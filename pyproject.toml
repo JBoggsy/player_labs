@@ -1,0 +1,9 @@
+[project]
+name = "player-labs"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "coworld[auth]>=0.1.20",
+    "httpx>=0.28.1",
+    "numpy>=2.4.6",
+]
