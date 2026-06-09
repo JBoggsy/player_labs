@@ -5,27 +5,13 @@ something mid-session; check it back at the start of focused work.
 
 ## Open
 
-- [ ] **Direction / hypothesis guide** (new; full-process walkthrough). From a report
-  to a decision: how to identify weaknesses in the signals, generate candidate
-  hypotheses (mechanism + predicted observable effect), and **present the options to
-  the user** for the human-in-the-loop call. Bridges crewrift-report (signals) →
-  implement.
-
-  > **Guides vs best_practices:** the guide walks the *whole process* and is the
-  > authoritative how-to. `best_practices.md` stays a terse *checklist* of disciplines
-  > — "here are the things to keep in mind" — and should NOT be pointed at as the
-  > authoritative guide. When the guide lands, stop citing best_practices as the
-  > how-to (incl. in the report skill / AGENTS), and reframe best_practices' own
-  > framing as a reference list.
-
 - [ ] **Quickstart: point, don't write (Pile 1).** The README quickstart should *route*
   to the durable docs, not restate them — and an agent not on its first run should
   reach this knowledge without the quickstart. Wire each step to its home: step 1→2 to
-  the (new) direction/hypothesis guide + crewrift-report; step 3 ("change crewborg") to
+  the `crewrift-diagnose` skill + crewrift-report; step 3 ("change crewborg") to
   crewborg `design.md` (esp. §12 tuning parameters, the first-change surface) +
   crewborg `AGENTS.md`; the re-measure to the `crewrift-ab` skill (+ its setup via
-  coworld-experience-requests). Do this *after* the direction/hypothesis guide exists
-  so that pointer resolves too.
+  coworld-experience-requests). The skills it pointed to all exist now, so it's unblocked.
 
 - [ ] **Minor: a version-log convention.** best_practices says "keep a version log"
   (version → the change it carries) but there's no file/template/home for it. Add a
@@ -75,6 +61,12 @@ something mid-session; check it back at the start of focused work.
 
 ## Done
 
+- **Direction / hypothesis guide → `crewrift-diagnose` skill** — done (draft, will
+  iterate). Signals → evidence-grounded mechanistic improvement hypotheses → presented
+  to the human as options. Distilled from prior player-improvement work (alpha_cog/
+  bulbacog notebooks + the agent-transcript corpus); the genuinely-new game-agnostic
+  lessons folded into `best_practices.md`, which is positioned as the cross-cutting
+  *checklist* while the skills are the authoritative how-to.
 - **A/B re-measure capability (`crewrift-ab` skill)** — done; its own skill, fresh +
   matched + head-to-head: `scripts/compare.py` (role-split metric deltas with
   normal-approx significance + a regression scan, led by `--target`) for the hard
