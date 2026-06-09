@@ -5,5 +5,46 @@ requires-python = ">=3.12"
 dependencies = [
     "coworld[auth]>=0.1.20",
     "httpx>=0.28.1",
-    "numpy>=2.4.6",
+    # The players repo (editable, from ~/coding/players) supplies the shared
+    # player_sdk that vendored players import as `players.player_sdk`, plus its
+    # base deps (anthropic, etc.). Keep ~/coding/players as a clean, untouched
+    # clone of Metta-AI/players — it is the SDK source of truth for every lab.
+    "players",
+    # crewborg's direct third-party deps (vendored fork under crewrift_lab/crewrift/crewborg/)
+    "numpy>=2.0.0",
+    "pydantic>=2.12.2",
+    "websockets>=16.0",
+    "cramjam>=2.8.0",
 ]
+
+[tool.uv.sources]
+players = { path = "../players", editable = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=1.3.0",
+    "pytest-xdist",
+]
+
+# Vendored players live under crewrift_lab/ grouped by game (e.g. crewrift.crewborg).
+# Each is a true in-lab fork, free to drift from upstream; only the shared SDK is
+# imported from the players dependency. Exposing crewrift_lab/ as a packages source
+# root makes `from crewrift.crewborg import build_runtime` importable after uv sync
+# (editable — edits are live).
+#
+# crewborg is the only Python policy. notsus and suspectra are vendored *Nim*
+# players (source-only; built externally via their Dockerfiles) — they are NOT
+# Python packages, so they're excluded from package discovery even though
+# suspectra carries an upstream-packaging __init__.py.
+[build-system]
+requires = ["setuptools>=70"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["crewrift_lab"]
+include = ["crewrift*"]
+exclude = ["crewrift.notsus*", "crewrift.suspectra*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
