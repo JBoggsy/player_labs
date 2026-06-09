@@ -68,6 +68,10 @@ on, your first evaluation, and your first improvement, step by step.
 > there, so a recorded active policy is the signal that onboarding is already done and
 > you should resume the loop (see [`AGENTS.md`](AGENTS.md)) instead.
 
+**Pointing a new user here?** [`docs/starter-prompt.md`](docs/starter-prompt.md) is a
+copy-paste prompt they can hand to their own coding agent to clone the repo and run the
+guided onboarding.
+
 **Prerequisites:** [`uv`](https://docs.astral.sh/uv/) and (only for *building* player
 images) Docker — **no GitHub credentials and no sibling checkouts**; the player SDK and
 the Crewrift game repo are public. TL;DR if you just want the commands:
