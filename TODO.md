@@ -24,21 +24,6 @@ something mid-session; check it back at the start of focused work.
   Switch it to read `COWORLD_PLAYER_WS_URL` (optionally falling back to the alias).
   This is a player-code change — run it through the loop, not as a drive-by.
 
-- [ ] **Fix dangling lab-README links once the READMEs are rewritten.**
-  Both lab READMEs were deleted (`player_labs/README.md`, `crewrift_lab/README.md`)
-  to be rewritten later. Until then, four links point at the now-missing
-  `crewrift_lab/README.md`:
-  - `crewrift_lab/crewrift/crewborg/README.md` → `../../README.md` (×2)
-  - `crewrift_lab/crewrift/crewborg/AGENTS.md` → `../../README.md`
-  (The `crewrift-replays.md → ../README.md` link was repointed to the lab `AGENTS.md`
-  during the replay-doc de-crewborging, so it's no longer dangling.)
-
-  When the READMEs are rewritten, confirm these resolve (or repoint them). Also
-  re-home the content worth carrying over from the old READMEs (external-checkouts
-  table + "never write to metta", the player contract, setup commands, gotchas, the
-  two workflows) — recoverable from git history (`git show HEAD:README.md`,
-  `git show HEAD:crewrift_lab/README.md`).
-
 - [ ] **Link the starting policies in `crewrift-player.md` §8.** All three are now
   vendored under `crewrift_lab/crewrift/`; wire up concrete pointers so a new author
   can clone one, and describe what each demonstrates:
@@ -68,3 +53,8 @@ something mid-session; check it back at the start of focused work.
 
 - **Write a real `AGENTS.md`** — done; root `AGENTS.md` has the skills index, this
   TODO pointer, and the game/world-agnostic-root rule.
+- **Rewrite the lab READMEs** — done; `player_labs/README.md` and
+  `crewrift_lab/README.md` rewritten (human + agent oriented, current state). The
+  three crewborg → `../../README.md` links now resolve; old-README content worth
+  keeping (external-checkouts table, never-write-to-metta, the player contract) was
+  re-homed and brought up to date.
