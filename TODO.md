@@ -5,20 +5,23 @@ something mid-session; check it back at the start of focused work.
 
 ## Open
 
-- [ ] **Quickstart: point, don't write (Pile 1).** The README quickstart should *route*
-  to the durable docs, not restate them — and an agent not on its first run should
-  reach this knowledge without the quickstart. Wire each step to its home: step 1→2 to
-  the `crewrift-diagnose` skill + crewrift-report; step 3 ("change crewborg") to
-  crewborg `design.md` (esp. §12 tuning parameters, the first-change surface) +
-  crewborg `AGENTS.md`; the re-measure to the `crewrift-ab` skill (+ its setup via
-  coworld-experience-requests). The skills it pointed to all exist now, so it's unblocked.
-
 - [ ] **Minor: a version-log convention.** best_practices says "keep a version log"
   (version → the change it carries) but there's no file/template/home for it. Add a
   simple convention (e.g. a `versions/` log or template) so the discipline has a place.
 
 ## Done
 
+- **Wrote the guided getting-started doc (`docs/getting-started.md`).** A one-time,
+  agent-as-guide onboarding script: Step 1 authenticate → Step 2 pick a player (recorded
+  under a `## Working context` heading in `crewrift_lab/user_preferences.md`, which
+  `crewrift_lab/AGENTS.md` reads on startup, so future sessions resume on it) → Step 3
+  first evaluation (build → upload-not-submit → experience request → monitor / download /
+  report + diagnose → watch a replay) → Step 4 first improvement (pick a direction →
+  edit → rebuild → Gate-1 smoke via `coworld-local-run` → upload → re-measure with
+  `crewrift-ab` → submit-or-iterate), handing off into the `AGENTS.md` loop. README's
+  Quickstart stripped to a pointer + prereqs; README flags first-timers (no active-policy
+  preference yet) into the guide. Also fixed the `replay-open <ereq_id>` mislabel (it's a
+  per-episode `episode_request_id`) in `crewrift-replays.md` + `coworld-local-run/cli.md`.
 - **Removed the GitHub-PAT requirement everywhere — repos went public.**
   `Metta-AI/coworld-crewrift` and `bitworld` are now public, so the Nim builds (notsus,
   suspectra) and the replay-reader need no credentials. Stripped the token machinery

@@ -58,7 +58,7 @@ so `coworld episodes -p crewborg` returns `[]`; the downloader goes via
   by policy — see §C).
 
 (If you instead use the raw `coworld` CLI — `episode-logs`/`replays --download-dir`
-— the files come out prefixed `<ereq_id>-policy_agent_{N}.log`; the downloader above
+— the files come out prefixed `<episode_request_id>-policy_agent_{N}.log`; the downloader above
 produces the clean `policy_agent_{N}.log` names this doc uses.) `coworld run-episode`
 also writes a `replay.json` for a locally-run game.
 
@@ -67,29 +67,44 @@ also writes a `replay.json` for a locally-run game.
 ## A. The visual replay (for humans)
 
 A Crewrift replay is **not stored frames** — it's per-tick player input masks the
-game **re-simulates** on playback (see "The `.bitreplay` format" below). You watch
-it by launching the Crewrift *game image* with the replay loaded.
+game **re-simulates** on playback (see "The `.bitreplay` format" below). It plays back
+in the Crewrift *game image*, either Observatory-hosted (you just get a URL) or by
+launching that image locally.
 
-Get a replay file via "Getting episode data" above (its `replay.json` is exactly
-this `.bitreplay`), then:
+`coworld replay-open` takes an **`<episode_request_id>`** — the id of **one game**
+(`V2EpisodeRequestRow.id`), *not* an experience-request/batch id. It resolves that
+episode's `replay_url` + `coworld_id` via `GET /v2/episode-requests/{id}`. (Caveat: this
+route only resolves **experience-request** episodes — the ids surfaced by `coworld
+xp-request episodes`, `coworld replays`, or the `ref_id` in the artifact-download
+`index.json`. Raw league `/episodes` ids are a different population and won't resolve.)
 
-**View it:**
+**View it — easiest (no local Docker):**
 
 ```sh
-coworld replay-open <ereq_id>            # local: resolve manifest+replay, launch viewer
-coworld replay-open <ereq_id> --hosted   # Observatory-served viewer, no local Docker
-# or, given a manifest + replay file:
+coworld replay-open <episode_request_id> --hosted   # creates a hosted Observatory replay
+                                                    # session and prints a viewer URL
+```
+
+This prints (and opens) an **Observatory-served `viewer_url`** — nothing is downloaded
+and no container runs locally. Hand that URL to a human and they can watch it in a
+browser. This is the default way to watch an episode from an evaluation.
+
+**View it — local (needs Docker):**
+
+```sh
+coworld replay-open <episode_request_id>   # resolve manifest+replay, launch viewer locally
+# or, given a manifest + replay file you already have:
 coworld download crewrift -o /tmp/crewrift
 coworld replay /tmp/crewrift/coworld_manifest.json /path/to/replay.json
 ```
 
-Both set `COGAME_LOAD_REPLAY_URI` on the container and open the **`/client/replay`**
-page (singular). Playback is 24 fps and **loops** by default; on-canvas controls
-give play/pause, speed (1/2/3/4/8/16×), loop toggle, and a scrubber. `coworld
-replay` does **not** verify the replay loaded — if the viewer is empty, use
-"Verifying playback" below. It also leaves a `tmp/coworld-replay-*` workspace under
-the **current directory** (and a running container) — run it from a scratch dir, or
-clean up after (`docker rm -f crewrift-replay`, remove the `tmp/…` dir).
+These set `COGAME_LOAD_REPLAY_URI` on a local container and open the **`/client/replay`**
+page (singular). Playback is 24 fps and **loops** by default; on-canvas controls give
+play/pause, speed (1/2/3/4/8/16×), loop toggle, and a scrubber. `coworld replay` does
+**not** verify the replay loaded — if the viewer is empty, use "Verifying playback"
+below. It also leaves a `tmp/coworld-replay-*` workspace under the **current directory**
+(and a running container) — run it from a scratch dir, or clean up after
+(`docker rm -f crewrift-replay`, remove the `tmp/…` dir).
 
 **Manual launch** (what the CLI does under the hood):
 

@@ -55,66 +55,34 @@ drive the mechanical halves of the loop:
 Game-specific analysis/build skills live in the game labs (e.g. Crewrift's
 `crewrift-report`). The index with full descriptions is in [`AGENTS.md`](AGENTS.md).
 
-## Setup
+## Getting started
+
+**New here? Follow the guided onboarding: [`docs/getting-started.md`](docs/getting-started.md)** —
+it walks you (and your coding agent) through authentication, picking a player to work
+on, your first evaluation, and your first improvement, step by step.
+
+> **Coding agents:** if this is your first time in this repo — or
+> [`crewrift_lab/user_preferences.md`](crewrift_lab/user_preferences.md) has **no
+> `## Working context` entry naming an active policy** — start with
+> [`docs/getting-started.md`](docs/getting-started.md). Step 2 records the chosen policy
+> there, so a recorded active policy is the signal that onboarding is already done and
+> you should resume the loop (see [`AGENTS.md`](AGENTS.md)) instead.
 
 **Prerequisites:** [`uv`](https://docs.astral.sh/uv/) and (only for *building* player
-images) Docker. **No sibling checkouts to clone** — the shared player SDK is pulled
-straight from the public `Metta-AI/players` repo, pinned in `pyproject.toml`.
+images) Docker — **no GitHub credentials and no sibling checkouts**; the player SDK and
+the Crewrift game repo are public. TL;DR if you just want the commands:
 
 ```sh
 uv sync                                          # .venv: coworld[auth] + the SDK + deps
 uv run softmax login && uv run softmax status    # auth to Observatory — expect "Authenticated"
 uv run pytest crewrift_lab/crewrift/crewborg/tests   # verify the install (should pass)
-uv run coworld --help                            # the game-ops CLI (leagues/results/submit/replays/…)
 ```
 
-(Auth is the `softmax` CLI; game operations are the `coworld` CLI — both come from the
-`coworld[auth]` dependency.) **No GitHub credentials are needed for anything** — the
-player SDK and the Crewrift game repo are public, so building players (Python *and*
-Nim) and the replay reader all work with just Docker.
-
-## Quickstart — your first evaluation, then the loop
-
-The goal is to get you (and your user) into the **evaluate → improve** loop fast. The
-human stays in the loop the whole way: you bring the signal and options, they pick the
-direction.
-
-**1 — Evaluate an existing policy (no upload, no build, no token).** crewborg already
-plays in the live league, so you can report on it immediately. Pull a batch of its
-recent league games and turn them into a dense, role-split report:
-
-```sh
-# pull recent league episodes for a policy (omit --version to take its recent games)
-uv run python .claude/skills/coworld-episode-artifacts/scripts/fetch_artifacts.py \
-  --policy crewborg -n 50 --out /tmp/eps
-
-# distill them into strengths/weaknesses (role-decomposed, flags interesting episodes)
-crewrift_lab/.claude/skills/crewrift-report/scripts/report.py /tmp/eps --policy crewborg
-```
-
-**2 — Read the report *with your user* and pick a direction.** The report shows where
-the policy is strong vs. weak by role (crewmate vs. imposter) and lists the interesting
-episodes. Surface the candidate weaknesses and let the human choose which to chase —
-this is the human-in-the-loop decision point. Drill into a flagged episode for the
-*why* with `crewrift_lab/.claude/skills/crewrift-report/scripts/profile_replay.py`.
-
-**3 — Improve one thing, then re-measure.** Change a single component of crewborg
-(`crewrift_lab/crewrift/crewborg/`), rebuild and upload it as *your own* version, then
-re-evaluate and compare to the baseline:
-
-```sh
-crewrift_lab/tools/build_player.sh crewborg                      # build a linux/amd64 image
-uv run coworld upload-policy players-crewborg:dev --name <your-name>   # routine; not a league submit
-# then: run an experience request (coworld-experience-requests skill) targeting your
-# version → pull its episodes → re-run the report → compare. Repeat until better.
-```
-
-**4 — Submit only when it's clearly better, and only with the human's OK** — submitting
-to a league is the irreversible, champion-making step (the `coworld-policy-lifecycle`
-skill). Uploading new versions along the way is free and routine.
-
-The full model — the two gates, measurement rigor, and which skill drives each step —
-is in [`AGENTS.md`](AGENTS.md).
+The guided onboarding above ([`docs/getting-started.md`](docs/getting-started.md)) takes
+you all the way to your first evaluation — authenticate, pick a player, then build →
+upload → run an experience request → report + diagnose. After that you're in the
+**evaluate → improve** loop; its full model (and the two gates) is in
+[`AGENTS.md`](AGENTS.md).
 
 ## Ground rules
 

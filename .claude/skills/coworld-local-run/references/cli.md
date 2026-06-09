@@ -57,8 +57,9 @@ checkout. There is no `--version` flag; `uv pip show coworld`.
 - **Two positionals: manifest then replay file.** Boots the game image in replay mode
   (`COGAME_LOAD_REPLAY_URI`), waits for `/healthz`, opens
   `http://127.0.0.1:<port>/client/replay`. Game container only — no player containers.
-- (`coworld replay-open <ereq_id> [--hosted]` is the *hosted* counterpart — fetches a
-  stored hosted episode's replay by id; not for local runs.)
+- (`coworld replay-open <episode_request_id> [--hosted]` is the counterpart for a
+  *stored* episode — fetches one game's replay by its episode-request id; `--hosted`
+  prints an Observatory viewer URL with no local Docker. Not for local runs.)
 
 ## Gotchas
 
