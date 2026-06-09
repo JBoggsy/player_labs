@@ -613,7 +613,7 @@ requires-dist = [
     { name = "cramjam", specifier = ">=2.8.0" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "numpy", specifier = ">=2.0.0" },
-    { name = "players", git = "https://github.com/Metta-AI/players?rev=5286e7c601559b980e14cda815314daba98afcc7" },
+    { name = "players", git = "https://github.com/Metta-AI/players?branch=main" },
     { name = "pydantic", specifier = ">=2.12.2" },
     { name = "websockets", specifier = ">=16.0" },
 ]
@@ -628,7 +628,7 @@ dev = [
 [[package]]
 name = "players"
 version = "0.1.0"
-source = { git = "https://github.com/Metta-AI/players?rev=5286e7c601559b980e14cda815314daba98afcc7#5286e7c601559b980e14cda815314daba98afcc7" }
+source = { git = "https://github.com/Metta-AI/players?branch=main#18ec2788fe14a1b01c9bc6f338c5d52b1987bc6b" }
 dependencies = [
     { name = "anthropic" },
     { name = "cramjam" },

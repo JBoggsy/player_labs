@@ -6,8 +6,8 @@ Player SDK's two-loop runtime and runs as a WebSocket client that speaks Crewrif
 binary protocol to the Coworld runner.
 
 The shared **Player SDK** is the `players.player_sdk` package, imported from the
-**pinned public `Metta-AI/players` repo** (installed via `pyproject.toml`; no local
-checkout — see the [lab README](../../README.md)); it is not vendored in this tree.
+**public `Metta-AI/players` repo**, which tracks `main` (installed via `pyproject.toml`;
+no local checkout — see the [lab README](../../README.md)); it is not vendored in this tree.
 
 - **Design spec:** [`design.md`](./design.md) — the settled architecture.
 - **Orientation:** [`AGENTS.md`](./AGENTS.md) — codebases, protocol, source pointers.

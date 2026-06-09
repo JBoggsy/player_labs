@@ -96,11 +96,12 @@ Every Coworld player image obeys the same contract (full details in
   **GitHub PAT for the Nim players** (the game repo + `bitworld` are private; see
   [§Credentials](#credentials-notsus--suspectra)); crewborg needs only Docker.
 - **Hermetic and pinned.** Heavy deps are fetched at build time, each pinned to a
-  ref: the (private) game repo is cloned at a **pinned commit** inside the Nim builds
-  (authenticated with the PAT via a BuildKit secret), and the shared SDK is installed
-  from the **public `Metta-AI/players` repo at `PLAYERS_SDK_REF`**
-  ([`tools/versions.env`](../../tools/versions.env)). No local checkouts — the host
-  needs only Docker (+ the PAT for Nim builds).
+  ref: the (private) game repo is cloned **at a deliberately-pinned commit**
+  (`CREWRIFT_REF`) inside the Nim builds (authenticated with the PAT via a BuildKit
+  secret), while the shared SDK is installed from the **public `Metta-AI/players`
+  repo at `PLAYERS_SDK_REF`** ([`tools/versions.env`](../../tools/versions.env)) —
+  which defaults to **`main`** (latest SDK each build; pin to a SHA for a reproducible
+  image). No local checkouts — the host needs only Docker (+ the PAT for Nim builds).
 - **One central game pin.** [`tools/versions.env`](../../tools/versions.env) holds
   `CREWRIFT_REF`, passed to every Nim build as `--build-arg`. **It must match the
   game version running in the league you target** — a player compiled against a
@@ -245,9 +246,12 @@ and the SDK from the local checkout.
 - **Mint + wire the GitHub PAT** for the Nim players (see
   [§Credentials](#credentials-notsus--suspectra)) — the one remaining setup step
   before notsus/suspectra can build. Tracked in [`../../../TODO.md`](../../../TODO.md).
-- **Reconcile `CREWRIFT_REF` with the live league game version** before submitting
-  built players (currently the lab's validated `d9f6b30`; upstream suspectra pinned
-  a different ref). Tracked in [`../../../TODO.md`](../../../TODO.md).
+- **Keep `CREWRIFT_REF` matched to the deployed game.** It can't be auto-resolved
+  (the platform exposes no commit; `master` runs ahead of the deployed `:latest` — a
+  `master`-built `expand_replay` hash-failed on a fresh live replay 2026-06-09, while
+  `d9f6b30` expands cleanly). So it's a deliberate pin; bump it when
+  `build_expand_replay` starts hash-failing on *fresh* replays (the redeploy signal).
+  Currently `d9f6b30`, validated against the live game 2026-06-09.
 - **Optional local-checkout fast path.** A `--local-game` mode (mount
   `~/coding/coworlds/coworld-crewrift` instead of cloning) would speed iteration at
   the cost of hermeticity; not implemented — add it if cold-build time hurts.

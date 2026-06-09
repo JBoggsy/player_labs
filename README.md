@@ -124,10 +124,12 @@ is in [`AGENTS.md`](AGENTS.md).
   to a league is the irreversible, champion-making action (the human's gate).
 - **Build `--platform=linux/amd64`** — the cluster is amd64; on Apple Silicon images
   build under emulation (the build tools handle this).
-- **The SDK is pinned, not vendored** — vendored players are forks *in this repo*, free
-  to drift; `players.player_sdk` is imported from the pinned public players repo. Bump
-  it via the `players` rev in `pyproject.toml` (+ `PLAYERS_SDK_REF` in
-  `crewrift_lab/tools/versions.env`).
+- **The SDK is imported, not vendored** — vendored players are forks *in this repo*,
+  free to drift; `players.player_sdk` is imported from the public players repo, which
+  **tracks `main`** (`pyproject.toml`). `uv.lock` records the exact commit so clones
+  are reproducible; adopt the latest with `uv lock --upgrade-package players` (no
+  hand-edited SHAs). The **game** ref (`CREWRIFT_REF`) stays deliberately pinned — it
+  must match the deployed league game, not latest (see `crewrift_lab/tools/versions.env`).
 - The Coworld platform contract (PLAYER.md/GAME.md, runner) lives in the `metta` repo
   if you need to consult it — **read-only; never write to a `metta` checkout.**
 

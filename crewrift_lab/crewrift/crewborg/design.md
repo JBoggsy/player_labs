@@ -1,7 +1,7 @@
 # Crewborg — Design Specification
 
 Crewborg is a Player-SDK agent (the SDK is the `players.player_sdk` package,
-imported from the pinned public `players` install) that plays **Crewrift**, a Coworld
+imported from the public `players` install, which tracks `main`) that plays **Crewrift**, a Coworld
 social-deduction game (Among Us–style: crewmates do tasks and vote; imposters
 kill, vent, and blend in). This document is the implementation spec.
 For codebase orientation, game constants, and source pointers, see
