@@ -5,10 +5,11 @@ requires-python = ">=3.12"
 dependencies = [
     "coworld[auth]>=0.1.20",
     "httpx>=0.28.1",
-    # The players repo (editable, from ~/coding/players) supplies the shared
-    # player_sdk that vendored players import as `players.player_sdk`, plus its
-    # base deps (anthropic, etc.). Keep ~/coding/players as a clean, untouched
-    # clone of Metta-AI/players — it is the SDK source of truth for every lab.
+    # The shared player SDK that vendored players import as `players.player_sdk`,
+    # plus its base deps (anthropic, etc.). Installed straight from the public
+    # Metta-AI/players repo (pinned below) — no local checkout required. To bump the
+    # SDK, change the `rev` here (and PLAYERS_SDK_REF in crewrift_lab/tools/versions.env
+    # so built images match) and re-run `uv lock`.
     "players",
     # crewborg's direct third-party deps (vendored fork under crewrift_lab/crewrift/crewborg/)
     "numpy>=2.0.0",
@@ -18,7 +19,7 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-players = { path = "../players", editable = true }
+players = { git = "https://github.com/Metta-AI/players", rev = "5286e7c601559b980e14cda815314daba98afcc7" }
 
 [dependency-groups]
 dev = [

@@ -8,8 +8,8 @@
 #   --game-ref override CREWRIFT_REF for this build (Nim players only)
 #
 # Produces a linux/amd64 image (the Coworld upload contract).
-#   crewborg (Python) installs the shared SDK from the local players checkout and
-#     runs the vendored fork. Needs only Docker.
+#   crewborg (Python) installs the shared SDK from the public players repo
+#     (PLAYERS_SDK_REF) and runs the vendored fork. Needs only Docker.
 #   notsus / suspectra (Nim) clone the PRIVATE crewrift game repo (+ its private
 #     bitworld dep) at the pinned CREWRIFT_REF and compile, so they ALSO need a
 #     GitHub token (GITHUB_PAT or `gh auth token`) with read access to the Metta-AI
@@ -20,7 +20,6 @@ set -euo pipefail
 
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # crewrift_lab/
 CREWRIFT_DIR="$LAB_DIR/crewrift"
-PLAYERS_REPO="${PLAYERS_REPO:-$HOME/coding/players}"         # SDK source of truth
 GAME_REPO_SLUG="Metta-AI/coworld-crewrift"                   # private; needs the PAT
 
 # shellcheck source=/dev/null
@@ -127,19 +126,15 @@ case "$policy" in
     ;;
 
   crewborg)
-    # Python fork re-rooted out of `players`: it imports only players.player_sdk,
-    # so we stage a composed context = {the SDK checkout, the vendored fork} and
-    # the Dockerfile installs the SDK then puts the fork on PYTHONPATH.
+    # Python fork re-rooted out of `players`: it imports only players.player_sdk.
+    # The Dockerfile installs the SDK from the public players repo (PLAYERS_SDK_REF),
+    # so we just stage the fork + the lab's crewrift/__init__.py and put it on
+    # PYTHONPATH. No local players checkout needed.
     dir="$CREWRIFT_DIR/crewborg"
-    [ -d "$PLAYERS_REPO/players/player_sdk" ] || die \
-      "SDK checkout not found at $PLAYERS_REPO (set PLAYERS_REPO=/path/to/players)"
     stage="$(mktemp -d)"; trap 'rm -rf "$stage"' EXIT
-    mkdir -p "$stage/sdk"
-    cp "$PLAYERS_REPO/pyproject.toml" "$PLAYERS_REPO/README.md" "$stage/sdk/"
-    rsync -a --exclude '__pycache__' --exclude '*.egg-info' "$PLAYERS_REPO/players" "$stage/sdk/"
     cp "$CREWRIFT_DIR/__init__.py" "$stage/crewrift_init.py"
     rsync -a --exclude '__pycache__' --exclude '*.egg-info' "$dir/" "$stage/crewborg/"
-    build "$stage" "$dir/coworld/Dockerfile"
+    build "$stage" "$dir/coworld/Dockerfile" --build-arg "PLAYERS_SDK_REF=$PLAYERS_SDK_REF"
     ;;
 
   *)

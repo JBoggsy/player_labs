@@ -124,11 +124,12 @@ clones the crewrift game at the pinned `CREWRIFT_REF` and compiles — this need
 doc's §Credentials).
 
 - **crewborg** *(Python)* — at [`crewrift/crewborg/`](crewrift/crewborg/) (package
-  `crewrift.crewborg`), a drifting fork of upstream
-  `~/coding/players/players/crewrift/crewborg`. A full Python player: `perception/`
+  `crewrift.crewborg`), a drifting fork of upstream `Metta-AI/players`
+  (`players/crewrift/crewborg`). A full Python player: `perception/`
   (Sprite-v1 → scene decoder), `strategy/`, `modes/`, `action.py`, `coworld/`
-  (the bridge). Imports the shared `players.player_sdk` from the editable `players`
-  install. Its own [`AGENTS.md`](crewrift/crewborg/AGENTS.md) and
+  (the bridge). Imports the shared `players.player_sdk` from the **pinned public
+  `players` repo** (`pyproject.toml`; no local checkout). Its own
+  [`AGENTS.md`](crewrift/crewborg/AGENTS.md) and
   [`design.md`](crewrift/crewborg/design.md) map its internals. **Currently the
   primary policy under optimization.**
 - **notsus** *(Nim)* — at [`crewrift/notsus/`](crewrift/notsus/), the **reference
@@ -142,7 +143,6 @@ doc's §Credentials).
   [`crewrift/suspectra/`](crewrift/suspectra/), a fork of notsus
   (`suspectra.nim`) that adds evidence voting and a bounded Bedrock/Anthropic
   **meeting LLM** (`llm_meeting.py`, invoked by path; prompts in `memory/`).
-  Upstream: `~/coding/players/players/crewrift/suspectra`. Its `build.sh` still
-  references the upstream players-repo build harness (`tools/players_build/`) — a
-  tether to clean up if/when we make it build cleanly in-lab.
+  Upstream: `Metta-AI/players` (`players/crewrift/suspectra`). Builds in-lab via
+  `tools/build_player.sh suspectra` (same Nim + PAT path as notsus).
 </content>

@@ -37,12 +37,14 @@ Most signal is cheap; only drill deep where it pays off.
 ## Workflow
 
 1. **Get the episodes** into one directory with the `coworld-episode-artifacts` skill
-   (by experience request, `--policy <name> --version N`, round, or division), e.g.
-   `… fetch_artifacts.py --policy crewborg --version 15 -n 100 --out /tmp/eps`.
+   (by experience request, `--policy <name>`, round, or division), e.g.
+   `… fetch_artifacts.py --policy crewborg -n 100 --out /tmp/eps`. (Add `--version N`
+   to focus a specific upload; omit it for the policy's recent games across versions.)
 
 2. **Tier 1 — the report:**
    ```sh
-   scripts/report.py /tmp/eps --policy crewborg --version 15 --json /tmp/report.json
+   scripts/report.py /tmp/eps --policy crewborg --json /tmp/report.json
+   #   add --version N to focus one upload (find yours via coworld-policy-lifecycle)
    ```
    Read the role-split distribution and the ranked **interesting episodes**. The
    `episode_dir` on each line is the drill-in handle.

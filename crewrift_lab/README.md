@@ -30,8 +30,9 @@ Three Crewrift policies are vendored here as drift-able forks under
 
 - **crewborg** *(Python)* — the main policy under optimization; a full Player-SDK agent
   (perception → belief/suspicion → strategy → action). It imports the shared
-  `players.player_sdk` from the editable players install (see [`../README.md`](../README.md)),
-  so the SDK never drifts even as the fork does. Its internals: `crewrift/crewborg/design.md`.
+  `players.player_sdk` from the **pinned public players repo** (`pyproject.toml`; no
+  local checkout — see [`../README.md`](../README.md)), so the SDK stays fixed even as
+  the fork drifts. Its internals: `crewrift/crewborg/design.md`.
 - **notsus** *(Nim)* — the minimal reference baseline / comparison opponent.
 - **suspectra** *(Nim + LLM)* — notsus plus a bounded meeting-LLM.
 
@@ -59,7 +60,8 @@ tools/bin/expand_replay <replay.json>
 # Analyze a batch of episodes into a strengths/weaknesses report:
 #   1) pull them with the coworld-episode-artifacts skill, then
 #   2) run the crewrift-report skill:
-.claude/skills/crewrift-report/scripts/report.py <episodes_dir> --policy crewborg --version 15
+.claude/skills/crewrift-report/scripts/report.py <episodes_dir> --policy crewborg
+#   (add --version N to focus a specific upload; omit it to take all recent games)
 ```
 
 The full evaluate → report → improve → submit cycle, and which skill drives each step,

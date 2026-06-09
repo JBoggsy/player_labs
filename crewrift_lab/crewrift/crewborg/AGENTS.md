@@ -67,8 +67,9 @@ the SDK's JSON bridge does not fit a binary game (see
 
 ## 1. The Player SDK (`players.player_sdk`)
 
-**Location:** `~/coding/players/players/player_sdk` (the `players` repo, installed
-editable into the lab — the SDK is imported, not vendored in this fork).
+**Source:** the public `Metta-AI/players` repo (`players/player_sdk`), installed into
+the lab from a pinned commit via `pyproject.toml` — no local checkout; the SDK is
+imported, not vendored in this fork.
 **Import root:** `players.player_sdk` (the repo is the `players` package).
 Pure Python, deps `numpy`/`pydantic`/`websockets`.
 
@@ -511,7 +512,7 @@ rather than pixel parity). Develop/run/test workflows live in the
 | Crewborg trace replay viewer | `./viewer/index.html` |
 
 Absolute roots:
-- Player SDK: `~/coding/players` (pkg `players`, installed editable into the lab)
+- Player SDK: pkg `players`, installed from the pinned public `Metta-AI/players` repo (no local checkout)
 - This crewborg fork: `~/coding/player_labs/crewrift_lab/crewrift/crewborg` (pkg `crewrift.crewborg`)
 - Crewrift game source: `~/coding/coworlds/coworld-crewrift`
 - Coworld platform: `~/coding/metta/packages/coworld` *(read-only — metta checkout)*

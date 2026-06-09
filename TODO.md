@@ -5,17 +5,15 @@ something mid-session; check it back at the start of focused work.
 
 ## Open
 
-- [ ] **Rename crewborg `crewrift.crewborg` → `players.crewborg`** (approach approved).
-  Make the lab own the `players` package: move `crewrift_lab/crewrift/crewborg` →
-  `crewrift_lab/players/crewborg`, rewrite self-imports `crewrift.crewborg` →
-  `players.crewborg` (leave `players.player_sdk` imports as-is), add
-  `crewrift_lab/players/__init__.py`, and bring the SDK in as a **relative symlink**
-  `crewrift_lab/players/player_sdk → ../../../players/players/player_sdk` (live, no
-  drift). Drop the editable `players` dependency from `pyproject.toml` (it would
-  re-collide) and add the SDK's deps directly; flip `packages.find` include
-  `crewrift*` → `players*`; run the tests. **Revisit portability later** — the
-  absolute/relative symlink assumes the `~/coding/player_labs` + `~/coding/players`
-  sibling layout.
+- [ ] **Reconsider the crewborg `crewrift.crewborg` → `players.crewborg` rename.**
+  Goal was to have the fork sit at `players.crewborg` (matching upstream). The
+  previously-approved mechanism (symlink the SDK from a `~/coding/players` sibling) is
+  now **obsolete** — as of 2026-06-09 the SDK is **git-installed** from the public
+  players repo, with **no sibling checkout**. A local `players.crewborg` would still
+  collide with that installed `players` package (one regular package can't span two
+  locations), so the rename is *harder* now, not easier, and arguably not worth it —
+  `crewrift.crewborg` works cleanly and reads fine. Decide whether to drop this task
+  or find a new mechanism (e.g. a namespace-package split) before doing anything.
 
 - [ ] **Fix the crewborg bridge to read the canonical WS env var.**
   `crewrift_lab/crewrift/crewborg/coworld/policy_player.py` reads

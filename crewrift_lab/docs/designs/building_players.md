@@ -95,12 +95,12 @@ Every Coworld player image obeys the same contract (full details in
   the image build — no host Nim, no host Python env. The one extra host input is a
   **GitHub PAT for the Nim players** (the game repo + `bitworld` are private; see
   [§Credentials](#credentials-notsus--suspectra)); crewborg needs only Docker.
-- **Hermetic where it can be; pinned where it can't.** The game repo is cloned at a
-  **pinned commit** inside the build (reproducible), authenticated with the PAT via a
-  BuildKit secret. Shared SDK code that isn't a public pip target is staged from the
-  lab's **clean, pinned local checkout** (`~/coding/players`) — effectively pinned by
-  lab convention. (The players repo is private too, which is why the SDK comes from
-  the local checkout rather than a git install.)
+- **Hermetic and pinned.** Heavy deps are fetched at build time, each pinned to a
+  ref: the (private) game repo is cloned at a **pinned commit** inside the Nim builds
+  (authenticated with the PAT via a BuildKit secret), and the shared SDK is installed
+  from the **public `Metta-AI/players` repo at `PLAYERS_SDK_REF`**
+  ([`tools/versions.env`](../../tools/versions.env)). No local checkouts — the host
+  needs only Docker (+ the PAT for Nim builds).
 - **One central game pin.** [`tools/versions.env`](../../tools/versions.env) holds
   `CREWRIFT_REF`, passed to every Nim build as `--build-arg`. **It must match the
   game version running in the league you target** — a player compiled against a
@@ -144,14 +144,14 @@ The build only needs three things wired, so it generalizes cleanly:
    - **Python player** → copy the crewborg Dockerfile: install your deps (and the
      SDK, if used), put your package on `PYTHONPATH`, bake
      `CMD ["python","-m","<your.module>"]`.
-2. **A context decision** — does your build need shared local code (the SDK)?
-   - **No** (self-contained, like the Nim players) → context is your player
-     directory; the Dockerfile clones/fetches everything else. Register the policy
-     in the wrapper's `notsus|suspectra)` branch.
-   - **Yes** (needs the local SDK, like crewborg) → the wrapper **stages a composed
-     context** = `{the SDK checkout, your fork}`; the Dockerfile installs the SDK
-     from the staged copy and puts your fork on the path. Register it in the
-     `crewborg)` branch (or generalize that branch).
+2. **A context decision** — where does your build get its inputs?
+   - **Self-contained** (like the Nim players) → context is your player directory;
+     the Dockerfile clones/fetches everything else. Register in the wrapper's
+     `notsus|suspectra)` branch.
+   - **Needs the shared SDK** (like crewborg) → the Dockerfile `pip install`s
+     `players` from the pinned public repo (`PLAYERS_SDK_REF`); the wrapper just
+     stages your fork (+ any package `__init__`) onto `PYTHONPATH`. Register in the
+     `crewborg)` branch. (No local checkout — the SDK comes over the network, pinned.)
 3. **Nothing else if your player isn't vendored.** A non-vendored player (source
    living elsewhere, or built straight from its origin repo) uses the same
    Dockerfile patterns; point the wrapper's context at wherever the source lives.
@@ -176,15 +176,14 @@ crewrift_lab/tools/build_player.sh crewborg
   (numpy/pydantic/websockets/cramjam are the SDK's base deps; `[bedrock]` adds
   boto3), puts the fork on `PYTHONPATH`, runs `python -m
   crewrift.crewborg.coworld.policy_player`.
-- **Why a composed context:** crewborg is re-rooted out of `players` into the
-  top-level `crewrift.crewborg` package and imports only `players.player_sdk`. The
-  wrapper stages `{the local players checkout, the fork, the lab crewrift/__init__}`
-  and the Dockerfile (`crewborg/coworld/Dockerfile`) installs the SDK from the
-  staged checkout (`pip install "/tmp/sdk[bedrock]"`) then copies the fork to
-  `/app/crewrift/crewborg`. It deliberately does **not** `pip install` the lab
-  package (that would pull lab tooling like `coworld[auth]`).
-- **SDK source:** the local `~/coding/players` checkout (lab's source of truth).
-  Override with `PLAYERS_REPO=/path/to/players`.
+- **SDK + fork:** crewborg is re-rooted out of `players` into the top-level
+  `crewrift.crewborg` package and imports only `players.player_sdk`. The Dockerfile
+  (`crewborg/coworld/Dockerfile`) `pip install`s the SDK straight from the public
+  players repo's source tarball at `PLAYERS_SDK_REF`
+  (`players[bedrock] @ https://github.com/Metta-AI/players/archive/<ref>.tar.gz` — no
+  git or local checkout needed in the build), then the wrapper-staged fork + the lab
+  `crewrift/__init__.py` are copied onto `PYTHONPATH`. It deliberately does **not**
+  `pip install` the lab package (that would pull lab tooling like `coworld[auth]`).
 - **Behavior env is NOT baked** — `CREWBORG_BE_DUMB`, `CREWBORG_POLICY_VARIANT`,
   etc. are experiment knobs; set them at upload time. (Upstream's image baked
   `BE_DUMB=1`, a reduced variant — the lab image ships the full default behavior.)
@@ -228,11 +227,11 @@ crewrift_lab/tools/build_player.sh suspectra
 | Base image | `python:3.12-slim` | `debian:bookworm-slim` | `debian:bookworm-slim` |
 | Build toolchain | pip | nimby 0.1.26 / Nim | nimby 0.1.26 / Nim |
 | Game dependency | scene vocab (no compile) | clone game @ `CREWRIFT_REF` | clone game @ `CREWRIFT_REF` |
-| Shared code | SDK from `~/coding/players` | — | — |
+| Shared code | SDK from public players repo @ `PLAYERS_SDK_REF` | — | — |
 | Credentials | none | **GitHub PAT** (private repos) | **GitHub PAT** (private repos) |
 | Runtime deps | players[bedrock] | libcurl4 | libcurl4 + anthropic + boto3 |
 | Entry | `python -m …policy_player` | `/bin/notsus` | `/bin/suspectra` |
-| Build context | composed (SDK + fork) | the policy dir | the policy dir |
+| Build context | the fork (SDK pip-installed) | the policy dir | the policy dir |
 
 **Host requirements:** Docker with `buildx` + amd64 emulation (qemu) — Docker
 Desktop or colima both provide this. For **notsus/suspectra**, also a **GitHub PAT**

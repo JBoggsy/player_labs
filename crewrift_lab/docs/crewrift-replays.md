@@ -40,7 +40,7 @@ Download an episode's replay + logs + metadata in one pass with the lab's
 ```sh
 cd ~/coding/player_labs
 uv run python .claude/skills/coworld-episode-artifacts/scripts/fetch_artifacts.py \
-  --policy crewborg --version 15 -n 5 --out /tmp/eps
+  --policy crewborg -n 5 --out /tmp/eps      # add --version N to focus one upload
 ```
 
 This handles the discovery a fresh agent gets wrong: **league** episodes (what a

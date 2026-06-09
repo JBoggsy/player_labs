@@ -613,7 +613,7 @@ requires-dist = [
     { name = "cramjam", specifier = ">=2.8.0" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "numpy", specifier = ">=2.0.0" },
-    { name = "players", editable = "../players" },
+    { name = "players", git = "https://github.com/Metta-AI/players?rev=5286e7c601559b980e14cda815314daba98afcc7" },
     { name = "pydantic", specifier = ">=2.12.2" },
     { name = "websockets", specifier = ">=16.0" },
 ]
@@ -628,7 +628,7 @@ dev = [
 [[package]]
 name = "players"
 version = "0.1.0"
-source = { editable = "../players" }
+source = { git = "https://github.com/Metta-AI/players?rev=5286e7c601559b980e14cda815314daba98afcc7#5286e7c601559b980e14cda815314daba98afcc7" }
 dependencies = [
     { name = "anthropic" },
     { name = "cramjam" },
@@ -636,25 +636,6 @@ dependencies = [
     { name = "pydantic" },
     { name = "websockets" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "anthropic", specifier = ">=0.40.0" },
-    { name = "boto3", marker = "extra == 'bedrock'", specifier = ">=1.34.0" },
-    { name = "cogames", marker = "extra == 'cogames'" },
-    { name = "cogsguard", marker = "extra == 'cogsguard'", git = "https://github.com/Metta-AI/coworld-cogs-vs-clips.git?branch=relh%2Fcogsguard-semantic-surface" },
-    { name = "cramjam", specifier = ">=2.8.0" },
-    { name = "mettagrid", marker = "extra == 'cogames'" },
-    { name = "mettagrid", marker = "extra == 'cogsguard'" },
-    { name = "numpy", specifier = ">=2.0.0" },
-    { name = "pydantic", specifier = ">=2.12.2" },
-    { name = "pytest", marker = "extra == 'test'" },
-    { name = "pytest-asyncio", marker = "extra == 'test'", specifier = ">=1.3.0" },
-    { name = "pytest-xdist", marker = "extra == 'test'" },
-    { name = "ruff", marker = "extra == 'test'" },
-    { name = "websockets", specifier = ">=16.0" },
-]
-provides-extras = ["cogames", "bedrock", "test", "cogsguard"]
 
 [[package]]
 name = "pluggy"
