@@ -8,10 +8,6 @@ The prompt front-loads a plain-language description of the lab (so the agent can
 questions *before* cloning), hands the agent the guide role, and points it at
 [`getting-started.md`](getting-started.md) to follow start to finish.
 
-> **Served copy:** the same prompt body, with no surrounding doc chrome, lives in
-> [`crewrift-play-prompt.md`](crewrift-play-prompt.md) — that's what softmax.com serves at
-> `/play_crewrift.md`. **Keep the two in sync** when you edit the prompt.
-
 ---
 
 ```text
