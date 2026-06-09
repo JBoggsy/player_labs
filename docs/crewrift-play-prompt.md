@@ -1,20 +1,3 @@
-# Starter prompt
-
-A copy-paste prompt to hand to a **new user's coding agent** so it clones this repo and
-walks them through onboarding. Share it however you like (chat, docs, a webpage); the
-user pastes it to their agent as their first message — they don't need the repo yet.
-
-The prompt front-loads a plain-language description of the lab (so the agent can answer
-questions *before* cloning), hands the agent the guide role, and points it at
-[`getting-started.md`](getting-started.md) to follow start to finish.
-
-> **Served copy:** the same prompt body, with no surrounding doc chrome, lives in
-> [`crewrift-play-prompt.md`](crewrift-play-prompt.md) — that's what softmax.com serves at
-> `/play_crewrift.md`. **Keep the two in sync** when you edit the prompt.
-
----
-
-```text
 Help me get started with player_labs, a hands-on lab for improving AI agents that
 compete in Coworld's game leagues. Act as my guide, not just a coding agent — this
 onboarding is part of the experience, not a normal coding task. Explain what's happening
@@ -43,4 +26,3 @@ Then walk me through it:
      I always know what's happening and why.
 
 Let's start.
-```
