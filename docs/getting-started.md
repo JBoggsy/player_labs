@@ -1,10 +1,19 @@
 # Getting started
 
-A guided, one-time onboarding into the lab. **You're the coding agent, and you're
-setting your user up** — work through these steps *with* them: do the mechanical parts
-yourself, and for anything that needs the human (signing in, choosing a direction),
-explain it in plain language and hand it over. Before each step, say what you're about
-to do and why, so they stay oriented.
+A guided, one-time onboarding into the lab. **You are a guide here, not just a coding
+agent — and this matters.** Onboarding *is* the user's first experience of the product,
+so *how* you communicate is part of it; do not treat this like a normal coding task you
+execute quietly and report back on. Work through these steps *with* your user:
+
+- **Explain in plain prose, not just commands.** Before each step, say what you're about
+  to do and why. Narrate as you go so they're never staring at a silent terminal
+  wondering what's happening.
+- **Lean on the relay quotes below — and adapt them.** They're starting points; use what
+  you know about *this* user (their background, how much detail they want, what they've
+  already grasped) to pitch the explanation right and fill any gaps. Aim for clarity and
+  completeness, not brevity.
+- **Hand off cleanly when the human is needed** (signing in, naming their policy,
+  choosing a direction): explain the choice, give them what they need, and wait.
 
 > **Run everything from the repo root.** All paths below are written relative to the
 > project root (where you're operating) — `crewrift_lab/…`, not `../…`.
@@ -122,10 +131,11 @@ strengths, weaknesses, and hypotheses that point at your first improvement.
 what's coming. Say something like:
 
 > Here's the plan for our first evaluation:
-> 1. I'll **build `<policy>` exactly as it stands now** into an uploadable image and
->    **upload it as a new version** — but **not** submit it to a league. Uploading is
->    routine and just gives us a version we can test; submitting is the public,
->    hard-to-undo step we'll save for when it's clearly better.
+> 1. I'll **build `<policy>` as it stands now and upload it as a new version.** To be
+>    clear up front: **this is not a league submission.** Uploading just creates a
+>    private version for *us* to evaluate — the experience request in the next step runs
+>    against it. Submitting to a league (making it compete for real) is a separate,
+>    public, hard-to-undo step we'll save for when the policy is clearly better.
 > 2. I'll run an **experience request** — Softmax's feature for running a whole batch of
 >    episodes in parallel, against opponents and matchups *we* design. It lets us test
 >    against strong players *right now* instead of waiting for league rounds to come
@@ -155,8 +165,13 @@ crewrift_lab/tools/build_player.sh <policy>          # → players-<policy>:dev 
 uv run coworld upload-policy players-<policy>:dev --name <your-policy-name>
 ```
 
-This creates a **testable version that is not in any league** — distinct from the stock
-policy others are running. (Upload mechanics and the upload-vs-submit gate: the
+This creates a **private, testable version — it is not entered in any league and is not
+a submission.** Make sure your user understands the distinction, because "upload" can
+sound bigger than it is: **uploading is routine and reversible; it just gives us a
+version that the experience request in Step 3b evaluates (that's what the uploaded
+version is *for*).** Submitting to a league — putting the policy into live competition —
+is a separate, deliberate step gated on a clearly-better result, and we are *not* doing
+that here. (Upload mechanics and the upload-vs-submit gate: the
 **`coworld-policy-lifecycle`** skill.)
 
 ### 3b — Run the evaluation (experience request)
