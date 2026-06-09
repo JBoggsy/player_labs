@@ -44,9 +44,12 @@ Tier = cheapest data that detects it (1 = `results.json`/`episode.json`; 2 =
 | `vote_timeout` | meetings this slot failed to vote (the −10 trigger) |
 | `connect_timeout` / `disconnect_timeout` | operational-failure counts (−100 trigger) |
 
-**`episode.json`** — `id`; `policy_results[]` = `{position, policy:{name,version,id},
-avg_reward, agents:[{reward}]}` (the **slot→policy** map; join to `results.json` by
-`position`). Also `game_stats`, `tags`, `steps`.
+**`episode.json`** — `id`; the **slot→policy** map, in one of two shapes (the scripts
+handle both via `slot_entries()`): **league** episodes carry `policy_results[]` =
+`{position, policy:{name,version,id}, avg_reward, agents:[{reward}]}` (plus `game_stats`,
+`tags`, `steps`); **experience-request** episodes — what XP requests produce — carry
+`participants[]` = `{position, policy_name, version, policy_version_id, player_name,
+label}`. Join either to `results.json` by `position`.
 
 > Note: `results.json` has **no** explicit "died"/"ejected" field — those are Tier-2
 > (parse kills + per-meeting vote tallies). And per-slot **chat** content is not in

@@ -68,28 +68,38 @@ def load_episode(ep_dir: Path) -> tuple[dict, dict] | None:
         return None
 
 
-def slots_for_policy(episode: dict, policy: str, version: int | None) -> list[tuple[int, str | None]]:
-    """Slots (position, version) where the target policy plays in this episode."""
-    out = []
-    for entry in episode.get("policy_results") or []:
-        pol = entry.get("policy") or {}
-        name = pol.get("name")
-        ver = pol.get("version")
-        if name == policy and (version is None or ver == version):
-            pos = entry.get("position")
-            if pos is not None:
-                out.append((pos, ver))
+def slot_entries(episode: dict) -> list[tuple[int, str | None, int | None]]:
+    """Normalize an episode's slot->policy map to ``(position, policy_name, version)``.
+
+    The downloader writes the raw episode record, which comes in two shapes:
+    - **league** episodes: ``policy_results[]`` = ``[{position, policy:{name,version}}]``
+    - **experience-request** episodes: ``participants[]`` =
+      ``[{position, policy_name, version}]``
+
+    Experience requests are the lab's primary evaluation path, so both must work.
+    """
+    out: list[tuple[int, str | None, int | None]] = []
+    policy_results = episode.get("policy_results")
+    if policy_results:
+        for entry in policy_results:
+            pol = entry.get("policy") or {}
+            if entry.get("position") is not None:
+                out.append((entry["position"], pol.get("name"), pol.get("version")))
+        return out
+    for entry in episode.get("participants") or []:
+        if entry.get("position") is not None:
+            out.append((entry["position"], entry.get("policy_name"), entry.get("version")))
     return out
 
 
+def slots_for_policy(episode: dict, policy: str, version: int | None) -> list[tuple[int, str | None]]:
+    """Slots (position, version) where the target policy plays in this episode."""
+    return [(pos, ver) for pos, name, ver in slot_entries(episode)
+            if name == policy and (version is None or ver == version)]
+
+
 def opponents_for(episode: dict, slot: int) -> list[str]:
-    names = []
-    for entry in episode.get("policy_results") or []:
-        if entry.get("position") != slot:
-            pol = entry.get("policy") or {}
-            if pol.get("name"):
-                names.append(pol["name"])
-    return names
+    return [name for pos, name, ver in slot_entries(episode) if pos != slot and name]
 
 
 def build_record(ep_dir: Path, episode: dict, results: dict, slot: int, version: int | None) -> Record | None:

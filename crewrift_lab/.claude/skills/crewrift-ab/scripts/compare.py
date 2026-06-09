@@ -49,6 +49,31 @@ def parse_spec(spec: str) -> tuple[str, int | None]:
     return spec, None
 
 
+def slot_entries(episode: dict) -> list[tuple[int, str | None, int | None]]:
+    """Normalize an episode's slot->policy map to ``(position, policy_name, version)``.
+
+    The downloader writes the raw episode record in two shapes:
+    - **league** episodes: ``policy_results[]`` = ``[{position, policy:{name,version}}]``
+    - **experience-request** episodes: ``participants[]`` =
+      ``[{position, policy_name, version}]``
+
+    A/B comparison runs on matched experience requests, so the ``participants`` shape is
+    the common case here — both must work.
+    """
+    out: list[tuple[int, str | None, int | None]] = []
+    policy_results = episode.get("policy_results")
+    if policy_results:
+        for entry in policy_results:
+            pol = entry.get("policy") or {}
+            if entry.get("position") is not None:
+                out.append((entry["position"], pol.get("name"), pol.get("version")))
+        return out
+    for entry in episode.get("participants") or []:
+        if entry.get("position") is not None:
+            out.append((entry["position"], entry.get("policy_name"), entry.get("version")))
+    return out
+
+
 def load_batch(root: Path, policy: str, version: int | None) -> list[Rec]:
     """Every appearance of (policy[:version]) across the episode dirs in `root`."""
     recs: list[Rec] = []
@@ -60,9 +85,8 @@ def load_batch(root: Path, policy: str, version: int | None) -> list[Rec]:
             episode, results = json.loads(ej.read_text()), json.loads(rj.read_text())
         except json.JSONDecodeError:
             continue
-        slots = [e.get("position") for e in (episode.get("policy_results") or [])
-                 if (e.get("policy") or {}).get("name") == policy
-                 and (version is None or (e.get("policy") or {}).get("version") == version)]
+        slots = [pos for pos, name, ver in slot_entries(episode)
+                 if name == policy and (version is None or ver == version)]
         for slot in slots:
             rec = _record(results, slot)
             if rec is not None:

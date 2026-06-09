@@ -134,15 +134,36 @@ def parse_timeline(text: str) -> Episode:
     return ep
 
 
+def slot_entries(episode: dict) -> list[tuple[int, str | None, int | None]]:
+    """Normalize an episode's slot->policy map to ``(position, policy_name, version)``.
+
+    The downloader writes the raw episode record in two shapes:
+    - **league** episodes: ``policy_results[]`` = ``[{position, policy:{name,version}}]``
+    - **experience-request** episodes: ``participants[]`` =
+      ``[{position, policy_name, version}]``
+    """
+    out: list[tuple[int, str | None, int | None]] = []
+    policy_results = episode.get("policy_results")
+    if policy_results:
+        for entry in policy_results:
+            pol = entry.get("policy") or {}
+            if entry.get("position") is not None:
+                out.append((entry["position"], pol.get("name"), pol.get("version")))
+        return out
+    for entry in episode.get("participants") or []:
+        if entry.get("position") is not None:
+            out.append((entry["position"], entry.get("policy_name"), entry.get("version")))
+    return out
+
+
 def load_target(ep_dir: Path, policy: str, version: int | None):
     """Return (slot, name, role, imposter_colors_by_name) using results + episode json."""
     episode = json.loads((ep_dir / "episode.json").read_text())
     results = json.loads((ep_dir / "results.json").read_text())
     slot = None
-    for entry in episode.get("policy_results") or []:
-        pol = entry.get("policy") or {}
-        if pol.get("name") == policy and (version is None or pol.get("version") == version):
-            slot = entry.get("position")
+    for pos, name, ver in slot_entries(episode):
+        if name == policy and (version is None or ver == version):
+            slot = pos
             break
     if slot is None:
         raise SystemExit(f"policy '{policy}' not found in {ep_dir/'episode.json'}")

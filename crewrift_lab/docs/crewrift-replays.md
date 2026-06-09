@@ -48,9 +48,10 @@ league player like crewborg plays) are *not* in the `/v2/episode-requests` table
 so `coworld episodes -p crewborg` returns `[]`; the downloader goes via
 `/stats/policy-versions` → `/episodes` instead. It writes one directory per episode:
 
-- `episode.json` — metadata, incl. **`policy_results[]`** = `[{position, policy:{name,version}}]`
-  (this is the **slot↔policy** map; for experience-request episodes the equivalent is
-  `participants[]` with `{position, label}`).
+- `episode.json` — metadata, incl. the **slot↔policy** map, in one of two shapes:
+  **league** episodes carry **`policy_results[]`** = `[{position, policy:{name,version}}]`;
+  **experience-request** episodes carry **`participants[]`** =
+  `[{position, policy_name, version}]` (plus a computed `label` = `"<name>:v<version>"`).
 - `results.json` — game outcome arrays (`win`, `kills`, `names`, `scores`, `vote_*`, …).
   **Note:** this does *not* carry the slot↔policy map — use `episode.json`.
 - `replay.json` (+ raw `replay.json.z`) — the `.bitreplay` (magic `CREWRIFT`).
@@ -235,7 +236,7 @@ jq -r '.policy_results[] | select(.policy.name=="<name>") | .position' "$ep/epis
 ```
 
 (For experience-request episodes the field is
-`participants[] | select(.label=="<name>:v<N>") | .position`.) Occasionally a slot's
+`participants[] | select(.policy_name=="<name>") | .position`.) Occasionally a slot's
 "log" is a Kubernetes collector error rather than the policy's output — a `grep '^{'`
 (for JSON logs) or a quick glance skips those. **Hosted logs are capped (~10k lines)**
 and may be missing the **start** of the game — don't assume tick 0 is present.
