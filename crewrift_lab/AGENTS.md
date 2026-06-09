@@ -85,13 +85,16 @@ Crewrift-specific skills live here in `.claude/skills/`:
   ops failures) and profiles them via `expand_replay`. The analysis engine of the
   loop's **Report** step. `scripts/report.py` (Tier 1, structured) +
   `scripts/profile_replay.py` (Tier 2, replay timeline); `references/signals.md`.
-- **`crewrift-ab`** — **A/B test two policy versions head-to-head** to decide whether
-  a change helped *right now*: fire two **matched, fresh** experience requests (same
-  roster/roles/count, same window), then compare hard metrics (`scripts/compare.py` —
-  role-split deltas with significance + a regression scan) **and** run a context-driven
-  qualitative investigation of the two sides' logs/replays. The loop's **re-measure**
-  step. Distinct from `crewrift-report` (which surveys *one* batch descriptively); A/B
-  is a *targeted two-version* comparison.
+- **`crewrift-ab`** — **A/B test two policy versions head-to-head** along an axis you
+  choose: run both in **matched, fresh** experience requests (same roster/roles/count,
+  same window — so the delta is attributable, not confounded by league drift), then
+  compare hard metrics (`scripts/compare.py` — role-split deltas with significance + a
+  regression scan) **and** run a context-driven qualitative investigation of the two
+  sides' logs/replays. Use it whenever you need to know whether one version genuinely
+  beats another on something — confirming a change helped, chasing a suspected
+  regression, settling "is A or B better at X," testing a hypothesis. (Distinct from
+  `crewrift-report`, which surveys *one* batch descriptively; A/B is a *targeted
+  two-version* comparison.)
 
 The loop's **game-agnostic** halves (experience requests, artifact download, local
 run, policy lifecycle) live at the **lab root** (`../.claude/skills/`, indexed in
