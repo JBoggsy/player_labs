@@ -11,8 +11,9 @@ chat is sent during Voting.
 
 Environment:
 
-- ``COGAMES_ENGINE_WS_URL`` — websocket URL including ``?slot=…&token=…``
-  (the runner fills these in; token validation is at HTTP upgrade).
+- ``COWORLD_PLAYER_WS_URL`` — websocket URL including ``?slot=…&token=…``
+  (the runner fills these in; token validation is at HTTP upgrade). The legacy
+  ``COGAMES_ENGINE_WS_URL`` alias (same value) is accepted as a fallback.
 """
 
 from __future__ import annotations
@@ -109,7 +110,13 @@ async def run_bridge(
 
 
 def main() -> None:
-    engine_ws_url = os.environ["COGAMES_ENGINE_WS_URL"]
+    # Canonical player-contract var is COWORLD_PLAYER_WS_URL; COGAMES_ENGINE_WS_URL is
+    # a legacy alias the runner also sets to the same value. Prefer the canonical one,
+    # fall back to the alias (see metta docs/roles/PLAYER.md, ../../player-build.md).
+    engine_ws_url = os.environ.get("COWORLD_PLAYER_WS_URL") or os.environ.get("COGAMES_ENGINE_WS_URL")
+    if not engine_ws_url:
+        raise SystemExit("no player websocket URL: set COWORLD_PLAYER_WS_URL "
+                         "(or the legacy COGAMES_ENGINE_WS_URL)")
     asyncio.run(run_bridge(engine_ws_url))
 
 

@@ -17,25 +17,7 @@ something mid-session; check it back at the start of focused work.
   (version → the change it carries) but there's no file/template/home for it. Add a
   simple convention (e.g. a `versions/` log or template) so the discipline has a place.
 
-- [ ] **Fix the crewborg bridge to read the canonical WS env var.**
-  `crewrift_lab/crewrift/crewborg/coworld/policy_player.py` reads
-  `COGAMES_ENGINE_WS_URL` (a legacy alias). The runner sets both, but the canonical
-  player-contract var is **`COWORLD_PLAYER_WS_URL`** (see metta `docs/roles/PLAYER.md`).
-  Switch it to read `COWORLD_PLAYER_WS_URL` (optionally falling back to the alias).
-  This is a player-code change — run it through the loop, not as a drive-by.
 
-- [ ] **Link the starting policies in `crewrift-player.md` §8.** All three are now
-  vendored under `crewrift_lab/crewrift/`; wire up concrete pointers so a new author
-  can clone one, and describe what each demonstrates:
-  - **notsus** *(Nim)* — `crewrift_lab/crewrift/notsus/`; the minimal Sprite-v1
-    reference (public image `…/players/notsus:latest`).
-  - **crewborg** *(Python)* — `crewrift_lab/crewrift/crewborg/`; the full worked
-    player (perception/strategy/modes/bridge).
-  - **suspectra** *(Nim + Python LLM hook)* — `crewrift_lab/crewrift/suspectra/`; a
-    notsus fork adding evidence voting + a bounded meeting LLM.
-  The §8 doc currently leans on notsus + crewborg; add suspectra and align the paths
-  to the vendored copies. (See the [Player policies] index in
-  `crewrift_lab/AGENTS.md` for the per-policy summary to draw from.)
 
 - [ ] **Mint + wire a GitHub PAT for the Nim player builds (notsus, suspectra).**
   Their images clone the **private** `Metta-AI/coworld-crewrift` (+ its private
@@ -50,6 +32,13 @@ something mid-session; check it back at the start of focused work.
     `crewrift_lab/docs/designs/building_players.md` §Credentials.
 
 ## Done
+
+- **Fixed the crewborg bridge WS env var** — `policy_player.py` now reads the canonical
+  `COWORLD_PLAYER_WS_URL`, falling back to the legacy `COGAMES_ENGINE_WS_URL` alias;
+  crewborg docs updated to match. 263 tests pass.
+- **Linked the starting policies in `crewrift-player.md` §8** — notsus / crewborg /
+  suspectra, pointed at their vendored paths with what each demonstrates (minimal
+  baseline / full worked player / LLM-meeting wiring).
 
 - **DROPPED the `crewrift.crewborg` → `players.crewborg` rename.** Not worth it, and
   the git-installed SDK makes it impossible cleanly: the installed `players` is a

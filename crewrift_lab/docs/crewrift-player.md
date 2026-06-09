@@ -316,16 +316,23 @@ not it's vendored), see [`designs/building_players.md`](designs/building_players
 general-case section is the guide for new players. The build command is
 `crewrift_lab/tools/build_player.sh <policy>`.
 
-Starting points for a new Crewrift player (README §Policy Starting Points):
+Starting points — three reference players, all **vendored** under
+[`crewrift_lab/crewrift/`](../crewrift/) and buildable with `tools/build_player.sh`
+(per-policy summary in the [AGENTS player-policies index](../AGENTS.md#player-policies)):
 
-- **Reference baseline** — `notsus` (`players/notsus/notsus.nim` in the crewrift
-  repo, with its own `README.md`); the public image `…/players/notsus:latest` runs it.
-  The minimal "decode Sprite v1, move, press A" implementation.
-- **A worked Python player** — crewborg, vendored in this lab
-  (`crewrift_lab/crewrift/crewborg`): `perception/` is a full Sprite-v1 → scene
-  decoder, `action.py` the input encoder, `coworld/policy_player.py` the bridge.
-  Heavier than you need to start, but it's the source-verified reference for every
-  id range / label / offset cited here.
+- **`notsus`** *(Nim)* — [`crewrift_lab/crewrift/notsus/`](../crewrift/notsus/), with
+  its own `README.md`; public image `…/players/notsus:latest`. The **minimal
+  "decode Sprite v1, move, press A" baseline** — the smallest complete implementation,
+  and a natural comparison opponent. Best starting point for a *from-scratch* player.
+- **`crewborg`** *(Python)* — [`crewrift_lab/crewrift/crewborg/`](../crewrift/crewborg/);
+  the **full worked player** (perception → belief/suspicion → strategy → action, plus
+  the bridge). Heavier than you need to start, but the **source-verified reference for
+  every id range / label / offset cited here** (`perception/constants.py`); its
+  `design.md` / `AGENTS.md` map the internals.
+- **`suspectra`** *(Nim + Python LLM)* — [`crewrift_lab/crewrift/suspectra/`](../crewrift/suspectra/);
+  a `notsus` fork that adds evidence voting and a **bounded meeting LLM**
+  (`llm_meeting.py`, prompts in `memory/`). The reference for **wiring an LLM into the
+  meeting/voting phase** under a latency budget.
 
 Once the player runs, evaluate it through the lab loop ([`AGENTS.md`](../../AGENTS.md))
 — experience requests, then read the replays/logs

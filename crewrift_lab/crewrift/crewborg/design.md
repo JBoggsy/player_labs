@@ -104,7 +104,7 @@ channels: the static `walkability map` and the dynamic `shadow` vision overlay (
 
 Crewborg writes its own websocket bridge (`coworld/policy_player.py`):
 
-1. Read `COGAMES_ENGINE_WS_URL` (runner fills `?slot=N&token=…`);
+1. Read `COWORLD_PLAYER_WS_URL` (runner fills `?slot=N&token=…`);
    `websockets.connect(url, max_size=None)` — token validation is at HTTP upgrade.
 2. Maintain a **`SceneState`** (a plain dataclass, owned by the bridge): three
    retained tables plus the decoded camera, walkability mask, and `shadow`

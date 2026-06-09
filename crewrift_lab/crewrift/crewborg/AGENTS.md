@@ -198,7 +198,7 @@ That is for *grid/token* games (cogsguard-style), **not** for a pixel game.
 Crewrift speaks **binary Sprite v1** (structured scene updates in, button/text
 packets out — see [§2](#sprite-v1-protocol-structured-scene-not-a-framebuffer)).
 So crewborg must **write its own websocket bridge** that:
-1. reads `COGAMES_ENGINE_WS_URL` (the runner fills in `?slot=N&token=...`);
+1. reads `COWORLD_PLAYER_WS_URL` (the runner fills in `?slot=N&token=...`);
 2. `websockets.connect(url, max_size=None)` — token validation is at HTTP
    upgrade, no app handshake;
 3. decodes each incoming binary message and applies it to the **scene tables**
@@ -435,7 +435,7 @@ object / walkability sprite have arrived yet on the first ticks.
 
 ### Connecting (`coworld-crewrift/README.md`)
 
-Hosted play sets `COGAMES_ENGINE_WS_URL=ws://<svc>:8080/player?slot=<s>&token=<t>`
+Hosted play sets `COWORLD_PLAYER_WS_URL=ws://<svc>:8080/player?slot=<s>&token=<t>`
 — connect to it **exactly**; don't hardcode slot/token. Browser clients:
 `/client/player`, `/client/global`, `/client/replay`, `/client/admin`. Reference
 bots live in `coworld-crewrift/players/` (`notsus`, `evidencebot_v2`,
@@ -445,7 +445,7 @@ bots live in `coworld-crewrift/players/` (`notsus`, `evidencebot_v2`,
 ### Runtime contract
 
 Crewborg runs as a **WebSocket client**: the Coworld runner sets
-`COGAMES_ENGINE_WS_URL`, the bridge (`coworld/policy_player.py`) connects, speaks
+`COWORLD_PLAYER_WS_URL` (legacy alias `COGAMES_ENGINE_WS_URL`), the bridge (`coworld/policy_player.py`) connects, speaks
 Crewrift's binary protocol for its slot, and exits on the final message.
 **stdout = protocol channel, stderr = logs/traces.** Platform contract:
 `coworld/src/coworld/docs/README.md` (overview + role/artifact docs under
