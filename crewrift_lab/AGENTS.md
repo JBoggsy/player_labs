@@ -33,7 +33,9 @@ repeat → gate2 → submit) runs **unchanged** here. The Crewrift-specific inst
 
 - **Evaluate** (step 1) — experience requests against the uploaded version of the
   policy under optimization. **Decompose by role** (crewmate vs. imposter are
-  effectively two different policies; see best practices) and by opponent.
+  effectively two different policies; see best practices) and by opponent. To pin the
+  requester's role, set `game_config_overrides.slots` — shape in
+  [`docs/crewrift-gameplay.md` → Forcing roles in evaluations](docs/crewrift-gameplay.md).
 - **Report** (step 2) — pull artifacts, then turn the batch into a dense report with
   the **`crewrift-report`** skill (flags the interesting episodes by role, profiles
   them). It builds on the Crewrift readers in

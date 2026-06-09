@@ -23,7 +23,13 @@ lives — and the API now does a lot for you, so prefer its built-ins:
 - **roster**: your `requester` + named/auto opponents (`top_n` champions), or a
   fully caller-owned `policy_version_ids` roster.
 - **roles & seats**: per-slot role overrides (`game_config_overrides`) and seat
-  round-robin (`rotate_seats`) — no post-hoc balancing.
+  round-robin (`rotate_seats`) — no post-hoc balancing. **Crewrift roles:**
+  `game_config_overrides.slots` is an **array of objects**, one per slot, e.g.
+  `{"slots": [{"role": "imposter"}, {"role": "crew"}, ...]}` (`role` ∈
+  `{"crew","imposter"}`; slot 0 = requester; supply the full array — it replaces the
+  whole key). *Not* bare strings. `create` validates this against the live game schema
+  before POSTing; full schema in
+  [`crewrift-gameplay.md`](../../../crewrift_lab/docs/crewrift-gameplay.md).
 - **count**: `num_episodes`, high enough to smooth variance.
 
 You compose that body to the question; the script handles the mechanical parts —

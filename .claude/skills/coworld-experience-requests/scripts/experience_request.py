@@ -25,7 +25,10 @@ Usage (auth from `softmax login`; run inside `uv run` so `softmax` imports):
 
 The API drifts; `create` validates your body's keys against the live
 `V2CreateExperienceRequestRequest` schema before POSTing and refuses unknown keys
-(`additionalProperties: false`). When a route 4xxs, read the live `<base>/openapi.json`.
+(`additionalProperties: false`). It *also* validates `game_config_overrides` (e.g.
+Crewrift role `slots`) against the live **game config schema** — fetched from the
+target coworld's manifest — so a bad override shape fails locally with a clear message
+instead of as an opaque server 400. When a route 4xxs, read the live `<base>/openapi.json`.
 """
 
 from __future__ import annotations
@@ -169,6 +172,79 @@ def validate_keys(payload: dict[str, Any], schema: dict[str, Any]) -> list[str]:
     return sorted(k for k in payload if k not in allowed)
 
 
+def _manifest_config_schema(client: httpx.Client, coworld_id: str) -> dict[str, Any] | None:
+    """Fetch a coworld's game config schema via the manifest route (no image pull)."""
+    data = get_json(client, f"/v2/coworlds/{coworld_id}")
+    manifest = data if isinstance(data, dict) and "game" in data else (data or {}).get("manifest") or {}
+    schema = ((manifest.get("game") or {}).get("config_schema"))
+    return schema if isinstance(schema, dict) else None
+
+
+def _resolve_coworld_id(client: httpx.Client, payload: dict[str, Any]) -> str | None:
+    """Best-effort: the coworld_id this request targets, for local config validation.
+
+    Handles a direct `coworld_id`, `target.coworld_id`, or `target.division_id`
+    (resolved via the division's league → game → coworld_id). Returns None for targets
+    we can't cheaply resolve (e.g. league_id / name only) — the caller then skips the
+    local check and lets the server validate.
+    """
+    if isinstance(payload.get("coworld_id"), str):
+        return payload["coworld_id"]
+    target = payload.get("target") or {}
+    if isinstance(target.get("coworld_id"), str):
+        return target["coworld_id"]
+    div = target.get("division_id")
+    if isinstance(div, str):
+        try:
+            d = get_json(client, f"/v2/divisions/{div}")
+            return ((d.get("league") or {}).get("game") or {}).get("coworld_id")
+        except Exception:
+            return None
+    return None
+
+
+def validate_game_config_overrides(client: httpx.Client, payload: dict[str, Any]) -> tuple[list[str], bool]:
+    """Validate `game_config_overrides` values against the live game config schema.
+
+    The server shallow-merges the override onto the variant config and validates the
+    result against `game.config_schema`, returning an opaque 400 on a bad shape. This
+    catches the common shape mistakes locally first — e.g. Crewrift `slots` must be an
+    array of objects (`[{"role": "imposter"}, ...]`), not bare strings.
+
+    Returns `(errors, validated)`. `validated=False` means the check was *skipped*
+    (couldn't resolve the target coworld, or `jsonschema` unavailable) — not a failure;
+    the caller warns and lets the server validate. It validates each override value
+    against its property subschema, so it catches malformed values and (when the schema
+    forbids extras) unknown keys; it does not reproduce cross-field constraints.
+    """
+    overrides = payload.get("game_config_overrides")
+    if not isinstance(overrides, dict) or not overrides:
+        return [], True
+    try:
+        from jsonschema import Draft202012Validator
+    except ImportError:
+        return [], False
+    coworld_id = _resolve_coworld_id(client, payload)
+    if not coworld_id:
+        return [], False
+    schema = _manifest_config_schema(client, coworld_id)
+    if not schema:
+        return [], False
+    props = schema.get("properties") or {}
+    extras_forbidden = schema.get("additionalProperties", True) is False
+    errors: list[str] = []
+    for key, value in overrides.items():
+        sub = props.get(key)
+        if sub is None:
+            if extras_forbidden:
+                errors.append(f"game_config_overrides.{key}: not a valid game config key for this game")
+            continue
+        for err in sorted(Draft202012Validator(sub).iter_errors(value), key=lambda e: list(e.path)):
+            loc = "".join(f"[{p!r}]" for p in err.path)
+            errors.append(f"game_config_overrides.{key}{loc}: {err.message}")
+    return errors, True
+
+
 def cmd_create(args: argparse.Namespace) -> int:
     raw = sys.stdin.read() if args.body == "-" else open(args.body, encoding="utf-8").read()
     payload = json.loads(raw)
@@ -180,9 +256,25 @@ def cmd_create(args: argparse.Namespace) -> int:
         if bad:
             sys.exit(f"Body has keys the live schema rejects (additionalProperties: false): {bad}\n"
                      f"Read references/api.md / the live V2CreateExperienceRequestRequest schema.")
+
+        # Validate game_config_overrides (e.g. Crewrift role `slots`) against the live
+        # game config schema, so a bad shape fails here instead of as an opaque 400.
+        ov_errors, ov_validated = validate_game_config_overrides(client, payload)
+        if ov_errors:
+            sys.exit("game_config_overrides rejected by the live game config schema:\n  - "
+                     + "\n  - ".join(ov_errors)
+                     + "\nSee references/api.md → 'Roles & seating' for the correct shape "
+                       "(Crewrift `slots` is an array of objects, e.g. [{\"role\": \"imposter\"}, ...]).")
+        if "game_config_overrides" in payload and not ov_validated:
+            log("WARNING: could not validate game_config_overrides locally (couldn't resolve "
+                "the target coworld, or jsonschema is unavailable) — the server will validate "
+                "it on POST. Double-check its shape against references/api.md.")
+
         if args.check_schema:
             log("Schema check passed (keys valid); not posting (--check-schema).")
-            emit({"check_schema": "ok", "keys": sorted(payload)})
+            emit({"check_schema": "ok", "keys": sorted(payload),
+                  "game_config_overrides": ("validated" if ov_validated else "unchecked")
+                  if "game_config_overrides" in payload else "absent"})
             return 0
 
         r = client.post("/v2/experience-requests", json=payload, timeout=120.0)

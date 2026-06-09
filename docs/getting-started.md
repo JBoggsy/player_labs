@@ -225,7 +225,9 @@ doesn't build — and runs your image in every slot in a short local game; it's 
 correctness/liveness check, not a competitive one, so a score of 0 in that fixture is
 fine.) This is the *same* image you upload next, so you build once, here. If the smoke
 test fails, fix the change and rebuild before going further — don't upload or spend
-evaluation budget on a broken build.
+evaluation budget on a broken build. **First run heads-up:** the smoke test pulls the
+game's Docker image, which can take a few minutes — tell the user it's downloading the
+game and isn't stuck; it's cached after that.
 
 **Upload and re-measure.** Upload the rebuilt image as a new version
 (**`coworld-policy-lifecycle`**), then re-evaluate — ideally **head-to-head against the

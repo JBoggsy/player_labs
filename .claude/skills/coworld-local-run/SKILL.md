@@ -39,6 +39,11 @@ competitive judgment comes from experience requests; see `coworld-experience-req
      --coworld cow_... --image my:dev --run python --run -m --run my_player --timeout 180
    ```
 
+   **Heads-up — the first run can take several minutes.** `download` pulls the
+   game's Docker image (often hundreds of MB) and tags it; that's the slow part. It's
+   cached and idempotent, so later smoke tests against the same game are fast. If a user
+   is watching, tell them it's pulling the game image and may take a bit — it isn't stuck.
+
    **Gate-1 passes** when it exits 0: the CLI exited cleanly (no game/player container
    crashed), `results.json` validated, and a `replay` was written. The default run uses
    the package's **certification** config, which is deliberately degenerate — **a score

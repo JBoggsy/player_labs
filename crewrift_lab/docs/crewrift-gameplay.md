@@ -56,6 +56,29 @@ The two sides have fundamentally different goals, action sets, and information �
     colors — the reveal is brief.
 - **Everyone starts at the emergency button** at the bottom of the map.
 
+### Forcing roles in evaluations
+
+By default roles are assigned randomly each episode. To **fix** who is crew vs. imposter
+(e.g. to measure your policy purely as an imposter), an experience request sets
+`game_config_overrides.slots` — the authoritative shape, straight from the game's config
+schema (`Metta-AI/coworld-crewrift`: `coworld_manifest.json` → `config_schema.slots`):
+
+- `slots` is an **array of objects**, one per slot — **not** an array of role strings.
+- Each object: `{"role": "crew"|"imposter", "color"?: <one of the 16 colors above>, "token"?: <str>}`.
+  Only `role` matters for role control; `color`/`token` are optional (auto-assigned).
+- The default roster is **8 slots** (6 crew + 2 imposter); **slot 0 is the requester**
+  (your policy). Supply the **full** array — the override replaces the whole `slots` key.
+
+```json
+"game_config_overrides": {"slots": [
+  {"role": "imposter"}, {"role": "crew"}, {"role": "crew"}, {"role": "crew"},
+  {"role": "crew"}, {"role": "crew"}, {"role": "crew"}, {"role": "imposter"}
+]}
+```
+
+The mechanics of putting this in a request (and a local schema check that catches a
+wrong shape before POST) are in the **`coworld-experience-requests`** skill.
+
 ---
 
 ## 3. Win & loss conditions *(rules)*

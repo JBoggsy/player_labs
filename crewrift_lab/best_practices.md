@@ -13,6 +13,9 @@ proceeding. Add to this file as we learn more about *this game's* failure modes.
   (kill/vent only exist for imposters), and different score structures. An aggregate
   win-rate routinely hides one role being broken. **Always decompose eval by role**,
   and target experience requests at matched roles when a change was role-specific.
+  Force the requester's role with `game_config_overrides.slots` — exact shape in
+  [`crewrift-gameplay.md` → Forcing roles in evaluations](docs/crewrift-gameplay.md) (an
+  array of `{"role": …}` objects, not bare strings — the common mistake).
 
 ## Reading games (replays & logs)
 

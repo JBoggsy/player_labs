@@ -98,7 +98,7 @@ yours, they're current league members):
 
 | field | meaning |
 | --- | --- |
-| `game_config_overrides` | shallow override of the resolved Coworld's game config (validated against *its* schema). **Crewrift:** `{"slots": ["crew","imposter",...]}` forces per-slot roles (8 slots; slot 0 is the requester) |
+| `game_config_overrides` | shallow override of the resolved Coworld's game config — each key **replaces** that key in the game config, and the result is validated against the game's own schema. **Crewrift:** `{"slots": [{"role": "imposter"}, {"role": "crew"}, ...]}` forces per-slot roles. `slots` is an **array of objects** (`{"role": "crew"\|"imposter", "color"?, "token"?}`), **not** bare strings; supply the **full** array (the merge replaces the whole key), slot 0 = the requester. Full Crewrift schema: [`crewrift-gameplay.md` → Forcing roles](../../../../crewrift_lab/docs/crewrift-gameplay.md) |
 | `rotate_seats` | `true` rotates the requester across **every** seat round-robin over the episodes, instead of a fixed slot (cancels out seat bias) |
 
 ### Volume & execution
@@ -157,18 +157,26 @@ auto-select for a list:
 }
 ```
 
-**Force roles (Crewrift)** — add `game_config_overrides.slots` (slot 0 = requester):
+**Force roles (Crewrift)** — `game_config_overrides.slots` is an **array of objects**
+(slot 0 = requester); supply the full array. `role` ∈ `{"crew","imposter"}`:
 
 ```json
 {
   "target": {"division_id": "div_…"},
   "requester": {"policy_version_id": "<your pv id>", "slot": 0},
   "top_n": 7,
-  "game_config_overrides": {"slots": ["imposter","imposter","crew","crew","crew","crew","crew","crew"]},
+  "game_config_overrides": {"slots": [
+    {"role": "imposter"}, {"role": "crew"}, {"role": "crew"}, {"role": "crew"},
+    {"role": "crew"}, {"role": "crew"}, {"role": "crew"}, {"role": "imposter"}
+  ]},
   "num_episodes": 50,
   "notes": "requester forced imposter"
 }
 ```
+
+`create` validates this `slots` shape against the live game config schema before
+POSTing (see the tool's `game_config_overrides` check), so a wrong shape fails locally
+with a clear message instead of as an opaque 400.
 
 **Cancel seat bias** — add `"rotate_seats": true` to rotate the requester through
 every seat. **Ad-hoc, no league** — use `"target": {"coworld_id": "cow_…"}`.
