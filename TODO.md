@@ -17,16 +17,6 @@ something mid-session; check it back at the start of focused work.
   (version → the change it carries) but there's no file/template/home for it. Add a
   simple convention (e.g. a `versions/` log or template) so the discipline has a place.
 
-- [ ] **Reconsider the crewborg `crewrift.crewborg` → `players.crewborg` rename.**
-  Goal was to have the fork sit at `players.crewborg` (matching upstream). The
-  previously-approved mechanism (symlink the SDK from a `~/coding/players` sibling) is
-  now **obsolete** — as of 2026-06-09 the SDK is **git-installed** from the public
-  players repo, with **no sibling checkout**. A local `players.crewborg` would still
-  collide with that installed `players` package (one regular package can't span two
-  locations), so the rename is *harder* now, not easier, and arguably not worth it —
-  `crewrift.crewborg` works cleanly and reads fine. Decide whether to drop this task
-  or find a new mechanism (e.g. a namespace-package split) before doing anything.
-
 - [ ] **Fix the crewborg bridge to read the canonical WS env var.**
   `crewrift_lab/crewrift/crewborg/coworld/policy_player.py` reads
   `COGAMES_ENGINE_WS_URL` (a legacy alias). The runner sets both, but the canonical
@@ -61,6 +51,14 @@ something mid-session; check it back at the start of focused work.
 
 ## Done
 
+- **DROPPED the `crewrift.crewborg` → `players.crewborg` rename.** Not worth it, and
+  the git-installed SDK makes it impossible cleanly: the installed `players` is a
+  *regular* package (can't be split across locations) and already ships
+  `players.crewrift.crewborg` (the upstream fork). A local `players.crewborg` would
+  shadow the whole installed `players` (breaking `players.player_sdk`) or be
+  unreachable — the only alternative being to re-vendor the SDK (drift). `crewrift.crewborg`
+  is the *correct* name: it cleanly separates our drifting fork from upstream-as-installed.
+  (No symlink ever existed — that was part of the never-executed editable-sibling plan.)
 - **Direction / hypothesis guide → `crewrift-diagnose` skill** — done (draft, will
   iterate). Signals → evidence-grounded mechanistic improvement hypotheses → presented
   to the human as options. Distilled from prior player-improvement work (alpha_cog/
