@@ -1,6 +1,6 @@
 ---
 name: crewrift-report
-description: "Use to turn a SET of Crewrift episodes (an experience request, a policy's recent league games, a round/tournament batch) into a dense, high-signal report on a player policy's strengths and weaknesses. Triggers: 'analyze/report on these XP-request episodes', 'where is crewborg weak', 'find the interesting/bad/good games', 'what did v15 do wrong as imposter', 'summarize this batch of replays/logs', post-mortem of an evaluation. Crewrift-specific (roles, votes, kills, expand_replay). Pair with coworld-episode-artifacts (to pull the episodes) and coworld-experience-requests (to create them)."
+description: "Use to turn a SET of Crewrift episodes (an experience request, a policy's recent league games, a round/tournament batch) into a dense, high-signal report on a player policy's strengths and weaknesses. Triggers: 'analyze/report on these XP-request episodes', 'where is crewborg weak', 'find the interesting/bad/good games', 'what did crewborg do wrong as imposter', 'summarize this batch of replays/logs', post-mortem of an evaluation. Crewrift-specific (roles, votes, kills, expand_replay). Pair with coworld-episode-artifacts (to pull the episodes) and coworld-experience-requests (to create them)."
 ---
 
 # Crewrift Report
@@ -53,7 +53,7 @@ Most signal is cheap; only drill deep where it pays off.
    (`crewrift_lab/tools/build_expand_replay.sh`; Observatory replays match
    `CREWRIFT_REF`), then:
    ```sh
-   scripts/profile_replay.py /tmp/eps/<episode_dir> --policy crewborg:v15
+   scripts/profile_replay.py /tmp/eps/<episode_dir> --policy crewborg
    ```
    Run it on the episodes Tier 1 flagged (the killed/ejected, vote-correctness, and
    score-breakdown facts are here). Parallelize across the flagged set if there are

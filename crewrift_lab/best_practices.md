@@ -32,8 +32,8 @@ proceeding. Add to this file as we learn more about *this game's* failure modes.
   happen," not "wrong query / not captured at this trace level."
 - **Identify crewborg's slot by name *and* version.** A single league episode can carry
   several crewborg versions, and every crewborg slot's log is JSON — a `head -1 | jq`
-  test only proves "a crewborg log," not "v15." Map slot→policy from `episode.json`
-  (`policy_results[]`), not `results.json`.
+  test only proves "a crewborg log," not *which version*. Map slot→policy from
+  `episode.json` (`policy_results[]`), not `results.json`.
 
 ## Perception & the scene contract
 

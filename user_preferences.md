@@ -10,7 +10,5 @@ sessions. Keep it tidy: one bullet per preference, drop ones that are superseded
 
 ## Preferences
 
-- **Concrete examples are fine, but mark them clearly as examples.** Using a real
-  name/value (e.g. `crewborg`) in docs/skills is welcome for clarity — just make it
-  obvious it's an example (under a "Usage"/example heading, or shown as a stand-in),
-  not a required or hardcoded value.
+_None recorded yet._
+</content>

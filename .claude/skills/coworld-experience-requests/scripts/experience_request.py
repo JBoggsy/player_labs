@@ -17,7 +17,7 @@ Three subcommands:
 
 Usage (auth from `softmax login`; run inside `uv run` so `softmax` imports):
 
-    uv run python experience_request.py resolve --policy crewborg --version 15
+    uv run python experience_request.py resolve --policy crewborg --version <N>
     uv run python experience_request.py resolve --division div_… --top 7
     uv run python experience_request.py create body.json
     uv run python experience_request.py create - < body.json --check-schema

@@ -141,7 +141,7 @@ runnable version.
   "player_selection": "top_n",
   "top_n": 7,
   "num_episodes": 100,
-  "notes": "crewborg:v15 vs live top-7, random roles"
+  "notes": "crewborg vs the live top-7, random roles"
 }
 ```
 
@@ -151,7 +151,7 @@ auto-select for a list:
 ```json
 {
   "target": {"division_id": "div_…"},
-  "requester": {"player_name": "James Boggs", "slot": 0},
+  "requester": {"player_name": "Player One", "slot": 0},
   "opponents": [{"player_name": "notsus"}, {"player_name": "evidencebot"}],
   "num_episodes": 50
 }

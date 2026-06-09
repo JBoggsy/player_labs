@@ -32,7 +32,7 @@ TOKEN = re.compile(r"^(?P<color>[a-z][a-z ]*?)\((?P<name>.*)\)$")
 
 
 def parse_token(tok: str) -> tuple[str, str] | None:
-    """'pale blue(Alex Smith)' -> ('pale blue', 'Alex Smith')."""
+    """'pale blue(Some Player)' -> ('pale blue', 'Some Player')."""
     m = TOKEN.match(tok.strip())
     return (m.group("color"), m.group("name")) if m else None
 

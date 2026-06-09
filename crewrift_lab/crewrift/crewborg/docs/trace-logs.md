@@ -90,7 +90,7 @@ and `CREWBORG_METRICS=1` for counters (see `design.md §11`).
 > and per-tick metrics are now **off** by default (debug/`GROUPS=decision`-only), and
 > the lean default keeps durable domain events, action attempts, meeting chat/vote
 > decisions, per-player deltas, occupancy seeks, and the per-meeting `suspicion_snapshot`.
-> Logs captured **before** that change shipped to the league (incl. older v15 episodes)
+> Logs captured **before** that change shipped to the league (incl. older episodes)
 > still carry `decision_snapshot` per tick — so always confirm what's present with the
 > **event histogram** recipe below rather than assuming.
 

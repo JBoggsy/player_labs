@@ -1,7 +1,7 @@
 # Reading a Crewrift game: replays & logs
 
 **Validated 2026-06-08** against coworld `296608a0`, crewrift `d9f6b30` (v0.1.40),
-bitworld `5a4bea1`, and crewborg `v15` (a real downloaded episode). Citations are
+bitworld `5a4bea1`, and a real downloaded crewborg league episode. Citations are
 by file + symbol (stable across line drift); re-derive from source if something
 doesn't match.
 
@@ -45,7 +45,7 @@ uv run python .claude/skills/coworld-episode-artifacts/scripts/fetch_artifacts.p
 
 This handles the discovery a fresh agent gets wrong: **league** episodes (what a
 league player like crewborg plays) are *not* in the `/v2/episode-requests` table,
-so `coworld episodes -p crewborg:v15` returns `[]`; the downloader goes via
+so `coworld episodes -p crewborg` returns `[]`; the downloader goes via
 `/stats/policy-versions` → `/episodes` instead. It writes one directory per episode:
 
 - `episode.json` — metadata, incl. **`policy_results[]`** = `[{position, policy:{name,version}}]`
@@ -150,7 +150,7 @@ token`) until it's public — same mechanism as the player builds; see
 [`designs/building_players.md`](designs/building_players.md) §Credentials.
 
 > **Verified 2026-06-09 (closed loop):** a binary built at `CREWRIFT_REF` (`d9f6b30`)
-> expands freshly-downloaded crewborg-v15 **league** replays **fully** (4720 / 5004
+> expands freshly-downloaded crewborg **league** replays **fully** (4720 / 5004
 > lines, 0 hash failures). Don't trust the bundled `tests/replays/notsus.bitreplay`
 > as an oracle — it is **stale** w.r.t. the committed sim and hash-fails (~tick 36)
 > under a current build; use a real downloaded replay. And don't rely on the
@@ -215,13 +215,13 @@ shape, so eyeballing the logs won't tell you which is which:
 
 ```bash
 ep=/tmp/eps/<episode_dir>
-# e.g. crewborg v15's slot:
-jq -r '.policy_results[] | select(.policy.name=="crewborg" and .policy.version==15) | .position' "$ep/episode.json"
+# the slot for policy <name> (add `and .policy.version==<N>` if several versions play):
+jq -r '.policy_results[] | select(.policy.name=="<name>") | .position' "$ep/episode.json"
 # -> the slot number N; the log is "$ep/logs/policy_agent_N.log"
 ```
 
 (For experience-request episodes the field is
-`participants[] | select(.label=="crewborg:v15") | .position`.) Occasionally a slot's
+`participants[] | select(.label=="<name>:v<N>") | .position`.) Occasionally a slot's
 "log" is a Kubernetes collector error rather than the policy's output — a `grep '^{'`
 (for JSON logs) or a quick glance skips those. **Hosted logs are capped (~10k lines)**
 and may be missing the **start** of the game — don't assume tick 0 is present.

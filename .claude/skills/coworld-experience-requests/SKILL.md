@@ -43,7 +43,7 @@ read it before composing a body, and re-check the live schema when a route 4xxs
    cd ~/coding/player_labs
    # a policy name -> its version id(s)
    uv run python .claude/skills/coworld-experience-requests/scripts/experience_request.py \
-     resolve --policy crewborg --version 15
+     resolve --policy crewborg --version <N>
    # a division's ranked, active opponents (name + policy_version_id)
    uv run python .claude/skills/coworld-experience-requests/scripts/experience_request.py \
      resolve --division div_... --top 7
