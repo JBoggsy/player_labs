@@ -51,11 +51,11 @@ server.
    the Observatory UI and pass it in.
 
 2. **Pick exactly one discovery mode** and run the downloader. Auth comes from
-   `softmax login`; run inside `uv run` (from `~/coding/player_labs` or any repo
+   `softmax login`; run inside `uv run` (from the repo root or any repo
    with `coworld[auth]` installed) so `softmax` is importable.
 
    ```bash
-   cd ~/coding/player_labs
+   cd /path/to/player_labs   # the repo root
 
    # A policy's most recent league episodes (across all its versions):
    uv run python .claude/skills/coworld-episode-artifacts/scripts/fetch_artifacts.py \

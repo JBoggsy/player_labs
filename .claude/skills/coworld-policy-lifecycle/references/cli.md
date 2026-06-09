@@ -1,7 +1,7 @@
 # Policy-lifecycle CLI + API reference
 
 Exact behaviour of the `coworld` commands and Observatory routes this skill uses,
-verified against **coworld 0.1.20** (source `~/coding/metta/packages/coworld/src/coworld/`,
+verified against **coworld 0.1.20** (source `Metta-AI/metta`: `packages/coworld/src/coworld/`,
 live `coworld <cmd> --help`, and the live `/observatory/openapi.json`). Re-check with
 `--help`; the CLI ships ahead of the metta checkout. Auth: `softmax login`
 (`load_current_token`); the CLI sends `Authorization: Bearer`, raw API probing uses

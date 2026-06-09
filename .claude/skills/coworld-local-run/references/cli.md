@@ -1,7 +1,7 @@
 # Local-run CLI reference
 
 Exact behaviour of the `coworld` commands this skill uses, verified against **coworld
-0.1.20** (source `~/coding/metta/packages/coworld/src/coworld/`, and `coworld <cmd>
+0.1.20** (source `Metta-AI/metta`: `packages/coworld/src/coworld/`, and `coworld <cmd>
 --help`). Re-check with `--help` if a flag seems off — the CLI ships ahead of the metta
 checkout. There is no `--version` flag; `uv pip show coworld`.
 

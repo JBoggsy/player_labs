@@ -12,7 +12,7 @@ deliberately **not** about the wire protocol or implementation.
 - For **reading a finished game** (replays/logs), see [`crewrift-replays.md`](crewrift-replays.md).
 
 > **Sourcing & validity.** Rules and parameters here are taken from the game source
-> (`~/coding/coworlds/coworld-crewrift/src/crewrift/sim.nim`, `README.md`) and the
+> (`Metta-AI/coworld-crewrift`: `src/crewrift/sim.nim`, `README.md`) and the
 > `notsus` reference bot's strategy notes, **validated against crewrift `d9f6b30`
 > (v0.1.40)**. Concrete numbers are *current* values and **version-dependent** — a
 > game bump can change them; re-check `sim.nim` if precision matters. **Rules**
@@ -325,6 +325,6 @@ Current values (`sim.nim` @ crewrift `d9f6b30`, 24 ticks/s; **version-dependent*
 - [`designs/building_players.md`](designs/building_players.md) — building a player image.
 - [`crewrift-replays.md`](crewrift-replays.md) — reading a finished game's replay/logs.
 - `crewrift/notsus/README.md` (vendored) — the reference bot's extensive strategy notes.
-- Authoritative game source: `~/coding/coworlds/coworld-crewrift/src/crewrift/sim.nim`
+- Authoritative game source: `Metta-AI/coworld-crewrift`: `src/crewrift/sim.nim`
   and the game `README.md` (rules, scoring). Re-check these if anything here is stale.
 </content>

@@ -40,7 +40,7 @@ read it before composing a body, and re-check the live schema when a route 4xxs
    (`coworld leagues|divisions|results|memberships --json`, or the helper):
 
    ```bash
-   cd ~/coding/player_labs
+   cd /path/to/player_labs   # the repo root
    # a policy name -> its version id(s)
    uv run python .claude/skills/coworld-experience-requests/scripts/experience_request.py \
      resolve --policy crewborg --version <N>

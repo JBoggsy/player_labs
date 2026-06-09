@@ -207,7 +207,7 @@ from PyPI and the SDK from the public players repo.
   `build_expand_replay` starts hash-failing on *fresh* replays (the redeploy signal).
   Currently `d9f6b30`, validated against the live game 2026-06-09.
 - **Optional local-checkout fast path.** A `--local-game` mode (mount
-  `~/coding/coworlds/coworld-crewrift` instead of cloning) would speed iteration at
+  the `Metta-AI/coworld-crewrift` repo instead of cloning) would speed iteration at
   the cost of hermeticity; not implemented — add it if cold-build time hurts.
 - **Optional shared build-base image (Plan B).** If repeat Nim builds become slow,
   a `crewrift-nim-base` (game-at-ref + nimby-synced, built once) makes each player a

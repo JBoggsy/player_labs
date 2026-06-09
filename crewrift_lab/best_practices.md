@@ -40,8 +40,8 @@ proceeding. Add to this file as we learn more about *this game's* failure modes.
 - **The game owns the scene vocabulary; re-derive from source when in doubt.** The
   Sprite-v1 object-id ranges, labels, and camera offsets (in
   [`docs/crewrift-player.md`](docs/crewrift-player.md) and crewborg's
-  `perception/constants.py`) are verified against `~/coding/coworlds/coworld-crewrift/
-  src/crewrift/{sim,global}.nim`, but they are the **game's to change**. If perception
+  `perception/constants.py`) are verified against `Metta-AI/coworld-crewrift`:
+  `src/crewrift/{sim,global}.nim`, but they are the **game's to change**. If perception
   misbehaves after a game bump, suspect drift and check the Nim source before trusting
   the decoder.
 </content>

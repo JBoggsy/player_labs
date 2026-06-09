@@ -22,7 +22,7 @@ scene and act with a d-pad + A/B, with **no semantic action API**.
 For the full game — rules, roles, win conditions, scoring, flow, and strategy from a
 **gameplay** perspective — read [`docs/crewrift-gameplay.md`](docs/crewrift-gameplay.md)
 (the lab's self-contained game reference; you rarely need to leave the repo). The game
-source at `~/coding/coworlds/coworld-crewrift` remains the ultimate authority on rules
+source in the `Metta-AI/coworld-crewrift` repo remains the ultimate authority on rules
 and the scene vocabulary. The policies we build and optimize are listed in the
 [Player policies](#player-policies) index below.
 
@@ -150,7 +150,7 @@ Docker-only with no credentials**.
   primary policy under optimization.**
 - **notsus** *(Nim)* — at [`crewrift/notsus/`](crewrift/notsus/), the **reference
   baseline** (upstream lives in the game repo,
-  `~/coding/coworlds/coworld-crewrift/players/notsus/`; public image
+  `Metta-AI/coworld-crewrift`: `players/notsus/`; public image
   `…/players/notsus:latest`). The minimal Sprite-v1 implementation
   (`notsus.nim` + `notsus/{votereader,protocols}.nim`), with its Dockerfile and
   `coplayer_manifest.json`. Useful as a comparison opponent and a from-scratch

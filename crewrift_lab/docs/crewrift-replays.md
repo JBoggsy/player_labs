@@ -38,7 +38,7 @@ Download an episode's replay + logs + metadata in one pass with the lab's
 **`coworld-episode-artifacts`** skill (indexed in the lab [`AGENTS.md`](../../AGENTS.md)):
 
 ```sh
-cd ~/coding/player_labs
+cd /path/to/player_labs   # the repo root
 uv run python .claude/skills/coworld-episode-artifacts/scripts/fetch_artifacts.py \
   --policy crewborg -n 5 --out /tmp/eps      # add --version N to focus one upload
 ```
@@ -124,7 +124,7 @@ The `uri` is the path **inside** the container (relative to the `-v` mount).
 
 ## B. The replay as events: `expand_replay` (objective ground truth)
 
-`tools/expand_replay` in the Crewrift repo (`~/coding/coworlds/coworld-crewrift`)
+`tools/expand_replay` in the Crewrift repo (`Metta-AI/coworld-crewrift`)
 parses a `.bitreplay` into a tick-by-tick **text event timeline**. Because it reads
 the recorded game, it knows the **true roles** — kills are attributed to the real
 imposters — so it is the fastest objective view of what actually happened. (The

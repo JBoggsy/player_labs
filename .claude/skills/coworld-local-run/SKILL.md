@@ -31,7 +31,7 @@ competitive judgment comes from experience requests; see `coworld-experience-req
    with your image in every slot → a PASS/FAIL verdict + the replay command:
 
    ```bash
-   cd ~/coding/player_labs
+   cd /path/to/player_labs   # the repo root
    uv run python .claude/skills/coworld-local-run/scripts/smoke.py \
      --coworld <cow_id|name> --image <your-tag>:dev
    # multi-token entrypoint, longer timeout, custom out dir:

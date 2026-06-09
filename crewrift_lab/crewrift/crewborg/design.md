@@ -14,8 +14,8 @@ For codebase orientation, game constants, and source pointers, see
 
 Conventions: paths like `sim:2464` cite the Crewrift Nim source (`sim` =
 `src/crewrift/sim.nim`, `global` = `src/crewrift/global.nim`, `protocols.nim` =
-`players/notsus/notsus/protocols.nim`), all under
-`~/coding/coworlds/coworld-crewrift/`.
+`players/notsus/notsus/protocols.nim`), all in the
+`Metta-AI/coworld-crewrift` repo.
 
 ---
 

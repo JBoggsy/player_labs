@@ -18,7 +18,7 @@ coworld `0.1.20`. Citations are by file + symbol. The two authoritative sources:
   `Metta-AI/bitworld/blob/master/docs/sprite_v1.md`). Crewrift's manifest points
   every player at this spec via `game.protocols.player`.
 - **The Crewrift scene** — what the sprites/objects/labels *mean* — defined by the
-  game in `~/coding/coworlds/coworld-crewrift/src/crewrift/{sim,global}.nim`. The
+  game in `Metta-AI/coworld-crewrift`: `src/crewrift/{sim,global}.nim`. The
   reference bot **`notsus`** (`players/notsus/notsus.nim`, with a `README.md`) is
   the canonical minimal implementation; crewborg's `perception/constants.py` is a
   second, source-verified decoder you can read in this lab. **Re-derive from the

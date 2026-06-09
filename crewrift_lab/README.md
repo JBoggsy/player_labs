@@ -21,7 +21,7 @@ and the player emits gamepad input; there is **no semantic "do task / vote" API*
 player decodes the scene into game state itself. The full, gameplay-perspective guide
 (rules, roles, scoring, strategy) is **[`docs/crewrift-gameplay.md`](docs/crewrift-gameplay.md)**
 — read that to understand the game without leaving the repo. Authoritative engine
-source lives in the (private) `~/coding/coworlds/coworld-crewrift` checkout.
+source lives in the `Metta-AI/coworld-crewrift` repo.
 
 ## The player policies
 

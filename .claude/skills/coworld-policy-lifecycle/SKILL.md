@@ -50,7 +50,7 @@ submission — "this submits to the live league (Gate 2); confirming go-ahead fi
 4. **Monitor standings** — is it active/champion, and how is it ranking?
 
    ```bash
-   cd ~/coding/player_labs
+   cd /path/to/player_labs   # the repo root
    uv run python .claude/skills/coworld-policy-lifecycle/scripts/policy_lifecycle.py \
      monitor --name <policy-name>
    ```
