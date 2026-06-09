@@ -81,9 +81,10 @@ Most signal is cheap; only drill deep where it pays off.
   lost) is usually the most informative failure.
 - **Mind small n** — `report.py` warns under ~20 appearances; don't over-read a thin
   batch. Pull more episodes for firm claims.
-- **A/B is the next step** — to judge whether a change helped, run this on two
-  versions' batches and compare role-split distributions + which categories shrank.
-  (v1 reports one batch at a time; diffing two reports is straightforward.)
+- **To judge whether a change helped, use the `crewrift-ab` skill** — this report
+  surveys *one* batch descriptively; deciding "did v2 beat v1, right now" is a
+  targeted, fresh, matched head-to-head comparison, which is what `crewrift-ab` does
+  (`compare.py` + a qualitative investigation). Don't eyeball two separate reports.
 
 ## "Unusual event profile"
 
