@@ -42,6 +42,14 @@ what they decide).
   building the instrument often precedes the fix.
 - **Triage by failure class; chase the surprise.** Aggregate, then sample the worst
   case per class. The most informative game is the one that "should have been a win."
+- **Variance carries the mechanism — and the lucky wins are findings too.** Don't stop
+  at the aggregate; look at *which* episodes moved and what they share. A change that
+  helps one cluster and hurts another points straight at the gating fix, and the
+  positive outliers ("we got lucky here") are a hypothesis source — find the mechanism
+  behind them and make it fire on purpose, not by chance.
+- **Don't optimize the obvious intermediate metric.** Confirm it actually maps to the
+  objective before chasing it; counterintuitive correlations (e.g. dying *more* while
+  scoring *more*) are signal, not noise — the "safe" metric can be the losing one.
 - **Name the layer first** — perception / belief / strategy / execution — because the
   layer determines where the fix goes. Keep **operations** failures (can't
   connect/build) strictly separate from **behavior** failures (plays badly).
@@ -53,6 +61,10 @@ what they decide).
 - **Name a specific mechanism and predict an observable effect.** Pin it to a
   rule/timer/threshold and the trace line that proves it; propose a scoped change to
   *that* mechanism only.
+- **Plausibility is not evidence.** "This should obviously help" is a reason to *test*,
+  never to assert or ship — roughly half of "obviously good" ideas regress. A
+  hypothesis you can't tie to something you actually observed (a trace line, a code
+  path) is a vibe, not a hypothesis.
 - **Pre-register the expected effect**, ideally as a test written *before* the run —
   the test is the hypothesis made falsifiable.
 - **"Capability exists" ≠ "capability is used."** A signal the policy never consults

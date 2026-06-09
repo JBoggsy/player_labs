@@ -62,12 +62,14 @@ Most signal is cheap; only drill deep where it pays off.
 4. **Tier 3 — read the logs** of the most informative episodes at the tick the
    profile points to, for the behavioral *why*.
 
-5. **Synthesize.** Write a dense report for the human: the headline role-split
-   outcome, then a ranked list of concrete strengths and weaknesses, each tied to
-   specific episodes and the deviating signal — and frame the takeaways as
-   **explicit, falsifiable hypotheses** ("as imposter it skips every meeting → never
-   ejects crew; predict: forcing aggressive votes raises imposter win-rate"), not
-   conclusions.
+5. **Synthesize + present.** Present a dense report to the human in the chat (the
+   markdown is printed to stdout for *you* to read; the human sees it because you relay
+   it): the headline role-split outcome, then a ranked list of concrete
+   strengths/weaknesses tied to specific episodes + the deviating signal, and point at
+   the interesting replays — then hand the **direction** call back to the human.
+   To go deeper on *why* a weakness happens and offer candidate directions, run the
+   **`crewrift-diagnose`** skill (optional) — it turns these signals into
+   evidence-grounded, mechanistic improvement hypotheses.
 
 ## Discipline (from `best_practices.md`)
 

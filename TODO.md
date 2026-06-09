@@ -5,32 +5,27 @@ something mid-session; check it back at the start of focused work.
 
 ## Open
 
-- [ ] **Measurement guide** (new; game-process *walkthrough*, not a principle list).
-  How to measure whether a change helped: pick the target metric, the fresh-matched
-  A/B method (→ the crewrift-ab skill), batch size / role decomposition / effect size /
-  noise, and deciding improvement-vs-regression-vs-noise. Authoritative how-to; the A/B
-  skill is the mechanism it reaches for.
-
 - [ ] **Direction / hypothesis guide** (new; full-process walkthrough). From a report
   to a decision: how to identify weaknesses in the signals, generate candidate
   hypotheses (mechanism + predicted observable effect), and **present the options to
   the user** for the human-in-the-loop call. Bridges crewrift-report (signals) →
   implement.
 
-  > **Guides vs best_practices (applies to both new guides):** guides walk the *whole
-  > process* and are the authoritative how-to. `best_practices.md` stays a terse
-  > *checklist* of disciplines — "here are the things to keep in mind" — and should NOT
-  > be pointed at as the authoritative guide. When the guides land, stop citing
-  > best_practices as the how-to (incl. in the report skill / AGENTS), and reframe
-  > best_practices' own framing as a reference list.
+  > **Guides vs best_practices:** the guide walks the *whole process* and is the
+  > authoritative how-to. `best_practices.md` stays a terse *checklist* of disciplines
+  > — "here are the things to keep in mind" — and should NOT be pointed at as the
+  > authoritative guide. When the guide lands, stop citing best_practices as the
+  > how-to (incl. in the report skill / AGENTS), and reframe best_practices' own
+  > framing as a reference list.
 
 - [ ] **Quickstart: point, don't write (Pile 1).** The README quickstart should *route*
   to the durable docs, not restate them — and an agent not on its first run should
   reach this knowledge without the quickstart. Wire each step to its home: step 1→2 to
   the (new) direction/hypothesis guide + crewrift-report; step 3 ("change crewborg") to
   crewborg `design.md` (esp. §12 tuning parameters, the first-change surface) +
-  crewborg `AGENTS.md`; the re-measure to the (new) measurement guide + crewrift-ab +
-  coworld-experience-requests. Do this *after* the guides/skill exist so the pointers resolve.
+  crewborg `AGENTS.md`; the re-measure to the `crewrift-ab` skill (+ its setup via
+  coworld-experience-requests). Do this *after* the direction/hypothesis guide exists
+  so that pointer resolves too.
 
 - [ ] **Minor: a version-log convention.** best_practices says "keep a version log"
   (version → the change it carries) but there's no file/template/home for it. Add a

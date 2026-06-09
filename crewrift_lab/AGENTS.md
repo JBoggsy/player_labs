@@ -95,6 +95,13 @@ Crewrift-specific skills live here in `.claude/skills/`:
   regression, settling "is A or B better at X," testing a hypothesis. (Distinct from
   `crewrift-report`, which surveys *one* batch descriptively; A/B is a *targeted
   two-version* comparison.)
+- **`crewrift-diagnose`** — turn a report's signals into **evidence-grounded,
+  mechanistic improvement hypotheses**: investigate the replays/logs/code for *why* a
+  behavior happens (or fails to), then **present candidate directions to the human** as
+  options (not directives). An optional augmentation of the **direction** step — it
+  enriches the human's call, doesn't replace it. Multi-turn/agentic (and will turn up
+  tracing + re-run on its own if the logs are too thin). Pairs with `crewrift-report`
+  (signals in) and `crewrift-ab` (test a hypothesis's predicted effect).
 
 The loop's **game-agnostic** halves (experience requests, artifact download, local
 run, policy lifecycle) live at the **lab root** (`../.claude/skills/`, indexed in
