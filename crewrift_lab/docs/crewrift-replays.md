@@ -144,10 +144,9 @@ crewrift_lab/tools/build_expand_replay.sh --run /tmp/eps/<episode>/replay.json
 crewrift_lab/tools/build_expand_replay.sh --ref <sha>
 ```
 
-It fetches the crewrift source for the ref (no clone) and compiles host-native. The
-game repo is private, so the build needs a GitHub token (`GITHUB_PAT` or `gh auth
-token`) until it's public — same mechanism as the player builds; see
-[`designs/building_players.md`](designs/building_players.md) §Credentials.
+It fetches the (public) crewrift source for the ref as a tarball (no clone) and
+compiles host-native — **no credentials needed**, just the host Nim toolchain. See
+[`designs/building_players.md`](designs/building_players.md).
 
 > **Verified 2026-06-09 (closed loop):** a binary built at `CREWRIFT_REF` (`d9f6b30`)
 > expands freshly-downloaded crewborg **league** replays **fully** (4720 / 5004

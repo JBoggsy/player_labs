@@ -69,11 +69,9 @@ uv run coworld --help                            # the game-ops CLI (leagues/res
 ```
 
 (Auth is the `softmax` CLI; game operations are the `coworld` CLI — both come from the
-`coworld[auth]` dependency.) Building the **Nim** players (notsus/suspectra) or the
-replay reader additionally needs a **GitHub token** for the still-private Crewrift game
-repo — `export GITHUB_PAT=…` or `gh auth login`; see
-`crewrift_lab/docs/designs/building_players.md` §Credentials. **Building crewborg and
-the whole evaluate loop need no token.**
+`coworld[auth]` dependency.) **No GitHub credentials are needed for anything** — the
+player SDK and the Crewrift game repo are public, so building players (Python *and*
+Nim) and the replay reader all work with just Docker.
 
 ## Quickstart — your first evaluation, then the loop
 

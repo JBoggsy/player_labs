@@ -28,17 +28,10 @@ RUN arch="$(dpkg --print-architecture)"; \
 ENV PATH="/root/.nimby/nim/bin:$PATH"
 
 WORKDIR /workspace/crewrift
-# coworld-crewrift and its bitworld dep are PRIVATE Metta-AI repos, so both the
-# clone and the nimby sync need a GitHub token. It is supplied as a BuildKit secret
-# (tools/build_player.sh passes `--secret id=gh_token,env=GITHUB_PAT`) and is NEVER
-# baked into a layer: the credential helper reads it from the mounted secret file at
-# git-invocation time, so only the path — not the token — is stored in git config,
-# and the secret mount disappears when this RUN finishes. Clone + sync share one RUN
-# so the token is available for both.
-RUN --mount=type=secret,id=gh_token \
-    git config --global credential.helper \
-      '!f(){ echo username=x-access-token; echo "password=$(cat /run/secrets/gh_token)"; };f' \
- && git clone https://github.com/Metta-AI/coworld-crewrift.git . \
+# coworld-crewrift and its bitworld dep are public, so the clone + nimby sync need no
+# credentials. (Pinning to CREWRIFT_REF — not the default branch — keeps the build
+# matched to the game version the league runs; see docs/crewrift-replays.md §B.)
+RUN git clone https://github.com/Metta-AI/coworld-crewrift.git . \
  && git checkout "$CREWRIFT_REF" \
  && nimby --global sync nimby.lock
 

@@ -15,44 +15,9 @@ is specifically about **producing the image**.
 > own Dockerfile; the crewrift game version is pinned centrally in
 > `crewrift_lab/tools/versions.env`.
 >
-> **crewborg builds with only Docker.** **notsus and suspectra additionally need a
-> GitHub PAT** because the crewrift game repo (and its `bitworld` dep) are private —
-> see [§Credentials](#credentials-notsus--suspectra). Minting/wiring that PAT is an
-> open setup step (tracked in [`TODO.md`](../../../TODO.md)); everything else is in
-> place and the crewborg path is validated end-to-end.
-
-## Credentials (notsus & suspectra)
-
-**If you are a coding agent reading this to build notsus or suspectra and no GitHub
-token is configured, you cannot build them yourself — ask your user to do the
-one-time setup below.** crewborg needs nothing here.
-
-notsus and suspectra are Nim players that **compile against the crewrift game repo
-and its `bitworld` dependency, both of which are private Metta-AI repos.** The build
-clones them inside Docker, so it needs a GitHub token with read access to the
-Metta-AI org. The user must:
-
-1. **Mint a GitHub Personal Access Token** with read access to `Metta-AI/coworld-crewrift`
-   and `Metta-AI/bitworld`:
-   - Fine-grained PAT (<https://github.com/settings/tokens?type=beta>): resource
-     owner `Metta-AI`, those two repos (or all), **Contents: Read-only**; or
-   - a classic PAT with the `repo` scope.
-2. **Provide it to the build** via either `export GITHUB_PAT=<token>` (preferred) or
-   `gh auth login` (the wrapper falls back to `gh auth token`).
-
-The token is passed to Docker as a **BuildKit secret** (`--secret id=gh_token`) and
-read by a git credential helper from the mounted secret at clone time — it is **never
-written into an image layer or the build cache**. `build_player.sh` pre-flights the
-token against the GitHub API and fails fast with a specific message if it's missing,
-invalid (401), or lacks access (403/404), so you never wait on a slow build only to
-hit an auth error deep inside.
-
-The replay-reader build (`tools/build_expand_replay.sh`, see
-[`../crewrift-replays.md`](../crewrift-replays.md) §B) needs the **same token** for
-the same reason — it fetches the private game source and `nimby sync`s `bitworld`. It
-resolves the token identically (`GITHUB_PAT` → `gh auth token`) and injects it as a
-*scoped* git credential (no Docker there — it's a host-native build). All of this
-becomes unnecessary once `coworld-crewrift` + `bitworld` are public.
+> **No credentials needed — the host needs only Docker.** All inputs are public:
+> crewborg installs the shared SDK from the public players repo, and notsus/suspectra
+> clone the public crewrift game repo (+ its bitworld dep). Validated end-to-end.
 
 ---
 
@@ -92,16 +57,14 @@ Every Coworld player image obeys the same contract (full details in
 
 - **Docker on the host; everything heavy is fetched inside the build.** The Nim
   toolchain, the game repo, Python packages, and the SDK are all installed *inside*
-  the image build — no host Nim, no host Python env. The one extra host input is a
-  **GitHub PAT for the Nim players** (the game repo + `bitworld` are private; see
-  [§Credentials](#credentials-notsus--suspectra)); crewborg needs only Docker.
+  the image build — no host Nim, no host Python env, and **no credentials** (all
+  inputs are public). The host needs only Docker.
 - **Hermetic and pinned.** Heavy deps are fetched at build time, each pinned to a
-  ref: the (private) game repo is cloned **at a deliberately-pinned commit**
-  (`CREWRIFT_REF`) inside the Nim builds (authenticated with the PAT via a BuildKit
-  secret), while the shared SDK is installed from the **public `Metta-AI/players`
-  repo at `PLAYERS_SDK_REF`** ([`tools/versions.env`](../../tools/versions.env)) —
-  which defaults to **`main`** (latest SDK each build; pin to a SHA for a reproducible
-  image). No local checkouts — the host needs only Docker (+ the PAT for Nim builds).
+  ref: the (public) game repo is cloned **at a deliberately-pinned commit**
+  (`CREWRIFT_REF`) inside the Nim builds, while the shared SDK is installed from the
+  **public `Metta-AI/players` repo at `PLAYERS_SDK_REF`**
+  ([`tools/versions.env`](../../tools/versions.env)) — which defaults to **`main`**
+  (latest SDK each build; pin to a SHA for a reproducible image). No local checkouts.
 - **One central game pin.** [`tools/versions.env`](../../tools/versions.env) holds
   `CREWRIFT_REF`, passed to every Nim build as `--build-arg`. **It must match the
   game version running in the league you target** — a player compiled against a
@@ -137,11 +100,10 @@ The build only needs three things wired, so it generalizes cleanly:
 
 1. **A Dockerfile** that produces the amd64 image for your player, following the
    matching template below:
-   - **Nim player** → copy the notsus Dockerfile: clone the game at
-     `ARG CREWRIFT_REF` (authenticated via the `gh_token` BuildKit secret),
-     `nimby --global sync nimby.lock`, overlay your source at `players/<name>`,
-     `nim c … players/<name>/<name>.nim`, then a slim runtime stage that copies the
-     binary and bakes `CMD ["/bin/<name>"]`. (Inherits the PAT requirement.)
+   - **Nim player** → copy the notsus Dockerfile: clone the (public) game at
+     `ARG CREWRIFT_REF`, `nimby --global sync nimby.lock`, overlay your source at
+     `players/<name>`, `nim c … players/<name>/<name>.nim`, then a slim runtime stage
+     that copies the binary and bakes `CMD ["/bin/<name>"]`.
    - **Python player** → copy the crewborg Dockerfile: install your deps (and the
      SDK, if used), put your package on `PYTHONPATH`, bake
      `CMD ["python","-m","<your.module>"]`.
@@ -199,9 +161,7 @@ crewrift_lab/tools/build_player.sh notsus
   `nimby --global sync nimby.lock`, overlays the vendored source at
   `players/notsus`, compiles to `/bin/notsus`; slim runtime stage runs it.
 - **Self-contained context:** the build context is `crewrift/notsus/`; the
-  Dockerfile fetches the game and toolchain itself.
-- **Needs a GitHub PAT** (game repo + bitworld are private) — see
-  [§Credentials](#credentials-notsus--suspectra).
+  Dockerfile fetches the (public) game and toolchain itself — no credentials.
 
 ### suspectra (Nim + Python LLM hook)
 
@@ -215,8 +175,7 @@ crewrift_lab/tools/build_player.sh suspectra
 - **Baked env is operational, not experimental:** the `SUSPECTRA_LLM_*` vars wire
   the helper to its prompt/memory files and cap call latency — part of the policy's
   identity. The Anthropic/Bedrock **key** is still attached at upload, never baked.
-- **Needs a GitHub PAT** (same as notsus) — see
-  [§Credentials](#credentials-notsus--suspectra).
+  (No build-time credentials — same public clone as notsus.)
 
 ---
 
@@ -229,23 +188,18 @@ crewrift_lab/tools/build_player.sh suspectra
 | Build toolchain | pip | nimby 0.1.26 / Nim | nimby 0.1.26 / Nim |
 | Game dependency | scene vocab (no compile) | clone game @ `CREWRIFT_REF` | clone game @ `CREWRIFT_REF` |
 | Shared code | SDK from public players repo @ `PLAYERS_SDK_REF` | — | — |
-| Credentials | none | **GitHub PAT** (private repos) | **GitHub PAT** (private repos) |
+| Credentials | none | none (all repos public) | none (all repos public) |
 | Runtime deps | players[bedrock] | libcurl4 | libcurl4 + anthropic + boto3 |
 | Entry | `python -m …policy_player` | `/bin/notsus` | `/bin/suspectra` |
 | Build context | the fork (SDK pip-installed) | the policy dir | the policy dir |
 
-**Host requirements:** Docker with `buildx` + amd64 emulation (qemu) — Docker
-Desktop or colima both provide this. For **notsus/suspectra**, also a **GitHub PAT**
-with read access to the private Metta-AI repos (see
-[§Credentials](#credentials-notsus--suspectra)). Nim builds clone the game repo and
-pull Nim deps over the network at build time; crewborg pulls Python deps from PyPI
-and the SDK from the local checkout.
+**Host requirements:** just Docker with `buildx` + amd64 emulation (qemu) — Docker
+Desktop or colima both provide this; **no credentials**. Nim builds clone the public
+game repo and pull Nim deps over the network at build time; crewborg pulls Python deps
+from PyPI and the SDK from the public players repo.
 
 ## Known follow-ups
 
-- **Mint + wire the GitHub PAT** for the Nim players (see
-  [§Credentials](#credentials-notsus--suspectra)) — the one remaining setup step
-  before notsus/suspectra can build. Tracked in [`../../../TODO.md`](../../../TODO.md).
 - **Keep `CREWRIFT_REF` matched to the deployed game.** It can't be auto-resolved
   (the platform exposes no commit; `master` runs ahead of the deployed `:latest` — a
   `master`-built `expand_replay` hash-failed on a fresh live replay 2026-06-09, while

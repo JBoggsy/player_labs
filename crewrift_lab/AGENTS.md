@@ -135,10 +135,9 @@ The Crewrift player policies we've vendored, each a drift-able in-lab copy, and 
 **buildable in-lab** with `tools/build_player.sh <policy>` (see
 [`docs/designs/building_players.md`](docs/designs/building_players.md)). They come in two
 flavors: **crewborg is Python** (editable-installed for dev; image installs the SDK +
-fork; **Docker-only, no credentials**); **notsus and suspectra are Nim** (their image
-clones the crewrift game at the pinned `CREWRIFT_REF` and compiles — this needs a
-**one-time GitHub PAT** because the game repo + bitworld are private; see the build
-doc's §Credentials).
+fork); **notsus and suspectra are Nim** (their image clones the crewrift game at the
+pinned `CREWRIFT_REF` and compiles). All repos are public, so **every build is
+Docker-only with no credentials**.
 
 - **crewborg** *(Python)* — at [`crewrift/crewborg/`](crewrift/crewborg/) (package
   `crewrift.crewborg`), a drifting fork of upstream `Metta-AI/players`
@@ -161,5 +160,5 @@ doc's §Credentials).
   (`suspectra.nim`) that adds evidence voting and a bounded Bedrock/Anthropic
   **meeting LLM** (`llm_meeting.py`, invoked by path; prompts in `memory/`).
   Upstream: `Metta-AI/players` (`players/crewrift/suspectra`). Builds in-lab via
-  `tools/build_player.sh suspectra` (same Nim + PAT path as notsus).
+  `tools/build_player.sh suspectra` (same Nim path as notsus).
 </content>

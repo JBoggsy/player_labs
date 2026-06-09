@@ -9,10 +9,10 @@ This README orients newcomers (human or agent). Two pointers do most of the work
 - **[`AGENTS.md`](AGENTS.md)** — the operating model *for this lab*: the improvement
   loop in Crewrift terms, the player-policy index, and the lab's practices. Read it to
   *work* here.
-- **[`../README.md`](../README.md)** — lab-wide setup (the `uv sync` / players-SDK
-  checkout / Observatory auth) and the ground rules. Crewrift adds one thing: building
-  the Nim players or the replay reader needs a **GitHub token** because the game repo
-  is private — see [`docs/designs/building_players.md`](docs/designs/building_players.md) §Credentials.
+- **[`../README.md`](../README.md)** — lab-wide setup (`uv sync` / Observatory auth)
+  and the ground rules. Everything here is public, so there are **no extra
+  credentials** — building players (Python or Nim) and the replay reader need only
+  Docker; see [`docs/designs/building_players.md`](docs/designs/building_players.md).
 
 ## The game
 
@@ -50,7 +50,7 @@ Three Crewrift policies are vendored here as drift-able forks under
 ## Quickstart
 
 ```sh
-# Build a player image (linux/amd64). Nim players need a GitHub PAT; crewborg doesn't.
+# Build a player image (linux/amd64) — just Docker, no credentials.
 tools/build_player.sh crewborg            # or: notsus | suspectra
 
 # Build the version-matched replay reader (host-native), then read a replay.

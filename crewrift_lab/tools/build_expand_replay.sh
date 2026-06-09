@@ -13,10 +13,8 @@
 # it at a pinned ref so it matches the replays from our own experience requests.
 #
 # It is a HOST analysis tool (you run it locally to read a replay), so it builds
-# native to this host's arch — no Docker, no amd64. The crewrift game source +
-# its bitworld dep are PRIVATE Metta-AI repos for now, so the source fetch and the
-# `nimby sync` need a GitHub token while private (GITHUB_PAT, or `gh auth token`);
-# once those repos are public, no token is needed and this works unchanged.
+# native to this host's arch — no Docker, no amd64. The crewrift game source + its
+# bitworld dep are public, so the source fetch and `nimby sync` need no credentials.
 set -euo pipefail
 
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # crewrift_lab/
@@ -62,50 +60,22 @@ if [[ -x "$out_bin" && $force -eq 0 ]]; then
   exit 0
 fi
 
-# --- GitHub token (only needed while the repos are private) -----------------------
-# Resolved like build_player.sh: GITHUB_PAT, else `gh auth token`. May be empty —
-# that's fine once coworld-crewrift + bitworld are public.
-token="${GITHUB_PAT:-}"
-if [[ -z "$token" ]] && command -v gh >/dev/null 2>&1; then
-  token="$(gh auth token 2>/dev/null || true)"
-fi
-
-# --- Fetch source for the ref (a tarball snapshot — never a clone) ----------------
+# --- Fetch source for the ref (a public tarball snapshot — never a clone) ---------
 src_dir="$CACHE_ROOT/$ref"
 if [[ ! -f "$src_dir/tools/expand_replay.nim" || $force -eq 1 ]]; then
   echo "==> fetching $GAME_REPO_SLUG @ $ref (tarball, no clone)"
   rm -rf "$src_dir"; mkdir -p "$src_dir"
   tgz="$(mktemp)"; trap 'rm -f "$tgz"' EXIT
-  auth=(); [[ -n "$token" ]] && auth=(-H "Authorization: Bearer $token")
-  if ! curl -fsSL "${auth[@]}" \
-        "https://api.github.com/repos/$GAME_REPO_SLUG/tarball/$ref" -o "$tgz"; then
-    if [[ -z "$token" ]]; then
-      die "could not download source and no GitHub token is set. $GAME_REPO_SLUG is
-  private — export GITHUB_PAT=<token> (read access to Metta-AI) or 'gh auth login',
-  then retry. (Once the repo is public, no token is needed.)"
-    fi
-    die "could not download $GAME_REPO_SLUG @ $ref — check the ref and that your token
-  has read access to the Metta-AI org (it also needs Metta-AI/bitworld for deps)."
-  fi
+  curl -fsSL "https://github.com/$GAME_REPO_SLUG/archive/$ref.tar.gz" -o "$tgz" \
+    || die "could not download $GAME_REPO_SLUG @ $ref — check the ref (and your network)."
   tar xzf "$tgz" -C "$src_dir" --strip-components=1
 fi
 
 # --- Resolve Nim deps (bitworld, etc.) --------------------------------------------
-# nimby clones deps via git into the persistent global store (~/.nimby/pkgs), so this
-# is normally a cache hit. While the deps are private, inject the token as a SCOPED
-# git credential helper (env-only, no global config mutation, nothing written to disk);
-# when public, this is simply absent.
-nimby_env=()
-if [[ -n "$token" ]]; then
-  export EXPAND_REPLAY_GH_TOKEN="$token"
-  nimby_env=(
-    GIT_CONFIG_COUNT=1
-    "GIT_CONFIG_KEY_0=credential.https://github.com.helper"
-    'GIT_CONFIG_VALUE_0=!f() { echo username=x-access-token; echo "password=${EXPAND_REPLAY_GH_TOKEN}"; }; f'
-  )
-fi
+# nimby clones the (public) deps via git into the persistent global store
+# (~/.nimby/pkgs), so this is normally a cache hit and needs no credentials.
 echo "==> nimby sync (deps; cache hit unless nimby.lock changed)"
-( cd "$src_dir" && env "${nimby_env[@]}" nimby --global sync nimby.lock )
+( cd "$src_dir" && nimby --global sync nimby.lock )
 
 # --- Build host-native ------------------------------------------------------------
 echo "==> compiling expand_replay (host-native) -> $out_bin"

@@ -17,22 +17,15 @@ something mid-session; check it back at the start of focused work.
   (version → the change it carries) but there's no file/template/home for it. Add a
   simple convention (e.g. a `versions/` log or template) so the discipline has a place.
 
-
-
-- [ ] **Mint + wire a GitHub PAT for the Nim player builds (notsus, suspectra).**
-  Their images clone the **private** `Metta-AI/coworld-crewrift` (+ its private
-  `bitworld` dep), so `tools/build_player.sh notsus|suspectra` needs a GitHub token
-  with read access to those repos. The build code is done — it passes the token as a
-  BuildKit secret and fails fast with guidance if it's missing/invalid. Remaining:
-  - Mint a PAT (fine-grained: Metta-AI org, `coworld-crewrift` + `bitworld`,
-    Contents: Read-only; or classic `repo` scope).
-  - Provide it via `export GITHUB_PAT=…` or `gh auth login`, then run a real Nim
-    build once to confirm the clone + `nimby sync` + `nim c` path works end-to-end
-    (only crewborg has been built so far). See
-    `crewrift_lab/docs/designs/building_players.md` §Credentials.
-
 ## Done
 
+- **Removed the GitHub-PAT requirement everywhere — repos went public.**
+  `Metta-AI/coworld-crewrift` and `bitworld` are now public, so the Nim builds (notsus,
+  suspectra) and the replay-reader need no credentials. Stripped the token machinery
+  from `build_player.sh` + `build_expand_replay.sh`, reverted the Dockerfiles to plain
+  clones, removed the §Credentials doc section, and de-PAT'd README/AGENTS/replays/
+  building_players. The whole lab is now Docker-only, fully clone-and-go. (Validated
+  the notsus Nim build end-to-end, tokenless.)
 - **Fixed the crewborg bridge WS env var** — `policy_player.py` now reads the canonical
   `COWORLD_PLAYER_WS_URL`, falling back to the legacy `COGAMES_ENGINE_WS_URL` alias;
   crewborg docs updated to match. 263 tests pass.
