@@ -25,6 +25,8 @@ artifact handle. All artifacts come from three job routes (verified live
     GET /jobs/{job_id}/artifacts/replay          -> replay bytes   (game replay)
     GET /jobs/{job_id}/policy-logs               -> ["policy_agent_0.log", ...]
     GET /jobs/{job_id}/policy-logs/{agent_idx}   -> one agent's stderr trace
+    GET /jobs/{job_id}/policy-artifact           -> [slot, ...] with uploaded artifacts
+    GET /jobs/{job_id}/policy-artifact/{agent_idx} -> one slot's artifact zip
     GET /jobs/{job_id}/artifacts/error_info      -> error_info.json (only on failure)
 
 Each artifact is best-effort: a missing replay or one missing log is logged and
@@ -371,6 +373,7 @@ def fetch_episode(
         "results": False,
         "replay": False,
         "logs": [],
+        "policy_artifacts": [],
         "error_info": False,
         "errors": [],
     }
@@ -431,7 +434,28 @@ def fetch_episode(
         else:
             summary["errors"].append("no policy logs listed for job")
 
-    # 5. Error info (present only when the episode failed).
+    # 5. Per-player artifact zips (policy-scoped: only slots we own come back).
+    # Players may upload one zip of structured telemetry/debug data per slot
+    # (e.g. crewborg's trace zip) — separate from the stderr policy logs.
+    if want_logs:
+        listing = client.get_text_or_none(f"/jobs/{job}/policy-artifact")
+        slots: list[int] = []
+        if listing is not None:
+            try:
+                slots = [int(s) for s in json.loads(listing)]
+            except (json.JSONDecodeError, TypeError, ValueError):
+                summary["errors"].append(f"unparseable policy-artifact listing: {listing[:80]}")
+        for idx in slots:
+            content = client.get_bytes_or_none(f"/jobs/{job}/policy-artifact/{idx}")
+            if content is None:
+                summary["errors"].append(f"policy-artifact {idx}: unavailable")
+                continue
+            artifacts_dir = out_dir / "artifacts"
+            artifacts_dir.mkdir(exist_ok=True)
+            (artifacts_dir / f"policy_artifact_{idx}.zip").write_bytes(content)
+            summary["policy_artifacts"].append(idx)
+
+    # 6. Error info (present only when the episode failed).
     err = client.get_text_or_none(f"/jobs/{job}/artifacts/error_info")
     if err is not None:
         (out_dir / "error_info.json").write_text(err)

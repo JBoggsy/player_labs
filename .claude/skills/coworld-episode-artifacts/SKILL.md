@@ -25,6 +25,9 @@ One directory per episode (`<timestamp>_<short-id>/`) containing:
   directly-loadable binary form) plus the raw zlib blob.
 - `logs/policy_agent_{N}.log` — each agent's full per-tick stderr trace (the
   richest behavioural record).
+- `artifacts/policy_artifact_{N}.zip` — any player-uploaded telemetry/debug
+  bundles (policy-scoped: only slots you own come back; e.g. crewborg's trace
+  zip with `telemetry.jsonl` + `manifest.json`).
 - `error_info.json` — only when the episode failed.
 
 Plus a top-level `index.json` summarizing the run. Every artifact is best-effort:

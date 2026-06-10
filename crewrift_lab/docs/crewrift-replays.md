@@ -247,6 +247,12 @@ and may be missing the **start** of the game — don't assume tick 0 is present.
   decisions, commands) with tunable verbosity (`CREWBORG_TRACE*`). Full format, field
   reference, and `jq` reading recipes:
   [`../crewrift/crewborg/docs/trace-logs.md`](../crewrift/crewborg/docs/trace-logs.md).
+  **Where it lands:** crewborg defaults to `jsonl@artifact` — the trace is zipped and
+  uploaded as a per-slot **player artifact** (`artifacts/policy_artifact_{N}.zip`,
+  containing `telemetry.jsonl` + `manifest.json`; the episode downloader pulls it),
+  which is **not subject to the hosted log-line cap** — so prefer the artifact over
+  `logs/policy_agent_{N}.log` when both exist. The stderr log remains the fallback
+  (bridge running outside a runner) and is overridable via `CREWBORG_TRACE_OUTPUTS`.
 - **notsus / suspectra** — Nim players that log **plain-text stderr** (human-readable
   diagnostic lines, no structured schema); read them directly. suspectra's meeting-LLM
   helper may add its own lines. *(No dedicated format doc — the lines are self-describing.)*

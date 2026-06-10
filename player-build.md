@@ -30,7 +30,12 @@ Plus, for the image itself:
   mirrored public). Attach secrets at upload (`--secret-env`, `--use-bedrock`), never
   in the image or manifest env.
 - **stdout/stderr are diagnostic logs only** — the source of truth for an episode is
-  the game's results/replay, not player logs.
+  the game's results/replay, not player logs. Hosted policy logs are line-capped; for
+  bulky structured telemetry, upload a **player artifact** instead: when the runner
+  sets `COWORLD_PLAYER_ARTIFACT_UPLOAD_URL`, the player may PUT one `.zip` (≤200 MB)
+  there before exiting (metta `docs/artifacts/PLAYER_ARTIFACT.md`; the player SDK's
+  `TraceOutputs` does this for you with an `…@artifact` output spec). Retrieval:
+  `GET /jobs/{job_id}/policy-artifact[/{agent_idx}]`, policy-scoped.
 - **Lightweight** — hosted default is **250m CPU / 256Mi memory** per player.
 
 ## The minimal Dockerfile
