@@ -35,6 +35,30 @@ that get contradicted.
   score-anomaly filter therefore *catches* these penalty cases for free.
 - **Status:** candidate
 
+### A moving-branch build-arg (`REF=main`) + remote tarball install = silently stale Docker layer.
+- **Hits:** 1 (2026-06-10)
+- **Evidence:** crewborg's image "tracks `main`" for the players SDK, but the
+  `pip install …/archive/main.tar.gz` layer caches on the unchanged URL string — after
+  upstream merged the TraceOutputs SDK, a fresh `build_player.sh crewborg` produced an
+  image whose SDK **didn't have it** (ImportError in-container). Classic
+  looked-like-success: build "succeeded", artifact stale. Fix shipped: build_player.sh
+  resolves `main` → the uv.lock commit and passes the SHA, so cache busts exactly when
+  the lock moves and image == dev SDK. General form: never feed a mutable ref to a
+  cached fetch step; resolve to a digest first.
+- **Status:** candidate (mechanism verified once; promote after it saves us again)
+
+### Player artifact upload: a `…@artifact` trace spec **crashes the player** if the upload URL is unset.
+- **Hits:** 1 (2026-06-10)
+- **Evidence:** `players.player_sdk.TraceOutputs.from_specs` raises `ValueError` when a spec
+  targets `artifact` but `COWORLD_PLAYER_ARTIFACT_UPLOAD_URL` is absent — which would crash
+  the bridge before connect (= failed episode / −100). The metta contract says the player
+  should *skip* uploading when the var is absent, so the SDK's raise is sharper than the
+  contract; wrap adoption with a fallback to `stderr`. Local `coworld run-episode` sets a
+  `file://` URL automatically; hosted sets a presigned PUT (metta #15290). Retrieval:
+  `GET /jobs/{job_id}/policy-artifact[/{idx}]`. 200 MB cap; jsonl/csv stream to disk,
+  json/parquet buffer in RAM (mind the 256Mi pod).
+- **Status:** candidate (promote to a build/ship practice once we've shipped it once)
+
 ### Daily-league *round* episodes are queryable (with scores inline) without downloading artifacts.
 - **Hits:** 1 (2026-06-10)
 - **Evidence:** `coworld episodes --round <round_id> --policy <name> --json` returns the
