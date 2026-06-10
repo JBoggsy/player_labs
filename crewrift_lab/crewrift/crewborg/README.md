@@ -56,6 +56,7 @@ crewborg/                (package crewrift.crewborg)
   types.py           the six SDK types + perceive/update_belief + phase machine
   action.py          action layer: stateful resolve_action + movement/edge FSMs
   nav.py             baked nav graph: pixel-validated A* + reachability + anchors + vent-teleport routing
+  navbake.py         load/validate the offline-baked nav graph + occupancy substrate (else fall back to live build)
   trace.py           trace selection: event families + env filtering (outputs = SDK TraceOutputs)
   events.py          CrewborgEventTracer: on_step_complete hook → domain.* events
   modes/             idle/normal/attend_meeting/report_body/flee + evade/pretend/search/hunt (+ imposter_common helpers)

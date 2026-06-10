@@ -31,6 +31,7 @@ from crewrift.crewborg.agent_tracking import AgentTrackingState
 from crewrift.crewborg.coworld.scene import SceneState
 from crewrift.crewborg.map.types import MapData
 from crewrift.crewborg.nav import NavGraph, build_nav_graph
+from crewrift.crewborg.navbake import load_navbake
 from crewrift.crewborg.perception.constants import PLAYER_OBJECT_BASE
 from crewrift.crewborg.perception.entities import ResolvedScene, VotingState
 from crewrift.crewborg.perception.resolve import resolve_scene
@@ -497,8 +498,16 @@ def update_belief(belief: Belief, percept: Percept) -> None:
     # Build the navigation graph once from the static walkability mask + baked map
     # (design §6): nodes/edges validated at pixel resolution, reachable flood from
     # home, and precomputed reachable anchors for every task / vent / button.
+    # Prefer the offline bake (nav graph + occupancy substrate) when it matches the
+    # streamed mask — building both live costs ~14s on the first tick under the
+    # hosted 250m-CPU budget (see navbake.py). On any mismatch/missing asset we fall
+    # back to the live build here, and the substrate builds lazily as before.
     if belief.nav is None and percept.walkability is not None:
-        belief.nav = build_nav_graph(percept.walkability, map_data=belief.map)
+        baked = load_navbake(percept.walkability)
+        if baked is not None:
+            belief.nav, belief.agent_tracking.substrate = baked
+        else:
+            belief.nav = build_nav_graph(percept.walkability, map_data=belief.map)
 
     # Tasks. The renderer emits a signal per incomplete assigned task. We only
     # accumulate which tasks are assigned and which are visible this tick;

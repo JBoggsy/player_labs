@@ -86,6 +86,16 @@ Every Coworld player image obeys the same contract (full details in
   baked.)
 - **Secrets only at upload.** LLM/cloud keys attach to the policy version
   (`--secret-env`, `--use-bedrock`), never to the image.
+- **Static derived data is baked offline, not per-run.** crewborg's nav graph +
+  occupancy substrate are a pure function of the (one, static) croatoan map but cost
+  ~14s to build on the first tick under the hosted 250m-CPU cap — so they're baked
+  **once** into a vendored asset and loaded at runtime (falling back to a live build
+  if the streamed map ever stops matching). **Re-bake only when the league redeploys a
+  changed map** (the signal: crewborg logs a walkability-mismatch warning / the
+  first-tick latency returns): capture a fresh mask from a local run with
+  `CREWBORG_CAPTURE_WALKABILITY=1`, then
+  [`tools/nav_bake.py`](../../tools/nav_bake.py) `extract-walkability` → `bake`, then
+  rebuild the image so the new asset ships. See crewborg `design.md` §6.
 
 ### How to build (the wrapper)
 

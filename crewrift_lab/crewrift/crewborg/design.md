@@ -469,6 +469,22 @@ The decoded walkability also validates the bake: if it doesn't match `croatoan`,
 the server is running a different map — fail loud / fall back. (`mapPath` is
 config-overridable, `sim:1320-1321`; today only `croatoan` exists.)
 
+**Offline nav bake (no per-run rebuild).** The nav graph *and* the occupancy
+substrate (§10.2 — anchors + pairwise route polylines, an O(anchors²) A* sweep) are
+pure functions of the static walkability mask + baked map, but building both is a
+heavy pure-Python pass: **~14s on the first tick under the hosted 250m-CPU budget**,
+which froze the agent at spawn while the real-time 24 Hz engine streamed ~330 frames
+ahead (it then drained a stale backlog — the "slow to leave start" symptom). Since
+there is one static map, we bake both **once, offline** into a vendored asset
+(`map/croatoan_navbake.pkl.gz`, ~186 KiB) via `crewrift_lab/tools/nav_bake.py`, and
+load it on the first tick instead (`navbake.py`; ~0.1s vs ~29s in a 250m container —
+a ~280× cut, with the loaded graph/substrate byte-identical to a live build). The
+load **validates** the streamed mask still matches the baked one and, on any
+mismatch / missing asset / load error, **falls back to the live build** with a
+warning — correctness never depends on the asset, and a mismatch is the signal to
+re-run the bake (capture a fresh mask with `CREWBORG_CAPTURE_WALKABILITY=1`, then
+`nav_bake.py extract-walkability … && nav_bake.py bake …`, then rebuild the image).
+
 > Building crewborg requires the game repo (or the vendored `croatoan.resources`)
 > present.
 
@@ -836,6 +852,7 @@ crewborg/
   types.py           # the six types + perceive/update_belief
   action.py          # action layer: stateful resolve_action, composite execution, momentum + button FSM
   nav.py             # baked-map nav graph + route planning (used by the action layer)
+  navbake.py         # load the offline-baked nav graph + occupancy substrate (tools/nav_bake.py bakes it)
   trace.py           # trace selection: event families + env-derived filtering (outputs are the SDK's)
   events.py          # CrewborgEventTracer: on_step_complete hook emitting domain.* events
   modes/             # idle, normal, attend_meeting, report_body, flee, evade, pretend, search, hunt

@@ -154,7 +154,7 @@ had a bug — treated the listing as slot ints, but it returns *filenames* `poli
 fixed. endpoint-map updated + marked verified.) The artifact is the **full untruncated game**
 (no 10k-line cap), which is what cracked the latency question below.
 
-**SLOW-START ROOT CAUSE FOUND — it's a ~13.7s first-tick init stall.** The untruncated trace
+**SLOW-START ROOT CAUSE FOUND & FIXED (offline nav bake) — was a ~13.7s first-tick init stall.** The untruncated trace
 shows `bridge.step_ms` at **tick 1 ≈ 13,700 ms** (consistent: 13658/13738/13769 across 3 eps),
 then ~1ms every tick after. So `runtime.step()` does a ~14s one-time init on the first tick
 under the 250m CPU cap (map-bake / nav-graph build, lazy on first perception — NOT in
@@ -162,9 +162,16 @@ under the 250m CPU cap (map-bake / nav-graph build, lazy on first perception —
 crewborg is frozen at spawn ~14s while everyone moves, then drains a stale backlog. This is
 exactly the human-observed "slow to leave start." **Steady-state (ticks 2+) is healthy**
 (~1–5ms, occasional ~20–50ms; the earlier "bimodal" tail effect is real but secondary).
-**Fix direction:** precompute the nav graph at image-build (load, don't compute) or do the
-init during the lobby/RoleReveal idle window without blocking frames. Localize *where* the 14s
-goes next.
+The init is the nav graph **and** the occupancy substrate (an O(anchors²)=1806-polyline A*
+sweep — the dominant share), both pure functions of the one static croatoan map.
+**Fix shipped:** bake both **offline** into a vendored asset (`map/croatoan_navbake.pkl.gz`,
+186 KiB) with `tools/nav_bake.py`; load+validate at runtime (`navbake.py`), falling back to the
+live build on any mask mismatch (the re-bake signal). **In-container 250m: 29.2s live build →
+104ms load (~280×); loaded graph/substrate byte-identical to a live build (play unchanged); 270
+tests pass.** Re-bake only when the league redeploys a changed map (capture via
+`CREWBORG_CAPTURE_WALKABILITY=1`). The earlier "bimodal" steady-state tail effect (~5 vs ~22ms)
+is real but secondary — deferred.
+**REMAINING:** v19 hosted probe to confirm tick-1 drops from ~13.7s in the real 250m environment.
 
 **TRACING CONFIRMED working** (v18 probe, 10 eps, stderr-fallback path): step_ms/loop_gap_ms/
 tick_drift 10/10, decision_snapshot 10/10, `voting` snapshot populated in exactly the 4/10

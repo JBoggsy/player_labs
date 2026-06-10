@@ -153,6 +153,12 @@ async def run_bridge(
                                     file=sys.stderr,
                                     flush=True,
                                 )
+                            # Optional capture: emit the streamed walkability mask once
+                            # so tools/nav_bake.py can re-bake the offline nav asset when
+                            # the map changes. Inert unless CREWBORG_CAPTURE_WALKABILITY
+                            # is set; the mask is the authoritative input crewborg sees.
+                            if _capture_walkability_enabled():
+                                _emit_walkability_capture(scene.walkability)
 
                         # step_ms: the per-tick compute budget check (~42 ms at
                         # 24 Hz). tick_drift: ticks the engine has likely run
@@ -213,6 +219,38 @@ def _metrics_enabled() -> bool:
     trace_level = os.environ.get("CREWBORG_TRACE", "").strip().lower()
     metrics_flag = os.environ.get(METRICS_ENV, "").strip().lower()
     return trace_level == "debug" or metrics_flag in {"1", "true", "yes", "on"}
+
+
+def _capture_walkability_enabled() -> bool:
+    return os.environ.get("CREWBORG_CAPTURE_WALKABILITY", "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _emit_walkability_capture(walkability: Any) -> None:
+    """Print the walkability mask to stderr as one bit-packed, base64 JSON line.
+
+    A line, not a file: the player container's filesystem isn't collected on local
+    runs, but its stderr is (the policy log). ``tools/nav_bake.py capture`` reads
+    this line back. ~100 KB packed for the croatoan mask — fine as a single line.
+    """
+
+    import base64
+    import json
+
+    import numpy as np
+
+    mask = np.ascontiguousarray(walkability, dtype=bool)
+    packed = np.packbits(mask)
+    print(
+        json.dumps(
+            {
+                "event": "walkability_capture",
+                "shape": list(mask.shape),
+                "packbits_b64": base64.b64encode(packed.tobytes()).decode("ascii"),
+            }
+        ),
+        file=sys.stderr,
+        flush=True,
+    )
 
 
 if __name__ == "__main__":
