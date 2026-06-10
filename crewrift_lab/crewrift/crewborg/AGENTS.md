@@ -447,9 +447,14 @@ bots live in `coworld-crewrift/players/` (`notsus`, `evidencebot_v2`,
 Crewborg runs as a **WebSocket client**: the Coworld runner sets
 `COWORLD_PLAYER_WS_URL` (legacy alias `COGAMES_ENGINE_WS_URL`), the bridge (`coworld/policy_player.py`) connects, speaks
 Crewrift's binary protocol for its slot, and exits on the final message.
-**stdout = protocol channel, stderr = logs/traces.** Platform contract:
+**stdout = protocol channel; traces/metrics go to SDK trace outputs.** The bridge
+defaults to `jsonl@artifact` — traces are zipped and uploaded to the runner-provided
+`COWORLD_PLAYER_ARTIFACT_UPLOAD_URL` at exit (falling back to `jsonl@stderr` when no
+URL is present), so heavy tracing survives Observatory's hosted log-line cap; override
+with `CREWBORG_TRACE_OUTPUTS` (see design.md §"Tracing"). Platform contract:
 `coworld/src/coworld/docs/README.md` (overview + role/artifact docs under
-`docs/roles/` and `docs/artifacts/`) and `runner/runner.py` (protocol authority).
+`docs/roles/` and `docs/artifacts/`, incl. `artifacts/PLAYER_ARTIFACT.md`) and
+`runner/runner.py` (protocol authority).
 
 ---
 

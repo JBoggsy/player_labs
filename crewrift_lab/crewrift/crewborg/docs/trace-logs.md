@@ -1,10 +1,17 @@
 # Reading crewborg's trace logs
 
-crewborg writes a per-tick **JSON-lines** trace to **stderr**, captured per episode as
-`logs/policy_agent_{N}.log` for the slot it controlled — its subjective point of view:
-what it **perceived**, **believed** (suspicion), the **mode** it chose, and the
-**command** it sent, tick by tick. This doc is crewborg's log *format* and how to read
-it.
+crewborg writes a per-tick **JSON-lines** trace — its subjective point of view: what it
+**perceived**, **believed** (suspicion), the **mode** it chose, and the **command** it
+sent, tick by tick. This doc is crewborg's log *format* and how to read it.
+
+**Where the trace lives** (same JSONL records either way; the format below applies to
+both): by default crewborg uploads it as a per-slot **player artifact zip**
+(`artifacts/policy_artifact_{N}.zip` → `telemetry.jsonl`, not subject to the hosted
+log-line cap); when no artifact upload URL is available it falls back to **stderr**,
+captured per episode as `logs/policy_agent_{N}.log`. Output targeting is
+`CREWBORG_TRACE_OUTPUTS` (see `design.md` §"Tracing"). One shape note: records now
+carry a redundant `"name"` field alongside `"event"` (the SDK writer emits both) —
+keys on `"event"` below work unchanged.
 
 This is **crewborg-specific** — other Crewrift policies log differently (the Nim
 players emit plain-text stderr, not this schema). For the **game-level** side of

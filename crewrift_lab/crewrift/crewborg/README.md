@@ -56,7 +56,7 @@ crewborg/                (package crewrift.crewborg)
   types.py           the six SDK types + perceive/update_belief + phase machine
   action.py          action layer: stateful resolve_action + movement/edge FSMs
   nav.py             baked nav graph: pixel-validated A* + reachability + anchors + vent-teleport routing
-  trace.py           stderr-JSON trace & metrics sinks
+  trace.py           trace selection: event families + env filtering (outputs = SDK TraceOutputs)
   events.py          CrewborgEventTracer: on_step_complete hook → domain.* events
   modes/             idle/normal/attend_meeting/report_body/flee + evade/pretend/search/hunt (+ imposter_common helpers)
   strategy/          rule_based.py: mode selector + suspicion.py: Bayesian P(imposter) → believed_imposters + event_log.py: per-player observation log + occupancy.py: perception-tape predicates + opportunity.py: victim/witness logic + trajectory.py: intercept prediction

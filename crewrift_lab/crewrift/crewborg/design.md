@@ -836,7 +836,7 @@ crewborg/
   types.py           # the six types + perceive/update_belief
   action.py          # action layer: stateful resolve_action, composite execution, momentum + button FSM
   nav.py             # baked-map nav graph + route planning (used by the action layer)
-  trace.py           # stderr JSON trace + metrics sinks
+  trace.py           # trace selection: event families + env-derived filtering (outputs are the SDK's)
   events.py          # CrewborgEventTracer: on_step_complete hook emitting domain.* events
   modes/             # idle, normal, attend_meeting, report_body, flee, evade, pretend, search, hunt
   strategy/          # rule_based.py: mode selector; suspicion.py: near-certain detection; event_log.py: per-player observation log; occupancy.py: tape predicates; opportunity/trajectory
@@ -848,13 +848,25 @@ crewborg/
   AGENTS.md  design.md  README.md
 ```
 
-**Tracing.** Stdout = protocol channel, stderr = logs/traces. Hosted Coworld logs
-are capped, so the policy bridge (`coworld/policy_player.py`) uses a lean stderr
-trace by default. It keeps durable domain events and low-volume mode boundary
-events, but filters per-tick SDK framework noise such as `perception`,
-`belief_updated`, `action_intent`, `act_command`, `snapshot_submitted`,
-`strategy_evaluated`, and repeated directive traces. The full framework stream is
-still available with `CREWBORG_TRACE=debug` or `CREWBORG_TRACE=viewer`.
+**Tracing.** Stdout = protocol channel; traces/metrics flow through the SDK's
+`TraceOutputs` (`players.player_sdk.trace_outputs`). **Outputs** (where records
+go) are configured by `CREWBORG_TRACE_OUTPUTS` — comma-separated
+`format@destination` specs (`jsonl|json|csv|parquet` @
+`stderr|stdout|file:<path>|artifact[:name]`). The bridge default is
+**`jsonl@artifact`**: records stream to a temp file and are zipped and uploaded
+to the runner-provided `COWORLD_PLAYER_ARTIFACT_UPLOAD_URL` when the bridge
+exits (one `policy_artifact_{slot}.zip` per slot, 200 MB cap — the metta
+`PLAYER_ARTIFACT` contract). This sidesteps Observatory's hosted policy-log line
+cap entirely, so even heavy trace levels survive hosted runs. When no upload URL
+is present (running outside a Coworld runner), the bridge falls back to
+`jsonl@stderr` with a warning instead of crashing — a pre-connect crash would
+fail the episode. **Selection** (which events go) is unchanged and lives in
+`trace.py`: the default is a lean stream that keeps durable domain events and
+low-volume mode boundary events but filters per-tick SDK framework noise such as
+`perception`, `belief_updated`, `action_intent`, `act_command`,
+`snapshot_submitted`, `strategy_evaluated`, and repeated directive traces. The
+full framework stream is still available with `CREWBORG_TRACE=debug` or
+`CREWBORG_TRACE=viewer`.
 The bridge also supports targeted log streams without full debug volume:
 `CREWBORG_TRACE_GROUPS` names event families, `CREWBORG_TRACE_INCLUDE` /
 `CREWBORG_TRACE_EXCLUDE` accept comma-separated glob patterns, and

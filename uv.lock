@@ -628,7 +628,7 @@ dev = [
 [[package]]
 name = "players"
 version = "0.1.0"
-source = { git = "https://github.com/Metta-AI/players?branch=main#18ec2788fe14a1b01c9bc6f338c5d52b1987bc6b" }
+source = { git = "https://github.com/Metta-AI/players?branch=main#146905e306751b3e1c1b666a30ea0a9a2448d0ff" }
 dependencies = [
     { name = "anthropic" },
     { name = "cramjam" },

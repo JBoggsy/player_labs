@@ -12,18 +12,31 @@ import asyncio
 import io
 import json
 import sys
+import zipfile
 
 import pytest
 from websockets.asyncio.server import serve
 from websockets.exceptions import ConnectionClosed, ConnectionClosedError
 
 from crewrift.crewborg.action import INPUT_HEADER, encode_chat
-from crewrift.crewborg.coworld.policy_player import run_bridge
+from crewrift.crewborg.coworld.policy_player import build_trace_outputs, run_bridge
 from crewrift.crewborg.tests import sprite_wire as w
 from crewrift.crewborg.types import Command
-from players.player_sdk import TraceEvent
+from players.player_sdk import NullMetricsSink, TraceEvent
 
 pytestmark = pytest.mark.asyncio
+
+
+def _json_records(raw: str) -> list[dict]:
+    """Parse the JSON lines from a stream, skipping plain-text warnings."""
+
+    records = []
+    for line in raw.splitlines():
+        try:
+            records.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return records
 
 
 async def test_bridge_defaults_to_lean_trace_and_no_metrics(monkeypatch) -> None:
@@ -35,6 +48,8 @@ async def test_bridge_defaults_to_lean_trace_and_no_metrics(monkeypatch) -> None
     stderr = io.StringIO()
     monkeypatch.delenv("CREWBORG_TRACE", raising=False)
     monkeypatch.delenv("CREWBORG_METRICS", raising=False)
+    monkeypatch.delenv("CREWBORG_TRACE_OUTPUTS", raising=False)
+    monkeypatch.delenv("COWORLD_PLAYER_ARTIFACT_UPLOAD_URL", raising=False)
     monkeypatch.setattr(sys, "stderr", stderr)
 
     def build(**kwargs):
@@ -47,11 +62,11 @@ async def test_bridge_defaults_to_lean_trace_and_no_metrics(monkeypatch) -> None
     with pytest.raises(RuntimeError, match="connect failed"):
         await run_bridge("ws://unused", connect=failing_connect, build=build)
 
-    assert captured["metrics_sink"] is None
+    assert isinstance(captured["metrics_sink"], NullMetricsSink)
     trace_sink = captured["trace_sink"]
     trace_sink.record(TraceEvent(tick=1, name="perception", data={}))
     trace_sink.record(TraceEvent(tick=2, name="domain.meeting_vote_selected", data={}))
-    records = [json.loads(line) for line in stderr.getvalue().splitlines()]
+    records = _json_records(stderr.getvalue())
     assert [record["event"] for record in records] == ["domain.meeting_vote_selected"]
 
 
@@ -62,6 +77,9 @@ async def test_bridge_enables_metrics_when_requested(monkeypatch) -> None:
 
     captured: dict[str, object] = {}
     monkeypatch.setenv("CREWBORG_METRICS", "1")
+    monkeypatch.delenv("CREWBORG_TRACE_OUTPUTS", raising=False)
+    monkeypatch.delenv("COWORLD_PLAYER_ARTIFACT_UPLOAD_URL", raising=False)
+    monkeypatch.setattr(sys, "stderr", io.StringIO())
 
     def build(**kwargs):
         captured.update(kwargs)
@@ -73,7 +91,55 @@ async def test_bridge_enables_metrics_when_requested(monkeypatch) -> None:
     with pytest.raises(RuntimeError, match="connect failed"):
         await run_bridge("ws://unused", connect=failing_connect, build=build)
 
-    assert captured["metrics_sink"] is not None
+    assert not isinstance(captured["metrics_sink"], NullMetricsSink)
+
+
+async def test_trace_outputs_default_to_artifact_zip(tmp_path, monkeypatch) -> None:
+    """With the runner-provided upload URL present, the default output is the
+    player artifact zip: traces land in telemetry.jsonl inside the uploaded
+    zip, not on stderr (design §11; metta PLAYER_ARTIFACT contract)."""
+
+    destination = tmp_path / "policy_artifact_0.zip"
+    stderr = io.StringIO()
+    monkeypatch.delenv("CREWBORG_TRACE", raising=False)
+    monkeypatch.delenv("CREWBORG_METRICS", raising=False)
+    monkeypatch.delenv("CREWBORG_TRACE_OUTPUTS", raising=False)
+    monkeypatch.setenv("COWORLD_PLAYER_ARTIFACT_UPLOAD_URL", f"file://{destination}")
+    monkeypatch.setattr(sys, "stderr", stderr)
+
+    outputs = build_trace_outputs()
+    outputs.trace_sink.record(TraceEvent(tick=1, name="domain.vote_cast", data={}))
+    outputs.close()
+
+    assert not _json_records(stderr.getvalue())
+    with zipfile.ZipFile(destination) as archive:
+        names = set(archive.namelist())
+        assert "manifest.json" in names
+        telemetry = next(name for name in names if name != "manifest.json")
+        records = _json_records(archive.read(telemetry).decode("utf-8"))
+    assert [record["event"] for record in records] == ["domain.vote_cast"]
+
+
+async def test_trace_outputs_fall_back_to_stderr_without_upload_url(monkeypatch) -> None:
+    """Without an upload URL (bridge running outside a runner) the artifact
+    default must degrade to stderr JSONL instead of raising — a crash here
+    would happen before connect and fail the episode."""
+
+    stderr = io.StringIO()
+    monkeypatch.delenv("CREWBORG_TRACE", raising=False)
+    monkeypatch.delenv("CREWBORG_METRICS", raising=False)
+    monkeypatch.delenv("CREWBORG_TRACE_OUTPUTS", raising=False)
+    monkeypatch.delenv("COWORLD_PLAYER_ARTIFACT_UPLOAD_URL", raising=False)
+    monkeypatch.setattr(sys, "stderr", stderr)
+
+    outputs = build_trace_outputs()
+    outputs.trace_sink.record(TraceEvent(tick=1, name="domain.vote_cast", data={}))
+    outputs.close()
+
+    raw = stderr.getvalue()
+    assert "falling back" in raw
+    records = _json_records(raw)
+    assert [record["event"] for record in records] == ["domain.vote_cast"]
 
 
 async def test_bridge_runs_idle_loop_and_exits_cleanly() -> None:
