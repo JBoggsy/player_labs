@@ -19,13 +19,16 @@ is the one-screen answer to "where are we and why."
 
 ## Current objective
 
-Improve **crewborg** (the Python policy under optimization). Newest version is **v19**
-(`policy_version_id 358ec5fb-33f4-411e-b745-181ba932293d`), **submitted to the Crewrift
-league** 2026-06-10 (`sub_2d6d92bf`) as the champion candidate — it's the v17 brain plus
-the spawn-freeze fix below, behavior-identical otherwise.
+Improve **crewborg** (the Python policy under optimization). Submitted champion is **v19**
+(`358ec5fb…`, `sub_2d6d92bf`) = v17 brain + the spawn-freeze fix, behavior-identical.
+**Uncommitted-to-league behavior changes now sit on `main` but are NOT built/uploaded yet**
+(would be a v20): ground-truth tick everywhere + kill-CD 500 (see shipped below). Build +
+A/B v20-vs-v19 before any submit (kill-CD 500 is a real imposter-timing change).
 
-**Between directions:** the slow-start / tracing tangent is done (below). Awaiting the
-next direction — see the candidate threads at the bottom.
+**Between directions:** awaiting the next direction (candidate threads at the bottom).
+Parked, ready when wanted: the **role-rotation eval** (v19, 42 eps, imposter-vs-crewmate
+with opponents rotated — `/tmp/v19_imp`, `/tmp/v19_crew` were the *confounded* top_n run;
+the corrected manual-role-RR run completed but its readout hasn't been pulled/analyzed).
 
 ## Working lens — the score-anomaly filter
 
@@ -59,6 +62,14 @@ Daily-league round episodes (with inline scores) are queryable cheaply via
   log cap), with stderr fallback. New bridge latency metrics (`bridge.step_ms` /
   `loop_gap_ms` / `tick_drift`) + a per-tick `voting` actuation snapshot. Pull the zips with
   the `coworld-episode-artifacts` skill (`policy_artifact_{N}.zip`).
+- **Ground-truth tick (on `main`, not yet uploaded).** The game now streams its
+  authoritative tick as a `"tick <N>"` marker sprite (id 5016); `scene.server_tick()` parses
+  it and the bridge drives the SDK runtime from it (`runtime.tick = server_tick-1`), so
+  perception, `belief.last_tick`, and **all tracing/metrics** use the engine's true tick
+  (not the local frame counter); `tick_drift` is now ground-truth. Other new-game signals
+  (config display, who-reported) are *future* — not yet streamed.
+- **Kill-CD 500 (on `main`, not yet uploaded).** `DEFAULT_KILL_COOLDOWN_TICKS` 900→500 to
+  match the live game; imposter no longer idles on a phantom 900-tick cooldown pre-measure.
 
 ## Pinned — return to later
 
