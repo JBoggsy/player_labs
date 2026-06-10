@@ -171,7 +171,11 @@ live build on any mask mismatch (the re-bake signal). **In-container 250m: 29.2s
 tests pass.** Re-bake only when the league redeploys a changed map (capture via
 `CREWBORG_CAPTURE_WALKABILITY=1`). The earlier "bimodal" steady-state tail effect (~5 vs ~22ms)
 is real but secondary — deferred.
-**REMAINING:** v19 hosted probe to confirm tick-1 drops from ~13.7s in the real 250m environment.
+**CONFIRMED HOSTED (v19 `358ec5fb`, xreq_94340f39, 3 eps):** tick-1 `bridge.step_ms`
+**52–72ms** (was ~13,700ms in v18) — ~200× cut, spawn freeze gone, steady-state unchanged.
+The baked mask matched the deployed game (asset loaded, no fallback). **Slow-start: DONE.**
+Open follow-ups (deferred): the secondary "bimodal" steady-state step (~5 vs ~22ms tail),
+and the vote-actuation/cursor investigation (the original thread, instrument now in place).
 
 **TRACING CONFIRMED working** (v18 probe, 10 eps, stderr-fallback path): step_ms/loop_gap_ms/
 tick_drift 10/10, decision_snapshot 10/10, `voting` snapshot populated in exactly the 4/10

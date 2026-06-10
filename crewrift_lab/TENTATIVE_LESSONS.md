@@ -62,6 +62,19 @@ that get contradicted.
   json/parquet buffer in RAM (mind the 256Mi pod).
 - **Status:** candidate (promote to a build/ship practice once we've shipped it once)
 
+### Static derived data (nav graph, route polylines) is image-build work, not per-run work.
+- **Hits:** 1 (2026-06-10)
+- **Evidence:** crewborg rebuilt its nav graph + occupancy substrate (O(anchors^2)=1806-poly
+  A* sweep) on the FIRST TICK every game — pure functions of the one static map. Fine at full
+  CPU (~2s), but ~13.7s under the hosted 250m cap, freezing the agent at spawn while the
+  24Hz engine streamed ~330 frames ahead. Baking once offline into a vendored asset +
+  loading (with a mask-match validation + live-build fallback) cut tick-1 ~200x hosted
+  (13,700ms -> ~65ms), play byte-identical. General lesson: profile the FIRST tick under the
+  real CPU budget, and move any input-independent precompute to build time. Watch for lazy
+  one-time builds triggered by the first stream frame — they hide from steady-state metrics
+  AND from line-capped logs (the start is what gets truncated).
+- **Status:** candidate (promote toward best_practices — strong, generalizable)
+
 ### The `/jobs/{job}/policy-artifact` listing returns filenames, not slot ints — and the start-of-game is ONLY in the artifact.
 - **Hits:** 1 (2026-06-10)
 - **Evidence:** Listing returns `["policy_artifact_0.zip","policy_artifact_1.zip"]`; a naive
