@@ -1,0 +1,11 @@
+# Crewborg Version Log
+
+This log maps uploaded `crewborg` policy versions to the code and runtime
+configuration they carry. Older live versions existed before this repo-local log
+was started; reconcile them with `policy_lifecycle.py versions --name crewborg`
+if they become relevant.
+
+| Version | Policy version ID | Uploaded at (UTC) | Source | Runtime config | Notes |
+| --- | --- | --- | --- | --- | --- |
+| v17 | `bd97b769-57fc-4279-a0b0-fc628e056a2d` | 2026-06-10T00:26:39Z | `player_labs` worktree based on `02f31a1` with vote-confirmation persistence fix; image `players-crewborg:dev` built via `crewrift_lab/tools/build_player.sh crewborg` | `--run python --run -m --run crewrift.crewborg.coworld.policy_player`; `CREWBORG_TRACE_GROUPS=voting,decision`; `CREWBORG_TRACE_DECISION_FIELDS=phase,role,mode,intent,command` | Metrics disabled by omitting `CREWBORG_METRICS`. Local Gate-1 smoke passed against Crewrift `0.1.46`; 10-episode XP request `xreq_59140c47-b54e-451b-aaf9-60e327d77341` completed 10/10 with 0 failures. 100-episode rotated top-7 XP request `xreq_d59e5db8-fb98-4fef-83c3-574013bf1a1b` completed 100/100 with 0 failures; crewborg had 0 eligible missed votes and ranked 2nd by mean score in that batch. Submitted to Crewrift league as `sub_6778090c-e843-4cb1-8bb3-67f7a00853d0`; qualifying membership `lpm_1c79d40c-2383-472b-a311-a44de9263a8c`. |
+| v16 | `27d9f9cc-6e38-4b23-9e41-a2da981cd112` | 2026-06-09T23:25:02Z | `player_labs` `02f31a1`; image `players-crewborg:dev` built via `crewrift_lab/tools/build_player.sh crewborg` | `--run python --run -m --run crewrift.crewborg.coworld.policy_player`; `CREWBORG_TRACE_GROUPS=voting,action,decision`; `CREWBORG_TRACE_DECISION_FIELDS=phase,role,mode,intent,command`; `CREWBORG_METRICS=1` | Voting-audit upload. Local Gate-1 smoke passed against Crewrift `0.1.46` after adding the required `--run` override. |

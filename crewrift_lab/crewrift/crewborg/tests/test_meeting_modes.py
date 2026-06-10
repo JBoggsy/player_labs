@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from crewrift.crewborg.action import BTN_A, BTN_DOWN, resolve_action
 from crewrift.crewborg.modes import AttendMeetingMode, FleeMode, ReportBodyMode
 from crewrift.crewborg.perception.entities import VoteCandidate, VotingState
 from crewrift.crewborg.strategy.meeting import MeetingDecision, MeetingLLMResult
@@ -70,6 +71,23 @@ def test_attend_meeting_skips_when_no_one_is_suspicious_enough() -> None:
     assert vote.kind == "vote" and vote.target_color is None
 
 
+def test_attend_meeting_stays_idle_after_vote_confirmation() -> None:
+    mode = AttendMeetingMode()
+    belief = Belief(phase="Voting")
+    belief.voting = VotingState(skip_cursor_present=True)
+    action_state = ActionState()
+
+    chat = mode.decide(belief, action_state)
+    resolve_action(chat, belief, action_state)
+    vote = mode.decide(belief, action_state)
+    command = resolve_action(vote, belief, action_state)
+    assert command.held_mask == BTN_A and action_state.vote_confirmed
+
+    idle = mode.decide(belief, action_state)
+    resolve_action(idle, belief, action_state)  # intent change resets action_state.vote_confirmed
+    assert mode.decide(belief, action_state).kind == "idle"
+
+
 def test_attend_meeting_llm_sends_multiple_chats_after_new_chat_and_cooldown() -> None:
     client = _FakeMeetingClient(
         [
@@ -109,6 +127,43 @@ def test_attend_meeting_llm_can_submit_vote_early() -> None:
     vote = mode.decide(_meeting_belief(tick=0), ActionState())
     assert vote.kind == "vote"
     assert vote.target_color == "red"
+
+
+def test_attend_meeting_llm_submitted_vote_persists_until_confirmed() -> None:
+    client = _FakeMeetingClient([MeetingDecision(action="submit_vote", vote_target="red")])
+    mode = AttendMeetingMode(llm_client=client)
+    belief = _meeting_belief(tick=0)
+    action_state = ActionState()
+
+    vote = mode.decide(belief, action_state)
+    assert vote.kind == "vote" and vote.target_color == "red"
+    command = resolve_action(vote, belief, action_state)
+    assert command.held_mask == BTN_A and action_state.vote_confirmed
+
+    idle = mode.decide(belief, action_state)
+    resolve_action(idle, belief, action_state)
+    assert mode.decide(belief, action_state).kind == "idle"
+    assert len(client.calls) == 1
+
+
+def test_attend_meeting_llm_submitted_vote_keeps_driving_cursor_until_confirmed() -> None:
+    client = _FakeMeetingClient([MeetingDecision(action="submit_vote", vote_target="blue")])
+    mode = AttendMeetingMode(llm_client=client)
+    belief = _meeting_belief(tick=0)
+    belief.voting = belief.voting.model_copy(update={"self_marker_color": "green"})
+    action_state = ActionState()
+
+    vote = mode.decide(belief, action_state)
+    assert vote.kind == "vote" and vote.target_color == "blue"
+    command = resolve_action(vote, belief, action_state)
+    assert command.held_mask == BTN_DOWN and not action_state.vote_confirmed
+
+    belief.voting = belief.voting.model_copy(update={"cursor_slot": 1})
+    vote = mode.decide(belief, action_state)
+    assert vote.kind == "vote" and vote.target_color == "blue"
+    command = resolve_action(vote, belief, action_state)
+    assert command.held_mask == BTN_A and action_state.vote_confirmed
+    assert len(client.calls) == 1
 
 
 def test_attend_meeting_invalid_llm_decision_falls_back_to_canned_chat() -> None:
