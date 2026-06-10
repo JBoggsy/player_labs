@@ -59,6 +59,15 @@ that get contradicted.
   json/parquet buffer in RAM (mind the 256Mi pod).
 - **Status:** candidate (promote to a build/ship practice once we've shipped it once)
 
+### `docker pull` 403 from `public.ecr.aws` → `docker logout public.ecr.aws` first.
+- **Hits:** 1 (2026-06-10)
+- **Evidence:** `coworld download crewrift` failed pulling the game image with `403
+  Forbidden` from ECR Public. Cause: a stale cached ECR auth token (anonymous pulls
+  work; expired credentials poison them). `docker logout public.ecr.aws` fixed it
+  immediately. Also: transient `SerializationFailure ... conflict with recovery`
+  500s from the XP-request API are read-replica conflicts — just retry.
+- **Status:** candidate
+
 ### Daily-league *round* episodes are queryable (with scores inline) without downloading artifacts.
 - **Hits:** 1 (2026-06-10)
 - **Evidence:** `coworld episodes --round <round_id> --policy <name> --json` returns the
