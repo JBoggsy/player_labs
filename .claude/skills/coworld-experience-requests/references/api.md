@@ -81,7 +81,7 @@ yours, they're current league members):
 
 | field | meaning |
 | --- | --- |
-| `requester` | your policy: `{policy_version_id}` **or** `{player_id}` / `{player_name}` (caller-owned), plus `slot` (which seat it controls) |
+| `requester` | your policy: `{policy_version_id}` **or** `{player_id}` / `{player_name}` (caller-owned), plus `slot` (which seat it controls). **`slot` must be ≥ 0** (`Field(ge=0)`; the seat resolver also rejects `< 0`) — there is **no `slot=-1` auto-round-robin**; the only round-robin primitive is `rotate_seats`. |
 | `opponents[]` | opponent selectors resolved from **active runnable league memberships**: each `{policy_version_id}` **or** `{player_id}` / `{player_name}` |
 | `player_selection` | `top_n` (highest-ranked by recent mean reward) or `random`; how `top_n` auto-picks champions. Ignored if `top_n` unset |
 | `top_n` | auto-select this many opponents from the target league instead of (or in addition to) listing them |
@@ -99,7 +99,7 @@ yours, they're current league members):
 | field | meaning |
 | --- | --- |
 | `game_config_overrides` | shallow override of the resolved Coworld's game config — each key **replaces** that key in the game config, and the result is validated against the game's own schema. **Crewrift:** `{"slots": [{"role": "imposter"}, {"role": "crew"}, ...]}` forces per-slot roles. `slots` is an **array of objects** (`{"role": "crew"\|"imposter", "color"?, "token"?}`), **not** bare strings; supply the **full** array (the merge replaces the whole key), slot 0 = the requester. Full Crewrift schema: [`crewrift-gameplay.md` → Forcing roles](../../../../crewrift_lab/docs/crewrift-gameplay.md) |
-| `rotate_seats` | `true` rotates the requester across **every** seat round-robin over the episodes, instead of a fixed slot (cancels out seat bias) |
+| `rotate_seats` | `true` cyclically rotates the **whole seat-ordered roster** by `episode_index % player_count` each episode (`app_backend/v2/experience_requests.py`). The field's description says "rotates the requester," but in fact **every** player (requester *and* all opponents) visits every seat over `player_count` episodes — a *cyclic shift*, not an independent shuffle (relative order is preserved). Cancels per-seat bias. **It does NOT pin a role:** since Crewrift roles are fixed *by seat* (via `game_config_overrides.slots`), rotating the requester through all seats rotates it through all **roles** too — so you can't "force the requester's role *and* rotate" at once. |
 
 ### Volume & execution
 
@@ -178,8 +178,19 @@ auto-select for a list:
 POSTing (see the tool's `game_config_overrides` check), so a wrong shape fails locally
 with a clear message instead of as an opaque 400.
 
-**Cancel seat bias** — add `"rotate_seats": true` to rotate the requester through
-every seat. **Ad-hoc, no league** — use `"target": {"coworld_id": "cow_…"}`.
+**Cancel seat bias** — add `"rotate_seats": true` to cyclically rotate the whole
+roster through every seat (see the field note above — it rotates *everyone*, and
+won't pin a role). **Ad-hoc, no league** — use `"target": {"coworld_id": "cow_…"}`.
+
+**Round-robin opponents through roles while pinning the requester's role** — no single
+field does this (forcing roles by seat fixes opponent seating; `rotate_seats` un-pins
+the requester's role). Do it **manually**: use **explicit `opponents`** (fixed order →
+fixed seats: requester at its `slot`, opponents fill the rest in list order), then issue
+**one request per role-configuration**, cycling the imposter seat(s) across the opponent
+seats so each opponent takes the imposter role in some episodes. E.g. for "requester
+always imposter," run 7 configs with the *second* imposter at seat 1…7; for "requester
+always crew," cycle the two imposter seats over the opponents. (Don't rely on `top_n`
+for this — its rank-ordered seating can drift between requests; name the opponents.)
 **All-owned roster with fixed seats** — use `policy_version_ids` + `requester_slot`
 (+ `assignments`) instead of `requester`/`opponents`.
 
