@@ -38,8 +38,11 @@ TRACK_WINDOW_TICKS = 120
 TEAMMATE_CLAIM_RADIUS = 80
 
 # The kill cooldown's full length (ticks), used to estimate time-to-ready before we
-# have measured a real cooldown from the binary HUD (design §7.2). The game default.
-DEFAULT_KILL_COOLDOWN_TICKS = 900
+# have measured a real cooldown from the binary HUD (design §7.2). Matches the live
+# Crewrift default `killCooldownTicks = 500` (coworld-crewrift sim.nim); we still learn
+# the true value from the HUD once a cooldown runs to ready, but this is the pre-measure
+# assumption (previously 900, which over-estimated and idled the imposter too long).
+DEFAULT_KILL_COOLDOWN_TICKS = 500
 
 # Enter Search this many ticks before the kill comes off cooldown. Search finds
 # and follows a victim; Hunt only activates once the kill is ready and a victim is

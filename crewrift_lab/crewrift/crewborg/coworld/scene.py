@@ -20,6 +20,12 @@ import numpy as np
 from crewrift.crewborg.perception.decoder import apply_message
 from crewrift.crewborg.perception.tables import LayerDef, ObjectState, SpriteDef
 
+# The engine streams an invisible 1x1 sprite labeled ``"tick <N>"`` every frame
+# (game object/sprite id 5016; see coworld-crewrift global.nim addSpritePlayerTickMarker),
+# where N is the engine's authoritative tick. We match on the label prefix rather than
+# the id so the parse survives id-offset changes (the reference notsus player does the same).
+SERVER_TICK_LABEL_PREFIX = "tick "
+
 
 @dataclass
 class SceneState:
@@ -60,3 +66,24 @@ class SceneState:
 
         self.messages_applied += 1
         apply_message(self, message)
+
+    def server_tick(self) -> int:
+        """The engine's authoritative tick from the streamed tick-marker sprite.
+
+        Returns the value parsed from the ``"tick <N>"`` sprite label, or ``-1``
+        when the marker has not arrived yet (the first frames) so the bridge can
+        fall back to its local message counter. Scans the retained sprite table and
+        takes the max in case a stale definition lingers.
+        """
+
+        latest = -1
+        for sprite in self.sprites.values():
+            label = sprite.label
+            if label.startswith(SERVER_TICK_LABEL_PREFIX):
+                try:
+                    value = int(label[len(SERVER_TICK_LABEL_PREFIX):])
+                except ValueError:
+                    continue
+                if value > latest:
+                    latest = value
+        return latest

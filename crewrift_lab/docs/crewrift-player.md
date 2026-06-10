@@ -186,6 +186,11 @@ Read these by **label**:
 - `vote cursor` / `vote skip cursor` / `vote timer` / `vote self marker <color>` —
   the voting UI: where your selection cursor is, the skip option, time left, and a
   marker on your own locked-in choice.
+- `"tick <N>"` — an **invisible 1×1 marker sprite** (object/sprite id `5016`) re-sent
+  every frame, where `N` is the engine's **authoritative tick**. Parse the integer
+  after `"tick "` for ground-truth game time (don't trust a local message counter —
+  it lags whenever you fall behind the real-time stream). Added in the latest game
+  build (`global.nim` `addSpritePlayerTickMarker`).
 
 ### Phase / result text (interstitials)
 

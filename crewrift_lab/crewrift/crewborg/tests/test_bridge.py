@@ -275,19 +275,40 @@ async def test_bridge_sends_chat_packet() -> None:
     assert encode_chat("gg") in received
 
 
-async def test_bridge_emits_latency_metrics_to_artifact(tmp_path, monkeypatch) -> None:
-    """With metrics on, each tick must produce bridge.step_ms / loop_gap_ms /
-    tick_drift records in the artifact — the wall-clock fall-behind
-    instrumentation (the engine streams in real time; local tick numbers can't
-    show lag)."""
+async def test_scene_server_tick_parses_marker() -> None:
+    """SceneState reads the engine's authoritative tick from the ``"tick <N>"``
+    marker sprite (id 5016), and re-definitions update it; -1 before it arrives."""
 
-    destination = tmp_path / "policy_artifact_0.zip"
+    from crewrift.crewborg.coworld.scene import SceneState
+
+    scene = SceneState()
+    assert scene.server_tick() == -1
+    scene.apply(w.define_sprite(5016, 1, 1, "tick 4242"))
+    assert scene.server_tick() == 4242
+    scene.apply(w.define_sprite(5016, 1, 1, "tick 4243"))
+    assert scene.server_tick() == 4243
+
+
+def _latency_records(destination) -> dict[str, list[dict]]:
+    with zipfile.ZipFile(destination) as archive:
+        telemetry = next(name for name in archive.namelist() if name != "manifest.json")
+        records = _json_records(archive.read(telemetry).decode("utf-8"))
+    by_name: dict[str, list[dict]] = {}
+    for record in records:
+        if record.get("kind") == "metric":
+            by_name.setdefault(record["name"], []).append(record)
+    return by_name
+
+
+async def _run_bridge_with_tick_frames(destination, tick_values, monkeypatch) -> dict[str, list[dict]]:
     monkeypatch.setenv("CREWBORG_METRICS", "1")
     monkeypatch.delenv("CREWBORG_TRACE", raising=False)
     monkeypatch.delenv("CREWBORG_TRACE_OUTPUTS", raising=False)
     monkeypatch.setenv("COWORLD_PLAYER_ARTIFACT_UPLOAD_URL", f"file://{destination}")
 
     class FakeRuntime:
+        tick = 0
+
         def step(self, _observation) -> Command:
             return Command(held_mask=0)
 
@@ -295,8 +316,8 @@ async def test_bridge_emits_latency_metrics_to_artifact(tmp_path, monkeypatch) -
             pass
 
     async def handler(websocket) -> None:
-        for _ in range(3):
-            await websocket.send(w.clear_objects())
+        for value in tick_values:
+            await websocket.send(w.define_sprite(5016, 1, 1, f"tick {value}"))
         try:
             while True:
                 await asyncio.wait_for(websocket.recv(), timeout=0.25)
@@ -307,17 +328,30 @@ async def test_bridge_emits_latency_metrics_to_artifact(tmp_path, monkeypatch) -
         port = server.sockets[0].getsockname()[1]
         url = f"ws://localhost:{port}/player?slot=0&token="
         await asyncio.wait_for(run_bridge(url, build=lambda **_: FakeRuntime()), timeout=5.0)
+    return _latency_records(destination)
 
-    with zipfile.ZipFile(destination) as archive:
-        telemetry = next(name for name in archive.namelist() if name != "manifest.json")
-        records = _json_records(archive.read(telemetry).decode("utf-8"))
-    by_name: dict[str, list[dict]] = {}
-    for record in records:
-        if record.get("kind") == "metric":
-            by_name.setdefault(record["name"], []).append(record)
 
-    assert len(by_name["bridge.step_ms"]) == 3          # one per frame
-    assert len(by_name["bridge.loop_gap_ms"]) == 2      # gaps between 3 frames
+async def test_bridge_metrics_use_server_tick_not_local_counter(tmp_path, monkeypatch) -> None:
+    """All bridge metrics must be tagged with the engine's server tick (from the
+    marker sprite), not the local received-message counter; keeping up 1:1 means
+    tick_drift is 0."""
+
+    by_name = await _run_bridge_with_tick_frames(tmp_path / "a.zip", [100, 101, 102], monkeypatch)
+    assert len(by_name["bridge.step_ms"]) == 3
+    assert len(by_name["bridge.loop_gap_ms"]) == 2
     assert len(by_name["bridge.tick_drift"]) == 3
-    assert by_name["bridge.step_ms"][0]["tags"] == {"tick": 1}
-    assert by_name["bridge.step_ms"][-1]["tags"] == {"tick": 3}
+    # SERVER ticks (100..102), NOT the local frame counter (1..3).
+    assert by_name["bridge.step_ms"][0]["tags"] == {"tick": 100}
+    assert by_name["bridge.step_ms"][-1]["tags"] == {"tick": 102}
+    assert all(r["value"] == 0 for r in by_name["bridge.tick_drift"])
+
+
+async def test_bridge_tick_drift_grows_when_frames_skip(tmp_path, monkeypatch) -> None:
+    """When the engine's tick jumps faster than frames we process (we fell behind),
+    tick_drift grows by the number of skipped frames."""
+
+    # Server advances 100 -> 102 -> 103: between frames 1 and 2 the engine ran 2
+    # ticks while we processed 1, so from frame 2 on we are 1 frame behind.
+    by_name = await _run_bridge_with_tick_frames(tmp_path / "b.zip", [100, 102, 103], monkeypatch)
+    drift = [r["value"] for r in by_name["bridge.tick_drift"]]
+    assert drift == [0, 1, 1]

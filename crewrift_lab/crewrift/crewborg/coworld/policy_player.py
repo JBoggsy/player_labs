@@ -53,10 +53,13 @@ FALLBACK_TRACE_OUTPUTS = "jsonl@stderr"
 # The engine pushes one frame per game tick at ~24 Hz and does NOT wait for the
 # player (docs/crewrift-player.md). At the hosted 250m-CPU budget that gives
 # runtime.step() ~42 ms per tick; exceeding it makes frames queue and inputs
-# land late. The bridge latency metrics below exist to make that visible:
-# `scene.tick` is a local received-message counter, so falling behind is
-# invisible in tick numbers and must be measured in wall-clock.
-ENGINE_TICK_HZ = 24.0
+# land late.
+#
+# `scene.tick` is a local received-message counter; the engine also streams its
+# authoritative tick as a sprite (`scene.server_tick()`). We drive the SDK runtime
+# from the server tick so perception, belief, and ALL tracing/metrics carry the
+# engine's true tick — and `bridge.tick_drift` reports exactly how many frames we've
+# fallen behind (server tick minus frames we've processed), not a wall-clock estimate.
 
 
 def build_trace_outputs() -> TraceOutputs:
@@ -107,8 +110,8 @@ async def run_bridge(
         metrics = outputs.metrics_sink
         last_sent_mask: int | None = None
         walkability_checked = False
-        first_message_wall: float | None = None
         previous_arrival: float | None = None
+        tick_offset: int | None = None  # (server_tick - scene.tick) when the marker first appears
 
         # Guarantee runtime cleanup (the strategy runner may own background
         # threads/tasks) even if connect, a step, or a shutdown-race send raises.
@@ -119,22 +122,31 @@ async def run_bridge(
                         if isinstance(message, str):
                             # The /player stream is binary Sprite-v1; ignore stray text.
                             continue
-                        # Latency metrics (no-ops unless CREWBORG_METRICS is on).
-                        # loop_gap_ms: wall-clock between consecutive frame
-                        # arrivals — sustained gaps *below* the ~42 ms frame
-                        # interval mean queued frames are being drained, i.e.
-                        # we had fallen behind the engine.
+                        # loop_gap_ms: wall-clock between consecutive frame arrivals
+                        # — sustained gaps *below* the ~42 ms frame interval mean queued
+                        # frames are being drained, i.e. we had fallen behind the engine.
+                        # (Measured here; emitted below, tagged with the server tick.)
                         arrival = time.perf_counter()
-                        if first_message_wall is None:
-                            first_message_wall = arrival
-                        if previous_arrival is not None:
-                            metrics.histogram(
-                                "bridge.loop_gap_ms",
-                                round((arrival - previous_arrival) * 1000.0, 3),
-                                tags={"tick": scene.tick + 1},
-                            )
+                        loop_gap_ms = (
+                            round((arrival - previous_arrival) * 1000.0, 3)
+                            if previous_arrival is not None
+                            else None
+                        )
                         scene.apply(message)
                         scene.tick += 1
+
+                        # Ground-truth tick: prefer the engine's streamed tick-marker
+                        # over our local frame counter, and drive the SDK runtime from it
+                        # so perception, belief.last_tick, and ALL tracing/metrics carry
+                        # the engine's true tick. step() does `self.tick += 1`, so seed it
+                        # one below the server tick to land exactly on it. Before the
+                        # marker arrives (first frames) fall back to the local counter.
+                        server_tick = scene.server_tick()
+                        tick = server_tick if server_tick >= 0 else scene.tick
+                        if server_tick >= 0:
+                            runtime.tick = server_tick - 1
+                            if tick_offset is None:
+                                tick_offset = server_tick - scene.tick
 
                         # Validate the baked map against the streamed walkability mask
                         # once it arrives (design §6); a size mismatch means a different
@@ -160,24 +172,26 @@ async def run_bridge(
                             if _capture_walkability_enabled():
                                 _emit_walkability_capture(scene.walkability)
 
-                        # step_ms: the per-tick compute budget check (~42 ms at
-                        # 24 Hz). tick_drift: ticks the engine has likely run
-                        # ahead of us (elapsed wall-clock x 24 Hz minus frames
-                        # received) — growth over a game means we're losing the
-                        # real-time race and inputs are landing late.
+                        # step_ms: the per-tick compute budget check (~42 ms at 24 Hz).
                         step_start = time.perf_counter()
-                        command = runtime.step(Observation(scene=scene, tick=scene.tick))
+                        command = runtime.step(Observation(scene=scene, tick=tick))
                         step_end = time.perf_counter()
+                        if loop_gap_ms is not None:
+                            metrics.histogram("bridge.loop_gap_ms", loop_gap_ms, tags={"tick": tick})
                         metrics.histogram(
                             "bridge.step_ms",
                             round((step_end - step_start) * 1000.0, 3),
-                            tags={"tick": scene.tick},
+                            tags={"tick": tick},
                         )
-                        metrics.gauge(
-                            "bridge.tick_drift",
-                            round((step_end - first_message_wall) * ENGINE_TICK_HZ - scene.tick, 2),
-                            tags={"tick": scene.tick},
-                        )
+                        # tick_drift: frames we've fallen behind the engine since the
+                        # marker first appeared (ground truth: server tick minus frames
+                        # processed). 0 means we're keeping up; growth means falling behind.
+                        if server_tick >= 0:
+                            metrics.gauge(
+                                "bridge.tick_drift",
+                                server_tick - scene.tick - tick_offset,
+                                tags={"tick": tick},
+                            )
 
                         # Send only when the held mask changes (design §3.3). The first
                         # tick sends the neutral mask once, establishing "all released".

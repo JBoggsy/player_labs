@@ -18,6 +18,16 @@ that get contradicted.
 
 ---
 
+### The SDK runtime keeps its OWN tick counter; `observation.tick` is ignored — override `runtime.tick` to inject ground truth.
+- **Hits:** 1 (2026-06-10)
+- **Evidence:** `players.player_sdk` `AgentRuntime.step` does `self.tick += 1; self.emit.tick = self.tick;
+  perceive(observation, self.tick)` — so perception, `belief.last_tick`, mode/directive timing, AND every
+  trace/metric tick all flow from the runtime's internal counter, and the `observation.tick` the bridge passes
+  is dead. To thread the engine's ground-truth tick (Crewrift's `"tick <N>"` marker sprite) through everything
+  in ONE place, set `runtime.tick = server_tick - 1` before `step()` (it increments to the server tick).
+  Changing only crewborg's `perceive` to read `observation.tick` would fix belief but NOT tracing.
+- **Status:** candidate
+
 ### One latency/init stall can masquerade as several unrelated-looking gameplay bugs.
 - **Hits:** 1 (2026-06-10)
 - **Evidence:** crewborg's ~14s first-tick nav/substrate build (under the 250m cap) was the

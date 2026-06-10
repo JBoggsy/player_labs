@@ -44,6 +44,12 @@ One JSON object per line, two shapes (distinguished by `kind`):
 `act_command`, `snapshot_submitted`) are SDK-framework events; game-level ones are
 prefixed `domain.`.
 
+**`tick` is the engine's ground-truth tick** — crewborg reads the streamed
+`"tick <N>"` marker sprite and drives the SDK runtime from it, so every trace/metric
+`tick` (and `belief.last_tick`) is the **server** tick, directly alignable to the
+replay's `expand_replay` timeline. (Only the first few frames, before the marker
+arrives, fall back to the local message counter.)
+
 The final line of a hosted log is plain text (`game over…`), not JSON — always
 prefilter with **`grep '^{'`** (it also drops any Kubernetes collector-error lines so
 `jq` never chokes).

@@ -259,7 +259,7 @@ via `defaultGameConfig` at `sim:1016`):
 | --- | --- | --- | --- | --- | --- | --- |
 | `TargetFps` | 24 | `sim:49` | | task complete | +1 | `sim:95`, awarded `sim:2231` |
 | `KillRange` | 20 px (dist² ≤ 400) | `sim:56` | | kill | +10 | `sim:96`, `sim:2502` |
-| `KillCooldownTicks` | 900 (37.5 s) | `sim:57` | | win (each winner) | +100 | `sim:97` |
+| `KillCooldownTicks` | 500 (~20.8 s) | `sim:50` | | win (each winner) | +100 | `sim:97` |
 | `VentRange` | 16 px (dist² ≤ 256) | `sim:61` | | vote timeout (per non-voter) | −10 | `sim:98`, `sim:3082` |
 | `ReportRange` | 20 px | `sim:65` | | stuck (idle crewmate) | −1 | `sim:99` |
 | `TaskCompleteTicks` | 72 (3 s hold-A) | `sim:59` | | map size | 1235×659 | `sim:25-26` |

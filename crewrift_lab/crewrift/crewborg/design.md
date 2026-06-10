@@ -930,14 +930,22 @@ Countable outcomes/attempts also emit a matching `domain.*` metrics counter when
 a metrics sink is enabled. Hosted Coworld runs leave metrics off by default; set
 `CREWBORG_METRICS=1` to include counters/gauges without enabling full debug, or
 `CREWBORG_TRACE=debug` to enable both metrics and the full debug trace.
-With metrics on, the **bridge** also emits per-tick latency instrumentation
-(the engine streams in real time at ~24 Hz and `scene.tick` is a local counter,
-so falling behind is only visible in wall-clock): `bridge.step_ms` (histogram —
-`runtime.step()` wall-time vs the ~42 ms/tick budget), `bridge.loop_gap_ms`
-(histogram — wall-clock between frame arrivals; sustained sub-42 ms gaps mean a
-queued-frame backlog is draining), and `bridge.tick_drift` (gauge — estimated
-engine ticks we're behind, `elapsed×24 − local tick`; growth means losing the
-real-time race). Each sample is tagged with the local tick. The per-tick
+**Ground-truth tick.** The engine streams its authoritative tick as an invisible
+`"tick <N>"` marker sprite (id 5016; `scene.server_tick()`). The bridge drives the
+SDK runtime from it (`runtime.tick = server_tick − 1` before `step()`), so
+perception, `belief.last_tick`, mode/directive timing, **and every trace event /
+metric `tick`** carry the engine's true tick — not the local received-message
+counter (`scene.tick`), which silently lags when we fall behind. (Before the marker
+arrives on the first frames, it falls back to the local counter.) **All tracing is
+therefore aligned to replay tick numbers.**
+
+With metrics on, the **bridge** also emits per-tick latency instrumentation:
+`bridge.step_ms` (histogram — `runtime.step()` wall-time vs the ~42 ms/tick budget),
+`bridge.loop_gap_ms` (histogram — wall-clock between frame arrivals; sustained
+sub-42 ms gaps mean a queued-frame backlog is draining), and `bridge.tick_drift`
+(gauge — **ground-truth** frames we've fallen behind: `server_tick − scene.tick`
+relative to their offset when the marker first appeared; `0` = keeping up, growth =
+falling behind). Each sample is tagged with the **server** tick. The per-tick
 `decision_snapshot` carries a `voting` section during meetings (`cursor_slot`,
 `cursor_on_skip`, `candidates`, `vote_confirmed`) — the action→effect record
 for vote-actuation forensics.
@@ -997,7 +1005,7 @@ structural, and each still awaits tuning against a live server.
 | Pretend fake-task hold | one task-time (`TASK_TICKS = 72`) held at the station, then re-dispatch |
 | Pretend room targeting | room score = expected crew density minus teammate-imposter pressure (`TEAMMATE_ROOM_PENALTY = 3.0`); choose a real task station in the selected room; keep a chosen room for `ROOM_TARGET_MIN_TICKS = 10000` unless arriving or being preempted |
 | Kill isolation bar | clearance `BASE_ISOLATION_RADIUS = 48` px and witness window `WITNESS_WINDOW_TICKS = 72`, both relaxed to zero by urgency `URGENCY_FULL_TICKS = 240` |
-| Search lead | enter Search `SEARCH_LEAD_TICKS = 100` before the kill is ready. Time-to-ready is reconstructed from the binary HUD: a learned `kill_cooldown_estimate` (or `DEFAULT_KILL_COOLDOWN_TICKS = 900` until measured) from the tracked cooldown start |
+| Search lead | enter Search `SEARCH_LEAD_TICKS = 100` before the kill is ready. Time-to-ready is reconstructed from the binary HUD: a learned `kill_cooldown_estimate` (or `DEFAULT_KILL_COOLDOWN_TICKS = 500`, matching the live game's `killCooldownTicks`, until measured) from the tracked cooldown start |
 | Hunt victim tracking | Hunt requires a visible victim; Search may follow a committed victim seen within `TRACK_WINDOW_TICKS = 120`; trajectory lead is capped at `MAX_LEAD_TICKS = 24` (velocity from sightings ≤ `VELOCITY_MAX_DT = 4` apart, `AGENT_SPEED_PX = 3`) |
 | Hunt teammate claim | prefer an unclaimed victim when a teammate-imposter seen within `TRACK_WINDOW_TICKS` is closer to another victim inside `TEAMMATE_CLAIM_RADIUS = 80` px |
 
