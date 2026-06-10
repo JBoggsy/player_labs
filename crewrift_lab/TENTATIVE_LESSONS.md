@@ -62,6 +62,16 @@ that get contradicted.
   json/parquet buffer in RAM (mind the 256Mi pod).
 - **Status:** candidate (promote to a build/ship practice once we've shipped it once)
 
+### The `/jobs/{job}/policy-artifact` listing returns filenames, not slot ints — and the start-of-game is ONLY in the artifact.
+- **Hits:** 1 (2026-06-10)
+- **Evidence:** Listing returns `["policy_artifact_0.zip","policy_artifact_1.zip"]`; a naive
+  `int(s)` parse drops everything (looked like "no artifacts"). Bigger lesson: the hosted
+  stderr policy log is capped at 10k lines and keeps the **tail**, so tick 1 is gone — but the
+  artifact zip is the **whole game**. crewborg's slow-start (a ~14s first-tick init) was
+  invisible in logs and obvious in the artifact on the first look. Always prefer the artifact
+  for anything time-series, especially the start. (Verified live after metta #15409.)
+- **Status:** candidate
+
 ### `docker pull` 403 from `public.ecr.aws` → `docker logout public.ecr.aws` first.
 - **Hits:** 1 (2026-06-10)
 - **Evidence:** `coworld download crewrift` failed pulling the game image with `403

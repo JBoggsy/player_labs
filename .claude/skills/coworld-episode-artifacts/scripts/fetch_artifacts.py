@@ -327,6 +327,22 @@ def discover_by_episode(client: Client, episode_ids: list[str]) -> list[EpisodeR
 # Per-episode artifact download (keyed off job_id)
 # --------------------------------------------------------------------------- #
 
+def _artifact_slot_index(entry: object) -> int | None:
+    """Slot index from a policy-artifact listing entry.
+
+    The route returns filenames like ``policy_artifact_0.zip``; tolerate a bare
+    int or numeric string too in case the shape changes.
+    """
+    if isinstance(entry, int):
+        return entry
+    if isinstance(entry, str):
+        import re
+        m = re.search(r"(\d+)", entry)
+        if m:
+            return int(m.group(1))
+    return None
+
+
 def _write_replay(content: bytes, out_dir: Path) -> None:
     """Write the raw replay blob plus its decompressed form.
 
@@ -437,14 +453,23 @@ def fetch_episode(
     # 5. Per-player artifact zips (policy-scoped: only slots we own come back).
     # Players may upload one zip of structured telemetry/debug data per slot
     # (e.g. crewborg's trace zip) — separate from the stderr policy logs.
+    # The listing is filenames (`["policy_artifact_0.zip", ...]`), not bare
+    # slot ints; the download route is keyed by the slot index parsed from them.
     if want_logs:
         listing = client.get_text_or_none(f"/jobs/{job}/policy-artifact")
         slots: list[int] = []
         if listing is not None:
             try:
-                slots = [int(s) for s in json.loads(listing)]
-            except (json.JSONDecodeError, TypeError, ValueError):
+                entries = json.loads(listing)
+            except json.JSONDecodeError:
+                entries = []
                 summary["errors"].append(f"unparseable policy-artifact listing: {listing[:80]}")
+            for entry in entries:
+                idx = _artifact_slot_index(entry)
+                if idx is None:
+                    summary["errors"].append(f"unrecognized policy-artifact entry: {entry!r}")
+                    continue
+                slots.append(idx)
         for idx in slots:
             content = client.get_bytes_or_none(f"/jobs/{job}/policy-artifact/{idx}")
             if content is None:

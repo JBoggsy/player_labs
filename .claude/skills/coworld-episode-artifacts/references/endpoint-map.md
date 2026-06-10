@@ -40,7 +40,7 @@ for both a Crewrift league episode and an amongthem experience-request episode):
 | `GET /jobs/{job_id}/artifacts/error_info` | `error_info.json` — **404 when absent** (valid type; present only on failure) |
 | `GET /jobs/{job_id}/policy-logs` | JSON list of filenames `["policy_agent_0.log", ...]` |
 | `GET /jobs/{job_id}/policy-logs/{agent_idx}` | one agent's stderr trace |
-| `GET /jobs/{job_id}/policy-artifact` | JSON list of slots that uploaded a player artifact zip |
+| `GET /jobs/{job_id}/policy-artifact` | JSON list of **filenames** (`["policy_artifact_0.zip", ...]`), one per slot that uploaded — *not* bare slot ints; parse the index out |
 | `GET /jobs/{job_id}/policy-artifact/{agent_idx}` | one slot's `policy_artifact_{idx}.zip` (player-uploaded telemetry/debug bundle; **policy-scoped** — only slots you own) |
 
 The replay decompresses (zlib) to the game's binary replay (e.g. magic
@@ -96,8 +96,9 @@ pass, use this skill's `fetch_artifacts.py` instead.
   (`/jobs/{job_id}/policy-artifact[/{agent_idx}]`) — players may upload one
   telemetry/debug zip per slot to a runner-provided
   `COWORLD_PLAYER_ARTIFACT_UPLOAD_URL` (metta #15290; player-side support in the
-  players SDK's `TraceOutputs`). Routes are from the metta contract docs
-  (`docs/artifacts/PLAYER_ARTIFACT.md`); not yet verified against a live upload.
+  players SDK's `TraceOutputs`). **Verified live 2026-06-10** against crewborg v18
+  hosted episodes (after metta #15409 fixed the runner-image build so the upload
+  actually ships). Note the listing returns **filenames**, not slot ints.
 
 - **2026-06**: `/v2/episode-requests*` ↔ `/v2/experience-request*` churn; the
   `/v2/experience-request-episodes` route was removed.

@@ -133,9 +133,62 @@ upload URL is absent (pre-connect crash would −100); `trace.py` trimmed to sel
 manifest+telemetry.jsonl via file:// URL; warning+stderr without). **Also fixed en route:**
 `PLAYERS_SDK_REF=main` was a Docker layer-cache trap (stale SDK in "fresh" builds) —
 build_player.sh now resolves `main`→uv.lock commit.
-**REMAINING:** hosted-deploy probe — upload as new version, run a tiny XP request, confirm
-`GET /jobs/{job}/policy-artifact` returns crewborg's zip (runner code is on metta main;
-deploy status unverified).
+**PROBE DONE (v18 `bd309093`, xreq_e82cb8d6, 10/10 ran):** artifact pipeline **blocked on
+hosted deploy** — runner did NOT set `COWORLD_PLAYER_ARTIFACT_UPLOAD_URL` (slot-0 trace
+landed on stderr; `/jobs/{job}/policy-artifact` = `[]`), so crewborg fell back to stderr
+and hit the **10k-line cap, truncating the START** (log begins ~tick 2512). #15290 is on
+metta `main` but not deployed to the league cluster yet. Local client (PyPI coworld
+**0.1.20**, the latest published — no newer) also lacks the local-runner URL injection.
+
+**Latency prelim (surviving tail, real 250m cap):** `step_ms` p50 1.3 / p99 8.4 / max 10ms
+(<< 42ms budget); `loop_gap_ms` ~41.7ms (tracks 24Hz, no backlog); `tick_drift` flat/neg
+(not falling behind). → steady-state **argues against the Python-latency hypothesis**, BUT
+the **slow-start ticks were truncated** — the actual open question. Need the uncapped trace
+(artifact, once deployed) or a throttled-local artifact run, or a metrics-lean re-upload
+that fits the start under the cap.
+
+**ARTIFACT PIPELINE NOW LIVE (metta #15409, 2026-06-10):** the per-player artifact zip
+upload ships hosted — verified end-to-end with v18 (xreq_ff0f6dfe, 3 eps): each job serves
+`policy_artifact_{0,1}.zip` via `/jobs/{job}/policy-artifact[/{idx}]`. (Our `fetch_artifacts.py`
+had a bug — treated the listing as slot ints, but it returns *filenames* `policy_artifact_N.zip`;
+fixed. endpoint-map updated + marked verified.) The artifact is the **full untruncated game**
+(no 10k-line cap), which is what cracked the latency question below.
+
+**SLOW-START ROOT CAUSE FOUND — it's a ~13.7s first-tick init stall.** The untruncated trace
+shows `bridge.step_ms` at **tick 1 ≈ 13,700 ms** (consistent: 13658/13738/13769 across 3 eps),
+then ~1ms every tick after. So `runtime.step()` does a ~14s one-time init on the first tick
+under the 250m CPU cap (map-bake / nav-graph build, lazy on first perception — NOT in
+`build_runtime`). At 24 Hz the engine streams ~330 frames into the buffer during that stall →
+crewborg is frozen at spawn ~14s while everyone moves, then drains a stale backlog. This is
+exactly the human-observed "slow to leave start." **Steady-state (ticks 2+) is healthy**
+(~1–5ms, occasional ~20–50ms; the earlier "bimodal" tail effect is real but secondary).
+**Fix direction:** precompute the nav graph at image-build (load, don't compute) or do the
+init during the lobby/RoleReveal idle window without blocking frames. Localize *where* the 14s
+goes next.
+
+**TRACING CONFIRMED working** (v18 probe, 10 eps, stderr-fallback path): step_ms/loop_gap_ms/
+tick_drift 10/10, decision_snapshot 10/10, `voting` snapshot populated in exactly the 4/10
+that reached a meeting (null otherwise — correct), all 10 reached GameOver (clean, no crash),
+JSON clean (1 benign docker-platform warning line/log).
+
+**LATENCY FINDINGS (surviving tail only, real 250m cap):**
+- Steady-state **healthy**: loop_gap p50 41.2ms (tracks 24 Hz), tick_drift stable-negative
+  (NOT falling behind), one 60ms loop_gap outlier (~1.5-frame stall).
+- **BUT step_ms is bimodal: ~half the games run ~5× heavier (p99 ≈22ms, max ≈28ms — half the
+  42ms budget) vs ≈5ms.** NOT explained by role/mode/meeting/game-kills (3.5 kills both
+  groups). `edada76d` (≈5ms) vs `3e6449d3` (≈22ms) are near-identical (alive crewmate,
+  all-"normal", no meeting, 8 tasks) → data-dependent cost inside `runtime.step()`'s normal
+  path, likely **nav route-planning geometry or perception** (couldn't confirm — `nav.route_len`/
+  `visible_players` were trimmed from v18's decision fields).
+- **START still truncated** (earliest surviving tick 756) → the original slow-start symptom
+  remains unseen.
+
+**REMAINING / NEXT (proposed, on hold):** one v19 upload that both (a) localizes the bimodal
+cost — sub-step timing (perception/strategy/action wall-times) or just re-include
+`nav,visible_players` decision fields — and (b) sees the start — metrics-lean trace (drop
+per-tick decision_snapshot) so the whole game fits under the 10k cap. Or wait for the hosted
+#15290 artifact deploy (uncapped). Dep decision (metta for coworld?): **hold — keep PyPI
+default**, see session notes.
 
 **Return point after this:** build the 3 latency metrics (step.duration_ms,
 loop_gap/tick_drift, action→effect fields) — now emitted via the artifact path — and read
