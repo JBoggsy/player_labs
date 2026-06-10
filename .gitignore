@@ -12,6 +12,7 @@ results/
 replays/
 episode_data/
 analysis/
+coworld/
 *.bitreplay
 *.replay.json.z
 *.sqlite

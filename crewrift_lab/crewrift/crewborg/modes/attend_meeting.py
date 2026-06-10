@@ -49,6 +49,8 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self._last_cooldown_prompt_chat_tick: int | None = None
         self._deadline_prompted = False
         self._tentative_vote: str | None = None
+        self._active_vote_target: str | None = None
+        self._active_vote_reason: str = ""
         self._vote_submitted = False
 
     def is_legal(self, belief: Belief) -> bool:
@@ -58,7 +60,12 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self._reset_for_meeting_if_needed(belief)
         if action_state.vote_confirmed:
             self._vote_submitted = True
+            self._active_vote_target = None
+            self._active_vote_reason = ""
+        if self._vote_submitted:
             return Intent(kind="idle", reason="vote already confirmed")
+        if self._active_vote_target is not None:
+            return self._vote_intent(self._active_vote_target, reason=self._active_vote_reason)
 
         if not self._llm_client.enabled:
             return self._decide_deterministic(belief, trace_disabled=True)
@@ -223,8 +230,12 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
 
     def _submit_vote_intent(self, belief: Belief, *, reason: str) -> Intent:
         vote_target = self._resolved_vote_target(belief)
-        self._vote_submitted = True
+        self._active_vote_target = vote_target
+        self._active_vote_reason = reason
         self.emit.event("meeting_vote_selected", {"target": vote_target, "reason": reason})
+        return self._vote_intent(vote_target, reason=reason)
+
+    def _vote_intent(self, vote_target: str, *, reason: str) -> Intent:
         if vote_target == VOTE_SKIP:
             return Intent(kind="vote", reason=reason)
         return Intent(kind="vote", target_color=vote_target, reason=reason)
@@ -253,6 +264,8 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self._last_cooldown_prompt_chat_tick = None
         self._deadline_prompted = False
         self._tentative_vote = None
+        self._active_vote_target = None
+        self._active_vote_reason = ""
         self._vote_submitted = False
 
     def _external_chat_signature(self, belief: Belief) -> tuple[tuple[int, str | None, str], ...]:
