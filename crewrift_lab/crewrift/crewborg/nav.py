@@ -1,7 +1,10 @@
 """Navigation graph + route planning (design §6, §9).
 
-Built **once per episode** from the decoded pixel walkability mask and the baked
-static map. Crewrift collides the player as a **1×1 point** (``sim.nim``
+Built from the decoded pixel walkability mask and the baked static map. The build
+is heavy (a pixel flood + per-pixel node/edge construction), so at runtime crewborg
+normally **loads it from the offline bake** (:mod:`.navbake`, baked by
+``tools/nav_bake.py``) and only calls ``build_nav_graph`` live as a fallback when no
+matching bake is present. Crewrift collides the player as a **1×1 point** (``sim.nim``
 ``CollisionW=CollisionH=1``), so *every walkable pixel is a legal agent position*.
 The grid is therefore coarsened only to keep A* fast on the full ~1235×659 map;
 correctness is enforced at **pixel resolution**, not at the coarse approximation:

@@ -433,8 +433,9 @@ the ~40-line parser to Python. Parse it **at container startup** into belief's m
 section (never per-tick — the map is static for an episode).
 
 **Walkability & validation.** The walkability grid comes from the stream's
-`walkability map` alpha (decoded once); the nav graph is built over it (`nav.py`,
-once per episode). Because Crewrift collides the player as a **1×1 point**
+`walkability map` alpha (decoded once); the nav graph is built over it (`nav.py`) —
+normally **loaded from the offline bake** (see "Offline nav bake" below), built live
+only as a fallback. Because Crewrift collides the player as a **1×1 point**
 (`sim.nim` `CollisionW=CollisionH=1`), every walkable pixel is a legal position, so
 the graph is coarsened (8px cells) only for A* speed while **correctness is
 enforced at pixel resolution**:
