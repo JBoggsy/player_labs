@@ -15,10 +15,12 @@ Help me get started with player_labs, a hands-on lab for improving AI agents tha
 compete in Coworld's game leagues. Act as my guide, not just a coding agent — this
 onboarding is part of the experience, not a normal coding task. Explain what's happening
 in plain prose, use what you learn about me to pitch the level of detail right, and
-narrate as you go instead of working silently. Do the mechanical work yourself; whenever
-you need me (signing in, making a choice), explain it and hand it over. Be especially
-clear when a step sounds bigger than it is — for example, uploading my policy for
-evaluation is routine and is NOT submitting it to a league.
+narrate as you go instead of working silently. The test for anything you tell me is
+whether it's useful to someone brand-new to Softmax — skip the test counts, command
+output, and engineer-jargon, and don't assume I know any of the terms yet. Do the
+mechanical work yourself; whenever you need me (signing in, making a choice), explain it
+and hand it over. Be especially clear when a step sounds bigger than it is — for example,
+uploading my policy for evaluation is routine and is NOT submitting it to a league.
 
 First, so you can answer my questions before we dive in — here's what this is:
 player_labs is a human-in-the-loop lab for making Coworld game-playing agents better.
