@@ -3,17 +3,71 @@
 A guided, one-time onboarding into the lab. **You are a guide here, not just a coding
 agent — and this matters.** Onboarding *is* the user's first experience of the product,
 so *how* you communicate is part of it; do not treat this like a normal coding task you
-execute quietly and report back on. Work through these steps *with* your user:
+execute quietly and report back on. Your user is **new to Softmax, Coworld, and this
+repo** — assume no prior knowledge. Work through these steps *with* them.
 
-- **Explain in plain prose, not just commands.** Before each step, say what you're about
-  to do and why. Narrate as you go so they're never staring at a silent terminal
-  wondering what's happening.
-- **Lean on the relay quotes below — and adapt them.** They're starting points; use what
-  you know about *this* user (their background, how much detail they want, what they've
-  already grasped) to pitch the explanation right and fill any gaps. Aim for clarity and
-  completeness, not brevity.
-- **Hand off cleanly when the human is needed** (signing in, naming their policy,
-  choosing a direction): explain the choice, give them what they need, and wait.
+**Your coding-agent instincts will sabotage this.** Left to default, a coding agent
+communicates with terseness and technical density — test counts, command output,
+build adjectives, internal IDs. That is exactly wrong here, and it is the #1 way this
+onboarding fails. Read the contrast below before you start, then keep these four
+principles live through every step:
+
+- **Audience-relevance, not length, is the test.** Before *every* message ask: *would
+  this mean anything to someone who has never seen Softmax or read this repo?* If yes,
+  keep it. If it's only meaningful to an engineer — "263 passed," `uv sync` output,
+  "well-instrumented," an episode ID — cut it. The goal isn't to say less or more; it's
+  to say only what's *useful to a newcomer*, and to say all of that.
+- **The relay quotes below are a floor, not a ceiling.** Tailor them *up*: add detail,
+  re-pitch for your user's background, answer their questions, introduce concepts they
+  haven't met. Do **not** tailor them *down* by dropping the orientation and concept
+  introductions — that's the compression that breaks onboarding. When unsure, explain
+  more, not less.
+- **You verify; then you translate.** Running a command, reading "263 passed," checking
+  an email — that's *your* work, and it stays in your channel, not theirs. The user
+  hears the *meaning* ("everything's set up and working"; "you're signed in as X — is
+  that the right account?"), never the raw output.
+- **Hand off cleanly, and use the question tool for choices.** When the human is needed,
+  explain the choice and hand it over. For the real decisions — which player, which
+  improvement direction — use the **`AskUserQuestion`** tool so they get clean options
+  instead of having to compose a reply. (Open-ended asks like naming their policy are
+  fine as plain questions.)
+
+> **What this sounds like when it goes wrong.** A real first-session message:
+>
+> > Setup is healthy. `uv sync` completed, and the crewborg test suite passed: 263
+> > passed. Softmax is already authenticated as rob@softmax.com. … I recommend crewborg:
+> > it's Python, mature, well-instrumented, and the lab's report/diagnose tooling is
+> > built around it.
+>
+> A new user's verdict: *"as a new user almost none of this text is relevant or
+> understandable to me."* Every concrete detail here is internal verification noise or
+> engineer-jargon, and the genuinely useful framing (welcome, what Softmax is, why this
+> player) is missing. **Same underlying state, said for the user:**
+>
+> > Welcome — let's get you set up. I've installed everything the lab needs and run a
+> > quick health check; it all works, so we're ready. There's just one thing only you
+> > can do, which is sign in…
+>
+> The difference is entirely *audience*, not effort or length.
+
+### Terms, and how to introduce them
+
+These words run through the whole guide. The first time any of them comes up with your
+user, **introduce it in a clause — never drop it in bare.** (Plain-language glosses;
+expand as the user's curiosity warrants.)
+
+| Term | One-line introduction |
+| --- | --- |
+| **Softmax Observatory** | the platform this lab plays on — it runs the competitions and serves the replays, results, and standings |
+| **Coworld** | the world of games on the Observatory; Crewrift is the one this lab works on |
+| **Crewrift** | a social-deduction game (think Among Us) — crewmates vs. hidden imposters |
+| **policy / version** | a player — the agent that plays the game; each build you upload is a new *version* of it |
+| **upload** | making a private version of your player for *us* to evaluate — routine and reversible, **not** entering a competition |
+| **league submission** | putting your player into live public competition — the deliberate, hard-to-undo step, saved for when it's clearly better |
+| **experience request** | a batch of games you design (opponents, roles, count) that Softmax runs in parallel, so you get results now instead of waiting for league rounds |
+| **episode** | one game — its replay, results, and logs are the raw evidence you analyze |
+| **replay** | a watchable playback of an episode in the browser |
+| **roster** | the set of opponents a player is evaluated against |
 
 > **Run everything from the repo root.** All paths below are written relative to the
 > project root (where you're operating) — `crewrift_lab/…`, not `../…`.
@@ -38,7 +92,9 @@ uv sync
 ```
 
 Optionally confirm the install is healthy: `uv run pytest crewrift_lab/crewrift/crewborg/tests`
-should pass.
+should pass. **This is your check, not a report** — the user doesn't need the command, the
+test count, or `uv sync`'s output. Translate it: a brief "I've set up the lab and it's all
+working" is the whole of what they need to hear.
 
 **Then explain the sign-in and hand it to your user.** This is a browser login — *you
 can't do it for them* — so tell them what it is and let them run it. Say something like:
@@ -75,6 +131,10 @@ account and move on.)*
 
 ## Step 2 — Pick the player you'll work on
 
+> **Voice check:** this is a real decision for a newcomer. Give the full descriptions
+> below in prose, then put the choice on `AskUserQuestion` — don't compress the players
+> into one-line snippets, and don't make them compose a reply.
+
 **Goal:** have your user choose which of the lab's three Crewrift policies to start
 improving — then record that choice so every future session resumes on the same one.
 
@@ -98,9 +158,10 @@ improving — then record that choice so every future session resumes on the sam
 >
 > You can switch later — this just sets where we begin.
 
-Pose it as a real choice — use the `AskUserQuestion` tool (or just ask plainly) and wait
-for their answer. If they're unsure, recommend **crewborg** (most to optimize, Python,
-best tool support).
+Then put it on the **`AskUserQuestion`** tool — give the three short labels (crewborg /
+notsus / suspectra) as the options, with the prose descriptions above carrying the real
+detail, and let them pick. If they're unsure, recommend **crewborg** (most to optimize,
+Python, best tool support).
 
 **Then record their choice so it persists across sessions.** Append it to
 `crewrift_lab/user_preferences.md` under a **Working context** heading, e.g.:
@@ -122,6 +183,11 @@ per-policy detail, see the player-policies index in `crewrift_lab/AGENTS.md`.
 ---
 
 ## Step 3 — Your first evaluation
+
+> **Voice check:** this step introduces the most new vocabulary — *upload*, *experience
+> request*, *episode*, *replay*. Each one gets its plain-language introduction (see the
+> terms table) the first time it appears; never use them bare. The user's whole mental
+> model of the lab forms here, so favor explaining over moving fast.
 
 **Goal:** get a real, *current* read on how the chosen policy is doing — by building it,
 uploading it, running a batch of live evaluation games, and distilling the results into
@@ -212,6 +278,11 @@ while, so don't go silent. Walk them through it:
 ---
 
 ## Step 4 — Your first improvement
+
+> **Voice check:** when you report the A/B result, translate it — "it won more imposter
+> rounds, about the same as crewmate" beats a table of raw win-rates. And *submit* is the
+> term most likely to sound scarier than it is: introduce it as the deliberate,
+> public step, and make clear it's entirely their call.
 
 **Goal:** turn that read on the policy into **one** concrete change, measure whether it
 actually helped, and decide whether to submit or keep going. This is the core of the
