@@ -63,8 +63,12 @@ Every Coworld player image obeys the same contract (full details in
   ref: the (public) game repo is cloned **at a deliberately-pinned commit**
   (`CREWRIFT_REF`) inside the Nim builds, while the shared SDK is installed from the
   **public `Metta-AI/players` repo at `PLAYERS_SDK_REF`**
-  ([`tools/versions.env`](../../tools/versions.env)) — which defaults to **`main`**
-  (latest SDK each build; pin to a SHA for a reproducible image). No local checkouts.
+  ([`tools/versions.env`](../../tools/versions.env)) — which defaults to **`main`,
+  resolved by `build_player.sh` to the exact commit `uv.lock` records**, so the image
+  runs the same SDK as `uv run` and the Docker layer cache busts exactly when the lock
+  moves (a literal `main` build-arg silently reuses a stale cached SDK layer). Bump
+  with `uv lock --upgrade-package players`; set a SHA to diverge deliberately. No
+  local checkouts.
 - **One central game pin.** [`tools/versions.env`](../../tools/versions.env) holds
   `CREWRIFT_REF`, passed to every Nim build as `--build-arg`. **It must match the
   game version running in the league you target** — a player compiled against a

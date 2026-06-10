@@ -68,6 +68,21 @@ case "$policy" in
     # The Dockerfile installs the SDK from the public players repo (PLAYERS_SDK_REF),
     # so we just stage the fork + the lab's crewrift/__init__.py and put it on
     # PYTHONPATH. No local players checkout needed.
+    #
+    # Resolve PLAYERS_SDK_REF=main to the exact commit uv.lock records: "main" as a
+    # build-arg is a Docker layer-cache trap (the pip-install layer caches on the
+    # unchanged tarball URL string, so a moved main silently does NOT rebuild — the
+    # image keeps the stale SDK). Pinning the SHA both busts the cache when (and only
+    # when) the lock moves and guarantees the image runs the same SDK as `uv run`.
+    if [ "$PLAYERS_SDK_REF" = "main" ]; then
+      locked_sha="$(sed -n 's/.*github\.com\/Metta-AI\/players?branch=main#\([0-9a-f]\{40\}\).*/\1/p' "$LAB_DIR/../uv.lock" | head -1)"
+      if [ -n "$locked_sha" ]; then
+        echo "==> PLAYERS_SDK_REF=main resolved to uv.lock commit $locked_sha"
+        PLAYERS_SDK_REF="$locked_sha"
+      else
+        echo "WARNING: could not resolve players commit from uv.lock; building at 'main' (Docker may reuse a stale cached SDK layer)" >&2
+      fi
+    fi
     dir="$CREWRIFT_DIR/crewborg"
     stage="$(mktemp -d)"; trap 'rm -rf "$stage"' EXIT
     cp "$CREWRIFT_DIR/__init__.py" "$stage/crewrift_init.py"
