@@ -18,6 +18,29 @@ that get contradicted.
 
 ---
 
+### One latency/init stall can masquerade as several unrelated-looking gameplay bugs.
+- **Hits:** 1 (2026-06-10)
+- **Evidence:** crewborg's ~14s first-tick nav/substrate build (under the 250m cap) was the
+  shared root cause of BOTH the "slow to leave spawn" symptom AND the rare early-meeting
+  vote-timeout: the spawn freeze backlogs ~330 frames, and a meeting landing in that
+  catch-up window makes the vote-cursor perceive→press loop run on a stale cursor → never
+  converges (120 presses, no `a`). Fixing the stall (offline nav bake, v19) cleaned up the
+  voting too — the vote actuator itself was sound (cursor advances 1 slot/press, converges
+  in ~8, verified in the uncapped artifact). Lesson: when two odd symptoms cluster in the
+  SAME early-game window, suspect one shared timing cause before modelling each separately.
+  (The human suspected this at the outset — trust that instinct.)
+- **Status:** candidate
+
+### Local `coworld run-episode` does NOT pass host env to player containers.
+- **Hits:** 1 (2026-06-10)
+- **Evidence:** Setting `CREWBORG_METRICS=1` / `CREWBORG_CAPTURE_WALKABILITY=1` in the shell
+  before `smoke.py`/`run-episode` had no effect — the player container never saw them (no
+  metrics, no capture line). The local runner doesn't forward host env. Workarounds: bake a
+  one-off `ENV` layer (`FROM <image>` + `ENV X=1`) for a local run, or set it hosted via
+  `coworld upload-policy --secret-env X=1` (which DOES reach the pod). Hosted secret-env is
+  the reliable channel for runtime env.
+- **Status:** candidate
+
 ### Join league scores to a policy by `policy_version_id`, never by slot position.
 - **Hits:** 1 (2026-06-10)
 - **Evidence:** A daily-league round's `scores`/`participants` for crewborg v17 also

@@ -142,6 +142,19 @@ both on startup** alongside the preferences above:
   and still holds, promote it** to the right `best_practices.md` and delete it here.
   Most entries are noise; the value is the occasional gem.
 
+**Cleanup step — run when you wrap up a thread (and before you push/land work).** Do a
+deliberate sweep so nothing learned evaporates:
+
+1. **Capture all tentative lessons.** Re-scan the work you just did for anything that
+   *looked* like a reusable lesson — a gotcha, a surprise, a "next time I'd…" — and make
+   sure each is written into [`TENTATIVE_LESSONS.md`](TENTATIVE_LESSONS.md) (bump the hit
+   count if it recurred). Capturing eagerly is the whole point; an un-recorded lesson is
+   a lost one. Promote any that have now hit ≈3 confirmations.
+2. **Reconcile working context.** Prune completed/stale detail from
+   [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md) (it's a one-screen state file, not a log —
+   finished work lives in git history / the version log), update the active
+   policy/version, and **clear/reseed it on a pivot** to a new direction.
+
 ## Deferred tasks
 
 Crewrift-specific parked work lives in the **shared** [`../TODO.md`](../TODO.md)
