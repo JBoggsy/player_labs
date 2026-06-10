@@ -69,12 +69,14 @@ on, your first evaluation, and your first improvement, step by step.
 > you should resume the loop (see [`AGENTS.md`](AGENTS.md)) instead.
 
 **Pointing a new user here?** [`docs/starter-prompt.md`](docs/starter-prompt.md) is a
-copy-paste prompt they can hand to their own coding agent to clone the repo and run the
-guided onboarding.
+copy-paste prompt they can hand to their own coding agent to fork & clone the repo and
+run the guided onboarding.
 
 **Prerequisites:** [`uv`](https://docs.astral.sh/uv/) and (only for *building* player
-images) Docker — **no GitHub credentials and no sibling checkouts**; the player SDK and
-the Crewrift game repo are public. TL;DR if you just want the commands:
+images) Docker — **no GitHub credentials and no sibling checkouts** to build or run; the
+player SDK and the Crewrift game repo are public. (A **GitHub account** isn't required to
+try the lab, but is recommended so you can **fork** it and keep your own copy to save
+work in — the guided onboarding sets that up.) TL;DR if you just want the commands:
 
 ```sh
 uv sync                                          # .venv: coworld[auth] + the SDK + deps
