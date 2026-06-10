@@ -53,8 +53,11 @@ that get contradicted.
   targets `artifact` but `COWORLD_PLAYER_ARTIFACT_UPLOAD_URL` is absent — which would crash
   the bridge before connect (= failed episode / −100). The metta contract says the player
   should *skip* uploading when the var is absent, so the SDK's raise is sharper than the
-  contract; wrap adoption with a fallback to `stderr`. Local `coworld run-episode` sets a
-  `file://` URL automatically; hosted sets a presigned PUT (metta #15290). Retrieval:
+  contract; wrap adoption with a fallback to `stderr`. The metta-main local runner sets a
+  `file://` URL (runner.py) — but the **published** coworld client (0.1.20) predates this
+  and sets nothing (verified in Gate-1 smoke 2026-06-10: all slots fell back), so local
+  smokes exercise the fallback until the client ships the runner change. Hosted sets a
+  presigned PUT (metta #15290). Retrieval:
   `GET /jobs/{job_id}/policy-artifact[/{idx}]`. 200 MB cap; jsonl/csv stream to disk,
   json/parquet buffer in RAM (mind the 256Mi pod).
 - **Status:** candidate (promote to a build/ship practice once we've shipped it once)
