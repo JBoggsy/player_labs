@@ -30,6 +30,7 @@ from __future__ import annotations
 import asyncio
 import os
 import sys
+import time
 from collections.abc import Callable
 from typing import Any
 
@@ -48,6 +49,14 @@ METRICS_ENV = "CREWBORG_METRICS"
 
 DEFAULT_TRACE_OUTPUTS = "jsonl@artifact"
 FALLBACK_TRACE_OUTPUTS = "jsonl@stderr"
+
+# The engine pushes one frame per game tick at ~24 Hz and does NOT wait for the
+# player (docs/crewrift-player.md). At the hosted 250m-CPU budget that gives
+# runtime.step() ~42 ms per tick; exceeding it makes frames queue and inputs
+# land late. The bridge latency metrics below exist to make that visible:
+# `scene.tick` is a local received-message counter, so falling behind is
+# invisible in tick numbers and must be measured in wall-clock.
+ENGINE_TICK_HZ = 24.0
 
 
 def build_trace_outputs() -> TraceOutputs:
@@ -95,8 +104,11 @@ async def run_bridge(
     # the container exits and the runner tears the pod down.
     with build_trace_outputs() as outputs:
         runtime = build(trace_sink=outputs.trace_sink, metrics_sink=outputs.metrics_sink)
+        metrics = outputs.metrics_sink
         last_sent_mask: int | None = None
         walkability_checked = False
+        first_message_wall: float | None = None
+        previous_arrival: float | None = None
 
         # Guarantee runtime cleanup (the strategy runner may own background
         # threads/tasks) even if connect, a step, or a shutdown-race send raises.
@@ -107,6 +119,20 @@ async def run_bridge(
                         if isinstance(message, str):
                             # The /player stream is binary Sprite-v1; ignore stray text.
                             continue
+                        # Latency metrics (no-ops unless CREWBORG_METRICS is on).
+                        # loop_gap_ms: wall-clock between consecutive frame
+                        # arrivals — sustained gaps *below* the ~42 ms frame
+                        # interval mean queued frames are being drained, i.e.
+                        # we had fallen behind the engine.
+                        arrival = time.perf_counter()
+                        if first_message_wall is None:
+                            first_message_wall = arrival
+                        if previous_arrival is not None:
+                            metrics.histogram(
+                                "bridge.loop_gap_ms",
+                                round((arrival - previous_arrival) * 1000.0, 3),
+                                tags={"tick": scene.tick + 1},
+                            )
                         scene.apply(message)
                         scene.tick += 1
 
@@ -128,7 +154,24 @@ async def run_bridge(
                                     flush=True,
                                 )
 
+                        # step_ms: the per-tick compute budget check (~42 ms at
+                        # 24 Hz). tick_drift: ticks the engine has likely run
+                        # ahead of us (elapsed wall-clock x 24 Hz minus frames
+                        # received) — growth over a game means we're losing the
+                        # real-time race and inputs are landing late.
+                        step_start = time.perf_counter()
                         command = runtime.step(Observation(scene=scene, tick=scene.tick))
+                        step_end = time.perf_counter()
+                        metrics.histogram(
+                            "bridge.step_ms",
+                            round((step_end - step_start) * 1000.0, 3),
+                            tags={"tick": scene.tick},
+                        )
+                        metrics.gauge(
+                            "bridge.tick_drift",
+                            round((step_end - first_message_wall) * ENGINE_TICK_HZ - scene.tick, 2),
+                            tags={"tick": scene.tick},
+                        )
 
                         # Send only when the held mask changes (design §3.3). The first
                         # tick sends the neutral mask once, establishing "all released".
@@ -139,6 +182,7 @@ async def run_bridge(
                         # Meeting chat (accepted only during Voting); sent as it appears.
                         if command.chat is not None:
                             await websocket.send(encode_chat(command.chat))
+                        previous_arrival = arrival
                 except ConnectionClosed:
                     # Game end: the Crewrift server closes the socket to signal the
                     # episode is over. It does so *abruptly* — no close handshake

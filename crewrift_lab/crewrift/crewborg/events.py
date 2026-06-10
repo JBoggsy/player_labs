@@ -601,6 +601,27 @@ def _decision_snapshot_payload(context: StepContext[Belief, ActionState, Intent,
             "route_len": len(action_state.route),
             "next_waypoint": _next_waypoint(action_state),
         },
+        "voting": _decision_voting_payload(belief, action_state),
+    }
+
+
+def _decision_voting_payload(belief: Belief, action_state: ActionState) -> dict[str, Any] | None:
+    """Ballot-actuation state, present only during Voting.
+
+    Captures the action->effect chain for one vote: where the perceived cursor
+    sits (`cursor_slot` / `cursor_on_skip`) versus whether we've confirmed
+    (`vote_confirmed`). A cursor that doesn't advance across many ticks of
+    `down` presses is the vote-timeout failure signature.
+    """
+
+    if belief.phase != "Voting":
+        return None
+    voting = belief.voting
+    return {
+        "cursor_slot": voting.cursor_slot,
+        "cursor_on_skip": voting.skip_cursor_present,
+        "candidates": len(voting.candidates),
+        "vote_confirmed": action_state.vote_confirmed,
     }
 
 

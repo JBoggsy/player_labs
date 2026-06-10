@@ -912,6 +912,17 @@ Countable outcomes/attempts also emit a matching `domain.*` metrics counter when
 a metrics sink is enabled. Hosted Coworld runs leave metrics off by default; set
 `CREWBORG_METRICS=1` to include counters/gauges without enabling full debug, or
 `CREWBORG_TRACE=debug` to enable both metrics and the full debug trace.
+With metrics on, the **bridge** also emits per-tick latency instrumentation
+(the engine streams in real time at ~24 Hz and `scene.tick` is a local counter,
+so falling behind is only visible in wall-clock): `bridge.step_ms` (histogram —
+`runtime.step()` wall-time vs the ~42 ms/tick budget), `bridge.loop_gap_ms`
+(histogram — wall-clock between frame arrivals; sustained sub-42 ms gaps mean a
+queued-frame backlog is draining), and `bridge.tick_drift` (gauge — estimated
+engine ticks we're behind, `elapsed×24 − local tick`; growth means losing the
+real-time race). Each sample is tagged with the local tick. The per-tick
+`decision_snapshot` carries a `voting` section during meetings (`cursor_slot`,
+`cursor_on_skip`, `candidates`, `vote_confirmed`) — the action→effect record
+for vote-actuation forensics.
 `kill_attempted` (we pressed) is distinct from `kill_landed` (the kill registered,
 seen as the kill-ready→cooldown edge). Incoming meeting chat is decoded into
 `belief.chat_log` (§4.3) and emitted once per meeting line as `chat_received`.

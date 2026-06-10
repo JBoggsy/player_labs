@@ -699,3 +699,46 @@ def test_domain_event_flows_through_a_real_runtime_step() -> None:
     assert phase_events
     assert phase_events[0].data == {"from": "unknown", "to": "Lobby"}
     assert phase_events[0].tick == 1
+
+
+def test_debug_decision_snapshot_captures_voting_actuation_state() -> None:
+    """During Voting the snapshot must tie perceived cursor position to vote
+    progress — the action->effect record for diagnosing slow/failed votes."""
+
+    from crewrift.crewborg.perception.entities import VoteCandidate, VotingState
+
+    belief = Belief(phase="Voting")
+    belief.voting = VotingState(
+        cursor_present=True,
+        skip_cursor_present=False,
+        cursor_slot=1,
+        candidates=(
+            VoteCandidate(slot=0, color="red", alive=True),
+            VoteCandidate(slot=1, color="blue", alive=True),
+        ),
+    )
+
+    h = _Harness(debug=True)
+    h.step(
+        belief=belief,
+        action_state=ActionState(),
+        intent=Intent(kind="vote", reason="unit"),
+        command=Command(held_mask=BTN_A),
+        active_directive=ModeDirective(mode="attend_meeting", source="strategy", reason="unit"),
+    )
+
+    [event] = h.events("domain.decision_snapshot")
+    assert event.data["voting"] == {
+        "cursor_slot": 1,
+        "cursor_on_skip": False,
+        "candidates": 2,
+        "vote_confirmed": False,
+    }
+
+
+def test_debug_decision_snapshot_voting_state_absent_outside_meetings() -> None:
+    h = _Harness(debug=True)
+    h.step(belief=Belief(phase="Playing"), intent=Intent(kind="idle"), command=Command())
+
+    [event] = h.events("domain.decision_snapshot")
+    assert event.data["voting"] is None

@@ -273,3 +273,51 @@ async def test_bridge_sends_chat_packet() -> None:
         await asyncio.wait_for(run_bridge(url, build=lambda **_: ChattyRuntime()), timeout=5.0)
 
     assert encode_chat("gg") in received
+
+
+async def test_bridge_emits_latency_metrics_to_artifact(tmp_path, monkeypatch) -> None:
+    """With metrics on, each tick must produce bridge.step_ms / loop_gap_ms /
+    tick_drift records in the artifact — the wall-clock fall-behind
+    instrumentation (the engine streams in real time; local tick numbers can't
+    show lag)."""
+
+    destination = tmp_path / "policy_artifact_0.zip"
+    monkeypatch.setenv("CREWBORG_METRICS", "1")
+    monkeypatch.delenv("CREWBORG_TRACE", raising=False)
+    monkeypatch.delenv("CREWBORG_TRACE_OUTPUTS", raising=False)
+    monkeypatch.setenv("COWORLD_PLAYER_ARTIFACT_UPLOAD_URL", f"file://{destination}")
+
+    class FakeRuntime:
+        def step(self, _observation) -> Command:
+            return Command(held_mask=0)
+
+        def close(self) -> None:
+            pass
+
+    async def handler(websocket) -> None:
+        for _ in range(3):
+            await websocket.send(w.clear_objects())
+        try:
+            while True:
+                await asyncio.wait_for(websocket.recv(), timeout=0.25)
+        except (asyncio.TimeoutError, ConnectionClosed):
+            return
+
+    async with serve(handler, "localhost", 0) as server:
+        port = server.sockets[0].getsockname()[1]
+        url = f"ws://localhost:{port}/player?slot=0&token="
+        await asyncio.wait_for(run_bridge(url, build=lambda **_: FakeRuntime()), timeout=5.0)
+
+    with zipfile.ZipFile(destination) as archive:
+        telemetry = next(name for name in archive.namelist() if name != "manifest.json")
+        records = _json_records(archive.read(telemetry).decode("utf-8"))
+    by_name: dict[str, list[dict]] = {}
+    for record in records:
+        if record.get("kind") == "metric":
+            by_name.setdefault(record["name"], []).append(record)
+
+    assert len(by_name["bridge.step_ms"]) == 3          # one per frame
+    assert len(by_name["bridge.loop_gap_ms"]) == 2      # gaps between 3 frames
+    assert len(by_name["bridge.tick_drift"]) == 3
+    assert by_name["bridge.step_ms"][0]["tags"] == {"tick": 1}
+    assert by_name["bridge.step_ms"][-1]["tags"] == {"tick": 3}
