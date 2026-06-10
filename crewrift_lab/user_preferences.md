@@ -10,6 +10,11 @@ repeated correction), **record it here** as a short, concrete entry so it persis
 across sessions. Keep it tidy: one bullet per preference, drop superseded ones.
 General (non-Crewrift) preferences go in the lab-wide file instead.
 
+> **Working context lives elsewhere.** The current objective and live state of work
+> (including the active policy/version that signals onboarding is done) are tracked in
+> [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md), not here. This file is for *durable
+> preferences* only. See [`AGENTS.md`](AGENTS.md).
+
 ## Preferences
 
 _None recorded yet._

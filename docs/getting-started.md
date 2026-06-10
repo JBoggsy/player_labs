@@ -163,18 +163,26 @@ notsus / suspectra) as the options, with the prose descriptions above carrying t
 detail, and let them pick. If they're unsure, recommend **crewborg** (most to optimize,
 Python, best tool support).
 
-**Then record their choice so it persists across sessions.** Append it to
-`crewrift_lab/user_preferences.md` under a **Working context** heading, e.g.:
+**Then record their choice so it persists across sessions.** The lab keeps the live
+state of *what we're working on* in `crewrift_lab/WORKING_CONTEXT.md` — a short,
+high-signal file you read on startup to resume and update as you learn. Set its
+**Current objective** to name the chosen policy, e.g.:
 
 ```markdown
-## Working context
-- **Active policy under optimization: `crewborg`** (chosen <today's date>). Future
-  sessions: continue improving this policy unless the user says otherwise.
+## Current objective
+Improve **crewborg** (chosen <today's date>) — the policy under optimization. Future
+sessions: continue improving this policy unless the user says otherwise.
 ```
 
-`crewrift_lab/AGENTS.md` has every session read `crewrift_lab/user_preferences.md` on
-startup (it's the Crewrift-specific preferences file), so a future agent will pick this
-up and **keep working on the policy you chose together** — no re-asking.
+`crewrift_lab/AGENTS.md` has every session read `WORKING_CONTEXT.md` on startup, so a
+future agent picks this up and **keeps working on the policy you chose together** — no
+re-asking. A recorded objective there is precisely the signal that onboarding is done.
+
+As you work the loop, keep `WORKING_CONTEXT.md` current with the high-signal state of
+the effort (findings, open threads), and **clear/reseed it when you pivot to a whole new
+direction**. Its sibling, `crewrift_lab/TENTATIVE_LESSONS.md`, is where you jot
+*candidate* lessons eagerly — noisy by design; the good ones graduate to
+`best_practices.md`. Both are described in `crewrift_lab/AGENTS.md`.
 
 The three players live under `crewrift_lab/crewrift/` and all build with
 `crewrift_lab/tools/build_player.sh <policy>` (Docker only, no credentials). For deeper

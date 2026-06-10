@@ -62,11 +62,13 @@ it walks you (and your coding agent) through authentication, picking a player to
 on, your first evaluation, and your first improvement, step by step.
 
 > **Coding agents:** if this is your first time in this repo — or
-> [`crewrift_lab/user_preferences.md`](crewrift_lab/user_preferences.md) has **no
-> `## Working context` entry naming an active policy** — start with
+> [`crewrift_lab/WORKING_CONTEXT.md`](crewrift_lab/WORKING_CONTEXT.md) has **no current
+> objective naming an active policy** — start with
 > [`docs/getting-started.md`](docs/getting-started.md). Step 2 records the chosen policy
-> there, so a recorded active policy is the signal that onboarding is already done and
-> you should resume the loop (see [`AGENTS.md`](AGENTS.md)) instead.
+> there, so a recorded objective is the signal that onboarding is already done and you
+> should resume the loop (see [`AGENTS.md`](AGENTS.md)) instead. As you work, that file
+> holds the live working context, and [`crewrift_lab/TENTATIVE_LESSONS.md`](crewrift_lab/TENTATIVE_LESSONS.md)
+> collects candidate lessons — both described in [`crewrift_lab/AGENTS.md`](crewrift_lab/AGENTS.md).
 
 **Pointing a new user here?** [`docs/starter-prompt.md`](docs/starter-prompt.md) is a
 copy-paste prompt they can hand to their own coding agent to clone the repo and run the

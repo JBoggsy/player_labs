@@ -125,6 +125,23 @@ trace-level verification). **Read both**; root first.
 [`../user_preferences.md`](../user_preferences.md). **Read both on startup**, and when
 the human states a Crewrift-specific preference, record it here.
 
+## Working context & tentative lessons
+
+Two session-spanning files carry state and learning forward between sessions — **read
+both on startup** alongside the preferences above:
+
+- **[`WORKING_CONTEXT.md`](WORKING_CONTEXT.md)** — the **live, minimal, high-signal
+  state of what we're working on right now**: the current objective plus the few facts
+  worth carrying forward (active policy/version, the working lens, live findings, open
+  threads). Read it to resume, **keep it updated as you learn**, and **clear/reseed it
+  when we pivot to a whole new direction**. A recorded objective there is the
+  resume-the-loop signal (it doubles as the onboarding "active policy" marker).
+- **[`TENTATIVE_LESSONS.md`](TENTATIVE_LESSONS.md)** — an **eager, noisy buffer of
+  candidate lessons**: write here freely the moment something *looks* like a reusable
+  lesson. Each entry carries a hit count; **once a lesson is confirmed enough (≈3 hits)
+  and still holds, promote it** to the right `best_practices.md` and delete it here.
+  Most entries are noise; the value is the occasional gem.
+
 ## Deferred tasks
 
 Crewrift-specific parked work lives in the **shared** [`../TODO.md`](../TODO.md)
