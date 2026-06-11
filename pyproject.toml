@@ -16,6 +16,13 @@ dependencies = [
     "pydantic>=2.12.2",
     "websockets>=16.0",
     "cramjam>=2.8.0",
+    # Meeting chat NLP (crewborg imposter bandwagon, design §10.5): dependency-parse
+    # negation scope on opponents' chat. Loaded lazily in the background and gated by
+    # CREWBORG_CHAT_NLP, so it never touches the gameplay hot path. The en_core_web_sm
+    # model is pinned by URL for reproducible installs; keep it in sync with spaCy's
+    # minor version.
+    "spacy>=3.8.0,<3.9.0",
+    "en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl",
 ]
 
 [tool.uv.sources]

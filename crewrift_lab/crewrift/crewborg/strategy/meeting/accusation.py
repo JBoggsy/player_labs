@@ -35,8 +35,48 @@ def build_accusation(belief: Belief, color: str) -> str | None:
     reasons = _ranked_reasons(belief, color)
     if not reasons:
         return None
+    return _format(color, reasons)
+
+
+def fabricate_accusation(belief: Belief, color: str) -> str | None:
+    """A **fabricated** accusation against ``color``, in the *identical* format a real
+    one uses (the anti-tell — see design §10.4). For the imposter's bandwagon: it has
+    no real evidence, so it cites **safe, hard-to-disprove** cues only — never a bold,
+    falsifiable witnessed kill/vent that another player could contradict.
+
+    A real body (if any) anchors the most persuasive safe claim ("next to X's body");
+    otherwise it falls back to a tail/vent claim. Returns ``None`` only if even the
+    fallbacks can't be formed (never, in practice)."""
+
+    reasons: list[str] = []
+    victim = _a_dead_color(belief)
+    if victim is not None:
+        reasons.append(_phrase_near_body(_synthetic("near_body", target_color=victim)))
+    else:
+        reasons.append(_phrase_tail(_synthetic("tailing_self")))
+    reasons.append(_phrase_vent_dwell(_synthetic("vent")))
+    return _format(color, reasons)
+
+
+def _format(color: str, reasons: list[str]) -> str:
     line = f"{color} sus: {', '.join(reasons[:MAX_REASONS])}"
     return line[:CHAT_MAX_CHARS]
+
+
+def _synthetic(kind: str, *, target_color: str | None = None) -> PlayerEvent:
+    return PlayerEvent(kind=kind, start_tick=0, end_tick=0, target_color=target_color)
+
+
+def _a_dead_color(belief: Belief) -> str | None:
+    """The most-recently-dead non-teammate color (a real body to name), or ``None``."""
+
+    dead = [
+        r for r in belief.roster.values()
+        if r.life_status == "dead" and r.color not in belief.teammate_colors
+    ]
+    if not dead:
+        return None
+    return max(dead, key=lambda r: r.death_seen_tick or 0).color
 
 
 def _ranked_reasons(belief: Belief, color: str) -> list[str]:

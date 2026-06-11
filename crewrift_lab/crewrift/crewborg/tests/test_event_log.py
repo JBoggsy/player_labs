@@ -129,6 +129,17 @@ def test_tailing_self_accumulates_while_a_player_shadows_us() -> None:
     assert tail[0].duration_ticks == 3 and (tail[0].start_tick, tail[0].end_tick) == (1, 3)
 
 
+def test_tailing_self_is_not_logged_for_our_own_sprite() -> None:
+    # Our own sprite sits at our position every tick; without excluding it we'd "tail"
+    # ourselves and suspect/vote ourself.
+    belief = Belief(map=_map())
+    belief.self_color = "red"
+    belief.self_world_x, belief.self_world_y = 300, 300
+    for tick in (1, 2, 3):
+        _see(belief, "red", (300, 300), tick)  # red (= us) right at our spot
+    assert not [e for e in belief.roster["red"].events if e.kind == "tailing_self"]
+
+
 def test_a_distant_player_is_not_tailing_us() -> None:
     belief = Belief(map=_map())
     belief.self_world_x, belief.self_world_y = 300, 300

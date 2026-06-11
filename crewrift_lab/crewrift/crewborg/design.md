@@ -528,7 +528,7 @@ re-decides.
 | **Hunt** | kill ready **and** a victim is visible | **commit to a visible victim and close/strike**: `select_victim` picks the most-isolated reachable visible crewmate, preferring targets not already claimed by a closer teammate; navigate to its **predicted intercept** (`strategy.trajectory` — lead a moving target); when in KillRange *and* unwitnessed → `kill`, else keep shadowing in range (lie in wait) |
 | **Evade** | for `EVADE_TICKS` after our own kill | `vent` if a vent exists; otherwise move away from the nearest known body. This avoids instant self-reports and gets the imposter away from the corpse before Search/Hunt/Pretend resume |
 | **Report Body** | a non-fresh body is in view after the evade window | `report` the nearest visible body — reuses the crewmate Report Body mode. Fresh self-kill bodies are handled by **Evade** first |
-| **Attend Meeting** | phase = `Voting` | currently **silent + skip** — suspicion is crewmate-only, so `top_suspect` is empty for an imposter and there's no accusation to make; suspicion-aware bluff/deflect (chat to misdirect, vote a crewmate, never a teammate) is future (part B) |
+| **Attend Meeting** | phase = `Voting` | **deflect onto crewmates, never a teammate** (§10.4): proactively accuse + vote a non-teammate who genuinely *looks* sus (real cues, same format as a crewmate); else wait and **bandwagon** onto a crewmate others suss/vote, citing *fabricated* safe cues in the identical format; else skip at the deadline |
 
 **Pretend is the imposter's default blending behaviour.** It does not follow
 visible crew and it carries no victim state. It chooses a highest-scoring
@@ -751,14 +751,16 @@ to kill improves imposter outcomes versus the default blend-in policy.
 > is the summary.
 
 `update_suspicion(belief)` runs every tick in the fast loop *after* `update_belief`
-+ `update_event_log` (composed in `build_runtime`). Crewmate POV: it maintains
++ `update_event_log` (composed in `build_runtime`). It maintains
 `belief.suspicion[color]` = the posterior **probability that player is an imposter**,
 ∈ [0, 1] — a real probability, so thresholds mean something. It drives the **vote**
 (`top_suspect`) and **Accuse** (`active_tail_suspect` — a live tail over
 `ACCUSE_THRESHOLD`). `believed_imposters` (alive players with `P ≥ FLEE_PROBABILITY`,
 0.9) is the near-certain set, kept as belief state (it seeds the vote) but no longer
-gating a reactive run-away mode. Crewmate-only — an imposter knows the truth
-(suspicion cleared), and a ghost neither accuses nor votes.
+gating a reactive run-away mode. Computed for **both live roles** but over different
+sets: a crewmate scores every other player (a genuine belief); an imposter scores only
+**non-teammates** (it never scores a known teammate) and reads the number as "how sus
+this crewmate looks," to pick a deflection target (§10.4). A ghost holds no suspicion.
 
 **Prior.** With `P` players and `K` imposters, a crewmate knows the `K` are among
 the other `P − 1`, so each other player's marginal prior is `K / (P − 1)`. `K` is
@@ -860,6 +862,66 @@ pressure, with a small tick interval to avoid repeated calls from one visual
 state. Distinct chat messages can be sent across the same meeting; duplicate model
 text is suppressed.
 
+### 10.4 Imposter meeting tactics (`strategy/meeting/`)
+
+The deterministic Attend Meeting path diverges by role (`_decide_imposter`). An
+imposter's job at a meeting is to get a **crewmate** ejected without outing itself —
+**never** a teammate. Two crucial invariants underpin this:
+
+- **Suspicion is computed for the imposter too** (§10.1), over **non-teammates only**.
+  Crewmates don't kill/vent, so their score comes purely from *innocent-looking*
+  graded cues (a vent dwell, walking past a body the imposter made, a coincidental
+  follow). That score is "how sus does this crewmate *look* to the table" — exactly
+  what a deflection wants.
+- **Chat formatting is identical to the crewmate's** — every accusation, real or
+  fabricated, goes through the same `build_accusation` templates (`"<color> sus:
+  <reasons>"`). A formatting difference would itself be a tell, so there is none.
+
+The priority order:
+
+1. **Proactive deflection.** If a non-teammate is a clear leading suspect
+   (`top_suspect`, §10.1), accuse + vote them with their **real** cues — the strongest
+   play, because it isn't even a lie.
+2. **Reactive bandwagon.** Otherwise wait, watching for a crewmate to take **heat** —
+   a vote cast against them (the reliable signal, read from the vote tally:
+   `imposter.votes_against` maps `VoteDot.target` slots → candidate colors, excluding
+   our own ballot and skips) or a chat accusation (an additive chat-read signal,
+   added in §10.5). `imposter.bandwagon_target` picks the most-heated non-teammate; we vote them
+   and cite **fabricated** evidence — *safe, hard-to-disprove* cues only (`lurking on a
+   vent`, `next to <body>'s body`, `they were tailing me`), never a bold falsifiable
+   witnessed kill/vent (`accusation.fabricate_accusation`).
+3. **Skip.** If no crewmate ever takes heat, cast a skip at the deadline.
+
+Chat and vote stay coupled (we accuse exactly who we then vote for).
+
+### 10.5 Reading opponents' chat (`strategy/meeting/chat_read.py`, `chat_nlp.py`)
+
+The bandwagon's *additive* signal (§10.4) is detecting which crewmates other players
+are **sussing in chat** — getting ahead of suspicion before it hardens into a vote.
+Free-form chat is hard, but the target vocabulary is a **closed set of colors**, which
+we exploit in two stages:
+
+1. **Keyword pre-gate** (cheap, in `chat_read`) — a message is only parsed if it names
+   a color *and* carries a sus cue (`SUS_WORDS`). Most chatter is dropped here.
+2. **Dependency-parse negation scope** (spaCy `en_core_web_sm`, in `chat_nlp`) — the
+   real value over a crude "is a negation word present?" guard, which mishandles
+   `"red isn't sus"` vs `"red is sus not blue"`. The parse tracks which clause a
+   negation/defense word governs, handles contrastive negation, and flips a color
+   adjacent to a *victim* cue (`"when red died"` ⇒ red is the victim, not the suspect).
+   `chat_accusers` then counts the **distinct other speakers** who accused each
+   non-teammate. (Validated at ~19/21 on representative chat vs ~16/21 for keyword +
+   crude negation; the wins are exactly the negation-scope cases.)
+
+**Loading is off the hot path.** `en_core_web_sm` costs ~1.5–2 s to load under the
+hosted ¼-core cap (~40 frames), so `chat_nlp.ensure_loading()` (called at
+`build_runtime`) kicks off a **background daemon thread**; the load overlaps the
+pre-game idle phases and is ready before the first meeting. `get_model()` returns
+`None` until ready, and callers degrade gracefully (no chat signal — the bandwagon
+rests on the reliable vote tally). The whole layer is gated by **`CREWBORG_CHAT_NLP`**
+(default on); unset it and spaCy is never imported or loaded. When the model is off we
+deliberately do **not** fall back to crude keyword matching — its false positives are
+exactly what this layer exists to avoid.
+
 ---
 
 ## 11. Package layout and tracing
@@ -876,6 +938,7 @@ crewborg/
   events.py          # CrewborgEventTracer: on_step_complete hook emitting domain.* events
   modes/             # idle, normal, attend_meeting, report_body, accuse, evade, pretend, search, hunt
   strategy/          # rule_based.py: mode selector; suspicion.py: near-certain detection; event_log.py: per-player observation log; occupancy.py: tape predicates; opportunity/trajectory
+  strategy/meeting/  # context/schema/llm (LLM path); accusation (chat templates); imposter (deflect/bandwagon); chat_read + chat_nlp (spaCy chat parsing)
   perception/        # Sprite-v1 scene decoder: maintain tables, resolve objects → (label, world xy)
   map/               # vendored croatoan.resources + ported parser (§6)
   coworld/           # policy_player.py (the websocket bridge) + scene.py
@@ -1019,6 +1082,7 @@ structural, and each still awaits tuning against a live server.
 | Re-plan cadence | `REPLAN_INTERVAL = 8` ticks (re-root the route at the live position; A* ≈ 0.2 ms) |
 | Voting policy | accuse + vote the **clear leading suspect** — near-certain (`P ≥ VOTE_PROBABILITY=0.8`) or a clear lead (`P ≥ VOTE_LEAD_MIN_P=0.5` and ahead of the runner-up by `VOTE_LEAD_MARGIN=0.2`), §10.1 — else **silent + skip** a flat field; always cast *something* before the timer (not voting costs −10) |
 | LLM meetings | opt-in with `CREWBORG_LLM_MEETINGS=1` + `ANTHROPIC_API_KEY`; default model `claude-haiku-4-5-20251001`; deadline LLM prompt at ≤96 ticks remaining and auto-submit at ≤48 ticks remaining; chat cooldown is 100 ticks |
+| Chat NLP (§10.5) | **on by default**; kill switch `CREWBORG_CHAT_NLP=0` disables it (never imports/loads spaCy). Drives the imposter bandwagon's chat signal via `en_core_web_sm` dependency-parse negation scope, background-loaded so it never blocks play |
 | Aggressive imposter selector | opt-in with `CREWBORG_BE_DUMB=1` or `BE_DUMB=1`; during `Playing`, imposters skip Pretend/Evade/ReportBody and always select Search unless kill-ready with a visible victim, then Hunt |
 | Report policy | crewmates always report visible bodies; imposters evade for `EVADE_TICKS = 72` after their own kill, then may report a non-fresh visible body (§7.2). Suspicion-aware reporting is a possible refinement |
 | Pretend fake-task hold | one task-time (`TASK_TICKS = 72`) held at the station, then re-dispatch |

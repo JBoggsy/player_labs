@@ -11,6 +11,29 @@ def _fold(belief: Belief, tick: int, **resolved_fields) -> None:
     update_belief(belief, Percept(tick=tick, messages_applied=tick, resolved=resolved))
 
 
+def test_self_color_learned_from_the_camera_center_sprite() -> None:
+    # The player at self_world (the centered self-sprite) is us; nearby others aren't.
+    from crewrift.crewborg.perception.entities import VisiblePlayer
+
+    belief = Belief()
+    _fold(
+        belief, 1, self_world_x=60, self_world_y=66,
+        visible_players=(
+            VisiblePlayer(object_id=1000, color="red", facing="left", world_x=60, world_y=66),  # us
+            VisiblePlayer(object_id=1001, color="blue", facing="left", world_x=120, world_y=120),
+        ),
+    )
+    assert belief.self_color == "red"
+
+
+def test_self_color_learned_from_the_voting_marker() -> None:
+    from crewrift.crewborg.perception.entities import VotingState
+
+    belief = Belief()
+    _fold(belief, 1, voting=VotingState(self_marker_color="green"))
+    assert belief.self_color == "green"
+
+
 def test_phase_transitions_role_reveal_into_playing() -> None:
     belief = Belief()
 
