@@ -60,18 +60,26 @@ vs top-7, 30 eps, connect-failure filtered:
   CD window. Only lever on our side: **get our kill in ASAP**. (Parked otherwise.)
 - v22 baseline data lives at `/tmp/ab_v22` (`xreq_9274d50f`); reuse as the A/B baseline.
 
-## Current experiment — v24 "kill sooner" A/B (PENDING build/eval)
+## Current experiment — v24 "kill sooner", 2-IMPOSTER A/B (RUNNING)
 
-Three targeted changes (committed `2199e4c`), A/B'd vs the v22 baseline (NO BE_DUMB):
-1. `SEARCH_LEAD_TICKS` 100→**250** — start shadowing a victim earlier in the cooldown.
-2. Pretend `DO_TASK` holds a fake task **only while a crewmate is visible**
-   (`has_visible_victim`) — unwatched fake tasks burn cooldown.
-3. The hold **stops the instant** the last crewmate leaves view; empty station
-   re-dispatches and keeps moving toward crew/victims.
-- Build v24 (real `tools/build_player.sh`), upload with **v22 env, NO BE_DUMB**, run
-  imposter-pinned (1-imp, slot 0) vs top-7, ~30 eps; compare kills/g + ejection rate vs
-  `/tmp/ab_v22`. Watch for: kills↑ without the ejection blowup (keeps Evade + a Pretend
-  window, unlike BE_DUMB). Verify the `pretend`/`search` mode shift in v24 traces.
+Three changes (committed `2199e4c`): `SEARCH_LEAD_TICKS` 100→**250**; Pretend `DO_TASK`
+holds a fake task **only while a crewmate is visible** (`has_visible_victim`); the hold
+**stops** the instant the last crewmate leaves view (re-dispatch toward crew/victims).
+v24 = `b725a6e1` (v22 env, NO BE_DUMB).
+
+- **1-imp A/B (DONE, inconclusive-by-design):** v22 2.27 kills / v24 2.00, within noise
+  (t≈1.3); mode shift confirmed (pretend 69%→48%, search 24%→45%, hunt 1%→3%). **But
+  1-imp has no partner**, so it can't test the partner-report-CD-reset mechanism the
+  changes target — and James's standing rule is now **always 2-imposter evals, never
+  1-imp** (see [user_preferences](user_preferences.md)).
+- **2-imp A/B (RUNNING):** crewborg slot 0 = imposter + slot 7 = partner imposter, 6
+  crew, vs top-7, 30 eps each. baseline v22 `xreq_dff96e86`, v24 `xreq_a62759e9`. Measure
+  crewborg's **own** kills (`results.json` by `policy_version_id`). **Ejection detection:
+  the 1-imp "GameOver right after a vote" trick fails here** (game continues while the
+  other imposter lives) — detect crewborg ejection from its trace role→dead or the replay.
+- **Decision:** if v24 > v22 on crewborg's kills in 2-imp → the kill-sooner changes earn
+  their place; if not → kill lever exhausted (2× confirmed search-time isn't it), pivot.
+  Don't ship v24 without a 2-imp win.
 
 ## Remaining kill levers (if v24 helps but not enough)
 
