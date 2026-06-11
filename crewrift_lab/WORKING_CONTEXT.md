@@ -26,10 +26,13 @@ is the one-screen answer to "where are we and why."
   partner artifact. Kills (v24 1.93 vs v22 1.73, p=0.005) were more robust — v24 led in
   both the 30-ep and 200-ep batches even as partner-strength flipped — but not clean. (See
   the `top_n`-uncontrolled-roster tentative lesson.)
-- **CONTROLLED 2-imp A/B RUNNING:** explicit identical roster (`opponents[]`, not top_n),
-  partner = **slava2** slot 7, same 6 crew; **only slot 0 differs** (v22 vs v24). Verified
-  the seating in the readback. 100 eps/arm: v22 `xreq_1c7f6bdf`, v24 `xreq_57de3453`. This
-  is the trustworthy test — analyze crewborg's own kills, connect-failure filtered.
+- **CONTROLLED 2-imp A/B DONE (trustworthy):** fixed roster, partner=slava2 both arms,
+  only slot 0 differs (v22 `xreq_1c7f6bdf` / v24 `xreq_57de3453`, 100 eps/arm).
+  **Kills +0.21/g (1.37→1.58, +15%), p=0.027 SIGNIFICANT** (robust — same ~+0.2 across all
+  3 batches, different partners). **Win +6%, p=0.40 NOT significant** — kill gain doesn't
+  reach wins; no ejection cost. **v24 kept** (self-vote fix + real kill bump, strictly
+  better than v22). **Kill lever now genuinely improved but kill→win link is weak** →
+  next direction should be imposter survival/meetings or crewmate, NOT more kill tuning.
 
 ## Current objective — RAISE THE IMPOSTER KILL RATE
 
