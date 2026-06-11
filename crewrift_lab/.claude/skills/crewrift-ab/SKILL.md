@@ -44,19 +44,23 @@ subject version:
 
 ```sh
 S=.claude/skills/coworld-experience-requests/scripts/experience_request.py
-# resolve the two subject versions + a shared opponent roster (same for both)
-uv run python $S resolve --policy crewborg --version <BASELINE_N>
-uv run python $S resolve --policy crewborg --version <CANDIDATE_N>
-uv run python $S resolve --division <div_…> --top 7          # the shared roster
-# build TWO request bodies that are byte-identical except the subject policy_version_id
-# (same target, same roster, same roles, same count), then create BOTH back-to-back:
+# rank the current field to pick the shared opponents (name + version per seat)
+uv run python $S resolve --division <div_…> --top 7
+# build TWO request bodies that are byte-identical except the subject's policy_ref
+# (same target, same pinned roster, same roles, same count), then create BOTH back-to-back:
 uv run python $S create baseline_req.json
 uv run python $S create candidate_req.json
 uv run python $S monitor <xreq_baseline>     # and the candidate xreq
 ```
 
-Matched = same target, **same opponent roster**, same role distribution, same episode
-count, same window. (Fire them back-to-back so they see the same field.) See the
+Matched = same target, **same explicitly-pinned opponent roster**, same role
+distribution, same episode count, same window. (Fire them back-to-back so they see
+the same field.) In the `roster`, name **every** seat with an explicit
+`policy_ref: "name:vN"` — **never `top_n`/`random` in an A/B**: the champion pool
+drifts between requests and can even seat your own league entry, so the two arms
+would face different fields (this exact confound burned the v22-vs-v24 A/B; see
+`crewrift_lab/TENTATIVE_LESSONS.md`). Pin the subject at its slot; the only byte
+that differs between the two bodies is the subject's `policy_ref` version. See the
 experience-requests skill's `references/api.md` for the body fields.
 
 ### 3. Pull both batches

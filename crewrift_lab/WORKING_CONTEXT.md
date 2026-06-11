@@ -33,6 +33,10 @@ is the one-screen answer to "where are we and why."
   reach wins; no ejection cost. **v24 kept** (self-vote fix + real kill bump, strictly
   better than v22). **Kill lever now genuinely improved but kill→win link is weak** →
   next direction should be imposter survival/meetings or crewmate, NOT more kill tuning.
+- **XP-request API rebuilt (2026-06-11, metta #15572):** the body is now a single
+  `roster` field (one entry per seat: `policy_ref`/`top_n`/`random` selector + `slot`
+  pinning or `-1` round-robin); `requester`/`opponents`/`rotate_seats`/`player_selection`
+  are gone. Skill docs (`coworld-experience-requests`, `crewrift-ab`) updated to match.
 
 ## Current objective — RAISE THE IMPOSTER KILL RATE
 

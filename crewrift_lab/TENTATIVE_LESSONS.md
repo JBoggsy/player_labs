@@ -21,18 +21,24 @@ that get contradicted.
 ### `top_n` opponent auto-selection makes the partner/roster UNCONTROLLED — pin an explicit identical roster for any A/B.
 - **Hits:** 1 (2026-06-11)
 - **Evidence:** A v22-vs-v24 imposter A/B (2-imp, slot 0 = crewborg + slot 7 = partner)
-  used `player_selection: top_n`. The auto-selected **slot-7 partner differed between
+  used `top_n` auto-selection. The auto-selected **slot-7 partner differed between
   arms** — v22 got Kyle Herndon (weak) / Aaron's Optimizer (strong) across batches, v24
   got a "James Boggs" crewborg — and the crew drifted too. That confounded everything:
   v22's *win rate swung 87%→37% with its partner alone*, so the "+23% win for v24" was a
   partner artifact, not a policy effect. Worse: once your own policy is a league member,
   `top_n` can seat **your own crewborg as the opponent/partner** (v24 was rank 10 in the
   division right after submission). **Fix:** for any A/B, pin an **explicit identical
-  opponent roster** (`opponents: [{policy_version_id…}]`, NOT `top_n`) so the only
-  difference between arms is slot 0; verify the seating in the request readback
-  (`xp-request get … .episodes[0].policy_version_ids`) — `opponents[]` seats in list order
-  into slots 1..N. (The kills metric was more robust — v24 led in both batches even as the
-  partner-strength direction flipped — but only a controlled roster makes it clean.)
+  roster** so the only difference between arms is the subject's seat; verify the seating
+  in the request readback (`xp-request get … .episodes[0]` participants). (The kills
+  metric was more robust — v24 led in both batches even as the partner-strength direction
+  flipped — but only a controlled roster makes it clean.)
+- **API note (2026-06-11, metta #15572):** the XP-request schema was rebuilt around a
+  single `roster` field; the old `opponents`/`player_selection` fields in the original
+  evidence are gone. The lesson holds unchanged — `top_n`/`random` are now *per-seat
+  selectors* and still draw from the drifting champion pool. The fix is now: every seat
+  an explicit `{"player": {"policy_ref": "name:vN"}, "slot": i}`. (Bonus: the new schema
+  can pin the subject's seat while the rest round-robin — `slot: -1` — which the old one
+  couldn't.)
 - **Status:** candidate (strong methodology lesson — promote on next confirmation)
 
 ### A teammate imposter's kill→report RESETS our kill cooldown — the cost of a sloppy partner is our lost CD window, not "stolen" victims.

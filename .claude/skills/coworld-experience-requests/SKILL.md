@@ -20,13 +20,18 @@ The request body (`V2CreateExperienceRequestRequest`) is where the experiment
 lives — and the API now does a lot for you, so prefer its built-ins:
 
 - **target**: a division/league (resolves its Coworld) or a direct `coworld_id`.
-- **roster**: your `requester` + named/auto opponents (`top_n` champions), or a
-  fully caller-owned `policy_version_ids` roster.
-- **roles & seats**: per-slot role overrides (`game_config_overrides`) and seat
-  round-robin (`rotate_seats`) — no post-hoc balancing. **Crewrift roles:**
+- **roster**: one list, **exactly one participant per seat** — each
+  `{"player": <selector>, "slot": <int>}`. The selector is `policy_ref`
+  (`"name:vN"` or a UUID — any runnable policy, yours or not), `top_n: N`
+  (champion pool), or `random: true`.
+- **seats**: per-participant `slot` — `-1` (the default) round-robins through the
+  open seats each episode; `0..N-1` pins that seat. Pin yours + leave the rest at
+  `-1` to hold your seat (and role) while the field rotates.
+- **roles**: per-slot role overrides (`game_config_overrides`) — roles are fixed
+  *by seat*, so pinned seat = pinned role. **Crewrift roles:**
   `game_config_overrides.slots` is an **array of objects**, one per slot, e.g.
   `{"slots": [{"role": "imposter"}, {"role": "crew"}, ...]}` (`role` ∈
-  `{"crew","imposter"}`; slot 0 = requester; supply the full array — it replaces the
+  `{"crew","imposter"}`; supply the full array — it replaces the
   whole key). *Not* bare strings. `create` validates this against the live game schema
   before POSTing; full schema in
   [`crewrift-gameplay.md`](../../../crewrift_lab/docs/crewrift-gameplay.md).
@@ -56,9 +61,10 @@ read it before composing a body, and re-check the live schema when a route 4xxs
    ```
 
 2. **Compose the body** per `references/api.md` (target × roster × roles × seats ×
-   count — whatever answers the question), e.g. `/tmp/req.json`. Opponents and the
-   requester accept `player_name`, and the target accepts a division/league name,
-   so you often don't need to resolve every id by hand.
+   count — whatever answers the question), e.g. `/tmp/req.json`. `policy_ref`
+   accepts the `name:vN` label and the target accepts a division/league name, so
+   you often don't need to resolve UUIDs at all — `resolve` is mainly for ranking
+   the field and confirming versions.
 
 3. **Validate + create.** `--check-schema` validates keys against the live schema
    without posting; drop it to POST. The tool reads the request back (through
@@ -70,7 +76,8 @@ read it before composing a body, and re-check the live schema when a route 4xxs
    uv run python .claude/skills/coworld-experience-requests/scripts/experience_request.py \
      create /tmp/req.json                  # for real
    ```
-   Verify it resolved as intended (episode_count, slot 0 = requester, opponents).
+   Verify it resolved as intended (episode_count; the first episodes' participants
+   seat the policies/versions you pinned, with the expected champion spread).
 
 4. **Monitor to completion**, then pull + analyze. "Created" ≠ "done":
 

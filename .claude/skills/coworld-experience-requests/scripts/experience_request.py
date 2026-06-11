@@ -12,6 +12,8 @@ Three subcommands:
 
   resolve  --policy NAME [--version N]      -> policy_version_id(s)
   resolve  --division DIV [--top N]         -> ranked opponents (name + pv id) for the roster
+                                               (roster `policy_ref` also takes "name:vN" labels,
+                                               so resolve is mostly for ranking the field)
   create   <body.json | ->  [--check-schema]  -> validate keys vs live schema, POST, read back
   monitor  <xreq_id>  [--once] [--interval S] -> poll status counts until every child episode is terminal
 

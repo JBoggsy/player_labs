@@ -66,8 +66,10 @@ schema (`Metta-AI/coworld-crewrift`: `coworld_manifest.json` → `config_schema.
 - `slots` is an **array of objects**, one per slot — **not** an array of role strings.
 - Each object: `{"role": "crew"|"imposter", "color"?: <one of the 16 colors above>, "token"?: <str>}`.
   Only `role` matters for role control; `color`/`token` are optional (auto-assigned).
-- The default roster is **8 slots** (6 crew + 2 imposter); **slot 0 is the requester**
-  (your policy). Supply the **full** array — the override replaces the whole `slots` key.
+- The default roster is **8 slots** (6 crew + 2 imposter). Roles attach to **seats**:
+  your policy gets the role of whichever slot you pin its roster participant to
+  (via the request's `roster[].slot`; a round-robin participant visits every open
+  seat's role). Supply the **full** array — the override replaces the whole `slots` key.
 
 ```json
 "game_config_overrides": {"slots": [
