@@ -21,6 +21,7 @@ from crewrift.crewborg.strategy.meeting.context import (
     VOTE_TIMER_TICKS,
 )
 from crewrift.crewborg.strategy.meeting.imposter import bandwagon_target
+from crewrift.crewborg.strategy.meeting import chat_read
 from crewrift.crewborg.strategy.suspicion import top_suspect
 from crewrift.crewborg.types import ActionState, Belief, ChatEvent, Intent
 from players.player_sdk import EmptyModeParams, Mode
@@ -51,6 +52,7 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self._active_vote_target: str | None = None
         self._active_vote_reason: str = ""
         self._vote_submitted = False
+        self._chat_parse_cache: dict[str, set[str]] = {}
 
     def is_legal(self, belief: Belief) -> bool:
         return belief.phase == "Voting"
@@ -161,9 +163,10 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
 
     def _chat_accusers(self, belief: Belief) -> dict[str, int]:
         """Per-color count of *other players* who have accused them in chat — the
-        additive bandwagon signal. Empty until the chat-NLP layer is wired in."""
+        additive bandwagon signal (empty when the chat-NLP model is off / still
+        loading). The per-meeting cache avoids re-parsing the same messages each tick."""
 
-        return {}
+        return chat_read.chat_accusers(belief, cache=self._chat_parse_cache)
 
     # --- LLM call cadence -------------------------------------------------
 
@@ -321,6 +324,7 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self._active_vote_target = None
         self._active_vote_reason = ""
         self._vote_submitted = False
+        self._chat_parse_cache = {}
 
     def _external_chat_signature(self, belief: Belief) -> tuple[tuple[int, str | None, str], ...]:
         self_color = belief.voting.self_marker_color

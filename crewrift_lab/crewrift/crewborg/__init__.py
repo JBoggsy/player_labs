@@ -23,6 +23,7 @@ from crewrift.crewborg.modes import (
     SearchMode,
 )
 from crewrift.crewborg.strategy import RuleBasedStrategy, update_event_log, update_suspicion
+from crewrift.crewborg.strategy.meeting import chat_nlp
 from crewrift.crewborg.types import (
     ActionState,
     Belief,
@@ -71,6 +72,11 @@ def build_runtime(
     per-tick dump; ``CREWBORG_TRACE_GROUPS`` / ``CREWBORG_TRACE_INCLUDE`` can
     target narrower event families without full debug volume.
     """
+
+    # Kick off the spaCy chat-NLP model load in the background now (gated by
+    # CREWBORG_CHAT_NLP), so the ~1.5-2s load overlaps the pre-game idle phases and is
+    # ready before the first meeting — never on the gameplay hot path (design §10.5).
+    chat_nlp.ensure_loading()
 
     registry: ModeRegistry[Belief, ActionState, Intent] = ModeRegistry()
     registry.register(IdleMode)

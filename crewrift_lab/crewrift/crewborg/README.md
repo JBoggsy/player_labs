@@ -68,6 +68,7 @@ crewborg/                (package crewrift.crewborg)
   events.py          CrewborgEventTracer: on_step_complete hook → domain.* events
   modes/             idle/normal/attend_meeting/report_body/accuse + evade/pretend/search/hunt (+ imposter_common helpers)
   strategy/          rule_based.py: mode selector + suspicion.py: Bayesian P(imposter) → believed_imposters + event_log.py: per-player observation log + occupancy.py: perception-tape predicates + opportunity.py: victim/witness logic + trajectory.py: intercept prediction
+  strategy/meeting/  accusation (chat templates + fabrication) + imposter (deflect/bandwagon) + chat_read/chat_nlp (spaCy chat parsing, CREWBORG_CHAT_NLP) + context/schema/llm (LLM path)
   perception/        Sprite-v1 decoder (decoder/tables) + resolution (resolve/entities)
   map/               vendored croatoan.resources + ported parser/bake (§6)
   coworld/           policy_player.py (the websocket bridge) + scene.py

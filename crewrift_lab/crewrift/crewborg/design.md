@@ -894,6 +894,34 @@ The priority order:
 
 Chat and vote stay coupled (we accuse exactly who we then vote for).
 
+### 10.5 Reading opponents' chat (`strategy/meeting/chat_read.py`, `chat_nlp.py`)
+
+The bandwagon's *additive* signal (§10.4) is detecting which crewmates other players
+are **sussing in chat** — getting ahead of suspicion before it hardens into a vote.
+Free-form chat is hard, but the target vocabulary is a **closed set of colors**, which
+we exploit in two stages:
+
+1. **Keyword pre-gate** (cheap, in `chat_read`) — a message is only parsed if it names
+   a color *and* carries a sus cue (`SUS_WORDS`). Most chatter is dropped here.
+2. **Dependency-parse negation scope** (spaCy `en_core_web_sm`, in `chat_nlp`) — the
+   real value over a crude "is a negation word present?" guard, which mishandles
+   `"red isn't sus"` vs `"red is sus not blue"`. The parse tracks which clause a
+   negation/defense word governs, handles contrastive negation, and flips a color
+   adjacent to a *victim* cue (`"when red died"` ⇒ red is the victim, not the suspect).
+   `chat_accusers` then counts the **distinct other speakers** who accused each
+   non-teammate. (Validated at ~19/21 on representative chat vs ~16/21 for keyword +
+   crude negation; the wins are exactly the negation-scope cases.)
+
+**Loading is off the hot path.** `en_core_web_sm` costs ~1.5–2 s to load under the
+hosted ¼-core cap (~40 frames), so `chat_nlp.ensure_loading()` (called at
+`build_runtime`) kicks off a **background daemon thread**; the load overlaps the
+pre-game idle phases and is ready before the first meeting. `get_model()` returns
+`None` until ready, and callers degrade gracefully (no chat signal — the bandwagon
+rests on the reliable vote tally). The whole layer is gated by **`CREWBORG_CHAT_NLP`**
+(default on); unset it and spaCy is never imported or loaded. When the model is off we
+deliberately do **not** fall back to crude keyword matching — its false positives are
+exactly what this layer exists to avoid.
+
 ---
 
 ## 11. Package layout and tracing
@@ -910,6 +938,7 @@ crewborg/
   events.py          # CrewborgEventTracer: on_step_complete hook emitting domain.* events
   modes/             # idle, normal, attend_meeting, report_body, accuse, evade, pretend, search, hunt
   strategy/          # rule_based.py: mode selector; suspicion.py: near-certain detection; event_log.py: per-player observation log; occupancy.py: tape predicates; opportunity/trajectory
+  strategy/meeting/  # context/schema/llm (LLM path); accusation (chat templates); imposter (deflect/bandwagon); chat_read + chat_nlp (spaCy chat parsing)
   perception/        # Sprite-v1 scene decoder: maintain tables, resolve objects → (label, world xy)
   map/               # vendored croatoan.resources + ported parser (§6)
   coworld/           # policy_player.py (the websocket bridge) + scene.py
@@ -1053,6 +1082,7 @@ structural, and each still awaits tuning against a live server.
 | Re-plan cadence | `REPLAN_INTERVAL = 8` ticks (re-root the route at the live position; A* ≈ 0.2 ms) |
 | Voting policy | accuse + vote the **clear leading suspect** — near-certain (`P ≥ VOTE_PROBABILITY=0.8`) or a clear lead (`P ≥ VOTE_LEAD_MIN_P=0.5` and ahead of the runner-up by `VOTE_LEAD_MARGIN=0.2`), §10.1 — else **silent + skip** a flat field; always cast *something* before the timer (not voting costs −10) |
 | LLM meetings | opt-in with `CREWBORG_LLM_MEETINGS=1` + `ANTHROPIC_API_KEY`; default model `claude-haiku-4-5-20251001`; deadline LLM prompt at ≤96 ticks remaining and auto-submit at ≤48 ticks remaining; chat cooldown is 100 ticks |
+| Chat NLP (§10.5) | **on by default**; kill switch `CREWBORG_CHAT_NLP=0` disables it (never imports/loads spaCy). Drives the imposter bandwagon's chat signal via `en_core_web_sm` dependency-parse negation scope, background-loaded so it never blocks play |
 | Aggressive imposter selector | opt-in with `CREWBORG_BE_DUMB=1` or `BE_DUMB=1`; during `Playing`, imposters skip Pretend/Evade/ReportBody and always select Search unless kill-ready with a visible victim, then Hunt |
 | Report policy | crewmates always report visible bodies; imposters evade for `EVADE_TICKS = 72` after their own kill, then may report a non-fresh visible body (§7.2). Suspicion-aware reporting is a possible refinement |
 | Pretend fake-task hold | one task-time (`TASK_TICKS = 72`) held at the station, then re-dispatch |
