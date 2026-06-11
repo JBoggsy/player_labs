@@ -46,27 +46,38 @@ crewborg's imposter problem is **passivity, not skill**:
   victim (`has_visible_victim`, no pre-positioning). So when the kill comes ready it's
   usually mid-pretend somewhere random and has to start hunting cold.
 
-## Current experiment — v23 BE_DUMB ceiling A/B (RUNNING)
+## BE_DUMB ceiling experiment — DONE, rejected (2026-06-11)
 
-Measuring the aggression ceiling + ejection cost **before** tuning (per James, 2026-06-11).
-- **v23** (`2ba6a477`) = the **same v22 image** re-uploaded with `CREWBORG_BE_DUMB=1`
-  (strips Pretend/Evade/Report → Search/Hunt only; `rule_based._select_imposter`). No
-  source change.
-- A/B, both **imposter-pinned (1-imp, slot 0)** vs Competition top-7, 30 eps each — 1-imp
-  so every kill is unambiguously crewborg's (no partner stealing them, which confounded
-  the random-role data). Baseline v22 `xreq_9274d50f`, BE_DUMB v23 `xreq_93e35801`.
-- **What to read:** kills/game and **ejection rate** delta, win rate, and confirm the
-  `pretend`→`hunt` mode shift in v23's traces (proves BE_DUMB reached the pod). If kills
-  rise and ejections stay low → tune `SEARCH_LEAD_TICKS`↑ / add Search-stalk. If ejections
-  spike → the caution was load-bearing; tune conservatively.
+v23 (`2ba6a477`, v22 image + `CREWBORG_BE_DUMB=1`) vs v22, both imposter-pinned (1-imp)
+vs top-7, 30 eps, connect-failure filtered:
+- **v22 baseline:** 2.25 kills/g, **14% ejected**. **v23 BE_DUMB:** 2.47 kills/g (+10%),
+  **40% ejected** (~3×). Mode shift confirmed (pretend 68%→0%, search 24%→97%, hunt
+  1.9%→3.2%) — but **hunt barely moved despite 97% search**: the cap is the 500-tick
+  cooldown + victim isolation, NOT blending time. **Pure aggression is a bad trade.**
+- **Reframe (James):** crewborg's lower league kills (1.73 in 2-imp) vs solo (2.25) is
+  **not** the partner stealing victims — a sloppy partner kills in obvious spots, the body
+  is reported fast, and a **report resets every imposter's kill cooldown**, so we lose our
+  CD window. Only lever on our side: **get our kill in ASAP**. (Parked otherwise.)
+- v22 baseline data lives at `/tmp/ab_v22` (`xreq_9274d50f`); reuse as the A/B baseline.
 
-## The tuning levers (all in `opportunity.py` / `rule_based.py` / `modes/`)
+## Current experiment — v24 "kill sooner" A/B (PENDING build/eval)
 
-- **A — position earlier:** raise `SEARCH_LEAD_TICKS` 100→~250 (one constant).
-- **B — stalk a committed victim:** have Search lock onto `select_victim()` (already
-  implemented) and shadow it at kill-range during cooldown, so Hunt fires the instant
-  the cooldown clears. A+B = "aggressive but keep self-protection".
-- **C — `CREWBORG_BE_DUMB=1`:** the upper bound (this experiment).
+Three targeted changes (committed `2199e4c`), A/B'd vs the v22 baseline (NO BE_DUMB):
+1. `SEARCH_LEAD_TICKS` 100→**250** — start shadowing a victim earlier in the cooldown.
+2. Pretend `DO_TASK` holds a fake task **only while a crewmate is visible**
+   (`has_visible_victim`) — unwatched fake tasks burn cooldown.
+3. The hold **stops the instant** the last crewmate leaves view; empty station
+   re-dispatches and keeps moving toward crew/victims.
+- Build v24 (real `tools/build_player.sh`), upload with **v22 env, NO BE_DUMB**, run
+  imposter-pinned (1-imp, slot 0) vs top-7, ~30 eps; compare kills/g + ejection rate vs
+  `/tmp/ab_v22`. Watch for: kills↑ without the ejection blowup (keeps Evade + a Pretend
+  window, unlike BE_DUMB). Verify the `pretend`/`search` mode shift in v24 traces.
+
+## Remaining kill levers (if v24 helps but not enough)
+
+- **Stalk a committed victim:** have Search lock onto `select_victim()` and shadow it at
+  kill-range during cooldown (sharper than "walk hotspots until a victim is visible").
+- **Partner-report CD reset** (parked): nothing we can do from our side beyond killing ASAP.
 
 ## Working lens — the score-anomaly filter
 
