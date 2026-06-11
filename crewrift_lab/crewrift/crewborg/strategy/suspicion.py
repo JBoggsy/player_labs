@@ -16,6 +16,13 @@ it could deflect onto) — mechanically the same number, but read as "how suspic
 this crewmate *looks* on the shared evidence," to pick the most-citable deflection
 target at a meeting (design §10.4). A ghost holds no suspicion.
 
+**Never ourselves.** Our own player sprite is the camera centre and leaks into the
+roster as if it were another player; ``_recompute`` skips ``belief.self_color`` (and
+``event_log`` skips logging ``tailing_self`` for it — we are trivially always at our
+own spot), so we never tail, suspect, accuse, or vote *ourself*. ``top_suspect`` /
+``active_tail_suspect`` hard-guard the same color regardless, and Attend Meeting refuses
+a self-targeted ballot — defense-in-depth around a bug that otherwise self-ejects us.
+
 **Prior.** With `P` players and `K` imposters, a crewmate knows the `K` imposters
 are among the other `P − 1`; by symmetry each other player's marginal prior is
 `K / (P − 1)`. `K` is derived from the player count via the game's auto formula
@@ -317,8 +324,8 @@ def _recompute(belief: Belief) -> None:
     for color, record in belief.roster.items():
         if record.life_status == "dead":
             continue  # the dead are no threat
-        if color in belief.teammate_colors:
-            continue  # a known teammate is never a target (no-op for a crewmate)
+        if color in belief.teammate_colors or color == belief.self_color:
+            continue  # never score a known teammate, or *ourself* (no-op for a crewmate)
         logit = prior_logit + _evidence_log_lr(belief, record)
         p = _sigmoid(logit)
         suspicion[color] = p
@@ -349,7 +356,7 @@ def active_tail_suspect(belief: Belief) -> str | None:
 
     best: tuple[str, float] | None = None
     for color, p in belief.suspicion.items():
-        if p < ACCUSE_THRESHOLD:
+        if p < ACCUSE_THRESHOLD or color == belief.self_color:
             continue
         record = belief.roster.get(color)
         if record is None or record.life_status == "dead":
@@ -379,11 +386,15 @@ def top_suspect(belief: Belief) -> str | None:
     witnessed catch or a saturated tail), or a clear lead short of that (P over
     `VOTE_LEAD_MIN_P` *and* ahead of the runner-up by `VOTE_LEAD_MARGIN`). A flat field
     — everyone near the prior — names no one, so we skip rather than eject at random.
+
+    **We never return our own color** — a hard guard so the agent can never vote itself
+    out, independent of how suspicion is computed.
     """
 
-    if not belief.suspicion:
+    ranked = [(c, p) for c, p in belief.suspicion.items() if c != belief.self_color]
+    if not ranked:
         return None
-    ranked = sorted(belief.suspicion.items(), key=lambda kv: kv[1], reverse=True)
+    ranked.sort(key=lambda kv: kv[1], reverse=True)
     color, p = ranked[0]
     if p >= VOTE_PROBABILITY:
         return color  # near-certain on its own

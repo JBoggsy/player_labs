@@ -332,6 +332,10 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
 
     def _submit_vote_intent(self, belief: Belief, *, reason: str) -> Intent:
         vote_target = self._resolved_vote_target(belief)
+        # Hard guard: the agent can never vote itself out, whatever suspicion says.
+        self_color = belief.self_color or belief.voting.self_marker_color
+        if self_color is not None and vote_target == self_color:
+            vote_target = VOTE_SKIP
         self._active_vote_target = vote_target
         self._active_vote_reason = reason
         self.emit.event("meeting_vote_selected", {"target": vote_target, "reason": reason})

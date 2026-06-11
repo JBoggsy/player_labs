@@ -59,6 +59,20 @@ def test_attend_meeting_accuses_a_clear_suspect_then_votes_them() -> None:
     assert mode.decide(belief, ActionState()).kind == "vote"
 
 
+def test_meeting_never_votes_self_even_if_self_is_top_suspect() -> None:
+    # The crew-loss bug: our own colour saturated suspicion and we voted ourself out.
+    mode = AttendMeetingMode()
+    belief = Belief(phase="Voting", self_role="crewmate", self_color="red")
+    belief.voting = VotingState(
+        timer_present=True, self_marker_color="red",
+        candidates=(VoteCandidate(slot=0, color="red", alive=True), VoteCandidate(slot=1, color="blue", alive=True)),
+    )
+    belief.suspicion = {"red": 0.99}  # self forced as the only/top suspect
+
+    intent = mode.decide(belief, ActionState())
+    assert intent.kind == "vote" and intent.target_color is None  # skip — never red (self)
+
+
 def test_attend_meeting_stays_silent_and_skips_a_flat_field() -> None:
     mode = AttendMeetingMode()
     belief = Belief(phase="Voting")
