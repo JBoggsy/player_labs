@@ -16,105 +16,76 @@ is the one-screen answer to "where are we and why."
 
 ---
 
-## Current objective — MAKE CREWBORG VOTE
+## Current objective — RAISE THE IMPOSTER KILL RATE
 
-In league play (LLM-off deterministic path) crewborg **always skips meetings** — **0
-player-votes across 42 eval episodes, in *both* roles**. It is the **only** player in the
-field that never votes; every stronger player votes players out. The suspicion machinery
-exists (`strategy/suspicion.py` → `believed_imposters` / `top_suspect`) but never produces
-a vote. **Wire it into real player-votes.** Cross-cutting: helps the **crewmate** (vote
-imposters out to win) *and* the **imposter** (deflect / push wrong ejections).
+crewborg is a respectable mid-pack player (clean 50-game eval, 2026-06-11) but its
+weakest dimension is **imposter kills: ~1.7/game vs the top imposters' ~2.0**, and in
+this game that gap *is* the win gap (64% vs 80% imp win). With 2 imposters the win
+ceiling is ~2 kills each (crew loses at parity), so the goal is concretely **convert
+1-kill games into 2-kill games** — i.e. get *more kill attempts*, not better aim.
 
-Active policy: **v19** (champion, `358ec5fb`). **v20** (ground-truth tick + kill-CD 500)
-sits on `main`, not built/uploaded — fold the voting change in, or sequence after.
+Active policy: **v22** (`40e29a8c`) — the self-vote bugfix, **submitted** to the
+Competition league 2026-06-11 (`sub_9a4b4fa9`), currently **qualifying** in Qualifiers
+(`lpm_dd5c96db`). **v21** (`52fc8572`) is still the live **champion** and carries the
+self-vote bug — **retire it once v22 qualifies into Competition**
+(`coworld retire-membership lpm_3e95ac16`). Don't retire before v22 places (the older
+`competing` versions also have the bug).
 
-## The data that motivates this — manual role-RR eval (42 eps vs rotated top-7, 2026-06-10)
+## The diagnosis that motivates this (5 expanded replays + traces, 2026-06-11)
 
-(Opponents pinned + rotated through roles so each is tested in both — de-confounds the
-earlier `top_n` run. Episodes in `/tmp/rr_eval/`.)
+crewborg's imposter problem is **passivity, not skill**:
+- **Kill conversion is ~100%** — `kill_attempted == kills` in every game. When it tries,
+  it succeeds. The bottleneck is purely **too few attempts** (1–3/game vs a ~4–5 ceiling).
+- **Mode-time is dominated by blending:** **54–74% `pretend`** (fake tasks), only
+  **0.1–2.9% `hunt`**, with big idle gaps (764–983 ticks) between kills — far past the
+  **500-tick kill cooldown**, so cooldown windows are wasted.
+- **It never gets caught:** survived to the end / **never ejected** in all 5 games. It's
+  spending the match buying a safety margin it isn't using → lots of unused aggression.
+- **Root cause in code:** `SEARCH_LEAD_TICKS = 100` (opportunity.py) makes it position
+  only in the *last fifth* of the cooldown, and Hunt requires an **already-visible**
+  victim (`has_visible_victim`, no pre-positioning). So when the kill comes ready it's
+  usually mid-pretend somewhere random and has to start hunting cold.
 
-- **v19 IMPOSTER (21):** win **52%**, kills **1.52** (only ever 1–2, never 3+). Kills
-  predict wins: 1 kill → 40%, 2 kills → 64%.
-- **v19 CREWMATE (21):** win **38%**, all-8 tasks **18/21** — *best task completion in the
-  field*, yet 2nd-worst crew win. Tasks don't win; the meeting/social layer does.
-- **v19 VOTES: 0 player-votes, ~99 skips, 0 timeouts** (both roles) → **always skips**.
-  (The old vote-timeout actuator bug is gone — 0 timeouts — it reliably casts; the cast is
-  just always "skip".)
-- **Field comparison** (each player in both roles, ~9 imp / ~33 crew eps):
-  - Strongest crewmate **truecrew v14** (55% win); strongest imposter **truecrew v14**
-    (100% win) / **crewborg-optimizer-what** (best killer **2.56** @ 78% — a *tuned
-    crewborg fork*, so the architecture has real kill headroom).
-  - **Every player stronger than v19 votes players out, in both roles. v19 never does.**
-  - Imposter **kill lever**: strong imps get 1.9–2.6 kills vs v19's 1.52.
-- **Two levers:** (A) **MAKE IT VOTE** ← this direction (cross-cutting, attributable,
-  machinery exists); (B) imposter kills (v20's kill-CD 500 is a first nudge).
+## Current experiment — v23 BE_DUMB ceiling A/B (RUNNING)
+
+Measuring the aggression ceiling + ejection cost **before** tuning (per James, 2026-06-11).
+- **v23** (`2ba6a477`) = the **same v22 image** re-uploaded with `CREWBORG_BE_DUMB=1`
+  (strips Pretend/Evade/Report → Search/Hunt only; `rule_based._select_imposter`). No
+  source change.
+- A/B, both **imposter-pinned (1-imp, slot 0)** vs Competition top-7, 30 eps each — 1-imp
+  so every kill is unambiguously crewborg's (no partner stealing them, which confounded
+  the random-role data). Baseline v22 `xreq_9274d50f`, BE_DUMB v23 `xreq_93e35801`.
+- **What to read:** kills/game and **ejection rate** delta, win rate, and confirm the
+  `pretend`→`hunt` mode shift in v23's traces (proves BE_DUMB reached the pod). If kills
+  rise and ejections stay low → tune `SEARCH_LEAD_TICKS`↑ / add Search-stalk. If ejections
+  spike → the caution was load-bearing; tune conservatively.
+
+## The tuning levers (all in `opportunity.py` / `rule_based.py` / `modes/`)
+
+- **A — position earlier:** raise `SEARCH_LEAD_TICKS` 100→~250 (one constant).
+- **B — stalk a committed victim:** have Search lock onto `select_victim()` (already
+  implemented) and shadow it at kill-range during cooldown, so Hunt fires the instant
+  the cooldown clears. A+B = "aggressive but keep self-protection".
+- **C — `CREWBORG_BE_DUMB=1`:** the upper bound (this experiment).
 
 ## Working lens — the score-anomaly filter
 
 Scoring (`docs/crewrift-gameplay.md` §6): win +100 · task +1 (×8) · kill +10 ·
-vote-timeout −10. "Clean success": crew **8** (all tasks, lost) / **108** (won); imposter
-**20/30** (lost, 2–3 kills) / **120/130/140** (won). Join scores to crewborg by
-`policy_version_id`, never by slot. Round episodes are queryable cheaply:
-`coworld episodes --round <id> --policy crewborg --json`.
+vote-timeout −10. Imposter "clean success": **20/30** (lost, 2–3 kills) /
+**120/130/140** (won). Join scores to crewborg by `policy_version_id`, never by slot.
+**Always filter connect/disconnect-timeout episodes (−100) before concluding** — they
+corrupt win rates platform-wide (see tentative lessons).
 
-## Tooling/state already in place (use these for this work)
+## Imposter code map (for this work)
 
-- **Tracing**: per-tick traces/metrics upload as an **uncapped artifact zip** (default
-  `jsonl@artifact`); pull with `coworld-episode-artifacts`. The per-tick `decision_snapshot`
-  has a `voting` section (`cursor_slot`/`cursor_on_skip`/`candidates`/`vote_confirmed`) and
-  meeting events (`meeting_vote_selected`, `vote_cast`) — use these to **see** vote decisions.
-- **Ground-truth tick** threads through perception/belief/all tracing (v20). Offline nav-bake
-  fixed the spawn freeze. A/B with the `crewrift-ab` skill.
-
-## Status — voting rule + suspicion refactor LANDED (not yet committed/built)
-
-Implemented this session (all 290 crewborg tests pass, ruff clean; on `main`, uncommitted):
-
-1. **Suspicion refactor — one probability, no `confirmed_imposters` set.** Witnessed
-   kills/vents are now `kill`/`vent_use` **point events on the perpetrator's event log**
-   (`_log_witnessed` in `suspicion.py`), mapped to `WITNESSED_LOG_LR` by `_evidence_log_lr`.
-   `witnessed_imposters(belief)` derives the caught set for tracing. `_recompute` iterates
-   `belief.roster` only. Consumers updated: `events.py`, `strategy/meeting/context.py`.
-2. **New signal — being tailed (`tailing_self`).** `event_log.py` logs a player sustained
-   within `TAIL_SELF_RADIUS_SQ=64²` of *us* (target_color None = me). `_tailing_self_log_lr`
-   is a **logistic in duration** (`MAX=ln40`, midpoint 30t, steepness 0.2): 15t→P≈0.32,
-   30t→0.72, 50t→0.94 (over the flee bar). Strong, needs no death.
-3. **Vote rule (A) — clear leading suspect.** `top_suspect` now fires on near-certainty
-   (`P ≥ VOTE_PROBABILITY=0.8`) **or** a clear lead (`P ≥ VOTE_LEAD_MIN_P=0.5` *and* ahead
-   of runner-up by `VOTE_LEAD_MARGIN=0.2`); a flat field → skip. (Was: absolute 0.8 only ⇒
-   never fired.)
-4. **Accusation chat + no default opener.** Removed `MEETING_CHAT="no read, skipping"`.
-   Deterministic path now **accuses then votes** the suspect (`build_accusation` in
-   `strategy/meeting/accusation.py` → `"<color> sus: <reasons>"`, reasons ranked by each
-   cue's log-LR, capped at `MAX_REASONS=3`) and stays **silent + skips** a flat field.
-   Chat coupled to vote (accuse exactly whom we vote). Imposter = silent+skip (empty
-   suspicion) — deflection is part B.
-5. **Accuse mode (renamed Flee) + tailing recalibration.** Tailing now saturates at a
-   *moderate* **P ≈ 0.72** (`TAIL_SELF_LOG_LR_MAX = ln 6.5`, was ln 40 / 0.94) — below
-   the flee/near-certain bars. New: when **actively tailed** by a suspect over
-   `ACCUSE_THRESHOLD=0.6` (`active_tail_suspect`, ~34 t of live tail), the selector
-   drops tasks → **Accuse mode** (`modes/accuse.py`): walk to the emergency button and
-   `call_meeting` (new intent; actuator `_resolve_call_meeting` mirrors report). The
-   opened meeting accuses+votes the tail via the path above. **Replaces Flee entirely**
-   (no more run-away; `flee_from` intent + `FleeMode` removed). The button is **one-shot
-   per game** (`buttonCalls=1`): the selector tracks `_button_call_spent` (set when
-   inside the button rect) and falls back to tasks after, resetting on a new game
-   (`Lobby`/`RoleReveal`). `believed_imposters` (P≥0.9) is now belief-state only (seeds
-   the vote), gates no reactive mode. Trigger is **only** active tailing (per James), per
-   the AskUserQuestion answers.
-
-**Remaining for this direction:**
-- **Carve-out dropped** (per James): the "chat anyway when *we* called the meeting" idea — gone, not doing it.
-- **Part B:** imposter deflection (never vote a teammate; push a crewmate ejection; bluff chat).
-- **Not committed, do not push** (James's standing instruction this session). Fold into
-  v20 (tick + kill-CD) and A/B vs v19 before any league push.
-
-## Voting / accuse code map
-
-- `strategy/suspicion.py` — `top_suspect` (clear-leading-suspect), `active_tail_suspect`
-  (Accuse trigger), `witnessed_imposters`, `_evidence_log_lr`, `_tailing_self_log_lr`.
-- `modes/attend_meeting.py` `_decide_deterministic` — accuse+vote / silent+skip.
-- `modes/accuse.py` — `AccuseMode` → `call_meeting` (go to button).
-- `strategy/rule_based.py` — selector: Accuse trigger + sticky commit + button-spent tracking.
-- `strategy/meeting/accusation.py` — `build_accusation` (the `<color> sus: <reasons>` line).
-- `action.py` `_resolve_call_meeting` (button press), `_resolve_vote` (ballot cursor).
+- `strategy/rule_based.py` `_select_imposter` — the gate: evade → report_body →
+  (`self_kill_ready` & `has_visible_victim`)→hunt → (`ticks_until_kill_ready ≤
+  SEARCH_LEAD_TICKS`)→search → else **pretend**. `CREWBORG_BE_DUMB` shortcut at the top.
+- `strategy/opportunity.py` — `SEARCH_LEAD_TICKS`, `DEFAULT_KILL_COOLDOWN_TICKS=500`,
+  `select_victim` (most-isolated reachable visible straggler), `has_visible_victim`,
+  `unwitnessed`/`kill_urgency_ticks` (witness bar relaxes with urgency), `TEAMMATE_CLAIM_RADIUS`.
+- `modes/hunt.py` / `modes/search.py` / `modes/pretend.py` / `modes/evade.py` — the modes.
+- **Trace to verify:** per-tick `domain.decision_snapshot` (mode/intent) + `domain.kill_attempted`
+  in the artifact `telemetry.jsonl`; expand replays with `tools/bin/expand_replay`
+  (the `3ea899eb` build matches game 0.1.51) for objective kill ticks — but **trust
+  results.json for kill COUNTS** (replay attribution is unreliable at simultaneous-body ticks).
