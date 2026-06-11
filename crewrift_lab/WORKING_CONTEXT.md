@@ -16,6 +16,16 @@ is the one-screen answer to "where are we and why."
 
 ---
 
+## Active league state (2026-06-11)
+
+- **v24** (`b725a6e1`) = self-vote fix (v22) + kill-sooner. **Submitted** `sub_e6969016`
+  (provisional, pending the large A/B). **v22** `sub_9a4b4fa9` and **v21** `sub_2c8afd84`
+  (still the buggy champion) are now both superseded — retire once v24 places.
+- **Large 2-imp confirmation A/B RUNNING** (2×100 eps/arm, pooled): v22 `xreq_8442b2e3`
+  + `xreq_bad4a426`; v24 `xreq_97e04fdd` + `xreq_753bdfa1`. Powered (>90%) for the
+  observed +0.23 kills/g gap. Analyze crewborg's own kills (`results.json` by
+  `policy_version_id`), connect-failure filtered; this decides whether v24's kill gain is real.
+
 ## Current objective — RAISE THE IMPOSTER KILL RATE
 
 crewborg is a respectable mid-pack player (clean 50-game eval, 2026-06-11) but its
