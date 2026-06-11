@@ -33,9 +33,12 @@ in two tiers:
 - **Always on (deltas + meeting snapshots), lean enough for hosted log caps:**
   ``player_event`` when a new observation interval opens on someone's log,
   ``player_died`` on an alive→dead transition, ``imposter_confirmed`` /
-  ``believed_changed`` when the suspicion sets move, and a full ``suspicion_snapshot``
+  ``believed_changed`` when the suspicion sets move, a full ``suspicion_snapshot``
   (ranked posteriors + each suspect's event log + the would-be vote and the bar)
-  at the start of every meeting. For the imposter, ``kill_ready_changed`` fires on
+  at the start of every meeting, and ``meeting_decision`` (emitted by Attend Meeting)
+  when the deterministic path commits — the headline meeting diagnostic: role, path,
+  target, real-vs-fabricated, and the imposter's heat (vote tally + chat accusers) and
+  chat-NLP state. For the imposter, ``kill_ready_changed`` fires on
   every kill cooldown→ready / ready→cooldown edge (with ``ready_since_tick``,
   ``urgency_ticks``, and whether a victim is trackable) — so kill-window utilization
   (how promptly the strike follows the cooldown clearing, and whether the gap is
@@ -353,7 +356,8 @@ class CrewborgEventTracer:
         if self._meeting_snapshotted:
             return
         self._meeting_snapshotted = True
-        # Suspicion is crewmate-only (cleared for imposter/ghost), so nothing to show otherwise.
+        # Held by both live roles now: a crewmate's genuine belief, or an imposter's
+        # deflection view over non-teammates (§10.4). A ghost has none ⇒ nothing to show.
         if not belief.suspicion:
             return
         target = top_suspect(belief)
@@ -370,6 +374,7 @@ class CrewborgEventTracer:
         emit.event(
             "suspicion_snapshot",
             {
+                "role": belief.self_role,  # crewmate belief vs imposter deflection view
                 "prior": round(_prior_imposter_p(belief), 4),
                 "ranking": ranking,
                 "confirmed": sorted(witnessed),

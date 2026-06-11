@@ -51,6 +51,16 @@ def get_model() -> Any | None:
     return _model
 
 
+def state() -> str:
+    """A one-word status for tracing: ``disabled`` / ``loading`` / ``ready`` / ``failed``."""
+
+    if not is_enabled():
+        return "disabled"
+    if _model is not None:
+        return "ready"
+    return "failed" if _failed else "loading"
+
+
 def _load() -> None:
     global _model, _failed
     try:

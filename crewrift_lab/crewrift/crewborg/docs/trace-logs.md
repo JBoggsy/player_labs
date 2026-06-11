@@ -68,9 +68,19 @@ prefilter with **`grep '^{'`** (it also drops any Kubernetes collector-error lin
   `last_seen_tick`, `dist`, and `tailing_self`), `task`, `accuse`
   `{target_color,target_p,button_xy,button_dist}` when calling a meeting,
   `nav {route_goal,next_waypoint}`.
-- **`domain.suspicion_snapshot`** — one per meeting (crewmate only); explains the vote.
+- **`domain.suspicion_snapshot`** — one per meeting (both live roles now); explains the
+  vote. `role` (a crewmate belief vs an imposter deflection view over non-teammates),
   `ranking[]` of `{color, p, events[]}` sorted by descending `p` (posterior
   P(imposter) ∈ [0,1]), plus `vote_bar`, `would_vote`, `confirmed[]`, `believed[]`.
+- **`domain.meeting_decision`** — one per meeting, fired when the deterministic path
+  commits. **The headline diagnostic for the new meeting modes.** `role`, `path`
+  (crewmate `accuse`/`silent_skip`; imposter `proactive`/`bandwagon`/`skip`), `target`,
+  `fabricated` (imposter bandwagon), `top_suspect`. For an imposter it also carries the
+  **heat** that drove it — `votes` (vote tally by color), `chat_accusers` (per-color
+  count from chat NLP) — and `nlp` (the spaCy state: `ready`/`loading`/`disabled`/
+  `failed`). A matching `meeting_decision` counter is tagged by `role`+`path` for
+  cross-episode aggregation. Cross-reference with `chat_received` to see which heard
+  messages produced (or didn't produce) an accuser.
 
 ## Other domain events
 

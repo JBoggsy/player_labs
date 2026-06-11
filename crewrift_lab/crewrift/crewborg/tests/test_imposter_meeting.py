@@ -7,6 +7,7 @@ from crewrift.crewborg.perception.entities import VoteCandidate, VoteDot, Voting
 from crewrift.crewborg.strategy.meeting.accusation import build_accusation, fabricate_accusation
 from crewrift.crewborg.strategy.meeting.imposter import bandwagon_target, votes_against
 from crewrift.crewborg.types import ActionState, Belief, PlayerEvent, PlayerRecord
+from players.player_sdk import EventEmitter, ListMetricsSink, ListTraceSink
 
 
 def _voting(self_color="orange", **kwargs) -> VotingState:
@@ -141,6 +142,26 @@ def test_imposter_stays_quiet_when_only_a_teammate_takes_heat() -> None:
     belief.voting = _voting(dots=(VoteDot(voter=2, target=1),))  # yellow voted blue (teammate)
 
     assert mode.decide(belief, ActionState()).kind == "idle"  # don't help eject our own
+
+
+def test_meeting_decision_trace_captures_the_bandwagon_and_its_heat() -> None:
+    sink = ListTraceSink()
+    mode = AttendMeetingMode()
+    mode.emit = EventEmitter(sink, ListMetricsSink())
+    belief = Belief(phase="Voting", self_role="imposter", teammate_colors={"green"})
+    belief.suspicion = {"red": 0.3, "blue": 0.3}  # no real lead
+    belief.voting = _voting(dots=(VoteDot(voter=2, target=1),))  # yellow voted blue
+    belief.roster["blue"] = PlayerRecord(color="blue", life_status="alive")
+
+    mode.decide(belief, ActionState())
+
+    [event] = [e for e in sink.events if e.name == "domain.meeting_decision"]
+    assert event.data["role"] == "imposter"
+    assert event.data["path"] == "bandwagon"
+    assert event.data["target"] == "blue"
+    assert event.data["fabricated"] is True
+    assert event.data["votes"] == {"blue": 1}  # the heat that drove it is recorded
+    assert "chat_accusers" in event.data and "nlp" in event.data
 
 
 def test_imposter_skips_at_the_deadline_when_no_crewmate_takes_heat() -> None:

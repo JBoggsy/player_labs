@@ -20,8 +20,8 @@ from crewrift.crewborg.strategy.meeting.context import (
     CHAT_COOLDOWN_TICKS,
     VOTE_TIMER_TICKS,
 )
-from crewrift.crewborg.strategy.meeting.imposter import bandwagon_target
-from crewrift.crewborg.strategy.meeting import chat_read
+from crewrift.crewborg.strategy.meeting.imposter import bandwagon_target, votes_against
+from crewrift.crewborg.strategy.meeting import chat_nlp, chat_read
 from crewrift.crewborg.strategy.suspicion import top_suspect
 from crewrift.crewborg.types import ActionState, Belief, ChatEvent, Intent
 from players.player_sdk import EmptyModeParams, Mode
@@ -53,6 +53,7 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self._active_vote_reason: str = ""
         self._vote_submitted = False
         self._chat_parse_cache: dict[str, set[str]] = {}
+        self._decision_traced = False
 
     def is_legal(self, belief: Belief) -> bool:
         return belief.phase == "Voting"
@@ -124,7 +125,11 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
                 self._tentative_vote = target  # couple the vote to whoever we accuse
                 accusation = build_accusation(belief, target)
                 if accusation is not None:
+                    self._trace_meeting_decision(belief, role="crewmate", path="accuse", target=target)
                     return self._send_chat_intent(belief, accusation, reason="accusing clear suspect")
+                self._trace_meeting_decision(belief, role="crewmate", path="vote_no_chat", target=target)
+            else:
+                self._trace_meeting_decision(belief, role="crewmate", path="silent_skip", target=None)
         return self._submit_vote_intent(belief, reason="deterministic meeting vote")
 
     def _decide_imposter(self, belief: Belief) -> Intent:
@@ -144,22 +149,62 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
             if accusation is not None:
                 self._tentative_vote = target
                 self._deterministic_chatted = True
+                self._trace_meeting_decision(belief, role="imposter", path="proactive", target=target)
                 return self._send_chat_intent(belief, accusation, reason="imposter deflect: real evidence")
 
         # 2. Reactive bandwagon — a crewmate already taking heat (votes + chat).
-        bandwagon = bandwagon_target(belief, self._chat_accusers(belief))
+        accusers = self._chat_accusers(belief)
+        bandwagon = bandwagon_target(belief, accusers)
         if bandwagon is not None:
             self._tentative_vote = bandwagon
             self._deterministic_chatted = True
             fabricated = fabricate_accusation(belief, bandwagon)
+            self._trace_meeting_decision(
+                belief, role="imposter", path="bandwagon", target=bandwagon,
+                fabricated=fabricated is not None, accusers=accusers,
+            )
             if fabricated is not None:
                 return self._send_chat_intent(belief, fabricated, reason="imposter bandwagon: fabricated")
             return self._submit_vote_intent(belief, reason="imposter bandwagon vote")
 
         # 3. No one to deflect onto yet — wait, then skip at the deadline.
         if self._should_auto_submit(belief):
+            self._trace_meeting_decision(belief, role="imposter", path="skip", target=None, accusers=accusers)
             return self._submit_vote_intent(belief, reason="imposter deadline: no deflection, skip")
         return Intent(kind="idle", reason="imposter waiting for a crewmate to take heat")
+
+    def _trace_meeting_decision(
+        self,
+        belief: Belief,
+        *,
+        role: str,
+        path: str,
+        target: str | None,
+        fabricated: bool = False,
+        accusers: dict[str, int] | None = None,
+    ) -> None:
+        """One structured record of the deterministic meeting decision, fired once when
+        we commit. The headline diagnostic for the new meeting modes: which path
+        (accuse / silent_skip · proactive / bandwagon / skip), the target, real vs
+        fabricated, and — for an imposter — the heat that drove it (vote tally + chat
+        accusers) and the chat-NLP state, so a replay explains *why* it did what it did."""
+
+        if self._decision_traced:
+            return
+        self._decision_traced = True
+        data: dict[str, Any] = {
+            "role": role,
+            "path": path,
+            "target": target,
+            "fabricated": fabricated,
+            "top_suspect": top_suspect(belief),
+        }
+        if role == "imposter":
+            data["votes"] = votes_against(belief)
+            data["chat_accusers"] = accusers if accusers is not None else {}
+            data["nlp"] = chat_nlp.state()
+        self.emit.event("meeting_decision", data)
+        self.emit.counter("meeting_decision", tags={"role": role, "path": path})
 
     def _chat_accusers(self, belief: Belief) -> dict[str, int]:
         """Per-color count of *other players* who have accused them in chat — the
@@ -325,6 +370,7 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self._active_vote_reason = ""
         self._vote_submitted = False
         self._chat_parse_cache = {}
+        self._decision_traced = False
 
     def _external_chat_signature(self, belief: Belief) -> tuple[tuple[int, str | None, str], ...]:
         self_color = belief.voting.self_marker_color
