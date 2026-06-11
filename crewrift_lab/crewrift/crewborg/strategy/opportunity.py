@@ -46,8 +46,14 @@ DEFAULT_KILL_COOLDOWN_TICKS = 500
 
 # Enter Search this many ticks before the kill comes off cooldown. Search finds
 # and follows a victim; Hunt only activates once the kill is ready and a victim is
-# visible.
-SEARCH_LEAD_TICKS = 100
+# visible. Raised from 100 → 250 (half the 500-tick cooldown): we want to be already
+# shadowing an isolated victim when the kill comes ready, so the cooldown window
+# converts to a kill ASAP — a partner's kill→report can reset our cooldown, so banking
+# our own kill quickly is the only lever on our side (see tentative lessons). 250
+# deliberately stops short of "search the whole cooldown": the BE_DUMB ceiling arm
+# (search ~97% of ticks) tripled our ejection rate (14%→40%) for only +10% kills, so we
+# keep a Pretend window for cover.
+SEARCH_LEAD_TICKS = 250
 
 # Backwards-compatible name for docs/tests that still refer to the old Hunt lead
 # term. New code should use SEARCH_LEAD_TICKS.

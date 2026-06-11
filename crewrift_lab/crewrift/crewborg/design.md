@@ -523,7 +523,7 @@ re-decides.
 
 | Mode | Active when | Intents emitted |
 |---|---|---|
-| **Pretend** | default imposter stance, while kill cooldown is not near ready | pick a room from **expected crew occupancy density**, penalize rooms where a teammate-imposter is likely present, choose a real task station in that room, move there, and hold for one task duration. Rooms without fake-task stations and the start room are skipped |
+| **Pretend** | default imposter stance, while kill cooldown is not near ready | pick a room from **expected crew occupancy density**, penalize rooms where a teammate-imposter is likely present, choose a real task station in that room, move there, and hold for one task duration **only while a crewmate is visible** — an unwatched fake task is wasted cooldown, so an empty room re-dispatches (keeps moving toward crew/victims) instead of idling. Rooms without fake-task stations and the start room are skipped |
 | **Search** | kill ready or within `SEARCH_LEAD_TICKS` of ready, but no visible kill target | walk ranked occupancy hot spots until a non-teammate crewmate is visible; once one is found, follow its live / recent last-seen position until Hunt can take over |
 | **Hunt** | kill ready **and** a victim is visible | **commit to a visible victim and close/strike**: `select_victim` picks the most-isolated reachable visible crewmate, preferring targets not already claimed by a closer teammate; navigate to its **predicted intercept** (`strategy.trajectory` — lead a moving target); when in KillRange *and* unwitnessed → `kill`, else keep shadowing in range (lie in wait) |
 | **Evade** | for `EVADE_TICKS` after our own kill | `vent` if a vent exists; otherwise move away from the nearest known body. This avoids instant self-reports and gets the imposter away from the corpse before Search/Hunt/Pretend resume |
@@ -533,8 +533,13 @@ re-decides.
 **Pretend is the imposter's default blending behaviour.** It does not follow
 visible crew and it carries no victim state. It chooses a highest-scoring
 occupancy room that has a real task station, moves to that station, and idles for
-`TASK_TICKS` (72) to fake task completion. If no occupancy room is available, it
-falls back to deterministic task-station wandering outside the start room.
+`TASK_TICKS` (72) to fake task completion — **but only while a crewmate is in view**
+(`has_visible_victim`). A fake task with no audience fools no one and burns the kill
+cooldown, so an empty station re-dispatches and keeps moving toward crew-dense rooms
+instead of standing there; this both refuses to *start* an unwatched hold and *stops*
+one the instant the last crewmate leaves view (get the kill in ASAP — a partner's
+kill→report can reset our cooldown). If no occupancy room is available, it falls back
+to deterministic task-station wandering outside the start room.
 
 ```
                  ╔══════════════════════════════════════════════════╗
@@ -565,14 +570,16 @@ falls back to deterministic task-station wandering outside the start room.
 |---|---|---|
 | **DISPATCH** | transient chooser | occupancy target available → **GOTO_TASK**(best room's task station); else → **GOTO_TASK**(fallback station outside current/start room) |
 | **GOTO_TASK**(station) | `navigate_to` a real task station in the selected room. Keep the chosen occupancy room for `ROOM_TARGET_MIN_TICKS` unless arriving, so noisy room scores do not cause route thrash | arrived at station → **DO_TASK**; no station/target exhausted → pick another station |
-| **DO_TASK**(station) | **hold `TASK_TICKS` (72)** (`idle` — a fake task) | hold complete → **DISPATCH** |
+| **DO_TASK**(station) | **hold `TASK_TICKS` (72)** (`idle` — a fake task), **only while a crewmate is visible** | hold complete *or* no crewmate in view → **DISPATCH** |
 
 Notes: the **starting room never triggers DO_TASK** (every player is co-located
 there at spawn, and anchoring a task there strands the imposter when the crew
-disperses). DO_TASK **holds the full duration** even if crewmates pass by — only
-Evade / Search / Hunt / Report Body (via the selector) can preempt it. Occupancy and
-fallback choices are **arbitrary-but-deterministic** — no RNG — so runs are
-reproducible without synchronizing both imposters onto the same round-robin path.
+disperses). DO_TASK holds for the task duration **but only with an audience** — it
+will not start an unwatched hold and abandons one the instant no crewmate is visible
+(`has_visible_victim`), re-dispatching to keep moving; Evade / Search / Hunt / Report
+Body (via the selector) can also preempt it. Occupancy and fallback choices are
+**arbitrary-but-deterministic** — no RNG — so runs are reproducible without
+synchronizing both imposters onto the same round-robin path.
 
 **Search owns the pre-kill lead window.** When the cooldown is ready or within
 `SEARCH_LEAD_TICKS`, but no visible victim is available, Search walks ranked
@@ -1088,7 +1095,7 @@ structural, and each still awaits tuning against a live server.
 | Pretend fake-task hold | one task-time (`TASK_TICKS = 72`) held at the station, then re-dispatch |
 | Pretend room targeting | room score = expected crew density minus teammate-imposter pressure (`TEAMMATE_ROOM_PENALTY = 3.0`); choose a real task station in the selected room; keep a chosen room for `ROOM_TARGET_MIN_TICKS = 10000` unless arriving or being preempted |
 | Kill isolation bar | clearance `BASE_ISOLATION_RADIUS = 48` px and witness window `WITNESS_WINDOW_TICKS = 72`, both relaxed to zero by urgency `URGENCY_FULL_TICKS = 240` |
-| Search lead | enter Search `SEARCH_LEAD_TICKS = 100` before the kill is ready. Time-to-ready is reconstructed from the binary HUD: a learned `kill_cooldown_estimate` (or `DEFAULT_KILL_COOLDOWN_TICKS = 500`, matching the live game's `killCooldownTicks`, until measured) from the tracked cooldown start |
+| Search lead | enter Search `SEARCH_LEAD_TICKS = 250` before the kill is ready (half the 500-tick cooldown — raised from 100 so we are already shadowing an isolated victim when the kill comes ready, converting the cooldown window to a kill ASAP; stops short of the BE_DUMB ceiling, which tripled ejections for +10% kills). Time-to-ready is reconstructed from the binary HUD: a learned `kill_cooldown_estimate` (or `DEFAULT_KILL_COOLDOWN_TICKS = 500`, matching the live game's `killCooldownTicks`, until measured) from the tracked cooldown start |
 | Hunt victim tracking | Hunt requires a visible victim; Search may follow a committed victim seen within `TRACK_WINDOW_TICKS = 120`; trajectory lead is capped at `MAX_LEAD_TICKS = 24` (velocity from sightings ≤ `VELOCITY_MAX_DT = 4` apart, `AGENT_SPEED_PX = 3`) |
 | Hunt teammate claim | prefer an unclaimed victim when a teammate-imposter seen within `TRACK_WINDOW_TICKS` is closer to another victim inside `TEAMMATE_CLAIM_RADIUS = 80` px |
 
