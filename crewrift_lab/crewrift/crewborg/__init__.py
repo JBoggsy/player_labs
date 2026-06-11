@@ -12,9 +12,9 @@ from crewrift.crewborg.action import resolve_action
 from crewrift.crewborg.events import CrewborgEventTracer
 from crewrift.crewborg.map import MapData, load_croatoan_map
 from crewrift.crewborg.modes import (
+    AccuseMode,
     AttendMeetingMode,
     EvadeMode,
-    FleeMode,
     HuntMode,
     IdleMode,
     NormalMode,
@@ -23,6 +23,7 @@ from crewrift.crewborg.modes import (
     SearchMode,
 )
 from crewrift.crewborg.strategy import RuleBasedStrategy, update_event_log, update_suspicion
+from crewrift.crewborg.strategy.meeting import chat_nlp
 from crewrift.crewborg.types import (
     ActionState,
     Belief,
@@ -61,7 +62,7 @@ def build_runtime(
     snapshot sees current search and ``believed_imposters`` state. The static map
     is baked once here (design §6) — ``map_data`` overrides the vendored
     ``croatoan`` bake (tests).
-    Registers all modes: idle / normal / attend_meeting / report_body / flee
+    Registers all modes: idle / normal / attend_meeting / report_body / accuse
     (crewmate) and evade / pretend / search / hunt (imposter). A ``CrewborgEventTracer``
     is wired as the runtime's ``on_step_complete`` hook so crewborg emits its
     ``domain.*`` trace events through the configured sinks (design §11): the
@@ -72,12 +73,17 @@ def build_runtime(
     target narrower event families without full debug volume.
     """
 
+    # Kick off the spaCy chat-NLP model load in the background now (gated by
+    # CREWBORG_CHAT_NLP), so the ~1.5-2s load overlaps the pre-game idle phases and is
+    # ready before the first meeting — never on the gameplay hot path (design §10.5).
+    chat_nlp.ensure_loading()
+
     registry: ModeRegistry[Belief, ActionState, Intent] = ModeRegistry()
     registry.register(IdleMode)
     registry.register(NormalMode)
     registry.register(AttendMeetingMode)
     registry.register(ReportBodyMode)
-    registry.register(FleeMode)
+    registry.register(AccuseMode)
     registry.register(EvadeMode)
     registry.register(HuntMode)
     registry.register(PretendMode)

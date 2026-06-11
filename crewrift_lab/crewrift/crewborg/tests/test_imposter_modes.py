@@ -287,6 +287,8 @@ def test_pretend_starts_fake_task_on_arrival_before_retargeting() -> None:
         support_cell_count=1,
     )
 
+    _see(belief, 1001, (90, 50))  # a crewmate is watching ⇒ the fake task is worth holding
+
     mode = PretendMode()
     mode._state = "goto_room"
     mode._target_room_name = "A"
@@ -296,10 +298,43 @@ def test_pretend_starts_fake_task_on_arrival_before_retargeting() -> None:
 
     intent = mode.decide(belief, ActionState())
     assert intent.kind == "idle"
-    assert intent.reason == "faking a task"
+    assert intent.reason == "faking a task (crew watching)"
     assert mode._state == "do_task"
     assert mode._target_room_name == "A"
     assert mode._hold_until == belief.last_tick + 72
+
+
+def test_pretend_does_not_fake_a_task_with_no_crewmate_watching() -> None:
+    # Change 2: arriving at a station with an empty room ⇒ don't idle a fake task; keep
+    # moving so the kill cooldown converts to a real kill sooner.
+    map_data = _shadow_map()
+    nav = build_nav_graph(np.ones((120, 200), dtype=bool), map_data=map_data)
+    belief = _belief(map_data, nav, (80, 50), tick=20)  # at room A's station, nobody in view
+    mode = PretendMode()
+    mode._state = "do_task"
+    mode._task_station = (80, 50)
+
+    intent = mode.decide(belief, ActionState())
+    assert intent.kind == "navigate_to"  # re-dispatched out, not idling
+    assert mode._hold_until is None  # never started the hold
+
+
+def test_pretend_abandons_a_fake_task_when_the_last_crewmate_leaves_view() -> None:
+    # Change 3: a hold already in progress stops the instant no crewmate is visible.
+    map_data = _shadow_map()
+    nav = build_nav_graph(np.ones((120, 200), dtype=bool), map_data=map_data)
+    belief = _belief(map_data, nav, (80, 50), tick=20)
+    _see(belief, 1001, (90, 50))  # watcher present
+    mode = PretendMode()
+    mode._state = "do_task"
+    mode._task_station = (80, 50)
+
+    watched = mode.decide(belief, ActionState())
+    assert watched.kind == "idle" and watched.reason == "faking a task (crew watching)"
+
+    belief.roster["green"].last_seen_tick = 5  # the watcher is no longer visible this tick
+    abandoned = mode.decide(belief, ActionState())
+    assert abandoned.kind == "navigate_to"  # stopped faking, moving on
 
 
 def test_pretend_does_not_fake_a_task_in_the_starting_room() -> None:

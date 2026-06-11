@@ -10,6 +10,9 @@ where crew occupancy is high.
     GOTO_ROOM(R)      fallback movement to a real task station; never idles
         • arrived near fallback station                        → DO_TASK
     DO_TASK(station)  go to the station, then hold TASK_TICKS (a fake task) → DISPATCH
+        • but only hold while a crewmate is visible — a fake task with no audience
+          fools no one and burns cooldown, so an empty room re-dispatches (keeps
+          moving toward crew/victims) instead of idling there (get kills ASAP).
 
 Occupancy room choices are deterministic but no longer synchronized round-robin:
 room density comes from the crew occupancy grid, while a separate teammate estimate
@@ -25,6 +28,7 @@ from __future__ import annotations
 from crewrift.crewborg.agent_tracking import best_pretend_room_target
 from crewrift.crewborg.modes import imposter_common as ic
 from crewrift.crewborg.map.types import Room
+from crewrift.crewborg.strategy.opportunity import has_visible_victim
 from crewrift.crewborg.types import ActionState, Belief, Intent
 from players.player_sdk import EmptyModeParams, Mode, ModeParams
 
@@ -106,18 +110,30 @@ class PretendMode(Mode[Belief, ActionState, Intent]):
 
     def _do_task(self, belief: Belief, self_xy: ic.Point) -> Intent:
         if self._task_station is None:
-            self._state = None
-            self._dispatch(belief, self_xy)
-            return self._act(belief, self_xy)
+            return self._redispatch(belief, self_xy)
         if ic.dist2(self_xy, self._task_station) > ARRIVE_RADIUS_SQ:
             return Intent(kind="navigate_to", point=self._task_station, reason="heading to a task station")
+        # A fake task only sells the disguise to someone watching. With no crewmate in
+        # view, idling at the station is wasted cooldown — abandon it and keep moving
+        # (toward crew-dense rooms) so the cooldown converts to a real kill sooner. This
+        # both refuses to *start* a hold with no audience and *stops* one the moment the
+        # last crewmate leaves view.
+        if not has_visible_victim(belief):
+            return self._redispatch(belief, self_xy)
         if self._hold_until is None:
             self._hold_until = belief.last_tick + TASK_TICKS
         if belief.last_tick < self._hold_until:
-            return Intent(kind="idle", reason="faking a task")
-        self._state = None  # hold complete — re-dispatch
+            return Intent(kind="idle", reason="faking a task (crew watching)")
+        return self._redispatch(belief, self_xy)  # hold complete
+
+    def _redispatch(self, belief: Belief, self_xy: ic.Point) -> Intent:
+        """Reset the fake-task FSM and pick the next thing to do (a fresh DISPATCH)."""
+
+        self._state = None
         self._target_room_name = None
         self._goto_point = None
+        self._task_station = None
+        self._hold_until = None
         self._room_chosen_tick = None
         self._dispatch(belief, self_xy)
         return self._act(belief, self_xy)

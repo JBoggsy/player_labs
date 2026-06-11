@@ -33,6 +33,17 @@ WORKDIR /app
 RUN pip install --upgrade pip \
  && pip install "players[bedrock] @ https://github.com/Metta-AI/players/archive/${PLAYERS_SDK_REF}.tar.gz"
 
+# Meeting chat NLP (imposter bandwagon, design §10.5): spaCy dependency-parse negation
+# scope over opponents' chat. Loaded lazily in a background thread and gated by
+# CREWBORG_CHAT_NLP, so it never touches the gameplay hot path; unset the flag to skip
+# it entirely. The en_core_web_sm model is pinned by URL to match spaCy's minor version.
+# `click` is pulled in explicitly: `import spacy` imports `spacy.cli` → `click`, and the
+# slim base + players deps leave it out (typer lands without it), so without this the
+# model load throws ModuleNotFoundError at runtime and chat NLP silently degrades to
+# vote-only (caught in the v20 eval via the meeting_decision `nlp=failed` trace).
+RUN pip install "spacy>=3.8.0,<3.9.0" click \
+ && pip install "en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl"
+
 # Put the vendored fork on the path as `crewrift.crewborg`.
 COPY crewrift_init.py /app/crewrift/__init__.py
 COPY crewborg /app/crewrift/crewborg

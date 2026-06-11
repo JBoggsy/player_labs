@@ -33,9 +33,12 @@ in two tiers:
 - **Always on (deltas + meeting snapshots), lean enough for hosted log caps:**
   ``player_event`` when a new observation interval opens on someone's log,
   ``player_died`` on an alive→dead transition, ``imposter_confirmed`` /
-  ``believed_changed`` when the suspicion sets move, and a full ``suspicion_snapshot``
+  ``believed_changed`` when the suspicion sets move, a full ``suspicion_snapshot``
   (ranked posteriors + each suspect's event log + the would-be vote and the bar)
-  at the start of every meeting. For the imposter, ``kill_ready_changed`` fires on
+  at the start of every meeting, and ``meeting_decision`` (emitted by Attend Meeting)
+  when the deterministic path commits — the headline meeting diagnostic: role, path,
+  target, real-vs-fabricated, and the imposter's heat (vote tally + chat accusers) and
+  chat-NLP state. For the imposter, ``kill_ready_changed`` fires on
   every kill cooldown→ready / ready→cooldown edge (with ``ready_since_tick``,
   ``urgency_ticks``, and whether a victim is trackable) — so kill-window utilization
   (how promptly the strike follows the cooldown clearing, and whether the gap is
@@ -65,11 +68,12 @@ from typing import Any
 from crewrift.crewborg.action import BTN_A, BTN_B
 from crewrift.crewborg.perception.constants import SCREEN_HEIGHT, SCREEN_WIDTH
 from crewrift.crewborg.strategy.opportunity import has_trackable_victim, kill_urgency_ticks
-from crewrift.crewborg.strategy.rule_based import FLEE_ENTER_SQ, FLEE_EXIT_SQ, FLEE_STALE_TICKS
 from crewrift.crewborg.strategy.suspicion import (
+    ACCUSE_TAIL_RECENCY_TICKS,
     VOTE_PROBABILITY,
     _prior_imposter_p,
     top_suspect,
+    witnessed_imposters,
 )
 from crewrift.crewborg.trace import TraceConfig
 from crewrift.crewborg.types import ActionState, Belief, Command, Intent, PlayerRecord
@@ -102,7 +106,7 @@ class CrewborgEventTracer:
         # Knowledge-layer delta state (per color where noted).
         self._event_counts: dict[str, int] = {}  # color → events logged so far (emit the new tail)
         self._life: dict[str, str] = {}  # color → last-seen life_status (alive→dead edge)
-        self._confirmed: set[str] = set()  # last confirmed_imposters (witnessed catches)
+        self._confirmed: set[str] = set()  # last witnessed_imposters set (kill/vent_use catches)
         self._believed: set[str] = set()  # last believed_imposters (over the flee bar)
         self._meeting_snapshotted: bool = False  # one suspicion snapshot per meeting
         self._chat_meeting_id: int | None = None
@@ -321,10 +325,11 @@ class CrewborgEventTracer:
     def _observe_suspicion_deltas(self, belief: Belief, emit: EventEmitter) -> None:
         """Emit moves in the confirmed (witnessed) and believed (over flee bar) sets."""
 
-        for color in sorted(belief.confirmed_imposters - self._confirmed):
+        witnessed = witnessed_imposters(belief)
+        for color in sorted(witnessed - self._confirmed):
             emit.event("imposter_confirmed", {"color": color, "p": round(belief.suspicion.get(color, 1.0), 4)})
             emit.counter("imposter_confirmed")
-        self._confirmed = set(belief.confirmed_imposters)
+        self._confirmed = witnessed
 
         if belief.believed_imposters != self._believed:
             emit.event(
@@ -351,15 +356,17 @@ class CrewborgEventTracer:
         if self._meeting_snapshotted:
             return
         self._meeting_snapshotted = True
-        # Suspicion is crewmate-only (cleared for imposter/ghost), so nothing to show otherwise.
+        # Held by both live roles now: a crewmate's genuine belief, or an imposter's
+        # deflection view over non-teammates (§10.4). A ghost has none ⇒ nothing to show.
         if not belief.suspicion:
             return
         target = top_suspect(belief)
+        witnessed = witnessed_imposters(belief)
         ranking = [
             {
                 "color": color,
                 "p": round(p, 4),
-                "confirmed": color in belief.confirmed_imposters,
+                "confirmed": color in witnessed,
                 "events": _event_summary(belief.roster.get(color)),
             }
             for color, p in sorted(belief.suspicion.items(), key=lambda kv: kv[1], reverse=True)
@@ -367,9 +374,10 @@ class CrewborgEventTracer:
         emit.event(
             "suspicion_snapshot",
             {
+                "role": belief.self_role,  # crewmate belief vs imposter deflection view
                 "prior": round(_prior_imposter_p(belief), 4),
                 "ranking": ranking,
-                "confirmed": sorted(belief.confirmed_imposters),
+                "confirmed": sorted(witnessed),
                 "believed": sorted(belief.believed_imposters),
                 "would_vote": target,
                 "would_vote_p": round(belief.suspicion[target], 4) if target is not None else None,
@@ -594,7 +602,7 @@ def _decision_snapshot_payload(context: StepContext[Belief, ActionState, Intent,
         "visible_bodies": _decision_visible_bodies(belief),
         "threats": _decision_threats(belief, visible_colors),
         "task": _decision_task_payload(context),
-        "flee": _decision_flee_payload(context, visible_colors),
+        "accuse": _decision_accuse_payload(context, visible_colors),
         "nav": {
             "route_goal": _point_list(action_state.route_goal),
             "route_cursor": action_state.route_cursor,
@@ -655,6 +663,7 @@ def _decision_command_payload(command: Command) -> dict[str, Any]:
 
 
 def _decision_visible_players(belief: Belief, visible_colors: set[str]) -> list[dict[str, Any]]:
+    witnessed = witnessed_imposters(belief)
     players: list[dict[str, Any]] = []
     for color in sorted(visible_colors):
         record = belief.roster.get(color)
@@ -667,7 +676,7 @@ def _decision_visible_players(belief: Belief, visible_colors: set[str]) -> list[
                 "life_status": record.life_status,
                 "suspicion": _rounded_p(belief.suspicion.get(color)),
                 "believed_imposter": color in belief.believed_imposters,
-                "confirmed_imposter": color in belief.confirmed_imposters,
+                "confirmed_imposter": color in witnessed,
             }
         )
     return players
@@ -684,15 +693,16 @@ def _decision_visible_bodies(belief: Belief) -> list[dict[str, Any]]:
 
 
 def _decision_threats(belief: Belief, visible_colors: set[str]) -> list[dict[str, Any]]:
-    threat_colors = belief.believed_imposters | belief.confirmed_imposters
+    witnessed = witnessed_imposters(belief)
+    threat_colors = belief.believed_imposters | witnessed
     return [
-        _decision_player_threat_payload(belief, color, visible_colors)
+        _decision_player_threat_payload(belief, color, visible_colors, witnessed)
         for color in sorted(threat_colors)
     ]
 
 
 def _decision_player_threat_payload(
-    belief: Belief, color: str, visible_colors: set[str]
+    belief: Belief, color: str, visible_colors: set[str], witnessed: set[str]
 ) -> dict[str, Any]:
     record = belief.roster.get(color)
     dist_sq = _record_dist_sq(belief, record)
@@ -701,7 +711,7 @@ def _decision_player_threat_payload(
         "color": color,
         "p": _rounded_p(belief.suspicion.get(color)),
         "believed": color in belief.believed_imposters,
-        "confirmed": color in belief.confirmed_imposters,
+        "confirmed": color in witnessed,
         "visible": color in visible_colors,
         "life_status": record.life_status if record is not None else None,
         "last_seen_tick": record.last_seen_tick if record is not None else None,
@@ -709,15 +719,19 @@ def _decision_player_threat_payload(
         "xy": [record.world_x, record.world_y] if record is not None else None,
         "dist": _rounded_dist(dist_sq),
         "dist_sq": dist_sq,
-        "flee_enter": dist_sq is not None and dist_sq <= FLEE_ENTER_SQ,
-        "flee_continue": dist_sq is not None and dist_sq <= FLEE_EXIT_SQ,
-        "flee_stale": age_ticks is not None and age_ticks > FLEE_STALE_TICKS,
-        "thresholds": {
-            "enter_sq": FLEE_ENTER_SQ,
-            "exit_sq": FLEE_EXIT_SQ,
-            "stale_ticks": FLEE_STALE_TICKS,
-        },
+        "tailing_self": _is_actively_tailing_self(record, belief.last_tick),
     }
+
+
+def _is_actively_tailing_self(record: PlayerRecord | None, tick: int) -> bool:
+    """Whether this player has a live ``tailing_self`` interval (the Accuse trigger)."""
+
+    if record is None:
+        return False
+    for event in reversed(record.events):
+        if event.kind == "tailing_self":
+            return tick - event.end_tick <= ACCUSE_TAIL_RECENCY_TICKS
+    return False
 
 
 def _decision_task_payload(context: StepContext[Belief, ActionState, Intent, Command]) -> dict[str, Any] | None:
@@ -751,36 +765,35 @@ def _decision_task_payload(context: StepContext[Belief, ActionState, Intent, Com
     }
 
 
-def _decision_flee_payload(
+def _decision_accuse_payload(
     context: StepContext[Belief, ActionState, Intent, Command], visible_colors: set[str]
 ) -> dict[str, Any] | None:
+    """Why/where we're calling a meeting: the tail we mean to accuse and the button run.
+
+    Emitted while Accuse is active (a ``call_meeting`` intent). ``target_color`` is the
+    suspect (best-effort — the meeting re-derives the vote from suspicion)."""
+
     intent = context.intent
     belief = context.belief
-    target_color = intent.target_color if intent.kind == "flee_from" else None
-    if target_color is None and not belief.believed_imposters:
+    if intent.kind != "call_meeting":
         return None
 
+    target_color = intent.target_color
     target = belief.roster.get(target_color) if target_color is not None else None
     self_xy = _belief_self_xy(belief)
-    target_xy = (target.world_x, target.world_y) if target is not None else None
-    away = (
-        (2 * self_xy[0] - target_xy[0], 2 * self_xy[1] - target_xy[1])
-        if self_xy is not None and target_xy is not None
-        else None
-    )
-    dist_sq = _dist_sq(self_xy, target_xy) if self_xy is not None and target_xy is not None else None
+    button = belief.map.button if belief.map is not None else None
+    button_anchor = belief.nav.button_anchor if belief.nav is not None else None
+    button_xy = button_anchor if button_anchor is not None else (button.center.x, button.center.y) if button else None
+    dist_sq = _dist_sq(self_xy, button_xy) if self_xy is not None and button_xy is not None else None
     return {
-        "active": intent.kind == "flee_from",
+        "active": True,
         "target_color": target_color,
+        "target_p": _rounded_p(belief.suspicion.get(target_color)) if target_color is not None else None,
         "target_visible": target_color in visible_colors if target_color is not None else None,
         "target_last_seen_tick": target.last_seen_tick if target is not None else None,
-        "target_age_ticks": (
-            max(0, belief.last_tick - target.last_seen_tick) if target is not None else None
-        ),
-        "target_xy": list(target_xy) if target_xy is not None else None,
-        "away_point": _point_list(away),
-        "target_dist": _rounded_dist(dist_sq),
-        "target_dist_sq": dist_sq,
+        "button_xy": list(button_xy) if button_xy is not None else None,
+        "button_dist": _rounded_dist(dist_sq),
+        "button_dist_sq": dist_sq,
     }
 
 
@@ -866,6 +879,7 @@ def _viewer_frame_payload(context: StepContext[Belief, ActionState, Intent, Comm
     """Live per-tick view model for replay inspection."""
 
     belief = context.belief
+    witnessed = witnessed_imposters(belief)
     action_state = context.action_state
     route = [list(point) for point in action_state.route]
     next_waypoint = (
@@ -914,7 +928,7 @@ def _viewer_frame_payload(context: StepContext[Belief, ActionState, Intent, Comm
                 "body_xy": _point_list(record.body_xy),
                 "suspicion": round(belief.suspicion[color], 4) if color in belief.suspicion else None,
                 "believed_imposter": color in belief.believed_imposters,
-                "confirmed_imposter": color in belief.confirmed_imposters,
+                "confirmed_imposter": color in witnessed,
                 "teammate": color in belief.teammate_colors,
             }
             for color, record in sorted(belief.roster.items())

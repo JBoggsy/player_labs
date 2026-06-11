@@ -296,14 +296,23 @@ def test_distinct_chat_intents_can_emit_after_an_intent_change() -> None:
     assert resolve_action(Intent(kind="chat", text="second"), Belief(), action_state).chat == "second"
 
 
-def test_flee_moves_away_from_threat() -> None:
-    belief = Belief(self_world_x=100, self_world_y=100)
-    belief.roster["red"] = PlayerRecord(
-        object_id=1004, color="red", facing="left", world_x=110, world_y=100, last_seen_tick=1,
-        life_status="alive",
+def _map_with_button(x: int, y: int, w: int = 8, h: int = 8) -> MapData:
+    return MapData(
+        width=400, height=400, tasks=(), vents=(), rooms=(),
+        button=MapRect(x=x, y=y, w=w, h=h), home=MapPoint(x=10, y=10),
     )
-    command = resolve_action(Intent(kind="flee_from", target_color="red"), belief, ActionState())
-    assert command.held_mask == BTN_LEFT  # threat is to our right ⇒ flee left
+
+
+def test_call_meeting_presses_a_inside_the_button_rect() -> None:
+    belief = Belief(self_world_x=100, self_world_y=100, map=_map_with_button(96, 96))  # self inside [96,104)
+    command = resolve_action(Intent(kind="call_meeting"), belief, ActionState())
+    assert command.held_mask == BTN_A  # standing on the button ⇒ a fresh A press calls a meeting
+
+
+def test_call_meeting_navigates_toward_the_button_when_away() -> None:
+    belief = Belief(self_world_x=100, self_world_y=100, map=_map_with_button(200, 96))  # button to our right
+    command = resolve_action(Intent(kind="call_meeting"), belief, ActionState())
+    assert command.held_mask == BTN_RIGHT  # no nav graph ⇒ steer straight at the button
 
 
 def _belief_with_target(self_xy: tuple[int, int], target_xy: tuple[int, int]) -> Belief:

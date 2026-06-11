@@ -45,6 +45,7 @@ IntentKind = Literal[
     "flee_from",
     "complete_task",
     "report",
+    "call_meeting",
     "vote",
     "chat",
     "kill",
@@ -100,11 +101,14 @@ LifeStatus = Literal["alive", "dead", "unknown"]
 # vote-result ejection.
 DeathSource = Literal["body", "census", "ejection"]
 
-# An observed interaction we logged about another player (design §5.2). All are
-# **durative**: an interval of contiguous observation. ``room``/``task``/``vent``
-# carry a ``region_index``; ``near_body``/``proximity`` carry a ``target_color``
-# (the body's color / the other player) and a ``min_dist`` closest approach.
-PlayerEventKind = Literal["room", "task", "vent", "near_body", "proximity"]
+# An observed interaction we logged about another player (design §5.2). Most are
+# **durative** (an interval of contiguous observation): ``room``/``task``/``vent``
+# carry a ``region_index``; ``near_body``/``proximity`` carry a ``target_color`` (the
+# body's color / the other player) and a ``min_dist``; ``tailing_self`` is them within
+# range of *us* over time (target_color ``None`` = me). Two are **point** events from
+# the near-certain detectors: ``kill`` (they killed ``target_color``) and ``vent_use``
+# (witnessed emerge/submerge) — each carries an overwhelming, latched LR ⇒ P ≈ 1.
+PlayerEventKind = Literal["room", "task", "vent", "near_body", "proximity", "kill", "vent_use", "tailing_self"]
 
 
 class PlayerEvent(BaseModel):
@@ -286,6 +290,12 @@ class Belief(BaseModel):
     self_kill_ready: bool | None = None
     self_world_x: int | None = None
     self_world_y: int | None = None
+    # Our own player color. The camera is locked to us, so the player at the camera
+    # center (``self_world``) is us; the voting UI's self-marker is authoritative.
+    # Learned in ``update_belief`` and used to exclude *self* from every suspicion path
+    # — without it we tail/suspect/vote ourselves (the self-sprite leaks into the
+    # roster as if it were another player).
+    self_color: str | None = None
 
     # Tasks (design §5 tasks).
     assigned_task_indices: set[int] = Field(default_factory=set)
@@ -326,12 +336,12 @@ class Belief(BaseModel):
 
     # Social / evidence (design §5, §10.1). Bayesian: ``suspicion[color]`` is the
     # posterior **P(imposter)** ∈ [0, 1] for each other player (crewmate POV),
-    # recomputed each tick from a combinatorial prior + likelihood-ratio updates for
-    # observed evidence. ``confirmed_imposters`` are colors caught by the near-certain
-    # detectors (witnessed kill/vent), contributed as overwhelming-LR evidence;
-    # ``believed_imposters`` is the derived set over the flee probability (drives
-    # Flee). ``imposter_count`` (K) overrides the player-count-derived default.
-    confirmed_imposters: set[str] = Field(default_factory=set)
+    # recomputed each tick from a combinatorial prior + likelihood-ratio updates over
+    # the per-player event log — *all* evidence flows through this one probability,
+    # including witnessed kills/vents (logged as ``kill``/``vent_use`` events carrying
+    # an overwhelming, latched LR ⇒ P ≈ 1) and being-tailed (``tailing_self``). There
+    # is no separate "confirmed" set. ``believed_imposters`` is the derived set over
+    # the flee probability (drives Flee). ``imposter_count`` (K) overrides the default.
     suspicion: dict[str, float] = Field(default_factory=dict)
     believed_imposters: set[str] = Field(default_factory=set)
     imposter_count: int | None = None
@@ -367,7 +377,9 @@ class Intent(BaseModel):
 
     kind: IntentKind = "idle"
     point: tuple[int, int] | None = None
-    # A player-identity target (the roster key) for ``kill`` / ``flee_from``.
+    # A player-identity target (the roster key) for ``kill``; also carried on
+    # ``call_meeting`` to record who we mean to accuse (forensics only — the meeting
+    # vote re-derives the target from suspicion).
     target_color: str | None = None
     # A body object id for ``report`` (bodies stay keyed by object id).
     target_id: int | None = None
@@ -480,6 +492,12 @@ def _record_death(
     record.mark_dead(tick, source, body_xy)
 
 
+# The self-sprite decodes to *exactly* ``self_world`` (the camera centers us); a real
+# player can't overlap us. So the visible player within this (small, rounding-tolerant)
+# squared distance of ``self_world`` is us, not someone else.
+SELF_SPRITE_MATCH_SQ = 4**2
+
+
 def update_belief(belief: Belief, percept: Percept) -> None:
     """Fold the percept into belief in place (design §5)."""
 
@@ -518,6 +536,17 @@ def update_belief(belief: Belief, percept: Percept) -> None:
     if resolved.crew_tasks_remaining is not None:
         belief.crew_tasks_remaining = resolved.crew_tasks_remaining
     belief.active_task_progress_pct = resolved.active_task_progress_pct
+
+    # Learn our own color. The voting UI's self-marker is authoritative; otherwise the
+    # camera-center player (at ``self_world``) is us — learned once and persisted (our
+    # colour is fixed for the game). Needed so suspicion never targets *self*.
+    if resolved.voting.self_marker_color is not None:
+        belief.self_color = resolved.voting.self_marker_color
+    elif belief.self_color is None and resolved.self_world_x is not None and resolved.visible_players:
+        sx, sy = resolved.self_world_x, resolved.self_world_y
+        me = min(resolved.visible_players, key=lambda p: (p.world_x - sx) ** 2 + (p.world_y - sy) ** 2)
+        if (me.world_x - sx) ** 2 + (me.world_y - sy) ** 2 <= SELF_SPRITE_MATCH_SQ:
+            belief.self_color = me.color
 
     # Live sightings: a "player <color>" in-world proves that player is alive here,
     # now. Keyed by color (the canonical identity); the trail accumulates in place.

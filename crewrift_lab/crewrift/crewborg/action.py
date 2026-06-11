@@ -267,8 +267,8 @@ def _resolve(
     if intent.kind == "report":
         return _resolve_report(intent, belief, action_state, self_xy)
 
-    if intent.kind == "flee_from":
-        return _resolve_flee(intent, belief, action_state, self_xy)
+    if intent.kind == "call_meeting":
+        return _resolve_call_meeting(belief, action_state, self_xy)
 
     if intent.kind == "kill":
         return _resolve_kill(intent, belief, action_state, self_xy)
@@ -353,17 +353,25 @@ def _resolve_chat(intent: Intent, action_state: ActionState) -> Command:
     return Command(held_mask=0, chat=intent.text)
 
 
-def _resolve_flee(
-    intent: Intent, belief: Belief, action_state: ActionState, self_xy: tuple[int, int]
+def _resolve_call_meeting(
+    belief: Belief, action_state: ActionState, self_xy: tuple[int, int]
 ) -> Command:
-    threat = belief.roster.get(intent.target_color) if intent.target_color is not None else None
-    if threat is None:
+    """Navigate to the emergency button and press A inside its rect to call a meeting.
+
+    Mirrors ``_resolve_report``/``_resolve_complete_task``: drive onto the button's
+    reachable anchor, then — once standing in the button rect — a fresh A press fires
+    ``tryCallButton`` (sim.nim). Holds still until the nav graph / map is available.
+    """
+
+    if belief.map is None:
         return Command(held_mask=0)
-    # Steer directly away from the threat: reflect its position through ours.
-    away = (2 * self_xy[0] - threat.world_x, 2 * self_xy[1] - threat.world_y)
-    if away == self_xy:  # co-located: no flee direction
-        return Command(held_mask=0)
-    return Command(held_mask=_movement_mask(self_xy, away, _velocity(action_state, self_xy)))
+    button = belief.map.button
+    inside = button.x <= self_xy[0] < button.x + button.w and button.y <= self_xy[1] < button.y + button.h
+    if inside:
+        return Command(held_mask=_edge_press(action_state, BTN_A))
+    anchor = belief.nav.button_anchor if belief.nav is not None else None
+    goal = anchor if anchor is not None else (button.center.x, button.center.y)
+    return Command(held_mask=_navigate_mask(belief, action_state, self_xy, goal))
 
 
 def _resolve_kill(

@@ -11,9 +11,10 @@ from crewrift.crewborg.strategy.suspicion import (
     FLEE_PROBABILITY,
     FOLLOW_FULL_TICKS,
     VENT_CROSS_TICKS,
-    VOTE_PROBABILITY,
+    active_tail_suspect,
     top_suspect,
     update_suspicion,
+    witnessed_imposters,
 )
 from crewrift.crewborg.types import Belief, PerceptionFrame, PlayerEvent, PlayerRecord
 
@@ -73,12 +74,25 @@ def test_non_consecutive_frames_are_not_read_as_a_kill() -> None:
     assert not belief.believed_imposters
 
 
-def test_imposter_observer_accrues_no_suspicion() -> None:
+def test_imposter_scores_deflection_suspicion_on_non_teammates() -> None:
+    # An imposter now computes suspicion over non-teammates (its deflection candidates):
+    # green looks like the killer of red, so the imposter could cite that at a meeting.
     prev = _frame(4, players={"red": (100, 100), "green": (110, 100)})
     curr = _frame(5, players={"green": (110, 100)}, bodies={"red": (100, 100)})
     belief = _belief(prev, curr, self_role="imposter")
     update_suspicion(belief)
-    assert not belief.suspicion and not belief.believed_imposters
+    assert belief.suspicion.get("green", 0.0) > 0.99 and "green" in belief.believed_imposters
+
+
+def test_imposter_never_scores_a_teammate() -> None:
+    # The same scene, but green is a known teammate ⇒ excluded entirely (we never
+    # deflect onto our own).
+    prev = _frame(4, players={"red": (100, 100), "green": (110, 100)})
+    curr = _frame(5, players={"green": (110, 100)}, bodies={"red": (100, 100)})
+    belief = _belief(prev, curr, self_role="imposter")
+    belief.teammate_colors = {"green"}
+    update_suspicion(belief)
+    assert "green" not in belief.suspicion and not belief.believed_imposters
 
 
 # --- witnessed vent: emergence (a) ------------------------------------------
@@ -269,9 +283,109 @@ def test_dead_subjects_drop_out_of_the_posterior() -> None:
 def test_a_confirmation_drives_the_posterior_to_near_one() -> None:
     belief = _belief(_frame(4, players={}), _frame(5, players={"red": (53, 53)}), map=_vent_map())
     belief.total_player_count = 8
-    update_suspicion(belief)  # emergence ⇒ confirmed
-    assert "red" in belief.confirmed_imposters and "red" in belief.believed_imposters
+    update_suspicion(belief)  # emergence ⇒ a witnessed vent_use event on red
+    assert "red" in witnessed_imposters(belief) and "red" in belief.believed_imposters
     assert belief.suspicion["red"] > 0.99  # overwhelming likelihood ratio
+
+
+# --- witnessed catches as event-log entries ---------------------------------
+
+
+def test_a_kill_event_on_the_log_drives_the_posterior_to_near_one() -> None:
+    belief = _crew_belief()
+    _add(belief, "red", [PlayerEvent(kind="kill", start_tick=50, end_tick=50, target_color="green")])
+    _add(belief, "blue")  # baseline
+    update_suspicion(belief)
+    assert belief.suspicion["red"] > 0.99 and "red" in belief.believed_imposters
+    assert "red" in witnessed_imposters(belief) and "blue" not in witnessed_imposters(belief)
+
+
+def test_a_vent_use_event_on_the_log_is_a_witnessed_catch() -> None:
+    belief = _crew_belief()
+    _add(belief, "red", [PlayerEvent(kind="vent_use", start_tick=50, end_tick=50)])
+    update_suspicion(belief)
+    assert belief.suspicion["red"] > 0.99 and "red" in witnessed_imposters(belief)
+
+
+# --- being tailed (tailing_self) — logistic in duration ---------------------
+
+
+def _tail(dur: int, start: int = 1) -> PlayerEvent:
+    return PlayerEvent(kind="tailing_self", start_tick=start, end_tick=start + dur, target_color=None)
+
+
+def test_a_brief_tail_barely_moves_the_posterior() -> None:
+    belief = _crew_belief()
+    _add(belief, "red", [_tail(dur=5)])  # a brief brush ⇒ ~nothing
+    _add(belief, "blue")  # baseline
+    update_suspicion(belief)
+    assert belief.suspicion["red"] == pytest.approx(belief.suspicion["blue"], abs=0.05)
+    assert "red" not in belief.believed_imposters
+
+
+def test_a_longer_tail_is_more_suspicious_than_a_shorter_one() -> None:
+    belief = _crew_belief()
+    _add(belief, "red", [_tail(dur=15)])
+    _add(belief, "green", [_tail(dur=30)])
+    _add(belief, "blue", [_tail(dur=50)])
+    update_suspicion(belief)
+    assert belief.suspicion["red"] < belief.suspicion["green"] < belief.suspicion["blue"]
+
+
+def test_a_sustained_tail_saturates_at_a_moderate_suspicion_below_the_flee_bar() -> None:
+    # Being tailed is deliberately *moderate* — a strong reason to call a meeting and
+    # accuse, but it must not on its own cross the flee / near-certain bars.
+    belief = _crew_belief()
+    _add(belief, "red", [_tail(dur=50)])  # well past the ramp
+    update_suspicion(belief)
+    assert 0.65 <= belief.suspicion["red"] <= 0.78  # saturates around ~0.72 at this prior
+    assert "red" not in belief.believed_imposters  # below FLEE_PROBABILITY
+
+
+def test_active_tail_suspect_fires_only_for_a_live_tail_over_the_bar() -> None:
+    belief = _crew_belief()  # last_tick = 200
+    _add(belief, "red", [_tail(dur=50, start=150)])  # ends at 200 — a live, sustained tail
+    _add(belief, "blue", [_tail(dur=50, start=1)])  # ends at 51 — same strength, but lapsed
+    update_suspicion(belief)
+    assert active_tail_suspect(belief) == "red"  # only the live tail triggers Accuse
+
+
+def test_active_tail_suspect_is_none_below_the_accuse_threshold() -> None:
+    belief = _crew_belief()
+    _add(belief, "red", [_tail(dur=8, start=190)])  # live (ends at 198) but brief ⇒ P < bar
+    update_suspicion(belief)
+    assert active_tail_suspect(belief) is None
+
+
+# --- never suspect / vote / accuse ourselves --------------------------------
+
+
+def test_our_own_color_is_never_scored() -> None:
+    # The self-sprite leaks into the roster as our own colour; it must never be scored
+    # (else we tail/suspect/vote ourselves — the crew-loss bug).
+    belief = _crew_belief()
+    belief.self_color = "red"
+    _add(belief, "red", [_vent_dwell(), _tail(dur=50, start=150)])  # heavy self-evidence
+    _add(belief, "blue")
+    update_suspicion(belief)
+    assert "red" not in belief.suspicion  # ourselves, never scored
+    assert "blue" in belief.suspicion
+
+
+def test_top_suspect_never_returns_self() -> None:
+    # Hard guard: even if our colour is somehow in the posterior, we never vote ourself.
+    belief = Belief(self_role="crewmate", self_color="red")
+    belief.suspicion = {"red": 0.99, "blue": 0.2}  # self forced highest
+    assert top_suspect(belief) != "red"
+    assert top_suspect(belief) is None  # blue (0.2) doesn't clear the bar ⇒ skip
+
+
+def test_active_tail_suspect_never_returns_self() -> None:
+    belief = _crew_belief()
+    belief.self_color = "red"
+    _add(belief, "red", [_tail(dur=50, start=150)])  # a live, saturated "self-tail"
+    belief.suspicion = {"red": 0.99}  # force self in
+    assert active_tail_suspect(belief) is None  # never accuse ourselves
 
 
 # --- believed-imposters maintenance -----------------------------------------
@@ -293,13 +407,30 @@ def test_a_confirmed_imposter_is_cleared_once_dead() -> None:
 # --- top_suspect (voting target) --------------------------------------------
 
 
-def test_top_suspect_picks_the_highest_over_the_vote_bar() -> None:
+def test_top_suspect_picks_a_near_certain_suspect_regardless_of_the_field() -> None:
     belief = Belief(self_role="crewmate")
-    belief.suspicion = {"red": VOTE_PROBABILITY + 0.05, "blue": 0.99}
-    assert top_suspect(belief) == "blue"  # the most suspicious clears the bar
+    belief.suspicion = {"red": 0.95, "blue": 0.99}  # both near-certain (e.g. two catches)
+    assert top_suspect(belief) == "blue"  # the most suspicious clears the absolute bar
 
 
-def test_top_suspect_returns_none_below_the_vote_bar() -> None:
+def test_top_suspect_fires_on_a_clear_leader_below_near_certainty() -> None:
     belief = Belief(self_role="crewmate")
-    belief.suspicion = {"red": VOTE_PROBABILITY - 0.05, "blue": 0.1}
-    assert top_suspect(belief) is None  # nobody confident enough ⇒ skip
+    belief.suspicion = {"red": 0.7, "blue": 0.3}  # red short of 0.8 but a clear lead
+    assert top_suspect(belief) == "red"  # vote the clear leading suspect
+
+
+def test_top_suspect_skips_a_flat_field() -> None:
+    belief = Belief(self_role="crewmate")
+    belief.suspicion = {"red": 0.6, "blue": 0.55, "green": 0.5}  # no one stands out
+    assert top_suspect(belief) is None  # flat posterior ⇒ skip rather than eject at random
+
+
+def test_top_suspect_skips_a_low_lone_lead() -> None:
+    belief = Belief(self_role="crewmate")
+    belief.suspicion = {"red": 0.45, "blue": 0.1}  # a lead, but the leader is below the floor
+    assert top_suspect(belief) is None  # not even more-likely-than-not ⇒ skip
+
+
+def test_top_suspect_returns_none_with_no_suspicion() -> None:
+    belief = Belief(self_role="crewmate")
+    assert top_suspect(belief) is None  # e.g. imposter/ghost (cleared suspicion) ⇒ skip

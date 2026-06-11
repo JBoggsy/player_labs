@@ -297,9 +297,11 @@ ghosts and during meetings (no camera).
   `phase_signals` (emit a `phase_change` trace on transition).
 - **voting** — live tally, cursor, timer, who has voted.
 - **social / evidence** — `suspicion[color]` = the Bayesian posterior **P(imposter)**
-  ∈ [0, 1] per other player (combinatorial prior + likelihood-ratio updates),
-  `confirmed_imposters` (near-certain catches contributed as overwhelming-LR
-  evidence), and `believed_imposters` (alive colors over the flee probability).
+  ∈ [0, 1] per other player (combinatorial prior + likelihood-ratio updates, including
+  witnessed kills/vents logged as `kill`/`vent_use` event-log entries that contribute
+  an overwhelming latched LR — there is no separate "confirmed" set), and
+  `believed_imposters` (alive colors over the near-certain `FLEE_PROBABILITY`, kept as
+  belief state that seeds the vote).
   `imposter_count` (K) overrides the player-count-derived default. Maintained each
   tick by the suspicion model (§10.1). The opt-in meeting LLM (§10.3) consumes the
   `chat_log`, vote tally, roster, and suspicion posterior for chat/vote decisions.
@@ -380,6 +382,13 @@ match):
 | `vent` | collision point inside a vent rect | `region_index` |
 | `near_body` | within `NEAR_BODY_RADIUS` of a discovered body | `target_color` (body), `min_dist` |
 | `proximity` | within `KILL_RANGE` of another live player | `target_color` (the other), `min_dist` |
+| `tailing_self` | sustained within `TAIL_SELF_RADIUS` (64 px) of **us** | `target_color = None` (me), `min_dist` |
+| `kill` | witnessed kill, a **point** event (tape transition, §5.1) | `target_color` (victim) |
+| `vent_use` | witnessed emerge/submerge, a **point** event (tape transition, §5.1) | — |
+
+The last two are **point** events written by the near-certain detectors (§10.1), not
+durative observations — they carry the overwhelming witnessed LR, so a caught player's
+posterior latches at P ≈ 1 without a separate "confirmed" set.
 
 Two principles:
 
@@ -398,12 +407,12 @@ Two principles:
   crewmate"* = total `task` dwell.
 
 It is **neutral memory**, built for every role (an imposter benefits too); only
-*acting* on it (suspicion → Flee) is crewmate-gated. Meeting chat stays in
+*acting* on it (suspicion → Accuse / vote) is crewmate-gated. Meeting chat stays in
 `chat_log` (§4.3) for now — a unified per-player view can merge the two later.
 The graded suspicion layer (§10.1) already consumes a conservative subset of these
-events (`vent`/`near_body`/`proximity`); `near_body` is sound because `belief.bodies`
-is cleared when a meeting opens (matching the server), so it never fires on a stale
-body location.
+events (`vent`/`near_body`/`proximity`/`tailing_self`, plus the witnessed `kill`/
+`vent_use` point events); `near_body` is sound because `belief.bodies` is cleared when
+a meeting opens (matching the server), so it never fires on a stale body location.
 
 ---
 
@@ -506,26 +515,31 @@ re-decides.
 | Mode | Active when | Intents emitted |
 |---|---|---|
 | **Normal** | default while `Playing` | target the nearest reachable **signalled** task (live arrows+bubbles = the remaining tasks) and `complete_task(T)`; conclude `T` done when its **bubble disappears**, gated on having seen ≥ `COMPLETION_PROGRESS_PCT` (≈90%) progress (so an occlusion/edge flicker doesn't false-complete); when **no task signal remains**, `navigate_to` the spawn / **start room** rather than standing still |
-| **Attend Meeting** | phase = `Voting` | `chat(text)`, then `vote` the top suspect (`P(imp) ≥ VOTE_PROBABILITY`, §10.1) else skip, before the timer |
+| **Attend Meeting** | phase = `Voting` | when there's a **clear leading suspect** (`top_suspect`, §10.1): **accuse then vote** them — `chat("<color> sus: <reasons>")` citing the ranked event-log evidence, then `vote` that color; on a **flat field** stay **silent and skip**. No default-firing opener; chat and vote are coupled. Always casts something before the timer |
 | **Report Body** | a body is in view | `report(body_id)`; yields when a meeting opens |
-| **Flee** | a believed-imposter is approaching | `flee_from(player)`, or a strategic `navigate_to(point)` |
+| **Accuse** | an **active tail** by a suspect over `ACCUSE_THRESHOLD` (`active_tail_suspect`, §10.1), one button call left | `call_meeting` — walk to the emergency button and press it; the meeting that opens accuses + votes the tail. Replaces the old Flee/keep-away mode |
 
 ### 7.2 Imposter modes
 
 | Mode | Active when | Intents emitted |
 |---|---|---|
-| **Pretend** | default imposter stance, while kill cooldown is not near ready | pick a room from **expected crew occupancy density**, penalize rooms where a teammate-imposter is likely present, choose a real task station in that room, move there, and hold for one task duration. Rooms without fake-task stations and the start room are skipped |
+| **Pretend** | default imposter stance, while kill cooldown is not near ready | pick a room from **expected crew occupancy density**, penalize rooms where a teammate-imposter is likely present, choose a real task station in that room, move there, and hold for one task duration **only while a crewmate is visible** — an unwatched fake task is wasted cooldown, so an empty room re-dispatches (keeps moving toward crew/victims) instead of idling. Rooms without fake-task stations and the start room are skipped |
 | **Search** | kill ready or within `SEARCH_LEAD_TICKS` of ready, but no visible kill target | walk ranked occupancy hot spots until a non-teammate crewmate is visible; once one is found, follow its live / recent last-seen position until Hunt can take over |
 | **Hunt** | kill ready **and** a victim is visible | **commit to a visible victim and close/strike**: `select_victim` picks the most-isolated reachable visible crewmate, preferring targets not already claimed by a closer teammate; navigate to its **predicted intercept** (`strategy.trajectory` — lead a moving target); when in KillRange *and* unwitnessed → `kill`, else keep shadowing in range (lie in wait) |
 | **Evade** | for `EVADE_TICKS` after our own kill | `vent` if a vent exists; otherwise move away from the nearest known body. This avoids instant self-reports and gets the imposter away from the corpse before Search/Hunt/Pretend resume |
 | **Report Body** | a non-fresh body is in view after the evade window | `report` the nearest visible body — reuses the crewmate Report Body mode. Fresh self-kill bodies are handled by **Evade** first |
-| **Attend Meeting** | phase = `Voting` | `chat(text)`, then `vote` — currently **skip** (suspicion is crewmate-only, so `top_suspect` is empty for an imposter); suspicion-aware bluff/deflect is future |
+| **Attend Meeting** | phase = `Voting` | **deflect onto crewmates, never a teammate** (§10.4): proactively accuse + vote a non-teammate who genuinely *looks* sus (real cues, same format as a crewmate); else wait and **bandwagon** onto a crewmate others suss/vote, citing *fabricated* safe cues in the identical format; else skip at the deadline |
 
 **Pretend is the imposter's default blending behaviour.** It does not follow
 visible crew and it carries no victim state. It chooses a highest-scoring
 occupancy room that has a real task station, moves to that station, and idles for
-`TASK_TICKS` (72) to fake task completion. If no occupancy room is available, it
-falls back to deterministic task-station wandering outside the start room.
+`TASK_TICKS` (72) to fake task completion — **but only while a crewmate is in view**
+(`has_visible_victim`). A fake task with no audience fools no one and burns the kill
+cooldown, so an empty station re-dispatches and keeps moving toward crew-dense rooms
+instead of standing there; this both refuses to *start* an unwatched hold and *stops*
+one the instant the last crewmate leaves view (get the kill in ASAP — a partner's
+kill→report can reset our cooldown). If no occupancy room is available, it falls back
+to deterministic task-station wandering outside the start room.
 
 ```
                  ╔══════════════════════════════════════════════════╗
@@ -556,14 +570,16 @@ falls back to deterministic task-station wandering outside the start room.
 |---|---|---|
 | **DISPATCH** | transient chooser | occupancy target available → **GOTO_TASK**(best room's task station); else → **GOTO_TASK**(fallback station outside current/start room) |
 | **GOTO_TASK**(station) | `navigate_to` a real task station in the selected room. Keep the chosen occupancy room for `ROOM_TARGET_MIN_TICKS` unless arriving, so noisy room scores do not cause route thrash | arrived at station → **DO_TASK**; no station/target exhausted → pick another station |
-| **DO_TASK**(station) | **hold `TASK_TICKS` (72)** (`idle` — a fake task) | hold complete → **DISPATCH** |
+| **DO_TASK**(station) | **hold `TASK_TICKS` (72)** (`idle` — a fake task), **only while a crewmate is visible** | hold complete *or* no crewmate in view → **DISPATCH** |
 
 Notes: the **starting room never triggers DO_TASK** (every player is co-located
 there at spawn, and anchoring a task there strands the imposter when the crew
-disperses). DO_TASK **holds the full duration** even if crewmates pass by — only
-Evade / Search / Hunt / Report Body (via the selector) can preempt it. Occupancy and
-fallback choices are **arbitrary-but-deterministic** — no RNG — so runs are
-reproducible without synchronizing both imposters onto the same round-robin path.
+disperses). DO_TASK holds for the task duration **but only with an audience** — it
+will not start an unwatched hold and abandons one the instant no crewmate is visible
+(`has_visible_victim`), re-dispatching to keep moving; Evade / Search / Hunt / Report
+Body (via the selector) can also preempt it. Occupancy and fallback choices are
+**arbitrary-but-deterministic** — no RNG — so runs are reproducible without
+synchronizing both imposters onto the same round-robin path.
 
 **Search owns the pre-kill lead window.** When the cooldown is ready or within
 `SEARCH_LEAD_TICKS`, but no visible victim is available, Search walks ranked
@@ -608,21 +624,21 @@ An intent is "what to do now" — above a button press, below a behavior. One
 |---|---|---|
 | `idle` / `loiter` | (optional anchor) | stand still / wander to blend in |
 | `navigate_to` | world point | go to a point |
-| `flee_from` | player id | maximize distance from a player |
 | `complete_task` | task index | go to the task rect and complete it |
 | `report` | body id | go to a body and report |
+| `call_meeting` | (target color, forensic) | walk to the emergency button and press A inside its rect to call a meeting (crewmate Accuse) |
 | `vote` | choice (player id / skip) | cast a meeting vote |
 | `chat` | text | speak in a meeting |
 | `kill` | target player id | go to a crewmate and kill (imposter) |
 | `vent` | vent / group target | go to a vent and use it (imposter) |
 | `escape` | world point | flee to a point, vanishing through a vent if one is on the fast route (imposter) |
 
-`flee_from` is the simple keep-away primitive (geometry owned by the action
-layer), used by the crewmate Flee mode — it never vents. Situational fleeing —
-toward a trusted player, the button, or around a corner — is the Flee mode emitting
-`navigate_to` instead. `escape` is its imposter counterpart: the action layer plans
-a vent-aware route to the point, so the only way an agent uses a vent in transit is
-an imposter emitting `escape` (crewmate routes never touch the teleport edges).
+`call_meeting` mirrors `report` (navigate to the button anchor, then a fresh A press
+fires `tryCallButton`); it carries the suspect color only for forensics — the meeting
+re-derives the vote from suspicion. `escape` is the imposter's vent-aware flight: the
+action layer plans a vent-aware route to the point, so the only way an agent uses a
+vent in transit is an imposter emitting `escape` (crewmate routes never touch the
+teleport edges).
 
 ---
 
@@ -698,12 +714,14 @@ default directive is `idle` mode (the stall/TTL fallback, rarely reached).
 **Crewmate selection** (priority order):
 
 1. phase = `Voting` → **Attend Meeting**; `RoleReveal`/`Lobby`/`GameOver` → **idle**
-2. body in view → **Report Body** (a meeting protects us and lets the crew act, so
-   reporting outranks fleeing a suspect we could instead report)
-3. believed-imposter approaching → **Flee**. This transition has spatial
-   hysteresis: enter when a recently seen believed imposter is close, then stay in
-   Flee until that same threat is clearly farther away or its last-known position
-   is stale. This prevents task/flee oscillation at the trigger radius.
+   (`Lobby`/`RoleReveal` also reset the per-game button-call budget)
+2. body in view → **Report Body** (a body report opens a meeting right here and
+   doesn't spend our one button call, so it outranks accusing)
+3. an **active tail** by a suspect over `ACCUSE_THRESHOLD` (`active_tail_suspect`),
+   with a button call left → **Accuse**: drop tasks and go slam the emergency button.
+   The selector **commits** to the target (stays in Accuse through the walk even if
+   the tail briefly lapses, until it's voted out / dies), and marks the one-shot call
+   spent once we reach the button so we fall back to tasks instead of looping there.
 4. otherwise → **Normal** (ghosts stay in Normal to finish own tasks)
 
 **Imposter selection** (priority order):
@@ -740,12 +758,16 @@ to kill improves imposter outcomes versus the default blend-in policy.
 > is the summary.
 
 `update_suspicion(belief)` runs every tick in the fast loop *after* `update_belief`
-+ `update_event_log` (composed in `build_runtime`). Crewmate POV: it maintains
++ `update_event_log` (composed in `build_runtime`). It maintains
 `belief.suspicion[color]` = the posterior **probability that player is an imposter**,
-∈ [0, 1] — a real probability, so thresholds mean something. `believed_imposters`
-(which gates Flee) is every **alive** player with `P ≥ FLEE_PROBABILITY` (0.9).
-Crewmate-only — an imposter knows the truth (suspicion cleared, never flees), nor
-does a ghost.
+∈ [0, 1] — a real probability, so thresholds mean something. It drives the **vote**
+(`top_suspect`) and **Accuse** (`active_tail_suspect` — a live tail over
+`ACCUSE_THRESHOLD`). `believed_imposters` (alive players with `P ≥ FLEE_PROBABILITY`,
+0.9) is the near-certain set, kept as belief state (it seeds the vote) but no longer
+gating a reactive run-away mode. Computed for **both live roles** but over different
+sets: a crewmate scores every other player (a genuine belief); an imposter scores only
+**non-teammates** (it never scores a known teammate) and reads the number as "how sus
+this crewmate looks," to pick a deflection target (§10.4). A ghost holds no suspicion.
 
 **Prior.** With `P` players and `K` imposters, a crewmate knows the `K` are among
 the other `P − 1`, so each other player's marginal prior is `K / (P − 1)`. `K` is
@@ -765,19 +787,23 @@ detail (the function shapes and how to fit them) lives in
 Two evidence sources, unified — a witnessed catch is just evidence with an
 overwhelming `logLR` (`WITNESSED_LOG_LR = ln 1e6 ⇒ P ≈ 1`), not a special case:
 
-- **Near-certain** (`confirmed_imposters`, persisted), from **consecutive**
-  frame-to-frame transitions on the tape (§5.1): *witnessed kill* (lone
-  `KILL_RANGE_SQ` neighbour of a victim alive last frame, body now) and *witnessed
-  vent* — *emergence* (vent + a `VENT_WALK_MARGIN` margin was in line of sight and
-  clear last frame, occupied now) or *submersion* (a player in the vent last frame
-  gone while it stays in sight). "In line of sight" is the decoded `shadow` mask
-  (§4.4) via `rect_visible`, so occlusion can't fake a "clear".
+- **Near-certain**, from **consecutive** frame-to-frame transitions on the tape
+  (§5.1), recorded as `kill` / `vent_use` **point events on the perpetrator's log**
+  (no separate "confirmed" set): *witnessed kill* (lone `KILL_RANGE_SQ` neighbour of a
+  victim alive last frame, body now) and *witnessed vent* — *emergence* (vent + a
+  `VENT_WALK_MARGIN` margin was in line of sight and clear last frame, occupied now)
+  or *submersion* (a player in the vent last frame gone while it stays in sight). "In
+  line of sight" is the decoded `shadow` mask (§4.4) via `rect_visible`, so occlusion
+  can't fake a "clear". `witnessed_imposters(belief)` derives the caught set for tracing.
 - **Graded functions** over the event log (§5.2): **vent dwell** (weak, ~flat past a
   pass-through), **body proximity** (log-LR *decreases* with dwell — a skilled
   imposter flees, so brief presence is the only window on a killer; a long camp is a
-  reporter), and **follow-to-death** (log-LR *increases* with how long the shadowing
-  of a now-dead victim lasted). A single graded cue lands below `FLEE_PROBABILITY`,
-  so graded fleeing needs corroboration.
+  reporter), **follow-to-death** (log-LR *increases* with how long the shadowing of a
+  now-dead victim lasted), and **being tailed** (`tailing_self` — a logistic in how
+  long someone shadowed *us*; needs no death, saturating at a *moderate* P ≈ 0.72:
+  a sustained live tail over `ACCUSE_THRESHOLD` (0.6) triggers **Accuse** — go call a
+  meeting — but doesn't on its own reach the near-certain bar). A single *weak* graded
+  cue lands well below near-certainty, so the meeting vote on those needs corroboration.
 
 Deliberately **excluded** as too noisy (an innocent reporter is next to the body;
 crew cluster while tasking): brief proximity, single-body passing, and *task dwell*
@@ -786,7 +812,7 @@ as exculpation (imposters fake tasks).
 v1 simplifications (documented for later): **naive-Bayes** independence between
 evidence types; **positive-evidence-only** (no exculpatory terms — the prior is the
 baseline); and a **static** `K / (P − 1)` prior without redistributing the imposter
-budget as players are confirmed or die (a proper joint model is a refinement). Still
+budget as players are caught or die (a proper joint model is a refinement). Still
 future evidence for the deterministic Bayesian model: *area-recency*,
 *alibi clearing*, *vote-tally* bandwagons (census-mapped `voting.dots`), and
 *chat semantics* (`chat_log`, §4.3). The meeting LLM already sees those signals
@@ -820,8 +846,9 @@ Attend Meeting remains a mode, not a strategy runner: meetings intentionally slo
 the game loop into a social phase, so the LLM call can run on the mode fast path
 without starving movement or combat decisions. The path is opt-in via
 `CREWBORG_LLM_MEETINGS=1` and `ANTHROPIC_API_KEY`; without both, the mode preserves
-the deterministic fallback (`"no read, skipping"` once, then the Bayesian
-`top_suspect` vote or skip).
+the deterministic fallback: accuse the clear leading suspect (`build_accusation` →
+`"<color> sus: <reasons>"`) and vote them, or stay silent and skip a flat field
+(`top_suspect`, §10.1).
 
 The implementation is split into three portable pieces under `strategy/meeting/`:
 
@@ -842,6 +869,66 @@ pressure, with a small tick interval to avoid repeated calls from one visual
 state. Distinct chat messages can be sent across the same meeting; duplicate model
 text is suppressed.
 
+### 10.4 Imposter meeting tactics (`strategy/meeting/`)
+
+The deterministic Attend Meeting path diverges by role (`_decide_imposter`). An
+imposter's job at a meeting is to get a **crewmate** ejected without outing itself —
+**never** a teammate. Two crucial invariants underpin this:
+
+- **Suspicion is computed for the imposter too** (§10.1), over **non-teammates only**.
+  Crewmates don't kill/vent, so their score comes purely from *innocent-looking*
+  graded cues (a vent dwell, walking past a body the imposter made, a coincidental
+  follow). That score is "how sus does this crewmate *look* to the table" — exactly
+  what a deflection wants.
+- **Chat formatting is identical to the crewmate's** — every accusation, real or
+  fabricated, goes through the same `build_accusation` templates (`"<color> sus:
+  <reasons>"`). A formatting difference would itself be a tell, so there is none.
+
+The priority order:
+
+1. **Proactive deflection.** If a non-teammate is a clear leading suspect
+   (`top_suspect`, §10.1), accuse + vote them with their **real** cues — the strongest
+   play, because it isn't even a lie.
+2. **Reactive bandwagon.** Otherwise wait, watching for a crewmate to take **heat** —
+   a vote cast against them (the reliable signal, read from the vote tally:
+   `imposter.votes_against` maps `VoteDot.target` slots → candidate colors, excluding
+   our own ballot and skips) or a chat accusation (an additive chat-read signal,
+   added in §10.5). `imposter.bandwagon_target` picks the most-heated non-teammate; we vote them
+   and cite **fabricated** evidence — *safe, hard-to-disprove* cues only (`lurking on a
+   vent`, `next to <body>'s body`, `they were tailing me`), never a bold falsifiable
+   witnessed kill/vent (`accusation.fabricate_accusation`).
+3. **Skip.** If no crewmate ever takes heat, cast a skip at the deadline.
+
+Chat and vote stay coupled (we accuse exactly who we then vote for).
+
+### 10.5 Reading opponents' chat (`strategy/meeting/chat_read.py`, `chat_nlp.py`)
+
+The bandwagon's *additive* signal (§10.4) is detecting which crewmates other players
+are **sussing in chat** — getting ahead of suspicion before it hardens into a vote.
+Free-form chat is hard, but the target vocabulary is a **closed set of colors**, which
+we exploit in two stages:
+
+1. **Keyword pre-gate** (cheap, in `chat_read`) — a message is only parsed if it names
+   a color *and* carries a sus cue (`SUS_WORDS`). Most chatter is dropped here.
+2. **Dependency-parse negation scope** (spaCy `en_core_web_sm`, in `chat_nlp`) — the
+   real value over a crude "is a negation word present?" guard, which mishandles
+   `"red isn't sus"` vs `"red is sus not blue"`. The parse tracks which clause a
+   negation/defense word governs, handles contrastive negation, and flips a color
+   adjacent to a *victim* cue (`"when red died"` ⇒ red is the victim, not the suspect).
+   `chat_accusers` then counts the **distinct other speakers** who accused each
+   non-teammate. (Validated at ~19/21 on representative chat vs ~16/21 for keyword +
+   crude negation; the wins are exactly the negation-scope cases.)
+
+**Loading is off the hot path.** `en_core_web_sm` costs ~1.5–2 s to load under the
+hosted ¼-core cap (~40 frames), so `chat_nlp.ensure_loading()` (called at
+`build_runtime`) kicks off a **background daemon thread**; the load overlaps the
+pre-game idle phases and is ready before the first meeting. `get_model()` returns
+`None` until ready, and callers degrade gracefully (no chat signal — the bandwagon
+rests on the reliable vote tally). The whole layer is gated by **`CREWBORG_CHAT_NLP`**
+(default on); unset it and spaCy is never imported or loaded. When the model is off we
+deliberately do **not** fall back to crude keyword matching — its false positives are
+exactly what this layer exists to avoid.
+
 ---
 
 ## 11. Package layout and tracing
@@ -856,8 +943,9 @@ crewborg/
   navbake.py         # load the offline-baked nav graph + occupancy substrate (tools/nav_bake.py bakes it)
   trace.py           # trace selection: event families + env-derived filtering (outputs are the SDK's)
   events.py          # CrewborgEventTracer: on_step_complete hook emitting domain.* events
-  modes/             # idle, normal, attend_meeting, report_body, flee, evade, pretend, search, hunt
+  modes/             # idle, normal, attend_meeting, report_body, accuse, evade, pretend, search, hunt
   strategy/          # rule_based.py: mode selector; suspicion.py: near-certain detection; event_log.py: per-player observation log; occupancy.py: tape predicates; opportunity/trajectory
+  strategy/meeting/  # context/schema/llm (LLM path); accusation (chat templates); imposter (deflect/bandwagon); chat_read + chat_nlp (spaCy chat parsing)
   perception/        # Sprite-v1 scene decoder: maintain tables, resolve objects → (label, world xy)
   map/               # vendored croatoan.resources + ported parser (§6)
   coworld/           # policy_player.py (the websocket bridge) + scene.py
@@ -916,9 +1004,10 @@ seam** (`EventEmitter` + `AgentRuntime(on_step_complete=…)`): `CrewborgEventTr
   the imposter's hottest search cell changes.
 - *decision audit* (debug only): `decision_snapshot` links the active
   mode/directive, symbolic intent, held mask, self position, currently visible
-  players/bodies, believed/confirmed threats with last-seen age and flee gate
-  distances, and task/flee/nav geometry. It is one record per tick, so it is
-  useful for single-game forensics but too noisy for capped hosted logs.
+  players/bodies, believed/confirmed threats with last-seen age and whether each is
+  tailing us, and task/accuse/nav geometry (the `accuse` block records the tail we
+  mean to accuse and the button run). It is one record per tick, so it is useful for
+  single-game forensics but too noisy for capped hosted logs.
 - *trace replay viewer* (opt-in via `CREWBORG_TRACE=viewer` or `debug`):
   `viewer_map` emits static map geometry, `viewer_occupancy_grid` emits the
   reachable coarse grid once available, and `viewer_frame` emits one browser-ready
@@ -998,14 +1087,15 @@ structural, and each still awaits tuning against a live server.
 | Movement-controller style | bang-bang + a release-near-target deadband with a predictive stop — release an axis within the estimated momentum stopping distance so the agent coasts onto the target instead of overshooting |
 | Path clearance | `CLEARANCE_RADIUS = 2` px config-space margin (routes keep off walls) |
 | Re-plan cadence | `REPLAN_INTERVAL = 8` ticks (re-root the route at the live position; A* ≈ 0.2 ms) |
-| Voting policy | vote the highest-posterior live suspect when `P(imp) ≥ VOTE_PROBABILITY` (§10.1), else **skip** — but always cast *something* before the timer (not voting costs −10) |
+| Voting policy | accuse + vote the **clear leading suspect** — near-certain (`P ≥ VOTE_PROBABILITY=0.8`) or a clear lead (`P ≥ VOTE_LEAD_MIN_P=0.5` and ahead of the runner-up by `VOTE_LEAD_MARGIN=0.2`), §10.1 — else **silent + skip** a flat field; always cast *something* before the timer (not voting costs −10) |
 | LLM meetings | opt-in with `CREWBORG_LLM_MEETINGS=1` + `ANTHROPIC_API_KEY`; default model `claude-haiku-4-5-20251001`; deadline LLM prompt at ≤96 ticks remaining and auto-submit at ≤48 ticks remaining; chat cooldown is 100 ticks |
+| Chat NLP (§10.5) | **on by default**; kill switch `CREWBORG_CHAT_NLP=0` disables it (never imports/loads spaCy). Drives the imposter bandwagon's chat signal via `en_core_web_sm` dependency-parse negation scope, background-loaded so it never blocks play |
 | Aggressive imposter selector | opt-in with `CREWBORG_BE_DUMB=1` or `BE_DUMB=1`; during `Playing`, imposters skip Pretend/Evade/ReportBody and always select Search unless kill-ready with a visible victim, then Hunt |
 | Report policy | crewmates always report visible bodies; imposters evade for `EVADE_TICKS = 72` after their own kill, then may report a non-fresh visible body (§7.2). Suspicion-aware reporting is a possible refinement |
 | Pretend fake-task hold | one task-time (`TASK_TICKS = 72`) held at the station, then re-dispatch |
 | Pretend room targeting | room score = expected crew density minus teammate-imposter pressure (`TEAMMATE_ROOM_PENALTY = 3.0`); choose a real task station in the selected room; keep a chosen room for `ROOM_TARGET_MIN_TICKS = 10000` unless arriving or being preempted |
 | Kill isolation bar | clearance `BASE_ISOLATION_RADIUS = 48` px and witness window `WITNESS_WINDOW_TICKS = 72`, both relaxed to zero by urgency `URGENCY_FULL_TICKS = 240` |
-| Search lead | enter Search `SEARCH_LEAD_TICKS = 100` before the kill is ready. Time-to-ready is reconstructed from the binary HUD: a learned `kill_cooldown_estimate` (or `DEFAULT_KILL_COOLDOWN_TICKS = 500`, matching the live game's `killCooldownTicks`, until measured) from the tracked cooldown start |
+| Search lead | enter Search `SEARCH_LEAD_TICKS = 250` before the kill is ready (half the 500-tick cooldown — raised from 100 so we are already shadowing an isolated victim when the kill comes ready, converting the cooldown window to a kill ASAP; stops short of the BE_DUMB ceiling, which tripled ejections for +10% kills). Time-to-ready is reconstructed from the binary HUD: a learned `kill_cooldown_estimate` (or `DEFAULT_KILL_COOLDOWN_TICKS = 500`, matching the live game's `killCooldownTicks`, until measured) from the tracked cooldown start |
 | Hunt victim tracking | Hunt requires a visible victim; Search may follow a committed victim seen within `TRACK_WINDOW_TICKS = 120`; trajectory lead is capped at `MAX_LEAD_TICKS = 24` (velocity from sightings ≤ `VELOCITY_MAX_DT = 4` apart, `AGENT_SPEED_PX = 3`) |
 | Hunt teammate claim | prefer an unclaimed victim when a teammate-imposter seen within `TRACK_WINDOW_TICKS` is closer to another victim inside `TEAMMATE_CLAIM_RADIUS = 80` px |
 

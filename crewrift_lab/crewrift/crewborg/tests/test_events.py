@@ -10,7 +10,16 @@ from __future__ import annotations
 from crewrift.crewborg.action import BTN_A, BTN_B, BTN_LEFT
 from crewrift.crewborg.events import CrewborgEventTracer
 from crewrift.crewborg.strategy.suspicion import VOTE_PROBABILITY
-from crewrift.crewborg.types import ActionState, Belief, BodyEntry, ChatEvent, Command, Intent, PlayerRecord
+from crewrift.crewborg.types import (
+    ActionState,
+    Belief,
+    BodyEntry,
+    ChatEvent,
+    Command,
+    Intent,
+    PlayerEvent,
+    PlayerRecord,
+)
 from players.player_sdk import EventEmitter, ListMetricsSink, ListTraceSink, ModeDirective, StepContext
 
 
@@ -143,7 +152,7 @@ def test_task_started_on_new_target_and_resume_after_interruption() -> None:
     h.step(intent=Intent(kind="complete_task", task_index=4))
     h.step(intent=Intent(kind="complete_task", task_index=4))  # same target: no re-emit
     h.step(intent=Intent(kind="complete_task", task_index=9))  # new target
-    h.step(intent=Intent(kind="flee_from", target_id=1))  # interruption clears the latch
+    h.step(intent=Intent(kind="call_meeting"))  # interruption clears the latch
     h.step(intent=Intent(kind="complete_task", task_index=9))  # resume counts as a new start
 
     started = h.events("domain.task_started")
@@ -251,9 +260,9 @@ def test_debug_decision_snapshot_includes_visibility_threat_task_and_command_geo
         world_y=100,
         last_seen_tick=10,
         life_status="alive",
+        events=[PlayerEvent(kind="vent_use", start_tick=9, end_tick=9)],  # a witnessed catch
     )
     belief.believed_imposters = {"red"}
-    belief.confirmed_imposters = {"red"}
     belief.suspicion = {"red": 0.99991}
 
     h = _Harness(debug=True)
@@ -277,7 +286,7 @@ def test_debug_decision_snapshot_includes_visibility_threat_task_and_command_geo
     assert data["threats"][0]["visible"] is True
     assert data["threats"][0]["age_ticks"] == 0
     assert data["threats"][0]["dist_sq"] == 2500
-    assert data["threats"][0]["flee_enter"] is True
+    assert data["threats"][0]["tailing_self"] is False  # this suspect was caught venting, not tailing
     assert data["task"]["task_index"] == 0
     assert data["task"]["inside"] is True
     assert data["task"]["goal"] == [102, 100]
@@ -285,13 +294,19 @@ def test_debug_decision_snapshot_includes_visibility_threat_task_and_command_geo
     assert data["nav"]["next_waypoint"] == [110, 100]
 
 
-def test_debug_decision_snapshot_marks_offscreen_last_known_flee_target() -> None:
+def test_debug_decision_snapshot_records_an_accuse_button_run() -> None:
+    from crewrift.crewborg.map.types import MapData, MapPoint, MapRect
+
     belief = Belief(
         phase="Playing",
         self_role="crewmate",
         last_tick=20,
         self_world_x=100,
         self_world_y=100,
+        map=MapData(
+            width=400, height=400, tasks=(), vents=(), rooms=(),
+            button=MapRect(x=196, y=96, w=8, h=8), home=MapPoint(x=10, y=10),  # center (200, 100)
+        ),
     )
     belief.roster["red"] = PlayerRecord(
         color="red",
@@ -299,6 +314,7 @@ def test_debug_decision_snapshot_marks_offscreen_last_known_flee_target() -> Non
         world_y=100,
         last_seen_tick=18,
         life_status="alive",
+        events=[PlayerEvent(kind="tailing_self", start_tick=1, end_tick=20, target_color=None)],
     )
     belief.believed_imposters = {"red"}
     belief.suspicion = {"red": 0.99}
@@ -306,9 +322,9 @@ def test_debug_decision_snapshot_marks_offscreen_last_known_flee_target() -> Non
     h = _Harness(debug=True)
     h.step(
         belief=belief,
-        intent=Intent(kind="flee_from", target_color="red", reason="fleeing believed imposter"),
+        intent=Intent(kind="call_meeting", target_color="red", reason="being tailed: call a meeting"),
         command=Command(held_mask=BTN_B),
-        active_directive=ModeDirective(mode="flee", source="strategy", reason="unit"),
+        active_directive=ModeDirective(mode="accuse", source="strategy", reason="unit"),
     )
 
     [event] = h.events("domain.decision_snapshot")
@@ -316,17 +332,16 @@ def test_debug_decision_snapshot_marks_offscreen_last_known_flee_target() -> Non
     assert data["visible_players"] == []
     assert data["threats"][0]["visible"] is False
     assert data["threats"][0]["age_ticks"] == 2
-    assert data["threats"][0]["flee_stale"] is False
-    assert data["flee"] == {
+    assert data["threats"][0]["tailing_self"] is True
+    assert data["accuse"] == {
         "active": True,
         "target_color": "red",
+        "target_p": 0.99,
         "target_visible": False,
         "target_last_seen_tick": 18,
-        "target_age_ticks": 2,
-        "target_xy": [150, 100],
-        "away_point": [50, 100],
-        "target_dist": 50.0,
-        "target_dist_sq": 2500,
+        "button_xy": [200, 100],
+        "button_dist": 100.0,
+        "button_dist_sq": 10000,
     }
 
 
@@ -379,7 +394,10 @@ def test_imposter_confirmed_and_believed_changed_on_set_moves() -> None:
     belief = _crewmate_belief()
     h.step(belief=belief)  # empty: nothing
 
-    belief.confirmed_imposters = {"red"}
+    # A witnessed catch (kill/vent_use event) is what witnessed_imposters reads.
+    belief.roster["red"] = PlayerRecord(
+        color="red", life_status="alive", events=[PlayerEvent(kind="kill", start_tick=4, end_tick=4, target_color="green")]
+    )
     belief.suspicion = {"red": 0.999}
     belief.believed_imposters = {"red"}
     h.step(belief=belief)

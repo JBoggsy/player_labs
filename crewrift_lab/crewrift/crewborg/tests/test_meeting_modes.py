@@ -1,12 +1,12 @@
-"""Attend Meeting / Report Body / Flee mode tests (design §7.1)."""
+"""Attend Meeting / Report Body / Accuse mode tests (design §7.1)."""
 
 from __future__ import annotations
 
 from crewrift.crewborg.action import BTN_A, BTN_DOWN, resolve_action
-from crewrift.crewborg.modes import AttendMeetingMode, FleeMode, ReportBodyMode
+from crewrift.crewborg.modes import AccuseMode, AttendMeetingMode, ReportBodyMode
 from crewrift.crewborg.perception.entities import VoteCandidate, VotingState
 from crewrift.crewborg.strategy.meeting import MeetingDecision, MeetingLLMResult
-from crewrift.crewborg.types import ActionState, Belief, BodyEntry, ChatEvent, PlayerRecord
+from crewrift.crewborg.types import ActionState, Belief, BodyEntry, ChatEvent, PlayerEvent, PlayerRecord
 
 
 class _FakeMeetingClient:
@@ -43,42 +43,51 @@ def _meeting_belief(*, tick: int = 0, start_tick: int = 0) -> Belief:
     return belief
 
 
-def test_attend_meeting_chats_once_then_votes() -> None:
-    mode = AttendMeetingMode()
-    first = mode.decide(Belief(phase="Voting"), ActionState())
-    assert first.kind == "chat" and first.text
-
-    second = mode.decide(Belief(phase="Voting"), ActionState())
-    assert second.kind == "vote"
-    assert mode.decide(Belief(phase="Voting"), ActionState()).kind == "vote"
-
-
-def test_attend_meeting_votes_the_top_suspect_when_confident() -> None:
+def test_attend_meeting_accuses_a_clear_suspect_then_votes_them() -> None:
     mode = AttendMeetingMode()
     belief = Belief(phase="Voting")
-    belief.suspicion = {"red": 0.95, "blue": 0.2}  # red over the vote bar
-    mode.decide(belief, ActionState())  # chat opener
+    belief.roster["red"] = PlayerRecord(
+        color="red", life_status="alive", events=[PlayerEvent(kind="vent_use", start_tick=4, end_tick=4)]
+    )
+    belief.suspicion = {"red": 0.95, "blue": 0.2}  # red a clear leading suspect
+
+    chat = mode.decide(belief, ActionState())
+    assert chat.kind == "chat" and chat.text == "red sus: saw them vent"  # accuse, citing evidence
+
     vote = mode.decide(belief, ActionState())
-    assert vote.kind == "vote" and vote.target_color == "red"
+    assert vote.kind == "vote" and vote.target_color == "red"  # votes whom it accused
+    assert mode.decide(belief, ActionState()).kind == "vote"
 
 
-def test_attend_meeting_skips_when_no_one_is_suspicious_enough() -> None:
+def test_meeting_never_votes_self_even_if_self_is_top_suspect() -> None:
+    # The crew-loss bug: our own colour saturated suspicion and we voted ourself out.
+    mode = AttendMeetingMode()
+    belief = Belief(phase="Voting", self_role="crewmate", self_color="red")
+    belief.voting = VotingState(
+        timer_present=True, self_marker_color="red",
+        candidates=(VoteCandidate(slot=0, color="red", alive=True), VoteCandidate(slot=1, color="blue", alive=True)),
+    )
+    belief.suspicion = {"red": 0.99}  # self forced as the only/top suspect
+
+    intent = mode.decide(belief, ActionState())
+    assert intent.kind == "vote" and intent.target_color is None  # skip — never red (self)
+
+
+def test_attend_meeting_stays_silent_and_skips_a_flat_field() -> None:
     mode = AttendMeetingMode()
     belief = Belief(phase="Voting")
-    belief.suspicion = {"red": 0.4, "blue": 0.2}  # nobody over the vote bar
-    mode.decide(belief, ActionState())  # chat opener
-    vote = mode.decide(belief, ActionState())
-    assert vote.kind == "vote" and vote.target_color is None
+    belief.suspicion = {"red": 0.4, "blue": 0.2}  # no clear leader — flat/low field
+
+    intent = mode.decide(belief, ActionState())
+    assert intent.kind == "vote" and intent.target_color is None  # silent skip, no chat opener
 
 
 def test_attend_meeting_stays_idle_after_vote_confirmation() -> None:
     mode = AttendMeetingMode()
-    belief = Belief(phase="Voting")
+    belief = Belief(phase="Voting")  # no suspicion ⇒ silent skip, the vote is the first decision
     belief.voting = VotingState(skip_cursor_present=True)
     action_state = ActionState()
 
-    chat = mode.decide(belief, action_state)
-    resolve_action(chat, belief, action_state)
     vote = mode.decide(belief, action_state)
     command = resolve_action(vote, belief, action_state)
     assert command.held_mask == BTN_A and action_state.vote_confirmed
@@ -166,13 +175,15 @@ def test_attend_meeting_llm_submitted_vote_keeps_driving_cursor_until_confirmed(
     assert len(client.calls) == 1
 
 
-def test_attend_meeting_invalid_llm_decision_falls_back_to_canned_chat() -> None:
+def test_attend_meeting_invalid_llm_decision_falls_back_to_the_deterministic_accusation() -> None:
     client = _FakeMeetingClient([MeetingDecision(action="send_chat", chat_text="vote green", vote_target="green")])
     mode = AttendMeetingMode(llm_client=client)
+    belief = _meeting_belief(tick=0)  # suspicion {"red": 0.95} ⇒ red the clear suspect
+    belief.roster["red"].events.append(PlayerEvent(kind="vent_use", start_tick=2, end_tick=2))
 
-    intent = mode.decide(_meeting_belief(tick=0), ActionState())
+    intent = mode.decide(belief, ActionState())
     assert intent.kind == "chat"
-    assert intent.text == "no read, skipping"
+    assert intent.text == "red sus: saw them vent"  # fell back to the deterministic accusation
 
 
 def test_report_body_targets_nearest_visible_body() -> None:
@@ -187,15 +198,12 @@ def test_report_body_idles_with_no_body_in_view() -> None:
     assert ReportBodyMode().decide(Belief(), ActionState()).kind == "idle"
 
 
-def test_flee_targets_believed_imposter_and_is_dormant_when_empty() -> None:
-    belief = Belief(self_world_x=100, self_world_y=100)
+def test_accuse_mode_calls_a_meeting_naming_the_active_tail() -> None:
+    belief = Belief(self_world_x=100, self_world_y=100, last_tick=40)
     belief.roster["red"] = PlayerRecord(
-        object_id=1004, color="red", facing="left", world_x=120, world_y=100, last_seen_tick=1,
-        life_status="alive",
+        color="red", world_x=120, world_y=100, last_seen_tick=40, life_status="alive",
+        events=[PlayerEvent(kind="tailing_self", start_tick=1, end_tick=40, target_color=None)],
     )
-    # Empty evidence stub ⇒ dormant.
-    assert FleeMode().decide(belief, ActionState()).kind == "idle"
-    # Once a believed imposter exists, flee from it.
-    belief.believed_imposters = {"red"}
-    intent = FleeMode().decide(belief, ActionState())
-    assert intent.kind == "flee_from" and intent.target_color == "red"
+    belief.suspicion = {"red": 0.7}  # over the sketched-out bar
+    intent = AccuseMode().decide(belief, ActionState())
+    assert intent.kind == "call_meeting" and intent.target_color == "red"
