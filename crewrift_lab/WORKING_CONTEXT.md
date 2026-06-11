@@ -21,10 +21,15 @@ is the one-screen answer to "where are we and why."
 - **v24** (`b725a6e1`) = self-vote fix (v22) + kill-sooner. **Submitted** `sub_e6969016`
   (provisional, pending the large A/B). **v22** `sub_9a4b4fa9` and **v21** `sub_2c8afd84`
   (still the buggy champion) are now both superseded — retire once v24 places.
-- **Large 2-imp confirmation A/B RUNNING** (2×100 eps/arm, pooled): v22 `xreq_8442b2e3`
-  + `xreq_bad4a426`; v24 `xreq_97e04fdd` + `xreq_753bdfa1`. Powered (>90%) for the
-  observed +0.23 kills/g gap. Analyze crewborg's own kills (`results.json` by
-  `policy_version_id`), connect-failure filtered; this decides whether v24's kill gain is real.
+- **Large 2-imp A/B (DONE but CONFOUNDED):** `top_n` seated a **different slot-7 partner
+  per arm** (v22 got Kyle/Aaron, v24 got a James Boggs crewborg), so the +23% win was a
+  partner artifact. Kills (v24 1.93 vs v22 1.73, p=0.005) were more robust — v24 led in
+  both the 30-ep and 200-ep batches even as partner-strength flipped — but not clean. (See
+  the `top_n`-uncontrolled-roster tentative lesson.)
+- **CONTROLLED 2-imp A/B RUNNING:** explicit identical roster (`opponents[]`, not top_n),
+  partner = **slava2** slot 7, same 6 crew; **only slot 0 differs** (v22 vs v24). Verified
+  the seating in the readback. 100 eps/arm: v22 `xreq_1c7f6bdf`, v24 `xreq_57de3453`. This
+  is the trustworthy test — analyze crewborg's own kills, connect-failure filtered.
 
 ## Current objective — RAISE THE IMPOSTER KILL RATE
 

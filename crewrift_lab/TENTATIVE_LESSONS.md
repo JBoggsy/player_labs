@@ -18,6 +18,36 @@ that get contradicted.
 
 ---
 
+### `top_n` opponent auto-selection makes the partner/roster UNCONTROLLED — pin an explicit identical roster for any A/B.
+- **Hits:** 1 (2026-06-11)
+- **Evidence:** A v22-vs-v24 imposter A/B (2-imp, slot 0 = crewborg + slot 7 = partner)
+  used `player_selection: top_n`. The auto-selected **slot-7 partner differed between
+  arms** — v22 got Kyle Herndon (weak) / Aaron's Optimizer (strong) across batches, v24
+  got a "James Boggs" crewborg — and the crew drifted too. That confounded everything:
+  v22's *win rate swung 87%→37% with its partner alone*, so the "+23% win for v24" was a
+  partner artifact, not a policy effect. Worse: once your own policy is a league member,
+  `top_n` can seat **your own crewborg as the opponent/partner** (v24 was rank 10 in the
+  division right after submission). **Fix:** for any A/B, pin an **explicit identical
+  opponent roster** (`opponents: [{policy_version_id…}]`, NOT `top_n`) so the only
+  difference between arms is slot 0; verify the seating in the request readback
+  (`xp-request get … .episodes[0].policy_version_ids`) — `opponents[]` seats in list order
+  into slots 1..N. (The kills metric was more robust — v24 led in both batches even as the
+  partner-strength direction flipped — but only a controlled roster makes it clean.)
+- **Status:** candidate (strong methodology lesson — promote on next confirmation)
+
+### A teammate imposter's kill→report RESETS our kill cooldown — the cost of a sloppy partner is our lost CD window, not "stolen" victims.
+- **Hits:** 1 (2026-06-11, James's correction)
+- **Evidence:** In 2-imposter games crewborg's kills (1.73) trail its solo-pinned rate
+  (2.25). The tempting read is "the partner steals our victims." The real mechanism
+  (per James): a partner that kills in an **obvious location** gets its body **reported
+  quickly**, and a report/meeting **resets every imposter's kill cooldown** — so if the
+  partner kills early and it's reported before we've converted our own ~500-tick CD into
+  a kill, we simply lose that window. It's not victim contention; it's CD loss we can't
+  control from our side. **Only lever on our end: get our kill in ASAP** (leave Pretend
+  earlier, don't waste the CD idling without an audience) so a kill is banked before a
+  report zeroes the clock. Parked: nothing we can do about the partner's behaviour itself.
+- **Status:** candidate
+
 ### The agent's OWN sprite is in the perception roster (camera-centre) — exclude `self_color` from suspicion/tailing/votes or it suspects and ejects itself.
 - **Hits:** 1 (2026-06-11)
 - **Evidence:** crewborg's camera is locked to itself, so its own sprite resolves into
