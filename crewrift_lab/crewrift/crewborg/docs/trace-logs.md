@@ -65,7 +65,8 @@ prefilter with **`grep '^{'`** (it also drops any Kubernetes collector-error lin
   `suspicion` is P(imposter) ∈ [0,1] when crewborg is a **crewmate** and `null` when
   it is the **imposter** (it only scores suspicion as a crewmate), `visible_bodies[]`,
   `threats[]` (every *believed* imposter even if not visible, with `p`, `visible`,
-  `last_seen_tick`, `dist`, and the `flee_*` gate booleans), `task`, `flee`,
+  `last_seen_tick`, `dist`, and `tailing_self`), `task`, `accuse`
+  `{target_color,target_p,button_xy,button_dist}` when calling a meeting,
   `nav {route_goal,next_waypoint}`.
 - **`domain.suspicion_snapshot`** — one per meeting (crewmate only); explains the vote.
   `ranking[]` of `{color, p, events[]}` sorted by descending `p` (posterior

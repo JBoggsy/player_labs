@@ -1,9 +1,9 @@
-"""Attend Meeting / Report Body / Flee mode tests (design §7.1)."""
+"""Attend Meeting / Report Body / Accuse mode tests (design §7.1)."""
 
 from __future__ import annotations
 
 from crewrift.crewborg.action import BTN_A, BTN_DOWN, resolve_action
-from crewrift.crewborg.modes import AttendMeetingMode, FleeMode, ReportBodyMode
+from crewrift.crewborg.modes import AccuseMode, AttendMeetingMode, ReportBodyMode
 from crewrift.crewborg.perception.entities import VoteCandidate, VotingState
 from crewrift.crewborg.strategy.meeting import MeetingDecision, MeetingLLMResult
 from crewrift.crewborg.types import ActionState, Belief, BodyEntry, ChatEvent, PlayerEvent, PlayerRecord
@@ -184,15 +184,12 @@ def test_report_body_idles_with_no_body_in_view() -> None:
     assert ReportBodyMode().decide(Belief(), ActionState()).kind == "idle"
 
 
-def test_flee_targets_believed_imposter_and_is_dormant_when_empty() -> None:
-    belief = Belief(self_world_x=100, self_world_y=100)
+def test_accuse_mode_calls_a_meeting_naming_the_active_tail() -> None:
+    belief = Belief(self_world_x=100, self_world_y=100, last_tick=40)
     belief.roster["red"] = PlayerRecord(
-        object_id=1004, color="red", facing="left", world_x=120, world_y=100, last_seen_tick=1,
-        life_status="alive",
+        color="red", world_x=120, world_y=100, last_seen_tick=40, life_status="alive",
+        events=[PlayerEvent(kind="tailing_self", start_tick=1, end_tick=40, target_color=None)],
     )
-    # Empty evidence stub ⇒ dormant.
-    assert FleeMode().decide(belief, ActionState()).kind == "idle"
-    # Once a believed imposter exists, flee from it.
-    belief.believed_imposters = {"red"}
-    intent = FleeMode().decide(belief, ActionState())
-    assert intent.kind == "flee_from" and intent.target_color == "red"
+    belief.suspicion = {"red": 0.7}  # over the sketched-out bar
+    intent = AccuseMode().decide(belief, ActionState())
+    assert intent.kind == "call_meeting" and intent.target_color == "red"

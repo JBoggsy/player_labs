@@ -12,9 +12,9 @@ from crewrift.crewborg.action import resolve_action
 from crewrift.crewborg.events import CrewborgEventTracer
 from crewrift.crewborg.map import MapData, load_croatoan_map
 from crewrift.crewborg.modes import (
+    AccuseMode,
     AttendMeetingMode,
     EvadeMode,
-    FleeMode,
     HuntMode,
     IdleMode,
     NormalMode,
@@ -61,7 +61,7 @@ def build_runtime(
     snapshot sees current search and ``believed_imposters`` state. The static map
     is baked once here (design §6) — ``map_data`` overrides the vendored
     ``croatoan`` bake (tests).
-    Registers all modes: idle / normal / attend_meeting / report_body / flee
+    Registers all modes: idle / normal / attend_meeting / report_body / accuse
     (crewmate) and evade / pretend / search / hunt (imposter). A ``CrewborgEventTracer``
     is wired as the runtime's ``on_step_complete`` hook so crewborg emits its
     ``domain.*`` trace events through the configured sinks (design §11): the
@@ -77,7 +77,7 @@ def build_runtime(
     registry.register(NormalMode)
     registry.register(AttendMeetingMode)
     registry.register(ReportBodyMode)
-    registry.register(FleeMode)
+    registry.register(AccuseMode)
     registry.register(EvadeMode)
     registry.register(HuntMode)
     registry.register(PretendMode)

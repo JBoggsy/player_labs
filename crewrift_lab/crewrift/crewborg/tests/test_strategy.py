@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from crewrift.crewborg.map.types import MapData, MapPoint, MapRect
 from crewrift.crewborg.strategy import RuleBasedStrategy
-from crewrift.crewborg.strategy.rule_based import FLEE_STALE_TICKS
-from crewrift.crewborg.types import ActionState, Belief, PlayerRecord
+from crewrift.crewborg.types import ActionState, Belief, PlayerEvent, PlayerRecord
 from players.player_sdk.types import BeliefSnapshot, ModeDirective, SharedMemory
 
 
@@ -20,25 +20,41 @@ def _select_with(strategy: RuleBasedStrategy, belief: Belief, tick: int = 1) -> 
     return directive.mode
 
 
-def _crewmate_with_threat(*, tick: int, threat_x: int, threat_y: int = 100, last_seen_tick: int | None = None) -> Belief:
-    belief = Belief(
-        phase="Playing",
-        self_role="crewmate",
-        last_tick=tick,
-        self_world_x=100,
-        self_world_y=100,
+def _crewmate_being_tailed(
+    *, tick: int, p: float = 0.7, tail_end: int | None = None, color: str = "red", alive: bool = True
+) -> Belief:
+    """A live crewmate being shadowed by ``color``: an (optionally lapsed) tailing_self
+    interval plus a manually set posterior ``p`` (the selector reads belief.suspicion)."""
+
+    belief = Belief(phase="Playing", self_role="crewmate", last_tick=tick, self_world_x=100, self_world_y=100)
+    # A reachable button away from self (no nav graph ⇒ reachable), so Accuse can fire
+    # and walk to it without immediately being "inside" it.
+    belief.map = MapData(
+        width=200, height=200, tasks=(), vents=(), rooms=(),
+        button=MapRect(x=10, y=10, w=8, h=8), home=MapPoint(x=10, y=10),
     )
-    belief.roster["red"] = PlayerRecord(
-        object_id=1004,
-        color="red",
-        facing="left",
-        world_x=threat_x,
-        world_y=threat_y,
-        last_seen_tick=tick if last_seen_tick is None else last_seen_tick,
-        life_status="alive",
+    belief.roster[color] = PlayerRecord(
+        color=color,
+        world_x=110,
+        world_y=100,
+        last_seen_tick=tick,
+        life_status="alive" if alive else "dead",
+        events=[
+            PlayerEvent(
+                kind="tailing_self", start_tick=1, end_tick=tick if tail_end is None else tail_end, target_color=None
+            )
+        ],
     )
-    belief.believed_imposters = {"red"}
+    belief.suspicion = {color: p}
     return belief
+
+
+def _map_with_button_around_self() -> MapData:
+    # A button rect covering self at (100, 100), so "inside the button rect" is true.
+    return MapData(
+        width=200, height=200, tasks=(), vents=(), rooms=(),
+        button=MapRect(x=96, y=96, w=8, h=8), home=MapPoint(x=10, y=10),
+    )
 
 
 def test_playing_crewmate_selects_normal() -> None:
@@ -71,30 +87,63 @@ def test_ghost_does_tasks_not_report() -> None:
     assert _select(belief) == "normal"
 
 
-def test_approaching_believed_imposter_selects_flee() -> None:
-    assert _select(_crewmate_with_threat(tick=1, threat_x=110)) == "flee"
+def test_active_tail_by_a_suspect_selects_accuse() -> None:
+    assert _select(_crewmate_being_tailed(tick=40, p=0.7)) == "accuse"
 
 
-def test_flee_stays_active_until_threat_is_clearly_clear() -> None:
+def test_a_tail_below_the_sketched_out_bar_keeps_tasking() -> None:
+    # Being tailed, but we're not yet suspicious enough (< ACCUSE_THRESHOLD) ⇒ tasks.
+    assert _select(_crewmate_being_tailed(tick=40, p=0.4)) == "normal"
+
+
+def test_a_suspect_not_currently_tailing_keeps_tasking() -> None:
+    # Suspicious, but the tail lapsed long ago (no live tailing_self) ⇒ no accuse.
+    assert _select(_crewmate_being_tailed(tick=100, p=0.7, tail_end=10)) == "normal"
+
+
+def test_accuse_commitment_persists_when_the_tail_briefly_lapses() -> None:
     strategy = RuleBasedStrategy()
-
-    assert _select_with(strategy, _crewmate_with_threat(tick=1, threat_x=150), tick=1) == "flee"
-    # Outside the 60px enter radius but inside the wider exit radius: stay in Flee
-    # instead of returning to tasking and bouncing at the threshold.
-    assert _select_with(strategy, _crewmate_with_threat(tick=2, threat_x=175), tick=2) == "flee"
-    assert _select_with(strategy, _crewmate_with_threat(tick=3, threat_x=205), tick=3) == "normal"
+    assert _select_with(strategy, _crewmate_being_tailed(tick=40, p=0.7), tick=40) == "accuse"
+    # The tail lapses mid-walk to the button, but we stay committed to the run.
+    lapsed = _crewmate_being_tailed(tick=50, p=0.7, tail_end=10)
+    assert _select_with(strategy, lapsed, tick=50) == "accuse"
 
 
-def test_flee_exits_when_last_known_threat_position_is_stale() -> None:
+def test_accuse_stops_once_the_committed_target_dies() -> None:
     strategy = RuleBasedStrategy()
+    assert _select_with(strategy, _crewmate_being_tailed(tick=40, p=0.7), tick=40) == "accuse"
+    dead = _crewmate_being_tailed(tick=50, p=0.7, alive=False)
+    assert _select_with(strategy, dead, tick=50) == "normal"
 
-    assert _select_with(strategy, _crewmate_with_threat(tick=10, threat_x=150), tick=10) == "flee"
-    stale = _crewmate_with_threat(
-        tick=10 + FLEE_STALE_TICKS + 1,
-        threat_x=150,
-        last_seen_tick=10,
-    )
-    assert _select_with(strategy, stale, tick=stale.last_tick) == "normal"
+
+def test_the_one_button_call_is_spent_at_the_button_then_we_fall_back_to_tasks() -> None:
+    strategy = RuleBasedStrategy()
+    at_button = _crewmate_being_tailed(tick=40, p=0.7)
+    at_button.map = _map_with_button_around_self()  # self is inside the button rect
+    assert _select_with(strategy, at_button, tick=40) == "accuse"  # presses A — call spent
+    # Still being tailed next tick, but the one call is used ⇒ back to tasks, not stuck.
+    assert _select_with(strategy, _crewmate_being_tailed(tick=41, p=0.7), tick=41) == "normal"
+
+
+def test_an_unreachable_button_keeps_us_tasking_instead_of_stalling() -> None:
+    # Map present but no nav graph yet ⇒ optimistically reachable (steer straight).
+    from crewrift.crewborg.strategy.rule_based import _button_reachable
+
+    assert _button_reachable(Belief()) is False  # no map ⇒ can't call a meeting
+    assert _button_reachable(_crewmate_being_tailed(tick=40, p=0.7)) is True  # map, no nav ⇒ ok
+    # With a nav graph the guard keys on button_anchor (unreachable ⇒ False), so the
+    # selector falls back to Normal rather than committing to an unrouteable goal.
+
+
+def test_a_new_game_restores_the_button_call_budget() -> None:
+    strategy = RuleBasedStrategy()
+    at_button = _crewmate_being_tailed(tick=40, p=0.7)
+    at_button.map = _map_with_button_around_self()
+    _select_with(strategy, at_button, tick=40)  # spends the call
+    assert _select_with(strategy, _crewmate_being_tailed(tick=41, p=0.7), tick=41) == "normal"
+    # A fresh game (RoleReveal) resets the budget; accusing is available again.
+    assert _select_with(strategy, Belief(phase="RoleReveal"), tick=42) == "idle"
+    assert _select_with(strategy, _crewmate_being_tailed(tick=43, p=0.7), tick=43) == "accuse"
 
 
 def test_non_playing_phases_idle() -> None:

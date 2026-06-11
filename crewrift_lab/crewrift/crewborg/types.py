@@ -45,6 +45,7 @@ IntentKind = Literal[
     "flee_from",
     "complete_task",
     "report",
+    "call_meeting",
     "vote",
     "chat",
     "kill",
@@ -329,12 +330,12 @@ class Belief(BaseModel):
 
     # Social / evidence (design §5, §10.1). Bayesian: ``suspicion[color]`` is the
     # posterior **P(imposter)** ∈ [0, 1] for each other player (crewmate POV),
-    # recomputed each tick from a combinatorial prior + likelihood-ratio updates for
-    # observed evidence. ``confirmed_imposters`` are colors caught by the near-certain
-    # detectors (witnessed kill/vent), contributed as overwhelming-LR evidence;
-    # ``believed_imposters`` is the derived set over the flee probability (drives
-    # Flee). ``imposter_count`` (K) overrides the player-count-derived default.
-    confirmed_imposters: set[str] = Field(default_factory=set)
+    # recomputed each tick from a combinatorial prior + likelihood-ratio updates over
+    # the per-player event log — *all* evidence flows through this one probability,
+    # including witnessed kills/vents (logged as ``kill``/``vent_use`` events carrying
+    # an overwhelming, latched LR ⇒ P ≈ 1) and being-tailed (``tailing_self``). There
+    # is no separate "confirmed" set. ``believed_imposters`` is the derived set over
+    # the flee probability (drives Flee). ``imposter_count`` (K) overrides the default.
     suspicion: dict[str, float] = Field(default_factory=dict)
     believed_imposters: set[str] = Field(default_factory=set)
     imposter_count: int | None = None
@@ -370,7 +371,9 @@ class Intent(BaseModel):
 
     kind: IntentKind = "idle"
     point: tuple[int, int] | None = None
-    # A player-identity target (the roster key) for ``kill`` / ``flee_from``.
+    # A player-identity target (the roster key) for ``kill``; also carried on
+    # ``call_meeting`` to record who we mean to accuse (forensics only — the meeting
+    # vote re-derives the target from suspicion).
     target_color: str | None = None
     # A body object id for ``report`` (bodies stay keyed by object id).
     target_id: int | None = None

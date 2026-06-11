@@ -23,12 +23,15 @@ see the [lab README](../../README.md).
 ## What it does
 
 Crewborg plays **both roles** end-to-end. As a crewmate it does tasks, attends
-meetings, reports bodies, flees believed imposters, and **votes out the most-likely
-imposter** — a **Bayesian suspicion model** (`strategy/suspicion.py`) maintains a
-posterior `P(imposter)` per player (a combinatorial prior updated by likelihood
-ratios for witnessed kills/vents and graded event-log cues); it flees anyone over a
-probability threshold and at meetings votes the highest-`P` player above the vote
-bar (else skips), with reporting a visible body taking priority over fleeing. As an
+meetings, reports bodies, and **votes out the most-likely imposter** — a **Bayesian
+suspicion model** (`strategy/suspicion.py`) maintains a posterior `P(imposter)` per
+player (a combinatorial prior updated by likelihood ratios for witnessed kills/vents,
+being tailed, and graded event-log cues). When it detects it's being **actively
+tailed** by a player it's grown suspicious of, it switches to **Accuse** mode — drop
+tasks, go slam the one-shot emergency button to call a meeting. At meetings, when
+there's a **clear leading suspect**, it **accuses then votes** them — chatting
+`"<color> sus: <reasons>"` from the ranked event-log evidence — staying silent and
+skipping a flat field. Reporting a visible body takes priority over accusing. As an
 imposter the
 role-aware selector runs a priority order during `Playing`: **Evade** immediately
 after its own kill (vent if possible, else move away from the body), **Report Body**
@@ -42,7 +45,7 @@ imposter is likely occupying, then fake the task for one task duration). Meeting
 reuse **Attend Meeting**. With `CREWBORG_LLM_MEETINGS=1` and `ANTHROPIC_API_KEY`,
 Attend Meeting uses a fast Haiku-class LLM call on the meeting fast path to chat,
 respond to other players, keep a tentative vote, and submit early when requested;
-otherwise it preserves the deterministic canned-chat + suspicion-vote fallback.
+otherwise it preserves the deterministic accuse-and-vote / silent-skip fallback.
 Hunt is gated on a visible kill opportunity whose isolation bar relaxes with
 urgency, not merely on the cooldown ending. The action layer covers `kill` (edge-A
 in KillRange) and `vent` (level-B in VentRange).
@@ -59,7 +62,7 @@ crewborg/                (package crewrift.crewborg)
   navbake.py         load/validate the offline-baked nav graph + occupancy substrate (else fall back to live build)
   trace.py           trace selection: event families + env filtering (outputs = SDK TraceOutputs)
   events.py          CrewborgEventTracer: on_step_complete hook → domain.* events
-  modes/             idle/normal/attend_meeting/report_body/flee + evade/pretend/search/hunt (+ imposter_common helpers)
+  modes/             idle/normal/attend_meeting/report_body/accuse + evade/pretend/search/hunt (+ imposter_common helpers)
   strategy/          rule_based.py: mode selector + suspicion.py: Bayesian P(imposter) → believed_imposters + event_log.py: per-player observation log + occupancy.py: perception-tape predicates + opportunity.py: victim/witness logic + trajectory.py: intercept prediction
   perception/        Sprite-v1 decoder (decoder/tables) + resolution (resolve/entities)
   map/               vendored croatoan.resources + ported parser/bake (§6)
