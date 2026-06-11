@@ -15,11 +15,12 @@ from crewrift.crewborg.strategy.meeting import (
     valid_vote_targets,
     validate_meeting_decision,
 )
-from crewrift.crewborg.strategy.meeting.accusation import build_accusation
+from crewrift.crewborg.strategy.meeting.accusation import build_accusation, fabricate_accusation
 from crewrift.crewborg.strategy.meeting.context import (
     CHAT_COOLDOWN_TICKS,
     VOTE_TIMER_TICKS,
 )
+from crewrift.crewborg.strategy.meeting.imposter import bandwagon_target
 from crewrift.crewborg.strategy.suspicion import top_suspect
 from crewrift.crewborg.types import ActionState, Belief, ChatEvent, Intent
 from players.player_sdk import EmptyModeParams, Mode
@@ -98,11 +99,8 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
     # --- deterministic fallback ------------------------------------------
 
     def _decide_deterministic(self, belief: Belief, *, trace_disabled: bool) -> Intent:
-        """No default-firing chat: accuse and vote a clear leading suspect, else stay
-        silent and skip. We speak only when we have evidence to provide (a crewmate
-        accusation); a flat posterior — or an imposter, whose suspicion is cleared —
-        produces a silent skip. Chat and vote are coupled: we accuse exactly who we
-        then vote for (deflection/imposter-side chat is a later addition, part B)."""
+        """No default-firing chat; chat and vote are always coupled (accuse exactly who
+        we vote — the anti-tell). The two roles diverge here (design §10.4)."""
 
         if trace_disabled and not self._disabled_traced:
             self._disabled_traced = True
@@ -110,6 +108,13 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
                 "meeting_llm_fallback",
                 {"reason": "llm_disabled", "detail": self._llm_client.disabled_reason},
             )
+        if belief.self_role == "imposter":
+            return self._decide_imposter(belief)
+        return self._decide_crewmate(belief)
+
+    def _decide_crewmate(self, belief: Belief) -> Intent:
+        """Accuse + vote a clear leading suspect; else stay silent and skip a flat field."""
+
         if not self._deterministic_chatted:
             self._deterministic_chatted = True
             target = top_suspect(belief)  # the clear leading suspect, or None (flat field)
@@ -119,6 +124,46 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
                 if accusation is not None:
                     return self._send_chat_intent(belief, accusation, reason="accusing clear suspect")
         return self._submit_vote_intent(belief, reason="deterministic meeting vote")
+
+    def _decide_imposter(self, belief: Belief) -> Intent:
+        """Deflect onto crewmates, never teammates. Prefer a **real** accusation against
+        a non-teammate who genuinely looks sus; otherwise wait and **bandwagon** onto a
+        crewmate others are sussing/voting, with *fabricated* (safe) evidence in the
+        identical format; if nobody takes heat, skip at the deadline."""
+
+        # Already accused someone ⇒ stay coupled: vote exactly them.
+        if self._deterministic_chatted and self._tentative_vote is not None:
+            return self._submit_vote_intent(belief, reason="imposter: vote whom we accused")
+
+        # 1. Proactive deflection — a non-teammate with strong, real citable evidence.
+        target = top_suspect(belief)
+        if target is not None:
+            accusation = build_accusation(belief, target)
+            if accusation is not None:
+                self._tentative_vote = target
+                self._deterministic_chatted = True
+                return self._send_chat_intent(belief, accusation, reason="imposter deflect: real evidence")
+
+        # 2. Reactive bandwagon — a crewmate already taking heat (votes + chat).
+        bandwagon = bandwagon_target(belief, self._chat_accusers(belief))
+        if bandwagon is not None:
+            self._tentative_vote = bandwagon
+            self._deterministic_chatted = True
+            fabricated = fabricate_accusation(belief, bandwagon)
+            if fabricated is not None:
+                return self._send_chat_intent(belief, fabricated, reason="imposter bandwagon: fabricated")
+            return self._submit_vote_intent(belief, reason="imposter bandwagon vote")
+
+        # 3. No one to deflect onto yet — wait, then skip at the deadline.
+        if self._should_auto_submit(belief):
+            return self._submit_vote_intent(belief, reason="imposter deadline: no deflection, skip")
+        return Intent(kind="idle", reason="imposter waiting for a crewmate to take heat")
+
+    def _chat_accusers(self, belief: Belief) -> dict[str, int]:
+        """Per-color count of *other players* who have accused them in chat — the
+        additive bandwagon signal. Empty until the chat-NLP layer is wired in."""
+
+        return {}
 
     # --- LLM call cadence -------------------------------------------------
 

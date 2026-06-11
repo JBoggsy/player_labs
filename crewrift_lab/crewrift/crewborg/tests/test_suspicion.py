@@ -74,12 +74,25 @@ def test_non_consecutive_frames_are_not_read_as_a_kill() -> None:
     assert not belief.believed_imposters
 
 
-def test_imposter_observer_accrues_no_suspicion() -> None:
+def test_imposter_scores_deflection_suspicion_on_non_teammates() -> None:
+    # An imposter now computes suspicion over non-teammates (its deflection candidates):
+    # green looks like the killer of red, so the imposter could cite that at a meeting.
     prev = _frame(4, players={"red": (100, 100), "green": (110, 100)})
     curr = _frame(5, players={"green": (110, 100)}, bodies={"red": (100, 100)})
     belief = _belief(prev, curr, self_role="imposter")
     update_suspicion(belief)
-    assert not belief.suspicion and not belief.believed_imposters
+    assert belief.suspicion.get("green", 0.0) > 0.99 and "green" in belief.believed_imposters
+
+
+def test_imposter_never_scores_a_teammate() -> None:
+    # The same scene, but green is a known teammate ⇒ excluded entirely (we never
+    # deflect onto our own).
+    prev = _frame(4, players={"red": (100, 100), "green": (110, 100)})
+    curr = _frame(5, players={"green": (110, 100)}, bodies={"red": (100, 100)})
+    belief = _belief(prev, curr, self_role="imposter")
+    belief.teammate_colors = {"green"}
+    update_suspicion(belief)
+    assert "green" not in belief.suspicion and not belief.believed_imposters
 
 
 # --- witnessed vent: emergence (a) ------------------------------------------

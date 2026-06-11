@@ -5,10 +5,16 @@ model, each evidence type's log-LR function (form + parameters + shape), the off
 fitting workflow, and the provenance log. Update that doc whenever a function or its
 constants change.
 
-Crewmate POV. For every other player we maintain `belief.suspicion[color]` = the
-posterior **probability they are an imposter**, updated from a combinatorial prior
+For every player we could vote as an imposter we maintain `belief.suspicion[color]` =
+the posterior **probability they are an imposter**, updated from a combinatorial prior
 by the evidence we have observed. The score is a real probability, so thresholds
 (e.g. the flee bar) are interpretable — no magic numbers.
+
+Maintained for both live roles. As a **crewmate** it scores every other player and is
+a genuine belief. As an **imposter** it scores only **non-teammates** (the crewmates
+it could deflect onto) — mechanically the same number, but read as "how suspicious
+this crewmate *looks* on the shared evidence," to pick the most-citable deflection
+target at a meeting (design §10.4). A ghost holds no suspicion.
 
 **Prior.** With `P` players and `K` imposters, a crewmate knows the `K` imposters
 are among the other `P − 1`; by symmetry each other player's marginal prior is
@@ -135,9 +141,16 @@ def update_suspicion(belief: Belief) -> None:
     """Recompute `suspicion` (posterior P(imp)) + `believed_imposters` each tick.
 
     Run after `update_belief`/`update_event_log` so the strategy snapshot is current.
+
+    Computed for **both** live roles, over the players we could vote as imposters —
+    every other player for a crewmate, the **non-teammates** for an imposter (it knows
+    its teammates, so it never scores them). For a crewmate the score is a genuine
+    `P(imposter)`; for an imposter it's "how suspicious this crewmate *looks* on the
+    shared evidence" — the same number, used to pick the most-citable deflection target
+    (design §10.4). A ghost holds no suspicion.
     """
 
-    if belief.self_role in ("imposter", "dead"):
+    if belief.self_role == "dead":
         belief.suspicion = {}
         belief.believed_imposters = set()
         return
@@ -304,6 +317,8 @@ def _recompute(belief: Belief) -> None:
     for color, record in belief.roster.items():
         if record.life_status == "dead":
             continue  # the dead are no threat
+        if color in belief.teammate_colors:
+            continue  # a known teammate is never a target (no-op for a crewmate)
         logit = prior_logit + _evidence_log_lr(belief, record)
         p = _sigmoid(logit)
         suspicion[color] = p

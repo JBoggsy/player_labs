@@ -528,7 +528,7 @@ re-decides.
 | **Hunt** | kill ready **and** a victim is visible | **commit to a visible victim and close/strike**: `select_victim` picks the most-isolated reachable visible crewmate, preferring targets not already claimed by a closer teammate; navigate to its **predicted intercept** (`strategy.trajectory` — lead a moving target); when in KillRange *and* unwitnessed → `kill`, else keep shadowing in range (lie in wait) |
 | **Evade** | for `EVADE_TICKS` after our own kill | `vent` if a vent exists; otherwise move away from the nearest known body. This avoids instant self-reports and gets the imposter away from the corpse before Search/Hunt/Pretend resume |
 | **Report Body** | a non-fresh body is in view after the evade window | `report` the nearest visible body — reuses the crewmate Report Body mode. Fresh self-kill bodies are handled by **Evade** first |
-| **Attend Meeting** | phase = `Voting` | currently **silent + skip** — suspicion is crewmate-only, so `top_suspect` is empty for an imposter and there's no accusation to make; suspicion-aware bluff/deflect (chat to misdirect, vote a crewmate, never a teammate) is future (part B) |
+| **Attend Meeting** | phase = `Voting` | **deflect onto crewmates, never a teammate** (§10.4): proactively accuse + vote a non-teammate who genuinely *looks* sus (real cues, same format as a crewmate); else wait and **bandwagon** onto a crewmate others suss/vote, citing *fabricated* safe cues in the identical format; else skip at the deadline |
 
 **Pretend is the imposter's default blending behaviour.** It does not follow
 visible crew and it carries no victim state. It chooses a highest-scoring
@@ -751,14 +751,16 @@ to kill improves imposter outcomes versus the default blend-in policy.
 > is the summary.
 
 `update_suspicion(belief)` runs every tick in the fast loop *after* `update_belief`
-+ `update_event_log` (composed in `build_runtime`). Crewmate POV: it maintains
++ `update_event_log` (composed in `build_runtime`). It maintains
 `belief.suspicion[color]` = the posterior **probability that player is an imposter**,
 ∈ [0, 1] — a real probability, so thresholds mean something. It drives the **vote**
 (`top_suspect`) and **Accuse** (`active_tail_suspect` — a live tail over
 `ACCUSE_THRESHOLD`). `believed_imposters` (alive players with `P ≥ FLEE_PROBABILITY`,
 0.9) is the near-certain set, kept as belief state (it seeds the vote) but no longer
-gating a reactive run-away mode. Crewmate-only — an imposter knows the truth
-(suspicion cleared), and a ghost neither accuses nor votes.
+gating a reactive run-away mode. Computed for **both live roles** but over different
+sets: a crewmate scores every other player (a genuine belief); an imposter scores only
+**non-teammates** (it never scores a known teammate) and reads the number as "how sus
+this crewmate looks," to pick a deflection target (§10.4). A ghost holds no suspicion.
 
 **Prior.** With `P` players and `K` imposters, a crewmate knows the `K` are among
 the other `P − 1`, so each other player's marginal prior is `K / (P − 1)`. `K` is
@@ -859,6 +861,38 @@ the LLM on meeting start, new external chat, chat-cooldown readiness, and deadli
 pressure, with a small tick interval to avoid repeated calls from one visual
 state. Distinct chat messages can be sent across the same meeting; duplicate model
 text is suppressed.
+
+### 10.4 Imposter meeting tactics (`strategy/meeting/`)
+
+The deterministic Attend Meeting path diverges by role (`_decide_imposter`). An
+imposter's job at a meeting is to get a **crewmate** ejected without outing itself —
+**never** a teammate. Two crucial invariants underpin this:
+
+- **Suspicion is computed for the imposter too** (§10.1), over **non-teammates only**.
+  Crewmates don't kill/vent, so their score comes purely from *innocent-looking*
+  graded cues (a vent dwell, walking past a body the imposter made, a coincidental
+  follow). That score is "how sus does this crewmate *look* to the table" — exactly
+  what a deflection wants.
+- **Chat formatting is identical to the crewmate's** — every accusation, real or
+  fabricated, goes through the same `build_accusation` templates (`"<color> sus:
+  <reasons>"`). A formatting difference would itself be a tell, so there is none.
+
+The priority order:
+
+1. **Proactive deflection.** If a non-teammate is a clear leading suspect
+   (`top_suspect`, §10.1), accuse + vote them with their **real** cues — the strongest
+   play, because it isn't even a lie.
+2. **Reactive bandwagon.** Otherwise wait, watching for a crewmate to take **heat** —
+   a vote cast against them (the reliable signal, read from the vote tally:
+   `imposter.votes_against` maps `VoteDot.target` slots → candidate colors, excluding
+   our own ballot and skips) or a chat accusation (an additive chat-read signal,
+   added in §10.5). `imposter.bandwagon_target` picks the most-heated non-teammate; we vote them
+   and cite **fabricated** evidence — *safe, hard-to-disprove* cues only (`lurking on a
+   vent`, `next to <body>'s body`, `they were tailing me`), never a bold falsifiable
+   witnessed kill/vent (`accusation.fabricate_accusation`).
+3. **Skip.** If no crewmate ever takes heat, cast a skip at the deadline.
+
+Chat and vote stay coupled (we accuse exactly who we then vote for).
 
 ---
 
