@@ -15,6 +15,7 @@ from crewrift.crewborg.strategy.meeting import (
     valid_vote_targets,
     validate_meeting_decision,
 )
+from crewrift.crewborg.strategy.meeting.accusation import build_accusation
 from crewrift.crewborg.strategy.meeting.context import (
     CHAT_COOLDOWN_TICKS,
     VOTE_TIMER_TICKS,
@@ -22,9 +23,6 @@ from crewrift.crewborg.strategy.meeting.context import (
 from crewrift.crewborg.strategy.suspicion import top_suspect
 from crewrift.crewborg.types import ActionState, Belief, ChatEvent, Intent
 from players.player_sdk import EmptyModeParams, Mode
-
-# Deterministic fallback: preserve the pre-LLM behavior unless explicitly enabled.
-MEETING_CHAT = "no read, skipping"
 
 LLM_MIN_CALL_INTERVAL_TICKS = 12
 DEADLINE_LLM_REMAINING_TICKS = 96
@@ -100,15 +98,26 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
     # --- deterministic fallback ------------------------------------------
 
     def _decide_deterministic(self, belief: Belief, *, trace_disabled: bool) -> Intent:
+        """No default-firing chat: accuse and vote a clear leading suspect, else stay
+        silent and skip. We speak only when we have evidence to provide (a crewmate
+        accusation); a flat posterior — or an imposter, whose suspicion is cleared —
+        produces a silent skip. Chat and vote are coupled: we accuse exactly who we
+        then vote for (deflection/imposter-side chat is a later addition, part B)."""
+
         if trace_disabled and not self._disabled_traced:
             self._disabled_traced = True
             self.emit.event(
                 "meeting_llm_fallback",
                 {"reason": "llm_disabled", "detail": self._llm_client.disabled_reason},
-        )
+            )
         if not self._deterministic_chatted:
             self._deterministic_chatted = True
-            return self._send_chat_intent(belief, MEETING_CHAT, reason="meeting opener")
+            target = top_suspect(belief)  # the clear leading suspect, or None (flat field)
+            if target is not None:
+                self._tentative_vote = target  # couple the vote to whoever we accuse
+                accusation = build_accusation(belief, target)
+                if accusation is not None:
+                    return self._send_chat_intent(belief, accusation, reason="accusing clear suspect")
         return self._submit_vote_intent(belief, reason="deterministic meeting vote")
 
     # --- LLM call cadence -------------------------------------------------

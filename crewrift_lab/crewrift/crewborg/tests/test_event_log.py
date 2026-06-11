@@ -118,6 +118,30 @@ def test_following_then_death_is_a_query_over_the_log() -> None:
     assert followed and belief.roster["yellow"].life_status == "dead"
 
 
+def test_tailing_self_accumulates_while_a_player_shadows_us() -> None:
+    belief = Belief(map=_map())
+    belief.self_world_x, belief.self_world_y = 300, 300
+    for tick in (1, 2, 3):
+        _see(belief, "red", (340, 300), tick)  # 40px from us — inside the tail radius (64px)
+    tail = [e for e in belief.roster["red"].events if e.kind == "tailing_self"]
+    assert len(tail) == 1
+    assert tail[0].target_color is None  # None target = me
+    assert tail[0].duration_ticks == 3 and (tail[0].start_tick, tail[0].end_tick) == (1, 3)
+
+
+def test_a_distant_player_is_not_tailing_us() -> None:
+    belief = Belief(map=_map())
+    belief.self_world_x, belief.self_world_y = 300, 300
+    _see(belief, "red", (380, 300), 1)  # 80px away — beyond the 64px tail radius
+    assert not [e for e in belief.roster["red"].events if e.kind == "tailing_self"]
+
+
+def test_no_self_position_means_no_tailing_signal() -> None:
+    belief = Belief(map=_map())  # self_world_x/y left unset
+    _see(belief, "red", (10, 10), 1)
+    assert not [e for e in belief.roster["red"].events if e.kind == "tailing_self"]
+
+
 def test_dead_players_are_not_logged() -> None:
     belief = Belief(map=_map())
     belief.roster["red"] = PlayerRecord(color="red", world_x=110, world_y=110, last_seen_tick=5, life_status="dead")

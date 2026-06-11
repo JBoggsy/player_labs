@@ -100,11 +100,14 @@ LifeStatus = Literal["alive", "dead", "unknown"]
 # vote-result ejection.
 DeathSource = Literal["body", "census", "ejection"]
 
-# An observed interaction we logged about another player (design §5.2). All are
-# **durative**: an interval of contiguous observation. ``room``/``task``/``vent``
-# carry a ``region_index``; ``near_body``/``proximity`` carry a ``target_color``
-# (the body's color / the other player) and a ``min_dist`` closest approach.
-PlayerEventKind = Literal["room", "task", "vent", "near_body", "proximity"]
+# An observed interaction we logged about another player (design §5.2). Most are
+# **durative** (an interval of contiguous observation): ``room``/``task``/``vent``
+# carry a ``region_index``; ``near_body``/``proximity`` carry a ``target_color`` (the
+# body's color / the other player) and a ``min_dist``; ``tailing_self`` is them within
+# range of *us* over time (target_color ``None`` = me). Two are **point** events from
+# the near-certain detectors: ``kill`` (they killed ``target_color``) and ``vent_use``
+# (witnessed emerge/submerge) — each carries an overwhelming, latched LR ⇒ P ≈ 1.
+PlayerEventKind = Literal["room", "task", "vent", "near_body", "proximity", "kill", "vent_use", "tailing_self"]
 
 
 class PlayerEvent(BaseModel):

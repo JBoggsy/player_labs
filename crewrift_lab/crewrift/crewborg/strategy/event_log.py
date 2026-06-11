@@ -30,6 +30,11 @@ from crewrift.crewborg.types import Belief, PlayerEvent, PlayerEventKind, Player
 # A player within this distance of a discovered body is logged as "near" it.
 NEAR_BODY_RADIUS_SQ = 48**2
 
+# A player sustained within this distance of *us* is logged as ``tailing_self`` — a
+# possible stalker shadowing its target. Wider than kill range (20 px) so we catch the
+# tail forming before it closes in; the suspicion weight ramps with how long it lasts.
+TAIL_SELF_RADIUS_SQ = 64**2
+
 # Bridge an interval across an unobserved gap of at most this many ticks (~a few
 # frames of occlusion / out-of-view). A longer gap, or any tick where we saw the
 # player but the predicate was false, starts a fresh interval instead.
@@ -50,6 +55,11 @@ def update_event_log(belief: Belief) -> None:
     rooms = belief.map.rooms if belief.map is not None else ()
     tasks = belief.map.tasks if belief.map is not None else ()
     vents = belief.map.vents if belief.map is not None else ()
+    self_xy = (
+        (belief.self_world_x, belief.self_world_y)
+        if belief.self_world_x is not None and belief.self_world_y is not None
+        else None
+    )
 
     for record in visible:
         here = (record.world_x, record.world_y)
@@ -71,6 +81,14 @@ def update_event_log(belief: Belief) -> None:
             d2 = _dist2(here, (body.world_x, body.world_y))
             if d2 <= NEAR_BODY_RADIUS_SQ:
                 _mark(record, tick, prev, "near_body", target_color=body.color, dist2=d2)
+
+        # Being tailed: a player sustained near *us* (target_color None = me). Unlike
+        # third-party proximity this needs no death — a stalker shadowing me is live
+        # evidence — and it's a signal we read best, since we always know our own spot.
+        if self_xy is not None:
+            d2 = _dist2(here, self_xy)
+            if d2 <= TAIL_SELF_RADIUS_SQ:
+                _mark(record, tick, prev, "tailing_self", dist2=d2)
 
         for other in visible:
             if other.color == record.color:

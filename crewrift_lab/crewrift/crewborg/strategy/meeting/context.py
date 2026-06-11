@@ -7,7 +7,12 @@ from typing import Any
 
 from crewrift.crewborg.perception.entities import SKIP_VOTE_TARGET
 from crewrift.crewborg.strategy.meeting.schema import CHAT_MAX_CHARS, SCHEMA_VERSION, VOTE_SKIP
-from crewrift.crewborg.strategy.suspicion import VOTE_PROBABILITY, _prior_imposter_p, top_suspect
+from crewrift.crewborg.strategy.suspicion import (
+    VOTE_PROBABILITY,
+    _prior_imposter_p,
+    top_suspect,
+    witnessed_imposters,
+)
 from crewrift.crewborg.types import Belief, PlayerEvent, PlayerRecord
 
 VOTE_TIMER_TICKS = 240
@@ -170,7 +175,7 @@ def _player_payload(belief: Belief, color: str, record: PlayerRecord) -> dict[st
         "death_source": record.death_source,
         "body_xy": list(record.body_xy) if record.body_xy is not None else None,
         "suspicion": _rounded(belief.suspicion.get(color)),
-        "confirmed_imposter": color in belief.confirmed_imposters,
+        "confirmed_imposter": color in witnessed_imposters(belief),
         "believed_imposter": color in belief.believed_imposters,
         "recent_events": [_event_payload(belief, event) for event in record.events[-8:]],
     }
@@ -207,7 +212,7 @@ def _suspicion_payload(belief: Belief, fallback_vote: str) -> dict[str, Any]:
     return {
         "prior": _rounded(_prior_imposter_p(belief)),
         "vote_probability_threshold": VOTE_PROBABILITY,
-        "confirmed": sorted(belief.confirmed_imposters),
+        "confirmed": sorted(witnessed_imposters(belief)),
         "believed": sorted(belief.believed_imposters),
         "ranking": [
             {"color": color, "p": _rounded(p)}

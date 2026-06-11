@@ -27,13 +27,17 @@ the learnable surface — there is no learning machinery yet).
 no double-counting; and because role is a fixed latent, evidence **persists** (no
 time decay):
 
-- Near-certain (`WITNESSED_LOG_LR` ⇒ P ≈ 1), from frame-to-frame transitions on the
-  tape (§5.1): *witnessed kill* (lone kill-range neighbour of a just-killed victim)
-  and *witnessed vent* (emergence / submersion, line-of-sight via the `shadow` mask).
+- Near-certain (`WITNESSED_LOG_LR` ⇒ P ≈ 1): detected from frame-to-frame transitions
+  on the tape (§5.1) — *witnessed kill* (lone kill-range neighbour of a just-killed
+  victim) and *witnessed vent* (emergence / submersion, line-of-sight via the `shadow`
+  mask) — and recorded as `kill` / `vent_use` point events on the perpetrator's log, so
+  every signal lives in one place (there is no separate "confirmed" set).
 - Graded functions over the event log (§5.2): **vent dwell** (weak, ~flat past a
   pass-through), **body proximity** (log-LR *decreases* with dwell — brief is the
   only window on a fleeing killer), **follow-to-death** (log-LR *increases* with how
-  long the shadowing lasted).
+  long the shadowing lasted), and **being tailed** (`tailing_self`, a logistic in how
+  long someone shadowed *us* — needs no death; saturates at a *moderate* P ≈ 0.72, a
+  strong reason to call a meeting and accuse but not on its own near-certain).
 
 `believed_imposters` (which gates Flee) is every alive player with `P ≥
 FLEE_PROBABILITY`. Crewmate-only — an imposter knows the truth, a ghost doesn't flee.
@@ -41,7 +45,7 @@ FLEE_PROBABILITY`. Crewmate-only — an imposter knows the truth, a ghost doesn'
 v1 simplifications (documented for later): naive-Bayes independence between evidence
 types; positive-evidence-only (the prior is the baseline — no exculpatory terms);
 and a static `K / (P − 1)` prior without redistributing the imposter budget as
-players are confirmed/die (a proper joint model is a refinement).
+players are caught/die (a proper joint model is a refinement).
 """
 
 from __future__ import annotations
@@ -54,7 +58,7 @@ from crewrift.crewborg.strategy.occupancy import (
     players_in_rect,
     rect_visible,
 )
-from crewrift.crewborg.types import Belief, PerceptionFrame, PlayerEvent, PlayerRecord
+from crewrift.crewborg.types import Belief, PerceptionFrame, PlayerEvent, PlayerEventKind, PlayerRecord
 
 # Each evidence type contributes a log-likelihood-ratio, log(P(e|imp)/P(e|crew)), to
 # the posterior. Witnessed kill/vent are definitional near-certainties (a constant).
@@ -88,13 +92,37 @@ FOLLOW_FULL_TICKS = 48  # the ramp reaches full at ~2 s of sustained proximity
 FOLLOW_DEATH_WINDOW_TICKS = 72  # the follow ended ~within 3 s of finding the body
 FOLLOW_LOG_LR = math.log(6.0)
 
+# being tailed (``tailing_self``) — live evidence: a player shadowing *us* over time is
+# a likely imposter lining up its target, and (unlike third-party follow) it needs no
+# death. A **logistic in duration**: a brief brush ⇒ ~nothing, the ramp leaves zero
+# around ~15 ticks, crosses the midpoint at ~30 ticks, and **saturates around P ≈ 0.72**
+# (deliberately *moderate*, not near-certain — being tailed is a strong reason to call a
+# meeting and accuse, but lots of crew move together, so it must not on its own clear the
+# flee/near-certain-vote bars). Saturated LR ≈ log(6.5) against the combinatorial prior.
+TAIL_SELF_LOG_LR_MAX = math.log(6.5)
+TAIL_SELF_MIDPOINT_TICKS = 30  # logistic centre (P ≈ 0.5 here at a typical prior)
+TAIL_SELF_STEEPNESS = 0.2  # 50 ticks ⇒ ~0.98 of max; 15 ticks ⇒ ~0.05 of max
+# Once an *active* tail pushes our suspicion of the tailer to this, we are "sketched
+# out" enough to stop and call a meeting (Accuse mode, ~34 ticks of sustained tailing).
+ACCUSE_THRESHOLD = 0.6
+# A tailing_self interval counts as *active* (they're tailing us right now) if it was
+# extended within this many ticks — robust to a brief occlusion mid-tail.
+ACCUSE_TAIL_RECENCY_TICKS = 6
+
 # Flee a player once P(imposter) reaches this — a real probability, so the bar is
 # interpretable (only near-certainty triggers the reactive Flee).
 FLEE_PROBABILITY = 0.9
-# Vote a player out once P(imposter) reaches this. Ejecting an innocent helps the
-# imposters, so the bar is high but a touch below the (reactive) flee bar — a vote is
-# a deliberate, one-shot decision made with the meeting's full evidence.
+# Vote a player out once P(imposter) reaches this on its own — near-certainty (a
+# witnessed catch, a saturated tail) clears the bar regardless of the field. A touch
+# below the (reactive) flee bar: a vote is a deliberate, one-shot meeting decision.
 VOTE_PROBABILITY = 0.8
+# A vote also fires on a *clear leading suspect* short of near-certainty: the top
+# posterior is over VOTE_LEAD_MIN_P (real evidence — more likely than not an imposter)
+# AND leads the runner-up by at least VOTE_LEAD_MARGIN (it stands out, not a flat field).
+# This is the "vote on a clear leader, skip when the posterior is flat" rule — ejecting
+# an innocent helps the imposters, so a flat or low field skips.
+VOTE_LEAD_MIN_P = 0.5
+VOTE_LEAD_MARGIN = 0.2
 # Clamp the prior away from 0/1 so its log-odds stays finite.
 PRIOR_MIN, PRIOR_MAX = 1e-3, 0.99
 
@@ -133,7 +161,7 @@ def _prior_imposter_p(belief: Belief) -> float:
     return min(max(_imposter_count(belief) / n_others, PRIOR_MIN), PRIOR_MAX)
 
 
-# --- tier 1: near-certain transitions → confirmed_imposters ------------------
+# --- tier 1: near-certain transitions → witnessed events on the perpetrator --
 
 
 def _frame_pair(belief: Belief) -> tuple[PerceptionFrame, PerceptionFrame] | None:
@@ -144,6 +172,29 @@ def _frame_pair(belief: Belief) -> tuple[PerceptionFrame, PerceptionFrame] | Non
         return None
     prev, curr = frames[-2], frames[-1]
     return (prev, curr) if curr.tick == prev.tick + 1 else None
+
+
+def _log_witnessed(belief: Belief, color: str, kind: PlayerEventKind, *, target_color: str | None = None) -> None:
+    """Record a witnessed catch as a point event on the perpetrator's log (latched).
+
+    The detectors fire on a one-tick transition, so this is a point event
+    (start == end == now). It carries no LR itself; ``_evidence_log_lr`` maps its
+    presence to ``WITNESSED_LOG_LR``. A ``kill`` is deduped per victim so a persisting
+    body can't re-log; ``vent_use`` is a genuine repeat each time someone vents.
+    """
+
+    # A witnessed catch is the strongest signal we have; never drop it on an ordering
+    # gap. In production ``update_belief`` has already rostered any player visible in the
+    # tape (and the perpetrator was, a frame ago), so this is a safety net, not the path.
+    record = belief.roster.get(color)
+    if record is None:
+        record = PlayerRecord(color=color)
+        belief.roster[color] = record
+    if kind == "kill" and any(e.kind == "kill" and e.target_color == target_color for e in record.events):
+        return
+    record.events.append(
+        PlayerEvent(kind=kind, start_tick=belief.last_tick, end_tick=belief.last_tick, target_color=target_color)
+    )
 
 
 def _detect_witnessed_kill(belief: Belief) -> None:
@@ -161,7 +212,7 @@ def _detect_witnessed_kill(belief: Belief) -> None:
             if color not in belief.teammate_colors
         ]
         if len(killers) == 1:  # a single, unambiguous neighbour ⇒ the killer
-            belief.confirmed_imposters.add(killers[0])
+            _log_witnessed(belief, killers[0], "kill", target_color=victim_color)
 
 
 def _detect_witnessed_vent(belief: Belief) -> None:
@@ -169,6 +220,7 @@ def _detect_witnessed_vent(belief: Belief) -> None:
     if pair is None or belief.map is None:
         return
     prev, curr = pair
+    venters: set[str] = set()
     for vent in belief.map.vents:
         x, y, w, h = vent.x, vent.y, vent.w, vent.h
         # (a) Emergence: vent + walk-margin in line of sight and clear last frame, occupied now.
@@ -176,13 +228,14 @@ def _detect_witnessed_vent(belief: Belief) -> None:
             prev, x, y, w, h, margin=VENT_WALK_MARGIN
         )
         if watched_clear:
-            for color in players_in_rect(curr, x, y, w, h):
-                belief.confirmed_imposters.add(color)
+            venters.update(players_in_rect(curr, x, y, w, h))
         # (b) Submersion: a player was in the vent last frame; vent still in sight, player gone.
         if rect_visible(curr, x, y, w, h):
             for color in players_in_rect(prev, x, y, w, h):
                 if color not in curr.players:
-                    belief.confirmed_imposters.add(color)
+                    venters.add(color)
+    for color in venters:
+        _log_witnessed(belief, color, "vent_use")
 
 
 # --- tier 2: graded evidence from the event log -----------------------------
@@ -214,17 +267,30 @@ def _follow_log_lr(event: PlayerEvent, belief: Belief) -> float:
     return FOLLOW_LOG_LR * ramp
 
 
-def _graded_log_lr(belief: Belief, record: PlayerRecord) -> float:
-    """A player's total graded log-LR: the most-suspicious instance per evidence type.
+def _tailing_self_log_lr(event: PlayerEvent) -> float:
+    """Logistic in how long the player shadowed *us*: a brief brush is ~nothing, the
+    ramp leaves zero around ~12-15 ticks, crosses half at the midpoint, and saturates
+    "very sketchy" by ~50 ticks (see the constants above for the calibration)."""
+
+    x = TAIL_SELF_STEEPNESS * (event.duration_ticks - TAIL_SELF_MIDPOINT_TICKS)
+    return TAIL_SELF_LOG_LR_MAX / (1.0 + math.exp(-max(-700.0, min(700.0, x))))
+
+
+def _evidence_log_lr(belief: Belief, record: PlayerRecord) -> float:
+    """A player's total log-LR: the most-suspicious instance per evidence type.
 
     Aggregating with ``max`` (not a sum over every event) keeps each type's
     contribution bounded and double-count-free even with an unbounded event log.
+    A single witnessed catch (``kill``/``vent_use``) latches the near-certain LR;
+    everything else is graded over the event log.
     """
 
+    witnessed = WITNESSED_LOG_LR if any(e.kind in ("kill", "vent_use") for e in record.events) else 0.0
     vent = max((_vent_dwell_log_lr(e) for e in record.events if e.kind == "vent"), default=0.0)
     body = max((_body_proximity_log_lr(e) for e in record.events if e.kind == "near_body"), default=0.0)
     follow = max((_follow_log_lr(e, belief) for e in record.events if e.kind == "proximity"), default=0.0)
-    return vent + body + follow
+    tail = max((_tailing_self_log_lr(e) for e in record.events if e.kind == "tailing_self"), default=0.0)
+    return witnessed + vent + body + follow + tail
 
 
 # --- combine into the posterior ---------------------------------------------
@@ -235,15 +301,10 @@ def _recompute(belief: Belief) -> None:
     suspicion: dict[str, float] = {}
     believed: set[str] = set()
 
-    for color in set(belief.roster) | belief.confirmed_imposters:
-        record = belief.roster.get(color)
-        if record is not None and record.life_status == "dead":
-            continue  # the dead are no threat (the confirmation is kept for the record)
-        logit = prior_logit
-        if color in belief.confirmed_imposters:
-            logit += WITNESSED_LOG_LR  # any near-certain catch — overwhelming
-        if record is not None:
-            logit += _graded_log_lr(belief, record)
+    for color, record in belief.roster.items():
+        if record.life_status == "dead":
+            continue  # the dead are no threat
+        logit = prior_logit + _evidence_log_lr(belief, record)
         p = _sigmoid(logit)
         suspicion[color] = p
         if p >= FLEE_PROBABILITY:
@@ -253,14 +314,68 @@ def _recompute(belief: Belief) -> None:
     belief.believed_imposters = believed
 
 
+def witnessed_imposters(belief: Belief) -> set[str]:
+    """Colors we directly caught killing or venting (a ``kill``/``vent_use`` event on
+    their log). These already drive P ≈ 1 via ``WITNESSED_LOG_LR``; this exposes the
+    set for tracing/forensics — there is no separate ``confirmed`` state to maintain."""
+
+    return {
+        color
+        for color, record in belief.roster.items()
+        if any(e.kind in ("kill", "vent_use") for e in record.events)
+    }
+
+
+def active_tail_suspect(belief: Belief) -> str | None:
+    """The player currently **tailing us** whom we're suspicious enough to accuse, or
+    `None`. The most-suspicious color with an *ongoing* `tailing_self` interval and
+    P ≥ `ACCUSE_THRESHOLD`. Drives Accuse mode: stop, go slam the meeting button, then
+    accuse them. Crewmate-only by construction (suspicion is empty for other roles)."""
+
+    best: tuple[str, float] | None = None
+    for color, p in belief.suspicion.items():
+        if p < ACCUSE_THRESHOLD:
+            continue
+        record = belief.roster.get(color)
+        if record is None or record.life_status == "dead":
+            continue
+        if not _is_actively_tailing(record, belief.last_tick):
+            continue
+        if best is None or p > best[1]:
+            best = (color, p)
+    return best[0] if best is not None else None
+
+
+def _is_actively_tailing(record: PlayerRecord, tick: int) -> bool:
+    """True if this player's most recent `tailing_self` interval is still live (extended
+    within `ACCUSE_TAIL_RECENCY_TICKS`)."""
+
+    for event in reversed(record.events):
+        if event.kind == "tailing_self":
+            return tick - event.end_tick <= ACCUSE_TAIL_RECENCY_TICKS
+    return False
+
+
 def top_suspect(belief: Belief) -> str | None:
-    """The live player to vote out — highest posterior P(imp) over `VOTE_PROBABILITY`,
-    or `None` (skip) when no one is suspicious enough. Used by Attend Meeting (§7.1)."""
+    """The live player to vote out — the **clear leading suspect**, or `None` (skip)
+    when the posterior is flat. Used by Attend Meeting (§7.1).
+
+    Two ways to clear the bar: near-certainty on its own (P ≥ `VOTE_PROBABILITY` — a
+    witnessed catch or a saturated tail), or a clear lead short of that (P over
+    `VOTE_LEAD_MIN_P` *and* ahead of the runner-up by `VOTE_LEAD_MARGIN`). A flat field
+    — everyone near the prior — names no one, so we skip rather than eject at random.
+    """
 
     if not belief.suspicion:
         return None
-    color, p = max(belief.suspicion.items(), key=lambda kv: kv[1])
-    return color if p >= VOTE_PROBABILITY else None
+    ranked = sorted(belief.suspicion.items(), key=lambda kv: kv[1], reverse=True)
+    color, p = ranked[0]
+    if p >= VOTE_PROBABILITY:
+        return color  # near-certain on its own
+    runner_up = ranked[1][1] if len(ranked) > 1 else 0.0
+    if p >= VOTE_LEAD_MIN_P and (p - runner_up) >= VOTE_LEAD_MARGIN:
+        return color  # a clear leader over a non-flat field
+    return None
 
 
 def _logit(p: float) -> float:
