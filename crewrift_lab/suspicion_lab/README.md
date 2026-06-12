@@ -32,6 +32,18 @@ uv run python crewrift_lab/suspicion_lab/tools/eval.py --model crewrift_lab/susp
 `models/<tag>/suspicion_weights.json` is committed — it is the deliverable the
 agent vendors.
 
+## The nightly champion loop (cron)
+
+`tools/nightly_refit.sh` runs the whole pipeline unattended (user crontab,
+`30 0 * * *`): scrape → expand → dataset → fit → **gates** (CV AUC ≥ 0.70,
+corpus ≥ 500 games, full crewborg test suite, local Gate-1 smoke — any failure
+aborts with the current champion untouched) → vendor weights → build → upload →
+**submit** (James's standing instruction, 2026-06-12) → version-log line + commit.
+Logs: `logs/nightly-<date>.log`. `--check` verifies prerequisites (uv, docker
+daemon, softmax auth). Caveats: cron skips a night if the machine is asleep at
+00:30, and an expired `softmax login` token aborts the run (re-login fixes the
+next night).
+
 ## Files
 
 - `tools/scrape_corpus.py` — round-ledgered incremental scraper (wraps the
