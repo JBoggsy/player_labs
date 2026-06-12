@@ -41,6 +41,18 @@ that get contradicted.
   couldn't.)
 - **Status:** candidate (strong methodology lesson — promote on next confirmation)
 
+### Instant-GameOver episodes score 0 with NO timeout flags — filter by "did the game reach Playing", not by −100.
+- **Hits:** 1 (2026-06-12)
+- **Evidence:** 14/160 episodes of the v24/v25 A/B were degenerate: players joined →
+  `phase GameOver` immediately (no GameInfo/RoleReveal/Playing), everyone scores 0,
+  `connect_timeout`/`disconnect_timeout` all zero, and the roles array is half-assigned
+  (only one imposter flag). They pollute role-split stats as fake "crew with 0 tasks"
+  appearances (compare.py counted them; the imp-config crew rows were 100% these). The
+  −100 filter misses them. Detect: a results.json where the subject has 0 score AND 0
+  tasks AND no vote actions, or (authoritative) an expanded replay with no Playing
+  phase. Uneven across arms (4 vs 10 of 40) — exclude before comparing.
+- **Status:** candidate
+
 ### Expander `player_manifest` roles are JOIN-TIME — always "crew"; take ground-truth roles from `player_state` rows.
 - **Hits:** 1 (2026-06-12)
 - **Evidence:** The manifest row is emitted when a player first appears (GameInfo

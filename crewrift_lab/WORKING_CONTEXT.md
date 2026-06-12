@@ -119,11 +119,17 @@ raises posteriors and worsens mis-votes; land with fitted weights (design §1).
   Weights re-vendored (`data/suspicion_weights.json`, intercept +0.392 — note an
   unseen player's baseline P≈0.6, behaviorally contained: vote needs 0.9, Accuse
   needs an active tail). 353 tests pass (10 new social-evidence), ruff clean.
-  **NEXT: (1)** Gate-1 smoke (build_player + local run — verify weights load
-  in-image + social counters fire); **(2)** 2-imp `crewrift-ab` v24 vs v25, target
-  axes = crew win + votes-at-crew rate; **(3)** James's Gate-2 call. Optional
-  later: parity test (offline features vs runtime-traced features on one of our own
-  episodes), refit cadence as the field drifts.
+  **SHIPPED (2026-06-12): v25 = the fitted model + v3 weights + interstitial caller
+  parse.** Gate-1 PASS (weights verified in-image, 0 log errors). **Submitted + placed**
+  (`sub_07dae14f`, `lpm_c04b55cc`) on James's explicit go-ahead. **A/B vs v24 (pinned
+  roster, 40 eps × 2 configs): crew win 22%→35% (p=0.22), votes-at-crew 0.88→0.05/g,
+  OWN ejections 52%→2%** (the evolved field — sussybuster-aaln, truecrew v20/21 — was
+  voting accuse-heavy v24 out!), team crew-ejections 30→6; imposter scan clean (kills
+  up p=0.01, win noise, ejections 11%→7%). v25 kept. **Open items:** (a) retire stale
+  memberships (v24/v22/v21) once v25 places as champion; (b) refit cadence as the field
+  adapts (it's adapting fast — "sussybuster" appeared within a day); (c) offline/runtime
+  feature parity test on one of our own episodes; (d) 14/160 A/B episodes were
+  instant-GameOver degenerates — new ops signature (tentative lesson).
 
 ## Prior objective — RAISE THE IMPOSTER KILL RATE (done: v24 shipped; kill→win link weak)
 
