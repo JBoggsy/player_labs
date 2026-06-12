@@ -41,6 +41,38 @@ that get contradicted.
   couldn't.)
 - **Status:** candidate (strong methodology lesson — promote on next confirmation)
 
+### Expander `player_manifest` roles are JOIN-TIME — always "crew"; take ground-truth roles from `player_state` rows.
+- **Hits:** 1 (2026-06-12)
+- **Evidence:** The manifest row is emitted when a player first appears (GameInfo
+  phase, before RoleReveal), so its `role` field is the pre-assignment default for
+  every player. Our first dataset had 0 imposter labels in 608 rows before this was
+  caught. `player_state` rows carry the live role every sample — use those (any row
+  after RoleReveal). General form: when a "manifest" is emitted at first-sight, every
+  field that gets assigned *later* is silently stale.
+- **Status:** candidate
+
+### Don't ship a model trained with features the runtime can't compute — refit on the feasible subset instead.
+- **Hits:** 1 (2026-06-12)
+- **Evidence:** The full suspicion model leans on `tasks_completed_watched` (−9.0,
+  exculpatory). Crewborg's runtime can't observe task completion yet; loading the full
+  model and zeroing the missing feature would bias every crew posterior UP (the
+  exculpatory pull-down never fires) — systematically more mis-votes. The honest move
+  is a refit on the runtime-feasible feature subset (AUC 0.811→0.704, but *calibrated*
+  for what the agent actually measures), and each new runtime detector re-fits and
+  re-vendors. General ML-deployment form: a missing feature at inference isn't "0
+  evidence", it's a different model.
+- **Status:** candidate
+
+### A shared decision threshold can serve OPPOSING goals per role — enumerate consumers before tuning it.
+- **Hits:** 1 (2026-06-12)
+- **Evidence:** Raising the vote bar to P≥0.9 (crew vote restraint) silently flowed
+  into `top_suspect`'s OTHER consumer: the imposter's meeting deflection, which *wants*
+  lower-confidence accusations (engineered mis-ejections are the imposter conversion
+  lever). A meeting test caught the imposter going silent. Fix: the raised bar applies
+  only when `self_role != "imposter"`. General form: before changing a threshold, grep
+  its consumers and ask whose objective each one serves.
+- **Status:** candidate
+
 ### Crew games are a pure parity-vs-task race: GHOSTS KEEP TASKING, so kills/ejections only matter via parity — and crew mis-ejections are the games' biggest parity gift.
 - **Hits:** 1 (2026-06-12, RowDaBoat investigation, 40-replay aggregate + 7 deep reads)
 - **Evidence:** expand_replay shows `completed task N while dead` — killed AND ejected

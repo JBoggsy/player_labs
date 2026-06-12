@@ -52,13 +52,16 @@ agent vendors.
 - `tools/eval.py` — held-out (out-of-fold) meeting decisions through a vote-policy
   grid; ship only what beats always-skip on net parity (design §6).
 
-## Current state (2026-06-12)
+## Current state (2026-06-12, v2)
 
-First interim fit on 341 games / 35k rows: full model CV AUC 0.811 (calibrated);
-runtime-subset AUC 0.739. Decision sim: runtime-subset at P≥0.9 votes 0.11/decision
-with 88% imposter precision (live hand model: 42%), net +8.3/100 vs always-skip.
-Biggest fitted facts: `tasks_completed_watched` is a near-perfect exculpation
-(−9.0; needs a new runtime perception detector — the top integration priority),
-`follow_death` is the strongest graded cue, `accusations_made` is incriminating
-(+1.1), and `tailing` is ~10× weaker than the hand model assumed. Corpus scrape was
-mid-flight; refit on the full corpus before shipping.
+Full-corpus fit on **1,857 games / 196k rows**: full model CV AUC 0.812;
+**runtime model AUC 0.801** — the `strategy/social_evidence.py` detectors (watched
+task completions via the `crew_tasks_remaining` decrement + dwell gate, chat
+stances, attributed vote dots) closed all of the v1 gap except the unobservable
+meeting-caller features (~0.011 AUC). Held-out decision sim @ P≥0.9: 0.20
+votes/decision at **94% imposter precision** (live hand model: 42%), net +17.3/100
+vs always-skip. `tasks_completed_watched` is the single strongest weight (−10.9;
+imposters produced ZERO across 62k labelled rows). Weights vendored at
+`crewrift/crewborg/data/suspicion_weights.json`; every cue's direction was stable
+from the 341-game interim fit to the full corpus. Next: Gate-1 smoke → 2-imp A/B
+(crew win + votes-at-crew rate) → Gate-2.

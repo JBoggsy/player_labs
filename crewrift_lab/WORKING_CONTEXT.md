@@ -98,14 +98,28 @@ raises posteriors and worsens mis-votes; land with fitted weights (design §1).
   goal). Legacy hand model = fallback (`CREWBORG_SUSPICION_WEIGHTS=0`). 343 tests
   pass (39 legacy-pinned + 9 new fitted-path), ruff clean; Dockerfile already COPYs
   the data/ package. suspicion.md updated + provenance row added.
-  **NEXT (in order): (1)** corpus scrape reached ~1,350 eps and continues — rerun
-  `expand_corpus → build_dataset → fit --features runtime` at full scale and re-vendor
-  the weights JSON (one `cp`, structure unchanged); **(2)** Gate-1 smoke (build_player
-  + local run); **(3)** 2-imp `crewrift-ab` v24-vs-v25, target axes = crew win +
-  votes-at-crew rate (expect ~0 player-votes as crew except witnessed); **(4)** then
-  James's Gate-2 call. Follow-up detectors (next fit): `tasks_completed_watched`
-  (−9.0, the big one — task-sprite-transition perception), chat-stance accumulation
-  (accusations_made/times_accused), `reported_bodies`/`button_calls`.
+- **v2: SOCIAL DETECTORS + FULL-CORPUS REFIT DONE (2026-06-12, James's "get the
+  full feature set into the player"):** new `strategy/social_evidence.py` in the
+  fast loop (after event_log, before suspicion) maintains cumulative PlayerRecord
+  counters: **watched task completions** (global `crew_tasks_remaining` HUD counter
+  decrements by exactly 1 while exactly ONE visible living player ends a ≥56-tick
+  task dwell — fake Pretend holds never decrement, so they can't trigger it), **chat
+  stances** (offline-mirrored accuse/defend regex over `chat_log`, deduped by
+  (tick,speaker,text) so per-meeting clears don't lose counts), and **attributed
+  votes** (VoteDot carries voter+target slots! staged during Voting, committed once
+  at meeting end: cast/skip/against-me/agreed-with-me). Only
+  `button_calls_made`/`reported_bodies` remain unobservable (no meeting-caller
+  indicator in the player view; worth ~0.011 AUC). **Full corpus: 2,684 eps scraped,
+  1,875 expanded, 196k rows. v2-runtime AUC 0.801 vs full-model ceiling 0.812**
+  (v1 was 0.704); decision sim @ P≥0.9: 94% imposter precision, net +17.3/100.
+  Weights re-vendored (`data/suspicion_weights.json`, intercept +0.392 — note an
+  unseen player's baseline P≈0.6, behaviorally contained: vote needs 0.9, Accuse
+  needs an active tail). 353 tests pass (10 new social-evidence), ruff clean.
+  **NEXT: (1)** Gate-1 smoke (build_player + local run — verify weights load
+  in-image + social counters fire); **(2)** 2-imp `crewrift-ab` v24 vs v25, target
+  axes = crew win + votes-at-crew rate; **(3)** James's Gate-2 call. Optional
+  later: parity test (offline features vs runtime-traced features on one of our own
+  episodes), refit cadence as the field drifts.
 
 ## Prior objective — RAISE THE IMPOSTER KILL RATE (done: v24 shipped; kill→win link weak)
 

@@ -22,7 +22,12 @@ from crewrift.crewborg.modes import (
     ReportBodyMode,
     SearchMode,
 )
-from crewrift.crewborg.strategy import RuleBasedStrategy, update_event_log, update_suspicion
+from crewrift.crewborg.strategy import (
+    RuleBasedStrategy,
+    update_event_log,
+    update_social_evidence,
+    update_suspicion,
+)
 from crewrift.crewborg.strategy.meeting import chat_nlp
 from crewrift.crewborg.types import (
     ActionState,
@@ -93,11 +98,12 @@ def build_runtime(
         map_data = load_croatoan_map()
 
     def fold_belief(belief: Belief, percept: Percept) -> None:
-        """Fast-loop belief update: perception, tracking, event log, then suspicion."""
+        """Fast-loop belief update: perception, tracking, event log, social evidence, suspicion."""
 
         update_belief(belief, percept)
         update_agent_tracking(belief)
         update_event_log(belief)
+        update_social_evidence(belief)
         update_suspicion(belief)
 
     return AgentRuntime(

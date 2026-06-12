@@ -177,6 +177,19 @@ class PlayerRecord(BaseModel):
     # exposure feature (``observed_samples``); incremented by ``strategy.event_log``.
     seen_ticks: int = 0
 
+    # Cumulative social/public-evidence counters for the fitted suspicion model,
+    # maintained by ``strategy.social_evidence`` (whole-episode, never reset):
+    # chat stances, attributed meeting votes, and watched real-task completions
+    # (the strongest exculpatory cue — imposters cannot produce one).
+    accusations_made: int = 0
+    times_accused: int = 0
+    times_defended: int = 0
+    votes_cast: int = 0
+    votes_skipped: int = 0
+    voted_against_me: int = 0
+    vote_agreed_with_me: int = 0
+    tasks_completed_watched: int = 0
+
     @property
     def join_order(self) -> int | None:
         """The player's joinOrder, recovered from the live-world object id."""
@@ -336,6 +349,17 @@ class Belief(BaseModel):
     # ticks and cleared when a new meeting opens. The raw transcript suspicion
     # reasoning will consume.
     chat_log: list[ChatEvent] = Field(default_factory=list)
+
+    # Bookkeeping for ``strategy.social_evidence`` (cumulative public-evidence
+    # counters on PlayerRecord): chat lines already counted (keys survive the
+    # per-meeting chat_log clear), the staged/banked meeting vote tallies, and the
+    # previous global task counter for the watched-completion detector.
+    social_counted_chats: set[tuple[int, str, str]] = Field(default_factory=set)
+    social_staged_votes: set[tuple[int, int]] = Field(default_factory=set)
+    social_staged_slots: dict[int, str] = Field(default_factory=dict)
+    social_staged_meeting_tick: int | None = None
+    social_banked_meeting_tick: int | None = None
+    social_prev_tasks_remaining: int | None = None
 
     # Social / evidence (design §5, §10.1). Bayesian: ``suspicion[color]`` is the
     # posterior **P(imposter)** ∈ [0, 1] for each other player (crewmate POV),

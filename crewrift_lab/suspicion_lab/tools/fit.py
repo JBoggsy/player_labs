@@ -64,9 +64,18 @@ RUNTIME_FEATURES = [
     "copresence_killrange_samples",
     "task_site_dwell_samples",
     "observed_samples",
-    # accusations_made / times_accused are runtime-feasible in principle (chat_read
-    # parses them) but need cross-meeting accumulation wiring — they join the v2
-    # runtime detector batch with tasks_completed_watched (design §7).
+    # v2 runtime detectors (strategy/social_evidence.py): watched completions via
+    # the crew_tasks_remaining decrement + dwell gate; chat stances; attributed
+    # vote dots. Only reported_bodies / button_calls_made remain offline-only
+    # (no meeting-caller indicator in the player's view).
+    "tasks_completed_watched",
+    "accusations_made",
+    "times_accused",
+    "times_defended",
+    "votes_cast",
+    "votes_skipped",
+    "voted_against_observer",
+    "vote_agreement_with_observer",
 ]  # linear count features are clipped here (one weight per instance, bounded)
 
 

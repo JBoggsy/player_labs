@@ -267,6 +267,16 @@ def _fitted_features(belief: Belief, record: PlayerRecord) -> dict[str, float]:
         "copresence_killrange_samples": copresence_ticks / unit,
         "task_site_dwell_samples": task_ticks / unit,
         "observed_samples": record.seen_ticks / unit,
+        # public / social counters (strategy.social_evidence; offline names differ
+        # only in the observer suffix)
+        "tasks_completed_watched": float(record.tasks_completed_watched),
+        "accusations_made": float(record.accusations_made),
+        "times_accused": float(record.times_accused),
+        "times_defended": float(record.times_defended),
+        "votes_cast": float(record.votes_cast),
+        "votes_skipped": float(record.votes_skipped),
+        "voted_against_observer": float(record.voted_against_me),
+        "vote_agreement_with_observer": float(record.vote_agreed_with_me),
     }
 
 
