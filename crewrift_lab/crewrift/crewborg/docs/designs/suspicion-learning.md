@@ -119,6 +119,14 @@ expands fresh league replays (no hash fail). Full row catalogue, from reading
 Output is ~3 MB/game at `--snapshot-every 24` (~1 s cadence) — cache compressed or
 treat as a transient stage piped straight into feature extraction.
 
+**`--snapshot-every` thins only the *state* sampling — no events slip through.**
+The expander steps the sim every tick and emits every discrete event (kills,
+votes, room transitions, task completions, …) on its exact tick; visibility
+intervals are likewise tracked per-tick with exact boundaries. Only
+`player_state`/`body_state` rows are sampled at the cadence — and even those are
+force-emitted on any tick that produced an event (verified in code and
+empirically: kill events land at ticks ≢ 0 mod 24).
+
 **Version matching.** The expander only expands replays recorded by the same game
 build (per-tick hash). Today master works on live replays. When the league
 redeploys: builds hash-fail on *fresh* replays → bump the expander ref (the
@@ -148,6 +156,14 @@ saw, exactly:
 spaced mid-play ticks (serves the Accuse decision). Label = suspect's true role
 from `player_manifest`. ~6 crew observers × ~7 suspects × ~2–4 meetings ⇒ **~100+
 rows/game, ~10⁵ rows per 1k games** — ample for logistic regression.
+
+**Evidence is cumulative for the whole episode.** A decision-point row is a
+*read-only snapshot* of the observer's monotone evidence accumulator — nothing is
+cleared or decayed at meetings (matching the runtime model, where role is a fixed
+latent and evidence never decays, suspicion.md §2.2). Later rows for the same
+(observer, suspect) strictly contain the earlier evidence plus whatever arrived
+since. Successive rows are therefore correlated — handled by game-grouped CV (§6),
+not by resetting the accumulator.
 
 **Candidate evidence features** (the initial catalogue; the model selects what
 earns weight). Existing cues, now instance-summed: near-body (per distinct body,
@@ -257,3 +273,21 @@ improves held-out decision metrics.
   contains scripted lines ("just resetting imposter cool downs") that are honest,
   and fabricated accusations (ours included) that aren't. Let the fit decide if
   chat carries weight; don't hand-trust it.
+
+## 10. Chat handling in v2 — structured stances only
+
+Second-order chat reasoning (judging a statement against our own evidence, modeling
+deception) is explicitly **out of scope for v2**. The v2 plan: reduce each chat
+line to a **stance triple** `(speaker, stance, target)` with
+`stance ∈ {accuses, defends, self_claim}` via regex/keyword parsing — the field's
+chat is overwhelmingly templated ("<color> sus: …", "no read, skipping", "just
+resetting imposter cool downs"), and crewborg's `chat_read.py` already parses the
+accusation form. Unparseable lines are dropped, not guessed at.
+
+Each triple yields candidate features in **both directions**, fitted like any other
+evidence: about the *target* — `times_accused`, `times_defended` (public, all
+observers); about the *speaker* — `accusations_made`, `accused_player_who_was/
+wasn't_then_ejected`, `defended_a_player`. Whether "being accused" or "accusing a
+lot" carries signal (imposters fabricate accusations; ours certainly does) is the
+fit's call, not ours. Anything requiring evaluating a claim's *content* against
+world state waits for v3.

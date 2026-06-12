@@ -75,11 +75,24 @@ dataset → logistic-regression fit → weights.json into the agent). Key enable
 verified: the upgraded expander (coworld-crewrift `42fed21`, PR #57) emits JSONL with
 ground-truth roles, true kill attribution, player states, AND **exact per-(observer,
 target) rendered-view visibility intervals** — so "did the player see it" is computed,
-not modelled; build `tools/bin/expand_replay-42fed21` expands fresh league replays
-cleanly (`--format jsonl --snapshot-every 24`, ~3 MB/game). ⚠️ Don't land
-instance-summing alone with current hand weights — it raises posteriors and worsens
-mis-votes; land with fitted weights (design §1). Next step: build order §8 step 1
-(corpus scraper + expansion cache) on James's go-ahead.
+not modelled. ⚠️ Don't land instance-summing alone with current hand weights — it
+raises posteriors and worsens mis-votes; land with fitted weights (design §1).
+- **PIPELINE BUILT + FIRST MODEL FIT (2026-06-12):** `crewrift_lab/suspicion_lab/`
+  (scrape_corpus → expand_corpus → build_dataset → fit → eval; see its README).
+  Interim fit, 341 games / 35k rows: **full model CV AUC 0.811** (calibrated);
+  **runtime-subset (existing event-log features only) AUC 0.739**; decision sim at
+  P≥0.9 → 88% of votes hit imposters (live hand model: 42%), net +8.3/100 over
+  always-skip. Fitted facts: `tasks_completed_watched` ≈ perfect exculpation (−9.0;
+  needs a NEW runtime perception detector — top integration priority);
+  `follow_death` strongest graded cue; `accusations_made` +1.1 (incriminating);
+  `tailing` ~10× weaker than the hand LR 6.5. Weights:
+  `suspicion_lab/models/v1-runtime/suspicion_weights.json`.
+  **NEXT: (a) corpus scrape was mid-flight — rerun expand→dataset→fit at full scale;
+  (b) task #7 runtime integration:** suspicion.py loads weights (fallback constants),
+  instance-summed + exculpatory scorer over existing event-log cues (unit contract:
+  offline "samples" = duration_ticks/24), witnessed stays a definitional floor,
+  thresholds from eval (P≥0.9, lead 0), rewrite affected suspicion tests, Gate-1,
+  then 2-imp A/B targeting crew win + mis-vote rate.
 
 ## Prior objective — RAISE THE IMPOSTER KILL RATE (done: v24 shipped; kill→win link weak)
 
