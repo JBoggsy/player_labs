@@ -46,6 +46,19 @@ is the one-screen answer to "where are we and why."
   findings confirm the standing call: next direction = imposter conversion or crewmate
   play, NOT more kill tuning. (~10% of league episodes double-seat crewborg — see the
   new tentative lesson before aggregating.)
+- **RowDaBoat's edge decoded (2026-06-12, 480-ep stats + 40-replay aggregate):** the
+  leader's dominance is ~all CREW-side: crew 39.2% win vs our 25.1% (imposter 74% @1.83
+  kills ≈ ours). Mechanism: crew wins are a parity-vs-task race (ghosts keep tasking!),
+  and RowDaBoat (a) almost never votes players (0.00 complicity in crew ejections over
+  33 crew games; we're 1.04 votes-at-crew/g, 0.48 complicity), (b) burns the emergency
+  button every game to reset imposter kill CDs (canned line "just resetting imposter
+  cool downs", shared with truecrew), (c) reliably finishes 8/8. Crew ejections ran 14
+  in 20 crew losses vs 4 in 20 wins; imposters ejected 2/40 games → our accuse/vote
+  feature is likely negative EV as crew. Exemplars in `/tmp/rdb_focus` (77d55243,
+  89c510fb, f3b7b1fa = RDB crew beating crewborg-as-imposter; 633ce75a = crewborg
+  imposter winning via 2 kills + 2 engineered mis-ejections). Full details in the new
+  tentative lesson. **Candidate directions:** crew = vote restraint (skip unless
+  near-certain); imposter = engineer mis-ejections (the conversion lever we're missing).
 - **XP-request API rebuilt (2026-06-11, metta #15572):** the body is now a single
   `roster` field (one entry per seat: `policy_ref`/`top_n`/`random` selector + `slot`
   pinning or `-1` round-robin); `requester`/`opponents`/`rotate_seats`/`player_selection`

@@ -41,6 +41,30 @@ that get contradicted.
   couldn't.)
 - **Status:** candidate (strong methodology lesson — promote on next confirmation)
 
+### Crew games are a pure parity-vs-task race: GHOSTS KEEP TASKING, so kills/ejections only matter via parity — and crew mis-ejections are the games' biggest parity gift.
+- **Hits:** 1 (2026-06-12, RowDaBoat investigation, 40-replay aggregate + 7 deep reads)
+- **Evidence:** expand_replay shows `completed task N while dead` — killed AND ejected
+  crewmates keep finishing tasks, and every winning crew team shows 6×8/8 tasks. So the
+  imposters' ONLY resource is the parity clock (4 crew removed before ~48 tasks), and
+  crew can't lose task capacity by dying — only by being slow or by the parity clock.
+  Across 40 league games: **crew ejections = 14 in the 20 crew losses vs 4 in the 20
+  wins**, while imposters got ejected just 2× in 40 games — i.e. crew player-votes
+  almost never hit imposters and routinely hand imposters a free parity step. Per-player
+  crew win tracks vote restraint: skip-heavy/never-complicit crew (RowDaBoat 0.33
+  votes-at-crew/g + 0.00 ejection-complicity, slava2, Kyle) win 39–43% as crew;
+  player-voting crew (crewborg **1.04 votes-at-crew/g, 0.48 complicity** — 58% of its
+  player-votes hit crew; Higgins 1.62/0.54) win 23–28%. Second tactic: top crew
+  (RowDaBoat, truecrew) burn the emergency button ~every game with the literal canned
+  chat "just resetting imposter cool downs" — meetings reset imposter kill CDs (James's
+  confirmed mechanism), so a button call stalls the parity clock for free.
+  **Implications for crewborg:** as crew, its accuse/bandwagon voting is likely
+  NEGATIVE EV in this field (eject-a-crewmate ≈ gifting a kill) — vote only on
+  near-certain reads, else skip; keep the button burn. As imposter, the mirror: engineer
+  crew mis-ejections (2 kills + 2 ejections wins faster than 4 kills — crewborg already
+  won a game exactly this way in `633ce75a`).
+- **Status:** candidate (strong — based on 40 games + mechanism; verify the vote-EV
+  claim with an A/B before rewiring crew voting)
+
 ### League round episodes can seat the SAME policy in TWO slots — aggregate per seat, and merge the "Name (2)" alias.
 - **Hits:** 1 (2026-06-11)
 - **Evidence:** 50/480 of crewborg v24's first Competition-round episodes seated crewborg
