@@ -277,6 +277,8 @@ def _fitted_features(belief: Belief, record: PlayerRecord) -> dict[str, float]:
         "votes_skipped": float(record.votes_skipped),
         "voted_against_observer": float(record.voted_against_me),
         "vote_agreement_with_observer": float(record.vote_agreed_with_me),
+        "reported_bodies": float(record.reported_bodies),
+        "button_calls_made": float(record.button_calls_made),
     }
 
 

@@ -189,6 +189,8 @@ class PlayerRecord(BaseModel):
     voted_against_me: int = 0
     vote_agreed_with_me: int = 0
     tasks_completed_watched: int = 0
+    reported_bodies: int = 0
+    button_calls_made: int = 0
 
     @property
     def join_order(self) -> int | None:
@@ -360,6 +362,13 @@ class Belief(BaseModel):
     social_staged_meeting_tick: int | None = None
     social_banked_meeting_tick: int | None = None
     social_prev_tasks_remaining: int | None = None
+    # The current meeting's caller, parsed from the MeetingCall interstitial text
+    # (game 4b9297d): color + kind ("body"|"button"|"unknown"), with the tick the
+    # interstitial was first seen (social_evidence banks each sighting once).
+    meeting_caller_color: str | None = None
+    meeting_call_kind: str | None = None
+    meeting_call_seen_tick: int | None = None
+    social_caller_banked_tick: int | None = None
 
     # Social / evidence (design §5, §10.1). Bayesian: ``suspicion[color]`` is the
     # posterior **P(imposter)** ∈ [0, 1] for each other player (crewmate POV),
@@ -649,6 +658,17 @@ def update_belief(belief: Belief, percept: Percept) -> None:
             belief.visible_body_ids.clear()
         belief.phase = phase
         belief.phase_start_tick = percept.tick
+
+    # The MeetingCall interstitial names the caller; latch it for the meeting
+    # (social_evidence banks it once), and drop it when play resumes.
+    if resolved.meeting_caller_color is not None and belief.meeting_caller_color is None:
+        belief.meeting_caller_color = resolved.meeting_caller_color
+        belief.meeting_call_kind = resolved.meeting_call_kind
+        belief.meeting_call_seen_tick = percept.tick
+    if belief.phase == "Playing" and belief.meeting_caller_color is not None:
+        belief.meeting_caller_color = None
+        belief.meeting_call_kind = None
+        belief.meeting_call_seen_tick = None
 
     # Chat is re-rendered every tick (the last few messages), so de-duplicate by
     # (speaker, text) and append only lines we have not logged this meeting.

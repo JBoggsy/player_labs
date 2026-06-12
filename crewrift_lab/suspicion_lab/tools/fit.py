@@ -78,6 +78,9 @@ RUNTIME_FEATURES = [
     "votes_skipped",
     "voted_against_observer",
     "vote_agreement_with_observer",
+    # meeting caller, parsed from the MeetingCall interstitial (game 4b9297d)
+    "reported_bodies",
+    "button_calls_made",
 ]  # linear count features are clipped here (one weight per instance, bounded)
 
 

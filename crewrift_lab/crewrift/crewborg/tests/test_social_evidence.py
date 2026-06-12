@@ -162,3 +162,39 @@ def test_short_dwell_is_not_a_completion() -> None:
     belief.crew_tasks_remaining = 39   # someone ELSE (unseen) completed
     update_social_evidence(belief)
     assert belief.roster["green"].tasks_completed_watched == 0
+
+
+# --- meeting caller (MeetingCall interstitial, game 4b9297d) ---------------------
+
+
+def test_button_caller_banks_once_per_meeting() -> None:
+    belief = _belief(last_tick=600)
+    belief.meeting_caller_color = "green"
+    belief.meeting_call_kind = "button"
+    belief.meeting_call_seen_tick = 600
+    update_social_evidence(belief)
+    update_social_evidence(belief)  # interstitial persists ~3 s; still one credit
+    assert belief.roster["green"].button_calls_made == 1
+
+    belief.meeting_call_seen_tick = 1400  # a later, separate meeting
+    update_social_evidence(belief)
+    assert belief.roster["green"].button_calls_made == 2
+
+
+def test_body_reporter_banks_reported_bodies() -> None:
+    belief = _belief(last_tick=600)
+    belief.meeting_caller_color = "blue"
+    belief.meeting_call_kind = "body"
+    belief.meeting_call_seen_tick = 600
+    update_social_evidence(belief)
+    assert belief.roster["blue"].reported_bodies == 1
+    assert belief.roster["blue"].button_calls_made == 0
+
+
+def test_unknown_caller_name_is_ignored() -> None:
+    belief = _belief(last_tick=600)
+    belief.meeting_caller_color = "someone"   # display fallback, not a roster color
+    belief.meeting_call_kind = "button"
+    belief.meeting_call_seen_tick = 600
+    update_social_evidence(belief)
+    assert all(r.button_calls_made == 0 for r in belief.roster.values())

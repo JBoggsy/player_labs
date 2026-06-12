@@ -55,6 +55,7 @@ def update_social_evidence(belief: Belief) -> None:
 
     _count_chat_stances(belief)
     _track_meeting_votes(belief)
+    _bank_meeting_caller(belief)
     _detect_watched_completions(belief)
 
 
@@ -155,6 +156,31 @@ def _track_meeting_votes(belief: Belief) -> None:
     belief.social_banked_meeting_tick = belief.social_staged_meeting_tick
     belief.social_staged_votes = set()
     belief.social_staged_slots = {}
+
+
+# --- meeting caller (the MeetingCall interstitial, game 4b9297d) -------------------
+
+
+def _bank_meeting_caller(belief: Belief) -> None:
+    """Credit the meeting caller once per interstitial sighting.
+
+    ``update_belief`` latches (caller, kind, seen_tick) while the interstitial is
+    up and clears it when play resumes; the seen-tick is the dedup key. Reporting
+    a body and pressing the button are separate (both exculpatory-leaning) cues.
+    """
+
+    if belief.meeting_caller_color is None or belief.meeting_call_seen_tick is None:
+        return
+    if belief.social_caller_banked_tick == belief.meeting_call_seen_tick:
+        return
+    record = belief.roster.get(belief.meeting_caller_color)
+    if record is None:
+        return  # "Someone"/unknown display name — not a roster color; ignore
+    if belief.meeting_call_kind == "body":
+        record.reported_bodies += 1
+    elif belief.meeting_call_kind == "button":
+        record.button_calls_made += 1
+    belief.social_caller_banked_tick = belief.meeting_call_seen_tick
 
 
 # --- watched real-task completion -------------------------------------------------

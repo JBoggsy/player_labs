@@ -52,14 +52,14 @@ agent vendors.
 - `tools/eval.py` — held-out (out-of-fold) meeting decisions through a vote-policy
   grid; ship only what beats always-skip on net parity (design §6).
 
-## Current state (2026-06-12, v2)
+## Current state (2026-06-12, v3)
 
-Full-corpus fit on **1,857 games / 196k rows**: full model CV AUC 0.812;
-**runtime model AUC 0.801** — the `strategy/social_evidence.py` detectors (watched
-task completions via the `crew_tasks_remaining` decrement + dwell gate, chat
-stances, attributed vote dots) closed all of the v1 gap except the
-meeting-caller features (~0.011 AUC; observable via the game's MeetingCall
-interstitial since 4b9297d — perception parse not yet built). Held-out decision sim @ P≥0.9: 0.20
+Full-corpus fit on **1,857 games / 196k rows**: **runtime model AUC 0.812 — the
+full-feature ceiling**. The `strategy/social_evidence.py` detectors (watched task
+completions via the `crew_tasks_remaining` decrement + dwell gate, chat stances,
+attributed vote dots) plus the MeetingCall-interstitial caller parse
+(`reported_bodies`/`button_calls_made`) make every offline feature
+runtime-observable. Held-out decision sim @ P≥0.9: 0.20
 votes/decision at **94% imposter precision** (live hand model: 42%), net +17.3/100
 vs always-skip. `tasks_completed_watched` is the single strongest weight (−10.9;
 imposters produced ZERO across 62k labelled rows). Weights vendored at

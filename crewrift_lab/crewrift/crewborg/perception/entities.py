@@ -153,6 +153,11 @@ class ResolvedScene(BaseModel):
 
     voting: VotingState = Field(default_factory=VotingState)
     phase_texts: frozenset[str] = frozenset()
+    # The MeetingCall interstitial (game 4b9297d): "<Color> reported|pressed|called"
+    # text names the meeting caller in the player view. ``kind`` is "body" (a
+    # report), "button" (the emergency button), or "unknown".
+    meeting_caller_color: str | None = None
+    meeting_call_kind: str | None = None
     # Player colors shown in the role-reveal icons — the imposter team when the
     # viewer is an imposter (design §7.2 teammate identification).
     reveal_player_colors: frozenset[str] = frozenset()
