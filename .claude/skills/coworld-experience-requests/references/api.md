@@ -99,6 +99,13 @@ inside the eligible set **count toward that tally** — e.g. pin champion *A*
 explicitly and ask for `top_n: 3` across 5 more seats → they fill as
 `B, C, A, B, C` (A already counted once).
 
+**Pool selectors resolve ONCE PER REQUEST, not per episode** (verified live
+2026-06-12): a `top_n`/`random` seat is filled at creation and that policy plays
+the seat for *every* episode (only seats/roles rotate). For opponent variety
+across a pool, fire **multiple requests** — each re-draws. Also note both
+selectors can draw **your own champion** into an opponent seat (it double-seats;
+attribute stats by policy_version_id, never name).
+
 **`slot` — which seat, and whether it rotates.**
 
 | value | meaning |
