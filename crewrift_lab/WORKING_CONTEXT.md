@@ -125,11 +125,19 @@ raises posteriors and worsens mis-votes; land with fitted weights (design §1).
   roster, 40 eps × 2 configs): crew win 22%→35% (p=0.22), votes-at-crew 0.88→0.05/g,
   OWN ejections 52%→2%** (the evolved field — sussybuster-aaln, truecrew v20/21 — was
   voting accuse-heavy v24 out!), team crew-ejections 30→6; imposter scan clean (kills
-  up p=0.01, win noise, ejections 11%→7%). v25 kept. **Open items:** (a) retire stale
-  memberships (v24/v22/v21) once v25 places as champion; (b) refit cadence as the field
-  adapts (it's adapting fast — "sussybuster" appeared within a day); (c) offline/runtime
-  feature parity test on one of our own episodes; (d) 14/160 A/B episodes were
-  instant-GameOver degenerates — new ops signature (tentative lesson).
+  up p=0.01, win noise, ejections 11%→7%). v25 kept. **NATURAL EVAL DONE (200 eps, xreq_25c447f9 fixed-top-7 + xreq_911e10e1
+  random-pool; random roles, all seats rotating):** **crew win 43.8%** (n=146, pv-id
+  attributed) vs v24's 25.1% debut — above even RowDaBoat's 39.2% benchmark; imposter
+  68.5% @1.43 k/g (held). Vote mechanism in the wild: votes-at-crew 0.01/g (batch A)
+  / 0.23 (batch B) vs v24's 0.88; own ejections 2–3%; **19 imposter ejections in
+  batch A's 100 games** (field baseline ≈5/100) — restrained votes actually convert
+  to ejections now. Tasks faster (done-8 median ~3850 vs ~5300). v25 IS champion
+  already (the random pool seated it as its own teammate — double-seats in batch B).
+  Field shift: truecrew v20/v21 (Andre) now top this pool (54–60% win); RowDaBoat
+  mid-pack. **Open items:** (a) retire stale memberships (v24/v22/v21 — v25 is
+  placed+champion); (b) refit cadence (field adapting daily); (c) offline/runtime
+  feature parity test; (d) instant-GameOver degenerate signature (lesson recorded;
+  0/200 in this eval).
 
 ## Prior objective — RAISE THE IMPOSTER KILL RATE (done: v24 shipped; kill→win link weak)
 
