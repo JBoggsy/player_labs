@@ -64,7 +64,24 @@ is the one-screen answer to "where are we and why."
   pinning or `-1` round-robin); `requester`/`opponents`/`rotate_seats`/`player_selection`
   are gone. Skill docs (`coworld-experience-requests`, `crewrift-ab`) updated to match.
 
-## Current objective — RAISE THE IMPOSTER KILL RATE
+## NEW DIRECTION (2026-06-12, James): tune the suspicion system — learned from replays
+
+James's calls: (1) evidence **instances** sum (not per-type max), (2) add
+**exculpatory** evidence, (3) the main thing: build the data-science pipeline —
+scrape all games, expand replays, fit evidence weights from ground truth, and adopt
+any evidence type that earns weight. Design doc written:
+`crewrift/crewborg/docs/designs/suspicion-learning.md` (scrape → expand → per-observer
+dataset → logistic-regression fit → weights.json into the agent). Key enabler
+verified: the upgraded expander (coworld-crewrift `42fed21`, PR #57) emits JSONL with
+ground-truth roles, true kill attribution, player states, AND **exact per-(observer,
+target) rendered-view visibility intervals** — so "did the player see it" is computed,
+not modelled; build `tools/bin/expand_replay-42fed21` expands fresh league replays
+cleanly (`--format jsonl --snapshot-every 24`, ~3 MB/game). ⚠️ Don't land
+instance-summing alone with current hand weights — it raises posteriors and worsens
+mis-votes; land with fitted weights (design §1). Next step: build order §8 step 1
+(corpus scraper + expansion cache) on James's go-ahead.
+
+## Prior objective — RAISE THE IMPOSTER KILL RATE (done: v24 shipped; kill→win link weak)
 
 crewborg is a respectable mid-pack player (clean 50-game eval, 2026-06-11) but its
 weakest dimension is **imposter kills: ~1.7/game vs the top imposters' ~2.0**, and in

@@ -292,8 +292,12 @@ Procedure:
 The witnessed-kill/vent log-LR is **definitional** (we saw it happen) and stays at
 the near-certainty value; it is not fit.
 
-The replay-analysis tooling itself is not built yet. When it is, this section should
-gain the exact command/script and its output format.
+The replay-analysis tooling itself is not built yet. The end-to-end design for it —
+corpus scraping, the upgraded expander's JSONL/visibility output, per-observer
+dataset construction, logistic-regression fitting (instance-summed, with
+exculpatory evidence), and runtime weight loading — is proposed in
+[`suspicion-learning.md`](suspicion-learning.md); this section's per-bin ratio
+procedure survives there as the shape-via-binned-features part of the linear model.
 
 ---
 
