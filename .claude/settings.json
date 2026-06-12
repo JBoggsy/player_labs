@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "crewrift_lab/tools/rotate_lessons.sh",
+            "timeout": 15,
+            "statusMessage": "Rotating tentative-lessons buffer"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "crewrift_lab/tools/lessons_stop_nudge.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
