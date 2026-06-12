@@ -41,6 +41,21 @@ that get contradicted.
   couldn't.)
 - **Status:** candidate (strong methodology lesson — promote on next confirmation)
 
+### League round episodes can seat the SAME policy in TWO slots — aggregate per seat, and merge the "Name (2)" alias.
+- **Hits:** 1 (2026-06-11)
+- **Evidence:** 50/480 of crewborg v24's first Competition-round episodes seated crewborg
+  in 2 of the 8 slots (episode.json `policy_results` shows `num_agents: 2` for the policy;
+  `results.json.names` labels the second seat **"James Boggs (2)"**). Two traps: (a)
+  per-name aggregation silently splits one player's stats across "Name" and "Name (2)";
+  (b) seat-level stats and episode-level pv-joined stats diverge (we measured 35.3% vs
+  42.6% overall win for the same player before reconciling — partly these doubles, partly
+  population offset between `--policy` discovery and per-round listing). Strip the
+  ` (N)` suffix (or join each seat independently by `policy_version_id`+position) and
+  decide explicitly whether the unit of analysis is the seat or the episode. Also note
+  the gameplay consequence: crewborg can be **its own imposter partner** or crew
+  alongside its own imposter.
+- **Status:** candidate
+
 ### A teammate imposter's kill→report RESETS our kill cooldown — the cost of a sloppy partner is our lost CD window, not "stolen" victims.
 - **Hits:** 1 (2026-06-11, James's correction)
 - **Evidence:** In 2-imposter games crewborg's kills (1.73) trail its solo-pinned rate

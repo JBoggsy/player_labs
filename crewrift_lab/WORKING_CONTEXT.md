@@ -33,6 +33,19 @@ is the one-screen answer to "where are we and why."
   reach wins; no ejection cost. **v24 kept** (self-vote fix + real kill bump, strictly
   better than v22). **Kill lever now genuinely improved but kill→win link is weak** →
   next direction should be imposter survival/meetings or crewmate, NOT more kill tuning.
+- **v24 league debut (first 7 Competition rounds, 2026-06-11 22:45–23:52, ~480 eps):**
+  leaderboard **rank 11/20** (44.15, tight mid-pack cluster 41.8–44.5). Seat-level
+  (results.json, all crewborg seats): **crew 25.1% win** (n=406, tasks med 8/8, **0 vote
+  timeouts**), **imposter 69.4% win** (n=121) @ **1.79 kills/g** — kill rate now
+  field-top tier (top imposters 1.8–2.1) and only 1/121 zero-kill games, **but imposter
+  WIN trails the top imposters (83–91%) by ~15–20pp**, and most imposter losses come
+  *with* 2 kills (21/34) → the imposter gap is now **conversion** (survival/meetings/
+  endgame), not kill volume. Crew gap to the best regulars (slava2 38%, RowDaBoat 35%)
+  ≈ 10–13pp, and 77% of seats are crew → **crew is the volume lever**. Round trend:
+  48% → ~38% win over the 7 rounds (n=80/round, borderline noise — watch it). Both
+  findings confirm the standing call: next direction = imposter conversion or crewmate
+  play, NOT more kill tuning. (~10% of league episodes double-seat crewborg — see the
+  new tentative lesson before aggregating.)
 - **XP-request API rebuilt (2026-06-11, metta #15572):** the body is now a single
   `roster` field (one entry per seat: `policy_ref`/`top_n`/`random` selector + `slot`
   pinning or `-1` round-robin); `requester`/`opponents`/`rotate_seats`/`player_selection`
