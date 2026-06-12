@@ -5,6 +5,21 @@ suspicion model and especially its **per-event log-LR functions** (§3) — the 
 where we record, justify, and improve the evidence weights as we learn them from
 games.
 
+> **Since 2026-06-12 the production posterior is the FITTED model** — weights
+> learned from scraped league replays (pipeline + design:
+> [`suspicion-learning.md`](suspicion-learning.md); weights vendored at
+> `data/suspicion_weights.json`). Under it, evidence **instances are summed**
+> (deduped per context — per body, per victim, per vent visit), **exculpatory
+> evidence exists** (negative weights — e.g. real-task dwell time), an **exposure
+> feature** weighs evidence against opportunity, and the crewmate vote fires only
+> at calibrated near-certainty (`WEIGHTS_VOTE_PROBABILITY = 0.9`, **no clear-leader
+> rule** — it was the mis-vote engine; held-out decision sim: ~100% imposter
+> precision at this bar). An imposter *deflecting* keeps the legacy clear-leader
+> logic (mis-ejections are its goal, not a risk). Witnessed kill/vent stays a
+> definitional near-certainty floor on both paths. The hand-written model below is
+> the **fallback** when no weights load (`CREWBORG_SUSPICION_WEIGHTS=0` forces it)
+> and remains the conceptual reference for what each cue means.
+
 - **Code:** [`strategy/suspicion.py`](../../strategy/suspicion.py) — the `_*_log_lr`
   functions + `WITNESSED_LOG_LR`; the update is `update_suspicion(belief)`.
 - **Spec summary:** [`design.md` §10.1](../../design.md).
@@ -317,6 +332,7 @@ weight is a guess or earned.
 | 2026-06-01 | `follow_to_death` | LR 6, ramp to full by 48 ticks (**increasing**) | hand estimate | 0 | sustained shadowing of a now-dead victim |
 | 2026-06-10 | `tailing_self` | LR logistic, peak ln 40, half at 30 ticks, slope 0.2 (**increasing**) | hand estimate | 0 | someone shadowing *us*; brief ≈ 0, ~50 ticks ⇒ P ≈ 0.94 (over the flee bar); needs no death (superseded same day) |
 | 2026-06-10 | `tailing_self` | LR logistic, peak **ln 6.5**, half at 30 ticks, slope 0.2 (**increasing**) | hand estimate | 0 | lowered the ceiling so a sustained tail saturates at a *moderate* P ≈ 0.72 — enough to call a meeting + accuse (drives Accuse mode over `ACCUSE_THRESHOLD`), not enough to flee/auto-vote |
+| 2026-06-12 | **all cues — FITTED** (`data/suspicion_weights.json`, v1-runtime) | L1 logistic regression: follow-to-death the strongest graded cue (+2.4/+2.7 binned); task-site dwell **exculpatory** (−2.1/−2.9); tailing ~10× weaker than the hand estimate (+0.49 at heavy exposure); witnessed-kill feature +3.96 (floor still ln 1e6) | **fitted from replays** (suspicion_lab, grouped CV AUC 0.704; full-feature ceiling 0.811) | 341 | first earned weights; instance-summed + exposure feature; crewmate vote bar 0.9, no lead rule (~100% held-out imposter precision). Re-fit on the full corpus + add `tasks_completed_watched` (perfect exculpation, −9.0, needs a perception detector) next |
 
 ---
 

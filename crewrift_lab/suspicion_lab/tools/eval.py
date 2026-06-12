@@ -18,7 +18,6 @@ policy point: votes/meeting, hit rate, and net = (imposter hits - crew hits) per
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 
 import pandas as pd

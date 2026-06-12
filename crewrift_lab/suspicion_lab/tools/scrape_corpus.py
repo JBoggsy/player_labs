@@ -66,7 +66,7 @@ def entries(payload):
 
 
 def resolve_division(client: httpx.Client, league_name: str, division_name: str) -> str:
-    leagues = [l for l in entries(get_json(client, "/v2/leagues")) if l.get("name") == league_name]
+    leagues = [lg for lg in entries(get_json(client, "/v2/leagues")) if lg.get("name") == league_name]
     if not leagues:
         sys.exit(f"League {league_name!r} not found.")
     divisions = entries(get_json(client, "/v2/divisions", league_id=leagues[0]["id"]))

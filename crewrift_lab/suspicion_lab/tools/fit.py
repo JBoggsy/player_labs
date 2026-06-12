@@ -64,8 +64,9 @@ RUNTIME_FEATURES = [
     "copresence_killrange_samples",
     "task_site_dwell_samples",
     "observed_samples",
-    "accusations_made",
-    "times_accused",
+    # accusations_made / times_accused are runtime-feasible in principle (chat_read
+    # parses them) but need cross-meeting accumulation wiring — they join the v2
+    # runtime detector batch with tasks_completed_watched (design §7).
 ]  # linear count features are clipped here (one weight per instance, bounded)
 
 
@@ -161,6 +162,7 @@ def main(argv: list[str] | None = None) -> int:
         "cv_log_loss": results[0][0],
         "intercept": float(model.intercept_[0]),
         "linear_clip": LINEAR_CLIP,
+        "sample_unit_ticks": 24,
         "bin_spec": BIN_SPEC,
         "coefficients": coefs,
     }

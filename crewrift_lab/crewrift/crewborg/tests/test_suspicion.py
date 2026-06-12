@@ -1,4 +1,10 @@
-"""Near-certain suspicion tests: witnessed kill + witnessed vent (design §10.1)."""
+"""Suspicion tests: witnessed catches, the legacy hand model, the fitted model.
+
+The graded-shape tests below assert the LEGACY hand-written functions (the fallback
+when no weights load), so an autouse fixture pins that path; the fitted path —
+production default once ``data/suspicion_weights.json`` vendored — has its own
+relational tests at the bottom (``TestFittedModel``).
+"""
 
 from __future__ import annotations
 
@@ -6,17 +12,29 @@ import numpy as np
 import pytest
 
 from crewrift.crewborg.map.types import MapData, MapPoint, MapRect, Vent
+from crewrift.crewborg.strategy import suspicion as suspicion_module
 from crewrift.crewborg.strategy.suspicion import (
     BODY_FADE_TICKS,
     FLEE_PROBABILITY,
     FOLLOW_FULL_TICKS,
     VENT_CROSS_TICKS,
+    WEIGHTS_VOTE_PROBABILITY,
     active_tail_suspect,
     top_suspect,
     update_suspicion,
     witnessed_imposters,
 )
 from crewrift.crewborg.types import Belief, PerceptionFrame, PlayerEvent, PlayerRecord
+
+
+@pytest.fixture(autouse=True)
+def _legacy_hand_model():
+    """Pin the legacy path: these tests assert the hand-written log-LR shapes."""
+
+    saved = suspicion_module._WEIGHTS
+    suspicion_module.set_weights(None)
+    yield
+    suspicion_module.set_weights(saved)
 
 
 def _frame(tick: int, players=None, bodies=None, camera=(0, 0), mask=None) -> PerceptionFrame:
@@ -434,3 +452,95 @@ def test_top_suspect_skips_a_low_lone_lead() -> None:
 def test_top_suspect_returns_none_with_no_suspicion() -> None:
     belief = Belief(self_role="crewmate")
     assert top_suspect(belief) is None  # e.g. imposter/ghost (cleared suspicion) ⇒ skip
+
+
+# --- the fitted model (data/suspicion_weights.json; suspicion-learning.md) ----
+#
+# Relational assertions only — they must survive a re-fit on more games, so they
+# test structure (summing, exculpation, restraint), never specific weight values.
+
+
+@pytest.fixture()
+def _fitted_model():
+    weights = suspicion_module._load_weights()
+    assert weights is not None, "vendored data/suspicion_weights.json failed to load"
+    suspicion_module.set_weights(weights)
+    yield weights
+    suspicion_module.set_weights(None)
+
+
+def _p(belief: Belief, color: str) -> float:
+    update_suspicion(belief)
+    return belief.suspicion[color]
+
+
+def _task_dwell(duration: int, start: int = 10) -> PlayerEvent:
+    return PlayerEvent(kind="task", start_tick=start, end_tick=start + duration, region_index=0)
+
+
+def _near_body_event(body_color: str, start: int = 10) -> PlayerEvent:
+    return PlayerEvent(kind="near_body", start_tick=start, end_tick=start + 4, target_color=body_color, min_dist=8)
+
+
+class TestFittedModel:
+    def test_vendored_weights_load_and_declare_the_schema(self, _fitted_model) -> None:
+        assert _fitted_model["schema"] == "crewborg-suspicion-weights/v1"
+        assert _fitted_model["coefficients"]
+
+    def test_no_evidence_sits_at_the_fitted_baseline_below_the_vote_bar(self, _fitted_model) -> None:
+        belief = _crew_belief()
+        _add(belief, "red")
+        p = _p(belief, "red")
+        assert p == pytest.approx(1 / (1 + np.exp(-_fitted_model["intercept"])), abs=1e-6)
+        assert p < WEIGHTS_VOTE_PROBABILITY
+
+    def test_witnessed_kill_is_a_definitional_near_certainty_and_votable(self, _fitted_model) -> None:
+        belief = _crew_belief()
+        _add(belief, "red", [PlayerEvent(kind="kill", start_tick=50, end_tick=50, target_color="cyan")])
+        _add(belief, "blue")
+        assert _p(belief, "red") > 0.99
+        assert top_suspect(belief) == "red"
+
+    def test_task_site_dwell_is_exculpatory(self, _fitted_model) -> None:
+        belief = _crew_belief()
+        _add(belief, "red", [_task_dwell(duration=600)])  # ~25 offline samples of real-task time
+        _add(belief, "blue")
+        update_suspicion(belief)
+        assert belief.suspicion["red"] < belief.suspicion["blue"]
+
+    def test_evidence_instances_sum_monotonically(self, _fitted_model) -> None:
+        one = _crew_belief()
+        _add(one, "red", [_near_body_event("cyan")])
+        two = _crew_belief()
+        _add(two, "red", [_near_body_event("cyan"), _near_body_event("purple", start=120)])
+        assert _p(two, "red") >= _p(one, "red")
+
+    def test_repeat_sightings_of_the_same_body_do_not_double_count(self, _fitted_model) -> None:
+        once = _crew_belief()
+        _add(once, "red", [_near_body_event("cyan")])
+        thrice = _crew_belief()
+        _add(thrice, "red", [_near_body_event("cyan"), _near_body_event("cyan", start=120), _near_body_event("cyan", start=300)])
+        assert _p(thrice, "red") == pytest.approx(_p(once, "red"))
+
+    def test_a_sustained_tail_alone_stays_below_the_vote_bar(self, _fitted_model) -> None:
+        belief = _crew_belief()
+        _add(belief, "red", [PlayerEvent(kind="tailing_self", start_tick=10, end_tick=110, min_dist=40)])
+        _add(belief, "blue")
+        assert _p(belief, "red") < WEIGHTS_VOTE_PROBABILITY
+        assert top_suspect(belief) is None
+
+    def test_no_clear_leader_rule_a_moderate_lead_does_not_vote(self, _fitted_model) -> None:
+        belief = _crew_belief()
+        # follow evidence well above the field, but short of the calibrated bar
+        _add(belief, "red", [_long_follow()])
+        _add(belief, "yellow")
+        belief.roster["yellow"].life_status = "dead"
+        belief.roster["yellow"].death_seen_tick = 40 + FOLLOW_FULL_TICKS
+        _add(belief, "blue")
+        update_suspicion(belief)
+        if belief.suspicion["red"] < WEIGHTS_VOTE_PROBABILITY:
+            assert top_suspect(belief) is None
+
+    def test_env_zero_forces_the_legacy_hand_model(self, monkeypatch) -> None:
+        monkeypatch.setenv("CREWBORG_SUSPICION_WEIGHTS", "0")
+        assert suspicion_module._load_weights() is None

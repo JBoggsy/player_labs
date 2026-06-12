@@ -173,6 +173,9 @@ class PlayerRecord(BaseModel):
     # a brief unobserved gap (bridge) from an observed departure (split).
     events: list[PlayerEvent] = Field(default_factory=list)
     last_event_tick: int = 0
+    # Total ticks we have had this player in view — the fitted suspicion model's
+    # exposure feature (``observed_samples``); incremented by ``strategy.event_log``.
+    seen_ticks: int = 0
 
     @property
     def join_order(self) -> int | None:

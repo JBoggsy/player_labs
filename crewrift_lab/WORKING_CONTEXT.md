@@ -87,12 +87,25 @@ raises posteriors and worsens mis-votes; land with fitted weights (design §1).
   `follow_death` strongest graded cue; `accusations_made` +1.1 (incriminating);
   `tailing` ~10× weaker than the hand LR 6.5. Weights:
   `suspicion_lab/models/v1-runtime/suspicion_weights.json`.
-  **NEXT: (a) corpus scrape was mid-flight — rerun expand→dataset→fit at full scale;
-  (b) task #7 runtime integration:** suspicion.py loads weights (fallback constants),
-  instance-summed + exculpatory scorer over existing event-log cues (unit contract:
-  offline "samples" = duration_ticks/24), witnessed stays a definitional floor,
-  thresholds from eval (P≥0.9, lead 0), rewrite affected suspicion tests, Gate-1,
-  then 2-imp A/B targeting crew win + mis-vote rate.
+- **RUNTIME INTEGRATION DONE (2026-06-12, uncommitted→committed; NOT yet built/
+  uploaded):** `suspicion.py` now loads `data/suspicion_weights.json` (vendored,
+  v1-runtime fit) and scores with the FITTED model: instance-summed features with
+  per-context dedup, exculpatory negative weights, exposure feature
+  (`PlayerRecord.seen_ticks`, incremented in event_log), offline-sample unit contract
+  (duration/24), witnessed kill/vent kept as a definitional floor. **Crewmate vote:
+  P≥0.9 only, NO clear-leader rule** (held-out sim: ~100% imposter precision);
+  **imposter deflection keeps the legacy clear-leader logic** (mis-ejections are its
+  goal). Legacy hand model = fallback (`CREWBORG_SUSPICION_WEIGHTS=0`). 343 tests
+  pass (39 legacy-pinned + 9 new fitted-path), ruff clean; Dockerfile already COPYs
+  the data/ package. suspicion.md updated + provenance row added.
+  **NEXT (in order): (1)** corpus scrape reached ~1,350 eps and continues — rerun
+  `expand_corpus → build_dataset → fit --features runtime` at full scale and re-vendor
+  the weights JSON (one `cp`, structure unchanged); **(2)** Gate-1 smoke (build_player
+  + local run); **(3)** 2-imp `crewrift-ab` v24-vs-v25, target axes = crew win +
+  votes-at-crew rate (expect ~0 player-votes as crew except witnessed); **(4)** then
+  James's Gate-2 call. Follow-up detectors (next fit): `tasks_completed_watched`
+  (−9.0, the big one — task-sprite-transition perception), chat-stance accumulation
+  (accusations_made/times_accused), `reported_bodies`/`button_calls`.
 
 ## Prior objective — RAISE THE IMPOSTER KILL RATE (done: v24 shipped; kill→win link weak)
 
