@@ -108,8 +108,12 @@ raises posteriors and worsens mis-votes; land with fitted weights (design §1).
   (tick,speaker,text) so per-meeting clears don't lose counts), and **attributed
   votes** (VoteDot carries voter+target slots! staged during Voting, committed once
   at meeting end: cast/skip/against-me/agreed-with-me). Only
-  `button_calls_made`/`reported_bodies` remain unobservable (no meeting-caller
-  indicator in the player view; worth ~0.011 AUC). **Full corpus: 2,684 eps scraped,
+  `button_calls_made`/`reported_bodies` are not yet wired (worth ~0.011 AUC) —
+  CORRECTION (James, 2026-06-12): they ARE observable; the game's MeetingCall
+  interstitial (4b9297d, deployed) shows the caller's icon + "<caller>
+  pressed/reported" in the player view; crewborg's perception predates it and
+  doesn't parse it yet. Next detector: parse the interstitial -> caller counters
+  -> refit with button/reported -> full 0.812 ceiling. **Full corpus: 2,684 eps scraped,
   1,875 expanded, 196k rows. v2-runtime AUC 0.801 vs full-model ceiling 0.812**
   (v1 was 0.704); decision sim @ P≥0.9: 94% imposter precision, net +17.3/100.
   Weights re-vendored (`data/suspicion_weights.json`, intercept +0.392 — note an

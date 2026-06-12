@@ -66,8 +66,10 @@ RUNTIME_FEATURES = [
     "observed_samples",
     # v2 runtime detectors (strategy/social_evidence.py): watched completions via
     # the crew_tasks_remaining decrement + dwell gate; chat stances; attributed
-    # vote dots. Only reported_bodies / button_calls_made remain offline-only
-    # (no meeting-caller indicator in the player's view).
+    # vote dots. Only reported_bodies / button_calls_made remain offline-only —
+    # observable in principle since game 4b9297d (the MeetingCall interstitial
+    # shows the caller's icon in the player view) but not yet parsed by
+    # crewborg's perception.
     "tasks_completed_watched",
     "accusations_made",
     "times_accused",
