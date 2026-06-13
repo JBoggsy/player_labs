@@ -43,7 +43,21 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
   but the tournament acct's subscription is unverified — needs `tournament` SSO login to confirm).
 - **Status:** candidate, HIGH-STAKES.
 
-### mentalist's Bedrock failure is a STALE UPLOAD, not your IAM hotfix — re-uploading after metta#15616 should fix it (kyle did exactly this).
+### CONTRADICTED: re-upload did NOT fix Bedrock; player-pod Bedrock model access is broken league-wide. Kyle never had working Bedrock.
+- **Evidence:** mentalist:v2 (dual-backend writer) uploaded `--use-bedrock` AFTER metta#15616 and
+  submitted — its first qualifier episode (job aaeca506) STILL threw the marketplace 403
+  (`PermissionDeniedError ... required AWS Marketplace actions`); writer correctly selected Bedrock
+  (`LLM backend: bedrock`) but the call was denied -> fallback. So re-upload is NOT the fix.
+  Then the premise behind the re-upload theory collapsed: kyle_policy:v3's answers across 40 episodes
+  (120 authored rows) are exactly **6 distinct hardcoded strings** (gentle piano / warm soup / a quiet
+  library / reading slowly / a brass key / soft blue) — question- and style-independent => kyle is NOT
+  running an LLM. kyle:v3's tag `bedrock_fallback_fix` meant "kyle ADDED a deterministic fallback"
+  (same as mentalist already had), not "kyle fixed Bedrock". So nobody in this league has working
+  player-pod Bedrock. Methodology miss: I inferred "kyle's Bedrock works" from coherent-looking short
+  answers without checking their distribution; a 6-value histogram would have caught it immediately.
+- **Status:** CONTRADICTS the earlier "stale upload" lesson above (kept for the record). The real fix is
+  the infra-independent ANTHROPIC_API_KEY path (already built) OR fixing the episode-runner IRSA role's
+  Bedrock Marketplace subscription in the tournament account 583928386201 (needs `tournament` SSO login).
 - **Evidence:** Player-pod Bedrock is gated in `coworld/runner/kubernetes_runner.py`: a player pod runs
   under the `episode-runner` service account (the Bedrock IRSA role) AND gets `AWS_REGION` from
   `COWORLD_BEDROCK_REGION` (us-east-1) ONLY if its stored `policy_secret_env` has `USE_BEDROCK=true`

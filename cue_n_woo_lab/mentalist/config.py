@@ -33,8 +33,16 @@ LOW_CONFIDENCE_COSINE = 0.05
 # The writer talks to Claude through the anthropic SDK over whichever backend the
 # runtime env selects (writer._build_client): USE_BEDROCK -> AnthropicBedrock,
 # else ANTHROPIC_API_KEY -> Anthropic. Same model family on both.
-LLM_MODEL_ID = "us.anthropic.claude-opus-4-8"  # Bedrock inference-profile id (baseline parity)
-ANTHROPIC_API_MODEL_ID = "claude-opus-4-8"  # direct-API model id (no "us." region prefix)
+#
+# MODEL CHOICE (load-bearing). The hosted episode-runner Bedrock IRSA role can
+# invoke **haiku-4-5 but NOT opus-4-8** — opus throws a Marketplace 403
+# (aws-marketplace:Subscribe) in every league episode. crewrift's crewborg uses
+# haiku-4-5 over the identical --use-bedrock path and works; the cue-n-woo baseline
+# uses opus-4-8 and is silently broken (see WORKING_CONTEXT). So we use haiku-4-5,
+# the model the tournament role actually has access to. Trade-off: haiku is weaker
+# than opus for in-style answer quality; revisit if opus-4-8 gets subscribed.
+LLM_MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"  # Bedrock inference-profile id
+ANTHROPIC_API_MODEL_ID = "claude-haiku-4-5-20251001"  # direct-API model id (no "us." prefix, no "-v1:0")
 BEDROCK_REGION = "us-east-1"  # only used if the pod env injects no AWS_REGION
 LLM_MAX_TOKENS = 1024
 LLM_ATTEMPTS = 4  # transient-failure retries (timeout/429/5xx), exponential backoff

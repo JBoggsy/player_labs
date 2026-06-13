@@ -16,28 +16,28 @@ below); this file is the one-screen "where are we and why."
 
 ## Status (2026-06-13, session 3): mentalist v2 built + Gate-1 verified — FIXES the production Bedrock fallback
 
-**The bug we found.** All 5 latest league episodes (vs kyle_policy v3) ran the
-**deterministic fallback**, never Claude: every Bedrock call threw marketplace
-`AccessDenied`. Root cause is NOT code (mentalist's Bedrock call is byte-identical to the
-league baseline) and NOT your earlier IAM hotfix (that was the *game-container signing
-key*, a different axis). It is a **stale upload**: a player pod reaches Bedrock only if
-its stored `policy_secret_env` carries `USE_BEDROCK=true` under the *current* dispatch
-path (runs under the `episode-runner` IRSA SA — `coworld/runner/kubernetes_runner.py`).
-**metta#15616** ("Add hosted Coworld secret URIs", squash `cf8ddcc`) reworked that
-secret-env dispatch and landed **2026-06-12 23:41Z** — *after* mentalist:v1's upload
-(20:22Z) but the player must be **re-uploaded** to re-store its secret-env. kyle_policy:v3
-(uploaded 02:58Z, tagged `purpose=bedrock_fallback_fix`) did exactly this and its Bedrock
-works in the same episodes ours fails.
+**The bug + the REAL root cause (corrected twice — see lessons).** All recent league
+episodes ran the **deterministic fallback**, never Claude: every Bedrock call threw a
+marketplace 403 (`aws-marketplace:Subscribe ... model access denied`) on
+`us.anthropic.claude-opus-4-8`. Two wrong turns before the truth: (1) "stale upload, re-upload
+post-#15616 fixes it" — DISPROVEN: v2 re-uploaded `--use-bedrock` and still 403'd on opus.
+(2) "kyle has working Bedrock" — FALSE: kyle's answers are 6 hardcoded strings (a fallback,
+not an LLM). **The real differentiator is the MODEL.** crewrift/crewborg reaches Bedrock over
+the *identical* `--use-bedrock` path, same `episode-runner` IRSA role, same region — and it
+**works, because it uses haiku-4-5**. The episode-runner role can invoke haiku-4-5 but NOT
+opus-4-8 (opus isn't subscribed for that role). cue-n-woo's mentalist + baseline both used
+opus-4-8 → 403 for everyone.
 
-**The fix (v2, this session — pending upload).** Dual-backend LLM writer
-([`mentalist/writer.py`](mentalist/writer.py)), the crewrift/suspectra convention: the
-`anthropic` SDK over a runtime-selected transport — `USE_BEDROCK` → `AnthropicBedrock`,
-else `ANTHROPIC_API_KEY` → `Anthropic` — replacing raw boto3. Re-uploading fixes Bedrock
-(re-stores secret-env post-#15616); the API-key path is an infra-independent fallback.
-**Gate-1 verified**: real-config local episode vs the live worker
-(`--use-bedrock --aws-profile softmax`) → `LLM backend: bedrock ... ok`, genuine in-style
-pirate prose (all ≤12 tokens, no rejections, no fallback), scores [579.2, 80.8], 86s. 29
-unit tests pass. See [`mentalist/VERSION_LOG.md`](mentalist/VERSION_LOG.md).
+**The fix (v2 → v3, this session).** v2 = dual-backend writer (`anthropic` SDK,
+`USE_BEDROCK` → `AnthropicBedrock` else `ANTHROPIC_API_KEY` → `Anthropic`), correct but still
+on opus → still 403 in the league. **v3 = switch the model to haiku-4-5**
+(`us.anthropic.claude-haiku-4-5-20251001-v1:0`), the model the tournament role actually has
+access to. **Gate-1 verified** (real-config local episode vs the live worker,
+`--use-bedrock --aws-profile softmax`): `LLM backend: bedrock, model ...haiku-4-5... ok`,
+real in-style pirate prose, all ≤12 tokens, no fallback. 29 unit tests pass. NOTE: local runs
+use the softmax profile (which *can* reach opus), so **only a league episode proves the fix** —
+the tournament role is the only identity that 403s on opus. Trade-off: haiku < opus on answer
+quality; revisit if opus-4-8 gets subscribed for the episode-runner role. See [`mentalist/VERSION_LOG.md`](mentalist/VERSION_LOG.md).
 
 **Prior status (session 2):** mentalist v1 (UUID `9fcac03b-a8b8-4195-8402-7c887a7574c0`)
 qualified and was promoted **CHAMPION** in Competition (`div_82c69031…`) — but on the
