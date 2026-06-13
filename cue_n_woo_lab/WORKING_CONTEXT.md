@@ -14,20 +14,38 @@ below); this file is the one-screen "where are we and why."
 
 ---
 
-## Status (2026-06-12, session 2): mentalist v1 QUALIFIED — CHAMPION in the Competition division
+## Status (2026-06-13, session 3): mentalist v2 built + Gate-1 verified — FIXES the production Bedrock fallback
 
-The player ([`mentalist/`](mentalist/)) is implemented per the design, passed Gate-1
-(cert smoke + a real-config local episode against the live worker), was uploaded as
-**`mentalist:v1`** (policy-version UUID `9fcac03b-a8b8-4195-8402-7c887a7574c0`),
-submitted to the live Cue N Woo league, and — after we diagnosed and hotfixed a
-league-side IAM bug that was disqualifying every entrant (see incident section below) —
-**qualified on resubmission and was promoted to CHAMPION** (membership `lpm_8f547834…`,
-division Competition `div_82c69031…`, `status=competing`, `champion=True`, ~20:50Z).
-The session goal (*upload a policy and have it qualify*; human-set, authorized the league
-submission and the naming/scope decisions below) is **met**.
+**The bug we found.** All 5 latest league episodes (vs kyle_policy v3) ran the
+**deterministic fallback**, never Claude: every Bedrock call threw marketplace
+`AccessDenied`. Root cause is NOT code (mentalist's Bedrock call is byte-identical to the
+league baseline) and NOT your earlier IAM hotfix (that was the *game-container signing
+key*, a different axis). It is a **stale upload**: a player pod reaches Bedrock only if
+its stored `policy_secret_env` carries `USE_BEDROCK=true` under the *current* dispatch
+path (runs under the `episode-runner` IRSA SA — `coworld/runner/kubernetes_runner.py`).
+**metta#15616** ("Add hosted Coworld secret URIs", squash `cf8ddcc`) reworked that
+secret-env dispatch and landed **2026-06-12 23:41Z** — *after* mentalist:v1's upload
+(20:22Z) but the player must be **re-uploaded** to re-store its secret-env. kyle_policy:v3
+(uploaded 02:58Z, tagged `purpose=bedrock_fallback_fix`) did exactly this and its Bedrock
+works in the same episodes ours fails.
+
+**The fix (v2, this session — pending upload).** Dual-backend LLM writer
+([`mentalist/writer.py`](mentalist/writer.py)), the crewrift/suspectra convention: the
+`anthropic` SDK over a runtime-selected transport — `USE_BEDROCK` → `AnthropicBedrock`,
+else `ANTHROPIC_API_KEY` → `Anthropic` — replacing raw boto3. Re-uploading fixes Bedrock
+(re-stores secret-env post-#15616); the API-key path is an infra-independent fallback.
+**Gate-1 verified**: real-config local episode vs the live worker
+(`--use-bedrock --aws-profile softmax`) → `LLM backend: bedrock ... ok`, genuine in-style
+pirate prose (all ≤12 tokens, no rejections, no fallback), scores [579.2, 80.8], 86s. 29
+unit tests pass. See [`mentalist/VERSION_LOG.md`](mentalist/VERSION_LOG.md).
+
+**Prior status (session 2):** mentalist v1 (UUID `9fcac03b-a8b8-4195-8402-7c887a7574c0`)
+qualified and was promoted **CHAMPION** in Competition (`div_82c69031…`) — but on the
+crippled fallback player. v2 is the first real-LLM player.
 
 **Environment:** git worktree, branch `worktree-cue-n-woo-lab`, dir
-`.claude/worktrees/cue-n-woo-lab`. Run everything from the worktree root.
+`.claude/worktrees/cue-n-woo-lab`. Run everything from the worktree root. Game image is
+now **cue_n_woo 0.2.10** (was 0.2.1; manifest/protocol look unchanged — re-verify if play breaks).
 
 ## The league (DISCOVERED THIS SESSION — earlier "no league" notes were stale)
 
@@ -86,17 +104,23 @@ and applied a two-sided IAM hotfix from James's credentials, then **resubmitted*
 
 ## Open threads
 
-1. **Qualification of the resubmission** — new membership in Qualifiers (`qualifying`);
-   qualifier ereq `ereq_c096e209…` running as of 20:40Z. Monitor:
-   `policy_lifecycle.py monitor --name mentalist`. If it crashes again, pull
-   `/jobs/{job_id}/artifacts/logs` (game-container logs; not covered by the
-   episode-artifacts skill).
-2. **Metta TF reconciliation** — replace the IAM hotfix with the proper Terraform change
-   (see the incident doc) and tell the metta/tournament owners (role authored by
-   nishu-builder, PR #10428; game by Kyle Herndon).
-3. **v2 candidates (human direction needed):** runtime self-scoring via the public worker
+1. **NEXT: build + upload mentalist:v2** (the dual-backend writer) with
+   `--use-bedrock` (re-stores secret-env post-#15616) — image `mentalist:v2dev` already
+   built + Gate-1-verified locally. Optionally also `--secret-env ANTHROPIC_API_KEY=...`
+   as belt-and-braces. Then pull one league episode's log and CONFIRM real Claude prose
+   (not the `"<Style> speaking…"` fallback). Upload is routine/ungated; **submitting**
+   v2 to the league is Gate-2 (human's call) — v1 is the current champion.
+2. **Quantify the LLM lift.** v1 (fallback) already wins ~80% vs kyle on the style tilt
+   alone; the open question is how much real prose adds. Once v2 is uploaded, run a
+   matched eval v1-vs-v2 (experience requests). Expect the biggest gain on the
+   mild/non-distinctive styles where the template had no floor (the v1 loss was a
+   `friendly classroom teacher` game, 136 vs 524).
+3. **Metta TF reconciliation** (from the signing-key incident) — replace the IAM hotfix
+   with the proper Terraform change (see the incident doc) and tell the metta/tournament
+   owners. Separate from the Bedrock-fallback issue, still owed.
+4. **Other v2+ candidates (human direction):** runtime self-scoring via the public worker
    (design §6); ablate style-label vs transcript; proposal-bank tuning. Propose-and-pause.
-4. The human still owes a review of `docs/designs/player-design.md` and the name
+5. The human still owes a review of `docs/designs/player-design.md` and the name
    `mentalist` (adopted under the goal directive; trivially renameable before it matters).
 
 ## Discipline (from [`../AGENTS.md`](../AGENTS.md))

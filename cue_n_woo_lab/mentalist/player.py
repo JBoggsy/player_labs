@@ -27,7 +27,7 @@ from websockets.exceptions import ConnectionClosed
 
 from . import config
 from .classifier import StyleClassifier, StyleMatch
-from .writer import BedrockWriter
+from .writer import LLMWriter
 
 
 def log(msg: str) -> None:
@@ -37,7 +37,7 @@ def log(msg: str) -> None:
 class Mentalist:
     def __init__(self) -> None:
         self.classifier = StyleClassifier(featurizer=config.CLASSIFIER_FEATURIZER)
-        self.writer = BedrockWriter()
+        self.writer = LLMWriter()
         self.pending: str | None = None  # action type in flight, cleared by counts/error
         self._asks_target = 0  # transcript length that confirms our latest ask landed
         self.style_matches: list[StyleMatch] | None = None

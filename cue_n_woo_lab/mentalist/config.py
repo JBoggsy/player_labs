@@ -29,11 +29,16 @@ CLASSIFIER_FEATURIZER = "word_raw"  # word_raw | char_3_5 (equivalent per findin
 # alone instead of a classified label.
 LOW_CONFIDENCE_COSINE = 0.05
 
-# --- Bedrock writer ----------------------------------------------------------
-BEDROCK_MODEL_ID = "us.anthropic.claude-opus-4-8"  # baseline parity
-BEDROCK_REGION = "us-east-1"
-BEDROCK_MAX_TOKENS = 1024
-BEDROCK_ATTEMPTS = 4  # throttle/availability retries, exponential backoff
+# --- LLM writer (dual backend: Bedrock or direct Anthropic API) --------------
+# The writer talks to Claude through the anthropic SDK over whichever backend the
+# runtime env selects (writer._build_client): USE_BEDROCK -> AnthropicBedrock,
+# else ANTHROPIC_API_KEY -> Anthropic. Same model family on both.
+LLM_MODEL_ID = "us.anthropic.claude-opus-4-8"  # Bedrock inference-profile id (baseline parity)
+ANTHROPIC_API_MODEL_ID = "claude-opus-4-8"  # direct-API model id (no "us." region prefix)
+BEDROCK_REGION = "us-east-1"  # only used if the pod env injects no AWS_REGION
+LLM_MAX_TOKENS = 1024
+LLM_ATTEMPTS = 4  # transient-failure retries (timeout/429/5xx), exponential backoff
+LLM_TIMEOUT_SECONDS = 90  # per-call client timeout
 LLM_VALIDATION_RETRIES = 2  # server-rejection retries before deterministic fallback
 
 # --- harness -----------------------------------------------------------------
