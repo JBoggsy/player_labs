@@ -1,0 +1,63 @@
+{
+ "schema": "crewborg-suspicion-weights/v1",
+ "feature_set": "runtime",
+ "trained": "2026-06-12",
+ "dataset": "/Users/jamesboggs/coding/personal_labs/crewrift_lab/suspicion_lab/dataset/dataset.parquet",
+ "games": 341,
+ "rows": 35137,
+ "C": 1.0,
+ "cv_auc": 0.7041749129594981,
+ "cv_log_loss": 0.5590306287034655,
+ "intercept": -0.3731408086462506,
+ "linear_clip": 5,
+ "sample_unit_ticks": 24,
+ "bin_spec": {
+  "follow_death_samples": [
+   2,
+   6
+  ],
+  "tail_obs_samples": [
+   5,
+   20
+  ],
+  "tail_obs_max_run": [
+   3,
+   8
+  ],
+  "copresence_killrange_samples": [
+   5,
+   20
+  ],
+  "task_site_dwell_samples": [
+   5,
+   20
+  ],
+  "observed_samples": [
+   10,
+   40
+  ]
+ },
+ "coefficients": {
+  "witnessed_kills": 3.9617284142857887,
+  "near_body_bodies": 0.26324114239267415,
+  "follow_death_samples__0to2": 1.1360156037770341,
+  "follow_death_samples__2to6": 2.3621613906232293,
+  "follow_death_samples__gt6": 2.691956276185203,
+  "tail_obs_samples__0to5": -0.11570794657426182,
+  "tail_obs_samples__5to20": 0.0,
+  "tail_obs_samples__gt20": 0.4862148474096781,
+  "tail_obs_max_run__0to3": -0.13903161230304287,
+  "tail_obs_max_run__3to8": 0.0,
+  "tail_obs_max_run__gt8": 0.20770175447971156,
+  "vent_visits": 0.06489690558739085,
+  "copresence_killrange_samples__0to5": 0.06900589733576458,
+  "copresence_killrange_samples__5to20": 0.2283521477240049,
+  "copresence_killrange_samples__gt20": 1.27104744452474,
+  "task_site_dwell_samples__0to5": -0.5391388031070408,
+  "task_site_dwell_samples__5to20": -2.107200072375906,
+  "task_site_dwell_samples__gt20": -2.8539436147397637,
+  "observed_samples__0to10": -0.36031560054831147,
+  "observed_samples__10to40": 0.0,
+  "observed_samples__gt40": 0.38791426982589083
+ }
+}

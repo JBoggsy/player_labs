@@ -7,6 +7,8 @@ pixels are read.
 
 from __future__ import annotations
 
+import re
+
 from typing import TYPE_CHECKING
 
 from crewrift.crewborg.perception.constants import (
@@ -57,6 +59,13 @@ from crewrift.crewborg.perception.entities import (
     VotingState,
 )
 
+# The MeetingCall interstitial's caller line (game 4b9297d): "<Color> reported" /
+# "<Color> pressed" / "<Color> called" — display-capitalized color names, possibly
+# two words ("Pale Blue"). The follow-up line ("the button", "<Color>'s body") is
+# not needed: the verb already distinguishes the call kind.
+MEETING_CALL_TEXT = re.compile(r"^([A-Za-z]+(?: [A-Za-z]+)?) (reported|pressed|called)$")
+MEETING_CALL_KINDS = {"reported": "body", "pressed": "button", "called": "unknown"}
+
 # A chat speaker icon is matched to the text line whose screen-y is nearest, within
 # this tolerance (px). The icon is vertically centered on its (possibly multi-line)
 # message, so its y can sit a few px below the text's top.
@@ -95,6 +104,8 @@ def resolve_scene(scene: SceneState, tick: int) -> ResolvedScene:
     active_progress: int | None = None
     crew_remaining: int | None = None
     phase_texts: set[str] = set()
+    meeting_caller_color: str | None = None
+    meeting_call_kind: str | None = None
     cursor = skip_cursor = timer = False
     cursor_xy: tuple[int, int] | None = None
     self_marker_color: str | None = None
@@ -165,6 +176,11 @@ def resolve_scene(scene: SceneState, tick: int) -> ResolvedScene:
             crew_remaining = _parse_trailing_int(label[len(PREFIX_TASK_COUNTER) :])
         elif label in PHASE_TEXTS:
             phase_texts.add(label)
+        else:
+            call = MEETING_CALL_TEXT.match(label)
+            if call is not None:
+                meeting_caller_color = call.group(1).lower()
+                meeting_call_kind = MEETING_CALL_KINDS[call.group(2)]
 
         # Player/body objects are drawn offset from their collision point; recover
         # the collision point so range checks (report, kill) match the server.
@@ -255,6 +271,8 @@ def resolve_scene(scene: SceneState, tick: int) -> ResolvedScene:
             cursor_slot=cursor_slot,
         ),
         phase_texts=frozenset(phase_texts),
+        meeting_caller_color=meeting_caller_color,
+        meeting_call_kind=meeting_call_kind,
         reveal_player_colors=frozenset(reveal_colors),
         chat_lines=chat_lines,
         census=census,

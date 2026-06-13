@@ -55,15 +55,29 @@ time decay):
 `believed_imposters` (which gates Flee) is every alive player with `P ≥
 FLEE_PROBABILITY`. Crewmate-only — an imposter knows the truth, a ghost doesn't flee.
 
-v1 simplifications (documented for later): naive-Bayes independence between evidence
-types; positive-evidence-only (the prior is the baseline — no exculpatory terms);
-and a static `K / (P − 1)` prior without redistributing the imposter budget as
-players are caught/die (a proper joint model is a refinement).
+**Two scoring paths.** When the vendored fitted weights load
+(``data/suspicion_weights.json``, trained by ``crewrift_lab/suspicion_lab`` — see
+``docs/designs/suspicion-learning.md``), the posterior is the FITTED model:
+``logit = intercept + Σ w·x`` over instance-summed, exposure-aware features, with
+negative weights as exculpatory evidence and the vote bar at calibrated
+near-certainty (no clear-leader rule). The hand-written ``_*_log_lr`` functions
+below are the fallback when no weights are available
+(``CREWBORG_SUSPICION_WEIGHTS=0`` forces them). A witnessed kill/vent is a
+definitional near-certainty floor on both paths.
+
+Legacy-path simplifications (documented for later): naive-Bayes independence between
+evidence types; positive-evidence-only (the prior is the baseline — no exculpatory
+terms); and a static `K / (P − 1)` prior without redistributing the imposter budget
+as players are caught/die (a proper joint model is a refinement).
 """
 
 from __future__ import annotations
 
+import importlib.resources
+import json
 import math
+import os
+from pathlib import Path
 
 from crewrift.crewborg.action import KILL_RANGE_SQ
 from crewrift.crewborg.strategy.occupancy import (
@@ -142,6 +156,153 @@ PRIOR_MIN, PRIOR_MAX = 1e-3, 0.99
 # Max distance a player can walk in one tick (MaxSpeed/MotionScale = 704/256 ≈ 2.75,
 # rounded up): a player materialising inside a vent from beyond this vented.
 VENT_WALK_MARGIN = 3
+
+
+# --- fitted weights (the learned model; docs/designs/suspicion-learning.md) ----
+#
+# When the vendored ``data/suspicion_weights.json`` loads, the posterior comes from
+# the FITTED model: logit = intercept + Σ w·x over the runtime feature vector below
+# (evidence *instances* summed — with per-context dedup — and exculpatory negative
+# weights, per design §1). The hand-written ``_*_log_lr`` functions above remain the
+# FALLBACK when no weights are available (and the witnessed kill/vent near-certainty
+# stays a definitional floor in both paths — it is not a fitted quantity).
+#
+# Ops override: CREWBORG_SUSPICION_WEIGHTS=0 forces the legacy hand model; a path
+# loads that file instead of the vendored asset.
+WEIGHTS_PACKAGE = "crewrift.crewborg.data"
+WEIGHTS_RESOURCE = "suspicion_weights.json"
+WEIGHTS_SCHEMA = "crewborg-suspicion-weights/v1"
+# Vote bar under the fitted model — from the held-out decision simulator
+# (suspicion_lab eval.py): at 0.9 the fitted posterior's votes hit imposters with
+# ~100% precision; there is NO clear-leader rule on this path (it was the mis-vote
+# engine — votes fire on calibrated near-certainty only).
+WEIGHTS_VOTE_PROBABILITY = 0.9
+# Offline features count expander samples (one per `snapshot-every` ticks); runtime
+# durations divide by this to land in the same unit. Read from the weights file.
+DEFAULT_SAMPLE_UNIT_TICKS = 24
+# The offline copresence gate (kill_range + 8 px), mirrored on tailing_self min_dist.
+COPRESENCE_DIST_SQ = 28**2
+
+
+def _load_weights() -> dict | None:
+    """The fitted weights, or None (→ legacy hand model). Never raises."""
+
+    override = os.environ.get("CREWBORG_SUSPICION_WEIGHTS", "").strip()
+    if override == "0":
+        return None
+    try:
+        if override:
+            data = json.loads(Path(override).read_text())
+        else:
+            resource = importlib.resources.files(WEIGHTS_PACKAGE).joinpath(WEIGHTS_RESOURCE)
+            data = json.loads(resource.read_text())
+        if data.get("schema") != WEIGHTS_SCHEMA or "coefficients" not in data:
+            return None
+        return data
+    except Exception:  # missing asset / bad JSON ⇒ hand model, never a crash
+        return None
+
+
+_WEIGHTS: dict | None = _load_weights()
+
+
+def set_weights(weights: dict | None) -> None:
+    """Test/ops hook: pin the scoring path (None ⇒ legacy hand model)."""
+
+    global _WEIGHTS
+    _WEIGHTS = weights
+
+
+def _fitted_features(belief: Belief, record: PlayerRecord) -> dict[str, float]:
+    """The runtime feature vector for one suspect (design §5; offline mirror:
+    suspicion_lab/tools/features.py — keep names, units, and dedup rules aligned).
+
+    Units: offline "samples" = one expander snapshot per ``sample_unit_ticks``;
+    runtime durations divide by that. Instance summing dedupes per context: bodies
+    by body color, follows summed across a victim's qualifying intervals, vent
+    visits per dwell interval.
+    """
+
+    unit = float((_WEIGHTS or {}).get("sample_unit_ticks", DEFAULT_SAMPLE_UNIT_TICKS))
+    tail_durations: list[int] = []
+    copresence_ticks = 0
+    task_ticks = 0
+    vent_visits = 0
+    follow_ticks = 0
+    near_bodies: set[str | None] = set()
+    witnessed = 0
+
+    for event in record.events:
+        if event.kind in ("kill", "vent_use"):
+            witnessed += 1
+        elif event.kind == "near_body":
+            if event.min_dist is not None:
+                near_bodies.add(event.target_color)
+        elif event.kind == "tailing_self":
+            tail_durations.append(event.duration_ticks)
+            if event.min_dist is not None and event.min_dist**2 <= COPRESENCE_DIST_SQ:
+                copresence_ticks += event.duration_ticks
+        elif event.kind == "task":
+            task_ticks += event.duration_ticks
+        elif event.kind == "vent":
+            if event.duration_ticks > VENT_CROSS_TICKS:
+                vent_visits += 1
+        elif event.kind == "proximity":
+            victim = belief.roster.get(event.target_color)
+            if (
+                victim is not None
+                and victim.life_status == "dead"
+                and victim.death_seen_tick is not None
+                and abs(victim.death_seen_tick - event.end_tick) <= FOLLOW_DEATH_WINDOW_TICKS
+            ):
+                follow_ticks += event.duration_ticks
+
+    return {
+        "witnessed_kills": float(witnessed),
+        "near_body_bodies": float(len(near_bodies)),
+        "follow_death_samples": follow_ticks / unit,
+        "tail_obs_samples": sum(tail_durations) / unit,
+        "tail_obs_max_run": (max(tail_durations) if tail_durations else 0) / unit,
+        "vent_visits": float(vent_visits),
+        "copresence_killrange_samples": copresence_ticks / unit,
+        "task_site_dwell_samples": task_ticks / unit,
+        "observed_samples": record.seen_ticks / unit,
+        # public / social counters (strategy.social_evidence; offline names differ
+        # only in the observer suffix)
+        "tasks_completed_watched": float(record.tasks_completed_watched),
+        "accusations_made": float(record.accusations_made),
+        "times_accused": float(record.times_accused),
+        "times_defended": float(record.times_defended),
+        "votes_cast": float(record.votes_cast),
+        "votes_skipped": float(record.votes_skipped),
+        "voted_against_observer": float(record.voted_against_me),
+        "vote_agreement_with_observer": float(record.vote_agreed_with_me),
+        "reported_bodies": float(record.reported_bodies),
+        "button_calls_made": float(record.button_calls_made),
+    }
+
+
+def _fitted_log_odds(belief: Belief, record: PlayerRecord) -> float:
+    """intercept + Σ w·x under the loaded weights (the offline transform mirrored:
+    binned indicators for ``bin_spec`` features, clipped linear counts otherwise)."""
+
+    assert _WEIGHTS is not None
+    coefs: dict[str, float] = _WEIGHTS["coefficients"]
+    bin_spec: dict[str, list[float]] = _WEIGHTS.get("bin_spec", {})
+    clip = float(_WEIGHTS.get("linear_clip", 5))
+    logit = float(_WEIGHTS["intercept"])
+    for name, value in _fitted_features(belief, record).items():
+        if name in bin_spec:
+            edges = [0.0, *bin_spec[name], math.inf]
+            for i in range(len(edges) - 1):
+                lo, hi = edges[i], edges[i + 1]
+                if lo < value <= hi:
+                    label = f"{name}__gt{lo:g}" if hi == math.inf else f"{name}__{lo:g}to{hi:g}"
+                    logit += coefs.get(label, 0.0)
+                    break
+        else:
+            logit += coefs.get(name, 0.0) * min(value, clip)
+    return logit
 
 
 def update_suspicion(belief: Belief) -> None:
@@ -326,7 +487,14 @@ def _recompute(belief: Belief) -> None:
             continue  # the dead are no threat
         if color in belief.teammate_colors or color == belief.self_color:
             continue  # never score a known teammate, or *ourself* (no-op for a crewmate)
-        logit = prior_logit + _evidence_log_lr(belief, record)
+        if _WEIGHTS is not None:
+            logit = _fitted_log_odds(belief, record)
+            # A witnessed kill/vent stays DEFINITIONAL near-certainty (we saw it),
+            # never down-weighted by the fitted model (design: witnessed is not fit).
+            if any(e.kind in ("kill", "vent_use") for e in record.events):
+                logit = max(logit, prior_logit + WITNESSED_LOG_LR)
+        else:
+            logit = prior_logit + _evidence_log_lr(belief, record)
         p = _sigmoid(logit)
         suspicion[color] = p
         if p >= FLEE_PROBABILITY:
@@ -396,6 +564,14 @@ def top_suspect(belief: Belief) -> str | None:
         return None
     ranked.sort(key=lambda kv: kv[1], reverse=True)
     color, p = ranked[0]
+    if _WEIGHTS is not None and belief.self_role != "imposter":
+        # Fitted model, CREWMATE vote: calibrated near-certainty ONLY. The clear-
+        # leader rule is deliberately absent here — on the league data it was the
+        # mis-vote engine (58% of player-votes hit crew), and every crew ejection is
+        # a parity gift; the held-out decision sim puts this bar at ~100% imposter
+        # precision. An IMPOSTER deflecting keeps the legacy clear-leader logic
+        # below: engineering plausible mis-ejections is its job, not a risk.
+        return color if p >= WEIGHTS_VOTE_PROBABILITY else None
     if p >= VOTE_PROBABILITY:
         return color  # near-certain on its own
     runner_up = ranked[1][1] if len(ranked) > 1 else 0.0

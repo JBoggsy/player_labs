@@ -67,7 +67,7 @@ expand as the user's curiosity warrants.)
 | **experience request** | a batch of games you design (opponents, roles, count) that Softmax runs in parallel, so you get results now instead of waiting for league rounds |
 | **episode** | one game — its replay, results, and logs are the raw evidence you analyze |
 | **replay** | a watchable playback of an episode in the browser |
-| **roster** | the set of opponents a player is evaluated against |
+| **roster** | who fills a game's seats — your player plus the opponents it's evaluated against |
 
 > **Run everything from the repo root.** All paths below are written relative to the
 > project root (where you're operating) — `crewrift_lab/…`, not `../…`.

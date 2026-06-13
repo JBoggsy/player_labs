@@ -173,6 +173,24 @@ class PlayerRecord(BaseModel):
     # a brief unobserved gap (bridge) from an observed departure (split).
     events: list[PlayerEvent] = Field(default_factory=list)
     last_event_tick: int = 0
+    # Total ticks we have had this player in view — the fitted suspicion model's
+    # exposure feature (``observed_samples``); incremented by ``strategy.event_log``.
+    seen_ticks: int = 0
+
+    # Cumulative social/public-evidence counters for the fitted suspicion model,
+    # maintained by ``strategy.social_evidence`` (whole-episode, never reset):
+    # chat stances, attributed meeting votes, and watched real-task completions
+    # (the strongest exculpatory cue — imposters cannot produce one).
+    accusations_made: int = 0
+    times_accused: int = 0
+    times_defended: int = 0
+    votes_cast: int = 0
+    votes_skipped: int = 0
+    voted_against_me: int = 0
+    vote_agreed_with_me: int = 0
+    tasks_completed_watched: int = 0
+    reported_bodies: int = 0
+    button_calls_made: int = 0
 
     @property
     def join_order(self) -> int | None:
@@ -333,6 +351,24 @@ class Belief(BaseModel):
     # ticks and cleared when a new meeting opens. The raw transcript suspicion
     # reasoning will consume.
     chat_log: list[ChatEvent] = Field(default_factory=list)
+
+    # Bookkeeping for ``strategy.social_evidence`` (cumulative public-evidence
+    # counters on PlayerRecord): chat lines already counted (keys survive the
+    # per-meeting chat_log clear), the staged/banked meeting vote tallies, and the
+    # previous global task counter for the watched-completion detector.
+    social_counted_chats: set[tuple[int, str, str]] = Field(default_factory=set)
+    social_staged_votes: set[tuple[int, int]] = Field(default_factory=set)
+    social_staged_slots: dict[int, str] = Field(default_factory=dict)
+    social_staged_meeting_tick: int | None = None
+    social_banked_meeting_tick: int | None = None
+    social_prev_tasks_remaining: int | None = None
+    # The current meeting's caller, parsed from the MeetingCall interstitial text
+    # (game 4b9297d): color + kind ("body"|"button"|"unknown"), with the tick the
+    # interstitial was first seen (social_evidence banks each sighting once).
+    meeting_caller_color: str | None = None
+    meeting_call_kind: str | None = None
+    meeting_call_seen_tick: int | None = None
+    social_caller_banked_tick: int | None = None
 
     # Social / evidence (design §5, §10.1). Bayesian: ``suspicion[color]`` is the
     # posterior **P(imposter)** ∈ [0, 1] for each other player (crewmate POV),
@@ -622,6 +658,17 @@ def update_belief(belief: Belief, percept: Percept) -> None:
             belief.visible_body_ids.clear()
         belief.phase = phase
         belief.phase_start_tick = percept.tick
+
+    # The MeetingCall interstitial names the caller; latch it for the meeting
+    # (social_evidence banks it once), and drop it when play resumes.
+    if resolved.meeting_caller_color is not None and belief.meeting_caller_color is None:
+        belief.meeting_caller_color = resolved.meeting_caller_color
+        belief.meeting_call_kind = resolved.meeting_call_kind
+        belief.meeting_call_seen_tick = percept.tick
+    if belief.phase == "Playing" and belief.meeting_caller_color is not None:
+        belief.meeting_caller_color = None
+        belief.meeting_call_kind = None
+        belief.meeting_call_seen_tick = None
 
     # Chat is re-rendered every tick (the last few messages), so de-duplicate by
     # (speaker, text) and append only lines we have not logged this meeting.

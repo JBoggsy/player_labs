@@ -63,6 +63,7 @@ def update_event_log(belief: Belief) -> None:
 
     for record in visible:
         here = (record.world_x, record.world_y)
+        record.seen_ticks += 1  # exposure for the fitted suspicion model
         # The previous tick we processed this player; captured before we overwrite it,
         # so _mark can tell a brief unobserved gap from an observed departure.
         prev = record.last_event_tick

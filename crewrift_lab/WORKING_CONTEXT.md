@@ -33,8 +33,118 @@ is the one-screen answer to "where are we and why."
   reach wins; no ejection cost. **v24 kept** (self-vote fix + real kill bump, strictly
   better than v22). **Kill lever now genuinely improved but kill→win link is weak** →
   next direction should be imposter survival/meetings or crewmate, NOT more kill tuning.
+- **v24 league debut (first 7 Competition rounds, 2026-06-11 22:45–23:52, ~480 eps):**
+  leaderboard **rank 11/20** (44.15, tight mid-pack cluster 41.8–44.5). Seat-level
+  (results.json, all crewborg seats): **crew 25.1% win** (n=406, tasks med 8/8, **0 vote
+  timeouts**), **imposter 69.4% win** (n=121) @ **1.79 kills/g** — kill rate now
+  field-top tier (top imposters 1.8–2.1) and only 1/121 zero-kill games, **but imposter
+  WIN trails the top imposters (83–91%) by ~15–20pp**, and most imposter losses come
+  *with* 2 kills (21/34) → the imposter gap is now **conversion** (survival/meetings/
+  endgame), not kill volume. Crew gap to the best regulars (slava2 38%, RowDaBoat 35%)
+  ≈ 10–13pp, and 77% of seats are crew → **crew is the volume lever**. Round trend:
+  48% → ~38% win over the 7 rounds (n=80/round, borderline noise — watch it). Both
+  findings confirm the standing call: next direction = imposter conversion or crewmate
+  play, NOT more kill tuning. (~10% of league episodes double-seat crewborg — see the
+  new tentative lesson before aggregating.)
+- **RowDaBoat's edge decoded (2026-06-12, 480-ep stats + 40-replay aggregate):** the
+  leader's dominance is ~all CREW-side: crew 39.2% win vs our 25.1% (imposter 74% @1.83
+  kills ≈ ours). Mechanism: crew wins are a parity-vs-task race (ghosts keep tasking!),
+  and RowDaBoat (a) almost never votes players (0.00 complicity in crew ejections over
+  33 crew games; we're 1.04 votes-at-crew/g, 0.48 complicity), (b) burns the emergency
+  button every game to reset imposter kill CDs (canned line "just resetting imposter
+  cool downs", shared with truecrew), (c) reliably finishes 8/8. Crew ejections ran 14
+  in 20 crew losses vs 4 in 20 wins; imposters ejected 2/40 games → our accuse/vote
+  feature is likely negative EV as crew. Exemplars in `/tmp/rdb_focus` (77d55243,
+  89c510fb, f3b7b1fa = RDB crew beating crewborg-as-imposter; 633ce75a = crewborg
+  imposter winning via 2 kills + 2 engineered mis-ejections). Full details in the new
+  tentative lesson. **Candidate directions:** crew = vote restraint (skip unless
+  near-certain); imposter = engineer mis-ejections (the conversion lever we're missing).
+- **XP-request API rebuilt (2026-06-11, metta #15572):** the body is now a single
+  `roster` field (one entry per seat: `policy_ref`/`top_n`/`random` selector + `slot`
+  pinning or `-1` round-robin); `requester`/`opponents`/`rotate_seats`/`player_selection`
+  are gone. Skill docs (`coworld-experience-requests`, `crewrift-ab`) updated to match.
 
-## Current objective — RAISE THE IMPOSTER KILL RATE
+## NEW DIRECTION (2026-06-12, James): tune the suspicion system — learned from replays
+
+James's calls: (1) evidence **instances** sum (not per-type max), (2) add
+**exculpatory** evidence, (3) the main thing: build the data-science pipeline —
+scrape all games, expand replays, fit evidence weights from ground truth, and adopt
+any evidence type that earns weight. Design doc written:
+`crewrift/crewborg/docs/designs/suspicion-learning.md` (scrape → expand → per-observer
+dataset → logistic-regression fit → weights.json into the agent). Key enabler
+verified: the upgraded expander (coworld-crewrift `42fed21`, PR #57) emits JSONL with
+ground-truth roles, true kill attribution, player states, AND **exact per-(observer,
+target) rendered-view visibility intervals** — so "did the player see it" is computed,
+not modelled. ⚠️ Don't land instance-summing alone with current hand weights — it
+raises posteriors and worsens mis-votes; land with fitted weights (design §1).
+- **PIPELINE BUILT + FIRST MODEL FIT (2026-06-12):** `crewrift_lab/suspicion_lab/`
+  (scrape_corpus → expand_corpus → build_dataset → fit → eval; see its README).
+  Interim fit, 341 games / 35k rows: **full model CV AUC 0.811** (calibrated);
+  **runtime-subset (existing event-log features only) AUC 0.739**; decision sim at
+  P≥0.9 → 88% of votes hit imposters (live hand model: 42%), net +8.3/100 over
+  always-skip. Fitted facts: `tasks_completed_watched` ≈ perfect exculpation (−9.0;
+  needs a NEW runtime perception detector — top integration priority);
+  `follow_death` strongest graded cue; `accusations_made` +1.1 (incriminating);
+  `tailing` ~10× weaker than the hand LR 6.5. Weights:
+  `suspicion_lab/models/v1-runtime/suspicion_weights.json`.
+- **RUNTIME INTEGRATION DONE (2026-06-12, uncommitted→committed; NOT yet built/
+  uploaded):** `suspicion.py` now loads `data/suspicion_weights.json` (vendored,
+  v1-runtime fit) and scores with the FITTED model: instance-summed features with
+  per-context dedup, exculpatory negative weights, exposure feature
+  (`PlayerRecord.seen_ticks`, incremented in event_log), offline-sample unit contract
+  (duration/24), witnessed kill/vent kept as a definitional floor. **Crewmate vote:
+  P≥0.9 only, NO clear-leader rule** (held-out sim: ~100% imposter precision);
+  **imposter deflection keeps the legacy clear-leader logic** (mis-ejections are its
+  goal). Legacy hand model = fallback (`CREWBORG_SUSPICION_WEIGHTS=0`). 343 tests
+  pass (39 legacy-pinned + 9 new fitted-path), ruff clean; Dockerfile already COPYs
+  the data/ package. suspicion.md updated + provenance row added.
+- **v2: SOCIAL DETECTORS + FULL-CORPUS REFIT DONE (2026-06-12, James's "get the
+  full feature set into the player"):** new `strategy/social_evidence.py` in the
+  fast loop (after event_log, before suspicion) maintains cumulative PlayerRecord
+  counters: **watched task completions** (global `crew_tasks_remaining` HUD counter
+  decrements by exactly 1 while exactly ONE visible living player ends a ≥56-tick
+  task dwell — fake Pretend holds never decrement, so they can't trigger it), **chat
+  stances** (offline-mirrored accuse/defend regex over `chat_log`, deduped by
+  (tick,speaker,text) so per-meeting clears don't lose counts), and **attributed
+  votes** (VoteDot carries voter+target slots! staged during Voting, committed once
+  at meeting end: cast/skip/against-me/agreed-with-me). Only
+  `button_calls_made`/`reported_bodies` are not yet wired (worth ~0.011 AUC) —
+  CORRECTION (James, 2026-06-12): they ARE observable; the game's MeetingCall
+  interstitial (4b9297d, deployed) shows the caller's icon + "<caller>
+  pressed/reported" in the player view; crewborg's perception predates it and
+  doesn't parse it yet. Next detector: parse the interstitial -> caller counters
+  -> refit with button/reported -> full 0.812 ceiling. **Full corpus: 2,684 eps scraped,
+  1,875 expanded, 196k rows. v2-runtime AUC 0.801 vs full-model ceiling 0.812**
+  (v1 was 0.704); decision sim @ P≥0.9: 94% imposter precision, net +17.3/100.
+  Weights re-vendored (`data/suspicion_weights.json`, intercept +0.392 — note an
+  unseen player's baseline P≈0.6, behaviorally contained: vote needs 0.9, Accuse
+  needs an active tail). 353 tests pass (10 new social-evidence), ruff clean.
+  **SHIPPED (2026-06-12): v25 = the fitted model + v3 weights + interstitial caller
+  parse.** Gate-1 PASS (weights verified in-image, 0 log errors). **Submitted + placed**
+  (`sub_07dae14f`, `lpm_c04b55cc`) on James's explicit go-ahead. **A/B vs v24 (pinned
+  roster, 40 eps × 2 configs): crew win 22%→35% (p=0.22), votes-at-crew 0.88→0.05/g,
+  OWN ejections 52%→2%** (the evolved field — sussybuster-aaln, truecrew v20/21 — was
+  voting accuse-heavy v24 out!), team crew-ejections 30→6; imposter scan clean (kills
+  up p=0.01, win noise, ejections 11%→7%). v25 kept. **NATURAL EVAL DONE (200 eps, xreq_25c447f9 fixed-top-7 + xreq_911e10e1
+  random-pool; random roles, all seats rotating):** **crew win 43.8%** (n=146, pv-id
+  attributed) vs v24's 25.1% debut — above even RowDaBoat's 39.2% benchmark; imposter
+  68.5% @1.43 k/g (held). Vote mechanism in the wild: votes-at-crew 0.01/g (batch A)
+  / 0.23 (batch B) vs v24's 0.88; own ejections 2–3%; **19 imposter ejections in
+  batch A's 100 games** (field baseline ≈5/100) — restrained votes actually convert
+  to ejections now. Tasks faster (done-8 median ~3850 vs ~5300). v25 IS champion
+  already (the random pool seated it as its own teammate — double-seats in batch B).
+  Field shift: truecrew v20/v21 (Andre) now top this pool (54–60% win); RowDaBoat
+  mid-pack. **NIGHTLY CHAMPION LOOP INSTALLED (2026-06-12, James):** user crontab
+  `30 0 * * *` → `suspicion_lab/tools/nightly_refit.sh` (scrape → refit → gates
+  [AUC≥0.70, ≥500 games, test suite, Gate-1] → vendor → build → upload → SUBMIT,
+  auto, per standing instruction; logs in suspicion_lab/logs/). Caveats: skips if
+  the machine sleeps through 00:30; aborts safely if softmax auth expires or
+  Docker is down. **Remaining open items:** (a) retire stale memberships
+  (v24/v22/v21 — v25 is placed+champion); (b) offline/runtime feature parity test;
+  (c) the nightly fit uses the full corpus — consider a recency window if the
+  field's drift outpaces accumulation.
+
+## Prior objective — RAISE THE IMPOSTER KILL RATE (done: v24 shipped; kill→win link weak)
 
 crewborg is a respectable mid-pack player (clean 50-game eval, 2026-06-11) but its
 weakest dimension is **imposter kills: ~1.7/game vs the top imposters' ~2.0**, and in

@@ -33,8 +33,8 @@ repeat → gate2 → submit) runs **unchanged** here. The Crewrift-specific inst
 
 - **Evaluate** (step 1) — experience requests against the uploaded version of the
   policy under optimization. **Decompose by role** (crewmate vs. imposter are
-  effectively two different policies; see best practices) and by opponent. To pin the
-  requester's role, set `game_config_overrides.slots` — shape in
+  effectively two different policies; see best practices) and by opponent. To pin your
+  policy's role, pin its roster `slot` and set `game_config_overrides.slots` — shape in
   [`docs/crewrift-gameplay.md` → Forcing roles in evaluations](docs/crewrift-gameplay.md).
 - **Report** (step 2) — pull artifacts, then turn the batch into a dense report with
   the **`crewrift-report`** skill (flags the interesting episodes by role, profiles
@@ -136,20 +136,25 @@ both on startup** alongside the preferences above:
   threads). Read it to resume, **keep it updated as you learn**, and **clear/reseed it
   when we pivot to a whole new direction**. A recorded objective there is the
   resume-the-loop signal (it doubles as the onboarding "active policy" marker).
-- **[`TENTATIVE_LESSONS.md`](TENTATIVE_LESSONS.md)** — an **eager, noisy buffer of
-  candidate lessons**: write here freely the moment something *looks* like a reusable
-  lesson. Each entry carries a hit count; **once a lesson is confirmed enough (≈3 hits)
-  and still holds, promote it** to the right `best_practices.md` and delete it here.
-  Most entries are noise; the value is the occasional gem.
+- **[`TENTATIVE_LESSONS.md`](TENTATIVE_LESSONS.md)** — **this session's** eager,
+  noisy buffer of candidate lessons: write here freely, AS YOU GO, the moment
+  something *looks* like a reusable lesson. Most entries are noise; the value is the
+  occasional gem. **The lifecycle is automated** (2026-06-12): a SessionStart hook
+  archives each session's buffer to [`lessons_archive/`](lessons_archive/) and creates
+  a fresh one; a Stop hook nudges once if substantive work ends with the buffer
+  untouched; the **`/lessons-review`** skill (≈weekly, human-driven) clusters lessons
+  that RECUR across archived sessions and graduates keepers to `best_practices.md`.
+  Recurrence across sessions — not in-session hit counts — is the graduation signal.
 
 **Cleanup step — run when you wrap up a thread (and before you push/land work).** Do a
 deliberate sweep so nothing learned evaporates:
 
 1. **Capture all tentative lessons.** Re-scan the work you just did for anything that
    *looked* like a reusable lesson — a gotcha, a surprise, a "next time I'd…" — and make
-   sure each is written into [`TENTATIVE_LESSONS.md`](TENTATIVE_LESSONS.md) (bump the hit
-   count if it recurred). Capturing eagerly is the whole point; an un-recorded lesson is
-   a lost one. Promote any that have now hit ≈3 confirmations.
+   sure each is written into [`TENTATIVE_LESSONS.md`](TENTATIVE_LESSONS.md). Capturing
+   eagerly is the whole point; an un-recorded lesson is a lost one. (The buffer is
+   archived automatically at the next session start; graduation happens at
+   `/lessons-review`, keyed on cross-session recurrence.)
 2. **Reconcile working context.** Prune completed/stale detail from
    [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md) (it's a one-screen state file, not a log —
    finished work lives in git history / the version log), update the active

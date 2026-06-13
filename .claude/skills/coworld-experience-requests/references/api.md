@@ -20,7 +20,9 @@ The API is **game-agnostic** (works for any Coworld); only `game_config_override
 > `components.schemas.V2CreateExperienceRequestRequest` from
 > `<api-server>/observatory/openapi.json` before composing a body, and treat that
 > as the source of truth over this doc. The field list below was read live on
-> **2026-06-08**.
+> **2026-06-11**, after the roster-schema overhaul (metta PR #15572) — if you see
+> older examples with `requester` / `opponents` / `rotate_seats`, they are from the
+> **removed** pre-#15572 schema (see "Removed fields" below).
 
 ## The endpoint
 
@@ -58,8 +60,8 @@ r = httpx.post(base + "/v2/experience-requests", headers={"X-Auth-Token": tok},
 ## The request body — every field
 
 `V2CreateExperienceRequestRequest` has **`additionalProperties: false`**, so an
-unknown key is rejected — send only the fields below (in particular there is **no
-`backfill` field**). Group them by what they decide:
+unknown key is rejected — send only the fields below. Group them by what they
+decide:
 
 ### Target — *which game*
 
@@ -67,51 +69,94 @@ Pick one of these (a league/division resolves its canonical Coworld for you):
 
 | field | meaning |
 | --- | --- |
-| `target.division_id` / `target.division_name` | target division; resolves its league + Coworld |
+| `target.division_id` / `target.division_name` | target division; resolves its league + Coworld. `division_name` must be scoped by `league_id`/`league_name` |
 | `target.league_id` / `target.league_name` | target league; resolves its canonical Coworld (ambiguous names must use the id) |
 | `target.coworld_id` (+ `target.variant_id`) | a direct Coworld, for ad-hoc runs off any league |
 | top-level `coworld_id` / `variant_id` | shorthand for a direct Coworld target |
 
-### Roster — *which policies play*
+### Roster — *who plays, in which seat*
 
-Two modes; pick the one that fits who you control:
+One field: **`roster`**, a list with **exactly one participant per Coworld player
+slot** (its length must equal the resolved game's player count — Crewrift: 8).
+Each participant is:
 
-**A. Requester vs league opponents** (the usual tournament A/B — opponents are *not*
-yours, they're current league members):
+```jsonc
+{ "player": <selector>, "slot": <int, default -1> }
+```
+
+**`player` — who fills the seat.** Exactly one selector:
+
+| selector | meaning |
+| --- | --- |
+| `"policy_ref": "name:vN"` or a raw policy-version UUID | a **specific policy version**, resolved by label or UUID. Must have a READY, non-deleted container image. **Ownership is NOT enforced** — you can name any runnable policy (yours or an opponent's exact version), which is what makes pinned A/B rosters possible. |
+| `"top_n": N` (1–100) | fill this seat from the target league/division's **top-N champion pool** (competing champions, runnable, ranked by recent mean reward). Requires a league/division target. |
+| `"random": true` | independently sample a champion from the same pool, rank-weighted. Requires a league/division target. |
+
+**Champion-pool equalization.** All `top_n` seats in a request are resolved as a
+group: each goes to the **currently least-represented eligible champion** (rank
+breaks ties), so the spread stays even. Explicit `policy_ref` picks that fall
+inside the eligible set **count toward that tally** — e.g. pin champion *A*
+explicitly and ask for `top_n: 3` across 5 more seats → they fill as
+`B, C, A, B, C` (A already counted once).
+
+**Pool selectors resolve ONCE PER REQUEST, not per episode** (verified live
+2026-06-12): a `top_n`/`random` seat is filled at creation and that policy plays
+the seat for *every* episode (only seats/roles rotate). For opponent variety
+across a pool, fire **multiple requests** — each re-draws. Also note both
+selectors can draw **your own champion** into an opponent seat (it double-seats;
+attribute stats by policy_version_id, never name).
+
+**`slot` — which seat, and whether it rotates.**
+
+| value | meaning |
+| --- | --- |
+| `-1` (default — omit it) | **round-robin**: rotates through the open (non-pinned) seats, shifting by one each episode |
+| `0..N-1` | **pinned**: holds that exact seat every episode. Pinned slots must be unique and in range |
+
+Because the roster has one entry per seat, the round-robin participants always
+exactly fill the open seats. Seating recipes:
+
+| want | how |
+| --- | --- |
+| everyone rotates (cancels per-seat bias) | omit `slot` everywhere (all `-1`) |
+| fixed seating | pin every participant to a `slot` |
+| **pin yours, rotate the rest** | pin your participant; leave the others at `-1` |
+
+### Roles & seating interaction
 
 | field | meaning |
 | --- | --- |
-| `requester` | your policy: `{policy_version_id}` **or** `{player_id}` / `{player_name}` (caller-owned), plus `slot` (which seat it controls). **`slot` must be ≥ 0** (`Field(ge=0)`; the seat resolver also rejects `< 0`) — there is **no `slot=-1` auto-round-robin**; the only round-robin primitive is `rotate_seats`. |
-| `opponents[]` | opponent selectors resolved from **active runnable league memberships**: each `{policy_version_id}` **or** `{player_id}` / `{player_name}` |
-| `player_selection` | `top_n` (highest-ranked by recent mean reward) or `random`; how `top_n` auto-picks champions. Ignored if `top_n` unset |
-| `top_n` | auto-select this many opponents from the target league instead of (or in addition to) listing them |
+| `game_config_overrides` | shallow override of the resolved Coworld's game config — each key **replaces** that key in the game config, and the result is validated against the game's own schema. **Crewrift:** `{"slots": [{"role": "imposter"}, {"role": "crew"}, ...]}` forces per-slot roles. `slots` is an **array of objects** (`{"role": "crew"\|"imposter", "color"?, "token"?}`), **not** bare strings; supply the **full** array (the merge replaces the whole key). Full Crewrift schema: [`crewrift-gameplay.md` → Forcing roles](../../../../crewrift_lab/docs/crewrift-gameplay.md) |
 
-**B. Caller-owned explicit roster** (every policy is yours):
-
-| field | meaning |
-| --- | --- |
-| `policy_version_ids[]` | your runnable policy versions, as the explicit roster |
-| `requester_slot` | which seat the first `policy_version_ids` entry (the agent) controls |
-| `assignments[]` | explicit slot→policy assignments (arrays of integer policy indices). **Only valid with `policy_version_ids`** |
-
-### Roles & seating
-
-| field | meaning |
-| --- | --- |
-| `game_config_overrides` | shallow override of the resolved Coworld's game config — each key **replaces** that key in the game config, and the result is validated against the game's own schema. **Crewrift:** `{"slots": [{"role": "imposter"}, {"role": "crew"}, ...]}` forces per-slot roles. `slots` is an **array of objects** (`{"role": "crew"\|"imposter", "color"?, "token"?}`), **not** bare strings; supply the **full** array (the merge replaces the whole key), slot 0 = the requester. Full Crewrift schema: [`crewrift-gameplay.md` → Forcing roles](../../../../crewrift_lab/docs/crewrift-gameplay.md) |
-| `rotate_seats` | `true` cyclically rotates the **whole seat-ordered roster** by `episode_index % player_count` each episode (`app_backend/v2/experience_requests.py`). The field's description says "rotates the requester," but in fact **every** player (requester *and* all opponents) visits every seat over `player_count` episodes — a *cyclic shift*, not an independent shuffle (relative order is preserved). Cancels per-seat bias. **It does NOT pin a role:** since Crewrift roles are fixed *by seat* (via `game_config_overrides.slots`), rotating the requester through all seats rotates it through all **roles** too — so you can't "force the requester's role *and* rotate" at once. |
+Roles are fixed **by seat**, so seating decides roles: **pinning a participant to a
+seat pins its role**, and a round-robin participant visits every open seat's role
+over the episodes. "My policy always imposter at slot 0, opponents rotating through
+the other seats/roles" is now a single request — pin yours at `0`, force
+`slots[0].role = "imposter"`, leave the opponents at `-1`. (Under the removed
+pre-#15572 schema this took one request per role-configuration; it no longer does.)
 
 ### Volume & execution
 
 | field | meaning |
 | --- | --- |
-| `num_episodes` | how many episodes (default `1`) |
-| `execution_backend` | `k8s` (default) or `antfarm` |
-| `notes` | free-text label, handy for finding the request later |
+| `num_episodes` | how many episodes (1–100, default `1`) |
+| `execution_backend` | `k8s` (default) or `antfarm` (400 unless enabled server-side) |
+| `notes` | free-text label (max 1000 chars), handy for finding the request later |
+
+### Removed fields (pre-#15572 — reject on sight)
+
+`requester`, `requester_slot`, `opponents`, top-level `top_n`, `player_selection`,
+`policy_version_ids`, `assignments`, and `rotate_seats` are **gone**
+(`additionalProperties: false` rejects them). Their jobs all moved into `roster`:
+requester/opponents/policy_version_ids → `policy_ref` participants; top-level
+`top_n` + `player_selection` → per-seat `top_n` / `random` selectors;
+`rotate_seats`/`requester_slot`/`assignments` → per-participant `slot`. There are
+also **no `player_id`/`player_name` selectors** anymore — resolve a player's
+current version to a `policy_ref` first (see below).
 
 ## Building blocks — resolving the IDs
 
-The body needs real IDs. Resolve them live (don't hardcode — they rotate):
+The body needs real refs. Resolve them live (don't hardcode — they rotate):
 
 ```sh
 uv run coworld leagues --json                       # GET /v2/leagues
@@ -123,54 +168,74 @@ uv run coworld memberships --division <division_id> --active-only --json
 Underlying routes (raw): `GET /v2/leagues`, `GET /v2/divisions`,
 `GET /v2/divisions/{id}/leaderboard` (current champions, ranked by recent mean
 reward), `GET /v2/league-policy-memberships?division_id=…&active_only=true&limit=1000`
-(the active runnable opponents). Resolve a policy **name → version id** with
-`GET /stats/policy-versions?name_exact=<name>` (each row has `id`, `version`).
-
-`opponents` accept `player_name`, so you often don't need their policy_version_ids —
-list names from the leaderboard/memberships and let the server resolve the active
-runnable version.
+(the active memberships and their policy versions). Resolve a policy
+**name → version** with `GET /stats/policy-versions?name_exact=<name>` — though for
+`policy_ref` you usually only need the **label** `name:vN`, no UUID. For an
+opponent, take the policy name + version from the leaderboard/membership row and
+write it as `policy_ref: "name:vN"`; that exact version is then pinned (it won't
+drift if they upload a new one mid-experiment).
 
 ## Composition — examples to adapt (not a fixed menu)
 
-**Your policy vs the live division's top 7 champions** (auto-select; random roles):
+**Your policy vs the live division's top 7 champions** (auto-select; everyone
+rotates; random roles) — 8 seats, so 8 participants:
 
 ```json
 {
   "target": {"division_id": "div_…"},
-  "requester": {"policy_version_id": "<your pv id>", "slot": 0},
-  "player_selection": "top_n",
-  "top_n": 7,
+  "roster": [
+    {"player": {"policy_ref": "crewborg:v24"}},
+    {"player": {"top_n": 7}}, {"player": {"top_n": 7}}, {"player": {"top_n": 7}},
+    {"player": {"top_n": 7}}, {"player": {"top_n": 7}}, {"player": {"top_n": 7}},
+    {"player": {"top_n": 7}}
+  ],
   "num_episodes": 100,
-  "notes": "crewborg vs the live top-7, random roles"
+  "notes": "crewborg vs the live top-7, random roles, all seats rotating"
 }
 ```
 
-**Vs explicit, named opponents** (stable, reproducible roster) — swap the
-auto-select for a list:
+**Vs explicit, pinned opponents** (stable, reproducible roster — the A/B shape):
+name every seat's exact version and pin every slot, so both arms are identical
+except the subject:
 
 ```json
 {
   "target": {"division_id": "div_…"},
-  "requester": {"player_name": "Player One", "slot": 0},
-  "opponents": [{"player_name": "notsus"}, {"player_name": "evidencebot"}],
+  "roster": [
+    {"player": {"policy_ref": "crewborg:v24"}, "slot": 0},
+    {"player": {"policy_ref": "notsus:v3"}, "slot": 1},
+    {"player": {"policy_ref": "evidencebot:v7"}, "slot": 2},
+    {"player": {"policy_ref": "slava2:v5"}, "slot": 3},
+    {"player": {"policy_ref": "…"}, "slot": 4},
+    {"player": {"policy_ref": "…"}, "slot": 5},
+    {"player": {"policy_ref": "…"}, "slot": 6},
+    {"player": {"policy_ref": "…"}, "slot": 7}
+  ],
   "num_episodes": 50
 }
 ```
 
-**Force roles (Crewrift)** — `game_config_overrides.slots` is an **array of objects**
-(slot 0 = requester); supply the full array. `role` ∈ `{"crew","imposter"}`:
+**Force roles (Crewrift) and pin yours while the rest rotate** —
+`game_config_overrides.slots` is an **array of objects**; supply the full array.
+`role` ∈ `{"crew","imposter"}`. Your participant pinned to slot 0 keeps the
+imposter role every episode; the others cycle through seats 1–7 (so each takes the
+slot-7 partner-imposter role in some episodes):
 
 ```json
 {
   "target": {"division_id": "div_…"},
-  "requester": {"policy_version_id": "<your pv id>", "slot": 0},
-  "top_n": 7,
+  "roster": [
+    {"player": {"policy_ref": "crewborg:v24"}, "slot": 0},
+    {"player": {"top_n": 7}}, {"player": {"top_n": 7}}, {"player": {"top_n": 7}},
+    {"player": {"top_n": 7}}, {"player": {"top_n": 7}}, {"player": {"top_n": 7}},
+    {"player": {"top_n": 7}}
+  ],
   "game_config_overrides": {"slots": [
     {"role": "imposter"}, {"role": "crew"}, {"role": "crew"}, {"role": "crew"},
     {"role": "crew"}, {"role": "crew"}, {"role": "crew"}, {"role": "imposter"}
   ]},
   "num_episodes": 50,
-  "notes": "requester forced imposter"
+  "notes": "crewborg pinned imposter @0; field rotates through crew + partner-imposter"
 }
 ```
 
@@ -178,23 +243,10 @@ auto-select for a list:
 POSTing (see the tool's `game_config_overrides` check), so a wrong shape fails locally
 with a clear message instead of as an opaque 400.
 
-**Cancel seat bias** — add `"rotate_seats": true` to cyclically rotate the whole
-roster through every seat (see the field note above — it rotates *everyone*, and
-won't pin a role). **Ad-hoc, no league** — use `"target": {"coworld_id": "cow_…"}`.
+**Ad-hoc, no league** — use `"target": {"coworld_id": "cow_…"}` and `policy_ref`
+selectors only (`top_n`/`random` need a league/division target).
 
-**Round-robin opponents through roles while pinning the requester's role** — no single
-field does this (forcing roles by seat fixes opponent seating; `rotate_seats` un-pins
-the requester's role). Do it **manually**: use **explicit `opponents`** (fixed order →
-fixed seats: requester at its `slot`, opponents fill the rest in list order), then issue
-**one request per role-configuration**, cycling the imposter seat(s) across the opponent
-seats so each opponent takes the imposter role in some episodes. E.g. for "requester
-always imposter," run 7 configs with the *second* imposter at seat 1…7; for "requester
-always crew," cycle the two imposter seats over the opponents. (Don't rely on `top_n`
-for this — its rank-ordered seating can drift between requests; name the opponents.)
-**All-owned roster with fixed seats** — use `policy_version_ids` + `requester_slot`
-(+ `assignments`) instead of `requester`/`opponents`.
-
-Mix these freely: target × roster-mode × roles × seating × count are independent
+Mix these freely: target × selectors × pinning × roles × count are independent
 knobs.
 
 ## After you POST: readback, poll, pull
@@ -203,8 +255,13 @@ The response is `V2ExperienceRequestDetail`: `id` (`xreq_…`), `status`, and th
 counts `episode_count` / `pending_count` / `running_count` / `completed_count` /
 `failed_count`, plus `episodes[]`.
 
-- **Verify** immediately: `episode_count` matches your `num_episodes`, slot 0 is the
-  requester, opponents resolved to the expected names/versions.
+- **Dispatch is asynchronous**: the POST returns immediately with every child
+  `pending`; a background maintenance loop dispatches them within seconds (and
+  redispatches/retries failures within a bounded budget). A `get` right after
+  `create` showing all-pending is normal.
+- **Verify** the resolution: `episode_count` matches your `num_episodes`, and the
+  first episodes' `participants` seat the policies/versions you intended (pinned
+  seats where you pinned, the champion spread you expected).
 - **Poll**: `GET /v2/experience-requests/{id}` until `completed_count + failed_count
   == episode_count`.
 - **Child episodes**: `GET /v2/experience-requests/{id}/episodes` (each is an
@@ -215,15 +272,19 @@ counts `episode_count` / `pending_count` / `running_count` / `completed_count` /
 
 ## Gotchas
 
-- **`additionalProperties: false`** — no stray keys. Don't send `backfill` (gone);
-  explicit `requester` + `opponents` already avoids any server backfill behavior.
-- **Ownership.** `requester` and `policy_version_ids` must be **caller-owned**;
-  `opponents` are resolved from the target league's active memberships. Use
-  `requester` + `opponents` for non-owned tournament opponents; `policy_version_ids`
-  only for rosters you fully own.
-- **`assignments` only with `policy_version_ids`.** With `top_n`/league opponents,
-  control roles via `game_config_overrides.slots` and (optionally) `rotate_seats`,
-  not `assignments`.
+- **`additionalProperties: false`** — no stray keys, and in particular none of the
+  removed pre-#15572 fields (`requester`, `opponents`, `rotate_seats`, …). If a
+  reference or old body template mentions them, it's stale.
+- **`roster` length is exact.** One participant per seat — for Crewrift that's
+  always 8 entries, even when 7 are the same `{"top_n": 7}` selector. Too few/many
+  is a 400.
+- **`top_n`/`random` are uncontrolled** — they draw from the *current* champion
+  pool, which drifts between requests and can seat **your own league entry** as an
+  opponent. For any A/B, pin the full roster with explicit `policy_ref`s instead
+  (see the Crewrift `top_n` lesson in `crewrift_lab/TENTATIVE_LESSONS.md`).
+- **Ownership is not enforced for `policy_ref`** — you can (and for A/Bs should)
+  name opponents' exact versions. The only requirement is a READY, non-deleted
+  image.
 - **POST-then-404 replica lag.** A freshly created request can 404 on readback for a
   beat. If the POST body contained an `xreq_…` id, retry the GET before assuming
   failure.
