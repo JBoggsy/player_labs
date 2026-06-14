@@ -19,6 +19,18 @@ what they decide).
   *and* a rank-based test, and apply multiple-comparison correction; pool matched
   batches for power. A leaderboard that looks cleanly ranked is mostly noise until
   corrected.
+- **Evaluate across the WHOLE field's strength, not just the top-N — the EV is in
+  beating the players you *can* beat.** A leaderboard scores your **mean over every
+  opponent you're seated against**, and the top few are a minority of that field. Tuning
+  and A/B-ing only against the top-N systematically *hides* gains that exist against the
+  weaker majority: the strongest opponents can cap a behavior regardless of your policy
+  (so a real improvement reads as a no-op), while the same change pays off clearly
+  against beatable opponents. **Always test a candidate against a strength *spread*
+  (strong / mid / weak), and bucket results by opponent strength** — a change that's
+  neutral vs elites and a win vs the rest is still a net EV gain, and you'd miss it
+  testing top-N only. Leaving the weak-opponent upside on the table is leaving points on
+  the table. (Mechanically: pin a representative spread, or draw randomly and bucket by
+  opponent leaderboard score; don't default the opponent roster to the top-N.)
 - **Experience requests are your primary eval — they aren't scarce.** They run many
   episodes in parallel on Softmax infra and are currently free, so use them liberally
   rather than rationing them; just **target them to the question** (matched roles when

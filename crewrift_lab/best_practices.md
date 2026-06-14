@@ -16,6 +16,18 @@ proceeding. Add to this file as we learn more about *this game's* failure modes.
   Force your policy's role by pinning its roster `slot` + `game_config_overrides.slots` — exact shape in
   [`crewrift-gameplay.md` → Forcing roles in evaluations](docs/crewrift-gameplay.md) (an
   array of `{"role": …}` objects, not bare strings — the common mistake).
+- **Don't evaluate imposter changes only against the top-7 — kills are
+  opponent-relative.** Imposter kill rate scales steeply with opponent *weakness*
+  (measured: ~1.1 k/g vs the strongest crew → ~1.9 vs the weakest; corr ≈ −0.35 with
+  opponent leaderboard score), because strong crew rarely isolate and the kill is
+  witness-gated. So the standing "pin the top-7 champions" A/B roster **caps kills
+  regardless of policy and hides real gains** — `CREWBORG_NO_ISOLATION` read as a dead
+  no-op vs the top-7 (1.27→1.24) yet was a clear win vs weak crew (1.69→1.92, imposter
+  win 59%→73%, *fewer* ejections) and shipped on that basis (v29). When testing an
+  imposter kill/aggression lever, **include a weak/mid-crew roster** (Crewrift ranks
+  ~8–18), not just the leaders. This is the Crewrift instance of the game-agnostic
+  "evaluate across the whole field's strength" rule in
+  [`../best_practices.md` → Measurement](../best_practices.md).
 
 ## Reading games (replays & logs)
 
