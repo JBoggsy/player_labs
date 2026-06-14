@@ -14,6 +14,8 @@ forever (design §10 "act with urgency").
 
 from __future__ import annotations
 
+import os
+
 from crewrift.crewborg.nav import plan_route
 from crewrift.crewborg.types import Belief, PlayerRecord
 
@@ -142,9 +144,31 @@ def select_victim(belief: Belief) -> PlayerRecord | None:
     return max(candidates, key=lambda t: (_isolation(t, belief), -_dist2(self_xy, (t.world_x, t.world_y))))
 
 
-def unwitnessed(belief: Belief, target: PlayerRecord) -> bool:
-    """Whether killing ``target`` now would go unseen, at the current urgency level."""
+def no_isolation_enabled() -> bool:
+    """Whether the witness/isolation strike-gate is disabled (``CREWBORG_NO_ISOLATION``).
 
+    Experiment flag: when set, the imposter strikes whenever the kill is ready and the
+    victim is in range, ignoring witnesses entirely (``unwitnessed`` always True). Tests
+    the hypothesis that landing more kills — even witnessed ones — is a net gain for the
+    average score the leaderboard ranks on, despite the higher ejection risk a witnessed
+    kill carries (body report → meeting → vote). Result (design §6.6–6.7): a no-op vs
+    elite crew but a clear win vs the weaker majority of the field (more kills, more
+    wins, *fewer* ejections — faster kills reach parity before a meeting). See
+    ``docs/designs/button-runner-interception.md`` §6.6–6.7.
+    """
+
+    return os.environ.get("CREWBORG_NO_ISOLATION", "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def unwitnessed(belief: Belief, target: PlayerRecord) -> bool:
+    """Whether killing ``target`` now would go unseen, at the current urgency level.
+
+    With ``CREWBORG_NO_ISOLATION`` set the witness gate is removed entirely (always
+    ``True``) — the imposter strikes regardless of who is watching.
+    """
+
+    if no_isolation_enabled():
+        return True
     frac = min(1.0, kill_urgency_ticks(belief) / URGENCY_FULL_TICKS)
     radius_sq = (BASE_ISOLATION_RADIUS * (1.0 - frac)) ** 2
     window = int(WITNESS_WINDOW_TICKS * (1.0 - frac))

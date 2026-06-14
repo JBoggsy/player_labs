@@ -64,7 +64,103 @@ is the one-screen answer to "where are we and why."
   pinning or `-1` round-robin); `requester`/`opponents`/`rotate_seats`/`player_selection`
   are gone. Skill docs (`coworld-experience-requests`, `crewrift-ab`) updated to match.
 
-## NEW DIRECTION (2026-06-12, James): tune the suspicion system — learned from replays
+## ACTIVE EXPERIMENT (2026-06-12, James): button-runner interception (imposter), Tier 1
+
+Counter the field's dominant crew defense — pressing the emergency button to **reset
+every imposter's kill cooldown** (and call a meeting). Design + Phase-0 study:
+`crewrift/crewborg/docs/designs/button-runner-interception.md`. **Phase-0 (DONE, 1,875
+games):** reset-calls in **92.5%** of games, **~2 crew calls/g**, **~900-tick rhythm**
+(median gap 945 — past our 500 kill CD, so the runner is killable), runners travel
+**solo** and funnel through the **bridge↔Hydroponics corridor** (~150–280px east of the
+button). Study script: `suspicion_lab/tools/button_runner_study.py`.
+
+**Tier 1 BUILT (flag `CREWBORG_FRONT_BIAS`):** new `strategy/button_intercept.py`
+(`button_approach_points()` from substrate anchor→button polylines, band 140–300px) +
+`SearchMode._next_search_point` prepends those corridor points during the pre-kill
+Search window. Bias only (visible victim still wins via `_target`). 364 tests, ruff
+clean, **Gate-1 PASS** (flag-on search path ran in-image, 0 tracebacks). Code uncommitted
+on `main` (commit after the A/B verdict + doc audit).
+
+**A/B DONE — Tier 1 REJECTED (regression):** baseline **v26** (flag off,
+`xreq_fa91574b…`) vs candidate **v27** (same image +`--secret-env CREWBORG_FRONT_BIAS=1`,
+`xreq_c8abf3cb…`), controlled 2-imp 100 eps/arm (crewborg imposter@0, slava2 partner@7,
+fixed top crew@1–6, game v0.1.54). **kills 1.27→0.91/g (−28%, p=0.000, d=−0.58), no-kill
+games 7%→23%, 2+kill games 31→13.** Win/score noise. The flag worked; the standing
+positional bias is the wrong mechanism — camping the bridge corridor sacrifices
+occupancy-driven straggler hunting and parks us in a witness-dense area (kills fail
+`unwitnessed`). Artifacts `/tmp/ab_front/{base,cand}`. (NB v26/v27 lacked v25's
+trace/metrics env — slot-0 logs empty — so mechanism is from kill distributions, not traces.)
+
+**FOLLOW-UP DONE (James): isolation-off — NO EFFECT, REJECTED.** Traced 2×2, 100 eps/arm
+(v28 control `xreq_5eff20a6…`, v29 no-iso `xreq_584b8086…`, v30 no-iso+front
+`xreq_291ad7b1…`; artifacts `/tmp/ab_front/{v28,v29,v30}`). **Dropping the witness gate is
+a no-op on kills: 1.27→1.24/g (p=0.80)**, score/win noise, ejection 7%→9%. **Trace
+mechanism:** Hunt spends ~96% of ticks (every arm, incl. iso-off) **closing distance to a
+victim, not waiting out witnesses** — the gate is rarely what blocks a kill; first-kill
+tick unchanged (~4500). Front-bias trace-confirmed active (v30 search 302px vs ~400px) yet
+still regresses (1.27→1.07). v28 control replicated v26 (1.27 exactly) → clean control,
+zero roster drift. **3rd independent confirmation (after BE_DUMB v23, kill-sooner v24) that
+imposter kills are at a structural ceiling (~1.27/g, cooldown-bound).**
+
+**STANDING CALL: the imposter-kill lever is EXHAUSTED — stop tuning it.** Remaining levers
+= crew play / conversion (vote restraint, task-race, survival), per the prior suspicion
+direction. v25 remains champion; none of v26–v30 submitted (all experimental). Code: both
+flags (`CREWBORG_FRONT_BIAS`, `CREWBORG_NO_ISOLATION`) gated off by default + the Phase-0
+study + design doc — disposition (commit gated-off à la BE_DUMB vs revert) pending James.
+
+**CAVEAT on the above A/Bs (James, 2026-06-13): all used a PINNED top-7-champion roster** —
+the division's *strongest* crew, which plausibly caps imposter kills. We had NOT tested vs
+a representative field. **RANDOM-FIELD three-way RUNNING (2026-06-13):** v25/v28/v29 each
+@slot0 (attribute by slot), **7 `random:true` active champions, NATURAL roles**, 4 reps ×
+100 eps/subject = **1,200 eps** (random resolves once-per-request, so multiple reps =
+multiple field draws — see api.md). xreq ids in `/tmp/rand_field/xreqs.tsv`; bodies
+`/tmp/rand_field/{v25,v28,v29}_req.json`. Measures (a) v25↔v28 parity (gated code inert?),
+(b) v28↔v29 iso-off effect vs a real field (not just strong crew), (c) crewborg's natural
+crew+imposter performance in the wild (~77% crew seats). Artifacts → `/tmp/rand_field/`.
+
+**RANDOM-FIELD DONE (2026-06-13, 1,200 eps, 0 fail; timeout-filtered).** Two findings:
+1. **Cross-subject three-way was CONFOUNDED** — `random:true` resolves once-per-request, so
+   v25/v28/v29 drew *different* opponent lineups (v25 SAME brain as v28 yet read 1.07 vs 1.47
+   imp kills — impossible for identical policies). 4 reps didn't average it out. Can't read
+   the iso-off delta from this. (For A/B deltas, pin the roster; random is for 1-subject field reads.)
+2. **THE REAL PAYOFF — kills are OPPONENT-RELATIVE, not structurally ceilinged** (pooled all
+   1,200, field-mix-invariant): imposter kills/g vs **strong(≥55) 1.12 / mid 1.61 / weak(<50)
+   1.90**, corr(opp_strength,kills) = **−0.35**. The "~1.27 ceiling" from all prior A/Bs was an
+   ARTIFACT of always pinning the top-7 (strongest crew). **Kill levers may still pay vs the
+   non-top field (most of it)** → the "imposter lever exhausted" call was premature; it's
+   exhausted *vs elite crew*, open vs the rest. James's random-field instinct was right.
+   Natural-role field read (for reference): crewborg crew win ~35-45%, tasks 6-7/8, ~18-22% of
+   seats imposter. v25 still champion; v26-v30 inert/experimental.
+
+**WEAK-CREW A/B DONE (2026-06-13) — iso-off RESCUED, "exhausted" call REVERSED.** Pinned 2-imp,
+v28 control vs v29 no-iso, crew = ranks 11-16 (mean ~47), 100 eps/arm, traced (v28 `xreq_dbb61f51`,
+v29 `xreq_2568cea0`; artifacts `/tmp/ab_weak/`). **iso-off WINS vs weak crew: kills 1.69→1.92
+(p=0.016), imp win 59%→73% (p=0.05), score 75.7→92.4, ejected 14%→3%.** (Opposite of the top-7
+A/B where it was a no-op, 1.27→1.24.) Trace mechanism: more kill attempts (1.65→1.89) — the witness
+gate WAS blocking strikes vs beatable crew; ejections DROP because faster kills hit parity before a
+meeting (3-kill games 6→15, game ~130t shorter). **`CREWBORG_NO_ISOLATION` profile = neutral vs
+elite, win vs the weaker majority, never-worse observed → plausible SHIP candidate.** Front-bias
+stays rejected (regressed both regimes).
+
+**NATURAL-FIELD A/B DONE (2026-06-13, pre-ship blended-EV check).** Pinned representative
+opponent lineup (ranks ~1/3/5/8/12/14/17, SAME both arms), NATURAL roles, v28 vs v29, 100
+eps/arm (v28 `xreq_833d6b23`, v29 `xreq_5ec382b4`; artifacts `/tmp/ab_nat/`). Results:
+**(a) NO crew-side regression** — crew win 33%→37%, tasks 7.6→7.8, score 41→44 (all noise; flag
+is imposter-only, confirmed). **(b) imposter kills 1.20→1.44 directionally consistent (d=+0.38)
+but p=0.23 (noise) — UNDERPOWERED:** natural roles gave only 25/18 imposter games per arm
+(~22% of seats). **(c) blended score FLAT (54.7→54.0)** — the imposter kill gain is real but
+imposters are too rare a seat to move the leaderboard average much. Design lesson: natural roles
+can't both confirm a kill effect (too few imposter games) AND measure blended EV; the weak-crew
+win came from PINNING imposter (~97 imposter games → significance).
+
+**STATE OF THE no-iso EVIDENCE:** vs weak crew pinned-imposter = clear win (kills +0.23 p=0.016,
+win +14pp p=0.05, ejected 14%→3%); vs top-7 = no-op; natural blended = no crew harm + directional
+imposter gain but the blended-average lift is small (imposters ~22% of seats). **DECISION PENDING
+(James):** options — (1) ship v29 anyway (asymmetric never-worse, helps imposter games), (2) a
+larger PINNED-imposter natural-opponent batch (~300 eps) to power the blended imposter estimate,
+or (3) bank it and pivot to crew (the 78%-of-seats volume lever). Code uncommitted on `main`.
+
+## PRIOR DIRECTION (2026-06-12, James): tune the suspicion system — learned from replays
 
 James's calls: (1) evidence **instances** sum (not per-type max), (2) add
 **exculpatory** evidence, (3) the main thing: build the data-science pipeline —

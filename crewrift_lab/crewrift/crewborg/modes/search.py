@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from crewrift.crewborg.agent_tracking import ranked_seek_points
 from crewrift.crewborg.modes import imposter_common as ic
+from crewrift.crewborg.strategy import button_intercept
 from crewrift.crewborg.strategy.opportunity import TRACK_WINDOW_TICKS, select_victim
 from crewrift.crewborg.types import ActionState, Belief, Intent, PlayerRecord
 from players.player_sdk import EmptyModeParams, Mode, ModeParams
@@ -72,7 +73,7 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
         return Intent(kind="navigate_to", point=self._search_point, reason="searching likely crew occupancy")
 
     def _next_search_point(self, belief: Belief, self_xy: ic.Point) -> ic.Point | None:
-        points = ranked_seek_points(belief)
+        points = self._ranked_points(belief)
         for point in points:
             if ic.dist2(self_xy, point) <= ARRIVE_RADIUS_SQ:
                 continue
@@ -83,6 +84,25 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
             if ic.dist2(self_xy, point) > ARRIVE_RADIUS_SQ:
                 return ic.reachable_point(belief, point)
         return None
+
+    def _ranked_points(self, belief: Belief) -> list[ic.Point]:
+        """Occupancy seek points, optionally biased toward the button-approach corridor.
+
+        With ``CREWBORG_FRONT_BIAS`` set (Tier 1, button-runner interception), the
+        convergence points east of the bridge button are tried *before* generic
+        occupancy hot spots, so the idle search walk loiters where inbound button
+        runners funnel. It's a prepend, not a replace: the visited-point rotation
+        still carries Search out to occupancy when no runner appears, and a visible
+        victim already pre-empts this path via ``_target``.
+        """
+
+        occupancy = ranked_seek_points(belief)
+        if not button_intercept.front_bias_enabled():
+            return occupancy
+        front = button_intercept.button_approach_points(belief)
+        if not front:
+            return occupancy
+        return front + [p for p in occupancy if p not in front]
 
 
 def _trackable(belief: Belief, target: PlayerRecord) -> bool:

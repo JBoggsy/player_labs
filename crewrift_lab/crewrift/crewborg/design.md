@@ -750,6 +750,26 @@ visible victim, Hunt; otherwise Search. This deliberately skips Pretend, Evade,
 and imposter body reports so hosted/local runs can isolate whether always preparing
 to kill improves imposter outcomes versus the default blend-in policy.
 
+**Kill-gate experiment — `CREWBORG_NO_ISOLATION`.** Makes `opportunity.unwitnessed()`
+always return `True`, so Hunt strikes whenever the kill is ready and the victim is in
+range, ignoring witnesses. A/B finding (design doc
+[`button-runner-interception.md`](docs/designs/button-runner-interception.md) §6.6–6.7):
+**opponent-conditional** — a no-op vs the elite top-7 crew (kills 1.27→1.24, p=0.80;
+victims are never isolated enough for the gate to bind) but a clear win vs the weaker
+majority of the field (pinned weak-crew A/B: kills 1.69→1.92 p=0.016, imposter win
+59%→73% p=0.05, and ejections *drop* 14%→3% because faster kills reach parity before a
+meeting). Default off.
+
+**Button-runner interception — `CREWBORG_FRONT_BIAS`.** Tier-1 experiment
+([`button-runner-interception.md`](docs/designs/button-runner-interception.md)): during
+the pre-kill Search window, `SearchMode` prepends button-approach-corridor convergence
+points (`strategy/button_intercept.py`) to the occupancy seek list, to loiter where
+crew emergency-button "reset" runners funnel. **Rejected** (§6.5): a standing positional
+bias regresses kills in every regime (camps a witness-dense area, sacrifices general
+straggler hunting). Default off; retained as the substrate for a possible future
+*event-triggered* intercept (detect-then-divert), which the Phase-0 study
+(`suspicion_lab/tools/button_runner_study.py`) shows is the real opportunity.
+
 ### 10.1 Suspicion — Bayesian P(imposter) (`strategy/suspicion.py`)
 
 > **Full reference:** [`docs/designs/suspicion.md`](docs/designs/suspicion.md) — the

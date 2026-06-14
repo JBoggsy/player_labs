@@ -158,6 +158,15 @@ def test_unwitnessed_ignores_a_stale_witness() -> None:
     assert unwitnessed(belief, belief.roster["green"])
 
 
+def test_no_isolation_flag_disables_the_witness_gate(monkeypatch) -> None:
+    # CREWBORG_NO_ISOLATION: strike regardless of an adjacent live witness.
+    monkeypatch.setenv("CREWBORG_NO_ISOLATION", "1")
+    belief = Belief(self_world_x=0, self_world_y=0, last_tick=5)
+    _crew(belief, 1, (50, 50), "green", 5)
+    _crew(belief, 2, (60, 50), "blue", 5)  # witness 10px away — normally vetoes
+    assert unwitnessed(belief, belief.roster["green"])
+
+
 def test_full_urgency_strikes_through_a_witness() -> None:
     belief = Belief(
         self_world_x=0, self_world_y=0, last_tick=URGENCY_FULL_TICKS,
