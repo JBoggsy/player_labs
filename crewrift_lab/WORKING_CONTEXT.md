@@ -155,10 +155,14 @@ win came from PINNING imposter (~97 imposter games → significance).
 
 **STATE OF THE no-iso EVIDENCE:** vs weak crew pinned-imposter = clear win (kills +0.23 p=0.016,
 win +14pp p=0.05, ejected 14%→3%); vs top-7 = no-op; natural blended = no crew harm + directional
-imposter gain but the blended-average lift is small (imposters ~22% of seats). **DECISION PENDING
-(James):** options — (1) ship v29 anyway (asymmetric never-worse, helps imposter games), (2) a
-larger PINNED-imposter natural-opponent batch (~300 eps) to power the blended imposter estimate,
-or (3) bank it and pivot to crew (the 78%-of-seats volume lever). Code uncommitted on `main`.
+imposter gain but the blended-average lift is small (imposters ~22% of seats).
+
+**SHIPPED (2026-06-13, James "ship v29 and stop"):** v29 (`6d488603…`, = v25 brain +
+`CREWBORG_NO_ISOLATION=1`) committed on branch `jboggs/imposter-no-isolation` (`ef6f272`),
+submitted `sub_1eff0958…`, **placed** membership `lpm_af94ae93…` (competing/qualifying).
+**OWED follow-up:** retire v25 champion `lpm_c04b55cc…` ONLY after v29 places as champion
+(don't gap). Branch not pushed/PR'd (no request). Front-bias rejected; v28/v30 inert.
+**Imposter line is now CLOSED per James.** Next lever when work resumes = crew (78% of seats).
 
 ## PRIOR DIRECTION (2026-06-12, James): tune the suspicion system — learned from replays
 
