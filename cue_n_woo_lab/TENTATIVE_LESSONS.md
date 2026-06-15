@@ -43,7 +43,24 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
   but the tournament acct's subscription is unverified — needs `tournament` SSO login to confirm).
 - **Status:** candidate, HIGH-STAKES.
 
-### CONTRADICTED: re-upload did NOT fix Bedrock; player-pod Bedrock model access is broken league-wide. Kyle never had working Bedrock.
+### SETTLED (3 wrong guesses later): NO player pod in this tournament has working Bedrock — the episode-runner role has no Anthropic marketplace access for ANY model.
+- **Evidence (ground truth, not inference):** mentalist player pod 403s on BOTH opus-4-8 (v2,
+  job aaeca506) AND haiku-4-5 (v3, job e942d273) — identical `aws-marketplace:Subscribe` denial,
+  so it is NOT model-specific. crewrift/crewborg does NOT run an LLM in the league: its trace shows
+  `meeting_llm_fallback reason=llm_disabled (CREWBORG_LLM_MEETINGS is not enabled)` in 66/66 events
+  across episodes — zero successful Bedrock/Anthropic calls. kyle = 6 hardcoded fallback strings.
+  => The `episode-runner` IRSA role (tournament acct 583928386201) genuinely lacks Bedrock Anthropic
+  marketplace access for every model; nobody has worked around it via Bedrock — they just don't use an LLM.
+- **METHODOLOGY LESSON (the real one):** I made the SAME mistake 3×: declared a "works" baseline
+  (kyle's Bedrock; crewrift's Bedrock; haiku) from a *capability* or *coherent-looking output*, without
+  ever grepping a SUCCESS log line. The disciplined check is: before claiming X works, find the log line
+  proving a successful call (`bedrock ok`, a real usage/token count), not just code that *could* or output
+  that *looks* right. A 6-value answer histogram and a `meeting_llm_fallback=llm_disabled` grep each would
+  have killed a wrong hypothesis in one step. Verify success, not capability.
+- **Real fix options:** (a) direct ANTHROPIC_API_KEY via `--secret-env` — bypasses Bedrock entirely, the
+  only LLM path not blocked by the role (already built into the dual-backend writer; needs a key); or
+  (b) get the episode-runner role Anthropic marketplace access in 583928386201 (tournament SSO + AWS/TF).
+  Until one lands, mentalist runs the deterministic fallback in the league (still ~80% vs this field).
 - **Evidence:** mentalist:v2 (dual-backend writer) uploaded `--use-bedrock` AFTER metta#15616 and
   submitted — its first qualifier episode (job aaeca506) STILL threw the marketplace 403
   (`PermissionDeniedError ... required AWS Marketplace actions`); writer correctly selected Bedrock
