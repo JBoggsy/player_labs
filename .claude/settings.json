@@ -5,13 +5,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "crewrift_lab/tools/rotate_lessons.sh",
+            "command": "\"$CLAUDE_PROJECT_DIR/crewrift_lab/tools/rotate_lessons.sh\"",
             "timeout": 15,
             "statusMessage": "Rotating Crewrift tentative-lessons buffer"
           },
           {
             "type": "command",
-            "command": "cue_n_woo_lab/tools/rotate_lessons.sh",
+            "command": "\"$CLAUDE_PROJECT_DIR/cue_n_woo_lab/tools/rotate_lessons.sh\"",
             "timeout": 15,
             "statusMessage": "Rotating Cue-n-Woo tentative-lessons buffer"
           }
@@ -23,12 +23,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "crewrift_lab/tools/lessons_stop_nudge.sh",
+            "command": "\"$CLAUDE_PROJECT_DIR/crewrift_lab/tools/lessons_stop_nudge.sh\"",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "cue_n_woo_lab/tools/lessons_stop_nudge.sh",
+            "command": "\"$CLAUDE_PROJECT_DIR/cue_n_woo_lab/tools/lessons_stop_nudge.sh\"",
             "timeout": 10
           }
         ]
