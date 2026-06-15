@@ -7,7 +7,13 @@
             "type": "command",
             "command": "crewrift_lab/tools/rotate_lessons.sh",
             "timeout": 15,
-            "statusMessage": "Rotating tentative-lessons buffer"
+            "statusMessage": "Rotating Crewrift tentative-lessons buffer"
+          },
+          {
+            "type": "command",
+            "command": "cue_n_woo_lab/tools/rotate_lessons.sh",
+            "timeout": 15,
+            "statusMessage": "Rotating Cue-n-Woo tentative-lessons buffer"
           }
         ]
       }
@@ -18,6 +24,11 @@
           {
             "type": "command",
             "command": "crewrift_lab/tools/lessons_stop_nudge.sh",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "cue_n_woo_lab/tools/lessons_stop_nudge.sh",
             "timeout": 10
           }
         ]

@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+tests/
+tools/
+Dockerfile
+.dockerignore
+README.md
+VERSION_LOG.md
