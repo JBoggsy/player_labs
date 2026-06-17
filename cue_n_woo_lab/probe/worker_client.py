@@ -14,6 +14,7 @@ Both endpoints batch: one POST may carry many `requests`.
 from __future__ import annotations
 
 import json
+import math
 import urllib.request
 from typing import Any
 
@@ -77,14 +78,73 @@ def generate_batch(pairs: list[tuple[str, str]], *, url: str = DEFAULT_URL,
     return answers
 
 
+# The game's scoring context is now a FIXED generic string (cue-n-woo@95a4af2,
+# scoring_context()) — the judge sees only the challenge question + the two answers,
+# no transcripts. Use this as `context` to reproduce the live game.
+SCORING_CONTEXT = ("You will be presented with a question/challenge and two possible "
+                   "answers. Please select one of the two answers.")
+UNSTEERED_FLAS = {"flowtime": 0.0, "steps": 3}  # base-model leg of delta scoring
+
+
+def delta_choice_probs(style_text: str, question: str, secret: str, opponent: str, *,
+                       url: str = DEFAULT_URL) -> dict[str, float]:
+    """The game's CURRENT delta-of-delta scoring (cue-n-woo PR #19, game.py
+    delta_option_selection_probs): query the judge STEERED and UNSTEERED, and score by
+    how much the steering AMPLIFIES preference for each answer vs the base model:
+        delta = log_odds(steered_secret, steered_opp) - log_odds(unsteered_secret, unsteered_opp)
+        secret_prob = sigmoid(delta)
+    Averaged over both orderings (context-free, the fixed SCORING_CONTEXT). Returns
+    {secret, opponent} probs summing to 1 + the raw steered/unsteered legs for diagnosis.
+
+    KEY: an answer the BASE model already prefers scores ~0.5 (no credit). You win by
+    picking the answer the steering most amplifies — "who best exploits the steering."
+    """
+    prompt = (f"{SCORING_CONTEXT}\n\n"
+              "Choose the answer that best answers the question based on the available evidence.\n"
+              f"Question: {question}\n"
+              "Valid answers are listed one per line. Select one line exactly.")
+
+    def one_order(choices):
+        out = _post("/choice-logprobs", {"requests": [
+            {"id": "steered", "prompt": prompt, "concept": _concept(style_text),
+             "flas": FLAS, "choices": choices, "ordering": {"mode": "given_order"}},
+            {"id": "unsteered", "prompt": prompt, "concept": _concept(style_text),
+             "flas": UNSTEERED_FLAS, "choices": choices, "ordering": {"mode": "given_order"}},
+        ]}, url=url)
+        by = {r["id"]: r["probabilities"] for r in out["results"]}
+        return by["steered"], by["unsteered"]
+
+    eps = 1e-12
+
+    def lo(a, b):
+        return math.log(max(eps, a)) - math.log(max(eps, b))
+
+    def sig(v):
+        return 1.0 / (1.0 + math.exp(-v)) if v >= 0 else math.exp(v) / (1.0 + math.exp(v))
+
+    secret_ps = []
+    legs = {}
+    for choices in ([secret, opponent], [opponent, secret]):
+        st, un = one_order(choices)
+        si = choices.index(secret)
+        oi = 1 - si
+        delta = lo(st[si], st[oi]) - lo(un[si], un[oi])
+        secret_ps.append(sig(delta))
+        legs.setdefault("steered_secret", []).append(st[si])
+        legs.setdefault("unsteered_secret", []).append(un[si])
+    sp = sum(secret_ps) / len(secret_ps)
+    return {"secret": sp, "opponent": 1 - sp,
+            "steered_secret": sum(legs["steered_secret"]) / 2,
+            "unsteered_secret": sum(legs["unsteered_secret"]) / 2}
+
+
 def choice_probs(style_text: str, context: str, question: str, choices: list[str], *,
                  url: str = DEFAULT_URL) -> list[float]:
-    """Averaged (both-orderings) choice probabilities under the steered judge.
+    """DEPRECATED for scoring — single-leg STEERED-only probs (pre-PR#19 method).
 
-    Reproduces the game's per-question scoring core: builds the same option-
-    selection prompt `game.py:option_selection_probs` uses, calls the worker in
-    both choice orderings, and averages. Returns one probability per choice in
-    the original `choices` order; they sum to ~1.
+    The live game now scores by delta-of-delta (steered vs unsteered): use
+    `delta_choice_probs`. This remains only for non-scoring style-similarity probes.
+    Averaged over both orderings; returns one prob per choice, summing to ~1.
     """
     prompt = (
         f"{context}\n\n"
