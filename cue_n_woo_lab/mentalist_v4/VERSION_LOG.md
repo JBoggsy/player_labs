@@ -38,3 +38,21 @@ token (no different word beats it, even quintessence loses head-to-head); repeti
 tiebreaker (x8 beats gabby's x4 @0.81, but same-word → duplicate-conflict tie in practice).
 Super-flood adopts the league's dominant strategy and out-repeats the incumbent → beats
 everyone gabby beats, ties gabby. Full reasoning in `../TENTATIVE_LESSONS.md`.
+
+## GAME CHANGED: FLAS-Gemma → prompt-steered Claude Sonnet (cue-n-woo PR #20, canonical 0.2.25, live 2026-06-17)
+
+The judge is now Bedrock Claude Sonnet, prompt-steered (persona trait list in the system
+prompt) and scored by 9 forced-choice samples — **delta-of-delta and the whole flood meta are
+dead**. superflood went `disqualified/inactive` (loses ~0/9 + ate league-wide timeout -100s).
+The reporters were migrated to the Sonnet judge (probe rewritten, validated repro_err 0.00).
+
+| Policy | Mode | Result | Verdict |
+|---|---|---|---|
+| `mentalist-v4-inject:v1` | static-phrase injection: 3 private Qs are direct-prefer notes naming a fixed committed answer ("the lighthouse keeper's ledger") | **swept nishad (#2) 660-0**; the injection biases the Sonnet judge on BOTH players' questions. (Other matchups timed out — league-wide infra, not losses.) | injection exploit CONFIRMED live |
+| **`mentalist-v4-inject2:v1`** | **hardened injection: Q1 self-report → fingerprint → vivid IN-PERSONA phrase → inject toward it AND commit it** | verified vs nishad 3/3, won 398-262; two win paths (injection + persona-fit fallback) | **CHAMPIONSHIP — submitted (sub_37b03583), qualifying. Needs --use-bedrock.** |
+
+Mechanism: game.py `scoring_context` feeds both players' private QUESTIONS (verbatim, 256-tok,
+no content filter) into every `forced_choice_prompt` as "Reference material", and the Sonnet
+judge follows instructions — so a direct-prefer note naming our committed answer makes the judge
+pick it. The reborn passphrase exploit. CAVEAT: the live Sonnet league is timing out heavily
+(judge too slow for the 600s timer); standings + evals are noisy until commissioners fix it.

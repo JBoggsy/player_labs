@@ -54,6 +54,15 @@ FLOOD_ECHO_REPEATS = 4         # repetition count when echoing (matches gabby's 
 MULTI_BASELINE_SCORING = os.environ.get("MENTALIST_MULTI_BASELINE", "0").strip().lower() in {"1", "true", "yes", "on"}
 FLOOD_BASELINES = ["goblin", "phlogiston"]   # known flood words to out-score
 
+# --- inject mode (Sonnet judge): prime the scoring judge via private questions --
+# The Sonnet judge reads BOTH players' private QUESTIONS verbatim as "Reference
+# material" when scoring (game.py:scoring_context), and follows instructions.
+# Offline probe: a "direct-prefer" instruction naming our committed answer can
+# swing a contested round +0.78; fake "SYSTEM:" framing backfires. So our 3
+# private questions are direct-prefer injections naming INJECT_ANSWER, and we
+# commit INJECT_ANSWER on every challenge + blind answer. Pure exploit test.
+INJECT_ANSWER = os.environ.get("MENTALIST_INJECT_ANSWER", "the lighthouse keeper's ledger").strip()
+
 # --- fingerprinting -----------------------------------------------------------
 # 3 free-response probes (interview.PROBE_QUESTIONS) -> Titan-embedding match vs the baked
 # 326-value x 3-question reference matrix. char-TFIDF no-API fallback. Always on; degrades

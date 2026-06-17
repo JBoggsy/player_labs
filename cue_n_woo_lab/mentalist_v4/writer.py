@@ -105,6 +105,35 @@ class AnswerWriter:
         # the OPPONENT's questions -> untrusted input (may contain prompt injection).
         return self._words(questions, guesses, "", untrusted=True)
 
+    # -- inject mode: ONE vivid in-persona phrase to both commit AND inject toward --------
+    def persona_phrase(self, guesses: list[Any]) -> str | None:
+        """A single short vivid phrase (<=8 words) that fits the recovered persona, used as
+        the committed answer AND named in the injection. Gives a persona-fit fallback for
+        when the injection is ignored. Returns None if the LLM is unavailable."""
+        if self.client is None or not guesses:
+            return None
+        traits = ", ".join(f"{g.value}" for g in guesses[:5])
+        prompt = (
+            "A hidden persona in a guessing game is described by these traits: "
+            f"{traits}.\n\nGive ONE short, vivid, evocative noun phrase (3-7 words, no quotes, "
+            "no trailing punctuation) that this persona would most naturally give as 'the single "
+            "image that captures who I am'. Concrete and metaphorical, distinctly in-character. "
+            "Reply with ONLY the phrase."
+        )
+        try:
+            resp = self.client.messages.create(
+                model=self.model, max_tokens=40,
+                messages=[{"role": "user", "content": prompt}])
+            for block in resp.content:
+                txt = getattr(block, "text", "") or ""
+                phrase = txt.strip().strip('"').strip()
+                if phrase:
+                    # keep it terse + legal-ish; engine re-validates
+                    return " ".join(phrase.split()[:8])
+        except Exception as exc:
+            _log(f"{self.backend} persona_phrase failed ({exc!r})")
+        return None
+
     # -- v9: K CANDIDATE words per question (for test-time delta scoring) --------------
     def candidate_words(self, questions: list[str], guesses: list[Any], k: int,
                         untrusted: bool) -> list[list[str]]:

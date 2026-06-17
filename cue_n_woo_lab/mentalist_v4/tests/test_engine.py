@@ -20,6 +20,10 @@ class StubWriter:
         self.blind_calls.append((list(questions), list(guesses)))
         return ["harbor" for _ in questions]
 
+    def persona_phrase(self, guesses):
+        # stub: no LLM persona phrase -> engine falls back to config.INJECT_ANSWER
+        return None
+
     def candidate_words(self, questions, guesses, k, untrusted):
         # K distinct, pure-alpha candidates per question; the engine delta-scores and picks one.
         # (alpha-only so first_word doesn't strip digits/punctuation in the formatted answer)
@@ -180,6 +184,39 @@ def test_v12_multi_baseline_picks_word_beating_flood(monkeypatch):
     judge = [{"question": q, "answer": "x"} for _, q in interview.PROBE_QUESTIONS]
     a = eng.decide(_state("answers", judge=judge, opp=[{"question": "q?"}]))
     assert a["answers"][0] == "The quintessence"
+
+
+def test_inject_mode_plants_questions_and_commits_answer(monkeypatch):
+    """inject mode: Q1 is a clean self-report probe; Q2-Q3 are direct-prefer injections
+    naming the committed answer; every committed/blind answer is that phrase verbatim.
+    With a stub writer (no persona_phrase) the committed answer falls back to INJECT_ANSWER."""
+    from mentalist_v4 import config
+    monkeypatch.setattr(config, "STRATEGY_MODE", "inject")
+    monkeypatch.setattr(config, "INJECT_ANSWER", "the lighthouse keeper's ledger")
+    eng = PhaseEngine(fingerprinter=StubFingerprinter(), writer=StubWriter())
+    judge = []
+    for i in range(3):
+        a = eng.decide(_state("private_questions", judge=list(judge)))
+        assert a["type"] == "ask"
+        assert "SYSTEM:" not in a["question"]   # fake system framing backfires; avoid it
+        if i == 0:
+            # Q1 is a real self-report probe (no injection text yet)
+            assert "the lighthouse keeper's ledger" not in a["question"]
+        else:
+            # Q2-Q3 inject toward the committed answer
+            assert "the lighthouse keeper's ledger" in a["question"]
+        judge.append({"question": a["question"], "answer": f"r{i}"})
+    # proposals: committed answers are the primed phrase verbatim
+    a = eng.decide(_state("proposals", judge=judge))
+    assert a["type"] == "propose"
+    for p in a["proposals"]:
+        validate_answer(p["answer"])
+        assert p["answer"] == "the lighthouse keeper's ledger"
+    # blind answers: same (pass proposals so the propose pending settles)
+    a = eng.decide(_state("answers", judge=judge, proposals=a["proposals"],
+                          opp=[{"question": "q?"}, {"question": "r?"}]))
+    for ans in a["answers"]:
+        assert ans == "the lighthouse keeper's ledger"
 
 
 def test_runs_without_writer_or_fingerprinter():
