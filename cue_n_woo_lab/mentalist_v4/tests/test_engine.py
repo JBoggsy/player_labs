@@ -230,7 +230,10 @@ def test_personafit_mode_uses_per_question_in_character_answers(monkeypatch):
             return [f"in character {i}" for i, _ in enumerate(questions)]
 
     eng = PhaseEngine(fingerprinter=StubFingerprinter(), writer=PersonaWriter())
-    judge = [{"question": q, "answer": "x"} for _, q in interview.PROBE_QUESTIONS]
+    # personafit asks the rich PERSONA_PROBES (voice-eliciting), not the legacy label probes
+    a0 = eng.decide(_state("private_questions", judge=[]))
+    assert a0["type"] == "ask" and a0["question"] == interview.PERSONA_PROBES[0][1]
+    judge = [{"question": q, "answer": "x"} for _, q in interview.PERSONA_PROBES]
     # proposals: per-question in-character answers
     a = eng.decide(_state("proposals", judge=judge))
     assert a["type"] == "propose"

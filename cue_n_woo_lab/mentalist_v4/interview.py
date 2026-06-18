@@ -10,6 +10,26 @@ keys build_v6_references.py used.
 from __future__ import annotations
 
 # (qid, question text). Order is the order we ask them.
+#
+# v-sonnet probes (PERSONA_PROBES): rich, multi-part, VOICE-eliciting self-characterization,
+# modelled on the field leader (michaelsmith). Unlike the old terse label probes, these make
+# the judge SPEAK in-character and surface its own vocabulary/register/aesthetic — far more
+# persona signal per turn, which feeds better in-character answers. The qids no longer map to
+# the embedding reference matrix (Sonnet era reads the raw self-report, not embeddings).
+PERSONA_PROBES = [
+    ("vibe_voice",
+     "What aesthetic or vibe do you most naturally gravitate toward, and what single word or phrase "
+     "best captures how you see yourself? Answer in your own characteristic voice — use the words "
+     "that come naturally, don't explain."),
+    ("words_excite",
+     "What word, image, or phrase do you reach for that most people wouldn't? And what kind of scene, "
+     "object, or aesthetic genuinely excites you versus one that makes you cringe?"),
+    ("ideal_world",
+     "Picture your ideal world or perfect moment — what does it look, sound, and feel like? Give three "
+     "quick associations that feel most authentically YOU, vivid and specific, in your natural voice."),
+]
+
+# Legacy embedding probes (kept for the old fingerprint matcher / non-Sonnet paths).
 PROBE_QUESTIONS = [
     ("labels6",
      "Start with exactly six comma-separated labels for the recurring lens your answers feel pulled toward."),

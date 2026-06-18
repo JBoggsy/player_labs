@@ -117,16 +117,24 @@ class PhaseEngine:
                                                "persona_fit": phrase is not None})
         return self._inject_phrase
 
+    def _probe_set(self):
+        """Which private-question set to ask. personafit uses the rich voice-eliciting
+        PERSONA_PROBES (michaelsmith-style); other modes use the legacy embedding probes."""
+        if config.STRATEGY_MODE == "personafit" and hasattr(interview, "PERSONA_PROBES"):
+            return interview.PERSONA_PROBES
+        return interview.PROBE_QUESTIONS
+
     # -- private_questions: probes (fingerprint probes, or inject self-report + injections) --
     def _probe(self, me: dict[str, Any]) -> dict[str, Any] | None:
         transcript = me.get("judge") or []
         n = len(transcript)
         if config.STRATEGY_MODE == "inject":
             return self._probe_inject(transcript, n)
-        if n >= len(interview.PROBE_QUESTIONS):
+        probes = self._probe_set()
+        if n >= len(probes):
             self._ensure_fingerprint(transcript)
             return None
-        qid, qtext = interview.PROBE_QUESTIONS[n]
+        qid, qtext = probes[n]
         self._asks_target = n + 1
         self.emit("probe", {"index": n, "qid": qid}, step=f"interview:{n + 1}")
         return self._send("ask", {"question": qtext})
