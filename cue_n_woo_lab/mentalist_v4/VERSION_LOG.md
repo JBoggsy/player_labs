@@ -89,3 +89,19 @@ Biggest lever = the PROBES (rich multi-part self-characterization that makes the
 speak in-character) — that's what got the first michaelsmith win. v6 beats the rest of
 the field decisively; michaelsmith is near-parity (coin-flip) on pure-voice concepts.
 Untried lever for the last gap: offline Sonnet re-rank of several candidate answers.
+
+### ★ THE LATENCY GATE — personafit-fast (the version that actually QUALIFIES)
+
+All persona-fit submissions (pf3/6/8, inject2) were DISQUALIFIED on LATENCY, not strategy:
+league episodes timed out at 599s (8/8), score [-100,0] (we get the inactive penalty). Root
+cause: our rich multi-part PERSONA_PROBES made the Sonnet judge GENERATE long answers, and our
+answer-gen (25s x3 attempts) stacked on top -> past the 600s hard timer.
+
+| Policy | Change | Result |
+|---|---|---|
+| `mentalist-v4-pffast:v1` | short single-part probes (judge answers <=6 words) + writer timeout 12s/1 attempt + no rerank | **9/9 episodes COMPLETE, 30-159s** (was 599s timeouts); 56% win, +103; nishad 4-0, michaelsmith 1-2. **Submitted sub_90dc0483.** |
+
+Lesson: against an LLM judge with a hard round timer, OUR judge-facing latency is a first-class
+constraint. Keep probes terse and CAP the judge's output length; a fast adequate player beats a
+slow excellent one that disqualifies. personafit-fast is the first version that can qualify +
+accrue a WEMA. Persona-fit quality (field-beating, ~parity with michaelsmith) is preserved.
