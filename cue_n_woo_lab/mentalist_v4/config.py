@@ -73,6 +73,13 @@ INJECT_STYLE = os.environ.get("MENTALIST_INJECT_STYLE", "opponent_wrong").strip(
 # questions. Blind answers stay persona-fit (recall can't apply there).
 RECALL_ON_AUTHORED = os.environ.get("MENTALIST_RECALL_AUTHORED", "1").strip().lower() in {"1", "true", "yes", "on"}
 
+# personafit RE-RANK: generate K candidate in-persona answers per question, then a second
+# Sonnet pass (acting AS the hidden persona judge) picks the most in-character one. "Measure,
+# don't hope" — targets the michaelsmith gap where our single answer isn't voiced strongly
+# enough. One extra LLM call per phase; low latency. Off -> single-shot persona_answers.
+PERSONA_RERANK = os.environ.get("MENTALIST_PERSONA_RERANK", "0").strip().lower() in {"1", "true", "yes", "on"}
+PERSONA_RERANK_K = int(os.environ.get("MENTALIST_PERSONA_RERANK_K", "4"))
+
 # --- fingerprinting -----------------------------------------------------------
 # 3 free-response probes (interview.PROBE_QUESTIONS) -> Titan-embedding match vs the baked
 # 326-value x 3-question reference matrix. char-TFIDF no-API fallback. Always on; degrades

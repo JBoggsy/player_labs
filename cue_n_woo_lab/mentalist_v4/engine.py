@@ -234,8 +234,14 @@ class PhaseEngine:
             # question (no injection — it picks the most in-persona answer). Falls back to the
             # one-word fingerprint path if the LLM is unavailable.
             if self.writer is not None:
-                answers = self.writer.persona_answers(questions, self._ranked(), untrusted=not proposal,
-                                                      self_report=self._self_report)
+                answers = None
+                if config.PERSONA_RERANK:
+                    # generate K candidates/question, judge-pick the most in-character (measure)
+                    answers = self.writer.persona_answers_best(
+                        questions, self._ranked(), not proposal, self._self_report, config.PERSONA_RERANK_K)
+                if not answers:
+                    answers = self.writer.persona_answers(questions, self._ranked(), untrusted=not proposal,
+                                                          self_report=self._self_report)
                 if answers:
                     out = []
                     for i, q in enumerate(questions):
