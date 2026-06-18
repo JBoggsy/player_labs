@@ -17,5 +17,9 @@ General (non-Crewrift) preferences go in the lab-wide file instead.
 
 ## Preferences
 
-_None recorded yet._
-</content>
+- **Always run 2-imposter evals, never 1-imposter.** When pinning roles for an imposter
+  eval, use a 2-imposter config (crewborg slot 0 = imposter + one partner-imposter slot,
+  the rest crew) — it matches real league games. 1-imposter games are not useful: they
+  remove the partner dynamics (e.g. a partner's kill→report resetting our kill cooldown)
+  that much of the imposter strategy actually targets, so they can't validate the
+  behaviour being tuned.

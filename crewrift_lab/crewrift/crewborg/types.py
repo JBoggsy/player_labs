@@ -290,6 +290,12 @@ class Belief(BaseModel):
     self_kill_ready: bool | None = None
     self_world_x: int | None = None
     self_world_y: int | None = None
+    # Our own player color. The camera is locked to us, so the player at the camera
+    # center (``self_world``) is us; the voting UI's self-marker is authoritative.
+    # Learned in ``update_belief`` and used to exclude *self* from every suspicion path
+    # — without it we tail/suspect/vote ourselves (the self-sprite leaks into the
+    # roster as if it were another player).
+    self_color: str | None = None
 
     # Tasks (design §5 tasks).
     assigned_task_indices: set[int] = Field(default_factory=set)
@@ -486,6 +492,12 @@ def _record_death(
     record.mark_dead(tick, source, body_xy)
 
 
+# The self-sprite decodes to *exactly* ``self_world`` (the camera centers us); a real
+# player can't overlap us. So the visible player within this (small, rounding-tolerant)
+# squared distance of ``self_world`` is us, not someone else.
+SELF_SPRITE_MATCH_SQ = 4**2
+
+
 def update_belief(belief: Belief, percept: Percept) -> None:
     """Fold the percept into belief in place (design §5)."""
 
@@ -524,6 +536,17 @@ def update_belief(belief: Belief, percept: Percept) -> None:
     if resolved.crew_tasks_remaining is not None:
         belief.crew_tasks_remaining = resolved.crew_tasks_remaining
     belief.active_task_progress_pct = resolved.active_task_progress_pct
+
+    # Learn our own color. The voting UI's self-marker is authoritative; otherwise the
+    # camera-center player (at ``self_world``) is us — learned once and persisted (our
+    # colour is fixed for the game). Needed so suspicion never targets *self*.
+    if resolved.voting.self_marker_color is not None:
+        belief.self_color = resolved.voting.self_marker_color
+    elif belief.self_color is None and resolved.self_world_x is not None and resolved.visible_players:
+        sx, sy = resolved.self_world_x, resolved.self_world_y
+        me = min(resolved.visible_players, key=lambda p: (p.world_x - sx) ** 2 + (p.world_y - sy) ** 2)
+        if (me.world_x - sx) ** 2 + (me.world_y - sy) ** 2 <= SELF_SPRITE_MATCH_SQ:
+            belief.self_color = me.color
 
     # Live sightings: a "player <color>" in-world proves that player is alive here,
     # now. Keyed by color (the canonical identity); the trail accumulates in place.

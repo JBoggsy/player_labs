@@ -74,12 +74,25 @@ def test_non_consecutive_frames_are_not_read_as_a_kill() -> None:
     assert not belief.believed_imposters
 
 
-def test_imposter_observer_accrues_no_suspicion() -> None:
+def test_imposter_scores_deflection_suspicion_on_non_teammates() -> None:
+    # An imposter now computes suspicion over non-teammates (its deflection candidates):
+    # green looks like the killer of red, so the imposter could cite that at a meeting.
     prev = _frame(4, players={"red": (100, 100), "green": (110, 100)})
     curr = _frame(5, players={"green": (110, 100)}, bodies={"red": (100, 100)})
     belief = _belief(prev, curr, self_role="imposter")
     update_suspicion(belief)
-    assert not belief.suspicion and not belief.believed_imposters
+    assert belief.suspicion.get("green", 0.0) > 0.99 and "green" in belief.believed_imposters
+
+
+def test_imposter_never_scores_a_teammate() -> None:
+    # The same scene, but green is a known teammate ⇒ excluded entirely (we never
+    # deflect onto our own).
+    prev = _frame(4, players={"red": (100, 100), "green": (110, 100)})
+    curr = _frame(5, players={"green": (110, 100)}, bodies={"red": (100, 100)})
+    belief = _belief(prev, curr, self_role="imposter")
+    belief.teammate_colors = {"green"}
+    update_suspicion(belief)
+    assert "green" not in belief.suspicion and not belief.believed_imposters
 
 
 # --- witnessed vent: emergence (a) ------------------------------------------
@@ -342,6 +355,37 @@ def test_active_tail_suspect_is_none_below_the_accuse_threshold() -> None:
     _add(belief, "red", [_tail(dur=8, start=190)])  # live (ends at 198) but brief ⇒ P < bar
     update_suspicion(belief)
     assert active_tail_suspect(belief) is None
+
+
+# --- never suspect / vote / accuse ourselves --------------------------------
+
+
+def test_our_own_color_is_never_scored() -> None:
+    # The self-sprite leaks into the roster as our own colour; it must never be scored
+    # (else we tail/suspect/vote ourselves — the crew-loss bug).
+    belief = _crew_belief()
+    belief.self_color = "red"
+    _add(belief, "red", [_vent_dwell(), _tail(dur=50, start=150)])  # heavy self-evidence
+    _add(belief, "blue")
+    update_suspicion(belief)
+    assert "red" not in belief.suspicion  # ourselves, never scored
+    assert "blue" in belief.suspicion
+
+
+def test_top_suspect_never_returns_self() -> None:
+    # Hard guard: even if our colour is somehow in the posterior, we never vote ourself.
+    belief = Belief(self_role="crewmate", self_color="red")
+    belief.suspicion = {"red": 0.99, "blue": 0.2}  # self forced highest
+    assert top_suspect(belief) != "red"
+    assert top_suspect(belief) is None  # blue (0.2) doesn't clear the bar ⇒ skip
+
+
+def test_active_tail_suspect_never_returns_self() -> None:
+    belief = _crew_belief()
+    belief.self_color = "red"
+    _add(belief, "red", [_tail(dur=50, start=150)])  # a live, saturated "self-tail"
+    belief.suspicion = {"red": 0.99}  # force self in
+    assert active_tail_suspect(belief) is None  # never accuse ourselves
 
 
 # --- believed-imposters maintenance -----------------------------------------

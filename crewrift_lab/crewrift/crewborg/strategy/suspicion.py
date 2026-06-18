@@ -5,10 +5,23 @@ model, each evidence type's log-LR function (form + parameters + shape), the off
 fitting workflow, and the provenance log. Update that doc whenever a function or its
 constants change.
 
-Crewmate POV. For every other player we maintain `belief.suspicion[color]` = the
-posterior **probability they are an imposter**, updated from a combinatorial prior
+For every player we could vote as an imposter we maintain `belief.suspicion[color]` =
+the posterior **probability they are an imposter**, updated from a combinatorial prior
 by the evidence we have observed. The score is a real probability, so thresholds
 (e.g. the flee bar) are interpretable — no magic numbers.
+
+Maintained for both live roles. As a **crewmate** it scores every other player and is
+a genuine belief. As an **imposter** it scores only **non-teammates** (the crewmates
+it could deflect onto) — mechanically the same number, but read as "how suspicious
+this crewmate *looks* on the shared evidence," to pick the most-citable deflection
+target at a meeting (design §10.4). A ghost holds no suspicion.
+
+**Never ourselves.** Our own player sprite is the camera centre and leaks into the
+roster as if it were another player; ``_recompute`` skips ``belief.self_color`` (and
+``event_log`` skips logging ``tailing_self`` for it — we are trivially always at our
+own spot), so we never tail, suspect, accuse, or vote *ourself*. ``top_suspect`` /
+``active_tail_suspect`` hard-guard the same color regardless, and Attend Meeting refuses
+a self-targeted ballot — defense-in-depth around a bug that otherwise self-ejects us.
 
 **Prior.** With `P` players and `K` imposters, a crewmate knows the `K` imposters
 are among the other `P − 1`; by symmetry each other player's marginal prior is
@@ -135,9 +148,16 @@ def update_suspicion(belief: Belief) -> None:
     """Recompute `suspicion` (posterior P(imp)) + `believed_imposters` each tick.
 
     Run after `update_belief`/`update_event_log` so the strategy snapshot is current.
+
+    Computed for **both** live roles, over the players we could vote as imposters —
+    every other player for a crewmate, the **non-teammates** for an imposter (it knows
+    its teammates, so it never scores them). For a crewmate the score is a genuine
+    `P(imposter)`; for an imposter it's "how suspicious this crewmate *looks* on the
+    shared evidence" — the same number, used to pick the most-citable deflection target
+    (design §10.4). A ghost holds no suspicion.
     """
 
-    if belief.self_role in ("imposter", "dead"):
+    if belief.self_role == "dead":
         belief.suspicion = {}
         belief.believed_imposters = set()
         return
@@ -304,6 +324,8 @@ def _recompute(belief: Belief) -> None:
     for color, record in belief.roster.items():
         if record.life_status == "dead":
             continue  # the dead are no threat
+        if color in belief.teammate_colors or color == belief.self_color:
+            continue  # never score a known teammate, or *ourself* (no-op for a crewmate)
         logit = prior_logit + _evidence_log_lr(belief, record)
         p = _sigmoid(logit)
         suspicion[color] = p
@@ -334,7 +356,7 @@ def active_tail_suspect(belief: Belief) -> str | None:
 
     best: tuple[str, float] | None = None
     for color, p in belief.suspicion.items():
-        if p < ACCUSE_THRESHOLD:
+        if p < ACCUSE_THRESHOLD or color == belief.self_color:
             continue
         record = belief.roster.get(color)
         if record is None or record.life_status == "dead":
@@ -364,11 +386,15 @@ def top_suspect(belief: Belief) -> str | None:
     witnessed catch or a saturated tail), or a clear lead short of that (P over
     `VOTE_LEAD_MIN_P` *and* ahead of the runner-up by `VOTE_LEAD_MARGIN`). A flat field
     — everyone near the prior — names no one, so we skip rather than eject at random.
+
+    **We never return our own color** — a hard guard so the agent can never vote itself
+    out, independent of how suspicion is computed.
     """
 
-    if not belief.suspicion:
+    ranked = [(c, p) for c, p in belief.suspicion.items() if c != belief.self_color]
+    if not ranked:
         return None
-    ranked = sorted(belief.suspicion.items(), key=lambda kv: kv[1], reverse=True)
+    ranked.sort(key=lambda kv: kv[1], reverse=True)
     color, p = ranked[0]
     if p >= VOTE_PROBABILITY:
         return color  # near-certain on its own

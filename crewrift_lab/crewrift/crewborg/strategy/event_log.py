@@ -85,7 +85,9 @@ def update_event_log(belief: Belief) -> None:
         # Being tailed: a player sustained near *us* (target_color None = me). Unlike
         # third-party proximity this needs no death — a stalker shadowing me is live
         # evidence — and it's a signal we read best, since we always know our own spot.
-        if self_xy is not None:
+        # Never log it for our *own* sprite: we are trivially always at our own spot, so
+        # this would make us "tail" ourselves and suspect/vote ourself.
+        if self_xy is not None and record.color != belief.self_color:
             d2 = _dist2(here, self_xy)
             if d2 <= TAIL_SELF_RADIUS_SQ:
                 _mark(record, tick, prev, "tailing_self", dist2=d2)

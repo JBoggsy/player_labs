@@ -41,8 +41,12 @@ strike when in range and unwitnessed),
 **Search** (within the kill lead window, walk ranked occupancy hot spots until a
 victim is visible, then follow that target), and **Pretend** (the default — pick a
 real task station in the highest-scoring occupancy room, penalizing rooms another
-imposter is likely occupying, then fake the task for one task duration). Meetings
-reuse **Attend Meeting**. With `CREWBORG_LLM_MEETINGS=1` and `ANTHROPIC_API_KEY`,
+imposter is likely occupying, then fake the task for one task duration). At meetings
+it **deflects onto crewmates** (never a teammate): it proactively accuses + votes a
+non-teammate who genuinely looks sus (real cues, same chat format as a crewmate — the
+formatting is identical by design so it isn't a tell), and otherwise waits to
+**bandwagon** onto whoever others suss/vote, citing *fabricated safe cues* in that
+same format. Meetings reuse **Attend Meeting**. With `CREWBORG_LLM_MEETINGS=1` and `ANTHROPIC_API_KEY`,
 Attend Meeting uses a fast Haiku-class LLM call on the meeting fast path to chat,
 respond to other players, keep a tentative vote, and submit early when requested;
 otherwise it preserves the deterministic accuse-and-vote / silent-skip fallback.
@@ -64,6 +68,7 @@ crewborg/                (package crewrift.crewborg)
   events.py          CrewborgEventTracer: on_step_complete hook → domain.* events
   modes/             idle/normal/attend_meeting/report_body/accuse + evade/pretend/search/hunt (+ imposter_common helpers)
   strategy/          rule_based.py: mode selector + suspicion.py: Bayesian P(imposter) → believed_imposters + event_log.py: per-player observation log + occupancy.py: perception-tape predicates + opportunity.py: victim/witness logic + trajectory.py: intercept prediction
+  strategy/meeting/  accusation (chat templates + fabrication) + imposter (deflect/bandwagon) + chat_read/chat_nlp (spaCy chat parsing, CREWBORG_CHAT_NLP) + context/schema/llm (LLM path)
   perception/        Sprite-v1 decoder (decoder/tables) + resolution (resolve/entities)
   map/               vendored croatoan.resources + ported parser/bake (§6)
   coworld/           policy_player.py (the websocket bridge) + scene.py
