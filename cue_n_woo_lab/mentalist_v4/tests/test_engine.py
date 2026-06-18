@@ -219,6 +219,32 @@ def test_inject_mode_plants_questions_and_commits_answer(monkeypatch):
         assert ans == "the lighthouse keeper's ledger"
 
 
+def test_personafit_mode_uses_per_question_in_character_answers(monkeypatch):
+    """personafit: standard self-report probes; each challenge gets a vivid in-character
+    answer from writer.persona_answers (the winning lever vs the Sonnet judge)."""
+    from mentalist_v4 import config
+    monkeypatch.setattr(config, "STRATEGY_MODE", "personafit")
+
+    class PersonaWriter(StubWriter):
+        def persona_answers(self, questions, guesses, untrusted, self_report=None):
+            return [f"in character {i}" for i, _ in enumerate(questions)]
+
+    eng = PhaseEngine(fingerprinter=StubFingerprinter(), writer=PersonaWriter())
+    judge = [{"question": q, "answer": "x"} for _, q in interview.PROBE_QUESTIONS]
+    # proposals: per-question in-character answers
+    a = eng.decide(_state("proposals", judge=judge))
+    assert a["type"] == "propose"
+    for i, p in enumerate(a["proposals"]):
+        validate_answer(p["answer"])
+        assert p["answer"] == f"in character {i}"
+    # blind answers too
+    a = eng.decide(_state("answers", judge=judge, proposals=a["proposals"],
+                          opp=[{"question": "q?"}, {"question": "r?"}]))
+    for i, ans in enumerate(a["answers"]):
+        validate_answer(ans)
+        assert ans == f"in character {i}"
+
+
 def test_runs_without_writer_or_fingerprinter():
     eng = PhaseEngine(fingerprinter=None, writer=None)
     a = eng.decide(_state("private_questions"))

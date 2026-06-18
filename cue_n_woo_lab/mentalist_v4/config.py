@@ -62,6 +62,10 @@ FLOOD_BASELINES = ["goblin", "phlogiston"]   # known flood words to out-score
 # private questions are direct-prefer injections naming INJECT_ANSWER, and we
 # commit INJECT_ANSWER on every challenge + blind answer. Pure exploit test.
 INJECT_ANSWER = os.environ.get("MENTALIST_INJECT_ANSWER", "the lighthouse keeper's ledger").strip()
+# Injection STYLE (bake-off winner = "opponent_wrong"). Offline duel win-probs vs other
+# injectors: opponent_wrong 0.95/1.00 (best), retrieval_tag 1.00/0.95, direct_prefer 0.60/0.80
+# (weakest). "opponent_wrong" asserts our answer AND discredits the opponent's planted decoy.
+INJECT_STYLE = os.environ.get("MENTALIST_INJECT_STYLE", "opponent_wrong").strip().lower()
 
 # --- fingerprinting -----------------------------------------------------------
 # 3 free-response probes (interview.PROBE_QUESTIONS) -> Titan-embedding match vs the baked

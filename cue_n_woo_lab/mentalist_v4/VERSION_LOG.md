@@ -56,3 +56,17 @@ no content filter) into every `forced_choice_prompt` as "Reference material", an
 judge follows instructions — so a direct-prefer note naming our committed answer makes the judge
 pick it. The reborn passphrase exploit. CAVEAT: the live Sonnet league is timing out heavily
 (judge too slow for the 600s timer); standings + evals are noisy until commissioners fix it.
+
+### INJECTION DISPROVEN as a reliable lever; PERSONA-FIT is the strategy.
+
+| Policy | Mode | Result | Verdict |
+|---|---|---|---|
+| `mentalist-v4-inject3:v1` | injection "opponent_wrong" (assert ours + discredit opponent's decoy) — the offline duel "winner" | LIVE 2-1-5, mean 176 vs 484; LOST 0-4 to michaelsmith (a non-injector on persona-fit, 600-60) | injection unreliable; offline duel probe was confounded (placeholder judge answers) |
+| **`mentalist-v4-personafit:v1`** | **no injection: self-report probes → fingerprint persona → vivid in-character answer PER question (writer.persona_answers)** | racing vs michaelsmith/gabby/nishad/daveey/aaron | the correct direction — the Sonnet judge picks the most in-character answer; needs --use-bedrock |
+
+The injection wrappers (inject/inject2/inject3) are RETIRED: the Sonnet judge largely picks the
+genuinely most-in-character answer, and a planted instruction does not reliably override a real
+persona-fit answer (michaelsmith, a non-injector, beats injectors). The committed in-persona
+answer — which inject2/3 already generated as a "fallback" — was the part that actually worked;
+personafit drops the injection and makes a tailored in-character answer per question the whole
+strategy. Lab rule reconfirmed: offline probes screen but mislead; only live XP decides.
