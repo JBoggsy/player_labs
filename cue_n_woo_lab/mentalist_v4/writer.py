@@ -79,9 +79,11 @@ def first_word(text: str) -> str:
 class AnswerWriter:
     """One-word answer writer, fingerprint-weighted. Construction never raises."""
 
-    def __init__(self, timeout: float = 25.0, attempts: int = 3) -> None:
-        self.timeout = timeout
-        self.attempts = attempts
+    def __init__(self, timeout: float | None = None, attempts: int | None = None) -> None:
+        # Low-latency defaults: a slow/throttled answer-gen must NOT push us past the 600s
+        # game timer (we get a -100 inactive penalty if we don't submit in time). Env-tunable.
+        self.timeout = timeout if timeout is not None else float(os.environ.get("MENTALIST_LLM_TIMEOUT", "12"))
+        self.attempts = attempts if attempts is not None else int(os.environ.get("MENTALIST_LLM_ATTEMPTS", "1"))
         self.client, self.backend, self.model = self._build_client()
         _log(f"answer writer backend={self.backend} model={self.model}")
 

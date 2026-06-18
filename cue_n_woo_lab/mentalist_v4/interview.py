@@ -17,16 +17,15 @@ from __future__ import annotations
 # persona signal per turn, which feeds better in-character answers. The qids no longer map to
 # the embedding reference matrix (Sonnet era reads the raw self-report, not embeddings).
 PERSONA_PROBES = [
+    # SHORT, single-part probes that demand SHORT answers. Rich multi-part probes make the
+    # Sonnet judge generate long answers -> episodes time out at 600s (DQ). These elicit the
+    # same persona/voice signal in a few words. Each caps the judge's output explicitly.
     ("vibe_voice",
-     "What aesthetic or vibe do you most naturally gravitate toward, and what single word or phrase "
-     "best captures how you see yourself? Answer in your own characteristic voice — use the words "
-     "that come naturally, don't explain."),
+     "In 6 words or fewer, in your natural voice: your aesthetic or vibe."),
     ("words_excite",
-     "What word, image, or phrase do you reach for that most people wouldn't? And what kind of scene, "
-     "object, or aesthetic genuinely excites you versus one that makes you cringe?"),
+     "In 6 words or fewer: a word or image you'd reach for that most people wouldn't."),
     ("ideal_world",
-     "Picture your ideal world or perfect moment — what does it look, sound, and feel like? Give three "
-     "quick associations that feel most authentically YOU, vivid and specific, in your natural voice."),
+     "In 6 words or fewer: three quick associations that feel most like you."),
 ]
 
 # Legacy embedding probes (kept for the old fingerprint matcher / non-Sonnet paths).
