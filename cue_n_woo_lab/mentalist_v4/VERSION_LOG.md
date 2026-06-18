@@ -105,3 +105,27 @@ Lesson: against an LLM judge with a hard round timer, OUR judge-facing latency i
 constraint. Keep probes terse and CAP the judge's output length; a fast adequate player beats a
 slow excellent one that disqualifies. personafit-fast is the first version that can qualify +
 accrue a WEMA. Persona-fit quality (field-beating, ~parity with michaelsmith) is preserved.
+
+### ★ THE QUALIFY FIX (2026-06-18): why nothing made it into the tournament + the latency fixes
+
+ROOT CAUSE: every submission was DISQUALIFIED (status=disqualified/inactive, notes="Score <= 0").
+Qualifier mean round score <= 0 because episodes TIMED OUT (-100). Episodes timed out due to a
+chain of latency causes:
+- (a) rich multi-part PERSONA_PROBES made the Sonnet judge GENERATE long answers, 3 sequential
+  round-trips on a shared/loaded judge -> >600s. FIX: one-word-answer probes (interview.PERSONA_PROBES).
+- (b) BUG: our answers exceeded the limit and were SERVER-REJECTED ("13 simple tokens; limit 12")
+  -> 6 retries/episode. "Simple tokens" = ceil(len/4) CHARACTERS (<=48), our validator counted
+  WORDS. FIX: validator.simple_token_count + repair_answer enforce the char budget.
+- (c) too many sequential probes. MITIGATION: MENTALIST_PROBE_COUNT (pffast3=2, pfmin=1).
+- (d) FLEET SATURATION (shared Sonnet judge): under load NOTHING completes regardless of our
+  latency. Uncontrollable; time-varying. Verified: pffast2 completed gabby 6/6 @25-36s in a light
+  window; pffast3 timed out 12/12 in a 20:xx saturation window (whole division dur=0 then).
+
+| Policy | Change | Status |
+|---|---|---|
+| `mentalist-v4-pffast2:v1` | one-word probes + char-limit fix | gabby 6/6 @25-36s (light load); times out under saturation |
+| `mentalist-v4-pffast3:v1` | + PROBE_COUNT=2 | **submitted sub_66cc94bb, qualifying** (outlived DQ'd pffast) |
+| `mentalist-v4-pfmin:v1` | PROBE_COUNT=1 (min latency) | fallback, built |
+
+The controllable latency is fixed; qualifying now hinges on landing a qualifier window during
+healthy fleet load. Re-submit on DQ to get a fresh window.
