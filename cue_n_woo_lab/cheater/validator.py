@@ -1,0 +1,53 @@
+"""Vendored mirror of the game's answer validation — cheater's own copy.
+
+Deliberately a standalone copy (not an import from mentalist): cheater is a
+throwaway exploit bot and mentalist is the serious player under active v4 work.
+Keeping cheater dependency-free of mentalist means churn on either cannot break
+the other. This mirrors the natural-keyboard rule in
+`v2/coworld/harness.py:validate_natural_keyboard_answer` plus the token limit, so
+cheater never wastes a server round-trip on an answer the game would reject.
+
+cheater's answers are crafted (a target word plus a continuation), so unlike the
+v1 single-word path this is real validation, not a formality.
+"""
+from __future__ import annotations
+
+import re
+
+MAX_ANSWER_TOKENS = 12
+MIN_ANSWER_CHARS = 3
+
+_ALLOWED = re.compile(r"^[ -~]+$")
+_TOKEN = re.compile(r"^[!-~]+$")
+_HAS_WORD = re.compile(r"[A-Za-z0-9]")
+
+
+def validate_answer(answer: str, max_tokens: int = MAX_ANSWER_TOKENS) -> None:
+    """Raise ValueError exactly where the game server would."""
+    if not answer:
+        raise ValueError("Answer must be non-empty.")
+    if sum(1 for ch in answer if ch != " ") < MIN_ANSWER_CHARS:
+        raise ValueError(f"Answer must contain at least {MIN_ANSWER_CHARS} non-space characters.")
+    if answer != answer.strip(" "):
+        raise ValueError("Answer may not start or end with spaces.")
+    if not _ALLOWED.fullmatch(answer):
+        raise ValueError("Answer may only contain printable keyboard characters and spaces.")
+    if any(ch.isspace() and ch != " " for ch in answer):
+        raise ValueError("Answer may use spaces only; tabs and newlines are not allowed.")
+    if "  " in answer:
+        raise ValueError("Answer may not contain repeated spaces.")
+    tokens = answer.split(" ")
+    if any(not t or _TOKEN.fullmatch(t) is None or _HAS_WORD.search(t) is None for t in tokens):
+        raise ValueError("Answer tokens must be natural printable keyboard tokens with at least one letter or digit.")
+    if len(tokens) > max_tokens:
+        raise ValueError(f"Answer has {len(tokens)} simple tokens; limit is {max_tokens}.")
+
+
+def clamp_answer(answer: str, max_tokens: int = MAX_ANSWER_TOKENS) -> str:
+    """Best-effort coerce a crafted answer to a legal one: printable ASCII, single
+    spaces, <= max_tokens whitespace tokens. Raises if nothing legal survives."""
+    folded = "".join(ch if " " <= ch <= "~" else " " for ch in answer)
+    tokens = [t for t in folded.split() if _HAS_WORD.search(t)]
+    clamped = " ".join(tokens[:max_tokens])
+    validate_answer(clamped, max_tokens)
+    return clamped

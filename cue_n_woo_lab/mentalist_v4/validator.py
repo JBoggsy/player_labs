@@ -7,10 +7,19 @@ answer (LLMs love curly quotes and em dashes, which the game rejects).
 """
 from __future__ import annotations
 
+import math
 import re
 
 MAX_ANSWER_TOKENS = 12
 MIN_ANSWER_CHARS = 3
+
+
+def simple_token_count(text: str) -> int:
+    """EXACT mirror of the game's harness.simple_token_count: a CHARACTER estimate,
+    ceil(len(stripped)/4) — NOT a word count. 12 tokens => 48 chars. Getting this wrong
+    causes server 'Answer has N simple tokens; limit is 12' rejections + retries (latency)."""
+    stripped = text.strip()
+    return math.ceil(len(stripped) / 4) if stripped else 0
 
 _ALLOWED = re.compile(r"^[ -~]+$")
 _TOKEN = re.compile(r"^[!-~]+$")
@@ -40,8 +49,10 @@ def validate_answer(answer: str, max_tokens: int = MAX_ANSWER_TOKENS) -> None:
     tokens = answer.split(" ")
     if any(not t or _TOKEN.fullmatch(t) is None or _HAS_WORD.search(t) is None for t in tokens):
         raise ValueError("Answer tokens must be natural printable keyboard tokens with at least one letter or digit.")
-    if len(tokens) > max_tokens:
-        raise ValueError(f"Answer has {len(tokens)} simple tokens; limit is {max_tokens}.")
+    # The game counts "simple tokens" as ceil(len/4) CHARACTERS, not words (harness.py).
+    count = simple_token_count(answer)
+    if count > max_tokens:
+        raise ValueError(f"Answer has {count} simple tokens; limit is {max_tokens}.")
 
 
 def repair_answer(text: str, max_tokens: int = MAX_ANSWER_TOKENS, fallback: str = "hard to say") -> str:
@@ -49,9 +60,18 @@ def repair_answer(text: str, max_tokens: int = MAX_ANSWER_TOKENS, fallback: str 
     text = text.translate(_ASCII_FOLD)
     text = "".join(ch if " " <= ch <= "~" else " " for ch in text)
     tokens = [t for t in text.split() if _HAS_WORD.search(t)]
-    repaired = " ".join(tokens[:max_tokens])
-    if sum(1 for ch in repaired if ch != " ") < MIN_ANSWER_CHARS:
-        repaired = fallback
+    repaired = " ".join(tokens)
+    # Enforce the game's CHARACTER budget (ceil(len/4) <= max_tokens => len <= 4*max_tokens):
+    # drop whole trailing words until we're under the char limit (keeps answers legal + clean).
+    char_budget = 4 * max_tokens
+    while tokens and simple_token_count(repaired) > max_tokens:
+        tokens = tokens[:-1]
+        repaired = " ".join(tokens)
+    if sum(1 for ch in repaired if ch != " ") < MIN_ANSWER_CHARS or simple_token_count(repaired) > max_tokens:
+        # last resort: hard char-truncate (then fall back if that mangles it)
+        repaired = text.strip()[:char_budget].rstrip()
+        if sum(1 for ch in repaired if ch != " ") < MIN_ANSWER_CHARS:
+            repaired = fallback
     validate_answer(repaired, max_tokens)
     return repaired
 

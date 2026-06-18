@@ -1,0 +1,15 @@
+opponent                    v6 win  v7 win      Δ    v6 mean v7 mean
+----------------------------------------------------------------------
+aaron-cue-n-woo               33%     0%   -33%        228       0
+aarons-optimizer-cue-n-woo     0%     0%    +0%          1      25
+biglobes                       0%    50%   +50%          0     299
+biglobes-jr                    0%     0%    +0%          0      34
+daveey-cnw-seat                0%    50%   +50%          0     294
+gabby                          0%     0%    +0%         47      82
+jernau-cnw                   100%   100%    +0%        644     473
+richard-cue-n-woo            100%    50%   -50%        363     310
+xXx_g0bl1nl0v3r_xXx            0%     0%    +0%          0      76
+----------------------------------------------------------------------
+OVERALL                       38%    35%    -3%        217     221
+
+v6: 3/8 games | v7: 9/26 games

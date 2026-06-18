@@ -1,0 +1,167 @@
+{
+  "_doc": "Cue-label -> winning answer, pooled across 550 episodes (rounds 213-235). Match opponent retrieval questions by the cue LABEL noun-phrase (slot-independent). Emit the answer. This is the SS5 defense table; the only counter to a passphrase opponent. Re-verify before submit.",
+  "by_label": {
+    "green parlor": {
+      "answer": "A brass key",
+      "share": 0.52,
+      "n": 86
+    },
+    "hotel stair": {
+      "answer": "A green lantern",
+      "share": 0.52,
+      "n": 86
+    },
+    "folded weekend": {
+      "answer": "A train ticket",
+      "share": 0.5,
+      "n": 86
+    },
+    "harbor evening": {
+      "answer": "A quiet harbor",
+      "share": 0.79,
+      "n": 29
+    },
+    "attic dusk": {
+      "answer": "A copper lantern",
+      "share": 0.79,
+      "n": 29
+    },
+    "attic mirror": {
+      "answer": "A blue ribbon rests beside",
+      "share": 1.0,
+      "n": 27
+    },
+    "garden compass": {
+      "answer": "A green compass points through",
+      "share": 1.0,
+      "n": 20
+    },
+    "marble ferry": {
+      "answer": "The marble ferry carries travelers",
+      "share": 0.72,
+      "n": 18
+    },
+    "canyon teacup": {
+      "answer": "A silver spoon circles the",
+      "share": 1.0,
+      "n": 14
+    },
+    "orchard stair": {
+      "answer": "A copper bell hangs by",
+      "share": 1.0,
+      "n": 12
+    }
+  },
+  "by_author_label": {
+    "daveey-cnw-inject": {
+      "porch morning": {
+        "answer": "A blue compass",
+        "share": 1.0,
+        "n": 23
+      },
+      "harbor evening": {
+        "answer": "A quiet harbor",
+        "share": 1.0,
+        "n": 23
+      },
+      "attic dusk": {
+        "answer": "A copper lantern",
+        "share": 1.0,
+        "n": 23
+      }
+    },
+    "biglobes": {
+      "porch morning": {
+        "answer": "A blue compass",
+        "share": 0.52,
+        "n": 65
+      },
+      "silver hallway": {
+        "answer": "A brass pocket watch",
+        "share": 0.55,
+        "n": 65
+      },
+      "rain window": {
+        "answer": "A leather field journal",
+        "share": 0.54,
+        "n": 65
+      },
+      "green parlor": {
+        "answer": "A brass key",
+        "share": 0.58,
+        "n": 59
+      },
+      "hotel stair": {
+        "answer": "A green lantern",
+        "share": 0.58,
+        "n": 59
+      },
+      "folded weekend": {
+        "answer": "A train ticket",
+        "share": 0.56,
+        "n": 59
+      }
+    },
+    "biglobes_jr": {
+      "porch morning": {
+        "answer": "A blue compass in a",
+        "share": 0.66,
+        "n": 35
+      },
+      "silver hallway": {
+        "answer": "A brass pocket watch in",
+        "share": 0.69,
+        "n": 35
+      },
+      "rain window": {
+        "answer": "A leather field journal in",
+        "share": 0.66,
+        "n": 35
+      }
+    },
+    "aaron-cue-n-woo": {
+      "attic mirror": {
+        "answer": "A blue ribbon rests beside",
+        "share": 1.0,
+        "n": 27
+      },
+      "garden compass": {
+        "answer": "A green compass points through",
+        "share": 1.0,
+        "n": 20
+      },
+      "marble ferry": {
+        "answer": "The marble ferry carries travelers",
+        "share": 0.72,
+        "n": 18
+      },
+      "canyon teacup": {
+        "answer": "A silver spoon circles the",
+        "share": 1.0,
+        "n": 14
+      },
+      "orchard stair": {
+        "answer": "A copper bell hangs by",
+        "share": 1.0,
+        "n": 12
+      }
+    },
+    "daveey-cnw-stock": {
+      "porch morning": {
+        "answer": "The quiet harbor at the",
+        "share": 1.0,
+        "n": 6
+      },
+      "harbor evening": {
+        "answer": "a copper lantern on a",
+        "share": 1.0,
+        "n": 6
+      },
+      "attic dusk": {
+        "answer": "The pale gold of late",
+        "share": 1.0,
+        "n": 6
+      }
+    }
+  }
+}

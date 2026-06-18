@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mentalist v4 — Player-SDK Rewrite &amp; Axis Classifier — Design</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a23; --panel-2:#1d2130; --ink:#e8eaf0; --ink-soft:#aab0c0;
+    --ink-faint:#7c8499; --line:#2a2f3e; --accent:#6ea8fe; --accent-2:#8b7cf6;
+    --good:#56d49a; --warn:#f0b860; --bad:#f07a7a; --code-bg:#0b0d13;
+    --maxw:980px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:linear-gradient(180deg,#0c0e14,#0f1117 240px); color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 24px 120px}
+  header.hero{ max-width:var(--maxw); margin:0 auto; padding:56px 24px 28px; }
+  .eyebrow{font-size:12.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent);
+    font-weight:700; margin:0 0 12px}
+  h1{font-size:34px; line-height:1.15; margin:0 0 14px; letter-spacing:-.01em; font-weight:760}
+  h1 .sub{display:block; font-size:18px; color:var(--ink-soft); font-weight:500; margin-top:8px; letter-spacing:0}
+  .meta{display:flex; flex-wrap:wrap; gap:8px 10px; margin-top:18px}
+  .pill{font-size:12.5px; padding:5px 11px; border-radius:999px; background:var(--panel-2);
+    border:1px solid var(--line); color:var(--ink-soft)}
+  .pill b{color:var(--ink); font-weight:650}
+  .lede{font-size:17.5px; color:var(--ink-soft); margin:22px 0 0; max-width:74ch}
+  .lede b{color:var(--ink)}
+
+  h2{font-size:23px; margin:52px 0 14px; padding-top:14px; letter-spacing:-.01em; font-weight:720;
+    border-top:1px solid var(--line)}
+  h2 .n{color:var(--accent-2); font-variant-numeric:tabular-nums; margin-right:10px; font-weight:800}
+  h3{font-size:17.5px; margin:30px 0 8px; font-weight:680; color:#f3f4f9}
+  p{margin:12px 0}
+  a{color:var(--accent); text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-size:13.5px;
+    background:var(--code-bg); border:1px solid var(--line); border-radius:5px; padding:1px 6px; color:#cdd6f4}
+  pre{background:var(--code-bg); border:1px solid var(--line); border-radius:12px; padding:16px 18px;
+    overflow:auto; margin:16px 0; font-size:13px; line-height:1.6}
+  pre code{background:none; border:none; padding:0; color:#cdd6f4}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:20px 22px; margin:18px 0}
+  .grid{display:grid; gap:16px}
+  @media(min-width:720px){ .grid.two{grid-template-columns:1fr 1fr} }
+
+  .callout{border-left:3px solid var(--accent); background:var(--panel); border-radius:0 12px 12px 0;
+    padding:14px 18px; margin:18px 0}
+  .callout.good{border-left-color:var(--good)}
+  .callout.warn{border-left-color:var(--warn)}
+  .callout.bad{border-left-color:var(--bad)}
+  .callout .tag{font-size:12px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:var(--accent)}
+  .callout.good .tag{color:var(--good)} .callout.warn .tag{color:var(--warn)} .callout.bad .tag{color:var(--bad)}
+
+  table{border-collapse:collapse; width:100%; margin:16px 0; font-size:14px}
+  th,td{text-align:left; padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top}
+  th{color:var(--ink-faint); font-weight:650; font-size:12.5px; letter-spacing:.04em; text-transform:uppercase}
+  tr:last-child td{border-bottom:none}
+  td code{font-size:12.5px}
+  .num{font-variant-numeric:tabular-nums; text-align:right}
+
+  ul,ol{margin:12px 0; padding-left:22px}
+  li{margin:6px 0}
+  li::marker{color:var(--accent)}
+  .keep{color:var(--good); font-weight:600}
+  .drop{color:var(--bad); font-weight:600}
+  .new{color:var(--accent); font-weight:600}
+  .ship{display:inline-block; font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+    color:#0c1f16; background:var(--good); border-radius:5px; padding:1px 7px; vertical-align:middle}
+
+  .toc{background:var(--panel-2); border:1px solid var(--line); border-radius:14px; padding:18px 22px; margin:28px 0 8px}
+  .toc h4{margin:0 0 10px; font-size:12.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint)}
+  .toc ol{columns:2; column-gap:32px; margin:0; padding-left:20px; font-size:14.5px}
+  .toc a{color:var(--ink-soft)} .toc a:hover{color:var(--accent)}
+
+  .flow{display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:16px 0; font-size:13.5px}
+  .node{background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:8px 12px}
+  .node b{color:var(--ink)} .node small{display:block; color:var(--ink-faint); font-size:11.5px}
+  .node.sdk{border-color:#33506e}
+  .arrow{color:var(--accent); font-weight:800}
+
+  .legend{display:flex; gap:16px; flex-wrap:wrap; font-size:13px; color:var(--ink-soft); margin:6px 0 0}
+  .legend span{display:inline-flex; align-items:center; gap:6px}
+  .dot{width:9px; height:9px; border-radius:3px; display:inline-block}
+  .dot.k{background:var(--good)} .dot.d{background:var(--bad)} .dot.n{background:var(--accent)}
+
+  footer{max-width:var(--maxw); margin:40px auto 0; padding:24px; color:var(--ink-faint); font-size:13px;
+    border-top:1px solid var(--line)}
+  .status{font-size:13px; color:var(--ink-faint); font-style:italic}
+  .changelog{font-size:13px; color:var(--ink-faint)}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <p class="eyebrow">Cue-n-Woo Lab · Living Design Document · Rev 2</p>
+  <h1>Mentalist v4 — Player-SDK Rewrite
+    <span class="sub">A stable, observable player built on the SDK's now-shipped game-agnostic helpers, with a classifier rebuilt for the axis-combo judge.</span>
+  </h1>
+  <div class="meta">
+    <span class="pill"><b>Status:</b> Draft for review (rev 2)</span>
+    <span class="pill"><b>Date:</b> 2026-06-15</span>
+    <span class="pill"><b>Supersedes:</b> mentalist v1–v3</span>
+    <span class="pill"><b>Game:</b> cue_n_woo · <code>axis_combo</code></span>
+    <span class="pill"><b>SDK:</b> P1–P5 on <code>main</code> · locked</span>
+  </div>
+  <p class="lede">
+    Two forces converge on a rewrite. <b>The game changed the ground we stand on</b> — the judge is no
+    longer one of 61 named styles but a random 4-tuple drawn from 15 axes, so the current 61-way
+    classifier returns near-uniform noise. And <b>we want a player we can keep</b>: robust, observable,
+    built on the same shared foundation as the other lab players. Since rev 1 of this doc, a focused SDK
+    pass <b>shipped the exact generalizations that make this clean</b> (P1–P5): a protocol-agnostic
+    websocket bridge, a shared LLM-client helper, a reusable trace-config, an opaque trace step label, and
+    a guaranteed grid-free telemetry core — <b>now merged to <code>main</code> (#67–#71) and locked into
+    this lab</b>. This revision builds the rewrite on those concrete, installed APIs and corrects one
+    wrong assumption from rev 1.
+  </p>
+</header>
+
+<div class="wrap">
+
+  <div class="callout good">
+    <div class="tag">What changed since rev 1</div>
+    <p>Rev 1 proposed (in its §9) six SDK generalizations and assumed we'd hand-roll the bridge and
+    that adopting telemetry "pulls in mettagrid types." A subsequent SDK pass <b>implemented P1–P5</b> and
+    verified that the telemetry core was <b>already grid-free</b> — so the wrong assumption is removed, and
+    §3/§7 below now build on real APIs (<code>run_message_bridge</code>, <code>players.player_sdk.llm</code>,
+    <code>TraceConfig</code>, <code>TraceEvent.step</code>, <code>players.player_sdk.telemetry</code>)
+    instead of sketches. Those PRs (#67–#71) are now <b>merged to <code>players</code> <code>main</code>
+    (tip <code>fdf2987</code>) and locked into this lab</b> (<code>uv.lock</code>); all P1–P5 helpers import
+    in the lab <code>.venv</code> and the lab suite (385 tests) is green on the bump. See the SDK-side
+    report: <code>players/player_sdk/docs/designs/generalizing-the-sdk-for-turn-based-games.md</code>.</p>
+  </div>
+
+  <nav class="toc">
+    <h4>Contents</h4>
+    <ol>
+      <li><a href="#why">Why rewrite now</a></li>
+      <li><a href="#sdk">What the SDK now offers (P1–P5)</a></li>
+      <li><a href="#adopt">Adoption strategy</a></li>
+      <li><a href="#arch">Target architecture</a></li>
+      <li><a href="#classifier">The new axis classifier</a></li>
+      <li><a href="#writer">Writer &amp; strategy retune</a></li>
+      <li><a href="#obs">Observability &amp; telemetry</a></li>
+      <li><a href="#plan">Build plan &amp; gates</a></li>
+      <li><a href="#sdk-gen">SDK generalization: status &amp; remaining work</a></li>
+      <li><a href="#risks">Risks &amp; open questions</a></li>
+    </ol>
+  </nav>
+
+  <!-- 1 -->
+  <h2 id="why"><span class="n">1</span>Why rewrite now</h2>
+  <p>
+    Mentalist:v3 is the league champion but sits <b>rank 3 of 3</b>. The standing is real — Bedrock
+    works in the tournament pods (verified from fresh episode logs), and the WEMA-over-last-20 standing
+    already reflects the LLM player, not the old fallback era. The player is losing <em>on the merits</em>,
+    for two reasons that no single knob can fix:
+  </p>
+  <div class="grid two">
+    <div class="callout bad">
+      <div class="tag">Root cause A · the classifier is blind</div>
+      <p>The judge now steers toward a combination like
+      <code>technical; evidence-first; frontier town; sterile</code> — four values from four of
+      <b>15 axes</b> (~287M combinations). The 61-style TF-IDF nearest-neighbor has no valid target;
+      on that concept it returned <code>haiku 0.354 | urban-planning 0.347 | sermon 0.341</code>,
+      a three-way tie of unrelated styles. It solves a problem that no longer exists.</p>
+    </div>
+    <div class="callout bad">
+      <div class="tag">Root cause B · the writer is mis-aimed</div>
+      <p>The new judge rewards <b>concrete, terse, on-topic</b> answers. Opponents win with
+      <code>"A brass key"</code> / <code>"A train ticket"</code> (judge p = 0.95–0.999) while mentalist
+      writes evocative prose (<em>"Threshold stone worn smooth by countless passages"</em>) and scores
+      p = 0.00–0.17. The writer's whole prompt strategy is tuned for the old "play a named style" game.</p>
+    </div>
+  </div>
+  <p>
+    Since we're replacing the two load-bearing components anyway, this is the moment to also put the player
+    on a durable footing: structured tracing, a per-episode telemetry artifact, and the shared SDK
+    conventions the rest of the lab uses. Hence a full rewrite — <span class="new">v4</span> — and the
+    timing is now ideal because the SDK just grew the pieces a turn-based text player needs.
+  </p>
+
+  <!-- 2 -->
+  <h2 id="sdk"><span class="n">2</span>What the SDK now offers (P1–P5)</h2>
+  <p>
+    The SDK is still a "two-loop cyborg-agent framework" whose <em>center of gravity</em> is tick-based
+    gridworlds. That part is unchanged and we still won't use it (see below). What changed is that the
+    SDK now exposes the <b>game-agnostic helpers a turn-based player actually wants</b>, as additive,
+    tested, backward-compatible modules.
+  </p>
+
+  <h3>The runtime layer <span class="drop">(still does not fit — and that's fine)</span></h3>
+  <p>
+    <code>AgentRuntime.step()</code>, <code>Mode</code>/<code>Reflex</code>/<code>StrategyRunner</code>
+    model a per-<b>tick</b> perceive→belief→mode→action loop for continuous gridworlds. Cue-n-Woo is
+    turn-based custom JSON (<code>state</code> → <code>ask</code>/<code>propose</code>/<code>answer</code>),
+    4 phases, ~7 actions per episode. There is no every-frame reflex to model, so we deliberately do
+    <b>not</b> adopt the tick runtime. The SDK report agrees and explicitly keeps the grid machinery as
+    an opt-in module beside a game-agnostic core.
+  </p>
+
+  <h3>The helpers we <span class="keep">will</span> use <span class="ship">shipped</span></h3>
+  <table>
+    <tr><th>SDK API (branch <code>sdk-gen-p5</code>)</th><th>What it gives mentalist v4</th><th>P</th></tr>
+    <tr><td><code>players.player_sdk.telemetry</code> — re-exports <code>TraceOutputs</code>, sinks,
+        <code>EventEmitter</code>, <code>TraceEvent</code></td>
+        <td>A <b>named, guaranteed grid-free</b> telemetry surface. A guard test
+        (<code>test_sdk_core_grid_free.py</code>) proves <code>coworld_json_bridge</code> is the only
+        mettagrid importer and it's never imported from <code>__init__</code> — so we depend on tracing
+        with <b>no <code>cogames</code> extra and zero gridworld baggage.</b></td>
+        <td>P1</td></tr>
+    <tr><td><code>run_message_bridge(url, handler, *, trace_outputs, on_close, teardown, **connect_kwargs)</code></td>
+        <td>The protocol-agnostic websocket loop: connect → async-iterate frames → <code>handler</code>
+        returns outbound frames (sync or async) → send → guaranteed teardown. Default
+        <code>on_close=exit_zero_on_unclean_close</code> <b>bakes in the hard-won "exit 0 even on an
+        abrupt code-1006 close" rule</b> the Coworld runner requires. Replaces our planned hand-rolled loop.</td>
+        <td>P2</td></tr>
+    <tr><td><code>players.player_sdk.llm</code> — <code>select_client</code>, <code>resolve_model</code>,
+        <code>bedrock_enabled</code>, <code>response_text</code>, <code>usage_dict</code>,
+        <code>extract_json_object</code>, <code>call_json</code>, <code>LLMCall</code></td>
+        <td>The shared Anthropic plumbing: Bedrock-vs-direct client selection from env flags, the
+        Bedrock-vs-direct model-id mapping (<code>DEFAULT_BEDROCK_MODEL</code> is already our haiku-4-5
+        profile id), lazy boto3 import, defensive usage/text extraction. We keep our own prompts, tool
+        schema, retry/fallback, and validation. <em>(See the nuance in §6.)</em></td>
+        <td>P3</td></tr>
+    <tr><td><code>TraceEvent.step: str | int | None</code> + <code>EventEmitter(step=…)</code></td>
+        <td>An <b>opaque turn/phase label</b> alongside the integer <code>tick</code>, so we key events
+        by <code>"interview:2"</code>/<code>"propose"</code>/<code>"answer"</code> instead of inventing a
+        fake frame counter. Additive: JSONL omits <code>step</code> when absent.</td>
+        <td>P4</td></tr>
+    <tr><td><code>TraceConfig.from_env(env_prefix="MENTALIST", groups=…, default_filter=…)</code></td>
+        <td>Reusable env-driven trace filtering (groups, include/exclude globs, level model) — we supply
+        only our event taxonomy, not the machinery.</td>
+        <td>P5</td></tr>
+    <tr><td><code>TraceOutputs.from_env(prefix="MENTALIST")</code> (pre-existing)</td>
+        <td>Builds <code>trace_sink</code>+<code>metrics_sink</code> from
+        <code>MENTALIST_TRACE_OUTPUTS</code>/<code>_METRICS</code>; the <code>artifact:</code> destination
+        bundles a zip uploaded to <code>COWORLD_PLAYER_ARTIFACT_UPLOAD_URL</code> — i.e. the
+        <code>policy_artifact_0.zip</code> we already download per episode.</td>
+        <td>—</td></tr>
+  </table>
+
+  <div class="callout good">
+    <div class="tag">Dependency status · resolved</div>
+    <p>P1–P5 are <b>merged to <code>players</code> <code>main</code></b> (#67–#71, tip
+    <code>fdf2987</code>) and <b>locked into this lab</b>: <code>uv.lock</code> moved
+    <code>146905e</code> → <code>fdf2987</code>, the <code>.venv</code> is synced, all P1–P5 helpers import,
+    and the lab test suite (385 tests) passes on the bump. The build is <b>unblocked</b> — no branch pin or
+    further SDK work is needed before starting.</p>
+  </div>
+
+  <!-- 3 -->
+  <h2 id="adopt"><span class="n">3</span>Adoption strategy</h2>
+  <p>
+    Build the player as a <b>thin handler over <code>run_message_bridge</code></b>, wrapped in
+    <code>TraceOutputs</code>, with a pure phase state machine doing the thinking. The bridge owns
+    transport and clean shutdown; our code owns decisions and is transport-free and unit-testable.
+  </p>
+  <div class="flow">
+    <div class="node sdk"><b>run_message_bridge</b><small>SDK · transport + exit-0</small></div>
+    <span class="arrow">→</span>
+    <div class="node"><b>MentalistHandler</b><small>decode state → action frames</small></div>
+    <span class="arrow">→</span>
+    <div class="node"><b>PhaseEngine</b><small>pure state machine</small></div>
+    <span class="arrow">→</span>
+    <div class="node"><b>AxisClassifier</b><small>15-axis inference</small></div>
+    <span class="arrow">→</span>
+    <div class="node"><b>Writer</b><small>SDK llm client + our prompts</small></div>
+    <span class="arrow">→</span>
+    <div class="node sdk"><b>TraceOutputs</b><small>SDK · jsonl + artifact zip</small></div>
+  </div>
+  <p>Sketch of the entry point — note how little transport code we now own:</p>
+  <pre><code>from players.player_sdk import run_message_bridge, TraceOutputs, TraceConfig
+
+async def main() -&gt; None:
+    cfg = TraceConfig.from_env(env_prefix="MENTALIST", groups=EVENT_GROUPS)
+    with TraceOutputs.from_env(prefix="MENTALIST", event_filter=cfg.allows) as out:
+        engine = PhaseEngine(trace=out.trace_sink, metrics=out.metrics_sink)
+        await run_message_bridge(
+            os.environ["COWORLD_PLAYER_WS_URL"],
+            handler=engine.handle,        # (frame) -&gt; list[str] outbound frames
+            trace_outputs=out,            # bridge guarantees out.close() on teardown
+            ping_interval=None, max_size=None,
+        )
+    # exit-0-on-unclean-close is the bridge default; no bespoke close handling.</code></pre>
+  <div class="callout good">
+    <div class="tag">Why this is the right line</div>
+    <p>It takes the SDK's real, now-tested game-agnostic value (transport + the exit-0 rule, telemetry,
+    artifact upload, LLM plumbing, trace config) and skips the tick runtime that doesn't fit. We own only
+    what's genuinely game-specific: the phase logic, the classifier, and the prompts. And by being the
+    <b>second consumer</b> of these helpers, mentalist v4 is the forcing function that proves them
+    (§9).</p>
+  </div>
+
+  <!-- 4 -->
+  <h2 id="arch"><span class="n">4</span>Target architecture</h2>
+  <p>New <code>mentalist/</code> module layout.
+     <span class="keep">green = keep/port</span>, <span class="drop">red = retire</span>,
+     <span class="new">blue = new</span>.</p>
+  <div class="legend">
+    <span><i class="dot k"></i>keep / port forward</span>
+    <span><i class="dot d"></i>retire</span>
+    <span><i class="dot n"></i>new in v4</span>
+  </div>
+  <table>
+    <tr><th>Module</th><th>Responsibility</th><th>Status</th></tr>
+    <tr><td><code>__main__.py</code></td><td>Entry: <code>python -m mentalist</code> → <code>main()</code> (above).</td><td><span class="keep">port</span></td></tr>
+    <tr><td><code>handler.py</code> <span class="new">(new)</span></td>
+        <td>Thin <code>MessageHandler</code>: parse one <code>state</code>/<code>error</code> frame, call
+        the engine, JSON-encode outbound action frames. No connect/loop code — that's the SDK bridge.</td>
+        <td><span class="new">new</span></td></tr>
+    <tr><td><code>engine.py</code> <span class="new">(new)</span></td>
+        <td>Pure, transport-free <code>PhaseEngine</code>: state + transcript → next action (or "wait").
+        All idempotence/in-flight logic; emits trace events keyed by <code>step</code>. Trivially testable.</td>
+        <td><span class="new">new</span></td></tr>
+    <tr><td><code>classifier.py</code></td>
+        <td><b>Rebuilt</b>: per-axis inference over 15 axes (§5) instead of 61-style NN.</td>
+        <td><span class="new">rewrite</span></td></tr>
+    <tr><td><code>writer.py</code></td>
+        <td>Move client plumbing to <code>player_sdk.llm</code> (<code>select_client</code>/
+        <code>resolve_model</code>/<code>bedrock_enabled</code>); keep our tool-forced output, retry,
+        fallback; <b>retune prompts</b> for concrete/terse, axis-targeted answers (§6).</td>
+        <td><span class="keep">port + retune</span></td></tr>
+    <tr><td><code>validator.py</code></td>
+        <td>Answer legality (≤12 tokens, ASCII, repair). Unchanged — scoring rules didn't change.</td>
+        <td><span class="keep">keep</span></td></tr>
+    <tr><td><code>questions.py</code> <span class="new">(new)</span></td>
+        <td>Private questions chosen to <b>discriminate across axes</b>; challenge questions that exploit
+        object/place/domain axes (§5,§6). Split out from <code>config</code>.</td>
+        <td><span class="new">new</span></td></tr>
+    <tr><td><code>trace.py</code> <span class="new">(new)</span></td>
+        <td>Mentalist's event taxonomy + <code>EVENT_GROUPS</code>, consumed by the SDK
+        <code>TraceConfig</code> (we own only the taxonomy now, not the filter machinery).</td>
+        <td><span class="new">new</span></td></tr>
+    <tr><td><code>config.py</code></td><td>Tunable knobs; one change per iteration stays attributable.</td><td><span class="keep">port</span></td></tr>
+    <tr><td><code>data/axes/</code> <span class="new">(new)</span></td>
+        <td>Per-axis-value reference fingerprints built from worker draws, replacing <code>library.json</code>.</td>
+        <td><span class="new">new</span></td></tr>
+    <tr><td><code>player.py</code>, <code>data/library.json</code></td>
+        <td>The hand-rolled WS loop and the 61-style references.</td><td><span class="drop">retire</span></td></tr>
+  </table>
+
+  <!-- 5 -->
+  <h2 id="classifier"><span class="n">5</span>The new axis classifier</h2>
+  <p>
+    <code>select_axis_combo_concept</code> picks <b>4 distinct axes</b> of 15, then one value from each,
+    joined with <code>"; "</code>. The space is huge (~287M) but <b>factored</b> — only ~326 atomic
+    values exist. So the tractable question is not "which of 287M" but
+    <b>"for each axis, which value (if any) is the judge exhibiting?"</b>
+  </p>
+  <h3>The 15 axes</h3>
+  <table>
+    <tr><th>Axis</th><th class="num">#</th><th>Axis</th><th class="num">#</th><th>Axis</th><th class="num">#</th></tr>
+    <tr><td>register</td><td class="num">16</td><td>genre</td><td class="num">30</td><td>persona</td><td class="num">16</td></tr>
+    <tr><td>syntax</td><td class="num">16</td><td>domain</td><td class="num">30</td><td>emotion</td><td class="num">12</td></tr>
+    <tr><td>rhetoric</td><td class="num">16</td><td>sensory</td><td class="num">30</td><td>morality</td><td class="num">16</td></tr>
+    <tr><td>cognition</td><td class="num">16</td><td>time</td><td class="num">24</td><td>social</td><td class="num">16</td></tr>
+    <tr><td>epistemology</td><td class="num">16</td><td>object</td><td class="num">36</td><td>place</td><td class="num">36</td></tr>
+  </table>
+  <h3>Inference design (proposed)</h3>
+  <ol>
+    <li><b>Probe across axes.</b> Re-select the 3 private questions so the judge's axis values surface in
+      its answers (a frontier-town/sterile/technical judge reveals all four under good open prompts).</li>
+    <li><b>Score each axis independently</b> against per-axis reference fingerprints built offline from
+      worker draws; emit a ranked <code>(value, score)</code> list per axis.</li>
+    <li><b>Don't force 4.</b> We don't know which 4 axes are active, so emit a confidence per axis and let
+      the writer consume the <b>most confident handful</b>. Concrete axes (<code>object</code>,
+      <code>place</code>, <code>domain</code>) are both easiest to detect and highest-leverage to echo
+      (§6), so they get priority when present.</li>
+    <li><b>Stay LLM-free and cheap</b> (the probe-validated virtue): TF-IDF/char-ngram cosine over known
+      strings, deterministic, no runtime network.</li>
+  </ol>
+  <div class="callout warn">
+    <div class="tag">Open empirical question · re-probe IN FLIGHT</div>
+    <p>Axis separability from 3 answers is being <b>measured now</b> against the live
+    <code>cue-n-woo-fleet.softmax-research.net</code> worker
+    (<code>probe/probe_axis_recovery.py</code>): for 5 axes (the 3 concrete bets — <code>object</code>,
+    <code>place</code>, <code>domain</code> — plus <code>register</code>/<code>rhetoric</code> as an
+    abstract contrast), it builds single-axis reference fingerprints and tests recovery of the true value
+    from realistic 4-axis blended draws, reporting per-axis top-1/top-3 for <code>word_raw</code> and
+    <code>char_3_5</code>. The old 95% top-1 was the 61-style game and does <b>not</b> transfer; this number
+    gates the classifier design. If some axes prove near-undetectable, the writer leans on the transcript
+    for those, exactly as the confident-axis design already allows. Results will land in
+    <code>docs/probe-findings.md</code>.</p>
+  </div>
+
+  <!-- 6 -->
+  <h2 id="writer"><span class="n">6</span>Writer &amp; strategy retune</h2>
+  <p>Keep the retry policy, tool-forced output, and graceful fallback; move the client construction to the
+     SDK helper; change <b>what we ask for</b>:</p>
+  <ul>
+    <li><b>Concrete over evocative.</b> <code>"A brass key"</code> beats
+      <em>"Threshold stone worn smooth by countless passages"</em> at p=0.95. Prompt the writer to name the
+      concrete thing — especially the detected <code>object</code>/<code>place</code>/<code>domain</code>
+      value — in the first one or two words, within the 12-token cap.</li>
+    <li><b>Feed axis values, not a style label.</b> The prompt takes the top per-axis detections + the raw
+      transcript, not one "your style is X" sentence.</li>
+    <li><b>Author axis-exploiting challenge questions</b> (like the winners' <em>"what image should the
+      quiet doorway cue point to?"</em>) whose favored answer is a specific axis value a blind opponent
+      can't guess. Replace today's generic open prompts (now low-signal / duplicate-conflict traps).</li>
+    <li><b>Keep the duplicate-conflict guard</b> — still correct under unchanged scoring.</li>
+  </ul>
+  <div class="callout">
+    <div class="tag">Honest API nuance · the LLM helper</div>
+    <p>The SDK's <code>call_json</code> is built for <b>text responses parsed caller-side</b>
+    (<code>extract_json_object</code>), whereas our writer relies on <b>tool-forced output</b>
+    (<code>tool_choice</code> → <code>submit_answers</code>), which is stricter for the ≤12-token answer
+    contract. So mentalist adopts the helper's <b>client/model/usage</b> pieces
+    (<code>select_client</code>, <code>resolve_model</code>, <code>bedrock_enabled</code>,
+    <code>usage_dict</code>) but keeps its own tool-call path rather than <code>call_json</code>. That gap
+    — "a <code>call_tool</code> variant for tool-forced output" — is logged as feedback to the SDK
+    (§9), a concrete improvement nominated by being a real second consumer.</p>
+  </div>
+
+  <!-- 7 -->
+  <h2 id="obs"><span class="n">7</span>Observability &amp; telemetry</h2>
+  <p>Every <code>print("[mentalist] …")</code> becomes a typed event or metric via <code>EventEmitter</code>,
+     keyed by phase using the new <code>step</code> label, fanned out per
+     <code>MENTALIST_TRACE_OUTPUTS</code> (default <code>jsonl@stderr</code>; set
+     <code>artifact:trace.jsonl</code> in the league to bundle into the downloadable episode zip).</p>
+  <table>
+    <tr><th>Boundary</th><th><code>step</code></th><th>Event / metric</th></tr>
+    <tr><td>Each private ask</td><td><code>interview:N</code></td><td><code>domain.ask</code> {index, question}</td></tr>
+    <tr><td>Classification done</td><td><code>classify</code></td><td><code>domain.axes_classified</code> {per-axis top values+scores}; gauge <code>classifier.top_confidence</code></td></tr>
+    <tr><td>Proposal / answer authored</td><td><code>propose</code>/<code>answer</code></td><td><code>domain.authored</code> {phase, answers, fallback?}</td></tr>
+    <tr><td>LLM call</td><td>—</td><td>histogram <code>writer.call_ms</code> {backend}; counter <code>writer.fallback</code> {phase, reason}</td></tr>
+    <tr><td>Server rejection</td><td>—</td><td>counter <code>protocol.rejected</code> {phase, error}</td></tr>
+    <tr><td>Episode end</td><td><code>reveal</code></td><td><code>domain.episode_end</code> {phase reached, clean?}</td></tr>
+  </table>
+  <p>Post-mortems become a structured read of <code>policy_artifact_0.zip</code> instead of log
+     archaeology, and classifier confidence + fallback rate become first-class metrics across an eval batch.</p>
+
+  <!-- 8 -->
+  <h2 id="plan"><span class="n">8</span>Build plan &amp; gates</h2>
+  <ol>
+    <li><b>Land the SDK dependency.</b> <span class="ship">done</span> — P1–P5 merged to <code>main</code>
+      (#67–#71); lab relocked to <code>fdf2987</code>, venv synced, helpers import, 385 tests green.</li>
+    <li><b>Re-probe the fleet worker</b> → per-axis separability from 3 questions; pick featurizer + question set.</li>
+    <li><b>Bridge + handler + PhaseEngine skeleton</b> on <code>run_message_bridge</code> + <code>TraceOutputs</code>; no behavior change yet; Gate-1 local episode still completes.</li>
+    <li><b>Axis classifier + data build</b> — replace <code>library.json</code> with per-axis references.</li>
+    <li><b>Writer retune</b> — SDK <code>llm</code> client + concrete/terse prompts + axis-exploiting challenge questions.</li>
+    <li><b>Telemetry pass</b> — events/metrics with <code>step</code> labels + artifact bundling.</li>
+    <li><b>Matched eval</b> vs current v3 via experience requests; only then consider Gate-2 submit.</li>
+  </ol>
+  <div class="callout">
+    <div class="tag">Gates (unchanged)</div>
+    <p><b>Gate 1 (every iteration, mine):</b> real-config local episode vs the live worker —
+    <code>LLM backend ok</code>, real prose, all answers legal, clean exit, unit tests pass.
+    <b>Gate 2 (rare, yours):</b> league submission — only once a matched eval shows v4 &gt; v3.</p>
+  </div>
+
+  <!-- 9 -->
+  <h2 id="sdk-gen"><span class="n">9</span>SDK generalization: status &amp; remaining work</h2>
+  <p>
+    Rev 1's §9 nominated six generalizations. A focused SDK pass (branch <code>sdk-gen-p5</code>)
+    <b>implemented P1–P5</b> as additive, tested, backward-compatible changes (SDK-side suite green;
+    crewborg/suspectra not yet migrated, by decision) and <b>verified one of rev 1's claims was wrong</b>.
+    Status:
+  </p>
+  <table>
+    <tr><th>Item</th><th>Status</th><th>Shipped as</th></tr>
+    <tr><td><b>P1</b> · Grid-free telemetry boundary</td><td><span class="ship">done</span></td>
+        <td><code>player_sdk/telemetry.py</code> namespace + framework-README boundary + guard test
+        (<code>test_sdk_core_grid_free.py</code>: subprocess import + AST scan proving
+        <code>coworld_json_bridge</code> is the sole mettagrid importer). <b>Corrects rev 1's wrong
+        assumption</b> that telemetry pulled in mettagrid — it never did.</td></tr>
+    <tr><td><b>P2</b> · Generic message bridge</td><td><span class="ship">done</span></td>
+        <td><code>message_bridge.py</code>: <code>run_message_bridge</code>, <code>MessageHandler</code>,
+        <code>ClosePolicy</code>, <code>exit_zero_on_unclean_close</code> (centralizes the code-1006
+        exit-0 rule). <code>test_message_bridge.py</code>.</td></tr>
+    <tr><td><b>P3</b> · Shared LLM-client helper</td><td><span class="ship">done</span></td>
+        <td><code>llm.py</code>: <code>select_client</code>/<code>resolve_model</code>/
+        <code>bedrock_enabled</code>/<code>response_text</code>/<code>usage_dict</code>/
+        <code>extract_json_object</code>/<code>call_json</code>/<code>LLMCall</code> (lazy boto3).
+        <code>test_llm_helper.py</code>.</td></tr>
+    <tr><td><b>P4</b> · Opaque trace step label</td><td><span class="ship">done</span></td>
+        <td>Additive <code>step: str|int|None</code> on <code>TraceEvent</code>+<code>EventEmitter</code>;
+        <code>tick</code> unchanged; JSONL byte-identical when absent.</td></tr>
+    <tr><td><b>P5</b> · Reusable <code>TraceConfig</code> base</td><td><span class="ship">done</span></td>
+        <td><code>trace_config.py</code>: env-driven groups/include/exclude/level + pluggable default
+        filter, no crewborg taxonomy baked in. <code>test_trace_config.py</code>.</td></tr>
+    <tr><td><b>P6</b> · Phase/step-machine primitive</td><td><span class="drop">deferred</span></td>
+        <td>Correctly deferred: mentalist's <code>PhaseEngine</code> is plain code; don't abstract from a
+        sample size of one. Revisit after a 2nd non-grid game. P4 is its prerequisite.</td></tr>
+  </table>
+
+  <h3>Remaining work we should drive (mentalist v4 is the forcing function)</h3>
+  <ul>
+    <li><b>Be the second consumer that proves the helpers.</b> The pass shipped the abstractions but did
+      <em>not</em> migrate crewborg/suspectra onto them. mentalist v4 adopting <code>run_message_bridge</code>,
+      <code>player_sdk.llm</code>, and <code>TraceConfig</code> is the real-world validation — and any
+      friction we hit is a concrete bug report, not speculation.</li>
+    <li><b>Nominate a tool-forced LLM path.</b> <code>call_json</code> serves text+caller-side JSON;
+      mentalist needs tool-forced output (§6). Propose a <code>call_tool</code> sibling (or a documented
+      pattern) so the helper covers both — backed by mentalist as the motivating case.</li>
+    <li><b>Merge to <code>main</code> + relock.</b> <span class="ship">done</span> — #67–#71 are on
+      <code>main</code> (<code>fdf2987</code>) and the lab is locked onto it, so any player can now consume
+      P1–P5.</li>
+    <li><b>Drive the deferred migration pass</b> (SDK report §1, §5): point <code>coworld_json_bridge</code>
+      and crewborg's Sprite-v1 loop at <code>run_message_bridge</code>; adopt <code>llm.py</code> in
+      crewborg + suspectra; have crewborg's <code>trace.py</code> consume the SDK <code>TraceConfig</code>
+      (disambiguating the shared class name). Each lands as the change that <em>removes</em> a duplicate
+      rather than adding a third copy.</li>
+  </ul>
+  <div class="callout good">
+    <div class="tag">Approach (unchanged, now validated)</div>
+    <p>Rev 1 said "don't pre-emptively refactor the SDK; build cleanly against it and let friction nominate
+    extractions." That's exactly what happened — the extractions exist, and the next step is to
+    <b>prove them as a real second consumer</b> and remove the duplication across the existing players.</p>
+  </div>
+
+  <!-- 10 -->
+  <h2 id="risks"><span class="n">10</span>Risks &amp; open questions</h2>
+  <ul>
+    <li><b>SDK dependency.</b> <span class="ship">resolved</span> — P1–P5 merged to <code>main</code>
+      (#67–#71) and locked into the lab (<code>fdf2987</code>); helpers import and 385 tests pass. No
+      longer a blocker.</li>
+    <li><b>Axis separability is unproven.</b> The classifier rests on detecting axis values from 3 answers.
+      Mitigated by re-probing first (§8.2) and by the confident-axis-only design that degrades to
+      transcript-only when an axis is unreadable.</li>
+    <li><b>LLM-helper fit.</b> The helper targets text/JSON, not tool-forced output; we adopt its client
+      pieces and keep our tool path (§6). Low risk, but a real seam to feed back to the SDK.</li>
+    <li><b>haiku vs opus.</b> The writer is on haiku-4-5 (the only model the tournament Bedrock role can
+      invoke). Concrete/terse answers may need less model strength than prose did — possibly a tailwind;
+      the <code>--secret-env ANTHROPIC_API_KEY</code> path remains a hedge.</li>
+    <li><b>Config drift.</b> If the league changes <code>concept_axis_count</code> or the axis files, the
+      per-axis references need regenerating — documented in <code>data/axes/</code>.</li>
+    <li><b>Scope.</b> Large rewrite; the staged plan (§8) keeps each step independently verifiable and
+      reversible, and no league submission happens until a matched eval beats v3.</li>
+  </ul>
+
+</div>
+
+<footer>
+  <p><b>Mentalist v4 — SDK Rewrite &amp; Axis Classifier (rev 2).</b> Living design document; evolves as the
+  re-probe and build reveal new information. Companion references:
+  <code>docs/axis-combo-system.md</code> (the new judge), <code>docs/cue-n-woo-gameplay.md</code> (rules),
+  <code>docs/designs/player-design.md</code> (the v1–v3 design being superseded),
+  <code>players/player_sdk/docs/designs/generalizing-the-sdk-for-turn-based-games.md</code> (the SDK-side P1–P5 report).</p>
+  <p class="changelog"><b>Rev 2 (2026-06-15):</b> rebuilt on shipped SDK helpers (P1–P5); removed rev 1's
+  incorrect "telemetry pulls in mettagrid" assumption; added the tool-forced-LLM seam.
+  <b>Rev 2.1 (2026-06-15):</b> confirmed P1–P5 merged to <code>players</code> <code>main</code> (#67–#71,
+  <code>fdf2987</code>) and relocked the lab onto it (venv synced, helpers import, 385 tests green) — the
+  dependency prerequisite is resolved and the build is unblocked.</p>
+  <p class="status">Draft · awaiting human review of direction before build begins.</p>
+</footer>
+
+</body>
+</html>

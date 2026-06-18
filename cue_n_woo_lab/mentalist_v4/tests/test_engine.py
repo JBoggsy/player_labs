@@ -116,9 +116,10 @@ def test_flood_mode_answers_fixed_word(monkeypatch):
     a = eng.decide(_state("answers", judge=judge, opp=[{"question": "q?"}, {"question": "r?"}]))
     for ans in a["answers"]:
         validate_answer(ans)
-        # phlogiston repeated x8, formatted "The phlogiston phlogiston ..." (<=12 tokens)
+        # flood word repeated, formatted "The phlogiston ..." — capped to the game's CHARACTER
+        # limit (12 simple tokens = ceil(len/4) <= 12 = 48 chars), so x8 truncates to ~x4.
         assert ans.startswith("The phlogiston phlogiston")
-        assert ans.split().count("phlogiston") == 8
+        assert ans.split().count("phlogiston") >= 4
 
 
 def test_v11_flood_aware_echoes_when_unbeatable(monkeypatch):

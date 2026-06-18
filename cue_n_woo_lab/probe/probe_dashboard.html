@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Axis-Recovery Probe — Live Dashboard</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a23; --panel-2:#1d2130; --ink:#e8eaf0; --ink-soft:#aab0c0;
+    --ink-faint:#7c8499; --line:#2a2f3e; --accent:#6ea8fe; --accent-2:#8b7cf6;
+    --good:#56d49a; --warn:#f0b860; --bad:#f07a7a; --code-bg:#0b0d13;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:linear-gradient(180deg,#0c0e14,#0f1117 220px); color:var(--ink);
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1080px; margin:0 auto; padding:28px 24px 80px}
+  header{display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:12px}
+  h1{font-size:24px; margin:0; font-weight:740; letter-spacing:-.01em}
+  .sub{color:var(--ink-faint); font-size:13px; margin-top:4px}
+  code{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-size:12.5px;
+    background:var(--code-bg); border:1px solid var(--line); border-radius:5px; padding:1px 6px; color:#cdd6f4}
+  .live{display:inline-flex; align-items:center; gap:7px; font-size:12.5px; color:var(--ink-soft)}
+  .blip{width:9px; height:9px; border-radius:50%; background:var(--good); box-shadow:0 0 0 0 rgba(86,212,154,.6);
+    animation:pulse 1.8s infinite}
+  .blip.stale{background:var(--warn); animation:none}
+  .blip.err{background:var(--bad); animation:none}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(86,212,154,.5)}70%{box-shadow:0 0 0 9px rgba(86,212,154,0)}100%{box-shadow:0 0 0 0 rgba(86,212,154,0)}}
+
+  .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin:22px 0}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:13px; padding:15px 17px}
+  .card .label{font-size:11.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-faint)}
+  .card .value{font-size:27px; font-weight:730; margin-top:5px; font-variant-numeric:tabular-nums}
+  .card .value small{font-size:14px; color:var(--ink-soft); font-weight:500}
+  .card.accent .value{color:var(--accent)}
+
+  .bigbar{height:26px; background:var(--panel-2); border:1px solid var(--line); border-radius:9px;
+    overflow:hidden; position:relative; margin:6px 0 4px}
+  .bigbar .fill{height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-2));
+    transition:width .5s ease; width:0%}
+  .bigbar .txt{position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:13px; font-weight:650; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.5)}
+
+  h2{font-size:15px; margin:30px 0 12px; color:var(--ink-soft); font-weight:650;
+    letter-spacing:.03em; text-transform:uppercase}
+
+  .axes{display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:8px 22px}
+  .axrow{display:flex; align-items:center; gap:10px; font-size:13px}
+  .axname{width:104px; color:var(--ink-soft); font-variant:small-caps; letter-spacing:.02em}
+  .axbar{flex:1; height:11px; background:var(--panel-2); border:1px solid var(--line); border-radius:6px; overflow:hidden}
+  .axbar .fill{height:100%; background:var(--good); transition:width .5s ease; width:0%}
+  .axbar .fill.partial{background:var(--accent)}
+  .axnum{width:70px; text-align:right; color:var(--ink-faint); font-variant-numeric:tabular-nums; font-size:12px}
+
+  table{border-collapse:collapse; width:100%; font-size:13px; margin-top:6px}
+  th,td{text-align:left; padding:7px 10px; border-bottom:1px solid var(--line); vertical-align:top}
+  th{color:var(--ink-faint); font-weight:600; font-size:11.5px; letter-spacing:.04em; text-transform:uppercase}
+  td.concept{color:var(--ink); font-family:"SF Mono",ui-monospace,Menlo,monospace; font-size:12px}
+  td.q{color:var(--accent-2); font-variant-numeric:tabular-nums; white-space:nowrap}
+  td.age{color:var(--ink-faint); font-variant-numeric:tabular-nums; white-space:nowrap; text-align:right}
+  td.ans{color:var(--ink-soft); font-size:12px}
+  tr.fresh td{animation:flash 2s ease}
+  @keyframes flash{0%{background:rgba(110,168,254,.14)}100%{background:transparent}}
+
+  footer{margin-top:34px; color:var(--ink-faint); font-size:12px}
+  .err-banner{display:none; background:rgba(240,122,122,.12); border:1px solid var(--bad); color:#f6b5b5;
+    border-radius:10px; padding:10px 14px; margin:16px 0; font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Axis-Recovery Probe</h1>
+      <div class="sub">mentalist v4 classifier gate · <span id="phase">…</span> ·
+        <code id="worker">…</code></div>
+    </div>
+    <div class="live"><span class="blip" id="blip"></span><span id="livetxt">connecting…</span></div>
+  </header>
+
+  <div class="err-banner" id="errbanner"></div>
+
+  <div class="bigbar"><div class="fill" id="bigfill"></div><div class="txt" id="bigtxt">…</div></div>
+
+  <div class="cards">
+    <div class="card accent"><div class="label">Completed</div>
+      <div class="value"><span id="c-done">–</span><small> / <span id="c-total">–</span></small></div></div>
+    <div class="card"><div class="label">Pending</div><div class="value" id="c-pending">–</div></div>
+    <div class="card"><div class="label">Throughput</div>
+      <div class="value" id="c-rate">–<small> /min</small></div></div>
+    <div class="card"><div class="label">ETA</div><div class="value" id="c-eta">–</div></div>
+    <div class="card"><div class="label">References</div>
+      <div class="value" style="font-size:20px" id="c-refs">–</div></div>
+    <div class="card"><div class="label">Test draws</div>
+      <div class="value" style="font-size:20px" id="c-draws">–</div></div>
+  </div>
+
+  <h2 id="group-heading">Progress by group</h2>
+  <div class="axes" id="axes"></div>
+
+  <h2>Recent generations <span id="recent-rate" style="text-transform:none;font-weight:400;color:var(--ink-faint)"></span></h2>
+  <table>
+    <thead><tr><th>Concept (steered style)</th><th>Q</th><th>Judge answer (preview)</th><th>Age</th></tr></thead>
+    <tbody id="recent"></tbody>
+  </table>
+
+  <footer>
+    Polls <code>/status</code> every 4s · derived live from the <code>cache/</code> dir ·
+    counts come from the probe's own work plan so they can't drift ·
+    last update <span id="stamp">–</span>
+  </footer>
+</div>
+
+<script>
+const POLL_MS = 4000;
+let lastConcepts = new Set();   // to flash genuinely-new rows
+let consecutiveErrors = 0;
+
+function fmtETA(s){
+  if (s == null) return "—";
+  if (s < 90) return Math.round(s) + "s";
+  const m = s/60;
+  if (m < 90) return Math.round(m) + "m";
+  const h = Math.floor(m/60), rem = Math.round(m%60);
+  return h + "h " + rem + "m";
+}
+function fmtAge(s){
+  if (s < 60) return Math.round(s) + "s";
+  if (s < 3600) return Math.round(s/60) + "m";
+  return (s/3600).toFixed(1) + "h";
+}
+
+function setLive(state, txt){
+  const blip = document.getElementById("blip");
+  blip.className = "blip" + (state === "ok" ? "" : state === "stale" ? " stale" : " err");
+  document.getElementById("livetxt").textContent = txt;
+}
+
+async function poll(){
+  try{
+    const r = await fetch("/status", {cache:"no-store"});
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    const d = await r.json();
+    consecutiveErrors = 0;
+    document.getElementById("errbanner").style.display = "none";
+    render(d);
+    setLive(d.rate_per_min > 0 ? "ok" : "stale",
+            d.rate_per_min > 0 ? "live · generating" : "idle (no recent generations)");
+  }catch(e){
+    consecutiveErrors++;
+    setLive("err", "status server unreachable");
+    if(consecutiveErrors >= 2){
+      const b = document.getElementById("errbanner");
+      b.style.display = "block";
+      b.textContent = "Cannot reach the status server (" + e.message +
+        "). Is probe_dashboard_server.py running? Start it with: uv run python probe_dashboard_server.py";
+    }
+  }
+}
+
+function render(d){
+  document.getElementById("phase").textContent = "phase: " + d.phase +
+    " · " + d.axes_count + " axes × " + d.questions + " questions";
+  document.getElementById("worker").textContent = d.worker_url;
+
+  document.getElementById("bigfill").style.width = d.pct + "%";
+  document.getElementById("bigtxt").textContent = d.pct.toFixed(1) + "%  (" + d.done + " / " + d.total + ")";
+
+  document.getElementById("c-done").textContent = d.done;
+  document.getElementById("c-total").textContent = d.total;
+  document.getElementById("c-pending").textContent = d.pending;
+  document.getElementById("c-rate").innerHTML = d.rate_per_min + "<small> /min</small>";
+  document.getElementById("c-eta").textContent = fmtETA(d.eta_seconds);
+  document.getElementById("c-refs").textContent = d.refs.done + " / " + d.refs.total;
+  document.getElementById("c-draws").textContent = d.draws.done + " / " + d.draws.total;
+
+  // progress-group bars (label is scan-specific: axes, candidate questions, refs/samples…)
+  if (d.group_label) document.getElementById("group-heading").textContent = d.group_label;
+  const ax = document.getElementById("axes");
+  ax.innerHTML = "";
+  for(const a of d.per_axis){
+    const pct = a.total ? (100*a.done/a.total) : 0;
+    const complete = a.done === a.total;
+    const row = document.createElement("div");
+    row.className = "axrow";
+    row.innerHTML =
+      '<span class="axname">' + a.axis + '</span>' +
+      '<span class="axbar"><span class="fill ' + (complete?"":"partial") + '" style="width:' + pct + '%"></span></span>' +
+      '<span class="axnum">' + a.done + '/' + a.total + '</span>';
+    ax.appendChild(row);
+  }
+
+  document.getElementById("recent-rate").textContent =
+    "· " + d.recent_count + " in the last " + Math.round(d.rate_window_seconds/60) + "m";
+
+  // recent generations feed
+  const tb = document.getElementById("recent");
+  tb.innerHTML = "";
+  const seen = new Set();
+  for(const g of d.recent){
+    const key = g.concept + "||" + g.qidx;
+    seen.add(key);
+    const tr = document.createElement("tr");
+    if(!lastConcepts.has(key)) tr.className = "fresh";
+    tr.innerHTML =
+      '<td class="concept">' + escapeHtml(g.concept) + '</td>' +
+      '<td class="q">Q' + (g.qidx+1) + '</td>' +
+      '<td class="ans">' + escapeHtml(g.answer_preview) + '…</td>' +
+      '<td class="age">' + fmtAge(g.age_seconds) + '</td>';
+    tb.appendChild(tr);
+  }
+  lastConcepts = seen;
+
+  document.getElementById("stamp").textContent = new Date().toLocaleTimeString();
+}
+
+function escapeHtml(s){
+  return (s||"").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+}
+
+poll();
+setInterval(poll, POLL_MS);
+</script>
+</body>
+</html>

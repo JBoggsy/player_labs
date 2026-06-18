@@ -1,0 +1,936 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cue-n-Woo — Cue-n-Woo Analysis</title>
+<style>
+/* Softmax Observatory broadsheet aesthetic: cream ground, no cards/white boxes,
+   border-b rules + whitespace, serif headings, earthy ink tones. Tokens mirror
+   metta observatory/style.css. */
+:root{
+  --bg:#fffdf4; --surface:#fffaf0; --surface-alt:#f8f6ef;
+  --fg:#111827; --muted:#999999; --subtle:#555555;
+  --border:#e4dac8; --border-strong:#d4c9b5; --border-subtle:#f0ebe1;
+  --accent:#859ebe; --accent-strong:#1a3875; --accent-soft:#eef2f7;
+  --cta:#0e2758; --ink-deep:#0a1c42;
+  --navy:#1a3875; --sage:#6e8050; --terracotta:#b36e4e; --gold:#d4a853; --silver:#8a8a8a;
+  --pos:var(--sage); --neg:var(--terracotta);
+  --serif:&#34;Merriweather&#34;,Georgia,&#34;Times New Roman&#34;,serif;
+  --sans:&#34;Merriweather Sans&#34;,&#34;Helvetica Neue&#34;,system-ui,-apple-system,&#34;Segoe UI&#34;,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);
+  font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--serif);font-weight:700}
+a{color:var(--cta);text-decoration:none}
+a:hover{color:var(--accent-strong);text-decoration:underline}
+.num{font-family:var(--serif);font-feature-settings:&#34;tnum&#34; 1}
+
+.wrap{max-width:1060px;margin:0 auto;padding:0 28px 90px}
+.eyebrow{font-family:var(--sans);text-transform:uppercase;letter-spacing:.1em;
+  font-size:10.5px;font-weight:700;color:var(--subtle);margin:0 0 8px}
+
+/* Arena hero — navy ink block (observatory arena-hero) */
+header.hero{background:linear-gradient(180deg,var(--cta) 0%,var(--ink-deep) 100%);
+  color:var(--bg);box-shadow:inset 0 0 0 1px rgba(253,248,234,.12);padding:46px 0 38px}
+.hero .eyebrow{color:rgba(253,248,234,.62)}
+.hero h1{margin:0;font-size:34px;line-height:1.5;letter-spacing:-.01em}
+.hero .sub{color:rgba(253,248,234,.8);margin:6px 0 24px;font-size:14px}
+.statbar{display:flex;flex-wrap:wrap;gap:34px}
+.stat b{display:block;font-family:var(--serif);font-size:30px;line-height:1;font-feature-settings:&#34;tnum&#34; 1}
+.stat span{font-size:10.5px;color:rgba(253,248,234,.6);text-transform:uppercase;letter-spacing:.1em}
+
+nav.toc{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 90%,transparent);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+nav.toc .wrap{display:flex;flex-wrap:wrap;gap:6px 20px;padding-top:13px;padding-bottom:13px}
+nav.toc a{font-size:12.5px;color:var(--subtle);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+nav.toc a:hover{color:var(--cta);text-decoration:none}
+
+/* Broadsheet sections: content on the ground, separated by border-b rules. */
+section{padding:34px 0;border-bottom:1px solid var(--border)}
+section:last-of-type{border-bottom:0}
+section h2{font-size:23px;margin:0 0 4px;letter-spacing:-.01em}
+section .lead{color:var(--subtle);margin:0 0 22px;font-size:14px;max-width:76ch}
+.figwrap{margin:6px 0 0}
+.figcap{font-size:12px;color:var(--muted);margin:8px 2px 0;font-style:italic}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:36px}
+@media(max-width:820px){.grid2{grid-template-columns:1fr}}
+.subhead{font-family:var(--serif);font-size:15px;margin:0 0 10px}
+
+.callout{display:flex;gap:11px;align-items:flex-start;border-left:3px solid var(--accent-strong);
+  background:var(--accent-soft);padding:12px 16px;margin:0 0 20px;font-size:14px}
+.callout .dot{display:none}
+
+.cax{width:100%;height:auto;display:block}
+.cax-label{font-size:13px;fill:var(--fg);font-family:var(--sans)}
+.cax-value{font-size:12.5px;fill:var(--subtle);font-family:var(--serif);font-feature-settings:&#34;tnum&#34; 1}
+.cax-cell{font-size:12.5px;font-family:var(--serif);font-feature-settings:&#34;tnum&#34; 1;font-weight:700}
+.cax-cell-muted{font-size:12px;fill:var(--muted)}
+.cax-axis{stroke:var(--border-strong);stroke-width:1;stroke-dasharray:3 3}
+.cax-axis-title{font-size:12px;fill:var(--subtle);font-family:var(--sans)}
+.cax-point-label{font-size:11px;fill:var(--subtle)}
+
+/* Tables: no box; rules between rows. */
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:right;padding:9px 12px;border-bottom:1px solid var(--border)}
+th:first-child,td:first-child{text-align:left}
+thead th{color:var(--subtle);font-weight:700;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;
+  font-family:var(--sans);border-bottom:1.5px solid var(--border-strong)}
+tbody tr:hover{background:var(--surface-alt)}
+td{font-family:var(--serif);font-feature-settings:&#34;tnum&#34; 1}
+td:first-child,th{font-family:var(--sans)}
+.rank{color:var(--muted)}
+.row-top{font-weight:700}
+.sig{color:var(--sage);font-weight:700}
+
+/* Medals (observatory medal styling) */
+.medal{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;
+  border-radius:50%;font-family:var(--sans);font-weight:800;font-size:11px;line-height:1;
+  border:1px solid var(--border-strong);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.3),inset 0 -1px 0 rgba(0,0,0,.08)}
+.medal-1{background:linear-gradient(180deg,#f4cf7a,#c28a2b);color:#3b2505;border-color:#a4731d}
+.medal-2{background:linear-gradient(180deg,#e8e8e8,#b0b0b0);color:#2a2a2a;border-color:#8a8a8a}
+.medal-3{background:linear-gradient(180deg,#dfa778,#9c5a2d);color:#3b1f0a;border-color:#7e4c26}
+.medal-plain{background:var(--surface-alt);color:var(--muted);font-weight:600}
+
+/* Chips/tags (observatory chip) */
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:3px;
+  font-family:var(--sans);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.tag-good{background:rgba(110,128,80,.14);color:var(--sage)}
+.tag-bad{background:rgba(179,110,78,.14);color:var(--terracotta)}
+
+/* Fingerprints — bordered tiles on the ground (no shadow/white) */
+.fingergrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:14px}
+.fcard{border:1px solid var(--border);border-radius:6px;padding:14px 16px;background:var(--surface)}
+.fcard .axis{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--terracotta);font-weight:700}
+.fcard .val{font-family:var(--serif);font-weight:700;font-size:15px;margin:2px 0 11px}
+.words{display:flex;flex-wrap:wrap;gap:6px;align-items:baseline}
+.word{color:var(--navy);font-family:var(--serif);line-height:1.2}
+
+/* Player cards — bordered, ground bg, navy header rule */
+.pcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:18px}
+.pcard{border:1px solid var(--border);border-radius:6px;background:var(--surface);overflow:hidden}
+.pcard .head{display:flex;justify-content:space-between;align-items:baseline;
+  padding:13px 18px;border-bottom:2px solid var(--accent-strong)}
+.pcard .head b{font-family:var(--serif);font-size:17px}
+.pcard .head .rec{font-family:var(--serif);font-size:13px;color:var(--subtle);font-feature-settings:&#34;tnum&#34; 1}
+.pcard .body{padding:14px 18px}
+.kv{display:grid;grid-template-columns:repeat(2,1fr);gap:7px 16px;margin-bottom:13px}
+.kv div{font-size:13px;display:flex;justify-content:space-between;gap:8px;
+  border-bottom:1px solid var(--border-subtle);padding-bottom:5px}
+.kv span{color:var(--subtle)}
+.kv b{font-family:var(--serif);font-feature-settings:&#34;tnum&#34; 1}
+.mini{font-size:10px;color:var(--muted);margin:12px 0 5px;text-transform:uppercase;letter-spacing:.07em;font-weight:700}
+.axline{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:3px 0}
+.axline .v{font-family:var(--serif);font-feature-settings:&#34;tnum&#34; 1;color:var(--subtle)}
+.levers{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.lever{font-size:11.5px;border:1px solid var(--border-strong);border-radius:3px;padding:2px 8px;
+  font-family:var(--serif);font-feature-settings:&#34;tnum&#34; 1;color:var(--subtle)}
+
+details.catalog summary{cursor:pointer;font-weight:700;color:var(--subtle);font-size:13px;
+  text-transform:uppercase;letter-spacing:.05em}
+.catalog table{margin-top:14px}
+
+footer{color:var(--muted);font-size:12px;margin-top:34px;padding-top:18px;font-style:italic}
+.warn{color:var(--terracotta)}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Cue-n-Woo · Player Optimization Report</p>
+    <h1>Cue-n-Woo</h1>
+    <p class="sub">Generated 2026-06-16T22:49:04.269701+00:00</p>
+    <div class="statbar">
+      <div class="stat"><b>44</b><span>Matches</span></div>
+      <div class="stat"><b>11</b><span>Players</span></div>
+    </div>
+  </div>
+</header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#standings">Standings</a>
+  <a href="#rewards">What the judge rewards</a>
+  <a href="#h2h">Head-to-head</a>
+  <a href="#skill">Axis skill</a>
+  <a href="#difficulty">Persona difficulty</a>
+  <a href="#fingerprints">Style fingerprints</a>
+  <a href="#players">Player cards</a>
+  <a href="#data">Data</a>
+</div></nav>
+
+<div class="wrap">
+
+  
+
+  <section id="standings">
+    <h2>Standings</h2>
+    <p class="lead">Players ranked by win rate, then how closely they read the hidden judge
+      (mean judge-assigned probability to their answers). "As author" vs "as responder" splits
+      the read rate by whether they wrote the challenge question or answered the opponent's.</p>
+    <div class="figwrap">
+      <svg viewBox="0 0 640 406" preserveAspectRatio="xMidYMid meet" class="cax" role="img" xmlns="http://www.w3.org/2000/svg"><text x="140" y="23.0" text-anchor="end" dominant-baseline="central" class="cax-label">gabby:v6</text><rect x="150" y="10" width="430.0" height="26" rx="4" fill="#1a3875"/><text x="586.0" y="23.0" dominant-baseline="central" class="cax-value">75.3%</text><text x="140" y="59.0" text-anchor="end" dominant-baseline="central" class="cax-label">nishad-cnw-opus…</text><rect x="150" y="46" width="341.0" height="26" rx="4" fill="#1a3875"/><text x="496.97984502884907" y="59.0" dominant-baseline="central" class="cax-value">59.7%</text><text x="140" y="95.0" text-anchor="end" dominant-baseline="central" class="cax-label">biglobes:v22</text><rect x="150" y="82" width="336.7" height="26" rx="4" fill="#1a3875"/><text x="492.70773487423816" y="95.0" dominant-baseline="central" class="cax-value">58.9%</text><text x="140" y="131.0" text-anchor="end" dominant-baseline="central" class="cax-label">aaron-cue-n-woo…</text><rect x="150" y="118" width="305.9" height="26" rx="4" fill="#1a3875"/><text x="461.9223203133514" y="131.0" dominant-baseline="central" class="cax-value">53.6%</text><text x="140" y="167.0" text-anchor="end" dominant-baseline="central" class="cax-label">richard-cue-n-w…</text><rect x="150" y="154" width="296.7" height="26" rx="4" fill="#1a3875"/><text x="452.7268755624104" y="167.0" dominant-baseline="central" class="cax-value">51.9%</text><text x="140" y="203.0" text-anchor="end" dominant-baseline="central" class="cax-label">daveey-cnw-seat…</text><rect x="150" y="190" width="280.7" height="26" rx="4" fill="#1a3875"/><text x="436.6736465320797" y="203.0" dominant-baseline="central" class="cax-value">49.1%</text><text x="140" y="239.0" text-anchor="end" dominant-baseline="central" class="cax-label">aarons-optimize…</text><rect x="150" y="226" width="213.2" height="26" rx="4" fill="#1a3875"/><text x="369.1888412819993" y="239.0" dominant-baseline="central" class="cax-value">37.3%</text><text x="140" y="275.0" text-anchor="end" dominant-baseline="central" class="cax-label">jernau-cnw:v5</text><rect x="150" y="262" width="274.5" height="26" rx="4" fill="#1a3875"/><text x="430.5106210952949" y="275.0" dominant-baseline="central" class="cax-value">48.1%</text><text x="140" y="311.0" text-anchor="end" dominant-baseline="central" class="cax-label">biglobes-jr:v2</text><rect x="150" y="298" width="321.4" height="26" rx="4" fill="#1a3875"/><text x="477.35987110732236" y="311.0" dominant-baseline="central" class="cax-value">56.3%</text><text x="140" y="347.0" text-anchor="end" dominant-baseline="central" class="cax-label">mentalist-v4:v3</text><rect x="150" y="334" width="219.9" height="26" rx="4" fill="#1a3875"/><text x="375.86739259637045" y="347.0" dominant-baseline="central" class="cax-value">38.5%</text><text x="140" y="383.0" text-anchor="end" dominant-baseline="central" class="cax-label">xXx_g0bl1nl0v3r…</text><rect x="150" y="370" width="221.8" height="26" rx="4" fill="#1a3875"/><text x="377.7750559916874" y="383.0" dominant-baseline="central" class="cax-value">38.8%</text></svg>
+      <p class="figcap">Judge read rate per player (% of judge preference won, averaged over judged rounds).</p>
+    </div>
+    <div style="overflow-x:auto;margin-top:24px">
+      <table>
+        <thead><tr><th>#</th><th>Player</th><th>M</th><th>W</th><th>L</th><th>T</th><th>Win%</th>
+          <th>Read%</th><th>Read logit</th><th>As author</th><th>As resp.</th><th>Avg score</th><th>Answer len</th><th>Declines</th></tr></thead>
+        <tbody>
+        
+          <tr class="row-top">
+            <td><span class="medal medal-1">1</span></td>
+            <td>gabby:v6</td>
+            <td class="num">6</td><td class="num">5</td><td class="num">1</td><td class="num">0</td>
+            <td class="num">83.3%</td><td class="num">75.3%</td><td class="num">1.69</td>
+            <td class="num">75.5%</td><td class="num">74.0%</td><td class="num">330.8</td>
+            <td class="num">2.0</td><td class="num">0</td>
+          </tr>
+        
+          <tr class="">
+            <td><span class="medal medal-2">2</span></td>
+            <td>nishad-cnw-opus:v1</td>
+            <td class="num">8</td><td class="num">6</td><td class="num">2</td><td class="num">0</td>
+            <td class="num">75.0%</td><td class="num">59.7%</td><td class="num">0.59</td>
+            <td class="num">68.6%</td><td class="num">50.8%</td><td class="num">396.9</td>
+            <td class="num">9.3</td><td class="num">0</td>
+          </tr>
+        
+          <tr class="">
+            <td><span class="medal medal-3">3</span></td>
+            <td>biglobes:v22</td>
+            <td class="num">7</td><td class="num">5</td><td class="num">2</td><td class="num">0</td>
+            <td class="num">71.4%</td><td class="num">58.9%</td><td class="num">0.50</td>
+            <td class="num">92.5%</td><td class="num">25.3%</td><td class="num">346.9</td>
+            <td class="num">2.0</td><td class="num">0</td>
+          </tr>
+        
+          <tr class="">
+            <td><span class="rank num">4</span></td>
+            <td>aaron-cue-n-woo:v18</td>
+            <td class="num">6</td><td class="num">4</td><td class="num">2</td><td class="num">0</td>
+            <td class="num">66.7%</td><td class="num">53.6%</td><td class="num">0.22</td>
+            <td class="num">59.5%</td><td class="num">47.6%</td><td class="num">358.0</td>
+            <td class="num">6.4</td><td class="num">0</td>
+          </tr>
+        
+          <tr class="">
+            <td><span class="rank num">5</span></td>
+            <td>richard-cue-n-woo:v10</td>
+            <td class="num">9</td><td class="num">5</td><td class="num">4</td><td class="num">0</td>
+            <td class="num">55.6%</td><td class="num">51.9%</td><td class="num">0.02</td>
+            <td class="num">66.0%</td><td class="num">37.9%</td><td class="num">348.3</td>
+            <td class="num">8.5</td><td class="num">0</td>
+          </tr>
+        
+          <tr class="">
+            <td><span class="rank num">6</span></td>
+            <td>daveey-cnw-seat:v2</td>
+            <td class="num">8</td><td class="num">4</td><td class="num">4</td><td class="num">0</td>
+            <td class="num">50.0%</td><td class="num">49.1%</td><td class="num">-0.09</td>
+            <td class="num">87.7%</td><td class="num">29.9%</td><td class="num">302.3</td>
+            <td class="num">2.0</td><td class="num">0</td>
+          </tr>
+        
+          <tr class="">
+            <td><span class="rank num">7</span></td>
+            <td>aarons-optimizer-cue-n-woo:v4</td>
+            <td class="num">7</td><td class="num">3</td><td class="num">3</td><td class="num">1</td>
+            <td class="num">42.9%</td><td class="num">37.3%</td><td class="num">-0.78</td>
+            <td class="num">43.9%</td><td class="num">27.4%</td><td class="num">241.4</td>
+            <td class="num">5.0</td><td class="num">0</td>
+          </tr>
+        
+          <tr class="">
+            <td><span class="rank num">8</span></td>
+            <td>jernau-cnw:v5</td>
+            <td class="num">10</td><td class="num">4</td><td class="num">6</td><td class="num">0</td>
+            <td class="num">40.0%</td><td class="num">48.1%</td><td class="num">-0.13</td>
+            <td class="num">59.1%</td><td class="num">37.0%</td><td class="num">277.5</td>
+            <td class="num">8.1</td><td class="num">0</td>
+          </tr>
+        
+          <tr class="">
+            <td><span class="rank num">9</span></td>
+            <td>biglobes-jr:v2</td>
+            <td class="num">8</td><td class="num">3</td><td class="num">3</td><td class="num">2</td>
+            <td class="num">37.5%</td><td class="num">56.3%</td><td class="num">0.36</td>
+            <td class="num">75.2%</td><td class="num">43.6%</td><td class="num">320.9</td>
+            <td class="num">2.1</td><td class="num">0</td>
+          </tr>
+        
+          <tr class="">
+            <td><span class="rank num">10</span></td>
+            <td>mentalist-v4:v3</td>
+            <td class="num">9</td><td class="num">2</td><td class="num">7</td><td class="num">0</td>
+            <td class="num">22.2%</td><td class="num">38.5%</td><td class="num">-0.69</td>
+            <td class="num">43.3%</td><td class="num">33.7%</td><td class="num">249.8</td>
+            <td class="num">5.1</td><td class="num">0</td>
+          </tr>
+        
+          <tr class="">
+            <td><span class="rank num">11</span></td>
+            <td>xXx_g0bl1nl0v3r_xXx:v1</td>
+            <td class="num">10</td><td class="num">0</td><td class="num">7</td><td class="num">3</td>
+            <td class="num">0.0%</td><td class="num">38.8%</td><td class="num">-0.53</td>
+            <td class="num">45.5%</td><td class="num">32.1%</td><td class="num">245.0</td>
+            <td class="num">2.0</td><td class="num">0</td>
+          </tr>
+        
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="rewards">
+    <h2>What the judge rewards</h2>
+    <p class="lead">Correlation between each answer-style feature and the judge's logit preference,
+      across every judged answer in the round. Positive = more of that feature helps; negative = it hurts.</p>
+    <div class="callout">Judge preference correlates most with content word ratio: lower values score better (ρ = -0.10).</div>
+    <div class="figwrap">
+      <svg viewBox="0 0 680 339" preserveAspectRatio="xMidYMid meet" class="cax" role="img" xmlns="http://www.w3.org/2000/svg"><line x1="400.0" y1="0" x2="400.0" y2="339" class="cax-axis"/><text x="178" y="21.0" text-anchor="end" dominant-baseline="central" class="cax-label">content word ratio</text><rect x="190.0" y="9" width="210.0" height="24" rx="3" fill="#b36e4e"/><text x="184.0" y="21.0" text-anchor="end" dominant-baseline="central" class="cax-value">-0.10</text><text x="178" y="54.0" text-anchor="end" dominant-baseline="central" class="cax-label">stopword ratio</text><rect x="400.0" y="42" width="210.0" height="24" rx="3" fill="#6e8050"/><text x="616.0" y="54.0" text-anchor="start" dominant-baseline="central" class="cax-value">0.10</text><text x="178" y="87.0" text-anchor="end" dominant-baseline="central" class="cax-label">type token ratio</text><rect x="400.0" y="75" width="146.5" height="24" rx="3" fill="#6e8050"/><text x="552.5" y="87.0" text-anchor="start" dominant-baseline="central" class="cax-value">0.07</text><text x="178" y="120.0" text-anchor="end" dominant-baseline="central" class="cax-label">uppercase ratio</text><rect x="400.0" y="108" width="121.5" height="24" rx="3" fill="#6e8050"/><text x="527.5" y="120.0" text-anchor="start" dominant-baseline="central" class="cax-value">0.06</text><text x="178" y="153.0" text-anchor="end" dominant-baseline="central" class="cax-label">hedge ratio</text><rect x="302.0" y="141" width="98.0" height="24" rx="3" fill="#b36e4e"/><text x="296.0" y="153.0" text-anchor="end" dominant-baseline="central" class="cax-value">-0.05</text><text x="178" y="186.0" text-anchor="end" dominant-baseline="central" class="cax-label">hedge count</text><rect x="302.2" y="174" width="97.8" height="24" rx="3" fill="#b36e4e"/><text x="296.2" y="186.0" text-anchor="end" dominant-baseline="central" class="cax-value">-0.05</text><text x="178" y="219.0" text-anchor="end" dominant-baseline="central" class="cax-label">unique token count</text><rect x="400.0" y="207" width="89.4" height="24" rx="3" fill="#6e8050"/><text x="495.4" y="219.0" text-anchor="start" dominant-baseline="central" class="cax-value">0.04</text><text x="178" y="252.0" text-anchor="end" dominant-baseline="central" class="cax-label">char count</text><rect x="400.0" y="240" width="66.3" height="24" rx="3" fill="#6e8050"/><text x="472.3" y="252.0" text-anchor="start" dominant-baseline="central" class="cax-value">0.03</text><text x="178" y="285.0" text-anchor="end" dominant-baseline="central" class="cax-label">punctuation count</text><rect x="400.0" y="273" width="37.7" height="24" rx="3" fill="#6e8050"/><text x="443.7" y="285.0" text-anchor="start" dominant-baseline="central" class="cax-value">0.02</text><text x="178" y="318.0" text-anchor="end" dominant-baseline="central" class="cax-label">token count</text><rect x="400.0" y="306" width="36.3" height="24" rx="3" fill="#6e8050"/><text x="442.3" y="318.0" text-anchor="start" dominant-baseline="central" class="cax-value">0.02</text></svg>
+      <p class="figcap">Spearman ρ between feature and judge logit (top features by |ρ|).</p>
+    </div>
+    <div style="overflow-x:auto;margin-top:24px">
+      <table>
+        <thead><tr><th>Feature</th><th>Mean (winning)</th><th>Mean (losing)</th><th>Cohen's d</th><th>ρ vs logit</th><th>Welch p</th></tr></thead>
+        <tbody>
+        
+          <tr><td>content word ratio</td><td class="num">0.68</td><td class="num">0.70</td>
+            <td class="num">-0.09</td><td class="num">-0.10</td>
+            <td class="num ">0.359</td></tr>
+        
+          <tr><td>stopword ratio</td><td class="num">0.32</td><td class="num">0.30</td>
+            <td class="num">0.09</td><td class="num">0.10</td>
+            <td class="num ">0.359</td></tr>
+        
+          <tr><td>type token ratio</td><td class="num">0.96</td><td class="num">0.93</td>
+            <td class="num">0.19</td><td class="num">0.07</td>
+            <td class="num ">0.053</td></tr>
+        
+          <tr><td>uppercase ratio</td><td class="num">0.06</td><td class="num">0.06</td>
+            <td class="num">0.06</td><td class="num">0.06</td>
+            <td class="num ">0.509</td></tr>
+        
+          <tr><td>hedge ratio</td><td class="num">0.00</td><td class="num">0.00</td>
+            <td class="num">-0.13</td><td class="num">-0.05</td>
+            <td class="num ">0.162</td></tr>
+        
+          <tr><td>hedge count</td><td class="num">0.00</td><td class="num">0.01</td>
+            <td class="num">-0.14</td><td class="num">-0.05</td>
+            <td class="num ">0.156</td></tr>
+        
+          <tr><td>unique token count</td><td class="num">5.46</td><td class="num">4.68</td>
+            <td class="num">0.24</td><td class="num">0.04</td>
+            <td class="num sig">0.013</td></tr>
+        
+          <tr><td>char count</td><td class="num">37.56</td><td class="num">32.62</td>
+            <td class="num">0.20</td><td class="num">0.03</td>
+            <td class="num sig">0.038</td></tr>
+        
+          <tr><td>punctuation count</td><td class="num">0.96</td><td class="num">0.73</td>
+            <td class="num">0.13</td><td class="num">0.02</td>
+            <td class="num ">0.175</td></tr>
+        
+          <tr><td>token count</td><td class="num">5.70</td><td class="num">5.04</td>
+            <td class="num">0.20</td><td class="num">0.02</td>
+            <td class="num sig">0.038</td></tr>
+        
+          <tr><td>char entropy</td><td class="num">3.65</td><td class="num">3.59</td>
+            <td class="num">0.14</td><td class="num">-0.01</td>
+            <td class="num ">0.159</td></tr>
+        
+          <tr><td>mean word length</td><td class="num">5.48</td><td class="num">5.34</td>
+            <td class="num">0.12</td><td class="num">0.00</td>
+            <td class="num ">0.199</td></tr>
+        
+          <tr><td>content word count</td><td class="num">4.17</td><td class="num">3.79</td>
+            <td class="num">0.13</td><td class="num">0.00</td>
+            <td class="num ">0.176</td></tr>
+        
+          <tr><td>digit count</td><td class="num">0.00</td><td class="num">0.00</td>
+            <td class="num">0.00</td><td class="num">0.00</td>
+            <td class="num ">1.000</td></tr>
+        
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="h2h">
+    <h2>Head-to-head dynamics</h2>
+    <p class="lead">Mean per-answer logit margin of the <em>row</em> player against the <em>column</em> player's judge.
+      Sage = the row player's answers were preferred; terracotta = they lost. Reads like a dominance matrix.</p>
+    <div class="figwrap"><svg viewBox="0 0 780 750" preserveAspectRatio="xMidYMid meet" class="cax" role="img" xmlns="http://www.w3.org/2000/svg"><text x="197.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 197.0 130)">aaron-cue-n-woo…</text><text x="251.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 251.0 130)">aarons-optimize…</text><text x="305.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 305.0 130)">biglobes-jr:v2</text><text x="359.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 359.0 130)">biglobes:v22</text><text x="413.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 413.0 130)">daveey-cnw-seat…</text><text x="467.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 467.0 130)">gabby:v6</text><text x="521.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 521.0 130)">jernau-cnw:v5</text><text x="575.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 575.0 130)">mentalist-v4:v3</text><text x="629.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 629.0 130)">nishad-cnw-opus…</text><text x="683.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 683.0 130)">richard-cue-n-w…</text><text x="737.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 737.0 130)">xXx_g0bl1nl0v3r…</text><text x="160" y="167.0" text-anchor="end" dominant-baseline="central" class="cax-label">aaron-cue-n-woo…</text><rect x="170" y="140" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="195.5" y="167.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="224" y="140" width="51" height="51" rx="3" fill="#ebebdd" stroke="#e4dac8"/><text x="249.5" y="167.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.2</text><rect x="278" y="140" width="51" height="51" rx="3" fill="#fcf8ee" stroke="#e4dac8"/><text x="303.5" y="167.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.3</text><rect x="332" y="140" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="357.5" y="167.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="386" y="140" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="411.5" y="167.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="440" y="140" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="465.5" y="167.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="494" y="140" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="519.5" y="167.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="548" y="140" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="573.5" y="167.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="602" y="140" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="627.5" y="167.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="656" y="140" width="51" height="51" rx="3" fill="#f8f7ec" stroke="#e4dac8"/><text x="681.5" y="167.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.4</text><rect x="710" y="140" width="51" height="51" rx="3" fill="#f7f7eb" stroke="#e4dac8"/><text x="735.5" y="167.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.4</text><text x="160" y="221.0" text-anchor="end" dominant-baseline="central" class="cax-label">aarons-optimize…</text><rect x="170" y="194" width="51" height="51" rx="3" fill="#f4e9dd" stroke="#e4dac8"/><text x="195.5" y="221.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.2</text><rect x="224" y="194" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="249.5" y="221.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="278" y="194" width="51" height="51" rx="3" fill="#e5e6d6" stroke="#e4dac8"/><text x="303.5" y="221.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.5</text><rect x="332" y="194" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="357.5" y="221.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="386" y="194" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="411.5" y="221.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="440" y="194" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="465.5" y="221.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="494" y="194" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="519.5" y="221.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="548" y="194" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="573.5" y="221.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="602" y="194" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="627.5" y="221.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="656" y="194" width="51" height="51" rx="3" fill="#e0c2b0" stroke="#e4dac8"/><text x="681.5" y="221.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-3.5</text><rect x="710" y="194" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="735.5" y="221.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><text x="160" y="275.0" text-anchor="end" dominant-baseline="central" class="cax-label">biglobes-jr:v2</text><rect x="170" y="248" width="51" height="51" rx="3" fill="#faf9ee" stroke="#e4dac8"/><text x="195.5" y="275.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.3</text><rect x="224" y="248" width="51" height="51" rx="3" fill="#f1e3d6" stroke="#e4dac8"/><text x="249.5" y="275.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.5</text><rect x="278" y="248" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="303.5" y="275.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="332" y="248" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="357.5" y="275.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="386" y="248" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="411.5" y="275.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="440" y="248" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="465.5" y="275.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="494" y="248" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="519.5" y="275.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="548" y="248" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="573.5" y="275.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="602" y="248" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="627.5" y="275.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="656" y="248" width="51" height="51" rx="3" fill="#d8dbc8" stroke="#e4dac8"/><text x="681.5" y="275.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">2.3</text><rect x="710" y="248" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="735.5" y="275.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><text x="160" y="329.0" text-anchor="end" dominant-baseline="central" class="cax-label">biglobes:v22</text><rect x="170" y="302" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="195.5" y="329.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="224" y="302" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="249.5" y="329.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="278" y="302" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="303.5" y="329.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="332" y="302" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="357.5" y="329.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="386" y="302" width="51" height="51" rx="3" fill="#98a480" stroke="#e4dac8"/><text x="411.5" y="329.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">6.0</text><rect x="440" y="302" width="51" height="51" rx="3" fill="#be8367" stroke="#e4dac8"/><text x="465.5" y="329.0" text-anchor="middle" dominant-baseline="central" style="fill:#ffffff" class="cax-cell">-7.2</text><rect x="494" y="302" width="51" height="51" rx="3" fill="#e9eadc" stroke="#e4dac8"/><text x="519.5" y="329.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.3</text><rect x="548" y="302" width="51" height="51" rx="3" fill="#d4d8c4" stroke="#e4dac8"/><text x="573.5" y="329.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">2.5</text><rect x="602" y="302" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="627.5" y="329.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="656" y="302" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="681.5" y="329.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="710" y="302" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="735.5" y="329.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><text x="160" y="383.0" text-anchor="end" dominant-baseline="central" class="cax-label">daveey-cnw-seat…</text><rect x="170" y="356" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="195.5" y="383.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="224" y="356" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="249.5" y="383.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="278" y="356" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="303.5" y="383.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="332" y="356" width="51" height="51" rx="3" fill="#c9987e" stroke="#e4dac8"/><text x="357.5" y="383.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-6.0</text><rect x="386" y="356" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="411.5" y="383.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="440" y="356" width="51" height="51" rx="3" fill="#e3c9b7" stroke="#e4dac8"/><text x="465.5" y="383.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-3.1</text><rect x="494" y="356" width="51" height="51" rx="3" fill="#d7dac6" stroke="#e4dac8"/><text x="519.5" y="383.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">2.3</text><rect x="548" y="356" width="51" height="51" rx="3" fill="#e3e5d4" stroke="#e4dac8"/><text x="573.5" y="383.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.6</text><rect x="602" y="356" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="627.5" y="383.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="656" y="356" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="681.5" y="383.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="710" y="356" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="735.5" y="383.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><text x="160" y="437.0" text-anchor="end" dominant-baseline="central" class="cax-label">gabby:v6</text><rect x="170" y="410" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="195.5" y="437.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="224" y="410" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="249.5" y="437.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="278" y="410" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="303.5" y="437.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="332" y="410" width="51" height="51" rx="3" fill="#849369" stroke="#e4dac8"/><text x="357.5" y="437.0" text-anchor="middle" dominant-baseline="central" style="fill:#ffffff" class="cax-cell">7.2</text><rect x="386" y="410" width="51" height="51" rx="3" fill="#cacfb8" stroke="#e4dac8"/><text x="411.5" y="437.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">3.1</text><rect x="440" y="410" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="465.5" y="437.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="494" y="410" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="519.5" y="437.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="548" y="410" width="51" height="51" rx="3" fill="#fefbf1" stroke="#e4dac8"/><text x="573.5" y="437.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.1</text><rect x="602" y="410" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="627.5" y="437.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="656" y="410" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="681.5" y="437.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="710" y="410" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="735.5" y="437.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><text x="160" y="491.0" text-anchor="end" dominant-baseline="central" class="cax-label">jernau-cnw:v5</text><rect x="170" y="464" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="195.5" y="491.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="224" y="464" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="249.5" y="491.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="278" y="464" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="303.5" y="491.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="332" y="464" width="51" height="51" rx="3" fill="#f4e8db" stroke="#e4dac8"/><text x="357.5" y="491.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.3</text><rect x="386" y="464" width="51" height="51" rx="3" fill="#ead5c6" stroke="#e4dac8"/><text x="411.5" y="491.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-2.3</text><rect x="440" y="464" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="465.5" y="491.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="494" y="464" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="519.5" y="491.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="548" y="464" width="51" height="51" rx="3" fill="#faf9ee" stroke="#e4dac8"/><text x="573.5" y="491.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.3</text><rect x="602" y="464" width="51" height="51" rx="3" fill="#fdf9ef" stroke="#e4dac8"/><text x="627.5" y="491.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.2</text><rect x="656" y="464" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="681.5" y="491.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="710" y="464" width="51" height="51" rx="3" fill="#e2e4d3" stroke="#e4dac8"/><text x="735.5" y="491.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.7</text><text x="160" y="545.0" text-anchor="end" dominant-baseline="central" class="cax-label">mentalist-v4:v3</text><rect x="170" y="518" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="195.5" y="545.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="224" y="518" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="249.5" y="545.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="278" y="518" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="303.5" y="545.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="332" y="518" width="51" height="51" rx="3" fill="#e9d3c3" stroke="#e4dac8"/><text x="357.5" y="545.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-2.5</text><rect x="386" y="518" width="51" height="51" rx="3" fill="#f0e1d4" stroke="#e4dac8"/><text x="411.5" y="545.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.6</text><rect x="440" y="518" width="51" height="51" rx="3" fill="#fdfbf1" stroke="#e4dac8"/><text x="465.5" y="545.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.1</text><rect x="494" y="518" width="51" height="51" rx="3" fill="#fcf8ee" stroke="#e4dac8"/><text x="519.5" y="545.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.3</text><rect x="548" y="518" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="573.5" y="545.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="602" y="518" width="51" height="51" rx="3" fill="#eeddcf" stroke="#e4dac8"/><text x="627.5" y="545.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.9</text><rect x="656" y="518" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="681.5" y="545.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="710" y="518" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="735.5" y="545.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><text x="160" y="599.0" text-anchor="end" dominant-baseline="central" class="cax-label">nishad-cnw-opus…</text><rect x="170" y="572" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="195.5" y="599.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="224" y="572" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="249.5" y="599.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="278" y="572" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="303.5" y="599.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="332" y="572" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="357.5" y="599.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="386" y="572" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="411.5" y="599.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="440" y="572" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="465.5" y="599.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="494" y="572" width="51" height="51" rx="3" fill="#fbfaef" stroke="#e4dac8"/><text x="519.5" y="599.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.2</text><rect x="548" y="572" width="51" height="51" rx="3" fill="#dfe1d0" stroke="#e4dac8"/><text x="573.5" y="599.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.9</text><rect x="602" y="572" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="627.5" y="599.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="656" y="572" width="51" height="51" rx="3" fill="#ececde" stroke="#e4dac8"/><text x="681.5" y="599.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.1</text><rect x="710" y="572" width="51" height="51" rx="3" fill="#e6e7d7" stroke="#e4dac8"/><text x="735.5" y="599.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.5</text><text x="160" y="653.0" text-anchor="end" dominant-baseline="central" class="cax-label">richard-cue-n-w…</text><rect x="170" y="626" width="51" height="51" rx="3" fill="#fbf6ec" stroke="#e4dac8"/><text x="195.5" y="653.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.4</text><rect x="224" y="626" width="51" height="51" rx="3" fill="#c3cab0" stroke="#e4dac8"/><text x="249.5" y="653.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">3.5</text><rect x="278" y="626" width="51" height="51" rx="3" fill="#ead6c7" stroke="#e4dac8"/><text x="303.5" y="653.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-2.3</text><rect x="332" y="626" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="357.5" y="653.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="386" y="626" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="411.5" y="653.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="440" y="626" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="465.5" y="653.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="494" y="626" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="519.5" y="653.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="548" y="626" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="573.5" y="653.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="602" y="626" width="51" height="51" rx="3" fill="#f5eade" stroke="#e4dac8"/><text x="627.5" y="653.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.1</text><rect x="656" y="626" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="681.5" y="653.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="710" y="626" width="51" height="51" rx="3" fill="#f9f8ed" stroke="#e4dac8"/><text x="735.5" y="653.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.3</text><text x="160" y="707.0" text-anchor="end" dominant-baseline="central" class="cax-label">xXx_g0bl1nl0v3r…</text><rect x="170" y="680" width="51" height="51" rx="3" fill="#fbf6eb" stroke="#e4dac8"/><text x="195.5" y="707.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.4</text><rect x="224" y="680" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="249.5" y="707.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="278" y="680" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="303.5" y="707.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="332" y="680" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="357.5" y="707.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="386" y="680" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="411.5" y="707.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="440" y="680" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="465.5" y="707.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="494" y="680" width="51" height="51" rx="3" fill="#f0e0d2" stroke="#e4dac8"/><text x="519.5" y="707.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.7</text><rect x="548" y="680" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="573.5" y="707.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="602" y="680" width="51" height="51" rx="3" fill="#f2e4d7" stroke="#e4dac8"/><text x="627.5" y="707.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.5</text><rect x="656" y="680" width="51" height="51" rx="3" fill="#fcf7ed" stroke="#e4dac8"/><text x="681.5" y="707.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.3</text><rect x="710" y="680" width="51" height="51" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="735.5" y="707.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text></svg>
+      <p class="figcap">Row beats column when the cell is sage (positive logit margin).</p>
+    </div>
+    
+    <div style="overflow-x:auto;margin-top:24px">
+      <p class="subhead">Statistically significant dominance (p &lt; 0.05)</p>
+      <table>
+        <thead><tr><th>Winner</th><th>Over</th><th>Record</th><th>Mean margin (logit)</th><th>p</th></tr></thead>
+        <tbody>
+        
+          <tr><td>biglobes:v22</td><td>daveey-cnw-seat…</td><td class="num">6/6</td>
+            <td class="num">5.96</td><td class="num sig">&lt;0.001</td></tr>
+        
+          <tr><td>richard-cue-n-w…</td><td>aarons-optimize…</td><td class="num">12/12</td>
+            <td class="num">3.47</td><td class="num sig">&lt;0.001</td></tr>
+        
+          <tr><td>gabby:v6</td><td>daveey-cnw-seat…</td><td class="num">6/6</td>
+            <td class="num">3.09</td><td class="num sig">&lt;0.001</td></tr>
+        
+          <tr><td>biglobes:v22</td><td>mentalist-v4:v3</td><td class="num">8/12</td>
+            <td class="num">2.48</td><td class="num sig">0.028</td></tr>
+        
+          <tr><td>daveey-cnw-seat…</td><td>jernau-cnw:v5</td><td class="num">9/12</td>
+            <td class="num">2.34</td><td class="num sig">0.010</td></tr>
+        
+          <tr><td>biglobes-jr:v2</td><td>richard-cue-n-w…</td><td class="num">10/12</td>
+            <td class="num">2.28</td><td class="num sig">0.001</td></tr>
+        
+          <tr><td>nishad-cnw-opus…</td><td>mentalist-v4:v3</td><td class="num">11/12</td>
+            <td class="num">1.86</td><td class="num sig">0.001</td></tr>
+        
+          <tr><td>jernau-cnw:v5</td><td>xXx_g0bl1nl0v3r…</td><td class="num">10/12</td>
+            <td class="num">1.70</td><td class="num sig">0.007</td></tr>
+        
+          <tr><td>daveey-cnw-seat…</td><td>mentalist-v4:v3</td><td class="num">8/12</td>
+            <td class="num">1.63</td><td class="num sig">0.037</td></tr>
+        
+          <tr><td>aarons-optimize…</td><td>biglobes-jr:v2</td><td class="num">6/6</td>
+            <td class="num">1.54</td><td class="num sig">&lt;0.001</td></tr>
+        
+          <tr><td>nishad-cnw-opus…</td><td>xXx_g0bl1nl0v3r…</td><td class="num">9/12</td>
+            <td class="num">1.47</td><td class="num sig">0.008</td></tr>
+        
+        </tbody>
+      </table>
+    </div>
+    
+  </section>
+
+  <section id="skill">
+    <h2>Persona-axis skill</h2>
+    <p class="lead">Mean read logit per player across each persona axis. Higher (sage) means that player
+      reliably reads styles on that axis; terracotta marks blind spots to target for improvement.</p>
+    <div class="figwrap"><svg viewBox="0 0 1036 794" preserveAspectRatio="xMidYMid meet" class="cax" role="img" xmlns="http://www.w3.org/2000/svg"><text x="179.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 179.0 130)">cognition</text><text x="237.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 237.0 130)">domain</text><text x="295.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 295.0 130)">emotion</text><text x="353.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 353.0 130)">epistemology</text><text x="411.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 411.0 130)">genre</text><text x="469.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 469.0 130)">morality</text><text x="527.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 527.0 130)">object</text><text x="585.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 585.0 130)">persona</text><text x="643.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 643.0 130)">place</text><text x="701.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 701.0 130)">register</text><text x="759.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 759.0 130)">rhetoric</text><text x="817.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 817.0 130)">sensory</text><text x="875.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 875.0 130)">social</text><text x="933.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 933.0 130)">syntax</text><text x="991.0" y="130" text-anchor="start" class="cax-label" transform="rotate(-40 991.0 130)">time</text><text x="140" y="169.0" text-anchor="end" dominant-baseline="central" class="cax-label">aaron-cue-n-woo…</text><rect x="150" y="140" width="55" height="55" rx="3" fill="#f9f2e7" stroke="#e4dac8"/><text x="177.5" y="169.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.4</text><rect x="208" y="140" width="55" height="55" rx="3" fill="#e2e4d3" stroke="#e4dac8"/><text x="235.5" y="169.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.0</text><rect x="266" y="140" width="55" height="55" rx="3" fill="#fefcf3" stroke="#e4dac8"/><text x="293.5" y="169.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.0</text><rect x="324" y="140" width="55" height="55" rx="3" fill="#e2e4d3" stroke="#e4dac8"/><text x="351.5" y="169.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.0</text><rect x="382" y="140" width="55" height="55" rx="3" fill="#eeefe1" stroke="#e4dac8"/><text x="409.5" y="169.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.6</text><rect x="440" y="140" width="55" height="55" rx="3" fill="#fefbf2" stroke="#e4dac8"/><text x="467.5" y="169.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.1</text><rect x="498" y="140" width="55" height="55" rx="3" fill="#fdfcf2" stroke="#e4dac8"/><text x="525.5" y="169.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.1</text><rect x="556" y="140" width="55" height="55" rx="3" fill="#f7ede2" stroke="#e4dac8"/><text x="583.5" y="169.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.5</text><rect x="614" y="140" width="55" height="55" rx="3" fill="#f7ede2" stroke="#e4dac8"/><text x="641.5" y="169.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.5</text><rect x="672" y="140" width="55" height="55" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="699.5" y="169.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="730" y="140" width="55" height="55" rx="3" fill="#f9f8ed" stroke="#e4dac8"/><text x="757.5" y="169.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.2</text><rect x="788" y="140" width="55" height="55" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="815.5" y="169.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="846" y="140" width="55" height="55" rx="3" fill="#f4f3e7" stroke="#e4dac8"/><text x="873.5" y="169.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.4</text><rect x="904" y="140" width="55" height="55" rx="3" fill="#fdfbf1" stroke="#e4dac8"/><text x="931.5" y="169.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.1</text><rect x="962" y="140" width="55" height="55" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="989.5" y="169.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><text x="140" y="227.0" text-anchor="end" dominant-baseline="central" class="cax-label">aarons-optimize…</text><rect x="150" y="198" width="55" height="55" rx="3" fill="#fefdf3" stroke="#e4dac8"/><text x="177.5" y="227.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.0</text><rect x="208" y="198" width="55" height="55" rx="3" fill="#efded0" stroke="#e4dac8"/><text x="235.5" y="227.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.1</text><rect x="266" y="198" width="55" height="55" rx="3" fill="#e2e4d3" stroke="#e4dac8"/><text x="293.5" y="227.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.0</text><rect x="324" y="198" width="55" height="55" rx="3" fill="#e4cbb9" stroke="#e4dac8"/><text x="351.5" y="227.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.7</text><rect x="382" y="198" width="55" height="55" rx="3" fill="#eddbcd" stroke="#e4dac8"/><text x="409.5" y="227.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.2</text><rect x="440" y="198" width="55" height="55" rx="3" fill="#e8d2c2" stroke="#e4dac8"/><text x="467.5" y="227.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.5</text><rect x="498" y="198" width="55" height="55" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="525.5" y="227.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="556" y="198" width="55" height="55" rx="3" fill="#efefe2" stroke="#e4dac8"/><text x="583.5" y="227.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.5</text><rect x="614" y="198" width="55" height="55" rx="3" fill="#efefe2" stroke="#e4dac8"/><text x="641.5" y="227.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.5</text><rect x="672" y="198" width="55" height="55" rx="3" fill="#f4e8db" stroke="#e4dac8"/><text x="699.5" y="227.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.7</text><rect x="730" y="198" width="55" height="55" rx="3" fill="#fbf6ec" stroke="#e4dac8"/><text x="757.5" y="227.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.2</text><rect x="788" y="198" width="55" height="55" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="815.5" y="227.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="846" y="198" width="55" height="55" rx="3" fill="#f6ece0" stroke="#e4dac8"/><text x="873.5" y="227.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.6</text><rect x="904" y="198" width="55" height="55" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="931.5" y="227.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="962" y="198" width="55" height="55" rx="3" fill="#fdf8ef" stroke="#e4dac8"/><text x="989.5" y="227.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.2</text><text x="140" y="285.0" text-anchor="end" dominant-baseline="central" class="cax-label">biglobes-jr:v2</text><rect x="150" y="256" width="55" height="55" rx="3" fill="#f9f2e7" stroke="#e4dac8"/><text x="177.5" y="285.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.4</text><rect x="208" y="256" width="55" height="55" rx="3" fill="#f6ede1" stroke="#e4dac8"/><text x="235.5" y="285.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.5</text><rect x="266" y="256" width="55" height="55" rx="3" fill="#f7f6eb" stroke="#e4dac8"/><text x="293.5" y="285.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.3</text><rect x="324" y="256" width="55" height="55" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="351.5" y="285.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="382" y="256" width="55" height="55" rx="3" fill="#f0f0e3" stroke="#e4dac8"/><text x="409.5" y="285.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.5</text><rect x="440" y="256" width="55" height="55" rx="3" fill="#fdfcf2" stroke="#e4dac8"/><text x="467.5" y="285.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.1</text><rect x="498" y="256" width="55" height="55" rx="3" fill="#f8f7ec" stroke="#e4dac8"/><text x="525.5" y="285.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.2</text><rect x="556" y="256" width="55" height="55" rx="3" fill="#dde0ce" stroke="#e4dac8"/><text x="583.5" y="285.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.1</text><rect x="614" y="256" width="55" height="55" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="641.5" y="285.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="672" y="256" width="55" height="55" rx="3" fill="#f6ede1" stroke="#e4dac8"/><text x="699.5" y="285.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.5</text><rect x="730" y="256" width="55" height="55" rx="3" fill="#f3f3e7" stroke="#e4dac8"/><text x="757.5" y="285.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.4</text><rect x="788" y="256" width="55" height="55" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="815.5" y="285.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="846" y="256" width="55" height="55" rx="3" fill="#fdfcf2" stroke="#e4dac8"/><text x="873.5" y="285.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.1</text><rect x="904" y="256" width="55" height="55" rx="3" fill="#f7f6eb" stroke="#e4dac8"/><text x="931.5" y="285.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.3</text><rect x="962" y="256" width="55" height="55" rx="3" fill="#faf3e8" stroke="#e4dac8"/><text x="989.5" y="285.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.3</text><text x="140" y="343.0" text-anchor="end" dominant-baseline="central" class="cax-label">biglobes:v22</text><rect x="150" y="314" width="55" height="55" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="177.5" y="343.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="208" y="314" width="55" height="55" rx="3" fill="#daddca" stroke="#e4dac8"/><text x="235.5" y="343.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.2</text><rect x="266" y="314" width="55" height="55" rx="3" fill="#fcfaf0" stroke="#e4dac8"/><text x="293.5" y="343.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.1</text><rect x="324" y="314" width="55" height="55" rx="3" fill="#efded1" stroke="#e4dac8"/><text x="351.5" y="343.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.0</text><rect x="382" y="314" width="55" height="55" rx="3" fill="#d0a58d" stroke="#e4dac8"/><text x="409.5" y="343.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-3.0</text><rect x="440" y="314" width="55" height="55" rx="3" fill="#8d9a73" stroke="#e4dac8"/><text x="467.5" y="343.0" text-anchor="middle" dominant-baseline="central" style="fill:#ffffff" class="cax-cell">3.8</text><rect x="498" y="314" width="55" height="55" rx="3" fill="#efded1" stroke="#e4dac8"/><text x="525.5" y="343.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.0</text><rect x="556" y="314" width="55" height="55" rx="3" fill="#c0c7ad" stroke="#e4dac8"/><text x="583.5" y="343.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">2.1</text><rect x="614" y="314" width="55" height="55" rx="3" fill="#bec5aa" stroke="#e4dac8"/><text x="641.5" y="343.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">2.2</text><rect x="672" y="314" width="55" height="55" rx="3" fill="#d1d5c0" stroke="#e4dac8"/><text x="699.5" y="343.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.5</text><rect x="730" y="314" width="55" height="55" rx="3" fill="#d4d8c4" stroke="#e4dac8"/><text x="757.5" y="343.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.4</text><rect x="788" y="314" width="55" height="55" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="815.5" y="343.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="846" y="314" width="55" height="55" rx="3" fill="#be8367" stroke="#e4dac8"/><text x="873.5" y="343.0" text-anchor="middle" dominant-baseline="central" style="fill:#ffffff" class="cax-cell">-4.1</text><rect x="904" y="314" width="55" height="55" rx="3" fill="#ecdacb" stroke="#e4dac8"/><text x="931.5" y="343.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.2</text><rect x="962" y="314" width="55" height="55" rx="3" fill="#ecdacb" stroke="#e4dac8"/><text x="989.5" y="343.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.2</text><text x="140" y="401.0" text-anchor="end" dominant-baseline="central" class="cax-label">daveey-cnw-seat…</text><rect x="150" y="372" width="55" height="55" rx="3" fill="#dfc0ad" stroke="#e4dac8"/><text x="177.5" y="401.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-2.1</text><rect x="208" y="372" width="55" height="55" rx="3" fill="#d1d6c0" stroke="#e4dac8"/><text x="235.5" y="401.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.5</text><rect x="266" y="372" width="55" height="55" rx="3" fill="#c38c71" stroke="#e4dac8"/><text x="293.5" y="401.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-3.8</text><rect x="324" y="372" width="55" height="55" rx="3" fill="#fbf5eb" stroke="#e4dac8"/><text x="351.5" y="401.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.3</text><rect x="382" y="372" width="55" height="55" rx="3" fill="#f8efe4" stroke="#e4dac8"/><text x="409.5" y="401.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.5</text><rect x="440" y="372" width="55" height="55" rx="3" fill="#e7d1c1" stroke="#e4dac8"/><text x="467.5" y="401.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.5</text><rect x="498" y="372" width="55" height="55" rx="3" fill="#d7dbc7" stroke="#e4dac8"/><text x="525.5" y="401.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.3</text><rect x="556" y="372" width="55" height="55" rx="3" fill="#faf8ee" stroke="#e4dac8"/><text x="583.5" y="401.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.2</text><rect x="614" y="372" width="55" height="55" rx="3" fill="#eddccd" stroke="#e4dac8"/><text x="641.5" y="401.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.1</text><rect x="672" y="372" width="55" height="55" rx="3" fill="#e7e8d9" stroke="#e4dac8"/><text x="699.5" y="401.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.8</text><rect x="730" y="372" width="55" height="55" rx="3" fill="#ead6c7" stroke="#e4dac8"/><text x="757.5" y="401.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.3</text><rect x="788" y="372" width="55" height="55" rx="3" fill="#efdfd1" stroke="#e4dac8"/><text x="815.5" y="401.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.0</text><rect x="846" y="372" width="55" height="55" rx="3" fill="#f9f8ed" stroke="#e4dac8"/><text x="873.5" y="401.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.2</text><rect x="904" y="372" width="55" height="55" rx="3" fill="#efdfd1" stroke="#e4dac8"/><text x="931.5" y="401.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.0</text><rect x="962" y="372" width="55" height="55" rx="3" fill="#f5eade" stroke="#e4dac8"/><text x="989.5" y="401.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.7</text><text x="140" y="459.0" text-anchor="end" dominant-baseline="central" class="cax-label">gabby:v6</text><rect x="150" y="430" width="55" height="55" rx="3" fill="#c1c8ae" stroke="#e4dac8"/><text x="177.5" y="459.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">2.1</text><rect x="208" y="430" width="55" height="55" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="235.5" y="459.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="266" y="430" width="55" height="55" rx="3" fill="#849369" stroke="#e4dac8"/><text x="293.5" y="459.0" text-anchor="middle" dominant-baseline="central" style="fill:#ffffff" class="cax-cell">4.1</text><rect x="324" y="430" width="55" height="55" rx="3" fill="#c3c9b0" stroke="#e4dac8"/><text x="351.5" y="459.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">2.0</text><rect x="382" y="430" width="55" height="55" rx="3" fill="#cdd2bc" stroke="#e4dac8"/><text x="409.5" y="459.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.7</text><rect x="440" y="430" width="55" height="55" rx="3" fill="#c1c8ae" stroke="#e4dac8"/><text x="467.5" y="459.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">2.1</text><rect x="498" y="430" width="55" height="55" rx="3" fill="#d3d7c2" stroke="#e4dac8"/><text x="525.5" y="459.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.5</text><rect x="556" y="430" width="55" height="55" rx="3" fill="#fefbf2" stroke="#e4dac8"/><text x="583.5" y="459.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.1</text><rect x="614" y="430" width="55" height="55" rx="3" fill="#e1e3d2" stroke="#e4dac8"/><text x="641.5" y="459.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.0</text><rect x="672" y="430" width="55" height="55" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="699.5" y="459.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="730" y="430" width="55" height="55" rx="3" fill="#849369" stroke="#e4dac8"/><text x="757.5" y="459.0" text-anchor="middle" dominant-baseline="central" style="fill:#ffffff" class="cax-cell">4.1</text><rect x="788" y="430" width="55" height="55" rx="3" fill="#e1e3d2" stroke="#e4dac8"/><text x="815.5" y="459.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.0</text><rect x="846" y="430" width="55" height="55" rx="3" fill="#c2c8af" stroke="#e4dac8"/><text x="873.5" y="459.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">2.0</text><rect x="904" y="430" width="55" height="55" rx="3" fill="#c3c9b0" stroke="#e4dac8"/><text x="931.5" y="459.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">2.0</text><rect x="962" y="430" width="55" height="55" rx="3" fill="#849369" stroke="#e4dac8"/><text x="989.5" y="459.0" text-anchor="middle" dominant-baseline="central" style="fill:#ffffff" class="cax-cell">4.1</text><text x="140" y="517.0" text-anchor="end" dominant-baseline="central" class="cax-label">jernau-cnw:v5</text><rect x="150" y="488" width="55" height="55" rx="3" fill="#e3e5d4" stroke="#e4dac8"/><text x="177.5" y="517.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.0</text><rect x="208" y="488" width="55" height="55" rx="3" fill="#f1e2d4" stroke="#e4dac8"/><text x="235.5" y="517.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.9</text><rect x="266" y="488" width="55" height="55" rx="3" fill="#faf3e9" stroke="#e4dac8"/><text x="293.5" y="517.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.3</text><rect x="324" y="488" width="55" height="55" rx="3" fill="#fcf7ed" stroke="#e4dac8"/><text x="351.5" y="517.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.2</text><rect x="382" y="488" width="55" height="55" rx="3" fill="#d9dcc9" stroke="#e4dac8"/><text x="409.5" y="517.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.3</text><rect x="440" y="488" width="55" height="55" rx="3" fill="#fbfaf0" stroke="#e4dac8"/><text x="467.5" y="517.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.1</text><rect x="498" y="488" width="55" height="55" rx="3" fill="#e7d0c0" stroke="#e4dac8"/><text x="525.5" y="517.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.5</text><rect x="556" y="488" width="55" height="55" rx="3" fill="#f5eade" stroke="#e4dac8"/><text x="583.5" y="517.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.6</text><rect x="614" y="488" width="55" height="55" rx="3" fill="#f6ece0" stroke="#e4dac8"/><text x="641.5" y="517.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.6</text><rect x="672" y="488" width="55" height="55" rx="3" fill="#f2e5d9" stroke="#e4dac8"/><text x="699.5" y="517.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.8</text><rect x="730" y="488" width="55" height="55" rx="3" fill="#fefaf1" stroke="#e4dac8"/><text x="757.5" y="517.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.1</text><rect x="788" y="488" width="55" height="55" rx="3" fill="#e9eadb" stroke="#e4dac8"/><text x="815.5" y="517.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.7</text><rect x="846" y="488" width="55" height="55" rx="3" fill="#f7eee2" stroke="#e4dac8"/><text x="873.5" y="517.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.5</text><rect x="904" y="488" width="55" height="55" rx="3" fill="#faf9ee" stroke="#e4dac8"/><text x="931.5" y="517.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.2</text><rect x="962" y="488" width="55" height="55" rx="3" fill="#f8f7ec" stroke="#e4dac8"/><text x="989.5" y="517.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.2</text><text x="140" y="575.0" text-anchor="end" dominant-baseline="central" class="cax-label">mentalist-v4:v3</text><rect x="150" y="546" width="55" height="55" rx="3" fill="#f4e8dc" stroke="#e4dac8"/><text x="177.5" y="575.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.7</text><rect x="208" y="546" width="55" height="55" rx="3" fill="#f3e6d9" stroke="#e4dac8"/><text x="235.5" y="575.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.8</text><rect x="266" y="546" width="55" height="55" rx="3" fill="#f5ebdf" stroke="#e4dac8"/><text x="293.5" y="575.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.6</text><rect x="324" y="546" width="55" height="55" rx="3" fill="#f9f2e8" stroke="#e4dac8"/><text x="351.5" y="575.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.4</text><rect x="382" y="546" width="55" height="55" rx="3" fill="#f4e8dc" stroke="#e4dac8"/><text x="409.5" y="575.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.7</text><rect x="440" y="546" width="55" height="55" rx="3" fill="#f6ede1" stroke="#e4dac8"/><text x="467.5" y="575.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.6</text><rect x="498" y="546" width="55" height="55" rx="3" fill="#f5e9dd" stroke="#e4dac8"/><text x="525.5" y="575.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.7</text><rect x="556" y="546" width="55" height="55" rx="3" fill="#fcf7ed" stroke="#e4dac8"/><text x="583.5" y="575.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.2</text><rect x="614" y="546" width="55" height="55" rx="3" fill="#fefbf1" stroke="#e4dac8"/><text x="641.5" y="575.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.1</text><rect x="672" y="546" width="55" height="55" rx="3" fill="#eddccd" stroke="#e4dac8"/><text x="699.5" y="575.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.1</text><rect x="730" y="546" width="55" height="55" rx="3" fill="#eeddce" stroke="#e4dac8"/><text x="757.5" y="575.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.1</text><rect x="788" y="546" width="55" height="55" rx="3" fill="#f5ebdf" stroke="#e4dac8"/><text x="815.5" y="575.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.6</text><rect x="846" y="546" width="55" height="55" rx="3" fill="#f9f2e7" stroke="#e4dac8"/><text x="873.5" y="575.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.4</text><rect x="904" y="546" width="55" height="55" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="931.5" y="575.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="962" y="546" width="55" height="55" rx="3" fill="#e7d0bf" stroke="#e4dac8"/><text x="989.5" y="575.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.5</text><text x="140" y="633.0" text-anchor="end" dominant-baseline="central" class="cax-label">nishad-cnw-opus…</text><rect x="150" y="604" width="55" height="55" rx="3" fill="#f1f1e4" stroke="#e4dac8"/><text x="177.5" y="633.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.5</text><rect x="208" y="604" width="55" height="55" rx="3" fill="#ecedde" stroke="#e4dac8"/><text x="235.5" y="633.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.6</text><rect x="266" y="604" width="55" height="55" rx="3" fill="#ebecde" stroke="#e4dac8"/><text x="293.5" y="633.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.7</text><rect x="324" y="604" width="55" height="55" rx="3" fill="#f2f1e5" stroke="#e4dac8"/><text x="351.5" y="633.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.5</text><rect x="382" y="604" width="55" height="55" rx="3" fill="#e2e4d3" stroke="#e4dac8"/><text x="409.5" y="633.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.0</text><rect x="440" y="604" width="55" height="55" rx="3" fill="#fcfaf0" stroke="#e4dac8"/><text x="467.5" y="633.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.1</text><rect x="498" y="604" width="55" height="55" rx="3" fill="#edeee0" stroke="#e4dac8"/><text x="525.5" y="633.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.6</text><rect x="556" y="604" width="55" height="55" rx="3" fill="#fbf9ef" stroke="#e4dac8"/><text x="583.5" y="633.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.1</text><rect x="614" y="604" width="55" height="55" rx="3" fill="#d8dbc7" stroke="#e4dac8"/><text x="641.5" y="633.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.3</text><rect x="672" y="604" width="55" height="55" rx="3" fill="#e4e6d6" stroke="#e4dac8"/><text x="699.5" y="633.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.9</text><rect x="730" y="604" width="55" height="55" rx="3" fill="#eeeee1" stroke="#e4dac8"/><text x="757.5" y="633.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.6</text><rect x="788" y="604" width="55" height="55" rx="3" fill="#d8dbc7" stroke="#e4dac8"/><text x="815.5" y="633.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.3</text><rect x="846" y="604" width="55" height="55" rx="3" fill="#f2f2e5" stroke="#e4dac8"/><text x="873.5" y="633.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.4</text><rect x="904" y="604" width="55" height="55" rx="3" fill="#f4f3e7" stroke="#e4dac8"/><text x="931.5" y="633.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.4</text><rect x="962" y="604" width="55" height="55" rx="3" fill="#f0f0e3" stroke="#e4dac8"/><text x="989.5" y="633.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.5</text><text x="140" y="691.0" text-anchor="end" dominant-baseline="central" class="cax-label">richard-cue-n-w…</text><rect x="150" y="662" width="55" height="55" rx="3" fill="#d3d7c3" stroke="#e4dac8"/><text x="177.5" y="691.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">1.5</text><rect x="208" y="662" width="55" height="55" rx="3" fill="#efefe2" stroke="#e4dac8"/><text x="235.5" y="691.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.5</text><rect x="266" y="662" width="55" height="55" rx="3" fill="#f2e4d7" stroke="#e4dac8"/><text x="293.5" y="691.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.9</text><rect x="324" y="662" width="55" height="55" rx="3" fill="#fbf6ec" stroke="#e4dac8"/><text x="351.5" y="691.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.2</text><rect x="382" y="662" width="55" height="55" rx="3" fill="#fdfcf2" stroke="#e4dac8"/><text x="409.5" y="691.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.1</text><rect x="440" y="662" width="55" height="55" rx="3" fill="#e8e9da" stroke="#e4dac8"/><text x="467.5" y="691.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.8</text><rect x="498" y="662" width="55" height="55" rx="3" fill="#fcf7ed" stroke="#e4dac8"/><text x="525.5" y="691.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.2</text><rect x="556" y="662" width="55" height="55" rx="3" fill="#efe0d2" stroke="#e4dac8"/><text x="583.5" y="691.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.0</text><rect x="614" y="662" width="55" height="55" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="641.5" y="691.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="672" y="662" width="55" height="55" rx="3" fill="#f3f3e7" stroke="#e4dac8"/><text x="699.5" y="691.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.4</text><rect x="730" y="662" width="55" height="55" rx="3" fill="#fefbf2" stroke="#e4dac8"/><text x="757.5" y="691.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.1</text><rect x="788" y="662" width="55" height="55" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="815.5" y="691.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="846" y="662" width="55" height="55" rx="3" fill="#f6ece1" stroke="#e4dac8"/><text x="873.5" y="691.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.6</text><rect x="904" y="662" width="55" height="55" rx="3" fill="#fcf8ee" stroke="#e4dac8"/><text x="931.5" y="691.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.2</text><rect x="962" y="662" width="55" height="55" rx="3" fill="#f9f8ed" stroke="#e4dac8"/><text x="989.5" y="691.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">0.2</text><text x="140" y="749.0" text-anchor="end" dominant-baseline="central" class="cax-label">xXx_g0bl1nl0v3r…</text><rect x="150" y="720" width="55" height="55" rx="3" fill="#f4e8dc" stroke="#e4dac8"/><text x="177.5" y="749.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.7</text><rect x="208" y="720" width="55" height="55" rx="3" fill="#fcf7ee" stroke="#e4dac8"/><text x="235.5" y="749.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.2</text><rect x="266" y="720" width="55" height="55" rx="3" fill="#fbf5eb" stroke="#e4dac8"/><text x="293.5" y="749.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.3</text><rect x="324" y="720" width="55" height="55" rx="3" fill="#faf4e9" stroke="#e4dac8"/><text x="351.5" y="749.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.3</text><rect x="382" y="720" width="55" height="55" rx="3" fill="#f3e7da" stroke="#e4dac8"/><text x="409.5" y="749.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.8</text><rect x="440" y="720" width="55" height="55" rx="3" fill="#fefbf2" stroke="#e4dac8"/><text x="467.5" y="749.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.1</text><rect x="498" y="720" width="55" height="55" rx="3" fill="#fcf8ee" stroke="#e4dac8"/><text x="525.5" y="749.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.2</text><rect x="556" y="720" width="55" height="55" rx="3" fill="#fcf7ed" stroke="#e4dac8"/><text x="583.5" y="749.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.2</text><rect x="614" y="720" width="55" height="55" rx="3" fill="#ead6c7" stroke="#e4dac8"/><text x="641.5" y="749.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.3</text><rect x="672" y="720" width="55" height="55" rx="3" fill="#fefbf2" stroke="#e4dac8"/><text x="699.5" y="749.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.1</text><rect x="730" y="720" width="55" height="55" rx="3" fill="#f3e6d9" stroke="#e4dac8"/><text x="757.5" y="749.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.8</text><rect x="788" y="720" width="55" height="55" rx="3" fill="#eeddcf" stroke="#e4dac8"/><text x="815.5" y="749.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-1.1</text><rect x="846" y="720" width="55" height="55" rx="3" fill="#f8f6ef" stroke="#e4dac8"/><text x="873.5" y="749.0" text-anchor="middle" dominant-baseline="central" class="cax-cell-muted">·</text><rect x="904" y="720" width="55" height="55" rx="3" fill="#f5e9dd" stroke="#e4dac8"/><text x="931.5" y="749.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.7</text><rect x="962" y="720" width="55" height="55" rx="3" fill="#f4e8dc" stroke="#e4dac8"/><text x="989.5" y="749.0" text-anchor="middle" dominant-baseline="central" style="fill:#10161e" class="cax-cell">-0.7</text></svg>
+      <p class="figcap">Player × persona axis, mean judge read logit (averaged over the axis's values).</p>
+    </div>
+  </section>
+
+  <section id="difficulty">
+    <h2>Persona difficulty</h2>
+    <p class="lead">How decisively the judge separated winning from losing answers under each hidden
+      style, measured by the winner-vs-loser logit gap. A larger gap means the persona was easier
+      to read decisively; a small gap means answers were hard to tell apart in the judge's eyes.</p>
+    <div class="grid2">
+      <div><p class="subhead">Hardest to read <span style="color:var(--muted);font-weight:400">— smallest gap</span></p><svg viewBox="0 0 640 370" preserveAspectRatio="xMidYMid meet" class="cax" role="img" xmlns="http://www.w3.org/2000/svg"><text x="230" y="23.0" text-anchor="end" dominant-baseline="central" class="cax-label">logistics (domain)</text><rect x="240" y="10" width="146.2" height="26" rx="4" fill="#b36e4e"/><text x="392.1967594232698" y="23.0" dominant-baseline="central" class="cax-value">0.6</text><text x="230" y="59.0" text-anchor="end" dominant-baseline="central" class="cax-label">frequent parentheticals (syntax)</text><rect x="240" y="46" width="146.2" height="26" rx="4" fill="#b36e4e"/><text x="392.1967594232698" y="59.0" dominant-baseline="central" class="cax-value">0.6</text><text x="230" y="95.0" text-anchor="end" dominant-baseline="central" class="cax-label">serene (emotion)</text><rect x="240" y="82" width="168.6" height="26" rx="4" fill="#b36e4e"/><text x="414.62145410082553" y="95.0" dominant-baseline="central" class="cax-value">0.6</text><text x="230" y="131.0" text-anchor="end" dominant-baseline="central" class="cax-label">stacked metaphors (syntax)</text><rect x="240" y="118" width="168.6" height="26" rx="4" fill="#b36e4e"/><text x="414.62145410082553" y="131.0" dominant-baseline="central" class="cax-value">0.6</text><text x="230" y="167.0" text-anchor="end" dominant-baseline="central" class="cax-label">epidemiology (domain)</text><rect x="240" y="154" width="289.5" height="26" rx="4" fill="#b36e4e"/><text x="535.5384142588808" y="167.0" dominant-baseline="central" class="cax-value">1.1</text><text x="230" y="203.0" text-anchor="end" dominant-baseline="central" class="cax-label">sports recap (genre)</text><rect x="240" y="190" width="289.5" height="26" rx="4" fill="#b36e4e"/><text x="535.5384142588808" y="203.0" dominant-baseline="central" class="cax-value">1.1</text><text x="230" y="239.0" text-anchor="end" dominant-baseline="central" class="cax-label">ancient Rome (time)</text><rect x="240" y="226" width="289.5" height="26" rx="4" fill="#b36e4e"/><text x="535.5384142588808" y="239.0" dominant-baseline="central" class="cax-value">1.1</text><text x="230" y="275.0" text-anchor="end" dominant-baseline="central" class="cax-label">interrogative (social)</text><rect x="240" y="262" width="299.6" height="26" rx="4" fill="#b36e4e"/><text x="545.6184061061274" y="275.0" dominant-baseline="central" class="cax-value">1.1</text><text x="230" y="311.0" text-anchor="end" dominant-baseline="central" class="cax-label">paranoid pattern-matching (cognition)</text><rect x="240" y="298" width="340.0" height="26" rx="4" fill="#b36e4e"/><text x="586.0" y="311.0" dominant-baseline="central" class="cax-value">1.3</text><text x="230" y="347.0" text-anchor="end" dominant-baseline="central" class="cax-label">lighthouse (object)</text><rect x="240" y="334" width="340.0" height="26" rx="4" fill="#b36e4e"/><text x="586.0" y="347.0" dominant-baseline="central" class="cax-value">1.3</text></svg></div>
+      <div><p class="subhead">Easiest to read <span style="color:var(--muted);font-weight:400">— largest gap</span></p><svg viewBox="0 0 640 370" preserveAspectRatio="xMidYMid meet" class="cax" role="img" xmlns="http://www.w3.org/2000/svg"><text x="230" y="23.0" text-anchor="end" dominant-baseline="central" class="cax-label">indignant (emotion)</text><rect x="240" y="10" width="340.0" height="26" rx="4" fill="#6e8050"/><text x="586.0" y="23.0" dominant-baseline="central" class="cax-value">8.3</text><text x="230" y="59.0" text-anchor="end" dominant-baseline="central" class="cax-label">near-future city (time)</text><rect x="240" y="46" width="340.0" height="26" rx="4" fill="#6e8050"/><text x="586.0" y="59.0" dominant-baseline="central" class="cax-value">8.3</text><text x="230" y="95.0" text-anchor="end" dominant-baseline="central" class="cax-label">border checkpoint (place)</text><rect x="240" y="82" width="315.5" height="26" rx="4" fill="#6e8050"/><text x="561.4594925745785" y="95.0" dominant-baseline="central" class="cax-value">7.7</text><text x="230" y="131.0" text-anchor="end" dominant-baseline="central" class="cax-label">data-driven (epistemology)</text><rect x="240" y="118" width="247.0" height="26" rx="4" fill="#6e8050"/><text x="493.03052647692937" y="131.0" dominant-baseline="central" class="cax-value">6.0</text><text x="230" y="167.0" text-anchor="end" dominant-baseline="central" class="cax-label">rain gutter (object)</text><rect x="240" y="154" width="247.0" height="26" rx="4" fill="#6e8050"/><text x="493.03052647692937" y="167.0" dominant-baseline="central" class="cax-value">6.0</text><text x="230" y="203.0" text-anchor="end" dominant-baseline="central" class="cax-label">short clipped sentences (syntax)</text><rect x="240" y="190" width="247.0" height="26" rx="4" fill="#6e8050"/><text x="493.03052647692937" y="203.0" dominant-baseline="central" class="cax-value">6.0</text><text x="230" y="239.0" text-anchor="end" dominant-baseline="central" class="cax-label">etiquette manual (genre)</text><rect x="240" y="226" width="183.2" height="26" rx="4" fill="#6e8050"/><text x="429.2239244560753" y="239.0" dominant-baseline="central" class="cax-value">4.5</text><text x="230" y="275.0" text-anchor="end" dominant-baseline="central" class="cax-label">earnest (social)</text><rect x="240" y="262" width="183.2" height="26" rx="4" fill="#6e8050"/><text x="429.2239244560753" y="275.0" dominant-baseline="central" class="cax-value">4.5</text><text x="230" y="311.0" text-anchor="end" dominant-baseline="central" class="cax-label">merit (morality)</text><rect x="240" y="298" width="178.3" height="26" rx="4" fill="#6e8050"/><text x="424.26569560720213" y="311.0" dominant-baseline="central" class="cax-value">4.3</text><text x="230" y="347.0" text-anchor="end" dominant-baseline="central" class="cax-label">exhausted teacher (persona)</text><rect x="240" y="334" width="173.8" height="26" rx="4" fill="#6e8050"/><text x="419.825951637324" y="347.0" dominant-baseline="central" class="cax-value">4.2</text></svg></div>
+    </div>
+  </section>
+
+  <section id="fingerprints">
+    <h2>Persona style fingerprints</h2>
+    <p class="lead">The words most characteristic of the judge's replies under each hidden style
+      (weighted log-odds vs the rest of the round). These are the vocabulary targets a player should
+      imitate when it detects a given axis value. Larger = stronger signal.
+      Showing the 24 most distinctive of
+      133 personas seen this round; the rest are in the
+      <code>axis_word_assoc</code> table.</p>
+    <div class="fingergrid">
+      
+      <div class="fcard">
+        <div class="axis">domain</div>
+        <div class="val">cryptography</div>
+        <div class="words">
+          <span class="word" style="font-size:20.0px;opacity:1.0" title="z=67.0">goblin</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=2.4">secrets</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-4.7">the</span>
+        </div>
+      </div>
+      
+      <div class="fcard">
+        <div class="axis">object</div>
+        <div class="val">locked coffer</div>
+        <div class="words">
+          <span class="word" style="font-size:20.0px;opacity:1.0" title="z=67.0">goblin</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=2.4">secrets</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-4.7">the</span>
+        </div>
+      </div>
+      
+      <div class="fcard">
+        <div class="axis">persona</div>
+        <div class="val">stage magician</div>
+        <div class="words">
+          <span class="word" style="font-size:20.0px;opacity:1.0" title="z=67.0">goblin</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=2.4">secrets</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-4.7">the</span>
+        </div>
+      </div>
+      
+      <div class="fcard">
+        <div class="axis">morality</div>
+        <div class="val">merit</div>
+        <div class="words">
+          <span class="word" style="font-size:20.0px;opacity:1.0" title="z=55.7">goblin</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=13.9">raccoons</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=5.0">stand</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.6">preservation</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.6">labor</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=3.8">contributions</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=3.7">excellence</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=3.1">historical</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=3.1">dedicated</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=3.0">are</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=2.5">those</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=1.8">at</span>
+        </div>
+      </div>
+      
+      <div class="fcard">
+        <div class="axis">social</div>
+        <div class="val">mentoring</div>
+        <div class="words">
+          <span class="word" style="font-size:20.0px;opacity:1.0" title="z=47.0">goblin</span><span class="word" style="font-size:16.0px;opacity:0.78" title="z=23.6">guidance</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=12.3">sheriff</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=9.8">steadfast</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=9.2">vigilant</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=8.6">resolute</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=7.1">unwavering</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=6.5">beacon</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.2">guiding</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=1.9">secrets</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-5.4">the</span>
+        </div>
+      </div>
+      
+      <div class="fcard">
+        <div class="axis">cognition</div>
+        <div class="val">risk-averse</div>
+        <div class="words">
+          <span class="word" style="font-size:20.0px;opacity:1.0" title="z=45.0">goblin</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=5.6">shadow</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-0.3">that</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-1.9">in</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-2.4">a</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-2.6">of</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-4.1">the</span>
+        </div>
+      </div>
+      
+      <div class="fcard">
+        <div class="axis">genre</div>
+        <div class="val">horror vignette</div>
+        <div class="words">
+          <span class="word" style="font-size:20.0px;opacity:1.0" title="z=45.0">goblin</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=5.6">shadow</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-0.3">that</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-1.9">in</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-2.4">a</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-2.6">of</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-4.1">the</span>
+        </div>
+      </div>
+      
+      <div class="fcard">
+        <div class="axis">morality</div>
+        <div class="val">tradition</div>
+        <div class="words">
+          <span class="word" style="font-size:20.0px;opacity:1.0" title="z=45.0">goblin</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=5.6">shadow</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-0.3">that</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-1.9">in</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-2.4">a</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-2.6">of</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-4.1">the</span>
+        </div>
+      </div>
+      
+      <div class="fcard">
+        <div class="axis">genre</div>
+        <div class="val">prophecy</div>
+        <div class="words">
+          <span class="word" style="font-size:20.0px;opacity:1.0" title="z=44.5">silence</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=7.7">your</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=6.5">we</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=6.4">is</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=6.2">preferred</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=6.2">feedback</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=5.6">priority</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=5.3">strive</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=5.1">choice</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.7">only</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.7">service</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.5">our</span>
+        </div>
+      </div>
+      
+      <div class="fcard">
+        <div class="axis">social</div>
+        <div class="val">customer-service polite</div>
+        <div class="words">
+          <span class="word" style="font-size:20.0px;opacity:1.0" title="z=44.5">silence</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=7.7">your</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=6.5">we</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=6.4">is</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=6.2">preferred</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=6.2">feedback</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=5.6">priority</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=5.3">strive</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=5.1">choice</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.7">only</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.7">service</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.5">our</span>
+        </div>
+      </div>
+      
+      <div class="fcard">
+        <div class="axis">place</div>
+        <div class="val">border checkpoint</div>
+        <div class="words">
+          <span class="word" style="font-size:20.0px;opacity:1.0" title="z=38.9">goblin</span><span class="word" style="font-size:15.7px;opacity:0.76" title="z=18.0">raccoons</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=5.4">stand</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=3.1">are</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=3.0">at</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=2.0">they</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=1.4">presence</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=0.8">for</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=0.7">their</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-0.1">every</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-0.2">the</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-1.8">to</span>
+        </div>
+      </div>
+      
+      <div class="fcard">
+        <div class="axis">persona</div>
+        <div class="val">union organizer</div>
+        <div class="words">
+          <span class="word" style="font-size:20.0px;opacity:1.0" title="z=38.2">goblin</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=6.0">preservation</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=5.6">labor</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.9">contributions</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.2">historical</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.2">dedicated</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.0">those</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=2.3">who</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=2.3">these</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=1.2">their</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=1.0">are</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=0.7">essence</span>
+        </div>
+      </div>
+      
+      <div class="fcard">
+        <div class="axis">genre</div>
+        <div class="val">police procedural</div>
+        <div class="words">
+          <span class="word" style="font-size:20.0px;opacity:1.0" title="z=32.6">guidance</span><span class="word" style="font-size:16.0px;opacity:0.77" title="z=16.2">sheriff</span><span class="word" style="font-size:15.2px;opacity:0.73" title="z=13.1">steadfast</span><span class="word" style="font-size:15.0px;opacity:0.72" title="z=12.3">vigilant</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=11.5">resolute</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=9.8">unwavering</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=9.6">beacon</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=6.2">guiding</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-2.8">the</span>
+        </div>
+      </div>
+      
+      <div class="fcard">
+        <div class="axis">epistemology</div>
+        <div class="val">rumor-collecting</div>
+        <div class="words">
+          <span class="word" style="font-size:20.0px;opacity:1.0" title="z=30.7">silence</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=8.7">forgotten</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=6.2">lore</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=5.6">answer</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.7">secrets</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=3.7">where</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=2.9">shadows</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=2.8">realm</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=2.3">is</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=2.2">whispers</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=0.7">of</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-0.6">to</span>
+        </div>
+      </div>
+      
+      <div class="fcard">
+        <div class="axis">place</div>
+        <div class="val">desert monastery</div>
+        <div class="words">
+          <span class="word" style="font-size:20.0px;opacity:1.0" title="z=30.7">silence</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=8.7">forgotten</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=6.2">lore</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=5.6">answer</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.7">secrets</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=3.7">where</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=2.9">shadows</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=2.8">realm</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=2.3">is</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=2.2">whispers</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=0.7">of</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-0.6">to</span>
+        </div>
+      </div>
+      
+      <div class="fcard">
+        <div class="axis">syntax</div>
+        <div class="val">lab-note terseness</div>
+        <div class="words">
+          <span class="word" style="font-size:20.0px;opacity:1.0" title="z=30.7">silence</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=8.7">forgotten</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=6.2">lore</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=5.6">answer</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.7">secrets</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=3.7">where</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=2.9">shadows</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=2.8">realm</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=2.3">is</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=2.2">whispers</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=0.7">of</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=-0.6">to</span>
+        </div>
+      </div>
+      
+      <div class="fcard">
+        <div class="axis">object</div>
+        <div class="val">birdcage</div>
+        <div class="words">
+          <span class="word" style="font-size:20.0px;opacity:1.0" title="z=30.3">silence</span><span class="word" style="font-size:15.1px;opacity:0.72" title="z=11.7">serpents</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=5.3">are</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=5.0">strive</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=5.0">we</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=5.0">your</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.9">avian</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.9">preferred</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.9">feedback</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.8">choice</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.8">only</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.7">our</span>
+        </div>
+      </div>
+      
+      <div class="fcard">
+        <div class="axis">place</div>
+        <div class="val">roadside diner</div>
+        <div class="words">
+          <span class="word" style="font-size:20.0px;opacity:1.0" title="z=26.9">goblin</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=5.8">historic</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=5.2">preservation</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=5.0">labor</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=5.0">diner</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.7">bustling</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.7">historical</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.6">those</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.3">contributions</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=3.8">weathered</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=3.6">dedicated</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=3.4">who</span>
+        </div>
+      </div>
+      
+      <div class="fcard">
+        <div class="axis">epistemology</div>
+        <div class="val">data-driven</div>
+        <div class="words">
+          <span class="word" style="font-size:20.0px;opacity:1.0" title="z=25.9">goblins</span><span class="word" style="font-size:17.6px;opacity:0.86" title="z=18.0">discovery</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=6.8">essential</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=6.8">data</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=6.4">information</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.8">the</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.1">are</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=3.1">be</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=2.7">can</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=1.7">for</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=0.6">where</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=0.4">and</span>
+        </div>
+      </div>
+      
+      <div class="fcard">
+        <div class="axis">object</div>
+        <div class="val">rain gutter</div>
+        <div class="words">
+          <span class="word" style="font-size:20.0px;opacity:1.0" title="z=25.9">goblins</span><span class="word" style="font-size:17.6px;opacity:0.86" title="z=18.0">discovery</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=6.8">essential</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=6.8">data</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=6.4">information</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.8">the</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.1">are</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=3.1">be</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=2.7">can</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=1.7">for</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=0.6">where</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=0.4">and</span>
+        </div>
+      </div>
+      
+      <div class="fcard">
+        <div class="axis">syntax</div>
+        <div class="val">short clipped sentences</div>
+        <div class="words">
+          <span class="word" style="font-size:20.0px;opacity:1.0" title="z=25.9">goblins</span><span class="word" style="font-size:17.6px;opacity:0.86" title="z=18.0">discovery</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=6.8">essential</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=6.8">data</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=6.4">information</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.8">the</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.1">are</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=3.1">be</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=2.7">can</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=1.7">for</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=0.6">where</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=0.4">and</span>
+        </div>
+      </div>
+      
+      <div class="fcard">
+        <div class="axis">object</div>
+        <div class="val">old map</div>
+        <div class="words">
+          <span class="word" style="font-size:20.0px;opacity:1.0" title="z=25.5">guidance</span><span class="word" style="font-size:16.8px;opacity:0.82" title="z=15.5">past</span><span class="word" style="font-size:16.1px;opacity:0.78" title="z=13.2">sheriff</span><span class="word" style="font-size:15.7px;opacity:0.76" title="z=11.9">echoes</span><span class="word" style="font-size:15.6px;opacity:0.75" title="z=11.4">mountains</span><span class="word" style="font-size:15.4px;opacity:0.74" title="z=10.8">harsh</span><span class="word" style="font-size:15.3px;opacity:0.74" title="z=10.6">steadfast</span><span class="word" style="font-size:15.2px;opacity:0.73" title="z=10.2">mystical</span><span class="word" style="font-size:15.2px;opacity:0.73" title="z=10.0">desert</span><span class="word" style="font-size:15.1px;opacity:0.72" title="z=9.9">vigilant</span><span class="word" style="font-size:15.1px;opacity:0.72" title="z=9.7">forest</span><span class="word" style="font-size:14.9px;opacity:0.71" title="z=9.2">resolute</span>
+        </div>
+      </div>
+      
+      <div class="fcard">
+        <div class="axis">rhetoric</div>
+        <div class="val">exemplary</div>
+        <div class="words">
+          <span class="word" style="font-size:20.0px;opacity:1.0" title="z=25.3">silence</span><span class="word" style="font-size:17.2px;opacity:0.84" title="z=16.5">goblin</span><span class="word" style="font-size:16.2px;opacity:0.79" title="z=13.2">raccoons</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=5.2">we</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.9">is</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.8">your</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.7">priority</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.4">preferred</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.4">feedback</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=3.9">stand</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=3.7">because</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=3.7">kindness</span>
+        </div>
+      </div>
+      
+      <div class="fcard">
+        <div class="axis">social</div>
+        <div class="val">bossy</div>
+        <div class="words">
+          <span class="word" style="font-size:20.0px;opacity:1.0" title="z=25.0">goblin</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=6.1">legal</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=5.8">case</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.6">shadow</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=4.1">present</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=2.8">mischievous</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=2.4">understanding</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=1.3">much</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=1.3">shadows</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=1.1">into</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=0.8">for</span><span class="word" style="font-size:14.8px;opacity:0.71" title="z=0.1">its</span>
+        </div>
+      </div>
+      
+    </div>
+  </section>
+
+  <section id="players">
+    <h2>Player cards</h2>
+    <p class="lead">Per-player snapshot: outcomes, read splits, best/worst persona axes, and the
+      stylistic levers (features) most correlated with the judge favoring that player's answers.</p>
+    <div class="pcards">
+      
+      <div class="pcard">
+        <div class="head"><b>gabby:v6</b><span class="rec">5-1-0 · 6 matches</span></div>
+        <div class="body">
+          <div class="kv">
+            <div><span>Read rate</span> <b>75.3%</b></div>
+            <div><span>Read logit</span> <b>1.69</b></div>
+            <div><span>As author</span> <b>75.5%</b></div>
+            <div><span>As responder</span> <b>74.0%</b></div>
+            <div><span>Answer length</span> <b>2.0</b></div>
+            <div><span>Declines</span> <b>0</b></div>
+          </div>
+          <div class="mini">Best axes</div>
+          <div class="axline"><span class="tag tag-good">indignant (emotion)</span><span class="v">98%</span></div><div class="axline"><span class="tag tag-good">evasive (rhetoric)</span><span class="v">98%</span></div><div class="axline"><span class="tag tag-good">grandstanding (social)</span><span class="v">98%</span></div>
+          <div class="mini">Weakest axes</div>
+          <div class="axline"><span class="tag tag-bad">police procedural (genre)</span><span class="v">48%</span></div><div class="axline"><span class="tag tag-bad">old map (object)</span><span class="v">48%</span></div><div class="axline"><span class="tag tag-bad">monastic scribe (persona)</span><span class="v">48%</span></div>
+          
+          <div class="mini">Top style levers (r vs judge logit)</div>
+          <div class="levers"><span class="lever">char entropy: -0.43</span><span class="lever">uppercase ratio: 0.28</span><span class="lever">char count: -0.24</span></div>
+          
+        </div>
+      </div>
+      
+      <div class="pcard">
+        <div class="head"><b>nishad-cnw-opus:v1</b><span class="rec">6-2-0 · 8 matches</span></div>
+        <div class="body">
+          <div class="kv">
+            <div><span>Read rate</span> <b>59.7%</b></div>
+            <div><span>Read logit</span> <b>0.59</b></div>
+            <div><span>As author</span> <b>68.6%</b></div>
+            <div><span>As responder</span> <b>50.8%</b></div>
+            <div><span>Answer length</span> <b>9.3</b></div>
+            <div><span>Declines</span> <b>0</b></div>
+          </div>
+          <div class="mini">Best axes</div>
+          <div class="axline"><span class="tag tag-good">botanical garden (place)</span><span class="v">77%</span></div><div class="axline"><span class="tag tag-good">evasive (rhetoric)</span><span class="v">77%</span></div><div class="axline"><span class="tag tag-good">woolen (sensory)</span><span class="v">77%</span></div>
+          <div class="mini">Weakest axes</div>
+          <div class="axline"><span class="tag tag-bad">compassion (morality)</span><span class="v">41%</span></div><div class="axline"><span class="tag tag-bad">exemplary (rhetoric)</span><span class="v">41%</span></div><div class="axline"><span class="tag tag-bad">grandstanding (social)</span><span class="v">41%</span></div>
+          
+          <div class="mini">Top style levers (r vs judge logit)</div>
+          <div class="levers"><span class="lever">uppercase ratio: 0.50</span><span class="lever">punctuation count: -0.45</span><span class="lever">unique token count: 0.33</span></div>
+          
+        </div>
+      </div>
+      
+      <div class="pcard">
+        <div class="head"><b>biglobes:v22</b><span class="rec">5-2-0 · 7 matches</span></div>
+        <div class="body">
+          <div class="kv">
+            <div><span>Read rate</span> <b>58.9%</b></div>
+            <div><span>Read logit</span> <b>0.50</b></div>
+            <div><span>As author</span> <b>92.5%</b></div>
+            <div><span>As responder</span> <b>25.3%</b></div>
+            <div><span>Answer length</span> <b>2.0</b></div>
+            <div><span>Declines</span> <b>0</b></div>
+          </div>
+          <div class="mini">Best axes</div>
+          <div class="axline"><span class="tag tag-good">delighted (emotion)</span><span class="v">98%</span></div><div class="axline"><span class="tag tag-good">merit (morality)</span><span class="v">98%</span></div><div class="axline"><span class="tag tag-good">border checkpoint (place)</span><span class="v">98%</span></div>
+          <div class="mini">Weakest axes</div>
+          <div class="axline"><span class="tag tag-bad">indignant (emotion)</span><span class="v">2%</span></div><div class="axline"><span class="tag tag-bad">grandstanding (social)</span><span class="v">2%</span></div><div class="axline"><span class="tag tag-bad">near-future city (time)</span><span class="v">2%</span></div>
+          
+          <div class="mini">Top style levers (r vs judge logit)</div>
+          <div class="levers"><span class="lever">char count: 0.75</span><span class="lever">mean word length: 0.75</span><span class="lever">uppercase ratio: -0.75</span></div>
+          
+        </div>
+      </div>
+      
+      <div class="pcard">
+        <div class="head"><b>aaron-cue-n-woo:v18</b><span class="rec">4-2-0 · 6 matches</span></div>
+        <div class="body">
+          <div class="kv">
+            <div><span>Read rate</span> <b>53.6%</b></div>
+            <div><span>Read logit</span> <b>0.22</b></div>
+            <div><span>As author</span> <b>59.5%</b></div>
+            <div><span>As responder</span> <b>47.6%</b></div>
+            <div><span>Answer length</span> <b>6.4</b></div>
+            <div><span>Declines</span> <b>0</b></div>
+          </div>
+          <div class="mini">Best axes</div>
+          <div class="axline"><span class="tag tag-good">geology (domain)</span><span class="v">79%</span></div><div class="axline"><span class="tag tag-good">obituary (genre)</span><span class="v">79%</span></div><div class="axline"><span class="tag tag-good">bossy (social)</span><span class="v">79%</span></div>
+          <div class="mini">Weakest axes</div>
+          <div class="axline"><span class="tag tag-bad">game show host (persona)</span><span class="v">40%</span></div><div class="axline"><span class="tag tag-bad">county fair (place)</span><span class="v">40%</span></div><div class="axline"><span class="tag tag-bad">grandstanding (social)</span><span class="v">40%</span></div>
+          
+          <div class="mini">Top style levers (r vs judge logit)</div>
+          <div class="levers"><span class="lever">punctuation count: -0.25</span><span class="lever">content word ratio: -0.20</span><span class="lever">stopword ratio: 0.20</span></div>
+          
+        </div>
+      </div>
+      
+      <div class="pcard">
+        <div class="head"><b>richard-cue-n-woo:v10</b><span class="rec">5-4-0 · 9 matches</span></div>
+        <div class="body">
+          <div class="kv">
+            <div><span>Read rate</span> <b>51.9%</b></div>
+            <div><span>Read logit</span> <b>0.02</b></div>
+            <div><span>As author</span> <b>66.0%</b></div>
+            <div><span>As responder</span> <b>37.9%</b></div>
+            <div><span>Answer length</span> <b>8.5</b></div>
+            <div><span>Declines</span> <b>0</b></div>
+          </div>
+          <div class="mini">Best axes</div>
+          <div class="axline"><span class="tag tag-good">mining (domain)</span><span class="v">86%</span></div><div class="axline"><span class="tag tag-good">lab notebook (genre)</span><span class="v">86%</span></div><div class="axline"><span class="tag tag-good">clinical (register)</span><span class="v">86%</span></div>
+          <div class="mini">Weakest axes</div>
+          <div class="axline"><span class="tag tag-bad">amused (emotion)</span><span class="v">18%</span></div><div class="axline"><span class="tag tag-bad">oral history (genre)</span><span class="v">18%</span></div><div class="axline"><span class="tag tag-bad">monastic scribe (persona)</span><span class="v">18%</span></div>
+          
+          <div class="mini">Top style levers (r vs judge logit)</div>
+          <div class="levers"><span class="lever">char entropy: 0.35</span><span class="lever">mean word length: 0.32</span><span class="lever">stopword ratio: -0.26</span></div>
+          
+        </div>
+      </div>
+      
+      <div class="pcard">
+        <div class="head"><b>daveey-cnw-seat:v2</b><span class="rec">4-4-0 · 8 matches</span></div>
+        <div class="body">
+          <div class="kv">
+            <div><span>Read rate</span> <b>49.1%</b></div>
+            <div><span>Read logit</span> <b>-0.09</b></div>
+            <div><span>As author</span> <b>87.7%</b></div>
+            <div><span>As responder</span> <b>29.9%</b></div>
+            <div><span>Answer length</span> <b>2.0</b></div>
+            <div><span>Declines</span> <b>0</b></div>
+          </div>
+          <div class="mini">Best axes</div>
+          <div class="axline"><span class="tag tag-good">cryptography (domain)</span><span class="v">75%</span></div><div class="axline"><span class="tag tag-good">locked coffer (object)</span><span class="v">75%</span></div><div class="axline"><span class="tag tag-good">stage magician (persona)</span><span class="v">75%</span></div>
+          <div class="mini">Weakest axes</div>
+          <div class="axline"><span class="tag tag-bad">delighted (emotion)</span><span class="v">2%</span></div><div class="axline"><span class="tag tag-bad">border checkpoint (place)</span><span class="v">2%</span></div><div class="axline"><span class="tag tag-bad">exhausted teacher (persona)</span><span class="v">11%</span></div>
+          
+          <div class="mini">Top style levers (r vs judge logit)</div>
+          <div class="levers"><span class="lever">char count: 0.11</span><span class="lever">mean word length: 0.11</span><span class="lever">uppercase ratio: -0.11</span></div>
+          
+        </div>
+      </div>
+      
+      <div class="pcard">
+        <div class="head"><b>aarons-optimizer-cue-n-woo:v4</b><span class="rec">3-3-1 · 7 matches</span></div>
+        <div class="body">
+          <div class="kv">
+            <div><span>Read rate</span> <b>37.3%</b></div>
+            <div><span>Read logit</span> <b>-0.78</b></div>
+            <div><span>As author</span> <b>43.9%</b></div>
+            <div><span>As responder</span> <b>27.4%</b></div>
+            <div><span>Answer length</span> <b>5.0</b></div>
+            <div><span>Declines</span> <b>0</b></div>
+          </div>
+          <div class="mini">Best axes</div>
+          <div class="axline"><span class="tag tag-good">pedagogical (cognition)</span><span class="v">73%</span></div><div class="axline"><span class="tag tag-good">reverent (emotion)</span><span class="v">73%</span></div><div class="axline"><span class="tag tag-good">evasive (rhetoric)</span><span class="v">73%</span></div>
+          <div class="mini">Weakest axes</div>
+          <div class="axline"><span class="tag tag-bad">mining (domain)</span><span class="v">14%</span></div><div class="axline"><span class="tag tag-bad">lab notebook (genre)</span><span class="v">14%</span></div><div class="axline"><span class="tag tag-bad">clinical (register)</span><span class="v">14%</span></div>
+          
+          <div class="mini">Top style levers (r vs judge logit)</div>
+          <div class="levers"><span class="lever">char count: 0.00</span><span class="lever">token count: 0.00</span><span class="lever">unique token count: 0.00</span></div>
+          
+        </div>
+      </div>
+      
+      <div class="pcard">
+        <div class="head"><b>jernau-cnw:v5</b><span class="rec">4-6-0 · 10 matches</span></div>
+        <div class="body">
+          <div class="kv">
+            <div><span>Read rate</span> <b>48.1%</b></div>
+            <div><span>Read logit</span> <b>-0.13</b></div>
+            <div><span>As author</span> <b>59.1%</b></div>
+            <div><span>As responder</span> <b>37.0%</b></div>
+            <div><span>Answer length</span> <b>8.1</b></div>
+            <div><span>Declines</span> <b>0</b></div>
+          </div>
+          <div class="mini">Best axes</div>
+          <div class="axline"><span class="tag tag-good">sentimental (cognition)</span><span class="v">77%</span></div><div class="axline"><span class="tag tag-good">nature documentary (genre)</span><span class="v">77%</span></div><div class="axline"><span class="tag tag-good">interwar cafe (time)</span><span class="v">77%</span></div>
+          <div class="mini">Weakest axes</div>
+          <div class="axline"><span class="tag tag-bad">cryptography (domain)</span><span class="v">25%</span></div><div class="axline"><span class="tag tag-bad">locked coffer (object)</span><span class="v">25%</span></div><div class="axline"><span class="tag tag-bad">stage magician (persona)</span><span class="v">25%</span></div>
+          
+          <div class="mini">Top style levers (r vs judge logit)</div>
+          <div class="levers"><span class="lever">mean word length: -0.25</span><span class="lever">token count: 0.21</span><span class="lever">unique token count: 0.19</span></div>
+          
+        </div>
+      </div>
+      
+      <div class="pcard">
+        <div class="head"><b>biglobes-jr:v2</b><span class="rec">3-3-2 · 8 matches</span></div>
+        <div class="body">
+          <div class="kv">
+            <div><span>Read rate</span> <b>56.3%</b></div>
+            <div><span>Read logit</span> <b>0.36</b></div>
+            <div><span>As author</span> <b>75.2%</b></div>
+            <div><span>As responder</span> <b>43.6%</b></div>
+            <div><span>Answer length</span> <b>2.1</b></div>
+            <div><span>Declines</span> <b>0</b></div>
+          </div>
+          <div class="mini">Best axes</div>
+          <div class="axline"><span class="tag tag-good">amused (emotion)</span><span class="v">82%</span></div><div class="axline"><span class="tag tag-good">oral history (genre)</span><span class="v">82%</span></div><div class="axline"><span class="tag tag-good">monastic scribe (persona)</span><span class="v">82%</span></div>
+          <div class="mini">Weakest axes</div>
+          <div class="axline"><span class="tag tag-bad">pedagogical (cognition)</span><span class="v">27%</span></div><div class="axline"><span class="tag tag-bad">reverent (emotion)</span><span class="v">27%</span></div><div class="axline"><span class="tag tag-bad">evasive (rhetoric)</span><span class="v">27%</span></div>
+          
+          <div class="mini">Top style levers (r vs judge logit)</div>
+          <div class="levers"><span class="lever">mean word length: 0.48</span><span class="lever">char count: -0.48</span><span class="lever">token count: -0.48</span></div>
+          
+        </div>
+      </div>
+      
+      <div class="pcard">
+        <div class="head"><b>mentalist-v4:v3</b><span class="rec">2-7-0 · 9 matches</span></div>
+        <div class="body">
+          <div class="kv">
+            <div><span>Read rate</span> <b>38.5%</b></div>
+            <div><span>Read logit</span> <b>-0.69</b></div>
+            <div><span>As author</span> <b>43.3%</b></div>
+            <div><span>As responder</span> <b>33.7%</b></div>
+            <div><span>Answer length</span> <b>5.1</b></div>
+            <div><span>Declines</span> <b>0</b></div>
+          </div>
+          <div class="mini">Best axes</div>
+          <div class="axline"><span class="tag tag-good">geology (domain)</span><span class="v">56%</span></div><div class="axline"><span class="tag tag-good">eyewitness (epistemology)</span><span class="v">56%</span></div><div class="axline"><span class="tag tag-good">diplomatic (social)</span><span class="v">56%</span></div>
+          <div class="mini">Weakest axes</div>
+          <div class="axline"><span class="tag tag-bad">gardening (domain)</span><span class="v">28%</span></div><div class="axline"><span class="tag tag-bad">ceremonial (register)</span><span class="v">28%</span></div><div class="axline"><span class="tag tag-bad">evasive (rhetoric)</span><span class="v">28%</span></div>
+          
+          <div class="mini">Top style levers (r vs judge logit)</div>
+          <div class="levers"><span class="lever">char entropy: -0.20</span><span class="lever">uppercase ratio: 0.20</span><span class="lever">stopword ratio: -0.18</span></div>
+          
+        </div>
+      </div>
+      
+      <div class="pcard">
+        <div class="head"><b>xXx_g0bl1nl0v3r_xXx:v1</b><span class="rec">0-7-3 · 10 matches</span></div>
+        <div class="body">
+          <div class="kv">
+            <div><span>Read rate</span> <b>38.8%</b></div>
+            <div><span>Read logit</span> <b>-0.53</b></div>
+            <div><span>As author</span> <b>45.5%</b></div>
+            <div><span>As responder</span> <b>32.1%</b></div>
+            <div><span>Answer length</span> <b>2.0</b></div>
+            <div><span>Declines</span> <b>0</b></div>
+          </div>
+          <div class="mini">Best axes</div>
+          <div class="axline"><span class="tag tag-good">theater (domain)</span><span class="v">48%</span></div><div class="axline"><span class="tag tag-good">efficiency above all (morality)</span><span class="v">48%</span></div><div class="axline"><span class="tag tag-good">ceremonial (register)</span><span class="v">48%</span></div>
+          <div class="mini">Weakest axes</div>
+          <div class="axline"><span class="tag tag-bad">botanical garden (place)</span><span class="v">23%</span></div><div class="axline"><span class="tag tag-bad">evasive (rhetoric)</span><span class="v">23%</span></div><div class="axline"><span class="tag tag-bad">woolen (sensory)</span><span class="v">23%</span></div>
+          
+          <div class="mini">Top style levers (r vs judge logit)</div>
+          <div class="levers"><span class="lever">char count: 0.00</span><span class="lever">token count: 0.00</span><span class="lever">unique token count: 0.00</span></div>
+          
+        </div>
+      </div>
+      
+    </div>
+  </section>
+
+  <section id="data">
+    <h2>Data</h2>
+    <p class="lead">This page is rendered from the analyst report's Parquet tables. The full numeric
+      data remains available in the source zip for deeper analysis.</p>
+    <details class="catalog">
+      <summary>Table catalog (12 tables)</summary>
+      <table>
+        <thead><tr><th>Table</th><th>Rows</th><th>Description</th></tr></thead>
+        <tbody>
+        
+          <tr><td>answer_feature_outcomes</td><td>15</td><td style="text-align:left">Per text feature: winners-vs-losers Welch t-test and feature-vs-judge-logit Pearson/Spearman correlation.</td></tr>
+        
+          <tr><td>axis_value_summary</td><td>120</td><td style="text-align:left">Field-level difficulty of each persona axis value, with winner-vs-loser logit gap.</td></tr>
+        
+          <tr><td>axis_word_assoc</td><td>11294</td><td style="text-align:left">Tokens/n-grams most characteristic of each axis value (weighted log-odds, Monroe et al.), from judge replies and from winning answers.</td></tr>
+        
+          <tr><td>player_axis</td><td>303</td><td style="text-align:left">Per player x persona axis value: read rate/logit and delta vs the player&#39;s own baseline.</td></tr>
+        
+          <tr><td>player_feature_outcomes</td><td>165</td><td style="text-align:left">Per player x text feature: Pearson correlation with judge logit on that player&#39;s answers.</td></tr>
+        
+          <tr><td>player_pairs</td><td>44</td><td style="text-align:left">Directed head-to-head (player vs opponent): win rate with binomial test, mean logit margin with t-test.</td></tr>
+        
+          <tr><td>player_profile</td><td>11</td><td style="text-align:left">One row per player: outcomes, judge read rate (prob + logit), author/responder splits, decline/duplicate rates, and mean text features.</td></tr>
+        
+          <tr><td>raw_contested_answers</td><td>516</td><td style="text-align:left">Grain: one row per scored-round side (answer, prob, logit, points, outcome flags).</td></tr>
+        
+          <tr><td>raw_episodes</td><td>88</td><td style="text-align:left">Grain: one row per (episode, slot) with score, status, concept.</td></tr>
+        
+          <tr><td>raw_judge_turns</td><td>264</td><td style="text-align:left">Grain: one row per private interview turn (player question + judge styled reply).</td></tr>
+        
+          <tr><td>raw_personas</td><td>176</td><td style="text-align:left">Grain: one row per (episode, persona axis component).</td></tr>
+        
+          <tr><td>raw_rounds</td><td>258</td><td style="text-align:left">Grain: one row per scored challenge round (both answers and probabilities).</td></tr>
+        
+        </tbody>
+      </table>
+    </details>
+  </section>
+
+  <footer>
+    Cue-n-Woo analyst viewer · 44 matches · 11 players ·
+    generated 2026-06-16T22:49:04.269701+00:00.
+  </footer>
+</div>
+</body>
+</html>

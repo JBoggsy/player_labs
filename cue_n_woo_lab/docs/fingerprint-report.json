@@ -1,0 +1,1272 @@
+{
+  "N": 325,
+  "n_obs": 280,
+  "n_combos": 70,
+  "overall": {
+    "1": {
+      "recall": 0.08928571428571429,
+      "chance": 0.003076923076923077,
+      "ci": [
+        0.061207782272192535,
+        0.1284811146336874
+      ],
+      "p": 2.419692026800457e-28,
+      "lift": 29.017857142857142
+    },
+    "5": {
+      "recall": 0.22857142857142856,
+      "chance": 0.015384615384615385,
+      "ci": [
+        0.1832557103870411,
+        0.28123434322032304
+      ],
+      "p": 4.597841535539058e-54,
+      "lift": 14.857142857142856
+    },
+    "10": {
+      "recall": 0.275,
+      "chance": 0.03076923076923077,
+      "ci": [
+        0.22600988280175358,
+        0.330080556372772
+      ],
+      "p": 1.3086849758171662e-49,
+      "lift": 8.9375
+    },
+    "25": {
+      "recall": 0.3964285714285714,
+      "chance": 0.07692307692307693,
+      "ci": [
+        0.3409061862699838,
+        0.45475449208019453
+      ],
+      "p": 7.6513922410756265e-50,
+      "lift": 5.153571428571428
+    },
+    "50": {
+      "recall": 0.5321428571428571,
+      "chance": 0.15384615384615385,
+      "ci": [
+        0.4736579901119185,
+        0.5897576614345779
+      ],
+      "p": 1.4536991245866508e-48,
+      "lift": 3.4589285714285714
+    }
+  },
+  "mrr": 0.16389861638283826,
+  "mean_rank": 79.98571428571428,
+  "median_rank": 40.0,
+  "perm_p": 0.0,
+  "axis_stats": [
+    {
+      "axis": "persona",
+      "n": 19,
+      "recall10": 0.631578947368421,
+      "ci": [
+        0.41039157498156714,
+        0.8085072762372616
+      ],
+      "mean_rank": 26.05263157894737,
+      "n_values": 16
+    },
+    {
+      "axis": "genre",
+      "n": 15,
+      "recall10": 0.4666666666666667,
+      "ci": [
+        0.24809225259746442,
+        0.6988336984894922
+      ],
+      "mean_rank": 68.4,
+      "n_values": 30
+    },
+    {
+      "axis": "time",
+      "n": 19,
+      "recall10": 0.42105263157894735,
+      "ci": [
+        0.2314162039203038,
+        0.637244485348399
+      ],
+      "mean_rank": 61.10526315789474,
+      "n_values": 24
+    },
+    {
+      "axis": "morality",
+      "n": 17,
+      "recall10": 0.4117647058823529,
+      "ci": [
+        0.21610786039131383,
+        0.6399492561448445
+      ],
+      "mean_rank": 72.29411764705883,
+      "n_values": 16
+    },
+    {
+      "axis": "place",
+      "n": 25,
+      "recall10": 0.32,
+      "ci": [
+        0.17204987516891146,
+        0.515900862654233
+      ],
+      "mean_rank": 78.56,
+      "n_values": 36
+    },
+    {
+      "axis": "domain",
+      "n": 22,
+      "recall10": 0.2727272727272727,
+      "ci": [
+        0.13150582015814438,
+        0.48152123699001975
+      ],
+      "mean_rank": 101.13636363636364,
+      "n_values": 30
+    },
+    {
+      "axis": "object",
+      "n": 28,
+      "recall10": 0.25,
+      "ci": [
+        0.12676334942200781,
+        0.43356025240704604
+      ],
+      "mean_rank": 72.92857142857143,
+      "n_values": 36
+    },
+    {
+      "axis": "rhetoric",
+      "n": 16,
+      "recall10": 0.25,
+      "ci": [
+        0.10181901984237347,
+        0.4949876892939865
+      ],
+      "mean_rank": 84.8125,
+      "n_values": 16
+    },
+    {
+      "axis": "social",
+      "n": 19,
+      "recall10": 0.21052631578947367,
+      "ci": [
+        0.08507538491591575,
+        0.43334714240266087
+      ],
+      "mean_rank": 100.10526315789474,
+      "n_values": 16
+    },
+    {
+      "axis": "sensory",
+      "n": 20,
+      "recall10": 0.2,
+      "ci": [
+        0.08065635327119998,
+        0.4160217220257599
+      ],
+      "mean_rank": 43.6,
+      "n_values": 30
+    },
+    {
+      "axis": "syntax",
+      "n": 20,
+      "recall10": 0.2,
+      "ci": [
+        0.08065635327119998,
+        0.4160217220257599
+      ],
+      "mean_rank": 85.9,
+      "n_values": 16
+    },
+    {
+      "axis": "emotion",
+      "n": 18,
+      "recall10": 0.16666666666666666,
+      "ci": [
+        0.058364704004657555,
+        0.3922249963835924
+      ],
+      "mean_rank": 98.61111111111111,
+      "n_values": 12
+    },
+    {
+      "axis": "epistemology",
+      "n": 15,
+      "recall10": 0.13333333333333333,
+      "ci": [
+        0.037360469891359285,
+        0.3788249920651624
+      ],
+      "mean_rank": 94.8,
+      "n_values": 16
+    },
+    {
+      "axis": "register",
+      "n": 11,
+      "recall10": 0.09090909090909091,
+      "ci": [
+        0.016231752262825964,
+        0.3773646254862038
+      ],
+      "mean_rank": 108.27272727272727,
+      "n_values": 16
+    },
+    {
+      "axis": "cognition",
+      "n": 16,
+      "recall10": 0.0,
+      "ci": [
+        0.0,
+        0.19361341827271994
+      ],
+      "mean_rank": 126.0625,
+      "n_values": 16
+    }
+  ],
+  "val_stats": [
+    {
+      "axis": "genre",
+      "value": "police procedural",
+      "n": 1,
+      "mean_rank": 0.0
+    },
+    {
+      "axis": "object",
+      "value": "broken clock",
+      "n": 1,
+      "mean_rank": 0.0
+    },
+    {
+      "axis": "morality",
+      "value": "compassion",
+      "n": 1,
+      "mean_rank": 0.0
+    },
+    {
+      "axis": "genre",
+      "value": "military briefing",
+      "n": 1,
+      "mean_rank": 0.0
+    },
+    {
+      "axis": "morality",
+      "value": "divine judgment",
+      "n": 1,
+      "mean_rank": 0.0
+    },
+    {
+      "axis": "persona",
+      "value": "radio astronomer",
+      "n": 1,
+      "mean_rank": 0.0
+    },
+    {
+      "axis": "object",
+      "value": "train station",
+      "n": 1,
+      "mean_rank": 0.0
+    },
+    {
+      "axis": "sensory",
+      "value": "brittle",
+      "n": 1,
+      "mean_rank": 1.0
+    },
+    {
+      "axis": "place",
+      "value": "deep-sea lab",
+      "n": 1,
+      "mean_rank": 1.0
+    },
+    {
+      "axis": "place",
+      "value": "casino floor",
+      "n": 1,
+      "mean_rank": 1.0
+    },
+    {
+      "axis": "domain",
+      "value": "medicine",
+      "n": 1,
+      "mean_rank": 1.0
+    },
+    {
+      "axis": "time",
+      "value": "medieval monastery",
+      "n": 1,
+      "mean_rank": 1.0
+    },
+    {
+      "axis": "genre",
+      "value": "recipe blog",
+      "n": 1,
+      "mean_rank": 1.0
+    },
+    {
+      "axis": "persona",
+      "value": "ship captain",
+      "n": 1,
+      "mean_rank": 1.0
+    },
+    {
+      "axis": "register",
+      "value": "clinical",
+      "n": 1,
+      "mean_rank": 2.0
+    },
+    {
+      "axis": "emotion",
+      "value": "wistful",
+      "n": 1,
+      "mean_rank": 2.0
+    },
+    {
+      "axis": "time",
+      "value": "Renaissance workshop",
+      "n": 4,
+      "mean_rank": 3.0
+    },
+    {
+      "axis": "morality",
+      "value": "tradition",
+      "n": 1,
+      "mean_rank": 3.0
+    },
+    {
+      "axis": "persona",
+      "value": "museum curator",
+      "n": 2,
+      "mean_rank": 3.0
+    },
+    {
+      "axis": "rhetoric",
+      "value": "story-framed",
+      "n": 1,
+      "mean_rank": 3.0
+    },
+    {
+      "axis": "place",
+      "value": "courtroom",
+      "n": 1,
+      "mean_rank": 4.0
+    },
+    {
+      "axis": "genre",
+      "value": "museum label",
+      "n": 2,
+      "mean_rank": 4.0
+    },
+    {
+      "axis": "morality",
+      "value": "survival pragmatism",
+      "n": 1,
+      "mean_rank": 4.0
+    },
+    {
+      "axis": "time",
+      "value": "early internet forum",
+      "n": 1,
+      "mean_rank": 4.0
+    },
+    {
+      "axis": "time",
+      "value": "post-collapse settlement",
+      "n": 2,
+      "mean_rank": 5.5
+    },
+    {
+      "axis": "domain",
+      "value": "beekeeping",
+      "n": 1,
+      "mean_rank": 6.0
+    },
+    {
+      "axis": "persona",
+      "value": "noir detective",
+      "n": 8,
+      "mean_rank": 6.5
+    },
+    {
+      "axis": "rhetoric",
+      "value": "definitional",
+      "n": 1,
+      "mean_rank": 9.0
+    },
+    {
+      "axis": "rhetoric",
+      "value": "evidence-first",
+      "n": 1,
+      "mean_rank": 9.0
+    },
+    {
+      "axis": "domain",
+      "value": "finance",
+      "n": 1,
+      "mean_rank": 10.0
+    },
+    {
+      "axis": "time",
+      "value": "plague village",
+      "n": 1,
+      "mean_rank": 10.0
+    },
+    {
+      "axis": "cognition",
+      "value": "improvisational",
+      "n": 1,
+      "mean_rank": 10.0
+    },
+    {
+      "axis": "object",
+      "value": "microscope slide",
+      "n": 3,
+      "mean_rank": 11.0
+    },
+    {
+      "axis": "place",
+      "value": "hospital atrium",
+      "n": 3,
+      "mean_rank": 11.0
+    },
+    {
+      "axis": "sensory",
+      "value": "salty",
+      "n": 1,
+      "mean_rank": 12.0
+    },
+    {
+      "axis": "epistemology",
+      "value": "folk wisdom",
+      "n": 2,
+      "mean_rank": 13.0
+    },
+    {
+      "axis": "time",
+      "value": "Bronze citadel",
+      "n": 2,
+      "mean_rank": 14.5
+    },
+    {
+      "axis": "domain",
+      "value": "archaeology",
+      "n": 3,
+      "mean_rank": 14.666666666666666
+    },
+    {
+      "axis": "morality",
+      "value": "civic responsibility",
+      "n": 2,
+      "mean_rank": 15.0
+    },
+    {
+      "axis": "domain",
+      "value": "gardening",
+      "n": 3,
+      "mean_rank": 16.0
+    },
+    {
+      "axis": "genre",
+      "value": "detective notes",
+      "n": 1,
+      "mean_rank": 16.0
+    },
+    {
+      "axis": "sensory",
+      "value": "granular",
+      "n": 2,
+      "mean_rank": 18.5
+    },
+    {
+      "axis": "sensory",
+      "value": "oily",
+      "n": 1,
+      "mean_rank": 19.0
+    },
+    {
+      "axis": "epistemology",
+      "value": "rumor-collecting",
+      "n": 1,
+      "mean_rank": 20.0
+    },
+    {
+      "axis": "epistemology",
+      "value": "hearsay",
+      "n": 1,
+      "mean_rank": 20.0
+    },
+    {
+      "axis": "syntax",
+      "value": "archaic diction",
+      "n": 4,
+      "mean_rank": 20.25
+    },
+    {
+      "axis": "object",
+      "value": "umbrella",
+      "n": 1,
+      "mean_rank": 21.0
+    },
+    {
+      "axis": "social",
+      "value": "diplomatic",
+      "n": 1,
+      "mean_rank": 21.0
+    },
+    {
+      "axis": "cognition",
+      "value": "contrarian",
+      "n": 1,
+      "mean_rank": 21.0
+    },
+    {
+      "axis": "sensory",
+      "value": "woolen",
+      "n": 1,
+      "mean_rank": 22.0
+    },
+    {
+      "axis": "persona",
+      "value": "medieval court advisor",
+      "n": 2,
+      "mean_rank": 22.5
+    },
+    {
+      "axis": "morality",
+      "value": "rebellion",
+      "n": 2,
+      "mean_rank": 22.5
+    },
+    {
+      "axis": "epistemology",
+      "value": "prophetic",
+      "n": 1,
+      "mean_rank": 23.0
+    },
+    {
+      "axis": "epistemology",
+      "value": "expert witness",
+      "n": 1,
+      "mean_rank": 25.0
+    },
+    {
+      "axis": "sensory",
+      "value": "velvet",
+      "n": 2,
+      "mean_rank": 25.5
+    },
+    {
+      "axis": "cognition",
+      "value": "maximalist",
+      "n": 1,
+      "mean_rank": 26.0
+    },
+    {
+      "axis": "emotion",
+      "value": "reverent",
+      "n": 1,
+      "mean_rank": 28.0
+    },
+    {
+      "axis": "sensory",
+      "value": "icy",
+      "n": 5,
+      "mean_rank": 28.6
+    },
+    {
+      "axis": "emotion",
+      "value": "anxious",
+      "n": 1,
+      "mean_rank": 29.0
+    },
+    {
+      "axis": "place",
+      "value": "fish market",
+      "n": 2,
+      "mean_rank": 29.0
+    },
+    {
+      "axis": "object",
+      "value": "filing cabinet",
+      "n": 1,
+      "mean_rank": 34.0
+    },
+    {
+      "axis": "emotion",
+      "value": "delighted",
+      "n": 1,
+      "mean_rank": 35.0
+    },
+    {
+      "axis": "place",
+      "value": "botanical garden",
+      "n": 1,
+      "mean_rank": 35.0
+    },
+    {
+      "axis": "syntax",
+      "value": "long nested clauses",
+      "n": 1,
+      "mean_rank": 37.0
+    },
+    {
+      "axis": "sensory",
+      "value": "rusted",
+      "n": 1,
+      "mean_rank": 39.0
+    },
+    {
+      "axis": "epistemology",
+      "value": "experimental doubt",
+      "n": 1,
+      "mean_rank": 39.0
+    },
+    {
+      "axis": "object",
+      "value": "old map",
+      "n": 1,
+      "mean_rank": 39.0
+    },
+    {
+      "axis": "domain",
+      "value": "meteorology",
+      "n": 1,
+      "mean_rank": 41.0
+    },
+    {
+      "axis": "social",
+      "value": "customer-service polite",
+      "n": 4,
+      "mean_rank": 44.75
+    },
+    {
+      "axis": "rhetoric",
+      "value": "caveated",
+      "n": 3,
+      "mean_rank": 45.0
+    },
+    {
+      "axis": "place",
+      "value": "greenhouse",
+      "n": 1,
+      "mean_rank": 45.0
+    },
+    {
+      "axis": "object",
+      "value": "porcelain cup",
+      "n": 5,
+      "mean_rank": 45.6
+    },
+    {
+      "axis": "social",
+      "value": "bossy",
+      "n": 1,
+      "mean_rank": 46.0
+    },
+    {
+      "axis": "domain",
+      "value": "botany",
+      "n": 1,
+      "mean_rank": 46.0
+    },
+    {
+      "axis": "genre",
+      "value": "epic poem",
+      "n": 1,
+      "mean_rank": 50.0
+    },
+    {
+      "axis": "genre",
+      "value": "pirate yarn",
+      "n": 3,
+      "mean_rank": 50.666666666666664
+    },
+    {
+      "axis": "object",
+      "value": "garden hose",
+      "n": 1,
+      "mean_rank": 53.0
+    },
+    {
+      "axis": "object",
+      "value": "matchbook",
+      "n": 4,
+      "mean_rank": 54.25
+    },
+    {
+      "axis": "place",
+      "value": "lighthouse",
+      "n": 2,
+      "mean_rank": 57.0
+    },
+    {
+      "axis": "persona",
+      "value": "monastic scribe",
+      "n": 1,
+      "mean_rank": 57.0
+    },
+    {
+      "axis": "sensory",
+      "value": "damp",
+      "n": 1,
+      "mean_rank": 57.0
+    },
+    {
+      "axis": "register",
+      "value": "poetic",
+      "n": 2,
+      "mean_rank": 59.5
+    },
+    {
+      "axis": "register",
+      "value": "ceremonial",
+      "n": 2,
+      "mean_rank": 59.5
+    },
+    {
+      "axis": "social",
+      "value": "deferential",
+      "n": 1,
+      "mean_rank": 60.0
+    },
+    {
+      "axis": "sensory",
+      "value": "lacquered",
+      "n": 1,
+      "mean_rank": 61.0
+    },
+    {
+      "axis": "persona",
+      "value": "bureaucrat",
+      "n": 3,
+      "mean_rank": 61.333333333333336
+    },
+    {
+      "axis": "time",
+      "value": "Belle Epoque salon",
+      "n": 3,
+      "mean_rank": 61.666666666666664
+    },
+    {
+      "axis": "sensory",
+      "value": "papery",
+      "n": 1,
+      "mean_rank": 63.0
+    },
+    {
+      "axis": "time",
+      "value": "Alexandrian library",
+      "n": 1,
+      "mean_rank": 65.0
+    },
+    {
+      "axis": "sensory",
+      "value": "fragrant",
+      "n": 1,
+      "mean_rank": 66.0
+    },
+    {
+      "axis": "emotion",
+      "value": "defensive",
+      "n": 1,
+      "mean_rank": 67.0
+    },
+    {
+      "axis": "syntax",
+      "value": "corporate jargon",
+      "n": 3,
+      "mean_rank": 70.66666666666667
+    },
+    {
+      "axis": "syntax",
+      "value": "repeated refrain",
+      "n": 2,
+      "mean_rank": 71.5
+    },
+    {
+      "axis": "social",
+      "value": "mentoring",
+      "n": 2,
+      "mean_rank": 79.0
+    },
+    {
+      "axis": "morality",
+      "value": "purity",
+      "n": 2,
+      "mean_rank": 79.5
+    },
+    {
+      "axis": "morality",
+      "value": "loyalty",
+      "n": 1,
+      "mean_rank": 80.0
+    },
+    {
+      "axis": "morality",
+      "value": "personal authenticity",
+      "n": 1,
+      "mean_rank": 82.0
+    },
+    {
+      "axis": "genre",
+      "value": "gossip column",
+      "n": 2,
+      "mean_rank": 82.0
+    },
+    {
+      "axis": "rhetoric",
+      "value": "proverb-filled",
+      "n": 1,
+      "mean_rank": 82.0
+    },
+    {
+      "axis": "syntax",
+      "value": "stacked metaphors",
+      "n": 2,
+      "mean_rank": 82.5
+    },
+    {
+      "axis": "rhetoric",
+      "value": "confessional",
+      "n": 2,
+      "mean_rank": 84.5
+    },
+    {
+      "axis": "object",
+      "value": "brass key",
+      "n": 1,
+      "mean_rank": 85.0
+    },
+    {
+      "axis": "domain",
+      "value": "perfume",
+      "n": 1,
+      "mean_rank": 86.0
+    },
+    {
+      "axis": "syntax",
+      "value": "frequent parentheticals",
+      "n": 1,
+      "mean_rank": 89.0
+    },
+    {
+      "axis": "emotion",
+      "value": "smug",
+      "n": 2,
+      "mean_rank": 90.5
+    },
+    {
+      "axis": "object",
+      "value": "receipt",
+      "n": 1,
+      "mean_rank": 95.0
+    },
+    {
+      "axis": "place",
+      "value": "airport lounge",
+      "n": 4,
+      "mean_rank": 97.5
+    },
+    {
+      "axis": "cognition",
+      "value": "probabilistic",
+      "n": 1,
+      "mean_rank": 101.0
+    },
+    {
+      "axis": "place",
+      "value": "lecture hall",
+      "n": 2,
+      "mean_rank": 101.5
+    },
+    {
+      "axis": "rhetoric",
+      "value": "comparative",
+      "n": 1,
+      "mean_rank": 105.0
+    },
+    {
+      "axis": "epistemology",
+      "value": "mystical conviction",
+      "n": 1,
+      "mean_rank": 105.0
+    },
+    {
+      "axis": "rhetoric",
+      "value": "punchline-chasing",
+      "n": 1,
+      "mean_rank": 107.0
+    },
+    {
+      "axis": "emotion",
+      "value": "impatient",
+      "n": 1,
+      "mean_rank": 110.0
+    },
+    {
+      "axis": "syntax",
+      "value": "lab-note terseness",
+      "n": 5,
+      "mean_rank": 111.4
+    },
+    {
+      "axis": "emotion",
+      "value": "serene",
+      "n": 3,
+      "mean_rank": 113.66666666666667
+    },
+    {
+      "axis": "social",
+      "value": "grandstanding",
+      "n": 2,
+      "mean_rank": 114.0
+    },
+    {
+      "axis": "emotion",
+      "value": "amused",
+      "n": 2,
+      "mean_rank": 115.0
+    },
+    {
+      "axis": "genre",
+      "value": "travel diary",
+      "n": 1,
+      "mean_rank": 116.0
+    },
+    {
+      "axis": "sensory",
+      "value": "candlelit",
+      "n": 1,
+      "mean_rank": 117.0
+    },
+    {
+      "axis": "rhetoric",
+      "value": "exemplary",
+      "n": 2,
+      "mean_rank": 124.0
+    },
+    {
+      "axis": "object",
+      "value": "satellite dish",
+      "n": 4,
+      "mean_rank": 124.25
+    },
+    {
+      "axis": "cognition",
+      "value": "associative",
+      "n": 4,
+      "mean_rank": 130.0
+    },
+    {
+      "axis": "social",
+      "value": "apologetic",
+      "n": 4,
+      "mean_rank": 134.25
+    },
+    {
+      "axis": "social",
+      "value": "earnest",
+      "n": 2,
+      "mean_rank": 137.5
+    },
+    {
+      "axis": "syntax",
+      "value": "dense alliteration",
+      "n": 1,
+      "mean_rank": 139.0
+    },
+    {
+      "axis": "register",
+      "value": "tabloid",
+      "n": 1,
+      "mean_rank": 141.0
+    },
+    {
+      "axis": "place",
+      "value": "toll booth",
+      "n": 2,
+      "mean_rank": 141.5
+    },
+    {
+      "axis": "epistemology",
+      "value": "legal standard of proof",
+      "n": 2,
+      "mean_rank": 144.0
+    },
+    {
+      "axis": "emotion",
+      "value": "suspicious",
+      "n": 4,
+      "mean_rank": 146.5
+    },
+    {
+      "axis": "epistemology",
+      "value": "Bayesian inference",
+      "n": 4,
+      "mean_rank": 149.5
+    },
+    {
+      "axis": "cognition",
+      "value": "hyperliteral",
+      "n": 3,
+      "mean_rank": 149.66666666666666
+    },
+    {
+      "axis": "rhetoric",
+      "value": "evasive",
+      "n": 1,
+      "mean_rank": 150.0
+    },
+    {
+      "axis": "persona",
+      "value": "stage magician",
+      "n": 1,
+      "mean_rank": 150.0
+    },
+    {
+      "axis": "register",
+      "value": "technical",
+      "n": 4,
+      "mean_rank": 154.75
+    },
+    {
+      "axis": "cognition",
+      "value": "risk-averse",
+      "n": 1,
+      "mean_rank": 158.0
+    },
+    {
+      "axis": "object",
+      "value": "wax seal",
+      "n": 1,
+      "mean_rank": 159.0
+    },
+    {
+      "axis": "social",
+      "value": "collegial",
+      "n": 1,
+      "mean_rank": 159.0
+    },
+    {
+      "axis": "place",
+      "value": "power plant",
+      "n": 5,
+      "mean_rank": 159.4
+    },
+    {
+      "axis": "cognition",
+      "value": "systems-thinking",
+      "n": 1,
+      "mean_rank": 162.0
+    },
+    {
+      "axis": "morality",
+      "value": "fairness",
+      "n": 3,
+      "mean_rank": 162.0
+    },
+    {
+      "axis": "domain",
+      "value": "cartography",
+      "n": 2,
+      "mean_rank": 164.0
+    },
+    {
+      "axis": "domain",
+      "value": "aviation",
+      "n": 1,
+      "mean_rank": 166.0
+    },
+    {
+      "axis": "emotion",
+      "value": "indignant",
+      "n": 1,
+      "mean_rank": 166.0
+    },
+    {
+      "axis": "cognition",
+      "value": "taxonomic",
+      "n": 2,
+      "mean_rank": 167.5
+    },
+    {
+      "axis": "domain",
+      "value": "mythology",
+      "n": 2,
+      "mean_rank": 170.0
+    },
+    {
+      "axis": "rhetoric",
+      "value": "analogical",
+      "n": 2,
+      "mean_rank": 170.0
+    },
+    {
+      "axis": "morality",
+      "value": "hospitality",
+      "n": 2,
+      "mean_rank": 170.0
+    },
+    {
+      "axis": "time",
+      "value": "Edwardian expedition",
+      "n": 1,
+      "mean_rank": 170.0
+    },
+    {
+      "axis": "object",
+      "value": "blueprint",
+      "n": 2,
+      "mean_rank": 178.0
+    },
+    {
+      "axis": "domain",
+      "value": "chess",
+      "n": 2,
+      "mean_rank": 181.5
+    },
+    {
+      "axis": "sensory",
+      "value": "glassy",
+      "n": 1,
+      "mean_rank": 184.0
+    },
+    {
+      "axis": "register",
+      "value": "devotional",
+      "n": 1,
+      "mean_rank": 191.0
+    },
+    {
+      "axis": "time",
+      "value": "near-future city",
+      "n": 1,
+      "mean_rank": 193.0
+    },
+    {
+      "axis": "time",
+      "value": "Gilded hotel",
+      "n": 1,
+      "mean_rank": 202.0
+    },
+    {
+      "axis": "genre",
+      "value": "field dispatch",
+      "n": 1,
+      "mean_rank": 217.0
+    },
+    {
+      "axis": "object",
+      "value": "hourglass",
+      "n": 1,
+      "mean_rank": 225.0
+    },
+    {
+      "axis": "cognition",
+      "value": "diagnostic",
+      "n": 1,
+      "mean_rank": 235.0
+    },
+    {
+      "axis": "domain",
+      "value": "diplomacy",
+      "n": 2,
+      "mean_rank": 238.5
+    },
+    {
+      "axis": "social",
+      "value": "adversarial",
+      "n": 1,
+      "mean_rank": 239.0
+    },
+    {
+      "axis": "domain",
+      "value": "insurance",
+      "n": 1,
+      "mean_rank": 269.0
+    },
+    {
+      "axis": "epistemology",
+      "value": "data-driven",
+      "n": 1,
+      "mean_rank": 278.0
+    },
+    {
+      "axis": "time",
+      "value": "1990s cable access show",
+      "n": 1,
+      "mean_rank": 279.0
+    },
+    {
+      "axis": "syntax",
+      "value": "bullet rhythm",
+      "n": 1,
+      "mean_rank": 295.0
+    },
+    {
+      "axis": "genre",
+      "value": "investor memo",
+      "n": 1,
+      "mean_rank": 302.0
+    }
+  ],
+  "eta2_axis": 0.07530534256730066,
+  "own_axis_top1": 0.29285714285714287,
+  "rank_hist": [
+    25,
+    39,
+    13,
+    34,
+    38,
+    39,
+    92
+  ],
+  "any_hit": {
+    "1": {
+      "rate": 0.35714285714285715,
+      "hits": 25,
+      "n": 70,
+      "ci": [
+        0.2550317346898088,
+        0.47411822955798655
+      ],
+      "chance": 0.01225100400686252,
+      "p": 6.063852215116875e-30
+    },
+    "5": {
+      "rate": 0.7428571428571429,
+      "hits": 52,
+      "n": 70,
+      "ci": [
+        0.6297364802928458,
+        0.8307085804859023
+      ],
+      "chance": 0.06013285249115907,
+      "p": 2.5348440917467048e-48
+    },
+    "10": {
+      "rate": 0.8142857142857143,
+      "hits": 57,
+      "n": 70,
+      "ci": [
+        0.7077420255730713,
+        0.888128053081779
+      ],
+      "chance": 0.11751207590770629,
+      "p": 9.515227550002065e-41
+    },
+    "25": {
+      "rate": 0.9571428571428572,
+      "hits": 67,
+      "n": 70,
+      "ci": [
+        0.8814013892581987,
+        0.9853187251488565
+      ],
+      "chance": 0.27397500087531934,
+      "p": 4.518988825677574e-34
+    }
+  },
+  "n_combos_scored": 70
+}

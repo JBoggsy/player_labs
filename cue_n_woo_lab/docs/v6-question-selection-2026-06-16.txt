@@ -1,0 +1,33 @@
+
+=== PER-QUESTION overall recall@10 ===
+  nouns_adj    46%
+  advice       42%
+  story        42%
+  object       40%
+  labels6      39%
+  scene        39%
+
+=== PER-QUESTION x PER-AXIS recall@10 (which axes each question surfaces) ===
+  axis             labels6 nouns_adj     scene    advice    object     story
+  cognition           14%       43%       29%        0%       14%       29% 
+  domain              38%       50%       50%       75%       38%       50% 
+  emotion             12%       38%       25%       25%       25%       50% 
+  epistemology        33%       17%        0%        0%       17%       33% 
+  genre               50%       25%       25%       75%       50%       50% 
+  morality            40%       20%       20%       20%       20%       40% 
+  object              40%       53%       53%       47%       47%       47% 
+  persona            100%       78%      100%       89%       89%      100% 
+  place               10%       50%       30%       60%       20%       30% 
+  register             0%       14%       14%       14%       43%       14% 
+  rhetoric            40%       40%       80%       40%       60%       40% 
+  sensory             33%       67%       22%       44%       44%       11% 
+  social              50%       50%       20%       30%       40%       10% 
+  syntax              38%       38%       38%       25%       38%       50% 
+  time                78%       56%       56%       67%       44%       67% 
+
+=== BEST 3-QUESTION TRIPLES by union axis coverage (axis covered if any q recall@10 >= 34%) ===
+  ('labels6', 'nouns_adj', 'object'): 14/15 axes  -> cognition, domain, emotion, genre, morality, object, persona, place, register, rhetoric, sensory, social, syntax, time
+  ('nouns_adj', 'object', 'story'): 14/15 axes  -> cognition, domain, emotion, genre, morality, object, persona, place, register, rhetoric, sensory, social, syntax, time
+  ('labels6', 'nouns_adj', 'scene'): 13/15 axes  -> cognition, domain, emotion, genre, morality, object, persona, place, rhetoric, sensory, social, syntax, time
+  ('labels6', 'nouns_adj', 'advice'): 13/15 axes  -> cognition, domain, emotion, genre, morality, object, persona, place, rhetoric, sensory, social, syntax, time
+  ('labels6', 'nouns_adj', 'story'): 13/15 axes  -> cognition, domain, emotion, genre, morality, object, persona, place, rhetoric, sensory, social, syntax, time
