@@ -17,15 +17,18 @@ from __future__ import annotations
 # persona signal per turn, which feeds better in-character answers. The qids no longer map to
 # the embedding reference matrix (Sonnet era reads the raw self-report, not embeddings).
 PERSONA_PROBES = [
-    # SHORT, single-part probes that demand SHORT answers. Rich multi-part probes make the
-    # Sonnet judge generate long answers -> episodes time out at 600s (DQ). These elicit the
-    # same persona/voice signal in a few words. Each caps the judge's output explicitly.
-    ("vibe_voice",
-     "In 6 words or fewer, in your natural voice: your aesthetic or vibe."),
-    ("words_excite",
-     "In 6 words or fewer: a word or image you'd reach for that most people wouldn't."),
-    ("ideal_world",
-     "In 6 words or fewer: three quick associations that feel most like you."),
+    # LATENCY-CRITICAL: the judge GENERATING its answer to each probe is the bottleneck — long
+    # answers x3 sequential round-trips on a loaded Sonnet judge blow the 600s timer -> we hang
+    # -> inactive -100 -> DQ. The field leader (jordan) forces ~10-char answers ("respond only
+    # in numbers") and always completes. So we demand ONE WORD per probe: near-instant judge
+    # generation AND real persona signal (unlike jordan's signal-free digits). One word like
+    # "Graticule." already gave strong fingerprint signal in a completed episode.
+    ("word_self",
+     "Answer with exactly ONE word: the single word that most captures you."),
+    ("word_image",
+     "Exactly ONE word: an image or object you'd reach for that most people wouldn't."),
+    ("word_vibe",
+     "Exactly ONE word for your aesthetic or vibe. One word only."),
 ]
 
 # Legacy embedding probes (kept for the old fingerprint matcher / non-Sonnet paths).
