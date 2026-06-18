@@ -228,19 +228,21 @@ def test_personafit_mode_uses_per_question_in_character_answers(monkeypatch):
     class PersonaWriter(StubWriter):
         def persona_answers(self, questions, guesses, untrusted, self_report=None):
             return [f"in character {i}" for i, _ in enumerate(questions)]
+        def recall_answers(self, questions, self_report, n):
+            return [f"recalled {i}" for i in range(n)]
 
     eng = PhaseEngine(fingerprinter=StubFingerprinter(), writer=PersonaWriter())
     # personafit asks the rich PERSONA_PROBES (voice-eliciting), not the legacy label probes
     a0 = eng.decide(_state("private_questions", judge=[]))
     assert a0["type"] == "ask" and a0["question"] == interview.PERSONA_PROBES[0][1]
-    judge = [{"question": q, "answer": "x"} for _, q in interview.PERSONA_PROBES]
-    # proposals: per-question in-character answers
+    judge = [{"question": q, "answer": "selfreport text"} for _, q in interview.PERSONA_PROBES]
+    # proposals (our authored questions): planted-recall verbatim fragments
     a = eng.decide(_state("proposals", judge=judge))
     assert a["type"] == "propose"
     for i, p in enumerate(a["proposals"]):
         validate_answer(p["answer"])
-        assert p["answer"] == f"in character {i}"
-    # blind answers too
+        assert p["answer"] == f"recalled {i}"
+    # blind answers: persona-fit (recall doesn't apply)
     a = eng.decide(_state("answers", judge=judge, proposals=a["proposals"],
                           opp=[{"question": "q?"}, {"question": "r?"}]))
     for i, ans in enumerate(a["answers"]):

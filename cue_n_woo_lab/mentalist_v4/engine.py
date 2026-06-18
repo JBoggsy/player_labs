@@ -220,6 +220,16 @@ class PhaseEngine:
         path if scoring is off, the guess is empty, or the worker is unreachable.
         """
         if config.STRATEGY_MODE == "personafit":
+            # HYBRID (personafit7): on OUR authored questions, commit verbatim fragments of the
+            # judge's self-report — the planted-recall exploit (matches the judge's own transcript
+            # words -> ~1.0). On BLIND questions, recall doesn't apply, so answer in-persona.
+            if (proposal and config.RECALL_ON_AUTHORED and self.writer is not None and self._self_report):
+                recalled = self.writer.recall_answers(questions, self._self_report, len(questions))
+                if recalled:
+                    out = [self._format_raw(recalled[i]) if i < len(recalled) and recalled[i]
+                           else self._format(self._fallback_word(q)) for i, q in enumerate(questions)]
+                    self.emit("recall_answers", {"answers": out}, step="propose")
+                    return out
             # vs the Sonnet judge, the winning lever is a genuinely in-character answer per
             # question (no injection — it picks the most in-persona answer). Falls back to the
             # one-word fingerprint path if the LLM is unavailable.

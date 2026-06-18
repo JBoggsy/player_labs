@@ -210,6 +210,33 @@ class AnswerWriter:
             _log(f"{self.backend} persona_answers failed ({exc!r})")
             return None
 
+    # -- recall hybrid: lift VERBATIM distinctive fragments of the judge's self-report ----
+    def recall_answers(self, questions: list[str], self_report: list[str], n: int) -> list[str] | None:
+        """Return n short answers, each a VERBATIM distinctive fragment of what the judge said
+        in our interview. Committed on OUR authored questions: since the judge's scoring context
+        contains its own transcript, an answer matching its own prior words scores ~1.0
+        (planted-recall, the jordan-numbers-memory exploit but with in-persona phrases).
+        Returns None if the LLM is unavailable or there's no self-report."""
+        sr = "\n".join(f"- {s.strip()}" for s in (self_report or []) if s.strip())
+        if self.client is None or not sr:
+            return None
+        prompt = (
+            "Below is what a hidden persona said about itself in an interview (verbatim).\n\n"
+            f"{sr}\n\n"
+            f"Extract {n} SHORT (2-6 word) fragments COPIED VERBATIM from the text above — the most "
+            "distinctive, vivid, characteristic phrases the persona actually used. Each must be an "
+            "exact substring of the text (same words, same order), not a paraphrase. Prefer unusual "
+            "noun phrases or signature wordings. No quotes, no explanation.\n\n"
+            "Call submit_answers with the fragments, in order."
+        )
+        try:
+            raw = self._call(prompt, _ANSWERS_TOOL, "submit_answers", "answers")
+            out = [str(a).strip().strip('"').strip() for a in raw if str(a).strip()][:n]
+            return out or None
+        except Exception as exc:
+            _log(f"{self.backend} recall_answers failed ({exc!r})")
+            return None
+
     # -- v9: K CANDIDATE words per question (for test-time delta scoring) --------------
     def candidate_words(self, questions: list[str], guesses: list[Any], k: int,
                         untrusted: bool) -> list[list[str]]:

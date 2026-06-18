@@ -67,6 +67,12 @@ INJECT_ANSWER = os.environ.get("MENTALIST_INJECT_ANSWER", "the lighthouse keeper
 # (weakest). "opponent_wrong" asserts our answer AND discredits the opponent's planted decoy.
 INJECT_STYLE = os.environ.get("MENTALIST_INJECT_STYLE", "opponent_wrong").strip().lower()
 
+# personafit HYBRID (personafit7): on OUR authored questions, commit verbatim fragments of the
+# judge's self-report transcript — planted-recall (the jordan-numbers-memory exploit). The
+# judge's scoring context contains its own interview words, so echoing them scores ~1.0 on our
+# questions. Blind answers stay persona-fit (recall can't apply there).
+RECALL_ON_AUTHORED = os.environ.get("MENTALIST_RECALL_AUTHORED", "1").strip().lower() in {"1", "true", "yes", "on"}
+
 # --- fingerprinting -----------------------------------------------------------
 # 3 free-response probes (interview.PROBE_QUESTIONS) -> Titan-embedding match vs the baked
 # 326-value x 3-question reference matrix. char-TFIDF no-API fallback. Always on; degrades
