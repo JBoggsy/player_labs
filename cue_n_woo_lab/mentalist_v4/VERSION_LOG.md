@@ -70,3 +70,22 @@ persona-fit answer (michaelsmith, a non-injector, beats injectors). The committe
 answer — which inject2/3 already generated as a "fallback" — was the part that actually worked;
 personafit drops the injection and makes a tailored in-character answer per question the whole
 strategy. Lab rule reconfirmed: offline probes screen but mislead; only live XP decides.
+
+### Persona-fit progression (Sonnet era) — the working strategy
+
+After injection was disproven, persona-fit became the strategy. Each version fixed a
+diagnosed gap vs the field leader michaelsmith (the wall). Win-record vs michaelsmith:
+
+| Policy | Change | vs michaelsmith |
+|---|---|---|
+| `mentalist-v4-personafit:v1` | per-question in-character answers | 0-3 |
+| `mentalist-v4-personafit2:v1` | register-matched (terse/voice) | 0-7 |
+| `mentalist-v4-personafit3:v1` | multi-axis + raw self-report (submitted sub_aeff8c7b) | 0-8 (188 vs 468) |
+| `mentalist-v4-personafit4:v1` | axis-balance (mood>jargon) | 0-8 (250 vs 406) |
+| `mentalist-v4-personafit5:v1` | michaelsmith-style rich voice-eliciting PROBES | **1**-6 (first win) |
+| **`mentalist-v4-personafit6:v1`** | + voice-axis delivery (speak in the persona's manner) | **2**-6 (282 vs 374) — **submitted sub_dba7cc14** |
+
+Biggest lever = the PROBES (rich multi-part self-characterization that makes the judge
+speak in-character) — that's what got the first michaelsmith win. v6 beats the rest of
+the field decisively; michaelsmith is near-parity (coin-flip) on pure-voice concepts.
+Untried lever for the last gap: offline Sonnet re-rank of several candidate answers.
