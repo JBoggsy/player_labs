@@ -121,7 +121,8 @@ class PhaseEngine:
         """Which private-question set to ask. personafit uses the rich voice-eliciting
         PERSONA_PROBES (michaelsmith-style); other modes use the legacy embedding probes."""
         if config.STRATEGY_MODE == "personafit" and hasattr(interview, "PERSONA_PROBES"):
-            return interview.PERSONA_PROBES
+            n = max(1, min(config.PERSONA_PROBE_COUNT, len(interview.PERSONA_PROBES)))
+            return interview.PERSONA_PROBES[:n]
         return interview.PROBE_QUESTIONS
 
     # -- private_questions: probes (fingerprint probes, or inject self-report + injections) --

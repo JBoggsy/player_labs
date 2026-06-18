@@ -80,6 +80,12 @@ RECALL_ON_AUTHORED = os.environ.get("MENTALIST_RECALL_AUTHORED", "1").strip().lo
 PERSONA_RERANK = os.environ.get("MENTALIST_PERSONA_RERANK", "0").strip().lower() in {"1", "true", "yes", "on"}
 PERSONA_RERANK_K = int(os.environ.get("MENTALIST_PERSONA_RERANK_K", "4"))
 
+# How many private probes to ask (personafit). Each is a SEQUENTIAL judge round-trip; under
+# the 600s timer + a slow opponent both hammering the shared Sonnet judge, fewer probes ->
+# faster interview -> we complete (and avoid the inactive -100 that DQs us). 1-2 one-word
+# probes still give usable persona signal. Trades fingerprint richness for COMPLETING at all.
+PERSONA_PROBE_COUNT = int(os.environ.get("MENTALIST_PROBE_COUNT", "3"))
+
 # --- fingerprinting -----------------------------------------------------------
 # 3 free-response probes (interview.PROBE_QUESTIONS) -> Titan-embedding match vs the baked
 # 326-value x 3-question reference matrix. char-TFIDF no-API fallback. Always on; degrades
