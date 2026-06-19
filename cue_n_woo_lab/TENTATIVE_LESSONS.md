@@ -18,6 +18,15 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
 
+### DIGIT-recall LOSES to PHRASE-recall: both plant verbatim text in the judge's reference, but the judge picks the more IN-CHARACTER one — an evocative phrase beats a sterile digit string.
+Evidence: no-LLM `mentalist-recall:v2` (jordan-style: probe forces judge to emit a 10+ digit string, commit it verbatim as our secret) raced 4 eps vs gabby:v15. v2 fix CONFIRMED working — proposals committed distinct RECALLED digits (`['8842019371','4721893650','0731054682']`), not the fallback; and NO timeouts (dur 27–220s vs v1's 428–599s), so the DQ blocker is gone. BUT we lost 3/4 + 1 tie (scores ~[231–330] vs gabby [330–429]). Per-row breakdown shows why:
+  - gabby is doing PHRASE-recall: its secret is an evocative planted phrase ("The decay note persists", "The wax remembers everything", "The barometer never forgets", "The shaft swallows daylight").
+  - On OUR OWN authored questions our digits often win (secP 0.89–1.00) but the FIRST question ("What single image best captures who you are?") repeatedly tanks (secP 0.22–0.56): a digit string reads as LESS in-character than gabby's phrase whenever the phrase fits the question.
+  - On the BLIND (opponent-authored) questions our digits get crushed (secP 0.56 down to as low as our 22pts; gabby's planted phrase scores 1.00 on its own Qs).
+Mechanism: both sides plant verbatim text the judge itself produced, so both read as "in its own words"; the judge's forced-choice then breaks toward the answer that is more in-character for the asked question. Digits are character-NEUTRAL → they only win when the opponent's phrase fits worse. A planted PHRASE competes on the same axis as gabby and wins/ties on character-fit.
+Decision: drop digits; plant an evocative SHORT PHRASE instead. Still zero-LLM on our side, still planted-recall (ask an open vivid question → judge emits a short in-character phrase by construction → commit verbatim). Building phrase-recall variant.
+Status: live 4-ep XP, slot0=us vs gabby slot1, xreq_99b2fb95. STRONG signal (consistent direction across 4 eps + clean per-question mechanism).
+
 ### ★ DURABLE RULE (graduate to best_practices): evaluating a strategy ALWAYS requires a live XP test vs real opponents. Judge-probes are for insight only.
 Evidence: I spent most of an overnight loop optimizing cheater prompts against a gemma+flas probe, and a "confirmed +8pt" probe win WASHED OUT at the live Gate-2 (v4 ~= v3). Worse, the fantasy-question probe pitted "The goblin" against the JUDGE'S OWN generated answer — which is definitionally the ceiling (the steered judge always prefers text it would itself produce), so it compressed all question variants together and HID the real effect James had already seen in live play (opponents beating us on our own questions). Taxonomy of probe opponent-models, worst->best:
   1. Judge's own generated answer = INVALID (it's the unbeatable ceiling). Only conceivably useful if building a strategy that tries to exactly mimic the judge.

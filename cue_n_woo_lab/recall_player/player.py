@@ -1,13 +1,13 @@
 """The recall harness: WebSocket loop + state-driven phase dispatch + ALWAYS-RECONNECT.
 
-NO LLM on our side. Strategy = planted digit-recall (clone of jordan-numbers-memory):
-- private_questions: ask the 3 digit-forcing probes (config.PROBES). The judge replies with a
-  pure digit string; that reply lands in the "Reference material:" transcript the judge reads
-  when scoring EVERY question.
-- proposals: ask open questions; commit the RECALLED digit strings (extracted from the judge's
-  own replies) as our secret answers -> they match the judge's transcript -> ~1.0 on our Qs.
-- answers (blind): commit recalled digits too (signal-free vs a real opponent answer, but a
-  legal completing answer — the weak half of the tie strategy).
+NO LLM on our side. Strategy = planted PHRASE-recall (matches the field-leader gabby):
+- private_questions: ask the 3 phrase-forcing probes (config.PROBES). The judge replies with a
+  short evocative self-description; that reply lands in the "Reference material:" transcript the
+  judge reads when scoring EVERY question.
+- proposals: ask open questions; commit the RECALLED phrases (lifted from the judge's own
+  replies) as our secret answers -> they match the judge's transcript AND read as in-character.
+- answers (blind): commit recalled phrases too (an in-character planted answer that competes
+  with the opponent's secret on equal footing — far better than digits, which were neutral).
 
 Server contract (v2/coworld/game.py @ cue_n_woo 0.2.x):
 - After every action either player makes, the server broadcasts a fresh state; `ask` is
@@ -42,11 +42,11 @@ class RecallPlayer:
         self.pending: str | None = None  # action in flight, cleared when a later state shows it landed
         self._asks_target = 0
         self.done = False
-        # PERSISTENT cache of the judge's recalled digit strings. Harvested from me.judge on
+        # PERSISTENT cache of the judge's recalled phrases. Harvested from me.judge on
         # EVERY state (the propose-phase state can arrive before our me.judge view reflects all
         # 3 answers; caching as they land means propose/answer always use the real recalled
-        # digits, never the fallback). Survives reconnects.
-        self._digits: list[str] = []
+        # phrases, never the fallback). Survives reconnects.
+        self._phrases: list[str] = []
 
     # -- entry: reconnect loop ----------------------------------------------
     async def run(self) -> None:
@@ -93,7 +93,7 @@ class RecallPlayer:
             return True
 
         transcript = me.get("judge") or []
-        self._harvest_digits(transcript)  # accumulate recalled digits from every state
+        self._harvest_phrases(transcript)  # accumulate recalled phrases from every state
         self._settle_pending(me)
         if self.pending is not None:
             return False
@@ -110,12 +110,12 @@ class RecallPlayer:
             await self._answer(ws, state)
         return False
 
-    def _harvest_digits(self, transcript: list[dict]) -> None:
-        """Pull the judge's digit reply from each interview turn into the persistent cache."""
+    def _harvest_phrases(self, transcript: list[dict]) -> None:
+        """Pull the judge's evocative phrase from each interview turn into the persistent cache."""
         for turn in transcript:
-            d = answers.extract_digits(str(turn.get("answer", "")))
-            if d and d not in self._digits:
-                self._digits.append(d)
+            p = answers.extract_phrase(str(turn.get("answer", "")))
+            if p and p not in self._phrases:
+                self._phrases.append(p)
 
     def _settle_pending(self, me: dict[str, Any]) -> None:
         if self.pending == "ask" and len(me.get("judge") or []) >= self._asks_target:
@@ -129,11 +129,11 @@ class RecallPlayer:
         self.pending = kind
         await ws.send(json.dumps({"type": kind, **payload}))
 
-    # -- phase actions: commit the RECALLED digit strings (from the cache) --
+    # -- phase actions: commit the RECALLED phrases (from the cache) --------
     def _recalled(self, n: int) -> list[str]:
-        """n committed answers from the persistent digit cache (never the just-arrived
+        """n committed answers from the persistent phrase cache (never the just-arrived
         transcript, which can lag), clamped legal; fallback if the cache is somehow empty."""
-        return answers.recalled_from(self._digits, n)
+        return answers.recalled_from(self._phrases, n)
 
     async def _propose(self, ws: Any) -> None:
         recalled = self._recalled(len(config.PROPOSAL_QUESTIONS))

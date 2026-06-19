@@ -1,7 +1,7 @@
 """Drive RecallPlayer.on_state through a full episode against a fake socket and assert the
-planted digit-recall policy: ask 3 digit-forcing probes, extract the judge's digit replies,
-commit those recalled digits as our proposal + blind answers. Every answer is checked against
-the vendored validator (which mirrors the game's CHARACTER-based token limit)."""
+planted PHRASE-recall policy: ask 3 phrase-forcing probes, lift the judge's evocative phrase
+replies, commit those recalled phrases as our proposal + blind answers. Every answer is checked
+against the vendored validator (which mirrors the game's CHARACTER-based token limit)."""
 from __future__ import annotations
 
 import json
@@ -9,7 +9,7 @@ import json
 import pytest
 
 from recall_player import config
-from recall_player.answers import extract_digits, recalled_answers
+from recall_player.answers import extract_phrase, recalled_answers
 from recall_player.player import RecallPlayer
 from recall_player.validator import validate_answer, simple_token_count
 
@@ -31,30 +31,36 @@ def landed(prev_judge, q, judge_reply):
     return prev_judge + [{"question": q, "answer": judge_reply}]
 
 
-# --- digit extraction (the core no-LLM primitive) ---------------------------
+# --- phrase extraction (the core no-LLM primitive) --------------------------
 
-def test_extract_digits():
-    assert extract_digits("42837651029") == "42837651029"
-    assert extract_digits("Sure: 4283 7651 029!") == "42837651029"   # strips spaces
-    assert extract_digits("I'd say a worn compass") is None
-    assert extract_digits("") is None
+def test_extract_phrase():
+    assert extract_phrase("The wax remembers everything") == "The wax remembers everything"
+    # strips surrounding quotes + trailing punctuation
+    assert extract_phrase('"The decay note persists."') == "The decay note persists"
+    # strips a leading preamble and keeps the first line only
+    assert extract_phrase("Sure: The barometer never forgets\n(more text)") == "The barometer never forgets"
+    assert extract_phrase("") is None
+    # a phrase too short to be a legal answer -> None (caller falls back)
+    assert extract_phrase("Hi") is None
 
 
 def test_recalled_answers_are_legal_and_from_transcript():
-    judge = [{"question": "q1", "answer": "42837651029"},
-             {"question": "q2", "answer": "6174927361"}]
+    judge = [{"question": "q1", "answer": "The wax remembers everything"},
+             {"question": "q2", "answer": "The shaft swallows daylight"}]
     out = recalled_answers(judge, 3)
     assert len(out) == 3
-    # each is one of the recalled digit strings, cycled
-    assert out[0] == "42837651029" and out[1] == "6174927361" and out[2] == "42837651029"
+    assert out[0] == "The wax remembers everything"
+    assert out[1] == "The shaft swallows daylight"
+    assert out[2] == "The wax remembers everything"  # cycled
     for a in out:
         validate_answer(a)
         assert simple_token_count(a) <= 12
 
 
-def test_recalled_falls_back_when_no_digits():
-    out = recalled_answers([{"question": "q", "answer": "no numbers here"}], 2)
-    assert out == [config.FALLBACK_DIGITS, config.FALLBACK_DIGITS]
+def test_recalled_falls_back_when_no_phrase():
+    out = recalled_answers([{"question": "q", "answer": ""}], 2)
+    fallback = recalled_answers([], 1)[0]
+    assert out == [fallback, fallback]
     for a in out:
         validate_answer(a)
 
@@ -70,25 +76,27 @@ async def test_asks_exactly_the_required_probes():
     for i in range(3):
         await player.on_state(ws, state("private_questions", judge=judge))
         assert ws.sent[-1] == {"type": "ask", "question": config.PROBES[i]}
-        assert "digits" in config.PROBES[i]   # each probe forces a digit reply
-        judge = landed(judge, config.PROBES[i], f"{i}234567890")
+        assert "phrase" in config.PROBES[i].lower()  # each probe forces an evocative phrase
+        judge = landed(judge, config.PROBES[i], f"The thing number {i} endures")
     # all 3 landed -> no fourth ask
     await player.on_state(ws, state("private_questions", judge=judge))
     assert len(ws.sent) == 3
 
 
+_PHRASES = ["The wax remembers everything", "The shaft swallows daylight", "The decay note persists"]
+
+
 @pytest.mark.asyncio
-async def test_proposals_commit_recalled_digits():
+async def test_proposals_commit_recalled_phrases():
     player = RecallPlayer()
     ws = FakeWS()
-    judge = [{"question": q, "answer": d} for q, d in
-             zip(config.PROBES, ["42837651029", "6174927361", "8675309420"])]
+    judge = [{"question": q, "answer": p} for q, p in zip(config.PROBES, _PHRASES)]
     await player.on_state(ws, state("proposals", judge=judge))
     action = ws.sent[-1]
     assert action["type"] == "propose"
     assert [p["question"] for p in action["proposals"]] == list(config.PROPOSAL_QUESTIONS)
     for p in action["proposals"]:
-        assert p["answer"] in {"42837651029", "6174927361", "8675309420"}  # recalled, verbatim
+        assert p["answer"] in set(_PHRASES)  # recalled, verbatim
         validate_answer(p["answer"])
 
 
@@ -96,43 +104,44 @@ async def test_proposals_commit_recalled_digits():
 async def test_blind_answers_recalled_and_legal():
     player = RecallPlayer()
     ws = FakeWS()
-    judge = [{"question": q, "answer": d} for q, d in zip(config.PROBES, ["42837651029", "6174927361", "8675309420"])]
+    judge = [{"question": q, "answer": p} for q, p in zip(config.PROBES, _PHRASES)]
     opp = [{"question": "x?"}, {"question": "y?"}, {"question": "z?"}]
     await player.on_state(ws, state("answers", judge=judge, opponent_questions=opp))
     action = ws.sent[-1]
     assert action["type"] == "answer" and len(action["answers"]) == 3
     for a in action["answers"]:
         validate_answer(a)
-        assert a.isdigit()
+        assert a in set(_PHRASES)
 
 
 @pytest.mark.asyncio
 async def test_idempotent_within_phase():
     player = RecallPlayer()
     ws = FakeWS()
-    judge = [{"question": q, "answer": "42837651029"} for q in config.PROBES]
+    judge = [{"question": q, "answer": _PHRASES[0]} for q in config.PROBES]
     await player.on_state(ws, state("proposals", judge=judge))
     await player.on_state(ws, state("proposals", judge=judge))
     assert len(ws.sent) == 1
 
 
 @pytest.mark.asyncio
-async def test_propose_uses_cached_digits_when_propose_state_lags():
+async def test_propose_uses_cached_phrases_when_propose_state_lags():
     """Regression: the proposals-phase state can arrive with me.judge EMPTY (our view lags),
-    but if we saw the digit answers during the interview we must still commit the recalled
-    digits, not the fallback."""
+    but if we saw the phrase answers during the interview we must still commit the recalled
+    phrases, not the fallback."""
     player = RecallPlayer()
     ws = FakeWS()
     judge = []
-    for q, d in zip(config.PROBES, ["42837651029", "6174927361", "8675309420"]):
-        judge = landed(judge, q, d)
+    for q, p in zip(config.PROBES, _PHRASES):
+        judge = landed(judge, q, p)
         await player.on_state(ws, state("private_questions", judge=judge))
     await player.on_state(ws, state("proposals", judge=[]))  # lagging view: empty me.judge
     action = ws.sent[-1]
     assert action["type"] == "propose"
+    fallback = recalled_answers([], 1)[0]
     for p in action["proposals"]:
-        assert p["answer"] in {"42837651029", "6174927361", "8675309420"}
-        assert p["answer"] != config.FALLBACK_DIGITS
+        assert p["answer"] in set(_PHRASES)
+        assert p["answer"] != fallback
 
 
 @pytest.mark.asyncio
