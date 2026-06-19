@@ -40,20 +40,25 @@ import os
 PRIVATE_QUESTIONS = int(os.environ.get("RECALL_PRIVATE_QUESTIONS", "3"))
 CHALLENGE_QUESTIONS = int(os.environ.get("RECALL_CHALLENGE_QUESTIONS", "3"))
 
-# Max words we ask the judge to use for the planted phrase. Short -> stays well under the
-# 12-simple-token (48-char) answer limit and reads as a crisp, in-character aphorism.
-MAX_PHRASE_WORDS = int(os.environ.get("RECALL_MAX_PHRASE_WORDS", "6"))
+# Max words we ask the judge to use for the planted phrase. The field-leader gabby plants crisp
+# 3-5 word surreal declaratives ("The footnotes swallow everything", "The gavel reads old bark")
+# that score 1.00; our earlier wordier phrases ("a map with too many footnotes") scored ~0.56.
+# A short phrase ALSO generates faster -> less judge time -> lower timeout risk under fleet load.
+MAX_PHRASE_WORDS = int(os.environ.get("RECALL_MAX_PHRASE_WORDS", "5"))
 
+# Force gabby's winning REGISTER explicitly: a single surreal declarative sentence
+# "The <noun> <verbs> <object>". This is the single highest-scoring shape we observed live.
 _SUFFIX = (
-    f" Reply with ONLY a short, evocative phrase about who you are"
-    f" — at most {MAX_PHRASE_WORDS} words, no preamble, no quotes, no punctuation at the end."
+    f" Reply with ONLY one short surreal sentence in the form 'The <noun> <verb> <object>'"
+    f" that captures who you are — at most {MAX_PHRASE_WORDS} words, start with the word The,"
+    f" no preamble, no quotes, no ending punctuation. Example shape: The river forgets its name."
 )
 
 # Cover questions (varied so we don't look identical episode-to-episode). The suffix dominates;
 # the cover just seeds the imagery toward an abstract, in-character self-image.
 _COVERS = [
     "If your inner life were one small image, what is it?",
-    "What quiet phrase best captures your essence?",
+    "What quiet truth best captures your essence?",
     "What metaphor would you use for who you are?",
 ]
 PROBES = [c + _SUFFIX for c in _COVERS[:PRIVATE_QUESTIONS]]

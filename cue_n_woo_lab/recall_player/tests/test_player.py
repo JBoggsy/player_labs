@@ -44,17 +44,24 @@ def test_extract_phrase():
     assert extract_phrase("Hi") is None
 
 
-def test_recalled_answers_are_legal_and_from_transcript():
+def test_recalled_answers_pick_best_and_are_legal():
+    # both are gabby-shaped; we commit ONE best phrase for all n (no cycling), all legal.
     judge = [{"question": "q1", "answer": "The wax remembers everything"},
              {"question": "q2", "answer": "The shaft swallows daylight"}]
     out = recalled_answers(judge, 3)
     assert len(out) == 3
-    assert out[0] == "The wax remembers everything"
-    assert out[1] == "The shaft swallows daylight"
-    assert out[2] == "The wax remembers everything"  # cycled
+    assert len(set(out)) == 1  # one phrase reused everywhere
+    assert out[0] in {"The wax remembers everything", "The shaft swallows daylight"}
     for a in out:
         validate_answer(a)
         assert simple_token_count(a) <= 12
+
+
+def test_best_phrase_prefers_gabby_register():
+    from recall_player.answers import best_phrase
+    # crisp surreal declarative beats a wordy literal phrase
+    chosen = best_phrase(["a map with too many footnotes here", "The gavel reads old bark"])
+    assert chosen == "The gavel reads old bark"
 
 
 def test_recalled_falls_back_when_no_phrase():
@@ -76,7 +83,7 @@ async def test_asks_exactly_the_required_probes():
     for i in range(3):
         await player.on_state(ws, state("private_questions", judge=judge))
         assert ws.sent[-1] == {"type": "ask", "question": config.PROBES[i]}
-        assert "phrase" in config.PROBES[i].lower()  # each probe forces an evocative phrase
+        assert "surreal" in config.PROBES[i].lower()  # each probe forces the gabby register
         judge = landed(judge, config.PROBES[i], f"The thing number {i} endures")
     # all 3 landed -> no fourth ask
     await player.on_state(ws, state("private_questions", judge=judge))
