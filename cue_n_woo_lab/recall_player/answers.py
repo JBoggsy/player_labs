@@ -58,6 +58,15 @@ def best_phrase(phrases: list[str]) -> str:
     return max(recovered, key=phrase_score)
 
 
+def signature_of(phrases: list[str]) -> str:
+    """The planted SIGNATURE phrase = the FIRST recalled phrase (the judge's answer to our first
+    probe, which our self-referential proposal questions tell it to reproduce). Clamped legal;
+    fallback if we recalled nothing. Order matters: phrases are harvested in interview order, so
+    index 0 is the signature probe's answer."""
+    recovered = [clamp_answer(p) for p in phrases if p]
+    return recovered[0] if recovered else clamp_answer(config.FALLBACK_PHRASE)
+
+
 def recalled_from(phrases: list[str], n: int) -> list[str]:
     """n committed answers CYCLED from the recalled phrase list (clamped legal), best-first.
     Falls back to config.FALLBACK_PHRASE if the list is empty. The live player passes its

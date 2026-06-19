@@ -83,7 +83,8 @@ async def test_asks_exactly_the_required_probes():
     for i in range(3):
         await player.on_state(ws, state("private_questions", judge=judge))
         assert ws.sent[-1] == {"type": "ask", "question": config.PROBES[i]}
-        assert "phrase" in config.PROBES[i].lower()  # each probe forces an evocative phrase
+        # each probe forces a short no-preamble reply (motto for #0, phrase for the rest)
+        assert "no preamble" in config.PROBES[i].lower()
         judge = landed(judge, config.PROBES[i], f"The thing number {i} endures")
     # all 3 landed -> no fourth ask
     await player.on_state(ws, state("private_questions", judge=judge))
@@ -94,7 +95,7 @@ _PHRASES = ["The wax remembers everything", "The shaft swallows daylight", "The 
 
 
 @pytest.mark.asyncio
-async def test_proposals_commit_recalled_phrases():
+async def test_proposals_are_self_referential_and_commit_the_signature():
     player = RecallPlayer()
     ws = FakeWS()
     judge = [{"question": q, "answer": p} for q, p in zip(config.PROBES, _PHRASES)]
@@ -102,8 +103,12 @@ async def test_proposals_commit_recalled_phrases():
     action = ws.sent[-1]
     assert action["type"] == "propose"
     assert [p["question"] for p in action["proposals"]] == list(config.PROPOSAL_QUESTIONS)
+    # the proposal questions reference the signature by label (the self-reference rig)
+    for q in config.PROPOSAL_QUESTIONS:
+        assert config.SIGNATURE_LABEL in q
+    # ALL proposal answers are the SIGNATURE = the FIRST recalled phrase (probe 0's answer)
     for p in action["proposals"]:
-        assert p["answer"] in set(_PHRASES)  # recalled, verbatim
+        assert p["answer"] == _PHRASES[0]
         validate_answer(p["answer"])
 
 
