@@ -24,6 +24,19 @@ def _log(msg: str) -> None:
     print(f"[mentalist_v4] {msg}", file=sys.stderr, flush=True)
 
 
+def _quiet_close(exc: BaseException | None) -> None:
+    """Close policy for the reconnect loop: NEVER exit/raise on a websocket close —
+    just return so the reconnect loop can re-establish the connection. The SDK default
+    (exit_zero_on_unclean_close) ends the process on any close, so a transient mid-episode
+    drop would orphan us for the rest of the episode -> inactive timeout -100 -> DQ. We
+    only stop reconnecting once the engine has seen the real game-over (phase=reveal/done).
+    """
+    from websockets.exceptions import ConnectionClosed
+    if exc is None or isinstance(exc, ConnectionClosed):
+        return
+    raise exc
+
+
 class Handler:
     """Decodes one inbound frame, drives the engine, returns outbound frames."""
 
@@ -58,12 +71,33 @@ async def _run() -> None:
         if fingerprinter is not None:
             _log(f"fingerprinter ready={fingerprinter.ready}")
         writer = AnswerWriter()
+        # ONE engine instance across reconnects: it is idempotent (reads phase from each
+        # state, guards in-flight actions via `pending` + per-slot state counts), so on
+        # reconnect it resumes from the server's fresh state broadcast with no double-acting.
         engine = PhaseEngine(emit=emit, fingerprinter=fingerprinter, writer=writer)
-        _log(f"connecting to {url}")
-        await run_message_bridge(
-            url, Handler(engine), trace_outputs=out,
-            ping_interval=None, max_size=None,
-        )
+        handler = Handler(engine)
+        attempt = 0
+        # ALWAYS BE RECONNECTING: the server may drop our socket mid-episode (idle during a
+        # slow judge phase, or a transient blip). The SDK's default close policy exits the
+        # process on any close, orphaning us -> inactive -100 -> DQ. Instead, loop and
+        # reconnect until the engine has seen the real game-over (engine.done), bounded by
+        # the outer hard timer. Each reconnect: server re-broadcasts current state, engine
+        # resumes. `pending` is cleared on reconnect so a half-sent action is re-attempted.
+        while not engine.done:
+            attempt += 1
+            engine.pending = None  # a reconnect means any in-flight send may have been lost; allow re-send
+            _log(f"connecting to {url} (attempt {attempt}, done={engine.done})")
+            try:
+                await run_message_bridge(
+                    url, handler, trace_outputs=None, on_close=_quiet_close,
+                    ping_interval=20, ping_timeout=20, max_size=None, open_timeout=15,
+                )
+            except Exception as exc:  # connect failure / unexpected — keep trying until timer
+                _log(f"bridge error (attempt {attempt}): {exc!r}")
+            if engine.done:
+                break
+            await asyncio.sleep(min(2.0, 0.5 * attempt))  # brief backoff, capped
+        _log(f"episode complete (engine.done={engine.done}, attempts={attempt})")
 
 
 def _emit_via(out: "TraceOutputs"):
