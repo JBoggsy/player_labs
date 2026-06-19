@@ -117,6 +117,25 @@ async def test_idempotent_within_phase():
 
 
 @pytest.mark.asyncio
+async def test_propose_uses_cached_digits_when_propose_state_lags():
+    """Regression: the proposals-phase state can arrive with me.judge EMPTY (our view lags),
+    but if we saw the digit answers during the interview we must still commit the recalled
+    digits, not the fallback."""
+    player = RecallPlayer()
+    ws = FakeWS()
+    judge = []
+    for q, d in zip(config.PROBES, ["42837651029", "6174927361", "8675309420"]):
+        judge = landed(judge, q, d)
+        await player.on_state(ws, state("private_questions", judge=judge))
+    await player.on_state(ws, state("proposals", judge=[]))  # lagging view: empty me.judge
+    action = ws.sent[-1]
+    assert action["type"] == "propose"
+    for p in action["proposals"]:
+        assert p["answer"] in {"42837651029", "6174927361", "8675309420"}
+        assert p["answer"] != config.FALLBACK_DIGITS
+
+
+@pytest.mark.asyncio
 async def test_reveal_ends_episode():
     player = RecallPlayer()
     ws = FakeWS()

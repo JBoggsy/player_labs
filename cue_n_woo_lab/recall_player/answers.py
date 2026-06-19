@@ -27,18 +27,15 @@ def extract_digits(judge_answer: str) -> str | None:
     return best or None
 
 
+def recalled_from(digits: list[str], n: int) -> list[str]:
+    """n committed answers cycled from an ALREADY-recalled digit list, clamped legal. Falls
+    back to config.FALLBACK_DIGITS if the list is empty. The live player passes its persistent
+    cache here so a lagging propose-phase state can't force the fallback."""
+    recovered = [d for d in digits if d] or [config.FALLBACK_DIGITS]
+    return [clamp_answer(recovered[i % len(recovered)]) for i in range(n)]
+
+
 def recalled_answers(judge_turns: list[dict], n: int) -> list[str]:
-    """n committed answers, each a recalled digit string from our judge transcript, clamped
-    legal. Falls back to config.FALLBACK_DIGITS when a turn yields no digits. Cycles through
-    the recovered strings if we need more answers than probes."""
-    recovered: list[str] = []
-    for turn in judge_turns:
-        d = extract_digits(str(turn.get("answer", "")))
-        if d:
-            recovered.append(d)
-    if not recovered:
-        recovered = [config.FALLBACK_DIGITS]
-    out = []
-    for i in range(n):
-        out.append(clamp_answer(recovered[i % len(recovered)]))
-    return out
+    """Convenience: extract digits from a judge transcript and cycle into n legal answers."""
+    recovered = [d for turn in judge_turns if (d := extract_digits(str(turn.get("answer", ""))))]
+    return recalled_from(recovered, n)

@@ -42,6 +42,11 @@ class RecallPlayer:
         self.pending: str | None = None  # action in flight, cleared when a later state shows it landed
         self._asks_target = 0
         self.done = False
+        # PERSISTENT cache of the judge's recalled digit strings. Harvested from me.judge on
+        # EVERY state (the propose-phase state can arrive before our me.judge view reflects all
+        # 3 answers; caching as they land means propose/answer always use the real recalled
+        # digits, never the fallback). Survives reconnects.
+        self._digits: list[str] = []
 
     # -- entry: reconnect loop ----------------------------------------------
     async def run(self) -> None:
@@ -88,6 +93,7 @@ class RecallPlayer:
             return True
 
         transcript = me.get("judge") or []
+        self._harvest_digits(transcript)  # accumulate recalled digits from every state
         self._settle_pending(me)
         if self.pending is not None:
             return False
@@ -99,10 +105,17 @@ class RecallPlayer:
                 log(f"asking probe {n + 1}/{len(config.PROBES)}")
                 await self._send(ws, "ask", {"question": config.PROBES[n]})
         elif phase == "proposals" and len(me.get("proposals") or []) == 0:
-            await self._propose(ws, transcript)
+            await self._propose(ws)
         elif phase == "answers" and len(me.get("answers") or []) == 0:
-            await self._answer(ws, state, transcript)
+            await self._answer(ws, state)
         return False
+
+    def _harvest_digits(self, transcript: list[dict]) -> None:
+        """Pull the judge's digit reply from each interview turn into the persistent cache."""
+        for turn in transcript:
+            d = answers.extract_digits(str(turn.get("answer", "")))
+            if d and d not in self._digits:
+                self._digits.append(d)
 
     def _settle_pending(self, me: dict[str, Any]) -> None:
         if self.pending == "ask" and len(me.get("judge") or []) >= self._asks_target:
@@ -116,18 +129,23 @@ class RecallPlayer:
         self.pending = kind
         await ws.send(json.dumps({"type": kind, **payload}))
 
-    # -- phase actions: commit the RECALLED digit strings -------------------
-    async def _propose(self, ws: Any, transcript: list[dict]) -> None:
-        recalled = answers.recalled_answers(transcript, len(config.PROPOSAL_QUESTIONS))
+    # -- phase actions: commit the RECALLED digit strings (from the cache) --
+    def _recalled(self, n: int) -> list[str]:
+        """n committed answers from the persistent digit cache (never the just-arrived
+        transcript, which can lag), clamped legal; fallback if the cache is somehow empty."""
+        return answers.recalled_from(self._digits, n)
+
+    async def _propose(self, ws: Any) -> None:
+        recalled = self._recalled(len(config.PROPOSAL_QUESTIONS))
         proposals = [{"question": q, "answer": a} for q, a in zip(config.PROPOSAL_QUESTIONS, recalled)]
         log(f"proposing {len(proposals)} questions; recalled answers {recalled}")
         await self._send(ws, "propose", {"proposals": proposals})
 
-    async def _answer(self, ws: Any, state: dict[str, Any], transcript: list[dict]) -> None:
+    async def _answer(self, ws: Any, state: dict[str, Any]) -> None:
         questions = state.get("opponent_questions") or []
         if not questions:
             return
-        recalled = answers.recalled_answers(transcript, len(questions))
+        recalled = self._recalled(len(questions))
         log(f"answering {len(questions)} opponent questions -> {recalled}")
         await self._send(ws, "answer", {"answers": recalled})
 
