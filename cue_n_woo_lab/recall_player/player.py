@@ -40,6 +40,7 @@ def log(msg: str) -> None:
 class RecallPlayer:
     def __init__(self) -> None:
         self.pending: str | None = None  # action in flight, cleared when a later state shows it landed
+        self._pending_phase: str | None = None  # the phase the in-flight action belongs to
         self._asks_target = 0
         self.done = False
         # PERSISTENT cache of the judge's recalled phrases. Harvested from me.judge on
@@ -94,7 +95,7 @@ class RecallPlayer:
 
         transcript = me.get("judge") or []
         self._harvest_phrases(transcript)  # accumulate recalled phrases from every state
-        self._settle_pending(me)
+        self._settle_pending(phase, me)
         if self.pending is not None:
             return False
 
@@ -103,11 +104,11 @@ class RecallPlayer:
             if n < len(config.PROBES):
                 self._asks_target = n + 1
                 log(f"asking probe {n + 1}/{len(config.PROBES)}")
-                await self._send(ws, "ask", {"question": config.PROBES[n]})
+                await self._send(ws, "ask", phase, {"question": config.PROBES[n]})
         elif phase == "proposals" and len(me.get("proposals") or []) == 0:
-            await self._propose(ws)
+            await self._propose(ws, phase)
         elif phase == "answers" and len(me.get("answers") or []) == 0:
-            await self._answer(ws, state)
+            await self._answer(ws, phase, state)
         return False
 
     def _harvest_phrases(self, transcript: list[dict]) -> None:
@@ -117,7 +118,20 @@ class RecallPlayer:
             if p and p not in self._phrases:
                 self._phrases.append(p)
 
-    def _settle_pending(self, me: dict[str, Any]) -> None:
+    def _settle_pending(self, phase: str | None, me: dict[str, Any]) -> None:
+        """Clear the in-flight guard once the action has landed OR the phase has moved on.
+
+        CRITICAL (league DQ fix): the guard must NOT outlive its phase. Our 3rd probe lands as
+        pending="ask" with _asks_target=3, but the proposals-phase state often arrives with
+        me.judge still lagging (<3), so the landed-check never fires. Without the phase-change
+        clear, we wait forever for a state that has already passed -> we never propose -> the
+        global phase stalls -> inactive timeout -> -100 / DQ. (Isolated races hid this because a
+        fast judge meant me.judge never lagged; under league load it always does.) So: if the
+        server has advanced past the phase our action belonged to, the action is moot — drop it."""
+        if self.pending is not None and phase != self._pending_phase:
+            self.pending = None
+            self._pending_phase = None
+            return
         if self.pending == "ask" and len(me.get("judge") or []) >= self._asks_target:
             self.pending = None
         elif self.pending == "propose" and me.get("proposals"):
@@ -125,8 +139,9 @@ class RecallPlayer:
         elif self.pending == "answer" and me.get("answers"):
             self.pending = None
 
-    async def _send(self, ws: Any, kind: str, payload: dict[str, Any]) -> None:
+    async def _send(self, ws: Any, kind: str, phase: str | None, payload: dict[str, Any]) -> None:
         self.pending = kind
+        self._pending_phase = phase
         await ws.send(json.dumps({"type": kind, **payload}))
 
     # -- phase actions: commit the RECALLED phrases (from the cache) --------
@@ -135,19 +150,19 @@ class RecallPlayer:
         transcript, which can lag), clamped legal; fallback if the cache is somehow empty."""
         return answers.recalled_from(self._phrases, n)
 
-    async def _propose(self, ws: Any) -> None:
+    async def _propose(self, ws: Any, phase: str | None) -> None:
         recalled = self._recalled(len(config.PROPOSAL_QUESTIONS))
         proposals = [{"question": q, "answer": a} for q, a in zip(config.PROPOSAL_QUESTIONS, recalled)]
         log(f"proposing {len(proposals)} questions; recalled answers {recalled}")
-        await self._send(ws, "propose", {"proposals": proposals})
+        await self._send(ws, "propose", phase, {"proposals": proposals})
 
-    async def _answer(self, ws: Any, state: dict[str, Any]) -> None:
+    async def _answer(self, ws: Any, phase: str | None, state: dict[str, Any]) -> None:
         questions = state.get("opponent_questions") or []
         if not questions:
             return
         recalled = self._recalled(len(questions))
         log(f"answering {len(questions)} opponent questions -> {recalled}")
-        await self._send(ws, "answer", {"answers": recalled})
+        await self._send(ws, "answer", phase, {"answers": recalled})
 
 
 async def main() -> None:

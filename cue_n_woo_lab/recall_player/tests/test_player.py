@@ -145,6 +145,31 @@ async def test_propose_uses_cached_phrases_when_propose_state_lags():
 
 
 @pytest.mark.asyncio
+async def test_no_wedge_when_proposals_arrives_with_ask_still_pending():
+    """League DQ regression: after the 3rd probe we hold pending='ask' (_asks_target=3), and the
+    NEXT state is already 'proposals' with me.judge LAGGING (<3). The phase-change clear must
+    drop the stale 'ask' guard so we propose — otherwise we wait forever, the global phase
+    stalls, and the server times us out inactive (-100). This is exactly what killed v1/v2 in
+    the live league while isolated fast-judge races never reproduced it."""
+    player = RecallPlayer()
+    ws = FakeWS()
+    # Probes land with NO transcript echo (judge view never catches up), so each ask stays pending
+    # until the phase advances. Drive 3 private_questions states, each showing 0 prior answers.
+    for _ in range(3):
+        await player.on_state(ws, state("private_questions", judge=[]))
+    # After 3 asks the player is still pending='ask' and has only sent... let's confirm it sent 1
+    # ask then wedged on its own guard within the interview — that's fine; the real unwedge is the
+    # phase change below. Seed the phrase cache as the interview would have (harvested elsewhere).
+    player._phrases = list(_PHRASES)
+    # proposals phase arrives with me.judge STILL empty (the lag):
+    await player.on_state(ws, state("proposals", judge=[]))
+    propose = [m for m in ws.sent if m.get("type") == "propose"]
+    assert len(propose) == 1, f"expected exactly one propose, got sent={ws.sent}"
+    for p in propose[0]["proposals"]:
+        assert p["answer"] in set(_PHRASES)
+
+
+@pytest.mark.asyncio
 async def test_reveal_ends_episode():
     player = RecallPlayer()
     ws = FakeWS()
