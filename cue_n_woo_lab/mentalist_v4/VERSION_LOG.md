@@ -129,3 +129,23 @@ chain of latency causes:
 
 The controllable latency is fixed; qualifying now hinges on landing a qualifier window during
 healthy fleet load. Re-submit on DQ to get a fresh window.
+
+### ★ THE CORRECT QUALIFYING PLAYER (2026-06-19): mentalist-v4-pf3probe
+
+After the "always be reconnecting" directive, the reconnect logs revealed the TRUE bug was
+NOT connection drops (socket stayed open, reconnects=1) but UNDER-ASKING probes: my latency
+"optimizations" cut PROBE_COUNT to 1-2, below the game's required 3 private questions, so the
+episode stalled in private_questions -> 599s timeout -> inactive -100 -> DQ. (pffast2's 3
+one-word probes had actually COMPLETED gabby 6/6; the probe-reduction broke it.)
+
+| Policy | Config | Result |
+|---|---|---|
+| `mentalist-v4-pf3probe:v1` | personafit, 3 one-word probes (== game quota), char-token validator, reconnect loop + ping keepalive, recall/rerank off | **COMPLETES vs gabby (205-231s, 3 probes, proposals+answers, 0 server-rejections)** — submitted sub_a7a42479, qualifying |
+
+THREE genuine fixes, all validated in one hosted episode (3 probes / fingerprint / authored /
+responded / 0 rejections): (1) char-based token limit (was word-count -> server rejections);
+(2) one-word probes (fast judge generation = low latency); (3) reconnect loop + keepalive
+(survive genuine drops). RULE: satisfy the game's per-phase quotas (3/3/3) — reduce latency by
+making each action FAST, never by skipping required actions. Episode duration (~200s) is now
+judge-side (Sonnet calls), not our latency. Qualifying gate cleared on the player side; rest is
+fleet-load timing + scheduler cadence.
