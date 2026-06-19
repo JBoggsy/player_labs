@@ -59,12 +59,19 @@ def best_phrase(phrases: list[str]) -> str:
 
 
 def recalled_from(phrases: list[str], n: int) -> list[str]:
-    """n committed answers, ALL the single best-scoring recalled phrase (clamped legal). Falls
-    back to config.FALLBACK_PHRASE if the list is empty. The live player passes its persistent
-    cache here so a lagging propose-phase state can't force the fallback. Reusing one strong
-    phrase (vs cycling all three) mirrors gabby and avoids planting our weaker phrases."""
-    chosen = best_phrase(phrases)
-    return [chosen for _ in range(n)]
+    """n committed answers CYCLED from the recalled phrase list (clamped legal), best-first.
+    Falls back to config.FALLBACK_PHRASE if the list is empty. The live player passes its
+    persistent cache here so a lagging propose-phase state can't force the fallback.
+
+    Cycle VARIED phrases (don't collapse to one): v5 committed a single 'best' phrase everywhere
+    and a single weak/colliding pick tanked all 3 rows (0/6). Cycling distinct phrases is a
+    diversity hedge — one weak phrase costs at most one row. Order best-first so the strongest
+    phrase lands on the first (and, when n>len, most-repeated) slot."""
+    recovered = [clamp_answer(p) for p in phrases if p]
+    if not recovered:
+        recovered = [clamp_answer(config.FALLBACK_PHRASE)]
+    ordered = sorted(recovered, key=phrase_score, reverse=True)
+    return [ordered[i % len(ordered)] for i in range(n)]
 
 
 def recalled_answers(judge_turns: list[dict], n: int) -> list[str]:

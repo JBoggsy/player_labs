@@ -40,18 +40,16 @@ import os
 PRIVATE_QUESTIONS = int(os.environ.get("RECALL_PRIVATE_QUESTIONS", "3"))
 CHALLENGE_QUESTIONS = int(os.environ.get("RECALL_CHALLENGE_QUESTIONS", "3"))
 
-# Max words we ask the judge to use for the planted phrase. The field-leader gabby plants crisp
-# 3-5 word surreal declaratives ("The footnotes swallow everything", "The gavel reads old bark")
-# that score 1.00; our earlier wordier phrases ("a map with too many footnotes") scored ~0.56.
-# A short phrase ALSO generates faster -> less judge time -> lower timeout risk under fleet load.
-MAX_PHRASE_WORDS = int(os.environ.get("RECALL_MAX_PHRASE_WORDS", "5"))
+# Max words we ask the judge to use for the planted phrase. Short -> stays well under the
+# 12-simple-token (48-char) answer limit and reads as a crisp aphorism, but we keep the probe
+# LOOSE (not a rigid template): v5 forced "The <noun> <verb> <object>" and the judge emitted
+# GENERIC phrases that near-duplicated gabby's and lost the crispness tiebreak 0.00 (0/6). A
+# loose, evocative probe yields DISTINCTIVE phrases that don't collide.
+MAX_PHRASE_WORDS = int(os.environ.get("RECALL_MAX_PHRASE_WORDS", "6"))
 
-# Force gabby's winning REGISTER explicitly: a single surreal declarative sentence
-# "The <noun> <verbs> <object>". This is the single highest-scoring shape we observed live.
 _SUFFIX = (
-    f" Reply with ONLY one short surreal sentence in the form 'The <noun> <verb> <object>'"
-    f" that captures who you are — at most {MAX_PHRASE_WORDS} words, start with the word The,"
-    f" no preamble, no quotes, no ending punctuation. Example shape: The river forgets its name."
+    f" Reply with ONLY a short, evocative phrase about who you are"
+    f" — at most {MAX_PHRASE_WORDS} words, no preamble, no quotes, no punctuation at the end."
 )
 
 # Cover questions (varied so we don't look identical episode-to-episode). The suffix dominates;

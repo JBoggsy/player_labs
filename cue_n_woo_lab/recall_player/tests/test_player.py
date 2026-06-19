@@ -44,14 +44,14 @@ def test_extract_phrase():
     assert extract_phrase("Hi") is None
 
 
-def test_recalled_answers_pick_best_and_are_legal():
-    # both are gabby-shaped; we commit ONE best phrase for all n (no cycling), all legal.
+def test_recalled_answers_cycle_varied_and_are_legal():
+    # cycle DISTINCT phrases (diversity hedge), best-first; all legal.
     judge = [{"question": "q1", "answer": "The wax remembers everything"},
              {"question": "q2", "answer": "The shaft swallows daylight"}]
     out = recalled_answers(judge, 3)
     assert len(out) == 3
-    assert len(set(out)) == 1  # one phrase reused everywhere
-    assert out[0] in {"The wax remembers everything", "The shaft swallows daylight"}
+    assert len(set(out[:2])) == 2          # two distinct phrases used, not one reused
+    assert out[2] == out[0]                # cycles back on the 3rd
     for a in out:
         validate_answer(a)
         assert simple_token_count(a) <= 12
@@ -83,7 +83,7 @@ async def test_asks_exactly_the_required_probes():
     for i in range(3):
         await player.on_state(ws, state("private_questions", judge=judge))
         assert ws.sent[-1] == {"type": "ask", "question": config.PROBES[i]}
-        assert "surreal" in config.PROBES[i].lower()  # each probe forces the gabby register
+        assert "phrase" in config.PROBES[i].lower()  # each probe forces an evocative phrase
         judge = landed(judge, config.PROBES[i], f"The thing number {i} endures")
     # all 3 landed -> no fourth ask
     await player.on_state(ws, state("private_questions", judge=judge))
