@@ -12,7 +12,10 @@ results/
 replays/
 episode_data/
 analysis/
-coworld/
+# Scratch/downloaded-coworld dir only (top-level). Do NOT ignore a player
+# package's source `coworld/` subdir (e.g. agricogla/farmhand/coworld,
+# crewborg/coworld) — those hold the bridge + Dockerfile and must be tracked.
+/coworld/
 *.bitreplay
 *.replay.json.z
 *.sqlite
