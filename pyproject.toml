@@ -53,8 +53,8 @@ requires = ["setuptools>=70"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-where = ["crewrift_lab"]
-include = ["crewrift*"]
+where = ["crewrift_lab", "agricogla_lab"]
+include = ["crewrift*", "agricogla*"]
 exclude = ["crewrift.notsus*", "crewrift.suspectra*"]
 
 [tool.pytest.ini_options]
