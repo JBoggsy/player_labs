@@ -24,6 +24,7 @@ DEFAULT_PARAMS: dict[str, float] = {
     # Rooms (enable growth)
     "room_housebound": 55.0,
     "room_ahead": 35.0,
+    "room_stable_only": 12.0,  # weight for a stables-only farm_expansion (see brain TODO)
     # Food / cooking (never-starve, §1.2)
     "cooker_critical": 50.0,
     "cooker_urgency": 5.0,

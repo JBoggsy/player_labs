@@ -177,6 +177,10 @@ class _Ctx:
                     return p["room_housebound"]
                 if self.rnd <= 7:
                     return p["room_ahead"]
+            # Stables-only: cheap (2 wood) and a stable enables fencing a pasture —
+            # a -1 scoring category to flip (STRATEGY §1.4). Lower priority than rooms.
+            if self.res.get("wood", 0) >= 2 and self._room_cell() is not None:
+                return p["room_stable_only"]
             return 2.0
         if sid == "r_improvement":
             return p["cooker_critical"] + self.urgency * p["cooker_urgency"] if not self.has_cooker else 15.0
@@ -234,7 +238,14 @@ class _Ctx:
     def build(self, sid: str) -> dict | None:
         if sid == "farm_expansion":
             cell = self._room_cell()
-            return {"action": sid, "rooms": [cell], "stables": []} if cell is not None else None
+            if cell is None:
+                return None
+            # Build a room if affordable; else fall back to a (cheap) stable.
+            if self.res.get(self.house, 0) >= 5 and self.res.get("reed", 0) >= 2:
+                return {"action": sid, "rooms": [cell], "stables": []}
+            if self.res.get("wood", 0) >= 2:
+                return {"action": sid, "rooms": [], "stables": [cell]}
+            return None
         if sid == "farmland":
             cell = self._field_cell()
             return {"action": sid, "spaces": [cell]} if cell is not None else None
