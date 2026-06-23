@@ -165,7 +165,10 @@ def main():
     rnd = st["round"] + 1
     log("round_start", round=rnd, beam=[e["label"] for e in st["beam"]])
 
-    parents = [e for e in st["beam"] if e.get("score") is not None] or st["beam"]
+    # Fall back to the champion when the beam is empty (e.g. just after a
+    # re-seed): an empty beam used to divide-by-zero at the proposal step below.
+    parents = ([e for e in st["beam"] if e.get("score") is not None]
+               or st["beam"] or [st["champion"]])
     parents.sort(key=lambda e: e.get("score") or -999, reverse=True)
     proposals = [{"params": mutate(parents[i % len(parents)].get("params", {}), rng),
                   "label": f"r{rnd}c{i}", "parent": parents[i % len(parents)]["label"], "novel": True}
