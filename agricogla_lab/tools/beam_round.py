@@ -32,7 +32,7 @@ CHAMPION_VID = "2664e3d4-bfaa-4576-9d29-1a81cf5ad202"
 BUILD = TOOLS / "build_player.sh"
 
 N_CANDIDATES = 3
-EPISODES = 16
+EPISODES = 10
 BEAM_WIDTH = 4
 SUBMIT_MARGIN = 1.5
 EXPLORE_TEMP = 0.30
@@ -121,7 +121,7 @@ def xp_request(cand_ref: str) -> str | None:
         return next((t for t in out.split() if t.startswith("xreq_")), None)
 
 
-def poll_scores(xreq, cand_label, timeout=2700):
+def poll_scores(xreq, cand_label, timeout=1500):
     deadline = time.time() + timeout
     while time.time() < deadline:
         rc, out = sh(["coworld", "xp-request", "episodes", xreq, "--json"], timeout=120)
@@ -133,13 +133,16 @@ def poll_scores(xreq, cand_label, timeout=2700):
                 eps = []
             done = [e for e in eps if e.get("status") == "completed" and e.get("scores")]
             if eps and len(done) >= max(1, int(0.8 * len(eps))):
-                agg, labels = defaultdict(list), {}
+                agg, names = defaultdict(list), {}
                 for e in done:
                     for p in (e.get("participants") or []):
-                        labels[p["policy_version_id"]] = p.get("label", "")
+                        # Match on policy_name (e.g. "agricogla-farmhand-r1c0"), NOT
+                        # label ("...:v2") — the version suffix made this never match,
+                        # so every round false-timed-out with results sitting unread.
+                        names[p["policy_version_id"]] = p.get("policy_name", "")
                     for s in (e.get("scores") or []):
                         agg[s["policy_version_id"]].append(s["score"])
-                cand = [v for pid, ss in agg.items() if labels.get(pid) == cand_label for v in ss]
+                cand = [v for pid, ss in agg.items() if names.get(pid) == cand_label for v in ss]
                 champ = agg.get(CHAMPION_VID, [])
                 if cand and champ:
                     return sum(cand) / len(cand), sum(champ) / len(champ)
