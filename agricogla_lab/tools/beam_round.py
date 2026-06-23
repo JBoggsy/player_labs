@@ -61,6 +61,9 @@ def load_state() -> dict:
             return json.loads(STATE.read_text())
         except (ValueError, OSError):
             pass
+    # Baseline = the FIXED farmhand (v2+). Empty params = DEFAULT_PARAMS, which now
+    # matches v1's grow-gate/cooker logic (the SDK-port regression was repaired
+    # 2026-06-23). Do NOT revert to the pre-fix baseline.
     seed = {"params": {}, "label": "farmhand-baseline", "score": None, "vid": None}
     beam = [seed]
     for f in sorted((LAB / "candidates").glob("[A-D]-*.json")):

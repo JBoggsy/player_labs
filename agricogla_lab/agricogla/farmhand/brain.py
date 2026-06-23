@@ -23,7 +23,8 @@ from __future__ import annotations
 from typing import Any
 
 HARVEST_ROUNDS = {4, 7, 9, 11, 13, 14}
-COOKERS = ("fireplace2", "fireplace3", "hearth4", "hearth5")
+# Match v1 player.py exactly: cookers live in majors OR minors, and include ovens.
+COOKERS = ("fireplace2", "fireplace3", "hearth4", "hearth5", "clay_oven", "stone_oven")
 
 # Always-schema-legal no-arg placements on a free space (fallback order).
 SAFE_NOARG = (
@@ -103,7 +104,7 @@ class Brain:
     def _convertible_food(self, me: dict) -> int:
         res = me.get("resources", {})
         food = res.get("food", 0) + res.get("grain", 0) + res.get("vegetable", 0)
-        if any(c in me.get("majors", []) for c in COOKERS):
+        if any(c in (me.get("majors", []) + me.get("minors", [])) for c in COOKERS):
             a = me.get("animals", {})
             food += a.get("sheep", 0) * 2 + a.get("boar", 0) * 2 + a.get("cattle", 0) * 3
         return food
@@ -134,7 +135,7 @@ class _Ctx:
         self.rooms = sum(1 for s in self.spaces if s.get("kind") == "room")
         self.fields = sum(1 for s in self.spaces if s.get("kind") == "field")
         self.house = me.get("houseMaterial", "wood")
-        self.has_cooker = any(c in me.get("majors", []) for c in COOKERS)
+        self.has_cooker = any(c in (me.get("majors", []) + me.get("minors", [])) for c in COOKERS)
         self.animals = me.get("animals", {})
         self.gaps = self._gaps()
         self.piles = {s["id"]: sum((s.get("pile") or {}).values())
@@ -156,19 +157,19 @@ class _Ctx:
     def _sown(self, crop: str) -> int:
         return sum(s.get("cropCount", 0) for s in self.spaces if s.get("crop") == crop)
 
-    def _can_feed_a_grow(self) -> bool:
-        # Don't grow without a real food engine (cooker + fields) — uncosted growth
-        # is the #1 way to lose (STRATEGY §1.2).
-        return self.has_cooker and self.fields >= 2
-
     def score(self, sid: str) -> float:
         p, pile = self.p, self.piles.get(sid, 0)
+        # Family growth — gate on whether we CAN grow (room available) and on food
+        # URGENCY, exactly like v1 player.py. urgency already models the food deficit
+        # to the next harvest, so it down-weights growth when feeding is at risk —
+        # do NOT add a separate hard cooker-gate (that was the SDK-port regression
+        # that crippled farmhand: it distorted behavior and starved the family).
         if sid == "r_family_growth":
-            if not self._can_feed_a_grow() or self.family >= 5 or self.rooms <= self.family:
-                return -100.0
+            if self.family >= 5 or self.rooms <= self.family:
+                return -100.0  # can't actually grow (no spare room / at cap)
             return p["grow_safe"] if self.urgency <= 1 else p["grow_base"] - self.urgency * p["grow_urgency_penalty"]
         if sid == "r_urgent_family":
-            if not self._can_feed_a_grow() or self.family >= 5:
+            if self.family >= 5:
                 return -100.0
             return p["urgent_grow_safe"] if self.urgency <= 2 else p["urgent_grow_risky"]
         if sid == "farm_expansion":
