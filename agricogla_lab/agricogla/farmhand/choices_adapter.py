@@ -67,7 +67,12 @@ def synth_choices(view: dict, me: dict) -> dict:
     legal_rooms = empties if (res.get(house, 0) >= 5 and res.get("reed", 0) >= 2) else []
     legal_stables = empties if res.get("wood", 0) >= 2 else []
 
-    # Sowable: empty fields (no crop growing).
+    # legalFields = empty non-stable cells you can PLOW into a new field (what
+    # the `farmland` placement's `spaces` arg needs). Distinct from sowableFields
+    # (existing empty fields ready to SOW). Conflating these dropped the spaces
+    # arg and got every farmland move rejected ("spaces Required").
+    legal_fields = empties
+    # Sowable: empty fields (no crop growing) — for r_sow_bake.
     sowable = [i for i in fields if (spaces[i].get("cropCount", 0) == 0)]
 
     # Conversion options for feeding: raw grain/veg (1:1) + animals via best cooker.
@@ -91,15 +96,16 @@ def synth_choices(view: dict, me: dict) -> dict:
         "legalRooms": legal_rooms,
         "legalStables": legal_stables,
         "roomCost": room_cost,
+        "legalFields": legal_fields,
         "sowableFields": sowable,
         "bakeOptions": [],            # baking via ovens — refine later
         "conversionOptions": conv,
         "foodNeededNow": max(0, _food_needed(me) - res.get("food", 0)),
         "fencePlans": [],             # geometry — refine later; policy skips this path
         # v1 treats hand cards as dicts ({id, affordable}); cogweb gives id strings.
-        "handOccupations": [{"id": c, "affordable": True} if isinstance(c, str) else c
+        "handOccupations": [{"id": c, "affordable": False} if isinstance(c, str) else c
                             for c in me.get("handOccupations", [])],
-        "handMinors": [{"id": c, "affordable": True} if isinstance(c, str) else c
+        "handMinors": [{"id": c, "affordable": False} if isinstance(c, str) else c
                        for c in me.get("handMinors", [])],
         "occupationCostBySpace": {},  # refine later
         # v1 expects major ENTRIES as dicts {id, affordable, prereqOk, cost}; the
