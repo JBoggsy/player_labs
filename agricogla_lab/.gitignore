@@ -1,3 +1,5 @@
 tools/beam-state.json
 tools/beam-log.jsonl
 tools/.xp-body.json
+tools/lens-state.json
+tools/lens-log.jsonl
