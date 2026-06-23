@@ -18,11 +18,12 @@ AGR_DIR="$LAB_DIR/agricogla"
 die() { echo "build_player.sh: $*" >&2; exit 1; }
 
 policy="${1:-farmhand}"; shift || true
-tag=""; push_ref=""
+tag=""; push_ref=""; params_json=""
 while (( $# )); do
   case "$1" in
-    --tag)  tag="$2";      shift 2 ;;
-    --push) push_ref="$2"; shift 2 ;;
+    --tag)    tag="$2";         shift 2 ;;
+    --push)   push_ref="$2";    shift 2 ;;
+    --params) params_json="$2"; shift 2 ;;   # inline JSON baked as AGRICOGLA_PARAMS (beam variants)
     -h|--help) sed -n '3,9p' "$0"; exit 0 ;;
     *) die "unknown argument: $1" ;;
   esac
@@ -52,10 +53,12 @@ cp -r "$dir/." "$stage/farmhand/"
 find "$stage/farmhand" -type d -name '__pycache__' -prune -exec rm -rf {} + 2>/dev/null || true
 find "$stage/farmhand" -name '*.egg-info' -prune -exec rm -rf {} + 2>/dev/null || true
 
-echo "==> docker buildx build --platform=linux/amd64 -t $tag"
-docker buildx build --platform=linux/amd64 --load \
+# Plain `docker build` (this host's `docker` is podman; buildx arg-parsing differs).
+echo "==> docker build --platform=linux/amd64 -t $tag"
+docker build --platform=linux/amd64 \
   -f "$dir/coworld/Dockerfile" -t "$tag" \
-  --build-arg "PLAYERS_SDK_REF=$PLAYERS_SDK_REF" "$stage"
+  --build-arg "PLAYERS_SDK_REF=$PLAYERS_SDK_REF" \
+  --build-arg "AGRICOGLA_PARAMS=$params_json" "$stage"
 
 if [ -n "$push_ref" ]; then
   docker tag "$tag" "$push_ref"

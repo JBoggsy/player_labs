@@ -33,5 +33,12 @@ RUN pip install --upgrade pip \
 COPY agricogla_init.py /app/agricogla/__init__.py
 COPY farmhand /app/agricogla/farmhand
 
+# Beam-search variant params baked at build time (params.py reads AGRICOGLA_PARAMS).
+# Default "" = the DEFAULT_PARAMS baseline; the beam runner passes a candidate's
+# JSON via --build-arg AGRICOGLA_PARAMS='{...}' so each candidate is a distinct,
+# reproducible image. Behavior-neutral when empty.
+ARG AGRICOGLA_PARAMS=""
+ENV AGRICOGLA_PARAMS=${AGRICOGLA_PARAMS}
+
 # Read COWORLD_PLAYER_WS_URL, play one slot, exit cleanly (../../player-build.md).
 CMD ["python", "-m", "agricogla.farmhand"]
