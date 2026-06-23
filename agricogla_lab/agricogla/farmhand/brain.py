@@ -50,9 +50,9 @@ class Brain:
 
     def decide(self, view: dict, seat: int, rejected: bool) -> dict:
         me = view["players"][seat]
-        free = {s["id"] for s in view["actionSpaces"] if s.get("occupiedBy") is None}
         if view.get("phase") == "feeding":
             return self._feed(view, me)
+        free = {s["id"] for s in view.get("actionSpaces", []) if s.get("occupiedBy") is None}
         if rejected:
             return self._fallback(free)
         return self._work(view, me, free) or self._fallback(free)
@@ -82,19 +82,66 @@ class Brain:
     # -- feeding phase --------------------------------------------------------
 
     def _feed(self, view: dict, me: dict) -> dict:
+        # cogweb.player.v1 does NOT provide conversionOptions/foodNeededNow in the
+        # view (the old protocol did), so we COMPUTE the conversions ourselves.
+        # The original bug: this only converted raw grain/veg and NEVER cooked
+        # animals — so a player with a cooker (incl. occupation cookers like Field
+        # Cook) + a full pasture still starved. Now we cook animals via the best
+        # available cooker, exactly the food the engine would let us.
         needed = self._food_needed(view, me)
         res = me.get("resources", {})
+        animals = me.get("animals", {})
         have = res.get("food", 0)
         conversions: list[dict] = []
-        # Raw crops convert 1:1; cook animals if we have a cooker (best rate first).
+
+        def add(via, good, count):
+            nonlocal have
+            if count > 0:
+                conversions.append({"via": via, "good": good, "count": count})
+
+        # 1. Raw grain/veg first (1 food each, no cooker needed).
         for good in ("grain", "vegetable"):
             if have >= needed:
                 break
             take = min(needed - have, res.get(good, 0))
-            if take > 0:
-                conversions.append({"via": "raw", "good": good, "count": take})
-                have += take
+            add("raw", good, take)
+            have += take
+
+        # 2. Cook animals via the best cooker we own (occupation OR major/minor).
+        #    Each cooker id maps to per-animal food rates; pick the richest route.
+        cooker = self._best_cooker(me)
+        if cooker:
+            via, rates = cooker
+            # spend the highest-food animals first to cover the deficit cheaply
+            for good in sorted(("sheep", "boar", "cattle"), key=lambda g: -rates.get(g, 0)):
+                if have >= needed:
+                    break
+                per = rates.get(good, 0)
+                if per <= 0:
+                    continue
+                count = min(animals.get(good, 0), -(-(needed - have) // per))  # ceil
+                add(via, good, count)
+                have += count * per
         return {"conversions": conversions}
+
+    def _best_cooker(self, me: dict):
+        """Return (via_card_id, {animal: food_per}) for the best cooker we own, or None.
+        Covers majors/minors AND occupation cookers (e.g. Field Cook)."""
+        owned = set(me.get("majors", []) + me.get("minors", []) + me.get("occupations", []))
+        # Richer cookers first. Rates are the standard Agricola conversion values.
+        table = [
+            ("hearth5", {"sheep": 2, "boar": 3, "cattle": 4}),
+            ("hearth4", {"sheep": 2, "boar": 3, "cattle": 4}),
+            ("stone_oven", {"sheep": 2, "boar": 3, "cattle": 4}),
+            ("clay_oven", {"sheep": 2, "boar": 2, "cattle": 3}),
+            ("fireplace3", {"sheep": 2, "boar": 2, "cattle": 3}),
+            ("fireplace2", {"sheep": 2, "boar": 2, "cattle": 3}),
+            ("field_cook", {"sheep": 2, "boar": 2, "cattle": 3}),  # occupation cooker
+        ]
+        for cid, rates in table:
+            if cid in owned:
+                return cid, rates
+        return None
 
     # -- food model -----------------------------------------------------------
 
