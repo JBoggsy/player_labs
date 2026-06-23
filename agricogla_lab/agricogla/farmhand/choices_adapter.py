@@ -13,9 +13,32 @@ policy simply won't use that path until it's refined; everything else matches v1
 
 from __future__ import annotations
 
+import json
+import os
 from typing import Any
 
 HARVEST_ROUNDS = {4, 7, 9, 11, 13, 14}
+
+# Real card DB (cost + occupation prereq) extracted from the authoritative engine
+# (Metta-AI/metta:.../agricogla/src/engine/cards/{minors,occupations,majors}.ts).
+# This is what lets us compute TRUE card legality — the missing piece that made v1
+# keep choosing improvement actions it couldn't fill (Reed Pond etc.).
+_CARD_DB: dict[str, dict] = {}
+try:
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "card_db.json")) as _f:
+        _CARD_DB = json.load(_f)
+except (OSError, ValueError):
+    _CARD_DB = {}
+
+
+def _card_playable(card_id: str, res: dict, occupations_played: int) -> bool:
+    """A card is playable iff we can pay its cost AND meet its occupation prereq."""
+    d = _CARD_DB.get(card_id, {})
+    if not _affordable(res, d.get("cost", {})):
+        return False
+    if occupations_played < d.get("prereq_occupations", 0):
+        return False
+    return True
 COOKERS = {  # cooker id -> per-animal food (sheep, boar, cattle)
     "hearth4": (2, 3, 4), "hearth5": (2, 3, 4), "stone_oven": (2, 3, 4),
     "clay_oven": (2, 2, 3), "fireplace2": (2, 2, 3), "fireplace3": (2, 2, 3),
@@ -57,6 +80,7 @@ def synth_choices(view: dict, me: dict) -> dict:
     house = me.get("houseMaterial", "wood")
     empties = _empty_cells(spaces)
     fields = [i for i, s in enumerate(spaces) if s.get("kind") == "field"]
+    occ_played = len(me.get("occupations", []))  # for card prereq checks
 
     # Growth legality: need rooms > family (a spare bed) and family < 5.
     family_growth_ok = rooms > family and family < 5
@@ -103,16 +127,22 @@ def synth_choices(view: dict, me: dict) -> dict:
         "foodNeededNow": max(0, _food_needed(me) - res.get("food", 0)),
         "fencePlans": [],             # geometry — refine later; policy skips this path
         # v1 treats hand cards as dicts ({id, affordable}); cogweb gives id strings.
-        "handOccupations": [{"id": c, "affordable": False} if isinstance(c, str) else c
+        # Real legality now: affordable iff cost payable AND occupation prereq met
+        # (occupations_played = len of own played occupations). Fixes the Reed-Pond
+        # (prereq 3) reject storm without the blanket-False overcorrection.
+        "handOccupations": [{"id": c, "affordable": _card_playable(c, res, occ_played)}
+                            if isinstance(c, str) else c
                             for c in me.get("handOccupations", [])],
-        "handMinors": [{"id": c, "affordable": False} if isinstance(c, str) else c
+        "handMinors": [{"id": c, "affordable": _card_playable(c, res, occ_played)}
+                       if isinstance(c, str) else c
                        for c in me.get("handMinors", [])],
         "occupationCostBySpace": {},  # refine later
         # v1 expects major ENTRIES as dicts {id, affordable, prereqOk, cost}; the
         # cogweb view only gives id strings, so synthesize them with affordability.
         "majors": [
-            {"id": mid, "cost": MAJOR_COST.get(mid, {}),
-             "affordable": _affordable(res, MAJOR_COST.get(mid, {"__none__": 1})),
+            {"id": mid, "cost": _CARD_DB.get(mid, {}).get("cost", MAJOR_COST.get(mid, {})),
+             "affordable": _card_playable(mid, res, occ_played)
+                           if mid in _CARD_DB else _affordable(res, MAJOR_COST.get(mid, {"__none__": 1})),
              "prereqOk": True}
             for mid in view.get("majorsAvailable", [])
         ],

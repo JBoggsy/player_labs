@@ -1,0 +1,534 @@
+{
+"min_wooden_plow": {
+"kind": "minor",
+"cost": {
+"wood": 1
+}
+},
+"min_heavy_plow": {
+"kind": "minor",
+"cost": {
+"wood": 1,
+"stone": 1
+}
+},
+"min_hearth_stones": {
+"kind": "minor",
+"cost": {
+"stone": 1
+}
+},
+"min_dough_trough": {
+"kind": "minor",
+"cost": {
+"wood": 1
+}
+},
+"min_cooking_corner": {
+"kind": "minor",
+"cost": {
+"clay": 1
+}
+},
+"min_smokehouse": {
+"kind": "minor",
+"cost": {
+"wood": 1,
+"stone": 1
+}
+},
+"min_stewpot": {
+"kind": "minor",
+"cost": {
+"clay": 1
+}
+},
+"min_animal_pen": {
+"kind": "minor",
+"cost": {
+"wood": 1
+}
+},
+"min_pig_sty": {
+"kind": "minor",
+"cost": {
+"wood": 1
+}
+},
+"min_cattle_shed": {
+"kind": "minor",
+"cost": {
+"wood": 1,
+"reed": 1
+}
+},
+"min_sheep_fold": {
+"kind": "minor",
+"cost": {
+"wood": 1
+}
+},
+"min_paddock": {
+"kind": "minor",
+"cost": {
+"wood": 2
+},
+"prereq_occupations": 1
+},
+"min_carp_pond": {
+"kind": "minor",
+"cost": {
+"food": 1
+},
+"prereq_occupations": 2
+},
+"min_reed_pond": {
+"kind": "minor",
+"cost": {
+"food": 1
+},
+"prereq_occupations": 3
+},
+"min_clay_deposit": {
+"kind": "minor",
+"cost": {
+"food": 1
+}
+},
+"min_wood_cache": {
+"kind": "minor",
+"cost": {
+"food": 1
+}
+},
+"min_seed_stock": {
+"kind": "minor",
+"cost": {
+"food": 1
+}
+},
+"min_wood_cart": {
+"kind": "minor",
+"cost": {
+"food": 1
+},
+"prereq_occupations": 1
+},
+"min_clay_pit_claim": {
+"kind": "minor",
+"cost": {
+"food": 1
+}
+},
+"min_market_stall": {
+"kind": "minor",
+"cost": {
+"grain": 1
+}
+},
+"min_stone_cart": {
+"kind": "minor",
+"cost": {
+"wood": 1
+},
+"prereq_occupations": 2
+},
+"min_threshing_board": {
+"kind": "minor",
+"cost": {
+"wood": 1
+},
+"prereq_occupations": 2
+},
+"min_fish_weir": {
+"kind": "minor",
+"cost": {
+"reed": 1
+}
+},
+"min_handcart": {
+"kind": "minor",
+"cost": {
+"wood": 2
+}
+},
+"min_shepherds_crook": {
+"kind": "minor",
+"cost": {
+"wood": 1
+}
+},
+"min_pig_trough": {
+"kind": "minor",
+"cost": {
+"wood": 1
+}
+},
+"min_cattle_prod": {
+"kind": "minor",
+"cost": {
+"wood": 1,
+"stone": 1
+},
+"prereq_occupations": 1
+},
+"min_timber_yard": {
+"kind": "minor",
+"cost": {
+"food": 1
+},
+"prereq_occupations": 2
+},
+"min_clay_works": {
+"kind": "minor",
+"cost": {
+"food": 1
+},
+"prereq_occupations": 2
+},
+"min_stone_yard": {
+"kind": "minor",
+"cost": {
+"food": 1
+},
+"prereq_occupations": 2
+},
+"min_fence_posts": {
+"kind": "minor",
+"cost": {
+"wood": 1
+}
+},
+"min_herb_garden": {
+"kind": "minor",
+"cost": {
+"wood": 1
+}
+},
+"min_milk_pail": {
+"kind": "minor",
+"cost": {
+"wood": 1
+}
+},
+"min_shearing_shears": {
+"kind": "minor",
+"cost": {
+"wood": 1
+}
+},
+"min_drying_shed": {
+"kind": "minor",
+"cost": {
+"clay": 1
+}
+},
+"min_dovecote": {
+"kind": "minor",
+"cost": {
+"stone": 2
+}
+},
+"min_rain_barrel": {
+"kind": "minor",
+"cost": {
+"wood": 1
+}
+},
+"min_cradle": {
+"kind": "minor",
+"cost": {
+"wood": 1
+}
+},
+"min_toy_chest": {
+"kind": "minor",
+"cost": {
+"wood": 1
+}
+},
+"min_carved_chest": {
+"kind": "minor",
+"cost": {
+"wood": 2
+},
+"prereq_occupations": 1
+},
+"min_pewter_jug": {
+"kind": "minor",
+"cost": {
+"stone": 1
+}
+},
+"min_gabled_house": {
+"kind": "minor",
+"cost": {
+"wood": 1,
+"reed": 1
+}
+},
+"min_grain_loft": {
+"kind": "minor",
+"cost": {
+"wood": 1,
+"clay": 1
+}
+},
+"min_root_cellar": {
+"kind": "minor",
+"cost": {
+"stone": 1
+}
+},
+"min_hunting_trophies": {
+"kind": "minor",
+"cost": {
+"wood": 1
+}
+},
+"min_scarecrow": {
+"kind": "minor",
+"cost": {
+"wood": 1
+}
+},
+"min_well_bucket": {
+"kind": "minor",
+"cost": {
+"wood": 1
+}
+},
+"min_lending_cart": {
+"kind": "minor",
+"cost": {}
+},
+"min_traveling_tinker": {
+"kind": "minor",
+"cost": {}
+},
+"min_seed_swap": {
+"kind": "minor",
+"cost": {}
+},
+"occ_lumberjack": {
+"kind": "occupation"
+},
+"occ_clay_digger": {
+"kind": "occupation"
+},
+"occ_reed_gatherer": {
+"kind": "occupation"
+},
+"occ_quarryman": {
+"kind": "occupation"
+},
+"occ_angler": {
+"kind": "occupation"
+},
+"occ_seasonal_hand": {
+"kind": "occupation"
+},
+"occ_peddler": {
+"kind": "occupation"
+},
+"occ_greengrocer": {
+"kind": "occupation"
+},
+"occ_quarry_foreman": {
+"kind": "occupation"
+},
+"occ_shepherds_friend": {
+"kind": "occupation"
+},
+"occ_wayfarer": {
+"kind": "occupation"
+},
+"occ_butcher": {
+"kind": "occupation"
+},
+"occ_charcutier": {
+"kind": "occupation"
+},
+"occ_mutton_cook": {
+"kind": "occupation"
+},
+"occ_field_cook": {
+"kind": "occupation"
+},
+"occ_baker": {
+"kind": "occupation"
+},
+"occ_miller": {
+"kind": "occupation",
+"prereq_occupations": 1
+},
+"occ_plowwright": {
+"kind": "occupation"
+},
+"occ_furrow_master": {
+"kind": "occupation"
+},
+"occ_stablemaster": {
+"kind": "occupation"
+},
+"occ_swineherd": {
+"kind": "occupation"
+},
+"occ_cowherd": {
+"kind": "occupation"
+},
+"occ_shepherd": {
+"kind": "occupation"
+},
+"occ_carpenter": {
+"kind": "occupation"
+},
+"occ_bricklayer": {
+"kind": "occupation"
+},
+"occ_mason": {
+"kind": "occupation"
+},
+"occ_thatcher": {
+"kind": "occupation"
+},
+"occ_hedge_warden": {
+"kind": "occupation"
+},
+"occ_stable_boy": {
+"kind": "occupation"
+},
+"occ_midwife": {
+"kind": "occupation"
+},
+"occ_patriarch": {
+"kind": "occupation"
+},
+"occ_forager": {
+"kind": "occupation"
+},
+"occ_gleaner": {
+"kind": "occupation"
+},
+"occ_milkman": {
+"kind": "occupation"
+},
+"occ_cheesemaker": {
+"kind": "occupation"
+},
+"occ_swine_keeper": {
+"kind": "occupation"
+},
+"occ_grain_steward": {
+"kind": "occupation"
+},
+"occ_water_carrier": {
+"kind": "occupation"
+},
+"occ_woodward": {
+"kind": "occupation"
+},
+"occ_vagrant": {
+"kind": "occupation"
+},
+"occ_journeyman": {
+"kind": "occupation"
+},
+"occ_seed_merchant": {
+"kind": "occupation"
+},
+"occ_veg_peddler": {
+"kind": "occupation",
+"prereq_occupations": 1
+},
+"occ_schoolmaster": {
+"kind": "occupation"
+},
+"occ_elder": {
+"kind": "occupation"
+},
+"occ_surveyor": {
+"kind": "occupation"
+},
+"occ_animal_breeder": {
+"kind": "occupation"
+},
+"occ_master_builder": {
+"kind": "occupation"
+},
+"occ_horticulturist": {
+"kind": "occupation"
+},
+"occ_compost_carter": {
+"kind": "occupation"
+},
+"occ_fence_hand": {
+"kind": "occupation"
+},
+"fireplace2": {
+"kind": "major",
+"cost": {
+"clay": 2
+}
+},
+"fireplace3": {
+"kind": "major",
+"cost": {
+"clay": 3
+}
+},
+"hearth4": {
+"kind": "major",
+"cost": {
+"clay": 4
+}
+},
+"hearth5": {
+"kind": "major",
+"cost": {
+"clay": 5
+}
+},
+"clay_oven": {
+"kind": "major",
+"cost": {
+"clay": 3,
+"stone": 1
+}
+},
+"stone_oven": {
+"kind": "major",
+"cost": {
+"clay": 1,
+"stone": 3
+}
+},
+"joinery": {
+"kind": "major",
+"cost": {
+"wood": 2,
+"stone": 2
+}
+},
+"pottery": {
+"kind": "major",
+"cost": {
+"clay": 2,
+"stone": 2
+}
+},
+"basketmaker": {
+"kind": "major",
+"cost": {
+"reed": 2,
+"stone": 2
+}
+},
+"well": {
+"kind": "major",
+"cost": {
+"wood": 1,
+"stone": 3
+}
+}
+}
