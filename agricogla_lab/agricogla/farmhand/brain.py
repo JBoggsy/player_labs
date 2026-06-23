@@ -41,9 +41,32 @@ class Brain:
         if rejected:
             return self._fallback(view)
         try:
-            return v1_logic.pick_best_action(synth_obs(view, seat))
+            dec = v1_logic.pick_best_action(synth_obs(view, seat))
         except Exception:
             return self._fallback(view)
+        # Guard against actions v1 selects but can't fully build under cogweb:
+        # the improvement/placement-arg actions require a sub-field the engine
+        # rejects if absent (e.g. r_improvement with no affordable card -> no
+        # "improvement" key). Rather than emit a guaranteed-reject move, fall back.
+        if not self._placement_complete(dec):
+            return self._fallback(view)
+        return dec
+
+    @staticmethod
+    def _placement_complete(dec: dict) -> bool:
+        a = dec.get("action")
+        # Actions that REQUIRE a sub-field per the cogweb schema:
+        if a in ("r_improvement",) and "improvement" not in dec:
+            return False
+        if a in ("farmland",) and not dec.get("spaces"):
+            return False
+        if a == "farm_expansion" and not (dec.get("rooms") or dec.get("stables")):
+            return False
+        if a in ("lessons", "lessons_b") and "occupation" not in dec:
+            return False
+        if a == "r_sow_bake" and not (dec.get("sow") or dec.get("bake")):
+            return False
+        return True
 
     def _fallback(self, view: dict) -> dict:
         free = {s["id"] for s in view.get("actionSpaces", []) if s.get("occupiedBy") is None}
