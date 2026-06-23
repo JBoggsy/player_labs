@@ -1,10 +1,10 @@
-"""Vendored PURE decision logic from the proven v1 player (agricogla-boses:v1).
+"""Vendored PURE decision logic from the ACTUAL league v1 (agricogla-boses:v1).
 
-This is v1's evaluate_action / pick_best_action / build_placement / decide_feeding
-and helpers, extracted verbatim (minus the asyncio/websockets play() loop). The
-SDK farmhand brain delegates to these so it runs v1's EXACT decisions — ending
-the reimplementation-parity whack-a-mole. v1 expects an old-protocol obs dict
-{state, choices, options, slot}; the brain adapts the cogweb view to that shape.
+Extracted from the v1 DOCKER IMAGE (agricogla-boses.tar), NOT the working-copy
+player.py — which I accidentally modified (PARAMS extraction) this session, causing
+farmhand to vendor a DIFFERENT, worse policy. This is the real +9 league logic:
+hardcoded constants, no PARAMS layer. The choices_adapter feeds it the legal-move
+layer cogweb omits.
 """
 """Agricogla Coworld player — heuristic policy with planning and opponent awareness.
 
@@ -15,73 +15,6 @@ import json
 import os
 
 HARVEST_ROUNDS = {4, 7, 9, 11, 13, 14}
-
-# --- Tunable policy parameters (the beam-search search space) ---------------
-# Defaults below reproduce the v1 policy EXACTLY (extraction is behavior-
-# preserving). A variant overrides a subset via the AGRICOGLA_PARAMS env var
-# (inline JSON) or a params.json next to this file. See OPTIMIZER.md.
-DEFAULT_PARAMS = {
-    # Family growth — the central compounding lever (STRATEGY §1.1)
-    "grow_safe": 80,            # r_family_growth when food urgency <= 1
-    "grow_base": 40,            # base when urgency higher (then - urgency*grow_urgency_penalty)
-    "grow_urgency_penalty": 8,
-    "urgent_grow_safe": 65,     # r_urgent_family when urgency <= 2
-    "urgent_grow_risky": 30,
-    # Rooms (enable growth)
-    "room_housebound": 55,      # need a room before we can grow
-    "room_ahead": 35,           # building ahead for growth (round <= 7)
-    "room_stable_only": 12,
-    # Food / cooking (never-starve, STRATEGY §1.2)
-    "cooker_critical": 50,      # r_improvement when no cooker (+ urgency*cooker_urgency)
-    "cooker_urgency": 5,
-    "renovate_cooker": 45,
-    "day_laborer_base": 3,
-    "day_laborer_urgency": 8,   # emergency food scales hard with urgency
-    "fishing_urgency": 2,
-    # Resources
-    "wood_need_growth": 5,      # forest multiplier when housebound & early
-    "wood_need_base": 2,
-    # Fields & sowing (sow-before-bake, breadth; STRATEGY §1.3/§1.4)
-    "field_first": 28,          # farmland when fields < 2
-    "field_gap": 20,            # farmland when fields < 5 and 'fields' in gaps
-    "sow_per_field": 6,
-    # Category breadth bonuses (the 0->1 ~+2 swing; STRATEGY §1.4)
-    "animal_category_bonus": 8,
-    "animal_breed_bonus": 10,
-    "veg_gap": 22,
-    # Cards (now relevant at 4p; STRATEGY §1.5/§1.6)
-    "occupation_early": 18,     # lessons when affordable & round <= 8
-    "occupation_late": 10,
-    # Renovation / stone engine (looser 4p economy — Eve's pivot #2)
-    "redevelop_late": 22,       # r_redevelop round>=12 and not stone
-    # Late-game fill
-    "late_fill_round": 10,
-    "late_fill_cap": 8,
-}
-
-
-def _load_params():
-    p = dict(DEFAULT_PARAMS)
-    raw = os.environ.get("AGRICOGLA_PARAMS")
-    if not raw:
-        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "params.json")
-        if os.path.exists(path):
-            try:
-                with open(path) as f:
-                    raw = f.read()
-            except OSError:
-                raw = None
-    if raw:
-        try:
-            overrides = json.loads(raw)
-            if isinstance(overrides, dict):
-                p.update({k: v for k, v in overrides.items() if k in DEFAULT_PARAMS})
-        except (ValueError, TypeError):
-            pass  # malformed overrides -> fall back to defaults (never crash the policy)
-    return p
-
-
-PARAMS = _load_params()
 
 
 def next_harvest_in(round_num):
@@ -241,18 +174,18 @@ def evaluate_action(action_id, obs, my_player, choices, options):
     if action_id == "r_family_growth":
         if choices.get("familyGrowthOk"):
             if urgency <= 1:
-                score = PARAMS["grow_safe"]
+                score = 80
             else:
-                score = PARAMS["grow_base"] - urgency * PARAMS["grow_urgency_penalty"]
+                score = 40 - urgency * 8
         else:
             score = -100  # can't actually grow
 
     elif action_id == "r_urgent_family":
         if choices.get("urgentGrowthOk"):
             if urgency <= 2:
-                score = PARAMS["urgent_grow_safe"]
+                score = 65
             else:
-                score = PARAMS["urgent_grow_risky"]
+                score = 30
         else:
             score = -100
 
@@ -261,38 +194,38 @@ def evaluate_action(action_id, obs, my_player, choices, options):
         room_cost = choices.get("roomCost", {})
         can_build_room = choices.get("legalRooms") and can_afford(my_player, room_cost)
         if rooms <= fam and can_build_room:
-            score = PARAMS["room_housebound"]  # need a room before growing
+            score = 55  # housebound — need a room before growing
         elif can_build_room and round_num <= 7:
-            score = PARAMS["room_ahead"]  # building ahead for growth
+            score = 35  # building ahead for growth
         elif choices.get("legalStables") and can_afford(my_player, {"wood": 2}):
-            score = PARAMS["room_stable_only"]  # just stables
+            score = 12  # just stables
         else:
             score = 2  # can't build anything useful
 
     # --- FOOD/COOKING ---
     elif action_id == "r_improvement":
         if not has_cook:
-            score = PARAMS["cooker_critical"] + urgency * PARAMS["cooker_urgency"]
+            score = 50 + urgency * 5  # critical: get a cooker
         else:
             score = 15  # minor or major for VP
 
     elif action_id == "r_renovate_improve":
         if not has_cook:
-            score = PARAMS["renovate_cooker"] + urgency * 3  # renovate + grab cooker
+            score = 45 + urgency * 3  # renovate + grab cooker
         elif round_num >= 9:
             score = 25  # renovation for VP
         else:
             score = 12
 
     elif action_id == "day_laborer":
-        score = PARAMS["day_laborer_base"] + urgency * PARAMS["day_laborer_urgency"]
+        score = 3 + urgency * 8  # emergency food
 
     elif action_id == "fishing":
-        score = pile_size * (1.5 + urgency * PARAMS["fishing_urgency"])
+        score = pile_size * (1.5 + urgency * 2)
 
     # --- RESOURCES ---
     elif action_id == "forest":
-        wood_need = PARAMS["wood_need_growth"] if (rooms <= fam and round_num <= 8) else PARAMS["wood_need_base"]
+        wood_need = 5 if (rooms <= fam and round_num <= 8) else 2
         score = pile_size * min(3.5, wood_need)
 
     elif action_id == "copse":
@@ -320,9 +253,9 @@ def evaluate_action(action_id, obs, my_player, choices, options):
     # --- FIELDS AND SOWING ---
     elif action_id == "farmland":
         if fields < 2:
-            score = PARAMS["field_first"]
+            score = 28
         elif fields < 5 and "fields" in gaps:
-            score = PARAMS["field_gap"]
+            score = 20
         else:
             score = 8
 
@@ -334,14 +267,14 @@ def evaluate_action(action_id, obs, my_player, choices, options):
 
     elif action_id == "r_vegetable":
         if "vegetables" in gaps:
-            score = PARAMS["veg_gap"]
+            score = 22
         else:
             score = 10
 
     elif action_id == "r_sow_bake":
         sowable = choices.get("sowableFields", [])
         bake_opts = choices.get("bakeOptions", [])
-        sow_value = len(sowable) * PARAMS["sow_per_field"]
+        sow_value = len(sowable) * 6
         bake_value = sum(b.get("food", 0) for b in bake_opts) if bake_opts else 0
         score = 20 + sow_value + bake_value * (1 + urgency)
 
@@ -352,22 +285,22 @@ def evaluate_action(action_id, obs, my_player, choices, options):
     elif action_id == "r_sheep":
         count = pile_size
         food_val = count * best_cook_rates(my_player).get("sheep", 0) if has_cook else 0
-        breed_bonus = PARAMS["animal_breed_bonus"] if (count_animals(my_player, "sheep") >= 1 and count >= 1) else 0
-        category_bonus = PARAMS["animal_category_bonus"] if "sheep" in gaps else 0
+        breed_bonus = 10 if (count_animals(my_player, "sheep") >= 1 and count >= 1) else 0
+        category_bonus = 8 if "sheep" in gaps else 0
         score = count * 4 + food_val * urgency * 0.5 + breed_bonus + category_bonus
 
     elif action_id == "r_boar":
         count = pile_size
         food_val = count * best_cook_rates(my_player).get("boar", 0) if has_cook else 0
-        breed_bonus = PARAMS["animal_breed_bonus"] if (count_animals(my_player, "boar") >= 1 and count >= 1) else 0
-        category_bonus = PARAMS["animal_category_bonus"] if "boar" in gaps else 0
+        breed_bonus = 10 if (count_animals(my_player, "boar") >= 1 and count >= 1) else 0
+        category_bonus = 8 if "boar" in gaps else 0
         score = count * 4.5 + food_val * urgency * 0.5 + breed_bonus + category_bonus
 
     elif action_id == "r_cattle":
         count = pile_size
         food_val = count * best_cook_rates(my_player).get("cattle", 0) if has_cook else 0
-        breed_bonus = PARAMS["animal_breed_bonus"] if (count_animals(my_player, "cattle") >= 1 and count >= 1) else 0
-        category_bonus = PARAMS["animal_category_bonus"] if "cattle" in gaps else 0
+        breed_bonus = 10 if (count_animals(my_player, "cattle") >= 1 and count >= 1) else 0
+        category_bonus = 8 if "cattle" in gaps else 0
         score = count * 5 + food_val * urgency * 0.5 + breed_bonus + category_bonus
 
     # --- FENCES ---
@@ -388,16 +321,16 @@ def evaluate_action(action_id, obs, my_player, choices, options):
         occ_cost = choices.get("occupationCostBySpace", {}).get(action_id)
         affordable_occs = [o for o in hand_occs if isinstance(o, dict) and o.get("affordable", True)] if hand_occs else []
         if affordable_occs and round_num <= 8:
-            score = PARAMS["occupation_early"]
+            score = 18
         elif affordable_occs:
-            score = PARAMS["occupation_late"]
+            score = 10
         else:
             score = -10
 
     # --- RENOVATION ---
     elif action_id == "r_redevelop":
         if round_num >= 12 and my_player.get("houseMaterial") != "stone":
-            score = PARAMS["redevelop_late"]
+            score = 22
         else:
             score = 8
 
@@ -413,10 +346,10 @@ def evaluate_action(action_id, obs, my_player, choices, options):
         score = 1  # unknown action, low priority
 
     # Late-game fill bonus
-    if round_num >= PARAMS["late_fill_round"]:
+    if round_num >= 10:
         unused = empty_space_count(my_player)
         if action_id in ("r_fences", "farm_expansion", "farmland"):
-            score += min(PARAMS["late_fill_cap"], unused * 1.2)
+            score += min(8, unused * 1.2)
 
     return score
 
