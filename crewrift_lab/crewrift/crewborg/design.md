@@ -120,10 +120,14 @@ high rate with a `-100` `connect_timeout`: the symptom (verified from artifacts)
 **never received a frame**. That is an *initial-connect race*: the container starts
 before the engine's `/player` socket accepts, the single `connect()` throws, and the
 process exits, failing the episode. The bridge now **retries the initial connection**
-with capped exponential backoff (`RECONNECT_BACKOFF_START`→`RECONNECT_BACKOFF_MAX`)
-until the first frame arrives, bounded by `RECONNECT_DEADLINE_SECONDS`
-(env `CREWBORG_RECONNECT_DEADLINE`, default 120s) so it can never hang past the
-runner's episode timeout. The discriminator is **`frames_seen`**: a close/error *before*
+on a short **flat interval** (`RECONNECT_INTERVAL_SECONDS`, env
+`CREWBORG_RECONNECT_INTERVAL`, default 0.1s ⇒ ~10 attempts/sec) — *no* exponential
+backoff, because this is a startup race and we want to catch the engine the instant
+it binds rather than drift to multi-second waits — until the first frame arrives,
+bounded by `RECONNECT_DEADLINE_SECONDS` (env `CREWBORG_RECONNECT_DEADLINE`, default
+120s) so it can never hang past the runner's episode timeout (~1200 attempts over the
+default deadline; the per-attempt log is throttled to the first 3 so a slow start
+doesn't flood the policy log). The discriminator is **`frames_seen`**: a close/error *before*
 any frame is a connect race → retry; *after* ≥1 frame it is the engine's normal
 abrupt game-over (code 1006) → exit 0, never reconnect (reconnecting after a real game
 end would be wrong). Session state (`scene`, masks, tick offset) lives in `_BridgeState`

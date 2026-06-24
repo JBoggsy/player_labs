@@ -57,15 +57,20 @@ FALLBACK_TRACE_OUTPUTS = "jsonl@stderr"
 # container races the engine's /player websocket coming up, the single connect()
 # throws (or closes with no frames), and the process exits, failing the episode.
 #
-# Fix: retry establishing the connection until the FIRST frame arrives, with capped
-# exponential backoff, bounded by a wall-clock deadline (so we never hang past the
-# runner's episode timeout). Once frames flow we hand off to the normal loop, where
-# an abrupt close still means "game over" (the engine ends episodes that way) — we
-# must NOT reconnect after a legitimate game end, so the discriminator is strictly
-# "did we ever receive a frame on this connection."
+# Fix: retry establishing the connection until the FIRST frame arrives, on a short
+# FLAT interval (no exponential backoff — this is a startup race against the engine
+# binding its socket, so we want to be aggressive and catch it the instant it comes
+# up, not back off to multi-second waits), bounded by a wall-clock deadline (so we
+# never hang past the runner's episode timeout). Once frames flow we hand off to the
+# normal loop, where an abrupt close still means "game over" (the engine ends
+# episodes that way) — we must NOT reconnect after a legitimate game end, so the
+# discriminator is strictly "did we ever receive a frame on this connection."
+#
+# A refused connect returns almost instantly (the engine isn't listening yet), so a
+# 0.1s interval probes ~10x/sec — aggressive, but not a pure busy-loop hammering the
+# host. Over the default deadline that's ~1000+ attempts before we give up.
 RECONNECT_DEADLINE_SECONDS = float(os.environ.get("CREWBORG_RECONNECT_DEADLINE", "120"))
-RECONNECT_BACKOFF_START = 0.25  # first retry wait
-RECONNECT_BACKOFF_MAX = 5.0     # cap per-retry wait
+RECONNECT_INTERVAL_SECONDS = float(os.environ.get("CREWBORG_RECONNECT_INTERVAL", "0.1"))
 CONNECT_OPEN_TIMEOUT = 10.0     # per-attempt handshake timeout (don't hang one attempt)
 
 # Connection-establishment failures worth retrying (vs a real game-over close, which
@@ -180,13 +185,12 @@ async def _connect_with_retry(
     metrics: Any,
     state: _BridgeState,
 ) -> None:
-    """Establish the websocket, retrying the INITIAL connect with capped backoff
+    """Establish the websocket, retrying the INITIAL connect on a short flat interval
     until the first frame arrives, then run the session. A connection that closes
     *after* frames were seen is a normal game-over (stop); a failure or close
     *before* any frame is a connect race (retry until the deadline)."""
 
     deadline = time.monotonic() + RECONNECT_DEADLINE_SECONDS
-    backoff = RECONNECT_BACKOFF_START
     attempt = 0
     last_error: BaseException | None = None  # closed-with-no-frames also retries
     while True:
@@ -204,7 +208,7 @@ async def _connect_with_retry(
                 # Crewrift engine signals game-over (code 1006), so exit normally.
                 print("game over: server closed the connection", file=sys.stderr, flush=True)
                 return
-            last_error = exc  # pre-first-frame failure: retry/backoff below
+            last_error = exc  # pre-first-frame failure: retry below
 
         if time.monotonic() >= deadline:
             print(
@@ -213,13 +217,12 @@ async def _connect_with_retry(
                 file=sys.stderr, flush=True,
             )
             return
-        sleep_for = min(backoff, max(0.0, deadline - time.monotonic()))
-        print(
-            f"connect attempt {attempt} failed (no frames yet); retrying in {sleep_for:.2f}s",
-            file=sys.stderr, flush=True,
-        )
-        await asyncio.sleep(sleep_for)
-        backoff = min(backoff * 2, RECONNECT_BACKOFF_MAX)
+        # Flat, short interval — stay aggressive so we catch the engine the instant it
+        # binds, rather than backing off to multi-second waits. Log only the first few
+        # so a slow startup doesn't spew thousands of lines into the policy log.
+        if attempt <= 3:
+            print(f"connect attempt {attempt} failed (no frames yet); retrying", file=sys.stderr, flush=True)
+        await asyncio.sleep(min(RECONNECT_INTERVAL_SECONDS, max(0.0, deadline - time.monotonic())))
 
 
 async def _run_session(
