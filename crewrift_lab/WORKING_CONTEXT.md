@@ -41,29 +41,34 @@ is the one-screen answer to "where are we and why."
   selectors now 500 (server statement-timeout on the champion-ranking query) — had to
   pin explicit policy_refs.
 
-## CURRENT EXPERIMENT — crew vote-threshold sweep (RUNNING, 2026-06-23)
+## NEW PROTOCOL (2026-06-24): XP requests run ONLY vs Aaron + Andre, opponents rotate roles
+Future evals fill opponent seats *only* from Aaron's & Andre's policies (rest of field too
+weak; new league coming). Champions: Andre Jr `truecrew:v24`, Aaron `crewborg-aaln:v3`,
+Andre von Houck `truecrew:v21`, Aaron's Optimizer `sussybuster:v3` (re-resolve; they drift).
+Our role stays FIXED (crewborg slot0); opponents sit at `slot:-1` so they rotate through all
+seats → we play WITH and AGAINST each in both roles. See [user_preferences](user_preferences.md).
 
-Standing eval (above) showed v31 **crew loses the parity race**: 38% win at 8/8 tasks,
-54/100 games 8/8-but-lost; wins when it votes (1.11 player-votes/g) vs loses when passive
-(0.23/g, skip 3.45/g). v25's vote-RESTRAINT (P≥0.9 gate, no clear-leader rule) was tuned
-for the *old* field that voted accuse-heavy crewborg out; the field evolved and passivity
-now loses. **Hypothesis: lowering the crew vote gate trades precision for ejections and
-raises crew win.** James's call: sweep the threshold via xreqs.
+## CURRENT EXPERIMENT — sweep2: threshold sweep vs Aaron+Andre, w/ tracing (RUNNING, 2026-06-24)
+Re-run of the crew vote-threshold sweep against ONLY Aaron+Andre champions (the new protocol),
+higher power + full trace logs. Doubles as our first clean read on how crewborg performs vs
+just those two. **300 eps/arm** (3×100, API caps 100/req), opponents rotating.
+- **CREW sweep:** v33=0.9(ctrl)/v34=0.8/v35=0.7/v36=0.6/v37=0.5, same ENV-baked images as sweep1.
+- **IMPOSTER baseline:** v33 (threshold inert on imposter path), slot0=imp+partner.
+- 18 xreqs total, IDs in `/tmp/sweep2_xreqs.txt`. Monitor: `/tmp/sweep2_mon.log`.
+- **Fetch WITH logs** this time (sweep1 dropped them) → measure own-ejection, team crew-ejections
+  (the v25 mis-vote risk), and the *why* via decision/voting traces.
 
-- **Mechanism:** `WEIGHTS_VOTE_PROBABILITY` (suspicion.py, the fitted-model crewmate vote
-  gate) is now env-tunable via `CREWBORG_WEIGHTS_VOTE_P` (default 0.9, behavior unchanged;
-  committed). Platform dedups by image digest, so each arm is a thin image
-  `FROM players-crewborg:dev` + `ENV CREWBORG_WEIGHTS_VOTE_P=<p>` → distinct version.
-- **Arms:** v33=0.9 (control) · v34=0.8 · v35=0.7 · v36=0.6 · v37=0.5. Bake verified in-image.
-- **Eval:** matched crew xreqs (crewborg slot0=crew vs live top-7, 2 imp), 150 eps/arm =
-  100-ep "A" + 50-ep "B" (API caps num_episodes at 100). IDs in `/tmp/sweep_xreqs.txt`:
-  v33 A=`xreq_ea68ebf3` B=`xreq_4e91d31d` · v34 A=`xreq_9eeb806a` B=`xreq_46a55137` ·
-  v35 A=`xreq_a771935c` B=`xreq_67439cce` · v36 A=`xreq_f8022ef2` B=`xreq_1e4c9be0` ·
-  v37 A=`xreq_c633787e` B=`xreq_51e19845`.
-- **Compare:** crew win% per arm (control 0.9 should ≈ today's 38%), plus votes-at-players/g,
-  own-ejection rate, team crew-ejections (the v25 mis-vote risk — watch it climb as the gate
-  drops), tasks-done. Attribute by slot 0. Filter instant-GameOver degenerates + ops timeouts.
-- **NOT submitted** — eval only; pick a winner, then Gate 2.
+## PRIOR EXPERIMENT — crew vote-threshold sweep vs top-7 (DONE, 2026-06-23)
+
+Mechanism: `WEIGHTS_VOTE_PROBABILITY` (suspicion.py crewmate vote gate) made env-tunable via
+`CREWBORG_WEIGHTS_VOTE_P` (default 0.9; committed). Arms = ENV-baked images v33=0.9(ctrl)/
+v34=0.8/v35=0.7/v36=0.6/v37=0.5. Eval vs **top-7**, slot0=crew, 2 imp, 150 eps/arm.
+**RESULT (crew win%, ops-filtered):** 0.9=**31.9%** / 0.8=35.5% / 0.7=40.4% / 0.6=31.4%(noisy
+dip) / **0.5=44.5% (+12.6pp vs ctrl, p=0.031 SIGNIFICANT)**. Trend up as gate drops; 0.6 = noise.
+**Mechanism confirmed across ALL arms:** win-when-it-votes 58–72% vs win-when-it-skips-all 9–28%;
+lowering the gate moves games from skip-bucket→vote-bucket (35→81 voting games at 0.9→0.5).
+⚠️ measured crew WIN only — did NOT measure own-ejection / team-crew-ejection (the v25 risk);
+sweep2 (above, w/ logs) closes that gap. NOT submitted.
 
 ## Prior league state (2026-06-11)
 
