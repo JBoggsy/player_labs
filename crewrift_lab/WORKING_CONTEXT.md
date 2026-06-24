@@ -141,6 +141,31 @@ expand-42fed21, 0% hash-fail). Apples-to-apples result:
   report_request.json; build with CREWRIFT_EXPAND_REPLAY=/tmp/expand-42fed21.
 - NEEDS James's direction: implement isolation-creation as the next crewborg imposter change?
 
+## ⭐ ACTIVE BUILD (2026-06-24): new simple SEARCH mode + path-prediction prerequisite
+James scrapped BOTH the occupancy-density seeking AND the group-follow/peel-off idea for a
+SIMPLER plan. New SEARCH algorithm (PRETEND mode removed; agent starts in SEARCH):
+1. pick a random nearby room → 2. enter, look for crew → 3. if crew present, idle at a task
+spot near the entrance until a crewmate leaves → 4. follow that crewmate to their next room →
+5. if all crew lost, back to 1. Old PRETEND/SEARCH logic cold-stored in `modes/_deprecated/`
+(DEPRECATED, DO NOT USE); live pretend.py/search.py are no-op placeholders (imposter idles —
+DON'T eval imposter play until rebuilt). 13 deprecated-behavior tests skipped.
+- **Step 4 needs good path projection FIRST (James's asterisk) → BUILT (first draft):**
+  - **`strategy/path_prediction.py`** — `PathPredictor`: per-frame probability distribution over
+    candidate nav ROUTES (tasks + room centers) a tracked crewmate is walking; scores observed
+    motion vs each route's direction with exponential forgetting (recent motion wins / reversals
+    recover), advances predictions through occlusion. Fed ONLY what crewborg saw (visibility-
+    masked). NOT a bare heading vector — routes, per James. 4 unit tests. Tuning knobs at file top.
+  - **Replay tooling (`crewborg/tools/`, documented in `tools/README.md`, linked from AGENTS.md):**
+    `replay_frames.py` (load 1 episode from a warehouse → per-tick truth + crewborg visibility);
+    `path_prediction_ui.py`+`.html` (LIVE browser UI :8810 — agent dropdown, weighted route overlay,
+    scrub/play, watch predictions sharpen + coast through occlusion); `path_prediction_eval.py`
+    (scores predictions at every visible→obscured transition: destination-ROOM match rate + CSV +
+    per-instance overlay PNGs actual-vs-predicted, `uv run --with matplotlib --with duckdb ...`).
+  - **First-draft accuracy (4 XP episodes, /tmp/xp_imp_warehouse):** 43% destination-room match
+    overall, but **86% when confident (pred_prob 0.4-0.7)** vs 33% when unsure → module is
+    informative (confidence tracks accuracy); first-draft tuning leaves most predictions low-conf.
+    Next: tune ALIGN_GAIN/EVIDENCE_DECAY/LOOKAHEAD against the eval, then build the SEARCH mode.
+
 ## sweep2: threshold sweep vs Aaron+Andre, w/ tracing (DONE, 2026-06-24)
 Re-ran the crew vote-threshold sweep vs ONLY Aaron+Andre champions (new protocol), 300 eps/arm,
 opponents rotating, + the imposter baseline. Dashboard: `xp_dashboard.py` (see skill).

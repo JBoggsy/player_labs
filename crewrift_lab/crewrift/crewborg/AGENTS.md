@@ -521,6 +521,8 @@ rather than pixel parity). Develop/run/test workflows live in the
 | Crewrift reference bots + guides | `Metta-AI/coworld-crewrift`: `players/` |
 | Coworld platform/runner contract | `Metta-AI/metta`: `packages/coworld/src/coworld/docs/README.md` + `runner/runner.py` *(read-only)* |
 | Crewborg trace replay viewer | `./viewer/index.html` |
+| Path-prediction module (where a crewmate is heading) | `./strategy/path_prediction.py` |
+| Path-prediction replay UI + accuracy/eval tools | [`./tools/README.md`](./tools/README.md) |
 
 Repo roots:
 - Player SDK: pkg `players`, installed from the public `Metta-AI/players` repo (tracks `main`, lock-pinned) (no local checkout)

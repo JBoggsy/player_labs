@@ -20,6 +20,13 @@ mid-session; check them back at the start of focused work.
   from the immediate crewborg reconnect fix. The reconnect code added to crewborg now is the
   reference implementation to lift.
 
+- **Investigate turn-end signalling added to Crewrift for game speed** (flagged by James,
+  2026-06-24). Crewrift has reportedly added a turn-end / ready signal (a way for a player
+  to declare it's done acting this tick) to speed games up. Look into what it is in the
+  game source (`~/coding/coworlds/coworld-crewrift`, currently at `42fed21` for arena 0.1.54
+  — check newer master), whether crewborg should emit it, and the expected speedup / any
+  contract change to the Sprite-v1 transport. Not yet scoped.
+
 ## Done
 
 _None yet._
