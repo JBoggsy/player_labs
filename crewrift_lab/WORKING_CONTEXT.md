@@ -114,6 +114,24 @@ Compared shadowing (`following_interval`+`chase_interval`) by imposter policy:
   it dies on transient urllib resets and only writes report_request.json after a full round).
 - NEEDS James's direction on whether to implement shadow-commitment as the next crewborg change.
 
+### CORRECTED FINDING (2026-06-24): on CONTROLLED XP data, the gap is ISOLATION-CREATION (not shadowing)
+James: dropped the natural-league analysis (misleading opponent mix) and rebuilt the warehouse over
+450 of THIS SESSION'S XP imposter episodes (`/tmp/xp_imp_warehouse`, crewborg slot0=imp vs Aaron/Andre,
+expand-42fed21, 0% hash-fail). Apples-to-apples result:
+- Shadowing is NORMAL: crewborg 13.2 intervals/game (= truecrew 13.1), per-shadow conversion 11%
+  (≈ truecrew 10%). The natural-league "short-shadow/poor-commitment" finding was an opponent-mix
+  artifact — SUPERSEDED.
+- **Real gap = isolation OPPORTUNITIES:** crewborg gets alone-with-a-crew **1.84×/game vs truecrew 4.44,
+  crewborg-aaln 3.45, sussybuster 3.83 — half the field.** ZERO isolation in **21% of crewborg's
+  imposter games vs 8-9%** for peers. Yet crewborg's iso→kill conversion is the BEST (19% vs 11-15%).
+  So: execution is great, it just doesn't MANUFACTURE enough 1-on-1s. Timing fine (median iso ~3200).
+- **Fix direction: actively create isolation** — separate/cut off a straggler instead of waiting for it.
+  (kills/g this sample: crewborg 0.85 vs truecrew 1.05, crewborg-aaln 1.07 — the ~0.2 deficit = the
+  opportunity deficit, not conversion.)
+- Reusable XP-warehouse recipe: `make_wh_input.py` (in /tmp) turns fetch_artifacts dirs → warehouse
+  report_request.json; build with CREWRIFT_EXPAND_REPLAY=/tmp/expand-42fed21.
+- NEEDS James's direction: implement isolation-creation as the next crewborg imposter change?
+
 ## sweep2: threshold sweep vs Aaron+Andre, w/ tracing (DONE, 2026-06-24)
 Re-ran the crew vote-threshold sweep vs ONLY Aaron+Andre champions (new protocol), 300 eps/arm,
 opponents rotating, + the imposter baseline. Dashboard: `xp_dashboard.py` (see skill).
