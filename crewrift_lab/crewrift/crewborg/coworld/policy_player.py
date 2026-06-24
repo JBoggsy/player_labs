@@ -32,10 +32,10 @@ import os
 import sys
 import time
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any
 
 import websockets
-from websockets.exceptions import ConnectionClosed
 
 from crewrift.crewborg import build_runtime
 from crewrift.crewborg.action import encode_chat, encode_input
@@ -49,6 +49,50 @@ METRICS_ENV = "CREWBORG_METRICS"
 
 DEFAULT_TRACE_OUTPUTS = "jsonl@artifact"
 FALLBACK_TRACE_OUTPUTS = "jsonl@stderr"
+
+# --- aggressive initial-connect reconnect (2026-06-24) ----------------------------
+# Hosted episodes were dying at a high rate with a -100 "connect_timeout": the player
+# produced 0-1 telemetry lines and no stderr (it NEVER received a frame), and the
+# episode never reached "running". That is an INITIAL-connect failure — the player
+# container races the engine's /player websocket coming up, the single connect()
+# throws (or closes with no frames), and the process exits, failing the episode.
+#
+# Fix: retry establishing the connection until the FIRST frame arrives, with capped
+# exponential backoff, bounded by a wall-clock deadline (so we never hang past the
+# runner's episode timeout). Once frames flow we hand off to the normal loop, where
+# an abrupt close still means "game over" (the engine ends episodes that way) — we
+# must NOT reconnect after a legitimate game end, so the discriminator is strictly
+# "did we ever receive a frame on this connection."
+RECONNECT_DEADLINE_SECONDS = float(os.environ.get("CREWBORG_RECONNECT_DEADLINE", "120"))
+RECONNECT_BACKOFF_START = 0.25  # first retry wait
+RECONNECT_BACKOFF_MAX = 5.0     # cap per-retry wait
+CONNECT_OPEN_TIMEOUT = 10.0     # per-attempt handshake timeout (don't hang one attempt)
+
+# Connection-establishment failures worth retrying (vs a real game-over close, which
+# only counts once a frame has been seen). OSError covers ECONNREFUSED while the
+# engine is still binding; the websockets handshake/timeout errors cover races.
+_RETRYABLE_CONNECT_ERRORS = (
+    OSError,
+    asyncio.TimeoutError,
+    websockets.exceptions.WebSocketException,
+)
+
+
+@dataclass
+class _BridgeState:
+    """Per-bridge session state that must survive a reconnect.
+
+    Keeping this outside the connection means a retried connect resumes against the
+    same scene/runtime rather than rebuilding belief. ``frames_seen`` is the
+    discriminator the retry loop uses: >0 means the game has started, so a close is
+    a real game-over (stop); 0 means we never connected (a race — keep retrying).
+    """
+
+    frames_seen: int = 0
+    last_sent_mask: int | None = None
+    walkability_checked: bool = False
+    previous_arrival: float | None = None
+    tick_offset: int | None = None  # (server_tick - scene.tick) when the marker first appears
 
 # The engine pushes one frame per game tick at ~24 Hz and does NOT wait for the
 # player (docs/crewrift-player.md). At the hosted 250m-CPU budget that gives
@@ -99,7 +143,11 @@ async def run_bridge(
     connect: Callable[..., Any] = websockets.connect,
     build: Callable[..., Any] = build_runtime,
 ) -> None:
-    """Connect, run the per-tick loop, and return when the socket closes."""
+    """Connect (retrying the initial connection) and run the per-tick loop.
+
+    Returns when the game ends (the engine closes the socket after we've received
+    frames) or when the reconnect deadline passes without ever connecting.
+    """
 
     scene = SceneState()
     # The with-block guarantees outputs.close() runs at exit — that close is what
@@ -108,114 +156,173 @@ async def run_bridge(
     with build_trace_outputs() as outputs:
         runtime = build(trace_sink=outputs.trace_sink, metrics_sink=outputs.metrics_sink)
         metrics = outputs.metrics_sink
-        last_sent_mask: int | None = None
-        walkability_checked = False
-        previous_arrival: float | None = None
-        tick_offset: int | None = None  # (server_tick - scene.tick) when the marker first appears
+        # Session state lives out here so a reconnect resumes cleanly rather than
+        # rebuilding the runtime/belief (which would discard everything learned).
+        state = _BridgeState()
 
         # Guarantee runtime cleanup (the strategy runner may own background
         # threads/tasks) even if connect, a step, or a shutdown-race send raises.
         try:
-            async with connect(engine_ws_url, max_size=None) as websocket:
-                try:
-                    async for message in websocket:
-                        if isinstance(message, str):
-                            # The /player stream is binary Sprite-v1; ignore stray text.
-                            continue
-                        # loop_gap_ms: wall-clock between consecutive frame arrivals
-                        # — sustained gaps *below* the ~42 ms frame interval mean queued
-                        # frames are being drained, i.e. we had fallen behind the engine.
-                        # (Measured here; emitted below, tagged with the server tick.)
-                        arrival = time.perf_counter()
-                        loop_gap_ms = (
-                            round((arrival - previous_arrival) * 1000.0, 3)
-                            if previous_arrival is not None
-                            else None
-                        )
-                        scene.apply(message)
-                        scene.tick += 1
-
-                        # Ground-truth tick: prefer the engine's streamed tick-marker
-                        # over our local frame counter, and drive the SDK runtime from it
-                        # so perception, belief.last_tick, and ALL tracing/metrics carry
-                        # the engine's true tick. step() does `self.tick += 1`, so seed it
-                        # one below the server tick to land exactly on it. Before the
-                        # marker arrives (first frames) fall back to the local counter.
-                        server_tick = scene.server_tick()
-                        tick = server_tick if server_tick >= 0 else scene.tick
-                        if server_tick >= 0:
-                            runtime.tick = server_tick - 1
-                            if tick_offset is None:
-                                tick_offset = server_tick - scene.tick
-
-                        # Validate the baked map against the streamed walkability mask
-                        # once it arrives (design §6); a size mismatch means a different
-                        # map than croatoan. Warn loudly rather than misnavigate later.
-                        if not walkability_checked and scene.walkability is not None:
-                            walkability_checked = True
-                            map_data = runtime.belief.map
-                            if map_data is not None and not walkability_matches(
-                                map_data, scene.walkability_width, scene.walkability_height
-                            ):
-                                print(
-                                    "WARNING: walkability map "
-                                    f"{scene.walkability_width}x{scene.walkability_height} does not match "
-                                    f"baked map {map_data.width}x{map_data.height}; server may be running "
-                                    "a different map than croatoan.",
-                                    file=sys.stderr,
-                                    flush=True,
-                                )
-                            # Optional capture: emit the streamed walkability mask once
-                            # so tools/nav_bake.py can re-bake the offline nav asset when
-                            # the map changes. Inert unless CREWBORG_CAPTURE_WALKABILITY
-                            # is set; the mask is the authoritative input crewborg sees.
-                            if _capture_walkability_enabled():
-                                _emit_walkability_capture(scene.walkability)
-
-                        # step_ms: the per-tick compute budget check (~42 ms at 24 Hz).
-                        step_start = time.perf_counter()
-                        command = runtime.step(Observation(scene=scene, tick=tick))
-                        step_end = time.perf_counter()
-                        if loop_gap_ms is not None:
-                            metrics.histogram("bridge.loop_gap_ms", loop_gap_ms, tags={"tick": tick})
-                        metrics.histogram(
-                            "bridge.step_ms",
-                            round((step_end - step_start) * 1000.0, 3),
-                            tags={"tick": tick},
-                        )
-                        # tick_drift: frames we've fallen behind the engine since the
-                        # marker first appeared (ground truth: server tick minus frames
-                        # processed). 0 means we're keeping up; growth means falling behind.
-                        if server_tick >= 0:
-                            metrics.gauge(
-                                "bridge.tick_drift",
-                                server_tick - scene.tick - tick_offset,
-                                tags={"tick": tick},
-                            )
-
-                        # Send only when the held mask changes (design §3.3). The first
-                        # tick sends the neutral mask once, establishing "all released".
-                        if command.held_mask != last_sent_mask:
-                            await websocket.send(encode_input(command.held_mask))
-                            last_sent_mask = command.held_mask
-
-                        # Meeting chat (accepted only during Voting); sent as it appears.
-                        if command.chat is not None:
-                            await websocket.send(encode_chat(command.chat))
-                        previous_arrival = arrival
-                except ConnectionClosed:
-                    # Game end: the Crewrift server closes the socket to signal the
-                    # episode is over. It does so *abruptly* — no close handshake
-                    # (code 1006, "no close frame received or sent") — which the
-                    # websockets async iterator surfaces as ConnectionClosedError
-                    # rather than swallowing (as it does a clean ConnectionClosedOK).
-                    # Either way a close means the game is over: treat it as normal
-                    # termination so the process exits 0. The Coworld runner requires
-                    # every player container to exit 0; propagating here would fail
-                    # the whole episode (runner._wait_for_player_exit).
-                    print("game over: server closed the connection", file=sys.stderr, flush=True)
+            await _connect_with_retry(
+                engine_ws_url, connect=connect, scene=scene, runtime=runtime,
+                metrics=metrics, state=state,
+            )
         finally:
             runtime.close()
+
+
+async def _connect_with_retry(
+    engine_ws_url: str,
+    *,
+    connect: Callable[..., Any],
+    scene: SceneState,
+    runtime: Any,
+    metrics: Any,
+    state: _BridgeState,
+) -> None:
+    """Establish the websocket, retrying the INITIAL connect with capped backoff
+    until the first frame arrives, then run the session. A connection that closes
+    *after* frames were seen is a normal game-over (stop); a failure or close
+    *before* any frame is a connect race (retry until the deadline)."""
+
+    deadline = time.monotonic() + RECONNECT_DEADLINE_SECONDS
+    backoff = RECONNECT_BACKOFF_START
+    attempt = 0
+    last_error: BaseException | None = None  # closed-with-no-frames also retries
+    while True:
+        attempt += 1
+        try:
+            async with connect(engine_ws_url, max_size=None, open_timeout=CONNECT_OPEN_TIMEOUT) as websocket:
+                await _run_session(websocket, scene=scene, runtime=runtime, metrics=metrics, state=state)
+            # Session returned without raising: a clean close.
+            if state.frames_seen:
+                return  # the game ran and ended normally
+            # Closed with no frames — treat as a connect race and retry.
+        except _RETRYABLE_CONNECT_ERRORS as exc:
+            if state.frames_seen:
+                # We were mid-game and the socket dropped abruptly: that is how the
+                # Crewrift engine signals game-over (code 1006), so exit normally.
+                print("game over: server closed the connection", file=sys.stderr, flush=True)
+                return
+            last_error = exc  # pre-first-frame failure: retry/backoff below
+
+        if time.monotonic() >= deadline:
+            print(
+                f"ERROR: could not connect to engine after {attempt} attempt(s) / "
+                f"{RECONNECT_DEADLINE_SECONDS:.0f}s ({type(last_error).__name__}: {last_error}); giving up.",
+                file=sys.stderr, flush=True,
+            )
+            return
+        sleep_for = min(backoff, max(0.0, deadline - time.monotonic()))
+        print(
+            f"connect attempt {attempt} failed (no frames yet); retrying in {sleep_for:.2f}s",
+            file=sys.stderr, flush=True,
+        )
+        await asyncio.sleep(sleep_for)
+        backoff = min(backoff * 2, RECONNECT_BACKOFF_MAX)
+
+
+async def _run_session(
+    websocket: Any,
+    *,
+    scene: SceneState,
+    runtime: Any,
+    metrics: Any,
+    state: _BridgeState,
+) -> None:
+    """Drive the per-tick loop on an established connection until it closes.
+
+    Raises the websockets close/connection errors to the caller, which decides —
+    based on whether any frame was seen — whether it's a game-over or a connect
+    race to retry. A clean ``ConnectionClosed`` from the async iterator returns
+    normally (the caller still inspects ``state.frames_seen``)."""
+
+    async for message in websocket:
+        if isinstance(message, str):
+            # The /player stream is binary Sprite-v1; ignore stray text.
+            continue
+        state.frames_seen += 1
+        # loop_gap_ms: wall-clock between consecutive frame arrivals
+        # — sustained gaps *below* the ~42 ms frame interval mean queued
+        # frames are being drained, i.e. we had fallen behind the engine.
+        # (Measured here; emitted below, tagged with the server tick.)
+        arrival = time.perf_counter()
+        loop_gap_ms = (
+            round((arrival - state.previous_arrival) * 1000.0, 3)
+            if state.previous_arrival is not None
+            else None
+        )
+        scene.apply(message)
+        scene.tick += 1
+
+        # Ground-truth tick: prefer the engine's streamed tick-marker
+        # over our local frame counter, and drive the SDK runtime from it
+        # so perception, belief.last_tick, and ALL tracing/metrics carry
+        # the engine's true tick. step() does `self.tick += 1`, so seed it
+        # one below the server tick to land exactly on it. Before the
+        # marker arrives (first frames) fall back to the local counter.
+        server_tick = scene.server_tick()
+        tick = server_tick if server_tick >= 0 else scene.tick
+        if server_tick >= 0:
+            runtime.tick = server_tick - 1
+            if state.tick_offset is None:
+                state.tick_offset = server_tick - scene.tick
+
+        # Validate the baked map against the streamed walkability mask
+        # once it arrives (design §6); a size mismatch means a different
+        # map than croatoan. Warn loudly rather than misnavigate later.
+        if not state.walkability_checked and scene.walkability is not None:
+            state.walkability_checked = True
+            map_data = runtime.belief.map
+            if map_data is not None and not walkability_matches(
+                map_data, scene.walkability_width, scene.walkability_height
+            ):
+                print(
+                    "WARNING: walkability map "
+                    f"{scene.walkability_width}x{scene.walkability_height} does not match "
+                    f"baked map {map_data.width}x{map_data.height}; server may be running "
+                    "a different map than croatoan.",
+                    file=sys.stderr,
+                    flush=True,
+                )
+            # Optional capture: emit the streamed walkability mask once
+            # so tools/nav_bake.py can re-bake the offline nav asset when
+            # the map changes. Inert unless CREWBORG_CAPTURE_WALKABILITY
+            # is set; the mask is the authoritative input crewborg sees.
+            if _capture_walkability_enabled():
+                _emit_walkability_capture(scene.walkability)
+
+        # step_ms: the per-tick compute budget check (~42 ms at 24 Hz).
+        step_start = time.perf_counter()
+        command = runtime.step(Observation(scene=scene, tick=tick))
+        step_end = time.perf_counter()
+        if loop_gap_ms is not None:
+            metrics.histogram("bridge.loop_gap_ms", loop_gap_ms, tags={"tick": tick})
+        metrics.histogram(
+            "bridge.step_ms",
+            round((step_end - step_start) * 1000.0, 3),
+            tags={"tick": tick},
+        )
+        # tick_drift: frames we've fallen behind the engine since the
+        # marker first appeared (ground truth: server tick minus frames
+        # processed). 0 means we're keeping up; growth means falling behind.
+        if server_tick >= 0:
+            metrics.gauge(
+                "bridge.tick_drift",
+                server_tick - scene.tick - state.tick_offset,
+                tags={"tick": tick},
+            )
+
+        # Send only when the held mask changes (design §3.3). The first
+        # tick sends the neutral mask once, establishing "all released".
+        if command.held_mask != state.last_sent_mask:
+            await websocket.send(encode_input(command.held_mask))
+            state.last_sent_mask = command.held_mask
+
+        # Meeting chat (accepted only during Voting); sent as it appears.
+        if command.chat is not None:
+            await websocket.send(encode_chat(command.chat))
+        state.previous_arrival = arrival
 
 
 def main() -> None:

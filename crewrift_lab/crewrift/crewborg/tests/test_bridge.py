@@ -27,6 +27,10 @@ from players.player_sdk import NullMetricsSink, TraceEvent
 pytestmark = pytest.mark.asyncio
 
 
+async def _no_sleep(_seconds: float) -> None:
+    """Stub for asyncio.sleep so reconnect-backoff tests don't wait in real time."""
+
+
 def _json_records(raw: str) -> list[dict]:
     """Parse the JSON lines from a stream, skipping plain-text warnings."""
 
@@ -243,6 +247,86 @@ async def test_bridge_closes_runtime_when_connect_raises() -> None:
         await run_bridge("ws://unused", connect=failing_connect, build=lambda **_: fake)
 
     assert fake.closed
+
+
+async def test_bridge_retries_initial_connect_until_it_succeeds(monkeypatch) -> None:
+    """The hosted -100 connect_timeout failures were INITIAL-connect races: the
+    player container starts before the engine's /player socket accepts, the single
+    connect() threw, and the process died. The bridge must retry the initial connect
+    (with backoff) until frames flow, not give up on the first failure."""
+
+    import crewrift.crewborg.coworld.policy_player as pp
+    monkeypatch.setattr(pp.asyncio, "sleep", _no_sleep)  # don't actually wait out backoff
+
+    class FakeRuntime:
+        def step(self, _observation) -> Command:
+            return Command(held_mask=0)
+
+        def close(self) -> None:
+            pass
+
+    attempts = {"n": 0}
+
+    class OneFrameThenClose:
+        def __init__(self) -> None:
+            self._sent = False
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *exc: object) -> bool:
+            return False
+
+        def __aiter__(self):
+            return self
+
+        async def __anext__(self) -> bytes:
+            if not self._sent:
+                self._sent = True
+                return w.clear_objects()
+            raise ConnectionClosedError(None, None)
+
+        async def send(self, _data: bytes) -> None:
+            pass
+
+    def flaky_connect(*_args, **_kwargs):
+        attempts["n"] += 1
+        if attempts["n"] < 3:
+            raise ConnectionRefusedError("engine not up yet")  # an OSError subclass
+        return OneFrameThenClose()
+
+    await asyncio.wait_for(
+        run_bridge("ws://unused", connect=flaky_connect, build=lambda **_: FakeRuntime()),
+        timeout=5.0,
+    )
+    assert attempts["n"] == 3  # two refusals, third connects and runs the game
+
+
+async def test_bridge_gives_up_after_reconnect_deadline(monkeypatch) -> None:
+    """If the engine never comes up, the bridge must give up at the deadline (exit
+    0 — never connected is still a clean process exit) rather than retry forever."""
+
+    import crewrift.crewborg.coworld.policy_player as pp
+    monkeypatch.setattr(pp.asyncio, "sleep", _no_sleep)
+    monkeypatch.setattr(pp, "RECONNECT_DEADLINE_SECONDS", 0.0)  # give up immediately
+
+    class FakeRuntime:
+        def __init__(self) -> None:
+            self.closed = False
+
+        def close(self) -> None:
+            self.closed = True
+
+    fake = FakeRuntime()
+
+    def always_refuse(*_args, **_kwargs):
+        raise ConnectionRefusedError("engine never came up")
+
+    await asyncio.wait_for(
+        run_bridge("ws://unused", connect=always_refuse, build=lambda **_: fake),
+        timeout=5.0,
+    )
+    assert fake.closed  # runtime still cleaned up on give-up
 
 
 async def test_bridge_sends_chat_packet() -> None:

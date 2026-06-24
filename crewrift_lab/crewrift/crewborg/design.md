@@ -114,6 +114,25 @@ Crewborg writes its own websocket bridge (`coworld/policy_player.py`):
    `SceneState`, then run `runtime.step(observation)` and send the result.
 4. Close the socket ⇒ game over; exit cleanly.
 
+**Aggressive initial-connect reconnect (§3.1).** Hosted episodes were failing at a
+high rate with a `-100` `connect_timeout`: the symptom (verified from artifacts) was
+**0–1 telemetry lines, no stderr, episode never reaching "running"** — i.e. the player
+**never received a frame**. That is an *initial-connect race*: the container starts
+before the engine's `/player` socket accepts, the single `connect()` throws, and the
+process exits, failing the episode. The bridge now **retries the initial connection**
+with capped exponential backoff (`RECONNECT_BACKOFF_START`→`RECONNECT_BACKOFF_MAX`)
+until the first frame arrives, bounded by `RECONNECT_DEADLINE_SECONDS`
+(env `CREWBORG_RECONNECT_DEADLINE`, default 120s) so it can never hang past the
+runner's episode timeout. The discriminator is **`frames_seen`**: a close/error *before*
+any frame is a connect race → retry; *after* ≥1 frame it is the engine's normal
+abrupt game-over (code 1006) → exit 0, never reconnect (reconnecting after a real game
+end would be wrong). Session state (`scene`, masks, tick offset) lives in `_BridgeState`
+outside the connection so a retry resumes rather than rebuilding belief. **Scope note:**
+this only fixes *our own* connect failures (~half the observed `-100`s in the
+2026-06-24 sweep); episodes where *opponents* fail to connect still go degenerate and
+are unfixable from our side. Eventually this transport+reconnect layer should move into
+the player SDK as a shared Coworld module (see root `TODO.md`).
+
 The server sends exactly one message per tick per socket, paced to 24 Hz, so the
 bridge processes one message per `step`. It has no rate limiter of its own and a
 step is sub-millisecond, so if frames ever transiently queue (a scheduler or
