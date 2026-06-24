@@ -97,6 +97,23 @@ use the event warehouse to compare crewborg vs the top imposters' shadowing beha
   imposters — i.e. point it at league rounds (where all policies appear) or our rotating evals —
   then query following/isolation lead-times by policy to test the "search too late" hypothesis.
 
+### FINDING (2026-06-24): imposter gap = shadow COMMITMENT, not search timing
+Warehouse built over 2 league rounds (443 eps, `/tmp/crewrift_warehouse`, expand-42fed21, 0% hash-fail).
+Compared shadowing (`following_interval`+`chase_interval`) by imposter policy:
+- "Search too late" REFUTED: crewborg shadows often (13.5/game, 4th) and early (median tick 1902).
+- **Real diff: crewborg's shadows are too SHORT and rarely convert.** avg shadow 158 ticks (LOWEST of
+  18 policies, median 65) vs top imposters 188–387; only **10% of crewborg shadows end in target death
+  vs 21–27%** for truecrew:v21 (2.21k), daveey (2.13k), crewborg-aaln (2.06k), Lively (2.04k). 89% of
+  crewborg shadows end in 'separation' (target escaped). Monotonic across all 18 policies:
+  longer shadow → more conversion → more kills/g.
+- **Fix direction: shadow COMMITMENT** — lock Search onto `select_victim()` and hold the shadow at
+  kill-range through the cooldown/kill window instead of flitting between targets. (Maps to the parked
+  "stalk a committed victim" lever + the existing `select_victim` in opportunity.py.)
+- Reusable tool now set up: `~/coding/role_repos/reporter_lab/crewrift-event-warehouse`, helper
+  `/tmp/expand-42fed21`, round fetcher `reporter_lab/tmp/round-loop/fetch_round.py` (wrap in retry —
+  it dies on transient urllib resets and only writes report_request.json after a full round).
+- NEEDS James's direction on whether to implement shadow-commitment as the next crewborg change.
+
 ## sweep2: threshold sweep vs Aaron+Andre, w/ tracing (DONE, 2026-06-24)
 Re-ran the crew vote-threshold sweep vs ONLY Aaron+Andre champions (new protocol), 300 eps/arm,
 opponents rotating, + the imposter baseline. Dashboard: `xp_dashboard.py` (see skill).
