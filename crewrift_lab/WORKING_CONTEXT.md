@@ -78,6 +78,25 @@ James's principle: always work the highest-leverage gap (lesson logged). Imposte
 - NB: `CREWBORG_TRACE=debug` must be baked as an ENV (distinct image digest) — `--secret-env`
   alone dedups to the same version (hit twice now).
 
+### INVESTIGATION LOOP (James, 2026-06-24): compare imposter search/hunt behavior across policies
+Hypothesis: **crewborg transitions to SEARCH too late → doesn't effectively shadow targets** (so
+when the post-meeting kill window opens, it isn't pre-positioned on an isolated victim). Plan:
+use the event warehouse to compare crewborg vs the top imposters' shadowing behavior.
+- **Tool: `~/coding/role_repos/reporter_lab/crewrift-event-warehouse`** (well-documented). Turns a
+  batch of episodes → policy-indexed Parquet/DuckDB star schema (`events` fact + `episode_players`
+  dim), re-keying each slot to policy_name/role. `build` CLI then `serve` (DuckDB SQL dashboard
+  :8765). Input = `report_request.json` files (round fetcher: `tmp/round-loop/fetch_round.py`).
+- **The events that test the hypothesis:** `following_interval` / `chase_interval` (shadowing!),
+  `isolation_interval` (was the victim isolated), `proximity_interval` (kill-range), `player_state`
+  (heading/pos), plus `killed`/`body`/`vote`. All re-keyed to policy+role for cross-policy compare.
+- **expand_replay version coupling VERIFIED:** arena `crewrift:0.1.54` ⇒ commit `42fed21`. Helper
+  `/tmp/expand-42fed21` already built + the crewrift checkout (`~/coding/coworlds/coworld-crewrift`)
+  is AT 42fed21; tested on a v39 replay → `trace_complete:true`, exit 0 (no hash-fail). Reporter
+  Docker image `crewrift-event-reporter:local` also present.
+- **Next:** build a warehouse over a batch that has crewborg AND the top imposters (Aaron/Andre) as
+  imposters — i.e. point it at league rounds (where all policies appear) or our rotating evals —
+  then query following/isolation lead-times by policy to test the "search too late" hypothesis.
+
 ## sweep2: threshold sweep vs Aaron+Andre, w/ tracing (DONE, 2026-06-24)
 Re-ran the crew vote-threshold sweep vs ONLY Aaron+Andre champions (new protocol), 300 eps/arm,
 opponents rotating, + the imposter baseline. Dashboard: `xp_dashboard.py` (see skill).
