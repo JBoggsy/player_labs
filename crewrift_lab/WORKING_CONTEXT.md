@@ -16,7 +16,56 @@ is the one-screen answer to "where are we and why."
 
 ---
 
-## Active league state (2026-06-11)
+## Active league state (2026-06-23) — NIGHTLY LOOP WAS BROKEN; champion frozen at v31
+
+- **Champion = v31** (nightly-2026-06-15 refit), Crewrift div `div_8d3ead22`, **rank
+  11/18, score 46.2** (586 rounds). Field has advanced past us: Andre Jr (truecrew:v24)
+  63.2, Aaron (sussybuster-aaln:v1) 56.9, RowDaBoat (softmax-sussyboi:v1) 54.5. Note:
+  the division leaderboard scores **per PLAYER** (James Boggs), so every crewborg
+  membership shows the same 46.2 — can't read a version's standing off it.
+- **NIGHTLY CHAMPION LOOP SILENTLY BROKE 06-16→06-20** (FIXED 06-23): every night the
+  refit/test/build PASSED but Gate-1 smoke CRASHED → aborted, "champion unchanged."
+  Root cause: `coworld-local-run/scripts/smoke.py:ensure_manifest()` globbed the
+  **shared** `coworld/` dir by newest mtime; with 3 labs downloading there, the
+  Crewrift smoke ran a *Cue-n-Woo* game container (timed out at 240s). **FIXED**
+  (committed): parse the `Manifest:` path `coworld download` prints instead of mtime.
+  Verified: resolves crewrift→cow_50ee07cf, full Gate-1 PASS. Tonight's nightly should
+  ship again. ⚠️ Refit AUC is also slowly *decaying* on the ballooning full corpus
+  (0.812→0.809 by 06-20, 191k games) — the recency-window concern is now real.
+- **STANDING EVAL IN FLIGHT (2026-06-23)** to locate v31 vs the current field,
+  role-decomposed, vs the explicit live top-7 (truecrew:v24, sussybuster-aaln:v1,
+  softmax-sussyboi:v1, daveey-notsus-tier5c:v1, truecrew:v21, jernau-crewrift:v14,
+  kyle-int-boost:v5; opponents rotate seats, crewborg pinned slot 0):
+  **CREW** `xreq_437780fd` (slot0=crew, 2 imp) + **IMPOSTER** `xreq_8babadbd`
+  (slot0=imp + partner imp), 100 eps each. Monitoring in bg. ⚠️ `top_n`/`random`
+  selectors now 500 (server statement-timeout on the champion-ranking query) — had to
+  pin explicit policy_refs.
+
+## CURRENT EXPERIMENT — crew vote-threshold sweep (RUNNING, 2026-06-23)
+
+Standing eval (above) showed v31 **crew loses the parity race**: 38% win at 8/8 tasks,
+54/100 games 8/8-but-lost; wins when it votes (1.11 player-votes/g) vs loses when passive
+(0.23/g, skip 3.45/g). v25's vote-RESTRAINT (P≥0.9 gate, no clear-leader rule) was tuned
+for the *old* field that voted accuse-heavy crewborg out; the field evolved and passivity
+now loses. **Hypothesis: lowering the crew vote gate trades precision for ejections and
+raises crew win.** James's call: sweep the threshold via xreqs.
+
+- **Mechanism:** `WEIGHTS_VOTE_PROBABILITY` (suspicion.py, the fitted-model crewmate vote
+  gate) is now env-tunable via `CREWBORG_WEIGHTS_VOTE_P` (default 0.9, behavior unchanged;
+  committed). Platform dedups by image digest, so each arm is a thin image
+  `FROM players-crewborg:dev` + `ENV CREWBORG_WEIGHTS_VOTE_P=<p>` → distinct version.
+- **Arms:** v33=0.9 (control) · v34=0.8 · v35=0.7 · v36=0.6 · v37=0.5. Bake verified in-image.
+- **Eval:** matched crew xreqs (crewborg slot0=crew vs live top-7, 2 imp), 150 eps/arm =
+  100-ep "A" + 50-ep "B" (API caps num_episodes at 100). IDs in `/tmp/sweep_xreqs.txt`:
+  v33 A=`xreq_ea68ebf3` B=`xreq_4e91d31d` · v34 A=`xreq_9eeb806a` B=`xreq_46a55137` ·
+  v35 A=`xreq_a771935c` B=`xreq_67439cce` · v36 A=`xreq_f8022ef2` B=`xreq_1e4c9be0` ·
+  v37 A=`xreq_c633787e` B=`xreq_51e19845`.
+- **Compare:** crew win% per arm (control 0.9 should ≈ today's 38%), plus votes-at-players/g,
+  own-ejection rate, team crew-ejections (the v25 mis-vote risk — watch it climb as the gate
+  drops), tasks-done. Attribute by slot 0. Filter instant-GameOver degenerates + ops timeouts.
+- **NOT submitted** — eval only; pick a winner, then Gate 2.
+
+## Prior league state (2026-06-11)
 
 - **v24** (`b725a6e1`) = self-vote fix (v22) + kill-sooner. **Submitted** `sub_e6969016`
   (provisional, pending the large A/B). **v22** `sub_9a4b4fa9` and **v21** `sub_2c8afd84`
