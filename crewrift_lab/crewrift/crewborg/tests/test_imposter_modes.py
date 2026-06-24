@@ -1,8 +1,21 @@
-"""Hunt / Search / Pretend / Evade imposter mode tests (design §7.2)."""
+"""Hunt / Search / Pretend / Evade imposter mode tests (design §7.2).
+
+NOTE: the Pretend/Search *seeking* tests below are skipped — that logic was retired
+2026-06-24 (cold-stored at ``modes/_deprecated/``) pending the new group-follow →
+peel-off approach. They are kept as a record of the old contract; they will be
+replaced by tests for the new modes, not revived. Hunt/Evade tests stay live.
+"""
 
 from __future__ import annotations
 
 import numpy as np
+import pytest
+
+# Applied to tests that pin the retired occupancy-seeking Pretend/Search behavior.
+deprecated_seeking = pytest.mark.skip(
+    reason="Pretend/Search occupancy-seeking retired 2026-06-24 (modes/_deprecated/); "
+    "new group-follow→peel-off approach pending. See design.md."
+)
 
 from crewrift.crewborg.map.types import MapData, MapPoint, MapRect, Room, TaskStation, Vent
 from crewrift.crewborg.agent_tracking import OccupancySnapshot, update_agent_tracking
@@ -116,6 +129,7 @@ def test_hunt_prefers_reachable_victim() -> None:
 # --------------------------------------------------------------------------- #
 
 
+@deprecated_seeking
 def test_search_follows_a_visible_target() -> None:
     belief = Belief(self_world_x=100, self_world_y=100, last_tick=5)
     _visible(belief, 1004, (130, 100), color="green")
@@ -125,6 +139,7 @@ def test_search_follows_a_visible_target() -> None:
     assert intent.reason == "search: following visible target"
 
 
+@deprecated_seeking
 def test_search_follows_a_recently_seen_committed_target() -> None:
     mode = SearchMode()
     belief = Belief(self_world_x=100, self_world_y=100, last_tick=5)
@@ -139,6 +154,7 @@ def test_search_follows_a_recently_seen_committed_target() -> None:
     assert intent.reason == "search: following last-seen target"
 
 
+@deprecated_seeking
 def test_search_moves_through_ranked_occupancy_points() -> None:
     map_data = _shadow_map()
     nav = build_nav_graph(np.ones((120, 200), dtype=bool), map_data=map_data)
@@ -237,6 +253,7 @@ def test_pretend_idles_only_without_a_self_position() -> None:
     assert PretendMode().decide(belief, ActionState()).kind == "idle"
 
 
+@deprecated_seeking
 def test_pretend_targets_a_fallback_task_station_not_visible_crew() -> None:
     map_data = _shadow_map()
     nav = build_nav_graph(np.ones((120, 200), dtype=bool), map_data=map_data)
@@ -247,6 +264,7 @@ def test_pretend_targets_a_fallback_task_station_not_visible_crew() -> None:
     assert intent.point == (80, 50)  # room A's task station, not the visible crewmate
 
 
+@deprecated_seeking
 def test_pretend_fakes_a_task_at_the_occupancy_selected_station() -> None:
     map_data = _shadow_map()
     nav = build_nav_graph(np.ones((120, 200), dtype=bool), map_data=map_data)
@@ -269,6 +287,7 @@ def test_pretend_fakes_a_task_at_the_occupancy_selected_station() -> None:
     assert 70 <= moving.point[0] < 90 and 40 <= moving.point[1] < 60  # room A's station rect
 
 
+@deprecated_seeking
 def test_pretend_starts_fake_task_on_arrival_before_retargeting() -> None:
     map_data = _shadow_map()
     nav = build_nav_graph(np.ones((120, 200), dtype=bool), map_data=map_data)
@@ -304,6 +323,7 @@ def test_pretend_starts_fake_task_on_arrival_before_retargeting() -> None:
     assert mode._hold_until == belief.last_tick + 72
 
 
+@deprecated_seeking
 def test_pretend_does_not_fake_a_task_with_no_crewmate_watching() -> None:
     # Change 2: arriving at a station with an empty room ⇒ don't idle a fake task; keep
     # moving so the kill cooldown converts to a real kill sooner.
@@ -319,6 +339,7 @@ def test_pretend_does_not_fake_a_task_with_no_crewmate_watching() -> None:
     assert mode._hold_until is None  # never started the hold
 
 
+@deprecated_seeking
 def test_pretend_abandons_a_fake_task_when_the_last_crewmate_leaves_view() -> None:
     # Change 3: a hold already in progress stops the instant no crewmate is visible.
     map_data = _shadow_map()
@@ -337,6 +358,7 @@ def test_pretend_abandons_a_fake_task_when_the_last_crewmate_leaves_view() -> No
     assert abandoned.kind == "navigate_to"  # stopped faking, moving on
 
 
+@deprecated_seeking
 def test_pretend_does_not_fake_a_task_in_the_starting_room() -> None:
     map_data = _shadow_map()
     nav = build_nav_graph(np.ones((120, 200), dtype=bool), map_data=map_data)
@@ -349,6 +371,7 @@ def test_pretend_does_not_fake_a_task_in_the_starting_room() -> None:
     assert intent.point[0] >= 40
 
 
+@deprecated_seeking
 def test_pretend_wanders_rooms_when_no_crew_is_in_sight() -> None:
     map_data = _shadow_map()
     nav = build_nav_graph(np.ones((120, 200), dtype=bool), map_data=map_data)
@@ -358,6 +381,7 @@ def test_pretend_wanders_rooms_when_no_crew_is_in_sight() -> None:
     assert intent.point[0] >= 40  # heading out of the start room toward another room
 
 
+@deprecated_seeking
 def test_pretend_wandering_does_not_switch_to_follow_on_sighting_a_crewmate() -> None:
     map_data = _shadow_map()
     nav = build_nav_graph(np.ones((120, 200), dtype=bool), map_data=map_data)

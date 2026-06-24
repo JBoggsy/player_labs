@@ -1,8 +1,20 @@
-"""Agent location tracking tests (docs/designs/agent-tracking.md)."""
+"""Agent location tracking tests (docs/designs/agent-tracking.md).
+
+The two ``test_pretend_*`` integration tests are skipped — Pretend's occupancy-room
+seeking was retired 2026-06-24 (cold-stored at ``modes/_deprecated/``) pending the
+new group-follow → peel-off approach. The substrate/estimator tests stay live (the
+substrate is retained as the cold-start fallback).
+"""
 
 from __future__ import annotations
 
 import numpy as np
+import pytest
+
+deprecated_seeking = pytest.mark.skip(
+    reason="Pretend occupancy-room seeking retired 2026-06-24 (modes/_deprecated/); "
+    "new approach pending. See design.md."
+)
 
 from crewrift.crewborg.agent_tracking import (
     OccupancySnapshot,
@@ -196,6 +208,7 @@ def test_best_pretend_room_target_has_hysteresis() -> None:
     assert target.room_name == "Right"
 
 
+@deprecated_seeking
 def test_pretend_uses_occupancy_room_target() -> None:
     belief = _belief()
     belief.last_tick = 850
@@ -219,6 +232,7 @@ def test_pretend_uses_occupancy_room_target() -> None:
     assert intent.reason == "pretending at likely crew task"
 
 
+@deprecated_seeking
 def test_pretend_commits_to_an_occupancy_room_until_mode_preemption() -> None:
     belief = _belief()
     # Put spawn outside the test rooms so both Left and Right are eligible fake-task

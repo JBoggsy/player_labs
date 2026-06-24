@@ -114,6 +114,26 @@ Crewborg writes its own websocket bridge (`coworld/policy_player.py`):
    `SceneState`, then run `runtime.step(observation)` and send the result.
 4. Close the socket ⇒ game over; exit cleanly.
 
+**Imposter seeking/positioning — NEW APPROACH (2026-06-24, James; supersedes occupancy-density seeking).**
+Diagnosis (event-warehouse, controlled XP data vs Aaron/Andre): crewborg's kill execution is best-in-field
+(19% isolation→kill) but it is *near a crew member only ~half as often* as the top imposters (6.6 vs ~12
+proximity intervals/game) and gets isolation-with-crew half as often (1.84 vs ~4.4/game; zero in 21% of games
+vs 8-9%). Root cause: the old occupancy system **diffuses** every unseen crew's position over a growing
+reachability disc, sums them, and seeks the **densest cell/room** — which (a) drifts to the central hub
+(diffusion centroid) and (b) by definition heads toward *crowds*, the worst place to find someone ALONE.
+
+The new principle: **don't gamble on an up-front shadow target — preserve optionality.** Stay WITH the group
+(keep many potential victims reachable) and only **commit to following an individual once it clearly peels off
+the group into isolation**; then shadow that straggler until Hunt can strike. Staying glued to the group
+forever gets us frozen out (no isolation); committing to one target early is a coin-flip (we can't tell good
+targets from group-stickers, and may chase someone who rejoins). Following the group until a clean peel-off
+emerges resolves both. NB the old `select_victim` ("pick the single most-isolated visible crew right now and
+commit") is the up-front-gamble anti-pattern for *seeking* — it stays only for Hunt (the strike, after a peel
+-off is already chosen). Never follow the teammate imposter. The occupancy substrate is retained as a cold
+-start fallback (seen nobody yet → explore the low-traffic PERIPHERAL rooms where stragglers isolate, not the
+hub). Implementation in progress; the prior Pretend/Search logic is cold-stored under
+`modes/_deprecated/` (DO NOT USE).
+
 **Aggressive initial-connect reconnect (§3.1).** Hosted episodes were failing at a
 high rate with a `-100` `connect_timeout`: the symptom (verified from artifacts) was
 **0–1 telemetry lines, no stderr, episode never reaching "running"** — i.e. the player
