@@ -200,12 +200,18 @@ packets out — see [§2](#sprite-v1-protocol-structured-scene-not-a-framebuffer
 So crewborg must **write its own websocket bridge** that:
 1. reads `COWORLD_PLAYER_WS_URL` (the runner fills in `?slot=N&token=...`);
 2. `websockets.connect(url, max_size=None)` — token validation is at HTTP
-   upgrade, no app handshake;
+   upgrade, no app handshake — **retrying the initial connect** on a flat ~0.1s
+   interval until the first frame arrives (bounded by a deadline), because the
+   container can start before the engine's `/player` socket binds and a single
+   failed connect would otherwise drop the episode to a `-100` connect-timeout
+   (design.md §3.1);
 3. decodes each incoming binary message and applies it to the **scene tables**
    (Layers / Sprites / Objects — see [§2](#sprite-v1-protocol-structured-scene-not-a-framebuffer)),
    then on each tick drives `runtime.step(scene)` and sends the resulting wire
    packets (a button packet, optionally a chat packet);
-4. exits cleanly when the server closes the socket (= game end).
+4. exits cleanly when the server closes the socket *after frames were seen*
+   (= game end); a close *before* any frame is treated as a connect race and
+   retried (the `frames_seen` discriminator).
 
 Each incoming binary message is a complete frame (the decoder applies all of its
 concatenated sub-messages), so the bridge applies one message, runs one

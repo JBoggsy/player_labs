@@ -90,6 +90,24 @@ read it before composing a body, and re-check the live schema when a route 4xxs
    compute the stats the question needs (win rate + score mean/median/quartiles/std,
    broken down by player and role).
 
+   **Live dashboard (one or more requests).** For a richer view than `monitor` —
+   especially when running several requests at once (a sweep, a multi-role eval) —
+   `scripts/xp_dashboard.py` serves a self-contained browser dashboard that fills in
+   as completions roll in: completion progress + throughput/ETA, a win-rate
+   leaderboard (overall / crew / imposter), a win-rate heatmap, and per-player
+   score-distribution strips. It polls the API in the background and pulls each
+   completed episode's per-seat `results.json` once; stats are attributed by seat
+   (from `participants` + `game_config.slots`) and ops-filtered (connect/disconnect
+   -timeout episodes dropped — watch the "ops-filtered" count, a big number means
+   your effective n is far below `num_episodes`). Win coloring uses the authoritative
+   per-seat win flag (a win is the +100 objective bonus, not score > 0).
+
+   ```bash
+   uv run python .claude/skills/coworld-experience-requests/scripts/xp_dashboard.py \
+     xreq_... [xreq_... ...]            # then open http://localhost:8808
+   # --port N or XP_DASH_PORT=N to override; serves immediately and back-fills.
+   ```
+
 ## Notes
 
 - Auth comes from `softmax login` (the tool uses `load_current_token`); run inside
