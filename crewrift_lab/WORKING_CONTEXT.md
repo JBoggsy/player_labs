@@ -125,9 +125,18 @@ expand-42fed21, 0% hash-fail). Apples-to-apples result:
   crewborg-aaln 3.45, sussybuster 3.83 — half the field.** ZERO isolation in **21% of crewborg's
   imposter games vs 8-9%** for peers. Yet crewborg's iso→kill conversion is the BEST (19% vs 11-15%).
   So: execution is great, it just doesn't MANUFACTURE enough 1-on-1s. Timing fine (median iso ~3200).
-- **Fix direction: actively create isolation** — separate/cut off a straggler instead of waiting for it.
-  (kills/g this sample: crewborg 0.85 vs truecrew 1.05, crewborg-aaln 1.07 — the ~0.2 deficit = the
-  opportunity deficit, not conversion.)
+- **Fix direction: PROXIMITY/PRESENCE, not "engineering" isolation** (James corrected the frame — you
+  can't control other players). Root cause is upstream: crewborg is NEAR a crew member only **6.64×/game
+  vs truecrew 12.4, sussybuster 11.9, crewborg-aaln 9.1** — ~half the field's co-location with crew. It
+  then converts near→alone slightly worse too (28% vs 36%). So it gets ~half the isolation opps simply by
+  being around crew half as much. WHERE: crewborg over-camps **Shuttle Bay (15% of presence vs 4% for
+  others)** — a low-yield room — and barely visits the peripheral wing (Med Bay 3%, Reactor/Engineering/
+  engines ~0-1% vs peers' 2-8%) where stragglers isolate. Even in the Bridge (equal presence 36% vs 37%)
+  truecrew gets 2× the iso opps (1.59 vs 0.74) → also micro-positioning within shared rooms. Versions in
+  the sample: crewborg = v38 76be842b(296)+v31(95)+452371ca(48); truecrew = v21 ec9266b9(115)+v24
+  fe68a21e(107) pooled; crewborg-aaln d359bd4f(98); sussybuster 765ec3d3(52).
+  **Lever: position where crew actually are** (follow population to high-traffic task rooms + circulate
+  the periphery), not camp Shuttle Bay. conversion/execution is already best-in-field (19%) — don't touch it.
 - Reusable XP-warehouse recipe: `make_wh_input.py` (in /tmp) turns fetch_artifacts dirs → warehouse
   report_request.json; build with CREWRIFT_EXPAND_REPLAY=/tmp/expand-42fed21.
 - NEEDS James's direction: implement isolation-creation as the next crewborg imposter change?
