@@ -48,15 +48,26 @@ Andre von Houck `truecrew:v21`, Aaron's Optimizer `sussybuster:v3` (re-resolve; 
 Our role stays FIXED (crewborg slot0); opponents sit at `slot:-1` so they rotate through all
 seats → we play WITH and AGAINST each in both roles. See [user_preferences](user_preferences.md).
 
-## CURRENT EXPERIMENT — sweep2: threshold sweep vs Aaron+Andre, w/ tracing (RUNNING, 2026-06-24)
-Re-run of the crew vote-threshold sweep against ONLY Aaron+Andre champions (the new protocol),
-higher power + full trace logs. Doubles as our first clean read on how crewborg performs vs
-just those two. **300 eps/arm** (3×100, API caps 100/req), opponents rotating.
-- **CREW sweep:** v33=0.9(ctrl)/v34=0.8/v35=0.7/v36=0.6/v37=0.5, same ENV-baked images as sweep1.
-- **IMPOSTER baseline:** v33 (threshold inert on imposter path), slot0=imp+partner.
-- 18 xreqs total, IDs in `/tmp/sweep2_xreqs.txt`. Monitor: `/tmp/sweep2_mon.log`.
-- **Fetch WITH logs** this time (sweep1 dropped them) → measure own-ejection, team crew-ejections
-  (the v25 mis-vote risk), and the *why* via decision/voting traces.
+## ⭐ NEW BASELINE: v34 (vote gate 0.8) — adopted 2026-06-24 (James). v33 scrapped.
+Working champion/baseline going forward is **v34** (`96d20cc1`, `CREWBORG_WEIGHTS_VOTE_P=0.8`).
+NOT yet submitted to the league (that's still Gate-2). v34–v37 are ~identical; v34 is the
+conservative pick (smallest move off the old 0.9). Continue iterating from v34.
+
+## sweep2: threshold sweep vs Aaron+Andre, w/ tracing (DONE, 2026-06-24)
+Re-ran the crew vote-threshold sweep vs ONLY Aaron+Andre champions (new protocol), 300 eps/arm,
+opponents rotating, + the imposter baseline. Dashboard: `xp_dashboard.py` (see skill).
+- **CREW win% by gate (clean games only):** v33/0.9=**50.0%** (n=200, WORST) · v34/0.8=**55.3%**
+  (n=94) · v35/0.7=54.1% (n=74) · v36/0.6=52.4% (n=63) · v37/0.5=53.2% (n=77). v34–v37 cluster
+  tightly ~4pp over v33; v33-vs-rest p=0.39 (underpowered — see ops note). Sweep1 (vs top-7)
+  independently had 0.9 WORST at p=0.031 → direction solid, magnitude uncertain.
+- **⚠️ ~65% ops/connect-timeout rate this run** (1177/1800 episodes degenerate −100, correctly
+  ops-filtered) gutted per-arm n (63–94 of 300). The disconnect problem is the next lever →
+  SDK aggressive-reconnect work (task #3).
+- **IMPOSTER baseline vs Aaron+Andre (v33):** crew ~50% but **imposter 36.5%** — well behind every
+  opponent's imposter rate (Andre von Houck 53.6%, Aaron 44.0%, Andre Jr 41.2%). **Imposter is
+  our weak half vs the strong field** — louder strategic signal than the vote threshold now.
+- xreq IDs: `/tmp/sweep2_xreqs.txt`. (Did NOT yet mine the trace logs for own-ejection /
+  team-crew-ejection — the v25 mis-vote risk check is still owed before pushing the gate lower.)
 
 ## PRIOR EXPERIMENT — crew vote-threshold sweep vs top-7 (DONE, 2026-06-23)
 
