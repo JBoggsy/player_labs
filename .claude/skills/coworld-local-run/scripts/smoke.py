@@ -68,11 +68,19 @@ def ensure_manifest(coworld_ref: str) -> Path:
     sys.stderr.write(p.stdout + p.stderr)
     if p.returncode != 0:
         sys.exit(f"`coworld download {coworld_ref}` failed (auth/network/docker?). See output above.")
-    # Find the manifest it wrote/used: ./coworld/<cow_id>/coworld_manifest.json
-    candidates = sorted(Path("coworld").glob("*/coworld_manifest.json"), key=lambda p: p.stat().st_mtime, reverse=True)
-    if not candidates:
-        sys.exit("download succeeded but no ./coworld/<id>/coworld_manifest.json was found.")
-    return candidates[0]
+    # Parse the manifest path `download` prints (`Manifest: <path>`) — it names the
+    # game we asked for, fresh or cached. Do NOT glob coworld/ by newest mtime: the
+    # download dir is shared across labs, so a cached no-op keeps its old mtime and
+    # the glob would pick whichever game some other lab downloaded most recently
+    # (this silently ran Crewrift smokes against a Cue-n-Woo game for a week).
+    for line in (p.stdout + p.stderr).splitlines():
+        if line.startswith("Manifest:"):
+            manifest = Path(line.split(":", 1)[1].strip())
+            if manifest.is_file():
+                return manifest
+            sys.exit(f"`coworld download` reported manifest {manifest} but it does not exist.")
+    sys.exit("could not find a `Manifest:` line in `coworld download` output; "
+             "pass --manifest <path> explicitly.")
 
 
 def main(argv: list[str] | None = None) -> int:
