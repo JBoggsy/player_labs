@@ -48,10 +48,20 @@ Andre von Houck `truecrew:v21`, Aaron's Optimizer `sussybuster:v3` (re-resolve; 
 Our role stays FIXED (crewborg slot0); opponents sit at `slot:-1` so they rotate through all
 seats → we play WITH and AGAINST each in both roles. See [user_preferences](user_preferences.md).
 
-## ⭐ NEW BASELINE: v34 (vote gate 0.8) — adopted 2026-06-24 (James). v33 scrapped.
-Working champion/baseline going forward is **v34** (`96d20cc1`, `CREWBORG_WEIGHTS_VOTE_P=0.8`).
-NOT yet submitted to the league (that's still Gate-2). v34–v37 are ~identical; v34 is the
-conservative pick (smallest move off the old 0.9). Continue iterating from v34.
+## ⭐ CURRENT BASELINE: v38 (= v34 gate 0.8 + aggressive reconnect) — 2026-06-24
+Working baseline is **v38** (`76be842b`, `CREWBORG_WEIGHTS_VOTE_P=0.8` + bridge reconnect).
+NOT submitted (Gate-2 still owed). Supersedes v34 (gate 0.8, no reconnect). Continue from v38.
+- **Reconnect WORKED — the big result:** eval vs Aaron+Andre (598 eps) ops-failure rate
+  **65%→3.0%**. The initial-connect-race −100s are largely gone; evals are trustworthy and
+  (likely) league episodes stop bleeding −100s too.
+- **v38 standing vs Aaron+Andre (clean):** crew **52.3%** CI[47,58] (n=300), imposter **43.2%**
+  CI[38,49] (n=280) — imposter up sharply from v33's 36.5%. Overall 47.9%, mid-pack
+  (Andre von Houck 54% / Andre Jr 49% / Aaron 48% / Aaron's Opt 46%). Eval xreqs:
+  `/tmp/eval_v38_xreqs.txt`. PR: JBoggsy/player_labs#5.
+- **Next lever:** imposter is still the weaker half (43% vs Andre von Houck's 54%) and the
+  obvious place to push for overall win-rate. Also: the v25 mis-vote-risk check (own-ejection /
+  team-crew-ejection at the lower gate) is still owed before submitting — the trace logs are
+  now in hand (fetched WITH artifacts this run).
 
 ## sweep2: threshold sweep vs Aaron+Andre, w/ tracing (DONE, 2026-06-24)
 Re-ran the crew vote-threshold sweep vs ONLY Aaron+Andre champions (new protocol), 300 eps/arm,
