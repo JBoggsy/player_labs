@@ -60,8 +60,23 @@ NOT submitted (Gate-2 still owed). Supersedes v34 (gate 0.8, no reconnect). Cont
   `/tmp/eval_v38_xreqs.txt`. PR: JBoggsy/player_labs#5.
 - **Next lever:** imposter is still the weaker half (43% vs Andre von Houck's 54%) and the
   obvious place to push for overall win-rate. Also: the v25 mis-vote-risk check (own-ejection /
-  team-crew-ejection at the lower gate) is still owed before submitting — the trace logs are
-  now in hand (fetched WITH artifacts this run).
+  team-crew-ejection at the lower gate) is still owed before submitting.
+
+## ⭐ CURRENT OBJECTIVE (2026-06-24): fix the IMPOSTER gap — under-killing, not ejection
+James's principle: always work the highest-leverage gap (lesson logged). Imposter is it.
+- **Loss structure (282 clean v38 imp eps, from results.json):** NO ejections (loss scores
+  0/10/20/30, no −100s) — we lose by **under-killing**. **31% of our imposter games are 0-kill**
+  (88/282, lost 75). Our kills 1.12/g in wins vs **0.63 in losses**; team (us+partner) 2.45 win
+  vs 1.45 loss (need ~3 to reach parity in 8p/2imp). In 0-kill games we score 0 (survived, never
+  ejected) and the partner still kills in 70/88 → victims exist, we just don't convert. Same root
+  as the old v23/v24 thread: **too few kill ATTEMPTS, not bad aim.**
+- **Diagnosis run IN FLIGHT:** v39 (= gate 0.8 + reconnect + `CREWBORG_TRACE=debug` baked,
+  policy id pending) — 50 imposter eps vs Aaron+Andre (slot0=imp, 2-imp, opponents round-robin
+  incl. the partner seat). `xreq_6e2dae51`. Full per-tick decision_snapshot trace (mode/intent/
+  threats/kill-readiness) to see WHY we don't attempt — stuck in pretend? not pre-positioning for
+  the cooldown window? (v38 default trace had empty decision_snapshot — needed debug level.)
+- NB: `CREWBORG_TRACE=debug` must be baked as an ENV (distinct image digest) — `--secret-env`
+  alone dedups to the same version (hit twice now).
 
 ## sweep2: threshold sweep vs Aaron+Andre, w/ tracing (DONE, 2026-06-24)
 Re-ran the crew vote-threshold sweep vs ONLY Aaron+Andre champions (new protocol), 300 eps/arm,
