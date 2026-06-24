@@ -176,7 +176,23 @@ WEIGHTS_SCHEMA = "crewborg-suspicion-weights/v1"
 # (suspicion_lab eval.py): at 0.9 the fitted posterior's votes hit imposters with
 # ~100% precision; there is NO clear-leader rule on this path (it was the mis-vote
 # engine — votes fire on calibrated near-certainty only).
-WEIGHTS_VOTE_PROBABILITY = 0.9
+#
+# Tunable via CREWBORG_WEIGHTS_VOTE_P (a float in (0,1)) for threshold sweeps: the
+# 0.9 bar maximises vote PRECISION, but a 2026-06-23 eval found v31 crew loses the
+# parity race (54% of games 8/8-tasks-but-lost) by sitting passive — it wins when it
+# votes (1.11 player-votes/g in wins vs 0.23 in losses). Lowering this trades
+# precision for more ejections; the sweep finds the crew-win-maximising point.
+def _env_float(name: str, default: float) -> float:
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        return default
+
+
+WEIGHTS_VOTE_PROBABILITY = _env_float("CREWBORG_WEIGHTS_VOTE_P", 0.9)
 # Offline features count expander samples (one per `snapshot-every` ticks); runtime
 # durations divide by this to land in the same unit. Read from the weights file.
 DEFAULT_SAMPLE_UNIT_TICKS = 24
