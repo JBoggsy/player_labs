@@ -219,13 +219,31 @@ def test_imposter_can_report_a_non_fresh_visible_body() -> None:
     assert _select(belief) == "report_body"
 
 
-def test_imposter_searches_within_the_lead_window_before_ready() -> None:
-    # Not yet kill-ready, but the cooldown clears in ~50 ticks (≤ SEARCH_LEAD_TICKS)
-    # ⇒ enter Search, not Hunt. Search follows visible targets until Hunt activates.
+def test_imposter_recons_within_the_recon_window_before_ready() -> None:
+    # Not yet kill-ready, the cooldown clears in ~50 ticks (≤ recon_window 100), and a
+    # crewmate has been seen ⇒ Recon (beeline to that crewmate so a victim is in hand
+    # the instant the kill comes ready), not Search.
     belief = _imposter_with_visible_target(self_kill_ready=False)
     belief.kill_cooldown_start_tick = belief.last_tick
     belief.kill_cooldown_estimate = 50  # ticks_until_ready = start + 50 − now = 50
+    assert _select(belief) == "recon"
+
+
+def test_imposter_searches_outside_the_recon_window() -> None:
+    # Cooldown clears in ~200 ticks (> recon_window 100) ⇒ still Search; recon only
+    # fires in the short pre-ready window.
+    belief = _imposter_with_visible_target(self_kill_ready=False)
+    belief.kill_cooldown_start_tick = belief.last_tick
+    belief.kill_cooldown_estimate = 200
     assert _select(belief) == "search"
+
+
+def test_recon_window_is_env_tunable(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_RECON_WINDOW", "300")
+    belief = _imposter_with_visible_target(self_kill_ready=False)
+    belief.kill_cooldown_start_tick = belief.last_tick
+    belief.kill_cooldown_estimate = 200  # now inside the widened 300-tick window
+    assert _select(belief) == "recon"
 
 
 def test_be_dumb_imposter_searches_instead_of_pretending(monkeypatch) -> None:

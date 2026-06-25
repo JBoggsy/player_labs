@@ -49,7 +49,12 @@ from __future__ import annotations
 
 import os
 
-from crewrift.crewborg.strategy.opportunity import has_visible_victim
+from crewrift.crewborg.strategy.opportunity import (
+    has_visible_victim,
+    most_recent_victim,
+    recon_window,
+    ticks_until_kill_ready,
+)
 from crewrift.crewborg.strategy.suspicion import active_tail_suspect
 from crewrift.crewborg.types import ActionState, Belief
 from players.player_sdk import ModeDirective
@@ -113,7 +118,11 @@ class RuleBasedStrategy:
         # body -> Report; kill ready and a victim visible -> Hunt; else SEARCH.
         # SEARCH is the always-on seeking stance (Pretend removed 2026-06-24): it
         # keeps us near crew — watching a room and following a crewmate to their next
-        # room — so a kill window opens, which is when Hunt takes over.
+        # room — so a kill window opens, which is when Hunt takes over. RECON (added
+        # 2026-06-25) sits just before the kill comes ready: within recon_window() ticks
+        # of ready we beeline to the most-recently-seen crewmate so a victim is already
+        # in hand the instant we can kill (warehouse: we had a crew in view at ready only
+        # 53% of the time vs Aaron's 83%).
         if _be_dumb_enabled():
             if belief.self_kill_ready and has_visible_victim(belief):
                 return ModeDirective(mode="hunt", source="strategy", reason="be dumb: kill ready with visible victim")
@@ -124,6 +133,8 @@ class RuleBasedStrategy:
             return ModeDirective(mode="report_body", source="strategy", reason="body in view after evade window")
         if belief.self_kill_ready and has_visible_victim(belief):
             return ModeDirective(mode="hunt", source="strategy", reason="kill ready: hunt visible victim")
+        if ticks_until_kill_ready(belief) <= recon_window() and most_recent_victim(belief) is not None:
+            return ModeDirective(mode="recon", source="strategy", reason="kill nearly ready: close on a crewmate")
         return ModeDirective(mode="search", source="strategy", reason="seek crew to be near a kill")
 
     def _sticky_accuse_target(self, belief: Belief) -> str | None:

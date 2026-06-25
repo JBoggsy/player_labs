@@ -6,6 +6,7 @@ from crewrift.crewborg.modes.evade import EvadeMode
 from crewrift.crewborg.modes.hunt import HuntMode
 from crewrift.crewborg.modes.idle import IdleMode
 from crewrift.crewborg.modes.normal import NormalMode
+from crewrift.crewborg.modes.recon import ReconMode
 from crewrift.crewborg.modes.report_body import ReportBodyMode
 from crewrift.crewborg.modes.search import SearchMode
 
@@ -16,6 +17,7 @@ __all__ = [
     "HuntMode",
     "IdleMode",
     "NormalMode",
+    "ReconMode",
     "ReportBodyMode",
     "SearchMode",
 ]

@@ -14,6 +14,8 @@ forever (design §10 "act with urgency").
 
 from __future__ import annotations
 
+import os
+
 from crewrift.crewborg.nav import plan_route
 from crewrift.crewborg.types import Belief, PlayerRecord
 
@@ -39,10 +41,11 @@ TEAMMATE_CLAIM_RADIUS = 80
 
 # The kill cooldown's full length (ticks), used to estimate time-to-ready before we
 # have measured a real cooldown from the binary HUD (design §7.2). Matches the live
-# Crewrift default `killCooldownTicks = 500` (coworld-crewrift sim.nim); we still learn
-# the true value from the HUD once a cooldown runs to ready, but this is the pre-measure
-# assumption (previously 900, which over-estimated and idled the imposter too long).
-DEFAULT_KILL_COOLDOWN_TICKS = 500
+# Crewrift default `KillCooldownTicks = 800` (coworld-crewrift sim.nim @ 0.1.59;
+# confirmed 800 in the 0.1.58 arena warehouse — the game raised it from 500). We still
+# learn the true value from the HUD once a cooldown runs to ready, but this is the
+# pre-measure assumption.
+DEFAULT_KILL_COOLDOWN_TICKS = 800
 
 # Enter Search this many ticks before the kill comes off cooldown. Search finds
 # and follows a victim; Hunt only activates once the kill is ready and a victim is
@@ -193,6 +196,47 @@ def _claimed_by_teammate(target: PlayerRecord, belief: Belief, self_xy: tuple[in
         if teammate_dist < self_dist and teammate_dist <= TEAMMATE_CLAIM_RADIUS**2:
             return True
     return False
+
+
+# --- Recon (pre-position on a crewmate just before the kill comes off cooldown) ----
+#
+# Diagnosis (2026-06-25 warehouse head-to-head vs crewborg-aaln): at the moment our
+# cooldown comes off we have a crewmate in view only ~53% of the time (Aaron: 83%) —
+# we drift away from crew we saw earlier in the cooldown cycle. Recon closes that gap:
+# inside RECON_WINDOW ticks of ready, beeline to the most-recently-seen crewmate so the
+# instant we can kill, a victim is in hand and Hunt fires immediately.
+
+# Ticks-before-ready at which to start recon. Deliberately short for now (a long window
+# = Aaron-style overextension that gets caught); env-tunable so we can sweep it.
+RECON_WINDOW_TICKS = 100
+
+
+def recon_window() -> int:
+    """The recon trigger window (ticks before kill-ready), env-overridable via
+    ``CREWBORG_RECON_WINDOW`` so it can be swept without a rebuild."""
+
+    raw = os.environ.get("CREWBORG_RECON_WINDOW")
+    if raw:
+        try:
+            return max(0, int(raw))
+        except ValueError:
+            pass
+    return RECON_WINDOW_TICKS
+
+
+def most_recent_victim(belief: Belief) -> PlayerRecord | None:
+    """The most-recently-seen live non-teammate crewmate — the target to close on
+    during recon (its ``world_x/y`` is the live position when visible, else last-known).
+    ``None`` when no crewmate has been seen at all."""
+
+    crew = [
+        entry
+        for entry in belief.roster.values()
+        if entry.color not in belief.teammate_colors and entry.life_status != "dead"
+    ]
+    if not crew:
+        return None
+    return max(crew, key=lambda entry: entry.last_seen_tick)
 
 
 def _self_xy(belief: Belief) -> tuple[int, int] | None:
