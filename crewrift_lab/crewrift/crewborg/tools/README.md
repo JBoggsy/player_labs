@@ -22,20 +22,26 @@ Both tools read a **crewrift-event-warehouse** dataset (per-tick `player_state`,
 XP-request episodes — see `~/coding/role_repos/reporter_lab/crewrift-event-warehouse`.
 
 ⚠️ **expand_replay version coupling** (the #1 silent failure): the warehouse's
-`CREWRIFT_EXPAND_REPLAY` helper must match the crewrift sim version the arena ran, or
-every replay hash-fails → sparse events (no kills/bodies/following/isolation; check
-`manifest.json` `trace_warning` counts first). The arena **redeploys** crewrift, so
-the matching commit moves:
-- **arena `crewrift:0.1.58`** (current, 2026-06-25) ⇒ build from tag **`0.1.59`**
-  (sim-compatible; 0.1.58 isn't tagged). Helper: **`/tmp/expand-0159`** (verified
-  `trace_complete:true` on a fresh 0.1.58 replay).
-- arena `crewrift:0.1.54` (older replays) ⇒ commit `42fed21`, helper
-  `/tmp/expand-42fed21`.
-To rebuild for a new deploy: `git -C ~/coding/coworlds/coworld-crewrift fetch && git
-checkout <tag>; nimby --global sync nimby.lock; nim c -d:release -d:useMalloc
---opt:speed --out:/tmp/expand-<ver> tools/expand_replay.nim`, then VERIFY
-`trace_complete:true` on a real replay before trusting a build. Find the arena
-version via an episode's `coworld_version`. Reusable 0.1.54 warehouses from earlier:
+`CREWRIFT_EXPAND_REPLAY` helper must match the **exact crewrift commit** the arena ran,
+or every replay hash-fails → sparse events (no chat/kills/bodies/intervals; check
+`manifest.json` `trace_warning` counts first). **Coworld package version ≠ git tag** —
+the versions (0.1.58, 0.3.9, …) are coworld package versions; the real source is a
+commit. Find it from the deployed coworld's manifest: `coworld download <cow_id>` then
+read `game.runnable.source_url` (`.../coworld-crewrift/tree/<commit>`). The two live
+deploys (2026-06-25):
+- **`crewrift_prime:0.3.9`** (the **PRIME** league — `coworld_name: crewrift_prime`;
+  this is where we compete) ⇒ commit **`20e3be4`**, helper **`/tmp/expand-prime039`**
+  (verified `trace_complete:true`, full events). Prime is the *same* crewrift engine,
+  a separate deploy/version line. **Use this for any Prime episode.**
+- **`crewrift:0.1.58`** (the regular league) ⇒ build from tag `0.1.59` (commit
+  `1cbd4de`), helper `/tmp/expand-0159`.
+- (older) `crewrift:0.1.54` ⇒ commit `42fed21`, helper `/tmp/expand-42fed21`.
+To rebuild for a deploy: read the cow manifest `source_url` for the commit, then
+`git -C ~/coding/coworlds/coworld-crewrift fetch && git checkout <commit>; nimby
+--global sync nimby.lock; nim c -d:release -d:useMalloc --opt:speed
+--out:/tmp/expand-<ver> tools/expand_replay.nim`, then VERIFY `trace_complete:true` on
+a real replay before trusting it. Find a replay's deploy via its `coworld_name` +
+`coworld_version` in `episode.json`. Reusable 0.1.54 warehouses from earlier:
 `/tmp/xp_imp_warehouse` (450 XP imposter episodes), `/tmp/crewrift_warehouse` (2 league rounds).
 
 To build an XP-episode warehouse from `fetch_artifacts`-downloaded dirs, the adapter
