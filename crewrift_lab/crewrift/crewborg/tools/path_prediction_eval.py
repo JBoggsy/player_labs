@@ -54,10 +54,12 @@ class Instance:
     onset_tick: int
     reacquire_tick: int | None
     horizon_tick: int
+    onset_room: str | None
     pred_room: str | None
     pred_prob: float
     actual_room: str | None
     match: bool
+    changed_rooms: bool
     endpoint_err: float | None
     pred_path: list
     actual_path: list
@@ -151,11 +153,13 @@ def self_close(out, fr, by_tick, slot, policy, onset, reacquire, min_occlusion, 
         pp = horizon_frame["candidates"][0]["pred"]
         endpoint_err = ((pp[0] - actual_pos[0]) ** 2 + (pp[1] - actual_pos[1]) ** 2) ** 0.5
 
+    onset_room = _room_at(fr.positions, onset, slot)
     out.append(Instance(
         episode_id=fr.episode_id, slot=slot, policy=policy,
         onset_tick=onset, reacquire_tick=reacquire, horizon_tick=horizon_tick,
-        pred_room=pred_room, pred_prob=pred_prob, actual_room=actual_room,
+        onset_room=onset_room, pred_room=pred_room, pred_prob=pred_prob, actual_room=actual_room,
         match=(pred_room is not None and pred_room == actual_room),
+        changed_rooms=(onset_room is not None and actual_room is not None and onset_room != actual_room),
         endpoint_err=endpoint_err,
         pred_path=top["path"], actual_path=actual_path,
         pred_dest=top["path"][-1] if top["path"] else None, actual_pos=actual_pos,
@@ -254,45 +258,142 @@ def main(argv=None) -> int:
         print(f"  {eid[:18]}…: {len([i for i in all_instances if i.episode_id==eid])} instances", file=sys.stderr)
 
     scored = [i for i in all_instances if i.pred_room is not None]
-    matches = sum(1 for i in scored if i.match)
+    changed = [i for i in scored if i.changed_rooms]
     n = len(scored)
+
+    def rate(items):
+        m = sum(1 for i in items if i.match)
+        return m, len(items), (100 * m / len(items) if items else 0.0)
+
+    overall = rate(scored)
+    changed_rate = rate(changed)
+    buckets = []
+    for lo, hi in [(0.0, 0.4), (0.4, 0.7), (0.7, 1.01)]:
+        buckets.append(((lo, hi), rate([i for i in scored if lo <= i.pred_prob < hi])))
+    errs = sorted(i.endpoint_err for i in scored if i.endpoint_err is not None)
+    med_err = errs[len(errs) // 2] if errs else None
+
     print("\n===== path-prediction accuracy at visible→obscured transitions =====")
     print(f"episodes: {len(episode_ids)}  occlusion instances (scored): {n}")
     if n:
-        print(f"DESTINATION-ROOM MATCH: {matches}/{n} = {100*matches/n:.1f}%")
-        errs = sorted(i.endpoint_err for i in scored if i.endpoint_err is not None)
-        if errs:
-            print(f"endpoint error px: median {errs[len(errs)//2]:.0f}  p90 {errs[int(len(errs)*0.9)]:.0f}")
-        # match rate by predicted confidence bucket
-        for lo, hi in [(0.0, 0.4), (0.4, 0.7), (0.7, 1.01)]:
-            b = [i for i in scored if lo <= i.pred_prob < hi]
+        print(f"DESTINATION-ROOM MATCH (all):           {overall[0]}/{overall[1]} = {overall[2]:.1f}%")
+        print(f"DESTINATION-ROOM MATCH (changed rooms): {changed_rate[0]}/{changed_rate[1]} = {changed_rate[2]:.1f}%  "
+              "(the cases that matter — they actually left the room)")
+        if med_err is not None:
+            print(f"endpoint error px: median {med_err:.0f}  p90 {errs[int(len(errs)*0.9)]:.0f}")
+        for (lo, hi), (m, b, r) in buckets:
             if b:
-                print(f"  pred_prob [{lo:.1f},{hi:.1f}): {sum(i.match for i in b)}/{len(b)} = {100*sum(i.match for i in b)/len(b):.0f}%")
+                print(f"  pred_prob [{lo:.1f},{hi:.1f}): {m}/{b} = {r:.0f}%")
 
     # CSV
     csv_path = out_dir / "instances.csv"
     with open(csv_path, "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["episode_id", "slot", "policy", "onset_tick", "horizon_tick", "occlusion_len",
-                    "pred_room", "pred_prob", "actual_room", "match", "endpoint_err"])
+                    "onset_room", "pred_room", "pred_prob", "actual_room", "changed_rooms", "match", "endpoint_err"])
         for i in scored:
             w.writerow([i.episode_id, i.slot, i.policy, i.onset_tick, i.horizon_tick,
-                        i.horizon_tick - i.onset_tick, i.pred_room, round(i.pred_prob, 3),
-                        i.actual_room, int(i.match), round(i.endpoint_err) if i.endpoint_err else ""])
+                        i.horizon_tick - i.onset_tick, i.onset_room, i.pred_room, round(i.pred_prob, 3),
+                        i.actual_room, int(i.changed_rooms), int(i.match),
+                        round(i.endpoint_err) if i.endpoint_err else ""])
     print(f"\nraw rows -> {csv_path}")
 
-    # sampled images
+    # sampled images (balance matches and misses among room-changers where possible)
+    image_files: list[tuple[str, Instance]] = []
     if args.images and scored:
         rng = random.Random(args.seed)
-        sample = rng.sample(scored, min(args.images, len(scored)))
+        pool = changed if len(changed) >= args.images else scored
+        sample = rng.sample(pool, min(args.images, len(pool)))
         img_dir = out_dir / "images"
         img_dir.mkdir(exist_ok=True)
         for k, inst in enumerate(sorted(sample, key=lambda i: (not i.match, i.onset_tick))):
             tag = "match" if inst.match else "MISS"
-            render_image(inst, maps[inst.episode_id], onset_cands.get(id(inst), []),
-                         img_dir / f"{k:03d}_{tag}_{inst.episode_id[:10]}_s{inst.slot}_t{inst.onset_tick}.png")
-        print(f"{len(sample)} overlay images -> {img_dir}")
+            fname = f"{k:03d}_{tag}_{inst.episode_id[:10]}_s{inst.slot}_t{inst.onset_tick}.png"
+            render_image(inst, maps[inst.episode_id], onset_cands.get(id(inst), []), img_dir / fname)
+            image_files.append((fname, inst))
+        print(f"{len(image_files)} overlay images -> {img_dir}")
+
+    # self-contained HTML report
+    report_path = out_dir / "report.html"
+    write_report(report_path, out_dir, len(episode_ids), n, overall, changed_rate, buckets,
+                 med_err, scored, image_files, args)
+    print(f"report -> {report_path}")
     return 0
+
+
+def write_report(path, out_dir, n_episodes, n, overall, changed_rate, buckets, med_err,
+                 scored, image_files, args) -> None:
+    import base64
+
+    def pct_bar(r):
+        return f'<div class="bar"><i style="width:{r:.0f}%"></i></div>'
+
+    rows = "".join(
+        f"<tr class='{'m' if i.match else 'x'}'><td>{i.episode_id[:12]}…</td><td>{i.slot}</td>"
+        f"<td>{i.policy}</td><td>{i.onset_room or '—'}</td><td>{i.pred_room or '—'}</td>"
+        f"<td>{i.pred_prob:.2f}</td><td>{i.actual_room or '—'}</td>"
+        f"<td>{'yes' if i.changed_rooms else 'no'}</td><td>{'✓' if i.match else '✗'}</td></tr>"
+        for i in sorted(scored, key=lambda i: (i.episode_id, i.onset_tick))
+    )
+    bucket_rows = "".join(
+        f"<tr><td>pred_prob [{lo:.1f},{hi:.1f})</td><td>{m}/{b}</td><td>{pct_bar(r)}</td><td class='p'>{r:.0f}%</td></tr>"
+        for (lo, hi), (m, b, r) in buckets if b
+    )
+    imgs = ""
+    for fname, inst in image_files:
+        b64 = base64.b64encode((out_dir / "images" / fname).read_bytes()).decode()
+        cls = "match" if inst.match else "miss"
+        imgs += (f"<figure class='{cls}'><img src='data:image/png;base64,{b64}'>"
+                 f"<figcaption>{'MATCH' if inst.match else 'MISS'} · {inst.policy} · "
+                 f"{inst.onset_room}→{inst.actual_room} · pred {inst.pred_room} ({inst.pred_prob:.2f})</figcaption></figure>")
+
+    html = f"""<!doctype html><html><head><meta charset="utf-8"><title>Path-prediction eval</title>
+<style>
+ body{{font:14px/1.5 ui-sans-serif,system-ui,sans-serif;background:#0e1116;color:#e6edf3;margin:0;padding:24px;max-width:1100px;}}
+ h1{{font-size:20px;}} h2{{font-size:15px;color:#8b96a5;border-bottom:1px solid #283040;padding-bottom:4px;margin-top:28px;}}
+ .big{{font-size:30px;font-weight:700;color:#58a6ff;}} .sub{{color:#8b96a5;}}
+ .cards{{display:flex;gap:16px;flex-wrap:wrap;margin:12px 0;}}
+ .card{{background:#161b22;border:1px solid #283040;border-radius:8px;padding:14px 18px;min-width:200px;}}
+ table{{border-collapse:collapse;width:100%;font-size:12px;margin-top:8px;}}
+ th,td{{padding:4px 8px;border-bottom:1px solid #21262d;text-align:left;}} th{{color:#8b96a5;}}
+ td.p{{text-align:right;color:#58a6ff;font-weight:600;}}
+ tr.x td{{background:#1c1416;}} tr.m td{{background:#13201a;}}
+ .bar{{height:7px;background:#0b0f14;border-radius:4px;width:90px;}} .bar>i{{display:block;height:100%;background:#58a6ff;border-radius:4px;}}
+ figure{{margin:0 0 18px;background:#161b22;border:1px solid #283040;border-radius:8px;padding:8px;}}
+ figure.miss{{border-color:#5a2a2a;}} figure.match{{border-color:#2a5a3a;}}
+ figure img{{width:100%;border-radius:4px;}} figcaption{{font-size:12px;color:#8b96a5;padding:6px 4px 2px;}}
+ .grid{{display:grid;grid-template-columns:1fr 1fr;gap:16px;}}
+ details summary{{cursor:pointer;color:#58a6ff;}}
+</style></head><body>
+<h1>Path-prediction accuracy — visible→obscured transitions</h1>
+<p class="sub">{n_episodes} episode(s) · {n} scored occlusions · min-occlusion {args.min_occlusion}t · horizon {args.horizon}t ·
+ warehouse <code>{args.warehouse}</code></p>
+
+<h2>Results</h2>
+<div class="cards">
+  <div class="card"><div class="big">{overall[2]:.0f}%</div><div class="sub">destination-room match (all {overall[1]})</div></div>
+  <div class="card"><div class="big">{changed_rate[2]:.0f}%</div><div class="sub">match when they CHANGED rooms ({changed_rate[1]})<br>— the cases that matter for "follow to next room"</div></div>
+  <div class="card"><div class="big">{('%.0f'%med_err) if med_err is not None else '—'}px</div><div class="sub">median endpoint error</div></div>
+</div>
+<p>The headline metric is whether the predicted top destination's <b>room</b> equals the room the crewmate
+actually reached (by re-acquisition or a {args.horizon}-tick horizon). The <b>changed-rooms</b> figure
+isolates the occlusions where the target genuinely left the room — the predictions we'll rely on to follow a
+crewmate to their next room (the "stayed put" cases are trivially correct and inflate the overall number).</p>
+
+<h2>Calibration — match rate by prediction confidence</h2>
+<p class="sub">A useful predictor is right more often when it is confident. Watch this stay monotonic as the module is tuned.</p>
+<table><tr><th>confidence</th><th>n</th><th></th><th></th></tr>{bucket_rows}</table>
+
+<h2>Representative instances</h2>
+<p class="sub">Orange = actual path · blue = predicted routes (opacity ∝ probability) · white dot = left view · ◇ predicted dest · ★ actual end.</p>
+<div class="grid">{imgs}</div>
+
+<h2>All scored instances</h2>
+<details><summary>show table ({n} rows)</summary>
+<table><tr><th>episode</th><th>slot</th><th>policy</th><th>onset room</th><th>pred room</th><th>prob</th><th>actual room</th><th>changed</th><th>match</th></tr>{rows}</table>
+</details>
+</body></html>"""
+    path.write_text(html)
 
 
 if __name__ == "__main__":

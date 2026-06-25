@@ -50,10 +50,22 @@ ALIGN_GAIN = 1.5
 EVIDENCE_DECAY = 0.7
 # A sighting older than this many ticks is too stale to derive a motion step from.
 MAX_SIGHTING_GAP = 6
+# Sustained heading window: score against the net displacement over up to this many
+# ticks of recent sightings, not the last single (often slow, doorway-navigating)
+# step. This is the "stable heading" — robust to a momentary slow-down at a room exit
+# (which was the dominant miss: the predictor anchored at the door instead of
+# projecting down the corridor the target committed to).
+HEADING_WINDOW_TICKS = 14
+# Minimum net displacement (px) over the window to treat the heading as real motion.
+MIN_HEADING_PX = 6.0
 # Assumed crew travel speed (world px/tick) for advancing predictions while occluded.
 CREW_SPEED_PX = 2.75
 # A fresh sighting farther than this from every prediction triggers re-acquisition.
 REACQUIRE_DIST = 96.0
+# Rebuild route GEOMETRY from the current position once the target has moved this far
+# from where the routes were last computed — so headings stay fresh as it crosses a
+# room — while CARRYING accumulated evidence (unlike a full reset re-acquire).
+REFRESH_DIST = 40.0
 # How far ahead along the route to read the "where would they walk next" direction.
 LOOKAHEAD_PX = 24.0
 
@@ -144,10 +156,14 @@ class PathPredictor:
     candidates: list[Candidate] = field(default_factory=list)
     last_point: Point | None = None
     last_tick: int | None = None
+    trail: list[tuple[int, Point]] = field(default_factory=list)  # recent (tick, point) sightings
+    routes_from: Point | None = None  # the point the current route geometry was built from
 
     # --- candidate construction ------------------------------------------------
-    def _acquire(self, point: Point) -> None:
-        """(Re)build the candidate set from a fresh sighting at ``point``."""
+    def _build_candidates(self, point: Point, prior: dict[str, float] | None = None) -> None:
+        """Build (or refresh) routes to every destination from ``point``. When
+        ``prior`` is given, carry each destination's accumulated evidence over to the
+        refreshed candidate so geometry updates without discarding confidence."""
 
         dests: list[tuple[Point, str]] = []
         for i, task in enumerate(self.map.tasks):
@@ -163,8 +179,20 @@ class PathPredictor:
             if not path:
                 continue
             path = [point, *path] if path[0] != point else path
-            candidates.append(Candidate(dest=dest, dest_label=label, path=path, cum=_polyline_length(path)))
+            cand = Candidate(dest=dest, dest_label=label, path=path, cum=_polyline_length(path))
+            if prior is not None and label in prior:
+                cand.log_score = prior[label]
+            candidates.append(cand)
         self.candidates = candidates
+        self.routes_from = point
+
+    def _acquire(self, point: Point) -> None:
+        """Full re-acquire: rebuild routes AND reset evidence (a fresh start)."""
+        self._build_candidates(point, prior=None)
+
+    def _refresh_routes(self, point: Point) -> None:
+        """Rebuild route geometry from ``point`` but keep accumulated evidence."""
+        self._build_candidates(point, prior={c.dest_label: c.log_score for c in self.candidates})
 
     # --- per-frame update ------------------------------------------------------
     def observe(self, tick: int, point: Point | None) -> None:
@@ -177,41 +205,65 @@ class PathPredictor:
             self._observe_occluded(tick)
         self._normalize()
 
-    def _observe_visible(self, tick: int, point: Point) -> None:
-        step: Point | None = None
-        if self.last_point is not None and self.last_tick is not None:
-            gap = tick - self.last_tick
-            if 0 < gap <= MAX_SIGHTING_GAP:
-                step = (point[0] - self.last_point[0], point[1] - self.last_point[1])
+    def _sustained_heading(self, point: Point) -> Point | None:
+        """Unit direction of net displacement over the recent sighting window — the
+        target's committed heading, robust to a single slow step at a doorway."""
 
-        # Re-acquire the full destination set when we have nothing, when the target
-        # jumped far from every prediction, or when it is now moving *against* all
-        # surviving routes (a reversal/new goal the pruned set can no longer explain).
-        if not self.candidates or self._far_from_all(point) or self._moving_against_all(point, step):
+        cutoff = self.last_tick - HEADING_WINDOW_TICKS if self.last_tick is not None else None
+        oldest = None
+        for t, p in self.trail:
+            if cutoff is None or t >= cutoff:
+                oldest = p
+                break
+        if oldest is None:
+            oldest = self.trail[0][1] if self.trail else None
+        if oldest is None:
+            return None
+        dx, dy = point[0] - oldest[0], point[1] - oldest[1]
+        n = math.hypot(dx, dy)
+        if n < MIN_HEADING_PX:
+            return None
+        return (dx / n, dy / n)
+
+    def _observe_visible(self, tick: int, point: Point) -> None:
+        # Maintain the bounded sighting trail (used for the sustained heading).
+        self.trail.append((tick, point))
+        while self.trail and self.trail[0][0] < tick - HEADING_WINDOW_TICKS - MAX_SIGHTING_GAP:
+            self.trail.pop(0)
+
+        heading = self._sustained_heading(point)
+
+        # Full re-acquire (reset evidence) when we have nothing, the target jumped far
+        # from every prediction, or it is moving *against* all surviving routes
+        # (a reversal the pruned set can no longer explain).
+        if not self.candidates or self._far_from_all(point) or self._moving_against_all(point, heading):
             self._acquire(point)
+        # Otherwise refresh route geometry (keep evidence) once it has moved enough
+        # from where the routes were last built, so headings stay current.
+        elif self.routes_from is not None and math.dist(point, self.routes_from) > REFRESH_DIST:
+            self._refresh_routes(point)
 
         # Snap every candidate's predicted position to the observed truth.
         for cand in self.candidates:
             cand.arc = _project_arc(cand.path, cand.cum, point)
 
-        if step is not None:
-            self._score(point, step)
+        if heading is not None:
+            self._score(point, heading)
         self.last_point = point
         self.last_tick = tick
 
-    def _moving_against_all(self, point: Point, step: Point | None) -> bool:
-        """True if a real step is anti-aligned (cos < 0) with every candidate's
-        heading — the target is walking away from all surviving routes, so the
-        pruned candidate set has lost the destination it is actually pursuing."""
+    def _moving_against_all(self, point: Point, heading: Point | None) -> bool:
+        """True if the sustained heading is anti-aligned (cos < 0) with every
+        candidate's route direction — the target is walking away from all surviving
+        routes, so the pruned set has lost the destination it is actually pursuing."""
 
-        if step is None or step == (0, 0) or not self.candidates:
+        if heading is None or not self.candidates:
             return False
-        sn = math.hypot(*step)
         for cand in self.candidates:
             h = cand.heading_from(point)
             if h is None:
                 return False
-            if (step[0] * h[0] + step[1] * h[1]) / sn > 0:
+            if heading[0] * h[0] + heading[1] * h[1] > 0:
                 return False  # at least one route still agrees with the motion
         return True
 
@@ -224,18 +276,16 @@ class PathPredictor:
             cand.arc = min(cand.cum[-1], cand.arc + CREW_SPEED_PX * steps)
         self.last_tick = tick
 
-    def _score(self, point: Point, step: Point) -> None:
-        """Decay then add this frame's directional evidence to each candidate."""
+    def _score(self, point: Point, heading: Point) -> None:
+        """Decay then add evidence: alignment of the sustained heading (a unit
+        vector) with each candidate's route direction from the current position."""
 
-        step_norm = math.hypot(*step)
         for cand in self.candidates:
             cand.log_score *= EVIDENCE_DECAY
-            if step_norm == 0:
+            route = cand.heading_from(point)
+            if route is None:
                 continue
-            heading = cand.heading_from(point)
-            if heading is None:
-                continue
-            cos = (step[0] * heading[0] + step[1] * heading[1]) / step_norm
+            cos = heading[0] * route[0] + heading[1] * route[1]
             cand.log_score += ALIGN_GAIN * cos
 
     def _far_from_all(self, point: Point) -> bool:
