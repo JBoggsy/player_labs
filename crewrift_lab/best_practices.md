@@ -6,6 +6,20 @@ these are additions, not replacements). Distilled from real work in this lab; tr
 as defaults and **warn the human if a request would contravene one** before
 proceeding. Add to this file as we learn more about *this game's* failure modes.
 
+## Scoring (read before interpreting results)
+
+- **`-100` means DISCONNECT/CRASH only — NOT ejection.** A `-100` (and the all-seats
+  variants) is an ops failure: the player container disconnected or crashed. Filter
+  these out before computing any rate (see the ops-filter practice below). **Do NOT
+  read `-100` as "got voted out."**
+- **Getting EJECTED (voted out) carries NO points penalty — there is no score signal
+  for it at all.** A loss after being ejected looks identical in `results.json` to any
+  other loss. So you **cannot** infer the ejection rate from scores; "no `-100`s ⇒ not
+  getting caught" is a FALSE inference. To know whether/when crewborg was ejected you
+  **must read the logs/replay** (the meeting outcome / `player_died`-by-vote /
+  `expand_replay` ejected-by-vote — `crewrift-report`'s `profile_replay` distinguishes
+  killed-by-imposter vs ejected-by-vote). Always check the logs, not the score, for ejection.
+
 ## Evaluation
 
 - **Crewmate and imposter are two different policies — never judge them merged.**
