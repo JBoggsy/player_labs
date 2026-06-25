@@ -18,6 +18,14 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
 
+### WHY AARON BEATS US: we DITHER on ready kills (1929 idle-ready ticks/g vs his 567) + make 2.5× fewer isolations (warehouse head-to-head, 2026-06-25)
+Built /tmp/v42_warehouse (200 v42 imposter eps vs Aaron+Andre LATEST, expand-0159, 10M events) and compared crewborg:v42 vs crewborg-aaln:v17 (Aaron's fork of crewborg, now ahead) AS IMPOSTER. Scripts: /tmp/aaron_compare.py, /tmp/kill_latency.py.
+- **KILL DITHER (James's hypothesis, CONFIRMED — the big one):** dither = Playing-ticks between kill_cooldown hitting 0 and the kill. Us median 28 / mean 256; **Aaron median 1 / mean 47** — he kills the instant he's able. **idle-ready ticks/game (alive+cooldown-ready+NOT killing): us 1929 vs Aaron 567 (3.4×).** This IS the kill→win conversion gap, quantified. Likely cause: Hunt's witness-bar ("wait for unwitnessed, relax with urgency") too conservative. → next experiment: kill faster when ready.
+- **Isolations/game (alone w/1 crew = kill setup): us 1.35 vs Aaron 3.41 (2.5×).** Follows/g: us 2.76 vs 4.33. Aaron manufactures far more kill chances.
+- **Movement:** room-entries/game us 34.2 vs Aaron 13.4 (we wander; he's patient). Presence: Aaron camps Bridge (28%, central hub) we barely use; we spread task rooms (Science Bay 31%/Storage 21%/Hydroponics 18%).
+- **Ejection (imposter-ended-dead): us 24% vs Aaron 39%** — WE get caught LESS. Aaron trades stealth for aggression and wins. Kills, not stealth, win here.
+- Method now durable: kill_cooldown already in player_state (NO expander fix needed); ejection = imposter ended dead. Queries in the two /tmp scripts (candidate to graduate into a crewrift analysis skill).
+
 ### CONFIRMED (n=180): vantage-SEARCH kills/g 1.23±0.10 — kills up, but win 34% (kill→win conversion is now the gap, NOT kills) (2026-06-25)
 200-ep confirmation vs Aaron+Andre LATEST (truecrew:v25, crewborg-aaln:v17 — note Aaron jumped v3→v17, a stronger field). v42 (vantage, non-debug): **kills/g 1.23±0.10** (vs v40 0.60, v38 0.85 — robust win), 0-kill only 11% (was 60% at v40), ≥2k 30%. BUT imposter **win 34%** [CI 27-41], DOWN from v38's 43% despite more kills. ⚠️ CORRECTION (James): my "zero ejections" claim was WRONG — `-100` = disconnect/crash only; EJECTION CARRIES NO SCORE PENALTY, so you can't infer ejection rate from scores at all (must read logs/replay — see best_practices Scoring). So ejection rate is UNKNOWN/unchecked; it could be contributing to the lower win. What IS true: kills in wins (1.33) ≈ kills in losses (1.20) → kills are no longer the bottleneck. Next: warehouse the 200 eps (expand-0159) to check (a) did "near crew" rise [mechanism] and (b) ejection rate via logs, then attack kill→win CONVERSION. Vantage fix = keep (kills robustly up). v42 shipped to Crewrift PRIME league 2026-06-25.
 
