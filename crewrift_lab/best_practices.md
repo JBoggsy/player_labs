@@ -19,6 +19,12 @@ proceeding. Add to this file as we learn more about *this game's* failure modes.
   **must read the logs/replay** (the meeting outcome / `player_died`-by-vote /
   `expand_replay` ejected-by-vote — `crewrift-report`'s `profile_replay` distinguishes
   killed-by-imposter vs ejected-by-vote). Always check the logs, not the score, for ejection.
+- **Cleanest ejection signal for an IMPOSTER: it ended dead.** An imposter cannot be
+  killed (only crew can), so an imposter dead at game end was **necessarily ejected by
+  vote**. In an event warehouse, `player_state.alive` going False for the imposter slot
+  (or a `died`/`player_died` event on that slot) = ejected — no meeting-tally parsing
+  needed. So *imposter ejection rate = fraction of imposter games the policy ended
+  dead*. (Crew deaths are ambiguous — killed vs ejected — and DO need the vote events.)
 
 ## Evaluation
 
