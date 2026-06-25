@@ -39,13 +39,10 @@ TRACK_WINDOW_TICKS = 120
 # that victim as "claimed" and prefer another target when one exists.
 TEAMMATE_CLAIM_RADIUS = 80
 
-# The kill cooldown's full length (ticks), used to estimate time-to-ready before we
-# have measured a real cooldown from the binary HUD (design §7.2). Matches the live
-# Crewrift default `KillCooldownTicks = 800` (coworld-crewrift sim.nim @ 0.1.59;
-# confirmed 800 in the 0.1.58 arena warehouse — the game raised it from 500). We still
-# learn the true value from the HUD once a cooldown runs to ready, but this is the
-# pre-measure assumption.
-DEFAULT_KILL_COOLDOWN_TICKS = 800
+# The kill cooldown fallback before HUD measurement: Crewrift Prime (0.3.9, our
+# target league) uses 500 ticks; regular Crewrift (0.1.58) uses 800. We still learn
+# the true value from the HUD once a cooldown runs to ready.
+DEFAULT_KILL_COOLDOWN_TICKS = 500
 
 # Enter Search this many ticks before the kill comes off cooldown. Search finds
 # and follows a victim; Hunt only activates once the kill is ready and a victim is

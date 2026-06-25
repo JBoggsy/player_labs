@@ -398,7 +398,8 @@ class Belief(BaseModel):
     # ready (design §7.2/§10). The HUD gives only a binary ready/cooldown icon — no
     # countdown — so we reconstruct "how soon": ``kill_cooldown_start_tick`` is when
     # the current cooldown began (our own kill, OR the first Playing tick after a
-    # meeting / role-reveal, since both reset killCooldown), and
+    # body-report/unknown meeting or role-reveal; emergency-button meetings do not
+    # reset killCooldown), and
     # ``kill_cooldown_estimate`` is the duration learned the first time we watch a
     # cooldown run to ready. ``strategy.opportunity.ticks_until_kill_ready`` combines
     # them (falling back to a default before anything is learned).
@@ -665,7 +666,9 @@ def update_belief(belief: Belief, percept: Percept) -> None:
         belief.meeting_caller_color = resolved.meeting_caller_color
         belief.meeting_call_kind = resolved.meeting_call_kind
         belief.meeting_call_seen_tick = percept.tick
+    ended_meeting_kind = None
     if belief.phase == "Playing" and belief.meeting_caller_color is not None:
+        ended_meeting_kind = belief.meeting_call_kind
         belief.meeting_caller_color = None
         belief.meeting_call_kind = None
         belief.meeting_call_seen_tick = None
@@ -715,11 +718,11 @@ def update_belief(belief: Belief, percept: Percept) -> None:
                     belief.kill_cooldown_estimate = percept.tick - belief.kill_cooldown_start_tick
             elif resolved.self_kill_ready is False:
                 belief.kill_ready_since_tick = None
-            # Mark when the current cooldown began. Both events that restart it are
-            # observable: our own kill (ready → cooldown during continuous play), and
-            # returning to Playing from a meeting / role-reveal (the game resets
-            # killCooldown then — also covers the game-start initial cooldown).
-            if previous_phase != "Playing" and belief.phase == "Playing":
+            # Mark when the current cooldown began. Resetting events are observable:
+            # our own kill (ready → cooldown during continuous play), body-report or
+            # unknown meetings, and the game-start role-reveal. Emergency-button
+            # meetings do not reset killCooldown.
+            if previous_phase != "Playing" and belief.phase == "Playing" and ended_meeting_kind != "button":
                 belief.kill_cooldown_start_tick = percept.tick
             elif belief.self_kill_ready is True and resolved.self_kill_ready is False:
                 belief.kill_cooldown_start_tick = percept.tick
