@@ -27,21 +27,30 @@ or every replay hash-fails → sparse events (no chat/kills/bodies/intervals; ch
 `manifest.json` `trace_warning` counts first). **Coworld package version ≠ git tag** —
 the versions (0.1.58, 0.3.9, …) are coworld package versions; the real source is a
 commit. Find it from the deployed coworld's manifest: `coworld download <cow_id>` then
-read `game.runnable.source_url` (`.../coworld-crewrift/tree/<commit>`). The two live
-deploys (2026-06-25):
-- **`crewrift_prime:0.3.9`** (the **PRIME** league — `coworld_name: crewrift_prime`;
-  this is where we compete) ⇒ commit **`20e3be4`**, helper **`/tmp/expand-prime039`**
-  (verified `trace_complete:true`, full events). Prime is the *same* crewrift engine,
-  a separate deploy/version line. **Use this for any Prime episode.**
-- **`crewrift:0.1.58`** (the regular league) ⇒ build from tag `0.1.59` (commit
-  `1cbd4de`), helper `/tmp/expand-0159`.
-- (older) `crewrift:0.1.54` ⇒ commit `42fed21`, helper `/tmp/expand-42fed21`.
-To rebuild for a deploy: read the cow manifest `source_url` for the commit, then
-`git -C ~/coding/coworlds/coworld-crewrift fetch && git checkout <commit>; nimby
---global sync nimby.lock; nim c -d:release -d:useMalloc --opt:speed
+read `game.runnable.source_url` (`.../coworld-crewrift/tree/<commit>`). ⚠️ **PRIME is a FORK and its version moves fast** (`crewrift_prime`: 0.3.9 → 0.4.2 →
+0.4.3 within days). Its `source_url` commit is often **non-public** (the fork's
+commits aren't in the public `coworld-crewrift`), so you can't always `git checkout`
+it. When the `source_url` SHA isn't in the repo, **find the matching commit
+empirically**: build expanders from a few public-master candidates and test which one
+gives `trace_complete:true` (no hash-fail) on the deploy's replays — *including a
+button game* (button-meeting re-sim is the thing that diverges on a wrong commit). The
+manifest calls Prime "config-only variants", so the sim usually matches a recent
+public-master commit even though the SHA differs. The deploys (2026-06-25):
+- **`crewrift_prime:0.4.3`** (current PRIME, where we compete; `source_url` `a3d1547`
+  is NON-PUBLIC) ⇒ sim matches **master-tip `26ee08c`**, helper **`/tmp/expand-043`**
+  (verified 63/63 `trace_complete`, button games expand cleanly with rounds
+  continuing). **Use this for the v44 / current Prime episodes.**
+- `crewrift_prime:0.3.9` (older Prime) ⇒ commit `20e3be4`, `/tmp/expand-prime039` —
+  but it HASH-FAILS on every button game (re-sim diverges at the button vote); a
+  later commit fixed that, so 0.4.3/master expand buttons fine.
+- `crewrift:0.1.58` (regular league) ⇒ tag `0.1.59` (`1cbd4de`), `/tmp/expand-0159`.
+- (older) `crewrift:0.1.54` ⇒ `42fed21`, `/tmp/expand-42fed21`.
+To build: `git -C ~/coding/coworlds/coworld-crewrift fetch && git checkout <commit>;
+nimby --global sync nimby.lock; nim c -d:release -d:useMalloc --opt:speed
 --out:/tmp/expand-<ver> tools/expand_replay.nim`, then VERIFY `trace_complete:true` on
-a real replay before trusting it. Find a replay's deploy via its `coworld_name` +
-`coworld_version` in `episode.json`. Reusable 0.1.54 warehouses from earlier:
+a real replay (and a button game) before trusting it. Find a replay's deploy via
+`coworld_name` + `coworld_version` in `episode.json` (NOT the `source_url` SHA — it may
+be non-public). Reusable 0.1.54 warehouses from earlier:
 `/tmp/xp_imp_warehouse` (450 XP imposter episodes), `/tmp/crewrift_warehouse` (2 league rounds).
 
 To build an XP-episode warehouse from `fetch_artifacts`-downloaded dirs, the adapter

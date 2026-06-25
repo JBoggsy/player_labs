@@ -16,6 +16,9 @@ buffers — not in-session hit counts — is the graduation signal.
 **Entry format.** `### <lesson, one line>` then `Evidence:` (what you observed,
 concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
+### EXPANDER FIXED for current Prime (crewrift_prime:0.4.3 = master-tip 26ee08c → /tmp/expand-043); buttons now expand cleanly, rounds CONTINUE (2026-06-25)
+The v44 XP request ran on **crewrift_prime:0.4.3** (Prime jumped 0.3.9→0.4.2→0.4.3 in days). Its source_url commit `a3d1547` is NON-PUBLIC (fork). Found the right expander EMPIRICALLY: built candidates and tested trace_complete on v44 replays incl. button games — **master-tip `26ee08c` expands 63/63 with 0 hash-fails, and all 8 button games are clean with Playing resuming after the button (rounds continue, as James said).** `/tmp/expand-043` = the 26ee08c build = use for current Prime. The old `expand-prime039` (20e3be4, for 0.3.9) hash-failed every button game — a later commit fixed button-vote re-sim. METHOD: when a coworld's source_url SHA isn't in the public repo (forks), find the commit empirically — build candidates, verify trace_complete on real replays INCLUDING a button game. Doc updated in tools/README. NEXT: the v44 imposter eval (xreq_2445297e, 100 eps, 0.4.3) can now be analyzed WITH button games (no selection bias).
+
 ---
 
 ### ⚠️ EXPANDER BUG: button meetings break expand-prime039 → 36% of Prime episodes hash-fail (all button games); my "buttons end the game" was a TOTAL ARTIFACT (2026-06-25)
