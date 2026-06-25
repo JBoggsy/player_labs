@@ -591,8 +591,8 @@ flips to Hunt. A small FSM:
 | State | Behaviour | Transitions |
 |---|---|---|
 | **PICK_ROOM** | choose a **random** nearby reachable task room (nearest `NEARBY_ROOMS`, excluding the current and just-left room, and the start room) | → **GO_TO_ROOM** |
-| **GO_TO_ROOM**(room) | `navigate_to` a task station in the room (nearest our approach ≈ "near the entrance") | arrived + crew in room → **WATCH**; arrived + empty → **PICK_ROOM**; a crewmate seen leaving anywhere → **FOLLOW** |
-| **WATCH**(room) | hold the watch spot (`idle`/hold), tracking which crew are inside | a watched crewmate **leaves** the room → **FOLLOW**(them); no watched crew still around → **PICK_ROOM** |
+| **GO_TO_ROOM**(room) | `navigate_to` the room **centre** (go fully inside to check it, not stand at the door) | arrived + crew in room → **WATCH**; arrived + empty → **PICK_ROOM**; a crewmate seen leaving anywhere → **FOLLOW** |
+| **WATCH**(room) | hold the in-room **vantage point with line-of-sight to the most crew** — recomputed (throttled, with hysteresis) as they move, so we keep crewmates in sight rather than standing at the entrance and letting them walk out of view. LOS via `nav._segment_clear` over the walkability mask, within `VANTAGE_RANGE` | a watched crewmate **leaves** the room → **FOLLOW**(them); no watched crew still around → **PICK_ROOM** |
 | **FOLLOW**(crew) | chase the leaver: `navigate_to` their live position while visible; once **occluded**, feed `PathPredictor` and steer to its **top predicted route position** (chase down the hallway) | settles in a room we reach with crew → **WATCH**; target dead/teammate/lost (`FOLLOW_LOST_TICKS` unseen, no prediction) → **PICK_ROOM** |
 
 Notes: **never follows the teammate imposter** (filtered from crew everywhere). The

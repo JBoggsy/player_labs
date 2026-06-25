@@ -113,6 +113,33 @@ def test_follow_uses_prediction_when_target_is_occluded() -> None:
     assert mode._predictor is not None
 
 
+def test_visible_count_respects_line_of_sight() -> None:
+    # A wall between the vantage and a crewmate blocks the line of sight.
+    m = _map()
+    walk = np.ones((m.height, m.width), dtype=bool)
+    walk[:, 95:105] = False  # vertical wall splitting Left from Mid
+    nav = build_nav_graph(walk, map_data=m)
+    belief = Belief(map=m, nav=nav, self_role="imposter", self_world_x=40, self_world_y=40, last_tick=10)
+    mode = SearchMode()
+    # crew on the same side (Left, clear) vs across the wall (Mid, blocked)
+    assert mode._visible_count(belief, (40, 40), [(60, 40)]) == 1     # same room, LOS clear
+    assert mode._visible_count(belief, (40, 40), [(150, 40)]) == 0    # across the wall, blocked
+
+
+def test_watch_moves_to_a_vantage_over_the_crew() -> None:
+    mode = SearchMode()
+    mode._state = "watch"
+    mode._target_room = "Left"
+    belief = _belief(self_xy=(10, 10))   # in a corner of Left, not yet at a good vantage
+    mode._room_crew = {"green"}
+    _crew(belief, "green", (80, 60))     # a crewmate elsewhere in Left
+    intent = mode.decide(belief, ActionState())
+    # should move to a vantage (it sees green) rather than idle in the corner
+    assert mode._state == "watch"
+    assert mode._vantage is not None
+    assert mode._visible_count(belief, mode._vantage, [(80, 60)]) == 1
+
+
 def test_never_follows_a_teammate() -> None:
     mode = SearchMode()
     mode._state = "watch"
