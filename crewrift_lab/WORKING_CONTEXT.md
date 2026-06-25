@@ -16,6 +16,32 @@ is the one-screen answer to "where are we and why."
 
 ---
 
+## 🌙 OVERNIGHT (2026-06-25 → 26 AM): big suss-rate eval + autonomous pipeline RUNNING
+James asked (then went to bed; FULL AUTONOMY granted): exploit Aaron's aggression by sussing
+him out as crew; build a DURABLE LLM-based "who-susses-who" warehouse capability; run a big eval.
+**MORNING FIRST STEP: read `/tmp/suss_big_results.txt`** (the pipeline writes it). If absent/partial,
+check `/tmp/suss_pipeline.log`; eval data persists on the cluster so re-running `/tmp/suss_pipeline.sh`
+recovers it.
+- **`suss` subcommand built + committed** to the reporter repo (`~/coding/role_repos/reporter_lab/
+  crewrift-event-warehouse`, `suss.py` + CLI). `crewrift-event-warehouse suss --out <wh>` labels each
+  meeting chat msg with who it accuses via **Bedrock Haiku 4.5** (us-east-1, AWS_PROFILE=softmax),
+  cached by distinct text, → `events/key=chat_suss` (suss_target_*, is_suss, target_is_imposter).
+  Validated: crew susses true imposter 66-80%; imposter deflection 0% (correct).
+- **Big eval:** 800 eps (8× xreq in `/tmp/suss_big_xreqs.txt`), crewborg:v43=CREW slot0 vs 2×
+  crewborg-aaln:v17 (Aaron) imposters, crew fill truecrew:v25+sussybuster:v3.
+- **Pipeline** `/tmp/suss_pipeline.sh` (nohup): waits ≥760/800 → fetch → warehouse (expand-0159,
+  snapshot-every 30) → suss → `crewrift_lab/suss_rate.py` → `/tmp/suss_big_results.txt`.
+- Analysis scripts: `crewrift_lab/{suss_rate,aaron_compare,kill_latency,visibility_at_ready}.py`.
+- Chat landscape: Andre=LLM/contextual (already cites the "following" tell); Aaron imposter SILENT
+  (95/95 "no read, skipping"), crew mostly skip → doubly exploitable. TODO added: LLM crewborg chat.
+
+## ✅ SHIPPED/CANDIDATE (2026-06-25): vantage-SEARCH + RECON imposter
+- **v42 (vantage-SEARCH) SHIPPED to Crewrift PRIME.** v43 (+100-tick RECON) = measured-better candidate
+  NOT yet shipped (kills 1.23→1.48, dither 28→1, in-view-at-ready 53→62%, ejection FLAT 24→25%; win
+  27% vs 34% is noise). RECON tunable `CREWBORG_RECON_WINDOW` (default 100); ejection-flat ⇒ headroom up.
+
+---
+
 ## Active league state (2026-06-23) — NIGHTLY LOOP WAS BROKEN; champion frozen at v31
 
 - **Champion = v31** (nightly-2026-06-15 refit), Crewrift div `div_8d3ead22`, **rank
