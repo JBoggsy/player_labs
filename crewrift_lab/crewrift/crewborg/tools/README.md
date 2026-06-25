@@ -59,32 +59,45 @@ bake can't load).
 ## `path_prediction_eval.py` — accuracy at visible→obscured transitions
 
 The moment a crewmate leaves view is when prediction matters. For each such
-transition this captures the prediction *at onset*, then uses ground truth to see
-where they actually went. Headline metric = **destination-room match** (did the
-predicted top destination's room equal the room they actually reached, by
-re-acquisition or a horizon cap).
+transition this captures the prediction *at onset*, then uses ground truth to score
+it **two** ways:
+
+- **Next-room match** — did the predicted top destination's room equal the **first
+  new room the crewmate actually entered** (`inside_room` flips in a room ≠ the onset
+  room)? This is the fair "follow them to their next room" target — far better than
+  scoring the room they're in 1–2 rooms later.
+- **Path reward (−1..+1)** — a **decaying, hallway-weighted** agreement between the
+  predicted and actual paths, aligned by arc-length from the shared onset point.
+  Getting the *early corridor* right is rewarded heavily; far-out divergence (the
+  exact final room) is forgiven. **This is the headline metric** — it measures
+  whether we'd chase down the right hallway, which is what actually matters. A
+  positive median means we ride the right corridor more often than not, even when the
+  room-name match is low (≈38% of "room misses" are actually right-hallway).
 
 ```sh
 uv run --with matplotlib --with duckdb python \
   crewrift_lab/crewrift/crewborg/tools/path_prediction_eval.py \
   --warehouse /tmp/xp_imp_warehouse --episodes 20 --images 40 --out /tmp/pred_eval
+# then open /tmp/pred_eval/report.html
 ```
 
-Knobs: `--episode <id>` (single) or `--episodes N` (sweep); `--min-occlusion 24`
-(ignore blinks); `--horizon 240` (don't blame the onset prediction for a wander
-beyond this); `--images N` (sampled overlay PNGs). Outputs to `--out`:
-`instances.csv` (one row per occlusion) + `images/` (overlay per sampled instance:
+Knobs: `--episode <id>` (single) or `--episodes N` (deterministic sweep, so reruns
+compare cleanly); `--min-occlusion 24` (ignore blinks); `--horizon 240` (window the
+next-room must be entered within); `--images N` (sampled overlay PNGs, biased toward
+room-changers). Outputs to `--out`: **`report.html`** (self-contained — write-up,
+result cards, calibration table, embedded images, full instance table),
+`instances.csv` (one row per occlusion), and `images/` (overlay per instance:
 **orange** = actual path, **blue** = predicted weighted routes, white dot = onset,
-diamond/star = predicted/actual destination, filename tags `match`/`MISS`).
-
-stdout also reports the match rate **by confidence bucket** — the calibration check:
-a useful module is right more often when it is confident. (First-draft baseline,
-2026-06-24, 4 episodes: 43% overall, but 86% when pred_prob ∈ [0.4,0.7).)
+◇/★ = predicted/actual destination). stdout also prints match rate **by confidence
+bucket** — calibration should stay monotonic. (Baseline 2026-06-24, 6 eps: next-room
+41% / path reward +0.26 / 79% in the top confidence bucket.)
 
 ## Tuning the module
 
-The knobs live at the top of `strategy/path_prediction.py`: `ALIGN_GAIN`,
-`EVIDENCE_DECAY`, `LOOKAHEAD_PX`, `CREW_SPEED_PX`, `REACQUIRE_DIST`. Change one, re-run
-the eval to watch the match-rate / calibration move, eyeball a few miss images to see
-*how* it fails. Unit tests pin the qualitative behavior:
-`tests/test_path_prediction.py`.
+Knobs live at the top of `strategy/path_prediction.py` (each documented there):
+`HEADING_WINDOW_TICKS`, `ALIGN_GAIN`, `EVIDENCE_DECAY`, `LOOKAHEAD_PX`, `REFRESH_DIST`,
+`REACQUIRE_DIST`, `CREW_SPEED_PX`. The path-reward shape (`PATH_DECAY_LEN`,
+`PATH_ERR_SCALE`, …) lives in the eval tool — it defines the *metric*, not the
+predictor. Loop: change one knob → re-run the eval → watch the **path reward** and
+**calibration** in `report.html` → eyeball a few miss images for *how* it fails.
+Unit tests pin the qualitative behavior: `tests/test_path_prediction.py`.

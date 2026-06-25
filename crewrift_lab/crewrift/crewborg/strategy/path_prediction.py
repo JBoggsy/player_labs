@@ -20,14 +20,50 @@ live game.
 
 Model:
 - **Destinations** are reachable task stations + room-center anchors (the places
-  crew actually walk to), with a route from the acquisition point computed once via
-  ``nav.plan_route`` and stored as an arc-length polyline.
+  crew actually walk to), with a route from the acquisition point computed via
+  ``nav.plan_route`` and stored as an arc-length polyline (refreshed from the current
+  position as the target moves, carrying accumulated evidence).
 - **Predicted position** per candidate is tracked as an arc-length along that
   polyline: snapped to the observed point while visible, advanced by assumed speed
   while occluded.
 - **Probability** is a softmax over a per-candidate evidence score that decays each
-  frame (recent alignment dominates); evidence is the cosine between the observed
-  step and the route's local direction from the target's current position.
+  frame (recent alignment dominates); evidence is the cosine between the target's
+  **sustained heading** (net displacement over ``HEADING_WINDOW_TICKS``, robust to a
+  slow step at a doorway) and each route's local direction from the current position.
+
+## Tuning & evaluation — DON'T tune by eye; use the replay tools
+
+This module is built to be tuned **offline against replays**, not in live games. The
+loop, per `tools/README.md`:
+
+  1. Build an event warehouse (see `tools/README.md` → version coupling) so you have
+     per-tick ground truth + crewborg's visibility windows.
+  2. Edit a knob below, then run the scorer:
+       `uv run --with matplotlib --with duckdb python tools/path_prediction_eval.py \\
+          --warehouse /tmp/xp_imp_warehouse --episodes 8 --out /tmp/pred_eval`
+     It writes `report.html` (a self-contained page: write-up, result cards,
+     calibration table, overlay images, instance table). The episode sweep is
+     deterministic, so two runs are directly comparable.
+  3. Watch the **path reward** (the headline: a decaying, hallway-weighted agreement
+     between predicted and actual paths, −1..+1 — getting the *early corridor* right
+     is what matters for starting a chase) and the **calibration** (match rate by
+     confidence bucket should stay monotonic). Eyeball a few miss images to see *how*
+     it fails. Use `tools/path_prediction_ui.py` to watch one episode tick-by-tick.
+
+The knobs (each documented at its definition below):
+- ``HEADING_WINDOW_TICKS`` — how many ticks of trail the sustained heading averages
+  over. Larger = steadier through doorways, slower to react to a real turn.
+- ``ALIGN_GAIN`` / ``EVIDENCE_DECAY`` — how decisively evidence concentrates / how
+  fast it is forgotten (lower decay = sharper, more reactive, less stable).
+- ``LOOKAHEAD_PX`` — how far down a route the "where would they walk next" direction
+  is read (smaller = more local/discriminating near junctions).
+- ``REFRESH_DIST`` / ``REACQUIRE_DIST`` — when route geometry is rebuilt (keeping
+  evidence) vs a full reset re-acquire (reversal / big jump).
+- ``CREW_SPEED_PX`` — how fast predictions coast while the target is occluded.
+- The path-reward shape (``PATH_DECAY_LEN`` / ``PATH_ERR_SCALE`` / …) lives in the
+  eval tool, not here — it defines the *metric*, not the predictor.
+
+Behaviour is pinned qualitatively by `tests/test_path_prediction.py`.
 """
 
 from __future__ import annotations
