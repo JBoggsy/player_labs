@@ -566,11 +566,11 @@ re-decides.
 
 | Mode | Active when | Intents emitted |
 |---|---|---|
-| **Search** | the imposter's **always-on seeking stance** (default when not evading / reporting / hunting; Pretend retired 2026-06-24) | pick a random nearby task room, go watch it, and when a crewmate **leaves** that room follow them to their next room — using **path prediction** (`strategy.path_prediction`) to keep chasing down the right hallway after they leave view. Keeps us *near crew* so a kill window opens (which is when Hunt takes over) |
+| **Search** | the imposter's **always-on seeking stance** (default when not evading / reconning / hunting; Pretend retired 2026-06-24) | pick a random nearby task room, go watch it, and when a crewmate **leaves** that room follow them to their next room — using **path prediction** (`strategy.path_prediction`) to keep chasing down the right hallway after they leave view. Keeps us *near crew* so a kill window opens (which is when Hunt takes over) |
 | **Recon** | not ready, but the kill comes off cooldown within `recon_window()` ticks (`CREWBORG_RECON_WINDOW`, default 100) **and** a crewmate has been seen | **beeline to the most-recently-seen non-teammate crewmate** (`modes/recon.py`; live position when visible, last-known otherwise) so a victim is in hand the instant we can kill → Hunt fires immediately. Built 2026-06-25 from the warehouse finding that we had a crew in view *at* cooldown-ready only 53% of the time vs Aaron's 83%. Deliberately short window for now (a long one = the over-extension that gets caught) |
 | **Hunt** | kill ready **and** a victim is visible | **commit to a visible victim and close/strike**: `select_victim` picks the most-isolated reachable visible crewmate, preferring targets not already claimed by a closer teammate; navigate to its **predicted intercept** (`strategy.trajectory` — lead a moving target); when in KillRange *and* unwitnessed → `kill`, else keep shadowing in range (lie in wait) |
-| **Evade** | for `EVADE_TICKS` after our own kill | `vent` if a vent exists; otherwise move away from the nearest known body. This avoids instant self-reports and gets the imposter away from the corpse before Search/Hunt resume |
-| **Report Body** | a non-fresh body is in view after the evade window | `report` the nearest visible body — reuses the crewmate Report Body mode. Fresh self-kill bodies are handled by **Evade** first |
+| **Evade** | for `EVADE_TICKS` after our own kill | `vent` if a vent exists; otherwise move away from the nearest known body. Gets the imposter off the corpse; once Evade ends we go **straight back to Search** (no report) |
+| _(Report Body)_ | **removed from the imposter gate 2026-06-25** | Imposters **never report bodies**. Self-reporting our own kill opened a meeting that reset the cooldown and killed snowball kills (~79% of our body-report meetings were self-reports; warehouse, §perf). `report_body` is now **crewmate-only**. |
 | **Attend Meeting** | phase = `Voting` | **deflect onto crewmates, never a teammate** (§10.4): proactively accuse + vote a non-teammate who genuinely *looks* sus (real cues, same format as a crewmate); else wait and **bandwagon** onto a crewmate others suss/vote, citing *fabricated* safe cues in the identical format; else skip at the deadline |
 
 **Search is the imposter's always-on seeking stance** (`modes/search.py`, rebuilt
@@ -744,14 +744,16 @@ default directive is `idle` mode (the stall/TTL fallback, rarely reached).
 
 1. phase = `Voting` → **Attend Meeting**
 2. just killed → **Evade** for `EVADE_TICKS` (vent if possible, else leave the body)
-3. a body in view → **Report Body** only after the fresh-kill evade window
-4. kill ready **and** a visible victim → **Hunt** (commit + close, strike when isolated)
-5. kill ready **or within `SEARCH_LEAD_TICKS` of ready** (`ticks_until_kill_ready`) → **Search**
-   (walk occupancy hot spots; follow the first visible non-teammate target)
-6. otherwise → **Pretend** (choose likely crew rooms from occupancy density,
-   penalize teammate-imposter pressure, move to a real task station, fake the task)
+3. kill ready **and** a visible victim → **Hunt** (commit + close, strike when isolated)
+4. not ready but within `recon_window()` of ready **and** a crewmate has been seen →
+   **Recon** (beeline to the most-recently-seen crewmate so a victim is in hand at ready)
+5. otherwise → **Search** (always-on seeking: watch a room, follow the first crewmate who leaves)
 
-(4) fires only when the kill is ready and a live non-teammate is visible. Hunt then
+Imposters **never report bodies** (removed 2026-06-25 — see the mode table) and **never
+Pretend** (retired 2026-06-24): once Evade ends we go straight back to the kill loop
+(Hunt / Recon / Search).
+
+(3) fires only when the kill is ready and a live non-teammate is visible. Hunt then
 commits to a victim (§7.2), firing the kill only when it would go **unwitnessed**.
 The witness bar relaxes with **urgency** — `last_tick − kill_ready_since_tick`, how
 long we have been able to kill without doing so — shrinking the required clearance
@@ -1107,7 +1109,7 @@ structural, and each still awaits tuning against a live server.
 | LLM meetings | opt-in with `CREWBORG_LLM_MEETINGS=1` + `ANTHROPIC_API_KEY`; default model `claude-haiku-4-5-20251001`; deadline LLM prompt at ≤96 ticks remaining and auto-submit at ≤48 ticks remaining; chat cooldown is 100 ticks |
 | Chat NLP (§10.5) | **on by default**; kill switch `CREWBORG_CHAT_NLP=0` disables it (never imports/loads spaCy). Drives the imposter bandwagon's chat signal via `en_core_web_sm` dependency-parse negation scope, background-loaded so it never blocks play |
 | Aggressive imposter selector | opt-in with `CREWBORG_BE_DUMB=1` or `BE_DUMB=1`; during `Playing`, imposters skip Pretend/Evade/ReportBody and always select Search unless kill-ready with a visible victim, then Hunt |
-| Report policy | crewmates always report visible bodies; imposters evade for `EVADE_TICKS = 72` after their own kill, then may report a non-fresh visible body (§7.2). Suspicion-aware reporting is a possible refinement |
+| Report policy | crewmates always report visible bodies; **imposters NEVER report** (removed 2026-06-25) — they evade for `EVADE_TICKS = 72` after their own kill, then go straight back to Search. Self-reporting our own kill opened a meeting that reset the kill cooldown and killed snowball kills (§7.2) |
 | Pretend fake-task hold | one task-time (`TASK_TICKS = 72`) held at the station, then re-dispatch |
 | Pretend room targeting | room score = expected crew density minus teammate-imposter pressure (`TEAMMATE_ROOM_PENALTY = 3.0`); choose a real task station in the selected room; keep a chosen room for `ROOM_TARGET_MIN_TICKS = 10000` unless arriving or being preempted |
 | Kill isolation bar | clearance `BASE_ISOLATION_RADIUS = 48` px and witness window `WITNESS_WINDOW_TICKS = 72`, both relaxed to zero by urgency `URGENCY_FULL_TICKS = 240` |

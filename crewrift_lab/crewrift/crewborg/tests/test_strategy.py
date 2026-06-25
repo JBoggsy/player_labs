@@ -210,13 +210,19 @@ def test_imposter_evades_before_reporting_a_fresh_kill_body() -> None:
     assert _select(belief) == "evade"
 
 
-def test_imposter_can_report_a_non_fresh_visible_body() -> None:
+def test_imposter_never_reports_a_body() -> None:
     from crewrift.crewborg.types import BodyEntry
 
     belief = _imposter_with_visible_target(self_kill_ready=True, last_kill_tick=1, visible_body_ids={2003})
-    belief.last_tick = 100
+    belief.last_tick = 100  # past the evade window (EVADE_TICKS = 72)
+    belief.roster["red"].last_seen_tick = 100  # the victim is visible *now* -> Hunt wins
     belief.bodies[2003] = BodyEntry(object_id=2003, color="green", world_x=60, world_y=60, first_seen_tick=10)
-    assert _select(belief) == "report_body"
+    # A visible body no longer routes the imposter to Report Body — it kills, not reports.
+    assert _select(belief) == "hunt"
+
+    body_only = Belief(phase="Playing", self_role="imposter", self_kill_ready=False, last_tick=200, visible_body_ids={2003})
+    body_only.bodies[2003] = BodyEntry(object_id=2003, color="green", world_x=60, world_y=60, first_seen_tick=10)
+    assert _select(body_only) == "search"
 
 
 def test_imposter_recons_within_the_recon_window_before_ready() -> None:

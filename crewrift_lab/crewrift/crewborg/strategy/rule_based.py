@@ -24,14 +24,14 @@ Imposter priority order (design §10):
 
 1. ``phase == Voting`` → Attend Meeting
 2. just killed → Evade (vent / leave the body)
-3. a body in view → Report Body (non-fresh bodies only)
-4. kill ready + a visible victim → Hunt (commit to a victim and strike / close)
-5. kill ready or within ``SEARCH_LEAD_TICKS`` of ready → Search (find/follow a target)
-6. otherwise → Pretend (fake tasks in likely occupied rooms)
+3. kill ready + a visible victim → Hunt (commit to a victim and strike / close)
+4. near-ready cooldown + known crew → Recon (close on the last seen crewmate)
+5. otherwise → Search (find/follow a target)
 
 (2) prevents instant self-reports after our own kill: the imposter first leaves the
-scene, preferably through a vent. A non-fresh body can still be reported later if it
-remains visible after the evade window.
+scene, preferably through a vent. Imposters NEVER report bodies; self-reporting our
+own kill triggered a meeting that reset the cooldown and killed snowball kills. Once
+Evade ends we go straight back to Search (or Hunt/Recon if the gates match).
 
 (5) fires once the kill cooldown is within a short lead window of being ready
 (`ticks_until_kill_ready ≤ SEARCH_LEAD_TICKS`, reconstructed from the binary HUD via
@@ -114,8 +114,10 @@ class RuleBasedStrategy:
         return ModeDirective(mode="idle", source="strategy", reason=f"idle in phase {phase}")
 
     def _select_imposter(self, belief: Belief) -> ModeDirective:
-        # Imposter priority (design §10): just killed -> Evade; non-fresh visible
-        # body -> Report; kill ready and a victim visible -> Hunt; else SEARCH.
+        # Imposter priority (design §10): just killed -> Evade; kill ready and a
+        # victim visible -> Hunt; near-ready with known crew -> Recon; else SEARCH.
+        # Imposters never report bodies: self-reporting our own kill opens a meeting
+        # and resets the cooldown, so once Evade ends we go back to the kill loop.
         # SEARCH is the always-on seeking stance (Pretend removed 2026-06-24): it
         # keeps us near crew — watching a room and following a crewmate to their next
         # room — so a kill window opens, which is when Hunt takes over. RECON (added
@@ -129,8 +131,6 @@ class RuleBasedStrategy:
             return ModeDirective(mode="search", source="strategy", reason="be dumb: always seek kill setup")
         if _recent_self_kill(belief):
             return ModeDirective(mode="evade", source="strategy", reason="just killed: evade")
-        if any(bid in belief.bodies for bid in belief.visible_body_ids):
-            return ModeDirective(mode="report_body", source="strategy", reason="body in view after evade window")
         if belief.self_kill_ready and has_visible_victim(belief):
             return ModeDirective(mode="hunt", source="strategy", reason="kill ready: hunt visible victim")
         if ticks_until_kill_ready(belief) <= recon_window() and most_recent_victim(belief) is not None:
