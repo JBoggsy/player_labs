@@ -4,44 +4,26 @@ from __future__ import annotations
 
 import json
 import os
-import time
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Any, Callable, NamedTuple, Protocol
 
 from pydantic import BaseModel, ConfigDict
 
-from crewrift.crewborg.strategy.meeting.schema import (
-    CHAT_MAX_CHARS,
-    VOTE_SKIP,
-    MeetingDecision,
-)
+from crewrift.crewborg.strategy.meeting.prompts import PROMPT_DIR_ENV, system_prompt_for_context
+from crewrift.crewborg.strategy.meeting.schema import VOTE_SKIP, MeetingDecision
 
 DEFAULT_MEETING_MODEL = "claude-haiku-4-5-20251001"
-
-SYSTEM_PROMPT = f"""You are controlling one Crewrift player during an active meeting.
-Choose exactly one JSON object matching the schema. Do not include markdown.
-
-Actions:
-- send_chat: send one concise printable-ASCII chat message now.
-- set_tentative_vote: update the vote target but do not submit yet.
-- submit_vote: submit the vote immediately.
-- wait: do nothing this tick.
-
-Rules:
-- Use only vote_target values from constraints.valid_vote_targets or "{VOTE_SKIP}".
-- Keep chat_text printable ASCII and at most {CHAT_MAX_CHARS} characters.
-- A submitted vote is final; tentative votes are auto-submitted near the deadline.
-- Prefer useful, game-grounded meeting speech over filler.
-"""
 
 
 @dataclass(frozen=True)
 class MeetingLLMConfig:
     model: str = DEFAULT_MEETING_MODEL
+    use_bedrock: bool = False
     max_tokens: int = 512
     temperature: float = 0.2
     timeout_seconds: float = 3.0
     trace_raw: bool = False
+    prompt_dir: str | None = None
 
 
 class MeetingLLMResult(BaseModel):
@@ -80,14 +62,22 @@ class AnthropicMeetingClient:
     enabled = True
     disabled_reason = None
 
-    def __init__(self, config: MeetingLLMConfig, *, client: Any | None = None) -> None:
+    def __init__(
+        self,
+        config: MeetingLLMConfig,
+        *,
+        client: Any,
+        call_json: Callable[..., Any],
+        extract_json_object: Callable[[str], str],
+    ) -> None:
         self.config = config
-        if client is not None:
-            self._client = client
-            return
-        from anthropic import Anthropic
+        self._client = client
+        self._call_json = call_json
+        self._extract_json_object = extract_json_object
 
-        self._client = Anthropic(timeout=config.timeout_seconds)
+    @property
+    def timeout_seconds(self) -> float:
+        return self.config.timeout_seconds
 
     def decide(self, context: dict[str, Any], *, trigger: str) -> MeetingLLMResult:
         request = {
@@ -103,24 +93,22 @@ class AnthropicMeetingClient:
             },
         }
         user_content = json.dumps(request, sort_keys=True, separators=(",", ":"))
-        start = time.perf_counter()
-        response = self._client.messages.create(
+        call = self._call_json(
+            self._client,
             model=self.config.model,
+            system=system_prompt_for_context(context, prompt_dir=self.config.prompt_dir),
+            user=user_content,
             max_tokens=self.config.max_tokens,
             temperature=self.config.temperature,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": user_content}],
         )
-        latency_ms = (time.perf_counter() - start) * 1000.0
-        raw_text = _response_text(response)
-        decision = MeetingDecision.model_validate_json(_extract_json_object(raw_text))
+        decision = MeetingDecision.model_validate_json(self._extract_json_object(call.text))
         return MeetingLLMResult(
             decision=decision,
-            model=self.config.model,
-            latency_ms=latency_ms,
-            usage=_usage_dict(response),
+            model=call.model,
+            latency_ms=call.latency_ms,
+            usage=call.usage,
             raw_request=request if self.config.trace_raw else None,
-            raw_response=raw_text if self.config.trace_raw else None,
+            raw_response=call.text if self.config.trace_raw else None,
         )
 
 
@@ -128,57 +116,69 @@ def build_meeting_llm_client_from_env(env: dict[str, str] | None = None) -> Meet
     env = env or os.environ
     if env.get("CREWBORG_LLM_MEETINGS", "").strip().lower() not in {"1", "true", "yes", "on"}:
         return DisabledMeetingClient("CREWBORG_LLM_MEETINGS is not enabled")
-    if not env.get("ANTHROPIC_API_KEY"):
-        return DisabledMeetingClient("ANTHROPIC_API_KEY is not set")
-    trace_raw = env.get("CREWBORG_LLM_TRACE_RAW", "").strip().lower() in {"1", "true", "yes", "on"}
-    trace_raw = trace_raw or env.get("CREWBORG_TRACE", "").strip().lower() == "debug"
-    config = MeetingLLMConfig(
-        model=env.get("CREWBORG_LLM_MODEL", DEFAULT_MEETING_MODEL),
-        max_tokens=_env_int(env, "CREWBORG_LLM_MAX_TOKENS", 512),
-        temperature=_env_float(env, "CREWBORG_LLM_TEMPERATURE", 0.2),
-        timeout_seconds=_env_float(env, "CREWBORG_LLM_TIMEOUT_SECONDS", 3.0),
-        trace_raw=trace_raw,
+    try:
+        helpers = _load_sdk_helpers()
+        use_bedrock = helpers.bedrock_enabled(env)
+        if not use_bedrock and not env.get("ANTHROPIC_API_KEY"):
+            return DisabledMeetingClient("no LLM backend configured")
+        trace_raw = env.get("CREWBORG_LLM_TRACE_RAW", "").strip().lower() in {"1", "true", "yes", "on"}
+        trace_raw = trace_raw or env.get("CREWBORG_TRACE", "").strip().lower() == "debug"
+        timeout_seconds = _env_float(env, "CREWBORG_LLM_TIMEOUT_SECONDS", 3.0)
+        config = MeetingLLMConfig(
+            model=helpers.resolve_model(
+                use_bedrock=use_bedrock,
+                direct_model=helpers.default_direct_model,
+                bedrock_model=helpers.default_bedrock_model,
+                explicit=env.get("CREWBORG_LLM_MODEL"),
+            ),
+            use_bedrock=use_bedrock,
+            max_tokens=_env_int(env, "CREWBORG_LLM_MAX_TOKENS", 512),
+            temperature=_env_float(env, "CREWBORG_LLM_TEMPERATURE", 0.2),
+            timeout_seconds=timeout_seconds,
+            trace_raw=trace_raw,
+            prompt_dir=env.get(PROMPT_DIR_ENV) or None,
+        )
+        client = helpers.select_client(use_bedrock=use_bedrock, timeout=timeout_seconds)
+        return AnthropicMeetingClient(
+            config,
+            client=client,
+            call_json=helpers.call_json,
+            extract_json_object=helpers.extract_json_object,
+        )
+    except Exception as exc:
+        return DisabledMeetingClient(f"meeting LLM client construction failed: {exc!r}")
+
+
+class _SDKHelpers(NamedTuple):
+    bedrock_enabled: Callable[..., bool]
+    select_client: Callable[..., Any]
+    resolve_model: Callable[..., str]
+    call_json: Callable[..., Any]
+    extract_json_object: Callable[[str], str]
+    default_bedrock_model: str
+    default_direct_model: str
+
+
+def _load_sdk_helpers() -> _SDKHelpers:
+    from players.player_sdk import (
+        DEFAULT_BEDROCK_MODEL,
+        DEFAULT_DIRECT_MODEL,
+        bedrock_enabled,
+        call_json,
+        extract_json_object,
+        resolve_model,
+        select_client,
     )
-    return AnthropicMeetingClient(config)
 
-
-def _response_text(response: Any) -> str:
-    parts: list[str] = []
-    for block in getattr(response, "content", []) or []:
-        if isinstance(block, str):
-            parts.append(block)
-        elif isinstance(block, dict):
-            text = block.get("text")
-            if isinstance(text, str):
-                parts.append(text)
-        else:
-            text = getattr(block, "text", None)
-            if isinstance(text, str):
-                parts.append(text)
-    return "".join(parts).strip()
-
-
-def _extract_json_object(text: str) -> str:
-    first = text.find("{")
-    last = text.rfind("}")
-    if first < 0 or last < first:
-        raise ValueError(f"LLM response did not contain a JSON object: {text!r}")
-    return text[first : last + 1]
-
-
-def _usage_dict(response: Any) -> dict[str, Any] | None:
-    usage = getattr(response, "usage", None)
-    if usage is None:
-        return None
-    if isinstance(usage, dict):
-        return dict(usage)
-    if hasattr(usage, "model_dump"):
-        return usage.model_dump(mode="json")
-    return {
-        key: getattr(usage, key)
-        for key in ("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")
-        if hasattr(usage, key)
-    }
+    return _SDKHelpers(
+        bedrock_enabled=bedrock_enabled,
+        select_client=select_client,
+        resolve_model=resolve_model,
+        call_json=call_json,
+        extract_json_object=extract_json_object,
+        default_bedrock_model=DEFAULT_BEDROCK_MODEL,
+        default_direct_model=DEFAULT_DIRECT_MODEL,
+    )
 
 
 def _env_int(env: dict[str, str], name: str, default: int) -> int:

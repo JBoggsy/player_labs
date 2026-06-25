@@ -46,7 +46,8 @@ it **deflects onto crewmates** (never a teammate): it proactively accuses + vote
 non-teammate who genuinely looks sus (real cues, same chat format as a crewmate — the
 formatting is identical by design so it isn't a tell), and otherwise waits to
 **bandwagon** onto whoever others suss/vote, citing *fabricated safe cues* in that
-same format. Meetings reuse **Attend Meeting**. With `CREWBORG_LLM_MEETINGS=1` and `ANTHROPIC_API_KEY`,
+same format. Meetings reuse **Attend Meeting**. With `CREWBORG_LLM_MEETINGS=1` plus
+Bedrock (`USE_BEDROCK=1`) or `ANTHROPIC_API_KEY`,
 Attend Meeting uses a fast Haiku-class LLM call on the meeting fast path to chat,
 respond to other players, keep a tentative vote, and submit early when requested;
 otherwise it preserves the deterministic accuse-and-vote / silent-skip fallback.

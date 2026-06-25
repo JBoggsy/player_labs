@@ -13,8 +13,9 @@ class _FakeMeetingClient:
     enabled = True
     disabled_reason = None
 
-    def __init__(self, decisions: list[MeetingDecision]) -> None:
+    def __init__(self, decisions: list[MeetingDecision], *, timeout_seconds: float | None = None) -> None:
         self.decisions = list(decisions)
+        self.timeout_seconds = timeout_seconds
         self.calls: list[tuple[str, dict]] = []
 
     def decide(self, context: dict, *, trigger: str) -> MeetingLLMResult:
@@ -138,6 +139,28 @@ def test_attend_meeting_llm_can_submit_vote_early() -> None:
     assert vote.target_color == "red"
 
 
+def test_attend_meeting_llm_low_confidence_submit_still_votes() -> None:
+    client = _FakeMeetingClient([MeetingDecision(action="submit_vote", vote_target="red", confidence=0.01)])
+    mode = AttendMeetingMode(llm_client=client)
+
+    vote = mode.decide(_meeting_belief(tick=0), ActionState())
+
+    assert vote.kind == "vote"
+    assert vote.target_color == "red"
+
+
+def test_attend_meeting_llm_self_target_never_votes_self() -> None:
+    client = _FakeMeetingClient([MeetingDecision(action="submit_vote", vote_target="blue")])
+    mode = AttendMeetingMode(llm_client=client)
+    belief = _meeting_belief(tick=0)
+    belief.suspicion = {}
+
+    vote = mode.decide(belief, ActionState())
+
+    assert vote.kind == "vote"
+    assert vote.target_color is None
+
+
 def test_attend_meeting_llm_submitted_vote_persists_until_confirmed() -> None:
     client = _FakeMeetingClient([MeetingDecision(action="submit_vote", vote_target="red")])
     mode = AttendMeetingMode(llm_client=client)
@@ -184,6 +207,32 @@ def test_attend_meeting_invalid_llm_decision_falls_back_to_the_deterministic_acc
     intent = mode.decide(belief, ActionState())
     assert intent.kind == "chat"
     assert intent.text == "red sus: saw them vent"  # fell back to the deterministic accusation
+
+
+def test_attend_meeting_deadline_prompt_wins_over_late_chat() -> None:
+    client = _FakeMeetingClient([MeetingDecision(action="wait"), MeetingDecision(action="wait")])
+    mode = AttendMeetingMode(llm_client=client)
+
+    assert mode.decide(_meeting_belief(tick=0), ActionState()).kind == "idle"
+    belief = _meeting_belief(tick=107)
+    belief.chat_log = [ChatEvent(tick=100, speaker_color="red", text="blue sus")]
+
+    assert mode.decide(belief, ActionState()).kind == "idle"
+    assert [trigger for trigger, _ in client.calls] == ["meeting_start", "deadline"]
+
+
+def test_attend_meeting_late_chat_in_danger_window_does_not_call_llm() -> None:
+    client = _FakeMeetingClient(
+        [MeetingDecision(action="wait"), MeetingDecision(action="send_chat", chat_text="too late")]
+    )
+    mode = AttendMeetingMode(llm_client=client)
+
+    assert mode.decide(_meeting_belief(tick=0), ActionState()).kind == "idle"
+    belief = _meeting_belief(tick=108)
+    belief.chat_log = [ChatEvent(tick=100, speaker_color="red", text="blue sus")]
+
+    assert mode.decide(belief, ActionState()).kind == "idle"
+    assert [trigger for trigger, _ in client.calls] == ["meeting_start"]
 
 
 def test_report_body_targets_nearest_visible_body() -> None:

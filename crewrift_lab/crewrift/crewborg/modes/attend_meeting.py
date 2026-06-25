@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 from crewrift.crewborg.strategy.meeting import (
@@ -29,6 +30,9 @@ from players.player_sdk import EmptyModeParams, Mode
 LLM_MIN_CALL_INTERVAL_TICKS = 12
 DEADLINE_LLM_REMAINING_TICKS = 96
 AUTO_SUBMIT_REMAINING_TICKS = 48
+MEETING_TICKS_PER_SECOND = VOTE_TIMER_TICKS // 10
+LLM_TIMEOUT_MARGIN_TICKS = LLM_MIN_CALL_INTERVAL_TICKS
+DEFAULT_LLM_TIMEOUT_SECONDS = 3.0
 
 
 class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
@@ -219,8 +223,15 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         tick = belief.last_tick
         if self._last_llm_call_tick is not None and tick - self._last_llm_call_tick < LLM_MIN_CALL_INTERVAL_TICKS:
             return None
+        if not self._can_start_llm_call(belief):
+            return None
+        if self._deadline_prompted:
+            return None
         if self._last_llm_call_tick is None:
             return "meeting_start"
+
+        if self._remaining_ticks(belief) <= self._deadline_prompt_remaining_ticks():
+            return "deadline"
 
         signature = self._external_chat_signature(belief)
         if signature != self._last_external_chat_signature:
@@ -233,8 +244,6 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         ):
             return "chat_cooldown_ready"
 
-        if self._remaining_ticks(belief) <= DEADLINE_LLM_REMAINING_TICKS and not self._deadline_prompted:
-            return "deadline"
         return None
 
     def _call_llm(self, context: dict[str, Any], *, trigger: str) -> Any | None:
@@ -397,6 +406,23 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
 
     def _should_auto_submit(self, belief: Belief) -> bool:
         return not self._vote_submitted and self._remaining_ticks(belief) <= AUTO_SUBMIT_REMAINING_TICKS
+
+    def _can_start_llm_call(self, belief: Belief) -> bool:
+        return self._remaining_ticks(belief) > self._latest_safe_llm_start_remaining_ticks()
+
+    def _deadline_prompt_remaining_ticks(self) -> int:
+        return max(DEADLINE_LLM_REMAINING_TICKS, self._latest_safe_llm_start_remaining_ticks() + 1)
+
+    def _latest_safe_llm_start_remaining_ticks(self) -> int:
+        timeout_ticks = math.ceil(self._llm_timeout_seconds() * MEETING_TICKS_PER_SECOND)
+        return AUTO_SUBMIT_REMAINING_TICKS + timeout_ticks + LLM_TIMEOUT_MARGIN_TICKS
+
+    def _llm_timeout_seconds(self) -> float:
+        value = getattr(self._llm_client, "timeout_seconds", DEFAULT_LLM_TIMEOUT_SECONDS)
+        try:
+            return max(0.0, float(value))
+        except (TypeError, ValueError):
+            return DEFAULT_LLM_TIMEOUT_SECONDS
 
     def _resolved_vote_target(self, belief: Belief) -> str:
         tentative = self._tentative_vote
