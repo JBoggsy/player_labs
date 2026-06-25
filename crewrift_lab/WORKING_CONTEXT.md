@@ -16,12 +16,27 @@ is the one-screen answer to "where are we and why."
 
 ---
 
-## 🌙 OVERNIGHT (2026-06-25 → 26 AM): big suss-rate eval + autonomous pipeline RUNNING
-James asked (then went to bed; FULL AUTONOMY granted): exploit Aaron's aggression by sussing
-him out as crew; build a DURABLE LLM-based "who-susses-who" warehouse capability; run a big eval.
-**MORNING FIRST STEP: read `/tmp/suss_big_results.txt`** (the pipeline writes it). If absent/partial,
-check `/tmp/suss_pipeline.log`; eval data persists on the cluster so re-running `/tmp/suss_pipeline.sh`
-recovers it.
+## 🌙 OVERNIGHT (2026-06-25 → 26 AM): TWO autonomous jobs running (full autonomy granted, James asleep)
+**MORNING: read `/tmp/prime_results.txt` (primary) and `/tmp/suss_big_results.txt`.** Logs:
+`/tmp/prime_loop.log`, `/tmp/suss_pipeline.log`. Eval data persists on the cluster — re-run the
+scripts if a job died (machine slept).
+
+### JOB 1 (PRIMARY) — Prime natural round-robin loop `/tmp/prime_loop.sh` (pid was 4304)
+James's refined ask: a PROPER natural experiment among only the GOOD policies — the **Crewrift PRIME
+league** champions (the regular Crewrift league is full of bad policies you win by exploiting, not by
+improving). Field = **crewborg:v43 (us) / crewborg-aaln:v17 (Aaron) / truecrew:v27 (Andre champ) /
+truecrew:v28 (Andre latest, from Prime Qualifiers — Andre's policies keep improving so include latest
++ champ)**. 2 seats each (8), **natural roles (no force)**, target Prime Competition div_acbde92a.
+Loop: ONE 100-ep request at a time, ≥30min between starts + waits for completion (serial — fixes the
+backend overload the 8-parallel approach caused), then folds each batch into a GROWING warehouse
+(`/tmp/prime_warehouse`, expand-0159, snapshot-every 50) + LLM suss pass, writes running standings to
+`/tmp/prime_results.txt`. Up to 20 batches (~2000 eps). xreqs logged in `/tmp/prime_xreqs.txt`.
+Analysis: `crewrift_lab/prime_summary.py` (win by role, kills, suss/vote accuracy per policy).
+
+### JOB 2 — crew-vs-Aaron suss eval `/tmp/suss_pipeline.sh` (pid was 61210)
+800 eps crewborg:v43=CREW vs 2× crewborg-aaln:v17 (Aaron) imposters (8 parallel xreq in
+`/tmp/suss_big_xreqs.txt`) → fetch → warehouse → suss → `/tmp/suss_big_results.txt`. Measures our
+suss/vote-rate vs Aaron + detection-vs-aggression. (Superseded in priority by JOB 1 but still good data.)
 - **`suss` subcommand built + committed** to the reporter repo (`~/coding/role_repos/reporter_lab/
   crewrift-event-warehouse`, `suss.py` + CLI). `crewrift-event-warehouse suss --out <wh>` labels each
   meeting chat msg with who it accuses via **Bedrock Haiku 4.5** (us-east-1, AWS_PROFILE=softmax),
