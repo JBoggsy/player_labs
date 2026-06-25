@@ -62,7 +62,23 @@ NOT submitted (Gate-2 still owed). Supersedes v34 (gate 0.8, no reconnect). Cont
   obvious place to push for overall win-rate. Also: the v25 mis-vote-risk check (own-ejection /
   team-crew-ejection at the lower gate) is still owed before submitting.
 
-## ⭐ CURRENT OBJECTIVE (2026-06-24): fix the IMPOSTER gap — under-killing, not ejection
+## ⭐ ACTIVE (2026-06-25): vantage-SEARCH imposter — CONFIRMATION EVAL RUNNING
+New SEARCH mode (watch-a-room→follow-leaver) + **vantage-watching fix** (hold the in-room point
+with LOS to the most crew, don't stand at the door — James caught it in replays). 20-ep look:
+**kills/g 0.60→1.50, imp win 30%→45%, 0-kill 6/10→1/20** (above top imposters' ~1.05). v41=debug
+build. **CONFIRMATION: v42** (vantage, non-debug, `players-crewborg:dev`) — 200 imposter eps vs
+Aaron+Andre **LATEST uploads** (truecrew:v25, crewborg-aaln:v17, sussybuster:v3; round-robin),
+slot0=imp+partner. xreqs `xreq_c151184b` + `xreq_a272c9bb` (2×100). Dashboard :8808. NB Aaron's
+crewborg-aaln jumped v3→v17 and is now a strong imposter (~60% imp win in this eval).
+- **Expander FIXED for 0.1.58:** arena redeployed crewrift 0.1.54→**0.1.58**; built
+  **`/tmp/expand-0159`** from tag 0.1.59 (sim-compatible), verified trace_complete:true + 0%
+  hash-fail + derived events (proximity/isolation) over a real episode. Warehouse "near-crew"
+  diagnosis UNBLOCKED. (Local Gate-1 needs `--manifest` at cached 0.1.54 cow_50ee07cf — SDK can't
+  validate the 0.1.58 manifest. Debug trace must be BAKED as ENV, not --secret-env.)
+- **Next after eval:** warehouse the 200 v42 eps (expand-0159) → confirm "near crew" rose from
+  6.64/g (the mechanism); if kills hold ~1.5, consider Gate-2 (submit). Win<kills (conversion gap).
+
+## PRIOR OBJECTIVE (2026-06-24): fix the IMPOSTER gap — under-killing, not ejection
 James's principle: always work the highest-leverage gap (lesson logged). Imposter is it.
 - **Loss structure (282 clean v38 imp eps, from results.json):** NO ejections (loss scores
   0/10/20/30, no −100s) — we lose by **under-killing**. **31% of our imposter games are 0-kill**
