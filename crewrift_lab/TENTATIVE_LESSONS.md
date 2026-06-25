@@ -18,6 +18,9 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
 
+### CONFIRMED (n=180): vantage-SEARCH kills/g 1.23±0.10 — kills up, but win 34% (kill→win conversion is now the gap, NOT kills) (2026-06-25)
+200-ep confirmation vs Aaron+Andre LATEST (truecrew:v25, crewborg-aaln:v17 — note Aaron jumped v3→v17, a stronger field). v42 (vantage, non-debug): **kills/g 1.23±0.10** (vs v40 0.60, v38 0.85 — robust win), 0-kill only 11% (was 60% at v40), ≥2k 30%. BUT imposter **win 34%** [CI 27-41], DOWN from v38's 43% despite more kills. Diagnosis: **ZERO ejections** (no −100 losses) so the vantage-proximity is NOT getting us caught; and **kills in wins (1.33) ≈ kills in losses (1.20)** → kills are no longer the bottleneck. We lose the **parity race** vs a stronger crew field even with 1-2 kills. So the imposter kill engine is now strong/solved; the next lever is **kill→win CONVERSION** (kill faster/earlier to reach parity before crew finish tasks, or endgame), not more kills. Vantage fix = keep this.
+
 ### Vantage-watching (keep crew in sight) >2x'd imposter kills — watch from max-LOS point, not the door (2026-06-25)
 James watched v40 replays: the imposter willingly walked OUT of sight of crew (stood at a task spot by the room entrance, didn't keep crewmates in view). Fix: WATCH now holds the in-room VANTAGE POINT with line-of-sight to the most crew (nav._segment_clear over walkability, recomputed as they move); GO_TO_ROOM enters to the room centre. Result vs Aaron/Andre: kills/g 0.60 (v40 door) → **1.50 (v41 vantage)**, imposter win 30%→45%(then 52% mid-run), 0-kill games 6/10→1/20. 1.50 k/g is now ABOVE the top imposters' ~1.05 vs this field. n=20 small but effect huge. LESSON: for an imposter, *staying in visual contact with crew* is the dominant lever — watching replays caught what metrics/unit-tests couldn't.
 
