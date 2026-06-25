@@ -22,13 +22,21 @@ Both tools read a **crewrift-event-warehouse** dataset (per-tick `player_state`,
 XP-request episodes — see `~/coding/role_repos/reporter_lab/crewrift-event-warehouse`.
 
 ⚠️ **expand_replay version coupling** (the #1 silent failure): the warehouse's
-`CREWRIFT_EXPAND_REPLAY` helper must be built from the *exact* crewrift commit the
-arena ran. As of 2026-06-24 arena `crewrift:0.1.54` ⇒ commit `42fed21`; the
-helper `/tmp/expand-42fed21` and the checkout `~/coding/coworlds/coworld-crewrift`
-(at 42fed21) are set up. A version skew yields sparse/hash-failed events (check
-`manifest.json` `trace_warning` counts first). Reusable warehouses already built
-this session: `/tmp/xp_imp_warehouse` (450 XP imposter episodes) and
-`/tmp/crewrift_warehouse` (2 league rounds).
+`CREWRIFT_EXPAND_REPLAY` helper must match the crewrift sim version the arena ran, or
+every replay hash-fails → sparse events (no kills/bodies/following/isolation; check
+`manifest.json` `trace_warning` counts first). The arena **redeploys** crewrift, so
+the matching commit moves:
+- **arena `crewrift:0.1.58`** (current, 2026-06-25) ⇒ build from tag **`0.1.59`**
+  (sim-compatible; 0.1.58 isn't tagged). Helper: **`/tmp/expand-0159`** (verified
+  `trace_complete:true` on a fresh 0.1.58 replay).
+- arena `crewrift:0.1.54` (older replays) ⇒ commit `42fed21`, helper
+  `/tmp/expand-42fed21`.
+To rebuild for a new deploy: `git -C ~/coding/coworlds/coworld-crewrift fetch && git
+checkout <tag>; nimby --global sync nimby.lock; nim c -d:release -d:useMalloc
+--opt:speed --out:/tmp/expand-<ver> tools/expand_replay.nim`, then VERIFY
+`trace_complete:true` on a real replay before trusting a build. Find the arena
+version via an episode's `coworld_version`. Reusable 0.1.54 warehouses from earlier:
+`/tmp/xp_imp_warehouse` (450 XP imposter episodes), `/tmp/crewrift_warehouse` (2 league rounds).
 
 To build an XP-episode warehouse from `fetch_artifacts`-downloaded dirs, the adapter
 `/tmp/make_wh_input.py` turns those into a warehouse `report_request.json`.
