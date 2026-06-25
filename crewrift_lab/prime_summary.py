@@ -33,26 +33,41 @@ for _, r in rows.sort_values("pv").iterrows():
     ik = f"{r.imp_kills/max(r.imp_g,1):.2f}"
     print(f"{lab(r.pv):30}{cw:>12}{iw:>12}{ik:>9}")
 
-# ---- crew detection: chat-suss accuracy + vote accuracy ----
-print(f"\n{'policy (as CREW)':30}{'chat suss acc':>15}{'vote acc':>12}{'susses':>8}{'votes':>8}")
-chat = con.execute(f"""
+# ---- crew engagement + detection (skip-spam "no read, skipping" EXCLUDED) ----
+# "no read, skipping" is a logged abstain, NOT a real message; real votes exclude
+# target-less skips. So this is the true "who actually talks / acts" picture.
+SKIP = "no read, skipping"
+print(f"\n{'policy (as CREW)':27}{'real chat/g':>12}{'votes/g':>9}{'suss acc':>10}{'vote acc':>10}{'spoke%':>8}")
+crew_g = con.execute(f"SELECT policy_version pv, COUNT(*) g FROM {EP} WHERE role='crew' AND score>=0 GROUP BY 1").df().set_index("pv")
+realchat = con.execute(f"""
+  SELECT policy_name, policy_version pv, COUNT(*) msgs,
+         COUNT(DISTINCT episode_id) games_spoke
+  FROM {ev('chat')} WHERE role='crew' AND json_extract_string(value,'$.text') <> '{SKIP}'
+  GROUP BY 1,2
+""").df().set_index("pv")
+suss = con.execute(f"""
   SELECT policy_version pv,
-    COUNT(*) FILTER (WHERE json_extract_string(value,'$.is_suss')='true') susses,
+    COUNT(*) FILTER (WHERE json_extract_string(value,'$.is_suss')='true') s,
     COUNT(*) FILTER (WHERE json_extract_string(value,'$.target_is_imposter')='true') hit
   FROM {ev('chat_suss')} WHERE role='crew' GROUP BY 1
-""").df()
+""").df().set_index("pv")
 vote = con.execute(f"""
   WITH v AS (SELECT vc.policy_version pv, vc.episode_id, json_extract(vc.value,'$.target_slot')::INT t
              FROM {ev('vote_cast')} vc WHERE vc.role='crew' AND json_extract(vc.value,'$.target_slot')::INT>=0)
   SELECT v.pv, COUNT(*) votes, COUNT(*) FILTER (WHERE ep.role='imposter') hit
   FROM v JOIN {EP} ep ON ep.episode_id=v.episode_id AND ep.slot=v.t GROUP BY 1
-""").df()
-chat = chat.set_index("pv"); vote = vote.set_index("pv")
-for pv in sorted(set(chat.index) | set(vote.index)):
-    s = int(chat.loc[pv].susses) if pv in chat.index else 0
-    sh = int(chat.loc[pv].hit) if pv in chat.index else 0
+""").df().set_index("pv")
+for pv in [k for k in LABEL] + [p for p in crew_g.index if p not in LABEL]:
+    if pv not in crew_g.index: continue
+    g = int(crew_g.loc[pv].g)
+    rc = int(realchat.loc[pv].msgs) if pv in realchat.index else 0
+    spoke = int(realchat.loc[pv].games_spoke) if pv in realchat.index else 0
+    s = int(suss.loc[pv].s) if pv in suss.index else 0
+    sh = int(suss.loc[pv].hit) if pv in suss.index else 0
     vt = int(vote.loc[pv].votes) if pv in vote.index else 0
     vh = int(vote.loc[pv].hit) if pv in vote.index else 0
     ca = f"{100*sh/s:.0f}%" if s else "-"
     va = f"{100*vh/vt:.0f}%" if vt else "-"
-    print(f"{lab(pv):30}{ca:>15}{va:>12}{s:>8}{vt:>8}")
+    print(f"{lab(pv):27}{rc/g:>12.2f}{vt/g:>9.2f}{ca:>10}{va:>10}{f'{100*spoke/g:.0f}%':>8}")
+print("\n('real chat/g' & 'votes/g' exclude 'no read, skipping' skip-spam and target-less vote skips.")
+print(" spoke% = share of crew-games with >=1 real message. suss/vote acc = of real susses/votes, % hitting an imposter.)")
