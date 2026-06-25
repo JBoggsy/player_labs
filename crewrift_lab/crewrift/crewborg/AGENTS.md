@@ -465,8 +465,8 @@ The durable architecture and the full set of design decisions live in
 layout (`__init__.py`/`types.py`/`action.py`/`nav.py`/`modes/`/`strategy/`/
 `perception/`/`map/`/`coworld/`/`tests/`), the type contracts, and the
 mode/intent/strategy design. The meeting LLM implementation lives under
-`strategy/meeting/` and is enabled only by `CREWBORG_LLM_MEETINGS=1` plus
-`ANTHROPIC_API_KEY`.
+`strategy/meeting/` and is enabled by `CREWBORG_LLM_MEETINGS=1` plus either
+Bedrock (`USE_BEDROCK=1`) or `ANTHROPIC_API_KEY`.
 
 Perception is **structured-scene maintenance**, not computer vision: there is no
 framebuffer parser, no pixel atlas, and no CV parity oracle. The only image steps

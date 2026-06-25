@@ -845,10 +845,12 @@ impact.
 Attend Meeting remains a mode, not a strategy runner: meetings intentionally slow
 the game loop into a social phase, so the LLM call can run on the mode fast path
 without starving movement or combat decisions. The path is opt-in via
-`CREWBORG_LLM_MEETINGS=1` and `ANTHROPIC_API_KEY`; without both, the mode preserves
-the deterministic fallback: accuse the clear leading suspect (`build_accusation` →
+`CREWBORG_LLM_MEETINGS=1` plus either Bedrock (`USE_BEDROCK=1`) or
+`ANTHROPIC_API_KEY`; without a configured backend, the mode preserves the
+deterministic fallback: accuse the clear leading suspect (`build_accusation` →
 `"<color> sus: <reasons>"`) and vote them, or stay silent and skip a flat field
-(`top_suspect`, §10.1).
+(`top_suspect`, §10.1). Client construction is a no-raise boundary: provider import,
+model resolution, and client selection all degrade to `DisabledMeetingClient`.
 
 The implementation is split into three portable pieces under `strategy/meeting/`:
 
@@ -857,9 +859,16 @@ The implementation is split into three portable pieces under `strategy/meeting/`
   roster, event summaries, and suspicion ranking/fallback vote.
 - `schema.py` owns the `MeetingDecision` contract and sanitizes/validates chat and
   vote targets against the current legal state.
-- `llm.py` owns provider-specific infra. The default client uses Anthropic's
-  Messages API with `claude-haiku-4-5-20251001`, configurable through
-  `CREWBORG_LLM_MODEL`.
+- `llm.py` owns provider-specific infra through the SDK's `players.player_sdk`
+  LLM helpers. It selects direct Anthropic or Bedrock from the environment,
+  defaults to Haiku 4.5 (`claude-haiku-4-5-20251001` direct,
+  `us.anthropic.claude-haiku-4-5-20251001-v1:0` Bedrock), and remains
+  configurable through `CREWBORG_LLM_MODEL`.
+- `prompts.py` loads role-specific markdown prompts from
+  `strategy/meeting/memory/{crewmate,imposter}.md`, selected from the serialized
+  context's `self.role`. `CREWBORG_LLM_PROMPT_DIR` can override the prompt
+  directory for experiments; missing prompt files fall back to baked minimal
+  doctrine rather than crashing a meeting.
 
 `MeetingDecision.action` is one of `send_chat`, `set_tentative_vote`,
 `submit_vote`, or `wait`. A tentative vote is stored in mode-local state and is
@@ -867,7 +876,9 @@ auto-submitted near the deadline; `submit_vote` casts immediately. The mode call
 the LLM on meeting start, new external chat, chat-cooldown readiness, and deadline
 pressure, with a small tick interval to avoid repeated calls from one visual
 state. Distinct chat messages can be sent across the same meeting; duplicate model
-text is suppressed.
+text is suppressed. The deadline prompt has priority over new chat/cooldown prompts,
+and the mode refuses to start an LLM call unless the configured timeout, converted to
+meeting ticks with a margin, can return before the auto-submit window.
 
 ### 10.4 Imposter meeting tactics (`strategy/meeting/`)
 
@@ -1088,7 +1099,7 @@ structural, and each still awaits tuning against a live server.
 | Path clearance | `CLEARANCE_RADIUS = 2` px config-space margin (routes keep off walls) |
 | Re-plan cadence | `REPLAN_INTERVAL = 8` ticks (re-root the route at the live position; A* ≈ 0.2 ms) |
 | Voting policy | accuse + vote the **clear leading suspect** — near-certain (`P ≥ VOTE_PROBABILITY=0.8`) or a clear lead (`P ≥ VOTE_LEAD_MIN_P=0.5` and ahead of the runner-up by `VOTE_LEAD_MARGIN=0.2`), §10.1 — else **silent + skip** a flat field; always cast *something* before the timer (not voting costs −10) |
-| LLM meetings | opt-in with `CREWBORG_LLM_MEETINGS=1` + `ANTHROPIC_API_KEY`; default model `claude-haiku-4-5-20251001`; deadline LLM prompt at ≤96 ticks remaining and auto-submit at ≤48 ticks remaining; chat cooldown is 100 ticks |
+| LLM meetings | opt-in with `CREWBORG_LLM_MEETINGS=1` plus Bedrock (`USE_BEDROCK=1`) or `ANTHROPIC_API_KEY`; default models `claude-haiku-4-5-20251001` direct / `us.anthropic.claude-haiku-4-5-20251001-v1:0` Bedrock; default timeout 3.0s; deadline prompt wins over chat prompts and is pulled earlier when needed so worst-case timeout plus margin returns before the ≤48-tick auto-submit window; chat cooldown is 100 ticks |
 | Chat NLP (§10.5) | **on by default**; kill switch `CREWBORG_CHAT_NLP=0` disables it (never imports/loads spaCy). Drives the imposter bandwagon's chat signal via `en_core_web_sm` dependency-parse negation scope, background-loaded so it never blocks play |
 | Aggressive imposter selector | opt-in with `CREWBORG_BE_DUMB=1` or `BE_DUMB=1`; during `Playing`, imposters skip Pretend/Evade/ReportBody and always select Search unless kill-ready with a visible victim, then Hunt |
 | Report policy | crewmates always report visible bodies; imposters evade for `EVADE_TICKS = 72` after their own kill, then may report a non-fresh visible body (§7.2). Suspicion-aware reporting is a possible refinement |
