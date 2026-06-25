@@ -19,6 +19,7 @@ what they decide).
   *and* a rank-based test, and apply multiple-comparison correction; pool matched
   batches for power. A leaderboard that looks cleanly ranked is mostly noise until
   corrected.
+- **Generate multiple hypotheses, then test with data — never assign a cause by intuitive inference.** When results show an effect, the trap is to reach for the first plausible mechanism and assert it (e.g. "self-reporting helps us win because the meeting lets us deflect and vote a crewmate out"). That is a guess dressed as a finding. Instead: (1) **check the effect is even real** (effect size + a significance test; a 10-point swing at n=100 may be noise); (2) **enumerate competing mechanisms** (social/voting? positional? timing? a game mechanic you forgot, like meetings teleporting all players home?); (3) **run the query that separates them** and report what it shows, including refutations. Watch your own language for smuggled assumptions — borrowed metaphors ("snowball", "momentum") often import a model the game doesn't have. A claim about *why* is not done until a number distinguishes it from the alternatives.
 - **Normalize every stat by seat-holding.** When a policy occupies a different number
   of roster seats than others (round-robin with duplicates, or any uneven roster),
   *always* report **per-seat-game rates, never raw totals** — a policy with 4 of 8
