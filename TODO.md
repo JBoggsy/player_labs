@@ -27,6 +27,18 @@ mid-session; check them back at the start of focused work.
   — check newer master), whether crewborg should emit it, and the expected speedup / any
   contract change to the Sprite-v1 transport. Not yet scoped.
 
+- **LLM-based meeting chat for crewborg** (flagged by James, 2026-06-25; "for later/
+  tomorrow"). Today crewborg's meeting chat is templated/cue-filled (`CHAT_NLP` produces
+  ~62 distinct strings like "purple sus: they were tailing me"). Andre's `truecrew` bots
+  use genuine **LLM-generated** chat (Bedrock) — 81/83 imposter and 378/383 crew messages
+  are *unique*, natural-language, and contextual ("Body in Science Bay. Red called it fast
+  - suspicious timing."; "Blue is super sus for following so much."). The goal: add LLM
+  chat **in addition to** the current templated path (not replacing it), for both roles —
+  imposter deflection/investigator-posing and crew behavioral-cue accusations. Bedrock is
+  verified working from the tournament pod (see cue_n_woo_lab notes). Pairs with the
+  near-term **crew-side "suss the aggressive imposter"** work (cite the following/proximity
+  tell, the way Andre's crew does). Not yet scoped.
+
 ## Done
 
 _None yet._
