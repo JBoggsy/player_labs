@@ -8,8 +8,10 @@ strategy gate switches to Hunt.
 
 The algorithm (James, 2026-06-24) — a small FSM:
 
-  PICK_ROOM   choose a random nearby reachable room (not the current/just-left one)
-                → GO_TO_ROOM
+  PICK_ROOM   go to the room holding the most recently-seen crew (the current room
+              included — so right after a kill we re-approach the crew still nearby
+              instead of wandering off); fall back to a random nearby room only when no
+              crew are known. → GO_TO_ROOM
   GO_TO_ROOM  navigate to the room CENTRE (go fully inside to check it)
                 • arrived, crew in the room  → WATCH
                 • arrived, room empty         → PICK_ROOM
@@ -42,6 +44,10 @@ from players.player_sdk import EmptyModeParams, Mode, ModeParams
 ARRIVE_RADIUS_SQ = 24**2
 # Consider only the few nearest rooms as "nearby" when picking a random one to sweep.
 NEARBY_ROOMS = 4
+# A crewmate seen within this many ticks is "known" for steering Search toward the
+# room they're in (their last-known room is a good bet even when briefly out of view).
+# ~ one kill cooldown, so right after a kill we re-approach the crew we just saw.
+SEARCH_CREW_MEMORY_TICKS = 600
 # Drop a follow once the target has been unseen this long with no live prediction.
 FOLLOW_LOST_TICKS = 120
 # A crewmate counts as "still watchable" from a vantage if seen within this window.
@@ -95,14 +101,22 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
 
     # --- states ---------------------------------------------------------------
     def _pick_room(self, belief: Belief, self_xy: ic.Point) -> Intent:
+        # Steer toward the crew: target the room holding the most recently-seen
+        # crewmates (the *current* room included — if crew are right here, hold and
+        # watch them; this is what re-acquires a victim after a kill, where Search
+        # used to wander to a random empty room). `_prev_room` is excluded so we don't
+        # re-pick a room we just checked and found empty. Only with no crew read at all
+        # do we fall back to a random nearby task room (exploration).
         current = ic.room_containing(belief, self_xy)
         current_name = current.name if current is not None else None
-        rooms = self._nearby_task_rooms(belief, self_xy, exclude={current_name, self._prev_room})
-        if not rooms:  # fall back to any task room if all excluded
-            rooms = self._nearby_task_rooms(belief, self_xy, exclude=set())
-        if not rooms:
-            return Intent(kind="idle", reason="search: no task rooms")
-        room = self._rng.choice(rooms)
+        room = self._crew_room(belief, self_xy, exclude={self._prev_room})
+        if room is None:
+            rooms = self._nearby_task_rooms(belief, self_xy, exclude={current_name, self._prev_room})
+            if not rooms:  # fall back to any task room if all excluded
+                rooms = self._nearby_task_rooms(belief, self_xy, exclude=set())
+            if not rooms:
+                return Intent(kind="idle", reason="search: no task rooms")
+            room = self._rng.choice(rooms)
         self._target_room = room.name
         # Head to the room CENTRE (go fully inside to check it), not a task spot by
         # the door — standing at the entrance misses crew and exits.
@@ -304,6 +318,36 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
             if belief.last_tick - rec.last_seen_tick <= 48:
                 return True
         return False
+
+    def _crew_room(self, belief: Belief, self_xy: ic.Point, exclude: set) -> Room | None:
+        """The map room holding the most recently-seen live non-teammate crew (>= 1),
+        tie-broken by nearest to us. ``None`` when no known crew sit in any non-excluded
+        room — that's the signal to fall back to a random sweep. Steering here (rather
+        than a random room) is what keeps us with the crew, e.g. re-approaching the
+        crewmates still around a fresh kill instead of wandering off."""
+
+        crew = [
+            entry
+            for entry in belief.roster.values()
+            if entry.color not in belief.teammate_colors
+            and entry.life_status != "dead"
+            and belief.last_tick - entry.last_seen_tick <= SEARCH_CREW_MEMORY_TICKS
+        ]
+        if not crew:
+            return None
+        best: Room | None = None
+        best_count = 0
+        best_dist = 0
+        for room in belief.map.rooms:
+            if room.name in exclude:
+                continue
+            count = sum(1 for c in crew if ic.in_rect((c.world_x, c.world_y), room))
+            if count == 0:
+                continue
+            dist = ic.dist2(self_xy, (room.center.x, room.center.y))
+            if count > best_count or (count == best_count and dist < best_dist):
+                best, best_count, best_dist = room, count, dist
+        return best
 
     def _nearby_task_rooms(self, belief: Belief, self_xy: ic.Point, exclude: set) -> list[Room]:
         start = ic.starting_room(belief)
