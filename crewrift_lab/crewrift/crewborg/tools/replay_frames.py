@@ -28,7 +28,7 @@ class ReplayFrames:
     episode_id: str
     map: dict
     players: dict[int, dict]
-    positions: dict[int, dict[int, tuple[int, int, bool, str]]]
+    positions: dict[int, dict[int, tuple[int, int, bool, str, bool]]]  # x,y,alive,room,inside_room
     visible: dict[int, set[int]]  # target_slot -> set of ticks crewborg (slot 0) saw it
     ticks: list[int]
 
@@ -65,7 +65,7 @@ def load(warehouse: str, episode_id: str) -> ReplayFrames:
         players[int(slot)] = {"policy": policy, "role": role, "name": name}
 
     # Per-tick ground-truth positions from player_state.
-    positions: dict[int, dict[int, tuple[int, int, bool, str]]] = {}
+    positions: dict[int, dict[int, tuple[int, int, bool, str, bool]]] = {}
     for ts, slot, value in con.execute(
         "SELECT ts, slot, value FROM events WHERE key='player_state' AND episode_id=? AND slot>=0",
         [episode_id],
@@ -73,6 +73,7 @@ def load(warehouse: str, episode_id: str) -> ReplayFrames:
         v = json.loads(value)
         positions.setdefault(int(ts), {})[int(slot)] = (
             int(v["x"]), int(v["y"]), bool(v.get("alive", True)), v.get("room") or "",
+            bool(v.get("inside_room", True)),
         )
 
     # Crewborg (slot 0) visibility of each target, expanded to a per-tick set.
