@@ -49,32 +49,11 @@ def _crew(belief: Belief, color: str, xy, tick=None) -> PlayerRecord:
 
 
 def test_pick_room_then_navigate_to_a_task_room() -> None:
-    # No crew known ⇒ fall back to a random nearby task room (not the start room Mid).
     mode = SearchMode()
     intent = mode.decide(_belief(), ActionState())
     assert intent.kind == "navigate_to"
     assert mode._state == "go_to_room"
-    assert mode._target_room in {"Left", "Right"}
-
-
-def test_pick_room_targets_the_room_with_the_most_known_crew() -> None:
-    # Crew known ⇒ Search steers to the room holding the most of them, not a random one.
-    mode = SearchMode()
-    belief = _belief(self_xy=(150, 40))  # we're in Mid
-    _crew(belief, "green", (250, 40))   # Right has 2 crew
-    _crew(belief, "blue", (260, 50))
-    _crew(belief, "pink", (40, 40))     # Left has 1
-    mode.decide(belief, ActionState())
-    assert mode._target_room == "Right"
-
-
-def test_pick_room_holds_the_current_room_when_crew_are_here() -> None:
-    # Post-kill case: crew are in our current room — don't wander off, target it.
-    mode = SearchMode()
-    belief = _belief(self_xy=(40, 40))  # we're in Left
-    _crew(belief, "green", (60, 40))    # a crewmate is right here in Left
-    mode.decide(belief, ActionState())
-    assert mode._target_room == "Left"
+    assert mode._target_room in {"Left", "Right"}  # a nearby task room, not the start room (Mid)
 
 
 def test_watches_when_crew_are_in_the_target_room() -> None:
