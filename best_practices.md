@@ -19,6 +19,19 @@ what they decide).
   *and* a rank-based test, and apply multiple-comparison correction; pool matched
   batches for power. A leaderboard that looks cleanly ranked is mostly noise until
   corrected.
+- **Normalize every stat by seat-holding.** When a policy occupies a different number
+  of roster seats than others (round-robin with duplicates, or any uneven roster),
+  *always* report **per-seat-game rates, never raw totals** — a policy with 4 of 8
+  seats racks up ~4× the totals (wins, kills, chat, votes) for the same per-seat skill.
+  Two traps beyond the obvious: (1) **counting non-events as events** (e.g. an
+  abstain/skip message logged as "chat") inflates volume — exclude them first; (2)
+  **team-outcome metrics carry a composition confound that per-seat normalization does
+  NOT remove** — in a team game with a *fixed* roster, the team result is determined by
+  who's on the *other* team, so a policy's "team win rate" entangles its own skill with
+  its seat-mates' and opponents' identities. Per-seat rates fix the totals problem;
+  isolating individual contribution to a team outcome needs a **controlled design**
+  (vary one seat, hold the rest fixed) or at least conditioning on composition.
+  Individual stats (kills, tasks) are clean per-seat; team stats (win) are not.
 - **Experience requests are your primary eval — they aren't scarce.** They run many
   episodes in parallel on Softmax infra and are currently free, so use them liberally
   rather than rationing them; just **target them to the question** (matched roles when
