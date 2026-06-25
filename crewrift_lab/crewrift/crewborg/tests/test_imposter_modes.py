@@ -19,7 +19,8 @@ deprecated_seeking = pytest.mark.skip(
 
 from crewrift.crewborg.map.types import MapData, MapPoint, MapRect, Room, TaskStation, Vent
 from crewrift.crewborg.agent_tracking import OccupancySnapshot, update_agent_tracking
-from crewrift.crewborg.modes import EvadeMode, HuntMode, PretendMode, SearchMode
+from crewrift.crewborg.modes import EvadeMode, HuntMode, SearchMode
+from crewrift.crewborg.modes._deprecated.pretend import PretendMode  # retired; only the skipped tests use it
 from crewrift.crewborg.nav import build_nav_graph
 from crewrift.crewborg.types import ActionState, Belief, BodyEntry, PlayerRecord
 

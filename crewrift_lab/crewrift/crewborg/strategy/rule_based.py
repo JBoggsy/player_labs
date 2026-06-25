@@ -49,11 +49,7 @@ from __future__ import annotations
 
 import os
 
-from crewrift.crewborg.strategy.opportunity import (
-    SEARCH_LEAD_TICKS,
-    has_visible_victim,
-    ticks_until_kill_ready,
-)
+from crewrift.crewborg.strategy.opportunity import has_visible_victim
 from crewrift.crewborg.strategy.suspicion import active_tail_suspect
 from crewrift.crewborg.types import ActionState, Belief
 from players.player_sdk import ModeDirective
@@ -114,8 +110,10 @@ class RuleBasedStrategy:
 
     def _select_imposter(self, belief: Belief) -> ModeDirective:
         # Imposter priority (design §10): just killed -> Evade; non-fresh visible
-        # body -> Report; kill ready and a victim visible -> Hunt; kill ready or
-        # about to be -> Search; else Pretend.
+        # body -> Report; kill ready and a victim visible -> Hunt; else SEARCH.
+        # SEARCH is the always-on seeking stance (Pretend removed 2026-06-24): it
+        # keeps us near crew — watching a room and following a crewmate to their next
+        # room — so a kill window opens, which is when Hunt takes over.
         if _be_dumb_enabled():
             if belief.self_kill_ready and has_visible_victim(belief):
                 return ModeDirective(mode="hunt", source="strategy", reason="be dumb: kill ready with visible victim")
@@ -126,9 +124,7 @@ class RuleBasedStrategy:
             return ModeDirective(mode="report_body", source="strategy", reason="body in view after evade window")
         if belief.self_kill_ready and has_visible_victim(belief):
             return ModeDirective(mode="hunt", source="strategy", reason="kill ready: hunt visible victim")
-        if ticks_until_kill_ready(belief) <= SEARCH_LEAD_TICKS:
-            return ModeDirective(mode="search", source="strategy", reason="kill window near: search for target")
-        return ModeDirective(mode="pretend", source="strategy", reason="blend in")
+        return ModeDirective(mode="search", source="strategy", reason="seek crew to be near a kill")
 
     def _sticky_accuse_target(self, belief: Belief) -> str | None:
         """The tail we should keep heading to the button to accuse, or ``None``.

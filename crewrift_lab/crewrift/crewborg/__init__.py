@@ -18,7 +18,6 @@ from crewrift.crewborg.modes import (
     HuntMode,
     IdleMode,
     NormalMode,
-    PretendMode,
     ReportBodyMode,
     SearchMode,
 )
@@ -91,7 +90,6 @@ def build_runtime(
     registry.register(AccuseMode)
     registry.register(EvadeMode)
     registry.register(HuntMode)
-    registry.register(PretendMode)
     registry.register(SearchMode)
 
     if map_data is None:

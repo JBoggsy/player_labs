@@ -164,9 +164,10 @@ def _imposter_with_visible_target(**kwargs) -> Belief:
     return belief
 
 
-def test_imposter_pretends_by_default() -> None:
-    # No kill opportunity ⇒ Pretend (which itself follows crew / wanders rooms).
-    assert _select(Belief(phase="Playing", self_role="imposter", last_tick=10)) == "pretend"
+def test_imposter_searches_by_default() -> None:
+    # No kill opportunity ⇒ Search (the always-on seeking stance; Pretend retired
+    # 2026-06-24). Search keeps us near crew so a kill window opens.
+    assert _select(Belief(phase="Playing", self_role="imposter", last_tick=10)) == "search"
 
 
 def test_imposter_hunts_when_kill_ready_with_opportunity() -> None:
@@ -266,12 +267,13 @@ def test_be_dumb_does_not_override_voting(monkeypatch) -> None:
     assert _select(Belief(phase="Voting", self_role="imposter")) == "attend_meeting"
 
 
-def test_imposter_pretends_when_kill_is_far_off_cooldown() -> None:
-    # A victim is in view but the kill is a long way off ⇒ blend (Pretend), don't tail.
+def test_imposter_searches_when_kill_is_far_off_cooldown() -> None:
+    # A victim is in view but the kill is a long way off ⇒ still Search (no Pretend /
+    # lead-window gate anymore): seek and stay near crew until the window opens.
     belief = _imposter_with_visible_target(self_kill_ready=False)
     belief.kill_cooldown_start_tick = belief.last_tick
     belief.kill_cooldown_estimate = 900
-    assert _select(belief) == "pretend"
+    assert _select(belief) == "search"
 
 
 def test_imposter_pretends_when_only_a_teammate_is_visible() -> None:
