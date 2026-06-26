@@ -1,0 +1,73 @@
+{
+ "schema": "crewborg-suspicion-weights/v1",
+ "feature_set": "runtime",
+ "trained": "2026-06-22",
+ "dataset": "/Users/jamesboggs/coding/personal_labs/crewrift_lab/suspicion_lab/dataset/dataset.parquet",
+ "games": 191532,
+ "rows": 19984465,
+ "C": 1.0,
+ "cv_auc": 0.8089847169032549,
+ "cv_log_loss": 0.4687066109247908,
+ "intercept": -0.5091468255520354,
+ "linear_clip": 5,
+ "sample_unit_ticks": 24,
+ "bin_spec": {
+  "follow_death_samples": [
+   2,
+   6
+  ],
+  "tail_obs_samples": [
+   5,
+   20
+  ],
+  "tail_obs_max_run": [
+   3,
+   8
+  ],
+  "copresence_killrange_samples": [
+   5,
+   20
+  ],
+  "task_site_dwell_samples": [
+   5,
+   20
+  ],
+  "observed_samples": [
+   10,
+   40
+  ]
+ },
+ "coefficients": {
+  "witnessed_kills": 9.791166394603005,
+  "near_body_bodies": 0.5176675691050933,
+  "follow_death_samples__0to2": 1.403605680025612,
+  "follow_death_samples__2to6": 1.9136280499873433,
+  "follow_death_samples__gt6": 1.6296831081631697,
+  "tail_obs_samples__0to5": -0.10155882026801082,
+  "tail_obs_samples__5to20": 0.0678034384035256,
+  "tail_obs_samples__gt20": 0.5371691738584499,
+  "tail_obs_max_run__0to3": -0.025017292514365037,
+  "tail_obs_max_run__3to8": 0.03481362146262039,
+  "tail_obs_max_run__gt8": 0.024985503010959562,
+  "vent_visits": 0.22533504813508057,
+  "copresence_killrange_samples__0to5": 0.008794545818421812,
+  "copresence_killrange_samples__5to20": 0.24490160995999385,
+  "copresence_killrange_samples__gt20": 0.7966447621620881,
+  "task_site_dwell_samples__0to5": -0.3288387023081158,
+  "task_site_dwell_samples__5to20": -0.550381448259712,
+  "task_site_dwell_samples__gt20": 0.8328387612656128,
+  "observed_samples__0to10": -0.3313445975648274,
+  "observed_samples__10to40": 0.23509550257191053,
+  "observed_samples__gt40": 0.794978029354723,
+  "tasks_completed_watched": -14.090798375226136,
+  "accusations_made": 1.0120167329280494,
+  "times_accused": -0.5477916312385809,
+  "times_defended": 0.0,
+  "votes_cast": -0.11515703923973837,
+  "votes_skipped": -0.21045141659006952,
+  "voted_against_observer": 0.6200774766294764,
+  "vote_agreement_with_observer": 0.40273808732495453,
+  "reported_bodies": -0.15034879710979446,
+  "button_calls_made": -1.3124370779315124
+ }
+}

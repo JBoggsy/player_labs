@@ -581,7 +581,7 @@ re-decides.
 | **Search** | the imposter's **always-on seeking stance** (default when not evading / reconning / hunting; Pretend retired 2026-06-24) | pick a random nearby task room, go watch it, and when a crewmate **leaves** that room follow them to their next room — using **path prediction** (`strategy.path_prediction`) to keep chasing down the right hallway after they leave view. Keeps us *near crew* so a kill window opens (which is when Hunt takes over) |
 | **Recon** | not ready, but the kill comes off cooldown within `recon_window()` ticks (`CREWBORG_RECON_WINDOW`, default 100) **and** a crewmate has been seen | **beeline to the most-recently-seen non-teammate crewmate** (`modes/recon.py`; live position when visible, last-known otherwise) so a victim is in hand the instant we can kill → Hunt fires immediately. Built 2026-06-25 from the warehouse finding that we had a crew in view *at* cooldown-ready only 53% of the time vs Aaron's 83%. Deliberately short window for now (a long one = the over-extension that gets caught) |
 | **Hunt** | kill ready **and** a victim is visible | **commit to a visible victim and close/strike**: `select_victim` picks the most-isolated reachable visible crewmate, preferring targets not already claimed by a closer teammate; navigate to its **predicted intercept** (`strategy.trajectory` — lead a moving target); when in KillRange *and* unwitnessed → `kill`, else keep shadowing in range (lie in wait) |
-| **Evade** | for `EVADE_TICKS` after our own kill | `vent` if a vent exists; otherwise move away from the nearest known body. Gets the imposter off the corpse; once Evade ends we go **straight back to Search** (no report) |
+| **Evade** | for `EVADE_TICKS` after our own kill | **beeline toward the most-populated area** — the densest expected-crew room (occupancy grid §10.2, minus teammate pressure), else the hottest occupancy cell, else the last-seen crewmate (cold start). **Rewritten 2026-06-26**: the old Evade *fled* (vent away / walk off the corpse), feeding post-kill drift. New Evade *re-approaches* crew so a victim cluster is nearby when the window hands back to Search/Recon. **Paired with Hunt's drop-the-witness-check-after-first-kill** (§10): re-approaching the crowd only pays off once witnesses no longer veto the 2nd kill (else the crowd is a witness-rich dead end) — the two are evaluated together |
 | _(Report Body)_ | **removed from the imposter gate 2026-06-25** | Imposters **never report bodies**. Self-reporting our own kill opened a meeting that reset the cooldown and killed snowball kills (~79% of our body-report meetings were self-reports; warehouse, §perf). `report_body` is now **crewmate-only**. |
 | **Attend Meeting** | phase = `Voting` | **deflect onto crewmates, never a teammate** (§10.4): proactively accuse + vote a non-teammate who genuinely *looks* sus (real cues, same format as a crewmate); else wait and **bandwagon** onto a crewmate others suss/vote, citing *fabricated* safe cues in the identical format; else skip at the deadline |
 
@@ -755,7 +755,7 @@ default directive is `idle` mode (the stall/TTL fallback, rarely reached).
 **Imposter selection** (priority order):
 
 1. phase = `Voting` → **Attend Meeting**
-2. just killed → **Evade** for `EVADE_TICKS` (vent if possible, else leave the body)
+2. just killed → **Evade** for `EVADE_TICKS` (beeline to the densest expected-crew area — re-approach, not flee; paired with Hunt's post-first-kill witness drop)
 3. kill ready **and** a visible victim → **Hunt** (commit + close, strike when isolated)
 4. not ready but within `recon_window()` of ready **and** a crewmate has been seen →
    **Recon** (beeline to the most-recently-seen crewmate so a victim is in hand at ready)
@@ -770,9 +770,15 @@ commits to a victim (§7.2), firing the kill only when it would go **unwitnessed
 The witness bar relaxes with **urgency** — `last_tick − kill_ready_since_tick`, how
 long we have been able to kill without doing so — shrinking the required clearance
 radius and the witness-staleness window to zero by `URGENCY_FULL_TICKS`, at which
-point the imposter strikes regardless of witnesses. When no visible victim is
-available, Search owns acquisition during the lead window rather than Hunt chasing
-stale targets.
+point the imposter strikes regardless of witnesses. **After our FIRST kill Hunt
+drops the witness check entirely** (the strike gate skips `unwitnessed` once
+`belief.last_kill_tick is not None`; James 2026-06-26): getting a **second** kill is
+the imposter's core job — two imposters × two kills each = the four that reach parity —
+and at the second ready we are usually already close to crew (meeting-aware @ready:
+~49px, in-view ~57%), so the bottleneck is **conversion, not stealth**; a witnessed
+second kill (paid for by a later ejection) beats a clean kill we never get. When no
+visible victim is available, Search owns acquisition during the lead window rather than
+Hunt chasing stale targets.
 
 **Aggressive experiment.** `CREWBORG_BE_DUMB=1` (or `BE_DUMB=1`) replaces the
 imposter `Playing` selector with only **Search**/**Hunt**: if kill-ready with a
@@ -1135,7 +1141,7 @@ structural, and each still awaits tuning against a live server.
 | Report policy | crewmates always report visible bodies; **imposters NEVER report** (removed 2026-06-25) — they evade for `EVADE_TICKS = 72` after their own kill, then go straight back to Search. Self-reporting our own kill opened a meeting that reset the kill cooldown and killed snowball kills (§7.2) |
 | Pretend fake-task hold | one task-time (`TASK_TICKS = 72`) held at the station, then re-dispatch |
 | Pretend room targeting | room score = expected crew density minus teammate-imposter pressure (`TEAMMATE_ROOM_PENALTY = 3.0`); choose a real task station in the selected room; keep a chosen room for `ROOM_TARGET_MIN_TICKS = 10000` unless arriving or being preempted |
-| Kill isolation bar | clearance `BASE_ISOLATION_RADIUS = 48` px and witness window `WITNESS_WINDOW_TICKS = 72`, both relaxed to zero by urgency `URGENCY_FULL_TICKS = 240` |
+| Kill isolation bar | clearance `BASE_ISOLATION_RADIUS = 48` px and witness window `WITNESS_WINDOW_TICKS = 72`, both relaxed to zero by urgency `URGENCY_FULL_TICKS = 240`; **and skipped entirely after our first kill** (Hunt's strike gate bypasses `unwitnessed` once `last_kill_tick` is set — prioritize banking the 2nd kill over stealth) |
 | Search lead | enter Search `SEARCH_LEAD_TICKS = 250` before the kill is ready (half the 500-tick cooldown — raised from 100 so we are already shadowing an isolated victim when the kill comes ready, converting the cooldown window to a kill ASAP; stops short of the BE_DUMB ceiling, which tripled ejections for +10% kills). Time-to-ready is reconstructed from the binary HUD: a learned `kill_cooldown_estimate` (or `DEFAULT_KILL_COOLDOWN_TICKS = 500`, matching the live game's `killCooldownTicks`, until measured) from the tracked cooldown start |
 | Hunt victim tracking | Hunt requires a visible victim; Search may follow a committed victim seen within `TRACK_WINDOW_TICKS = 120`; trajectory lead is capped at `MAX_LEAD_TICKS = 24` (velocity from sightings ≤ `VELOCITY_MAX_DT = 4` apart, `AGENT_SPEED_PX = 3`) |
 | Hunt teammate claim | prefer an unclaimed victim when a teammate-imposter seen within `TRACK_WINDOW_TICKS` is closer to another victim inside `TEAMMATE_CLAIM_RADIUS = 80` px |

@@ -22,7 +22,7 @@ from crewrift.crewborg.agent_tracking import OccupancySnapshot, update_agent_tra
 from crewrift.crewborg.modes import EvadeMode, HuntMode, SearchMode
 from crewrift.crewborg.modes._deprecated.pretend import PretendMode  # retired; only the skipped tests use it
 from crewrift.crewborg.nav import build_nav_graph
-from crewrift.crewborg.types import ActionState, Belief, BodyEntry, PlayerRecord
+from crewrift.crewborg.types import ActionState, Belief, PlayerRecord
 
 
 def _visible(belief: Belief, object_id: int, xy: tuple[int, int], color: str = "red", tick: int | None = None) -> None:
@@ -89,6 +89,19 @@ def test_hunt_lies_in_wait_when_a_witness_is_near() -> None:
     _visible(belief, 1005, (110, 100), color="blue")  # witness next to the victim
     intent = HuntMode().decide(belief, ActionState())
     assert intent.kind == "navigate_to"  # lying in wait, not killing
+
+
+def test_hunt_strikes_a_witnessed_victim_after_the_first_kill() -> None:
+    # After our FIRST kill (last_kill_tick set), the unwitnessed requirement is dropped:
+    # getting the SECOND kill is the imposter's core job, worth more than stealth. Same
+    # witness setup as the lie-in-wait test, but with a kill already banked ⇒ strike.
+    belief = Belief(
+        self_world_x=100, self_world_y=100, last_tick=5, self_kill_ready=True, last_kill_tick=3,
+    )
+    _visible(belief, 1004, (108, 100), color="green")
+    _visible(belief, 1005, (110, 100), color="blue")  # witness ignored once we've killed once
+    intent = HuntMode().decide(belief, ActionState())
+    assert intent.kind == "kill" and intent.target_color == "green"
 
 
 def test_hunt_strikes_a_witnessed_victim_under_full_urgency() -> None:
@@ -187,31 +200,55 @@ def test_search_moves_through_ranked_occupancy_points() -> None:
 
 
 # --------------------------------------------------------------------------- #
-# Evade — leave the body after a kill                                         #
+# Evade — re-approach the crew after a kill (rewritten 2026-06-26)             #
+# Old flee behavior (vent away / walk off the body) is gone: Evade now beelines #
+# toward the densest expected-crew area so a victim cluster is nearby when it    #
+# hands back to Search/Recon.                                                    #
 # --------------------------------------------------------------------------- #
 
 
-def test_evade_vents_when_a_vent_exists() -> None:
+def _evade_belief_with_occupancy(target_room: str) -> Belief:
+    """An imposter in the Left room with expected-crew occupancy massed in `target_room`.
+    A vent is present specifically to prove Evade no longer uses it."""
     map_data = MapData(
-        width=1000, height=1000, tasks=(),
-        vents=(Vent(x=300, y=300, w=14, h=14, group="1", group_index=1),),
-        rooms=(), button=MapRect(x=0, y=0, w=28, h=34), home=MapPoint(x=0, y=0),
+        width=128, height=64,
+        tasks=(TaskStation(name="left", x=16, y=16, w=8, h=8),
+               TaskStation(name="right", x=96, y=16, w=8, h=8)),
+        vents=(Vent(x=8, y=8, w=14, h=14, group="1", group_index=1),),
+        rooms=(Room(name="Left", x=0, y=0, w=64, h=64),
+               Room(name="Right", x=64, y=0, w=64, h=64)),
+        button=MapRect(x=4, y=48, w=8, h=8), home=MapPoint(x=8, y=8),
     )
-    belief = Belief(map=map_data, self_world_x=100, self_world_y=100)
+    nav = build_nav_graph(np.ones((map_data.height, map_data.width), dtype=bool), map_data=map_data)
+    belief = Belief(map=map_data, nav=nav, self_role="imposter", self_world_x=8, self_world_y=8)
+    update_agent_tracking(belief)
+    cells = [c for c in belief.agent_tracking.substrate.cells.values() if c.label == target_room]
+    belief.agent_tracking.snapshot = OccupancySnapshot(
+        tick=1, expected_by_cell={c.index: 0.5 for c in cells},
+        top_cell=cells[0].index, top_point=cells[0].center, top_expected=0.5,
+        tracked_count=1, support_cell_count=len(cells),
+    )
+    return belief
+
+
+def test_evade_beelines_to_densest_crew_area_not_a_vent() -> None:
+    belief = _evade_belief_with_occupancy("Right")  # crew massed across the map in Right
     intent = EvadeMode().decide(belief, ActionState())
-    assert intent.kind == "vent"
+    assert intent.kind == "navigate_to"  # no longer vents or flees the body
+    assert intent.point[0] > 64          # heads INTO the crew-dense Right room
 
 
-def test_evade_moves_away_from_body_when_no_vents() -> None:
+def test_evade_falls_back_to_last_seen_crew_without_occupancy() -> None:
+    # Cold start: no occupancy grid yet, but we have seen a crewmate -> close on them.
     map_data = MapData(
         width=1000, height=1000, tasks=(), vents=(), rooms=(),
         button=MapRect(x=0, y=0, w=28, h=34), home=MapPoint(x=0, y=0),
     )
-    belief = Belief(map=map_data, self_world_x=100, self_world_y=100)
-    belief.bodies[2003] = BodyEntry(object_id=2003, color="green", world_x=110, world_y=100, first_seen_tick=1)
+    belief = Belief(map=map_data, self_role="imposter", self_world_x=100, self_world_y=100)
+    _visible(belief, 1007, (400, 300), color="green", tick=5)
     intent = EvadeMode().decide(belief, ActionState())
     assert intent.kind == "navigate_to"
-    assert intent.point == (90, 100)
+    assert intent.point == (400, 300)
 
 
 # --------------------------------------------------------------------------- #

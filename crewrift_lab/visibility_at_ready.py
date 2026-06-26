@@ -11,7 +11,7 @@ def ev(k): return f"read_parquet('{WH}/events/key={k}/*.parquet')"
 EP = f"read_parquet('{WH}/episode_players.parquet')"
 
 imp = con.execute(f"""SELECT policy_name, episode_id, slot FROM {EP}
-  WHERE role='imposter' AND policy_name IN ('crewborg','crewborg-aaln') AND score>=0""").df()
+  WHERE role='imposter' AND policy_name IN ('crewborg','crewborg-aaln','truecrew') AND score>=0""").df()
 key = {(r.episode_id, r.slot): r.policy_name for _,r in imp.iterrows()}
 
 # cooldown series (Playing, alive) for imposter slots
@@ -66,16 +66,16 @@ print(f"warehouse: {WH}\n")
 print("Share of cooldown-ready moments with a CREW in view at/within N ticks before ready:")
 hdr = "policy".ljust(16) + "ready".rjust(7) + "".join(f"≤{w}t".rjust(8) for w in WINDOWS) + "avg#@R".rjust(9)
 print(hdr)
-for pol in ('crewborg','crewborg-aaln'):
+for pol in ('crewborg','crewborg-aaln','truecrew'):
     d = res[pol]; n = d["ready"] or 1
-    tag = " <<us" if pol=='crewborg' else " (Aaron)"
+    tag = {"crewborg":" <<us","crewborg-aaln":" (Aaron)","truecrew":" (Andre)"}.get(pol,"")
     cells = "".join(f"{100*d['win'][w]/n:.0f}%".rjust(8) for w in WINDOWS)
     avg = st.mean(d["ncrew_at"]) if d["ncrew_at"] else 0
     print(f"{pol:16}{d['ready']:>7}{cells}{avg:>9.2f}{tag}")
 print("\n(≤0t = visible exactly AT the ready tick. Reading across shows how early we'd")
 print(" have to start approaching to have a target in hand when cooldown ends.)")
 print("\nMedian ticks since last crew sighting at the ready moment (lower = a target was just there):")
-for pol in ('crewborg','crewborg-aaln'):
+for pol in ('crewborg','crewborg-aaln','truecrew'):
     g = [x for x in res[pol]["gaps"] if x is not None]
     none_n = sum(1 for x in res[pol]["gaps"] if x is None)
     md = f"{st.median(g):.0f}" if g else "-"

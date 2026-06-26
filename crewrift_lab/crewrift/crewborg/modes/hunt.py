@@ -14,7 +14,9 @@ in range and the kill would go **unwitnessed**:
 - when within KillRange and unwitnessed → ``kill``; if a witness is near, keep
   shadowing (lie in wait) rather than blowing the kill. The urgency bar relaxes
   the witness requirement over time, so a perpetually-shadowed kill still
-  eventually fires.
+  eventually fires. **After our first kill the witness requirement is dropped
+  entirely** (``last_kill_tick`` set ⇒ strike regardless of witnesses): banking
+  the second kill is the imposter's core job and conversion beats stealth there.
 
 Victim selection also has a local teammate-claim heuristic: if a recently seen
 fellow imposter is already closer to a target, prefer another victim when one
@@ -52,9 +54,17 @@ class HuntMode(Mode[Belief, ActionState, Intent]):
         victim_xy = (victim.world_x, victim.world_y)
         in_range = ic.dist2(self_xy, victim_xy) <= KILL_RANGE_SQ
 
-        # Strike: kill ready, in range, victim present, and the kill goes unseen.
-        if in_range and belief.self_kill_ready and unwitnessed(belief, victim):
-            return Intent(kind="kill", target_color=victim.color, reason="striking isolated victim")
+        # Strike when kill-ready and in range. The witness requirement applies only
+        # *before* our first kill; once a kill is banked (``last_kill_tick`` set) we
+        # strike regardless of witnesses — getting the SECOND kill is the imposter's
+        # core job (2 imposters × 2 kills = parity), and at the second ready we're
+        # usually already close to crew, so conversion beats stealth (a witnessed kill,
+        # paid for by a later ejection, beats a clean one we never get). James 2026-06-26.
+        if in_range and belief.self_kill_ready:
+            already_killed = belief.last_kill_tick is not None
+            if already_killed or unwitnessed(belief, victim):
+                reason = "striking the 2nd+ kill (witnesses ignored)" if already_killed else "striking isolated victim"
+                return Intent(kind="kill", target_color=victim.color, reason=reason)
 
         # Otherwise close on the predicted intercept (lead a moving target) and shadow.
         # When already in range we lie in wait if a witness is near. The urgency

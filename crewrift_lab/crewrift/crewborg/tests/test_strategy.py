@@ -214,8 +214,8 @@ def test_imposter_never_reports_a_body() -> None:
     from crewrift.crewborg.types import BodyEntry
 
     belief = _imposter_with_visible_target(self_kill_ready=True, last_kill_tick=1, visible_body_ids={2003})
-    belief.last_tick = 100  # past the evade window (EVADE_TICKS = 72)
-    belief.roster["red"].last_seen_tick = 100  # the victim is visible *now* -> Hunt wins
+    belief.last_tick = 500  # past the post-kill re-approach window (EVADE_TICKS = 400)
+    belief.roster["red"].last_seen_tick = 500  # the victim is visible *now* -> Hunt wins
     belief.bodies[2003] = BodyEntry(object_id=2003, color="green", world_x=60, world_y=60, first_seen_tick=10)
     # A visible body no longer routes the imposter to Report Body — it kills, not reports.
     assert _select(belief) == "hunt"

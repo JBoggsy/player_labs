@@ -17,34 +17,55 @@ This is *not* a log or archive: finished work lives in git history / the
 
 ## 🎯 OBJECTIVE: crewborg's IMPOSTER KILL EFFICIENCY (the durable gap)
 
-Current build **`crewborg:v50`** (uploaded, **NOT submitted**). It carries everything:
-vantage-SEARCH + Recon + cooldown fixes, **working LLM meetings** (Bedrock), and the
-**mid-game reconnect**. Prime champion is still **v42** (last placed; v49 was *rejected*
-from qualifiers, v50 not submitted).
+Champion is still **v42** (shipped Prime). Current code lineage = **v54** (= clean HEAD; v50 lineage
++ everything: vantage-SEARCH, Recon, reconnect, LLM meetings). **v61 = v54 code + debug tracing** (the
+complete-baseline subject). NOT submitted: v53/v58 (inconclusive A/B arms), v61 (eval only). **Avoid
+v59/v60 — separate research thread.**
 
-**Clean diagnosis (combined n=127 clean, Prime round-robin vs the field; meeting-aware):**
-crewborg imposter **70% win / 1.38 k/g** vs Aaron **86% / 2.01** and Andre **84% / 2.02**.
-Crew is ~5% win for *everyone* (imposter-dominated field → crew win-rate is not
-discriminating; judge crew by sub-metrics, not the team outcome).
+**✅ CONFIRMED BASELINE — v54, 300 eps, NATURAL ROLES, vs Aaron(v17)+Andre(v28), Prime 0.4.9, meeting-aware
+(`/tmp/v54base_wh`; 2026-06-26).** This is the authoritative current diagnosis (the v50 numbers were a
+different config; the pinned-2-imp A/Bs MASKED the gap — see lessons).
 
-**Root cause = subsequent-kill CONVERSION, driven by post-kill positioning:**
-- crewborg gets a **2nd kill only 44%** of the time (vs Aaron/Andre **~83%**), and gets
-  **0 kills in 11%** of imposter games (they're 0%). It lands the 1st, then stalls.
-- **idle-ready ~2.8× Aaron** (2669 vs 953 ticks/g), and **189 ticks (~8s) since its last
-  crew sighting at the moment it's ready** — Aaron is at **0** (a victim is always there).
-- So it's not cooldown/dither/witnesses: **we lose crew contact and don't have a victim in
-  sight when ready** — first kill *and* every kill after. Lever = stay on / re-approach the
-  nearest killable crew through the cooldown. **NOT YET BUILT.**
-- ⚠️ One earlier attempt (v46: make SEARCH pick the crew-densest room) **regressed** — the
-  random sweep's *mobility* was load-bearing. The fix must be surgical (approach the nearest
-  *single* victim), not a rewrite of room-picking.
+| imposter | n | win% | kills/g | **≥2-kill** | 0-kill | post-kill in-view@ready | post-kill nearest-crew |
+|---|---|---|---|---|---|---|---|
+| **crewborg** | 60 | 80% | **1.52** | **52%** | 8% | **47%** | **95px** |
+| Aaron | 246 | 86% | 1.97 | 82% | 2% | 76% | 14px |
+| Andre | 164 | 92% | 1.97 | 82% | 2% | 81% | 18px |
 
-**Next step:** the spatial pass is half-done — use `tools/positioning_viz/` (web UI +
-`render_event.py` PNG) on `/tmp/v50_pertick` to see *where* "ready but no victim in sight /
-doesn't commit" happens (hunting-path vs target-selection), then build the surgical
-post-kill re-approach and A/B it (crewrift-ab skill). Secondary direction the human raised:
-**crew-side — punish aggressive imposters** (detect their relentless proximity/kills to
-reduce Aaron/Andre's imposter win and lift our crew win).
+Crew: crewborg win 3% / tasks **6.0/8 (best tasker)**; Aaron 3%/5.7, Andre 6%/4.5 — crew win ~3-6% for
+all (imposter-dominated field, not discriminating).
+
+**Root cause = POST-KILL subsequent-kill CONVERSION (the ~30pp ≥2-kill gap, CONFIRMED real in natural play):**
+- crewborg ≥2-kill **52% vs Aaron/Andre 82%**; our **first** kill positioning is fine (first-cd in-view
+  73% / 22px) — the fall-off is specifically **post-kill** (in-view 47% / 95px vs their 76-81% / 14-18px).
+  Aaron/Andre stay glued (~14-18px) and snowball; we drift to ~95px median.
+- Lever (unchanged) = **after a kill, re-establish contact with a killable ISOLATED victim / the cluster
+  the victim peeled from, SUSTAINED across the cooldown** — the ~428t of random Search is the bigger
+  culprit than Evade's 72t. **NOT solved.**
+- ⚠️ v46 (Search → crew-densest room) regressed; v53 (Evade → densest crowd) neutral — **crowd-seeking is
+  a dead end** (we kill ISOLATED victims; crowds = witnesses). Target the single lone victim, not density.
+
+**Both prior fixes are INCONCLUSIVE (wrong eval config), NOT neutral** — they were A/B'd pinned-2-imp where
+the gap was masked (≥2-kill 69% there vs 52% natural). **Re-test any post-kill fix in NATURAL roles.**
+
+**ATTEMPT 1 (2026-06-26) — Evade → beeline to most-populated area: NEUTRAL.** Built `v53` (Evade
+beelines to densest crew area off the occupancy grid) vs `v54` (old flee-Evade); 2× 100-ep
+imposter-pinned A/B (P1 fixed-Andre co-imp; RR round-robin co-imp). Fully-clean episodes: kills
+1.73→1.74 (P1), 1.71→1.69 (RR); no-kill & ≥2-kill identical. **Dead neutral, safe (0 disconnect
+crashes; failures all platform connect_timeouts — recompute on FULLY-clean eps, see lessons).** Why:
+we kill ISOLATED victims (~120-170px to next crew even at the kill), so beelining to the densest
+CROWD heads into witnesses where Hunt's gate blocks the kill — the **v46 crowd-seeking dead-end,
+re-confirmed**. Also Evade is only 72t of the 500t cooldown; Search's random-room wander over the
+other ~428t undoes it.
+
+**Next step (refined lever):** the post-kill re-approach must target the **single nearest ISOLATED
+victim / the cluster the victim peeled from** (NOT the densest crowd), SUSTAINED across the whole
+cooldown — the ~428t of random Search is the bigger culprit than Evade's 72t. Forks: (A) dedicated
+re-approach state spanning Evade→Search that shadows the nearest reachable lone crew; (C) strengthen
+Recon (longer post-kill window + head to a live/predicted single victim, not a stale last-seen).
+Optional confirm: post-kill distance-curve on v53 vs v54 replays (needs a 0.4.9 warehouse — expand-043
+covers only 0.4.3-0.4.7). Secondary direction the human raised: **crew-side — punish aggressive
+imposters** (detect relentless proximity/kills to cut Aaron/Andre's imposter win, lift our crew win).
 
 ## Tools / data ready to use
 - **`tools/positioning_viz/`** — kill-ready spatial viewer (meeting-aware; see its README).

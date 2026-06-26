@@ -60,8 +60,14 @@ from crewrift.crewborg.types import ActionState, Belief
 from players.player_sdk import ModeDirective
 from players.player_sdk.types import BeliefSnapshot
 
-# Ticks after a kill during which the imposter prefers to Evade (≈3s at 24 Hz).
-EVADE_TICKS = 72
+# Ticks after a kill during which the imposter stays in Evade. Evade no longer "flees" —
+# it RE-APPROACHES the densest expected-crew area (modes/evade.py), so this is really the
+# post-kill "go to where we think the crew are" window. Raised 72 → 400 (2026-06-26,
+# James): at 72t the re-approach washed out long before the ~500-tick-later second ready
+# (measured: post-kill positioning unchanged), so it now spans most of the cooldown to keep
+# us with the crowd until the kill is ready (where the witness-drop, modes/hunt.py, lets us
+# convert the 2nd kill). Env-tunable for sweeps via CREWBORG_EVADE_TICKS.
+EVADE_TICKS = int(os.environ.get("CREWBORG_EVADE_TICKS", "400"))
 
 
 class RuleBasedStrategy:
