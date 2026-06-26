@@ -119,6 +119,27 @@ def test_runtime_with_commander_off_leaves_belief_unset_and_no_inference_trace(m
     assert "strategy_inferences" not in trace.names()
 
 
+def test_runtime_with_commander_trace_group_reports_disabled_reason(monkeypatch) -> None:
+    monkeypatch.delenv("CREWBORG_LLM_COMMANDER", raising=False)
+    monkeypatch.setenv("CREWBORG_TRACE_GROUPS", "commander")
+    trace = ListTraceSink()
+    runtime = build_runtime(trace_sink=trace)
+    scene = SceneState()
+    scene.apply(w.clear_objects())
+    scene.tick += 1
+
+    runtime.step(Observation(scene=scene, tick=scene.tick))
+    runtime.close()
+
+    [started] = [event for event in trace.events if event.name == "domain.commander_started"]
+    assert started.data == {
+        "enabled": False,
+        "backend": None,
+        "model": None,
+        "disabled_reason": "CREWBORG_LLM_COMMANDER is not enabled",
+    }
+
+
 def _snapshot(
     belief: Belief,
     *,

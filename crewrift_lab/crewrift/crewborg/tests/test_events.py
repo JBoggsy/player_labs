@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from crewrift.crewborg.action import BTN_A, BTN_B, BTN_LEFT
 from crewrift.crewborg.events import CrewborgEventTracer
+from crewrift.crewborg.strategy.commander.trace import CommanderTrace
 from crewrift.crewborg.strategy.suspicion import VOTE_PROBABILITY
 from crewrift.crewborg.types import (
     ActionState,
@@ -16,6 +17,7 @@ from crewrift.crewborg.types import (
     BodyEntry,
     ChatEvent,
     Command,
+    CommanderPriorities,
     Intent,
     PlayerEvent,
     PlayerRecord,
@@ -26,13 +28,19 @@ from players.player_sdk import EventEmitter, ListMetricsSink, ListTraceSink, Mod
 class _Harness:
     """A tracer plus list sinks and a tick-advancing StepContext builder."""
 
-    def __init__(self, *, debug: bool | None = None, viewer: bool = False) -> None:
+    def __init__(
+        self,
+        *,
+        debug: bool | None = None,
+        viewer: bool = False,
+        commander_trace: CommanderTrace | None = None,
+    ) -> None:
         self.trace = ListTraceSink()
         self.metrics = ListMetricsSink()
         self.emit = EventEmitter(self.trace, self.metrics, tick=0)
         # Pin debug explicitly (default off) so an ambient CREWBORG_TRACE=debug in the
         # test environment can't perturb the lean-mode assertions.
-        self.tracer = CrewborgEventTracer(debug=bool(debug), viewer=viewer)
+        self.tracer = CrewborgEventTracer(debug=bool(debug), viewer=viewer, commander_trace=commander_trace)
 
     def step(
         self,
@@ -230,6 +238,56 @@ def test_decision_trace_group_enables_compact_decision_snapshot(monkeypatch) -> 
     assert event.data["mode"] == "attend_meeting"
     assert event.data["intent"]["kind"] == "chat"
     assert event.data["command"] == {"held_mask": 0, "buttons": [], "chat": True}
+
+
+def test_commander_trace_is_not_emitted_by_default() -> None:
+    commander_trace = CommanderTrace()
+    commander_trace.record("commander_started", {"enabled": True})
+    h = _Harness(commander_trace=commander_trace)
+
+    h.step()
+
+    assert not h.events("domain.commander_started")
+    assert commander_trace.drain() == [("commander_started", {"enabled": True})]
+
+
+def test_commander_trace_group_drains_and_emits_records(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_TRACE_GROUPS", "commander")
+    commander_trace = CommanderTrace()
+    commander_trace.record("commander_started", {"enabled": True})
+    commander_trace.record("commander_call", {"outcome": "ok", "latency_ms": 12.5})
+    h = _Harness(commander_trace=commander_trace)
+
+    h.step()
+
+    assert h.events("domain.commander_started")[0].data == {"enabled": True}
+    assert h.events("domain.commander_call")[0].data == {"outcome": "ok", "latency_ms": 12.5}
+    assert commander_trace.drain() == []
+
+
+def test_debug_trace_drains_commander_records() -> None:
+    commander_trace = CommanderTrace()
+    commander_trace.record("commander_call_start", {"phase": "Playing", "role": "imposter"})
+    h = _Harness(debug=True, commander_trace=commander_trace)
+
+    h.step()
+
+    assert h.events("domain.commander_call_start")[0].data == {"phase": "Playing", "role": "imposter"}
+
+
+def test_commander_applied_emits_on_belief_commander_change(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_TRACE_GROUPS", "commander")
+    h = _Harness()
+
+    h.step(belief=Belief(commander=None))
+    h.step(belief=Belief(commander=CommanderPriorities(hunt_room="electrical", as_of_tick=10)))
+    h.step(belief=Belief(commander=CommanderPriorities(hunt_room="electrical", as_of_tick=10)))
+    h.step(belief=Belief(commander=CommanderPriorities(hunt_room="bridge", as_of_tick=14)))
+
+    applied = h.events("domain.commander_applied")
+    assert [event.data["as_of_tick"] for event in applied] == [10, 14]
+    assert applied[0].data["priorities"]["hunt_room"] == "electrical"
+    assert applied[1].data["priorities"]["hunt_room"] == "bridge"
 
 
 def test_debug_decision_snapshot_includes_visibility_threat_task_and_command_geometry() -> None:

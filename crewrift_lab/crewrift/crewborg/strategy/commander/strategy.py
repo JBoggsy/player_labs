@@ -36,7 +36,7 @@ class CommanderStrategy:
         self._started = False
 
     def decide(self, snapshot: BeliefSnapshot[Belief, ActionState]) -> StrategyResult:
-        if self._worker.enabled and not self._started:
+        if not self._started:
             self._worker.start()
             self._started = True
 

@@ -33,6 +33,7 @@ from crewrift.crewborg.strategy import (
 )
 from crewrift.crewborg.strategy.commander.llm import build_commander_client
 from crewrift.crewborg.strategy.commander.strategy import CommanderStrategy, apply_commander_inferences
+from crewrift.crewborg.strategy.commander.trace import CommanderTrace
 from crewrift.crewborg.strategy.commander.worker import CommanderWorker
 from crewrift.crewborg.strategy.meeting import chat_nlp
 from crewrift.crewborg.types import (
@@ -128,9 +129,10 @@ def build_runtime(
         update_social_evidence(belief)
         update_suspicion(belief)
 
+    commander_trace = CommanderTrace()
     commander_strategy = CommanderStrategy(
         RuleBasedStrategy(),
-        CommanderWorker(build_commander_client(dict(os.environ))),
+        CommanderWorker(build_commander_client(dict(os.environ)), trace=commander_trace),
     )
 
     return AgentRuntime(
@@ -147,7 +149,7 @@ def build_runtime(
             metrics_sink=metrics_sink,
         ),
         apply_inferences=apply_commander_inferences,
-        on_step_complete=CrewborgEventTracer(),
+        on_step_complete=CrewborgEventTracer(commander_trace=commander_trace),
         trace_sink=trace_sink,
         metrics_sink=metrics_sink,
     )
