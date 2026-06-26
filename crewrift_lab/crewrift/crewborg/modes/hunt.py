@@ -25,7 +25,9 @@ from __future__ import annotations
 
 from crewrift.crewborg.action import KILL_RANGE_SQ
 from crewrift.crewborg.modes import imposter_common as ic
-from crewrift.crewborg.strategy.opportunity import select_victim, unwitnessed
+from crewrift.crewborg.nav import plan_route
+from crewrift.crewborg.strategy.commander.bias import commander_of
+from crewrift.crewborg.strategy.opportunity import select_victim, unwitnessed, visible_victims
 from crewrift.crewborg.strategy.trajectory import lead_ticks, predict
 from crewrift.crewborg.types import ActionState, Belief, Intent, PlayerRecord
 from players.player_sdk import EmptyModeParams, Mode, ModeParams
@@ -77,6 +79,18 @@ class HuntMode(Mode[Belief, ActionState, Intent]):
             and current.last_seen_tick == belief.last_tick
         ):
             return current
-        victim = select_victim(belief)
+        victim = self._commander_victim(belief) or select_victim(belief)
         self._victim_color = victim.color if victim is not None else None
+        return victim
+
+    def _commander_victim(self, belief: Belief) -> PlayerRecord | None:
+        cmd = commander_of(belief)
+        if cmd is None or cmd.target_player is None:
+            return None
+        victim = next((candidate for candidate in visible_victims(belief) if candidate.color == cmd.target_player), None)
+        if victim is None or belief.nav is None:
+            return victim
+        self_xy = ic.self_xy(belief)
+        if self_xy is None or not plan_route(belief.nav, self_xy, (victim.world_x, victim.world_y)):
+            return None
         return victim
