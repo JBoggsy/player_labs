@@ -976,16 +976,18 @@ rests on the reliable vote tally). The whole layer is gated by **`CREWBORG_CHAT_
 deliberately do **not** fall back to crude keyword matching — its false positives are
 exactly what this layer exists to avoid.
 
-### 10.6 LLM gameplay commander (`strategy/commander/`, designed)
+### 10.6 LLM gameplay commander (`strategy/commander/`)
 
 > **Full reference:** [`docs/designs/llm-commander.md`](docs/designs/llm-commander.md).
-> **Status: Phase 1 (scaffold + wiring) built & gated-off (2026-06-26); modes do not yet read
-> priorities.** This section is the summary.
+> **Status: BUILT & gated-off (2026-06-26)** — both roles' levers, danger mode, a soft/hard
+> strength dial, observability, a forced-priority debug knob, and the Bedrock-in-pod gating fix;
+> 460 tests green; disabled path byte-identical; **not submitted**; control demonstrated but not
+> yet tuned for performance. This section is the summary.
 
 A background LLM that steers *gameplay* by writing **priorities** into belief, which the
 modes read to bias *how* they execute — without ever selecting a mode or blocking a tick.
-It is the planned realization of the `AsyncStrategyRunner` seam noted above, scoped to
-the **Playing** phase; the meeting LLM (§10.3) is untouched.
+It realizes the `AsyncStrategyRunner` seam noted above, scoped to the **Playing** phase;
+the meeting LLM (§10.3) is untouched (only the Bedrock-enable check is shared).
 
 - **Two loops, one belief.** A `CommanderStrategy` wraps `RuleBasedStrategy` on the
   existing `SynchronousStrategyRunner` (mode selection unchanged, every tick). Each
@@ -996,21 +998,29 @@ the **Playing** phase; the meeting LLM (§10.3) is untouched.
   `apply_inferences` hook. Priorities are **sticky** until the next cycle overwrites
   them; the worker never touches live belief (lock-protected latest-value handoff).
 - **Priorities (`belief.commander`).** Crew: `target_room`, `target_task`, `posture`
-  (stick/isolate/neutral). Imposter: `hunt_room`, `target_player`, `avoid_room`.
-  Consumed at each mode's existing candidate-ranking step (`normal.py:85`,
-  `search.py:266`, `recon.py:534`, `hunt.py:612`) under one rule: **bias, don't force**
-  — filter-then-rank or score-nudge, always falling back to today's default when the
-  priority would select nothing valid; stale (`as_of_tick` TTL) or invalid priorities
-  are ignored. Reactive/safety gates are untouched.
+  (stick/isolate/neutral). Imposter: `hunt_room`, `target_player`, `avoid_room`. Plus a
+  `strength` dial. Consumed at each mode's existing candidate-ranking step (NormalMode
+  `_pick_target`, SearchMode `_pick_room`/follow, ReconMode + HuntMode victim choice) under
+  one rule: **bias, don't force** — filter-then-rank or score-nudge, always falling back to
+  today's default when the priority would select nothing valid; stale (`as_of_tick` TTL) or
+  invalid priorities are ignored. Reactive/safety gates are untouched.
+- **Strength dial.** `strength: soft` (default, the bias-with-fallback above) vs `hard`
+  (override the default even when suboptimal — Search targets a distant `hunt_room`, NormalMode
+  loiters in a no-task `target_room`, longer `target_player` follow). Measured (forced runs):
+  soft→hard takes imposter `hunt_room` adherence 29%→100%, crew `target_room` 13%→67%.
+- **Forced-priority knob.** `CREWBORG_COMMANDER_FORCE='{…}'` stamps a fixed sanitized priority
+  into belief each tick, bypassing the LLM/worker (no backend needed) — for deterministic control demos/QA.
 - **Danger mode (imposter, opt-in).** Two LLM-authorized risk levers that are the
   *deliberate exception* to "never touch the gates": `allow_witnessed_kill` (relax
   Hunt's witness test, `hunt.py:599`) and `skip_evade` (suppress the post-kill Evade
   window, `rule_based.py:132`). Both require a traced `danger_reason`; the play-guide
   prompt marks them as ⚠️ DANGER. Unset → today's conservative behaviour.
-- **Gating & fallback.** Opt-in via `CREWBORG_LLM_COMMANDER=1` + a backend
-  (`USE_BEDROCK` / `ANTHROPIC_API_KEY`), mirroring `CREWBORG_LLM_MEETINGS`. No flag or
-  no backend → worker disabled, `belief.commander` stays `None`, behaviour is exactly
-  current crewborg.
+- **Gating & fallback.** Opt-in via `CREWBORG_LLM_COMMANDER=1` + a backend, mirroring
+  `CREWBORG_LLM_MEETINGS`. No flag / no backend → worker disabled, `belief.commander` stays
+  `None`, behaviour is exactly current crewborg. **In-pod Bedrock note:** sidecar mode strips
+  `USE_BEDROCK` and injects `AWS_ENDPOINT_URL_BEDROCK_RUNTIME`, so both the commander and meeting
+  factories now gate on that endpoint (not `USE_BEDROCK`). Observability: `domain.commander_*`
+  traces (`CREWBORG_TRACE_GROUPS=commander`), incl. `commander_started.env_seen` for in-pod enable diagnosis.
 
 ---
 

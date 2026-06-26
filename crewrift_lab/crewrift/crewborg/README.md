@@ -55,6 +55,13 @@ Hunt is gated on a visible kill opportunity whose isolation bar relaxes with
 urgency, not merely on the cooldown ending. The action layer covers `kill` (edge-A
 in KillRange) and `vent` (level-B in VentRange).
 
+A separate, opt-in **LLM gameplay commander** (`CREWBORG_LLM_COMMANDER=1`) can steer the
+Playing phase by writing *priorities* into belief that the modes read to bias which room to
+task/hunt in, which player to chase, and how hard (a soft/hard strength dial), plus an
+imposter danger mode — without ever selecting a mode or blocking a tick. It is **gated off by
+default** (byte-identical deterministic play when off) and **not yet submitted**. Built but not
+yet performance-tuned; full reference: [`docs/designs/llm-commander.md`](docs/designs/llm-commander.md).
+
 ## Layout
 
 ```
