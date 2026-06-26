@@ -16,6 +16,22 @@ is the one-screen answer to "where are we and why."
 
 ---
 
+## 🧭 ACTIVE OBJECTIVE — LLM GAMEPLAY COMMANDER (design stored 2026-06-26)
+A background LLM that steers *gameplay* (not meetings) by writing **priorities** into
+`belief.commander` that the modes read to bias *how* they execute — never selecting a mode,
+never blocking a tick. Design: **[`crewrift/crewborg/docs/designs/llm-commander.md`](crewrift/crewborg/docs/designs/llm-commander.md)**
+(summary in `design.md` §10.6). **Decisions locked:** background daemon thread + sync Bedrock
+`call_json` (one call in flight); `CommanderStrategy` wraps `RuleBasedStrategy` on the existing
+`SynchronousStrategyRunner`; priorities flow via `StrategyResult.inferences` → `apply_inferences`
+→ `belief.commander` (sticky, lock-protected handoff). Scope v1 = **gameplay only, meeting LLM
+untouched**. Rule = **bias, don't force** (filter-then-rank / score-nudge, fall back to default
+on stale/invalid). **Danger mode** (imposter, opt-in, traced `danger_reason`): `allow_witnessed_kill`
++ `skip_evade`. Mode injection points: `normal.py:85`, `search.py:266`, `recon.py:534`, `hunt.py:612`.
+Gating `CREWBORG_LLM_COMMANDER=1` + backend (mirrors `CREWBORG_LLM_MEETINGS`). **Build phasing:**
+scaffold → imposter levers + danger → crewmate levers → (later) EscortMode + unify w/ meetings.
+NEXT: build phase 1 (scaffold + no-op fallback). Directly attacks the durable imposter
+kill-efficiency gap.
+
 ## ✅ LLM MEETINGS CONFIRMED WORKING — v50, end-to-end (2026-06-26)
 The v47 "NEXT" item below is DONE. The LLM was silently 403'ing (disabled) until two fixes landed:
 (1) **SDK sidecar routing** — `players.player_sdk.llm.select_client` hit AWS Bedrock directly instead of
