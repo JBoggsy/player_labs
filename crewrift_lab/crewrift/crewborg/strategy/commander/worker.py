@@ -160,6 +160,11 @@ def _env_seen() -> dict[str, bool]:
         "USE_BEDROCK": _truthy(os.environ.get("USE_BEDROCK", "")),
         "CLAUDE_CODE_USE_BEDROCK": _truthy(os.environ.get("CLAUDE_CODE_USE_BEDROCK", "")),
         "ANTHROPIC_API_KEY": "ANTHROPIC_API_KEY" in os.environ,
+        # The sidecar endpoint the runner injects in sidecar mode (it strips USE_BEDROCK);
+        # its presence is the real in-pod Bedrock signal the commander now gates on.
+        "AWS_ENDPOINT_URL_BEDROCK_RUNTIME": bool(
+            os.environ.get("AWS_ENDPOINT_URL_BEDROCK_RUNTIME", "").strip()
+        ),
     }
 
 

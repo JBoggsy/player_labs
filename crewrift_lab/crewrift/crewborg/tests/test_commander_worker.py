@@ -72,6 +72,7 @@ def test_worker_records_enabled_start_success_and_stop(monkeypatch) -> None:
     monkeypatch.setenv("USE_BEDROCK", "true")
     monkeypatch.setenv("CLAUDE_CODE_USE_BEDROCK", "false")
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("AWS_ENDPOINT_URL_BEDROCK_RUNTIME", raising=False)
     trace = CommanderTrace()
     worker = CommanderWorker(lambda: _FakeClient(), trace=trace)
     worker.start()
@@ -95,6 +96,7 @@ def test_worker_records_enabled_start_success_and_stop(monkeypatch) -> None:
                 "USE_BEDROCK": True,
                 "CLAUDE_CODE_USE_BEDROCK": False,
                 "ANTHROPIC_API_KEY": False,
+                "AWS_ENDPOINT_URL_BEDROCK_RUNTIME": False,
             },
         },
     )
@@ -117,6 +119,7 @@ def test_worker_records_disabled_start(monkeypatch) -> None:
     monkeypatch.delenv("USE_BEDROCK", raising=False)
     monkeypatch.delenv("CLAUDE_CODE_USE_BEDROCK", raising=False)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("AWS_ENDPOINT_URL_BEDROCK_RUNTIME", raising=False)
     trace = CommanderTrace()
     worker = CommanderWorker(lambda: DisabledCommanderClient("disabled"), trace=trace, build_attempts=1)
 
@@ -137,6 +140,7 @@ def test_worker_records_disabled_start(monkeypatch) -> None:
                     "USE_BEDROCK": False,
                     "CLAUDE_CODE_USE_BEDROCK": False,
                     "ANTHROPIC_API_KEY": False,
+                    "AWS_ENDPOINT_URL_BEDROCK_RUNTIME": False,
                 },
             },
         )
@@ -181,6 +185,7 @@ def test_worker_retries_missing_backend_until_client_is_enabled(monkeypatch) -> 
     monkeypatch.delenv("USE_BEDROCK", raising=False)
     monkeypatch.setenv("CLAUDE_CODE_USE_BEDROCK", "yes")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "redacted")
+    monkeypatch.delenv("AWS_ENDPOINT_URL_BEDROCK_RUNTIME", raising=False)
     trace = CommanderTrace()
     calls = 0
 
@@ -214,6 +219,7 @@ def test_worker_retries_missing_backend_until_client_is_enabled(monkeypatch) -> 
                 "USE_BEDROCK": False,
                 "CLAUDE_CODE_USE_BEDROCK": True,
                 "ANTHROPIC_API_KEY": True,
+                "AWS_ENDPOINT_URL_BEDROCK_RUNTIME": False,
             },
         },
         {
@@ -226,6 +232,7 @@ def test_worker_retries_missing_backend_until_client_is_enabled(monkeypatch) -> 
                 "USE_BEDROCK": False,
                 "CLAUDE_CODE_USE_BEDROCK": True,
                 "ANTHROPIC_API_KEY": True,
+                "AWS_ENDPOINT_URL_BEDROCK_RUNTIME": False,
             },
         },
     ]
