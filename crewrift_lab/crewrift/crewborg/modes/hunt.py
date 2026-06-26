@@ -27,7 +27,9 @@ from __future__ import annotations
 
 from crewrift.crewborg.action import KILL_RANGE_SQ
 from crewrift.crewborg.modes import imposter_common as ic
-from crewrift.crewborg.strategy.opportunity import select_victim, unwitnessed
+from crewrift.crewborg.nav import plan_route
+from crewrift.crewborg.strategy.commander.bias import commander_of
+from crewrift.crewborg.strategy.opportunity import select_victim, unwitnessed, visible_victims
 from crewrift.crewborg.strategy.trajectory import lead_ticks, predict
 from crewrift.crewborg.types import ActionState, Belief, Intent, PlayerRecord
 from players.player_sdk import EmptyModeParams, Mode, ModeParams
@@ -54,17 +56,32 @@ class HuntMode(Mode[Belief, ActionState, Intent]):
         victim_xy = (victim.world_x, victim.world_y)
         in_range = ic.dist2(self_xy, victim_xy) <= KILL_RANGE_SQ
 
-        # Strike when kill-ready and in range. The witness requirement applies only
-        # *before* our first kill; once a kill is banked (``last_kill_tick`` set) we
-        # strike regardless of witnesses — getting the SECOND kill is the imposter's
-        # core job (2 imposters × 2 kills = parity), and at the second ready we're
-        # usually already close to crew, so conversion beats stealth (a witnessed kill,
-        # paid for by a later ejection, beats a clean one we never get). James 2026-06-26.
-        if in_range and belief.self_kill_ready:
-            already_killed = belief.last_kill_tick is not None
-            if already_killed or unwitnessed(belief, victim):
-                reason = "striking the 2nd+ kill (witnesses ignored)" if already_killed else "striking isolated victim"
-                return Intent(kind="kill", target_color=victim.color, reason=reason)
+        # Strike when kill-ready and in range. The kill fires if it goes UNWITNESSED (the
+        # normal case), OR we've already banked a kill — after our first kill the witness
+        # requirement is dropped, since getting the SECOND kill is the imposter's core job
+        # (2 imposters × 2 = parity, and at the 2nd ready we're usually already close to
+        # crew, so conversion beats stealth; James 2026-06-26) — OR the commander's danger
+        # mode explicitly allows a witnessed kill.
+        cmd = commander_of(belief)
+        already_killed = belief.last_kill_tick is not None
+        kill_is_unwitnessed = unwitnessed(belief, victim)
+        danger_witness_allowed = cmd is not None and cmd.allow_witnessed_kill
+        if in_range and belief.self_kill_ready and (kill_is_unwitnessed or already_killed or danger_witness_allowed):
+            if not kill_is_unwitnessed and danger_witness_allowed:
+                self.emit.event(
+                    "commander_danger",
+                    {
+                        "lever": "allow_witnessed_kill",
+                        "danger_reason": cmd.danger_reason,
+                        "target_color": victim.color,
+                    },
+                )
+            reason = (
+                "striking the 2nd+ kill (witnesses ignored)"
+                if already_killed and not kill_is_unwitnessed
+                else "striking isolated victim"
+            )
+            return Intent(kind="kill", target_color=victim.color, reason=reason)
 
         # Otherwise close on the predicted intercept (lead a moving target) and shadow.
         # When already in range we lie in wait if a witness is near. The urgency
@@ -87,6 +104,18 @@ class HuntMode(Mode[Belief, ActionState, Intent]):
             and current.last_seen_tick == belief.last_tick
         ):
             return current
-        victim = select_victim(belief)
+        victim = self._commander_victim(belief) or select_victim(belief)
         self._victim_color = victim.color if victim is not None else None
+        return victim
+
+    def _commander_victim(self, belief: Belief) -> PlayerRecord | None:
+        cmd = commander_of(belief)
+        if cmd is None or cmd.target_player is None:
+            return None
+        victim = next((candidate for candidate in visible_victims(belief) if candidate.color == cmd.target_player), None)
+        if victim is None or belief.nav is None:
+            return victim
+        self_xy = ic.self_xy(belief)
+        if self_xy is None or not plan_route(belief.nav, self_xy, (victim.world_x, victim.world_y)):
+            return None
         return victim

@@ -12,7 +12,7 @@ import numpy as np
 from crewrift.crewborg.map.types import MapData, MapPoint, MapRect, Room, TaskStation
 from crewrift.crewborg.modes.search import SearchMode
 from crewrift.crewborg.nav import build_nav_graph
-from crewrift.crewborg.types import ActionState, Belief, PlayerRecord
+from crewrift.crewborg.types import ActionState, Belief, CommanderPriorities, PlayerRecord
 
 
 def _map() -> MapData:
@@ -35,10 +35,36 @@ def _map() -> MapData:
     )
 
 
+def _distant_map() -> MapData:
+    rooms = tuple(
+        Room(name=name, x=index * 100, y=0, w=100, h=80)
+        for index, name in enumerate(("Start", "Near1", "Near2", "Near3", "Near4", "Far"))
+    )
+    tasks = tuple(
+        TaskStation(name=name, x=room.x + 40, y=40, w=8, h=8)
+        for name, room in zip(("start", "n1", "n2", "n3", "n4", "far"), rooms, strict=True)
+    )
+    return MapData(
+        width=600,
+        height=80,
+        tasks=tasks,
+        vents=(),
+        rooms=rooms,
+        button=MapRect(x=4, y=4, w=8, h=8),
+        home=MapPoint(x=50, y=40),
+    )
+
+
 def _belief(self_xy=(150, 40), tick=10) -> Belief:
     m = _map()
     nav = build_nav_graph(np.ones((m.height, m.width), dtype=bool), map_data=m)
     return Belief(map=m, nav=nav, self_role="imposter", self_world_x=self_xy[0], self_world_y=self_xy[1], last_tick=tick)
+
+
+def _distant_belief() -> Belief:
+    m = _distant_map()
+    nav = build_nav_graph(np.ones((m.height, m.width), dtype=bool), map_data=m)
+    return Belief(map=m, nav=nav, self_role="imposter", self_world_x=50, self_world_y=40, last_tick=10)
 
 
 def _crew(belief: Belief, color: str, xy, tick=None) -> PlayerRecord:
@@ -48,12 +74,76 @@ def _crew(belief: Belief, color: str, xy, tick=None) -> PlayerRecord:
     return rec
 
 
+def _seed_occluded_follow(mode: SearchMode, belief: Belief, color: str = "green") -> PlayerRecord:
+    target = _crew(belief, color, (130, 40))
+    mode._begin_follow(belief, target)
+    for tick in range(11, 20):
+        belief.last_tick = tick
+        target.record(tick, 130 + (tick - 10) * 4, 40, "right", 1001)
+        mode.decide(belief, ActionState())
+    return target
+
+
 def test_pick_room_then_navigate_to_a_task_room() -> None:
     mode = SearchMode()
     intent = mode.decide(_belief(), ActionState())
     assert intent.kind == "navigate_to"
     assert mode._state == "go_to_room"
     assert mode._target_room in {"Left", "Right"}  # a nearby task room, not the start room (Mid)
+
+
+def test_commander_hunt_room_picks_valid_task_room() -> None:
+    mode = SearchMode()
+    belief = _belief()
+    belief.commander = CommanderPriorities(hunt_room="Right", as_of_tick=belief.last_tick)
+    intent = mode.decide(belief, ActionState())
+    assert intent.kind == "navigate_to"
+    assert mode._target_room == "Right"
+
+
+def test_hard_commander_hunt_room_picks_distant_task_room() -> None:
+    mode = SearchMode()
+    belief = _distant_belief()
+    belief.commander = CommanderPriorities(hunt_room="Far", strength="hard", as_of_tick=belief.last_tick)
+    intent = mode.decide(belief, ActionState())
+    assert intent.kind == "navigate_to"
+    assert mode._target_room == "Far"
+
+
+def test_soft_commander_hunt_room_does_not_force_distant_task_room() -> None:
+    mode = SearchMode()
+    belief = _distant_belief()
+    belief.commander = CommanderPriorities(hunt_room="Far", as_of_tick=belief.last_tick)
+    intent = mode.decide(belief, ActionState())
+    assert intent.kind == "navigate_to"
+    assert mode._target_room != "Far"
+
+
+def test_commander_unknown_hunt_room_falls_back_to_random_pick() -> None:
+    mode = SearchMode()
+    belief = _belief()
+    belief.commander = CommanderPriorities(hunt_room="Unknown", as_of_tick=belief.last_tick)
+    intent = mode.decide(belief, ActionState())
+    assert intent.kind == "navigate_to"
+    assert mode._target_room in {"Left", "Right"}
+
+
+def test_commander_avoid_room_excludes_candidate_task_room() -> None:
+    mode = SearchMode()
+    belief = _belief()
+    belief.commander = CommanderPriorities(avoid_room="Left", as_of_tick=belief.last_tick)
+    intent = mode.decide(belief, ActionState())
+    assert intent.kind == "navigate_to"
+    assert mode._target_room == "Right"
+
+
+def test_commander_avoid_room_falls_back_when_filter_empties_candidates() -> None:
+    mode = SearchMode()
+    belief = _belief(self_xy=(10, 40))  # Left is current; only Right survives current/start exclusions.
+    belief.commander = CommanderPriorities(avoid_room="Right", as_of_tick=belief.last_tick)
+    intent = mode.decide(belief, ActionState())
+    assert intent.kind == "navigate_to"
+    assert mode._target_room == "Right"
 
 
 def test_watches_when_crew_are_in_the_target_room() -> None:
@@ -93,24 +183,80 @@ def test_follows_a_crewmate_who_leaves_the_room() -> None:
     assert intent.kind == "navigate_to"
 
 
+def test_commander_target_player_preferred_when_leaving_room() -> None:
+    mode = SearchMode()
+    belief = _belief(self_xy=(40, 40))
+    belief.commander = CommanderPriorities(target_player="blue", as_of_tick=belief.last_tick)
+    room = mode._room(belief, "Left")
+    assert room is not None
+    mode._room_crew = {"green", "blue"}
+    _crew(belief, "green", (130, 40))
+    _crew(belief, "blue", (135, 40))
+    assert mode._a_crewmate_left(belief, room).color == "blue"
+
+
+def test_commander_target_player_falls_back_when_not_a_valid_leaver() -> None:
+    mode = SearchMode()
+    belief = _belief(self_xy=(40, 40))
+    belief.commander = CommanderPriorities(target_player="blue", as_of_tick=belief.last_tick)
+    room = mode._room(belief, "Left")
+    assert room is not None
+    mode._room_crew = {"green", "blue"}
+    green = _crew(belief, "green", (130, 40))
+    _crew(belief, "blue", (60, 40))  # still inside the watched room, so not followable.
+    assert mode._a_crewmate_left(belief, room) == green
+
+
 def test_follow_uses_prediction_when_target_is_occluded() -> None:
     mode = SearchMode()
     belief = _belief(self_xy=(120, 40))
-    # green was just seen heading right; commit to following it.
-    green = _crew(belief, "green", (130, 40))
-    mode._begin_follow(belief, green)
+    _seed_occluded_follow(mode, belief)
     assert mode._state == "follow"
-    # advance a few visible ticks moving right (builds a heading)
-    for t in range(11, 20):
-        belief.last_tick = t
-        green.record(t, 130 + (t - 10) * 4, 40, "right", 1001)
-        mode.decide(belief, ActionState())
     # now occlude: green stops being seen this tick
     belief.last_tick = 40
     intent = mode.decide(belief, ActionState())
     assert intent.kind in {"navigate_to", "idle"}
     # the predictor should still hold candidates (chasing the predicted path)
     assert mode._predictor is not None
+
+
+def test_default_follow_stops_after_lost_window() -> None:
+    mode = SearchMode()
+    belief = _belief(self_xy=(120, 40))
+    _seed_occluded_follow(mode, belief)
+
+    belief.last_tick = 140
+    mode.decide(belief, ActionState())
+
+    assert mode._follow_color is None
+    assert mode._state != "follow"
+
+
+def test_hard_commander_target_player_extends_lost_follow_window() -> None:
+    mode = SearchMode()
+    belief = _belief(self_xy=(120, 40))
+    belief.commander = CommanderPriorities(target_player="green", strength="hard", as_of_tick=belief.last_tick)
+    _seed_occluded_follow(mode, belief)
+
+    belief.last_tick = 140
+    intent = mode.decide(belief, ActionState())
+
+    assert intent.kind == "navigate_to"
+    assert mode._follow_color == "green"
+    assert mode._state == "follow"
+
+
+def test_hard_commander_non_target_player_uses_default_lost_follow_window() -> None:
+    mode = SearchMode()
+    belief = _belief(self_xy=(120, 40))
+    belief.commander = CommanderPriorities(target_player="blue", strength="hard", as_of_tick=belief.last_tick)
+    _seed_occluded_follow(mode, belief, color="green")
+
+    belief.last_tick = 140
+    mode.decide(belief, ActionState())
+
+    assert mode._follow_color is None
+    assert mode._state != "follow"
 
 
 def test_visible_count_respects_line_of_sight() -> None:
@@ -133,7 +279,7 @@ def test_watch_moves_to_a_vantage_over_the_crew() -> None:
     belief = _belief(self_xy=(10, 10))   # in a corner of Left, not yet at a good vantage
     mode._room_crew = {"green"}
     _crew(belief, "green", (80, 60))     # a crewmate elsewhere in Left
-    intent = mode.decide(belief, ActionState())
+    mode.decide(belief, ActionState())
     # should move to a vantage (it sees green) rather than idle in the corner
     assert mode._state == "watch"
     assert mode._vantage is not None

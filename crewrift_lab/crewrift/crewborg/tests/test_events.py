@@ -290,6 +290,24 @@ def test_commander_applied_emits_on_belief_commander_change(monkeypatch) -> None
     assert applied[1].data["priorities"]["hunt_room"] == "bridge"
 
 
+def test_commander_danger_marker_emits_and_clears(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_TRACE_GROUPS", "commander")
+    h = _Harness()
+    belief = Belief(
+        commander_danger_events=[
+            {"lever": "skip_evade", "danger_reason": "chain pressure before crew groups"},
+        ]
+    )
+
+    h.step(belief=belief)
+    h.step(belief=belief)
+
+    danger = h.events("domain.commander_danger")
+    assert len(danger) == 1
+    assert danger[0].data == {"lever": "skip_evade", "danger_reason": "chain pressure before crew groups"}
+    assert belief.commander_danger_events == []
+
+
 def test_debug_decision_snapshot_includes_visibility_threat_task_and_command_geometry() -> None:
     from crewrift.crewborg.map.types import MapData, MapPoint, MapRect, TaskStation
 

@@ -9,7 +9,6 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import TypeVar
 
-from crewrift.crewborg.modes import imposter_common as ic
 from crewrift.crewborg.types import Belief, CommanderPriorities
 
 T = TypeVar("T")
@@ -39,4 +38,12 @@ def room_crew_count(belief: Belief, room_name: str) -> int:
     room = next((candidate for candidate in belief.map.rooms if candidate.name == room_name), None)
     if room is None:
         return 0
-    return sum(1 for crew in ic.visible_crew(belief) if ic.in_rect((crew.world_x, crew.world_y), room))
+    return sum(
+        1
+        for crew in belief.roster.values()
+        if crew.last_seen_tick == belief.last_tick
+        and crew.color not in belief.teammate_colors
+        and crew.life_status != "dead"
+        and room.x <= crew.world_x < room.x + room.w
+        and room.y <= crew.world_y < room.y + room.h
+    )

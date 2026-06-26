@@ -11,18 +11,19 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-# Applied to tests that pin the retired occupancy-seeking Pretend/Search behavior.
-deprecated_seeking = pytest.mark.skip(
-    reason="Pretend/Search occupancy-seeking retired 2026-06-24 (modes/_deprecated/); "
-    "new group-follow→peel-off approach pending. See design.md."
-)
-
 from crewrift.crewborg.map.types import MapData, MapPoint, MapRect, Room, TaskStation, Vent
 from crewrift.crewborg.agent_tracking import OccupancySnapshot, update_agent_tracking
 from crewrift.crewborg.modes import EvadeMode, HuntMode, SearchMode
 from crewrift.crewborg.modes._deprecated.pretend import PretendMode  # retired; only the skipped tests use it
 from crewrift.crewborg.nav import build_nav_graph
-from crewrift.crewborg.types import ActionState, Belief, PlayerRecord
+from crewrift.crewborg.types import ActionState, Belief, BodyEntry, CommanderPriorities, PlayerRecord
+from players.player_sdk import EventEmitter, ListTraceSink
+
+# Applied to tests that pin the retired occupancy-seeking Pretend/Search behavior.
+deprecated_seeking = pytest.mark.skip(
+    reason="Pretend/Search occupancy-seeking retired 2026-06-24 (modes/_deprecated/); "
+    "new group-follow→peel-off approach pending. See design.md."
+)
 
 
 def _visible(belief: Belief, object_id: int, xy: tuple[int, int], color: str = "red", tick: int | None = None) -> None:
@@ -114,6 +115,38 @@ def test_hunt_strikes_a_witnessed_victim_under_full_urgency() -> None:
     assert intent.kind == "kill" and intent.target_color == "green"
 
 
+def test_hunt_commander_allows_witnessed_kill_with_danger_reason() -> None:
+    belief = Belief(self_world_x=100, self_world_y=100, last_tick=5, self_kill_ready=True)
+    belief.commander = CommanderPriorities(
+        allow_witnessed_kill=True,
+        danger_reason="last chance before meeting",
+        as_of_tick=belief.last_tick,
+    )
+    _visible(belief, 1004, (108, 100), color="green")
+    _visible(belief, 1005, (110, 100), color="blue")  # witness next to the victim
+    mode = HuntMode()
+    trace = ListTraceSink()
+    mode.emit = EventEmitter(trace, tick=belief.last_tick)
+    intent = mode.decide(belief, ActionState())
+    assert intent.kind == "kill" and intent.target_color == "green"
+    [event] = [event for event in trace.events if event.name == "domain.commander_danger"]
+    assert event.data["lever"] == "allow_witnessed_kill"
+    assert event.data["danger_reason"] == "last chance before meeting"
+    assert event.data["target_color"] == "green"
+
+
+def test_hunt_stale_commander_does_not_allow_witnessed_kill() -> None:
+    belief = Belief(self_world_x=100, self_world_y=100, last_tick=500, self_kill_ready=True)
+    belief.commander = CommanderPriorities(
+        allow_witnessed_kill=True,
+        danger_reason="stale risk",
+        as_of_tick=0,
+    )
+    _visible(belief, 1004, (108, 100), color="green")
+    _visible(belief, 1005, (110, 100), color="blue")
+    assert HuntMode().decide(belief, ActionState()).kind == "navigate_to"
+
+
 def test_hunt_commits_to_one_victim_across_ticks() -> None:
     # Once committed, Hunt keeps the same victim even as another comes closer.
     mode = HuntMode()
@@ -136,6 +169,38 @@ def test_hunt_prefers_reachable_victim() -> None:
     mode = HuntMode()
     mode.decide(belief, ActionState())
     assert mode._victim_color == "blue"  # committed to the reachable one, not 1001
+
+
+def test_hunt_default_select_victim_pick_stands_without_commander_target() -> None:
+    belief = Belief(self_world_x=100, self_world_y=100, last_tick=5)
+    _visible(belief, 1004, (120, 100), color="green")
+    _visible(belief, 1005, (300, 100), color="blue")  # more isolated ⇒ default target
+    _visible(belief, 1006, (122, 100), color="white")
+    mode = HuntMode()
+    mode.decide(belief, ActionState())
+    assert mode._victim_color == "blue"
+
+
+def test_hunt_prefers_commander_target_player_when_visible_and_selectable() -> None:
+    belief = Belief(self_world_x=100, self_world_y=100, last_tick=5)
+    belief.commander = CommanderPriorities(target_player="green", as_of_tick=belief.last_tick)
+    _visible(belief, 1004, (120, 100), color="green")
+    _visible(belief, 1005, (300, 100), color="blue")  # default would prefer this isolated victim
+    _visible(belief, 1006, (122, 100), color="white")
+    mode = HuntMode()
+    mode.decide(belief, ActionState())
+    assert mode._victim_color == "green"
+
+
+def test_hunt_target_player_falls_back_when_not_visible() -> None:
+    belief = Belief(self_world_x=100, self_world_y=100, last_tick=5)
+    belief.commander = CommanderPriorities(target_player="green", as_of_tick=belief.last_tick)
+    _visible(belief, 1004, (120, 100), color="green", tick=1)
+    _visible(belief, 1005, (300, 100), color="blue")
+    _visible(belief, 1006, (122, 100), color="white")
+    mode = HuntMode()
+    mode.decide(belief, ActionState())
+    assert mode._victim_color == "blue"
 
 
 # --------------------------------------------------------------------------- #

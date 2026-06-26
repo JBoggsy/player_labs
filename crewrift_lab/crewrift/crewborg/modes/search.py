@@ -35,6 +35,7 @@ import random
 from crewrift.crewborg.modes import imposter_common as ic
 from crewrift.crewborg.map.types import Room
 from crewrift.crewborg.nav import _segment_clear
+from crewrift.crewborg.strategy.commander.bias import commander_of, filter_or_fallback
 from crewrift.crewborg.strategy.path_prediction import PathPredictor
 from crewrift.crewborg.types import ActionState, Belief, Intent, PlayerRecord
 from players.player_sdk import EmptyModeParams, Mode, ModeParams
@@ -44,6 +45,8 @@ ARRIVE_RADIUS_SQ = 24**2
 NEARBY_ROOMS = 4
 # Drop a follow once the target has been unseen this long with no live prediction.
 FOLLOW_LOST_TICKS = 120
+# Hard commander target-player follows get a little more persistence before Search gives up.
+COMMANDER_FOLLOW_LOST_TICKS = 240
 # A crewmate counts as "still watchable" from a vantage if seen within this window.
 WATCH_RECENT_TICKS = 36
 # Line-of-sight range (px) for vantage scoring — generous; LOS through walls is the
@@ -102,7 +105,11 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
             rooms = self._nearby_task_rooms(belief, self_xy, exclude=set())
         if not rooms:
             return Intent(kind="idle", reason="search: no task rooms")
-        room = self._rng.choice(rooms)
+        cmd = commander_of(belief)
+        hunt_room = cmd.hunt_room if cmd is not None else None
+        room = next((candidate for candidate in rooms if candidate.name == hunt_room), None)
+        if room is None:
+            room = self._rng.choice(rooms)
         self._target_room = room.name
         # Head to the room CENTRE (go fully inside to check it), not a task spot by
         # the door — standing at the entrance misses crew and exits.
@@ -237,7 +244,7 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
                           reason="search: following a leaver (visible)")
 
         # Out of view: chase down the predicted hallway toward the top route's position.
-        if self._last_seen_tick is not None and belief.last_tick - self._last_seen_tick > FOLLOW_LOST_TICKS:
+        if self._last_seen_tick is not None and belief.last_tick - self._last_seen_tick > self._follow_lost_ticks(belief):
             return self._stop_follow(belief, self_xy)
         best = self._predictor.best()
         if best is None:
@@ -273,6 +280,17 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
         self._state = "pick_room"
         return self._pick_room(belief, self_xy)
 
+    def _follow_lost_ticks(self, belief: Belief) -> int:
+        cmd = commander_of(belief)
+        if (
+            cmd is not None
+            and cmd.strength == "hard"
+            and self._follow_color is not None
+            and self._follow_color == cmd.target_player
+        ):
+            return COMMANDER_FOLLOW_LOST_TICKS
+        return FOLLOW_LOST_TICKS
+
     # --- helpers --------------------------------------------------------------
     def _crew_in_room(self, belief: Belief, room: Room) -> list[PlayerRecord]:
         return [c for c in ic.visible_crew(belief) if ic.in_rect((c.world_x, c.world_y), room)]
@@ -282,6 +300,7 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
         outside the room, or no longer visible (likely out a door). Returns the one
         to follow, or ``None``."""
 
+        leavers = []
         for color in self._room_crew:
             if color in belief.teammate_colors:
                 continue
@@ -291,8 +310,12 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
             inside = ic.in_rect((rec.world_x, rec.world_y), room)
             recently = belief.last_tick - rec.last_seen_tick
             if not inside and recently <= 8:
-                return rec  # last-known position is now outside the watched room
-        return None
+                leavers.append(rec)  # last-known position is now outside the watched room
+        if not leavers:
+            return None
+        cmd = commander_of(belief)
+        target_player = cmd.target_player if cmd is not None else None
+        return next((rec for rec in leavers if rec.color == target_player), leavers[0])
 
     def _room_crew_still_around(self, belief: Belief, room: Room) -> bool:
         if not self._room_crew:
@@ -316,7 +339,21 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
                 continue  # only rooms with a task station to idle/blend at
             rooms.append(room)
         rooms.sort(key=lambda r: ic.dist2(self_xy, (r.center.x, r.center.y)))
-        return rooms[:NEARBY_ROOMS]
+        rooms = rooms[:NEARBY_ROOMS]
+        cmd = commander_of(belief)
+        if cmd is None or cmd.avoid_room is None:
+            candidates = rooms
+        else:
+            candidates = filter_or_fallback(rooms, lambda room: room.name != cmd.avoid_room)
+        if cmd is not None and cmd.strength == "hard" and cmd.hunt_room is not None:
+            hunt_room = self._room(belief, cmd.hunt_room)
+            if (
+                hunt_room is not None
+                and self._room_task_indices(belief, hunt_room)
+                and all(room.name != hunt_room.name for room in candidates)
+            ):
+                candidates.append(hunt_room)
+        return candidates
 
     def _room_task_indices(self, belief: Belief, room: Room) -> list[int]:
         tasks = belief.map.tasks if belief.map is not None else ()

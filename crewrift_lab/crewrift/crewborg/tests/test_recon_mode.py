@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from crewrift.crewborg.modes.recon import ReconMode
 from crewrift.crewborg.strategy.opportunity import most_recent_victim, recon_window
-from crewrift.crewborg.types import ActionState, Belief, PlayerRecord
+from crewrift.crewborg.types import ActionState, Belief, CommanderPriorities, PlayerRecord
 
 
 def _imposter() -> Belief:
@@ -30,6 +30,27 @@ def test_recon_beelines_to_the_most_recently_seen_crewmate() -> None:
     intent = ReconMode().decide(b, ActionState())
     assert intent.kind == "navigate_to"
     assert intent.point == (300, 80)
+
+
+def test_recon_prefers_commander_target_player_when_alive_and_known() -> None:
+    b = _imposter()
+    _seen(b, "green", (200, 60), tick=45)  # current default target
+    _seen(b, "blue", (300, 80), tick=20)
+    b.commander = CommanderPriorities(target_player="blue", as_of_tick=b.last_tick)
+    intent = ReconMode().decide(b, ActionState())
+    assert intent.kind == "navigate_to"
+    assert intent.point == (300, 80)
+
+
+def test_recon_target_player_falls_back_when_unknown_or_dead() -> None:
+    b = _imposter()
+    _seen(b, "green", (200, 60), tick=45)
+    b.commander = CommanderPriorities(target_player="blue", as_of_tick=b.last_tick)
+    assert ReconMode().decide(b, ActionState()).point == (200, 60)
+
+    dead_target = _seen(b, "blue", (300, 80), tick=49)
+    dead_target.life_status = "dead"
+    assert ReconMode().decide(b, ActionState()).point == (200, 60)
 
 
 def test_recon_ignores_the_teammate_imposter() -> None:

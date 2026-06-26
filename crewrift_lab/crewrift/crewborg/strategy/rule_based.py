@@ -49,6 +49,7 @@ from __future__ import annotations
 
 import os
 
+from crewrift.crewborg.strategy.commander.bias import commander_of
 from crewrift.crewborg.strategy.opportunity import (
     has_visible_victim,
     most_recent_victim,
@@ -138,8 +139,16 @@ class RuleBasedStrategy:
             if belief.self_kill_ready and has_visible_victim(belief):
                 return ModeDirective(mode="hunt", source="strategy", reason="be dumb: kill ready with visible victim")
             return ModeDirective(mode="search", source="strategy", reason="be dumb: always seek kill setup")
-        if _recent_self_kill(belief):
+        cmd = commander_of(belief)
+        if _recent_self_kill(belief) and not (cmd is not None and cmd.skip_evade):
             return ModeDirective(mode="evade", source="strategy", reason="just killed: evade")
+        if _recent_self_kill(belief) and cmd is not None and cmd.skip_evade:
+            belief.commander_danger_events.append(
+                {
+                    "lever": "skip_evade",
+                    "danger_reason": cmd.danger_reason or "",
+                }
+            )
         if belief.self_kill_ready and has_visible_victim(belief):
             return ModeDirective(mode="hunt", source="strategy", reason="kill ready: hunt visible victim")
         if ticks_until_kill_ready(belief) <= recon_window() and most_recent_victim(belief) is not None:

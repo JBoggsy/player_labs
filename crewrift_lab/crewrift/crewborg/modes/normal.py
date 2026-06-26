@@ -27,7 +27,8 @@ Two stall guards (design §5):
 
 from __future__ import annotations
 
-from crewrift.crewborg.map.types import TaskStation
+from crewrift.crewborg.map.types import Room, TaskStation
+from crewrift.crewborg.strategy.commander.bias import commander_of, room_crew_count
 from crewrift.crewborg.types import ActionState, Belief, Intent
 from players.player_sdk import EmptyModeParams, Mode
 
@@ -54,6 +55,10 @@ class NormalMode(Mode[Belief, ActionState, Intent]):
         self._update_target(belief, tasks)
         if self._target is not None:
             return Intent(kind="complete_task", task_index=self._target, reason="completing assigned task")
+
+        hard_position = _hard_target_room_intent(belief)
+        if hard_position is not None:
+            return hard_position
 
         sweep = self._sweep_intent(belief, tasks)
         if sweep is not None:
@@ -95,9 +100,22 @@ class NormalMode(Mode[Belief, ActionState, Intent]):
             if reachable:
                 candidates = reachable
 
+        cmd = commander_of(belief)
+        if cmd is not None:
+            if cmd.target_task in candidates:
+                return cmd.target_task
+            if cmd.target_room is not None:
+                target_room_candidates = [i for i in candidates if _task_room(belief, tasks[i]) == cmd.target_room]
+                if target_room_candidates:
+                    candidates = target_room_candidates
+                elif cmd.strength == "hard" and _room_exists(belief, cmd.target_room):
+                    return None
+
         self_xy = _self_xy(belief)
         if self_xy is None:
             return min(candidates)
+        if cmd is not None and cmd.posture != "neutral":
+            return min(candidates, key=lambda i: _posture_key(belief, tasks[i], cmd.posture, self_xy, i))
         return min(candidates, key=lambda i: _dist2(self_xy, _nav_point(belief, tasks[i], i)))
 
     def _sweep_intent(self, belief: Belief, tasks: tuple[TaskStation, ...]) -> Intent | None:
@@ -137,6 +155,27 @@ def _return_to_start(belief: Belief) -> Intent:
     return Intent(kind="navigate_to", point=goal, reason="tasks done: returning to the start room")
 
 
+def _hard_target_room_intent(belief: Belief) -> Intent | None:
+    cmd = commander_of(belief)
+    if cmd is None or cmd.strength != "hard" or cmd.target_room is None or belief.map is None:
+        return None
+    room = _room_exists(belief, cmd.target_room)
+    if room is None:
+        return None
+    goal = (room.center.x, room.center.y)
+    if belief.nav is not None:
+        cell = belief.nav.nearest_reachable_node(*goal)
+        if cell is not None:
+            goal = belief.nav.node_point[cell]
+    return Intent(kind="navigate_to", point=goal, reason=f"commander: positioning in {room.name}")
+
+
+def _room_exists(belief: Belief, name: str) -> Room | None:
+    if belief.map is None:
+        return None
+    return next((room for room in belief.map.rooms if room.name == name), None)
+
+
 def _inside(task: TaskStation, x: int | None, y: int | None) -> bool:
     if x is None or y is None:
         return False
@@ -155,6 +194,27 @@ def _nav_point(belief: Belief, task: TaskStation, index: int) -> tuple[int, int]
         if anchor is not None:
             return anchor
     return task.center.x, task.center.y
+
+
+def _task_room(belief: Belief, task: TaskStation) -> str | None:
+    if belief.map is None:
+        return None
+    x, y = task.center.x, task.center.y
+    room = next((room for room in belief.map.rooms if room.x <= x < room.x + room.w and room.y <= y < room.y + room.h), None)
+    return room.name if room is not None else None
+
+
+def _posture_key(
+    belief: Belief,
+    task: TaskStation,
+    posture: str,
+    self_xy: tuple[int, int],
+    index: int,
+) -> tuple[int, int]:
+    room = _task_room(belief, task)
+    crew_count = room_crew_count(belief, room) if room is not None else 0
+    posture_score = -crew_count if posture == "stick" else crew_count
+    return posture_score, _dist2(self_xy, _nav_point(belief, task, index))
 
 
 def _self_xy(belief: Belief) -> tuple[int, int] | None:

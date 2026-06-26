@@ -167,6 +167,7 @@ class CrewborgEventTracer:
             self._observe_occupancy_debug(belief, emit)
         if self._emit_commander:
             self._observe_commander_applied(belief, emit)
+        self._observe_commander_danger(belief, emit)
 
     def _optional_event_enabled(self, event_name: str, mode_enabled: bool) -> bool:
         enabled_by_mode = mode_enabled and not self._trace_config.excludes_event(event_name)
@@ -198,6 +199,18 @@ class CrewborgEventTracer:
                 "as_of_tick": belief.commander.as_of_tick,
             },
         )
+
+    def _observe_commander_danger(self, belief: Belief, emit: EventEmitter) -> None:
+        """Drain transient danger events produced outside a Mode emitter."""
+
+        if not belief.commander_danger_events:
+            return
+        events = list(belief.commander_danger_events)
+        belief.commander_danger_events.clear()
+        if not self._emit_commander:
+            return
+        for event in events:
+            emit.event("commander_danger", event)
 
     # --- state-transition / outcome events (belief & action-state deltas) ---
 

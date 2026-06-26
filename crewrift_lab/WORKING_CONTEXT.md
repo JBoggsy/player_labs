@@ -27,8 +27,25 @@ Bedrock on that **endpoint**, not `USE_BEDROCK` (`strategy/commander/llm.py` + `
 **Confirmed live in-pod** (Crewrift Prime XP, v64): commander 4637 `commander_call` ok / 0 errors; **meeting LLM
 REVIVED** — 290 `meeting_llm_decision`, 0 `_fallback` (was 184/184 disabled). Infra issue:
 [`docs/issues/2026-06-26-bedrock-disabled-crewrift-prime-xp.md`](docs/issues/2026-06-26-bedrock-disabled-crewrift-prime-xp.md).
-NEXT: **Phase 2** — imposter levers (`hunt_room`/`target_player`/`avoid_room` in `search.py:266`/`recon.py:534`/`hunt.py:612`)
-+ danger mode, then A/B. Branch `worktree-labs-work`; uploaded v55–v64, **none submitted**.
+**Phase 2 DONE** (commits `c2e83e9`..`0e19585`): imposter levers — `hunt_room`/`avoid_room` in Search,
+`target_player` in Search-follow/Recon/Hunt (reachability-checked), + **danger mode** (`allow_witnessed_kill`
+relaxes Hunt's witness gate; `skip_evade` suppresses post-kill Evade) with `commander_danger` tracing. All
+bias-don't-force via `commander_of`/`filter_or_fallback`; disabled path byte-identical; 440 tests green.
+**Phase 3 DONE** — crewmate levers (`target_room`/`target_task`/`posture`) in NormalMode + a debug knob
+`CREWBORG_COMMANDER_FORCE='{...}'` that seeds `belief.commander` with a fixed sanitized priority each tick
+(bypasses LLM/Bedrock) for deterministic control demos. **CONTROL CAPACITY DEMONSTRATED live (both roles)**
+via a forced run (v67, 3 Prime eps, `target_room=Reactor`/`hunt_room=Observatory`): imposters → Observatory
+is the #1 nav destination (29%, ~13 rooms, chance ~8%); crew → Reactor elevated to #2 (13%, ~1.6× chance) —
+weaker because the task-room lever only steers among a crewmate's OWN assigned tasks (bias-don't-force). So the
+commander provably drives both roles; the crewmate task lever is gentle by design. **STRENGTH KNOB added** (commits `ad00f1d`..`c22b05a`): `CommanderPriorities.strength` = `soft` (default,
+byte-identical bias-with-fallback) | `hard` (stronger override). `hard`: Search targets a distant `hunt_room`
+regardless of nearby-N; NormalMode loiters in `target_room` even with no assigned task there (new positioning
+intent); `target_player` follow window 120→240 ticks. **Measured (forced Prime, soft→hard):** imposter
+`hunt_room` adherence **29%→100%**; crew `target_room` **13%→67%**. So the commander now has a real steering
+dial (settable by the LLM or via `CREWBORG_COMMANDER_FORCE`). 460 tests green; soft path byte-identical.
+NEXT: tune — (1) imposter A/B (commander LLM on vs off) for kill efficiency, iterate the imposter prompt to emit
+useful `hunt_room`/`target_player`/`strength`; (2) Phase 4 EscortMode for crew. Both roles wired + strength dial. Branch `worktree-labs-work`
+(merged to origin/main @ `2ec14f9`); uploaded v55–v64, **none submitted**.
 
 ## 🎯 OBJECTIVE: crewborg's IMPOSTER KILL EFFICIENCY (the durable gap)
 

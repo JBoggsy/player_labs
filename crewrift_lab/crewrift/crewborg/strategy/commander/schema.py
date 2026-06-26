@@ -7,6 +7,7 @@ from typing import Any
 from crewrift.crewborg.types import CommanderPriorities
 
 _VALID_POSTURES = {"stick", "isolate", "neutral"}
+_VALID_STRENGTHS = {"soft", "hard"}
 
 
 def sanitize_priorities(
@@ -30,11 +31,15 @@ def sanitize_priorities(
     posture = raw.get("posture")
     if posture not in _VALID_POSTURES:
         posture = "neutral"
+    strength = raw.get("strength")
+    if strength not in _VALID_STRENGTHS:
+        strength = "soft"
 
     return CommanderPriorities(
         target_room=_legal_string(raw.get("target_room"), legal_rooms),
         target_task=target_task,
         posture=posture,
+        strength=strength,
         hunt_room=_legal_string(raw.get("hunt_room"), legal_rooms),
         target_player=_legal_string(raw.get("target_player"), legal_players),
         avoid_room=_legal_string(raw.get("avoid_room"), legal_rooms),
