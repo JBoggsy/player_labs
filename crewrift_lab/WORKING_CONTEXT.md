@@ -33,9 +33,18 @@ scaffold → imposter levers + danger → crewmate levers → (later) EscortMode
 by Codex via codex-task, reviewed; 403 crewborg tests green, disabled path proven byte-identical,
 ruff clean on commander code). Package `strategy/commander/` (bias/context/schema/llm/prompts/worker/
 strategy) + `belief.commander` + `CommanderStrategy` wrapper on a `CloseAwareSynchronousStrategyRunner`
-+ `apply_inferences` wiring. Modes do NOT yet read priorities. NEXT: phase 2 (imposter levers
-`hunt_room`/`target_player`/`avoid_room` in search/recon/hunt, then danger mode) — highest expected
-lift on the durable imposter kill-efficiency gap. Owed: a live-backend Gate-1 smoke (flag on, real Bedrock).
++ `apply_inferences` wiring. Modes do NOT yet read priorities. **Observability added** (commit `b61fa20`):
+`domain.commander_*` traces (started/call/applied + `env_seen`), gated by `CREWBORG_TRACE=debug` or
+`CREWBORG_TRACE_GROUPS=commander`. **Lazy in-worker client + env diagnostic** (`52398eb`). **✅ COMMANDER
+LIVE IN-POD (v62, commit `d43149d`):** sidecar mode strips `USE_BEDROCK` and injects
+`AWS_ENDPOINT_URL_BEDROCK_RUNTIME` — so the commander now gates Bedrock on that endpoint, not `USE_BEDROCK`.
+XP `xreq_5a87445f` (Crewrift Prime): `commander_started enabled:true backend:bedrock`, **672 commander_call
+outcome:ok, 0 errors**, ~1.8s latency. Infra issue (USE_BEDROCK stripped) written:
+`crewborg/docs/issues/2026-06-26-bedrock-disabled-crewrift-prime-xp.md`; sidecar IS deployed for crewrift_prime
+XP jobs. **NB the meeting LLM still gates on `USE_BEDROCK` (SDK `bedrock_enabled`) → still disabled in-pod;
+same endpoint-gating fix would revive it.** NEXT: **Phase 2 unblocked** — imposter levers
+(`hunt_room`/`target_player`/`avoid_room` in search/recon/hunt, then danger mode), then A/B vs the
+deterministic champion. Mode injection points: `normal.py:85`, `search.py:266`, `recon.py:534`, `hunt.py:612`.
 
 ## ✅ LLM MEETINGS CONFIRMED WORKING — v50, end-to-end (2026-06-26)
 The v47 "NEXT" item below is DONE. The LLM was silently 403'ing (disabled) until two fixes landed:

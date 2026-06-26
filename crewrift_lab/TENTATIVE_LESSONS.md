@@ -86,3 +86,14 @@ chat LLM currently never fires in these pods either. NOT a commander-specific is
 is simply absent for crewrift_prime experience-request player containers. Infra (re-enable + persist the
 Bedrock sidecar for those jobs). The meeting LLM's existing `meeting_llm_fallback {detail}` trace already
 reports this — no new code needed to check it; the commander's env_seen pins down WHY (env vars all false).
+
+### ✅ FIX CONFIRMED: gate Bedrock on AWS_ENDPOINT_URL_BEDROCK_RUNTIME, not USE_BEDROCK (sidecar strips it)
+Evidence: sidecar mode (kubernetes_runner) strips USE_BEDROCK + direct AWS identity from the player container
+and injects AWS_ENDPOINT_URL_BEDROCK_RUNTIME + dummy creds. SDK bedrock_enabled() only checks
+USE_BEDROCK/CLAUDE_CODE_USE_BEDROCK → wrongly "no backend" in-pod. Changed crewborg commander factory to OR-in
+the sidecar endpoint as a Bedrock signal. In-pod (v62, xreq_5a87445f, Crewrift Prime): commander_started
+enabled:true backend:bedrock env_seen{USE_BEDROCK:false, AWS_ENDPOINT_URL_BEDROCK_RUNTIME:true}, 672
+commander_call outcome:ok, 0 errors, ~1.8s. So the sidecar IS deployed; only USE_BEDROCK was missing. The
+meeting LLM still gates on USE_BEDROCK via the SDK → still dark in-pod; same one-line endpoint-gating fix
+revives it. Platform/SDK fix still recommended (keep injecting USE_BEDROCK=true / SDK treat endpoint as signal)
+so the documented --use-bedrock contract holds for all players.
