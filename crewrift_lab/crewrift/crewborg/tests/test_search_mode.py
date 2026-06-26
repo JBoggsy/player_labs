@@ -12,7 +12,7 @@ import numpy as np
 from crewrift.crewborg.map.types import MapData, MapPoint, MapRect, Room, TaskStation
 from crewrift.crewborg.modes.search import SearchMode
 from crewrift.crewborg.nav import build_nav_graph
-from crewrift.crewborg.types import ActionState, Belief, PlayerRecord
+from crewrift.crewborg.types import ActionState, Belief, CommanderPriorities, PlayerRecord
 
 
 def _map() -> MapData:
@@ -54,6 +54,42 @@ def test_pick_room_then_navigate_to_a_task_room() -> None:
     assert intent.kind == "navigate_to"
     assert mode._state == "go_to_room"
     assert mode._target_room in {"Left", "Right"}  # a nearby task room, not the start room (Mid)
+
+
+def test_commander_hunt_room_picks_valid_task_room() -> None:
+    mode = SearchMode()
+    belief = _belief()
+    belief.commander = CommanderPriorities(hunt_room="Right", as_of_tick=belief.last_tick)
+    intent = mode.decide(belief, ActionState())
+    assert intent.kind == "navigate_to"
+    assert mode._target_room == "Right"
+
+
+def test_commander_unknown_hunt_room_falls_back_to_random_pick() -> None:
+    mode = SearchMode()
+    belief = _belief()
+    belief.commander = CommanderPriorities(hunt_room="Unknown", as_of_tick=belief.last_tick)
+    intent = mode.decide(belief, ActionState())
+    assert intent.kind == "navigate_to"
+    assert mode._target_room in {"Left", "Right"}
+
+
+def test_commander_avoid_room_excludes_candidate_task_room() -> None:
+    mode = SearchMode()
+    belief = _belief()
+    belief.commander = CommanderPriorities(avoid_room="Left", as_of_tick=belief.last_tick)
+    intent = mode.decide(belief, ActionState())
+    assert intent.kind == "navigate_to"
+    assert mode._target_room == "Right"
+
+
+def test_commander_avoid_room_falls_back_when_filter_empties_candidates() -> None:
+    mode = SearchMode()
+    belief = _belief(self_xy=(10, 40))  # Left is current; only Right survives current/start exclusions.
+    belief.commander = CommanderPriorities(avoid_room="Right", as_of_tick=belief.last_tick)
+    intent = mode.decide(belief, ActionState())
+    assert intent.kind == "navigate_to"
+    assert mode._target_room == "Right"
 
 
 def test_watches_when_crew_are_in_the_target_room() -> None:
@@ -133,7 +169,7 @@ def test_watch_moves_to_a_vantage_over_the_crew() -> None:
     belief = _belief(self_xy=(10, 10))   # in a corner of Left, not yet at a good vantage
     mode._room_crew = {"green"}
     _crew(belief, "green", (80, 60))     # a crewmate elsewhere in Left
-    intent = mode.decide(belief, ActionState())
+    mode.decide(belief, ActionState())
     # should move to a vantage (it sees green) rather than idle in the corner
     assert mode._state == "watch"
     assert mode._vantage is not None

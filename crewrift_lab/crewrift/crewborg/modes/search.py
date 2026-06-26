@@ -35,6 +35,7 @@ import random
 from crewrift.crewborg.modes import imposter_common as ic
 from crewrift.crewborg.map.types import Room
 from crewrift.crewborg.nav import _segment_clear
+from crewrift.crewborg.strategy.commander.bias import commander_of, filter_or_fallback
 from crewrift.crewborg.strategy.path_prediction import PathPredictor
 from crewrift.crewborg.types import ActionState, Belief, Intent, PlayerRecord
 from players.player_sdk import EmptyModeParams, Mode, ModeParams
@@ -102,7 +103,11 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
             rooms = self._nearby_task_rooms(belief, self_xy, exclude=set())
         if not rooms:
             return Intent(kind="idle", reason="search: no task rooms")
-        room = self._rng.choice(rooms)
+        cmd = commander_of(belief)
+        hunt_room = cmd.hunt_room if cmd is not None else None
+        room = next((candidate for candidate in rooms if candidate.name == hunt_room), None)
+        if room is None:
+            room = self._rng.choice(rooms)
         self._target_room = room.name
         # Head to the room CENTRE (go fully inside to check it), not a task spot by
         # the door — standing at the entrance misses crew and exits.
@@ -316,7 +321,11 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
                 continue  # only rooms with a task station to idle/blend at
             rooms.append(room)
         rooms.sort(key=lambda r: ic.dist2(self_xy, (r.center.x, r.center.y)))
-        return rooms[:NEARBY_ROOMS]
+        rooms = rooms[:NEARBY_ROOMS]
+        cmd = commander_of(belief)
+        if cmd is None or cmd.avoid_room is None:
+            return rooms
+        return filter_or_fallback(rooms, lambda room: room.name != cmd.avoid_room)
 
     def _room_task_indices(self, belief: Belief, room: Room) -> list[int]:
         tasks = belief.map.tasks if belief.map is not None else ()
