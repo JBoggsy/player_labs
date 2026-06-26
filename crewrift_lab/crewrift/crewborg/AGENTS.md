@@ -67,10 +67,12 @@ the SDK's JSON bridge does not fit a binary game (see
 
 ## 1. The Player SDK (`players.player_sdk`)
 
-**Source:** the public `Metta-AI/players` repo (`players/player_sdk`), installed into
-the lab from `main` (lock-pinned) via `pyproject.toml` — no local checkout; the SDK is
-imported, not vendored in this fork.
-**Import root:** `players.player_sdk` (the repo is the `players` package).
+**Source:** the public `Metta-AI/coworld-tools` monorepo (`players/` subdirectory; the old
+`Metta-AI/players` repo is archived), installed into the lab from a pinned archive **tarball**
+via `pyproject.toml` `[tool.uv.sources]` (`players[bedrock]`) — no local checkout; the SDK is
+imported, not vendored in this fork. (Tarball, not git: avoids coworld-tools' broken `co-gas`
+submodule that breaks uv's clone — issue #13.)
+**Import root:** `players.player_sdk` (the package is still named `players`).
 Pure Python, deps `numpy`/`pydantic`/`websockets`.
 
 ### The two-loop model
@@ -525,7 +527,7 @@ rather than pixel parity). Develop/run/test workflows live in the
 | Path-prediction replay UI + accuracy/eval tools | [`./tools/README.md`](./tools/README.md) |
 
 Repo roots:
-- Player SDK: pkg `players`, installed from the public `Metta-AI/players` repo (tracks `main`, lock-pinned) (no local checkout)
+- Player SDK: pkg `players`, installed from the public `Metta-AI/coworld-tools` monorepo (`players/` subdir; `Metta-AI/players` archived) via a pinned archive tarball, lock-pinned, no local checkout
 - This crewborg fork: `crewrift_lab/crewrift/crewborg` in this repo (pkg `crewrift.crewborg`)
 - Crewrift game source: the `Metta-AI/coworld-crewrift` repo
 - Coworld platform: `Metta-AI/metta`: `packages/coworld` *(read-only reference)*

@@ -98,11 +98,16 @@ upload → run an experience request → report + diagnose. After that you're in
 - **Build `--platform=linux/amd64`** — the cluster is amd64; on Apple Silicon images
   build under emulation (the build tools handle this).
 - **The SDK is imported, not vendored** — vendored players are forks *in this repo*,
-  free to drift; `players.player_sdk` is imported from the public players repo, which
-  **tracks `main`** (`pyproject.toml`). `uv.lock` records the exact commit so clones
-  are reproducible; adopt the latest with `uv lock --upgrade-package players` (no
-  hand-edited SHAs). The **game** ref (`CREWRIFT_REF`) stays deliberately pinned — it
-  must match the deployed league game, not latest (see `crewrift_lab/tools/versions.env`).
+  free to drift; `players.player_sdk` is imported from the public **`Metta-AI/coworld-tools`**
+  monorepo (the `players` repo moved there as the `players/` subdirectory; the old repo is
+  archived). Both the hosted image and local `uv` install it from the coworld-tools **archive
+  tarball** (`pyproject.toml` `[tool.uv.sources]`, with the `[bedrock]` extra) — a tarball, not
+  a git source, because a GitHub archive excludes submodules and so sidesteps coworld-tools'
+  broken `co-gas` submodule that breaks uv's recursive clone (issue #13). `uv.lock` pins the
+  exact tarball SHA for reproducible installs; to adopt a newer SDK, bump that SHA (in
+  `pyproject.toml` + `crewrift_lab/tools/versions.env`) and `uv lock` (a tarball can't
+  auto-track `main`). The **game** ref (`CREWRIFT_REF`) stays deliberately pinned — it must
+  match the deployed league game, not latest (see `crewrift_lab/tools/versions.env`).
 - The Coworld platform contract (PLAYER.md/GAME.md, runner) lives in the `metta` repo
   if you need to consult it — **read-only; never write to a `metta` checkout.**
 
