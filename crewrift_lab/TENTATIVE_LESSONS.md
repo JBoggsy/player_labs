@@ -64,3 +64,15 @@ Evidence: before the trace, in-pod looked like "0 strategy_inferences, unexplain
 `enabled:false, disabled_reason:"no LLM backend configured"` — diagnosing the USE_BEDROCK misconfig in one
 shot. Lesson confirmed: instrument the async LLM worker's connect/enable BEFORE trusting any eval; a silent
 client-disable is indistinguishable from "fired fine" without it.
+
+### Commander in-pod disable is INFRA (Bedrock env absent), proven by env_seen — not eager-vs-lazy timing
+Evidence: made client construction lazy (in-worker, live os.environ) + 20x retry + added env_seen diagnostic
+to commander_started. Local: enabled:true, env_seen.USE_BEDROCK:true. In-pod (crewrift_prime XP, v59):
+enabled:false, env_seen ALL false (USE_BEDROCK/CLAUDE_CODE_USE_BEDROCK/ANTHROPIC_API_KEY) on all 8 slots,
+even after retries. So the lazy fix (candidate cause a) was RULED OUT; the Bedrock env genuinely isn't in
+the player container (cause b). CREWBORG_LLM_COMMANDER (same secret-env path) DOES arrive → USE_BEDROCK is
+special-cased/stripped by the platform to gate sidecar attachment, and the sidecar isn't attached for
+crewrift_prime XP jobs now. Implies the meeting LLM is also currently disabled in these pods (the v50
+enablement likely reverted; "TF reconciliation owed"). Lesson: an `env_seen` diagnostic on the LLM-enable
+path turns an ambiguous "it's disabled" into a one-line infra-vs-code verdict — build it early. The lazy
+construction is still kept (correct + matches meetings + handles genuinely-late env).
