@@ -297,6 +297,7 @@ class CommanderPriorities(BaseModel):
     target_room: str | None = None
     target_task: int | None = None
     posture: Literal["stick", "isolate", "neutral"] = "neutral"
+    strength: Literal["soft", "hard"] = "soft"
     hunt_room: str | None = None
     target_player: str | None = None
     avoid_room: str | None = None
