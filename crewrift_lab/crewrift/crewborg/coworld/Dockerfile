@@ -26,12 +26,13 @@ ENV PYTHONUNBUFFERED=1 \
 WORKDIR /app
 
 # Shared SDK + crewborg's runtime deps (numpy/pydantic/websockets/cramjam are
-# players' base deps). Installed from the public players repo via its GitHub source
-# tarball at the pinned ref (no git or local checkout needed in the build).
+# players' base deps). The players repo moved into the coworld-tools monorepo as the
+# `players/` subdirectory; install from its GitHub source tarball at the pinned ref
+# (tarball = no git/submodules or local checkout needed in the build).
 # `[bedrock]` adds boto3 so the meeting LLM can route through AWS Bedrock when the
 # policy is uploaded with `--use-bedrock`; inert otherwise.
 RUN pip install --upgrade pip \
- && pip install "players[bedrock] @ https://github.com/Metta-AI/players/archive/${PLAYERS_SDK_REF}.tar.gz"
+ && pip install "players[bedrock] @ https://github.com/Metta-AI/coworld-tools/archive/${PLAYERS_SDK_REF}.tar.gz#subdirectory=players"
 
 # Meeting chat NLP (imposter bandwagon, design §10.5): spaCy dependency-parse negation
 # scope over opponents' chat. Loaded lazily in a background thread and gated by

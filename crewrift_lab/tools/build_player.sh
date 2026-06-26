@@ -65,22 +65,24 @@ case "$policy" in
 
   crewborg)
     # Python fork re-rooted out of `players`: it imports only players.player_sdk.
-    # The Dockerfile installs the SDK from the public players repo (PLAYERS_SDK_REF),
-    # so we just stage the fork + the lab's crewrift/__init__.py and put it on
-    # PYTHONPATH. No local players checkout needed.
+    # The Dockerfile installs the SDK from the coworld-tools monorepo (players/ subdir)
+    # at PLAYERS_SDK_REF, so we just stage the fork + the lab's crewrift/__init__.py and
+    # put it on PYTHONPATH. No local players checkout needed.
     #
-    # Resolve PLAYERS_SDK_REF=main to the exact commit uv.lock records: "main" as a
-    # build-arg is a Docker layer-cache trap (the pip-install layer caches on the
-    # unchanged tarball URL string, so a moved main silently does NOT rebuild — the
-    # image keeps the stale SDK). Pinning the SHA both busts the cache when (and only
-    # when) the lock moves and guarantees the image runs the same SDK as `uv run`.
+    # Resolve PLAYERS_SDK_REF=main to coworld-tools' current main commit via ls-remote:
+    # "main" as a build-arg is a Docker layer-cache trap (the pip-install layer caches on
+    # the unchanged tarball URL string, so a moved main silently does NOT rebuild — the
+    # image keeps the stale SDK). Pinning the SHA busts the cache exactly when main moves.
+    # We resolve from the remote (not uv.lock) because uv cannot lock coworld-tools — its
+    # broken `players/users/relh/co-gas` submodule fails uv's recursive clone; the Docker
+    # tarball install sidesteps submodules entirely.
     if [ "$PLAYERS_SDK_REF" = "main" ]; then
-      locked_sha="$(sed -n 's/.*github\.com\/Metta-AI\/players?branch=main#\([0-9a-f]\{40\}\).*/\1/p' "$LAB_DIR/../uv.lock" | head -1)"
-      if [ -n "$locked_sha" ]; then
-        echo "==> PLAYERS_SDK_REF=main resolved to uv.lock commit $locked_sha"
-        PLAYERS_SDK_REF="$locked_sha"
+      remote_sha="$(git ls-remote https://github.com/Metta-AI/coworld-tools.git refs/heads/main | awk '{print $1}' | head -1)"
+      if [ -n "$remote_sha" ]; then
+        echo "==> PLAYERS_SDK_REF=main resolved to coworld-tools main $remote_sha"
+        PLAYERS_SDK_REF="$remote_sha"
       else
-        echo "WARNING: could not resolve players commit from uv.lock; building at 'main' (Docker may reuse a stale cached SDK layer)" >&2
+        echo "WARNING: could not resolve coworld-tools main via ls-remote; building at 'main' (Docker may reuse a stale cached SDK layer)" >&2
       fi
     fi
     dir="$CREWRIFT_DIR/crewborg"
