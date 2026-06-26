@@ -48,3 +48,19 @@ from "fired fine." Lesson: a swallow-and-continue worker MUST emit a success/fai
 you cannot tell a working LLM from a dead one in production. First Phase-2 task: commander_decision /
 commander_error trace+metric (latency, fired/fallback). Confirmed working LOCALLY (direct Bedrock via temp
 softmax SSO creds); in-pod confirmation deferred to that tracing.
+
+### `--use-bedrock` upload flag is NOT enough — also pass `--secret-env USE_BEDROCK=true`
+Evidence: v55/v56 uploaded with `--use-bedrock` + `CREWBORG_LLM_COMMANDER=1` but NO `USE_BEDROCK` env →
+in-pod `commander_started` traced `{enabled:false, disabled_reason:"no LLM backend configured"}` on all 8
+slots. SDK `players.player_sdk.llm.bedrock_enabled(env)` only checks truthy env vars
+`_BEDROCK_ENV_NAMES=("USE_BEDROCK","CLAUDE_CODE_USE_BEDROCK")`; the `--use-bedrock` CLI flag wires the
+sidecar endpoint but does NOT set that env var. The working meeting LLM (v50) was uploaded with
+`--use-bedrock` + `USE_BEDROCK=true` + `CREWBORG_LLM_MEETINGS=1` — the explicit env is the actual enable.
+Fix: v57 adds `--secret-env USE_BEDROCK=true`. Applies to ANY crewborg LLM feature (meetings or commander).
+
+### The commander observability paid off on its very first in-pod run
+Evidence: before the trace, in-pod looked like "0 strategy_inferences, unexplained." After adding
+`domain.commander_started` (+ call/applied), the first v56 episode immediately showed
+`enabled:false, disabled_reason:"no LLM backend configured"` — diagnosing the USE_BEDROCK misconfig in one
+shot. Lesson confirmed: instrument the async LLM worker's connect/enable BEFORE trusting any eval; a silent
+client-disable is indistinguishable from "fired fine" without it.
