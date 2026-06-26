@@ -27,8 +27,14 @@ Bedrock on that **endpoint**, not `USE_BEDROCK` (`strategy/commander/llm.py` + `
 **Confirmed live in-pod** (Crewrift Prime XP, v64): commander 4637 `commander_call` ok / 0 errors; **meeting LLM
 REVIVED** — 290 `meeting_llm_decision`, 0 `_fallback` (was 184/184 disabled). Infra issue:
 [`docs/issues/2026-06-26-bedrock-disabled-crewrift-prime-xp.md`](docs/issues/2026-06-26-bedrock-disabled-crewrift-prime-xp.md).
-NEXT: **Phase 2** — imposter levers (`hunt_room`/`target_player`/`avoid_room` in `search.py:266`/`recon.py:534`/`hunt.py:612`)
-+ danger mode, then A/B. Branch `worktree-labs-work`; uploaded v55–v64, **none submitted**.
+**Phase 2 DONE** (commits `c2e83e9`..`0e19585`): imposter levers — `hunt_room`/`avoid_room` in Search,
+`target_player` in Search-follow/Recon/Hunt (reachability-checked), + **danger mode** (`allow_witnessed_kill`
+relaxes Hunt's witness gate; `skip_evade` suppresses post-kill Evade) with `commander_danger` tracing. All
+bias-don't-force via `commander_of`/`filter_or_fallback`; disabled path byte-identical; 440 tests green.
+NEXT: **A/B** the commander (on vs off) for imposter kill efficiency — needs the imposter prompt to emit
+useful `hunt_room`/`target_player` priorities (may need prompt iteration); run in-pod (commander fires there
+now). Phase 3 = crewmate levers (NormalMode `target_room`/`posture`), later. Branch `worktree-labs-work`
+(merged to origin/main @ `2ec14f9`); uploaded v55–v64, **none submitted**.
 
 ## 🎯 OBJECTIVE: crewborg's IMPOSTER KILL EFFICIENCY (the durable gap)
 
