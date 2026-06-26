@@ -285,6 +285,28 @@ class PerceptionFrame(BaseModel):
     visible_mask: np.ndarray | None = None
 
 
+class CommanderPriorities(BaseModel):
+    """Sticky gameplay priorities written by the opt-in LLM commander.
+
+    Modes read these only at discretionary ranking points. Unset fields preserve
+    current behavior; danger levers are opt-in and sanitized before entering belief.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    target_room: str | None = None
+    target_task: int | None = None
+    posture: Literal["stick", "isolate", "neutral"] = "neutral"
+    hunt_room: str | None = None
+    target_player: str | None = None
+    avoid_room: str | None = None
+    allow_witnessed_kill: bool = False
+    skip_evade: bool = False
+    danger_reason: str | None = None
+    reason: str | None = None
+    as_of_tick: int = 0
+
+
 class Belief(BaseModel):
     """Persistent world model — the only interface the strategy and modes see."""
 
@@ -343,6 +365,8 @@ class Belief(BaseModel):
     # Phase machine (design §5 phase).
     phase: Phase = "unknown"
     phase_start_tick: int = 0
+    # Gameplay-commander priorities. ``None`` is the disabled-path default.
+    commander: CommanderPriorities | None = None
 
     # Voting (design §5 voting).
     voting: VotingState = Field(default_factory=VotingState)
