@@ -18,6 +18,17 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
 
+### Witness-drop combo CONFIRMED significant; SUSTAINING the re-approach (72→400t) backfires via suspicion
+Evidence: 3-arm A/B natural roles (300/arm). Fully-clean imposter: v63 (72t re-approach + witness-drop)
+≥2-kill 54% / win 88%; v65 (400t sustained) 46% / 70%; v54 (baseline) 35% / 73%. **v63 vs v54: +19pp
+≥2-kill, +14pp win, +0.32 kills p=0.038 (SIGNIFICANT)** — replicates last round's p=0.056, confirms the
+combo helps. **v65 vs v63: −8pp ≥2-kill, win 88→70%** — extending the post-kill crowd re-approach to 400t
+HURT, almost certainly because camping the crew crowd most of the cooldown (not doing tasks) reads as
+suspicious → voted out more, no kill gain. LESSON: "move toward where people are after a kill" is fine
+BRIEFLY (72t, inert-but-harmless) but SUSTAINING it backfires — the lever was CONVERSION (witness-drop),
+not contact. Best tested = v63; reverted EVADE_TICKS to 72. The Evade re-approach is inert even at 72t
+(positioning unchanged), so witness-drop alone likely gives the same gain (untested in isolation, natural).
+
 ### WITNESS-DROP-after-1st-kill (v58) HELPS in natural roles (+15pp ≥2-kill) — the masking lesson, paid off
 Evidence: combined candidate v63 (Evade re-approach v53 + witness-drop v58) vs v54, NATURAL roles, 300
 eps/arm, matched same-window. crewborg imposter: kills 1.12→1.38 (+0.26, t p=0.056), ≥2-kill 35→50%

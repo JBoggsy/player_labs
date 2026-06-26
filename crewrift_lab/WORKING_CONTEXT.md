@@ -32,10 +32,14 @@ NEXT: **Phase 2** — imposter levers (`hunt_room`/`target_player`/`avoid_room` 
 
 ## 🎯 OBJECTIVE: crewborg's IMPOSTER KILL EFFICIENCY (the durable gap)
 
-Champion is still **v42** (shipped Prime). Current code lineage = **v54** (= clean HEAD; v50 lineage
-+ everything: vantage-SEARCH, Recon, reconnect, LLM meetings). **v61 = v54 code + debug tracing** (the
-complete-baseline subject). NOT submitted: v53/v58 (inconclusive A/B arms), v61 (eval only). **Avoid
-v59/v60 — separate research thread.**
+**✅ SHIPPED `crewborg:v66` to Crewrift PRIME 2026-06-26** (`sub_9851f507-…`, auto-champion=always →
+supersedes v42 once it qualifies). v66 = the **confirmed imposter 2nd-kill combo** (witness-drop after
+1st kill + 72t Evade re-approach, EVADE_TICKS=72) **+ meeting LLM ON** (commander OFF), built on the
+merged LLM-commander codebase. Meeting LLM verified firing pre-submit (probe `xreq_2e49c8f9`: crewborg's
+own artifact = 17 `meeting_llm_decision`, 0 fallback). The **witness-drop is the significant driver**
+(v63 vs v54 natural roles: +19pp ≥2-kill / +14pp win / +0.32 kills, p=0.038). **Next: monitor placement.**
+Prior champion v42. v59/v60/v62/v64 = the other worktree's LLM-commander thread (commander kept OFF here).
+v61 = v54+debug (complete-baseline eval subject). v53/v58/v65 = inconclusive/superseded A/B arms.
 
 **✅ CONFIRMED BASELINE — v54, 300 eps, NATURAL ROLES, vs Aaron(v17)+Andre(v28), Prime 0.4.9, meeting-aware
 (`/tmp/v54base_wh`; 2026-06-26).** This is the authoritative current diagnosis (the v50 numbers were a
