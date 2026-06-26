@@ -37,6 +37,10 @@ for r in vis.itertuples():
 # per policy: for each cooldown-ready transition: visible AT R, and visible within
 # each lookback window; plus the gap to the most-recent crew sighting at/before R.
 WINDOWS = [0, 50, 100, 200, 400, 800]
+# snapshot interval (median small step) so the gap-to-last-sighting is measured in PLAYING
+# ticks (counting Playing samples), not a raw R-sighting delta that would span any meeting.
+steps = [b[0]-a[0] for rr in cdser.values() for a,b in zip(sorted(rr), sorted(rr)[1:]) if 0 < b[0]-a[0] < 100]
+SNAP = st.median(steps) if steps else 1.0
 res = defaultdict(lambda: {"ready":0, "win":defaultdict(int), "gaps":[], "ncrew_at":[]})
 for k, rows in cdser.items():
     pol = key[k]; rows.sort()
@@ -50,9 +54,12 @@ for k, rows in cdser.items():
             res[pol]["ncrew_at"].append(sum(1 for t0,t1 in ivals if t0 <= R <= t1))
             for w in WINDOWS:
                 if any(t1 >= R-w and t0 <= R for t0,t1 in ivals): res[pol]["win"][w] += 1
-            # gap to most-recent sighting at/before R (visible spans count as gap 0)
-            recent = [min(t1, R) for t0,t1 in ivals if t0 <= R]
-            res[pol]["gaps"].append(R - max(recent) if recent else None)
+            # PLAYING ticks since the most-recent sighting at/before R (visible spans => 0).
+            # Count Playing samples since the sighting x SNAP; a raw R-sighting delta would span
+            # any meeting in between, which is NOT search/idle time. (best_practices: meetings ≠ idle.)
+            last_sight = max((min(t1, R) for t0,t1 in ivals if t0 <= R), default=None)
+            res[pol]["gaps"].append(
+                sum(1 for t2,_,_ in rows if last_sight < t2 <= R) * SNAP if last_sight is not None else None)
         last = cd
 
 print(f"warehouse: {WH}\n")

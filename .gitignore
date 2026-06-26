@@ -31,3 +31,8 @@ analysis/
 crewrift_lab/.cache/
 crewrift_lab/tools/bin/
 .superpowers/
+
+# positioning_viz debug screenshots + playwright artifacts
+posviz_*.png
+.playwright-mcp/
+.claude/worktrees/

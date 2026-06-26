@@ -25,6 +25,22 @@ proceeding. Add to this file as we learn more about *this game's* failure modes.
   (or a `died`/`player_died` event on that slot) = ejected — no meeting-tally parsing
   needed. So *imposter ejection rate = fraction of imposter games the policy ended
   dead*. (Crew deaths are ambiguous — killed vs ejected — and DO need the vote events.)
+- **🚩 Meeting/voting ticks are NOT idle time — exclude them from EVERY idle / latency /
+  ready / gap metric.** A body report or button press starts a meeting: `MeetingCallTicks`
+  (72) + `VoteTimerTicks` (1200) ≈ ~1272 ticks during which nobody moves or kills, everyone
+  is teleported home, and a body/unknown meeting **resets imposter kill cooldowns**. So any
+  "idle-ready", "kill latency / dither", "ticks since cooldown ready", "ready→kill", or
+  "inter-kill gap" number must drop meeting ticks. This has bitten the analysis repeatedly
+  (the "~2000-tick inter-kill gap" and the "2077-tick wander" were both *meetings*, not
+  hunting). **Two layers, BOTH required:** (1) filter `player_state.phase == 'Playing'` —
+  drops the meeting *samples*; (2) **never subtract a raw tick delta across a Playing-filtered
+  series** — the delta between two consecutive Playing samples STILL spans any meeting in
+  between (~1272 ticks; and a *button* meeting doesn't reset the cooldown, so the `cd==0`
+  guard won't even catch it). Instead **count Playing+ready samples × snapshot interval**, or
+  bound the window explicitly at the next meeting. And: a **ready→kill window ENDS at the next
+  meeting** (the meeting resets the cooldown), so a kill *after* a meeting does NOT convert
+  that ready moment — attribute it to the post-meeting ready event. (Reference impl:
+  `tools/positioning_viz/extract_positions.py` — sample-count idle + meeting-aware window.)
 
 ## Evaluation
 

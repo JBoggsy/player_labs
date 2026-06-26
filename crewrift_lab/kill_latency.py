@@ -43,25 +43,33 @@ for r in kills.itertuples():
 dith = defaultdict(list)      # policy -> [dither ticks per kill]
 ttfk = defaultdict(list)      # policy -> [time-to-first-kill ticks]
 idle_ready = defaultdict(list) # policy -> [ticks alive & cd==0 but not killing] per game
+
+# Measure durations by COUNTING Playing samples x snapshot interval, NEVER by subtracting
+# raw ticks: the series is Playing-only, so a tick delta between two consecutive samples
+# spans any meeting in between (~1272 ticks; a button meeting doesn't even reset cd) which
+# is NOT idle/hunting time. Counting samples excludes meeting time automatically.
+# (See best_practices.md: "Meeting/voting ticks are NOT idle time.")
+steps = [b[0]-a[0] for rows in series.values() for a, b in zip(sorted(rows), sorted(rows)[1:]) if 0 < b[0]-a[0] < 100]
+SNAP = st.median(steps) if steps else 1.0
+
 for k, rows in series.items():
     pol = key[k]; rows.sort()
     play_start = rows[0][0]
     ks = sorted(killmap.get(k, []))
-    if ks: ttfk[pol].append(ks[0] - play_start)
-    # walk series, track when cd became 0; for each kill, dither = kill_ts - ready_ts
-    ready_ts = None; last_cd = None; ki = 0; idle = 0; prev_ts = None
+    if ks:  # TTFK = Playing samples from start to first kill x SNAP (drops any meeting before it)
+        ttfk[pol].append(sum(1 for ts, _, _ in rows if play_start <= ts < ks[0]) * SNAP)
+    ki = 0; idle_n = 0; ready_n = None  # ready_n = Playing+ready samples since becoming ready
     for ts, cd, alive in rows:
         if cd is None: continue
-        if last_cd is not None and cd == 0 and last_cd > 0: ready_ts = ts
-        # advance through kills that occurred at/before this tick
-        while ki < len(ks) and ks[ki] <= ts:
-            if ready_ts is not None: dith[pol].append(ks[ki] - ready_ts)
-            ready_ts = None; ki += 1
-        # idle-ready time: alive, cooldown ready, not in the act
-        if alive == 'true' and cd == 0 and prev_ts is not None:
-            idle += ts - prev_ts
-        prev_ts = ts; last_cd = cd
-    idle_ready[pol].append(idle)
+        while ki < len(ks) and ks[ki] <= ts:  # at each kill: dither = ready samples before it
+            if ready_n is not None: dith[pol].append(ready_n * SNAP)
+            ready_n = None; ki += 1
+        if cd == 0 and alive == 'true':
+            ready_n = (ready_n or 0) + 1
+            idle_n += 1
+        else:
+            ready_n = None  # cd>0 (own cooldown / post-meeting reset) ends the ready window
+    idle_ready[pol].append(idle_n * SNAP)
 
 print(f"warehouse: {WH}\n")
 print(f"{'policy':16}{'kills_seen':>11}{'median dither':>14}{'mean dither':>12}{'median TTFK':>13}{'idle-ready/g':>13}")
