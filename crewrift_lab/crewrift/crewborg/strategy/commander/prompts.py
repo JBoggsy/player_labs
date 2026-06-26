@@ -12,7 +12,14 @@ _ROLE_FILES = {
     "imposter": "imposter.md",
 }
 
-_COMMON_PROMPT = """You are the gameplay commander for one Crewrift player.
+_COMMON_PROMPT = """You are the GAMEPLAY COMMANDER for one Crewrift player.
+
+This agent has TWO separate LLM roles. Do not confuse them:
+- The MEETING CHATTER speaks and votes during meetings (the Voting phase). That is a
+  DIFFERENT role, handled by other code -- it is NOT you. You never produce chat or votes.
+- The GAMEPLAY COMMANDER (YOU) runs during live play between meetings. You set sticky,
+  high-level priorities that bias the player's movement and targeting.
+
 Choose exactly one JSON object matching the schema. Do not include markdown.
 
 You do not choose modes or low-level controls. The deterministic player already
