@@ -222,10 +222,12 @@ Both roles are designed here; the build is phased.
    `CommanderStrategy` wrapper + daemon worker, env gating, and `build_runtime` wiring;
    disabled-path equivalence + runtime-off integration proven by unit tests (403 green).
    Still owed: a live-backend Gate-1 smoke (flag on, real Bedrock) — not yet exercised.
-2. **Imposter levers first** — `hunt_room` / `target_player` / `avoid_room` in
-   Search/Recon/Hunt, then danger mode. Highest expected lift: imposter kill efficiency
-   is crewborg's durable weakness, and positioning is exactly what the rule layer
-   under-reasons about.
+2. **Imposter levers first** — ✅ DONE (2026-06-26). `hunt_room`/`avoid_room` in Search,
+   `target_player` in Search-follow/Recon/Hunt (reachability-validated), and **danger mode**
+   (`allow_witnessed_kill` relaxes Hunt's witness test; `skip_evade` suppresses post-kill Evade),
+   both with `commander_danger` tracing. All bias-don't-force via `commander_of`/`filter_or_fallback`;
+   disabled path byte-identical (440 tests green). Highest expected lift: imposter kill efficiency is
+   crewborg's durable weakness, and positioning is exactly what the rule layer under-reasons about.
 3. **Crewmate levers** — `target_room` / `target_task` / `posture` in Normal.
 4. **Later** — real `EscortMode`; unify with the meeting LLM (meeting sets the next
    Playing-phase plan).
