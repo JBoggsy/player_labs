@@ -55,7 +55,19 @@ class HuntMode(Mode[Belief, ActionState, Intent]):
         in_range = ic.dist2(self_xy, victim_xy) <= KILL_RANGE_SQ
 
         # Strike: kill ready, in range, victim present, and the kill goes unseen.
-        if in_range and belief.self_kill_ready and unwitnessed(belief, victim):
+        cmd = commander_of(belief)
+        kill_is_unwitnessed = unwitnessed(belief, victim)
+        danger_witness_allowed = cmd is not None and cmd.allow_witnessed_kill
+        if in_range and belief.self_kill_ready and (kill_is_unwitnessed or danger_witness_allowed):
+            if not kill_is_unwitnessed and danger_witness_allowed:
+                self.emit.event(
+                    "commander_danger",
+                    {
+                        "lever": "allow_witnessed_kill",
+                        "danger_reason": cmd.danger_reason,
+                        "target_color": victim.color,
+                    },
+                )
             return Intent(kind="kill", target_color=victim.color, reason="striking isolated victim")
 
         # Otherwise close on the predicted intercept (lead a moving target) and shadow.

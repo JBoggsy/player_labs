@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from crewrift.crewborg.map.types import MapData, MapPoint, MapRect
 from crewrift.crewborg.strategy import RuleBasedStrategy
-from crewrift.crewborg.types import ActionState, Belief, PlayerEvent, PlayerRecord
+from crewrift.crewborg.types import ActionState, Belief, CommanderPriorities, PlayerEvent, PlayerRecord
 from players.player_sdk.types import BeliefSnapshot, ModeDirective, SharedMemory
 
 
@@ -208,6 +208,36 @@ def test_imposter_evades_before_reporting_a_fresh_kill_body() -> None:
     belief = _imposter_with_visible_target(self_kill_ready=True, last_kill_tick=9, visible_body_ids={2003})
     belief.bodies[2003] = BodyEntry(object_id=2003, color="green", world_x=60, world_y=60, first_seen_tick=10)
     assert _select(belief) == "evade"
+
+
+def test_commander_skip_evade_goes_straight_to_kill_loop() -> None:
+    belief = _imposter_with_visible_target(self_kill_ready=True, last_kill_tick=9)
+    belief.commander = CommanderPriorities(
+        skip_evade=True,
+        danger_reason="chain pressure before crew groups",
+        as_of_tick=belief.last_tick,
+    )
+    assert _select(belief) == "hunt"
+    assert belief.commander_danger_events == [
+        {
+            "lever": "skip_evade",
+            "danger_reason": "chain pressure before crew groups",
+        }
+    ]
+
+
+def test_stale_commander_skip_evade_keeps_conservative_evade() -> None:
+    belief = _imposter_with_visible_target(self_kill_ready=True, last_kill_tick=9)
+    belief.commander = CommanderPriorities(
+        skip_evade=True,
+        danger_reason="stale chain pressure",
+        as_of_tick=0,
+    )
+    belief.last_tick = 500
+    belief.last_kill_tick = 499
+    belief.roster["red"].last_seen_tick = 500
+    assert _select(belief) == "evade"
+    assert belief.commander_danger_events == []
 
 
 def test_imposter_never_reports_a_body() -> None:

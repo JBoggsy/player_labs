@@ -367,6 +367,9 @@ class Belief(BaseModel):
     phase_start_tick: int = 0
     # Gameplay-commander priorities. ``None`` is the disabled-path default.
     commander: CommanderPriorities | None = None
+    # Transient commander danger events produced outside a Mode emitter and drained
+    # by CrewborgEventTracer on the next step-complete hook.
+    commander_danger_events: list[dict[str, str]] = Field(default_factory=list)
 
     # Voting (design §5 voting).
     voting: VotingState = Field(default_factory=VotingState)

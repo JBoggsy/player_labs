@@ -17,6 +17,7 @@ from crewrift.crewborg.modes import EvadeMode, HuntMode, SearchMode
 from crewrift.crewborg.modes._deprecated.pretend import PretendMode  # retired; only the skipped tests use it
 from crewrift.crewborg.nav import build_nav_graph
 from crewrift.crewborg.types import ActionState, Belief, BodyEntry, CommanderPriorities, PlayerRecord
+from players.player_sdk import EventEmitter, ListTraceSink
 
 # Applied to tests that pin the retired occupancy-seeking Pretend/Search behavior.
 deprecated_seeking = pytest.mark.skip(
@@ -99,6 +100,38 @@ def test_hunt_strikes_a_witnessed_victim_under_full_urgency() -> None:
     _visible(belief, 1005, (110, 100), color="blue")  # witness ignored at full urgency
     intent = HuntMode().decide(belief, ActionState())
     assert intent.kind == "kill" and intent.target_color == "green"
+
+
+def test_hunt_commander_allows_witnessed_kill_with_danger_reason() -> None:
+    belief = Belief(self_world_x=100, self_world_y=100, last_tick=5, self_kill_ready=True)
+    belief.commander = CommanderPriorities(
+        allow_witnessed_kill=True,
+        danger_reason="last chance before meeting",
+        as_of_tick=belief.last_tick,
+    )
+    _visible(belief, 1004, (108, 100), color="green")
+    _visible(belief, 1005, (110, 100), color="blue")  # witness next to the victim
+    mode = HuntMode()
+    trace = ListTraceSink()
+    mode.emit = EventEmitter(trace, tick=belief.last_tick)
+    intent = mode.decide(belief, ActionState())
+    assert intent.kind == "kill" and intent.target_color == "green"
+    [event] = [event for event in trace.events if event.name == "domain.commander_danger"]
+    assert event.data["lever"] == "allow_witnessed_kill"
+    assert event.data["danger_reason"] == "last chance before meeting"
+    assert event.data["target_color"] == "green"
+
+
+def test_hunt_stale_commander_does_not_allow_witnessed_kill() -> None:
+    belief = Belief(self_world_x=100, self_world_y=100, last_tick=500, self_kill_ready=True)
+    belief.commander = CommanderPriorities(
+        allow_witnessed_kill=True,
+        danger_reason="stale risk",
+        as_of_tick=0,
+    )
+    _visible(belief, 1004, (108, 100), color="green")
+    _visible(belief, 1005, (110, 100), color="blue")
+    assert HuntMode().decide(belief, ActionState()).kind == "navigate_to"
 
 
 def test_hunt_commits_to_one_victim_across_ticks() -> None:
