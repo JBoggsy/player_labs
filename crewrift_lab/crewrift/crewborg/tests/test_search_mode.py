@@ -74,6 +74,16 @@ def _crew(belief: Belief, color: str, xy, tick=None) -> PlayerRecord:
     return rec
 
 
+def _seed_occluded_follow(mode: SearchMode, belief: Belief, color: str = "green") -> PlayerRecord:
+    target = _crew(belief, color, (130, 40))
+    mode._begin_follow(belief, target)
+    for tick in range(11, 20):
+        belief.last_tick = tick
+        target.record(tick, 130 + (tick - 10) * 4, 40, "right", 1001)
+        mode.decide(belief, ActionState())
+    return target
+
+
 def test_pick_room_then_navigate_to_a_task_room() -> None:
     mode = SearchMode()
     intent = mode.decide(_belief(), ActionState())
@@ -200,21 +210,53 @@ def test_commander_target_player_falls_back_when_not_a_valid_leaver() -> None:
 def test_follow_uses_prediction_when_target_is_occluded() -> None:
     mode = SearchMode()
     belief = _belief(self_xy=(120, 40))
-    # green was just seen heading right; commit to following it.
-    green = _crew(belief, "green", (130, 40))
-    mode._begin_follow(belief, green)
+    _seed_occluded_follow(mode, belief)
     assert mode._state == "follow"
-    # advance a few visible ticks moving right (builds a heading)
-    for t in range(11, 20):
-        belief.last_tick = t
-        green.record(t, 130 + (t - 10) * 4, 40, "right", 1001)
-        mode.decide(belief, ActionState())
     # now occlude: green stops being seen this tick
     belief.last_tick = 40
     intent = mode.decide(belief, ActionState())
     assert intent.kind in {"navigate_to", "idle"}
     # the predictor should still hold candidates (chasing the predicted path)
     assert mode._predictor is not None
+
+
+def test_default_follow_stops_after_lost_window() -> None:
+    mode = SearchMode()
+    belief = _belief(self_xy=(120, 40))
+    _seed_occluded_follow(mode, belief)
+
+    belief.last_tick = 140
+    mode.decide(belief, ActionState())
+
+    assert mode._follow_color is None
+    assert mode._state != "follow"
+
+
+def test_hard_commander_target_player_extends_lost_follow_window() -> None:
+    mode = SearchMode()
+    belief = _belief(self_xy=(120, 40))
+    belief.commander = CommanderPriorities(target_player="green", strength="hard", as_of_tick=belief.last_tick)
+    _seed_occluded_follow(mode, belief)
+
+    belief.last_tick = 140
+    intent = mode.decide(belief, ActionState())
+
+    assert intent.kind == "navigate_to"
+    assert mode._follow_color == "green"
+    assert mode._state == "follow"
+
+
+def test_hard_commander_non_target_player_uses_default_lost_follow_window() -> None:
+    mode = SearchMode()
+    belief = _belief(self_xy=(120, 40))
+    belief.commander = CommanderPriorities(target_player="blue", strength="hard", as_of_tick=belief.last_tick)
+    _seed_occluded_follow(mode, belief, color="green")
+
+    belief.last_tick = 140
+    mode.decide(belief, ActionState())
+
+    assert mode._follow_color is None
+    assert mode._state != "follow"
 
 
 def test_visible_count_respects_line_of_sight() -> None:

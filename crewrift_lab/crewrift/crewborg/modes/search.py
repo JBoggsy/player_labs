@@ -45,6 +45,8 @@ ARRIVE_RADIUS_SQ = 24**2
 NEARBY_ROOMS = 4
 # Drop a follow once the target has been unseen this long with no live prediction.
 FOLLOW_LOST_TICKS = 120
+# Hard commander target-player follows get a little more persistence before Search gives up.
+COMMANDER_FOLLOW_LOST_TICKS = 240
 # A crewmate counts as "still watchable" from a vantage if seen within this window.
 WATCH_RECENT_TICKS = 36
 # Line-of-sight range (px) for vantage scoring — generous; LOS through walls is the
@@ -242,7 +244,7 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
                           reason="search: following a leaver (visible)")
 
         # Out of view: chase down the predicted hallway toward the top route's position.
-        if self._last_seen_tick is not None and belief.last_tick - self._last_seen_tick > FOLLOW_LOST_TICKS:
+        if self._last_seen_tick is not None and belief.last_tick - self._last_seen_tick > self._follow_lost_ticks(belief):
             return self._stop_follow(belief, self_xy)
         best = self._predictor.best()
         if best is None:
@@ -277,6 +279,17 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
         self._prev_room = room.name if room is not None else self._prev_room
         self._state = "pick_room"
         return self._pick_room(belief, self_xy)
+
+    def _follow_lost_ticks(self, belief: Belief) -> int:
+        cmd = commander_of(belief)
+        if (
+            cmd is not None
+            and cmd.strength == "hard"
+            and self._follow_color is not None
+            and self._follow_color == cmd.target_player
+        ):
+            return COMMANDER_FOLLOW_LOST_TICKS
+        return FOLLOW_LOST_TICKS
 
     # --- helpers --------------------------------------------------------------
     def _crew_in_room(self, belief: Belief, room: Room) -> list[PlayerRecord]:
