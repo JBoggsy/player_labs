@@ -32,6 +32,16 @@ NEXT: **Phase 2** — imposter levers (`hunt_room`/`target_player`/`avoid_room` 
 
 ## 🎯 OBJECTIVE: crewborg's IMPOSTER KILL EFFICIENCY (the durable gap)
 
+**⭐⭐ `crewborg:v69` is the Crewrift PRIME CHAMPION (2026-06-26)** — placed into Prime Competition
+(div_acbde92a), `lpm_3bc70241`, champion=True, **superseded v42.** v69 = the **deterministic** ship:
+the confirmed witness-drop-after-1st-kill imposter combo (v63 vs v54 natural roles: +19pp ≥2-kill /
++14pp win / +0.32 kills, p=0.038) + inert 72t Evade re-approach (EVADE_TICKS=72), **LLM OFF** (the
+meeting LLM only fires in k8s/xreq pods, never league/dispatch rounds — sidecar not wired there — so an
+LLM-on build just adds weight + silent fallback in league). Submission saga: v66 (LLM-on) and the first
+v69 tries REJECTED with "league has no submission division" (Prime was missing its Qualifiers staging
+division / stale `qualifiers_division_name` config); after a **backend fix**, v69 re-submit placed +
+auto-championed. Local↔image SDK parity now done (pyproject installs `players[bedrock]` from the
+coworld-tools tarball). Earlier (now-historical) note on the v66 rejection follows:
 **⚠️ `crewborg:v66` submitted to Crewrift PRIME 2026-06-26 but REJECTED — `notes="league has no submission
 division"` (PLATFORM/league-config issue, NOT our play; same as v49).** Prime was migrated 2026-06-24 to an
 among-them-commissioner + "Qualifiers" division flow; direct `coworld submit --league <prime>` now has no

@@ -31,6 +31,16 @@ LLM FELL BACK (artifacts: meeting_llm_fallback every ep, 0 meeting_llm_decision)
 — the LLM-on version plays DETERMINISTICALLY in league. Verify the sidecar in league pods before relying on
 the LLM in a submission. The shippable play gain is the deterministic witness-drop, LLM aside. See
 [[crewrift-meeting-llm-enablement]].
+ROOT CAUSE confirmed: xreq runs on the **k8s** backend (only k8s/antfarm accepted), league rounds run on
+**dispatch**; the Bedrock sidecar wiring lives ONLY in `kubernetes_runner.py`, so dispatch/league pods get
+no sidecar → meeting LLM falls back (8/8 qualifier eps). The other worktree's "confirmed firing in-pod" was
+validated via xreq (k8s), which hid this. So an LLM-on submission gains nothing until the league/dispatch
+runner also wires the sidecar — a PLATFORM gap, not a crewborg fix.
+SUBMISSION ROOT CAUSE: Crewrift PRIME's commissioner config requires a "Qualifiers" STAGING division
+(level -99) that was never created (only "Competition" exists); the regular Crewrift league HAS its
+Qualifiers div (nightly places there). No client tool creates a division / edits league config
+(patch-commissioner only swaps the image) → Prime submission is a SERVER-SIDE fix (create the div / re-run
+the commissioner migration). Prime is system-owned.
 
 ### Witness-drop combo CONFIRMED significant; SUSTAINING the re-approach (72→400t) backfires via suspicion
 Evidence: 3-arm A/B natural roles (300/arm). Fully-clean imposter: v63 (72t re-approach + witness-drop)
