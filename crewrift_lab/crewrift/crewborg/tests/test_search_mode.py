@@ -35,10 +35,36 @@ def _map() -> MapData:
     )
 
 
+def _distant_map() -> MapData:
+    rooms = tuple(
+        Room(name=name, x=index * 100, y=0, w=100, h=80)
+        for index, name in enumerate(("Start", "Near1", "Near2", "Near3", "Near4", "Far"))
+    )
+    tasks = tuple(
+        TaskStation(name=name, x=room.x + 40, y=40, w=8, h=8)
+        for name, room in zip(("start", "n1", "n2", "n3", "n4", "far"), rooms, strict=True)
+    )
+    return MapData(
+        width=600,
+        height=80,
+        tasks=tasks,
+        vents=(),
+        rooms=rooms,
+        button=MapRect(x=4, y=4, w=8, h=8),
+        home=MapPoint(x=50, y=40),
+    )
+
+
 def _belief(self_xy=(150, 40), tick=10) -> Belief:
     m = _map()
     nav = build_nav_graph(np.ones((m.height, m.width), dtype=bool), map_data=m)
     return Belief(map=m, nav=nav, self_role="imposter", self_world_x=self_xy[0], self_world_y=self_xy[1], last_tick=tick)
+
+
+def _distant_belief() -> Belief:
+    m = _distant_map()
+    nav = build_nav_graph(np.ones((m.height, m.width), dtype=bool), map_data=m)
+    return Belief(map=m, nav=nav, self_role="imposter", self_world_x=50, self_world_y=40, last_tick=10)
 
 
 def _crew(belief: Belief, color: str, xy, tick=None) -> PlayerRecord:
@@ -63,6 +89,24 @@ def test_commander_hunt_room_picks_valid_task_room() -> None:
     intent = mode.decide(belief, ActionState())
     assert intent.kind == "navigate_to"
     assert mode._target_room == "Right"
+
+
+def test_hard_commander_hunt_room_picks_distant_task_room() -> None:
+    mode = SearchMode()
+    belief = _distant_belief()
+    belief.commander = CommanderPriorities(hunt_room="Far", strength="hard", as_of_tick=belief.last_tick)
+    intent = mode.decide(belief, ActionState())
+    assert intent.kind == "navigate_to"
+    assert mode._target_room == "Far"
+
+
+def test_soft_commander_hunt_room_does_not_force_distant_task_room() -> None:
+    mode = SearchMode()
+    belief = _distant_belief()
+    belief.commander = CommanderPriorities(hunt_room="Far", as_of_tick=belief.last_tick)
+    intent = mode.decide(belief, ActionState())
+    assert intent.kind == "navigate_to"
+    assert mode._target_room != "Far"
 
 
 def test_commander_unknown_hunt_room_falls_back_to_random_pick() -> None:

@@ -329,8 +329,18 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
         rooms = rooms[:NEARBY_ROOMS]
         cmd = commander_of(belief)
         if cmd is None or cmd.avoid_room is None:
-            return rooms
-        return filter_or_fallback(rooms, lambda room: room.name != cmd.avoid_room)
+            candidates = rooms
+        else:
+            candidates = filter_or_fallback(rooms, lambda room: room.name != cmd.avoid_room)
+        if cmd is not None and cmd.strength == "hard" and cmd.hunt_room is not None:
+            hunt_room = self._room(belief, cmd.hunt_room)
+            if (
+                hunt_room is not None
+                and self._room_task_indices(belief, hunt_room)
+                and all(room.name != hunt_room.name for room in candidates)
+            ):
+                candidates.append(hunt_room)
+        return candidates
 
     def _room_task_indices(self, belief: Belief, room: Room) -> list[int]:
         tasks = belief.map.tasks if belief.map is not None else ()
