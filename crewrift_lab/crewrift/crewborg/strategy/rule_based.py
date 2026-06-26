@@ -80,8 +80,11 @@ class RuleBasedStrategy:
     def decide(self, snapshot: BeliefSnapshot[Belief, ActionState]) -> ModeDirective:
         with snapshot.read() as memory:
             belief = memory.belief
-            directive = self._select(belief)
+            directive = self.select(belief)
         return directive
+
+    def select(self, belief: Belief) -> ModeDirective:
+        return self._select(belief)
 
     def _select(self, belief: Belief) -> ModeDirective:
         phase = belief.phase

@@ -30,6 +30,7 @@ analysis/
 # In-lab expand_replay build: fetched game source + built binaries
 crewrift_lab/.cache/
 crewrift_lab/tools/bin/
+.superpowers/
 
 # positioning_viz debug screenshots + playwright artifacts
 posviz_*.png

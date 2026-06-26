@@ -41,6 +41,12 @@ NOISY_DOMAIN_EVENTS = frozenset(
         "domain.suspicion_tick",
         "domain.kill_state",
         "domain.occupancy_snapshot",
+        "domain.commander_started",
+        "domain.commander_call_start",
+        "domain.commander_call",
+        "domain.commander_stopped",
+        "domain.commander_applied",
+        "domain.commander_trace_dropped",
     }
 )
 
@@ -69,11 +75,13 @@ TRACE_GROUP_PATTERNS: dict[str, tuple[str, ...]] = {
         "domain.decision_snapshot",
     ),
     "chat": ("domain.chat_*", "domain.meeting_chat_*"),
+    "commander": ("domain.commander_*",),
     "debug": (
         "domain.decision_snapshot",
         "domain.suspicion_tick",
         "domain.kill_state",
         "domain.occupancy_snapshot",
+        "domain.commander_*",
     ),
     "decision": ("domain.decision_snapshot",),
     "framework": (

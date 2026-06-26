@@ -7,6 +7,9 @@ parameters, three pure functions, modes, and the rule-based strategy. See
 
 from __future__ import annotations
 
+import os
+from typing import Protocol
+
 from crewrift.crewborg.agent_tracking import update_agent_tracking
 from crewrift.crewborg.action import resolve_action
 from crewrift.crewborg.events import CrewborgEventTracer
@@ -28,6 +31,10 @@ from crewrift.crewborg.strategy import (
     update_social_evidence,
     update_suspicion,
 )
+from crewrift.crewborg.strategy.commander.llm import build_commander_client_from_env, commander_feature_enabled
+from crewrift.crewborg.strategy.commander.strategy import CommanderStrategy, apply_commander_inferences
+from crewrift.crewborg.strategy.commander.trace import CommanderTrace
+from crewrift.crewborg.strategy.commander.worker import CommanderWorker
 from crewrift.crewborg.strategy.meeting import chat_nlp
 from crewrift.crewborg.types import (
     ActionState,
@@ -49,6 +56,22 @@ from players.player_sdk import (
 )
 
 __all__ = ["build_runtime"]
+
+
+class _CloseableStrategy(Protocol):
+    def close(self) -> None: ...
+
+
+class CloseAwareSynchronousStrategyRunner(SynchronousStrategyRunner[Belief, ActionState]):
+    """Sync runner that also closes the wrapped strategy if it owns resources."""
+
+    def __init__(self, strategy: _CloseableStrategy, **kwargs) -> None:
+        super().__init__(strategy, **kwargs)
+        self._closeable_strategy = strategy
+
+    def close(self) -> None:
+        self._closeable_strategy.close()
+        super().close()
 
 
 def build_runtime(
@@ -106,6 +129,14 @@ def build_runtime(
         update_social_evidence(belief)
         update_suspicion(belief)
 
+    commander_trace = CommanderTrace()
+    feature_on = commander_feature_enabled(dict(os.environ))
+    commander_strategy = CommanderStrategy(
+        RuleBasedStrategy(),
+        CommanderWorker(build_commander_client_from_env, trace=commander_trace),
+        feature_enabled=feature_on,
+    )
+
     return AgentRuntime(
         belief=Belief(map=map_data),
         action_state=ActionState(),
@@ -114,12 +145,13 @@ def build_runtime(
         resolve_action=resolve_action,
         mode_registry=registry,
         default_directive=ModeDirective(mode="idle", source="default", reason="default idle"),
-        strategy_runner=SynchronousStrategyRunner(
-            RuleBasedStrategy(),
+        strategy_runner=CloseAwareSynchronousStrategyRunner(
+            commander_strategy,
             trace_sink=trace_sink,
             metrics_sink=metrics_sink,
         ),
-        on_step_complete=CrewborgEventTracer(),
+        apply_inferences=apply_commander_inferences,
+        on_step_complete=CrewborgEventTracer(commander_trace=commander_trace),
         trace_sink=trace_sink,
         metrics_sink=metrics_sink,
     )

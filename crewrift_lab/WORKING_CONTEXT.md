@@ -15,6 +15,21 @@ This is *not* a log or archive: finished work lives in git history / the
 
 ---
 
+## 🤖 PARALLEL TRACK — LLM GAMEPLAY COMMANDER (Phase 1 done; both LLMs live in-pod 2026-06-26)
+A background LLM steers *gameplay* by writing **priorities** into `belief.commander` that the modes read to
+bias execution — never selecting a mode, never blocking a tick. Design:
+[`crewrift/crewborg/docs/designs/llm-commander.md`](crewrift/crewborg/docs/designs/llm-commander.md) (design.md §10.6).
+**Phase 1 (scaffold + wiring + observability) BUILT & gated-off** — `strategy/commander/`, `belief.commander`,
+`CommanderStrategy` on a `CloseAwareSynchronousStrategyRunner`, `apply_inferences`; modes do NOT yet read priorities.
+`domain.commander_*` traces (incl. `env_seen`) via `CREWBORG_TRACE_GROUPS=commander`. **Bedrock-in-pod fix (KEY):**
+sidecar mode STRIPS `USE_BEDROCK` and injects `AWS_ENDPOINT_URL_BEDROCK_RUNTIME`, so BOTH LLM factories now gate
+Bedrock on that **endpoint**, not `USE_BEDROCK` (`strategy/commander/llm.py` + `strategy/meeting/llm.py`).
+**Confirmed live in-pod** (Crewrift Prime XP, v64): commander 4637 `commander_call` ok / 0 errors; **meeting LLM
+REVIVED** — 290 `meeting_llm_decision`, 0 `_fallback` (was 184/184 disabled). Infra issue:
+[`docs/issues/2026-06-26-bedrock-disabled-crewrift-prime-xp.md`](docs/issues/2026-06-26-bedrock-disabled-crewrift-prime-xp.md).
+NEXT: **Phase 2** — imposter levers (`hunt_room`/`target_player`/`avoid_room` in `search.py:266`/`recon.py:534`/`hunt.py:612`)
++ danger mode, then A/B. Branch `worktree-labs-work`; uploaded v55–v64, **none submitted**.
+
 ## 🎯 OBJECTIVE: crewborg's IMPOSTER KILL EFFICIENCY (the durable gap)
 
 Champion is still **v42** (shipped Prime). Current code lineage = **v54** (= clean HEAD; v50 lineage
@@ -83,11 +98,16 @@ imposters** (detect relentless proximity/kills to cut Aaron/Andre's imposter win
   coworld-tools** (broken `players/users/relh/co-gas` submodule → filed
   **coworld-tools issue #13**), so local `uv.lock` still points at the archived mirror — the
   hosted image is the source of truth for the SDK.
-- **LLM meetings on Bedrock**: upload needs `--use-bedrock` **AND** `--secret-env
-  USE_BEDROCK=true` + `CREWBORG_LLM_MEETINGS=1`. The pod runs a **loopback Bedrock sidecar**;
-  the SDK now routes to it via `AWS_ENDPOINT_URL_BEDROCK_RUNTIME` (coworld-tools PR #12,
-  merged). Verify it fired via `policy_artifact_<slot>.zip → telemetry.jsonl`
-  (`domain.meeting_llm_decision`, not `_fallback`).
+- **LLM meetings/commander on Bedrock**: upload with `--use-bedrock` + `CREWBORG_LLM_MEETINGS=1`
+  / `CREWBORG_LLM_COMMANDER=1`. The pod runs a **loopback Bedrock sidecar**; the SDK routes to it via
+  `AWS_ENDPOINT_URL_BEDROCK_RUNTIME` (coworld-tools PR #12). **CORRECTION (2026-06-26): sidecar mode
+  STRIPS `USE_BEDROCK` from the player container** (treats it like a credential) and injects only the
+  endpoint — so the SDK's `bedrock_enabled()` (USE_BEDROCK gate) reported "no LLM backend" in-pod and
+  BOTH LLMs were silently disabled (meetings were 184/184 `_fallback`). **Fix:** crewborg now gates Bedrock
+  on `AWS_ENDPOINT_URL_BEDROCK_RUNTIME` presence (`strategy/{commander,meeting}/llm.py`). Verify via
+  `policy_artifact_<slot>.zip → telemetry.jsonl` (`domain.meeting_llm_decision` + `domain.commander_call`
+  `outcome:ok`, not `_fallback` / `env_seen` all-false). Platform fix owed (keep injecting `USE_BEDROCK=true`)
+  — see `docs/issues/2026-06-26-bedrock-disabled-crewrift-prime-xp.md`.
 - **Expander**: `/tmp/expand-043` (master sim `26ee08c`) handles **crewrift_prime
   0.4.3–0.4.7** (the fork's version bumps didn't change the sim). Use
   `CREWRIFT_EXPAND_REPLAY=/tmp/expand-043` for the warehouse.

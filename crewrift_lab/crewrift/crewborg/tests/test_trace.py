@@ -48,6 +48,17 @@ def test_trace_group_targets_action_events_and_framework_action_boundaries() -> 
     assert not config.allows(TraceEvent(tick=1, name="domain.phase_change", data={}))
 
 
+def test_trace_group_targets_commander_events() -> None:
+    config = TraceConfig.from_env({"CREWBORG_TRACE_GROUPS": "commander"})
+
+    assert config.allows(TraceEvent(tick=1, name="domain.commander_started", data={}))
+    assert config.allows(TraceEvent(tick=1, name="domain.commander_call_start", data={}))
+    assert config.allows(TraceEvent(tick=1, name="domain.commander_call", data={}))
+    assert config.allows(TraceEvent(tick=1, name="domain.commander_stopped", data={}))
+    assert config.allows(TraceEvent(tick=1, name="domain.commander_applied", data={}))
+    assert not config.allows(TraceEvent(tick=1, name="domain.phase_change", data={}))
+
+
 def test_trace_include_and_exclude_patterns_accept_domain_shorthand() -> None:
     config = TraceConfig.from_env(
         {

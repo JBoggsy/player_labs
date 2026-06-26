@@ -67,6 +67,7 @@ from typing import Any
 
 from crewrift.crewborg.action import BTN_A, BTN_B
 from crewrift.crewborg.perception.constants import SCREEN_HEIGHT, SCREEN_WIDTH
+from crewrift.crewborg.strategy.commander.trace import CommanderTrace
 from crewrift.crewborg.strategy.opportunity import has_trackable_victim, kill_urgency_ticks
 from crewrift.crewborg.strategy.suspicion import (
     ACCUSE_TAIL_RECENCY_TICKS,
@@ -76,7 +77,7 @@ from crewrift.crewborg.strategy.suspicion import (
     witnessed_imposters,
 )
 from crewrift.crewborg.trace import TraceConfig
-from crewrift.crewborg.types import ActionState, Belief, Command, Intent, PlayerRecord
+from crewrift.crewborg.types import ActionState, Belief, Command, CommanderPriorities, Intent, PlayerRecord
 from players.player_sdk import EventEmitter, StepContext
 
 
@@ -92,6 +93,7 @@ class CrewborgEventTracer:
         debug: bool | None = None,
         viewer: bool | None = None,
         trace_config: TraceConfig | None = None,
+        commander_trace: CommanderTrace | None = None,
     ) -> None:
         # Previous-tick state for edge/delta detection. ``phase`` starts at the
         # Belief default so the first real transition (unknown → …) is reported.
@@ -117,6 +119,8 @@ class CrewborgEventTracer:
         self._occupancy_seek_cell: int | None = None
         self._viewer_map_seen: bool = False
         self._viewer_grid_seen: bool = False
+        self._commander: CommanderPriorities | None = None
+        self._commander_trace = commander_trace
         self._trace_config = trace_config if trace_config is not None else TraceConfig.from_env()
         # Full per-tick suspicion dump is opt-in: heavy, for single-game forensics.
         trace_level = os.environ.get("CREWBORG_TRACE", "").strip().lower()
@@ -129,10 +133,13 @@ class CrewborgEventTracer:
         self._emit_suspicion_debug = self._optional_event_enabled("domain.suspicion_tick", self._debug)
         self._emit_kill_debug = self._optional_event_enabled("domain.kill_state", self._debug)
         self._emit_occupancy_debug = self._optional_event_enabled("domain.occupancy_snapshot", self._debug)
+        self._emit_commander = self._optional_event_enabled("domain.commander_call", self._debug)
 
     def __call__(self, context: StepContext[Belief, ActionState, Intent, Command]) -> None:
         belief = context.belief
         emit = context.emit
+        if self._emit_commander:
+            self._observe_commander_trace(emit)
         self._observe_phase(belief, emit)
         self._observe_role(belief, emit)
         self._observe_bodies(belief, emit)
@@ -158,10 +165,39 @@ class CrewborgEventTracer:
             self._observe_kill_debug(belief, emit, context.active_mode_name)
         if self._emit_occupancy_debug:
             self._observe_occupancy_debug(belief, emit)
+        if self._emit_commander:
+            self._observe_commander_applied(belief, emit)
 
     def _optional_event_enabled(self, event_name: str, mode_enabled: bool) -> bool:
         enabled_by_mode = mode_enabled and not self._trace_config.excludes_event(event_name)
         return enabled_by_mode or self._trace_config.targets_event(event_name)
+
+    # --- gameplay commander telemetry -------------------------------------
+
+    def _observe_commander_trace(self, emit: EventEmitter) -> None:
+        """Drain background-thread commander telemetry on the inner-loop thread."""
+
+        if self._commander_trace is None:
+            return
+        for event, data in self._commander_trace.drain():
+            emit.event(event, data)
+
+    def _observe_commander_applied(self, belief: Belief, emit: EventEmitter) -> None:
+        """Trace the sanitized priorities currently installed in belief."""
+
+        if belief.commander == self._commander:
+            return
+        self._commander = belief.commander
+        if belief.commander is None:
+            return
+        payload = belief.commander.model_dump()
+        emit.event(
+            "commander_applied",
+            {
+                "priorities": payload,
+                "as_of_tick": belief.commander.as_of_tick,
+            },
+        )
 
     # --- state-transition / outcome events (belief & action-state deltas) ---
 
