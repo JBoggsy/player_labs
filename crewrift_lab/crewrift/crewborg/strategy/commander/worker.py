@@ -24,6 +24,10 @@ class CommanderWorker:
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
+    @property
+    def enabled(self) -> bool:
+        return self._client.enabled
+
     def start(self) -> None:
         if not self._client.enabled or self._thread is not None:
             return
