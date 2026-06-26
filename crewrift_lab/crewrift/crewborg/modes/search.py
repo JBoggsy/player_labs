@@ -287,6 +287,7 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
         outside the room, or no longer visible (likely out a door). Returns the one
         to follow, or ``None``."""
 
+        leavers = []
         for color in self._room_crew:
             if color in belief.teammate_colors:
                 continue
@@ -296,8 +297,12 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
             inside = ic.in_rect((rec.world_x, rec.world_y), room)
             recently = belief.last_tick - rec.last_seen_tick
             if not inside and recently <= 8:
-                return rec  # last-known position is now outside the watched room
-        return None
+                leavers.append(rec)  # last-known position is now outside the watched room
+        if not leavers:
+            return None
+        cmd = commander_of(belief)
+        target_player = cmd.target_player if cmd is not None else None
+        return next((rec for rec in leavers if rec.color == target_player), leavers[0])
 
     def _room_crew_still_around(self, belief: Belief, room: Room) -> bool:
         if not self._room_crew:

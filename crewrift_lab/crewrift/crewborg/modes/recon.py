@@ -19,6 +19,7 @@ caught 39% of the time). Target selection + window live in ``strategy.opportunit
 from __future__ import annotations
 
 from crewrift.crewborg.modes import imposter_common as ic
+from crewrift.crewborg.strategy.commander.bias import commander_of
 from crewrift.crewborg.strategy.opportunity import most_recent_victim
 from crewrift.crewborg.types import ActionState, Belief, Intent
 from players.player_sdk import EmptyModeParams, Mode, ModeParams
@@ -33,7 +34,7 @@ class ReconMode(Mode[Belief, ActionState, Intent]):
 
     def decide(self, belief: Belief, action_state: ActionState) -> Intent:
         del action_state
-        target = most_recent_victim(belief)
+        target = self._commander_target(belief) or most_recent_victim(belief)
         if target is None or ic.self_xy(belief) is None:
             # Gate only routes here when a crew has been seen; idle is a safe no-op.
             return Intent(kind="idle", reason="recon: no known crewmate to close on")
@@ -42,3 +43,12 @@ class ReconMode(Mode[Belief, ActionState, Intent]):
             point=(target.world_x, target.world_y),
             reason="recon: closing on a crewmate before the kill comes ready",
         )
+
+    def _commander_target(self, belief: Belief):
+        cmd = commander_of(belief)
+        if cmd is None or cmd.target_player is None or cmd.target_player in belief.teammate_colors:
+            return None
+        target = belief.roster.get(cmd.target_player)
+        if target is None or target.life_status == "dead":
+            return None
+        return target

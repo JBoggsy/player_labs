@@ -129,6 +129,30 @@ def test_follows_a_crewmate_who_leaves_the_room() -> None:
     assert intent.kind == "navigate_to"
 
 
+def test_commander_target_player_preferred_when_leaving_room() -> None:
+    mode = SearchMode()
+    belief = _belief(self_xy=(40, 40))
+    belief.commander = CommanderPriorities(target_player="blue", as_of_tick=belief.last_tick)
+    room = mode._room(belief, "Left")
+    assert room is not None
+    mode._room_crew = {"green", "blue"}
+    _crew(belief, "green", (130, 40))
+    _crew(belief, "blue", (135, 40))
+    assert mode._a_crewmate_left(belief, room).color == "blue"
+
+
+def test_commander_target_player_falls_back_when_not_a_valid_leaver() -> None:
+    mode = SearchMode()
+    belief = _belief(self_xy=(40, 40))
+    belief.commander = CommanderPriorities(target_player="blue", as_of_tick=belief.last_tick)
+    room = mode._room(belief, "Left")
+    assert room is not None
+    mode._room_crew = {"green", "blue"}
+    green = _crew(belief, "green", (130, 40))
+    _crew(belief, "blue", (60, 40))  # still inside the watched room, so not followable.
+    assert mode._a_crewmate_left(belief, room) == green
+
+
 def test_follow_uses_prediction_when_target_is_occluded() -> None:
     mode = SearchMode()
     belief = _belief(self_xy=(120, 40))
