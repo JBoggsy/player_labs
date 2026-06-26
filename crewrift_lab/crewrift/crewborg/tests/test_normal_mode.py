@@ -83,6 +83,46 @@ def test_commander_target_room_bias_picks_reachable_task_in_that_room() -> None:
     assert intent.kind == "complete_task" and intent.task_index == 2
 
 
+def test_hard_commander_target_room_completes_candidate_task_in_that_room() -> None:
+    belief = Belief(
+        map=_roomed_map(),
+        assigned_task_indices={0, 1, 2},
+        visible_task_indices={0, 1, 2},
+        self_world_x=145,
+        self_world_y=44,
+        last_tick=10,
+        commander=CommanderPriorities(target_room="Right", strength="hard", as_of_tick=10),
+    )
+
+    intent = NormalMode().decide(belief, ActionState())
+
+    assert intent.kind == "complete_task" and intent.task_index == 2
+
+
+def test_hard_commander_target_room_without_candidate_task_positions_in_room() -> None:
+    map_data = _roomed_map()
+    nav = build_nav_graph(np.ones((map_data.height, map_data.width), dtype=bool), map_data=map_data)
+    belief = Belief(
+        map=map_data,
+        nav=nav,
+        assigned_task_indices={0, 1},
+        visible_task_indices={0, 1},
+        self_world_x=145,
+        self_world_y=44,
+        last_tick=10,
+        commander=CommanderPriorities(target_room="Right", strength="hard", as_of_tick=10),
+    )
+    room_center = (250, 50)
+    expected_cell = nav.nearest_reachable_node(*room_center)
+    assert expected_cell is not None
+
+    intent = NormalMode().decide(belief, ActionState())
+
+    assert intent.kind == "navigate_to"
+    assert intent.point == nav.node_point[expected_cell]
+    assert intent.reason == "commander: positioning in Right"
+
+
 def test_commander_target_task_wins_when_signalled_and_reachable() -> None:
     belief = Belief(
         map=_roomed_map(),
@@ -108,6 +148,22 @@ def test_commander_unknown_or_empty_target_room_falls_back_to_nearest_task() -> 
         self_world_y=44,
         last_tick=10,
         commander=CommanderPriorities(target_room="Right", as_of_tick=10),
+    )
+
+    intent = NormalMode().decide(belief, ActionState())
+
+    assert intent.kind == "complete_task" and intent.task_index == 1
+
+
+def test_hard_commander_unknown_target_room_falls_back_to_nearest_task() -> None:
+    belief = Belief(
+        map=_roomed_map(),
+        assigned_task_indices={0, 1},
+        visible_task_indices={0, 1},
+        self_world_x=142,
+        self_world_y=44,
+        last_tick=10,
+        commander=CommanderPriorities(target_room="Unknown", strength="hard", as_of_tick=10),
     )
 
     intent = NormalMode().decide(belief, ActionState())

@@ -27,8 +27,8 @@ Two stall guards (design §5):
 
 from __future__ import annotations
 
-from crewrift.crewborg.map.types import TaskStation
-from crewrift.crewborg.strategy.commander.bias import commander_of, filter_or_fallback, room_crew_count
+from crewrift.crewborg.map.types import Room, TaskStation
+from crewrift.crewborg.strategy.commander.bias import commander_of, room_crew_count
 from crewrift.crewborg.types import ActionState, Belief, Intent
 from players.player_sdk import EmptyModeParams, Mode
 
@@ -55,6 +55,10 @@ class NormalMode(Mode[Belief, ActionState, Intent]):
         self._update_target(belief, tasks)
         if self._target is not None:
             return Intent(kind="complete_task", task_index=self._target, reason="completing assigned task")
+
+        hard_position = _hard_target_room_intent(belief)
+        if hard_position is not None:
+            return hard_position
 
         sweep = self._sweep_intent(belief, tasks)
         if sweep is not None:
@@ -101,7 +105,11 @@ class NormalMode(Mode[Belief, ActionState, Intent]):
             if cmd.target_task in candidates:
                 return cmd.target_task
             if cmd.target_room is not None:
-                candidates = filter_or_fallback(candidates, lambda i: _task_room(belief, tasks[i]) == cmd.target_room)
+                target_room_candidates = [i for i in candidates if _task_room(belief, tasks[i]) == cmd.target_room]
+                if target_room_candidates:
+                    candidates = target_room_candidates
+                elif cmd.strength == "hard" and _room_exists(belief, cmd.target_room):
+                    return None
 
         self_xy = _self_xy(belief)
         if self_xy is None:
@@ -145,6 +153,27 @@ def _return_to_start(belief: Belief) -> Intent:
         if cell is not None:
             goal = belief.nav.node_point[cell]
     return Intent(kind="navigate_to", point=goal, reason="tasks done: returning to the start room")
+
+
+def _hard_target_room_intent(belief: Belief) -> Intent | None:
+    cmd = commander_of(belief)
+    if cmd is None or cmd.strength != "hard" or cmd.target_room is None or belief.map is None:
+        return None
+    room = _room_exists(belief, cmd.target_room)
+    if room is None:
+        return None
+    goal = (room.center.x, room.center.y)
+    if belief.nav is not None:
+        cell = belief.nav.nearest_reachable_node(*goal)
+        if cell is not None:
+            goal = belief.nav.node_point[cell]
+    return Intent(kind="navigate_to", point=goal, reason=f"commander: positioning in {room.name}")
+
+
+def _room_exists(belief: Belief, name: str) -> Room | None:
+    if belief.map is None:
+        return None
+    return next((room for room in belief.map.rooms if room.name == name), None)
 
 
 def _inside(task: TaskStation, x: int | None, y: int | None) -> bool:
