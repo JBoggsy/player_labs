@@ -62,7 +62,8 @@ def test_commander_strategy_matches_rules_when_disabled() -> None:
         assert worker.started is False
 
 
-def test_commander_strategy_sanitizes_and_returns_latest_worker_priorities() -> None:
+def test_commander_strategy_sanitizes_and_returns_latest_worker_priorities(monkeypatch) -> None:
+    monkeypatch.delenv("CREWBORG_COMMANDER_FORCE", raising=False)
     belief = _imposter_with_visible_target(self_kill_ready=False)
     worker = _ManualWorker()
     worker.priorities.publish(
@@ -82,6 +83,35 @@ def test_commander_strategy_sanitizes_and_returns_latest_worker_priorities() -> 
     assert result.inferences["commander"]["target_player"] == "red"
     assert result.inferences["commander"]["allow_witnessed_kill"] is False
     assert result.inferences["commander"]["as_of_tick"] == 12
+    assert worker.snapshots.take()["active_mode"] == "search"
+
+
+def test_commander_strategy_force_returns_fresh_priorities_without_worker(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_COMMANDER_FORCE", '{"target_room":"electrical"}')
+    belief = _imposter_with_visible_target(self_kill_ready=False)
+    worker = _DisabledWorker()
+    strategy = CommanderStrategy(RuleBasedStrategy(), worker, feature_enabled=True)
+
+    result = strategy.decide(_snapshot(belief, active_mode="search", tick=33))
+
+    assert result.directive is not None
+    assert result.inferences["commander"]["target_room"] == "electrical"
+    assert result.inferences["commander"]["as_of_tick"] == 33
+    assert worker.started is False
+    assert worker.snapshots.take() is None
+
+
+def test_commander_strategy_unset_force_uses_worker_path(monkeypatch) -> None:
+    monkeypatch.delenv("CREWBORG_COMMANDER_FORCE", raising=False)
+    belief = _imposter_with_visible_target(self_kill_ready=False)
+    worker = _DisabledWorker()
+    strategy = CommanderStrategy(RuleBasedStrategy(), worker, feature_enabled=True)
+
+    result = strategy.decide(_snapshot(belief, active_mode="search", tick=33))
+
+    assert result.directive is not None
+    assert result.inferences == {}
+    assert worker.started is True
     assert worker.snapshots.take()["active_mode"] == "search"
 
 
@@ -126,6 +156,7 @@ def test_runtime_with_commander_off_leaves_belief_unset_and_no_inference_trace(m
 
 def test_runtime_with_commander_trace_group_reports_backend_env_seen(monkeypatch) -> None:
     monkeypatch.setenv("CREWBORG_LLM_COMMANDER", "1")
+    monkeypatch.delenv("CREWBORG_COMMANDER_FORCE", raising=False)
     monkeypatch.delenv("USE_BEDROCK", raising=False)
     monkeypatch.setenv("CLAUDE_CODE_USE_BEDROCK", "false")
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
