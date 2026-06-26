@@ -118,7 +118,12 @@ def build_meeting_llm_client_from_env(env: dict[str, str] | None = None) -> Meet
         return DisabledMeetingClient("CREWBORG_LLM_MEETINGS is not enabled")
     try:
         helpers = _load_sdk_helpers()
-        use_bedrock = helpers.bedrock_enabled(env)
+        # Sidecar mode strips USE_BEDROCK from the player container and injects
+        # AWS_ENDPOINT_URL_BEDROCK_RUNTIME instead, so the SDK's bedrock_enabled() (which only
+        # checks USE_BEDROCK/CLAUDE_CODE_USE_BEDROCK) reports no backend in-pod. Gate on what we
+        # actually receive: treat the sidecar endpoint as a Bedrock signal. See
+        # crewrift_lab/docs/issues/2026-06-26-bedrock-disabled-crewrift-prime-xp.md.
+        use_bedrock = helpers.bedrock_enabled(env) or _sidecar_bedrock(env)
         if not use_bedrock and not env.get("ANTHROPIC_API_KEY"):
             return DisabledMeetingClient("no LLM backend configured")
         trace_raw = env.get("CREWBORG_LLM_TRACE_RAW", "").strip().lower() in {"1", "true", "yes", "on"}
@@ -179,6 +184,16 @@ def _load_sdk_helpers() -> _SDKHelpers:
         default_bedrock_model=DEFAULT_BEDROCK_MODEL,
         default_direct_model=DEFAULT_DIRECT_MODEL,
     )
+
+
+#: Loopback Bedrock proxy endpoint the runner injects in sidecar mode (it strips USE_BEDROCK).
+BEDROCK_SIDECAR_ENDPOINT_ENV = "AWS_ENDPOINT_URL_BEDROCK_RUNTIME"
+
+
+def _sidecar_bedrock(env: dict[str, str]) -> bool:
+    """Whether the Bedrock sidecar endpoint is present (the in-pod Bedrock signal)."""
+
+    return bool(env.get(BEDROCK_SIDECAR_ENDPOINT_ENV, "").strip())
 
 
 def _env_int(env: dict[str, str], name: str, default: int) -> int:
