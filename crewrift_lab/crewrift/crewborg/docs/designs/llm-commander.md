@@ -228,7 +228,12 @@ Both roles are designed here; the build is phased.
    both with `commander_danger` tracing. All bias-don't-force via `commander_of`/`filter_or_fallback`;
    disabled path byte-identical (440 tests green). Highest expected lift: imposter kill efficiency is
    crewborg's durable weakness, and positioning is exactly what the rule layer under-reasons about.
-3. **Crewmate levers** — `target_room` / `target_task` / `posture` in Normal.
+3. **Crewmate levers** — ✅ DONE (2026-06-26). `target_room` / `target_task` / `posture` (stick=most-crew,
+   isolate=fewest-crew, distance breaks ties) in NormalMode `_pick_target`. Also added a **forced-priority
+   debug knob** `CREWBORG_COMMANDER_FORCE='{...}'`: when the feature is on, it seeds `belief.commander` with a
+   fixed sanitized priority each tick (fresh `as_of_tick`), bypassing the worker/LLM (no Bedrock needed) — for
+   deterministically demonstrating/QA-ing control. 449 tests green; disabled path byte-identical. Both roles are
+   now wired; control verified (forced priority reaches belief live + per-lever mode tests).
 4. **Later** — real `EscortMode`; unify with the meeting LLM (meeting sets the next
    Playing-phase plan).
 
