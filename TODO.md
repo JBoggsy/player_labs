@@ -27,18 +27,24 @@ mid-session; check them back at the start of focused work.
   — check newer master), whether crewborg should emit it, and the expected speedup / any
   contract change to the Sprite-v1 transport. Not yet scoped.
 
-- **LLM-based meeting chat for crewborg** (flagged by James, 2026-06-25; "for later/
-  tomorrow"). Today crewborg's meeting chat is templated/cue-filled (`CHAT_NLP` produces
-  ~62 distinct strings like "purple sus: they were tailing me"). Andre's `truecrew` bots
-  use genuine **LLM-generated** chat (Bedrock) — 81/83 imposter and 378/383 crew messages
-  are *unique*, natural-language, and contextual ("Body in Science Bay. Red called it fast
-  - suspicious timing."; "Blue is super sus for following so much."). The goal: add LLM
-  chat **in addition to** the current templated path (not replacing it), for both roles —
-  imposter deflection/investigator-posing and crew behavioral-cue accusations. Bedrock is
-  verified working from the tournament pod (see cue_n_woo_lab notes). Pairs with the
-  near-term **crew-side "suss the aggressive imposter"** work (cite the following/proximity
-  tell, the way Andre's crew does). Not yet scoped.
+- **Drop `CREWBORG_LLM_TRACE_RAW=1` after the first LLM-meetings eval** (added 2026-06-25).
+  v47 was uploaded with raw LLM request/response tracing on so the first eval can inspect the
+  model's actual decisions/chat. It's verbose (full serialized context per call) — re-upload
+  without it once the eval confirms the path works, to keep trace artifacts lean.
+
+- **Commit/PR the ux.link DX feedback left in `metta_7`** (added 2026-06-25). Two feedback
+  entries were appended (uncommitted) to `~/coding/metta_checkouts/metta_7/agent-plugins/
+  default/skills/ux.link/FEEDBACK.md` (the protected `~/coding/metta` can't be written). Decide
+  whether to commit/PR them upstream or discard.
 
 ## Done
 
-_None yet._
+- **LLM-based meeting chat for crewborg** (flagged 2026-06-25; DONE 2026-06-25, `crewborg:v47`).
+  Lit up the dormant LLM meeting brain for the hosted league: Bedrock backend (SDK helpers),
+  per-role `memory/{crewmate,imposter}.md` prompts, full LLM chat+vote authority, timeout-derived
+  deadline guard. Design `crewrift/crewborg/docs/designs/llm-meetings.md`; details in
+  `crewrift_lab/WORKING_CONTEXT.md`. **Nuance vs the original ask:** the original framing was "LLM
+  chat *in addition to* the templated path"; what shipped (per James's ux.link-page decision) makes
+  the **LLM the primary chat+vote path when enabled**, with the templated/deterministic path as the
+  **fallback** (LLM disabled or call fails) — not both running simultaneously. Eval pending before
+  any Gate-2 submit.

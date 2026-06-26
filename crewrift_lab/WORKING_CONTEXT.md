@@ -16,6 +16,49 @@ is the one-screen answer to "where are we and why."
 
 ---
 
+## ✅ LLM MEETINGS CONFIRMED WORKING — v50, end-to-end (2026-06-26)
+The v47 "NEXT" item below is DONE. The LLM was silently 403'ing (disabled) until two fixes landed:
+(1) **SDK sidecar routing** — `players.player_sdk.llm.select_client` hit AWS Bedrock directly instead of
+the pod's loopback proxy sidecar (`AWS_ENDPOINT_URL_BEDROCK_RUNTIME`); fixed in **coworld-tools PR #12**
+(`bedrock_base_url`). (2) **Infra** — the Bedrock sidecar enabled for `crewrift_prime` experience-request
+jobs (James). Built **v50** against coworld-tools `main` (Dockerfile + `versions.env` now install the SDK
+from `coworld-tools/archive/<main-sha>.tar.gz#subdirectory=players`; `main` resolved via `git ls-remote`),
+uploaded `--use-bedrock` + `USE_BEDROCK=true` + `CREWBORG_LLM_MEETINGS=1`. **10-ep eval: 101
+`meeting_llm_decision`, ZERO fallbacks**, ~1.5–2s latency; it chats up to **7×/game**, deflecting as imposter
+and demanding evidence as crew. NOT submitted. Also this session: **mid-game reconnect** added to the bridge
+(retry a few times on a post-frame drop, resume if frames return — recovers transient blips that were `-100`s).
+NB v49 (LLM, no SDK fix) was REJECTED from Prime qualifiers (mean score 0.7, 2 crashes); tournament Bedrock
+403'd the SAME as XP requests (no tournament/XP difference).
+
+---
+
+## 💬 LLM MEETINGS LIT UP — v47 uploaded, NOT submitted, eval pending (2026-06-25)
+Directly answers the "TODO: LLM crewborg chat" noted under JOB 2 (Aaron's imposter is chat-SILENT, Andre uses
+LLM chat — chat is an exploitable axis). Design: `crewrift/crewborg/docs/designs/llm-meetings.md`.
+- **What shipped (committed `0a2395c`, merged `523226d` into the search line; built + uploaded as
+  `crewborg:v47` = `91616701-5528-44cc-beb6-3ae972b71597`).** The dormant LLM meeting brain now actually
+  runs in the league: **Bedrock backend** in `strategy/meeting/llm.py` via the SDK helpers
+  (`select_client`/`bedrock_enabled`/`resolve_model`/`call_json`); enable = `CREWBORG_LLM_MEETINGS=1` AND
+  (`USE_BEDROCK` or `ANTHROPIC_API_KEY`); factory never raises → deterministic fallback. **Per-role prompts**
+  `strategy/meeting/memory/{crewmate,imposter}.md` (crew = vote *restraint*; imposter = conversion/deflect,
+  never out a teammate). **Full LLM vote authority** (no confidence downgrade; self-vote guard kept).
+  **Timeout-derived deadline guard** (no call starts unless a 3s worst-case returns before the 48-tick
+  auto-submit; 24 ticks/s, 240-tick=10s timer). Codex did a reviewed surgical impl. 367 tests pass, ruff clean.
+- **v47 provenance VERIFIED:** md5 of llm.py/prompts.py/attend_meeting.py/search.py/opportunity.py/recon.py
+  INSIDE the image == merged main → v47 = current best (search-line + recon + v46-revert) + LLM meetings.
+  Uploaded with `--use-bedrock --bedrock-model us.anthropic.claude-haiku-4-5-20251001-v1:0` +
+  `CREWBORG_LLM_TRACE_RAW=1` (first-version debug — drop later) + v25 trace/metrics env.
+- **Gate-1: liveness PASS only** — the cert fixture has NO Voting phase, so the LLM meeting call was NOT
+  exercised locally. Required env fix along the way: local `coworld` 0.1.20→**0.1.26** (couldn't parse
+  crewrift 0.1.59 manifest); now in `uv.lock` on main.
+- **NEXT (the real test):** experience-request eval of v47, role-decomposed vs the deterministic champion —
+  confirm the LLM fires on Bedrock (`meeting_llm_decision` events, latency, **zero `meeting_llm_fallback`**),
+  read raw chat/vote quality, and check crew vote-restraint doesn't regress. Then (Gate-2, James's call) submit.
+- **Loose end:** ux.link DX feedback was appended (uncommitted) to `~/coding/metta_checkouts/metta_7/
+  agent-plugins/default/skills/ux.link/FEEDBACK.md` (couldn't write the protected `~/coding/metta`).
+
+---
+
 ## 🌙 OVERNIGHT (2026-06-25 → 26 AM): TWO autonomous jobs running (full autonomy granted, James asleep)
 **MORNING: read `/tmp/prime_results.txt` (primary) and `/tmp/suss_big_results.txt`.** Logs:
 `/tmp/prime_loop.log`, `/tmp/suss_pipeline.log`. Eval data persists on the cluster — re-run the
