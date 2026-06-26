@@ -979,7 +979,8 @@ exactly what this layer exists to avoid.
 ### 10.6 LLM gameplay commander (`strategy/commander/`, designed)
 
 > **Full reference:** [`docs/designs/llm-commander.md`](docs/designs/llm-commander.md).
-> **Status: designed, not yet built (2026-06-26).** This section is the summary.
+> **Status: Phase 1 (scaffold + wiring) built & gated-off (2026-06-26); modes do not yet read
+> priorities.** This section is the summary.
 
 A background LLM that steers *gameplay* by writing **priorities** into belief, which the
 modes read to bias *how* they execute — without ever selecting a mode or blocking a tick.

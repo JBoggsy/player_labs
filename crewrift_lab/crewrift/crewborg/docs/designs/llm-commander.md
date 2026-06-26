@@ -1,6 +1,9 @@
 # LLM gameplay commander
 
-> **Status: designed, not yet built (2026-06-26).** This is the living design for an
+> **Status: Phase 1 (scaffold + wiring) BUILT & gated-off 2026-06-26; gameplay levers (Phases 2–3) pending.**
+> The `strategy/commander/` package, `belief.commander`, the `CommanderStrategy` wrapper, and the
+> `build_runtime` wiring are in (403 tests green, disabled path proven byte-identical). The modes do
+> not yet read priorities. This is the living design for an
 > LLM that steers crewborg's *gameplay* by biasing the existing modes, without ever
 > sitting on the play path. It is the planned realization of the "`AsyncStrategyRunner`
 > LLM seam for future experiments" that [`design.md`](../../design.md) §10 anticipates.
@@ -214,9 +217,11 @@ and whether it mattered.
 
 Both roles are designed here; the build is phased.
 
-1. **Scaffold** — `belief.commander`, `strategy/commander.py` helpers + `filter_or_fallback`,
-   the `CommanderStrategy` wrapper + worker thread, env gating, no-op fallback verified
-   (Gate-1 smoke unchanged behaviour with the flag off).
+1. **Scaffold** — ✅ DONE (2026-06-26, commits `86971fc`..`cb248d9`). `belief.commander`,
+   `strategy/commander/` (bias/context/schema/llm/prompts/worker/strategy), the
+   `CommanderStrategy` wrapper + daemon worker, env gating, and `build_runtime` wiring;
+   disabled-path equivalence + runtime-off integration proven by unit tests (403 green).
+   Still owed: a live-backend Gate-1 smoke (flag on, real Bedrock) — not yet exercised.
 2. **Imposter levers first** — `hunt_room` / `target_player` / `avoid_room` in
    Search/Recon/Hunt, then danger mode. Highest expected lift: imposter kill efficiency
    is crewborg's durable weakness, and positioning is exactly what the rule layer

@@ -29,8 +29,13 @@ on stale/invalid). **Danger mode** (imposter, opt-in, traced `danger_reason`): `
 + `skip_evade`. Mode injection points: `normal.py:85`, `search.py:266`, `recon.py:534`, `hunt.py:612`.
 Gating `CREWBORG_LLM_COMMANDER=1` + backend (mirrors `CREWBORG_LLM_MEETINGS`). **Build phasing:**
 scaffold → imposter levers + danger → crewmate levers → (later) EscortMode + unify w/ meetings.
-NEXT: build phase 1 (scaffold + no-op fallback). Directly attacks the durable imposter
-kill-efficiency gap.
+**Phase 1 (scaffold + wiring) BUILT & gated-off** (2026-06-26, commits `86971fc`..`cb248d9`; built
+by Codex via codex-task, reviewed; 403 crewborg tests green, disabled path proven byte-identical,
+ruff clean on commander code). Package `strategy/commander/` (bias/context/schema/llm/prompts/worker/
+strategy) + `belief.commander` + `CommanderStrategy` wrapper on a `CloseAwareSynchronousStrategyRunner`
++ `apply_inferences` wiring. Modes do NOT yet read priorities. NEXT: phase 2 (imposter levers
+`hunt_room`/`target_player`/`avoid_room` in search/recon/hunt, then danger mode) — highest expected
+lift on the durable imposter kill-efficiency gap. Owed: a live-backend Gate-1 smoke (flag on, real Bedrock).
 
 ## ✅ LLM MEETINGS CONFIRMED WORKING — v50, end-to-end (2026-06-26)
 The v47 "NEXT" item below is DONE. The LLM was silently 403'ing (disabled) until two fixes landed:
