@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import numpy as np
 
-from crewrift.crewborg.map.types import MapData, MapPoint, MapRect, TaskStation
+from crewrift.crewborg.map.types import MapData, MapPoint, MapRect, Room, TaskStation
 from crewrift.crewborg.modes import NormalMode
 from crewrift.crewborg.nav import build_nav_graph
-from crewrift.crewborg.types import ActionState, Belief
+from crewrift.crewborg.types import ActionState, Belief, CommanderPriorities
 
 
 def _map_with_tasks() -> MapData:
@@ -25,6 +25,26 @@ def _map_with_tasks() -> MapData:
     )
 
 
+def _roomed_map() -> MapData:
+    return MapData(
+        width=300,
+        height=100,
+        tasks=(
+            TaskStation(name="left", x=40, y=40, w=8, h=8),
+            TaskStation(name="mid", x=140, y=40, w=8, h=8),
+            TaskStation(name="right", x=240, y=40, w=8, h=8),
+        ),
+        vents=(),
+        rooms=(
+            Room(name="Left", x=0, y=0, w=100, h=100),
+            Room(name="Mid", x=100, y=0, w=100, h=100),
+            Room(name="Right", x=200, y=0, w=100, h=100),
+        ),
+        button=MapRect(x=0, y=0, w=8, h=8),
+        home=MapPoint(x=0, y=0),
+    )
+
+
 def test_picks_nearest_incomplete_assigned_task() -> None:
     belief = Belief(
         map=_map_with_tasks(),
@@ -35,6 +55,73 @@ def test_picks_nearest_incomplete_assigned_task() -> None:
     )
     intent = NormalMode().decide(belief, ActionState())
     assert intent.kind == "complete_task" and intent.task_index == 1
+
+
+def test_commander_target_room_bias_picks_reachable_task_in_that_room() -> None:
+    belief = Belief(
+        map=_roomed_map(),
+        assigned_task_indices={0, 1, 2},
+        visible_task_indices={0, 1, 2},
+        self_world_x=145,
+        self_world_y=44,
+        last_tick=10,
+        commander=CommanderPriorities(target_room="Right", as_of_tick=10),
+    )
+
+    intent = NormalMode().decide(belief, ActionState())
+
+    assert intent.kind == "complete_task" and intent.task_index == 2
+
+
+def test_commander_target_task_wins_when_signalled_and_reachable() -> None:
+    belief = Belief(
+        map=_roomed_map(),
+        assigned_task_indices={0, 1, 2},
+        visible_task_indices={0, 1, 2},
+        self_world_x=42,
+        self_world_y=44,
+        last_tick=10,
+        commander=CommanderPriorities(target_room="Left", target_task=2, as_of_tick=10),
+    )
+
+    intent = NormalMode().decide(belief, ActionState())
+
+    assert intent.kind == "complete_task" and intent.task_index == 2
+
+
+def test_commander_unknown_or_empty_target_room_falls_back_to_nearest_task() -> None:
+    belief = Belief(
+        map=_roomed_map(),
+        assigned_task_indices={0, 1},
+        visible_task_indices={0, 1},
+        self_world_x=142,
+        self_world_y=44,
+        last_tick=10,
+        commander=CommanderPriorities(target_room="Right", as_of_tick=10),
+    )
+
+    intent = NormalMode().decide(belief, ActionState())
+
+    assert intent.kind == "complete_task" and intent.task_index == 1
+
+
+def test_commander_target_task_unreachable_falls_back_to_nearest_reachable_task() -> None:
+    mask = np.ones((100, 300), dtype=bool)
+    mask[:, 100:200] = False
+    belief = Belief(
+        map=_roomed_map(),
+        assigned_task_indices={0, 2},
+        visible_task_indices={0, 2},
+        self_world_x=44,
+        self_world_y=44,
+        last_tick=10,
+        commander=CommanderPriorities(target_task=2, as_of_tick=10),
+    )
+    belief.nav = build_nav_graph(mask, map_data=belief.map, cell_size=8)
+
+    intent = NormalMode().decide(belief, ActionState())
+
+    assert intent.kind == "complete_task" and intent.task_index == 0
 
 
 def test_advances_to_next_task_after_completion() -> None:

@@ -28,6 +28,7 @@ Two stall guards (design §5):
 from __future__ import annotations
 
 from crewrift.crewborg.map.types import TaskStation
+from crewrift.crewborg.strategy.commander.bias import commander_of, filter_or_fallback
 from crewrift.crewborg.types import ActionState, Belief, Intent
 from players.player_sdk import EmptyModeParams, Mode
 
@@ -95,6 +96,13 @@ class NormalMode(Mode[Belief, ActionState, Intent]):
             if reachable:
                 candidates = reachable
 
+        cmd = commander_of(belief)
+        if cmd is not None:
+            if cmd.target_task in candidates:
+                return cmd.target_task
+            if cmd.target_room is not None:
+                candidates = filter_or_fallback(candidates, lambda i: _task_room(belief, tasks[i]) == cmd.target_room)
+
         self_xy = _self_xy(belief)
         if self_xy is None:
             return min(candidates)
@@ -155,6 +163,14 @@ def _nav_point(belief: Belief, task: TaskStation, index: int) -> tuple[int, int]
         if anchor is not None:
             return anchor
     return task.center.x, task.center.y
+
+
+def _task_room(belief: Belief, task: TaskStation) -> str | None:
+    if belief.map is None:
+        return None
+    x, y = task.center.x, task.center.y
+    room = next((room for room in belief.map.rooms if room.x <= x < room.x + room.w and room.y <= y < room.y + room.h), None)
+    return room.name if room is not None else None
 
 
 def _self_xy(belief: Belief) -> tuple[int, int] | None:
