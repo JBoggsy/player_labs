@@ -76,3 +76,13 @@ crewrift_prime XP jobs now. Implies the meeting LLM is also currently disabled i
 enablement likely reverted; "TF reconciliation owed"). Lesson: an `env_seen` diagnostic on the LLM-enable
 path turns an ambiguous "it's disabled" into a one-line infra-vs-code verdict — build it early. The lazy
 construction is still kept (correct + matches meetings + handles genuinely-late env).
+
+### CONFIRMED DIRECTLY: the meeting/chat LLM is ALSO disabled in-pod ("no LLM backend configured")
+Evidence: v60 (both CREWBORG_LLM_COMMANDER=1 and CREWBORG_LLM_MEETINGS=1, --use-bedrock + USE_BEDROCK=true)
+6-ep self-play batch on Crewrift Prime. 184 meetings -> 184/184 `domain.meeting_llm_fallback`
+{reason:"llm_disabled", detail:"no LLM backend configured"}, AND commander_started enabled:false env_seen
+all-false in the same pods. So the v50 "meetings working in crewrift_prime XP jobs" state has REVERTED — the
+chat LLM currently never fires in these pods either. NOT a commander-specific issue: the Bedrock backend env
+is simply absent for crewrift_prime experience-request player containers. Infra (re-enable + persist the
+Bedrock sidecar for those jobs). The meeting LLM's existing `meeting_llm_fallback {detail}` trace already
+reports this — no new code needed to check it; the commander's env_seen pins down WHY (env vars all false).
