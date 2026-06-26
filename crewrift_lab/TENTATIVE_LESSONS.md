@@ -46,3 +46,37 @@ REAL working tree, not the isolated worktree. The codex-task skill's worktree is
 Outcome was fine here (changes landed where I wanted + validated with the real toolchain), but it could have
 been a surprise. How to apply: when isolation matters, `cd` into the worktree before EVERY `codex exec resume`,
 or verify file_change paths point at the worktree, not the live repo.
+
+### Local Gate-1 can't exercise the LLM meeting path — the cert fixture has NO Voting phase
+Evidence: ran `coworld run-episode` on the crewrift cert config with `--use-bedrock --secret-env CREWBORG_LLM_MEETINGS=1`;
+clean Lobby→Playing→GameOver, artifacts written, 0 errors (liveness PASS), but the trace `domain.phase_change`
+events showed it NEVER entered `Voting` — the degenerate self-play cert fixture has no meeting. So the LLM
+meeting call (the whole point of the change) was not exercised locally at all. How to apply: Gate-1 stays
+liveness-only for meeting features; verify "the LLM actually fires" via an EXPERIENCE REQUEST (look for
+`meeting_llm_decision` events + `meeting_llm.latency_ms` + zero `meeting_llm_fallback` in the artifacts). To
+force a meeting locally you'd need a real game variant (`coworld play --variant` / an episode_request.json
+with a real game_config), not the cert default.
+
+### Gate-1 footguns: local↔live coworld drift, and the `/bin/notsus` default-command trap
+Evidence: (1) local `coworld` 0.1.20 could not even PARSE the current crewrift 0.1.59 manifest
+(`game.config_schema.properties.tokens must declare equal minItems and maxItems`) — fixed correctly by
+upgrading the runner (`uv lock --upgrade-package coworld` → 0.1.26), not by working around it. (2) Supplying
+your image to `run-episode` without `--run` makes the runner launch the MANIFEST's baked reference-player
+command (`exec /bin/notsus` → "no such file" in a crewborg image). Must pass `--run python --run -m --run
+crewrift.crewborg.coworld.policy_player` — ONE token per `--run` flag (a single space-containing `--run`
+string is rejected with a message that spells out the right form). `smoke.py`'s argparse `--run` chokes on
+`--run -m` (reads `-m` as a flag), so use `run-episode` directly for multi-token argv + `--use-bedrock`.
+
+### Uncommitted worktree work is fragile — but the built Docker image is a faithful code+docs backup
+Evidence: my entire LLM-meetings change was uncommitted in a git worktree (`personal_labs-wt`) when that
+worktree dir was deleted out from under the session (shell cwd recovered to $HOME). No loss in the end because
+(a) James had merged the work into `personal_labs` main first, and (b) the built image `players-crewborg:dev`
+contains the WHOLE crewborg package — the Dockerfile `COPY crewborg /app/crewrift/crewborg` includes
+`docs/`, `version_log.md`, and all source — so the image is a recoverable snapshot of code+docs. I confirmed
+v47's provenance by `md5`-comparing six key files INSIDE the image against merged main (all identical). How to
+apply: commit/merge before destructive worktree ops; treat the latest built image as a fallback backup for
+crewborg; and when a build's source state is uncertain, hash image files vs the repo to pin down exactly what
+shipped (don't assume — verify).
+
+### LLM meetings: gating fixed (USE_BEDROCK secret-env) but BLOCKED by invalid Bedrock creds in XP-request pods (403) (2026-06-26)
+First real test of the LLM meeting seam (v48/v49, round-robin natural roles vs Aaron+Andre). Verified via crewborg telemetry (policy_artifact_N.zip → telemetry.jsonl; the stdout policy_agent_N.log is ~empty, just "game over"). TWO layers found by NOT assuming Bedrock worked: (1) v48 `--use-bedrock` alone → every meeting `domain.meeting_llm_fallback reason=llm_disabled "no LLM backend configured"`. ROOT: attend_meeting.py:44 calls build_meeting_llm_client_from_env() on os.environ; llm.py:117 passed (CREWBORG_LLM_MEETINGS=1 is a --secret-env, reaches the process) but llm.py:123 fired because helpers.bedrock_enabled(os.environ) was False — **`--use-bedrock` does NOT inject USE_BEDROCK into the player PROCESS env** (it wires Bedrock at the policy/routing layer); the meeting gate reads the in-process env var. FIX (worked): also pass `--secret-env USE_BEDROCK=true` (and CLAUDE_CODE_USE_BEDROCK=true). (2) v49 with that → gate enabled, context serialized, call attempted, but `domain.meeting_llm_fallback reason=llm_call_failed error=PermissionDeniedError 403 "The security token included in the request is invalid"` (12/12). So the XP-request pod's AWS/IRSA creds are INVALID for Bedrock — infra/IAM, not crewborg code (cf. CnW league IAM hotfix; CnW Bedrock verified only from TOURNAMENT pods). IMPLICATION: LLM meetings can't be validated via Crewrift experience requests until those pods get Bedrock creds; may only work in league/tournament pods (gated submit). crewborg LLM code is complete + correctly wired. NOTE: the v48 100-ep results (imp 78%/1.53 vs Aaron 2.05/Andre 2.13) are the DETERMINISTIC version — LLM never ran.
