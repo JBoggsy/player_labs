@@ -31,9 +31,15 @@ REVIVED** — 290 `meeting_llm_decision`, 0 `_fallback` (was 184/184 disabled). 
 `target_player` in Search-follow/Recon/Hunt (reachability-checked), + **danger mode** (`allow_witnessed_kill`
 relaxes Hunt's witness gate; `skip_evade` suppresses post-kill Evade) with `commander_danger` tracing. All
 bias-don't-force via `commander_of`/`filter_or_fallback`; disabled path byte-identical; 440 tests green.
-NEXT: **A/B** the commander (on vs off) for imposter kill efficiency — needs the imposter prompt to emit
-useful `hunt_room`/`target_player` priorities (may need prompt iteration); run in-pod (commander fires there
-now). Phase 3 = crewmate levers (NormalMode `target_room`/`posture`), later. Branch `worktree-labs-work`
+**Phase 3 DONE** — crewmate levers (`target_room`/`target_task`/`posture`) in NormalMode + a debug knob
+`CREWBORG_COMMANDER_FORCE='{...}'` that seeds `belief.commander` with a fixed sanitized priority each tick
+(bypasses LLM/Bedrock) for deterministic control demos. **CONTROL CAPACITY DEMONSTRATED live (both roles)**
+via a forced run (v67, 3 Prime eps, `target_room=Reactor`/`hunt_room=Observatory`): imposters → Observatory
+is the #1 nav destination (29%, ~13 rooms, chance ~8%); crew → Reactor elevated to #2 (13%, ~1.6× chance) —
+weaker because the task-room lever only steers among a crewmate's OWN assigned tasks (bias-don't-force). So the
+commander provably drives both roles; the crewmate task lever is gentle by design. NEXT: now tune — (1) imposter
+A/B (commander LLM on vs off) for kill efficiency, needs prompt iteration to emit useful `hunt_room`/`target_player`;
+(2) stronger crew steering = `posture` / a real EscortMode (Phase 4). 449 tests green; both roles wired. Branch `worktree-labs-work`
 (merged to origin/main @ `2ec14f9`); uploaded v55–v64, **none submitted**.
 
 ## 🎯 OBJECTIVE: crewborg's IMPOSTER KILL EFFICIENCY (the durable gap)
