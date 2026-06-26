@@ -148,10 +148,22 @@ bounded by `RECONNECT_DEADLINE_SECONDS` (env `CREWBORG_RECONNECT_DEADLINE`, defa
 120s) so it can never hang past the runner's episode timeout (~1200 attempts over the
 default deadline; the per-attempt log is throttled to the first 3 so a slow start
 doesn't flood the policy log). The discriminator is **`frames_seen`**: a close/error *before*
-any frame is a connect race → retry; *after* ≥1 frame it is the engine's normal
-abrupt game-over (code 1006) → exit 0, never reconnect (reconnecting after a real game
-end would be wrong). Session state (`scene`, masks, tick offset) lives in `_BridgeState`
-outside the connection so a retry resumes rather than rebuilding belief. **Scope note:**
+any frame is a connect race → retry on the flat interval.
+
+**Mid-game reconnect (§3.1, 2026-06-26).** A drop *after* ≥1 frame is **ambiguous** — it's
+how the engine signals game-over (abrupt 1006), but it's also what a transient mid-game
+network blip looks like, and the old "after a frame ⇒ exit, never reconnect" rule turned
+every such blip into an unrecoverable `-100` `disconnect_timeout`. The bridge now **tries to
+reconnect a few times before concluding game-over**: a reconnect that delivers *new* frames
+means the game was still live (we resume and keep playing); a run of **`MIDGAME_RECONNECT_ATTEMPTS`**
+(env `CREWBORG_MIDGAME_RECONNECTS`, default 5) reconnects with *no* new frames means the game
+really ended (exit 0). New frames refresh the idle budget, so a long game survives several
+independent blips; `RECONNECT_DEADLINE_SECONDS` is the backstop against an adversarial engine
+that dribbles one frame per reconnect. Interval is `MIDGAME_RECONNECT_INTERVAL_SECONDS` (env
+`CREWBORG_MIDGAME_RECONNECT_INTERVAL`, default 0.25s — slightly more patient than the startup
+race, to let a blip clear). A *clean* close after frames is still a normal game-over (the
+engine only drops *unclean* mid-stream). Session state (`scene`, masks, tick offset) lives in
+`_BridgeState` outside the connection so a retry resumes rather than rebuilding belief. **Scope note:**
 this only fixes *our own* connect failures (~half the observed `-100`s in the
 2026-06-24 sweep); episodes where *opponents* fail to connect still go degenerate and
 are unfixable from our side. Eventually this transport+reconnect layer should move into

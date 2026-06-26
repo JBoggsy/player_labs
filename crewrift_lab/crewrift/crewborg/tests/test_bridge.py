@@ -19,7 +19,11 @@ from websockets.asyncio.server import serve
 from websockets.exceptions import ConnectionClosed, ConnectionClosedError
 
 from crewrift.crewborg.action import INPUT_HEADER, encode_chat
-from crewrift.crewborg.coworld.policy_player import build_trace_outputs, run_bridge
+from crewrift.crewborg.coworld.policy_player import (
+    MIDGAME_RECONNECT_ATTEMPTS,
+    build_trace_outputs,
+    run_bridge,
+)
 from crewrift.crewborg.tests import sprite_wire as w
 from crewrift.crewborg.types import Command
 from players.player_sdk import NullMetricsSink, TraceEvent
@@ -171,60 +175,116 @@ async def test_bridge_runs_idle_loop_and_exits_cleanly() -> None:
     assert bridge_packets == [bytes([INPUT_HEADER, 0x00])]
 
 
-async def test_bridge_treats_unclean_close_as_game_end() -> None:
-    """The Crewrift Nim server drops the ``/player`` socket without a close
-    handshake (code 1006, "no close frame received or sent") at game end. The
-    bridge must treat that unclean close as normal termination — return without
-    raising so the container exits 0 — and still close the runtime. (The
-    websockets async iterator swallows a *clean* close but re-raises
-    ``ConnectionClosedError`` on an unclean one, which is what this guards.)"""
+class _FakeRuntime:
+    def __init__(self) -> None:
+        self.closed = False
 
-    class FakeRuntime:
-        def __init__(self) -> None:
-            self.closed = False
+    def step(self, _observation) -> Command:
+        return Command(held_mask=0)
 
-        def step(self, _observation) -> Command:
-            return Command(held_mask=0)
+    def close(self) -> None:
+        self.closed = True
 
-        def close(self) -> None:
-            self.closed = True
 
-    fake_runtime = FakeRuntime()
+class _FrameThenUncleanClose:
+    """One scene frame, then an unclean ``ConnectionClosedError`` (the engine's 1006 drop)."""
 
-    class UncleanConnection:
-        """Async context manager + iterator: yields one scene frame, then raises
-        ``ConnectionClosedError`` exactly as the real server's abrupt close does."""
+    def __init__(self) -> None:
+        self._frame_sent = False
+
+    async def __aenter__(self) -> _FrameThenUncleanClose:
+        return self
+
+    async def __aexit__(self, *exc: object) -> bool:
+        return False
+
+    def __aiter__(self) -> _FrameThenUncleanClose:
+        return self
+
+    async def __anext__(self) -> bytes:
+        if not self._frame_sent:
+            self._frame_sent = True
+            return w.clear_objects()
+        raise ConnectionClosedError(None, None)
+
+    async def send(self, _data: bytes) -> None:
+        pass
+
+
+async def test_bridge_retries_then_concludes_game_over_on_unclean_close(monkeypatch) -> None:
+    """A mid-game unclean close (1006) is ambiguous — game-over vs a transient blip — so the
+    bridge now retries a few times before concluding the game ended. When the reconnects keep
+    failing (the engine is really gone), it still returns cleanly and closes the runtime."""
+
+    monkeypatch.setattr(asyncio, "sleep", _no_sleep)
+    fake_runtime = _FakeRuntime()
+    connects = {"n": 0}
+
+    class _DeadConnection:
+        """The engine is gone: connecting refuses before any frame arrives."""
+
+        async def __aenter__(self) -> _DeadConnection:
+            raise ConnectionClosedError(None, None)
+
+        async def __aexit__(self, *exc: object) -> bool:
+            return False
+
+    def fake_connect(*_args: object, **_kwargs: object):
+        connects["n"] += 1
+        return _FrameThenUncleanClose() if connects["n"] == 1 else _DeadConnection()
+
+    await asyncio.wait_for(
+        run_bridge("ws://unused", connect=fake_connect, build=lambda **_: fake_runtime),
+        timeout=5.0,
+    )
+    assert fake_runtime.closed
+    # One live connection, then MIDGAME_RECONNECT_ATTEMPTS idle reconnects before giving up.
+    assert connects["n"] == 1 + MIDGAME_RECONNECT_ATTEMPTS
+
+
+async def test_bridge_recovers_from_a_transient_midgame_drop(monkeypatch) -> None:
+    """A transient blip: the socket drops mid-game, but the next connect resumes (more
+    frames) and the bridge keeps playing instead of bailing on the first drop."""
+
+    monkeypatch.setattr(asyncio, "sleep", _no_sleep)
+    fake_runtime = _FakeRuntime()
+    connects = {"n": 0}
+
+    class _FrameThenCleanEnd:
+        """One more frame after the reconnect, then a clean end (game finishes normally)."""
 
         def __init__(self) -> None:
             self._frame_sent = False
 
-        async def __aenter__(self) -> UncleanConnection:
+        async def __aenter__(self) -> _FrameThenCleanEnd:
             return self
 
         async def __aexit__(self, *exc: object) -> bool:
             return False
 
-        def __aiter__(self) -> UncleanConnection:
+        def __aiter__(self) -> _FrameThenCleanEnd:
             return self
 
         async def __anext__(self) -> bytes:
             if not self._frame_sent:
                 self._frame_sent = True
                 return w.clear_objects()
-            raise ConnectionClosedError(None, None)
+            raise StopAsyncIteration
 
         async def send(self, _data: bytes) -> None:
             pass
 
-    def fake_connect(*_args: object, **_kwargs: object) -> UncleanConnection:
-        return UncleanConnection()
+    def fake_connect(*_args: object, **_kwargs: object):
+        connects["n"] += 1
+        return _FrameThenUncleanClose() if connects["n"] == 1 else _FrameThenCleanEnd()
 
-    # Must return (not raise) despite the unclean close, and still close the runtime.
     await asyncio.wait_for(
         run_bridge("ws://unused", connect=fake_connect, build=lambda **_: fake_runtime),
         timeout=5.0,
     )
     assert fake_runtime.closed
+    # Reconnected exactly once after the drop, resumed, then ended cleanly — did NOT give up.
+    assert connects["n"] == 2
 
 
 async def test_bridge_closes_runtime_when_connect_raises() -> None:
@@ -267,7 +327,9 @@ async def test_bridge_retries_initial_connect_until_it_succeeds(monkeypatch) -> 
 
     attempts = {"n": 0}
 
-    class OneFrameThenClose:
+    class OneFrameThenCleanEnd:
+        # Ends the game with a CLEAN close (StopAsyncIteration) so this test stays focused
+        # on the initial-connect retry; mid-game unclean-drop recovery is covered separately.
         def __init__(self) -> None:
             self._sent = False
 
@@ -284,7 +346,7 @@ async def test_bridge_retries_initial_connect_until_it_succeeds(monkeypatch) -> 
             if not self._sent:
                 self._sent = True
                 return w.clear_objects()
-            raise ConnectionClosedError(None, None)
+            raise StopAsyncIteration
 
         async def send(self, _data: bytes) -> None:
             pass
@@ -293,7 +355,7 @@ async def test_bridge_retries_initial_connect_until_it_succeeds(monkeypatch) -> 
         attempts["n"] += 1
         if attempts["n"] < 3:
             raise ConnectionRefusedError("engine not up yet")  # an OSError subclass
-        return OneFrameThenClose()
+        return OneFrameThenCleanEnd()
 
     await asyncio.wait_for(
         run_bridge("ws://unused", connect=flaky_connect, build=lambda **_: FakeRuntime()),

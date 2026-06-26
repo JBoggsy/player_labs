@@ -73,6 +73,16 @@ RECONNECT_DEADLINE_SECONDS = float(os.environ.get("CREWBORG_RECONNECT_DEADLINE",
 RECONNECT_INTERVAL_SECONDS = float(os.environ.get("CREWBORG_RECONNECT_INTERVAL", "0.1"))
 CONNECT_OPEN_TIMEOUT = 10.0     # per-attempt handshake timeout (don't hang one attempt)
 
+# After the game has started, a dropped socket is AMBIGUOUS: it is how the Crewrift engine
+# signals game-over (an unclean 1006 close), but it is also exactly what a transient mid-game
+# network blip looks like. So don't give up on the first drop — try to reconnect a few times.
+# If frames resume, the game was still live and we recover; if a run of reconnects delivers no
+# new frames, the game really ended and we stop. A reconnect that DOES deliver new frames is
+# progress and refreshes the idle budget (so an hour-long game survives several independent
+# blips). The overall RECONNECT_DEADLINE is the ultimate backstop.
+MIDGAME_RECONNECT_ATTEMPTS = int(os.environ.get("CREWBORG_MIDGAME_RECONNECTS", "5"))
+MIDGAME_RECONNECT_INTERVAL_SECONDS = float(os.environ.get("CREWBORG_MIDGAME_RECONNECT_INTERVAL", "0.25"))
+
 # Connection-establishment failures worth retrying (vs a real game-over close, which
 # only counts once a frame has been seen). OSError covers ECONNREFUSED while the
 # engine is still binding; the websockets handshake/timeout errors cover races.
@@ -192,22 +202,36 @@ async def _connect_with_retry(
 
     deadline = time.monotonic() + RECONNECT_DEADLINE_SECONDS
     attempt = 0
+    midgame_idle = 0  # consecutive post-game-start reconnects that delivered no new frames
     last_error: BaseException | None = None  # closed-with-no-frames also retries
     while True:
         attempt += 1
+        frames_before = state.frames_seen
         try:
             async with connect(engine_ws_url, max_size=None, open_timeout=CONNECT_OPEN_TIMEOUT) as websocket:
                 await _run_session(websocket, scene=scene, runtime=runtime, metrics=metrics, state=state)
-            # Session returned without raising: a clean close.
+            # Session returned without raising: a clean close. After the game has started a
+            # clean close is a normal game-over (the engine only does an *unclean* 1006 drop
+            # mid-stream; a graceful close means it's done).
             if state.frames_seen:
                 return  # the game ran and ended normally
             # Closed with no frames — treat as a connect race and retry.
         except _RETRYABLE_CONNECT_ERRORS as exc:
             if state.frames_seen:
-                # We were mid-game and the socket dropped abruptly: that is how the
-                # Crewrift engine signals game-over (code 1006), so exit normally.
-                print("game over: server closed the connection", file=sys.stderr, flush=True)
-                return
+                # Mid-game abrupt drop — ambiguous between game-over (1006) and a transient
+                # blip. A reconnect that delivered new frames is progress (reset the budget);
+                # otherwise count it. Conclude game-over only after a run of idle reconnects
+                # (or the overall deadline), so a real network blip gets a chance to recover.
+                midgame_idle = 0 if state.frames_seen > frames_before else midgame_idle + 1
+                if midgame_idle >= MIDGAME_RECONNECT_ATTEMPTS or time.monotonic() >= deadline:
+                    print("game over: server closed the connection", file=sys.stderr, flush=True)
+                    return
+                print(
+                    f"mid-game disconnect — reconnecting ({midgame_idle}/{MIDGAME_RECONNECT_ATTEMPTS} idle)",
+                    file=sys.stderr, flush=True,
+                )
+                await asyncio.sleep(min(MIDGAME_RECONNECT_INTERVAL_SECONDS, max(0.0, deadline - time.monotonic())))
+                continue
             last_error = exc  # pre-first-frame failure: retry below
 
         if time.monotonic() >= deadline:
