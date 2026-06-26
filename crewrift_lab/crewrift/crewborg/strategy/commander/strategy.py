@@ -17,7 +17,6 @@ from players.player_sdk.types import BeliefSnapshot
 
 
 class _CommanderWorker(Protocol):
-    enabled: bool
     snapshots: Any
     priorities: Any
 
@@ -29,13 +28,18 @@ class _CommanderWorker(Protocol):
 class CommanderStrategy:
     """Delegate mode selection to rules while asynchronously refreshing priorities."""
 
-    def __init__(self, rules: RuleBasedStrategy, worker: _CommanderWorker) -> None:
+    def __init__(self, rules: RuleBasedStrategy, worker: _CommanderWorker, *, feature_enabled: bool) -> None:
         self._rules = rules
         self._worker = worker
+        self._feature_enabled = feature_enabled
         self._last: CommanderPriorities | None = None
         self._started = False
 
     def decide(self, snapshot: BeliefSnapshot[Belief, ActionState]) -> StrategyResult:
+        if not self._feature_enabled:
+            with snapshot.read() as memory:
+                return StrategyResult(directive=self._rules.select(memory.belief))
+
         if not self._started:
             self._worker.start()
             self._started = True
@@ -43,8 +47,6 @@ class CommanderStrategy:
         with snapshot.read() as memory:
             belief = memory.belief
             directive = self._rules.select(belief)
-            if not self._worker.enabled:
-                return StrategyResult(directive=directive)
             context = serialize_commander_context(belief, active_mode=memory.active_directive.mode)
             rooms = set(legal_rooms(belief))
             players = set(legal_players(belief))

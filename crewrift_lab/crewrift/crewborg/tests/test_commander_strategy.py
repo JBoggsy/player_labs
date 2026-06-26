@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from crewrift.crewborg import build_runtime
@@ -52,11 +53,13 @@ def test_commander_strategy_matches_rules_when_disabled() -> None:
 
     for belief in cases:
         expected = RuleBasedStrategy().decide(_snapshot(belief)).mode
-        result = CommanderStrategy(RuleBasedStrategy(), _DisabledWorker()).decide(_snapshot(belief))
+        worker = _DisabledWorker()
+        result = CommanderStrategy(RuleBasedStrategy(), worker, feature_enabled=False).decide(_snapshot(belief))
 
         assert result.directive is not None
         assert result.directive.mode == expected
         assert result.inferences == {}
+        assert worker.started is False
 
 
 def test_commander_strategy_sanitizes_and_returns_latest_worker_priorities() -> None:
@@ -70,7 +73,7 @@ def test_commander_strategy_sanitizes_and_returns_latest_worker_priorities() -> 
             "reason": "fake",
         }
     )
-    strategy = CommanderStrategy(RuleBasedStrategy(), worker)
+    strategy = CommanderStrategy(RuleBasedStrategy(), worker, feature_enabled=True)
 
     result = strategy.decide(_snapshot(belief, active_mode="search", tick=12))
 
@@ -97,7 +100,7 @@ def test_apply_commander_inferences_sets_belief() -> None:
 
 def test_commander_strategy_close_closes_worker() -> None:
     worker = _DisabledWorker()
-    strategy = CommanderStrategy(RuleBasedStrategy(), worker)
+    strategy = CommanderStrategy(RuleBasedStrategy(), worker, feature_enabled=False)
 
     strategy.close()
 
@@ -105,21 +108,6 @@ def test_commander_strategy_close_closes_worker() -> None:
 
 
 def test_runtime_with_commander_off_leaves_belief_unset_and_no_inference_trace(monkeypatch) -> None:
-    monkeypatch.delenv("CREWBORG_LLM_COMMANDER", raising=False)
-    trace = ListTraceSink()
-    runtime = build_runtime(trace_sink=trace)
-    scene = SceneState()
-    scene.apply(w.clear_objects())
-    scene.tick += 1
-
-    runtime.step(Observation(scene=scene, tick=scene.tick))
-    runtime.close()
-
-    assert runtime.belief.commander is None
-    assert "strategy_inferences" not in trace.names()
-
-
-def test_runtime_with_commander_trace_group_reports_disabled_reason(monkeypatch) -> None:
     monkeypatch.delenv("CREWBORG_LLM_COMMANDER", raising=False)
     monkeypatch.setenv("CREWBORG_TRACE_GROUPS", "commander")
     trace = ListTraceSink()
@@ -131,12 +119,41 @@ def test_runtime_with_commander_trace_group_reports_disabled_reason(monkeypatch)
     runtime.step(Observation(scene=scene, tick=scene.tick))
     runtime.close()
 
+    assert runtime.belief.commander is None
+    assert "strategy_inferences" not in trace.names()
+    assert "domain.commander_started" not in trace.names()
+
+
+def test_runtime_with_commander_trace_group_reports_backend_env_seen(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_LLM_COMMANDER", "1")
+    monkeypatch.delenv("USE_BEDROCK", raising=False)
+    monkeypatch.setenv("CLAUDE_CODE_USE_BEDROCK", "false")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("CREWBORG_TRACE_GROUPS", "commander")
+    trace = ListTraceSink()
+    runtime = build_runtime(trace_sink=trace)
+    scene = SceneState()
+    scene.apply(w.clear_objects())
+    scene.tick += 1
+
+    runtime.step(Observation(scene=scene, tick=scene.tick))
+    time.sleep(0.02)
+    scene.tick += 1
+    runtime.step(Observation(scene=scene, tick=scene.tick))
+    runtime.close()
+
     [started] = [event for event in trace.events if event.name == "domain.commander_started"]
     assert started.data == {
         "enabled": False,
         "backend": None,
         "model": None,
-        "disabled_reason": "CREWBORG_LLM_COMMANDER is not enabled",
+        "disabled_reason": "no LLM backend configured",
+        "attempt": 1,
+        "env_seen": {
+            "USE_BEDROCK": False,
+            "CLAUDE_CODE_USE_BEDROCK": False,
+            "ANTHROPIC_API_KEY": False,
+        },
     }
 
 

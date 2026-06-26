@@ -31,7 +31,7 @@ from crewrift.crewborg.strategy import (
     update_social_evidence,
     update_suspicion,
 )
-from crewrift.crewborg.strategy.commander.llm import build_commander_client
+from crewrift.crewborg.strategy.commander.llm import build_commander_client_from_env, commander_feature_enabled
 from crewrift.crewborg.strategy.commander.strategy import CommanderStrategy, apply_commander_inferences
 from crewrift.crewborg.strategy.commander.trace import CommanderTrace
 from crewrift.crewborg.strategy.commander.worker import CommanderWorker
@@ -130,9 +130,11 @@ def build_runtime(
         update_suspicion(belief)
 
     commander_trace = CommanderTrace()
+    feature_on = commander_feature_enabled(dict(os.environ))
     commander_strategy = CommanderStrategy(
         RuleBasedStrategy(),
-        CommanderWorker(build_commander_client(dict(os.environ)), trace=commander_trace),
+        CommanderWorker(build_commander_client_from_env, trace=commander_trace),
+        feature_enabled=feature_on,
     )
 
     return AgentRuntime(

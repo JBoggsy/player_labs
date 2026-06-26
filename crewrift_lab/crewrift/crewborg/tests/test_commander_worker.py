@@ -7,6 +7,7 @@ from crewrift.crewborg.strategy.commander.llm import (
     CommanderLLMResult,
     DisabledCommanderClient,
     build_commander_client_from_env,
+    commander_feature_enabled,
 )
 from crewrift.crewborg.strategy.commander.prompts import system_prompt_for_role
 from crewrift.crewborg.strategy.commander.trace import CommanderTrace
@@ -34,18 +35,32 @@ class _ErrorClient(_FakeClient):
         raise PermissionError("bedrock 403")
 
 
+def _wait_for_priority(worker: CommanderWorker) -> dict | None:
+    output = None
+    for _ in range(50):
+        output = worker.priorities.take()
+        if output is not None:
+            break
+        time.sleep(0.02)
+    return output
+
+
+def _drain_until(trace: CommanderTrace, event_name: str) -> list[tuple[str, dict]]:
+    events: list[tuple[str, dict]] = []
+    for _ in range(50):
+        events.extend(trace.drain())
+        if any(event == event_name for event, _ in events):
+            return events
+        time.sleep(0.02)
+    return events
+
+
 def test_worker_publishes_priorities() -> None:
-    worker = CommanderWorker(_FakeClient())
+    worker = CommanderWorker(lambda: _FakeClient())
     worker.start()
     try:
         worker.snapshots.publish({"legal_rooms": ["electrical"], "legal_players": []})
-
-        output = None
-        for _ in range(50):
-            output = worker.priorities.take()
-            if output is not None:
-                break
-            time.sleep(0.02)
+        output = _wait_for_priority(worker)
 
         assert output is not None
         assert output["hunt_room"] == "electrical"
@@ -53,19 +68,16 @@ def test_worker_publishes_priorities() -> None:
         worker.close()
 
 
-def test_worker_records_enabled_start_success_and_stop() -> None:
+def test_worker_records_enabled_start_success_and_stop(monkeypatch) -> None:
+    monkeypatch.setenv("USE_BEDROCK", "true")
+    monkeypatch.setenv("CLAUDE_CODE_USE_BEDROCK", "false")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     trace = CommanderTrace()
-    worker = CommanderWorker(_FakeClient(), trace=trace)
+    worker = CommanderWorker(lambda: _FakeClient(), trace=trace)
     worker.start()
     try:
         worker.snapshots.publish({"phase": "Playing", "self": {"role": "imposter"}, "legal_rooms": ["electrical"]})
-
-        output = None
-        for _ in range(50):
-            output = worker.priorities.take()
-            if output is not None:
-                break
-            time.sleep(0.02)
+        output = _wait_for_priority(worker)
     finally:
         worker.close()
 
@@ -78,6 +90,12 @@ def test_worker_records_enabled_start_success_and_stop() -> None:
             "backend": "bedrock",
             "model": "fake-model",
             "disabled_reason": None,
+            "attempt": 1,
+            "env_seen": {
+                "USE_BEDROCK": True,
+                "CLAUDE_CODE_USE_BEDROCK": False,
+                "ANTHROPIC_API_KEY": False,
+            },
         },
     )
     assert ("commander_call_start", {"phase": "Playing", "role": "imposter"}) in events
@@ -95,13 +113,18 @@ def test_worker_records_enabled_start_success_and_stop() -> None:
     assert events[-1] == ("commander_stopped", {})
 
 
-def test_worker_records_disabled_start() -> None:
+def test_worker_records_disabled_start(monkeypatch) -> None:
+    monkeypatch.delenv("USE_BEDROCK", raising=False)
+    monkeypatch.delenv("CLAUDE_CODE_USE_BEDROCK", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     trace = CommanderTrace()
-    worker = CommanderWorker(DisabledCommanderClient("disabled"), trace=trace)
+    worker = CommanderWorker(lambda: DisabledCommanderClient("disabled"), trace=trace, build_attempts=1)
 
     worker.start()
+    events = _drain_until(trace, "commander_started")
+    worker.close()
 
-    assert trace.drain() == [
+    assert events == [
         (
             "commander_started",
             {
@@ -109,6 +132,12 @@ def test_worker_records_disabled_start() -> None:
                 "backend": None,
                 "model": None,
                 "disabled_reason": "disabled",
+                "attempt": 1,
+                "env_seen": {
+                    "USE_BEDROCK": False,
+                    "CLAUDE_CODE_USE_BEDROCK": False,
+                    "ANTHROPIC_API_KEY": False,
+                },
             },
         )
     ]
@@ -116,7 +145,7 @@ def test_worker_records_disabled_start() -> None:
 
 def test_worker_records_call_errors_without_stopping() -> None:
     trace = CommanderTrace()
-    worker = CommanderWorker(_ErrorClient(), trace=trace)
+    worker = CommanderWorker(lambda: _ErrorClient(), trace=trace)
     worker.start()
     calls: list[dict] = []
     try:
@@ -137,7 +166,7 @@ def test_worker_records_call_errors_without_stopping() -> None:
 
 
 def test_disabled_worker_never_runs() -> None:
-    worker = CommanderWorker(DisabledCommanderClient("disabled"))
+    worker = CommanderWorker(lambda: DisabledCommanderClient("disabled"), build_attempts=1)
     worker.start()
     try:
         worker.snapshots.publish({"legal_rooms": ["x"], "legal_players": []})
@@ -146,6 +175,65 @@ def test_disabled_worker_never_runs() -> None:
         assert worker.priorities.take() is None
     finally:
         worker.close()
+
+
+def test_worker_retries_missing_backend_until_client_is_enabled(monkeypatch) -> None:
+    monkeypatch.delenv("USE_BEDROCK", raising=False)
+    monkeypatch.setenv("CLAUDE_CODE_USE_BEDROCK", "yes")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "redacted")
+    trace = CommanderTrace()
+    calls = 0
+
+    def factory():
+        nonlocal calls
+        calls += 1
+        if calls < 3:
+            return DisabledCommanderClient("no LLM backend configured")
+        return _FakeClient()
+
+    worker = CommanderWorker(factory, trace=trace, build_attempts=3, retry_interval=0.01)
+    worker.start()
+    try:
+        worker.snapshots.publish({"legal_rooms": ["electrical"], "legal_players": []})
+        output = _wait_for_priority(worker)
+    finally:
+        worker.close()
+
+    assert calls == 3
+    assert output is not None
+    assert output["hunt_room"] == "electrical"
+    started = [data for event, data in trace.drain() if event == "commander_started"]
+    assert started == [
+        {
+            "enabled": False,
+            "backend": None,
+            "model": None,
+            "disabled_reason": "no LLM backend configured",
+            "attempt": 1,
+            "env_seen": {
+                "USE_BEDROCK": False,
+                "CLAUDE_CODE_USE_BEDROCK": True,
+                "ANTHROPIC_API_KEY": True,
+            },
+        },
+        {
+            "enabled": True,
+            "backend": "bedrock",
+            "model": "fake-model",
+            "disabled_reason": None,
+            "attempt": 3,
+            "env_seen": {
+                "USE_BEDROCK": False,
+                "CLAUDE_CODE_USE_BEDROCK": True,
+                "ANTHROPIC_API_KEY": True,
+            },
+        },
+    ]
+
+
+def test_commander_feature_enabled_reads_flag() -> None:
+    assert commander_feature_enabled({}) is False
+    assert commander_feature_enabled({"CREWBORG_LLM_COMMANDER": "yes"}) is True
 
 
 def test_build_commander_client_disabled_without_flag() -> None:

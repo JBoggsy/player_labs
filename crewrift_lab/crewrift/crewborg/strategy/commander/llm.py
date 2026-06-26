@@ -155,6 +155,11 @@ def build_commander_client_from_env(env: dict[str, str] | None = None) -> Comman
 build_commander_client = build_commander_client_from_env
 
 
+def commander_feature_enabled(env: dict[str, str] | None = None) -> bool:
+    env = os.environ if env is None else env
+    return _truthy(env.get("CREWBORG_LLM_COMMANDER", ""))
+
+
 class _SDKHelpers(NamedTuple):
     bedrock_enabled: Callable[..., bool]
     select_client: Callable[..., Any]
