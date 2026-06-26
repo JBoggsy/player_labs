@@ -32,14 +32,18 @@ NEXT: **Phase 2** — imposter levers (`hunt_room`/`target_player`/`avoid_room` 
 
 ## 🎯 OBJECTIVE: crewborg's IMPOSTER KILL EFFICIENCY (the durable gap)
 
-**✅ SHIPPED `crewborg:v66` to Crewrift PRIME 2026-06-26** (`sub_9851f507-…`, auto-champion=always →
-supersedes v42 once it qualifies). v66 = the **confirmed imposter 2nd-kill combo** (witness-drop after
-1st kill + 72t Evade re-approach, EVADE_TICKS=72) **+ meeting LLM ON** (commander OFF), built on the
-merged LLM-commander codebase. Meeting LLM verified firing pre-submit (probe `xreq_2e49c8f9`: crewborg's
-own artifact = 17 `meeting_llm_decision`, 0 fallback). The **witness-drop is the significant driver**
-(v63 vs v54 natural roles: +19pp ≥2-kill / +14pp win / +0.32 kills, p=0.038). **Next: monitor placement.**
-Prior champion v42. v59/v60/v62/v64 = the other worktree's LLM-commander thread (commander kept OFF here).
-v61 = v54+debug (complete-baseline eval subject). v53/v58/v65 = inconclusive/superseded A/B arms.
+**⚠️ `crewborg:v66` submitted to Crewrift PRIME 2026-06-26 but REJECTED — `notes="league has no submission
+division"` (PLATFORM/league-config issue, NOT our play; same as v49).** Prime was migrated 2026-06-24 to an
+among-them-commissioner + "Qualifiers" division flow; direct `coworld submit --league <prime>` now has no
+submission division. v42 placed pre-migration; the nightly places in the REGULAR Crewrift league
+(`league_605ff338`), not Prime. **v66's placement games were FINE** (mean +8, imposter 1.33 kills/g). ALSO:
+in league-round pods the **meeting LLM FELL BACK** (0 decisions vs 17 in the xreq probe) — the Bedrock
+sidecar is wired for experience-requests but NOT league rounds, so the LLM-on build plays DETERMINISTICALLY
+in league. **The shippable, confirmed gain is the deterministic witness-drop** (v63 vs v54 natural roles:
++19pp ≥2-kill / +14pp win / +0.32 kills, p=0.038). NEXT: resolve Prime submission routing (owner/qualifiers
+flow) and/or verify the sidecar in league pods before relying on the LLM. v66 = confirmed imposter combo +
+meeting LLM (commander OFF) on the merged codebase. v59/v60/v62/v64 = other worktree's LLM-commander thread;
+v61 = v54+debug; v53/v58/v65 = inconclusive/superseded arms.
 
 **✅ CONFIRMED BASELINE — v54, 300 eps, NATURAL ROLES, vs Aaron(v17)+Andre(v28), Prime 0.4.9, meeting-aware
 (`/tmp/v54base_wh`; 2026-06-26).** This is the authoritative current diagnosis (the v50 numbers were a

@@ -18,6 +18,20 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
 
+### Crewrift PRIME submission is BROKEN ("league has no submission division"); LLM falls back in league rounds
+Evidence: v66 submitted to Crewrift Prime (`league_a12f5172`) → `status=rejected, notes="league has no
+submission division"` (same as v49). NOT a play/ops failure — placement games fine (mean +8, imposter 1.33
+kills/g). Cause: Prime was migrated 2026-06-24 to an among-them-commissioner + "Qualifiers" division flow;
+the direct `coworld submit --league <prime>` path now has no submission division. v42 placed BEFORE the
+migration; v49/v66 (after) bounced. The nightly places fine because it submits to the REGULAR Crewrift
+league (`league_605ff338`), not Prime. FIX: raise with the Prime league owner / find the Qualifiers-division
+submit path (`coworld submit` has no --division flag). SECOND finding: in league-round pods crewborg's meeting
+LLM FELL BACK (artifacts: meeting_llm_fallback every ep, 0 meeting_llm_decision) — opposite of the xreq probe
+(17 decisions, 0 fallback). So the **Bedrock sidecar is wired for experience-requests but NOT league rounds**
+— the LLM-on version plays DETERMINISTICALLY in league. Verify the sidecar in league pods before relying on
+the LLM in a submission. The shippable play gain is the deterministic witness-drop, LLM aside. See
+[[crewrift-meeting-llm-enablement]].
+
 ### Witness-drop combo CONFIRMED significant; SUSTAINING the re-approach (72→400t) backfires via suspicion
 Evidence: 3-arm A/B natural roles (300/arm). Fully-clean imposter: v63 (72t re-approach + witness-drop)
 ≥2-kill 54% / win 88%; v65 (400t sustained) 46% / 70%; v54 (baseline) 35% / 73%. **v63 vs v54: +19pp
