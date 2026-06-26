@@ -7,7 +7,7 @@ import numpy as np
 from crewrift.crewborg.map.types import MapData, MapPoint, MapRect, Room, TaskStation
 from crewrift.crewborg.modes import NormalMode
 from crewrift.crewborg.nav import build_nav_graph
-from crewrift.crewborg.types import ActionState, Belief, CommanderPriorities
+from crewrift.crewborg.types import ActionState, Belief, CommanderPriorities, PlayerRecord
 
 
 def _map_with_tasks() -> MapData:
@@ -42,6 +42,16 @@ def _roomed_map() -> MapData:
         ),
         button=MapRect(x=0, y=0, w=8, h=8),
         home=MapPoint(x=0, y=0),
+    )
+
+
+def _crew(belief: Belief, color: str, xy: tuple[int, int]) -> None:
+    belief.roster[color] = PlayerRecord(
+        color=color,
+        world_x=xy[0],
+        world_y=xy[1],
+        last_seen_tick=belief.last_tick,
+        life_status="alive",
     )
 
 
@@ -122,6 +132,61 @@ def test_commander_target_task_unreachable_falls_back_to_nearest_reachable_task(
     intent = NormalMode().decide(belief, ActionState())
 
     assert intent.kind == "complete_task" and intent.task_index == 0
+
+
+def test_commander_posture_stick_breaks_task_ties_toward_crowded_room() -> None:
+    belief = Belief(
+        map=_roomed_map(),
+        assigned_task_indices={0, 2},
+        visible_task_indices={0, 2},
+        self_world_x=144,
+        self_world_y=44,
+        last_tick=10,
+        commander=CommanderPriorities(posture="stick", as_of_tick=10),
+    )
+    _crew(belief, "green", (220, 44))
+    _crew(belief, "blue", (230, 44))
+
+    intent = NormalMode().decide(belief, ActionState())
+
+    assert intent.kind == "complete_task" and intent.task_index == 2
+
+
+def test_commander_posture_isolate_breaks_task_ties_toward_empty_room() -> None:
+    belief = Belief(
+        map=_roomed_map(),
+        assigned_task_indices={0, 2},
+        visible_task_indices={0, 2},
+        self_world_x=144,
+        self_world_y=44,
+        last_tick=10,
+        commander=CommanderPriorities(posture="isolate", as_of_tick=10),
+    )
+    _crew(belief, "green", (220, 44))
+    _crew(belief, "blue", (230, 44))
+
+    intent = NormalMode().decide(belief, ActionState())
+
+    assert intent.kind == "complete_task" and intent.task_index == 0
+
+
+def test_commander_posture_neutral_matches_default_task_tie() -> None:
+    common = dict(
+        map=_roomed_map(),
+        assigned_task_indices={0, 2},
+        visible_task_indices={0, 2},
+        self_world_x=144,
+        self_world_y=44,
+        last_tick=10,
+    )
+    default_intent = NormalMode().decide(Belief(**common), ActionState())
+    neutral_intent = NormalMode().decide(
+        Belief(**common, commander=CommanderPriorities(posture="neutral", as_of_tick=10)),
+        ActionState(),
+    )
+
+    assert neutral_intent.kind == "complete_task"
+    assert neutral_intent.task_index == default_intent.task_index
 
 
 def test_advances_to_next_task_after_completion() -> None:
