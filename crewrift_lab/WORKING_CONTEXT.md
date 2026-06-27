@@ -49,8 +49,13 @@ useful `hunt_room`/`target_player`/`strength`; (2) Phase 4 EscortMode for crew. 
 
 ## 🎯 OBJECTIVE: crewborg's IMPOSTER KILL EFFICIENCY (the durable gap)
 
-**⭐⭐ `crewborg:v69` is the Crewrift PRIME CHAMPION (2026-06-26)** — placed into Prime Competition
-(div_acbde92a), `lpm_3bc70241`, champion=True, **superseded v42.** v69 = the **deterministic** ship:
+**⭐⭐ `crewborg:v70` is the Crewrift PRIME CHAMPION (2026-06-26)** — the **meeting-LLM-ON** ship
+(`lpm_60b71147`, champion=True; supersedes v69). v70 = v69's confirmed imposter combo (witness-drop)
++ meeting LLM turned on (commander OFF), on the merged commander codebase. Meeting LLM verified firing
+pre-submit (probe `xreq_bc2878d1`: 22 `meeting_llm_decision`, 0 fallback). **⚠️ OPEN: does the meeting
+LLM fire in LEAGUE (dispatch) rounds, or only xreq (k8s)?** — v66 fell back in league; verify once v70's
+league rounds run. (v71 = nightly refit, currently `qualifying`.) Prior champion lineage below:
+**`crewborg:v69`** was the Crewrift PRIME CHAMPION — the **deterministic** ship:
 the confirmed witness-drop-after-1st-kill imposter combo (v63 vs v54 natural roles: +19pp ≥2-kill /
 +14pp win / +0.32 kills, p=0.038) + inert 72t Evade re-approach (EVADE_TICKS=72), **LLM OFF** (the
 meeting LLM only fires in k8s/xreq pods, never league/dispatch rounds — sidecar not wired there — so an
