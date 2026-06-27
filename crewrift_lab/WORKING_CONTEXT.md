@@ -47,8 +47,37 @@ NEXT: tune — (1) imposter A/B (commander LLM on vs off) for kill efficiency, i
 useful `hunt_room`/`target_player`/`strength`; (2) Phase 4 EscortMode for crew. Both roles wired + strength dial. Branch `worktree-labs-work`
 (merged to origin/main @ `2ec14f9`); uploaded v55–v64, **none submitted**.
 
-## 🎯 OBJECTIVE: crewborg's IMPOSTER KILL EFFICIENCY (the durable gap)
+## 🎯 OBJECTIVE (REFRAMED 2026-06-26): imposter KILL→WIN CONVERSION, not kill count
 
+**🏆 TOURNAMENT REALITY CHECK (the headline for the next session).** Ran a proper 100-ep champion
+tournament (`xreq_b1f12adf`: 8 `random` Prime champions per episode — the live API redraws per episode —
+full round-robin; 78 clean, 22 dropped to platform connect-timeouts). **crewborg v70 came LAST of the 3
+Prime champions.** Per-seat-game:
+
+| champion | win% | imposter k/g | ≥2-kill | **imposter win%** | crew win% | tasks |
+|---|---|---|---|---|---|---|
+| Aaron (crewborg-aaln:v17) | **30%** | 1.47 | 47% | **91%** | 8% | 5.5 |
+| notsus v5 | 26% | 1.60 | 65% | 79% | 5% | 5.5 |
+| **crewborg v70 (us)** | **19%** | 1.48 | 50% | **67%** | 6% | 5.8 |
+
+**THE NEW LEVER — kill→WIN conversion, not more kills.** Our kills are competitive (1.48 ≈ Aaron's 1.47,
+≥2-kill 50% ≈ his 47%), but our imposter **win rate is 67% vs Aaron's 91% / notsus's 79%** — we get the
+kills then LOSE the game more. Aaron wins 91% on the SAME kill count. So this whole session's optimization
+of *kills* (witness-drop = real +19pp ≥2-kill vs our OLD self, v63 vs v54) closed the kill gap but NOT the
+win gap. The actual frontier is **surviving the meeting / reaching parity / not getting voted out for
+witnessed kills** — likely the witness-drop's ejection backlash against competent crew (Aaron/notsus vote
+well). NB v70 ran with the **meeting LLM ACTIVE** here (xreq=k8s pods) and was still last → the LLM isn't
+buying wins in this field. notsus (the "minimal baseline") out-kills us (1.60).
+
+**OPEN THREAD for next session:** pull the replays where crewborg out-kills but LOSES — is it (a) ejection
+(witnessed-kill backlash → voted out), (b) failing to reach parity (kills too slow/late), or (c)
+meeting/survival? That diagnosis sets the next fix. Re-run the tournament for more power (22% ops-failures
+gutted the sample); field is only 3 champions (broaden via `included_players` if wanted). Also still OPEN:
+does the meeting LLM fire in LEAGUE (dispatch) rounds (sidecar gap) — v66 fell back; verify on v70's league
+rounds.
+
+---
+### (prior framing kept for reference) crewborg's IMPOSTER KILL EFFICIENCY
 **⭐⭐ `crewborg:v70` is the Crewrift PRIME CHAMPION (2026-06-26)** — the **meeting-LLM-ON** ship
 (`lpm_60b71147`, champion=True; supersedes v69). v70 = v69's confirmed imposter combo (witness-drop)
 + meeting LLM turned on (commander OFF), on the merged commander codebase. Meeting LLM verified firing

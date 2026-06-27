@@ -18,6 +18,28 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
 
+### A champion TOURNAMENT reframed the gap: kill→WIN conversion, not kill count (we optimized the wrong thing)
+Evidence: 100-ep champion tournament (`xreq_b1f12adf`, 8 `random` Prime champions/ep — current API redraws
+per episode — round-robin; 78 clean, 22 dropped to ops-failures). crewborg v70 came LAST of 3: win 19% vs
+Aaron 30%, notsus 26%. But our KILLS are competitive (1.48 k/g ≈ Aaron 1.47; ≥2-kill 50% ≈ his 47%) — the
+gap is **imposter WIN rate 67% vs Aaron 91% / notsus 79%.** Aaron wins 91% on the SAME kill count → we get
+the kills then LOSE (survive-the-meeting / reach-parity / witnessed-kill ejection backlash). The whole
+session optimized KILLS (witness-drop, real +19pp ≥2-kill vs our OLD self) but the field gap is CONVERSION.
+LESSONS: (1) a self-vs-self A/B (v63 vs v54) confirms a change helped US but says NOTHING about the FIELD —
+run a champion tournament (`random` seats, per-episode redraw) to see where you actually stand; (2) "champion"
+via auto_champion=always ≠ best (v70 is champion but last head-to-head); (3) competitive kills + low wins =
+the lever is conversion, not kills. NEXT: replays where we out-kill but lose → ejection vs slow-parity vs
+meeting. NB the meeting LLM was ACTIVE (xreq=k8s) and we were still last → LLM isn't a win edge in this field.
+
+### Champion tournament = `random` roster seats (per-episode redraw), NOT top_n or pinned
+Evidence: the live `V2RosterPlayer.random` schema now says "fill with a random champion from the target league
+FOR EACH EPISODE" (the old "resolves once per request" is gone; `excluded_players` even notes the pool
+"regenerates mid-episode"). So 8 `{"player":{"random":true}}` seats + all slot=-1 + a league/division target =
+a proper per-episode champion tournament. `random`/`top_n` draw only `is_champion=True` policies (not old
+versions) — satisfies "champions, not old policies." Pool = the target league's champions (Prime had only 3:
+crewborg, Aaron, notsus); broaden with `included_players`. ALWAYS recheck the live OpenAPI schema — the
+experience-request API drifts (this redraw-per-episode behavior was the opposite a few weeks ago).
+
 ### Crewrift PRIME submission is BROKEN ("league has no submission division"); LLM falls back in league rounds
 Evidence: v66 submitted to Crewrift Prime (`league_a12f5172`) → `status=rejected, notes="league has no
 submission division"` (same as v49). NOT a play/ops failure — placement games fine (mean +8, imposter 1.33
