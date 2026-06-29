@@ -15,11 +15,13 @@ from crewrift.crewborg.map.types import MapData, MapPoint, MapRect, Vent
 from crewrift.crewborg.strategy import suspicion as suspicion_module
 from crewrift.crewborg.strategy.suspicion import (
     BODY_FADE_TICKS,
+    CHAT_SUSPECT_MIN_P,
     FLEE_PROBABILITY,
     FOLLOW_FULL_TICKS,
     VENT_CROSS_TICKS,
     WEIGHTS_VOTE_PROBABILITY,
     active_tail_suspect,
+    chat_suspect,
     top_suspect,
     update_suspicion,
     witnessed_imposters,
@@ -396,6 +398,23 @@ def test_top_suspect_never_returns_self() -> None:
     belief.suspicion = {"red": 0.99, "blue": 0.2}  # self forced highest
     assert top_suspect(belief) != "red"
     assert top_suspect(belief) is None  # blue (0.2) doesn't clear the bar ⇒ skip
+
+
+def test_chat_suspect_voices_a_soft_lead_below_the_vote_bar() -> None:
+    # A soft lead (>= CHAT_SUSPECT_MIN_P, short of the vote bar) is worth voicing a read on.
+    belief = Belief(self_role="crewmate", self_color="red")
+    belief.suspicion = {"blue": 0.5, "green": 0.2}
+    assert 0.5 >= CHAT_SUSPECT_MIN_P > 0.2
+    assert chat_suspect(belief) == "blue"
+
+
+def test_chat_suspect_skips_a_flat_field_and_never_returns_self() -> None:
+    flat = Belief(self_role="crewmate", self_color="red")
+    flat.suspicion = {"blue": 0.3, "green": 0.25}  # both below the chat floor ⇒ stay quiet
+    assert chat_suspect(flat) is None
+    self_high = Belief(self_role="crewmate", self_color="red")
+    self_high.suspicion = {"red": 0.9, "blue": 0.3}  # self excluded; blue below the floor
+    assert chat_suspect(self_high) is None
 
 
 def test_active_tail_suspect_never_returns_self() -> None:

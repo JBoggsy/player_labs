@@ -23,7 +23,7 @@ from crewrift.crewborg.strategy.meeting.context import (
 )
 from crewrift.crewborg.strategy.meeting.imposter import bandwagon_target, votes_against
 from crewrift.crewborg.strategy.meeting import chat_nlp, chat_read
-from crewrift.crewborg.strategy.suspicion import top_suspect
+from crewrift.crewborg.strategy.suspicion import chat_suspect, top_suspect
 from crewrift.crewborg.types import ActionState, Belief, ChatEvent, Intent
 from players.player_sdk import EmptyModeParams, Mode
 
@@ -120,7 +120,8 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         return self._decide_crewmate(belief)
 
     def _decide_crewmate(self, belief: Belief) -> Intent:
-        """Accuse + vote a clear leading suspect; else stay silent and skip a flat field."""
+        """Accuse + vote a clear leading suspect; else SHARE a read on a softer suspect
+        (chat only, no vote) rather than going silent — vote restraint is unchanged."""
 
         if not self._deterministic_chatted:
             self._deterministic_chatted = True
@@ -133,6 +134,13 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
                     return self._send_chat_intent(belief, accusation, reason="accusing clear suspect")
                 self._trace_meeting_decision(belief, role="crewmate", path="vote_no_chat", target=target)
             else:
+                # No clear suspect to VOTE — but voice an evidence-cited read instead of
+                # going silent (chat only; we still skip the vote on a thin field).
+                soft = chat_suspect(belief)
+                read = build_accusation(belief, soft) if soft is not None else None
+                if read is not None:
+                    self._trace_meeting_decision(belief, role="crewmate", path="share_read", target=soft)
+                    return self._send_chat_intent(belief, read, reason="sharing read (no vote)")
                 self._trace_meeting_decision(belief, role="crewmate", path="silent_skip", target=None)
         return self._submit_vote_intent(belief, reason="deterministic meeting vote")
 
