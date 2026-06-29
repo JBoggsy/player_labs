@@ -794,7 +794,7 @@ to kill improves imposter outcomes versus the default blend-in policy.
 
 ### 10.1 Suspicion — Bayesian P(imposter) (`strategy/suspicion.py`)
 
-> **Full reference:** [`docs/designs/suspicion.md`](docs/designs/suspicion.md) — the
+> **Full reference:** [`docs/suspicion.md`](docs/suspicion.md) — the
 > living home for the model, the likelihood-ratio table's per-entry rationale, the
 > offline LR-learning workflow, and the provenance log of every weight. This section
 > is the summary.
@@ -824,7 +824,7 @@ player's events (most-suspicious instance), so an unbounded event log (§5.2) ca
 inflate the posterior and there's no double-counting; and because role is a fixed
 latent, evidence **persists** (no time decay — the prior is the baseline). Full
 detail (the function shapes and how to fit them) lives in
-[`docs/designs/suspicion.md`](docs/designs/suspicion.md) §3.
+[`docs/suspicion.md`](docs/suspicion.md) §3.
 
 Two evidence sources, unified — a witnessed catch is just evidence with an
 overwhelming `logLR` (`WITNESSED_LOG_LR = ln 1e6 ⇒ P ≈ 1`), not a special case:
@@ -862,7 +862,7 @@ as serialized context, but it does not write back durable suspicion facts.
 
 ### 10.2 Agent location tracking (`agent_tracking.py`)
 
-> **Full reference:** [`docs/designs/agent-tracking.md`](docs/designs/agent-tracking.md).
+> **Full reference:** [`docs/agent-tracking.md`](docs/agent-tracking.md).
 
 `update_agent_tracking(belief)` runs every tick in the fast loop after
 `update_belief`. It builds a deterministic static substrate once the nav graph
@@ -984,7 +984,7 @@ exactly what this layer exists to avoid.
 
 ### 10.6 LLM gameplay commander (`strategy/commander/`)
 
-> **Full reference:** [`docs/designs/llm-commander.md`](docs/designs/llm-commander.md).
+> **Full reference:** [`docs/commander.md`](docs/commander.md).
 > **Status: BUILT & gated-off (2026-06-26)** — both roles' levers, danger mode, a soft/hard
 > strength dial, observability, a forced-priority debug knob, and the Bedrock-in-pod gating fix;
 > 460 tests green; disabled path byte-identical; **not submitted**; control demonstrated but not

@@ -40,7 +40,7 @@ class SpriteProtocolError(ValueError):
     """Raised on a malformed Sprite-v1 message (truncation, unknown type, …).
 
     The protocol mandates closing the connection on malformed input
-    (``docs/sprite_v1.md`` §Error Handling); the bridge lets this propagate.
+    (``crewrift_lab/docs/crewrift-protocol.md`` §Error Handling); the bridge lets this propagate.
     """
 
 

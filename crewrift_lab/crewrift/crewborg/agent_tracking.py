@@ -1,7 +1,7 @@
 """Probabilistic per-agent location tracking for imposter search.
 
 This module implements the first behaviour-changing slice of
-``docs/designs/agent-tracking.md``:
+``docs/agent-tracking.md``:
 
 * a deterministic static substrate: anchors, pairwise route polylines, and a
   coarse reachable occupancy grid;

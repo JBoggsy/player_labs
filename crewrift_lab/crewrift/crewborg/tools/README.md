@@ -53,8 +53,9 @@ a real replay (and a button game) before trusting it. Find a replay's deploy via
 be non-public). Reusable 0.1.54 warehouses from earlier:
 `/tmp/xp_imp_warehouse` (450 XP imposter episodes), `/tmp/crewrift_warehouse` (2 league rounds).
 
-To build an XP-episode warehouse from `fetch_artifacts`-downloaded dirs, the adapter
-`/tmp/make_wh_input.py` turns those into a warehouse `report_request.json`.
+To build an event warehouse from `fetch_artifacts`-downloaded dirs, use the
+**`crewrift-event-warehouse`** skill (`scripts/build_warehouse.py` ingests episode dirs / IDs
+directly — the old `make_wh_input.py` adapter is retired).
 
 ## `path_prediction_ui.py` — live prediction viewer
 

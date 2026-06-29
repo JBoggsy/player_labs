@@ -1,94 +1,102 @@
 ---
 name: coworld-policy-lifecycle
-description: "Use to take a built player image through the Coworld policy lifecycle: upload it as a new version, (gated) submit it to a league, and monitor its live standings. Triggers: 'upload the new policy version', 'submit crewborg to the league', 'is my submission live / champion', 'how is my policy ranking', 'ship the player'. Game-agnostic. Upload is routine and inert; SUBMIT is the public, irreversible, champion-making action — only on explicit human go-ahead."
+description: "Use to submit an ALREADY-UPLOADED policy version to a Coworld league and monitor whether it QUALIFIES, then competes (and becomes champion). Triggers: 'submit crewborg to the league', 'did it qualify', 'is it disqualified / champion', 'watch the qualifier', 'monitor standings after submitting'. SUBMIT is the public, effectively-irreversible, champion-making action — explicit human go-ahead only. (Building + uploading a version is the separate `build & upload` skill.)"
 ---
 
-# Coworld Policy Lifecycle (upload → submit → monitor)
+# Coworld Policy Lifecycle — Submit & Monitor
 
-Take a built player image through its competitive lifecycle. **The upload/submit
-distinction is load-bearing:**
+This skill owns the **rare, high-stakes** end of the loop: take a version you've *already built,
+uploaded, and proven*, **submit** it to a live league, and **monitor whether it actually
+QUALIFIES** — then competes and (optionally) becomes champion. It assumes the version exists; the
+routine **build + upload** every iteration is the separate **`build & upload`** skill.
 
-- **`upload-policy` is routine and inert** — it registers a **new version** of a stably
-  named policy and pushes the image; nothing competes. This is the **Gate-1 re-upload**
-  you do every iteration. Do it freely.
-- **`submit` is the public, gated, effectively-irreversible action** — it injects a
-  version into a live league, where it can become the **champion** as soon as it
-  qualifies. This is **Gate 2**: only submit once the player is demonstrably better and
-  the human has given explicit go-ahead. *Not* submitting is your rollback.
+> **Upload freely; submit rarely.** Uploading a version is routine and inert. **`submit` is the
+> public, gated, effectively-irreversible action** — it enters a version into a live league where it
+> can become **champion** once it qualifies. Only submit a **demonstrably-better** player with
+> **explicit human go-ahead**. *Not* submitting is your rollback.
 
-**Announce at start:** "Working the policy lifecycle. Uploading a new version" — or, for
-submission — "this submits to the live league (Gate 2); confirming go-ahead first."
+**Announce at start:** "This submits `<name>:vN` to the live league (Gate 2) — confirming go-ahead
+first. Then I'll background a qualification monitor so we can keep working while it qualifies."
 
-## Workflow
+## Prerequisite — an uploaded, eval-proven version
 
-1. **Build `linux/amd64`** (game-specific) and **upload it as a new version** (routine,
-   ungated). Pass `--run` so the runner launches *your* policy:
+Before submitting you should have: a version **built + uploaded** (`build & upload` skill), passing a
+**Gate-1 smoke** (`coworld-local-run`), and shown **better than the incumbent via experience
+requests** (`coworld-experience-requests`). To pick which `vN` to submit, list uploads and consult
+the version log via the **`build & upload`** skill (`scripts/versions.py --name crewborg` +
+[`version_log.md`](../../../crewrift_lab/crewrift/crewborg/version_log.md)).
 
-   ```bash
-   uv run coworld upload-policy <your-tag>:dev --name <policy-name> [--run python --run -m --run my_player]
-   # -> "Upload complete: <name>:v<N>"   (a new version; INERT, not competing)
-   ```
-   Re-uploading the **same `--name`** auto-increments the version. Record the new version
-   in the **version log** (next section).
-
-2. **Smoke-test before relying on it** — local Gate-1 via the `coworld-local-run` skill,
-   or just confirm the upload returned a new `vN`. **Evaluate competitiveness via
-   experience requests** (`coworld-experience-requests`) against this uploaded version —
-   uploading does *not* enter any competition, so you can iterate uploads + experiments
-   freely without touching a league.
-
-3. **Submit — only when better + the human approves (Gate 2):**
-
-   ```bash
-   uv run coworld submit <policy-name>[:vN] --league <league_id>
-   ```
-   Creates a league submission (`POST /v2/league-submissions`); the server then places it
-   asynchronously into a division (a membership). **Becoming champion is a separate
-   server/commissioner step** — `submit` does not set it. Re-resolve the `league_id`
-   live (`coworld leagues`); ids rotate.
-
-4. **Monitor standings** — is it active/champion, and how is it ranking?
-
-   ```bash
-   cd /path/to/player_labs   # the repo root
-   uv run python .claude/skills/coworld-policy-lifecycle/scripts/policy_lifecycle.py \
-     monitor --name <policy-name>
-   ```
-   Prints each submission's status, each membership's `status`/champion flag/division,
-   and the version's **rank + score** on the live division leaderboard (matched per
-   player). Or by hand: `coworld memberships --mine --policy <name>` (am I champion?) +
-   `coworld divisions --league <id>` → `coworld results <div_id> --include-recent-rounds 5`.
-
-## The version log (a best practice — keep it)
-
-Maintain a log mapping **each uploaded version → the change it carries**, so you always
-know what each version is testing/capable of (see `best_practices.md`). There is no
-`coworld versions` command; reconcile your log against the live list:
+## Step 1 — Submit (gated; confirm go-ahead first)
 
 ```bash
-uv run python .claude/skills/coworld-policy-lifecycle/scripts/policy_lifecycle.py \
-  versions --name <policy-name>     # every uploaded version: vN + UUID + created_at
+uv run coworld submit crewborg:vN --league <league_id> [--auto-champion always|never|lineage]
 ```
 
-Key the log on `(name, version)` for readability with the policy-version UUID as the
-canonical id. The version log itself is **game-specific** (it describes that player's
-changes) — keep it under that player's lab dir, not at the lab root.
+- **Re-resolve `<league_id>` live** (`coworld leagues`); ids rotate.
+- **You do NOT pick a division.** `submit` sends only `{league_id, policy_version_id}`; the **server**
+  resolves the target division: the league's **Qualifiers** (staging) division if its config names a
+  live one → the membership starts **`qualifying`**; otherwise the **Competition** entry division —
+  which, for Crewrift's container-commissioner league, **also starts `qualifying`** (event-driven).
+  *(The old "you must place it into a qualifier division" model is wrong — verified in metta
+  `pipeline.py` + `division_selectors.py`; see `references/cli.md`.)*
+- **`--auto-champion`** governs promotion **after** it qualifies: `always` (promote whenever it
+  qualifies — default) · `never` (place but never auto-champion) · `lineage` (only replace *your own*
+  prior champion).
+- **If it's `rejected`** (the monitor surfaces `notes`): `"… already has an active membership in this
+  league"` (dedup — retire the old membership or submit a *new* version) · `"league has no
+  divisions"` · `"league has no submission division"` (now **rare** — a genuine **league
+  misconfiguration**; escalate to the league owner / commissioner, it is **not** a division you
+  choose).
+
+## Step 2 — Monitor qualification — the #1 job, and background it
+
+The whole point of a submission is the question **"did it actually QUALIFY?"** Run the watcher as a
+**background process** and keep working; it polls until the verdict is terminal:
+
+```bash
+uv run python "$S" monitor --name crewborg --watch     # run in the BACKGROUND; --poll/--max-minutes to tune
+```
+
+It reports the path **submission → membership → verdict**:
+
+- submission `status` → `placed` (+ the `membership` id), or `rejected` with `notes`.
+- membership `status`: **`submitted` → `qualifying`** (running qualifier episodes — it prints the
+  `completed/scheduled` episode progress) **→ `competing` (✅ QUALIFIED)** or **`disqualified` (❌)**.
+- once `competing`: the division **leaderboard rank/score**, and **`is_champion`** if promoted.
+
+**What "qualified" means:** the league's **commissioner** runs qualifier rounds (~every 10 min) and,
+per its configured criteria (enough **completed episodes** + a **score** bar), transitions the
+membership `qualifying → competing`. There is **no games-played field** on the membership — progress
+comes from the membership-events evidence, which the monitor surfaces.
+
+## Reading a DISQUALIFICATION
+
+- **`substatus=crash`** → the policy crashed / failed episodes. **The #1 cause is TIMEOUTS** —
+  especially **LLM latency** (a fast or no-LLM player qualifies clean). **Pull the qualifier
+  episodes** (`coworld-episode-artifacts`) and read the logs for the timeout/error.
+- **`substatus=inactive`** → **evicted** (player-per-user limit, default 2) or **retired** — **not** a
+  quality failure (a newer champion of yours can evict an older membership).
+- **A failed *round* is NOT a disqualified *policy*.** Infra faults (5xx / OOM / dead pod) abort a
+  round without changing membership status. Trust **`membership.status == disqualified`**, never round
+  failures — the monitor keys off status for exactly this reason.
+
+## Reversibility & attribution
+
+- **`coworld retire-membership <lpm_id> [--reason …]`** retires a placed membership (`POST
+  /v2/league-policy-memberships/{id}/retire`); the public submission record persists. Treat `submit`
+  as **irreversible** when deciding to do it — retiring is cleanup, not an undo.
+- The CLI `submit` always submits as your **account-default player**. Submitting under a *different*
+  owned player identity uses the API `player_id` field (not exposed by the CLI).
 
 ## Notes & gotchas
 
-- **`--run` is the quietest failure.** For an image bundling multiple roles, you must
-  pass `--run` with the argv that launches *your* policy on both `upload-policy` and
-  local runs — omit it and a reference/default player runs, so the version uploads/submits
-  fine but a *different* policy actually plays.
-- **Reversibility:** `coworld retire-membership <lpm_id> [--reason ...]` retires a placed
-  membership (`POST /v2/league-policy-memberships/{id}/retire`); the public submission
-  record persists. Treat `submit` as irreversible when deciding to do it.
-- **Attribution:** the CLI `submit` always submits as the account default player. To
-  submit under a *different* owned player identity, use the `coworld-player-swap` skill
-  (the API's `player_id` field; not exposed by the CLI).
-- **`resolve-and-upload` is NOT this flow** — it's a Coworld/*game* upload wrapper, not a
-  policy one. Don't use it for policies.
-- **amd64 mandatory** (hard fail on upload); rotating league/division ids (re-resolve);
-  Docker daemon needed for the push; `submit` only resolves versions you own (`--mine`).
-- Full CLI + API reference (exact flags, routes, response shapes): `references/cli.md`.
-  Verified against **coworld 0.1.20**.
+- **Know what you're submitting:** versioning (the version → change log) lives in the **`build &
+  upload`** skill + [`version_log.md`](../../../crewrift_lab/crewrift/crewborg/version_log.md) — confirm `vN` maps to the
+  change you intend before this gated step.
+- **amd64** images only; **rotating** league/division ids (re-resolve); `submit` only resolves
+  policies you own (`--mine`).
+- **`resolve-and-upload` is NOT this flow** — it's a Coworld/*game* upload wrapper, not a policy one.
+- Routes used: `/v2/league-submissions`, `/v2/league-policy-memberships`,
+  `/v2/policy-membership-events`, `/v2/divisions/{id}/leaderboard`. The discipline behind "submit
+  rarely" is in [`crewrift_lab/best_practices.md`](../../../crewrift_lab/best_practices.md).
+- Full CLI flags + routes + the submission/qualification model: [`references/cli.md`](references/cli.md).

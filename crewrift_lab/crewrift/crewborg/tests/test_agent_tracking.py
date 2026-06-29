@@ -1,4 +1,4 @@
-"""Agent location tracking tests (docs/designs/agent-tracking.md).
+"""Agent location tracking tests (docs/agent-tracking.md).
 
 The two ``test_pretend_*`` integration tests are skipped — Pretend's occupancy-room
 seeking was retired 2026-06-24 (cold-stored at ``modes/_deprecated/``) pending the

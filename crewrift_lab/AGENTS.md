@@ -37,7 +37,7 @@ repeat → gate2 → submit) runs **unchanged** here. The Crewrift-specific inst
   policy's role, pin its roster `slot` and set `game_config_overrides.slots` — shape in
   [`docs/crewrift-gameplay.md` → Forcing roles in evaluations](docs/crewrift-gameplay.md).
 - **Report** (step 2) — pull artifacts, then turn the batch into a dense report with
-  the **`crewrift-report`** skill (flags the interesting episodes by role, profiles
+  the **`crewrift-survey`** skill (flags the interesting episodes by role, profiles
   them). It builds on the Crewrift readers in
   [`docs/crewrift-replays.md`](docs/crewrift-replays.md): the objective
   `expand_replay` event timeline (version-matched via
@@ -51,7 +51,7 @@ repeat → gate2 → submit) runs **unchanged** here. The Crewrift-specific inst
   design in [`docs/designs/building_players.md`](docs/designs/building_players.md)), then
   the game-agnostic skills + [`../player-build.md`](../player-build.md) for the
   upload/submit flow. The Crewrift I/O contract any built image must satisfy is
-  [`docs/crewrift-player.md`](docs/crewrift-player.md).
+  [`docs/crewrift-protocol.md`](docs/crewrift-protocol.md).
 
 ## Crewrift lab docs
 
@@ -59,7 +59,7 @@ repeat → gate2 → submit) runs **unchanged** here. The Crewrift-specific inst
   a **gameplay** (not implementation) perspective: rules, roles, win/loss, flow,
   mechanics, scoring, and a full strategy treatment. The self-contained game reference
   — start here to build a mental model before reasoning about play or setting direction.
-- **[`docs/crewrift-player.md`](docs/crewrift-player.md)** — what **any** Crewrift
+- **[`docs/crewrift-protocol.md`](docs/crewrift-protocol.md)** — what **any** Crewrift
   player policy must do: the Sprite-v1 I/O contract (decode the scene, decide, emit
   buttons/chat), the scene vocabulary, phases, scoring. For building a new policy or
   understanding the contract every policy implements.
@@ -80,36 +80,38 @@ their directory — see the [Player policies](#player-policies) index.
 
 Crewrift-specific skills live here in `.claude/skills/`:
 
-- **`crewrift-report`** — turn a **set** of episodes (an experience request, a
-  policy's recent league games, a tournament batch) into a dense, role-decomposed
-  report of a policy's strengths/weaknesses: it flags the "interesting" episodes
-  (score outliers, role-objective failures, killed-vs-ejected, voting pathologies,
-  ops failures) and profiles them via `expand_replay`. The analysis engine of the
-  loop's **Report** step. `scripts/report.py` (Tier 1, structured) +
-  `scripts/profile_replay.py` (Tier 2, replay timeline); `references/signals.md`.
-- **`crewrift-ab`** — **A/B test two policy versions head-to-head** along an axis you
-  choose: run both in **matched, fresh** experience requests (same roster/roles/count,
-  same window — so the delta is attributable, not confounded by league drift), then
-  compare hard metrics (`scripts/compare.py` — role-split deltas with significance + a
-  regression scan) **and** run a context-driven qualitative investigation of the two
-  sides' logs/replays. Use it whenever you need to know whether one version genuinely
-  beats another on something — confirming a change helped, chasing a suspected
-  regression, settling "is A or B better at X," testing a hypothesis. (Distinct from
-  `crewrift-report`, which surveys *one* batch descriptively; A/B is a *targeted
-  two-version* comparison.)
-- **`crewrift-diagnose`** — turn a report's signals into **evidence-grounded,
-  mechanistic improvement hypotheses**: investigate the replays/logs/code for *why* a
-  behavior happens (or fails to), then **present candidate directions to the human** as
-  options (not directives). An optional augmentation of the **direction** step — it
-  enriches the human's call, doesn't replace it. Multi-turn/agentic (and will turn up
-  tracing + re-run on its own if the logs are too thin). Pairs with `crewrift-report`
-  (signals in) and `crewrift-ab` (test a hypothesis's predicted effect).
+- **`crewrift-survey`** — turn a **set** of episodes (an experience request, a policy's
+  recent league games, a tournament batch) into a fast, role-decomposed **HTML survey**: a
+  per-policy stats table, a policy×policy win heat map, and a short list of the interesting
+  episodes (with replay links). Reads `results.json` + `episode.json` only — instant over
+  hundreds of episodes. The loop's **Report** step. (Replaces the old `crewrift-report`; the
+  *deep* per-episode dissection is the event-warehouse below.)
+- **`crewrift-event-warehouse`** — build + query a policy-indexed **DuckDB/Parquet event
+  store** from expanded replays, for cross-episode behavioural analysis ("all the data":
+  proximity, isolation, follow/chase, kills, votes, chats, per-room time). The deep dig
+  behind the survey, and the default cheap experiment. `references/event-catalog.md` +
+  `references/recipes.md`.
+- **`crewrift-ab`** — **A/B test two policy versions head-to-head**: run both in **matched,
+  fresh** experience requests (same roster/roles/count/window — so the delta is attributable,
+  not confounded by league drift), then compare hard metrics (`scripts/compare.py` — role-split
+  deltas with significance + a regression scan, rendered to an HTML report) **and** investigate
+  the two sides' logs/replays. Use whenever you need to know whether one version genuinely beats
+  another. (Distinct from `crewrift-survey`, which surveys *one* batch descriptively.)
+- **`crewrift-diagnose`** — turn a survey's signals into **evidence-grounded, mechanistic
+  improvement hypotheses**: investigate replays/logs/code for *why* a behavior happens (or fails
+  to), then **present candidate directions to the human** as options (not directives). An
+  optional augmentation of the **direction** step. Pairs with `crewrift-survey` (signals in),
+  `crewrift-event-warehouse` (test cheaply), and `crewrift-experiment` (run one).
+- **`crewrift-experiment`** — design + run **one** falsifiable experiment for a single
+  hypothesis (design ↔ adversarial-critique ↔ run); renders an HTML design report and **gates on
+  the human before running**. Usable standalone ("it might be X — let's test it").
+- **`lessons-review`** — cluster lessons that RECUR across archived sessions and graduate keepers
+  to `best_practices.md` (the ≈weekly, human-driven graduation pass).
 
-The loop's **game-agnostic** halves (experience requests, artifact download, local
-run, policy lifecycle) live at the **lab root** (`../.claude/skills/`, indexed in
-[`../AGENTS.md`](../AGENTS.md)) — use those to *create* and *pull* the episodes, then
-`crewrift-report` to analyze them. New Crewrift-specific tooling belongs here, not at
-the root.
+The loop's **game-agnostic** halves (experience requests, artifact download, local run,
+**build & upload**, policy lifecycle) live at the **lab root** (`../.claude/skills/`, indexed in
+[`../AGENTS.md`](../AGENTS.md)) — use those to build/upload a version and create/pull the episodes,
+then `crewrift-survey` to analyze them. New Crewrift-specific tooling belongs here, not at the root.
 
 ## Crewrift best practices
 

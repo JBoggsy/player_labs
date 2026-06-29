@@ -27,7 +27,10 @@ One directory per episode (`<timestamp>_<short-id>/`) containing:
   richest behavioural record).
 - `artifacts/policy_artifact_{N}.zip` — any player-uploaded telemetry/debug
   bundles (policy-scoped: only slots you own come back; e.g. crewborg's trace
-  zip with `telemetry.jsonl` + `manifest.json`).
+  zip with `telemetry.jsonl` + `manifest.json`). **This is where you verify
+  crewborg's LLM/Bedrock** — `telemetry.jsonl` carries `domain.meeting_llm_decision`
+  vs `_fallback` (see [Bedrock debugging](../../../crewrift_lab/docs/coworld-platform.md#bedrock--in-pod-llm))
+  — and it is **not** subject to the hosted ~10k-line log cap, so prefer it over `logs/`.
 - `error_info.json` — only when the episode failed.
 
 Plus a top-level `index.json` summarizing the run. Every artifact is best-effort:
@@ -54,31 +57,22 @@ server.
    the Observatory UI and pass it in.
 
 2. **Pick exactly one discovery mode** and run the downloader. Auth comes from
-   `softmax login`; run inside `uv run` (from the repo root or any repo
-   with `coworld[auth]` installed) so `softmax` is importable.
+   `softmax login`; run inside `uv run` from an environment with the Coworld SDK
+   (`coworld[auth]`) installed so `softmax` is importable.
 
    ```bash
-   cd /path/to/player_labs   # the repo root
+   F=.claude/skills/coworld-episode-artifacts/scripts/fetch_artifacts.py
 
    # A policy's most recent league episodes (across all its versions):
-   uv run python .claude/skills/coworld-episode-artifacts/scripts/fetch_artifacts.py \
-     --policy crewborg -n 10 --out /tmp/crewborg_eps
-
+   uv run python "$F" --policy crewborg -n 10 --out /tmp/crewborg_eps
    # All child episodes of one experience request:
-   uv run python .claude/skills/coworld-episode-artifacts/scripts/fetch_artifacts.py \
-     --xreq xreq_... --out /tmp/xreq_eps
-
+   uv run python "$F" --xreq xreq_... --out /tmp/xreq_eps
    # Explicit experience-request episodes (repeatable):
-   uv run python .claude/skills/coworld-episode-artifacts/scripts/fetch_artifacts.py \
-     --ereq ereq_aaa... --ereq ereq_bbb... --out /tmp/eps
-
+   uv run python "$F" --ereq ereq_aaa... --ereq ereq_bbb... --out /tmp/eps
    # Everything in a pool / round / division:
-   uv run python .claude/skills/coworld-episode-artifacts/scripts/fetch_artifacts.py \
-     --pool pool_... -n 50 --out /tmp/pool_eps
-
+   uv run python "$F" --pool pool_... -n 50 --out /tmp/pool_eps
    # Explicit league episode uuids:
-   uv run python .claude/skills/coworld-episode-artifacts/scripts/fetch_artifacts.py \
-     --episode <uuid> --out /tmp/eps
+   uv run python "$F" --episode <uuid> --out /tmp/eps
    ```
 
    Useful flags: `-n/--num` (cap for policy/xreq/pool/round/division modes),
@@ -86,10 +80,14 @@ server.
    (skip a category), `--force` (re-download complete dirs), `--server` (override
    the API base). Runs are **idempotent** — complete episode dirs are skipped.
 
-3. **Use the artifacts.** Replays open in the viewer
-   (`uv run coworld replay <coworld_id> <replay.json>`, or the
-   `COGAME_LOAD_REPLAY_URI` recipe in the game's replay docs). `results.json` and
-   the episode row drive scoring; `logs/` is where per-agent behaviour lives.
+3. **Use the artifacts.** *How* to read each — the viewer vs the version-matched
+   `expand_replay` vs the policy logs, the `.bitreplay` format, the slot↔policy
+   mapping, and the hosted-log cap — is in
+   [`crewrift-replays.md`](../../../crewrift_lab/docs/crewrift-replays.md). In short:
+   `results.json` + the episode row drive scoring; `logs/` and the
+   `artifacts/*.zip` telemetry hold per-agent behaviour; replays open in the viewer
+   (`uv run coworld replay <coworld_id> <replay.json>`) or `expand_replay`. Turn a
+   whole batch into a report with the **`crewrift-survey`** skill.
 
 ## Notes
 

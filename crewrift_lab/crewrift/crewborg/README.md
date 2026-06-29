@@ -11,10 +11,10 @@ no local checkout — see the [lab README](../../README.md)); it is not vendored
 
 - **Design spec:** [`design.md`](./design.md) — the settled architecture.
 - **Orientation:** [`AGENTS.md`](./AGENTS.md) — codebases, protocol, source pointers.
-- **Design docs:** [`docs/designs/`](./docs/designs/) — living deep-dives, e.g.
-  [`suspicion.md`](./docs/designs/suspicion.md) (the Bayesian model + likelihood-ratio
+- **Design docs:** [`docs/`](./docs/) — living deep-dives, e.g.
+  [`suspicion.md`](./docs/suspicion.md) (the Bayesian model + likelihood-ratio
   table + how we learn/improve the weights) and
-  [`agent-tracking.md`](./docs/designs/agent-tracking.md) (probabilistic location
+  [`agent-tracking.md`](./docs/agent-tracking.md) (probabilistic location
   tracking for imposter search).
 
 Develop / run / test / benchmark / fetch-episode workflows live at the lab level —
@@ -60,7 +60,7 @@ Playing phase by writing *priorities* into belief that the modes read to bias wh
 task/hunt in, which player to chase, and how hard (a soft/hard strength dial), plus an
 imposter danger mode — without ever selecting a mode or blocking a tick. It is **gated off by
 default** (byte-identical deterministic play when off) and **not yet submitted**. Built but not
-yet performance-tuned; full reference: [`docs/designs/llm-commander.md`](docs/designs/llm-commander.md).
+yet performance-tuned; full reference: [`docs/commander.md`](docs/commander.md).
 
 ## Layout
 

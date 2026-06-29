@@ -19,10 +19,11 @@ The API is **game-agnostic** (works for any Coworld); only `game_config_override
 > **Always check the live schema first — the API drifts.** Print
 > `components.schemas.V2CreateExperienceRequestRequest` from
 > `<api-server>/observatory/openapi.json` before composing a body, and treat that
-> as the source of truth over this doc. The field list below was read live on
-> **2026-06-11**, after the roster-schema overhaul (metta PR #15572) — if you see
-> older examples with `requester` / `opponents` / `rotate_seats`, they are from the
-> **removed** pre-#15572 schema (see "Removed fields" below).
+> as the source of truth over this doc. The field list below was **re-verified live on
+> 2026-06-27** (incl. `included_players` / `excluded_players` and per-episode pool resolution); the
+> roster schema dates to the overhaul in metta PR #15572 — if you see older examples with
+> `requester` / `opponents` / `rotate_seats`, they are from the **removed** pre-#15572 schema (see
+> "Removed fields" below).
 
 ## The endpoint
 
@@ -92,19 +93,27 @@ Each participant is:
 | `"top_n": N` (1–100) | fill this seat from the target league/division's **top-N champion pool** (competing champions, runnable, ranked by recent mean reward). Requires a league/division target. |
 | `"random": true` | independently sample a champion from the same pool, rank-weighted. Requires a league/division target. |
 
-**Champion-pool equalization.** All `top_n` seats in a request are resolved as a
-group: each goes to the **currently least-represented eligible champion** (rank
-breaks ties), so the spread stays even. Explicit `policy_ref` picks that fall
-inside the eligible set **count toward that tally** — e.g. pin champion *A*
-explicitly and ask for `top_n: 3` across 5 more seats → they fill as
-`B, C, A, B, C` (A already counted once).
+**Pool selectors resolve PER EPISODE** (verified 2026-06-27 against
+`metta/app_backend/src/metta/app_backend/v2/experience_requests.py`:
+`create_experience_request_in_db` loops `for job_index in range(num_episodes)` and calls
+`experience_request_episode_policy_version_ids(roster, job_index)` for each). Every episode
+independently fills its `top_n`/`random` seats by **rank-weighted sampling without replacement**
+from a fresh champion pool that regenerates when exhausted, **and rotates the round-robin seats**
+by the episode index. So a **single N-episode request already faces a varied field across
+episodes** — you do **not** need to fire multiple requests for opponent variety (older docs that
+said "resolve once per request → fire multiple requests" are stale; this was fixed). Within one
+episode the sampled seats are distinct; across episodes they re-draw. `top_n`/`random` can also draw
+**your own champion** into an opponent seat — attribute stats by `policy_version_id`, never by name.
+*(To re-check if it drifts: read that resolver, or fire a small `top_n`/`random` request and confirm
+the opponent changes across the first episodes' `participants`.)*
 
-**Pool selectors resolve ONCE PER REQUEST, not per episode** (verified live
-2026-06-12): a `top_n`/`random` seat is filled at creation and that policy plays
-the seat for *every* episode (only seats/roles rotate). For opponent variety
-across a pool, fire **multiple requests** — each re-draws. Also note both
-selectors can draw **your own champion** into an opponent seat (it double-seats;
-attribute stats by policy_version_id, never name).
+**Restricting the champion pool — `included_players` / `excluded_players`** (optional, top-level
+arrays of player ids `ply_…` or names). `included_players` restricts the `top_n`/`random` pool to
+**only** those players (players named by explicit `policy_ref` seats are always included;
+non-matching entries are ignored). `excluded_players` drops those players **entirely** (applied after
+`included_players`; they stay out even after the pool regenerates mid-request). Use `included_players`
+to **broaden or hand-pick the opponent field** when the live champion pool is thin or you want a
+specific set; `excluded_players` to keep a known-bad/irrelevant policy out.
 
 **`slot` — which seat, and whether it rotates.**
 
@@ -278,10 +287,10 @@ counts `episode_count` / `pending_count` / `running_count` / `completed_count` /
 - **`roster` length is exact.** One participant per seat — for Crewrift that's
   always 8 entries, even when 7 are the same `{"top_n": 7}` selector. Too few/many
   is a 400.
-- **`top_n`/`random` are uncontrolled** — they draw from the *current* champion
-  pool, which drifts between requests and can seat **your own league entry** as an
-  opponent. For any A/B, pin the full roster with explicit `policy_ref`s instead
-  (see the Crewrift `top_n` lesson in `crewrift_lab/TENTATIVE_LESSONS.md`).
+- **`top_n`/`random` sample the live pool — varied per episode (good), but uncontrolled.** The pool
+  is the *current* champions, so it drifts as memberships change and can seat **your own league
+  entry** as an opponent. For a clean, reproducible **A/B**, pin the full roster with explicit
+  `policy_ref`s; to **shape the pool** without full pinning, use `included_players` / `excluded_players`.
 - **Ownership is not enforced for `policy_ref`** — you can (and for A/Bs should)
   name opponents' exact versions. The only requirement is a READY, non-deleted
   image.

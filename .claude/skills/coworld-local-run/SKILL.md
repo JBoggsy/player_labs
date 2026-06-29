@@ -24,19 +24,23 @@ competitive judgment comes from experience requests; see `coworld-experience-req
 
 ## Workflow
 
-1. **Build your policy `linux/amd64`** (game-specific build; e.g. the player's `build.sh`
-   or `docker build --platform linux/amd64 -t <tag> .`).
+1. **Build crewborg `linux/amd64`** (the cluster + local runner are amd64):
+
+   ```bash
+   crewrift_lab/tools/build_player.sh crewborg   # builds players-crewborg:dev
+   ```
+   (or the **`build-and-upload`** skill.)
 
 2. **Smoke test it** — the helper does download (if needed) → amd64 check → run-episode
    with your image in every slot → a PASS/FAIL verdict + the replay command:
 
    ```bash
-   cd /path/to/player_labs   # the repo root
-   uv run python .claude/skills/coworld-local-run/scripts/smoke.py \
-     --coworld <cow_id|name> --image <your-tag>:dev
+   # run with the Coworld SDK available (a uv env with coworld[auth]) + Docker
+   S=.claude/skills/coworld-local-run/scripts/smoke.py
+   uv run python "$S" --coworld <cow_id|name> --image players-crewborg:dev
    # multi-token entrypoint, longer timeout, custom out dir:
-   uv run python .claude/skills/coworld-local-run/scripts/smoke.py \
-     --coworld cow_... --image my:dev --run python --run -m --run my_player --timeout 180
+   uv run python "$S" --coworld cow_... --image players-crewborg:dev \
+     --run python --run -m --run crewrift.crewborg.coworld.policy_player --timeout 180
    ```
 
    **Heads-up — the first run can take several minutes.** `download` pulls the
@@ -76,12 +80,19 @@ supply *zero* images).
 - **`run` vs `play`:** `run-episode` is headless and writes the artifacts (the Gate-1
   case); `play` opens the live browser viewer and keeps the session alive — use it to
   watch a game in real time.
-- **Real (non-degenerate) variant:** `run-episode` has no `--variant` (only `play`
-  does). To smoke a fuller game headlessly, pass an `episode_request.json` whose
-  `game_config` is the variant you want, or use `coworld play <manifest> <image>
-  --variant <id>`. For competitive numbers, use experience requests, not local runs.
+- **Real (non-degenerate) variant:** `run-episode` now takes **`--variant <id>`** (added
+  since 0.1.20), so you can smoke a fuller game headlessly — or `coworld play <manifest>
+  <image> --variant <id>` to watch it. For competitive numbers, use experience requests.
+- **Smoke the LLM path locally** with `--use-bedrock` on a by-hand `run-episode` (the
+  helper doesn't pass it): it uses **your own** AWS creds and there is **no sidecar
+  locally**, so it proves the code can call Bedrock but **not** that the hosted upload is
+  correct — that contract is the
+  [Bedrock section of `coworld-platform.md`](../../../crewrift_lab/docs/coworld-platform.md#bedrock--in-pod-llm).
 - **Auth/network:** `download` needs `softmax login` (for a name) + Docker + network to
   pull/tag the game image; once the game image and your `:dev` image are local, the run
   is offline. `cow_…` ids are stable; **names resolve to whatever is canonical now**.
-- Full CLI reference (exact flags, outputs, every gotcha): `references/cli.md`.
-- Verified against **coworld 0.1.20**.
+- The player-image contract + the runner lifecycle live in
+  [`coworld-platform.md`](../../../crewrift_lab/docs/coworld-platform.md). Full CLI reference
+  (exact flags, outputs, every gotcha): [`references/cli.md`](references/cli.md).
+- CLI **re-verified 2026-06-27** (`run-episode` gained `--variant`/`-n`/`--use-bedrock`
+  since the original 0.1.20 pass — see `references/cli.md`).

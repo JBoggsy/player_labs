@@ -93,10 +93,13 @@ Lab-wide, game-agnostic Coworld tooling lives in `.claude/skills/`:
 - **`coworld-local-run`** — run your own built policy in a **local** episode and watch
   it; the Gate-1 smoke test (did the change take, does it connect→play→exit cleanly —
   *not* a comparative matchup). `scripts/smoke.py`. (Loop step 5.)
-- **`coworld-policy-lifecycle`** — **upload** a built image as a new version → (gated)
-  **submit** to a league → **monitor** standings, with version-log discipline. Upload
-  is routine/inert; submit is the irreversible champion-making action.
-  `scripts/policy_lifecycle.py` does `versions` / `monitor`. (Loop steps 5–8.)
+- **`build-and-upload`** — build the player image and **upload** it as a new version: the
+  routine, inert, every-iteration action that produces a runnable artifact to smoke-test and
+  evaluate. Uploading enters no competition. (Loop step 5.)
+- **`coworld-policy-lifecycle`** — **submit** an already-uploaded version to a league → watch
+  it **qualify** → **monitor** standings, with version-log discipline. Submit is the gated,
+  irreversible, champion-making action (human go-ahead only). `scripts/policy_lifecycle.py`
+  does `versions` / `monitor`. (Loop steps 7–8.)
 
 These cover the lab-wide, mechanical halves of the loop. **Game-specific skills/tools
 — result analysis (scoring/roles), the player's build, its observability — belong

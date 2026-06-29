@@ -92,6 +92,10 @@ pass, use this skill's `fetch_artifacts.py` instead.
 
 ## Drift log (why this file exists)
 
+- **2026-06-27**: re-verified the discovery split live — `coworld episodes --policy crewborg`
+  returns `[]` (champion league player), while `/stats/policy-versions` → `/episodes` lists its
+  league games (the `fetch_artifacts.py --policy` path downloaded a current league episode). The
+  two-population model + the `job_id` artifact routes still hold.
 - **2026-06-10**: added the per-player artifact routes
   (`/jobs/{job_id}/policy-artifact[/{agent_idx}]`) — players may upload one
   telemetry/debug zip per slot to a runner-provided
@@ -104,7 +108,7 @@ pass, use this skill's `fetch_artifacts.py` instead.
   `/v2/experience-request-episodes` route was removed.
 - **~2026-06 (auth)**: `softmax.auth.load_current_cogames_token(api_server=...)` →
   `softmax.auth.load_current_token(server=...)`. The old name is gone; tools that
-  still call it (e.g. an older `crewborg/scripts/fetch_episodes.py`) fail at auth
+  still call it (e.g. an older `crewrift/crewborg/scripts/fetch_episodes.py`) fail at auth
   until updated.
 
 When you hit drift: diff `<base>/openapi.json` against the routes above, fix the

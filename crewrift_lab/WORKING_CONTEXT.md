@@ -156,9 +156,11 @@ imposters** (detect relentless proximity/kills to cut Aaron/Andre's imposter win
   Needs a **per-tick** warehouse (`--snapshot-every 1`); one exists at `/tmp/v50_pertick`
   (run #1, 100 eps). `/tmp/v50_warehouse` + `/tmp/v50b_warehouse` are the every-10 combined
   ~127-clean set used for the stats above.
-- Analysis scripts in `crewrift_lab/` (kill_latency, visibility_at_ready, aaron_compare,
-  prime_summary, suss_rate) — all **meeting-aware** now (count Playing samples, never raw
-  tick deltas; see best_practices "meetings are not idle time").
+- Behavioural analysis is now the **`crewrift-event-warehouse`** skill (cross-episode SQL over
+  expanded replays) + **`tools/behavior_compare.py`** (per-game policy comparison). The old loose
+  `crewrift_lab/` scripts (kill_latency, visibility_at_ready, aaron_compare, prime_summary,
+  suss_rate) were retired/folded into those — all **meeting-aware** (count Playing samples, never
+  raw tick deltas; see best_practices "meetings are not idle time").
 
 ## Load-bearing infra facts
 - **Player SDK moved to `Metta-AI/coworld-tools`** (the `players` repo is **archived**).

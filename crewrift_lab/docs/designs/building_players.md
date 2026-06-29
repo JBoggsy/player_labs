@@ -7,7 +7,7 @@ only Docker.
 This is the **build** half of the loop's Gate-1/upload step. For the runtime image
 *contract* (what any Coworld player image must be, regardless of game) see the
 lab-root [`player-build.md`](../../../player-build.md); for what a Crewrift player
-must *do* over the wire see [`crewrift-player.md`](../crewrift-player.md). This doc
+must *do* over the wire see [`crewrift-protocol.md`](../crewrift-protocol.md). This doc
 is specifically about **producing the image**.
 
 > **Status:** Plan A, implemented. One thin wrapper

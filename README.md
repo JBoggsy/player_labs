@@ -54,7 +54,7 @@ drive the mechanical halves of the loop:
 - **`coworld-policy-lifecycle`** — upload a new version → (gated) submit → monitor.
 
 Game-specific analysis/build skills live in the game labs (e.g. Crewrift's
-`crewrift-report`). The index with full descriptions is in [`AGENTS.md`](AGENTS.md).
+`crewrift-survey`). The index with full descriptions is in [`AGENTS.md`](AGENTS.md).
 
 ## Getting started
 

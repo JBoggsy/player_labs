@@ -2,7 +2,7 @@
 
 Sidecar mode strips USE_BEDROCK and injects AWS_ENDPOINT_URL_BEDROCK_RUNTIME instead, so
 the commander must treat that endpoint as a Bedrock signal (not rely on USE_BEDROCK).
-See docs/issues/2026-06-26-bedrock-disabled-crewrift-prime-xp.md.
+See crewrift_lab/docs/coworld-platform.md.
 """
 
 from __future__ import annotations

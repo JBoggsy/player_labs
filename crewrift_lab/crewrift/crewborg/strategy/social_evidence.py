@@ -1,7 +1,7 @@
 """Social evidence: cumulative meeting-public + watched-completion counters.
 
 Maintains the per-player counters behind the fitted suspicion model's "public"
-features (design: ``docs/designs/suspicion-learning.md`` §5/§10; offline mirror:
+features (design: ``crewrift_lab/suspicion_lab/README.md`` §5/§10; offline mirror:
 ``crewrift_lab/suspicion_lab/tools/features.py`` — keep definitions aligned):
 
 - **Chat stances** — each meeting chat line reduces to ``(speaker, stance, target)``

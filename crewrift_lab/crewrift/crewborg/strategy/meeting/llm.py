@@ -122,7 +122,7 @@ def build_meeting_llm_client_from_env(env: dict[str, str] | None = None) -> Meet
         # AWS_ENDPOINT_URL_BEDROCK_RUNTIME instead, so the SDK's bedrock_enabled() (which only
         # checks USE_BEDROCK/CLAUDE_CODE_USE_BEDROCK) reports no backend in-pod. Gate on what we
         # actually receive: treat the sidecar endpoint as a Bedrock signal. See
-        # crewrift_lab/docs/issues/2026-06-26-bedrock-disabled-crewrift-prime-xp.md.
+        # crewrift_lab/docs/coworld-platform.md.
         use_bedrock = helpers.bedrock_enabled(env) or _sidecar_bedrock(env)
         if not use_bedrock and not env.get("ANTHROPIC_API_KEY"):
             return DisabledMeetingClient("no LLM backend configured")

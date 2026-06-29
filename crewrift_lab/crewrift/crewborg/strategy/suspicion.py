@@ -1,6 +1,6 @@
 """Bayesian suspicion: posterior P(imposter) per player (design §10.1).
 
-→ Canonical reference: ``docs/designs/suspicion.md`` — the living home for the
+→ Canonical reference: ``docs/suspicion.md`` — the living home for the
 model, each evidence type's log-LR function (form + parameters + shape), the offline
 fitting workflow, and the provenance log. Update that doc whenever a function or its
 constants change.
@@ -57,7 +57,7 @@ FLEE_PROBABILITY`. Crewmate-only — an imposter knows the truth, a ghost doesn'
 
 **Two scoring paths.** When the vendored fitted weights load
 (``data/suspicion_weights.json``, trained by ``crewrift_lab/suspicion_lab`` — see
-``docs/designs/suspicion-learning.md``), the posterior is the FITTED model:
+``crewrift_lab/suspicion_lab/README.md``), the posterior is the FITTED model:
 ``logit = intercept + Σ w·x`` over instance-summed, exposure-aware features, with
 negative weights as exculpatory evidence and the vote bar at calibrated
 near-certainty (no clear-leader rule). The hand-written ``_*_log_lr`` functions
@@ -93,7 +93,7 @@ from crewrift.crewborg.types import Belief, PerceptionFrame, PlayerEvent, Player
 # event's features (duration, distance) — `_*_log_lr` below — because the
 # relationship is not flat: a skilled imposter *flees* rather than dwelling, so e.g.
 # body-proximity is MORE suspicious when brief. The function form + its constants ARE
-# the parameterization (no learning machinery yet); docs/designs/suspicion.md §3
+# the parameterization (no learning machinery yet); docs/suspicion.md §3
 # documents each shape and §6 how to (re)fit the constants from replays. Keep code
 # and doc in sync, and log changes in the provenance table (§7).
 
@@ -158,7 +158,7 @@ PRIOR_MIN, PRIOR_MAX = 1e-3, 0.99
 VENT_WALK_MARGIN = 3
 
 
-# --- fitted weights (the learned model; docs/designs/suspicion-learning.md) ----
+# --- fitted weights (the learned model; crewrift_lab/suspicion_lab/README.md) ----
 #
 # When the vendored ``data/suspicion_weights.json`` loads, the posterior comes from
 # the FITTED model: logit = intercept + Σ w·x over the runtime feature vector below

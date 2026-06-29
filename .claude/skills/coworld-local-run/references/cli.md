@@ -1,9 +1,11 @@
 # Local-run CLI reference
 
-Exact behaviour of the `coworld` commands this skill uses, verified against **coworld
-0.1.20** (source `Metta-AI/metta`: `packages/coworld/src/coworld/`, and `coworld <cmd>
---help`). Re-check with `--help` if a flag seems off — the CLI ships ahead of the metta
-checkout. There is no `--version` flag; `uv pip show coworld`.
+Exact behaviour of the `coworld` commands this skill uses (source `Metta-AI/metta`:
+`packages/coworld/src/coworld/`, and `coworld <cmd> --help`). **Re-verified 2026-06-27:**
+`download`/`run-episode`/`replay`/`play` all present; since the original 0.1.20 pass
+`run-episode` **gained** `-n/--episodes`, `--variant`, and `--use-bedrock`/`--aws-*`.
+Re-check with `--help` if a flag seems off — the CLI ships ahead of the metta checkout.
+There is no `--version` flag; `uv pip show coworld`.
 
 ## `coworld download <ref> [-o DIR=./coworld] [--server] [--refresh]`
 
@@ -15,7 +17,7 @@ checkout. There is no `--version` flag; `uv pip show coworld`.
 - Side effect: `docker pull` + `docker tag` each referenced image → needs **Docker +
   network**. Idempotent: skips re-pull if manifest+images JSON exist and no `--refresh`.
 
-## `coworld run-episode <manifest> [PLAYER_IMAGE...] [--run TOK]... [-o DIR] [--timeout-seconds 3600] [--verify-replay] [--secret-env K=V]... [--server]`
+## `coworld run-episode <manifest> [PLAYER_IMAGE...] [--run TOK]... [-o DIR] [-n EPISODES] [--variant ID] [--timeout-seconds 3600] [--verify-replay] [--use-bedrock] [--aws-profile P] [--aws-region R] [--secret-env K=V]... [--server]`
 
 - `<manifest>` = a path, URL, or bare `cow_…` (auto-downloads+caches if absent).
 - **Positional player image(s)** are how you run *your* policy:
@@ -28,10 +30,18 @@ checkout. There is no `--version` flag; `uv pip show coworld`.
     image positional** (`--run` alone errors).
 - Default config = the manifest's `certification.game_config` — deliberately
   tiny/degenerate (a "package smoke test, not a benchmark"); **a 0 score is not a
-  failure**. There is **no `--variant`** on `run-episode` (only `play` has it); for a
-  fuller game headlessly, supply an `episode_request.json` positional with the variant's
-  `game_config`.
-- No `-n/--episodes` here (that's on `scrimmage`).
+  failure**. For a fuller game headlessly, pass **`--variant <id>`** (added to
+  `run-episode` since 0.1.20 — it used to be `play`-only), or supply an
+  `episode_request.json` positional with the variant's `game_config`.
+- **`-n/--episodes N`** runs N local episodes back-to-back in one invocation (added since
+  0.1.20) — use it to confirm the player is **stable across repeated games** (catches an
+  intermittent crash / connect-race / timeout that a single smoke would miss). Still
+  self-play on the local config, so it is **not** a competitive measure — that's experience
+  requests.
+- **`--use-bedrock` [`--aws-profile P` / `--aws-region R`]** smoke-tests the LLM path
+  locally with **your own** AWS creds — there is **no sidecar locally**, so it proves the
+  code can call Bedrock but **not** that the hosted upload is correct (the hosted sidecar
+  contract is the [Bedrock section of `coworld-platform.md`](../../../../crewrift_lab/docs/coworld-platform.md#bedrock--in-pod-llm)).
 - **Output dir** = `--output-dir` if given, else `./coworld/<cow_id>/results` for a
   downloaded coworld, else `<manifest_dir>/results`. Writes: `config.json`,
   `results.json` (validated vs `game.results_schema`; has a `scores` array),

@@ -2,7 +2,7 @@
 
 Sidecar mode strips USE_BEDROCK and injects AWS_ENDPOINT_URL_BEDROCK_RUNTIME, so the
 meeting client must treat that endpoint as a Bedrock signal too (else meetings silently
-fall back to deterministic in-pod). See docs/issues/2026-06-26-bedrock-disabled-crewrift-prime-xp.md.
+fall back to deterministic in-pod). See crewrift_lab/docs/coworld-platform.md.
 """
 
 from __future__ import annotations

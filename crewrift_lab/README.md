@@ -40,7 +40,7 @@ Three Crewrift policies are vendored here as drift-able forks under
 
 - **[`docs/crewrift-gameplay.md`](docs/crewrift-gameplay.md)** — the game, from a
   gameplay perspective (start here for a mental model).
-- **[`docs/crewrift-player.md`](docs/crewrift-player.md)** — what any Crewrift player
+- **[`docs/crewrift-protocol.md`](docs/crewrift-protocol.md)** — what any Crewrift player
   must do over the wire (the Sprite-v1 I/O contract).
 - **[`docs/crewrift-replays.md`](docs/crewrift-replays.md)** — reading a finished game
   (the `expand_replay` timeline + a policy's logs).
@@ -59,9 +59,10 @@ tools/bin/expand_replay <replay.json>
 
 # Analyze a batch of episodes into a strengths/weaknesses report:
 #   1) pull them with the coworld-episode-artifacts skill, then
-#   2) run the crewrift-report skill:
-.claude/skills/crewrift-report/scripts/report.py <episodes_dir> --policy crewborg
-#   (add --version N to focus a specific upload; omit it to take all recent games)
+#   2) run the crewrift-survey skill:
+.claude/skills/crewrift-survey/scripts/survey.py <episodes_dir> --out /tmp/survey.html
+#   (survey reads results.json + episode.json — instant; open the HTML it writes.
+#    For cross-episode behavioural data, build a crewrift-event-warehouse instead.)
 ```
 
 The full evaluate → report → improve → submit cycle, and which skill drives each step,

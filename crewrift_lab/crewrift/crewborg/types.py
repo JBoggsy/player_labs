@@ -349,7 +349,7 @@ class Belief(BaseModel):
     # frames (oldest first), appended only on camera-ready frames. The substrate
     # for frame-to-frame transition detection; aggregates below are folded from it.
     recent_frames: list[PerceptionFrame] = Field(default_factory=list)
-    # Probabilistic per-agent location tracker (docs/designs/agent-tracking.md):
+    # Probabilistic per-agent location tracker (docs/agent-tracking.md):
     # static occupancy substrate plus per-player reachability-disc beliefs.
     agent_tracking: AgentTrackingState = Field(default_factory=AgentTrackingState)
 

@@ -1,131 +1,107 @@
 ---
 name: crewrift-diagnose
-description: "Use to turn a Crewrift report's signals into evidence-grounded, MECHANISTIC improvement hypotheses — by investigating the replays/logs/code for *why* a behavior happens (or fails to), then presenting candidate directions to the human. Triggers: 'why is crewborg weak at X', 'what should we try / where should we go next', 'form hypotheses', 'diagnose this weakness', 'what's the mechanism behind Y', 'turn this report into directions', 'we got lucky in some games — can we engineer that'. Optional AUGMENTATION of the Report step — it adds candidate hypotheses alongside the report's replay-pointers; it does not replace the human's direction call. Pairs with crewrift-report (signals in) and crewrift-ab (to test a hypothesis)."
+description: "Use to turn crewborg's signals (a survey, a warehouse, league results) into an explanation and a small set of VARIED, mechanistic improvement hypotheses — what is going wrong, why (pinned to a code location), and which directions are worth testing. Triggers: 'why is crewborg weak at X', 'explain these signals', 'where are we weakest', 'what should we try', 'form hypotheses', 'turn this report into directions'. Explanatory + generative: it presents hypotheses + suggests experiments; the actual testing is the crewrift-experiment skill."
 ---
 
 # Crewrift Diagnose
 
-Turn the **interesting signals** in a report into a small set of **mechanistic
-hypotheses for improvement** — each one a claim about *what* the policy is doing (or
-not doing) and *why*, grounded in evidence from the replays, logs, and code, with a
-concrete change and a predicted, measurable effect.
+Turn the signals into **understanding + directions**: find where crewborg is weakest, **explain what
+the signals mean**, and produce a few **varied, mechanistic hypotheses** for *why* — each a claim
+about what the policy is doing (or failing to do) and the code that drives it. This is the
+**explanatory** half of improvement; it hands a chosen hypothesis to **`crewrift-experiment`** to
+actually test.
 
-This is the **direction** step's augmentation. The standard human-in-the-loop flow is:
-`crewrift-report` surfaces weaknesses + points the human at interesting replays, and
-the human picks where to go. This skill **adds** to that — it offers the human
-*"here's what I've been thinking"*: candidate hypotheses to consider **alongside** the
-replays. It is **optional**, and it **does not assert** what the human should do —
-present hypotheses as options, the human still chooses (or chooses none).
+It does **not** decide for the human, and it does **not** run experiments. It offers *"here's what's
+going on, here's what I think is causing it, here's what we could test."* The human (or you) picks.
 
-**Output:** you **present the hypotheses in the session chat** (like the report itself
-— there's no file). This is a multi-turn, agentic investigation, not a script run.
+**Announce:** "Diagnosing — I'll locate the weakness, explain the signals, and propose a few
+mechanistic hypotheses with experiments to test them."
 
-## Premise
+## 1. Locate the weakness (quick triage — the on-ramp, not the point)
 
-You have a `crewrift-report` (run it first if not — it's the signal source: the
-role-split distribution + the flagged "interesting episodes"). Diagnose explains those
-signals; it doesn't re-derive them.
+From the survey (`crewrift-survey`) / warehouse / league standings, name **where crewborg is weakest**.
+There's a small, recurring set of ways it fails — check these, pick the highest-leverage one:
 
-## What a good hypothesis is (read this first)
+| Role | Common failure | Where to read it |
+|---|---|---|
+| Imposter | behind in **kills** / **under-converting** (near crew but no kill) / **caught** after a kill | survey kills/g · warehouse `following_interval`/`isolation_interval` vs `kill` |
+| Crew | behind in **task completion** / **killed early** / **voting wrong** (ejecting crew, missing imposters) | survey tasks/g, win% · warehouse `task_attempt`, `vote_cast`, `chat_suss` |
+| Either | getting **evicted** / **always alone** (isolation) / **stuck on the map** (nav) / otherwise blocked from the goal | survey ops% · warehouse `isolation_interval`, `entered_room`/`player_state` |
 
-The lessons from prior player-improvement work are blunt about what separates
-hypotheses that produced real gains from wasted effort:
+Keep this short — it's the entry. The value is the explanation + hypotheses below.
 
-- **A mechanism, not a tweak.** State the causal chain: *"X is happening because Y in
-  the code, which causes Z."* "Lower the threshold" is not a hypothesis; *"it flees too
-  early because the flee gate trips on any believed-imposter within 60px regardless of
-  kill-readiness, so it abandons tasks"* is.
-- **Grounded in evidence, not plausibility.** "This should obviously help" is a reason
-  to *test*, not to assert — historically about half of "obviously good" ideas
-  regressed. Every hypothesis must cite what you actually saw (episodes, log lines,
-  code location).
-- **Pinned to a code location.** If you can't point at the mode/strategy/threshold that
-  drives the behavior, it's a vibe, not a hypothesis — keep investigating.
-- **With a predicted, observable effect.** Name what should move and by roughly how
-  much, per role — this is what `crewrift-ab` will later test (it becomes the target
-  axis). A hypothesis you can't measure can't be confirmed.
+> **Known standing lever (2026-06, re-verify):** the imposter is strong but **under-converts kills to
+> wins** — more kills haven't moved win%, so kill→win conversion (esp. landing the 2nd kill) is the
+> durable gap. A good default place to look.
 
-## The process (multi-turn)
+## 2. Explain the signals (what do they actually mean?)
 
-### 1. Pick the signals worth explaining
-From the report: the flagged categories and interesting episodes. **Include the
-positive outliers, not just the failures** — "we did unusually well / got lucky in
-these games" is a hypothesis source as much as "we lost badly here." The three shapes
-a hypothesis takes:
-- **(a) Stop a bad behavior** — something fires that shouldn't (e.g. votes a real
-  crewmate, kills in front of witnesses). *Why does it fire? → gate/remove it.*
-- **(b) Enable an absent good one** — something that should happen doesn't (e.g. never
-  reports a body it walked past). *Why is it absent/mis-gated? → enable it.*
-- **(c) Amplify a working one** — something good happens; make it happen more. Includes
-  **engineering the luck**: take the positive-variance episodes, find the *mechanism*
-  that made them go well, and make it fire reliably rather than by chance.
+Translate the flags and numbers into **what is happening in the games**. The survey's flag symbols
+(`crew_lost_nearly_won`, `imposter_no_kills`, …) and the warehouse rates are *symptoms*; say what
+they imply about behaviour. Read the evidence at the relevant tier:
 
-### 2. Find the mechanism — investigate, don't guess
-This is the core, and it's where the value is. For each signal, work from the
-**outcome** down to the **code**:
+- the survey/warehouse **distributions** (role-split — crew and imposter are different policies);
+- the **objective timeline** (`expand_replay` / the warehouse events) at the flagged moments — what
+  actually happened (kills, bodies, votes, positions, true roles);
+- the policy's **own logs** ([`trace-logs.md`](../../../crewrift/crewborg/docs/trace-logs.md)) at the same ticks —
+  what it *perceived, believed, and decided*. **The gap between what was true and what it chose is
+  usually where the mechanism lives.**
 
-1. **Locate the moments.** Use the report's flagged episodes; from `crewrift-ab`-style
-   per-episode/role decomposition, find *which* episodes show the pattern (the variance
-   carries the mechanism — what do the bad ones, or the lucky ones, have in common?).
-2. **Read the objective timeline** (`expand_replay` — see
-   [`crewrift-replays.md`](../../../docs/crewrift-replays.md)) at those ticks: what
-   actually happened (kills/bodies/votes, true roles)?
-3. **Read the policy's own logs** at the same ticks — what did it *perceive, believe,
-   and decide*? (crewborg: its per-tick traces,
-   [`crewborg/docs/trace-logs.md`](../../../crewrift/crewborg/docs/trace-logs.md);
-   Nim players: plain-text stderr.) The gap between "what was true" (timeline) and
-   "what it believed/chose" (logs) is usually where the mechanism lives.
-4. **Trace it into the code.** Find the mode / strategy / threshold that produced that
-   decision (crewborg: [`crewborg/design.md`](../../../crewrift/crewborg/design.md) and
-   its `AGENTS.md` "where things are" table). Name the exact place — that's your
-   mechanism.
+Present this as the explanation: "the signal says X; in the games that looks like Y; here's the
+moment it goes wrong."
 
-**Tracing-escalation branch (act autonomously — no human gate):** if the logs are too
-thin to find the mechanism, get more tracing and re-run. If it's a config knob
-(crewborg: `CREWBORG_TRACE_GROUPS` / `CREWBORG_TRACE_INCLUDE` — see trace-logs.md), just
-**turn it up → re-run the experience request → re-pull (coworld-episode-artifacts) →
-re-report → resume the investigation.** This is mechanical; don't stop to ask. (Only
-flag the human if getting the needed signal requires a *code* change to the player's
-tracing — that's itself a finding.)
+## 3. Generate varied mechanistic hypotheses (2–4)
 
-### 3. Form the hypotheses
-Produce **one or two at minimum, no fixed cap** — and they need **not** be competing;
-a spread of independent improvement mechanisms is good. Each hypothesis states:
-- **the observation** (the signal, with evidence: episodes / log lines),
-- **the mechanism** (what + why, pinned to a code location),
-- **the directed change** (what to alter — one component, so it stays attributable),
-- **the predicted effect** (what should move, per role — the future `crewrift-ab` target),
-- **confidence + what would falsify it.**
+For the weakness, propose a few **different, independent** mechanisms — not variations of one. A good
+hypothesis is:
 
-### 4. Present to the human — as options, not directives
-In the chat, alongside the report's replay-pointers, offer the hypotheses: *"From the
-report, here are N mechanistic hypotheses — candidates for your consideration, not a
-recommendation,"* each with its evidence → mechanism → change → predicted effect. Then
-hand the decision back: where does the human want to go? (They may pick one, combine,
-or set a different direction entirely.)
+- **a mechanism, not a tweak** — *"X happens because Y in the code, causing Z"*, not "lower the
+  threshold";
+- **grounded in evidence** — cites what you actually saw (episodes, log lines, warehouse rows), never
+  "this should obviously help" (~half of "obviously good" ideas regressed, and a mechanism can be
+  flat **backwards** — which is exactly why a hypothesis is a claim to *test*, not assert);
+- **pinned to a code location** — the mode/strategy/threshold that drives it (crewborg:
+  [`design.md`](../../../crewrift/crewborg/design.md) + the package `AGENTS.md` "where things are"). If you can't
+  point at the code, keep investigating — it's a vibe, not a hypothesis;
+- **with a predicted, observable effect, per role** — what should move, and roughly how much. This is
+  what `crewrift-experiment` will turn into an if-true/if-false test.
 
-## Discipline (the do / don'ts, from prior improvement work)
+Include the **positive** outliers too — "we did unusually well here" is a mechanism to find and make
+reliable, as much as "we lost badly here." The three shapes: **stop** a bad behaviour that fires,
+**enable** an absent good one, **amplify/engineer the luck** of a working one.
+
+**Tracing-escalation (autonomous):** if the logs are too thin to find the mechanism, turn up tracing
+(`CREWBORG_TRACE_*`) → re-run the experience request → re-pull → re-examine. That's mechanical; don't
+stop to ask. Only flag the human if getting the signal needs a *code* change to the player's tracing.
+
+## 4. Present a readable report → hand off
+
+Render the diagnosis as a clean HTML report for the human with `scripts/diagnose_report.py` (fill the
+JSON: the weakness, the *signals-mean* explanation, and each hypothesis = evidence → mechanism [code
+location] → change → predicted effect → confidence → suggested test). Each hypothesis is laid out
+clearly separated.
+
+**Adapt the HTML where the content needs it — it's a starting point, not a form to fill.** If a
+hypothesis wants a small table, a diagram, or its own emphasis, author it; follow
+[`report-style.md`](../../../docs/report-style.md) and **look at the rendered page** (serve +
+screenshot, or run `ux.ify`) before you present it.
+
+Offer the hypotheses **as options, not directives**. Then hand the chosen one to
+**`crewrift-experiment`**, which designs a falsifiable test and runs it. (Diagnose suggests the
+experiment; the experiment skill makes it rigorous and executes it.)
+
+## Discipline
+
 - **Mechanism, not tweak; code location, not vibe; predicted effect, not hand-waving.**
-- **Plausibility ≠ evidence** — "obviously helps" gets tested, never asserted.
-- **Variance/outliers carry the mechanism** — decompose; the lucky wins and the worst
-  losses are both hypothesis sources.
-- **Don't optimize the obvious intermediate metric** — check it actually maps to
-  score/win; counterintuitive correlations (e.g. dying *more* while scoring *more*) are
-  signal, not noise.
-- **Don't thrash** — investigate one signal to a grounded mechanism before spawning the
-  next hypothesis; generating hypotheses faster than you ground them is the classic
-  failure.
-- **Prefer an unexplored mechanism over a marginal tweak** to something already
-  well-tuned.
-- **Present, don't assert; don't auto-implement.** The only thing you do autonomously
-  is the tracing-escalation re-run (§2).
+- **Varied, not redundant** — a spread of independent mechanisms beats three versions of one.
+- **Plausibility ≠ evidence** — "obviously helps" is a reason to *test* (→ experiment), never to assert.
+- **Decompose by role** — a fix can help one role and break the other.
+- **Don't thrash** — investigate one signal to a grounded mechanism before spawning the next.
+- **Present, don't assert; don't auto-implement.** The only autonomous action is the tracing re-run.
 
 ## See also
-- [`crewrift-report`](../crewrift-report/SKILL.md) — the signals this consumes.
-- [`crewrift-ab`](../crewrift-ab/SKILL.md) — test a hypothesis's predicted effect (its
-  predicted effect → the A/B target axis).
-- [`crewrift-replays.md`](../../../docs/crewrift-replays.md) + the policy's log docs —
-  the investigation surfaces.
-- [`crewrift-gameplay.md`](../../../docs/crewrift-gameplay.md) — to read events as gameplay.
-- `best_practices.md` (lab root) — the cross-cutting checklist these disciplines distill.
-</content>
+
+- **`crewrift-survey`** / **`crewrift-event-warehouse`** — the signals this explains.
+- **`crewrift-experiment`** — tests a hypothesis this generates (design ↔ criticize ↔ run).
+- **`crewrift-ab`** — measures whether a fix that came out of all this actually helped.
+- [`crewrift-replays.md`](../../../docs/crewrift-replays.md) · [`trace-logs.md`](../../../crewrift/crewborg/docs/trace-logs.md) — the investigation surfaces.
