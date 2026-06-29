@@ -18,7 +18,7 @@ This is *not* a log or archive: finished work lives in git history / the
 ## 🤖 PARALLEL TRACK — LLM GAMEPLAY COMMANDER (Phase 1 done; both LLMs live in-pod 2026-06-26)
 A background LLM steers *gameplay* by writing **priorities** into `belief.commander` that the modes read to
 bias execution — never selecting a mode, never blocking a tick. Design:
-[`crewrift/crewborg/docs/designs/llm-commander.md`](crewrift/crewborg/docs/designs/llm-commander.md) (design.md §10.6).
+[`crewrift/crewborg/docs/commander.md`](crewrift/crewborg/docs/commander.md) (design.md §10.6).
 **Phase 1 (scaffold + wiring + observability) BUILT & gated-off** — `strategy/commander/`, `belief.commander`,
 `CommanderStrategy` on a `CloseAwareSynchronousStrategyRunner`, `apply_inferences`; modes do NOT yet read priorities.
 `domain.commander_*` traces (incl. `env_seen`) via `CREWBORG_TRACE_GROUPS=commander`. **Bedrock-in-pod fix (KEY):**
@@ -26,7 +26,7 @@ sidecar mode STRIPS `USE_BEDROCK` and injects `AWS_ENDPOINT_URL_BEDROCK_RUNTIME`
 Bedrock on that **endpoint**, not `USE_BEDROCK` (`strategy/commander/llm.py` + `strategy/meeting/llm.py`).
 **Confirmed live in-pod** (Crewrift Prime XP, v64): commander 4637 `commander_call` ok / 0 errors; **meeting LLM
 REVIVED** — 290 `meeting_llm_decision`, 0 `_fallback` (was 184/184 disabled). Infra issue:
-[`docs/issues/2026-06-26-bedrock-disabled-crewrift-prime-xp.md`](docs/issues/2026-06-26-bedrock-disabled-crewrift-prime-xp.md).
+[`docs/coworld-platform.md`](docs/coworld-platform.md).
 **Phase 2 DONE** (commits `c2e83e9`..`0e19585`): imposter levers — `hunt_room`/`avoid_room` in Search,
 `target_player` in Search-follow/Recon/Hunt (reachability-checked), + **danger mode** (`allow_witnessed_kill`
 relaxes Hunt's witness gate; `skip_evade` suppresses post-kill Evade) with `commander_danger` tracing. All
@@ -178,7 +178,7 @@ imposters** (detect relentless proximity/kills to cut Aaron/Andre's imposter win
   on `AWS_ENDPOINT_URL_BEDROCK_RUNTIME` presence (`strategy/{commander,meeting}/llm.py`). Verify via
   `policy_artifact_<slot>.zip → telemetry.jsonl` (`domain.meeting_llm_decision` + `domain.commander_call`
   `outcome:ok`, not `_fallback` / `env_seen` all-false). Platform fix owed (keep injecting `USE_BEDROCK=true`)
-  — see `docs/issues/2026-06-26-bedrock-disabled-crewrift-prime-xp.md`.
+  — see `docs/coworld-platform.md`.
 - **Expander**: `/tmp/expand-043` (master sim `26ee08c`) handles **crewrift_prime
   0.4.3–0.4.7** (the fork's version bumps didn't change the sim). Use
   `CREWRIFT_EXPAND_REPLAY=/tmp/expand-043` for the warehouse.
