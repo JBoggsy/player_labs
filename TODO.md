@@ -5,6 +5,42 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
+- **Make crewborg's imposter teammate detection BULLETPROOF** (flagged by James, 2026-06-30).
+  Diagnosis (warehouse `/tmp/sweep_wh`): crewborg frequently does NOT know its teammate — it
+  votes the teammate **21–23%** of imposter casts (top imposters 0%) and **follows** the teammate
+  46% of intervals (notsus 26%), both impossible if `teammate_colors` were populated. Root cause:
+  teammate identity is a **single brittle capture** from the RoleReveal icons (`types.py` ~L716;
+  the `worktree-imposter-kill-to-win` branch widened it to latch the `9500+` reveal-icon range
+  on sight, but that still only helps if the reveal frames are SEEN — a connect race that joins
+  after RoleReveal never sees them). The whole imposter game (Search/Hunt/opportunity/recon/
+  meeting voting + the new parity-push) gates on `teammate_colors`, so a miss is expensive.
+  **Make it un-missable:** add inference fallbacks that don't depend on the reveal frame — e.g.
+  latch any color we **witness killing or venting** into `teammate_colors` (definitional imposter,
+  already tracked by `suspicion.witnessed_imposters`; gate on `self_role=="imposter"`); consider
+  process-of-elimination at endgame from the census + known `imposter_count`. Upload a
+  **trace-enabled** build (`CREWBORG_TRACE_GROUPS`) and MEASURE the teammate-known rate per game
+  (the current branch couldn't, because traces weren't on). Targets to drive to ~0: teammate-vote
+  rate, teammate-follow rate. Branch `worktree-imposter-kill-to-win` is the starting point (it
+  fixed the *parse/timing* miss but not the *never-saw-the-reveal* miss).
+
+- **Improve crewborg's imposter SOCIAL DECEPTION — make it stronger and fire more often** (flagged
+  by James, 2026-06-30). The validated kill→WIN lever is the **meeting**: crewborg under-creates
+  suspicion on crew. It skips far more than the top imposters (vote skip-rate ~39% vs notsus 5%),
+  chats ~half as much (0.84 vs 1.83 lines/imposter-slot), and only acts on a *real* suspect or an
+  *existing* heat pile. The `worktree-imposter-kill-to-win` branch added a narrow first step — a
+  parity-closing manufactured vote (`strategy/meeting/imposter.parity_closing_vote_target`, fires
+  ONLY at gap==1 with a known teammate; A/B +14.4pp imposter win) — but deception is still mostly
+  reactive. **Go further:** (a) **self-defense / counter-deflection** when crewborg itself is the
+  heat target (it currently has none — just deflect/bandwagon/skip), which directly attacks the
+  64%-of-losses ejection axis; (b) build crew suspicion EARLIER, not only at parity (a notsus-style
+  alive-count-scaled vote threshold + active accusations, carefully — voting aggression is lower-
+  risk than the reverted *killing* aggression, but still gate it); (c) richer fabricated-evidence
+  variety so repeated accusations don't read as a tell; (d) lean on the **meeting LLM** (already
+  wired, `CREWBORG_LLM_MEETINGS=1`) for genuinely persuasive chat, and measure whether it out-
+  deceives the deterministic path. Reference: notsus `socials.nim`/`votereader.nim` (trust matrix,
+  brigade voting, plain-English chat parsing) in `~/coding/coworlds/coworld-crewrift/players/notsus`.
+  Validate every step with the pinned-champion 1v1 A/B harness used on the parity-push.
+
 - **Move the Coworld websocket transport/bridge into the player SDK** (flagged by James,
   2026-06-24). Today each player carries its own transport: crewborg's lives in
   `crewrift_lab/crewrift/crewborg/coworld/policy_player.py` (`run_bridge` — connects to the
