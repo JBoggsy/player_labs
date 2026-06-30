@@ -30,5 +30,25 @@ nothing. The accuse.py + design §7.1 docstrings claim "the meeting accuses + vo
 the code never threads the called suspect into the meeting; `Intent.target_color` on `call_meeting`
 is explicitly "forensics only — the meeting vote re-derives the target from suspicion" (types.py:446).
 Documented-but-unimplemented = a real bug.
-Status: diagnosed from code; quantifying frequency/conversion in the event warehouse; fix = thread
-the called-suspect into the meeting and commit (chat+vote) rather than re-deriving top_suspect.
+Status: CONFIRMED by warehouse (170-ep Prime sweep): crewborg-crew called **97 button meetings**
+(notsus: 4), **9% convicted** an imposter, **27% ejected a crewmate**, crewborg itself **voted skip
+in 54%** / **silent in 80%** of the meetings it called. Two opposite fixes are being A/B/C-tested.
+
+### Two ways to close the call/convict gap — A/B/C, not a single fix
+Evidence: the gap can be closed by aligning the bars EITHER direction. (A "raise") only call when the
+tailer is already `top_suspect` — call rarely, convict surely. (B "lower") keep calling at 0.6 but
+lower the in-meeting vote bar to 0.6 (`CREWBORG_WEIGHTS_VOTE_P=0.6`) — call readily, convict at the
+lower bar. They trade off precision vs. activity: A risks under-calling (the feature goes nearly
+dormant), B risks mis-ejecting crew (the fitted intercept puts a no-evidence player at P≈0.57, so 0.6
+is barely above baseline). Lesson: when a fix is "align two thresholds," BOTH directions are real
+candidates — don't assume raise-to-safe is better than lower-to-active; A/B/C them.
+Status: 3-arm A/B/C launched 2026-06-30 (arms crewborg-emr-{base,raise,lower}:v1), 7 Prime champions
+× 20 eps each, our policy = 6 crew vs champion = 2 imposters. Verdict pending.
+
+### Build/upload hazard: parallel worktree agents share the global Docker `:dev` tag
+Evidence: a concurrent agent (imposter-kill worktree) was rebuilding `players-crewborg:dev` and
+uploading under `--name crewborg` at the same time as this session — so `players-crewborg:dev` could
+not be trusted to be MY code. Fix: build each arm under a UNIQUE image tag (`players-crewborg:accuse-cand`,
+`:emr-base`, `:emr-lower`) and verify the image carries the change (`docker run … grep`) before
+uploading. Also: hosted uploads/POSTs were flaky (broken pipe), so wrap them in retry loops and verify
+server-side (`versions.py`) rather than trusting one attempt.
