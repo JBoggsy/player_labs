@@ -264,6 +264,36 @@ def test_search_moves_through_ranked_occupancy_points() -> None:
     assert second.point == cell_b.center
 
 
+def test_search_seeks_the_hotter_occupancy_room_not_a_random_one() -> None:
+    # _pick_room heads toward best_seek_point (the hottest crew-occupancy cell), not a
+    # random room (acquisition fix, James 2026-06-30). FLIP the weights so B is hottest:
+    # the pick must follow the occupancy (toward B), which the old seeded-random pick would
+    # not — this is the regression guard for "seek crew, don't wander".
+    map_data = _shadow_map()
+    nav = build_nav_graph(np.ones((120, 200), dtype=bool), map_data=map_data)
+    belief = _belief(map_data, nav, (10, 10), tick=5)
+    update_agent_tracking(belief)
+    substrate = belief.agent_tracking.substrate
+    assert substrate is not None
+    cell_a = next(cell for cell in substrate.cells.values() if cell.label == "A")
+    cell_b = next(cell for cell in substrate.cells.values() if cell.label == "B")
+    belief.agent_tracking.snapshot = OccupancySnapshot(
+        tick=5,
+        expected_by_cell={cell_a.index: 1.0, cell_b.index: 2.0},  # B hotter than A now
+        top_cell=cell_b.index,
+        top_point=cell_b.center,
+        top_expected=2.0,
+        tracked_count=1,
+        support_cell_count=2,
+    )
+    first = SearchMode().decide(belief, ActionState())
+    assert first.kind == "navigate_to"
+    # The pick heads toward the hotter cell B's room, not A — occupancy-driven, not the RNG.
+    to_b = (first.point[0] - cell_b.center[0]) ** 2 + (first.point[1] - cell_b.center[1]) ** 2
+    to_a = (first.point[0] - cell_a.center[0]) ** 2 + (first.point[1] - cell_a.center[1]) ** 2
+    assert to_b < to_a
+
+
 # --------------------------------------------------------------------------- #
 # Evade — re-approach the crew after a kill (rewritten 2026-06-26)             #
 # Old flee behavior (vent away / walk off the body) is gone: Evade now beelines #
