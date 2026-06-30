@@ -130,6 +130,20 @@ def test_teammates_recorded_from_imps_role_reveal() -> None:
     assert belief.teammate_colors == {"red", "blue"}
 
 
+def test_teammates_latch_from_reveal_icons_even_without_the_imps_text() -> None:
+    # The role-reveal icon range (9500+) renders nowhere else, so its colors ARE our
+    # team — capture them even on a frame where the "IMPS" interstitial text wasn't
+    # parsed (a one-frame blip / connect race), so we are not blind to our teammate.
+    belief = Belief()
+    resolved = ResolvedScene(
+        tick=1, camera_ready=True, camera_x=0, camera_y=0,
+        phase_texts=frozenset(), reveal_player_colors=frozenset({"green"}),
+    )
+    update_belief(belief, Percept(tick=1, messages_applied=1, resolved=resolved))
+    assert belief.self_role == "imposter"
+    assert belief.teammate_colors == {"green"}
+
+
 def test_no_false_kill_after_a_meeting() -> None:
     from crewrift.crewborg.perception.entities import VotingState
 

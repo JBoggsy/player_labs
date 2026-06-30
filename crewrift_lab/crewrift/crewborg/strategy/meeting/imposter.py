@@ -60,3 +60,72 @@ def bandwagon_target(belief: Belief, chat_accusers: dict[str, int] | None = None
         if best is None or heat > best[1]:
             best = (color, heat)
     return best[0] if best is not None else None
+
+
+def alive_imposter_count(belief: Belief) -> int:
+    """How many imposters are alive *that we can account for* — ourself plus every
+    known teammate the meeting census still lists alive. Self-gating value: it is 1
+    when we don't know a live teammate (no reveal captured), so callers that need
+    the real imposter count stay conservative rather than acting on a wrong roster.
+    """
+
+    alive_colors = {c.color for c in belief.voting.candidates if c.alive}
+    alive_teammates = {c for c in belief.teammate_colors if c in alive_colors}
+    return 1 + len(alive_teammates)
+
+
+def parity_closing_vote_target(
+    belief: Belief, chat_accusers: dict[str, int] | None = None
+) -> str | None:
+    """The non-teammate crewmate to **manufacture** a vote against to reach parity
+    this meeting, or ``None``.
+
+    Imposters win at parity (#imposters alive ≥ #crew alive). After the usual ~3 kills
+    the board sits at 3 crew / 2 imposters — *one removal short* — and a single crew
+    ejection wins the game outright. The deterministic meeting path otherwise **skips**
+    when no crewmate is already taking heat, parking the team one step short (the
+    dominant crewborg imposter loss; warehouse 2026-06-30). This picks a scapegoat to
+    pile onto even with no pre-existing heat, but only at the exact parity-closing
+    moment so it never over-extends into the "vote aggression raises ejection" trap.
+
+    Two safety gates make it sound without perfect teammate knowledge:
+    - **Known live teammate** (``alive_imposter_count >= 2``): otherwise we can't trust
+      the parity arithmetic *or* the teammate exclusion, so we don't fire (no regression
+      — falls back to the prior skip — and never risks voting our own teammate).
+    - **Exactly one removal from parity** (``alive_crew - alive_imp == 1``): a successful
+      vote reaches parity and ends the game, bounding the exposure to this one meeting.
+
+    Target ranking is a **shared, deterministic** function (existing votes, then lowest
+    slot) so both imposters converge on the *same* crewmate and their ballots stack into
+    a plurality, rather than splitting across two targets.
+    """
+
+    candidates = belief.voting.candidates
+    if not candidates:
+        return None  # vote grid not yet rendered this meeting
+    self_color = belief.voting.self_marker_color or belief.self_color
+    alive_imp = alive_imposter_count(belief)
+    if alive_imp < 2:
+        return None  # team unknown / no live teammate → unsafe to push
+
+    # Crew = alive candidates that are neither us nor a known teammate. Counting the
+    # pool directly (rather than total − imposters) keeps the arithmetic correct even
+    # if the census happens not to list our own marker this frame.
+    crew = [
+        c
+        for c in candidates
+        if c.alive and c.color != self_color and c.color not in belief.teammate_colors
+    ]
+    if not crew:
+        return None
+    if len(crew) - alive_imp != 1:
+        return None  # only at the exact parity-closing moment
+
+    accusers = chat_accusers or {}
+    tally = votes_against(belief)
+
+    def rank(candidate) -> tuple[int, int]:
+        heat = tally.get(candidate.color, 0) * VOTE_WEIGHT + accusers.get(candidate.color, 0) * CHAT_WEIGHT
+        return (heat, -candidate.slot)  # shared deterministic key → both imposters agree
+
+    return max(crew, key=rank).color

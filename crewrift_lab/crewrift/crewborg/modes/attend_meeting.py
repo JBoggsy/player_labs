@@ -21,7 +21,11 @@ from crewrift.crewborg.strategy.meeting.context import (
     CHAT_COOLDOWN_TICKS,
     VOTE_TIMER_TICKS,
 )
-from crewrift.crewborg.strategy.meeting.imposter import bandwagon_target, votes_against
+from crewrift.crewborg.strategy.meeting.imposter import (
+    bandwagon_target,
+    parity_closing_vote_target,
+    votes_against,
+)
 from crewrift.crewborg.strategy.meeting import chat_nlp, chat_read
 from crewrift.crewborg.strategy.suspicion import chat_suspect, top_suspect
 from crewrift.crewborg.types import ActionState, Belief, ChatEvent, Intent
@@ -179,7 +183,23 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
                 return self._send_chat_intent(belief, fabricated, reason="imposter bandwagon: fabricated")
             return self._submit_vote_intent(belief, reason="imposter bandwagon vote")
 
-        # 3. No one to deflect onto yet — wait, then skip at the deadline.
+        # 3. Parity-closing push — one removal from a win and no crewmate is taking
+        #    heat on their own, so MANUFACTURE the pile instead of skipping it away
+        #    (the dominant imposter loss is stalling at 3-crew/2-imp; design §10.4).
+        parity_target = parity_closing_vote_target(belief, accusers)
+        if parity_target is not None:
+            self._tentative_vote = parity_target
+            self._deterministic_chatted = True
+            fabricated = fabricate_accusation(belief, parity_target)
+            self._trace_meeting_decision(
+                belief, role="imposter", path="parity_push", target=parity_target,
+                fabricated=fabricated is not None, accusers=accusers,
+            )
+            if fabricated is not None:
+                return self._send_chat_intent(belief, fabricated, reason="imposter parity push: fabricated")
+            return self._submit_vote_intent(belief, reason="imposter parity push vote")
+
+        # 4. No one to deflect onto yet — wait, then skip at the deadline.
         if self._should_auto_submit(belief):
             self._trace_meeting_decision(belief, role="imposter", path="skip", target=None, accusers=accusers)
             return self._submit_vote_intent(belief, reason="imposter deadline: no deflection, skip")

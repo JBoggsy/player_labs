@@ -583,7 +583,7 @@ re-decides.
 | **Hunt** | kill ready **and** a victim is visible | **commit to a visible victim and close/strike**: `select_victim` picks the most-isolated reachable visible crewmate, preferring targets not already claimed by a closer teammate; navigate to its **predicted intercept** (`strategy.trajectory` — lead a moving target); when in KillRange *and* unwitnessed → `kill`, else keep shadowing in range (lie in wait) |
 | **Evade** | for `EVADE_TICKS` after our own kill | **beeline toward the most-populated area** — the densest expected-crew room (occupancy grid §10.2, minus teammate pressure), else the hottest occupancy cell, else the last-seen crewmate (cold start). **Rewritten 2026-06-26**: the old Evade *fled* (vent away / walk off the corpse), feeding post-kill drift. New Evade *re-approaches* crew so a victim cluster is nearby when the window hands back to Search/Recon. **Paired with Hunt's drop-the-witness-check-after-first-kill** (§10): re-approaching the crowd only pays off once witnesses no longer veto the 2nd kill (else the crowd is a witness-rich dead end) — the two are evaluated together |
 | _(Report Body)_ | **removed from the imposter gate 2026-06-25** | Imposters **never report bodies**. Self-reporting our own kill opened a meeting that reset the cooldown and killed snowball kills (~79% of our body-report meetings were self-reports; warehouse, §perf). `report_body` is now **crewmate-only**. |
-| **Attend Meeting** | phase = `Voting` | **deflect onto crewmates, never a teammate** (§10.4): proactively accuse + vote a non-teammate who genuinely *looks* sus (real cues, same format as a crewmate); else wait and **bandwagon** onto a crewmate others suss/vote, citing *fabricated* safe cues in the identical format; else skip at the deadline |
+| **Attend Meeting** | phase = `Voting` | **deflect onto crewmates, never a teammate** (§10.4): proactively accuse + vote a non-teammate who genuinely *looks* sus (real cues, same format as a crewmate); else wait and **bandwagon** onto a crewmate others suss/vote, citing *fabricated* safe cues in the identical format; else, when **one removal from parity with a known live teammate**, *manufacture* a coordinated vote to close it; else skip at the deadline |
 
 **Search is the imposter's always-on seeking stance** (`modes/search.py`, rebuilt
 2026-06-24; the prior occupancy-density Pretend/Search is cold-stored at
@@ -950,9 +950,30 @@ The priority order:
    and cite **fabricated** evidence — *safe, hard-to-disprove* cues only (`lurking on a
    vent`, `next to <body>'s body`, `they were tailing me`), never a bold falsifiable
    witnessed kill/vent (`accusation.fabricate_accusation`).
-3. **Skip.** If no crewmate ever takes heat, cast a skip at the deadline.
+3. **Parity-closing push.** If the board is **exactly one removal from parity** (a single
+   crew ejection wins the game) *and* we know a **live teammate**, don't skip a flat meeting
+   away — *manufacture* the pile: pick the best non-teammate crewmate and accuse+vote it like
+   a bandwagon (`imposter.parity_closing_vote_target`). The target rank is a **shared,
+   deterministic** key (existing votes, then lowest slot) so both imposters converge on the
+   *same* crewmate and their ballots stack into a plurality. Two safety gates keep it from the
+   "vote aggression raises ejection" trap (a same-policy A/B *did* confirm aggressive *killing*
+   raises ejection — this is voting, and far narrower): it fires **only** when
+   `imposter.alive_imposter_count >= 2` (so the parity arithmetic and the teammate exclusion are
+   trustworthy — and it never risks voting our own teammate when the reveal was missed) and
+   **only** at `crew_alive − imp_alive == 1` (a success ends the game, bounding exposure to this
+   one meeting). Motivation (warehouse 2026-06-30): the dominant crewborg imposter loss is
+   stalling at 3-crew/2-imp and never closing it, while the top imposters manufacture that
+   parity-closing ejection in the meeting. A/B (`crewborg-paritypush:v1`): imposter win
+   +14.4pp (43.7→58.1, p<1e-9) at flat kills.
+4. **Skip.** If no crewmate ever takes heat and we're not parity-closing, cast a skip at the deadline.
 
 Chat and vote stay coupled (we accuse exactly who we then vote for).
+
+The reveal-derived `teammate_colors` (§7.2) is what makes the never-out-a-teammate invariant and
+the parity gate sound; because that one-shot RoleReveal capture can be missed (a connect race or a
+one-frame parse blip), the latch is widened to record any role-reveal icon colors **on sight**
+(the `9500+` id range renders nowhere else), not only on the frame the phase machine has reached
+`RoleReveal` with the `IMPS` text parsed.
 
 ### 10.5 Reading opponents' chat (`strategy/meeting/chat_read.py`, `chat_nlp.py`)
 

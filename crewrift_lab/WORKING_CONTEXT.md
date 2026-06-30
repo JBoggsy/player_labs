@@ -110,6 +110,24 @@ gutted the sample); field is only 3 champions (broaden via `included_players` if
 does the meeting LLM fire in LEAGUE (dispatch) rounds (sidecar gap) — v66 fell back; verify on v70's league
 rounds.
 
+### ✅ ANSWERED + FIXED (2026-06-30, branch `worktree-imposter-kill-to-win`): the gap is the MEETING
+Warehouse decomposition of the 170-ep sweep (`/tmp/sweep_wh`): conditioning win on the SAME kill count,
+crewborg @1 kill wins 0.39 vs notsus 1.00, @2 wins 0.63 vs 1.00 — the win leaks AFTER the kills. Of 39
+crewborg imposter LOSSES: **64% = an imposter voted out** (a), the rest **stall at 3-crew/2-imp — one removal
+from parity — and never close it** (b). notsus closes via the MEETING (1.10 crew-eject/win vs our ~0.4) and is
+NEVER ejected. Code causes: deterministic imposter meeting path **skips** (39% vs notsus 5%) and crewborg
+often **doesn't know its teammate** (votes it 21-23%, follows it 46% vs notsus 0%/26%) — RoleReveal capture is
+a brittle one-shot.
+**FIX (`crewborg-paritypush:v1`, commit `1178f31`):** (1) `parity_closing_vote_target` — one removal from
+parity AND known live teammate ⇒ manufacture a coordinated fabricated-accusation+vote on a non-teammate
+crewmate instead of skipping (self-gated `alive_imposter_count>=2`; only gap==1). (2) Widened RoleReveal
+teammate latch (types.py). 470 tests pass.
+**A/B (6 pinned-champion 1v1 blocks, both imposters=subject vs `crewborg-base`, 80 eps/champ, clean n≈955/arm):
+imposter win 43.7% → 58.1%, Δ=+14.4pp, p<1e-9; kills flat (1.48→1.43); skip-rate 26.3%→23.6% (mechanism).**
+5/6 champions positive (forgeling +46, jordan-aaln +17, crewborg-mv +15, notsus +13, aaln +0, softmaxwell −5
+noise). NOT submitted. Next: confirm via ejection-rate decomposition (needs replays + warehouse); upload a
+trace-enabled build to log `meeting_decision path=parity_push`; broaden to natural-roles to de-mask.
+
 ---
 ### (prior framing kept for reference) crewborg's IMPOSTER KILL EFFICIENCY
 **⭐⭐ `crewborg:v70` is the Crewrift PRIME CHAMPION (2026-06-26)** — the **meeting-LLM-ON** ship
