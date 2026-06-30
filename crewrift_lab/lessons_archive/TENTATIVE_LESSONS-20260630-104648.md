@@ -1,0 +1,46 @@
+# Crewrift tentative lessons — session buffer
+
+**Session started:** 2026-06-26 23:22. This is THIS SESSION's lesson buffer. Write candidate
+lessons here **as you go** — eagerly and noisily; most will be noise and that's
+fine. At the next session start, a hook archives this file automatically to
+[`lessons_archive/`](lessons_archive/) and creates a fresh one — nothing you
+write here is lost, and nothing carries over by hand.
+
+**Lifecycle.** Per-session buffer → automatic archive (SessionStart hook,
+`crewrift_lab/tools/rotate_lessons.sh`) → periodic human+agent review
+(`/lessons-review`) that clusters RECURRING lessons across archived sessions and
+graduates the keepers to `best_practices.md` (Crewrift-specific) or the root
+`best_practices.md` (game-agnostic). Recurrence across independent session
+buffers — not in-session hit counts — is the graduation signal.
+
+**Entry format.** `### <lesson, one line>` then `Evidence:` (what you observed,
+concrete) and optional `Status:` notes. Terse. One lesson per `###`.
+
+---
+
+### XP-request champion resolution is now PER-EPISODE (the "resolve once per request" bug is FIXED) — verified in metta source
+Evidence: `metta/app_backend/src/metta/app_backend/v2/experience_requests.py`: `create_experience_request_in_db` loops `for job_index in range(num_episodes)` and calls `experience_request_episode_policy_version_ids(roster, job_index)` PER EPISODE, which builds a fresh `_ChampionPool` and samples each top_n/random seat (rank-weighted, w/o replacement, regenerating) AND rotates round-robin seats by job_index; each episode also gets a distinct derived seed (`experience_request_episode_seed`). So a SINGLE N-episode request now faces a VARIED field across episodes — the old "fire multiple requests for opponent variety" advice (still in the skill's api.md) is OBSOLETE. `included_players`/`excluded_players` restrict the pool (hold across mid-request regen). The live schema's "random… for each episode" is correct; api.md's "resolve ONCE PER REQUEST" is stale → fix in the skill rewrite, cite the metta symbol + re-verify recipe.
+
+### Bedrock is OPTIONAL — frame LLM docs as "if you want it, here's how," not "you must use the sidecar"
+Evidence: James — don't force Bedrock. crewborg plays fully deterministically (meeting LLM + commander are opt-in, off by default, fall open). The sidecar "ONE RULE" (route to AWS_ENDPOINT_URL_BEDROCK_RUNTIME, InvokeModel not Converse) only applies WHEN you enable the LLM. coworld-platform.md reframed: "Bedrock is optional… if you do want an LLM…" + "THE ONE RULE (if you use Bedrock)". metta PR #16867 (the BEDROCK player runtime contract) MERGED into metta main — cite BEDROCK.md directly, not as a pending PR.
+
+### Skill/reference-doc API claims DRIFT — re-verify live against `--help`/openapi before shipping, don't trust the doc
+Evidence: porting the coworld skills, two reference docs were stale vs the live CLI/API. (1) XP `api.md` said pool selectors "resolve once per request" — now per-episode (metta source). (2) local-run `cli.md` said `run-episode` has "no `--variant`" and "no `-n/--episodes`" — live `--help` shows it GAINED `--variant`, `-n/--episodes`, and `--use-bedrock`/`--aws-*` since 0.1.20. Pattern: the coworld CLI/server ship ahead of any checked-in doc. Every skill overhaul must re-verify endpoints/flags live + re-date, and prefer dated drift-logs + re-check recipes over hardcoded claims.
+
+### Good skill shape: decision-flow first, conditional prefs link, cross-link into the doc web
+Evidence: the XP-request SKILL.md landed best when rebuilt around "frame the question → pick the request KIND" (field eval / A-B / role-pinned / natural-roles / self-play) with best-practices as decision points, rather than a flat field dump (that lives in references/api.md). User-prefs links must be CONDITIONAL ("check user_preferences.md for any standing prefs") since that doc ships empty. Wire skills to the reference docs (crewrift-replays, coworld-platform Bedrock) so they form one navigable web.
+
+### build+upload is a recurring DO-task → a skill, not a static guide; policy-lifecycle is its home
+Evidence: dropped `building_players.md` (superseded by README+Dockerfile+coworld-platform.md). James: build+upload is something the agent does every iteration → make it a skill. The existing coworld-policy-lifecycle skill already does upload→(gated)submit→monitor and models the routine/gated split; folding the concrete crewborg build into its Step 1 makes it the full build→upload→submit→monitor lifecycle (no separate skill needed). Decision pending James.
+
+### League submission → qualification model (verified live 2026-06-27) — qualification is the load-bearing gate to monitor
+Evidence: `coworld submit POLICY --league <id> [--auto-champion always|never|lineage]` (no `--player` → submits as account-default player; different identity needs the API player_id / a player-swap skill). Live openapi: submission `status` ∈ {pending, processing, placed, rejected, withdrawn} (rejected carries a `notes` reason — e.g. observed "league has no submission division"); membership `status` ∈ {submitted, qualifying, competing, disqualified}. **Qualification = membership status `qualifying` → `competing`** (or `disqualified` on fail). `auto_champion` + `is_champion` govern promotion AFTER qualifying. Operationally the #1 DQ cause = **TIMEOUTS in the commissioner's qualifier episodes** (LLM latency especially — a no-LLM/fast player "qualifies with zero timeouts"). Observability routes: `/v2/league-policy-memberships` (status), `/v2/policy-membership-events` (timestamped transitions), `/v2/league-submissions` (status+notes), `/v2/divisions/{id}/leaderboard`. → submit&monitor skill: a background watcher that polls until terminal (competing ✓ / disqualified ✗), centering qualification + surfacing rejection notes + the DQ-by-timeout cause.
+
+### Submission placement is SERVER-side now — you do NOT pick/create a qualifier division (stale mental model, corrected)
+Evidence: verified metta HEAD `app_backend/src/metta/app_backend/v2/pipeline.py:688-723` + `division_selectors.py`. Client `submit` POSTs only `{league_id, policy_version_id}` (no division). Server resolves the target: `select_qualifier_division` (the STAGING division named by league config `qualifiers_division_name`, if set + live) → membership starts `qualifying`; ELSE `select_competition_entry_division` (named Competition div, else lowest-level Competition) → may go straight to `competing`. The OLD hard-reject on a stale `qualifiers_division_name` is FIXED — pipeline.py now falls back to Competition even when the qualifiers name points at an archived/missing division (comment at :704). So `"league has no submission division"` is now RARE = genuine league misconfig (escalate to commissioner/league-config, NOT a client division choice). Other rejects: `"league has no divisions"`, `"policy version … already has an active membership in this league"` (dedup). Skill must say: don't choose a division; the server picks Qualifiers→qualifying or Competition→competing; a `rejected`+`notes` is the diagnostic, not the old qualifier-division mistake.
+
+### Clickable Observatory replay viewer URL: POST /v2/coworlds/replays/session (verified live 2026-06-27)
+Evidence: `episode.json.replay_url` is a raw zlib `.z` S3 blob (download), NOT watchable. To get a clickable hosted viewer: `POST <base>/v2/coworlds/replays/session` with `{coworld_id, replay_uri}` (coworld_id from `episode.json.tags.coworld_id`, replay_uri = `replay_url`) → `{viewer_url}` (a `.../client/replay` URL). Works for ANY episode (league or XP). The CLI path is `coworld replay-open <ereq> --hosted` (posts the same), but the direct API works for league episodes too (no ereq). Use in the batch-survey to link worth-watching episodes to their replays. Source: metta `packages/coworld/src/coworld/docs/artifacts/REPLAY.md` + `tournament_cli.py:replay_open`; `observatory_web_url()` strips `/api` to get the web origin.
+
+### Event warehouse = the deep-dig tool; vendoring it INTO coworld-crewrift solves the version-coupling
+Evidence: `role_repos/reporter_lab/crewrift-event-warehouse` (+ its `crewrift-event-reporter` dep) is a mature CLI that turns episodes → policy-indexed DuckDB/Parquet event dataset (events fact + episode_players dim). The #1 failure is expand_replay VERSION SKEW (hash-fails → sparse output + trace_warning rows; check trace_warning count FIRST). Vendoring both packages into `players/crewborg/tools/event-warehouse/` (side-by-side to keep the relative path dep) means the `expand_replay` binary builds from THIS repo's own `tools/expand_replay.nim` at the deployed commit — coupling solved by colocation. Event catalog: movement/proximity(near=32px)/following(alignment≥0.6,lag≥0.35)/chase/kills/votes/tasks/visibility; embedded slots (victim_slot/target/target_slot/player_a/b) need self-join to episode_players. LLM-chat extension pattern (`suss.py`): distinct chat texts → batched Bedrock Haiku classify + cache → resolve color→slot→identity → write events/key=<x> partition keyed by speaker. Copy it for any chat interpretation (claims, vouching, defenses).

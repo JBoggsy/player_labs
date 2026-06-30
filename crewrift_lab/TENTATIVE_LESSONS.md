@@ -1,6 +1,6 @@
 # Crewrift tentative lessons — session buffer
 
-**Session started:** 2026-06-26 23:22. This is THIS SESSION's lesson buffer. Write candidate
+**Session started:** 2026-06-30 10:46. This is THIS SESSION's lesson buffer. Write candidate
 lessons here **as you go** — eagerly and noisily; most will be noise and that's
 fine. At the next session start, a hook archives this file automatically to
 [`lessons_archive/`](lessons_archive/) and creates a fresh one — nothing you
