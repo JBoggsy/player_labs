@@ -523,6 +523,48 @@ def test_suspicion_snapshot_once_per_meeting_with_ranking_and_vote() -> None:
     assert len(h.events("domain.suspicion_snapshot")) == 2
 
 
+def test_suspicion_snapshot_emits_feature_vector_and_raw_inputs_when_flag_set(monkeypatch) -> None:
+    # Training capture: CREWBORG_TRACE_SUSPICION_FEATURES adds, per suspect, the exact
+    # runtime feature vector + the raw inputs (seen_ticks, per-event end_tick) needed to
+    # refit the model on what crewborg actually computes live.
+    from crewrift.crewborg.strategy.suspicion import _fitted_features
+    from crewrift.crewborg.types import PlayerEvent, PlayerRecord
+
+    monkeypatch.setenv("CREWBORG_TRACE_SUSPICION_FEATURES", "1")
+    h = _Harness()
+    belief = _crewmate_belief(phase="Playing")
+    red = belief.roster["red"] = PlayerRecord(color="red", life_status="alive")
+    red.seen_ticks = 120
+    red.events.append(PlayerEvent(kind="near_body", start_tick=3, end_tick=6, target_color="green", min_dist=5))
+    belief.suspicion = {"red": 0.5}
+    h.step(belief=belief)
+    belief.phase = "Voting"
+    h.step(belief=belief)
+
+    entry = h.events("domain.suspicion_snapshot")[0].data["ranking"][0]
+    assert entry["features"] == _fitted_features(belief, red)  # the exact model input
+    assert entry["features"]["near_body_bodies"] == 1.0 and "tasks_completed_watched" in entry["features"]
+    assert entry["seen_ticks"] == 120  # raw input for observed_samples
+    assert entry["events"][0]["end_tick"] == 6  # raw input for follow_death_samples
+
+
+def test_suspicion_snapshot_omits_features_by_default() -> None:
+    from crewrift.crewborg.types import PlayerEvent, PlayerRecord
+
+    h = _Harness()
+    belief = _crewmate_belief(phase="Playing")
+    red = belief.roster["red"] = PlayerRecord(color="red", life_status="alive")
+    red.events.append(PlayerEvent(kind="near_body", start_tick=3, end_tick=6, target_color="green", min_dist=5))
+    belief.suspicion = {"red": 0.5}
+    h.step(belief=belief)
+    belief.phase = "Voting"
+    h.step(belief=belief)
+
+    entry = h.events("domain.suspicion_snapshot")[0].data["ranking"][0]
+    assert "features" not in entry and "seen_ticks" not in entry
+    assert "end_tick" not in entry["events"][0]
+
+
 def test_suspicion_snapshot_skipped_when_no_suspicion() -> None:
     # An imposter / ghost has its suspicion cleared, so a meeting yields no snapshot.
     h = _Harness()

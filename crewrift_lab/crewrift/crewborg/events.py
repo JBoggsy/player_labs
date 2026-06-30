@@ -72,6 +72,7 @@ from crewrift.crewborg.strategy.opportunity import has_trackable_victim, kill_ur
 from crewrift.crewborg.strategy.suspicion import (
     ACCUSE_TAIL_RECENCY_TICKS,
     VOTE_PROBABILITY,
+    _fitted_features,
     _prior_imposter_p,
     top_suspect,
     witnessed_imposters,
@@ -134,6 +135,15 @@ class CrewborgEventTracer:
         self._emit_kill_debug = self._optional_event_enabled("domain.kill_state", self._debug)
         self._emit_occupancy_debug = self._optional_event_enabled("domain.occupancy_snapshot", self._debug)
         self._emit_commander = self._optional_event_enabled("domain.commander_call", self._debug)
+        # Suspicion-training capture (opt-in, off by default): when set, suspicion_snapshot
+        # additionally carries, per suspect, the EXACT runtime feature vector the model
+        # scores (`_fitted_features`) plus the raw inputs needed to rebuild/parity-check it
+        # (`seen_ticks`; each event's `end_tick`). This makes the trace sufficient to refit
+        # the suspicion model on what crewborg actually computes live, closing the
+        # train->serve gap (docs/suspicion.md "where it breaks").
+        self._emit_suspicion_features: bool = (
+            os.environ.get("CREWBORG_TRACE_SUSPICION_FEATURES", "").strip().lower() in ("1", "true", "yes", "on")
+        )
 
     def __call__(self, context: StepContext[Belief, ActionState, Intent, Command]) -> None:
         belief = context.belief
@@ -411,15 +421,21 @@ class CrewborgEventTracer:
             return
         target = top_suspect(belief)
         witnessed = witnessed_imposters(belief)
-        ranking = [
-            {
+        features = self._emit_suspicion_features
+        ranking: list[dict[str, object]] = []
+        for color, p in sorted(belief.suspicion.items(), key=lambda kv: kv[1], reverse=True):
+            record = belief.roster.get(color)
+            entry: dict[str, object] = {
                 "color": color,
                 "p": round(p, 4),
                 "confirmed": color in witnessed,
-                "events": _event_summary(belief.roster.get(color)),
+                "events": _event_summary(record, with_end_tick=features),
             }
-            for color, p in sorted(belief.suspicion.items(), key=lambda kv: kv[1], reverse=True)
-        ]
+            if features and record is not None:
+                # Training capture: the exact model input + the raw inputs to parity-check it.
+                entry["features"] = _fitted_features(belief, record)
+                entry["seen_ticks"] = record.seen_ticks
+            ranking.append(entry)
         emit.event(
             "suspicion_snapshot",
             {
@@ -616,21 +632,29 @@ def _kill_state(belief: Belief) -> dict[str, object]:
     }
 
 
-def _event_summary(record: PlayerRecord | None) -> list[dict[str, object]]:
-    """Compact per-player event log for a suspicion snapshot (durations, not spans)."""
+def _event_summary(record: PlayerRecord | None, with_end_tick: bool = False) -> list[dict[str, object]]:
+    """Compact per-player event log for a suspicion snapshot (durations, not spans).
+
+    With ``with_end_tick`` (training capture), each event also carries its ``end_tick`` —
+    the raw input ``follow_death_samples`` needs (compared against the victim's
+    ``death_seen_tick``), which the duration alone can't reconstruct.
+    """
 
     if record is None:
         return []
-    return [
-        {
+    out: list[dict[str, object]] = []
+    for event in record.events:
+        entry: dict[str, object] = {
             "kind": event.kind,
             "dur": event.duration_ticks,
             "target": event.target_color,
             "region": event.region_index,
             "min_dist": event.min_dist,
         }
-        for event in record.events
-    ]
+        if with_end_tick:
+            entry["end_tick"] = event.end_tick
+        out.append(entry)
+    return out
 
 
 def _decision_snapshot_payload(context: StepContext[Belief, ActionState, Intent, Command]) -> dict[str, Any]:
