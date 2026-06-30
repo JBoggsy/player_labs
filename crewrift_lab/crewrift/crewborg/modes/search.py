@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import random
 
+from crewrift.crewborg.agent_tracking import best_seek_point
 from crewrift.crewborg.modes import imposter_common as ic
 from crewrift.crewborg.map.types import Room
 from crewrift.crewborg.nav import _segment_clear
@@ -109,7 +110,16 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
         hunt_room = cmd.hunt_room if cmd is not None else None
         room = next((candidate for candidate in rooms if candidate.name == hunt_room), None)
         if room is None:
-            room = self._rng.choice(rooms)
+            # Seek toward where crew are most expected (the hottest occupancy cell from
+            # agent_tracking) rather than a random room. The acquisition data showed the
+            # random sweep left us ready-but-alone — median 266px from crew at kill-ready,
+            # crew in view only 17% (vs aaln's 22px / 52%). Fall back to random with no
+            # tracking signal yet.
+            seek = best_seek_point(belief)
+            if seek is not None:
+                room = min(rooms, key=lambda c: (c.center.x - seek[0]) ** 2 + (c.center.y - seek[1]) ** 2)
+            else:
+                room = self._rng.choice(rooms)
         self._target_room = room.name
         # Head to the room CENTRE (go fully inside to check it), not a task spot by
         # the door — standing at the entrance misses crew and exits.

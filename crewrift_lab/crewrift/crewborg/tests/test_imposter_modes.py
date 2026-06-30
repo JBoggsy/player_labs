@@ -83,13 +83,14 @@ def test_hunt_skips_teammates() -> None:
     assert intent.kind == "kill" and intent.target_color == "green"
 
 
-def test_hunt_lies_in_wait_when_a_witness_is_near() -> None:
-    # Victim in range but a witness beside it (zero urgency) ⇒ shadow, don't fire.
+def test_hunt_strikes_even_with_a_witness_near() -> None:
+    # Witnesses are no longer a gate (James 2026-06-30): in range + kill-ready ⇒ strike,
+    # even with a witness beside the victim and no prior kill banked. (Was: lie in wait.)
     belief = Belief(self_world_x=100, self_world_y=100, last_tick=5, self_kill_ready=True)
     _visible(belief, 1004, (108, 100), color="green")
-    _visible(belief, 1005, (110, 100), color="blue")  # witness next to the victim
+    _visible(belief, 1005, (110, 100), color="blue")  # witness next to the victim — ignored now
     intent = HuntMode().decide(belief, ActionState())
-    assert intent.kind == "navigate_to"  # lying in wait, not killing
+    assert intent.kind == "kill" and intent.target_color == "green"
 
 
 def test_hunt_strikes_a_witnessed_victim_after_the_first_kill() -> None:
@@ -113,38 +114,6 @@ def test_hunt_strikes_a_witnessed_victim_under_full_urgency() -> None:
     _visible(belief, 1005, (110, 100), color="blue")  # witness ignored at full urgency
     intent = HuntMode().decide(belief, ActionState())
     assert intent.kind == "kill" and intent.target_color == "green"
-
-
-def test_hunt_commander_allows_witnessed_kill_with_danger_reason() -> None:
-    belief = Belief(self_world_x=100, self_world_y=100, last_tick=5, self_kill_ready=True)
-    belief.commander = CommanderPriorities(
-        allow_witnessed_kill=True,
-        danger_reason="last chance before meeting",
-        as_of_tick=belief.last_tick,
-    )
-    _visible(belief, 1004, (108, 100), color="green")
-    _visible(belief, 1005, (110, 100), color="blue")  # witness next to the victim
-    mode = HuntMode()
-    trace = ListTraceSink()
-    mode.emit = EventEmitter(trace, tick=belief.last_tick)
-    intent = mode.decide(belief, ActionState())
-    assert intent.kind == "kill" and intent.target_color == "green"
-    [event] = [event for event in trace.events if event.name == "domain.commander_danger"]
-    assert event.data["lever"] == "allow_witnessed_kill"
-    assert event.data["danger_reason"] == "last chance before meeting"
-    assert event.data["target_color"] == "green"
-
-
-def test_hunt_stale_commander_does_not_allow_witnessed_kill() -> None:
-    belief = Belief(self_world_x=100, self_world_y=100, last_tick=500, self_kill_ready=True)
-    belief.commander = CommanderPriorities(
-        allow_witnessed_kill=True,
-        danger_reason="stale risk",
-        as_of_tick=0,
-    )
-    _visible(belief, 1004, (108, 100), color="green")
-    _visible(belief, 1005, (110, 100), color="blue")
-    assert HuntMode().decide(belief, ActionState()).kind == "navigate_to"
 
 
 def test_hunt_commits_to_one_victim_across_ticks() -> None:
@@ -262,6 +231,37 @@ def test_search_moves_through_ranked_occupancy_points() -> None:
     second = mode.decide(belief, ActionState())
     assert second.kind == "navigate_to"
     assert second.point == cell_b.center
+
+
+def test_search_seeks_the_hotter_occupancy_room_not_a_random_one() -> None:
+    # _pick_room heads toward best_seek_point (the hottest crew-occupancy cell), not a
+    # random room (acquisition fix, James 2026-06-30). FLIP the weights so B is hottest:
+    # the pick must follow the occupancy (B first), which the old seeded-random pick would
+    # not — this is the regression guard for "seek crew, don't wander".
+    map_data = _shadow_map()
+    nav = build_nav_graph(np.ones((120, 200), dtype=bool), map_data=map_data)
+    belief = _belief(map_data, nav, (10, 10), tick=5)
+    update_agent_tracking(belief)
+    substrate = belief.agent_tracking.substrate
+    assert substrate is not None
+    cell_a = next(cell for cell in substrate.cells.values() if cell.label == "A")
+    cell_b = next(cell for cell in substrate.cells.values() if cell.label == "B")
+    belief.agent_tracking.snapshot = OccupancySnapshot(
+        tick=5,
+        expected_by_cell={cell_a.index: 1.0, cell_b.index: 2.0},  # B hotter than A now
+        top_cell=cell_b.index,
+        top_point=cell_b.center,
+        top_expected=2.0,
+        tracked_count=1,
+        support_cell_count=2,
+    )
+    first = SearchMode().decide(belief, ActionState())
+    assert first.kind == "navigate_to"
+    # The pick heads toward the hotter cell B's room, not A — occupancy-driven, not the RNG
+    # (the old random pick would not flip with the weights).
+    to_b = (first.point[0] - cell_b.center[0]) ** 2 + (first.point[1] - cell_b.center[1]) ** 2
+    to_a = (first.point[0] - cell_a.center[0]) ** 2 + (first.point[1] - cell_a.center[1]) ** 2
+    assert to_b < to_a
 
 
 # --------------------------------------------------------------------------- #
