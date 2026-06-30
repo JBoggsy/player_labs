@@ -150,6 +150,11 @@ VOTE_PROBABILITY = 0.8
 # an innocent helps the imposters, so a flat or low field skips.
 VOTE_LEAD_MIN_P = 0.5
 VOTE_LEAD_MARGIN = 0.2
+# A softer bar for VOICING a read in a meeting (chat only, never a vote): the top
+# posterior is meaningfully above the ~2/8 prior. Below the vote bar by design —
+# sharing "I'm watching X because…" drives the deduction without ejecting on thin
+# evidence. Used by chat_suspect() for the deterministic meeting voice.
+CHAT_SUSPECT_MIN_P = 0.4
 # Clamp the prior away from 0/1 so its log-odds stays finite.
 PRIOR_MIN, PRIOR_MAX = 1e-3, 0.99
 
@@ -594,6 +599,23 @@ def top_suspect(belief: Belief) -> str | None:
     if p >= VOTE_LEAD_MIN_P and (p - runner_up) >= VOTE_LEAD_MARGIN:
         return color  # a clear leader over a non-flat field
     return None
+
+
+def chat_suspect(belief: Belief) -> str | None:
+    """The leading suspect worth VOICING a read on in a meeting — the top-posterior
+    non-self player at or above `CHAT_SUSPECT_MIN_P`, or `None` on a flat field.
+
+    Deliberately a softer bar than `top_suspect` (the vote bar) and **never used to
+    vote**: it lets the deterministic meeting voice share an evidence-cited read
+    ("watching X because …") instead of going silent, while vote restraint is unchanged.
+    Like `top_suspect`, never returns our own color.
+    """
+
+    ranked = [(c, p) for c, p in belief.suspicion.items() if c != belief.self_color]
+    if not ranked:
+        return None
+    color, p = max(ranked, key=lambda kv: kv[1])
+    return color if p >= CHAT_SUSPECT_MIN_P else None
 
 
 def _logit(p: float) -> float:

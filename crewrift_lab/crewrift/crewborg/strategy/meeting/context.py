@@ -16,7 +16,9 @@ from crewrift.crewborg.strategy.suspicion import (
 from crewrift.crewborg.types import Belief, PlayerEvent, PlayerRecord
 
 VOTE_TIMER_TICKS = 240
-CHAT_COOLDOWN_TICKS = 100
+# Min ticks between our own chats. Kept well under VOTE_TIMER_TICKS so a proactive
+# meeting voice can speak more than once (share a read, then react/follow up).
+CHAT_COOLDOWN_TICKS = 60
 
 
 def serialize_meeting_context(

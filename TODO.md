@@ -5,6 +5,19 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
+- **Meeting-LLM latency / fallback — ~41% of meeting-LLM calls fall back to the silent
+  deterministic floor** (held 2026-06-30, from the proactive-chat work). In a 16-game Prime XP
+  probe of `crewborg-chat:v1` (LLM on, proactive doctrine), the LLM fired but **~41% of decisions
+  hit `domain.meeting_llm_fallback`** — the Bedrock round-trip can't finish inside the in-pod budget
+  (¼-core + the 3.0s `CREWBORG_LLM_TIMEOUT_SECONDS`; the diagnosis's H4). Consequence: even with the
+  doctrine fixed, ~41% of intended chats/votes never land (warehouse chat 1.92/g vs telemetry intent
+  4.5/g). Levers to make the LLM *land* consistently: faster model / shorter serialized context /
+  async pre-warm or pipelining of the call / more timeout headroom. **Also re-check
+  `VOTE_TIMER_TICKS=240`** (`strategy/meeting/context.py`) — the game's voting period went **6×
+  longer** (`coworld-crewrift` b78e400, merged 2026-06-29), so the latency guard's timer model may
+  now be stale (crewborg thinks it has far less time than it does, over-triggering the deadline
+  fallback). The proactive-chat change itself is done + committed on branch `meeting-chat-proactive`.
+
 - **Move the Coworld websocket transport/bridge into the player SDK** (flagged by James,
   2026-06-24). Today each player carries its own transport: crewborg's lives in
   `crewrift_lab/crewrift/crewborg/coworld/policy_player.py` (`run_bridge` — connects to the

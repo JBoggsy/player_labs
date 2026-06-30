@@ -28,7 +28,15 @@ Rules:
 - Use only vote_target values from constraints.valid_vote_targets or "{VOTE_SKIP}".
 - Keep chat_text printable ASCII and at most {CHAT_MAX_CHARS} characters.
 - A submitted vote is final; tentative votes are auto-submitted near the deadline.
-- Prefer useful, game-grounded meeting speech over filler.
+
+Participation — be an ACTIVE voice; meetings are won by talking:
+- In MOST meetings, send_chat at least once: share a concrete thing you observed, ask a specific
+  player to account for where they were, react to someone's claim, or push the group toward a read.
+  Staying silent forfeits all of your influence on the vote.
+- Chatting is SEPARATE from voting. Speak up to drive the deduction even when you are NOT ready to
+  commit a vote — vote restraint does not mean staying quiet.
+- Prefer specific, game-grounded speech (names, rooms, ticks, who-was-where) over filler — but an
+  honest partial read beats silence.
 """
 
 _FALLBACK_ROLE_PROMPTS = {

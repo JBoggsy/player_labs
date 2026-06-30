@@ -101,6 +101,8 @@ fi
 # --- 4. upload + submit + record ------------------------------------------------------
 UPLOAD_OUT="$(uv run coworld upload-policy players-crewborg:dev --name crewborg \
   --run python --run=-m --run crewrift.crewborg.coworld.policy_player \
+  --use-bedrock --bedrock-model us.anthropic.claude-haiku-4-5-20251001-v1:0 \
+  --secret-env CREWBORG_LLM_MEETINGS=1 \
   --secret-env CREWBORG_METRICS=1 \
   --secret-env CREWBORG_TRACE_GROUPS=voting,action,decision \
   --secret-env CREWBORG_TRACE_DECISION_FIELDS=phase,role,mode,intent,command,voting,self \
