@@ -17,13 +17,10 @@ General (non-Crewrift) preferences go in the lab-wide file instead.
 
 ## Preferences
 
-- **XP-request opponents: only Aaron's and Andre's players** (2026-06-24). Future
-  experience requests fill opponent seats *only* from Aaron's and Andre's policies — the
-  rest of the field is too weak to be worth measuring against, and a new league is coming.
-  The four relevant accounts and their current champions: **Andre Jr `truecrew:v24`**,
-  **Aaron `crewborg-aaln:v3`**, **Andre von Houck `truecrew:v21`**, **Aaron's Optimizer
-  `sussybuster:v3`** (re-resolve before each run — versions drift). What we care about now
-  is specifically *how crewborg performs against Aaron and Andre*.
+- **XP-request opponents: the current Crewrift Prime champions** (2026-06-29; supersedes the
+  earlier "only Aaron's and Andre's players" rule, now scrapped). Fill opponent seats from the
+  live Prime division's champion pool — i.e. `top_n` / `random` against the Prime division
+  target. Measure crewborg against whoever is actually competing now, not a hand-picked set.
 - **Rotate opponents through seats so we play with AND against each of them in every role.**
   Our own role stays *fixed* (crewborg pinned at slot 0 with the batch's role); the
   *opponents* sit at `slot: -1` (round-robin) so each cycles through all open seats across

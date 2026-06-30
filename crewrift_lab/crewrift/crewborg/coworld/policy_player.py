@@ -38,7 +38,7 @@ from typing import Any
 import websockets
 
 from crewrift.crewborg import build_runtime
-from crewrift.crewborg.action import encode_chat, encode_input
+from crewrift.crewborg.action import encode_chat, encode_input, encode_ready
 from crewrift.crewborg.coworld.scene import SceneState
 from crewrift.crewborg.map import walkability_matches
 from crewrift.crewborg.trace import TraceConfig
@@ -349,6 +349,13 @@ async def _run_session(
         # Meeting chat (accepted only during Voting); sent as it appears.
         if command.chat is not None:
             await websocket.send(encode_chat(command.chat))
+
+        # End-of-tick Player-Ready (0x85): let the server's fast-mode frame limiter
+        # advance the moment every player is ready, instead of waiting the full ~42ms
+        # frame. Sent every tick AFTER our action/chat above, so the tick never
+        # advances before we've acted. Only all-ready games (our self-play /
+        # same-policy A/Bs) actually speed up; it's ignored otherwise.
+        await websocket.send(encode_ready())
         state.previous_arrival = arrival
 
 
