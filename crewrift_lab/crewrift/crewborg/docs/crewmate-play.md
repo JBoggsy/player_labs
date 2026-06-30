@@ -99,8 +99,12 @@ button instead of flickering on and off with the tail:
 
 - If `_button_call_spent` is already set, it returns `None` forever (this game) — we never
   call a second meeting; we fall back to tasks.
-- If we already have a committed `_accuse_target` and that player is still alive
-  (`_accuse_target_alive`), we **keep** it — even if the tail briefly lapses while we walk.
+- If we already have a committed `_accuse_target` that is still alive **and** still
+  `top_suspect` (the player the meeting would vote out), we **keep** it — even if the tail
+  briefly lapses while we walk (suspicion persists, so a near-certain suspect stays
+  convictable). But if it's been exculpated back below the vote bar — or overtaken /
+  voted / killed — we drop it and re-acquire, so we never march the one-shot button run
+  toward a meeting we can no longer win (or one that would eject a teammate).
 - Otherwise we re-acquire from `strategy/suspicion.py:active_tail_suspect` — the player
   with an *ongoing* `tailing_self` interval who is also `top_suspect` (the player the
   meeting would vote out), so the call bar is the conviction bar. See
@@ -199,7 +203,11 @@ The division of labor is deliberate:
   one-shot button (and refuses to re-enter Accuse once `_button_call_spent`), and it keeps
   `_sticky_accuse_target` locked on the committed player through the whole walk even if the
   tail briefly drops — so the agent commits to the walk instead of abandoning it the first
-  frame the tailer steps out of view.
+  frame the tailer steps out of view. The commitment is gated on **convictability**, not
+  the tail: it holds while the suspect is still `top_suspect` (the meeting would eject it),
+  and is released the moment it's exculpated below the vote bar / overtaken / voted /
+  killed — so a tail lapse keeps the walk, but a suspect that stops being convictable sends
+  us back to tasks rather than to a button press we can't win.
 - **The action layer does the walking and pressing.**
   `action.py:_resolve_call_meeting` drives onto the button's reachable anchor
   (`nav.button_anchor`, or the button center before the graph exists) and, once standing in

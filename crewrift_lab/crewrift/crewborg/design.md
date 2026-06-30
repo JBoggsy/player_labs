@@ -754,9 +754,14 @@ default directive is `idle` mode (the stall/TTL fallback, rarely reached).
 3. an **active tail** by a suspect the meeting would convict (`active_tail_suspect` —
    the tailer is `top_suspect`), with a button call left → **Accuse**: drop tasks and
    go slam the emergency button.
-   The selector **commits** to the target (stays in Accuse through the walk even if
-   the tail briefly lapses, until it's voted out / dies), and marks the one-shot call
-   spent once we reach the button so we fall back to tasks instead of looping there.
+   The selector **commits** to the target and keeps walking to the button — but only
+   **while the meeting could still convict it**: the target is alive *and* still
+   `top_suspect`. Suspicion persists (no decay), so the commitment survives the tail
+   lapsing as we leave the suspect; but if the suspect is exculpated back below the vote
+   bar (or another suspect overtakes it / it's voted out / dies), we **abandon the run
+   and go back to tasks** rather than spend the one-shot button on a meeting we can no
+   longer win. It marks the one-shot call spent once we reach the button so we fall back
+   to tasks instead of looping there.
 4. otherwise → **Normal** (ghosts stay in Normal to finish own tasks)
 
 **Imposter selection** (priority order):

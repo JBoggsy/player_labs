@@ -112,6 +112,16 @@ def test_accuse_commitment_persists_when_the_tail_briefly_lapses() -> None:
     assert _select_with(strategy, lapsed, tick=50) == "accuse"
 
 
+def test_accuse_abandons_a_target_no_longer_convictable_and_returns_to_tasks() -> None:
+    # Committed to a convictable tail, but mid-walk the suspect is exculpated back below
+    # the vote bar (it's no longer top_suspect). We must NOT keep marching to the button
+    # for a meeting we can't win (or that would eject a teammate) — drop it and task.
+    strategy = RuleBasedStrategy()
+    assert _select_with(strategy, _crewmate_being_tailed(tick=40, p=0.95), tick=40) == "accuse"
+    exculpated = _crewmate_being_tailed(tick=50, p=0.7)  # still alive + tailing, but < the bar
+    assert _select_with(strategy, exculpated, tick=50) == "normal"
+
+
 def test_accuse_stops_once_the_committed_target_dies() -> None:
     strategy = RuleBasedStrategy()
     assert _select_with(strategy, _crewmate_being_tailed(tick=40, p=0.95), tick=40) == "accuse"

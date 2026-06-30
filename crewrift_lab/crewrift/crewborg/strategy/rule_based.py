@@ -58,7 +58,7 @@ from crewrift.crewborg.strategy.opportunity import (
     recon_window,
     ticks_until_kill_ready,
 )
-from crewrift.crewborg.strategy.suspicion import active_tail_suspect
+from crewrift.crewborg.strategy.suspicion import active_tail_suspect, top_suspect
 from crewrift.crewborg.types import ActionState, Belief
 from players.player_sdk import ModeDirective
 from players.player_sdk.types import BeliefSnapshot
@@ -160,16 +160,27 @@ class RuleBasedStrategy:
     def _sticky_accuse_target(self, belief: Belief) -> str | None:
         """The tail we should keep heading to the button to accuse, or ``None``.
 
-        Once we've spent the one button call this game, we never accuse again (fall
-        back to tasks). Otherwise we **commit** to a target: stay locked on it through
-        the walk to the button even if the tail briefly lapses, until it's voted out /
-        dies. We re-acquire from ``active_tail_suspect`` only when not already committed.
+        Once we've spent the one button call this game, we never accuse again (fall back
+        to tasks). Otherwise we **commit** to a target and keep walking to the button —
+        but *only while the meeting could still convict it*: the target is alive **and**
+        still ``top_suspect`` (the player Attend Meeting would vote out). Suspicion
+        persists with no time decay, so this holds through the walk even as the tail
+        lapses behind us once we leave the suspect. But if the suspect gets exculpated
+        back below the vote bar (the fitted model has exculpatory evidence — doing tasks,
+        being observed) or another suspect overtakes it, we **abandon the button run and
+        go finish tasks** rather than spend the one-shot button on a meeting we can no
+        longer win (or one that would eject a teammate). We re-acquire from
+        ``active_tail_suspect`` only when not already committed to a convictable target.
         """
 
         if self._button_call_spent:
             self._accuse_target = None
             return None
-        if self._accuse_target is not None and self._accuse_target_alive(belief, self._accuse_target):
+        if (
+            self._accuse_target is not None
+            and self._accuse_target_alive(belief, self._accuse_target)
+            and self._accuse_target == top_suspect(belief)
+        ):
             return self._accuse_target
         self._accuse_target = active_tail_suspect(belief)
         return self._accuse_target
