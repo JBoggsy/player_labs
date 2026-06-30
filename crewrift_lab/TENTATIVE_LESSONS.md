@@ -64,6 +64,28 @@ actively dangerous:**
   STRONG evidence), not the tail-meeting threshold. Recommend: keep "raise" (safe waste-removal),
   reject "lower" (dangerous), look elsewhere for crew win rate. [[crewborg-crew-weakness]]
 
+### Commitment to the button run must be gated on convictability, not just "alive"
+Evidence: with "raise", acquisition is safe (we only START an Accuse run when the tailer is
+`top_suspect`), but the OLD stickiness (`rule_based._sticky_accuse_target`) kept walking to the
+one-shot button as long as the committed target was merely ALIVE — never re-checking the vote was
+still winnable. A suspect exculpated mid-walk (the fitted model lowers P when a player does tasks /
+is observed) still got the button spent on a meeting that now silent-skips. Fix: keep the committed
+target only while it is alive AND still `top_suspect` (the player the meeting would eject). Suspicion
+has no time decay, so this still survives the tail lapsing as we walk away from the suspect — but a
+suspect that drops below the vote bar / is overtaken / voted / killed releases the run → back to
+tasks. Lesson: a "commit through transient noise" rule must re-validate on the END CONDITION that
+makes the action worth it (here: convictability), not a proxy (alive) that stays true long after the
+action stopped paying off.
+
+### Convictability flickering (≥0.9 → <0.9 mid-game) is suspicion-MODEL volatility, not a meeting bug
+Evidence: the only reason the abandon-the-run guard above is needed is that a player we judged
+near-certain (`top_suspect`, P≥0.9) can later fall below the bar. If the suspicion posterior were
+stable, a convictable suspect would STAY convictable and the guard would rarely fire. So the guard is
+DEFENSIVE against suspicion noise — the durable fix is in the suspicion components (the fitted model /
+`suspicion_lab`), which is owned elsewhere. Lesson: when a downstream consumer needs a "don't act on
+stale confidence" guard, note it as a SYMPTOM pointing at upstream model instability — fix the guard
+to stay safe now, but flag the root cause rather than papering over it silently. [[crewborg-v70-equals-base]]
+
 ### Build/upload hazard: parallel worktree agents share the global Docker `:dev` tag
 Evidence: a concurrent agent (imposter-kill worktree) was rebuilding `players-crewborg:dev` and
 uploading under `--name crewborg` at the same time as this session — so `players-crewborg:dev` could
