@@ -5,7 +5,12 @@ from __future__ import annotations
 from crewrift.crewborg.modes import AttendMeetingMode
 from crewrift.crewborg.perception.entities import VoteCandidate, VoteDot, VotingState
 from crewrift.crewborg.strategy.meeting.accusation import build_accusation, fabricate_accusation
-from crewrift.crewborg.strategy.meeting.imposter import bandwagon_target, votes_against
+from crewrift.crewborg.strategy.meeting.imposter import (
+    alive_imposter_count,
+    bandwagon_target,
+    parity_closing_vote_target,
+    votes_against,
+)
 from crewrift.crewborg.types import ActionState, Belief, PlayerEvent, PlayerRecord
 from players.player_sdk import EventEmitter, ListMetricsSink, ListTraceSink
 
@@ -21,6 +26,16 @@ def _voting(self_color="orange", **kwargs) -> VotingState:
         ),
         **kwargs,
     )
+
+
+def _parity_voting(self_color="orange", teammate="green", crew=("red", "blue", "yellow"), **kwargs):
+    """A census at the parity-closing board: us + one live teammate + ``crew`` crewmates,
+    all alive (default 5 alive = 3 crew / 2 imposters, exactly one removal short)."""
+
+    cells = [VoteCandidate(slot=0, color=self_color, alive=True),
+             VoteCandidate(slot=1, color=teammate, alive=True)]
+    cells += [VoteCandidate(slot=2 + i, color=c, alive=True) for i, c in enumerate(crew)]
+    return VotingState(timer_present=True, self_marker_color=self_color, candidates=tuple(cells), **kwargs)
 
 
 # --- vote tally read --------------------------------------------------------
@@ -173,3 +188,73 @@ def test_imposter_skips_at_the_deadline_when_no_crewmate_takes_heat() -> None:
     belief.last_tick = 200  # within the auto-submit window (240-tick timer)
     vote = mode.decide(belief, ActionState())
     assert vote.kind == "vote" and vote.target_color is None  # skip
+
+
+# --- parity-closing push (one removal from a win) ---------------------------
+
+
+def test_alive_imposter_count_is_self_plus_live_known_teammates() -> None:
+    belief = Belief(self_role="imposter", teammate_colors={"green"})
+    belief.voting = _parity_voting(teammate="green")
+    assert alive_imposter_count(belief) == 2  # us + the live teammate
+    # An unknown teammate doesn't count, and is the conservative (1) self-gate value.
+    assert alive_imposter_count(Belief(self_role="imposter")) == 1
+
+
+def test_parity_push_manufactures_a_target_when_one_removal_from_parity() -> None:
+    # 3 crew / 2 imposters, no heat anywhere: pick the lowest-slot crewmate (the shared
+    # deterministic key both imposters compute, so their ballots stack).
+    belief = Belief(self_role="imposter", teammate_colors={"green"})
+    belief.voting = _parity_voting()  # red(2) blue(3) yellow(4)
+    assert parity_closing_vote_target(belief) == "red"
+
+
+def test_parity_push_prefers_a_crewmate_already_drawing_votes() -> None:
+    belief = Belief(self_role="imposter", teammate_colors={"green"})
+    belief.voting = _parity_voting(dots=(VoteDot(voter=2, target=3),))  # red -> blue
+    assert parity_closing_vote_target(belief) == "blue"  # join the visible pile
+
+
+def test_parity_push_never_targets_a_teammate_even_when_the_team_draws_heat() -> None:
+    belief = Belief(self_role="imposter", teammate_colors={"green"})
+    belief.voting = _parity_voting(dots=(VoteDot(voter=2, target=1),))  # red -> green (teammate)
+    assert parity_closing_vote_target(belief) == "red"  # teammate excluded; cold pick
+
+
+def test_parity_push_is_silent_without_a_known_live_teammate() -> None:
+    # Team unknown (reveal missed) ⇒ we can't trust the arithmetic or the exclusion,
+    # so we never push (no regression, and never risk voting our own teammate).
+    belief = Belief(self_role="imposter")  # no teammate_colors
+    belief.voting = _parity_voting(teammate="green")
+    assert parity_closing_vote_target(belief) is None
+
+
+def test_parity_push_does_not_fire_two_removals_from_parity() -> None:
+    belief = Belief(self_role="imposter", teammate_colors={"green"})
+    belief.voting = _parity_voting(crew=("red", "blue", "yellow", "pink"))  # 4 crew / 2 imp
+    assert parity_closing_vote_target(belief) is None
+
+
+def test_imposter_parity_pushes_instead_of_skipping_one_removal_short() -> None:
+    mode = AttendMeetingMode()
+    belief = Belief(phase="Voting", self_role="imposter", teammate_colors={"green"}, last_tick=0)
+    belief.suspicion = {"red": 0.3, "blue": 0.3, "yellow": 0.3}  # flat — no real lead
+    belief.voting = _parity_voting()  # 3 crew / 2 imp, no heat → would otherwise skip
+    belief.roster["red"] = PlayerRecord(color="red", life_status="alive")
+
+    chat = mode.decide(belief, ActionState())
+    assert chat.kind == "chat" and chat.text.startswith("red sus:")  # manufactured pile
+    vote = mode.decide(belief, ActionState())
+    assert vote.kind == "vote" and vote.target_color == "red"
+
+
+def test_imposter_without_a_known_teammate_still_skips_a_flat_endgame() -> None:
+    mode = AttendMeetingMode()
+    belief = Belief(phase="Voting", self_role="imposter", phase_start_tick=0, last_tick=0)
+    belief.suspicion = {"red": 0.3, "blue": 0.3, "yellow": 0.3}
+    belief.voting = _parity_voting(teammate="green")  # green present but not known as ours
+
+    assert mode.decide(belief, ActionState()).kind == "idle"  # no push without a known team
+    belief.last_tick = 200
+    vote = mode.decide(belief, ActionState())
+    assert vote.kind == "vote" and vote.target_color is None  # falls back to skip

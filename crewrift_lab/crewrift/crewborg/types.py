@@ -713,11 +713,20 @@ def update_belief(belief: Belief, percept: Percept) -> None:
                     ChatEvent(tick=percept.tick, speaker_color=line.speaker_color, text=line.text)
                 )
 
-    # The role-reveal "IMPS" interstitial confirms we are an imposter and shows
-    # only our teammates' icons; record their colors so Hunt never targets them.
-    if belief.phase == "RoleReveal" and "IMPS" in resolved.phase_texts:
+    # The role-reveal screen shows an imposter viewer *only* their teammates' icons
+    # in a dedicated object-id range (9500+, `ROLE_ICON_OBJECT_BASE`) that the engine
+    # renders nowhere else. So any non-empty `reveal_player_colors` IS our imposter
+    # team — latch it on sight rather than gating on the phase machine having reached
+    # "RoleReveal" with the "IMPS" text parsed that exact frame. That strict gate could
+    # miss a one-frame parse blip or an initial-connect race (design §3.1), leaving us
+    # blind to our teammate all game — which then makes us follow, suss, and vote our
+    # own teammate (design §7.2; warehouse 2026-06-30: ~22% of imposter votes hit the
+    # teammate, vs 0% for policies that always know it).
+    if resolved.reveal_player_colors:
         belief.self_role = "imposter"
         belief.teammate_colors |= resolved.reveal_player_colors
+    elif belief.phase == "RoleReveal" and "IMPS" in resolved.phase_texts:
+        belief.self_role = "imposter"
 
     # Self role/state (design §4-§5). The HUD shows an imposter/ghost icon for
     # those roles; an alive crewmate has neither, so once we know we are Playing
