@@ -42,8 +42,27 @@ lower bar. They trade off precision vs. activity: A risks under-calling (the fea
 dormant), B risks mis-ejecting crew (the fitted intercept puts a no-evidence player at P≈0.57, so 0.6
 is barely above baseline). Lesson: when a fix is "align two thresholds," BOTH directions are real
 candidates — don't assume raise-to-safe is better than lower-to-active; A/B/C them.
-Status: 3-arm A/B/C launched 2026-06-30 (arms crewborg-emr-{base,raise,lower}:v1), 7 Prime champions
-× 20 eps each, our policy = 6 crew vs champion = 2 imposters. Verdict pending.
+Status: 3-arm A/B/C DONE 2026-06-30 (420 clean eps, our policy=6 crew vs each of 7 Prime champions
+=2 imposters, 20 eps/cell). **VERDICT — neither bar-alignment moves crew win rate; "lower" is
+actively dangerous:**
+- crew win: base **23.6%** (33/140), raise **25.0%** (35/140, +1.4pp p=0.78 NS), lower **20.0%**
+  (28/140, −3.6pp p=0.47 NS). All three statistically indistinguishable at the arm level.
+- "lower" (convict at 0.6) is a high-variance TRAP: +35pp vs notsus (50% — notsus imposters cross
+  0.6 on real evidence) but COLLAPSES to **0/20** vs three aaln-lineage imposters (crewborg-aaln,
+  crewborg-mv, jordan-aaln) + 10% vs aaln-richard. Mechanism (highly significant): lowered-bar crew
+  cast **6.06 player-votes/g** (base 3.02, raise 2.06) and **65% of their losses are crew-on-crew
+  self-ejections** (imp kills≤3 ⟹ a crewmate was voted out; base 26%, p=7e-9). Against stealthy
+  (crewborg-derived) imposters that stay under 0.6, the 0.6 crew vote each OTHER out → parity gift.
+  Empirically validates exactly why the fitted crew vote bar is 0.9 (precision).
+- "raise" (call only when convictable) is a SAFE no-op: neutral win rate, fewer crew player-votes
+  (3.02→2.06 — it stops spending the button on unconvictable tails), no downside. It implements the
+  documented intent and removes the warehouse-confirmed waste (97 calls, 9% convict, 27% mis-eject)
+  at zero cost — but the emergency meeting is NOT the crew-winrate lever.
+- BIG-PICTURE lesson: the crew emergency-meeting bar doesn't move crew outcomes in EITHER direction.
+  Crew lose ~76-80% regardless; **77/140 base games were "nearly done (≥36/48 tasks) but lost"** — the
+  real crew lever is the PARITY RACE (surviving kills / finishing tasks faster / voting imposters on
+  STRONG evidence), not the tail-meeting threshold. Recommend: keep "raise" (safe waste-removal),
+  reject "lower" (dangerous), look elsewhere for crew win rate. [[crewborg-crew-weakness]]
 
 ### Build/upload hazard: parallel worktree agents share the global Docker `:dev` tag
 Evidence: a concurrent agent (imposter-kill worktree) was rebuilding `players-crewborg:dev` and
