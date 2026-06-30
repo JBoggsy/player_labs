@@ -42,6 +42,19 @@ step() {  # step <name> <cmd...>
 
 log "=== nightly refit start ($TAG) ==="
 
+# --- DISABLED 2026-06-30 (James) ------------------------------------------------------
+# Nightly auto-fit+submit is PAUSED pending a thorough rework of the training pipeline.
+# Root cause (docs/crew-voting-investigation.md): the model is fit on the OFFLINE replay
+# reconstruction (suspicion_lab features.py over game.sees()), which has a TRAIN->SERVE
+# gap vs crewborg's LIVE perception + event_log — 94% imposter-precision offline vs ~39%
+# live. Re-fitting on the same offline reconstruction can't close that gap, so the nightly
+# refit churned versions without moving outcomes. The rework fits on crewborg's OWN
+# runtime-traced features instead. Re-enable only once that lands: NIGHTLY_REFIT_ENABLED=1.
+if [[ "${NIGHTLY_REFIT_ENABLED:-0}" != "1" ]]; then
+  log "DISABLED: nightly auto-fit+submit paused pending training-pipeline rework — champion unchanged."
+  exit 0
+fi
+
 # --- prerequisites -------------------------------------------------------------
 command -v uv >/dev/null || abort "uv not on PATH"
 command -v docker >/dev/null || abort "docker not on PATH"
