@@ -15,10 +15,12 @@ Crewmate priority order (design §10):
 5. otherwise → idle
 
 The Accuse trigger is ``active_tail_suspect`` (``strategy.suspicion``, design §10.1):
-the most-suspicious player currently shadowing us whose posterior is over
-``ACCUSE_THRESHOLD``. The emergency button is a **one-shot** resource per game
-(``buttonCalls = 1``), so once we've spent the call we fall back to tasks rather than
-loop at the button; the budget resets at the next game (``Lobby``/``RoleReveal``).
+the player currently shadowing us whom the meeting would actually convict (``top_suspect``
+— the one Attend Meeting would vote out). The call bar IS the conviction bar, so we only
+spend the button when the meeting will eject the tailer. The emergency button is a
+**one-shot** resource per game (``buttonCalls = 1``), so once we've spent the call we
+fall back to tasks rather than loop at the button; the budget resets at the next game
+(``Lobby``/``RoleReveal``).
 
 Imposter priority order (design §10):
 

@@ -253,6 +253,6 @@ def test_accuse_mode_calls_a_meeting_naming_the_active_tail() -> None:
         color="red", world_x=120, world_y=100, last_seen_tick=40, life_status="alive",
         events=[PlayerEvent(kind="tailing_self", start_tick=1, end_tick=40, target_color=None)],
     )
-    belief.suspicion = {"red": 0.7}  # over the sketched-out bar
+    belief.suspicion = {"red": 0.95}  # convictable: the player the meeting would vote out
     intent = AccuseMode().decide(belief, ActionState())
     assert intent.kind == "call_meeting" and intent.target_color == "red"

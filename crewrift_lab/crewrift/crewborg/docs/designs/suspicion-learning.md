@@ -231,7 +231,9 @@ improves held-out decision metrics.
    (expand one of our own episodes, compare against the agent's traced features —
    crewborg's `telemetry.jsonl` already records its event log).
 3. **Thresholds re-derived, not inherited.** `VOTE_PROBABILITY` /
-   `VOTE_LEAD_MIN_P+MARGIN` / `ACCUSE_THRESHOLD` get re-chosen by the §6 decision
+   `VOTE_LEAD_MIN_P+MARGIN` get re-chosen by the §6 decision
+   <!-- The accuse bar is no longer a standalone threshold: Accuse fires only when the
+   tailer is `top_suspect`, so it inherits whatever vote bar is chosen here. -->
    simulator on the *fitted* posterior (likely outcome: vote only near witnessed-
    level certainty; keep Accuse's button-slam — the CD-reset stall is independently
    valuable — but decouple its accusation/vote unless the posterior clears the new

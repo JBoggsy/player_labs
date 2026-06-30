@@ -21,7 +21,7 @@ def _select_with(strategy: RuleBasedStrategy, belief: Belief, tick: int = 1) -> 
 
 
 def _crewmate_being_tailed(
-    *, tick: int, p: float = 0.7, tail_end: int | None = None, color: str = "red", alive: bool = True
+    *, tick: int, p: float = 0.95, tail_end: int | None = None, color: str = "red", alive: bool = True
 ) -> Belief:
     """A live crewmate being shadowed by ``color``: an (optionally lapsed) tailing_self
     interval plus a manually set posterior ``p`` (the selector reads belief.suspicion)."""
@@ -88,41 +88,44 @@ def test_ghost_does_tasks_not_report() -> None:
 
 
 def test_active_tail_by_a_suspect_selects_accuse() -> None:
-    assert _select(_crewmate_being_tailed(tick=40, p=0.7)) == "accuse"
+    assert _select(_crewmate_being_tailed(tick=40, p=0.95)) == "accuse"
 
 
-def test_a_tail_below_the_sketched_out_bar_keeps_tasking() -> None:
-    # Being tailed, but we're not yet suspicious enough (< ACCUSE_THRESHOLD) ⇒ tasks.
+def test_a_tail_below_the_conviction_bar_keeps_tasking() -> None:
+    # Being tailed by a real suspect (P=0.7), but short of the conviction bar the meeting
+    # votes at (top_suspect ⇒ 0.9 fitted): calling would burn the one-shot button on a
+    # meeting that silently skips, so we keep tasking instead.
+    assert _select(_crewmate_being_tailed(tick=40, p=0.7)) == "normal"
     assert _select(_crewmate_being_tailed(tick=40, p=0.4)) == "normal"
 
 
 def test_a_suspect_not_currently_tailing_keeps_tasking() -> None:
     # Suspicious, but the tail lapsed long ago (no live tailing_self) ⇒ no accuse.
-    assert _select(_crewmate_being_tailed(tick=100, p=0.7, tail_end=10)) == "normal"
+    assert _select(_crewmate_being_tailed(tick=100, p=0.95, tail_end=10)) == "normal"
 
 
 def test_accuse_commitment_persists_when_the_tail_briefly_lapses() -> None:
     strategy = RuleBasedStrategy()
-    assert _select_with(strategy, _crewmate_being_tailed(tick=40, p=0.7), tick=40) == "accuse"
+    assert _select_with(strategy, _crewmate_being_tailed(tick=40, p=0.95), tick=40) == "accuse"
     # The tail lapses mid-walk to the button, but we stay committed to the run.
-    lapsed = _crewmate_being_tailed(tick=50, p=0.7, tail_end=10)
+    lapsed = _crewmate_being_tailed(tick=50, p=0.95, tail_end=10)
     assert _select_with(strategy, lapsed, tick=50) == "accuse"
 
 
 def test_accuse_stops_once_the_committed_target_dies() -> None:
     strategy = RuleBasedStrategy()
-    assert _select_with(strategy, _crewmate_being_tailed(tick=40, p=0.7), tick=40) == "accuse"
-    dead = _crewmate_being_tailed(tick=50, p=0.7, alive=False)
+    assert _select_with(strategy, _crewmate_being_tailed(tick=40, p=0.95), tick=40) == "accuse"
+    dead = _crewmate_being_tailed(tick=50, p=0.95, alive=False)
     assert _select_with(strategy, dead, tick=50) == "normal"
 
 
 def test_the_one_button_call_is_spent_at_the_button_then_we_fall_back_to_tasks() -> None:
     strategy = RuleBasedStrategy()
-    at_button = _crewmate_being_tailed(tick=40, p=0.7)
+    at_button = _crewmate_being_tailed(tick=40, p=0.95)
     at_button.map = _map_with_button_around_self()  # self is inside the button rect
     assert _select_with(strategy, at_button, tick=40) == "accuse"  # presses A — call spent
     # Still being tailed next tick, but the one call is used ⇒ back to tasks, not stuck.
-    assert _select_with(strategy, _crewmate_being_tailed(tick=41, p=0.7), tick=41) == "normal"
+    assert _select_with(strategy, _crewmate_being_tailed(tick=41, p=0.95), tick=41) == "normal"
 
 
 def test_an_unreachable_button_keeps_us_tasking_instead_of_stalling() -> None:
@@ -130,20 +133,20 @@ def test_an_unreachable_button_keeps_us_tasking_instead_of_stalling() -> None:
     from crewrift.crewborg.strategy.rule_based import _button_reachable
 
     assert _button_reachable(Belief()) is False  # no map ⇒ can't call a meeting
-    assert _button_reachable(_crewmate_being_tailed(tick=40, p=0.7)) is True  # map, no nav ⇒ ok
+    assert _button_reachable(_crewmate_being_tailed(tick=40, p=0.95)) is True  # map, no nav ⇒ ok
     # With a nav graph the guard keys on button_anchor (unreachable ⇒ False), so the
     # selector falls back to Normal rather than committing to an unrouteable goal.
 
 
 def test_a_new_game_restores_the_button_call_budget() -> None:
     strategy = RuleBasedStrategy()
-    at_button = _crewmate_being_tailed(tick=40, p=0.7)
+    at_button = _crewmate_being_tailed(tick=40, p=0.95)
     at_button.map = _map_with_button_around_self()
     _select_with(strategy, at_button, tick=40)  # spends the call
-    assert _select_with(strategy, _crewmate_being_tailed(tick=41, p=0.7), tick=41) == "normal"
+    assert _select_with(strategy, _crewmate_being_tailed(tick=41, p=0.95), tick=41) == "normal"
     # A fresh game (RoleReveal) resets the budget; accusing is available again.
     assert _select_with(strategy, Belief(phase="RoleReveal"), tick=42) == "idle"
-    assert _select_with(strategy, _crewmate_being_tailed(tick=43, p=0.7), tick=43) == "accuse"
+    assert _select_with(strategy, _crewmate_being_tailed(tick=43, p=0.95), tick=43) == "accuse"
 
 
 def test_non_playing_phases_idle() -> None:

@@ -129,9 +129,14 @@ FOLLOW_LOG_LR = math.log(6.0)
 TAIL_SELF_LOG_LR_MAX = math.log(6.5)
 TAIL_SELF_MIDPOINT_TICKS = 30  # logistic centre (P ≈ 0.5 here at a typical prior)
 TAIL_SELF_STEEPNESS = 0.2  # 50 ticks ⇒ ~0.98 of max; 15 ticks ⇒ ~0.05 of max
-# Once an *active* tail pushes our suspicion of the tailer to this, we are "sketched
-# out" enough to stop and call a meeting (Accuse mode, ~34 ticks of sustained tailing).
-ACCUSE_THRESHOLD = 0.6
+# The accuse/call-a-meeting bar is NOT a standalone threshold — it is the *conviction*
+# bar (``top_suspect``, the player Attend Meeting would actually vote out). The one-shot
+# emergency button + the whole team's frozen task time are only worth spending when the
+# meeting will convict, so ``active_tail_suspect`` calls only when the tailer is the
+# votable top suspect. (History: a standalone ``ACCUSE_THRESHOLD = 0.6`` sat far below
+# the 0.9 fitted conviction bar, so crewborg called ~0.6 button meetings/game that
+# converted only ~9% and ejected a *crewmate* ~27% of the time — a parity gift to the
+# imposters; warehouse, 170-ep sweep 2026-06-30. See ``active_tail_suspect``.)
 # A tailing_self interval counts as *active* (they're tailing us right now) if it was
 # extended within this many ticks — robust to a brief occlusion mid-tail.
 ACCUSE_TAIL_RECENCY_TICKS = 6
@@ -533,23 +538,36 @@ def witnessed_imposters(belief: Belief) -> set[str]:
 
 
 def active_tail_suspect(belief: Belief) -> str | None:
-    """The player currently **tailing us** whom we're suspicious enough to accuse, or
-    `None`. The most-suspicious color with an *ongoing* `tailing_self` interval and
-    P ≥ `ACCUSE_THRESHOLD`. Drives Accuse mode: stop, go slam the meeting button, then
-    accuse them. Crewmate-only by construction (suspicion is empty for other roles)."""
+    """The player currently **tailing us** that the meeting would actually convict, or
+    `None`. Drives Accuse mode: stop, go slam the emergency button, then accuse + vote
+    them.
 
-    best: tuple[str, float] | None = None
-    for color, p in belief.suspicion.items():
-        if p < ACCUSE_THRESHOLD or color == belief.self_color:
-            continue
-        record = belief.roster.get(color)
-        if record is None or record.life_status == "dead":
-            continue
-        if not _is_actively_tailing(record, belief.last_tick):
-            continue
-        if best is None or p > best[1]:
-            best = (color, p)
-    return best[0] if best is not None else None
+    The call bar IS the conviction bar. The button is a one-shot resource and a meeting
+    freezes the *whole team's* task time, so spending it on a tail only pays off if the
+    meeting will eject the tailer — and the meeting votes ``top_suspect`` (the player
+    Attend Meeting would eject). So we call only when the player we'd vote out is the one
+    shadowing us: ``top_suspect(belief)`` is alive and actively tailing. If no one clears
+    the conviction bar (a *pure* tail never does under the fitted model — being-tailed is
+    weak/exculpatory evidence, design §10.1), we keep tasking rather than burn the button
+    on a meeting that silently skips.
+
+    This replaced a standalone ``ACCUSE_THRESHOLD = 0.6`` that sat far below the 0.9
+    fitted vote bar: crewborg called button meetings readily but then re-derived
+    ``top_suspect`` at 0.9 and found no one, so it voted *skip* in 54% of the meetings it
+    itself called and stayed silent in 80% — 97 calls, ~9% converted, 27% ejected a
+    crewmate (warehouse, 170-ep sweep 2026-06-30). Tying the call to ``top_suspect``
+    aligns the two bars: call only when convictable. Crewmate-only by construction
+    (suspicion is empty for other roles)."""
+
+    votable = top_suspect(belief)
+    if votable is None or votable == belief.self_color:
+        return None
+    record = belief.roster.get(votable)
+    if record is None or record.life_status == "dead":
+        return None
+    if not _is_actively_tailing(record, belief.last_tick):
+        return None
+    return votable
 
 
 def _is_actively_tailing(record: PlayerRecord, tick: int) -> bool:

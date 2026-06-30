@@ -360,18 +360,30 @@ def test_a_sustained_tail_saturates_at_a_moderate_suspicion_below_the_flee_bar()
     assert "red" not in belief.believed_imposters  # below FLEE_PROBABILITY
 
 
-def test_active_tail_suspect_fires_only_for_a_live_tail_over_the_bar() -> None:
+def test_active_tail_suspect_fires_when_the_votable_top_suspect_is_tailing() -> None:
+    # The call bar IS the conviction bar: we call only on a tail the meeting would eject
+    # (top_suspect), alive and actively shadowing us.
     belief = _crew_belief()  # last_tick = 200
     _add(belief, "red", [_tail(dur=50, start=150)])  # ends at 200 — a live, sustained tail
-    _add(belief, "blue", [_tail(dur=50, start=1)])  # ends at 51 — same strength, but lapsed
-    update_suspicion(belief)
-    assert active_tail_suspect(belief) == "red"  # only the live tail triggers Accuse
+    belief.suspicion = {"red": 0.95, "blue": 0.2}  # red is the convictable top suspect
+    assert active_tail_suspect(belief) == "red"
 
 
-def test_active_tail_suspect_is_none_below_the_accuse_threshold() -> None:
+def test_active_tail_suspect_is_none_when_the_top_suspect_is_not_tailing() -> None:
+    # Convictable, but the tail lapsed long ago (no live tailing_self) ⇒ no button call.
     belief = _crew_belief()
-    _add(belief, "red", [_tail(dur=8, start=190)])  # live (ends at 198) but brief ⇒ P < bar
-    update_suspicion(belief)
+    _add(belief, "red", [_tail(dur=50, start=1)])  # ends at 51 — lapsed
+    belief.suspicion = {"red": 0.95, "blue": 0.2}
+    assert active_tail_suspect(belief) is None
+
+
+def test_active_tail_suspect_is_none_below_the_conviction_bar() -> None:
+    # Being tailed by a real-but-not-convictable suspect on a flat field (top_suspect
+    # names no one): calling would burn the one-shot button on a meeting that silently
+    # skips, so we keep tasking.
+    belief = _crew_belief()
+    _add(belief, "red", [_tail(dur=50, start=150)])  # a live, sustained tail
+    belief.suspicion = {"red": 0.7, "blue": 0.65}  # no clear leader, none at the vote bar
     assert active_tail_suspect(belief) is None
 
 
