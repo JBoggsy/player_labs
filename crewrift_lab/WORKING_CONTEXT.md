@@ -47,7 +47,41 @@ NEXT: tune — (1) imposter A/B (commander LLM on vs off) for kill efficiency, i
 useful `hunt_room`/`target_player`/`strength`; (2) Phase 4 EscortMode for crew. Both roles wired + strength dial. Branch `worktree-labs-work`
 (merged to origin/main @ `2ec14f9`); uploaded v55–v64, **none submitted**.
 
-## 🎯 OBJECTIVE (REFRAMED 2026-06-26): imposter KILL→WIN CONVERSION, not kill count
+## 🎯 OBJECTIVE (REFRAMED 2026-06-30): fix crewborg's CREW play (voting-led)
+
+**Two active win fronts: CREW (new, primary) + imposter KILL→WIN (kept).** A 170-ep Prime sweep + 4-agent
+diagnosis (2026-06-30) added the crew front and refined — NOT replaced — the old "kill→WIN conversion" thread
+below (direction 4): crewborg is a **competent imposter (40–70% 1v1 win) and a losing crewmate (0–30%)**; v70 ≈ crewborg-base, so weights don't move outcomes — **change the MODES**. The crew
+loss is a **social-deduction / voting failure**, not survival: crew skips ~49% of votes, hits a *crewmate*
+~60% of the time it does vote, ejects 0.28 imposters/ep vs notsus's 0.60; notsus dies at the same rate but
+WINS by **decisive + coordinated** voting (roster-shrinking bar, bandwagon to quorum, witnessed-tell + trust
+signals). Full diagnosis + figures: `/tmp/sweep_report.html`. Memories: `crewborg-crew-weakness`,
+`crewborg-v70-equals-base`, `crewrift-imposter-favored-meta`.
+
+### ▶ FOUR FIX DIRECTIONS (set 2026-06-30; about to fan out — NOT yet pursued)
+1. **Navigation / maneuver efficiency — CONFIRM FIRST.** James's intuition from watching replays: can
+   crewborg move fast enough to catch up to / flee from other players? It is *unconfirmed* — investigate and
+   prove it's real before building. A movement/maneuver deficit would underlie BOTH crew (can't flee/regroup)
+   and imposter (can't close for the kill), so it's the foundational check.
+2. **Voting gating.** Sweep the suspicion vote thresholds (`CREWBORG_WEIGHTS_VOTE_P`, `VOTE_PROBABILITY`,
+   `VOTE_LEAD_*`) for the best value; **validate the suspicion mechanism** itself (the fitted crew model is
+   miscalibrated live — ~100% precision in held-out sim vs ~40% in real games, a train/serve skew); and
+   improve crew voting **coordination** (bandwagon onto the public vote pile; `strategy/meeting/chat_read.py`
+   exists but is wired only to the imposter bandwagon path).
+3. **Emergency-meeting effectiveness.** When crew calls a meeting after being followed, be **convincing +
+   effective** enough to actually convict the chasing imposter — else we waste the meeting (and the team's
+   task time) without removing the imp. Today crewborg is **accuse-happy** (6× notsus's button calls, 0.6 tail
+   bar `suspicion.py:134`) but **vote-shy** (skips at the 0.9 bar) — it calls meetings it then squanders.
+4. **Imposter KILL→WIN conversion (KEPT — also fanning out).** Kills are competitive (1.48 k/g ≈ Aaron's
+   1.47, ≥2-kill 50% ≈ his 47%) but our **imposter win lags — 67% vs Aaron 91% / notsus 79%**: we get the kills
+   then lose the game (ejected / fail to reach parity / lose the meeting). This session's witness-drop A/B
+   confirmed the ejection backlash (dropping the no-witness gate → +13pp ejections, −6pp win, no kill gain).
+   Fan out on what converts kills→WINS: imposter **meeting survival** (deflection/defense when accused), pacing
+   kills to **reach parity**, and not getting **voted out for witnessed kills**. Detail + tournament table below.
+
+---
+
+### (direction 4 — DETAIL, STILL ACTIVE) imposter KILL→WIN CONVERSION, not kill count
 
 **🏆 TOURNAMENT REALITY CHECK (the headline for the next session).** Ran a proper 100-ep champion
 tournament (`xreq_b1f12adf`: 8 `random` Prime champions per episode — the live API redraws per episode —
