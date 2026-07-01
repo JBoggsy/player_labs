@@ -127,12 +127,17 @@ def resolve_scene(scene: SceneState, tick: int) -> ResolvedScene:
         world_x = obj.x + camera_x
         world_y = obj.y + camera_y
 
-        # HUD self-role icons (their object ids are not in the entity ranges).
+        # HUD icons (their object ids are not in the entity ranges). We read kill
+        # *state* and death here — NOT role. Imposter-vs-crew is established
+        # positively from the RoleReveal interstitial text (see derive_phase /
+        # update_belief in types.py); the kill/cooldown icon only tells us whether a
+        # kill is currently ready, and the ghost icon tells us we have died (a state,
+        # which overrides role once it happens).
         if label == LABEL_IMPOSTER_ICON:
-            self_role, self_kill_ready = "imposter", True
+            self_kill_ready = True
             continue
         if label == LABEL_IMPOSTER_ICON_COOLDOWN:
-            self_role, self_kill_ready = "imposter", False
+            self_kill_ready = False
             continue
         if label == LABEL_GHOST_ICON:
             self_role = "dead"

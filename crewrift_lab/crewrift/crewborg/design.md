@@ -215,7 +215,9 @@ coords are `worldX = obj.x + cameraX` (`protocols.nim:496-499`). World coords ar
 unavailable until the map object arrives — degrade gracefully on the first ticks.
 
 **Self is not an object** — it is the implicit camera center. Self world position
-≈ `camera + fixed center offset`; self role/state comes from HUD labels (§4).
+≈ `camera + fixed center offset`; self **role** is latched from the RoleReveal
+interstitial text (`IMPS`/`CREWMATE`, §5), and kill-ready/death **state** come from
+HUD labels (§4).
 
 ### 3.3 Input & output
 
@@ -257,8 +259,8 @@ present*.
 | Field | Source (label / id range) | Notes |
 |---|---|---|
 | `tick`, `camera_ready`, `camera_x/y` | map object id 1 / sprite 1 | gates world coords |
-| `self_role` | `imposter icon`/`imposter icon cooldown` ⇒ imposter; `ghost icon` ⇒ dead; neither ⇒ crewmate | HUD (`global:2484-2506`) |
-| `self_kill_ready` | `imposter icon` (ready) vs `imposter icon cooldown` | imposter only |
+| `self_role` | `ghost icon` ⇒ `dead`; otherwise `None`. Imposter-vs-crew is **not** read from the HUD — it is latched at the belief layer from the RoleReveal text (`IMPS` ⇒ imposter, `CREWMATE` ⇒ crewmate; §5), so crew is as solid as imposter | HUD ghost icon (`global:2484-2506`) |
+| `self_kill_ready` | `imposter icon` (ready) vs `imposter icon cooldown` — kill **state**, not role | imposter only |
 | `self_world_xy` | camera + fixed center offset | approximate |
 | `visible_players[]` | `player <color> left/right`; ids `1000+joinOrder` | id, color, facing, world xy. Visible & alive only — a living agent never sees ghost objects (`global:2389-2398`) |
 | `visible_bodies[]` | `body <color>`; ids `2000+i` | id, color, world xy |
@@ -970,10 +972,13 @@ The priority order:
 Chat and vote stay coupled (we accuse exactly who we then vote for).
 
 The reveal-derived `teammate_colors` (§7.2) is what makes the never-out-a-teammate invariant and
-the parity gate sound; because that one-shot RoleReveal capture can be missed (a connect race or a
-one-frame parse blip), the latch is widened to record any role-reveal icon colors **on sight**
-(the `9500+` id range renders nowhere else), not only on the frame the phase machine has reached
-`RoleReveal` with the `IMPS` text parsed.
+the parity gate sound. It is captured on **every** RoleReveal tick that shows the `IMPS` text
+(idempotent re-check, not a one-shot), so a single-frame parse blip cannot lose it. It is gated on
+the `IMPS` text specifically because the **crew** reveal *also* renders player icons in the `9500+`
+range — so teammate colors (and the imposter role itself) must be latched from the interstitial text
+(`IMPS` vs `CREWMATE`), never from the mere presence of reveal icons. A prior "latch any reveal icon
+on sight" widening dropped that text gate and made **every crew** false-latch imposter (playing the
+whole game as one, 0 tasks); the text gate is load-bearing, not incidental.
 
 ### 10.5 Reading opponents' chat (`strategy/meeting/chat_read.py`, `chat_nlp.py`)
 

@@ -47,47 +47,58 @@ def test_phase_transitions_role_reveal_into_playing() -> None:
     assert belief.phase_start_tick == 2
 
 
-def test_alive_crewmate_role_is_derived_during_play() -> None:
-    belief = Belief()
-    # A plain playing scene with no imposter/ghost HUD marker.
-    _fold(belief, 1, crew_tasks_remaining=5)
-    assert belief.phase == "Playing"
-    assert belief.self_role == "crewmate"
+def test_crew_role_is_latched_positively_from_the_crewmate_reveal() -> None:
+    # Crew is a positively-detected role, exactly like imposter: the "CREWMATE" reveal
+    # text sets it. With no reveal seen, the role stays None ("not yet known") — we do
+    # NOT default to crew from the absence of a HUD marker.
+    unknown = Belief()
+    _fold(unknown, 1, crew_tasks_remaining=5)  # a plain playing scene, no reveal
+    assert unknown.phase == "Playing"
+    assert unknown.self_role is None
+
+    crew = Belief()
+    _fold(crew, 1, phase_texts=frozenset({"CREWMATE"}))
+    assert crew.phase == "RoleReveal"
+    assert crew.self_role == "crewmate"
 
 
-def test_imposter_hud_sets_role_and_kill_ready() -> None:
+def test_hud_kill_icon_sets_only_kill_ready_not_role() -> None:
     belief = Belief()
-    _fold(belief, 1, crew_tasks_remaining=5, self_role="imposter", self_kill_ready=True)
-    assert belief.self_role == "imposter"
+    # The HUD kill icon reports kill-ready state; it no longer sets role.
+    _fold(belief, 1, crew_tasks_remaining=5, self_kill_ready=True)
+    assert belief.self_role is None
     assert belief.self_kill_ready is True
 
 
 def test_just_killed_recorded_on_kill_ready_to_cooldown_edge() -> None:
     belief = Belief()
-    # Imposter, kill ready.
-    _fold(belief, 5, self_role="imposter", self_kill_ready=True, crew_tasks_remaining=3)
+    _fold(belief, 1, phase_texts=frozenset({"IMPS"}))  # latch imposter from the reveal
+    assert belief.self_role == "imposter"
+    # Enter play, kill ready.
+    _fold(belief, 5, self_kill_ready=True, crew_tasks_remaining=3)
     assert belief.last_kill_tick is None
-    # Kill ready → cooldown: we just killed someone.
-    _fold(belief, 6, self_role="imposter", self_kill_ready=False, crew_tasks_remaining=3)
+    # Kill ready → cooldown during continuous Playing: we just killed someone.
+    _fold(belief, 6, self_kill_ready=False, crew_tasks_remaining=3)
     assert belief.last_kill_tick == 6
     # Staying on cooldown does not re-record.
-    _fold(belief, 7, self_role="imposter", self_kill_ready=False, crew_tasks_remaining=3)
+    _fold(belief, 7, self_kill_ready=False, crew_tasks_remaining=3)
     assert belief.last_kill_tick == 6
 
 
 def test_kill_ready_since_tick_tracks_the_cooldown_to_ready_edge() -> None:
     belief = Belief()
+    _fold(belief, 1, phase_texts=frozenset({"IMPS"}))  # latch imposter from the reveal
     # Cooldown: no ready-since stamp.
-    _fold(belief, 5, self_role="imposter", self_kill_ready=False, crew_tasks_remaining=3)
+    _fold(belief, 5, self_kill_ready=False, crew_tasks_remaining=3)
     assert belief.kill_ready_since_tick is None
     # Cooldown → ready: stamp the tick we became able to kill.
-    _fold(belief, 6, self_role="imposter", self_kill_ready=True, crew_tasks_remaining=3)
+    _fold(belief, 6, self_kill_ready=True, crew_tasks_remaining=3)
     assert belief.kill_ready_since_tick == 6
     # Staying ready does not re-stamp (urgency keeps climbing).
-    _fold(belief, 9, self_role="imposter", self_kill_ready=True, crew_tasks_remaining=3)
+    _fold(belief, 9, self_kill_ready=True, crew_tasks_remaining=3)
     assert belief.kill_ready_since_tick == 6
     # Killing (ready → cooldown) clears it.
-    _fold(belief, 10, self_role="imposter", self_kill_ready=False, crew_tasks_remaining=3)
+    _fold(belief, 10, self_kill_ready=False, crew_tasks_remaining=3)
     assert belief.kill_ready_since_tick is None
     assert belief.last_kill_tick == 10
 
@@ -130,18 +141,24 @@ def test_teammates_recorded_from_imps_role_reveal() -> None:
     assert belief.teammate_colors == {"red", "blue"}
 
 
-def test_teammates_latch_from_reveal_icons_even_without_the_imps_text() -> None:
-    # The role-reveal icon range (9500+) renders nowhere else, so its colors ARE our
-    # team — capture them even on a frame where the "IMPS" interstitial text wasn't
-    # parsed (a one-frame blip / connect race), so we are not blind to our teammate.
-    belief = Belief()
-    resolved = ResolvedScene(
-        tick=1, camera_ready=True, camera_x=0, camera_y=0,
-        phase_texts=frozenset(), reveal_player_colors=frozenset({"green"}),
-    )
-    update_belief(belief, Percept(tick=1, messages_applied=1, resolved=resolved))
-    assert belief.self_role == "imposter"
-    assert belief.teammate_colors == {"green"}
+def test_crew_reveal_icons_do_not_falsely_latch_imposter() -> None:
+    # REGRESSION (the crew-plays-imposter collapse, 2026-06-30): the CREW role-reveal
+    # also renders player icons in the 9500+ range, so reveal_player_colors is non-empty
+    # for crew too. Role must therefore come from the interstitial TEXT ("CREWMATE" vs
+    # "IMPS"), never from the mere presence of reveal icons — otherwise every crew latches
+    # imposter and plays the whole game as one (0 tasks). A crew reveal is crewmate, with
+    # no teammates recorded.
+    crew = Belief()
+    _fold(crew, 1, phase_texts=frozenset({"CREWMATE"}), reveal_player_colors=frozenset({"green"}))
+    assert crew.phase == "RoleReveal"
+    assert crew.self_role == "crewmate"
+    assert crew.teammate_colors == set()
+
+    # And reveal icons with NEITHER text yet (a pre-text frame) latch nothing — we wait.
+    early = Belief()
+    _fold(early, 1, reveal_player_colors=frozenset({"green"}))
+    assert early.self_role is None
+    assert early.teammate_colors == set()
 
 
 def test_no_false_kill_after_a_meeting() -> None:

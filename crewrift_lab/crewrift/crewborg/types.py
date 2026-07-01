@@ -713,59 +713,56 @@ def update_belief(belief: Belief, percept: Percept) -> None:
                     ChatEvent(tick=percept.tick, speaker_color=line.speaker_color, text=line.text)
                 )
 
-    # The role-reveal screen shows an imposter viewer *only* their teammates' icons
-    # in a dedicated object-id range (9500+, `ROLE_ICON_OBJECT_BASE`) that the engine
-    # renders nowhere else. So any non-empty `reveal_player_colors` IS our imposter
-    # team — latch it on sight rather than gating on the phase machine having reached
-    # "RoleReveal" with the "IMPS" text parsed that exact frame. That strict gate could
-    # miss a one-frame parse blip or an initial-connect race (design §3.1), leaving us
-    # blind to our teammate all game — which then makes us follow, suss, and vote our
-    # own teammate (design §7.2; warehouse 2026-06-30: ~22% of imposter votes hit the
-    # teammate, vs 0% for policies that always know it).
-    if resolved.reveal_player_colors:
-        belief.self_role = "imposter"
-        belief.teammate_colors |= resolved.reveal_player_colors
-    elif belief.phase == "RoleReveal" and "IMPS" in resolved.phase_texts:
-        belief.self_role = "imposter"
+    # Self role — positively latched from the RoleReveal interstitial TEXT. Both
+    # roles are handed to us on-screen ("IMPS" for an imposter, "CREWMATE" for crew),
+    # so there is no CV or inference to get wrong; crew is as solid as imposter. We
+    # re-check on every RoleReveal tick (idempotent) rather than latching once, so a
+    # one-frame parse blip on any single frame cannot lose it. An imposter also records
+    # its teammates from the reveal icons (accumulated across ticks). Until we have
+    # seen one of the two texts, `self_role` stays None — meaning "role not yet known",
+    # NOT crew (we must not fabricate a role from the absence of a signal).
+    if belief.phase == "RoleReveal":
+        if "IMPS" in resolved.phase_texts:
+            belief.self_role = "imposter"
+            belief.teammate_colors |= resolved.reveal_player_colors
+        elif "CREWMATE" in resolved.phase_texts:
+            belief.self_role = "crewmate"
 
-    # Self role/state (design §4-§5). The HUD shows an imposter/ghost icon for
-    # those roles; an alive crewmate has neither, so once we know we are Playing
-    # and no such marker is present, the role is crewmate. Role is fixed for the
-    # game (a crewmate only changes to "dead" on death, via the ghost icon).
-    if resolved.self_role is not None:
-        # A kill-ready → cooldown edge for an imposter means we just killed
-        # someone (the icon flips to "imposter icon cooldown"); note it to evade.
-        # Gate on continuous Playing: a meeting also resets killCooldown, which
-        # would otherwise look like a kill on the first Playing frame afterward.
+    # Death is a STATE, not a role. The ghost icon is the one HUD signal we keep for
+    # self-state (the reveal cannot tell us about a mid-game death); it overrides role.
+    if resolved.self_role == "dead":
+        belief.self_role = "dead"
+
+    # Kill-cooldown tracking (imposter only), from the HUD kill/cooldown icon — kill
+    # *state*, not role (role is already established above). A kill-ready → cooldown
+    # edge during continuous Playing means we just killed (note it to evade); a meeting
+    # also resets killCooldown, hence the continuous-Playing gate.
+    if belief.self_role == "imposter":
         if (
-            resolved.self_role == "imposter"
-            and belief.self_kill_ready is True
+            belief.self_kill_ready is True
             and resolved.self_kill_ready is False
             and previous_phase == "Playing"
             and belief.phase == "Playing"
         ):
             belief.last_kill_tick = percept.tick
-        # Track the cooldown → kill-ready edge (and clear it on the way down) so the
-        # strategy can measure how long we have been able to kill without doing so.
-        if resolved.self_role == "imposter":
-            if resolved.self_kill_ready is True and belief.self_kill_ready is not True:
-                belief.kill_ready_since_tick = percept.tick
-                # Cooldown just ran to ready: learn its duration (for pre-positioning).
-                if belief.kill_cooldown_start_tick is not None:
-                    belief.kill_cooldown_estimate = percept.tick - belief.kill_cooldown_start_tick
-            elif resolved.self_kill_ready is False:
-                belief.kill_ready_since_tick = None
-            # Mark when the current cooldown began. Resetting events are observable:
-            # our own kill (ready → cooldown during continuous play), body-report or
-            # unknown meetings, and the game-start role-reveal. Emergency-button
-            # meetings do not reset killCooldown.
-            if previous_phase != "Playing" and belief.phase == "Playing" and ended_meeting_kind != "button":
-                belief.kill_cooldown_start_tick = percept.tick
-            elif belief.self_kill_ready is True and resolved.self_kill_ready is False:
-                belief.kill_cooldown_start_tick = percept.tick
-        belief.self_role = resolved.self_role
+        if resolved.self_kill_ready is True and belief.self_kill_ready is not True:
+            belief.kill_ready_since_tick = percept.tick
+            # Cooldown just ran to ready: learn its duration (for pre-positioning).
+            if belief.kill_cooldown_start_tick is not None:
+                belief.kill_cooldown_estimate = percept.tick - belief.kill_cooldown_start_tick
+        elif resolved.self_kill_ready is False:
+            belief.kill_ready_since_tick = None
+        # Mark when the current cooldown began. Resetting events are observable: our
+        # own kill (ready → cooldown during continuous play), body-report or unknown
+        # meetings, and the game-start role-reveal. Emergency-button meetings do not
+        # reset killCooldown.
+        if previous_phase != "Playing" and belief.phase == "Playing" and ended_meeting_kind != "button":
+            belief.kill_cooldown_start_tick = percept.tick
+        elif belief.self_kill_ready is True and resolved.self_kill_ready is False:
+            belief.kill_cooldown_start_tick = percept.tick
+    # Refresh kill-ready only when the HUD gave us a reading this frame (keep the last
+    # known value otherwise, as before).
+    if resolved.self_kill_ready is not None:
         belief.self_kill_ready = resolved.self_kill_ready
-    elif belief.self_role is None and belief.phase == "Playing":
-        belief.self_role = "crewmate"
 
     belief.voting = resolved.voting
