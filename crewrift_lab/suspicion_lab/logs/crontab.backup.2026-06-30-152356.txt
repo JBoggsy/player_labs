@@ -1,0 +1,1 @@
+30 0 * * * /Users/jamesboggs/coding/personal_labs/crewrift_lab/suspicion_lab/tools/nightly_refit.sh
