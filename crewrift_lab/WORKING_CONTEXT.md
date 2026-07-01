@@ -64,6 +64,14 @@ seat completing 6–8 tasks cannot be running imposter play. Memory: `crewborg-r
 league; no rollback needed. Crew **win-rate** stays meta-capped (~12%, imposter-favored division), so the
 **voting lever below is the real remaining crew front** — now measurable cleanly on a non-regressed build.
 
+**⭐ v80 SUBMITTED → PRIME CHAMPION (2026-07-01).** After the "big imposter fixes" tested well (parallel
+session), James gave the go-ahead: `crewborg:v80` (`d85ebab3`) submitted to Crewrift Prime (`sub_3fc853d2`) →
+placed into Competition (`lpm_a95f8e29`), **competing + champion** (auto-champion=always; supersedes v77).
+Post-submit tournament-style eval **COMPLETE: `xreq_c10927d1`** — 100 eps (100 completed / 0 failed),
+natural/random roles, v80 + 7 `random` champion-pool seats, all rotating; dashboard on
+http://localhost:8814. **Not yet analyzed** — survey/diagnose it to pick the next improvement. NB the v76–v80 version-log
+entries (what the fixes were, exact commits) still need back-filling from the session that built them.
+
 **Two active win fronts: CREW (new, primary) + imposter KILL→WIN (kept).** A 170-ep Prime sweep + 4-agent
 diagnosis (2026-06-30) added the crew front and refined — NOT replaced — the old "kill→WIN conversion" thread
 below (direction 4): crewborg is a **competent imposter (40–70% 1v1 win) and a losing crewmate (0–30%)**; v70 ≈ crewborg-base, so weights don't move outcomes — **change the MODES**. The crew
