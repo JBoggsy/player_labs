@@ -1,0 +1,73 @@
+{
+ "schema": "crewborg-suspicion-weights/v1",
+ "feature_set": "runtime",
+ "trained": "2026-06-30",
+ "dataset": "crewrift_lab/suspicion_lab/dataset/runtime.parquet",
+ "games": 188,
+ "rows": 2305,
+ "C": 1.0,
+ "cv_auc": 0.6387560391558281,
+ "cv_log_loss": 0.5851724967635547,
+ "intercept": -0.16594217593175276,
+ "linear_clip": 5,
+ "sample_unit_ticks": 24,
+ "bin_spec": {
+  "follow_death_samples": [
+   2,
+   6
+  ],
+  "tail_obs_samples": [
+   5,
+   20
+  ],
+  "tail_obs_max_run": [
+   3,
+   8
+  ],
+  "copresence_killrange_samples": [
+   5,
+   20
+  ],
+  "task_site_dwell_samples": [
+   5,
+   20
+  ],
+  "observed_samples": [
+   10,
+   40
+  ]
+ },
+ "coefficients": {
+  "witnessed_kills": 4.309837679536924,
+  "near_body_bodies": 0.18367411166550582,
+  "follow_death_samples__0to2": 0.8008878357829411,
+  "follow_death_samples__2to6": 0.40000465836377713,
+  "follow_death_samples__gt6": 0.0,
+  "tail_obs_samples__0to5": -0.38008686394334756,
+  "tail_obs_samples__5to20": -0.14344820250684934,
+  "tail_obs_samples__gt20": 0.3090013602791026,
+  "tail_obs_max_run__0to3": 0.0,
+  "tail_obs_max_run__3to8": -0.2950943173132023,
+  "tail_obs_max_run__gt8": -0.5330875427778149,
+  "vent_visits": 0.13219123670631486,
+  "copresence_killrange_samples__0to5": 0.09474004559542529,
+  "copresence_killrange_samples__5to20": 0.15404641131372218,
+  "copresence_killrange_samples__gt20": 0.48651499166056544,
+  "task_site_dwell_samples__0to5": -0.1221420969881762,
+  "task_site_dwell_samples__5to20": -0.919064502599689,
+  "task_site_dwell_samples__gt20": 0.0,
+  "observed_samples__0to10": -0.15257876820645594,
+  "observed_samples__10to40": 0.0,
+  "observed_samples__gt40": 0.0,
+  "tasks_completed_watched": -0.48850887755998273,
+  "accusations_made": -1.083659317255331,
+  "times_accused": 0.5605838610398809,
+  "times_defended": 0.0,
+  "votes_cast": 0.0,
+  "votes_skipped": 0.17526146836038198,
+  "voted_against_observer": 0.37411991494378244,
+  "vote_agreement_with_observer": -3.350119306936697,
+  "reported_bodies": 0.0,
+  "button_calls_made": 0.0
+ }
+}

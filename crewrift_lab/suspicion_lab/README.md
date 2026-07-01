@@ -32,6 +32,43 @@ uv run python crewrift_lab/suspicion_lab/tools/eval.py --model crewrift_lab/susp
 `models/<tag>/suspicion_weights.json` is committed — it is the deliverable the
 agent vendors.
 
+## Runtime-feature dataset — the train→serve-gap rework
+
+Stage C (`build_dataset.py`) reconstructs features *offline* from expanded replays,
+so even `fit --features runtime` fits on offline-reconstructed values that **diverge
+from what crewborg actually computes at serve time** (the train→serve gap — refits
+churned versions without moving outcomes). `tools/build_dataset_runtime.py` fixes
+this: it reads crewborg's **own** traced feature vectors —
+`domain.suspicion_snapshot.ranking[].features`, emitted per meeting when the policy
+runs with `CREWBORG_TRACE_SUSPICION_FEATURES=1` (+ `CREWBORG_TRACE_GROUPS=suspicion`)
+— and labels each (crewborg-observer, suspect, meeting) row from the expanded replay's
+`player_manifest`. It emits the **same parquet schema**, so `fit.py --features runtime`
+and `eval.py` consume it unchanged.
+
+```sh
+# 1. run a trace-enabled crewborg (build+upload with the two env vars above),
+#    play a few hundred tournament episodes, fetch with replays + artifacts.
+# 2. expand the replays (for labels); the runtime path only needs player_manifest.
+uv run python crewrift_lab/suspicion_lab/tools/expand_corpus.py --corpus <eps> --ref <ref> --out <expanded>
+# 3. join traced features to labels:
+uv run python crewrift_lab/suspicion_lab/tools/build_dataset_runtime.py \
+    --expanded <expanded> --artifacts <eps> --policy crewborg --version <N> --out dataset/runtime.parquet
+# 4. fit / eval as normal:
+uv run python crewrift_lab/suspicion_lab/tools/fit.py  --dataset dataset/runtime.parquet --features runtime --tag runtime-vN
+uv run python crewrift_lab/suspicion_lab/tools/eval.py --model models/runtime-vN
+```
+
+> **Expander gotcha:** the JSONL emitter (`--format jsonl`) only exists from ref
+> `42fed21` on, but that ref may hash-fail on the *current* game. You need a binary that
+> is **both** JSONL-capable **and** matches the live game hash — build via
+> `crewrift_lab/tools/build_expand_replay.sh`, verify one replay expands `ok`, and drop it
+> at `crewrift_lab/tools/bin/expand_replay-<ref>`. A stale committed binary for the current
+> game ref may be *pre-JSONL* (fails with "Unknown option: --format") — check before a run.
+>
+> Rows are **crewborg-POV only** (its own vantage — correct per suspicion-learning.md §9),
+> so fewer rows than the offline all-observers dataset, but parity-correct by construction.
+> The `nightly_refit.sh` re-enable (`NIGHTLY_REFIT_ENABLED=1`) waits on this path landing.
+
 ## The nightly champion loop (cron)
 
 `tools/nightly_refit.sh` runs the whole pipeline unattended (user crontab,
