@@ -16,7 +16,8 @@ mid-session; check them back at the start of focused work.
   `VOTE_TIMER_TICKS=240`** (`strategy/meeting/context.py`) — the game's voting period went **6×
   longer** (`coworld-crewrift` b78e400, merged 2026-06-29), so the latency guard's timer model may
   now be stale (crewborg thinks it has far less time than it does, over-triggering the deadline
-  fallback). The proactive-chat change itself is done + committed on branch `meeting-chat-proactive`.
+  fallback). The proactive-chat change itself is done + **merged to main** (`b050768`; the
+  `meeting-chat-proactive` branch is gone).
 - **Make crewborg's imposter teammate detection BULLETPROOF** (flagged by James, 2026-06-30).
   Diagnosis (warehouse `/tmp/sweep_wh`): crewborg frequently does NOT know its teammate — it
   votes the teammate **21–23%** of imposter casts (top imposters 0%) and **follows** the teammate
@@ -32,8 +33,9 @@ mid-session; check them back at the start of focused work.
   process-of-elimination at endgame from the census + known `imposter_count`. Upload a
   **trace-enabled** build (`CREWBORG_TRACE_GROUPS`) and MEASURE the teammate-known rate per game
   (the current branch couldn't, because traces weren't on). Targets to drive to ~0: teammate-vote
-  rate, teammate-follow rate. Branch `worktree-imposter-kill-to-win` is the starting point (it
-  fixed the *parse/timing* miss but not the *never-saw-the-reveal* miss).
+  rate, teammate-follow rate. The `worktree-imposter-kill-to-win` branch is merged/deleted — its
+  parity-push + latch work is on main (`strategy/meeting/imposter.py:parity_closing_vote_target`);
+  start from main (it fixed the *parse/timing* miss but not the *never-saw-the-reveal* miss).
 
 - **Improve crewborg's imposter SOCIAL DECEPTION — make it stronger and fire more often** (flagged
   by James, 2026-06-30). The validated kill→WIN lever is the **meeting**: crewborg under-creates

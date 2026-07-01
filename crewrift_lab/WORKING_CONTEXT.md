@@ -41,9 +41,10 @@ Search→WATCH, which idles at a vantage instead of closing. Report + tick-by-ti
   ~150t / distance / teammate / task-bonus / soft-commander; hard commander stays hard; new
   `agent_tracking.room_occupancy`). **Matched 4-way A/B (same fixed roster): idle&ready 0.68→0.59→0.44→
   0.10, freezes≥1k 23→14→9→1, timeouts 0.38→0.28→0.20→0.07, kills 1.18→1.43→1.27→1.91 (p<0.001), imposter
-  win 0.42→0.42→0.63→0.78.** Recon de-freeze was the big lever. v80 NOT submitted (v77 is the current
-  Prime champion). NEXT: crew-side regression check (natural roles) before considering v80 submission;
-  optional PICK_ROOM weight sweep. worktree `crewborg-idle-warehouse` (uncommitted).
+  win 0.42→0.42→0.63→0.78.** Recon de-freeze was the big lever. v80 was later SUBMITTED → champion
+  but carries the role-latch regression (see the v80 section below); **v81 = this work merged to main
+  (`2d46468`) + the v75 latch fix.** The `crewborg-idle-warehouse` worktree is merged and REMOVED
+  (branch deleted; code lives on main). Remaining follow-up: optional PICK_ROOM weight sweep.
 
 ---
 
@@ -101,8 +102,8 @@ session), James gave the go-ahead: `crewborg:v80` (`d85ebab3`) submitted to Crew
 placed into Competition (`lpm_a95f8e29`), **competing + champion** (auto-champion=always; supersedes v77).
 Post-submit tournament-style eval **COMPLETE: `xreq_c10927d1`** — 100 eps (100 completed / 0 failed),
 natural/random roles, v80 + 7 `random` champion-pool seats, all rotating; dashboard on
-http://localhost:8814. NB the v76–v80 version-log
-entries (what the fixes were, exact commits) still need back-filling from the session that built them.
+http://localhost:8814. Version-log entries for v77–v81 landed with the worktree merge (`2d46468`);
+only a v76 entry (the idle-fix A/B baseline build) is still missing.
 
 **🚨 v80 CARRIES THE ROLE-LATCH REGRESSION (found 2026-07-01, league survey + James's replay watch).**
 The champion is throwing ~half its crew games: **49% of v80 crew games end 0-task** (66/135 league eps,
@@ -110,7 +111,8 @@ field 0-5%; task/g 2.58 vs 5.2-6.5; bimodal 0-vs-8) — the `1178f31` crew-latch
 present in EVERY population (league + all xreqs). Inference (unverified in code): v80 was built on the
 paritypush lineage without the v75 IMPS-text fix (`4e1d7c1`). Open q: why ~50% and not ~100% like the
 original 15/15 repro. Survey: `/tmp/survey_v80_league.html` (196 league eps); artifacts `/tmp/v80_league_eps`;
-warehouse building at `/tmp/v80_league_wh`. **Fix path: v81 = v80 imposter gains + `4e1d7c1` latch fix.**
+warehouse BUILT at `/tmp/v80_league_wh` (484 eps ok). **Fix path: v81 = v80 imposter gains + `4e1d7c1`
+latch fix — BUILT + uploaded (see version log); pre-submit fingerprint check pending.**
 Also: v80 is the only policy with ops crashes in the league set (6 disconnects) — separate issue.
 League form context: lineage rank 9 is historical; v80's first champion round (276) scored 16 (rank 2).
 Top of field = RelhAlpha ~15.8/round; league imposter gap vs top: win 73% vs 87-89%, K/g 1.55 vs 1.8+.
@@ -176,7 +178,7 @@ gutted the sample); field is only 3 champions (broaden via `included_players` if
 does the meeting LLM fire in LEAGUE (dispatch) rounds (sidecar gap) — v66 fell back; verify on v70's league
 rounds.
 
-### ✅ ANSWERED + FIXED (2026-06-30, branch `worktree-imposter-kill-to-win`): the gap is the MEETING
+### ✅ ANSWERED + FIXED (2026-06-30, `worktree-imposter-kill-to-win` — since merged to main, branch deleted): the gap is the MEETING
 Warehouse decomposition of the 170-ep sweep (`/tmp/sweep_wh`): conditioning win on the SAME kill count,
 crewborg @1 kill wins 0.39 vs notsus 1.00, @2 wins 0.63 vs 1.00 — the win leaks AFTER the kills. Of 39
 crewborg imposter LOSSES: **64% = an imposter voted out** (a), the rest **stall at 3-crew/2-imp — one removal
