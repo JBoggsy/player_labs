@@ -151,7 +151,10 @@ class RuleBasedStrategy:
             )
         if belief.self_kill_ready and has_visible_victim(belief):
             return ModeDirective(mode="hunt", source="strategy", reason="kill ready: hunt visible victim")
-        if ticks_until_kill_ready(belief) <= recon_window() and most_recent_victim(belief) is not None:
+        # Recon only in the strictly PRE-ready window. If the kill is already ready but no
+        # victim is visible, do NOT recon (it would beeline to a stale last-known position and
+        # freeze on it — see the recon-stall lesson); go to Search to actively find a victim.
+        if not belief.self_kill_ready and ticks_until_kill_ready(belief) <= recon_window() and most_recent_victim(belief) is not None:
             return ModeDirective(mode="recon", source="strategy", reason="kill nearly ready: close on a crewmate")
         return ModeDirective(mode="search", source="strategy", reason="seek crew to be near a kill")
 
