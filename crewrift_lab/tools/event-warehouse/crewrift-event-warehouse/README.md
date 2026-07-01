@@ -70,6 +70,19 @@ uv run crewrift-event-warehouse build \
 process must have `CREWRIFT_EXPAND_REPLAY` pointing at a compatible helper
 binary (see [version coupling](#expand_replay-version-coupling)).
 
+#### Incremental builds
+
+Repeated `build` runs against the same `--out` are **incremental**: episodes
+already recorded `ok` (and not trace-warned) in the existing `manifest.json`
+are skipped — no replay re-expansion — while `failed` / `trace_warning`
+episodes are re-attempted (their old event shards are deleted first).
+`manifest.json` and `episode_players.parquet` are **merged** with the prior
+build rather than overwritten, so a build over a growing episode set only pays
+for the new episodes. The manifest's `episodes_cached` counts this run's cache
+hits. Delete the `--out` directory for a from-scratch rebuild (e.g. after
+fixing a version-skewed `CREWRIFT_EXPAND_REPLAY`, since `ok` episodes are
+trusted and never re-checked).
+
 ### `serve` — query dashboard
 
 ```sh

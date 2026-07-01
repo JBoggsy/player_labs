@@ -67,6 +67,8 @@ server.
    uv run python "$F" --policy crewborg -n 10 --out /tmp/crewborg_eps
    # All child episodes of one experience request:
    uv run python "$F" --xreq xreq_... --out /tmp/xreq_eps
+   # …or STREAM them while the experience request is still running (exits when drained):
+   uv run python "$F" --xreq xreq_... --watch --out /tmp/xreq_eps
    # Explicit experience-request episodes (repeatable):
    uv run python "$F" --ereq ereq_aaa... --ereq ereq_bbb... --out /tmp/eps
    # Everything in a pool / round / division:
@@ -91,6 +93,12 @@ server.
 
 ## Notes
 
+- **`--watch`** (with `--xreq` only) polls the request and downloads each
+  episode as it turns terminal instead of requiring the batch to be done —
+  the streaming half of the default eval flow (see
+  `coworld-experience-requests` step 4). Resume-safe: completeness is judged
+  from disk, so a killed watch just picks up where it left off;
+  `watch_state.json` bounds retries (3) for episodes whose artifacts error.
 - For *interactive* one-off inspection of a single experience-request episode, the
   `coworld` CLI (`coworld episodes|replays|episode-logs|episode-results`) is
   fine — see `references/endpoint-map.md`. This script is for discovering across a

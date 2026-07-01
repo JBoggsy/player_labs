@@ -82,19 +82,31 @@ uv run python "$S" create /tmp/req.json                  # POST for real -> prin
 **Verify it resolved as intended:** `episode_count` matches `num_episodes`, and the first episodes'
 `participants` seat the policies/versions and roles you intended (the spread you expected).
 
-## Step 4 — monitor, then pull & analyze
+## Step 4 — stream, don't wait (the default)
 
-"Created" ≠ "done":
+"Created" ≠ "done" — but **do not wait for the xreq to drain before starting
+the next stage.** Immediately after `create` returns the `xreq_…`, launch the
+streaming pipeline **in the background** and let all stages overlap:
 
-```bash
-uv run python "$S" monitor xreq_...
-```
-For several requests at once (a sweep / multi-role eval), `scripts/xp_dashboard.py xreq_... [...]`
-serves a self-contained browser dashboard (completion/ETA, win-rate leaderboard overall/crew/imposter,
-heatmap, score strips; ops-filtered — watch the "ops-filtered" count). When every child episode is
-terminal, pull replays/results/logs with the **`coworld-episode-artifacts`** skill
-(`fetch_artifacts.py --xreq xreq_...`) and compute the stats the question needs, **decomposed by role
-and opponent**.
+- **Crewrift deep-dig (warehouse wanted — the common case):** hand the fresh
+  `xreq_…` id(s) to the `crewrift-event-warehouse` skill's `stream_eval.py`
+  (see that SKILL.md). It watches the request, pulls each episode's artifacts
+  as it completes, and folds them into the event warehouse in incremental
+  batches — the warehouse is ready (or nearly) the moment the last episode ends.
+- **Artifacts only:** `fetch_artifacts.py --xreq xreq_… --watch` (the
+  `coworld-episode-artifacts` skill) streams the downloads the same way.
+
+Both are crash-safe: rerun the same command and it resumes from disk.
+
+For a quick status glance (or several requests at once), the old serial tools
+remain: `uv run python "$S" monitor xreq_…` polls one request;
+`scripts/xp_dashboard.py xreq_… [...]` serves the browser dashboard
+(completion/ETA, win-rate leaderboard overall/crew/imposter, heatmap, score
+strips; ops-filtered — watch the "ops-filtered" count). Serial
+monitor → fetch → build is the **fallback**, not the default.
+
+When everything is terminal, compute the stats the question needs,
+**decomposed by role and opponent**.
 
 ## Notes
 

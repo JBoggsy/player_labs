@@ -28,6 +28,11 @@ direction.
    **not scarce** — use them liberally, but **target them to the question** (matched
    roles when the last change was role-specific; the specific opponents the policy
    struggles against). Turn on heavy tracing for the policy if it has it.
+   Run evals **streaming by default**: right after creating an experience
+   request, launch the streaming pipeline in the background (the
+   `coworld-experience-requests` skill, step 4) so artifact download and
+   analysis prep overlap the still-running episodes instead of waiting for
+   the batch to drain.
 2. **Report** (you → human) — pull the replays / logs / results those experiments
    produced (`coworld-episode-artifacts` skill), **extract dense signal** (with that
    skill plus the game's own analysis tools), and

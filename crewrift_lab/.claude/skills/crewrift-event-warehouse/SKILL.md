@@ -38,6 +38,23 @@ uv run python "$B" --policy crewborg -n 200 --out /tmp/wh --expand-replay /tmp/e
 
 It prints the manifest summary and **flags `trace_warning` episodes** (the #1 failure, below).
 
+**Streaming (the default for fresh experience requests):** don't wait for the
+xreq to finish — `stream_eval.py` overlaps fetch + build, so the warehouse is
+ready as the last episode ends:
+
+```bash
+S=crewrift_lab/.claude/skills/crewrift-event-warehouse/scripts/stream_eval.py
+uv run python "$S" --xreq xreq_A [--xreq xreq_B] --out /tmp/wh --expand-replay /tmp/expand-<commit>
+# episodes land in /tmp/wh_episodes/; the warehouse builds incrementally into /tmp/wh
+# batches: every 10 new episodes or 120s (--batch-n / --batch-secs); crash-safe rerun
+```
+
+Builds are **incremental**: episodes already in the manifest as `ok` are never
+re-expanded, so repeated builds over a growing episode dir only pay for the
+new ones (this also makes re-running `build_warehouse.py` after a partial
+failure cheap). A version-skewed `--expand-replay` is warned after the FIRST
+batch, minutes in.
+
 ### ⚠️ The one hard part — `expand_replay` version coupling
 
 The extractor re-steps the sim and **hash-checks every tick**; on a version mismatch it **aborts
