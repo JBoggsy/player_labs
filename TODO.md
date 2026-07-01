@@ -5,6 +5,17 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
+- **League telemetry artifacts are EPHEMERAL (~one round's retention) — investigate + build a harvest**
+  (flagged 2026-07-01, James). With all-telemetry uploads now standard (`CREWBORG_TRACE_GROUPS=all`,
+  see `user_preferences.md`), policy artifacts from league rounds vanish after roughly one round
+  (~10-15 min): v82's 21:10 fetch found artifacts only in the newest round's episodes (6/100); same
+  pattern in the v80 pull (17/196, all newest-round). Two threads: (a) find where/why they're
+  deleted (Observatory retention? dispatch-runner cleanup?) and whether retention can be extended;
+  (b) until then, stand up a per-round artifact harvest (cron/loop every ~10 min pulling the newest
+  round's artifacts) so continuous telemetry actually accumulates. Related small fix: the
+  `vote_bar` telemetry field lies (logs legacy 0.8; the live crew gate is `WEIGHTS_VOTE_PROBABILITY=0.9`)
+  — `crewrift/crewborg/events.py:449`.
+
 - **Meeting-LLM latency / fallback — ~41% of meeting-LLM calls fall back to the silent
   deterministic floor** (held 2026-06-30, from the proactive-chat work). In a 16-game Prime XP
   probe of `crewborg-chat:v1` (LLM on, proactive doctrine), the LLM fired but **~41% of decisions

@@ -108,11 +108,26 @@ only a v76 entry (the idle-fix A/B baseline build) is still missing.
 **🚨 v80 CARRIES THE ROLE-LATCH REGRESSION (found 2026-07-01, league survey + James's replay watch).**
 The champion is throwing ~half its crew games: **49% of v80 crew games end 0-task** (66/135 league eps,
 field 0-5%; task/g 2.58 vs 5.2-6.5; bimodal 0-vs-8) — the `1178f31` crew-latches-imposter fingerprint,
-present in EVERY population (league + all xreqs). Inference (unverified in code): v80 was built on the
-paritypush lineage without the v75 IMPS-text fix (`4e1d7c1`). Open q: why ~50% and not ~100% like the
-original 15/15 repro. Survey: `/tmp/survey_v80_league.html` (196 league eps); artifacts `/tmp/v80_league_eps`;
-warehouse BUILT at `/tmp/v80_league_wh` (484 eps ok). **Fix path: v81 = v80 imposter gains + `4e1d7c1`
-latch fix — BUILT + uploaded (see version log); pre-submit fingerprint check pending.**
+present in EVERY population (league + all xreqs). Cause verified: v80 was built from the idle-warehouse
+worktree, forked before `4e1d7c1`. The "why ~50% not ~100%" is ANSWERED: ~100% of v80 crew mis-latched;
+49% counted only the 0-TASK (surviving) half — the dead half ghost-task 8. Survey `/tmp/survey_v80_league.html`;
+warehouses `/tmp/v80_league_wh` (484 eps), `/tmp/v81_fp_wh` (30 eps).
+
+**✅ RESOLVED: v82 = merged main `2d46468` (idle fixes + latch fix) + full telemetry → CHAMPION 2026-07-01**
+(`sub_cca840cf` → `lpm_2449fb14`, competing/champion, supersedes v80). Fingerprint on v81: 0-task crew 49%→~15-22%.
+
+**🔬 CREW-VOTING ROOT-CAUSE HUNT CLOSED (2026-07-01, agent report):** v80's total vote/chat blackout
+(0/440 player votes) was the SAME latch bug one hop deeper — mis-latched crew absorbed reveal icons into
+`teammate_colors` → suspicion skips teammates → empty posterior → imposter meeting path finds no target →
+silent skip. Fixed by `4e1d7c1`; v81 votes mechanically fine (4/27 player votes, 3/4 correct, 14 chats).
+The residual 15%-vs-51% vote-rate drop is the fitted **0.9 gate** (`CREWBORG_WEIGHTS_VOTE_P`,
+`suspicion.py:588-595`) over posteriors that **COOLED with the platform bump 0.4.21→0.4.28/29** (inferred
+by elimination — weights/LLM/composition/code all refuted; confirm with v82's league telemetry).
+**v83 candidates:** (1) vote-P sweep 0.6–0.7 via env + A/B (precision on cold posteriors must be re-measured);
+(2) role-limbo escape — ALL 3 frozen v81 crew seats were **slot 4** deterministically (CREWMATE reveal text
+never parses there); bounded fallback-to-crew after N ticks in `types.py`; (3) **`VOTE_TIMER_TICKS=240`
+stale vs live `voteTimerTicks=1200`** (`strategy/meeting/context.py:18`) — we submit ~16% into the meeting
+and stop listening; align before any meeting-coordination work.
 Also: v80 is the only policy with ops crashes in the league set (6 disconnects) — separate issue.
 League form context: lineage rank 9 is historical; v80's first champion round (276) scored 16 (rank 2).
 Top of field = RelhAlpha ~15.8/round; league imposter gap vs top: win 73% vs 87-89%, K/g 1.55 vs 1.8+.
