@@ -227,6 +227,17 @@ covers only 0.4.3-0.4.7). Secondary direction the human raised: **crew-side — 
 imposters** (detect relentless proximity/kills to cut Aaron/Andre's imposter win, lift our crew win).
 
 ## Tools / data ready to use
+- **STREAMING eval pipeline is now the default (built + live-validated 2026-07-01):**
+  right after `create` returns an `xreq_…`, run `crewrift-event-warehouse` skill's
+  `stream_eval.py --xreq … --out <wh> --expand-replay <bin>` in the background — it overlaps
+  fetch (`fetch_artifacts.py --watch`, per-episode as each turns terminal) with INCREMENTAL
+  warehouse builds (episodes `ok` in the manifest are never re-expanded; `episodes_cached` in
+  the manifest counts hits). Validated on `xreq_307f10d6-2a6b-4c23-9be8-567f9a724417` (8 self-play
+  eps): first build fired at 4/8 fetched (overlap confirmed), resume-after-completion cached 2+,
+  final 8/8 ok. Design: `docs/designs/2026-07-01-streaming-xreq-eval-pipeline-design.md`.
+  ⚠️ validation also showed `/tmp/expand-043` is going STALE vs prime 0.4.29 — 6/8 fresh episodes
+  trace_warned (partial rows), though it exits 0 on some. Rebuild the expander from the arena's
+  current commit before the next warehouse-dependent analysis (versions.env bump signal).
 - **`tools/positioning_viz/`** — kill-ready spatial viewer (meeting-aware; see its README).
   Needs a **per-tick** warehouse (`--snapshot-every 1`); one exists at `/tmp/v50_pertick`
   (run #1, 100 eps). `/tmp/v50_warehouse` + `/tmp/v50b_warehouse` are the every-10 combined
