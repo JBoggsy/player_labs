@@ -117,8 +117,8 @@ def summarize(out: Path) -> int:
     manifest = json.loads((out / "manifest.json").read_text())
     warned = sum(1 for e in manifest.get("episodes", []) if e.get("trace_warning"))
     print("\n=== warehouse manifest ===")
-    for k in ("episodes_total", "episodes_ok", "episodes_skipped", "episodes_failed",
-              "events_written", "distinct_policies"):
+    for k in ("episodes_total", "episodes_ok", "episodes_cached", "episodes_skipped",
+              "episodes_failed", "events_written", "distinct_policies"):
         print(f"  {k}: {manifest.get(k)}")
     print(f"  event_keys: {', '.join(manifest.get('event_keys', []))}")
     if warned:
