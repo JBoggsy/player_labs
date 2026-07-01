@@ -387,6 +387,34 @@ def best_pretend_room_target(
     return best if best.expected > 0 else None
 
 
+def room_occupancy(belief: "Belief") -> dict[str, tuple[float, float]]:
+    """Per-room ``(crew_density, teammate_density)`` from the occupancy substrate.
+
+    Density = expected crew (or teammate) mass in the room / its cell count, so rooms of
+    different sizes compare fairly. Empty dict when no substrate/snapshot has built yet
+    (early game) — callers must tolerate that and fall back to non-occupancy signals.
+    """
+
+    substrate = belief.agent_tracking.substrate
+    snapshot = belief.agent_tracking.snapshot
+    if substrate is None or snapshot is None:
+        return {}
+    room_cells = _cells_by_room(substrate)
+    expected_by_room = _room_expected(substrate, snapshot.expected_by_cell)
+    teammate_snapshot = belief.agent_tracking.teammate_snapshot
+    teammate_by_room = (
+        _room_expected(substrate, teammate_snapshot.expected_by_cell) if teammate_snapshot is not None else {}
+    )
+    out: dict[str, tuple[float, float]] = {}
+    for room_name, expected in expected_by_room.items():
+        cells = room_cells.get(room_name)
+        if not cells:
+            continue
+        n = len(cells)
+        out[room_name] = (expected / n, teammate_by_room.get(room_name, 0.0) / n)
+    return out
+
+
 def _cells_by_room(substrate: OccupancySubstrate) -> dict[str, list[OccupancyCell]]:
     out: dict[str, list[OccupancyCell]] = {}
     for cell in substrate.cells.values():

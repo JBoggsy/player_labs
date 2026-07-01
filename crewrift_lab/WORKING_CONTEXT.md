@@ -15,6 +15,38 @@ This is *not* a log or archive: finished work lives in git history / the
 
 ---
 
+## 🎯 ACTIVE — imposter IDLE leak (investigated 2026-07-01; v77 ready to ship, v78/H2 replaced by H3)
+Warehouse over `xreq_3411a283` (100 eps) found crewborg-v76 imposter spends **~26% of live play idle
+while the kill is READY** (vs 1–3% for the aaln forks) — 79% of idle ticks = ready + a crewmate visible
+~267px away, standing still. Cause: when no victim is in CURRENT line-of-sight the selector stays in
+Search→WATCH, which idles at a vantage instead of closing. Report + tick-by-tick + replay links:
+`$CLAUDE_JOB_DIR/tmp/crewborg_idle_report.html` (job-scoped; regen `gen_report.py`).
+**Fixes built + A/B'd** (3 matched imposter-pinned arms, 60 eps, crewborg slot0 + v70 partner):
+- **v77 = H1 (re-acquire on ready)** in `modes/search.py:_watch` — when ready + recently-seen crew,
+  `navigate_to` last-known pos. **WORKS: idle&ready 68%→59%, kills 1.18→1.43 (+21%, p≈0.08), 0-kill
+  games 11→5, freezes≥1k 23→14, timeout-draws 38%→28%. Win flat** (kill→win bottleneck + weak v70 partner).
+  **→ SHIP v77.** A/B: base `xreq_da7a6fe0` vs v77 `xreq_75af8d5d`.
+- **v78 = H1+H2 (env-gated WATCH idle-timeout, `CREWBORG_WATCH_IDLE_TIMEOUT=200`)** — **NO EFFECT**
+  (bout histogram == v77). `xreq_e99d7567`.
+- **H3 (discovered):** the worst freeze (9,437 ticks, Hydroponics, kill ready, crew 1% in-room) is a
+  `_pick_room` "no task rooms" DEAD-END, not WATCH — so the watch-timeout can't catch it.
+- **v77 SHIPPED → Prime CHAMPION** (over v70); v78 (watch-timeout) was a no-op (wrong scope).
+- **SEARCH REWORK — BUILT + VALIDATED (v79 → v80).** Design = imposter-FSM doc §8
+  (`$CLAUDE_JOB_DIR/tmp/crewborg_imposter_fsm.html`; gen `gen_fsm.py`). **v79** = the 5-state FSM
+  (PICK_ROOM never idles / GO_TO_ROOM follows any visible crewmate incl. hallway / new SEARCH_ROOM sweep /
+  WATCH multi→vantage vs single→approach≈35px / FOLLOW kept). **v80** = v79 + FOLLOW same-room→SEARCH_ROOM
+  handoff + **RECON de-freeze** (selector gates recon to strictly-pre-ready; recon abandons reached-stale
+  targets, falls back to seeking crew — never idles) + **scored env-tunable PICK_ROOM**
+  (`CREWBORG_PICKROOM_W_*`: occupancy 3.0 strongest / unvisited 2.5 grows ~800t / recency −3.0 decays
+  ~150t / distance / teammate / task-bonus / soft-commander; hard commander stays hard; new
+  `agent_tracking.room_occupancy`). **Matched 4-way A/B (same fixed roster): idle&ready 0.68→0.59→0.44→
+  0.10, freezes≥1k 23→14→9→1, timeouts 0.38→0.28→0.20→0.07, kills 1.18→1.43→1.27→1.91 (p<0.001), imposter
+  win 0.42→0.42→0.63→0.78.** Recon de-freeze was the big lever. v80 NOT submitted (v77 is the current
+  Prime champion). NEXT: crew-side regression check (natural roles) before considering v80 submission;
+  optional PICK_ROOM weight sweep. worktree `crewborg-idle-warehouse` (uncommitted).
+
+---
+
 ## 🤖 PARALLEL TRACK — LLM GAMEPLAY COMMANDER (Phase 1 done; both LLMs live in-pod 2026-06-26)
 A background LLM steers *gameplay* by writing **priorities** into `belief.commander` that the modes read to
 bias execution — never selecting a mode, never blocking a tick. Design:

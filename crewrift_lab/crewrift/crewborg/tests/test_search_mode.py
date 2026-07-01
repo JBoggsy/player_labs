@@ -75,6 +75,9 @@ def _crew(belief: Belief, color: str, xy, tick=None) -> PlayerRecord:
 
 
 def _seed_occluded_follow(mode: SearchMode, belief: Belief, color: str = "green") -> PlayerRecord:
+    # Keep self in Left while the target moves through Mid so the FOLLOW same-room hand-off
+    # does not fire during seeding (this test map has no corridors; a real map does).
+    belief.self_world_x, belief.self_world_y = 10, 40
     target = _crew(belief, color, (130, 40))
     mode._begin_follow(belief, target)
     for tick in range(11, 20):
@@ -110,13 +113,50 @@ def test_hard_commander_hunt_room_picks_distant_task_room() -> None:
     assert mode._target_room == "Far"
 
 
-def test_soft_commander_hunt_room_does_not_force_distant_task_room() -> None:
+def test_soft_commander_hunt_room_is_a_nudge_not_a_force() -> None:
+    # A SOFT hunt-room only ADDS a bonus to the score; a strong recency penalty on it wins.
     mode = SearchMode()
-    belief = _distant_belief()
-    belief.commander = CommanderPriorities(hunt_room="Far", as_of_tick=belief.last_tick)
+    belief = _belief()  # self in Mid; candidates Left / Right
+    belief.commander = CommanderPriorities(hunt_room="Right", as_of_tick=belief.last_tick)
+    mode._last_visit_tick = {"Right": belief.last_tick}  # Right JUST visited -> big recency penalty
     intent = mode.decide(belief, ActionState())
     assert intent.kind == "navigate_to"
-    assert mode._target_room != "Far"
+    assert mode._target_room == "Left"  # recency penalty overrides the soft hunt nudge
+
+
+def test_pickroom_prefers_high_occupancy_room(monkeypatch) -> None:
+    import crewrift.crewborg.modes.search as search_mod
+    # Occupancy is the strongest signal: crew expected in Right -> pick Right over empty Left.
+    monkeypatch.setattr(search_mod, "room_occupancy", lambda belief: {"Left": (0.0, 0.0), "Right": (1.0, 0.0)})
+    mode = SearchMode()
+    intent = mode.decide(_belief(), ActionState())  # self in Mid; candidates Left / Right
+    assert intent.kind == "navigate_to"
+    assert mode._target_room == "Right"
+
+
+def test_pickroom_penalizes_recently_visited() -> None:
+    # Anti-ping-pong: a room we just visited is penalized, so we pick the other.
+    mode = SearchMode()
+    belief = _belief()
+    mode._last_visit_tick = {"Left": belief.last_tick}  # Left just visited
+    intent = mode.decide(belief, ActionState())
+    assert mode._target_room == "Right"
+
+
+def test_pickroom_prefers_long_unvisited_room() -> None:
+    # Unvisitedness grows over time so peripheral rooms get swept: long-stale Left beats fresh Right.
+    mode = SearchMode()
+    belief = _belief()
+    belief.last_tick = 2000
+    mode._last_visit_tick = {"Left": 900, "Right": 1980}  # Left stale (age 1100), Right just seen (age 20)
+    intent = mode.decide(belief, ActionState())
+    assert mode._target_room == "Left"
+
+
+def test_pickroom_always_moves_never_idles() -> None:
+    mode = SearchMode()
+    intent = mode.decide(_belief(), ActionState())
+    assert intent.kind == "navigate_to"  # PICK_ROOM must never emit idle
 
 
 def test_commander_unknown_hunt_room_falls_back_to_random_pick() -> None:
@@ -146,27 +186,55 @@ def test_commander_avoid_room_falls_back_when_filter_empties_candidates() -> Non
     assert mode._target_room == "Right"
 
 
-def test_watches_when_crew_are_in_the_target_room() -> None:
+def test_go_to_room_follows_any_visible_crewmate() -> None:
+    # NEW: seeing ANY crewmate (room or hallway) while in transit -> FOLLOW it.
     mode = SearchMode()
     mode._state = "go_to_room"
     mode._target_room = "Left"
     mode._goto_point = (40, 40)
-    belief = _belief(self_xy=(40, 40))  # we've arrived in Left
-    _crew(belief, "green", (60, 40))     # a crewmate is in Left
+    belief = _belief(self_xy=(120, 40))    # still en route (in Mid)
+    _crew(belief, "green", (118, 40))       # a crewmate right next to us
+    intent = mode.decide(belief, ActionState())
+    assert mode._state == "follow"
+    assert mode._follow_color == "green"
+    assert intent.kind == "navigate_to"
+
+
+def test_go_to_room_arrives_empty_then_scans() -> None:
+    # NEW: arriving with no visible crew -> SEARCH_ROOM (sweep for hidden crew), never idle.
+    mode = SearchMode()
+    mode._state = "go_to_room"
+    mode._target_room = "Left"
+    mode._goto_point = (40, 40)
+    belief = _belief(self_xy=(40, 40))      # arrived in Left, nobody in view
+    intent = mode.decide(belief, ActionState())
+    assert mode._state == "search_room"
+    assert intent.kind == "navigate_to"      # moving to a scan point, not idling
+
+
+def test_search_room_watches_when_crew_found() -> None:
+    mode = SearchMode()
+    mode._state = "search_room"
+    mode._target_room = "Left"
+    mode._scan_points = [(20, 20)]
+    mode._scan_idx = 0
+    belief = _belief(self_xy=(40, 40))
+    _crew(belief, "green", (60, 60))         # crew hidden inside Left, now found
     mode.decide(belief, ActionState())
     assert mode._state == "watch"
     assert "green" in mode._room_crew
 
 
-def test_empty_room_repicks() -> None:
+def test_search_room_swept_empty_repicks_never_idle() -> None:
     mode = SearchMode()
-    mode._state = "go_to_room"
+    mode._state = "search_room"
     mode._target_room = "Left"
-    mode._goto_point = (40, 40)
-    belief = _belief(self_xy=(40, 40))  # arrived, but no crew here
-    mode.decide(belief, ActionState())
-    assert mode._state in {"pick_room", "go_to_room"}  # re-dispatched to another room
+    mode._scan_points = []                    # sweep already exhausted
+    mode._scan_idx = 0
+    belief = _belief(self_xy=(40, 40))        # no crew here
+    intent = mode.decide(belief, ActionState())
     assert mode._prev_room == "Left"
+    assert intent.kind == "navigate_to"        # re-picked another room; PICK_ROOM never idles
 
 
 def test_follows_a_crewmate_who_leaves_the_room() -> None:
@@ -272,18 +340,31 @@ def test_visible_count_respects_line_of_sight() -> None:
     assert mode._visible_count(belief, (40, 40), [(150, 40)]) == 0    # across the wall, blocked
 
 
-def test_watch_moves_to_a_vantage_over_the_crew() -> None:
+def test_watch_multiple_crew_holds_a_vantage() -> None:
+    # MULTIPLE crew in the room -> hold the vantage seeing the most (the one deliberate hold).
     mode = SearchMode()
     mode._state = "watch"
     mode._target_room = "Left"
-    belief = _belief(self_xy=(10, 10))   # in a corner of Left, not yet at a good vantage
-    mode._room_crew = {"green"}
-    _crew(belief, "green", (80, 60))     # a crewmate elsewhere in Left
+    belief = _belief(self_xy=(10, 10))   # in a corner of Left
+    mode._room_crew = {"green", "yellow"}
+    _crew(belief, "green", (80, 60))
+    _crew(belief, "yellow", (60, 70))    # TWO crew in Left
     mode.decide(belief, ActionState())
-    # should move to a vantage (it sees green) rather than idle in the corner
     assert mode._state == "watch"
     assert mode._vantage is not None
-    assert mode._visible_count(belief, mode._vantage, [(80, 60)]) == 1
+
+
+def test_watch_single_crew_closes_in_not_idle() -> None:
+    # NEW: a lone crewmate is CLOSED ON (approach), never watched from afar / idled.
+    mode = SearchMode()
+    mode._state = "watch"
+    mode._target_room = "Left"
+    mode._room_crew = {"green"}
+    belief = _belief(self_xy=(10, 10))
+    _crew(belief, "green", (80, 60))     # ONE crew -> approach
+    intent = mode.decide(belief, ActionState())
+    assert intent.kind == "navigate_to"
+    assert "closing on the lone crewmate" in (intent.reason or "")
 
 
 def test_never_follows_a_teammate() -> None:
@@ -297,3 +378,15 @@ def test_never_follows_a_teammate() -> None:
     _crew(belief, "red", (130, 40))  # the teammate "leaves" — must NOT be followed
     mode.decide(belief, ActionState())
     assert mode._follow_color != "red"
+
+
+def test_follow_hands_off_to_search_room_when_caught_in_a_room() -> None:
+    # NEW: while following a VISIBLE target, once we're in the SAME room as it (run down),
+    # hand off to SEARCH_ROOM -> WATCH (a lone target then gets approached, not walked onto).
+    mode = SearchMode()
+    belief = _belief(self_xy=(60, 40))       # we're inside Left
+    green = _crew(belief, "green", (75, 40))  # target also inside Left — we've caught up
+    mode._begin_follow(belief, green)
+    intent = mode.decide(belief, ActionState())
+    assert mode._state == "watch"             # SEARCH_ROOM found green -> WATCH
+    assert intent.kind == "navigate_to"       # single crew -> approach, not idle
