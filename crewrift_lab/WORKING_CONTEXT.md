@@ -69,8 +69,19 @@ session), James gave the go-ahead: `crewborg:v80` (`d85ebab3`) submitted to Crew
 placed into Competition (`lpm_a95f8e29`), **competing + champion** (auto-champion=always; supersedes v77).
 Post-submit tournament-style eval **COMPLETE: `xreq_c10927d1`** — 100 eps (100 completed / 0 failed),
 natural/random roles, v80 + 7 `random` champion-pool seats, all rotating; dashboard on
-http://localhost:8814. **Not yet analyzed** — survey/diagnose it to pick the next improvement. NB the v76–v80 version-log
+http://localhost:8814. NB the v76–v80 version-log
 entries (what the fixes were, exact commits) still need back-filling from the session that built them.
+
+**🚨 v80 CARRIES THE ROLE-LATCH REGRESSION (found 2026-07-01, league survey + James's replay watch).**
+The champion is throwing ~half its crew games: **49% of v80 crew games end 0-task** (66/135 league eps,
+field 0-5%; task/g 2.58 vs 5.2-6.5; bimodal 0-vs-8) — the `1178f31` crew-latches-imposter fingerprint,
+present in EVERY population (league + all xreqs). Inference (unverified in code): v80 was built on the
+paritypush lineage without the v75 IMPS-text fix (`4e1d7c1`). Open q: why ~50% and not ~100% like the
+original 15/15 repro. Survey: `/tmp/survey_v80_league.html` (196 league eps); artifacts `/tmp/v80_league_eps`;
+warehouse building at `/tmp/v80_league_wh`. **Fix path: v81 = v80 imposter gains + `4e1d7c1` latch fix.**
+Also: v80 is the only policy with ops crashes in the league set (6 disconnects) — separate issue.
+League form context: lineage rank 9 is historical; v80's first champion round (276) scored 16 (rank 2).
+Top of field = RelhAlpha ~15.8/round; league imposter gap vs top: win 73% vs 87-89%, K/g 1.55 vs 1.8+.
 
 **Two active win fronts: CREW (new, primary) + imposter KILL→WIN (kept).** A 170-ep Prime sweep + 4-agent
 diagnosis (2026-06-30) added the crew front and refined — NOT replaced — the old "kill→WIN conversion" thread
