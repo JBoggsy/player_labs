@@ -41,10 +41,18 @@ DISCOVERY MODES (pick exactly one):
                                   experience-request episodes in a container
     --episode UUID [--episode ..] explicit league episode records by id
 
+WATCH MODE (--watch, with --xreq only): stream a still-running experience
+request — poll it and download each episode's artifacts as it turns terminal,
+exiting once every episode is terminal and fetched. Resume-safe (completeness
+is judged from disk); watch_state.json bounds retries (--max-attempts, default
+3) for episodes whose artifacts keep erroring. This is the streaming half of
+the default eval flow (see the coworld-experience-requests skill, step 4).
+
 Usage (auth comes from `softmax login`; run inside `uv run` so softmax is importable):
 
     uv run python fetch_artifacts.py --policy crewborg -n 10 --out /tmp/eps
     uv run python fetch_artifacts.py --xreq xreq_abc... --out /tmp/eps
+    uv run python fetch_artifacts.py --xreq xreq_abc... --watch --out /tmp/eps
     uv run python fetch_artifacts.py --ereq ereq_abc... --ereq ereq_def... --no-logs
     uv run python fetch_artifacts.py --pool pool_abc... -n 20 --out /tmp/eps
 

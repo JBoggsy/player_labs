@@ -89,8 +89,11 @@ Crewrift-specific skills live here in `.claude/skills/`:
 - **`crewrift-event-warehouse`** — build + query a policy-indexed **DuckDB/Parquet event
   store** from expanded replays, for cross-episode behavioural analysis ("all the data":
   proximity, isolation, follow/chase, kills, votes, chats, per-room time). The deep dig
-  behind the survey, and the default cheap experiment. `references/event-catalog.md` +
-  `references/recipes.md`.
+  behind the survey, and the default cheap experiment. For a **fresh experience request**,
+  its `scripts/stream_eval.py` is the default path: it fetches artifacts and builds the
+  warehouse **while the episodes are still running** (incremental builds; crash-safe
+  rerun), so the warehouse is ready as the request drains. `references/event-catalog.md`
+  + `references/recipes.md`.
 - **`crewrift-ab`** — **A/B test two policy versions head-to-head**: run both in **matched,
   fresh** experience requests (same roster/roles/count/window — so the delta is attributable,
   not confounded by league drift), then compare hard metrics (`scripts/compare.py` — role-split

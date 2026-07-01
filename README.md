@@ -49,7 +49,9 @@ Lab-wide, game-agnostic Coworld tooling in [`.claude/skills/`](.claude/skills) �
 drive the mechanical halves of the loop:
 
 - **`coworld-experience-requests`** — create & monitor hosted evaluation batches.
-- **`coworld-episode-artifacts`** — download episodes' replays, results, and logs.
+  After `create`, the default is to **stream** the results (below), not wait.
+- **`coworld-episode-artifacts`** — download episodes' replays, results, and logs —
+  one-shot for finished batches, or **streamed live** (`--watch`) while a batch runs.
 - **`coworld-local-run`** — smoke-run your built policy locally (Gate 1).
 - **`coworld-policy-lifecycle`** — upload a new version → (gated) submit → monitor.
 

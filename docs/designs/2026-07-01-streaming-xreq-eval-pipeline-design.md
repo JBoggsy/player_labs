@@ -1,6 +1,9 @@
 # Streaming XP-request → artifacts → warehouse pipeline
 
-**Status:** approved design, not yet implemented
+**Status:** IMPLEMENTED + live-validated 2026-07-01 (xreq_307f10d6, 8 episodes:
+overlap, resume, and the first-batch skew alarm all confirmed). Components:
+`fetch_artifacts.py --watch` (root skill), incremental builds in the vendored
+warehouse, `stream_eval.py` (crewrift-event-warehouse skill scripts/).
 **Date:** 2026-07-01
 
 ## Problem

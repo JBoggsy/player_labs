@@ -92,9 +92,12 @@ Lab-wide, game-agnostic Coworld tooling lives in `.claude/skills/`:
   evaluating agents against a live roster. (Loop step 1: **Evaluate**.)
   `references/api.md` is the full request-API field reference;
   `scripts/experience_request.py` does `resolve` / `create` / `monitor`.
+  **After `create`, stream by default** (that skill's step 4): launch the
+  streaming pipeline in the background instead of waiting for the batch.
 - **`coworld-episode-artifacts`** — download completed episodes' replays, results,
-  and per-agent logs into one directory per episode (keyed off `job_id`). (Loop step
-  2: **Report**, the pull.)
+  and per-agent logs into one directory per episode (keyed off `job_id`) — one-shot,
+  or **streamed live from a running request** (`fetch_artifacts.py --xreq … --watch`:
+  each episode downloads as it turns terminal). (Loop step 2: **Report**, the pull.)
 - **`coworld-local-run`** — run your own built policy in a **local** episode and watch
   it; the Gate-1 smoke test (did the change take, does it connect→play→exit cleanly —
   *not* a comparative matchup). `scripts/smoke.py`. (Loop step 5.)

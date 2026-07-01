@@ -37,7 +37,9 @@ what they decide).
   episodes in parallel on Softmax infra and are currently free, so use them liberally
   rather than rationing them; just **target them to the question** (matched roles when
   the change was role-specific; the specific opponents the policy struggles against)
-  and harvest async (the value is in the results, not babysitting the wait).
+  and harvest async (the value is in the results, not babysitting the wait) — the
+  streaming pipeline (the `coworld-experience-requests` skill, step 4) makes the
+  harvest overlap the run by default, so "async" costs nothing.
 - **Local testing is smoke/correctness only — never comparative.** You generally
   can't download and run other users' policies locally (currently broken, and strong
   policies may be private), so local play proves only that your artifact runs, speaks

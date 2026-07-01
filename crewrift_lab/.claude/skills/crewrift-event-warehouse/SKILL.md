@@ -1,6 +1,6 @@
 ---
 name: crewrift-event-warehouse
-description: "Use to build and query the Crewrift event warehouse — a policy-indexed DuckDB/Parquet dataset of per-tick gameplay events (kills, follows, proximity, votes, tasks, chat) over many episodes — for deep, mechanistic, cross-episode questions about a policy's behaviour. Triggers: 'how often is crewborg near a crewmate without killing', 'who trails crewborg', 'where does it abandon tasks', 'does it vote real imposters', 'build the warehouse for this round', 'query the events'. This is the deep-dig mainstay after crewrift-survey flags something."
+description: "Use to build and query the Crewrift event warehouse — a policy-indexed DuckDB/Parquet dataset of per-tick gameplay events (kills, follows, proximity, votes, tasks, chat) over many episodes — for deep, mechanistic, cross-episode questions about a policy's behaviour. Triggers: 'how often is crewborg near a crewmate without killing', 'who trails crewborg', 'where does it abandon tasks', 'does it vote real imposters', 'build the warehouse for this round', 'query the events', 'stream an experience request into a warehouse'. For a FRESH experience request, stream_eval.py builds the warehouse WHILE the episodes run (the default; builds are incremental). This is the deep-dig mainstay after crewrift-survey flags something."
 ---
 
 # Crewrift Event Warehouse

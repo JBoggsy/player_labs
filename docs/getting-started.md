@@ -214,7 +214,7 @@ what's coming. Say something like:
 >    episodes in parallel, against opponents and matchups *we* design. It lets us test
 >    against strong players *right now* instead of waiting for league rounds to come
 >    around.
-> 3. Once those games run, I'll **monitor them to completion, pull the results, and
+> 3. While those games run, I'll **stream the results down as each one finishes and
 >    distill the high-signal bits** — a role-split report plus some mechanistic
 >    diagnoses — so we can see where it's strong and weak and choose our first
 >    improvement together.
@@ -262,12 +262,15 @@ being measured — relay something like:
 This is the part where **keeping the user posted matters most** — the games take a
 while, so don't go silent. Walk them through it:
 
-- **Monitor** the request to completion (the `coworld-experience-requests` skill). This
-  takes a bit, so let the user know it's running and that you're watching it — they
-  should never wonder whether you've stalled.
-- **Announce when it finishes** and tell them you're now **downloading** the results —
-  pull the finished episodes into one directory (the **`coworld-episode-artifacts`** skill).
-- **Distill:** tell them you're analyzing the games, then run **`crewrift-report`** for
+- **Stream, don't wait:** right after the request is created, start pulling results
+  **while the games are still running** — `fetch_artifacts.py --xreq … --watch` (the
+  **`coworld-episode-artifacts`** skill) downloads each episode the moment it
+  finishes, in the background. (For Crewrift deep digs there's a fuller pipeline,
+  `stream_eval.py`, that also builds the event warehouse as episodes land — see the
+  `crewrift-event-warehouse` skill.) Let the user know the batch is running and that
+  results are streaming in — they should never wonder whether you've stalled.
+- **Announce when the batch finishes** — the episodes are already downloaded by then.
+- **Distill:** tell them you're analyzing the games, then run **`crewrift-survey`** for
   the role-split strengths/weaknesses + the interesting episodes, and **`crewrift-diagnose`**
   to turn those signals into evidence-grounded, mechanistic improvement hypotheses.
 - **Present it to your user:** where the policy is strong vs. weak and the candidate

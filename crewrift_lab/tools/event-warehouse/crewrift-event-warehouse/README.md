@@ -193,9 +193,12 @@ records how the slot was resolved (`request.player_id` → `request.display_name
 
 `manifest.json` fields: `schema_version` (`crewrift-event-warehouse/v1`),
 `episodes_total`, `episodes_ok`, `episodes_skipped`, `episodes_failed`,
-`events_written`, `distinct_policies`, `event_keys` (sorted), and `episodes[]`
-with per-episode `episode_id`, `status`, `event_count`, **`trace_warning`** (bool;
-the version-skew signal — see below), and `message`.
+`episodes_cached` (this run's incremental-build cache hits), `events_written`,
+`distinct_policies`, `event_keys` (sorted), and `episodes[]` (sorted by
+`episode_id`) with per-episode `episode_id`, `status`, `event_count`,
+**`trace_warning`** (bool; the version-skew signal — see below), and `message`.
+Summary counts describe the **merged warehouse**, not just the latest call
+(see "Incremental builds" above).
 
 Load it with DuckDB:
 

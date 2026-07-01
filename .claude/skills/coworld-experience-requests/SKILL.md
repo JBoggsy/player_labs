@@ -1,6 +1,6 @@
 ---
 name: coworld-experience-requests
-description: "Use to create and monitor Coworld experience requests — hosted batches of episodes you define (target, roster, roles, count) for evaluating a policy against a live field. Triggers: 'run crewborg vs the top opponents', 'make an experience request', 'request N hosted games', 'A/B a policy against the league', 'measure the imposter', 'set up an evaluation battery'. Pair with coworld-episode-artifacts to pull the resulting episodes."
+description: "Use to create and monitor Coworld experience requests — hosted batches of episodes you define (target, roster, roles, count) for evaluating a policy against a live field. Triggers: 'run crewborg vs the top opponents', 'make an experience request', 'request N hosted games', 'A/B a policy against the league', 'measure the imposter', 'set up an evaluation battery'. DEFAULT FLOW after create: launch the STREAMING pipeline in the background (step 4) — artifacts download and analysis prep overlap the still-running episodes; don't wait for the batch to drain."
 ---
 
 # Coworld Experience Requests
@@ -12,7 +12,7 @@ roles), and a **count**; POST it; poll the `xreq_…` to completion; then pull t
 currently free — use them liberally, but **target them to the question.**
 
 **Announce at start:** "Setting up a Coworld experience request. I'll frame the question, resolve the
-live IDs, compose the request, validate it against the live schema, POST it, and monitor to completion."
+live IDs, compose the request, validate it against the live schema, POST it, and stream the results in the background."
 
 > **Check `user_preferences.md` for any standing XP-request preferences** before composing
 > (e.g. a preferred opponent set, a default episode count, an always-2-imposter rule). The human may
