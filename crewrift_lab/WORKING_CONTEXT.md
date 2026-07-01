@@ -49,6 +49,21 @@ useful `hunt_room`/`target_player`/`strength`; (2) Phase 4 EscortMode for crew. 
 
 ## 🎯 OBJECTIVE (REFRAMED 2026-06-30): fix crewborg's CREW play (voting-led)
 
+**✅ UPDATE 2026-07-01 — the recent crew "collapse" was mostly a REGRESSION, now FIXED (crewborg:v75).**
+Root cause: commit `1178f31`'s "robust teammate latch" made CREW mis-detect their own role as **IMPOSTER**
+at RoleReveal (verified 15/15 A/B crew seats) and play the whole game as imposter → **0 tasks**. The crew
+role-reveal also renders player icons in the 9500+ range, and the change had dropped the `IMPS`-text gate
+that distinguished a crew reveal from an imposter one. **Fixed in v75:** role is now latched positively from
+the RoleReveal **text** (`4e1d7c1`), `dead` split from role into a `self_alive` flag (`72a14a0`), and the
+0x85 per-tick send reverted (`ab92f3c`, it was a net-harmful aggravator). **Measured (`xreq_300b95e7`, 100 ep
+natural-roles vs the Prime field):** crew task completion **2.7 → 5.96** (median 7; 25/68 seats do all 8),
+0-task "wanderer" seats **~45% → 4%** (the normal early-death baseline). Direct belief-role telemetry wasn't
+captured (v75 was uploaded without trace groups), but task recovery is the definitive downstream proof — a crew
+seat completing 6–8 tasks cannot be running imposter play. Memory: `crewborg-role-latch-regression`.
+**v75 NOT submitted** — v70 (deployed champion) is PRE-regression / healthy, so the bug never reached the
+league; no rollback needed. Crew **win-rate** stays meta-capped (~12%, imposter-favored division), so the
+**voting lever below is the real remaining crew front** — now measurable cleanly on a non-regressed build.
+
 **Two active win fronts: CREW (new, primary) + imposter KILL→WIN (kept).** A 170-ep Prime sweep + 4-agent
 diagnosis (2026-06-30) added the crew front and refined — NOT replaced — the old "kill→WIN conversion" thread
 below (direction 4): crewborg is a **competent imposter (40–70% 1v1 win) and a losing crewmate (0–30%)**; v70 ≈ crewborg-base, so weights don't move outcomes — **change the MODES**. The crew
