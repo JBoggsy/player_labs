@@ -327,7 +327,8 @@ class Belief(BaseModel):
     camera_ready: bool = False
     camera_x: int = 0
     camera_y: int = 0
-    self_role: str | None = None
+    self_role: str | None = None  # "imposter" / "crewmate" / None (unknown). Fixed for the game.
+    self_alive: bool = True  # cleared on our own death (ghost icon); role is preserved separately.
     self_kill_ready: bool | None = None
     self_world_x: int | None = None
     self_world_y: int | None = None
@@ -724,14 +725,17 @@ def update_belief(belief: Belief, percept: Percept) -> None:
     if belief.phase == "RoleReveal":
         if "IMPS" in resolved.phase_texts:
             belief.self_role = "imposter"
+            belief.self_alive = True  # a fresh reveal means a new game — we are alive again
             belief.teammate_colors |= resolved.reveal_player_colors
         elif "CREWMATE" in resolved.phase_texts:
             belief.self_role = "crewmate"
+            belief.self_alive = True
 
-    # Death is a STATE, not a role. The ghost icon is the one HUD signal we keep for
-    # self-state (the reveal cannot tell us about a mid-game death); it overrides role.
-    if resolved.self_role == "dead":
-        belief.self_role = "dead"
+    # Death is a STATE (a flag), not a role — so we keep knowing whether we were crew
+    # or imposter after dying. The ghost icon is the one HUD self-state signal we keep
+    # (the reveal cannot tell us about a mid-game death).
+    if resolved.self_dead:
+        belief.self_alive = False
 
     # Kill-cooldown tracking (imposter only), from the HUD kill/cooldown icon — kill
     # *state*, not role (role is already established above). A kill-ready → cooldown

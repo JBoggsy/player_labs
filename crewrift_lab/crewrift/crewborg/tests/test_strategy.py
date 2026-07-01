@@ -61,8 +61,8 @@ def test_playing_crewmate_selects_normal() -> None:
     assert _select(Belief(phase="Playing", self_role="crewmate")) == "normal"
     # Role not yet known during early Playing still does tasks.
     assert _select(Belief(phase="Playing", self_role=None)) == "normal"
-    # A crewmate ghost keeps doing its own tasks (design §7.3).
-    assert _select(Belief(phase="Playing", self_role="dead")) == "normal"
+    # A ghost (dead) keeps doing its own tasks (design §7.3), regardless of role.
+    assert _select(Belief(phase="Playing", self_role="crewmate", self_alive=False)) == "normal"
 
 
 def test_voting_selects_attend_meeting() -> None:
@@ -82,7 +82,7 @@ def test_ghost_does_tasks_not_report() -> None:
 
     # A dead crewmate (ghost) can't report; it goes straight to Normal even with a
     # body in view, so it keeps finishing its own tasks (design §7.3).
-    belief = Belief(phase="Playing", self_role="dead", visible_body_ids={2003})
+    belief = Belief(phase="Playing", self_role="crewmate", self_alive=False, visible_body_ids={2003})
     belief.bodies[2003] = BodyEntry(object_id=2003, color="green", world_x=10, world_y=10, first_seen_tick=1)
     assert _select(belief) == "normal"
 

@@ -12,7 +12,6 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 Facing = Literal["left", "right"]
-SelfRole = Literal["crewmate", "imposter", "dead"]
 
 
 class VisiblePlayer(BaseModel):
@@ -137,7 +136,7 @@ class ResolvedScene(BaseModel):
     camera_x: int
     camera_y: int
 
-    self_role: SelfRole | None = None
+    self_dead: bool = False  # ghost icon present this frame (our own death); a STATE, not a role
     self_kill_ready: bool | None = None
     # Self is the camera center, not an object; world position is the camera plus
     # a fixed offset (design §3.2). Valid only when ``camera_ready``.

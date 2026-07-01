@@ -59,16 +59,16 @@ def test_hud_icons_report_kill_state_and_death_not_role() -> None:
     cooldown = SceneState()
     cooldown.apply(w.define_sprite(900, 8, 8, "imposter icon cooldown") + w.define_object(900, 4, 4, 9, 0, 900))
     r = resolve_scene(cooldown, tick=1)
-    assert r.self_role is None and r.self_kill_ready is False
+    assert r.self_dead is False and r.self_kill_ready is False
 
     ready = SceneState()
     ready.apply(w.define_sprite(901, 8, 8, "imposter icon") + w.define_object(901, 4, 4, 9, 0, 901))
     r = resolve_scene(ready, tick=2)
-    assert r.self_role is None and r.self_kill_ready is True
+    assert r.self_dead is False and r.self_kill_ready is True
 
     ghost = SceneState()
     ghost.apply(w.define_sprite(902, 8, 8, "ghost icon") + w.define_object(902, 4, 4, 9, 0, 902))
-    assert resolve_scene(ghost, tick=3).self_role == "dead"
+    assert resolve_scene(ghost, tick=3).self_dead is True
 
 
 def test_progress_counter_and_voting_resolved() -> None:

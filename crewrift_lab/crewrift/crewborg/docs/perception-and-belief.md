@@ -208,7 +208,7 @@ self-role section below), so the kill/cooldown icons set only `self_kill_ready`:
 
 - `LABEL_IMPOSTER_ICON` → `self_kill_ready=True`
 - `LABEL_IMPOSTER_ICON_COOLDOWN` → `self_kill_ready=False`
-- `LABEL_GHOST_ICON` → `self_role="dead"` (our own death — a state that overrides role)
+- `LABEL_GHOST_ICON` → `self_dead=True` (our own death — a state; at the belief layer this sets `self_alive=False` and preserves the role)
 
 Phase / HUD text, the voting cursor / skip-cursor / timer, the vote self-marker,
 the progress bar, the crew-task counter, and the `MeetingCall` caller line

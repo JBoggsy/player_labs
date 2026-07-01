@@ -259,7 +259,7 @@ present*.
 | Field | Source (label / id range) | Notes |
 |---|---|---|
 | `tick`, `camera_ready`, `camera_x/y` | map object id 1 / sprite 1 | gates world coords |
-| `self_role` | `ghost icon` ⇒ `dead`; otherwise `None`. Imposter-vs-crew is **not** read from the HUD — it is latched at the belief layer from the RoleReveal text (`IMPS` ⇒ imposter, `CREWMATE` ⇒ crewmate; §5), so crew is as solid as imposter | HUD ghost icon (`global:2484-2506`) |
+| `self_dead` | `ghost icon` present ⇒ `True` (our own death — a **state**, not a role; sets `belief.self_alive=False` while preserving the role). Imposter-vs-crew is latched separately at the belief layer from the RoleReveal text (`IMPS` ⇒ imposter, `CREWMATE` ⇒ crewmate; §5), so crew is as solid as imposter | HUD ghost icon (`global:2484-2506`) |
 | `self_kill_ready` | `imposter icon` (ready) vs `imposter icon cooldown` — kill **state**, not role | imposter only |
 | `self_world_xy` | camera + fixed center offset | approximate |
 | `visible_players[]` | `player <color> left/right`; ids `1000+joinOrder` | id, color, facing, world xy. Visible & alive only — a living agent never sees ghost objects (`global:2389-2398`) |

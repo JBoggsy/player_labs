@@ -339,7 +339,7 @@ def update_suspicion(belief: Belief) -> None:
     (design §10.4). A ghost holds no suspicion.
     """
 
-    if belief.self_role == "dead":
+    if not belief.self_alive:
         belief.suspicion = {}
         belief.believed_imposters = set()
         return

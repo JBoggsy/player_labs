@@ -95,7 +95,7 @@ def resolve_scene(scene: SceneState, tick: int) -> ResolvedScene:
     camera_x = scene.camera_x
     camera_y = scene.camera_y
 
-    self_role: str | None = None
+    self_dead: bool = False
     self_kill_ready: bool | None = None
     players: list[VisiblePlayer] = []
     bodies: list[VisibleBody] = []
@@ -140,7 +140,7 @@ def resolve_scene(scene: SceneState, tick: int) -> ResolvedScene:
             self_kill_ready = False
             continue
         if label == LABEL_GHOST_ICON:
-            self_role = "dead"
+            self_dead = True
             continue
 
         # Social UI on the voting / vote-result screens, dispatched by id range.
@@ -257,7 +257,7 @@ def resolve_scene(scene: SceneState, tick: int) -> ResolvedScene:
         camera_ready=scene.camera_ready,
         camera_x=camera_x,
         camera_y=camera_y,
-        self_role=self_role,
+        self_dead=self_dead,
         self_kill_ready=self_kill_ready,
         self_world_x=self_world_x,
         self_world_y=self_world_y,

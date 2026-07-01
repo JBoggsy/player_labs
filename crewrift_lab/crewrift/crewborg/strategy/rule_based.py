@@ -98,9 +98,9 @@ class RuleBasedStrategy:
             return ModeDirective(mode="attend_meeting", source="strategy", reason="meeting open")
 
         if phase == "Playing":
-            # A crewmate ghost can't report or be threatened; it only finishes its
-            # own tasks (design §7.3), so it goes straight to Normal.
-            if belief.self_role == "dead":
+            # A ghost (dead, either role) can't report or be threatened; it only
+            # finishes its own tasks (design §7.3), so it goes straight to Normal.
+            if not belief.self_alive:
                 self._accuse_target = None
                 return ModeDirective(mode="normal", source="strategy", reason="ghost: finish own tasks")
             if belief.self_role == "imposter":

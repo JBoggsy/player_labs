@@ -165,19 +165,31 @@ def test_no_false_kill_after_a_meeting() -> None:
     from crewrift.crewborg.perception.entities import VotingState
 
     belief = Belief()
-    _fold(belief, 1, self_role="imposter", self_kill_ready=True, crew_tasks_remaining=3)  # Playing, ready
+    _fold(belief, 1, phase_texts=frozenset({"IMPS"}))  # latch imposter from the reveal
+    _fold(belief, 2, self_kill_ready=True, crew_tasks_remaining=3)  # Playing, kill ready
 
-    # Meeting: voting active; the HUD role icon is absent so kill_ready is carried.
+    # Meeting: voting active; the HUD kill icon is absent so kill_ready is carried.
     meeting = ResolvedScene(
-        tick=2, camera_ready=True, camera_x=0, camera_y=0, voting=VotingState(timer_present=True)
+        tick=3, camera_ready=True, camera_x=0, camera_y=0, voting=VotingState(timer_present=True)
     )
-    update_belief(belief, Percept(tick=2, messages_applied=2, resolved=meeting))
+    update_belief(belief, Percept(tick=3, messages_applied=3, resolved=meeting))
     assert belief.phase == "Voting"
 
     # Back to Playing with cooldown reset by the meeting — NOT a kill.
-    _fold(belief, 3, self_role="imposter", self_kill_ready=False, crew_tasks_remaining=3)
+    _fold(belief, 4, self_kill_ready=False, crew_tasks_remaining=3)
     assert belief.phase == "Playing"
     assert belief.last_kill_tick is None
+
+
+def test_death_sets_the_alive_flag_and_preserves_role() -> None:
+    # The ghost icon is our own death — a STATE (a flag), not a role. Role is kept, so a
+    # dead agent still knows whether it was crew or imposter.
+    belief = Belief()
+    _fold(belief, 1, phase_texts=frozenset({"CREWMATE"}))
+    assert belief.self_role == "crewmate" and belief.self_alive is True
+    _fold(belief, 5, self_dead=True, crew_tasks_remaining=3)
+    assert belief.self_alive is False
+    assert belief.self_role == "crewmate"  # role survives death
 
 
 def test_phase_stays_unknown_before_any_signal() -> None:
