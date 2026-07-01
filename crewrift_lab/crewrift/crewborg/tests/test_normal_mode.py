@@ -370,3 +370,143 @@ def test_picks_reachable_task_over_nearer_unreachable_one() -> None:
     belief.nav = build_nav_graph(mask, map_data=belief.map, cell_size=8)
     intent = NormalMode().decide(belief, ActionState())
     assert intent.kind == "complete_task" and intent.task_index == 0  # task 1 is unreachable
+
+
+# --- stall escape + witness posture (H4: never stand still holding a dead target) ---
+
+
+def test_stall_escape_blocks_the_wedged_target_and_picks_another() -> None:
+    belief = Belief(
+        map=_map_with_tasks(),
+        assigned_task_indices={0, 1},
+        visible_task_indices={0, 1},
+        self_world_x=104,
+        self_world_y=104,  # near task 0 but frozen (e.g. wedged outside its rect)
+        last_tick=0,
+    )
+    mode = NormalMode()
+    assert mode.decide(belief, ActionState()).task_index == 0
+
+    # 101 ticks later: same spot, no task progress ⇒ stall escape fires.
+    belief.last_tick = 101
+    intent = mode.decide(belief, ActionState())
+    assert intent.kind == "complete_task" and intent.task_index == 1  # moved off the wedge
+
+
+def test_stall_blocked_task_is_retried_after_the_retry_window() -> None:
+    belief = Belief(
+        map=_map_with_tasks(),
+        assigned_task_indices={0},
+        visible_task_indices={0},
+        self_world_x=104,
+        self_world_y=104,
+        last_tick=0,
+    )
+    mode = NormalMode()
+    assert mode.decide(belief, ActionState()).task_index == 0
+
+    belief.last_tick = 101  # stall: task 0 becomes blocked, nothing else to do
+    assert mode.decide(belief, ActionState()).task_index is None
+
+    belief.last_tick = 101 + 900  # retry window over: task 0 is pickable again
+    intent = mode.decide(belief, ActionState())
+    assert intent.kind == "complete_task" and intent.task_index == 0
+
+
+def test_working_a_task_is_not_a_stall() -> None:
+    belief = Belief(
+        map=_map_with_tasks(),
+        assigned_task_indices={0},
+        visible_task_indices={0},
+        self_world_x=110,
+        self_world_y=110,  # standing on task 0, working it
+        last_tick=0,
+    )
+    mode = NormalMode()
+    assert mode.decide(belief, ActionState()).task_index == 0
+
+    belief.last_tick = 90
+    belief.active_task_progress_pct = 40  # progress moved: signature changed
+    assert mode.decide(belief, ActionState()).task_index == 0
+
+    belief.last_tick = 185  # 95 ticks at 40% — still under the stall bar
+    assert mode.decide(belief, ActionState()).task_index == 0
+
+
+def test_all_tasks_done_live_crew_shadows_nearest_crewmate() -> None:
+    belief = Belief(
+        map=_map_with_tasks(),
+        assigned_task_indices={0, 1},
+        completed_task_indices={0, 1},
+        self_world_x=110,
+        self_world_y=110,
+        self_color="red",
+        last_tick=10,
+    )
+    _crew(belief, "green", (300, 110))
+
+    intent = NormalMode().decide(belief, ActionState())
+
+    assert intent.kind == "navigate_to"
+    assert intent.point == (300 + 28, 110)  # a small offset off the crewmate
+    assert intent.reason == "witness posture: shadowing green"
+
+
+def test_all_tasks_done_ghost_keeps_the_walk_home() -> None:
+    belief = Belief(
+        map=_map_with_tasks(),  # home = (0, 0)
+        assigned_task_indices={0, 1},
+        completed_task_indices={0, 1},
+        self_world_x=110,
+        self_world_y=110,
+        self_color="red",
+        self_alive=False,
+        last_tick=10,
+    )
+    _crew(belief, "green", (300, 110))
+
+    intent = NormalMode().decide(belief, ActionState())
+
+    assert intent.kind == "navigate_to" and intent.point == (0, 0)  # home, no shadowing
+
+
+def test_shadow_skips_self_and_dead_records() -> None:
+    belief = Belief(
+        map=_map_with_tasks(),
+        assigned_task_indices={0, 1},
+        completed_task_indices={0, 1},
+        self_world_x=110,
+        self_world_y=110,
+        self_color="red",
+        last_tick=10,
+    )
+    _crew(belief, "red", (111, 110))  # the self-sprite leaked into the roster
+    _crew(belief, "blue", (150, 110))
+    belief.roster["blue"].life_status = "dead"
+    _crew(belief, "green", (300, 110))
+
+    intent = NormalMode().decide(belief, ActionState())
+
+    assert intent.reason == "witness posture: shadowing green"
+
+
+def test_shadow_repicks_after_the_repick_window() -> None:
+    belief = Belief(
+        map=_map_with_tasks(),
+        assigned_task_indices={0, 1},
+        completed_task_indices={0, 1},
+        self_world_x=110,
+        self_world_y=110,
+        self_color="red",
+        last_tick=10,
+    )
+    _crew(belief, "green", (300, 110))
+    mode = NormalMode()
+    assert mode.decide(belief, ActionState()).reason == "witness posture: shadowing green"
+
+    # green dies; a repick window later we shadow the remaining live crewmate.
+    belief.roster["green"].life_status = "dead"
+    belief.last_tick = 220
+    _crew(belief, "cyan", (400, 110))
+    intent = mode.decide(belief, ActionState())
+    assert intent.reason == "witness posture: shadowing cyan"

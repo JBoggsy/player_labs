@@ -41,6 +41,10 @@ WAYPOINT_RADIUS = 8  # within this of a route waypoint ⇒ advance to the next
 # Momentum stopping distance ≈ v·fr/(1-fr) with fr = 144/256; ≈ 1.29·v. Release
 # the axis a bit before that so friction brings us to rest on the target.
 STOP_FACTOR = 1.3
+# Un-wedge range for complete_task: only when this close to the station center do
+# we treat a dead navigate mask as the deadband wedge and nudge at the center —
+# farther out a dead mask means "unreachable", where holding still is correct.
+TASK_NUDGE_RANGE = 24
 
 # Re-root the nav route at the agent's live position at least this often (ticks), so
 # the follower never commits to a stale route after drifting off the planned line.
@@ -294,7 +298,16 @@ def _resolve_complete_task(
     # rect), falling back to the geometric center before the nav graph exists.
     anchor = belief.nav.task_anchor(intent.task_index) if belief.nav is not None else None
     goal = anchor if anchor is not None else (task.center.x, task.center.y)
-    return Command(held_mask=_navigate_mask(belief, action_state, self_xy, goal))
+    mask = _navigate_mask(belief, action_state, self_xy, goal)
+    if mask == 0 and _dist2(self_xy, (task.center.x, task.center.y)) <= TASK_NUDGE_RANGE**2:
+        # Deadband wedge (H4 warehouse forensics: 107/145 crew standing-still
+        # penalties sat exactly here): "arrived" within ±ARRIVE_RADIUS of the
+        # anchor yet still OUTSIDE the rect, so the A-hold never starts and
+        # nothing ever moves again. Aim straight at the rect center — it lies
+        # more than ARRIVE_RADIUS inside every edge on real stations, so the
+        # nudge re-enters the rect.
+        mask = _movement_mask(self_xy, (task.center.x, task.center.y), _velocity(action_state, self_xy))
+    return Command(held_mask=mask)
 
 
 def _resolve_report(
