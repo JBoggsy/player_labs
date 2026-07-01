@@ -25,7 +25,6 @@ from crewrift.crewborg.types import ActionState, Belief, Command, Intent
 
 INPUT_HEADER = 0x84
 CHAT_HEADER = 0x81
-READY_HEADER = 0x85
 MASK_BITS = 0x7F
 
 # Button bit assignments (AGENTS.md §2 / design §3.3).
@@ -70,21 +69,6 @@ def encode_input(held_mask: int) -> bytes:
     """Encode a held-button bitmask into a Sprite-v1 input packet."""
 
     return bytes([INPUT_HEADER, held_mask & MASK_BITS])
-
-
-def encode_ready() -> bytes:
-    """Encode the end-of-tick Player-Ready packet (Sprite-v1 ``0x85``).
-
-    A single byte the server's fast-mode frame limiter uses to advance the tick the
-    instant *every* active player has signalled ready, instead of waiting the full
-    ~42ms frame (``crewrift/src/crewrift/server.nim``: ``isPlayerReadyPacket`` /
-    ``allPlayersReady`` / ``runFrameLimiter``; ``fastMode`` defaults on in ``sim.nim``).
-    Sent once per tick AFTER our action, so the tick never advances before we've acted.
-    The early-advance only fires when *all* players ready, so today it speeds only our
-    self-play / same-policy A/B evals; it's harmless (ignored) in mixed games.
-    """
-
-    return bytes([READY_HEADER])
 
 
 def _axis_input(delta: int, velocity: int) -> int:

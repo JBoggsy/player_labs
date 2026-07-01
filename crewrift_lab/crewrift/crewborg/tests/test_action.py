@@ -13,10 +13,8 @@ from crewrift.crewborg.action import (
     BTN_UP,
     CHAT_HEADER,
     INPUT_HEADER,
-    READY_HEADER,
     encode_chat,
     encode_input,
-    encode_ready,
     resolve_action,
 )
 from crewrift.crewborg.map.types import MapData, MapPoint, MapRect, TaskStation, Vent
@@ -123,13 +121,6 @@ def test_encode_input_emits_header_and_masked_byte() -> None:
 def test_encode_input_masks_reserved_bit_7() -> None:
     # Bit 7 is reserved and must never reach the wire.
     assert encode_input(0xFF) == bytes([INPUT_HEADER, 0x7F])
-
-
-def test_encode_ready_is_a_single_header_byte() -> None:
-    # The end-of-tick Player-Ready packet is exactly one byte: 0x85.
-    assert encode_ready() == bytes([READY_HEADER])
-    assert READY_HEADER == 0x85
-    assert len(encode_ready()) == 1
 
 
 def test_resolve_idle_holds_nothing() -> None:

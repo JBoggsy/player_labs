@@ -18,7 +18,7 @@ import pytest
 from websockets.asyncio.server import serve
 from websockets.exceptions import ConnectionClosed, ConnectionClosedError
 
-from crewrift.crewborg.action import INPUT_HEADER, READY_HEADER, encode_chat
+from crewrift.crewborg.action import INPUT_HEADER, encode_chat
 from crewrift.crewborg.coworld.policy_player import (
     MIDGAME_RECONNECT_ATTEMPTS,
     build_trace_outputs,
@@ -170,12 +170,9 @@ async def test_bridge_runs_idle_loop_and_exits_cleanly() -> None:
         # The bridge must return on its own when the server closes the socket.
         await asyncio.wait_for(run_bridge(url), timeout=5.0)
 
-    # Idle holds mask 0: the bridge sends the neutral input packet once (the held
-    # mask never changes), plus a Player-Ready (0x85) every tick (end-of-tick signal
-    # for the server's fast-mode frame limiter).
-    assert bridge_packets[0] == bytes([INPUT_HEADER, 0x00])
-    assert bridge_packets.count(bytes([READY_HEADER])) >= 1
-    assert all(p == bytes([READY_HEADER]) for p in bridge_packets[1:])
+    # Idle holds mask 0; the bridge sends the neutral packet once and nothing
+    # after, since the held mask never changes.
+    assert bridge_packets == [bytes([INPUT_HEADER, 0x00])]
 
 
 class _FakeRuntime:
