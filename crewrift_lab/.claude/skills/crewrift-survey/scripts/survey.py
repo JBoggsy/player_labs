@@ -287,8 +287,18 @@ def render_html(data: dict, title: str, highlight: str | None, reasons: dict[str
     for ep in shown:
         reason = reasons.get(ep["episode_dir"]) or auto_reason(ep["flags"])
         tags = " · ".join(dict.fromkeys(f.split(" (")[0] for f in ep["flags"]))
-        link = (f'<a class="ink-link" href="{ep["viewer_url"]}" target="_blank" rel="noopener">▸ watch replay</a>'
-                if ep.get("viewer_url") else '<span class="dim">replay link not minted</span>')
+        # Two links, best-effort: the ephemeral session viewer (watch-in-browser, only if
+        # minted + fresh — the Observatory replay session expires) AND the DURABLE public-S3
+        # replay artifact (`replay_url`, permanent, always present for a completed episode).
+        # The durable link is why this never says "not minted": there is no durable hosted
+        # *viewer*, so the permanent anchor is the raw replay file (open with `coworld replay`
+        # or re-mint a fresh session with `coworld replay-open <ereq> --hosted`).
+        parts = []
+        if ep.get("viewer_url"):
+            parts.append(f'<a class="ink-link" href="{ep["viewer_url"]}" target="_blank" rel="noopener">▸ watch (session)</a>')
+        if ep.get("replay_uri"):
+            parts.append(f'<a class="ink-link" href="{ep["replay_uri"]}">⬇ replay (durable)</a>')
+        link = " · ".join(parts) if parts else '<span class="dim">no replay artifact</span>'
         items.append(
             f'<li><p class="reason">{reason}</p>'
             f'<p class="ep"><span class="tag">{tags}</span><code>{ep["episode_dir"]}</code> {link}</p></li>')
