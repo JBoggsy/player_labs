@@ -374,12 +374,17 @@ def episode_dirname(ref: EpisodeRef) -> str:
     return f"{stamp}_{short}"
 
 
-def episode_is_complete(out_dir: Path, want_replay: bool, want_logs: bool) -> bool:
+def episode_is_complete(out_dir: Path, want_replay: bool, want_logs: bool,
+                        want_artifacts: bool = True) -> bool:
     if not (out_dir / "episode.json").exists():
         return False
     if want_replay and not (out_dir / "replay.json").exists():
         return False
     if want_logs and not (out_dir / "logs").exists():
+        return False
+    # Episodes with no policy-scoped artifact (none of our slots uploaded one)
+    # legitimately lack artifacts/ — they get re-checked, which is cheap.
+    if want_artifacts and not (out_dir / "artifacts").exists():
         return False
     return True
 
@@ -392,6 +397,7 @@ def fetch_episode(
     want_replay: bool,
     want_results: bool,
     want_logs: bool,
+    want_artifacts: bool = True,
 ) -> dict[str, Any]:
     """Download everything available for one episode into `out_dir`."""
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -467,10 +473,12 @@ def fetch_episode(
 
     # 5. Per-player artifact zips (policy-scoped: only slots we own come back).
     # Players may upload one zip of structured telemetry/debug data per slot
-    # (e.g. crewborg's trace zip) — separate from the stderr policy logs.
+    # (e.g. crewborg's trace zip) — separate from the stderr policy logs, and
+    # gated separately (--no-artifacts), NOT by --no-logs: the zips are the
+    # richer record (no hosted log cap) and are wanted even when logs are not.
     # The listing is filenames (`["policy_artifact_0.zip", ...]`), not bare
     # slot ints; the download route is keyed by the slot index parsed from them.
-    if want_logs:
+    if want_artifacts:
         listing = client.get_text_or_none(f"/jobs/{job}/policy-artifact")
         slots: list[int] = []
         if listing is not None:
@@ -521,6 +529,7 @@ def select_watch_fetches(
     *,
     want_replay: bool,
     want_logs: bool,
+    want_artifacts: bool = True,
     max_attempts: int,
     xreq_drained: bool,
 ) -> tuple[list[EpisodeRef], list[EpisodeRef], list[EpisodeRef], list[EpisodeRef]]:
@@ -536,7 +545,7 @@ def select_watch_fetches(
     exhausted: list[EpisodeRef] = []
     done: list[EpisodeRef] = []
     for ref in refs:
-        if episode_is_complete(out_root / episode_dirname(ref), want_replay, want_logs):
+        if episode_is_complete(out_root / episode_dirname(ref), want_replay, want_logs, want_artifacts):
             done.append(ref)
             continue
         status = str(ref.record.get("status") or "").lower()
@@ -594,6 +603,7 @@ def watch_loop(
     want_replay: bool,
     want_results: bool,
     want_logs: bool,
+    want_artifacts: bool = True,
 ) -> int:
     """Poll the xreq; fetch each episode as it turns terminal; exit when drained.
 
@@ -614,7 +624,7 @@ def watch_loop(
         refs = discover_by_xreq(client, args.xreq, args.num)
         to_fetch, waiting, exhausted, done = select_watch_fetches(
             refs, args.out, attempts,
-            want_replay=want_replay, want_logs=want_logs,
+            want_replay=want_replay, want_logs=want_logs, want_artifacts=want_artifacts,
             max_attempts=args.max_attempts, xreq_drained=drained,
         )
         for ref in to_fetch:
@@ -623,10 +633,11 @@ def watch_loop(
             s = fetch_episode(
                 client, ref, ep_dir,
                 want_replay=want_replay, want_results=want_results, want_logs=want_logs,
+                want_artifacts=want_artifacts,
             )
             for err in s["errors"]:
                 log(f"      ! {err}")
-            if episode_is_complete(ep_dir, want_replay, want_logs):
+            if episode_is_complete(ep_dir, want_replay, want_logs, want_artifacts):
                 attempts.pop(ref.ref_id, None)
                 done.append(ref)
             else:
@@ -679,6 +690,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--no-replay", action="store_true", help="Skip replay downloads.")
     parser.add_argument("--no-results", action="store_true", help="Skip results downloads.")
     parser.add_argument("--no-logs", action="store_true", help="Skip per-agent policy-log downloads.")
+    parser.add_argument("--no-artifacts", action="store_true",
+                        help="Skip per-player policy-artifact zips (telemetry bundles).")
     parser.add_argument("--force", action="store_true",
                         help="Re-download episodes whose directory already looks complete.")
     parser.add_argument("--watch", action="store_true",
@@ -727,6 +740,7 @@ def main(argv: list[str] | None = None) -> int:
     want_replay = not args.no_replay
     want_results = not args.no_results
     want_logs = not args.no_logs
+    want_artifacts = not args.no_artifacts
     server = args.server or default_server()
     args.out.mkdir(parents=True, exist_ok=True)
 
@@ -735,6 +749,7 @@ def main(argv: list[str] | None = None) -> int:
             return watch_loop(
                 client, args, server,
                 want_replay=want_replay, want_results=want_results, want_logs=want_logs,
+                want_artifacts=want_artifacts,
             )
 
     with Client(server, load_token()) as client:
@@ -748,7 +763,7 @@ def main(argv: list[str] | None = None) -> int:
         for i, ref in enumerate(refs, 1):
             short = ref.ref_id[:16] if ref.ref_id.startswith("ereq_") else ref.ref_id[:8]
             ep_dir = args.out / episode_dirname(ref)
-            if not args.force and episode_is_complete(ep_dir, want_replay, want_logs):
+            if not args.force and episode_is_complete(ep_dir, want_replay, want_logs, want_artifacts):
                 log(f"  [{i}/{len(refs)}] {short} {ref.label} — already present, skipping")
                 summaries.append({"ref_id": ref.ref_id, "dir": ep_dir.name, "skipped": True})
                 continue
@@ -756,6 +771,7 @@ def main(argv: list[str] | None = None) -> int:
             s = fetch_episode(
                 client, ref, ep_dir,
                 want_replay=want_replay, want_results=want_results, want_logs=want_logs,
+                want_artifacts=want_artifacts,
             )
             for err in s["errors"]:
                 log(f"      ! {err}")

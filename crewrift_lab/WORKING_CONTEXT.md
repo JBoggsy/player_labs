@@ -35,6 +35,45 @@ deterministic uploads are A/B arms only; XP dashboards for >16-ep requests.
 aaln v26, rowdaboat v6, forgeling v7, softmaxwell v12 all bumped today. Any absolute numbers here
 stale fast; re-survey before acting.
 
+**Warehouse dig (2026-07-02, rounds 391–394, /tmp/prime_wh):** three quantified gaps —
+(1) **kill trigger**: isolated+ready conversion 2/5 vs notsus 9/9; longest unready isolation
+windows (421-tick mean — no cooldown-timed approach); first kill median tick 3402 = slowest.
+(2) **votes**: participation fine (2.9% no-vote) but meeting-1 = 12 skips/5 votes and 47%
+accuracy overall vs 68–77% leaders; ejected-as-crew 5× (worst). relhalpha wins crew via 28
+button-calls + 83% late-meeting accuracy. (3) **ghosts**: resume tasking at median 964 ticks
+post-death vs 111–239 field-best.
+
+**Three tracks opened 2026-07-02 (James):**
+1. **Ghost nav shortcut** — BUILT on branch `worktree-agent-ad95c8246d5986371` (commit d28b97c;
+   worktree `.claude/worktrees/agent-ad95c8246d5986371`): death already detected via ghost HUD;
+   fix = straight-line noclip nav + skip anchor filters (port of parked `worktree-ghost-tasking`
+   onto current main). 527 tests pass. Un-merged, un-uploaded. A/B metric must be time-to-first-
+   ghost-completion (median 964 → target ~200), NOT completion rate (prior A/B flat on rate).
+2. **Imposter kill failure** — INVESTIGATED (no changes): approach is fine (median 23.8px from
+   crew when ready; 27.6% of ready ticks truth-inside 20px kill range) but only 19.6% of
+   ready+in-range ticks convert (field 84-91%). Ranked: H1 witness-veto starvation (crew pair up;
+   BASE_ISOLATION_RADIUS=48=2.4x kill range; URGENCY_FULL_TICKS=240 ramp resets on meetings),
+   H2 meeting confiscation (body-reports reset unused cooldown 0→500; vote freeze), H3
+   committed-victim mismatch (in range of the WRONG crew = no strike; hunt.py:57), H4 speed-parity
+   shadow (47% of ready ticks stuck 20-32px), H5 v82 press-loop bug FIXED since v84. Next: one
+   trace-enabled ~20-imposter-ep xreq (hunt reasons + committed victim + urgency) to split H1/H3.
+3. **Suspicion evidence renovation (voting)** — corpus PULLED + VERIFIED: /tmp/susp_corpus_eps,
+   692 eps across 16 xreqs (v82/v84/v85/v87/v88/v89 + v87-90 probes, crewrift_prime 0.4.31-era);
+   artifact zips 691/692; **634 crewborg-slot episodes carry 1,486 per-meeting suspicion
+   snapshots** (v82: 186 eps, v84: 179, v89: 47+49probe, v90probe: 50, …) — each ranks ~7
+   suspects → ~10k labelable (observer,suspect,meeting) rows once joined to replay roles.
+   KEY FINDING: NO upload ever set CREWBORG_TRACE_SUSPICION_FEATURES=1 (TRACE_GROUPS=all does NOT
+   imply it — separate env gate, events.py:144), so NO existing episode has ranking[].features;
+   build_dataset_runtime.py yields 0 rows on all real data. Snapshots DO carry per-meeting
+   posteriors + per-suspect event summaries (kind/dur/target/region/min_dist — verified in live
+   zips): 7/19 runtime features reconstructable; observed_samples, follow_death_samples and ALL
+   10 social counters (incl tasks_completed_watched, the strongest weight) are NOT. Plan: (a) add
+   the flag to the standing upload recipe (needs James OK — user_preferences.md edit), (b) renovate
+   build_dataset_runtime for both full + degraded snapshots, (c) calibration analysis of live
+   posteriors on the 692 eps now, (d) fresh traced upload + ~200-300 eps → true runtime refit.
+   /tmp/expand-043 is JSONL-capable + hash-clean on 0.4.31 (verified) for the label stage.
+   fetch_artifacts.py FIXED: --no-logs no longer drops policy-artifact zips (new --no-artifacts).
+
 ## ▶ OPEN LEVERS (evidence on file, none in flight)
 
 1. **Evidence warming for the fitted suspicion posterior** — the remaining crew lever
@@ -84,7 +123,11 @@ the loop-skill invocation in this session's history and works well with ~2h cade
 - **Expander**: `/tmp/expand-043` (master sim `26ee08c`) handles **crewrift_prime
   0.4.3–0.4.7** (the fork's version bumps didn't change the sim). Use
   `CREWRIFT_EXPAND_REPLAY=/tmp/expand-043` for the warehouse.
-- **Prime field** (Competition `div_acbde92a-…`): just **Aaron `crewborg-aaln:v17`** +
-  **Andre `truecrew:v28`**. Prime league `league_a12f5172-0907-4d04-8bcb-ca02f5360e3a`.
-  Evals: fully round-robin, natural roles (no pinning), vs those two. Heavy
-  `connect_timeout` ops-failures are platform load, not us — re-run / probe small first.
+- **Prime field** (Competition `div_acbde92a-…`, league `league_a12f5172-0907-4d04-8bcb-ca02f5360e3a`):
+  **11 entrants** as of 2026-07-02 rounds 391–394 (~10-min cadence, 12 eps/round, 8 seats):
+  notsus:v168, relhalpha-hunter:v1, jordan-crewborg-aaln:v1, softmaxwell-crewborg:v12,
+  rowdaboat-notsus:v6, richard-notsus:v2, crewborg-aaln:v26, forgeling-focusfire:v7,
+  crewborg-mv:v1, daveey-prime-notsus:v2, **crewborg:v89 (LAST, 31%; crew 24% vs field-par ~36%;
+  imp 57% ≈ par)**. Survey: /tmp/survey_prime_r391_394.html (+ /tmp/prime_r391_394 artifacts).
+  Crew wins in this field come from ejections, not tasks — v89's tight vote gate casts 0 votes in
+  most crew games. NOTE: the 4-way vote-lever refutations predate this 11-entrant field.

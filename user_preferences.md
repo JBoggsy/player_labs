@@ -34,9 +34,13 @@ sessions. Keep it tidy: one bullet per preference, drop ones that are superseded
 
 - **Always upload policies with ALL telemetry enabled unless told otherwise** (James, 2026-07-01).
   Every `coworld upload-policy` gets `--secret-env CREWBORG_METRICS=1 --secret-env
-  CREWBORG_TRACE_GROUPS=all` (the `all` trace group exists in `trace.py`). Rationale:
-  massive logs when we need them beat re-uploading the same policy and re-running XP
-  requests to get telemetry (v81 had to be re-uploaded as v82 for exactly this reason).
-  If telemetry volume is ever suspected of causing latency/timeouts, that's a finding to
-  raise, not a reason to silently strip tracing.
+  CREWBORG_TRACE_GROUPS=all --secret-env CREWBORG_TRACE_SUSPICION_FEATURES=1` (the `all`
+  trace group exists in `trace.py`; the suspicion-features flag is a SEPARATE env gate —
+  `TRACE_GROUPS=all` does NOT imply it, and without it `suspicion_snapshot` lacks the
+  `ranking[].features` vectors the suspicion refit needs; added 2026-07-02 per James after
+  discovering no upload had ever carried it). Rationale: massive logs when we need them
+  beat re-uploading the same policy and re-running XP requests to get telemetry (v81 had
+  to be re-uploaded as v82 for exactly this reason). If telemetry volume is ever suspected
+  of causing latency/timeouts, that's a finding to raise, not a reason to silently strip
+  tracing.
 </content>

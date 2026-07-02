@@ -162,17 +162,24 @@ def primary_flag(ep: dict) -> str:
     return ep["flags"][0].split(" (")[0]
 
 
-def select_interesting(episodes: list[dict], per_type: int = 5, cap: int = 14) -> tuple[list[dict], str]:
-    """A focused, varied shortlist + a one-line summary of all flag-type counts."""
+def select_interesting(episodes: list[dict], reasons: dict[str, str] | None = None,
+                       per_type: int = 5, cap: int = 14) -> tuple[list[dict], str]:
+    """A focused, varied shortlist + a one-line summary of all flag-type counts.
+
+    Episodes with a human-written reason (--reasons) always make the list — the
+    per-type/cap limits only govern the auto-filled remainder.
+    """
+    reasons = reasons or {}
     counts: dict[str, int] = {}
     for ep in episodes:
         counts[primary_flag(ep)] = counts.get(primary_flag(ep), 0) + 1
-    ordered = sorted(episodes, key=lambda e: -FLAG_PRIORITY.get(primary_flag(e), 0))
+    ordered = sorted(episodes, key=lambda e: (e["episode_dir"] not in reasons,
+                                              -FLAG_PRIORITY.get(primary_flag(e), 0)))
     shown: list[dict] = []
     seen: dict[str, int] = {}
     for ep in ordered:
         t = primary_flag(ep)
-        if seen.get(t, 0) >= per_type or len(shown) >= cap:
+        if ep["episode_dir"] not in reasons and (seen.get(t, 0) >= per_type or len(shown) >= cap):
             continue
         seen[t] = seen.get(t, 0) + 1
         shown.append(ep)
@@ -284,16 +291,20 @@ def render_html(data: dict, title: str, highlight: str | None, reasons: dict[str
                 cells.append(f'<td style="{heat_css(v)}" title="{row} won {m[0]}/{m[1]} vs {col}">{100*v:.0f}</td>')
         heat_rows.append(f'<tr{hi(row)}><th scope="row">{row}</th>{"".join(cells)}</tr>')
 
-    shown, flag_summary = select_interesting(data["episodes"])
+    shown, flag_summary = select_interesting(data["episodes"], reasons)
     more = len(data["episodes"]) - len(shown)
     items = []
     for ep in shown:
         reason = reasons.get(ep["episode_dir"]) or auto_reason(ep["flags"])
         tags = " · ".join(dict.fromkeys(f.split(" (")[0] for f in ep["flags"]))
-        # DURABLE HOSTED viewer link: the Observatory replay UI takes the permanent coworld_id
-        # + the permanent public-S3 replay_url (both from episode.json) — no ephemeral session,
-        # no raw download. This is the link that actually plays in the browser and never rots.
-        if ep.get("coworld_id") and ep.get("replay_uri"):
+        # Primary link: the Observatory episode-request DETAIL page (replay + logs + results in
+        # one place), addressed by the episode's full ereq id. Non-ereq (league) episodes fall
+        # back to the durable hosted replay viewer (permanent coworld_id + public-S3 replay_url).
+        ep_id = ep.get("id") or ""
+        if ep_id.startswith("ereq_"):
+            detail = f"https://softmax.com/observatory/v2?detail=episode-request:{ep_id}"
+            link = f'<a class="ink-link" href="{detail}" target="_blank" rel="noopener">▸ open episode</a>'
+        elif ep.get("coworld_id") and ep.get("replay_uri"):
             viewer = (f'https://softmax.com/observatory/coworld-replays/{ep["coworld_id"]}'
                       f'?replay_uri={urllib.parse.quote(ep["replay_uri"], safe="")}')
             link = f'<a class="ink-link" href="{viewer}" target="_blank" rel="noopener">▸ watch replay</a>'
@@ -301,7 +312,7 @@ def render_html(data: dict, title: str, highlight: str | None, reasons: dict[str
             link = '<span class="dim">no replay artifact</span>'
         items.append(
             f'<li><p class="reason">{reason}</p>'
-            f'<p class="ep"><span class="tag">{tags}</span><code>{ep["episode_dir"]}</code> {link}</p></li>')
+            f'<p class="ep"><span class="tag">{tags}</span><code>{ep_id or ep["episode_dir"]}</code> {link}</p></li>')
     if not items:
         items = ['<li><p class="reason dim"><i>No Tier-1 outliers fired in this batch.</i></p></li>']
 
@@ -426,7 +437,10 @@ def main() -> int:
     args.out.write_text(render_html(data, args.title, args.highlight, reasons))
     # the flagged episodes (+ minted links) for you to write reasons against
     args.out.with_suffix(".interesting.json").write_text(json.dumps(
-        [{"episode_dir": e["episode_dir"], "flags": e["flags"], "viewer_url": e.get("viewer_url")}
+        [{"episode_dir": e["episode_dir"], "id": e.get("id"),
+          "detail_url": (f'https://softmax.com/observatory/v2?detail=episode-request:{e["id"]}'
+                         if (e.get("id") or "").startswith("ereq_") else None),
+          "flags": e["flags"], "viewer_url": e.get("viewer_url")}
          for e in data["episodes"]], indent=1))
     print(f"{len(dirs)} episodes, {len(data['names'])} policies, {len(data['episodes'])} flagged -> {args.out}")
     if args.json:

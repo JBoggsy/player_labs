@@ -18,6 +18,13 @@ Episodes are matched between the two by their `ereq_<id>` key.
     uv run python crewrift_lab/suspicion_lab/tools/build_dataset_runtime.py \
         --expanded /tmp/v76_expanded --artifacts /tmp/v76_arts \
         --policy crewborg --version 76 --out /tmp/runtime_dataset.parquet
+
+Pre-v90 telemetry never carried CREWBORG_TRACE_SUSPICION_FEATURES (TRACE_GROUPS=all
+does NOT imply it), so those snapshots lack `features`. `--allow-degraded`
+reconstructs the 7 mechanically-recoverable features from the snapshot's event
+summary (features_degraded=1 marks such rows; the other 12 features stay 0 —
+including all social counters, so do NOT fit the full runtime feature set on
+degraded rows). `--policy`/`--version` are repeatable; omit --version to take any.
 """
 from __future__ import annotations
 
@@ -35,6 +42,57 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from features import FEATURE_NAMES  # noqa: E402
 from replay_parse import parse_game  # noqa: E402
+
+# Exact-parity constants from the runtime scorer (crewborg is an installed package
+# in this uv project). Used only by the --allow-degraded reconstruction below.
+from crewrift.crewborg.strategy import suspicion as _rt  # noqa: E402
+
+# Features reconstructable from the UN-flagged snapshot's per-suspect event summary
+# (kind/dur/target/region/min_dist — no end_tick, no seen_ticks, no social counters).
+# Mirrors `_fitted_features` (strategy/suspicion.py) event-for-event; everything not
+# in this set is unrecoverable from degraded snapshots and stays 0.
+DEGRADED_RECOVERABLE = (
+    "witnessed_kills", "near_body_bodies", "tail_obs_samples", "tail_obs_max_run",
+    "vent_visits", "copresence_killrange_samples", "task_site_dwell_samples",
+)
+
+
+def degraded_features(events: list[dict]) -> dict[str, float]:
+    """Rebuild the 7 mechanically-recoverable runtime features from a snapshot's
+    event summary — the path for pre-v90 telemetry that lacks `ranking[].features`
+    (CREWBORG_TRACE_SUSPICION_FEATURES was never set on those uploads)."""
+    unit = float((_rt._WEIGHTS or {}).get("sample_unit_ticks", _rt.DEFAULT_SAMPLE_UNIT_TICKS))
+    tail_durations: list[int] = []
+    copresence_ticks = 0
+    task_ticks = 0
+    vent_visits = 0
+    near_bodies: set = set()
+    witnessed = 0
+    for ev in events or []:
+        kind, dur, min_dist = ev.get("kind"), int(ev.get("dur") or 0), ev.get("min_dist")
+        if kind in ("kill", "vent_use"):
+            witnessed += 1
+        elif kind == "near_body":
+            if min_dist is not None:
+                near_bodies.add(ev.get("target"))
+        elif kind == "tailing_self":
+            tail_durations.append(dur)
+            if min_dist is not None and min_dist ** 2 <= _rt.COPRESENCE_DIST_SQ:
+                copresence_ticks += dur
+        elif kind == "task":
+            task_ticks += dur
+        elif kind == "vent":
+            if dur > _rt.VENT_CROSS_TICKS:
+                vent_visits += 1
+    return {
+        "witnessed_kills": float(witnessed),
+        "near_body_bodies": float(len(near_bodies)),
+        "tail_obs_samples": sum(tail_durations) / unit,
+        "tail_obs_max_run": (max(tail_durations) if tail_durations else 0) / unit,
+        "vent_visits": float(vent_visits),
+        "copresence_killrange_samples": copresence_ticks / unit,
+        "task_site_dwell_samples": task_ticks / unit,
+    }
 
 EREQ = re.compile(r"ereq_[0-9a-f]+")
 # crewborg's traced snapshot fires at meeting start; require the matched meeting's
@@ -67,10 +125,19 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--expanded", type=Path, required=True)
     ap.add_argument("--artifacts", type=Path, required=True)
-    ap.add_argument("--policy", default="crewborg")
-    ap.add_argument("--version", type=int, required=True)
+    ap.add_argument("--policy", action="append", default=None,
+                    help="Subject policy name(s); repeatable. Default: crewborg.")
+    ap.add_argument("--version", type=int, action="append", default=None,
+                    help="Subject version(s); repeatable. Omit to accept ANY version "
+                         "of the named policies (observer_version records which).")
+    ap.add_argument("--allow-degraded", action="store_true",
+                    help="Also emit rows from snapshots WITHOUT ranking[].features "
+                         "(pre-v90 telemetry), reconstructing the 7 recoverable "
+                         "features from the event summary; features_degraded=1.")
     ap.add_argument("--out", type=Path, required=True)
     args = ap.parse_args(argv)
+    policies = set(args.policy or ["crewborg"])
+    versions = set(args.version or [])
 
     art_by_ereq: dict[str, Path] = {}
     for d in sorted(args.artifacts.glob("*/")):
@@ -93,14 +160,16 @@ def main(argv: list[str] | None = None) -> int:
         except OSError:
             st["no_episode_json"] += 1
             continue
-        cb_slot = next(
-            (p.get("position") for p in (ep.get("participants") or [])
-             if p.get("policy_name") == args.policy and p.get("version") == args.version),
+        subject = next(
+            (p for p in (ep.get("participants") or [])
+             if p.get("policy_name") in policies
+             and (not versions or p.get("version") in versions)),
             None,
         )
-        if cb_slot is None:
+        if subject is None:
             st["no_subject_seat"] += 1
             continue
+        cb_slot = subject.get("position")
         zpath = artdir / "artifacts" / f"policy_artifact_{cb_slot}.zip"
         if not zpath.exists():
             st["no_artifact_zip"] += 1
@@ -133,8 +202,13 @@ def main(argv: list[str] | None = None) -> int:
             match_dists.append(dist)
             for entry in ranking:
                 feats = entry.get("features")
+                degraded = False
                 if not isinstance(feats, dict):
-                    continue
+                    if not args.allow_degraded:
+                        st["no_features_skipped"] += 1
+                        continue
+                    feats = degraded_features(entry.get("events") or [])
+                    degraded = True
                 sslot = color2slot.get(entry.get("color"))
                 if sslot is None or sslot == cb_slot:
                     st["suspect_unresolved"] += (sslot is None)
@@ -146,11 +220,14 @@ def main(argv: list[str] | None = None) -> int:
                     "decision_tick": ct,
                     "observer_slot": cb_slot,
                     "observer_name": game.players[cb_slot].name,
+                    "observer_policy": subject.get("policy_name"),
+                    "observer_version": subject.get("version"),
                     "suspect_slot": sslot,
                     "suspect_name": sus.name,
                     "label_imposter": int(sus.role == "imposter"),
                     "snapshot_tick": tick,
                     "runtime_p": entry.get("p"),
+                    "features_degraded": int(degraded),
                 }
                 # All FEATURE_NAMES columns (fit.py may reference either set); the traced
                 # dict carries exactly the RUNTIME_FEATURES, offline-only names stay 0.

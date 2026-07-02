@@ -1,6 +1,6 @@
 ---
 name: crewrift-survey
-description: "Use to turn a SET of Crewrift episodes (an experience request, a policy's recent league games, a tournament batch) into a fast, polished HTML survey: a per-policy stats table, a policy×policy win heat map, and a short list of interesting episodes (with replay links). Triggers: 'survey these episodes', 'how is crewborg doing in this batch', 'who beats whom', 'give me the report on this XP request', 'which games should I watch'. Fast + lightweight (results.json + episode.json only). Pair with coworld-episode-artifacts (to pull the episodes); the DEEP per-episode dissection is a separate skill."
+description: "Use to turn a SET of Crewrift episodes (an experience request, a policy's recent league games, a tournament batch) into a fast, polished HTML survey: a per-policy stats table, a policy×policy win heat map, and a short list of interesting episodes (full ereq ids + links to their Observatory detail pages). Triggers: 'survey these episodes', 'how is crewborg doing in this batch', 'who beats whom', 'give me the report on this XP request', 'which games should I watch'. Fast + lightweight (results.json + episode.json only). Pair with coworld-episode-artifacts (to pull the episodes); the DEEP per-episode dissection is a separate skill."
 ---
 
 # Crewrift Survey — fast batch overview
@@ -66,7 +66,10 @@ reasons for the interesting episodes and link their replays."
 - **② Win heat map**: cell = % of opposite-team games the **row** policy beat the **column** policy
   (hover → raw count), sage→terracotta.
 - **③ Interesting episodes**: a focused, de-duplicated shortlist (rarer flags first; capped, with a
-  flag-count summary), each with your reason + a replay link.
+  flag-count summary; episodes you wrote reasons for always make the list), each showing the **full
+  episode-request id** (`ereq_…`) + your reason + a link to the **Observatory episode-request detail
+  page** (`https://softmax.com/observatory/v2?detail=episode-request:<ereq_id>` — replay, logs, and
+  results in one place). Non-ereq (league) episodes fall back to the hosted replay-viewer link.
 
 The HTML follows the **Ink & Print** house style — [`report-style.md`](../../../docs/report-style.md).
 `survey.py` is a starting point: when a batch needs a different cut (an extra column, a second
@@ -96,11 +99,18 @@ for XP-request episodes — `slot_policy_map` handles both), the episode `id`, `
 are just `reward` — anything richer (deaths, ejections, chats, positions) is **not here**; it needs
 the replay → the deep survey.
 
-## Replay links
+## Episode links
 
-Each interesting episode links to the Observatory hosted replay viewer, minted at survey time:
-`POST /v2/coworlds/replays/session {coworld_id, replay_uri}` → `{viewer_url}` (works for any episode,
-league or XP). That's what `--mint-replays` does; without it the links read "not minted".
+The primary link for each interesting episode is the **episode-request detail page**, built directly
+from the episode's full id — no minting needed:
+`https://softmax.com/observatory/v2?detail=episode-request:<ereq_id>`. The full `ereq_…` id is also
+displayed next to each episode (and written to the `.interesting.json` sidecar as `id` +
+`detail_url`) so a human can quote or paste it.
+
+For episodes without an `ereq_…` id (league episodes), the link falls back to the hosted replay
+viewer. `--mint-replays` still POSTs `/v2/coworlds/replays/session {coworld_id, replay_uri}` →
+`{viewer_url}` into the sidecar (works for any episode) — useful when you want a directly-watchable
+replay URL for an episode you're citing outside the report.
 
 ## Discipline
 
