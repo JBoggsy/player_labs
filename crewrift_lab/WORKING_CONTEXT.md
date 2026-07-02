@@ -84,6 +84,21 @@ post-death vs 111–239 field-best.
    band; the 4 old bar refutations all used the noisy v3 model — this is new, not a retry).
    Curiosity before any ship: cand imposter win 89% vs 67% (p=0.06). Open detector bug:
    reported_bodies/button_calls_made all-zero live across 398 meetings — fix before next refit.
+### ✅ DIAGNOSED (2026-07-02, worktree movement deep-dive): imposter "can't find victims" ROOT CAUSE
+**The ready-state has no search.** `rule_based.py` routes ready+no-visible-victim to **Recon whenever any
+crew was EVER seen** (≈always) — Search's room-checking FSM is structurally unreachable while kill-ready —
+and `recon.py` beelines to `most_recent_victim`'s last-seen point with **no staleness bound, no arrival
+fallback, no timeout** (`opportunity.py:most_recent_victim`). Two observed failure shapes: (1) **stale-point
+park** — killtrace ep parked 98.5% of an 8,452-tick ready window on a 9,000-tick-stale point (killtrace
+median parked share of blind ready ticks 87% vs notsus 0%); (2) **glimpse-chase circuits** — repeated
+whole-map loops passing ~20px (through walls) from sitting crew without entering the room. NOT the problem:
+handoff/positioning (median 18px from crew at the ready moment, 84% of windows start <60px; best-in-field
+cooldown same-room %) and NOT coverage (blind-search heat overlaps crew density MORE than anyone, 0.48 vs
+notsus 0.26). The costs: point-blank windows convert 70-77% vs field-best 88-92%, and >150px windows take
+median **519 ticks vs field 91-218**. Fix directions (ranked, not built): ready-state re-search (recon
+staleness bound + fallback to Search/occupancy), room-entry checks when passing task rooms, point-blank
+strike latency. Tools + full findings: **`tools/imposter_movement/`** (README) — MERGED to main; renders in the session scratchpad `mov/`.
+
 
 ## ▶ OPEN LEVERS (evidence on file, none in flight)
 
