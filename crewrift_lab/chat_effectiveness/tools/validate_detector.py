@@ -82,7 +82,7 @@ def compute_agreement(sample: pd.DataFrame, chat_suss: pd.DataFrame) -> dict:
     """Join the regex sample to warehouse chat_suss rows on (episode, speaker
     slot, tick) and compute stance/target agreement rates.
     """
-    if chat_suss.empty:
+    if chat_suss.empty or sample.empty:
         return {"n_matched": 0, "stance_agreement": None, "target_agreement": None}
     suss = chat_suss.rename(columns={"episode_id": "episode", "slot": "speaker_slot", "ts": "tick"})
     joined = sample.merge(suss, on=["episode", "speaker_slot", "tick"], how="inner")

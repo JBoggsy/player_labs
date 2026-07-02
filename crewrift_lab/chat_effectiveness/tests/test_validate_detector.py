@@ -69,3 +69,17 @@ def test_compute_agreement_handles_no_matches():
     agreement = compute_agreement(sample, chat_suss)
 
     assert agreement == {"n_matched": 0, "stance_agreement": None, "target_agreement": None}
+
+
+def test_compute_agreement_handles_empty_sample():
+    sample = pd.DataFrame()
+    chat_suss = pd.DataFrame(
+        [{
+            "episode_id": "test_ep", "slot": 0, "ts": 101,
+            "is_suss": True, "suss_target_slot": 1,
+        }]
+    )
+
+    agreement = compute_agreement(sample, chat_suss)
+
+    assert agreement == {"n_matched": 0, "stance_agreement": None, "target_agreement": None}
