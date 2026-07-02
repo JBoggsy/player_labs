@@ -284,3 +284,28 @@ def test_known_member_claim_lands_in_society_known(society_on, monkeypatch, tmp_
         assert any(name == "honor_known_member" for name, _ in emit.events)
     finally:
         honor_society.reset_members_for_tests()
+
+
+def test_role_reveal_trust_pins_suspicion_near_zero(society_on) -> None:
+    from crewrift.crewborg.strategy.suspicion import update_suspicion
+    belief = _crew_belief()
+    belief.phase = "Playing"
+    belief.voting = belief.voting  # unchanged; suspicion recompute is phase-agnostic here
+    belief.roster["red"].events = [PlayerEvent(kind="tailing_self", start_tick=4, end_tick=200, min_dist=10)]
+    update_suspicion(belief)
+    hot = belief.suspicion.get("red", 0.0)
+    belief.society_trusted.add("red")
+    update_suspicion(belief)
+    pinned = belief.suspicion.get("red", 1.0)
+    assert pinned < 0.05 and pinned < hot  # revealed crew: posterior collapses
+    assert "red" not in belief.believed_imposters
+
+
+def test_role_reveal_trust_never_overrides_witnessed(society_on) -> None:
+    from crewrift.crewborg.strategy.suspicion import update_suspicion
+    belief = _crew_belief()
+    belief.phase = "Playing"
+    belief.society_trusted.add("red")
+    belief.roster["red"].events = [PlayerEvent(kind="kill", start_tick=4, end_tick=4)]
+    update_suspicion(belief)
+    assert belief.suspicion.get("red", 0.0) > 0.9  # caught in the act: trust loses

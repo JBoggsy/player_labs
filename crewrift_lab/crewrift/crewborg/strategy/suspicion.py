@@ -535,14 +535,22 @@ def _recompute(belief: Belief) -> None:
             continue  # the dead are no threat
         if color in belief.teammate_colors or color == belief.self_color:
             continue  # never score a known teammate, or *ourself* (no-op for a crewmate)
+        witnessed = any(e.kind in ("kill", "vent_use") for e in record.events)
         if _WEIGHTS is not None:
             logit = _fitted_log_odds(belief, record)
             # A witnessed kill/vent stays DEFINITIONAL near-certainty (we saw it),
             # never down-weighted by the fitted model (design: witnessed is not fit).
-            if any(e.kind in ("kill", "vent_use") for e in record.events):
+            if witnessed:
                 logit = max(logit, prior_logit + WITNESSED_LOG_LR)
         else:
             logit = prior_logit + _evidence_log_lr(belief, record)
+        # Honor Society role-reveal trust (design docs/designs/honor-society.md):
+        # a verified member claiming crew IS crew — pin their posterior near zero
+        # so votes, accusations, flee logic, and the meeting-LLM context all treat
+        # them as revealed. Witnessed evidence is definitional and overrides trust
+        # (a witnessed trusted claimant is a caught liar, handled by the ledger).
+        if color in belief.society_trusted and not witnessed:
+            logit = min(logit, prior_logit - WITNESSED_LOG_LR)
         p = _sigmoid(logit)
         suspicion[color] = p
         if p >= FLEE_PROBABILITY:
