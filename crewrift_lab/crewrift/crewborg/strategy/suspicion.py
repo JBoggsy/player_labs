@@ -187,11 +187,17 @@ WEIGHTS_SCHEMA = "crewborg-suspicion-weights/v1"
 # ~100% precision; there is NO clear-leader rule on this path (it was the mis-vote
 # engine — votes fire on calibrated near-certainty only).
 #
-# Tunable via CREWBORG_WEIGHTS_VOTE_P (a float in (0,1)) for threshold sweeps: the
-# 0.9 bar maximises vote PRECISION, but a 2026-06-23 eval found v31 crew loses the
-# parity race (54% of games 8/8-tasks-but-lost) by sitting passive — it wins when it
-# votes (1.11 player-votes/g in wins vs 0.23 in losses). Lowering this trades
-# precision for more ejections; the sweep finds the crew-win-maximising point.
+# Tunable via CREWBORG_VOTE_PROBABILITY (legacy alias CREWBORG_WEIGHTS_VOTE_P) for
+# threshold sweeps, clamped to [0.5, 0.99]: the 0.9 bar maximises vote PRECISION, but
+# a 2026-06-23 eval found v31 crew loses the parity race (54% of games
+# 8/8-tasks-but-lost) by sitting passive — it wins when it votes (1.11 player-votes/g
+# in wins vs 0.23 in losses). Lowering this trades precision for more ejections; the
+# sweep finds the crew-win-maximising point. The v4 live-fit weights (2026-07-02)
+# made the 0.7–0.9 band honest for the first time (OOF precision 94–97% with a clear
+# lead), so the bar pairs with an optional LEAD requirement, CREWBORG_VOTE_LEAD
+# (default 0 = off): a posterior-based vote must also stand out from the runner-up
+# by at least this margin. A WITNESSED catch is definitional and never gated by
+# either knob (see ``top_suspect``).
 def _env_float(name: str, default: float) -> float:
     raw = os.environ.get(name, "").strip()
     if not raw:
@@ -202,7 +208,23 @@ def _env_float(name: str, default: float) -> float:
         return default
 
 
-WEIGHTS_VOTE_PROBABILITY = _env_float("CREWBORG_WEIGHTS_VOTE_P", 0.9)
+def _vote_bar_from_env() -> float:
+    """The fitted crew vote bar: CREWBORG_VOTE_PROBABILITY (falling back to the
+    legacy CREWBORG_WEIGHTS_VOTE_P name, else 0.9), clamped to [0.5, 0.99]."""
+
+    raw = _env_float("CREWBORG_VOTE_PROBABILITY", _env_float("CREWBORG_WEIGHTS_VOTE_P", 0.9))
+    return min(0.99, max(0.5, raw))
+
+
+def _vote_lead_from_env() -> float:
+    """The optional clear-lead margin: CREWBORG_VOTE_LEAD, clamped to [0, 0.5];
+    0 (the default) disables the lead requirement entirely."""
+
+    return min(0.5, max(0.0, _env_float("CREWBORG_VOTE_LEAD", 0.0)))
+
+
+WEIGHTS_VOTE_PROBABILITY = _vote_bar_from_env()
+WEIGHTS_VOTE_LEAD = _vote_lead_from_env()
 # Offline features count expander samples (one per `snapshot-every` ticks); runtime
 # durations divide by this to land in the same unit. Read from the weights file.
 DEFAULT_SAMPLE_UNIT_TICKS = 24
@@ -604,13 +626,24 @@ def top_suspect(belief: Belief) -> str | None:
     ranked.sort(key=lambda kv: kv[1], reverse=True)
     color, p = ranked[0]
     if _WEIGHTS is not None and belief.self_role != "imposter":
-        # Fitted model, CREWMATE vote: calibrated near-certainty ONLY. The clear-
-        # leader rule is deliberately absent here — on the league data it was the
+        # Fitted model, CREWMATE vote: the calibrated bar ONLY. The legacy clear-
+        # leader OR-rule is deliberately absent here — on the league data it was the
         # mis-vote engine (58% of player-votes hit crew), and every crew ejection is
-        # a parity gift; the held-out decision sim puts this bar at ~100% imposter
+        # a parity gift; the held-out decision sim puts the 0.9 bar at ~100% imposter
         # precision. An IMPOSTER deflecting keeps the legacy clear-leader logic
         # below: engineering plausible mis-ejections is its job, not a risk.
-        return color if p >= WEIGHTS_VOTE_PROBABILITY else None
+        if p < WEIGHTS_VOTE_PROBABILITY:
+            return None
+        if WEIGHTS_VOTE_LEAD > 0.0 and color not in witnessed_imposters(belief):
+            # Optional AND-requirement (CREWBORG_VOTE_LEAD, for sub-0.9 bar sweeps):
+            # a posterior-based vote must also stand clear of the runner-up. A
+            # WITNESSED catch is definitional (we saw it) and is never gated by
+            # bar/lead tuning — two witnessed imposters at p ≈ 1 must not block
+            # each other on a ~0 margin.
+            runner_up = ranked[1][1] if len(ranked) > 1 else 0.0
+            if (p - runner_up) < WEIGHTS_VOTE_LEAD:
+                return None
+        return color
     if p >= VOTE_PROBABILITY:
         return color  # near-certain on its own
     runner_up = ranked[1][1] if len(ranked) > 1 else 0.0

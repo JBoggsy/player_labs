@@ -144,7 +144,8 @@ hand model.
 |---|---|
 | `CREWBORG_SUSPICION_WEIGHTS=0` | force the legacy hand model (§5) |
 | `CREWBORG_SUSPICION_WEIGHTS=<path>` | load weights from `<path>` instead of the vendored asset |
-| `CREWBORG_WEIGHTS_VOTE_P=<float>` | override the fitted crewmate vote bar `WEIGHTS_VOTE_PROBABILITY` (default 0.9) |
+| `CREWBORG_VOTE_PROBABILITY=<float>` | override the fitted crewmate vote bar `WEIGHTS_VOTE_PROBABILITY` (default 0.9, clamped to [0.5, 0.99]; legacy alias `CREWBORG_WEIGHTS_VOTE_P`) |
+| `CREWBORG_VOTE_LEAD=<float>` | require a posterior-based crewmate vote to also lead the runner-up by ≥ this margin (`WEIGHTS_VOTE_LEAD`, default 0 = off, clamped to [0, 0.5]; witnessed catches exempt) |
 
 `set_weights(weights)` is a test/ops hook to pin the scoring path.
 
@@ -322,7 +323,8 @@ a separate "confirmed" set.
 
 | Knob | Value | Effect |
 |---|---|---|
-| `WEIGHTS_VOTE_PROBABILITY` | 0.9 (env `CREWBORG_WEIGHTS_VOTE_P`) | the **fitted crewmate** vote bar: vote only at calibrated near-certainty; **no clear-leader rule** |
+| `WEIGHTS_VOTE_PROBABILITY` | 0.9 (env `CREWBORG_VOTE_PROBABILITY`, legacy `CREWBORG_WEIGHTS_VOTE_P`; clamped [0.5, 0.99]) | the **fitted crewmate** vote bar: vote only at the calibrated bar; **no clear-leader OR-rule** |
+| `WEIGHTS_VOTE_LEAD` | 0 = off (env `CREWBORG_VOTE_LEAD`; clamped [0, 0.5]) | optional AND-requirement on the fitted crewmate vote: the leader must also be ≥ this margin ahead of the runner-up; **witnessed catches exempt** (never gated by bar/lead tuning) |
 | `VOTE_PROBABILITY` | 0.8 | self-standing vote bar on the **legacy / imposter** path — near-certainty regardless of the field |
 | `VOTE_LEAD_MIN_P` / `VOTE_LEAD_MARGIN` | 0.5 / 0.2 | the *clear leading suspect* rule (legacy / imposter path): vote the top suspect when P ≥ 0.5 and it leads the runner-up by ≥ 0.2; a flat field names no one |
 | _(accuse bar)_ | = conviction bar | there is **no standalone accuse threshold**; an active tail triggers Accuse only when that tailer is `top_suspect` (the player the meeting would vote out), so the call bar can't drift below the vote bar |
@@ -338,8 +340,11 @@ a separate "confirmed" set.
 
 - **Fitted model, crewmate** (`_WEIGHTS` loaded and `self_role != "imposter"`):
   return the leader only if `P ≥ WEIGHTS_VOTE_PROBABILITY` (0.9). The clear-leader
-  rule is deliberately absent — on league data it was the mis-vote engine, and every
-  crew ejection is a parity gift, so crewborg votes only at calibrated near-certainty.
+  OR-rule is deliberately absent — on league data it was the mis-vote engine, and every
+  crew ejection is a parity gift, so crewborg votes only at the calibrated bar. When
+  `WEIGHTS_VOTE_LEAD > 0` the leader must **additionally** be that margin ahead of the
+  runner-up — unless the leader is a witnessed catch (`witnessed_imposters`), which is
+  definitional and never gated by bar/lead tuning.
 - **Legacy model, or any imposter**: return the leader if `P ≥ VOTE_PROBABILITY`
   (0.8), else if it is a clear leader (`P ≥ VOTE_LEAD_MIN_P` and ahead of the
   runner-up by `VOTE_LEAD_MARGIN`). An imposter keeps the clear-leader logic on

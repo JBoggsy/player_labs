@@ -580,3 +580,106 @@ class TestFittedModel:
     def test_env_zero_forces_the_legacy_hand_model(self, monkeypatch) -> None:
         monkeypatch.setenv("CREWBORG_SUSPICION_WEIGHTS", "0")
         assert suspicion_module._load_weights() is None
+
+
+# --- the crew vote-bar / vote-lead knobs (CREWBORG_VOTE_PROBABILITY / _VOTE_LEAD) ----
+
+
+class TestCrewVoteKnobs:
+    """The env-tunable fitted crewmate vote gate: the bar (`WEIGHTS_VOTE_PROBABILITY`)
+    and the optional clear-lead margin (`WEIGHTS_VOTE_LEAD`). Witnessed catches are
+    never gated by either knob."""
+
+    @pytest.fixture(autouse=True)
+    def _fitted_path(self):
+        weights = suspicion_module._load_weights()
+        assert weights is not None, "vendored data/suspicion_weights.json failed to load"
+        suspicion_module.set_weights(weights)
+        yield
+        suspicion_module.set_weights(None)
+
+    # -- env parsing + clamping ------------------------------------------------
+
+    def test_defaults_bar_090_lead_off(self, monkeypatch) -> None:
+        for name in ("CREWBORG_VOTE_PROBABILITY", "CREWBORG_WEIGHTS_VOTE_P", "CREWBORG_VOTE_LEAD"):
+            monkeypatch.delenv(name, raising=False)
+        assert suspicion_module._vote_bar_from_env() == 0.9
+        assert suspicion_module._vote_lead_from_env() == 0.0
+
+    def test_bar_env_is_read_and_clamped(self, monkeypatch) -> None:
+        monkeypatch.delenv("CREWBORG_WEIGHTS_VOTE_P", raising=False)
+        monkeypatch.setenv("CREWBORG_VOTE_PROBABILITY", "0.7")
+        assert suspicion_module._vote_bar_from_env() == 0.7
+        monkeypatch.setenv("CREWBORG_VOTE_PROBABILITY", "0.3")  # below the floor
+        assert suspicion_module._vote_bar_from_env() == 0.5
+        monkeypatch.setenv("CREWBORG_VOTE_PROBABILITY", "1.5")  # above the ceiling
+        assert suspicion_module._vote_bar_from_env() == 0.99
+        monkeypatch.setenv("CREWBORG_VOTE_PROBABILITY", "not-a-float")
+        assert suspicion_module._vote_bar_from_env() == 0.9
+
+    def test_bar_env_falls_back_to_the_legacy_name(self, monkeypatch) -> None:
+        monkeypatch.delenv("CREWBORG_VOTE_PROBABILITY", raising=False)
+        monkeypatch.setenv("CREWBORG_WEIGHTS_VOTE_P", "0.8")
+        assert suspicion_module._vote_bar_from_env() == 0.8
+        monkeypatch.setenv("CREWBORG_VOTE_PROBABILITY", "0.6")  # the new name wins
+        assert suspicion_module._vote_bar_from_env() == 0.6
+
+    def test_lead_env_is_read_and_clamped(self, monkeypatch) -> None:
+        monkeypatch.setenv("CREWBORG_VOTE_LEAD", "0.2")
+        assert suspicion_module._vote_lead_from_env() == 0.2
+        monkeypatch.setenv("CREWBORG_VOTE_LEAD", "-1")
+        assert suspicion_module._vote_lead_from_env() == 0.0
+        monkeypatch.setenv("CREWBORG_VOTE_LEAD", "0.9")
+        assert suspicion_module._vote_lead_from_env() == 0.5
+
+    # -- gate behaviour (top_suspect, fitted crewmate path) ---------------------
+
+    def test_default_gate_unchanged_bar_090_no_lead(self) -> None:
+        below = Belief(self_role="crewmate")
+        below.suspicion = {"red": 0.89, "blue": 0.88}  # close second; lead off ⇒ irrelevant
+        assert top_suspect(below) is None
+        above = Belief(self_role="crewmate")
+        above.suspicion = {"red": 0.91, "blue": 0.90}
+        assert top_suspect(above) == "red"
+
+    def test_a_lowered_bar_is_respected(self, monkeypatch) -> None:
+        monkeypatch.setattr(suspicion_module, "WEIGHTS_VOTE_PROBABILITY", 0.7)
+        belief = Belief(self_role="crewmate")
+        belief.suspicion = {"red": 0.75, "blue": 0.2}
+        assert top_suspect(belief) == "red"
+        belief.suspicion = {"red": 0.65, "blue": 0.2}  # still below the lowered bar
+        assert top_suspect(belief) is None
+
+    def test_lead_blocks_a_close_second(self, monkeypatch) -> None:
+        monkeypatch.setattr(suspicion_module, "WEIGHTS_VOTE_PROBABILITY", 0.7)
+        monkeypatch.setattr(suspicion_module, "WEIGHTS_VOTE_LEAD", 0.2)
+        belief = Belief(self_role="crewmate")
+        belief.suspicion = {"red": 0.8, "blue": 0.7}  # over the bar, but a close second
+        assert top_suspect(belief) is None
+        belief.suspicion = {"red": 0.8, "blue": 0.5}  # a clear lead ⇒ vote
+        assert top_suspect(belief) == "red"
+
+    def test_lead_passes_a_lone_suspect(self, monkeypatch) -> None:
+        monkeypatch.setattr(suspicion_module, "WEIGHTS_VOTE_PROBABILITY", 0.7)
+        monkeypatch.setattr(suspicion_module, "WEIGHTS_VOTE_LEAD", 0.2)
+        belief = Belief(self_role="crewmate")
+        belief.suspicion = {"red": 0.8}  # no runner-up ⇒ margin over 0.0
+        assert top_suspect(belief) == "red"
+
+    def test_a_witnessed_catch_is_never_blocked_by_the_lead(self, monkeypatch) -> None:
+        monkeypatch.setattr(suspicion_module, "WEIGHTS_VOTE_LEAD", 0.2)
+        belief = _crew_belief()
+        # Two witnessed imposters (e.g. a double catch): both pinned at p ≈ 1, so the
+        # margin is ~0 — the lead gate must not talk us out of voting either one.
+        _add(belief, "red", [PlayerEvent(kind="kill", start_tick=50, end_tick=50, target_color="cyan")])
+        _add(belief, "blue", [PlayerEvent(kind="vent_use", start_tick=60, end_tick=60)])
+        update_suspicion(belief)
+        assert belief.suspicion["red"] > 0.99 and belief.suspicion["blue"] > 0.99
+        assert top_suspect(belief) in ("red", "blue")
+
+    def test_imposter_deflection_keeps_the_legacy_logic_regardless_of_knobs(self, monkeypatch) -> None:
+        monkeypatch.setattr(suspicion_module, "WEIGHTS_VOTE_PROBABILITY", 0.99)
+        monkeypatch.setattr(suspicion_module, "WEIGHTS_VOTE_LEAD", 0.5)
+        belief = Belief(self_role="imposter")
+        belief.suspicion = {"red": 0.7, "blue": 0.3}  # legacy clear-leader rule fires
+        assert top_suspect(belief) == "red"
