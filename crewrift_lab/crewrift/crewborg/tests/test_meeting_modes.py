@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from crewrift.crewborg.action import BTN_A, BTN_DOWN, resolve_action
 from crewrift.crewborg.modes import AccuseMode, AttendMeetingMode, ReportBodyMode
-from crewrift.crewborg.perception.entities import VoteCandidate, VotingState
+from crewrift.crewborg.perception.entities import VoteCandidate, VoteDot, VotingState
 from crewrift.crewborg.strategy.meeting import MeetingDecision, MeetingLLMResult
 from crewrift.crewborg.strategy.meeting.worker import MeetingLLMOutcome, MeetingLLMRequest
 from crewrift.crewborg.types import ActionState, Belief, BodyEntry, ChatEvent, PlayerEvent, PlayerRecord
@@ -361,10 +361,11 @@ def test_attend_meeting_llm_call_budget_capped(monkeypatch) -> None:
     assert [trigger for trigger, _ in client.calls] == ["meeting_start", "new_chat"]
 
 
-def test_attend_meeting_chat_implied_fallback_vote_beats_suspicion_gate_skip(monkeypatch) -> None:
-    """v86 confident-chat-then-skip: the LLM accused a color in chat (no vote_target),
-    later calls failed, and the fallback collapsed to the 0.9-gate skip. If we said it,
-    we vote it."""
+def test_attend_meeting_uncorroborated_chat_implied_fallback_gated_to_skip(monkeypatch) -> None:
+    """v88 confidence gate: a bare chat-implied guess (LLM accused a color in chat with
+    no vote_target, later calls never landed) is NOT corroboration — on the v87 league
+    the fallback-sourced player votes hit imposters 4/24 (17%). Not witnessed, posterior
+    under the vote bar, never LLM-named => the auto-submit votes SKIP, never red."""
 
     from crewrift.crewborg.strategy.meeting import chat_read
 
@@ -387,7 +388,170 @@ def test_attend_meeting_chat_implied_fallback_vote_beats_suspicion_gate_skip(mon
     late.suspicion = {"red": 0.4}
     vote = mode.decide(late, ActionState())
     assert vote.kind == "vote"
-    assert vote.target_color == "red"  # chat-implied vote, not the gate skip
+    assert vote.target_color is None  # gated to skip: uncorroborated chat-implied guess
+
+
+def test_attend_meeting_witnessed_chat_implied_fallback_still_votes(monkeypatch) -> None:
+    """The gate's witnessed arm: same chat-implied fallback, but we caught red venting
+    (suspicion.witnessed_imposters) — the fallback vote goes through."""
+
+    from crewrift.crewborg.strategy.meeting import chat_read
+
+    monkeypatch.setattr(
+        chat_read,
+        "accused_colors",
+        lambda text, colors: {"red"} if "red" in text else set(),
+    )
+    client = _FakeMeetingClient(
+        [MeetingDecision(action="send_chat", chat_text="red is sus, saw them fake a task")]
+    )
+    mode = _llm_mode(client)
+    belief = _meeting_belief(tick=0)
+    belief.suspicion = {"red": 0.4}
+
+    assert mode.decide(belief, ActionState()).kind == "idle"
+    assert mode.decide(belief, ActionState()).kind == "chat"
+
+    late = _meeting_belief(tick=1153)
+    late.suspicion = {"red": 0.4}
+    late.roster["red"].events.append(PlayerEvent(kind="vent_use", start_tick=5, end_tick=5))
+    vote = mode.decide(late, ActionState())
+    assert vote.kind == "vote"
+    assert vote.target_color == "red"  # witnessed => corroborated, vote lands
+
+
+def test_attend_meeting_llm_named_tentative_passes_gate_at_low_posterior() -> None:
+    """The gate's LLM-sourced arm in isolation: the LLM named red (set_tentative_vote)
+    while the posterior sits under every vote bar — the deadline auto-submit still
+    votes red. LLM-decided targets are exempt from the 0.9 gate (that arm is refuted)."""
+
+    client = _FakeMeetingClient([MeetingDecision(action="set_tentative_vote", vote_target="red")])
+    mode = _llm_mode(client)
+    belief = _meeting_belief(tick=0)
+    belief.suspicion = {"red": 0.4}  # top_suspect() None, nothing witnessed
+
+    assert mode.decide(belief, ActionState()).kind == "idle"  # call in flight
+    assert mode.decide(belief, ActionState()).kind == "idle"  # tentative applied
+
+    late = _meeting_belief(tick=1153)
+    late.suspicion = {"red": 0.4}
+    vote = mode.decide(late, ActionState())
+    assert vote.kind == "vote"
+    assert vote.target_color == "red"
+
+
+def test_attend_meeting_llm_submit_with_backfilled_target_gated_to_skip() -> None:
+    """A submit_vote WITHOUT a target gets the fallback backfilled by validation —
+    that backfill is not an LLM-named target and must not pass the gate."""
+
+    client = _FakeMeetingClient(
+        [MeetingDecision(action="submit_vote")]  # no vote_target: backfilled fallback
+    )
+    mode = _llm_mode(client)
+    belief = _meeting_belief(tick=0)
+    belief.suspicion = {"red": 0.4}  # fallback resolves under every vote bar
+
+    assert mode.decide(belief, ActionState()).kind == "idle"  # call in flight
+    vote = mode.decide(belief, ActionState())  # LLM submit with backfilled target
+    assert vote.kind == "vote"
+    assert vote.target_color is None  # backfill is not corroboration: skip
+
+
+def test_attend_meeting_uncorroborated_tentative_held_then_gated_at_deadline() -> None:
+    """An uncorroborated fallback tentative (e.g. the posterior drifted back under the
+    bar after a deterministic accusation) would be gated to a skip; early-submitting a
+    skip forfeits a later real vote, so hold it — the deadline auto-submit still fires
+    (vote timeouts stay 0) and gates it to skip there."""
+
+    client = _FakeMeetingClient([MeetingDecision(action="wait")])
+    mode = _llm_mode(client)
+    belief = _meeting_belief(tick=0)
+    belief.suspicion = {"red": 0.4}
+
+    assert mode.decide(belief, ActionState()).kind == "idle"  # call in flight
+    assert mode.decide(belief, ActionState()).kind == "idle"  # wait applied
+    mode._tentative_vote = "red"  # uncorroborated fallback tentative (posterior drift)
+
+    mid = _meeting_belief(tick=700)  # <50% believed time remains, LLM idle
+    mid.suspicion = {"red": 0.4}
+    assert mode.decide(mid, ActionState()).kind == "idle"  # held, not early-submitted
+
+    late = _meeting_belief(tick=1153)  # auto-submit window
+    late.suspicion = {"red": 0.4}
+    vote = mode.decide(late, ActionState())
+    assert vote.kind == "vote"
+    assert vote.target_color is None  # gated to skip at the deadline
+
+
+def test_attend_meeting_dead_seat_never_calls_llm_chats_or_votes() -> None:
+    """v88 dead-seat mute: dead inputs are skipped by the sim (0 post-death vote_cast
+    in the v87 replays) but dead seats burned ~23% of meeting-LLM call volume. Dead =>
+    no LLM requests, no chats, no vote submits — idle through the whole meeting."""
+
+    client = _FakeMeetingClient([MeetingDecision(action="submit_vote", vote_target="red")])
+    mode = _llm_mode(client)
+
+    for tick in (0, 200, 700, 1153, 1190):  # start .. early-submit .. auto-submit window
+        belief = _meeting_belief(tick=tick)
+        belief.self_alive = False
+        intent = mode.decide(belief, ActionState())
+        assert intent.kind == "idle"
+    assert client.calls == []  # zero LLM submissions
+
+
+def test_attend_meeting_dead_mute_does_not_touch_deterministic_path() -> None:
+    """LLM off: the deterministic (fallback) meeting behavior is byte-identical even
+    when dead — the mute lives on the LLM-enabled path only."""
+
+    mode = AttendMeetingMode()
+    belief = Belief(phase="Voting")
+    belief.self_alive = False
+    belief.roster["red"] = PlayerRecord(
+        color="red", life_status="alive", events=[PlayerEvent(kind="vent_use", start_tick=4, end_tick=4)]
+    )
+    belief.suspicion = {"red": 0.95, "blue": 0.2}
+
+    chat = mode.decide(belief, ActionState())
+    assert chat.kind == "chat" and chat.text == "red sus: saw them vent"
+    vote = mode.decide(belief, ActionState())
+    assert vote.kind == "vote" and vote.target_color == "red"
+
+
+def test_attend_meeting_imposter_fallback_votes_exempt_from_gate() -> None:
+    """The gate is crew-only: an imposter's fallback deflection votes mis-eject crew on
+    purpose (and suspicion is empty for imposters). An LLM-failure fallback onto the
+    deterministic imposter path must still land its bandwagon vote."""
+
+    class _FailingClient(_FakeMeetingClient):
+        def decide(self, context: dict, *, trigger: str) -> MeetingLLMResult:
+            self.calls.append((trigger, context))
+            raise RuntimeError("bedrock 429")
+
+    client = _FailingClient([])
+    mode = _llm_mode(client)
+    belief = _meeting_belief(tick=0)
+    belief.self_role = "imposter"
+    belief.suspicion = {}
+    # red is taking heat: green's cast vote against red drives the bandwagon.
+    belief.voting = belief.voting.model_copy(
+        update={
+            "candidates": (
+                VoteCandidate(slot=0, color="red", alive=True),
+                VoteCandidate(slot=1, color="blue", alive=True),
+                VoteCandidate(slot=2, color="green", alive=True),
+            ),
+            "dots": (VoteDot(voter=2, target=0),),  # green -> red
+        }
+    )
+
+    assert mode.decide(belief, ActionState()).kind == "idle"  # call in flight
+    intent = mode.decide(belief, ActionState())  # failure -> deterministic imposter
+    # bandwagon: chat (fabricated) or a direct vote for red — never a gated skip.
+    if intent.kind == "chat":
+        late = belief.model_copy(update={"last_tick": 601})  # early-submit window
+        intent = mode.decide(late, ActionState())
+    assert intent.kind == "vote"
+    assert intent.target_color == "red"
 
 
 def test_attend_meeting_early_submits_tentative_once_llm_idle_past_half_time() -> None:

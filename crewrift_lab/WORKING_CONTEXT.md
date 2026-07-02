@@ -92,6 +92,22 @@ player votes (witnessed OR 0.9-posterior OR LLM-sourced tentative; else SKIP —
 (b) mute meeting LLM for dead seats. Ghost fingerprint RESOLVED (see TODO): decide layer fine, parking
 bounded; noclip stays parked. Meta: notsus v150 = closest crew rival (survival 58.3%, precision 54.8%);
 jordan 5/5 imposter wins in batch; aaln v25 weak; daveey collapsed.
+## 🧪 v88 PACKAGE BUILT + PROBED (2026-07-02, worktree-v88-vote-quality): fallback-vote gate + dead-seat LLM mute
+
+Cycle-2 follow-up on v87 (`attend_meeting.py`): (1) **confidence gate on fallback-resolved crew
+PLAYER votes** — early-submit/auto-submit/chat-implied targets need corroboration (witnessed,
+`top_suspect` 0.9, or LLM-named) else SKIP; uncorroborated tentatives are also HELD from early-submit
+(deadline auto-submit still fires → timeouts stay 0); imposter + deterministic LLM-off paths exempt.
+(2) **dead seats fully mute the meeting-LLM path** (no calls/chats/votes; `meeting_dead_mute` event) —
+v87 burned 62/200 probe calls (31%) + 44 chats on dead seats whose inputs the sim discards.
+Tests 586+13 (main 579+13; the v86 chat-implied-beats-gate test deliberately reversed). Gate-1 PASS.
+**Matched 16-ep probe** (crewborg-v88probe:v1 `xreq_049ffc12` vs crewborg:v87 `xreq_152a59e4`, same
+pinned 7-champion field, natural roles, 0 ops both): dead-seat calls **62→0**, fallback crew-vote
+precision **1/7 (14%) → 8/12 (67%)** (Fisher p=0.04), overall crew vote precision 50%→67%, vote
+timeouts 0→0, live chats 96→117, wins 5/16→9/16 (crew 5/11→6/11, imp 0/5→3/5), 429/fail rate ~14%
+flat (both arms shared the same quota window). NOT submitted; branch `worktree-v88-vote-quality`.
+⚠️ analysis gotcha recorded in TENTATIVE_LESSONS: warehouse `died` events are INCOMPLETE — derive
+deaths from `player_state.alive=false` (the `died` key missed kill victims and skewed dead-seat stats).
 
 ## ✅ INCIDENT CLOSED (2026-07-02): v87 (async meeting-LLM) is CHAMPION and RANK 1
 

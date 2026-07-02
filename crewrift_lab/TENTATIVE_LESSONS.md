@@ -177,3 +177,21 @@ Evidence: v84's correct VOTE_TIMER fix (240->1200) quintupled meeting-LLM call v
   (~35 subject crew deaths) — the ~11pp league gap needs a bigger n or a per-tick fingerprint
   metric, not a completion rate. Worktree `worktree-ghost-tasking` (b3d8844) holds the change +
   tests; do not merge on this evidence.
+
+### Warehouse `died` events are INCOMPLETE — derive deaths from `player_state.alive=false`
+Evidence: v88 probe analysis (2026-07-02): `key=died` had 28 rows vs 43 kills; kill victims
+(e.g. ereq_7d629e3c slot 0, killed t=1159) had NO died event, so death-keyed stats (dead-seat
+LLM calls, alive-meeting timeouts) were wrong until deaths were recomputed as
+`min(ts) WHERE json alive=false` from `key=player_state`. Also: ghosts keep completing tasks,
+so "tasks after death" is NOT evidence the player is alive.
+
+### Post-gate, fallback-sourced crew votes don't vanish — they become corroborated (and hit like LLM votes)
+Evidence: v88 probe (16v16 matched vs v87): crew fallback-source player votes 12 w/ 8 imposter
+hits (67%) vs v87's 7 w/ 1 hit (14%), Fisher p=0.04; `meeting_vote_gated` fired 0 times — the
+prompt rides vote_target on nearly every chat, so tentatives are almost always LLM-named and the
+gate's work is done by the early-submit HOLD + corroboration check, not by live conversions.
+
+### Dead seats were ~30% of meeting-LLM volume — muting them is free call budget
+Evidence: v87 probe arm: 62/200 calls + 44/140 chats fired from dead seats (sim discards dead
+inputs; 0 post-death vote_cast). v88 mute: 0 dead calls/chats, live chats rose 96→117 in the
+matched probe.

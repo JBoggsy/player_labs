@@ -28,8 +28,9 @@ from crewrift.crewborg.strategy.meeting.imposter import (
     votes_against,
 )
 from crewrift.crewborg.strategy.meeting import chat_nlp, chat_read
+from crewrift.crewborg.strategy.meeting.schema import normalize_vote_target
 from crewrift.crewborg.strategy.meeting.worker import MeetingLLMRequest, MeetingLLMWorker
-from crewrift.crewborg.strategy.suspicion import chat_suspect, top_suspect
+from crewrift.crewborg.strategy.suspicion import chat_suspect, top_suspect, witnessed_imposters
 from crewrift.crewborg.types import ActionState, Belief, ChatEvent, Intent
 from players.player_sdk import EmptyModeParams, Mode
 
@@ -84,9 +85,15 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self._last_cooldown_prompt_chat_tick: int | None = None
         self._deadline_prompted = False
         self._tentative_vote: str | None = None
+        # Targets the LLM itself named in a decision (set_tentative_vote / submit_vote /
+        # a vote_target riding on a chat). Corroboration for the fallback vote gate:
+        # an LLM-chosen target may be fallback-submitted; a bare chat-implied or
+        # backfilled tentative may not.
+        self._llm_vote_targets: set[str] = set()
         self._active_vote_target: str | None = None
         self._active_vote_reason: str = ""
         self._vote_submitted = False
+        self._dead_mute_traced = False
         self._chat_parse_cache: dict[str, set[str]] = {}
         self._decision_traced = False
 
@@ -106,6 +113,18 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
 
         if not self._llm_client.enabled:
             return self._decide_deterministic(belief, trace_disabled=True)
+
+        if not belief.self_alive:
+            # Dead seats' meeting inputs are ignored by the sim (0 post-death vote_cast
+            # across the v87 league replays), yet dead crewborg seats burned ~23% of
+            # meeting-LLM call volume — pure Bedrock rate pressure on the live seats.
+            # Mute everything: no LLM calls, no chats, no vote submits; idle through
+            # the meeting. The deterministic (LLM-off) branch above is untouched.
+            if not self._dead_mute_traced:
+                self._dead_mute_traced = True
+                self.emit.event("meeting_dead_mute", {"tick": belief.last_tick})
+                self.emit.counter("meeting_dead_mute")
+            return Intent(kind="idle", reason="dead: meeting inputs ignored, LLM muted")
 
         intent = self._collect_llm_outcome(belief)
         if intent is not None:
@@ -381,12 +400,18 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
 
     def _validate_decision(self, belief: Belief, decision: MeetingDecision) -> MeetingDecision | None:
         try:
-            return validate_meeting_decision(
+            validated = validate_meeting_decision(
                 decision,
                 alive_vote_targets=valid_vote_targets(belief),
                 current_tentative=self._tentative_vote,
                 fallback_vote=self._fallback_vote_target(belief),
             )
+            # Only a target the LLM itself named counts as LLM-decided for the vote
+            # gate — a submit_vote with no target gets the tentative/fallback
+            # backfilled by validation, and that backfill is NOT corroboration.
+            if normalize_vote_target(decision.vote_target) is not None and validated.vote_target not in (None, VOTE_SKIP):
+                self._llm_vote_targets.add(validated.vote_target)
+            return validated
         except MeetingDecisionValidationError as exc:
             self.emit.event(
                 "meeting_llm_fallback",
@@ -469,6 +494,17 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
 
     def _submit_vote_intent(self, belief: Belief, *, reason: str) -> Intent:
         vote_target = self._resolved_vote_target(belief)
+        if self._llm_client.enabled and not self._vote_target_corroborated(belief, vote_target):
+            # Confidence gate on fallback-sourced crew PLAYER votes (v88). On the v87
+            # league (40 eps) LLM-decided votes hit imposters 13/19 (68%) but the
+            # non-LLM fallback resolutions (early-submit tentative / deadline
+            # auto-submit / chat-implied) hit 4/24 (17%) — active friendly fire.
+            # An uncorroborated fallback guess becomes a neutral skip; the vote
+            # still submits, so timeouts stay at 0. NOT a global 0.9 re-gate:
+            # LLM-decided targets pass via _llm_vote_targets (that arm is refuted).
+            self.emit.event("meeting_vote_gated", {"target": vote_target, "reason": reason})
+            self.emit.counter("meeting_vote_gated")
+            vote_target = VOTE_SKIP
         # Hard guard: the agent can never vote itself out, whatever suspicion says.
         self_color = belief.self_color or belief.voting.self_marker_color
         if self_color is not None and vote_target == self_color:
@@ -512,9 +548,11 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self._last_cooldown_prompt_chat_tick = None
         self._deadline_prompted = False
         self._tentative_vote = None
+        self._llm_vote_targets = set()
         self._active_vote_target = None
         self._active_vote_reason = ""
         self._vote_submitted = False
+        self._dead_mute_traced = False
         self._chat_parse_cache = {}
         self._decision_traced = False
 
@@ -550,6 +588,11 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
 
         if self._tentative_vote is None or self._tentative_vote == VOTE_SKIP:
             return False
+        if not self._vote_target_corroborated(belief, self._tentative_vote):
+            # The gate would turn this into a skip; early-submitting a skip forfeits
+            # a later real vote (same rule as a tentative skip). Hold — the deadline
+            # auto-submit still fires and gates it there, so timeouts stay 0.
+            return False
         if self._llm_pending is not None or self._pending_chat_text is not None:
             return False
         return (
@@ -577,6 +620,25 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
             return max(0.0, float(value))
         except (TypeError, ValueError):
             return DEFAULT_LLM_TIMEOUT_SECONDS
+
+    def _vote_target_corroborated(self, belief: Belief, target: str) -> bool:
+        """Whether a resolved vote target is safe to submit on the LLM-enabled path.
+
+        Crew only: an imposter's fallback deflection votes (bandwagon / parity push)
+        mis-eject crew ON PURPOSE, and suspicion is empty for imposters anyway.
+        A crew player-vote needs one of: we witnessed them kill/vent, the fitted
+        posterior clears the vote bar (``top_suspect``), or the LLM itself named
+        them in a decision. A bare chat-implied or backfilled tentative fails all
+        three and is converted to skip by the caller.
+        """
+
+        if target == VOTE_SKIP or belief.self_role == "imposter":
+            return True
+        if target in self._llm_vote_targets:
+            return True
+        if target in witnessed_imposters(belief):
+            return True
+        return top_suspect(belief) == target
 
     def _resolved_vote_target(self, belief: Belief) -> str:
         tentative = self._tentative_vote
