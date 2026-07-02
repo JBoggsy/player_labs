@@ -281,3 +281,19 @@ Evidence: median nearest-crew at the ready moment: crewborg ≈18px, 84% of wind
   ready-search build is the lever. Env knob CREWBORG_URGENCY_FULL_TICKS kept on main (inert at 240).
 - hunt_block `strike` events re-fire until the server registers the kill — never count strikes as
   kills (452 strikes vs 125 kills in one arm).
+
+## 2026-07-02 — vote-bar sweep verdict (4 arms x 100, v4 weights)
+- **INCONCLUSIVE on outcomes, but the durable finding: v4's calibration HOLDS LIVE at every bar.**
+  Precision 100/92/92/86% at bars 0.9/0.8/0.7/0.6 — the old-model catastrophe (65% self-ejections
+  at low bars) did not recur. The refit is validated at serve; the honest 0.7-0.9 band genuinely
+  fires (votes 13→24→25→36 monotone as the bar drops).
+- **Conversion is the bottleneck, not precision**: extra high-precision votes didn't become
+  significantly more ejections (0.49/0.62/0.44/0.65 imp-ej/crew-ep, non-monotone; bar60 best,
+  p=0.09) or wins. One seat's vote rarely swings a tally — the next lever is probably vote
+  COORDINATION (Honor Society trust network / accuse-then-vote chat), not more solo firing.
+- **Rule-selected candidate bar60 (0.6+lead0.2, 86% precision) needs a dedicated 200/arm
+  bar60-vs-bar90 confirmation before any ship.** Knobs merged to main inert (0.9/0 defaults).
+- Tooling (2nd+3rd occurrence): --watch fetchers die silently on transient RemoteProtocolError /
+  mid-batch drain — always verify final on-disk counts vs episode_count before analysis; reruns
+  are free. smoke.py needs --run=-m (SKILL.md example shows the broken form — fix it).
+- died=ejection validated (107/107 had votes against); died events land in Playing/GameOver phase.
