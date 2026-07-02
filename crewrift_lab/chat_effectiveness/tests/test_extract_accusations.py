@@ -78,3 +78,21 @@ def test_extract_accusation_rows_returns_empty_for_no_meetings():
     game.meetings = []
 
     assert extract_accusation_rows(game) == []
+
+
+def test_extract_accusation_rows_detects_ejection_even_when_meeting_ejected_slot_is_none():
+    """Regression test for a real replay_parse.py ordering bug (found via a live
+    200-episode run: 0/73 meetings ever had Meeting.ejected_slot set). The
+    `phase: Playing/GameOver` event that closes a meeting fires at the SAME
+    tick as the `died` event but is processed first in the event stream, so
+    Meeting.ejected_slot is never populated in practice. extract_accusation_rows
+    must derive ejection from game.ejections (the raw list, reliably populated)
+    instead of trusting Meeting.ejected_slot.
+    """
+    game = _game_with_one_meeting()
+    game.meetings[0].ejected_slot = None  # simulates the real, always-unset field
+
+    rows = extract_accusation_rows(game)
+
+    assert len(rows) == 1
+    assert rows[0]["target_ejected_same_meeting"] is True

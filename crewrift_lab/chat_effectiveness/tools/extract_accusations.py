@@ -30,10 +30,34 @@ def _alive_at(game: Game, slot: int, tick: int) -> bool:
     return bool(state and state.alive and state.connected)
 
 
+def _ejected_slot_by_meeting(game: Game) -> dict[int, int]:
+    """meeting_idx -> ejected slot, derived from game.ejections (the raw,
+    reliably-populated list) rather than Meeting.ejected_slot.
+
+    replay_parse.py's per-meeting ejected_slot assignment is order-sensitive:
+    it's only set if the meeting's end_tick is still None when the `died`
+    event is processed, but the `phase: Playing/GameOver` event that CLOSES
+    the meeting (setting end_tick) fires at the SAME tick as `died` and is
+    emitted first in the stream — so ejected_slot silently never gets set in
+    practice (verified: 0/73 meetings across a 30-game sample). game.ejections
+    is appended to unconditionally, so bucket each ejection tick into the
+    meeting whose [call_tick, next_call_tick) window contains it instead.
+    """
+    call_ticks = [m.call_tick for m in game.meetings] + [game.tick_count + 1]
+    result: dict[int, int] = {}
+    for tick, slot in game.ejections:
+        for idx in range(len(game.meetings)):
+            if call_ticks[idx] <= tick < call_ticks[idx + 1]:
+                result[idx] = slot
+                break
+    return result
+
+
 def extract_accusation_rows(game: Game) -> list[dict]:
     if not game.players or not game.meetings:
         return []
     stances = chat_stances(game)
+    ejected_by_meeting = _ejected_slot_by_meeting(game)
     rows: list[dict] = []
     for triple in stances:
         meeting = game.meetings[triple.meeting_idx]
@@ -57,7 +81,7 @@ def extract_accusation_rows(game: Game) -> list[dict]:
                 "target_role": target.role,
                 "target_is_imposter": target.role == "imposter",
                 "target_voted_same_meeting": any(v.target_slot == triple.target_slot for v in meeting.votes),
-                "target_ejected_same_meeting": meeting.ejected_slot == triple.target_slot,
+                "target_ejected_same_meeting": ejected_by_meeting.get(triple.meeting_idx) == triple.target_slot,
                 "num_candidates": len(candidates),
             }
         )
