@@ -420,10 +420,12 @@ def test_attend_meeting_witnessed_chat_implied_fallback_still_votes(monkeypatch)
     assert vote.target_color == "red"  # witnessed => corroborated, vote lands
 
 
-def test_attend_meeting_llm_named_tentative_passes_gate_at_low_posterior() -> None:
-    """The gate's LLM-sourced arm in isolation: the LLM named red (set_tentative_vote)
-    while the posterior sits under every vote bar — the deadline auto-submit still
-    votes red. LLM-decided targets are exempt from the 0.9 gate (that arm is refuted)."""
+def test_attend_meeting_llm_named_tentative_alone_held_then_gated_to_skip() -> None:
+    """v89 tightening: an LLM set_tentative_vote is no longer corroboration. In v88 this
+    clause fed 10 wrong vs 3 right crew votes (and 4 crew mis-ejections) — so a target
+    the LLM only *tentatively* named, with the posterior under every vote bar and
+    nothing witnessed, is held at the early-submit window and gated to SKIP by the
+    deadline auto-submit (the vote still submits: timeouts stay 0)."""
 
     client = _FakeMeetingClient([MeetingDecision(action="set_tentative_vote", vote_target="red")])
     mode = _llm_mode(client)
@@ -433,11 +435,53 @@ def test_attend_meeting_llm_named_tentative_passes_gate_at_low_posterior() -> No
     assert mode.decide(belief, ActionState()).kind == "idle"  # call in flight
     assert mode.decide(belief, ActionState()).kind == "idle"  # tentative applied
 
-    late = _meeting_belief(tick=1153)
+    mid = _meeting_belief(tick=700)  # <50% believed time remains, LLM idle
+    mid.suspicion = {"red": 0.4}
+    assert mode.decide(mid, ActionState()).kind == "idle"  # held, not early-submitted
+
+    late = _meeting_belief(tick=1153)  # auto-submit window
     late.suspicion = {"red": 0.4}
     vote = mode.decide(late, ActionState())
     assert vote.kind == "vote"
-    assert vote.target_color == "red"
+    assert vote.target_color is None  # LLM-named tentative alone: gated to skip
+
+
+def test_attend_meeting_chat_riding_vote_target_gated_to_skip_at_low_posterior() -> None:
+    """v89: the prompt rides a vote_target on ~every chat, which made the v88 gate a
+    no-op (0/35 eps fired). A vote_target that only rode along on a send_chat is not
+    corroboration — under the vote bar and unwitnessed, the auto-submit votes SKIP."""
+
+    client = _FakeMeetingClient(
+        [MeetingDecision(action="send_chat", chat_text="feels like red maybe", vote_target="red")]
+    )
+    mode = _llm_mode(client)
+    belief = _meeting_belief(tick=0)
+    belief.suspicion = {"red": 0.4}
+
+    assert mode.decide(belief, ActionState()).kind == "idle"  # call in flight
+    assert mode.decide(belief, ActionState()).kind == "chat"  # chat sent, tentative=red rides
+
+    late = _meeting_belief(tick=1153)  # auto-submit window
+    late.suspicion = {"red": 0.4}
+    vote = mode.decide(late, ActionState())
+    assert vote.kind == "vote"
+    assert vote.target_color is None  # chat-riding target alone: gated to skip
+
+
+def test_attend_meeting_llm_submit_vote_named_target_passes_gate_at_low_posterior() -> None:
+    """The one LLM-sourced corroboration that survives v89: an explicit submit_vote
+    naming the target. Pooled v87+v88, LLM-submitted votes hit imposters 28/37 (76%)
+    — that arm votes even with the posterior under every bar and nothing witnessed."""
+
+    client = _FakeMeetingClient([MeetingDecision(action="submit_vote", vote_target="red")])
+    mode = _llm_mode(client)
+    belief = _meeting_belief(tick=0)
+    belief.suspicion = {"red": 0.4}  # top_suspect() None, nothing witnessed
+
+    assert mode.decide(belief, ActionState()).kind == "idle"  # call in flight
+    vote = mode.decide(belief, ActionState())
+    assert vote.kind == "vote"
+    assert vote.target_color == "red"  # LLM's own submit_vote: corroborated
 
 
 def test_attend_meeting_llm_submit_with_backfilled_target_gated_to_skip() -> None:
@@ -497,6 +541,44 @@ def test_attend_meeting_dead_seat_never_calls_llm_chats_or_votes() -> None:
         intent = mode.decide(belief, ActionState())
         assert intent.kind == "idle"
     assert client.calls == []  # zero LLM submissions
+
+
+def test_attend_meeting_kill_to_meeting_death_lag_stays_muted() -> None:
+    """The v88 mute leak (ep 422637ce: killed t=1070, meeting t=1142, 4 LLM calls): the
+    ghost icon never rendered between the kill and the vote screen, so belief.self_alive
+    lagged our own death across the kill→meeting transition. v89: the meeting census
+    (our own dead candidate cell) flips self_alive in update_belief — which runs before
+    mode.decide — so the dead-seat mute catches the very first meeting tick."""
+
+    from crewrift.crewborg.perception.entities import CensusEntry, ResolvedScene
+    from crewrift.crewborg.types import Percept, update_belief
+
+    client = _FakeMeetingClient([MeetingDecision(action="submit_vote", vote_target="red")])
+    mode = _llm_mode(client)
+
+    belief = Belief(phase="Playing", last_tick=1070, self_role="crewmate", self_color="blue")
+    assert belief.self_alive  # ghost icon never seen: still believed alive at the meeting
+
+    # The meeting opens at t=1142; the vote-screen census shows our own cell dead.
+    resolved = ResolvedScene(
+        tick=1142, camera_ready=False, camera_x=0, camera_y=0,
+        voting=VotingState(
+            timer_present=True,
+            self_marker_color="blue",
+            candidates=(
+                VoteCandidate(slot=0, color="red", alive=True),
+                VoteCandidate(slot=1, color="blue", alive=False),
+            ),
+        ),
+        census=(CensusEntry(color="red", alive=True), CensusEntry(color="blue", alive=False)),
+    )
+    update_belief(belief, Percept(tick=1142, messages_applied=1142, resolved=resolved))
+    assert belief.phase == "Voting"
+    assert belief.self_alive is False  # census caught the lagged death
+
+    for _ in range(3):
+        assert mode.decide(belief, ActionState()).kind == "idle"
+    assert client.calls == []  # zero dead-seat LLM calls, including the lag case
 
 
 def test_attend_meeting_dead_mute_does_not_touch_deterministic_path() -> None:

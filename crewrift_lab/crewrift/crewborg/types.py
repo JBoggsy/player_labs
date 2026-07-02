@@ -328,7 +328,7 @@ class Belief(BaseModel):
     camera_x: int = 0
     camera_y: int = 0
     self_role: str | None = None  # "imposter" / "crewmate" / None (unknown). Fixed for the game.
-    self_alive: bool = True  # cleared on our own death (ghost icon); role is preserved separately.
+    self_alive: bool = True  # cleared on our own death (ghost icon / own dead census cell); role preserved separately.
     # Consecutive Playing ticks with self_role still None — drives the role-limbo escape.
     unlatched_playing_ticks: int = 0
     self_kill_ready: bool | None = None
@@ -685,6 +685,13 @@ def update_belief(belief: Belief, percept: Percept) -> None:
                 record.life_status = "alive"
         else:
             _record_death(belief, entry.color, percept.tick, "census")
+            # Our own dead census cell is a self-death signal the ghost icon can
+            # miss: a seat killed just before a meeting may never render the ghost
+            # between the kill and the vote screen (ep 422637ce: killed t=1070,
+            # meeting t=1142), leaving self_alive stale through the whole meeting
+            # and leaking dead-seat LLM calls past the meeting mute.
+            if entry.color == belief.self_color:
+                belief.self_alive = False
 
     # The vote-result interstitial names the player the meeting ejected.
     if resolved.ejected_color is not None:

@@ -300,6 +300,32 @@ def test_census_records_alive_and_dead_players_by_color() -> None:
     assert belief.total_player_count == 2
 
 
+def test_own_dead_census_cell_clears_self_alive() -> None:
+    """Kill→meeting death lag (ep 422637ce): a seat killed just before a meeting may
+    never render the ghost icon before the vote screen, leaving self_alive stale for
+    the whole meeting. Our own dead cell in the authoritative meeting census clears
+    self_alive; another player's dead cell must not."""
+
+    from crewrift.crewborg.perception.entities import CensusEntry, VotingState
+
+    belief = Belief(self_color="red", self_role="crewmate")
+    _fold(
+        belief, 1142,
+        voting=VotingState(timer_present=True, self_marker_color="red"),
+        census=(CensusEntry(color="red", alive=False), CensusEntry(color="blue", alive=True)),
+    )
+    assert belief.self_alive is False
+    assert belief.self_role == "crewmate"  # death is a state, not a role
+
+    other = Belief(self_color="red", self_role="crewmate")
+    _fold(
+        other, 1142,
+        voting=VotingState(timer_present=True, self_marker_color="red"),
+        census=(CensusEntry(color="red", alive=True), CensusEntry(color="blue", alive=False)),
+    )
+    assert other.self_alive is True
+
+
 def test_ejection_marks_the_voted_out_player_dead() -> None:
     belief = Belief()
     _fold(belief, 7, ejected_color="white")

@@ -85,11 +85,12 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self._last_cooldown_prompt_chat_tick: int | None = None
         self._deadline_prompted = False
         self._tentative_vote: str | None = None
-        # Targets the LLM itself named in a decision (set_tentative_vote / submit_vote /
-        # a vote_target riding on a chat). Corroboration for the fallback vote gate:
-        # an LLM-chosen target may be fallback-submitted; a bare chat-implied or
-        # backfilled tentative may not.
-        self._llm_vote_targets: set[str] = set()
+        # Targets the LLM itself named in a *submit_vote* decision — the only
+        # LLM-sourced corroboration for the fallback vote gate (v89). v88 counted any
+        # LLM-named target (set_tentative_vote / a vote_target riding on a chat), but
+        # the prompt rides vote_target on ~every chat, so that gate never fired
+        # (0/35 eps) and the LLM-named-tentative clause fed 10 wrong vs 3 right votes.
+        self._llm_submitted_vote_targets: set[str] = set()
         self._active_vote_target: str | None = None
         self._active_vote_reason: str = ""
         self._vote_submitted = False
@@ -406,11 +407,17 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
                 current_tentative=self._tentative_vote,
                 fallback_vote=self._fallback_vote_target(belief),
             )
-            # Only a target the LLM itself named counts as LLM-decided for the vote
-            # gate — a submit_vote with no target gets the tentative/fallback
-            # backfilled by validation, and that backfill is NOT corroboration.
-            if normalize_vote_target(decision.vote_target) is not None and validated.vote_target not in (None, VOTE_SKIP):
-                self._llm_vote_targets.add(validated.vote_target)
+            # Only a target the LLM itself named in a submit_vote counts as LLM-decided
+            # for the vote gate (v89). A submit_vote with no target gets the
+            # tentative/fallback backfilled by validation, and that backfill is NOT
+            # corroboration; nor is a tentative or a vote_target riding on a chat —
+            # the prompt attaches one to ~every chat, which made the v88 gate a no-op.
+            if (
+                decision.action == "submit_vote"
+                and normalize_vote_target(decision.vote_target) is not None
+                and validated.vote_target not in (None, VOTE_SKIP)
+            ):
+                self._llm_submitted_vote_targets.add(validated.vote_target)
             return validated
         except MeetingDecisionValidationError as exc:
             self.emit.event(
@@ -495,13 +502,12 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
     def _submit_vote_intent(self, belief: Belief, *, reason: str) -> Intent:
         vote_target = self._resolved_vote_target(belief)
         if self._llm_client.enabled and not self._vote_target_corroborated(belief, vote_target):
-            # Confidence gate on fallback-sourced crew PLAYER votes (v88). On the v87
-            # league (40 eps) LLM-decided votes hit imposters 13/19 (68%) but the
-            # non-LLM fallback resolutions (early-submit tentative / deadline
-            # auto-submit / chat-implied) hit 4/24 (17%) — active friendly fire.
-            # An uncorroborated fallback guess becomes a neutral skip; the vote
-            # still submits, so timeouts stay at 0. NOT a global 0.9 re-gate:
-            # LLM-decided targets pass via _llm_vote_targets (that arm is refuted).
+            # Confidence gate on fallback-sourced crew PLAYER votes (v88, tightened
+            # v89). Pooled v87+v88 leagues: fallback-resolved crew votes hit imposters
+            # 7/34 (21%) vs LLM-submitted 28/37 (76%), Fisher p=4e-6 — active friendly
+            # fire. An uncorroborated fallback guess becomes a neutral skip; the vote
+            # still submits, so timeouts stay at 0. NOT a global 0.9 re-gate: targets
+            # the LLM explicitly submit_vote'd pass via _llm_submitted_vote_targets.
             self.emit.event("meeting_vote_gated", {"target": vote_target, "reason": reason})
             self.emit.counter("meeting_vote_gated")
             vote_target = VOTE_SKIP
@@ -548,7 +554,7 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self._last_cooldown_prompt_chat_tick = None
         self._deadline_prompted = False
         self._tentative_vote = None
-        self._llm_vote_targets = set()
+        self._llm_submitted_vote_targets = set()
         self._active_vote_target = None
         self._active_vote_reason = ""
         self._vote_submitted = False
@@ -627,14 +633,15 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         Crew only: an imposter's fallback deflection votes (bandwagon / parity push)
         mis-eject crew ON PURPOSE, and suspicion is empty for imposters anyway.
         A crew player-vote needs one of: we witnessed them kill/vent, the fitted
-        posterior clears the vote bar (``top_suspect``), or the LLM itself named
-        them in a decision. A bare chat-implied or backfilled tentative fails all
-        three and is converted to skip by the caller.
+        posterior clears the vote bar (``top_suspect``), or the LLM itself issued a
+        submit_vote naming them. A chat-implied guess, an LLM tentative / chat-riding
+        vote_target, or a backfilled tentative fails all three and is converted to
+        skip by the caller (v89: the wider LLM-named arm fed 10 wrong vs 3 right).
         """
 
         if target == VOTE_SKIP or belief.self_role == "imposter":
             return True
-        if target in self._llm_vote_targets:
+        if target in self._llm_submitted_vote_targets:
             return True
         if target in witnessed_imposters(belief):
             return True
