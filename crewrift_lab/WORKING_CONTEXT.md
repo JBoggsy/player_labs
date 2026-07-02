@@ -55,7 +55,7 @@ league telemetry harvest. Escalate if relogin doesn't fix.
 - **Instant-vote: episodes complete, read-out blocked** (above). Prior evidence adverse (22-50%).
 - **Ready-search: NEUTRAL-safe** (pathology was partly pre-fixed by v77-80 FSM); shipped as hardening.
 
-## ▶ OPEN LEVERS
+## ▶ OPEN LEVERS (week roadmap with evidence: [WEEKLY_CONTEXT.md](WEEKLY_CONTEXT.md))
 
 1. Suspicion detector bug: reported_bodies/button_calls_made ALL-ZERO live (398 meetings) — fix
    before next refit; refit pipeline is fully operational now (runtime features flowing from every
