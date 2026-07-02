@@ -1,0 +1,64 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Experiment design</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Merriweather+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fffdf4;--alt:#f8f6ef;--fg:#111827;--sub:#555;--muted:#999;--navy:#1a3875;
+ --sage:#6e8050;--terra:#b36e4e;--gold:#d4a853;--exclusive:#8f5b3f;--border:#e4dac8;--border-strong:#d4c9b5;}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);margin:0;font:400 15px/1.6 'Merriweather Sans',sans-serif}
+.wrap{max-width:880px;margin:0 auto;padding:40px 36px 72px}
+header{border-bottom:2px solid var(--fg);padding-bottom:14px;margin-bottom:6px}
+.eyebrow{font:700 11px/1 'Merriweather Sans';text-transform:uppercase;letter-spacing:.16em;color:var(--terra);margin:0 0 10px}
+h1{font:900 26px/1.25 'Merriweather',Georgia,serif;margin:0;letter-spacing:-.01em}
+h2{font:700 12px/1 'Merriweather Sans';text-transform:uppercase;letter-spacing:.12em;color:var(--navy);margin:30px 0 8px}
+p{margin:0 0 4px}
+.flow{display:flex;align-items:stretch;gap:0;margin:20px 0 6px;flex-wrap:wrap}
+.flow .step{flex:1;min-width:120px;background:var(--alt);border:1px solid var(--border);border-radius:3px;padding:9px 11px}
+.flow .step .l{font:700 9px 'Merriweather Sans';text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.flow .step .b{font:600 13px 'IBM Plex Mono',monospace;color:var(--navy)}
+.flow .arr{display:flex;align-items:center;color:var(--border-strong);font-size:20px;padding:0 7px}
+.detail{background:var(--alt);border-left:3px solid var(--navy);padding:12px 16px;font-size:14px;color:var(--sub)}
+.detail pre{font:500 12px/1.5 'IBM Plex Mono',monospace;color:var(--fg);white-space:pre-wrap;margin:6px 0 0;overflow-x:auto}
+.preds{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:8px 0}
+.pred{border-radius:3px;padding:12px 14px;font-size:14px}
+.pred.t{background:rgba(110,128,80,.1);border:1px solid rgba(110,128,80,.3)}
+.pred.f{background:rgba(179,110,78,.08);border:1px solid rgba(179,110,78,.3)}
+.pred .h{font:700 10px 'Merriweather Sans';text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.pred.t .h{color:var(--sage)} .pred.f .h{color:var(--terra)}
+.rule{background:#fbf6e6;border:1px solid var(--gold);border-radius:3px;padding:11px 14px;font-size:14px}
+.rule b{color:#9a7b2e}
+ul{margin:6px 0;padding-left:20px;font-size:14px;color:var(--sub)}
+.verdict{border-radius:3px;padding:14px 16px;margin-top:8px;font-size:15px}
+.v-confirmed{background:rgba(110,128,80,.14);border:1px solid var(--sage)}
+.v-refuted{background:rgba(179,110,78,.12);border:1px solid var(--terra)}
+.v-inconclusive{background:rgba(212,168,83,.16);border:1px solid var(--gold)}
+.vchip{font:700 10px 'Merriweather Sans';text-transform:uppercase;letter-spacing:.07em;padding:2px 9px;border-radius:999px;margin-right:8px}
+.note{font-size:11.5px;color:var(--muted);font-style:italic;margin-top:22px}
+code{font-family:'IBM Plex Mono';font-size:12px;background:var(--alt);padding:1px 5px;border-radius:3px}
+@media(max-width:640px){.wrap{padding:24px 16px}.preds{grid-template-columns:1fr}.flow{flex-direction:column}.flow .arr{transform:rotate(90deg);padding:3px 0}}
+</style></head><body><div class="wrap">
+<header><p class="eyebrow">Crewrift · Experiment design</p><h1>H4 (as posed): crewborg crew has no post-task/late-game doctrine — finished/task-less crew idles solo (0.84 standing-still penalties/g vs notsus 0.01), hurting survival and getting it voted out. PHASE-1 REVISION (v82 warehouse, 227 clean eps): the mechanism as posed is REFUTED — 0/145 penalties are post-8th-task (89 all-8-done seats: zero penalties) and only 2/20 ejected crew seats idled before ejection. The idle is a MID-TASK execution freeze: 107/145 penalties sit wedged exactly one pixel outside a task-station rect (action.py ARRIVE_RADIUS=4 deadband straddles the rect edge, so the A-hold never engages: recurring stations 4/7/28/34/37), the other 38 park on dead routes (action.py:179 &#x27;a stall the mode can react to&#x27; — NormalMode never reacts). 12/173 crew games contain a frozen seat: crew win 8.3% vs 29.8% clean, ~2x game length (a frozen live seat or ghost blocks the crew task-win). Revised claim: fixing the freeze (deadband nudge + 100-tick stall escape + witness posture when task-less) eliminates the penalties and recovers those games without costing task throughput.</h1></header>
+<div class="flow"><div class="step"><div class="l">Hypothesis</div><div class="b">claim</div></div><span class="arr">→</span><div class="step"><div class="l">Instrument</div><div class="b">Experience request</div></div><span class="arr">→</span><div class="step"><div class="l">Decision</div><div class="b">pre-committed</div></div><span class="arr">→</span><div class="step"><div class="l">Verdict</div><div class="b">confirmed</div></div></div>
+
+<h2>What's being tested</h2><p>crewborg-h4:v1 = v82 base + (1) action.py complete_task deadband-wedge nudge (dead navigate mask within 24px of station center -&gt; steer at the center, which is &gt; ARRIVE_RADIUS inside every edge); (2) NormalMode stall escape (same spot + no task progress for 100 ticks -&gt; block target 900 ticks, re-pick; never stand holding a dead target); (3) witness posture (live crew with no workable task shadows nearest live crewmate at 28px offset, re-picked every 200 ticks; ghosts keep the walk home). Crew-only; imposter modes untouched.</p>
+
+<h2>How — the instrument</h2><div class="detail">Matched fresh A/B: crewborg:v82 vs crewborg-h4:v1, CREW-pinned slot 0, 2 imposters, pinned Prime top-7 field, 100 eps/arm, fired back-to-back.<pre>target: Crewrift Prime / Competition (div_acbde92a)
+subject: pinned slot 0, role=crew (game_config_overrides.slots[0])
+roles: slots 1-2 imposter, 3-7 crew (always-2-imposter pref)
+opponents (identical both arms, slot -1 rotate): crewrift-prime-crewborg-aaln-hunter-relhalpha:v1, jordan-crewborg-aaln:v1, crewborg-mv:v1, notsus:v132, daveey-prime-notsus:v2, forgeling-focusfire:v6, crewborg-aaln:v18
+num_episodes: 100/arm; ops-failed episodes dropped before comparing
+measure (subject seat only): standing-still penalties/g, tasks completed/g, survive-to-end, voted-out-as-crew, crew win, mean score</pre></div>
+
+<h2>Predictions — the falsifiability contract</h2>
+<div class="preds">
+  <div class="pred t"><div class="h">If TRUE — confirms</div>Candidate standing-still penalties/g collapse to notsus-level (&lt; 0.15/g, i.e. &gt;80% reduction vs the baseline arm) AND tasks/g does not drop (&gt;= baseline - 0.15). Directionally (underpowered at 100 eps): fewer 10k+-tick marathon losses, crew win/survival flat-to-up.</div>
+  <div class="pred f"><div class="h">If FALSE — refutes</div>Candidate penalties/g stay &gt;= 0.4/g (escape/nudge failed to clear the wedge), OR tasks/g drops &gt; 0.15 / crew win drops significantly (the escape abandons workable tasks or the shadow posture displaces task work) — the fix is wrong or harmful.</div>
+</div>
+<h2>Decision rule (committed before running)</h2>
+<div class="rule"><b>Read as:</b> PRIMARY (mechanism): candidate ss-penalties/g &lt; 0.15 with baseline &gt;= 0.5 in the same window =&gt; CONFIRMED; candidate &gt;= 0.4 =&gt; REFUTED. GUARDS: tasks/g drop &lt;= 0.15 and no significant crew-win regression (compare.py &#x27;regressed&#x27;), else the fix is rejected regardless. Crew win/survival deltas are reported with CIs but NOT gating (1-2pp effects are unresolvable at 100 eps). Committed before firing the requests.</div>
+<h2>Confounds controlled</h2><ul><li>Field drift — both arms pin the identical 7-opponent roster by exact name:vN and fire back-to-back; pool selectors are not used.</li><li>Role mix — subject seat is role-pinned crew in both arms; per-seat bias cancelled by rotating all opponents (slot -1).</li><li>Ops failures hit arms asymmetrically — connect/disconnect-timeout episodes are dropped from both arms before comparing.</li><li>Env skew — candidate uploaded with CREWBORG_METRICS=1 + CREWBORG_TRACE_GROUPS=all (observability only), matching the v82 upload recipe.</li><li>Baseline tree — baseline is crewborg:v82 (built from main f3bcd17, the same commit the candidate branch forked from), so only the H4 diff differs.</li><li>Crew-pinned masking — a crew-pinned A/B can mask natural-role effects; acceptable here because the mechanism under test is crew-only and imposter code is untouched (confirm in natural roles before shipping).</li></ul>
+<h2>Verdict</h2><div class="verdict v-confirmed"><span class="vchip v-confirmed">confirmed</span>A/B (97 vs 100 clean eps, crew-pinned, identical pinned field): standing-still penalties/g 0.454 -&gt; 0.010 (44 total -&gt; 1; penalty-split binomial p=6.8e-13); games-with-penalties 7/97 -&gt; 1/100 (Fisher p=.033); frozen games (&gt;=2 penalties) 4/97 -&gt; 0/100 (p=.057); 40/44 baseline penalties sat wedged at a task-rect edge, candidate&#x27;s single penalty was off-station. Voted-out-as-crew 11.3% -&gt; 2.0% (p=.0094) — a significant, unpredicted improvement. Guards: tasks/g 6.62 -&gt; 6.43 (point drop 0.19 vs the 0.15 gate, but p=.53 — noise; both straddle the league 6.49); crew win 30.9% -&gt; 25.0% (p=.43, noise); survival 29.9% -&gt; 34.0% (p=.55, noise); marathons(&gt;10k ticks) 22 -&gt; 17. LETTER-OF-THE-RULE NOTE: the baseline-reproduction clause asked &gt;=0.5 ss/g and the arm produced 0.454 (91% of gate), and the tasks/g point drop exceeded 0.15 while being statistically flat — by strict conjunction the pre-committed rule reads inconclusive; by its primary contrast (candidate &lt;0.15 achieved at 0.010, refutation clause &gt;=0.4 not met, pathology clearly reproduced in-arm) the mechanism fix is confirmed. H4 AS ORIGINALLY POSED (post-task doctrine gap) remains REFUTED by Phase 1: 0/145 league penalties were post-8th-task; the idle was a mid-task deadband wedge + unowned no-route hold.</div>
+<p class="note">Shown for your go-ahead before running. The if-true and if-false predictions differ,
+so the result can actually decide it — that's the bar for running.</p>
+</div></body></html>

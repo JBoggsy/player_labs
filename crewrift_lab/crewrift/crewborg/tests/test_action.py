@@ -354,3 +354,60 @@ def test_vent_navigates_then_holds_b_level_in_range() -> None:
 
     far = _belief_with_vent((300, 300), (100, 100))
     assert resolve_action(Intent(kind="vent"), far, ActionState()).held_mask == BTN_UP | BTN_LEFT
+
+
+# --- complete_task deadband wedge (H4): arrived at the anchor but outside the rect ---
+
+
+def _edge_anchor_map() -> MapData:
+    # A 14x14 station whose interior is walkable ONLY along its left edge column,
+    # so the baked anchor lands at the rect edge (like croatoan's wedge stations).
+    return MapData(
+        width=64,
+        height=64,
+        tasks=(TaskStation(name="w", x=24, y=24, w=14, h=14),),  # center (31, 31)
+        vents=(),
+        rooms=(),
+        button=MapRect(x=0, y=0, w=4, h=4),
+        home=MapPoint(x=0, y=0),
+    )
+
+
+def test_complete_task_nudges_at_the_center_when_wedged_outside_the_rect() -> None:
+    map_data = _edge_anchor_map()
+    mask = np.ones((64, 64), dtype=bool)
+    mask[24:38, 26:38] = False  # station interior unwalkable except x = 24..25
+    belief = Belief(map=map_data, self_world_x=21, self_world_y=31)  # 3px left of the rect
+    belief.nav = build_nav_graph(mask, map_data=map_data, cell_size=8)
+    anchor = belief.nav.task_anchor(0)
+    assert anchor is not None and 24 <= anchor[0] <= 25  # anchor sits on the left edge
+    assert abs(anchor[0] - 21) <= 4  # we are inside the arrive deadband of it
+
+    command = resolve_action(Intent(kind="complete_task", task_index=0), belief, ActionState())
+
+    # Without the nudge this held still forever (the H4 freeze); now it drives
+    # toward the rect center to re-enter the station.
+    assert command.held_mask == BTN_RIGHT
+
+
+def test_complete_task_still_holds_still_when_route_is_dead_and_station_far() -> None:
+    # No route to the station and it is far (outside the nudge range) ⇒ the nudge
+    # must NOT fire: hold still rather than mash into the wall (same contract as
+    # test_navigate_holds_still_when_nav_route_unreachable).
+    mask = np.ones((24, 48), dtype=bool)
+    mask[:, 24:32] = False
+    map_data = MapData(
+        width=48,
+        height=24,
+        tasks=(TaskStation(name="R", x=38, y=10, w=4, h=4),),  # center (40, 12), right side
+        vents=(),
+        rooms=(),
+        button=MapRect(x=0, y=0, w=4, h=4),
+        home=MapPoint(x=0, y=0),
+    )
+    belief = Belief(map=map_data, self_world_x=8, self_world_y=12)  # left of the wall
+    belief.nav = build_nav_graph(mask, cell_size=8)  # graph without baked anchors
+
+    command = resolve_action(Intent(kind="complete_task", task_index=0), belief, ActionState())
+
+    assert command.held_mask == 0

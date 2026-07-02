@@ -30,3 +30,41 @@ Evidence (H1 experiment over /tmp/v82_league_wh, 227 clean eps): among crewborg 
 Status: fix direction = (a) kill-progress escape: if kill pressed ~N times (e.g. 24) with no cooldown flip, treat as out-of-range and step toward the target (idling-is-dangerous class: a kill-spam loop with no escape), and/or (b) press-range margin: require dist2 <= (20-6)^2 before pressing so the ~6px perception offset can't cross the boundary. Do NOT build the H1 ready-stall/WATCH-flip lever — wrong mechanism.
 ### The other >300-tick ready streaks are acquisition/close latency, not gate holds
 Evidence: a2de70ce (1,519t, moving 100%, 12 rooms, only 19 crew-visible ticks) and a048572f (354t) both ENDED IN KILLS; 9fbebe4e (897t, chase, never closed <22px) ended by meeting; ced1754e (712t, 0 crew visible) ended by GameOver. Search-side find/corner problems — a different hypothesis family.
+
+### An arrival deadband that can straddle an interaction rect edge is a permanent freeze
+Evidence: H4 warehouse forensics (v82 league, 227 clean eps): 107/145 crewborg crew
+standing-still penalties sat EXACTLY one pixel outside a 14x14 task-station rect —
+`ARRIVE_RADIUS=4` lets the agent settle outside while `inside` (exclusive at x+w) stays
+false, so the A-hold never starts and no d-pad ever fires again. Recurring at specific
+croatoan stations (4, 7, 28, 34, 37) whose baked anchors sit near a rect edge. Fix =
+nudge at the rect center (always > ARRIVE_RADIUS inside) when the navigate mask goes
+dead within 24px of the station.
+
+### "A stall the mode can react to" is a freeze unless some mode actually reacts
+Evidence: action.py:179 returns hold-still on an empty route and the comment says the
+mode can react — no crew mode ever did; 38/145 H4 penalties were exactly this park.
+Same class as the recon-stall and WATCH-idle lessons: every idle path needs an owner
+with a timeout escape (NormalMode now blocks the target after 100 stationary ticks).
+
+### Verify an idle hypothesis' TIMING before designing a posture fix
+Evidence: H4 was posed as "post-8th-task idling doctrine gap" — but 0/145 penalties
+were post-8th-task (89 all-tasks-done seats took zero penalties; `_return_to_start`
+walking works), 79/145 were ghosts, and all sat mid-assignment at a wedged station.
+The cheap warehouse timing/position query redirected the fix from "post-task posture"
+to "execution wedge + stall escape" before any build was spent.
+
+### A frozen crew seat blocks the crew task-win and drags the game
+Evidence: 12/173 v82 crew games had a >=2-penalty frozen crewborg seat: crew win 8.3%
+vs 29.8% in clean games, mean length 12181 vs 6928 ticks — the unfinished tasks (alive
+or ghost) make the task-completion win unreachable, so the game grinds until the
+imposters kill out. Standing-still score (-1 each) is the SMALL part of the cost.
+
+### H4 A/B result: stall escape + wedge nudge eliminates the crew freeze (44 penalties -> 1)
+Evidence: matched crew-pinned A/B, crewborg:v82 (xreq_78d75331) vs crewborg-h4:v1
+(xreq_038f4eef), 100 eps/arm, identical pinned Prime top-7 field, 2 imposters.
+ss-penalties/g 0.454->0.010 (p=6.8e-13), frozen games 4->0, voted-out-as-crew
+11.3%->2.0% (p=.0094, unpredicted bonus — likely the witness posture/no-freeze
+reads less suspicious), tasks/g 6.62->6.43 (p=.53 noise), crew win 30.9%->25.0%
+(p=.43 noise), survival 29.9%->34.0% (noise). Mechanism confirmed; win-rate lift
+(expected ~1.5pp) unresolvable at this n. Report: crewrift_lab/docs/h4_experiment.html
+(worktree); design + verdict pre-committed.

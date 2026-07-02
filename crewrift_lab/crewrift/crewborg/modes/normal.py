@@ -16,13 +16,25 @@ only a gate, never the trigger (so we never stop the hold early at, say, 98%); a
 because targeting uses the live signals, a falsely-concluded task that is still
 signalled is simply re-targeted (self-healing).
 
-Two stall guards (design §5):
+Stall guards (design §5, best_practices "idling is dangerous"):
 
 - *Reachability* — prefer tasks the nav graph can actually route to, so we don't
   fixate on an unreachable station (the action layer holds still on no path).
 - *Arrows-disabled sweep* — when ``showTaskArrows`` is off, off-screen tasks emit
   no signals, so the signal set can be empty at spawn even with tasks to do. Rather
   than head home immediately, sweep the baked stations to discover assigned ones.
+- *Stall escape* — league forensics (H4, v82 warehouse) found crew seats standing
+  frozen for thousands of ticks while holding a task target: wedged one pixel
+  outside the station rect by the action deadband, or parked on an unroutable
+  goal (the "hold still on no path" above, which nothing ever reacted to). So:
+  standing in one spot with zero task progress for ``STALL_ESCAPE_TICKS`` blocks
+  the held target for a retry window and forces a fresh pick — we never stand
+  still holding a target that is going nowhere.
+
+Witness posture: when no workable task remains (all done, or every remaining one
+stall-blocked), a *live* crewmate shadows the nearest other live crewmate at a
+small offset instead of idling solo — a witness deters kills and sees what
+happens. Ghosts keep the old walk home (no witness value in a ghost).
 """
 
 from __future__ import annotations
@@ -37,6 +49,19 @@ from players.player_sdk import EmptyModeParams, Mode
 COMPLETION_PROGRESS_PCT = 90
 SWEEP_ARRIVE_RADIUS = 24  # within this of a station center ⇒ count it as checked
 
+# Stall escape: standing in one spot with no task-progress change for this many
+# ticks means execution is wedged (deadband stall / unroutable goal) — never stand
+# still longer than this holding a target.
+STALL_ESCAPE_TICKS = 100
+# A stall-blocked task becomes pickable again after this many ticks (the wedge may
+# have been transient — a meeting teleport or a crowd shove clears it; the action
+# layer's center-nudge usually fixes it outright on the retry).
+BLOCKED_TASK_RETRY_TICKS = 900
+# Witness posture: how often to re-pick which live crewmate to shadow, and how far
+# from them to stand (just outside their sprite, well inside sight range).
+SHADOW_REPICK_TICKS = 200
+SHADOW_OFFSET_PX = 28
+
 
 class NormalMode(Mode[Belief, ActionState, Intent]):
     name = "normal"
@@ -47,11 +72,22 @@ class NormalMode(Mode[Belief, ActionState, Intent]):
         self._target: int | None = None
         self._max_progress: int = 0  # peak progress seen for the current target
         self._swept: set[int] = set()
+        # Stall-escape state: the last observed (position, progress) signature and
+        # when it last changed, plus targets blocked by a stall (index -> block tick).
+        self._stall_signature: tuple[tuple[int, int], int | None] | None = None
+        self._stall_since: int = 0
+        self._blocked: dict[int, int] = {}
+        # Witness-posture state: who we're shadowing and when we picked them; the
+        # flip alternates the offset side when a shadow spot itself stalls.
+        self._shadow_color: str | None = None
+        self._shadow_picked_tick: int = 0
+        self._shadow_flip: bool = False
 
     def decide(self, belief: Belief, action_state: ActionState) -> Intent:
         del action_state
         tasks = belief.map.tasks if belief.map is not None else ()
 
+        self._update_stall(belief)
         self._update_target(belief, tasks)
         if self._target is not None:
             return Intent(kind="complete_task", task_index=self._target, reason="completing assigned task")
@@ -63,7 +99,42 @@ class NormalMode(Mode[Belief, ActionState, Intent]):
         sweep = self._sweep_intent(belief, tasks)
         if sweep is not None:
             return sweep
+
+        shadow = self._shadow_intent(belief)
+        if shadow is not None:
+            return shadow
         return _return_to_start(belief)
+
+    def _update_stall(self, belief: Belief) -> None:
+        """Escape a wedged execution: same spot + no task progress for too long.
+
+        League forensics (H4): a held ``complete_task`` can stand forever — wedged
+        one pixel outside the station rect by the action deadband, or parked on an
+        unroutable goal. Working a task is *not* a stall (progress keeps changing),
+        and any movement resets the clock (a meeting teleport counts as movement).
+        """
+
+        xy = _self_xy(belief)
+        now = belief.last_tick
+        if xy is None:
+            self._stall_signature = None
+            return
+        signature = (xy, belief.active_task_progress_pct)
+        if signature != self._stall_signature:
+            self._stall_signature = signature
+            self._stall_since = now
+            return
+        if now - self._stall_since < STALL_ESCAPE_TICKS:
+            return
+        # Wedged. Block the held target for a retry window and force a fresh pick;
+        # a stalled shadow spot instead flips to the target's other side.
+        if self._target is not None:
+            self._blocked[self._target] = now
+            self._target = None
+        else:
+            self._shadow_color = None
+            self._shadow_flip = not self._shadow_flip
+        self._stall_since = now
 
     def _update_target(self, belief: Belief, tasks: tuple[TaskStation, ...]) -> None:
         """Conclude/keep the current target, then pick a new one off the live signals."""
@@ -89,7 +160,12 @@ class NormalMode(Mode[Belief, ActionState, Intent]):
     def _pick_target(self, belief: Belief, tasks: tuple[TaskStation, ...], signals: set[int]) -> int | None:
         # The live signal set is the authoritative list of remaining tasks; a task
         # still signalled is still to do (even if we earlier mis-concluded it done).
-        candidates = [index for index in signals if index < len(tasks)]
+        # Stall-blocked tasks are skipped until their retry window expires; with
+        # every signalled task blocked we return None (the witness posture takes
+        # over until a retry comes due).
+        now = belief.last_tick
+        self._blocked = {i: t for i, t in self._blocked.items() if now - t < BLOCKED_TASK_RETRY_TICKS}
+        candidates = [index for index in signals if index < len(tasks) and index not in self._blocked]
         if not candidates:
             return None
 
@@ -139,6 +215,58 @@ class NormalMode(Mode[Belief, ActionState, Intent]):
             return None  # checked every station and found no assigned tasks
         nearest = min(remaining, key=lambda i: _dist2(self_xy, _nav_point(belief, tasks[i], i)))
         return Intent(kind="navigate_to", point=_nav_point(belief, tasks[nearest], nearest), reason="sweeping for tasks")
+
+    def _shadow_intent(self, belief: Belief) -> Intent | None:
+        """Witness posture: shadow the nearest live crewmate at a small offset.
+
+        Fires only for a *live* crewmate with no workable task (all done, or every
+        remaining one stall-blocked): standing near another player is witness
+        cover — it deters kills and puts us where the game is happening — instead
+        of idling solo. The shadow target is re-picked every SHADOW_REPICK_TICKS
+        (or when it dies); ghosts skip this (no witness value) and walk home.
+        """
+
+        if not belief.self_alive:
+            return None
+        self_xy = _self_xy(belief)
+        if self_xy is None:
+            return None
+
+        now = belief.last_tick
+        if self._shadow_color is not None:
+            record = belief.roster.get(self._shadow_color)
+            if record is None or record.life_status == "dead" or now - self._shadow_picked_tick >= SHADOW_REPICK_TICKS:
+                self._shadow_color = None
+        if self._shadow_color is None:
+            nearest = self._nearest_live_other(belief, self_xy)
+            if nearest is None:
+                return None
+            self._shadow_color = nearest
+            self._shadow_picked_tick = now
+
+        record = belief.roster[self._shadow_color]
+        side = -1 if self._shadow_flip else 1
+        goal = (record.world_x + side * SHADOW_OFFSET_PX, record.world_y)
+        if belief.nav is not None:
+            cell = belief.nav.nearest_reachable_node(*goal)
+            if cell is not None:
+                goal = belief.nav.node_point[cell]
+        return Intent(kind="navigate_to", point=goal, reason=f"witness posture: shadowing {self._shadow_color}")
+
+    def _nearest_live_other(self, belief: Belief, self_xy: tuple[int, int]) -> str | None:
+        """Color of the nearest known-live other player (last-known fix)."""
+
+        best: str | None = None
+        best_d = None
+        for record in belief.roster.values():
+            if record.color == belief.self_color or record.life_status == "dead":
+                continue
+            if record.last_seen_tick == 0:
+                continue  # never actually sighted — no positional fix to walk to
+            d = _dist2(self_xy, (record.world_x, record.world_y))
+            if best_d is None or d < best_d:
+                best, best_d = record.color, d
+        return best
 
 
 def _return_to_start(belief: Belief) -> Intent:
