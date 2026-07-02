@@ -104,6 +104,16 @@ implements announcements only until the society specs challenges.
 5. Vote vetoes only ever convert a vote to **skip** — they can never produce a new
    vote target, so the mis-ejection risk is strictly reduced.
 
+## Known-members registry
+
+`data/honor_members.json` (`crewborg-honor-members/v1`) vendors known member keys
+(ours + Alex Smith's, added 2026-07-02). Keys compare by raw bytes, so either base64
+flavor matches. A verified claim from a known key additionally lands in
+`belief.society_known` (color → label) and emits `honor_known_member` — reputation-
+backed trust, distinct from fresh unknown keys (provisionally trusted only).
+`CREWBORG_HONOR_MEMBERS` overrides the path; `0` disables; missing/bad file ⇒ empty
+registry, never a crash.
+
 ## Files
 
 - `strategy/honor_society.py` — identity, wire format, parsing/verification,

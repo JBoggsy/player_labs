@@ -410,6 +410,10 @@ class Belief(BaseModel):
     # ordinal (the announce targets the first meeting).
     society_claims: dict[str, str] = Field(default_factory=dict)
     society_trusted: set[str] = Field(default_factory=set)
+    # Verified claims whose key is in the vendored known-members registry
+    # (data/honor_members.json): color -> member label. Reputation-backed trust,
+    # distinct from fresh unknown keys (which are provisionally trusted only).
+    society_known: dict[str, str] = Field(default_factory=dict)
     society_liar_keys: set[str] = Field(default_factory=set)
     society_counted_chats: set[tuple[int, str | None, str]] = Field(default_factory=set)
     society_announced: bool = False

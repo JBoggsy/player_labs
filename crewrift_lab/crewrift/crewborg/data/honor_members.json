@@ -1,0 +1,18 @@
+{
+  "schema": "crewborg-honor-members/v1",
+  "comment": "Known Crewrift Honor Society member keys. Keys compare by RAW BYTES, so either base64 encoding matches. A verified HS1 claim from a known key is recorded in belief.society_known (color -> label) on top of the normal trusted-crew effects.",
+  "members": [
+    {
+      "pub": "Gq5nOr6NdgrRPfi7Ahzm-i9fuMJdHIaNHaDDDUuRhMc",
+      "label": "crewborg-lab",
+      "added": "2026-07-02",
+      "note": "our own key (seed at ~/.crewborg/honor_seed.b64)"
+    },
+    {
+      "pub": "WxWJy6ZOjtSAPzoLBSGSgMIe0uC2b7mYke-7LRUJnf8",
+      "label": "alex-smith",
+      "added": "2026-07-02",
+      "note": "received via Discord DM 2026-07-02; example announcement verified (signed as red); emits unpadded base64url"
+    }
+  ]
+}

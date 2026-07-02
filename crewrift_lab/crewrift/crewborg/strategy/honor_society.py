@@ -51,6 +51,12 @@ Emitter = Any
 _identity: tuple[object, str] | None = None
 _identity_failed = False
 
+# Known-members registry (data/honor_members.json): raw-key-bytes -> label.
+# Lazy + failure-tolerant like the identity; None until loaded, {} if unavailable.
+ENV_MEMBERS = "CREWBORG_HONOR_MEMBERS"
+MEMBERS_SCHEMA = "crewborg-honor-members/v1"
+_members: dict[bytes, str] | None = None
+
 
 def _b64e(raw: bytes) -> str:
     """Standard base64 WITH padding — the HS1 encoding."""
@@ -140,6 +146,56 @@ def reset_identity_for_tests() -> None:
 def public_key_b64() -> str | None:
     ident = _load_identity()
     return ident[1] if ident else None
+
+
+def _load_members() -> dict[bytes, str]:
+    """The known-members registry: raw key bytes -> label. Never raises.
+
+    Vendored at data/honor_members.json; `CREWBORG_HONOR_MEMBERS` overrides the
+    path ("0" disables). Keys compare by raw bytes so either base64 flavor matches.
+    """
+
+    global _members
+    if _members is not None:
+        return _members
+    _members = {}
+    override = os.environ.get(ENV_MEMBERS, "").strip()
+    if override == "0":
+        return _members
+    try:
+        import importlib.resources
+        import json
+
+        if override:
+            from pathlib import Path
+
+            data = json.loads(Path(override).read_text())
+        else:
+            resource = importlib.resources.files("crewrift.crewborg.data").joinpath("honor_members.json")
+            data = json.loads(resource.read_text())
+        if data.get("schema") != MEMBERS_SCHEMA:
+            return _members
+        for entry in data.get("members", []):
+            raw = _b64d(str(entry.get("pub", "")))
+            if raw is not None and len(raw) == 32:
+                _members[raw] = str(entry.get("label", "member"))
+    except Exception:
+        pass  # missing/bad registry => empty; the society still works without it
+    return _members
+
+
+def known_member_label(pub_b64: str) -> str | None:
+    """The registry label for a key (either base64 flavor), or None if unknown."""
+
+    raw = _b64d(pub_b64)
+    if raw is None:
+        return None
+    return _load_members().get(raw)
+
+
+def reset_members_for_tests() -> None:
+    global _members
+    _members = None
 
 
 def _sign(context: str) -> str:
@@ -245,7 +301,14 @@ def process_chats(belief: "Belief", emit: Emitter, *, receipt_time: float | None
         belief.society_claims[event.speaker_color] = pub
         if pub not in belief.society_liar_keys:
             belief.society_trusted.add(event.speaker_color)
-        emit.event("honor_claim", {"color": event.speaker_color, "pub": pub})
+        label = known_member_label(pub)
+        if label is not None:
+            # A KNOWN member's verified claim: bind the label into belief so the
+            # meeting/vote layers (and telemetry) can distinguish reputation-backed
+            # claims from fresh unknown keys.
+            belief.society_known[event.speaker_color] = label
+            emit.event("honor_known_member", {"color": event.speaker_color, "label": label})
+        emit.event("honor_claim", {"color": event.speaker_color, "pub": pub, "known": label})
 
     # Liar sweep — claims contradicted by definitional knowledge. Witnessed
     # kills/vents work for either of our roles; teammate knowledge only exists

@@ -244,3 +244,43 @@ def test_accepts_base64url_member_announce(society_on) -> None:
     ts, nonce, pub, sig = parsed
     assert honor_society.verify_announce(ts, nonce, pub, sig, "red", receipt_time=ts) == "ok"
     assert honor_society.verify_announce(ts, nonce, pub, sig, "blue", receipt_time=ts) == "bad_sig"
+
+
+def test_known_member_registry_recognizes_alex_in_either_encoding(society_on) -> None:
+    honor_society.reset_members_for_tests()
+    urlsafe = "WxWJy6ZOjtSAPzoLBSGSgMIe0uC2b7mYke-7LRUJnf8"
+    standard = base64.b64encode(base64.urlsafe_b64decode(urlsafe + "=")).decode()
+    assert honor_society.known_member_label(urlsafe) == "alex-smith"
+    assert honor_society.known_member_label(standard) == "alex-smith"
+    assert honor_society.known_member_label(base64.b64encode(b"\x09" * 32).decode()) is None
+
+
+def test_known_member_claim_lands_in_society_known(society_on, monkeypatch, tmp_path) -> None:
+    # Registry override naming the TEST identity's key as a known member.
+    import json
+    pub = honor_society.public_key_b64()
+    reg = tmp_path / "members.json"
+    reg.write_text(json.dumps({
+        "schema": "crewborg-honor-members/v1",
+        "members": [{"pub": pub, "label": "test-member"}],
+    }))
+    monkeypatch.setenv(honor_society.ENV_MEMBERS, str(reg))
+    honor_society.reset_members_for_tests()
+    try:
+        belief = _crew_belief()
+        now = time.time()
+        emit = _Emit()
+        # Unknown fresh key: trusted but NOT known.
+        _, announce = _other_member_announce("green", now=now)
+        belief.chat_log.append(ChatEvent(tick=5, speaker_color="green", text=announce))
+        honor_society.process_chats(belief, emit, receipt_time=now)
+        assert "green" in belief.society_trusted and "green" not in belief.society_known
+        # The registry key (distinct color) -> known with its label.
+        nonce = base64.b64encode(b"\x03" * 6).decode()
+        sig = honor_society._sign(f"HS1|{int(now)}|{nonce}|red")
+        belief.chat_log.append(ChatEvent(tick=6, speaker_color="red", text=f"HS1 {int(now)} {nonce} {pub} {sig}"))
+        honor_society.process_chats(belief, emit, receipt_time=now)
+        assert belief.society_known.get("red") == "test-member"
+        assert any(name == "honor_known_member" for name, _ in emit.events)
+    finally:
+        honor_society.reset_members_for_tests()
