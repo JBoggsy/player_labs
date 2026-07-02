@@ -318,3 +318,16 @@ Evidence: first ParkedGuard wiring in ReconMode returned an escape intent for a 
 `_decide` re-derives the same parked target next tick, so the agent would stay parked with the
 guard firing every 12 ticks. Escapes must change PERSISTENT state (FSM state, a sticky waypoint),
 not just the returned intent. Search's guard was safe precisely because it mutates `_state`.
+
+## 2026-07-02 late — platform + society notes
+- **Observatory /jobs/* artifact routes 403 "not a softmax team member" since ~22:20Z** while /v2/*
+  works; `softmax login` no-ops (already authed), `--force` relogin is the next step, else server-side
+  authz regression (deploy-shaped). No `--elevated` flag / X-Elevated-Privileges header exists in the
+  CLIs or metta source. Workaround proven by the camo agent: synthesize results.json from
+  episode.json + replay (validated exact-match on 23 real files); replays stay public.
+- **fetch_artifacts completeness doesn't check results.json** — 100 eps passed "complete" without it
+  during the 403 window. Add results to episode_is_complete or a fetch-error surface.
+- **Same-key multi-seat collides with HS1 first-poster-wins**: two seats announcing one key = second
+  is a suspected replay. Distinct key per concurrent seat (crewborg-hs2:v1 pattern). Tell Alex.
+- **Camo A/B = the good pattern**: mechanism metrics hit hard significance (p=5.6e-13) while outcome
+  endpoints trend NS at n=100 — ship-safe evidence shape for behavior-shaping changes.
