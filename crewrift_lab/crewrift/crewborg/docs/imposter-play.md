@@ -258,7 +258,7 @@ counts as unwitnessed — the imposter will strike regardless of nearby crew.
 |------------------|-------|---------|
 | `BASE_ISOLATION_RADIUS` | 48 px | Clearance required around the target at zero urgency. |
 | `WITNESS_WINDOW_TICKS` | 72 | Max age of a sighting that still counts a crewmate as a potential witness, at zero urgency. |
-| `URGENCY_FULL_TICKS` | 240 | Kill-ready-without-killing ticks at which the witness bar reaches zero. |
+| `URGENCY_FULL_TICKS` | 240 | Kill-ready-without-killing ticks at which the witness bar reaches zero. Env-overridable via `CREWBORG_URGENCY_FULL_TICKS` (clamped to ≥ 1) for sweeps without a rebuild. |
 
 ### The first-kill witness drop
 

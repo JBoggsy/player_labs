@@ -33,11 +33,11 @@ from crewrift.crewborg.nav import plan_route
 from crewrift.crewborg.strategy.commander.bias import commander_of
 from crewrift.crewborg.strategy.opportunity import (
     BASE_ISOLATION_RADIUS,
-    URGENCY_FULL_TICKS,
     WITNESS_WINDOW_TICKS,
     kill_urgency_ticks,
     select_victim,
     unwitnessed,
+    urgency_full_ticks,
     visible_victims,
 )
 from crewrift.crewborg.strategy.trajectory import lead_ticks, predict
@@ -178,7 +178,7 @@ def _hunt_block_payload(
         "unwitnessed": kill_is_unwitnessed,
         "already_killed": already_killed,
         "urgency_ticks": urgency,
-        "urgency_frac": round(min(1.0, urgency / URGENCY_FULL_TICKS), 3),
+        "urgency_frac": round(min(1.0, urgency / urgency_full_ticks()), 3),
         "witnesses": witnesses,
         "nearest_other": (
             {

@@ -60,6 +60,21 @@ SEARCH_LEAD_TICKS = 250
 HUNT_LEAD_TICKS = SEARCH_LEAD_TICKS
 
 
+def urgency_full_ticks() -> int:
+    """Ticks of kill-ready-without-killing at which the witness bar reaches zero,
+    env-overridable via ``CREWBORG_URGENCY_FULL_TICKS`` so it can be swept without
+    a rebuild. Clamped to >= 1 (it is a divisor); invalid values fall back to the
+    default ``URGENCY_FULL_TICKS``."""
+
+    raw = os.environ.get("CREWBORG_URGENCY_FULL_TICKS")
+    if raw:
+        try:
+            return max(1, int(raw))
+        except ValueError:
+            pass
+    return URGENCY_FULL_TICKS
+
+
 def kill_urgency_ticks(belief: Belief) -> int:
     """How long we have been able to kill without doing so (0 if not kill-ready)."""
 
@@ -145,7 +160,7 @@ def select_victim(belief: Belief) -> PlayerRecord | None:
 def unwitnessed(belief: Belief, target: PlayerRecord) -> bool:
     """Whether killing ``target`` now would go unseen, at the current urgency level."""
 
-    frac = min(1.0, kill_urgency_ticks(belief) / URGENCY_FULL_TICKS)
+    frac = min(1.0, kill_urgency_ticks(belief) / urgency_full_ticks())
     radius_sq = (BASE_ISOLATION_RADIUS * (1.0 - frac)) ** 2
     window = int(WITNESS_WINDOW_TICKS * (1.0 - frac))
     return _is_unwitnessed(target, belief, radius_sq, window)

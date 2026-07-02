@@ -12,6 +12,7 @@ from crewrift.crewborg.strategy.opportunity import (
     select_victim,
     ticks_until_kill_ready,
     unwitnessed,
+    urgency_full_ticks,
 )
 from crewrift.crewborg.types import Belief, PlayerRecord
 
@@ -166,3 +167,29 @@ def test_full_urgency_strikes_through_a_witness() -> None:
     _crew(belief, 1, (50, 50), "green", URGENCY_FULL_TICKS)
     _crew(belief, 2, (60, 50), "blue", URGENCY_FULL_TICKS)  # witness ignored at full urgency
     assert unwitnessed(belief, belief.roster["green"])
+
+
+def test_urgency_full_ticks_default_env_and_clamp(monkeypatch) -> None:
+    monkeypatch.delenv("CREWBORG_URGENCY_FULL_TICKS", raising=False)
+    assert urgency_full_ticks() == URGENCY_FULL_TICKS
+    monkeypatch.setenv("CREWBORG_URGENCY_FULL_TICKS", "80")
+    assert urgency_full_ticks() == 80
+    monkeypatch.setenv("CREWBORG_URGENCY_FULL_TICKS", "0")
+    assert urgency_full_ticks() == 1  # clamped: it is a divisor
+    monkeypatch.setenv("CREWBORG_URGENCY_FULL_TICKS", "garbage")
+    assert urgency_full_ticks() == URGENCY_FULL_TICKS  # invalid falls back to default
+
+
+def test_fast_urgency_ramp_strikes_through_a_witness_sooner(monkeypatch) -> None:
+    # With the ramp shortened to 80 ticks, 80 kill-ready ticks = FULL urgency:
+    # a witness that would veto at the default 240-tick ramp (frac 0.33) is ignored.
+    monkeypatch.setenv("CREWBORG_URGENCY_FULL_TICKS", "80")
+    belief = Belief(
+        self_world_x=0, self_world_y=0, last_tick=80,
+        self_kill_ready=True, kill_ready_since_tick=0,
+    )
+    _crew(belief, 1, (50, 50), "green", 80)
+    _crew(belief, 2, (60, 50), "blue", 80)  # 10px from the victim, seen now
+    assert unwitnessed(belief, belief.roster["green"])
+    monkeypatch.delenv("CREWBORG_URGENCY_FULL_TICKS")
+    assert not unwitnessed(belief, belief.roster["green"])  # default ramp still vetoes
