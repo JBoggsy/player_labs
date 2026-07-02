@@ -59,8 +59,21 @@ def _b64e(raw: bytes) -> str:
 
 
 def _b64d(text: str) -> bytes | None:
+    """Accept standard AND URL-safe base64, padded or not (receiver liberality).
+
+    Alex's spec text says standard base64, but at least one member implementation
+    emits unpadded base64url (verified 2026-07-02: their example key/sig are valid
+    Ed25519 under urlsafe decoding). We SEND per the spec; we ACCEPT both.
+    """
+
+    padded = text + "=" * (-len(text) % 4)
     try:
-        return base64.b64decode(text, validate=True)
+        return base64.b64decode(padded, validate=True)
+    except Exception:
+        pass
+    try:
+        # urlsafe variant (no validate kwarg): translate then validate-decode.
+        return base64.b64decode(padded.replace("-", "+").replace("_", "/"), validate=True)
     except Exception:
         return None
 

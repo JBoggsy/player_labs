@@ -231,3 +231,16 @@ def test_witnessed_kill_overrides_trust(society_on) -> None:
     intents = [mode.decide(belief, ActionState()) for _ in range(3)]
     votes = [i for i in intents if i.kind == "vote"]
     assert votes and votes[0].target_color == "red"
+
+
+def test_accepts_base64url_member_announce(society_on) -> None:
+    # A real member implementation emits unpadded base64url (spec text says standard
+    # b64) — receiver accepts both. This is that member's actual example message,
+    # signed as color "red"; freshness pinned to its canned timestamp.
+    msg = ("HS1 1782000000 aQ8-Zr2K WxWJy6ZOjtSAPzoLBSGSgMIe0uC2b7mYke-7LRUJnf8 "
+           "9e3plbO9Y-3z2q6NpbK3W6U6YtarOnl8d7uN17mZhbOgZ3YLhY7QW2Nn_5su3Qy4mUaZMfF2OszHdYmeV5p_Dg")
+    parsed = honor_society.parse(msg)
+    assert parsed is not None
+    ts, nonce, pub, sig = parsed
+    assert honor_society.verify_announce(ts, nonce, pub, sig, "red", receipt_time=ts) == "ok"
+    assert honor_society.verify_announce(ts, nonce, pub, sig, "blue", receipt_time=ts) == "bad_sig"
