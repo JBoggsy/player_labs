@@ -36,3 +36,4 @@ crewrift_lab/tools/bin/
 posviz_*.png
 .playwright-mcp/
 .claude/worktrees/
+crewrift_lab/.claude/worktrees/
