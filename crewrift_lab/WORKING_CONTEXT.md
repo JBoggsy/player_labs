@@ -75,14 +75,15 @@ post-death vs 111–239 field-best.
    posteriors on the 692 eps now, (d) fresh traced upload + ~200-300 eps → true runtime refit.
    /tmp/expand-043 is JSONL-capable + hash-clean on 0.4.31 (verified) for the label stage.
    fetch_artifacts.py FIXED: --no-logs no longer drops policy-artifact zips (new --no-artifacts).
-   **v4 REFIT DONE + A/B IN FLIGHT**: fit on 2,220 live rows (205 eps/398 meetings) → held-out
-   AUC 0.671 vs old-weights-live 0.59; precision@0.9 98% vs 66% same-rows. Weights vendored on
-   main (commit "suspicion v4"), suite green, verified loading in-image. Deterministic A/B:
-   `crewborg-suspfit:v1` (new) vs `crewborg-suspfit-base:v1` (old), 100 eps each,
-   `xreq_bb325dec` / `xreq_9cc4c88c`. PRE-REGISTERED: crew vote precision UP (Fisher, replay
-   truth); imposters-ejected/crew-ep + crew win not worse; timeouts/ops 0. Expect FEWER
-   fallback votes (stricter honest 0.9). Open detector bug: reported_bodies/button_calls_made
-   all-zero live across 398 meetings — fix before next refit.
+   **v4 REFIT DONE; A/B NEUTRAL (not ship-validated)**: fit on 2,220 live rows → held-out AUC
+   0.671 vs old-live 0.59; precision@0.9 98% vs 66% same-rows. But the 100v100 deterministic A/B
+   (xreq_bb325dec/xreq_9cc4c88c) showed NO headroom on the deterministic path — both arms ~91-93%
+   precise (witnessed-dominated gate); v4 cut vote volume (14 vs 23), imp-ejections/crew-ep 0.47
+   vs 0.56, crew win 18% vs 24% (NS). Weights stay vendored on main, NOT ship-validated.
+   **UNLOCKED NEXT LEVER: crew vote bar 0.7+lead≥0.2 on the honest posterior** (94% OOF precision
+   band; the 4 old bar refutations all used the noisy v3 model — this is new, not a retry).
+   Curiosity before any ship: cand imposter win 89% vs 67% (p=0.06). Open detector bug:
+   reported_bodies/button_calls_made all-zero live across 398 meetings — fix before next refit.
 
 ## ▶ OPEN LEVERS (evidence on file, none in flight)
 

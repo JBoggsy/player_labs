@@ -28,6 +28,7 @@ from crewrift.crewborg.strategy.meeting.imposter import (
     votes_against,
 )
 from crewrift.crewborg.strategy.meeting import chat_nlp, chat_read
+from crewrift.crewborg.strategy import honor_society
 from crewrift.crewborg.strategy.meeting.schema import normalize_vote_target
 from crewrift.crewborg.strategy.meeting.worker import MeetingLLMRequest, MeetingLLMWorker
 from crewrift.crewborg.strategy.suspicion import chat_suspect, top_suspect, witnessed_imposters
@@ -107,10 +108,17 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
             self._vote_submitted = True
             self._active_vote_target = None
             self._active_vote_reason = ""
+        if honor_society.enabled():
+            # Listen every meeting tick (both roles, even after our vote is in);
+            # inert when the flag is off (design docs/designs/honor-society.md).
+            honor_society.process_chats(belief, self.emit)
         if self._vote_submitted:
             return Intent(kind="idle", reason="vote already confirmed")
         if self._active_vote_target is not None:
             return self._vote_intent(self._active_vote_target, reason=self._active_vote_reason)
+        society_intent = self._society_chat_intent(belief)
+        if society_intent is not None:
+            return society_intent
 
         if not self._llm_client.enabled:
             return self._decide_deterministic(belief, trace_disabled=True)
@@ -186,6 +194,8 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         if not self._deterministic_chatted:
             self._deterministic_chatted = True
             target = top_suspect(belief)  # the clear leading suspect, or None (flat field)
+            if target is not None and honor_society.vote_veto(belief, target):
+                target = None  # society-trusted (and unwitnessed): accuse no one instead
             if target is not None:
                 self._tentative_vote = target  # couple the vote to whoever we accuse
                 accusation = build_accusation(belief, target)
@@ -197,6 +207,8 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
                 # No clear suspect to VOTE — but voice an evidence-cited read instead of
                 # going silent (chat only; we still skip the vote on a thin field).
                 soft = chat_suspect(belief)
+                if soft is not None and honor_society.vote_veto(belief, soft):
+                    soft = None  # don't voice reads against society-trusted members either
                 read = build_accusation(belief, soft) if soft is not None else None
                 if read is not None:
                     self._trace_meeting_decision(belief, role="crewmate", path="share_read", target=soft)
@@ -475,11 +487,44 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
 
         return Intent(kind="idle", reason=decision.reason or "LLM waits")
 
-    def _send_chat_intent(self, belief: Belief, text: str, *, reason: str) -> Intent:
+    def _society_chat_intent(self, belief: Belief) -> Intent | None:
+        """The Honor Society's one-line sends: a queued challenge response, else the
+        once-per-game crew announce (design docs/designs/honor-society.md).
+
+        Strictly lower priority than voting: never fires from a dead seat, over a
+        submitted vote, or inside the deadline auto-submit window, and it obeys the
+        normal chat cooldown — worst case it costs one chat slot per game.
+        Imposters stay entirely silent (claiming crew is forbidden; silence is not).
+        """
+
+        if not honor_society.enabled():
+            return None
+        if belief.self_role != "crewmate" or not belief.self_alive:
+            return None
+        if self._vote_submitted or self._should_auto_submit(belief):
+            return None
+        if not self._chat_cooldown_ready(belief):
+            return None
+        self_color = belief.self_color or belief.voting.self_marker_color
+        if self_color is None:
+            return None
+        if belief.society_challenges_due:
+            nonce = belief.society_challenges_due.pop(0)
+            text = honor_society.response_text(nonce, self_color)
+            return self._send_chat_intent(belief, text, reason="society: challenge response", society=True)
+        if not belief.society_announced:
+            belief.society_announced = True
+            text = honor_society.announce_text(self_color)
+            return self._send_chat_intent(belief, text, reason="society: crew announce", society=True)
+        return None
+
+    def _send_chat_intent(self, belief: Belief, text: str, *, reason: str, society: bool = False) -> Intent:
         self._pending_chat_text = None
         self._sent_chat_texts.add(text)
         self._last_chat_tick = belief.last_tick
-        if self._llm_client.enabled:  # keep the LLM-off path byte-identical
+        # Society lines carry no color words, but bypass the accusation reader
+        # explicitly — a CHS message must never set a chat-implied vote.
+        if self._llm_client.enabled and not society:  # keep the LLM-off path byte-identical
             self._note_own_accusation(belief, text)
         self.emit.event("meeting_chat_selected", {"text": text, "reason": reason})
         return Intent(kind="chat", text=text, reason=reason)
@@ -501,6 +546,13 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
 
     def _submit_vote_intent(self, belief: Belief, *, reason: str) -> Intent:
         vote_target = self._resolved_vote_target(belief)
+        # Honor Society: spare trusted claimed-crew members from posterior-driven
+        # votes (witnessed evidence overrides trust inside vote_veto). Skip-only:
+        # this can remove a vote, never invent one. Inert with the flag off.
+        if vote_target != VOTE_SKIP and honor_society.vote_veto(belief, vote_target):
+            self.emit.event("meeting_vote_society_veto", {"target": vote_target, "reason": reason})
+            self.emit.counter("meeting_vote_society_veto")
+            vote_target = VOTE_SKIP
         if self._llm_client.enabled and not self._vote_target_corroborated(belief, vote_target):
             # Confidence gate on fallback-sourced crew PLAYER votes (v88, tightened
             # v89). Pooled v87+v88 leagues: fallback-resolved crew votes hit imposters

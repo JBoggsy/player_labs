@@ -45,6 +45,11 @@ RUN pip install --upgrade pip \
 RUN pip install "spacy>=3.8.0,<3.9.0" click \
  && pip install "en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl"
 
+# Ed25519 for the Crewrift Honor Society membership (strategy/honor_society.py,
+# gated by CREWBORG_HONOR_SOCIETY — inert by default). The import is lazy and
+# failure-disables the feature, so this line is safety, not a hard requirement.
+RUN pip install "cryptography>=42"
+
 # Put the vendored fork on the path as `crewrift.crewborg`.
 COPY crewrift_init.py /app/crewrift/__init__.py
 COPY crewborg /app/crewrift/crewborg

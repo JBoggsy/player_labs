@@ -57,6 +57,16 @@ Hunt is gated on a visible kill opportunity whose isolation bar relaxes with
 urgency, not merely on the cooldown ending. The action layer covers `kill` (edge-A
 in KillRange) and `vent` (level-B in VentRange).
 
+Opt-in **Crewrift Honor Society membership** (`CREWBORG_HONOR_SOCIETY=1`, plus
+`CREWBORG_HONOR_SEED` = base64 Ed25519 seed — never committed): when crew, announce a
+signed crew claim in chat at the first meeting; listen for other members' claims and
+treat signature-verified claimants as trusted crew (spared from posterior-driven votes
+and accusations — witnessed evidence still overrides); answer identity challenges;
+ledger provable liars (`domain.honor_liar`). As imposter it stays entirely silent
+(the rules permit silence, never a false crew claim). Gated off by default —
+byte-identical behaviour when unset. Design + wire format:
+[`docs/designs/honor-society.md`](docs/designs/honor-society.md).
+
 A separate, opt-in **LLM gameplay commander** (`CREWBORG_LLM_COMMANDER=1`) can steer the
 Playing phase by writing *priorities* into belief that the modes read to bias which room to
 task/hunt in, which player to chase, and how hard (a soft/hard strength dial), plus an
