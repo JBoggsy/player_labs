@@ -195,3 +195,27 @@ gate's work is done by the early-submit HOLD + corroboration check, not by live 
 Evidence: v87 probe arm: 62/200 calls + 44/140 chats fired from dead seats (sim discards dead
 inputs; 0 post-death vote_cast). v88 mute: 0 dead calls/chats, live chats rose 96→117 in the
 matched probe.
+
+### v88 league (35 eps): the probe's "fallback votes become good" did NOT replicate — LLM-named ≠ corroboration
+Evidence (cycle-3, /tmp/v88_league_wh 35 eps vs /tmp/v87_league_wh 40 eps, 100% telemetry both):
+`meeting_vote_gated` fired 0/35 league eps (as in the probe). Landed crew player votes by source —
+v88: LLM-submitted 15/18 (83%), early-submit-of-LLM-named-tentative 3/13 (23%), auto-submit 0/1;
+v87: LLM 13/19 (68%), early-submit 4/24 (17%). Pooled: LLM 28/37 (76%) vs fallback-resolved 7/34
+(21%), Fisher p=4e-6 — stable across arms; the probe's 8/12 fallback read was small-n optimism.
+All 4 source-attributable v88 crew mis-ejections we voted for came from the early-submit+llm-named
+path (imposter ejections we fed: 8/9 LLM-sourced). The gate's corroboration clause "LLM named this
+color at ANY point in the meeting" (`_llm_vote_targets`) is one clause too permissive: an early
+tentative named before discussion ≠ the LLM's final judgment. Candidate v89 lever (needs matched
+A/B; pre-register that it may be win-neutral like emr-raise): early-submit/auto-submit requires
+witnessed OR 0.9-posterior — LLM-named only counts from the LLM's own submit_vote.
+
+### v88 dead-mute holds in league, with one belief-lag leak
+Evidence: dead-seat meeting-LLM calls 4/260 (1.5%, all ep 422637ce — killed t=1070, meeting t=1142;
+belief.self_alive lagged its own death across the kill→meeting transition) vs v87 111/482 (23%).
+Total call volume 260 vs 482 (−46%) at similar per-call failure (25% vs 23% llm_call_failed —
+shared quota window). meeting_dead_mute fired in 17 meetings.
+
+### League/tournament episode.json carries coworld_id under tags, not top-level
+Evidence: survey --mint-replays silently minted 0 links on BOTH the v87 and v88 league surveys
+(mint requires coworld_id; league eps have it only in tags.coworld_id; XP eps have it top-level).
+Fixed in survey.py (fallback to tags) — v88 survey now 31/31 minted.

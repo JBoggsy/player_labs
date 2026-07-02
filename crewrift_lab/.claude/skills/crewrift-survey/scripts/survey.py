@@ -198,7 +198,9 @@ def flag_episode(name: str, episode: dict, r: dict, smap: dict[int, str], n: int
         if r["vote_timeout"][slot]:
             flags.append(f"no_vote_penalty ({pol})")
     return {"episode_dir": name, "id": episode.get("id"),
-            "coworld_id": episode.get("coworld_id"),  # top-level field, NOT under tags
+            # XP-request episodes carry coworld_id top-level; league/tournament
+            # episodes carry it under tags.coworld_id — accept both.
+            "coworld_id": episode.get("coworld_id") or (episode.get("tags") or {}).get("coworld_id"),
             "replay_uri": episode.get("replay_url"), "flags": flags}
 
 

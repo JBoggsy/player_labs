@@ -109,6 +109,25 @@ flat (both arms shared the same quota window). NOT submitted; branch `worktree-v
 ⚠️ analysis gotcha recorded in TENTATIVE_LESSONS: warehouse `died` events are INCOMPLETE — derive
 deaths from `player_state.alive=false` (the `died` key missed kill victims and skewed dead-seat stats).
 
+## 🔬 CYCLE-3 FINDINGS (2026-07-02): v88 league read — gate inert-but-fine; the leak is the LLM-named clause
+
+v88 league tournament batch: 35 eps (`/tmp/v88_league_eps`, tournament subset symlinked at
+`/tmp/v88_league_wh_input`), warehouse `/tmp/v88_league_wh` (35/35 ok, 0 trace_warning,
+expand_replay-8710aa6), survey `/tmp/survey_v88_league.html` (31/31 replay links minted — survey.py
+fixed: league eps carry coworld_id under `tags`). Crewborg v88: 18/35 (crew 10/23, imp 8/12, 0 ops,
+0 vote timeouts, tasks 6.13/cg, kills 1.92/ig). **Q1 (gate):** `meeting_vote_gated` 0/35 (as probe);
+dead-mute holds (dead LLM calls 4/260=1.5% vs v87 111/482=23%; one belief-lag leak ep 422637ce); crew
+vote precision 18/32 (56%) vs v87 16/42 (38%); imp ejected 0.96/crew-ep (v87 0.86), crew mis-ejected
+0.61 (v87 0.75) — BUT the probe's "fallback votes become good" did NOT replicate: LLM-submitted 15/18
+(83%) vs early-submit-of-LLM-named-tentative 3/13 (23%); pooled LLM 28/37 vs fallback 7/34, p=4e-6.
+All 4 attributable v88 crew mis-ejections we fed were that clause. **Candidate v89 lever (not built):**
+drop `_llm_vote_targets` corroboration for early/auto-submit (witnessed OR 0.9 only; LLM counts only
+via its own submit_vote). **Q2 (RelhAlpha):** its cumulative lead is the window, not a better crew
+game — this batch relh 50% (crew 8/21) vs our 51% (crew 10/23); tasks 3.86/cg vs our 6.13; vote
+precision 50% vs our 56%. Real structural edges: first kill ~2× faster (median ~1290 vs ~2350 ticks)
+and it wins imposter games on ejections (7/9 with 1.44 k/g, incl. a 0-kill imp win 8a1630fb); heavy
+button caller as crew (~1.0/game vs our 0.43) at similar precision — volume, not accuracy.
+
 ## ✅ INCIDENT CLOSED (2026-07-02): v87 (async meeting-LLM) is CHAMPION and RANK 1
 
 v87 = v84 code + async LLM worker + cadence cap/budget + chat-implied fallback vote + early submit,
