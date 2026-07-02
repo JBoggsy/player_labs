@@ -31,3 +31,13 @@ in present tense.
 The Sprite-v1 **wire protocol** and the game's label vocabulary live in the player-directory
 top-level `AGENTS.md` (the consolidated game/SDK reference), not here — these docs describe how
 crewborg *uses* the protocol, not its byte layout.
+
+## Reports
+
+[`reports/`](./reports/) holds dated, self-contained findings write-ups from investigations —
+empirical results, not descriptions of how the agent works (that's the subsystem docs above) or
+proposed changes (that's [`designs/`](./designs/)). Each is a standalone HTML file.
+
+| Report | What it found |
+|---|---|
+| [2026-07-02-chat-accuracy-effectiveness.html](./reports/2026-07-02-chat-accuracy-effectiveness.html) | Field-wide (not crewborg-only): how accurate crew chat accusations are vs. ground-truth imposter identity, and how effective accusations are at moving votes/ejections and correlating with win rate. crewborg's crew accusation accuracy sits mid-pack (48%, consistent with a historical 43% in an independent June corpus) while several smaller bots hit 85%+; accusations get voted on 76-88% of the time but only convert to an ejection 18-22%, well below the field's 53-65%. Study code: `crewrift_lab/chat_effectiveness/`. |
