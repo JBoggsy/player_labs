@@ -80,6 +80,18 @@ NEXT: tune — (1) imposter A/B (commander LLM on vs off) for kill efficiency, i
 useful `hunt_room`/`target_player`/`strength`; (2) Phase 4 EscortMode for crew. Both roles wired + strength dial. Branch `worktree-labs-work`
 (merged to origin/main @ `2ec14f9`); uploaded v55–v64, **none submitted**.
 
+## 📊 CYCLE-4 (2026-07-02): v89 KEPT — 'regression' was field-par shift; gate inversion queued
+
+v89 league (36 eps): win 31%, crew 24% — looked bad vs v88's 43% BUT the field's crew-team win fell
+37%→25% in the same window (imposter-draw rotation: softmaxwell 13 imp seats vs 1; notsus v159; field
+first-kills ~900t faster). v89's crew = field par exactly, and = its own A/B level (p=0.78); v88's 43%
+was an above-par-window outlier. LLM healthiest on record in league (9% fallback, 0 quota-429s — the
+A/B arms ran quota-drained and UNDERSTATED LLM behavior). Gate cost bounded ≤1-2 wins/29 eps; sharp
+inversion found: gated deadline tentatives 50% would-be precision vs early-submit passes 22% (LLM
+submit_vote 86%). **QUEUED (next cycle, clean-quota A/B): allow LLM-set tentative at deadline
+auto-submit; tighten early-submit corroboration.** attend_meeting.py ~L504/L630. All ops/timeout/
+dead-mute checks clean; tasks 7.17/cg all-time best. Survey /tmp/survey_v89_league.html.
+
 ## 🔬 CYCLE-2 FINDINGS (2026-07-02): protect the LLM vote path; v88 in flight
 
 Lead drivers (40-ep warehouse `/tmp/v87_league_wh`, survey `/tmp/survey_v87_league.html`): crew 46% is
