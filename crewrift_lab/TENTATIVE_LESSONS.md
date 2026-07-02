@@ -271,3 +271,13 @@ Evidence: `rule_based.py:154` (any crew EVER seen ⇒ recon whenever ready+blind
 
 ### Imposter handoff/positioning is NOT the problem — stop optimizing it
 Evidence: median nearest-crew at the ready moment: crewborg ≈18px, 84% of windows start <60px (best-in-field cooldown same-room 85-95%). The losses are (a) point-blank windows convert 70-77% vs field-best 88-92%, (b) >150px windows take median 519t vs field 91-218t. Also blind-search COVERAGE overlaps crew density MORE than anyone (Bhattacharyya 0.48 vs notsus 0.26) — where it goes is fine; what it does when passing (no room-check, no persistence) is not.
+
+## 2026-07-02 — urgency-ramp A/B verdict
+- **URGENCY 240→80 NEGATIVE — third refutation of the witness-gate-relaxation family** (after
+  witness-drop and deadline-tentative). The textbook "mechanism moved, outcome didn't": wait_witness
+  ticks/ep fell 2.3× (5.57 vs 12.59), strike urgency median 41.5 vs 68 — and kills/g went 1.25 vs
+  1.36 (wrong direction), ≥2-kill 34% vs 38%, subject-ejected +7pp. H1 is real but NOT BINDING;
+  contact starvation (96% victimless ready ticks) dominates. Stop tuning the witness gate; the
+  ready-search build is the lever. Env knob CREWBORG_URGENCY_FULL_TICKS kept on main (inert at 240).
+- hunt_block `strike` events re-fire until the server registers the kill — never count strikes as
+  kills (452 strikes vs 125 kills in one arm).

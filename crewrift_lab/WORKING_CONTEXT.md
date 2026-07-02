@@ -100,6 +100,13 @@ staleness bound + fallback to Search/occupancy), room-entry checks when passing 
 strike latency. Tools + full findings: **`tools/imposter_movement/`** (README) — MERGED to main; renders in the session scratchpad `mov/`.
 
 
+**READY-SEARCH BUILD IN FLIGHT (James-approved directions 1+4+density, 2026-07-02):** worktree agent
+building Recon staleness bound (`CREWBORG_RECON_STALENESS_TICKS`) + arrival fall-through to Search +
+parked guard (zero-length-route escape) + **empirical density-weighted search** — new pipeline
+`tools/imposter_movement/room_density.py` → vendored `data/room_density.json` (247 eps: per-room
+live-crew share over 600-tick bands; Bridge 45%→23%, task rooms 7-17%). Pre-registered imposter-pinned
+100v100 A/B vs main base; primary kills/g UP + first-kill Playing ticks DOWN; mechanism parked→~0.
+
 ## ▶ OPEN LEVERS (evidence on file, none in flight)
 
 1. **Evidence warming for the fitted suspicion posterior** — the remaining crew lever
