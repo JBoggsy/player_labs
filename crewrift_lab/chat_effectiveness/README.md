@@ -20,7 +20,16 @@ Observational, not causal — no randomized intervention on who accuses whom.
 `data/` is gitignored (rebuildable from a fresh pull + the historical
 suspicion_lab corpus); the report and any durable findings get written up
 in `crewrift_lab/TENTATIVE_LESSONS.md` per this lab's living-docs
-discipline.
+discipline. The persisted, human-readable write-up lives at
+[`../crewrift/crewborg/docs/reports/2026-07-02-chat-accuracy-effectiveness.html`](../crewrift/crewborg/docs/reports/2026-07-02-chat-accuracy-effectiveness.html).
+
+**Pulling the data itself** (resolving a pinned roster, splitting a big ask
+across the 100-episode/request cap, expanding replays, building a bounded
+historical subset) is the repeatable part of this study, not just its
+one-off analysis code — that process is packaged as the
+[`crewrift-field-study`](../.claude/skills/crewrift-field-study/SKILL.md)
+skill, with `tools/resolve_champion_roster.py`, `tools/expand_episodes.py`,
+and `tools/build_historical_subset.py` (below) as its durable scripts.
 
 ## 2026-07-02 run
 
@@ -42,6 +51,13 @@ discipline.
   ("Blue dead... Pink sus: no alibi") where the regex's
   first-color-mentioned heuristic picked the wrong target — a known,
   now-quantified limitation, not a new bug.
+- **Bugs found and fixed along the way:** the event-warehouse's `chat_suss`
+  keys episodes by `episode.json`'s internal `id`, not this pipeline's
+  directory-stem convention (would have silently zeroed the detector
+  validation); and `replay_parse.py`'s per-meeting `Meeting.ejected_slot`
+  is never actually set (a same-tick event-ordering bug — caught via a
+  suspicious flat 0.0% ejection rate across every row). Both are recorded
+  in `crewrift_lab/TENTATIVE_LESSONS.md`.
 
 ## Files
 
@@ -59,3 +75,12 @@ discipline.
   the stem — see `build_episode_id_map`).
 - `tools/build_report.py` — static HTML report (plain f-strings, matching
   `crewrift-survey`'s pattern).
+- `tools/resolve_champion_roster.py` — resolves the current top-N champions'
+  exact `policy_ref` labels and writes a pinned-roster experience-request
+  body, sidestepping the `top_n`/`random` selectors' server-side 500.
+- `tools/expand_episodes.py` — expands a whole downloaded episode batch
+  with a version-matched `expand_replay` binary, reporting a per-episode
+  failure count (version/button skew tell).
+- `tools/build_historical_subset.py` — symlinks a bounded, verified
+  (results.json + matching expanded replay present) subset out of an
+  existing scraped corpus, for a historical cross-check.
