@@ -128,6 +128,19 @@ by elimination — weights/LLM/composition/code all refuted; confirm with v82's 
 never parses there); bounded fallback-to-crew after N ticks in `types.py`; (3) **`VOTE_TIMER_TICKS=240`
 stale vs live `voteTimerTicks=1200`** (`strategy/meeting/context.py:18`) — we submit ~16% into the meeting
 and stop listening; align before any meeting-coordination work.
+
+**▶ EXPERIMENT FAN-OUT COMPLETE (2026-07-01 eve) — all 4 hypotheses REFUTED AS POSED, 3 real fixes surfaced:**
+H1→ the real imposter blocker is a KILL-PRESS DEADLOCK (belief in-range 15.8px vs sim 22.1px>20 KillRange, ~4-6px perception offset; ep d1126954 pressed kill 4,622x for 9,117 ticks = 50% of ALL our ready ticks; fix specced: press-count escape in action.py:_resolve_kill + press-range margin — NOT YET BUILT). H2→ corpse-avoidance is a NON-problem (linger doesn't predict reports/ejections; don't build). H3→ self-called button meetings are our WORST evidence context (40% imposter piles, 19 crew vs 11 imp ejections) — conditional gate would HARM; vote thresholds now refuted 3 ways; MERGE worktree-direction3-emergency-meetings (call bar=conviction bar, its own A/B/C safe-neutral); direction-2 witnessed-only A/B at full n: +2.0pp p=0.64 neutral. H4→ posed mechanism wrong (0/145 penalties post-tasks) but found TWO mid-task freezes (ARRIVE_RADIUS=4 deadband wedge outside task rect, action.py; unowned no-route hold, action.py:179) — FIX BUILT on worktree-h4-posttask-posture + A/B CONFIRMED (ss-penalties 0.454→0.010 p=7e-13, voted-out-as-crew 11.3%→2.0% p=.0094, tasks/win flat; crewborg-h4:v1, xreqs 78d75331/038f4eef; frozen games had crew win 8.3% vs 29.8%). Report: crewrift_lab/docs/h4_experiment.html (worktree).
+
+(superseded running-note:)  4 agents testing the v82 diagnosis hypotheses
+(report `/tmp/v82_diagnosis.html`, warehouse `/tmp/v82_league_wh`): H1 imposter strike-gate starvation
+in crowds (priority), H2 post-kill corpse-avoidance, H3 conditional vote gate for SELF-CALLED meetings,
+H4 post-task crew posture. Unique tags/policy names crewborg-h{1..4}; no submissions. PRIOR WORK
+REDISCOVERED: unmerged branches worktree-direction2-voting (witnessed-only lever + completed-but-underread
+300/arm A/B — being re-pulled at full n by H3) and worktree-direction3-emergency-meetings (call/vote-bar
+A/B/C: global vote-bar lowering REJECTED-dangerous; convictability guard) — merge decisions owed.
+Also: v83 (= v82 + meeting LLM) uploaded + VERIFIED firing in xreq (102 decisions, only benign
+cooldown fallbacks); NOT submitted — league sidecar presence unknown.
 Also: v80 is the only policy with ops crashes in the league set (6 disconnects) — separate issue.
 League form context: lineage rank 9 is historical; v80's first champion round (276) scored 16 (rank 2).
 Top of field = RelhAlpha ~15.8/round; league imposter gap vs top: win 73% vs 87-89%, K/g 1.55 vs 1.8+.

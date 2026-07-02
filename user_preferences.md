@@ -17,6 +17,21 @@ sessions. Keep it tidy: one bullet per preference, drop ones that are superseded
   message that reports the request was created. Reuse a running dashboard's port only by
   restarting it with the new xreq id(s); don't leave it pointed at a stale request.
 
+- **NEVER submit a policy without LLM chatting to the actual tournament** (James, 2026-07-01).
+  League submissions ALWAYS carry the meeting LLM (the recipe below). Deterministic (LLM-off)
+  uploads exist ONLY as A/B test arms — both arms deterministic to isolate the mechanism under
+  test. The flow: A/B the change deterministically → if positive, re-upload the same image with
+  the LLM recipe → verify `meeting_llm_decision` fires → submit THAT.
+
+- **ALL uploads: meeting LLM ON, commander OFF, unless told otherwise** (James, 2026-07-01).
+  Every `coworld upload-policy` gets `--use-bedrock --bedrock-model
+  us.anthropic.claude-haiku-4-5-20251001-v1:0 --secret-env CREWBORG_LLM_MEETINGS=1`
+  (the proven v70 recipe: NO manual USE_BEDROCK — the SDK gates on the sidecar endpoint)
+  and does NOT set `CREWBORG_LLM_COMMANDER` (stays off). After upload, verify
+  `domain.meeting_llm_decision` fires in an xreq probe; note league/dispatch pods
+  historically lack the Bedrock sidecar (LLM falls back deterministic there) — check the
+  league telemetry after any submission.
+
 - **Always upload policies with ALL telemetry enabled unless told otherwise** (James, 2026-07-01).
   Every `coworld upload-policy` gets `--secret-env CREWBORG_METRICS=1 --secret-env
   CREWBORG_TRACE_GROUPS=all` (the `all` trace group exists in `trace.py`). Rationale:
