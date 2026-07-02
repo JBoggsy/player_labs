@@ -135,6 +135,56 @@ def test_hunt_commander_allows_witnessed_kill_with_danger_reason() -> None:
     assert event.data["target_color"] == "green"
 
 
+def test_hunt_block_event_classifies_witness_wait() -> None:
+    # Kill-ready, committed victim in range, witness beside it ⇒ one hunt_block
+    # record with outcome=wait_witness carrying the gate context (H1 signature).
+    belief = Belief(self_world_x=100, self_world_y=100, last_tick=5, self_kill_ready=True, kill_ready_since_tick=5)
+    _visible(belief, 1004, (108, 100), color="green")
+    _visible(belief, 1005, (110, 100), color="blue")  # witness next to the victim
+    mode = HuntMode()
+    trace = ListTraceSink()
+    mode.emit = EventEmitter(trace, tick=belief.last_tick)
+    intent = mode.decide(belief, ActionState())
+    assert intent.kind == "navigate_to"
+    [event] = [event for event in trace.events if event.name == "domain.hunt_block"]
+    assert event.data["outcome"] == "wait_witness"
+    assert event.data["victim_color"] == "green"
+    assert event.data["in_range"] is True
+    assert event.data["unwitnessed"] is False
+    assert event.data["witnesses"] == [{"color": "blue", "dist_to_victim": 2.0}]
+    assert event.data["nearest_other"]["color"] == "blue"
+    assert event.data["nearest_other"]["in_kill_range"] is True
+
+
+def test_hunt_block_event_flags_other_crew_in_range_while_approaching() -> None:
+    # Kill-ready, committed victim OUT of range while a different visible crewmate
+    # IS in range ⇒ outcome=approach with nearest_other.in_kill_range (H3 signature).
+    belief = Belief(self_world_x=100, self_world_y=100, last_tick=5, self_kill_ready=True, kill_ready_since_tick=5)
+    _visible(belief, 1004, (300, 100), color="green")  # isolated straggler — Hunt commits here
+    _visible(belief, 1005, (110, 100), color="blue")  # 10px away, but not the committed victim
+    _visible(belief, 1006, (118, 100), color="cyan")  # blue's pair partner
+    mode = HuntMode()
+    trace = ListTraceSink()
+    mode.emit = EventEmitter(trace, tick=belief.last_tick)
+    intent = mode.decide(belief, ActionState())
+    assert intent.kind == "navigate_to"
+    [event] = [event for event in trace.events if event.name == "domain.hunt_block"]
+    assert event.data["outcome"] == "approach"
+    assert event.data["victim_color"] == "green"
+    assert event.data["in_range"] is False
+    assert event.data["nearest_other"] == {"color": "blue", "dist": 10.0, "in_kill_range": True}
+
+
+def test_hunt_block_event_silent_when_not_kill_ready() -> None:
+    belief = Belief(self_world_x=100, self_world_y=100, last_tick=5, self_kill_ready=False)
+    _visible(belief, 1004, (108, 100), color="green")
+    mode = HuntMode()
+    trace = ListTraceSink()
+    mode.emit = EventEmitter(trace, tick=belief.last_tick)
+    mode.decide(belief, ActionState())
+    assert not [event for event in trace.events if event.name == "domain.hunt_block"]
+
+
 def test_hunt_stale_commander_does_not_allow_witnessed_kill() -> None:
     belief = Belief(self_world_x=100, self_world_y=100, last_tick=500, self_kill_ready=True)
     belief.commander = CommanderPriorities(

@@ -215,7 +215,12 @@ The `action_intent` / `act_command` payloads are `repr()` strings — use
 
 `domain.decision_snapshot` (above), `domain.suspicion_tick` (the entire live
 P(imposter) vector every tick), `domain.kill_state` (imposter per-tick kill
-context), `domain.occupancy_snapshot`, and the browser-viewer bootstraps
+context), `domain.hunt_block` (Hunt's per-tick strike-gate readout while
+kill-ready, emitted by `modes/hunt.py`: `outcome` `strike`/`wait_witness`/
+`approach`, committed `victim_color` + `victim_dist`, `in_range`, `unwitnessed`,
+`already_killed`, `urgency_ticks`/`urgency_frac`, `witnesses[]` near the victim,
+and `nearest_other` — the closest visible non-victim crew with
+`in_kill_range`; in the `kill` trace group), `domain.occupancy_snapshot`, and the browser-viewer bootstraps
 `domain.viewer_map` / `domain.viewer_occupancy_grid` / per-tick
 `domain.viewer_frame`. Commander telemetry (`domain.commander_*`,
 `domain.commander_applied`, `domain.commander_danger`) is also gated here; see

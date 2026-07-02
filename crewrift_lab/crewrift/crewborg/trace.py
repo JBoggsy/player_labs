@@ -40,6 +40,7 @@ NOISY_DOMAIN_EVENTS = frozenset(
         "domain.viewer_occupancy_grid",
         "domain.suspicion_tick",
         "domain.kill_state",
+        "domain.hunt_block",
         "domain.occupancy_snapshot",
         "domain.commander_started",
         "domain.commander_call_start",
@@ -95,7 +96,7 @@ TRACE_GROUP_PATTERNS: dict[str, tuple[str, ...]] = {
         "fallback_activated",
         "mode_*",
     ),
-    "kill": ("domain.kill_*",),
+    "kill": ("domain.kill_*", "domain.hunt_block"),
     "knowledge": (
         "domain.player_event",
         "domain.player_died",

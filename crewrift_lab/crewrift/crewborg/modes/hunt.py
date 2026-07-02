@@ -25,11 +25,21 @@ exists.
 
 from __future__ import annotations
 
+import math
+
 from crewrift.crewborg.action import KILL_RANGE_SQ
 from crewrift.crewborg.modes import imposter_common as ic
 from crewrift.crewborg.nav import plan_route
 from crewrift.crewborg.strategy.commander.bias import commander_of
-from crewrift.crewborg.strategy.opportunity import select_victim, unwitnessed, visible_victims
+from crewrift.crewborg.strategy.opportunity import (
+    BASE_ISOLATION_RADIUS,
+    URGENCY_FULL_TICKS,
+    WITNESS_WINDOW_TICKS,
+    kill_urgency_ticks,
+    select_victim,
+    unwitnessed,
+    visible_victims,
+)
 from crewrift.crewborg.strategy.trajectory import lead_ticks, predict
 from crewrift.crewborg.types import ActionState, Belief, Intent, PlayerRecord
 from players.player_sdk import EmptyModeParams, Mode, ModeParams
@@ -66,7 +76,14 @@ class HuntMode(Mode[Belief, ActionState, Intent]):
         already_killed = belief.last_kill_tick is not None
         kill_is_unwitnessed = unwitnessed(belief, victim)
         danger_witness_allowed = cmd is not None and cmd.allow_witnessed_kill
-        if in_range and belief.self_kill_ready and (kill_is_unwitnessed or already_killed or danger_witness_allowed):
+        strikes = in_range and belief.self_kill_ready and (kill_is_unwitnessed or already_killed or danger_witness_allowed)
+        if belief.self_kill_ready:
+            outcome = "strike" if strikes else ("wait_witness" if in_range else "approach")
+            self.emit.event(
+                "hunt_block",
+                _hunt_block_payload(belief, victim, self_xy, in_range, outcome, kill_is_unwitnessed, already_killed),
+            )
+        if strikes:
             if not kill_is_unwitnessed and danger_witness_allowed:
                 self.emit.event(
                     "commander_danger",
@@ -119,3 +136,57 @@ class HuntMode(Mode[Belief, ActionState, Intent]):
         if self_xy is None or not plan_route(belief.nav, self_xy, (victim.world_x, victim.world_y)):
             return None
         return victim
+
+
+def _hunt_block_payload(
+    belief: Belief,
+    victim: PlayerRecord,
+    self_xy: tuple[int, int],
+    in_range: bool,
+    outcome: str,
+    kill_is_unwitnessed: bool,
+    already_killed: bool,
+) -> dict[str, object]:
+    """Per-tick (kill-ready only) strike-gate telemetry: who Hunt is committed to,
+    whether the committed victim vs. some OTHER visible crew is in kill range, and
+    which gate term blocked the strike — the record that separates witness-veto
+    starvation from committed-victim mismatch when reading a game.
+    """
+
+    urgency = kill_urgency_ticks(belief)
+    victim_xy = (victim.world_x, victim.world_y)
+    witnesses = [
+        {"color": other.color, "dist_to_victim": round(math.dist(victim_xy, (other.world_x, other.world_y)), 1)}
+        for other in belief.roster.values()
+        if other.color != victim.color
+        and other.color not in belief.teammate_colors
+        and other.life_status != "dead"
+        and belief.last_tick - other.last_seen_tick <= WITNESS_WINDOW_TICKS
+        and ic.dist2(victim_xy, (other.world_x, other.world_y)) <= BASE_ISOLATION_RADIUS**2
+    ]
+    others = [
+        (candidate, math.dist(self_xy, (candidate.world_x, candidate.world_y)))
+        for candidate in visible_victims(belief)
+        if candidate.color != victim.color
+    ]
+    nearest_other = min(others, key=lambda pair: pair[1]) if others else None
+    return {
+        "outcome": outcome,
+        "victim_color": victim.color,
+        "victim_dist": round(math.dist(self_xy, victim_xy), 1),
+        "in_range": in_range,
+        "unwitnessed": kill_is_unwitnessed,
+        "already_killed": already_killed,
+        "urgency_ticks": urgency,
+        "urgency_frac": round(min(1.0, urgency / URGENCY_FULL_TICKS), 3),
+        "witnesses": witnesses,
+        "nearest_other": (
+            {
+                "color": nearest_other[0].color,
+                "dist": round(nearest_other[1], 1),
+                "in_kill_range": nearest_other[1] ** 2 <= KILL_RANGE_SQ,
+            }
+            if nearest_other is not None
+            else None
+        ),
+    }
