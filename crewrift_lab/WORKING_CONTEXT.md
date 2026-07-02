@@ -99,6 +99,24 @@ median **519 ticks vs field 91-218**. Fix directions (ranked, not built): ready-
 staleness bound + fallback to Search/occupancy), room-entry checks when passing task rooms, point-blank
 strike latency. Tools + full findings: **`tools/imposter_movement/`** (README) — MERGED to main; renders in the session scratchpad `mov/`.
 
+**▶ READY-STATE RE-SEARCH BUILT + A/B IN FLIGHT (2026-07-02, branch worktree-agent-acbf700f2aba97ef5
+@5a7243f).** RECONCILIATION: the diagnosis was measured on pre-FSM code (killtrace branch based at
+b359e28); main had ALREADY merged 2c9f305 (v77-v80: Recon strictly pre-ready, ready-blind → Search FSM),
+so the literal "Recon while ready" path is gone on main — the candidate's delta vs main is: (1) recon
+staleness bound (`CREWBORG_RECON_STALENESS_TICKS`=360 = 3× the 120t track/follow windows); (2) SPENT
+sightings — reaching a target's last-known point victimless marks (color,last_seen_tick) spent in the
+selector, re-armed only by a fresh sighting (kills Search→Recon ping-pong); (3) `ParkedGuard`
+(imposter_common; 12 ready ticks on a zero-length route/idle force a state change + `domain.parked_guard`)
+wired into Search+Recon; (4) PICK_ROOM blends the empirical density prior (`strategy/room_prior.py` +
+data/room_density.json, W_PRIOR=1.5 = half live occupancy; band = tick//600 clamped). 559 tests green;
+crewmate path untouched. A/B arms `crewborg-research:v1` (45bb1a90…) vs `crewborg-research-base:v1`
+(4995e70f…, = main 9fc477d), deterministic + all telemetry, Gate-1 PASS both. xreqs (100 eps each,
+imposter-pinned slot0 + rotating partner-imposter, pinned top-7): cand
+`xreq_cdf1dd4c-b8eb-41d1-8b83-1757496b3fe9`, base `xreq_d2ee49cc-f266-4fb1-ae8b-848bbf291581`; warehouses
+streaming to /tmp/rsab_{cand,base}_wh. Pre-registered: PRIMARY kills/g UP + first-kill Playing ticks DOWN;
+MECHANISM parked share of blind ready ticks ~0, >150px window median →~150 (note: "Search ticks while
+ready >0" holds in BOTH arms — base has the FSM); GUARDS imp win/ejections not worse (>3pp), ops ~0.
+
 
 ## ▶ OPEN LEVERS (evidence on file, none in flight)
 
