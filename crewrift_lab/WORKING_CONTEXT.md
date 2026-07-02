@@ -114,9 +114,16 @@ crewmate path untouched. A/B arms `crewborg-research:v1` (45bb1a90…) vs `crewb
 (4995e70f…, = main 9fc477d), deterministic + all telemetry, Gate-1 PASS both. xreqs (100 eps each,
 imposter-pinned slot0 + rotating partner-imposter, pinned top-7): cand
 `xreq_cdf1dd4c-b8eb-41d1-8b83-1757496b3fe9`, base `xreq_d2ee49cc-f266-4fb1-ae8b-848bbf291581`; warehouses
-streaming to /tmp/rsab_{cand,base}_wh. Pre-registered: PRIMARY kills/g UP + first-kill Playing ticks DOWN;
-MECHANISM parked share of blind ready ticks ~0, >150px window median →~150 (note: "Search ticks while
-ready >0" holds in BOTH arms — base has the FSM); GUARDS imp win/ejections not worse (>3pp), ops ~0.
+/tmp/rsab_{cand,base}_wh. **A/B RESULT (100v100 clean, 0 ops, 0 trace warnings): NEUTRAL — efficacy not
+shown, ALL SAFETY GUARDS PASS.** PRIMARY not met (kills/g 1.67 v 1.60 p=0.56; first-kill Playing ticks
+603 v 605 p=0.56). KEY MECHANISM FINDING: the diagnosed pathology is ABSENT IN BOTH ARMS — parked share
+med 0.028 v 0.000, >150px windows 7 v 11 per 100 eps, parked_guard fired 0×; the killtrace "87% parked"
+was PRE-FSM code, main's v77-v80 already removed the park. Directional positives (all NS): shorter games
+(2083 v 2519 playing ticks p=0.09), kills/1000 playing ticks 1.22 v 1.07 (p=0.08), >150px conversion 86%
+v 64%, ejections 18% v 24%. Guards: imp win 84% both; opp crew tasks 5.10 v 5.53 (p=3e-4) = shorter
+games, not a crew regression (crewmate code untouched, diff-verified). James authorized shipping the
+package pre-verdict (2026-07-02) — it ships as safe-neutral hardening (staleness/spent/guard/prior).
+Handed off to main @8bbde65 (branch tip; = uploaded 5a7243f + insurance-only sticky-escape fix).
 
 
 **READY-SEARCH BUILD IN FLIGHT (James-approved directions 1+4+density, 2026-07-02):** worktree agent
