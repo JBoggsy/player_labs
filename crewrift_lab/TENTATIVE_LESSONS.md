@@ -178,3 +178,54 @@ its meeting's `[call_tick, next_call_tick)` window) rather than touching the sha
 `Meeting.ejected_slot` (suspicion_lab's own `features.py` doesn't use it, only votes/reports/button-calls,
 so it's silently escaped notice so far) will get the same silent zero.** Worth fixing at the source
 if anything else ever wants per-meeting ejection outcomes.
+
+## Chat TACTICS deep-dive: silence + one rigid "sus + vote" template beats crewborg's rich, hedged, directive-less analysis (2026-07-02)
+
+Follow-up to the chat-effectiveness study: read/quantified the actual chat text (not just the
+regex-classified accusation rows) for the top-3 (jordan-crewborg-aaln, crewborg-mv,
+crewrift-prime-crewborg-aaln-hunter-relhalpha) and bottom-3 (crewborg, rowdaboat-notsus,
+softmaxwell-crewborg) by same-meeting ejection conversion, across all 481 fresh-pull meetings where
+one of them spoke (`/tmp/chat_eff_expanded` + `outcomes.parquet` slot→policy join; ad-hoc scripts,
+not added to the durable pipeline).
+
+### THE FINDING: the top-3 are silent 82-87% of meetings, and the ENTIRE non-silent vocabulary is one template: "saw COLOR, COLOR sus, vote COLOR"
+Across 1,166 sampled messages from the 3 top performers there are exactly **2 distinct message
+shapes, period**: `"no read, skipping"` (84.1%) or the single fixed template (15.9%) — zero
+hedging, zero questions, zero defense, zero variation. All three use the byte-identical template
+string, strongly implying shared chat-gen code (an "aaln"-lineage fork) rather than 3 independent
+strategies — **n=1 unique strategy here, not n=3**, don't over-generalize the sample size.
+Compare: crewborg has 83 distinct message shapes across 244 messages (never silent, 0% skip-rate),
+rowdaboat-notsus has 340 distinct shapes across 415 (also never silent); both are far more varied
+and evidence-rich (crewborg: 90.6% cite a witnessed-behavior claim; room/spatial detail in 42%).
+
+### The explicit "vote X" directive rate is the single cleanest correlate of conversion
+Substantive-message-only rates: jordan/crewborg-mv/relhalpha-hunter close **100%** of their
+accusations with an explicit "vote COLOR" (same-meeting ejection 65/59/53%). rowdaboat-notsus
+closes 20.5% (ejection 26%). softmaxwell-crewborg closes 38.2% (ejection 24%, but n=34 substantive
+msgs, small). **crewborg closes 0.8%** — it labels suspicion ("X sus: they were tailing me" + a
+composable justification clause) but essentially never tells the room what to DO with it (checked
+for "eject/kick/remove/get out" alt-phrasing too: 0/244) — and converts only 18%. First-mover rate
+(literally message index 0 in the meeting) shows the same split: aaln-lineage 30-36% when they
+speak; crewborg and rowdaboat effectively 0% (crewborg NEVER speaks first in this sample).
+
+### Persuasion vs. correctness — the top style converts WRONG accusations almost as well as right ones
+Split same-meeting ejection by whether the accusation was actually correct: **jordan converts wrong
+accusations 63.2% of the time vs. 65.9% for correct ones — almost no discrimination.**
+crewborg-mv/relhalpha show more separation (72%/32%, 62%/39%) but still convert wrong calls at a
+rate crewborg/rowdaboat never hit even when RIGHT (crewborg: correct 28.8% vs wrong 15.3%;
+rowdaboat: correct 42.2% vs wrong 10.5% — a real accuracy-sensitive gap, but a much weaker overall
+lever). **Read this as: the top style's "effectiveness" is substantially persuasion/anchoring power
+(speak first, be terse, be unhedged, always name an action) — not superior detection.** crewborg's
+detection is comparable-to-better in places (48% accuracy vs jordan's 70%, but wrong-call
+ejection-rate discrimination is actually healthier); its bottleneck is entirely on the
+close-the-loop side.
+
+### Actionable, low-risk lever for crewborg (not yet built, not yet tested)
+Two structural gaps, independent of suspicion-model quality: (1) append an explicit `vote <color>`
+(or equivalent action verb) whenever chat already names a suspect — currently near-zero-cost
+labeling with no call to action; (2) don't always wait to hear the room first — when suspicion is
+already high pre-meeting, consider speaking early rather than only ever reacting. Both are meetings/
+chat-generation changes, not suspicion-model changes — genuinely separable from the open "evidence
+warming" suspicion lever. NOT yet designed, NOT yet A/B'd — this is read/pattern evidence, not a
+verdict; the field-eval discipline (pre-registered A/B, deterministic-for-gameplay) still applies
+before shipping anything derived from this.
