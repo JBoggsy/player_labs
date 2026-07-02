@@ -163,3 +163,18 @@ n=63); **crewborg 48.4%** (n=122) — mid-pack, not a standout either direction.
 Historical (June, n=2,976) cross-check shows the SAME qualitative pattern (crewborg/crewborg-aaln
 crew accuracy 43-46%, well below several smaller bots' 85-93%) — this is a stable trait, not a
 one-window artifact, though the historical policy versions predate the current champions.
+
+### FOUND (via this study) — `replay_parse.py`'s per-meeting `Meeting.ejected_slot` is silently NEVER set: 0/73 meetings in a live sample
+A suspiciously uniform `p_target_ejected = 0.0` across every single policy/role row was the tell
+(this lab's own "a near-perfect 0/N split is a tooling-artifact tell" lesson, confirmed again). Root
+cause: the `phase: Playing/GameOver` event that closes a meeting fires at the SAME tick as the
+`died` (ejection) event, but is processed FIRST in the stream — so by the time `died` is handled,
+`pending_meeting.end_tick` is already non-None and the `if pending_meeting.end_tick is None` guard
+(replay_parse.py, the `died` branch) silently skips setting `ejected_slot`. `game.ejections` (the
+raw list) IS reliably populated — only the per-`Meeting` convenience field is broken. Fixed
+LOCALLY in `chat_effectiveness/tools/extract_accusations.py` (bucket each `game.ejections` tick into
+its meeting's `[call_tick, next_call_tick)` window) rather than touching the shared, read-only
+`suspicion_lab/tools/replay_parse.py` — but this bug is real and upstream: **any other consumer of
+`Meeting.ejected_slot` (suspicion_lab's own `features.py` doesn't use it, only votes/reports/button-calls,
+so it's silently escaped notice so far) will get the same silent zero.** Worth fixing at the source
+if anything else ever wants per-meeting ejection outcomes.
