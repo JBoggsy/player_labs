@@ -313,23 +313,15 @@ room for their own idea. Pick **one** change and commit to it; resist bundling s
 **Make the change.** Edit the chosen policy's code — one focused change aimed at the
 hypothesis. Narrate what you're changing and why you expect it to help.
 
-**Rebuild, then smoke-test locally (Gate 1).** First rebuild the image so your change is
-actually in it — `crewrift_lab/tools/build_player.sh <policy>`. Then run the
-**`coworld-local-run`** skill on that freshly built image: it's the Gate-1 smoke test —
-confirm the policy still **connects → plays → exits cleanly** before you spend
-evaluation budget. (The skill expects an already-built local image — it smoke-tests, it
-doesn't build — and runs your image in every slot in a short local game; it's a
-correctness/liveness check, not a competitive one, so a score of 0 in that fixture is
-fine.) This is the *same* image you upload next, so you build once, here. If the smoke
-test fails, fix the change and rebuild before going further — don't upload or spend
-evaluation budget on a broken build. **First run heads-up:** the smoke test pulls the
-game's Docker image, which can take a few minutes — tell the user it's downloading the
-game and isn't stuck; it's cached after that.
-
-**Upload and re-measure.** Upload the rebuilt image as a new version
-(**`coworld-policy-lifecycle`**), then re-evaluate — ideally **head-to-head against the
-previous version with `crewrift-ab`**, so you isolate whether *this* change is what
-helped rather than roster noise.
+**Rebuild, upload, and re-measure — straight through, no local testing.** Rebuild the
+image so your change is actually in it — `crewrift_lab/tools/build_player.sh <policy>` —
+then immediately upload it as a new version (**`build-and-upload`**) and re-evaluate —
+ideally **head-to-head against the previous version with `crewrift-ab`**, so you isolate
+whether *this* change is what helped rather than roster noise. There is no smoke test
+and no pre-upload gate in this lab: uploading is inert, evaluations are free, and the
+next eval both catches breakage and measures gameplay in one step. (If an eval shows the
+artifact can't even connect or play, *then* debug it locally with `coworld-local-run` —
+a debugging tool, not a routine step.)
 
 **Back to the user — submit or iterate?** Present the result (did it help, by how much,
 split by role), then hand them the decision. Relay something like:
@@ -339,7 +331,7 @@ split by role), then hand them the decision. Relay something like:
 > iterating**: pick another direction and go again. What do you want to do?
 
 **That's the loop.** You're now self-sustaining: pick a direction → change one thing →
-rebuild → smoke-test → upload → re-measure with `crewrift-ab` → submit only when it's
-clearly better. The full operating model — the loop and its two gates — lives in
-`AGENTS.md`; from here, work from there.
+rebuild → upload → re-measure with `crewrift-ab` → submit only when it's
+clearly better. Keep it fast — iterations per day is the KPI. The full operating model —
+the loop and its submission gate — lives in `AGENTS.md`; from here, work from there.
 </content>

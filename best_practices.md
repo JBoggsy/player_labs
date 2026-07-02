@@ -6,6 +6,31 @@ campaigns. `AGENTS.md` tells you to read these. Treat them as your defaults, and
 **warn the human if a request would contravene one** before proceeding (then do
 what they decide).
 
+## Speed first — iterations per day is the KPI
+
+Everything below serves one goal: **more iterations through the loop, faster.** The
+loop's cost is dominated by the agent being careful, not by the agent being wrong —
+a broken upload costs one free eval round; a cautious afternoon costs the whole
+afternoon. Defaults:
+
+- **Write code fast; ship it now.** Make the focused change, rebuild, upload, move on.
+  No polishing, no defensive code, no restructuring "while you're in there", no test
+  scaffolding around the change.
+- **No smoke tests, no pre-upload gate.** Upload straight after the rebuild. The next
+  experience request both catches breakage and measures gameplay — one step, hosted,
+  free, parallel. Local runs (`coworld-local-run`) are a *debugging tool* for when an
+  eval shows the artifact can't even connect/play — never a routine step.
+- **Only the most critical testing survives.** Run a test only when it's the fastest
+  path to an answer you need right now — a pure function you just changed, a parser
+  against a captured fixture. Never test-first, never a suite run as ritual, never
+  "just to be safe."
+- **Careful is reserved for the irreversible.** League submission (the human's gate)
+  and destroying data. Everything else — code, uploads, versions, evals — is cheap
+  and retryable; treat hesitation there as the real cost.
+- **Rigor lives in *reading* results, not in shipping code.** The measurement and
+  diagnosis disciplines below are about not fooling yourself when you interpret an
+  eval — they gate *conclusions*, not uploads. Don't let them slow the ship step.
+
 ## Measurement — know whether a change actually helped
 
 - **Evaluate on a batch, never a single game.** Within-game variance (std can exceed
@@ -40,13 +65,13 @@ what they decide).
   and harvest async (the value is in the results, not babysitting the wait) — the
   streaming pipeline (the `coworld-experience-requests` skill, step 4) makes the
   harvest overlap the run by default, so "async" costs nothing.
-- **Local testing is smoke/correctness only — never comparative.** You generally
-  can't download and run other users' policies locally (currently broken, and strong
-  policies may be private), so local play proves only that your artifact runs, speaks
-  the protocol, and that your change took. **All competitive judgment comes from
-  experience requests.** (A local zero from a trivial fixture is still not a broken
-  player; and join scores to role/player by the authoritative per-policy field, never
-  by list position.)
+- **Local runs are a debugging tool — not a gate, never comparative.** Don't run
+  locally before uploading; upload and let the eval speak. Drop to a local run only
+  when an eval shows the artifact can't connect/play and you need to watch it fail.
+  You generally can't download and run other users' policies locally anyway, so
+  **all competitive judgment comes from experience requests.** (A local zero from a
+  trivial fixture is still not a broken player; and join scores to role/player by the
+  authoritative per-policy field, never by list position.)
 
 ## Diagnosis — from "it lost" to "it does X in situation Y because Z"
 
@@ -81,8 +106,9 @@ what they decide).
   never to assert or ship — roughly half of "obviously good" ideas regress. A
   hypothesis you can't tie to something you actually observed (a trace line, a code
   path) is a vibe, not a hypothesis.
-- **Pre-register the expected effect**, ideally as a test written *before* the run —
-  the test is the hypothesis made falsifiable.
+- **Pre-register the expected effect** — one written sentence predicting what the
+  eval will show, *before* the run. Costs nothing, keeps the readout honest. (Not a
+  test suite — a prediction.)
 - **"Capability exists" ≠ "capability is used."** A signal the policy never consults
   is a silent no-op; verify it's consumed, not just emitted.
 - **Validate from the trace, not the scoreboard.** A win can be noise; confirm the

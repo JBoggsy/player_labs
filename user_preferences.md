@@ -10,6 +10,15 @@ sessions. Keep it tidy: one bullet per preference, drop ones that are superseded
 
 ## Preferences
 
+- **Speed over caution — iterations per day is the KPI** (James, 2026-07-02).
+  Write code fast and get iterations out; don't spend time being careful/safe. No
+  smoke tests, no pre-upload gate (Gate 1 is removed from the loop), no test-first
+  discipline, no routine test-suite runs — upload straight after the rebuild and let
+  the next experience request catch breakage and measure gameplay in one step. Care
+  is reserved for the irreversible: league submission (still the human's gate) and
+  destroying data. Encoded in `AGENTS.md` ("Speed is the meta-priority") and
+  `best_practices.md` ("Speed first").
+
 - **XP requests > 16 episodes: always bring up the dashboard** (James, 2026-07-01).
   Whenever you create an experience request with more than 16 episodes, start the
   XP dashboard for it (`.claude/skills/coworld-experience-requests/scripts/xp_dashboard.py

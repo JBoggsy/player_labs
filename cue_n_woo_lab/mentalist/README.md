@@ -37,11 +37,12 @@ rejections, low clock) — the player never declines, never crashes the episode.
 ## Build / test / ship
 
 ```sh
-uv run pytest cue_n_woo_lab/mentalist/tests                  # unit tests
 cd cue_n_woo_lab/mentalist && docker build --platform linux/amd64 -t mentalist:dev .
-# Gate-1 smoke + upload: lab-wide skills (coworld-local-run, coworld-policy-lifecycle)
+# upload straight away — the next hosted eval is the test (no local smoke test)
 uv run coworld upload-policy mentalist:dev --name mentalist \
   --run python --run=-m --run mentalist --use-bedrock
+# (unit tests exist — uv run pytest cue_n_woo_lab/mentalist/tests — run only when
+#  a test is the fastest answer to a specific question, not as a routine step)
 ```
 
 **`--run` is mandatory** here (upload AND local runs): without it the cue_n_woo
@@ -55,8 +56,8 @@ platform change to re-store the secret-env** — a stale upload silently falls b
 Alternatively `--secret-env ANTHROPIC_API_KEY=...` selects the direct Anthropic
 API (infra-independent). You may pass both as belt-and-braces (Bedrock wins). With
 neither, the player runs deterministic fallbacks only — legal, never crashes, but
-weak. **Gate-1 that exercises the writer** (not just the stub-worker cert smoke):
-run a real-config local episode against the live worker —
+weak. **Debugging run that exercises the writer** (when an eval shows the LLM path
+silently falling back): run a real-config local episode against the live worker —
 ```sh
 # build an episode_request.json from the default variant's game_config with
 # require_signing=false + stub_worker=false, then:

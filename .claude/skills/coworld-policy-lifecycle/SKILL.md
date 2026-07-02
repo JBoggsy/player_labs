@@ -15,14 +15,13 @@ routine **build + upload** every iteration is the separate **`build & upload`** 
 > can become **champion** once it qualifies. Only submit a **demonstrably-better** player with
 > **explicit human go-ahead**. *Not* submitting is your rollback.
 
-**Announce at start:** "This submits `<name>:vN` to the live league (Gate 2) — confirming go-ahead
-first. Then I'll background a qualification monitor so we can keep working while it qualifies."
+**Announce at start:** "This submits `<name>:vN` to the live league (the human's gate) — confirming
+go-ahead first. Then I'll background a qualification monitor so we can keep working while it qualifies."
 
 ## Prerequisite — an uploaded, eval-proven version
 
-Before submitting you should have: a version **built + uploaded** (`build & upload` skill), passing a
-**Gate-1 smoke** (`coworld-local-run`), and shown **better than the incumbent via experience
-requests** (`coworld-experience-requests`). To pick which `vN` to submit, list uploads and consult
+Before submitting you should have: a version **built + uploaded** (`build & upload` skill) and shown
+**better than the incumbent via experience requests** (`coworld-experience-requests`). To pick which `vN` to submit, list uploads and consult
 the version log via the **`build & upload`** skill (`scripts/versions.py --name crewborg` +
 [`version_log.md`](../../../crewrift_lab/crewrift/crewborg/version_log.md)).
 
