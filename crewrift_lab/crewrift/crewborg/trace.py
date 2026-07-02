@@ -96,7 +96,7 @@ TRACE_GROUP_PATTERNS: dict[str, tuple[str, ...]] = {
         "fallback_activated",
         "mode_*",
     ),
-    "kill": ("domain.kill_*", "domain.hunt_block"),
+    "kill": ("domain.kill_*", "domain.hunt_block", "domain.parked_guard"),
     "knowledge": (
         "domain.player_event",
         "domain.player_died",

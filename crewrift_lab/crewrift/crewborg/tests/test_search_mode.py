@@ -390,3 +390,131 @@ def test_follow_hands_off_to_search_room_when_caught_in_a_room() -> None:
     intent = mode.decide(belief, ActionState())
     assert mode._state == "watch"             # SEARCH_ROOM found green -> WATCH
     assert intent.kind == "navigate_to"       # single crew -> approach, not idle
+
+
+# --------------------------------------------------------------------------- #
+# Parked guard (imposter_common.ParkedGuard) — kill-ready ticks never park     #
+# --------------------------------------------------------------------------- #
+
+import pytest
+
+from crewrift.crewborg.modes import imposter_common as ic
+from crewrift.crewborg.strategy import room_prior
+from crewrift.crewborg.types import Intent
+from players.player_sdk import EventEmitter, ListTraceSink
+
+
+def test_parked_guard_fires_after_a_streak_of_kill_ready_zero_length_ticks() -> None:
+    guard = ic.ParkedGuard()
+    ready = Belief(phase="Playing", self_kill_ready=True, last_tick=1)
+    parked = Intent(kind="navigate_to", point=(100, 100), reason="test")
+    for _ in range(ic.PARKED_GUARD_TICKS - 1):
+        assert not guard.fires(ready, (100, 100), parked)
+    assert guard.fires(ready, (100, 100), parked)      # streak reached the trigger
+    assert not guard.fires(ready, (100, 100), parked)  # streak reset after firing
+
+
+def test_parked_guard_counts_idle_as_parked() -> None:
+    guard = ic.ParkedGuard()
+    ready = Belief(phase="Playing", self_kill_ready=True, last_tick=1)
+    idle = Intent(kind="idle", reason="test")
+    for _ in range(ic.PARKED_GUARD_TICKS - 1):
+        assert not guard.fires(ready, (100, 100), idle)
+    assert guard.fires(ready, (100, 100), idle)
+
+
+def test_parked_guard_resets_on_a_real_route_and_never_fires_unready() -> None:
+    guard = ic.ParkedGuard()
+    ready = Belief(phase="Playing", self_kill_ready=True, last_tick=1)
+    parked = Intent(kind="navigate_to", point=(100, 100), reason="test")
+    moving = Intent(kind="navigate_to", point=(400, 100), reason="test")
+    for _ in range(ic.PARKED_GUARD_TICKS - 1):
+        guard.fires(ready, (100, 100), parked)
+    assert not guard.fires(ready, (100, 100), moving)  # real route ⇒ streak reset
+    assert not guard.fires(ready, (100, 100), parked)  # streak restarted from 1
+
+    unready = Belief(phase="Playing", self_kill_ready=False, last_tick=1)
+    for _ in range(ic.PARKED_GUARD_TICKS * 2):
+        assert not guard.fires(unready, (100, 100), parked)  # only guards ready ticks
+
+
+def test_parked_guard_trigger_is_env_tunable(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_PARKED_GUARD_TICKS", "3")
+    guard = ic.ParkedGuard()
+    ready = Belief(phase="Playing", self_kill_ready=True, last_tick=1)
+    parked = Intent(kind="idle", reason="test")
+    assert not guard.fires(ready, (100, 100), parked)
+    assert not guard.fires(ready, (100, 100), parked)
+    assert guard.fires(ready, (100, 100), parked)
+
+
+def test_search_parked_guard_forces_a_fresh_room_pick(monkeypatch) -> None:
+    belief = _belief()  # self at (150, 40) — inside Mid
+    belief.phase = "Playing"
+    belief.self_kill_ready = True
+    mode = SearchMode()
+    trace = ListTraceSink()
+    mode.emit = EventEmitter(trace, tick=belief.last_tick)
+    parked = Intent(kind="navigate_to", point=(150, 40), reason="test: zero-length route")
+    monkeypatch.setattr(mode, "_dispatch", lambda b, xy: parked)
+    for _ in range(ic.PARKED_GUARD_TICKS - 1):
+        assert mode.decide(belief, ActionState()).point == (150, 40)
+    intent = mode.decide(belief, ActionState())  # guard fires ⇒ real PICK_ROOM runs
+    assert intent.kind == "navigate_to"
+    assert intent.point != (150, 40)             # Mid (current room) is excluded
+    [event] = [e for e in trace.events if e.name == "domain.parked_guard"]
+    assert event.data["mode"] == "search"
+
+
+# --------------------------------------------------------------------------- #
+# Empirical density prior blended into PICK_ROOM (strategy/room_prior.py)      #
+# --------------------------------------------------------------------------- #
+
+
+def _prior(share: dict[str, list[float]]) -> dict:
+    n_bands = len(next(iter(share.values())))
+    return {
+        "schema": "crewborg-room-density/v1",
+        "bucket_ticks": 600,
+        "bucket_start_ticks": [band * 600 for band in range(n_bands)],
+        "share": share,
+    }
+
+
+@pytest.fixture
+def _restore_prior():
+    saved = room_prior._DENSITY
+    yield
+    room_prior._DENSITY = saved
+
+
+def test_pick_room_follows_the_density_prior_when_blind(_restore_prior) -> None:
+    # No live occupancy at all (no substrate): Left and Right are symmetric —
+    # same distance, both unvisited, both task rooms — so the band prior decides.
+    room_prior.set_density(_prior({"Left": [0.9, 0.1], "Right": [0.1, 0.9]}))
+
+    intent = SearchMode().decide(_belief(tick=10), ActionState())        # band 0
+    assert intent.kind == "navigate_to" and intent.point[0] < 100        # → Left
+
+    intent = SearchMode().decide(_belief(tick=700), ActionState())       # band 1
+    assert intent.point[0] > 200                                         # → Right
+
+    intent = SearchMode().decide(_belief(tick=10_000_000), ActionState())  # clamped to band 1
+    assert intent.point[0] > 200
+
+
+def test_live_occupancy_dominates_the_density_prior(_restore_prior, monkeypatch) -> None:
+    # The prior says Left (max-normalized 1.0 vs 0.11), but live occupancy says
+    # Right — live evidence carries 2× the prior's weight and must win.
+    room_prior.set_density(_prior({"Left": [0.9], "Right": [0.1]}))
+    monkeypatch.setattr(
+        "crewrift.crewborg.modes.search.room_occupancy", lambda belief: {"Right": (1.0, 0.0)}
+    )
+    intent = SearchMode().decide(_belief(tick=10), ActionState())
+    assert intent.kind == "navigate_to" and intent.point[0] > 200        # → Right
+
+
+def test_pick_room_is_unchanged_when_the_prior_is_disabled(_restore_prior) -> None:
+    room_prior.set_density(None)
+    intent = SearchMode().decide(_belief(tick=10), ActionState())
+    assert intent.kind == "navigate_to"  # scoring still works, prior term is 0.0

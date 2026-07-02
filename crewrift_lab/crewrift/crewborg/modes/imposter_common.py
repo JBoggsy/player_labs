@@ -8,10 +8,73 @@ so the mode stays focused on its state machine.
 
 from __future__ import annotations
 
+import os
+
 from crewrift.crewborg.map.types import Room
-from crewrift.crewborg.types import Belief, PlayerRecord
+from crewrift.crewborg.types import Belief, Intent, PlayerRecord
 
 Point = tuple[int, int]
+
+# Consecutive kill-ready Playing ticks of a zero-length navigation target (or idle)
+# before the parked guard forces a state change. ~0.5 s at 24 Hz: tolerant of the
+# movement controller's coast-to-rest ticks, but orders of magnitude below the
+# measured multi-hundred-tick ready-state parks. Env-tunable for sweeps.
+PARKED_GUARD_TICKS = 12
+
+# A navigation target within this radius (px) of self is a zero-length route — the
+# action layer has nothing to do and the agent stands still.
+PARKED_ARRIVE_RADIUS_SQ = 24**2
+
+
+def parked_guard_ticks() -> int:
+    raw = os.environ.get("CREWBORG_PARKED_GUARD_TICKS")
+    if raw:
+        try:
+            return max(1, int(raw))
+        except ValueError:
+            pass
+    return PARKED_GUARD_TICKS
+
+
+class ParkedGuard:
+    """Escape hatch against kill-ready parking (the standing "idling is dangerous"
+    lab principle: every idle needs an escape).
+
+    A kill-ready imposter standing still is a wasted kill window — the exact
+    signature of the measured ready-state parks (2026-07-02 movement diagnosis).
+    Modes that navigate while an imposter can be kill-ready (Search, Recon) run
+    their outgoing intent through :meth:`fires`; when it reports True the mode must
+    force a state change to a *different* target rather than keep emitting the
+    same zero-length route. Hunt is deliberately not guarded: its in-range hold
+    ("lying in wait") already escapes via the urgency relaxation, and Evade can't
+    be kill-ready (our own kill just reset the cooldown).
+    """
+
+    def __init__(self) -> None:
+        self._streak = 0
+
+    def fires(self, belief: Belief, self_xy: Point, intent: Intent) -> bool:
+        """True when the guard trips: ``parked_guard_ticks()`` consecutive
+        kill-ready Playing ticks whose intent is idle or a zero-length navigate.
+        Resets its streak whenever the condition breaks (or after firing)."""
+
+        parked_now = (
+            belief.phase == "Playing"
+            and belief.self_kill_ready
+            and (
+                intent.kind == "idle"
+                or (intent.kind == "navigate_to" and intent.point is not None
+                    and dist2(self_xy, intent.point) <= PARKED_ARRIVE_RADIUS_SQ)
+            )
+        )
+        if not parked_now:
+            self._streak = 0
+            return False
+        self._streak += 1
+        if self._streak < parked_guard_ticks():
+            return False
+        self._streak = 0
+        return True
 
 
 def self_xy(belief: Belief) -> Point | None:
