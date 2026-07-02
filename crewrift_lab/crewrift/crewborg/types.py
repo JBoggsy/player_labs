@@ -402,17 +402,16 @@ class Belief(BaseModel):
     social_caller_banked_tick: int | None = None
 
     # Crewrift Honor Society (strategy.honor_society; design docs/designs/
-    # honor-society.md). All inert unless CREWBORG_HONOR_SOCIETY is set. Claims map
-    # color -> announced pubkey; trusted is the claimed-crew set the crew vote/accuse
-    # paths spare; liar keys are pubkeys caught claiming crew while provably imposter;
-    # counted_chats dedupes CHS lines across the per-meeting chat_log clear;
-    # challenges_due queues nonces addressed to us; meeting_no is the 1-based meeting
+    # honor-society.md; HS1 wire spec). All inert unless CREWBORG_HONOR_SOCIETY is
+    # set. Claims map color -> announced pubkey (first-poster-wins per episode);
+    # trusted is the claimed-crew set the crew vote/accuse paths spare; liar keys are
+    # pubkeys caught claiming crew while provably imposter; counted_chats dedupes HS1
+    # lines across the per-meeting chat_log clear; meeting_no is the 1-based meeting
     # ordinal (the announce targets the first meeting).
     society_claims: dict[str, str] = Field(default_factory=dict)
     society_trusted: set[str] = Field(default_factory=set)
     society_liar_keys: set[str] = Field(default_factory=set)
     society_counted_chats: set[tuple[int, str | None, str]] = Field(default_factory=set)
-    society_challenges_due: list[str] = Field(default_factory=list)
     society_announced: bool = False
     society_meeting_no: int = 0
 

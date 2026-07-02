@@ -1,25 +1,37 @@
-"""Crewrift Honor Society (CHS) membership — design: docs/designs/honor-society.md.
+"""Crewrift Honor Society (HS) membership — design: docs/designs/honor-society.md.
 
-Level 1: announce an Ed25519-backed crew claim at the first meeting when crew, listen
-for other members' claims (signature-verified -> ``belief.society_trusted``), answer
-identity challenges, and ledger liars. Everything is gated on ``CREWBORG_HONOR_SOCIETY``
-(default OFF => zero behavioural change) and the whole feature failure-disables if the
+Level 1: announce an Ed25519-backed crew claim at the first meeting when crew, and
+listen for other members' claims (signature-verified -> ``belief.society_trusted``),
+ledgering liars. Everything is gated on ``CREWBORG_HONOR_SOCIETY`` (default OFF =>
+zero behavioural change) and the whole feature failure-disables if the
 ``cryptography`` package is unavailable: the player must never crash over this.
 
-Wire format (chat-only, versioned prefix, unpadded URL-safe base64):
+Wire format — the society's canonical **HS1** spec (Alex Smith, 2026-07-02); one
+message type, chat-only, standard (padded) base64:
 
-    CHS1 iam <pub> crew <sig>     sig over "CHS1|crew|<speaker_color>"
-    CHS1 chal <color> <nonce>     (we answer these; v1 never issues them)
-    CHS1 resp <nonce> <sig>       sig over "CHS1|resp|<nonce>|<speaker_color>"
+    HS1 <unix_ts> <nonce> <pubkey_b64> <sig_b64>        (157 chars exactly)
 
-Society text deliberately contains no color words (the announce/response we send), so
-chat-accusation parsers — ours and other policies' — cannot misread it as an accusation.
+- ``unix_ts``: current Unix seconds, 10 digits.
+- ``nonce``: 8 base64 chars (48 random bits) — makes every announcement globally
+  unique, so a byte-identical repeat is a self-evident replay.
+- ``sig_b64``: Ed25519 over the UTF-8 string ``HS1|<unix_ts>|<nonce>|<my_color>``
+  with the announcer's own lowercase color — a copied announcement re-broadcast by
+  another seat is verifiably wrong, not merely suspicious.
+
+A receiver accepts iff: the signature verifies with the OBSERVED speaker color,
+|receipt_time - unix_ts| <= 10 s, and first-poster-wins — later announcements of an
+already-bound key are suspected replays (ignored in-game, logged for audit).
+Do not add fields to HS1 without re-budgeting the 160-char chat cap.
+
+The announcement contains no color words, so chat-accusation parsers — ours and
+other policies' — cannot misread it as an accusation.
 """
 
 from __future__ import annotations
 
 import base64
 import os
+import time
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
@@ -27,27 +39,41 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
 
 ENV_FLAG = "CREWBORG_HONOR_SOCIETY"
 ENV_SEED = "CREWBORG_HONOR_SEED"
-PREFIX = "CHS1"
+PREFIX = "HS1"
+# HS1 verification window: |receipt_time - announced unix_ts| must be inside this.
+ANNOUNCE_FRESHNESS_SECONDS = 10
 
 # The mode's EventEmitter (``.event(name, data)`` / ``.counter(name)``).
 Emitter = Any
 
-# Process-wide identity cache: (seed-source, signing_key, pub_b64). The key is
-# stable for the process lifetime; an ephemeral key (no ENV_SEED) is generated once.
+# Process-wide identity cache. The key is stable for the process lifetime; an
+# ephemeral key (no ENV_SEED) is generated once.
 _identity: tuple[object, str] | None = None
 _identity_failed = False
-_ephemeral_traced = False
 
 
 def _b64e(raw: bytes) -> str:
-    return base64.urlsafe_b64encode(raw).decode().rstrip("=")
+    """Standard base64 WITH padding — the HS1 encoding."""
+
+    return base64.b64encode(raw).decode()
 
 
 def _b64d(text: str) -> bytes | None:
     try:
-        return base64.urlsafe_b64decode(text + "=" * (-len(text) % 4))
+        return base64.b64decode(text, validate=True)
     except Exception:
         return None
+
+
+def _seed_b64d(text: str) -> bytes | None:
+    """The seed env accepts either standard or URL-safe base64, padded or not."""
+
+    for decoder in (base64.b64decode, base64.urlsafe_b64decode):
+        try:
+            return decoder(text + "=" * (-len(text) % 4))
+        except Exception:
+            continue
+    return None
 
 
 def _flag_on() -> bool:
@@ -73,7 +99,7 @@ def _load_identity():
         )
 
         seed_b64 = os.environ.get(ENV_SEED, "").strip()
-        seed = _b64d(seed_b64) if seed_b64 else None
+        seed = _seed_b64d(seed_b64) if seed_b64 else None
         if seed is not None and len(seed) == 32:
             key = Ed25519PrivateKey.from_private_bytes(seed)
         else:
@@ -93,10 +119,9 @@ def enabled() -> bool:
 
 
 def reset_identity_for_tests() -> None:
-    global _identity, _identity_failed, _ephemeral_traced
+    global _identity, _identity_failed
     _identity = None
     _identity_failed = False
-    _ephemeral_traced = False
 
 
 def public_key_b64() -> str | None:
@@ -125,52 +150,61 @@ def _verify(pub_b64: str, sig_b64: str, context: str) -> bool:
 # --- wire format ---------------------------------------------------------------
 
 
-def announce_text(self_color: str) -> str:
-    """`CHS1 iam <pub> crew <sig>` — our crew claim, bound to the color we claim as."""
+def announce_text(self_color: str, *, now: float | None = None) -> str:
+    """``HS1 <unix_ts> <nonce> <pub> <sig>`` — our crew claim (157 chars)."""
 
     _key, pub = _load_identity()  # type: ignore[misc]
-    return f"{PREFIX} iam {pub} crew {_sign(f'{PREFIX}|crew|{self_color}')}"
+    ts = int(now if now is not None else time.time())
+    nonce = _b64e(os.urandom(6))  # 48 bits -> exactly 8 base64 chars, no padding
+    sig = _sign(f"{PREFIX}|{ts}|{nonce}|{self_color.lower()}")
+    return f"{PREFIX} {ts} {nonce} {pub} {sig}"
 
 
-def response_text(nonce_b64: str, self_color: str) -> str:
-    """`CHS1 resp <nonce> <sig>` — answer to an identity challenge naming us."""
-
-    return f"{PREFIX} resp {nonce_b64} {_sign(f'{PREFIX}|resp|{nonce_b64}|{self_color}')}"
-
-
-def parse(text: str) -> tuple[str, ...] | None:
-    """A CHS line -> ("iam", pub, sig) | ("chal", color, nonce) | ("resp", nonce, sig)."""
+def parse(text: str) -> tuple[int, str, str, str] | None:
+    """An HS1 line -> (unix_ts, nonce, pub_b64, sig_b64), or None."""
 
     parts = text.strip().split()
-    if len(parts) < 2 or parts[0] != PREFIX:
+    if len(parts) != 5 or parts[0] != PREFIX:
         return None
-    kind = parts[1]
-    if kind == "iam" and len(parts) == 5 and parts[3] == "crew":
-        return ("iam", parts[2], parts[4])
-    if kind == "chal" and len(parts) == 4:
-        return ("chal", parts[2], parts[3])
-    if kind == "resp" and len(parts) == 4:
-        return ("resp", parts[2], parts[3])
-    return None
+    ts_text, nonce, pub, sig = parts[1:]
+    if not (ts_text.isdigit() and len(ts_text) == 10):
+        return None
+    return (int(ts_text), nonce, pub, sig)
 
 
-def verify_announce(pub_b64: str, sig_b64: str, speaker_color: str) -> bool:
-    return _verify(pub_b64, sig_b64, f"{PREFIX}|crew|{speaker_color}")
+def verify_announce(
+    unix_ts: int,
+    nonce: str,
+    pub_b64: str,
+    sig_b64: str,
+    speaker_color: str,
+    *,
+    receipt_time: float | None = None,
+) -> str:
+    """HS1 acceptance check -> "ok" | "bad_sig" | "stale".
 
+    The payload is reconstructed with the OBSERVED speaker color (lowercase), so a
+    copied announcement re-broadcast from another seat fails verification outright.
+    """
 
-def verify_response(pub_b64: str, sig_b64: str, nonce_b64: str, speaker_color: str) -> bool:
-    return _verify(pub_b64, sig_b64, f"{PREFIX}|resp|{nonce_b64}|{speaker_color}")
+    if not _verify(pub_b64, sig_b64, f"{PREFIX}|{unix_ts}|{nonce}|{speaker_color.lower()}"):
+        return "bad_sig"
+    receipt = receipt_time if receipt_time is not None else time.time()
+    if abs(receipt - unix_ts) > ANNOUNCE_FRESHNESS_SECONDS:
+        return "stale"
+    return "ok"
 
 
 # --- belief integration ----------------------------------------------------------
 
 
-def process_chats(belief: "Belief", emit: Emitter) -> None:
-    """Fold new meeting-chat CHS lines into the society belief state.
+def process_chats(belief: "Belief", emit: Emitter, *, receipt_time: float | None = None) -> None:
+    """Fold new meeting-chat HS1 announcements into the society belief state.
 
     Idempotent per chat line (``society_counted_chats`` survives the per-meeting
     chat_log clear). Runs for BOTH roles — an imposter still listens and ledgers,
-    it just never speaks.
+    it just never speaks. First-poster-wins: once a key is bound to a color this
+    episode, later announcements of that key are suspected replays (ignored, logged).
     """
 
     from crewrift.crewborg.strategy.suspicion import witnessed_imposters
@@ -186,20 +220,19 @@ def process_chats(belief: "Belief", emit: Emitter) -> None:
         msg = parse(event.text)
         if msg is None:
             continue
-        if msg[0] == "iam":
-            _, pub, sig = msg
-            if not verify_announce(pub, sig, event.speaker_color):
-                emit.event("honor_invalid_sig", {"color": event.speaker_color, "text": event.text})
-                continue
-            belief.society_claims[event.speaker_color] = pub
-            if pub not in belief.society_liar_keys:
-                belief.society_trusted.add(event.speaker_color)
-            emit.event("honor_claim", {"color": event.speaker_color, "pub": pub})
-        elif msg[0] == "chal":
-            _, color, nonce = msg
-            if self_color is not None and color == self_color and nonce not in belief.society_challenges_due:
-                belief.society_challenges_due.append(nonce)
-        # "resp": v1 issues no challenges, so responses to others are not consumed.
+        unix_ts, nonce, pub, sig = msg
+        if pub in belief.society_claims.values():
+            # First-poster-wins: this key is already bound this episode.
+            emit.event("honor_replay_suspected", {"color": event.speaker_color, "pub": pub})
+            continue
+        verdict = verify_announce(unix_ts, nonce, pub, sig, event.speaker_color, receipt_time=receipt_time)
+        if verdict != "ok":
+            emit.event("honor_invalid_announce", {"color": event.speaker_color, "why": verdict, "text": event.text})
+            continue
+        belief.society_claims[event.speaker_color] = pub
+        if pub not in belief.society_liar_keys:
+            belief.society_trusted.add(event.speaker_color)
+        emit.event("honor_claim", {"color": event.speaker_color, "pub": pub})
 
     # Liar sweep — claims contradicted by definitional knowledge. Witnessed
     # kills/vents work for either of our roles; teammate knowledge only exists

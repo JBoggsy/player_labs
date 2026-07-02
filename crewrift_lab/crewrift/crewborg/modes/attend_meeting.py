@@ -488,8 +488,8 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         return Intent(kind="idle", reason=decision.reason or "LLM waits")
 
     def _society_chat_intent(self, belief: Belief) -> Intent | None:
-        """The Honor Society's one-line sends: a queued challenge response, else the
-        once-per-game crew announce (design docs/designs/honor-society.md).
+        """The Honor Society's once-per-game HS1 crew announce (design
+        docs/designs/honor-society.md).
 
         Strictly lower priority than voting: never fires from a dead seat, over a
         submitted vote, or inside the deadline auto-submit window, and it obeys the
@@ -508,10 +508,6 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self_color = belief.self_color or belief.voting.self_marker_color
         if self_color is None:
             return None
-        if belief.society_challenges_due:
-            nonce = belief.society_challenges_due.pop(0)
-            text = honor_society.response_text(nonce, self_color)
-            return self._send_chat_intent(belief, text, reason="society: challenge response", society=True)
         if not belief.society_announced:
             belief.society_announced = True
             text = honor_society.announce_text(self_color)

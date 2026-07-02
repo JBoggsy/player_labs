@@ -17,31 +17,39 @@ wins being weighted equally to imposter wins with far more crew games. Level 1:
 4. **Track standing** — log liars (watch replays too); punish by refusing future trust.
 5. **Use the knowledge** — treat verified claimed-crew members as trusted crew.
 
-## Wire format (`CHS1`, chat-only)
+## Wire format (`HS1`, chat-only — the society's canonical spec, Alex Smith 2026-07-02)
 
 Meeting chat is the only channel. crewborg's own chat cap is 160 chars
-(`CHAT_MAX_CHARS`); the sim renders at least ~170. All binary values are
-**unpadded URL-safe base64**; the version prefix `CHS1` makes the format evolvable and
-cheap to parse. Since the society publishes no canonical encoding, this file is the
-reference — other members interop by adopting it.
+(`CHAT_MAX_CHARS`); the sim renders at least ~170. One message type:
 
-| message | text | signature is over |
-|---|---|---|
-| announce | `CHS1 iam <pub> crew <sig>` | `CHS1\|crew\|<speaker_color>` |
-| challenge | `CHS1 chal <color> <nonce>` | — (nonce: 12 random bytes) |
-| response | `CHS1 resp <nonce> <sig>` | `CHS1\|resp\|<nonce>\|<speaker_color>` |
+```
+HS1 <unix_ts> <nonce> <pubkey_b64> <sig_b64>
+```
 
-- `<pub>` = 32-byte Ed25519 public key (43 chars); `<sig>` = 64-byte signature
-  (86 chars). Announce ≈ 148 chars — inside the cap.
-- The announce signature binds the key to the **claimed color and the crew claim**, so
-  a bystander cannot splice a seen pubkey into their own claim. It does **not** prevent
-  verbatim replay of a whole announce line in another game by whoever holds the same
-  color there — that is what challenges are for. Trust from a bare announce is
-  therefore *provisional* by design; Level 1 accepts it (the liar ledger is the
-  backstop, per the rules).
-- crewborg **answers** challenges (rule: prove identity when challenged) but does not
-  issue them in v1 — issuing spends scarce chat turns and mentions a color word, which
-  other policies' chat parsers may read as an accusation.
+- `unix_ts` — current Unix time in seconds (10 digits).
+- `nonce` — 8 chars of base64 (48 random bits): every announcement is globally
+  unique, so a byte-identical repeat is a self-evident replay.
+- `pubkey_b64` — the member's Ed25519 public key, **standard base64** (44 chars).
+- `sig_b64` — Ed25519 signature, standard base64 (88 chars), over the UTF-8 string
+  `HS1|<unix_ts>|<nonce>|<my_color>` where `<my_color>` is the announcer's own player
+  color, lowercase. Binding the color means a copied announcement re-broadcast by
+  another seat is **verifiably wrong**, not merely suspicious.
+- Length: 4+10+1+8+1+44+1+88 = **157 chars** — 3 to spare under the 160 budget.
+  **Do not add fields to HS1 without re-budgeting.**
+
+**Verification.** A receiver accepts an announcement iff all of:
+
+1. The signature verifies for `pubkey_b64` over the payload reconstructed with the
+   **observed** speaker color.
+2. `|receipt_time − unix_ts| ≤ 10 s` (receipt = when the verifier observes it).
+3. **First-poster-wins**: no earlier valid announcement of the same key was seen this
+   episode. Later announcements of an already-bound key are suspected replays —
+   ignored in-game (`honor_replay_suspected`), logged for post-hoc audit.
+
+An accepted announcement binds this episode's color to the key; how much to trust the
+key is the verifier's own business (crewborg trusts it unless the key is on its liar
+ledger). The rules' challenge/response clause has no wire spec yet — crewborg
+implements announcements only until the society specs challenges.
 
 ## Key management
 

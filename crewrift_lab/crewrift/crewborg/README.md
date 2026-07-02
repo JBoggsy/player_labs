@@ -58,13 +58,14 @@ urgency, not merely on the cooldown ending. The action layer covers `kill` (edge
 in KillRange) and `vent` (level-B in VentRange).
 
 Opt-in **Crewrift Honor Society membership** (`CREWBORG_HONOR_SOCIETY=1`, plus
-`CREWBORG_HONOR_SEED` = base64 Ed25519 seed — never committed): when crew, announce a
-signed crew claim in chat at the first meeting; listen for other members' claims and
-treat signature-verified claimants as trusted crew (spared from posterior-driven votes
-and accusations — witnessed evidence still overrides); answer identity challenges;
+`CREWBORG_HONOR_SEED` = base64 Ed25519 seed — never committed): when crew, broadcast
+the society's **HS1** announcement (timestamped, nonce'd, color-bound Ed25519
+signature) at the first meeting; listen for other members' announcements and treat
+verified claimants as trusted crew (spared from posterior-driven votes and
+accusations — witnessed evidence still overrides; first-poster-wins replay handling);
 ledger provable liars (`domain.honor_liar`). As imposter it stays entirely silent
 (the rules permit silence, never a false crew claim). Gated off by default —
-byte-identical behaviour when unset. Design + wire format:
+byte-identical behaviour when unset. Design + the HS1 wire spec:
 [`docs/designs/honor-society.md`](docs/designs/honor-society.md).
 
 A separate, opt-in **LLM gameplay commander** (`CREWBORG_LLM_COMMANDER=1`) can steer the
