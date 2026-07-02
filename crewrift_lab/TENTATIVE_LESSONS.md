@@ -271,3 +271,25 @@ Evidence: `rule_based.py:154` (any crew EVER seen ⇒ recon whenever ready+blind
 
 ### Imposter handoff/positioning is NOT the problem — stop optimizing it
 Evidence: median nearest-crew at the ready moment: crewborg ≈18px, 84% of windows start <60px (best-in-field cooldown same-room 85-95%). The losses are (a) point-blank windows convert 70-77% vs field-best 88-92%, (b) >150px windows take median 519t vs field 91-218t. Also blind-search COVERAGE overlaps crew density MORE than anyone (Bhattacharyya 0.48 vs notsus 0.26) — where it goes is fine; what it does when passing (no room-check, no persistence) is not.
+
+## 2026-07-02 — ready-state re-search build + A/B (worktree acbf700f)
+
+### Re-base a diagnosis against CURRENT main before building the fix
+Evidence: the movement diagnosis ("Recon selected whenever ready+blind, Search unreachable, 87%
+parked") was measured on pre-FSM code (killtrace branch based at b359e28); main had already merged
+2c9f305 (v77-v80: Recon strictly pre-ready, ready-blind → Search FSM) in parallel. Half the
+prescribed fix was already live; the 100v100 A/B confirmed the pathology absent in BOTH arms
+(parked share ~0, parked_guard fired 0×, >150px windows 7-11/100 eps vs the diagnosed 519-tick
+medians). Cost: a build+A/B cycle validating hardening rather than a win. Cheap check: `git log
+-S` the diagnosed gate line against main tip before writing any code.
+
+### Fast-moving main + multi-agent worktrees = stale-baseline traps everywhere
+Evidence: same session, three parallel agents; my assigned worktree was cut at b359e28 while main
+was 9fc477d (missing the tooling + data my task referenced). Always `git merge-base HEAD main` +
+fast-forward before reading code or building A/B base images.
+
+### A one-tick escape is no escape (idling-is-dangerous corollary)
+Evidence: first ParkedGuard wiring in ReconMode returned an escape intent for a single tick;
+`_decide` re-derives the same parked target next tick, so the agent would stay parked with the
+guard firing every 12 ticks. Escapes must change PERSISTENT state (FSM state, a sticky waypoint),
+not just the returned intent. Search's guard was safe precisely because it mutates `_state`.
