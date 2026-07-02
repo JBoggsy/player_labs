@@ -574,7 +574,7 @@ re-decides.
 | **Normal** | default while `Playing` | target the nearest reachable **signalled** task (live arrows+bubbles = the remaining tasks) and `complete_task(T)`; conclude `T` done when its **bubble disappears**, gated on having seen ≥ `COMPLETION_PROGRESS_PCT` (≈90%) progress (so an occlusion/edge flicker doesn't false-complete); when **no task signal remains**, `navigate_to` the spawn / **start room** rather than standing still |
 | **Attend Meeting** | phase = `Voting` | when there's a **clear leading suspect** (`top_suspect`, §10.1): **accuse then vote** them — `chat("<color> sus: <reasons>")` citing the ranked event-log evidence, then `vote` that color; on a **flat field** stay **silent and skip**. No default-firing opener; chat and vote are coupled. Always casts something before the timer |
 | **Report Body** | a body is in view | `report(body_id)`; yields when a meeting opens |
-| **Accuse** | an **active tail** by a suspect over `ACCUSE_THRESHOLD` (`active_tail_suspect`, §10.1), one button call left | `call_meeting` — walk to the emergency button and press it; the meeting that opens accuses + votes the tail. Replaces the old Flee/keep-away mode |
+| **Accuse** | an **active tail** by a suspect the meeting would convict (`active_tail_suspect` — the tailer is `top_suspect`, §10.1), one button call left | `call_meeting` — walk to the emergency button and press it; the meeting that opens accuses + votes the tail. Replaces the old Flee/keep-away mode |
 
 ### 7.2 Imposter modes
 
@@ -753,11 +753,17 @@ default directive is `idle` mode (the stall/TTL fallback, rarely reached).
    (`Lobby`/`RoleReveal` also reset the per-game button-call budget)
 2. body in view → **Report Body** (a body report opens a meeting right here and
    doesn't spend our one button call, so it outranks accusing)
-3. an **active tail** by a suspect over `ACCUSE_THRESHOLD` (`active_tail_suspect`),
-   with a button call left → **Accuse**: drop tasks and go slam the emergency button.
-   The selector **commits** to the target (stays in Accuse through the walk even if
-   the tail briefly lapses, until it's voted out / dies), and marks the one-shot call
-   spent once we reach the button so we fall back to tasks instead of looping there.
+3. an **active tail** by a suspect the meeting would convict (`active_tail_suspect` —
+   the tailer is `top_suspect`), with a button call left → **Accuse**: drop tasks and
+   go slam the emergency button.
+   The selector **commits** to the target and keeps walking to the button — but only
+   **while the meeting could still convict it**: the target is alive *and* still
+   `top_suspect`. Suspicion persists (no decay), so the commitment survives the tail
+   lapsing as we leave the suspect; but if the suspect is exculpated back below the vote
+   bar (or another suspect overtakes it / it's voted out / dies), we **abandon the run
+   and go back to tasks** rather than spend the one-shot button on a meeting we can no
+   longer win. It marks the one-shot call spent once we reach the button so we fall back
+   to tasks instead of looping there.
 4. otherwise → **Normal** (ghosts stay in Normal to finish own tasks)
 
 **Imposter selection** (priority order):
@@ -805,8 +811,9 @@ to kill improves imposter outcomes versus the default blend-in policy.
 + `update_event_log` (composed in `build_runtime`). It maintains
 `belief.suspicion[color]` = the posterior **probability that player is an imposter**,
 ∈ [0, 1] — a real probability, so thresholds mean something. It drives the **vote**
-(`top_suspect`) and **Accuse** (`active_tail_suspect` — a live tail over
-`ACCUSE_THRESHOLD`). `believed_imposters` (alive players with `P ≥ FLEE_PROBABILITY`,
+(`top_suspect`) and **Accuse** (`active_tail_suspect` — a live tail by the player
+`top_suspect` would vote out, so the call bar = the conviction bar).
+`believed_imposters` (alive players with `P ≥ FLEE_PROBABILITY`,
 0.9) is the near-certain set, kept as belief state (it seeds the vote) but no longer
 gating a reactive run-away mode. Computed for **both live roles** but over different
 sets: a crewmate scores every other player (a genuine belief); an imposter scores only
@@ -844,9 +851,12 @@ overwhelming `logLR` (`WITNESSED_LOG_LR = ln 1e6 ⇒ P ≈ 1`), not a special ca
   imposter flees, so brief presence is the only window on a killer; a long camp is a
   reporter), **follow-to-death** (log-LR *increases* with how long the shadowing of a
   now-dead victim lasted), and **being tailed** (`tailing_self` — a logistic in how
-  long someone shadowed *us*; needs no death, saturating at a *moderate* P ≈ 0.72:
-  a sustained live tail over `ACCUSE_THRESHOLD` (0.6) triggers **Accuse** — go call a
-  meeting — but doesn't on its own reach the near-certain bar). A single *weak* graded
+  long someone shadowed *us*; needs no death, saturating at a *moderate* P ≈ 0.72 on
+  the legacy path and *weak/exculpatory* under the fitted weights). A live tail triggers
+  **Accuse** — go call a meeting — only when that tailer is also `top_suspect` (the
+  player the meeting would vote out), so a pure tail (which clears neither conviction
+  bar on its own) never spends the one-shot button on a meeting that would silently skip.
+  A single *weak* graded
   cue lands well below near-certainty, so the meeting vote on those needs corroboration.
 
 Deliberately **excluded** as too noisy (an innocent reporter is next to the body;

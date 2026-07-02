@@ -48,7 +48,7 @@ could vote as imposters:
 | `belief.suspicion[color]` | `_recompute` | per-player posterior P(imposter) |
 | `belief.believed_imposters` | `_recompute` | the set of **alive** colors at or above `FLEE_PROBABILITY` (0.9) — the near-certain set, exposed as belief state (e.g. it seeds the meeting vote) |
 | `top_suspect(belief)` | `strategy/suspicion.py:top_suspect` | the live player to vote out at a meeting, or `None` to skip a flat field |
-| `active_tail_suspect(belief)` | `strategy/suspicion.py:active_tail_suspect` | the most-suspicious player *currently tailing us* over `ACCUSE_THRESHOLD`, which gates Accuse mode |
+| `active_tail_suspect(belief)` | `strategy/suspicion.py:active_tail_suspect` | the player *currently tailing us* that the meeting would convict (i.e. is `top_suspect`), which gates Accuse mode — the call bar is the conviction bar |
 | `witnessed_imposters(belief)` | `strategy/suspicion.py:witnessed_imposters` | colors directly caught killing or venting; for tracing/forensics (already drive P ≈ 1) |
 
 ### Self-exclusion — never suspect, accuse, or vote self
@@ -234,7 +234,7 @@ globals in `strategy/suspicion.py`.
 | vent dwell | `_vent_dwell_log_lr` | `VENT_DWELL_LOG_LR (ln 8)` if `duration > VENT_CROSS_TICKS (3)`, else 0 | ~flat | weak: a real venter teleports (owned by the transition detector); merely standing on a vent past crossing it |
 | body proximity | `_body_proximity_log_lr` | 0 if `min_dist > BODY_NEAR_DIST (16 px)`, else `BODY_NEAR_LOG_LR (ln 3) · max(0, 1 − duration/BODY_FADE_TICKS (48))` | **decreasing** | brief presence is the only window on a fleeing killer; a long camp is innocent reporter behaviour, fading to 0 by ~2 s |
 | follow-to-death | `_follow_log_lr` | 0 unless target now dead and `\|death_seen − end\| ≤ FOLLOW_DEATH_WINDOW_TICKS (72)`, else `FOLLOW_LOG_LR (ln 6) · min(1, duration/FOLLOW_FULL_TICKS (48))` | **increasing** | sustained shadowing of a now-dead victim, saturating at full by ~2 s |
-| being tailed | `_tailing_self_log_lr` | logistic: `TAIL_SELF_LOG_LR_MAX (ln 6.5) / (1 + exp(−TAIL_SELF_STEEPNESS (0.2)·(duration − TAIL_SELF_MIDPOINT_TICKS (30))))` | **increasing** | someone shadowing *us* over time; a brief brush ≈ 0, half at 30 ticks, saturates at a **moderate** P ≈ 0.72. Needs **no death**. Crossing `ACCUSE_THRESHOLD` (~34 ticks) triggers Accuse |
+| being tailed | `_tailing_self_log_lr` | logistic: `TAIL_SELF_LOG_LR_MAX (ln 6.5) / (1 + exp(−TAIL_SELF_STEEPNESS (0.2)·(duration − TAIL_SELF_MIDPOINT_TICKS (30))))` | **increasing** | someone shadowing *us* over time; a brief brush ≈ 0, half at 30 ticks, saturates at a **moderate** P ≈ 0.72 (legacy; weak/exculpatory under the fitted weights). Needs **no death**. A live tail triggers Accuse only when the tailer is also `top_suspect` (the call bar = the conviction bar) |
 
 The being-tailed cue is read off the agent's own position (which it knows perfectly)
 and needs no death, so it is a high-quality live signal — but it is deliberately
@@ -325,7 +325,7 @@ a separate "confirmed" set.
 | `WEIGHTS_VOTE_PROBABILITY` | 0.9 (env `CREWBORG_WEIGHTS_VOTE_P`) | the **fitted crewmate** vote bar: vote only at calibrated near-certainty; **no clear-leader rule** |
 | `VOTE_PROBABILITY` | 0.8 | self-standing vote bar on the **legacy / imposter** path — near-certainty regardless of the field |
 | `VOTE_LEAD_MIN_P` / `VOTE_LEAD_MARGIN` | 0.5 / 0.2 | the *clear leading suspect* rule (legacy / imposter path): vote the top suspect when P ≥ 0.5 and it leads the runner-up by ≥ 0.2; a flat field names no one |
-| `ACCUSE_THRESHOLD` | 0.6 | an **active tail** at/above this triggers Accuse (drop tasks, go call a meeting) |
+| _(accuse bar)_ | = conviction bar | there is **no standalone accuse threshold**; an active tail triggers Accuse only when that tailer is `top_suspect` (the player the meeting would vote out), so the call bar can't drift below the vote bar |
 | `ACCUSE_TAIL_RECENCY_TICKS` | 6 | how recently a `tailing_self` interval must have been extended to count as *active* (robust to brief occlusion) |
 | `FLEE_PROBABILITY` | 0.9 | the near-certain bar defining `believed_imposters` |
 | `PRIOR_MIN` / `PRIOR_MAX` | 1e-3 / 0.99 | clamp the prior so log-odds is finite |
@@ -351,9 +351,12 @@ in [`imposter-play.md`](./imposter-play.md).
 
 ### `active_tail_suspect` — the Accuse trigger
 
-`active_tail_suspect` returns the most-suspicious live player with P ≥
-`ACCUSE_THRESHOLD` whose most recent `tailing_self` interval is still live (extended
-within `ACCUSE_TAIL_RECENCY_TICKS`). It gates Accuse mode (`modes/accuse.py`): stop
+`active_tail_suspect` returns `top_suspect(belief)` (the player the meeting would vote
+out) **iff** that player is alive and their most recent `tailing_self` interval is still
+live (extended within `ACCUSE_TAIL_RECENCY_TICKS`); otherwise `None`. Tying the call to
+`top_suspect` makes the call bar identical to the conviction bar — a pure tail (which
+clears neither vote bar on its own) never spends the one-shot button on a meeting that
+would silently skip. It gates Accuse mode (`modes/accuse.py`): stop
 tasking, walk to the emergency button, call a meeting, and accuse. Crewmate-only by
 construction (suspicion is empty for other live roles).
 

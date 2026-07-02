@@ -99,11 +99,16 @@ button instead of flickering on and off with the tail:
 
 - If `_button_call_spent` is already set, it returns `None` forever (this game) — we never
   call a second meeting; we fall back to tasks.
-- If we already have a committed `_accuse_target` and that player is still alive
-  (`_accuse_target_alive`), we **keep** it — even if the tail briefly lapses while we walk.
-- Otherwise we re-acquire from `strategy/suspicion.py:active_tail_suspect` — the
-  most-suspicious player with an *ongoing* `tailing_self` interval whose posterior is over
-  `ACCUSE_THRESHOLD` (0.6). See [`./suspicion.md`](./suspicion.md) for what makes a tail
+- If we already have a committed `_accuse_target` that is still alive **and** still
+  `top_suspect` (the player the meeting would vote out), we **keep** it — even if the tail
+  briefly lapses while we walk (suspicion persists, so a near-certain suspect stays
+  convictable). But if it's been exculpated back below the vote bar — or overtaken /
+  voted / killed — we drop it and re-acquire, so we never march the one-shot button run
+  toward a meeting we can no longer win (or one that would eject a teammate).
+- Otherwise we re-acquire from `strategy/suspicion.py:active_tail_suspect` — the player
+  with an *ongoing* `tailing_self` interval who is also `top_suspect` (the player the
+  meeting would vote out), so the call bar is the conviction bar. See
+  [`./suspicion.md`](./suspicion.md) for what makes a tail
   "active" and how the posterior gets there; see [`./agent-tracking.md`](./agent-tracking.md)
   for how `tailing_self` intervals are detected.
 
@@ -180,7 +185,8 @@ If no target is held after `_update_target`, Normal falls through in order:
 ## Accuse mode — calling a meeting on a tail
 
 `modes/accuse.py:AccuseMode` is selected when a live crewmate is being actively tailed by a
-suspect over `ACCUSE_THRESHOLD` and the one button call is still unspent and reachable. The
+suspect the meeting would convict (the tailer is `top_suspect`) and the one button call is
+still unspent and reachable. The
 mode itself is **stateless** and does one thing: it emits
 
 ```
@@ -197,7 +203,11 @@ The division of labor is deliberate:
   one-shot button (and refuses to re-enter Accuse once `_button_call_spent`), and it keeps
   `_sticky_accuse_target` locked on the committed player through the whole walk even if the
   tail briefly drops — so the agent commits to the walk instead of abandoning it the first
-  frame the tailer steps out of view.
+  frame the tailer steps out of view. The commitment is gated on **convictability**, not
+  the tail: it holds while the suspect is still `top_suspect` (the meeting would eject it),
+  and is released the moment it's exculpated below the vote bar / overtaken / voted /
+  killed — so a tail lapse keeps the walk, but a suspect that stops being convictable sends
+  us back to tasks rather than to a button press we can't win.
 - **The action layer does the walking and pressing.**
   `action.py:_resolve_call_meeting` drives onto the button's reachable anchor
   (`nav.button_anchor`, or the button center before the graph exists) and, once standing in
@@ -266,7 +276,7 @@ task loop: nearest signalled task, progress-gated completion, return-to-start wh
 |---|---|
 | `strategy/rule_based.py:RuleBasedStrategy._select` | per-tick crewmate mode selector + sticky accuse / button budget |
 | `strategy/rule_based.py:_button_reachable` | whether the emergency button can be routed to |
-| `strategy/suspicion.py:active_tail_suspect` | the Accuse trigger (a tailing suspect over `ACCUSE_THRESHOLD`) |
+| `strategy/suspicion.py:active_tail_suspect` | the Accuse trigger (a tailing suspect who is also `top_suspect` — the call bar = the conviction bar) |
 | `strategy/suspicion.py:top_suspect` | the meeting vote target (clear leading suspect, or `None`) |
 | `modes/normal.py:NormalMode` | task targeting, progress-gated completion, sweep, return-to-start |
 | `modes/report_body.py:ReportBodyMode` | report the nearest visible body (outranks accusing) |
@@ -279,7 +289,7 @@ task loop: nearest signalled task, progress-gated completion, return-to-start wh
 
 | Constant | Value | Where | Meaning |
 |---|---|---|---|
-| `ACCUSE_THRESHOLD` | `0.6` | `strategy/suspicion.py` | posterior at which an active tail triggers Accuse |
+| _(accuse bar)_ | = conviction bar | `strategy/suspicion.py` | no standalone threshold; an active tail triggers Accuse only when the tailer is `top_suspect` (the player the meeting would vote out) |
 | `ACCUSE_TAIL_RECENCY_TICKS` | `6` | `strategy/suspicion.py` | a tail counts as "active" if extended within this many ticks |
 | `COMPLETION_PROGRESS_PCT` | `90` | `modes/normal.py` | progress a vanished bubble needs to count as a real completion |
 | `SWEEP_ARRIVE_RADIUS` | `24` | `modes/normal.py` | distance (px) within which a swept station counts as checked |

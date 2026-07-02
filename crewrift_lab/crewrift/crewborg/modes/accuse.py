@@ -1,11 +1,13 @@
 """Accuse mode: call a meeting on a player who is tailing us (design §7.1).
 
-When we detect we're being actively shadowed by someone we've grown suspicious of
-(``active_tail_suspect`` — an ongoing ``tailing_self`` interval pushing their
-posterior over ``ACCUSE_THRESHOLD``), we stop what we're doing and go **call a
-meeting** rather than run away: emit ``call_meeting`` (the action layer walks to the
-emergency button and presses it), and once the meeting opens, Attend Meeting accuses
-and votes the suspect from the same suspicion model.
+When we detect we're being actively shadowed by someone the meeting would actually
+convict (``active_tail_suspect`` — an ongoing ``tailing_self`` interval *and* that
+player is ``top_suspect``, the one Attend Meeting would vote out), we stop what we're
+doing and go **call a meeting** rather than run away: emit ``call_meeting`` (the action
+layer walks to the emergency button and presses it), and once the meeting opens, Attend
+Meeting accuses and votes that same top suspect. The call bar IS the conviction bar, so
+we never burn the one-shot button on a tail the meeting would only silently skip
+(``strategy.suspicion.active_tail_suspect``).
 
 This replaces the old keep-away Flee behaviour: a believed imposter shadowing us is
 better answered by dragging them into a public vote than by fleeing. The emergency
