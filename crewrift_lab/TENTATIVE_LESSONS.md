@@ -103,3 +103,63 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 - Curiosities (not pre-registered, treat as hypotheses): cand imposter win 89% vs 67% (p=0.06);
   more crew ejected by the FIELD in cand crew-eps (38 vs 21, p=0.04) — suspicion weights also
   feed the imposter deflection view; worth a look before any ship.
+
+## Chat accuracy & effectiveness study (2026-07-02, worktree-chat-accuracy-effectiveness)
+
+New field-wide investigation (not crewborg-specific): is crew chat accurate, and does
+accusing (crew or imposter) actually move votes/win rate? Built `crewrift_lab/chat_effectiveness/`
+(design: `docs/designs/2026-07-02-chat-accuracy-effectiveness-design.md`). Reused
+`suspicion_lab`'s `chat_stances()`/`replay_parse.py` read-only rather than re-parsing chat.
+
+### Detector validated at 97.5% stance / 87.7% target agreement vs the warehouse's LLM `suss` job (n=200)
+The cheap regex accusation-target detector (first non-self color named in an accuse/defend line)
+is NOT ground truth — quantified it against Bedrock-labeled chat on the same 200 fresh episodes.
+A manual 10-row spot-check found the expected failure mode: a line naming 3 colors before the
+actual accusation ("Blue dead... Pink sus: no alibi") got mis-targeted to the FIRST color, not the
+accused one. ~88% target accuracy is a real ceiling on this detector, not a bug to fix reflexively —
+any future consumer of `chat_stances()` for target attribution inherits this same ceiling.
+
+### CRITICAL gotcha found (and fixed) before it silently corrupted results: the event-warehouse keys chat_suss by episode.json's internal `id`, not the directory-stem join key this whole pipeline uses
+`build_warehouse.py`'s `eid = meta.get("id") or ep.name` means `chat_suss.episode_id` is usually
+the opaque internal id. Everything else in `chat_effectiveness/` (and this lab's existing
+suspicion_lab convention) joins on the directory/replay-filename STEM instead. Without a remap,
+this join silently zero-matches (n_matched=0) rather than erroring — the report would have printed
+"detector validation not yet run" after a real, paid Bedrock run. Fixed via
+`validate_detector.build_episode_id_map()` (needs the raw episode dirs, new required `--episodes`
+flag). METHOD LESSON: a join that can silently return empty is worse than one that crashes — audit
+every cross-tool join key explicitly, don't assume two systems share an ID convention just because
+both call it "episode".
+
+### `top_n`/`random` roster selectors hit a real backend 500 (query timeout on the champion-ranking join) — pin explicit `policy_ref`s as the workaround
+Two consecutive `top_n`-roster xreq creates 500'd with `psycopg.errors.QueryCanceled` on the
+`eligible_champions`/`mean_reward` ranking query (different backing coworld_id each time — not
+a fluke). Resolving the roster manually (`coworld results <division_id>` for rank +
+`coworld memberships --active-only` for each player's `is_champion` policy label) and pinning
+`policy_ref`s sidesteps the expensive query entirely and worked immediately. Also hit 3 more
+transient network-level failures today (TLS handshake timeout, read timeout, server-disconnect)
+across different endpoints — the Observatory backend was demonstrably flaky this session,
+independent of anything in this repo.
+
+### Historical suspicion_lab corpus is NOT uniformly usable for outcome/win analysis — only entries with a full 4-file scrape (episode.json+replay.json+replay.json.z+results.json) work
+The most-recent scraped batch (2026-06-25) has ONLY `episode.json` per dir (an interrupted/partial
+scrape) — `results.json` (needed for win/role) is absent. The June 12-13 batch has all 4 files.
+Used a symlinked subset (2,999 dirs, 2,976 with matching expanded replays) from the complete
+end for the historical cross-check rather than the full 287k-dir corpus (which would also mix
+6 months of policy-version drift into one "stability check," defeating its purpose).
+
+### `num_episodes` per experience request caps at 100 (not documented in this lab's memory before) — split a bigger ask into multiple xreqs
+Original design wanted ~240 episodes ("~20 Prime rounds"); the API rejects anything above 100/request.
+Ran 2×100 back-to-back instead. `fetch_artifacts.py --watch` crashed twice on `ReadTimeout` fetching
+`policy-artifact` telemetry zips (large, unneeded for this study) before it occurred to skip them —
+`--no-artifacts --no-logs` is the move whenever a study only needs `replay.json`+`results.json`,
+both to reduce payload and to dodge the most failure-prone endpoint.
+
+### Headline numbers (fresh pull, 200 eps, top-8 current champions, natural roles)
+Crew accusation accuracy ranges 9.5% (softmaxwell-crewborg, n=21) to 70% (jordan-crewborg-aaln,
+n=63); **crewborg 48.4%** (n=122) — mid-pack, not a standout either direction. Same-meeting
+"target actually voted" ranges from 0% (notsus-as-imposter, n=7, deflection working) to 100%
+(several crew). Full breakdown + seat-normalized win-rate association in
+`crewrift_lab/chat_effectiveness/data/report.html` (gitignored; rebuild via the package README).
+Historical (June, n=2,976) cross-check shows the SAME qualitative pattern (crewborg/crewborg-aaln
+crew accuracy 43-46%, well below several smaller bots' 85-93%) — this is a stable trait, not a
+one-window artifact, though the historical policy versions predate the current champions.
