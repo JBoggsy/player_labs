@@ -724,3 +724,85 @@ def test_accuse_mode_calls_a_meeting_naming_the_active_tail() -> None:
     belief.suspicion = {"red": 0.95}  # convictable: the player the meeting would vote out
     intent = AccuseMode().decide(belief, ActionState())
     assert intent.kind == "call_meeting" and intent.target_color == "red"
+
+
+# --- instant suss-vote (CREWBORG_LLM_SUSS_INSTANT_VOTE) ---------------------------
+
+
+def _drive_until(mode, belief, kinds, n=6):
+    seen = []
+    for _ in range(n):
+        intent = mode.decide(belief, ActionState())
+        seen.append(intent)
+        if intent.kind in kinds:
+            return intent, seen
+    return None, seen
+
+
+def test_instant_vote_fires_on_llm_tentative(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_LLM_SUSS_INSTANT_VOTE", "1")
+    client = _FakeMeetingClient([MeetingDecision(action="set_tentative_vote", vote_target="red", reason="sus")])
+    mode = _llm_mode(client)
+    belief = _meeting_belief(tick=10)
+    belief.self_role = "crewmate"
+    belief.self_alive = True
+    vote, seen = _drive_until(mode, belief, {"vote"})
+    assert vote is not None and vote.target_color == "red"  # named -> voted, no deadline hold
+
+
+def test_instant_vote_fires_after_llm_chat_accusation(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_LLM_SUSS_INSTANT_VOTE", "1")
+    client = _FakeMeetingClient(
+        [MeetingDecision(action="send_chat", chat_text="red sus: saw them vent", reason="accuse")]
+    )
+    mode = _llm_mode(client)
+    belief = _meeting_belief(tick=10)
+    belief.self_role = "crewmate"
+    belief.self_alive = True
+    chat, _ = _drive_until(mode, belief, {"chat"})
+    assert chat is not None and "red" in chat.text  # the accusation goes out first
+    vote, _ = _drive_until(mode, belief, {"vote"})
+    assert vote is not None and vote.target_color == "red"
+
+
+def test_instant_vote_off_by_default(monkeypatch) -> None:
+    monkeypatch.delenv("CREWBORG_LLM_SUSS_INSTANT_VOTE", raising=False)
+    client = _FakeMeetingClient([MeetingDecision(action="set_tentative_vote", vote_target="red", reason="sus")])
+    mode = _llm_mode(client)
+    belief = _meeting_belief(tick=10)
+    belief.self_role = "crewmate"
+    belief.self_alive = True
+    vote, seen = _drive_until(mode, belief, {"vote"}, n=4)
+    assert vote is None  # tentative held for early-submit/deadline gates, unchanged
+
+
+def test_instant_vote_never_arms_for_imposter(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_LLM_SUSS_INSTANT_VOTE", "1")
+    client = _FakeMeetingClient([MeetingDecision(action="set_tentative_vote", vote_target="red", reason="deflect")])
+    mode = _llm_mode(client)
+    belief = _meeting_belief(tick=10)
+    belief.self_role = "imposter"
+    belief.self_alive = True
+    vote, _ = _drive_until(mode, belief, {"vote"}, n=4)
+    assert vote is None  # imposter deflection timing unchanged
+
+
+def test_instant_vote_respects_society_trust_veto(monkeypatch) -> None:
+    import base64
+    from crewrift.crewborg.strategy import honor_society
+    monkeypatch.setenv("CREWBORG_LLM_SUSS_INSTANT_VOTE", "1")
+    monkeypatch.setenv(honor_society.ENV_FLAG, "1")
+    monkeypatch.setenv(honor_society.ENV_SEED, base64.b64encode(b"\x07" * 32).decode())
+    honor_society.reset_identity_for_tests()
+    try:
+        client = _FakeMeetingClient([MeetingDecision(action="set_tentative_vote", vote_target="red", reason="sus")])
+        mode = _llm_mode(client)
+        belief = _meeting_belief(tick=10)
+        belief.self_role = "crewmate"
+        belief.self_alive = True
+        belief.society_announced = True
+        belief.society_trusted.add("red")  # trusted member, not witnessed
+        vote, _ = _drive_until(mode, belief, {"vote"})
+        assert vote is not None and vote.target_color is None  # veto converts to skip
+    finally:
+        honor_society.reset_identity_for_tests()

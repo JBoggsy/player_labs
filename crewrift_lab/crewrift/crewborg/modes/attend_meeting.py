@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import os
+import re
 from typing import Any, Callable
 
 from crewrift.crewborg.strategy.meeting import (
@@ -74,6 +75,18 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self._llm_pending: MeetingLLMRequest | None = None
         self._llm_calls_used = 0
         self._llm_call_budget = _llm_call_budget_from_env()
+        # Instant suss-vote (CREWBORG_LLM_SUSS_INSTANT_VOTE, default off): when the
+        # meeting LLM NAMES a suspect — a chat accusation or a tentative vote_target —
+        # the crew seat votes them on the next tick instead of holding to the
+        # early-submit/deadline gates. James's directive 2026-07-02; NOTE the prior
+        # evidence cuts the other way (LLM-named-not-submitted targets measured
+        # 22-50% precise vs 76% for explicit submit_vote; v90 deadline pass-through
+        # A/B-refuted) — ship only on a fresh LLM-on A/B.
+        self._instant_vote_enabled = (
+            os.environ.get("CREWBORG_LLM_SUSS_INSTANT_VOTE", "").strip().lower()
+            in ("1", "true", "yes", "on")
+        )
+        self._instant_vote_pending: str | None = None
         self._chat_accused: str | None = None
         self._meeting_id: int | None = None
         self._deterministic_chatted = False
@@ -119,6 +132,17 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         society_intent = self._society_chat_intent(belief)
         if society_intent is not None:
             return society_intent
+        if (
+            self._instant_vote_pending is not None
+            and belief.self_alive
+            and self._pending_chat_text is None  # let the accusing chat go out first
+        ):
+            # Instant suss-vote: the LLM named this target; its chat is out, so vote
+            # them now instead of holding to the early-submit/deadline gates.
+            target = self._instant_vote_pending
+            self._instant_vote_pending = None
+            self._tentative_vote = target
+            return self._submit_vote_intent(belief, reason="LLM named suss: instant vote")
 
         if not self._llm_client.enabled:
             return self._decide_deterministic(belief, trace_disabled=True)
@@ -457,7 +481,40 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
 
     # --- decision application --------------------------------------------
 
+    def _maybe_arm_instant_vote(self, belief: Belief, decision: MeetingDecision) -> None:
+        """Instant suss-vote arming: the LLM NAMED someone — a tentative vote_target
+        or a color accused in its chat — so queue an immediate vote for them.
+
+        Crew-and-alive only; explicit submit_vote decisions already vote at once, so
+        arming there is a harmless no-op (the pending clears when the vote submits).
+        The named target is treated as LLM-corroborated by James's rule; the
+        self-guard and the Honor-Society trust veto still apply at submit time.
+        """
+
+        if not self._instant_vote_enabled or belief.self_role == "imposter" or not belief.self_alive:
+            return
+        target = decision.vote_target
+        if (target is None or target == VOTE_SKIP) and decision.chat_text:
+            self_color = belief.self_color or belief.voting.self_marker_color
+            colors = set(belief.roster)
+            accused = chat_read.accused_colors(decision.chat_text, colors) - {self_color}
+            if not accused:
+                # accused_colors needs the (optional) spaCy model; the LLM literally
+                # naming a color in its own outgoing chat is enough here — plain
+                # word-boundary match as the NLP-off fallback.
+                words = re.findall(r"[a-z]+", decision.chat_text.lower())
+                accused = {c for c in colors if c in words} - {self_color}
+            if accused:
+                target = max(accused, key=lambda color: belief.suspicion.get(color, 0.0))
+        if target is None or target == VOTE_SKIP:
+            return
+        self._instant_vote_pending = target
+        self._llm_submitted_vote_targets.add(target)
+        self.emit.event("meeting_instant_vote_armed", {"target": target, "action": decision.action})
+        self.emit.counter("meeting_instant_vote_armed")
+
     def _apply_decision(self, belief: Belief, decision: MeetingDecision) -> Intent:
+        self._maybe_arm_instant_vote(belief, decision)
         if decision.vote_target is not None:
             self._tentative_vote = decision.vote_target
             self.emit.event(
@@ -591,6 +648,7 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         # request_id and is dropped in _collect_llm_outcome; the id itself never resets.
         self._llm_pending = None
         self._llm_calls_used = 0
+        self._instant_vote_pending = None
         self._chat_accused = None
         self._deterministic_chatted = False
         self._disabled_traced = False
