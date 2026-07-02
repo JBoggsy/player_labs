@@ -111,3 +111,25 @@ def test_recon_parked_guard_escapes_a_zero_length_seek(monkeypatch) -> None:
     assert intent.point == (300, 80)  # first ranked seek point that is elsewhere
     [event] = [e for e in trace.events if e.name == "domain.parked_guard"]
     assert event.data["mode"] == "recon"
+
+
+def test_recon_escape_point_is_sticky_until_reached_or_crew_appears(monkeypatch) -> None:
+    from crewrift.crewborg.modes import imposter_common as ic
+
+    b = _imposter()
+    b.self_kill_ready = True
+    _seen(b, "green", (100, 100), tick=10)  # stale, underfoot
+    monkeypatch.setattr("crewrift.crewborg.modes.recon.best_seek_point", lambda belief: (100, 100))
+    monkeypatch.setattr(
+        "crewrift.crewborg.modes.recon.ranked_seek_points", lambda belief: [(300, 80)]
+    )
+    mode = ReconMode()
+    for _ in range(ic.PARKED_GUARD_TICKS):
+        intent = mode.decide(b, ActionState())
+    assert intent.point == (300, 80)  # guard fired -> escape committed
+    # The escape persists on later ticks (a one-tick escape would immediately
+    # re-derive the same parked seek target and never actually move).
+    assert mode.decide(b, ActionState()).point == (300, 80)
+    # A crewmate coming into view releases the escape back to normal recon.
+    _seen(b, "blue", (200, 60), tick=b.last_tick)
+    assert mode.decide(b, ActionState()).point == (200, 60)

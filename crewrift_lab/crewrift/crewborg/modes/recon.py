@@ -45,12 +45,23 @@ class ReconMode(Mode[Belief, ActionState, Intent]):
         super().__init__(params)
         self._abandoned: str | None = None  # a target we reached but who had already left
         self._parked_guard = ic.ParkedGuard()
+        self._escape_point: ic.Point | None = None  # sticky un-park destination
 
     def decide(self, belief: Belief, action_state: ActionState) -> Intent:
         del action_state
         self_xy = ic.self_xy(belief)
         if self_xy is None:
             return Intent(kind="idle", reason="recon: no self position")  # startup no-op (no camera)
+
+        # A previously fired guard committed us to an escape point: keep walking there
+        # until we arrive (or a crewmate shows up) — a one-tick escape would be no
+        # escape at all, since _decide re-derives the same parked target every tick.
+        if self._escape_point is not None:
+            if ic.visible_crew(belief) or ic.dist2(self_xy, self._escape_point) <= REACHED_RADIUS_SQ:
+                self._escape_point = None
+            else:
+                return Intent(kind="navigate_to", point=self._escape_point,
+                              reason="recon: parked guard — moving to expected crew elsewhere")
 
         intent = self._decide(belief, self_xy)
         # PARKED GUARD (insurance — the selector shouldn't route a kill-ready blind
@@ -90,8 +101,8 @@ class ReconMode(Mode[Belief, ActionState, Intent]):
         return Intent(kind="idle", reason="recon: no crew signal yet")  # rare: no occupancy built yet
 
     def _escape(self, belief: Belief, self_xy: ic.Point) -> Intent:
-        """Forced un-park: abandon the current target and head for the hottest
-        occupancy point that is actually somewhere else."""
+        """Forced un-park: abandon the current target and commit to the hottest
+        occupancy point that is actually somewhere else (sticky via _escape_point)."""
 
         target = self._commander_target(belief) or most_recent_victim(belief)
         if target is not None:
@@ -99,6 +110,7 @@ class ReconMode(Mode[Belief, ActionState, Intent]):
         for seek in ranked_seek_points(belief):
             point = ic.reachable_point(belief, seek)
             if ic.dist2(self_xy, point) > REACHED_RADIUS_SQ:
+                self._escape_point = point
                 return Intent(kind="navigate_to", point=point,
                               reason="recon: parked guard — moving to expected crew elsewhere")
         return Intent(kind="idle", reason="recon: parked guard fired but no crew signal to move on")
