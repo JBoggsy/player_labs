@@ -67,3 +67,23 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 - **Ghost fix pattern**: death detection already existed (ghost HUD → self_alive flip); the
   latency was nav-shaped (wall-aware A* + hold-still-on-unreachable + anchor filters). The parked
   branch had the full fix; `git branch --no-merged` before re-implementing (2nd occurrence).
+
+## 2026-07-02 — ghost A/B + killtrace verdicts (subagent runs)
+- **Ghost straight-line nav REFUTED, and the metric was confounded**: death→first-ghost-completion
+  is dominated by MEETING-LOCKED ticks (movement frozen ~1300t/meeting, meetings often start right
+  after the kill). On Playing-phase ticks both arms are ~241-250 median — already inside the
+  111-239 competitor band; ghosts ALREADY noclip at full speed while Playing. The league "964"
+  overstated the gap ~4x. ALWAYS compute ghost latency on Playing-phase ticks. Do not merge/retry
+  straight-line ghost nav (100v100, primary reversed p=0.69, conversion 45% vs 68% worse p=0.06).
+- **Kill gate: H1 (witness-veto starvation) confirmed 367:2 over H3; H3 also MOOT** — the A-press
+  kills the server-nearest in-range crew regardless of Hunt's committed target (replay-verified:
+  committed blue, killed purple). But the 19.6% ready+in-range conversion figure did NOT replicate
+  (69.7% truth-based in the pinned probe) — the earlier number was contaminated (isolation windows
+  spanning vote-freezes). Dominant ready-time cost is CONTACT: 96% of kill-ready ticks have no
+  visible victim (recon), median ready→kill 8t once seen. The big lever remains post-kill
+  re-approach / victim finding, with URGENCY_FULL_TICKS 240→80 as the designed cheap A/B.
+- **hunt_block telemetry** exists on branch worktree-agent-a17e8a614aabde1c4 (commit 1547423) —
+  per-ready-tick gate outcome/committed victim/witness geometry; debug-gated, 3 tests. Merge-worthy
+  for future kill work even though the A/B lever is a separate decision.
+- **coworld CLI 0.1.26 → 0.1.27 required** (manifest 'promo' field rejection on run-episode);
+  both subagents hit it independently. Bumped on main.

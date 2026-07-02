@@ -43,20 +43,22 @@ accuracy overall vs 68–77% leaders; ejected-as-crew 5× (worst). relhalpha win
 button-calls + 83% late-meeting accuracy. (3) **ghosts**: resume tasking at median 964 ticks
 post-death vs 111–239 field-best.
 
-**Three tracks opened 2026-07-02 (James):**
-1. **Ghost nav shortcut** — BUILT on branch `worktree-agent-ad95c8246d5986371` (commit d28b97c;
-   worktree `.claude/worktrees/agent-ad95c8246d5986371`): death already detected via ghost HUD;
-   fix = straight-line noclip nav + skip anchor filters (port of parked `worktree-ghost-tasking`
-   onto current main). 527 tests pass. Un-merged, un-uploaded. A/B metric must be time-to-first-
-   ghost-completion (median 964 → target ~200), NOT completion rate (prior A/B flat on rate).
-2. **Imposter kill failure** — INVESTIGATED (no changes): approach is fine (median 23.8px from
-   crew when ready; 27.6% of ready ticks truth-inside 20px kill range) but only 19.6% of
-   ready+in-range ticks convert (field 84-91%). Ranked: H1 witness-veto starvation (crew pair up;
-   BASE_ISOLATION_RADIUS=48=2.4x kill range; URGENCY_FULL_TICKS=240 ramp resets on meetings),
-   H2 meeting confiscation (body-reports reset unused cooldown 0→500; vote freeze), H3
-   committed-victim mismatch (in range of the WRONG crew = no strike; hunt.py:57), H4 speed-parity
-   shadow (47% of ready ticks stuck 20-32px), H5 v82 press-loop bug FIXED since v84. Next: one
-   trace-enabled ~20-imposter-ep xreq (hunt reasons + committed victim + urgency) to split H1/H3.
+**Three tracks opened 2026-07-02 (James) — two CLOSED same day:**
+1. **Ghost nav shortcut — REFUTED, DO NOT MERGE/RETRY** (100v100 A/B, xreq_afc56187/xreq_b6c21efc,
+   arms crewborg-ghostnav:v1 / -base:v1): primary reversed (672 vs 317, p=0.69), conversion worse
+   (45% vs 68%, p=0.06). ROOT DISCOVERY: the "964-tick ghost latency" was MEETING-LOCKED time —
+   on Playing-phase ticks both arms ≈241-250, already at competitor par; ghosts already noclip.
+   Branch worktree-agent-ad95c8246d5986371 (d28b97c) stays unmerged; ghost-task lever if any is
+   meeting cadence, not pathing.
+2. **Imposter kill failure — H1 CONFIRMED (367:2 blocked ticks), H3 REFUTED+MOOT** (server kills
+   nearest in-range crew regardless of committed target). Probe: crewborg-killtrace:v1
+   (xreq_c3a6890b, 25 pinned-imposter eps; hunt_block telemetry on branch
+   worktree-agent-a17e8a614aabde1c4 @1547423 — merge-worthy). CORRECTION: 19.6% conversion was an
+   artifact (vote-freeze-spanning windows); truth-based = 69.7%. Dominant cost = CONTACT (96% of
+   ready ticks victimless in recon; median ready→kill 8t once seen) → post-kill re-approach /
+   victim-finding remains the big lever. DESIGNED (not run, awaiting James): URGENCY_FULL_TICKS
+   240→80 via env knob, imposter-pinned 100/arm, primary kills/g + ≥2-kill rate, guard imposter
+   ejections not worse >3pp.
 3. **Suspicion evidence renovation (voting)** — corpus PULLED + VERIFIED: /tmp/susp_corpus_eps,
    692 eps across 16 xreqs (v82/v84/v85/v87/v88/v89 + v87-90 probes, crewrift_prime 0.4.31-era);
    artifact zips 691/692; **634 crewborg-slot episodes carry 1,486 per-meeting suspicion
@@ -73,6 +75,14 @@ post-death vs 111–239 field-best.
    posteriors on the 692 eps now, (d) fresh traced upload + ~200-300 eps → true runtime refit.
    /tmp/expand-043 is JSONL-capable + hash-clean on 0.4.31 (verified) for the label stage.
    fetch_artifacts.py FIXED: --no-logs no longer drops policy-artifact zips (new --no-artifacts).
+   **v4 REFIT DONE + A/B IN FLIGHT**: fit on 2,220 live rows (205 eps/398 meetings) → held-out
+   AUC 0.671 vs old-weights-live 0.59; precision@0.9 98% vs 66% same-rows. Weights vendored on
+   main (commit "suspicion v4"), suite green, verified loading in-image. Deterministic A/B:
+   `crewborg-suspfit:v1` (new) vs `crewborg-suspfit-base:v1` (old), 100 eps each,
+   `xreq_bb325dec` / `xreq_9cc4c88c`. PRE-REGISTERED: crew vote precision UP (Fisher, replay
+   truth); imposters-ejected/crew-ep + crew win not worse; timeouts/ops 0. Expect FEWER
+   fallback votes (stricter honest 0.9). Open detector bug: reported_bodies/button_calls_made
+   all-zero live across 398 meetings — fix before next refit.
 
 ## ▶ OPEN LEVERS (evidence on file, none in flight)
 
