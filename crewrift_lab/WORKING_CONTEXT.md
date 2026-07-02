@@ -139,6 +139,19 @@ parked guard (zero-length-route escape) + **empirical density-weighted search** 
 live-crew share over 600-tick bands; Bridge 45%→23%, task rooms 7-17%). Pre-registered imposter-pinned
 100v100 A/B vs main base; primary kills/g UP + first-kill Playing ticks DOWN; mechanism parked→~0.
 
+**v91 first field check (120-ep tournament vs sampled champions, /tmp/survey_v91_tourney.html):**
+30% overall (9th/11 but field compressed 27-42%; window turned hard imposter-favored — crew par ~21%).
+Crew 20% = AT PAR (was below par this morning); imposter 63% vs par 68%; **kills/imp-game 1.93 =
+2nd in field** (was 1.1-1.5 — the ready-search+density stack correlates); tasks/cg 6.67 best; ops 0.
+Server `random:true`/`top_n` champion-pool queries 500 on statement timeout (2nd+3rd sighting) —
+sample rosters client-side.
+
+**WATCH CAMOUFLAGE BUILD IN FLIGHT (James spec, 2026-07-02 late):** in Search/WATCH with >=1 visible
+crew and >100 ticks of kill CD left → fake-task at the task spot with best (pre-baked) vision over
+visible crew, for fake-task duration + buffer, with full escape set + ParkedGuard exemption.
+Worktree agent building + pre-registered imposter-pinned 100v100 A/B (primary: imposter-ejected
+DOWN and/or kills/g UP; guard: first-kill not worse >15%).
+
 ## ▶ OPEN LEVERS (evidence on file, none in flight)
 
 1. **Evidence warming for the fitted suspicion posterior** — the remaining crew lever
