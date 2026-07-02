@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 TOOLS = Path(__file__).resolve().parents[1] / "tools"
@@ -44,3 +45,20 @@ def test_render_html_formats_none_target_agreement():
     assert "None" not in html, "Literal 'None' should not appear in HTML output"
     assert "n/a" in html, "Should format None target_agreement as 'n/a'"
     assert "target agreement n/a" in html, "Should read as 'target agreement n/a'"
+
+
+def test_render_html_formats_nan_metric_cell_as_na():
+    """A zero-accusation policy leaves `accuracy` as NaN in winrate_association;
+    it must render as 'N/A' in the HTML table, not the literal 'nan'.
+    """
+    winrate_with_nan = pd.DataFrame(
+        [
+            {"policy_name": "crewborg", "role": "crew", "seat_games": 100, "seat_win_rate": 0.24, "accusations_made": 40, "accuracy": 0.55},
+            {"policy_name": "notsus", "role": "imposter", "seat_games": 50, "seat_win_rate": 0.6, "accusations_made": 0, "accuracy": np.nan},
+        ]
+    )
+
+    html = render_html(META, VALIDATION, CREW_ACCURACY, EFFECTIVENESS, winrate_with_nan)
+
+    assert ">nan<" not in html, "Literal 'nan' should not appear as a table cell in HTML output"
+    assert "N/A" in html, "Should render NaN accuracy cell as 'N/A'"

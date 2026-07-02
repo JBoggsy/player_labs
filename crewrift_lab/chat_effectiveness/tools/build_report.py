@@ -15,7 +15,7 @@ import pandas as pd
 
 
 def _table(df: pd.DataFrame) -> str:
-    return df.to_html(index=False, float_format=lambda x: f"{x:.3f}", border=0, classes="tbl")
+    return df.to_html(index=False, float_format=lambda x: f"{x:.3f}", border=0, classes="tbl", na_rep="N/A")
 
 
 def render_html(
