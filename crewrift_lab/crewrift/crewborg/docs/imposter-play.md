@@ -146,7 +146,7 @@ form; see the module docstring for the authoritative transition list):
 | `pick_room` | **Score every reachable room and commit to the best — never idles.** The score blends (env-tunable weights, `modes/search.py`): live expected-crew occupancy (strongest, `W_OCCUPANCY` 3.0), the **empirical density prior** (`W_PRIOR` 1.5 — see below), unvisitedness (grows with time since visit), a fast-decaying just-visited penalty, travel cost, teammate-pressure subtraction, a task-room blend bonus, and a soft commander hunt-room nudge. Excludes the current room, the spawn room, and a commander avoid-room when possible. Head to the room **center** (go fully inside), not a door/task spot. |
 | `go_to_room` | Navigate to the center; seeing ANY live non-teammate — room or hallway — switches to FOLLOW immediately; on arrival, SEARCH_ROOM. |
 | `search_room` | Sweep the room's interior scan points so crew hidden from the door are found. Crew in the room → WATCH; a crewmate seen elsewhere → FOLLOW; swept empty → PICK_ROOM. |
-| `watch` | Only entered with crew confirmed in the room. Multiple crew: hold the in-room **vantage** with line-of-sight to the most of them (recomputed as they move). A single crew: close to just outside kill range (or a task site beside it). Leaver → FOLLOW; no watched crew remain → PICK_ROOM. |
+| `watch` | Only entered with crew confirmed in the room. **Camouflage first** (2026-07-02, [design](./designs/watch-camouflage.md)): when the kill is >`CREWBORG_CAMO_MIN_CD_TICKS` (100) from ready, fake a task — idle one task duration + buffer at the in-room task spot whose *baked* vision (`visionbake.py`) covers the most visible crew — instead of hovering; escapes on kill-soon / crew-lost / travel-cap / preemption, one fake task per room visit. Then: multiple crew: hold the in-room **vantage** with line-of-sight to the most of them (recomputed as they move). A single crew: close to just outside kill range (or a task site beside it). Leaver → FOLLOW; no watched crew remain → PICK_ROOM. |
 | `follow(c)` | Chase the committed leaver `c` to its next room. When visible, `navigate_to` its live position and feed `strategy/path_prediction.py:PathPredictor`; when occluded, `navigate_to` the predictor's top predicted hallway position. Give up when the target is gone/dead/now a teammate, the lost-ticks budget expires, or the predictor runs out. |
 
 Search never follows the teammate imposter (`belief.teammate_colors`). The path
@@ -181,7 +181,30 @@ new target is always elsewhere); Recon abandons its target and heads for the
 hottest occupancy point that isn't underfoot — and emits a
 `domain.parked_guard` trace event (in the `kill` trace group). Hunt is
 deliberately unguarded (its in-range "lying in wait" hold escapes via the
-urgency relaxation) and Evade can't be kill-ready.
+urgency relaxation) and Evade can't be kill-ready. The one exemption is
+Search's camo idle (below) — *intentional* idling passed as
+`fires(..., intentional_idle=True)` resets the streak instead of accruing.
+
+### WATCH camouflage — fake a task instead of hovering
+
+Full design: [`./designs/watch-camouflage.md`](./designs/watch-camouflage.md).
+When WATCH has ≥1 visible crewmate in the room and the kill is more than
+`CREWBORG_CAMO_MIN_CD_TICKS` (100, = the Recon window — camo never eats the
+near-ready window) ticks from ready, the imposter walks to the task station in
+the room whose **baked vision** covers the most currently-visible crew
+(tie-break: larger total visible area; no usable bake → nearest in-room task
+spot) and fakes a task there: idle `FAKE_TASK_TICKS` (72) +
+`CREWBORG_CAMO_BUFFER_TICKS` (12). The per-task visibility masks are baked
+offline (`visionbake.py`, vendored `map/croatoan_visionbake.pkl.gz`, re-baked
+by `crewrift_lab/tools/vision_bake.py`) and validated at load against the
+walkability fingerprint + task count.
+
+Every camo tick has an escape: kill-soon (`ticks_until_kill_ready` back inside
+the gate), crew-lost (all crew unseen `CREWBORG_CAMO_CREW_LOST_TICKS` = 36
+ticks), a 120-tick travel cap on the walk to the spot, the hold deadline, and
+mode preemption (`SearchMode.on_exit` closes an active camo). One fake task per
+room visit; `CREWBORG_CAMO=0` is the kill switch. Telemetry:
+`domain.camo_idle` (phase `enter`/`exit`, in the `kill` trace group).
 
 ### Vantage selection
 
