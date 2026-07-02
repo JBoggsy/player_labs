@@ -34,7 +34,10 @@ from players.player_sdk import EmptyModeParams, Mode
 LLM_MIN_CALL_INTERVAL_TICKS = 12
 DEADLINE_LLM_REMAINING_TICKS = 96
 AUTO_SUBMIT_REMAINING_TICKS = 48
-MEETING_TICKS_PER_SECOND = VOTE_TIMER_TICKS // 10
+# The sim's real tick rate (24/s). Deliberately NOT derived from VOTE_TIMER_TICKS —
+# the timer length changed (240→1200) but the tick rate did not; deriving it would
+# corrupt the LLM latency-guard's seconds→ticks conversion.
+MEETING_TICKS_PER_SECOND = 24
 LLM_TIMEOUT_MARGIN_TICKS = LLM_MIN_CALL_INTERVAL_TICKS
 DEFAULT_LLM_TIMEOUT_SECONDS = 3.0
 

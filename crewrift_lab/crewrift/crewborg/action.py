@@ -56,6 +56,11 @@ REPORT_RANGE_SQ = 400
 # Kill fires within KillRange = 20px (dist² ≤ 400); vent within VentRange = 16px
 # (dist² ≤ 256) (sim.nim).
 KILL_RANGE_SQ = 400
+# Kill-press escape (see _resolve_kill): after this many fruitless in-range presses
+# (~2 ticks each: press+release), assume a belief/sim range disagreement and step
+# toward the target for KILL_PRESS_NAV_TICKS before pressing again.
+KILL_PRESS_ESCAPE = 24
+KILL_PRESS_NAV_TICKS = 12
 VENT_RANGE_SQ = 256
 
 
@@ -394,10 +399,25 @@ def _resolve_kill(
     if target is None:
         return Command(held_mask=0)
     target_xy = (target.world_x, target.world_y)
+    if intent.target_color != action_state.kill_press_target:
+        action_state.kill_press_target = intent.target_color
+        action_state.kill_press_streak = 0
     if _dist2(self_xy, target_xy) <= KILL_RANGE_SQ:
+        # Kill-press escape: belief and the sim can disagree by a few pixels right at
+        # KillRange; then every press is silently rejected and we'd deadlock pressing
+        # forever. After KILL_PRESS_ESCAPE fruitless presses, force a short navigate
+        # phase toward the target to actually close the gap, then resume pressing.
+        if action_state.kill_press_streak < 0:
+            action_state.kill_press_streak += 1
+            return Command(held_mask=_navigate_mask(belief, action_state, self_xy, target_xy))
+        if action_state.kill_press_streak >= KILL_PRESS_ESCAPE:
+            action_state.kill_press_streak = -KILL_PRESS_NAV_TICKS
+            return Command(held_mask=_navigate_mask(belief, action_state, self_xy, target_xy))
         # In range: a fresh A press kills (sim.nim tryKill). Caveat: if a body is
         # adjacent, the server reports it instead — Hunt avoids that case.
+        action_state.kill_press_streak += 1
         return Command(held_mask=_edge_press(action_state, BTN_A))
+    action_state.kill_press_streak = 0
     return Command(held_mask=_navigate_mask(belief, action_state, self_xy, target_xy))
 
 

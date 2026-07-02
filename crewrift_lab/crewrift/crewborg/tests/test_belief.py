@@ -329,3 +329,32 @@ def test_chat_log_accumulates_dedups_and_resets_each_meeting() -> None:
     _fold(belief, 10, crew_tasks_remaining=3)
     _fold(belief, 11, voting=voting, chat_lines=(ChatLine(speaker_color="green", text="fresh"),))
     assert [(e.speaker_color, e.text) for e in belief.chat_log] == [("green", "fresh")]
+
+
+def test_role_limbo_escape_defaults_to_crewmate_after_bounded_unknown() -> None:
+    # If neither reveal text ever parses (observed deterministically at some seats),
+    # self_role must not stay None forever — after ROLE_LIMBO_ESCAPE_TICKS of Playing
+    # the seat defaults to crewmate (the safe majority prior) instead of freezing.
+    from crewrift.crewborg.types import ROLE_LIMBO_ESCAPE_TICKS
+
+    belief = Belief()
+    _fold(belief, 1, crew_tasks_remaining=5)  # Playing, no reveal text ever seen
+    assert belief.phase == "Playing" and belief.self_role is None
+
+    for tick in range(2, ROLE_LIMBO_ESCAPE_TICKS):
+        _fold(belief, tick, crew_tasks_remaining=5)
+    assert belief.self_role is None  # still within the window
+
+    _fold(belief, ROLE_LIMBO_ESCAPE_TICKS, crew_tasks_remaining=5)
+    assert belief.self_role == "crewmate"
+
+
+def test_role_limbo_escape_never_overrides_a_latched_role() -> None:
+    from crewrift.crewborg.types import ROLE_LIMBO_ESCAPE_TICKS
+
+    belief = Belief()
+    _fold(belief, 1, phase_texts=frozenset({"IMPS"}))
+    assert belief.self_role == "imposter"
+    for tick in range(2, ROLE_LIMBO_ESCAPE_TICKS + 10):
+        _fold(belief, tick, crew_tasks_remaining=5)
+    assert belief.self_role == "imposter"

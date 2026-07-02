@@ -15,7 +15,10 @@ from crewrift.crewborg.strategy.suspicion import (
 )
 from crewrift.crewborg.types import Belief, PlayerEvent, PlayerRecord
 
-VOTE_TIMER_TICKS = 240
+# The game's voting-phase length. Was 240 (10s); coworld-crewrift b78e400 (merged
+# 2026-06-29) raised the live game to voteTimerTicks=1200 — with the old constant
+# crewborg auto-submitted ~16% into the meeting and stopped listening for the rest.
+VOTE_TIMER_TICKS = 1200
 # Min ticks between our own chats. Kept well under VOTE_TIMER_TICKS so a proactive
 # meeting voice can speak more than once (share a read, then react/follow up).
 CHAT_COOLDOWN_TICKS = 60

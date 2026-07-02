@@ -51,7 +51,7 @@ def test_meeting_context_serializes_timer_chat_votes_and_suspicion() -> None:
         last_chat_tick=10,
     )
 
-    assert context["meeting"]["estimated_remaining_ticks"] == 216
+    assert context["meeting"]["estimated_remaining_ticks"] == 1176
     assert context["constraints"]["valid_vote_targets"] == ["red", VOTE_SKIP]
     assert context["constraints"]["chat_cooldown_ready"] is False
     assert context["state"]["tentative_vote"] == "red"

@@ -329,6 +329,8 @@ class Belief(BaseModel):
     camera_y: int = 0
     self_role: str | None = None  # "imposter" / "crewmate" / None (unknown). Fixed for the game.
     self_alive: bool = True  # cleared on our own death (ghost icon); role is preserved separately.
+    # Consecutive Playing ticks with self_role still None — drives the role-limbo escape.
+    unlatched_playing_ticks: int = 0
     self_kill_ready: bool | None = None
     self_world_x: int | None = None
     self_world_y: int | None = None
@@ -480,6 +482,13 @@ class ActionState(BaseModel):
     vote_confirmed: bool = False
     # Whether the current chat intent's text has been emitted (sent once).
     chat_sent: bool = False
+    # Kill-press escape (idling-is-dangerous): consecutive in-range kill presses on
+    # the same target with no cooldown flip. Belief can disagree with the sim by a
+    # few pixels right at KillRange, in which case every press is rejected and the
+    # agent deadlocks pressing forever (ep d1126954: 4,622 presses over 9,117 ticks).
+    # Positive = pressing; negative = forced-navigate phase stepping toward the target.
+    kill_press_streak: int = 0
+    kill_press_target: str | None = None
 
 
 class Command(BaseModel):
@@ -562,6 +571,12 @@ def _record_death(
 # player can't overlap us. So the visible player within this (small, rounding-tolerant)
 # squared distance of ``self_world`` is us, not someone else.
 SELF_SPRITE_MATCH_SQ = 4**2
+
+# Role-limbo escape: Playing ticks with self_role still None before defaulting to
+# crewmate. The reveal lasts ~120 ticks and the latch re-checks every reveal tick, so
+# by 240 Playing ticks (~10s) an unlatched role means the text never rendered/parsed
+# for this seat at all — waiting longer only prolongs a frozen seat.
+ROLE_LIMBO_ESCAPE_TICKS = 240
 
 
 def update_belief(belief: Belief, percept: Percept) -> None:
@@ -730,6 +745,20 @@ def update_belief(belief: Belief, percept: Percept) -> None:
         elif "CREWMATE" in resolved.phase_texts:
             belief.self_role = "crewmate"
             belief.self_alive = True
+
+    # Role-limbo escape (idling-is-dangerous): at some seats the reveal text never
+    # parses at all (observed deterministically at slot 4), leaving self_role None
+    # forever — the seat then plays neither role: no tasks, no votes, frozen. After a
+    # bounded window of Playing with no latched role, default to CREWMATE: the safe
+    # majority prior (6/8 seats), and the safe direction — a mistaken "crew" does tasks
+    # and votes, while fabricating "imposter" was the 1178f31 catastrophe. The positive
+    # text latch above stays primary; this only breaks a permanent unknown.
+    if belief.phase == "Playing" and belief.self_role is None:
+        belief.unlatched_playing_ticks += 1
+        if belief.unlatched_playing_ticks >= ROLE_LIMBO_ESCAPE_TICKS:
+            belief.self_role = "crewmate"
+    elif belief.self_role is not None:
+        belief.unlatched_playing_ticks = 0
 
     # Death is a STATE (a flag), not a role — so we keep knowing whether we were crew
     # or imposter after dying. The ghost icon is the one HUD self-state signal we keep

@@ -125,7 +125,7 @@ def test_attend_meeting_llm_tentative_vote_auto_submits_near_deadline() -> None:
 
     assert mode.decide(_meeting_belief(tick=0), ActionState()).kind == "idle"
 
-    vote = mode.decide(_meeting_belief(tick=193), ActionState())
+    vote = mode.decide(_meeting_belief(tick=1153), ActionState())
     assert vote.kind == "vote"
     assert vote.target_color == "red"
 
@@ -214,8 +214,8 @@ def test_attend_meeting_deadline_prompt_wins_over_late_chat() -> None:
     mode = AttendMeetingMode(llm_client=client)
 
     assert mode.decide(_meeting_belief(tick=0), ActionState()).kind == "idle"
-    belief = _meeting_belief(tick=107)
-    belief.chat_log = [ChatEvent(tick=100, speaker_color="red", text="blue sus")]
+    belief = _meeting_belief(tick=1067)
+    belief.chat_log = [ChatEvent(tick=1060, speaker_color="red", text="blue sus")]
 
     assert mode.decide(belief, ActionState()).kind == "idle"
     assert [trigger for trigger, _ in client.calls] == ["meeting_start", "deadline"]
@@ -228,8 +228,8 @@ def test_attend_meeting_late_chat_in_danger_window_does_not_call_llm() -> None:
     mode = AttendMeetingMode(llm_client=client)
 
     assert mode.decide(_meeting_belief(tick=0), ActionState()).kind == "idle"
-    belief = _meeting_belief(tick=108)
-    belief.chat_log = [ChatEvent(tick=100, speaker_color="red", text="blue sus")]
+    belief = _meeting_belief(tick=1068)
+    belief.chat_log = [ChatEvent(tick=1060, speaker_color="red", text="blue sus")]
 
     assert mode.decide(belief, ActionState()).kind == "idle"
     assert [trigger for trigger, _ in client.calls] == ["meeting_start"]

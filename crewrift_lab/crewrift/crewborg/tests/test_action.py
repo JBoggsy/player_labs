@@ -411,3 +411,44 @@ def test_complete_task_still_holds_still_when_route_is_dead_and_station_far() ->
     command = resolve_action(Intent(kind="complete_task", task_index=0), belief, ActionState())
 
     assert command.held_mask == 0
+
+
+def test_kill_press_escape_navigates_after_fruitless_presses() -> None:
+    # Belief says in-range at the boundary; the sim can disagree by a few pixels and
+    # reject every press (the d1126954 deadlock). After KILL_PRESS_ESCAPE in-range
+    # resolver ticks (press/release alternation) with no kill, the resolver must step
+    # toward the target instead of pressing forever.
+    from crewrift.crewborg.action import KILL_PRESS_ESCAPE, KILL_PRESS_NAV_TICKS
+
+    belief = _belief_with_target((50, 50), (68, 50))  # dist 18 <= KillRange 20, believed in-range
+    action_state = ActionState()
+    intent = Intent(kind="kill", target_color="red")
+
+    for _ in range(KILL_PRESS_ESCAPE):
+        mask = resolve_action(intent, belief, action_state).held_mask
+        assert mask in (BTN_A, 0)  # pressing/releasing, no navigation yet
+
+    # Escape phase: the trigger tick + the nav window all navigate, no presses.
+    nav_masks = [resolve_action(intent, belief, action_state).held_mask for _ in range(KILL_PRESS_NAV_TICKS + 1)]
+    assert all(mask & BTN_A == 0 for mask in nav_masks)
+    assert any(mask != 0 for mask in nav_masks)  # actually moving, not idling
+
+    # After the navigate window it presses again.
+    assert resolve_action(intent, belief, action_state).held_mask == BTN_A
+
+
+def test_kill_press_streak_resets_on_target_change() -> None:
+    from crewrift.crewborg.action import KILL_PRESS_ESCAPE
+
+    belief = _belief_with_target((50, 50), (68, 50))
+    belief.roster["blue"] = PlayerRecord(
+        object_id=1005, color="blue", facing="left", world_x=68, world_y=50,
+        last_seen_tick=1, life_status="alive",
+    )
+    action_state = ActionState()
+    for _ in range(KILL_PRESS_ESCAPE - 1):
+        resolve_action(Intent(kind="kill", target_color="red"), belief, action_state)
+    assert action_state.kill_press_streak == KILL_PRESS_ESCAPE - 1
+    resolve_action(Intent(kind="kill", target_color="blue"), belief, action_state)
+    assert action_state.kill_press_target == "blue"
+    assert action_state.kill_press_streak == 1

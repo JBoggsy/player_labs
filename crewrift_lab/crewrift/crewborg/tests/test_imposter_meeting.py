@@ -185,7 +185,7 @@ def test_imposter_skips_at_the_deadline_when_no_crewmate_takes_heat() -> None:
     belief.voting = _voting()
 
     assert mode.decide(belief, ActionState()).kind == "idle"  # early: wait
-    belief.last_tick = 200  # within the auto-submit window (240-tick timer)
+    belief.last_tick = 1160  # within the auto-submit window (1200-tick timer)
     vote = mode.decide(belief, ActionState())
     assert vote.kind == "vote" and vote.target_color is None  # skip
 
@@ -255,6 +255,6 @@ def test_imposter_without_a_known_teammate_still_skips_a_flat_endgame() -> None:
     belief.voting = _parity_voting(teammate="green")  # green present but not known as ours
 
     assert mode.decide(belief, ActionState()).kind == "idle"  # no push without a known team
-    belief.last_tick = 200
+    belief.last_tick = 1160
     vote = mode.decide(belief, ActionState())
     assert vote.kind == "vote" and vote.target_color is None  # falls back to skip
