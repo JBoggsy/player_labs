@@ -144,3 +144,5 @@ not be trusted to be MY code. Fix: build each arm under a UNIQUE image tag (`pla
 `:emr-base`, `:emr-lower`) and verify the image carries the change (`docker run … grep`) before
 uploading. Also: hosted uploads/POSTs were flaky (broken pipe), so wrap them in retry loops and verify
 server-side (`versions.py`) rather than trusting one attempt.
+### fetch_artifacts --no-logs ALSO skips the policy-artifact telemetry zips
+Evidence: v85 probe fetched --no-logs -> 0/8 artifacts; the zips download inside the `want_logs` branch (fetch_artifacts.py step 5). For any telemetry-verification fetch, keep logs ON (or split the flag — a --no-logs that keeps artifacts would match actual usage).

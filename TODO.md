@@ -5,6 +5,15 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
+- **Meeting-LLM call failures at 1200-tick meetings (~43% of non-cooldown calls)** (2026-07-02).
+  v85's probe: 132 `meeting_llm_decision` vs 100 `llm_call_failed` fallbacks — the 6x-longer
+  voting phase (VOTE_TIMER 240→1200, fixed in v84) triples call attempts per meeting and the
+  Bedrock sidecar starts failing calls (rate/timeout pressure; v83's short meetings had ZERO
+  llm_call_failed). Falls back safely to the A/B-validated deterministic path, so it's lost
+  upside, not a correctness risk. Levers: raise `LLM_MIN_CALL_INTERVAL_TICKS` (12 → ~60-100 at
+  the new meeting length), batch/skip triggers, or longer `CREWBORG_LLM_TIMEOUT_SECONDS` now
+  that the deadline budget is 5x roomier. Related: the pre-existing ~41%-fallback latency item below.
+
 - **League telemetry artifacts are EPHEMERAL (~one round's retention) — investigate + build a harvest**
   (flagged 2026-07-01, James). With all-telemetry uploads now standard (`CREWBORG_TRACE_GROUPS=all`,
   see `user_preferences.md`), policy artifacts from league rounds vanish after roughly one round

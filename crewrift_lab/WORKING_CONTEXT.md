@@ -129,6 +129,15 @@ never parses there); bounded fallback-to-crew after N ticks in `types.py`; (3) *
 stale vs live `voteTimerTicks=1200`** (`strategy/meeting/context.py:18`) — we submit ~16% into the meeting
 and stop listening; align before any meeting-coordination work.
 
+**👑 v85 CHAMPION (2026-07-02, ~01:45Z):** v84 (= v82 + ALL fan-out fixes: H4 freeze fixes, direction-3
+call-bar, kill-press deadlock escape, slot-4 role-limbo escape, VOTE_TIMER 240→1200) A/B'd POSITIVE vs v82
+(natural roles, pinned field, 100/arm: overall +5.8pp, imposter 68% vs 50%, 0-task crew 0%, ss-penalties
+−63%); v85 = same image + meeting LLM (per the never-submit-without-LLM rule) verified firing, then
+submitted → qualified (new `skill_gate` stage) → CHAMPION, supersedes v82. NB Andre pushed notsus v140/v142
+tonight — the field is moving. NEXT: harvest v85's first league rounds promptly (ephemeral artifacts!) to
+(1) check the LLM fires in dispatch pods (the historical sidecar gap), (2) confirm the fixes in natural
+league play; then the llm_call_failed tuning (TODO top item).
+
 **▶ EXPERIMENT FAN-OUT COMPLETE (2026-07-01 eve) — all 4 hypotheses REFUTED AS POSED, 3 real fixes surfaced:**
 H1→ the real imposter blocker is a KILL-PRESS DEADLOCK (belief in-range 15.8px vs sim 22.1px>20 KillRange, ~4-6px perception offset; ep d1126954 pressed kill 4,622x for 9,117 ticks = 50% of ALL our ready ticks; fix specced: press-count escape in action.py:_resolve_kill + press-range margin — NOT YET BUILT). H2→ corpse-avoidance is a NON-problem (linger doesn't predict reports/ejections; don't build). H3→ self-called button meetings are our WORST evidence context (40% imposter piles, 19 crew vs 11 imp ejections) — conditional gate would HARM; vote thresholds now refuted 3 ways; MERGE worktree-direction3-emergency-meetings (call bar=conviction bar, its own A/B/C safe-neutral); direction-2 witnessed-only A/B at full n: +2.0pp p=0.64 neutral. H4→ posed mechanism wrong (0/145 penalties post-tasks) but found TWO mid-task freezes (ARRIVE_RADIUS=4 deadband wedge outside task rect, action.py; unowned no-route hold, action.py:179) — FIX BUILT on worktree-h4-posttask-posture + A/B CONFIRMED (ss-penalties 0.454→0.010 p=7e-13, voted-out-as-crew 11.3%→2.0% p=.0094, tasks/win flat; crewborg-h4:v1, xreqs 78d75331/038f4eef; frozen games had crew win 8.3% vs 29.8%). Report: crewrift_lab/docs/h4_experiment.html (worktree).
 
