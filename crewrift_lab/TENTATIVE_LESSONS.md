@@ -230,3 +230,8 @@ Evidence: v89 league crew 24% looked like a collapse vs v88's 43% — but the fi
 
 ### Vote-gate inversion: gated deadline tentatives beat the early-submit votes the gate lets through
 Evidence (v89 league): LLM submit_vote 19/22 (86%), early-submit passes 2/9 (22%), gated deadline tentatives would-have-hit 6/12 (50%). The gate suppresses a 50%-precision channel while admitting a 22% one. Queued fix: allow LLM-set tentatives at deadline auto-submit; tighten early-submit corroboration further.
+### Measure a channel's VOLUME before shipping a precision fix for it
+Evidence: v90's deadline pass-through targeted a channel that league data showed at 50% precision (6/12) — but 305 chat-riding tentative-sets vs 47 LLM set_tentative_vote decisions meant chats overwrite the named tentative before deadline; the lever fired once in 38 crew eps. Precision of a channel is meaningless if the channel carries no volume by the time your hook sees it.
+
+### Same-window A/B arms are not quota-matched — check per-arm 429 rates before comparing LLM-dependent metrics
+Evidence: v90/v89 arms ran concurrently; the v89 arm absorbed 78% call failures vs v90's 25% (they drain the shared daily quota against each other, asymmetrically). Paired deltas on LLM-path metrics carry this bias; note its direction relative to the verdict (here it favored the candidate, making DO-NOT-SHIP conservative).

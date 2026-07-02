@@ -80,6 +80,19 @@ NEXT: tune — (1) imposter A/B (commander LLM on vs off) for kill efficiency, i
 useful `hunt_room`/`target_player`/`strength`; (2) Phase 4 EscortMode for crew. Both roles wired + strength dial. Branch `worktree-labs-work`
 (merged to origin/main @ `2ec14f9`); uploaded v55–v64, **none submitted**.
 
+## 🏁 CYCLE-5 / LOOP CLOSED (2026-07-02): v90 refuted cleanly — v89 stays champion
+
+v90 (deadline pass-through + stricter early submit) built + 50v50 A/B'd vs v89 (current-roster field,
+`xreq_27602007`/`xreq_b53e500f`): **DO NOT SHIP** — primary failed (imp-ejections/crew-ep 0.11 vs 0.17),
+crew win worse-leaning, and the league's 50%-precision deadline channel did NOT replicate (2/8=25% in
+the arm; v89's gated pool 5/20=25%). Root: chats overwrite LLM-named tentatives (305 chat-riding vs 47
+set_tentative), so the lever had ~zero volume — v89's gate was right. Code parked on
+`worktree-v90-deadline-tentative` (crewborg-v90probe:v1 uploaded, inert). Also: same-window A/B arms
+are NOT quota-matched (v89 arm ate 78% 429s vs v90's 25% — bias favored the candidate; verdict is
+conservative). **The 2h meta loop (cron a3d08900) is DELETED per James — cycle 5 was the last.**
+Standing champion: v89. Open levers on file: RelhAlpha first-kill latency (earmarked), ghost noclip
+(parked), meeting-LLM latency items (TODO), telemetry harvest automation (TODO).
+
 ## 📊 CYCLE-4 (2026-07-02): v89 KEPT — 'regression' was field-par shift; gate inversion queued
 
 v89 league (36 eps): win 31%, crew 24% — looked bad vs v88's 43% BUT the field's crew-team win fell
