@@ -5,6 +5,15 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
+- **Ghost idle mechanism — dead crew idles upstream of navigation** (2026-07-02, from the ghost-tasking
+  experiment). Dead-task completion 50-64% vs notsus 61-69%; ghosts stand still 72-79% of dead time but
+  only ~8-10% of that is at task stations — they idle in the DECIDE layer, not en route. Noclip nav was
+  implemented + A/B'd flat (kept unmerged on `worktree-ghost-tasking`, commit b3d8844 — harmless, retest
+  if the decide fix lands). Next instrument: per-tick fingerprint of ghost time (held intent + target while
+  still) via `CREWBORG_TRACE_GROUPS=decision,action` probe, or read 5 ghost replays from
+  /tmp/ab_ghost/cand_wh_episodes. Suspects: post-completion parking, `_pick_target` returning None for
+  ghosts in some state, dying with few tasks left (denominator), or a mode ping-pong.
+
 - **Meeting-LLM call failures at 1200-tick meetings (~43% of non-cooldown calls)** (2026-07-02).
   v85's probe: 132 `meeting_llm_decision` vs 100 `llm_call_failed` fallbacks — the 6x-longer
   voting phase (VOTE_TIMER 240→1200, fixed in v84) triples call attempts per meeting and the

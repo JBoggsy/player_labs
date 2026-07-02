@@ -80,6 +80,19 @@ NEXT: tune — (1) imposter A/B (commander LLM on vs off) for kill efficiency, i
 useful `hunt_room`/`target_player`/`strength`; (2) Phase 4 EscortMode for crew. Both roles wired + strength dial. Branch `worktree-labs-work`
 (merged to origin/main @ `2ec14f9`); uploaded v55–v64, **none submitted**.
 
+## 🚨 ACTIVE INCIDENT + FIX IN FLIGHT (2026-07-02 morning): synchronous meeting-LLM blocks the loop
+
+v86 is CHAMPION (LLM on, no tracing) but bleeding: **38.5% league disconnects, 8% win** (v85 was 9.4%).
+Root cause UNIFIED (chat-vote agent, 175 eps): the meeting LLM call is SYNCHRONOUS (~3s loop block each);
+v84's 1200-tick timer quintupled call volume → belief clock lags ~670 ticks (26% crew meetings end
+vote_timeout — votes selected but never land), server disconnect-timeouts on meeting-heavy seats, and the
+Bedrock DAILY quota exhausted (800× 429) → failed vote calls → 0.9-gate skips ("chatting confidently but
+not voting"). Tracing was exonerated (v86 has none, got worse). **v87 package in flight**
+(worktree-v87-async-meeting-llm agent): async worker (commander pattern) + cadence cap 12→120 + per-meeting
+call budget + chat-implied fallback vote + early tentative submit. Validation = LLM-on 16-ep probe vs v85
+(deterministic A/B can't exercise LLM paths). Ghost-tasking A/B also in flight (crewborg-ghost:v1 vs v84,
+dashboards :8791). Ship order: v87 fixes first (incident), fold ghost fix if its A/B is positive.
+
 ## 🎯 OBJECTIVE (REFRAMED 2026-06-30): fix crewborg's CREW play (voting-led)
 
 **✅ UPDATE 2026-07-01 — the recent crew "collapse" was mostly a REGRESSION, now FIXED (crewborg:v75).**

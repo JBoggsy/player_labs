@@ -146,3 +146,34 @@ uploading. Also: hosted uploads/POSTs were flaky (broken pipe), so wrap them in 
 server-side (`versions.py`) rather than trusting one attempt.
 ### fetch_artifacts --no-logs ALSO skips the policy-artifact telemetry zips
 Evidence: v85 probe fetched --no-logs -> 0/8 artifacts; the zips download inside the `want_logs` branch (fetch_artifacts.py step 5). For any telemetry-verification fetch, keep logs ON (or split the flag — a --no-logs that keeps artifacts would match actual usage).
+
+### v85 "chats confidently, then skips": LLM chat decisions never carry votes + 429s kill the later vote call + LLM blocking stalls the belief clock
+Evidence (175 league eps, 337 v85 meetings; docs/experiment_v85_chat_then_skip.html): send_chat
+decisions carried vote_target in 1/1566 cases, so the vote depends entirely on a LATER
+set_tentative/submit_vote call; 35% of meeting-LLM calls fail (90% Bedrock 429 "Too many tokens per
+day"), so in 60/102 confident-chat-no-player-vote crew meetings the vote fell to the deadline
+fallback (top_suspect@0.9 gate) => skip (CONFIRMED, pre-committed rule). Compounding: each
+synchronous LLM call blocks the game loop ~3s (bridge.loop_gap_ms == call latency); skip meetings
+averaged 29s blocked of a 50s meeting, so the belief clock lags reality by up to ~670 ticks —
+27 meetings never reached their believed deadline before the REAL meeting ended, and 26% of crew
+meetings (60/230) ended in vote_timeout (selected votes that never landed: 21/77 player, 34/78
+skip). VOTE_TIMER 240->1200 (v84) is NOT the bug; belief-time lag is. Minimal fix: remember the
+color we accused in our own meeting chat and use it in _fallback_vote_target (attend_meeting.py:464)
+ahead of top_suspect@0.9; companion fix for the timeouts = cut call cadence (chat re-triggers) and
+submit the tentative early instead of waiting for a belief-time deadline that may never arrive.
+### One root cause wore four masks: synchronous LLM calls at 5x meeting length
+Evidence: v84's correct VOTE_TIMER fix (240->1200) quintupled meeting-LLM call volume; each SYNCHRONOUS call blocks the game loop ~3s -> (a) ~29s/50s meetings blocked, belief clock ~670 ticks behind, 26% crew meetings end vote_timeout (votes selected but never land); (b) server-side disconnects on the seats that live through meetings (v85 9.4%, v86 38.5% league games); (c) Bedrock DAILY token quota exhausted (800x 429 'Too many tokens per day') -> failed vote calls -> 0.9-gate skip -> James's 'chatting confidently but not voting'. The tracing-weight hypothesis was WRONG (v86 removed tracing, got worse) — beware time-confounded comparisons when a shared quota is draining. Fix = async worker + cadence cap + chat-implied fallback vote + early submit (v87).
+
+- **Ghost-tasking noclip A/B (2026-07-02): nav is NOT the ghost bottleneck.** Code+warehouse
+  said crewborg ghosts under-task (v85 league: 50.3% dead-completion vs notsus 61-69%; 72%
+  standing-still dead) with the nav layer wall-routing ghosts and holding still on
+  graph-unreachable goals. The surgical fix (crewborg-ghost:v1 = v84 + `_navigate_mask`
+  straight-line when `self_alive=False`, no anchor, no reachable filter) A/B'd NOISE on the
+  pre-committed metric (dead-completion 63.5% vs 67.0%, CI ±13pp; arms xreq_b5f6b8a7/xreq_8fcb29ae,
+  warehouses /tmp/ab_ghost/{cand,base}_wh) and CAND ghosts stood still MORE (85.3% vs 76.2%,
+  only ~8-10% of dead stillness is station-holding in both arms). Two lessons: (1) the ghost
+  stillness is a decide-layer/time-allocation phenomenon (post-completion parking, dying with
+  little left to do), not route-length; (2) a 100-ep arm resolves only ~±13pp on dead-completion
+  (~35 subject crew deaths) — the ~11pp league gap needs a bigger n or a per-tick fingerprint
+  metric, not a completion rate. Worktree `worktree-ghost-tasking` (b3d8844) holds the change +
+  tests; do not merge on this evidence.
