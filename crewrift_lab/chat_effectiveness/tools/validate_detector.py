@@ -30,7 +30,12 @@ def _color_lookup(game: Game) -> tuple[re.Pattern, dict[str, int]]:
 
 
 def regex_lines(game: Game) -> list[dict]:
-    """Every classifiable chat line with tick + raw text, for sampling."""
+    """Every classifiable chat line with tick + raw text, for sampling.
+
+    Reimplements chat_stances()'s classification logic (not a call-through)
+    because chat_stances() doesn't expose per-line tick/text; keep this in
+    sync with features.py if that logic ever changes.
+    """
     if not game.players or not game.meetings:
         return []
     pattern, by_color = _color_lookup(game)
