@@ -45,3 +45,13 @@ Evidence: 12/173 v82 crew games had a >=2-penalty frozen crewborg seat: crew win
 vs 29.8% in clean games, mean length 12181 vs 6928 ticks — the unfinished tasks (alive
 or ghost) make the task-completion win unreachable, so the game grinds until the
 imposters kill out. Standing-still score (-1 each) is the SMALL part of the cost.
+
+### H4 A/B result: stall escape + wedge nudge eliminates the crew freeze (44 penalties -> 1)
+Evidence: matched crew-pinned A/B, crewborg:v82 (xreq_78d75331) vs crewborg-h4:v1
+(xreq_038f4eef), 100 eps/arm, identical pinned Prime top-7 field, 2 imposters.
+ss-penalties/g 0.454->0.010 (p=6.8e-13), frozen games 4->0, voted-out-as-crew
+11.3%->2.0% (p=.0094, unpredicted bonus — likely the witness posture/no-freeze
+reads less suspicious), tasks/g 6.62->6.43 (p=.53 noise), crew win 30.9%->25.0%
+(p=.43 noise), survival 29.9%->34.0% (noise). Mechanism confirmed; win-rate lift
+(expected ~1.5pp) unresolvable at this n. Report: crewrift_lab/docs/h4_experiment.html
+(worktree); design + verdict pre-committed.
