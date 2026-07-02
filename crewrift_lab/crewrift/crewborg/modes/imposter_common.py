@@ -15,6 +15,11 @@ from crewrift.crewborg.types import Belief, Intent, PlayerRecord
 
 Point = tuple[int, int]
 
+# One task-time hold (≈ the 72-tick task progress in sim.nim) — how long a crewmate
+# takes to complete a task. The fake-task duration Pretend used; now the WATCH
+# camouflage hold (see docs/designs/watch-camouflage.md).
+FAKE_TASK_TICKS = 72
+
 # Consecutive kill-ready Playing ticks of a zero-length navigation target (or idle)
 # before the parked guard forces a state change. ~0.5 s at 24 Hz: tolerant of the
 # movement controller's coast-to-rest ticks, but orders of magnitude below the
@@ -36,6 +41,21 @@ def parked_guard_ticks() -> int:
     return PARKED_GUARD_TICKS
 
 
+def would_park(belief: Belief, self_xy: Point, intent: Intent) -> bool:
+    """Whether this tick has the parked shape the guard counts: a kill-ready
+    Playing tick whose intent is idle or a zero-length navigate."""
+
+    return (
+        belief.phase == "Playing"
+        and belief.self_kill_ready
+        and (
+            intent.kind == "idle"
+            or (intent.kind == "navigate_to" and intent.point is not None
+                and dist2(self_xy, intent.point) <= PARKED_ARRIVE_RADIUS_SQ)
+        )
+    )
+
+
 class ParkedGuard:
     """Escape hatch against kill-ready parking (the standing "idling is dangerous"
     lab principle: every idle needs an escape).
@@ -53,20 +73,23 @@ class ParkedGuard:
     def __init__(self) -> None:
         self._streak = 0
 
-    def fires(self, belief: Belief, self_xy: Point, intent: Intent) -> bool:
+    def fires(self, belief: Belief, self_xy: Point, intent: Intent, *, intentional_idle: bool = False) -> bool:
         """True when the guard trips: ``parked_guard_ticks()`` consecutive
         kill-ready Playing ticks whose intent is idle or a zero-length navigate.
-        Resets its streak whenever the condition breaks (or after firing)."""
+        Resets its streak whenever the condition breaks (or after firing).
 
-        parked_now = (
-            belief.phase == "Playing"
-            and belief.self_kill_ready
-            and (
-                intent.kind == "idle"
-                or (intent.kind == "navigate_to" and intent.point is not None
-                    and dist2(self_xy, intent.point) <= PARKED_ARRIVE_RADIUS_SQ)
-            )
-        )
+        ``intentional_idle`` exempts a *deliberate* idle — Search's WATCH
+        camouflage (a fake task with its own escapes; see
+        docs/designs/watch-camouflage.md) — from accruing: the guard exists to
+        catch unintentional parking, not to defeat intentional blending. The
+        exemption should be unreachable on a kill-ready tick (camo's kill-soon
+        escape ends it first); Search traces ``camo_guard_exempt`` if not.
+        """
+
+        parked_now = would_park(belief, self_xy, intent)
+        if parked_now and intentional_idle:
+            self._streak = 0
+            return False
         if not parked_now:
             self._streak = 0
             return False
