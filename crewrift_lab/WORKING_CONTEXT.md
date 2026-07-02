@@ -15,197 +15,62 @@ This is *not* a log or archive: finished work lives in git history / the
 
 ---
 
-## 🎯 CURRENT STATE (reseeded 2026-07-02 session end)
+## 🎯 CURRENT STATE (reseeded 2026-07-03 session end)
 
-**Champion: `crewborg:v91`** (submitted + QUALIFIED + champion 2026-07-02 evening, James-authorized
-full-stack ship without pre-A/B): = v89 + v4 live-fit suspicion weights + vote bar 0.6/lead 0.2 +
-ready-state re-search hardening + empirical density prior + **Honor Society ON (HS1)** + full tracing
-incl. suspicion features. Verification probe xreq_07dfadff in flight (HS1 announce / LLM / features /
-vote behavior). Prior champion below for reference:
+**Champion lineage: v91 COMPETING+CHAMPION (rank ~6); v92 and v93 QUALIFYING** (lineage
+auto-champion — last to qualify holds the seat). All three = the 2026-07-02 full-stack ship
+(James-authorized without pre-A/B): v89 base + **v4 live-fit suspicion weights** + **vote bar
+0.6/lead 0.2** + **ready-state re-search** (recon staleness 360 + spent sightings + parked guard +
+empirical density prior) + **Honor Society ON** + full tracing (incl. suspicion features).
+v92 adds WATCH camouflage (default-on) + HS base64url interop + known-members registry;
+v93 adds role-reveal trust (verified member claims pin P(imposter)~0).
+Ship recipe: standing LLM + all telemetry + CREWBORG_TRACE_SUSPICION_FEATURES=1 +
+CREWBORG_HONOR_SOCIETY=1 + seed + CREWBORG_VOTE_PROBABILITY=0.6 + CREWBORG_VOTE_LEAD=0.2.
 
-**Was: `crewborg:v89`** — the full stack: role-latch fix, idle/search FSM + freeze escapes
-(kill-press, role-limbo, mid-task wedge/stall), witness posture, call-bar=conviction-bar,
-VOTE_TIMER=1200, **async meeting LLM** (worker + 120-tick cadence + 5-call budget + dead-seat mute)
-with the **tight vote gate** (fallback votes need witnessed / 0.9-posterior / explicit LLM
-submit_vote). Form: at field par in an imposter-favored window (~31% overall, crew ~24% = par;
-in favorable windows v87/v88 hit 51-55%, crew 43-46%). Ops pristine: 0 disconnects/timeouts/dead-leaks
-across v87-v89. **Judge any form number against the WINDOW'S FIELD PAR** (field crew win oscillates
-25-40% with draw rotation / opponent versions / patches — see lessons).
+**On main, unshipped (rides v94):** role-limbo veto fix (probe forensics); instant-vote knob
+(CREWBORG_LLM_SUSS_INSTANT_VOTE, default OFF — A/B episodes on disk, read-out BLOCKED, below).
 
-**Version ledger:** v84 (deterministic A/B base, never submit), v85-v89 champions in sequence;
-full details in [version_log.md](crewrift/crewborg/version_log.md). Standing rules in
-[`user_preferences.md`](../user_preferences.md): submissions ALWAYS LLM-on + all-telemetry;
-deterministic uploads are A/B arms only; XP dashboards for >16-ep requests.
+**Honor Society state:** HS1 spec (Alex Smith) implemented; seed ~/.crewborg/honor_seed.b64
+(0600); pubkey Gq5nOr6NdgrRPfi7Ahzm+i9fuMJdHIaNHaDDDUuRhMc=; known-members registry
+data/honor_members.json (us + alex-smith); receiver accepts both b64 flavors; PROBE-VERIFIED
+live (23 announces/16 eps, mutual trust held; the one bad vote = role-limbo, fixed).
+Told Alex: encoding fork + our key. STILL TO TELL: same-key multi-seat collides with
+first-poster-wins (distinct key per concurrent seat — crewborg-hs2:v1 pattern, seed /tmp/hs2_seed.b64).
 
-**Field velocity (session end):** notsus v168 (was v130 this morning — Andre ships hourly),
-aaln v26, rowdaboat v6, forgeling v7, softmaxwell v12 all bumped today. Any absolute numbers here
-stale fast; re-survey before acting.
+## ⛔ PLATFORM BLOCKER (since 2026-07-02 ~22:20Z)
 
-**Warehouse dig (2026-07-02, rounds 391–394, /tmp/prime_wh):** three quantified gaps —
-(1) **kill trigger**: isolated+ready conversion 2/5 vs notsus 9/9; longest unready isolation
-windows (421-tick mean — no cooldown-timed approach); first kill median tick 3402 = slowest.
-(2) **votes**: participation fine (2.9% no-vote) but meeting-1 = 12 skips/5 votes and 47%
-accuracy overall vs 68–77% leaders; ejected-as-crew 5× (worst). relhalpha wins crew via 28
-button-calls + 83% late-meeting accuracy. (3) **ghosts**: resume tasking at median 964 ticks
-post-death vs 111–239 field-best.
+**/jobs/* artifact routes 403 "not a softmax team member"** (results/policy-artifact/policy-logs);
+/v2/* fine; `softmax login` no-ops; `--force` relogin untried-successfully; NO elevated flag exists.
+Blocks: instant-vote A/B read-out (/tmp/iv_{cand,base}_eps, 50v50, replays present, results
+missing — synthesizable from replays, camo agent validated the method), HS probe telemetry,
+league telemetry harvest. Escalate if relogin doesn't fix.
 
-**Three tracks opened 2026-07-02 (James) — two CLOSED same day:**
-1. **Ghost nav shortcut — REFUTED, DO NOT MERGE/RETRY** (100v100 A/B, xreq_afc56187/xreq_b6c21efc,
-   arms crewborg-ghostnav:v1 / -base:v1): primary reversed (672 vs 317, p=0.69), conversion worse
-   (45% vs 68%, p=0.06). ROOT DISCOVERY: the "964-tick ghost latency" was MEETING-LOCKED time —
-   on Playing-phase ticks both arms ≈241-250, already at competitor par; ghosts already noclip.
-   Branch worktree-agent-ad95c8246d5986371 (d28b97c) stays unmerged; ghost-task lever if any is
-   meeting cadence, not pathing.
-2. **Imposter kill failure — H1 CONFIRMED (367:2 blocked ticks), H3 REFUTED+MOOT** (server kills
-   nearest in-range crew regardless of committed target). Probe: crewborg-killtrace:v1
-   (xreq_c3a6890b, 25 pinned-imposter eps; hunt_block telemetry on branch
-   worktree-agent-a17e8a614aabde1c4 @1547423 — merge-worthy). CORRECTION: 19.6% conversion was an
-   artifact (vote-freeze-spanning windows); truth-based = 69.7%. Dominant cost = CONTACT (96% of
-   ready ticks victimless in recon; median ready→kill 8t once seen) → post-kill re-approach /
-   victim-finding remains the big lever. URGENCY A/B RUN + NEGATIVE (2026-07-02,
-   xreq_3b8b3c7d/xreq_fc845eb0): mechanism moved 2.3x (wait_witness 5.57 vs 12.59 ticks/ep) but
-   kills/g 1.25 vs 1.36 (wrong direction), ejections +7pp — THIRD witness-gate refutation; knob
-   merged inert (default 240). Contact starvation is the lever → ready-search build in flight.
-3. **Suspicion evidence renovation (voting)** — corpus PULLED + VERIFIED: /tmp/susp_corpus_eps,
-   692 eps across 16 xreqs (v82/v84/v85/v87/v88/v89 + v87-90 probes, crewrift_prime 0.4.31-era);
-   artifact zips 691/692; **634 crewborg-slot episodes carry 1,486 per-meeting suspicion
-   snapshots** (v82: 186 eps, v84: 179, v89: 47+49probe, v90probe: 50, …) — each ranks ~7
-   suspects → ~10k labelable (observer,suspect,meeting) rows once joined to replay roles.
-   KEY FINDING: NO upload ever set CREWBORG_TRACE_SUSPICION_FEATURES=1 (TRACE_GROUPS=all does NOT
-   imply it — separate env gate, events.py:144), so NO existing episode has ranking[].features;
-   build_dataset_runtime.py yields 0 rows on all real data. Snapshots DO carry per-meeting
-   posteriors + per-suspect event summaries (kind/dur/target/region/min_dist — verified in live
-   zips): 7/19 runtime features reconstructable; observed_samples, follow_death_samples and ALL
-   10 social counters (incl tasks_completed_watched, the strongest weight) are NOT. Plan: (a) add
-   the flag to the standing upload recipe (needs James OK — user_preferences.md edit), (b) renovate
-   build_dataset_runtime for both full + degraded snapshots, (c) calibration analysis of live
-   posteriors on the 692 eps now, (d) fresh traced upload + ~200-300 eps → true runtime refit.
-   /tmp/expand-043 is JSONL-capable + hash-clean on 0.4.31 (verified) for the label stage.
-   fetch_artifacts.py FIXED: --no-logs no longer drops policy-artifact zips (new --no-artifacts).
-   **v4 REFIT DONE; A/B NEUTRAL (not ship-validated)**: fit on 2,220 live rows → held-out AUC
-   0.671 vs old-live 0.59; precision@0.9 98% vs 66% same-rows. But the 100v100 deterministic A/B
-   (xreq_bb325dec/xreq_9cc4c88c) showed NO headroom on the deterministic path — both arms ~91-93%
-   precise (witnessed-dominated gate); v4 cut vote volume (14 vs 23), imp-ejections/crew-ep 0.47
-   vs 0.56, crew win 18% vs 24% (NS). Weights stay vendored on main, NOT ship-validated.
-   **UNLOCKED NEXT LEVER: crew vote bar 0.7+lead≥0.2 on the honest posterior** (94% OOF precision
-   band; the 4 old bar refutations all used the noisy v3 model — this is new, not a retry).
-   Curiosity before any ship: cand imposter win 89% vs 67% (p=0.06). Open detector bug:
-   reported_bodies/button_calls_made all-zero live across 398 meetings — fix before next refit.
-### ✅ DIAGNOSED (2026-07-02, worktree movement deep-dive): imposter "can't find victims" ROOT CAUSE
-**The ready-state has no search.** `rule_based.py` routes ready+no-visible-victim to **Recon whenever any
-crew was EVER seen** (≈always) — Search's room-checking FSM is structurally unreachable while kill-ready —
-and `recon.py` beelines to `most_recent_victim`'s last-seen point with **no staleness bound, no arrival
-fallback, no timeout** (`opportunity.py:most_recent_victim`). Two observed failure shapes: (1) **stale-point
-park** — killtrace ep parked 98.5% of an 8,452-tick ready window on a 9,000-tick-stale point (killtrace
-median parked share of blind ready ticks 87% vs notsus 0%); (2) **glimpse-chase circuits** — repeated
-whole-map loops passing ~20px (through walls) from sitting crew without entering the room. NOT the problem:
-handoff/positioning (median 18px from crew at the ready moment, 84% of windows start <60px; best-in-field
-cooldown same-room %) and NOT coverage (blind-search heat overlaps crew density MORE than anyone, 0.48 vs
-notsus 0.26). The costs: point-blank windows convert 70-77% vs field-best 88-92%, and >150px windows take
-median **519 ticks vs field 91-218**. Fix directions (ranked, not built): ready-state re-search (recon
-staleness bound + fallback to Search/occupancy), room-entry checks when passing task rooms, point-blank
-strike latency. Tools + full findings: **`tools/imposter_movement/`** (README) — MERGED to main; renders in the session scratchpad `mov/`.
+## 📋 A/B ledger (2026-07-02 evening)
 
-**▶ READY-STATE RE-SEARCH BUILT + A/B IN FLIGHT (2026-07-02, branch worktree-agent-acbf700f2aba97ef5
-@5a7243f).** RECONCILIATION: the diagnosis was measured on pre-FSM code (killtrace branch based at
-b359e28); main had ALREADY merged 2c9f305 (v77-v80: Recon strictly pre-ready, ready-blind → Search FSM),
-so the literal "Recon while ready" path is gone on main — the candidate's delta vs main is: (1) recon
-staleness bound (`CREWBORG_RECON_STALENESS_TICKS`=360 = 3× the 120t track/follow windows); (2) SPENT
-sightings — reaching a target's last-known point victimless marks (color,last_seen_tick) spent in the
-selector, re-armed only by a fresh sighting (kills Search→Recon ping-pong); (3) `ParkedGuard`
-(imposter_common; 12 ready ticks on a zero-length route/idle force a state change + `domain.parked_guard`)
-wired into Search+Recon; (4) PICK_ROOM blends the empirical density prior (`strategy/room_prior.py` +
-data/room_density.json, W_PRIOR=1.5 = half live occupancy; band = tick//600 clamped). 559 tests green;
-crewmate path untouched. A/B arms `crewborg-research:v1` (45bb1a90…) vs `crewborg-research-base:v1`
-(4995e70f…, = main 9fc477d), deterministic + all telemetry, Gate-1 PASS both. xreqs (100 eps each,
-imposter-pinned slot0 + rotating partner-imposter, pinned top-7): cand
-`xreq_cdf1dd4c-b8eb-41d1-8b83-1757496b3fe9`, base `xreq_d2ee49cc-f266-4fb1-ae8b-848bbf291581`; warehouses
-/tmp/rsab_{cand,base}_wh. **A/B RESULT (100v100 clean, 0 ops, 0 trace warnings): NEUTRAL — efficacy not
-shown, ALL SAFETY GUARDS PASS.** PRIMARY not met (kills/g 1.67 v 1.60 p=0.56; first-kill Playing ticks
-603 v 605 p=0.56). KEY MECHANISM FINDING: the diagnosed pathology is ABSENT IN BOTH ARMS — parked share
-med 0.028 v 0.000, >150px windows 7 v 11 per 100 eps, parked_guard fired 0×; the killtrace "87% parked"
-was PRE-FSM code, main's v77-v80 already removed the park. Directional positives (all NS): shorter games
-(2083 v 2519 playing ticks p=0.09), kills/1000 playing ticks 1.22 v 1.07 (p=0.08), >150px conversion 86%
-v 64%, ejections 18% v 24%. Guards: imp win 84% both; opp crew tasks 5.10 v 5.53 (p=3e-4) = shorter
-games, not a crew regression (crewmate code untouched, diff-verified). James authorized shipping the
-package pre-verdict (2026-07-02) — it ships as safe-neutral hardening (staleness/spent/guard/prior).
-Handed off to main @8bbde65 (branch tip; = uploaded 5a7243f + insurance-only sticky-escape fix).
+- **Camo: SAFE-POSITIVE** (mechanism p=5.6e-13, primaries right-direction NS, guards pass) — shipped in v92+.
+- **Urgency 240→80: NEGATIVE** — 3rd and final witness-gate refutation; contact starvation dominates.
+- **Vote-bar sweep: INCONCLUSIVE** — v4 calibration VALIDATED live (86-100% precision at all bars);
+  conversion NS; bar60-vs-bar90 200/arm confirmation is the designed follow-up (bar60 shipped anyway
+  per James). Next lever = vote COORDINATION (HS trust network fits).
+- **Instant-vote: episodes complete, read-out blocked** (above). Prior evidence adverse (22-50%).
+- **Ready-search: NEUTRAL-safe** (pathology was partly pre-fixed by v77-80 FSM); shipped as hardening.
 
+## ▶ OPEN LEVERS
 
-**READY-SEARCH BUILD IN FLIGHT (James-approved directions 1+4+density, 2026-07-02):** worktree agent
-building Recon staleness bound (`CREWBORG_RECON_STALENESS_TICKS`) + arrival fall-through to Search +
-parked guard (zero-length-route escape) + **empirical density-weighted search** — new pipeline
-`tools/imposter_movement/room_density.py` → vendored `data/room_density.json` (247 eps: per-room
-live-crew share over 600-tick bands; Bridge 45%→23%, task rooms 7-17%). Pre-registered imposter-pinned
-100v100 A/B vs main base; primary kills/g UP + first-kill Playing ticks DOWN; mechanism parked→~0.
+1. Suspicion detector bug: reported_bodies/button_calls_made ALL-ZERO live (398 meetings) — fix
+   before next refit; refit pipeline is fully operational now (runtime features flowing from every
+   league round).
+2. Vote coordination (the conversion bottleneck; HS trust network is the vehicle).
+3. bar60-vs-bar90 200/arm confirmation (if the sweep's p=0.09 ejection gain is real).
+4. Movement toolkit (tools/imposter_movement/) + room-density pipeline are reusable measurement infra.
 
-**v91 first field check (120-ep tournament vs sampled champions, /tmp/survey_v91_tourney.html):**
-30% overall (9th/11 but field compressed 27-42%; window turned hard imposter-favored — crew par ~21%).
-Crew 20% = AT PAR (was below par this morning); imposter 63% vs par 68%; **kills/imp-game 1.93 =
-2nd in field** (was 1.1-1.5 — the ready-search+density stack correlates); tasks/cg 6.67 best; ops 0.
-Server `random:true`/`top_n` champion-pool queries 500 on statement timeout (2nd+3rd sighting) —
-sample rosters client-side.
-
-**WATCH CAMOUFLAGE BUILD IN FLIGHT (James spec, 2026-07-02 late):** in Search/WATCH with >=1 visible
-crew and >100 ticks of kill CD left → fake-task at the task spot with best (pre-baked) vision over
-visible crew, for fake-task duration + buffer, with full escape set + ParkedGuard exemption.
-Worktree agent building + pre-registered imposter-pinned 100v100 A/B (primary: imposter-ejected
-DOWN and/or kills/g UP; guard: first-kill not worse >15%).
-
-## ▶ OPEN LEVERS (evidence on file, none in flight)
-
-1. **Evidence warming for the fitted suspicion posterior** — the remaining crew lever
-   (train→serve gap; suspicion_lab runtime-feature rework scoped in its docs). Vote-threshold
-   levers are REFUTED 4 ways (raise / lower-global / lower-conditional / deadline-passthrough —
-   the last for zero channel volume: chats overwrite LLM tentatives 305:47).
-2. **Imposter first-kill latency** — RelhAlpha opens ~1290 ticks vs our ~2350; distinct from the
-   refuted witness-drop (that was 2nd-kill). Unexplored.
-3. **Meeting-LLM latency/quota items** — TODO.md top entries (call-failure tuning at long
-   meetings; the shared daily Bedrock quota; per-arm 429 asymmetry in concurrent A/Bs).
-4. **Telemetry harvest automation** — league artifacts ephemeral (~1 round); per-round harvest
-   loop scripted (session scratchpad pattern) but not made a standing cron/tool. TODO.md.
-5. **Parked branches:** `worktree-ghost-tasking` (noclip, A/B-flat, harmless), 
-   `worktree-v90-deadline-tentative` (refuted, has useful telemetry events), direction-2
-   witnessed-only lever (merged, default-off, A/B-neutral).
-
-## 🤖 Parallel track — LLM gameplay COMMANDER (built, gated OFF, unshipped)
-
-Phases 1-3 done on main: background LLM writes priorities into `belief.commander`, modes read them
-(bias-don't-force + strength dial); proven steering both roles in forced runs; commander worker is
-the pattern the v87 meeting-LLM async fix copied. Ships behind `CREWBORG_LLM_COMMANDER=1` (+Bedrock).
-Never A/B'd for win-rate value. Design: `crewrift/crewborg/docs/commander.md`.
-
-## Tools / data (fresh as of session end)
-
-Warehouses: /tmp/v87_league_wh (40 eps), /tmp/v88_league_wh (35), /tmp/v89_league_wh (36),
-A/B pairs v89/v88 + v90/v89. Surveys: /tmp/survey_v8{7,8,9}_league.html. The 2-hour meta-loop
-cron was DELETED at session end (James); re-arm with /loop if wanted — the cycle prompt lives in
-the loop-skill invocation in this session's history and works well with ~2h cadence.
 ## Load-bearing infra facts
-- **Player SDK moved to `Metta-AI/coworld-tools`** (the `players` repo is **archived**).
-  The build installs it from the coworld-tools **tarball** subdirectory
-  (`Dockerfile` + `versions.env`; `main` resolved via `git ls-remote`). **`uv` can't lock
-  coworld-tools** (broken `players/users/relh/co-gas` submodule → filed
-  **coworld-tools issue #13**), so local `uv.lock` still points at the archived mirror — the
-  hosted image is the source of truth for the SDK.
-- **LLM meetings/commander on Bedrock**: upload with `--use-bedrock` + `CREWBORG_LLM_MEETINGS=1`
-  / `CREWBORG_LLM_COMMANDER=1`. The pod runs a **loopback Bedrock sidecar**; the SDK routes to it via
-  `AWS_ENDPOINT_URL_BEDROCK_RUNTIME` (coworld-tools PR #12). **CORRECTION (2026-06-26): sidecar mode
-  STRIPS `USE_BEDROCK` from the player container** (treats it like a credential) and injects only the
-  endpoint — so the SDK's `bedrock_enabled()` (USE_BEDROCK gate) reported "no LLM backend" in-pod and
-  BOTH LLMs were silently disabled (meetings were 184/184 `_fallback`). **Fix:** crewborg now gates Bedrock
-  on `AWS_ENDPOINT_URL_BEDROCK_RUNTIME` presence (`strategy/{commander,meeting}/llm.py`). Verify via
-  `policy_artifact_<slot>.zip → telemetry.jsonl` (`domain.meeting_llm_decision` + `domain.commander_call`
-  `outcome:ok`, not `_fallback` / `env_seen` all-false). Platform fix owed (keep injecting `USE_BEDROCK=true`)
-  — see `docs/coworld-platform.md`.
-- **Expander**: `/tmp/expand-043` (master sim `26ee08c`) handles **crewrift_prime
-  0.4.3–0.4.7** (the fork's version bumps didn't change the sim). Use
-  `CREWRIFT_EXPAND_REPLAY=/tmp/expand-043` for the warehouse.
-- **Prime field** (Competition `div_acbde92a-…`, league `league_a12f5172-0907-4d04-8bcb-ca02f5360e3a`):
-  **11 entrants** as of 2026-07-02 rounds 391–394 (~10-min cadence, 12 eps/round, 8 seats):
-  notsus:v168, relhalpha-hunter:v1, jordan-crewborg-aaln:v1, softmaxwell-crewborg:v12,
-  rowdaboat-notsus:v6, richard-notsus:v2, crewborg-aaln:v26, forgeling-focusfire:v7,
-  crewborg-mv:v1, daveey-prime-notsus:v2, **crewborg:v89 (LAST, 31%; crew 24% vs field-par ~36%;
-  imp 57% ≈ par)**. Survey: /tmp/survey_prime_r391_394.html (+ /tmp/prime_r391_394 artifacts).
-  Crew wins in this field come from ejections, not tasks — v89's tight vote gate casts 0 votes in
-  most crew games. NOTE: the 4-way vote-lever refutations predate this 11-entrant field.
+
+- Player SDK from Metta-AI/coworld-tools tarball (issue #13); coworld CLI 0.1.27 pinned.
+- Expander /tmp/expand-043 (= tools/bin/expand_replay-26ee08c) hash-clean through crewrift_prime
+  0.4.35, JSONL-capable. Warehouses/duckdb run from tools/event-warehouse/crewrift-event-warehouse.
+- Prime field ~11 champions, ships hourly (notsus v168→v174 in one day); server random/top_n pool
+  selectors 500 on statement timeout — pin explicit policy_refs.
+- fetch_artifacts: --watch dies silently on transient errors + completeness misses results.json —
+  ALWAYS verify final on-disk counts; refetch is idempotent.
+- Bedrock LLM: sidecar-endpoint gating; meeting LLM verified firing v91 probe (117 decisions/9 fallbacks).
