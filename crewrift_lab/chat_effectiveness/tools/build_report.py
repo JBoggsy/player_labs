@@ -26,10 +26,12 @@ def render_html(
     winrate: pd.DataFrame,
 ) -> str:
     if detector_validation.get("n_matched"):
+        target_agreement = detector_validation['target_agreement']
+        target_agreement_str = f"{target_agreement:.2f}" if target_agreement is not None else "n/a"
         validation_note = (
             f"Regex-vs-LLM agreement on {detector_validation['n_matched']} sampled chat lines: "
             f"stance agreement {detector_validation['stance_agreement']:.2f}, "
-            f"target agreement {detector_validation['target_agreement']}. "
+            f"target agreement {target_agreement_str}. "
             "Treat the tables below with this precision in mind — they are not ground truth "
             "on the detector's own accuracy."
         )

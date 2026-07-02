@@ -34,3 +34,13 @@ def test_render_html_flags_missing_validation():
     html = render_html(META, {"n_matched": 0, "stance_agreement": None, "target_agreement": None}, CREW_ACCURACY, EFFECTIVENESS, WINRATE)
 
     assert "not yet run" in html or "unverified" in html
+
+
+def test_render_html_formats_none_target_agreement():
+    """When target_agreement is None (no accusations in sample), format as 'n/a' not 'None'."""
+    validation = {"n_matched": 50, "stance_agreement": 0.9, "target_agreement": None}
+    html = render_html(META, validation, CREW_ACCURACY, EFFECTIVENESS, WINRATE)
+
+    assert "None" not in html, "Literal 'None' should not appear in HTML output"
+    assert "n/a" in html, "Should format None target_agreement as 'n/a'"
+    assert "target agreement n/a" in html, "Should read as 'target agreement n/a'"
