@@ -30,6 +30,15 @@ ready kill away — a lone target is *approached* to within a step, a crowd is *
 until one peels off. The only ``idle`` this mode can emit is the deliberate multi-crew
 vantage hold (and the startup no-op before the camera/map exist).
 
+Two ready-state safeguards (2026-07-02 movement diagnosis):
+
+- PICK_ROOM blends an **empirical density prior** (``strategy/room_prior.py``: each room's
+  measured live-crew share by 600-tick game band) with live occupancy — live evidence
+  dominates when present; the prior steers when blind. See the weight comments below.
+- A **parked guard** (``imposter_common.ParkedGuard``): any run of kill-ready Playing ticks
+  spent on a zero-length route (or idle) forces a fresh room pick and emits a
+  ``parked_guard`` trace event, so no state can ever park a ready kill again.
+
 Never follows the teammate imposter. The path predictor is fed only what we actually see.
 """
 
@@ -45,6 +54,7 @@ from crewrift.crewborg.map.types import Room
 from crewrift.crewborg.nav import _segment_clear
 from crewrift.crewborg.strategy.commander.bias import commander_of
 from crewrift.crewborg.strategy.path_prediction import PathPredictor
+from crewrift.crewborg.strategy.room_prior import room_share_prior
 from crewrift.crewborg.types import ActionState, Belief, Intent, PlayerRecord
 from players.player_sdk import EmptyModeParams, Mode, ModeParams
 
@@ -83,6 +93,11 @@ def _wenv(name: str, default: float) -> float:
 # Occupancy (go where crew are expected) is the strongest positive signal. Unvisitedness is
 # also strong and GROWS with time-since-visit so peripheral rooms get swept occasionally.
 # Recency is a strong penalty that DECAYS quickly (anti-ping-pong between two rooms).
+# The empirical density PRIOR (strategy/room_prior.py: per-room live-crew share by game
+# band, from 247 real episodes) is deliberately HALF the live-occupancy weight: both terms
+# are max-normalized to 0..1, so when the tracker has live evidence it dominates 2:1, and
+# when we're blind (occupancy ≈ 0 everywhere, early game / long no-contact stretches) the
+# prior is the crew-seeking signal that breaks ties between otherwise-equal rooms.
 W_OCCUPANCY = _wenv("CREWBORG_PICKROOM_W_OCCUPANCY", 3.0)   # where crew are expected — strongest
 W_UNVISITED = _wenv("CREWBORG_PICKROOM_W_UNVISITED", 2.5)   # long-unvisited rooms — grows over time
 W_RECENCY = _wenv("CREWBORG_PICKROOM_W_RECENCY", 3.0)       # just-visited penalty — decays fast
@@ -90,6 +105,7 @@ W_DISTANCE = _wenv("CREWBORG_PICKROOM_W_DISTANCE", 1.0)     # discount far rooms
 W_TEAMMATE = _wenv("CREWBORG_PICKROOM_W_TEAMMATE", 1.5)     # don't converge with our co-imposter
 W_TASKBONUS = _wenv("CREWBORG_PICKROOM_W_TASKBONUS", 0.4)   # small blend bonus for task rooms
 W_COMMANDER = _wenv("CREWBORG_PICKROOM_W_COMMANDER", 1.0)   # soft commander hunt-room nudge
+W_PRIOR = _wenv("CREWBORG_PICKROOM_W_PRIOR", 1.5)           # empirical density prior — see above
 # Recency penalty is gone after ~this many ticks; unvisitedness maxes out after ~this many.
 RECENCY_DECAY_TICKS = _wenv("CREWBORG_PICKROOM_RECENCY_DECAY", 150.0)
 UNVISITED_FULL_TICKS = _wenv("CREWBORG_PICKROOM_UNVISITED_FULL", 800.0)
@@ -115,6 +131,7 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
         self._last_seen_tick: int | None = None
         self._last_visit_tick: dict[str, int] = {}   # room name -> last tick we were inside it
         self._rng = random.Random(0xC0FFEE)
+        self._parked_guard = ic.ParkedGuard()
 
     # --- entry ----------------------------------------------------------------
     def decide(self, belief: Belief, action_state: ActionState) -> Intent:
@@ -129,6 +146,24 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
         if here is not None:
             self._last_visit_tick[here.name] = belief.last_tick
 
+        intent = self._dispatch(belief, self_xy)
+        # PARKED GUARD: a kill-ready tick must never stand on a zero-length route.
+        # Whatever state produced it, force a fresh room pick (the current room is
+        # excluded by PICK_ROOM, so the new target is always somewhere else).
+        if self._parked_guard.fires(belief, self_xy, intent):
+            self.emit.event(
+                "parked_guard",
+                {"mode": self.name, "state": self._state, "intent": intent.kind, "reason": intent.reason},
+            )
+            self._prev_room = self._target_room
+            self._follow_color = None
+            self._predictor = None
+            self._last_seen_tick = None
+            self._state = "pick_room"
+            intent = self._pick_room(belief, self_xy)
+        return intent
+
+    def _dispatch(self, belief: Belief, self_xy: ic.Point) -> Intent:
         if self._state == "go_to_room":
             return self._go_to_room(belief, self_xy)
         if self._state == "search_room":
@@ -202,6 +237,7 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
         distance = math.hypot(room.center.x - self_xy[0], room.center.y - self_xy[1]) / diag
         score = (
             W_OCCUPANCY * occupancy
+            + W_PRIOR * room_share_prior(room.name, now)
             + W_UNVISITED * unvisited
             - W_RECENCY * recency
             - W_DISTANCE * distance

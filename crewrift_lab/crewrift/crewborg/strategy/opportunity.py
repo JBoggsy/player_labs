@@ -207,18 +207,53 @@ def _claimed_by_teammate(target: PlayerRecord, belief: Belief, self_xy: tuple[in
 # = Aaron-style overextension that gets caught); env-tunable so we can sweep it.
 RECON_WINDOW_TICKS = 100
 
+# A recon target whose freshest sighting is older than this is STALE — its last-seen
+# point carries no victim information anymore, so beelining there is worse than running
+# Search's room-checking FSM (the measured failure: parking on minutes-old points — see
+# the 2026-07-02 movement diagnosis in tools/imposter_movement/README.md). Default 360
+# (~15 s at 24 Hz) = 3× the 120-tick TRACK/FOLLOW windows (beyond which the codebase
+# already treats a sighting as un-followable) ≈ 2-3 room transits: within it the target
+# is plausibly still near its last-seen room; past it the point is just history.
+RECON_STALENESS_TICKS = 360
+
+# Radius (px) at which a recon point counts as reached. Shared by ReconMode's own
+# arrival handling and the selector's spent-target check (rule_based).
+RECON_REACHED_RADIUS_SQ = 24**2
+
 
 def recon_window() -> int:
     """The recon trigger window (ticks before kill-ready), env-overridable via
     ``CREWBORG_RECON_WINDOW`` so it can be swept without a rebuild."""
 
-    raw = os.environ.get("CREWBORG_RECON_WINDOW")
+    return _env_ticks("CREWBORG_RECON_WINDOW", RECON_WINDOW_TICKS)
+
+
+def recon_staleness_ticks() -> int:
+    """The recon target staleness bound (ticks since the freshest sighting),
+    env-overridable via ``CREWBORG_RECON_STALENESS_TICKS``."""
+
+    return _env_ticks("CREWBORG_RECON_STALENESS_TICKS", RECON_STALENESS_TICKS)
+
+
+def _env_ticks(name: str, default: int) -> int:
+    raw = os.environ.get(name)
     if raw:
         try:
             return max(0, int(raw))
         except ValueError:
             pass
-    return RECON_WINDOW_TICKS
+    return default
+
+
+def recon_target(belief: Belief) -> PlayerRecord | None:
+    """``most_recent_victim`` bounded by the staleness window: the crewmate to
+    close on during recon, or ``None`` when even the freshest sighting is too old
+    to act on (→ the selector falls through to Search)."""
+
+    victim = most_recent_victim(belief)
+    if victim is None or belief.last_tick - victim.last_seen_tick > recon_staleness_ticks():
+        return None
+    return victim
 
 
 def most_recent_victim(belief: Belief) -> PlayerRecord | None:

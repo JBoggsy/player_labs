@@ -27,7 +27,9 @@ Imposter priority order (design §10):
 1. ``phase == Voting`` → Attend Meeting
 2. just killed → Evade (vent / leave the body)
 3. kill ready + a visible victim → Hunt (commit to a victim and strike / close)
-4. near-ready cooldown + known crew → Recon (close on the last seen crewmate)
+4. near-ready cooldown + a FRESH, unspent sighting → Recon (close on it). A sighting
+   older than ``recon_staleness_ticks()`` or one whose point we already reached and
+   found empty ("spent") does not qualify — those fall through to Search.
 5. otherwise → Search (find/follow a target)
 
 (2) prevents instant self-reports after our own kill: the imposter first leaves the
@@ -53,13 +55,14 @@ import os
 
 from crewrift.crewborg.strategy.commander.bias import commander_of
 from crewrift.crewborg.strategy.opportunity import (
+    RECON_REACHED_RADIUS_SQ,
     has_visible_victim,
-    most_recent_victim,
+    recon_target,
     recon_window,
     ticks_until_kill_ready,
 )
 from crewrift.crewborg.strategy.suspicion import active_tail_suspect, top_suspect
-from crewrift.crewborg.types import ActionState, Belief
+from crewrift.crewborg.types import ActionState, Belief, PlayerRecord
 from players.player_sdk import ModeDirective
 from players.player_sdk.types import BeliefSnapshot
 
@@ -79,6 +82,11 @@ class RuleBasedStrategy:
         # and whether we've already spent this game's single emergency-button call.
         self._accuse_target: str | None = None
         self._button_call_spent: bool = False
+        # A recon sighting we walked to and found nobody at: (color, last_seen_tick).
+        # Excluded from recon targeting until that crewmate is sighted afresh (a new
+        # last_seen_tick), so the selector falls through to Search instead of
+        # re-beelining to a point we already know is empty.
+        self._recon_spent: tuple[str, int] | None = None
 
     def decide(self, snapshot: BeliefSnapshot[Belief, ActionState]) -> ModeDirective:
         with snapshot.read() as memory:
@@ -153,12 +161,45 @@ class RuleBasedStrategy:
             )
         if belief.self_kill_ready and has_visible_victim(belief):
             return ModeDirective(mode="hunt", source="strategy", reason="kill ready: hunt visible victim")
-        # Recon only in the strictly PRE-ready window. If the kill is already ready but no
-        # victim is visible, do NOT recon (it would beeline to a stale last-known position and
-        # freeze on it — see the recon-stall lesson); go to Search to actively find a victim.
-        if not belief.self_kill_ready and ticks_until_kill_ready(belief) <= recon_window() and most_recent_victim(belief) is not None:
+        # Recon only in the strictly PRE-ready window, and only on a sighting worth
+        # beelining to: fresh (recon_target's staleness bound) and not already SPENT
+        # (we reached its point and nobody was there). Everything else falls through to
+        # Search's room-checking FSM — beelining to stale/empty points was the measured
+        # ready-state park (see the recon-stall lesson + the 2026-07-02 movement diagnosis).
+        if (
+            not belief.self_kill_ready
+            and ticks_until_kill_ready(belief) <= recon_window()
+            and self._live_recon_target(belief) is not None
+        ):
             return ModeDirective(mode="recon", source="strategy", reason="kill nearly ready: close on a crewmate")
         return ModeDirective(mode="search", source="strategy", reason="seek crew to be near a kill")
+
+    def _live_recon_target(self, belief: Belief) -> PlayerRecord | None:
+        """The recon target worth closing on, or ``None`` (→ fall through to Search).
+
+        A target is spent the moment we stand at its last-known point (within
+        ``RECON_REACHED_RADIUS_SQ``) without it being visible — that sighting has
+        been checked and disproven. The spent mark is keyed on (color,
+        last_seen_tick), so any *fresh* sighting of the same crewmate re-arms recon.
+        """
+
+        victim = recon_target(belief)
+        if victim is None:
+            return None
+        key = (victim.color, victim.last_seen_tick)
+        if key == self._recon_spent:
+            return None
+        if victim.last_seen_tick != belief.last_tick and self._at_point(belief, (victim.world_x, victim.world_y)):
+            self._recon_spent = key
+            return None
+        return victim
+
+    def _at_point(self, belief: Belief, xy: tuple[int, int]) -> bool:
+        if belief.self_world_x is None or belief.self_world_y is None:
+            return False
+        dx = belief.self_world_x - xy[0]
+        dy = belief.self_world_y - xy[1]
+        return dx * dx + dy * dy <= RECON_REACHED_RADIUS_SQ
 
     def _sticky_accuse_target(self, belief: Belief) -> str | None:
         """The tail we should keep heading to the button to accuse, or ``None``.
@@ -204,6 +245,7 @@ class RuleBasedStrategy:
     def _reset_for_new_game(self) -> None:
         self._accuse_target = None
         self._button_call_spent = False
+        self._recon_spent = None
 
 
 def _button_reachable(belief: Belief) -> bool:

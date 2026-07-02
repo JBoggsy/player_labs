@@ -348,3 +348,65 @@ def test_imposter_pretends_when_only_a_teammate_is_visible() -> None:
     belief = _imposter_with_visible_target(self_kill_ready=True)
     belief.teammate_colors = {"red"}  # the visible target is red (see helper)
     assert _select(belief) == "search"
+
+
+# --------------------------------------------------------------------------- #
+# Recon staleness bound + spent-target fall-through (2026-07-02 movement fix) #
+# --------------------------------------------------------------------------- #
+
+
+def _pre_ready_imposter(seen_tick: int, victim_xy=(50, 50), tick: int = 1000) -> Belief:
+    """An imposter inside the recon window (ready in 50 ticks) whose only known
+    crewmate was last seen at ``seen_tick`` at ``victim_xy`` (self at (100, 100))."""
+
+    belief = Belief(
+        phase="Playing", self_role="imposter", self_kill_ready=False, last_tick=tick,
+        self_world_x=100, self_world_y=100,
+    )
+    belief.kill_cooldown_start_tick = tick
+    belief.kill_cooldown_estimate = 50
+    belief.roster["red"] = PlayerRecord(
+        object_id=1004, color="red", facing="left", world_x=victim_xy[0], world_y=victim_xy[1],
+        last_seen_tick=seen_tick, life_status="alive",
+    )
+    return belief
+
+
+def test_recon_requires_a_fresh_sighting() -> None:
+    assert _select(_pre_ready_imposter(seen_tick=900)) == "recon"  # 100 ticks old — fresh
+    # A sighting past the staleness bound (360) is history, not a target: fall
+    # through to Search's room-checking FSM, never beeline to a minutes-old point.
+    assert _select(_pre_ready_imposter(seen_tick=1000 - 361)) == "search"
+
+
+def test_recon_staleness_is_env_tunable(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_RECON_STALENESS_TICKS", "2000")
+    assert _select(_pre_ready_imposter(seen_tick=100)) == "recon"
+    monkeypatch.setenv("CREWBORG_RECON_STALENESS_TICKS", "50")
+    assert _select(_pre_ready_imposter(seen_tick=900)) == "search"
+    monkeypatch.setenv("CREWBORG_RECON_STALENESS_TICKS", "garbage")
+    assert _select(_pre_ready_imposter(seen_tick=900)) == "recon"  # invalid ⇒ default 360
+
+
+def test_reaching_an_empty_recon_point_spends_the_sighting() -> None:
+    strategy = RuleBasedStrategy()
+    # Standing exactly on the target's last-known point with the target NOT in view:
+    # that sighting is checked-and-disproven ⇒ Search, not a re-beeline.
+    belief = _pre_ready_imposter(seen_tick=900, victim_xy=(100, 100))
+    assert _select_with(strategy, belief) == "search"
+    # ...and it STAYS spent after we walk away (no Search→Recon ping-pong back to
+    # the same empty point).
+    belief.self_world_x, belief.self_world_y = 300, 300
+    assert _select_with(strategy, belief) == "search"
+    # A FRESH sighting of the same crewmate re-arms recon.
+    belief.roster["red"].last_seen_tick = 950
+    assert _select_with(strategy, belief) == "recon"
+
+
+def test_a_new_game_clears_the_spent_recon_mark() -> None:
+    strategy = RuleBasedStrategy()
+    belief = _pre_ready_imposter(seen_tick=900, victim_xy=(100, 100))
+    assert _select_with(strategy, belief) == "search"  # spent on the spot
+    _select_with(strategy, Belief(phase="Lobby"))       # new game resets the mark
+    belief.self_world_x, belief.self_world_y = 300, 300
+    assert _select_with(strategy, belief) == "recon"

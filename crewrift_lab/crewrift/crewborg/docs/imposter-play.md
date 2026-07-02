@@ -57,14 +57,30 @@ priority first):
 | 1 | `phase == "Voting"` | `attend_meeting` | (handled in `_select`, before role dispatch) |
 | 2 | killed within `EVADE_TICKS` ago | `evade` | `_recent_self_kill(belief)` |
 | 3 | kill ready **and** a victim visible | `hunt` | `belief.self_kill_ready and has_visible_victim(belief)` |
-| 4 | within `recon_window()` of ready **and** a crewmate has been seen | `recon` | `ticks_until_kill_ready(belief) <= recon_window() and most_recent_victim(belief) is not None` |
+| 4 | strictly PRE-ready, within `recon_window()` of ready, **and** a *fresh, unspent* sighting exists | `recon` | `not self_kill_ready and ticks_until_kill_ready(belief) <= recon_window() and _live_recon_target(belief) is not None` |
 | 5 | otherwise (the literal `else`) | `search` | — no gate of its own — |
 
 Order is the design contract (§10): Evade outranks Hunt so we never instantly
 re-hunt over our own fresh body; Hunt outranks Recon because a ready kill on a
 visible victim beats pre-positioning; Recon outranks Search because a tick-windowed
 beeline to crew beats undirected seeking. Search is the always-on fallback that
-fires whenever nothing above it does.
+fires whenever nothing above it does — including **every kill-ready tick with no
+visible victim** (recon is pre-ready only; a ready blind imposter actively sweeps
+rooms rather than beelining to history).
+
+Gate 4's "fresh, unspent" qualifier (`_live_recon_target`, added with the
+2026-07-02 ready-state re-search fix) keeps Recon honest two ways:
+
+- **Staleness bound** — the freshest sighting behind
+  `strategy/opportunity.py:recon_target` must be younger than
+  `recon_staleness_ticks()` (default 360, env `CREWBORG_RECON_STALENESS_TICKS`);
+  an older last-seen point carries no victim information, so we sweep rooms
+  (Search) instead of beelining to it.
+- **Spent sightings** — the moment we stand at a target's last-known point
+  (within `RECON_REACHED_RADIUS_SQ`) without it being visible, that (color,
+  last_seen_tick) sighting is marked spent in the selector and stops qualifying;
+  only a *fresh* sighting of that crewmate re-arms Recon. This prevents the
+  Search→Recon ping-pong back to a point we already know is empty.
 
 The selector re-evaluates every tick — there are no reflex transitions or sticky
 mode state in the selector itself (the modes hold their own FSM state). The
@@ -76,6 +92,7 @@ applies to imposter and crewmate alike.
 | Lever | Source | Effect |
 |-------|--------|--------|
 | `EVADE_TICKS` | env `CREWBORG_EVADE_TICKS`, default `72` (~3s at 24 Hz) | Length of the post-kill Evade window (`_recent_self_kill`). |
+| `RECON_STALENESS_TICKS` | env `CREWBORG_RECON_STALENESS_TICKS`, default `360` (~15s) | Max age of a sighting that still qualifies as a recon target (gate 4). |
 | `CREWBORG_BE_DUMB` / `BE_DUMB` | env truthy | Replaces the imposter `Playing` order with only Hunt (ready + visible victim) / Search — skips Evade, Recon, Report Body. An isolation experiment for "always prepare to kill". |
 | `skip_evade` | LLM commander (`strategy/commander/bias.py:commander_of`) | When the commander signals danger, suppresses Evade so we don't loiter near a body; logged to `belief.commander_danger_events`. See [`./commander.md`](./commander.md). |
 
@@ -113,27 +130,58 @@ window opens. It does not kill; when the kill is ready and a victim is visible
 the selector flips to Hunt. The measured imposter gap that motivates Search is
 being near crew about half as often as the strongest imposters.
 
-A small FSM, with all state on the instance:
+A small FSM, with all state on the instance (reworked 2026-07-01 to the 5-state
+form; see the module docstring for the authoritative transition list):
 
 ```
-  PICK_ROOM ─► GO_TO_ROOM ─► WATCH ─► FOLLOW(c) ─┐
-      ▲            │            │          │      │
-      │   (room    │  (room     │ (crew    │ (c   │
-      │   empty)   │  empty)    │ leaves)  │ settles in
-      └────────────┴────────────┴──────────┘  a room) ─► WATCH
-                                             (c lost) ─► PICK_ROOM
+  PICK_ROOM ─► GO_TO_ROOM ─► SEARCH_ROOM ─► WATCH ─► FOLLOW(c) ─┐
+      ▲            │              │            │          │      │
+      │   (room    │ (crewmate    │ (swept     │ (crew    │ (c settles in
+      │   empty)   │  seen ⇒      │  empty)    │ leaves)  │  a room) ─► SEARCH_ROOM
+      └────────────┴─ FOLLOW) ────┴────────────┴──────────┘ (c lost) ─► SEARCH_ROOM/PICK_ROOM
 ```
 
 | State | Behavior |
 |-------|----------|
-| `pick_room` | Choose a nearby reachable task room to sweep — a random one of the nearest `NEARBY_ROOMS` (4) rooms that contain a task station (somewhere to blend), excluding the current and just-left rooms and the spawn room. A fixed-seed RNG (`0xC0FFEE`) makes picks deterministic/replayable. Head to the room **center** (go fully inside), not a door/task spot. |
-| `go_to_room` | Navigate to the center; if a crewmate is seen leaving any watchable room, switch to FOLLOW immediately; on arrival, WATCH if crew are present else back to PICK_ROOM. |
-| `watch` | Hold the in-room **vantage** with line-of-sight to the most crew, recomputed as they move (so crew don't walk out of view). Leaver → FOLLOW; no watched crew remain → PICK_ROOM. |
+| `pick_room` | **Score every reachable room and commit to the best — never idles.** The score blends (env-tunable weights, `modes/search.py`): live expected-crew occupancy (strongest, `W_OCCUPANCY` 3.0), the **empirical density prior** (`W_PRIOR` 1.5 — see below), unvisitedness (grows with time since visit), a fast-decaying just-visited penalty, travel cost, teammate-pressure subtraction, a task-room blend bonus, and a soft commander hunt-room nudge. Excludes the current room, the spawn room, and a commander avoid-room when possible. Head to the room **center** (go fully inside), not a door/task spot. |
+| `go_to_room` | Navigate to the center; seeing ANY live non-teammate — room or hallway — switches to FOLLOW immediately; on arrival, SEARCH_ROOM. |
+| `search_room` | Sweep the room's interior scan points so crew hidden from the door are found. Crew in the room → WATCH; a crewmate seen elsewhere → FOLLOW; swept empty → PICK_ROOM. |
+| `watch` | Only entered with crew confirmed in the room. Multiple crew: hold the in-room **vantage** with line-of-sight to the most of them (recomputed as they move). A single crew: close to just outside kill range (or a task site beside it). Leaver → FOLLOW; no watched crew remain → PICK_ROOM. |
 | `follow(c)` | Chase the committed leaver `c` to its next room. When visible, `navigate_to` its live position and feed `strategy/path_prediction.py:PathPredictor`; when occluded, `navigate_to` the predictor's top predicted hallway position. Give up when the target is gone/dead/now a teammate, the lost-ticks budget expires, or the predictor runs out. |
 
 Search never follows the teammate imposter (`belief.teammate_colors`). The path
 predictor is fed only what we actually see (the target's position when visible,
 `None` otherwise) — the same signal it is scored on offline.
+
+### The empirical density prior
+
+`strategy/room_prior.py` loads `data/room_density.json` once at import (schema
+`crewborg-room-density/v1`, built from 247 real episodes by
+`crewrift_lab/tools/imposter_movement/room_density.py`): each room's measured
+share of all live crew, in 600-tick Playing bands. `room_share_prior(room, tick)`
+returns the room's share **max-normalized within the current band** (band =
+tick // 600, clamped to the last band) — the same 0..1 scaling PICK_ROOM applies
+to live occupancy, so the blend weights compare directly. The blend rule: the
+prior's weight (`W_PRIOR` 1.5, env `CREWBORG_PICKROOM_W_PRIOR`) is deliberately
+**half** the live-occupancy weight — live evidence dominates 2:1 when the
+tracker has mass; when blind (early game, long no-contact stretches) the prior
+is the crew-seeking signal that breaks ties between otherwise-equal rooms.
+Failure-tolerant: a missing/malformed file (or `CREWBORG_ROOM_DENSITY=0`, or a
+room not in the table) makes the prior term 0.0 — never a crash.
+
+### The parked guard
+
+`modes/imposter_common.py:ParkedGuard` — the standing "idling is dangerous"
+insurance, wired into Search and Recon. Any run of
+`parked_guard_ticks()` (default 12, env `CREWBORG_PARKED_GUARD_TICKS`)
+consecutive **kill-ready Playing ticks** whose intent is idle or a zero-length
+route (navigation target within `PARKED_ARRIVE_RADIUS_SQ` of self) forces a
+state change — Search re-runs PICK_ROOM (the current room is excluded, so the
+new target is always elsewhere); Recon abandons its target and heads for the
+hottest occupancy point that isn't underfoot — and emits a
+`domain.parked_guard` trace event (in the `kill` trace group). Hunt is
+deliberately unguarded (its in-range "lying in wait" hold escapes via the
+urgency relaxation) and Evade can't be kill-ready.
 
 ### Vantage selection
 
@@ -146,7 +194,6 @@ vantage sees at least one more crewmate, avoiding jitter between equal vantages.
 
 | Search constant | Value | Meaning |
 |-----------------|-------|---------|
-| `NEARBY_ROOMS` | 4 | How many nearest task rooms are candidates to sweep. |
 | `ARRIVE_RADIUS_SQ` | `24²` | Arrival tolerance at a goto point/vantage. |
 | `FOLLOW_LOST_TICKS` | 120 | Drop an unseen follow after this long with no live prediction. |
 | `COMMANDER_FOLLOW_LOST_TICKS` | 240 | Extended follow persistence for a commander-hard-named target. |
@@ -172,15 +219,20 @@ most-recently-seen crewmate** (`strategy/opportunity.py:most_recent_victim` —
 live position when visible, last-known otherwise) so that the instant the
 cooldown clears, a victim is in view and Hunt fires immediately.
 
-Recon is stateless: the target (commander `target_player` override, else
-`most_recent_victim`) is re-chosen each tick. Unlike Hunt it does not require the
-target to be currently visible or reachable — it is only pre-positioning, not
-striking. It `idle`s only when we have no self position or no crewmate has been
-seen at all.
+The target (commander `target_player` override, else `most_recent_victim`) is
+re-chosen each tick. Unlike Hunt it does not require the target to be currently
+visible or reachable — it is only pre-positioning, not striking. The selector
+only routes here for a *fresh, unspent* sighting (see gate 4 above), and Recon
+itself never stands on a ghost position: reaching the last-known point without
+the target in view abandons it (`_abandoned`) and falls back to occupancy
+seeking, with a `ParkedGuard` as final insurance. It `idle`s only when we have
+no self position or no crew signal exists at all.
 
 | Recon constant | Source | Value | Meaning |
 |----------------|--------|-------|---------|
 | `RECON_WINDOW_TICKS` | env `CREWBORG_RECON_WINDOW` via `recon_window()` | 100 | Ticks before ready at which Recon activates. Deliberately short — a long window risks over-extension that gets the imposter caught. |
+| `RECON_STALENESS_TICKS` | env `CREWBORG_RECON_STALENESS_TICKS` via `recon_staleness_ticks()` | 360 | Max sighting age that still qualifies as a recon target (3× the 120-tick follow/track windows ≈ 2-3 room transits); older ⇒ Search. |
+| `RECON_REACHED_RADIUS_SQ` | `strategy/opportunity.py` | `24²` | "Reached the last-known point" radius, shared by ReconMode's arrival handling and the selector's spent-sighting check. |
 
 ## Hunt — commit, intercept, strike
 
