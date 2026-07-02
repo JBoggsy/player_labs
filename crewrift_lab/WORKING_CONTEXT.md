@@ -109,6 +109,23 @@ flat (both arms shared the same quota window). NOT submitted; branch `worktree-v
 ⚠️ analysis gotcha recorded in TENTATIVE_LESSONS: warehouse `died` events are INCOMPLETE — derive
 deaths from `player_state.alive=false` (the `died` key missed kill victims and skewed dead-seat stats).
 
+## ✅ CYCLE-4 (2026-07-02, worktree-v89-tight-gate): v89 tight gate BUILT + A/B POSITIVE — SHIP RECOMMENDED, awaiting go-ahead
+
+v89 = v88 + the cycle-3 lever, built in `worktree-v89-tight-gate` (`828d8f1`): (1) fallback-vote
+corroboration tightened to **witnessed OR 0.9 posterior OR the LLM's OWN submit_vote** —
+`_llm_submitted_vote_targets` replaces `_llm_vote_targets` (set_tentative_vote / chat-riding
+vote_target / backfill no longer count; uncorroborated = hold at early-submit, SKIP at auto-submit);
+(2) **census self-death catch** (`types.py`): our own dead candidate-grid cell clears
+`belief.self_alive` — closes the kill→meeting ghost-icon lag leak (ep 422637ce). 523+13 tests.
+Uploaded `crewborg-v89probe:v1` (`cc664a1e`, standing LLM probe recipe). **Matched 50v50 A/B**
+(`xreq_d947dcf9` v89 / `xreq_23530fff` v88, pinned 7-champ field, natural roles; warehouses
+`/tmp/v89_ab_wh` `/tmp/v88_ab_wh`, 0 trace_warnings, 0 ops): gate fires 17 vs 4; crew vote precision
+**71% (24/34) vs 36% (19/53), p=0.002**; crew mis-ejections fed **2 vs 7**; imposter-ejections fed
+**14 vs 4** (imp-ejected/crew-ep 0.65 vs 0.49 — no loss); crew win 30% vs 21% (NS p=0.44, not worse);
+imposter win unchanged; timeouts 0/0; dead-seat calls 0/0. v89 arm ate MORE Bedrock 429s (294 vs 175
+failed calls) and still improved — bias against us. **All pre-registered ship criteria met → ship
+recommendation stands; NOT submitted** (needs James's explicit go). Merge `worktree-v89-tight-gate`.
+
 ## 🔬 CYCLE-3 FINDINGS (2026-07-02): v88 league read — gate inert-but-fine; the leak is the LLM-named clause
 
 v88 league tournament batch: 35 eps (`/tmp/v88_league_eps`, tournament subset symlinked at
