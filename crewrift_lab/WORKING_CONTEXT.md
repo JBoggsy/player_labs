@@ -80,7 +80,17 @@ NEXT: tune — (1) imposter A/B (commander LLM on vs off) for kill efficiency, i
 useful `hunt_room`/`target_player`/`strength`; (2) Phase 4 EscortMode for crew. Both roles wired + strength dial. Branch `worktree-labs-work`
 (merged to origin/main @ `2ec14f9`); uploaded v55–v64, **none submitted**.
 
-## 🚨 ACTIVE INCIDENT + FIX IN FLIGHT (2026-07-02 morning): synchronous meeting-LLM blocks the loop
+## ✅ INCIDENT CLOSED (2026-07-02): v87 (async meeting-LLM) is CHAMPION and RANK 1
+
+v87 = v84 code + async LLM worker + cadence cap/budget + chat-implied fallback vote + early submit,
+shipped with LLM + full telemetry (tracing exonerated). **League confirmation (40 games): 0 disconnects
+(v86 was 38.5%), 0 vote timeouts (was 26% of crew meetings), crew player-votes 1.54/g (was 0.49),
+win 55% — crew 46% (!!), imposter 75% @ 2.0 K/g. Leaderboard reset put us RANK 1.** Bedrock daily
+quota still part-drained (fallbacks graceful); cadence cap halves burn going forward. Cycle-2 analysis
+agent digging lead-drivers + the queued ghost-idle fingerprint. Ghost noclip parked unmerged
+(worktree-ghost-tasking, A/B flat). 2-hour meta loop active (cron a3d08900).
+
+## (superseded) 🚨 ACTIVE INCIDENT + FIX IN FLIGHT (2026-07-02 morning): synchronous meeting-LLM blocks the loop
 
 v86 is CHAMPION (LLM on, no tracing) but bleeding: **38.5% league disconnects, 8% win** (v85 was 9.4%).
 Root cause UNIFIED (chat-vote agent, 175 eps): the meeting LLM call is SYNCHRONOUS (~3s loop block each);
