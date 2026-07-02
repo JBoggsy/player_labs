@@ -17,7 +17,13 @@ This is *not* a log or archive: finished work lives in git history / the
 
 ## 🎯 CURRENT STATE (reseeded 2026-07-02 session end)
 
-**Champion: `crewborg:v89`** — the full stack: role-latch fix, idle/search FSM + freeze escapes
+**Champion: `crewborg:v91`** (submitted + QUALIFIED + champion 2026-07-02 evening, James-authorized
+full-stack ship without pre-A/B): = v89 + v4 live-fit suspicion weights + vote bar 0.6/lead 0.2 +
+ready-state re-search hardening + empirical density prior + **Honor Society ON (HS1)** + full tracing
+incl. suspicion features. Verification probe xreq_07dfadff in flight (HS1 announce / LLM / features /
+vote behavior). Prior champion below for reference:
+
+**Was: `crewborg:v89`** — the full stack: role-latch fix, idle/search FSM + freeze escapes
 (kill-press, role-limbo, mid-task wedge/stall), witness posture, call-bar=conviction-bar,
 VOTE_TIMER=1200, **async meeting LLM** (worker + 120-tick cadence + 5-call budget + dead-seat mute)
 with the **tight vote gate** (fallback votes need witnessed / 0.9-posterior / explicit LLM
