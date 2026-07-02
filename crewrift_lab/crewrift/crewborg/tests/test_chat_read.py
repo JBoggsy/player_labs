@@ -137,3 +137,22 @@ def test_ensure_loading_is_a_noop_when_disabled(monkeypatch) -> None:
         assert chat_nlp._thread is None and chat_nlp.get_model() is None
     finally:
         chat_nlp._model, chat_nlp._thread, chat_nlp._failed = saved
+
+
+# --- own-chat accusation parse (chat-implied fallback vote) ------------------
+
+
+def test_accused_colors_parses_a_single_message(nlp_model) -> None:
+    colors = set(_COLORS)
+    assert chat_read.accused_colors("red is sus, saw them vent", colors) == {"red"}
+    assert chat_read.accused_colors("i vouch for red, they are safe", colors) == set()
+    assert chat_read.accused_colors("hello everyone", colors) == set()
+
+
+def test_accused_colors_is_empty_without_a_model() -> None:
+    saved = chat_nlp._model
+    chat_nlp._model = None
+    try:
+        assert chat_read.accused_colors("red sus", {"red"}) == set()
+    finally:
+        chat_nlp._model = saved

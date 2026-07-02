@@ -48,9 +48,11 @@ formatting is identical by design so it isn't a tell), and otherwise waits to
 **bandwagon** onto whoever others suss/vote, citing *fabricated safe cues* in that
 same format. Meetings reuse **Attend Meeting**. With `CREWBORG_LLM_MEETINGS=1` plus
 Bedrock (`USE_BEDROCK=1`) or `ANTHROPIC_API_KEY`,
-Attend Meeting uses a fast Haiku-class LLM call on the meeting fast path to chat,
-respond to other players, keep a tentative vote, and submit early when requested;
-otherwise it preserves the deterministic accuse-and-vote / silent-skip fallback.
+Attend Meeting uses fast Haiku-class LLM calls — run on a background worker so the
+game loop never blocks, rate/budget-capped per meeting — to chat, respond to other
+players, keep a tentative vote, and submit early when requested or once the LLM is
+idle late in the meeting; otherwise it preserves the deterministic
+accuse-and-vote / silent-skip fallback.
 Hunt is gated on a visible kill opportunity whose isolation bar relaxes with
 urgency, not merely on the cooldown ending. The action layer covers `kill` (edge-A
 in KillRange) and `vent` (level-B in VentRange).

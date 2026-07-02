@@ -928,11 +928,38 @@ The implementation is split into three portable pieces under `strategy/meeting/`
 `submit_vote`, or `wait`. A tentative vote is stored in mode-local state and is
 auto-submitted near the deadline; `submit_vote` casts immediately. The mode calls
 the LLM on meeting start, new external chat, chat-cooldown readiness, and deadline
-pressure, with a small tick interval to avoid repeated calls from one visual
-state. Distinct chat messages can be sent across the same meeting; duplicate model
-text is suppressed. The deadline prompt has priority over new chat/cooldown prompts,
-and the mode refuses to start an LLM call unless the configured timeout, converted to
-meeting ticks with a margin, can return before the auto-submit window.
+pressure. Distinct chat messages can be sent across the same meeting; duplicate model
+text is suppressed. The deadline prompt has priority over new chat/cooldown prompts.
+
+**Calls are asynchronous** (`strategy/meeting/worker.py`, the commander-worker
+pattern): the mode publishes at most one in-flight request to a background daemon
+thread and polls a latest-wins result buffer each tick, so the game loop never
+blocks on an LLM call. This is the v87 fix for the measured v86 root cause —
+synchronous ~3s calls stalled the loop at the 1200-tick meetings, lagged the
+belief clock ~670 ticks, and lost selected votes to `vote_timeout`. Outcomes are
+matched by a monotonic `request_id`, so a call that outlives its meeting is
+dropped, not applied; the worker is closed (without joining an in-flight call) in
+the mode's `on_exit`. The deadline geometry no longer guards against blocking; it
+only decides when a new call is pointless (the answer would arrive after
+auto-submit) and when to stop waiting and fall back.
+
+**Call volume is bounded** two ways: a 120-tick minimum interval between calls
+(`LLM_MIN_CALL_INTERVAL_TICKS` — the old 12 exploded into ~5x call volume at
+1200-tick meetings and exhausted the Bedrock daily token quota; v86 saw 800 429s)
+and a hard per-meeting call budget (`CREWBORG_LLM_MEETING_CALL_BUDGET`, default
+5). The system prompt instructs the model to attach its current best
+`vote_target` to every `send_chat`, so each budgeted call also refreshes the
+tentative vote.
+
+**Votes are never held hostage to a failed call.** The fallback vote prefers, in
+order: whomever our *own* chat accused this meeting (parsed with
+`chat_read.accused_colors`, the §10.5 dependency parse — accuse-then-skip is a
+tell), then the suspicion vote bar (`top_suspect`), then skip. And once a
+tentative non-skip vote exists with no call in flight, the mode submits it
+**early** — after the call budget is spent, or once under half the believed time
+remains — because the belief clock can lag real time and a submitted vote can't
+be lost to `vote_timeout`. The chat-implied tracking runs only on the LLM path,
+so LLM-off behavior is unchanged.
 
 ### 10.4 Imposter meeting tactics (`strategy/meeting/`)
 
@@ -1176,8 +1203,10 @@ for vote-actuation forensics.
 `kill_attempted` (we pressed) is distinct from `kill_landed` (the kill registered,
 seen as the kill-ready→cooldown edge). Incoming meeting chat is decoded into
 `belief.chat_log` (§4.3) and emitted once per meeting line as `chat_received`.
-When the meeting LLM is enabled, `meeting_context_serialized`,
-`meeting_llm_decision`, fallback reasons, and selected chat/vote are in the default
+When the meeting LLM is enabled, `meeting_context_serialized`, `meeting_llm_call`
+(per request: trigger, calls used vs the `CREWBORG_LLM_MEETING_CALL_BUDGET` cap),
+`meeting_llm_budget_exhausted`, `meeting_llm_decision`, `meeting_chat_implied_vote`,
+fallback reasons, and selected chat/vote are in the default
 trace; the LLM latency histogram is emitted when metrics are enabled. Raw LLM
 request/response tracing is opt-in via `CREWBORG_LLM_TRACE_RAW=1` or `CREWBORG_TRACE=debug`.
 
@@ -1223,7 +1252,7 @@ structural, and each still awaits tuning against a live server.
 | Path clearance | `CLEARANCE_RADIUS = 2` px config-space margin (routes keep off walls) |
 | Re-plan cadence | `REPLAN_INTERVAL = 8` ticks (re-root the route at the live position; A* ≈ 0.2 ms) |
 | Voting policy | accuse + vote the **clear leading suspect** — near-certain (`P ≥ VOTE_PROBABILITY=0.8`) or a clear lead (`P ≥ VOTE_LEAD_MIN_P=0.5` and ahead of the runner-up by `VOTE_LEAD_MARGIN=0.2`), §10.1 — else **silent + skip** a flat field; always cast *something* before the timer (not voting costs −10) |
-| LLM meetings | opt-in with `CREWBORG_LLM_MEETINGS=1` plus Bedrock (`USE_BEDROCK=1`) or `ANTHROPIC_API_KEY`; default models `claude-haiku-4-5-20251001` direct / `us.anthropic.claude-haiku-4-5-20251001-v1:0` Bedrock; default timeout 3.0s; deadline prompt wins over chat prompts and is pulled earlier when needed so worst-case timeout plus margin returns before the ≤48-tick auto-submit window; chat cooldown is 100 ticks |
+| LLM meetings | opt-in with `CREWBORG_LLM_MEETINGS=1` plus Bedrock (`USE_BEDROCK=1`) or `ANTHROPIC_API_KEY`; default models `claude-haiku-4-5-20251001` direct / `us.anthropic.claude-haiku-4-5-20251001-v1:0` Bedrock; default timeout 3.0s; calls run on a background worker (never block the loop); ≥120 ticks between calls and ≤`CREWBORG_LLM_MEETING_CALL_BUDGET` (default 5) calls per meeting; deadline prompt wins over chat prompts; fallback vote = own-chat accusation → `top_suspect` → skip; tentative non-skip votes early-submit once the budget is spent or <50% believed time remains, else auto-submit in the ≤48-tick window; chat cooldown is `CHAT_COOLDOWN_TICKS = 60` |
 | Chat NLP (§10.5) | **on by default**; kill switch `CREWBORG_CHAT_NLP=0` disables it (never imports/loads spaCy). Drives the imposter bandwagon's chat signal via `en_core_web_sm` dependency-parse negation scope, background-loaded so it never blocks play |
 | Aggressive imposter selector | opt-in with `CREWBORG_BE_DUMB=1` or `BE_DUMB=1`; during `Playing`, imposters skip Pretend/Evade/ReportBody and always select Search unless kill-ready with a visible victim, then Hunt |
 | Report policy | crewmates always report visible bodies; **imposters NEVER report** (removed 2026-06-25) — they evade for `EVADE_TICKS = 72` after their own kill, then go straight back to Search. Self-reporting our own kill opened a meeting that reset the kill cooldown and killed snowball kills (§7.2) |
