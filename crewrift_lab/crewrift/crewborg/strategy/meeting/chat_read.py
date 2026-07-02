@@ -68,6 +68,18 @@ def chat_accusers(belief: Belief, *, cache: dict[str, set[str]] | None = None) -
     }
 
 
+def accused_colors(text: str, colors: set[str]) -> set[str]:
+    """The colors a single message accuses — the same gate + dependency parse as
+    ``chat_accusers``. Used on crewborg's *own* outgoing meeting chat to derive the
+    chat-implied fallback vote (accuse-then-skip is a tell; vote whom we accused).
+    Empty when the NLP model is disabled or still loading."""
+
+    nlp = chat_nlp.get_model()
+    if nlp is None:
+        return set()
+    return _extract(nlp, text, colors) if _gate(text, colors) else set()
+
+
 def _accused_for(text: str, colors: set[str], nlp: Any, cache: dict[str, set[str]]) -> set[str]:
     if text in cache:
         return cache[text]

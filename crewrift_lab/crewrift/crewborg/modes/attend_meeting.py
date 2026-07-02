@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import math
-from typing import Any
+import os
+from typing import Any, Callable
 
 from crewrift.crewborg.strategy.meeting import (
     CHAT_MAX_CHARS,
@@ -27,28 +28,51 @@ from crewrift.crewborg.strategy.meeting.imposter import (
     votes_against,
 )
 from crewrift.crewborg.strategy.meeting import chat_nlp, chat_read
+from crewrift.crewborg.strategy.meeting.worker import MeetingLLMRequest, MeetingLLMWorker
 from crewrift.crewborg.strategy.suspicion import chat_suspect, top_suspect
 from crewrift.crewborg.types import ActionState, Belief, ChatEvent, Intent
 from players.player_sdk import EmptyModeParams, Mode
 
-LLM_MIN_CALL_INTERVAL_TICKS = 12
+# Min ticks between LLM calls. 12 (one visual state) exploded into ~5x call volume at
+# the 1200-tick meetings and exhausted the Bedrock daily token quota (v86: 800 429s);
+# 120 (~5s) keeps a multi-turn conversation while staying inside the per-meeting budget.
+LLM_MIN_CALL_INTERVAL_TICKS = 120
+# Hard per-meeting call cap, on top of the interval (env-overridable).
+LLM_CALL_BUDGET_ENV = "CREWBORG_LLM_MEETING_CALL_BUDGET"
+DEFAULT_LLM_CALL_BUDGET = 5
 DEADLINE_LLM_REMAINING_TICKS = 96
 AUTO_SUBMIT_REMAINING_TICKS = 48
 # The sim's real tick rate (24/s). Deliberately NOT derived from VOTE_TIMER_TICKS —
 # the timer length changed (240→1200) but the tick rate did not; deriving it would
 # corrupt the LLM latency-guard's seconds→ticks conversion.
 MEETING_TICKS_PER_SECOND = 24
-LLM_TIMEOUT_MARGIN_TICKS = LLM_MIN_CALL_INTERVAL_TICKS
+LLM_TIMEOUT_MARGIN_TICKS = 12
 DEFAULT_LLM_TIMEOUT_SECONDS = 3.0
+# Early-submit a tentative vote (LLM idle) once under half the believed time remains —
+# the belief clock can lag real time, and a submitted vote can't be lost to vote_timeout.
+EARLY_SUBMIT_REMAINING_FRACTION = 0.5
 
 
 class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
     name = "attend_meeting"
     params_type = EmptyModeParams
 
-    def __init__(self, params=None, *, llm_client: MeetingLLMClient | None = None) -> None:
+    def __init__(
+        self,
+        params=None,
+        *,
+        llm_client: MeetingLLMClient | None = None,
+        llm_worker_factory: Callable[[MeetingLLMClient], MeetingLLMWorker] | None = None,
+    ) -> None:
         super().__init__(params)
         self._llm_client = llm_client if llm_client is not None else build_meeting_llm_client_from_env()
+        self._llm_worker_factory = llm_worker_factory if llm_worker_factory is not None else MeetingLLMWorker
+        self._worker: MeetingLLMWorker | None = None
+        self._llm_request_id = 0  # monotonic across meetings so stale deliveries are dropped
+        self._llm_pending: MeetingLLMRequest | None = None
+        self._llm_calls_used = 0
+        self._llm_call_budget = _llm_call_budget_from_env()
+        self._chat_accused: str | None = None
         self._meeting_id: int | None = None
         self._deterministic_chatted = False
         self._disabled_traced = False
@@ -83,11 +107,21 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         if not self._llm_client.enabled:
             return self._decide_deterministic(belief, trace_disabled=True)
 
+        intent = self._collect_llm_outcome(belief)
+        if intent is not None:
+            return intent
+
         if self._should_auto_submit(belief):
             return self._submit_vote_intent(belief, reason="meeting deadline: auto-submit tentative vote")
 
         if self._pending_chat_text is not None and self._chat_cooldown_ready(belief):
             return self._send_chat_intent(belief, self._pending_chat_text, reason="sending pending LLM chat")
+
+        if self._should_early_submit(belief):
+            return self._submit_vote_intent(belief, reason="early submit: tentative vote, LLM idle")
+
+        if self._llm_pending is not None:
+            return Intent(kind="idle", reason="waiting for meeting LLM result")
 
         trigger = self._next_llm_trigger(belief)
         if trigger is None:
@@ -101,14 +135,13 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
             last_chat_tick=self._last_chat_tick,
         )
         self.emit.event("meeting_context_serialized", {"trigger": trigger, "context": context})
-        result = self._call_llm(context, trigger=trigger)
-        if result is None:
-            return self._decide_after_llm_failure(belief, trigger)
-        decision = self._validate_decision(belief, result.decision)
-        if decision is None:
-            return self._decide_after_llm_failure(belief, trigger)
-        self._trace_decision(trigger, decision, result)
-        return self._apply_decision(belief, decision)
+        self._submit_llm_request(context, trigger=trigger)
+        return Intent(kind="idle", reason=f"meeting LLM call in flight ({trigger})")
+
+    def on_exit(self, belief: Belief, action_state: ActionState, next_directive) -> None:
+        if self._worker is not None:
+            self._worker.close()
+            self._worker = None
 
     # --- deterministic fallback ------------------------------------------
 
@@ -252,6 +285,8 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
 
     def _next_llm_trigger(self, belief: Belief) -> str | None:
         tick = belief.last_tick
+        if self._llm_calls_used >= self._llm_call_budget:
+            return None
         if self._last_llm_call_tick is not None and tick - self._last_llm_call_tick < LLM_MIN_CALL_INTERVAL_TICKS:
             return None
         if not self._can_start_llm_call(belief):
@@ -277,7 +312,14 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
 
         return None
 
-    def _call_llm(self, context: dict[str, Any], *, trigger: str) -> Any | None:
+    def _submit_llm_request(self, context: dict[str, Any], *, trigger: str) -> None:
+        """Hand the call to the background worker and return immediately.
+
+        The blocking call is the v86 root cause (each ~3s call stalled the loop, lagged
+        the belief clock, and lost selected votes to vote_timeout); the mode now only
+        submits here and picks the outcome up in ``_collect_llm_outcome`` on a later tick.
+        """
+
         self._last_llm_call_tick = int(context["meeting"]["tick"])
         self._last_external_chat_signature = tuple(
             (event["tick"], event["speaker_color"], event["text"])
@@ -288,16 +330,54 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
             self._deadline_prompted = True
         if trigger == "chat_cooldown_ready":
             self._last_cooldown_prompt_chat_tick = self._last_chat_tick
-        try:
-            result = self._llm_client.decide(context, trigger=trigger)
-        except Exception as exc:
+        self._llm_calls_used += 1
+        self._llm_request_id += 1
+        request = MeetingLLMRequest(request_id=self._llm_request_id, trigger=trigger, context=context)
+        self._llm_pending = request
+        self.emit.event(
+            "meeting_llm_call",
+            {
+                "trigger": trigger,
+                "request_id": request.request_id,
+                "calls_used": self._llm_calls_used,
+                "call_budget": self._llm_call_budget,
+            },
+        )
+        if self._llm_calls_used >= self._llm_call_budget:
+            self.emit.event("meeting_llm_budget_exhausted", {"call_budget": self._llm_call_budget})
+        self._ensure_worker().requests.publish(request)
+
+    def _collect_llm_outcome(self, belief: Belief) -> Intent | None:
+        """Non-blocking pickup of the pending call's outcome; ``None`` = nothing yet."""
+
+        if self._worker is None or self._llm_pending is None:
+            return None
+        outcome = self._worker.results.take()
+        if outcome is None:
+            return None
+        if outcome.request_id != self._llm_pending.request_id:
+            return None  # stale delivery (earlier meeting/request) — drop, keep waiting
+        trigger = outcome.trigger
+        self._llm_pending = None
+        if outcome.error is not None or outcome.result is None:
             self.emit.event(
                 "meeting_llm_fallback",
-                {"reason": "llm_call_failed", "trigger": trigger, "error": repr(exc)},
+                {"reason": "llm_call_failed", "trigger": trigger, "error": outcome.error},
             )
-            return None
+            return self._decide_after_llm_failure(belief, trigger)
+        result = outcome.result
         self.emit.histogram("meeting_llm.latency_ms", result.latency_ms, tags={"model": result.model, "trigger": trigger})
-        return result
+        decision = self._validate_decision(belief, result.decision)
+        if decision is None:
+            return self._decide_after_llm_failure(belief, trigger)
+        self._trace_decision(trigger, decision, result)
+        return self._apply_decision(belief, decision)
+
+    def _ensure_worker(self) -> MeetingLLMWorker:
+        if self._worker is None:
+            self._worker = self._llm_worker_factory(self._llm_client)
+            self._worker.start()
+        return self._worker
 
     def _validate_decision(self, belief: Belief, decision: MeetingDecision) -> MeetingDecision | None:
         try:
@@ -367,8 +447,25 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self._pending_chat_text = None
         self._sent_chat_texts.add(text)
         self._last_chat_tick = belief.last_tick
+        if self._llm_client.enabled:  # keep the LLM-off path byte-identical
+            self._note_own_accusation(belief, text)
         self.emit.event("meeting_chat_selected", {"text": text, "reason": reason})
         return Intent(kind="chat", text=text, reason=reason)
+
+    def _note_own_accusation(self, belief: Belief, text: str) -> None:
+        """Track whom our own chat accused: the chat-implied fallback vote.
+
+        v86's headline crew failure was confident-chat-then-skip — the LLM accused a
+        color in chat, the follow-up vote call failed (429/timeout), and the fallback
+        collapsed to the 0.9-gate skip. If we said it, we should vote it."""
+
+        accused = chat_read.accused_colors(text, set(belief.roster))
+        self_color = belief.self_color or belief.voting.self_marker_color
+        accused -= belief.teammate_colors | {self_color}
+        if not accused:
+            return
+        self._chat_accused = max(accused, key=lambda color: belief.suspicion.get(color, 0.0))
+        self.emit.event("meeting_chat_implied_vote", {"target": self._chat_accused, "text": text})
 
     def _submit_vote_intent(self, belief: Belief, *, reason: str) -> Intent:
         vote_target = self._resolved_vote_target(belief)
@@ -400,6 +497,11 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         if meeting_id == self._meeting_id:
             return
         self._meeting_id = meeting_id
+        # A still-running call from the previous meeting delivers against a stale
+        # request_id and is dropped in _collect_llm_outcome; the id itself never resets.
+        self._llm_pending = None
+        self._llm_calls_used = 0
+        self._chat_accused = None
         self._deterministic_chatted = False
         self._disabled_traced = False
         self._sent_chat_texts.clear()
@@ -438,7 +540,28 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
     def _should_auto_submit(self, belief: Belief) -> bool:
         return not self._vote_submitted and self._remaining_ticks(belief) <= AUTO_SUBMIT_REMAINING_TICKS
 
+    def _should_early_submit(self, belief: Belief) -> bool:
+        """Submit a tentative vote early instead of holding it for the believed-clock
+        deadline: the belief clock can lag, and a submitted vote can't be lost to
+        vote_timeout. Only once the LLM can no longer usefully revise it — call budget
+        spent, or under half the believed time remains — and never over a pending chat
+        (send that first; the vote ends our participation) or a bare skip (submitting
+        skip early gains nothing and forfeits a later real vote)."""
+
+        if self._tentative_vote is None or self._tentative_vote == VOTE_SKIP:
+            return False
+        if self._llm_pending is not None or self._pending_chat_text is not None:
+            return False
+        return (
+            self._llm_calls_used >= self._llm_call_budget
+            or self._remaining_ticks(belief) < VOTE_TIMER_TICKS * EARLY_SUBMIT_REMAINING_FRACTION
+        )
+
     def _can_start_llm_call(self, belief: Belief) -> bool:
+        """Whether a call started now can still deliver before auto-submit. Calls never
+        block the loop anymore; this only avoids spending budget on an answer that
+        would arrive after the fallback vote is already in."""
+
         return self._remaining_ticks(belief) > self._latest_safe_llm_start_remaining_ticks()
 
     def _deadline_prompt_remaining_ticks(self) -> int:
@@ -462,4 +585,20 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         return self._fallback_vote_target(belief)
 
     def _fallback_vote_target(self, belief: Belief) -> str:
+        """Prefer whom we accused in our own chat this meeting (never chat-then-skip),
+        then the suspicion vote bar, then skip. ``_chat_accused`` is only ever set on
+        the LLM path, so the deterministic (LLM-off) vote is unchanged."""
+
+        if self._chat_accused is not None and self._chat_accused in valid_vote_targets(belief):
+            return self._chat_accused
         return top_suspect(belief) or VOTE_SKIP
+
+
+def _llm_call_budget_from_env() -> int:
+    raw = os.environ.get(LLM_CALL_BUDGET_ENV)
+    if raw is None:
+        return DEFAULT_LLM_CALL_BUDGET
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return DEFAULT_LLM_CALL_BUDGET

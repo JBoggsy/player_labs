@@ -474,7 +474,10 @@ layout (`__init__.py`/`types.py`/`action.py`/`nav.py`/`modes/`/`strategy/`/
 `perception/`/`map/`/`coworld/`/`tests/`), the type contracts, and the
 mode/intent/strategy design. The meeting LLM implementation lives under
 `strategy/meeting/` and is enabled by `CREWBORG_LLM_MEETINGS=1` plus either
-Bedrock (`USE_BEDROCK=1`) or `ANTHROPIC_API_KEY`.
+Bedrock (`USE_BEDROCK=1`) or `ANTHROPIC_API_KEY`. Calls run asynchronously on a
+background worker (`strategy/meeting/worker.py` — the game loop never blocks on
+one) and are capped per meeting by `CREWBORG_LLM_MEETING_CALL_BUDGET` (default 5)
+on top of a 120-tick call interval; see design.md §10.3.
 
 Perception is **structured-scene maintenance**, not computer vision: there is no
 framebuffer parser, no pixel atlas, and no CV parity oracle. The only image steps

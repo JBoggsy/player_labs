@@ -28,6 +28,9 @@ Rules:
 - Use only vote_target values from constraints.valid_vote_targets or "{VOTE_SKIP}".
 - Keep chat_text printable ASCII and at most {CHAT_MAX_CHARS} characters.
 - A submitted vote is final; tentative votes are auto-submitted near the deadline.
+- On EVERY send_chat, ALSO set vote_target to your current best vote (a valid color, or
+  "{VOTE_SKIP}") — it records/updates your tentative vote alongside the message, so a
+  sudden meeting end can never catch you voteless. Update it as your read changes.
 
 Participation — be an ACTIVE voice; meetings are won by talking:
 - In MOST meetings, send_chat at least once: share a concrete thing you observed, ask a specific
