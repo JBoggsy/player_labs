@@ -73,7 +73,11 @@ def build_outcomes_table(episodes_root: Path) -> pd.DataFrame:
             continue
         if not (d / "episode.json").exists() or not (d / "results.json").exists():
             continue
-        rows.extend(parse_episode_outcome(d))
+        try:
+            rows.extend(parse_episode_outcome(d))
+        except Exception as exc:  # noqa: BLE001 - skip malformed episodes, keep building
+            print(f"  skip {d.name}: {exc}", file=sys.stderr)
+            continue
     return pd.DataFrame(rows, columns=OUTCOME_COLUMNS)
 
 

@@ -75,6 +75,19 @@ def test_parse_episode_outcome_falls_back_to_policy_results_for_league_shape(tmp
     assert rows[1]["policy_version"] == 168
 
 
+def test_build_outcomes_table_skips_malformed_episode_dir(tmp_path):
+    _write_episode_dir(tmp_path, "ep_good")
+    malformed = tmp_path / "ep_malformed"
+    malformed.mkdir()
+    (malformed / "episode.json").write_text(json.dumps(EPISODE_JSON))
+    (malformed / "results.json").write_text(json.dumps({"scores": [108, 20]}))  # missing "win"
+
+    df = build_outcomes_table(tmp_path)
+
+    assert set(df["episode"]) == {"ep_good"}
+    assert len(df) == 2
+
+
 def test_build_outcomes_table_across_multiple_episode_dirs(tmp_path):
     _write_episode_dir(tmp_path, "ep_one")
     _write_episode_dir(tmp_path, "ep_two")
