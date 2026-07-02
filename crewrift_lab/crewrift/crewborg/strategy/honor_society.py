@@ -328,7 +328,10 @@ def vote_veto(belief: "Belief", target: str) -> bool:
     Trust never outranks witnessed evidence, and never affects imposter play.
     """
 
-    if not enabled() or belief.self_role != "crewmate":
+    if not enabled() or belief.self_role == "imposter":
+        # Applies to crew AND role-limbo (self_role None): the veto is skip-only,
+        # so it is safe when the role is unknown — and a role-limbo seat plays the
+        # crew paths anyway. Only a known imposter is exempt (deflection untouched).
         return False
     if target not in belief.society_trusted:
         return False

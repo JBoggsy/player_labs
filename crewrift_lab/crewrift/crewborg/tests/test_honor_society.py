@@ -309,3 +309,12 @@ def test_role_reveal_trust_never_overrides_witnessed(society_on) -> None:
     belief.roster["red"].events = [PlayerEvent(kind="kill", start_tick=4, end_tick=4)]
     update_suspicion(belief)
     assert belief.suspicion.get("red", 0.0) > 0.9  # caught in the act: trust loses
+
+
+def test_vote_veto_applies_in_role_limbo(society_on) -> None:
+    # A missed role reveal (self_role None) must not silently disable the trust
+    # veto — the seat plays crew paths and the veto is skip-only/safe.
+    belief = _crew_belief()
+    belief.self_role = None
+    belief.society_trusted.add("red")
+    assert honor_society.vote_veto(belief, "red")
