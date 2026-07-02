@@ -5,6 +5,11 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
+- **RESOLVED 2026-07-02 (cycle-2 fingerprint): ghost "idle" decomposed** — 70% is meetings/GameOver
+  (vote-timer-inflated, unavoidable), 20% is healthy tasking, 8.5% is post-completion parking at home
+  (`normal.py:_return_to_start` — bounded, ~-1 score/40 eps, not worth a slot). Decide layer is FINE;
+  noclip retest low-value. NEW actionable finding: dead seats consumed 23% of meeting-LLM calls on votes
+  that never count → v88 mutes the meeting LLM for dead seats. Original item kept below for context.
 - **Ghost idle mechanism — dead crew idles upstream of navigation** (2026-07-02, from the ghost-tasking
   experiment). Dead-task completion 50-64% vs notsus 61-69%; ghosts stand still 72-79% of dead time but
   only ~8-10% of that is at task stations — they idle in the DECIDE layer, not en route. Noclip nav was

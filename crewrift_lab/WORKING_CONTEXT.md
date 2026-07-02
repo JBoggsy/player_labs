@@ -80,6 +80,19 @@ NEXT: tune — (1) imposter A/B (commander LLM on vs off) for kill efficiency, i
 useful `hunt_room`/`target_player`/`strength`; (2) Phase 4 EscortMode for crew. Both roles wired + strength dial. Branch `worktree-labs-work`
 (merged to origin/main @ `2ec14f9`); uploaded v55–v64, **none submitted**.
 
+## 🔬 CYCLE-2 FINDINGS (2026-07-02): protect the LLM vote path; v88 in flight
+
+Lead drivers (40-ep warehouse `/tmp/v87_league_wh`, survey `/tmp/survey_v87_league.html`): crew 46% is
+funded by (1) the **LLM vote path — 68.4% precision, kill-witness→ejection locks** + 0 vote timeouts, and
+(2) the **task engine** (6.39/seat, 21% completed dead) + meeting generation (0.86 imposters ejected/ep).
+**Fragility: the early-submit fallback vote runs 16.7% precision** (4/24) — 21 crew mis-ejected vs 24
+imposters in our crew eps — and **dead seats burn 23% of LLM calls on votes that never count** (0 dead
+vote_cast in replays). **v88 in flight (worktree-v88-vote-quality):** (a) confidence-gate fallback-sourced
+player votes (witnessed OR 0.9-posterior OR LLM-sourced tentative; else SKIP — auto-submit timing kept),
+(b) mute meeting LLM for dead seats. Ghost fingerprint RESOLVED (see TODO): decide layer fine, parking
+bounded; noclip stays parked. Meta: notsus v150 = closest crew rival (survival 58.3%, precision 54.8%);
+jordan 5/5 imposter wins in batch; aaln v25 weak; daveey collapsed.
+
 ## ✅ INCIDENT CLOSED (2026-07-02): v87 (async meeting-LLM) is CHAMPION and RANK 1
 
 v87 = v84 code + async LLM worker + cadence cap/budget + chat-implied fallback vote + early submit,
