@@ -56,9 +56,10 @@ post-death vs 111–239 field-best.
    worktree-agent-a17e8a614aabde1c4 @1547423 — merge-worthy). CORRECTION: 19.6% conversion was an
    artifact (vote-freeze-spanning windows); truth-based = 69.7%. Dominant cost = CONTACT (96% of
    ready ticks victimless in recon; median ready→kill 8t once seen) → post-kill re-approach /
-   victim-finding remains the big lever. DESIGNED (not run, awaiting James): URGENCY_FULL_TICKS
-   240→80 via env knob, imposter-pinned 100/arm, primary kills/g + ≥2-kill rate, guard imposter
-   ejections not worse >3pp.
+   victim-finding remains the big lever. URGENCY A/B RUN + NEGATIVE (2026-07-02,
+   xreq_3b8b3c7d/xreq_fc845eb0): mechanism moved 2.3x (wait_witness 5.57 vs 12.59 ticks/ep) but
+   kills/g 1.25 vs 1.36 (wrong direction), ejections +7pp — THIRD witness-gate refutation; knob
+   merged inert (default 240). Contact starvation is the lever → ready-search build in flight.
 3. **Suspicion evidence renovation (voting)** — corpus PULLED + VERIFIED: /tmp/susp_corpus_eps,
    692 eps across 16 xreqs (v82/v84/v85/v87/v88/v89 + v87-90 probes, crewrift_prime 0.4.31-era);
    artifact zips 691/692; **634 crewborg-slot episodes carry 1,486 per-meeting suspicion
