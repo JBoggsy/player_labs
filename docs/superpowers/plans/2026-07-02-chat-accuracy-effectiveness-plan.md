@@ -1270,6 +1270,15 @@ the LLM-labeling job (requires real AWS/Bedrock credentials — confirm
 `uv run softmax status`-equivalent AWS auth is live before this step, since
 `suss.py` has no dry-run path).
 
+**Join-key gotcha (found in final review, already fixed in the code):**
+`build_warehouse.py` keys `chat_suss.episode_id` by `episode.json`'s
+internal `id` field (`eid = meta.get("id") or ep.name`), NOT by this
+package's directory-stem `episode` convention. `validate_detector.py`'s
+`main()` therefore requires a new `--episodes` flag (the same
+`/tmp/chat_eff_eps` dir from Step 4) to build an id→stem remap before
+joining — already reflected in Step 7's command below. Don't drop that
+flag when running this for real.
+
 - [ ] **Step 7: Run the extraction → join → validation → report pipeline**
 
 ```bash
@@ -1288,6 +1297,7 @@ uv run python crewrift_lab/chat_effectiveness/tools/metrics.py \
 uv run python crewrift_lab/chat_effectiveness/tools/validate_detector.py \
   --expanded /tmp/chat_eff_expanded \
   --chat-suss /tmp/chat_eff_wh/events/key=chat_suss/chat_suss.parquet \
+  --episodes /tmp/chat_eff_eps \
   --n 200 --out crewrift_lab/chat_effectiveness/data/validation.json
 
 cat > crewrift_lab/chat_effectiveness/data/meta.json <<EOF
@@ -1360,7 +1370,7 @@ Observational, not causal — no randomized intervention on who accuses whom.
     uv run python tools/episode_outcomes.py --episodes <dir of episode dirs> --out data/outcomes.parquet
     uv run python tools/extract_accusations.py --expanded <dir of expanded jsonl> --out data/accusations.parquet
     uv run python tools/metrics.py --accusations data/accusations.parquet --outcomes data/outcomes.parquet --out-dir data/metrics
-    uv run python tools/validate_detector.py --expanded <expanded dir> --chat-suss <warehouse>/events/key=chat_suss/chat_suss.parquet --out data/validation.json
+    uv run python tools/validate_detector.py --expanded <expanded dir> --chat-suss <warehouse>/events/key=chat_suss/chat_suss.parquet --episodes <dir of episode dirs> --out data/validation.json
     uv run python tools/build_report.py --meta data/meta.json --validation data/validation.json --metrics-dir data/metrics --out data/report.html
 
 `data/` is gitignored (rebuildable from a fresh pull + the historical
