@@ -87,3 +87,19 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
   for future kill work even though the A/B lever is a separate decision.
 - **coworld CLI 0.1.26 → 0.1.27 required** (manifest 'promo' field rejection on run-episode);
   both subagents hit it independently. Bumped on main.
+
+## 2026-07-02 — suspfit v4 A/B verdict (deterministic arms)
+- **A/B NEUTRAL — primary had no headroom in deterministic arms**: crew vote precision 93% (13/14)
+  vs 91% (21/23), p=1.0 — the v89 tight gate's deterministic fallback votes are witnessed-dominated
+  and were ALREADY precise; the old model's live noise (58-66% precision) shows up in LLM-on play
+  and probes, not in the deterministic path. The refit instead REDUCED vote volume (14 vs 23 in
+  ~70 crew games; honest 0.9 crossings are rarer), imp-ejections/crew-ep 0.47 vs 0.56, crew win
+  18% vs 24% (p=0.41). Timeouts/ops 0 both. NOT shipped on this evidence.
+- **The real payoff of honest calibration is the vote-BAR lever it unlocks**: v4's OOF 0.7+lead
+  band = 94% precision. The four vote-bar refutations on file were all measured under the OLD
+  noisy posterior — with an honest posterior, lowering the crew vote bar to ~0.7+lead is a
+  NEW experiment, not a retry. Candidate design: new weights + VOTE_PROBABILITY 0.7 + lead>=0.2
+  vs v89 base, primary = imposters-ejected/crew-ep UP + precision >= 75%.
+- Curiosities (not pre-registered, treat as hypotheses): cand imposter win 89% vs 67% (p=0.06);
+  more crew ejected by the FIELD in cand crew-eps (38 vs 21, p=0.04) — suspicion weights also
+  feed the imposter deflection view; worth a look before any ship.
