@@ -78,12 +78,43 @@ def sample_lines(expanded: Path, n: int, seed: int) -> pd.DataFrame:
     return pd.DataFrame(all_rows)
 
 
-def compute_agreement(sample: pd.DataFrame, chat_suss: pd.DataFrame) -> dict:
+def build_episode_id_map(episodes_root: Path) -> dict[str, str]:
+    """Map episode.json's internal `id` (what the event-warehouse keys
+    chat_suss by) -> this package's `episode` join key (the directory
+    stem) — the warehouse does NOT use the directory-stem convention.
+    """
+    mapping: dict[str, str] = {}
+    for d in sorted(episodes_root.iterdir()):
+        if not d.is_dir():
+            continue
+        episode_json = d / "episode.json"
+        if not episode_json.exists():
+            continue
+        episode = json.loads(episode_json.read_text())
+        internal_id = episode.get("id")
+        if internal_id:
+            mapping[internal_id] = d.name
+    return mapping
+
+
+def compute_agreement(
+    sample: pd.DataFrame,
+    chat_suss: pd.DataFrame,
+    episode_id_map: dict[str, str] | None = None,
+) -> dict:
     """Join the regex sample to warehouse chat_suss rows on (episode, speaker
     slot, tick) and compute stance/target agreement rates.
+
+    The warehouse's `chat_suss.episode_id` is keyed by episode.json's
+    internal `id` field, not by the directory-stem `episode` key this
+    package uses everywhere else. Pass `episode_id_map` (from
+    `build_episode_id_map`) to remap those ids to stems before joining.
     """
     if chat_suss.empty or sample.empty:
         return {"n_matched": 0, "stance_agreement": None, "target_agreement": None}
+    chat_suss = chat_suss.copy()
+    if episode_id_map:
+        chat_suss["episode_id"] = chat_suss["episode_id"].map(lambda x: episode_id_map.get(x, x))
     suss = chat_suss.rename(columns={"episode_id": "episode", "slot": "speaker_slot", "ts": "tick"})
     joined = sample.merge(suss, on=["episode", "speaker_slot", "tick"], how="inner")
     if joined.empty:
@@ -107,6 +138,10 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Validate the regex accusation detector against LLM suss labels.")
     parser.add_argument("--expanded", type=Path, required=True)
     parser.add_argument("--chat-suss", type=Path, required=True, help="events/key=chat_suss/*.parquet from the warehouse.")
+    parser.add_argument(
+        "--episodes", type=Path, required=True,
+        help="Dir of raw episode subdirs (each with episode.json), for the id->stem remap",
+    )
     parser.add_argument("--n", type=int, default=200)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--out", type=Path, required=True)
@@ -116,8 +151,9 @@ def main(argv: list[str] | None = None) -> int:
     chat_suss_raw = pd.read_parquet(args.chat_suss)
     value_df = pd.json_normalize(chat_suss_raw["value"].apply(json.loads))
     chat_suss = pd.concat([chat_suss_raw.drop(columns=["value"]), value_df], axis=1)
+    episode_id_map = build_episode_id_map(args.episodes)
 
-    agreement = compute_agreement(sample, chat_suss)
+    agreement = compute_agreement(sample, chat_suss, episode_id_map)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(agreement, indent=2))
     print(json.dumps(agreement, indent=2))

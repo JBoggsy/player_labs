@@ -71,6 +71,42 @@ def test_compute_agreement_handles_no_matches():
     assert agreement == {"n_matched": 0, "stance_agreement": None, "target_agreement": None}
 
 
+def test_compute_agreement_remaps_opaque_episode_id_through_map():
+    sample = pd.DataFrame(
+        [{"episode": "test_ep", "speaker_slot": 0, "tick": 101, "regex_stance": "accuses", "regex_target_slot": 1}]
+    )
+    chat_suss_opaque = pd.DataFrame(
+        [{
+            "episode_id": "ep_opaque_internal", "slot": 0, "ts": 101,
+            "is_suss": True, "suss_target_slot": 1,
+        }]
+    )
+    episode_id_map = {"ep_opaque_internal": "test_ep"}
+
+    # Without the map, the opaque id doesn't match the stem -> no match.
+    agreement_no_map = compute_agreement(sample, chat_suss_opaque)
+    assert agreement_no_map["n_matched"] == 0
+
+    # With the map, the opaque id is remapped to the stem -> matches.
+    agreement_with_map = compute_agreement(sample, chat_suss_opaque, episode_id_map)
+    assert agreement_with_map["n_matched"] == 1
+    assert agreement_with_map["stance_agreement"] == 1.0
+    assert agreement_with_map["target_agreement"] == 1.0
+
+    # No-regression check: existing stem-keyed chat_suss still matches
+    # correctly with no map passed at all.
+    chat_suss_with_stem_ids = pd.DataFrame(
+        [{
+            "episode_id": "test_ep", "slot": 0, "ts": 101,
+            "is_suss": True, "suss_target_slot": 1,
+        }]
+    )
+    agreement_stem = compute_agreement(sample, chat_suss_with_stem_ids)
+    assert agreement_stem["n_matched"] == 1
+    assert agreement_stem["stance_agreement"] == 1.0
+    assert agreement_stem["target_agreement"] == 1.0
+
+
 def test_compute_agreement_handles_empty_sample():
     sample = pd.DataFrame()
     chat_suss = pd.DataFrame(
