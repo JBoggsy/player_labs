@@ -1,6 +1,6 @@
 # Cue-n-Woo tentative lessons — session buffer
 
-**Session started:** 2026-07-04 16:02. This is THIS SESSION's lesson buffer. Write candidate
+**Session started:** 2026-07-04 15:24. This is THIS SESSION's lesson buffer. Write candidate
 lessons here **as you go** — eagerly and noisily; most will be noise and that's
 fine. At the next session start, a hook archives this file automatically to
 [`lessons_archive/`](lessons_archive/) and creates a fresh one — nothing you
@@ -17,3 +17,7 @@ buffers — not in-session hit counts — is the graduation signal.
 concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
+
+### No Cue-n-Woo work this session
+Evidence: session was entirely Crewrift-side (crewborg orientation + pulling league
+rounds); no cue_n_woo_lab files touched, no lessons to record here.
