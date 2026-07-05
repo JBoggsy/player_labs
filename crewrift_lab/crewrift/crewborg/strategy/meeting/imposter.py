@@ -3,7 +3,7 @@
 The imposter never targets a teammate. When it has no strong real deflection of its
 own (``top_suspect`` over non-teammates, see ``suspicion.py``), it waits and watches
 for a crewmate to take **heat** — a vote cast against them (the reliable signal, read
-from the vote tally) or a chat accusation (the additive ``chat_read`` signal) — then
+from the vote tally) or a chat accusation (the additive ``chat_evidence`` signal) — then
 piles on. This module turns those signals into a single bandwagon target.
 """
 

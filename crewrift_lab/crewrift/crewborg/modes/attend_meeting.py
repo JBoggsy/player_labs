@@ -28,7 +28,7 @@ from crewrift.crewborg.strategy.meeting.imposter import (
     parity_closing_vote_target,
     votes_against,
 )
-from crewrift.crewborg.strategy.meeting import chat_nlp, chat_read
+from crewrift.crewborg.strategy.meeting import chat_evidence, chat_nlp
 from crewrift.crewborg.strategy import honor_society
 from crewrift.crewborg.strategy.meeting.schema import normalize_vote_target
 from crewrift.crewborg.strategy.meeting.worker import MeetingLLMRequest, MeetingLLMWorker
@@ -335,7 +335,7 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         additive bandwagon signal (empty when the chat-NLP model is off / still
         loading). The per-meeting cache avoids re-parsing the same messages each tick."""
 
-        return chat_read.chat_accusers(belief, cache=self._chat_parse_cache)
+        return chat_evidence.chat_accusers(belief, cache=self._chat_parse_cache)
 
     # --- LLM call cadence -------------------------------------------------
 
@@ -497,7 +497,7 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         if (target is None or target == VOTE_SKIP) and decision.chat_text:
             self_color = belief.self_color or belief.voting.self_marker_color
             colors = set(belief.roster)
-            accused = chat_read.accused_colors(decision.chat_text, colors) - {self_color}
+            accused = chat_evidence.accused_colors(decision.chat_text, colors) - {self_color}
             if not accused:
                 # accused_colors needs the (optional) spaCy model; the LLM literally
                 # naming a color in its own outgoing chat is enough here — plain
@@ -589,7 +589,7 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         color in chat, the follow-up vote call failed (429/timeout), and the fallback
         collapsed to the 0.9-gate skip. If we said it, we should vote it."""
 
-        accused = chat_read.accused_colors(text, set(belief.roster))
+        accused = chat_evidence.accused_colors(text, set(belief.roster))
         self_color = belief.self_color or belief.voting.self_marker_color
         accused -= belief.teammate_colors | {self_color}
         if not accused:
