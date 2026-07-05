@@ -459,6 +459,7 @@ class Belief(BaseModel):
     meeting_call_kind: str | None = None
     meeting_call_seen_tick: int | None = None
     social_caller_banked_tick: int | None = None
+    social_spoke_first_banked_tick: int | None = None
 
     # Crewrift Honor Society (strategy.honor_society; design docs/designs/
     # honor-society.md; HS1 wire spec). All inert unless CREWBORG_HONOR_SOCIETY is

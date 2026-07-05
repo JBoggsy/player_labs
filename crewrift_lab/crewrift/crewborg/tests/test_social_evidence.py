@@ -15,7 +15,7 @@ from crewrift.crewborg.strategy.social_evidence import (
     WATCHED_DWELL_MIN_TICKS,
     update_social_evidence,
 )
-from crewrift.crewborg.types import Belief, ChatEvent, PlayerEvent, PlayerRecord
+from crewrift.crewborg.types import Belief, ChatEvent, PlayerEvent, PlayerRecord, VoteCast
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -241,3 +241,113 @@ def test_unknown_caller_name_is_ignored() -> None:
     belief.meeting_call_seen_tick = 600
     update_social_evidence(belief)
     assert all(r.button_calls_made == 0 for r in belief.roster.values())
+
+
+# --- vote-order diffing + speaking order ------------------------------------------
+
+
+def test_vote_history_records_rank_and_timing_in_cast_order() -> None:
+    belief = Belief(phase="Voting", phase_start_tick=100, last_tick=100)
+    belief.roster["red"] = PlayerRecord(color="red")
+    belief.roster["blue"] = PlayerRecord(color="blue")
+    belief.voting = VotingState(
+        candidates=(VoteCandidate(slot=0, color="red", alive=True), VoteCandidate(slot=1, color="blue", alive=True)),
+        dots=(VoteDot(voter=0, target=1),),
+    )
+    update_social_evidence(belief)  # red votes for blue at tick 100
+
+    belief.last_tick = 140
+    belief.voting = VotingState(
+        candidates=belief.voting.candidates,
+        dots=(VoteDot(voter=0, target=1), VoteDot(voter=1, target=0)),
+    )
+    update_social_evidence(belief)  # blue votes for red at tick 140 (later)
+
+    belief.phase = "Playing"  # meeting ends -> commit
+    belief.voting = VotingState()
+    update_social_evidence(belief)
+
+    assert belief.roster["red"].vote_history == [
+        VoteCast(meeting_tick=100, ticks_after_meeting_start=0, target_color="blue", rank=1)
+    ]
+    assert belief.roster["blue"].vote_history == [
+        VoteCast(meeting_tick=100, ticks_after_meeting_start=40, target_color="red", rank=2)
+    ]
+
+
+def test_flicker_restage_after_commit_does_not_corrupt_next_meetings_vote_order() -> None:
+    """The vote UI's dots can flicker back onto screen for one frame during the
+    Voting -> VoteResult transition (the old dots still template-matched alongside
+    the interstitial text), re-entering the staging branch with phase != "Voting"
+    right after a meeting has already committed. This hits the "already committed"
+    early-exit guard on the next tick (staged_meeting_tick == banked_meeting_tick) —
+    which must clear social_vote_order alongside social_staged_votes, or a leaked
+    (voter, target) pair with a stale, pre-flicker tick poisons `already_seen` for
+    the next meeting that happens to reuse the same pair: the real vote is silently
+    dropped from social_vote_order and the leaked entry is committed instead, under
+    the *new* meeting's tick — producing a corrupted (even negative-offset)
+    VoteCast.
+    """
+
+    belief = Belief(phase="Voting", phase_start_tick=100, last_tick=100)
+    belief.roster["red"] = PlayerRecord(color="red")
+    belief.roster["blue"] = PlayerRecord(color="blue")
+    candidates = (
+        VoteCandidate(slot=0, color="red", alive=True),
+        VoteCandidate(slot=1, color="blue", alive=True),
+    )
+
+    # Meeting 1: red votes for blue at tick 100 (meeting opened at tick 100).
+    belief.voting = VotingState(candidates=candidates, dots=(VoteDot(voter=0, target=1),))
+    update_social_evidence(belief)  # stage
+
+    belief.phase = "Playing"
+    belief.voting = VotingState()
+    update_social_evidence(belief)  # commit meeting 1
+
+    assert belief.roster["red"].vote_history == [
+        VoteCast(meeting_tick=100, ticks_after_meeting_start=0, target_color="blue", rank=1)
+    ]
+
+    # Flicker: one frame after the commit, the SAME (voter, target) pair reappears
+    # (phase is "Playing", not "Voting") — this re-enters the staging branch and
+    # restages the pair with a fresh, post-commit tick.
+    belief.last_tick = 111
+    belief.voting = VotingState(candidates=candidates, dots=(VoteDot(voter=0, target=1),))
+    update_social_evidence(belief)
+
+    # The flicker's dots vanish the next tick, tripping the "already committed"
+    # early-exit guard (staged_meeting_tick still == banked_meeting_tick from
+    # meeting 1) — this must clear social_vote_order, not just social_staged_votes.
+    belief.last_tick = 112
+    belief.voting = VotingState()
+    update_social_evidence(belief)
+
+    # Meeting 2: the same (voter, target) pair recurs at a real, much later tick.
+    belief.phase = "Voting"
+    belief.phase_start_tick = 500
+    belief.last_tick = 500
+    belief.voting = VotingState(candidates=candidates, dots=(VoteDot(voter=0, target=1),))
+    update_social_evidence(belief)  # stage meeting 2
+
+    belief.phase = "Playing"
+    belief.voting = VotingState()
+    update_social_evidence(belief)  # commit meeting 2
+
+    assert belief.roster["red"].vote_history == [
+        VoteCast(meeting_tick=100, ticks_after_meeting_start=0, target_color="blue", rank=1),
+        VoteCast(meeting_tick=500, ticks_after_meeting_start=0, target_color="blue", rank=1),
+    ]
+
+
+def test_spoke_first_count_credits_the_first_non_self_speaker() -> None:
+    belief = Belief(phase="Voting", phase_start_tick=50, last_tick=60, self_color="green")
+    belief.roster["red"] = PlayerRecord(color="red")
+    belief.roster["blue"] = PlayerRecord(color="blue")
+    belief.chat_log = [
+        ChatEvent(tick=52, speaker_color="blue", text="hello"),
+        ChatEvent(tick=55, speaker_color="red", text="hi"),
+    ]
+    update_social_evidence(belief)
+    assert belief.roster["blue"].spoke_first_count == 1
+    assert belief.roster["red"].spoke_first_count == 0
