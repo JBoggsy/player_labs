@@ -47,7 +47,7 @@ There is no `--version` flag; `uv pip show coworld`.
   `results.json` (validated vs `game.results_schema`; has a `scores` array),
   **`replay`** (raw bytes, *no extension*), `logs/game.stdout.log`,
   `logs/game.stderr.log`, `logs/policy_agent_<slot>.log` (per player container).
-- **Success / crash detection (the Gate-1 signal):** the CLI exits non-zero if the game
+- **Success / crash detection (the pass/fail signal):** the CLI exits non-zero if the game
   container exits non-zero, **any player container exits non-zero** ("did my player
   crash"), health times out, the player token is rejected, or `results.json` fails
   schema validation. Exit 0 + valid results + replay written = pass.

@@ -130,10 +130,16 @@ def load_token() -> str:
 class Client:
     """Thin authenticated httpx wrapper over the Observatory data API."""
 
-    def __init__(self, server: str, token: str) -> None:
+    def __init__(self, server: str, token: str, elevated: bool = False) -> None:
+        headers = {"X-Auth-Token": token}
+        if elevated:
+            # metta PR #17028: Softmax team members are external by default now;
+            # per-episode job artifacts (results/replay/policy-logs) for another
+            # player's policy are TEAM_AUTH-gated and 403 without this header.
+            headers["X-Use-Elevated-Privileges"] = "true"
         self._http = httpx.Client(
             base_url=server.rstrip("/"),
-            headers={"X-Auth-Token": token},
+            headers=headers,
             timeout=120.0,
             follow_redirects=True,
         )
@@ -687,6 +693,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                         help="Output directory (one subdir per episode + index.json).")
     parser.add_argument("--server", default=None,
                         help="Observatory API base URL. Default: <api-server>/observatory from `softmax login`.")
+    parser.add_argument("--elevated", action="store_true",
+                        help="Send X-Use-Elevated-Privileges (Softmax team members only; needed to "
+                             "read another player's job artifacts -- results/replay/policy-logs -- "
+                             "since metta PR #17028 made team access opt-in. No-op for external users.")
     parser.add_argument("--no-replay", action="store_true", help="Skip replay downloads.")
     parser.add_argument("--no-results", action="store_true", help="Skip results downloads.")
     parser.add_argument("--no-logs", action="store_true", help="Skip per-agent policy-log downloads.")
@@ -745,14 +755,14 @@ def main(argv: list[str] | None = None) -> int:
     args.out.mkdir(parents=True, exist_ok=True)
 
     if args.watch:
-        with Client(server, load_token()) as client:
+        with Client(server, load_token(), elevated=args.elevated) as client:
             return watch_loop(
                 client, args, server,
                 want_replay=want_replay, want_results=want_results, want_logs=want_logs,
                 want_artifacts=want_artifacts,
             )
 
-    with Client(server, load_token()) as client:
+    with Client(server, load_token(), elevated=args.elevated) as client:
         refs = resolve_refs(client, args)
         if not refs:
             log("No episodes found for the given selection.")

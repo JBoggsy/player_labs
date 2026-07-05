@@ -11,8 +11,8 @@ most of the building.
 
 > **Operating model → [`AGENTS.md`](AGENTS.md).** How the improvement loop actually
 > runs (the human sets strategic direction; the agent builds observability, measures,
-> and holds the correctness gate), plus the skills index and the two gates. Read that
-> before doing optimization work. This README doesn't repeat it.
+> and ships iterations fast — speed over caution), plus the skills index and the
+> submission gate. Read that before doing optimization work. This README doesn't repeat it.
 
 ## How the lab works, in one paragraph
 
@@ -52,7 +52,8 @@ drive the mechanical halves of the loop:
   After `create`, the default is to **stream** the results (below), not wait.
 - **`coworld-episode-artifacts`** — download episodes' replays, results, and logs —
   one-shot for finished batches, or **streamed live** (`--watch`) while a batch runs.
-- **`coworld-local-run`** — smoke-run your built policy locally (Gate 1).
+- **`coworld-local-run`** — run your built policy locally (debugging tool only —
+  not part of the standard loop).
 - **`coworld-policy-lifecycle`** — upload a new version → (gated) submit → monitor.
 
 Game-specific analysis/build skills live in the game labs (e.g. Crewrift's
@@ -90,7 +91,7 @@ uv run pytest crewrift_lab/crewrift/crewborg/tests   # verify the install (shoul
 The guided onboarding above ([`docs/getting-started.md`](docs/getting-started.md)) takes
 you all the way to your first evaluation — authenticate, pick a player, then build →
 upload → run an experience request → report + diagnose. After that you're in the
-**evaluate → improve** loop; its full model (and the two gates) is in
+**evaluate → improve** loop; its full model (and the submission gate) is in
 [`AGENTS.md`](AGENTS.md).
 
 ## Ground rules

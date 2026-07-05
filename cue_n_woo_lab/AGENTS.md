@@ -4,7 +4,8 @@ The **Cue-n-Woo** corner of player_labs: where we build, evaluate, and improve
 **player policies** for the Cue-n-Woo game. This file orients agents working here.
 
 **Read the lab-root [`../AGENTS.md`](../AGENTS.md) first** — it defines the
-improvement loop, your role in it, the two gates, and the game-agnostic skills.
+improvement loop, your role in it (speed first), the submission gate, and the
+game-agnostic skills.
 This file is the **Cue-n-Woo-specific layer** on top of it: the game, the docs, the
 practices/preferences, and the policies we optimize. When the two disagree, the root
 defines *process*; this file defines *Cue-n-Woo*.
@@ -32,8 +33,8 @@ ultimate authority. The policy we build and optimize is in the
 
 ## The loop, in Cue-n-Woo terms
 
-The root loop (evaluate → report → direction → implement → gate1+rebuild+reupload →
-repeat → gate2 → submit) runs **unchanged** here. The Cue-n-Woo-specific instruments:
+The root loop (evaluate → report → direction → implement → rebuild+reupload →
+repeat → human gate → submit) runs **unchanged** here. The Cue-n-Woo-specific instruments:
 
 - **Evaluate** (step 1) — experience requests against the uploaded version of the
   policy under optimization. The game is symmetric (no role split like Crewrift's
@@ -41,7 +42,7 @@ repeat → gate2 → submit) runs **unchanged** here. The Cue-n-Woo-specific ins
   (the 61-style pool — watch whether one style cluster is systematically lost). The
   **judge worker is publicly callable unsigned** (`cue-n-woo-worker.softmax-research.net`),
   so a true head-to-head self-eval is also possible *locally* without the league
-  (see Gate 1 below).
+  (see the rebuild/upload bullet below).
 - **Report** (step 2) — pull artifacts with the game-agnostic
   `coworld-episode-artifacts` skill, then distill. **There is no Cue-n-Woo-specific
   report skill yet** — see [Skills](#skills); building one (and an artifact-logs
@@ -49,15 +50,16 @@ repeat → gate2 → submit) runs **unchanged** here. The Cue-n-Woo-specific ins
 - **Implement** (step 4) — change the policy under optimization (see
   [Player policies](#player-policies)); keep tunable knobs in `mentalist/config.py`,
   separate from logic, so each iteration is attributable.
-- **Gate 1 / rebuild / upload / submit** (steps 5–8) — build the policy's image with
+- **Rebuild / upload / submit** (steps 5–8) — build the policy's image with
   its own [`mentalist/Dockerfile`](mentalist/Dockerfile) (`docker build
   --platform linux/amd64`; `--run python --run=-m --run mentalist --use-bedrock` is
   **mandatory** on upload AND local runs — see [`mentalist/README.md`](mentalist/README.md)),
   then the game-agnostic skills + [`../player-build.md`](../player-build.md) for the
   upload/submit flow. **Hosted-vs-local gotcha that has already bitten:** the league
   runs `require_signing=true` (exercising a game-side signing-key path that local
-  `require_signing=false` runs never touch), so Gate 1 can pass while every league
-  episode crashes game-side — see
+  `require_signing=false` runs never touch), so a local run can pass while every league
+  episode crashes game-side — one more reason the hosted eval, not a local run, is the
+  test — see
   [`docs/league-infra-incident-2026-06-12.md`](docs/league-infra-incident-2026-06-12.md).
 
 ## Cue-n-Woo lab docs

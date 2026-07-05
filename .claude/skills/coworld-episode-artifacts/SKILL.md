@@ -80,8 +80,9 @@ server.
    Useful flags: `-n/--num` (cap for policy/xreq/pool/round/division modes; default
    10, unlimited under `--watch`), `--version N` (with `--policy`), `--no-replay` /
    `--no-results` / `--no-logs` (skip a category), `--force` (re-download complete
-   dirs), `--server` (override the API base); watch mode adds `--interval` (poll
-   seconds, default 15) and `--max-attempts` (retry bound, default 3). Runs are
+   dirs), `--server` (override the API base), `--elevated` (Softmax team members
+   only — see the 403 note below); watch mode adds `--interval` (poll seconds,
+   default 15) and `--max-attempts` (retry bound, default 3). Runs are
    **idempotent** — complete episode dirs are skipped.
 
 3. **Use the artifacts.** *How* to read each — the viewer vs the version-matched
@@ -110,3 +111,9 @@ server.
   use the `coworld-experience-requests` skill.
 - If auth fails with an `AttributeError` on `load_current_cogames_token`, you're
   looking at an older tool — the current API is `load_current_token(server=...)`.
+- **A 403 "not a softmax team member" on `results`/`replay`/`policy-logs`** means
+  you're pulling artifacts for a policy you don't own — Softmax team members are
+  external-by-default now (metta PR #17028). Pass `--elevated` to attach
+  `X-Use-Elevated-Privileges` (no-op for non-team users; refused for `ply_*`
+  player-subject tokens). Requires `coworld` 0.1.28+ — if the flag isn't
+  recognized, `uv lock --upgrade-package coworld && uv sync`.

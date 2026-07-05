@@ -70,15 +70,17 @@ async def main():
 asyncio.run(main())
 ```
 
-## Build → test → ship
+## Build → ship
 
 1. **Build amd64:**  `docker build --platform linux/amd64 -t <your-tag>:dev .`
-2. **Smoke-test locally** (Gate 1 — does it connect → play → exit cleanly?): the
-   **`coworld-local-run`** skill.
-3. **Upload as a new version** (routine, inert) and — gated — **submit + monitor**: the
+2. **Upload as a new version** (routine, inert; no local test first — the next hosted
+   eval is the test) and — gated — **submit + monitor**: the
    **`coworld-policy-lifecycle`** skill
    (`coworld upload-policy <image> --name <name> [--run …]` →
    `coworld submit <name> --league <id>`).
+
+If a hosted eval shows the image can't connect → play → exit cleanly, debug it locally
+with the **`coworld-local-run`** skill.
 
 ## Secrets, LLM keys, Bedrock
 

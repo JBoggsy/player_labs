@@ -4,7 +4,8 @@ The **Crewrift** corner of player_labs: where we build, evaluate, and improve
 **player policies** for the Crewrift game. This file orients agents working here.
 
 **Read the lab-root [`../AGENTS.md`](../AGENTS.md) first** — it defines the
-improvement loop, your role in it, the two gates, and the game-agnostic skills.
+improvement loop, your role in it (speed first), the submission gate, and the
+game-agnostic skills.
 This file is the **Crewrift-specific layer** on top of it: the game, the docs, the
 practices/preferences, and the policies we optimize. When the two disagree, the root
 defines *process*; this file defines *Crewrift*.
@@ -28,8 +29,8 @@ and the scene vocabulary. The policies we build and optimize are listed in the
 
 ## The loop, in Crewrift terms
 
-The root loop (evaluate → report → direction → implement → gate1+rebuild+reupload →
-repeat → gate2 → submit) runs **unchanged** here. The Crewrift-specific instruments:
+The root loop (evaluate → report → direction → implement → rebuild+reupload →
+repeat → human gate → submit) runs **unchanged** here. The Crewrift-specific instruments:
 
 - **Evaluate** (step 1) — experience requests against the uploaded version of the
   policy under optimization. **Decompose by role** (crewmate vs. imposter are
@@ -46,7 +47,7 @@ repeat → gate2 → submit) runs **unchanged** here. The Crewrift-specific inst
 - **Implement** (step 4) — change the policy under optimization (see the
   [Player policies](#player-policies) index; each vendored policy carries its own
   internal docs).
-- **Gate 1 / rebuild / upload / submit** (steps 5–8) — build the policy's image
+- **Rebuild / upload / submit** (steps 5–8) — build the policy's image
   in-lab with [`tools/build_player.sh <policy>`](tools/build_player.sh) (Docker-only;
   design in [`docs/designs/building_players.md`](docs/designs/building_players.md)), then
   the game-agnostic skills + [`../player-build.md`](../player-build.md) for the

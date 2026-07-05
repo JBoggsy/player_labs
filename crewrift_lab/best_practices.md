@@ -27,6 +27,11 @@ human if a request would contravene one** before proceeding (then do what they d
 5. **Upload freely; submit rarely.** Uploading a version is routine and touches no league. Submitting
    is the irreversible, champion-making action — only on a demonstrably-better player + human go-ahead.
    *Not* submitting is your rollback.
+6. **Speed first — iterations per day is the KPI.** Write the change fast, rebuild, upload
+   *immediately* — no smoke test, no pre-upload gate, no test scaffolding. The next experience
+   request catches breakage *and* measures gameplay; a broken upload costs one free eval round.
+   Rigor is for *reading* results (items 1–4), not for shipping code. (Full version:
+   [`../best_practices.md`](../best_practices.md).)
 
 ## Working with the human
 
@@ -64,9 +69,10 @@ human if a request would contravene one** before proceeding (then do what they d
 - **Experience requests are your primary eval — they aren't scarce.** They run many episodes in
   parallel on Softmax infra and are currently free; use them liberally, just **target them to the
   question** (matched roles, the specific opponents you struggle against) and harvest async.
-- **Local testing is smoke/correctness only — never comparative.** You generally can't run other
-  users' policies locally, so local play proves only that your artifact runs, speaks the protocol,
-  and that your change took. All competitive judgment comes from experience requests.
+- **Local runs are a debugging tool — not a gate, never comparative.** Don't run locally before
+  uploading; upload and let the eval speak. Drop to a local run only when an eval shows the
+  artifact can't connect/play. You generally can't run other users' policies locally anyway, so
+  all competitive judgment comes from experience requests.
 
 ## Diagnosis — from "it lost" to "it does X in situation Y because Z"
 

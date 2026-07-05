@@ -98,18 +98,19 @@ def fetch_sources(args: argparse.Namespace, dest: Path) -> Path:
     (routed to the right selector), so you can cherry-pick arbitrary episodes across many rounds/XPs.
     """
     dest.mkdir(parents=True, exist_ok=True)
+    elevated = ["--elevated"] if args.elevated else []
     for x in args.xreq:
-        _fetch_one(dest, ["--xreq", x])
+        _fetch_one(dest, ["--xreq", x, *elevated])
     for r in args.round:
-        _fetch_one(dest, ["--round", r])
+        _fetch_one(dest, ["--round", r, *elevated])
     ereqs = [e for e in args.episode if e.startswith("ereq_")]
     uuids = [e for e in args.episode if not e.startswith("ereq_")]
     if ereqs:
-        _fetch_one(dest, [f for e in ereqs for f in ("--ereq", e)])
+        _fetch_one(dest, [*(f for e in ereqs for f in ("--ereq", e)), *elevated])
     if uuids:
-        _fetch_one(dest, [f for e in uuids for f in ("--episode", e)])
+        _fetch_one(dest, [*(f for e in uuids for f in ("--episode", e)), *elevated])
     if args.policy:
-        _fetch_one(dest, ["--policy", args.policy, "-n", str(args.num)])
+        _fetch_one(dest, ["--policy", args.policy, "-n", str(args.num), *elevated])
     return dest
 
 
@@ -145,6 +146,10 @@ def main() -> int:
     ap.add_argument("--out", type=Path, required=True, help="Warehouse output directory.")
     ap.add_argument("--expand-replay", type=Path, help="Version-matched expand_replay binary (CREWRIFT_EXPAND_REPLAY).")
     ap.add_argument("--workers", type=int, help="Parallel build workers (default: CPU count).")
+    ap.add_argument("--elevated", action="store_true",
+                     help="Passed through to fetch_artifacts.py: send X-Use-Elevated-Privileges "
+                          "(Softmax team members only; needed for another player's job artifacts "
+                          "since metta PR #17028).")
     args = ap.parse_args()
 
     if args.episodes:

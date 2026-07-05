@@ -186,8 +186,27 @@ drift if they upload a new one mid-experiment).
 
 ## Composition — examples to adapt (not a fixed menu)
 
-**Your policy vs the live division's top 7 champions** (auto-select; everyone
-rotates; random roles) — 8 seats, so 8 participants:
+**Tournament-style** (mimics real tournament matchmaking — the substitute to use when the league
+itself isn't running episodes): your policy in one seat, **every other seat independently `random`**
+from the division's full rank-weighted pool (not restricted to a top slice), no role override —
+8 seats, so 8 participants. `num_episodes` caps at 100 per request; run two for ~200:
+
+```json
+{
+  "target": {"division_id": "div_…"},
+  "roster": [
+    {"player": {"policy_ref": "crewborg:v93"}},
+    {"player": {"random": true}}, {"player": {"random": true}}, {"player": {"random": true}},
+    {"player": {"random": true}}, {"player": {"random": true}}, {"player": {"random": true}},
+    {"player": {"random": true}}
+  ],
+  "num_episodes": 100,
+  "notes": "tournament-substitute: crewborg vs fully random field, natural roles"
+}
+```
+
+**Your policy vs the live division's top 7 champions** (auto-select from a top-N slice, narrower
+than a real tournament's pool; everyone rotates; natural roles) — 8 seats, so 8 participants:
 
 ```json
 {
@@ -199,7 +218,7 @@ rotates; random roles) — 8 seats, so 8 participants:
     {"player": {"top_n": 7}}
   ],
   "num_episodes": 100,
-  "notes": "crewborg vs the live top-7, random roles, all seats rotating"
+  "notes": "crewborg vs the live top-7, natural roles, all seats rotating"
 }
 ```
 

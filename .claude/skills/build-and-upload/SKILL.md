@@ -1,13 +1,14 @@
 ---
 name: build-and-upload
-description: "Use to build the crewborg image and upload it as a new policy version — the routine, inert, every-iteration action that gives you a runnable artifact to smoke-test and evaluate. Triggers: 'build crewborg', 'upload a new version', 'rebuild and re-upload', 'ship a version for testing', 'upload with the LLM on'. Uploading enters NO competition; submitting to a league is the separate coworld-policy-lifecycle (submit & monitor) skill."
+description: "Use to build the crewborg image and upload it as a new policy version — the routine, inert, every-iteration action that gives you a runnable artifact to evaluate. Triggers: 'build crewborg', 'upload a new version', 'rebuild and re-upload', 'ship a version for testing', 'upload with the LLM on'. Uploading enters NO competition; submitting to a league is the separate coworld-policy-lifecycle (submit & monitor) skill."
 ---
 
 # Build & Upload — a new crewborg version
 
 The routine, every-iteration action: **build** the crewborg image and **upload** it as a **new
-version**, so you have a runnable artifact to smoke-test (`coworld-local-run`) and measure
-(`coworld-experience-requests`). **Uploading is inert** — it registers a version and enters no
+version**, so you have a runnable artifact to measure (`coworld-experience-requests`).
+Go straight from build to upload — **no smoke test, no pre-upload checks**; the next
+experience request is the test. **Uploading is inert** — it registers a version and enters no
 competition, so do it freely. (Entering a version into a live league is the gated, rare
 **`coworld-policy-lifecycle`** / submit & monitor skill.)
 
@@ -78,9 +79,9 @@ Clear versioning is the whole point of uploading: **map each version → the cha
 
 ## Then what
 
-1. **Gate-1 smoke** the new version — `coworld-local-run`.
-2. **Measure it** vs the field — `coworld-experience-requests`.
-3. **Only when demonstrably better + the human approves** — submit it (the gated
+1. **Measure it** vs the field — `coworld-experience-requests` (this is also what
+   catches a broken build; if it can't connect/play, debug with `coworld-local-run`).
+2. **Only when demonstrably better + the human approves** — submit it (the gated
    `coworld-policy-lifecycle` / submit & monitor skill).
 
 ## Notes

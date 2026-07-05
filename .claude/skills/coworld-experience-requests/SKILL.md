@@ -28,12 +28,30 @@ the wrong question (or gets masked).
 
 | What you want to learn | Request kind | Key knobs |
 |---|---|---|
-| "How does crewborg do **against the live field**?" | **Field eval** | `top_n`/`random` opponents, all seats rotating (`slot:-1`), **natural roles** (no role override), high `num_episodes` |
+| "How does crewborg do **against the live field**?" a.k.a. **tournament-style** | **Field eval** | your `policy_ref` in exactly one seat, **every other seat `{"random": true}`** (all seats `slot:-1`), **natural roles** (no `game_config_overrides`), high `num_episodes` |
 | "**Did my change help?**" (vs a baseline) | **A/B** | pin the **full roster** with explicit `policy_ref`s, pin seats, *identical across arms except the subject*. Prefer the **`crewrift-ab`** skill, which runs both arms matched. |
 | "How's crewborg **as imposter** (or crew)?" | **Role-pinned eval** | pin your seat + force its role via `game_config_overrides.slots`; opponents rotate the rest |
 | "Where's the **role gap** as it actually plays?" | **Natural-roles eval** | no role override (roles fall naturally), seats rotating — see the masking caveat below |
 | "Does the build **run at scale / not crash**?" | **Self-play crash-test** | your `policy_ref` in most/all seats, modest `num_episodes` |
 | "Broaden / hand-pick the **opponent field**" | any of the above | add `included_players` / `excluded_players` to shape the `top_n`/`random` pool |
+
+> **"Tournament-style" — precise definition.** When the human asks for a request that "mimics the
+> tournament" or "substitutes for tournament signal" (e.g. because the real league is down), it means
+> exactly the **Field eval** shape above, not a pinned/A-B shape:
+> - **Your subject** fills exactly one seat via `policy_ref`.
+> - **Every other seat is `{"random": true}`** — independently sampled from the division's full
+>   rank-weighted champion pool, same as how real tournament rounds fill seats. Do **not** substitute
+>   pinned explicit opponents (that's a controlled-field eval, a different question) or `top_n`
+>   (that restricts to a top-N slice, which is narrower than a real tournament's pool).
+> - **No `game_config_overrides`** — roles are assigned naturally by the game, exactly as in a real
+>   round.
+> - All seats default `slot:-1` (round-robin) — nothing about your seat is special beyond which
+>   `policy_ref` sits there.
+> - **Known infra risk:** `random`/`top_n` pool selectors have previously 500'd on a statement timeout
+>   (see `crewrift_lab/WORKING_CONTEXT.md`) — if that recurs, it's a platform bug to report, not a
+>   reason to quietly fall back to pinned opponents (that changes what the request measures).
+> - **`num_episodes` caps at 100 per request** (API-enforced) — a "200-episode" ask needs two requests
+>   with the same body.
 
 Full field reference (every option, with worked example bodies) is in
 [`references/api.md`](references/api.md) — **read it before composing a body**, and re-print the live
@@ -97,6 +115,11 @@ streaming pipeline **in the background** and let all stages overlap:
   `coworld-episode-artifacts` skill) streams the downloads the same way.
 
 Both are crash-safe: rerun the same command and it resumes from disk.
+
+**Pulling artifacts for opponents' policies (the normal case in a field eval)?** Add `--elevated`
+to `fetch_artifacts.py`/`stream_eval.py`/`build_warehouse.py`/`xp_dashboard.py` — Softmax team
+members are external-by-default now (metta PR #17028), so another player's `results`/`replay`/
+`policy-logs` 403 without it. See the `coworld-episode-artifacts` skill's 403 note.
 
 For a quick status glance (or several requests at once), the old serial tools
 remain: `uv run python "$S" monitor xreq_…` polls one request;
