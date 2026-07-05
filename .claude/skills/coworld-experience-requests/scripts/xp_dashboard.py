@@ -271,9 +271,12 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("xreqs", nargs="+", help="One or more xreq_… ids to monitor.")
     ap.add_argument("--port", type=int, default=int(os.environ.get("XP_DASH_PORT", "8808")))
+    ap.add_argument("--elevated", action="store_true",
+                     help="Send X-Use-Elevated-Privileges (Softmax team members only; needed to "
+                          "read another player's per-seat results.json since metta PR #17028).")
     args = ap.parse_args(argv)
 
-    client = FA.Client(FA.default_server(), FA.load_token())
+    client = FA.Client(FA.default_server(), FA.load_token(), elevated=args.elevated)
     poller = Poller(client, args.xreqs)
     # Prime + poll in the background so the server binds and serves IMMEDIATELY.
     # Priming many requests x ~100 result fetches can take minutes; the page just

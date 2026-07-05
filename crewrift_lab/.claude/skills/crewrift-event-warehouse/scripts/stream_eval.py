@@ -50,10 +50,13 @@ def _pump(prefix: str, stream) -> None:
         log(f"[{prefix}] {line.rstrip()}")
 
 
-def spawn_watcher(xreq: str, ep_dir: Path, interval: float) -> subprocess.Popen:
+def spawn_watcher(xreq: str, ep_dir: Path, interval: float, elevated: bool) -> subprocess.Popen:
+    cmd = ["uv", "run", "python", str(FETCH), "--xreq", xreq, "--watch",
+           "--interval", str(interval), "--out", str(ep_dir)]
+    if elevated:
+        cmd.append("--elevated")
     proc = subprocess.Popen(
-        ["uv", "run", "python", str(FETCH), "--xreq", xreq, "--watch",
-         "--interval", str(interval), "--out", str(ep_dir)],
+        cmd,
         stderr=subprocess.PIPE,
         text=True,
     )
@@ -107,11 +110,15 @@ def main() -> int:
                     help="…or when this long has passed since the last build with >=1 new episode.")
     ap.add_argument("--interval", type=float, default=15.0, help="Poll cadence, seconds.")
     ap.add_argument("--workers", type=int, help="Warehouse build workers (default: CPU count).")
+    ap.add_argument("--elevated", action="store_true",
+                     help="Passed through to fetch_artifacts.py: send X-Use-Elevated-Privileges "
+                          "(Softmax team members only; needed for another player's job artifacts "
+                          "since metta PR #17028).")
     args = ap.parse_args()
 
     ep_dir = args.out.parent / (args.out.name + "_episodes")
     ep_dir.mkdir(parents=True, exist_ok=True)
-    procs = {x: spawn_watcher(x, ep_dir, args.interval) for x in args.xreq}
+    procs = {x: spawn_watcher(x, ep_dir, args.interval, args.elevated) for x in args.xreq}
     log(f"[stream] watching {len(procs)} xreq(s) -> episodes in {ep_dir}, warehouse in {args.out}")
 
     last_build = time.monotonic()
