@@ -4,11 +4,12 @@ Maintains the per-player counters behind the fitted suspicion model's "public"
 features (design: ``crewrift_lab/suspicion_lab/README.md`` §5/§10; offline mirror:
 ``crewrift_lab/suspicion_lab/tools/features.py`` — keep definitions aligned):
 
-- **Chat stances** — each meeting chat line reduces to ``(speaker, stance, target)``
-  with ``stance ∈ {accuses, defends}`` via the same templated-chat heuristics the
-  offline extractor uses; bumps ``accusations_made`` on the speaker and
-  ``times_accused`` / ``times_defended`` on the target. Unparseable lines are
-  dropped, never guessed at.
+- **Chat stances** — each meeting chat line is parsed via ``chat_evidence.parse_claims``
+  (the shared dependency-parse extractor) into claims with
+  ``claim_type ∈ {accusation, defense, location, vent, task}``; accusation/defense
+  claims bump ``accusations_made`` on the speaker and ``times_accused`` /
+  ``times_defended`` on the target, and every claim about a player is retained on
+  their ``PlayerRecord.claims``. Unparseable lines are dropped, never guessed at.
 - **Vote tallies** — the voting UI's dots attribute every vote (voter slot →
   target slot); at meeting end they are committed once into ``votes_cast`` /
   ``votes_skipped`` / ``voted_against_me`` / ``vote_agreed_with_me``.
@@ -26,8 +27,7 @@ and live on ``PlayerRecord``; ``suspicion._fitted_features`` reads them.
 
 from __future__ import annotations
 
-import re
-
+from crewrift.crewborg.strategy.meeting import chat_evidence
 from crewrift.crewborg.types import Belief
 
 # A real task completion requires TaskCompleteTicks (72) of standing at the site.
@@ -38,10 +38,6 @@ WATCHED_DWELL_MIN_TICKS = 56
 # The dwell interval must still be "live" at the decrement tick (within the event
 # log's merge grace) to be the completing dwell.
 DWELL_END_GRACE_TICKS = 4
-
-# Offline-mirrored stance heuristics (features.py ACCUSE_HINT / DEFEND_HINT).
-ACCUSE_HINT = re.compile(r"\bsus\b|\bvote\b|\bsaw (?:them|him|her|it)\b", re.IGNORECASE)
-DEFEND_HINT = re.compile(r"\bclear(?:ed)?\b|\bsafe\b|\binnocent\b|\bnot sus\b|\bwasn'?t\b", re.IGNORECASE)
 
 SKIP_VOTE_TARGET = -2  # perception.entities.VoteDot sentinel
 
@@ -62,44 +58,28 @@ def update_social_evidence(belief: Belief) -> None:
 # --- chat stances -------------------------------------------------------------
 
 
-def _color_pattern(belief: Belief) -> re.Pattern | None:
-    colors = [c for c in belief.roster if c]
-    if not colors:
-        return None
-    alternation = "|".join(sorted((re.escape(c) for c in colors), key=len, reverse=True))
-    return re.compile(rf"\b({alternation})\b", re.IGNORECASE)
-
-
 def _count_chat_stances(belief: Belief) -> None:
     if not belief.chat_log:
-        return
-    pattern = _color_pattern(belief)
-    if pattern is None:
         return
     for event in belief.chat_log:
         key = (event.tick, event.speaker_color, event.text)
         if key in belief.social_counted_chats:
             continue
         belief.social_counted_chats.add(key)
-        named = [m.group(1).lower() for m in pattern.finditer(event.text or "")]
-        named = [c for c in named if c != event.speaker_color]
-        if not named:
-            continue
-        if DEFEND_HINT.search(event.text):
-            stance = "defends"
-        elif ACCUSE_HINT.search(event.text):
-            stance = "accuses"
-        else:
-            continue
-        target = belief.roster.get(named[0])
-        speaker = belief.roster.get(event.speaker_color)
-        if stance == "accuses":
-            if speaker is not None:
-                speaker.accusations_made += 1
+        for claim in chat_evidence.parse_claims(belief, event):
+            if claim.claim_type in ("location", "vent", "task"):
+                claim = chat_evidence.verify_claim(belief, claim)
+            target = belief.roster.get(claim.target_color)
+            speaker = belief.roster.get(claim.speaker_color) if claim.speaker_color else None
             if target is not None:
-                target.times_accused += 1
-        elif target is not None:
-            target.times_defended += 1
+                target.claims.append(claim)
+            if claim.claim_type == "accusation":
+                if speaker is not None:
+                    speaker.accusations_made += 1
+                if target is not None:
+                    target.times_accused += 1
+            elif claim.claim_type == "defense" and target is not None:
+                target.times_defended += 1
 
 
 # --- vote tallies ---------------------------------------------------------------

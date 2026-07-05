@@ -6,13 +6,37 @@ offline mirror: crewrift_lab/suspicion_lab/tools/features.py).
 
 from __future__ import annotations
 
+import pytest
+
 from crewrift.crewborg.perception.entities import VoteCandidate, VoteDot, VotingState
+from crewrift.crewborg.strategy.meeting import chat_nlp
 from crewrift.crewborg.strategy.social_evidence import (
     SKIP_VOTE_TARGET,
     WATCHED_DWELL_MIN_TICKS,
     update_social_evidence,
 )
 from crewrift.crewborg.types import Belief, ChatEvent, PlayerEvent, PlayerRecord
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _chat_nlp_model_loaded():
+    """Chat-stance counting now goes through chat_evidence.parse_claims, which needs
+    a loaded spaCy model (chat_nlp.get_model()). Production code loads it via a
+    background thread (chat_nlp.ensure_loading()) so gameplay never blocks on it, but
+    tests need it deterministically ready — so load it synchronously here and inject
+    it, same approach as test_chat_evidence.py's ``nlp_model`` fixture."""
+
+    try:
+        import spacy
+
+        model = spacy.load("en_core_web_sm", disable=["ner"])
+    except Exception:
+        yield
+        return
+    saved = chat_nlp._model
+    chat_nlp._model = model
+    yield
+    chat_nlp._model = saved
 
 
 def _belief(**kwargs) -> Belief:
@@ -45,7 +69,11 @@ def test_a_defense_counts_for_the_target() -> None:
 
 def test_chat_lines_count_once_across_ticks_and_meetings() -> None:
     belief = _belief()
-    belief.chat_log.append(ChatEvent(tick=100, speaker_color="blue", text="green sus, vote green"))
+    # Only one mention of "green" (not "vote green") — the dependency parse yields one
+    # accusation claim per color mention, so repeating the color name would legitimately
+    # parse as two separate accusations; this test is about the (tick, speaker, text)
+    # dedup, not about how many mentions a single message can carry.
+    belief.chat_log.append(ChatEvent(tick=100, speaker_color="blue", text="green sus, vote them"))
     update_social_evidence(belief)
     update_social_evidence(belief)          # same line still in the log
     belief.chat_log.clear()                  # meeting ended
@@ -62,6 +90,21 @@ def test_unparseable_chat_is_dropped() -> None:
         r.accusations_made == 0 and r.times_accused == 0 and r.times_defended == 0
         for r in belief.roster.values()
     )
+
+
+def test_accusation_chat_lands_a_claim_on_the_target(monkeypatch) -> None:
+    import crewrift.crewborg.strategy.meeting.chat_nlp as chat_nlp_module
+    belief = Belief()
+    belief.roster["red"] = PlayerRecord(color="red")
+    belief.roster["blue"] = PlayerRecord(color="blue")
+    belief.chat_log = [ChatEvent(tick=5, speaker_color="red", text="blue is sus, saw them vent")]
+    if chat_nlp_module.get_model() is None:
+        pytest.skip("spaCy model not available in this environment")
+    update_social_evidence(belief)
+    claims = belief.roster["blue"].claims
+    assert any(c.claim_type == "accusation" and c.speaker_color == "red" for c in claims)
+    assert belief.roster["blue"].times_accused == 1
+    assert belief.roster["red"].accusations_made == 1
 
 
 # --- vote tallies -----------------------------------------------------------------
