@@ -615,6 +615,24 @@ def _is_actively_tailing(record: PlayerRecord, tick: int) -> bool:
     return False
 
 
+def active_vote_probability_bar(self_role: str | None) -> float:
+    """The near-certainty P(imposter) bar `top_suspect()` is CURRENTLY applying for
+    this role — the single source of truth so any other surface describing "the
+    vote bar" (notably `meeting/context.py`'s LLM-facing serialization) can never
+    drift from what the decision function actually checks.
+
+    Fitted model, CREWMATE: the calibrated `WEIGHTS_VOTE_PROBABILITY` (env-tunable
+    via `CREWBORG_VOTE_PROBABILITY`). Otherwise (no fitted weights loaded, or an
+    IMPOSTER deflecting): the legacy hand-model `VOTE_PROBABILITY` — imposter
+    deflection deliberately keeps the legacy clear-leader logic regardless of the
+    fitted crewmate knobs (see `top_suspect`).
+    """
+
+    if _WEIGHTS is not None and self_role != "imposter":
+        return WEIGHTS_VOTE_PROBABILITY
+    return VOTE_PROBABILITY
+
+
 def top_suspect(belief: Belief) -> str | None:
     """The live player to vote out — the **clear leading suspect**, or `None` (skip)
     when the posterior is flat. Used by Attend Meeting (§7.1).
@@ -633,6 +651,7 @@ def top_suspect(belief: Belief) -> str | None:
         return None
     ranked.sort(key=lambda kv: kv[1], reverse=True)
     color, p = ranked[0]
+    bar = active_vote_probability_bar(belief.self_role)
     if _WEIGHTS is not None and belief.self_role != "imposter":
         # Fitted model, CREWMATE vote: the calibrated bar ONLY. The legacy clear-
         # leader OR-rule is deliberately absent here — on the league data it was the
@@ -640,7 +659,7 @@ def top_suspect(belief: Belief) -> str | None:
         # a parity gift; the held-out decision sim puts the 0.9 bar at ~100% imposter
         # precision. An IMPOSTER deflecting keeps the legacy clear-leader logic
         # below: engineering plausible mis-ejections is its job, not a risk.
-        if p < WEIGHTS_VOTE_PROBABILITY:
+        if p < bar:
             return None
         if WEIGHTS_VOTE_LEAD > 0.0 and color not in witnessed_imposters(belief):
             # Optional AND-requirement (CREWBORG_VOTE_LEAD, for sub-0.9 bar sweeps):
@@ -652,7 +671,7 @@ def top_suspect(belief: Belief) -> str | None:
             if (p - runner_up) < WEIGHTS_VOTE_LEAD:
                 return None
         return color
-    if p >= VOTE_PROBABILITY:
+    if p >= bar:
         return color  # near-certain on its own
     runner_up = ranked[1][1] if len(ranked) > 1 else 0.0
     if p >= VOTE_LEAD_MIN_P and (p - runner_up) >= VOTE_LEAD_MARGIN:

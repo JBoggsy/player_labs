@@ -19,8 +19,10 @@ from crewrift.crewborg.strategy.suspicion import (
     FLEE_PROBABILITY,
     FOLLOW_FULL_TICKS,
     VENT_CROSS_TICKS,
+    VOTE_PROBABILITY,
     WEIGHTS_VOTE_PROBABILITY,
     active_tail_suspect,
+    active_vote_probability_bar,
     chat_suspect,
     top_suspect,
     update_suspicion,
@@ -683,3 +685,20 @@ class TestCrewVoteKnobs:
         belief = Belief(self_role="imposter")
         belief.suspicion = {"red": 0.7, "blue": 0.3}  # legacy clear-leader rule fires
         assert top_suspect(belief) == "red"
+
+    # -- active_vote_probability_bar: single source of truth for the CURRENT bar,
+    # so the LLM-facing meeting context (context.py) can never quote a stale number.
+
+    def test_active_vote_probability_bar_reports_the_fitted_bar_for_crewmate(self, monkeypatch) -> None:
+        monkeypatch.setattr(suspicion_module, "WEIGHTS_VOTE_PROBABILITY", 0.6)
+        assert active_vote_probability_bar("crewmate") == 0.6
+
+    def test_active_vote_probability_bar_stays_legacy_for_imposter(self, monkeypatch) -> None:
+        monkeypatch.setattr(suspicion_module, "WEIGHTS_VOTE_PROBABILITY", 0.6)
+        assert active_vote_probability_bar("imposter") == VOTE_PROBABILITY
+
+
+def test_active_vote_probability_bar_is_legacy_without_fitted_weights() -> None:
+    # Module-level autouse fixture pins _WEIGHTS to None for this file's top-level tests.
+    assert suspicion_module._WEIGHTS is None
+    assert active_vote_probability_bar("crewmate") == VOTE_PROBABILITY

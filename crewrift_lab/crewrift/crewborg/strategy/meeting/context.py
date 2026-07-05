@@ -8,8 +8,8 @@ from typing import Any
 from crewrift.crewborg.perception.entities import SKIP_VOTE_TARGET
 from crewrift.crewborg.strategy.meeting.schema import CHAT_MAX_CHARS, SCHEMA_VERSION, VOTE_SKIP
 from crewrift.crewborg.strategy.suspicion import (
-    VOTE_PROBABILITY,
     _prior_imposter_p,
+    active_vote_probability_bar,
     top_suspect,
     witnessed_imposters,
 )
@@ -100,7 +100,8 @@ def _fallback_vote_target(belief: Belief) -> str:
 
 def _fallback_vote_reason(belief: Belief, fallback_vote: str) -> str:
     if fallback_vote == VOTE_SKIP:
-        return f"no suspect at or above vote bar {VOTE_PROBABILITY}"
+        bar = active_vote_probability_bar(belief.self_role)
+        return f"no suspect at or above vote bar {bar}"
     p = belief.suspicion.get(fallback_vote)
     return f"top suspect {fallback_vote} at P(imposter)={p:.4f}" if p is not None else "top suspect"
 
@@ -216,7 +217,7 @@ def _region_name(belief: Belief, event: PlayerEvent) -> str | None:
 def _suspicion_payload(belief: Belief, fallback_vote: str) -> dict[str, Any]:
     return {
         "prior": _rounded(_prior_imposter_p(belief)),
-        "vote_probability_threshold": VOTE_PROBABILITY,
+        "vote_probability_threshold": active_vote_probability_bar(belief.self_role),
         "confirmed": sorted(witnessed_imposters(belief)),
         "believed": sorted(belief.believed_imposters),
         "ranking": [
