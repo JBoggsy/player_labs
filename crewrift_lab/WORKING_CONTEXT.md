@@ -37,13 +37,30 @@ live (23 announces/16 eps, mutual trust held; the one bad vote = role-limbo, fix
 Told Alex: encoding fork + our key. STILL TO TELL: same-key multi-seat collides with
 first-poster-wins (distinct key per concurrent seat — crewborg-hs2:v1 pattern, seed /tmp/hs2_seed.b64).
 
-## ⛔ PLATFORM BLOCKER (since 2026-07-02 ~22:20Z)
+## ✅ RESOLVED (2026-07-03): /jobs/* 403 was metta PR #17028 (opt-in elevation), not an outage
 
-**/jobs/* artifact routes 403 "not a softmax team member"** (results/policy-artifact/policy-logs);
-/v2/* fine; `softmax login` no-ops; `--force` relogin untried-successfully; NO elevated flag exists.
-Blocks: instant-vote A/B read-out (/tmp/iv_{cand,base}_eps, 50v50, replays present, results
-missing — synthesizable from replays, camo agent validated the method), HS probe telemetry,
-league telemetry harvest. Escalate if relogin doesn't fix.
+Root cause: Softmax team members are now EXTERNAL-by-default; TEAM_AUTH routes (per-episode job
+artifacts for another player's policy — results/replay/policy-logs) need
+`X-Use-Elevated-Privileges: true`. Fix: `coworld --elevated ...` (CLI, needs the 0.1.28 pin — see
+below) or the header directly. Added `--elevated` to `fetch_artifacts.py`, `xp_dashboard.py`, and
+passthrough in `stream_eval.py`/`build_warehouse.py` (crewrift-event-warehouse skill); verified live.
+**None of these default it on** — every invocation needs the flag explicitly.
+**Unblocks:** instant-vote A/B read-out (/tmp/iv_{cand,base}_eps, 50v50, replays present — results
+should now be fetchable with `--elevated`, re-run the fetch to confirm), HS probe telemetry, league
+telemetry harvest — all previously blocked by this, now worth re-attempting.
+
+## ⛔ PLATFORM BLOCKER (confirmed 2026-07-03, reproducible 3/3)
+
+**xp-request roster `random`/`top_n` seat-fill 500s** — `eligible_champions` CTE query (joins
+policy_versions → league_policy_memberships → … → episode_policy_metrics for a mean_reward-ranked
+pool) hits `psycopg.errors.QueryCanceled: canceling statement due to statement timeout`. NOT flaky —
+3 back-to-back identical failures. Blocks **true tournament-style requests** (random/top_n opponent
+seats — see the new definition in `coworld-experience-requests/SKILL.md`); the "pin explicit
+policy_refs" workaround still works but answers a narrower question (a fixed field, not a random
+draw from the live pool) and is not a substitute when "tournament-style" is specifically wanted. The
+`resolve --division --top N` ranking (division-leaderboard endpoint) is unaffected — only the
+xp-request roster-fill path breaks. Worth escalating: may explain why the real tournament/league
+looked "broken" too, if the commissioner's own round matchmaking hits the same query.
 
 ## 📋 A/B ledger (2026-07-02 evening)
 
@@ -66,7 +83,8 @@ league telemetry harvest. Escalate if relogin doesn't fix.
 
 ## Load-bearing infra facts
 
-- Player SDK from Metta-AI/coworld-tools tarball (issue #13); coworld CLI 0.1.27 pinned.
+- Player SDK from Metta-AI/coworld-tools tarball (issue #13); coworld CLI 0.1.28 pinned (bumped
+  2026-07-03 from 0.1.27 for `--elevated` support — `uv lock --upgrade-package coworld && uv sync`).
 - Expander /tmp/expand-043 (= tools/bin/expand_replay-26ee08c) hash-clean through crewrift_prime
   0.4.35, JSONL-capable. Warehouses/duckdb run from tools/event-warehouse/crewrift-event-warehouse.
 - Prime field ~11 champions, ships hourly (notsus v168→v174 in one day); server random/top_n pool
