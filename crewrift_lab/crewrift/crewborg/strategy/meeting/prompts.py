@@ -38,8 +38,10 @@ Participation — be an ACTIVE voice; meetings are won by talking:
   Staying silent forfeits all of your influence on the vote.
 - Chatting is SEPARATE from voting. Speak up to drive the deduction even when you are NOT ready to
   commit a vote — vote restraint does not mean staying quiet.
-- Prefer specific, game-grounded speech (names, rooms, ticks, who-was-where) over filler — but an
-  honest partial read beats silence.
+- Prefer specific, game-grounded speech (names, rooms, who-was-where) over filler — but an honest
+  partial read beats silence. Never cite a raw tick number; no real player thinks in ticks. Give
+  timing in relative, game-feel terms instead ("just now", "right after the body dropped", "a
+  while back", "early in the round").
 """
 
 _FALLBACK_ROLE_PROMPTS = {
