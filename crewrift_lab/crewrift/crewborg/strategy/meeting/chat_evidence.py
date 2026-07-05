@@ -17,6 +17,7 @@ from __future__ import annotations
 from typing import Any
 
 from crewrift.crewborg.strategy.meeting import chat_nlp
+from crewrift.crewborg.strategy.meeting.schema import ChatEvidenceTag
 from crewrift.crewborg.types import Belief, ChatClaim, ChatEvent, ClaimType
 
 # Cues that an utterance is an accusation. Closed, tunable; inflections included so we
@@ -149,6 +150,32 @@ def verify_claim(belief: Belief, claim: ChatClaim) -> ChatClaim:
     if same_kind_places:
         return claim.model_copy(update={"verification": "contradicted"})
     return claim.model_copy(update={"verification": "unconfirmed"})
+
+
+def apply_llm_tags(belief: Belief, raw_tags: list[dict]) -> None:
+    """Validate the LLM's chat_evidence tags one at a time, converting each valid
+    one into a ChatClaim(source="llm") appended to its target's claims. An invalid
+    tag (unknown color, bad claim_type, missing field) is silently dropped — never
+    raised — per the design doc's per-tag degradation rule."""
+
+    colors = set(belief.roster)
+    for raw in raw_tags:
+        try:
+            tag = ChatEvidenceTag(**raw)
+        except Exception:
+            continue
+        if tag.speaker_color not in colors or tag.target_color not in colors:
+            continue
+        claim = ChatClaim(
+            tick=belief.last_tick,
+            speaker_color=tag.speaker_color,
+            target_color=tag.target_color,
+            claim_type=tag.claim_type,
+            source="llm",
+        )
+        record = belief.roster.get(tag.target_color)
+        if record is not None:
+            record.claims.append(claim)
 
 
 def chat_accusers(belief: Belief, *, cache: dict[str, set[str]] | None = None) -> dict[str, int]:

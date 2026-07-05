@@ -9,6 +9,7 @@ import pytest
 
 from crewrift.crewborg.strategy.meeting import llm as meeting_llm
 from crewrift.crewborg.strategy.meeting.prompts import system_prompt_for_context
+from crewrift.crewborg.strategy.meeting.schema import MeetingDecision
 
 
 @dataclass(frozen=True)
@@ -134,3 +135,11 @@ def test_prompt_loader_uses_files_and_missing_file_fallback(tmp_path) -> None:
 
     assert "CREWMATE FILE" in crewmate
     assert "Imposter doctrine" in imposter
+
+
+def test_meeting_decision_accepts_chat_evidence_as_loose_dicts() -> None:
+    decision = MeetingDecision(
+        action="wait",
+        chat_evidence=[{"speaker_color": "red", "claim_type": "not-a-real-type"}],  # malformed, but MeetingDecision itself must still construct
+    )
+    assert decision.chat_evidence == [{"speaker_color": "red", "claim_type": "not-a-real-type"}]

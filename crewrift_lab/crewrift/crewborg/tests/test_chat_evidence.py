@@ -8,7 +8,7 @@ from crewrift.crewborg.map.types import MapData, MapPoint, MapRect, Room
 from crewrift.crewborg.modes import AttendMeetingMode
 from crewrift.crewborg.perception.entities import VoteCandidate, VotingState
 from crewrift.crewborg.strategy.meeting import chat_nlp, chat_evidence
-from crewrift.crewborg.strategy.meeting.chat_evidence import parse_claims, verify_claim
+from crewrift.crewborg.strategy.meeting.chat_evidence import apply_llm_tags, parse_claims, verify_claim
 from crewrift.crewborg.types import ActionState, Belief, ChatClaim, ChatEvent, PlayerEvent, PlayerRecord
 
 _COLORS = ("red", "blue", "green", "yellow", "orange", "purple")
@@ -274,3 +274,40 @@ def test_verify_claim_vent_stays_unconfirmed_never_contradicted() -> None:
     belief = _belief_with_roster({"red"})
     claim = ChatClaim(tick=20, speaker_color="blue", target_color="red", claim_type="vent")
     assert verify_claim(belief, claim).verification == "unconfirmed"
+
+
+def test_apply_llm_tags_lands_a_valid_tag_as_an_llm_sourced_claim() -> None:
+    belief = _belief_with_roster({"red", "blue"})
+    belief.last_tick = 42
+    apply_llm_tags(belief, [
+        {"speaker_color": "red", "target_color": "blue", "stance": "accuse", "claim_type": "accusation", "credibility": 0.8}
+    ])
+    claims = belief.roster["blue"].claims
+    assert len(claims) == 1
+    assert claims[0].source == "llm" and claims[0].speaker_color == "red"
+
+
+def test_apply_llm_tags_drops_a_tag_with_an_unknown_color() -> None:
+    belief = _belief_with_roster({"red", "blue"})
+    apply_llm_tags(belief, [
+        {"speaker_color": "red", "target_color": "purple", "stance": "accuse", "claim_type": "accusation"}
+    ])
+    assert belief.roster["blue"].claims == []
+
+
+def test_apply_llm_tags_drops_a_malformed_tag_without_raising() -> None:
+    belief = _belief_with_roster({"red", "blue"})
+    apply_llm_tags(belief, [{"speaker_color": "red", "claim_type": "not-a-real-type"}])  # missing fields, bad enum
+    assert belief.roster["red"].claims == [] and belief.roster["blue"].claims == []
+
+
+def test_apply_llm_tags_processes_remaining_tags_after_a_malformed_one() -> None:
+    belief = _belief_with_roster({"red", "blue"})
+    belief.last_tick = 42
+    apply_llm_tags(belief, [
+        {"speaker_color": "red", "claim_type": "not-a-real-type"},  # malformed, dropped
+        {"speaker_color": "red", "target_color": "blue", "stance": "accuse", "claim_type": "accusation"},  # valid
+    ])
+    claims = belief.roster["blue"].claims
+    assert len(claims) == 1
+    assert claims[0].source == "llm" and claims[0].speaker_color == "red"

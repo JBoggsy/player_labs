@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -19,6 +19,22 @@ class MeetingDecisionValidationError(ValueError):
     """Raised when an LLM decision cannot be safely applied."""
 
 
+class ChatEvidenceTag(BaseModel):
+    """The LLM's own read on a chat message's stance/credibility (design:
+    docs/designs/chat-evidence.md). Validated per-tag by chat_evidence.apply_llm_tags,
+    never as part of MeetingDecision's own validation — a malformed tag must never
+    block the chat/vote action it rode in on."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    speaker_color: str
+    target_color: str
+    stance: Literal["accuse", "defend", "neutral"]
+    claim_type: Literal["accusation", "defense", "location", "vent", "task"]
+    credibility: float | None = Field(default=None, ge=0.0, le=1.0)
+    note: str | None = None
+
+
 class MeetingDecision(BaseModel):
     """One fast-path meeting decision produced by the LLM."""
 
@@ -32,6 +48,10 @@ class MeetingDecision(BaseModel):
     vote_target: str | None = None
     reason: str = ""
     confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+    # Optional LLM-bundled chat enrichment (Approach B) — deliberately loose (raw
+    # dicts, not list[ChatEvidenceTag]) so one malformed tag can't fail the whole
+    # decision's validation. chat_evidence.apply_llm_tags validates each one.
+    chat_evidence: list[dict[str, Any]] = Field(default_factory=list)
 
 
 def sanitize_chat(text: str | None, *, max_chars: int = CHAT_MAX_CHARS) -> str:
