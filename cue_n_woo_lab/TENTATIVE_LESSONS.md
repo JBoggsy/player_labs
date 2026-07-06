@@ -17,3 +17,10 @@ buffers — not in-session hit counts — is the graduation signal.
 concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
+
+### No Cue-n-Woo lessons this session
+Evidence: session was entirely git repo hygiene (resolving a `git pull` merge conflict between
+the SessionStart lesson-rotation hook and 27 diverged upstream commits); no Cue-n-Woo code, data,
+or evals were touched. The one real lesson from this session (rotation hook can silently drop
+lessons when the branch is stale) is logged in crewrift_lab/TENTATIVE_LESSONS.md since it
+surfaced identically in both games' buffers and is game-agnostic tooling, not Cue-n-Woo-specific.
