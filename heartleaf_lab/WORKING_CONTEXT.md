@@ -47,23 +47,40 @@ and the `talking_villager` player framework.
   on them.**
 - **League variant config:** 9 compressed days (100s each), `maxTicks: 23760`, `num_agents: 9`.
 
-## Open threads (next steps — human-directed)
+## First eval done (2026-07-06): cady RUNS clean but is BLIND TO GARDENS — never gathers
 
-1. **NEXT: build cady's image + upload a version.** `heartleaf_lab/cady/Dockerfile` is written
-   (context = `heartleaf_lab/cady/`, `--platform=linux/amd64`) but **not yet built** — do a
-   `docker build` sanity check, then upload via the `build-and-upload` / `player-build.md` flow.
-   Confirm the Python-image upload path works for this game (manifest player `run` = `/bin/<name>`).
-2. **Verify the league exists + its id / game version** via the Observatory API before the first
-   experience request (still not confirmed).
-3. **First hosted eval → CALIBRATE.** Run an experience request vs the bundled villager field,
-   pull artifacts + logs, and use them to calibrate the deferred unknowns cady flagged as
-   `# CALIBRATION`: the self-position offset (`perception.SELF_OFFSET`, currently (0,0) — cancels
-   for relative nav but confirm), our **seat identity** (which `"gnome <i>"` is ours), and the
-   garden/house **trigger geometry** (`action.GATHER_RANGE`). The capture probe
-   (`python -m cady.tools.capture_scene`) is the tool for this once pointed at a real stream.
-4. **Then a Heartleaf survey skill** — per-day host/guest/score report (AGENTS.md → Skills).
-5. **v2 = coordination** — chat-based guest recruitment (the real scoring lever), the reserved
-   next iteration. The `decide`/`Command` seam for chat is already in place.
+`xreq_101eed6b`, 15 eps, cady vs 8 chatty-villagers on heartleaf 0.1.10. **Ops: 15/15 completed,
+zero failures** — the SpriteV1 bridge + perception + entry point all work hosted (cady ran 762
+decision ticks/game). **Score: cady 0/15** (field also near-0: 5/120 seats nonzero, max 13 — a
+low-scoring env, likely villagers on the mock `keep_gathering_plants` reply).
+**Root cause (from cady's telemetry artifact):** cady perceived **ZERO food gardens all game** →
+strategy skipped Gather → went straight to **Host at tick 7 and `hold`ed with `held_mask=0`
+forever** (never moved, never pressed A, never gathered → empty inventory → can't score). It DID
+reach Host (not stuck Idle), so **camera/self resolve OK — it's GARDEN perception that's broken.**
+Almost certainly the label/object-id mismatch we flagged: `perception.py` uses `"garden marker"`
+/ base-4000 from the **0.1.0** clone, but the deployed game is **0.1.10**.
+
+## Open threads (next steps)
+
+1. **NEXT — fix garden perception vs 0.1.10 (the bug that zeroed cady).** Confirm the real
+   0.1.10 garden vocabulary: run the capture probe against a live stream, OR decode a replay
+   frame (we have `replay.json` per episode in the eval artifacts — raw BitWorld sprite bytes;
+   the SDK `SpriteWorld.apply_frame` decodes them). Check the actual garden label + object-id
+   base (and re-confirm gnome/clock while at it). Then fix `cady/perception.py`, rebuild, upload
+   cady:v2, re-eval. This is the calibration step, now with a concrete target.
+2. **Also verify** self/home geometry: cady `hold`s at its tick-1 home_anchor — confirm that's
+   actually inside its house (else it can't host even with food). And the `SELF_OFFSET`(0,0)/seat.
+3. **Heartleaf survey skill** — per-day host/guest/score report (AGENTS.md → Skills).
+4. **v2 = coordination** — chat-based guest recruitment (the real scoring lever). Seam in place.
+
+## Eval how-to (learned this session)
+- Field: Competition div `div_396961a3…`, league `league_f831ba75…`; champion
+  `heartleaf-fatherly-villager:v2`. Roster = 9 seats (cady + 8 random). **No -100 here** — detect
+  failures via episode status/`failed_policy_index`, NOT score≤0 (see gameplay doc §Results).
+- cady's traces go to the **policy-artifact zip** (jsonl@artifact), not stderr; fetch via
+  `/jobs/{job}/policy-artifact/{seat}` with header `X-Use-Elevated-Privileges: true`. Its stderr
+  policy-log is nearly empty. Artifact events: perception/belief/strategy/action_intent/act_command
+  per tick + mode_entered/exited (generic — no data values, so read intent/command strings).
 
 ## Discipline (from [`../AGENTS.md`](../AGENTS.md))
 
