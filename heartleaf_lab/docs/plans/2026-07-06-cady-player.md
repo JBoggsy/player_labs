@@ -1,9 +1,14 @@
 # Cady Player — High-Level Implementation Plan
 
-> **Execution model:** this is a **high-level, phase-level** plan. Each phase is a unit of
-> work delegated to **Codex** (`/codex-task`), which plans the detailed steps and implements
-> them. Claude owns the phase boundaries, interface contracts, acceptance criteria, and the
-> between-phase review gate; Codex owns the per-phase detailed plan + code. (This deliberately
+> **✅ COMPLETE (2026-07-06).** All six phases done — cady v1 is built (26 modules, 31 tests
+> passing). Phase 1 by Claude (env-sensitive pin bump); Phases 2–6 by Codex (plan → review →
+> implement → verify → commit per phase), one commit each: 3e87ffa, then Phase 2–6. Not yet
+> done (the human-gated lab loop, below): docker build, upload, first hosted eval, calibration.
+>
+> **Execution model:** this was a **high-level, phase-level** plan. Each phase was a unit of
+> work delegated to **Codex** (`/codex-task`), which planned the detailed steps and implemented
+> them. Claude owned the phase boundaries, interface contracts, acceptance criteria, and the
+> between-phase review gate; Codex owned the per-phase detailed plan + code. (This deliberately
 > departs from the usual bite-sized-TDD plan format because the human asked for Codex to plan
 > and execute each phase.)
 

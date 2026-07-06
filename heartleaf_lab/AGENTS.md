@@ -164,6 +164,15 @@ the rest of the lab's deferred tasks. Check it at the start of focused work.
 
 ## Player policies
 
-_None yet._ When the first policy is built (see [Player build paths](#player-build-paths)),
-index it here with a one-paragraph summary, mirroring how crewrift_lab and cue_n_woo_lab
-index theirs.
+- **cady** *(Python)* — at [`cady/`](cady/), our first Heartleaf player and the primary policy
+  under optimization. A **deterministic cyborg Player-SDK policy on the SDK's SpriteV1 bridge**
+  (`players.player_sdk.run_sprite_bridge` — no vendored wire layer): `perceive` reads the raw
+  `SpriteWorld` labels/positions into a `HeartleafState`, belief folds it (recording a morning
+  `home_anchor`), a clock-driven `ClockStrategy` picks Gather/Host/Idle, and `resolve_action`
+  emits a `Button` mask — assembled on `AgentRuntime` and glued to the bridge by `cady.decide`.
+  **v1** = gather food by day, return home to host at 6 PM, no chat/LLM (build path 3, raw
+  Sprite-v1). Built 2026-07-06 (design [`docs/designs/cady-player-design.md`](docs/designs/cady-player-design.md),
+  plan [`docs/plans/2026-07-06-cady-player.md`](docs/plans/2026-07-06-cady-player.md); 31 tests,
+  `uv run pytest heartleaf_lab/cady/tests`). Version history: [`cady/VERSION_LOG.md`](cady/VERSION_LOG.md).
+  **Next (human-gated lab loop):** build image → upload → first hosted eval → calibrate self/seat
+  + geometry from the real stream. Coordination (chat invitations) is the planned **v2**.
