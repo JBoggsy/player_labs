@@ -17,3 +17,8 @@ buffers — not in-session hit counts — is the graduation signal.
 concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
+
+### No Cue-n-Woo lessons this session
+Evidence: session was entirely Crewrift/crewborg work (meeting-caller latch fix, vote-bar
+doctrine, v96 ship + validation run); no Cue-n-Woo code, data, or evals were touched.
+Crewrift lessons went to crewrift_lab/TENTATIVE_LESSONS.md.
