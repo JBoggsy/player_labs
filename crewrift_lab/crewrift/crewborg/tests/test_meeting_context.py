@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from crewrift.crewborg.perception.entities import VoteCandidate, VoteDot, VotingState
+from crewrift.crewborg.strategy import suspicion as suspicion_module
 from crewrift.crewborg.strategy.meeting import (
     VOTE_SKIP,
     MeetingDecision,
@@ -14,6 +15,7 @@ from crewrift.crewborg.strategy.meeting import (
     validate_meeting_decision,
     valid_vote_targets,
 )
+from crewrift.crewborg.strategy.suspicion import VOTE_PROBABILITY
 from crewrift.crewborg.types import Belief, ChatEvent, PlayerRecord
 
 
@@ -73,6 +75,41 @@ def test_meeting_decision_validation_rejects_dead_or_unknown_vote_target() -> No
             alive_vote_targets={"red"},
             fallback_vote=VOTE_SKIP,
         )
+
+
+def test_fallback_vote_reason_quotes_the_actual_fitted_bar_not_the_legacy_constant(monkeypatch) -> None:
+    # Fitted weights loaded (the production default), a crewmate role, and a
+    # deployed bar (0.6) below the legacy hand-model constant (0.8). The top
+    # suspect (0.5) clears neither, so the reason must name the REAL bar (0.6) —
+    # quoting the legacy 0.8 here would mislead the LLM about what actually gates
+    # a vote (context.py must ask suspicion for the CURRENT bar, not import the
+    # legacy constant directly).
+    monkeypatch.setattr(suspicion_module, "WEIGHTS_VOTE_PROBABILITY", 0.6)
+    belief = _belief()
+    belief.self_role = "crewmate"
+    belief.suspicion = {"red": 0.5, "green": 0.2}
+
+    context = serialize_meeting_context(belief, trigger="meeting_start")
+
+    assert context["state"]["fallback_vote"] == VOTE_SKIP
+    assert context["state"]["fallback_vote_reason"] == "no suspect at or above vote bar 0.6"
+    assert context["suspicion"]["vote_probability_threshold"] == 0.6
+
+
+def test_fallback_vote_reason_stays_on_the_legacy_bar_for_imposter_role(monkeypatch) -> None:
+    # Imposter deflection deliberately keeps the legacy clear-leader logic
+    # regardless of the fitted crewmate knobs, so the reported bar must stay the
+    # legacy VOTE_PROBABILITY (0.8) even with a very different fitted bar set.
+    monkeypatch.setattr(suspicion_module, "WEIGHTS_VOTE_PROBABILITY", 0.6)
+    belief = _belief()
+    belief.self_role = "imposter"
+    belief.suspicion = {"red": 0.3, "green": 0.2}  # below VOTE_LEAD_MIN_P too -> a real skip
+
+    context = serialize_meeting_context(belief, trigger="meeting_start")
+
+    assert context["state"]["fallback_vote"] == VOTE_SKIP
+    assert context["state"]["fallback_vote_reason"] == f"no suspect at or above vote bar {VOTE_PROBABILITY}"
+    assert context["suspicion"]["vote_probability_threshold"] == VOTE_PROBABILITY
 
 
 def test_submit_without_target_uses_tentative_then_fallback() -> None:

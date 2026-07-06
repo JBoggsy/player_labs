@@ -1,0 +1,49 @@
+{
+  "target": {
+    "division_id": "div_acbde92a-df21-4489-859c-4510bd4445f2"
+  },
+  "roster": [
+    {
+      "player": {
+        "policy_ref": "crewborg:v96"
+      }
+    },
+    {
+      "player": {
+        "policy_ref": "jordan-crewborg-aaln:v1"
+      }
+    },
+    {
+      "player": {
+        "policy_ref": "notsus:v177"
+      }
+    },
+    {
+      "player": {
+        "policy_ref": "crewrift-prime-crewborg-aaln-hunter-relhalpha:v1"
+      }
+    },
+    {
+      "player": {
+        "policy_ref": "softmaxwell-crewborg:v12"
+      }
+    },
+    {
+      "player": {
+        "policy_ref": "sasmith-crewborg-hs1:v1"
+      }
+    },
+    {
+      "player": {
+        "policy_ref": "crewborg-mv:v6"
+      }
+    },
+    {
+      "player": {
+        "policy_ref": "rowdaboat-notsus:v12"
+      }
+    }
+  ],
+  "num_episodes": 100,
+  "notes": "v96 RANKING eval: crewborg:v96 vs live champion field, natural roles, balanced subset 2/15 (role-conditional ranking, seats rotate)"
+}

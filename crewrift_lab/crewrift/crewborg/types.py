@@ -191,6 +191,15 @@ class PlayerRecord(BaseModel):
     tasks_completed_watched: int = 0
     reported_bodies: int = 0
     button_calls_made: int = 0
+    # Chat claims made ABOUT this player (target_color == this color), spaCy- or
+    # LLM-sourced; raw structured log, same pattern as `events` above — aggregated
+    # by whoever needs a number later rather than pre-committed scalar counters.
+    claims: list[ChatClaim] = Field(default_factory=list)
+    # How many meetings this player was the first (non-us) speaker in.
+    spoke_first_count: int = 0
+    # Per-meeting vote timing (rank + ticks-after-meeting-start), one entry per
+    # non-skip vote this player cast, across the whole episode.
+    vote_history: list[VoteCast] = Field(default_factory=list)
 
     @property
     def join_order(self) -> int | None:
@@ -253,6 +262,51 @@ class ChatEvent(BaseModel):
     tick: int
     speaker_color: str | None
     text: str
+
+
+ClaimType = Literal["accusation", "defense", "location", "vent", "task"]
+VerificationStatus = Literal["confirmed", "contradicted", "unconfirmed"]
+
+
+class ChatClaim(BaseModel):
+    """One claim extracted from a chat message (design: docs/designs/chat-evidence.md).
+
+    ``target_color`` is who the claim is ABOUT — equal to ``speaker_color`` for a
+    self-alibi. ``place_name`` is the matched room/task-station name, set only for
+    ``location``/``task`` claims — ``vent`` claims never carry one: crewrift vents
+    have no chat-nameable identity (only a synthetic ``group:group_index``, which no
+    real message would say, especially post the tick/coordinate-avoidance prompt
+    rule). ``verification`` is set for all three of location/vent/task (accusation/
+    defense are suspicion stances, not checkable facts) and stays ``None`` until
+    ``chat_evidence.verify_claim`` runs. ``source`` distinguishes the always-on spaCy
+    extraction from optional LLM-bundled enrichment — both land in the same list on
+    the same shape.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    tick: int
+    speaker_color: str | None
+    target_color: str
+    claim_type: ClaimType
+    place_name: str | None = None
+    verification: VerificationStatus | None = None
+    source: Literal["spacy", "llm"] = "spacy"
+
+
+class VoteCast(BaseModel):
+    """One player's vote, timestamped, for bandwagon-timing analysis (design:
+    docs/designs/chat-evidence.md). ``rank`` is 1-indexed among a meeting's non-skip
+    votes (1 = first to vote); skip votes are not timing-interesting and are not
+    recorded here (see ``PlayerRecord.votes_skipped`` for the existing skip count).
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    meeting_tick: int
+    ticks_after_meeting_start: int
+    target_color: str
+    rank: int
 
 
 # How many recent raw observation frames the perception tape keeps (~1 s at 24 Hz).
@@ -392,6 +446,11 @@ class Belief(BaseModel):
     social_staged_slots: dict[int, str] = Field(default_factory=dict)
     social_staged_meeting_tick: int | None = None
     social_banked_meeting_tick: int | None = None
+    # Order-preserving staging for vote-timing (chat-evidence design): appended once
+    # per (tick, voter_slot, target_slot) the FIRST time that pair is observed this
+    # meeting; cleared when social_evidence commits the meeting (mirrors
+    # social_staged_votes' lifecycle, but keeps order instead of discarding it).
+    social_vote_order: list[tuple[int, int, int]] = Field(default_factory=list)
     social_prev_tasks_remaining: int | None = None
     # The current meeting's caller, parsed from the MeetingCall interstitial text
     # (game 4b9297d): color + kind ("body"|"button"|"unknown"), with the tick the
@@ -400,6 +459,7 @@ class Belief(BaseModel):
     meeting_call_kind: str | None = None
     meeting_call_seen_tick: int | None = None
     social_caller_banked_tick: int | None = None
+    social_spoke_first_banked_tick: int | None = None
 
     # Crewrift Honor Society (strategy.honor_society; design docs/designs/
     # honor-society.md; HS1 wire spec). All inert unless CREWBORG_HONOR_SOCIETY is
@@ -737,7 +797,16 @@ def update_belief(belief: Belief, percept: Percept) -> None:
         belief.meeting_call_kind = resolved.meeting_call_kind
         belief.meeting_call_seen_tick = percept.tick
     ended_meeting_kind = None
-    if belief.phase == "Playing" and belief.meeting_caller_color is not None:
+    # "Play resumed" needs BOTH conditions: derive_phase has no MeetingCall state, so
+    # belief.phase stays "Playing" for the whole ~3 s interstitial — clearing on phase
+    # alone would erase the caller on the very tick it latched, before social evidence
+    # ever banks it. The interstitial text still being on screen means the meeting is
+    # starting, not ending.
+    if (
+        belief.phase == "Playing"
+        and resolved.meeting_caller_color is None
+        and belief.meeting_caller_color is not None
+    ):
         ended_meeting_kind = belief.meeting_call_kind
         belief.meeting_caller_color = None
         belief.meeting_call_kind = None

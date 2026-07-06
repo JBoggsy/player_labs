@@ -4,11 +4,12 @@ Maintains the per-player counters behind the fitted suspicion model's "public"
 features (design: ``crewrift_lab/suspicion_lab/README.md`` §5/§10; offline mirror:
 ``crewrift_lab/suspicion_lab/tools/features.py`` — keep definitions aligned):
 
-- **Chat stances** — each meeting chat line reduces to ``(speaker, stance, target)``
-  with ``stance ∈ {accuses, defends}`` via the same templated-chat heuristics the
-  offline extractor uses; bumps ``accusations_made`` on the speaker and
-  ``times_accused`` / ``times_defended`` on the target. Unparseable lines are
-  dropped, never guessed at.
+- **Chat stances** — each meeting chat line is parsed via ``chat_evidence.parse_claims``
+  (the shared dependency-parse extractor) into claims with
+  ``claim_type ∈ {accusation, defense, location, vent, task}``; accusation/defense
+  claims bump ``accusations_made`` on the speaker and ``times_accused`` /
+  ``times_defended`` on the target, and every claim about a player is retained on
+  their ``PlayerRecord.claims``. Unparseable lines are dropped, never guessed at.
 - **Vote tallies** — the voting UI's dots attribute every vote (voter slot →
   target slot); at meeting end they are committed once into ``votes_cast`` /
   ``votes_skipped`` / ``voted_against_me`` / ``vote_agreed_with_me``.
@@ -26,9 +27,8 @@ and live on ``PlayerRecord``; ``suspicion._fitted_features`` reads them.
 
 from __future__ import annotations
 
-import re
-
-from crewrift.crewborg.types import Belief
+from crewrift.crewborg.strategy.meeting import chat_evidence
+from crewrift.crewborg.types import Belief, VoteCast
 
 # A real task completion requires TaskCompleteTicks (72) of standing at the site.
 # We credit a watched completion only if we observed most of that dwell — slack
@@ -38,10 +38,6 @@ WATCHED_DWELL_MIN_TICKS = 56
 # The dwell interval must still be "live" at the decrement tick (within the event
 # log's merge grace) to be the completing dwell.
 DWELL_END_GRACE_TICKS = 4
-
-# Offline-mirrored stance heuristics (features.py ACCUSE_HINT / DEFEND_HINT).
-ACCUSE_HINT = re.compile(r"\bsus\b|\bvote\b|\bsaw (?:them|him|her|it)\b", re.IGNORECASE)
-DEFEND_HINT = re.compile(r"\bclear(?:ed)?\b|\bsafe\b|\binnocent\b|\bnot sus\b|\bwasn'?t\b", re.IGNORECASE)
 
 SKIP_VOTE_TARGET = -2  # perception.entities.VoteDot sentinel
 
@@ -55,6 +51,7 @@ def update_social_evidence(belief: Belief) -> None:
 
     _count_chat_stances(belief)
     _track_meeting_votes(belief)
+    _track_speaking_order(belief)
     _bank_meeting_caller(belief)
     _detect_watched_completions(belief)
 
@@ -62,44 +59,28 @@ def update_social_evidence(belief: Belief) -> None:
 # --- chat stances -------------------------------------------------------------
 
 
-def _color_pattern(belief: Belief) -> re.Pattern | None:
-    colors = [c for c in belief.roster if c]
-    if not colors:
-        return None
-    alternation = "|".join(sorted((re.escape(c) for c in colors), key=len, reverse=True))
-    return re.compile(rf"\b({alternation})\b", re.IGNORECASE)
-
-
 def _count_chat_stances(belief: Belief) -> None:
     if not belief.chat_log:
-        return
-    pattern = _color_pattern(belief)
-    if pattern is None:
         return
     for event in belief.chat_log:
         key = (event.tick, event.speaker_color, event.text)
         if key in belief.social_counted_chats:
             continue
         belief.social_counted_chats.add(key)
-        named = [m.group(1).lower() for m in pattern.finditer(event.text or "")]
-        named = [c for c in named if c != event.speaker_color]
-        if not named:
-            continue
-        if DEFEND_HINT.search(event.text):
-            stance = "defends"
-        elif ACCUSE_HINT.search(event.text):
-            stance = "accuses"
-        else:
-            continue
-        target = belief.roster.get(named[0])
-        speaker = belief.roster.get(event.speaker_color)
-        if stance == "accuses":
-            if speaker is not None:
-                speaker.accusations_made += 1
+        for claim in chat_evidence.parse_claims(belief, event):
+            if claim.claim_type in ("location", "vent", "task"):
+                claim = chat_evidence.verify_claim(belief, claim)
+            target = belief.roster.get(claim.target_color)
+            speaker = belief.roster.get(claim.speaker_color) if claim.speaker_color else None
             if target is not None:
-                target.times_accused += 1
-        elif target is not None:
-            target.times_defended += 1
+                target.claims.append(claim)
+            if claim.claim_type == "accusation":
+                if speaker is not None:
+                    speaker.accusations_made += 1
+                if target is not None:
+                    target.times_accused += 1
+            elif claim.claim_type == "defense" and target is not None:
+                target.times_defended += 1
 
 
 # --- vote tallies ---------------------------------------------------------------
@@ -113,6 +94,13 @@ def _track_meeting_votes(belief: Belief) -> None:
         # Stage (overwrite) — dots are cumulative within a meeting, and the meeting
         # is identified by when its Voting phase opened.
         belief.social_staged_votes = {(d.voter, d.target) for d in voting.dots}
+        # social_staged_votes holds (voter, target) pairs (the current full snapshot,
+        # overwritten every tick above); social_vote_order accumulates (tick, voter,
+        # target) — diff against every pair already recorded, so each pair's tick is
+        # stamped exactly once, the first time it's observed.
+        already_seen = {(voter, target) for _, voter, target in belief.social_vote_order}
+        for voter, target in belief.social_staged_votes - already_seen:
+            belief.social_vote_order.append((belief.last_tick, voter, target))
         belief.social_staged_slots = {c.slot: c.color for c in voting.candidates}
         belief.social_staged_meeting_tick = belief.phase_start_tick if belief.phase == "Voting" else (
             belief.social_staged_meeting_tick or belief.phase_start_tick
@@ -125,6 +113,7 @@ def _track_meeting_votes(belief: Belief) -> None:
         return
     if belief.social_staged_meeting_tick == belief.social_banked_meeting_tick:
         belief.social_staged_votes = set()
+        belief.social_vote_order = []
         return
 
     slots = belief.social_staged_slots
@@ -153,9 +142,49 @@ def _track_meeting_votes(belief: Belief) -> None:
         if my_target is not None and my_target != SKIP_VOTE_TARGET and target == my_target:
             record.vote_agreed_with_me += 1
 
+    meeting_tick = belief.social_staged_meeting_tick or 0
+    non_skip_order = [
+        (tick, voter, target) for tick, voter, target in belief.social_vote_order if target != SKIP_VOTE_TARGET
+    ]
+    non_skip_order.sort(key=lambda row: row[0])
+    for rank, (tick, voter, target) in enumerate(non_skip_order, start=1):
+        color = slots.get(voter)
+        target_color = slots.get(target)
+        record = belief.roster.get(color or "")
+        if record is None or target_color is None:
+            continue
+        record.vote_history.append(
+            VoteCast(
+                meeting_tick=meeting_tick,
+                ticks_after_meeting_start=tick - meeting_tick,
+                target_color=target_color,
+                rank=rank,
+            )
+        )
+    belief.social_vote_order = []
+
     belief.social_banked_meeting_tick = belief.social_staged_meeting_tick
     belief.social_staged_votes = set()
     belief.social_staged_slots = {}
+
+
+def _track_speaking_order(belief: Belief) -> None:
+    """Credit whoever was the first non-us speaker in a meeting, once per meeting."""
+
+    if belief.phase != "Voting" or not belief.chat_log:
+        return
+    meeting_tick = belief.phase_start_tick
+    if belief.social_spoke_first_banked_tick == meeting_tick:
+        return
+    self_color = belief.self_color or belief.voting.self_marker_color
+    meeting_messages = [e for e in belief.chat_log if e.tick >= meeting_tick]
+    first_other = next((e for e in meeting_messages if e.speaker_color and e.speaker_color != self_color), None)
+    if first_other is None:
+        return
+    record = belief.roster.get(first_other.speaker_color)
+    if record is not None:
+        record.spoke_first_count += 1
+    belief.social_spoke_first_banked_tick = meeting_tick
 
 
 # --- meeting caller (the MeetingCall interstitial, game 4b9297d) -------------------

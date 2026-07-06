@@ -38,15 +38,18 @@ Participation — be an ACTIVE voice; meetings are won by talking:
   Staying silent forfeits all of your influence on the vote.
 - Chatting is SEPARATE from voting. Speak up to drive the deduction even when you are NOT ready to
   commit a vote — vote restraint does not mean staying quiet.
-- Prefer specific, game-grounded speech (names, rooms, ticks, who-was-where) over filler — but an
-  honest partial read beats silence.
+- Prefer specific, game-grounded speech (names, rooms, who-was-where) over filler — but an honest
+  partial read beats silence. Never cite a raw tick number; no real player thinks in ticks. Give
+  timing in relative, game-feel terms instead ("just now", "right after the body dropped", "a
+  while back", "early in the round").
 """
 
 _FALLBACK_ROLE_PROMPTS = {
     "crewmate": (
-        "Crewmate doctrine: default to skip unless the context shows concrete, citable "
-        "evidence. Do not invent evidence. If state.fallback_vote is skip, treat that as "
-        "the deterministic restraint signal and usually wait or skip."
+        "Crewmate doctrine: do not invent evidence. The suspicion numbers and threshold are "
+        "a guideline, not a gate — the fitted model is only ~60% accurate. If you are "
+        "confident in a suspect and arguing it in chat, vote them even below the threshold; "
+        "skip only when you have no real read on anyone."
     ),
     "imposter": (
         "Imposter doctrine: never accuse or vote a teammate. Deflect onto a plausible "

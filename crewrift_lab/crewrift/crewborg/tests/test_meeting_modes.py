@@ -367,10 +367,10 @@ def test_attend_meeting_uncorroborated_chat_implied_fallback_gated_to_skip(monke
     the fallback-sourced player votes hit imposters 4/24 (17%). Not witnessed, posterior
     under the vote bar, never LLM-named => the auto-submit votes SKIP, never red."""
 
-    from crewrift.crewborg.strategy.meeting import chat_read
+    from crewrift.crewborg.strategy.meeting import chat_evidence
 
     monkeypatch.setattr(
-        chat_read,
+        chat_evidence,
         "accused_colors",
         lambda text, colors: {"red"} if "red" in text else set(),
     )
@@ -395,10 +395,10 @@ def test_attend_meeting_witnessed_chat_implied_fallback_still_votes(monkeypatch)
     """The gate's witnessed arm: same chat-implied fallback, but we caught red venting
     (suspicion.witnessed_imposters) — the fallback vote goes through."""
 
-    from crewrift.crewborg.strategy.meeting import chat_read
+    from crewrift.crewborg.strategy.meeting import chat_evidence
 
     monkeypatch.setattr(
-        chat_read,
+        chat_evidence,
         "accused_colors",
         lambda text, colors: {"red"} if "red" in text else set(),
     )

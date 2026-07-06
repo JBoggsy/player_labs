@@ -22,3 +22,8 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 Evidence: session was entirely Crewrift (crewborg v93 tournament-substitute XP
 request); nothing touched cue_n_woo_lab. Candidate lessons logged in
 crewrift_lab/TENTATIVE_LESSONS.md instead.
+
+### No Cue-n-Woo lessons this session
+Evidence: session was entirely Crewrift/crewborg work (meeting-caller latch fix, vote-bar
+doctrine, v96 ship + validation run); no Cue-n-Woo code, data, or evals were touched.
+Crewrift lessons went to crewrift_lab/TENTATIVE_LESSONS.md.
