@@ -201,7 +201,10 @@ function render(d){
     tb.innerHTML=`<tr class="empty-row"><td colspan="6">No scored episodes yet — waiting for the first results.</td></tr>`;
   } else {
     tb.innerHTML = lb.map(p=>{
-      const me = /^crewborg:/.test(p.label) ? "me" : "";
+      // p.label is "Player Name (policy:vN)" (see seat_label() server-side) — the
+      // policy name always immediately follows the opening paren, so anchor there,
+      // not to the start of the whole label (which is the player's name).
+      const me = /\(crewborg[:)]/.test(p.label) ? "me" : "";
       const w = p.win==null?"—":p.win;
       return `<tr class="${me}"><td>${esc(p.label)}</td><td>${p.n}</td>
         <td class="wr" style="color:${winText(p.win)}">${w}</td>
