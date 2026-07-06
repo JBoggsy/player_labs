@@ -797,7 +797,16 @@ def update_belief(belief: Belief, percept: Percept) -> None:
         belief.meeting_call_kind = resolved.meeting_call_kind
         belief.meeting_call_seen_tick = percept.tick
     ended_meeting_kind = None
-    if belief.phase == "Playing" and belief.meeting_caller_color is not None:
+    # "Play resumed" needs BOTH conditions: derive_phase has no MeetingCall state, so
+    # belief.phase stays "Playing" for the whole ~3 s interstitial — clearing on phase
+    # alone would erase the caller on the very tick it latched, before social evidence
+    # ever banks it. The interstitial text still being on screen means the meeting is
+    # starting, not ending.
+    if (
+        belief.phase == "Playing"
+        and resolved.meeting_caller_color is None
+        and belief.meeting_caller_color is not None
+    ):
         ended_meeting_kind = belief.meeting_call_kind
         belief.meeting_caller_color = None
         belief.meeting_call_kind = None

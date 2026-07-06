@@ -181,6 +181,59 @@ def test_no_false_kill_after_a_meeting() -> None:
     assert belief.last_kill_tick is None
 
 
+def test_meeting_caller_latch_survives_the_interstitial_and_clears_on_resume() -> None:
+    # The MeetingCall interstitial shows for ~3s while derive_phase still reports
+    # "Playing" (no phase text matches the caller line, and the voting UI is not up
+    # yet). The latch must persist through those ticks — clearing it while the
+    # interstitial is still visible would erase the caller before social evidence
+    # ever banks it (the live bug behind reported_bodies/button_calls_made == 0).
+    from crewrift.crewborg.perception.entities import VotingState
+
+    belief = Belief()
+    _fold(belief, 1, phase_texts=frozenset({"CREWMATE"}))
+    _fold(belief, 2, crew_tasks_remaining=5)
+    assert belief.phase == "Playing"
+
+    # Interstitial ticks: caller line visible, no voting UI, phase stays Playing.
+    for tick in (3, 4, 5):
+        _fold(belief, tick, meeting_caller_color="green", meeting_call_kind="button")
+    assert belief.meeting_caller_color == "green"
+    assert belief.meeting_call_kind == "button"
+    assert belief.meeting_call_seen_tick == 3  # first sighting, not re-latched
+
+    # Voting: the interstitial text is gone but the meeting is still on — keep the latch.
+    _fold(belief, 6, voting=VotingState(timer_present=True))
+    assert belief.phase == "Voting"
+    assert belief.meeting_caller_color == "green"
+
+    # Play resumes: now the latch drops, and the ended-meeting kind is the real one.
+    _fold(belief, 7, crew_tasks_remaining=5)
+    assert belief.phase == "Playing"
+    assert belief.meeting_caller_color is None
+    assert belief.meeting_call_kind is None
+    assert belief.meeting_call_seen_tick is None
+
+
+def test_button_meeting_does_not_reset_the_kill_cooldown_clock() -> None:
+    # sim.nim resets killCooldown for body/unknown meetings but NOT for
+    # emergency-button meetings. The ended_meeting_kind gate at the
+    # Voting→Playing transition needs the latch still alive to know that.
+    from crewrift.crewborg.perception.entities import VotingState
+
+    belief = Belief()
+    _fold(belief, 1, phase_texts=frozenset({"IMPS"}))
+    _fold(belief, 2, crew_tasks_remaining=3)
+    belief.kill_cooldown_start_tick = None
+
+    for tick in (3, 4):
+        _fold(belief, tick, meeting_caller_color="green", meeting_call_kind="button")
+    _fold(belief, 5, voting=VotingState(timer_present=True))
+    _fold(belief, 6, crew_tasks_remaining=3)  # play resumes
+
+    assert belief.phase == "Playing"
+    assert belief.kill_cooldown_start_tick is None  # button meeting: no cooldown reset
+
+
 def test_death_sets_the_alive_flag_and_preserves_role() -> None:
     # The ghost icon is our own death — a STATE (a flag), not a role. Role is kept, so a
     # dead agent still knows whether it was crew or imposter.

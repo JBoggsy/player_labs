@@ -234,6 +234,29 @@ def test_body_reporter_banks_reported_bodies() -> None:
     assert belief.roster["blue"].button_calls_made == 0
 
 
+def test_caller_banks_through_the_real_belief_fold() -> None:
+    # End-to-end through update_belief, the path live games take: the interstitial
+    # shows the caller while derive_phase still says "Playing" (no phase text, no
+    # voting UI yet). The older tests set the latch fields directly and so never
+    # caught the latch being cleared before social evidence ran.
+    from crewrift.crewborg.perception.entities import ResolvedScene
+    from crewrift.crewborg.types import Percept, update_belief
+
+    belief = _belief(phase="Playing", phase_start_tick=0, last_tick=0)
+
+    def fold(tick: int, **resolved_fields) -> None:
+        resolved = ResolvedScene(
+            tick=tick, camera_ready=True, camera_x=0, camera_y=0, **resolved_fields
+        )
+        update_belief(belief, Percept(tick=tick, messages_applied=tick, resolved=resolved))
+        update_social_evidence(belief)
+
+    for tick in (600, 601, 602):  # interstitial persists ~3 s
+        fold(tick, meeting_caller_color="blue", meeting_call_kind="body", crew_tasks_remaining=5)
+    assert belief.roster["blue"].reported_bodies == 1
+    assert belief.roster["blue"].button_calls_made == 0
+
+
 def test_unknown_caller_name_is_ignored() -> None:
     belief = _belief(last_tick=600)
     belief.meeting_caller_color = "someone"   # display fallback, not a roster color
