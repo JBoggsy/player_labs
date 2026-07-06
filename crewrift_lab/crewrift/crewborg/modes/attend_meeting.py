@@ -514,6 +514,7 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self.emit.counter("meeting_instant_vote_armed")
 
     def _apply_decision(self, belief: Belief, decision: MeetingDecision) -> Intent:
+        chat_evidence.apply_llm_tags(belief, decision.chat_evidence)
         self._maybe_arm_instant_vote(belief, decision)
         if decision.vote_target is not None:
             self._tentative_vote = decision.vote_target
