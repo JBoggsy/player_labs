@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cady — Heartleaf player design (v1)</title>
+<style>
+  :root{
+    --bg:#fffdf4; --surface:#fffaf0; --surface-alt:#f8f6ef;
+    --fg:#111827; --fg-subtle:#555555; --fg-muted:#8a8578;
+    --navy:#1a3875; --sage:#6e8050; --terracotta:#b36e4e; --gold:#c99a3f;
+    --border:#e4dac8; --border-strong:#d4c9b5; --border-subtle:#f0ebe1;
+    --exclusive:#8f5b3f;
+    --serif:"Iowan Old Style",Georgia,"Times New Roman",serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0b1220; --surface:#111827; --surface-alt:#1b2536;
+      --fg:#f0ede3; --fg-subtle:#b8b4a8; --fg-muted:#8b8778;
+      --navy:#9db4dd; --sage:#a8bd8e; --terracotta:#d69a76; --gold:#e0bd6a;
+      --border:#334056; --border-strong:#3f4d66; --border-subtle:#232f42;
+      --exclusive:#d69a76;
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#fffdf4; --surface:#fffaf0; --surface-alt:#f8f6ef;
+    --fg:#111827; --fg-subtle:#555555; --fg-muted:#8a8578;
+    --navy:#1a3875; --sage:#6e8050; --terracotta:#b36e4e; --gold:#c99a3f;
+    --border:#e4dac8; --border-strong:#d4c9b5; --border-subtle:#f0ebe1; --exclusive:#8f5b3f;
+  }
+  :root[data-theme="dark"]{
+    --bg:#0b1220; --surface:#111827; --surface-alt:#1b2536;
+    --fg:#f0ede3; --fg-subtle:#b8b4a8; --fg-muted:#8b8778;
+    --navy:#9db4dd; --sage:#a8bd8e; --terracotta:#d69a76; --gold:#e0bd6a;
+    --border:#334056; --border-strong:#3f4d66; --border-subtle:#232f42; --exclusive:#d69a76;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:var(--sans); font-size:16.5px; line-height:1.62;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  }
+  .wrap{max-width:820px; margin:0 auto; padding:0 24px 96px}
+
+  /* ---- masthead ---- */
+  header.masthead{padding:64px 0 22px; border-bottom:2px solid var(--border-strong); margin-bottom:8px}
+  .kicker{font-family:var(--sans); font-weight:700; font-size:11px; letter-spacing:.22em;
+    text-transform:uppercase; color:var(--terracotta); margin:0 0 14px}
+  h1.title{font-family:var(--serif); font-weight:700; font-size:clamp(2.6rem,7vw,4.2rem);
+    line-height:.98; letter-spacing:-.01em; margin:0}
+  .subtitle{font-family:var(--serif); font-style:italic; font-size:clamp(1.05rem,2.6vw,1.35rem);
+    color:var(--fg-subtle); margin:12px 0 0}
+  .dek{font-size:1.02rem; color:var(--fg-subtle); margin:20px 0 0; max-width:62ch}
+  .dek b{color:var(--fg); font-weight:600}
+
+  .meta{display:flex; flex-wrap:wrap; gap:0 40px; margin-top:26px}
+  .meta div{padding:2px 0}
+  .meta dt{font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--fg-muted); font-weight:700}
+  .meta dd{margin:2px 0 0; font-size:.9rem; color:var(--fg)}
+  .meta dd code{font-family:var(--mono); font-size:.82rem}
+
+  /* ---- sections ---- */
+  section{padding-top:44px}
+  .eyebrow{font-family:var(--sans); font-weight:700; font-size:11px; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--navy); margin:0 0 6px; display:flex; align-items:baseline; gap:12px}
+  .eyebrow .n{font-family:var(--mono); color:var(--fg-muted); font-size:11px; letter-spacing:.05em}
+  h2{font-family:var(--serif); font-weight:700; font-size:1.62rem; line-height:1.15; margin:0 0 14px}
+  h3{font-family:var(--serif); font-weight:700; font-size:1.12rem; margin:30px 0 8px}
+  p{margin:0 0 15px} p:last-child{margin-bottom:0}
+  a{color:var(--navy); text-decoration:underline; text-underline-offset:2px; text-decoration-thickness:1px}
+  code{font-family:var(--mono); font-size:.86em; background:var(--surface-alt);
+    padding:.08em .34em; border-radius:3px; color:var(--exclusive)}
+  strong{font-weight:600; color:var(--fg)}
+  em{color:var(--fg-subtle)}
+
+  .lead{font-size:1.12rem; line-height:1.55; color:var(--fg)}
+  hr.rule{border:0; border-top:1px solid var(--border); margin:44px 0 0}
+
+  /* two-column goals / non-goals — proximity + rule, no decorative boxes */
+  .cols{display:grid; grid-template-columns:1fr 1fr; gap:36px; margin-top:18px}
+  @media (max-width:640px){.cols{grid-template-columns:1fr; gap:24px}}
+  .col h4{font-family:var(--sans); font-weight:700; font-size:11px; letter-spacing:.13em;
+    text-transform:uppercase; margin:0 0 10px; padding-bottom:7px; border-bottom:1px solid var(--border)}
+  .col.goals h4{color:var(--sage)} .col.nongoals h4{color:var(--fg-muted)}
+  ul.tick{list-style:none; margin:0; padding:0}
+  ul.tick li{position:relative; padding:0 0 9px 22px; font-size:.95rem; color:var(--fg-subtle)}
+  ul.tick li b{color:var(--fg); font-weight:600}
+  ul.tick li::before{position:absolute; left:0; top:0; font-family:var(--mono); font-size:.8rem}
+  .goals ul.tick li::before{content:"+"; color:var(--sage); font-weight:700}
+  .nongoals ul.tick li::before{content:"–"; color:var(--terracotta); font-weight:700}
+
+  /* editorial aside (allowed edge/aside pattern, not a decorative card) */
+  .aside{border-left:3px solid var(--gold); padding:4px 0 4px 20px; margin:20px 0;
+    color:var(--fg-subtle); font-size:.96rem}
+  .aside.risk{border-color:var(--terracotta)}
+  .aside b{color:var(--fg); font-weight:600}
+  .aside .lbl{display:block; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase;
+    font-weight:700; color:var(--terracotta); margin-bottom:5px}
+  .aside.note .lbl{color:var(--gold)}
+
+  /* tables */
+  .tbl-scroll{overflow-x:auto; margin:18px 0 4px}
+  table{border-collapse:collapse; width:100%; font-size:.9rem; min-width:520px}
+  caption{caption-side:bottom; text-align:left; font-size:.82rem; color:var(--fg-muted);
+    font-style:italic; padding-top:10px}
+  th{text-align:left; font-family:var(--sans); font-weight:700; font-size:10.5px; letter-spacing:.09em;
+    text-transform:uppercase; color:var(--navy); padding:0 16px 8px 0; border-bottom:2px solid var(--border-strong)}
+  td{padding:9px 16px 9px 0; border-bottom:1px solid var(--border-subtle); vertical-align:top; color:var(--fg-subtle)}
+  td:first-child,th:first-child{padding-left:0}
+  td code{white-space:nowrap}
+  td b{color:var(--fg); font-weight:600}
+  .tag{font-family:var(--mono); font-size:.74rem; font-weight:600; padding:1px 7px; border-radius:999px;
+    white-space:nowrap; border:1px solid transparent}
+  .tag.vend{color:var(--terracotta); background:color-mix(in srgb,var(--terracotta) 12%,transparent); border-color:color-mix(in srgb,var(--terracotta) 26%,transparent)}
+  .tag.new{color:var(--sage); background:color-mix(in srgb,var(--sage) 14%,transparent); border-color:color-mix(in srgb,var(--sage) 30%,transparent)}
+  .tag.sdk{color:var(--navy); background:color-mix(in srgb,var(--navy) 12%,transparent); border-color:color-mix(in srgb,var(--navy) 26%,transparent)}
+
+  /* figures / diagrams */
+  figure{margin:26px 0 8px}
+  figure svg{display:block; width:100%; height:auto}
+  .fig-scroll{overflow-x:auto}
+  .fig-scroll svg{min-width:640px}
+  figcaption{font-size:.82rem; color:var(--fg-muted); font-style:italic; margin-top:12px}
+  .svg-fill-surface{fill:var(--surface)}
+  .svg-fill-alt{fill:var(--surface-alt)}
+  .svg-stroke{stroke:var(--border-strong)}
+  text{font-family:var(--sans)}
+
+  /* legend */
+  .legend{display:flex; flex-wrap:wrap; gap:6px 20px; margin:14px 0 0; font-size:.82rem; color:var(--fg-subtle)}
+  .legend span{display:inline-flex; align-items:center; gap:7px}
+  .legend i{width:11px; height:11px; border-radius:3px; display:inline-block}
+
+  /* ordered build steps */
+  ol.steps{list-style:none; counter-reset:s; margin:18px 0 0; padding:0}
+  ol.steps li{counter-increment:s; position:relative; padding:0 0 16px 44px; font-size:.96rem; color:var(--fg-subtle)}
+  ol.steps li b{color:var(--fg); font-weight:600}
+  ol.steps li::before{content:counter(s); position:absolute; left:0; top:-2px; width:28px; height:28px;
+    display:grid; place-items:center; font-family:var(--serif); font-weight:700; font-size:.95rem;
+    color:var(--navy); border:1px solid var(--border-strong); border-radius:50%}
+  ol.steps li:not(:last-child)::after{content:""; position:absolute; left:14px; top:29px; bottom:6px;
+    width:1px; background:var(--border)}
+
+  ol.plain{margin:0 0 15px; padding-left:22px} ol.plain li{margin-bottom:7px; color:var(--fg-subtle)}
+  ol.plain li b{color:var(--fg); font-weight:600}
+
+  /* theme toggle */
+  .toggle{position:fixed; top:16px; right:16px; z-index:10; font-family:var(--sans); font-size:11px;
+    letter-spacing:.1em; text-transform:uppercase; font-weight:700; color:var(--fg-subtle);
+    background:var(--surface); border:1px solid var(--border-strong); border-radius:999px;
+    padding:7px 14px; cursor:pointer}
+  .toggle:hover{background:var(--surface-alt); color:var(--fg)}
+  .toggle:focus-visible{outline:2px solid var(--navy); outline-offset:2px}
+
+  footer{margin-top:56px; padding-top:20px; border-top:2px solid var(--border-strong);
+    font-size:.84rem; color:var(--fg-muted)}
+  footer code{font-size:.8rem}
+</style>
+</head>
+<body>
+<button class="toggle" id="themeToggle" aria-label="Toggle light and dark theme">Theme</button>
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="kicker">Heartleaf Lab · Player Design</p>
+    <h1 class="title">Cady</h1>
+    <p class="subtitle">Heartleaf’s first player — a deterministic cyborg gnome, v1</p>
+    <p class="dek">A raw Sprite-v1 policy on the Coworld Player&nbsp;SDK that connects, reads the
+      garden village, <b>navigates</b>, <b>gathers food</b>, and <b>hosts dinner</b> at its own
+      house — then exits clean. Just enough to earn a hosted eval and start the loop. Named for
+      Cady Heron.</p>
+    <dl class="meta">
+      <div><dt>Status</dt><dd>Proposed · 2026-07-06</dd></div>
+      <div><dt>Build path</dt><dd>Raw Sprite-v1 · SDK <code>AgentRuntime</code> + Modes</dd></div>
+      <div><dt>Brain</dt><dd>Deterministic (no LLM)</dd></div>
+      <div><dt>Scoring</dt><dd><code>hosted food × guests</code></dd></div>
+    </dl>
+  </header>
+
+  <section id="problem">
+    <p class="eyebrow"><span>Problem &amp; goal</span><span class="n">§1</span></p>
+    <h2>A player that plays — before a player that wins</h2>
+    <p class="lead">Heartleaf has no policy of ours yet. Cady v1 exists to prove the whole loop
+      end to end: connect to the <code>/player</code> socket, decode the Sprite-v1 scene, move
+      around the map, collect vegetables, and be inside its own house at 6&nbsp;PM so any gnome
+      who wanders in becomes a scoring guest.</p>
+    <p>Scoring in Heartleaf is <code>hosted food × guests</code>, and <em>only hosts score</em>.
+      The real lever is social — recruiting a full table over chat — but that is a deliberate
+      <b>v2</b>. v1 is the clean baseline it builds on: it must genuinely <b>gather</b> and
+      <b>navigate</b>, the two core competencies, and everything else is layered on from there.</p>
+
+    <div class="cols">
+      <div class="col goals">
+        <h4>Goals — v1</h4>
+        <ul class="tick">
+          <li>Connect, decode Sprite-v1 frames, <b>exit&nbsp;0</b> on close.</li>
+          <li><b>Navigate</b> with a bang-bang movement controller.</li>
+          <li><b>Gather</b>: find food gardens, path to them, press&nbsp;A.</li>
+          <li><b>Host</b>: return home before dinner, hold inside at 6&nbsp;PM.</li>
+          <li>Emit trace events + metrics via the SDK sinks.</li>
+          <li>Modular: perception, policy, action are separable units.</li>
+        </ul>
+      </div>
+      <div class="col nongoals">
+        <h4>Non-goals — deferred</h4>
+        <ul class="tick">
+          <li><b>Chat / invitations</b> to recruit guests — the reserved v2.</li>
+          <li>Host-vs-visit scheduling; visiting; multi-day food banking.</li>
+          <li>Any LLM decision layer.</li>
+          <li>A* routing (straight-line steering first).</li>
+          <li>Broad test coverage — the hosted eval is the test.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule">
+  <section id="foundation">
+    <p class="eyebrow"><span>Foundation</span><span class="n">§2</span></p>
+    <h2>The SDK ships no Sprite-v1 — so vendor the wire, use the SDK for the rest</h2>
+    <p>The Coworld Player SDK is engine-agnostic and contains <b>no Sprite-v1 support</b>; that
+      binary substrate lives only in the crewborg example player. The split falls out cleanly:</p>
+
+    <div class="cols">
+      <div class="col">
+        <h4 style="color:var(--terracotta)">Vendored · ported from crewborg</h4>
+        <p style="font-size:.95rem;color:var(--fg-subtle);margin:0">The Sprite-v1 <b>byte decoder</b>,
+          the retained <b>SceneState</b>, and the <b>input/chat encoders</b> + button bits. This is
+          the wire <em>contract</em>, not Crewrift semantics — Cady owns its copy, so it has
+          <b>no dependency on <code>crewrift_lab</code></b>.</p>
+      </div>
+      <div class="col">
+        <h4 style="color:var(--navy)">Used from <code>players.player_sdk</code></h4>
+        <p style="font-size:.95rem;color:var(--fg-subtle);margin:0"><b>Transport</b> —
+          <code>run_message_bridge</code> with exit-0-on-close.
+          <b>Brain</b> — <code>AgentRuntime</code> + <code>Mode</code> / <code>ModeRegistry</code>
+          + <code>SynchronousStrategyRunner</code>.
+          <b>Observability</b> — <code>TraceSink</code> / <code>MetricsSink</code>.</p>
+      </div>
+    </div>
+    <p style="margin-top:20px">crewborg’s <code>build_runtime</code> is the assembly template;
+      its <code>decoder.py</code>, <code>scene.py</code>, and <code>action.py</code> are the port
+      sources. What we write fresh is everything <em>Heartleaf</em>: interpreting the scene and
+      deciding what to do with it.</p>
+  </section>
+
+  <hr class="rule">
+  <section id="flow">
+    <p class="eyebrow"><span>Per-tick data flow</span><span class="n">§3</span></p>
+    <h2>One tick, end to end</h2>
+    <p>Each binary frame folds into the scene, resolves into a Heartleaf view, updates long-lived
+      belief, drives mode selection, and produces a held-button command — sent only when it
+      changes. The loop runs continuously; the SDK bridge owns the socket and the exit-0-on-close
+      contract.</p>
+
+    <figure>
+      <div class="fig-scroll">
+      <svg viewBox="0 0 1120 250" role="img" aria-label="Per-tick pipeline: websocket frame to SceneState to HeartleafState to Belief to Mode decision to Command, sent back over the socket.">
+        <defs>
+          <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--fg-muted)"/>
+          </marker>
+        </defs>
+        <!-- ownership band labels -->
+        <text x="16" y="26" font-size="11" font-weight="700" letter-spacing="1.5" fill="var(--fg-muted)">SDK BRIDGE</text>
+        <text x="300" y="26" font-size="11" font-weight="700" letter-spacing="1.5" fill="var(--terracotta)">VENDORED WIRE</text>
+        <text x="560" y="26" font-size="11" font-weight="700" letter-spacing="1.5" fill="var(--sage)">CADY LOGIC · ON SDK RUNTIME</text>
+
+        <!-- nodes: x positions -->
+        <!-- helper geometry: node w=150 h=64, y=70 -->
+        <g font-family="var(--sans)">
+          <!-- 1 ws in -->
+          <rect x="12"  y="70" width="132" height="64" rx="6" class="svg-fill-surface" stroke="var(--navy)" stroke-width="1.5"/>
+          <text x="78" y="98" text-anchor="middle" font-size="14" font-weight="700" fill="var(--fg)">/player</text>
+          <text x="78" y="117" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">binary frame</text>
+
+          <!-- 2 SceneState -->
+          <rect x="196" y="70" width="150" height="64" rx="6" class="svg-fill-surface" stroke="var(--terracotta)" stroke-width="1.5"/>
+          <text x="271" y="98" text-anchor="middle" font-size="14" font-weight="700" fill="var(--fg)">SceneState</text>
+          <text x="271" y="117" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">sprites · objects</text>
+
+          <!-- 3 HeartleafState -->
+          <rect x="398" y="70" width="164" height="64" rx="6" class="svg-fill-surface" stroke="var(--sage)" stroke-width="1.5"/>
+          <text x="480" y="98" text-anchor="middle" font-size="14" font-weight="700" fill="var(--fg)">HeartleafState</text>
+          <text x="480" y="117" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">the percept</text>
+
+          <!-- 4 Belief -->
+          <rect x="614" y="70" width="132" height="64" rx="6" class="svg-fill-surface" stroke="var(--sage)" stroke-width="1.5"/>
+          <text x="680" y="98" text-anchor="middle" font-size="14" font-weight="700" fill="var(--fg)">Belief</text>
+          <text x="680" y="117" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">map · time · inv</text>
+
+          <!-- 5 Mode.decide -->
+          <rect x="798" y="70" width="150" height="64" rx="6" class="svg-fill-surface" stroke="var(--sage)" stroke-width="1.5"/>
+          <text x="873" y="98" text-anchor="middle" font-size="14" font-weight="700" fill="var(--fg)">Mode.decide</text>
+          <text x="873" y="117" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">strategy → mode</text>
+
+          <!-- 6 Command -->
+          <rect x="1000" y="70" width="108" height="64" rx="6" class="svg-fill-surface" stroke="var(--navy)" stroke-width="1.5"/>
+          <text x="1054" y="98" text-anchor="middle" font-size="14" font-weight="700" fill="var(--fg)">Command</text>
+          <text x="1054" y="117" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">held_mask</text>
+        </g>
+
+        <!-- arrows + transform labels -->
+        <g font-size="11" fill="var(--fg-muted)" text-anchor="middle" font-style="italic">
+          <line x1="146" y1="102" x2="192" y2="102" stroke="var(--fg-muted)" stroke-width="1.4" marker-end="url(#ah)"/>
+          <text x="169" y="60">apply</text>
+          <line x1="348" y1="102" x2="394" y2="102" stroke="var(--fg-muted)" stroke-width="1.4" marker-end="url(#ah)"/>
+          <text x="371" y="60">perceive</text>
+          <line x1="564" y1="102" x2="610" y2="102" stroke="var(--fg-muted)" stroke-width="1.4" marker-end="url(#ah)"/>
+          <text x="587" y="60">update</text>
+          <line x1="748" y1="102" x2="794" y2="102" stroke="var(--fg-muted)" stroke-width="1.4" marker-end="url(#ah)"/>
+          <text x="771" y="60">select</text>
+          <line x1="950" y1="102" x2="996" y2="102" stroke="var(--fg-muted)" stroke-width="1.4" marker-end="url(#ah)"/>
+          <text x="973" y="60">resolve</text>
+        </g>
+
+        <!-- return loop: Command -> ws (send on change) -->
+        <path d="M1054,134 L1054,196 L78,196 L78,138" fill="none" stroke="var(--gold)" stroke-width="1.5"
+          stroke-dasharray="5 4" marker-end="url(#ah)"/>
+        <text x="566" y="214" text-anchor="middle" font-size="11.5" font-style="italic" fill="var(--gold)">
+          send held_mask only when it changes · ~loop every tick</text>
+      </svg>
+      </div>
+      <figcaption>Figure 1 — The per-tick pipeline. Runtime <code>step()</code> is synchronous;
+        the async websocket loop wraps it and turns a dropped socket into a clean exit.</figcaption>
+    </figure>
+  </section>
+
+  <hr class="rule">
+  <section id="arch">
+    <p class="eyebrow"><span>Architecture</span><span class="n">§4</span></p>
+    <h2>Layers, each with one job</h2>
+    <p>The package <code>heartleaf_lab/cady/cady/</code> stacks from the wire contract at the
+      bottom to the transport entry point at the top — mirroring how <code>crewborg</code> and
+      <code>mentalist</code> vendor their players. Colour marks ownership: what we <b>ported</b>,
+      what we <b>write fresh</b>, and what the <b>SDK</b> supplies.</p>
+
+    <figure>
+      <div class="fig-scroll">
+      <svg viewBox="0 0 760 360" role="img" aria-label="Layered architecture from the vendored wire layer up through perception, belief, modes, runtime, to the SDK transport bridge.">
+        <g font-family="var(--sans)">
+          <!-- SDK rail on the right -->
+          <rect x="600" y="24" width="140" height="300" rx="6" class="svg-fill-alt" stroke="var(--navy)" stroke-width="1.5" stroke-dasharray="4 4"/>
+          <text x="670" y="46" text-anchor="middle" font-size="12" font-weight="700" fill="var(--navy)">PLAYER SDK</text>
+          <text x="670" y="70" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">AgentRuntime</text>
+          <text x="670" y="90" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">Mode · Registry</text>
+          <text x="670" y="110" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">Strategy runner</text>
+          <text x="670" y="130" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">Trace · Metrics</text>
+          <text x="670" y="150" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">message bridge</text>
+          <line x1="618" y1="166" x2="722" y2="166" stroke="var(--border-strong)"/>
+          <text x="670" y="188" text-anchor="middle" font-size="11" fill="var(--fg-muted)">wired into every</text>
+          <text x="670" y="204" text-anchor="middle" font-size="11" fill="var(--fg-muted)">layer at left</text>
+
+          <!-- stack of cady layers -->
+          <!-- main.py (top) SDK-based new -->
+          <rect x="24" y="24" width="540" height="44" rx="6" class="svg-fill-surface" stroke="var(--sage)" stroke-width="1.5"/>
+          <text x="40" y="45" font-size="13.5" font-weight="700" fill="var(--fg)">main.py</text>
+          <text x="40" y="61" font-size="11.5" fill="var(--fg-subtle)">SDK transport bridge · trace/metrics wiring · __main__ entry</text>
+
+          <!-- runtime.py -->
+          <rect x="24" y="78" width="540" height="44" rx="6" class="svg-fill-surface" stroke="var(--sage)" stroke-width="1.5"/>
+          <text x="40" y="99" font-size="13.5" font-weight="700" fill="var(--fg)">runtime.py</text>
+          <text x="40" y="115" font-size="11.5" fill="var(--fg-subtle)">build_runtime() — assembles AgentRuntime from the six types</text>
+
+          <!-- modes + strategy -->
+          <rect x="24" y="132" width="264" height="52" rx="6" class="svg-fill-surface" stroke="var(--sage)" stroke-width="1.5"/>
+          <text x="40" y="153" font-size="13.5" font-weight="700" fill="var(--fg)">modes/</text>
+          <text x="40" y="169" font-size="11.5" fill="var(--fg-subtle)">Gather · Host · Idle</text>
+          <rect x="300" y="132" width="264" height="52" rx="6" class="svg-fill-surface" stroke="var(--sage)" stroke-width="1.5"/>
+          <text x="316" y="153" font-size="13.5" font-weight="700" fill="var(--fg)">strategy.py · action.py</text>
+          <text x="316" y="169" font-size="11.5" fill="var(--fg-subtle)">clock → mode · intent → mask</text>
+
+          <!-- perception + belief + types -->
+          <rect x="24" y="194" width="540" height="52" rx="6" class="svg-fill-surface" stroke="var(--sage)" stroke-width="1.5"/>
+          <text x="40" y="215" font-size="13.5" font-weight="700" fill="var(--fg)">perception.py · belief.py · types.py</text>
+          <text x="40" y="231" font-size="11.5" fill="var(--fg-subtle)">SceneState → HeartleafState → Belief · the six SDK types</text>
+
+          <!-- wire (bottom, vendored) -->
+          <rect x="24" y="256" width="540" height="52" rx="6" class="svg-fill-surface" stroke="var(--terracotta)" stroke-width="1.5"/>
+          <text x="40" y="277" font-size="13.5" font-weight="700" fill="var(--fg)">wire/ — decoder · scene · encode</text>
+          <text x="40" y="293" font-size="11.5" fill="var(--fg-subtle)">Sprite-v1 bytes ⇄ tables · button bits · vendored, game-agnostic</text>
+
+          <!-- upward flow arrow -->
+          <path d="M12,300 L12,40" fill="none" stroke="var(--fg-muted)" stroke-width="1.3" marker-end="url(#ah)"/>
+        </g>
+      </svg>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--terracotta)"></i>Vendored (ported)</span>
+        <span><i style="background:var(--sage)"></i>New — Heartleaf-specific</span>
+        <span><i style="background:var(--navy)"></i>Player SDK</span>
+      </div>
+      <figcaption>Figure 2 — Bytes enter at the bottom and rise to a decision at the top; the SDK
+        runtime (right) threads through the middle layers.</figcaption>
+    </figure>
+
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Unit</th><th>Responsibility</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td><code>wire/</code></td><td>Sprite-v1 byte decode → tables; <code>encode_input</code>/<code>encode_chat</code>; button bits</td><td><span class="tag vend">ported</span></td></tr>
+          <tr><td><code>perception.py</code></td><td>Interpret labeled objects → <code>HeartleafState</code>; self = camera-centre + offset</td><td><span class="tag new">new</span></td></tr>
+          <tr><td><code>belief.py</code> · <code>types.py</code></td><td>Long-lived belief + the six SDK types; <code>perceive</code> / <code>update_belief</code></td><td><span class="tag new">new</span></td></tr>
+          <tr><td><code>modes/</code> · <code>strategy.py</code></td><td>Gather / Host / Idle; clock-driven mode selection</td><td><span class="tag new">new</span></td></tr>
+          <tr><td><code>action.py</code></td><td>Resolve intent → button mask: nav, gather-press, enter-house</td><td><span class="tag new">new</span> <span class="tag vend">ctrl ported</span></td></tr>
+          <tr><td><code>main.py</code></td><td>SDK transport bridge; trace/metrics; env WS URL; entry point</td><td><span class="tag sdk">SDK</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="rule">
+  <section id="types">
+    <p class="eyebrow"><span>The cyborg contract</span><span class="n">§5</span></p>
+    <h2>Six types make it a proper SDK policy</h2>
+    <p><code>AgentRuntime</code> is generic over six type parameters and three pure functions.
+      Filling them for Heartleaf is what makes Cady a real cyborg policy rather than an ad-hoc
+      loop — and it forces perception, belief, and action apart at clean seams.</p>
+
+    <figure>
+      <div class="fig-scroll">
+      <svg viewBox="0 0 760 300" role="img" aria-label="AgentRuntime generic over Observation, Percept, Belief, ActionState, Intent, Command, wired by perceive, update_belief, and resolve_action.">
+        <g font-family="var(--sans)">
+          <!-- central runtime -->
+          <rect x="280" y="120" width="200" height="60" rx="8" class="svg-fill-alt" stroke="var(--navy)" stroke-width="2"/>
+          <text x="380" y="146" text-anchor="middle" font-size="14.5" font-weight="700" fill="var(--fg)">AgentRuntime</text>
+          <text x="380" y="165" text-anchor="middle" font-size="11" fill="var(--fg-subtle)">step(obs) → command</text>
+
+          <!-- six type slots around it -->
+          <g font-size="12.5" font-weight="700">
+            <!-- top row -->
+            <rect x="40"  y="30" width="150" height="46" rx="6" class="svg-fill-surface" stroke="var(--border-strong)"/>
+            <text x="115" y="52" text-anchor="middle" fill="var(--fg)">Observation</text>
+            <text x="115" y="68" text-anchor="middle" font-size="10.5" font-weight="400" fill="var(--fg-subtle)">scene + tick</text>
+
+            <rect x="305" y="30" width="150" height="46" rx="6" class="svg-fill-surface" stroke="var(--sage)" stroke-width="1.5"/>
+            <text x="380" y="52" text-anchor="middle" fill="var(--fg)">Percept</text>
+            <text x="380" y="68" text-anchor="middle" font-size="10.5" font-weight="400" fill="var(--fg-subtle)">= HeartleafState</text>
+
+            <rect x="570" y="30" width="150" height="46" rx="6" class="svg-fill-surface" stroke="var(--sage)" stroke-width="1.5"/>
+            <text x="645" y="52" text-anchor="middle" fill="var(--fg)">Belief</text>
+            <text x="645" y="68" text-anchor="middle" font-size="10.5" font-weight="400" fill="var(--fg-subtle)">map · time · inv</text>
+
+            <!-- bottom row -->
+            <rect x="40"  y="224" width="150" height="46" rx="6" class="svg-fill-surface" stroke="var(--border-strong)"/>
+            <text x="115" y="246" text-anchor="middle" fill="var(--fg)">ActionState</text>
+            <text x="115" y="262" text-anchor="middle" font-size="10.5" font-weight="400" fill="var(--fg-subtle)">nav route · mask</text>
+
+            <rect x="305" y="224" width="150" height="46" rx="6" class="svg-fill-surface" stroke="var(--sage)" stroke-width="1.5"/>
+            <text x="380" y="246" text-anchor="middle" fill="var(--fg)">Intent</text>
+            <text x="380" y="262" text-anchor="middle" font-size="10.5" font-weight="400" fill="var(--fg-subtle)">gather · home · hold</text>
+
+            <rect x="570" y="224" width="150" height="46" rx="6" class="svg-fill-surface" stroke="var(--navy)" stroke-width="1.5"/>
+            <text x="645" y="246" text-anchor="middle" fill="var(--fg)">Command</text>
+            <text x="645" y="262" text-anchor="middle" font-size="10.5" font-weight="400" fill="var(--fg-subtle)">held_mask · chat*</text>
+          </g>
+
+          <!-- connectors labeled with the pure functions -->
+          <g stroke="var(--fg-muted)" stroke-width="1.3" fill="none">
+            <path d="M150,76 C170,110 250,120 280,132" marker-end="url(#ah)"/>
+            <path d="M380,76 L380,118" marker-end="url(#ah)"/>
+            <path d="M600,76 C560,110 500,120 480,134" marker-end="url(#ah)"/>
+            <path d="M300,180 C240,210 180,214 165,222" marker-end="url(#ah)"/>
+            <path d="M400,182 L400,222" marker-end="url(#ah)"/>
+            <path d="M470,178 C540,206 580,214 600,222" marker-end="url(#ah)"/>
+          </g>
+          <g font-size="10.5" font-style="italic" fill="var(--fg-muted)">
+            <text x="196" y="104">perceive</text>
+            <text x="600" y="104" text-anchor="end">update_belief</text>
+            <text x="470" y="205" text-anchor="start">resolve_action</text>
+          </g>
+        </g>
+      </svg>
+      </div>
+      <figcaption>Figure 3 — The runtime is a hub; the three pure functions are the spokes.
+        Green slots are the Heartleaf-specific types we define.</figcaption>
+    </figure>
+  </section>
+
+  <hr class="rule">
+  <section id="policy">
+    <p class="eyebrow"><span>Deterministic policy</span><span class="n">§6</span></p>
+    <h2>Gather all day, be home for dinner</h2>
+    <p>v1’s brain is a clock, not a model. It mirrors the villagers’ time policy without an LLM:
+      gather while the day is young, then stop and get home in time to host. The thresholds live
+      in one config block so every iteration is attributable.</p>
+
+    <figure>
+      <div class="fig-scroll">
+      <svg viewBox="0 0 760 200" role="img" aria-label="Day timeline: gather from 8am to 5pm, return home 5 to 6pm, dinner at 6pm, day ends at 10pm.">
+        <g font-family="var(--sans)">
+          <!-- baseline -->
+          <line x1="40" y1="60" x2="720" y2="60" stroke="var(--border-strong)" stroke-width="1"/>
+          <!-- ticks: 8am(40) .. 10pm(720) : 14 hours over 680px => ~48.6px/hr -->
+          <!-- gather zone 8->5pm : 8am x=40, 5pm=8+9=... 9hrs => x=40+9*48.57=477 -->
+          <rect x="40" y="44" width="437" height="32" rx="4" fill="color-mix(in srgb,var(--sage) 20%,transparent)" stroke="var(--sage)"/>
+          <text x="258" y="65" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--sage)">GATHER — nearest food garden → A</text>
+          <!-- return/host 5->6pm : 1hr => 477..526 -->
+          <rect x="477" y="44" width="49" height="32" rx="4" fill="color-mix(in srgb,var(--gold) 24%,transparent)" stroke="var(--gold)"/>
+          <!-- host hold 6->10pm : 526..720 -->
+          <rect x="526" y="44" width="194" height="32" rx="4" fill="color-mix(in srgb,var(--navy) 14%,transparent)" stroke="var(--navy)"/>
+          <text x="623" y="65" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--navy)">HOST — hold inside own house</text>
+
+          <!-- dinner marker at 6pm x=526 -->
+          <line x1="526" y1="30" x2="526" y2="90" stroke="var(--terracotta)" stroke-width="2"/>
+          <circle cx="526" cy="30" r="4" fill="var(--terracotta)"/>
+          <text x="526" y="22" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--terracotta)">6 PM · DINNER</text>
+
+          <!-- hour labels -->
+          <g font-size="11" fill="var(--fg-muted)" text-anchor="middle">
+            <text x="40"  y="106">8 AM</text><line x1="40" y1="56" x2="40" y2="64" stroke="var(--border-strong)"/>
+            <text x="477" y="106">~5 PM</text><line x1="477" y1="56" x2="477" y2="64" stroke="var(--gold)" stroke-width="1.5"/>
+            <text x="720" y="106">10 PM</text><line x1="720" y1="56" x2="720" y2="64" stroke="var(--border-strong)"/>
+          </g>
+          <text x="501" y="126" text-anchor="middle" font-size="10.5" font-style="italic" fill="var(--gold)">stop &amp; walk home</text>
+
+          <!-- mode track -->
+          <text x="40" y="160" font-size="10.5" font-weight="700" letter-spacing="1.2" fill="var(--fg-muted)">MODE</text>
+          <g font-family="var(--mono)" font-size="12">
+            <text x="120" y="160" fill="var(--sage)">GatherMode</text>
+            <text x="240" y="160" fill="var(--fg-muted)">→</text>
+            <text x="270" y="160" fill="var(--navy)">HostMode</text>
+            <text x="420" y="160" fill="var(--fg-muted)">· IdleMode = fallback</text>
+          </g>
+        </g>
+      </svg>
+      </div>
+      <figcaption>Figure 4 — The clock-driven policy. Before ~5&nbsp;PM: <code>GatherMode</code>.
+        From ~5&nbsp;PM: <code>HostMode</code> — go home, enter, hold through dinner.
+        <code>IdleMode</code> covers the ticks before the camera and clock come up.</figcaption>
+    </figure>
+
+    <h3>Action resolution</h3>
+    <p>Cady ports crewborg’s bang-bang d-pad controller: steer toward a target world point with a
+      release-near-target deadband and a predictive stop. Intents map to it directly —
+      <code>navigate_to</code> steers straight at a point; <code>gather_at</code> navigates to a
+      garden then fires a fresh <b>A press</b> in range; <code>enter_house</code> navigates to the
+      entrance then presses A to go inside; <code>hold</code>/<code>idle</code> emit the neutral
+      mask.</p>
+  </section>
+
+  <hr class="rule">
+  <section id="wire-vocab">
+    <p class="eyebrow"><span>Wire vocabulary</span><span class="n">§7</span></p>
+    <h2>What the scene actually says</h2>
+    <p>Heartleaf’s <code>protocol.nim</code> defines a clean, stable object-id and label scheme —
+      which is exactly what makes a raw decoder tractable. Perception reads these; the game’s own
+      <code>talking_villager.nim</code> is the reference for turning them into behaviour.</p>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Object base</th><th>Meaning</th><th>Label</th></tr></thead>
+        <tbody>
+          <tr><td><code>1000</code></td><td><b>Gnomes</b> (players)</td><td><code>"gnome "</code></td></tr>
+          <tr><td><code>2000</code></td><td>Name tags</td><td><code>"name "</code></td></tr>
+          <tr><td><code>3000</code></td><td>Chat bubbles <span style="color:var(--fg-muted)">· v2</span></td><td><code>"chat "</code></td></tr>
+          <tr><td><code>4000</code></td><td><b>Gardens</b></td><td><code>"garden marker"</code> = food present</td></tr>
+          <tr><td><code>5000</code> · <code>6000</code></td><td>Inventory items &amp; counts</td><td>—</td></tr>
+          <tr><td><code>7000</code></td><td><b>Clock</b></td><td><code>"clock "</code></td></tr>
+          <tr><td><code>7100</code></td><td>Score panels</td><td><code>"score "</code></td></tr>
+        </tbody>
+        <caption>Fixed gnome names by house 0–8: Ivan, Anton, Yura, Sasha, Maxim, Nikita, Vova,
+          Dima, Egor. Walkability sprites: <code>"heartleaf main/home walkability"</code>. Chat cap 48 chars.</caption>
+      </table>
+    </div>
+    <div class="aside risk">
+      <span class="lbl">Not in the scheme — calibrate first</span>
+      The scheme gives the object <b>vocabulary</b> but not the <b>geometry</b>: the self-position
+      camera offset (self is the camera centre plus a fixed offset) and the house/garden trigger
+      distances. A <code>tools/capture_scene.py</code> probe dumps every label, id, and position
+      from one real stream to nail these down <b>before</b> perception trusts them. It is the first
+      implementation milestone.
+    </div>
+  </section>
+
+  <hr class="rule">
+  <section id="testing">
+    <p class="eyebrow"><span>Testing</span><span class="n">§8</span></p>
+    <h2>Minimal, high-value only</h2>
+    <p>Per the lab’s discipline, the hosted eval is the real test. The few unit tests worth
+      writing pin the load-bearing seams:</p>
+    <ul class="tick" style="margin-top:6px">
+      <li class="goal" style="padding-left:22px;position:relative"><b>Decoder</b> — hand-built Sprite-v1 frames (ported wire-test helpers) → assert the <code>SceneState</code> tables decode.</li>
+      <li style="padding-left:22px"><b>Perception</b> — a synthetic scene with a <code>"garden marker"</code> and a <code>"clock "</code> sprite → assert garden position, food flag, parsed time.</li>
+      <li style="padding-left:22px"><b>Policy</b> — assert the clock threshold flips <code>GatherMode → HostMode</code>, and no-food falls back cleanly.</li>
+    </ul>
+    <p style="margin-top:14px;color:var(--fg-muted);font-style:italic">No coverage for its own sake —
+      no smoke tests, no pre-upload gate.</p>
+  </section>
+
+  <hr class="rule">
+  <section id="risks">
+    <p class="eyebrow"><span>Risks &amp; open questions</span><span class="n">§9</span></p>
+    <h2>What could bite, and the mitigation</h2>
+    <ol class="plain">
+      <li><b>Self-position offset</b> — unknown exact value. <em>Mitigation:</em> the capture probe calibrates it before nav is trusted. First milestone.</li>
+      <li><b>House / garden trigger geometry</b> — where to stand and press A. <em>Mitigation:</em> mirror <code>talking_villager.nim</code>, confirm with the probe.</li>
+      <li><b>Straight-line nav vs. A*</b> — v1 steers straight; add A* over the streamed walkability grid only if an eval shows wedging.</li>
+      <li><b>Python-image upload path</b> — the manifest’s player <code>run</code> is <code>/bin/&lt;name&gt;</code>; confirm the Python image uploads cleanly for this game (as crewborg does) before the first upload.</li>
+      <li><b>League existence / game version</b> — verify via the Observatory API before the first experience request. Carried over from lab creation.</li>
+    </ol>
+  </section>
+
+  <hr class="rule">
+  <section id="build-order">
+    <p class="eyebrow"><span>Build order</span><span class="n">§10</span></p>
+    <h2>The path to a first eval</h2>
+    <ol class="steps">
+      <li>Vendor + test the Sprite-v1 <b>wire layer</b> (<code>wire/</code>), with the capture probe.</li>
+      <li><b>Calibrate</b> the self-offset and garden/house geometry from a captured Heartleaf stream.</li>
+      <li><code>perception.py</code> + <code>types.py</code> — the six types, <code>perceive</code>, <code>update_belief</code>.</li>
+      <li><code>action.py</code> — navigate, gather-press, enter-house (ported controller).</li>
+      <li>Modes + strategy (Gather → Host) + <code>runtime.build_runtime</code>.</li>
+      <li><code>main.py</code> (SDK bridge + tracing), <code>Dockerfile</code>, <code>README</code>, <code>VERSION_LOG</code>.</li>
+      <li>Build image → local smoke (connects / plays / exits) → upload → <b>first hosted eval</b>.</li>
+    </ol>
+  </section>
+
+  <footer>
+    <p>Living design document — updated as implementation reveals new facts. Source of record:
+      <code>heartleaf_lab/docs/designs/cady-player-design.md</code>. Game reference:
+      <code>heartleaf_lab/docs/heartleaf-gameplay.md</code>.</p>
+  </footer>
+
+</div>
+<script>
+  (function(){
+    var btn=document.getElementById('themeToggle');
+    var root=document.documentElement;
+    function cur(){ if(root.dataset.theme) return root.dataset.theme;
+      return matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'; }
+    btn.addEventListener('click',function(){
+      var next=cur()==='dark'?'light':'dark';
+      root.dataset.theme=next;
+    });
+  })();
+</script>
+</body>
+</html>
