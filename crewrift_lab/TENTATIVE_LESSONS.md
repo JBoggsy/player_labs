@@ -82,3 +82,33 @@ already correct) was never surfaced as the model the LLM should imitate. Fixed v
 names → cite evidence if you have it → actually vote, not just chat" doctrine, plus an explicit note
 that the suspicion/vote_probability_threshold numbers are for picking a deflection target, not a bar
 the imposter's OWN vote needs to clear. Not yet built/uploaded/A-B'd — same as the crew vote-bar fix.
+
+### Reporting "implemented and tested" to the user is NOT the same as committing — verify git status before moving on
+Evidence: the vote-bar fix and the imposter-bandwagon/tick-avoidance prompt changes were both
+reported to James as done, with tests passing, earlier this session — but neither was ever actually
+`git commit`ed at the time. They sat as uncommitted working-tree changes through the entire
+design/planning/SDD-implementation phase that followed (several hours, 7+ new commits on top),
+one `git clean -fdx` or careless `git checkout .` away from silent loss, and only surfaced when an
+SDD task-review subagent's `git status` incidentally showed them as "modified" alongside a
+same-named file (`imposter.py`) a different task had just touched. Lesson: after implementing +
+testing a change and telling the human it's done, `git commit` it in the same breath — don't let
+"the tests pass" substitute for "the work is durably saved." Especially true right before starting
+a different multi-step thread (like a design/planning session) that will run for a long time on top
+of an assumed-clean tree.
+
+### Swapping a feature-generating function underneath an already-fitted model is a train/serve skew risk a per-task review structurally cannot see
+Evidence: the chat-evidence consolidation replaced social_evidence.py's regex chat-stance tally with
+chat_evidence.py's dependency parse — same field names (`accusations_made`/`times_accused`/
+`times_defended`), same PlayerRecord counters, so every per-task reviewer correctly signed off (the
+counters still increment on the same triggers, tests pass). But those three fields are LIVE features
+in the already-trained `suspicion_weights.json` — the weights were fitted against the regex's
+statistical distribution (first-match-only, narrow DEFEND_HINT vocabulary), and are now being served
+dependency-parse-generated values with a different distribution (one claim per color mention, a
+wider defense vocabulary including "good"/"sure"/"with", zero on spaCy-unavailable games) — a real,
+silent skew between what the model learned and what it now sees at inference time. Only the FINAL
+whole-branch review caught this, because no single task's diff shows "this field feeds an
+already-fitted model trained on a different generating function" — that context only exists at the
+level of the whole feature. Lesson: when a plan changes what PRODUCES a value already consumed by a
+trained model (not just adding new fields), flag it explicitly as a train/serve-skew risk during
+design, not just correctness — a per-task reviewer verifying "does the counter still increment
+correctly" will always miss it, by construction.
