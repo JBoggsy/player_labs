@@ -27,8 +27,12 @@ belief, a clock-driven strategy over Gather/Host/Idle modes, and an action resol
 
 ## Global Constraints (apply to every phase)
 
-- **Package root:** `heartleaf_lab/cady/`, importable module `cady` (mirror
-  `crewrift_lab/crewrift/crewborg/` layout: package dir with its own `pyproject.toml`/module).
+- **Package root:** a **flat** package `cady` at `heartleaf_lab/cady/` (i.e.
+  `heartleaf_lab/cady/perception.py` is module `cady.perception`). Mirrors how
+  `crewrift_lab/crewrift/crewborg/` is vendored: **no own `pyproject.toml`** — the root
+  `pyproject.toml` discovers it (`[tool.setuptools.packages.find] where=["…","heartleaf_lab"]
+  include=["…","cady*"]`, already wired in Phase 1) and cady's deps live in the root pyproject.
+  Run/import as `cady` / `python -m cady`.
 - **SDK pin:** must be `e8921a6b18484030d8704277e4c52d3aae5c8917` (coworld-tools main, includes the
   sprite bridge PR #20). The old pin `6dcd022e013febffb0043b5f625f853c5cc36e0f` predates it.
 - **No vendored wire layer.** Import `run_sprite_bridge`, `SpriteWorld`, `SpriteObject`,
@@ -100,30 +104,36 @@ phase, but any change to a name another phase consumes must be reflected back he
 
 ## File structure
 
+Flat package (scaffolded in Phase 1 as stubs with `TODO(phase N)` docstrings):
+
 ```
-heartleaf_lab/cady/
-  pyproject.toml            # the cady package (installs players[bedrock] SDK pin + deps)
-  cady/
-    __init__.py
-    types.py                # Phase 3
-    perception.py           # Phase 3
-    belief.py               # Phase 3
-    action.py               # Phase 4
-    modes/{__init__,gather,host,idle}.py   # Phase 5
-    strategy.py             # Phase 5
-    runtime.py              # Phase 5
-    decide.py               # Phase 5
-    main.py                 # Phase 6
-    tools/capture_scene.py  # Phase 2
-    tests/                  # Phases 3-5
-  Dockerfile                # Phase 6
-  README.md                 # Phase 6
-  VERSION_LOG.md            # Phase 6
+heartleaf_lab/cady/            # package `cady` (discovered by root pyproject; no own pyproject)
+  __init__.py                  # (done, Phase 1)
+  types.py                     # Phase 3
+  perception.py                # Phase 3
+  belief.py                    # Phase 3
+  action.py                    # Phase 4
+  modes/{__init__,gather,host,idle}.py   # Phase 5
+  strategy.py                  # Phase 5
+  runtime.py                   # Phase 5
+  decide.py                    # Phase 5
+  main.py                      # Phase 6
+  tools/capture_scene.py       # Phase 2
+  tests/                       # Phases 3-5 (cady.tests)
+  Dockerfile                   # Phase 6
+  README.md                    # Phase 6
+  VERSION_LOG.md               # Phase 6
 ```
 
 ---
 
-## Phase 1 — SDK pin bump + package scaffold
+## Phase 1 — SDK pin bump + package scaffold ✅ DONE (Claude, 2026-07-06)
+
+**Result:** pin bumped `6dcd022…→e8921a6…` in `pyproject.toml` + `crewrift_lab/tools/versions.env`
+(SHA-pinned) + `uv lock`/`uv sync`; root `[tool.setuptools.packages.find]` extended to
+`heartleaf_lab` / `cady*`; flat `heartleaf_lab/cady/` stub package created. Acceptance all green:
+SDK sprite-bridge imports OK; **crewborg tests 636 passed / 13 skipped** (no shared-SDK
+regression); `import cady` OK. Codex begins at Phase 2.
 
 **Goal:** an importable SpriteV1 bridge and a compiling empty `cady` package.
 
