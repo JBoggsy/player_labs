@@ -73,6 +73,7 @@ class Belief:
     home_anchor: tuple[int, int] | None = None
     home_anchor_is_morning: bool = False
     own_house_index: int | None = None
+    food_gardens: tuple[Garden, ...] = ()
     garden_positions: dict[int, tuple[int, int]] = field(default_factory=dict)
     house_entrances: dict[int, tuple[int, int]] = field(default_factory=dict)
     last_time_minutes: int | None = None

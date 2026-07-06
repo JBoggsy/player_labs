@@ -16,9 +16,11 @@ def update_belief(belief: Belief, percept: HeartleafState) -> None:
     """
 
     if not percept.ready:
+        belief.food_gardens = ()
         return
 
     belief.self_xy = percept.self_xy
+    belief.food_gardens = percept.gardens
     _update_home_anchor(belief, percept)
     for garden in percept.gardens:
         belief.garden_positions[garden.object_id] = garden.pos

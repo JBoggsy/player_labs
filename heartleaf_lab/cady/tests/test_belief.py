@@ -58,23 +58,28 @@ def test_fallback_home_anchor_upgrades_to_first_morning_anchor() -> None:
 
 def test_garden_positions_accumulate_and_scalar_fields_update() -> None:
     belief = Belief()
+    first_garden = Garden(object_id=4000, pos=(1, 2), has_food=True)
+    second_garden = Garden(object_id=4001, pos=(3, 4), has_food=True)
     update_belief(
         belief,
         _state(
             time_minutes=10,
-            gardens=(Garden(object_id=4000, pos=(1, 2), has_food=True),),
+            gardens=(first_garden,),
             inventory_count=1,
         ),
     )
+    assert belief.food_gardens == (first_garden,)
+
     update_belief(
         belief,
         _state(
             time_minutes=20,
-            gardens=(Garden(object_id=4001, pos=(3, 4), has_food=True),),
+            gardens=(second_garden,),
             inventory_count=2,
         ),
     )
 
+    assert belief.food_gardens == (second_garden,)
     assert belief.garden_positions == {4000: (1, 2), 4001: (3, 4)}
     assert belief.last_time_minutes == 20
     assert belief.inventory_count == 2
@@ -98,3 +103,11 @@ def test_not_ready_frame_is_no_op() -> None:
     assert belief.garden_positions == {}
     assert belief.last_time_minutes is None
     assert belief.inventory_count == 0
+
+
+def test_not_ready_frame_clears_current_food_gardens() -> None:
+    belief = Belief(food_gardens=(Garden(object_id=4000, pos=(1, 2), has_food=True),))
+
+    update_belief(belief, _state(ready=False, self_xy=None))
+
+    assert belief.food_gardens == ()
