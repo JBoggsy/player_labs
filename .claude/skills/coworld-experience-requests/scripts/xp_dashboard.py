@@ -271,6 +271,12 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("xreqs", nargs="+", help="One or more xreq_… ids to monitor.")
     ap.add_argument("--port", type=int, default=int(os.environ.get("XP_DASH_PORT", "8808")))
+    ap.add_argument("--host", default=os.environ.get("XP_DASH_HOST", "127.0.0.1"),
+                     help="Bind address. Default 127.0.0.1 (local-only). Pass a Tailscale IP "
+                          "(`tailscale ip -4`) or 0.0.0.0 to make it reachable from other devices "
+                          "on that network — the page never embeds the Observatory auth token "
+                          "(it stays server-side in this process), so this only exposes the "
+                          "rendered XP-request stats, not credentials.")
     ap.add_argument("--elevated", action="store_true",
                      help="Send X-Use-Elevated-Privileges (Softmax team members only; needed to "
                           "read another player's per-seat results.json since metta PR #17028).")
@@ -285,8 +291,8 @@ def main(argv: list[str] | None = None) -> int:
 
     Handler.poller = poller
     socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer(("127.0.0.1", args.port), Handler) as httpd:
-        print(f"XP dashboard: http://localhost:{args.port}  ({len(args.xreqs)} request(s); Ctrl-C to stop)", flush=True)
+    with socketserver.TCPServer((args.host, args.port), Handler) as httpd:
+        print(f"XP dashboard: http://{args.host}:{args.port}  ({len(args.xreqs)} request(s); Ctrl-C to stop)", flush=True)
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
