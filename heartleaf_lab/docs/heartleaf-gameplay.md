@@ -160,6 +160,28 @@ arrays `names` / `usernames` / `playerNames` / `scores` in **score order** — i
 cumulative score of each of the 9 gnomes at each day's end. That's the signal an eval
 report is built from: who out-hosted whom, and how the gap evolved across the 9 days.
 
+**Scoring math (verified in `heartleaf.nim`):** per dinner, `score = (host's total food
+items) × (number of guests)`, added to the host's cumulative total (`host.score += …`).
+Only hosts score; visitors get nothing. Scores are **integers, `minimum: 0`** (results
+schema, confirmed identical in the deployed 0.1.10 manifest) — **the game never emits a
+negative.**
+
+**⚠️ Failure signal is NOT a −100 score (unlike Crewrift).** The `−100` sentinel is
+*Crewrift-game-specific*; the metta episode runner has no −100 — it flags a player that
+fails to connect / crashes / times out by **failing the episode** with
+`error_type="player_error"|"episode_timeout"` and `failed_policy_index=<slot>`
+(`coworld/runner/runner.py`). So a non-connecting gnome's *game score is `0`*, identical to
+a gnome that connected but never hosted. **Consequence for eval interpretation: do NOT
+apply Crewrift's "drop score ≤ 0 / −100" ops-filter here** — it would discard legitimate
+0-score gnomes. Detect our player's failures via **episode status / `failed_policy_index`**,
+and read a *completed-episode* score of 0 as "played but never hosted" (a gameplay signal).
+
+**Deployed vs public source:** the live league runs **heartleaf 0.1.10**, but the public
+`Metta-AI/coworld-heartleaf` repo master is only **0.1.0** (no 0.1.10 tag/branch — it's a
+deployment-only build). `coworld download heartleaf` fetches the deployed **package**
+(manifest + image refs, not Nim source). The 0.1.10 manifest matches 0.1.0 on scoring/
+protocol; its only roster change is an added base `villager` player.
+
 ## Open questions to resolve empirically
 
 - **Exact garden/food economy:** how many gardens, respawn cadence, item variety, and the
