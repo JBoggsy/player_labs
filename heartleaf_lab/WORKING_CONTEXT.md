@@ -60,6 +60,25 @@ reach Host (not stuck Idle), so **camera/self resolve OK — it's GARDEN percept
 Almost certainly the label/object-id mismatch we flagged: `perception.py` uses `"garden marker"`
 / base-4000 from the **0.1.0** clone, but the deployed game is **0.1.10**.
 
+## cady v2 (2026-07-06): baked navigation — CODE-COMPLETE, not yet built/evaled
+
+Fixes v1's zero-score cause (only gathered when a garden was *perceived*; never at spawn).
+v2 navigates the FIXED baked map to known gardens. Shipped (46 tests pass):
+- `mapdata/` — baked from `map.aseprite`+`map.resource`: 748×941 walk grid, 39 garden
+  approach points, 9 house targets, a pre-computed circuit. `mapdata.py` loader + `bake_map.py`.
+- `nav.py` — **hierarchical A*** router (`find_path`): coarse 4× grid for long hops (validated
+  to preserve connectivity), fine A* for short + local wall-clip repair. **Arbitrary-point
+  routing median ~3ms / max ~21ms, fully followable** (was 220ms full-grid A* — James's
+  condition). NOTE: true JPS deferred — no-corner-cut JPS forced-neighbor rules are a known-hard
+  variant; both Codex's and a hand-rolled JPS had reachability bugs; A* gives identical paths.
+- `frame.py` (to_map/to_world via `WORLD_TO_MAP=(0,0)`), `navigator.py` (cached waypoint follower),
+  `modes/gather.py` rewritten as a **circuit follower** (walk GARDEN_CIRCUIT → press A within 40px
+  of each garden rect → advance), strategy Gather-before-cutoff, Host routes home via navigator.
+
+**THE make-or-break caveat:** `WORLD_TO_MAP=(0,0)` assumes cady's perceived world frame == the
+baked map-asset frame. If there's an offset, cady routes to the wrong pixels. The first v2 eval
+(telemetry: does it move + harvest, inventory>0) confirms/sets it — it's the one calibration knob.
+
 ## Open threads (next steps)
 
 1. **NEXT — fix garden perception vs 0.1.10 (the bug that zeroed cady).** Confirm the real
