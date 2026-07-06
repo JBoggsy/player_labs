@@ -1,7 +1,8 @@
-"""Host mode: return to the recorded home anchor and hold there."""
+"""Host mode: route to the recorded home anchor and hold there."""
 
 from __future__ import annotations
 
+from cady import navigator
 from cady.config import HOME_RADIUS_SQ
 from cady.types import ActionState, Belief, Intent
 from players.player_sdk import EmptyModeParams, Mode
@@ -19,7 +20,11 @@ class HostMode(Mode[Belief, ActionState, Intent]):
             return Intent(kind="idle")
         if _dist2(belief.self_xy, belief.home_anchor) <= HOME_RADIUS_SQ:
             return Intent(kind="hold")
-        return Intent(kind="navigate_to", point=belief.home_anchor)
+        # TODO(calibrate): use HOUSE_TARGETS[own_house_index] once seat identity is reliable.
+        waypoint = navigator.next_waypoint(belief, belief.self_xy, belief.home_anchor)
+        if waypoint is None:
+            return Intent(kind="idle")
+        return Intent(kind="navigate_to", point=waypoint)
 
 
 def _dist2(a: tuple[int, int], b: tuple[int, int]) -> int:

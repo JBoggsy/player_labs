@@ -79,6 +79,10 @@ class Belief:
     last_time_minutes: int | None = None
     inventory_count: int = 0
     current_target: tuple[int, int] | None = None
+    circuit_index: int = 0
+    nav_goal: tuple[int, int] | None = None
+    nav_path: list[tuple[int, int]] | None = None
+    nav_cursor: int = 0
 
 
 @dataclass

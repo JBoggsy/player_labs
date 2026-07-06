@@ -22,9 +22,9 @@ class ClockStrategy:
         if belief.self_xy is None:
             return ModeDirective(mode="idle", source="strategy", reason="self unresolved")
         before_cutoff = belief.last_time_minutes is None or belief.last_time_minutes < GATHER_CUTOFF_MINUTES
-        if before_cutoff and belief.food_gardens:
-            return ModeDirective(mode="gather", source="strategy", reason="food visible before cutoff")
-        return ModeDirective(mode="host", source="strategy", reason="host cutoff reached or no food visible")
+        if before_cutoff:
+            return ModeDirective(mode="gather", source="strategy", reason="before gather cutoff")
+        return ModeDirective(mode="host", source="strategy", reason="host cutoff reached")
 
 
 __all__ = ["ClockStrategy"]

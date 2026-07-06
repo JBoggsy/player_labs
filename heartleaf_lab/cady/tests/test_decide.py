@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from cady.decide import build_decide
+from cady.mapdata import GARDEN_APPROACHES, GARDEN_CIRCUIT
 from players.player_sdk import SpriteContext, SpriteDef, SpriteObject, SpriteWorld
 
 
@@ -23,6 +24,7 @@ def _object(object_id: int, x: int, y: int, sprite_id: int, *, layer: int = 0) -
 
 def _gather_world() -> SpriteWorld:
     world = SpriteWorld()
+    start_x, start_y = GARDEN_APPROACHES[GARDEN_CIRCUIT[-1]]
     labels = {
         1: "world map",
         400: "garden marker",
@@ -36,7 +38,7 @@ def _gather_world() -> SpriteWorld:
     }
     world.sprites = {sprite_id: _sprite(sprite_id, label) for sprite_id, label in labels.items()}
     world.objects = {
-        1: _object(1, 0, 0, 1),
+        1: _object(1, -start_x, -start_y, 1),
         4000: _object(4000, 50, 0, 400),
         7000: _object(7000, 0, 20, 700),
         7001: _object(7001, 10, 20, 701),
