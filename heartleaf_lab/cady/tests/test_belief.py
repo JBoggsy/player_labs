@@ -31,6 +31,7 @@ def test_first_ready_morning_frame_sets_home_anchor() -> None:
 
     update_belief(belief, _state(self_xy=(12, 34), time_minutes=0))
 
+    assert belief.self_xy == (12, 34)
     assert belief.home_anchor == (12, 34)
     assert belief.home_anchor_is_morning
 

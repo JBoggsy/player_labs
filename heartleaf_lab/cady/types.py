@@ -69,6 +69,7 @@ class HeartleafState:
 class Belief:
     """Long-lived mutable state folded across perception frames."""
 
+    self_xy: tuple[int, int] | None = None
     home_anchor: tuple[int, int] | None = None
     home_anchor_is_morning: bool = False
     own_house_index: int | None = None
@@ -81,10 +82,10 @@ class Belief:
 
 @dataclass
 class ActionState:
-    """Mutable action bookkeeping.
+    """Mutable action bookkeeping for movement and interaction presses."""
 
-    Phase 4 will add held-mask, movement, arrival, and edge-trigger press state.
-    """
+    last_self_xy: tuple[int, int] | None = None
+    a_held: bool = False
 
 
 IntentKind = Literal["gather_at", "navigate_to", "enter_house", "hold", "idle"]
