@@ -174,11 +174,19 @@
       house — then exits clean. Just enough to earn a hosted eval and start the loop. Named for
       Cady Heron.</p>
     <dl class="meta">
-      <div><dt>Status</dt><dd>Proposed · 2026-07-06</dd></div>
-      <div><dt>Build path</dt><dd>Raw Sprite-v1 · SDK <code>AgentRuntime</code> + Modes</dd></div>
+      <div><dt>Status</dt><dd>Proposed · 2026-07-06 · rev 2</dd></div>
+      <div><dt>Build path</dt><dd>SDK <code>run_sprite_bridge</code> · <code>AgentRuntime</code> + Modes</dd></div>
       <div><dt>Brain</dt><dd>Deterministic (no LLM)</dd></div>
       <div><dt>Scoring</dt><dd><code>hosted food × guests</code></dd></div>
     </dl>
+    <div class="aside note" style="margin-top:26px">
+      <span class="lbl">Rev 2 — 2026-07-06</span>
+      The Player SDK now ships a BitWorld/SpriteV1 transport bridge
+      (<code>players.player_sdk.sprite_bridge</code>, coworld-tools PR&nbsp;#20). Cady uses it
+      instead of vendoring a Sprite-v1 decoder — <b>the whole <code>wire/</code> layer is gone
+      from the plan</b>. One prerequisite: our pinned SDK is stale and must be bumped to include
+      the bridge (§2).
+    </div>
   </header>
 
   <section id="problem">
@@ -221,41 +229,53 @@
   <hr class="rule">
   <section id="foundation">
     <p class="eyebrow"><span>Foundation</span><span class="n">§2</span></p>
-    <h2>The SDK ships no Sprite-v1 — so vendor the wire, use the SDK for the rest</h2>
-    <p>The Coworld Player SDK is engine-agnostic and contains <b>no Sprite-v1 support</b>; that
-      binary substrate lives only in the crewborg example player. The split falls out cleanly:</p>
+    <h2>The SDK now owns the Sprite-v1 transport</h2>
+    <p>The Player SDK now includes <code>players.player_sdk.sprite_bridge</code> — the BitWorld
+      <code>/sprite_player</code> transport bridge, the SpriteV1 peer of the cogweb and mettagrid
+      bridges. <b>Cady no longer vendors a wire layer.</b> Everything below is imported from
+      <code>players.player_sdk</code>:</p>
 
     <div class="cols">
       <div class="col">
-        <h4 style="color:var(--terracotta)">Vendored · ported from crewborg</h4>
-        <p style="font-size:.95rem;color:var(--fg-subtle);margin:0">The Sprite-v1 <b>byte decoder</b>,
-          the retained <b>SceneState</b>, and the <b>input/chat encoders</b> + button bits. This is
-          the wire <em>contract</em>, not Crewrift semantics — Cady owns its copy, so it has
-          <b>no dependency on <code>crewrift_lab</code></b>.</p>
+        <h4 style="color:var(--navy)">Transport &amp; decode — the SDK’s</h4>
+        <p style="font-size:.95rem;color:var(--fg-subtle);margin:0"><code>run_sprite_bridge(url,
+          decide, …)</code> connects, accumulates the binary record stream into a raw
+          <code>SpriteWorld</code> (<code>objects</code> + <code>sprites</code> with labels),
+          calls <code>decide</code> per changed frame, packs the mask/chat, and <b>exits 0</b> on
+          close. Plus <code>Button</code>, <code>env_ws_url</code>, <code>Trace</code>/<code>Metrics</code> sinks.</p>
       </div>
       <div class="col">
-        <h4 style="color:var(--navy)">Used from <code>players.player_sdk</code></h4>
-        <p style="font-size:.95rem;color:var(--fg-subtle);margin:0"><b>Transport</b> —
-          <code>run_message_bridge</code> with exit-0-on-close.
-          <b>Brain</b> — <code>AgentRuntime</code> + <code>Mode</code> / <code>ModeRegistry</code>
-          + <code>SynchronousStrategyRunner</code>.
-          <b>Observability</b> — <code>TraceSink</code> / <code>MetricsSink</code>.</p>
+        <h4 style="color:var(--sage)">The game — ours</h4>
+        <p style="font-size:.95rem;color:var(--fg-subtle);margin:0">Only three things:
+          <b>interpret</b> the <code>SpriteWorld</code> into Heartleaf state (perception),
+          <b>decide</b> what to do (policy), and turn that into a <code>Button</code> mask
+          (action). The transport and the raw decode are no longer our code.</p>
       </div>
     </div>
-    <p style="margin-top:20px">crewborg’s <code>build_runtime</code> is the assembly template;
-      its <code>decoder.py</code>, <code>scene.py</code>, and <code>action.py</code> are the port
-      sources. What we write fresh is everything <em>Heartleaf</em>: interpreting the scene and
-      deciding what to do with it.</p>
+    <p style="margin-top:20px">The bridge’s one callback is
+      <code>decide(world, ctx) → mask | (mask, chat) | None</code> — return a mask to hold those
+      buttons, add a chat line, or <code>None</code> to hold the last mask. It is robust by
+      construction: undecodable frames and bad outputs are skipped, never raised, so the process
+      survives the whole episode.</p>
+
+    <div class="aside risk">
+      <span class="lbl">Prerequisite — bump the pinned SDK (shared with crewborg)</span>
+      Our <code>pyproject.toml</code> pin (<code>6dcd022…</code>) predates the bridge. Bump it to
+      <code>e8921a6…</code> (current <code>main</code>, incl. PR&nbsp;#20) + <code>uv lock</code>,
+      and mirror it in <code>crewrift_lab/tools/versions.env</code>. Because crewborg imports the
+      <em>same</em> SDK, run its tests after the bump to confirm no regression — additive change,
+      but verify. This is build step&nbsp;1.
+    </div>
   </section>
 
   <hr class="rule">
   <section id="flow">
     <p class="eyebrow"><span>Per-tick data flow</span><span class="n">§3</span></p>
     <h2>One tick, end to end</h2>
-    <p>Each binary frame folds into the scene, resolves into a Heartleaf view, updates long-lived
-      belief, drives mode selection, and produces a held-button command — sent only when it
-      changes. The loop runs continuously; the SDK bridge owns the socket and the exit-0-on-close
-      contract.</p>
+    <p>The SDK bridge decodes each binary frame into a raw <code>SpriteWorld</code> and calls
+      <code>decide</code> — that call is the boundary. Right of it is all Cady: resolve a
+      Heartleaf view, update belief, pick a mode, produce a held-button command. The bridge sends
+      the mask (only on change) and owns the exit-0-on-close contract.</p>
 
     <figure>
       <div class="fig-scroll">
@@ -265,23 +285,24 @@
             <path d="M0,0 L10,5 L0,10 z" fill="var(--fg-muted)"/>
           </marker>
         </defs>
-        <!-- ownership band labels -->
-        <text x="16" y="26" font-size="11" font-weight="700" letter-spacing="1.5" fill="var(--fg-muted)">SDK BRIDGE</text>
-        <text x="300" y="26" font-size="11" font-weight="700" letter-spacing="1.5" fill="var(--terracotta)">VENDORED WIRE</text>
-        <text x="560" y="26" font-size="11" font-weight="700" letter-spacing="1.5" fill="var(--sage)">CADY LOGIC · ON SDK RUNTIME</text>
+        <!-- ownership band: the decide() boundary -->
+        <text x="16" y="26" font-size="11" font-weight="700" letter-spacing="1.5" fill="var(--navy)">SDK · run_sprite_bridge — transport + decode</text>
+        <text x="398" y="26" font-size="11" font-weight="700" letter-spacing="1.5" fill="var(--sage)">CADY — via decide( )</text>
+        <!-- boundary divider between SpriteWorld and HeartleafState -->
+        <line x1="372" y1="34" x2="372" y2="150" stroke="var(--border-strong)" stroke-width="1" stroke-dasharray="3 4"/>
 
         <!-- nodes: x positions -->
         <!-- helper geometry: node w=150 h=64, y=70 -->
         <g font-family="var(--sans)">
           <!-- 1 ws in -->
           <rect x="12"  y="70" width="132" height="64" rx="6" class="svg-fill-surface" stroke="var(--navy)" stroke-width="1.5"/>
-          <text x="78" y="98" text-anchor="middle" font-size="14" font-weight="700" fill="var(--fg)">/player</text>
+          <text x="78" y="98" text-anchor="middle" font-size="13" font-weight="700" fill="var(--fg)">/sprite_player</text>
           <text x="78" y="117" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">binary frame</text>
 
-          <!-- 2 SceneState -->
-          <rect x="196" y="70" width="150" height="64" rx="6" class="svg-fill-surface" stroke="var(--terracotta)" stroke-width="1.5"/>
-          <text x="271" y="98" text-anchor="middle" font-size="14" font-weight="700" fill="var(--fg)">SceneState</text>
-          <text x="271" y="117" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">sprites · objects</text>
+          <!-- 2 SpriteWorld (SDK decodes) -->
+          <rect x="196" y="70" width="150" height="64" rx="6" class="svg-fill-surface" stroke="var(--navy)" stroke-width="1.5"/>
+          <text x="271" y="98" text-anchor="middle" font-size="14" font-weight="700" fill="var(--fg)">SpriteWorld</text>
+          <text x="271" y="117" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">objects · labels</text>
 
           <!-- 3 HeartleafState -->
           <rect x="398" y="70" width="164" height="64" rx="6" class="svg-fill-surface" stroke="var(--sage)" stroke-width="1.5"/>
@@ -299,15 +320,15 @@
           <text x="873" y="117" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">strategy → mode</text>
 
           <!-- 6 Command -->
-          <rect x="1000" y="70" width="108" height="64" rx="6" class="svg-fill-surface" stroke="var(--navy)" stroke-width="1.5"/>
+          <rect x="1000" y="70" width="108" height="64" rx="6" class="svg-fill-surface" stroke="var(--sage)" stroke-width="1.5"/>
           <text x="1054" y="98" text-anchor="middle" font-size="14" font-weight="700" fill="var(--fg)">Command</text>
-          <text x="1054" y="117" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">held_mask</text>
+          <text x="1054" y="117" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">→ mask</text>
         </g>
 
         <!-- arrows + transform labels -->
         <g font-size="11" fill="var(--fg-muted)" text-anchor="middle" font-style="italic">
           <line x1="146" y1="102" x2="192" y2="102" stroke="var(--fg-muted)" stroke-width="1.4" marker-end="url(#ah)"/>
-          <text x="169" y="60">apply</text>
+          <text x="169" y="60">decode</text>
           <line x1="348" y1="102" x2="394" y2="102" stroke="var(--fg-muted)" stroke-width="1.4" marker-end="url(#ah)"/>
           <text x="371" y="60">perceive</text>
           <line x1="564" y1="102" x2="610" y2="102" stroke="var(--fg-muted)" stroke-width="1.4" marker-end="url(#ah)"/>
@@ -318,11 +339,11 @@
           <text x="973" y="60">resolve</text>
         </g>
 
-        <!-- return loop: Command -> ws (send on change) -->
+        <!-- return loop: Command -> ws (decide returns the mask, sent on change) -->
         <path d="M1054,134 L1054,196 L78,196 L78,138" fill="none" stroke="var(--gold)" stroke-width="1.5"
           stroke-dasharray="5 4" marker-end="url(#ah)"/>
         <text x="566" y="214" text-anchor="middle" font-size="11.5" font-style="italic" fill="var(--gold)">
-          send held_mask only when it changes · ~loop every tick</text>
+          decide( ) returns the mask · bridge sends on change · ~loop every tick</text>
       </svg>
       </div>
       <figcaption>Figure 1 — The per-tick pipeline. Runtime <code>step()</code> is synchronous;
@@ -334,80 +355,76 @@
   <section id="arch">
     <p class="eyebrow"><span>Architecture</span><span class="n">§4</span></p>
     <h2>Layers, each with one job</h2>
-    <p>The package <code>heartleaf_lab/cady/cady/</code> stacks from the wire contract at the
-      bottom to the transport entry point at the top — mirroring how <code>crewborg</code> and
-      <code>mentalist</code> vendor their players. Colour marks ownership: what we <b>ported</b>,
-      what we <b>write fresh</b>, and what the <b>SDK</b> supplies.</p>
+    <p>The package <code>heartleaf_lab/cady/cady/</code> — <b>no <code>wire/</code> layer</b>,
+      because the SDK owns the wire now. Perception sits at the bottom on the SDK’s
+      <code>SpriteWorld</code>; the transport entry point is at the top. Colour marks ownership:
+      what we <b>write fresh</b> and what the <b>SDK</b> supplies.</p>
 
     <figure>
       <div class="fig-scroll">
-      <svg viewBox="0 0 760 360" role="img" aria-label="Layered architecture from the vendored wire layer up through perception, belief, modes, runtime, to the SDK transport bridge.">
+      <svg viewBox="0 0 760 296" role="img" aria-label="Layered architecture from perception on the SDK's SpriteWorld up through belief, modes, runtime and the decide adapter, to the SDK sprite bridge at the top.">
         <g font-family="var(--sans)">
           <!-- SDK rail on the right -->
-          <rect x="600" y="24" width="140" height="300" rx="6" class="svg-fill-alt" stroke="var(--navy)" stroke-width="1.5" stroke-dasharray="4 4"/>
+          <rect x="600" y="24" width="140" height="248" rx="6" class="svg-fill-alt" stroke="var(--navy)" stroke-width="1.5" stroke-dasharray="4 4"/>
           <text x="670" y="46" text-anchor="middle" font-size="12" font-weight="700" fill="var(--navy)">PLAYER SDK</text>
-          <text x="670" y="70" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">AgentRuntime</text>
-          <text x="670" y="90" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">Mode · Registry</text>
-          <text x="670" y="110" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">Strategy runner</text>
-          <text x="670" y="130" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">Trace · Metrics</text>
-          <text x="670" y="150" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">message bridge</text>
-          <line x1="618" y1="166" x2="722" y2="166" stroke="var(--border-strong)"/>
-          <text x="670" y="188" text-anchor="middle" font-size="11" fill="var(--fg-muted)">wired into every</text>
-          <text x="670" y="204" text-anchor="middle" font-size="11" fill="var(--fg-muted)">layer at left</text>
+          <text x="670" y="70" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">run_sprite_bridge</text>
+          <text x="670" y="90" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">SpriteWorld</text>
+          <text x="670" y="110" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">Button · env_ws_url</text>
+          <text x="670" y="130" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">AgentRuntime</text>
+          <text x="670" y="150" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">Mode · Registry</text>
+          <text x="670" y="170" text-anchor="middle" font-size="11.5" fill="var(--fg-subtle)">Trace · Metrics</text>
+          <line x1="618" y1="186" x2="722" y2="186" stroke="var(--border-strong)"/>
+          <text x="670" y="208" text-anchor="middle" font-size="11" fill="var(--fg-muted)">owns transport</text>
+          <text x="670" y="224" text-anchor="middle" font-size="11" fill="var(--fg-muted)">+ raw decode</text>
 
           <!-- stack of cady layers -->
-          <!-- main.py (top) SDK-based new -->
-          <rect x="24" y="24" width="540" height="44" rx="6" class="svg-fill-surface" stroke="var(--sage)" stroke-width="1.5"/>
-          <text x="40" y="45" font-size="13.5" font-weight="700" fill="var(--fg)">main.py</text>
-          <text x="40" y="61" font-size="11.5" fill="var(--fg-subtle)">SDK transport bridge · trace/metrics wiring · __main__ entry</text>
+          <!-- main.py (top) -->
+          <rect x="24" y="24" width="540" height="48" rx="6" class="svg-fill-surface" stroke="var(--sage)" stroke-width="1.5"/>
+          <text x="40" y="46" font-size="13.5" font-weight="700" fill="var(--fg)">main.py</text>
+          <text x="40" y="63" font-size="11.5" fill="var(--fg-subtle)">run_sprite_bridge(env_ws_url(), decide) · trace/metrics · __main__</text>
 
-          <!-- runtime.py -->
-          <rect x="24" y="78" width="540" height="44" rx="6" class="svg-fill-surface" stroke="var(--sage)" stroke-width="1.5"/>
-          <text x="40" y="99" font-size="13.5" font-weight="700" fill="var(--fg)">runtime.py</text>
-          <text x="40" y="115" font-size="11.5" fill="var(--fg-subtle)">build_runtime() — assembles AgentRuntime from the six types</text>
+          <!-- runtime + decide adapter -->
+          <rect x="24" y="84" width="540" height="48" rx="6" class="svg-fill-surface" stroke="var(--sage)" stroke-width="1.5"/>
+          <text x="40" y="106" font-size="13.5" font-weight="700" fill="var(--fg)">runtime.py · decide.py</text>
+          <text x="40" y="123" font-size="11.5" fill="var(--fg-subtle)">build_runtime() · the SpriteWorld → step() → mask adapter</text>
 
-          <!-- modes + strategy -->
-          <rect x="24" y="132" width="264" height="52" rx="6" class="svg-fill-surface" stroke="var(--sage)" stroke-width="1.5"/>
-          <text x="40" y="153" font-size="13.5" font-weight="700" fill="var(--fg)">modes/</text>
-          <text x="40" y="169" font-size="11.5" fill="var(--fg-subtle)">Gather · Host · Idle</text>
-          <rect x="300" y="132" width="264" height="52" rx="6" class="svg-fill-surface" stroke="var(--sage)" stroke-width="1.5"/>
-          <text x="316" y="153" font-size="13.5" font-weight="700" fill="var(--fg)">strategy.py · action.py</text>
-          <text x="316" y="169" font-size="11.5" fill="var(--fg-subtle)">clock → mode · intent → mask</text>
+          <!-- modes + strategy/action -->
+          <rect x="24" y="144" width="264" height="52" rx="6" class="svg-fill-surface" stroke="var(--sage)" stroke-width="1.5"/>
+          <text x="40" y="165" font-size="13.5" font-weight="700" fill="var(--fg)">modes/</text>
+          <text x="40" y="181" font-size="11.5" fill="var(--fg-subtle)">Gather · Host · Idle</text>
+          <rect x="300" y="144" width="264" height="52" rx="6" class="svg-fill-surface" stroke="var(--sage)" stroke-width="1.5"/>
+          <text x="316" y="165" font-size="13.5" font-weight="700" fill="var(--fg)">strategy.py · action.py</text>
+          <text x="316" y="181" font-size="11.5" fill="var(--fg-subtle)">clock → mode · intent → Button mask</text>
 
-          <!-- perception + belief + types -->
-          <rect x="24" y="194" width="540" height="52" rx="6" class="svg-fill-surface" stroke="var(--sage)" stroke-width="1.5"/>
-          <text x="40" y="215" font-size="13.5" font-weight="700" fill="var(--fg)">perception.py · belief.py · types.py</text>
-          <text x="40" y="231" font-size="11.5" fill="var(--fg-subtle)">SceneState → HeartleafState → Belief · the six SDK types</text>
-
-          <!-- wire (bottom, vendored) -->
-          <rect x="24" y="256" width="540" height="52" rx="6" class="svg-fill-surface" stroke="var(--terracotta)" stroke-width="1.5"/>
-          <text x="40" y="277" font-size="13.5" font-weight="700" fill="var(--fg)">wire/ — decoder · scene · encode</text>
-          <text x="40" y="293" font-size="11.5" fill="var(--fg-subtle)">Sprite-v1 bytes ⇄ tables · button bits · vendored, game-agnostic</text>
+          <!-- perception + belief + types (bottom, on SpriteWorld) -->
+          <rect x="24" y="208" width="540" height="52" rx="6" class="svg-fill-surface" stroke="var(--sage)" stroke-width="1.5"/>
+          <text x="40" y="229" font-size="13.5" font-weight="700" fill="var(--fg)">perception.py · belief.py · types.py</text>
+          <text x="40" y="245" font-size="11.5" fill="var(--fg-subtle)">SpriteWorld → HeartleafState → Belief · the six SDK types</text>
 
           <!-- upward flow arrow -->
-          <path d="M12,300 L12,40" fill="none" stroke="var(--fg-muted)" stroke-width="1.3" marker-end="url(#ah)"/>
+          <path d="M12,252 L12,40" fill="none" stroke="var(--fg-muted)" stroke-width="1.3" marker-end="url(#ah)"/>
         </g>
       </svg>
       </div>
       <div class="legend">
-        <span><i style="background:var(--terracotta)"></i>Vendored (ported)</span>
-        <span><i style="background:var(--sage)"></i>New — Heartleaf-specific</span>
-        <span><i style="background:var(--navy)"></i>Player SDK</span>
+        <span><i style="background:var(--sage)"></i>New — Heartleaf-specific (all of it)</span>
+        <span><i style="background:var(--navy)"></i>Player SDK — transport + decode</span>
       </div>
-      <figcaption>Figure 2 — Bytes enter at the bottom and rise to a decision at the top; the SDK
-        runtime (right) threads through the middle layers.</figcaption>
+      <figcaption>Figure 2 — The <code>SpriteWorld</code> enters at the bottom and rises to a
+        decision at the top; the SDK (right) owns the transport and hands every layer its raw
+        world. Cady is all one colour now — pure game logic.</figcaption>
     </figure>
 
     <div class="tbl-scroll">
       <table>
         <thead><tr><th>Unit</th><th>Responsibility</th><th>Source</th></tr></thead>
         <tbody>
-          <tr><td><code>wire/</code></td><td>Sprite-v1 byte decode → tables; <code>encode_input</code>/<code>encode_chat</code>; button bits</td><td><span class="tag vend">ported</span></td></tr>
-          <tr><td><code>perception.py</code></td><td>Interpret labeled objects → <code>HeartleafState</code>; self = camera-centre + offset</td><td><span class="tag new">new</span></td></tr>
+          <tr><td><code>perception.py</code></td><td>Interpret <code>SpriteWorld</code> labels + positions → <code>HeartleafState</code>; self = camera-centre</td><td><span class="tag new">new</span></td></tr>
           <tr><td><code>belief.py</code> · <code>types.py</code></td><td>Long-lived belief + the six SDK types; <code>perceive</code> / <code>update_belief</code></td><td><span class="tag new">new</span></td></tr>
           <tr><td><code>modes/</code> · <code>strategy.py</code></td><td>Gather / Host / Idle; clock-driven mode selection</td><td><span class="tag new">new</span></td></tr>
-          <tr><td><code>action.py</code></td><td>Resolve intent → button mask: nav, gather-press, enter-house</td><td><span class="tag new">new</span> <span class="tag vend">ctrl ported</span></td></tr>
-          <tr><td><code>main.py</code></td><td>SDK transport bridge; trace/metrics; env WS URL; entry point</td><td><span class="tag sdk">SDK</span></td></tr>
+          <tr><td><code>action.py</code></td><td>Resolve intent → <code>Button</code> mask: bang-bang nav, gather-press, enter-house</td><td><span class="tag new">new</span></td></tr>
+          <tr><td><code>decide.py</code></td><td>Bridge callback: <code>SpriteWorld</code> → <code>runtime.step()</code> → <code>(mask, chat)</code></td><td><span class="tag new">new</span></td></tr>
+          <tr><td><code>main.py</code></td><td><code>run_sprite_bridge(env_ws_url(), decide)</code>; trace/metrics; entry point</td><td><span class="tag new">new</span> <span class="tag sdk">on SDK</span></td></tr>
         </tbody>
       </table>
     </div>
@@ -419,7 +436,10 @@
     <h2>Six types make it a proper SDK policy</h2>
     <p><code>AgentRuntime</code> is generic over six type parameters and three pure functions.
       Filling them for Heartleaf is what makes Cady a real cyborg policy rather than an ad-hoc
-      loop — and it forces perception, belief, and action apart at clean seams.</p>
+      loop — and it forces perception, belief, and action apart at clean seams. The bridge and
+      the runtime meet in exactly one place: <code>decide.py</code> wraps the SDK’s
+      <code>SpriteWorld</code> in an <code>Observation</code>, calls <code>step()</code>, and
+      unpacks the returned <code>Command</code> into the bridge’s <code>(mask, chat)</code>.</p>
 
     <figure>
       <div class="fig-scroll">
@@ -435,7 +455,7 @@
             <!-- top row -->
             <rect x="40"  y="30" width="150" height="46" rx="6" class="svg-fill-surface" stroke="var(--border-strong)"/>
             <text x="115" y="52" text-anchor="middle" fill="var(--fg)">Observation</text>
-            <text x="115" y="68" text-anchor="middle" font-size="10.5" font-weight="400" fill="var(--fg-subtle)">scene + tick</text>
+            <text x="115" y="68" text-anchor="middle" font-size="10.5" font-weight="400" fill="var(--fg-subtle)">world + frame</text>
 
             <rect x="305" y="30" width="150" height="46" rx="6" class="svg-fill-surface" stroke="var(--sage)" stroke-width="1.5"/>
             <text x="380" y="52" text-anchor="middle" fill="var(--fg)">Percept</text>
@@ -535,8 +555,9 @@
     </figure>
 
     <h3>Action resolution</h3>
-    <p>Cady ports crewborg’s bang-bang d-pad controller: steer toward a target world point with a
-      release-near-target deadband and a predictive stop. Intents map to it directly —
+    <p>Cady reimplements crewborg’s bang-bang d-pad <em>algorithm</em> (not its code — the wire is
+      the SDK’s now): steer toward a target world point with a release-near-target deadband and a
+      predictive stop, emitting a <code>Button</code> mask. Intents map to it directly —
       <code>navigate_to</code> steers straight at a point; <code>gather_at</code> navigates to a
       garden then fires a fresh <b>A press</b> in range; <code>enter_house</code> navigates to the
       entrance then presses A to go inside; <code>hold</code>/<code>idle</code> emit the neutral
@@ -546,33 +567,37 @@
   <hr class="rule">
   <section id="wire-vocab">
     <p class="eyebrow"><span>Wire vocabulary</span><span class="n">§7</span></p>
-    <h2>What the scene actually says</h2>
-    <p>Heartleaf’s <code>protocol.nim</code> defines a clean, stable object-id and label scheme —
-      which is exactly what makes a raw decoder tractable. Perception reads these; the game’s own
-      <code>talking_villager.nim</code> is the reference for turning them into behaviour.</p>
+    <h2>Everything v1 needs is in the labels</h2>
+    <p>The bridge hands us <code>world.objects</code> joined to <code>world.sprites[id].label</code>
+      — and Heartleaf’s <code>protocol.nim</code> + <code>heartleaf.nim</code> encode everything v1
+      needs in those <b>labels and object positions</b>. So v1 does <b>no</b> sprite-pixel
+      decoding at all; <code>talking_villager.nim</code> is the reference for turning these into
+      behaviour.</p>
     <div class="tbl-scroll">
       <table>
-        <thead><tr><th>Object base</th><th>Meaning</th><th>Label</th></tr></thead>
+        <thead><tr><th>Object base</th><th>Meaning</th><th>Label (verified in source)</th></tr></thead>
         <tbody>
-          <tr><td><code>1000</code></td><td><b>Gnomes</b> (players)</td><td><code>"gnome "</code></td></tr>
-          <tr><td><code>2000</code></td><td>Name tags</td><td><code>"name "</code></td></tr>
-          <tr><td><code>3000</code></td><td>Chat bubbles <span style="color:var(--fg-muted)">· v2</span></td><td><code>"chat "</code></td></tr>
-          <tr><td><code>4000</code></td><td><b>Gardens</b></td><td><code>"garden marker"</code> = food present</td></tr>
-          <tr><td><code>5000</code> · <code>6000</code></td><td>Inventory items &amp; counts</td><td>—</td></tr>
-          <tr><td><code>7000</code></td><td><b>Clock</b></td><td><code>"clock "</code></td></tr>
-          <tr><td><code>7100</code></td><td>Score panels</td><td><code>"score "</code></td></tr>
+          <tr><td><code>1000</code></td><td><b>Gnomes</b></td><td><code>"gnome &lt;index&gt; &lt;dir&gt;"</code> — index + facing</td></tr>
+          <tr><td><code>2000</code></td><td>Name tags</td><td><code>"name &lt;PlayerName&gt;"</code></td></tr>
+          <tr><td><code>3000</code></td><td>Chat bubbles <span style="color:var(--fg-muted)">· v2</span></td><td><code>"chat …"</code></td></tr>
+          <tr><td><code>4000</code></td><td><b>Gardens</b> (with food)</td><td><code>"garden marker"</code></td></tr>
+          <tr><td><code>5000</code> · <code>6000</code></td><td>Inventory items / counts</td><td>rendered UI</td></tr>
+          <tr><td><code>7000</code></td><td><b>Clock</b></td><td>per-glyph <code>"clock &lt;char&gt;"</code> → join by x → <code>3:00pm</code></td></tr>
+          <tr><td><code>7100</code></td><td>Score panels</td><td><code>"score …"</code></td></tr>
         </tbody>
-        <caption>Fixed gnome names by house 0–8: Ivan, Anton, Yura, Sasha, Maxim, Nikita, Vova,
-          Dima, Egor. Walkability sprites: <code>"heartleaf main/home walkability"</code>. Chat cap 48 chars.</caption>
+        <caption>Reading the time is a string join, not a pixel read: gather the clock-glyph
+          objects, sort by x, concatenate their one-char labels, parse. Fixed gnome names by house
+          0–8: Ivan, Anton, Yura, Sasha, Maxim, Nikita, Vova, Dima, Egor.</caption>
       </table>
     </div>
     <div class="aside risk">
-      <span class="lbl">Not in the scheme — calibrate first</span>
-      The scheme gives the object <b>vocabulary</b> but not the <b>geometry</b>: the self-position
-      camera offset (self is the camera centre plus a fixed offset) and the house/garden trigger
-      distances. A <code>tools/capture_scene.py</code> probe dumps every label, id, and position
-      from one real stream to nail these down <b>before</b> perception trusts them. It is the first
-      implementation milestone.
+      <span class="lbl">Not in the labels — calibrate first</span>
+      The labels give the object <b>vocabulary</b> but not the <b>geometry</b>: our own <b>seat</b>
+      (the stream doesn’t announce it, and self isn’t a distinct object — crewborg’s answer is
+      self = the camera centre) and the house/garden trigger distances. A
+      <code>tools/capture_scene.py</code> probe — just a logging <code>decide</code> — dumps every
+      label, id, and position from one real stream to nail these down <b>before</b> perception
+      trusts them. First implementation milestone.
     </div>
   </section>
 
@@ -583,8 +608,7 @@
     <p>Per the lab’s discipline, the hosted eval is the real test. The few unit tests worth
       writing pin the load-bearing seams:</p>
     <ul class="tick" style="margin-top:6px">
-      <li class="goal" style="padding-left:22px;position:relative"><b>Decoder</b> — hand-built Sprite-v1 frames (ported wire-test helpers) → assert the <code>SceneState</code> tables decode.</li>
-      <li style="padding-left:22px"><b>Perception</b> — a synthetic scene with a <code>"garden marker"</code> and a <code>"clock "</code> sprite → assert garden position, food flag, parsed time.</li>
+      <li style="padding-left:22px;position:relative"><b>Perception</b> — a synthetic <code>SpriteWorld</code> with a <code>"garden marker"</code> object and <code>"clock 3"</code>/<code>"clock :"</code>/… glyph objects → assert garden position, food flag, and parsed time. <em>(The SDK owns + tests the frame decoder — we don’t re-test the wire.)</em></li>
       <li style="padding-left:22px"><b>Policy</b> — assert the clock threshold flips <code>GatherMode → HostMode</code>, and no-food falls back cleanly.</li>
     </ul>
     <p style="margin-top:14px;color:var(--fg-muted);font-style:italic">No coverage for its own sake —
@@ -596,11 +620,13 @@
     <p class="eyebrow"><span>Risks &amp; open questions</span><span class="n">§9</span></p>
     <h2>What could bite, and the mitigation</h2>
     <ol class="plain">
-      <li><b>Self-position offset</b> — unknown exact value. <em>Mitigation:</em> the capture probe calibrates it before nav is trusted. First milestone.</li>
+      <li><b>Self / seat identity</b> — the stream doesn’t announce our seat and self isn’t a distinct object. <em>Mitigation:</em> crewborg’s answer is self = the camera centre (world-map object); the capture probe confirms it and which <code>"gnome &lt;i&gt;"</code> is ours before nav is trusted. First milestone.</li>
       <li><b>House / garden trigger geometry</b> — where to stand and press A. <em>Mitigation:</em> mirror <code>talking_villager.nim</code>, confirm with the probe.</li>
-      <li><b>Straight-line nav vs. A*</b> — v1 steers straight; add A* over the streamed walkability grid only if an eval shows wedging.</li>
+      <li><b>SDK pin bump is shared with crewborg</b> — bumping <code>6dcd022…→e8921a6…</code> moves crewborg’s SDK too; run its tests after the bump. Additive change, but verify.</li>
+      <li><b>Local run path</b> — the bridge’s path constant is <code>/sprite_player</code> but the local server serves <code>/player</code>; the bridge uses the injected URL verbatim, so confirm the hosted <code>COWORLD_PLAYER_WS_URL</code> path for this game.</li>
       <li><b>Python-image upload path</b> — the manifest’s player <code>run</code> is <code>/bin/&lt;name&gt;</code>; confirm the Python image uploads cleanly for this game (as crewborg does) before the first upload.</li>
       <li><b>League existence / game version</b> — verify via the Observatory API before the first experience request. Carried over from lab creation.</li>
+      <li><b>Pixel decode is deferred, not free</b> — A* over the walkability sprite would need pixel/palette decode (the bridge exposes raw <code>SpriteDef.data</code>). v1 avoids it entirely by steering straight-line.</li>
     </ol>
   </section>
 
@@ -609,12 +635,12 @@
     <p class="eyebrow"><span>Build order</span><span class="n">§10</span></p>
     <h2>The path to a first eval</h2>
     <ol class="steps">
-      <li>Vendor + test the Sprite-v1 <b>wire layer</b> (<code>wire/</code>), with the capture probe.</li>
-      <li><b>Calibrate</b> the self-offset and garden/house geometry from a captured Heartleaf stream.</li>
-      <li><code>perception.py</code> + <code>types.py</code> — the six types, <code>perceive</code>, <code>update_belief</code>.</li>
-      <li><code>action.py</code> — navigate, gather-press, enter-house (ported controller).</li>
-      <li>Modes + strategy (Gather → Host) + <code>runtime.build_runtime</code>.</li>
-      <li><code>main.py</code> (SDK bridge + tracing), <code>Dockerfile</code>, <code>README</code>, <code>VERSION_LOG</code>.</li>
+      <li><b>Bump the SDK pin</b> (<code>6dcd022…→e8921a6…</code>) in <code>pyproject.toml</code> + <code>uv lock</code> + <code>versions.env</code>; confirm <code>run_sprite_bridge</code> imports and run crewborg’s tests (shared-SDK check).</li>
+      <li><b>Capture probe</b> — a logging <code>decide</code> that dumps <code>world</code> labels + positions from a real stream; calibrate self/seat + garden/house geometry.</li>
+      <li><code>perception.py</code> + <code>types.py</code> — the six types, <code>perceive</code> (labels → state, clock-glyph join), <code>update_belief</code>.</li>
+      <li><code>action.py</code> — bang-bang nav + gather-press + enter-house, emitting <code>Button</code> masks.</li>
+      <li>Modes + strategy (Gather → Host) + <code>runtime.build_runtime</code> + <code>decide.py</code> adapter.</li>
+      <li><code>main.py</code> (<code>run_sprite_bridge</code> + tracing), <code>Dockerfile</code>, <code>README</code>, <code>VERSION_LOG</code>.</li>
       <li>Build image → local smoke (connects / plays / exits) → upload → <b>first hosted eval</b>.</li>
     </ol>
   </section>

@@ -1,202 +1,234 @@
 # Cady — Heartleaf player design (v1)
 
-**Status:** proposed (2026-07-06). Living design doc; update as implementation reveals
-new facts. **Player:** `cady` (named for Cady Heron, *Mean Girls*). **Build path:**
-raw Sprite-v1 on the Coworld Player SDK (`AgentRuntime` + `Mode`s), self-contained wire
-layer. **Decision policy:** deterministic (no LLM in v1).
+**Status:** proposed (2026-07-06, rev 2 — now on the SDK's SpriteV1 bridge). Living design
+doc; update as implementation reveals new facts. **Player:** `cady` (named for Cady Heron,
+*Mean Girls*). **Build path:** raw Sprite-v1 on the Coworld Player SDK — using the SDK's new
+`run_sprite_bridge` (no vendored wire layer), with an `AgentRuntime` + `Mode` brain.
+**Decision policy:** deterministic (no LLM in v1).
+
+> **Rev 2 change (2026-07-06):** the Player SDK now ships a BitWorld/SpriteV1 transport bridge
+> (`players.player_sdk.sprite_bridge`, coworld-tools PR #20, merged at `e8921a6`). Cady uses it
+> instead of vendoring a Sprite-v1 decoder from crewborg. This removes the entire `wire/` layer
+> from the plan. **Prerequisite:** our pinned SDK tarball is stale (`6dcd022…`, predates the
+> bridge) — bump it to `e8921a6…` (see §2).
 
 ## Problem & goal
 
-Heartleaf has no player of ours yet. We need a first policy that **connects, decodes the
-Sprite-v1 scene, navigates the map, gathers food, and hosts dinner at its own house**,
-then exits cleanly — enough to pass a hosted eval and start the improvement loop. It must
-be a **proper cyborg Player-SDK policy** (uses the SDK's `AgentRuntime`/`Mode` structure,
-transport, and observability) and **modular**, so later iterations (chat-based guest
-recruitment, smarter routing, host-vs-visit scheduling) drop in without rework.
+Heartleaf has no player of ours yet. Cady v1 exists to prove the loop end to end: connect,
+read the garden village off the sprite stream, **navigate**, **gather food**, and **host
+dinner** at its own house — then exit cleanly. Enough to pass a hosted eval and start the
+improvement loop. It must be a **proper cyborg Player-SDK policy** and **modular**, so later
+iterations (chat-based guest recruitment, smarter routing, host-vs-visit scheduling) drop in
+without rework.
 
 Game reference: [`../heartleaf-gameplay.md`](../heartleaf-gameplay.md). Scoring is
-`hosted food × guests`; only hosts score. v1 gets us on the board; **coordination is the
-next iteration**, not this one.
+`hosted food × guests`; only hosts score. v1 gets us on the board; **coordination is the next
+iteration**, not this one.
 
 ### Goals (v1)
-- Connect to the `/player` websocket, decode Sprite-v1 binary frames, exit 0 on close.
-- **Navigate** the shared map with a bang-bang movement controller (the reusable core).
+- Connect via the SDK's sprite bridge, react to each changed frame, **exit 0** on close.
+- **Navigate** the shared map with a bang-bang movement controller.
 - **Gather**: locate gardens holding food, path to them, press A to collect.
-- **Host**: stop gathering as dinner nears, return to own house, be inside it at 6pm so
-  any gnome who wanders in becomes a scoring guest.
-- Emit observability (trace events + metrics) via the SDK sinks.
+- **Host**: stop gathering as dinner nears, return to own house, be inside it at 6 PM.
+- Emit trace events + metrics via the SDK sinks.
 - Be **modular**: perception, policy, and action are separable units with clear interfaces.
 
-### Non-goals (v1 — deferred to later iterations)
-- **Chat / invitations** (parsing `chat @3000`, emitting `encode_chat`) to actively
-  recruit guests. This is the real scoring lever and the planned v2 — the architecture
-  reserves seams for it (a `ChatIntent` on `Command`, chat lines on the percept) but v1
-  does not use them.
-- Host-vs-visit scheduling across days; visiting other houses; multi-day food banking.
+### Non-goals (v1 — deferred)
+- **Chat / invitations** to recruit guests — the real scoring lever, and the reserved **v2**.
+  The architecture reserves the seam (the bridge's `decide` can return `(mask, chat)`; a
+  `ChatIntent` on `Command`) but v1 sends no chat.
+- Host-vs-visit scheduling; visiting; multi-day food banking.
 - Any LLM decision layer.
-- Broad test coverage.
+- A* routing / any sprite-**pixel** decoding (v1 reads labels + positions only — see §7).
+- Broad test coverage — the hosted eval is the test.
 
-## Foundation: what we vendor vs. what the SDK provides
+## Foundation: the SDK now owns the Sprite-v1 transport
 
-The Player SDK is **engine-agnostic and ships no Sprite-v1 support** — the Sprite-v1
-binary substrate exists only in the crewborg example player. So:
+The Coworld Player SDK now includes `players.player_sdk.sprite_bridge` — the BitWorld
+`/sprite_player` transport bridge. It is the SpriteV1 peer of the cogweb and mettagrid JSON
+bridges, built on `run_message_bridge`. **Cady no longer vendors a wire layer.** What the SDK
+gives us, all imported from `players.player_sdk`:
 
-- **Vendored (self-contained, ported from crewborg, protocol-level & game-agnostic):** the
-  Sprite-v1 byte decoder, the retained `SceneState`, and the input/chat encoders + button
-  bits. These are the wire contract, not Crewrift semantics; `cady` owns its copy so it has
-  **no dependency on `crewrift_lab`**.
-- **Used from the SDK (`players.player_sdk`):**
-  - **Transport** — `run_message_bridge` (or the crewborg-style bridge loop) with
-    `exit_zero_on_unclean_close`: connect with `max_size=None`, iterate binary frames,
-    send-on-change, exit 0 on game-over. `env_ws_url()` resolves
-    `COWORLD_PLAYER_WS_URL` (canonical) / `COGAMES_ENGINE_WS_URL` (legacy).
-  - **Brain** — `AgentRuntime` generic over cady's six types, `Mode`/`ModeRegistry`/
-    `ModeDirective`, `SynchronousStrategyRunner` for the mode-selection strategy.
-  - **Observability** — `TraceSink` / `MetricsSink` (+ `TraceOutputs.from_env`).
+- **`run_sprite_bridge(url, decide, *, on_frame, trace_outputs, on_close, teardown, **kw)`** —
+  owns the whole transport envelope: connects (verbatim URL), accumulates the binary
+  sprite/object record stream into a `SpriteWorld`, calls `decide` once per **changed** frame,
+  packs the returned mask/chat into wire packets, and **exits 0** when the server closes.
+- **`SpriteWorld`** — the raw accumulated render state handed to `decide`: `sprites: dict[id →
+  SpriteDef(sprite_id, width, height, label, data)]`, `objects: dict[id → SpriteObject(object_id,
+  x, y, z, layer, sprite_id)]`, a `frame` counter, and `sprite_for(obj)`. It **deliberately does
+  not decode sprite pixels/palette or any game semantics** — that is our job.
+- **`Button`** (`IntFlag`: UP/DOWN/LEFT/RIGHT/SELECT/A/B) and `pack_input_packet` /
+  `pack_chat_packet` — the controller vocabulary; OR buttons into a mask. No vendored button bits.
+- **`env_ws_url()`** — resolves `COWORLD_PLAYER_WS_URL`. Pass its result to `run_sprite_bridge`
+  verbatim.
 
-crewborg's `build_runtime` (`players/crewrift/crewborg/__init__.py`) is the assembly
-template; crewborg's `coworld/policy_player.py`, `perception/decoder.py`,
-`perception/tables.py`, `coworld/scene.py`, and `action.py` are the port sources.
+`decide(world: SpriteWorld, ctx: SpriteContext) -> mask | (mask, chat) | None` is the single
+callback the game supplies (sync or async). Return a `Button`/int mask to hold those buttons,
+`(mask, chat)` to also broadcast chat, or `None` to send nothing (the server holds the last
+mask); `0` releases all buttons. The bridge is robust by construction — undecodable frames and
+invalid `decide` outputs are skipped, never raised, so the process survives the whole episode.
 
-## Heartleaf wire vocabulary (from `coworld-heartleaf/src/heartleaf/protocol.nim`)
+**What we still write is only the game:** interpreting the `SpriteWorld` into Heartleaf state
+(perception), deciding what to do (policy), and turning that into a `Button` mask (action).
+That is the point of the bridge — the transport and the raw decode are no longer our code.
 
-The game exposes a clean, stable object-id + label scheme, which makes raw decoding
-tractable. Object-id bases:
+### Prerequisite: bump the pinned SDK (mechanical, but shared)
 
-| Base | Meaning | Label prefix / label |
-|---|---|---|
-| `1000` `PlayerObjectBase` | gnomes (players) | `"gnome "` |
-| `2000` `NameObjectBase` | name tags | `"name "` |
-| `3000` `ChatObjectBase` | chat bubbles | `"chat "` (v2) |
-| `4000` `GardenObjectBase` | gardens | `GardenMarkerLabel = "garden marker"` (food present) |
-| `5000` `InventoryObjectBase` | inventory items | — |
-| `6000` `InventoryCountObjectBase` | inventory counts | — |
-| `7000` `ClockObjectBase` | clock | `"clock "` |
-| `7100` `ScoreObjectBase` | score panels | `"score "` |
-| `1`/`2` | bottom / overhang world layers | `"heartleaf main/home bottom/overhang…"` |
+Our pinned SDK tarball is stale and predates the bridge:
 
-Walkability sprites: `"heartleaf main walkability"`, `"heartleaf home walkability"`.
-Fixed gnome names by house index 0–8: Ivan, Anton, Yura, Sasha, Maxim, Nikita, Vova, Dima,
-Egor. Chat cap `ChatMaxChars = 48`. The reference for *interpreting* these into behavior is
-the game's own `players/talking_villager/talking_villager.nim` (perception + nav + the
-`stand_at_house_garden` / `go_home` / gather logic to mirror deterministically).
-
-**Two facts the scheme does not give us, to confirm empirically (see Risks):** the
-**self-position camera offset** (self is the camera center + a fixed offset, as in crewborg
-— value TBD from a real stream) and the **house entrance geometry** (where to stand / press
-A to enter your house).
+- `pyproject.toml` `[tool.uv.sources]` pins `players` to coworld-tools archive
+  `6dcd022e013febffb0043b5f625f853c5cc36e0f`. **Bump to `e8921a6b18484030d8704277e4c52d3aae5c8917`**
+  (current `main`, includes PR #20), then `uv lock`.
+- Mirror the bump in `crewrift_lab/tools/versions.env` (`PLAYERS_SDK_REF`) so the hosted image
+  builds against the same SDK, and Cady's own `Dockerfile` installs that ref.
+- **Shared-SDK caution:** crewborg (crewrift) imports the same `players.player_sdk`. Bumping the
+  pin moves crewborg's SDK too. Before relying on the bump, do a quick crewborg import/test pass
+  (`uv run pytest crewrift_lab/crewrift/crewborg/tests`) to confirm no SDK-surface regression;
+  if something breaks, that is a crewrift concern to resolve alongside, not a blocker for Cady's
+  design. This is the first build step (§10).
 
 ## Architecture
 
 Package `heartleaf_lab/cady/cady/` (installable module `cady`), mirroring how
-`crewrift_lab/crewrift/crewborg/` and `cue_n_woo_lab/mentalist/` vendor their players.
+`crewrift_lab/crewrift/crewborg/` and `cue_n_woo_lab/mentalist/` vendor their players — but
+**without a `wire/` layer**, because the SDK owns the wire now.
 
 ```
 heartleaf_lab/cady/
   cady/
-    wire/
-      decoder.py      # Sprite-v1 byte decode -> SceneState tables (ported)
-      scene.py        # retained SceneState dataclass (ported)
-      encode.py       # encode_input / encode_chat + button bits (ported)
-    perception.py     # SceneState -> HeartleafState (the Percept): self/gnomes/gardens/
-                      #   houses/clock/inventory/chat  [Heartleaf-specific]
-    belief.py         # long-lived Belief: own house, learned garden/house geometry,
+    perception.py     # SpriteWorld -> HeartleafState (the Percept): self/gnomes/gardens/
+                      #   houses/clock-time/inventory  [reads labels + object positions]
+    belief.py         # long-lived Belief: own seat/house, learned garden/house geometry,
                       #   time-of-day, inventory, current target
     modes/
       __init__.py
       gather.py       # GatherMode: nearest food garden -> navigate -> press A
-      host.py         # HostMode: navigate home -> enter house -> hold through 6pm
+      host.py         # HostMode: navigate home -> enter house -> hold through 6 PM
       idle.py         # IdleMode: neutral fallback
     strategy.py       # deterministic mode-selection: clock-driven Gather -> Host
-    action.py         # resolve Intent -> Command (button mask): nav + gather + enter house
-    types.py          # Observation, Percept(=HeartleafState), Belief, ActionState,
-                      #   Intent, Command; perceive/update_belief pure functions
+    action.py         # resolve Intent -> Button mask: bang-bang nav + gather-press + enter-house
+    types.py          # Observation(world, frame), Percept(=HeartleafState), Belief,
+                      #   ActionState, Intent, Command; perceive/update_belief pure functions
     runtime.py        # build_runtime(): assemble AgentRuntime from the six types + modes
-    main.py           # SDK transport bridge + trace/metrics wiring; __main__ entry
+    decide.py         # the bridge callback: SpriteWorld -> runtime.step() -> (mask, chat)
+    main.py           # run_sprite_bridge(env_ws_url(), decide, trace_outputs=...); __main__
     tools/
-      capture_scene.py# decode a stream/replay and dump labels/ids/positions (vocab probe)
-    tests/            # wire-frame decoder tests + a few perception/policy tests
+      capture_scene.py# a decide that logs world.sprites/objects labels+positions (vocab probe)
+    tests/            # perception (label->state) + policy tests
   Dockerfile
   README.md
   VERSION_LOG.md
 ```
 
+### How the SDK bridge and the AgentRuntime compose
+The bridge calls `decide(world, ctx)`; the `AgentRuntime` exposes `step(observation) -> command`.
+`decide.py` is the thin adapter between them: it wraps the SDK's `SpriteWorld` + `ctx.frame` in
+Cady's `Observation`, calls `runtime.step(obs)`, and unpacks the returned `Command` into the
+`(mask, chat)` the bridge expects. So Cady is a genuine cyborg policy (perceive → belief →
+strategy → mode → resolve) **and** rides the SDK transport — the adapter is the only glue.
+
 ### The six SDK types (mirrors crewborg's cyborg shape)
-- **Observation** — `{scene: SceneState, tick: int}` (thin, by-reference).
-- **Percept = `HeartleafState`** — resolved this-tick view: `self_world (x,y)`, `time`
-  (decoded clock → minutes-since-8am + an `is_dinner`/`past_dinner` flag), `gardens:
-  [(pos, has_food)]`, `gnomes: [(pos, name?)]`, `own_house_index`, `houses: [(entrance_pos)]`,
-  `inventory_count`, `chat_lines` (populated, unused in v1).
-- **Belief** — long-lived: `own_house_index`, accumulated **garden positions** and **house
-  entrance geometry** (learned once and cached; the map is static), `last_time`,
-  `inventory_count`, `current_target`.
-- **ActionState** — nav route + cursor, `held_mask`, last self position (velocity),
-  edge-press bookkeeping (fresh-A). Ported from crewborg's `ActionState`.
-- **Intent** — symbolic: `gather_at(garden_pos)` | `navigate_to(point)` |
-  `enter_house(index)` | `hold` | `idle`.
-- **Command** — `{held_mask: int, chat: str | None = None}` (chat reserved for v2).
+- **Observation** — `{world: SpriteWorld, frame: int}` (the SDK's raw world, by reference).
+- **Percept = `HeartleafState`** — resolved this-tick view built by `perceive(world)`:
+  `self_world (x,y)`, `time` (day-minutes parsed from the clock glyphs → an `is_dinner` /
+  `past_gather_cutoff` flag), `gardens: [(pos, has_food)]`, `gnomes: [(pos, index, facing)]`,
+  `own_house_index`, `houses: [(entrance_pos)]`, `inventory_count`.
+- **Belief** — long-lived: own seat/house index, accumulated **garden positions** and **house
+  entrance geometry** (the map is static — learn once, cache), `last_time`, `inventory_count`,
+  `current_target`.
+- **ActionState** — nav route + cursor, `held_mask`, last self position (for velocity),
+  edge-press bookkeeping (fresh-A).
+- **Intent** — symbolic: `gather_at(garden_pos)` | `navigate_to(point)` | `enter_house(index)`
+  | `hold` | `idle`.
+- **Command** — `{held_mask: int, chat: str | None = None}`; `decide.py` unpacks it for the
+  bridge (chat reserved for v2).
 
 ### Per-tick data flow
-`binary frame → SceneState.apply() → perceive() → HeartleafState → update_belief()
-→ strategy picks a Mode → Mode.decide(belief, action_state) → Intent → resolve_action()
-→ Command → send held_mask on change`. Runtime `step()` is synchronous; the SDK bridge
-owns the async websocket loop and the exit-0-on-close contract.
+`/sprite_player` frame → **`run_sprite_bridge`** decodes it into **`SpriteWorld`** (SDK) →
+**`decide`** → `perceive()` → `HeartleafState` → `update_belief()` → strategy picks a Mode →
+`Mode.decide()` → `Intent` → `resolve_action()` → `Command` → `decide` returns the `Button`
+mask → the bridge sends it (on change) and exits 0 on close. Everything left of `decide` is the
+SDK's; everything right of it is Cady's.
 
 ### Deterministic policy (v1)
 Clock-driven, mirroring the villagers' time policy without an LLM:
-- **Before ~5:00 PM:** `GatherMode` — target the nearest garden showing `"garden marker"`,
-  navigate to it, press A to collect; repeat. (Gathering + navigation = the v1 core.)
-- **~5:00 PM onward:** `HostMode` — stop gathering, navigate to own house entrance, enter,
-  and hold inside through 6:00 PM dinner so any visiting gnome scores us.
-- **Fallback:** `IdleMode` (neutral mask) before the camera/clock are up or when no garden
-  is visible.
+- **Before ~5:00 PM:** `GatherMode` — target the nearest garden labeled `"garden marker"`,
+  navigate, press A; repeat. (Gathering + navigation = the v1 core.)
+- **~5:00 PM onward:** `HostMode` — stop gathering, navigate to own house entrance, enter, hold
+  inside through 6:00 PM dinner so any visiting gnome scores us.
+- **Fallback:** `IdleMode` (neutral mask) before self/clock resolve or when no garden is visible.
 The thresholds (gather-stop time, arrive radii) are constants in one config block so each
 iteration is attributable.
 
 ### Action resolution
-Port crewborg's bang-bang d-pad controller (`_movement_mask` / `_axis_input`: move toward
-a target world point with a release-near-target deadband and predictive stop). Heartleaf
-intents:
-- `navigate_to(point)` → movement mask toward the point (straight-line steering first; A*
-  over the walkability grid is a later optimization if straight-line wedges).
-- `gather_at(garden)` → navigate to the garden, then a fresh **A press** in range to
-  collect (edge-triggered, like crewborg's report/task press).
-- `enter_house(index)` → navigate to the house entrance, then **A press** to go inside
-  (exact trigger geometry confirmed via the capture probe).
-- `hold` / `idle` → neutral mask.
+The bang-bang d-pad controller is an *algorithm* (not vendored code): steer toward a target
+world point with a release-near-target deadband and a predictive stop, emitting a `Button` mask
+(crewborg's `action.py` is the reference to reimplement). Intents map directly —
+`navigate_to` → mask toward the point; `gather_at` → navigate to the garden then a fresh **A
+press** in range; `enter_house` → navigate to the entrance then A to go inside;
+`hold`/`idle` → neutral mask.
 
-## Testing (minimal, per lab discipline)
-- **Decoder**: hand-built Sprite-v1 frames (port crewborg's `tests/sprite_wire.py` helpers)
-  → assert `SceneState` tables decode (define-sprite, define-object, tick marker,
-  walkability).
-- **Perception**: a synthetic scene with a `"garden marker"` object and a `"clock "` sprite
-  → assert `HeartleafState` extracts garden position, food flag, and parsed time.
-- **Policy**: assert the clock threshold flips `GatherMode → HostMode`, and that with no
-  visible food the mode falls back cleanly.
-No broad coverage; the hosted eval is the real test.
+## Heartleaf wire vocabulary — readable from labels alone (no pixel decode in v1)
+
+The SDK bridge hands us `world.objects` joined to `world.sprites[id].label`; Heartleaf's
+`src/heartleaf/protocol.nim` + `heartleaf.nim` encode everything v1 needs **in those labels and
+object positions** — so v1 needs **no** sprite-pixel decoding:
+
+| Object base | Meaning | Label (verified in `heartleaf.nim`) |
+|---|---|---|
+| `1000` | **Gnomes** | `"gnome <index> <direction>"` (e.g. `gnome 3 south`) — index + facing |
+| `2000` | Name tags | `"name <PlayerName>"` (e.g. `name Sasha`) |
+| `3000` | Chat bubbles · v2 | `"chat …"` |
+| `4000` | **Gardens** | `"garden marker"` on a garden that holds food |
+| `5000` / `6000` | Inventory items / counts | rendered UI |
+| `7000` | **Clock** | per-glyph sprites labeled `"clock <char>"` — concatenate by x → `3:00pm` |
+| `7100` | Score panels | `"score …"` |
+
+Reading the **time** is therefore a string join, not a pixel read: collect the clock-glyph
+objects (base `7000`), sort by `x`, concatenate their single-char labels, and parse with the
+inverse of `clockName` (`parseClockMinutes`). Fixed gnome names by house 0–8: Ivan, Anton,
+Yura, Sasha, Maxim, Nikita, Vova, Dima, Egor. `talking_villager.nim` is the reference for
+turning these into behaviour.
 
 ## Risks & open questions
-1. **Self-position offset** — self is the camera center + a fixed offset (crewborg pattern);
-   Heartleaf's exact offset is unknown. **Mitigation:** `tools/capture_scene.py` dumps the
-   camera + object positions from a real stream (via a local run) to calibrate before
-   trusting nav. First implementation milestone.
-2. **House/garden trigger geometry** — where exactly to stand and press A to collect / enter.
-   Mirror `talking_villager.nim`'s logic and confirm with the capture probe.
-3. **Straight-line nav vs. A\*** — v1 uses straight-line steering; if the map has walls that
-   wedge it, add A* over the streamed `"heartleaf main walkability"` grid (crewborg has the
-   pattern). Deferred until an eval shows wedging.
-4. **How a custom (non-Nim) player uploads for this game** — the manifest's player `run` is
-   `/bin/<name>`; confirm the Python-image upload path (`../player-build.md` + the
-   build-and-upload skill) works for Heartleaf, as it does for crewborg. Verify before the
-   first upload.
-5. **League existence / game version** — verify via the Observatory API before the first
-   experience request (open thread from lab creation).
+1. **Self / seat identification** — the sprite stream doesn't announce our seat, and self is not
+   a distinct object. crewborg's answer: self = the camera centre (the world-map object's
+   placement, base `1`), because the camera follows our gnome. *Mitigation:* the capture probe
+   (`tools/capture_scene.py`, a logging `decide`) confirms the camera→self relationship and which
+   `"gnome <i>"` is ours before nav is trusted. First implementation milestone.
+2. **House / garden trigger geometry** — where exactly to stand and press A to collect / enter.
+   Mirror `talking_villager.nim`; confirm with the probe.
+3. **SDK pin bump is shared with crewborg** — bumping `6dcd022…→e8921a6…` moves crewborg's SDK
+   too; run its tests after the bump (§2). Low risk (the bridge PR is additive), but verify.
+4. **Local run path** — the bridge's `PROTOCOL_PATH` is `/sprite_player`, but the local Heartleaf
+   server serves `/player`; the bridge uses the injected URL verbatim, so a local run points at
+   the server's actual path. Confirm the hosted `COWORLD_PLAYER_WS_URL` path for this game.
+5. **Python-image upload path** — the manifest's player `run` is `/bin/<name>`; confirm a Python
+   image uploads cleanly for this game (as crewborg does) before the first upload.
+6. **League existence / game version** — verify via the Observatory API before the first
+   experience request. Carried over from lab creation.
+7. **Pixel decode is deferred, not free** — A* over the walkability sprite would need
+   pixel/palette decode (the bridge exposes raw `SpriteDef.data`; mettagrid has
+   `snappy_decompress` + palette). v1 avoids it entirely by steering straight-line.
 
 ## Build order (feeds the implementation plan)
-1. Vendor + test the Sprite-v1 wire layer (`wire/`), with the capture probe.
-2. **Calibrate** self-offset + garden/house geometry from a captured Heartleaf stream.
-3. `perception.py` + `types.py` (the six types, `perceive`, `update_belief`).
-4. `action.py` (nav + gather-press + enter-house), ported controller.
-5. Modes + strategy (Gather → Host), `runtime.build_runtime`.
-6. `main.py` (SDK bridge + tracing), `Dockerfile`, `README`, `VERSION_LOG`.
-7. Build image → local smoke (connects/plays/exits) → upload → first hosted eval.
+1. **Bump the SDK pin** (`6dcd022…→e8921a6…`) in `pyproject.toml` + `uv lock` + `versions.env`;
+   confirm `from players.player_sdk import run_sprite_bridge, SpriteWorld, Button, env_ws_url`
+   and run crewborg's tests (shared-SDK check).
+2. **Capture probe** — a `decide` that logs `world.sprites`/`objects` labels + positions from a
+   real Heartleaf stream; calibrate self/seat + garden/house geometry.
+3. `perception.py` + `types.py` — the six types, `perceive` (labels → `HeartleafState`,
+   clock-glyph join), `update_belief`.
+4. `action.py` — bang-bang nav + gather-press + enter-house, emitting `Button` masks.
+5. Modes + strategy (Gather → Host), `runtime.build_runtime`, `decide.py` adapter.
+6. `main.py` (`run_sprite_bridge(env_ws_url(), decide, trace_outputs=…)`), `Dockerfile`,
+   `README`, `VERSION_LOG`.
+7. Build image → local smoke (connects / plays / exits) → upload → **first hosted eval**.
+
+## Testing (minimal, per lab discipline)
+- **Perception** — a synthetic `SpriteWorld` with a `"garden marker"` object and `"clock 3"`,
+  `"clock :"`, … glyph objects → assert garden position, food flag, and parsed time. (The
+  SDK owns + tests the frame decoder, so we don't re-test the wire.)
+- **Policy** — assert the clock threshold flips `GatherMode → HostMode`, and no-food falls back
+  cleanly.
+No coverage for its own sake — the hosted eval is the real test.
