@@ -62,6 +62,32 @@ def test_nearest_walkable_returns_a_walkable_cell() -> None:
     assert grid[point[1], point[0]]
 
 
+def test_find_path_arbitrary_point_is_reachable_fast_and_followable() -> None:
+    """Arbitrary-point routing on the real baked map: reachable, fully followable
+    by the bang-bang controller, and fast (the condition JPS was meant to satisfy)."""
+    import time
+
+    import cady.mapdata as mapdata
+    from cady.nav import _line_walkable, find_path
+
+    grid = mapdata.WALK_GRID
+    approaches = mapdata.GARDEN_APPROACHES
+    # Two far-apart walkable points (a long cross-map route).
+    start = min(approaches, key=lambda p: (p[0], p[1]))
+    goal = max(approaches, key=lambda p: (p[0], p[1]))
+
+    began = time.perf_counter()
+    path = find_path(grid, start, goal)
+    elapsed_ms = (time.perf_counter() - began) * 1000.0
+
+    assert path is not None
+    assert path[0] == start and path[-1] == goal
+    # Every hop is traversable straight by the controller (no wall clips).
+    assert all(_line_walkable(grid, a, b) for a, b in zip(path, path[1:]))
+    # Generous bound: full-grid A* here is ~200ms; the hierarchical router is ~20ms.
+    assert elapsed_ms < 100.0, f"arbitrary-point route too slow: {elapsed_ms:.0f} ms"
+
+
 def _path_is_legal(grid: np.ndarray, path: list[Point]) -> bool:
     for start, end in zip(path, path[1:]):
         x, y = start
