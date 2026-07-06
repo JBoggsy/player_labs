@@ -1,0 +1,296 @@
+{
+  "crew": [
+    {
+      "feature": "votes_skip",
+      "crewborg_mean": 1.7601476014760147,
+      "top3_mean": 0.8631465517241379,
+      "crewborg_n": 542,
+      "top3_n": 928,
+      "cohen_d": 0.7822182784779946,
+      "p": 1.7375782905275088e-50,
+      "direction": "crewborg HIGHER"
+    },
+    {
+      "feature": "meetings_called",
+      "crewborg_mean": 0.3007380073800738,
+      "top3_mean": 0.7068965517241379,
+      "crewborg_n": 542,
+      "top3_n": 928,
+      "cohen_d": -0.6528099605155964,
+      "p": 1.224845051087887e-35,
+      "direction": "crewborg LOWER"
+    },
+    {
+      "feature": "votes_player",
+      "crewborg_mean": 0.6420664206642066,
+      "top3_mean": 1.3491379310344827,
+      "crewborg_n": 542,
+      "top3_n": 928,
+      "cohen_d": -0.6082985923257835,
+      "p": 3.3490193876009236e-30,
+      "direction": "crewborg LOWER"
+    },
+    {
+      "feature": "voted",
+      "crewborg_mean": 0.3929889298892989,
+      "top3_mean": 0.6756465517241379,
+      "crewborg_n": 542,
+      "top3_n": 928,
+      "cohen_d": -0.5937744392185211,
+      "p": 4.486478521708981e-26,
+      "direction": "crewborg LOWER"
+    },
+    {
+      "feature": "chatted",
+      "crewborg_mean": 0.8837638376383764,
+      "top3_mean": 0.7327586206896551,
+      "crewborg_n": 542,
+      "top3_n": 928,
+      "cohen_d": 0.3755030508476978,
+      "p": 8.101748349084131e-12,
+      "direction": "crewborg HIGHER"
+    },
+    {
+      "feature": "tasks",
+      "crewborg_mean": 6.787822878228782,
+      "top3_mean": 6.0969827586206895,
+      "crewborg_n": 542,
+      "top3_n": 928,
+      "cohen_d": 0.3414917942151168,
+      "p": 3.648427692810728e-07,
+      "direction": "crewborg HIGHER"
+    },
+    {
+      "feature": "rooms_visited",
+      "crewborg_mean": 6.007380073800738,
+      "top3_mean": 5.547413793103448,
+      "crewborg_n": 542,
+      "top3_n": 928,
+      "cohen_d": 0.24745962788851,
+      "p": 7.749417132838537e-05,
+      "direction": "crewborg HIGHER"
+    },
+    {
+      "feature": "ghost_move_latency",
+      "crewborg_mean": 64.63036303630363,
+      "top3_mean": 144.33529411764707,
+      "crewborg_n": 303,
+      "top3_n": 510,
+      "cohen_d": -0.20827297399649292,
+      "p": 0.32411965810759424,
+      "direction": "crewborg LOWER"
+    },
+    {
+      "feature": "chats",
+      "crewborg_mean": 2.158671586715867,
+      "top3_mean": 1.8577586206896552,
+      "crewborg_n": 542,
+      "top3_n": 928,
+      "cohen_d": 0.1937885719073763,
+      "p": 0.0004099756816709595,
+      "direction": "crewborg HIGHER"
+    },
+    {
+      "feature": "got_trailed",
+      "crewborg_mean": 4.922509225092251,
+      "top3_mean": 4.405172413793103,
+      "crewborg_n": 542,
+      "top3_n": 928,
+      "cohen_d": 0.17477342398457543,
+      "p": 0.008449992149614552,
+      "direction": "crewborg HIGHER"
+    },
+    {
+      "feature": "tasks_while_dead",
+      "crewborg_mean": 1.2933579335793357,
+      "top3_mean": 1.6336206896551724,
+      "crewborg_n": 542,
+      "top3_n": 928,
+      "cohen_d": -0.15713167042817217,
+      "p": 0.07706271944378383,
+      "direction": "crewborg LOWER"
+    },
+    {
+      "feature": "isolations",
+      "crewborg_mean": 1.8929889298892988,
+      "top3_mean": 1.6045258620689655,
+      "crewborg_n": 542,
+      "top3_n": 928,
+      "cohen_d": 0.1321792462242462,
+      "p": 0.030421312628692358,
+      "direction": "crewborg HIGHER"
+    },
+    {
+      "feature": "win",
+      "crewborg_mean": 0.3505535055350554,
+      "top3_mean": 0.39978448275862066,
+      "crewborg_n": 542,
+      "top3_n": 928,
+      "cohen_d": -0.10139499117280382,
+      "p": 0.06094678912246037,
+      "direction": "crewborg LOWER"
+    },
+    {
+      "feature": "got_killed",
+      "crewborg_mean": 0.559040590405904,
+      "top3_mean": 0.5495689655172413,
+      "crewborg_n": 542,
+      "top3_n": 928,
+      "cohen_d": 0.019038668518226998,
+      "p": 0.7246879492651406,
+      "direction": "crewborg HIGHER"
+    }
+  ],
+  "imposter": [
+    {
+      "feature": "follows",
+      "crewborg_mean": 4.263440860215054,
+      "top3_mean": 6.715753424657534,
+      "crewborg_n": 186,
+      "top3_n": 292,
+      "cohen_d": -0.7990441279445217,
+      "p": 3.007568377934842e-16,
+      "direction": "crewborg LOWER"
+    },
+    {
+      "feature": "chats",
+      "crewborg_mean": 1.3279569892473118,
+      "top3_mean": 2.184931506849315,
+      "crewborg_n": 186,
+      "top3_n": 292,
+      "cohen_d": -0.7626603030797486,
+      "p": 1.1892694963815934e-14,
+      "direction": "crewborg LOWER"
+    },
+    {
+      "feature": "chases",
+      "crewborg_mean": 0.8924731182795699,
+      "top3_mean": 1.3732876712328768,
+      "crewborg_n": 186,
+      "top3_n": 292,
+      "cohen_d": -0.45819324720833043,
+      "p": 2.695444695972918e-06,
+      "direction": "crewborg LOWER"
+    },
+    {
+      "feature": "chatted",
+      "crewborg_mean": 0.8064516129032258,
+      "top3_mean": 0.9452054794520548,
+      "crewborg_n": 186,
+      "top3_n": 292,
+      "cohen_d": -0.4555708651313656,
+      "p": 2.090487591040627e-06,
+      "direction": "crewborg LOWER"
+    },
+    {
+      "feature": "first_kill_tick",
+      "crewborg_mean": 3853.153005464481,
+      "top3_mean": 3216.170818505338,
+      "crewborg_n": 183,
+      "top3_n": 281,
+      "cohen_d": 0.36438457087747483,
+      "p": 0.00017535711563030688,
+      "direction": "crewborg HIGHER"
+    },
+    {
+      "feature": "meetings_called",
+      "crewborg_mean": 0.0967741935483871,
+      "top3_mean": 0.0273972602739726,
+      "crewborg_n": 186,
+      "top3_n": 292,
+      "cohen_d": 0.3087176089660693,
+      "p": 0.0011279511523932502,
+      "direction": "crewborg HIGHER"
+    },
+    {
+      "feature": "isolations",
+      "crewborg_mean": 2.349462365591398,
+      "top3_mean": 2.886986301369863,
+      "crewborg_n": 186,
+      "top3_n": 292,
+      "cohen_d": -0.29927368159506385,
+      "p": 0.001700064493489046,
+      "direction": "crewborg LOWER"
+    },
+    {
+      "feature": "win",
+      "crewborg_mean": 0.7043010752688172,
+      "top3_mean": 0.8013698630136986,
+      "crewborg_n": 186,
+      "top3_n": 292,
+      "cohen_d": -0.22941535450912787,
+      "p": 0.015002923517307093,
+      "direction": "crewborg LOWER"
+    },
+    {
+      "feature": "witnesses_per_kill",
+      "crewborg_mean": 0.9986559139784946,
+      "top3_mean": 0.8718607305931507,
+      "crewborg_n": 186,
+      "top3_n": 292,
+      "cohen_d": 0.10226859923012667,
+      "p": 0.39062985271008244,
+      "direction": "crewborg HIGHER"
+    },
+    {
+      "feature": "voted",
+      "crewborg_mean": 0.8172043010752689,
+      "top3_mean": 0.7773972602739726,
+      "crewborg_n": 186,
+      "top3_n": 292,
+      "cohen_d": 0.09813835279788263,
+      "p": 0.29578658149341286,
+      "direction": "crewborg HIGHER"
+    },
+    {
+      "feature": "rooms_visited",
+      "crewborg_mean": 5.064516129032258,
+      "top3_mean": 4.845890410958904,
+      "crewborg_n": 186,
+      "top3_n": 292,
+      "cohen_d": 0.09548697518421385,
+      "p": 0.2778710614021922,
+      "direction": "crewborg HIGHER"
+    },
+    {
+      "feature": "votes_player",
+      "crewborg_mean": 1.435483870967742,
+      "top3_mean": 1.4931506849315068,
+      "crewborg_n": 186,
+      "top3_n": 292,
+      "cohen_d": -0.052943894495670066,
+      "p": 0.8915007331412903,
+      "direction": "crewborg LOWER"
+    },
+    {
+      "feature": "kills",
+      "crewborg_mean": 1.7688172043010753,
+      "top3_mean": 1.7773972602739727,
+      "crewborg_n": 186,
+      "top3_n": 292,
+      "cohen_d": -0.010504133046286728,
+      "p": 0.6349038354876236,
+      "direction": "crewborg LOWER"
+    },
+    {
+      "feature": "suss_chats",
+      "crewborg_mean": 0.0,
+      "top3_mean": 0.0,
+      "crewborg_n": 186,
+      "top3_n": 292,
+      "cohen_d": 0.0,
+      "p": 1.0,
+      "direction": "crewborg LOWER"
+    },
+    {
+      "feature": "got_killed",
+      "crewborg_mean": 0.0,
+      "top3_mean": 0.0,
+      "crewborg_n": 186,
+      "top3_n": 292,
+      "cohen_d": 0.0,
+      "p": 1.0,
+      "direction": "crewborg LOWER"
+    }
+  ]
+}

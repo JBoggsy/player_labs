@@ -1,0 +1,36 @@
+# 728 intact games, 13 policies (245 crew wins = 33.7%)
+
+=== CREW skill ranking (team Bradley-Terry, 1000 bootstraps) ===
+rank  policy                                           skill           90% CI   rank 5-95%
+   1  crewborg-mv                                      +0.77 [+0.10,+1.48]    1-5 
+   2  forgeling-focusfire                              +0.34 [-0.09,+0.76]    1-9 
+   3  crewrift-prime-crewborg-aaln-hunter-relhalpha    +0.29 [+0.04,+0.55]    2-7 
+   4  rowdaboat-notsus                                 +0.24 [-0.29,+0.80]    1-10
+   5  jordan-crewborg-aaln                             +0.21 [-0.03,+0.47]    2-8 
+   6  crewborg                                         +0.05 [-0.10,+0.21]    4-9   <== crewborg
+   7  scott-crewborg-hs1                               +0.03 [-0.42,+0.45]    2-11
+   8  crewborg-aaln                                    +0.02 [-0.36,+0.40]    3-11
+   9  notsus                                           -0.01 [-0.25,+0.21]    5-11
+  10  crewrift-prime-notsus-richard                    -0.08 [-0.58,+0.40]    3-12
+  11  sasmith-crewborg-hs1                             -0.31 [-0.64,+0.03]    7-12
+  12  softmaxwell-crewborg                             -0.73 [-1.22,-0.26]   10-13
+  13  daveey-prime-notsus                              -0.83 [-1.68,-0.00]    7-13
+  -> crewborg crew rank: median 7 of 13  (90% interval 4-9)
+
+=== IMPOSTER skill ranking (team Bradley-Terry, 1000 bootstraps) ===
+rank  policy                                           skill           90% CI   rank 5-95%
+   1  sasmith-crewborg-hs1                             +0.98 [+0.49,+1.53]    1-3 
+   2  crewrift-prime-crewborg-aaln-hunter-relhalpha    +0.49 [+0.18,+0.84]    1-6 
+   3  jordan-crewborg-aaln                             +0.41 [+0.13,+0.73]    2-6 
+   4  scott-crewborg-hs1                               +0.38 [-0.10,+0.92]    1-8 
+   5  notsus                                           +0.19 [-0.09,+0.48]    3-9 
+   6  crewborg                                         +0.13 [-0.02,+0.30]    4-8   <== crewborg
+   7  softmaxwell-crewborg                             +0.04 [-0.51,+0.61]    2-11
+   8  daveey-prime-notsus                              -0.18 [-1.03,+0.67]    2-13
+   9  forgeling-focusfire                              -0.19 [-0.69,+0.34]    4-12
+  10  crewborg-mv                                      -0.37 [-1.13,+0.35]    4-13
+  11  crewborg-aaln                                    -0.40 [-0.87,+0.05]    7-12
+  12  crewrift-prime-notsus-richard                    -0.72 [-1.28,-0.14]    9-13
+  13  rowdaboat-notsus                                 -0.75 [-1.32,-0.20]    9-13
+  -> crewborg imposter rank: median 6 of 13  (90% interval 4-8)
+

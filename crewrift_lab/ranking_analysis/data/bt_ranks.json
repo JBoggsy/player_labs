@@ -1,0 +1,214 @@
+{
+  "crew": {
+    "crewborg": {
+      "skill": 0.052508107722981576,
+      "skill_lo": -0.10164173007121455,
+      "skill_hi": 0.228233598187815,
+      "rank_med": 7.0,
+      "rank_lo": 4.0,
+      "rank_hi": 9.0
+    },
+    "crewborg-aaln": {
+      "skill": 0.027624208420003665,
+      "skill_lo": -0.35075515764259163,
+      "skill_hi": 0.4403430949895705,
+      "rank_med": 7.0,
+      "rank_lo": 3.0,
+      "rank_hi": 11.0
+    },
+    "crewborg-mv": {
+      "skill": 0.7785250242341085,
+      "skill_lo": 0.12304244062182967,
+      "skill_hi": 1.493084344727958,
+      "rank_med": 1.0,
+      "rank_lo": 1.0,
+      "rank_hi": 6.0
+    },
+    "crewrift-prime-crewborg-aaln-hunter-relhalpha": {
+      "skill": 0.27571674028883797,
+      "skill_lo": 0.014241882228116521,
+      "skill_hi": 0.5332518375548929,
+      "rank_med": 4.0,
+      "rank_lo": 2.0,
+      "rank_hi": 7.0
+    },
+    "crewrift-prime-notsus-richard": {
+      "skill": -0.07823052207855594,
+      "skill_lo": -0.540817480740923,
+      "skill_hi": 0.4009982211111093,
+      "rank_med": 9.0,
+      "rank_lo": 3.0,
+      "rank_hi": 12.0
+    },
+    "daveey-prime-notsus": {
+      "skill": -0.8248956762377965,
+      "skill_lo": -1.632302977097385,
+      "skill_hi": 0.010726129798663882,
+      "rank_med": 13.0,
+      "rank_lo": 7.0,
+      "rank_hi": 13.0
+    },
+    "forgeling-focusfire": {
+      "skill": 0.33703636805352705,
+      "skill_lo": -0.08096581835318478,
+      "skill_hi": 0.769820194701684,
+      "rank_med": 3.0,
+      "rank_lo": 1.0,
+      "rank_hi": 9.0
+    },
+    "jordan-crewborg-aaln": {
+      "skill": 0.21136429706934803,
+      "skill_lo": -0.0435269037792842,
+      "skill_hi": 0.4751367692614448,
+      "rank_med": 5.0,
+      "rank_lo": 2.0,
+      "rank_hi": 8.0
+    },
+    "notsus": {
+      "skill": -0.015056536243749818,
+      "skill_lo": -0.2460456707592614,
+      "skill_hi": 0.22000810554011202,
+      "rank_med": 8.0,
+      "rank_lo": 5.0,
+      "rank_hi": 11.0
+    },
+    "rowdaboat-notsus": {
+      "skill": 0.21705640821454303,
+      "skill_lo": -0.3614920700695623,
+      "skill_hi": 0.7841292801003603,
+      "rank_med": 4.0,
+      "rank_lo": 1.0,
+      "rank_hi": 11.0
+    },
+    "sasmith-crewborg-hs1": {
+      "skill": -0.2971230421442716,
+      "skill_lo": -0.6118711940911954,
+      "skill_hi": 0.029124367439989838,
+      "rank_med": 11.0,
+      "rank_lo": 7.0,
+      "rank_hi": 12.0
+    },
+    "scott-crewborg-hs1": {
+      "skill": 0.018437017349902378,
+      "skill_lo": -0.4429930822815339,
+      "skill_hi": 0.4570966234351346,
+      "rank_med": 7.0,
+      "rank_lo": 2.0,
+      "rank_hi": 12.0
+    },
+    "softmaxwell-crewborg": {
+      "skill": -0.7029623946488788,
+      "skill_lo": -1.1833620654508166,
+      "skill_hi": -0.22071043163258847,
+      "rank_med": 12.0,
+      "rank_lo": 10.0,
+      "rank_hi": 13.0
+    }
+  },
+  "imposter": {
+    "crewborg": {
+      "skill": 0.13599075638983418,
+      "skill_lo": -0.022321812605293485,
+      "skill_hi": 0.31634740127384586,
+      "rank_med": 6.0,
+      "rank_lo": 4.0,
+      "rank_hi": 8.0
+    },
+    "crewborg-aaln": {
+      "skill": -0.4063042348672137,
+      "skill_lo": -0.864434508894945,
+      "skill_hi": 0.04336465716509447,
+      "rank_med": 10.0,
+      "rank_lo": 7.0,
+      "rank_hi": 12.0
+    },
+    "crewborg-mv": {
+      "skill": -0.3897990824688719,
+      "skill_lo": -1.1581900962905742,
+      "skill_hi": 0.3597048727652839,
+      "rank_med": 10.0,
+      "rank_lo": 4.0,
+      "rank_hi": 13.0
+    },
+    "crewrift-prime-crewborg-aaln-hunter-relhalpha": {
+      "skill": 0.48772937784583403,
+      "skill_lo": 0.1690201891473659,
+      "skill_hi": 0.8222807557303549,
+      "rank_med": 3.0,
+      "rank_lo": 1.0,
+      "rank_hi": 6.0
+    },
+    "crewrift-prime-notsus-richard": {
+      "skill": -0.7102521112119022,
+      "skill_lo": -1.297104028595043,
+      "skill_hi": -0.12532537247725287,
+      "rank_med": 12.0,
+      "rank_lo": 8.0,
+      "rank_hi": 13.0
+    },
+    "daveey-prime-notsus": {
+      "skill": -0.19429040735040695,
+      "skill_lo": -0.9984742666353056,
+      "skill_hi": 0.6499523193835998,
+      "rank_med": 9.0,
+      "rank_lo": 2.0,
+      "rank_hi": 13.0
+    },
+    "forgeling-focusfire": {
+      "skill": -0.1835729264207895,
+      "skill_lo": -0.7014084204112971,
+      "skill_hi": 0.3467523202925833,
+      "rank_med": 9.0,
+      "rank_lo": 4.0,
+      "rank_hi": 12.0
+    },
+    "jordan-crewborg-aaln": {
+      "skill": 0.42337693462634507,
+      "skill_lo": 0.13355397290249094,
+      "skill_hi": 0.7317496893618027,
+      "rank_med": 3.0,
+      "rank_lo": 2.0,
+      "rank_hi": 6.0
+    },
+    "notsus": {
+      "skill": 0.1969561013132471,
+      "skill_lo": -0.09162101395462004,
+      "skill_hi": 0.49492755930118076,
+      "rank_med": 6.0,
+      "rank_lo": 3.0,
+      "rank_hi": 9.0
+    },
+    "rowdaboat-notsus": {
+      "skill": -0.7270741165260753,
+      "skill_lo": -1.3540440461197367,
+      "skill_hi": -0.11864338066905367,
+      "rank_med": 12.0,
+      "rank_lo": 8.0,
+      "rank_hi": 13.0
+    },
+    "sasmith-crewborg-hs1": {
+      "skill": 0.9724629057169074,
+      "skill_lo": 0.48997575600170434,
+      "skill_hi": 1.4707231287898412,
+      "rank_med": 1.0,
+      "rank_lo": 1.0,
+      "rank_hi": 3.0
+    },
+    "scott-crewborg-hs1": {
+      "skill": 0.3781318341148637,
+      "skill_lo": -0.10691516503517078,
+      "skill_hi": 0.9092438552282377,
+      "rank_med": 4.0,
+      "rank_lo": 1.0,
+      "rank_hi": 9.0
+    },
+    "softmaxwell-crewborg": {
+      "skill": 0.01664496883822808,
+      "skill_lo": -0.5251510576302288,
+      "skill_hi": 0.5662580464376379,
+      "rank_med": 7.0,
+      "rank_lo": 2.0,
+      "rank_hi": 11.0
+    }
+  }
+}
