@@ -122,9 +122,11 @@ def _marker(draw: ImageDraw.ImageDraw, shape: str, x: int, y: int,
                      fill=color, outline=(0, 0, 0))
 
 
-def render(rows, spotlight: str | None, draw_events: bool) -> Image.Image:
+def render(rows, spotlight: str | None, spotlight_user: str | None,
+           draw_events: bool) -> Image.Image:
     """Render travel lines + events for all main-map players."""
     names: dict[int, str] = {}
+    users: dict[int, str] = {}
     # Per slot: parallel lists of sampled ticks and (x, y) on the main map.
     ticks: dict[int, list[int]] = {}
     paths: dict[int, list[tuple[int, int]]] = {}
@@ -139,6 +141,7 @@ def render(rows, spotlight: str | None, draw_events: bool) -> Image.Image:
                     continue
                 slot = player["slot"]
                 names[slot] = player["name"]
+                users[slot] = player.get("user", "")
                 ticks.setdefault(slot, []).append(tick)
                 paths.setdefault(slot, []).append((player["x"], player["y"]))
         elif kind == "event":
@@ -148,6 +151,8 @@ def render(rows, spotlight: str | None, draw_events: bool) -> Image.Image:
     draw = ImageDraw.Draw(image)
 
     def is_spotlit(slot: int) -> bool:
+        if spotlight_user is not None:
+            return users.get(slot, "") == spotlight_user
         return spotlight is None or names.get(slot, "") == spotlight
 
     # Travel lines: dim the non-spotlit players so the subject stands out.
@@ -195,14 +200,17 @@ def main() -> None:
     parser.add_argument("jsonl", help="expanded replay JSONL ('-' for stdin)")
     parser.add_argument("--out", default="replay_paths.png", help="output PNG")
     parser.add_argument("--player", default=None,
-                        help="spotlight this player name (dim the rest)")
+                        help="spotlight this player NAME (display name; dim the rest)")
+    parser.add_argument("--user", default=None,
+                        help="spotlight by USERNAME instead of display name "
+                             "(e.g. --user Cady; display names vary per episode)")
     parser.add_argument("--no-events", action="store_true",
                         help="draw only travel lines, no event markers")
     parser.add_argument("--scale", type=int, default=1,
                         help="integer upscale factor for the output image")
     args = parser.parse_args()
 
-    image = render(_read_rows(args.jsonl), args.player, not args.no_events)
+    image = render(_read_rows(args.jsonl), args.player, args.user, not args.no_events)
     if args.scale > 1:
         image = image.resize(
             (image.width * args.scale, image.height * args.scale),
