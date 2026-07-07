@@ -27,6 +27,13 @@ NOTE: near dinner villagers disperse to their OWN houses, so the single hottest 
 house — a follow-up is to prefer a spot central to MANY houses, hit early before they lock home.
 ## v19 — 2026-07-07 (gather reliability: navigator stuck-detection → re-plan)
 
+**RESULT — harvest floor FIXED.** 15/15 scored; harvest min 27→113, ZERO collapse games (was 2),
+mean harvest 113→135. Score mean flat (145→141) — NOT a regression: with gather+nav solid,
+score variance is now ENTIRELY guest-count driven. Proof: 31e63 (130 food, 15 guests) scored
+248 while 0c540 (135 food, 1 guest) scored 54 — same food, 4.5x score. Low-score games had
+full harvests + many chats but few villagers COMMITTED. Recruiting *conversion* is the next
+lever (deterministic floor may be near its ceiling; the LLM layer targets exactly this).
+
 v18 scored 15/15 but 2 games cratered to ~27 food (vs ~130 usual). Traced with the replay
 tools: NOT competition or slow movement — a **navigation dead-stall**. From ~day 3 she froze
 at one spot (~900 ticks, harvesting ~1/day): a STALE cached waypoint sat behind a wall relative
