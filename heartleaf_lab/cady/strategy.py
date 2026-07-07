@@ -17,16 +17,15 @@ modes; a guest scores 0, so hosting is our own scoring lever.
 from __future__ import annotations
 
 from cady.config import (
-    HOST_PREP_MINUTES,
     HOUSE_ENTER_MINUTES,
-    STRONG_HOST_FOOD,
+    INVITE_START_MINUTES,
 )
 from cady.types import ActionState, Belief
 from players.player_sdk import BeliefSnapshot, ModeDirective
 
-#: A host directive stays valid this many ticks so a brief strategy hiccup (or,
-#: later, LLM latency) never yanks us off hosting and back. At 24 fps this is a
-#: few seconds; hosting is a stable, whole-evening commitment anyway.
+#: A host/invite directive stays valid this many ticks so a brief strategy hiccup
+#: (or, later, LLM latency) never yanks us off the social plan and back. At 24 fps
+#: this is a few seconds; these are stable, whole-evening commitments anyway.
 HOST_DIRECTIVE_TTL_TICKS = 120
 
 
@@ -51,32 +50,27 @@ class SocialStrategy:
                 return _directive("host", "host time, stay home", ttl=HOST_DIRECTIVE_TTL_TICKS)
             return _directive("exit_house", "inside home before host time")
 
+        # Phase order: gather → invite (broadcast at our door, 3-5 PM) → host
+        # (enter our house and hold, 5 PM through dinner). Inviting has to happen
+        # OUTSIDE, visible at our door, BEFORE we go in — so it precedes host.
         if self._is_host_time(belief):
-            return _directive("host", self._host_reason(belief), ttl=HOST_DIRECTIVE_TTL_TICKS)
+            return _directive("host", "house-enter cutoff reached", ttl=HOST_DIRECTIVE_TTL_TICKS)
+        if self._is_invite_time(belief):
+            return _directive("invite", "invite window open", ttl=HOST_DIRECTIVE_TTL_TICKS)
         return _directive("gather", "gathering food")
 
-    def _is_host_time(self, belief: Belief) -> bool:
-        """True once we should stop gathering and hold our own party.
-
-        Two triggers, whichever comes first (mirrors the villager):
-        - the hard house-enter cutoff (be in position before dinner), or
-        - we're already food-rich by the prep hour (no need to keep gathering).
-        """
+    def _is_invite_time(self, belief: Belief) -> bool:
+        """True in the pre-dinner window (invite open → house-enter cutoff): stop
+        gathering and stand at our door broadcasting invites, since only guests
+        turn our food into score."""
         minutes = belief.last_time_minutes
-        if minutes is None:
-            # No clock yet: keep gathering (the safe default before dinner).
-            return False
-        if minutes >= HOUSE_ENTER_MINUTES:
-            return True
-        if minutes >= HOST_PREP_MINUTES and belief.inventory_count >= STRONG_HOST_FOOD:
-            return True
-        return False
+        return minutes is not None and minutes >= INVITE_START_MINUTES
 
-    def _host_reason(self, belief: Belief) -> str:
-        minutes = belief.last_time_minutes or 0
-        if minutes >= HOUSE_ENTER_MINUTES:
-            return "house-enter cutoff reached"
-        return f"food-rich ({belief.inventory_count}) at prep time"
+    def _is_host_time(self, belief: Belief) -> bool:
+        """True at the hard house-enter cutoff: stop inviting, go inside to host
+        (must be inside our own home at dinner to score)."""
+        minutes = belief.last_time_minutes
+        return minutes is not None and minutes >= HOUSE_ENTER_MINUTES
 
 
 def _directive(mode: str, reason: str, *, ttl: int = 0) -> ModeDirective:

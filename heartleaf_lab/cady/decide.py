@@ -22,7 +22,7 @@ def build_decide(
     *,
     trace_sink: TraceSink | None = None,
     metrics_sink: MetricsSink | None = None,
-) -> Callable[[SpriteWorld, SpriteContext], int]:
+) -> Callable[[SpriteWorld, SpriteContext], int | tuple[int, str | None]]:
     """Build a stateful bridge callback backed by one runtime instance."""
 
     diagnostics = _DiagnosticLogger() if _diagnostics_enabled() else None
@@ -32,10 +32,14 @@ def build_decide(
         on_step_complete=diagnostics.on_step_complete if diagnostics is not None else None,
     )
 
-    def _decide(world: SpriteWorld, ctx: SpriteContext) -> int:
+    def _decide(world: SpriteWorld, ctx: SpriteContext) -> int | tuple[int, str | None]:
         if diagnostics is not None:
             diagnostics.capture_world(world, ctx.frame)
         command = runtime.step(Observation(world=world, frame=ctx.frame))
+        # Return (mask, chat) only when speaking this frame; the SDK bridge packs
+        # the chat packet and caps it. A bare mask on silent frames.
+        if command.chat:
+            return int(command.held_mask), command.chat
         return int(command.held_mask)
 
     return _decide

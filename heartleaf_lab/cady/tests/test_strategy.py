@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 from cady.config import (
-    HOST_PREP_MINUTES,
     HOUSE_ENTER_MINUTES,
-    STRONG_HOST_FOOD,
+    INVITE_START_MINUTES,
 )
 from cady.frame import to_world
 from cady.mapdata import HOUSE_TARGETS
@@ -36,9 +35,20 @@ def test_strategy_stays_home_to_host_at_host_time() -> None:
     assert directive.ttl_ticks == HOST_DIRECTIVE_TTL_TICKS
 
 
-def test_strategy_gathers_before_cutoff() -> None:
-    directive = SocialStrategy().select(Belief(self_xy=(0, 0), last_time_minutes=300))
+def test_strategy_gathers_before_invite_window() -> None:
+    directive = SocialStrategy().select(
+        Belief(self_xy=(0, 0), last_time_minutes=INVITE_START_MINUTES - 60)
+    )
     assert directive.mode == "gather"
+
+
+def test_strategy_invites_in_the_pre_dinner_window() -> None:
+    # From the invite window until the house-enter cutoff: broadcast invites.
+    directive = SocialStrategy().select(
+        Belief(self_xy=(0, 0), last_time_minutes=INVITE_START_MINUTES)
+    )
+    assert directive.mode == "invite"
+    assert directive.ttl_ticks == HOST_DIRECTIVE_TTL_TICKS
 
 
 def test_strategy_hosts_at_house_enter_cutoff() -> None:
@@ -47,22 +57,6 @@ def test_strategy_hosts_at_house_enter_cutoff() -> None:
     )
     assert directive.mode == "host"
     assert directive.ttl_ticks == HOST_DIRECTIVE_TTL_TICKS
-
-
-def test_strategy_hosts_early_when_food_rich_at_prep_time() -> None:
-    # Food-rich by the prep hour: stop gathering early and host.
-    directive = SocialStrategy().select(
-        Belief(self_xy=(0, 0), last_time_minutes=HOST_PREP_MINUTES, inventory_count=STRONG_HOST_FOOD)
-    )
-    assert directive.mode == "host"
-
-
-def test_strategy_keeps_gathering_when_food_poor_at_prep_time() -> None:
-    # Prep hour but not food-rich yet: keep gathering until the hard cutoff.
-    directive = SocialStrategy().select(
-        Belief(self_xy=(0, 0), last_time_minutes=HOST_PREP_MINUTES, inventory_count=STRONG_HOST_FOOD - 1)
-    )
-    assert directive.mode == "gather"
 
 
 def test_strategy_gathers_when_time_is_unknown() -> None:

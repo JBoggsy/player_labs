@@ -111,6 +111,8 @@ class ActionState:
     # Frames left to release/observe before the next A press (press-and-verify
     # cadence; see A_PRESS_PERIOD). 0 means the next interact may press A now.
     a_cooldown: int = 0
+    # Frames until we may broadcast the next invite (rate-limit, not spam).
+    invite_cooldown: int = 0
 
 
 IntentKind = Literal["gather_at", "navigate_to", "enter_house", "hold", "idle"]
@@ -123,6 +125,9 @@ class Intent:
     kind: IntentKind
     point: tuple[int, int] | None = None
     house_index: int | None = None
+    #: Optional chat line to broadcast this frame (invites). The action layer
+    #: passes it through to the Command; the bridge caps/sanitizes it.
+    chat: str | None = None
 
 
 @dataclass(frozen=True)

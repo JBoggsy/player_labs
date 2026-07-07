@@ -13,6 +13,23 @@ Deterministic gather-and-host baseline on the SDK SpriteV1 bridge.
 This is the connect/gather/navigate/host/exit baseline. Coordination through
 chat invitations is planned for v2.
 
+## v12 — 2026-07-07 (social increment 2: invite guests — broadcast at our door)
+
+The scoring lever: only hosts score (`food × guests`), and v11 hosted with 0 guests.
+Increment 2 adds the deterministic **invite** phase (LLM still off). New `InviteMode` +
+phase order: gather → **invite (3–5 PM)** → host (enter at 5 PM). During invite, Cady stands
+at her OWN house door and, whenever another gnome is within hearing range
+(`INVITE_HEARING_RADIUS`), broadcasts a ≤48-char line naming her own house by owner name —
+`"Party at <PLAYER_NAMES[own_house_index]>'s house at 6! ..."`. That's the exact form a
+villager's hearing→LLM→`inferSocialCommitment` path can parse into a commitment to attend us
+([[heartleaf-villager-exploits]]): a heard invite naming a house can lock a villager there.
+Standing at our door means hearers also SEE the party forming (crowd-snowball).
+
+Also wires chat end-to-end (was dropped): `Intent.chat` → `Command.chat` → `decide` returns
+`(mask, chat)`; broadcasts rate-limited by `INVITE_MIN_INTERVAL_TICKS` (no spam). Inviting is
+inherently a pre-dinner, OUTSIDE-the-house action, so it precedes host in the schedule. 70
+tests pass; chat flow verified. Invites only fire past 3 PM, so this needs a hosted eval.
+
 ## v11 — 2026-07-07 (social increment 1: deterministic host floor + press-and-verify A cadence)
 
 > Uploaded version **v11** (`d27c4dc2`). Bundles two committed changes — the

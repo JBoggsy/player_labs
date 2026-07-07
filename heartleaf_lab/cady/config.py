@@ -31,6 +31,29 @@ HOUSE_CROWD_RADIUS = 48
 """Pixels from a house rect within which a visible gnome counts toward that
 house's 'crowd' (for choosing which party to attend)."""
 
+# --- Invite (get guests to OUR party) --------------------------------------
+#: Fixed house-owner display names by house index (heartleaf protocol.nim
+#: PlayerNames). A player's house index == its gnome index == perception's
+#: own_house_index, so PLAYER_NAMES[own_house_index] is OUR house's owner name —
+#: which is how villagers refer to a house ("<Name>'s house"). Our invite names
+#: our own house this way so a hearer's LLM can commit to attending it.
+PLAYER_NAMES = (
+    "Ivan", "Anton", "Yura", "Sasha", "Maxim", "Nikita", "Vova", "Dima", "Egor",
+)
+
+INVITE_START_MINUTES = 420
+"""3:00 PM — start broadcasting invites (matches the villager's invite window;
+too early and villagers keep gathering instead of committing)."""
+
+INVITE_HEARING_RADIUS = 150
+"""Pixels: release an invite only when a target is within ~half a viewport, so
+the bubble actually lands on their screen (heartleaf has no chat radius; reach =
+bubble on the hearer's 320x200 viewport). See the broadcast/whisper note."""
+
+INVITE_MIN_INTERVAL_TICKS = 72
+"""Min frames between our invite chats (~3 s). Chat bubbles linger ~5 s; we
+re-broadcast periodically without spamming."""
+
 WAYPOINT_RADIUS = 6
 """Distance in pixels at which a cached navigation waypoint counts as reached."""
 

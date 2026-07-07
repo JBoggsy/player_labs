@@ -19,14 +19,17 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
     self_xy = belief.self_xy
     if self_xy is None:
         state.a_held = False
-        return Command(held_mask=0)
+        return Command(held_mask=0, chat=intent.chat)
 
     velocity = _velocity(state, self_xy)
     mask = _resolve_mask(intent, belief, state, self_xy, velocity)
 
     state.last_self_xy = self_xy
     state.a_held = bool(mask & int(Button.A))
-    return Command(held_mask=int(mask))
+    # Chat is decided by the mode (proximity-gated invites) and passed through;
+    # the bridge sanitizes/caps it. A mode leaves it None on frames it isn't
+    # speaking, so we don't re-broadcast every tick.
+    return Command(held_mask=int(mask), chat=intent.chat)
 
 
 def _resolve_mask(
