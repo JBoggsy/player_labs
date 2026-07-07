@@ -6,6 +6,39 @@ thin wrappers that just pass a different "soul" prompt). Source:
 `coworld-heartleaf/players/talking_villager/talking_villager.nim` (+ `decisions.nim`),
 read at master `c0dc3df`. All line numbers are from that file.
 
+## What triggers a villager's LLM to ACCEPT our invite (from soul.md, 2026-07-07)
+
+Each villager's `soul.md` (personality prompt) gives the LLM an **explicit accept recipe**.
+All four (chatty/friendly/fatherly/shy) share the same structure — only the wording of the
+promise differs:
+
+> *"If someone invites you and **you are free**, promise \<warmly/firmly/clearly\>: **I will be
+> there for sure! / I would love to, see you at 6 / I will come to your house at 6**. **Set
+> commitParty true** when you promise, with **houseIndex set to that owner's house**. **Do not
+> promise two dinners.**"*
+
+So the accept fires when **(a) the LLM hears an invite naming a house/owner, AND (b) it is
+"free"** — i.e. not already committed elsewhere and not hosting. The reply is an attendance
+phrase + `commitParty:true` + the owner's `houseIndex`, which the deterministic layer then
+**locks** (`inferSocialCommitment` → `committedPartyHouse`, honored unless it arrives to an
+empty house). The "free / do not promise two dinners / do not confirm if already committed or
+hosting" rule is the **first-come-first-served** lever:
+
+- **Invite EARLY and FIRST.** Whoever's invite the villager hears-and-accepts first captures
+  it; after that it won't double-book. Beating rival hosts to the promise is the whole game.
+- **Food gates whether the villager HOSTS (and thus is "not free").** Every soul: "if your
+  food is high, host … invite people to your house." A food-*rich* villager becomes a host
+  (not free → won't accept us); a food-*poor* one "asks around and joins one" / "accepts an
+  invitation graciously." So **food-poor villagers are the acceptors** (as we suspected), and
+  a villager only starts *its own* inviting at 4 PM ("At 4pm, invite people to your house") —
+  another reason to hit them **before 4 PM**, while they're still free and not yet hosting.
+- **Naming matters:** souls are told to refer to houses by owner name ("Anton's house"), never
+  number — matching our invite format. Our line must name our own owner-name (we do).
+
+CAVEAT: this is the LLM path. It requires the villager's LLM to be firing (measured working in
+xreq — see reliability note below) and to judge itself "free." No deterministic fallback reads
+our chat, so if the LLM is down our invite does nothing to that villager.
+
 ## Two facts that drive how we recruit them (verified in source, 2026-07-07)
 
 1. **A host stands OUTSIDE its own door, visible — not inside.** `gatherAtHouseGoal`
