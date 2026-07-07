@@ -15,6 +15,13 @@ chat invitations is planned for v2.
 
 ## v16 — 2026-07-07 (ROOT-CAUSE FIX: clock was unreadable — all clock-gated phases were dead)
 
+**RESULT — FIRST POINTS ON THE BOARD.** 15-ep hosted eval: Cady scored in **12/15 games**
+(was 0/15 every prior version), mean **109/game** (max 239, total 1637), broadcasting invites
+in 14/15. The full chain fires: clock reads → invite phase (seek crowd, broadcast) → villagers
+commit + attend → host at own house at the 6:55 resolve → score = food × guests. Multi-guest
+dinners appear (e.g. 2 guests × 96 food = 192). 3 zero-score games had low/zero chats (0,2,5)
+— the recruiting-reliability tail is the next lever.
+
 The bug behind every 0-score social eval, found via a new `time_minutes` diagnostic that read
 **None on every frame, all game**. `SocialStrategy` is clock-gated (gather<420, invite 420-540,
 host>=540), so a dead clock meant she NEVER left gather/exit_house — no invite, no real host.
