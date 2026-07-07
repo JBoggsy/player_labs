@@ -50,7 +50,13 @@ def main() -> None:
     url = _with_username(env_ws_url(), USERNAME)
     outputs = build_trace_outputs()
     decide = build_decide(trace_sink=outputs.trace_sink, metrics_sink=outputs.metrics_sink)
-    asyncio.run(run_sprite_bridge(url, decide, trace_outputs=outputs))
+    # Disable the websockets client keepalive. Our per-frame ``decide`` runs
+    # synchronously inside the async loop, so a slow frame can delay the
+    # library's ping/pong past its default 20s timeout — the connection is then
+    # torn down mid-game (observed: Cady dropped ~33s in, every game). The game
+    # streams frames continuously, so that stream IS the liveness signal; we
+    # don't need library-level pings on top of it.
+    asyncio.run(run_sprite_bridge(url, decide, trace_outputs=outputs, ping_interval=None))
 
 
 if __name__ == "__main__":

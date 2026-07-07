@@ -13,6 +13,20 @@ Deterministic gather-and-host baseline on the SDK SpriteV1 bridge.
 This is the connect/gather/navigate/host/exit baseline. Coordination through
 chat invitations is planned for v2.
 
+## v8 — 2026-07-07 (fix: disable websocket keepalive — Cady stayed connected only ~33s)
+
+**The bug that made every prior version score 0.** Cady disconnected ~20–48s into
+*every* game (tick ~456–1152) and was absent for ~97% of it — not a navigation bug, a
+connection bug. Root cause: the SDK bridge connects with the `websockets` default
+keepalive (ping 20s / timeout 20s), and Cady's per-frame `decide` runs synchronously in
+the async loop, delaying pong handling past the timeout → `websockets` tears down the
+connection (reported as "server closed the connection"). Reproduced locally: all 9 self-play
+instances dropped at tick ~800; with `ping_interval=None` all 9 survived to game end.
+
+Fix: pass `ping_interval=None` to `run_sprite_bridge` (`main.py`) — the game's continuous
+frame stream is the liveness signal, so library pings aren't needed. Diagnosed with the
+replay expander + `viz_replay` and `coworld-local-run` (see `../docs/replay-tools.md`).
+
 ## v2–v6 — 2026-07-06/07 (nav foundation + coordinate-system fixes)
 
 The navigation build-out and the self-position bug hunt. See `git log -- heartleaf_lab/cady`
