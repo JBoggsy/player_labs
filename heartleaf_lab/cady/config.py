@@ -54,6 +54,24 @@ INVITE_MIN_INTERVAL_TICKS = 72
 """Min frames between our invite chats (~3 s). Chat bubbles linger ~5 s; we
 re-broadcast periodically without spamming."""
 
+INVITE_MIN_AUDIENCE = 2
+"""Broadcast only once at least this many other gnomes are within hearing range
+at the same time — so the bubble lands on several viewers at once, not the first
+lone passer-by. One villager in range still gets invited if the window is
+closing (see INVITE_BROADCAST_DEADLINE_MINUTES)."""
+
+INVITE_BROADCAST_DEADLINE_MINUTES = 510
+"""4:30 PM — past this, drop the audience requirement and invite whoever is in
+range (even one), since time to recruit is almost gone before the 5 PM cutoff."""
+
+INVITE_RETURN_MINUTES = 525
+"""4:45 PM — stop seeking and head back to our own door, so we're never caught
+far from home at the HOUSE_ENTER cutoff (5 PM)."""
+
+INVITE_MAP_CENTER = (374, 473)
+"""Walkable point near the map's geometric center (748x941) — the default place
+to head when no crowd is visible yet, to maximize the chance of finding one."""
+
 WAYPOINT_RADIUS = 6
 """Distance in pixels at which a cached navigation waypoint counts as reached."""
 

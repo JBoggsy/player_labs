@@ -1,8 +1,14 @@
-"""Tests for Cady's invite mode (draw guests to our own party)."""
+"""Tests for Cady's invite mode (seek a crowd, broadcast to our own party)."""
 
 from __future__ import annotations
 
-from cady.config import INVITE_HEARING_RADIUS, INVITE_MIN_INTERVAL_TICKS, PLAYER_NAMES
+from cady.config import (
+    INVITE_BROADCAST_DEADLINE_MINUTES,
+    INVITE_MIN_AUDIENCE,
+    INVITE_MIN_INTERVAL_TICKS,
+    INVITE_RETURN_MINUTES,
+    PLAYER_NAMES,
+)
 from cady.frame import to_world
 from cady.mapdata import HOUSE_TARGETS
 from cady.modes import InviteMode
@@ -11,29 +17,27 @@ from cady.types import ActionState, Belief, Gnome
 OWN = 6  # our house index for these tests
 
 
-def _at_own_door(**overrides) -> Belief:
+def _belief(self_xy, gnomes=(), minutes=430, **overrides) -> Belief:
     belief = Belief(
-        self_xy=to_world(HOUSE_TARGETS[OWN]),
+        self_xy=self_xy,
         own_house_index=OWN,
         map_context="main",
+        last_time_minutes=minutes,
+        gnomes=tuple(gnomes),
     )
     for key, value in overrides.items():
         setattr(belief, key, value)
     return belief
 
 
-def _nearby_gnome() -> Gnome:
-    x, y = to_world(HOUSE_TARGETS[OWN])
-    return Gnome(index=0, pos=(x + 20, y), facing="south")  # well within earshot
+def _cluster_around(center, n) -> list[Gnome]:
+    # n gnomes packed at the same spot (well within one hearing radius).
+    return [Gnome(index=i, pos=(center[0] + i, center[1]), facing="south") for i in range(n)]
 
 
-def _far_gnome() -> Gnome:
-    x, y = to_world(HOUSE_TARGETS[OWN])
-    return Gnome(index=0, pos=(x + INVITE_HEARING_RADIUS + 50, y), facing="south")
-
-
-def test_invite_broadcasts_when_someone_is_in_earshot() -> None:
-    belief = _at_own_door(gnomes=(_nearby_gnome(),))
+def test_invite_broadcasts_when_enough_are_in_earshot() -> None:
+    here = (400, 400)
+    belief = _belief(here, gnomes=_cluster_around(here, INVITE_MIN_AUDIENCE))
     intent = InviteMode().decide(belief, ActionState())
 
     assert intent.chat is not None
@@ -41,30 +45,53 @@ def test_invite_broadcasts_when_someone_is_in_earshot() -> None:
     assert len(intent.chat) <= 48
 
 
-def test_invite_stays_silent_with_nobody_near() -> None:
-    belief = _at_own_door(gnomes=(_far_gnome(),))
-    intent = InviteMode().decide(belief, ActionState())
+def test_invite_stays_silent_below_audience_threshold_early() -> None:
+    here = (400, 400)
+    # Only one gnome in earshot, and it's early — wait for a bigger audience.
+    belief = _belief(here, gnomes=_cluster_around(here, 1), minutes=430)
+    assert INVITE_MIN_AUDIENCE > 1
+    assert InviteMode().decide(belief, ActionState()).chat is None
 
-    assert intent.chat is None
+
+def test_invite_relaxes_to_one_when_window_closing() -> None:
+    here = (400, 400)
+    belief = _belief(here, gnomes=_cluster_around(here, 1), minutes=INVITE_BROADCAST_DEADLINE_MINUTES)
+    assert InviteMode().decide(belief, ActionState()).chat is not None
+
+
+def test_invite_seeks_the_crowd_centroid() -> None:
+    # Standing away from a distant cluster: move toward its center of gravity.
+    here = (100, 100)
+    cluster = [Gnome(index=0, pos=(500, 500), facing="s"), Gnome(index=1, pos=(520, 520), facing="s")]
+    belief = _belief(here, gnomes=cluster)
+    intent = InviteMode().decide(belief, ActionState())
+    assert intent.kind in ("navigate_to", "hold")
+    # Not silent-standing at home: it has a movement goal toward the crowd.
+    if intent.kind == "navigate_to":
+        assert intent.point is not None
+
+
+def test_invite_returns_home_after_return_time() -> None:
+    # Past the return cutoff, head to our own door regardless of a far crowd.
+    here = (100, 100)
+    cluster = [Gnome(index=0, pos=(700, 900), facing="s")]
+    belief = _belief(here, gnomes=cluster, minutes=INVITE_RETURN_MINUTES)
+    intent = InviteMode().decide(belief, ActionState())
+    # The goal is our own house target (navigate toward it), not the far crowd.
+    assert intent.kind == "navigate_to"
 
 
 def test_invite_rate_limits_broadcasts() -> None:
-    belief = _at_own_door(gnomes=(_nearby_gnome(),))
+    here = (400, 400)
+    belief = _belief(here, gnomes=_cluster_around(here, INVITE_MIN_AUDIENCE))
     state = ActionState()
 
     first = InviteMode().decide(belief, state)
     assert first.chat is not None
     assert state.invite_cooldown == INVITE_MIN_INTERVAL_TICKS
 
-    # Immediately after, we hold the line rather than re-broadcasting every tick.
     second = InviteMode().decide(belief, state)
-    assert second.chat is None
-
-
-def test_invite_holds_at_own_door() -> None:
-    belief = _at_own_door(gnomes=())
-    intent = InviteMode().decide(belief, ActionState())
-    assert intent.kind == "hold"
+    assert second.chat is None  # cooling down, not spamming
 
 
 def test_invite_idles_without_own_house() -> None:
@@ -72,8 +99,8 @@ def test_invite_idles_without_own_house() -> None:
     assert InviteMode().decide(belief, ActionState()).kind == "idle"
 
 
-def test_invite_does_not_count_self_as_earshot() -> None:
-    # The only visible gnome is us (index == own_house_index) → nobody to invite.
-    x, y = to_world(HOUSE_TARGETS[OWN])
-    belief = _at_own_door(gnomes=(Gnome(index=OWN, pos=(x, y), facing="south"),))
+def test_invite_ignores_self_in_the_crowd() -> None:
+    here = (400, 400)
+    # Only "other" gnome is us -> no audience, no crowd to seek.
+    belief = _belief(here, gnomes=[Gnome(index=OWN, pos=here, facing="s")])
     assert InviteMode().decide(belief, ActionState()).chat is None
