@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import sys
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from cady.decide import build_decide
 from players.player_sdk import (
@@ -15,6 +17,17 @@ from players.player_sdk import (
 
 DEFAULT_TRACE_OUTPUTS = "jsonl@artifact"
 FALLBACK_TRACE_OUTPUTS = "jsonl@stderr"
+#: Heartleaf reads the player's display name from a ``?username=`` query param on the
+#: connection URL (heartleaf.nim). Announce ourselves as "Cady" (override via env).
+USERNAME = os.getenv("CADY_USERNAME", "Cady")
+
+
+def _with_username(url: str, username: str) -> str:
+    """Return ``url`` with a ``username=`` query param set (preserving others)."""
+    parts = urlsplit(url)
+    query = [(k, v) for k, v in parse_qsl(parts.query, keep_blank_values=True) if k != "username"]
+    query.append(("username", username))
+    return urlunsplit(parts._replace(query=urlencode(query)))
 
 
 def build_trace_outputs() -> TraceOutputs:
@@ -34,7 +47,7 @@ def build_trace_outputs() -> TraceOutputs:
 def main() -> None:
     """Run Cady against the runner-provided SpriteV1 websocket URL."""
 
-    url = env_ws_url()
+    url = _with_username(env_ws_url(), USERNAME)
     outputs = build_trace_outputs()
     decide = build_decide(trace_sink=outputs.trace_sink, metrics_sink=outputs.metrics_sink)
     asyncio.run(run_sprite_bridge(url, decide, trace_outputs=outputs))
