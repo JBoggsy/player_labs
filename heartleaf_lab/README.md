@@ -56,7 +56,8 @@ heartleaf_lab/
   TENTATIVE_LESSONS.md            this session's candidate-lessons buffer (auto-rotated)
   docs/
     heartleaf-gameplay.md         self-contained game reference (rules, protocol, scoring, strategy)
-  tools/                          lessons lifecycle hooks (rotate + stop-nudge)
+    replay-tools.md               how to expand a replay + draw travel-line debug images
+  tools/                          lessons hooks + replay debugging (expand_replay build + viz_replay)
   .claude/skills/lessons-review/  the ≈weekly lessons-graduation skill
   lessons_archive/                rotated per-session lesson buffers
 ```
