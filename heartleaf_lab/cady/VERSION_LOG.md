@@ -13,6 +13,22 @@ Deterministic gather-and-host baseline on the SDK SpriteV1 bridge.
 This is the connect/gather/navigate/host/exit baseline. Coordination through
 chat invitations is planned for v2.
 
+## v16 — 2026-07-07 (ROOT-CAUSE FIX: clock was unreadable — all clock-gated phases were dead)
+
+The bug behind every 0-score social eval, found via a new `time_minutes` diagnostic that read
+**None on every frame, all game**. `SocialStrategy` is clock-gated (gather<420, invite 420-540,
+host>=540), so a dead clock meant she NEVER left gather/exit_house — no invite, no real host.
+This also means the earlier "host floor verified" was a false positive: she was only inside her
+home at the day-reset teleport, never hosting at the actual 6:55 PM dinner (her inventory never
+cleared, the tell of a host with a dinner).
+
+Root cause: the game emits the clock as **"<Weekday> H:MMpm"** (e.g. "Monday 3:00pm"), one glyph
+object per char. `read_clock_string` joined ALL glyphs -> "Monday 3:00pm", and `parse_clock_minutes`
+(regex ^H:MMam/pm$) rejected the weekday prefix -> None, every frame. Fix: return only the final
+whitespace-separated token (the time). Regression test added with the real weekday-prefixed format
+(the old test used a bare "3:00pm" that never exercised the prefix). v15 was the diagnostic build;
+v16 carries the fix. 73 tests.
+
 ## v14 — 2026-07-07 (invite: chat audience = in-view viewport box, not a radial guess)
 
 Correctness fix on the seek-crowd invite: a gnome hears our chat iff our bubble lands in

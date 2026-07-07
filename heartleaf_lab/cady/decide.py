@@ -94,6 +94,8 @@ class _DiagnosticLogger:
             "intent": intent.kind,
             "intent_point": _point(intent.point),
             "held_mask": step.command.held_mask,
+            "chat": step.command.chat,
+            "time_minutes": step.belief.last_time_minutes,
             "inventory_count": step.belief.inventory_count,
             "garden_marker_count": _garden_marker_count(world),
             "grid": _grid_dims(step.belief.map_context),

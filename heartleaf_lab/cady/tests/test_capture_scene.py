@@ -58,6 +58,28 @@ def test_read_clock_string_sorts_clock_glyphs_by_x() -> None:
     assert read_clock_string(_world()) == "3:00pm"
 
 
+def _weekday_clock_world() -> SpriteWorld:
+    """The clock as the GAME actually emits it: '<Weekday> H:MMpm', one glyph
+    object per char (ClockObjectBase=7000). read_clock_string must return just
+    the time token, not the weekday prefix."""
+    world = SpriteWorld()
+    text = "Monday 3:00pm"
+    world.sprites = {}
+    world.objects = {}
+    for i, ch in enumerate(text):
+        sprite_id = 8000 + i
+        world.sprites[sprite_id] = _sprite(sprite_id, f"clock {ch}")
+        world.objects[7000 + i] = _object(7000 + i, i * 6, 0, sprite_id, layer=2)
+    return world
+
+
+def test_read_clock_string_drops_weekday_prefix() -> None:
+    # Regression: the game sends "Monday 3:00pm"; joining all glyphs and parsing
+    # failed (weekday broke the H:MMpm regex), leaving the clock unreadable and
+    # every clock-gated phase (invite/host) dead.
+    assert read_clock_string(_weekday_clock_world()) == "3:00pm"
+
+
 def test_capture_probe_dumps_scene_vocabulary(capsys: pytest.CaptureFixture[str]) -> None:
     probe = CaptureSceneProbe(max_frames=1)
 

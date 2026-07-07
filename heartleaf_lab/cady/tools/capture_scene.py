@@ -30,12 +30,13 @@ CLOCK_GLYPH_END = 7100
 
 
 def read_clock_string(world: SpriteWorld) -> str | None:
-    """Read Heartleaf's clock by joining per-glyph ``clock <char>`` labels.
+    """Read Heartleaf's clock time (e.g. ``3:00pm``) from its per-glyph objects.
 
-    Clock glyph objects can arrive in any dictionary insertion order, so they
-    are ordered by x coordinate and then object id for deterministic tie
-    handling. Objects with missing sprite definitions or non-clock labels are
-    ignored. ``None`` means no clock glyphs were readable in this world.
+    The game emits the clock as ``"<Weekday> H:MMpm"`` — one glyph object per
+    character (``clock <char>``, ids from ``ClockObjectBase``). We order the
+    glyphs by x, join them, and return only the **time token** (the last
+    whitespace-separated piece): the weekday prefix must be dropped or the
+    ``H:MMam/pm`` parse fails. ``None`` when no clock glyphs are readable.
     """
 
     glyphs: list[tuple[int, int, str]] = []
@@ -51,7 +52,11 @@ def read_clock_string(world: SpriteWorld) -> str | None:
 
     if not glyphs:
         return None
-    return "".join(char for _, _, char in sorted(glyphs))
+    text = "".join(char for _, _, char in sorted(glyphs)).strip()
+    if not text:
+        return None
+    # Drop the "<Weekday> " prefix; the clock time is the final token.
+    return text.split()[-1]
 
 
 @dataclass(frozen=True)
