@@ -13,10 +13,11 @@ Deterministic-floor behavior:
 - **Seek a center of gravity.** Head toward the centroid of visible gnomes (the
   crowd); if none are visible yet, head to the map center to go find one.
 - **Broadcast to the group, not the first passer-by.** Only chat once
-  ``INVITE_MIN_AUDIENCE`` gnomes are in hearing range at once (so the bubble
-  lands on several viewers), relaxing to "anyone in range" as the window closes.
-  The line names our OWN house by owner display name — the form a hearer's LLM
-  parses into a commitment to attend us.
+  ``INVITE_MIN_AUDIENCE`` gnomes are in our viewport at once (a gnome hears our
+  chat iff our bubble lands on their screen; cameras are self-centered so that's
+  ~"the gnome is in view of us"), relaxing to "anyone in view" as the window
+  closes. The line names our OWN house by owner display name — the form a
+  hearer's LLM parses into a commitment to attend us.
 - **Return home before the cutoff.** Past ``INVITE_RETURN_MINUTES`` head back to
   our own door, so we're never caught far away at the 5 PM host-enter cutoff.
 
@@ -29,11 +30,12 @@ from __future__ import annotations
 from cady import navigator
 from cady.config import (
     INVITE_BROADCAST_DEADLINE_MINUTES,
-    INVITE_HEARING_RADIUS,
     INVITE_MAP_CENTER,
     INVITE_MIN_AUDIENCE,
     INVITE_MIN_INTERVAL_TICKS,
     INVITE_RETURN_MINUTES,
+    INVITE_VIEW_HALF_H,
+    INVITE_VIEW_HALF_W,
     PLAYER_NAMES,
 )
 from cady.frame import to_world
@@ -95,11 +97,14 @@ class InviteMode(Mode[Belief, ActionState, Intent]):
         return self._invite_line(belief.own_house_index)
 
     def _audience_count(self, belief: Belief, others: list[Gnome]) -> int:
+        """How many other gnomes would see our chat bubble = are within our
+        viewport box (they hear us iff our bubble lands on their screen; each
+        camera is self-centered, so this is symmetric with "in view of us")."""
         sx, sy = belief.self_xy  # type: ignore[misc]  # guarded by caller
         return sum(
             1
             for g in others
-            if (g.pos[0] - sx) ** 2 + (g.pos[1] - sy) ** 2 <= INVITE_HEARING_RADIUS ** 2
+            if abs(g.pos[0] - sx) <= INVITE_VIEW_HALF_W and abs(g.pos[1] - sy) <= INVITE_VIEW_HALF_H
         )
 
     def _required_audience(self, belief: Belief) -> int:

@@ -45,10 +45,20 @@ INVITE_START_MINUTES = 420
 """3:00 PM — start broadcasting invites (matches the villager's invite window;
 too early and villagers keep gathering instead of committing)."""
 
-INVITE_HEARING_RADIUS = 150
-"""Pixels: release an invite only when a target is within ~half a viewport, so
-the bubble actually lands on their screen (heartleaf has no chat radius; reach =
-bubble on the hearer's 320x200 viewport). See the broadcast/whisper note."""
+# A gnome HEARS our chat iff our bubble lands in their 320x200 viewport. Since
+# each viewer's camera is centered on themselves and the bubble sits just above
+# our head, that's ~"the gnome is within a viewport of us" — and perception only
+# ever returns gnomes already on OUR screen, so a visible gnome is essentially
+# guaranteed to see our chat. We test it as a rectangular in-view box (camera
+# cancels: both positions are map coords), inset from the raw half-extents to
+# stay clear of the edge / bubble-anchor asymmetry.
+INVITE_VIEW_HALF_W = 150
+"""Half-width (px) of the in-view box for chat audience (viewport is 320 wide;
+inset from 160 for safety)."""
+
+INVITE_VIEW_HALF_H = 90
+"""Half-height (px) of the in-view box (viewport is 200 tall; inset from 100,
+extra margin because the bubble sits above our head)."""
 
 INVITE_MIN_INTERVAL_TICKS = 72
 """Min frames between our invite chats (~3 s). Chat bubbles linger ~5 s; we

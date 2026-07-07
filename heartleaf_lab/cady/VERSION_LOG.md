@@ -13,6 +13,17 @@ Deterministic gather-and-host baseline on the SDK SpriteV1 bridge.
 This is the connect/gather/navigate/host/exit baseline. Coordination through
 chat invitations is planned for v2.
 
+## v14 — 2026-07-07 (invite: chat audience = in-view viewport box, not a radial guess)
+
+Correctness fix on the seek-crowd invite: a gnome hears our chat iff our bubble lands in
+their 320x200 viewport (cameras are self-centered), and perception only ever returns gnomes
+already on OUR screen — so "in view of us" == "will see our chat". v13 used a radial <=150px
+check, which is the wrong shape AND smaller than the 160px horizontal viewport reach, so it
+skipped gnomes who were in view and would have heard us. v14 counts audience with the
+rectangular in-view box (+-150 W / +-90 H, inset from the viewport half-extents). Strategic
+gate unchanged (still wait for >=INVITE_MIN_AUDIENCE in view before broadcasting). The radial
+v13 eval was killed unanalyzed (box strictly reaches >= radial). 72 tests.
+
 ## v13 — 2026-07-07 (invite: seek the crowd — passive door-stand got 0 guests)
 
 v12's passive door-broadcast produced **0 chats / 0 guests / 0 score across 15 games** —
