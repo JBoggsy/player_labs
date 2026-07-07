@@ -73,10 +73,13 @@ INVITE_MIN_INTERVAL_TICKS = 72
 """Min frames between our invite chats (~3 s). Chat bubbles linger ~5 s; we
 re-broadcast periodically without spamming."""
 
-INVITE_MIN_AUDIENCE = 2
-"""Broadcast only once at least this many other gnomes are within hearing range
-at the same time — so the bubble lands on several viewers at once, not the first
-lone passer-by. One villager in range still gets invited if the window is
+INVITE_MIN_AUDIENCE = 1
+"""Broadcast as soon as at least this many other gnomes are in view. Measured
+from replays: during the gather phase Cady has >=1 villager in view ~18% of
+frames but >=2 only ~2% — so requiring 2 threw away ~9x the real opportunities.
+A single in-view villager both hears the bubble and can accept, so 1 is right.
+Kept as a knob in case a future patrol wants to hold out for a group. One
+villager in range still gets invited if the window is
 closing (see INVITE_BROADCAST_DEADLINE_MINUTES)."""
 
 INVITE_BROADCAST_DEADLINE_MINUTES = 510

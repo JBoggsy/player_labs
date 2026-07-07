@@ -45,18 +45,20 @@ def test_invite_broadcasts_when_enough_are_in_earshot() -> None:
     assert len(intent.chat) <= 48
 
 
-def test_invite_stays_silent_below_audience_threshold_early() -> None:
+def test_invite_broadcasts_to_a_single_villager_in_view() -> None:
+    # Threshold is 1 (villagers are sparse; a lone in-view villager both hears
+    # and can accept), so one gnome in view is enough to broadcast.
+    assert INVITE_MIN_AUDIENCE == 1
     here = (400, 400)
-    # Only one gnome in earshot, and it's early — wait for a bigger audience.
     belief = _belief(here, gnomes=_cluster_around(here, 1), minutes=430)
-    assert INVITE_MIN_AUDIENCE > 1
-    assert InviteMode().decide(belief, ActionState()).chat is None
-
-
-def test_invite_relaxes_to_one_when_window_closing() -> None:
-    here = (400, 400)
-    belief = _belief(here, gnomes=_cluster_around(here, 1), minutes=INVITE_BROADCAST_DEADLINE_MINUTES)
     assert InviteMode().decide(belief, ActionState()).chat is not None
+
+
+def test_invite_stays_silent_with_nobody_in_view() -> None:
+    here = (400, 400)
+    far = [Gnome(index=0, pos=(here[0] + 400, here[1]), facing="south")]  # off-screen
+    belief = _belief(here, gnomes=far, minutes=430)
+    assert InviteMode().decide(belief, ActionState()).chat is None
 
 
 def test_invite_seeks_the_crowd_centroid() -> None:
