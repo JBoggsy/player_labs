@@ -9,7 +9,6 @@ import numpy as np
 from cady import nav
 from cady.config import WAYPOINT_RADIUS
 from cady.frame import to_map, to_world
-from cady.mapdata import WALK_GRID
 from cady.types import Belief
 
 Point = tuple[int, int]
@@ -19,7 +18,8 @@ def next_waypoint(
     belief: Belief,
     self_world: Point,
     goal_world: Point,
-    grid: np.ndarray = WALK_GRID,
+    *,
+    grid: np.ndarray,
 ) -> Point | None:
     """Return the current cached waypoint toward ``goal_world``.
 

@@ -15,6 +15,12 @@ def test_strategy_selects_idle_when_self_unresolved() -> None:
     assert directive.mode == "idle"
 
 
+def test_strategy_selects_exit_house_when_inside_home() -> None:
+    directive = ClockStrategy().select(Belief(self_xy=(0, 0), map_context="home"))
+
+    assert directive.mode == "exit_house"
+
+
 def test_strategy_selects_gather_before_cutoff_without_visible_food() -> None:
     directive = ClockStrategy().select(Belief(self_xy=(0, 0), last_time_minutes=300, food_gardens=()))
 
@@ -34,7 +40,7 @@ def test_strategy_selects_gather_when_time_is_unknown() -> None:
 
 
 def test_host_mode_navigates_to_home_anchor_waypoint_when_far(monkeypatch: MonkeyPatch) -> None:
-    monkeypatch.setattr("cady.modes.host.navigator.next_waypoint", lambda belief, self_xy, goal: (20, 0))
+    monkeypatch.setattr("cady.modes.host.navigator.next_waypoint", lambda belief, self_xy, goal, *, grid: (20, 0))
     intent = HostMode().decide(Belief(self_xy=(0, 0), home_anchor=(100, 0)), ActionState())
 
     assert intent.kind == "navigate_to"

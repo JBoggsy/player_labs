@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from cady.perception import SELF_OFFSET, parse_clock_minutes, perceive
+from cady.perception import HOME_WALKABILITY_LABEL, MAIN_WALKABILITY_LABEL, SELF_OFFSET, parse_clock_minutes, perceive
 from cady.types import Observation
 from players.player_sdk import SpriteDef, SpriteObject, SpriteWorld
 
@@ -60,6 +60,7 @@ def test_perceive_resolves_world_coordinates_labels_and_clock() -> None:
     state = perceive(Observation(world=_perception_world(), frame=1))
 
     assert state.ready
+    assert state.map_context == "unknown"
     assert state.self_xy == (100 + SELF_OFFSET[0], 50 + SELF_OFFSET[1])
     assert state.time_minutes == 420
     assert state.inventory_count == 2
@@ -87,6 +88,24 @@ def test_perceive_without_world_map_degrades_cleanly() -> None:
     assert state.time_minutes is None
     assert state.gardens == ()
     assert state.gnomes == ()
+
+
+def test_perceive_detects_home_map_context_from_sprite_definition() -> None:
+    world = SpriteWorld()
+    world.sprites = {8001: _sprite(8001, HOME_WALKABILITY_LABEL)}
+
+    state = perceive(Observation(world=world, frame=1))
+
+    assert state.map_context == "home"
+
+
+def test_perceive_detects_main_map_context_from_sprite_definition() -> None:
+    world = SpriteWorld()
+    world.sprites = {8000: _sprite(8000, MAIN_WALKABILITY_LABEL)}
+
+    state = perceive(Observation(world=world, frame=1))
+
+    assert state.map_context == "main"
 
 
 def test_parse_clock_minutes() -> None:

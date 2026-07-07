@@ -12,6 +12,8 @@ from typing import TYPE_CHECKING, Literal
 
 from players.player_sdk import SpriteWorld
 
+MapContext = Literal["main", "home", "unknown"]
+
 
 @dataclass(frozen=True)
 class Observation:
@@ -57,6 +59,7 @@ class HeartleafState:
 
     ready: bool
     self_xy: tuple[int, int] | None
+    map_context: MapContext
     time_minutes: int | None
     gardens: tuple[Garden, ...]
     gnomes: tuple[Gnome, ...]
@@ -78,6 +81,7 @@ class Belief:
     house_entrances: dict[int, tuple[int, int]] = field(default_factory=dict)
     last_time_minutes: int | None = None
     inventory_count: int = 0
+    map_context: MapContext = "unknown"
     current_target: tuple[int, int] | None = None
     circuit_index: int = 0
     nav_goal: tuple[int, int] | None = None
@@ -132,5 +136,6 @@ __all__ = [
     "House",
     "Intent",
     "IntentKind",
+    "MapContext",
     "Observation",
 ]

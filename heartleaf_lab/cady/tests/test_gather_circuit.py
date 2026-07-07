@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from cady.frame import to_world
-from cady.mapdata import GARDEN_APPROACHES, GARDEN_CIRCUIT
+from cady.mapdata import GARDEN_APPROACHES, GARDEN_CIRCUIT, WALK_GRID
 from cady.modes import GatherMode
 from cady.types import ActionState, Belief
 from pytest import MonkeyPatch
@@ -15,8 +15,15 @@ def test_gather_mode_navigates_to_first_circuit_garden(monkeypatch: MonkeyPatch)
     waypoint = (target_world[0] - 1, target_world[1] - 1)
     seen_goals: list[tuple[int, int]] = []
 
-    def _next_waypoint(belief: Belief, self_xy: tuple[int, int], goal: tuple[int, int]) -> tuple[int, int]:
+    def _next_waypoint(
+        belief: Belief,
+        self_xy: tuple[int, int],
+        goal: tuple[int, int],
+        *,
+        grid: object,
+    ) -> tuple[int, int]:
         del belief, self_xy
+        assert grid is WALK_GRID
         seen_goals.append(goal)
         return waypoint
 

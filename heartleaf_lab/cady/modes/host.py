@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from cady import navigator
 from cady.config import HOME_RADIUS_SQ
+from cady.mapdata import WALK_GRID
 from cady.types import ActionState, Belief, Intent
 from players.player_sdk import EmptyModeParams, Mode
 
@@ -21,7 +22,7 @@ class HostMode(Mode[Belief, ActionState, Intent]):
         if _dist2(belief.self_xy, belief.home_anchor) <= HOME_RADIUS_SQ:
             return Intent(kind="hold")
         # TODO(calibrate): use HOUSE_TARGETS[own_house_index] once seat identity is reliable.
-        waypoint = navigator.next_waypoint(belief, belief.self_xy, belief.home_anchor)
+        waypoint = navigator.next_waypoint(belief, belief.self_xy, belief.home_anchor, grid=WALK_GRID)
         if waypoint is None:
             return Intent(kind="idle")
         return Intent(kind="navigate_to", point=waypoint)

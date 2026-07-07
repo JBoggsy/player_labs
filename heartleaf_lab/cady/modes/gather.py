@@ -7,7 +7,7 @@ import math
 from cady import navigator
 from cady.config import HARVEST_RADIUS
 from cady.frame import to_map, to_world
-from cady.mapdata import GARDEN_APPROACHES, GARDEN_CIRCUIT, GARDEN_RECTS
+from cady.mapdata import GARDEN_APPROACHES, GARDEN_CIRCUIT, GARDEN_RECTS, WALK_GRID
 from cady.types import ActionState, Belief, Intent
 from players.player_sdk import EmptyModeParams, Mode
 
@@ -35,7 +35,7 @@ class GatherMode(Mode[Belief, ActionState, Intent]):
             navigator.clear_navigation(belief)
             return Intent(kind="gather_at", point=approach_world)
 
-        waypoint = navigator.next_waypoint(belief, belief.self_xy, approach_world)
+        waypoint = navigator.next_waypoint(belief, belief.self_xy, approach_world, grid=WALK_GRID)
         if waypoint is None:
             belief.circuit_index += 1
             navigator.clear_navigation(belief)

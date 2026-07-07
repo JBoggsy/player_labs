@@ -13,6 +13,7 @@ def _state(
     time_minutes: int | None = 0,
     gardens: tuple[Garden, ...] = (),
     inventory_count: int = 0,
+    map_context: str = "unknown",
 ) -> HeartleafState:
     return HeartleafState(
         ready=ready,
@@ -23,6 +24,7 @@ def _state(
         own_house_index=None,
         houses=(),
         inventory_count=inventory_count,
+        map_context=map_context,
     )
 
 
@@ -111,3 +113,27 @@ def test_not_ready_frame_clears_current_food_gardens() -> None:
     update_belief(belief, _state(ready=False, self_xy=None))
 
     assert belief.food_gardens == ()
+
+
+def test_unknown_map_context_preserves_last_known_context() -> None:
+    belief = Belief(map_context="home")
+
+    update_belief(belief, _state(map_context="unknown"))
+
+    assert belief.map_context == "home"
+
+
+def test_map_context_change_clears_navigation_cache() -> None:
+    belief = Belief(
+        map_context="home",
+        nav_goal=(10, 20),
+        nav_path=[(1, 2), (10, 20)],
+        nav_cursor=1,
+    )
+
+    update_belief(belief, _state(map_context="main"))
+
+    assert belief.map_context == "main"
+    assert belief.nav_goal is None
+    assert belief.nav_path is None
+    assert belief.nav_cursor == 0

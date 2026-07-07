@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from cady import navigator
 from cady.types import Belief, HeartleafState
 
 MORNING_CUTOFF_MINUTES = 120
@@ -15,6 +16,7 @@ def update_belief(belief: Belief, percept: HeartleafState) -> None:
     exists it is stable for the episode.
     """
 
+    _update_map_context(belief, percept)
     if not percept.ready:
         belief.food_gardens = ()
         return
@@ -29,6 +31,14 @@ def update_belief(belief: Belief, percept: HeartleafState) -> None:
         belief.own_house_index = percept.own_house_index
     belief.last_time_minutes = percept.time_minutes
     belief.inventory_count = percept.inventory_count
+
+
+def _update_map_context(belief: Belief, percept: HeartleafState) -> None:
+    if percept.map_context == "unknown":
+        return
+    if belief.map_context != percept.map_context:
+        navigator.clear_navigation(belief)
+    belief.map_context = percept.map_context
 
 
 def _update_home_anchor(belief: Belief, percept: HeartleafState) -> None:

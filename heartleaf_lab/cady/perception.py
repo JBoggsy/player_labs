@@ -7,7 +7,7 @@ import re
 from players.player_sdk import SpriteObject, SpriteWorld
 
 from cady.tools.capture_scene import read_clock_string
-from cady.types import Garden, Gnome, HeartleafState, Observation
+from cady.types import Garden, Gnome, HeartleafState, MapContext, Observation
 
 MAP_OBJECT_ID = 1
 GNOME_OBJECT_BASE = 1000
@@ -16,6 +16,8 @@ GARDEN_OBJECT_BASE = 4000
 GARDEN_OBJECT_LIMIT = 5000
 INVENTORY_OBJECT_BASE = 5000
 INVENTORY_OBJECT_LIMIT = 6000
+MAIN_WALKABILITY_LABEL = "heartleaf main walkability"
+HOME_WALKABILITY_LABEL = "heartleaf home walkability"
 
 # CALIBRATION: exact self offset from camera center is unknown until the capture
 # probe sees a live stream. v1 navigation uses relative vectors and records
@@ -51,11 +53,13 @@ def perceive(obs: Observation) -> HeartleafState:
     """Resolve one raw sprite frame into Cady's Heartleaf percept."""
 
     world = obs.world
+    map_context = _map_context(world)
     camera = _camera(world)
     if camera is None:
         return HeartleafState(
             ready=False,
             self_xy=None,
+            map_context=map_context,
             time_minutes=None,
             gardens=(),
             gnomes=(),
@@ -89,6 +93,7 @@ def perceive(obs: Observation) -> HeartleafState:
     return HeartleafState(
         ready=True,
         self_xy=self_xy,
+        map_context=map_context,
         time_minutes=parse_clock_minutes(clock) if clock is not None else None,
         gardens=tuple(gardens),
         gnomes=tuple(gnomes),
@@ -103,6 +108,15 @@ def _camera(world: SpriteWorld) -> tuple[int, int] | None:
     if obj is None:
         return None
     return (-obj.x, -obj.y)
+
+
+def _map_context(world: SpriteWorld) -> MapContext:
+    labels = {sprite.label for sprite in world.sprites.values()}
+    if HOME_WALKABILITY_LABEL in labels:
+        return "home"
+    if MAIN_WALKABILITY_LABEL in labels:
+        return "main"
+    return "unknown"
 
 
 def _world_xy(obj: SpriteObject, camera: tuple[int, int]) -> tuple[int, int]:
@@ -125,4 +139,4 @@ def _parse_gnome_label(label: str) -> tuple[int, str] | None:
     return index, parts[2]
 
 
-__all__ = ["SELF_OFFSET", "parse_clock_minutes", "perceive"]
+__all__ = ["HOME_WALKABILITY_LABEL", "MAIN_WALKABILITY_LABEL", "SELF_OFFSET", "parse_clock_minutes", "perceive"]

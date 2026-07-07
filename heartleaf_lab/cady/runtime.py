@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from cady.action import resolve_action
 from cady.belief import update_belief
-from cady.modes import GatherMode, HostMode, IdleMode
+from cady.modes import ExitHouseMode, GatherMode, HostMode, IdleMode
 from cady.perception import perceive
 from cady.strategy import ClockStrategy
 from cady.types import ActionState, Belief, Command, HeartleafState, Intent, Observation
@@ -14,6 +14,7 @@ from players.player_sdk import (
     ModeDirective,
     ModeRegistry,
     SynchronousStrategyRunner,
+    StepCompleteHook,
     TraceSink,
 )
 
@@ -22,11 +23,13 @@ def build_runtime(
     *,
     trace_sink: TraceSink | None = None,
     metrics_sink: MetricsSink | None = None,
+    on_step_complete: StepCompleteHook[Belief, ActionState, Intent, Command] | None = None,
 ) -> AgentRuntime[Observation, HeartleafState, Belief, ActionState, Intent, Command]:
     """Assemble Cady's ``perceive -> belief -> mode -> action`` runtime."""
 
     registry: ModeRegistry[Belief, ActionState, Intent] = ModeRegistry()
     registry.register(IdleMode)
+    registry.register(ExitHouseMode)
     registry.register(GatherMode)
     registry.register(HostMode)
 
@@ -45,6 +48,7 @@ def build_runtime(
         ),
         trace_sink=trace_sink,
         metrics_sink=metrics_sink,
+        on_step_complete=on_step_complete,
     )
 
 

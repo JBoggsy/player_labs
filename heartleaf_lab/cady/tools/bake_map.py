@@ -15,6 +15,8 @@ from cady.nav import nearest_walkable
 
 MAP_ASEPRITE = Path("/Users/jamesboggs/coding/coworld-heartleaf/data/map.aseprite")
 MAP_RESOURCE = Path("/Users/jamesboggs/coding/coworld-heartleaf/data/map.resource")
+HOME_ASEPRITE = Path("/Users/jamesboggs/coding/coworld-heartleaf/data/home_map.aseprite")
+HOME_RESOURCE = Path("/Users/jamesboggs/coding/coworld-heartleaf/data/home_map.resource")
 OUT_DIR = Path(__file__).resolve().parents[1] / "mapdata"
 WORLD_TO_MAP = (0, 0)
 
@@ -25,8 +27,10 @@ Rect = tuple[int, int, int, int]
 def main() -> None:
     """Parse source assets and write packed Cady map data."""
 
-    walk = _parse_walk_grid(MAP_ASEPRITE)
+    walk = _parse_walk_grid(MAP_ASEPRITE, expected_shape=(941, 748))
     gardens, houses = _parse_resource_rects(MAP_RESOURCE)
+    home_walk = _parse_walk_grid(HOME_ASEPRITE, expected_shape=(247, 251))
+    home_layout = _parse_home_resource(HOME_RESOURCE, home_walk)
 
     garden_approaches = [_approach_for_garden(walk, rect) for rect in gardens]
     house_rects = [houses[f"house{i}"] for i in range(1, 10)]
@@ -35,6 +39,7 @@ def main() -> None:
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     _write_walk_grid(walk, OUT_DIR / "walk.npz")
+    _write_walk_grid(home_walk, OUT_DIR / "home_walk.npz")
     _write_layout(
         OUT_DIR / "layout.json",
         gardens,
@@ -42,15 +47,18 @@ def main() -> None:
         house_rects,
         house_targets,
         garden_circuit,
+        home_layout,
     )
 
     walkable_pct = 100.0 * float(walk.mean())
+    home_walkable_pct = 100.0 * float(home_walk.mean())
     print(f"wrote {OUT_DIR}")
     print(f"walk grid: {walk.shape[1]}x{walk.shape[0]}, {walkable_pct:.1f}% walkable")
+    print(f"home walk grid: {home_walk.shape[1]}x{home_walk.shape[0]}, {home_walkable_pct:.1f}% walkable")
     print(f"GARDEN_CIRCUIT: {garden_circuit}")
 
 
-def _parse_walk_grid(path: Path) -> np.ndarray:
+def _parse_walk_grid(path: Path, *, expected_shape: tuple[int, int]) -> np.ndarray:
     data = path.read_bytes()
     _, magic, frames, width, height, depth = struct.unpack_from("<IHHHHH", data, 0)
     if magic != 0xA5E0 or depth != 32:
@@ -88,21 +96,17 @@ def _parse_walk_grid(path: Path) -> np.ndarray:
     walk = np.zeros((height, width), dtype=bool)
     walk[y : y + cel_height, x : x + cel_width] = cel[:, :, 3] > 0
 
-    if walk.shape != (941, 748):
+    if walk.shape != expected_shape:
         raise ValueError(f"unexpected walk grid shape {walk.shape}")
     return walk
 
 
 def _parse_resource_rects(path: Path) -> tuple[list[Rect], dict[str, Rect]]:
-    blocks = re.split(r"/\*\s*(.*?)\s*\*/", path.read_text())
+    named_rects = _parse_named_rects(path)
     gardens: list[Rect] = []
     houses: dict[str, Rect] = {}
 
-    for i in range(1, len(blocks) - 1, 2):
-        name = blocks[i].strip()
-        rect = _rect(blocks[i + 1])
-        if rect is None:
-            continue
+    for name, rect in named_rects:
         if name == "garden":
             gardens.append(rect)
         elif re.fullmatch(r"house[1-9]", name):
@@ -114,6 +118,55 @@ def _parse_resource_rects(path: Path) -> tuple[list[Rect], dict[str, Rect]]:
     if missing:
         raise ValueError(f"missing house rects: {missing}")
     return gardens, houses
+
+
+def _parse_home_resource(path: Path, walk: np.ndarray) -> dict[str, object]:
+    named_rects = _parse_named_rects(path)
+    diner_rects: list[Rect] = []
+    exit_rect: Rect | None = None
+    cook_rect: Rect | None = None
+    wash_rect: Rect | None = None
+
+    for name, rect in named_rects:
+        if name == "exit":
+            exit_rect = rect
+        elif name == "diner":
+            diner_rects.append(rect)
+        elif name == "cook":
+            cook_rect = rect
+        elif name == "wash":
+            wash_rect = rect
+
+    if exit_rect is None:
+        raise ValueError("missing home exit rect")
+    if len(diner_rects) != 6:
+        raise ValueError(f"expected 6 home diner rects, found {len(diner_rects)}")
+    if cook_rect is None:
+        raise ValueError("missing home cook rect")
+    if wash_rect is None:
+        raise ValueError("missing home wash rect")
+
+    return {
+        "exit_rect": exit_rect,
+        "exit": _target_for_rect(walk, exit_rect),
+        "diner_rects": diner_rects,
+        "diners": [_target_for_rect(walk, rect) for rect in diner_rects],
+        "cook_rect": cook_rect,
+        "cook": _target_for_rect(walk, cook_rect),
+        "wash_rect": wash_rect,
+        "wash": _target_for_rect(walk, wash_rect),
+    }
+
+
+def _parse_named_rects(path: Path) -> list[tuple[str, Rect]]:
+    blocks = re.split(r"/\*\s*(.*?)\s*\*/", path.read_text())
+    rects: list[tuple[str, Rect]] = []
+    for i in range(1, len(blocks) - 1, 2):
+        name = blocks[i].strip()
+        rect = _rect(blocks[i + 1])
+        if rect is not None:
+            rects.append((name, rect))
+    return rects
 
 
 def _rect(body: str) -> Rect | None:
@@ -210,6 +263,7 @@ def _write_layout(
     house_rects: list[Rect],
     house_targets: list[Point],
     garden_circuit: list[int],
+    home_layout: dict[str, object],
 ) -> None:
     layout = {
         "world_to_map": list(WORLD_TO_MAP),
@@ -218,8 +272,22 @@ def _write_layout(
         "house_rects": [list(rect) for rect in house_rects],
         "house_targets": [list(point) for point in house_targets],
         "garden_circuit": garden_circuit,
+        "home": _json_home_layout(home_layout),
     }
     path.write_text(json.dumps(layout, indent=2) + "\n")
+
+
+def _json_home_layout(home_layout: dict[str, object]) -> dict[str, object]:
+    return {
+        "exit_rect": list(home_layout["exit_rect"]),
+        "exit": list(home_layout["exit"]),
+        "diner_rects": [list(rect) for rect in home_layout["diner_rects"]],
+        "diners": [list(point) for point in home_layout["diners"]],
+        "cook_rect": list(home_layout["cook_rect"]),
+        "cook": list(home_layout["cook"]),
+        "wash_rect": list(home_layout["wash_rect"]),
+        "wash": list(home_layout["wash"]),
+    }
 
 
 def _rect_center(rect: Rect) -> Point:
