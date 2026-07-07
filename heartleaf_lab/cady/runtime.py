@@ -6,7 +6,7 @@ from cady.action import resolve_action
 from cady.belief import update_belief
 from cady.modes import ExitHouseMode, GatherMode, HostMode, IdleMode
 from cady.perception import perceive
-from cady.strategy import ClockStrategy
+from cady.strategy import SocialStrategy
 from cady.types import ActionState, Belief, Command, HeartleafState, Intent, Observation
 from players.player_sdk import (
     AgentRuntime,
@@ -42,7 +42,7 @@ def build_runtime(
         mode_registry=registry,
         default_directive=ModeDirective(mode="idle", source="default", reason="default idle"),
         strategy_runner=SynchronousStrategyRunner(
-            ClockStrategy(),
+            SocialStrategy(),
             trace_sink=trace_sink,
             metrics_sink=metrics_sink,
         ),

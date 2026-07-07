@@ -1,7 +1,35 @@
 """Tunable constants for Cady's deterministic v1 policy."""
 
 GATHER_CUTOFF_MINUTES = 540
-"""Stop gathering at 5:00 PM, nine hours after Heartleaf's 8:00 AM start."""
+"""Stop gathering at 5:00 PM, nine hours after Heartleaf's 8:00 AM start.
+
+All *_MINUTES below are minutes since the 8:00 AM start (Heartleaf's clock;
+``perception.parse_clock_minutes``). Dinner is at 6:00 PM = 600."""
+
+# --- Social schedule (deterministic floor; mirrors the starter villager's phases,
+# see docs/designs/cady-social-llm-controller.md + villager-dinner-attendance.md).
+DINNER_MINUTES = 600
+"""6:00 PM — dinner resolves; a host with any guest inside scores."""
+
+HOST_PREP_MINUTES = 420
+"""3:00 PM (420 min after the 8 AM start). If we are food-rich by now, stop
+gathering early and go prepare to host our own party."""
+
+HOUSE_ENTER_MINUTES = 540
+"""5:00 PM — stop gathering for good; commit to a house (ours or a party) and be
+in position before dinner. Equal to GATHER_CUTOFF_MINUTES by design."""
+
+# --- Food bands that decide host-vs-attend (item counts; only total matters).
+STRONG_HOST_FOOD = 12
+"""At/above this, we have plenty to host a worthwhile party — host our own."""
+
+LOW_HOST_FOOD = 2
+"""At/below this, hosting scores little; better to attend someone else's party
+(as a guest we score 0, but this is the floor before the invite/steal logic)."""
+
+HOUSE_CROWD_RADIUS = 48
+"""Pixels from a house rect within which a visible gnome counts toward that
+house's 'crowd' (for choosing which party to attend)."""
 
 WAYPOINT_RADIUS = 6
 """Distance in pixels at which a cached navigation waypoint counts as reached."""

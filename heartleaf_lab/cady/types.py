@@ -94,6 +94,12 @@ class Belief:
     nav_goal: tuple[int, int] | None = None
     nav_path: list[tuple[int, int]] | None = None
     nav_cursor: int = 0
+    # Social state (host/attend phase). Visible gnomes this frame (for reading
+    # house crowds); the party house we've committed to for dinner (our own when
+    # hosting, or another's when attending) — kept slowly so the plan doesn't
+    # thrash. -1 / None means uncommitted.
+    gnomes: tuple[Gnome, ...] = ()
+    committed_party_house: int | None = None
 
 
 @dataclass
