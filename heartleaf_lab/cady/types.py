@@ -102,6 +102,9 @@ class ActionState:
 
     last_self_xy: tuple[int, int] | None = None
     a_held: bool = False
+    # Frames left to release/observe before the next A press (press-and-verify
+    # cadence; see A_PRESS_PERIOD). 0 means the next interact may press A now.
+    a_cooldown: int = 0
 
 
 IntentKind = Literal["gather_at", "navigate_to", "enter_house", "hold", "idle"]

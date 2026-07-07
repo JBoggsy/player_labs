@@ -7,7 +7,13 @@ import math
 from cady import navigator
 from cady.config import HARVEST_RADIUS, MARKER_SIGHT_RADIUS, MAX_GATHER_TICKS
 from cady.frame import to_map, to_world
-from cady.mapdata import GARDEN_APPROACHES, GARDEN_CIRCUIT, GARDEN_RECTS, WALK_GRID
+from cady.mapdata import (
+    GARDEN_APPROACHES,
+    GARDEN_CIRCUIT,
+    GARDEN_RECTS,
+    HOUSE_RECTS,
+    WALK_GRID,
+)
 from cady.types import ActionState, Belief, Intent
 from players.player_sdk import EmptyModeParams, Mode
 
@@ -41,6 +47,20 @@ class GatherMode(Mode[Belief, ActionState, Intent]):
                 belief.gather_active_index = None
                 navigator.clear_navigation(belief)
                 return Intent(kind="idle")
+
+            # Food is here, but if our foot is on a house footprint an A press
+            # would ENTER the house instead of harvesting — step toward the
+            # approach point to clear the house first, then harvest.
+            if _foot_on_house(to_map(belief.self_xy)):
+                belief.gather_active_index = None
+                waypoint = navigator.next_waypoint(
+                    belief, belief.self_xy, approach_world, grid=WALK_GRID
+                )
+                if waypoint is None:
+                    belief.circuit_index += 1
+                    navigator.clear_navigation(belief)
+                    return Intent(kind="idle")
+                return Intent(kind="navigate_to", point=waypoint)
 
             # In range with food: press A and STAY until a pickup is confirmed
             # (inventory rose) or we time out — rather than firing one press and
@@ -84,6 +104,15 @@ def _food_marker_in_range(belief: Belief) -> bool:
             continue
         gx, gy = garden.pos
         if math.hypot(gx - sx, gy - sy) <= MARKER_SIGHT_RADIUS:
+            return True
+    return False
+
+
+def _foot_on_house(point: Point) -> bool:
+    """True when a map-coord point sits inside any house footprint."""
+    x, y = point
+    for hx, hy, hw, hh in HOUSE_RECTS:
+        if hx <= x <= hx + hw and hy <= y <= hy + hh:
             return True
     return False
 

@@ -2,10 +2,19 @@
 
 from __future__ import annotations
 
-from cady.config import MAX_GATHER_TICKS
+import pytest
+
+from cady.config import HARVEST_RADIUS, MAX_GATHER_TICKS
 from cady.frame import to_world
-from cady.mapdata import GARDEN_APPROACHES, GARDEN_CIRCUIT, WALK_GRID
+from cady.mapdata import (
+    GARDEN_APPROACHES,
+    GARDEN_CIRCUIT,
+    GARDEN_RECTS,
+    HOUSE_RECTS,
+    WALK_GRID,
+)
 from cady.modes import GatherMode
+from cady.modes.gather import _point_rect_distance
 from cady.types import ActionState, Belief, Garden
 from pytest import MonkeyPatch
 
@@ -110,3 +119,33 @@ def test_gather_mode_skips_a_garden_with_no_visible_food_without_pressing_a() ->
     assert intent.kind != "gather_at"
     assert belief.circuit_index == 1
     assert belief.gather_active_index is None
+
+
+def test_gather_mode_steps_off_a_house_before_pressing_a() -> None:
+    # If a circuit garden's harvest radius overlaps a house footprint, standing
+    # there and pressing A would ENTER the house. Cady must navigate off the
+    # house first, not gather_at.
+    overlap = None
+    for circuit_index, garden_index in enumerate(GARDEN_CIRCUIT):
+        rect = GARDEN_RECTS[garden_index]
+        for hx, hy, hw, hh in HOUSE_RECTS:
+            center = (hx + hw // 2, hy + hh // 2)
+            if _point_rect_distance(center, rect) <= HARVEST_RADIUS:
+                overlap = (circuit_index, center)
+                break
+        if overlap is not None:
+            break
+    if overlap is None:
+        pytest.skip("no circuit garden's harvest radius overlaps a house footprint")
+
+    circuit_index, on_house_map = overlap
+    self_world = to_world(on_house_map)
+    belief = Belief(
+        self_xy=self_world,
+        circuit_index=circuit_index,
+        food_gardens=_food_marker_at(self_world),
+    )
+
+    intent = GatherMode().decide(belief, ActionState())
+
+    assert intent.kind == "navigate_to"  # step off the house, don't press A here

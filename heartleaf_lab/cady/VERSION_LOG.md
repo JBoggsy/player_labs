@@ -13,6 +13,19 @@ Deterministic gather-and-host baseline on the SDK SpriteV1 bridge.
 This is the connect/gather/navigate/host/exit baseline. Coordination through
 chat invitations is planned for v2.
 
+## v11 — 2026-07-07 (robustness: press-and-verify A cadence, never per-frame spam)
+
+v10's hosted eval was clean (15/15 present 100%, harvest 193–240, enter/exit exactly
+10/9 — nav + gather + actions rock solid). v11 is not a bug fix but a robustness change:
+replace per-frame A-pulsing with a deliberate **press-and-verify cadence**. `_actuate_a`
+presses A once, then releases for `A_PRESS_PERIOD` frames to observe whether the desired
+result happened (a pickup / a door transition) before pressing again; the requesting mode
+stops issuing the interact intent as soon as its result lands, so we press just enough to
+get the result. Non-interact intents clear the cooldown. The house-footprint guard moved
+from `action.py` into `gather.py` (it's a harvest decision: step off the house, then
+harvest). Behavior preserved locally (enters 1 each, harvest intact); the win is we never
+spam buttons. Same principle will govern the future invite/host A-presses.
+
 ## v10 — 2026-07-07 (fix: stop house oscillation — only press A at real food, never on a house)
 
 v9's reliable harvesting worked (15/15 games, 118–245 food) but exposed a bad actions bug:

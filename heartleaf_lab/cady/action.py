@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from players.player_sdk import Button
 
-from cady.frame import to_map
-from cady.mapdata import HOUSE_RECTS
+from cady.config import A_PRESS_PERIOD
 from cady.types import ActionState, Belief, Command, Intent
 
 ARRIVE_RADIUS = 4
@@ -38,27 +37,29 @@ def _resolve_mask(
     velocity: tuple[int, int],
 ) -> int:
     if intent.kind in ("idle", "hold"):
+        state.a_cooldown = 0
         return 0
 
     if intent.kind == "navigate_to":
+        state.a_cooldown = 0
         if intent.point is None:
             return 0
         return _movement_mask(self_xy, intent.point, velocity)
 
     if intent.kind == "gather_at":
-        # Never press the harvest A while standing on a house footprint: the
-        # game overloads A (harvest / enter-house / exit-home), so an A press on
-        # a house rect ENTERS the house instead of harvesting. Keep moving toward
-        # the approach point to step clear of the house, then A resumes.
-        press_a = 0 if _foot_on_house(self_xy) else _edge_press_a(state)
+        # An interact: press A on the press-and-verify cadence (not every frame)
+        # while nudging toward the point. The requesting mode stops issuing
+        # gather_at once its result lands (gather.py: inventory rose; exit_house:
+        # back on the main map), so this presses just enough to get the result.
+        # Callers gate WHERE this fires (gather.py won't interact on a house
+        # footprint, where A would enter the house instead of harvesting).
+        press = _actuate_a(state)
         if intent.point is None:
-            return press_a
-        # gather.py only issues gather_at with food in range, so press A to
-        # collect while nudging toward the approach point (settles a small
-        # perception offset that could leave the foot just out of true range).
-        return _movement_mask(self_xy, intent.point, velocity) | press_a
+            return press
+        return _movement_mask(self_xy, intent.point, velocity) | press
 
     if intent.kind == "enter_house":
+        state.a_cooldown = 0
         if intent.house_index is None:
             return 0
         entrance = belief.house_entrances.get(intent.house_index)
@@ -68,6 +69,7 @@ def _resolve_mask(
             return 0
         return _interact_or_navigate(entrance, self_xy, velocity, state)
 
+    state.a_cooldown = 0
     return 0
 
 
@@ -105,24 +107,25 @@ def _interact_or_navigate(
     state: ActionState,
 ) -> int:
     if _dist2(self_xy, target_xy) <= GATHER_RANGE_SQ:
-        return _edge_press_a(state)
+        return _actuate_a(state)
+    state.a_cooldown = 0
     return _movement_mask(self_xy, target_xy, velocity)
 
 
-def _edge_press_a(state: ActionState) -> int:
-    """Emit a fresh A press, releasing for one tick if A was already held."""
+def _actuate_a(state: ActionState) -> int:
+    """Press A on a deliberate cadence: one press, then release for
+    ``A_PRESS_PERIOD`` frames to observe whether the desired result happened,
+    then press again — a robust press-and-verify, never a per-frame spam.
 
-    return 0 if state.a_held else int(Button.A)
+    The game acts on a fresh A *edge* and one press does the whole job (a
+    garden's food, a door), so the requesting mode normally sees the result and
+    stops asking before the next press ever fires."""
 
-
-def _foot_on_house(self_xy: tuple[int, int]) -> bool:
-    """True when the foot (converted to map coords) sits inside a house rect."""
-
-    mx, my = to_map(self_xy)
-    for x, y, w, h in HOUSE_RECTS:
-        if x <= mx <= x + w and y <= my <= y + h:
-            return True
-    return False
+    if state.a_cooldown > 0:
+        state.a_cooldown -= 1
+        return 0
+    state.a_cooldown = A_PRESS_PERIOD
+    return int(Button.A)
 
 
 def _velocity(state: ActionState, self_xy: tuple[int, int]) -> tuple[int, int]:

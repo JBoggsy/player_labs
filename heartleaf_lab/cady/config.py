@@ -22,6 +22,14 @@ harvest here." A bit larger than HARVEST_RADIUS so we don't skip a real garden
 whose marker position sits at the edge of range; the game's own 40px check still
 gates whether the A press actually collects."""
 
+A_PRESS_PERIOD = 4
+"""Frames to wait (releasing A) after each A press before pressing again. The
+game acts on a fresh A *edge*; we press once, then observe for this many frames
+whether the result we want happened (a pickup, a door transition) before pressing
+again — a deliberate press-and-verify cadence, never a per-frame button-spam. A
+successful action lands within 1-2 frames, so the mode stops requesting A before
+the next press fires."""
+
 MAX_GATHER_TICKS = 12
 """Frames to keep pressing A at one garden before giving up and moving on. One
 successful press harvests all of a garden's food, so this only needs to cover

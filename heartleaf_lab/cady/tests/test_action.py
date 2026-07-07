@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 from cady.action import ARRIVE_RADIUS, resolve_action
-from cady.frame import to_world
-from cady.mapdata import HOUSE_RECTS
+from cady.config import A_PRESS_PERIOD
 from cady.types import ActionState, Belief, Intent
 from players.player_sdk import Button
 
@@ -13,20 +12,19 @@ def _has(mask: int, button: Button) -> bool:
     return bool(mask & int(button))
 
 
-def test_gather_at_does_not_press_a_while_on_a_house_footprint() -> None:
-    # A press on a house rect ENTERS the house (overloaded A), so gather_at must
-    # not press A there — it should only move (toward the approach point).
-    hx, hy, hw, hh = HOUSE_RECTS[0]
-    on_house_world = to_world((hx + hw // 2, hy + hh // 2))
+def test_gather_at_presses_a_on_a_cadence_not_every_frame() -> None:
+    # Press-and-verify: A on the first frame, then released for A_PRESS_PERIOD
+    # frames (observe the result) before the next press — never a per-frame spam.
+    state = ActionState()
+    intent = Intent(kind="gather_at", point=(100, 10))
 
-    command = resolve_action(
-        Intent(kind="gather_at", point=(on_house_world[0] + 100, on_house_world[1])),
-        Belief(self_xy=on_house_world),
-        ActionState(),
-    )
+    def press(self_xy: tuple[int, int]) -> bool:
+        return _has(resolve_action(intent, Belief(self_xy=self_xy), state).held_mask, Button.A)
 
-    assert not _has(command.held_mask, Button.A)
-    assert _has(command.held_mask, Button.RIGHT)  # still steps toward the garden
+    assert press((10, 10))  # frame 0: fresh press
+    for i in range(A_PRESS_PERIOD):
+        assert not press((11 + i, 10)), f"frame {i + 1} should release/observe, not press"
+    assert press((15, 10))  # next press only after the observe window
 
 
 def test_navigate_to_moves_right_and_down() -> None:
@@ -53,16 +51,14 @@ def test_navigate_to_releases_inside_arrive_radius() -> None:
 
 
 def test_gather_at_edge_triggers_a_press() -> None:
+    # At the point (within ARRIVE_RADIUS, so no movement) the mask is a pure A
+    # edge: press this frame, then release next frame to observe the result.
     belief = Belief(self_xy=(10, 10))
     state = ActionState()
     intent = Intent(kind="gather_at", point=(12, 12))
 
     assert resolve_action(intent, belief, state).held_mask == int(Button.A)
-    assert state.a_held
     assert resolve_action(intent, belief, state).held_mask == 0
-    assert not state.a_held
-    assert resolve_action(intent, belief, state).held_mask == int(Button.A)
-    assert state.a_held
 
 
 def test_gather_at_moves_toward_point_and_pulses_a() -> None:
