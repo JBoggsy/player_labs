@@ -100,6 +100,10 @@ class Belief:
     # thrash. -1 / None means uncommitted.
     gnomes: tuple[Gnome, ...] = ()
     committed_party_house: int | None = None
+    # Door-to-door invite tour: house indices already reached this pass (we rush
+    # a greedy-nearest loop of the OTHER houses before 4 PM, broadcasting to
+    # anyone in view en route). Not who we invited — just doors visited.
+    invited_houses: set[int] = field(default_factory=set)
 
 
 @dataclass

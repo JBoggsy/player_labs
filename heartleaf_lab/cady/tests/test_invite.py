@@ -61,16 +61,37 @@ def test_invite_stays_silent_with_nobody_in_view() -> None:
     assert InviteMode().decide(belief, ActionState()).chat is None
 
 
-def test_invite_seeks_the_crowd_centroid() -> None:
-    # Standing away from a distant cluster: move toward its center of gravity.
-    here = (100, 100)
-    cluster = [Gnome(index=0, pos=(500, 500), facing="s"), Gnome(index=1, pos=(520, 520), facing="s")]
-    belief = _belief(here, gnomes=cluster)
+def test_invite_tours_nearest_unreached_other_house() -> None:
+    # From our own door, head toward the nearest OTHER house (never our own).
+    from cady.mapdata import HOUSE_TARGETS
+
+    belief = _belief(to_world(HOUSE_TARGETS[OWN]), minutes=430)
     intent = InviteMode().decide(belief, ActionState())
     assert intent.kind in ("navigate_to", "hold")
-    # Not silent-standing at home: it has a movement goal toward the crowd.
-    if intent.kind == "navigate_to":
-        assert intent.point is not None
+    assert OWN not in belief.invited_houses  # we never target our own house
+
+
+def test_invite_marks_a_door_reached_when_standing_on_it() -> None:
+    from cady.mapdata import HOUSE_TARGETS
+
+    other = 0 if OWN != 0 else 1
+    belief = _belief(to_world(HOUSE_TARGETS[other]), minutes=430)
+    InviteMode().decide(belief, ActionState())
+    assert other in belief.invited_houses
+
+
+def test_invite_tour_targets_the_one_remaining_door() -> None:
+    # With all-but-one other door already marked, the seek goal is that door.
+    from cady.mapdata import HOUSE_TARGETS
+
+    remaining = 3 if OWN != 3 else 4
+    reached = {i for i in range(len(HOUSE_TARGETS)) if i not in (OWN, remaining)}
+    # Start ON another door (a known-walkable point) so nav can route.
+    start_house = next(i for i in reached)
+    belief = _belief(to_world(HOUSE_TARGETS[start_house]), minutes=430)
+    belief.invited_houses = set(reached)
+    goal = InviteMode()._nearest_unreached_door(belief, belief.self_xy)
+    assert goal == HOUSE_TARGETS[remaining]  # exactly the last unreached door
 
 
 def test_invite_returns_home_after_return_time() -> None:

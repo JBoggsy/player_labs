@@ -87,8 +87,12 @@ INVITE_BROADCAST_DEADLINE_MINUTES = 510
 range (even one), since time to recruit is almost gone before the 5 PM cutoff."""
 
 INVITE_RETURN_MINUTES = 525
-"""4:45 PM — stop seeking and head back to our own door, so we're never caught
-far from home at the HOUSE_ENTER cutoff (5 PM)."""
+"""4:45 PM — stop the door-to-door tour and head back to our own door, so we're
+never caught far from home at the HOUSE_ENTER cutoff (5 PM)."""
+
+DOOR_REACH_RADIUS = 24
+"""Pixels: how close to a house's door target counts as 'reached' on the
+door-to-door invite tour (then we mark it done and move to the next nearest)."""
 
 INVITE_MAP_CENTER = (374, 473)
 """Walkable point near the map's geometric center (748x941) — the default place

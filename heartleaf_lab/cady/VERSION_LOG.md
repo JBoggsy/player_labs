@@ -25,6 +25,17 @@ map-center. `cady/occupancy.py` is the runtime lookup (graceful None if unbaked)
 spots are walkable and shift by hour (morning gardens → house doors near dinner). 76 tests.
 NOTE: near dinner villagers disperse to their OWN houses, so the single hottest cell sits at one
 house — a follow-up is to prefer a spot central to MANY houses, hit early before they lock home.
+## v18 — 2026-07-07 (guest-finding: door-to-door invite rush + broadcast threshold 1)
+
+v16 scored 12/15 but 3 zero-chat games showed she rarely got villagers in view while gathering
+(measured: >=1 in view only 18% of gather frames, >=2 only 2%). Two changes:
+(1) **Broadcast threshold 2 -> 1** — a lone in-view villager both hears and can accept, and
+requiring 2 discarded ~9x the opportunities.
+(2) **Door-to-door invite tour** — from 3 PM (gather stops), rush the 8 OTHER houses in a
+greedy-nearest order (skip our own), broadcasting to anyone in view en route; peel home at
+4:45. Villagers stand at their doors 3-5 PM and their souls only start hosting/double-booking
+at 4 PM, so hitting them early catches them "free" (first invite heard wins — they won't
+promise two dinners). No invite-tracking this round — just rush + blanket-invite. 78 tests.
 ## v16 — 2026-07-07 (ROOT-CAUSE FIX: clock was unreadable — all clock-gated phases were dead)
 
 **RESULT — FIRST POINTS ON THE BOARD.** 15-ep hosted eval: Cady scored in **12/15 games**
