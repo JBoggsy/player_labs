@@ -30,3 +30,22 @@ least fetch+compare) before rotating, or the rotation should diff against origin
 stale local `HEAD`, before archiving.
 Status: recovered by hand this time; the hook itself is unchanged and will do this again on the
 next stale-branch + concurrent-edit collision.
+
+### `gh pr view <n> --json mergedAt/state` can read `null`/`CLOSED` for a PR that genuinely merged, if the org uses the Graphite merge queue
+Evidence: PR #17117 (`fix(app_backend): add missing pv_internal_id index on episode_policy_metrics`)
+showed `{"state":"CLOSED","mergedAt":null}` via `gh pr view --json state,mergedAt`, which reads as
+"abandoned." It actually merged — Graphite's merge queue closes the original PR and lands the
+commit via a synthetic draft PR (here, #17262), so GitHub's native merge fields never populate on
+the PR the author actually opened. The real signal is the "Merge activity" bot comment
+(`gh pr view <n> --json comments`) or checking `git log origin/main --grep "<PR title>"` for the
+commit directly. Don't conclude "not merged" from state/mergedAt alone in a Graphite repo.
+
+### A slow/timing-out query can have more than one independent unindexed predicate — fixing one doesn't mean the query is fixed
+Evidence: `load_ranked_champion_policy_version_ids` (metta `app_backend/v2/experience_requests.py`,
+backs Coworld's `random`/`top_n` xp-request roster fill) had TWO separate unindexed JSONB filters
+in the same statement: `episode_policy_metrics(pv_internal_id, metric_name)` (fixed by PR #17117,
+merged 2026-07-06) and `job_requests.job ->> 'coworld_id'` (still unindexed — audited every
+migration on the table, confirmed no expression index exists for that column). The query still
+timed out identically after #17117 merged. Root-causing a timeout by reading the query plan/SQL
+text for ALL its filters — not stopping at the first plausible unindexed one — is what caught this;
+a single fix landing is not evidence the symptom is resolved until re-reproduced.

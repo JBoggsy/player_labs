@@ -15,80 +15,98 @@ This is *not* a log or archive: finished work lives in git history / the
 
 ---
 
-## 🎯 CURRENT STATE (reseeded 2026-07-03 session end)
+## 🎯 CURRENT STATE (reseeded 2026-07-06 session end)
 
-**Champion lineage: v91 COMPETING+CHAMPION (rank ~6); v92 and v93 QUALIFYING** (lineage
-auto-champion — last to qualify holds the seat). All three = the 2026-07-02 full-stack ship
-(James-authorized without pre-A/B): v89 base + **v4 live-fit suspicion weights** + **vote bar
-0.6/lead 0.2** + **ready-state re-search** (recon staleness 360 + spent sightings + parked guard +
-empirical density prior) + **Honor Society ON** + full tracing (incl. suspicion features).
-v92 adds WATCH camouflage (default-on) + HS base64url interop + known-members registry;
-v93 adds role-reveal trust (verified member claims pin P(imposter)~0).
-Ship recipe: standing LLM + all telemetry + CREWBORG_TRACE_SUSPICION_FEATURES=1 +
-CREWBORG_HONOR_SOCIETY=1 + seed + CREWBORG_VOTE_PROBABILITY=0.6 + CREWBORG_VOTE_LEAD=0.2.
+**Champion: v100, QUALIFIED + COMPETING + CHAMPION** (`lpm_e11fdaa6…`, clean qualify).
+v100 = v99 + two changes, both direct responses to James watching v99 replays:
 
-**On main, unshipped (rides v94):** role-limbo veto fix (probe forensics); instant-vote knob
-(CREWBORG_LLM_SUSS_INSTANT_VOTE, default OFF — A/B episodes on disk, read-out BLOCKED, below).
+- **WATCH simplified to one case.** Removed the kill-cooldown-gated camouflage one-shot
+  and the single/multiple-crew split; WATCH now always latches onto the best-view **task
+  station** (never hovers mid-room) whenever crew are visible. Deleted the now-dead
+  `visionbake.py` subsystem entirely (module, `tools/vision_bake.py`, the precomputed
+  `map/croatoan_visionbake.pkl.gz` asset) rather than keeping it as a second path.
+- **Recon retimed.** Entry trigger changed from a fixed `RECON_WINDOW_TICKS` to computed
+  timing (`travel_ticks`: nav-route-aware distance / `AGENT_SPEED_PX`), firing exactly
+  when the remaining kill cooldown matches real travel time to the target — start moving
+  only once "just in time," not earlier. Target selection changed from most-recently-seen
+  to `most_isolated_recon_candidate` (farthest from every other fresh sighting).
 
-**Honor Society state:** HS1 spec (Alex Smith) implemented; seed ~/.crewborg/honor_seed.b64
-(0600); pubkey Gq5nOr6NdgrRPfi7Ahzm+i9fuMJdHIaNHaDDDUuRhMc=; known-members registry
-data/honor_members.json (us + alex-smith); receiver accepts both b64 flavors; PROBE-VERIFIED
-live (23 announces/16 eps, mutual trust held; the one bad vote = role-limbo, fixed).
-Told Alex: encoding fork + our key. STILL TO TELL: same-key multi-seat collides with
-first-poster-wins (distinct key per concurrent seat — crewborg-hs2:v1 pattern, seed /tmp/hs2_seed.b64).
+Both land on top of the same-day **vision model correction**: traced Crewrift's real
+per-player camera (128×128 world-px window + wall occlusion, not a circular radius —
+see `docs/designs/vision-model.md`) and fixed two places that approximated it with the
+wrong number — the kill-witness gate (now an exact live visible-crew count, since vision
+is symmetric) and vantage scoring (`VANTAGE_RANGE` 360→91, the true diagonal reach).
 
-## ✅ RESOLVED (2026-07-03): /jobs/* 403 was metta PR #17028 (opt-in elevation), not an outage
+**Witness gate reworked the same day:** replaced the old `BASE_ISOLATION_RADIUS`/
+`WITNESS_WINDOW_TICKS` heuristic with an urgency ramp — `witness_tolerance()` allows only
+1 witness at zero urgency, ramping to 6 (always-strike ceiling in this 6-crew format) at
+full urgency. Always allows a kill with exactly one witness, no hard cutover.
 
-Root cause: Softmax team members are now EXTERNAL-by-default; TEAM_AUTH routes (per-episode job
-artifacts for another player's policy — results/replay/policy-logs) need
-`X-Use-Elevated-Privileges: true`. Fix: `coworld --elevated ...` (CLI, needs the 0.1.28 pin — see
-below) or the header directly. Added `--elevated` to `fetch_artifacts.py`, `xp_dashboard.py`, and
-passthrough in `stream_eval.py`/`build_warehouse.py` (crewrift-event-warehouse skill); verified live.
-**None of these default it on** — every invocation needs the flag explicitly.
-**Unblocks:** instant-vote A/B read-out (/tmp/iv_{cand,base}_eps, 50v50, replays present — results
-should now be fetchable with `--elevated`, re-run the fetch to confirm), HS probe telemetry, league
-telemetry harvest — all previously blocked by this, now worth re-attempting.
+**Version history this session:** v97 (upload mistake — nonexistent env var, no
+Bedrock model pin — caught, retired, documented in `version_log.md` as a mistake) → v98
+(correct recipe, churned twice for non-quality reasons — account slot eviction, unclear
+supersession) → v99 (re-upload of v98's code, clean qualify, champion) → v100 (above).
+624 tests green pre-upload on v100; no pre-ship A/B — per James's relaxed-submission call
+(see `user_preferences.md` / `[[speed-first-iteration]]` memory: per-version leaderboard
+tracking means a bad submit has no lasting cost).
 
-## ⛔ PLATFORM BLOCKER (confirmed 2026-07-03, reproducible 3/3)
+**Also shipped this session (not crewborg gameplay):**
+- `ranking_analysis/voting_metrics.py` + `voting_report_gen.py` — per-policy vote rate,
+  chat rate, vote accuracy, ejection effectiveness (conversion vs friendly-fire), crew win
+  rate, from the event warehouse. See `ranking_analysis/README.md`'s new section.
+- `docs/designs/sprite-bridge-migration.md` — plan (not yet implemented) to adopt
+  coworld-tools' new `SpriteV1` bridge (`sprite_bridge.py`) instead of our vendored wire
+  protocol handling, while keeping crewborg's own reconnect loop (the SDK's
+  `message_bridge.py` has no retry — would regress hard-won reliability fixes).
 
-**xp-request roster `random`/`top_n` seat-fill 500s** — `eligible_champions` CTE query (joins
-policy_versions → league_policy_memberships → … → episode_policy_metrics for a mean_reward-ranked
-pool) hits `psycopg.errors.QueryCanceled: canceling statement due to statement timeout`. NOT flaky —
-3 back-to-back identical failures. Blocks **true tournament-style requests** (random/top_n opponent
-seats — see the new definition in `coworld-experience-requests/SKILL.md`); the "pin explicit
-policy_refs" workaround still works but answers a narrower question (a fixed field, not a random
-draw from the live pool) and is not a substitute when "tournament-style" is specifically wanted. The
-`resolve --division --top N` ranking (division-leaderboard endpoint) is unaffected — only the
-xp-request roster-fill path breaks. Worth escalating: may explain why the real tournament/league
-looked "broken" too, if the commissioner's own round matchmaking hits the same query.
+## ▶ IN PROGRESS: v100 500-episode tournament-style field eval — BLOCKED on platform bug (below)
 
-## 📋 A/B ledger (2026-07-02 evening)
+Composed 5×100-episode tournament-style xreqs (`crewborg:v100` in one seat, every other
+seat `{"random": true}`, natural roles) — request bodies at `/tmp/v100_tourney_reqs/`.
+**Every creation attempt 500s** on the roster-fill query (see blocker below). A background
+retry script was running (`create_v100_xreqs.sh`, 45s cadence) — **killed at session end**
+per James, since the failure is structural, not transient; don't resume the naive retry
+loop without first checking whether the fix below has landed AND deployed.
 
-- **Camo: SAFE-POSITIVE** (mechanism p=5.6e-13, primaries right-direction NS, guards pass) — shipped in v92+.
-- **Urgency 240→80: NEGATIVE** — 3rd and final witness-gate refutation; contact starvation dominates.
-- **Vote-bar sweep: INCONCLUSIVE** — v4 calibration VALIDATED live (86-100% precision at all bars);
-  conversion NS; bar60-vs-bar90 200/arm confirmation is the designed follow-up (bar60 shipped anyway
-  per James). Next lever = vote COORDINATION (HS trust network fits).
-- **Instant-vote: episodes complete, read-out blocked** (above). Prior evidence adverse (22-50%).
-- **Ready-search: NEUTRAL-safe** (pathology was partly pre-fixed by v77-80 FSM); shipped as hardening.
+**To resume:** re-run `uv run python .claude/skills/coworld-experience-requests/scripts/experience_request.py create /tmp/v100_tourney_reqs/req_0N.json` for N in 1..5 once the platform fix (below) is confirmed deployed; stream via `crewrift-event-warehouse`'s `stream_eval.py`.
 
-## ▶ OPEN LEVERS (week roadmap with evidence: [WEEKLY_CONTEXT.md](WEEKLY_CONTEXT.md))
+## ⛔ PLATFORM BLOCKER (root-caused 2026-07-06, still open)
 
-1. Suspicion detector bug: reported_bodies/button_calls_made ALL-ZERO live (398 meetings) — fix
-   before next refit; refit pipeline is fully operational now (runtime features flowing from every
-   league round).
-2. Vote coordination (the conversion bottleneck; HS trust network is the vehicle).
-3. bar60-vs-bar90 200/arm confirmation (if the sweep's p=0.09 ejection gain is real).
-4. Movement toolkit (tools/imposter_movement/) + room-density pipeline are reusable measurement infra.
+**xp-request roster `random`/`top_n` seat-fill 500s** on `POST /v2/experience-requests` —
+`load_ranked_champion_policy_version_ids()` in metta's
+`app_backend/src/metta/app_backend/v2/experience_requests.py:277-364` hits
+`psycopg.errors.QueryCanceled: canceling statement due to statement timeout`. This is the
+**same symptom** noted 2026-07-03, but now root-caused to **two independent unindexed
+predicates in the same query**:
+
+1. `episode_policy_metrics` join on `(pv_internal_id, metric_name)` — **FIXED**, PR #17117
+   (`fix(app_backend): add missing pv_internal_id index on episode_policy_metrics`) merged
+   to metta `main` today via Graphite queue (commit `10874ebb47`). **Unconfirmed whether
+   the migration has actually been *applied* to the production DB** — a merge to `main`
+   doesn't run `alembic upgrade` by itself.
+2. `job_requests.job ->> 'coworld_id'` — **NOT fixed, no PR yet.** Audited every index ever
+   created on `job_requests` across all alembic migrations: none touch the `job` JSONB
+   column (only `result->>'episode_id'` has an expression index, a different column/PR
+   `a1b2c3d4e5f7`). Reproduced this exact predicate still timing out live, today, in this
+   session — including after #17117 merged, so it's very likely the remaining/sole cause
+   now. Follow-up issue drafted (full repro SQL + proposed migration) at
+   `/private/tmp/claude-501/-Users-jamesboggs-coding-personal-labs/9ba09582-d86d-4b7d-8b42-62a24349a8f9/scratchpad/job_requests_coworld_id_index_issue.md`
+   — hand this to an agent on a **separate** metta clone/worktree (never `~/coding/metta`
+   directly — read-only hard rule) to open as PR #2.
+
+Gotcha for next time: `gh pr view <n> --json mergedAt` can show `null` even for a PR that
+truly merged, if the org uses the **Graphite merge queue** — it closes the original PR and
+merges via a synthetic draft PR instead. Check `gh pr view <n> --json comments` for the
+Graphite "Merge activity" bot comment, or `git log origin/main --grep "<PR title>"`, not
+just `state`/`mergedAt`.
 
 ## Load-bearing infra facts
 
-- Player SDK from Metta-AI/coworld-tools tarball (issue #13); coworld CLI 0.1.28 pinned (bumped
-  2026-07-03 from 0.1.27 for `--elevated` support — `uv lock --upgrade-package coworld && uv sync`).
-- Expander /tmp/expand-043 (= tools/bin/expand_replay-26ee08c) hash-clean through crewrift_prime
-  0.4.35, JSONL-capable. Warehouses/duckdb run from tools/event-warehouse/crewrift-event-warehouse.
-- Prime field ~11 champions, ships hourly (notsus v168→v174 in one day); server random/top_n pool
-  selectors 500 on statement timeout — pin explicit policy_refs.
-- fetch_artifacts: --watch dies silently on transient errors + completeness misses results.json —
-  ALWAYS verify final on-disk counts; refetch is idempotent.
-- Bedrock LLM: sidecar-endpoint gating; meeting LLM verified firing v91 probe (117 decisions/9 fallbacks).
+- Player SDK from Metta-AI/coworld-tools tarball (issue #13); coworld CLI 0.1.28 pinned.
+- Expander binary must match the exact deployed Crewrift commit (`trace_warning` = version
+  skew or genuine replay non-determinism — check which before trusting a warehouse build).
+- fetch_artifacts/stream_eval/build_warehouse/xp_dashboard all need `--elevated` when
+  pulling another player's (opponent) episode artifacts (metta PR #17028 — team members are
+  external-by-default now).
+- Bedrock LLM: sidecar-endpoint gating (`USE_BEDROCK` alone doesn't gate it); meeting LLM
+  toggle is `CREWBORG_LLM_MEETINGS=1`, upload with `--use-bedrock --bedrock-model <id>`.
