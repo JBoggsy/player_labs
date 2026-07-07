@@ -27,9 +27,26 @@ read at master `c0dc3df`. All line numbers are from that file.
    (`shouldGather`), so pre-4 PM it's out in the gardens, not idle.
    **Implication:** inviting in the gardens *before 4 PM* can work — but it relies on the
    villager's **LLM** hearing us and choosing to accept (ungated), not on the deterministic
-   crowd path (gated). Whether that fires in practice needs an empirical test, and note the
-   LLM may be absent in league pods (then only the crowd-gated path exists → early invites
-   land weakly). Measure before committing to an early-invite strategy.
+   crowd path (gated).
+
+### Villager LLM reliability — what we've actually measured (don't assume from Crewrift)
+
+**Measured (xreq path, 15 v16 games, 2026-07-07):** the villager LLM **IS working** here — 35
+villager chats, **26 unique lines**, clearly contextual/conversational ("Creek running high? My
+garden's doing well too!"), i.e. real generation, not fixed templates. An earlier note claimed
+"LLM often absent in league pods" — that was an **unverified import from Crewrift** (where the
+Bedrock sidecar served xreq pods but not league/dispatch rounds) and is **not established for
+Heartleaf**; corrected. Two honest limits remain:
+   - **Volume is low: ~2 villager chats/game, and 3/15 games had zero villager chat.** The LLM
+     works but villagers chat *sparsely* — don't count on a dense stream to key off.
+   - **This is verified for the xreq (experience-request) path only.** All our evals are xreq.
+     Whether the LLM fires in true **league/dispatch** rounds is *unverified* — and that's the
+     exact axis where Crewrift differed. For a precise per-call reliability number, pull the
+     villagers' own telemetry artifacts (`--elevated`) and look for LLM-decision-vs-fallback
+     counters, rather than inferring from chat diversity.
+
+   So: early garden invites can work *if* their LLM hears+accepts; it demonstrably does in xreq.
+   Measure the league path before betting the strategy on it.
 
 ## TL;DR
 
