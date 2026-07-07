@@ -22,7 +22,7 @@ set -euo pipefail
 # replays (re-sim validates a per-tick hash). Currently the replay-expander
 # branch (Metta-AI/coworld-heartleaf#15); bump to the merge commit once it
 # lands, and again if the deployed league game advances and hashes mismatch.
-HEARTLEAF_REF="${HEARTLEAF_REF:-7aa7adb}"
+HEARTLEAF_REF="${HEARTLEAF_REF:-23e0cdb}"
 GAME_REPO_SLUG="Metta-AI/coworld-heartleaf"
 
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # heartleaf_lab/

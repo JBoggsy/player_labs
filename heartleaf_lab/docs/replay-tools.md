@@ -48,10 +48,20 @@ events always fire at their exact tick. Output rows (`type`):
   - `join` / `leave` — `home` (own house index)
   - `harvest` — `amount`, `total`, `foods` (each veggie **named**)
   - `enter_house` / `exit_house` — `house` index, `own` (their own home?)
-  - `chat` — `text`
+  - `chat` — `text`, plus `heard_count` and `heard_by[]` (see hearing range below)
   - `score` — `amount`, `total`
   - `dinner` — `host`, `was_host`, `guests`, `food`, `score`
 - **`summary`** (last): `ticks`, `hash_failed`, `hash_mismatch_tick`.
+
+> **Chat hearing range.** Heartleaf has no explicit chat radius. A player
+> *hears* a message when the speaker's speech bubble lands inside their
+> 320×200 viewport (the camera follows each viewer, clamped at map edges) on
+> the **same map** — so a house wall blocks it. Each `chat` event therefore
+> carries `heard_by` (the other players in range, `{slot, name}`) and
+> `heard_count`, computed from the game's real render geometry at the tick the
+> line is spoken. (The bubble then lingers ~5 s, so a late arrival can still
+> see it; the event captures the audience at the moment of speaking.) In
+> practice a creek-side cluster yields ~3–6 hearers of 8, not the whole map.
 
 > **Coordinate frame.** Player `x`,`y` are foot-centre pixels in the current
 > map's frame — the **same frame as the baked walk grid** (`cady/mapdata.py`)
