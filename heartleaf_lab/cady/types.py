@@ -84,6 +84,13 @@ class Belief:
     map_context: MapContext = "unknown"
     current_target: tuple[int, int] | None = None
     circuit_index: int = 0
+    # Harvest-attempt state: which circuit garden we are currently pressing A at,
+    # the inventory count when the attempt started, and how many frames we've
+    # tried — so we advance the circuit only once a pickup is confirmed (or we
+    # time out), instead of firing one A press and moving on.
+    gather_active_index: int | None = None
+    gather_inv_baseline: int = 0
+    gather_ticks: int = 0
     nav_goal: tuple[int, int] | None = None
     nav_path: list[tuple[int, int]] | None = None
     nav_cursor: int = 0

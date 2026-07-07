@@ -13,6 +13,23 @@ Deterministic gather-and-host baseline on the SDK SpriteV1 bridge.
 This is the connect/gather/navigate/host/exit baseline. Coordination through
 chat invitations is planned for v2.
 
+## v9 — 2026-07-07 (fix: reliable harvesting — press A in real range, retry until picked up)
+
+v8 finally stayed connected and gathered, but only harvested in 13/15 games and converted
+just ~60% of its garden approaches to food. Cause: a threshold/target mismatch. `gather.py`
+fired `gather_at` (and advanced the circuit) within 40px of the garden **rect** — matching
+the game's `InteractionRadius` — but `action.py` only pressed A within a stale
+`GATHER_RANGE=12` of the **approach point**, otherwise it emitted a *movement* mask. So in
+the 12–40px band `gather_at` walked instead of pressing A, and the circuit had already
+advanced, losing that garden. Confirmed in the logs: the held mask at every `gather_at`
+tick was a movement bit, never A (`1<<5`).
+
+Fix: (1) `gather_at` now presses A every frame (and nudges toward the approach point to
+settle a small perception offset) — `action.py`; (2) `gather.py` stays on the garden and
+retries until a pickup is confirmed (inventory rose) or a short timeout (`MAX_GATHER_TICKS`),
+instead of firing once and moving on. Local self-play (9 clones colliding on one circuit)
+went from 0 harvests to real pickups; hosted eval to confirm.
+
 ## v8 — 2026-07-07 (fix: disable websocket keepalive — Cady stayed connected only ~33s)
 
 **The bug that made every prior version score 0.** Cady disconnected ~20–48s into

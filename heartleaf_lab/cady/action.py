@@ -45,8 +45,12 @@ def _resolve_mask(
 
     if intent.kind == "gather_at":
         if intent.point is None:
-            return 0
-        return _interact_or_navigate(intent.point, self_xy, velocity, state)
+            return _edge_press_a(state)
+        # gather.py only issues gather_at once we're within the game's harvest
+        # radius of the garden, so press A every frame to collect. Also keep
+        # nudging toward the approach point: it settles a small perception
+        # offset that could otherwise leave the foot just out of true range.
+        return _movement_mask(self_xy, intent.point, velocity) | _edge_press_a(state)
 
     if intent.kind == "enter_house":
         if intent.house_index is None:

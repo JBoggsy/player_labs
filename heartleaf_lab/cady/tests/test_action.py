@@ -47,16 +47,27 @@ def test_gather_at_edge_triggers_a_press() -> None:
     assert state.a_held
 
 
-def test_gather_at_out_of_range_navigates_without_a() -> None:
-    command = resolve_action(
+def test_gather_at_moves_toward_point_and_pulses_a() -> None:
+    # gather.py only issues gather_at once in harvest range, so gather_at both
+    # closes any residual gap (RIGHT) and presses A to collect.
+    state = ActionState()
+
+    first = resolve_action(
         Intent(kind="gather_at", point=(100, 10)),
         Belief(self_xy=(10, 10)),
-        ActionState(),
+        state,
     )
+    assert _has(first.held_mask, Button.RIGHT)
+    assert _has(first.held_mask, Button.A)  # fresh press this frame
 
-    assert command.held_mask != 0
-    assert not _has(command.held_mask, Button.A)
-    assert _has(command.held_mask, Button.RIGHT)
+    # A was held last frame -> release it for one tick (edge press) but keep moving.
+    second = resolve_action(
+        Intent(kind="gather_at", point=(100, 10)),
+        Belief(self_xy=(11, 10)),
+        state,
+    )
+    assert _has(second.held_mask, Button.RIGHT)
+    assert not _has(second.held_mask, Button.A)
 
 
 def test_hold_and_idle_release_buttons() -> None:

@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 
 from cady import navigator
-from cady.config import HARVEST_RADIUS
+from cady.config import HARVEST_RADIUS, MAX_GATHER_TICKS
 from cady.frame import to_map, to_world
 from cady.mapdata import GARDEN_APPROACHES, GARDEN_CIRCUIT, GARDEN_RECTS, WALK_GRID
 from cady.types import ActionState, Belief, Intent
@@ -31,10 +31,25 @@ class GatherMode(Mode[Belief, ActionState, Intent]):
         garden_rect = GARDEN_RECTS[garden_index]
 
         if _point_rect_distance(to_map(belief.self_xy), garden_rect) <= HARVEST_RADIUS:
-            belief.circuit_index += 1
-            navigator.clear_navigation(belief)
+            # In range: press A and STAY until a pickup is confirmed (inventory
+            # rose) or we time out — rather than firing one press and advancing,
+            # which lost the garden on any marginal miss.
+            if belief.gather_active_index != garden_index:
+                belief.gather_active_index = garden_index
+                belief.gather_inv_baseline = belief.inventory_count
+                belief.gather_ticks = 0
+            belief.gather_ticks += 1
+
+            harvested = belief.inventory_count > belief.gather_inv_baseline
+            if harvested or belief.gather_ticks >= MAX_GATHER_TICKS:
+                belief.circuit_index += 1
+                belief.gather_active_index = None
+                navigator.clear_navigation(belief)
+                return Intent(kind="idle")
             return Intent(kind="gather_at", point=approach_world)
 
+        # Out of range: abandon any in-progress attempt and walk to the garden.
+        belief.gather_active_index = None
         waypoint = navigator.next_waypoint(belief, belief.self_xy, approach_world, grid=WALK_GRID)
         if waypoint is None:
             belief.circuit_index += 1
