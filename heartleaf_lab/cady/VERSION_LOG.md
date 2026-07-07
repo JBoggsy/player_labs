@@ -27,6 +27,11 @@ NOTE: near dinner villagers disperse to their OWN houses, so the single hottest 
 house — a follow-up is to prefer a spot central to MANY houses, hit early before they lock home.
 ## v18 — 2026-07-07 (guest-finding: door-to-door invite rush + broadcast threshold 1)
 
+**RESULT — scored 15/15 games (was 12/15), mean 145 (was 109, +33%), total 2179 (was 1637).**
+Zero-chat/zero-score games ELIMINATED (0, was 3). Chats 6.5->9.5/game; guests appear at
+nearly every dinner (1-3 each). The 2 lowest games (27,35) were HARVEST failures (27/29 food
+vs ~130 usual), not recruiting — she still chatted+got guests. Door-to-door recruiting works.
+
 v16 scored 12/15 but 3 zero-chat games showed she rarely got villagers in view while gathering
 (measured: >=1 in view only 18% of gather frames, >=2 only 2%). Two changes:
 (1) **Broadcast threshold 2 -> 1** — a lone in-view villager both hears and can accept, and
