@@ -40,20 +40,93 @@ gnomes attend.** You do **not** score by hoarding food; you score by **feeding g
   as host food.
 - **Evening:** the world visibly darkens through five stages (daylight → purple → dark
   blue) as a clock cue.
-- **Dinner: 6:00 PM** (see below).
+- **Dinner: displayed 6:00 PM, RESOLVES 6:55 PM** — the scoring tally fires at 6:55 PM
+  (`DinnerTallyMinutes`), not at the 6:00 shown on the clock. To score you must be inside
+  your own home *at the resolve*, not merely "around dinner." (See Exact timing + Dinner.)
 - **End of day: 10:00 PM** — every gnome is teleported home, sees a cumulative-score
-  panel (~3s), then the next day begins from morning setup.
+  panel (~10s), then the next day begins from morning setup.
 
 The **league variant** runs **9 compressed days** (`maxTicks: 23760`, `maxGames: 1`,
 `num_agents: 9`, `daySeconds: 100`) — deliberately enough days that every gnome gets a
 hosting turn. `freeplay` (open-ended) and `smoke` (12 ticks) variants also exist.
 
+## Exact timing — the authoritative table (verify code before trusting prose)
+
+**Read this before writing any clock-gated behavior.** All values are from the game source
+(`src/heartleaf.nim`, `src/heartleaf/common.nim`) at the pinned ref — cite it, don't infer.
+A wrong mental model here silently disabled Cady's whole social phase once (the clock read
+as `None` and the "6:00 dinner" was actually resolved at 6:55). Distinguish **displayed** vs
+**resolved** times.
+
+### Constants (source of truth)
+
+| Constant | Value | Meaning |
+|---|---|---|
+| `DayStartMinutes` | `8*60 = 480` | day starts 8:00 AM |
+| `DayEndMinutes` | `22*60 = 1320` | day ends 10:00 PM |
+| `DayTotalMinutes` | `1320-480 = 840` | game-minutes per day |
+| `DayStepMinutes` | `5` | clock advances in 5-min steps (quantized) |
+| `DayStepCount` | `840/5 = 168` | number of clock steps in a day |
+| `DinnerMinutes` | `18*60 = 1080` | **6:00 PM — the DISPLAYED dinner time** |
+| `DinnerTallyMinutes` | `1080+55 = 1135` | **6:55 PM — when dinner actually RESOLVES + scores** |
+| `DuskStartMinutes` | `17*60 = 1020` | 5:00 PM — world starts darkening (visual cue) |
+| `TicksPerSecond` | `24` | sim tick rate |
+| `daySeconds` | league **100** (manifest default 180) | real seconds per in-game day |
+| `ScoreScreenTicks` | `10*24 = 240` | end-of-day score panel duration (~10s) |
+| `ChatLifetimeTicks` | `5*24 = 120` | a chat bubble lingers ~5s |
+| `GardenStartFoodCount` | `1` | each garden reseeds 1 random veggie per day |
+
+### Minute ↔ tick mapping (this is what I got wrong)
+
+- **`dayTicks = daySeconds * TicksPerSecond`.** League: `100*24 = 2400` gameplay ticks/day.
+- The clock is **quantized**: `currentDayMinutes = 480 + step*5`, where
+  `step = min(168, dayTick * 168 / dayTicks)`. So `game_minute` from a `dayTick`:
+  `480 + 5 * floor(dayTick * 168 / dayTicks)`.
+- **To convert a target game-minute `M` (absolute, e.g. 1135) to a dayTick** (league,
+  dayTicks=2400): `dayTick ≈ (M - 480) / 840 * 2400`.
+- **A full day = `dayTicks` gameplay ticks + `ScoreScreenTicks` score screen.** League:
+  `2400 + 240 = 2640` ticks/day → 9 days ≈ `23760` (`maxTicks`). ✔ matches.
+
+**Key league dayTicks (daySeconds=100, dayTicks=2400):**
+
+| Event | Game time | dayTick (approx) |
+|---|---|---|
+| Day start / morning | 8:00 AM (480) | 0 |
+| **Invite window opens** (our cutover) | 3:00 PM (900) | ~1200 |
+| Dusk begins (visual) | 5:00 PM (1020) | ~1543 |
+| **House-enter deadline** (be inside) | 5:00 PM (1020) | ~1543 |
+| Dinner displayed | 6:00 PM (1080) | ~1714 |
+| **Dinner RESOLVES + scores** | 6:55 PM (1135) | ~1871 |
+| Gameplay ends → score screen | 10:00 PM (1320) | 2400 |
+| Next day begins | — | 2640 |
+
+> Cady's minute constants are **minutes-since-8AM** (`parse_clock_minutes` subtracts
+> `8*60`). So displayed dinner = 600, **dinner-resolve = 655**, day-end = 840.
+
+### The exact per-tick day sequence (from `step`)
+
+Each tick: apply inputs → move players → `updateMessages` → `inc dayTick` → **if
+`currentDayMinutes >= DinnerTallyMinutes (6:55) and not dinnerDone`: `startDinnerParties()`**
+(this is the single scoring moment — see below) → if `dayTick >= dayTicks`:
+`startScoreScreen()` (freezes `dayTick`, sets 240 score-screen ticks, **teleports every
+gnome to their own home**, clears dinner records). After the score screen drains,
+`startDay()`: `dayNumber++`, `dayTick=0`, **reseed gardens**, players keep inventory + score.
+
+> **Gotcha that caused a false positive:** at the score screen every gnome is teleported
+> home. So "inside my own home near the day boundary" is NOT evidence of hosting — it's the
+> forced end-of-day teleport. Real hosting is only measurable at the **6:55 PM resolve tick**
+> (and confirmed by the host's inventory clearing).
+
 ## Dinner — how scoring actually happens
 
-Dinner is the **only** scoring event. At 6:00 PM:
+Dinner is the **only** scoring event. It resolves **once**, at **6:55 PM**
+(`DinnerTallyMinutes`; the clock shows 6:00 as the dinner *hour*, but the tally fires at
+6:55) — `startDinnerParties()`, guarded by `dinnerDone` so it happens exactly once per day:
 
-- A house **hosts a party** iff **its owner is inside it** AND **≥1 visiting gnome is
-  inside the same house**. Multiple parties run simultaneously in different houses.
+- A house **hosts a party** iff **its owner is inside it** (`host.mapIndex == its home map`)
+  AT THE RESOLVE TICK AND **≥1 visiting gnome is inside the same house**. Multiple parties
+  run simultaneously in different houses. Being home *before or after* 6:55 doesn't count —
+  only presence at the resolve.
 - **Food is multiplicative per guest:** every visitor eats the **full** amount of
   everything the host collected. If the host has {3 apples, 1 pear, 2 potatoes}, *each*
   visitor eats all of that.

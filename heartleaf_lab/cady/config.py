@@ -9,7 +9,16 @@ All *_MINUTES below are minutes since the 8:00 AM start (Heartleaf's clock;
 # --- Social schedule (deterministic floor; mirrors the starter villager's phases,
 # see docs/designs/cady-social-llm-controller.md + villager-dinner-attendance.md).
 DINNER_MINUTES = 600
-"""6:00 PM — dinner resolves; a host with any guest inside scores."""
+"""6:00 PM (minutes-since-8AM) — the DISPLAYED dinner time. NOTE: dinner actually
+RESOLVES/scores at 6:55 PM = 655 (game `DinnerTallyMinutes`), not 600. This
+constant is the clock label only; the strategy keys off HOUSE_ENTER_MINUTES
+(be inside well before the 655 resolve). See docs/heartleaf-gameplay.md
+'Exact timing'."""
+
+DINNER_RESOLVE_MINUTES = 655
+"""6:55 PM (minutes-since-8AM) — the tick dinner actually tallies and scores
+(game `DinnerTallyMinutes` = DinnerMinutes+55). Be inside our own home BEFORE
+this. This is the true deadline, not the 6:00 shown on the clock."""
 
 HOST_PREP_MINUTES = 420
 """3:00 PM (420 min after the 8 AM start). If we are food-rich by now, stop
