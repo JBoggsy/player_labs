@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 
 from cady import navigator
-from cady.config import HARVEST_RADIUS, MAX_GATHER_TICKS
+from cady.config import HARVEST_RADIUS, MARKER_SIGHT_RADIUS, MAX_GATHER_TICKS
 from cady.frame import to_map, to_world
 from cady.mapdata import GARDEN_APPROACHES, GARDEN_CIRCUIT, GARDEN_RECTS, WALK_GRID
 from cady.types import ActionState, Belief, Intent
@@ -31,9 +31,20 @@ class GatherMode(Mode[Belief, ActionState, Intent]):
         garden_rect = GARDEN_RECTS[garden_index]
 
         if _point_rect_distance(to_map(belief.self_xy), garden_rect) <= HARVEST_RADIUS:
-            # In range: press A and STAY until a pickup is confirmed (inventory
-            # rose) or we time out — rather than firing one press and advancing,
-            # which lost the garden on any marginal miss.
+            # Reached the circuit garden. Only press A if there's an actual food
+            # marker in range: a marker only appears when a garden holds food, so
+            # this skips depleted gardens AND avoids pressing A on a spot whose
+            # harvest radius overlaps a house footprint (where A would ENTER the
+            # house, not harvest — the game overloads A: harvest / enter / exit).
+            if not _food_marker_in_range(belief):
+                belief.circuit_index += 1
+                belief.gather_active_index = None
+                navigator.clear_navigation(belief)
+                return Intent(kind="idle")
+
+            # In range with food: press A and STAY until a pickup is confirmed
+            # (inventory rose) or we time out — rather than firing one press and
+            # advancing, which lost the garden on any marginal miss.
             if belief.gather_active_index != garden_index:
                 belief.gather_active_index = garden_index
                 belief.gather_inv_baseline = belief.inventory_count
@@ -56,6 +67,25 @@ class GatherMode(Mode[Belief, ActionState, Intent]):
             navigator.clear_navigation(belief)
             return Intent(kind="idle")
         return Intent(kind="navigate_to", point=waypoint)
+
+
+def _food_marker_in_range(belief: Belief) -> bool:
+    """True if a visible garden marker with food is within harvesting sight.
+
+    Garden markers (``belief.food_gardens``) only appear while a garden holds
+    food, so their presence is the ground truth for "there is something to
+    harvest here" — more reliable than the baked circuit, which can point at a
+    now-empty garden or a spot near a house."""
+    if belief.self_xy is None:
+        return False
+    sx, sy = belief.self_xy
+    for garden in belief.food_gardens:
+        if not garden.has_food:
+            continue
+        gx, gy = garden.pos
+        if math.hypot(gx - sx, gy - sy) <= MARKER_SIGHT_RADIUS:
+            return True
+    return False
 
 
 def _point_rect_distance(point: Point, rect: Rect) -> float:

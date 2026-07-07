@@ -16,6 +16,12 @@ Matches the game's ``InteractionRadius`` (heartleaf ``common.nim``): the server
 harvests when the player's foot is within this distance of the garden rect and A
 is pressed."""
 
+MARKER_SIGHT_RADIUS = 60
+"""Distance in pixels within which a visible garden marker counts as "food to
+harvest here." A bit larger than HARVEST_RADIUS so we don't skip a real garden
+whose marker position sits at the edge of range; the game's own 40px check still
+gates whether the A press actually collects."""
+
 MAX_GATHER_TICKS = 12
 """Frames to keep pressing A at one garden before giving up and moving on. One
 successful press harvests all of a garden's food, so this only needs to cover

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from players.player_sdk import Button
 
+from cady.frame import to_map
+from cady.mapdata import HOUSE_RECTS
 from cady.types import ActionState, Belief, Command, Intent
 
 ARRIVE_RADIUS = 4
@@ -44,13 +46,17 @@ def _resolve_mask(
         return _movement_mask(self_xy, intent.point, velocity)
 
     if intent.kind == "gather_at":
+        # Never press the harvest A while standing on a house footprint: the
+        # game overloads A (harvest / enter-house / exit-home), so an A press on
+        # a house rect ENTERS the house instead of harvesting. Keep moving toward
+        # the approach point to step clear of the house, then A resumes.
+        press_a = 0 if _foot_on_house(self_xy) else _edge_press_a(state)
         if intent.point is None:
-            return _edge_press_a(state)
-        # gather.py only issues gather_at once we're within the game's harvest
-        # radius of the garden, so press A every frame to collect. Also keep
-        # nudging toward the approach point: it settles a small perception
-        # offset that could otherwise leave the foot just out of true range.
-        return _movement_mask(self_xy, intent.point, velocity) | _edge_press_a(state)
+            return press_a
+        # gather.py only issues gather_at with food in range, so press A to
+        # collect while nudging toward the approach point (settles a small
+        # perception offset that could leave the foot just out of true range).
+        return _movement_mask(self_xy, intent.point, velocity) | press_a
 
     if intent.kind == "enter_house":
         if intent.house_index is None:
@@ -107,6 +113,16 @@ def _edge_press_a(state: ActionState) -> int:
     """Emit a fresh A press, releasing for one tick if A was already held."""
 
     return 0 if state.a_held else int(Button.A)
+
+
+def _foot_on_house(self_xy: tuple[int, int]) -> bool:
+    """True when the foot (converted to map coords) sits inside a house rect."""
+
+    mx, my = to_map(self_xy)
+    for x, y, w, h in HOUSE_RECTS:
+        if x <= mx <= x + w and y <= my <= y + h:
+            return True
+    return False
 
 
 def _velocity(state: ActionState, self_xy: tuple[int, int]) -> tuple[int, int]:

@@ -13,6 +13,22 @@ Deterministic gather-and-host baseline on the SDK SpriteV1 bridge.
 This is the connect/gather/navigate/host/exit baseline. Coordination through
 chat invitations is planned for v2.
 
+## v10 — 2026-07-07 (fix: stop house oscillation — only press A at real food, never on a house)
+
+v9's reliable harvesting worked (15/15 games, 118–245 food) but exposed a bad actions bug:
+Cady entered/exited houses 267–1038× per game. The game overloads the A button
+(harvest / enter-house / exit-home), so her aggressive A-pulsing entered a house whenever
+she pressed A while standing on a house footprint. Confirmed in a replay: her circuit sends
+her onto house 7's rect to "harvest" garden 30 (whose 40px radius overlaps the house) where
+`gardens=0` (no food); she pressed A, entered the house, got kicked out, repeated — the
+retry state reset each time so it never timed out.
+
+Fix: (1) `gather.py` only presses A when a **visible food marker** is actually in range
+(`MARKER_SIGHT_RADIUS`) — markers only appear with food, so this skips empty/absent gardens
+and the house-overlap spot; (2) `action.py` never includes the harvest A while the foot is
+inside a house rect. Local self-play: house entries dropped from hundreds to ~1 each;
+harvesting preserved.
+
 ## v9 — 2026-07-07 (fix: reliable harvesting — press A in real range, retry until picked up)
 
 v8 finally stayed connected and gathered, but only harvested in 13/15 games and converted
