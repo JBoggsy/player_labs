@@ -27,7 +27,7 @@ the line; this floor recruits the visible crowd with a fixed, effective template
 
 from __future__ import annotations
 
-from cady import navigator
+from cady import navigator, occupancy
 from cady.config import (
     INVITE_BROADCAST_DEADLINE_MINUTES,
     INVITE_MAP_CENTER,
@@ -71,8 +71,12 @@ class InviteMode(Mode[Belief, ActionState, Intent]):
         return Intent(kind="navigate_to", point=waypoint, chat=chat)
 
     def _seek_goal(self, belief: Belief, others: list[Gnome]) -> Point | None:
-        """Where to move: back to our own door once it's return time; else the
-        crowd's center of gravity; else the map center to go find a crowd."""
+        """Where to move (blend live + learned):
+        1. return time → back to our own door (never miss the host cutoff);
+        2. gnomes visible → their live center of gravity (react to what we see);
+        3. screen empty → the empirically-hottest spot for this game-hour from
+           the baked occupancy heatmap (go where players usually are now);
+        4. no heatmap baked → the map center (last-resort blind fallback)."""
         minutes = belief.last_time_minutes
         if minutes is not None and minutes >= INVITE_RETURN_MINUTES:
             return self._own_house_target(belief)
@@ -80,7 +84,8 @@ class InviteMode(Mode[Belief, ActionState, Intent]):
             cx = sum(g.pos[0] for g in others) // len(others)
             cy = sum(g.pos[1] for g in others) // len(others)
             return (cx, cy)
-        return INVITE_MAP_CENTER
+        hot = occupancy.hottest_spot(minutes, avoid=belief.self_xy)
+        return hot if hot is not None else INVITE_MAP_CENTER
 
     def _maybe_invite(
         self, belief: Belief, action_state: ActionState, others: list[Gnome]

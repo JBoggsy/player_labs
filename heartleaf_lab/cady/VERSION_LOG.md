@@ -13,6 +13,18 @@ Deterministic gather-and-host baseline on the SDK SpriteV1 bridge.
 This is the connect/gather/navigate/host/exit baseline. Coordination through
 chat invitations is planned for v2.
 
+## v17 — 2026-07-07 (guest-finding: baked occupancy heatmap guides the invite patrol)
+
+v16's 3 zero-score games had low/zero chats: Cady never got in front of a crowd. Her seek logic
+only knew about ON-SCREEN gnomes and blindly walked to map-center when her screen was empty.
+Fix: a **per-game-hour occupancy heatmap** learned offline from **178 replays / 16.2M
+other-player position samples** (`tools/build_occupancy_heatmap.py` → `mapdata/occupancy.npz`,
+14 hours × 59×47 coarse cells). Invite `_seek_goal` now BLENDS: live visible-gnome centroid when
+anyone's on screen; else the empirically-hottest cell for the current game-hour; else (no heatmap)
+map-center. `cady/occupancy.py` is the runtime lookup (graceful None if unbaked). Verified hot
+spots are walkable and shift by hour (morning gardens → house doors near dinner). 76 tests.
+NOTE: near dinner villagers disperse to their OWN houses, so the single hottest cell sits at one
+house — a follow-up is to prefer a spot central to MANY houses, hit early before they lock home.
 ## v16 — 2026-07-07 (ROOT-CAUSE FIX: clock was unreadable — all clock-gated phases were dead)
 
 **RESULT — FIRST POINTS ON THE BOARD.** 15-ep hosted eval: Cady scored in **12/15 games**
