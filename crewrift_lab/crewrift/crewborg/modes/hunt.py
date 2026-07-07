@@ -11,12 +11,15 @@ in range and the kill would go **unwitnessed**:
   and stick with it until it's killed or lost;
 - navigate to its **predicted intercept** point (``strategy.trajectory``) — leading a
   moving target instead of tail-chasing its live position at equal speed;
-- when within KillRange and unwitnessed → ``kill``; if a witness is near, keep
-  shadowing (lie in wait) rather than blowing the kill. The urgency bar relaxes
-  the witness requirement over time, so a perpetually-shadowed kill still
-  eventually fires. **After our first kill the witness requirement is dropped
-  entirely** (``last_kill_tick`` set ⇒ strike regardless of witnesses): banking
-  the second kill is the imposter's core job and conversion beats stealth there.
+- when within KillRange and unwitnessed → ``kill``; if MORE than the currently
+  tolerated number of witnesses is visible, keep shadowing (lie in wait) rather than
+  blowing the kill. The tolerance ramps from 1 witness at zero urgency to 6 (this
+  game's fixed crew count means that's effectively "always strike") by
+  ``urgency_full_ticks()`` of being kill-ready without a clean shot, so a
+  perpetually-shadowed kill still eventually fires. **After our first kill the
+  witness requirement is dropped entirely** (``last_kill_tick`` set ⇒ strike
+  regardless of witnesses): banking the second kill is the imposter's core job and
+  conversion beats stealth there.
 
 Victim selection also has a local teammate-claim heuristic: if a recently seen
 fellow imposter is already closer to a target, prefer another victim when one
@@ -32,13 +35,12 @@ from crewrift.crewborg.modes import imposter_common as ic
 from crewrift.crewborg.nav import plan_route
 from crewrift.crewborg.strategy.commander.bias import commander_of
 from crewrift.crewborg.strategy.opportunity import (
-    BASE_ISOLATION_RADIUS,
-    WITNESS_WINDOW_TICKS,
     kill_urgency_ticks,
     select_victim,
     unwitnessed,
     urgency_full_ticks,
     visible_victims,
+    witness_tolerance,
 )
 from crewrift.crewborg.strategy.trajectory import lead_ticks, predict
 from crewrift.crewborg.types import ActionState, Belief, Intent, PlayerRecord
@@ -161,9 +163,9 @@ def _hunt_block_payload(
         if other.color != victim.color
         and other.color not in belief.teammate_colors
         and other.life_status != "dead"
-        and belief.last_tick - other.last_seen_tick <= WITNESS_WINDOW_TICKS
-        and ic.dist2(victim_xy, (other.world_x, other.world_y)) <= BASE_ISOLATION_RADIUS**2
+        and other.last_seen_tick == belief.last_tick  # currently visible == a witness; see opportunity.unwitnessed
     ]
+    tolerance = witness_tolerance(belief)
     others = [
         (candidate, math.dist(self_xy, (candidate.world_x, candidate.world_y)))
         for candidate in visible_victims(belief)
@@ -179,6 +181,7 @@ def _hunt_block_payload(
         "already_killed": already_killed,
         "urgency_ticks": urgency,
         "urgency_frac": round(min(1.0, urgency / urgency_full_ticks()), 3),
+        "witness_tolerance": tolerance,
         "witnesses": witnesses,
         "nearest_other": (
             {
