@@ -93,7 +93,37 @@ class _DiagnosticLogger:
             "inventory_count": step.belief.inventory_count,
             "garden_marker_count": _garden_marker_count(world),
             "grid": _grid_dims(step.belief.map_context),
+            "scene": _scene_probe(world),
         }
+
+
+def _scene_probe(world: SpriteWorld | None) -> dict[str, Any] | None:
+    """Raw scene coords for calibrating the frame: gnomes, walk-sprite dims,
+    gardens, and the self-candidate (gnome nearest the 320x200 viewport center)."""
+    if world is None:
+        return None
+    gnomes = []  # objects 1000..1099 -> (id, x, y, label)
+    gardens = []  # objects 4000..4999 -> (id, x, y)
+    for obj in world.objects.values():
+        oid = obj.object_id
+        if 1000 <= oid < 1100:
+            sp = world.sprite_for(obj)
+            gnomes.append([oid, int(obj.x), int(obj.y), (sp.label if sp else "")])
+        elif 4000 <= oid < 5000:
+            gardens.append([oid, int(obj.x), int(obj.y)])
+    walk = None
+    for sp in world.sprites.values():
+        if sp.label in ("heartleaf main walkability", "heartleaf home walkability"):
+            walk = {"id": sp.sprite_id, "w": sp.width, "h": sp.height, "label": sp.label}
+            break
+    # self = gnome nearest viewport center (320/2, 200/2) by foot ~ (x,y)
+    self_cand = None
+    if gnomes:
+        cx, cy = 160, 100
+        best = min(gnomes, key=lambda g: (g[1] - cx) ** 2 + (g[2] - cy) ** 2)
+        self_cand = {"index": best[0] - 1000, "x": best[1], "y": best[2], "label": best[3]}
+    return {"gnomes": gnomes, "walk_sprite": walk, "gardens": gardens[:5],
+            "n_gardens": len(gardens), "self_candidate": self_cand}
 
 
 def _diagnostics_enabled() -> bool:

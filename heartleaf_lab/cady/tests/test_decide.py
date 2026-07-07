@@ -23,29 +23,27 @@ def _object(object_id: int, x: int, y: int, sprite_id: int, *, layer: int = 0) -
 
 
 def _gather_world() -> SpriteWorld:
+    """A main-map, gather-time frame where cady stands on a walkable spot far from
+    the first circuit garden — so it should route (a non-zero mask)."""
     world = SpriteWorld()
-    start_x, start_y = GARDEN_APPROACHES[GARDEN_CIRCUIT[-1]]
+    # Own gnome foot = a real walkable approach point (circuit's LAST garden), far
+    # from circuit[0]'s target. Sprite top-left = foot - (16, 26).
+    fx, fy = 16, 26
+    ax, ay = GARDEN_APPROACHES[GARDEN_CIRCUIT[-1]]
     labels = {
-        1: "world map",
-        400: "garden marker",
-        700: "clock 1",
-        701: "clock 0",
-        702: "clock :",
-        703: "clock 0",
-        704: "clock 0",
-        705: "clock a",
-        706: "clock m",
+        1: "heartleaf bottom 0",          # bottom layer -> main map context
+        100: "gnome 0 south",             # our gnome
+        # clock spelling "10:00am" (120 min after 8am -> before the gather cutoff)
+        700: "clock 1", 701: "clock 0", 702: "clock :", 703: "clock 0",
+        704: "clock 0", 705: "clock a", 706: "clock m",
     }
-    world.sprites = {sprite_id: _sprite(sprite_id, label) for sprite_id, label in labels.items()}
+    world.sprites = {sid: _sprite(sid, label) for sid, label in labels.items()}
     world.objects = {
-        1: _object(1, -start_x, -start_y, 1),
-        4000: _object(4000, 50, 0, 400),
-        7000: _object(7000, 0, 20, 700),
-        7001: _object(7001, 10, 20, 701),
-        7002: _object(7002, 20, 20, 702),
-        7003: _object(7003, 30, 20, 703),
-        7004: _object(7004, 40, 20, 704),
-        7005: _object(7005, 50, 20, 705),
+        1: _object(1, 0, 0, 1),
+        1000: _object(1000, ax - fx, ay - fy, 100),
+        7000: _object(7000, 0, 20, 700), 7001: _object(7001, 10, 20, 701),
+        7002: _object(7002, 20, 20, 702), 7003: _object(7003, 30, 20, 703),
+        7004: _object(7004, 40, 20, 704), 7005: _object(7005, 50, 20, 705),
         7006: _object(7006, 60, 20, 706),
     }
     return world

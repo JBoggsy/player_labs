@@ -9,7 +9,7 @@ from players.player_sdk import SpriteObject, SpriteWorld
 from cady.tools.capture_scene import read_clock_string
 from cady.types import Garden, Gnome, HeartleafState, MapContext, Observation
 
-MAP_OBJECT_ID = 1
+BOTTOM_OBJECT_ID = 1  # the map's bottom layer; its sprite label names the active map
 GNOME_OBJECT_BASE = 1000
 GNOME_OBJECT_LIMIT = 2000
 GARDEN_OBJECT_BASE = 4000
@@ -18,12 +18,17 @@ INVENTORY_OBJECT_BASE = 5000
 INVENTORY_OBJECT_LIMIT = 6000
 MAIN_WALKABILITY_LABEL = "heartleaf main walkability"
 HOME_WALKABILITY_LABEL = "heartleaf home walkability"
+MAIN_BOTTOM_PREFIX = "heartleaf bottom"
+HOME_BOTTOM_PREFIX = "heartleaf home bottom"
 
-# CALIBRATION: exact self offset from camera center is unknown until the capture
-# probe sees a live stream. v1 navigation uses relative vectors and records
-# home_anchor from self_xy with the same offset, so this constant cancels out for
-# target-vs-self and self-vs-home calculations.
-SELF_OFFSET = (0, 0)  # TODO(calibrate)
+# Object x/y are the gnome sprite top-left in the CURRENT map's pixel frame (which
+# equals our baked-grid frame — no camera offset). The gnome STANDS at its foot:
+# foot = (x + PlayerBoxOffsetX + PlayerBoxWidth//2, y + PlayerBoxOffsetY + PlayerBoxHeight//2)
+# = (x + 16, y + 26) (heartleaf common.nim). Self position is the own gnome's foot.
+FOOT_OFFSET = (16, 26)
+# The controlled gnome is the one nearest the 320x200 viewport centre (the camera
+# follows it) — mirrors the game's own villager `findSelfIndexByCamera`.
+VIEWPORT_CENTER = (160, 100)
 
 _CLOCK_RE = re.compile(r"^(\d{1,2}):(\d{2})(am|pm)$", re.IGNORECASE)
 
@@ -54,24 +59,13 @@ def perceive(obs: Observation) -> HeartleafState:
 
     world = obs.world
     map_context = _map_context(world)
-    camera = _camera(world)
-    if camera is None:
-        return HeartleafState(
-            ready=False,
-            self_xy=None,
-            map_context=map_context,
-            time_minutes=None,
-            gardens=(),
-            gnomes=(),
-            own_house_index=None,
-            houses=(),
-            inventory_count=0,
-        )
 
     clock = read_clock_string(world)
     gardens: list[Garden] = []
     gnomes: list[Gnome] = []
     inventory_count = 0
+    own: tuple[int, tuple[int, int], str] | None = None  # (index, foot, facing)
+    own_dist = None
 
     for obj in world.objects.values():
         label = _sprite_label(world, obj)
@@ -83,44 +77,56 @@ def perceive(obs: Observation) -> HeartleafState:
             if parsed is None:
                 continue
             index, facing = parsed
-            gnomes.append(Gnome(index=index, pos=_world_xy(obj, camera), facing=facing))
+            foot = (obj.x + FOOT_OFFSET[0], obj.y + FOOT_OFFSET[1])
+            gnomes.append(Gnome(index=index, pos=foot, facing=facing))
+            dist = (foot[0] - VIEWPORT_CENTER[0]) ** 2 + (foot[1] - VIEWPORT_CENTER[1]) ** 2
+            if own_dist is None or dist < own_dist:
+                own_dist = dist
+                own = (index, foot, facing)
         elif GARDEN_OBJECT_BASE <= obj.object_id < GARDEN_OBJECT_LIMIT and label == "garden marker":
-            gardens.append(Garden(object_id=obj.object_id, pos=_world_xy(obj, camera), has_food=True))
+            foot = (obj.x + FOOT_OFFSET[0], obj.y + FOOT_OFFSET[1])
+            gardens.append(Garden(object_id=obj.object_id, pos=foot, has_food=True))
         elif INVENTORY_OBJECT_BASE <= obj.object_id < INVENTORY_OBJECT_LIMIT:
             inventory_count += 1  # best-effort (calibrate later)
 
-    self_xy = (camera[0] + SELF_OFFSET[0], camera[1] + SELF_OFFSET[1])
+    if own is None:
+        # No gnome visible -> we can't locate ourselves this frame.
+        return HeartleafState(
+            ready=False, self_xy=None, map_context=map_context, time_minutes=None,
+            gardens=(), gnomes=(), own_house_index=None, houses=(), inventory_count=0,
+        )
+
     return HeartleafState(
         ready=True,
-        self_xy=self_xy,
+        self_xy=own[1],
         map_context=map_context,
         time_minutes=parse_clock_minutes(clock) if clock is not None else None,
         gardens=tuple(gardens),
         gnomes=tuple(gnomes),
-        own_house_index=None,  # CALIBRATION: seat/house identity is deferred.
-        houses=(),  # CALIBRATION: v1 hosts via Belief.home_anchor, not house geometry.
+        own_house_index=own[0],  # the controlled gnome's label index
+        houses=(),
         inventory_count=inventory_count,
     )
 
 
-def _camera(world: SpriteWorld) -> tuple[int, int] | None:
-    obj = world.objects.get(MAP_OBJECT_ID)
-    if obj is None:
-        return None
-    return (-obj.x, -obj.y)
-
-
 def _map_context(world: SpriteWorld) -> MapContext:
+    """Active map from the bottom layer object (id 1) sprite label — reliable even
+    when both maps' walkability sprite *definitions* linger. Falls back to the
+    walkability labels present."""
+    bottom = world.objects.get(BOTTOM_OBJECT_ID)
+    if bottom is not None:
+        sprite = world.sprite_for(bottom)
+        if sprite is not None:
+            if sprite.label.startswith(HOME_BOTTOM_PREFIX):
+                return "home"
+            if sprite.label.startswith(MAIN_BOTTOM_PREFIX):
+                return "main"
     labels = {sprite.label for sprite in world.sprites.values()}
     if HOME_WALKABILITY_LABEL in labels:
         return "home"
     if MAIN_WALKABILITY_LABEL in labels:
         return "main"
     return "unknown"
-
-
-def _world_xy(obj: SpriteObject, camera: tuple[int, int]) -> tuple[int, int]:
-    return (obj.x + camera[0], obj.y + camera[1])
 
 
 def _sprite_label(world: SpriteWorld, obj: SpriteObject) -> str | None:
@@ -139,4 +145,4 @@ def _parse_gnome_label(label: str) -> tuple[int, str] | None:
     return index, parts[2]
 
 
-__all__ = ["HOME_WALKABILITY_LABEL", "MAIN_WALKABILITY_LABEL", "SELF_OFFSET", "parse_clock_minutes", "perceive"]
+__all__ = ["HOME_WALKABILITY_LABEL", "MAIN_WALKABILITY_LABEL", "parse_clock_minutes", "perceive"]
