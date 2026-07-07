@@ -56,7 +56,7 @@ def test_perceive_self_is_the_own_gnome_foot_nearest_viewport_centre() -> None:
     assert state.inventory_count == 2
 
     assert len(state.gardens) == 1
-    assert state.gardens[0].pos == (30 + FX, 40 + FY)
+    assert state.gardens[0].pos == (30, 40)  # marker pos + camera (0 here); no foot offset
 
     by_index = {g.index: g for g in state.gnomes}
     assert by_index[0].facing == "south" and by_index[0].pos == (10 + FX, 20 + FY)
@@ -90,3 +90,15 @@ def test_parse_clock_minutes() -> None:
     assert parse_clock_minutes("6:00pm") == 600
     assert parse_clock_minutes("12:00am") == -480
     assert parse_clock_minutes("junk") is None
+
+
+def test_perceive_applies_camera_offset_on_a_scrolling_map() -> None:
+    """On the main map the bottom object scrolls; self = screen foot + camera."""
+    world = _perception_world()
+    world.objects[1] = _object(1, -300, -600, 1)  # camera = (300, 600)
+
+    state = perceive(Observation(world=world, frame=1))
+
+    # gnome 1001 screen foot (166,116) + camera (300,600) = (466,716)
+    assert state.self_xy == (150 + FX + 300, 90 + FY + 600)
+    assert state.gnomes[0].pos[0] >= 300  # everything shifted into map space

@@ -59,12 +59,17 @@ def perceive(obs: Observation) -> HeartleafState:
 
     world = obs.world
     map_context = _map_context(world)
+    # Object x/y are viewport/screen coords; the map scrolls, so the true map
+    # position is screen + camera, where camera = -(bottom layer object's placement)
+    # (the bottom is pinned to the map origin). The home map fits the viewport so
+    # its bottom sits at (0,0) -> camera 0; the larger main map scrolls -> camera != 0.
+    cam = _camera(world)
 
     clock = read_clock_string(world)
     gardens: list[Garden] = []
     gnomes: list[Gnome] = []
     inventory_count = 0
-    own: tuple[int, tuple[int, int], str] | None = None  # (index, foot, facing)
+    own: tuple[int, tuple[int, int], str] | None = None  # (index, map_foot, facing)
     own_dist = None
 
     for obj in world.objects.values():
@@ -77,15 +82,17 @@ def perceive(obs: Observation) -> HeartleafState:
             if parsed is None:
                 continue
             index, facing = parsed
-            foot = (obj.x + FOOT_OFFSET[0], obj.y + FOOT_OFFSET[1])
-            gnomes.append(Gnome(index=index, pos=foot, facing=facing))
-            dist = (foot[0] - VIEWPORT_CENTER[0]) ** 2 + (foot[1] - VIEWPORT_CENTER[1]) ** 2
+            # self-selection uses the SCREEN foot (self is nearest the viewport
+            # centre); the reported position is the MAP foot (screen + camera).
+            screen_foot = (obj.x + FOOT_OFFSET[0], obj.y + FOOT_OFFSET[1])
+            map_foot = (screen_foot[0] + cam[0], screen_foot[1] + cam[1])
+            gnomes.append(Gnome(index=index, pos=map_foot, facing=facing))
+            dist = (screen_foot[0] - VIEWPORT_CENTER[0]) ** 2 + (screen_foot[1] - VIEWPORT_CENTER[1]) ** 2
             if own_dist is None or dist < own_dist:
                 own_dist = dist
-                own = (index, foot, facing)
+                own = (index, map_foot, facing)
         elif GARDEN_OBJECT_BASE <= obj.object_id < GARDEN_OBJECT_LIMIT and label == "garden marker":
-            foot = (obj.x + FOOT_OFFSET[0], obj.y + FOOT_OFFSET[1])
-            gardens.append(Garden(object_id=obj.object_id, pos=foot, has_food=True))
+            gardens.append(Garden(object_id=obj.object_id, pos=(obj.x + cam[0], obj.y + cam[1]), has_food=True))
         elif INVENTORY_OBJECT_BASE <= obj.object_id < INVENTORY_OBJECT_LIMIT:
             inventory_count += 1  # best-effort (calibrate later)
 
@@ -107,6 +114,15 @@ def perceive(obs: Observation) -> HeartleafState:
         houses=(),
         inventory_count=inventory_count,
     )
+
+
+def _camera(world: SpriteWorld) -> tuple[int, int]:
+    """Camera offset (map = screen + camera) from the bottom layer object (id 1),
+    which is pinned to the map origin. (0, 0) when the bottom isn't placed yet."""
+    bottom = world.objects.get(BOTTOM_OBJECT_ID)
+    if bottom is None:
+        return (0, 0)
+    return (-bottom.x, -bottom.y)
 
 
 def _map_context(world: SpriteWorld) -> MapContext:
