@@ -6,6 +6,31 @@ thin wrappers that just pass a different "soul" prompt). Source:
 `coworld-heartleaf/players/talking_villager/talking_villager.nim` (+ `decisions.nim`),
 read at master `c0dc3df`. All line numbers are from that file.
 
+## Two facts that drive how we recruit them (verified in source, 2026-07-07)
+
+1. **A host stands OUTSIDE its own door, visible — not inside.** `gatherAtHouseGoal`
+   ("keep the bot **visible outside** one house") targets `desiredHouseGatherPoint =
+   (house.x + w/2 + slot_offset, house.y + h + 4)` — a spot just **below the door on the
+   main map**. So the occupancy heatmap's pre-dinner clusters are villagers standing at
+   their doors advertising, reachable by chat. (They only step *inside* at the enter/dinner
+   phase.) Earlier notes that said "gone inside to prep" were wrong.
+
+2. **Accepting an invite is NOT time-gated; only *sending* one is.** `enforceTimePolicy`
+   blocks a villager's own `say_to_person` **host-invite** before 4 PM (`InviteStartMinutes`),
+   but there is **no time gate on accepting**: `inferSocialCommitment` (heard attendance
+   phrase → commit to that house) has **zero minute checks**, and nothing blocks
+   `go_to_party` early. So **a villager can commit to OUR invite before 4 PM** — via its LLM
+   hearing our line and replying "I'll come". CAVEAT: the *deterministic* accept path
+   (`bestVisiblePartyHouse` → `go_to_party`) is effectively gated early by `acceptsPartyCrowd`
+   (before 4 PM it wants a visible crowd of 2–4; after 4 PM/`LatePartySearchMinutes` it
+   accepts anyone). And a villager keeps *gathering* until its gardens are exhausted or 5 PM
+   (`shouldGather`), so pre-4 PM it's out in the gardens, not idle.
+   **Implication:** inviting in the gardens *before 4 PM* can work — but it relies on the
+   villager's **LLM** hearing us and choosing to accept (ungated), not on the deterministic
+   crowd path (gated). Whether that fires in practice needs an empirical test, and note the
+   LLM may be absent in league pods (then only the crowd-gated path exists → early invites
+   land weakly). Measure before committing to an early-invite strategy.
+
 ## TL;DR
 
 **The LLM proposes; deterministic guardrails dispose.** Each frame the villager may
