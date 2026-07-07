@@ -94,6 +94,12 @@ class Belief:
     nav_goal: tuple[int, int] | None = None
     nav_path: list[tuple[int, int]] | None = None
     nav_cursor: int = 0
+    # Stuck detection: last position the navigator saw, and how many consecutive
+    # frames we've made no real progress toward the current waypoint. If we stall
+    # (a stale cached waypoint walled off from our actual spot), we force a
+    # re-plan from the current position instead of pushing into the wall forever.
+    nav_last_xy: tuple[int, int] | None = None
+    nav_stuck_ticks: int = 0
     # Social state (host/attend phase). Visible gnomes this frame (for reading
     # house crowds); the party house we've committed to for dinner (our own when
     # hosting, or another's when attending) — kept slowly so the plan doesn't

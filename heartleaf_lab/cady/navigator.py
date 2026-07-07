@@ -7,7 +7,7 @@ import math
 import numpy as np
 
 from cady import nav
-from cady.config import WAYPOINT_RADIUS
+from cady.config import NAV_STUCK_TICKS, NAV_PROGRESS_EPS, WAYPOINT_RADIUS
 from cady.frame import to_map, to_world
 from cady.types import Belief
 
@@ -24,9 +24,18 @@ def next_waypoint(
     """Return the current cached waypoint toward ``goal_world``.
 
     Routes are computed in baked map coordinates and cached on ``belief`` as
-    world-frame waypoints. The route is recomputed only when the goal changes or
-    no cached path exists.
+    world-frame waypoints. The route is recomputed when the goal changes, no
+    cached path exists, or we've made no progress for a while (a stale waypoint
+    that's walled off from our current position — otherwise we'd push into the
+    wall forever).
     """
+
+    _update_stuck(belief, self_world)
+    if belief.nav_stuck_ticks >= NAV_STUCK_TICKS:
+        # Stalled: drop the cached path so it re-plans from where we ARE now.
+        belief.nav_path = None
+        belief.nav_goal = None
+        belief.nav_stuck_ticks = 0
 
     if belief.nav_goal != goal_world or belief.nav_path is None:
         points = nav.find_path(grid, to_map(self_world), to_map(goal_world))
@@ -57,6 +66,18 @@ def clear_navigation(belief: Belief) -> None:
     belief.nav_goal = None
     belief.nav_path = None
     belief.nav_cursor = 0
+    belief.nav_last_xy = None
+    belief.nav_stuck_ticks = 0
+
+
+def _update_stuck(belief: Belief, self_world: Point) -> None:
+    """Count consecutive frames with negligible movement (stuck against a wall)."""
+    last = belief.nav_last_xy
+    if last is not None and _distance(last, self_world) < NAV_PROGRESS_EPS:
+        belief.nav_stuck_ticks += 1
+    else:
+        belief.nav_stuck_ticks = 0
+    belief.nav_last_xy = self_world
 
 
 def _distance(a: Point, b: Point) -> float:

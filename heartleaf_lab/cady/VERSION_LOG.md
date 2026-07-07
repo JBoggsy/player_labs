@@ -25,6 +25,16 @@ map-center. `cady/occupancy.py` is the runtime lookup (graceful None if unbaked)
 spots are walkable and shift by hour (morning gardens → house doors near dinner). 76 tests.
 NOTE: near dinner villagers disperse to their OWN houses, so the single hottest cell sits at one
 house — a follow-up is to prefer a spot central to MANY houses, hit early before they lock home.
+## v19 — 2026-07-07 (gather reliability: navigator stuck-detection → re-plan)
+
+v18 scored 15/15 but 2 games cratered to ~27 food (vs ~130 usual). Traced with the replay
+tools: NOT competition or slow movement — a **navigation dead-stall**. From ~day 3 she froze
+at one spot (~900 ticks, harvesting ~1/day): a STALE cached waypoint sat behind a wall relative
+to her actual position, she held movement toward it (mask into the wall), and the arrival-only
+cursor could never skip an unreachable waypoint → stuck until the day flipped. Root cause: the
+navigator had no no-progress recovery. Fix: track per-frame progress (`nav_last_xy`,
+`nav_stuck_ticks`); after `NAV_STUCK_TICKS` (~0.8s) of <`NAV_PROGRESS_EPS` movement, force a
+re-plan from the CURRENT position (fresh find_path curves around the wall). 80 tests.
 ## v18 — 2026-07-07 (guest-finding: door-to-door invite rush + broadcast threshold 1)
 
 **RESULT — scored 15/15 games (was 12/15), mean 145 (was 109, +33%), total 2179 (was 1637).**

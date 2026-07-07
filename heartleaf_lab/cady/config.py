@@ -94,6 +94,18 @@ DOOR_REACH_RADIUS = 24
 """Pixels: how close to a house's door target counts as 'reached' on the
 door-to-door invite tour (then we mark it done and move to the next nearest)."""
 
+NAV_PROGRESS_EPS = 2.0
+"""Pixels: per-frame movement below this counts as 'no progress' for stuck
+detection (she moves several px/frame when walking freely)."""
+
+NAV_STUCK_TICKS = 20
+"""Frames of no progress before the navigator force-replans from the current
+position. ~0.8s at 24fps — long enough to ignore momentary contact with a wall
+while sliding, short enough to escape a real dead-stall before it wastes a day.
+Root cause it fixes: a stale cached waypoint walled off from where we actually
+are, which the arrival-only cursor could never skip (observed: frozen ~900
+ticks against a wall, harvesting ~1/day)."""
+
 INVITE_MAP_CENTER = (374, 473)
 """Walkable point near the map's geometric center (748x941) — the default place
 to head when no crowd is visible yet, to maximize the chance of finding one."""
