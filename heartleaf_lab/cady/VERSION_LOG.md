@@ -13,6 +13,17 @@ Deterministic gather-and-host baseline on the SDK SpriteV1 bridge.
 This is the connect/gather/navigate/host/exit baseline. Coordination through
 chat invitations is planned for v2.
 
+## v13 — 2026-07-07 (invite: seek the crowd — passive door-stand got 0 guests)
+
+v12's passive door-broadcast produced **0 chats / 0 guests / 0 score across 15 games** —
+nobody wandered within earshot of her door in the 3-5 PM window. But crowds DO form near her
+elsewhere (27% of her main-map frames had >=1 other gnome within 150px, up to 4). So v13 makes
+invite ACTIVE: move toward the centroid of visible gnomes (or the map center when none are
+visible), broadcast only once >=INVITE_MIN_AUDIENCE gnomes are in hearing range at once
+(bubble lands on several viewers, not the first passer-by; relaxes to 1 as the window closes),
+and return to our own door before the 5 PM host-enter cutoff. Still deterministic (LLM off).
+Baseline to beat: v12 = 0 score. 72 tests.
+
 ## v12 — 2026-07-07 (social increment 2: invite guests — broadcast at our door)
 
 The scoring lever: only hosts score (`food × guests`), and v11 hosted with 0 guests.
