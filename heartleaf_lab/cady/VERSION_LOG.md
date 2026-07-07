@@ -13,7 +13,27 @@ Deterministic gather-and-host baseline on the SDK SpriteV1 bridge.
 This is the connect/gather/navigate/host/exit baseline. Coordination through
 chat invitations is planned for v2.
 
-## v11 — 2026-07-07 (robustness: press-and-verify A cadence, never per-frame spam)
+## v11 — 2026-07-07 (social increment 1: deterministic host floor + press-and-verify A cadence)
+
+> Uploaded version **v11** (`d27c4dc2`). Bundles two committed changes — the
+> press-and-verify A-cadence refactor and social increment 1 — because the cadence
+> refactor was committed but never uploaded on its own.
+
+**Social increment 1 (the headline):** first step of the social/LLM controller
+(`docs/designs/cady-social-llm-controller.md`), LLM OFF. Replaces `ClockStrategy` with
+`SocialStrategy`: gather → (food-rich by 3 PM → prep) → **host through dinner**, on the
+villager's phase skeleton. The scoring insight: to score you must be INSIDE your own home
+map at dinner with ≥1 guest (heartleaf `startDinnerParties` skips a host whose
+`mapIndex != mapIndex`). So `HostMode` now routes to our own house and ENTERS it (A on the
+house footprint = enter; house index == gnome index == perception's `own_house_index`,
+verified in `addPlayer`), then holds inside — instead of v1's "hold at the morning anchor
+on the main map" which scored nothing. Anti-oscillation: host directives carry `ttl_ticks`
+so a brief strategy/LLM hiccup can't yank us off hosting and back. Belief now folds visible
+`gnomes` + a `committed_party_house` for the coming attend/invite work. Deterministic floor
+only — the LLM layer and invite/attend modes come next. NOTE: the local cert fixture stops
+before 6 PM, so hosting only exercises in a full hosted game.
+
+**Press-and-verify A cadence (also in this upload):**
 
 v10's hosted eval was clean (15/15 present 100%, harvest 193–240, enter/exit exactly
 10/9 — nav + gather + actions rock solid). v11 is not a bug fix but a robustness change:
