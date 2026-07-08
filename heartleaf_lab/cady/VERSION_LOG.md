@@ -25,6 +25,23 @@ map-center. `cady/occupancy.py` is the runtime lookup (graceful None if unbaked)
 spots are walkable and shift by hour (morning gardens → house doors near dinner). 76 tests.
 NOTE: near dinner villagers disperse to their OWN houses, so the single hottest cell sits at one
 house — a follow-up is to prefer a spot central to MANY houses, hit early before they lock home.
+## v21 — 2026-07-08 (attend mode: accept invites when food is low — reciprocity + self-play)
+
+Cady can now ATTEND another gnome's party, not just host. Guests score 0, so this is a
+reciprocity investment (a perpetual free-rider gets frozen out once opponents track who
+reciprocates) and it makes SELF-PLAY non-degenerate (9 host-only Cadys = 9 empty parties).
+Gate: host-first; attend only when `inventory_count <= ATTEND_MAX_FOOD` (=10) — hosting
+`food × guests` scores little with that little food, so reciprocity is ~free. Food accumulates
+across days until a successful dinner clears it, so early/just-hosted days are naturally low-food
+attend days.
+
+New: perception hears invites (name obj 2000+i + chat obj 3000+i, paired by slot; host-invite
+phrasing; party house = SPEAKER's house via PLAYER_NAMES since invites say 'my house').
+`HeardInvite` in belief. `AttendMode` enters the committed host's house and holds as a guest
+(same enter-house mechanic as HostMode). Strategy commits to the first heard invite when
+low-food, sticky (no thrash), attend beats host at the enter cutoff. Per-day social/tour state
+(committed party, invited_houses, circuit_index) now resets on the clock's morning rollover.
+91 tests. Verifying attend fires + produces guests via a full-game self-play xreq.
 ## v20 — 2026-07-08 (comprehensive tracing + SUBMIT candidate)
 
 Robust diagnostics before submitting. `CADY_DIAG` now emits (a) periodic full-state snapshots

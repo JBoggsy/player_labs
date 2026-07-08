@@ -54,6 +54,16 @@ class House:
 
 
 @dataclass(frozen=True)
+class HeardInvite:
+    """A dinner invite Cady overheard this frame. ``house_index`` is the party's
+    house (resolved from the speaker's name via PLAYER_NAMES — invites say 'my
+    house', so the speaker identifies it, not the text)."""
+
+    house_index: int
+    speaker: str
+
+
+@dataclass(frozen=True)
 class HeartleafState:
     """Per-frame label-only Heartleaf state."""
 
@@ -66,6 +76,7 @@ class HeartleafState:
     own_house_index: int | None
     houses: tuple[House, ...]
     inventory_count: int
+    heard_invites: tuple[HeardInvite, ...] = ()
 
 
 @dataclass
@@ -105,6 +116,7 @@ class Belief:
     # hosting, or another's when attending) — kept slowly so the plan doesn't
     # thrash. -1 / None means uncommitted.
     gnomes: tuple[Gnome, ...] = ()
+    heard_invites: tuple[HeardInvite, ...] = ()
     committed_party_house: int | None = None
     # Door-to-door invite tour: house indices already reached this pass (we rush
     # a greedy-nearest loop of the OTHER houses before 4 PM, broadcasting to
@@ -163,6 +175,7 @@ __all__ = [
     "Command",
     "Garden",
     "Gnome",
+    "HeardInvite",
     "HeartleafState",
     "House",
     "Intent",

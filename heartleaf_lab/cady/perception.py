@@ -6,16 +6,27 @@ import re
 
 from players.player_sdk import SpriteObject, SpriteWorld
 
+from cady.config import PLAYER_NAMES
 from cady.tools.capture_scene import read_clock_string
-from cady.types import Garden, Gnome, HeartleafState, MapContext, Observation
+from cady.types import Garden, Gnome, HeardInvite, HeartleafState, MapContext, Observation
 
 BOTTOM_OBJECT_ID = 1  # the map's bottom layer; its sprite label names the active map
 GNOME_OBJECT_BASE = 1000
 GNOME_OBJECT_LIMIT = 2000
+NAME_OBJECT_BASE = 2000  # "name <PlayerName>" per visible player (NameObjectBase + slot)
+NAME_OBJECT_LIMIT = 3000
+CHAT_OBJECT_BASE = 3000  # "chat <text>" per speaking visible player (ChatObjectBase + slot)
+CHAT_OBJECT_LIMIT = 4000
 GARDEN_OBJECT_BASE = 4000
 GARDEN_OBJECT_LIMIT = 5000
 INVENTORY_OBJECT_BASE = 5000
 INVENTORY_OBJECT_LIMIT = 6000
+NAME_LABEL_PREFIX = "name "
+CHAT_LABEL_PREFIX = "chat "
+# Host-invite phrasings (mirror heartleaf isHostInviteMessage). Invites say "my
+# house", so the TEXT doesn't name the house — the SPEAKER's name does.
+_HOST_INVITE_PHRASES = ("at my house", "party at my", "come to my", "meet at my", "dinner at my", "my place")
+_NAME_TO_HOUSE = {name.lower(): i for i, name in enumerate(PLAYER_NAMES)}
 MAIN_WALKABILITY_LABEL = "heartleaf main walkability"
 HOME_WALKABILITY_LABEL = "heartleaf home walkability"
 MAIN_BOTTOM_PREFIX = "heartleaf bottom"
@@ -71,10 +82,21 @@ def perceive(obs: Observation) -> HeartleafState:
     inventory_count = 0
     own: tuple[int, tuple[int, int], str] | None = None  # (index, map_foot, facing)
     own_dist = None
+    names_by_slot: dict[int, str] = {}   # NameObjectBase+slot -> speaker name
+    chats_by_slot: dict[int, str] = {}   # ChatObjectBase+slot -> chat text
 
     for obj in world.objects.values():
         label = _sprite_label(world, obj)
         if label is None:
+            continue
+
+        if NAME_OBJECT_BASE <= obj.object_id < NAME_OBJECT_LIMIT:
+            if label.startswith(NAME_LABEL_PREFIX):
+                names_by_slot[obj.object_id - NAME_OBJECT_BASE] = label[len(NAME_LABEL_PREFIX):]
+            continue
+        if CHAT_OBJECT_BASE <= obj.object_id < CHAT_OBJECT_LIMIT:
+            if label.startswith(CHAT_LABEL_PREFIX):
+                chats_by_slot[obj.object_id - CHAT_OBJECT_BASE] = label[len(CHAT_LABEL_PREFIX):]
             continue
 
         if GNOME_OBJECT_BASE <= obj.object_id < GNOME_OBJECT_LIMIT:
@@ -113,7 +135,33 @@ def perceive(obs: Observation) -> HeartleafState:
         own_house_index=own[0],  # the controlled gnome's label index
         houses=(),
         inventory_count=inventory_count,
+        heard_invites=_heard_invites(names_by_slot, chats_by_slot, own[0]),
     )
+
+
+def _heard_invites(
+    names_by_slot: dict[int, str],
+    chats_by_slot: dict[int, str],
+    own_house_index: int,
+) -> tuple[HeardInvite, ...]:
+    """Pair name+chat objects by slot; a host-invite chat from another player
+    resolves to that speaker's house (invites say 'my house', so the speaker
+    identifies the party, not the text)."""
+    invites: list[HeardInvite] = []
+    for slot, text in chats_by_slot.items():
+        speaker = names_by_slot.get(slot)
+        if speaker is None or not _is_host_invite(text):
+            continue
+        house = _NAME_TO_HOUSE.get(speaker.strip().lower())
+        if house is None or house == own_house_index:
+            continue
+        invites.append(HeardInvite(house_index=house, speaker=speaker))
+    return tuple(invites)
+
+
+def _is_host_invite(text: str) -> bool:
+    lower = text.lower()
+    return any(phrase in lower for phrase in _HOST_INVITE_PHRASES)
 
 
 def _camera(world: SpriteWorld) -> tuple[int, int]:

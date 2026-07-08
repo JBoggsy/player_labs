@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from cady.action import resolve_action
 from cady.belief import update_belief
-from cady.modes import ExitHouseMode, GatherMode, HostMode, IdleMode, InviteMode
+from cady.modes import AttendMode, ExitHouseMode, GatherMode, HostMode, IdleMode, InviteMode
 from cady.perception import perceive
 from cady.strategy import SocialStrategy
 from cady.types import ActionState, Belief, Command, HeartleafState, Intent, Observation
@@ -33,6 +33,7 @@ def build_runtime(
     registry.register(GatherMode)
     registry.register(HostMode)
     registry.register(InviteMode)
+    registry.register(AttendMode)
 
     return AgentRuntime(
         belief=Belief(),

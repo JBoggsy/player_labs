@@ -36,6 +36,15 @@ LOW_HOST_FOOD = 2
 """At/below this, hosting scores little; better to attend someone else's party
 (as a guest we score 0, but this is the floor before the invite/steal logic)."""
 
+ATTEND_MAX_FOOD = 10
+"""At/below this food, prefer ATTENDING a heard invite over hosting our own
+(hosting `food × guests` scores little with this little food, so reciprocity is
+nearly free). Food persists + accumulates across days until a successful dinner
+clears it, so early days / just-after-hosting are naturally low-food attend days
+— which also keeps self-play non-degenerate (some Cadys attend, real guests
+appear). Above this, host. Set generously vs LOW_HOST_FOOD since Cady's
+full-circuit gather grows fast once a day gets going."""
+
 HOUSE_CROWD_RADIUS = 48
 """Pixels from a house rect within which a visible gnome counts toward that
 house's 'crowd' (for choosing which party to attend)."""

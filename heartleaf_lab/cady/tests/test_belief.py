@@ -137,3 +137,23 @@ def test_map_context_change_clears_navigation_cache() -> None:
     assert belief.nav_goal is None
     assert belief.nav_path is None
     assert belief.nav_cursor == 0
+
+
+def test_new_day_resets_per_day_social_and_tour_state() -> None:
+    from cady.belief import update_belief
+    from cady.types import Belief, HeartleafState
+
+    belief = Belief(
+        self_xy=(10, 10), own_house_index=6, last_time_minutes=800,
+        committed_party_house=1, circuit_index=15,
+    )
+    belief.invited_houses = {0, 2, 3}
+    # A ready frame with the clock rolled back to morning (new day).
+    percept = HeartleafState(
+        ready=True, self_xy=(10, 10), map_context="home", time_minutes=0,
+        gardens=(), gnomes=(), own_house_index=6, houses=(), inventory_count=5,
+    )
+    update_belief(belief, percept)
+    assert belief.committed_party_house is None
+    assert belief.invited_houses == set()
+    assert belief.circuit_index == 0

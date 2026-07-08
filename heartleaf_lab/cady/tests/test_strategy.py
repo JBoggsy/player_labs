@@ -103,3 +103,48 @@ def test_host_mode_idles_without_house_or_anchor() -> None:
 
 def test_idle_mode_returns_idle_intent() -> None:
     assert IdleMode().decide(Belief(self_xy=(0, 0)), ActionState()).kind == "idle"
+
+
+def test_strategy_attends_when_low_food_and_heard_invite() -> None:
+    from cady.config import ATTEND_MAX_FOOD, HOUSE_ENTER_MINUTES
+    from cady.types import HeardInvite
+
+    belief = Belief(
+        self_xy=(400, 400), own_house_index=6, map_context="main",
+        last_time_minutes=HOUSE_ENTER_MINUTES, inventory_count=ATTEND_MAX_FOOD,
+        heard_invites=(HeardInvite(house_index=1, speaker="Anton"),),
+    )
+    directive = SocialStrategy().select(belief)
+    assert directive.mode == "attend"
+    assert belief.committed_party_house == 1  # committed to Anton's house
+
+
+def test_strategy_hosts_when_food_rich_despite_invite() -> None:
+    from cady.config import ATTEND_MAX_FOOD, HOUSE_ENTER_MINUTES
+    from cady.types import HeardInvite
+
+    belief = Belief(
+        self_xy=(400, 400), own_house_index=6, map_context="main",
+        last_time_minutes=HOUSE_ENTER_MINUTES, inventory_count=ATTEND_MAX_FOOD + 50,
+        heard_invites=(HeardInvite(house_index=1, speaker="Anton"),),
+    )
+    directive = SocialStrategy().select(belief)
+    assert directive.mode == "host"
+    assert belief.committed_party_house is None
+
+
+def test_strategy_attend_commitment_is_sticky() -> None:
+    from cady.config import ATTEND_MAX_FOOD, HOUSE_ENTER_MINUTES
+    from cady.types import HeardInvite
+
+    belief = Belief(
+        self_xy=(400, 400), own_house_index=6, map_context="main",
+        last_time_minutes=HOUSE_ENTER_MINUTES, inventory_count=3,
+        heard_invites=(HeardInvite(house_index=1, speaker="Anton"),),
+    )
+    SocialStrategy().select(belief)
+    assert belief.committed_party_house == 1
+    # A later, different invite doesn't switch us (don't thrash).
+    belief.heard_invites = (HeardInvite(house_index=4, speaker="Maxim"),)
+    SocialStrategy().select(belief)
+    assert belief.committed_party_house == 1

@@ -102,3 +102,43 @@ def test_perceive_applies_camera_offset_on_a_scrolling_map() -> None:
     # gnome 1001 screen foot (166,116) + camera (300,600) = (466,716)
     assert state.self_xy == (150 + FX + 300, 90 + FY + 600)
     assert state.gnomes[0].pos[0] >= 300  # everything shifted into map space
+
+
+def _invite_world() -> SpriteWorld:
+    """Cady (gnome 6, near viewport center) + villager 'Anton' (slot 1) inviting."""
+    world = SpriteWorld()
+    world.sprites = {
+        1: _sprite(1, "heartleaf bottom 0"),
+        106: _sprite(106, "gnome 6 south"),
+        201: _sprite(201, "name Anton"),
+        301: _sprite(301, "chat Dinner at my house at 6, tell everyone!"),
+    }
+    world.objects = {
+        1: _object(1, 0, 0, 1),
+        1006: _object(1006, 150, 90, 106),  # nearest viewport center -> self
+        2001: _object(2001, 50, 50, 201),   # NameObjectBase + 1
+        3001: _object(3001, 50, 40, 301),   # ChatObjectBase + 1
+    }
+    return world
+
+
+def test_perceive_hears_invite_and_resolves_speaker_house() -> None:
+    from cady.types import HeardInvite
+
+    state = perceive(Observation(world=_invite_world(), frame=1))
+    assert state.heard_invites == (HeardInvite(house_index=1, speaker="Anton"),)  # Anton -> house 1
+
+
+def test_perceive_ignores_non_invite_chat() -> None:
+    world = _invite_world()
+    world.sprites[301] = _sprite(301, "chat Have you seen the creek today?")
+    state = perceive(Observation(world=world, frame=1))
+    assert state.heard_invites == ()
+
+
+def test_perceive_ignores_our_own_invite() -> None:
+    # A chat from the slot whose name maps to OUR house is not a party to attend.
+    world = _invite_world()
+    world.sprites[201] = _sprite(201, "name Vova")  # Vova == house 6 == Cady's own
+    state = perceive(Observation(world=world, frame=1))
+    assert state.heard_invites == ()  # own-house invite dropped

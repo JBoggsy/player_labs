@@ -166,6 +166,45 @@ rule). The LLM picks the *target/plan*; a cheap per-frame proximity check in the
 Deterministic floor first, LLM layered second — so we always have a shippable,
 non-regressing build and can attribute any gain to the LLM.
 
+## Attend mode — accepting invites (added 2026-07-08)
+
+**Why (despite guests scoring 0):** attending is a **reciprocity investment**, not a points
+grab. Today a guest scores 0 (`visitorRecord.score = 0`), so a host-only Cady is optimal
+*against the current villagers*. But (a) it makes **self-play degenerate** — 9 host-only Cadys
+throw 9 empty parties, everyone scores 0, so we can't A/B policies; and (b) once opponents get
+smarter and track who reciprocates (the deferred PlayerRecord), a perpetual free-rider who
+never attends anyone gets frozen out of *their* guest lists. So Cady should attend — but only
+when it's **cheap**: when her own food is low enough that hosting would score little anyway.
+
+**Accept rule (deterministic floor):** host-first; attend only if `inventory_count <=
+LOW_HOST_FOOD` (the villagers' own "if food is low, join one" rule). Costs ~nothing in real
+games (a low-food party is worth little) while guaranteeing self-play produces real guests
+(someone always has the least food). No env flag — genuine competitive behavior.
+
+**New perception (Cady is currently deaf to invites).** For every player `i` visible in the
+viewport the game emits a **name object** `NameObjectBase+i` (label `"name <PlayerName>"`) and,
+while speaking, a **chat object** `ChatObjectBase+i` (label `"chat <text>"`) — confirmed:
+`addPlayerObjects` calls `addNameTag`+`addSpeechBubble` for each visible player. So `perceive`
+gains: read `2000+i` → speaker name, `3000+i` → text, pair by `i`. An invite is a chat matching
+the host-invite phrasing ("at my house" / "party at my" / "come to my" / "dinner at my" —
+mirrors `isHostInviteMessage`). **The party's house = the SPEAKER's house**, resolved by
+`PLAYER_NAMES.index(speaker_name)` (invites say "*my* house", so the speaker's identity names it,
+not the text). Add `HeartleafState.heard_invites` (house_index + speaker), fold into belief.
+
+**AttendMode:** given a committed target house, route to `HOUSE_TARGETS[target]` and **enter it**
+(A on the footprint — same mechanic HostMode uses for our own house), then hold inside until the
+dinner resolve. Reuses the enter-house action path.
+
+**Strategy wiring:** in the pre-dinner window, if food is low AND we've heard an invite to a
+present host → commit (`committed_party_house`) and select `attend` instead of `host`. Honor it
+stickily (don't thrash between invites); abandon only if we arrive to an empty house (like the
+villagers). Chat *acceptance* ("I'll come") is a reciprocity nicety, not required to attend —
+deferred to the LLM/PlayerRecord layer.
+
+**Scope now:** perception + AttendMode + the low-food gate, deterministic. NOT the
+who-reciprocated ledger yet — this just makes Cady *capable* of attending so self-play works and
+the reciprocity floor exists.
+
 ## Open questions
 
 - Exact `LLM_DIRECTIVE_TTL` / cadence (start ~5 s TTL, ~2–3 s cadence; tune from
