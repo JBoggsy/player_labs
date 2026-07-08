@@ -268,31 +268,25 @@ def test_imposter_never_reports_a_body() -> None:
     assert _select(body_only) == "search"
 
 
-def test_imposter_recons_within_the_recon_window_before_ready() -> None:
-    # Not yet kill-ready, the cooldown clears in ~50 ticks (≤ recon_window 100), and a
-    # crewmate has been seen ⇒ Recon (beeline to that crewmate so a victim is in hand
-    # the instant the kill comes ready), not Search.
+def test_imposter_recons_once_travel_time_matches_the_remaining_cooldown() -> None:
+    # Not yet kill-ready; the lone crewmate (at (50, 50), self at (100, 100)) is
+    # ~70.7px away ⇒ ~23.6 ticks to walk there at AGENT_SPEED_PX. The cooldown clears
+    # in 20 ticks — LESS than the travel time — so it's time to start moving: Recon,
+    # not Search (2026-07-06: dynamic timing replaced the old fixed recon_window()).
     belief = _imposter_with_visible_target(self_kill_ready=False)
     belief.kill_cooldown_start_tick = belief.last_tick
-    belief.kill_cooldown_estimate = 50  # ticks_until_ready = start + 50 − now = 50
+    belief.kill_cooldown_estimate = 20
     assert _select(belief) == "recon"
 
 
-def test_imposter_searches_outside_the_recon_window() -> None:
-    # Cooldown clears in ~200 ticks (> recon_window 100) ⇒ still Search; recon only
-    # fires in the short pre-ready window.
+def test_imposter_searches_while_the_cooldown_still_exceeds_travel_time() -> None:
+    # Same target/distance (~23.6 ticks to walk there), but the cooldown clears in 200
+    # ticks — far more than the travel time needs — so it's not time to move yet:
+    # Search holds the best-view task until travel time catches up with the cooldown.
     belief = _imposter_with_visible_target(self_kill_ready=False)
     belief.kill_cooldown_start_tick = belief.last_tick
     belief.kill_cooldown_estimate = 200
     assert _select(belief) == "search"
-
-
-def test_recon_window_is_env_tunable(monkeypatch) -> None:
-    monkeypatch.setenv("CREWBORG_RECON_WINDOW", "300")
-    belief = _imposter_with_visible_target(self_kill_ready=False)
-    belief.kill_cooldown_start_tick = belief.last_tick
-    belief.kill_cooldown_estimate = 200  # now inside the widened 300-tick window
-    assert _select(belief) == "recon"
 
 
 def test_be_dumb_imposter_searches_instead_of_pretending(monkeypatch) -> None:
@@ -356,15 +350,17 @@ def test_imposter_pretends_when_only_a_teammate_is_visible() -> None:
 
 
 def _pre_ready_imposter(seen_tick: int, victim_xy=(50, 50), tick: int = 1000) -> Belief:
-    """An imposter inside the recon window (ready in 50 ticks) whose only known
-    crewmate was last seen at ``seen_tick`` at ``victim_xy`` (self at (100, 100))."""
+    """An imposter ready in 20 ticks -- LESS than the ~23.6-tick walk from self
+    (100, 100) to the default ``victim_xy`` (50, 50), so it's already time to Recon
+    for that default -- whose only known crewmate was last seen at ``seen_tick`` at
+    ``victim_xy``."""
 
     belief = Belief(
         phase="Playing", self_role="imposter", self_kill_ready=False, last_tick=tick,
         self_world_x=100, self_world_y=100,
     )
     belief.kill_cooldown_start_tick = tick
-    belief.kill_cooldown_estimate = 50
+    belief.kill_cooldown_estimate = 20
     belief.roster["red"] = PlayerRecord(
         object_id=1004, color="red", facing="left", world_x=victim_xy[0], world_y=victim_xy[1],
         last_seen_tick=seen_tick, life_status="alive",

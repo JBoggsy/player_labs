@@ -1,13 +1,14 @@
 """Recon mode tests (modes/recon.py).
 
-Recon pre-positions on the most-recently-seen crewmate in the short window before the
-kill comes off cooldown, so a victim is in hand the instant we can kill.
+Recon pre-positions on the most ISOLATED fresh crewmate (timed by the selector to
+arrive right as the kill comes off cooldown), so a victim is in hand the instant we
+can kill.
 """
 
 from __future__ import annotations
 
 from crewrift.crewborg.modes.recon import ReconMode
-from crewrift.crewborg.strategy.opportunity import most_recent_victim, recon_window
+from crewrift.crewborg.strategy.opportunity import most_recent_victim
 from crewrift.crewborg.types import ActionState, Belief, CommanderPriorities, PlayerRecord
 
 
@@ -23,10 +24,25 @@ def _seen(belief: Belief, color: str, xy, tick) -> PlayerRecord:
     return rec
 
 
-def test_recon_beelines_to_the_most_recently_seen_crewmate() -> None:
+def test_recon_beelines_to_the_most_isolated_crewmate() -> None:
+    # green and blue are clustered close together; purple is far from both -- the
+    # target is purple (farthest from every other candidate), even though it's the
+    # STALEST sighting of the three (recency is only the tie-break, not the criterion).
+    b = _imposter()
+    _seen(b, "green", (200, 60), tick=45)
+    _seen(b, "blue", (210, 65), tick=40)
+    _seen(b, "purple", (600, 400), tick=10)
+    intent = ReconMode().decide(b, ActionState())
+    assert intent.kind == "navigate_to"
+    assert intent.point == (600, 400)
+
+
+def test_recon_isolation_ties_break_toward_more_recently_seen() -> None:
+    # Exactly two candidates: each is "farthest" from the other by definition (the
+    # same single gap), so isolation ties and the more recent sighting wins.
     b = _imposter()
     _seen(b, "green", (200, 60), tick=20)
-    _seen(b, "blue", (300, 80), tick=45)  # more recently seen ⇒ the target
+    _seen(b, "blue", (300, 80), tick=45)
     intent = ReconMode().decide(b, ActionState())
     assert intent.kind == "navigate_to"
     assert intent.point == (300, 80)
@@ -74,15 +90,6 @@ def test_recon_idles_with_no_known_crew() -> None:
     b = _imposter()  # roster empty
     assert ReconMode().decide(b, ActionState()).kind == "idle"
     assert most_recent_victim(b) is None
-
-
-def test_recon_window_default_and_env(monkeypatch) -> None:
-    monkeypatch.delenv("CREWBORG_RECON_WINDOW", raising=False)
-    assert recon_window() == 100
-    monkeypatch.setenv("CREWBORG_RECON_WINDOW", "250")
-    assert recon_window() == 250
-    monkeypatch.setenv("CREWBORG_RECON_WINDOW", "garbage")
-    assert recon_window() == 100  # invalid falls back to default
 
 
 def test_recon_parked_guard_escapes_a_zero_length_seek(monkeypatch) -> None:

@@ -83,11 +83,15 @@ def test_hunt_skips_teammates() -> None:
     assert intent.kind == "kill" and intent.target_color == "green"
 
 
-def test_hunt_lies_in_wait_when_a_witness_is_near() -> None:
-    # Victim in range but a witness beside it (zero urgency) ⇒ shadow, don't fire.
+def test_hunt_lies_in_wait_when_two_witnesses_are_near() -> None:
+    # A single witness is tolerated even at zero urgency (ALLOWED_WITNESSES_MIN=1);
+    # a SECOND witness exceeds that tolerance ⇒ shadow, don't fire. The 2nd witness
+    # sits right beside the 1st (not far off) so green -- with the largest gap to its
+    # nearest other crewmate -- stays the selected (most-isolated) victim.
     belief = Belief(self_world_x=100, self_world_y=100, last_tick=5, self_kill_ready=True)
     _visible(belief, 1004, (108, 100), color="green")
-    _visible(belief, 1005, (110, 100), color="blue")  # witness next to the victim
+    _visible(belief, 1005, (110, 100), color="blue")  # 1st witness next to the victim
+    _visible(belief, 1006, (111, 100), color="purple")  # 2nd witness, exceeds tolerance
     intent = HuntMode().decide(belief, ActionState())
     assert intent.kind == "navigate_to"  # lying in wait, not killing
 
@@ -116,6 +120,8 @@ def test_hunt_strikes_a_witnessed_victim_under_full_urgency() -> None:
 
 
 def test_hunt_commander_allows_witnessed_kill_with_danger_reason() -> None:
+    # Two witnesses (exceeding the zero-urgency tolerance of 1) so the kill is
+    # genuinely witnessed and the commander's override is what's actually exercised.
     belief = Belief(self_world_x=100, self_world_y=100, last_tick=5, self_kill_ready=True)
     belief.commander = CommanderPriorities(
         allow_witnessed_kill=True,
@@ -123,7 +129,8 @@ def test_hunt_commander_allows_witnessed_kill_with_danger_reason() -> None:
         as_of_tick=belief.last_tick,
     )
     _visible(belief, 1004, (108, 100), color="green")
-    _visible(belief, 1005, (110, 100), color="blue")  # witness next to the victim
+    _visible(belief, 1005, (110, 100), color="blue")  # 1st witness next to the victim
+    _visible(belief, 1006, (111, 100), color="purple")  # 2nd witness, exceeds tolerance
     mode = HuntMode()
     trace = ListTraceSink()
     mode.emit = EventEmitter(trace, tick=belief.last_tick)
@@ -136,11 +143,13 @@ def test_hunt_commander_allows_witnessed_kill_with_danger_reason() -> None:
 
 
 def test_hunt_block_event_classifies_witness_wait() -> None:
-    # Kill-ready, committed victim in range, witness beside it ⇒ one hunt_block
-    # record with outcome=wait_witness carrying the gate context (H1 signature).
+    # Kill-ready, committed victim in range, TWO witnesses beside it (exceeding the
+    # zero-urgency tolerance of 1) ⇒ one hunt_block record with outcome=wait_witness
+    # carrying the gate context (H1 signature).
     belief = Belief(self_world_x=100, self_world_y=100, last_tick=5, self_kill_ready=True, kill_ready_since_tick=5)
     _visible(belief, 1004, (108, 100), color="green")
-    _visible(belief, 1005, (110, 100), color="blue")  # witness next to the victim
+    _visible(belief, 1005, (110, 100), color="blue")  # 1st witness next to the victim
+    _visible(belief, 1006, (111, 100), color="purple")  # 2nd witness, exceeds tolerance
     mode = HuntMode()
     trace = ListTraceSink()
     mode.emit = EventEmitter(trace, tick=belief.last_tick)
@@ -151,7 +160,11 @@ def test_hunt_block_event_classifies_witness_wait() -> None:
     assert event.data["victim_color"] == "green"
     assert event.data["in_range"] is True
     assert event.data["unwitnessed"] is False
-    assert event.data["witnesses"] == [{"color": "blue", "dist_to_victim": 2.0}]
+    assert event.data["witness_tolerance"] == 1
+    assert event.data["witnesses"] == [
+        {"color": "blue", "dist_to_victim": 2.0},
+        {"color": "purple", "dist_to_victim": 3.0},
+    ]
     assert event.data["nearest_other"]["color"] == "blue"
     assert event.data["nearest_other"]["in_kill_range"] is True
 
@@ -186,6 +199,8 @@ def test_hunt_block_event_silent_when_not_kill_ready() -> None:
 
 
 def test_hunt_stale_commander_does_not_allow_witnessed_kill() -> None:
+    # Two witnesses (exceeding the zero-urgency tolerance of 1) so the kill is
+    # genuinely witnessed, and the stale commander directive correctly grants no override.
     belief = Belief(self_world_x=100, self_world_y=100, last_tick=500, self_kill_ready=True)
     belief.commander = CommanderPriorities(
         allow_witnessed_kill=True,
@@ -193,7 +208,8 @@ def test_hunt_stale_commander_does_not_allow_witnessed_kill() -> None:
         as_of_tick=0,
     )
     _visible(belief, 1004, (108, 100), color="green")
-    _visible(belief, 1005, (110, 100), color="blue")
+    _visible(belief, 1005, (110, 100), color="blue")  # 1st witness next to the victim
+    _visible(belief, 1006, (111, 100), color="purple")  # 2nd witness, exceeds tolerance
     assert HuntMode().decide(belief, ActionState()).kind == "navigate_to"
 
 

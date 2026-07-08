@@ -5,22 +5,22 @@ our kill cooldown expires we have a crewmate in crewborg's view only ~53% of the
 versus Aaron's 83% — we drift away from crew we saw earlier in the cooldown cycle, so
 when we *can* kill there's no victim in hand and we dither. Recon closes that gap.
 
-When the strategy gate sees the kill is within ``recon_window()`` ticks of ready (env
-``CREWBORG_RECON_WINDOW``, default 100), it routes here instead of Search. Recon does
-one thing: **beeline to the most-recently-seen crewmate** (live position when visible,
-last-known position otherwise) so that the instant the cooldown clears, a victim is in
-view and Hunt takes over and kills immediately.
+When the strategy gate computes that the real travel time to a target has caught up
+with the remaining cooldown (reworked 2026-07-06 — was a fixed ``recon_window()``
+ticks-before-ready), it routes here instead of Search. Recon does one thing:
+**beeline to the most ISOLATED fresh crewmate** (live position when visible,
+last-known position otherwise) so that the instant the cooldown clears, a victim is
+in view and Hunt takes over and kills immediately — timed to arrive right as the
+cooldown clears, not early.
 
 The selector only sends us to a sighting worth beelining to: fresh within
 ``recon_staleness_ticks()`` and not already checked-and-found-empty ("spent" — see
 ``rule_based._live_recon_target``); stale/spent sightings fall through to Search's
 room-checking FSM instead. Locally we still never stand on a ghost position (the
 ``_abandoned`` arrival handling below) and carry a ``ParkedGuard`` as insurance
-against any future zero-length-route park while kill-ready.
-
-Intentionally simple and aggressive for now — James's call is to test a short 100-tick
-window and see what it does (a longer window risks the over-extension that gets Aaron
-caught 39% of the time). Target selection + window live in ``strategy.opportunity``.
+against any future zero-length-route park while kill-ready. We re-derive
+``recon_target`` here (rather than caching what the selector saw) so the target
+and the timing the selector computed always agree — see ``strategy.opportunity``.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ from __future__ import annotations
 from crewrift.crewborg.agent_tracking import best_seek_point, ranked_seek_points
 from crewrift.crewborg.modes import imposter_common as ic
 from crewrift.crewborg.strategy.commander.bias import commander_of
-from crewrift.crewborg.strategy.opportunity import RECON_REACHED_RADIUS_SQ, most_recent_victim
+from crewrift.crewborg.strategy.opportunity import RECON_REACHED_RADIUS_SQ, recon_target
 from crewrift.crewborg.types import ActionState, Belief, Intent
 from players.player_sdk import EmptyModeParams, Mode, ModeParams
 
@@ -75,7 +75,7 @@ class ReconMode(Mode[Belief, ActionState, Intent]):
         return intent
 
     def _decide(self, belief: Belief, self_xy: ic.Point) -> Intent:
-        target = self._commander_target(belief) or most_recent_victim(belief)
+        target = self._commander_target(belief) or recon_target(belief)
         if target is not None:
             target_xy = (target.world_x, target.world_y)
             visible = target.last_seen_tick == belief.last_tick
@@ -104,7 +104,7 @@ class ReconMode(Mode[Belief, ActionState, Intent]):
         """Forced un-park: abandon the current target and commit to the hottest
         occupancy point that is actually somewhere else (sticky via _escape_point)."""
 
-        target = self._commander_target(belief) or most_recent_victim(belief)
+        target = self._commander_target(belief) or recon_target(belief)
         if target is not None:
             self._abandoned = target.color
         for seek in ranked_seek_points(belief):

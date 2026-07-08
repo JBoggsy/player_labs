@@ -1,0 +1,387 @@
+{
+  "warehouse": "/tmp/v96_rank_wh",
+  "n_clean_games": 650,
+  "n_trace_warning_episodes": 78,
+  "n_meetings": 1930,
+  "n_ejections_resolved": 658,
+  "n_meetings_multi_ejection": 1,
+  "policies": {
+    "crewborg": {
+      "crew_games": 475,
+      "votes_per_game": {
+        "mean": 0.6147368421052631,
+        "median": 0.0,
+        "std": 0.9507900801929846
+      },
+      "chats_per_game": {
+        "mean": 2.132631578947368,
+        "median": 2.0,
+        "std": 1.4759994186349779
+      },
+      "crew_win_rate": {
+        "n": 475,
+        "pct": 25.894736842105264
+      },
+      "vote_accuracy": {
+        "n": 292,
+        "pct": 84.93150684931507
+      },
+      "eject_when_voted_imposter": {
+        "n": 248,
+        "pct": 41.12903225806452
+      },
+      "eject_when_voted_crewmate": {
+        "n": 44,
+        "pct": 27.27272727272727
+      }
+    },
+    "crewborg-aaln": {
+      "crew_games": 307,
+      "votes_per_game": {
+        "mean": 1.3680781758957654,
+        "median": 1.0,
+        "std": 1.26466194057302
+      },
+      "chats_per_game": {
+        "mean": 2.1042345276872965,
+        "median": 2.0,
+        "std": 1.3365946573850833
+      },
+      "crew_win_rate": {
+        "n": 307,
+        "pct": 22.149837133550488
+      },
+      "vote_accuracy": {
+        "n": 420,
+        "pct": 53.095238095238095
+      },
+      "eject_when_voted_imposter": {
+        "n": 223,
+        "pct": 41.25560538116592
+      },
+      "eject_when_voted_crewmate": {
+        "n": 197,
+        "pct": 32.99492385786802
+      }
+    },
+    "crewborg-mv": {
+      "crew_games": 292,
+      "votes_per_game": {
+        "mean": 1.7191780821917808,
+        "median": 2.0,
+        "std": 1.261337045930026
+      },
+      "chats_per_game": {
+        "mean": 2.48972602739726,
+        "median": 2.0,
+        "std": 1.239345212998976
+      },
+      "crew_win_rate": {
+        "n": 292,
+        "pct": 34.24657534246575
+      },
+      "vote_accuracy": {
+        "n": 502,
+        "pct": 41.633466135458164
+      },
+      "eject_when_voted_imposter": {
+        "n": 209,
+        "pct": 49.760765550239235
+      },
+      "eject_when_voted_crewmate": {
+        "n": 293,
+        "pct": 31.399317406143346
+      }
+    },
+    "crewrift-prime-crewborg-aaln-hunter-relhalpha": {
+      "crew_games": 307,
+      "votes_per_game": {
+        "mean": 1.5570032573289903,
+        "median": 1.0,
+        "std": 1.1656191978379733
+      },
+      "chats_per_game": {
+        "mean": 2.3908794788273617,
+        "median": 2.0,
+        "std": 1.1841746009044352
+      },
+      "crew_win_rate": {
+        "n": 307,
+        "pct": 20.846905537459286
+      },
+      "vote_accuracy": {
+        "n": 478,
+        "pct": 56.06694560669456
+      },
+      "eject_when_voted_imposter": {
+        "n": 268,
+        "pct": 34.701492537313435
+      },
+      "eject_when_voted_crewmate": {
+        "n": 210,
+        "pct": 37.142857142857146
+      }
+    },
+    "crewrift-prime-notsus-richard": {
+      "crew_games": 283,
+      "votes_per_game": {
+        "mean": 1.0212014134275618,
+        "median": 1.0,
+        "std": 1.101051707933871
+      },
+      "chats_per_game": {
+        "mean": 0.0,
+        "median": 0.0,
+        "std": 0.0
+      },
+      "crew_win_rate": {
+        "n": 283,
+        "pct": 28.975265017667844
+      },
+      "vote_accuracy": {
+        "n": 289,
+        "pct": 75.77854671280276
+      },
+      "eject_when_voted_imposter": {
+        "n": 219,
+        "pct": 54.794520547945204
+      },
+      "eject_when_voted_crewmate": {
+        "n": 70,
+        "pct": 72.85714285714285
+      }
+    },
+    "daveey-prime-notsus": {
+      "crew_games": 283,
+      "votes_per_game": {
+        "mean": 1.3886925795053005,
+        "median": 1.0,
+        "std": 1.273354613818709
+      },
+      "chats_per_game": {
+        "mean": 0.4028268551236749,
+        "median": 0.0,
+        "std": 0.7674165431925524
+      },
+      "crew_win_rate": {
+        "n": 283,
+        "pct": 26.501766784452297
+      },
+      "vote_accuracy": {
+        "n": 393,
+        "pct": 64.63104325699746
+      },
+      "eject_when_voted_imposter": {
+        "n": 254,
+        "pct": 42.91338582677165
+      },
+      "eject_when_voted_crewmate": {
+        "n": 139,
+        "pct": 46.043165467625904
+      }
+    },
+    "forgeling-focusfire": {
+      "crew_games": 277,
+      "votes_per_game": {
+        "mean": 1.371841155234657,
+        "median": 1.0,
+        "std": 1.2346160011635583
+      },
+      "chats_per_game": {
+        "mean": 0.4151624548736462,
+        "median": 0.0,
+        "std": 0.7737924619931561
+      },
+      "crew_win_rate": {
+        "n": 277,
+        "pct": 32.851985559566785
+      },
+      "vote_accuracy": {
+        "n": 380,
+        "pct": 60.0
+      },
+      "eject_when_voted_imposter": {
+        "n": 228,
+        "pct": 49.56140350877193
+      },
+      "eject_when_voted_crewmate": {
+        "n": 152,
+        "pct": 48.026315789473685
+      }
+    },
+    "jordan-crewborg-aaln": {
+      "crew_games": 292,
+      "votes_per_game": {
+        "mean": 1.3493150684931507,
+        "median": 1.0,
+        "std": 1.3112909918622833
+      },
+      "chats_per_game": {
+        "mean": 2.095890410958904,
+        "median": 2.0,
+        "std": 1.309908142543156
+      },
+      "crew_win_rate": {
+        "n": 292,
+        "pct": 21.91780821917808
+      },
+      "vote_accuracy": {
+        "n": 394,
+        "pct": 55.076142131979694
+      },
+      "eject_when_voted_imposter": {
+        "n": 217,
+        "pct": 42.3963133640553
+      },
+      "eject_when_voted_crewmate": {
+        "n": 177,
+        "pct": 42.3728813559322
+      }
+    },
+    "notsus": {
+      "crew_games": 290,
+      "votes_per_game": {
+        "mean": 1.1,
+        "median": 1.0,
+        "std": 1.110036004279072
+      },
+      "chats_per_game": {
+        "mean": 2.893103448275862,
+        "median": 3.0,
+        "std": 2.151434869147063
+      },
+      "crew_win_rate": {
+        "n": 290,
+        "pct": 18.275862068965516
+      },
+      "vote_accuracy": {
+        "n": 319,
+        "pct": 65.8307210031348
+      },
+      "eject_when_voted_imposter": {
+        "n": 210,
+        "pct": 30.952380952380953
+      },
+      "eject_when_voted_crewmate": {
+        "n": 109,
+        "pct": 30.275229357798167
+      }
+    },
+    "rowdaboat-notsus": {
+      "crew_games": 315,
+      "votes_per_game": {
+        "mean": 2.2,
+        "median": 2.0,
+        "std": 1.2972287954600379
+      },
+      "chats_per_game": {
+        "mean": 3.0761904761904764,
+        "median": 2.0,
+        "std": 2.6722038356756124
+      },
+      "crew_win_rate": {
+        "n": 315,
+        "pct": 28.57142857142857
+      },
+      "vote_accuracy": {
+        "n": 693,
+        "pct": 46.753246753246756
+      },
+      "eject_when_voted_imposter": {
+        "n": 324,
+        "pct": 37.34567901234568
+      },
+      "eject_when_voted_crewmate": {
+        "n": 369,
+        "pct": 26.558265582655828
+      }
+    },
+    "sasmith-crewborg-hs1": {
+      "crew_games": 260,
+      "votes_per_game": {
+        "mean": 0.7038461538461539,
+        "median": 0.0,
+        "std": 0.9670161762454055
+      },
+      "chats_per_game": {
+        "mean": 2.5384615384615383,
+        "median": 3.0,
+        "std": 1.5126434768610506
+      },
+      "crew_win_rate": {
+        "n": 260,
+        "pct": 25.0
+      },
+      "vote_accuracy": {
+        "n": 183,
+        "pct": 56.830601092896174
+      },
+      "eject_when_voted_imposter": {
+        "n": 104,
+        "pct": 47.11538461538461
+      },
+      "eject_when_voted_crewmate": {
+        "n": 79,
+        "pct": 36.708860759493675
+      }
+    },
+    "scott-crewborg-hs1": {
+      "crew_games": 260,
+      "votes_per_game": {
+        "mean": 0.7846153846153846,
+        "median": 0.0,
+        "std": 1.0321818955007231
+      },
+      "chats_per_game": {
+        "mean": 2.473076923076923,
+        "median": 3.0,
+        "std": 1.4845556755829517
+      },
+      "crew_win_rate": {
+        "n": 260,
+        "pct": 31.153846153846153
+      },
+      "vote_accuracy": {
+        "n": 204,
+        "pct": 68.62745098039215
+      },
+      "eject_when_voted_imposter": {
+        "n": 140,
+        "pct": 57.14285714285714
+      },
+      "eject_when_voted_crewmate": {
+        "n": 64,
+        "pct": 42.1875
+      }
+    },
+    "softmaxwell-crewborg": {
+      "crew_games": 253,
+      "votes_per_game": {
+        "mean": 1.1264822134387351,
+        "median": 1.0,
+        "std": 1.0273107309748273
+      },
+      "chats_per_game": {
+        "mean": 1.6521739130434783,
+        "median": 2.0,
+        "std": 1.1842070958344688
+      },
+      "crew_win_rate": {
+        "n": 253,
+        "pct": 15.810276679841898
+      },
+      "vote_accuracy": {
+        "n": 285,
+        "pct": 32.63157894736842
+      },
+      "eject_when_voted_imposter": {
+        "n": 93,
+        "pct": 15.053763440860216
+      },
+      "eject_when_voted_crewmate": {
+        "n": 192,
+        "pct": 23.4375
+      }
+    }
+  }
+}

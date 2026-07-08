@@ -31,6 +31,8 @@ ranking_analysis/
 ├── features.py            # per-seat behavioural features from the EVENT WAREHOUSE
 ├── differential.py        # crewborg vs top-3, Cohen's d + Mann-Whitney, per role
 ├── report_gen.py          # renders the self-contained HTML report + charts
+├── voting_metrics.py      # per-policy vote/chat rate, vote accuracy, ejection effectiveness (event warehouse)
+├── voting_report_gen.py   # renders the self-contained HTML voting-behaviour report (reads voting_metrics.json)
 ├── serve.sh               # serve the report over Tailscale/localhost
 ├── requests/              # the exact 15-request eval definition (rebuild recipe)
 │   ├── req_01.json … req_15.json
@@ -41,6 +43,8 @@ ranking_analysis/
     ├── features.json             # DISTILLED per-seat feature table (differential input)
     ├── bt_ranks.json  overall.json  differential.json  rooms.json  replays.json
     ├── report.html               # the deliverable
+    ├── voting_metrics.json       # voting_metrics.py output (voting_report_gen.py input)
+    ├── voting_report.html        # the voting-behaviour deliverable
     └── RESULTS_bt.txt
 ```
 
@@ -70,6 +74,23 @@ python report_gen.py      # -> data/report.html
 ```bash
 RANK_WH=/path/to/v96_rank_wh python features.py   # rewrites data/features.json
 python differential.py && python report_gen.py
+```
+
+## Voting behaviour report (crew games only)
+
+`voting_metrics.py` extracts per-policy voting behaviour from the event warehouse — vote rate,
+chat rate, vote accuracy, ejection effectiveness (conversion when the target is truly the
+imposter; friendly fire when the target is truly a crewmate), and crew win rate — scoped to games
+played as crew. Ejection ground truth has no native warehouse event, so it's derived from a `died`
+event falling inside a meeting's `vote_called_body`/`vote_called_button` → next-meeting window (see
+the module docstring for the derivation and its validation). Same clean-game + `trace_warning`
+exclusion philosophy as the rest of this directory.
+
+```bash
+# needs a full event warehouse (RANK_WH, default /tmp/v96_rank_wh) — see "Extract NEW
+# behavioural features" above for how to get one
+python voting_metrics.py       # -> data/voting_metrics.json (+ prints a per-policy summary table)
+python voting_report_gen.py    # -> data/voting_report.html
 ```
 
 Get the warehouse one of two ways:

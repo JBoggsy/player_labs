@@ -35,6 +35,9 @@ dependencies = [
     "pyarrow>=24.0.0",
     "cryptography>=49.0.0",
     "pillow>=12.3.0",
+    "duckdb>=1.5.4",
+    "scipy>=1.17.1",
+    "matplotlib>=3.11.0",
 ]
 
 [tool.uv.sources]

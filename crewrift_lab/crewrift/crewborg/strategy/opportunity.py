@@ -6,30 +6,44 @@ commit to (``select_victim`` — the most-isolated visible straggler, easiest to
 finish off unseen), whether a kill on a given target is currently unwitnessed
 (``unwitnessed``), and whether any victim is visible or trackable right now.
 
-The witness bar is not fixed: the longer the imposter has been *able* to kill
-without doing so, the more it relaxes (``kill_urgency_ticks``), so a cautious
-imposter that never finds a clean opening still escalates rather than stalling
-forever (design §10 "act with urgency").
+A witness is definitional, not a distance/recency estimate: ``belief.roster`` only
+records another player's position on ticks where *our own* vision actually saw them
+(``types.py``'s ``PlayerRecord.record`` is fed straight from the percept), and Crewrift
+vision is symmetric (same camera-frame + line-of-sight check run from either side — see
+``docs/designs/vision-model.md``). So a currently-visible live non-teammate crewmate can
+see the kill too, and counting how many are visible right now is exact — no radius or
+staleness window is needed to approximate "nearby and probably still watching."
+
+The witness *tolerance* is not fixed: at zero urgency a kill still proceeds with up to
+``allowed_witnesses_min()`` (1) witnesses visible — a single onlooker no longer vetoes a
+strike — ramping linearly as urgency builds (``kill_urgency_ticks``) to
+``allowed_witnesses_max()`` (6) by full urgency. Since this game's fixed 6-crew format
+means at most 5 OTHER live crew can ever witness a kill, 6 is an effective "always
+strike" ceiling — so a cautious imposter that never finds a clean opening still
+escalates rather than stalling forever (design §10 "act with urgency").
 """
 
 from __future__ import annotations
 
+import math
 import os
 
 from crewrift.crewborg.nav import plan_route
+from crewrift.crewborg.strategy.trajectory import AGENT_SPEED_PX
 from crewrift.crewborg.types import Belief, PlayerRecord
 
-# Clearance (world px) required around a target at zero urgency: no other crewmate
-# may be within this distance for the kill to count as unwitnessed.
-BASE_ISOLATION_RADIUS = 48
-
-# At zero urgency, another crewmate seen within this many ticks still counts as a
-# potential witness; the window shrinks with urgency so stale sightings stop vetoing.
-WITNESS_WINDOW_TICKS = 72
-
-# Ticks of being able-to-kill-without-killing at which the witness bar reaches zero —
-# i.e. the imposter will strike any victim regardless of witnesses (~10s at 24 Hz).
+# Ticks of being able-to-kill-without-killing at which witness tolerance reaches its
+# maximum (~10s at 24 Hz).
 URGENCY_FULL_TICKS = 240
+
+# Witnesses tolerated at zero urgency: a kill still proceeds with up to this many
+# OTHER live non-teammate crewmates currently visible.
+ALLOWED_WITNESSES_MIN = 1
+
+# Witnesses tolerated at full urgency. This game's fixed 6-crew format means at most
+# 5 other live crew can ever witness a kill, so 6 is an "always strike" ceiling --
+# same guarantee as the old hard cutover, reached by a ramp instead of a cliff.
+ALLOWED_WITNESSES_MAX = 6
 
 # A non-teammate seen within this many ticks is still "trackable" — Search can
 # follow it to its last-known position even while it is briefly out of view.
@@ -61,10 +75,10 @@ HUNT_LEAD_TICKS = SEARCH_LEAD_TICKS
 
 
 def urgency_full_ticks() -> int:
-    """Ticks of kill-ready-without-killing at which the witness bar reaches zero,
-    env-overridable via ``CREWBORG_URGENCY_FULL_TICKS`` so it can be swept without
-    a rebuild. Clamped to >= 1 (it is a divisor); invalid values fall back to the
-    default ``URGENCY_FULL_TICKS``."""
+    """Ticks of kill-ready-without-killing at which witness tolerance reaches its
+    maximum, env-overridable via ``CREWBORG_URGENCY_FULL_TICKS`` so it can be swept
+    without a rebuild. Clamped to >= 1 (it is a divisor); invalid values fall back to
+    the default ``URGENCY_FULL_TICKS``."""
 
     raw = os.environ.get("CREWBORG_URGENCY_FULL_TICKS")
     if raw:
@@ -73,6 +87,20 @@ def urgency_full_ticks() -> int:
         except ValueError:
             pass
     return URGENCY_FULL_TICKS
+
+
+def allowed_witnesses_min() -> int:
+    """Witnesses tolerated at zero urgency, env-overridable via
+    ``CREWBORG_ALLOWED_WITNESSES_MIN`` so it can be swept without a rebuild."""
+
+    return _env_ticks("CREWBORG_ALLOWED_WITNESSES_MIN", ALLOWED_WITNESSES_MIN)
+
+
+def allowed_witnesses_max() -> int:
+    """Witnesses tolerated at full urgency, env-overridable via
+    ``CREWBORG_ALLOWED_WITNESSES_MAX`` so it can be swept without a rebuild."""
+
+    return _env_ticks("CREWBORG_ALLOWED_WITNESSES_MAX", ALLOWED_WITNESSES_MAX)
 
 
 def kill_urgency_ticks(belief: Belief) -> int:
@@ -158,12 +186,27 @@ def select_victim(belief: Belief) -> PlayerRecord | None:
 
 
 def unwitnessed(belief: Belief, target: PlayerRecord) -> bool:
-    """Whether killing ``target`` now would go unseen, at the current urgency level."""
+    """Whether killing ``target`` now would go unseen, at the current urgency level.
+
+    Not a yes/no gate on any witness at all: the number of OTHER live non-teammate
+    crewmates currently visible to us must be at or below the urgency-ramped
+    tolerance (``witness_tolerance`` — 1 at zero urgency, ramping to 6, effectively
+    "always strike," by full urgency). See the module docstring and
+    ``docs/designs/vision-model.md`` for why current visibility is an exact witness
+    count, not a distance/staleness proxy.
+    """
+
+    return _witness_count(belief, target) <= witness_tolerance(belief)
+
+
+def witness_tolerance(belief: Belief) -> int:
+    """The witness count tolerated right now: ramps linearly from
+    ``allowed_witnesses_min()`` at zero urgency to ``allowed_witnesses_max()`` at
+    full urgency (``kill_urgency_ticks >= urgency_full_ticks()``)."""
 
     frac = min(1.0, kill_urgency_ticks(belief) / urgency_full_ticks())
-    radius_sq = (BASE_ISOLATION_RADIUS * (1.0 - frac)) ** 2
-    window = int(WITNESS_WINDOW_TICKS * (1.0 - frac))
-    return _is_unwitnessed(target, belief, radius_sq, window)
+    lo, hi = allowed_witnesses_min(), allowed_witnesses_max()
+    return int(lo + (hi - lo) * frac)
 
 
 def _isolation(target: PlayerRecord, belief: Belief) -> float:
@@ -178,20 +221,21 @@ def _isolation(target: PlayerRecord, belief: Belief) -> float:
     return min(gaps) if gaps else float("inf")
 
 
-def _is_unwitnessed(target: PlayerRecord, belief: Belief, radius_sq: float, window: int) -> bool:
-    """Whether no live non-teammate crewmate is close enough (and recent enough) to see the kill."""
+def _witness_count(belief: Belief, target: PlayerRecord) -> int:
+    """How many OTHER live non-teammate crewmates are visible to us THIS tick.
 
-    target_xy = (target.world_x, target.world_y)
-    for other in belief.roster.values():
-        if other.color == target.color or other.color in belief.teammate_colors:
-            continue  # the victim itself and fellow imposters are never witnesses
-        if other.life_status == "dead":
-            continue  # a dead crewmate cannot witness the kill
-        if belief.last_tick - other.last_seen_tick > window:
-            continue  # last seen too long ago to credibly still be watching
-        if _dist2(target_xy, (other.world_x, other.world_y)) <= radius_sq:
-            return False
-    return True
+    Vision is symmetric (see the module docstring), so "visible to us now" already
+    means "could see the kill" -- no separate distance or recency check is needed.
+    """
+
+    return sum(
+        1
+        for other in belief.roster.values()
+        if other.color != target.color
+        and other.color not in belief.teammate_colors
+        and other.life_status != "dead"
+        and other.last_seen_tick == belief.last_tick
+    )
 
 
 def _claimed_by_teammate(target: PlayerRecord, belief: Belief, self_xy: tuple[int, int]) -> bool:
@@ -215,12 +259,19 @@ def _claimed_by_teammate(target: PlayerRecord, belief: Belief, self_xy: tuple[in
 # Diagnosis (2026-06-25 warehouse head-to-head vs crewborg-aaln): at the moment our
 # cooldown comes off we have a crewmate in view only ~53% of the time (Aaron: 83%) —
 # we drift away from crew we saw earlier in the cooldown cycle. Recon closes that gap:
-# inside RECON_WINDOW ticks of ready, beeline to the most-recently-seen crewmate so the
-# instant we can kill, a victim is in hand and Hunt fires immediately.
-
-# Ticks-before-ready at which to start recon. Deliberately short for now (a long window
-# = Aaron-style overextension that gets caught); env-tunable so we can sweep it.
-RECON_WINDOW_TICKS = 100
+# beeline to a target timed so we ARRIVE the instant the cooldown clears, not before
+# (holding position — WATCH's job — until then avoids the over-extension that gets
+# an early-committing imposter caught).
+#
+# Reworked 2026-07-06 (James): the entry trigger used to be a fixed
+# ``RECON_WINDOW_TICKS`` (100) regardless of how far the target actually was, and the
+# target was simply the most-recently-seen crewmate. Now both are computed: the
+# target is the most ISOLATED fresh sighting (farthest from every other candidate —
+# least likely another crewmate or teammate interferes with the approach or the
+# kill), and the trigger fires exactly when the remaining cooldown drops to the
+# real travel time to that target (via the nav route when available, straight-line
+# distance / speed otherwise) — so we start moving only once "close enough" that we
+# hit them right as the cooldown clears, not any earlier.
 
 # A recon target whose freshest sighting is older than this is STALE — its last-seen
 # point carries no victim information anymore, so beelining there is worse than running
@@ -234,13 +285,6 @@ RECON_STALENESS_TICKS = 360
 # Radius (px) at which a recon point counts as reached. Shared by ReconMode's own
 # arrival handling and the selector's spent-target check (rule_based).
 RECON_REACHED_RADIUS_SQ = 24**2
-
-
-def recon_window() -> int:
-    """The recon trigger window (ticks before kill-ready), env-overridable via
-    ``CREWBORG_RECON_WINDOW`` so it can be swept without a rebuild."""
-
-    return _env_ticks("CREWBORG_RECON_WINDOW", RECON_WINDOW_TICKS)
 
 
 def recon_staleness_ticks() -> int:
@@ -260,21 +304,64 @@ def _env_ticks(name: str, default: int) -> int:
     return default
 
 
-def recon_target(belief: Belief) -> PlayerRecord | None:
-    """``most_recent_victim`` bounded by the staleness window: the crewmate to
-    close on during recon, or ``None`` when even the freshest sighting is too old
-    to act on (→ the selector falls through to Search)."""
+def travel_ticks(belief: Belief, self_xy: tuple[int, int], target_xy: tuple[int, int]) -> float:
+    """Estimated ticks to walk from ``self_xy`` to ``target_xy`` at ``AGENT_SPEED_PX``,
+    via the real nav route when one exists (respects walls/corridors — a straight line
+    through a wall would understate the real travel time), else straight-line distance."""
 
-    victim = most_recent_victim(belief)
-    if victim is None or belief.last_tick - victim.last_seen_tick > recon_staleness_ticks():
+    if belief.nav is not None:
+        route = plan_route(belief.nav, self_xy, target_xy)
+        if route:
+            points = [self_xy, *route]
+            distance = sum(math.dist(points[i], points[i + 1]) for i in range(len(points) - 1))
+            return distance / AGENT_SPEED_PX
+    return math.dist(self_xy, target_xy) / AGENT_SPEED_PX
+
+
+def most_isolated_recon_candidate(belief: Belief) -> PlayerRecord | None:
+    """Among fresh (``recon_staleness_ticks()``) live non-teammate crew, the one
+    farthest from every OTHER such candidate — the target least likely to have
+    another crewmate (or us) complicate the approach or the kill. ``None`` when no
+    sighting is fresh enough. Ties broken toward the more recently seen (more
+    reliable position), then toward the existing roster order."""
+
+    fresh = [
+        rec for rec in belief.roster.values()
+        if rec.color not in belief.teammate_colors
+        and rec.life_status != "dead"
+        and belief.last_tick - rec.last_seen_tick <= recon_staleness_ticks()
+    ]
+    if not fresh:
         return None
-    return victim
+    if len(fresh) == 1:
+        return fresh[0]
+
+    def isolation(rec: PlayerRecord) -> float:
+        xy = (rec.world_x, rec.world_y)
+        gaps = [
+            _dist2(xy, (other.world_x, other.world_y))
+            for other in fresh
+            if other.color != rec.color
+        ]
+        return min(gaps) if gaps else float("inf")
+
+    return max(fresh, key=lambda rec: (isolation(rec), rec.last_seen_tick))
+
+
+def recon_target(belief: Belief) -> PlayerRecord | None:
+    """The crewmate to close on during recon: ``most_isolated_recon_candidate``,
+    which already bounds itself to fresh (``recon_staleness_ticks()``) sightings —
+    ``None`` when nothing is fresh enough (→ the selector falls through to Search)."""
+
+    return most_isolated_recon_candidate(belief)
 
 
 def most_recent_victim(belief: Belief) -> PlayerRecord | None:
-    """The most-recently-seen live non-teammate crewmate — the target to close on
-    during recon (its ``world_x/y`` is the live position when visible, else last-known).
-    ``None`` when no crewmate has been seen at all."""
+    """The most-recently-seen live non-teammate crewmate (its ``world_x/y`` is the
+    live position when visible, else last-known). ``None`` when no crewmate has been
+    seen at all. Used by Evade's cold-start fallback (no occupancy data yet) — NOT
+    by Recon, which targets the most *isolated* fresh sighting instead (see
+    ``most_isolated_recon_candidate``)."""
 
     crew = [
         entry

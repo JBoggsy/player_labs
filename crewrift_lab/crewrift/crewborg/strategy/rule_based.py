@@ -27,9 +27,13 @@ Imposter priority order (design §10):
 1. ``phase == Voting`` → Attend Meeting
 2. just killed → Evade (vent / leave the body)
 3. kill ready + a visible victim → Hunt (commit to a victim and strike / close)
-4. near-ready cooldown + a FRESH, unspent sighting → Recon (close on it). A sighting
-   older than ``recon_staleness_ticks()`` or one whose point we already reached and
-   found empty ("spent") does not qualify — those fall through to Search.
+4. a FRESH, unspent sighting whose travel time has caught up with the remaining
+   cooldown → Recon (close on it, timed to arrive exactly as the cooldown clears).
+   A sighting older than ``recon_staleness_ticks()``, one whose point we already
+   reached and found empty ("spent"), or one still farther away than the
+   remaining cooldown allows time to reach does not qualify — those fall
+   through to Search (which holds the best-view task until Recon's moment
+   arrives).
 5. otherwise → Search (find/follow a target)
 
 (2) prevents instant self-reports after our own kill: the imposter first leaves the
@@ -58,8 +62,8 @@ from crewrift.crewborg.strategy.opportunity import (
     RECON_REACHED_RADIUS_SQ,
     has_visible_victim,
     recon_target,
-    recon_window,
     ticks_until_kill_ready,
+    travel_ticks,
 )
 from crewrift.crewborg.strategy.suspicion import active_tail_suspect, top_suspect
 from crewrift.crewborg.types import ActionState, Belief, PlayerRecord
@@ -135,16 +139,19 @@ class RuleBasedStrategy:
 
     def _select_imposter(self, belief: Belief) -> ModeDirective:
         # Imposter priority (design §10): just killed -> Evade; kill ready and a
-        # victim visible -> Hunt; near-ready with known crew -> Recon; else SEARCH.
+        # victim visible -> Hunt; travel time to the best recon target has caught up
+        # with the remaining cooldown -> Recon; else SEARCH.
         # Imposters never report bodies: self-reporting our own kill opens a meeting
         # and resets the cooldown, so once Evade ends we go back to the kill loop.
         # SEARCH is the always-on seeking stance (Pretend removed 2026-06-24): it
-        # keeps us near crew — watching a room and following a crewmate to their next
-        # room — so a kill window opens, which is when Hunt takes over. RECON (added
-        # 2026-06-25) sits just before the kill comes ready: within recon_window() ticks
-        # of ready we beeline to the most-recently-seen crewmate so a victim is already
-        # in hand the instant we can kill (warehouse: we had a crew in view at ready only
-        # 53% of the time vs Aaron's 83%).
+        # keeps us near crew — holding the best-view task in a room with crew — so a
+        # kill window opens, which is when Hunt takes over. RECON (added 2026-06-25,
+        # reworked 2026-07-06) closes the pre-kill gap: rather than a fixed window
+        # before ready, it computes how long the walk to the most ISOLATED fresh
+        # sighting actually takes and starts the beeline exactly when that travel
+        # time equals the remaining cooldown — arriving right as the kill clears
+        # instead of camping there early (warehouse: we had a crew in view at ready
+        # only 53% of the time vs Aaron's 83%).
         if _be_dumb_enabled():
             if belief.self_kill_ready and has_visible_victim(belief):
                 return ModeDirective(mode="hunt", source="strategy", reason="be dumb: kill ready with visible victim")
@@ -161,17 +168,26 @@ class RuleBasedStrategy:
             )
         if belief.self_kill_ready and has_visible_victim(belief):
             return ModeDirective(mode="hunt", source="strategy", reason="kill ready: hunt visible victim")
-        # Recon only in the strictly PRE-ready window, and only on a sighting worth
-        # beelining to: fresh (recon_target's staleness bound) and not already SPENT
-        # (we reached its point and nobody was there). Everything else falls through to
-        # Search's room-checking FSM — beelining to stale/empty points was the measured
-        # ready-state park (see the recon-stall lesson + the 2026-07-02 movement diagnosis).
-        if (
-            not belief.self_kill_ready
-            and ticks_until_kill_ready(belief) <= recon_window()
-            and self._live_recon_target(belief) is not None
-        ):
-            return ModeDirective(mode="recon", source="strategy", reason="kill nearly ready: close on a crewmate")
+        # Recon only on a sighting worth beelining to: fresh (recon_target's staleness
+        # bound), the most isolated such sighting, not already SPENT (we reached its
+        # point and nobody was there), AND only once the real travel time to it has
+        # caught up with the remaining cooldown — so we arrive right as the kill
+        # clears rather than camping there early. Everything else falls through to
+        # Search, which holds the best-view task in the meantime.
+        if not belief.self_kill_ready:
+            target = self._live_recon_target(belief)
+            if (
+                target is not None
+                and belief.self_world_x is not None
+                and belief.self_world_y is not None
+            ):
+                self_xy = (belief.self_world_x, belief.self_world_y)
+                target_xy = (target.world_x, target.world_y)
+                if ticks_until_kill_ready(belief) <= travel_ticks(belief, self_xy, target_xy):
+                    return ModeDirective(
+                        mode="recon", source="strategy",
+                        reason="travel time to the most isolated crewmate matches the remaining cooldown",
+                    )
         return ModeDirective(mode="search", source="strategy", reason="seek crew to be near a kill")
 
     def _live_recon_target(self, belief: Belief) -> PlayerRecord | None:
