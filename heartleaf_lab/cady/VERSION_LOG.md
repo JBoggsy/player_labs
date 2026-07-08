@@ -25,6 +25,16 @@ map-center. `cady/occupancy.py` is the runtime lookup (graceful None if unbaked)
 spots are walkable and shift by hour (morning gardens → house doors near dinner). 76 tests.
 NOTE: near dinner villagers disperse to their OWN houses, so the single hottest cell sits at one
 house — a follow-up is to prefer a spot central to MANY houses, hit early before they lock home.
+## v20 — 2026-07-08 (comprehensive tracing + SUBMIT candidate)
+
+Robust diagnostics before submitting. `CADY_DIAG` now emits (a) periodic full-state snapshots
+enriched with belief + nav + social fields (own_house_index, directive_reason, circuit_index,
+nav_goal/cursor/path_len/stuck_ticks, invited_houses, committed_party_house, villagers_in_view,
+n_gnomes_visible) and (b) immediate TRANSITION lines whenever mode, strategy directive, map
+context, inventory, invite-tour progress, party commitment, or a chat changes — so nothing
+fires silently between snapshots. The SDK trace_sink (jsonl@artifact) also carries
+mode_entered/strategy_evaluated/fallback events. Same play code as v19 (15/15 scored, mean ~141,
+harvest floor fixed); this adds observability only. Built + uploaded + SUBMITTED with tracing on.
 ## v19 — 2026-07-07 (gather reliability: navigator stuck-detection → re-plan)
 
 **RESULT — harvest floor FIXED.** 15/15 scored; harvest min 27→113, ZERO collapse games (was 2),
