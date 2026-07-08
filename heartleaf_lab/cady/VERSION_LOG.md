@@ -35,6 +35,11 @@ context, inventory, invite-tour progress, party commitment, or a chat changes �
 fires silently between snapshots. The SDK trace_sink (jsonl@artifact) also carries
 mode_entered/strategy_evaluated/fallback events. Same play code as v19 (15/15 scored, mean ~141,
 harvest floor fixed); this adds observability only. Built + uploaded + SUBMITTED with tracing on.
+
+**SUBMITTED 2026-07-08** to Heartleaf league `league_f831ba75-e81b-4796-b8c6-cd10be18c0bf`
+(`sub_ed58259d-57b4-499f-8c8e-36dbfc062ffa`, `--auto-champion always`, status pending →
+placement async). Policy version `69d4490b-5181-4963-90c2-3956cbbe8cdc`. First Heartleaf
+submission. cady:v20 = same play as v19 (15/15 scored, mean ~141) + full tracing.
 ## v19 — 2026-07-07 (gather reliability: navigator stuck-detection → re-plan)
 
 **RESULT — harvest floor FIXED.** 15/15 scored; harvest min 27→113, ZERO collapse games (was 2),
