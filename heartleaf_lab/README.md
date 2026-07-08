@@ -55,9 +55,14 @@ heartleaf_lab/
   best_practices.md               Heartleaf-specific practices (near-empty until lessons graduate)
   TENTATIVE_LESSONS.md            this session's candidate-lessons buffer (auto-rotated)
   docs/
-    heartleaf-gameplay.md         self-contained game reference (rules, protocol, scoring, strategy)
+    heartleaf-gameplay.md         self-contained game reference (rules, protocol, scoring, exact timing)
+    villager-dinner-attendance.md how the starter villagers decide/accept dinners (what we exploit)
     replay-tools.md               how to expand a replay + draw travel-line debug images
-  tools/                          lessons hooks + replay debugging (expand_replay build + viz_replay)
+    designs/                      cady player + social-LLM-controller designs
+  tools/                          lessons hooks + replay/analysis viz (expand_replay, viz_replay,
+                                  viz_occupancy, build/viz_flow_field — movement + heatmap over the map)
+  .claude/skills/lessons-review/  the ≈weekly lessons-graduation skill
+  lessons_archive/                rotated per-session lesson buffers
   .claude/skills/lessons-review/  the ≈weekly lessons-graduation skill
   lessons_archive/                rotated per-session lesson buffers
 ```
