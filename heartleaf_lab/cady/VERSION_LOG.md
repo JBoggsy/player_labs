@@ -40,6 +40,10 @@ harvest floor fixed); this adds observability only. Built + uploaded + SUBMITTED
 (`sub_ed58259d-57b4-499f-8c8e-36dbfc062ffa`, `--auto-champion always`, status pending →
 placement async). Policy version `69d4490b-5181-4963-90c2-3956cbbe8cdc`. First Heartleaf
 submission. cady:v20 = same play as v19 (15/15 scored, mean ~141) + full tracing.
+
+**QUALIFIED → 👑 CHAMPION (2026-07-08).** Placed → qualified → moved into the Competition
+division, membership `lpm_1ba945b3-b079-4cef-a0a3-733307a6c634`, status `competing`, champion.
+Cady's first league championship — the deterministic gather→invite(door-to-door)→host build.
 ## v19 — 2026-07-07 (gather reliability: navigator stuck-detection → re-plan)
 
 **RESULT — harvest floor FIXED.** 15/15 scored; harvest min 27→113, ZERO collapse games (was 2),
