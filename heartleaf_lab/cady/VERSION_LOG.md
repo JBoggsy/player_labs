@@ -41,7 +41,15 @@ phrasing; party house = SPEAKER's house via PLAYER_NAMES since invites say 'my h
 (same enter-house mechanic as HostMode). Strategy commits to the first heard invite when
 low-food, sticky (no thrash), attend beats host at the enter cutoff. Per-day social/tour state
 (committed party, invited_houses, circuit_index) now resets on the clock's morning rollover.
-91 tests. Verifying attend fires + produces guests via a full-game self-play xreq.
+91 tests.
+
+**RESULT (hosted evals).** SELF-PLAY (9x cady:v21, 5 games): now produces real guests —
+23 scored parties, 38 guest-attendances, total score 435 (was 0; self-play no longer
+degenerate). FIELD (1 cady + 8 random, 15 games): 14/15 scored, mean 152 (≥ v19's 141),
+harvest min 161, and Cady attended **0** times — correct: she's food-rich vs the field
+every day so the attend gate never trips; she just hosts. Attend works in self-play, stays
+dormant in real competition. (Local smoke test was blocked by a pruned game image, not our
+code — verified via `docker run … build_runtime()` + hosted evals instead.)
 ## v20 — 2026-07-08 (comprehensive tracing + SUBMIT candidate)
 
 Robust diagnostics before submitting. `CADY_DIAG` now emits (a) periodic full-state snapshots
