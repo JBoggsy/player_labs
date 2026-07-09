@@ -12,94 +12,86 @@ is the one-screen "where are we and why."
 
 ---
 
-## Status (2026-07-06, session 1): lab created AND cady v1 built — not yet uploaded
+## Status (2026-07-08, session 2): cady is the Heartleaf CHAMPION — full deterministic build
 
-This session created the Heartleaf sub-lab (orientation docs, `docs/heartleaf-gameplay.md`,
-lessons infra) **and built the first player, `cady` v1**, end to end from a design
-(`docs/designs/cady-player-design.md`) + high-level plan (`docs/plans/2026-07-06-cady-player.md`).
-cady is a deterministic cyborg Player-SDK policy on the **SDK's new SpriteV1 bridge**
-(`run_sprite_bridge`; the pinned SDK was bumped `6dcd022→e8921a6` to get it — shared with
-crewborg, whose 636 tests still pass). Built in 6 phases: Phase 1 (pin bump + scaffold) by
-Claude; Phases 2–6 (capture probe, perception+types, action, modes+strategy+runtime+decide,
-entry+packaging) delegated to **Codex** (plan→review→implement→verify→commit each). **31 tests
-pass** (`uv run pytest heartleaf_lab/cady/tests`); `python -m cady` wires to the bridge.
-Player index + summary: [`AGENTS.md`](AGENTS.md#player-policies).
+`cady` went from "runs but scores 0" to **league champion** this session, fully deterministic
+(no LLM). The whole day loop works and is proven in hosted evals:
 
-**NOT yet done (the human-gated lab loop):** docker build, upload a version, first hosted eval.
-See Open threads.
+    gather (39-garden circuit) → invite (door-to-door, 3-4:45 PM) → host (own house, 6:55 resolve)
+    + attend (accept an invite when food is low — reciprocity / self-play)
 
-The game repo is cloned at **`~/coding/coworld-heartleaf`** (reference only — not part of
-this repo). The game reference doc was distilled from that repo's `docs/`, `coworld_manifest.json`,
-and the `talking_villager` player framework.
+**Champion: `cady:v20`** (rank 1, score ~249) submitted 2026-07-08 (`sub_ed58259d`,
+`--auto-champion always`, membership `lpm_1ba945b3`). **`cady:v21` just submitted** (`sub_d860f316`,
+adds attend mode) — qualifying async when this was written (watcher: `scratchpad/qual_v21.log`).
+**91 tests pass.** Version history + per-version detail: `cady/VERSION_LOG.md`.
 
-## Key facts established this session
+Latest field eval (v21, 1 cady + 8 random): **14/15 scored, mean 152, harvest min 161**. Cady
+out-hosts the entire villager field combined ~19× (~5 attended parties/game vs their ~0.3).
 
-- **Game shape:** 9-gnome Sprite-v1 gridworld; score = `hosted food × guests`; only hosts
-  score; social coordination over chat is the meta-game. (Full detail in the gameplay doc.)
-- **The big architectural fact:** the game ships a working `talking_villager` Nim engine
-  (perception → pathfinding → 8-verb semantic actions → Bedrock LLM → chat); the 4 league
-  players are that engine + different `soul.md` prompts. LLM call is mockable via
-  `TALKING_VILLAGER_MOCK_REPLY`. → Cheapest player build paths are (a) new soul.md or
-  (b) deterministic decision layer; (c) raw Sprite-v1 is the fallback. See AGENTS.md.
-- **Repo status caveat:** `Metta-AI/coworld-heartleaf` is topic `coworld-incomplete` —
-  `coworld certify` has NOT passed (README badge "verify: failed"). A live Observatory
-  league is reported to exist, but **verify the game version + league state before relying
-  on them.**
-- **League variant config:** 9 compressed days (100s each), `maxTicks: 23760`, `num_agents: 9`.
+The game repo is cloned at **`~/coding/coworld-heartleaf`** (reference only). Our expander PR
+(#15) is **merged** there (HEAD ~`ffa907e`); it adds `tools/expand_replay.nim` + I added
+`tools/export_map_png.nim`.
 
-## First eval done (2026-07-06): cady RUNS clean but is BLIND TO GARDENS — never gathers
+## Key facts (the hard-won ones — full detail in the docs)
 
-`xreq_101eed6b`, 15 eps, cady vs 8 chatty-villagers on heartleaf 0.1.10. **Ops: 15/15 completed,
-zero failures** — the SpriteV1 bridge + perception + entry point all work hosted (cady ran 762
-decision ticks/game). **Score: cady 0/15** (field also near-0: 5/120 seats nonzero, max 13 — a
-low-scoring env, likely villagers on the mock `keep_gathering_plants` reply).
-**Root cause (from cady's telemetry artifact):** cady perceived **ZERO food gardens all game** →
-strategy skipped Gather → went straight to **Host at tick 7 and `hold`ed with `held_mask=0`
-forever** (never moved, never pressed A, never gathered → empty inventory → can't score). It DID
-reach Host (not stuck Idle), so **camera/self resolve OK — it's GARDEN perception that's broken.**
-Almost certainly the label/object-id mismatch we flagged: `perception.py` uses `"garden marker"`
-/ base-4000 from the **0.1.0** clone, but the deployed game is **0.1.10**.
+- **Scoring:** `hosted food × guests`, only the host scores, guests score 0. Dinner **RESOLVES at
+  6:55 PM (`DinnerTallyMinutes`), not the 6:00 shown on the clock.** Food/variety irrelevant —
+  only total item count matters. Exact timing table (minute↔tick, league dayTicks 2400+240=2640):
+  `docs/heartleaf-gameplay.md` "Exact timing".
+- **Seat identity:** house index == gnome index == perception's `own_house_index` (verified in
+  `addPlayer`). Owner display names by house: `config.PLAYER_NAMES` (Ivan…Egor).
+- **Villager exploit (`docs/villager-dinner-attendance.md`):** their LLM accepts an invite iff it
+  hears one naming a house AND is "free" (not committed/hosting). First invite heard wins (no
+  double-booking). Food-rich villagers host (unavailable); food-poor accept. They start their own
+  hosting at 4 PM → hit them 3-4 PM while free. **Villager LLM is WORKING in xreq (measured);
+  league-path reliability unverified.**
+- **Chat hearing = viewport, not radius:** a gnome hears our chat iff our bubble lands on their
+  320×200 viewport ≈ they're in view of us. Perception only returns on-screen gnomes.
 
-## cady v2 (2026-07-06): baked navigation — CODE-COMPLETE, not yet built/evaled
+## What shipped this session (v7→v21, the arc)
 
-Fixes v1's zero-score cause (only gathered when a garden was *perceived*; never at spawn).
-v2 navigates the FIXED baked map to known gardens. Shipped (46 tests pass):
-- `mapdata/` — baked from `map.aseprite`+`map.resource`: 748×941 walk grid, 39 garden
-  approach points, 9 house targets, a pre-computed circuit. `mapdata.py` loader + `bake_map.py`.
-- `nav.py` — **hierarchical A*** router (`find_path`): coarse 4× grid for long hops (validated
-  to preserve connectivity), fine A* for short + local wall-clip repair. **Arbitrary-point
-  routing median ~3ms / max ~21ms, fully followable** (was 220ms full-grid A* — James's
-  condition). NOTE: true JPS deferred — no-corner-cut JPS forced-neighbor rules are a known-hard
-  variant; both Codex's and a hand-rolled JPS had reachability bugs; A* gives identical paths.
-- `frame.py` (to_map/to_world via `WORLD_TO_MAP=(0,0)`), `navigator.py` (cached waypoint follower),
-  `modes/gather.py` rewritten as a **circuit follower** (walk GARDEN_CIRCUIT → press A within 40px
-  of each garden rect → advance), strategy Gather-before-cutoff, Host routes home via navigator.
+Root-cause fixes, each verified by eval: **v8** ws-keepalive disconnect (was dropping ~33s in —
+the real cause of every early "0 score"); **v9** reliable harvest (press A in range + retry);
+**v10** stop house-oscillation (only press A at real food); **v11** press-and-verify A cadence +
+host floor (enter own house); **v16** THE clock fix (game emits "\<Weekday\> 3:00pm"; our parser
+rejected the weekday prefix → clock read None → all timed phases dead — first points once fixed);
+**v18** door-to-door invite rush (15/15 scored, +33%); **v19** navigator stuck-detection re-plan
+(fixed rare ~27-food games); **v20** comprehensive tracing → submitted → CHAMPION; **v21** attend
+mode (self-play now produces guests: 435 vs 0; no host regression).
 
-**THE make-or-break caveat:** `WORLD_TO_MAP=(0,0)` assumes cady's perceived world frame == the
-baked map-asset frame. If there's an offset, cady routes to the wrong pixels. The first v2 eval
-(telemetry: does it move + harvest, inventory>0) confirms/sets it — it's the one calibration knob.
+**Tracing (v20+):** `CADY_DIAG` stderr lines — periodic full-state snapshots (belief+nav+social)
++ transition lines (mode/strategy/inventory/invite-tour/party-commit/chat). SDK trace_sink →
+episode artifact for mode/strategy/fallback events.
+
+**Analysis tooling (all in `heartleaf_lab/tools/`):** `expand_replay` (build via
+`build_expand_replay.sh`) → per-tick positions + tagged events incl. `heard_by` for chat;
+`viz_replay.py` (travel lines), `viz_occupancy.py` (per-hour crowd heatmap), `build/viz_flow_field.py`
+(movement flow), all over the real map (`export_map_png.nim` in the game repo dumps the art).
+Occupancy heatmap baked to `cady/mapdata/occupancy.npz` (178 replays / 16M samples).
 
 ## Open threads (next steps)
 
-1. **NEXT — fix garden perception vs 0.1.10 (the bug that zeroed cady).** Confirm the real
-   0.1.10 garden vocabulary: run the capture probe against a live stream, OR decode a replay
-   frame (we have `replay.json` per episode in the eval artifacts — raw BitWorld sprite bytes;
-   the SDK `SpriteWorld.apply_frame` decodes them). Check the actual garden label + object-id
-   base (and re-confirm gnome/clock while at it). Then fix `cady/perception.py`, rebuild, upload
-   cady:v2, re-eval. This is the calibration step, now with a concrete target.
-2. **Also verify** self/home geometry: cady `hold`s at its tick-1 home_anchor — confirm that's
-   actually inside its house (else it can't host even with food). And the `SELF_OFFSET`(0,0)/seat.
-3. **Heartleaf survey skill** — per-day host/guest/score report (AGENTS.md → Skills).
-4. **v2 = coordination** — chat-based guest recruitment (the real scoring lever). Seam in place.
+1. **Confirm v21 qualified** (watcher `scratchpad/qual_v21.log`) — should become champion.
+2. **The score lever is now recruiting CONVERSION** (guests-per-party ~1.3; volume already
+   dominant). Getting 1→2+ guests/party multiplies score. This is what the **LLM social layer**
+   (increment 3, designed in `docs/designs/cady-social-llm-controller.md`) targets: smart
+   target selection (food-poor acceptors), authored/persuasive chat, and the deferred
+   **PlayerRecord** (track who we invited / who accepted / who reciprocated).
+3. **LOCAL SMOKE TESTS BLOCKED:** the heartleaf *game* Docker image got pruned/untagged
+   (`heartleaf-0.1.10-N:downloaded` missing though cogames shas present). `coworld download` no-ops
+   (manifest cached). Re-tag or force re-pull before relying on `coworld-local-run`. Hosted evals
+   are the authoritative test regardless.
 
-## Eval how-to (learned this session)
-- Field: Competition div `div_396961a3…`, league `league_f831ba75…`; champion
-  `heartleaf-fatherly-villager:v2`. Roster = 9 seats (cady + 8 random). **No -100 here** — detect
-  failures via episode status/`failed_policy_index`, NOT score≤0 (see gameplay doc §Results).
-- cady's traces go to the **policy-artifact zip** (jsonl@artifact), not stderr; fetch via
-  `/jobs/{job}/policy-artifact/{seat}` with header `X-Use-Elevated-Privileges: true`. Its stderr
-  policy-log is nearly empty. Artifact events: perception/belief/strategy/action_intent/act_command
-  per tick + mode_entered/exited (generic — no data values, so read intent/command strings).
+## Eval how-to
+- Field: Competition div `div_396961a3-58af-4276-abc7-3f45fb7fe337`, league
+  `league_f831ba75-e81b-4796-b8c6-cd10be18c0bf` (re-resolve live before submit — ids rotate).
+  Roster = 9 seats. Self-play = 9× `cady:vN` (verifies attend / social; the field-eval can't).
+  **No -100 here** — detect failures via episode status, not score≤0.
+- Identify Cady in replays by **`user="Cady"`**, never display name (game-assigned, varies).
+  Measure scoring/competitive questions from the **dinner events** (they ARE the scoring records;
+  cross-check vs results.json) — not positional reconstruction.
+- Fetch artifacts with `--elevated` (team access is opt-in). CADY_DIAG lands in the stderr
+  policy-log now (folded), plus the SDK artifact zip.
 
 ## Discipline (from [`../AGENTS.md`](../AGENTS.md))
 
