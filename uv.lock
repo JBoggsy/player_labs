@@ -1416,6 +1416,7 @@ dependencies = [
     { name = "matplotlib" },
     { name = "numpy" },
     { name = "pandas" },
+    { name = "pillow" },
     { name = "players", extra = ["bedrock"] },
     { name = "pyarrow" },
     { name = "pydantic" },
@@ -1443,7 +1444,8 @@ requires-dist = [
     { name = "matplotlib", specifier = ">=3.11.0" },
     { name = "numpy", specifier = ">=2.0.0" },
     { name = "pandas", specifier = ">=3.0.3" },
-    { name = "players", extras = ["bedrock"], url = "https://github.com/Metta-AI/coworld-tools/archive/6dcd022e013febffb0043b5f625f853c5cc36e0f.tar.gz", subdirectory = "players" },
+    { name = "pillow", specifier = ">=12.3.0" },
+    { name = "players", extras = ["bedrock"], url = "https://github.com/Metta-AI/coworld-tools/archive/e8921a6b18484030d8704277e4c52d3aae5c8917.tar.gz", subdirectory = "players" },
     { name = "pyarrow", specifier = ">=24.0.0" },
     { name = "pydantic", specifier = ">=2.12.2" },
     { name = "scikit-learn", specifier = ">=1.9.0" },
@@ -1462,7 +1464,7 @@ dev = [
 [[package]]
 name = "players"
 version = "0.1.0"
-source = { url = "https://github.com/Metta-AI/coworld-tools/archive/6dcd022e013febffb0043b5f625f853c5cc36e0f.tar.gz", subdirectory = "players" }
+source = { url = "https://github.com/Metta-AI/coworld-tools/archive/e8921a6b18484030d8704277e4c52d3aae5c8917.tar.gz", subdirectory = "players" }
 dependencies = [
     { name = "anthropic" },
     { name = "cramjam" },
@@ -1470,7 +1472,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "websockets" },
 ]
-sdist = { hash = "sha256:d33c50b4e33fe754f2373a10ef0b3db0d65585eda5c7f60530edff531caa74de" }
+sdist = { hash = "sha256:58ed938af68317329038250f8218b74b2ae8088b56c8e47bd95ef83f18669bbf" }
 
 [package.optional-dependencies]
 bedrock = [

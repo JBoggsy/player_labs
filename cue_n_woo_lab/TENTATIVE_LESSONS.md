@@ -17,3 +17,8 @@ buffers — not in-session hit counts — is the graduation signal.
 concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
+
+### No Cue-n-Woo lessons this session — work was creating the new heartleaf_lab
+Evidence: session scaffolded `heartleaf_lab/` from the crewrift/cue-n-woo template; any
+reusable lessons were captured in `heartleaf_lab/TENTATIVE_LESSONS.md`. Nothing touched or
+learned about Cue-n-Woo specifically.
