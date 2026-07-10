@@ -69,6 +69,33 @@ human if a request would contravene one** before proceeding (then do what they d
 - **Experience requests are your primary eval — they aren't scarce.** They run many episodes in
   parallel on Softmax infra and are currently free; use them liberally, just **target them to the
   question** (matched roles, the specific opponents you struggle against) and harvest async.
+- **Cap LLM-on evals at ~400 concurrent episodes.** The hosted Bedrock (Haiku) capacity is a
+  **shared pool on the tournament account** (`583928386201`), not our per-account quota (ours is
+  714M tokens/day, ~untouched). Under heavy concurrent load it throttles with `429 "Too many tokens
+  per day"`. Binary search (2026-07-09): 100/200/400 concurrent all held the meeting LLM ≥60%
+  decision rate with **zero 429s**; **800 collapsed to ~52% with 34 throttles**. So run big LLM-on
+  A/Bs in **chunks of ≤400 running at once** (e.g. fire 4×100, let them drain, then the next 4) —
+  firing 6–8×100 simultaneously self-throttles the pool and silently starves the LLM.
+- **🚩 But for MATCHED A/Bs, don't even fire 4×100 together — pace to ONE ~100-ep request at a time.**
+  A *second*, distinct contention limit bites well below the Bedrock ceiling: firing 4×100=400
+  episodes simultaneously (a 2-arm A/B) made **opponent pods fail to connect** — in the v106-vs-v105
+  A/B, **76% of episodes were dead games** (an imposter seat connect-timed-out → no imposters → the
+  game sat in Lobby → everyone scored 0), vs **0% dead games** when the same policy ran as a single
+  100-ep request. So: fire each arm as a **separate 100-ep request, drained before the next**, not
+  all at once. Diagnostic: a spike in all-zero / "stuck-in-Lobby" episodes = platform **connect**
+  contention, not a policy bug — check the `connect_timeout` array across ALL 8 seats (it lands on
+  the *opponents*, and `connect_timeout rate == dead-game rate == stuck rate`) before blaming crewborg.
+- **Gate any LLM-behaviour eval on the LLM actually firing.** Before trusting an A/B of a
+  prompt/doctrine change, measure the `domain.meeting_llm_decision` vs `domain.meeting_llm_fallback`
+  ratio in crewborg's telemetry. If it's low (throttled/timed-out), the A/B silently tested only the
+  deterministic fallback path — the LLM change was never exercised. Target ≥60%.
+- **Don't fetch replays for large eval batches — `telemetry.jsonl` is enough.** The LLM-rate /
+  ejection / kill / vote measurements only need the policy `telemetry.jsonl` inside
+  `artifacts/policy_artifact_*.zip`; the multi-MB `replay.json` is only for warehouse builds /
+  single-episode deep-dives. Fetch `--no-replay` for batch measurement and delete each batch's
+  episode dir right after extracting its numbers — two 1200-ep A/Bs fetched WITH replays filled the
+  disk (30GB) and deadlocked the session (ENOSPC). Reserve replays for the qualitative pass on a
+  handful of episodes.
 - **Local runs are a debugging tool — not a gate, never comparative.** Don't run locally before
   uploading; upload and let the eval speak. Drop to a local run only when an eval shows the
   artifact can't connect/play. You generally can't run other users' policies locally anyway, so

@@ -8,6 +8,7 @@ __pycache__/
 
 # Lab outputs (regenerable; never commit raw blobs)
 tmp/
+.tmp/
 results/
 replays/
 episode_data/

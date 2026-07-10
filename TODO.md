@@ -5,6 +5,16 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
+- **Imposter incidental co-location with teammate — avoid clustering (2026-07-07, James).** Belief
+  trace refuted the "teammate detection is broken" theory (v101: 0/24 detection failures, teammate
+  known every game — see [[crewrift-imposter-kill-lever]]). BUT the replay shows crewborg-imposter
+  near/following its co-imposter 32% of intervals (field-worst), and since it correctly KNOWS the
+  teammate, that's **incidental co-location** — two imposters clustering wastes coverage and reads as
+  a tell to crew (two players always together). Not suspected to be a big loss driver (James), so
+  LATER. Fix direction: an imposter-side "spread from known teammate" nudge in movement/search
+  (repel from `teammate_colors` positions), analogous to crew dispersion. The teammate identity is
+  reliable (`teammate_colors`), so the signal to act on is already there.
+
 - **RESOLVED 2026-07-02 (cycle-2 fingerprint): ghost "idle" decomposed** — 70% is meetings/GameOver
   (vote-timer-inflated, unavoidable), 20% is healthy tasking, 8.5% is post-completion parking at home
   (`normal.py:_return_to_start` — bounded, ~-1 score/40 eps, not worth a slot). Decide layer is FINE;

@@ -69,6 +69,59 @@ GET /v2/experience-requests/{xreq_id}/episodes             -> [experience-reques
 GET /v2/experience-requests?mine&limit&offset              -> {entries, ...} (the xreq batteries, not episodes)
 ```
 
+## Episode search — the direct cross-population query (`POST /v2/episodes/search`)
+
+The newest and often best discovery route: search episodes **directly** by a filter
+AST, across both populations, without walking containers. Verified live 2026-07-09.
+
+```
+GET  /v2/episodes/search/fields?coworld_name=<name>   -> [{field, type, operators, description}, ...]
+POST /v2/episodes/search  {where, order_by, order_dir, limit<=500, offset<=10000}
+                                                       -> {entries, total_count, limit, offset}
+```
+
+`where` is a filter AST — composites `{op: and|or, clauses:[...]}` / `{op: not, clause}`;
+leaves `{op: eq|ne|gt|gte|lt|lte|in|like|ilike|exists|contains|includes|excludes,
+field, value}`. Queryable field paths (from `/search/fields`): `episode_id`, `created_at`,
+`replay_url`, `primary_pv_id`, `coworld.{id,name,version}`, `tag.<key>`,
+`policy.{version_id,name,version,player_id}`, `metric.<name>`, `results.<path>`,
+`attributes.<path>`. **`includes`/`excludes`** on `policy.version_id` take a LIST and mean
+"the episode includes all / none of these versions participated" — e.g. every episode a
+policy version played:
+
+```json
+{"op":"and","clauses":[
+  {"op":"eq","field":"coworld.name","value":"crewrift_prime"},
+  {"op":"includes","field":"policy.version_id","value":["<pv-uuid>"]}]}
+```
+
+**Why this is the tool of choice for "find all episodes version X played":** it works
+even for uploaded-but-never-submitted versions (no league episodes) whose only history is
+experience-request episodes scattered across many xreqs. Returned rows carry INLINE
+`results` (per-seat `win`/`crew`/`imposter`/`kills`/`tasks`/`vote_*`/`names`, seat-aligned)
+and `tags.job_id`/`replay_url` — so a role-split **win-rate A/B needs zero artifact
+downloads**; only deeper metrics (LLM-firing gate, warehouses) need the job routes above.
+
+Two gotchas: (1) the row's `policies` list is **not** in seat order — map a seat via
+`results.names`, not list index. (2) If one account owns several policy *versions*, two of
+its seats in one episode both surface as `"<name>"` / `"<name> (2)"` in `results.names`,
+which cannot be mapped back to a version from the row — restrict to episodes where the
+account holds exactly one seat, or download the job's per-slot artifacts to disambiguate.
+
+## Discovery routes
+
+```
+GET /stats/policy-versions?name_exact=<name>&limit=100      -> [{id, version, policy_id, ...}]
+GET /episodes?policy_version_id=<pv>&limit&offset           -> [episode record, ...]
+GET /episodes/{episode_id}                                  -> single league episode record
+GET /v2/episode-requests?pool_id=pool_<uuid>|round_id|division_id|player_id&limit&offset
+                                                           -> {entries, total_count, limit, offset}
+GET /v2/episode-requests/{ereq_id}                          -> single experience-request episode row
+GET /v2/experience-requests/{xreq_id}/episodes             -> [experience-request episode row, ...]
+GET /v2/experience-requests?mine&limit&offset              -> {entries, ...} (the xreq batteries, not episodes)
+POST /v2/episodes/search                                    -> {entries, total_count, ...}  (see "Episode search" above)
+```
+
 `/episodes` and `/stats/policy-versions` return bare lists (the latter may also be
 `{entries:[...]}`). `/v2/episode-requests` is paginated as
 `{entries, total_count, limit, offset}` — `total_count` is the whole table
@@ -92,6 +145,13 @@ pass, use this skill's `fetch_artifacts.py` instead.
 
 ## Drift log (why this file exists)
 
+- **2026-07-09**: documented `POST /v2/episodes/search` + `GET /v2/episodes/search/fields`
+  (see "Episode search" above) — the direct filter-AST episode query, verified live. It is
+  the right tool for "all episodes version X played" (esp. uploaded-but-unsubmitted versions
+  with no league games), returns inline per-seat `results` so a win-rate A/B needs no
+  downloads, and supersedes walking xreq details for participant discovery. Also recorded the
+  two seat-mapping gotchas (policies list not seat-ordered; one account's multiple versions
+  collide in `results.names`).
 - **2026-06-27**: re-verified the discovery split live — `coworld episodes --policy crewborg`
   returns `[]` (champion league player), while `/stats/policy-versions` → `/episodes` lists its
   league games (the `fetch_artifacts.py --policy` path downloaded a current league episode). The
