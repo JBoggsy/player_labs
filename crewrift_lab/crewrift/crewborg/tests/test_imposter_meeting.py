@@ -89,21 +89,21 @@ def test_fabrication_names_a_real_body_when_one_exists() -> None:
     belief = Belief(self_role="imposter")
     belief.roster["red"] = PlayerRecord(color="red", life_status="dead", death_seen_tick=40)
     line = fabricate_accusation(belief, "blue")
-    assert line == "blue sus: next to red's body, lurking on a vent"
+    assert line == "blue sus: next to red's body, lurking on a vent. vote blue"
     assert "kill" not in line  # never a bold, falsifiable witnessed claim
 
 
 def test_fabrication_falls_back_to_a_tail_claim_without_a_body() -> None:
     belief = Belief(self_role="imposter")
     line = fabricate_accusation(belief, "blue")
-    assert line == "blue sus: they were tailing me, lurking on a vent"
+    assert line == "blue sus: they were tailing me, lurking on a vent. vote blue"
 
 
 def test_fabrication_never_names_a_teammate_body() -> None:
     belief = Belief(self_role="imposter", teammate_colors={"red"})
     belief.roster["red"] = PlayerRecord(color="red", life_status="dead", death_seen_tick=40)
     line = fabricate_accusation(belief, "blue")
-    assert line == "blue sus: they were tailing me, lurking on a vent"  # red (teammate) not cited
+    assert line == "blue sus: they were tailing me, lurking on a vent. vote blue"  # red (teammate) not cited
 
 
 def test_fabricated_and_real_accusations_share_the_format() -> None:
@@ -115,7 +115,7 @@ def test_fabricated_and_real_accusations_share_the_format() -> None:
     )
     real = build_accusation(real_belief, "red")
     fake = fabricate_accusation(Belief(self_role="imposter"), "red")
-    assert real == "red sus: lurking on a vent"
+    assert real == "red sus: lurking on a vent. vote red"
     assert fake.startswith("red sus: ") and real.startswith("red sus: ")
 
 
@@ -132,7 +132,7 @@ def test_imposter_proactively_accuses_a_sus_crewmate_with_real_evidence() -> Non
     belief.suspicion = {"red": 0.85}  # red a clear leading non-teammate suspect
 
     chat = mode.decide(belief, ActionState())
-    assert chat.kind == "chat" and chat.text == "red sus: lurking on a vent"  # real evidence
+    assert chat.kind == "chat" and chat.text == "red sus: lurking on a vent. vote red"  # real evidence
     vote = mode.decide(belief, ActionState())
     assert vote.kind == "vote" and vote.target_color == "red"
 

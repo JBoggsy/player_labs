@@ -28,7 +28,7 @@ from crewrift.crewborg.strategy.meeting.imposter import (
     parity_closing_vote_target,
     votes_against,
 )
-from crewrift.crewborg.strategy.meeting import chat_evidence, chat_nlp
+from crewrift.crewborg.strategy.meeting import chat_evidence, chat_nlp, spend
 from crewrift.crewborg.strategy import honor_society
 from crewrift.crewborg.strategy.meeting.schema import normalize_vote_target
 from crewrift.crewborg.strategy.meeting.worker import MeetingLLMRequest, MeetingLLMWorker
@@ -43,6 +43,14 @@ LLM_MIN_CALL_INTERVAL_TICKS = 120
 # Hard per-meeting call cap, on top of the interval (env-overridable).
 LLM_CALL_BUDGET_ENV = "CREWBORG_LLM_MEETING_CALL_BUDGET"
 DEFAULT_LLM_CALL_BUDGET = 5
+# Rough per-call cost estimate (USD) for the spend guard: ~1.3K input + ~0.5K output on Haiku ≈
+# a fraction of a cent; we keep this conservative so we stop BEFORE the sidecar 429s. When the
+# sidecar reports a per-episode spend limit, we only issue a follow-up call if the remaining
+# budget comfortably covers another one (RESERVE × estimate) — but we ALWAYS allow the first
+# ("meeting_start") call of a meeting so we never go fully silent. Env-overridable.
+LLM_CALL_COST_ESTIMATE_ENV = "CREWBORG_LLM_CALL_COST_USD"
+DEFAULT_LLM_CALL_COST_USD = 0.004
+LLM_SPEND_RESERVE_FACTOR = 1.5
 DEADLINE_LLM_REMAINING_TICKS = 96
 AUTO_SUBMIT_REMAINING_TICKS = 48
 # The sim's real tick rate (24/s). Deliberately NOT derived from VOTE_TIMER_TICKS —
@@ -75,6 +83,9 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self._llm_pending: MeetingLLMRequest | None = None
         self._llm_calls_used = 0
         self._llm_call_budget = _llm_call_budget_from_env()
+        self._llm_call_cost_usd = _env_float(os.environ, LLM_CALL_COST_ESTIMATE_ENV, DEFAULT_LLM_CALL_COST_USD)
+        self._spend_checked_tick: int | None = None  # cache /spend read within a meeting-tick
+        self._spend_remaining_usd: float | None = None  # last read; None = no limit / unknown
         # Instant suss-vote (CREWBORG_LLM_SUSS_INSTANT_VOTE, default off): when the
         # meeting LLM NAMES a suspect — a chat accusation or a tentative vote_target —
         # the crew seat votes them on the next tick instead of holding to the
@@ -151,13 +162,24 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
             # Dead seats' meeting inputs are ignored by the sim (0 post-death vote_cast
             # across the v87 league replays), yet dead crewborg seats burned ~23% of
             # meeting-LLM call volume — pure Bedrock rate pressure on the live seats.
-            # Mute everything: no LLM calls, no chats, no vote submits; idle through
-            # the meeting. The deterministic (LLM-off) branch above is untouched.
+            # Mute the EXPENSIVE parts: no LLM calls, no chats. The deterministic
+            # (LLM-off) branch above is untouched.
             if not self._dead_mute_traced:
                 self._dead_mute_traced = True
                 self.emit.event("meeting_dead_mute", {"tick": belief.last_tick})
                 self.emit.counter("meeting_dead_mute")
-            return Intent(kind="idle", reason="dead: meeting inputs ignored, LLM muted")
+            # BUT still cast a terminal SKIP at the deadline (idling-is-dangerous): the
+            # dead-mute fires on belief.self_alive, which can be WRONGLY False — the v105
+            # self_color one-shot latch can stick a neighbour's colour, so the meeting
+            # census (types.update_belief) flips self_alive off when that neighbour dies
+            # while we're actually alive. A muted-but-alive seat that never votes draws the
+            # game's "-10 for failing to vote or skip" penalty (measured: v105 vote_timeout
+            # 0%→~10%, v100 had none). A skip is harmless if we really are dead (the sim
+            # ignores dead inputs) and saves the penalty if we're not. No LLM/chat spend:
+            # this is one vote intent at the very end, nothing more.
+            if self._should_auto_submit(belief) and not self._vote_submitted:
+                return self._vote_intent(VOTE_SKIP, reason="dead-mute deadline: safety skip")
+            return Intent(kind="idle", reason="dead: LLM/chat muted (skip at deadline)")
 
         intent = self._collect_llm_outcome(belief)
         if intent is not None:
@@ -350,7 +372,14 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         if self._deadline_prompted:
             return None
         if self._last_llm_call_tick is None:
+            # ALWAYS allow the first call of a meeting (the highest-value one) — we never go
+            # fully silent, even when the episode budget is nearly spent.
             return "meeting_start"
+
+        # Follow-up calls are gated on the per-episode LLM spend budget: if the sidecar reports we
+        # can't comfortably afford another call, stop here rather than burning budget into a 429.
+        if not self._spend_allows_followup(belief):
+            return None
 
         if self._remaining_ticks(belief) <= self._deadline_prompt_remaining_ticks():
             return "deadline"
@@ -367,6 +396,34 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
             return "chat_cooldown_ready"
 
         return None
+
+    def _spend_allows_followup(self, belief: Belief) -> bool:
+        """Can we afford another (follow-up) LLM call under the per-episode spend limit?
+
+        Reads the sidecar's ``GET /spend`` (cached per meeting-tick). Returns True when there's no
+        configured limit or no sidecar (nothing to budget against), or when the remaining budget
+        comfortably covers another call (RESERVE × per-call estimate). Traces the reading so the
+        budget is visible per meeting."""
+        tick = belief.last_tick
+        if self._spend_checked_tick != tick:
+            self._spend_checked_tick = tick
+            status = spend.read_spend()
+            self._spend_remaining_usd = status.remaining_usd if status is not None else None
+            if status is not None:
+                self.emit.event(
+                    "meeting_spend",
+                    {
+                        "spend_usd": round(status.spend_usd, 6),
+                        "remaining_usd": None if status.remaining_usd is None else round(status.remaining_usd, 6),
+                        "limit_usd": status.spend_limit_usd,
+                    },
+                )
+        if self._spend_remaining_usd is None:
+            return True  # no limit configured (or unreadable) → the call-count budget governs
+        allowed = self._spend_remaining_usd >= LLM_SPEND_RESERVE_FACTOR * self._llm_call_cost_usd
+        if not allowed:
+            self.emit.counter("meeting_llm_spend_gated")
+        return allowed
 
     def _submit_llm_request(self, context: dict[str, Any], *, trigger: str) -> None:
         """Hand the call to the background worker and return immediately.
@@ -778,3 +835,10 @@ def _llm_call_budget_from_env() -> int:
         return max(1, int(raw))
     except ValueError:
         return DEFAULT_LLM_CALL_BUDGET
+
+
+def _env_float(env: dict[str, str], name: str, default: float) -> float:
+    try:
+        return float(env.get(name, default))
+    except (TypeError, ValueError):
+        return default

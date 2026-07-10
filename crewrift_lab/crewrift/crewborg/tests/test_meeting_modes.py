@@ -95,7 +95,7 @@ def test_attend_meeting_accuses_a_clear_suspect_then_votes_them() -> None:
     belief.suspicion = {"red": 0.95, "blue": 0.2}  # red a clear leading suspect
 
     chat = mode.decide(belief, ActionState())
-    assert chat.kind == "chat" and chat.text == "red sus: saw them vent"  # accuse, citing evidence
+    assert chat.kind == "chat" and chat.text == "red sus: saw them vent. vote red"  # accuse, citing evidence
 
     vote = mode.decide(belief, ActionState())
     assert vote.kind == "vote" and vote.target_color == "red"  # votes whom it accused
@@ -257,7 +257,7 @@ def test_attend_meeting_invalid_llm_decision_falls_back_to_the_deterministic_acc
     assert mode.decide(belief, ActionState()).kind == "idle"  # call in flight
     intent = mode.decide(belief, ActionState())
     assert intent.kind == "chat"
-    assert intent.text == "red sus: saw them vent"  # fell back to the deterministic accusation
+    assert intent.text == "red sus: saw them vent. vote red"  # fell back to the deterministic accusation
 
 
 def test_attend_meeting_deadline_prompt_wins_over_late_chat() -> None:
@@ -359,6 +359,40 @@ def test_attend_meeting_llm_call_budget_capped(monkeypatch) -> None:
     ]
     assert mode.decide(belief, ActionState()).kind == "idle"  # budget blocks call 3
     assert [trigger for trigger, _ in client.calls] == ["meeting_start", "new_chat"]
+
+
+def test_attend_meeting_spend_guard_allows_first_call_but_gates_followups(monkeypatch) -> None:
+    """Per-episode Bedrock spend budget: the FIRST (meeting_start) call is always allowed so we
+    never go silent, but follow-up calls stop once the remaining budget can't afford another —
+    rather than firing into a 429. No configured limit (remaining_usd=None) => no gating."""
+    from crewrift.crewborg.strategy.meeting import spend
+    from crewrift.crewborg.modes import attend_meeting as am
+
+    client = _FakeMeetingClient([MeetingDecision(action="wait")] * 4)
+
+    def status(remaining):
+        return spend.SpendStatus(spend_usd=0.0, spend_limit_usd=1.0, remaining_usd=remaining)
+
+    # 1) budget nearly gone: first call still allowed, follow-up gated.
+    monkeypatch.setattr(spend, "read_spend", lambda env=None: status(0.0001))
+    mode = _llm_mode(client)
+    assert mode._next_llm_trigger(_meeting_belief(tick=0)) == "meeting_start"  # always allowed
+    mode._last_llm_call_tick = 0  # simulate the first call having gone out
+    b = _meeting_belief(tick=400)
+    b.chat_log = [ChatEvent(tick=350, speaker_color="red", text="hm")]  # a new_chat trigger exists
+    assert mode._next_llm_trigger(b) is None  # follow-up gated by spend
+
+    # 2) ample budget: the same follow-up trigger fires.
+    monkeypatch.setattr(spend, "read_spend", lambda env=None: status(1.0))
+    mode2 = _llm_mode(client)
+    mode2._last_llm_call_tick = 0
+    assert mode2._next_llm_trigger(b) == "new_chat"
+
+    # 3) no configured limit → never gated.
+    monkeypatch.setattr(spend, "read_spend", lambda env=None: status(None))
+    mode3 = _llm_mode(client)
+    mode3._last_llm_call_tick = 0
+    assert mode3._next_llm_trigger(b) == "new_chat"
 
 
 def test_attend_meeting_uncorroborated_chat_implied_fallback_gated_to_skip(monkeypatch) -> None:
@@ -527,20 +561,48 @@ def test_attend_meeting_uncorroborated_tentative_held_then_gated_at_deadline() -
     assert vote.target_color is None  # gated to skip at the deadline
 
 
-def test_attend_meeting_dead_seat_never_calls_llm_chats_or_votes() -> None:
-    """v88 dead-seat mute: dead inputs are skipped by the sim (0 post-death vote_cast
-    in the v87 replays) but dead seats burned ~23% of meeting-LLM call volume. Dead =>
-    no LLM requests, no chats, no vote submits — idle through the whole meeting."""
+def test_attend_meeting_dead_seat_mutes_llm_and_chat_then_skips_at_deadline() -> None:
+    """v88 dead-seat mute: dead inputs are skipped by the sim but dead seats burned ~23%
+    of meeting-LLM call volume, so we mute the expensive parts (no LLM requests, no chats).
+    v105 fix: still cast ONE terminal SKIP at the deadline — the mute keys off
+    belief.self_alive, which can be wrongly False (self_color mis-latch → census flips it
+    off while we're alive), and a muted-but-alive seat that never votes draws the game's
+    '-10 for failing to vote' penalty. A skip is inert if truly dead, saves the penalty if not."""
 
     client = _FakeMeetingClient([MeetingDecision(action="submit_vote", vote_target="red")])
     mode = _llm_mode(client)
 
-    for tick in (0, 200, 700, 1153, 1190):  # start .. early-submit .. auto-submit window
+    for tick in (0, 200, 700, 1100):  # start .. mid-meeting — all before the auto-submit window
         belief = _meeting_belief(tick=tick)
         belief.self_alive = False
-        intent = mode.decide(belief, ActionState())
-        assert intent.kind == "idle"
-    assert client.calls == []  # zero LLM submissions
+        assert mode.decide(belief, ActionState()).kind == "idle"
+
+    deadline = _meeting_belief(tick=1160)  # inside the auto-submit window (<=48 ticks left of 1200)
+    deadline.self_alive = False
+    intent = mode.decide(deadline, ActionState())
+    assert intent.kind == "vote" and intent.target_color is None  # a bare SKIP, never a player
+    assert client.calls == []  # still zero LLM submissions
+
+
+def test_attend_meeting_wrongly_dead_seat_still_skips_and_does_not_time_out() -> None:
+    """REGRESSION (v105 vote_timeout 0%→~10%, v100 had none): belief.self_alive can be
+    WRONGLY False — the v105 one-shot self_color latch stuck a neighbour's colour, so the
+    meeting census flipped self_alive off when THAT colour died while our seat was still
+    alive and owed a vote. The old dead-mute idled the whole meeting → the game charged
+    '-10 for failing to vote or skip'. The seat must reach the deadline and submit a skip
+    so no vote_timeout penalty lands, even when it (wrongly) believes it is dead."""
+
+    mode = _llm_mode(_FakeMeetingClient([]))
+    # Whole meeting believed-dead, driven tick by tick as the real loop does.
+    for tick in (0, 300, 700, 1100):
+        b = _meeting_belief(tick=tick)
+        b.self_alive = False
+        assert mode.decide(b, ActionState()).kind == "idle"  # muted, holding for the deadline
+
+    late = _meeting_belief(tick=1180)  # auto-submit window (<= AUTO_SUBMIT_REMAINING_TICKS left)
+    late.self_alive = False
+    intent = mode.decide(late, ActionState())
+    assert intent.kind == "vote" and intent.target_color is None  # skip lands → no timeout
 
 
 def test_attend_meeting_kill_to_meeting_death_lag_stays_muted() -> None:
@@ -594,7 +656,7 @@ def test_attend_meeting_dead_mute_does_not_touch_deterministic_path() -> None:
     belief.suspicion = {"red": 0.95, "blue": 0.2}
 
     chat = mode.decide(belief, ActionState())
-    assert chat.kind == "chat" and chat.text == "red sus: saw them vent"
+    assert chat.kind == "chat" and chat.text == "red sus: saw them vent. vote red"
     vote = mode.decide(belief, ActionState())
     assert vote.kind == "vote" and vote.target_color == "red"
 

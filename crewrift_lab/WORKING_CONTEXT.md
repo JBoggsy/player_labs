@@ -15,98 +15,142 @@ This is *not* a log or archive: finished work lives in git history / the
 
 ---
 
-## 🎯 CURRENT STATE (reseeded 2026-07-06 session end)
+## 🎯 OBJECTIVE: v106 SUBMITTED to Crewrift Prime — watch qualification; then read whether it's actually better
 
-**Champion: v100, QUALIFIED + COMPETING + CHAMPION** (`lpm_e11fdaa6…`, clean qualify).
-v100 = v99 + two changes, both direct responses to James watching v99 replays:
+**v106 SUBMITTED (James, 2026-07-09)** to Crewrift Prime (`sub_cc707442-849d-4a11-876a-39be36e6cfa6`,
+auto-champion=always, policy-version `f8a407c5…`). As of submit it's `status=pending` (commissioner
+places it on its ~10-min round cadence). **Qualification poller running:** `.tmp/poll_v106_qualify.py`
+→ `.tmp/v106_qualify.log` (tracks OUR submission+membership by pv-id; the skill's `monitor` has a bug —
+it terminated on the pre-existing v100 champion's 'competing' status, so use the targeted poller).
+Watch for: pending → placed → qualifying → **competing (✅) / disqualified (❌)**. Champion is still
+v100 until v106 qualifies. DQ risk to watch: `substatus=crash` = LLM-latency timeout (pull qualifier
+episode logs); the residual ~7-9% alive-seat vote_timeout is a latent concern.
 
-- **WATCH simplified to one case.** Removed the kill-cooldown-gated camouflage one-shot
-  and the single/multiple-crew split; WATCH now always latches onto the best-view **task
-  station** (never hovers mid-room) whenever crew are visible. Deleted the now-dead
-  `visionbake.py` subsystem entirely (module, `tools/vision_bake.py`, the precomputed
-  `map/croatoan_visionbake.pkl.gz` asset) rather than keeping it as a second path.
-- **Recon retimed.** Entry trigger changed from a fixed `RECON_WINDOW_TICKS` to computed
-  timing (`travel_ticks`: nav-route-aware distance / `AGENT_SPEED_PX`), firing exactly
-  when the remaining kill cooldown matches real travel time to the target — start moving
-  only once "just in time," not earlier. Target selection changed from most-recently-seen
-  to `most_isolated_recon_candidate` (farthest from every other fresh sighting).
+**What v106 is (the fix):** kills the v105 `no_vote`/vote_timeout regression. Root cause (replay-
+confirmed): v105's `self_alive` went **falsely False** — the one-shot self_color latch stuck a
+neighbour's colour pre-meeting; the census self-death check (types.py:776) flipped self_alive off when
+that neighbour died; dead-mute then idled a LIVE meeting → game's "-10 for failing to vote" (19/200 v105,
+0/200 v106). 3-layer fix (638 tests green): (1) seed self_color from runner `?slot=` (zero-CV — slot IS
+colour, like suspectra); (2) self_color source hierarchy (marker/slot latches hard, corrects a
+provisional sprite guess once — keeps v102 anti-drift); (3) dead-mute still SKIPs at the deadline
+([[crewborg-idling-is-dangerous]]). version_log v106 has the detail.
 
-Both land on top of the same-day **vision model correction**: traced Crewrift's real
-per-player camera (128×128 world-px window + wall occlusion, not a circular radius —
-see `docs/designs/vision-model.md`) and fixed two places that approximated it with the
-wrong number — the kill-witness gate (now an exact live visible-crew count, since vision
-is symmetric) and vantage scoring (`VANTAGE_RANGE` 360→91, the true diagonal reach).
+**Validation state (honest):** v106 is SOUND but NOT proven better than v105.
+- ✅ dead-mute vote_timeout fixed: 0/172 matched A/B (v105 8.6%).
+- ✅ sound at ≤100-concurrent: 0% dead-game, LLM 73%, crew win 29% / imposter 56% (`.tmp/v106_field/eps100`).
+- ⚠️ the matched v106-vs-v105 A/B win-rate is CONTAMINATED — fired 4×100=400 at once → opponent pods
+  connect-timed-out → 76% dead games (ZERO at ≤100). LESSON: pace arms as separate ≤100-ep requests.
+- ⚠️ residual ~7-9% alive-seat vote_timeout remains (separate, pre-existing; NOT the dead-mute path).
 
-**Witness gate reworked the same day:** replaced the old `BASE_ISOLATION_RADIUS`/
-`WITNESS_WINDOW_TICKS` heuristic with an urgency ramp — `witness_tolerance()` allows only
-1 witness at zero urgency, ramping to 6 (always-strike ceiling in this 6-crew format) at
-full urgency. Always allows a kill with exactly one witness, no hard cutover.
+**Next (post-qualification):** if we want to know v106 vs v105 gameplay, run a PACED matched A/B
+(separate 100-ep requests, drained one at a time). Optionally chase the residual alive-seat timeout.
 
-**Version history this session:** v97 (upload mistake — nonexistent env var, no
-Bedrock model pin — caught, retired, documented in `version_log.md` as a mistake) → v98
-(correct recipe, churned twice for non-quality reasons — account slot eviction, unclear
-supersession) → v99 (re-upload of v98's code, clean qualify, champion) → v100 (above).
-624 tests green pre-upload on v100; no pre-ship A/B — per James's relaxed-submission call
-(see `user_preferences.md` / `[[speed-first-iteration]]` memory: per-version leaderboard
-tracking means a bad submit has no lasting cost).
+**Next action: when the 4 watchers drain (~10-15 min), (1) confirm vote_timeout→~0 on v106; (2) run
+compare.py role-split. If clean, the v105 social rework (minus this bug) is worth a powered ~300/arm
+A/B vs v100 to settle the crew-win signal (was 15%→22%, p=0.11, underpowered). Do NOT submit yet.**
 
-**Also shipped this session (not crewborg gameplay):**
-- `ranking_analysis/voting_metrics.py` + `voting_report_gen.py` — per-policy vote rate,
-  chat rate, vote accuracy, ejection effectiveness (conversion vs friendly-fire), crew win
-  rate, from the event warehouse. See `ranking_analysis/README.md`'s new section.
-- `docs/designs/sprite-bridge-migration.md` — plan (not yet implemented) to adopt
-  coworld-tools' new `SpriteV1` bridge (`sprite_bridge.py`) instead of our vendored wire
-  protocol handling, while keeping crewborg's own reconnect loop (the SDK's
-  `message_bridge.py` has no retry — would regress hard-won reliability fixes).
+<details><summary>The v105-vs-v100 social-rework A/B result (2026-07-09, the run that surfaced the bug)</summary>
 
-## ▶ IN PROGRESS: v100 500-episode tournament-style field eval — BLOCKED on platform bug (below)
+400 eps, paced, LLM GATE PASSED (v105 71.6% / v100 81.9% seat-0 decision rate — first clean test of
+the rework vs all the throttled historical data). crew win 15%→22% (p=0.11, underpowered ~160 crew /
+~40 imposter per arm); imposter 57%→59% (p=0.86, flat); **the no_vote_rate regression** 0%→9% crew /
+0%→14% imposter that v106 now fixes. Artifacts: `.tmp/ab_v105_v100/` (diff.json, ab.html, finding.md).</details>
 
-Composed 5×100-episode tournament-style xreqs (`crewborg:v100` in one seat, every other
-seat `{"random": true}`, natural roles) — request bodies at `/tmp/v100_tourney_reqs/`.
-**Every creation attempt 500s** on the roster-fill query (see blocker below). A background
-retry script was running (`create_v100_xreqs.sh`, 45s cadence) — **killed at session end**
-per James, since the failure is structural, not transient; don't resume the naive retry
-loop without first checking whether the fix below has landed AND deployed.
+<details><summary>Prior objective (done): run the paced A/B so the LLM fires</summary>
 
-**To resume:** re-run `uv run python .claude/skills/coworld-experience-requests/scripts/experience_request.py create /tmp/v100_tourney_reqs/req_0N.json` for N in 1..5 once the platform fix (below) is confirmed deployed; stream via `crewrift-event-warehouse`'s `stream_eval.py`.
+The chat-persuasion social rework is built + uploaded (v105) but had **never been cleanly
+A/B-tested** — every attempt was starved by Bedrock throttling until we fixed the token cost.
+Ran it paced at ≤400 concurrent; LLM fired reliably; see result above. First tried mining
+historical episodes via the episode-search API (`POST /v2/episodes/search`) to avoid a fresh
+run — but "LLM fired" and "roster matched" are anti-correlated in the archived data (throttled
+matched-roster runs, random-field fired runs), so a fresh paced A/B was unavoidable.
+</details>
 
-## ⛔ PLATFORM BLOCKER (root-caused 2026-07-06, still open)
+- **Champion in the league: still v100** (last submitted). v101-v105 are UPLOADED (inert), NOT submitted.
+- **crewborg on the live commissioner board sits ~#12/12** — but that's largely the imposter-favored
+  meta (crew wins ~18% field-wide, imposter ~82%); crewborg is strong imposter (~87% win, 3rd/8),
+  mid-field crew. There is NO clean mechanistic crew lever left (see "closed levers"). The social
+  rework targets meeting *persuasion* (both roles) — the current open bet.
 
-**xp-request roster `random`/`top_n` seat-fill 500s** on `POST /v2/experience-requests` —
-`load_ranked_champion_policy_version_ids()` in metta's
-`app_backend/src/metta/app_backend/v2/experience_requests.py:277-364` hits
-`psycopg.errors.QueryCanceled: canceling statement due to statement timeout`. This is the
-**same symptom** noted 2026-07-03, but now root-caused to **two independent unindexed
-predicates in the same query**:
+## ⚠️ CRITICAL HANDOFF FACT: ALL of v101→v105 is UNCOMMITTED
+Last crewborg commit = `03fff48` (= v100 code). Everything since is working-tree only:
+- `events.py` — teammate-belief trace (`role_resolved` enriched + new `teammate_belief_changed`).
+- `types.py` — teammate self-dedup fix + **self_color one-shot latch** (was re-derived every tick,
+  drifted onto teammates → the v102 kill regression; now latched once).
+- `strategy/meeting/context.py` — `recent_events` compressed + **`players` rendered as terse PROSE**
+  not JSON (context 2490→~1340 tk/call; this is what got the LLM firing).
+- `strategy/meeting/spend.py` (NEW) + `attend_meeting.py` — read sidecar `GET /spend`, gate
+  FOLLOW-UP LLM calls on remaining per-episode budget (1st call always allowed); traces `meeting_spend`.
+- `strategy/meeting/accusation.py` — deterministic accusations close with ". vote <color>".
+- `memory/imposter.md` + `memory/crewmate.md` — persuasion doctrine from the chat_study.
+- `crewrift_lab/chat_study/` (NEW, untracked) — the vote-persuasion study pipeline.
+- **634 tests green.** **COMMIT THIS before more churn** (it's a lot of validated work at risk).
 
-1. `episode_policy_metrics` join on `(pv_internal_id, metric_name)` — **FIXED**, PR #17117
-   (`fix(app_backend): add missing pv_internal_id index on episode_policy_metrics`) merged
-   to metta `main` today via Graphite queue (commit `10874ebb47`). **Unconfirmed whether
-   the migration has actually been *applied* to the production DB** — a merge to `main`
-   doesn't run `alembic upgrade` by itself.
-2. `job_requests.job ->> 'coworld_id'` — **NOT fixed, no PR yet.** Audited every index ever
-   created on `job_requests` across all alembic migrations: none touch the `job` JSONB
-   column (only `result->>'episode_id'` has an expression index, a different column/PR
-   `a1b2c3d4e5f7`). Reproduced this exact predicate still timing out live, today, in this
-   session — including after #17117 merged, so it's very likely the remaining/sole cause
-   now. Follow-up issue drafted (full repro SQL + proposed migration) at
-   `/private/tmp/claude-501/-Users-jamesboggs-coding-personal-labs/9ba09582-d86d-4b7d-8b42-62a24349a8f9/scratchpad/job_requests_coworld_id_index_issue.md`
-   — hand this to an agent on a **separate** metta clone/worktree (never `~/coding/metta`
-   directly — read-only hard rule) to open as PR #2.
+## ▶ NEXT ACTION: the v105-vs-v100 A/B (paced)
+- Matched: crewborg pinned seat 0 + the **same 7 fixed champions both arms** (relhalpha:v1,
+  notsus:v130, scott-hs1:v2, forgeling:v5, softmaxwell:v25, sasmith-hs1:v1, crewborg-aaln:v25),
+  natural roles. ~300 eps/arm for power.
+- **PACE IT: ≤400 episodes running concurrently** (fire ≤4×100 at once, let them drain, then more).
+  Firing 6-8×100 at once self-throttles the shared Bedrock pool → LLM collapses to ~6%. (Rule now in
+  best_practices.md.)
+- **Fetch `--no-replay`** (telemetry.jsonl is all the measurement needs) and **delete each batch's
+  episode dir after measuring** — fetching replays for big batches filled the disk (deadlocked a
+  session). `--watch` is BROKEN on crewrift_prime 0.4.52 (reports 0 completed) — use one-shot
+  `-n 100` fetch and poll.
+- **GATE before trusting the compare: verify cand LLM-decision rate ≥60%** (count
+  `domain.meeting_llm_decision` vs `_fallback` in crewborg's `artifacts/policy_artifact_*.zip`
+  telemetry.jsonl). If low, the A/B only tested the deterministic path — the rework wasn't exercised.
+- Then: `crewrift-ab/scripts/compare.py` role-split (target win_rate); build warehouses from a
+  replay-fetched subset for ejection accuracy BY crewborg role — **imposter voted-out DOWN =
+  deflection working; crew imposter-ejection UP = persuasion working**. Drop ops-fail episodes first.
+- Ship v105 only if the LLM fired AND the social metrics move the right way (else the kill fix alone
+  in v103+ is still a real, shippable improvement over v100).
 
-Gotcha for next time: `gh pr view <n> --json mergedAt` can show `null` even for a PR that
-truly merged, if the org uses the **Graphite merge queue** — it closes the original PR and
-merges via a synthetic draft PR instead. Check `gh pr view <n> --json comments` for the
-Graphite "Merge activity" bot comment, or `git log origin/main --grep "<PR title>"`, not
-just `state`/`mergedAt`.
+## Chat-persuasion study findings (the social rework is built FROM these)
+`crewrift_lab/chat_study/` (851 eps / 2450 meetings / 6757 NL chats; labels = REAL vote movement):
+1. **Concrete evidence is the top persuasion lever, esp. imposter** — accusations WITH a cue land
+   64% vs 43% without. crewborg's `fabricate_accusation` already makes cues; fire it, never bare-accuse.
+2. Explicit "vote X"/"X sus" phrasing persuades; asking questions does NOT (defers).
+3. Bandwagoning a live pile > opening a fresh accusation.
+4. Self-referential defensiveness ("not me / I was doing tasks") DRAWS suspicion — don't self-defend unprompted.
 
-## Load-bearing infra facts
+## Bedrock LLM throttling — the hard-won operational truth
+- The 429 "Too many tokens per day" is **shared-capacity ThrottlingException on the TOURNAMENT
+  account `583928386201`** (`role/episode-runner-bedrock`), NOT our per-account quota (ours =
+  714M/day, barely used) and NOT (for xreqs) the per-episode sidecar spend limit (xreqs have none set).
+- It's **load contention** on the shared pool — worsens under concurrency. **Self-inflicted above
+  ~400 concurrent episodes** (binary search: 100/200/400 hold LLM ≥60%, zero 429s; 800 → 52% + throttles).
+- Token cost per call was the multiplier: prose-players compression cut context 2490→1340 tk, which
+  is what moved LLM-use 2%→67% at equal load. `claude-haiku-4-5`, max_tokens 512.
+- Latency median 2.6s / max 10s vs `CREWBORG_LLM_TIMEOUT_SECONDS=3.0` → some calls time out at scale;
+  consider raising the eval timeout.
+- I can't read `583928386201`'s quota directly (my SSO grants sandbox/prod/infra/staging only, not
+  tournament). A quota increase there is the durable fix if throttling keeps blocking evals.
 
-- Player SDK from Metta-AI/coworld-tools tarball (issue #13); coworld CLI 0.1.28 pinned.
-- Expander binary must match the exact deployed Crewrift commit (`trace_warning` = version
-  skew or genuine replay non-determinism — check which before trusting a warehouse build).
-- fetch_artifacts/stream_eval/build_warehouse/xp_dashboard all need `--elevated` when
-  pulling another player's (opponent) episode artifacts (metta PR #17028 — team members are
-  external-by-default now).
-- Bedrock LLM: sidecar-endpoint gating (`USE_BEDROCK` alone doesn't gate it); meeting LLM
-  toggle is `CREWBORG_LLM_MEETINGS=1`, upload with `--use-bedrock --bedrock-model <id>`.
+## CLOSED levers (don't re-chase — verified dead this session)
+- **Wanderer / crew task-throughput bug** — GONE. crewborg crew 0% zero-task, 6.36 tasks ≈ notsus.
+  The [[crewborg-crew-weakness]] 06-30 diagnosis is STALE (fixed by v77-80 FSM).
+- **Teammate detection "broken"** — REFUTED by belief trace (0/24 failures; the "2 colors" was self
+  inclusion, benign). Then the self-dedup FIX for that briefly caused the v102 kill regression — now
+  fixed (latch). Detection is fine.
+- **v102 kill regression (1.86→0.97)** — root-caused to the per-tick self-dedup deleting drifting-
+  self-colored teammates; FIXED (v103+, confirmed 1.76→1.58 ~flat, no-kills 3%→3%).
+
+## Platform / infra facts (load-bearing)
+- xreq `top_n`/`random` seat-fill 500 is FIXED + deployed (metta #17288 + #17294; pool now ranks by
+  the division's commissioner leaderboard). Both metta branches cleaned up.
+- Event warehouse: `build_warehouse.py` now points at `replay.json` (platform serves replays
+  UNCOMPRESSED — raw `CREWRIFT` magic, not zlib). Correct expander binary = `expand_replay-34a97a3`
+  (NOT the `d9f6b30` in versions.env). Pass expander an ABSOLUTE path. Vote targets live in
+  `vote_cast.value.target_slot`/`target_label` (`.target` is skip-only).
+- fetch_artifacts/stream_eval/build_warehouse/xp_dashboard need `--elevated` for opponents' artifacts.
+- Meeting LLM recipe: `--use-bedrock --bedrock-model us.anthropic.claude-haiku-4-5-20251001-v1:0
+  --secret-env CREWBORG_LLM_MEETINGS=1 CREWBORG_CHAT_NLP=1 CREWBORG_METRICS=1 CREWBORG_TRACE_GROUPS=all
+  CREWBORG_TRACE_SUSPICION_FEATURES=1`.
+- Player SDK from Metta-AI/coworld-tools tarball (issue #13); coworld CLI pinned.
+- /tmp fully cleaned of eval artifacts this session; everything re-fetches fresh.
+
+## Reusable infra built this session
+- `chat_study/` — merges any vote-target warehouses (`--warehouses`/`--glob-dir`) + LLM-labels chat;
+  the persuasion/suspicion labels + readable-logit fit are the template for future social studies.
+- Belief trace (`teammate_belief_changed`) — per-game teammate-belief queryable from policy artifacts.

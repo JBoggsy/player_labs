@@ -21,6 +21,7 @@ from websockets.exceptions import ConnectionClosed, ConnectionClosedError
 from crewrift.crewborg.action import INPUT_HEADER, encode_chat
 from crewrift.crewborg.coworld.policy_player import (
     MIDGAME_RECONNECT_ATTEMPTS,
+    _self_color_from_url,
     build_trace_outputs,
     run_bridge,
 )
@@ -29,6 +30,22 @@ from crewrift.crewborg.types import Command
 from players.player_sdk import NullMetricsSink, TraceEvent
 
 pytestmark = pytest.mark.asyncio
+
+
+async def test_self_color_from_url_maps_slot_to_palette_color() -> None:
+    # The engine defaults slot N's colour to PlayerColors[N] (sim.nim addPlayer), and the
+    # runner puts the slot in the WS URL — so the slot IS our colour index with zero CV.
+    # This is what fixed the v105 vote_timeout mis-latch (self_color known from tick 0).
+    assert _self_color_from_url("ws://host/player?slot=0&token=abc") == "red"
+    assert _self_color_from_url("ws://host/player?token=x&slot=6") == "blue"
+    assert _self_color_from_url("wss://h/player?slot=13") == "green"
+
+
+async def test_self_color_from_url_none_when_slot_absent_or_invalid() -> None:
+    # Local runs / a game with configured slot colours: no usable slot → fall back to CV.
+    assert _self_color_from_url("ws://host/player?token=x") is None
+    assert _self_color_from_url("ws://host/player?slot=99") is None  # out of palette range
+    assert _self_color_from_url("ws://host/player?slot=nope") is None
 
 
 async def _no_sleep(_seconds: float) -> None:

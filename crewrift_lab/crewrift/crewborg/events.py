@@ -100,6 +100,7 @@ class CrewborgEventTracer:
         # Belief default so the first real transition (unknown → …) is reported.
         self._phase: str = "unknown"
         self._role: str | None = None
+        self._teammate_colors: frozenset[str] | None = None
         self._seen_body_ids: set[int] = set()
         self._completed_task_indices: set[int] = set()
         self._last_kill_tick: int | None = None
@@ -152,6 +153,7 @@ class CrewborgEventTracer:
             self._observe_commander_trace(emit)
         self._observe_phase(belief, emit)
         self._observe_role(belief, emit)
+        self._observe_teammate(belief, emit)
         self._observe_bodies(belief, emit)
         self._observe_completed_tasks(belief, emit)
         self._observe_kill_landed(belief, emit)
@@ -232,7 +234,44 @@ class CrewborgEventTracer:
     def _observe_role(self, belief: Belief, emit: EventEmitter) -> None:
         if self._role is None and belief.self_role is not None:
             self._role = belief.self_role
-            emit.event("role_resolved", {"role": belief.self_role})
+            data: dict[str, Any] = {"role": belief.self_role}
+            # For an imposter, capture teammate identity AT role-resolve: expected teammate count
+            # (imposter_count - 1) vs how many we actually know. This is the ground-truth-free signal
+            # for "did teammate detection work" -- the reveal frames are the ONLY source of
+            # teammate_colors, so if we didn't learn them here we likely never will (connect race).
+            if belief.self_role == "imposter":
+                expected = None if belief.imposter_count is None else max(0, belief.imposter_count - 1)
+                data["expected_teammates"] = expected
+                data["known_teammates"] = len(belief.teammate_colors)
+                data["teammate_colors"] = sorted(belief.teammate_colors)
+            emit.event("role_resolved", data)
+
+    def _observe_teammate(self, belief: Belief, emit: EventEmitter) -> None:
+        """Imposter teammate belief, emitted whenever ``teammate_colors`` changes.
+
+        Fires the initial set (often at RoleReveal) and any later gain -- so a single per-game query
+        can answer "did this imposter ever identify its teammate, and when?" without inferring it from
+        replay follow/kill behaviour. A game whose only teammate event is an empty set (or none at all
+        after role_resolved=imposter) is a teammate-detection FAILURE.
+        """
+        if belief.self_role != "imposter":
+            return
+        current = frozenset(belief.teammate_colors)
+        # `None` = not yet emitted for this imposter; emit the first observation even when empty
+        # (an empty initial set is the detection-failure signal we want to see), then only on change.
+        if current == self._teammate_colors:
+            return
+        self._teammate_colors = current
+        expected = None if belief.imposter_count is None else max(0, belief.imposter_count - 1)
+        emit.event(
+            "teammate_belief_changed",
+            {
+                "teammate_colors": sorted(current),
+                "known_teammates": len(current),
+                "expected_teammates": expected,
+                "complete": expected is not None and len(current) >= expected,
+            },
+        )
 
     def _observe_bodies(self, belief: Belief, emit: EventEmitter) -> None:
         for body_id in sorted(belief.bodies.keys() - self._seen_body_ids):

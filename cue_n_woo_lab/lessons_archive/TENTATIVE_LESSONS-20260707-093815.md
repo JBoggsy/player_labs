@@ -1,6 +1,6 @@
 # Cue-n-Woo tentative lessons — session buffer
 
-**Session started:** 2026-07-10 12:11. This is THIS SESSION's lesson buffer. Write candidate
+**Session started:** 2026-07-06 09:11. This is THIS SESSION's lesson buffer. Write candidate
 lessons here **as you go** — eagerly and noisily; most will be noise and that's
 fine. At the next session start, a hook archives this file automatically to
 [`lessons_archive/`](lessons_archive/) and creates a fresh one — nothing you
@@ -18,7 +18,9 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
 
-### No Cue-n-Woo lessons this session — work was creating the new heartleaf_lab
-Evidence: session scaffolded `heartleaf_lab/` from the crewrift/cue-n-woo template; any
-reusable lessons were captured in `heartleaf_lab/TENTATIVE_LESSONS.md`. Nothing touched or
-learned about Cue-n-Woo specifically.
+### No Cue-n-Woo lessons this session
+Evidence: session was entirely git repo hygiene (resolving a `git pull` merge conflict between
+the SessionStart lesson-rotation hook and 27 diverged upstream commits); no Cue-n-Woo code, data,
+or evals were touched. The one real lesson from this session (rotation hook can silently drop
+lessons when the branch is stale) is logged in crewrift_lab/TENTATIVE_LESSONS.md since it
+surfaced identically in both games' buffers and is game-agnostic tooling, not Cue-n-Woo-specific.
