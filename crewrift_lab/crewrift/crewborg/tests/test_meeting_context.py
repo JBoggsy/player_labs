@@ -59,8 +59,33 @@ def test_meeting_context_serializes_timer_chat_votes_and_suspicion() -> None:
     assert context["state"]["tentative_vote"] == "red"
     assert context["chat"]["messages"][0]["text"] == "blue sus"
     assert context["voting"]["tally"] == {VOTE_SKIP: 1, "green": 1}
-    assert context["players"][0]["color"] == "blue"
+    # players is terse prose, one line per player (sorted), with life + suspicion + flags
+    players = context["players"]
+    assert isinstance(players, str)
+    lines = players.splitlines()
+    assert lines[0].startswith("blue: alive")  # sorted order: blue, green, red
+    assert any(line.startswith("green: dead") for line in lines)
+    assert any(line.startswith("red: alive") and "sus 0.91" in line for line in lines)
     assert context["suspicion"]["would_vote"] == "red"
+
+
+def test_players_prose_is_terse_and_covers_events() -> None:
+    # players is rendered as prose (not JSON) to cut ~65% of the context tokens. Verify the shape:
+    # one line per player, a proximity event reads "near <color>", and self/teammate are flagged.
+    from crewrift.crewborg.strategy.meeting.context import _players_prose
+    from crewrift.crewborg.types import PlayerEvent
+
+    belief = _belief()  # _belief() already sets voting.self_marker_color = "blue"
+    belief.teammate_colors = {"red"}
+    belief.roster["green"].events = [
+        PlayerEvent(kind="proximity", start_tick=1, end_tick=5, target_color="red"),
+    ]
+    prose = _players_prose(belief)
+    lines = {ln.split(":")[0]: ln for ln in prose.splitlines()}
+    assert "[me]" in lines["blue"]
+    assert "[teammate]" in lines["red"]
+    assert "near red" in lines["green"]  # proximity event as a terse phrase
+    assert "{" not in prose and '"' not in prose  # no JSON overhead
 
 
 def test_chat_sanitizer_keeps_printable_ascii_and_truncates() -> None:

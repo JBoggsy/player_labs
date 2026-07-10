@@ -98,11 +98,43 @@ def test_phase_change_fires_once_per_transition() -> None:
 def test_role_resolved_emitted_once() -> None:
     h = _Harness()
     h.step(belief=Belief(self_role=None))
-    h.step(belief=Belief(self_role="imposter"))
-    h.step(belief=Belief(self_role="imposter"))
+    h.step(belief=Belief(self_role="imposter", imposter_count=2, teammate_colors={"blue"}))
+    h.step(belief=Belief(self_role="imposter", imposter_count=2, teammate_colors={"blue"}))
 
     [event] = h.events("domain.role_resolved")
-    assert event.data == {"role": "imposter"}
+    # Imposter role_resolved carries teammate identity at latch time (the detection signal).
+    assert event.data == {
+        "role": "imposter",
+        "expected_teammates": 1,
+        "known_teammates": 1,
+        "teammate_colors": ["blue"],
+    }
+
+
+def test_teammate_belief_changed_tracks_identification() -> None:
+    h = _Harness()
+    # Imposter that never learns its teammate: one event with an empty set = detection FAILURE.
+    h.step(belief=Belief(self_role="imposter", imposter_count=2))
+    [miss] = h.events("domain.teammate_belief_changed")
+    assert miss.data == {
+        "teammate_colors": [],
+        "known_teammates": 0,
+        "expected_teammates": 1,
+        "complete": False,
+    }
+
+    # Learning a teammate later fires a second event marked complete.
+    h.step(belief=Belief(self_role="imposter", imposter_count=2, teammate_colors={"green"}))
+    events = h.events("domain.teammate_belief_changed")
+    assert len(events) == 2
+    assert events[1].data["teammate_colors"] == ["green"]
+    assert events[1].data["complete"] is True
+
+
+def test_teammate_belief_not_traced_for_crew() -> None:
+    h = _Harness()
+    h.step(belief=Belief(self_role="crewmate"))
+    assert h.events("domain.teammate_belief_changed") == []
 
 
 def test_body_sighted_once_per_body_with_counter() -> None:

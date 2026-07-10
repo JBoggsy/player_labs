@@ -24,17 +24,17 @@ def test_unknown_color_yields_no_accusation() -> None:
 
 def test_witnessed_kill_names_the_victim_and_leads() -> None:
     belief = _belief_with("red", [PlayerEvent(kind="kill", start_tick=5, end_tick=5, target_color="green")])
-    assert build_accusation(belief, "red") == "red sus: saw them kill green"
+    assert build_accusation(belief, "red") == "red sus: saw them kill green. vote red"
 
 
 def test_witnessed_vent_phrasing() -> None:
     belief = _belief_with("red", [PlayerEvent(kind="vent_use", start_tick=5, end_tick=5)])
-    assert build_accusation(belief, "red") == "red sus: saw them vent"
+    assert build_accusation(belief, "red") == "red sus: saw them vent. vote red"
 
 
 def test_being_tailed_phrasing() -> None:
     belief = _belief_with("red", [PlayerEvent(kind="tailing_self", start_tick=1, end_tick=50, target_color=None)])
-    assert build_accusation(belief, "red") == "red sus: they were tailing me"
+    assert build_accusation(belief, "red") == "red sus: they were tailing me. vote red"
 
 
 def test_a_kill_outranks_a_tail_and_leads_the_line() -> None:
@@ -46,7 +46,7 @@ def test_a_kill_outranks_a_tail_and_leads_the_line() -> None:
         ],
     )
     line = build_accusation(belief, "red")
-    assert line == "red sus: saw them kill green, they were tailing me"  # strongest first
+    assert line == "red sus: saw them kill green, they were tailing me. vote red"  # strongest first
 
 
 def test_each_evidence_type_is_cited_once() -> None:
@@ -58,7 +58,7 @@ def test_each_evidence_type_is_cited_once() -> None:
             PlayerEvent(kind="vent", start_tick=20, end_tick=40, region_index=0),
         ],
     )
-    assert build_accusation(belief, "red") == "red sus: lurking on a vent"
+    assert build_accusation(belief, "red") == "red sus: lurking on a vent. vote red"
 
 
 def test_at_most_max_reasons_are_cited() -> None:
@@ -78,3 +78,29 @@ def test_at_most_max_reasons_are_cited() -> None:
     assert line is not None
     assert line.count(",") == MAX_REASONS - 1  # exactly MAX_REASONS reasons
     assert line.startswith("red sus: saw them kill green")  # witnessed kill leads
+
+
+def test_accusation_closes_with_an_explicit_vote_call() -> None:
+    # chat_study finding: cite the cue AND say "vote <color>" — both move votes onto the
+    # target; a bare accusation persuades far less. The cue leads, the vote call closes.
+    belief = _belief_with("red", [PlayerEvent(kind="vent_use", start_tick=5, end_tick=5)])
+    line = build_accusation(belief, "red")
+    assert line.startswith("red sus: ")  # cue-first
+    assert line.endswith(". vote red")  # explicit vote call closes
+
+
+def test_accusation_drops_the_vote_call_when_it_would_overflow() -> None:
+    # A very long cue list stays within the char limit by dropping the appended vote call
+    # rather than truncating mid-cue.
+    from crewrift.crewborg.strategy.meeting.schema import CHAT_MAX_CHARS
+
+    belief = _belief_with(
+        "red",
+        [
+            PlayerEvent(kind="kill", start_tick=70, end_tick=70, target_color="green"),
+            PlayerEvent(kind="tailing_self", start_tick=1, end_tick=50, target_color=None),
+            PlayerEvent(kind="vent", start_tick=1, end_tick=10, region_index=0),
+        ],
+    )
+    line = build_accusation(belief, "red")
+    assert line is not None and len(line) <= CHAT_MAX_CHARS

@@ -8,12 +8,22 @@ from typing import Any
 from crewrift.crewborg.perception.entities import SKIP_VOTE_TARGET
 from crewrift.crewborg.strategy.meeting.schema import CHAT_MAX_CHARS, SCHEMA_VERSION, VOTE_SKIP
 from crewrift.crewborg.strategy.suspicion import (
+    _body_proximity_log_lr,
+    _follow_log_lr,
     _prior_imposter_p,
+    _tailing_self_log_lr,
+    _vent_dwell_log_lr,
     active_vote_probability_bar,
     top_suspect,
     witnessed_imposters,
 )
 from crewrift.crewborg.types import Belief, PlayerEvent, PlayerRecord
+
+# Cap events sent per player in the LLM context. recent_events was ~93% of the (large) player
+# payload and blew the per-episode Bedrock spend limit; we keep the N events that most move the
+# read — the most INCRIMINATING and most EXONERATING — not just the most recent, so the LLM still
+# sees both sides of the case on a compact budget. See chat_study / the token-cost investigation.
+MAX_EVENTS_PER_PLAYER = 10
 
 # The game's voting-phase length. Was 240 (10s); coworld-crewrift b78e400 (merged
 # 2026-06-29) raised the live game to voteTimerTicks=1200 — with the old constant
@@ -71,7 +81,11 @@ def serialize_meeting_context(
         },
         "voting": _voting_payload(belief),
         "chat": _chat_payload(belief, sent_chat_texts),
-        "players": _players_payload(belief),
+        # players is rendered as terse PROSE lines, not JSON objects: it's ~65% of the context and
+        # JSON key/brace overhead was ~5x the content (measured — one player ~1670 tk of JSON vs
+        # ~357 tk of prose, 79% smaller). The LLM reads the lines fine; this is the main lever on
+        # the per-episode token/spend budget. See the token-cost investigation.
+        "players": _players_prose(belief),
         "suspicion": _suspicion_payload(belief, fallback_vote),
     }
 
@@ -160,46 +174,95 @@ def _chat_payload(belief: Belief, sent_chat_texts: set[str]) -> dict[str, Any]:
     }
 
 
-def _players_payload(belief: Belief) -> list[dict[str, Any]]:
-    return [
-        _player_payload(belief, color, record)
-        for color, record in sorted(belief.roster.items())
-    ]
+def _players_prose(belief: Belief) -> str:
+    """The roster as one terse prose line per player (see serialize_meeting_context for why).
+
+    Each line: ``<color>: <alive|dead> [tags] sus <p> | <events>`` — tags flag self / teammate /
+    confirmed-or-believed imposter; events are the compact ``_event_phrase`` list. Raw coordinates,
+    last-seen ticks, and body xy are dropped (the LLM reasons over rooms + who/what, not px/ticks)."""
+    witnessed = witnessed_imposters(belief)
+    lines: list[str] = []
+    for color, record in sorted(belief.roster.items()):
+        tags: list[str] = []
+        if color == belief.voting.self_marker_color:
+            tags.append("me")
+        if color in belief.teammate_colors:
+            tags.append("teammate")
+        if color in witnessed:
+            tags.append("CONFIRMED-imposter")
+        elif color in belief.believed_imposters:
+            tags.append("believed-imposter")
+
+        parts = [f"{color}: {record.life_status}"]
+        if tags:
+            parts.append("[" + ",".join(tags) + "]")
+        sus = _rounded(belief.suspicion.get(color))
+        if sus is not None:
+            parts.append(f"sus {sus}")
+        head = " ".join(parts)
+
+        phrases = [_event_phrase(belief, e) for e in _relevant_events(belief, record)]
+        if phrases:
+            head += " | " + "; ".join(phrases)
+        lines.append(head)
+    return "\n".join(lines)
 
 
-def _player_payload(belief: Belief, color: str, record: PlayerRecord) -> dict[str, Any]:
-    age = None if record.last_seen_tick == 0 else max(0, belief.last_tick - record.last_seen_tick)
-    return {
-        "color": color,
-        "self": color == belief.voting.self_marker_color,
-        "teammate": color in belief.teammate_colors,
-        "life_status": record.life_status,
-        "last_seen_tick": record.last_seen_tick or None,
-        "last_seen_age_ticks": age,
-        "last_seen_xy": [record.world_x, record.world_y] if record.last_seen_tick else None,
-        "death_seen_tick": record.death_seen_tick,
-        "death_source": record.death_source,
-        "body_xy": list(record.body_xy) if record.body_xy is not None else None,
-        "suspicion": _rounded(belief.suspicion.get(color)),
-        "confirmed_imposter": color in witnessed_imposters(belief),
-        "believed_imposter": color in belief.believed_imposters,
-        "recent_events": [_event_payload(belief, event) for event in record.events[-8:]],
-    }
+def _relevant_events(belief: Belief, record: PlayerRecord) -> list[PlayerEvent]:
+    """The player's most decision-relevant events, newest-last. Keep the MAX_EVENTS_PER_PLAYER
+    with the largest |suspicion| — the most incriminating (kill/vent/tail/near-body) AND the most
+    exonerating (long tasking) — so the LLM sees both sides of the case on a compact budget."""
+    events = record.events
+    if len(events) > MAX_EVENTS_PER_PLAYER:
+        ranked = sorted(events, key=lambda e: abs(_event_suspicion(belief, e)), reverse=True)
+        kept = set(id(e) for e in ranked[:MAX_EVENTS_PER_PLAYER])
+        events = [e for e in events if id(e) in kept]
+    return events[-MAX_EVENTS_PER_PLAYER:]
 
 
-def _event_payload(belief: Belief, event: PlayerEvent) -> dict[str, Any]:
-    payload: dict[str, Any] = {
-        "kind": event.kind,
-        "start_tick": event.start_tick,
-        "end_tick": event.end_tick,
-        "duration_ticks": event.duration_ticks,
-        "target_color": event.target_color,
-        "region_index": event.region_index,
-        "min_dist": event.min_dist,
-    }
-    if belief.map is not None and event.region_index is not None:
-        payload["region_name"] = _region_name(belief, event)
-    return payload
+def _event_suspicion(belief: Belief, event: PlayerEvent) -> float:
+    """A signed relevance score for one event: positive = incriminating, negative = exonerating
+    (long tasking reads as innocent crew). Reuses the suspicion model's per-event log-LRs so the
+    kept set matches what actually drives the posterior."""
+    if event.kind in ("kill", "vent_use"):
+        return 10.0  # witnessed — always keep
+    if event.kind == "tailing_self":
+        return _tailing_self_log_lr(event)
+    if event.kind == "proximity":
+        return _follow_log_lr(event, belief)
+    if event.kind == "near_body":
+        return _body_proximity_log_lr(event)
+    if event.kind == "vent":
+        return _vent_dwell_log_lr(event)
+    if event.kind == "task":
+        return -float(event.duration_ticks)  # more tasking → more exonerating (negative)
+    return 0.0
+
+
+_EVENT_VERB = {
+    "room": "in",
+    "task": "tasked in",
+    "vent": "vented in",
+    "near_body": "by body of",
+    "proximity": "near",
+    "tailing_self": "tailed me",
+    "kill": "killed",
+    "vent_use": "vented",
+}
+
+
+def _event_phrase(belief: Belief, event: PlayerEvent) -> str:
+    """One event as a terse phrase, e.g. 'in Bridge', 'near green', 'killed red', 'tailed me'.
+    Only the kind, who it involved, and the room — no ticks/indices/distances."""
+    verb = _EVENT_VERB.get(event.kind, event.kind)
+    room = _region_name(belief, event) if (belief.map is not None and event.region_index is not None) else None
+    parts = [verb]
+    if event.target_color is not None:
+        parts.append(event.target_color)
+    if room is not None:
+        # room-kinds already read "in <room>" via the verb; others append "in <room>"
+        parts.append(room if event.kind in ("room", "task", "vent") else f"in {room}")
+    return " ".join(parts)
 
 
 def _region_name(belief: Belief, event: PlayerEvent) -> str | None:
