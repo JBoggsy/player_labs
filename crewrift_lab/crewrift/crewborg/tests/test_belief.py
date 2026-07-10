@@ -34,6 +34,46 @@ def test_self_color_learned_from_the_voting_marker() -> None:
     assert belief.self_color == "green"
 
 
+def test_self_color_latches_once_and_never_overwrites() -> None:
+    # REGRESSION (v102): our colour is fixed for the game, so a MARKER-learned self_color must
+    # never be re-derived. Both sources can drift onto a neighbour on later ticks; overwriting let
+    # self_color land on a teammate mid-game (deleting them from teammate_colors — the kill bug).
+    from crewrift.crewborg.perception.entities import VotingState
+
+    belief = Belief()
+    _fold(belief, 1, voting=VotingState(self_marker_color="green"))
+    assert belief.self_color == "green"
+    # a later frame whose marker points elsewhere (cursor on another player) must NOT overwrite us
+    _fold(belief, 2, voting=VotingState(self_marker_color="blue"))
+    assert belief.self_color == "green"
+
+
+def test_authoritative_marker_corrects_a_provisional_sprite_guess() -> None:
+    # REGRESSION (v105 vote_timeout): the camera-center sprite can latch a NEIGHBOUR during the
+    # ~500 Playing ticks before the first meeting; when that neighbour later dies the census
+    # flips self_alive off → the seat idles the meeting → the game charges "-10 for failing to
+    # vote". The sprite guess is PROVISIONAL: the authoritative voting self-marker must correct
+    # it (once) the first time a meeting renders one.
+    from crewrift.crewborg.perception.entities import VisiblePlayer, VotingState
+
+    belief = Belief()
+    # Playing: sprite heuristic locks onto a neighbour ("blue") sitting at the camera centre.
+    _fold(
+        belief, 1, self_world_x=60, self_world_y=66,
+        visible_players=(VisiblePlayer(object_id=1, color="blue", facing="left", world_x=60, world_y=66),),
+    )
+    assert belief.self_color == "blue" and belief.self_color_from_marker is False  # provisional
+    # First meeting: the game-rendered self-marker says we are actually "red" — correct the guess.
+    _fold(belief, 2, voting=VotingState(self_marker_color="red"))
+    assert belief.self_color == "red" and belief.self_color_from_marker is True
+    # And once marker-latched, a later drifting sprite must NOT overwrite it.
+    _fold(
+        belief, 3, self_world_x=60, self_world_y=66,
+        visible_players=(VisiblePlayer(object_id=2, color="green", facing="left", world_x=60, world_y=66),),
+    )
+    assert belief.self_color == "red"
+
+
 def test_phase_transitions_role_reveal_into_playing() -> None:
     belief = Belief()
 
@@ -159,6 +199,50 @@ def test_crew_reveal_icons_do_not_falsely_latch_imposter() -> None:
     _fold(early, 1, reveal_player_colors=frozenset({"green"}))
     assert early.self_role is None
     assert early.teammate_colors == set()
+
+
+def test_reveal_excludes_self_colour_when_known() -> None:
+    # The imposter reveal icons include US; when self_color is already known, our own colour is
+    # dropped from the captured teammate set (so teammate_colors is the OTHER imposters only).
+    from crewrift.crewborg.perception.entities import VotingState
+
+    belief = Belief()
+    _fold(belief, 1, voting=VotingState(self_marker_color="red"))  # learn self = red
+    _fold(belief, 2, phase_texts=frozenset({"IMPS"}), reveal_player_colors=frozenset({"red", "blue"}))
+    assert belief.teammate_colors == {"blue"}  # self (red) excluded, real teammate (blue) kept
+
+
+def test_reveal_excludes_self_when_marker_and_icons_arrive_same_tick() -> None:
+    # ORDERING: the self_color latch must run BEFORE the reveal-set self-exclusion within a tick, so
+    # when the self-marker and the reveal icons land together, self is already known and excluded.
+    from crewrift.crewborg.perception.entities import VotingState
+
+    belief = Belief()
+    _fold(
+        belief, 1,
+        phase_texts=frozenset({"IMPS"}),
+        reveal_player_colors=frozenset({"red", "blue"}),
+        voting=VotingState(self_marker_color="red"),  # self resolves the SAME tick as the reveal
+    )
+    assert belief.self_color == "red"
+    assert belief.teammate_colors == {"blue"}  # self excluded on the same tick, not left in
+
+
+def test_reveal_teammate_survives_self_color_drift() -> None:
+    # REGRESSION (v102 kill collapse, 2026-07-08): self_color is re-derived every tick and can
+    # drift onto a TEAMMATE's colour (the vote cursor / nearest sprite lands on them). A per-tick
+    # `teammate_colors.discard(self_color)` then deleted the real teammate for the rest of the game,
+    # so the kill gate let crewborg attack its own teammate (kills 1.86 -> 0.97). The reveal set is
+    # the source of truth for teammates; a later self_color must NEVER remove a captured teammate.
+    from crewrift.crewborg.perception.entities import VotingState
+
+    belief = Belief()
+    _fold(belief, 1, phase_texts=frozenset({"IMPS"}), reveal_player_colors=frozenset({"blue"}))
+    assert belief.teammate_colors == {"blue"}  # teammate captured
+    # self_color now drifts onto the teammate's colour (a mis-resolved marker/sprite):
+    _fold(belief, 2, phase_texts=frozenset({"Playing"}), voting=VotingState(self_marker_color="blue"))
+    assert belief.self_color == "blue"
+    assert belief.teammate_colors == {"blue"}  # teammate MUST survive the drift
 
 
 def test_no_false_kill_after_a_meeting() -> None:

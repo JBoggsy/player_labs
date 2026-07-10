@@ -41,6 +41,7 @@ from crewrift.crewborg import build_runtime
 from crewrift.crewborg.action import encode_chat, encode_input
 from crewrift.crewborg.coworld.scene import SceneState
 from crewrift.crewborg.map import walkability_matches
+from crewrift.crewborg.perception.constants import PLAYER_COLOR_NAMES
 from crewrift.crewborg.trace import TraceConfig
 from crewrift.crewborg.types import Observation
 from players.player_sdk import TraceOutputs, parse_trace_output_specs
@@ -155,6 +156,7 @@ def build_trace_outputs() -> TraceOutputs:
 async def run_bridge(
     engine_ws_url: str,
     *,
+    self_color: str | None = None,
     connect: Callable[..., Any] = websockets.connect,
     build: Callable[..., Any] = build_runtime,
 ) -> None:
@@ -162,6 +164,9 @@ async def run_bridge(
 
     Returns when the game ends (the engine closes the socket after we've received
     frames) or when the reconnect deadline passes without ever connecting.
+
+    ``self_color`` (from the connection slot, see ``_self_color_from_url``) seeds our own
+    colour as authoritative ground truth so the CV self-ID never has to guess it.
     """
 
     scene = SceneState()
@@ -169,7 +174,9 @@ async def run_bridge(
     # zips and uploads the artifact (when configured), so it must happen before
     # the container exits and the runner tears the pod down.
     with build_trace_outputs() as outputs:
-        runtime = build(trace_sink=outputs.trace_sink, metrics_sink=outputs.metrics_sink)
+        runtime = build(
+            trace_sink=outputs.trace_sink, metrics_sink=outputs.metrics_sink, self_color=self_color
+        )
         metrics = outputs.metrics_sink
         # Session state lives out here so a reconnect resumes cleanly rather than
         # rebuilding the runtime/belief (which would discard everything learned).
@@ -352,6 +359,32 @@ async def _run_session(
         state.previous_arrival = arrival
 
 
+def _self_color_from_url(engine_ws_url: str) -> str | None:
+    """Our own colour from the connection ``?slot=`` — zero-CV ground truth.
+
+    The Crewrift engine defaults each slot's colour to ``PlayerColors[slot mod 16]``
+    (game ``sim.nim`` addPlayer: ``PlayerColors[order mod PlayerColors.len]``) unless a
+    per-slot ``slots[i].color`` is configured — so the runner-assigned slot in the WS URL
+    IS our colour index in the standard (no per-slot-colour) config. This is what suspectra
+    uses (``forcedSelfColorIndex = slot``); reading it here means self_color is known from
+    tick 0, before any sprite/marker CV, killing the mis-latch that idled meetings and drew
+    the vote_timeout penalty (v105). Returns None when the slot is absent/out of range (local
+    runs, or a game that configured explicit slot colours) — the CV path then still resolves it.
+    """
+    from urllib.parse import parse_qs, urlparse
+
+    raw = parse_qs(urlparse(engine_ws_url).query).get("slot", [None])[0]
+    if raw is None:
+        return None
+    try:
+        slot = int(raw)
+    except ValueError:
+        return None
+    if 0 <= slot < len(PLAYER_COLOR_NAMES):
+        return PLAYER_COLOR_NAMES[slot]
+    return None
+
+
 def main() -> None:
     # Canonical player-contract var is COWORLD_PLAYER_WS_URL; COGAMES_ENGINE_WS_URL is
     # a legacy alias the runner also sets to the same value. Prefer the canonical one,
@@ -360,7 +393,7 @@ def main() -> None:
     if not engine_ws_url:
         raise SystemExit("no player websocket URL: set COWORLD_PLAYER_WS_URL "
                          "(or the legacy COGAMES_ENGINE_WS_URL)")
-    asyncio.run(run_bridge(engine_ws_url))
+    asyncio.run(run_bridge(engine_ws_url, self_color=_self_color_from_url(engine_ws_url)))
 
 
 def _metrics_enabled() -> bool:
