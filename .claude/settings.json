@@ -23,6 +23,12 @@
           },
           {
             "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/ctf_lab/tools/rotate_lessons.sh\"",
+            "timeout": 15,
+            "statusMessage": "Rotating CTF tentative-lessons buffer"
+          },
+          {
+            "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR/vanilla_wow_lab/tools/rotate_lessons.sh\"",
             "timeout": 15,
             "statusMessage": "Rotating Vanilla WoW tentative-lessons buffer"
@@ -35,22 +41,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/crewrift_lab/tools/lessons_stop_nudge.sh\"",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/cue_n_woo_lab/tools/lessons_stop_nudge.sh\"",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/heartleaf_lab/tools/lessons_stop_nudge.sh\"",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/vanilla_wow_lab/tools/lessons_stop_nudge.sh\"",
+            "command": "\"$CLAUDE_PROJECT_DIR/tools/lessons_stop_nudge.sh\"",
             "timeout": 10
           }
         ]

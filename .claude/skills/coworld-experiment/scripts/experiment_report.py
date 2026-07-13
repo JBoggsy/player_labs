@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Render a crewrift-experiment design → a clean Ink & Print HTML page to show the human BEFORE running
-(and to update with the verdict after). You supply the design as JSON; this lays it out clearly with
-the falsifiability predictions side-by-side and a design→run→verdict flow. Schema:
+"""Render a coworld-experiment design → a clean Ink & Print HTML page to show the human BEFORE running
+(and to update with the verdict after). Game-agnostic: the schema carries no game-specific fields;
+the only lab-specific knob is the header eyebrow (--eyebrow). You supply the design as JSON; this lays
+it out clearly with the falsifiability predictions side-by-side and a design→run→verdict flow. Schema:
 
 {
   "hypothesis":   "The claim: what's happening, why, and the observable consequence.",
@@ -18,7 +19,7 @@ the falsifiability predictions side-by-side and a design→run→verdict flow. S
   "verdict":   {"result":"confirmed|refuted|inconclusive","evidence":"..."}   // optional, post-run
 }
 
-Usage:  experiment_report.py design.json --out experiment.html
+Usage:  experiment_report.py design.json --out experiment.html [--eyebrow "<Game> · Experiment design"]
 """
 
 from __future__ import annotations
@@ -73,7 +74,7 @@ def esc(s: str) -> str:
     return html.escape(str(s or ""))
 
 
-def render(d: dict) -> str:
+def render(d: dict, eyebrow: str) -> str:
     inst = d.get("instrument") or {}
     kind = inst.get("kind", "warehouse-query")
     verdict_state = (d.get("verdict") or {}).get("result")
@@ -100,7 +101,7 @@ def render(d: dict) -> str:
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Merriweather+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>{STYLE}</style></head><body><div class="wrap">
-<header><p class="eyebrow">Crewrift · Experiment design</p><h1>{esc(d.get("hypothesis"))}</h1></header>
+<header><p class="eyebrow">{esc(eyebrow)}</p><h1>{esc(d.get("hypothesis"))}</h1></header>
 <div class="flow">{flow}</div>
 
 <h2>What's being tested</h2><p>{esc(d.get("what_changes"))}</p>
@@ -125,8 +126,10 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("design", type=Path, help="The experiment-design JSON (see the docstring schema).")
     ap.add_argument("--out", type=Path, default=Path("experiment.html"))
+    ap.add_argument("--eyebrow", default="Coworld · Experiment design",
+                    help="Header eyebrow (e.g. 'Crewrift · Experiment design').")
     args = ap.parse_args()
-    args.out.write_text(render(json.loads(args.design.read_text())))
+    args.out.write_text(render(json.loads(args.design.read_text()), args.eyebrow))
     print(f"wrote {args.out}")
     return 0
 

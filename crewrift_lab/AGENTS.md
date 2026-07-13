@@ -97,25 +97,30 @@ Crewrift-specific skills live here in `.claude/skills/`:
   + `references/recipes.md`.
 - **`crewrift-ab`** — **A/B test two policy versions head-to-head**: run both in **matched,
   fresh** experience requests (same roster/roles/count/window — so the delta is attributable,
-  not confounded by league drift), then compare hard metrics (`scripts/compare.py` — role-split
-  deltas with significance + a regression scan, rendered to an HTML report) **and** investigate
-  the two sides' logs/replays. Use whenever you need to know whether one version genuinely beats
-  another. (Distinct from `crewrift-survey`, which surveys *one* batch descriptively.)
+  not confounded by league drift), then compare hard metrics **and** investigate the two sides'
+  logs/replays. This is the **crewrift adapter** for the root **`coworld-ab`** skill:
+  `scripts/compare.py` supplies crewrift's metrics + crew/imposter grouping and imports the shared
+  `ab_stats` engine (significance, verdicts) at `../.claude/skills/coworld-ab/`; the HTML renderer
+  lives there too. (Distinct from `crewrift-survey`, which surveys *one* batch descriptively.)
 - **`crewrift-diagnose`** — turn a survey's signals into **evidence-grounded, mechanistic
   improvement hypotheses**: investigate replays/logs/code for *why* a behavior happens (or fails
   to), then **present candidate directions to the human** as options (not directives). An
   optional augmentation of the **direction** step. Pairs with `crewrift-survey` (signals in),
   `crewrift-event-warehouse` (test cheaply), and `crewrift-experiment` (run one).
 - **`crewrift-experiment`** — design + run **one** falsifiable experiment for a single
-  hypothesis (design ↔ adversarial-critique ↔ run); renders an HTML design report and **gates on
-  the human before running**. Usable standalone ("it might be X — let's test it").
+  hypothesis (design ↔ adversarial-critique ↔ run); **gates on the human before running**. The
+  **crewrift binding** of the root **`coworld-experiment`** method: it supplies crewrift's
+  instruments (event warehouse / `crewrift-ab` / trace-logs) and examples, and uses the root
+  `experiment_report.py` renderer. Usable standalone ("it might be X — let's test it").
 - **`lessons-review`** — cluster lessons that RECUR across archived sessions and graduate keepers
   to `best_practices.md` (the ≈weekly, human-driven graduation pass).
 
 The loop's **game-agnostic** halves (experience requests, artifact download, local run,
-**build & upload**, policy lifecycle) live at the **lab root** (`../.claude/skills/`, indexed in
-[`../AGENTS.md`](../AGENTS.md)) — use those to build/upload a version and create/pull the episodes,
-then `crewrift-survey` to analyze them. New Crewrift-specific tooling belongs here, not at the root.
+**build & upload**, policy lifecycle, and the **experiment/A/B method** — `coworld-experiment` +
+`coworld-ab` with its shared stats engine) live at the **lab root** (`../.claude/skills/`, indexed
+in [`../AGENTS.md`](../AGENTS.md)) — use those to build/upload a version and create/pull the
+episodes, then `crewrift-survey` to analyze them. Crewrift-specific tooling — including the
+`crewrift-ab` metric **adapter** — belongs here; the shared method + stats engine live at the root.
 
 ## Crewrift best practices
 
@@ -147,10 +152,12 @@ both on startup** alongside the preferences above:
   something *looks* like a reusable lesson. Most entries are noise; the value is the
   occasional gem. **The lifecycle is automated** (2026-06-12): a SessionStart hook
   archives each session's buffer to [`lessons_archive/`](lessons_archive/) and creates
-  a fresh one; a Stop hook nudges once if substantive work ends with the buffer
-  untouched; the **`/lessons-review`** skill (≈weekly, human-driven) clusters lessons
+  a fresh one; the **`/lessons-review`** skill (≈weekly, human-driven) clusters lessons
   that RECUR across archived sessions and graduates keepers to `best_practices.md`.
   Recurrence across sessions — not in-session hit counts — is the graduation signal.
+  (A single repo-wide Stop hook (`tools/lessons_stop_nudge.sh` at the repo root) nudges
+  once per session, naming only the labs the session actually worked in whose buffers
+  are still untouched — it replaced the old per-lab nudges on 2026-07-13.)
 
 **Cleanup step — run when you wrap up a thread (and before you push/land work).** Do a
 deliberate sweep so nothing learned evaporates:

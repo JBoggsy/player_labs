@@ -33,11 +33,13 @@ player_labs/
   user_preferences.md  durable human preferences (read on startup)
   player-build.md      the game-agnostic Coworld player image contract
   TODO.md              deferred tasks
+  tools/               repo-wide hooks (lessons_stop_nudge.sh — the once-per-session lessons nudge)
   .claude/skills/      lab-wide, game-agnostic Coworld skills (below)
   crewrift_lab/        first game lab — Crewrift (has its own README + AGENTS)
   cue_n_woo_lab/       second game lab — Cue-n-Woo, a text theory-of-mind game (own README)
   heartleaf_lab/       third game lab — Heartleaf, a 9-gnome garden-dinner game (own README)
-  vanilla_wow_lab/     fourth game lab — Vanilla WoW, a real WoW 1.12.1/VMaNGOS realm (own README)
+  ctf_lab/             fourth game lab — CTF, an 8v8 capture-the-flag shooter (own README)
+  vanilla_wow_lab/     fifth game lab — Vanilla WoW, a real WoW 1.12.1/VMaNGOS realm (own README)
   pyproject.toml       uv project: coworld[auth] + the pinned players SDK (from git) + deps
 ```
 
@@ -57,9 +59,14 @@ drive the mechanical halves of the loop:
 - **`coworld-local-run`** — run your built policy locally (debugging tool only —
   not part of the standard loop).
 - **`coworld-policy-lifecycle`** — upload a new version → (gated) submit → monitor.
+- **`coworld-experiment`** — design + run **one** falsifiable hypothesis test (design →
+  criticize → cheapest instrument → pre-registered verdict). Game-agnostic method.
+- **`coworld-ab`** — decide whether a change actually helped via a matched, fresh A/B. Ships
+  the shared stats engine + report renderer; each lab supplies a small `compare.py` metric adapter.
 
-Game-specific analysis/build skills live in the game labs (e.g. Crewrift's
-`crewrift-survey`). The index with full descriptions is in [`AGENTS.md`](AGENTS.md).
+Game-specific analysis/build skills — and each lab's `compare.py` metric adapter — live in the
+game labs (e.g. Crewrift's `crewrift-survey`, `crewrift-ab`). The index with full descriptions is
+in [`AGENTS.md`](AGENTS.md).
 
 ## Getting started
 
