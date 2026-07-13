@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
-"""Render an A/B comparison (compare.py --json) → a clean Ink & Print HTML page.
+"""Render an A/B comparison (a lab adapter's compare.py --json) → a clean Ink & Print HTML page.
+
+Game-agnostic: consumes the neutral JSON contract emitted by any lab's `compare.py` adapter
+(via ab_stats.emit_json). The only lab-specific knob is the header eyebrow (--eyebrow).
 
 This is a strong DEFAULT, not the only shape — a direct comparison invites visuals (a delta-bar
-plot, a role grid, a heat map). Adapt or extend the HTML to fit what *this* comparison shows
-(see ../../../../docs/report-style.md); the agent has creative control over the presentation.
+plot, a group grid, a heat map). Adapt or extend the HTML to fit what *this* comparison shows
+(see the lab's report-style doc); the agent has creative control over the presentation.
 
-Input: the JSON written by `compare.py --json`:
-  {baseline, candidate, target, deltas:[{metric, role, base, cand, n_base, n_cand, p, effect, verdict}]}
+Input: the JSON written by a compare.py adapter:
+  {baseline, candidate, target, deltas:[{metric, group, base, cand, n_base, n_cand, p, effect, verdict}]}
 Optional: --finding <file> — your qualitative side-by-side finding (markdown/plain text); the part
-the numbers can't give. --verdict "<one-line synthesis>".
+the numbers can't give. --verdict "<one-line synthesis>". --eyebrow "<Game> · A/B comparison".
 
-Usage:  compare_report.py diff.json --out ab.html [--finding finding.md] [--verdict "..."]
+Usage:  compare_report.py diff.json --out ab.html [--finding finding.md] [--verdict "..."] [--eyebrow "..."]
 """
 
 from __future__ import annotations
@@ -18,7 +21,6 @@ from __future__ import annotations
 import argparse
 import html
 import json
-import math
 from pathlib import Path
 
 STYLE = """
@@ -42,7 +44,7 @@ table{border-collapse:collapse;width:100%;font-size:13.5px}
 th,td{padding:6px 9px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap}
 thead th{font:700 10px 'Merriweather Sans';text-transform:uppercase;letter-spacing:.07em;color:var(--sub);border-bottom:2px solid var(--border-strong)}
 td.metric,th:first-child{text-align:left;font:600 13px 'IBM Plex Mono'}
-td.role{text-align:left;color:var(--sub);font-size:12px}
+td.group{text-align:left;color:var(--sub);font-size:12px}
 .v-improved{color:var(--sage);font-weight:700} .v-regressed{color:var(--terra);font-weight:700} .v-noise,.v-na{color:var(--muted)}
 .chip{font:700 9px 'Merriweather Sans';text-transform:uppercase;letter-spacing:.05em;padding:1px 7px;border-radius:999px}
 .c-improved{background:rgba(110,128,80,.16);color:var(--sage)} .c-regressed{background:rgba(179,110,78,.14);color:var(--terra)}
@@ -82,14 +84,14 @@ def bar(effect: float, verdict: str) -> str:
     return f'<span class="bar"><span class="mid"></span><span class="fill" style="{side};background:{color}"></span></span>'
 
 
-def render(d: dict, finding: str | None, verdict_line: str | None) -> str:
+def render(d: dict, finding: str | None, verdict_line: str | None, eyebrow: str) -> str:
     deltas = d.get("deltas") or []
     target = d.get("target")
-    by = {(x["metric"], x.get("role")): x for x in deltas}
-    # headline cards: target axis (if any) + overall win rate
+    by = {(x["metric"], x.get("group")): x for x in deltas}
+    # headline cards: target axis (if any) + overall win rate (whatever group it lands in)
     cards = []
     tgt = next((x for x in deltas if x["metric"] == target), None) if target else None
-    win = by.get(("win_rate", None))
+    win = next((x for x in deltas if x["metric"] == "win_rate"), None)
     for label, x in (("Target · " + (target or "—"), tgt), ("Overall win rate", win)):
         if not x:
             continue
@@ -102,12 +104,12 @@ def render(d: dict, finding: str | None, verdict_line: str | None) -> str:
 
     rows = []
     for x in deltas:
-        m, role, vd = x["metric"], x.get("role"), x["verdict"]
+        m, group, vd = x["metric"], x.get("group"), x["verdict"]
         if x["base"] is None and x["cand"] is None:
             continue
         delta = (x["cand"] or 0) - (x["base"] or 0)
         rows.append(
-            f'<tr><td class="metric">{esc(m)}</td><td class="role">{esc(role or "all")}</td>'
+            f'<tr><td class="metric">{esc(m)}</td><td class="group">{esc(group or "all")}</td>'
             f'<td class="num">{fmt(x["base"],m)}</td><td class="num">{fmt(x["cand"],m)}</td>'
             f'<td class="num v-{vd.replace("/","")}">{"+" if delta>=0 else ""}{fmt(delta,m) if m.endswith("_rate") else f"{delta:.2f}"}</td>'
             f'<td>{bar(x.get("effect") or 0, vd)}</td>'
@@ -116,8 +118,8 @@ def render(d: dict, finding: str | None, verdict_line: str | None) -> str:
 
     regr = [x for x in deltas if x["verdict"] == "regressed"]
     scan = (f'<div class="regr"><b>⚠ Regression scan:</b> {len(regr)} metric(s) regressed — '
-            + ", ".join(f'{esc(x["metric"])} ({esc(x.get("role") or "all")})' for x in regr)
-            + '. Check you didn\'t fix one role by breaking the other.</div>') if regr else \
+            + ", ".join(f'{esc(x["metric"])} ({esc(x.get("group") or "all")})' for x in regr)
+            + '. Check you didn\'t fix one group by breaking another.</div>') if regr else \
            '<div class="ok"><b>✓ Regression scan:</b> nothing regressed beyond noise.</div>'
 
     find_html = (f'<h2>Qualitative finding — what the numbers can\'t say</h2>'
@@ -129,13 +131,13 @@ def render(d: dict, finding: str | None, verdict_line: str | None) -> str:
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Merriweather+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>{STYLE}</style></head><body><div class="wrap">
-<header><p class="eyebrow">Crewrift · A/B comparison</p>
+<header><p class="eyebrow">{esc(eyebrow)}</p>
 <h1>{esc(d.get("baseline"))} <span class="arrow">→</span> {esc(d.get("candidate"))}</h1></header>
 <div class="headline">{''.join(cards) or '<div class="hcard"><div class="l">No target/win metric</div></div>'}</div>
 
-<h2>All metrics — baseline → candidate, role-split</h2>
+<h2>All metrics — baseline → candidate, group-split</h2>
 <div style="overflow-x:auto"><table><thead><tr>
-  <th>Metric</th><th>Role</th><th>Base</th><th>Cand</th><th>Δ</th><th>Effect</th><th>Verdict</th><th>p</th><th>n b/c</th>
+  <th>Metric</th><th>Group</th><th>Base</th><th>Cand</th><th>Δ</th><th>Effect</th><th>Verdict</th><th>p</th><th>n b/c</th>
 </tr></thead><tbody>{''.join(rows)}</tbody></table></div>
 <p class="note">Effect bar = standardized effect size (Cohen's d / z), centred at 0 — right/sage =
 candidate better, left/terracotta = worse; noise = no bar. compare.py errs conservative: a borderline
@@ -144,7 +146,7 @@ move reads as <i>noise</i>, not a win. Rates need a few hundred appearances/side
 {find_html}
 {vline}
 <p class="note">Quantitative half from compare.py; the qualitative finding is your side-by-side read of
-the two batches' replays/logs. Adapt this layout to the comparison — see report-style.md.</p>
+the two batches' replays/logs. Adapt this layout to the comparison — see your lab's report-style doc.</p>
 </div></body></html>"""
 
 
@@ -154,9 +156,11 @@ def main() -> int:
     ap.add_argument("--out", type=Path, default=Path("ab.html"))
     ap.add_argument("--finding", type=Path, help="Your qualitative finding (markdown/plain text).")
     ap.add_argument("--verdict", help="One-line synthesis verdict.")
+    ap.add_argument("--eyebrow", default="Coworld · A/B comparison",
+                    help="Header eyebrow (e.g. 'Crewrift · A/B comparison').")
     args = ap.parse_args()
     finding = args.finding.read_text() if args.finding and args.finding.exists() else None
-    args.out.write_text(render(json.loads(args.diff.read_text()), finding, args.verdict))
+    args.out.write_text(render(json.loads(args.diff.read_text()), finding, args.verdict, args.eyebrow))
     print(f"wrote {args.out}")
     return 0
 

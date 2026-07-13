@@ -56,9 +56,14 @@ drive the mechanical halves of the loop:
 - **`coworld-local-run`** — run your built policy locally (debugging tool only —
   not part of the standard loop).
 - **`coworld-policy-lifecycle`** — upload a new version → (gated) submit → monitor.
+- **`coworld-experiment`** — design + run **one** falsifiable hypothesis test (design →
+  criticize → cheapest instrument → pre-registered verdict). Game-agnostic method.
+- **`coworld-ab`** — decide whether a change actually helped via a matched, fresh A/B. Ships
+  the shared stats engine + report renderer; each lab supplies a small `compare.py` metric adapter.
 
-Game-specific analysis/build skills live in the game labs (e.g. Crewrift's
-`crewrift-survey`). The index with full descriptions is in [`AGENTS.md`](AGENTS.md).
+Game-specific analysis/build skills — and each lab's `compare.py` metric adapter — live in the
+game labs (e.g. Crewrift's `crewrift-survey`, `crewrift-ab`). The index with full descriptions is
+in [`AGENTS.md`](AGENTS.md).
 
 ## Getting started
 
