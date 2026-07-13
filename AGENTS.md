@@ -126,10 +126,19 @@ Lab-wide, game-agnostic Coworld tooling lives in `.claude/skills/`:
   it **qualify** → **monitor** standings, with version-log discipline. Submit is the gated,
   irreversible, champion-making action (human go-ahead only). `scripts/policy_lifecycle.py`
   does `versions` / `monitor`. (Loop steps 7–8.)
+- **`coworld-experiment`** — test **one** falsifiable hypothesis about a player rigorously:
+  design → adversarially criticize for falsifiability → run the cheapest valid instrument →
+  pre-registered verdict. Game-agnostic *method*; each lab binds its own instruments.
+  `scripts/experiment_report.py` renders the design/verdict (pass `--eyebrow`).
+- **`coworld-ab`** — decide whether a change **actually helped** via a matched, fresh, same-window
+  A/B. The game-agnostic *method* + the shared stats engine (`scripts/ab_stats.py`: significance,
+  improved/regressed/noise verdicts, group-split) + the report renderer (`scripts/compare_report.py`).
+  Each lab supplies a small `compare.py` **adapter** with its own metrics; crewrift's is the reference.
 
-These cover the lab-wide, mechanical halves of the loop. **Game-specific skills/tools
-— result analysis (scoring/roles), the player's build, its observability — belong
-under that game's lab directory, not here.**
+These cover the lab-wide, mechanical halves of the loop, plus the **experiment/A/B method** (the
+statistical core is shared; each lab supplies only its metric adapter). **Game-specific tools — a
+lab's metric adapter, result analysis, the player's build, its observability — belong under that
+game's lab directory, not here.**
 
 ## Deferred tasks
 
