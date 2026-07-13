@@ -17,3 +17,8 @@ buffers — not in-session hit counts — is the graduation signal.
 concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
+
+### No Cue-n-Woo lessons this session — work was creating a new sibling lab (vanilla_wow_lab)
+Evidence: This session's substantive work was scaffolding a brand-new game lab from the
+heartleaf_lab template; no Cue-n-Woo gameplay, tooling, or eval work occurred. Genuinely no
+Cue-n-Woo-specific lesson to record.
