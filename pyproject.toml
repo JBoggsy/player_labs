@@ -3,7 +3,7 @@ name = "player-labs"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
-    "coworld[auth]>=0.1.20",
+    "coworld[auth]>=0.1.30",
     "httpx>=0.28.1",
     # The shared player SDK that vendored players import as `players.player_sdk`,
     # plus its base deps (anthropic, boto3 for Bedrock, etc.). The `players` repo moved
@@ -68,8 +68,8 @@ requires = ["setuptools>=70"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-where = ["crewrift_lab", "heartleaf_lab"]
-include = ["crewrift*", "cady*"]
+where = ["crewrift_lab", "heartleaf_lab", "vanilla_wow_lab"]
+include = ["crewrift*", "cady*", "wowborg*"]
 exclude = ["crewrift.notsus*", "crewrift.suspectra*"]
 
 [tool.pytest.ini_options]

@@ -13,10 +13,10 @@ file is the one-screen "where are we and why."
 
 ---
 
-## Status (2026-07-13, session 1): lab created — docs + scaffolding only, loop BLOCKED
+## Status (2026-07-13, session 2): `wowborg` v1 implemented; loop still BLOCKED
 
-`vanilla_wow_lab` was created this session from the `heartleaf_lab` template (which itself was
-a scaffolding-only new lab). What exists:
+`vanilla_wow_lab` was created from the `heartleaf_lab` template, and the first Python policy
+skeleton now exists. What exists:
 
 - **Five docs**, from a deep read of the game repo + web research (with citations):
   [`docs/vanilla-wow-gameplay.md`](docs/vanilla-wow-gameplay.md) (the game, accessibly),
@@ -30,9 +30,12 @@ a scaffolding-only new lab). What exists:
 - **Standard lab scaffolding**: README, AGENTS, near-empty best_practices, this file, the
   lessons buffer + hooks (`tools/rotate_lessons.sh`, `tools/lessons_stop_nudge.sh`, registered
   in the root `.claude/settings.json`), and the `/lessons-review` skill.
-- **No player policy.** No `vanilla_wow_lab/<policy>/` dir, no Nim build path, no `versions.env`
-  yet — those come when a first policy is chosen (a human-direction call; see build paths in
-  [`AGENTS.md`](AGENTS.md#player-build-paths)).
+- **`wowborg` v1**: a pure-Python policy under [`wowborg/`](wowborg/) that connects to the
+  Coworld `/player` session, authenticates to realmd over `/tcp/realmd`, opens `/tcp/world`,
+  logs the seeded `character_name` into mangosd through `SMSG_LOGIN_VERIFY_WORLD`, sends the
+  worldport ACK / active mover packets, then idles with periodic `CMSG_PING`. It does not decode
+  world state or play yet. Focused validation: `uv run pytest vanilla_wow_lab/wowborg/tests -q`
+  passes (14 tests).
 
 **The loop is BLOCKED** and cannot run yet — this is the single most important fact:
 
@@ -48,9 +51,9 @@ a scaffolding-only new lab). What exists:
   game, and the persistent-tournament commissioner / account-mapping / hosted leaderboard are
   **designed but not implemented** (`docs/persistent-tournament.md:273-284`).
 
-So uploading a policy has nothing to compete in yet, and an experience request has no live
-field to run against. **Do not** treat this like the crewrift/heartleaf loop until the game is
-live.
+So uploading `wowborg` may produce a runnable score-0 artifact, but there is still nothing live
+to compete in yet, and an experience request may have no scored field to run against. **Do not**
+treat this like the crewrift/heartleaf loop until the game is live.
 
 ## Key facts (the hard-won ones — full detail in the docs)
 
@@ -83,8 +86,9 @@ live.
    opened since 2026-07-13? Is `vanilla_wow` submittable to a real competition yet? This
    determines whether the loop can even start. (`git -C ~/coding/coworlds/coworld-vanilla-wow
    pull` and re-read `docs/coworld-readiness.md` + the README badge.)
-2. **If live:** pick a build path (AGENTS.md#player-build-paths) — human-direction call — and
-   vendor the first policy under `vanilla_wow_lab/<policy>/` with a Nim build path.
+2. **If live:** build/upload `wowborg` and run the first hosted integration eval. Expected score
+   is 0; success is `SMSG_LOGIN_VERIFY_WORLD` in `WOWBORG` logs plus nonzero `/tcp/realmd` and
+   `/tcp/world` audit bytes.
 3. **Tooling gap:** a Vanilla-WoW survey/report skill (on the reporter's recap/events/stats +
    diagnoser findings) is the top investment once real episodes exist — analogous to
    `crewrift-survey`.
