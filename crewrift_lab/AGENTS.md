@@ -152,10 +152,12 @@ both on startup** alongside the preferences above:
   something *looks* like a reusable lesson. Most entries are noise; the value is the
   occasional gem. **The lifecycle is automated** (2026-06-12): a SessionStart hook
   archives each session's buffer to [`lessons_archive/`](lessons_archive/) and creates
-  a fresh one; a Stop hook nudges once if substantive work ends with the buffer
-  untouched; the **`/lessons-review`** skill (≈weekly, human-driven) clusters lessons
+  a fresh one; the **`/lessons-review`** skill (≈weekly, human-driven) clusters lessons
   that RECUR across archived sessions and graduates keepers to `best_practices.md`.
   Recurrence across sessions — not in-session hit counts — is the graduation signal.
+  (A single repo-wide Stop hook (`tools/lessons_stop_nudge.sh` at the repo root) nudges
+  once per session, naming only the labs the session actually worked in whose buffers
+  are still untouched — it replaced the old per-lab nudges on 2026-07-13.)
 
 **Cleanup step — run when you wrap up a thread (and before you push/land work).** Do a
 deliberate sweep so nothing learned evaporates:

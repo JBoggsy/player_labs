@@ -4,8 +4,7 @@
 # Mechanism, not trust: on every NEW session (source = startup|clear — never
 # resume/compact), the previous session's buffer is archived with a timestamp and
 # a fresh, stamped buffer is created. The agent is pointed at it via
-# additionalContext. Also records the fresh buffer's hash keyed by session_id so
-# the Stop-hook nudge (lessons_stop_nudge.sh) can tell "untouched this session".
+# additionalContext.
 #
 # Stdin: hook JSON {session_id, source, ...}. Stdout: hook JSON (additionalContext).
 set -uo pipefail
@@ -13,10 +12,8 @@ set -uo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 BUFFER="$REPO/ctf_lab/TENTATIVE_LESSONS.md"
 ARCHIVE_DIR="$REPO/ctf_lab/lessons_archive"
-STATE_DIR="${TMPDIR:-/tmp}"
 
 INPUT="$(cat 2>/dev/null || true)"
-SESSION_ID="$(printf '%s' "$INPUT" | jq -r '.session_id // "unknown"' 2>/dev/null || echo unknown)"
 SOURCE="$(printf '%s' "$INPUT" | jq -r '.source // "startup"' 2>/dev/null || echo startup)"
 
 emit_context() {
@@ -24,17 +21,11 @@ emit_context() {
     '{hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: $ctx}}'
 }
 
-record_state() {  # let the Stop nudge detect "buffer untouched this session"
-  { md5 -q "$BUFFER" 2>/dev/null || md5sum "$BUFFER" 2>/dev/null | cut -d' ' -f1; } \
-    > "$STATE_DIR/claude_ctf_lessons_baseline_$SESSION_ID" 2>/dev/null || true
-}
-
 NOW="$(date '+%Y-%m-%d %H:%M')"
 STAMP="$(date '+%Y%m%d-%H%M%S')"
 
 if [[ "$SOURCE" != "startup" && "$SOURCE" != "clear" ]]; then
   # Resumed/compacted session: same session, do NOT rotate. Just point at the buffer.
-  [[ -f "$STATE_DIR/claude_ctf_lessons_baseline_$SESSION_ID" ]] || record_state
   emit_context "Tentative-lessons buffer (this session's, write lessons AS YOU GO): ctf_lab/TENTATIVE_LESSONS.md"
   exit 0
 fi
@@ -70,12 +61,10 @@ concrete) and optional \`Status:\` notes. Terse. One lesson per \`###\`.
 EOF
 
 if [[ -n "$ARCHIVED" ]]; then
-  CTX="Tentative-lessons buffer rotated: previous session's lessons archived to ctf_lab/lessons_archive/$ARCHIVED. Fresh buffer: ctf_lab/TENTATIVE_LESSONS.md — write candidate lessons there AS YOU GO (a Stop hook will nudge once if substantive work happens with the buffer untouched)."
+  CTX="Tentative-lessons buffer rotated: previous session's lessons archived to ctf_lab/lessons_archive/$ARCHIVED. Fresh buffer: ctf_lab/TENTATIVE_LESSONS.md — write candidate lessons there AS YOU GO."
 else
   CTX="Fresh tentative-lessons buffer: ctf_lab/TENTATIVE_LESSONS.md (previous buffer was empty; nothing archived) — write candidate lessons there AS YOU GO."
 fi
-
-record_state
 
 # Keep git tidy: commit the rotation if the tree allows it (best effort, never block).
 if [[ -n "$ARCHIVED" ]]; then

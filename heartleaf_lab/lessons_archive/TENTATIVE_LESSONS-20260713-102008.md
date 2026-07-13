@@ -1,6 +1,6 @@
 # Heartleaf tentative lessons — session buffer
 
-**Session started:** 2026-07-13 15:54. This is THIS SESSION's lesson buffer. Write candidate
+**Session started:** 2026-07-13 10:14. This is THIS SESSION's lesson buffer. Write candidate
 lessons here **as you go** — eagerly and noisily; most will be noise and that's
 fine. At the next session start, a hook archives this file automatically to
 [`lessons_archive/`](lessons_archive/) and creates a fresh one — nothing you
@@ -17,3 +17,6 @@ buffers — not in-session hit counts — is the graduation signal.
 concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
+
+### No lessons this session — work was entirely in crewrift_lab.
+Evidence: this session resolved a merge conflict and gave a crewborg (Crewrift) primer; Heartleaf was never touched, so no Heartleaf-specific lessons arose.
