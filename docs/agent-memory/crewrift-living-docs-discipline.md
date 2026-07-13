@@ -29,8 +29,11 @@ version log.
 **Update (2026-06-12):** James automated the lessons *lifecycle* because instruction-
 following alone wasn't reliable: a SessionStart hook (`crewrift_lab/tools/rotate_lessons.sh`)
 archives each session's TENTATIVE_LESSONS.md to `crewrift_lab/lessons_archive/` and creates
-a fresh per-session buffer; a Stop hook (`lessons_stop_nudge.sh`) blocks once per session if
-substantive work ends with the buffer untouched; `/lessons-review` (≈weekly, human-driven)
+a fresh per-session buffer; `/lessons-review` (≈weekly, human-driven)
 graduates lessons that RECUR across archived session buffers. Writing lessons AS YOU GO is
-still the agent's job — the hooks only rotate and nudge. WORKING_CONTEXT.md discipline is
+still the agent's job — the hook only rotates. WORKING_CONTEXT.md discipline is
 unchanged (still manual).
+
+**Update (2026-07-13):** The Stop-hook nudge (`lessons_stop_nudge.sh`) was removed at
+James's request — the four scripts are deleted and the `Stop` block is gone from the
+root `.claude/settings.json`. Only the SessionStart rotation remains automated.

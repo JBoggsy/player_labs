@@ -29,32 +29,6 @@
           }
         ]
       }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/crewrift_lab/tools/lessons_stop_nudge.sh\"",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/cue_n_woo_lab/tools/lessons_stop_nudge.sh\"",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/heartleaf_lab/tools/lessons_stop_nudge.sh\"",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/ctf_lab/tools/lessons_stop_nudge.sh\"",
-            "timeout": 10
-          }
-        ]
-      }
     ]
   }
 }
