@@ -94,6 +94,10 @@ comes from the membership-events evidence, which the monitor surfaces.
   change you intend before this gated step.
 - **amd64** images only; **rotating** league/division ids (re-resolve); `submit` only resolves
   policies you own (`--mine`).
+- **Private/team-gated leagues (e.g. Vanilla Wow) are invisible** to unelevated requests
+  (opt-in elevation, metta #17028). Run the monitor with **`COWORLD_ELEVATED=1`** to send
+  `X-Use-Elevated-Privileges` (Softmax team members only; mirrors `coworld --elevated` — a
+  no-op for non-team credentials).
 - **`resolve-and-upload` is NOT this flow** — it's a Coworld/*game* upload wrapper, not a policy one.
 - Routes used: `/v2/league-submissions`, `/v2/league-policy-memberships`,
   `/v2/policy-membership-events`, `/v2/divisions/{id}/leaderboard`. The discipline behind "submit
