@@ -59,17 +59,17 @@ dev = [
 # as a packages source root makes `from crewrift.crewborg import build_runtime` and
 # `import cady` importable after uv sync (editable — edits are live).
 #
-# crewborg (crewrift) and cady (heartleaf) are Python policies. notsus and suspectra are
-# vendored *Nim* players (source-only; built externally via their Dockerfiles) — they are
-# NOT Python packages, so they're excluded from discovery even though suspectra carries an
-# upstream-packaging __init__.py.
+# crewborg (crewrift), cady (heartleaf), and beacon (ctf) are Python policies. notsus and
+# suspectra are vendored *Nim* players (source-only; built externally via their Dockerfiles)
+# — they are NOT Python packages, so they're excluded from discovery even though suspectra
+# carries an upstream-packaging __init__.py.
 [build-system]
 requires = ["setuptools>=70"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-where = ["crewrift_lab", "heartleaf_lab"]
-include = ["crewrift*", "cady*"]
+where = ["crewrift_lab", "heartleaf_lab", "ctf_lab"]
+include = ["crewrift*", "cady*", "ctf*"]
 exclude = ["crewrift.notsus*", "crewrift.suspectra*"]
 
 [tool.pytest.ini_options]

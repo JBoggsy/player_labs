@@ -37,6 +37,7 @@ player_labs/
   crewrift_lab/        first game lab — Crewrift (has its own README + AGENTS)
   cue_n_woo_lab/       second game lab — Cue-n-Woo, a text theory-of-mind game (own README)
   heartleaf_lab/       third game lab — Heartleaf, a 9-gnome garden-dinner game (own README)
+  ctf_lab/             fourth game lab — CTF, an 8v8 capture-the-flag shooter (own README)
   pyproject.toml       uv project: coworld[auth] + the pinned players SDK (from git) + deps
 ```
 
