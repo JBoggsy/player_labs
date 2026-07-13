@@ -1,6 +1,6 @@
 # Cue-n-Woo tentative lessons — session buffer
 
-**Session started:** 2026-07-13 15:00. This is THIS SESSION's lesson buffer. Write candidate
+**Session started:** 2026-07-13 15:07. This is THIS SESSION's lesson buffer. Write candidate
 lessons here **as you go** — eagerly and noisily; most will be noise and that's
 fine. At the next session start, a hook archives this file automatically to
 [`lessons_archive/`](lessons_archive/) and creates a fresh one — nothing you
@@ -17,3 +17,6 @@ buffers — not in-session hit counts — is the graduation signal.
 concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
+
+### No gameplay lessons this session — repo-infra work only
+Evidence: session removed the per-lab Stop-hook nudges and replaced them with one repo-wide nudge (tools/lessons_stop_nudge.sh); it touched this lab only to edit its rotate_lessons.sh + AGENTS.md, no player/eval work.
