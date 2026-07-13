@@ -14,6 +14,12 @@
             "command": "\"$CLAUDE_PROJECT_DIR/cue_n_woo_lab/tools/rotate_lessons.sh\"",
             "timeout": 15,
             "statusMessage": "Rotating Cue-n-Woo tentative-lessons buffer"
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/heartleaf_lab/tools/rotate_lessons.sh\"",
+            "timeout": 15,
+            "statusMessage": "Rotating Heartleaf tentative-lessons buffer"
           }
         ]
       }
@@ -29,6 +35,11 @@
           {
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR/cue_n_woo_lab/tools/lessons_stop_nudge.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/heartleaf_lab/tools/lessons_stop_nudge.sh\"",
             "timeout": 10
           }
         ]

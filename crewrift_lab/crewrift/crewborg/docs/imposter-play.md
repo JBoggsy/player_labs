@@ -33,7 +33,7 @@ instead.
                    ├─ Voting ──────────────► attend_meeting   (see ./meetings.md)
                    ├─ just killed ─────────► evade            (post-kill re-approach)
                    ├─ ready + visible victim► hunt             (commit ▸ intercept ▸ strike)
-                   ├─ nearly ready + crew ──► recon            (pre-ready beeline)
+                   ├─ travel time ≈ cooldown► recon            (timed pre-ready beeline)
                    └─ otherwise ───────────► search           (always-on seeking FSM)
                                                   │
                           each mode returns a symbolic Intent (navigate_to / kill / idle)
@@ -57,25 +57,37 @@ priority first):
 | 1 | `phase == "Voting"` | `attend_meeting` | (handled in `_select`, before role dispatch) |
 | 2 | killed within `EVADE_TICKS` ago | `evade` | `_recent_self_kill(belief)` |
 | 3 | kill ready **and** a victim visible | `hunt` | `belief.self_kill_ready and has_visible_victim(belief)` |
-| 4 | strictly PRE-ready, within `recon_window()` of ready, **and** a *fresh, unspent* sighting exists | `recon` | `not self_kill_ready and ticks_until_kill_ready(belief) <= recon_window() and _live_recon_target(belief) is not None` |
+| 4 | strictly PRE-ready, a *fresh, unspent* sighting exists, **and** the real travel time to it has caught up with the remaining cooldown | `recon` | `not self_kill_ready and target is not None and ticks_until_kill_ready(belief) <= travel_ticks(belief, self_xy, target_xy)` |
 | 5 | otherwise (the literal `else`) | `search` | — no gate of its own — |
 
 Order is the design contract (§10): Evade outranks Hunt so we never instantly
 re-hunt over our own fresh body; Hunt outranks Recon because a ready kill on a
-visible victim beats pre-positioning; Recon outranks Search because a tick-windowed
+visible victim beats pre-positioning; Recon outranks Search because a well-timed
 beeline to crew beats undirected seeking. Search is the always-on fallback that
 fires whenever nothing above it does — including **every kill-ready tick with no
 visible victim** (recon is pre-ready only; a ready blind imposter actively sweeps
-rooms rather than beelining to history).
+rooms rather than beelining to history) **and every pre-ready tick where it isn't
+time to move yet** — Search's WATCH holds the best-view task station until gate 4
+fires.
 
-Gate 4's "fresh, unspent" qualifier (`_live_recon_target`, added with the
-2026-07-02 ready-state re-search fix) keeps Recon honest two ways:
+Gate 4 (reworked 2026-07-06 — was a fixed `recon_window()` ticks-before-ready,
+replaced with computed timing) keeps Recon honest three ways:
 
-- **Staleness bound** — the freshest sighting behind
-  `strategy/opportunity.py:recon_target` must be younger than
-  `recon_staleness_ticks()` (default 360, env `CREWBORG_RECON_STALENESS_TICKS`);
-  an older last-seen point carries no victim information, so we sweep rooms
-  (Search) instead of beelining to it.
+- **Isolation, not recency** — the target is `strategy/opportunity.py`'s
+  `most_isolated_recon_candidate`: among fresh sightings, the one farthest from
+  every OTHER candidate (maximizing the minimum gap), tie-broken toward the more
+  recently seen. Least likely another crewmate (or a teammate) complicates the
+  approach or the kill.
+- **Staleness bound** — the candidate pool behind `recon_target` only includes
+  sightings younger than `recon_staleness_ticks()` (default 360, env
+  `CREWBORG_RECON_STALENESS_TICKS`); an older last-seen point carries no victim
+  information, so we sweep rooms (Search) instead of beelining to it.
+- **Timed departure** — `travel_ticks(belief, self_xy, target_xy)` estimates the
+  walk via the real nav route when available (straight-line distance / speed
+  otherwise) and Recon only fires once `ticks_until_kill_ready(belief)` has
+  counted down to that estimate — so we arrive right as the cooldown clears
+  instead of camping there early (the over-extension risk a longer fixed window
+  used to create).
 - **Spent sightings** — the moment we stand at a target's last-known point
   (within `RECON_REACHED_RADIUS_SQ`) without it being visible, that (color,
   last_seen_tick) sighting is marked spent in the selector and stops qualifying;
@@ -93,6 +105,7 @@ applies to imposter and crewmate alike.
 |-------|--------|--------|
 | `EVADE_TICKS` | env `CREWBORG_EVADE_TICKS`, default `72` (~3s at 24 Hz) | Length of the post-kill Evade window (`_recent_self_kill`). |
 | `RECON_STALENESS_TICKS` | env `CREWBORG_RECON_STALENESS_TICKS`, default `360` (~15s) | Max age of a sighting that still qualifies as a recon target (gate 4). |
+| `AGENT_SPEED_PX` | `strategy/trajectory.py`, `3.0` px/tick | Movement speed `travel_ticks` divides distance by to estimate recon departure timing (gate 4). |
 | `CREWBORG_BE_DUMB` / `BE_DUMB` | env truthy | Replaces the imposter `Playing` order with only Hunt (ready + visible victim) / Search — skips Evade, Recon, Report Body. An isolation experiment for "always prepare to kill". |
 | `skip_evade` | LLM commander (`strategy/commander/bias.py:commander_of`) | When the commander signals danger, suppresses Evade so we don't loiter near a body; logged to `belief.commander_danger_events`. See [`./commander.md`](./commander.md). |
 
@@ -110,8 +123,8 @@ The HUD exposes only a binary ready/cooldown bit — no countdown — so the
   learned `kill_cooldown_estimate` or, before anything is measured,
   `DEFAULT_KILL_COOLDOWN_TICKS` (500 — Crewrift Prime 0.3.9, the target league;
   regular Crewrift uses 800). With no cooldown start observed yet it assumes a
-  full cooldown remains, so a no-information imposter does not falsely enter the
-  Recon window.
+  full cooldown remains, so a no-information imposter does not falsely trigger
+  Recon's timed departure.
 - The cooldown start and learned duration are maintained in `types.py` belief
   folding: `last_kill_tick`, `kill_ready_since_tick`, `kill_cooldown_start_tick`,
   and `kill_cooldown_estimate` are updated as `self_kill_ready` transitions are
@@ -146,7 +159,7 @@ form; see the module docstring for the authoritative transition list):
 | `pick_room` | **Score every reachable room and commit to the best — never idles.** The score blends (env-tunable weights, `modes/search.py`): live expected-crew occupancy (strongest, `W_OCCUPANCY` 3.0), the **empirical density prior** (`W_PRIOR` 1.5 — see below), unvisitedness (grows with time since visit), a fast-decaying just-visited penalty, travel cost, teammate-pressure subtraction, a task-room blend bonus, and a soft commander hunt-room nudge. Excludes the current room, the spawn room, and a commander avoid-room when possible. Head to the room **center** (go fully inside), not a door/task spot. |
 | `go_to_room` | Navigate to the center; seeing ANY live non-teammate — room or hallway — switches to FOLLOW immediately; on arrival, SEARCH_ROOM. |
 | `search_room` | Sweep the room's interior scan points so crew hidden from the door are found. Crew in the room → WATCH; a crewmate seen elsewhere → FOLLOW; swept empty → PICK_ROOM. |
-| `watch` | Only entered with crew confirmed in the room. **Camouflage first** (2026-07-02, [design](./designs/watch-camouflage.md)): when the kill is >`CREWBORG_CAMO_MIN_CD_TICKS` (100) from ready, fake a task — idle one task duration + buffer at the in-room task spot whose *baked* vision (`visionbake.py`) covers the most visible crew — instead of hovering; escapes on kill-soon / crew-lost / travel-cap / preemption, one fake task per room visit. Then: multiple crew: hold the in-room **vantage** with line-of-sight to the most of them (recomputed as they move). A single crew: close to just outside kill range (or a task site beside it). Leaver → FOLLOW; no watched crew remain → PICK_ROOM. |
+| `watch` | Only entered with crew confirmed in the room. **One case** (simplified 2026-07-06 — James: crewborg should just latch onto the best-viewing task and never hover): any crew visible → hold the in-room task station with line-of-sight to the most of them (recomputed as they move), regardless of how many are visible or how close the kill is. Leaver → FOLLOW; no watched crew remain → PICK_ROOM. |
 | `follow(c)` | Chase the committed leaver `c` to its next room. When visible, `navigate_to` its live position and feed `strategy/path_prediction.py:PathPredictor`; when occluded, `navigate_to` the predictor's top predicted hallway position. Give up when the target is gone/dead/now a teammate, the lost-ticks budget expires, or the predictor runs out. |
 
 Search never follows the teammate imposter (`belief.teammate_colors`). The path
@@ -181,39 +194,32 @@ new target is always elsewhere); Recon abandons its target and heads for the
 hottest occupancy point that isn't underfoot — and emits a
 `domain.parked_guard` trace event (in the `kill` trace group). Hunt is
 deliberately unguarded (its in-range "lying in wait" hold escapes via the
-urgency relaxation) and Evade can't be kill-ready. The one exemption is
-Search's camo idle (below) — *intentional* idling passed as
-`fires(..., intentional_idle=True)` resets the streak instead of accruing.
+urgency relaxation) and Evade can't be kill-ready. No exemptions: if WATCH's
+vantage hold ever fires the guard, the selector should already have switched
+to Hunt before Search ran at all — the guard firing anyway is a real bug to
+chase, not a case to special-case around.
 
-### WATCH camouflage — fake a task instead of hovering
+### Vantage selection (WATCH's one case)
 
-Full design: [`./designs/watch-camouflage.md`](./designs/watch-camouflage.md).
-When WATCH has ≥1 visible crewmate in the room and the kill is more than
-`CREWBORG_CAMO_MIN_CD_TICKS` (100, = the Recon window — camo never eats the
-near-ready window) ticks from ready, the imposter walks to the task station in
-the room whose **baked vision** covers the most currently-visible crew
-(tie-break: larger total visible area; no usable bake → nearest in-room task
-spot) and fakes a task there: idle `FAKE_TASK_TICKS` (72) +
-`CREWBORG_CAMO_BUFFER_TICKS` (12). The per-task visibility masks are baked
-offline (`visionbake.py`, vendored `map/croatoan_visionbake.pkl.gz`, re-baked
-by `crewrift_lab/tools/vision_bake.py`) and validated at load against the
-walkability fingerprint + task count.
+`_refresh_vantage` / `_best_vantage` pick, over the room's **task stations only**
+— never an arbitrary room point (2026-07-06, James: replays showed crewborg
+hovering mid-room instead of latching onto a task; every room on croatoan has
+>=1 task station, so a held vantage is always one, and this is now WATCH's
+*only* behavior — no separate camouflage state, no single/multiple-crew split)
+— whichever has clear line-of-sight (`nav._segment_clear` over
+`belief.nav.walkability`) to the most watchable crew within `VANTAGE_RANGE`
+(91 px — the circumscribed-circle radius of the game's real 128×128 camera
+window, see `docs/designs/vision-model.md`). It is throttled
+(`VANTAGE_REFRESH_TICKS` = 18) and uses hysteresis (`VANTAGE_SWITCH_MARGIN` = 1)
+so it only moves when a new vantage sees at least one more crewmate, avoiding
+jitter between equal vantages. Returns `None` only for a room with zero task
+stations (doesn't happen on croatoan; guards a future map).
 
-Every camo tick has an escape: kill-soon (`ticks_until_kill_ready` back inside
-the gate), crew-lost (all crew unseen `CREWBORG_CAMO_CREW_LOST_TICKS` = 36
-ticks), a 120-tick travel cap on the walk to the spot, the hold deadline, and
-mode preemption (`SearchMode.on_exit` closes an active camo). One fake task per
-room visit; `CREWBORG_CAMO=0` is the kill switch. Telemetry:
-`domain.camo_idle` (phase `enter`/`exit`, in the `kill` trace group).
-
-### Vantage selection
-
-`_refresh_vantage` / `_best_vantage` pick, over a coarse `VANTAGE_STEP` (40 px)
-grid of reachable in-room points, the point with clear line-of-sight
-(`nav._segment_clear` over `belief.nav.walkability`) to the most watchable crew
-within `VANTAGE_RANGE` (360 px). It is throttled (`VANTAGE_REFRESH_TICKS` = 18)
-and uses hysteresis (`VANTAGE_SWITCH_MARGIN` = 1) so it only moves when a new
-vantage sees at least one more crewmate, avoiding jitter between equal vantages.
+A prior version of this ("WATCH camouflage") gated the task-latch behind a
+kill-cooldown threshold and split single- vs multiple-crew handling — removed
+2026-07-06 in favor of always latching onto the best-view task regardless of
+cooldown or crew count. See `docs/designs/watch-camouflage.md` (marked
+superseded) for the historical design and why it existed.
 
 | Search constant | Value | Meaning |
 |-----------------|-------|---------|
@@ -221,8 +227,7 @@ vantage sees at least one more crewmate, avoiding jitter between equal vantages.
 | `FOLLOW_LOST_TICKS` | 120 | Drop an unseen follow after this long with no live prediction. |
 | `COMMANDER_FOLLOW_LOST_TICKS` | 240 | Extended follow persistence for a commander-hard-named target. |
 | `WATCH_RECENT_TICKS` | 36 | A crewmate is "still watchable" from a vantage if seen within this window. |
-| `VANTAGE_RANGE` | 360 px | Line-of-sight range for vantage scoring. |
-| `VANTAGE_STEP` | 40 px | Grid step for candidate vantage points. |
+| `VANTAGE_RANGE` | 91 px | Line-of-sight range for vantage scoring. |
 | `VANTAGE_REFRESH_TICKS` | 18 | Max vantage recompute frequency. |
 | `VANTAGE_SWITCH_MARGIN` | 1 | Extra crew a new vantage must see before we move to it. |
 
@@ -233,29 +238,44 @@ see [`./commander.md`](./commander.md). Movement/pathing mechanics are in
 [`./navigation.md`](./navigation.md); path-destination prediction is its own
 subsystem in `strategy/path_prediction.py`.
 
-## Recon — the pre-ready beeline
+## Recon — the timed pre-ready beeline
 
-`modes/recon.py:ReconMode`. The only *tick-windowed* pre-position. When the
-selector sees the kill within `recon_window()` ticks of ready (gate 4), it routes
-here instead of Search. Recon does exactly one thing: **beeline to the
-most-recently-seen crewmate** (`strategy/opportunity.py:most_recent_victim` —
-live position when visible, last-known otherwise) so that the instant the
-cooldown clears, a victim is in view and Hunt fires immediately.
+`modes/recon.py:ReconMode`. The only *pre-positioning* mode (reworked
+2026-07-06 — was a fixed tick-window before ready, now a computed departure
+time). When the selector's travel-time gate fires (gate 4), it routes here
+instead of Search. Recon does exactly one thing: **beeline to the most
+ISOLATED fresh crewmate** (`strategy/opportunity.py:recon_target` — live
+position when visible, last-known otherwise) so that the instant the cooldown
+clears, a victim is in view and Hunt fires immediately.
 
-The target (commander `target_player` override, else `most_recent_victim`) is
-re-chosen each tick. Unlike Hunt it does not require the target to be currently
-visible or reachable — it is only pre-positioning, not striking. The selector
-only routes here for a *fresh, unspent* sighting (see gate 4 above), and Recon
-itself never stands on a ghost position: reaching the last-known point without
-the target in view abandons it (`_abandoned`) and falls back to occupancy
-seeking, with a `ParkedGuard` as final insurance. It `idle`s only when we have
-no self position or no crew signal exists at all.
+The target (commander `target_player` override, else `recon_target`) is
+re-derived each tick — the SAME function the selector used to time the entry,
+so mode and trigger never disagree about who to approach. Unlike Hunt it does
+not require the target to be currently visible or reachable — it is only
+pre-positioning, not striking. The selector only routes here for a *fresh,
+unspent* sighting whose travel time has caught up with the remaining cooldown
+(see gate 4 above), and Recon itself never stands on a ghost position: reaching
+the last-known point without the target in view abandons it (`_abandoned`) and
+falls back to occupancy seeking, with a `ParkedGuard` as final insurance. It
+`idle`s only when we have no self position or no crew signal exists at all.
 
 | Recon constant | Source | Value | Meaning |
 |----------------|--------|-------|---------|
-| `RECON_WINDOW_TICKS` | env `CREWBORG_RECON_WINDOW` via `recon_window()` | 100 | Ticks before ready at which Recon activates. Deliberately short — a long window risks over-extension that gets the imposter caught. |
 | `RECON_STALENESS_TICKS` | env `CREWBORG_RECON_STALENESS_TICKS` via `recon_staleness_ticks()` | 360 | Max sighting age that still qualifies as a recon target (3× the 120-tick follow/track windows ≈ 2-3 room transits); older ⇒ Search. |
 | `RECON_REACHED_RADIUS_SQ` | `strategy/opportunity.py` | `24²` | "Reached the last-known point" radius, shared by ReconMode's arrival handling and the selector's spent-sighting check. |
+| `AGENT_SPEED_PX` | `strategy/trajectory.py` | `3.0` px/tick | Speed `travel_ticks` divides distance by to decide when it's time to depart. |
+
+Target selection: among fresh sightings, `most_isolated_recon_candidate` picks
+the one farthest from every OTHER candidate (max of the min-gap to any other),
+tie-broken toward the more recently seen. This replaced plain
+"most-recently-seen" targeting — a crewmate standing next to others is more
+likely to have a witness or get intercepted, and least useful to pre-position
+on. Departure timing: `travel_ticks(belief, self_xy, target_xy)` estimates the
+walk via the real nav route when one exists (respects walls/corridors), else
+straight-line distance / `AGENT_SPEED_PX`. Gate 4 fires once
+`ticks_until_kill_ready(belief) <= travel_ticks(...)` — so Search holds its
+best-view task vantage right up until that moment, and Recon departs timed to
+arrive as the cooldown clears, not early.
 
 ## Hunt — commit, intercept, strike
 
@@ -299,41 +319,50 @@ in_range  AND  self_kill_ready  AND  (unwitnessed  OR  already_killed  OR  dange
 `in_range` is `dist2(self_xy, victim_xy) <= KILL_RANGE_SQ`. The interesting part
 is the third clause — when a witnessed kill is allowed anyway.
 
-### `unwitnessed` and the isolation radius
+### `unwitnessed` — a witness COUNT against an urgency-ramped tolerance
 
 `strategy/opportunity.py:unwitnessed(belief, target)` answers "would killing this
-target now go unseen, at the current urgency?" A kill is unwitnessed when **no
-live non-teammate crewmate** (other than the victim) is both:
+target now go unseen, at the current urgency?" **A kill is unwitnessed iff the
+number of live non-teammate crewmates (other than the victim) currently visible
+to us — this exact tick — is at or below the current tolerance**
+(`witness_tolerance(belief)`). It's not a yes/no gate on any witness at all: a
+single onlooker never vetoes a strike, even at zero urgency.
 
-- within an isolation radius of the target, and
-- has been seen recently enough to credibly still be watching.
+Counting "currently visible" is exact, not an approximation: `belief.roster`
+only records another player's position on ticks where *our own* vision actually
+saw them, and Crewrift vision is symmetric (same camera-frame + line-of-sight
+check run from either side — see `docs/designs/vision-model.md`). So "we
+currently see them" and "they can see the kill" are the same fact — no isolation
+radius or staleness window is needed to *approximate* "nearby and probably still
+watching." (Before 2026-07-06 this used a bespoke `BASE_ISOLATION_RADIUS`/
+`WITNESS_WINDOW_TICKS` heuristic that was never derived from the game's real
+~64–90px vision reach — see the vision-model doc.) The victim itself and fellow
+imposters are never witnesses; dead crewmates can't witness.
 
-The victim itself and fellow imposters are never witnesses; dead crewmates can't
-witness. At zero urgency the radius is `BASE_ISOLATION_RADIUS` (48 world px) and
-the recency window is `WITNESS_WINDOW_TICKS` (72 ticks).
+### Urgency ramps the tolerated witness count
 
-### Urgency relaxation to zero
-
-The witness bar is not fixed. The longer the imposter has been *able* to kill
-without doing so, the more both the radius and the window shrink, so a cautious
+The witness tolerance is not fixed. The longer the imposter has been *able* to
+kill without doing so, the more witnesses it will strike through, so a cautious
 imposter that never finds a perfectly clean opening still escalates rather than
 stalling forever:
 
 ```
 frac      = min(1.0, kill_urgency_ticks / URGENCY_FULL_TICKS)
-radius_sq = (BASE_ISOLATION_RADIUS * (1 - frac))²
-window    = int(WITNESS_WINDOW_TICKS * (1 - frac))
+tolerance = int(ALLOWED_WITNESSES_MIN + (ALLOWED_WITNESSES_MAX - ALLOWED_WITNESSES_MIN) * frac)
+unwitnessed = (witness_count <= tolerance)
 ```
 
-At `URGENCY_FULL_TICKS` (240 ticks, ~10s at 24 Hz) of being kill-ready without
-killing, `frac == 1.0`, the radius and window both reach zero, and *every* victim
-counts as unwitnessed — the imposter will strike regardless of nearby crew.
+At zero urgency, up to `ALLOWED_WITNESSES_MIN` (1) witness is tolerated. By
+`URGENCY_FULL_TICKS` (240 ticks, ~10s at 24 Hz) of being kill-ready without
+killing, the tolerance reaches `ALLOWED_WITNESSES_MAX` (6) — since this game's
+fixed 6-crew format means at most 5 OTHER live crew can ever witness a kill, that
+ceiling is an effective "always strike," reached by a ramp rather than a cliff.
 
 | Witness constant | Value | Meaning |
 |------------------|-------|---------|
-| `BASE_ISOLATION_RADIUS` | 48 px | Clearance required around the target at zero urgency. |
-| `WITNESS_WINDOW_TICKS` | 72 | Max age of a sighting that still counts a crewmate as a potential witness, at zero urgency. |
-| `URGENCY_FULL_TICKS` | 240 | Kill-ready-without-killing ticks at which the witness bar reaches zero. Env-overridable via `CREWBORG_URGENCY_FULL_TICKS` (clamped to ≥ 1) for sweeps without a rebuild. |
+| `URGENCY_FULL_TICKS` | 240 | Kill-ready-without-killing ticks at which witness tolerance reaches its maximum. Env-overridable via `CREWBORG_URGENCY_FULL_TICKS` (clamped to ≥ 1) for sweeps without a rebuild. |
+| `ALLOWED_WITNESSES_MIN` | 1 | Witnesses tolerated at zero urgency. Env-overridable via `CREWBORG_ALLOWED_WITNESSES_MIN`. |
+| `ALLOWED_WITNESSES_MAX` | 6 | Witnesses tolerated at full urgency (exceeds the max possible in this game's 8-player format — an "always strike" ceiling). Env-overridable via `CREWBORG_ALLOWED_WITNESSES_MAX`. |
 
 ### The first-kill witness drop
 

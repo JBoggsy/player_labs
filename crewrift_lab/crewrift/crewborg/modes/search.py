@@ -11,17 +11,15 @@ parking.** A 5-state FSM (see the imposter-FSM doc §8):
   SEARCH_ROOM  Sweep the room's interior so crew hidden from the door are found. Crew in
                the room -> WATCH; a crewmate seen elsewhere -> FOLLOW; swept empty ->
                PICK_ROOM.
-  WATCH        Only entered with crew confirmed in the room. CAMOUFLAGE first (2026-07-02,
-               docs/designs/watch-camouflage.md): when the kill is >CREWBORG_CAMO_MIN_CD_TICKS
-               (100) from ready, fake a task — idle one task duration (+buffer) at the in-room
-               task spot whose BAKED vision covers the most visible crew — instead of hovering
-               suspiciously; escapes on kill-soon / crew-lost / travel-cap / preemption. Then:
-               MULTIPLE crew visible -> hold the vantage seeing the most (recomputed as they
-               move). A SINGLE crew -> close on it: a task site beside it if one is near, else
-               approach to ``kill_range + 15px`` (just outside kill range, poised to strike).
-               Self-loops (holds) only while >=1 crew is in view; the LAST crewmate leaving
-               view -> FOLLOW; no crew in view AND none seen to leave -> PICK_ROOM (rare
-               fallback).
+  WATCH        Only entered with crew confirmed in the room. **One case** (simplified
+               2026-07-06 — James: crewborg should just latch onto the best-viewing task
+               and never hover): whenever ANY crew is visible in the room, hold the TASK
+               STATION with line-of-sight to the most of them, recomputed as they move —
+               never an arbitrary room point, and never a special-cased close-in for a
+               lone crewmate (Hunt owns closing the gap once the kill is actually ready).
+               Self-loops (holds) only while >=1 crew is in view; the LAST crewmate
+               leaving view -> FOLLOW; no crew in view AND none seen to leave -> PICK_ROOM
+               (rare fallback).
   FOLLOW       Persistent chase of a leaver using path prediction — keeps going down the
                predicted hallway while the target is occluded, up to FOLLOW_LOST_TICKS (240
                for a hard-commander target). While the target is visible we chase its live
@@ -30,10 +28,10 @@ parking.** A 5-state FSM (see the imposter-FSM doc §8):
                the window) we re-scan the room we ended up in (-> SEARCH_ROOM) or -> PICK_ROOM.
 
 Kill hand-off is automatic and lives in the selector (``rule_based``): the instant the kill
-is ready and a victim is visible, the strategy gate switches to Hunt. So Search never idles a
-ready kill away — a lone target is *approached* to within a step, a crowd is *watched* only
-until one peels off. The only ``idle`` this mode can emit is the deliberate multi-crew
-vantage hold (and the startup no-op before the camera/map exist).
+is ready and a victim is visible, the strategy gate switches to Hunt — so Search never idles
+a ready kill away; the switch happens before Search would even be asked for an intent. The
+only ``idle`` this mode can emit is the deliberate WATCH vantage hold (and the startup no-op
+before the camera/map exist).
 
 Two ready-state safeguards (2026-07-02 movement diagnosis):
 
@@ -58,12 +56,10 @@ from crewrift.crewborg.modes import imposter_common as ic
 from crewrift.crewborg.map.types import Room
 from crewrift.crewborg.nav import _segment_clear
 from crewrift.crewborg.strategy.commander.bias import commander_of
-from crewrift.crewborg.strategy.opportunity import ticks_until_kill_ready
 from crewrift.crewborg.strategy.path_prediction import PathPredictor
 from crewrift.crewborg.strategy.room_prior import room_share_prior
 from crewrift.crewborg.types import ActionState, Belief, Intent, PlayerRecord
-from crewrift.crewborg.visionbake import TaskVisionBake, load_visionbake
-from players.player_sdk import EmptyModeParams, Mode, ModeDirective, ModeParams
+from players.player_sdk import EmptyModeParams, Mode, ModeParams
 
 ARRIVE_RADIUS_SQ = 24**2
 # Drop a follow once the target has been unseen this long with no live prediction.
@@ -72,20 +68,16 @@ FOLLOW_LOST_TICKS = 120
 COMMANDER_FOLLOW_LOST_TICKS = 240
 # A crewmate counts as "still watchable" from a vantage if seen within this window.
 WATCH_RECENT_TICKS = 36
-# Line-of-sight range (px) for vantage scoring — generous; LOS through walls is the real gate.
-VANTAGE_RANGE = 360
+# Line-of-sight range (px) for vantage scoring: the circumscribed-circle radius of
+# Crewrift's real 128x128 camera window (ceil(64 * sqrt(2)) -- see
+# docs/designs/vision-model.md), so it over- rather than under-covers the true square
+# viewport; LOS through walls (the real gate) narrows it down from there.
+VANTAGE_RANGE = 91
 VANTAGE_RANGE_SQ = VANTAGE_RANGE**2
-# Coarse grid step (px) for candidate vantage points within a room.
-VANTAGE_STEP = 40
 # Recompute the vantage at most this often (crew move; LOS scans cost a little).
 VANTAGE_REFRESH_TICKS = 18
 # Only move to a new vantage if it sees at least this many MORE crew (hysteresis).
 VANTAGE_SWITCH_MARGIN = 1
-# Single-crew close-in target: kill_range (20px) + 15px margin — just outside kill range,
-# poised to dart in the instant the cooldown lifts (the selector flips us to Hunt then).
-SINGLE_APPROACH_PX = 35
-# A task station this close (px) to a lone target is a natural place to stand and blend.
-TASK_SITE_NEAR_SQ = 56**2
 
 
 def _wenv(name: str, default: float) -> float:
@@ -118,73 +110,6 @@ RECENCY_DECAY_TICKS = _wenv("CREWBORG_PICKROOM_RECENCY_DECAY", 150.0)
 UNVISITED_FULL_TICKS = _wenv("CREWBORG_PICKROOM_UNVISITED_FULL", 800.0)
 
 
-# --- WATCH camouflage (docs/designs/watch-camouflage.md) -----------------------------------
-# When the kill is far from ready, hovering near crew is pure suspicion cost — there is
-# nothing to convert yet. Blend in instead: fake a task (idle one crewmate task duration
-# + buffer) at the in-room task spot whose BAKED vision covers the most visible crew
-# (visionbake.py; nearest task spot when the bake is unusable). The default minimum-
-# cooldown gate equals RECON_WINDOW_TICKS, so camo never eats the near-ready window that
-# Recon/Hunt own. Every camo tick has an escape: kill-soon, crew-lost, travel cap, hold
-# deadline, mode preemption (on_exit), and the parked guard as last-resort insurance.
-
-# Bound the walk to the camo spot (an in-room hop; ~360px at ~3px/tick with slack).
-CAMO_TRAVEL_CAP_TICKS = 120
-
-
-def _ienv(name: str, default: int, minimum: int = 0) -> int:
-    """An int env knob with a safe fallback (bad values -> default)."""
-
-    raw = os.environ.get(name)
-    if raw:
-        try:
-            return max(minimum, int(raw))
-        except ValueError:
-            pass
-    return default
-
-
-def camo_enabled() -> bool:
-    """Kill switch: CREWBORG_CAMO=0 disables the WATCH camouflage entirely."""
-
-    return os.environ.get("CREWBORG_CAMO", "1").strip().lower() not in {"0", "false", "off", "no"}
-
-
-def camo_min_cd_ticks() -> int:
-    """Camo only when MORE than this many ticks remain until the kill is ready;
-    doubles as the kill-soon escape threshold once camo is running."""
-
-    return _ienv("CREWBORG_CAMO_MIN_CD_TICKS", 100)
-
-
-def camo_buffer_ticks() -> int:
-    """Small buffer added to the one-task fake hold (James: 'plus a small buffer')."""
-
-    return _ienv("CREWBORG_CAMO_BUFFER_TICKS", 12)
-
-
-def camo_crew_lost_ticks() -> int:
-    """All crew unseen for this long during camo -> abandon it (the room emptied)."""
-
-    return _ienv("CREWBORG_CAMO_CREW_LOST_TICKS", WATCH_RECENT_TICKS, minimum=1)
-
-
-# The vendored task-vision bake, loaded once per process. The sentinel keeps a genuine
-# "no usable bake" (None) from being re-attempted every tick.
-_VISION_UNSET = object()
-_vision_cache: object = _VISION_UNSET
-
-
-def _camo_vision(belief: Belief) -> TaskVisionBake | None:
-    """The task-vision bake validated against this game's map, or ``None`` (fallback)."""
-
-    global _vision_cache
-    if _vision_cache is _VISION_UNSET:
-        if belief.nav is None or belief.map is None:
-            return None  # don't memoize before the nav/map exist
-        _vision_cache = load_visionbake(belief.nav.walkability, len(belief.map.tasks))
-    return _vision_cache if isinstance(_vision_cache, TaskVisionBake) else None
-
-
 class SearchMode(Mode[Belief, ActionState, Intent]):
     name = "search"
     params_type = EmptyModeParams
@@ -206,13 +131,6 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
         self._last_visit_tick: dict[str, int] = {}   # room name -> last tick we were inside it
         self._rng = random.Random(0xC0FFEE)
         self._parked_guard = ic.ParkedGuard()
-        # WATCH camouflage state (docs/designs/watch-camouflage.md).
-        self._camo_spot: ic.Point | None = None      # non-None ⇔ a camo is active
-        self._camo_task_index: int | None = None
-        self._camo_enter_tick: int | None = None
-        self._camo_idle_until: int | None = None     # set on arrival at the spot
-        self._camo_done = False                      # one fake task per room visit
-        self._camo_intent_tick: int | None = None    # tick whose outgoing intent was a camo idle
 
     # --- entry ----------------------------------------------------------------
     def decide(self, belief: Belief, action_state: ActionState) -> Intent:
@@ -230,23 +148,16 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
         intent = self._dispatch(belief, self_xy)
         # PARKED GUARD: a kill-ready tick must never stand on a zero-length route.
         # Whatever state produced it, force a fresh room pick (the current room is
-        # excluded by PICK_ROOM, so the new target is always somewhere else). The one
-        # exemption is a camo idle — INTENTIONAL idling with its own escapes. It should
-        # be unreachable while kill-ready (camo's kill-soon escape ends it first); if
-        # that invariant ever breaks, trace the suppressed park loudly.
-        intentional = self._camo_intent_tick == belief.last_tick
-        if intentional and ic.would_park(belief, self_xy, intent):
-            self.emit.event(
-                "camo_guard_exempt",
-                {"mode": self.name, "state": self._state, "intent": intent.kind, "reason": intent.reason},
-            )
-        if self._parked_guard.fires(belief, self_xy, intent, intentional_idle=intentional):
+        # excluded by PICK_ROOM, so the new target is always somewhere else). The WATCH
+        # vantage hold is never exempt: if we're holding a vantage AND kill-ready with a
+        # visible victim, the selector should already have switched to Hunt before Search
+        # was even asked for an intent -- if this fires anyway, something upstream is wrong
+        # and re-picking a room is the right recovery.
+        if self._parked_guard.fires(belief, self_xy, intent):
             self.emit.event(
                 "parked_guard",
                 {"mode": self.name, "state": self._state, "intent": intent.kind, "reason": intent.reason},
             )
-            if self._camo_active():
-                self._camo_exit(belief, "parked_guard")
             self._prev_room = self._target_room
             self._follow_color = None
             self._predictor = None
@@ -254,14 +165,6 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
             self._state = "pick_room"
             intent = self._pick_room(belief, self_xy)
         return intent
-
-    def on_exit(self, belief: Belief, action_state: ActionState, next_directive: ModeDirective) -> None:
-        # Mode preemption (meeting → attend_meeting; kill window → Recon/Hunt/Evade)
-        # replaces this instance outright — close an active camo visibly so every
-        # camo_idle enter pairs with an exit (the meeting-start escape, among others).
-        del action_state, next_directive
-        if self._camo_active():
-            self._camo_exit(belief, "preempted")
 
     def _dispatch(self, belief: Belief, self_xy: ic.Point) -> Intent:
         if self._state == "go_to_room":
@@ -355,7 +258,6 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
         self._room_crew = set()
         self._vantage = None
         self._vantage_tick = None
-        self._camo_reset(belief)
         self._state = "go_to_room"
         return self._go_to_room(belief, self_xy)
 
@@ -389,7 +291,6 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
         self._room_crew = set()
         self._vantage = None
         self._vantage_tick = None
-        self._camo_reset(belief)
         self._state = "search_room"
         return self._search_room(belief, self_xy)
 
@@ -444,6 +345,11 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
 
     # --- WATCH ----------------------------------------------------------------
     def _watch(self, belief: Belief, self_xy: ic.Point) -> Intent:
+        """One case: any crew visible in the room -> hold the task station with
+        line-of-sight to the most of them (recomputed as they move), so we're always
+        latched onto a task -- never hovering -- while positioned to strike the
+        instant a kill comes ready (2026-07-06, James)."""
+
         room = self._room(belief, self._target_room)
         if room is None:
             self._state = "pick_room"
@@ -452,39 +358,10 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
         visible_here = self._crew_in_room(belief, room)
         if visible_here:
             self._room_crew |= {c.color for c in visible_here}
-
-        # CAMOUFLAGE: with crew here and the kill far from ready, don't hover — fake a
-        # task at the spot with the best view over them (docs/designs/watch-camouflage.md).
-        # While camo runs it owns the tick (leaver chases resume after it ends; the
-        # crew-lost escape covers the room emptying under us).
-        if self._camo_active():
-            camo = self._camo_tick(belief, self_xy)
-            if camo is not None:
-                return camo
-            # camo just ended — resume normal WATCH behaviour this same tick
-        elif (
-            visible_here
-            and not self._camo_done
-            and camo_enabled()
-            and ticks_until_kill_ready(belief) > camo_min_cd_ticks()
-        ):
-            camo = self._camo_start(belief, room, self_xy, visible_here)
-            if camo is not None:
-                return camo
-            # no task spot in this room — normal WATCH
-
-        if visible_here:
-            if len(visible_here) >= 2:
-                # MULTIPLE crew: hold the in-room vantage with line-of-sight to the most of
-                # them (recomputed as they move). This is the one deliberate hold in Search.
-                self._refresh_vantage(belief, room, self_xy)
-                if self._vantage is not None and ic.dist2(self_xy, self._vantage) > ARRIVE_RADIUS_SQ:
-                    return Intent(kind="navigate_to", point=self._vantage, reason="search: moving to a vantage over the crew")
-                return Intent(kind="idle", reason="search: watching multiple crew from a vantage")
-            # SINGLE crew: don't watch from afar — close on it so Hunt can strike at ready.
-            target = visible_here[0]
-            point = self._single_target_point(belief, target, self_xy)
-            return Intent(kind="navigate_to", point=point, reason="search: closing on the lone crewmate")
+            self._refresh_vantage(belief, room, self_xy)
+            if self._vantage is not None and ic.dist2(self_xy, self._vantage) > ARRIVE_RADIUS_SQ:
+                return Intent(kind="navigate_to", point=self._vantage, reason="search: heading to the best-view task")
+            return Intent(kind="idle", reason="search: watching from the best-view task")
 
         # No crew in view right now. Did the last one just leave? Then chase it.
         leaver = self._a_crewmate_left(belief, room)
@@ -496,140 +373,11 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
         self._state = "pick_room"
         return self._pick_room(belief, self_xy)
 
-    def _single_target_point(self, belief: Belief, target: PlayerRecord, self_xy: ic.Point) -> ic.Point:
-        """Where to stand to shadow a lone crewmate: a nearby task site (natural blend),
-        else a point ``SINGLE_APPROACH_PX`` from the target on our side (just out of range)."""
-
-        target_xy = (target.world_x, target.world_y)
-        site = self._nearest_task_site(belief, target_xy)
-        if site is not None:
-            return site
-        dx = self_xy[0] - target_xy[0]
-        dy = self_xy[1] - target_xy[1]
-        dist = math.hypot(dx, dy)
-        if dist < 1e-6:
-            return ic.reachable_point(belief, target_xy)
-        px = target_xy[0] + dx / dist * SINGLE_APPROACH_PX
-        py = target_xy[1] + dy / dist * SINGLE_APPROACH_PX
-        return ic.reachable_point(belief, (int(px), int(py)))
-
-    def _nearest_task_site(self, belief: Belief, xy: ic.Point) -> ic.Point | None:
-        tasks = belief.map.tasks if belief.map is not None else ()
-        best: ic.Point | None = None
-        best_d = TASK_SITE_NEAR_SQ + 1
-        for task in tasks:
-            task_xy = (task.center.x, task.center.y)
-            d = ic.dist2(xy, task_xy)
-            if d < best_d:
-                best_d, best = d, task_xy
-        return best if best is not None and best_d <= TASK_SITE_NEAR_SQ else None
-
-    # --- WATCH camouflage (docs/designs/watch-camouflage.md) --------------------
-    def _camo_active(self) -> bool:
-        return self._camo_spot is not None
-
-    def _camo_start(self, belief: Belief, room: Room, self_xy: ic.Point,
-                    visible_here: list[PlayerRecord]) -> Intent | None:
-        """Begin a camo fake-task in ``room``, or ``None`` when it has no task spot.
-
-        Spot = the in-room task station whose baked vision covers the most
-        currently-visible crew (tie-break: larger total visible area, then
-        nearest). With no usable bake: the nearest in-room task spot.
-        """
-
-        indices = self._room_task_indices(belief, room)
-        if not indices:
-            return None
-        vision = _camo_vision(belief)
-        if vision is None:
-            index = min(indices, key=lambda i: ic.dist2(self_xy, ic.task_point(belief, i)))
-        else:
-            crew_xy = [(c.world_x, c.world_y) for c in visible_here]
-            index = max(indices, key=lambda i: (
-                sum(1 for xy in crew_xy if vision.visible_from(i, xy)),
-                vision.visible_area(i),
-                -ic.dist2(self_xy, ic.task_point(belief, i)),
-            ))
-        self._camo_task_index = index
-        self._camo_spot = ic.task_point(belief, index)
-        self._camo_enter_tick = belief.last_tick
-        self._camo_idle_until = None
-        self.emit.event(
-            "camo_idle",
-            {
-                "phase": "enter",
-                "spot": list(self._camo_spot),
-                "task_index": index,
-                "visible_crew": len(visible_here),
-                "planned_hold_ticks": ic.FAKE_TASK_TICKS + camo_buffer_ticks(),
-                "ticks_until_ready": ticks_until_kill_ready(belief),
-                "bake_used": vision is not None,
-            },
-        )
-        return self._camo_tick(belief, self_xy)
-
-    def _camo_tick(self, belief: Belief, self_xy: ic.Point) -> Intent | None:
-        """One tick of the active camo; ``None`` when it just ended (resume WATCH)."""
-
-        # Escapes, in priority order (every idle needs one — lab standing principle).
-        if ticks_until_kill_ready(belief) <= camo_min_cd_ticks():
-            return self._camo_exit(belief, "kill_soon")
-        if not self._camo_crew_recent(belief):
-            return self._camo_exit(belief, "crew_lost")
-        if self._camo_idle_until is not None and belief.last_tick >= self._camo_idle_until:
-            return self._camo_exit(belief, "done")
-        if self._camo_idle_until is None:
-            if belief.last_tick - self._camo_enter_tick >= CAMO_TRAVEL_CAP_TICKS:
-                return self._camo_exit(belief, "travel_timeout")
-            if ic.dist2(self_xy, self._camo_spot) > ARRIVE_RADIUS_SQ:
-                return Intent(kind="navigate_to", point=self._camo_spot,
-                              reason="search: camo — heading to a task spot in view of the crew")
-            # Arrived: the fake-task hold starts now.
-            self._camo_idle_until = belief.last_tick + ic.FAKE_TASK_TICKS + camo_buffer_ticks()
-        self._camo_intent_tick = belief.last_tick  # marks this idle as INTENTIONAL (guard exemption)
-        return Intent(kind="idle", reason="search: camo — faking a task with eyes on the crew")
-
-    def _camo_exit(self, belief: Belief, reason: str) -> None:
-        """End the active camo (traced); returns ``None`` so callers can tail-return it."""
-
-        self.emit.event(
-            "camo_idle",
-            {
-                "phase": "exit",
-                "reason": reason,
-                "task_index": self._camo_task_index,
-                "held_ticks": belief.last_tick - (self._camo_enter_tick or belief.last_tick),
-                "arrived": self._camo_idle_until is not None,
-            },
-        )
-        self._camo_spot = None
-        self._camo_task_index = None
-        self._camo_enter_tick = None
-        self._camo_idle_until = None
-        self._camo_done = True
-        return None
-
-    def _camo_reset(self, belief: Belief) -> None:
-        """A fresh room visit re-arms camo (and closes out a stale active one)."""
-
-        if self._camo_active():
-            self._camo_exit(belief, "room_change")
-        self._camo_done = False
-
-    def _camo_crew_recent(self, belief: Belief) -> bool:
-        """Whether ANY live non-teammate has been seen within the crew-lost window."""
-
-        lost = camo_crew_lost_ticks()
-        return any(
-            rec.color not in belief.teammate_colors
-            and rec.life_status != "dead"
-            and belief.last_tick - rec.last_seen_tick <= lost
-            for rec in belief.roster.values()
-        )
-
     def _refresh_vantage(self, belief: Belief, room: Room, self_xy: ic.Point) -> None:
-        """(Re)pick the point in ``room`` with line-of-sight to the most watchable crew,
-        throttled, with hysteresis so we don't jitter between equal vantages."""
+        """(Re)pick the TASK STATION in ``room`` with line-of-sight to the most watchable
+        crew, throttled, with hysteresis so we don't jitter between equal vantages. Never
+        an arbitrary room point (2026-07-06, James: crewborg should never hover randomly
+        mid-room) -- see ``_best_vantage``."""
 
         if (
             self._vantage is not None
@@ -650,22 +398,24 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
         self._vantage_tick = belief.last_tick
 
     def _best_vantage(self, belief: Belief, room: Room, crew_xy, self_xy):
-        """Argmax over a coarse grid of reachable in-room points of how many crew each has
-        line-of-sight to. Ties broken toward staying put (less movement)."""
+        """Argmax over the room's TASK STATIONS (never an arbitrary room point) of how
+        many crew each has line-of-sight to. A held vantage is always a place to stand
+        and plausibly work, not bare hovering. Ties broken toward staying put (less
+        movement). ``None`` only for a room with no task station at all (doesn't happen
+        on croatoan — every room has one — but guards a future map)."""
 
+        indices = self._room_task_indices(belief, room)
+        if not indices:
+            return None
         best_point = None
         best_score = -1
         best_move = 0
-        x0, y0 = room.x, room.y
-        for gx in range(x0 + VANTAGE_STEP // 2, x0 + room.w, VANTAGE_STEP):
-            for gy in range(y0 + VANTAGE_STEP // 2, y0 + room.h, VANTAGE_STEP):
-                point = ic.reachable_point(belief, (gx, gy))
-                if not ic.in_rect(point, room):
-                    continue
-                score = self._visible_count(belief, point, crew_xy)
-                move = ic.dist2(self_xy, point)
-                if score > best_score or (score == best_score and move < best_move):
-                    best_point, best_score, best_move = point, score, move
+        for index in indices:
+            point = ic.task_point(belief, index)
+            score = self._visible_count(belief, point, crew_xy)
+            move = ic.dist2(self_xy, point)
+            if score > best_score or (score == best_score and move < best_move):
+                best_point, best_score, best_move = point, score, move
         return (best_point, best_score) if best_point is not None else None
 
     def _visible_count(self, belief: Belief, point: ic.Point | None, crew_xy) -> int:

@@ -1,5 +1,18 @@
 # WATCH camouflage — fake a task instead of hovering (2026-07-02)
 
+**Status: SUPERSEDED 2026-07-06.** Replays showed crewborg still hovering
+mid-room in WATCH — this design's kill-cooldown gate (only latch onto a task
+when the kill was far from ready) and single/multiple-crew split meant the
+task-latch didn't apply most of the time; the multi-crew "vantage hold" path
+fell through to a bare coarse-grid room scan instead (see
+`docs/designs/vision-model.md` and the `search.py` module docstring). James's
+fix: drop the gating and the crew-count split entirely — WATCH now has exactly
+one case, always latch onto the best-view task station, regardless of cooldown
+or how many crew are visible. The camouflage mechanism described below (and
+`visionbake.py`, `tools/vision_bake.py`, the vendored per-task visibility bake)
+was removed rather than kept as a second code path — this doc is kept as the
+historical record of the problem and the first (partial) fix.
+
 **Problem (James, from replays):** while Search is shadowing crew in a room, the
 imposter acts suspicious — it hovers at a vantage or trails a lone crewmate at
 35px with nothing to do. Real crewmates in a room are *at task stations doing

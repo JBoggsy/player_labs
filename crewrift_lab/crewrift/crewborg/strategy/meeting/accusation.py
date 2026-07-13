@@ -59,8 +59,15 @@ def fabricate_accusation(belief: Belief, color: str) -> str | None:
 
 
 def _format(color: str, reasons: list[str]) -> str:
-    line = f"{color} sus: {', '.join(reasons[:MAX_REASONS])}"
-    return line[:CHAT_MAX_CHARS]
+    # "<color> sus: <cues>. vote <color>" — the chat_study (851 games) found both the
+    # concrete cue AND explicit "vote X"/"sus" phrasing persuade (move votes onto the
+    # target); a bare accusation lands far less. The cue leads (it's the biggest lever),
+    # the explicit vote call closes. Trimmed to the char limit, cue-first.
+    body = f"{color} sus: {', '.join(reasons[:MAX_REASONS])}"
+    vote_call = f". vote {color}"
+    if len(body) + len(vote_call) <= CHAT_MAX_CHARS:
+        return body + vote_call
+    return body[:CHAT_MAX_CHARS]
 
 
 def _synthetic(kind: str, *, target_color: str | None = None) -> PlayerEvent:

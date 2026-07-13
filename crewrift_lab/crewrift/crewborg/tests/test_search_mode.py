@@ -340,11 +340,8 @@ def test_visible_count_respects_line_of_sight() -> None:
     assert mode._visible_count(belief, (40, 40), [(150, 40)]) == 0    # across the wall, blocked
 
 
-def test_watch_multiple_crew_holds_a_vantage(monkeypatch) -> None:
+def test_watch_multiple_crew_holds_a_vantage() -> None:
     # MULTIPLE crew in the room -> hold the vantage seeing the most (the one deliberate hold).
-    # Camo off: these pin the BASE WATCH behaviours camo sits on top of (test_watch_camo.py
-    # owns the camo path — with a cold kill and crew visible, camo would fire first).
-    monkeypatch.setenv("CREWBORG_CAMO", "0")
     mode = SearchMode()
     mode._state = "watch"
     mode._target_room = "Left"
@@ -354,22 +351,45 @@ def test_watch_multiple_crew_holds_a_vantage(monkeypatch) -> None:
     _crew(belief, "yellow", (60, 70))    # TWO crew in Left
     mode.decide(belief, ActionState())
     assert mode._state == "watch"
-    assert mode._vantage is not None
+    # The vantage is the room's ONE task station ("L", at its baked anchor) — never a bare
+    # room point (2026-07-06: replays showed crewborg hovering mid-room instead of at a task).
+    assert mode._vantage == ic.task_point(belief, 0)
 
 
-def test_watch_single_crew_closes_in_not_idle(monkeypatch) -> None:
-    # NEW: a lone crewmate is CLOSED ON (approach), never watched from afar / idled.
-    # Camo off — pins the base WATCH behaviour (camo path: test_watch_camo.py).
-    monkeypatch.setenv("CREWBORG_CAMO", "0")
+def test_watch_vantage_is_always_a_task_station_not_an_open_floor_point() -> None:
+    # Regression test for the mid-room-hover bug: place crew so an OPEN-FLOOR point (far
+    # from the room's one task) would see both of them with clear line of sight, while the
+    # task station itself sees only one. The old coarse-grid scan would have picked the
+    # open-floor point (it saw more crew); the fix must pick the task station regardless,
+    # since a held vantage must always be a place to stand and plausibly work.
+    mode = SearchMode()
+    mode._state = "watch"
+    mode._target_room = "Left"
+    belief = _belief(self_xy=(90, 10))   # far corner of Left, away from the task at (44, 44)
+    mode._room_crew = {"green", "yellow"}
+    # Both crew clustered near the far corner -- an open-floor point there sees both; the
+    # task station at (44, 44) is far enough that at most one stays in VANTAGE_RANGE.
+    _crew(belief, "green", (85, 15))
+    _crew(belief, "yellow", (95, 25))
+    mode.decide(belief, ActionState())
+    assert mode._state == "watch"
+    assert mode._vantage == ic.task_point(belief, 0)  # the task, not the open-floor cluster
+
+
+def test_watch_single_crew_also_holds_the_best_view_task() -> None:
+    # A LONE crewmate gets the exact same treatment as multiple: hold the task station
+    # with the best view of them (2026-07-06, James: one case, not a single/multiple
+    # split) — never a special-cased close-in approach.
     mode = SearchMode()
     mode._state = "watch"
     mode._target_room = "Left"
     mode._room_crew = {"green"}
     belief = _belief(self_xy=(10, 10))
-    _crew(belief, "green", (80, 60))     # ONE crew -> approach
+    _crew(belief, "green", (80, 60))
     intent = mode.decide(belief, ActionState())
     assert intent.kind == "navigate_to"
-    assert "closing on the lone crewmate" in (intent.reason or "")
+    assert mode._vantage == ic.task_point(belief, 0)
+    assert "best-view task" in (intent.reason or "")
 
 
 def test_never_follows_a_teammate() -> None:
@@ -385,18 +405,18 @@ def test_never_follows_a_teammate() -> None:
     assert mode._follow_color != "red"
 
 
-def test_follow_hands_off_to_search_room_when_caught_in_a_room(monkeypatch) -> None:
+def test_follow_hands_off_to_search_room_when_caught_in_a_room() -> None:
     # NEW: while following a VISIBLE target, once we're in the SAME room as it (run down),
-    # hand off to SEARCH_ROOM -> WATCH (a lone target then gets approached, not walked onto).
-    # Camo off — pins the base WATCH behaviour (camo path: test_watch_camo.py).
-    monkeypatch.setenv("CREWBORG_CAMO", "0")
+    # hand off to SEARCH_ROOM -> WATCH (which then holds the best-view task). We land within
+    # arrival radius of Left's one task ("L" at (44, 44)) here, so WATCH idles immediately.
     mode = SearchMode()
     belief = _belief(self_xy=(60, 40))       # we're inside Left
     green = _crew(belief, "green", (75, 40))  # target also inside Left — we've caught up
     mode._begin_follow(belief, green)
     intent = mode.decide(belief, ActionState())
     assert mode._state == "watch"             # SEARCH_ROOM found green -> WATCH
-    assert intent.kind == "navigate_to"       # single crew -> approach, not idle
+    assert intent.kind == "idle"
+    assert mode._vantage == ic.task_point(belief, 0)
 
 
 # --------------------------------------------------------------------------- #

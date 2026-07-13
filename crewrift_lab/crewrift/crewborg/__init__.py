@@ -79,6 +79,7 @@ def build_runtime(
     trace_sink: TraceSink | None = None,
     metrics_sink: MetricsSink | None = None,
     map_data: MapData | None = None,
+    self_color: str | None = None,
 ) -> AgentRuntime[Observation, Percept, Belief, ActionState, Intent, Command]:
     """Assemble the crewborg ``AgentRuntime``.
 
@@ -137,8 +138,17 @@ def build_runtime(
         feature_enabled=feature_on,
     )
 
+    # Seed our own colour from the runner-assigned slot when known (zero-CV ground
+    # truth — see policy_player._self_color_from_url). Marked as marker-sourced so the
+    # CV self-ID hierarchy treats it as authoritative and never overwrites it, while the
+    # meeting census still cross-checks self_alive against it.
+    seed_belief = Belief(map=map_data)
+    if self_color is not None:
+        seed_belief.self_color = self_color
+        seed_belief.self_color_from_marker = True
+
     return AgentRuntime(
-        belief=Belief(map=map_data),
+        belief=seed_belief,
         action_state=ActionState(),
         perceive=perceive,
         update_belief=fold_belief,

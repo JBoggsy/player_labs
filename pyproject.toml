@@ -34,13 +34,17 @@ dependencies = [
     "pandas>=3.0.3",
     "pyarrow>=24.0.0",
     "cryptography>=49.0.0",
+    "pillow>=12.3.0",
+    "duckdb>=1.5.4",
+    "scipy>=1.17.1",
+    "matplotlib>=3.11.0",
 ]
 
 [tool.uv.sources]
 # coworld-tools tarball (NOT git) — see the `players` dependency comment above for why
 # (avoids the broken co-gas submodule that breaks uv's recursive clone). SHA = coworld-tools
 # `main` as of 2026-06-26, matching the hosted image build.
-players = { url = "https://github.com/Metta-AI/coworld-tools/archive/6dcd022e013febffb0043b5f625f853c5cc36e0f.tar.gz", subdirectory = "players" }
+players = { url = "https://github.com/Metta-AI/coworld-tools/archive/e8921a6b18484030d8704277e4c52d3aae5c8917.tar.gz", subdirectory = "players" }
 
 [dependency-groups]
 dev = [
@@ -49,23 +53,23 @@ dev = [
     "pytest-xdist",
 ]
 
-# Vendored players live under crewrift_lab/ grouped by game (e.g. crewrift.crewborg).
-# Each is a true in-lab fork, free to drift from upstream; only the shared SDK is
-# imported from the players dependency. Exposing crewrift_lab/ as a packages source
-# root makes `from crewrift.crewborg import build_runtime` importable after uv sync
-# (editable — edits are live).
+# Vendored players live under each game lab, grouped by game (e.g. crewrift.crewborg
+# under crewrift_lab/, cady under heartleaf_lab/). Each is a true in-lab fork, free to
+# drift; only the shared SDK is imported from the players dependency. Exposing each lab
+# as a packages source root makes `from crewrift.crewborg import build_runtime` and
+# `import cady` importable after uv sync (editable — edits are live).
 #
-# crewborg is the only Python policy. notsus and suspectra are vendored *Nim*
-# players (source-only; built externally via their Dockerfiles) — they are NOT
-# Python packages, so they're excluded from package discovery even though
-# suspectra carries an upstream-packaging __init__.py.
+# crewborg (crewrift) and cady (heartleaf) are Python policies. notsus and suspectra are
+# vendored *Nim* players (source-only; built externally via their Dockerfiles) — they are
+# NOT Python packages, so they're excluded from discovery even though suspectra carries an
+# upstream-packaging __init__.py.
 [build-system]
 requires = ["setuptools>=70"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-where = ["crewrift_lab"]
-include = ["crewrift*"]
+where = ["crewrift_lab", "heartleaf_lab"]
+include = ["crewrift*", "cady*"]
 exclude = ["crewrift.notsus*", "crewrift.suspectra*"]
 
 [tool.pytest.ini_options]

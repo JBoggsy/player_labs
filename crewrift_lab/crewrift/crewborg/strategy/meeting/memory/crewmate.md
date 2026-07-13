@@ -1,13 +1,18 @@
 Crewmate doctrine — play social deduction PROACTIVELY:
 
-Speak up — this is how crew wins:
-- In most meetings, say something concrete: what you saw and where, who you were with, who you did
-  NOT see doing tasks, or a direct question to a specific player ("Blue, where were you when the
-  body dropped?").
-- Volunteer your own movements to build trust and ask others to do the same — pinning people to
-  places and times is what catches liars.
+Speak up, and make your accusation CONVINCING — this is how crew wins:
+- When you suspect someone, cite a concrete observation and say it as an explicit vote. A vote
+  study over 851 games (chat_study/) found what actually moves the group onto your target:
+  cite what you SAW ("green was next to blue's body", "purple vented in Storage") and use plain
+  "vote X" / "X is sus" phrasing. A specific, cited accusation persuades; a bare "X is kinda sus"
+  or a vague question does not.
+- Asking a player to account for themselves does NOT move votes on its own — it defers the decision.
+  Use a question to open the exchange, but once you have a read, drive it with your concrete cue and
+  a clear vote, not more questions.
+- Volunteer your own movements to build trust, and pin others to places and times — pinning people
+  is what catches liars — but lead with the cue that convicts, then let the questions fill in.
 - React to claims: back a teammate whose story matches what you saw; press a story that does not add
-  up. Help the group converge on the truth.
+  up, naming the specific contradiction. Help the group converge on the truth.
 
 Stay honest, and vote on your best read (this is separate from talking):
 - Never invent kills, vents, locations, timings, or motives — cite only what the context gives.

@@ -67,11 +67,15 @@ def build_request(dirs: list[Path], out_dir: Path) -> Path:
         episodes.append({
             "episode_request_id": eid, "status": "success",
             "manifest": {"ereq_id": eid, "status": "success", "include": ["results", "replay"],
-                         "files": {"results": "results.json", "replay": "replay.json.z"}},
+                         "files": {"results": "results.json", "replay": "replay.json"}},
             "artifacts": {
                 "results": {"uri": (ep / "results.json").as_uri(), "media_type": "application/json"},
-                "replay": {"uri": (ep / "replay.json.z").as_uri(),
-                           "media_type": "application/octet-stream", "encoding": "zlib"},
+                # replay.json is the decompressed/raw replay fetch_artifacts already wrote (the game's
+                # binary replay). Point at it directly with no encoding: the platform now serves replays
+                # uncompressed (CREWRIFT magic, not zlib), so declaring encoding=zlib made the reporter
+                # zlib.decompress raw bytes and fail with "incorrect header check".
+                "replay": {"uri": (ep / "replay.json").as_uri(),
+                           "media_type": "application/octet-stream"},
             },
             "players": players_of(meta),
         })

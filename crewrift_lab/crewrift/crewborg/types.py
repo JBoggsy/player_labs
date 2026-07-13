@@ -394,6 +394,12 @@ class Belief(BaseModel):
     # — without it we tail/suspect/vote ourselves (the self-sprite leaks into the
     # roster as if it were another player).
     self_color: str | None = None
+    # Whether ``self_color`` came from the AUTHORITATIVE voting self-marker (a game-rendered
+    # "you are here" label) vs the fuzzy camera-center sprite heuristic. A sprite guess is
+    # PROVISIONAL — the marker may correct it once (the v105 vote_timeout fix); a marker
+    # value is final and nothing overwrites it (the v102 kill-regression latch). See the
+    # self_color source-hierarchy in ``update_belief``.
+    self_color_from_marker: bool = False
 
     # Tasks (design §5 tasks).
     assigned_task_indices: set[int] = Field(default_factory=set)
@@ -696,16 +702,30 @@ def update_belief(belief: Belief, percept: Percept) -> None:
         belief.crew_tasks_remaining = resolved.crew_tasks_remaining
     belief.active_task_progress_pct = resolved.active_task_progress_pct
 
-    # Learn our own color. The voting UI's self-marker is authoritative; otherwise the
-    # camera-center player (at ``self_world``) is us — learned once and persisted (our
-    # colour is fixed for the game). Needed so suspicion never targets *self*.
+    # Learn our own colour under a SOURCE HIERARCHY — our colour is fixed for the game, but
+    # the two sources are not equally trustworthy, and blindly latching the first one either
+    # drifts (v102) or freezes a wrong guess (v105). The two sources:
+    #   • the voting self-marker — a game-rendered "you are here" label: AUTHORITATIVE, only
+    #     present during a meeting; and
+    #   • the camera-center sprite — a geometric nearest-to-centre guess that can land on a
+    #     neighbour standing close to us: PROVISIONAL, available during play.
+    # Rules that satisfy BOTH regressions:
+    #   1. The marker sets self_color and latches it hard — nothing overwrites a marker value
+    #      (v102: re-deriving every tick let the sprite drift onto a teammate mid-game, which
+    #      the teammate-dedup then deleted → killing our own partner).
+    #   2. The marker may CORRECT a still-provisional sprite guess exactly once (v105: the
+    #      sprite latched a neighbour during the ~500 Playing ticks before the first meeting;
+    #      when that neighbour later died the census flipped self_alive off → vote_timeout).
+    #   3. The sprite only fills self_color while it is still unknown, and stays provisional.
     if resolved.voting.self_marker_color is not None:
-        belief.self_color = resolved.voting.self_marker_color
+        if not belief.self_color_from_marker:  # marker is authoritative: set or upgrade-from-sprite
+            belief.self_color = resolved.voting.self_marker_color
+            belief.self_color_from_marker = True
     elif belief.self_color is None and resolved.self_world_x is not None and resolved.visible_players:
         sx, sy = resolved.self_world_x, resolved.self_world_y
         me = min(resolved.visible_players, key=lambda p: (p.world_x - sx) ** 2 + (p.world_y - sy) ** 2)
         if (me.world_x - sx) ** 2 + (me.world_y - sy) ** 2 <= SELF_SPRITE_MATCH_SQ:
-            belief.self_color = me.color
+            belief.self_color = me.color  # provisional; a later marker may correct it
 
     # Live sightings: a "player <color>" in-world proves that player is alive here,
     # now. Keyed by color (the canonical identity); the trail accumulates in place.
@@ -836,7 +856,19 @@ def update_belief(belief: Belief, percept: Percept) -> None:
         if "IMPS" in resolved.phase_texts:
             belief.self_role = "imposter"
             belief.self_alive = True  # a fresh reveal means a new game — we are alive again
-            belief.teammate_colors |= resolved.reveal_player_colors
+            # The reveal icons show ALL imposters including us, so drop our OWN colour from the
+            # freshly-read reveal set — teammates are the OTHER imposters. We exclude self only at
+            # INGEST (against the reveal set we just read), never with a per-tick discard against the
+            # persisted teammate_colors: that removed real teammates when self_color drifted onto one
+            # (the v102 kill regression). This runs AFTER the self_color latch above (which fixes the
+            # drift by learning our colour once), so self_color is stable here. If it isn't known yet
+            # on this reveal tick (marker/sprite not resolvable during the interstitial), self simply
+            # isn't excluded — a benign no-op (self in teammate_colors is inert; can't kill/vote self)
+            # that self-corrects on any later RoleReveal tick once self_color has latched.
+            revealed = resolved.reveal_player_colors
+            if belief.self_color is not None:
+                revealed = revealed - {belief.self_color}
+            belief.teammate_colors |= revealed
         elif "CREWMATE" in resolved.phase_texts:
             belief.self_role = "crewmate"
             belief.self_alive = True

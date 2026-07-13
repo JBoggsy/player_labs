@@ -73,24 +73,13 @@ class ParkedGuard:
     def __init__(self) -> None:
         self._streak = 0
 
-    def fires(self, belief: Belief, self_xy: Point, intent: Intent, *, intentional_idle: bool = False) -> bool:
+    def fires(self, belief: Belief, self_xy: Point, intent: Intent) -> bool:
         """True when the guard trips: ``parked_guard_ticks()`` consecutive
         kill-ready Playing ticks whose intent is idle or a zero-length navigate.
         Resets its streak whenever the condition breaks (or after firing).
-
-        ``intentional_idle`` exempts a *deliberate* idle — Search's WATCH
-        camouflage (a fake task with its own escapes; see
-        docs/designs/watch-camouflage.md) — from accruing: the guard exists to
-        catch unintentional parking, not to defeat intentional blending. The
-        exemption should be unreachable on a kill-ready tick (camo's kill-soon
-        escape ends it first); Search traces ``camo_guard_exempt`` if not.
         """
 
-        parked_now = would_park(belief, self_xy, intent)
-        if parked_now and intentional_idle:
-            self._streak = 0
-            return False
-        if not parked_now:
+        if not would_park(belief, self_xy, intent):
             self._streak = 0
             return False
         self._streak += 1

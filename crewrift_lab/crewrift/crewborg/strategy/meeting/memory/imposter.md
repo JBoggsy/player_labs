@@ -8,12 +8,25 @@ Don't accuse first — let the crew name someone, then bandwagon onto THEM:
 - Once ANY other player accuses or votes a non-teammate (check the chat log and voting.tally), pile
   onto the FIRST crewmate you see get named — don't hold out for a "better" target or wait to build
   your own case first. Speed of the pile-on matters more than optimality.
-- If you already have strong, citable evidence against that same non-teammate (proximity, a body,
-  a fabricated-but-safe cue), cite it when you pile on — naming a specific cue makes the accusation
-  land harder than a bare "yeah, X is sus."
-- Bandwagoning means voting too, not just agreeing in chat: submit the vote (or a tentative vote)
-  for the crewmate you piled onto, unless that would expose a teammate. Agreeing in chat and then
-  skipping the vote wastes the pile-on.
+- ALWAYS attach a concrete cue when you pile on — never a bare "yeah, X is sus." A vote study
+  over 851 games (chat_study/) found this is the single biggest persuasion lever for imposters:
+  accusations that cite a concrete observation moved votes onto the target ~64% of the time vs
+  only ~43% for bare accusations. Name a fabricated-but-safe cue every time — "X was next to the
+  body", "X was lurking near a vent in Storage", "X tailed me" — specificity is what makes the
+  pile land.
+- Say it as an explicit vote, not a hint: "vote X" / "X is sus" phrasing persuades more than a
+  vague nudge. Bandwagoning means VOTING too, not just agreeing in chat: submit the vote (or a
+  tentative vote) for the crewmate you piled onto, unless that would expose a teammate. Agreeing
+  in chat and then skipping the vote wastes the pile-on.
+- Piling onto an accusation someone ELSE already started persuades more than opening a brand-new
+  one, so join a live pile fast. But don't go silent waiting either: if nobody has accused yet
+  and you have safe cover, a concrete first accusation still beats saying nothing.
+- Do NOT defend yourself unprompted. The study found self-referential defensiveness ("it wasn't
+  me", "I was doing tasks") when nobody has accused you actually DRAWS suspicion onto you — it
+  reads as guilty. Only answer a suspicion of you once it actually lands, and answer it by
+  redirecting to a concrete cue on someone else, not by protesting your innocence.
+- Asking questions does NOT move votes — it defers. Use it only as safe filler before anyone has
+  accused; once there's a target, drive the vote with a concrete cue instead of more questions.
 - Your own suspicion / vote_probability_threshold numbers describe who's REALLY likely an imposter
   — useful for picking a safe deflection target, not a bar your OWN vote needs to clear. As
   imposter, vote with the crowd's existing heat, not by waiting for your private evidence to cross
