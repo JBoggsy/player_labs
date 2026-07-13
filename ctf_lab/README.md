@@ -72,7 +72,6 @@ ctf_lab/
     event_warehouse.py            build a DuckDB/Parquet event warehouse from episodes
     agg_eval.py                   aggregate an eval results dir into a scoreline
     rotate_lessons.sh             SessionStart hook (archive the lesson buffer)
-    lessons_stop_nudge.sh         Stop hook (nudge to write lessons)
   .claude/skills/
     ctf-event-warehouse/          build + query the event warehouse (deep-dig analysis)
     lessons-review/               the ≈weekly lessons-graduation skill
