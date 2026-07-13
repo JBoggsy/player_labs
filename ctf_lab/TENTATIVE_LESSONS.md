@@ -85,3 +85,11 @@ Result: beacon:v4 vs co-gas went 19-0 (wipe/tiebreak, 3.4 deaths/game, 496 kills
 CAPTURE (20 captures, 0.0 deaths, 5 kills — games end instantly). Lesson: when reading a
 game's rendered objects, account for sprite draw-offsets/lifts vs the logical entity centre;
 a threshold tuned to logical distance silently fails on the rendered offset.
+
+### Beat the baseline by CAPTURING faster, not out-fighting: escort + attack bias → 0-20 to 4-11
+Evidence: v4 diag vs baseline showed attackers reached the flag & carried it (maxX>1049,
+i_carry True) but died solo before delivery; 5 defenders were idle (baseline barely attacks,
+captures ~0 both sides). v5 = escort rung (attackers converge on a teammate carrier and move
+home WITH it) + DEFENDER_COUNT 5→3. Result vs baseline: 0-20 → 4-11 (26% win), 0→4 captures,
+while still dying 20.9/game. Against a superior fighter, don't win the attrition war — grab
+and escort the flag home before it can wipe you. Deaths stayed high; wins came from captures.

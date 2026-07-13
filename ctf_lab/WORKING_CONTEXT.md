@@ -10,7 +10,22 @@ startup to resume; **update it as you learn** (keep it tight).
 
 ---
 
-## Status (2026-07-10, session 1): beacon:v4 fixes CAPTURE; v3 is the competing champion
+## Status (2026-07-10, session 1): beacon:v5 takes games off the baseline (4-11)
+
+**v5 (latest, uploaded — NOT yet submitted):** carrier escort + attack bias. v4 diag vs the
+baseline showed attackers grabbed the flag but died solo before delivery, while 5 defenders
+sat idle (baseline barely attacks; captures ~0 both sides). v5 adds an **escort rung**
+(attackers converge on a teammate carrier and move home WITH it) and shifts **DEFENDER_COUNT
+5→3** (5 attackers push+escort). Results:
+- **vs baseline: 4-11 (26% win), 4 captures** — up from v4's 0-20/0 captures. First version to
+  take games off the champion. Still dies 20.9/game — it wins by CAPTURING before being wiped,
+  not by out-fighting.
+- **vs co-gas: 16-0, 16 captures, 0 deaths** — no regression (cleaner than ever).
+
+**v4 is the currently-submitted/competing version** (`sub_b7fe5799…`). **v5 is a strict
+improvement — re-submitting it is the human's gated call.**
+
+## (prior) Status: beacon:v4 fixes CAPTURE; v3 is the competing champion
 
 **v4 (latest, uploaded, NOT yet submitted):** fixed the "stuck on the flag" bug — a carried
 flag renders ~10px above its carrier (`CarriedFlagLift`), but perception's carry threshold was

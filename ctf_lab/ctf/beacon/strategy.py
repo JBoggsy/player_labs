@@ -34,7 +34,19 @@ def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
     if belief.own_flag_stolen and belief.own_flag_thief_pos is not None:
         return Intent(kind="navigate_to", point=belief.own_flag_thief_pos, reason="intercept_thief"), None
 
-    # Rung 3: role split.
+    # Rung 3 (attackers): a TEAMMATE is carrying our stolen enemy flag -> escort it.
+    # The enemy flag is off its pedestal, we don't carry it, and we can see it => a
+    # teammate has it (the flag sprite rides the carrier). Attackers converge on the
+    # carrier and move home *with* it, so the carrier isn't a lone target the baseline
+    # picks off on the return — the fix for "grabs the flag but dies before delivery".
+    if (
+        belief.role == "attacker"
+        and belief.enemy_flag_pos is not None
+        and not belief.enemy_flag_on_pedestal
+    ):
+        return Intent(kind="navigate_to", point=belief.enemy_flag_pos, reason="escort_carrier"), None
+
+    # Rung 4: role split.
     if belief.role == "defender" and belief.hold_point is not None:
         # Hold cover on our turf: the enemy dies attacking us (we respawn close),
         # and our flag stops being undefended. Once at the hold point, stop

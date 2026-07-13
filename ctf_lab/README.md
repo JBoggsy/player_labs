@@ -15,10 +15,10 @@ This README orients newcomers (human or agent). Two pointers do most of the work
 > **Status (2026-07-10): first player `beacon` built and competing.** The game repo
 > (`Metta-AI/coworld-ctf`) is cloned for reference at `~/coding/coworlds/coworld-ctf`.
 > **`beacon` (Python, at [`ctf/beacon/`](ctf/beacon/)) is uploaded and submitted to the
-> CTF league** — it dominates the co-gas opponents (20-0, by capture) and loses to the
-> elite Nim `ctf-baseline-16`. Live state + open threads:
-> [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md); version history:
-> [`ctf/beacon/VERSION_LOG.md`](ctf/beacon/VERSION_LOG.md).
+> CTF league** (currently `beacon:v5`) — it dominates the co-gas opponents (20-0, by
+> capture) and, as of v5, takes games off the elite Nim `ctf-baseline-16` too (4-11, via
+> carrier escort). Live state + open threads: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md);
+> version history: [`ctf/beacon/VERSION_LOG.md`](ctf/beacon/VERSION_LOG.md).
 
 ## The game (one paragraph)
 

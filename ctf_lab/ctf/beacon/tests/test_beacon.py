@@ -148,6 +148,25 @@ def test_intercept_visible_thief():
     assert intent.reason == "intercept_thief" and intent.point == (250, 300)
 
 
+def test_attacker_escorts_visible_carrier():
+    # Enemy flag off its pedestal + visible + we don't carry it => a teammate has it;
+    # an attacker moves to the carrier to escort it home (v5).
+    b = Belief(team="red", seat=7, role="attacker", alive=True, self_xy=(600, 329),
+               i_carry_enemy_flag=False, enemy_flag_on_pedestal=False,
+               enemy_flag_pos=(800, 300))
+    intent, flow = decide_objective(b)
+    assert intent.reason == "escort_carrier" and intent.point == (800, 300)
+
+
+def test_carrier_still_runs_home_not_escort():
+    # The actual carrier runs home (rung 1) even though the flag is off-pedestal.
+    b = Belief(team="red", seat=7, role="attacker", alive=True, self_xy=(800, 300),
+               i_carry_enemy_flag=True, enemy_flag_on_pedestal=False,
+               enemy_flag_pos=(800, 300))
+    intent, flow = decide_objective(b)
+    assert intent.reason == "carry_home" and flow == "home"
+
+
 # --- combat overlay ---------------------------------------------------------------
 def test_fires_when_aimed_at_close_enemy():
     b = Belief(team="red", alive=True, self_xy=(300, 329), aim_brads=0, fire_ready=True)

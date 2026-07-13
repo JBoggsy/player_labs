@@ -66,8 +66,12 @@ DIAG_EVERY_TICKS = _env_int("BEACON_DIAG_EVERY_TICKS", 96)
 # on the enemy's defended pedestal (far respawn walk-back). v2 splits seats into a
 # defensive contingent that holds cover on OUR turf (close respawns; the enemy now dies
 # attacking us) and attackers that still push the flag.
-#: How many of the 8 per-team seats defend (seats 0..N-1). Default 5 = defensive bias.
-DEFENDER_COUNT = _env_int("BEACON_DEFENDERS", 5)
+#: How many of the 8 per-team seats defend (seats 0..N-1). 3 defenders hold our turf;
+#: 5 attackers push + ESCORT the carrier home (v5 — 5 solo attackers grabbed the flag vs
+#: the baseline but died before delivery; more attackers moving the flag home together is
+#: the fix). The enemy rarely attacks our flag (captures ~0 both sides), so heavy defense
+#: was wasted bodies. A/B via BEACON_DEFENDERS.
+DEFENDER_COUNT = _env_int("BEACON_DEFENDERS", 3)
 #: Defender hold line — x on each team's own side (mirror of the baseline's choke).
 CHOKE_X = {"red": 390, "blue": MAP_W - 1 - 390}
 #: Defenders spread their hold points across this y-band (avoids stacking on one cell).

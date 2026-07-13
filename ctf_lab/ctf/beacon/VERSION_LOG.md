@@ -2,6 +2,18 @@
 
 Version → change mapping for the CTF `beacon` policy. Newest first.
 
+## v5 — carrier escort + attack bias (2026-07-10)
+
+**Why:** vs the baseline, v4 diag showed attackers DO reach the flag and DO carry it
+(seats 5/7 maxX 1017/1055, i_carry True) but die before delivering — 3 solo attackers
+can't escort the flag home through the baseline's coordinated defense + overwatch, and 5
+defenders were wasted bodies (the baseline barely attacks our flag; captures ~0 both sides).
+
+**Changes:** (1) new escort rung — when a teammate is carrying (enemy flag off-pedestal,
+visible, not mine), attackers navigate to the carrier's position and move home *with* it,
+so it isn't a lone target. (2) DEFENDER_COUNT 5→3 (3 hold our turf, 5 push+escort).
+26 tests pass. Upload: `beacon:v5`.
+
 ## v4 — fix carry detection (the "stuck on the flag" bug) (2026-07-10)
 
 **Why:** watched replays — attackers reached the enemy pedestal but never brought the

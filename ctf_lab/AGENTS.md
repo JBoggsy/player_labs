@@ -11,9 +11,9 @@ defines *process*; this file defines *CTF*.
 
 > **Lab status (2026-07-10): first player `beacon` built, uploaded, and competing.** The
 > game repo (`Metta-AI/coworld-ctf`) is cloned for reference at `~/coding/coworlds/coworld-ctf`.
-> **`beacon` (Python, [`ctf/beacon/`](ctf/beacon/)) is on `beacon:v4`, submitted to the CTF
-> league** — it beats the co-gas opponents 20-0 by capture but loses to the elite Nim
-> `ctf-baseline-16`; the open thread is beating the baseline. Live state:
+> **`beacon` (Python, [`ctf/beacon/`](ctf/beacon/)) is on `beacon:v5`** (v4 is the currently
+> submitted/competing version). It beats the co-gas opponents 20-0 by capture and, as of v5,
+> takes games off the elite Nim `ctf-baseline-16` too (4-11, via carrier escort). Live state:
 > [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md); versions: [`ctf/beacon/VERSION_LOG.md`](ctf/beacon/VERSION_LOG.md).
 
 ## What CTF is
@@ -199,11 +199,13 @@ rest of the lab's deferred tasks. Check it at the start of focused work.
   walkable grid, two Dijkstra flow fields per team, and a cover-cell grid); online A*
   handles dynamic goals. Design:
   [`docs/designs/ctf-player-v1-design.html`](docs/designs/ctf-player-v1-design.html).
-  **Current: `beacon:v4`** — seat-based roles (5 defenders on cover / 3 attackers),
-  friendly-fire gate, and the carry-detection fix (a carried flag rides ~10px above its
-  carrier). Beats both co-gas opponents 20-0 **by capture**; loses to `ctf-baseline-16`.
-  Version history: [`ctf/beacon/VERSION_LOG.md`](ctf/beacon/VERSION_LOG.md). Behavior knobs
-  are env vars in `ctf/beacon/config.py` (`BEACON_DEFENDERS`, `BEACON_FF_CORRIDOR_PX`, …),
-  set at upload time for A/B. Build: `tools/build_player.sh beacon`.
-  **Next (open thread):** beat the baseline — survive the grab-and-run (carrier escort /
-  coordinated push), track memory, exposure-aware routing.
+  **Current: `beacon:v5`** — seat-based roles (**3 defenders** on cover / **5 attackers**),
+  friendly-fire gate, carry-detection fix (a carried flag rides ~10px above its carrier),
+  and **carrier escort** (attackers converge on a teammate carrier and move home with it).
+  Beats both co-gas opponents 20-0 **by capture**, and **takes games off `ctf-baseline-16`**
+  (4-11 vs the champion, up from 0-20 — it wins by capturing before being wiped, not by
+  out-fighting). Version history: [`ctf/beacon/VERSION_LOG.md`](ctf/beacon/VERSION_LOG.md).
+  Behavior knobs are env vars in `ctf/beacon/config.py` (`BEACON_DEFENDERS`,
+  `BEACON_FF_CORRIDOR_PX`, …), set at upload time for A/B. Build: `tools/build_player.sh beacon`.
+  **Next (open thread):** raise the baseline win rate above 26% — survive the grab-and-run
+  better (tighter escort, staggered pushes), enemy-track memory, exposure-aware routing.
