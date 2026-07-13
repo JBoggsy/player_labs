@@ -113,18 +113,31 @@ the loop generates the need — mirroring `crewrift_lab/docs/`.
 
 ## Skills
 
-**No CTF-specific skills exist yet** beyond the lessons-lifecycle skill (`/lessons-review`,
-in `ctf_lab/.claude/skills/`). The loop's **game-agnostic** halves (experience requests,
-artifact download, local run, build-and-upload, policy lifecycle) live at the **lab root**
-(`../.claude/skills/`, indexed in [`../AGENTS.md`](../AGENTS.md)) — use those to *create*,
-*pull*, and *ship* episodes.
+CTF-specific skills live in `ctf_lab/.claude/skills/`:
 
-Game-specific tooling belongs **here** (`ctf_lab/.claude/skills/`), not at the root. The
-gap worth filling first (once real episodes exist):
+- **`ctf-event-warehouse`** — build/query the CTF event warehouse: a policy-indexed
+  DuckDB/Parquet store of ground-truth replay events (kills, flag steals/returns, captures,
+  scores — via the version-matched `expand_replay_json` binary) **plus** beacon's belief
+  traces (snapshots + objective/alive/engage transitions), both re-keyed slot → policy /
+  version / team / seat / role. The deep-dig tool for mechanistic, cross-episode questions
+  (delivery rate, where carriers die, objective time-share). Built on
+  `tools/event_warehouse.py`.
+- **`lessons-review`** — the ≈weekly lessons-graduation skill.
 
-- A **CTF survey/report** skill — turn a batch of episodes into a dense report on win rate
-  by team/seat, the win path taken (capture / wipe / tiebreak), and flag + kill events
-  (built on the `expand_replay` timeline), analogous to `crewrift-survey`.
+The loop's **game-agnostic** halves (experience requests, artifact download, local run,
+build-and-upload, policy lifecycle) live at the **lab root** (`../.claude/skills/`, indexed
+in [`../AGENTS.md`](../AGENTS.md)) — use those to *create*, *pull*, and *ship* episodes.
+
+**Observability quick reference:**
+- `tools/agg_eval.py <dir>` — fast one-line scoreline from a results dir.
+- `tools/build_expand_replay.sh` — builds two host-native, version-matched replay readers:
+  `expand_replay` (human timeline) and `expand_replay_json` (JSONL for the warehouse).
+- **beacon tracing** — structured `TraceEvent`s to the SDK `TraceOutputs` (default
+  `jsonl@artifact`; `BEACON_TRACE_OUTPUTS` to override, `BEACON_DIAG_EVERY_TICKS=1` for a
+  per-tick trace); falls back to `CTF_DIAG` stderr lines with no artifact URL.
+
+Still worth building: a **CTF survey/report** HTML skill (win rate by team/seat, win path)
+analogous to `crewrift-survey`.
 
 ## CTF best practices
 

@@ -67,11 +67,15 @@ ctf_lab/
   tools/
     build_player.sh               build the beacon image (linux/amd64)
     versions.env                  pinned SDK + game refs for builds
-    build_expand_replay.sh        build a version-matched host-native replay reader (Nim)
+    build_expand_replay.sh        build version-matched replay readers (human + JSONL)
+    expand_replay_json.nim        JSONL event emitter (feeds the warehouse)
+    event_warehouse.py            build a DuckDB/Parquet event warehouse from episodes
     agg_eval.py                   aggregate an eval results dir into a scoreline
     rotate_lessons.sh             SessionStart hook (archive the lesson buffer)
     lessons_stop_nudge.sh         Stop hook (nudge to write lessons)
-  .claude/skills/lessons-review/  the ≈weekly lessons-graduation skill
+  .claude/skills/
+    ctf-event-warehouse/          build + query the event warehouse (deep-dig analysis)
+    lessons-review/               the ≈weekly lessons-graduation skill
   lessons_archive/                rotated per-session lesson buffers
 ```
 

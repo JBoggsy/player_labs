@@ -93,3 +93,13 @@ captures ~0 both sides). v5 = escort rung (attackers converge on a teammate carr
 home WITH it) + DEFENDER_COUNT 5→3. Result vs baseline: 0-20 → 4-11 (26% win), 0→4 captures,
 while still dying 20.9/game. Against a superior fighter, don't win the attrition war — grab
 and escort the flag home before it can wipe you. Deaths stayed high; wins came from captures.
+
+### CTF observability: structured trace→artifact + JSONL expand_replay + a lean warehouse
+Evidence: built this session. beacon now emits SDK TraceEvents (jsonl@artifact, tunable
+cadence incl. per-tick via BEACON_DIAG_EVERY_TICKS=1) instead of stderr-only prints; a Nim
+expand_replay_json emitter feeds ground-truth events; event_warehouse.py re-keys both feeds
+slot→policy/team/seat/role into DuckDB+Parquet. First query proved the value: "beacon 81
+steals → 0 captures" cross-20-episodes in one SQL line. Gotchas found: (1) private repo needs
+`gh api tarball` not curl; (2) DuckDB can't scan a raw dict — use a pyarrow table, and avoid
+the reserved name `table`; (3) the artifact fetcher stores policy logs as a Python bytes-repr
+string (literal b'...\n...') — decode with ast.literal_eval before splitlines.
