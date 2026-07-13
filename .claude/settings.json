@@ -29,6 +29,17 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/tools/lessons_stop_nudge.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   }
 }

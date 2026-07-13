@@ -155,8 +155,9 @@ both on startup** alongside the preferences above:
   a fresh one; the **`/lessons-review`** skill (≈weekly, human-driven) clusters lessons
   that RECUR across archived sessions and graduates keepers to `best_practices.md`.
   Recurrence across sessions — not in-session hit counts — is the graduation signal.
-  (Writing lessons as you go is the agent's discipline — there is no Stop-hook nudge;
-  it was removed 2026-07-13.)
+  (A single repo-wide Stop hook (`tools/lessons_stop_nudge.sh` at the repo root) nudges
+  once per session, naming only the labs the session actually worked in whose buffers
+  are still untouched — it replaced the old per-lab nudges on 2026-07-13.)
 
 **Cleanup step — run when you wrap up a thread (and before you push/land work).** Do a
 deliberate sweep so nothing learned evaporates:

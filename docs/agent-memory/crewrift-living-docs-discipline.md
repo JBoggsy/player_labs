@@ -34,6 +34,9 @@ graduates lessons that RECUR across archived session buffers. Writing lessons AS
 still the agent's job — the hook only rotates. WORKING_CONTEXT.md discipline is
 unchanged (still manual).
 
-**Update (2026-07-13):** The Stop-hook nudge (`lessons_stop_nudge.sh`) was removed at
-James's request — the four scripts are deleted and the `Stop` block is gone from the
-root `.claude/settings.json`. Only the SessionStart rotation remains automated.
+**Update (2026-07-13):** The four per-lab Stop-hook nudges were replaced by ONE
+repo-wide nudge (`tools/lessons_stop_nudge.sh` at the repo root) — the per-lab hooks all
+fired on every stop regardless of which labs the session touched. The new hook fires at
+most once per session and names only the labs the session actually worked in (detected
+via lab-path hits in the transcript's tool_use lines) whose buffers are still untouched,
+with an explicit instruction not to add entries to labs not worked in.
