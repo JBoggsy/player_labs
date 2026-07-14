@@ -9,16 +9,16 @@ the **Vanilla-WoW-specific layer** on top of it: the game, the docs, the practic
 policies we optimize. When the two disagree, the root defines *process*; this file defines
 *Vanilla WoW*.
 
-> **Lab status (2026-07-13): just created — docs + scaffolding only, no player yet, loop
-> BLOCKED.** The game repo (`coworld-vanilla-wow`) is cloned for reference; the package
-> `vanilla_wow:0.1.4.post8` passed executable certification + a local isolated-RFC smoke, but
-> the README badge is **"coworld verify: not ready"** — the "ready" badge is gated on a
-> *retained* hosted commissioner round + XP-request episode on Kubernetes that **have not been
-> created**, and **there is no live scored Observatory league yet** (only a persistent
-> *practice* realm). **No player policy has been built or uploaded.** The immediate next step
-> is human-directed: confirm the game's live state (does a scored league/XP-request path exist
-> yet?), then pick a build path (below) and start the loop. Live state:
-> [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
+> **Lab status (2026-07-14): `wowborg` v1 (idle-login skeleton) uploaded and hosted
+> XP-requests work; the league exists but its scoring is unconfirmed.** The Observatory
+> league **"Vanilla Wow"** (division "Leveling Ladder") exists as of 2026-07-12 and the
+> deployed game is **v0.1.6**, but the game repo's README badge still reads **"coworld
+> verify: not ready"** — the badge and the league's existence disagree, so treat the ladder's
+> scoring/retention as unverified. A 4-episode hosted smoke on `orc-fresh-start` completed
+> (score 0.0, no crash) though per-agent policy logs weren't retained. **Episode-duration
+> trap:** wowborg v1 never self-terminates, so episodes run to the full variant deadline —
+> `rfc-five-player-clear` is ~27.8 h/episode; smoke on `orc-fresh-start` (~17 min) or
+> override `max_ticks`. Live state + next steps: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
 
 ## What Vanilla WoW is
 
