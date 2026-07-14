@@ -24,6 +24,22 @@ emit_context() {
     '{hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: $ctx}}'
 }
 
+hash_file() {
+  if command -v md5 >/dev/null 2>&1; then md5 -q "$1"; else md5sum "$1" | cut -d" " -f1; fi
+}
+
+# A git sync/merge can restore an already-archived buffer; re-archiving it under
+# a new timestamp mints byte-identical duplicate archives and inflates the
+# recurrence signal /lessons-review graduates on (seen in 3 labs, 2026-07-13).
+buffer_is_already_archived() {
+  local buf_md5 f
+  buf_md5="$(hash_file "$BUFFER")" || return 1
+  while IFS= read -r -d "" f; do
+    [[ "$(hash_file "$f")" == "$buf_md5" ]] && return 0
+  done < <(find "$ARCHIVE_DIR" -name "TENTATIVE_LESSONS-*.md" -print0 2>/dev/null)
+  return 1
+}
+
 record_state() {  # let the Stop nudge detect "buffer untouched this session"
   { md5 -q "$BUFFER" 2>/dev/null || md5sum "$BUFFER" 2>/dev/null | cut -d' ' -f1; } \
     > "$STATE_DIR/claude_vw_lessons_baseline_$SESSION_ID" 2>/dev/null || true
@@ -41,10 +57,15 @@ fi
 
 mkdir -p "$ARCHIVE_DIR"
 ARCHIVED=""
+SKIPPED_DUP=""
 if [[ -f "$BUFFER" ]] && grep -q '^### ' "$BUFFER"; then
-  ARCHIVE_FILE="$ARCHIVE_DIR/TENTATIVE_LESSONS-$STAMP.md"
-  mv "$BUFFER" "$ARCHIVE_FILE"
-  ARCHIVED="$(basename "$ARCHIVE_FILE")"
+  if buffer_is_already_archived; then
+    SKIPPED_DUP=1
+  else
+    ARCHIVE_FILE="$ARCHIVE_DIR/TENTATIVE_LESSONS-$STAMP.md"
+    mv "$BUFFER" "$ARCHIVE_FILE"
+    ARCHIVED="$(basename "$ARCHIVE_FILE")"
+  fi
 fi
 
 cat > "$BUFFER" << EOF
@@ -71,6 +92,8 @@ EOF
 
 if [[ -n "$ARCHIVED" ]]; then
   CTX="Tentative-lessons buffer rotated: previous session's lessons archived to vanilla_wow_lab/lessons_archive/$ARCHIVED. Fresh buffer: vanilla_wow_lab/TENTATIVE_LESSONS.md — write candidate lessons there AS YOU GO (a Stop hook will nudge once if substantive work happens with the buffer untouched)."
+elif [[ -n "$SKIPPED_DUP" ]]; then
+  CTX="Fresh tentative-lessons buffer: vanilla_wow_lab/TENTATIVE_LESSONS.md (previous buffer was a byte-identical copy of an existing archive - likely restored by a git sync; not re-archived) - write candidate lessons there AS YOU GO."
 else
   CTX="Fresh tentative-lessons buffer: vanilla_wow_lab/TENTATIVE_LESSONS.md (previous buffer was empty; nothing archived) — write candidate lessons there AS YOU GO."
 fi
