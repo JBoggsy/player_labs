@@ -34,6 +34,9 @@ Usage (auth from `softmax login`; run inside `uv run`):
     uv run python policy_lifecycle.py monitor  --name crewborg
     uv run python policy_lifecycle.py monitor  --name crewborg --watch   # background it
 
+Set COWORLD_ELEVATED=1 to send X-Use-Elevated-Privileges (Softmax team members only;
+needed to see private/team-gated leagues, e.g. Vanilla Wow — mirrors `coworld --elevated`).
+
 Routes (Observatory gateway): /stats/policy-versions, /v2/league-submissions,
 /v2/league-policy-memberships, /v2/policy-membership-events, /v2/divisions/{id}/leaderboard.
 The API drifts — read `<base>/openapi.json` if a route 4xxs.
@@ -42,6 +45,7 @@ The API drifts — read `<base>/openapi.json` if a route 4xxs.
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 import time
 from typing import Any
@@ -67,8 +71,15 @@ def client() -> httpx.Client:
     tok = auth.load_current_token(server=api)
     if not tok:
         sys.exit("Not authenticated. Run: uv run softmax login")
+    headers = {"X-Auth-Token": tok}
+    # Private/team-gated leagues (e.g. the Vanilla Wow league) are invisible to
+    # unelevated requests under the opt-in elevation model (metta #17028). Set
+    # COWORLD_ELEVATED=1 to send the team-access header, mirroring `coworld --elevated`.
+    # The header is a no-op for non-team credentials; it never elevates a player token.
+    if os.environ.get("COWORLD_ELEVATED", "").lower() in {"1", "true", "yes"}:
+        headers["X-Use-Elevated-Privileges"] = "true"
     return httpx.Client(base_url=api.rstrip("/") + "/observatory",
-                        headers={"X-Auth-Token": tok}, timeout=60.0, follow_redirects=True)
+                        headers=headers, timeout=60.0, follow_redirects=True)
 
 
 def get(c: httpx.Client, path: str, **params: Any) -> Any:
