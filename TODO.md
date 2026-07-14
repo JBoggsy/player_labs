@@ -133,6 +133,14 @@ mid-session; check them back at the start of focused work.
 
 ## Done
 
+- **Fix `rotate_lessons.sh` re-archiving UNCHANGED buffers under new timestamps** (found 2026-07-13
+  lessons sweep — 3 labs had byte-identical duplicate archives inflating the recurrence signal;
+  DONE 2026-07-14). All five labs' hooks now md5-compare the buffer against every existing archive
+  (incl. `reviewed/`) and skip re-archiving byte-identical restores (e.g. from a git sync), with a
+  distinct additionalContext message. Verified end-to-end in a scratch repo: new content archives,
+  identical content skips, resume never rotates. Remaining related history (conflict-marker
+  archiving cue_n_woo 2026-07-05; stale-branch drop crewrift 2026-06-15) — no repro since, watch.
+
 - **LLM-based meeting chat for crewborg** (flagged 2026-06-25; DONE 2026-06-25, `crewborg:v47`).
   Lit up the dormant LLM meeting brain for the hosted league: Bedrock backend (SDK helpers),
   per-role `memory/{crewmate,imposter}.md` prompts, full LLM chat+vote authority, timeout-derived

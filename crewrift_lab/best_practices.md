@@ -69,6 +69,25 @@ human if a request would contravene one** before proceeding (then do what they d
 - **Experience requests are your primary eval — they aren't scarce.** They run many episodes in
   parallel on Softmax infra and are currently free; use them liberally, just **target them to the
   question** (matched roles, the specific opponents you struggle against) and harvest async.
+- **Pin an explicit identical roster for any A/B — never `top_n`/`random` seats.** Auto-selected
+  seats drift between arms (one partner swing alone moved win rate 87%→37%) and can seat **your own
+  champion** as opponent/partner; the selectors have also repeatedly 500'd (statement timeout) and
+  their semantics keep changing (once-per-request → per-episode redraw → commissioner-leaderboard
+  ranking). Make every seat an explicit `{"player": {"policy_ref": "name:vN"}}` and verify the
+  seating in the request readback. `random` seats are for tournament-style field reads only.
+- **Read an A/B only from complete, verified data.** Before analysis, check the on-disk episode
+  count matches `episode_count` and both arms are DONE — partial/mid-run pulls have fabricated a
+  fake +20.8pp delta and mis-read a finished A/B as pending (`fetch_artifacts` defaults `-n 10`;
+  `--watch` fetchers die silently). Re-pull with `--force` after arms complete. Conversely, a
+  directional result on a **confirmed mechanism** is worth powering up, not discarding (+5.9pp
+  p=0.20 at n=240 resolved to +14.4pp p<1e-9 at n≈955).
+- **Evaluate a fix in the SAME conditions the problem was diagnosed in, and judge against the
+  window's field par.** A pinned-favorable-seat config once masked a 30pp imposter gap ("inconclusive"
+  ≠ "neutral" — a test that can't see the effect says nothing); self-play validation doesn't
+  transfer to the league (80% vs 39% vote accuracy, same code). And the field itself moves: compare
+  a version to the SAME-window field average, not the previous version's raw number (v89's "collapse"
+  to 24% crew was exactly field par), and re-check window-conditioned lever verdicts after the field
+  or game version pivots — several refuted/confirmed levers flipped when the field changed.
 - **Cap LLM-on evals at ~400 concurrent episodes.** The hosted Bedrock (Haiku) capacity is a
   **shared pool on the tournament account** (`583928386201`), not our per-account quota (ours is
   714M tokens/day, ~untouched). Under heavy concurrent load it throttles with `429 "Too many tokens
@@ -85,10 +104,21 @@ human if a request would contravene one** before proceeding (then do what they d
   all at once. Diagnostic: a spike in all-zero / "stuck-in-Lobby" episodes = platform **connect**
   contention, not a policy bug — check the `connect_timeout` array across ALL 8 seats (it lands on
   the *opponents*, and `connect_timeout rate == dead-game rate == stuck rate`) before blaming crewborg.
+- **Drop dead connect-timeout games at the GAME level, never per-seat.** A game where any seat
+  connect/disconnect-timed-out is a dead game (auto-scored, no real play); a per-seat filter keeps
+  the surviving seats and counts the auto-result as real (crew win rate read 20% contaminated vs
+  33.7% clean — a 14pp error). Drop the whole episode if any seat has a timeout, then verify
+  "intact" = the full expected roster actually played. Also note: heavy/LLM images cold-start slowly
+  (Bedrock + spaCy + seed loads) and miss tightened connect deadlines — crewborg's own
+  connect-timeout rate hit ~24% on coworld 0.4.42, i.e. startup latency can be a bigger standing
+  lever than any skill change.
 - **Gate any LLM-behaviour eval on the LLM actually firing.** Before trusting an A/B of a
   prompt/doctrine change, measure the `domain.meeting_llm_decision` vs `domain.meeting_llm_fallback`
   ratio in crewborg's telemetry. If it's low (throttled/timed-out), the A/B silently tested only the
-  deterministic fallback path — the LLM change was never exercised. Target ≥60%.
+  deterministic fallback path — the LLM change was never exercised. Target ≥60%. Also check the
+  ratio (and `llm_call_failed`/429 counts) **per arm**: even matched same-window arms drain the
+  shared daily quota against each other asymmetrically (observed 78% vs 25% failure between
+  concurrent arms) — note the bias direction relative to your verdict before trusting a delta.
 - **Don't fetch replays for large eval batches — `telemetry.jsonl` is enough.** The LLM-rate /
   ejection / kill / vote measurements only need the policy `telemetry.jsonl` inside
   `artifacts/policy_artifact_*.zip`; the multi-MB `replay.json` is only for warehouse builds /
@@ -140,7 +170,28 @@ human if a request would contravene one** before proceeding (then do what they d
 - **Rebuild after every change** — a stale artifact reads as "the change did nothing."
 - **Upload freely; submit rarely** (see the non-negotiables). *Not* submitting is your rollback.
 - **Keep a version log** (`crewrift/crewborg/version_log.md`) mapping each uploaded version to the changes
-  it carries, so you always know what each version is testing.
+  it carries, so you always know what each version is testing. **Write the entry in the same breath
+  as the upload** — parallel sessions have left gaps, and a submitting session must confirm the log
+  covers the version being submitted (or flag the gap) before submitting.
+- **Parallel sessions clobber shared build/upload identity.** The Docker tag `players-crewborg:dev`
+  is host-global and `--name crewborg` uploads interleave version numbers — a sibling worktree's
+  build silently overwrites the bits you then upload (observed with 3 concurrent agents). When
+  fanning out: build each candidate to a **unique `--tag`**, upload under a **unique `--name`**
+  (`crewborg-<slug>`), and verify the image actually carries your change
+  (`docker run … grep`) before uploading.
+- **Env flags bake at UPLOAD, and same-image uploads dedup by digest.** `--secret-env` is fixed per
+  policy version (not settable per experience request), and uploading the same image N times with
+  different secret-env collapses to ONE version. To A/B a config flag you need **distinct images** —
+  thin `FROM <base>` + `ENV X=…` layers, one per arm — and verify the bake inside the image before
+  launching. Bake the **trace env on the candidate** for any behaviour-path A/B, or you can't
+  confirm the new path ever fired.
+- **Check unmerged branches and current main before re-diagnosing or building.** Finished evidence
+  hides on unmerged worktree branches (`git branch --no-merged` — a refuted lever was nearly
+  re-proposed from scratch), and a diagnosis measured on a stale base can prescribe a fix main
+  already shipped (cost: a full build+A/B cycle). `git merge-base HEAD main` + fast-forward before
+  reading code or cutting an A/B baseline; and **re-verify any old warehouse-diagnosed lever against
+  fresh data before building on it** — two "mechanistic levers" (the wanderer bug, teammate
+  detection) evaporated on re-verification.
 - **Use explicit positive/negative controls** — a silent fallback can run a reference player, not
   yours; a verified A/B beats a source review.
 - Stay alert to **local↔live drift**, **stale rotating IDs / docs**, **over-reading a small batch**,
@@ -200,13 +251,24 @@ These layer on Part 1; they're the failure modes of *this* game. Add to this par
   - *One game's objective ground truth* → **`expand_replay`** (the single-game primitive the others build on).
 - **Policy logs are version-independent — the primary source for hosted/league episodes** (no replay
   or version match needed; crewborg writes a rich per-tick JSON trace).
+- **crewborg's trace lives in `artifacts/policy_artifact_<slot>.zip` → `telemetry.jsonl`, NOT the
+  per-agent log.** Hosted `policy_agent_N.log` is typically one line ("game over"); the per-tick
+  decision/vote/suspicion trace is only in the artifact zip. Beware fetch flags: `--no-logs` has
+  (twice) silently gated the artifact-zip download too — after any filtered fetch, verify the zips
+  actually landed before concluding "no telemetry."
 - **League episodes are a disjoint population — `coworld episodes -p crewborg` returns `[]`.**
   Discover them via the policy-versions → episodes path (the `coworld-episode-artifacts` skill);
-  never read `[]` as "no episodes."
+  never read `[]` as "no episodes." For outcome-level reads (win rates, role splits), skip artifact
+  fetching entirely: `POST /v2/episodes/search` returns per-seat `results` inline for any policy
+  version — it's also a cross-user "has anyone already run this config" check. `/jobs/*` artifact
+  routes need `--elevated` (opt-in elevation model). And **league telemetry artifacts are ephemeral
+  (~one round's retention)** — harvest every round or lose them.
 - **Confirm what's in a log before querying it** (crewborg's trace level varies — an empty `select`
-  can mean "wrong level," not "didn't happen"), and **identify a slot by name *and* version** (a
-  league episode can carry several crewborg versions — map slot→policy from `episode.json`, not list
-  position).
+  can mean "wrong level," not "didn't happen"), and **🚩 attribute by `policy_version_id`, never by
+  display name or list position.** Your own champion gets drawn as an opponent under the same
+  "James Boggs" name, one policy can hold two seats ("Name (2)"), and pooled warehouses mis-attribute
+  per-version behavior unless split by version UUID — all three have produced phantom findings.
+  Map seat→policy from `episode.json` participants.
 
 ## Perception & the scene contract
 
@@ -216,6 +278,26 @@ These layer on Part 1; they're the failure modes of *this* game. Add to this par
   `src/crewrift/{sim,global}.nim`, but they are the **game's to change**. If perception misbehaves
   after a game bump, suspect drift and check the Nim source before trusting the decoder (see
   [`crewrift/crewborg/docs/perception-and-belief.md`](crewrift/crewborg/docs/perception-and-belief.md)).
+- **Game versions bump frequently and silently — re-verify tooling and re-baseline behavior after
+  every bump.** Constants are variant- AND version-specific (`killCooldownTicks` 500 vs 800,
+  `voteTimerTicks` 240→1200) and config-overridable: the authoritative value is the episode's baked
+  `game_config` / the deployed ref's sim source, never a doc or a hardcoded constant. For the
+  expander: don't assume a bump changed the sim (0.4.3–0.4.29 were sim-identical) or that it didn't
+  (0.4.21→0.4.28 changed vote timing and collapsed the vote rate with zero crewborg changes; 0.4.42
+  stopped zlib-compressing replays) — **test the existing expander binary empirically on several
+  fresh replays including a button game** and trust the per-episode `trace_warning` count, not one
+  exit-0 smoke. Fitted-threshold behaviors (vote gates, timing models) need re-measurement after
+  any game bump.
+- **Self-ID and role/teammate latching must come from authoritative one-shot sources, never
+  re-derived fuzzy estimates.** The connection slot IS the colour index (`?slot=` in the WS URL —
+  zero-variance ground truth); role/teammate identity comes from the IMPS reveal text (with its
+  discriminating gate — dropping it caused crew to latch "imposter" and wear three masks at once:
+  0 tasks, 0 votes, 0 chat); `self_alive` needs the meeting-census backstop (HUD icons can skip a
+  phase transition). **Never mutate a source-of-truth set against a drifting estimate** — a per-tick
+  `teammate_colors.discard(self_color)` deleted the real teammate and cratered kills ~10σ. Exclude
+  self at ingest, one-shot, against the authoritative read. And when one version shows several weird
+  symptoms at once, look for ONE upstream belief bug before filing three; any build lineage forked
+  before a critical belief fix must be checked for that fix before submitting.
 
 ## Idling is dangerous — every idle needs an escape
 
@@ -231,3 +313,36 @@ These layer on Part 1; they're the failure modes of *this* game. Add to this par
   re-search instead. Concretely: RECON with no live target → fall back to SEARCH (never idle); PICK_ROOM
   → always pick a room. When auditing the FSM, check every `idle` **and** every `navigate_to` that could
   resolve to the agent's current position.
+- **An escape must change persistent state — a one-tick escape is no escape.** An escape that only
+  returns a different intent for one tick gets re-derived away next tick (the mode recomputes the
+  same parked target); real escapes mutate FSM state or a sticky waypoint. Likewise "a stall the
+  mode can react to" is a freeze unless some mode actually reacts — every idle path needs an owner
+  with a timeout.
+- **Actuator near-miss loops are the same disease.** Any repeated-press loop (kill A-press,
+  task-station A-hold) that can sit just outside the interaction boundary is a permanent freeze:
+  a ~6px perception offset held a kill-press deadlock for 9,000+ ticks, and an `ARRIVE_RADIUS`
+  deadband settling one pixel outside a task rect wedged crew at specific stations for whole games.
+  Gate on **progress** (N presses with no state change ⇒ treat as out-of-range, step/nudge toward
+  the target's center), not on believed-in-range.
+
+## Gameplay levers — what the evidence keeps saying
+
+Distilled from many refuted and confirmed experiments; check these before proposing a direction.
+
+- **The whole game is the parity race.** Ghosts keep tasking, so crew can't lose task capacity by
+  dying — imposters' only resource is removing crew (kills + ejections) before tasks finish, and a
+  crew mis-ejection is a free parity step for the imposters. Both roles' levers derive from this.
+- **Imposter kill VOLUME is structurally capped — stop tuning it.** Kills are bound by the cooldown
+  and by body-meetings resetting it (refuted ≥3× independently: BE_DUMB, kill-sooner, isolation-gate
+  removal; witness-gate relaxations refuted 3× more). The recurring real levers: (a) **contact** —
+  keep/regain sight of crew through the post-kill cooldown so the next ready window lands on a
+  visible victim; (b) **kill→win conversion** — meeting play (the parity-push vote was +14.4pp win,
+  p<1e-9, with kills flat); condition win on kill count to see this gap. And **never a standing
+  positional bias** — camping a chokepoint or seeking the densest room regressed kills both times
+  it was tried (capture rare events with an event-trigger, not a standing bias).
+- **Crew voting: precision beats participation, and the suspicion model has a train→serve gap.**
+  Offline/self-play precision does not transfer live (~94% offline / 80% self-play vs ~39% league —
+  the offline replay reconstruction diverges from live perception, which is also why weight refits
+  alone never moved outcomes). Mis-votes are parity gifts (2.2× more crew than imposters ejected),
+  so vote-bar tuning in either direction is a validated dead end until the live ranking improves —
+  and any voting change must be A/B'd against the live league field, never self-play.
