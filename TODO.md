@@ -5,6 +5,16 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
+- **Fix `rotate_lessons.sh`: it re-archives UNCHANGED buffers under new timestamps (2026-07-13,
+  lessons sweep).** Found independently in 3 labs during the cross-lab lessons review: ctf_lab had
+  4 byte-identical archived buffers, heartleaf_lab 4, crewrift_lab 2 pairs — one session minted as
+  several "independent" sessions, silently inflating the recurrence signal `/lessons-review`
+  graduates on. Fix: the hook (each lab's `tools/rotate_lessons.sh`) should skip rotation when the
+  live buffer has no `### ` entries or is byte-identical to the newest archive. Until fixed,
+  reviews must dedupe archives by md5 before counting recurrence. Related earlier incidents: the
+  hook archived files with unresolved conflict markers verbatim (cue_n_woo 2026-07-05) and a
+  stale-branch rotation silently dropped upstream lessons (crewrift 2026-06-15).
+
 - **Imposter incidental co-location with teammate — avoid clustering (2026-07-07, James).** Belief
   trace refuted the "teammate detection is broken" theory (v101: 0/24 detection failures, teammate
   known every game — see [[crewrift-imposter-kill-lever]]). BUT the replay shows crewborg-imposter

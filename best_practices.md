@@ -27,6 +27,13 @@ afternoon. Defaults:
 - **Careful is reserved for the irreversible.** League submission (the human's gate)
   and destroying data. Everything else — code, uploads, versions, evals — is cheap
   and retryable; treat hesitation there as the real cost.
+- **Ship the minimal capable player first; let the eval locate the gap.** A bare
+  loop that connects, acts, and exits cleanly is a better first artifact than a
+  clever one — the first eval reliably pinpoints the highest-leverage missing
+  capability (this held in every lab). Two corollaries: build the **deterministic
+  floor before wiring an LLM** (first points must never gate on the model), and
+  after *every* eval re-ask "where is the biggest gap now?" instead of continuing
+  to polish the thing you just touched.
 - **Rigor lives in *reading* results, not in shipping code.** The measurement and
   diagnosis disciplines below are about not fooling yourself when you interpret an
   eval — they gate *conclusions*, not uploads. Don't let them slow the ship step.
@@ -44,7 +51,7 @@ afternoon. Defaults:
   *and* a rank-based test, and apply multiple-comparison correction; pool matched
   batches for power. A leaderboard that looks cleanly ranked is mostly noise until
   corrected.
-- **🚩 NO CAUSAL CLAIM WITHOUT THE FALSIFYING QUERY — this is the single most-violated discipline; treat every "because / since / due to" in your own draft as an un-run query, not a conclusion.** When a result appears, the reflex is to narrate a plausible mechanism and ship it as a finding. *Every* such mechanism has **observable preconditions**, and the query to check them is almost always one cheap join away — and it *repeatedly* overturns the story, often showing the **opposite**. This failure recurred **three times in a single session**, each refuted by one query: (1) "self-report helps us win by voting a crewmate out" → ejections were ~1%; nobody gets voted out. (2) "self-report helps win" → the win delta was **not even significant** (p=0.12) — there was no effect to explain. (3) "the crew-aware room change hurt because it put us in crowds where kills get witnessed" → the data showed the **reverse**: we moved *less* and were near *fewer* crew, alone *more* often. The mechanism wasn't subtly wrong, it was backwards. **The procedure, every time, before writing the "why":** (a) **is the effect even real?** effect size + a significance test (a 10-pt swing at n=100 may be noise); (b) **name what this mechanism would make observable, and what the *competing* mechanism would** — including a game rule you may have forgotten (e.g. meetings teleport all players home); (c) **run the query that separates them and report it, refutations included.** Watch your own language: borrowed metaphors ("snowball", "momentum") smuggle in a model the game doesn't have. A claim about *why* is not done until a number distinguishes it from the alternatives — and you should expect to be wrong about half the time, so go look.
+- **🚩 NO CAUSAL CLAIM WITHOUT THE FALSIFYING QUERY — this is the single most-violated discipline; treat every "because / since / due to" in your own draft as an un-run query, not a conclusion.** When a result appears, the reflex is to narrate a plausible mechanism and ship it as a finding. *Every* such mechanism has **observable preconditions**, and the query to check them is almost always one cheap join away — and it *repeatedly* overturns the story, often showing the **opposite**. This failure recurred **three times in a single session**, each refuted by one query: (1) "self-report helps us win by voting a crewmate out" → ejections were ~1%; nobody gets voted out. (2) "self-report helps win" → the win delta was **not even significant** (p=0.12) — there was no effect to explain. (3) "the crew-aware room change hurt because it put us in crowds where kills get witnessed" → the data showed the **reverse**: we moved *less* and were near *fewer* crew, alone *more* often. The mechanism wasn't subtly wrong, it was backwards. **The procedure, every time, before writing the "why":** (a) **is the effect even real?** effect size + a significance test (a 10-pt swing at n=100 may be noise); (b) **name what this mechanism would make observable, and what the *competing* mechanism would** — including a game rule you may have forgotten (e.g. meetings teleport all players home); (c) **run the query that separates them and report it, refutations included.** Watch your own language: borrowed metaphors ("snowball", "momentum") smuggle in a model the game doesn't have. And **pull the distribution before naming a mechanism** — a bimodal outcome hiding under a mean, or two distinct event types pooled into one count (death vs idle), routinely sends the story to the wrong mechanism. A claim about *why* is not done until a number distinguishes it from the alternatives — and you should expect to be wrong about half the time, so go look.
 - **Normalize every stat by seat-holding.** When a policy occupies a different number
   of roster seats than others (round-robin with duplicates, or any uneven roster),
   *always* report **per-seat-game rates, never raw totals** — a policy with 4 of 8
@@ -58,6 +65,23 @@ afternoon. Defaults:
   isolating individual contribution to a team outcome needs a **controlled design**
   (vary one seat, hold the rest fixed) or at least conditioning on composition.
   Individual stats (kills, tasks) are clean per-seat; team stats (win) are not.
+- **Cheap proxies screen; only live evaluation judges.** Any offline/local probe that
+  fixes the opponent (or the field) measures only the half you influence — probe deltas
+  have repeatedly reversed on the live field, in more than one lab. Use proxies to
+  *rank candidates cheaply*, never to declare a change good; the verdict is always a
+  live experience request against the real field.
+- **Replicate before believing; run A/B arms time-tight.** A measured delta from one
+  seed/sample flips sign often enough that a second independent replication is a
+  mandatory gate, not a nicety. And when any part of the evaluator drifts over time
+  (a hosted judge, the league field, infra load), matched arms must run in the same
+  time window — a verdict conditioned on one window rots with it.
+- **Score finished episodes only; infra failures are not skill.** Timeouts,
+  connect failures, and dead games hit the *episode*, not one player — drop them at
+  the game level (never per-seat), report the failure rate alongside the result, and
+  treat a *cluster* of failures in one window as one infra event, not a behavior rate.
+  Relatedly, a reliability/latency floor gates competition entry: a fast adequate
+  player beats a slow excellent one that gets disqualified — completion rate first,
+  win rate second.
 - **Experience requests are your primary eval — they aren't scarce.** They run many
   episodes in parallel on Softmax infra and are currently free, so use them liberally
   rather than rationing them; just **target them to the question** (matched roles when
@@ -80,7 +104,10 @@ afternoon. Defaults:
 - **Observability is something you build, not something you're given** — reason traces
   (mode / options / choice + a *why*), belief/perception snapshots, tick-keyed lines,
   tiered verbosity, replays. If you can't see the behavior you can't improve it;
-  building the instrument often precedes the fix.
+  building the instrument often precedes the fix. In particular, **log every sensed
+  value a gated decision depends on**: a gate silently reading `None` (or a quota
+  silently drained in one A/B arm) is invisible for hours until the input itself is
+  in the trace.
 - **Triage by failure class; chase the surprise.** Aggregate, then sample the worst
   case per class. The most informative game is the one that "should have been a win."
 - **Variance carries the mechanism — and the lucky wins are findings too.** Don't stop
@@ -96,6 +123,13 @@ afternoon. Defaults:
   connect/build) strictly separate from **behavior** failures (plays badly).
 - **Ground truth beats inference.** When the player's view or the tooling could be
   lying, verify against the game's authoritative source/logs before building on it.
+  Two recurring applications: **extract exact rules, constants, and timings from the
+  game's source and write them down *before* building rule-gated behavior** (an
+  approximately-right mental model of a clock, threshold, or scoring rule fails
+  silently — this caused multi-eval zero-score runs in more than one lab); and
+  **learn each game's ops-failure sentinel from its own schema/runner** — failure
+  signals (a score sentinel, an episode status, a `failed_policy_index`) do not
+  transfer between games.
 
 ## Hypothesis discipline — make a diagnosis actionable
 
@@ -114,7 +148,27 @@ afternoon. Defaults:
 - **Validate from the trace, not the scoreboard.** A win can be noise; confirm the
   intended mechanism actually fired.
 
-## Provenance — never trust an unverified green result
+## Player engineering — Coworld platform traps that recur across games
+
+- **A synchronous `decide` starves the websocket keepalive — pass
+  `ping_interval=None` (or equivalent) on the bridge.** The default
+  `websockets` keepalive plus a blocking decide loop silently disconnects the
+  player ~20–40s in; it presents as a mysterious early death, not an error.
+  Verified by a 9/9-dead → 9/9-alive local A/B; applies to every Python
+  Sprite-v1 player until fixed upstream in the SDK.
+- **Perception reads *rendered* objects — account for draw-offsets vs the logical
+  entity centre.** A distance threshold tuned to logical positions silently fails
+  on a sprite drawn with a lift/offset (a carried flag rendered 10px above its
+  carrier made "am I carrying?" never true across 38k snapshots). When decoding a
+  scene, pin thresholds to the renderer's geometry, not the abstract model.
+- **Guards keyed on "did my action appear in my own view" are unsafe across phase
+  boundaries** — server views lag, so an in-flight/idempotence latch can wedge a
+  player permanently. Clear such guards on phase advance.
+- **Mirror matches (own both slots) are the cheapest reproduction of league-only
+  concurrency bugs** — you get both sides' logs and full control of timing.
+- **State escapes must mutate persistent state.** A one-tick "escape" from an idle
+  or stuck loop that doesn't change what the next tick reads is no escape; pair
+  retry loops with progress gates.
 
 - **Change one component at a time** so the next evaluation is attributable.
 - **Rebuild after every change** — a stale artifact reads as "the change did nothing."
@@ -127,6 +181,22 @@ afternoon. Defaults:
   you always know what each version is testing and capable of.
 - **Use explicit positive/negative controls** — a silent fallback can run a reference
   player, not yours; a verified A/B beats a source review.
+- **Verify success, not capability.** Before claiming an integration works (an LLM
+  backend, an upload flag, a new transport), find the *log line proving a successful
+  call actually happened* — coherent-looking output is not evidence, and this exact
+  mistake has shipped "working" players with no LLM more than once. The paired habit:
+  after every upload, check the hosted pod's success line, never local output.
+- **An eval regression in a path your change can't mechanically touch means another
+  bundled diff did it** — audit everything else that rode along before re-diagnosing
+  the game (a 10σ regression has come from a "harmless" co-packaged change).
+- **"Implemented and tested" is not "committed."** Commit in the same breath as
+  reporting done; days-old uncommitted work on a live lab is a standing provenance
+  hazard. Same family: after any sync with main, re-read the lab's process docs
+  (`AGENTS.md`, `WORKING_CONTEXT.md`) — they can change under you mid-session.
+- **Freshness checks extend to package pins and reference docs** — before concluding
+  an SDK lacks a feature, check the dependency's `main`, not just the pinned copy in
+  the venv; before relying on a skill/API recipe, re-verify against the live
+  `--help`/openapi (recorded recipes drift).
 - Stay alert to **local↔live drift**, **stale rotating IDs / docs**, **over-reading a
   small batch**, and **position-based score joins** — the classic looked-like-success
   failures.
