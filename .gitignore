@@ -24,6 +24,9 @@ analysis/
 # Per-experiment scratch logs
 *.log
 
+# Report-generation working files (final reports live in docs/reports/)
+.reports-working/
+
 # Local secrets / env
 .env
 .env.*
