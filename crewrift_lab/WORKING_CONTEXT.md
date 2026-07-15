@@ -15,16 +15,12 @@ This is *not* a log or archive: finished work lives in git history / the
 
 ---
 
-## 🎯 OBJECTIVE: v106 SUBMITTED to Crewrift Prime — watch qualification; then read whether it's actually better
+## 🎯 OBJECTIVE: v106 QUALIFIED & CHAMPION — pick the next improvement lever
 
-**v106 SUBMITTED (James, 2026-07-09)** to Crewrift Prime (`sub_cc707442-849d-4a11-876a-39be36e6cfa6`,
-auto-champion=always, policy-version `f8a407c5…`). As of submit it's `status=pending` (commissioner
-places it on its ~10-min round cadence). **Qualification poller running:** `.tmp/poll_v106_qualify.py`
-→ `.tmp/v106_qualify.log` (tracks OUR submission+membership by pv-id; the skill's `monitor` has a bug —
-it terminated on the pre-existing v100 champion's 'competing' status, so use the targeted poller).
-Watch for: pending → placed → qualifying → **competing (✅) / disqualified (❌)**. Champion is still
-v100 until v106 qualifies. DQ risk to watch: `substatus=crash` = LLM-latency timeout (pull qualifier
-episode logs); the residual ~7-9% alive-seat vote_timeout is a latent concern.
+**v106 is `competing` and 👑 CHAMPION** in Crewrift Prime (verified 2026-07-15;
+membership `lpm_d02abdf8…`, Competition division). Standings: **rank 14/16, score 1464 / 216
+rounds** — board is tight (#1 docxology 1684; Richard Higgins ties us at 1464). The old v100
+membership is `disqualified(superseded)` — normal supersession, not a failure.
 
 **What v106 is (the fix):** kills the v105 `no_vote`/vote_timeout regression. Root cause (replay-
 confirmed): v105's `self_alive` went **falsely False** — the one-shot self_color latch stuck a
@@ -42,8 +38,26 @@ provisional sprite guess once — keeps v102 anti-drift); (3) dead-mute still SK
   connect-timed-out → 76% dead games (ZERO at ≤100). LESSON: pace arms as separate ≤100-ep requests.
 - ⚠️ residual ~7-9% alive-seat vote_timeout remains (separate, pre-existing; NOT the dead-mute path).
 
-**Next (post-qualification):** if we want to know v106 vs v105 gameplay, run a PACED matched A/B
-(separate 100-ep requests, drained one at a time). Optionally chase the residual alive-seat timeout.
+**🚨 A/B VERDICT (2026-07-15): v106 imposter SELF-HUNT BUG — the CHAMPION is hunting its own
+sprite.** The paced v106-vs-v100 A/B (200 cand / 100 base eps; stopped early — verdict decisive;
+round-3 xreq cancelled) found: imposter win 71%→35% (p=0.005), kills 1.58→0.58, zero-kill imposter
+games 4%→44%. Root cause (telemetry-confirmed, 45/53 cand imposter eps, 0/50 base):
+`visible_victims()` (strategy/opportunity.py:147) filters only `teammate_colors` and NEVER excluded
+`self_color` — in v100 self was accidentally protected because reveal ingestion put OUR OWN color
+into teammate_colors; v106's ingest-time self-exclusion (types.py:868-871, the correct v102-fix)
+removed that shield, and select_victim's most-isolated heuristic now locks onto the self sprite
+(always visible, dist ~6.3, 111,568 self-strikes vs 24 real). Crew metrics unchanged; LLM fired
+27%/19% (<60% gate) so the social rework is STILL untested. Artifacts: `.tmp/ab_v106_v100/`
+(diff.json, ab.html, finding.md, compare.md; arms in cand/ + base/).
+
+**v107 SHIPPED (2026-07-15, commit `6cfdffb`, pv `5a4e0eae…`) — the self-hunt fix.** Not just the
+one-liner: new `opportunity.is_live_opponent` (not self / not teammate / not dead) applied at every
+roster-derived imposter pool (victims, witnesses/isolation, hunt commit, follow/watch, recon,
+commander targets/room-bias, agent_tracking, suspicion killer inference); 7 regression tests;
+645 green. **A/B v107-vs-v100 IN FLIGHT:** driver `crewrift_lab/.tmp/ab_v107_v100/run_ab.sh`
+(same paced shape as the v106 A/B; first xreq `xreq_307fdfab…` verified carrying v107). When done:
+confirm imposter kills/win recover to ~v100 levels + no crew regression, then SUBMIT (human gate) —
+v106 is live and bleeding imposter rounds at rank 14/16.
 
 **Next action: when the 4 watchers drain (~10-15 min), (1) confirm vote_timeout→~0 on v106; (2) run
 compare.py role-split. If clean, the v105 social rework (minus this bug) is worth a powered ~300/arm
@@ -72,8 +86,9 @@ matched-roster runs, random-field fired runs), so a fresh paced A/B was unavoida
   mid-field crew. There is NO clean mechanistic crew lever left (see "closed levers"). The social
   rework targets meeting *persuasion* (both roles) — the current open bet.
 
-## ⚠️ CRITICAL HANDOFF FACT: ALL of v101→v105 is UNCOMMITTED
-Last crewborg commit = `03fff48` (= v100 code). Everything since is working-tree only:
+## ~~CRITICAL HANDOFF FACT~~ RESOLVED: v101→v106 is COMMITTED
+`db3b1ae` (v101-v105 social rework) + `94888ef` (v106 self-ID/dead-mute fix) + `6735493` (docs/infra).
+The list below is what those commits contain (kept for orientation):
 - `events.py` — teammate-belief trace (`role_resolved` enriched + new `teammate_belief_changed`).
 - `types.py` — teammate self-dedup fix + **self_color one-shot latch** (was re-derived every tick,
   drifted onto teammates → the v102 kill regression; now latched once).
