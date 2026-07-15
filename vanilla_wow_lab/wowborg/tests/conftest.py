@@ -1,7 +1,15 @@
 from __future__ import annotations
 
 import asyncio
+import sys
 from collections import deque
+from pathlib import Path
+
+# wow_sdk ships in the v2 base image; for local test runs, use the read-only game-repo
+# checkout's src/ when present. test_bridge.py importorskips wow_sdk if neither exists.
+_GAME_REPO_SRC = Path.home() / "coding/coworlds/coworld-vanilla-wow/src"
+if _GAME_REPO_SRC.is_dir() and str(_GAME_REPO_SRC) not in sys.path:
+    sys.path.insert(0, str(_GAME_REPO_SRC))
 
 
 class ScriptedTunnel:
