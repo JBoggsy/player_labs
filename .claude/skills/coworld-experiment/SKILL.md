@@ -114,6 +114,8 @@ Read the result against the **pre-committed** predictions (no post-hoc goalpost-
 
 ## See also
 
+- **`coworld-hypothesis-miner`** — generates ranked candidate hypotheses from a scored batch when
+  nothing specific is suspected yet; its top candidate is a natural input here.
 - **`coworld-ab`** — the experiment-as-a-matched-fresh-run; also measures whether a confirmed fix helped.
 - **`coworld-experience-requests`** / **`coworld-episode-artifacts`** — fire designed runs / pull them.
 - **`crewrift-experiment`** — the crewrift-specific instrument bindings (event warehouse, trace-logs).

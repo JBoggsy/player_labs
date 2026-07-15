@@ -63,6 +63,9 @@ drive the mechanical halves of the loop:
   criticize → cheapest instrument → pre-registered verdict). Game-agnostic method.
 - **`coworld-ab`** — decide whether a change actually helped via a matched, fresh A/B. Ships
   the shared stats engine + report renderer; each lab supplies a small `compare.py` metric adapter.
+- **`coworld-hypothesis-miner`** — decide *what to change next*: mine a scored batch for the
+  behaviors separating the policy's own wins from its losses; ranked hypothesis candidates.
+  Shared engine; each lab supplies a small `features.py` adapter.
 
 Game-specific analysis/build skills — and each lab's `compare.py` metric adapter — live in the
 game labs (e.g. Crewrift's `crewrift-survey`, `crewrift-ab`). The index with full descriptions is
@@ -128,5 +131,7 @@ upload → run an experience request → report + diagnose. After that you're in
 - [`AGENTS.md`](AGENTS.md) — the operating model and skills index (start here to *work*).
 - [`crewrift_lab/`](crewrift_lab/) — the first game lab (its README + AGENTS).
 - [`player-build.md`](player-build.md) — what any Coworld player image must be.
+- [`docs/player-engineering.md`](docs/player-engineering.md) — how to design what goes
+  *inside* one: architecture selection, robustness, navigation.
 - [`TODO.md`](TODO.md) — parked work.
 </content>
