@@ -2,6 +2,24 @@
 
 Version → change mapping for the CTF `beacon` policy. Newest first.
 
+## v7 — peek-fire-duck micro (2026-07-15)
+
+**Why:** v6 field eval vs `ctf-focusfire:v5` (the new #1): 0-9, out-killed 207-128,
+23.9 deaths/game. Beacon's combat was stand-and-deliver — it stood exposed through the
+gun's cooldown+windup and paid aim traverse while visible. The baseline/focusfire lineage
+spends cooldown behind a wall and re-emerges pre-aimed (design doc:
+`docs/designs/ctf-peek-fire-duck-design.md`; reference: `players/baseline/baseline.nim`).
+
+**Changes:** (1) nav.npz now ships the raw per-pixel `wall` mask; `mapdata.ray_clear`
+(sampled segment LoS, ~14us/map-length ray). (2) fire→duck→peek movement override in
+`action.py`: gun down + fresh near threat (≤30 ticks, ≤340px) → sidestep to the nearest
+cell that BREAKS the threat's line, hold, keep aim on its arc; gun up + fresh track
+(≤24 ticks) wall-blocked → PRE-LAY aim and sidestep to the cell that OPENS the line
+(combat overlay fires the tick it clears). Exempt while carrying and within 90px of the
+steal pedestal. First consumer of the v6 tracks groundwork (velocity-predicted).
+(3) knobs: `BEACON_PEEK_DUCK` (default ON — the A/B bit), `BEACON_DUCK_RANGE_PX`, etc.
+~10us/tick worst case. 42 tests pass. Upload: `beacon:v7`.
+
 ## v6 — port to ctf 0.7.3 wire format (2026-07-14)
 
 **Why:** the league redeployed ctf **0.7.3** (`cow_e7586b05…`, source `5450c64`,

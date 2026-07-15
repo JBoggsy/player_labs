@@ -104,6 +104,24 @@ DANGER_STAMP_RADIUS_PX = 16
 #: Nav-cells-per-side folded into one cell when tracing the danger grid (4 -> 39x21).
 DANGER_TRACE_DOWNSAMPLE = 4
 
+# --- Peek-fire-duck micro (v7) ------------------------------------------------------
+# The baseline/focusfire lineage's edge: spend the gun's cooldown BEHIND a wall, pay
+# the aim traverse in cover, and re-emerge with the shot pre-laid. Constants mirror
+# players/baseline/baseline.nim (DuckRange, FreshShotTicks, Duck/PeekSearchCells).
+#: Master switch — the single A/B bit for the v7 iteration.
+PEEK_DUCK = _env_int("BEACON_PEEK_DUCK", 1) == 1
+#: Duck from remembered threats within this range (px) while the gun is down.
+DUCK_RANGE_PX = _env_int("BEACON_DUCK_RANGE_PX", 340)
+#: Only duck from tracks seen this recently (ticks) — stale tracks don't pin us.
+DUCK_THREAT_FRESH_TICKS = _env_int("BEACON_DUCK_THREAT_FRESH_TICKS", 30)
+#: Only peek at tracks seen this recently (ticks; baseline FreshShotTicks).
+PEEK_TARGET_FRESH_TICKS = _env_int("BEACON_PEEK_TARGET_FRESH_TICKS", 24)
+#: Search radius (nav cells) for the duck/peek sidestep cell.
+PEEK_DUCK_SEARCH_CELLS = _env_int("BEACON_PEEK_DUCK_SEARCH_CELLS", 3)
+#: Within this distance (px) of the steal target, never duck/peek — grab speed wins
+#: (mirrors the baseline's pocket-rush exemption).
+PEEK_DUCK_RUSH_EXEMPT_PX = _env_int("BEACON_PEEK_DUCK_RUSH_EXEMPT_PX", 90)
+
 # --- Roles (v2) -------------------------------------------------------------------
 # CTF games (vs the baseline) are decided by WIPE, not capture (see TENTATIVE_LESSONS):
 # nobody captures, so the team that keeps its lives wins. v1's 8 identical rushers died

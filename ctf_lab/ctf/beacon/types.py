@@ -78,6 +78,7 @@ class Belief:
 
     team: Team | None = None
     seat: int = 0  # slot // 2, in 0..7 — fixes the role and defensive hold point
+    tick: int = 0  # current runtime tick, for aging tracks at decision time
     role: Role = "attacker"
     hold_point: tuple[int, int] | None = None  # defender's assigned hold cell
     self_xy: tuple[int, int] | None = None

@@ -256,7 +256,9 @@ def build_cover_grid(grid: np.ndarray) -> np.ndarray:
 def bake() -> dict[str, np.ndarray]:
     wall_px = build_wall_mask()
     grid = build_walkable_grid(wall_px)
-    fields = {"walkable": grid, "cover": build_cover_grid(grid)}
+    # The raw per-pixel mask ships too: line-of-sight rays (peek/duck micro) must
+    # test true walls, not the footprint-eroded grid (sight has no 6px body).
+    fields = {"wall": wall_px, "walkable": grid, "cover": build_cover_grid(grid)}
     for team in ("red", "blue"):
         enemy = "blue" if team == "red" else "red"
         fields[f"flow_steal_{team}"] = build_flow_field(grid, PEDESTAL[enemy])

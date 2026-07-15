@@ -373,6 +373,91 @@ def test_enemy_players_read_at_map_scale():
     assert len(st.enemies) == 1 and st.enemies[0].pos == (450, 300)
 
 
+# --- peek-fire-duck micro (v7) -------------------------------------------------------
+# Geometry anchor: the arena's first rect obstacle spans x 268-286, y 10-72 (bake_map
+# _RECTS[0]), so (250, 40) and (300, 40) are on opposite sides of a wall.
+
+
+def test_ray_blocked_by_wall_and_clear_in_open():
+    assert not mapdata.ray_clear((250, 40), (300, 40))  # through the rect
+    assert mapdata.ray_clear((560, 329), (680, 329))  # across the open center ring
+
+
+def _combat_belief(**kw):
+    from ctf.beacon.types import PlayerTrack
+    b = Belief(team="red", alive=True, fire_ready=True, tick=100, **kw)
+    return b
+
+
+def test_duck_moves_behind_cover_when_gun_down():
+    from ctf.beacon.action import _peek_duck_override
+    from ctf.beacon.types import PlayerTrack
+    # We stand west of the rect wall; a fresh threat is east of it, in the open,
+    # with clear LoS to us. Gun down => duck should move us (or hold behind cover).
+    b = _combat_belief()
+    b.fire_ready = False
+    b.self_xy = (250, 90)  # south of the rect, open ground
+    b.enemy_tracks = [PlayerTrack(pos=(340, 90), last_tick=95, facing="left")]
+    out = _peek_duck_override(Intent(kind="navigate_to", point=(1049, 329), reason="steal"), b)
+    assert out is not None
+    mask, aim = out
+    assert aim is not None  # aim stays laid on the threat's arc
+
+
+def test_duck_holds_still_when_already_covered():
+    from ctf.beacon.action import _peek_duck_override
+    from ctf.beacon.types import PlayerTrack
+    b = _combat_belief()
+    b.fire_ready = False
+    b.self_xy = (250, 40)  # west of the rect
+    b.enemy_tracks = [PlayerTrack(pos=(300, 40), last_tick=95, facing="left")]  # east of it
+    out = _peek_duck_override(Intent(kind="navigate_to", point=(1049, 329), reason="steal"), b)
+    assert out is not None
+    mask, aim = out
+    assert mask == 0  # wall already breaks the line: hold, watch the arc
+
+
+def test_peek_pre_lays_aim_at_blocked_track():
+    from ctf.beacon.action import _peek_duck_override
+    from ctf.beacon.types import PlayerTrack
+    b = _combat_belief()  # gun UP
+    # Near the rect's south end (y=72): a ~2-cell sidestep south opens the line.
+    b.self_xy = (250, 56)
+    b.enemy_tracks = [PlayerTrack(pos=(300, 56), last_tick=90, facing="left")]  # blocked
+    out = _peek_duck_override(Intent(kind="navigate_to", point=(1049, 329), reason="steal"), b)
+    assert out is not None
+    mask, aim = out
+    assert aim is not None  # pre-laid on the blocked target
+    assert mask != 0  # sidestepping toward the peek cell
+
+
+def test_no_override_when_carrying_or_rushing():
+    from ctf.beacon.action import _peek_duck_override
+    from ctf.beacon.types import PlayerTrack
+    tracks = [PlayerTrack(pos=(300, 40), last_tick=95, facing="left")]
+    b = _combat_belief(i_carry_enemy_flag=True)
+    b.fire_ready = False
+    b.self_xy = (250, 40)
+    b.enemy_tracks = tracks
+    assert _peek_duck_override(Intent(kind="navigate_to", point=(150, 329), reason="carry_home"), b) is None
+    # Final pedestal approach: exempt even with a fresh threat.
+    b2 = _combat_belief()
+    b2.fire_ready = False
+    b2.self_xy = (1000, 329)  # 49px from Blue pedestal (1049, 329)
+    b2.enemy_tracks = [PlayerTrack(pos=(1010, 300), last_tick=95, facing="left")]
+    assert _peek_duck_override(Intent(kind="navigate_to", point=(1049, 329), reason="steal"), b2) is None
+
+
+def test_no_duck_from_stale_track():
+    from ctf.beacon.action import _peek_duck_override
+    from ctf.beacon.types import PlayerTrack
+    b = _combat_belief()
+    b.fire_ready = False
+    b.self_xy = (250, 90)
+    b.enemy_tracks = [PlayerTrack(pos=(340, 90), last_tick=10, facing="left")]  # 90 ticks stale
+    assert _peek_duck_override(Intent(kind="navigate_to", point=(1049, 329), reason="steal"), b) is None
+
+
 def test_corpse_is_not_a_live_player_and_we_read_dead():
     # While dead (0.7.x: fog does NOT lift), our own body is labeled "corpse ...",
     # so self is not found -> not ready/alive; and a corpse never counts as an enemy.

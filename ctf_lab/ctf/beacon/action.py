@@ -20,19 +20,28 @@ from __future__ import annotations
 
 import math
 
-from ctf.beacon import nav
+from ctf.beacon import mapdata, nav
 from ctf.beacon.config import (
     AIM_BRADS_TURN,
     AIM_DEADBAND,
     AIM_TURN_RATE,
     CLOSE_RANGE_PX,
+    DUCK_RANGE_PX,
+    DUCK_THREAT_FRESH_TICKS,
     FIRE_SLACK_PX,
     FRIENDLY_FIRE_CORRIDOR_PX,
+    GRID_H,
+    GRID_W,
+    NAV_CELL,
     PEDESTAL,
+    PEEK_DUCK,
+    PEEK_DUCK_RUSH_EXEMPT_PX,
+    PEEK_DUCK_SEARCH_CELLS,
+    PEEK_TARGET_FRESH_TICKS,
     STUCK_TICKS,
     SWEEP_HALF_ARC,
 )
-from ctf.beacon.types import ActionState, Belief, Command, Intent
+from ctf.beacon.types import ActionState, Belief, Command, Intent, PlayerTrack
 from players.player_sdk import Button
 
 
@@ -130,6 +139,123 @@ def _teammate_blocks_shot(belief: Belief, target_pos: tuple[int, int]) -> bool:
     return False
 
 
+# --- Peek-fire-duck micro (v7) --------------------------------------------------------
+# The fire->duck->peek cycle (mirrors players/baseline/baseline.nim): spend the gun's
+# cooldown behind a wall, pre-lay the aim on a blocked target while sidestepping to the
+# cell that opens the line, and fire the tick the ray clears. Overrides MOVEMENT (and
+# supplies a desired aim); the combat overlay's snap-aim/fire/FF gates are unchanged.
+
+
+def _cell_center(gx: int, gy: int) -> tuple[int, int]:
+    return (gx * NAV_CELL + NAV_CELL // 2, gy * NAV_CELL + NAV_CELL // 2)
+
+
+def _fresh_track(belief: Belief, max_age: int, max_range: float | None = None) -> PlayerTrack | None:
+    """The nearest enemy track seen within ``max_age`` ticks (and ``max_range`` px)."""
+    assert belief.self_xy is not None
+    sx, sy = belief.self_xy
+    best: PlayerTrack | None = None
+    best_d = float("inf") if max_range is None else max_range
+    for t in belief.enemy_tracks:
+        if belief.tick - t.last_tick > max_age:
+            continue
+        d = math.hypot(t.pos[0] - sx, t.pos[1] - sy)
+        if d < best_d:
+            best_d = d
+            best = t
+    return best
+
+
+def _predicted_pos(track: PlayerTrack, tick: int) -> tuple[int, int]:
+    """The track's velocity-extrapolated position now (clamped to the map)."""
+    if track.vel is None:
+        return track.pos
+    dt = tick - track.last_tick
+    from ctf.beacon.config import MAP_H, MAP_W
+
+    x = min(max(round(track.pos[0] + track.vel[0] * dt), 0), MAP_W - 1)
+    y = min(max(round(track.pos[1] + track.vel[1] * dt), 0), MAP_H - 1)
+    return (x, y)
+
+
+def _find_sidestep_cell(
+    self_xy: tuple[int, int], ref: tuple[int, int], *, want_los: bool
+) -> tuple[int, int] | None:
+    """Nearest reachable nav cell whose centre has (want_los=True) or breaks
+    (False) line-of-sight to ``ref``. Reachable = walkable + a clear straight
+    walk from here (one sidestep, not a route). None if no cell qualifies."""
+    walkable = mapdata.walkable_grid()
+    gx0 = min(max(self_xy[0] // NAV_CELL, 0), GRID_W - 1)
+    gy0 = min(max(self_xy[1] // NAV_CELL, 0), GRID_H - 1)
+    best: tuple[int, int] | None = None
+    best_d = float("inf")
+    r = PEEK_DUCK_SEARCH_CELLS
+    for dy in range(-r, r + 1):
+        for dx in range(-r, r + 1):
+            nx, ny = gx0 + dx, gy0 + dy
+            if not (0 <= nx < GRID_W and 0 <= ny < GRID_H) or not walkable[ny, nx]:
+                continue
+            p = _cell_center(nx, ny)
+            if not mapdata.ray_clear(self_xy, p):
+                continue  # can't walk straight there
+            if mapdata.ray_clear(p, ref) != want_los:
+                continue
+            d = (p[0] - self_xy[0]) ** 2 + (p[1] - self_xy[1]) ** 2
+            if d < best_d:
+                best_d = d
+                best = p
+    return best
+
+
+def _peek_duck_override(intent: Intent, belief: Belief) -> tuple[int, int | None] | None:
+    """The peek/duck movement mask + desired aim for this tick, or None to fall
+    through to normal navigation. Exempt while carrying (run!) and in the final
+    pedestal approach (grab speed beats safety)."""
+    assert belief.self_xy is not None and belief.team is not None
+    if belief.i_carry_enemy_flag:
+        return None
+    enemy = "blue" if belief.team == "red" else "red"
+    steal = PEDESTAL[enemy]
+    sx, sy = belief.self_xy
+    if intent.reason == "steal" and math.hypot(steal[0] - sx, steal[1] - sy) <= PEEK_DUCK_RUSH_EXEMPT_PX:
+        return None
+
+    if not belief.fire_ready:
+        # DUCK: gun is down and a fresh threat is near -> break its line and hold,
+        # keeping the aim (vision cone) on the threat's arc.
+        threat = _fresh_track(belief, DUCK_THREAT_FRESH_TICKS, DUCK_RANGE_PX)
+        if threat is None:
+            return None
+        tpos = _predicted_pos(threat, belief.tick)
+        aim = _brads_of(tpos[0] - sx, tpos[1] - sy)
+        if not mapdata.ray_clear(belief.self_xy, tpos):
+            return (0, aim)  # already behind cover: hold still, watch the arc
+        duck = _find_sidestep_cell(belief.self_xy, tpos, want_los=False)
+        if duck is None:
+            return None  # no cover nearby — fight in the open as before
+        return (nav.octant_toward(belief.self_xy, duck, False), aim)
+
+    if not belief.enemies:
+        # PEEK: gun is up but the freshest track is wall-blocked -> pre-lay the aim
+        # on it and sidestep to the cell that opens the line; the combat overlay
+        # fires the tick it becomes visible.
+        target = _fresh_track(belief, PEEK_TARGET_FRESH_TICKS)
+        if target is None:
+            return None
+        tpos = _predicted_pos(target, belief.tick)
+        if mapdata.ray_clear(belief.self_xy, tpos):
+            return None  # line already open; if it were really there we'd see it
+        aim = _brads_of(tpos[0] - sx, tpos[1] - sy)
+        peek = _find_sidestep_cell(belief.self_xy, tpos, want_los=True)
+        if peek is None:
+            return None
+        if math.hypot(peek[0] - sx, peek[1] - sy) < 5.0:
+            return (0, aim)  # on the peek cell; hold and let the aim settle
+        return (nav.octant_toward(belief.self_xy, peek, False), aim)
+
+    return None
+
+
 def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Command:
     """Compose the controller mask for this frame."""
     mask = 0
@@ -141,11 +267,16 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
 
     self_xy = belief.self_xy
 
+    # --- Peek-fire-duck micro (v7): may override movement + supply a desired aim ---
+    override = _peek_duck_override(intent, belief) if PEEK_DUCK else None
+
     # --- Movement (decoupled from aim) --------------------------------------------
     # "hold" emits no movement (defender sitting on its line); the combat overlay
     # below still sweeps + fires. "navigate_to" routes via the flow field for the two
     # fixed strategic goals, else A* for a dynamic point (hold approach / thief chase).
-    if intent.kind == "navigate_to":
+    if override is not None:
+        mask |= override[0]
+    elif intent.kind == "navigate_to":
         team = belief.team
         assert team is not None
         enemy = "blue" if team == "red" else "red"
@@ -179,8 +310,13 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
             mask |= _rotation_button(err, state)
     else:
         state.a_held = False
-        # No enemy: lighthouse sweep across the threat axis.
-        target = _sweep_target(belief)
+        if override is not None and override[1] is not None:
+            # Ducking/peeking: lay the aim on the remembered threat's arc so the
+            # vision cone watches the lane (and a peek exits pre-aimed).
+            target = override[1]
+        else:
+            # No enemy: lighthouse sweep across the threat axis.
+            target = _sweep_target(belief)
         err = _brad_error(target, belief.aim_brads)
         mask |= _rotation_button(err, state)
 

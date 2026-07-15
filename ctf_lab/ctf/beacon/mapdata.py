@@ -7,6 +7,7 @@ image. This module loads it once and exposes the walkable grid + the four flow f
 
 from __future__ import annotations
 
+import math
 from functools import lru_cache
 from pathlib import Path
 
@@ -30,6 +31,29 @@ def _load() -> dict[str, np.ndarray]:
 def walkable_grid() -> np.ndarray:
     """Boolean [GRID_H, GRID_W] grid; True = a player body fits in the cell."""
     return _load()["walkable"]
+
+
+def wall_mask() -> np.ndarray:
+    """Boolean [MAP_H, MAP_W] per-pixel wall mask (True = wall), the sim's
+    isArenaWall verbatim. For line-of-sight rays — NOT for movement (use the
+    footprint-eroded walkable grid for that)."""
+    return _load()["wall"]
+
+
+def ray_clear(a: tuple[int, int], b: tuple[int, int], step: float = 2.0) -> bool:
+    """True when the segment a->b crosses no wall pixel (sampled every ~step px).
+
+    Mirrors the baseline bot's coarse LoS ray: good enough for peek/duck cover
+    decisions; not a guarantee at grazing angles."""
+    wall = wall_mask()
+    ax, ay = a
+    bx, by = b
+    length = math.hypot(bx - ax, by - ay)
+    n = max(int(length / step), 1)
+    t = np.linspace(0.0, 1.0, n + 1)
+    xs = np.clip(np.round(ax + (bx - ax) * t).astype(np.intp), 0, wall.shape[1] - 1)
+    ys = np.clip(np.round(ay + (by - ay) * t).astype(np.intp), 0, wall.shape[0] - 1)
+    return not wall[ys, xs].any()
 
 
 def cover_grid() -> np.ndarray:
@@ -72,4 +96,12 @@ def nearest_cover(px: int, py: int, max_cells: int = 6):
     return None
 
 
-__all__ = ["NEIGHBORS", "cover_grid", "flow_field", "nearest_cover", "walkable_grid"]
+__all__ = [
+    "NEIGHBORS",
+    "cover_grid",
+    "flow_field",
+    "nearest_cover",
+    "ray_clear",
+    "walkable_grid",
+    "wall_mask",
+]

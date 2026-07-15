@@ -59,6 +59,7 @@ _STAMP_CELLS = max(DANGER_STAMP_RADIUS_PX // NAV_CELL, 1)
 
 def update_belief(belief: Belief, percept: CtfState, action_state: ActionState, tick: int) -> None:
     """Mutate ``belief`` in place from this frame's percept."""
+    belief.tick = tick
     was_alive = belief.alive
     belief.alive = percept.self_xy is not None
     if percept.self_xy is not None:
