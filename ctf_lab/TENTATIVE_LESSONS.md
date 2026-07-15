@@ -81,14 +81,20 @@ that cover micro is worthless. Should have shipped activation counters in the sa
 iteration (one trace field) — a behavior A/B without mechanism instrumentation can't
 distinguish "didn't fire" from "fired and didn't help", which decide opposite next steps.
 
-### Policy-artifact zips come back EMPTY from the fetcher; stderr traces are the reliable channel
+### Policy-artifact zips "empty" — ROOT CAUSE: the fetcher's v1 routes were deleted upstream; FIXED to v2
 
-Evidence: two fetch attempts (incl. --force, --elevated) on a fresh v8 xreq returned
-`policy_artifacts: []` for every episode — the `jsonl@artifact` trace member never
-materialized. Re-uploading the same image with `--secret-env
-BEACON_TRACE_OUTPUTS=jsonl@stderr` (v9) put full trace jsonl in the ordinary
-policy_agent_N.log files on the first try. Until the artifact path is debugged, run
-diagnostics with stderr traces. (Also: logs are stored as a Python bytes-repr string —
+Evidence: the artifact pipeline was healthy end-to-end the whole time — beacon uploaded
+its zip (v8's traces confirmed present server-side, `has_artifact: true`), but
+`fetch_artifacts.py` listed via `GET /jobs/{job}/policy-artifact`, which metta commit
+c4ddebd857 (2026-07-10, "delete unused v1 team-only job read routes") REMOVED — it 404s,
+and the fetcher's get-or-none swallowed that into a silent `[]`. Fix (applied): use the
+v2 pair — `GET /v2/episode-requests/{ereq}/policy-artifacts` (per-position has_artifact
+flags) then `GET /v2/episode-requests/{ereq}/{policy_version_id}/policy-artifact/{pos}`.
+Verified: all 24 beacon zips from the v8 batch now download and parse. Two residuals:
+(1) league episodes (non-ereq) have NO v2 artifact route — only xreq episodes fetch
+zips; (2) the deletion commit's audit missed this consumer because the skill script
+lives outside metta — after any upstream "unused route cleanup", re-test the lab's
+fetch paths. (Still true: policy logs come back as a Python bytes-repr string —
 `ast.literal_eval` before splitlines.)
 
 ### The activation diagnostic worked exactly as intended — and refuted the comfortable hypotheses in one 3-episode run

@@ -31,6 +31,10 @@ One directory per episode (`<timestamp>_<short-id>/`) containing:
   crewborg's LLM/Bedrock** — `telemetry.jsonl` carries `domain.meeting_llm_decision`
   vs `_fallback` (see [Bedrock debugging](../../../crewrift_lab/docs/coworld-platform.md#bedrock--in-pod-llm))
   — and it is **not** subject to the hosted ~10k-line log cap, so prefer it over `logs/`.
+  Downloaded via the **v2 episode-request routes** (the v1 `/jobs/{job}/policy-artifact`
+  pair was deleted upstream, metta c4ddebd857 2026-07-10) — so artifact zips are only
+  fetchable for **experience-request episodes** (`ereq_…`), not league episodes, until
+  a v2 league-episode route exists.
 - `error_info.json` — only when the episode failed.
 
 Plus a top-level `index.json` summarizing the run. Every artifact is best-effort:

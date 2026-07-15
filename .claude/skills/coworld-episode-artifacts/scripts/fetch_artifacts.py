@@ -25,8 +25,11 @@ artifact handle. All artifacts come from three job routes (verified live
     GET /jobs/{job_id}/artifacts/replay          -> replay bytes   (game replay)
     GET /jobs/{job_id}/policy-logs               -> ["policy_agent_0.log", ...]
     GET /jobs/{job_id}/policy-logs/{agent_idx}   -> one agent's stderr trace
-    GET /jobs/{job_id}/policy-artifact           -> [slot, ...] with uploaded artifacts
-    GET /jobs/{job_id}/policy-artifact/{agent_idx} -> one slot's artifact zip
+    GET /v2/episode-requests/{ereq}/policy-artifacts -> per-position has_artifact flags
+    GET /v2/episode-requests/{ereq}/{policy_version_id}/policy-artifact/{agent_idx}
+                                                 -> one slot's artifact zip
+    (the old /jobs/{job_id}/policy-artifact pair was DELETED upstream, metta
+    c4ddebd857 2026-07-10 — episode-request-scoped v2 routes are the only path now)
     GET /jobs/{job_id}/artifacts/error_info      -> error_info.json (only on failure)
 
 Each artifact is best-effort: a missing replay or one missing log is logged and
@@ -342,22 +345,6 @@ def discover_by_episode(client: Client, episode_ids: list[str]) -> list[EpisodeR
 # Per-episode artifact download (keyed off job_id)
 # --------------------------------------------------------------------------- #
 
-def _artifact_slot_index(entry: object) -> int | None:
-    """Slot index from a policy-artifact listing entry.
-
-    The route returns filenames like ``policy_artifact_0.zip``; tolerate a bare
-    int or numeric string too in case the shape changes.
-    """
-    if isinstance(entry, int):
-        return entry
-    if isinstance(entry, str):
-        import re
-        m = re.search(r"(\d+)", entry)
-        if m:
-            return int(m.group(1))
-    return None
-
-
 def _write_replay(content: bytes, out_dir: Path) -> None:
     """Write the raw replay blob plus its decompressed form.
 
@@ -482,32 +469,42 @@ def fetch_episode(
     # (e.g. crewborg's trace zip) — separate from the stderr policy logs, and
     # gated separately (--no-artifacts), NOT by --no-logs: the zips are the
     # richer record (no hosted log cap) and are wanted even when logs are not.
-    # The listing is filenames (`["policy_artifact_0.zip", ...]`), not bare
-    # slot ints; the download route is keyed by the slot index parsed from them.
+    # The v1 /jobs/{job}/policy-artifact routes were deleted upstream (metta
+    # c4ddebd857, 2026-07-10); the only path is the v2 episode-request pair —
+    # a per-position listing with has_artifact flags, then a download keyed by
+    # (ereq id, policy_version_id, agent position). League episodes (no ereq_…
+    # ref) currently have NO artifact download route; note it and move on.
     if want_artifacts:
-        listing = client.get_text_or_none(f"/jobs/{job}/policy-artifact")
-        slots: list[int] = []
-        if listing is not None:
-            try:
-                entries = json.loads(listing)
-            except json.JSONDecodeError:
-                entries = []
-                summary["errors"].append(f"unparseable policy-artifact listing: {listing[:80]}")
-            for entry in entries:
-                idx = _artifact_slot_index(entry)
-                if idx is None:
-                    summary["errors"].append(f"unrecognized policy-artifact entry: {entry!r}")
+        if not ref.ref_id.startswith("ereq_"):
+            summary["errors"].append(
+                "policy artifacts: no v2 route for league episodes (only episode requests)"
+            )
+        else:
+            listing = client.get_text_or_none(f"/v2/episode-requests/{ref.ref_id}/policy-artifacts")
+            rows: list[dict[str, Any]] = []
+            if listing is not None:
+                try:
+                    rows = json.loads(listing)
+                except json.JSONDecodeError:
+                    summary["errors"].append(f"unparseable policy-artifacts listing: {listing[:80]}")
+            for row in rows:
+                if not row.get("has_artifact"):
                     continue
-                slots.append(idx)
-        for idx in slots:
-            content = client.get_bytes_or_none(f"/jobs/{job}/policy-artifact/{idx}")
-            if content is None:
-                summary["errors"].append(f"policy-artifact {idx}: unavailable")
-                continue
-            artifacts_dir = out_dir / "artifacts"
-            artifacts_dir.mkdir(exist_ok=True)
-            (artifacts_dir / f"policy_artifact_{idx}.zip").write_bytes(content)
-            summary["policy_artifacts"].append(idx)
+                idx = row.get("position")
+                pv = row.get("policy_version_id")
+                if idx is None or pv is None:
+                    summary["errors"].append(f"unrecognized policy-artifacts row: {row!r}")
+                    continue
+                content = client.get_bytes_or_none(
+                    f"/v2/episode-requests/{ref.ref_id}/{pv}/policy-artifact/{idx}"
+                )
+                if content is None:
+                    summary["errors"].append(f"policy-artifact {idx}: unavailable (403 if not owned)")
+                    continue
+                artifacts_dir = out_dir / "artifacts"
+                artifacts_dir.mkdir(exist_ok=True)
+                (artifacts_dir / f"policy_artifact_{idx}.zip").write_bytes(content)
+                summary["policy_artifacts"].append(idx)
 
     # 6. Error info (present only when the episode failed).
     err = client.get_text_or_none(f"/jobs/{job}/artifacts/error_info")
