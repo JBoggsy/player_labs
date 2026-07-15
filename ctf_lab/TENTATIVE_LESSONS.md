@@ -72,6 +72,15 @@ new `ctf-focusfire:v5` is the new #1 and beats v6 0-9 (out-kills ~2:1) while v6 
 other five entrants 50-0 (49 of 50 by capture). An eval battery vs a stale field answers
 last week's question.
 
+### Copying the champion's mechanism isn't enough — verify the mechanism FIRES before crediting/blaming it
+
+Evidence: v7 ported the baseline's peek-fire-duck cycle faithfully (same constants, same
+cell search, pre-laid aim) and changed NOTHING vs focusfire: v6 0-9/128 kills/23.9 deaths
+→ v7 0-9/127/24.0 — numbers this identical suggest the override rarely activates, not
+that cover micro is worthless. Should have shipped activation counters in the same
+iteration (one trace field) — a behavior A/B without mechanism instrumentation can't
+distinguish "didn't fire" from "fired and didn't help", which decide opposite next steps.
+
 ### All-±1-scores with 0 kills/0 captures/0 deaths = opponent never actually played; discount the sweep
 
 Evidence: v6 "10-0" vs daf-actinf-ctf-v4:v1 had zero kills, zero captures, zero deaths on

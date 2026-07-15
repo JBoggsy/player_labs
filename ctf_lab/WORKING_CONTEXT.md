@@ -59,9 +59,20 @@ on kills).
 Standings at submission: rank #2 of 7 (0.497, 64 mostly-v5 rounds) behind daveey
 (0.679). Expect the score to climb as correct-wire v6 rounds accumulate.
 
-**Next levers** (one per iteration): grenades (we ignore them; focusfire may not),
-gate a behavior on tracks/danger (pursuit / exposure-aware routing), or
-peek-fire-duck micro to close the focusfire gap.
+**v7 (2026-07-15, uploaded, NOT submitted): peek-fire-duck micro — NO EFFECT vs
+focusfire.** Design `docs/designs/ctf-peek-fire-duck-design.md`: fire→duck→peek cycle
+(baseline lineage), wall-mask LoS rays in nav.npz, first consumer of the tracks
+groundwork, `BEACON_PEEK_DUCK=1` default. A/B (10 eps each, 8v8):
+- vs focusfire: v6 0-9 (kills 128/207, deaths 23.9) → **v7 0-9 (127/209, 24.0)** —
+  statistically identical. The mechanism either never fires in the real fight shape
+  or isn't the binding constraint.
+- Regressions clean: flankfire 10-0, Picasso 10-0 (all by capture).
+**Open question for next session:** instrument WHY — add duck/peek activation counts
+to the trace (one line in decide.py's snapshot), re-run 3 eps vs focusfire, and read
+whether it engages at all. Hypotheses: (a) beacon dies mid-open-field where no cover
+is within 3 cells, (b) tracks are rarely fresh+blocked in the deadly moments (fog),
+(c) focusfire's edge is target selection/lead + focus fire, not cover micro.
+v6 remains the competing champion; v7 upload is inert.
 
 ## (prior) Status (2026-07-14, session 2): belief groundwork — player tracks + danger field (uncommitted)
 
