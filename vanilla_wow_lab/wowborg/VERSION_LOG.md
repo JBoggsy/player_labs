@@ -1,6 +1,9 @@
 # wowborg version log
 
-## v2 - shim adoption: random-point navigator (built, not yet uploaded)
+## v2 - shim adoption: random-point navigator
+
+- Version UUID: `eb6aa13e-4fcd-4037-a443-42fc7ae676d0` (uploaded 2026-07-15,
+  `players-wowborg:dev` linux/amd64, tag `purpose=v2-shim-random-walk`).
 
 - Architecture change: our policy now drives the game's bundled Nim client
   (`king_richard --scenario=nim-control`, autonomous planner off) through its file
