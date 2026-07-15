@@ -55,4 +55,26 @@ Evidence: RULES.md "Observation render scale" — map/fog layers carry object co
 sprite sizes at 3x; recover with `map_x = (obj.x + sprite.w/2) / 3`. The invisible
 `walkability map` sprite stays unscaled (1235x659). So nav.npz, config thresholds, and all
 beacon internals can stay in map pixels if perception divides once at the boundary.
-Status: fix not yet implemented; beacon v5 is presumed blind on the live game until then.
+Status: DONE in v6 — one-line change in `_center` + `config.RENDER_SCALE`; nothing else
+in the pipeline needed touching. Seam design validated.
+
+### A wire-format port is ONE build-upload-eval iteration; a full-field head-to-head battery (6x10 eps) turns around in ~15 min
+
+Evidence: v6 = 3 small perception edits, tests, build, upload, then 6 parallel 10-episode
+8v8 xreqs vs every division entrant — all posted at once, all complete inside ~15 minutes,
+fetched in parallel with `--elevated`. Faster and far more informative than the old
+one-opponent-at-a-time evals; make "vs the whole field" the default eval shape.
+
+### Post-redeploy, re-verify WHO the wall is — the champion bot gets replaced too
+
+Evidence: after the 0.7.4 redeploy the old ctf-baseline-16 is gone from the field; daveey's
+new `ctf-focusfire:v5` is the new #1 and beats v6 0-9 (out-kills ~2:1) while v6 sweeps the
+other five entrants 50-0 (49 of 50 by capture). An eval battery vs a stale field answers
+last week's question.
+
+### All-±1-scores with 0 kills/0 captures/0 deaths = opponent never actually played; discount the sweep
+
+Evidence: v6 "10-0" vs daf-actinf-ctf-v4:v1 had zero kills, zero captures, zero deaths on
+both sides — every red seat +1, every blue -1. That's a disconnect/abandon walkover
+(0.7.4 even added a disconnected-losers fix upstream), not gameplay signal. Check the
+kills/captures columns before counting a win streak as evidence.

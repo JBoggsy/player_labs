@@ -10,10 +10,11 @@ startup to resume; **update it as you learn** (keep it tight).
 
 ---
 
-## Status (2026-07-14, session 3): LEAGUE REDEPLOYED ctf 0.7.3 — beacon ported to the new wire format
+## Status (2026-07-14, session 3): LEAGUE REDEPLOYED ctf 0.7.4 — beacon ported to the new wire format
 
 **The league redeployed** (new coworld `cow_e7586b05-3b53-465a-bb87-b9847a1b7bf9`, ctf
-**0.7.3**, source ref `5450c64` = coworld-ctf HEAD 2026-07-14; GameVersion 1→2). The old
+**0.7.4**, source ref `d60dc27` = coworld-ctf HEAD 2026-07-14; GameVersion 1→2; NOTE the
+live xreqs report "ctf v0.7.4" — 0.7.3/`5450c64` + a disconnect-win fix + bot grenades). The old
 `cow_325613c1…`/0.5.4 IDs below are stale. **Division scores RESET** — everyone 0.500 with
 0 rounds; our old rank-#2 history is void. Breaking changes since our 761c098 pin:
 
@@ -33,11 +34,27 @@ startup to resume; **update it as you learn** (keep it tight).
 - **Scoring:** WinReward 100 → +1 winners / -1 losers per capture-or-wipe.
 - **Arena geometry: UNCHANGED** (sim.nim block byte-identical except exports) — `nav.npz`
   needs no rebake. Slot→team, aim/vision/speed constants, CarriedFlagLift all unchanged.
-- `CTF_REF` re-pinned to `5450c64` in `tools/build_expand_replay.sh` (old replays need the
+- `CTF_REF` re-pinned to `d60dc27` in `tools/build_expand_replay.sh` (old replays need the
   old pin). All 36 beacon tests green, incl. new wire-scale/heart/corpse regressions.
 
-**Next:** build + upload v6 (this port), eval **against the current division field** (not
-pure co-gas), then resume the improvement loop on fresh baselines.
+**DONE this session:** v6 (the port) built + uploaded; **6 x 10-episode 8v8 field evals
+run** vs each current division entrant (ids in `scratch/eval_v6_field/xreq_ids.txt`,
+results downloaded there, dashboard on :8765). **v6 post-redeploy baseline:**
+
+| Opponent | Result | Notes |
+|---|---|---|
+| ctf-focusfire:v5 (daveey, #1) | **0-9** | beacon 0 captures, dies 23.9/game vs 13.3 — same gap as the old baseline bot |
+| Picasso:v1 (softmaxwell, #3) | **10-0** | all by capture, 0 deaths |
+| daf-actinf-ctf-v4:v1 (docxology, #4) | **10-0** | scores ±1 with 0 kills/0 captures/0 deaths — opponent likely never connected/abandoned; weak signal |
+| ctf-flankfire:v1 (Aaron, #5) | **10-0** | all by capture, 0 deaths |
+| co-gas relhalpha:v7 (#6) | **10-0** | all by capture, 0 deaths |
+| co-gas richard:v7 (#7) | **10-0** | all by capture, 0 deaths |
+
+The port restored full function: v6 cleanly beats everyone except daveey's new
+**ctf-focusfire:v5**, which replaced ctf-baseline-16 as the wall (0-9, out-fought ~2:1
+on kills). **Next levers** (one per iteration): grenades (we ignore them; focusfire may
+not), gate a behavior on tracks/danger (pursuit / exposure-aware routing), or
+peek-fire-duck micro. Re-submitting v6 to the league is the human's gated call.
 
 ## (prior) Status (2026-07-14, session 2): belief groundwork — player tracks + danger field (uncommitted)
 
@@ -172,7 +189,7 @@ field-relative; not the champion.
 ## Eval how-to
 - Division `div_37361341-2970-4dac-9528-55398bab0d1a` (Competition),
   `div_64d9b2dc…` (Qualifiers), league `league_3243d905-d32d-4ec6-978b-fa94751d4a37`,
-  coworld `cow_e7586b05-3b53-465a-bb87-b9847a1b7bf9` (ctf **0.7.3**, redeployed 2026-07-14;
+  coworld `cow_e7586b05-3b53-465a-bb87-b9847a1b7bf9` (ctf **0.7.4**, redeployed 2026-07-14;
   scores reset). Field (7 entrants): daveey, Aaron (`ctf-flankfire`), us, softmaxwell,
   docxology, Richard Higgins, RelhAlpha.
 - Build: `ctf_lab/tools/build_player.sh beacon --tag players-beacon:dev`; upload:
