@@ -56,6 +56,7 @@ from crewrift.crewborg.modes import imposter_common as ic
 from crewrift.crewborg.map.types import Room
 from crewrift.crewborg.nav import _segment_clear
 from crewrift.crewborg.strategy.commander.bias import commander_of
+from crewrift.crewborg.strategy.opportunity import is_live_opponent
 from crewrift.crewborg.strategy.path_prediction import PathPredictor
 from crewrift.crewborg.strategy.room_prior import room_share_prior
 from crewrift.crewborg.types import ActionState, Belief, Intent, PlayerRecord
@@ -435,7 +436,7 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
 
         out = []
         for rec in belief.roster.values():
-            if rec.color in belief.teammate_colors or rec.life_status == "dead":
+            if not is_live_opponent(belief, rec):
                 continue
             if belief.last_tick - rec.last_seen_tick <= WATCH_RECENT_TICKS:
                 out.append((rec.world_x, rec.world_y))
@@ -447,7 +448,7 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
             self._state = "pick_room"
             return self._pick_room(belief, self_xy)
         target = belief.roster.get(self._follow_color)
-        if target is None or target.life_status == "dead" or self._follow_color in belief.teammate_colors:
+        if target is None or not is_live_opponent(belief, target):
             return self._stop_follow(belief, self_xy)
 
         visible = target.last_seen_tick == belief.last_tick
@@ -526,10 +527,8 @@ class SearchMode(Mode[Belief, ActionState, Intent]):
 
         leavers = []
         for color in self._room_crew:
-            if color in belief.teammate_colors:
-                continue
             rec = belief.roster.get(color)
-            if rec is None or rec.life_status == "dead":
+            if rec is None or not is_live_opponent(belief, rec):
                 continue
             inside = ic.in_rect((rec.world_x, rec.world_y), room)
             recently = belief.last_tick - rec.last_seen_tick

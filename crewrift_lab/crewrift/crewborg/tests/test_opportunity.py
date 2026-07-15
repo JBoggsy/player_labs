@@ -20,6 +20,7 @@ from crewrift.crewborg.strategy.opportunity import (
     travel_ticks,
     unwitnessed,
     urgency_full_ticks,
+    visible_victims,
     witness_tolerance,
 )
 from crewrift.crewborg.strategy.trajectory import AGENT_SPEED_PX
@@ -316,3 +317,81 @@ def test_most_isolated_recon_candidate_ties_break_toward_more_recent() -> None:
 
 def test_recon_target_is_none_with_no_fresh_candidate() -> None:
     assert recon_target(Belief(last_tick=100)) is None
+
+
+# --- self-exclusion (the v106 self-hunt regression) ---------------------------
+# Our own sprite is ingested into the roster like any visible player. Until v106 it
+# was shielded from these pools only ACCIDENTALLY (self sat in teammate_colors via
+# reveal ingestion); the v106 ingest-time self-exclusion removed that shield and the
+# imposter hunted its own sprite (win 71%->35%). These pin the explicit exclusion.
+
+
+def _with_self(belief: Belief, color: str = "red", xy: tuple[int, int] = (0, 0)) -> None:
+    belief.self_color = color
+    belief.self_world_x, belief.self_world_y = xy
+    _crew(belief, 99, xy, color, belief.last_tick)  # our own sprite, visible like any player
+
+
+def test_visible_victims_excludes_self() -> None:
+    belief = Belief(last_tick=5)
+    _with_self(belief)
+    assert not has_visible_victim(belief)
+    _crew(belief, 1, (50, 50), "green", 5)
+    assert [v.color for v in visible_victims(belief)] == ["green"]
+
+
+def test_select_victim_never_targets_self() -> None:
+    # Self is nearest AND maximally "isolated" — exactly the sprite the heuristic loved.
+    belief = Belief(last_tick=5)
+    _with_self(belief)
+    _crew(belief, 1, (300, 0), "green", 5)
+    v = select_victim(belief)
+    assert v is not None and v.color == "green"
+
+
+def test_has_trackable_victim_ignores_self() -> None:
+    belief = Belief(last_tick=5)
+    _with_self(belief)
+    assert not has_trackable_victim(belief)
+
+
+def test_witness_count_excludes_self() -> None:
+    # Our always-visible sprite must not consume the witness tolerance: one real
+    # witness + self is still within the zero-urgency tolerance of 1.
+    belief = Belief(last_tick=5)
+    _with_self(belief)
+    _crew(belief, 1, (50, 50), "green", 5)
+    _witnesses(belief, 1, tick=5)
+    assert unwitnessed(belief, belief.roster["green"])
+
+
+def test_isolation_ignores_self() -> None:
+    # A victim right next to us must still read as isolated from OTHER crew —
+    # self standing nearby is not cover for the victim.
+    belief = Belief(last_tick=5)
+    _with_self(belief)
+    _crew(belief, 1, (10, 0), "green", 5)   # right beside us
+    _crew(belief, 2, (40, 0), "blue", 5)    # clustered pair far away
+    _crew(belief, 3, (50, 0), "white", 5)
+    v = select_victim(belief)
+    assert v is not None and v.color == "green"
+
+
+def test_recon_candidate_excludes_self() -> None:
+    belief = Belief(last_tick=5)
+    _with_self(belief)
+    assert most_isolated_recon_candidate(belief) is None
+    _crew(belief, 1, (200, 200), "green", 5)
+    c = most_isolated_recon_candidate(belief)
+    assert c is not None and c.color == "green"
+
+
+def test_most_recent_victim_excludes_self() -> None:
+    from crewrift.crewborg.strategy.opportunity import most_recent_victim
+
+    belief = Belief(last_tick=5)
+    _with_self(belief)
+    assert most_recent_victim(belief) is None
+    _crew(belief, 1, (200, 200), "green", 3)
+    v = most_recent_victim(belief)
+    assert v is not None and v.color == "green"

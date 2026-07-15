@@ -438,7 +438,7 @@ def _detect_witnessed_kill(belief: Belief) -> None:
         killers = [
             color
             for color in neighbors_within(prev, victim_pos, KILL_RANGE_SQ, exclude=victim_color)
-            if color not in belief.teammate_colors
+            if color not in belief.teammate_colors and color != belief.self_color
         ]
         if len(killers) == 1:  # a single, unambiguous neighbour ⇒ the killer
             _log_witnessed(belief, killers[0], "kill", target_color=victim_color)

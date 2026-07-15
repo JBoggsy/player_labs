@@ -237,10 +237,15 @@ def update_agent_tracking(belief: "Belief") -> None:
 
     frame = belief.recent_frames[-1] if belief.recent_frames and belief.recent_frames[-1].tick == belief.last_tick else None
     visible_colors = set(frame.players) if frame is not None else set()
+    # Inline the is_live_opponent predicate (opportunity.py) — importing it here would
+    # be circular (types.py imports this module). Self must be excluded explicitly:
+    # its sprite is in the roster like any player (the v106 self-hunt regression).
     live_crew_colors = {
         color
         for color, record in belief.roster.items()
-        if color not in belief.teammate_colors and record.life_status != "dead"
+        if color != belief.self_color
+        and color not in belief.teammate_colors
+        and record.life_status != "dead"
     }
     live_teammate_colors = {
         color

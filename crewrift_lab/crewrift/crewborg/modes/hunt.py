@@ -35,6 +35,7 @@ from crewrift.crewborg.modes import imposter_common as ic
 from crewrift.crewborg.nav import plan_route
 from crewrift.crewborg.strategy.commander.bias import commander_of
 from crewrift.crewborg.strategy.opportunity import (
+    is_live_opponent,
     kill_urgency_ticks,
     select_victim,
     unwitnessed,
@@ -118,8 +119,7 @@ class HuntMode(Mode[Belief, ActionState, Intent]):
         current = belief.roster.get(self._victim_color) if self._victim_color is not None else None
         if (
             current is not None
-            and current.color not in belief.teammate_colors
-            and current.life_status != "dead"
+            and is_live_opponent(belief, current)
             and current.last_seen_tick == belief.last_tick
         ):
             return current
@@ -161,8 +161,7 @@ def _hunt_block_payload(
         {"color": other.color, "dist_to_victim": round(math.dist(victim_xy, (other.world_x, other.world_y)), 1)}
         for other in belief.roster.values()
         if other.color != victim.color
-        and other.color not in belief.teammate_colors
-        and other.life_status != "dead"
+        and is_live_opponent(belief, other)
         and other.last_seen_tick == belief.last_tick  # currently visible == a witness; see opportunity.unwitnessed
     ]
     tolerance = witness_tolerance(belief)

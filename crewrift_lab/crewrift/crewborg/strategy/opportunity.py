@@ -130,6 +130,26 @@ def ticks_until_kill_ready(belief: Belief) -> int:
     return max(0, belief.kill_cooldown_start_tick + duration - belief.last_tick)
 
 
+def is_live_opponent(belief: Belief, entry: PlayerRecord) -> bool:
+    """A live player that is neither us nor a fellow imposter — the only legal
+    victims / witnesses / follow targets.
+
+    The self check must be EXPLICIT: our own sprite is ingested into the roster
+    like any other visible player, and until v106 it was shielded from these pools
+    only *accidentally* (reveal ingestion used to put our own colour into
+    ``teammate_colors``). v106's correct ingest-time self-exclusion removed that
+    shield and the imposter hunted its own always-visible sprite (win 71%→35%,
+    the v106 self-hunt regression). When ``self_color`` is still unknown (None) no
+    roster colour matches it, so this degrades to the old teammate-only filter.
+    """
+
+    return (
+        entry.color != belief.self_color
+        and entry.color not in belief.teammate_colors
+        and entry.life_status != "dead"
+    )
+
+
 def has_trackable_victim(belief: Belief) -> bool:
     """Whether any non-teammate has been seen recently enough for Search to follow.
 
@@ -137,22 +157,19 @@ def has_trackable_victim(belief: Belief) -> bool:
     """
 
     return any(
-        entry.color not in belief.teammate_colors
-        and entry.life_status != "dead"
+        is_live_opponent(belief, entry)
         and belief.last_tick - entry.last_seen_tick <= TRACK_WINDOW_TICKS
         for entry in belief.roster.values()
     )
 
 
 def visible_victims(belief: Belief) -> list[PlayerRecord]:
-    """Live non-teammates visible on the current tick."""
+    """Live non-teammates (never self) visible on the current tick."""
 
     return [
         entry
         for entry in belief.roster.values()
-        if entry.color not in belief.teammate_colors
-        and entry.life_status != "dead"
-        and entry.last_seen_tick == belief.last_tick
+        if is_live_opponent(belief, entry) and entry.last_seen_tick == belief.last_tick
     ]
 
 
@@ -216,7 +233,7 @@ def _isolation(target: PlayerRecord, belief: Belief) -> float:
     gaps = [
         _dist2(target_xy, (o.world_x, o.world_y))
         for o in belief.roster.values()
-        if o.color != target.color and o.color not in belief.teammate_colors and o.life_status != "dead"
+        if o.color != target.color and is_live_opponent(belief, o)
     ]
     return min(gaps) if gaps else float("inf")
 
@@ -232,8 +249,7 @@ def _witness_count(belief: Belief, target: PlayerRecord) -> int:
         1
         for other in belief.roster.values()
         if other.color != target.color
-        and other.color not in belief.teammate_colors
-        and other.life_status != "dead"
+        and is_live_opponent(belief, other)
         and other.last_seen_tick == belief.last_tick
     )
 
@@ -327,8 +343,7 @@ def most_isolated_recon_candidate(belief: Belief) -> PlayerRecord | None:
 
     fresh = [
         rec for rec in belief.roster.values()
-        if rec.color not in belief.teammate_colors
-        and rec.life_status != "dead"
+        if is_live_opponent(belief, rec)
         and belief.last_tick - rec.last_seen_tick <= recon_staleness_ticks()
     ]
     if not fresh:
@@ -363,11 +378,7 @@ def most_recent_victim(belief: Belief) -> PlayerRecord | None:
     by Recon, which targets the most *isolated* fresh sighting instead (see
     ``most_isolated_recon_candidate``)."""
 
-    crew = [
-        entry
-        for entry in belief.roster.values()
-        if entry.color not in belief.teammate_colors and entry.life_status != "dead"
-    ]
+    crew = [entry for entry in belief.roster.values() if is_live_opponent(belief, entry)]
     if not crew:
         return None
     return max(crew, key=lambda entry: entry.last_seen_tick)

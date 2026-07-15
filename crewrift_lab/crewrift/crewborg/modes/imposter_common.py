@@ -11,6 +11,7 @@ from __future__ import annotations
 import os
 
 from crewrift.crewborg.map.types import Room
+from crewrift.crewborg.strategy.opportunity import is_live_opponent
 from crewrift.crewborg.types import Belief, Intent, PlayerRecord
 
 Point = tuple[int, int]
@@ -145,12 +146,10 @@ def task_point(belief: Belief, index: int) -> Point:
 
 
 def visible_crew(belief: Belief) -> list[PlayerRecord]:
-    """Live non-teammate players seen this very tick (the candidates to follow)."""
+    """Live non-teammate players (never self) seen this very tick (the candidates to follow)."""
 
     return [
         e
         for e in belief.roster.values()
-        if e.last_seen_tick == belief.last_tick
-        and e.color not in belief.teammate_colors
-        and e.life_status != "dead"
+        if e.last_seen_tick == belief.last_tick and is_live_opponent(belief, e)
     ]

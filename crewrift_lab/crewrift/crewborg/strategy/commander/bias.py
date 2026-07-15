@@ -9,6 +9,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import TypeVar
 
+from crewrift.crewborg.strategy.opportunity import is_live_opponent
 from crewrift.crewborg.types import Belief, CommanderPriorities
 
 T = TypeVar("T")
@@ -42,8 +43,7 @@ def room_crew_count(belief: Belief, room_name: str) -> int:
         1
         for crew in belief.roster.values()
         if crew.last_seen_tick == belief.last_tick
-        and crew.color not in belief.teammate_colors
-        and crew.life_status != "dead"
+        and is_live_opponent(belief, crew)
         and room.x <= crew.world_x < room.x + room.w
         and room.y <= crew.world_y < room.y + room.h
     )

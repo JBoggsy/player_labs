@@ -117,7 +117,12 @@ class ReconMode(Mode[Belief, ActionState, Intent]):
 
     def _commander_target(self, belief: Belief):
         cmd = commander_of(belief)
-        if cmd is None or cmd.target_player is None or cmd.target_player in belief.teammate_colors:
+        if (
+            cmd is None
+            or cmd.target_player is None
+            or cmd.target_player in belief.teammate_colors
+            or cmd.target_player == belief.self_color
+        ):
             return None
         target = belief.roster.get(cmd.target_player)
         if target is None or target.life_status == "dead":
