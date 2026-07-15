@@ -52,9 +52,16 @@ results downloaded there, dashboard on :8765). **v6 post-redeploy baseline:**
 
 The port restored full function: v6 cleanly beats everyone except daveey's new
 **ctf-focusfire:v5**, which replaced ctf-baseline-16 as the wall (0-9, out-fought ~2:1
-on kills). **Next levers** (one per iteration): grenades (we ignore them; focusfire may
-not), gate a behavior on tracks/danger (pursuit / exposure-aware routing), or
-peek-fire-duck micro. Re-submitting v6 to the league is the human's gated call.
+on kills).
+
+**v6 SUBMITTED (human go-ahead) and QUALIFIED — now the competing champion entry**
+(`sub_f319957b…`, membership `lpm_08989373…`, qualified in ~12 min, v5 benched).
+Standings at submission: rank #2 of 7 (0.497, 64 mostly-v5 rounds) behind daveey
+(0.679). Expect the score to climb as correct-wire v6 rounds accumulate.
+
+**Next levers** (one per iteration): grenades (we ignore them; focusfire may not),
+gate a behavior on tracks/danger (pursuit / exposure-aware routing), or
+peek-fire-duck micro to close the focusfire gap.
 
 ## (prior) Status (2026-07-14, session 2): belief groundwork — player tracks + danger field (uncommitted)
 
