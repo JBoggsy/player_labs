@@ -40,6 +40,12 @@ uv run coworld xp-request get xreq_... --json
 uv run coworld xp-request episodes xreq_...
 ```
 
+**Cancelling a runaway request:** `POST /v2/experience-requests/{xreq_id}/cancel` (raw
+httpx; no CLI subcommand as of 2026-07-14) flips the request to `status: "cancelled"`,
+including mid-run episodes. Verified live 2026-07-14 — the escape hatch for a mis-shaped
+request or one whose episodes turn out to have a huge deadline (e.g. vanilla_wow's
+10000-tick variants at tick_rate 0.1 ≈ 27.8 h/episode when the policy never self-exits).
+
 ```python
 # Python client (handles auth + base URL)
 from coworld.api_client import CoworldApiClient
