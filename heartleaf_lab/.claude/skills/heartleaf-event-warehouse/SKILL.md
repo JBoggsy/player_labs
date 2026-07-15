@@ -79,6 +79,17 @@ FROM events WHERE kind='dinner' AND CAST(json_extract(value,'$.was_host') AS BOO
 
 ## Discipline
 
+- **⚠️ KNOWN BUG (2026-07-15, live v5): slot→policy attribution is WRONG whenever players
+  crash/disconnect.** Replay slots are assigned in *connection order* (and compact around
+  dropouts), but the reporter keys identity by `participants[].position` (*seat* order) —
+  see `identity.nim`/`run.nim` in the reporter source. In rounds where the co-gas/daf
+  policies crash (currently: every round), scores and events land on the WRONG policy
+  (verified: cady v21's 48-point hosted dinner was credited to co-gas-relhalpha; v21 was
+  shown as "left at tick ~750" when it played the full game and won). **Do not trust
+  per-policy attribution until the reporter maps replay slot → seat via the replay's
+  `playerName`.** Cross-check any load-bearing claim against `results.json` +
+  `episode.json` participants (`coworld-episode-artifacts`).
+
 - **Check the manifest before trusting a run**: `episodes_ok` vs `episodes_total`, and any
   `trace_warning` rows. A per-tick hash mismatch means the league game moved past the
   reporter's compiled sim (`heartleaf_ref`, currently `ffa907e`) — partial events survive
