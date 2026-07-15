@@ -17,3 +17,17 @@ buffers — not in-session hit counts — is the graduation signal.
 concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
+
+### Importing another team's methodology: filter through the operating model, not topical overlap
+
+Evidence: Pulled from `Metta-AI/optimizer-skills` (an *autonomous*-optimizer library) into
+this *human-gated, speed-first* lab. What transferred cleanly: executable engines fitting
+our shared-engine + per-lab-adapter pattern (their variance miner → `coworld-hypothesis-miner`),
+durable engineering doctrine (`docs/player-engineering.md`), and dense measurement heuristics
+(eval sizing from variance, opponent-field-from-goal → root `best_practices.md`). What was
+deliberately rejected despite topical fit: promotion-gate / continuous-optimizer /
+defend-leaderboard (their replacement for our human gate — importing would fight the lab's
+model), the local-sim harness (probe deltas reverse on the live field), game-strategy
+snapshots (stale vs our live labs). Where an import diverges from its source's posture,
+state it in the imported doc (e.g. "uploads stay ungated here") so readers don't inherit
+the source repo's caution.

@@ -103,7 +103,9 @@ the game live in **that game's lab**, not here:
 
 - **Speaking the protocol** — decoding observations / encoding actions for the specific
   game (the body of the bridge above).
-- **The player's logic** — perception, belief, strategy.
+- **The player's logic** — perception, belief, strategy. (The game-agnostic *design*
+  doctrine for what goes inside the image — architecture selection, robustness,
+  navigation — is [`docs/player-engineering.md`](docs/player-engineering.md).)
 - **That player's actual build** — its real Dockerfile / build script and any
   source-repo build harness.
 

@@ -134,6 +134,11 @@ Lab-wide, game-agnostic Coworld tooling lives in `.claude/skills/`:
   A/B. The game-agnostic *method* + the shared stats engine (`scripts/ab_stats.py`: significance,
   improved/regressed/noise verdicts, group-split) + the report renderer (`scripts/compare_report.py`).
   Each lab supplies a small `compare.py` **adapter** with its own metrics; crewrift's is the reference.
+- **`coworld-hypothesis-miner`** — decide **what to change next** when nothing specific is suspected:
+  mine a batch of scored episodes for the behaviors that separate the policy's own wins from its own
+  losses, demote the invariant engine, and emit a **ranked** list of candidate hypotheses (with
+  estimated points recoverable) for `coworld-experiment`. Shared engine
+  (`scripts/variance_miner.py`) + a small per-lab `features.py` adapter — the `coworld-ab` pattern.
 
 These cover the lab-wide, mechanical halves of the loop, plus the **experiment/A/B method** (the
 statistical core is shared; each lab supplies only its metric adapter). **Game-specific tools — a
