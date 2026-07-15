@@ -1,6 +1,6 @@
 # CTF tentative lessons — session buffer
 
-**Session started:** 2026-07-14 10:38. This is THIS SESSION's lesson buffer. Write candidate
+**Session started:** 2026-07-14 18:47. This is THIS SESSION's lesson buffer. Write candidate
 lessons here **as you go** — eagerly and noisily; most will be noise and that's
 fine. At the next session start, a hook archives this file automatically to
 [`lessons_archive/`](lessons_archive/) and creates a fresh one — nothing you
