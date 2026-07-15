@@ -9,16 +9,16 @@ the **Vanilla-WoW-specific layer** on top of it: the game, the docs, the practic
 policies we optimize. When the two disagree, the root defines *process*; this file defines
 *Vanilla WoW*.
 
-> **Lab status (2026-07-14): `wowborg` v1 (idle-login skeleton) uploaded and hosted
-> XP-requests work; the league exists but its scoring is unconfirmed.** The Observatory
-> league **"Vanilla Wow"** (division "Leveling Ladder") exists as of 2026-07-12 and the
-> deployed game is **v0.1.6**, but the game repo's README badge still reads **"coworld
-> verify: not ready"** — the badge and the league's existence disagree, so treat the ladder's
-> scoring/retention as unverified. A 4-episode hosted smoke on `orc-fresh-start` completed
-> (score 0.0, no crash) though per-agent policy logs weren't retained. **Episode-duration
-> trap:** wowborg v1 never self-terminates, so episodes run to the full variant deadline —
-> `rfc-five-player-clear` is ~27.8 h/episode; smoke on `orc-fresh-start` (~17 min) or
-> override `max_ticks`. Live state + next steps: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
+> **Lab status (2026-07-15): `wowborg` v2 (shim adoption) built + locally validated; not
+> yet uploaded.** v2 drives the bundled Nim client (King Richard, `nim-control` mode,
+> planner off) through its file bridge — no Python WoW-protocol code in the hosted path;
+> see [`docs/designs/wowborg-v2-shim-adoption.md`](docs/designs/wowborg-v2-shim-adoption.md).
+> The league ("Vanilla Wow" / "Leveling Ladder") exists but its scoring/retention is still
+> unverified (game repo badge "coworld verify: not ready" as of 2026-07-14). The v1
+> episode-duration trap is fixed by construction: the shim honors
+> `WOWBORG_DURATION_SECONDS` (default 120 s) and exits; still smoke on `orc-fresh-start`
+> (~17 min) rather than `rfc-five-player-clear` (~27.8 h at full deadline). Live state +
+> next steps: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
 
 ## What Vanilla WoW is
 
@@ -75,29 +75,25 @@ compete in yet. When that clears, the Vanilla-WoW-specific instruments will be:
 
 ## Player build paths
 
-Because the game ships working reference bots (King Nimrod, King Richard) with a full Nim
-behavior stack — perception → navmesh pathfinding → per-class combat rotations →
-quest/loot/vendor/train → death recovery → grouping — there are several paths, cheapest
-first. **Which one to pursue is a human-direction decision (loop step 3), not a default** —
-surface the fork, don't pre-commit.
+**Chosen path (2026-07-15, human decision): our own Python policy drives the bundled Nim
+client through its file bridge** — wowborg v2, designed in
+[`docs/designs/wowborg-v2-shim-adoption.md`](docs/designs/wowborg-v2-shim-adoption.md).
+The Nim client (King Richard, `nim-control` mode, autonomous planner off) supplies
+perception → navmesh pathfinding → action execution; all *decisions* are ours in Python
+(`wowborg/policies/`). No Nim build path needed: the image layers on the **deployed**
+reference player image, digest-pinned in [`tools/versions.env`](tools/versions.env).
+
+The original fork of alternatives, kept for when this path hits a ceiling (revisiting is a
+human-direction decision, not a default):
 
 1. **Tune the bundled policy** — new/better leveling profiles (the authored zone JSONs) or
    sharper class rotations (`player/bots/rotations.nim`) on top of the existing engine.
-   Cheapest; tests whether the shipped bots are tuning-limited.
-2. **Fork King Nimrod / the shared bot policy** — change the decision layer (farm/follow
-   strategy, party coordination for the 5-slot RFC clear) while reusing the perception/
-   navigation/action plumbing. Medium lift; where the RFC clear problem likely lives.
+2. **Fork King Nimrod / the shared bot policy in Nim** — change the Nim decision layer
+   while reusing the plumbing (needs a Nim build path + pinned game commit).
 3. **The identity-blind general-grinding lane** — build on the experimental `--policy
-   general-grinding` (opt-in, default-off) that selects from client-observed affordances
-   instead of authored content. Bet on *transfer*; more speculative.
-4. **A new player from the protocol up** — only if 1–3 hit a ceiling; this is "write more of a
-   WoW client," the heaviest option.
-
-Because the player is **Nim**, every path needs a Nim build path, and any fork of the bundled
-engine needs a **pinned game commit** (the `versions.env` pattern from `crewrift_lab/tools/`).
-When a path is chosen, vendor the policy under this lab (e.g. `vanilla_wow_lab/<policy>/`),
-mirroring `crewrift_lab/crewrift/` / `heartleaf_lab/cady/`, and record a design doc under
-[`docs/designs/`](docs/designs/).
+   general-grinding` (opt-in, default-off). Bet on *transfer*; more speculative.
+4. **A new player from the protocol up** — "write a WoW client" (sized 2026-07-15 at a
+   20–45k-line port; rejected in favor of the shim — see the v2 design doc).
 
 ## Vanilla WoW lab docs
 

@@ -11,14 +11,14 @@ This README orients newcomers (human or agent). Two pointers do most of the work
 - **[`../README.md`](../README.md)** — lab-wide setup (`uv sync` / Observatory auth) and the
   ground rules.
 
-> **Status (2026-07-14): `wowborg` v1 uploaded and smoke-tested hosted; league exists but
-> its scoring is unconfirmed.** The Observatory league **"Vanilla Wow"** (division "Leveling
-> Ladder") was created 2026-07-12 and the deployed game package is **v0.1.6**, but the game
-> repo's README badge still reads **"coworld verify: not ready"** — treat the ladder's
-> scoring/retention as unverified until a retained round exists. `wowborg` v1 (idle-login
-> skeleton, no gameplay) completed a 4-episode hosted smoke (`orc-fresh-start`, score 0.0,
-> no crash); per-agent policy logs were not retained, so login success isn't yet confirmed
-> from artifacts. Live state + next steps: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
+> **Status (2026-07-15): `wowborg` v2 (shim adoption) built + locally smoke-tested; not
+> yet uploaded.** v2 drives the game's bundled Nim client (King Richard in `nim-control`
+> mode) through its documented file bridge instead of reimplementing the WoW protocol —
+> see [`docs/designs/wowborg-v2-shim-adoption.md`](docs/designs/wowborg-v2-shim-adoption.md).
+> The image layers on the deployed reference player (vanilla_wow 0.1.19, digest-pinned in
+> [`tools/versions.env`](tools/versions.env)). League scoring/retention remains unverified
+> (game repo badge still "coworld verify: not ready" as of 2026-07-14). Live state + next
+> steps: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
 
 ## The game (one paragraph)
 
@@ -66,17 +66,19 @@ vanilla_wow_lab/
     vanilla-wow-protocol.md          exhaustive interface-protocol reference (every message/schema/format)
     vanilla-wow-rfc-roles.md         the 5 RFC roles (commissioner/grader/…) + round scoring
     vanilla-wow-strategy-guide.md    how to PLAY WoW well: beginner's guide + pro tips + RFC/leveling strategy
-    designs/                         player design docs (empty until a policy is designed)
-  tools/                             lessons hooks (rotate_lessons.sh, lessons_stop_nudge.sh)
+    designs/                         player design docs (obs/action spaces, v2 shim adoption)
+    recon/                           citation-backed recon reports (navigation obs/actions)
+  wowborg/                           our player: v2 shim-driven policy stack (own README)
+  tools/                             versions.env (shim pin), build_player.sh, cwreplay.py (replay decoder), lessons hooks
   .claude/skills/lessons-review/     the ≈weekly lessons-graduation skill
   lessons_archive/                   rotated per-session lesson buffers
 ```
 
-A player policy directory (e.g. `vanilla_wow_lab/<policy>/`) gets added once the first policy
-is built — mirroring `crewrift_lab/crewrift/`, `cue_n_woo_lab/mentalist/`, and
-`heartleaf_lab/cady/`. Because the player is Nim, that will also bring a Nim build path and
-(if it forks the bundled engine) a pinned game commit — the `versions.env` pattern from
-`crewrift_lab/tools/`.
+The player policy directory is [`wowborg/`](wowborg/) — mirroring `crewrift_lab/crewrift/`,
+`cue_n_woo_lab/mentalist/`, and `heartleaf_lab/cady/`. Its v2 image is pure Python layered
+on the **deployed** reference player image (which carries the compiled Nim client) — no Nim
+build path of our own; the shim pin lives in [`tools/versions.env`](tools/versions.env),
+the `versions.env` pattern from `crewrift_lab/tools/`.
 
 The full evaluate → report → improve → submit cycle, and which skill drives each step, is in
 [`AGENTS.md`](AGENTS.md) (Vanilla-WoW layer) and [`../AGENTS.md`](../AGENTS.md) (the loop).

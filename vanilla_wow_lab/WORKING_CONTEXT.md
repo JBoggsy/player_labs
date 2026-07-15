@@ -13,6 +13,61 @@ file is the one-screen "where are we and why."
 
 ---
 
+## Status (2026-07-15, session 4): wowborg v2 = shim adoption; built + smoke-tested locally, NOT yet uploaded
+
+Session 4 made the strategic pivot and built it:
+
+- **Decision (human): drive the game's bundled Nim client (the "shim") instead of
+  reimplementing the WoW protocol in Python.** Sizing recon showed a faithful Python
+  client is a 20–45k-line port, while the deployed reference player image's *default
+  path already is* "Python policy drives `king_richard --scenario=nim-control`
+  (`KING_RICHARD_AUTONOMOUS=0`) over the file bridge" — a versioned, documented seam
+  (`state.json` / `action.json` / `action-results.jsonl`,
+  `vanilla_wow.llm_sdk_state.v1`). Design: `docs/designs/wowborg-v2-shim-adoption.md`.
+- **Typed obs/action target spaces designed first** (session 4a):
+  `docs/designs/wowborg-observation-action-spaces.html` — full observation + action
+  vocabulary with wire citations and T0/T1/T2 tiers; v2 implements the T0 slice over
+  the shim.
+- **wowborg v2 exists and passes local validation**: `shim.py` (supervisor, the swap
+  point) + `bridge.py` (only module importing `wow_sdk`) + `types.py` +
+  `policies/random_walk.py` (random 10–20 yd legs, typed settlements). 45 tests green;
+  image `players-wowborg:dev` builds (amd64) FROM the deployed player image pinned by
+  digest in `tools/versions.env` (vanilla_wow **0.1.19**, fetched via
+  `coworld download vanilla_wow` 2026-07-15); container smoke with a scripted fake
+  king_richard ran 12 legs, all `reached_target`. Deadline discipline is structural now
+  (`WOWBORG_DURATION_SECONDS`, default 120 s).
+- **Reporting stack exists (session 4b)** — recon:
+  `docs/recon/replay-tooling-2026-07-15.md`. Highlights:
+  - **`tools/cwreplay.py`** — standalone CWREPLAY decoder (summary / packets-JSONL /
+    trajectory / members / header; chat-text extraction). Validated against the 4 smoke
+    replays. **Knowability boundary (important):** stateless decode covers
+    self-describing packets — chat, login, XP events, and our OWN trajectory (outbound
+    MovementInfo is plaintext) — but derived world state (other units' positions/health,
+    update-field values, auras) requires the stateful client reducer; the supported
+    tier-2 path is extending the game repo's `inspect_party_wire_replay.nim`
+    (replay → PlayerStateMirror → snapshot JSONL), planned for when combat analysis
+    needs it. Full roadmap (survey → tier-2 decode → warehouse → wow-ab):
+    `docs/recon/replay-tooling-2026-07-15.md` §Build plan.
+  - **v1 login RETROACTIVELY CONFIRMED**: the decoder shows `SMSG_LOGIN_VERIFY_WORLD`
+    for **all 5 members in all 4 episodes** (durations ~999 s, moves=0, as expected for
+    the idle skeleton). Session 3's "login success unconfirmed" is now resolved ✔.
+  - **wowborg v2 tracing**: `trace.py` (JSONL + `WOWBORG-TRACE` stdout mirror of every
+    observation/intent/typed-outcome), `artifact.py` (session-end evidence zip PUT to
+    `COWORLD_PLAYER_ARTIFACT_UPLOAD_URL` — the retention-proof channel), and
+    replay-visible `/say` breadcrumbs (`ShimBridge.say`, rate-limited) so the replay
+    itself carries our leg narrative even if logs vanish again.
+  - Human replay viewing: `uv run coworld replay-open <episode> --hosted` (the WASM
+    viewer route was fixed upstream after our session-2 notes).
+- **Next steps:** (1) upload v2 (`build-and-upload`) and run a hosted
+  `orc-fresh-start` smoke — evidence now comes from THREE channels (policy-artifact
+  zip, stdout/trace if retained, `/say` breadcrumbs in the replay via
+  `tools/cwreplay.py packets --say-only`); (2) confirm the runner injects
+  `COWORLD_PLAYER_ARTIFACT_UPLOAD_URL` (the shim logs `evidence bundle: …`);
+  (3) build the `wow-survey` skill (tier-2 report over episode.json + cwreplay
+  summaries); (4) grow the bridge toward the T1 slice per the obs/action design doc.
+
+---
+
 ## Status (2026-07-14, session 3): first hosted smoke PASSED-ish; league exists; partly UNBLOCKED
 
 Session 3 ran `wowborg` v1's first hosted experience requests. What changed since session 2:
