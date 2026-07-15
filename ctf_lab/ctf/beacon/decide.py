@@ -95,6 +95,12 @@ class _DiagnosticLogger:
         self._last_objective: str | None = None
         self._last_alive: bool | None = None
         self._last_engaged: bool | None = None
+        self._last_micro: str | None = None
+        # Cumulative activation tick-counts per micro mode ("duck"/"peek"), carried in
+        # every snapshot. Behavior-change discipline: any new gated behavior must be
+        # countable from the trace, so a null A/B can distinguish "never fired" from
+        # "fired and didn't help".
+        self._micro_ticks: dict[str, int] = {}
 
     def on_step(self, step: StepInfo) -> None:
         self._log_transitions(step)
@@ -115,6 +121,13 @@ class _DiagnosticLogger:
         if engaged != self._last_engaged:
             self._record(step.tick, "engage", {"engaged": engaged, "n_enemies": len(b.enemies)})
             self._last_engaged = engaged
+        if b.micro is not None:
+            self._micro_ticks[b.micro] = self._micro_ticks.get(b.micro, 0) + 1
+        if b.micro != self._last_micro:
+            self._record(step.tick, "micro",
+                         {"from": self._last_micro, "to": b.micro, "self_xy": b.self_xy,
+                          "fire_ready": b.fire_ready})
+            self._last_micro = b.micro
 
     def _payload(self, step: StepInfo) -> dict:
         b = step.belief
@@ -136,6 +149,8 @@ class _DiagnosticLogger:
             "sweep_offset": b.sweep_offset,
             "nav_stuck": b.nav_stuck_ticks,
             "held_mask": step.command.held_mask,
+            "micro": b.micro,
+            "micro_ticks": dict(self._micro_ticks),
             "enemy_tracks": [_track_row(t, step.tick) for t in b.enemy_tracks],
             "teammate_tracks": [_track_row(t, step.tick) for t in b.teammate_tracks],
             "danger": _danger_grid(b.danger),

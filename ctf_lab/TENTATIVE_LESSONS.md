@@ -81,6 +81,26 @@ that cover micro is worthless. Should have shipped activation counters in the sa
 iteration (one trace field) — a behavior A/B without mechanism instrumentation can't
 distinguish "didn't fire" from "fired and didn't help", which decide opposite next steps.
 
+### Policy-artifact zips come back EMPTY from the fetcher; stderr traces are the reliable channel
+
+Evidence: two fetch attempts (incl. --force, --elevated) on a fresh v8 xreq returned
+`policy_artifacts: []` for every episode — the `jsonl@artifact` trace member never
+materialized. Re-uploading the same image with `--secret-env
+BEACON_TRACE_OUTPUTS=jsonl@stderr` (v9) put full trace jsonl in the ordinary
+policy_agent_N.log files on the first try. Until the artifact path is debugged, run
+diagnostics with stderr traces. (Also: logs are stored as a Python bytes-repr string —
+`ast.literal_eval` before splitlines.)
+
+### The activation diagnostic worked exactly as intended — and refuted the comfortable hypotheses in one 3-episode run
+
+Evidence: v7's flat A/B had three candidate explanations; one cheap instrumented run
+(v8/v9, 3 eps) measured duck=14.0%/peek=3.7% of alive time (421+219 engagements across
+24 agents) with kills/deaths unchanged — killing "never fires" and "no cover nearby"
+and leaving "cover micro isn't the binding constraint". The next iteration now targets
+the right layer (target selection / velocity lead / focus fire) instead of tuning duck
+knobs blind. Pattern to keep: null A/B -> activation-instrumented micro-run -> THEN
+choose the next lever.
+
 ### All-±1-scores with 0 kills/0 captures/0 deaths = opponent never actually played; discount the sweep
 
 Evidence: v6 "10-0" vs daf-actinf-ctf-v4:v1 had zero kills, zero captures, zero deaths on

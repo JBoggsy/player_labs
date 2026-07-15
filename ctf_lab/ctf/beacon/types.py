@@ -115,6 +115,10 @@ class Belief:
     # brads, and the sweep direction (+1 / -1). Reset while dead.
     sweep_offset: int = 0
     sweep_dir: int = 1
+    # Active combat-micro state this tick, for activation tracing: "duck" / "peek" /
+    # None. Behavior changes MUST be observable — a null A/B without activation
+    # counts can't distinguish "never fired" from "fired and didn't help".
+    micro: str | None = None
 
 
 @dataclass

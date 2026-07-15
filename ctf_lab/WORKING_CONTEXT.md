@@ -67,12 +67,22 @@ groundwork, `BEACON_PEEK_DUCK=1` default. A/B (10 eps each, 8v8):
   statistically identical. The mechanism either never fires in the real fight shape
   or isn't the binding constraint.
 - Regressions clean: flankfire 10-0, Picasso 10-0 (all by capture).
-**Open question for next session:** instrument WHY — add duck/peek activation counts
-to the trace (one line in decide.py's snapshot), re-run 3 eps vs focusfire, and read
-whether it engages at all. Hypotheses: (a) beacon dies mid-open-field where no cover
-is within 3 cells, (b) tracks are rarely fresh+blocked in the deadly moments (fog),
-(c) focusfire's edge is target selection/lead + focus fire, not cover micro.
-v6 remains the competing champion; v7 upload is inert.
+**ANSWERED (v8/v9 diagnostic, 2026-07-15): the micro FIRES — it just doesn't help.**
+v8 = v7 + activation tracing (`belief.micro`, `micro` transition events, cumulative
+`micro_ticks` in snapshots — now standing lab discipline, see `user_preferences.md`:
+every behavior change ships with activation tracing). v9 = same image with
+`BEACON_TRACE_OUTPUTS=jsonl@stderr` (the artifact-zip path comes back EMPTY from the
+fetcher — policy_artifacts always []; stderr logs are the reliable channel). 3-ep
+diagnostic vs focusfire: **duck = 14.0% of alive time, peek = 3.7%** (6,891/1,838
+ticks across 24 beacon-agents; 421 duck + 219 peek engagements) — yet kills/deaths
+unchanged (42/71, 23.0 deaths/game; 0-1 with 2 draws). Hypotheses (a) no-cover and
+(b) never-triggers are REFUTED; **(c) stands: focusfire's edge is not cover micro —
+likely target selection/velocity lead/focus-fire, or beacon's cover time is spent in
+the WRONG places (ducking mid-push instead of fighting from prepared lines).**
+Next lever candidates: velocity-lead aim + wounded-target priority (baseline's
+prio = dist + traverse - hp bonus - focus bonus), or warehouse the diagnostic to see
+WHERE deaths happen relative to micro state. v6 remains the competing champion;
+v7/v8/v9 uploads inert.
 
 ## (prior) Status (2026-07-14, session 2): belief groundwork — player tracks + danger field (uncommitted)
 

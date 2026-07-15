@@ -2,6 +2,22 @@
 
 Version → change mapping for the CTF `beacon` policy. Newest first.
 
+## v8/v9 — micro activation tracing (2026-07-15)
+
+**Why:** v7's A/B vs focusfire was dead flat (0-9 both arms) with no way to tell
+"never fired" from "fired and didn't help". New standing discipline (James,
+`user_preferences.md`): every behavior change ships activation tracing.
+
+**Changes (v8):** `belief.micro` ("duck"/"peek"/None, set per tick by the override),
+`micro` transition trace events, cumulative `micro_ticks` in every snapshot. 43 tests.
+**v9** = the same image uploaded with `--secret-env BEACON_TRACE_OUTPUTS=jsonl@stderr`
+— the artifact-zip trace path returns empty from the fetcher; stderr is reliable.
+
+**Diagnostic verdict (3 eps vs focusfire):** duck 14.0% / peek 3.7% of alive time
+(421+219 engagements, 24 agents) — the micro FIRES; kills/deaths unchanged. Cover
+micro is not the binding constraint vs focusfire; next lever is target
+selection/velocity lead/focus-fire (or warehouse WHERE deaths happen vs micro state).
+
 ## v7 — peek-fire-duck micro (2026-07-15)
 
 **Why:** v6 field eval vs `ctf-focusfire:v5` (the new #1): 0-9, out-killed 207-128,

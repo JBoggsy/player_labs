@@ -10,6 +10,13 @@ sessions. Keep it tidy: one bullet per preference, drop ones that are superseded
 
 ## Preferences
 
+- **Every behavior change ships with activation tracing** (James, 2026-07-15). Whenever
+  a change gates a new behavior (or meaningfully alters when an existing one fires),
+  add (possibly temporary) tracing/logging in the SAME iteration that counts how often
+  it actually activates — so a null A/B can distinguish "never fired" from "fired and
+  didn't help". Origin: beacon v7 peek-fire-duck A/B'd dead-flat vs focusfire with no
+  way to tell which; the `micro`/`micro_ticks` trace fields were added after the fact.
+
 - **Speed over caution — iterations per day is the KPI** (James, 2026-07-02).
   Write code fast and get iterations out; don't spend time being careful/safe. No
   smoke tests, no pre-upload gate (Gate 1 is removed from the loop), no test-first

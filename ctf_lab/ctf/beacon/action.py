@@ -229,10 +229,12 @@ def _peek_duck_override(intent: Intent, belief: Belief) -> tuple[int, int | None
         tpos = _predicted_pos(threat, belief.tick)
         aim = _brads_of(tpos[0] - sx, tpos[1] - sy)
         if not mapdata.ray_clear(belief.self_xy, tpos):
+            belief.micro = "duck"
             return (0, aim)  # already behind cover: hold still, watch the arc
         duck = _find_sidestep_cell(belief.self_xy, tpos, want_los=False)
         if duck is None:
             return None  # no cover nearby — fight in the open as before
+        belief.micro = "duck"
         return (nav.octant_toward(belief.self_xy, duck, False), aim)
 
     if not belief.enemies:
@@ -249,6 +251,7 @@ def _peek_duck_override(intent: Intent, belief: Belief) -> tuple[int, int | None
         peek = _find_sidestep_cell(belief.self_xy, tpos, want_los=True)
         if peek is None:
             return None
+        belief.micro = "peek"
         if math.hypot(peek[0] - sx, peek[1] - sy) < 5.0:
             return (0, aim)  # on the peek cell; hold and let the aim settle
         return (nav.octant_toward(belief.self_xy, peek, False), aim)
@@ -260,6 +263,7 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
     """Compose the controller mask for this frame."""
     mask = 0
     state.last_rot = 0
+    belief.micro = None  # set by _peek_duck_override when it engages this tick
 
     if belief.self_xy is None:  # dead / not ready — release everything
         state.a_held = False

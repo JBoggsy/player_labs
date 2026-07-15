@@ -448,6 +448,20 @@ def test_no_override_when_carrying_or_rushing():
     assert _peek_duck_override(Intent(kind="navigate_to", point=(1049, 329), reason="steal"), b2) is None
 
 
+def test_micro_state_set_and_cleared_by_resolve_action():
+    from ctf.beacon.types import PlayerTrack
+    # Duck engages -> belief.micro == "duck"; next tick with no threat -> cleared.
+    b = _combat_belief()
+    b.fire_ready = False
+    b.self_xy = (250, 40)
+    b.enemy_tracks = [PlayerTrack(pos=(300, 40), last_tick=95, facing="left")]
+    resolve_action(Intent(kind="navigate_to", point=(1049, 329), reason="steal"), b, ActionState())
+    assert b.micro == "duck"
+    b.enemy_tracks = []
+    resolve_action(Intent(kind="navigate_to", point=(1049, 329), reason="steal"), b, ActionState())
+    assert b.micro is None
+
+
 def test_no_duck_from_stale_track():
     from ctf.beacon.action import _peek_duck_override
     from ctf.beacon.types import PlayerTrack
