@@ -87,6 +87,31 @@ subset only. Any wowborg-on-shim image roaming further (RFC = map 389!) must bun
 right mmap tiles from the vmangos_data build context. This is the biggest hidden cost of
 the reuse path — and also proof the from-scratch path is worse (no navmesh at all).
 
+### Session-3's "no policy logs retained" was probably just a 403 — policy-logs routes need `--elevated` for softmax team members
+
+Evidence: v2 smoke (2026-07-15): `GET /jobs/{job}/policy-logs` → 403 "User is not a
+softmax team member" on OUR OWN policy's episode. The artifact skill documents
+`--elevated` (X-Use-Elevated-Privileges) for exactly this. Session 3 recorded "logs not
+retained" as a platform mystery; the mundane explanation is the watcher hit 403s and
+recorded nothing. Always retry artifact fetches with `--elevated` before concluding
+retention gaps. (`policy-artifact` 404'd too — whether the runner injects
+COWORLD_PLAYER_ARTIFACT_UPLOAD_URL for this game is still open; read the shim's
+"evidence bundle:" log line via elevated logs.)
+
+### The xreq DETAIL endpoint intermittently 500s while the LIST endpoint stays healthy — wrap --watch in a retry loop
+
+Evidence: v2 smoke: `GET /v2/experience-requests/{id}` 500'd repeatedly (~30+ attempts),
+killing fetch_artifacts --watch each time, while `coworld xp-request list --mine`
+kept working and episodes kept completing/downloading between crashes. Workaround: a
+5-line bash retry wrapper around the watch command; it resumes from disk. Report
+upstream if it persists.
+
+### The Nim shim narrates our queued actions as its own /say lines ("Policy action: <kind>") — a free-but-noisy extra replay channel
+
+Evidence: v2 replay: alongside our own breadcrumbs, each queued action produced a
+"Policy action: move/chat_say" say from the client layer. Useful corroboration;
+also means breadcrumb extraction should filter for our `wowborg ` prefix.
+
 ### CWREPLAY decoding has TWO tiers: self-describing packets decode statelessly; derived world state needs the client reducer
 
 Evidence: replay recon + `tools/cwreplay.py` (2026-07-15; boundary sharpened by James).

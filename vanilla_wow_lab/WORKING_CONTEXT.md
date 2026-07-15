@@ -13,6 +13,41 @@ file is the one-screen "where are we and why."
 
 ---
 
+## Status (2026-07-15, session 4c): wowborg v2 HOSTED SMOKE PASSED — the loop is LIVE
+
+**wowborg:v2 uploaded** (`eb6aa13e-…`, tag `purpose=v2-shim-random-walk`) and smoked on
+`orc-fresh-start` (xreq_c530da3b-…, 2 eps; ep 1 completed, ep 2 queued behind large
+crewrift batches at session end — retry-watcher running). **Episode 1 = full pass:**
+
+- All 5 members logged in AND PLAYED: ~120 s in-world each (duration budget honored —
+  the 27.8 h failure mode is dead), ~400 movement packets each.
+- **Random-walk worked**: e.g. Freshwar walked **273.5 yd** over 20 legs (17 reached);
+  all five members: 18–21 legs, 9–17 reached, mix of reached_target /
+  advanced_corridor / no_progress settlements — real Detour-settled navigation.
+- **All evidence channels proved out in the replay**: `/say` breadcrumbs
+  (`wowborg leg N: <kind> (M reached)`) extracted via
+  `tools/cwreplay.py packets --say-only`; trajectory via `trajectory` subcommand.
+  ALSO discovered: the shim layer narrates `Policy action: <kind>` says — that's the
+  NIM side echoing our queued actions (bonus channel, slightly noisy).
+- **Artifact-route reality check** (job 29fcfad4-…): `policy-logs` → 403 "not a softmax
+  team member" (SO: session-3's "no logs retained" was likely just the 403 — retry with
+  `--elevated`); `policy-artifact` → 404 (either no upload URL injected for this game's
+  players or bundle upload failed — check WOWBORG-SHIM "evidence bundle:" line via
+  elevated logs next session). results.json still absent for vanilla_wow episodes.
+- **Reporting tools live**: `tools/wow_survey.py` (batch HTML survey; validated on both
+  smokes) and `tools/trace_audit.py` (trace↔replay "sent is not accepted" cross-check;
+  needs the trace file from the artifact bundle or elevated logs to run on hosted eps).
+- Known platform irritant: the xreq detail endpoint (`GET /v2/experience-requests/{id}`)
+  intermittently 500s, killing `--watch`; workaround = retry wrapper (/tmp/watch_retry.sh
+  pattern). The list endpoint stays healthy.
+
+**Next steps:** (1) fetch ep 2 + rerun the survey over both; (2) retry `policy-logs`
+with `--elevated` to confirm the artifact-upload question and read our trace; (3) T1
+bridge growth (combat/loot/quests) per the obs/action design doc — leveling policies can
+now be measured leg-by-leg.
+
+---
+
 ## Status (2026-07-15, session 4): wowborg v2 = shim adoption; built + smoke-tested locally, NOT yet uploaded
 
 Session 4 made the strategic pivot and built it:
