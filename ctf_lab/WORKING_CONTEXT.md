@@ -84,6 +84,20 @@ prio = dist + traverse - hp bonus - focus bonus), or warehouse the diagnostic to
 WHERE deaths happen relative to micro state. v6 remains the competing champion;
 v7/v8/v9 uploads inert.
 
+**Crash scare (2026-07-15 evening — resolved, NOT a beacon bug):** a "v6 crashing
+constantly" report was investigated; fresh league logs show v6 ending normally
+("game over: server closed the connection" — v6 is stderr-QUIET by design since traces
+go to jsonl@artifact; don't misread quiet logs as dead agents). The only real crash
+traceback in fresh rounds was a co-gas policy (`bitworld_player.py`
+ConnectionClosedError). MEANWHILE the field moved, twice: (1) the league coworld
+redeployed again — now `cow_ffafb5af…` (still 0.7.4 @ d60dc27; our pin is current);
+(2) daveey shipped **ctf-focusfire:v7** built specifically to beat beacon:v6
+(coworld-ctf #9 "working grenade loop" + #10 "late all-in breaks peek-duck stalemates",
+commit msg cites "8W-0L-16D vs beacon:v6"). Fresh v6-vs-focusfire:v7 league games score
+0.0/0.0 (draws). Countering the grenade + tick-6800 all-in kit is the next strategic
+question. Also: fetch_artifacts league-episode logs are keyed by AGENT ORDER not slot —
+map slots via episode.json policy_results before reading.
+
 ## (prior) Status (2026-07-14, session 2): belief groundwork — player tracks + danger field (uncommitted)
 
 Toward open thread 3 (close the baseline gap), beacon's belief state grew two folded,
