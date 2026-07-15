@@ -93,14 +93,21 @@ the loop generates the need — mirroring `crewrift_lab/docs/`.
 
 ## Skills
 
-**No Heartleaf-specific skills exist yet** beyond the lessons-lifecycle skill
-(`/lessons-review`, in `heartleaf_lab/.claude/skills/`). The loop's **game-agnostic** halves
+Heartleaf-specific skills (in `heartleaf_lab/.claude/skills/`):
+
+- **`heartleaf-event-warehouse`** — fetch + query the hosted `heartleaf-round-warehouse`
+  reporter's outputs (events / player_stats / dinner_edges / chats Parquet) for deep,
+  cross-episode behavioural questions. Runs automatically on every closed league round;
+  on-demand over your own experience requests.
+- **`/lessons-review`** — the lessons-lifecycle skill.
+
+The loop's **game-agnostic** halves
 (experience requests, artifact download, local run, build-and-upload, policy lifecycle) live
 at the **lab root** (`../.claude/skills/`, indexed in [`../AGENTS.md`](../AGENTS.md)) — use
 those to *create*, *pull*, and *ship* episodes.
 
 Game-specific tooling belongs **here** (`heartleaf_lab/.claude/skills/`), not at the root.
-The gap worth filling first (once real episodes exist):
+The gap worth filling next:
 
 - A **Heartleaf survey/report** skill — turn a batch of episodes into a dense report on the
   policy's per-day host/guest/score behavior (did it host? how big a table? how did the
