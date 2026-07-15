@@ -2,6 +2,23 @@
 
 Version → change mapping for the CTF `beacon` policy. Newest first.
 
+## v6 — port to ctf 0.7.3 wire format (2026-07-14)
+
+**Why:** the league redeployed ctf **0.7.3** (`cow_e7586b05…`, source `5450c64`,
+GameVersion 2) — v5 is blind on the live game: since 0.6.0 map-layer observations arrive
+at **3x map resolution** (all its position reads were 3x off), and since 0.7.0 the capture
+objects are labeled `red/blue heart` (its `… flag` lookups matched nothing). Division
+scores also reset (+1/-1 scoring now); old eval baselines are void.
+
+**Changes (correctness port only — no behavior/strategy change):** (1) perception
+`_center` recovers map px by `(wire + sprite/2) / RENDER_SCALE` (new `config.RENDER_SCALE
+= 3`); all internals (nav.npz, thresholds, belief, traces) stay in map pixels. (2) heart
+labels in the flag-state lookups. (3) belief docs/dead-state: death no longer lifts fog
+(dead frames carry no sightings; own body is `corpse …`, never misread as a player).
+Grenades (also new in 0.7.x) are deliberately IGNORED this version. Arena geometry is
+unchanged upstream — nav.npz not rebaked. 36 tests pass (new wire-scale, heart-carry,
+corpse regressions). Upload: `beacon:v6`.
+
 ## v5 — carrier escort + attack bias (2026-07-10)
 
 **Why:** vs the baseline, v4 diag showed attackers DO reach the flag and DO carry it

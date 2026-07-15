@@ -28,7 +28,8 @@ from pathlib import Path
 
 import numpy as np
 
-# --- Arena constants (verbatim from src/ctf/sim.nim @ CTF_REF 761c098) ------------
+# --- Arena constants (verbatim from src/ctf/sim.nim @ CTF_REF 5450c64; geometry
+# verified byte-identical to the original 761c098 port on 2026-07-14) --------------
 MAP_W = 1235
 MAP_H = 659
 CENTER_X = MAP_W // 2  # 617

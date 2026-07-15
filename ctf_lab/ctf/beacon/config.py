@@ -23,6 +23,20 @@ PEDESTAL = {"red": (186, 329), "blue": (1049, 329)}
 #: A point deep in each team's capture zone (the deliver target).
 HOME_DEEP = {"red": (150, 329), "blue": (MAP_W - 1 - 150, 329)}
 
+# --- Movement (sim.nim) -----------------------------------------------------------
+#: Max player speed in px/tick PER AXIS: sim.nim MaxSpeed (704) / MotionScale (256).
+#: velX/velY clamp independently, so diagonal movement reaches sqrt(2)x this. The
+#: flag carrier moves at carrierSpeedPct (70%) of it.
+MAX_SPEED_PX_TICK = 704 / 256  # 2.75
+
+# --- Observation wire format (hd.nim, game >= 0.6.0) -------------------------------
+#: HD pixels per map pixel on the zoomable map/fog layers (hd.nim RenderScale).
+#: Object coordinates and sprite sizes arrive multiplied by this; perception divides
+#: once at the seam (perception._center) so everything downstream — nav.npz, all
+#: thresholds, belief, traces — stays in map pixels. (The invisible "walkability map"
+#: sprite is documented unscaled, but we never read it: nav is baked offline.)
+RENDER_SCALE = 3
+
 # --- Aim / vision (sim.nim) -------------------------------------------------------
 AIM_BRADS_TURN = 256  # brads per full turn
 AIM_TURN_RATE = 5  # brads/tick a held rotate button turns aim (must match server)
@@ -35,6 +49,13 @@ SPAWN_AIM = {"red": 0, "blue": AIM_BRADS_TURN // 2}
 def _env_int(name: str, default: int) -> int:
     try:
         return int(os.getenv(name, ""))
+    except ValueError:
+        return default
+
+
+def _env_float(name: str, default: float) -> float:
+    try:
+        return float(os.getenv(name, ""))
     except ValueError:
         return default
 
@@ -59,6 +80,29 @@ REPLAN_GOAL_CELLS = _env_int("BEACON_REPLAN_GOAL_CELLS", 2)
 STUCK_TICKS = _env_int("BEACON_STUCK_TICKS", 8)
 #: Diagnostics cadence (frames between full-state CTF_DIAG snapshots).
 DIAG_EVERY_TICKS = _env_int("BEACON_DIAG_EVERY_TICKS", 96)
+
+# --- Belief: player tracks + danger field (groundwork — nothing gates on these yet) -
+#: Drop a player track this many ticks after its last sighting (~5 s at 24 tps,
+#: matching the baseline's track TTL).
+TRACK_TTL_TICKS = _env_int("BEACON_TRACK_TTL_TICKS", 120)
+#: Track association slack (px) on top of how far the player could have moved since
+#: last seen (dt * max speed). Sightings farther than the gate start a NEW track.
+TRACK_MATCH_SLACK_PX = 16
+#: Don't difference a velocity across a sighting gap larger than this (ticks) — the
+#: average over a long unseen stretch says nothing about their current motion.
+TRACK_VEL_MAX_GAP_TICKS = 8
+#: EMA weight of the newest velocity sample when smoothing a track's velocity.
+TRACK_VEL_EMA = 0.5
+#: Danger-field spread speed as a fraction of max player speed — the hot zone around
+#: a lost sighting grows at roughly the speed the enemy could actually flee. <1 so
+#: the danger zone lingers behind the enemy's true reachable front.
+DANGER_DIFFUSION_FACTOR = _env_float("BEACON_DANGER_DIFFUSION_FACTOR", 0.75)
+#: Danger cools with this exponential half-life (ticks); ~2 s at 24 tps.
+DANGER_DECAY_HALF_LIFE_TICKS = _env_int("BEACON_DANGER_HALF_LIFE_TICKS", 48)
+#: Stamp full danger within this radius (px) of each currently-visible enemy.
+DANGER_STAMP_RADIUS_PX = 16
+#: Nav-cells-per-side folded into one cell when tracing the danger grid (4 -> 39x21).
+DANGER_TRACE_DOWNSAMPLE = 4
 
 # --- Roles (v2) -------------------------------------------------------------------
 # CTF games (vs the baseline) are decided by WIPE, not capture (see TENTATIVE_LESSONS):

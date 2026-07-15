@@ -10,7 +10,85 @@ startup to resume; **update it as you learn** (keep it tight).
 
 ---
 
-## Status (2026-07-10, session 1): beacon:v5 takes games off the baseline (4-11)
+## Status (2026-07-14, session 3): LEAGUE REDEPLOYED ctf 0.7.3 — beacon ported to the new wire format
+
+**The league redeployed** (new coworld `cow_e7586b05-3b53-465a-bb87-b9847a1b7bf9`, ctf
+**0.7.3**, source ref `5450c64` = coworld-ctf HEAD 2026-07-14; GameVersion 1→2). The old
+`cow_325613c1…`/0.5.4 IDs below are stale. **Division scores RESET** — everyone 0.500 with
+0 rounds; our old rank-#2 history is void. Breaking changes since our 761c098 pin:
+
+- **3x observation render scale (0.6.0+):** map-layer object coords + sprite sizes arrive
+  at 3x map resolution; recover map px via `(obj.x + sprite.w/2) / 3`. FIXED: perception
+  `_center` divides once at the seam (`config.RENDER_SCALE = 3`); everything downstream
+  (nav.npz, thresholds, belief, traces) stays in map pixels.
+- **Flags → hearts (0.7.0):** capture-object labels now `red heart`/`blue heart`. FIXED in
+  perception label lookups (internal names still say "flag").
+- **Death no longer lifts fog:** a dead viewer sees only terrain, pedestal hearts, and its
+  own `corpse <color> <side>` sprite. Perception already reads dead (no `self …` label);
+  belief docs updated — dead frames carry no sightings, tracks just age, danger decays.
+- **Grenades (0.7.0):** corner pickups, C-button (mask bit 128) charged throw over walls,
+  ~40px blast, 2 dmg, hurts thrower/teammates too. Labels: `grenade`, `grenade air`,
+  `grenade carried`, `throw target`, `blast stage N`, `grenade sound`. Beacon IGNORES them
+  for now (correctness first) — a later iteration can pick up/throw.
+- **Scoring:** WinReward 100 → +1 winners / -1 losers per capture-or-wipe.
+- **Arena geometry: UNCHANGED** (sim.nim block byte-identical except exports) — `nav.npz`
+  needs no rebake. Slot→team, aim/vision/speed constants, CarriedFlagLift all unchanged.
+- `CTF_REF` re-pinned to `5450c64` in `tools/build_expand_replay.sh` (old replays need the
+  old pin). All 36 beacon tests green, incl. new wire-scale/heart/corpse regressions.
+
+**Next:** build + upload v6 (this port), eval **against the current division field** (not
+pure co-gas), then resume the improvement loop on fresh baselines.
+
+## (prior) Status (2026-07-14, session 2): belief groundwork — player tracks + danger field (uncommitted)
+
+Toward open thread 3 (close the baseline gap), beacon's belief state grew two folded,
+**not-yet-gated** structures (`ctf/beacon/belief.py`, config knobs `BEACON_TRACK_*` /
+`BEACON_DANGER_*`):
+- **Player tracks** (`Belief.enemy_tracks` / `teammate_tracks`, `PlayerTrack` in types.py):
+  last-seen pos/tick/facing per player, greedy nearest-neighbour association under a
+  reachability gate (Chebyshev, since velX/velY clamp per-axis: MAX_SPEED_PX_TICK = 704/256
+  = 2.75 px/tick/axis from sim.nim), EMA velocity across close sightings, TTL 120 ticks
+  (~5 s, matches the baseline's). Updated while dead too (ghosts see the whole map).
+- **Danger field** (`Belief.danger`, float32 [GRID_H, GRID_W] 0..1): init hot on the enemy
+  half / cold on ours; visible enemies stamp 1.0; spreads one walkable-masked 3x3-max ring
+  per NAV_CELL/(0.75 x max speed) ticks (~every 3.9 ticks — deliberately slower than a
+  fleeing player so the zone lingers); exponential decay half-life 48 ticks.
+- **Tracing:** every `snapshot` trace event now carries `enemy_tracks`/`teammate_tracks`
+  (pos, age, facing, vel, frames_seen) and `danger` (block-max 4x-downsampled 38x20 grid,
+  quantized 0..255, `cell_px: 32`) — renderable as a heatmap; warehouse ingests it as-is.
+  Cost: ~3.6 KB/snapshot, update_belief ~15 us/tick.
+- Nothing reads these yet — next iteration gates ONE behavior on them (pursuit,
+  exposure-aware routing, or aim-at-danger) as its own attributable A/B.
+- Known limits (documented in belief.py): no kill percept, so dead enemies' tracks linger
+  to TTL; own vision doesn't clear danger (a swept-empty corridor stays hot until decay).
+
+**Replay-overlay upstream change (2026-07-14): PRs OPEN.** Sprite-v1's 0x86 debug-sprite
+channel is now implemented end-to-end for CTF; design doc at
+`docs/designs/ctf-debug-sprite-overlay-design.md`. Two PRs (designed here, implemented by
+Codex under review, both test-green):
+- **Metta-AI/bitworld#235** — debug-sprite codec (master's 87724ba) cherry-picked onto
+  `daveey/hd-client-pin` (the branch CTF pins; master lacks the HD client). Includes a fix
+  for the branch-tip test failure (stale 0x7f mask assertion after ButtonC).
+- **Metta-AI/coworld-ctf#6** — server validates (structure + snappy pixels,
+  32 KiB/player/tick cap) → records (replay record 0x06) → folds into per-player
+  DebugOverlay; keyframes SNAPSHOT overlays (leaves shift indices, so prefix re-fold is
+  inexact); global viewer renders the selected player's overlay (map layer, z=29000, id
+  pools 40000+idx*1024, payload ids 0..1023). 8 new tests; full suite 67 green.
+  DEPENDS on #235: after it merges, bump nimby.lock's bitworld SHA on the PR branch
+  (worktrees live at /tmp/codex-ctf-overlay/{bitworld,coworld-ctf}).
+Still needed after merge: SDK `pack_debug_sprites_packet()` (coworld-tools), beacon
+emitting overlays (danger heatmap + tracks + path), league redeploy for hosted replays.
+
+## (prior) Status (2026-07-14): beacon:v5 SUBMITTED, qualified, competing — rank #2 of 6
+
+**v5 was submitted** (`sub_fb788e45…`, membership `lpm_d5d2e3dc…`) after the session below,
+qualified, and is now **competing as our champion entry** in Competition
+(`div_37361341…`): **rank #2 of 6, score 0.298** (46 rounds) behind daveey's champion
+(0.434). The field grew to 6 entrants — a new #3, Aaron's `ctf-flankfire:v1` (0.274,
+173 rounds), sits close behind us. Recent-round form (last 20 rounds, 2026-07-14):
+beacon avg round-score ≈0.34 vs daveey ≈0.38 — closer than the cumulative scores suggest.
+
+## (prior) Status (2026-07-10, session 1): beacon:v5 takes games off the baseline (4-11)
 
 **v5 (latest, uploaded — NOT yet submitted):** carrier escort + attack bias. v4 diag vs the
 baseline showed attackers grabbed the flag but died solo before delivery, while 5 defenders
@@ -93,8 +171,10 @@ field-relative; not the champion.
 
 ## Eval how-to
 - Division `div_37361341-2970-4dac-9528-55398bab0d1a` (Competition),
-  `div_64d9b2dc…` (Qualifiers), league `league_3243d905…`, coworld `cow_325613c1…` (ctf 0.5.4).
-  Field: `ctf-baseline-16:v4` (rank 1), `co-gas-ctf-simple-richard:v4` / `-relhalpha:v4` (0.8).
+  `div_64d9b2dc…` (Qualifiers), league `league_3243d905-d32d-4ec6-978b-fa94751d4a37`,
+  coworld `cow_e7586b05-3b53-465a-bb87-b9847a1b7bf9` (ctf **0.7.3**, redeployed 2026-07-14;
+  scores reset). Field (7 entrants): daveey, Aaron (`ctf-flankfire`), us, softmaxwell,
+  docxology, Richard Higgins, RelhAlpha.
 - Build: `ctf_lab/tools/build_player.sh beacon --tag players-beacon:dev`; upload:
   `uv run coworld upload-policy players-beacon:dev --name beacon`.
 - beacon behavior knobs are env vars (`BEACON_DEFENDERS`, `BEACON_FF_CORRIDOR_PX`, …) in

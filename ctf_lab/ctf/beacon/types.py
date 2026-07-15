@@ -10,6 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+import numpy as np
+
 from players.player_sdk import SpriteWorld
 
 Team = Literal["red", "blue"]
@@ -25,10 +27,27 @@ class Observation:
 
 @dataclass(frozen=True)
 class Enemy:
-    """A visible enemy player resolved from its labeled sprite this frame."""
+    """A visible player (enemy or teammate) resolved from its labeled sprite this frame."""
 
     pos: tuple[int, int]
     facing: str  # "left" | "right"
+
+
+@dataclass
+class PlayerTrack:
+    """Last-seen memory of one other player, folded across frames (belief.py).
+
+    Tracks outlive the sighting: a player that leaves the cone keeps its track (with
+    the position/heading we last saw) until ``TRACK_TTL_TICKS`` stale. Not gated on
+    yet — belief-state groundwork for pursuit / exposure-aware routing."""
+
+    pos: tuple[int, int]
+    last_tick: int  # tick of the most recent sighting
+    facing: str  # "left" | "right" — sprite heading at last sighting
+    #: px/tick, EMA-smoothed; None until the track has two sightings close enough in
+    #: time to difference (frames_seen >= 2 with a small tick gap).
+    vel: tuple[float, float] | None = None
+    frames_seen: int = 1
 
 
 @dataclass(frozen=True)
@@ -76,6 +95,15 @@ class Belief:
     enemy_flag_pos: tuple[int, int] | None = None
     own_flag_stolen: bool = False
     own_flag_thief_pos: tuple[int, int] | None = None
+    # Player tracks + danger field (folded in belief.py; nothing gates on them yet):
+    enemy_tracks: list[PlayerTrack] = field(default_factory=list)
+    teammate_tracks: list[PlayerTrack] = field(default_factory=list)
+    #: Danger scalar field over the nav grid, float32 [GRID_H, GRID_W] in 0..1 —
+    #: stamped hot by visible enemies, spreading at DANGER_DIFFUSION_FACTOR x max
+    #: player speed, cooling with a half-life. Initialized hot on the enemy half.
+    danger: np.ndarray | None = None
+    #: Fractional nav-cells of danger spread owed; dilate one ring per whole unit.
+    danger_spread_carry: float = 0.0
     # Navigation:
     nav_goal: tuple[int, int] | None = None
     nav_path: list[tuple[int, int]] | None = None
@@ -129,6 +157,7 @@ __all__ = [
     "Intent",
     "IntentKind",
     "Observation",
+    "PlayerTrack",
     "Role",
     "Team",
 ]

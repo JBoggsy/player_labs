@@ -13,29 +13,35 @@ from __future__ import annotations
 
 import math
 
-from ctf.beacon.config import AIM_BRADS_TURN, PEDESTAL
+from ctf.beacon.config import AIM_BRADS_TURN, PEDESTAL, RENDER_SCALE
 from ctf.beacon.types import CtfState, Enemy, Team
 from players.player_sdk import SpriteObject, SpriteWorld
 
 #: A visible aim-dot farther than this (px) from us is a teammate's, not ours.
 _AIM_DOT_RADIUS = 40.0
-#: Enemy flag within this distance (px) of us => we're carrying it.
-#: A carried flag rides ~10px ABOVE its carrier (sim.nim CarriedFlagLift=10), so the
-#: flag's observed centre sits ~9px from our self-sprite centre even when WE hold it.
-#: The old 6px threshold was below that, so carry was NEVER detected and the carrier
-#: sat on the pedestal in "steal" mode instead of running home. 24px clears the lift
-#: with margin while staying well under the distance to a teammate carrier.
+#: Enemy heart within this distance (px) of us => we're carrying it.
+#: A carried heart rides ~10px ABOVE its carrier (global.nim CarriedFlagLift=10), so
+#: the heart's observed centre sits ~10px from our self-sprite centre even when WE
+#: hold it. The old 6px threshold was below that, so carry was NEVER detected and the
+#: carrier sat on the pedestal in "steal" mode instead of running home. 24px clears
+#: the lift with margin while staying well under the distance to a teammate carrier.
 _CARRY_DIST = 24.0
-#: Own flag within this distance (px) of its pedestal => safely home.
+#: Own heart within this distance (px) of its pedestal => safely home.
 _HOME_SAFE_DIST = 8.0
 
 
 def _center(world: SpriteWorld, obj: SpriteObject) -> tuple[int, int]:
-    """Map-space centre of an object (camera sits at origin in CTF)."""
+    """Map-space centre of an object (camera sits at origin in CTF).
+
+    Since game 0.6.0 the zoomable map layer is wire-scaled: object coordinates and
+    sprite sizes arrive at RENDER_SCALE (3x) map resolution, with every entity sprite
+    centered on its scaled map point — so the wire centre divided by the scale is the
+    exact map-pixel centre (RULES.md, "Observation render scale").
+    """
     sprite = world.sprite_for(obj)
     w = sprite.width if sprite else 0
     h = sprite.height if sprite else 0
-    return (obj.x + w // 2, obj.y + h // 2)
+    return (round((obj.x + w / 2) / RENDER_SCALE), round((obj.y + h / 2) / RENDER_SCALE))
 
 
 def _objects_with_label(world: SpriteWorld, label: str) -> list[SpriteObject]:
@@ -105,15 +111,16 @@ def perceive(obs, team: Team) -> CtfState:
     # never matches here). Used only for the friendly-fire gate — friendly fire is ON.
     teammates = _players_of_color(world, team)
 
-    # Flag bookkeeping. The enemy flag can only be carried by US, so its sprite is
-    # never fogged: on its pedestal = stealable, on us = carrying, elsewhere = a
-    # teammate carries it. Our own flag can only be carried by the ENEMY: on its
-    # pedestal = safe, absent = a fogged thief has it, visible-off-pedestal = a live
-    # thief fix.
+    # Heart bookkeeping (the capture objects; labeled "<color> heart" since 0.7.0).
+    # A pedestal heart is never fogged — even from a dead viewer — and a carried
+    # heart is exactly as visible as its carrier (sim.nim flagVisibleTo). So for the
+    # ENEMY heart: on its pedestal = stealable, on us = carrying, elsewhere-visible =
+    # a teammate carries it. For OUR heart: on its pedestal = safe, absent = a fogged
+    # thief has it, visible-off-pedestal = a live thief fix.
     steal_target = PEDESTAL[enemy_color]
     own_home = PEDESTAL[team]
-    enemy_flags = _objects_with_label(world, f"{enemy_color} flag")
-    own_flags = _objects_with_label(world, f"{team} flag")
+    enemy_flags = _objects_with_label(world, f"{enemy_color} heart")
+    own_flags = _objects_with_label(world, f"{team} heart")
 
     i_carry = False
     enemy_flag_on_pedestal = False

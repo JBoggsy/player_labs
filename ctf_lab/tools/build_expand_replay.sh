@@ -23,9 +23,11 @@ set -euo pipefail
 #   How you'll know to bump: build_expand_replay starts hash-failing on FRESH replays
 #   — that's the signal the league redeployed; try a newer commit until a fresh replay
 #   expands cleanly, and update this.
-# Current value (761c098) is coworld-ctf HEAD as of 2026-07-10 (lab creation); the
-# CTF league is brand-new, so confirm against a real league replay when one exists.
-CTF_REF="${CTF_REF:-761c098}"
+# Current value (5450c64) is coworld-ctf HEAD as of 2026-07-14, matching the league's
+# redeploy to ctf 0.7.3 (cow_e7586b05…) — GameVersion 2: hearts, grenades, 3x
+# observation render scale, +1/-1 scoring. Replays recorded before the redeploy need
+# the previous pin (761c098, ctf 0.5.4).
+CTF_REF="${CTF_REF:-5450c64}"
 GAME_REPO_SLUG="Metta-AI/coworld-ctf"
 
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # ctf_lab/

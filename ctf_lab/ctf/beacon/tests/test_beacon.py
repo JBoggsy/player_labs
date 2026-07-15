@@ -2,7 +2,8 @@
 
 These cover the few things that would silently lose games or crash an episode:
 brad arithmetic (aim rotation direction), the mask stays legal, flow-field routing
-reaches the goal, flag-state detection, and team-from-slot.
+reaches the goal, flag-state detection, team-from-slot, and the folded belief
+memory (player tracks + danger field).
 """
 
 from __future__ import annotations
@@ -211,13 +212,127 @@ def test_lighthouse_sweeps_when_no_enemy():
     assert cmd.held_mask & (int(Button.B) | int(Button.SELECT))
 
 
-# --- carry detection (the "stuck on the flag" bug: flag rides ~10px above carrier) --
-def _world_with_self_and_flag(self_xy, flag_center):
+# --- belief memory: player tracks + danger field ------------------------------------
+def _percept(enemies=(), teammates=(), self_xy=(300, 329)):
+    from ctf.beacon.types import CtfState
+    return CtfState(
+        ready=True, self_xy=self_xy, self_facing="right", observed_aim=None,
+        fire_ready=False, enemies=tuple(enemies), teammates=tuple(teammates),
+        i_carry_enemy_flag=False, enemy_flag_on_pedestal=True, enemy_flag_pos=None,
+        own_flag_stolen=False, own_flag_thief_pos=None,
+    )
+
+
+def test_track_persists_after_sighting_lost():
+    from ctf.beacon.belief import update_belief
+    from ctf.beacon.config import TRACK_TTL_TICKS
+    b, st = Belief(team="red"), ActionState()
+    update_belief(b, _percept(enemies=[Enemy(pos=(500, 300), facing="left")]), st, tick=1)
+    assert len(b.enemy_tracks) == 1 and b.enemy_tracks[0].pos == (500, 300)
+    # Enemy leaves the cone: the track outlives the sighting...
+    update_belief(b, _percept(), st, tick=2)
+    assert len(b.enemy_tracks) == 1 and b.enemy_tracks[0].last_tick == 1
+    # ...until TTL, when it drops.
+    update_belief(b, _percept(), st, tick=2 + TRACK_TTL_TICKS)
+    assert b.enemy_tracks == []
+
+
+def test_track_velocity_from_consecutive_sightings():
+    from ctf.beacon.belief import update_belief
+    b, st = Belief(team="red"), ActionState()
+    update_belief(b, _percept(enemies=[Enemy(pos=(500, 300), facing="left")]), st, tick=1)
+    assert b.enemy_tracks[0].vel is None  # one sighting can't yield a velocity
+    update_belief(b, _percept(enemies=[Enemy(pos=(502, 299), facing="left")]), st, tick=2)
+    t = b.enemy_tracks[0]
+    assert len(b.enemy_tracks) == 1 and t.frames_seen == 2  # associated, not a new track
+    assert t.vel == (2.0, -1.0)
+
+
+def test_far_sighting_starts_new_track():
+    from ctf.beacon.belief import update_belief
+    b, st = Belief(team="red"), ActionState()
+    update_belief(b, _percept(enemies=[Enemy(pos=(500, 300), facing="left")]), st, tick=1)
+    # Next tick, a sighting across the map: unreachable at max speed => a second track.
+    update_belief(b, _percept(enemies=[Enemy(pos=(900, 300), facing="left")]), st, tick=2)
+    assert len(b.enemy_tracks) == 2
+
+
+def test_teammates_tracked_separately():
+    from ctf.beacon.belief import update_belief
+    b, st = Belief(team="red"), ActionState()
+    update_belief(b, _percept(teammates=[Enemy(pos=(320, 329), facing="right")]), st, tick=1)
+    assert len(b.teammate_tracks) == 1 and b.enemy_tracks == []
+
+
+def test_danger_initialized_hot_on_enemy_half_only():
+    from ctf.beacon.belief import update_belief
+    from ctf.beacon.config import NAV_CELL
+    b, st = Belief(team="red"), ActionState()
+    update_belief(b, _percept(), st, tick=1)
+    grid = mapdata.walkable_grid()
+    east = b.danger[:, (900 // NAV_CELL)][grid[:, (900 // NAV_CELL)]]
+    west = b.danger[:, (300 // NAV_CELL)][grid[:, (300 // NAV_CELL)]]
+    assert east.size and (east > 0.9).all()  # enemy (Blue) half starts hot
+    assert west.size and (west == 0.0).all()  # our half starts cold
+
+
+def test_danger_stamped_by_visible_enemy_and_decays():
+    from ctf.beacon.belief import update_belief
+    from ctf.beacon.config import NAV_CELL
+    b, st = Belief(team="red"), ActionState()
+    enemy_xy = (400, 329)  # on OUR (cold) half
+    gx, gy = enemy_xy[0] // NAV_CELL, enemy_xy[1] // NAV_CELL
+    update_belief(b, _percept(enemies=[Enemy(pos=enemy_xy, facing="left")]), st, tick=1)
+    assert b.danger[gy, gx] == 1.0
+    # Enemy vanishes: the hot spot decays but lingers (diffusion <1x speed).
+    update_belief(b, _percept(), st, tick=2)
+    assert 0.5 < b.danger[gy, gx] < 1.0
+
+
+def test_danger_never_on_walls():
+    from ctf.beacon.belief import update_belief
+    b, st = Belief(team="red"), ActionState()
+    for tick in range(1, 30):
+        update_belief(b, _percept(enemies=[Enemy(pos=(617, 329), facing="left")]), st, tick=tick)
+    assert (b.danger[~mapdata.walkable_grid()] == 0.0).all()
+
+
+# --- perception at the 0.7.3 wire format --------------------------------------------
+# Since 0.6.0 the zoomable map layer is wire-scaled: object coordinates and sprite
+# sizes arrive at RENDER_SCALE (3x) map resolution, every sprite centered on its
+# scaled map point. These helpers build worlds exactly as global.nim emits them
+# (HD crew canvas 96 = 32 map px, heart canvas 60 = 20 map px).
+from ctf.beacon.config import RENDER_SCALE
+
+_HD_CREW = 96
+_HD_FLAG = 60
+
+
+def _add_player(w, obj_id, sprite_id, label, center_xy):
+    """Place a player-like sprite as addHdPlayerObject does: 3*x - canvas/2."""
+    w.sprites[sprite_id] = SpriteDef(sprite_id, _HD_CREW, _HD_CREW, label, b"")
+    w.objects[obj_id] = SpriteObject(
+        obj_id,
+        center_xy[0] * RENDER_SCALE - _HD_CREW // 2,
+        center_xy[1] * RENDER_SCALE - _HD_CREW // 2,
+        0, 0, sprite_id,
+    )
+
+
+def _add_heart(w, obj_id, sprite_id, label, center_xy, lift=0):
+    """Place a heart as the per-player packet does: map-px offset, wire-scaled."""
+    w.sprites[sprite_id] = SpriteDef(sprite_id, _HD_FLAG, _HD_FLAG, label, b"")
+    map_x = center_xy[0] - _HD_FLAG // (2 * RENDER_SCALE)
+    map_y = center_xy[1] - _HD_FLAG // (2 * RENDER_SCALE) - lift
+    w.objects[obj_id] = SpriteObject(
+        obj_id, map_x * RENDER_SCALE, map_y * RENDER_SCALE, 0, 0, sprite_id
+    )
+
+
+def _world_with_self_and_heart(self_xy, heart_center, lift=0):
     w = SpriteWorld()
-    w.sprites[1] = SpriteDef(1, 18, 18, "self red right", b"")   # crew sprite ~18px
-    w.sprites[2] = SpriteDef(2, 12, 12, "blue flag", b"")        # enemy (blue) flag
-    w.objects[10] = SpriteObject(10, self_xy[0] - 9, self_xy[1] - 9, 0, 0, 1)
-    w.objects[20] = SpriteObject(20, flag_center[0] - 6, flag_center[1] - 6, 0, 0, 2)
+    _add_player(w, 10, 1, "self red right", self_xy)
+    _add_heart(w, 20, 2, "blue heart", heart_center, lift=lift)
     w.frame = 1
     return w
 
@@ -226,19 +341,48 @@ def _obs(w):
     return type("O", (), {"world": w, "frame": 1})()
 
 
-def test_carry_detected_when_flag_rides_above_us():
-    # Carried flag sits ~10px above the carrier (CarriedFlagLift) — the old 6px
-    # threshold missed this, so beacon never ran the flag home.
-    st = perceive(_obs(_world_with_self_and_flag((600, 329), (600, 319))), "red")
+def test_wire_scale_recovers_map_coordinates():
+    # A self sprite placed at map (600, 329) through the 3x wire math must read
+    # back as exactly (600, 329) after perception's divide-at-the-seam.
+    st = perceive(_obs(_world_with_self_and_heart((600, 329), (1049, 329))), "red")
+    assert st.self_xy == (600, 329)
+
+
+def test_carry_detected_when_heart_rides_above_us():
+    # Carried heart sits ~10px above the carrier (CarriedFlagLift) — the old 6px
+    # threshold missed this, so beacon never ran the heart home.
+    st = perceive(_obs(_world_with_self_and_heart((600, 329), (600, 329), lift=10)), "red")
     assert st.i_carry_enemy_flag and not st.enemy_flag_on_pedestal
 
 
-def test_standing_on_pedestal_with_resting_flag_is_not_carry():
-    st = perceive(_obs(_world_with_self_and_flag((1049, 329), (1049, 329))), "red")
+def test_standing_on_pedestal_with_resting_heart_is_not_carry():
+    st = perceive(_obs(_world_with_self_and_heart((1049, 329), (1049, 329))), "red")
     assert not st.i_carry_enemy_flag and st.enemy_flag_on_pedestal
 
 
 def test_grab_on_pedestal_registers_carry():
     # The instant we grab it on the pedestal, it lifts to ~10px above -> carry.
-    st = perceive(_obs(_world_with_self_and_flag((1049, 329), (1049, 319))), "red")
+    st = perceive(_obs(_world_with_self_and_heart((1049, 329), (1049, 329), lift=10)), "red")
     assert st.i_carry_enemy_flag
+
+
+def test_enemy_players_read_at_map_scale():
+    w = _world_with_self_and_heart((300, 329), (1049, 329))
+    _add_player(w, 11, 3, "player blue left", (450, 300))
+    st = perceive(_obs(w), "red")
+    assert len(st.enemies) == 1 and st.enemies[0].pos == (450, 300)
+
+
+def test_corpse_is_not_a_live_player_and_we_read_dead():
+    # While dead (0.7.x: fog does NOT lift), our own body is labeled "corpse ...",
+    # so self is not found -> not ready/alive; and a corpse never counts as an enemy.
+    w = SpriteWorld()
+    _add_player(w, 10, 1, "corpse red right", (300, 329))
+    _add_heart(w, 20, 2, "blue heart", (1049, 329))
+    _add_heart(w, 21, 3, "red heart", (186, 329))
+    w.frame = 1
+    st = perceive(_obs(w), "red")
+    assert not st.ready and st.self_xy is None
+    assert st.enemies == () and st.teammates == ()
+    # Pedestal hearts stay readable through death (they never fog).
+    assert st.enemy_flag_on_pedestal and not st.own_flag_stolen
