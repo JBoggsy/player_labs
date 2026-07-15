@@ -52,7 +52,7 @@ class BeaconRuntime:
     def step(self, obs: Observation) -> Command:
         self.tick += 1
         percept = perceive(obs, self.belief.team)
-        update_belief(self.belief, percept, self.action_state)
+        update_belief(self.belief, percept, self.action_state, self.tick)
 
         if not self.belief.alive:
             # Dead/ghost or not yet spawned: release inputs, hold state.

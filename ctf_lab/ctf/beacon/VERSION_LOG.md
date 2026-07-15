@@ -2,6 +2,57 @@
 
 Version → change mapping for the CTF `beacon` policy. Newest first.
 
+## v8/v9 — micro activation tracing (2026-07-15)
+
+**Why:** v7's A/B vs focusfire was dead flat (0-9 both arms) with no way to tell
+"never fired" from "fired and didn't help". New standing discipline (James,
+`user_preferences.md`): every behavior change ships activation tracing.
+
+**Changes (v8):** `belief.micro` ("duck"/"peek"/None, set per tick by the override),
+`micro` transition trace events, cumulative `micro_ticks` in every snapshot. 43 tests.
+**v9** = the same image uploaded with `--secret-env BEACON_TRACE_OUTPUTS=jsonl@stderr`
+— the artifact-zip trace path returns empty from the fetcher; stderr is reliable.
+
+**Diagnostic verdict (3 eps vs focusfire):** duck 14.0% / peek 3.7% of alive time
+(421+219 engagements, 24 agents) — the micro FIRES; kills/deaths unchanged. Cover
+micro is not the binding constraint vs focusfire; next lever is target
+selection/velocity lead/focus-fire (or warehouse WHERE deaths happen vs micro state).
+
+## v7 — peek-fire-duck micro (2026-07-15)
+
+**Why:** v6 field eval vs `ctf-focusfire:v5` (the new #1): 0-9, out-killed 207-128,
+23.9 deaths/game. Beacon's combat was stand-and-deliver — it stood exposed through the
+gun's cooldown+windup and paid aim traverse while visible. The baseline/focusfire lineage
+spends cooldown behind a wall and re-emerges pre-aimed (design doc:
+`docs/designs/ctf-peek-fire-duck-design.md`; reference: `players/baseline/baseline.nim`).
+
+**Changes:** (1) nav.npz now ships the raw per-pixel `wall` mask; `mapdata.ray_clear`
+(sampled segment LoS, ~14us/map-length ray). (2) fire→duck→peek movement override in
+`action.py`: gun down + fresh near threat (≤30 ticks, ≤340px) → sidestep to the nearest
+cell that BREAKS the threat's line, hold, keep aim on its arc; gun up + fresh track
+(≤24 ticks) wall-blocked → PRE-LAY aim and sidestep to the cell that OPENS the line
+(combat overlay fires the tick it clears). Exempt while carrying and within 90px of the
+steal pedestal. First consumer of the v6 tracks groundwork (velocity-predicted).
+(3) knobs: `BEACON_PEEK_DUCK` (default ON — the A/B bit), `BEACON_DUCK_RANGE_PX`, etc.
+~10us/tick worst case. 42 tests pass. Upload: `beacon:v7`.
+
+## v6 — port to ctf 0.7.3 wire format (2026-07-14)
+
+**Why:** the league redeployed ctf **0.7.3** (`cow_e7586b05…`, source `5450c64`,
+GameVersion 2) — v5 is blind on the live game: since 0.6.0 map-layer observations arrive
+at **3x map resolution** (all its position reads were 3x off), and since 0.7.0 the capture
+objects are labeled `red/blue heart` (its `… flag` lookups matched nothing). Division
+scores also reset (+1/-1 scoring now); old eval baselines are void.
+
+**Changes (correctness port only — no behavior/strategy change):** (1) perception
+`_center` recovers map px by `(wire + sprite/2) / RENDER_SCALE` (new `config.RENDER_SCALE
+= 3`); all internals (nav.npz, thresholds, belief, traces) stay in map pixels. (2) heart
+labels in the flag-state lookups. (3) belief docs/dead-state: death no longer lifts fog
+(dead frames carry no sightings; own body is `corpse …`, never misread as a player).
+Grenades (also new in 0.7.x) are deliberately IGNORED this version. Arena geometry is
+unchanged upstream — nav.npz not rebaked. 36 tests pass (new wire-scale, heart-carry,
+corpse regressions). Upload: `beacon:v6`.
+
 ## v5 — carrier escort + attack bias (2026-07-10)
 
 **Why:** vs the baseline, v4 diag showed attackers DO reach the flag and DO carry it

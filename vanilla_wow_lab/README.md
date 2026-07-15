@@ -11,15 +11,14 @@ This README orients newcomers (human or agent). Two pointers do most of the work
 - **[`../README.md`](../README.md)** — lab-wide setup (`uv sync` / Observatory auth) and the
   ground rules.
 
-> **Status (2026-07-13): lab just created — docs + scaffolding only, no player yet, and the
-> loop is BLOCKED.** The game repo (`coworld-vanilla-wow`) is cloned for reference at
-> `~/coding/coworlds/coworld-vanilla-wow`, but its README badge reads **"coworld verify: not
-> ready"**: the package `vanilla_wow:0.1.4.post8` passed executable certification + a local
-> isolated-RFC smoke, but the "ready" badge is gated on a *retained* hosted round + XP-request
-> episode that **haven't been created**, and **no live scored Observatory league exists yet**
-> (only a persistent *practice* realm). So the evaluate→improve loop can't run until the game
-> certifies and a league opens — the immediate next step is human-directed. Live state:
-> [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
+> **Status (2026-07-14): `wowborg` v1 uploaded and smoke-tested hosted; league exists but
+> its scoring is unconfirmed.** The Observatory league **"Vanilla Wow"** (division "Leveling
+> Ladder") was created 2026-07-12 and the deployed game package is **v0.1.6**, but the game
+> repo's README badge still reads **"coworld verify: not ready"** — treat the ladder's
+> scoring/retention as unverified until a retained round exists. `wowborg` v1 (idle-login
+> skeleton, no gameplay) completed a 4-episode hosted smoke (`orc-fresh-start`, score 0.0,
+> no crash); per-agent policy logs were not retained, so login success isn't yet confirmed
+> from artifacts. Live state + next steps: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
 
 ## The game (one paragraph)
 

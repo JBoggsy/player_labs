@@ -19,13 +19,13 @@ The authoritative source is the **`coworld-vanilla-wow`** repo (currently cloned
 that repo at the state read on 2026-07-13; **re-verify against the code before trusting
 prose** — this game is under active development.
 
-> **Readiness caveat (2026-07-13).** The game repo's README badge reads **"coworld
-> verify: not ready."** The submitted package `vanilla_wow:0.1.4.post8` has passed all ten
-> executable certification steps and a local isolated-RFC smoke, but the "ready" badge is
-> gated on one *retained* hosted commissioner round + one XP-request episode on Kubernetes,
-> **neither of which has been authorized or created** (`docs/coworld-readiness.md`). There
-> is a live *persistent practice realm*, but **no live scored Observatory league exists
-> yet.** Treat everything here as "the game as designed and certified," and see
+> **Readiness caveat (updated 2026-07-14).** The game repo's README badge still reads
+> **"coworld verify: not ready"** — the "ready" badge is gated on one *retained* hosted
+> commissioner round + one XP-request episode on Kubernetes (`docs/coworld-readiness.md`).
+> However, as of 2026-07-12 an Observatory league **"Vanilla Wow"** (division "Leveling
+> Ladder") exists, the deployed package is **v0.1.6**, and hosted XP-requests run to
+> completion (verified 2026-07-14 with a 4-episode `orc-fresh-start` smoke). The badge and
+> the league's existence disagree — treat the ladder's scoring/retention as unverified. See
 > [`../WORKING_CONTEXT.md`](../WORKING_CONTEXT.md) for what that means for the lab's loop.
 
 ---
@@ -398,10 +398,11 @@ not success). That contract is the subject of
 
 ## Open questions to resolve empirically (once real episodes exist)
 
-- **Is there a live scored league?** As of 2026-07-13 there is a persistent *practice*
-  realm but no live scored Observatory league; the readiness badge is gated on hosted
-  proof that hasn't been created (`docs/coworld-readiness.md`). Verify current state before
-  claiming the loop is runnable.
+- **Does the "Vanilla Wow" league actually score/retain rounds?** As of 2026-07-14 the
+  league + "Leveling Ladder" division exist and hosted XP-requests complete, but the
+  readiness badge is still "not ready" and no retained round has been observed
+  (`docs/coworld-readiness.md`). Verify a scored round exists before claiming the loop is
+  fully runnable.
 - **RFC clear difficulty for a self-play party** — how hard is a same-brain 5-slot tank +
   healer + 3 DPS coordination problem in practice? Where do parties wipe?
 - **Framework ceiling** — how far do the bundled leveling profiles + class rotations get

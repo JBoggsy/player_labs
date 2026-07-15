@@ -20,9 +20,11 @@ import os
 import sys
 from collections.abc import Callable
 
-from ctf.beacon.config import DIAG_EVERY_TICKS
+import numpy as np
+
+from ctf.beacon.config import DANGER_TRACE_DOWNSAMPLE, DIAG_EVERY_TICKS, NAV_CELL
 from ctf.beacon.runtime import BeaconRuntime, StepInfo
-from ctf.beacon.types import Team
+from ctf.beacon.types import PlayerTrack, Team
 from players.player_sdk import SpriteContext, SpriteWorld, TraceEvent, TraceSink
 
 
@@ -93,6 +95,12 @@ class _DiagnosticLogger:
         self._last_objective: str | None = None
         self._last_alive: bool | None = None
         self._last_engaged: bool | None = None
+        self._last_micro: str | None = None
+        # Cumulative activation tick-counts per micro mode ("duck"/"peek"), carried in
+        # every snapshot. Behavior-change discipline: any new gated behavior must be
+        # countable from the trace, so a null A/B can distinguish "never fired" from
+        # "fired and didn't help".
+        self._micro_ticks: dict[str, int] = {}
 
     def on_step(self, step: StepInfo) -> None:
         self._log_transitions(step)
@@ -113,6 +121,13 @@ class _DiagnosticLogger:
         if engaged != self._last_engaged:
             self._record(step.tick, "engage", {"engaged": engaged, "n_enemies": len(b.enemies)})
             self._last_engaged = engaged
+        if b.micro is not None:
+            self._micro_ticks[b.micro] = self._micro_ticks.get(b.micro, 0) + 1
+        if b.micro != self._last_micro:
+            self._record(step.tick, "micro",
+                         {"from": self._last_micro, "to": b.micro, "self_xy": b.self_xy,
+                          "fire_ready": b.fire_ready})
+            self._last_micro = b.micro
 
     def _payload(self, step: StepInfo) -> dict:
         b = step.belief
@@ -134,10 +149,43 @@ class _DiagnosticLogger:
             "sweep_offset": b.sweep_offset,
             "nav_stuck": b.nav_stuck_ticks,
             "held_mask": step.command.held_mask,
+            "micro": b.micro,
+            "micro_ticks": dict(self._micro_ticks),
+            "enemy_tracks": [_track_row(t, step.tick) for t in b.enemy_tracks],
+            "teammate_tracks": [_track_row(t, step.tick) for t in b.teammate_tracks],
+            "danger": _danger_grid(b.danger),
         }
 
     def _record(self, tick: int, name: str, data: dict) -> None:
         self._sink.record(TraceEvent(tick=tick, name=name, data=data))
+
+
+def _track_row(t: PlayerTrack, tick: int) -> dict:
+    """One track as a compact JSON-safe row (age instead of an absolute tick)."""
+    return {
+        "pos": list(t.pos),
+        "age": tick - t.last_tick,  # 0 = seen this tick
+        "facing": t.facing,
+        "vel": [round(t.vel[0], 2), round(t.vel[1], 2)] if t.vel is not None else None,
+        "frames_seen": t.frames_seen,
+    }
+
+
+def _danger_grid(danger: np.ndarray | None) -> dict | None:
+    """The danger field, block-max downsampled and quantized to 0..255 rows.
+
+    Max (not mean) per block so a hot single cell survives the fold — for danger,
+    the pessimistic read is the honest one. The full grid would be ~13k floats per
+    snapshot; this is a ~38x20 grid of small ints (renderable as a heatmap).
+    """
+    if danger is None:
+        return None
+    ds = DANGER_TRACE_DOWNSAMPLE
+    h, w = danger.shape
+    th, tw = h // ds, w // ds
+    blocks = danger[: th * ds, : tw * ds].reshape(th, ds, tw, ds).max(axis=(1, 3))
+    quantized = (blocks * 255).astype(int)
+    return {"cell_px": ds * NAV_CELL, "rows": quantized.tolist()}
 
 
 __all__ = ["build_decide"]

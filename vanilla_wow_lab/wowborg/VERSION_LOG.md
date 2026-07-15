@@ -7,3 +7,8 @@
 - Enters the seeded `wow_session.character_name`.
 - Idles with periodic `CMSG_PING`.
 - Does not decode world state or take gameplay actions.
+- Does NOT honor the session's `deadline_seconds` — never self-terminates, so hosted
+  episodes always run to the full variant deadline (fix in v2).
+- First hosted smoke 2026-07-14: `xreq_23feebad-…`, 4 episodes on `orc-fresh-start`
+  (5× self-play), all completed, score 0.0, no crash. Policy logs not retained; login
+  success not yet confirmed from artifacts.

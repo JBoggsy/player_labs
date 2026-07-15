@@ -82,6 +82,24 @@ afternoon. Defaults:
   Relatedly, a reliability/latency floor gates competition entry: a fast adequate
   player beats a slow excellent one that gets disqualified — completion rate first,
   win rate second.
+- **Size the batch from the game's variance, not habit.** Episode count is a
+  calculation: more players per episode, role/seat randomization, and a wide
+  single-episode score range (big penalties ↔ big bonuses) each multiply the games
+  needed to pin a mean. A 2-player tight-score game resolves in a handful of episodes;
+  an 8-player hidden-role game with floor penalties needs 40–80+ *completed* games per
+  arm, disaggregated by role, before promote/reject means anything — a decisive-looking
+  small result there is variance or a structural bug. State the expected effect size up
+  front; if the planned N can't resolve it, say so *before* running, and keep firing
+  requests until the completed count (not the request count) hits the target.
+- **Derive the opponent field from the goal — the field IS the objective made
+  concrete.** "Beat the best" and "maximize league points" are different evals: beating
+  a *weak, frequent* opponent can yield more expected points than edging the *strongest,
+  rare* one, so decide explicitly whether the goal rewards crushing the common-weak or
+  winning the tail, and weight episodes by encounter frequency/point yield when
+  aggregating (state the weighting used). Pairwise fields diagnose; broad top-N/random
+  fields guard against overfitting to one opponent — run the broad guard before
+  declaring a targeted fix good. Never silently collapse a multi-policy field to one
+  representative opponent.
 - **Experience requests are your primary eval — they aren't scarce.** They run many
   episodes in parallel on Softmax infra and are currently free, so use them liberally
   rather than rationing them; just **target them to the question** (matched roles when
@@ -115,6 +133,28 @@ afternoon. Defaults:
   helps one cluster and hurts another points straight at the gating fix, and the
   positive outliers ("we got lucky here") are a hypothesis source — find the mechanism
   behind them and make it fire on purpose, not by chance.
+- **Mine the policy's own variance, not its habits.** The behaviors a policy performs
+  in *every* game — its invariant engine — explain how it beats others but are useless
+  for explaining its own score spread, because they're identical in its best and worst
+  games; the spread lives in the high-variance, load-bearing moves. So when hunting
+  "what to improve next", compare the policy's own winning games against its own losing
+  games and rank what differs (the `coworld-hypothesis-miner` skill mechanizes this) —
+  don't spend a hypothesis on a behavior that's present either way. Watch for reverse
+  causation in what you find: "winners do more X" is often a consequence of winning.
+- **Profile opponents from repeated evidence, not one game.** When an opponent drives
+  losses, build a small profile (dominant behaviors, seat/role conditioning,
+  exploit-vs-us, suspected mechanism) from row-level evidence across episodes, and
+  treat a version change of theirs as a new hypothesis. Counter with a *pattern
+  classifier* (detect the behavior, then respond) rather than an opponent-name check —
+  a hardcoded counter helps one matchup and silently costs the broad field.
+- **A static heatmap can't show sequence — don't over-read it.** Summed grids and
+  aggregate position stats flatten ordering and timing; a chase, an interception, or
+  who-converged-then-what is invisible in them, and a fabricated story fits them
+  easily. For inherently sequential-spatial questions use sequence-preserving views
+  (time-gradient trajectory polylines, event-anchored windows — the N ticks around
+  each kill/capture for everyone in range, per-tick closing distances). If the view
+  you have can't represent the ordering, say so and treat the read as lossy rather
+  than concluding from it.
 - **Don't optimize the obvious intermediate metric.** Confirm it actually maps to the
   objective before chasing it; counterintuitive correlations (e.g. dying *more* while
   scoring *more*) are signal, not noise — the "safe" metric can be the losing one.
@@ -149,6 +189,11 @@ afternoon. Defaults:
   intended mechanism actually fired.
 
 ## Player engineering — Coworld platform traps that recur across games
+
+The full design doctrine — architecture selection (scripted / LLM / hybrid two-loop),
+package structure for the loop, never-lose-on-time robustness techniques, and map
+navigation — is [`docs/player-engineering.md`](docs/player-engineering.md). The traps
+below are the recurring platform-specific ones:
 
 - **A synchronous `decide` starves the websocket keepalive — pass
   `ping_interval=None` (or equivalent) on the bridge.** The default

@@ -13,6 +13,41 @@ file is the one-screen "where are we and why."
 
 ---
 
+## Status (2026-07-14, session 3): first hosted smoke PASSED-ish; league exists; partly UNBLOCKED
+
+Session 3 ran `wowborg` v1's first hosted experience requests. What changed since session 2:
+
+- **The Observatory league EXISTS now** (the session-2 "no scored league" claim below is
+  stale): league **"Vanilla Wow"** (`league_d7bf3aea-…`), division **"Leveling Ladder"**
+  (`div_fe784707-…`), commissioner `vanilla-wow-leveling-commissioner`, weekly rounds
+  (`schedule_interval_minutes: 10080`), created 2026-07-12. **Not yet verified**: whether
+  the ladder actually scores/retains rounds (the game repo README badge is still
+  "coworld verify: not ready" as of the 2026-07-14 pull — the badge and the league's
+  existence currently disagree; treat the league's scoring as unconfirmed).
+- **Deployed game package is `vanilla_wow` v0.1.6** (session 2 said 0.1.4.post8). The live
+  manifest (15 variants, game configs) is fetchable via `GET /v2/coworlds/cow_d4b20fe9-…`;
+  trust it over the local checkout.
+- **First smoke (xreq_23feebad-…, 4 episodes, `orc-fresh-start`, wowborg:v1 in all 5 seats):
+  all 4 episodes completed, score 0.0 each** — the artifact runs hosted episodes end-to-end
+  without crashing. Caveats: no per-agent policy logs were retained and no results artifact
+  was available (replay only, a custom `CWREPLAY` binary format), so the intended success
+  signal (`SMSG_LOGIN_VERIFY_WORLD` in WOWBORG logs + nonzero realmd/world audit bytes)
+  **could not be confirmed**. Completion without failure is the only evidence so far.
+- **Two operational hard lessons** (also in the lessons buffer): (1) wowborg v1 never
+  self-terminates and ignores `deadline_seconds`, so every episode runs to the FULL variant
+  deadline — `rfc-five-player-clear` is 10000/0.1 ≈ **27.8 h per episode**; a first attempt
+  (xreq_5d4946c2-…) had to be cancelled via `POST /v2/experience-requests/{id}/cancel`
+  (route exists; not in the skill docs). Use `orc-fresh-start` (max_ticks=100, ~17 min) or a
+  `game_config_overrides` with small `max_ticks` for smokes. (2) Each episode boots an
+  all-in-one VMaNGOS container on k8s first — budget ~5+ min infra overhead per episode.
+
+**Next steps:** figure out why policy logs weren't retained (elevated fetch? platform gap?);
+decode the `CWREPLAY` replay format to extract the login-success signal; make wowborg v2
+honor `deadline_seconds`; verify whether the Leveling Ladder actually scores rounds before
+calling the loop unblocked.
+
+---
+
 ## Status (2026-07-13, session 2): `wowborg` v1 implemented; loop still BLOCKED
 
 `vanilla_wow_lab` was created from the `heartleaf_lab` template, and the first Python policy
