@@ -50,14 +50,19 @@ removed that shield, and select_victim's most-isolated heuristic now locks onto 
 27%/19% (<60% gate) so the social rework is STILL untested. Artifacts: `.tmp/ab_v106_v100/`
 (diff.json, ab.html, finding.md, compare.md; arms in cand/ + base/).
 
-**v107 SHIPPED (2026-07-15, commit `6cfdffb`, pv `5a4e0eae…`) — the self-hunt fix.** Not just the
-one-liner: new `opportunity.is_live_opponent` (not self / not teammate / not dead) applied at every
-roster-derived imposter pool (victims, witnesses/isolation, hunt commit, follow/watch, recon,
-commander targets/room-bias, agent_tracking, suspicion killer inference); 7 regression tests;
-645 green. **A/B v107-vs-v100 IN FLIGHT:** driver `crewrift_lab/.tmp/ab_v107_v100/run_ab.sh`
-(same paced shape as the v106 A/B; first xreq `xreq_307fdfab…` verified carrying v107). When done:
-confirm imposter kills/win recover to ~v100 levels + no crew regression, then SUBMIT (human gate) —
-v106 is live and bleeding imposter rounds at rank 14/16.
+**v107 SHIPPED + A/B VERIFIED (2026-07-15, commit `6cfdffb`, pv `5a4e0eae…`) — the self-hunt fix
+works.** Fix: new `opportunity.is_live_opponent` (not self / not teammate / not dead) at every
+roster-derived imposter pool; 7 regression tests; 645 green. **A/B verdict (196 v107 / 100 v100
+matched eps):** self-strikes 0/36 imposter eps (v106: 45/53); kills 1.67 vs 1.28 (v106: 0.58);
+zero-kill 3% vs 11% (v106: 44%); imposter win 64% vs 61% (v106: 35%); crew all noise. Pure-bug-fix
+profile: no regression anywhere. Artifacts: `.tmp/ab_v107_v100/` (diff.json, ab.html, finding.md).
+Caveat (same as v106 A/B): LLM fired ~19-27% both arms → deterministic path compared; fine, the fix
+is deterministic-only. NOTE: mid-A/B the platform 500'd on GET/POST /v2/experience-requests
+("Coworld Manifest tags Field required", ~15:55-16:45Z) then recovered; babysitter drained the
+stuck batches.
+
+**AWAITING HUMAN GATE: submit v107 to Crewrift Prime** to evict the damaged v106 champion
+(rank 14/16, hunting its own sprite in imposter rounds). Recommendation: submit.
 
 **Next action: when the 4 watchers drain (~10-15 min), (1) confirm vote_timeout→~0 on v106; (2) run
 compare.py role-split. If clean, the v105 social rework (minus this bug) is worth a powered ~300/arm
