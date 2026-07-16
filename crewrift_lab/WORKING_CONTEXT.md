@@ -15,12 +15,21 @@ This is *not* a log or archive: finished work lives in git history / the
 
 ---
 
-## 🎯 OBJECTIVE: v106 QUALIFIED & CHAMPION — pick the next improvement lever
+## 🎯 OBJECTIVE: v107 QUALIFIED & CHAMPION 👑 — watch league standings recover, then pick the next lever
 
-**v106 is `competing` and 👑 CHAMPION** in Crewrift Prime (verified 2026-07-15;
-membership `lpm_d02abdf8…`, Competition division). Standings: **rank 14/16, score 1464 / 216
-rounds** — board is tight (#1 docxology 1684; Richard Higgins ties us at 1464). The old v100
-membership is `disqualified(superseded)` — normal supersession, not a failure.
+**v107 is `competing/active` and CHAMPION** in Crewrift Prime (qualified in ~5 min,
+2026-07-15 17:10Z; membership `lpm_fd1323fc…`, Competition division). v106 is
+`competing/benched` (no longer champion, benched by supersession). v107 = v106's fixes +
+the self-hunt fix, A/B-verified (imposter restored to v100 level; see below). Standings
+inherited from the damaged-v106 era: ~rank 14/16 — **watch whether rank/score climb over the
+next ~50-100 rounds now the imposter actually kills opponents instead of itself.**
+
+**Next-lever candidates (from the 2026-07-15 session):** (1) residual ~7-9% alive-seat
+vote_timeout (cheap telemetry dig, never done); (2) the social-rework crew-win question is
+STILL open — every A/B so far under-fired the LLM (~19-27% vs the 60% gate; shared Bedrock
+pool contention) — needs either low-contention timing or the quota fix; (3) mine v107's live
+rounds with coworld-hypothesis-miner / the top-3 advantage methodology
+(docs/top3-advantage-reporter-guidance.md).
 
 **What v106 is (the fix):** kills the v105 `no_vote`/vote_timeout regression. Root cause (replay-
 confirmed): v105's `self_alive` went **falsely False** — the one-shot self_color latch stuck a
@@ -61,8 +70,11 @@ is deterministic-only. NOTE: mid-A/B the platform 500'd on GET/POST /v2/experien
 ("Coworld Manifest tags Field required", ~15:55-16:45Z) then recovered; babysitter drained the
 stuck batches.
 
-**AWAITING HUMAN GATE: submit v107 to Crewrift Prime** to evict the damaged v106 champion
-(rank 14/16, hunting its own sprite in imposter rounds). Recommendation: submit.
+**v107 SUBMITTED (James's go-ahead) + QUALIFIED + CHAMPION (2026-07-15 17:10Z, ~5 min
+qualifier):** `sub_acd40308…`, membership `lpm_fd1323fc…` `competing/active` champ=True;
+v106 → `competing/benched`. (Ops note for next submit: the skill's `monitor --watch` again
+terminated on the OLD champion's 'competing' — use a targeted by-pv-id poller,
+`.tmp/poll_v107_qualify.py` is the template.)
 
 **Next action: when the 4 watchers drain (~10-15 min), (1) confirm vote_timeout→~0 on v106; (2) run
 compare.py role-split. If clean, the v105 social rework (minus this bug) is worth a powered ~300/arm
