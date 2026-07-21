@@ -107,7 +107,7 @@ def test_catalog_tiers_distances_and_vias() -> None:
         elif tier == "far":
             assert d > 450, f"{name}: {d:.0f} yd is not far"
         else:
-            assert tier == "stage", f"{name}: unknown tier {tier}"
+            assert tier in ("stage", "hard"), f"{name}: unknown tier {tier}"
         for via_name in via:
             assert via_name in WAYPOINT_CATALOG, f"{name}: unknown via {via_name}"
             assert via_name != name

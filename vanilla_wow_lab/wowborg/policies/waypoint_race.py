@@ -60,30 +60,39 @@ WAYPOINT_CATALOG: dict[str, tuple[float, float, float, str, tuple[str, ...]]] = 
     "field-shelf-3":      (-482.2, -4216.1, 50.1, "stage", ()),
     "field-shelf-4":      (-457.3, -4156.4, 47.6, "stage", ()),
     "south-road-mid":     (-100.0, -4980.0, 20.0, "stage", ()),  # authored Sen'jin approach
-    # --- mid: rim, mesa, gate corridor (150-450 yd) ---
-    # The east field is entered along the authored shelf route (the direct chord clips
-    # "the steep choke around x=-550..-594" — profile comment); Hana'zua and Sarkoth
-    # continue from inside the field.
-    "east-scorpid-field": (-405.0, -4118.0, 51.0, "mid",
-                           ("scorpid-field-edge", "field-shelf-1", "field-shelf-2",
-                            "field-shelf-3", "field-shelf-4")),
-    "hanazua-rock":       (-397.8, -4109.0, 50.3, "mid",
-                           ("scorpid-field-edge", "field-shelf-1", "field-shelf-2",
-                            "field-shelf-3", "field-shelf-4")),
-    "sarkoth-mesa":       (-547.3, -4103.9, 70.1, "mid",
-                           ("scorpid-field-edge", "field-shelf-1", "field-shelf-2",
-                            "field-shelf-3", "field-shelf-4", "hanazua-rock")),
+    # --- mid: rim / gate corridor (150-450 yd) ---
     "gate-corridor":      (-359.7, -4309.8, 49.9, "mid", ()),    # authored valley-exit node
-    "northwest-ridge":    (-753.6, -4143.2, 38.8, "mid", ("boar-yard",)),
+    "field-shelf-far":    (-457.3, -4156.4, 47.6, "mid",
+                           ("scorpid-field-edge", "field-shelf-1", "field-shelf-2",
+                            "field-shelf-3")),  # deepest reliably-reached shelf point
     # --- far: out the gate (> 450 yd; real Detour road work) ---
     # Authored Sen'jin approach: gate → the (-100,-4980) road bend → the village.
     "razor-hill-road":    (-825.6, -4920.8, 19.7, "far",
                            ("gate-corridor", "south-road-mid")),
     "senjin-village":     (-797.5, -4921.2, 23.0, "far",
                            ("gate-corridor", "south-road-mid", "razor-hill-road")),
+    # --- hard: unreliable at this executor's pace — 4 hosted batches of evidence
+    # (northwest-ridge 0/8 completions; the east-field family ~2/12 even with the full
+    # authored shelf chain). Sampled ONLY by stress courses (count 0 by default); kept
+    # because they're the benchmark for future navigation improvements. ---
+    "east-scorpid-field": (-405.0, -4118.0, 51.0, "hard",
+                           ("scorpid-field-edge", "field-shelf-1", "field-shelf-2",
+                            "field-shelf-3", "field-shelf-4")),
+    "hanazua-rock":       (-397.8, -4109.0, 50.3, "hard",
+                           ("scorpid-field-edge", "field-shelf-1", "field-shelf-2",
+                            "field-shelf-3", "field-shelf-4")),
+    "sarkoth-mesa":       (-547.3, -4103.9, 70.1, "hard",
+                           ("scorpid-field-edge", "field-shelf-1", "field-shelf-2",
+                            "field-shelf-3", "field-shelf-4", "hanazua-rock")),
+    "northwest-ridge":    (-753.6, -4143.2, 38.8, "hard", ("boar-yard",)),
 }
 
-DEFAULT_SUBSET_BY_TIER = {"near": 2, "mid": 2, "far": 1}
+# Course composition for a ~970s episode at the executor's observed ~2 yd/s: near legs
+# run 60-130s, mid 130-180s, a far leg 350-650s. 3 near + 1 mid + 1 far ≈ 800-950s of
+# racing — full course, tight but completable. "hard" defaults to 0 (stress-only);
+# override via WOWBORG_COURSE_TIERS (JSON, e.g. {"near":1,"mid":1,"hard":2}).
+DEFAULT_SUBSET_BY_TIER = {"near": 3, "mid": 1, "far": 1}
+COURSE_TIERS_ENV = "WOWBORG_COURSE_TIERS"
 
 WAYPOINTS_ENV = "WOWBORG_WAYPOINTS"
 WAYPOINTS_FILE_ENV = "WOWBORG_WAYPOINTS_FILE"
@@ -120,13 +129,29 @@ def waypoint_via(name: str) -> tuple[str, ...]:
     return WAYPOINT_CATALOG[name][4] if name in WAYPOINT_CATALOG else ()
 
 
+def course_tiers() -> dict[str, int]:
+    raw = os.environ.get(COURSE_TIERS_ENV)
+    if raw:
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, dict) and all(
+                isinstance(v, int) and v >= 0 for v in parsed.values()
+            ):
+                return parsed
+            log("ignoring malformed WOWBORG_COURSE_TIERS (need {tier: count})")
+        except json.JSONDecodeError as exc:
+            log(f"ignoring unparseable WOWBORG_COURSE_TIERS: {exc}")
+    return dict(DEFAULT_SUBSET_BY_TIER)
+
+
 def sample_course(rng: random.Random) -> list[tuple[str, list[float]]]:
     """Random subset of the catalog (tier-balanced), in random order.
 
-    Stage-tier nodes are routing infrastructure, never race targets.
+    Stage-tier nodes are routing infrastructure, never race targets; hard-tier nodes
+    are sampled only when WOWBORG_COURSE_TIERS asks for them.
     """
     course: list[tuple[str, list[float]]] = []
-    for tier, count in DEFAULT_SUBSET_BY_TIER.items():
+    for tier, count in course_tiers().items():
         names = [n for n, entry in WAYPOINT_CATALOG.items() if entry[3] == tier]
         for name in rng.sample(names, min(count, len(names))):
             course.append((name, waypoint_point(name)))
