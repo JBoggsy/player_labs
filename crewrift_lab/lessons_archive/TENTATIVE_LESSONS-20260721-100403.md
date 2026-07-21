@@ -1,6 +1,6 @@
 # Crewrift tentative lessons — session buffer
 
-**Session started:** 2026-07-21 10:04. This is THIS SESSION's lesson buffer. Write candidate
+**Session started:** 2026-07-21 09:18. This is THIS SESSION's lesson buffer. Write candidate
 lessons here **as you go** — eagerly and noisily; most will be noise and that's
 fine. At the next session start, a hook archives this file automatically to
 [`lessons_archive/`](lessons_archive/) and creates a fresh one — nothing you
@@ -17,3 +17,5 @@ buffers — not in-session hit counts — is the graduation signal.
 concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
+### A doc written mid-session gets referenced (WORKING_CONTEXT, lessons) but not indexed — audit docs/README.md before committing new docs
+Evidence: top3-advantage-reporter-guidance.md sat untracked and unindexed while WORKING_CONTEXT.md and a lessons archive already linked to it; the pre-commit doc audit caught that docs/README.md's table was the only place it was missing. The doc-index table is the discoverability surface — a doc absent from it is invisible to a fresh agent.
