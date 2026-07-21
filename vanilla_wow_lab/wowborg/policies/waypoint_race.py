@@ -38,24 +38,32 @@ import os
 import random
 import time
 
-# name -> (x, y, z, tier). Sources: durotar_troll_shaman.nim (authored route nodes,
-# trainer/vendor spawns, hunt-area anchors); spawn cross-checked against our own
+# name -> (x, y, z, tier, via). Sources: durotar_troll_shaman.nim (authored route
+# nodes, trainer/vendor spawns, hunt-area anchors); spawn cross-checked against our own
 # hosted traces. All map 1 (Kalimdor/Durotar).
-WAYPOINT_CATALOG: dict[str, tuple[float, float, float, str]] = {
+#
+# `via` = staging waypoints (catalog names, visited loosely en route) for targets the
+# executor cannot route to DIRECTLY — mirrors the authored profile's approachRoutes.
+# v6 race evidence: sarkoth-mesa / east-scorpid-field / northwest-ridge DNF'd with
+# "no goal-relative progress" at consistent distances (the valley wall / disconnected
+# mesa); the profile itself routes them through these staging nodes.
+WAYPOINT_CATALOG: dict[str, tuple[float, float, float, str, tuple[str, ...]]] = {
     # --- near: the Valley of Trials bowl (< 150 yd from spawn) ---
-    "spawn-plaza":        (-618.5, -4251.7, 38.7, "near"),   # fresh-start spawn
-    "valley-trainers":    (-623.9, -4203.9, 38.4, "near"),   # class-trainer row (Shikrik spawn)
-    "boar-yard":          (-715.0, -4240.0, 40.0, "near"),   # Mottled Boar hunt anchor
-    "sleeping-peons":     (-628.5, -4340.7, 41.8, "near"),   # Lazy Peons field (south)
-    "scorpid-field-edge": (-600.1, -4186.2, 41.3, "near"),   # staging node toward the east field
+    "spawn-plaza":        (-618.5, -4251.7, 38.7, "near", ()),   # fresh-start spawn
+    "valley-trainers":    (-623.9, -4203.9, 38.4, "near", ()),   # class-trainer row
+    "boar-yard":          (-715.0, -4240.0, 40.0, "near", ()),   # Mottled Boar anchor
+    "sleeping-peons":     (-628.5, -4340.7, 41.8, "near", ()),   # Lazy Peons field
+    "scorpid-field-edge": (-600.1, -4186.2, 41.3, "near", ()),   # authored staging node
     # --- mid: rim, mesa, gate corridor (150-450 yd) ---
-    "east-scorpid-field": (-405.0, -4118.0, 51.0, "mid"),    # Hana'zua's scorpid flats
-    "sarkoth-mesa":       (-547.3, -4103.9, 70.1, "mid"),    # Sarkoth's den atop the mesa (elevation!)
-    "gate-corridor":      (-359.7, -4309.8, 49.9, "mid"),    # authored route node at the valley exit
-    "northwest-ridge":    (-753.6, -4143.2, 38.8, "mid"),    # NW hunt pocket past the boar yard
+    "east-scorpid-field": (-405.0, -4118.0, 51.0, "mid", ("scorpid-field-edge",)),
+    "hanazua-rock":       (-397.8, -4109.0, 50.3, "mid", ("scorpid-field-edge",)),
+    "sarkoth-mesa":       (-547.3, -4103.9, 70.1, "mid",
+                           ("scorpid-field-edge", "hanazua-rock")),  # mesa entered from the east field
+    "gate-corridor":      (-359.7, -4309.8, 49.9, "mid", ()),    # authored valley-exit node
+    "northwest-ridge":    (-753.6, -4143.2, 38.8, "mid", ("boar-yard",)),
     # --- far: out the gate (> 450 yd; real Detour road work) ---
-    "razor-hill-road":    (-825.6, -4920.8, 19.7, "far"),    # Razor Hill approach (authored node)
-    "senjin-village":     (-797.5, -4921.2, 23.0, "far"),    # Sen'jin Village center
+    "razor-hill-road":    (-825.6, -4920.8, 19.7, "far", ("gate-corridor",)),
+    "senjin-village":     (-797.5, -4921.2, 23.0, "far", ("gate-corridor",)),
 }
 
 DEFAULT_SUBSET_BY_TIER = {"near": 2, "mid": 2, "far": 1}
@@ -82,14 +90,22 @@ def log(message: str) -> None:
     print(f"WOWBORG-POLICY {message}", flush=True)
 
 
+def waypoint_point(name: str) -> list[float]:
+    x, y, z, _, _ = WAYPOINT_CATALOG[name]
+    return [x, y, z]
+
+
+def waypoint_via(name: str) -> tuple[str, ...]:
+    return WAYPOINT_CATALOG[name][4] if name in WAYPOINT_CATALOG else ()
+
+
 def sample_course(rng: random.Random) -> list[tuple[str, list[float]]]:
     """Random subset of the catalog (tier-balanced), in random order."""
     course: list[tuple[str, list[float]]] = []
     for tier, count in DEFAULT_SUBSET_BY_TIER.items():
-        names = [n for n, (_, _, _, t) in WAYPOINT_CATALOG.items() if t == tier]
+        names = [n for n, entry in WAYPOINT_CATALOG.items() if entry[3] == tier]
         for name in rng.sample(names, min(count, len(names))):
-            x, y, z, _ = WAYPOINT_CATALOG[name]
-            course.append((name, [x, y, z]))
+            course.append((name, waypoint_point(name)))
     rng.shuffle(course)
     return course
 
@@ -178,9 +194,21 @@ class WaypointRacePolicy:
         leg_started_at: float | None = None
         leg_origin: list[float] | None = None
         leg_budget: float | None = None
+        # Staging queue for the current leg: via nodes not yet passed. The race clock
+        # covers the whole leg (via + final) — staging is a routing aid, not a split.
+        stage_queue: list[tuple[str, list[float]]] = []
+
+        def build_stages(name: str, current_x: float, current_y: float) -> list[tuple[str, list[float]]]:
+            """Ordered staging nodes for this target, skipping ones we're already at."""
+            stages = []
+            for via_name in waypoint_via(name):
+                point = waypoint_point(via_name)
+                if distance_2d(current_x, current_y, point[0], point[1]) > ARRIVAL_TOLERANCE_YARDS * 2:
+                    stages.append((via_name, point))
+            return stages
 
         def advance(completed_leg: bool, loc, name: str, target: list[float]) -> None:
-            nonlocal index, moves, no_progress_streak, best_distance, leg_started_at, leg_origin, leg_budget
+            nonlocal index, moves, no_progress_streak, best_distance, leg_started_at, leg_origin, leg_budget, stage_queue
             index += 1
             if index >= len(self.course):
                 index = 0
@@ -196,9 +224,14 @@ class WaypointRacePolicy:
             leg_started_at = time.monotonic()
             leg_origin = [loc.x, loc.y]
             next_name, next_target = self.course[index]
-            leg_budget = LEG_BUDGET_BASE_SECONDS + LEG_BUDGET_SECONDS_PER_YARD * distance_2d(
-                loc.x, loc.y, next_target[0], next_target[1]
-            )
+            stage_queue = build_stages(next_name, loc.x, loc.y)
+            # Budget covers the staged path, not the straight line.
+            path_yd = 0.0
+            px, py = loc.x, loc.y
+            for _, sp in [*stage_queue, (next_name, next_target)]:
+                path_yd += distance_2d(px, py, sp[0], sp[1])
+                px, py = sp[0], sp[1]
+            leg_budget = LEG_BUDGET_BASE_SECONDS + LEG_BUDGET_SECONDS_PER_YARD * path_yd
 
         while time.monotonic() < until:
             remaining = until - time.monotonic()
@@ -217,7 +250,20 @@ class WaypointRacePolicy:
 
             name, target = self.course[index]
             loc = obs.location
+
+            # Staging: clear passed via nodes; steer toward the first remaining one.
+            while stage_queue and distance_2d(
+                loc.x, loc.y, stage_queue[0][1][0], stage_queue[0][1][1]
+            ) <= ARRIVAL_TOLERANCE_YARDS * 2:
+                passed_name = stage_queue.pop(0)[0]
+                log(f"{name}: passed staging node {passed_name}")
+                no_progress_streak = 0
+                best_distance = None
+            steer_name, steer_point = (
+                stage_queue[0] if stage_queue else (name, target)
+            )
             to_target = distance_2d(loc.x, loc.y, target[0], target[1])
+            to_steer = distance_2d(loc.x, loc.y, steer_point[0], steer_point[1])
 
             # Arrived?
             if to_target <= ARRIVAL_TOLERANCE_YARDS:
@@ -277,11 +323,15 @@ class WaypointRacePolicy:
             if leg_started_at is None:
                 leg_started_at = time.monotonic()
                 leg_origin = [loc.x, loc.y]
+                stage_queue = build_stages(name, loc.x, loc.y)
+                steer_name, steer_point = stage_queue[0] if stage_queue else (name, target)
+                to_steer = distance_2d(loc.x, loc.y, steer_point[0], steer_point[1])
                 leg_budget = LEG_BUDGET_BASE_SECONDS + LEG_BUDGET_SECONDS_PER_YARD * to_target
 
-            # Progress bookkeeping: did the last settlement move us closer?
-            if best_distance is None or to_target < best_distance - PROGRESS_EPSILON_YARDS:
-                best_distance = to_target
+            # Progress bookkeeping: did the last settlement move us toward the CURRENT
+            # steering point (staging node or final target)?
+            if best_distance is None or to_steer < best_distance - PROGRESS_EPSILON_YARDS:
+                best_distance = to_steer
                 no_progress_streak = 0
             else:
                 no_progress_streak += 1
@@ -297,7 +347,9 @@ class WaypointRacePolicy:
                     continue
 
             moves += 1
-            request_id = bridge.select_move_to(frame, target[0], target[1], target[2], loc.map_id)
+            request_id = bridge.select_move_to(
+                frame, steer_point[0], steer_point[1], steer_point[2], loc.map_id
+            )
             if request_id is None:
                 log(f"{name}: move refused by mask (move {moves}); taking recommended")
                 request_id = bridge.select_recommended(frame)

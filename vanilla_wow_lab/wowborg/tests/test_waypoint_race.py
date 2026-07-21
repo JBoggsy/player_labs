@@ -50,6 +50,7 @@ class TeleportBridge:
         self._frame = 0
         self.fail_moves = fail_moves
         self.says: list[str] = []
+        self.moves: list[list[float]] = []
         self._tracer = None
 
     def say(self, text: str) -> str | None:
@@ -62,6 +63,7 @@ class TeleportBridge:
         return FakeFrame(frame_id=self._frame, observation=FakeObservation(location=loc))
 
     def select_move_to(self, frame, x, y, z, map_id) -> str:
+        self.moves.append([x, y, z])
         if not self.fail_moves:
             self.position = [x, y, z]
         return f"frame-{frame.frame_id}"
@@ -92,11 +94,11 @@ SQUARE = [
 # ---- catalog & course sampling ----------------------------------------------------
 
 
-def test_catalog_tiers_and_distances() -> None:
+def test_catalog_tiers_distances_and_vias() -> None:
     import math
 
     spawn = WAYPOINT_CATALOG["spawn-plaza"]
-    for name, (x, y, z, tier) in WAYPOINT_CATALOG.items():
+    for name, (x, y, z, tier, via) in WAYPOINT_CATALOG.items():
         d = math.hypot(x - spawn[0], y - spawn[1])
         if tier == "near":
             assert d < 150, f"{name}: {d:.0f} yd is not near"
@@ -104,6 +106,9 @@ def test_catalog_tiers_and_distances() -> None:
             assert 100 <= d <= 500, f"{name}: {d:.0f} yd is not mid"
         else:
             assert d > 450, f"{name}: {d:.0f} yd is not far"
+        for via_name in via:
+            assert via_name in WAYPOINT_CATALOG, f"{name}: unknown via {via_name}"
+            assert via_name != name
 
 
 def test_sample_course_is_tier_balanced_and_seeded() -> None:
@@ -118,6 +123,30 @@ def test_sample_course_is_tier_balanced_and_seeded() -> None:
         assert tiers.count(tier) == count
     names = [n for n, _ in course_a]
     assert len(set(names)) == len(names)  # no duplicates
+
+
+def test_staged_leg_routes_via_staging_nodes() -> None:
+    from wowborg.policies.waypoint_race import waypoint_point
+
+    # course: spawn → sarkoth-mesa (staged via scorpid-field-edge then hanazua-rock)
+    course = [
+        ("spawn-plaza", waypoint_point("spawn-plaza")),
+        ("sarkoth-mesa", waypoint_point("sarkoth-mesa")),
+    ]
+    policy = WaypointRacePolicy(course=course, rng=random.Random(1))
+    bridge = TeleportBridge()
+    bridge.position = list(waypoint_point("spawn-plaza"))
+    policy.run(bridge, until=time.monotonic() + 0.5)
+    # the mesa leg must be reached THROUGH its staging chain: the bridge saw moves to
+    # the staging nodes before the final point
+    targets = [(round(m[0], 1), round(m[1], 1)) for m in bridge.moves]
+    edge = waypoint_point("scorpid-field-edge")
+    rock = waypoint_point("hanazua-rock")
+    mesa = waypoint_point("sarkoth-mesa")
+    assert (round(edge[0], 1), round(edge[1], 1)) in targets
+    assert (round(rock[0], 1), round(rock[1], 1)) in targets
+    assert (round(mesa[0], 1), round(mesa[1], 1)) in targets
+    assert policy.legs_completed >= 2
 
 
 def test_load_course_env_override_and_seed(monkeypatch) -> None:
