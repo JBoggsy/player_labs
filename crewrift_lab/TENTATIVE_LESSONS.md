@@ -156,3 +156,14 @@ Note: env vars (seed + trace groups) bake at UPLOAD via --secret-env, NOT per-xr
 CREWBORG_TRACE_GROUPS=all silently drops honor_* from the artifact (they're non-domain. → lean-filtered).
 The vote-veto/posterior-pin only *fires* when the posterior would otherwise vote a trusted member, so
 it won't appear in every game (a clean crewmate never becomes a vote target).
+
+### A worktree can be removed mid-session by another actor — commits survive only if merged/on a branch
+
+Evidence: Mid-session, the `worktree-crewrift-honor-society` worktree dir was deleted and its branch
+gone (shell cwd reset to repo root). Recovered via reflog: another session had MERGED the branch into
+main (`98439ca Merge branch 'worktree-crewrift-honor-society'`) — and independently landed the same
+stale-PLAYER_COLOR_NAMES root cause (`ffe9759`, a v107 10-round audit). Both my commits were reachable
+from main (`git merge-base --is-ancestor <sha> HEAD`). Lesson: commit early/often on the worktree
+branch (uncommitted work would have been LOST when the dir vanished), and if a worktree disappears,
+check `git reflog --all | grep <branch/sha>` + `git fsck --no-reflogs | grep dangling` before assuming
+loss — a parallel session may have merged it. Continue from the main checkout with absolute paths.
