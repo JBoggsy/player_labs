@@ -289,14 +289,17 @@ class WaypointRacePolicy:
             name, target = self.course[index]
             loc = obs.location
 
-            # Staging: clear passed via nodes; steer toward the first remaining one.
-            while stage_queue and distance_2d(
-                loc.x, loc.y, stage_queue[0][1][0], stage_queue[0][1][1]
-            ) <= ARRIVAL_TOLERANCE_YARDS * 2:
-                passed_name = stage_queue.pop(0)[0]
-                log(f"{name}: passed staging node {passed_name}")
+            # Staging is POSITIONAL, recomputed every frame: steer at the first chain
+            # node ahead of us. (v8 evidence: a pop-once queue broke when a planner
+            # recovery relocated the bot back inside the valley — the popped gate
+            # node never re-entered and the bot tried to cross the wall directly.)
+            new_stages = build_stages(name, loc.x, loc.y)
+            if [s[0] for s in new_stages] != [s[0] for s in stage_queue]:
+                stage_queue = new_stages
                 no_progress_streak = 0
                 best_distance = None
+                if stage_queue:
+                    log(f"{name}: staging via {[s[0] for s in stage_queue]}")
             steer_name, steer_point = (
                 stage_queue[0] if stage_queue else (name, target)
             )
