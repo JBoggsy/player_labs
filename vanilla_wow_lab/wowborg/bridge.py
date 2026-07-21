@@ -100,7 +100,7 @@ class ShimBridge:
         )
         try:
             accepted = self._client.submit_goal(request)
-        except NimControlError as exc:
+        except (OSError, NimControlError) as exc:
             self._tracer.emit("goal_rejected", error=str(exc))
             return False
         self._goal_armed = True
@@ -115,6 +115,17 @@ class ShimBridge:
     def close(self) -> None:
         self._client.close()
 
+    def _reconnect(self) -> None:
+        """Drop and re-dial the control socket after any socket-level error.
+
+        socket.timeout is an OSError, NOT a NimControlError — v9 hosted evidence: one
+        5s read timeout escaped the old except clauses and ended a 970s session at
+        158s. The Nim server accepts fresh connections; state lives server-side."""
+        try:
+            self._client.close()
+        except OSError:
+            pass
+
     # ---- observations ----------------------------------------------------------
 
     def wait_for_frame(self, *, timeout_s: float = 60.0) -> EnvironmentFrame | None:
@@ -123,8 +134,9 @@ class ShimBridge:
         while time.monotonic() < deadline:
             try:
                 result = self._client.status(include_environment_frame=True)
-            except NimControlError as exc:
+            except (OSError, NimControlError) as exc:
                 self._tracer.emit("status_error", error=str(exc))
+                self._reconnect()
                 time.sleep(FRAME_POLL_SECONDS)
                 continue
             if isinstance(result, EnvironmentFrame) and result.action_ready:
@@ -141,7 +153,8 @@ class ShimBridge:
         """
         try:
             result = self._client.status(include_environment_frame=True)
-        except NimControlError:
+        except (OSError, NimControlError):
+            self._reconnect()
             return None
         if not isinstance(result, EnvironmentFrame):
             return None
@@ -193,7 +206,8 @@ class ShimBridge:
         while time.monotonic() < deadline:
             try:
                 settled = self._client.last_settlement()
-            except NimControlError:
+            except (OSError, NimControlError):
+                self._reconnect()
                 settled = None
             if settled is not None and settled.frame_id >= frame_id:
                 outcome = ActionOutcome(
@@ -236,7 +250,8 @@ class ShimBridge:
         self._tracer.emit("say", text=text)
         try:
             result = self._client.status(include_environment_frame=True)
-        except NimControlError:
+        except (OSError, NimControlError):
+            self._reconnect()
             return None
         if not isinstance(result, EnvironmentFrame) or not result.action_ready:
             return None
@@ -271,6 +286,16 @@ class ShimBridge:
         )
         try:
             self._client.select(request)
+        except OSError as exc:
+            self._reconnect()
+            self._tracer.emit(
+                "selection_rejected",
+                label=label,
+                action_kind=action.kind,
+                frame_id=frame.frame_id,
+                error=f"socket: {exc!r}",
+            )
+            return None
         except NimControlError as exc:
             self._tracer.emit(
                 "selection_rejected",

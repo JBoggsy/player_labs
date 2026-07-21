@@ -178,7 +178,17 @@ def main(argv: list[str] | None = None) -> int:
         policy = build_policy(policy_name)
         deadline = time.monotonic() + duration_s
         try:
-            policy.run(bridge, until=deadline)
+            # The policy loop must survive transient bridge/socket failures for the
+            # whole session (v9: one escaped TimeoutError cost 812s of race time).
+            while time.monotonic() < deadline:
+                try:
+                    policy.run(bridge, until=deadline)
+                    break
+                except Exception as exc:  # noqa: BLE001
+                    log(f"policy loop crashed ({exc!r}); reconnecting and resuming")
+                    tracer.emit("policy_restart", error=repr(exc))
+                    bridge._reconnect()
+                    time.sleep(2.0)
         finally:
             tracer.emit("session_end", summary=getattr(policy, "summary", lambda: None)())
             bridge.close()
