@@ -24,6 +24,25 @@ the self-hunt fix, A/B-verified (imposter restored to v100 level; see below). St
 inherited from the damaged-v106 era: ~rank 14/16 — **watch whether rank/score climb over the
 next ~50-100 rounds now the imposter actually kills opponents instead of itself.**
 
+**2026-07-21 LIVE-ROUND AUDIT (10 rounds, 199 eps, warehouse /tmp/wh10, survey /tmp/survey10.html):**
+v107 is rank **14/18** (52.4% WR; leader 60.8%). Role split in the sample: crew 27% (11/41, field
+median ~32%), imposter 41% (7/17, field ~55-77%). Three mechanistic findings:
+1. **SELF-ACCUSATION BUG (new, smoking gun):** crewborg *as crew* chats "orange sus: lurking on a
+   vent, they were tailing me. vote orange" — its OWN color — 5 msgs / 2 eps
+   (ereq_94c9f0fc: field then ejected it; ereq_e502d991). The deterministic accusation template can
+   select self as suss target (self_color missing from the candidate filter — same class as the
+   v106 self-hunt bug, but in the meeting/accusation path). It skip-votes while doing it, so the
+   vote self-exclusion works; the CHAT target pool doesn't exclude self.
+2. **Imposter too conspicuous + too timid:** ejected 53% of imposter seats (field median ~31%,
+   best 0-20%); votes-received/seat 2.47; kills/seat 1.29 (top: 1.9); isolated-with-crew kill
+   conversion 19% vs 34-50% for winners (e.g. 1410-tick isolated interval unconverted in
+   ereq_1cd1f049). Opponents' "X was tailing me" detectors fire on its follow-heavy stalking.
+3. **Crew draws suspicion:** votes-received/seat 1.37 as crew (2nd-worst), 15% of crew seats
+   ejected — opponents (and framing imposters) cite "tailing me / lurking on a vent", i.e. its
+   crew movement pattern trips the same detectors.
+   Also: league telemetry shows LLM fired only ~38% (154 decision / 248 fallback, 236 Bedrock
+   throttle lines over 58 eps) — production meetings mostly run the deterministic path.
+
 **Next-lever candidates (from the 2026-07-15 session):** (1) residual ~7-9% alive-seat
 vote_timeout (cheap telemetry dig, never done); (2) the social-rework crew-win question is
 STILL open — every A/B so far under-fired the LLM (~19-27% vs the 60% gate; shared Bedrock
