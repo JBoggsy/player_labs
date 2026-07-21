@@ -1,15 +1,20 @@
 """Crewrift Honor Society tests (strategy/honor_society.py + the meeting hooks).
 
 The safety contract under test, per docs/designs/honor-society.md: flag off => no
-behaviour change; crew announces the HS1 line once (never imposters, never dead);
-valid claims become trusted crew the vote/accuse paths spare; witnessed evidence
-overrides trust; replays and stale/tampered announcements are rejected; liars are
-ledgered.
+behaviour change; crew announces the compact HS1 line once (never imposters, never
+dead); valid claims from KNOWN members become trusted crew the vote/accuse paths
+spare; witnessed evidence overrides trust; stale/tampered/cross-seat announcements
+are rejected; liars are ledgered.
+
+Wire format is the real HS1 protocol (verified against the live sasmith champion,
+2026-07-21): compact ``HS1 <sig>`` over ``HS1|<ts5>|<color>``; legacy
+``HS1 <ts> <nonce> <pub> <sig>`` over ``HS1|<ts>|<nonce>|<color>`` still accepted.
 """
 
 from __future__ import annotations
 
 import base64
+import json
 import time
 
 import pytest
@@ -21,14 +26,20 @@ from crewrift.crewborg.types import ActionState, Belief, ChatEvent, PlayerEvent,
 
 SEED_B64 = base64.b64encode(b"\x01" * 32).decode()
 
+# Alex Smith's real registered public key (data/honor_members.json), unpadded b64url.
+ALEX_PUB = "WxWJy6ZOjtSAPzoLBSGSgMIe0uC2b7mYke-7LRUJnf8"
+
 
 @pytest.fixture()
 def society_on(monkeypatch):
     monkeypatch.setenv(honor_society.ENV_FLAG, "1")
-    monkeypatch.setenv(honor_society.ENV_SEED, SEED_B64)
+    monkeypatch.setenv(honor_society.ENV_SECRET, SEED_B64)
+    monkeypatch.delenv(honor_society.ENV_SEED, raising=False)
     honor_society.reset_identity_for_tests()
+    honor_society.reset_members_for_tests()
     yield
     honor_society.reset_identity_for_tests()
+    honor_society.reset_members_for_tests()
 
 
 class _Emit:
@@ -43,18 +54,36 @@ class _Emit:
         self.counters.append(name)
 
 
-def _other_member_announce(color: str, *, now: float | None = None) -> tuple[str, str]:
-    """A second member's (pub_b64, HS1 announce text) built with an independent key."""
+def _member_key():
+    """A fresh Ed25519 (signing_key, canonical_pub_b64url) pair for a test member."""
 
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
     from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
     key = Ed25519PrivateKey.generate()
-    pub = base64.b64encode(key.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw)).decode()
+    pub_raw = key.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw)
+    return key, base64.urlsafe_b64encode(pub_raw).decode().rstrip("=")
+
+
+def _compact_announce(key, color: str, *, now: float | None = None) -> str:
+    """A member's compact ``HS1 <sig>`` line signed with ``key`` over ts5|color."""
+
+    ts5 = (int(now if now is not None else time.time()) // honor_society.QUANTUM_SECONDS) * honor_society.QUANTUM_SECONDS
+    sig = base64.urlsafe_b64encode(key.sign(f"HS1|{ts5}|{color.lower()}".encode())).decode().rstrip("=")
+    return f"HS1 {sig}"
+
+
+def _legacy_announce(key, pub_b64: str, color: str, *, now: float | None = None) -> str:
     ts = int(now if now is not None else time.time())
-    nonce = base64.b64encode(b"\x02" * 6).decode()
-    sig = base64.b64encode(key.sign(f"HS1|{ts}|{nonce}|{color.lower()}".encode())).decode()
-    return pub, f"HS1 {ts} {nonce} {pub} {sig}"
+    nonce = base64.urlsafe_b64encode(b"\x02" * 6).decode().rstrip("=")
+    sig = base64.urlsafe_b64encode(key.sign(f"HS1|{ts}|{nonce}|{color.lower()}".encode())).decode().rstrip("=")
+    return f"HS1 {ts} {nonce} {pub_b64} {sig}"
+
+
+def _registry(tmp_path, members) -> str:
+    reg = tmp_path / "members.json"
+    reg.write_text(json.dumps({"schema": honor_society.MEMBERS_SCHEMA, "members": members}))
+    return str(reg)
 
 
 def _crew_belief(**kw) -> Belief:
@@ -67,15 +96,27 @@ def _crew_belief(**kw) -> Belief:
 # --- gating ---------------------------------------------------------------------
 
 
-def test_disabled_without_flag(monkeypatch) -> None:
+def test_flag_default_on(monkeypatch) -> None:
+    # HS defaults ON: no flag set => enabled (receive-always). Explicit false disables.
     monkeypatch.delenv(honor_society.ENV_FLAG, raising=False)
+    monkeypatch.setenv(honor_society.ENV_SECRET, SEED_B64)
+    honor_society.reset_identity_for_tests()
+    assert honor_society.enabled()
+    for off in ("0", "false", "no", "off"):
+        monkeypatch.setenv(honor_society.ENV_FLAG, off)
+        honor_society.reset_identity_for_tests()
+        assert not honor_society.enabled()
+
+
+def test_disabled_when_flag_false(monkeypatch) -> None:
+    monkeypatch.setenv(honor_society.ENV_FLAG, "0")
     honor_society.reset_identity_for_tests()
     assert not honor_society.enabled()
     assert not honor_society.vote_veto(_crew_belief(), "red")
 
 
 def test_flag_off_meeting_behaviour_unchanged(monkeypatch) -> None:
-    monkeypatch.delenv(honor_society.ENV_FLAG, raising=False)
+    monkeypatch.setenv(honor_society.ENV_FLAG, "0")
     honor_society.reset_identity_for_tests()
     mode = AttendMeetingMode()
     belief = _crew_belief()
@@ -85,83 +126,159 @@ def test_flag_off_meeting_behaviour_unchanged(monkeypatch) -> None:
     assert chat.kind == "chat" and "HS1" not in (chat.text or "")  # normal accusation, no announce
 
 
-# --- HS1 protocol -----------------------------------------------------------------
+# --- HS1 protocol: our own compact announce -------------------------------------
 
 
-def test_announce_is_exactly_157_chars_and_verifies(society_on) -> None:
-    text = honor_society.announce_text("blue")
-    assert len(text) == 157  # the HS1 budget: 4+10+1+8+1+44+1+88
-    msg = honor_society.parse(text)
-    assert msg is not None
-    ts, nonce, pub, sig = msg
-    assert honor_society.verify_announce(ts, nonce, pub, sig, "blue") == "ok"
-    # Bound to the announcer's color: a re-broadcast from another seat fails.
-    assert honor_society.verify_announce(ts, nonce, pub, sig, "red") == "bad_sig"
-    # Tampered signature fails.
-    bad_sig = sig[:-3] + ("AA=" if not sig.endswith("AA=") else "BB=")
-    assert honor_society.verify_announce(ts, nonce, pub, bad_sig, "blue") == "bad_sig"
-
-
-def test_stale_announce_is_rejected(society_on) -> None:
+def test_compact_announce_is_two_tokens_and_self_verifies(society_on, tmp_path, monkeypatch) -> None:
+    # Register our own test key so the compact brute-force can verify it.
+    pub = honor_society.public_key_b64()
+    monkeypatch.setenv(honor_society.ENV_MEMBERS, _registry(tmp_path, [{"pub": pub, "label": "self-test"}]))
+    honor_society.reset_members_for_tests()
     now = time.time()
-    text = honor_society.announce_text("blue", now=now - 100)
-    ts, nonce, pub, sig = honor_society.parse(text)
-    assert honor_society.verify_announce(ts, nonce, pub, sig, "blue", receipt_time=now) == "stale"
-    assert honor_society.verify_announce(ts, nonce, pub, sig, "blue", receipt_time=now - 95) == "ok"
+    text = honor_society.announce_text("blue", now=now)
+    parts = text.split()
+    assert parts[0] == "HS1" and len(parts) == 2      # compact: HS1 <sig>
+    assert 88 <= len(text) <= 92                       # ~90 chars
+    parsed = honor_society.parse(text)
+    assert parsed is not None and parsed.form == "compact"
+    verdict, vpub = honor_society.verify(parsed, "blue", receipt_time=now)
+    assert verdict == "ok" and vpub == pub
+    # Bound to the announcer's color: verifying it as another seat's color fails.
+    assert honor_society.verify(parsed, "red", receipt_time=now)[0] == "bad_sig"
+
+
+def test_compact_freshness_window(society_on, tmp_path, monkeypatch) -> None:
+    pub = honor_society.public_key_b64()
+    monkeypatch.setenv(honor_society.ENV_MEMBERS, _registry(tmp_path, [{"pub": pub, "label": "self-test"}]))
+    honor_society.reset_members_for_tests()
+    now = time.time()
+    parsed = honor_society.parse(honor_society.announce_text("blue", now=now))
+    assert honor_society.verify(parsed, "blue", receipt_time=now)[0] == "ok"
+    assert honor_society.verify(parsed, "blue", receipt_time=now + 5)[0] == "ok"      # within window
+    assert honor_society.verify(parsed, "blue", receipt_time=now + 100)[0] == "bad_sig"  # stale => no match
 
 
 def test_parse_rejects_junk(society_on) -> None:
-    for junk in ("", "hello", "HS1", "HS1 123 n p s", "HS2 1751470000 nonce pub sig",
-                 "red sus: saw them vent", "HS1 notatime aaaaaaaa pub sig"):
+    for junk in ("", "hello", "HS1", "red sus: saw them vent",
+                 "HS1 a b c", "HS2 sig", "HS1 1 2 3 4 5 6"):
         assert honor_society.parse(junk) is None
+    # A well-formed compact shell parses but fails verification (no matching key).
+    parsed = honor_society.parse("HS1 " + base64.urlsafe_b64encode(b"\x00" * 64).decode().rstrip("="))
+    assert parsed is not None and honor_society.verify(parsed, "red")[0] == "bad_sig"
 
 
-# --- listening ------------------------------------------------------------------
+# --- listening: known members become trusted ------------------------------------
 
 
-def test_valid_claim_becomes_trusted_and_rebroadcast_is_rejected(society_on) -> None:
+def test_known_member_compact_claim_becomes_trusted(society_on, tmp_path, monkeypatch) -> None:
+    key, pub = _member_key()
+    monkeypatch.setenv(honor_society.ENV_MEMBERS, _registry(tmp_path, [{"pub": pub, "label": "peer"}]))
+    honor_society.reset_members_for_tests()
     belief = _crew_belief()
     now = time.time()
-    pub, announce = _other_member_announce("green", now=now)
-    belief.chat_log.append(ChatEvent(tick=5, speaker_color="green", text=announce))
-    # red re-broadcasts green's announce verbatim: the signature binds green's color.
-    belief.chat_log.append(ChatEvent(tick=6, speaker_color="red", text=announce))
+    belief.chat_log.append(ChatEvent(tick=5, speaker_color="green", text=_compact_announce(key, "green", now=now)))
     emit = _Emit()
     honor_society.process_chats(belief, emit, receipt_time=now)
     assert belief.society_trusted == {"green"}
-    assert belief.society_claims == {"green": pub}
-    # green's key is already bound, so red's copy dies as a suspected replay
-    # (first-poster-wins) before signature verification even matters.
-    assert any(name == "honor_replay_suspected" for name, _ in emit.events)
+    assert belief.society_known.get("green") == "peer"
+    assert belief.society_claims.get("green") == pub
+    assert any(name == "honor_known_member" for name, _ in emit.events)
 
 
-def test_processing_is_idempotent_across_ticks(society_on) -> None:
+def test_real_sasmith_signature_verifies(society_on) -> None:
+    """A REAL compact announcement captured from a live game (2026-07-21), signed
+    by sasmith as 'cyan' at ts5=1784664095. Proves the vendored registry + verify
+    path accept the actual champion's wire format end-to-end."""
+
+    honor_society.reset_members_for_tests()  # use the vendored data/honor_members.json (has alex-smith)
+    real_sig = "ya3nvOOQUpAQGzYdkvnliyPZ_pdi3ufxtzghEkAOWgiCLoPooMc6QIbwxLn9K7FctvFc7SnU2IIboQqU2z9SBw"
+    parsed = honor_society.parse(f"HS1 {real_sig}")
+    assert parsed is not None and parsed.form == "compact"
+    ts5 = 1784664095
+    verdict, pub = honor_society.verify(parsed, "cyan", receipt_time=ts5)
+    assert verdict == "ok"
+    assert honor_society.known_member_label(pub) == "alex-smith"
+    # Signed for cyan: verifying as another color must fail.
+    assert honor_society.verify(parsed, "purple", receipt_time=ts5)[0] == "bad_sig"
+
+
+def test_unknown_key_compact_is_not_verifiable(society_on, tmp_path, monkeypatch) -> None:
+    # Compact has no pubkey on the wire, so a NON-registered member cannot be
+    # verified at all (fail-closed): recorded as invalid, never trusted.
+    monkeypatch.setenv(honor_society.ENV_MEMBERS, _registry(tmp_path, []))  # empty ledger
+    honor_society.reset_members_for_tests()
+    key, _pub = _member_key()
     belief = _crew_belief()
     now = time.time()
-    _, announce = _other_member_announce("green", now=now)
-    belief.chat_log.append(ChatEvent(tick=5, speaker_color="green", text=announce))
+    belief.chat_log.append(ChatEvent(tick=5, speaker_color="green", text=_compact_announce(key, "green", now=now)))
+    emit = _Emit()
+    honor_society.process_chats(belief, emit, receipt_time=now)
+    assert belief.society_trusted == set()
+    assert any(name == "honor_invalid_announce" for name, _ in emit.events)
+
+
+def test_legacy_form_still_accepted(society_on, tmp_path, monkeypatch) -> None:
+    # Legacy self-describing form verifies from the wire pubkey; a KNOWN key trusts.
+    key, pub = _member_key()
+    monkeypatch.setenv(honor_society.ENV_MEMBERS, _registry(tmp_path, [{"pub": pub, "label": "peer"}]))
+    honor_society.reset_members_for_tests()
+    belief = _crew_belief()
+    now = time.time()
+    belief.chat_log.append(ChatEvent(tick=5, speaker_color="green", text=_legacy_announce(key, pub, "green", now=now)))
+    emit = _Emit()
+    honor_society.process_chats(belief, emit, receipt_time=now)
+    assert "green" in belief.society_trusted
+
+
+def test_processing_is_idempotent_across_ticks(society_on, tmp_path, monkeypatch) -> None:
+    key, pub = _member_key()
+    monkeypatch.setenv(honor_society.ENV_MEMBERS, _registry(tmp_path, [{"pub": pub, "label": "peer"}]))
+    honor_society.reset_members_for_tests()
+    belief = _crew_belief()
+    now = time.time()
+    belief.chat_log.append(ChatEvent(tick=5, speaker_color="green", text=_compact_announce(key, "green", now=now)))
     emit = _Emit()
     honor_society.process_chats(belief, emit, receipt_time=now)
     honor_society.process_chats(belief, emit, receipt_time=now)
     assert sum(1 for name, _ in emit.events if name == "honor_claim") == 1
 
 
-def test_stale_incoming_claim_is_not_trusted(society_on) -> None:
+def test_stale_incoming_compact_claim_is_not_trusted(society_on, tmp_path, monkeypatch) -> None:
+    key, pub = _member_key()
+    monkeypatch.setenv(honor_society.ENV_MEMBERS, _registry(tmp_path, [{"pub": pub, "label": "peer"}]))
+    honor_society.reset_members_for_tests()
     belief = _crew_belief()
     now = time.time()
-    _, announce = _other_member_announce("green", now=now - 60)
-    belief.chat_log.append(ChatEvent(tick=5, speaker_color="green", text=announce))
+    belief.chat_log.append(ChatEvent(tick=5, speaker_color="green", text=_compact_announce(key, "green", now=now - 60)))
     emit = _Emit()
     honor_society.process_chats(belief, emit, receipt_time=now)
     assert belief.society_trusted == set()
-    assert any(name == "honor_invalid_announce" and d.get("why") == "stale" for name, d in emit.events)
+    assert any(name == "honor_invalid_announce" for name, _ in emit.events)
 
 
-def test_witnessed_claimant_is_ledgered_as_liar(society_on) -> None:
+def test_cross_seat_rebroadcast_fails(society_on, tmp_path, monkeypatch) -> None:
+    # green's compact announce copied verbatim by red: the sig binds green's color,
+    # so verifying it against red's observed color fails (no trust for red).
+    key, pub = _member_key()
+    monkeypatch.setenv(honor_society.ENV_MEMBERS, _registry(tmp_path, [{"pub": pub, "label": "peer"}]))
+    honor_society.reset_members_for_tests()
     belief = _crew_belief()
     now = time.time()
-    pub, announce = _other_member_announce("green", now=now)
-    belief.chat_log.append(ChatEvent(tick=5, speaker_color="green", text=announce))
+    line = _compact_announce(key, "green", now=now)
+    belief.chat_log.append(ChatEvent(tick=5, speaker_color="green", text=line))
+    belief.chat_log.append(ChatEvent(tick=6, speaker_color="red", text=line))
+    emit = _Emit()
+    honor_society.process_chats(belief, emit, receipt_time=now)
+    assert belief.society_trusted == {"green"}  # red's copy rejected
+
+
+def test_witnessed_claimant_is_ledgered_as_liar(society_on, tmp_path, monkeypatch) -> None:
+    key, pub = _member_key()
+    monkeypatch.setenv(honor_society.ENV_MEMBERS, _registry(tmp_path, [{"pub": pub, "label": "peer"}]))
+    honor_society.reset_members_for_tests()
+    belief = _crew_belief()
+    now = time.time()
+    belief.chat_log.append(ChatEvent(tick=5, speaker_color="green", text=_compact_announce(key, "green", now=now)))
     # We saw green kill: definitional imposter -> the crew claim was a lie.
     belief.roster["green"].events = [PlayerEvent(kind="kill", start_tick=4, end_tick=4)]
     emit = _Emit()
@@ -181,7 +298,7 @@ def test_crew_announces_once_at_first_meeting_then_plays_normally(society_on) ->
     belief.suspicion = {"red": 0.95}
     belief.roster["red"].events = [PlayerEvent(kind="vent_use", start_tick=4, end_tick=4)]
     first = mode.decide(belief, ActionState())
-    assert first.kind == "chat" and first.text.startswith("HS1 ")
+    assert first.kind == "chat" and first.text.startswith("HS1 ") and len(first.text.split()) == 2
     assert belief.society_announced
     # Cooldown passed: the normal accusation still happens; the announce is not repeated.
     belief.last_tick = 400
@@ -233,64 +350,19 @@ def test_witnessed_kill_overrides_trust(society_on) -> None:
     assert votes and votes[0].target_color == "red"
 
 
-def test_accepts_base64url_member_announce(society_on) -> None:
-    # A real member implementation emits unpadded base64url (spec text says standard
-    # b64) — receiver accepts both. This is that member's actual example message,
-    # signed as color "red"; freshness pinned to its canned timestamp.
-    msg = ("HS1 1782000000 aQ8-Zr2K WxWJy6ZOjtSAPzoLBSGSgMIe0uC2b7mYke-7LRUJnf8 "
-           "9e3plbO9Y-3z2q6NpbK3W6U6YtarOnl8d7uN17mZhbOgZ3YLhY7QW2Nn_5su3Qy4mUaZMfF2OszHdYmeV5p_Dg")
-    parsed = honor_society.parse(msg)
-    assert parsed is not None
-    ts, nonce, pub, sig = parsed
-    assert honor_society.verify_announce(ts, nonce, pub, sig, "red", receipt_time=ts) == "ok"
-    assert honor_society.verify_announce(ts, nonce, pub, sig, "blue", receipt_time=ts) == "bad_sig"
-
-
 def test_known_member_registry_recognizes_alex_in_either_encoding(society_on) -> None:
     honor_society.reset_members_for_tests()
-    urlsafe = "WxWJy6ZOjtSAPzoLBSGSgMIe0uC2b7mYke-7LRUJnf8"
+    urlsafe = ALEX_PUB
     standard = base64.b64encode(base64.urlsafe_b64decode(urlsafe + "=")).decode()
     assert honor_society.known_member_label(urlsafe) == "alex-smith"
     assert honor_society.known_member_label(standard) == "alex-smith"
     assert honor_society.known_member_label(base64.b64encode(b"\x09" * 32).decode()) is None
 
 
-def test_known_member_claim_lands_in_society_known(society_on, monkeypatch, tmp_path) -> None:
-    # Registry override naming the TEST identity's key as a known member.
-    import json
-    pub = honor_society.public_key_b64()
-    reg = tmp_path / "members.json"
-    reg.write_text(json.dumps({
-        "schema": "crewborg-honor-members/v1",
-        "members": [{"pub": pub, "label": "test-member"}],
-    }))
-    monkeypatch.setenv(honor_society.ENV_MEMBERS, str(reg))
-    honor_society.reset_members_for_tests()
-    try:
-        belief = _crew_belief()
-        now = time.time()
-        emit = _Emit()
-        # Unknown fresh key: trusted but NOT known.
-        _, announce = _other_member_announce("green", now=now)
-        belief.chat_log.append(ChatEvent(tick=5, speaker_color="green", text=announce))
-        honor_society.process_chats(belief, emit, receipt_time=now)
-        assert "green" in belief.society_trusted and "green" not in belief.society_known
-        # The registry key (distinct color) -> known with its label.
-        nonce = base64.b64encode(b"\x03" * 6).decode()
-        sig = honor_society._sign(f"HS1|{int(now)}|{nonce}|red")
-        belief.chat_log.append(ChatEvent(tick=6, speaker_color="red", text=f"HS1 {int(now)} {nonce} {pub} {sig}"))
-        honor_society.process_chats(belief, emit, receipt_time=now)
-        assert belief.society_known.get("red") == "test-member"
-        assert any(name == "honor_known_member" for name, _ in emit.events)
-    finally:
-        honor_society.reset_members_for_tests()
-
-
 def test_role_reveal_trust_pins_suspicion_near_zero(society_on) -> None:
     from crewrift.crewborg.strategy.suspicion import update_suspicion
     belief = _crew_belief()
     belief.phase = "Playing"
-    belief.voting = belief.voting  # unchanged; suspicion recompute is phase-agnostic here
     belief.roster["red"].events = [PlayerEvent(kind="tailing_self", start_tick=4, end_tick=200, min_dist=10)]
     update_suspicion(belief)
     hot = belief.suspicion.get("red", 0.0)

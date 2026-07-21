@@ -102,8 +102,9 @@ def test_attend_meeting_accuses_a_clear_suspect_then_votes_them() -> None:
     assert mode.decide(belief, ActionState()).kind == "vote"
 
 
-def test_meeting_never_votes_self_even_if_self_is_top_suspect() -> None:
+def test_meeting_never_votes_self_even_if_self_is_top_suspect(monkeypatch) -> None:
     # The crew-loss bug: our own colour saturated suspicion and we voted ourself out.
+    monkeypatch.setenv("CREWBORG_HONOR_SOCIETY", "0")  # isolate the vote path from the HS announce
     mode = AttendMeetingMode()
     belief = Belief(phase="Voting", self_role="crewmate", self_color="red")
     belief.voting = VotingState(
@@ -814,6 +815,7 @@ def test_instant_vote_fires_on_llm_tentative(monkeypatch) -> None:
 
 def test_instant_vote_fires_after_llm_chat_accusation(monkeypatch) -> None:
     monkeypatch.setenv("CREWBORG_LLM_SUSS_INSTANT_VOTE", "1")
+    monkeypatch.setenv("CREWBORG_HONOR_SOCIETY", "0")  # the HS announce would take the first chat slot
     client = _FakeMeetingClient(
         [MeetingDecision(action="send_chat", chat_text="red sus: saw them vent", reason="accuse")]
     )

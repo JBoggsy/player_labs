@@ -17,7 +17,7 @@ def _scene_with_camera() -> SceneState:
 def test_players_and_bodies_resolve_with_world_coords() -> None:
     scene = _scene_with_camera()
     scene.apply(
-        w.define_sprite(1042, 10, 10, "player light blue right")
+        w.define_sprite(1042, 10, 10, "player cyan right")
         + w.define_object(1042, 30, 40, 5, 0, 1042)  # world (1030, 540)
         + w.define_sprite(2003, 10, 10, "body green")
         + w.define_object(2003, -5, 8, 5, 0, 2003)  # world (995, 508)
@@ -27,7 +27,7 @@ def test_players_and_bodies_resolve_with_world_coords() -> None:
     assert resolved.camera_ready
     assert len(resolved.visible_players) == 1
     player = resolved.visible_players[0]
-    assert (player.color, player.facing) == ("light blue", "right")
+    assert (player.color, player.facing) == ("cyan", "right")
     # Draw pos (1030, 540) + collision offset (3, 9) = the server's collision point.
     assert (player.world_x, player.world_y) == (1033, 549)
 

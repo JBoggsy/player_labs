@@ -57,16 +57,19 @@ Hunt is gated on a visible kill opportunity whose isolation bar relaxes with
 urgency, not merely on the cooldown ending. The action layer covers `kill` (edge-A
 in KillRange) and `vent` (level-B in VentRange).
 
-Opt-in **Crewrift Honor Society membership** (`CREWBORG_HONOR_SOCIETY=1`, plus
-`CREWBORG_HONOR_SEED` = base64 Ed25519 seed — never committed): when crew, broadcast
-the society's **HS1** announcement (timestamped, nonce'd, color-bound Ed25519
-signature) at the first meeting; listen for other members' announcements and treat
-verified claimants as trusted crew (spared from posterior-driven votes and
-accusations — witnessed evidence still overrides; first-poster-wins replay handling);
-ledger provable liars (`domain.honor_liar`). As imposter it stays entirely silent
-(the rules permit silence, never a false crew claim). Gated off by default —
-byte-identical behaviour when unset. Design + the HS1 wire spec:
-[`docs/designs/honor-society.md`](docs/designs/honor-society.md).
+**Crewrift Honor Society membership** (`CREWBORG_HONOR_SOCIETY`, **default ON**;
+supply `CREWBORG_HS_SECRET` = base64url Ed25519 seed — never committed — to
+announce as our persisted identity, else an ephemeral key is used and we simply
+receive without a verifiable announce): when crew, broadcast the society's compact
+**HS1** announcement (`HS1 <sig>`, a color-bound Ed25519 signature over
+`HS1|<ts5>|<color>`) at the first meeting; listen for other members' announcements
+and treat verified **known-member** claimants (keys in `data/honor_members.json`)
+as trusted crew — spared from posterior-driven votes and accusations, posterior
+pinned near zero — with witnessed evidence always overriding; ledger provable
+liars (`domain.honor_liar`). As imposter it stays entirely silent (the rules
+permit silence, never a false crew claim). Receive-always / send-optional; set the
+flag to `0`/`false` for byte-identical legacy behaviour. Design + the HS1 wire
+spec: [`docs/designs/honor-society.md`](docs/designs/honor-society.md).
 
 A separate, opt-in **LLM gameplay commander** (`CREWBORG_LLM_COMMANDER=1`) can steer the
 Playing phase by writing *priorities* into belief that the modes read to bias which room to

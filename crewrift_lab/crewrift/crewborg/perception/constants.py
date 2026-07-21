@@ -82,24 +82,31 @@ SELF_OFFSET_Y = 66
 ENTITY_COLLISION_DX = 3  # SpriteDrawOffX + 1
 ENTITY_COLLISION_DY = 9  # SpriteDrawOffY + 1
 
-# The 16 player color names, in palette order (global.nim PlayerColorNames).
+# The 16 player color names, in palette order — MUST mirror the game's
+# ``sim.nim`` ``PlayerColorNames`` (slot i → this name), since these strings are
+# what the game renders on sprite labels and vote markers and what any protocol
+# built on colours (e.g. the Honor Society HS1 signature over the observed colour)
+# reconstructs. The game changed this palette on 2026-06-24 (coworld-crewrift
+# commit 1cbd4de, "update player colors"); this constant tracks the current list.
+# Consumed by ``policy_player._self_color_from_url`` (the runner-slot self-colour
+# seed): slot i defaults to ``PlayerColors[i mod 16]`` (game ``addPlayer``).
 PLAYER_COLOR_NAMES: tuple[str, ...] = (
     "red",
+    "blue",
+    "green",
+    "pink",
     "orange",
     "yellow",
-    "light blue",
-    "pink",
+    "purple",
+    "cyan",
     "lime",
-    "blue",
-    "pale blue",
-    "gray",
-    "white",
-    "dark brown",
     "brown",
-    "dark teal",
-    "green",
-    "dark navy",
-    "black",
+    "beige",
+    "navy",
+    "teal",
+    "rose",
+    "maroon",
+    "gray",
 )
 
 # Fixed sprite labels (global.nim init / per-tick HUD).
