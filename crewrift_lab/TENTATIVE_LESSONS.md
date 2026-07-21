@@ -120,3 +120,19 @@ verification reconstructs the signed bytes from the color STRING, a wrong palett
 STALE constant → our OWN announce would sign a wrong color whenever self-color is seeded from slot
 before the marker is seen. Also a latent bug beyond HS1 (any slot-indexed color lookup wrong for
 slots ≥3). Must decide: fix the constant now (re-verify v106 self-ID holds) or scope narrowly.
+
+### HS1 fix VERIFIED end-to-end in live games (crewborg:v109 + sasmith, xreq_25bb7e0f)
+
+Evidence: After rewriting honor_society.py to the compact form + fixing the palette + default-on,
+built players-crewborg:hs-fix (in-image checks passed: palette fixed, compact 2-token announce,
+our pubkey Gq5nOr6…, sasmith real sig verifies→alex-smith), uploaded v108 (no trace env) then v109
+(with CREWBORG_TRACE_GROUPS=all so the non-domain honor_* events survive the lean filter). Fired
+xreq_25bb7e0f: crewborg:v109 crew@slot0 + sasmith-crewborg-hs1:v15 crew@slot1, 2 random imposters@6,7.
+crewborg's OWN policy_artifact_0.zip trace shows, per completed episode: `society: crew announce`
+(we send compact HS1) + `domain.honor_claim {color:blue, pub:WxWJy6ZO…, known:alex-smith}` +
+`domain.honor_known_member {color:blue, label:alex-smith}` — we parse+verify sasmith's REAL compact
+signature and register them trusted. This is the exact chain that returned None (100% broken) before.
+Note: env vars (seed + trace groups) bake at UPLOAD via --secret-env, NOT per-xreq — an upload without
+CREWBORG_TRACE_GROUPS=all silently drops honor_* from the artifact (they're non-domain. → lean-filtered).
+The vote-veto/posterior-pin only *fires* when the posterior would otherwise vote a trusted member, so
+it won't appear in every game (a clean crewmate never becomes a vote target).
