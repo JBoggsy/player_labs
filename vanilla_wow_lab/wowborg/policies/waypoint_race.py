@@ -17,12 +17,17 @@ a course reproducible (A/B: same seed both arms). ``WOWBORG_WAYPOINTS`` /
 ``WOWBORG_WAYPOINTS_FILE`` (JSON ``[[x,y,z], ...]``) still override with a fixed course.
 
 RACE SEMANTICS. Visit waypoints strictly in order; a leg completes when the observed
-position is within ``arrival_tolerance`` of the waypoint (settlement alone can
-under-deliver, e.g. no_progress). A failed/blocked leg retries up to
-``MAX_LEG_ATTEMPTS`` times, then is skipped (counted DNF). Laps repeat (fresh shuffle
-of the same course each lap) until the deadline. Every leg emits a ``race_leg`` trace
-event (waypoint name, wall-clock split, straight-line yards, attempts); the summary
-reports completion rate and yards/second — the race metrics.
+position is within ``arrival_tolerance`` of the waypoint. One `move` settlement advances
+only one route CHUNK (~30-50 yd on the live controller — first race batch evidence), so
+legs are PROGRESS-based, not attempt-capped: keep re-issuing the move while distance to
+the target shrinks; a DNF requires ``MAX_NO_PROGRESS`` consecutive settlements without
+progress OR blowing the distance-scaled time budget. After two consecutive
+no-progress settlements the policy interleaves the planner's recommended action (its
+unstick logic) before retrying — the first batch showed a bot wedged repeating "no safe
+adjacent edge" 174 times with no recovery. Laps repeat (fresh shuffle each lap) until
+the deadline. Every leg emits a ``race_leg`` trace event (waypoint name, wall-clock
+split, straight-line yards, move count); the summary reports completion rate and
+yards/second — the race metrics.
 """
 
 from __future__ import annotations
@@ -60,9 +65,14 @@ WAYPOINTS_FILE_ENV = "WOWBORG_WAYPOINTS_FILE"
 RACE_SEED_ENV = "WOWBORG_RACE_SEED"
 
 ARRIVAL_TOLERANCE_YARDS = 8.0
-MAX_LEG_ATTEMPTS = 3
+# A leg fails only when it stops making progress, not after N chunk-moves:
+MAX_NO_PROGRESS = 4            # consecutive settlements with < PROGRESS_EPSILON gain
+PROGRESS_EPSILON_YARDS = 3.0
+UNSTICK_AFTER_NO_PROGRESS = 2  # interleave the planner's recommendation this early
+LEG_BUDGET_BASE_SECONDS = 30.0     # + distance-scaled component
+LEG_BUDGET_SECONDS_PER_YARD = 0.5  # ~2 yd/s observed pace → 0.5 s/yd doubles as slack
 FRAME_TIMEOUT_SECONDS = 60.0
-LEG_TIMEOUT_SECONDS = 120.0
+SETTLE_TIMEOUT_SECONDS = 30.0
 
 BREADCRUMBS_ENV = "WOWBORG_BREADCRUMBS"
 DEFAULT_BREADCRUMBS = "minimal"
@@ -162,9 +172,34 @@ class WaypointRacePolicy:
         log(f"course: {[n for n, _ in self.course]}, racing until deadline")
 
         index = 0
-        attempts = 0
+        moves = 0
+        no_progress_streak = 0
+        best_distance: float | None = None
         leg_started_at: float | None = None
         leg_origin: list[float] | None = None
+        leg_budget: float | None = None
+
+        def advance(completed_leg: bool, loc, name: str, target: list[float]) -> None:
+            nonlocal index, moves, no_progress_streak, best_distance, leg_started_at, leg_origin, leg_budget
+            index += 1
+            if index >= len(self.course):
+                index = 0
+                self.laps_completed += 1
+                trace("race_lap", lap=self.laps_completed)
+                if completed_leg:
+                    say(f"wowborg lap {self.laps_completed} complete")
+                log(f"LAP {self.laps_completed} complete — reshuffling course")
+                self._rng.shuffle(self.course)
+            moves = 0
+            no_progress_streak = 0
+            best_distance = None
+            leg_started_at = time.monotonic()
+            leg_origin = [loc.x, loc.y]
+            next_name, next_target = self.course[index]
+            leg_budget = LEG_BUDGET_BASE_SECONDS + LEG_BUDGET_SECONDS_PER_YARD * distance_2d(
+                loc.x, loc.y, next_target[0], next_target[1]
+            )
+
         while time.monotonic() < until:
             remaining = until - time.monotonic()
             frame = bridge.wait_for_frame(timeout_s=min(FRAME_TIMEOUT_SECONDS, remaining))
@@ -177,20 +212,18 @@ class WaypointRacePolicy:
                 log("character dead/ghost — accepting recommended recovery action")
                 request_id = bridge.select_recommended(frame)
                 if request_id is not None:
-                    bridge.wait_for_settlement(frame.frame_id, timeout_s=LEG_TIMEOUT_SECONDS)
+                    bridge.wait_for_settlement(frame.frame_id, timeout_s=SETTLE_TIMEOUT_SECONDS)
                 continue
 
             name, target = self.course[index]
             loc = obs.location
             to_target = distance_2d(loc.x, loc.y, target[0], target[1])
 
-            # Already at the waypoint? (arrival check happens here so a partial leg
-            # that settled short still completes once a later frame shows us close)
+            # Arrived?
             if to_target <= ARRIVAL_TOLERANCE_YARDS:
-                # A leg only COUNTS if we actually raced it (≥1 move attempt);
-                # standing at a waypoint (spawn, or after a lap of skips) advances
-                # the course silently — no phantom split.
-                if leg_started_at is not None and attempts > 0 and leg_origin is not None:
+                # A leg only COUNTS if we actually raced it (≥1 move);
+                # standing at a waypoint advances silently — no phantom split.
+                if leg_started_at is not None and moves > 0 and leg_origin is not None:
                     seconds = time.monotonic() - leg_started_at
                     yards = distance_2d(leg_origin[0], leg_origin[1], target[0], target[1])
                     self.splits.append(
@@ -200,7 +233,7 @@ class WaypointRacePolicy:
                             "to": target,
                             "seconds": round(seconds, 1),
                             "yards": round(yards, 1),
-                            "attempts": attempts,
+                            "attempts": moves,
                         }
                     )
                     self.legs_completed += 1
@@ -211,47 +244,62 @@ class WaypointRacePolicy:
                         waypoint=target,
                         seconds=round(seconds, 1),
                         yards=round(yards, 1),
-                        attempts=attempts,
+                        attempts=moves,
                     )
                     log(
                         f"leg {self.legs_completed}: reached {name} in {seconds:.1f}s "
-                        f"({yards:.0f} yd straight-line, {attempts} attempts)"
+                        f"({yards:.0f} yd straight-line, {moves} moves)"
                     )
-                index += 1
-                if index >= len(self.course):
-                    index = 0
-                    self.laps_completed += 1
-                    trace("race_lap", lap=self.laps_completed)
-                    say(f"wowborg lap {self.laps_completed} complete")
-                    log(f"LAP {self.laps_completed} complete — reshuffling course")
-                    self._rng.shuffle(self.course)
-                attempts = 0
-                leg_started_at = time.monotonic()
-                leg_origin = [loc.x, loc.y]
+                advance(True, loc, name, target)
                 continue
 
-            if attempts >= MAX_LEG_ATTEMPTS:
+            # Leg failure: only on sustained no-progress or a blown time budget.
+            over_budget = (
+                leg_started_at is not None
+                and leg_budget is not None
+                and time.monotonic() - leg_started_at > leg_budget
+            )
+            if no_progress_streak >= MAX_NO_PROGRESS or over_budget:
+                reason = "budget" if over_budget else "no_progress"
                 self.legs_skipped += 1
-                trace("race_leg_skipped", name=name, waypoint=target, attempts=attempts)
-                log(f"{name}: SKIPPED after {attempts} attempts (DNF)")
-                index += 1
-                if index >= len(self.course):
-                    index = 0
-                    self.laps_completed += 1
-                    trace("race_lap", lap=self.laps_completed)
-                    self._rng.shuffle(self.course)
-                attempts = 0
-                leg_started_at = time.monotonic()
-                leg_origin = [loc.x, loc.y]
+                trace(
+                    "race_leg_skipped",
+                    name=name,
+                    waypoint=target,
+                    attempts=moves,
+                    reason=reason,
+                    remaining_yd=round(to_target, 1),
+                )
+                log(f"{name}: SKIPPED ({reason}) after {moves} moves, {to_target:.0f} yd short (DNF)")
+                advance(False, loc, name, target)
                 continue
 
             if leg_started_at is None:
                 leg_started_at = time.monotonic()
                 leg_origin = [loc.x, loc.y]
-            attempts += 1
+                leg_budget = LEG_BUDGET_BASE_SECONDS + LEG_BUDGET_SECONDS_PER_YARD * to_target
+
+            # Progress bookkeeping: did the last settlement move us closer?
+            if best_distance is None or to_target < best_distance - PROGRESS_EPSILON_YARDS:
+                best_distance = to_target
+                no_progress_streak = 0
+            else:
+                no_progress_streak += 1
+
+            # Wedged? Let the planner's own recommendation run once (its unstick logic)
+            # before re-issuing our move — the observed failure mode is a bot repeating
+            # "no safe adjacent edge" forever from the same spot.
+            if no_progress_streak >= UNSTICK_AFTER_NO_PROGRESS and frame.recommended_action is not None:
+                log(f"{name}: {no_progress_streak} stalled settlements — taking recommended (unstick)")
+                request_id = bridge.select_recommended(frame)
+                if request_id is not None:
+                    bridge.wait_for_settlement(frame.frame_id, timeout_s=SETTLE_TIMEOUT_SECONDS)
+                    continue
+
+            moves += 1
             request_id = bridge.select_move_to(frame, target[0], target[1], target[2], loc.map_id)
             if request_id is None:
-                log(f"{name}: move refused by mask (attempt {attempts}); taking recommended")
+                log(f"{name}: move refused by mask (move {moves}); taking recommended")
                 request_id = bridge.select_recommended(frame)
                 if request_id is None:
                     continue
@@ -259,12 +307,12 @@ class WaypointRacePolicy:
             if remaining <= 0:
                 break
             outcome = bridge.wait_for_settlement(
-                frame.frame_id, timeout_s=min(LEG_TIMEOUT_SECONDS, remaining)
+                frame.frame_id, timeout_s=min(SETTLE_TIMEOUT_SECONDS, remaining)
             )
             if outcome is None:
-                log(f"{name}: settlement TIMEOUT (attempt {attempts})")
+                log(f"{name}: settlement TIMEOUT (move {moves})")
             elif not outcome.success:
-                log(f"{name}: settled unsuccessfully ({outcome.detail!r}, attempt {attempts})")
+                log(f"{name}: settled unsuccessfully ({outcome.detail!r}, move {moves})")
 
         summary = self.summary()
         trace("race_end", **summary)
