@@ -54,16 +54,33 @@ WAYPOINT_CATALOG: dict[str, tuple[float, float, float, str, tuple[str, ...]]] = 
     "boar-yard":          (-715.0, -4240.0, 40.0, "near", ()),   # Mottled Boar anchor
     "sleeping-peons":     (-628.5, -4340.7, 41.8, "near", ()),   # Lazy Peons field
     "scorpid-field-edge": (-600.1, -4186.2, 41.3, "near", ()),   # authored staging node
+    # --- staging-only nodes (authored approachRoute points; never sampled) ---
+    "field-shelf-1":      (-560.3, -4235.5, 43.9, "stage", ()),  # steep-choke bypass
+    "field-shelf-2":      (-514.3, -4284.2, 40.7, "stage", ()),
+    "field-shelf-3":      (-482.2, -4216.1, 50.1, "stage", ()),
+    "field-shelf-4":      (-457.3, -4156.4, 47.6, "stage", ()),
+    "south-road-mid":     (-100.0, -4980.0, 20.0, "stage", ()),  # authored Sen'jin approach
     # --- mid: rim, mesa, gate corridor (150-450 yd) ---
-    "east-scorpid-field": (-405.0, -4118.0, 51.0, "mid", ("scorpid-field-edge",)),
-    "hanazua-rock":       (-397.8, -4109.0, 50.3, "mid", ("scorpid-field-edge",)),
+    # The east field is entered along the authored shelf route (the direct chord clips
+    # "the steep choke around x=-550..-594" — profile comment); Hana'zua and Sarkoth
+    # continue from inside the field.
+    "east-scorpid-field": (-405.0, -4118.0, 51.0, "mid",
+                           ("scorpid-field-edge", "field-shelf-1", "field-shelf-2",
+                            "field-shelf-3", "field-shelf-4")),
+    "hanazua-rock":       (-397.8, -4109.0, 50.3, "mid",
+                           ("scorpid-field-edge", "field-shelf-1", "field-shelf-2",
+                            "field-shelf-3", "field-shelf-4")),
     "sarkoth-mesa":       (-547.3, -4103.9, 70.1, "mid",
-                           ("scorpid-field-edge", "hanazua-rock")),  # mesa entered from the east field
+                           ("scorpid-field-edge", "field-shelf-1", "field-shelf-2",
+                            "field-shelf-3", "field-shelf-4", "hanazua-rock")),
     "gate-corridor":      (-359.7, -4309.8, 49.9, "mid", ()),    # authored valley-exit node
     "northwest-ridge":    (-753.6, -4143.2, 38.8, "mid", ("boar-yard",)),
     # --- far: out the gate (> 450 yd; real Detour road work) ---
-    "razor-hill-road":    (-825.6, -4920.8, 19.7, "far", ("gate-corridor",)),
-    "senjin-village":     (-797.5, -4921.2, 23.0, "far", ("gate-corridor",)),
+    # Authored Sen'jin approach: gate → the (-100,-4980) road bend → the village.
+    "razor-hill-road":    (-825.6, -4920.8, 19.7, "far",
+                           ("gate-corridor", "south-road-mid")),
+    "senjin-village":     (-797.5, -4921.2, 23.0, "far",
+                           ("gate-corridor", "south-road-mid", "razor-hill-road")),
 }
 
 DEFAULT_SUBSET_BY_TIER = {"near": 2, "mid": 2, "far": 1}
@@ -73,12 +90,16 @@ WAYPOINTS_FILE_ENV = "WOWBORG_WAYPOINTS_FILE"
 RACE_SEED_ENV = "WOWBORG_RACE_SEED"
 
 ARRIVAL_TOLERANCE_YARDS = 8.0
-# A leg fails only when it stops making progress, not after N chunk-moves:
-MAX_NO_PROGRESS = 4            # consecutive settlements with < PROGRESS_EPSILON gain
+# A leg fails only when the character genuinely STOPS: a settlement counts as stalled
+# only when it neither improved goal distance NOR physically moved us (v7 evidence:
+# roads bend, so goal distance can stagnate for several chunks while the executor is
+# legitimately walking — displacement disambiguates "detouring" from "wedged").
+MAX_NO_PROGRESS = 6
 PROGRESS_EPSILON_YARDS = 3.0
-UNSTICK_AFTER_NO_PROGRESS = 2  # interleave the planner's recommendation this early
-LEG_BUDGET_BASE_SECONDS = 30.0     # + distance-scaled component
-LEG_BUDGET_SECONDS_PER_YARD = 0.5  # ~2 yd/s observed pace → 0.5 s/yd doubles as slack
+DISPLACEMENT_EPSILON_YARDS = 5.0
+UNSTICK_AFTER_NO_PROGRESS = 3  # interleave the planner's recommendation this early
+LEG_BUDGET_BASE_SECONDS = 45.0     # + distance-scaled component
+LEG_BUDGET_SECONDS_PER_YARD = 0.7  # ~2 yd/s observed pace; 0.7 s/yd = real slack
 FRAME_TIMEOUT_SECONDS = 60.0
 SETTLE_TIMEOUT_SECONDS = 30.0
 
@@ -100,7 +121,10 @@ def waypoint_via(name: str) -> tuple[str, ...]:
 
 
 def sample_course(rng: random.Random) -> list[tuple[str, list[float]]]:
-    """Random subset of the catalog (tier-balanced), in random order."""
+    """Random subset of the catalog (tier-balanced), in random order.
+
+    Stage-tier nodes are routing infrastructure, never race targets.
+    """
     course: list[tuple[str, list[float]]] = []
     for tier, count in DEFAULT_SUBSET_BY_TIER.items():
         names = [n for n, entry in WAYPOINT_CATALOG.items() if entry[3] == tier]
@@ -191,6 +215,7 @@ class WaypointRacePolicy:
         moves = 0
         no_progress_streak = 0
         best_distance: float | None = None
+        last_position: tuple[float, float] | None = None
         leg_started_at: float | None = None
         leg_origin: list[float] | None = None
         leg_budget: float | None = None
@@ -199,16 +224,28 @@ class WaypointRacePolicy:
         stage_queue: list[tuple[str, list[float]]] = []
 
         def build_stages(name: str, current_x: float, current_y: float) -> list[tuple[str, list[float]]]:
-            """Ordered staging nodes for this target, skipping ones we're already at."""
-            stages = []
-            for via_name in waypoint_via(name):
-                point = waypoint_point(via_name)
-                if distance_2d(current_x, current_y, point[0], point[1]) > ARRIVAL_TOLERANCE_YARDS * 2:
-                    stages.append((via_name, point))
-            return stages
+            """Ordered staging nodes for this target, starting from where we are.
+
+            Drop the PREFIX of the chain that is already behind us: find the chain node
+            nearest our position and keep only what follows it (plus that node itself
+            if we haven't reached it). Prevents doubling back to stage 1 when a leg
+            (re)starts mid-chain — observed in the v7 senjin traces.
+            """
+            chain = [(v, waypoint_point(v)) for v in waypoint_via(name)]
+            if not chain:
+                return []
+            nearest = min(
+                range(len(chain)),
+                key=lambda i: distance_2d(current_x, current_y, chain[i][1][0], chain[i][1][1]),
+            )
+            nearest_d = distance_2d(
+                current_x, current_y, chain[nearest][1][0], chain[nearest][1][1]
+            )
+            start = nearest + 1 if nearest_d <= ARRIVAL_TOLERANCE_YARDS * 2 else nearest
+            return chain[start:]
 
         def advance(completed_leg: bool, loc, name: str, target: list[float]) -> None:
-            nonlocal index, moves, no_progress_streak, best_distance, leg_started_at, leg_origin, leg_budget, stage_queue
+            nonlocal index, moves, no_progress_streak, best_distance, last_position, leg_started_at, leg_origin, leg_budget, stage_queue
             index += 1
             if index >= len(self.course):
                 index = 0
@@ -221,6 +258,7 @@ class WaypointRacePolicy:
             moves = 0
             no_progress_streak = 0
             best_distance = None
+            last_position = None
             leg_started_at = time.monotonic()
             leg_origin = [loc.x, loc.y]
             next_name, next_target = self.course[index]
@@ -328,13 +366,23 @@ class WaypointRacePolicy:
                 to_steer = distance_2d(loc.x, loc.y, steer_point[0], steer_point[1])
                 leg_budget = LEG_BUDGET_BASE_SECONDS + LEG_BUDGET_SECONDS_PER_YARD * to_target
 
-            # Progress bookkeeping: did the last settlement move us toward the CURRENT
-            # steering point (staging node or final target)?
+            # Progress bookkeeping: a settlement is stalled only if it neither improved
+            # distance to the CURRENT steering point NOR physically displaced us
+            # (roads bend — walking a detour is progress even when goal distance isn't
+            # shrinking; a wedged bot does neither).
+            displaced = (
+                last_position is not None
+                and distance_2d(loc.x, loc.y, last_position[0], last_position[1])
+                > DISPLACEMENT_EPSILON_YARDS
+            )
             if best_distance is None or to_steer < best_distance - PROGRESS_EPSILON_YARDS:
                 best_distance = to_steer
                 no_progress_streak = 0
+            elif displaced:
+                no_progress_streak = 0
             else:
                 no_progress_streak += 1
+            last_position = (loc.x, loc.y)
 
             # Wedged? Let the planner's own recommendation run once (its unstick logic)
             # before re-issuing our move — the observed failure mode is a bot repeating

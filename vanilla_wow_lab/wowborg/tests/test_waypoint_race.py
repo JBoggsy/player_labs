@@ -104,8 +104,10 @@ def test_catalog_tiers_distances_and_vias() -> None:
             assert d < 150, f"{name}: {d:.0f} yd is not near"
         elif tier == "mid":
             assert 100 <= d <= 500, f"{name}: {d:.0f} yd is not mid"
-        else:
+        elif tier == "far":
             assert d > 450, f"{name}: {d:.0f} yd is not far"
+        else:
+            assert tier == "stage", f"{name}: unknown tier {tier}"
         for via_name in via:
             assert via_name in WAYPOINT_CATALOG, f"{name}: unknown via {via_name}"
             assert via_name != name
@@ -137,15 +139,18 @@ def test_staged_leg_routes_via_staging_nodes() -> None:
     bridge = TeleportBridge()
     bridge.position = list(waypoint_point("spawn-plaza"))
     policy.run(bridge, until=time.monotonic() + 0.5)
-    # the mesa leg must be reached THROUGH its staging chain: the bridge saw moves to
-    # the staging nodes before the final point
+    # The mesa leg must route THROUGH its staging chain (suffix from the nearest chain
+    # node — prefix nodes behind the start are dropped) before the final point.
     targets = [(round(m[0], 1), round(m[1], 1)) for m in bridge.moves]
-    edge = waypoint_point("scorpid-field-edge")
     rock = waypoint_point("hanazua-rock")
     mesa = waypoint_point("sarkoth-mesa")
-    assert (round(edge[0], 1), round(edge[1], 1)) in targets
+    shelf4 = waypoint_point("field-shelf-4")
+    assert (round(shelf4[0], 1), round(shelf4[1], 1)) in targets
     assert (round(rock[0], 1), round(rock[1], 1)) in targets
     assert (round(mesa[0], 1), round(mesa[1], 1)) in targets
+    mesa_i = targets.index((round(mesa[0], 1), round(mesa[1], 1)))
+    rock_i = targets.index((round(rock[0], 1), round(rock[1], 1)))
+    assert rock_i < mesa_i  # staging precedes the target
     assert policy.legs_completed >= 2
 
 
