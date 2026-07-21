@@ -140,6 +140,9 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
             return Intent(kind="idle", reason="vote already confirmed")
         if self._active_vote_target is not None:
             return self._vote_intent(self._active_vote_target, reason=self._active_vote_reason)
+        first_mover = self._first_mover_accusation_intent(belief)
+        if first_mover is not None:
+            return first_mover
         society_intent = self._society_chat_intent(belief)
         if society_intent is not None:
             return society_intent
@@ -216,6 +219,48 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         if self._worker is not None:
             self._worker.close()
             self._worker = None
+
+    # --- first-mover anchoring --------------------------------------------
+
+    def _first_mover_accusation_intent(self, belief: Belief) -> Intent | None:
+        """Crew with a vote-bar-clearing suspect at meeting start: accuse IMMEDIATELY
+        (first chat slot), before the meeting_start LLM round-trip.
+
+        The 2026-07-02 chat study found conversion (same-meeting ejection of the
+        accused) tracks speaking FIRST: the first named target anchors the pile
+        (premise re-verified on 199 live episodes: P(ejected|named first) 28.7% vs
+        12.5% later, z=5.8; crewborg's median first chat lands 55 ticks in — the LLM
+        latency — vs tick 1 for the top converters). Design:
+        crewrift_lab/docs/designs/2026-07-21-first-mover-anchor-design.md.
+
+        LLM path only — the deterministic (LLM-off) path already accuses on its
+        first decide tick. Fires at most once per meeting, before the first LLM
+        call; sets ``_deterministic_chatted`` so an LLM-failure fallback can't chat
+        twice, and routes through ``_send_chat_intent`` so a duplicate later LLM
+        chat is suppressed by the existing gate. The coupled tentative vote passes
+        ``_vote_target_corroborated`` by construction (``top_suspect == target``).
+        """
+
+        if not self._llm_client.enabled:
+            return None
+        if belief.self_role == "imposter" or not belief.self_alive:
+            return None
+        if self._deterministic_chatted or self._last_chat_tick is not None:
+            return None
+        if self._last_llm_call_tick is not None:
+            return None  # the meeting_start call is already out — too late to anchor
+        target = top_suspect(belief)
+        if target is None or honor_society.vote_veto(belief, target):
+            return None
+        accusation = build_accusation(belief, target)
+        if accusation is None:
+            return None  # no citable evidence — never bare-accuse
+        self._deterministic_chatted = True
+        self._tentative_vote = target
+        self.emit.event("meeting_first_mover_accusation", {"target": target, "tick": belief.last_tick})
+        self.emit.counter("meeting_first_mover_accusation")
+        self._trace_meeting_decision(belief, role="crewmate", path="first_mover_accuse", target=target)
+        return self._send_chat_intent(belief, accusation, reason="first-mover: anchor the pile")
 
     # --- deterministic fallback ------------------------------------------
 
