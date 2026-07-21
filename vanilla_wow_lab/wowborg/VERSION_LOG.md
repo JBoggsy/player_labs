@@ -1,5 +1,26 @@
 # wowborg version log
 
+## v3 - nim_control migration (built + fake-server smoked, not yet uploaded)
+
+- Migrated to the game's 0.1.31 policy seam: `action.json` no longer exists upstream;
+  the bridge now drives `vanilla_wow.nim_control.v1` (binary-framed local TCP,
+  port 41114+slot) — arm external selection via GoalRequest, read EnvironmentFrames
+  (observation + dense bindings + factorized action masks), submit one mask-admitted
+  FactorizedAction per offered frame, settle via typed ActionSettled. Recon:
+  `docs/recon/player-contract-0131-2026-07-21.md`.
+- Base image bumped to vanilla_wow 0.1.31 (digest in `tools/versions.env`); player
+  images no longer bundle world data — the shim forwards the wrapper's `--assets=<url>`
+  to king_richard; session budget derives from KING_NIMROD_SESSION_DEADLINE_SECONDS.
+- random_walk is frame-driven now; mask-refused moves fall back to the frame's
+  recommended action; death defers to recommended recovery instead of stopping.
+- Evidence unchanged (trace/artifact/breadcrumbs); artifact bundle now also carries
+  environment-frame.json + decision-audit/leveling-performance/decision-loop-profile
+  when present. 0.1.31 caveat: /say text must be in the frame's admitted vocabulary.
+- Validated: 57 unit tests (bridge tests run the real wow_sdk client from the pinned
+  image's SDK snapshot against a scripted control server); image builds amd64;
+  end-to-end container smoke (fake king_richard serving the control socket): goal
+  armed, 5+ legs selected/settled, positions tracked, clean teardown.
+
 ## v2 - shim adoption: random-point navigator
 
 - Version UUID: `eb6aa13e-4fcd-4037-a443-42fc7ae676d0` (uploaded 2026-07-15,

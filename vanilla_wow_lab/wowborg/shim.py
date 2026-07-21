@@ -1,18 +1,22 @@
-"""King-Richard shim supervisor — the ONLY module that knows which Nim client we run.
+"""King-Richard shim supervisor (0.1.31 contract) — the ONLY module that knows which
+Nim client we run.
 
 Launched by the base image's ``vanilla_wow_coworld.player`` WS wrapper via
-``KING_NIMROD_COMMAND="python3 -m wowborg.shim"``. Responsibilities:
+``KING_NIMROD_COMMAND="python3 -m wowborg.shim"``. At 0.1.31 the wrapper appends an
+``--assets=<url>`` argument (the game container serves world data over HTTP — player
+images carry none) and exports ``KING_NIMROD_SESSION_DEADLINE_SECONDS``. Responsibilities:
 
 1. Map the wrapper's ``KING_NIMROD_*`` credential env to ``KING_RICHARD_*``.
-2. Spawn ``king_richard --scenario=nim-control`` with the autonomous planner OFF,
-   so our Python policy owns every decision.
-3. Wait for the file bridge (``state.json``) to appear, then run the selected
-   policy loop in-process for a bounded duration.
-4. Stop the Nim client and exit 0 (Coworld treats nonzero as a failed slot).
+2. Spawn ``king_richard --scenario=nim-control`` (autonomous planner OFF), forwarding
+   the ``--assets`` argument.
+3. Connect to the Nim control socket (``vanilla_wow.nim_control.v1``), arm external
+   per-step selection, and run the policy loop for the session budget (derived from
+   the wrapper-provided deadline, minus a teardown margin).
+4. Upload the evidence bundle, stop the Nim client, and exit 0 (nonzero fails the slot).
 
-Modeled on the repo-proven ``wow_sdk.control.hosted_general_grinder`` (the deployed
-image's own default). Swapping to a different shim means replacing this module and
-the adapter half of ``wowborg.bridge`` — policies never import either's internals.
+Modeled on the 0.1.31 ``wow_sdk.control.hosted_general_grinder`` (the deployed image's
+own default). Swapping shims means replacing this module + the adapter half of
+``wowborg.bridge`` — policies never import either's internals.
 """
 
 from __future__ import annotations
@@ -26,16 +30,24 @@ from pathlib import Path
 
 DEFAULT_RUNTIME_DIR = Path("/tmp/wowborg-runtime")
 DEFAULT_KING_RICHARD_BINARY = "/usr/local/bin/king_richard"
-# The base image installs the game repo's `bots/` decision package here; king_richard's
-# nim-control mode expects it importable (mirrors hosted_general_grinder.py).
+# The base image installs the game repo's `bots/` tree here; nim-control expects it.
 PACKAGED_PLAYER_ROOT = "/opt/coworld-player"
-# 120 s is the longest hosted duration with a completed XP/replay proof upstream;
-# pod + VMaNGOS startup eats most of the 20-minute job budget before our clock starts.
 DEFAULT_DURATION_SECONDS = 120.0
-DEFAULT_STARTUP_TIMEOUT_SECONDS = 120.0
+# Leave room for evidence upload + teardown inside the session budget.
+TEARDOWN_MARGIN_SECONDS = 30.0
+DEFAULT_STARTUP_TIMEOUT_SECONDS = 180.0
 CHILD_STOP_GRACE_SECONDS = 10.0
 
-CREDENTIAL_SUFFIXES = ("REALM_HOST", "REALM_PORT", "USERNAME", "PASSWORD", "CHARACTER_NAME")
+CREDENTIAL_SUFFIXES = (
+    "REALM_HOST",
+    "REALM_PORT",
+    "USERNAME",
+    "PASSWORD",
+    "CHARACTER_NAME",
+    "CHARACTER_RACE",
+    "CHARACTER_CLASS",
+    "CHARACTER_GENDER",
+)
 
 
 def log(message: str) -> None:
@@ -56,16 +68,27 @@ def richard_environment(runtime_dir: Path, base_env: dict[str, str] | None = Non
     return env
 
 
-def wait_for_state(state_file: Path, timeout_seconds: float, child: subprocess.Popen) -> bool:
-    """Wait until the Nim client writes its first snapshot (it is logged in by then)."""
-    deadline = time.monotonic() + timeout_seconds
-    while time.monotonic() < deadline:
-        if state_file.exists():
-            return True
-        if child.poll() is not None:
-            return False
-        time.sleep(1.0)
-    return False
+def assets_argument(argv: list[str]) -> str | None:
+    """The wrapper appends --assets=<url> to our command; forward it to the Nim child."""
+    return next((a for a in argv if a.startswith("--assets=")), None)
+
+
+def session_duration_seconds(env: dict[str, str] | None = None) -> float:
+    """Policy-loop budget: explicit override > session deadline − margin > default."""
+    source = os.environ if env is None else env
+    override = source.get("WOWBORG_DURATION_SECONDS")
+    if override:
+        try:
+            return float(override)
+        except ValueError:
+            log(f"ignoring non-numeric WOWBORG_DURATION_SECONDS={override!r}")
+    deadline = source.get("KING_NIMROD_SESSION_DEADLINE_SECONDS")
+    if deadline:
+        try:
+            return max(30.0, float(deadline) - TEARDOWN_MARGIN_SECONDS)
+        except ValueError:
+            log(f"ignoring non-numeric session deadline {deadline!r}")
+    return DEFAULT_DURATION_SECONDS
 
 
 def stop_child(child: subprocess.Popen) -> None:
@@ -90,26 +113,29 @@ def env_float(name: str, default: float) -> float:
         return default
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    argv = sys.argv[1:] if argv is None else argv
     runtime_dir = Path(os.environ.get("WOWBORG_RUNTIME_DIR", DEFAULT_RUNTIME_DIR))
     runtime_dir.mkdir(parents=True, exist_ok=True)
     binary = os.environ.get("WOWBORG_KING_RICHARD_BINARY", DEFAULT_KING_RICHARD_BINARY)
-    duration_s = env_float("WOWBORG_DURATION_SECONDS", DEFAULT_DURATION_SECONDS)
+    duration_s = session_duration_seconds()
     startup_timeout_s = env_float("WOWBORG_STARTUP_TIMEOUT_SECONDS", DEFAULT_STARTUP_TIMEOUT_SECONDS)
     policy_name = os.environ.get("WOWBORG_POLICY", "random_walk")
+    slot = int(os.environ.get("WOW_SDK_NIM_RUNTIME_SLOT", "0") or 0)
 
-    log(f"starting shim: policy={policy_name} duration={duration_s}s runtime_dir={runtime_dir}")
+    command = [binary, "--scenario=nim-control"]
+    if assets := assets_argument(argv):
+        command.append(assets)
+
+    log(
+        f"starting shim: policy={policy_name} duration={duration_s}s slot={slot} "
+        f"runtime_dir={runtime_dir} command={command}"
+    )
     child = subprocess.Popen(  # noqa: S603 — fixed binary path, no shell
-        [binary, "--scenario=nim-control"],
+        command,
         env=richard_environment(runtime_dir),
     )
     try:
-        if not wait_for_state(runtime_dir / "state.json", startup_timeout_s, child):
-            code = child.poll()
-            log(f"nim client never produced state.json (child exit={code}); giving up cleanly")
-            return 0
-
-        log("state.json present — nim client is in-world; starting policy loop")
         # Imported late so a bridge/policy import error still yields a clean exit path.
         from wowborg.bridge import ShimBridge
         from wowborg.policies import build_policy
@@ -122,15 +148,28 @@ def main() -> int:
             duration_s=duration_s,
             runtime_dir=str(runtime_dir),
             character=os.environ.get("KING_NIMROD_CHARACTER_NAME"),
-            slot=os.environ.get("COWORLD_SLOT"),
+            slot=slot,
         )
-        bridge = ShimBridge(runtime_dir, tracer)
+        bridge = ShimBridge(runtime_dir, tracer, slot=slot)
+        if not bridge.connect(timeout_s=startup_timeout_s):
+            code = child.poll()
+            log(f"control socket never came up (child exit={code}); giving up cleanly")
+            tracer.emit("session_end", summary={"error": "control_socket_timeout"})
+            return 0
+        if not bridge.arm_external_control(
+            deadline_unix_seconds=time.time() + duration_s
+        ):
+            log("goal submission rejected; giving up cleanly")
+            tracer.emit("session_end", summary={"error": "goal_rejected"})
+            return 0
+
         policy = build_policy(policy_name)
         deadline = time.monotonic() + duration_s
         try:
             policy.run(bridge, until=deadline)
         finally:
             tracer.emit("session_end", summary=getattr(policy, "summary", lambda: None)())
+            bridge.close()
             from wowborg.artifact import upload_evidence
 
             members = upload_evidence(runtime_dir)

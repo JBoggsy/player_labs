@@ -39,9 +39,21 @@ verified inside the deployed image):
 - Open probes: admitted-text vocabulary in a real frame; whether external selection
   paces well for pure exploration; whether v2 (0.1.19) still runs on 0.1.31 infra.
 
-**Next steps:** migrate wowborg to 0.1.31 (order in the recon §Next steps: re-extract
-.sdk-snapshot → bridge rewrite vs NimControlClient → shim updates → versions.env bump →
-local fake-control smoke → hosted probe on `custom-fresh-start`).
+**MIGRATION DONE (session 5c) — wowborg v3 built + fake-server smoked, not yet uploaded:**
+bridge rewritten against `NimControlClient` (external selection over EnvironmentFrames,
+mask-checked FactorizedActions, ActionSettled results); shim updated (assets passthrough,
+deadline-derived budget, socket-ready wait, expanded evidence bundle); pin bumped to the
+0.1.31 digest; `.sdk-snapshot` re-extracted; build sanity checks fixed (no mmaps at
+0.1.31). 57 tests green — bridge tests exercise the REAL wow_sdk client against a
+scripted control server (`tests/fake_control_server.py`); container smoke: goal armed,
+legs selected/settled, positions tracked, clean teardown.
+
+**Next steps:** (1) upload v3 + hosted probe on `custom-fresh-start` — validates the
+contract against the real Nim controller AND answers the two open probes (admitted-text
+vocabulary; external-selection pacing for exploration — watch legs_fallback in the
+summary); (2) then T1 (combat/loot/quests via FactorizedAction composition — the masks
+make legal-move enumeration trivial now); (3) party formation via the native `dungeon`
+goal mode when RFC work starts.
 
 ---
 

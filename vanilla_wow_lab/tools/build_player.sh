@@ -41,12 +41,13 @@ docker buildx build --platform=linux/amd64 --load \
   "$LAB_DIR/wowborg"
 
 echo "==> sanity-checking built image (base contract + our layer)"
+# 0.1.31 base: world data is NOT bundled (game serves it via --assets URL); the control
+# seam is wow_sdk.nim_control (binary TCP socket), not the old action.json file bridge.
 docker run --rm --entrypoint sh "$tag" -c '
   set -e
   test -x /usr/local/bin/king_richard
-  test -x /usr/local/bin/vmangos-navmesh-helper
-  test -d /opt/coworld-player/mmaps
-  python3 -c "import wow_sdk.runtime, wow_sdk.protocol"
+  python3 -c "import wow_sdk.nim_control, wow_sdk.runtime, wow_sdk.protocol"
+  python3 -c "from wow_sdk.nim_control import NimControlClient, EnvironmentFrame, FactorizedAction"
   python3 -c "import vanilla_wow_coworld.player"
   python3 -c "import wowborg.shim, wowborg.bridge, wowborg.policies"
   [ "$KING_NIMROD_COMMAND" = "python3 -m wowborg.shim" ]

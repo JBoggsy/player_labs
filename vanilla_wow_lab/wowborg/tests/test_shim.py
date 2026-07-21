@@ -41,3 +41,52 @@ def test_richard_environment_skips_absent_credentials() -> None:
     env = richard_environment(Path("/tmp/rt"), {"KING_NIMROD_USERNAME": "A"})
     assert env["KING_RICHARD_USERNAME"] == "A"
     assert "KING_RICHARD_PASSWORD" not in env
+
+
+def test_richard_environment_maps_character_creation_fields() -> None:
+    env = richard_environment(
+        Path("/tmp/rt"),
+        {
+            "KING_NIMROD_CHARACTER_RACE": "orc",
+            "KING_NIMROD_CHARACTER_CLASS": "warrior",
+            "KING_NIMROD_CHARACTER_GENDER": "male",
+        },
+    )
+    assert env["KING_RICHARD_CHARACTER_RACE"] == "orc"
+    assert env["KING_RICHARD_CHARACTER_CLASS"] == "warrior"
+    assert env["KING_RICHARD_CHARACTER_GENDER"] == "male"
+
+
+def test_assets_argument_forwarded() -> None:
+    from wowborg.shim import assets_argument
+
+    assert assets_argument(["--assets=http://game:8000/player/assets"]) == (
+        "--assets=http://game:8000/player/assets"
+    )
+    assert assets_argument([]) is None
+    assert assets_argument(["--other=x"]) is None
+
+
+def test_session_duration_prefers_override_then_deadline(monkeypatch) -> None:
+    from wowborg.shim import (
+        DEFAULT_DURATION_SECONDS,
+        TEARDOWN_MARGIN_SECONDS,
+        session_duration_seconds,
+    )
+
+    assert session_duration_seconds({}) == DEFAULT_DURATION_SECONDS
+    assert (
+        session_duration_seconds({"KING_NIMROD_SESSION_DEADLINE_SECONDS": "1000"})
+        == 1000 - TEARDOWN_MARGIN_SECONDS
+    )
+    assert (
+        session_duration_seconds(
+            {
+                "WOWBORG_DURATION_SECONDS": "45",
+                "KING_NIMROD_SESSION_DEADLINE_SECONDS": "1000",
+            }
+        )
+        == 45.0
+    )
+    # tiny deadlines clamp to a sane floor
+    assert session_duration_seconds({"KING_NIMROD_SESSION_DEADLINE_SECONDS": "10"}) == 30.0

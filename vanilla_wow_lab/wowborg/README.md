@@ -1,21 +1,30 @@
 # wowborg
 
-`wowborg` is our Python Vanilla WoW Coworld player. **v2 architecture: our Python policy
-drives the game's bundled Nim client (the "shim") through its file bridge** — we do not
-speak the WoW wire protocol ourselves. Design and rationale:
-[`../docs/designs/wowborg-v2-shim-adoption.md`](../docs/designs/wowborg-v2-shim-adoption.md);
-the target typed observation/action spaces:
+`wowborg` is our Python Vanilla WoW Coworld player. **v3 architecture (game 0.1.31+):
+our Python policy drives the game's bundled Nim client (the "shim") through its
+`nim_control` TCP socket** — external per-step selection of factorized, mask-validated
+actions over EnvironmentFrames. We do not speak the WoW wire protocol ourselves.
+Contract recon: [`../docs/recon/player-contract-0131-2026-07-21.md`](../docs/recon/player-contract-0131-2026-07-21.md);
+original adoption rationale:
+[`../docs/designs/wowborg-v2-shim-adoption.md`](../docs/designs/wowborg-v2-shim-adoption.md)
+(v2 targeted the 0.1.19 action.json file bridge, replaced upstream);
+target typed observation/action spaces:
 [`../docs/designs/wowborg-observation-action-spaces.html`](../docs/designs/wowborg-observation-action-spaces.html).
 
-## v2 layout (the live player)
+## v3 layout (the live player)
 
 - `shim.py` — King-Richard-aware supervisor, launched by the base image's WS wrapper via
   `KING_NIMROD_COMMAND`. Spawns `king_richard --scenario=nim-control` (autonomous planner
-  off), waits for `state.json`, runs the policy loop, exits 0. **The swap point**: a new
+  off), forwarding the wrapper's `--assets=<url>` argument (0.1.31 player images carry no
+  world data — the game serves it); derives the session budget from
+  `KING_NIMROD_SESSION_DEADLINE_SECONDS`; connects the control socket, arms external
+  selection, runs the policy loop, uploads evidence, exits 0. **The swap point**: a new
   shim means replacing this module + the adapter half of `bridge.py`.
-- `bridge.py` — the typed seam over the file bridge (`state.json` / `action.json` /
-  `action-results.jsonl`). The only module that imports `wow_sdk` (present in the base
-  image). Adapts snapshots/results into `types.py` shapes.
+- `bridge.py` — the typed seam over `vanilla_wow.nim_control.v1` (binary-framed local TCP,
+  port 41114+slot). The only module that imports `wow_sdk` (present in the base image).
+  observe = EnvironmentFrame (observation + bindings + masks) → `types.py` shapes;
+  act = one mask-admitted `FactorizedAction` per offered frame (stale-safe by
+  frame_id/revision); results = typed `ActionSettled`.
 - `types.py` — dependency-free policy-facing types (`Observation`, `ActionOutcome`,
   `Position`). Policies import only this.
 - `trace.py` — structured tracing: every observation tick, intent, and typed outcome to
@@ -25,11 +34,13 @@ the target typed observation/action spaces:
   zipped and PUT to `COWORLD_PLAYER_ARTIFACT_UPLOAD_URL` — fetchable per slot via the
   `policy-artifact` job routes, immune to the stdout log cap/retention gap.
 - `policies/` — the policy registry (`WOWBORG_POLICY` env; default `random_walk`).
-  `random_walk.py` is the T0 navigator: random 10–20 yd legs, one typed settlement each.
+  `random_walk.py` is the T0 navigator: frame-driven random 10–20 yd legs; when the
+  action mask refuses a destination it falls back to the frame's recommended action.
 - `Dockerfile` — layers `wowborg/` onto the **deployed reference player image** (pinned by
   digest in [`../tools/versions.env`](../tools/versions.env)) and repoints
   `KING_NIMROD_COMMAND` at our shim. The base's CMD (`vanilla_wow_coworld.player` WS
-  wrapper), Nim binaries, navmesh data, and `wow_sdk` are inherited unchanged.
+  wrapper), Nim binaries, and `wow_sdk` are inherited unchanged (0.1.31+: no world data
+  in player images — the game serves assets over HTTP).
 
 Container env knobs: `WOWBORG_POLICY` (default `random_walk`),
 `WOWBORG_DURATION_SECONDS` (default 120), `WOWBORG_RUNTIME_DIR`,
@@ -38,11 +49,13 @@ Container env knobs: `WOWBORG_POLICY` (default `random_walk`),
 
 **Evidence channels (ordered by retention confidence):** ① the policy-artifact zip
 (`artifact.py`), ② `trace.jsonl` + stdout, ③ `/say` breadcrumbs (`ShimBridge.say`,
-rate-limited) which land inside the CWREPLAY itself — decode with
+rate-limited; 0.1.31 caveat: the text factor indexes the frame's ADMITTED vocabulary, so
+arbitrary strings may be unsendable — chat is bonus, never load-bearing) which land
+inside the CWREPLAY itself — decode with
 [`../tools/cwreplay.py`](../tools/cwreplay.py) (`summary` / `packets --say-only`).
 Replay tooling landscape: [`../docs/recon/replay-tooling-2026-07-15.md`](../docs/recon/replay-tooling-2026-07-15.md).
 
-## v1 modules (kept as a debugging asset — not in the v2 image path)
+## v1 modules (kept as a debugging asset — not in the image path)
 
 - `wire.py`, `srp6.py`, `crypt.py`: pure byte/crypto protocol core.
 - `realmd.py`: SRP6 realmd login and realm-list request.
@@ -53,11 +66,15 @@ Replay tooling landscape: [`../docs/recon/replay-tooling-2026-07-15.md`](../docs
 ## Commands
 
 ```bash
-uv run pytest vanilla_wow_lab/wowborg/tests -q       # all tests (v1 + v2)
+uv run pytest vanilla_wow_lab/wowborg/tests -q       # all tests (v1 legacy + v3)
 vanilla_wow_lab/tools/build_player.sh                 # build players-wowborg:dev (amd64)
 ```
 
-The build script sources the base-image digest pin from `../tools/versions.env` and
-sanity-checks the built image (king_richard, navmesh data, wow_sdk, our modules, the
-`KING_NIMROD_COMMAND` override). To bump the shim when the league redeploys the game, see
-the bump notes in `versions.env`.
+The bridge tests run the REAL `wow_sdk.nim_control` client (from
+`../.sdk-snapshot/`, extracted from the pinned base image — recipe in
+`tests/conftest.py`) against a scripted control server
+(`tests/fake_control_server.py`). The build script sources the digest pin from
+`../tools/versions.env` and sanity-checks the built image (king_richard,
+`wow_sdk.nim_control` importable, our modules, the `KING_NIMROD_COMMAND` override).
+To bump the shim when the league redeploys the game, follow the bump notes in
+`versions.env` (pin → snapshot re-extract → tests → rebuild).

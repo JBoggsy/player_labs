@@ -1,187 +1,335 @@
-"""Typed seam between wowborg policies and the Nim shim's file bridge.
+"""Typed seam between wowborg policies and the Nim client's control socket (0.1.31+).
 
-Policies see ONLY the types defined here (``Observation``, ``ActionOutcome``); they never
-touch ``wow_sdk`` models, runtime files, or processes. This module is the adapter half of
-the swap seam: it imports ``wow_sdk`` (installed in the base image) and reduces its
-``TelemetrySnapshot`` / ``ActionExecutionResult`` into the T0 slice of the observation and
-action-result spaces designed in
-``docs/designs/wowborg-observation-action-spaces.html`` (§3.1, §4.1, §4.9).
+Policies see ONLY ``wowborg.types`` (``Observation``, intents, ``ActionOutcome``); they
+never touch ``wow_sdk`` models, sockets, or processes. This module is the adapter half
+of the swap seam: it drives ``vanilla_wow.nim_control.v1`` — the binary-framed local TCP
+socket that replaced the 0.1.19 action.json file bridge (recon:
+``docs/recon/player-contract-0131-2026-07-21.md``).
 
-The file-bridge contract (verified against the game repo @ 312d1d0c7):
-- ``state.json``   — one TelemetrySnapshot, atomically replaced by the Nim client.
-- ``action.json``  — flat envelope ``{sequence>=1, request_id, kind, ...allowlisted args}``.
-- ``action-results.jsonl`` — one ActionExecutionResult per line; move results always carry
-  a typed ``movement_settlement`` (success ⇔ kind ∈ {reached_target, advanced_corridor,
-  combat_interrupted}).
+Control contract (verified against the deployed 0.1.31 image's wow_sdk):
+- One ``GoalRequest(selection_mode="external")`` arms per-step control; the Nim
+  controller then OFFERS immutable EnvironmentFrames (observation + dense one-based
+  bindings + factorized action masks + a recommended action).
+- The policy's only write is one mask-admitted ``FactorizedAction`` per offered frame,
+  bound to that frame's ``frame_id``/``observed_tick``/``revision`` (single-use,
+  stale-safe).
+- Settlements arrive as typed ``ActionSettled`` records (also mirrored to the read-only
+  ``action-results.jsonl``); "sent is not accepted" maps to: selection accepted ≠ done —
+  wait for the settlement of that frame's action.
 """
 
 from __future__ import annotations
 
 import time
-import uuid
 from pathlib import Path
 
-from wow_sdk.runtime import EmbeddedClientRuntimeClient, atomic_write_json
+from wow_sdk.nim_control import (
+    ActionSelectionRequest,
+    ControlStatus,
+    EnvironmentFrame,
+    FactorizedAction,
+    GoalRequest,
+    NimControlClient,
+    NimControlError,
+    WorldPoint,
+)
 
 from wowborg.trace import NullTracer, Tracer
 from wowborg.types import ActionOutcome, Observation, Position
 
 # Replay-visible breadcrumbs cost real game actions; keep them sparse.
 SAY_MIN_INTERVAL_SECONDS = 5.0
+FRAME_POLL_SECONDS = 0.25
+GOAL_ID = "wowborg"
 
 
 class ShimBridge:
-    """Drives one Nim-shim runtime dir: observe, emit intents, await typed results."""
+    """Drives one Nim control socket: observe frames, select actions, await settlement."""
 
-    def __init__(self, runtime_dir: Path | str, tracer: Tracer | None = None) -> None:
-        self._client = EmbeddedClientRuntimeClient(Path(runtime_dir))
-        self._sequence = 0
-        self._result_offset = 0
+    def __init__(
+        self,
+        runtime_dir: Path | str,  # kept for evidence-surface symmetry (trace/artifact)
+        tracer: Tracer | None = None,
+        *,
+        slot: int = 0,
+        host: str | None = None,
+        port: int | None = None,
+    ) -> None:
+        self._runtime_dir = Path(runtime_dir)
         self._tracer = tracer or NullTracer()
+        self._client = NimControlClient(host=host, port=port, slot=slot)
+        self._slot = slot
         self._last_say = 0.0
         self._last_traced_tick: int | None = None
-        # Settled-but-unclaimed results: action.json is a single slot, so results can
-        # arrive for requests other than the one currently being awaited.
-        self._pending_results: list = []
+        self._goal_armed = False
 
-    # ---- observations ------------------------------------------------------
+    # ---- lifecycle -----------------------------------------------------------
+
+    def connect(self, *, timeout_s: float = 120.0) -> bool:
+        """Connect to the control socket, retrying until the Nim client serves it."""
+        deadline = time.monotonic() + timeout_s
+        while time.monotonic() < deadline:
+            try:
+                self._client.connect()
+                status = self._client.status()
+                self._tracer.emit(
+                    "control_connected", phase=status.phase, revision=status.revision
+                )
+                return True
+            except (OSError, NimControlError):
+                self._client.close()
+                time.sleep(1.0)
+        return False
+
+    def arm_external_control(
+        self, *, goal_kind: str = "leveling", deadline_unix_seconds: float = 0.0
+    ) -> bool:
+        """Submit the goal that switches the controller to external per-step selection.
+
+        The Nim planner still PLANS (it paces frames and supplies recommended_action);
+        external mode means WE choose which admitted action executes each frame.
+        """
+        status = self._client.status()
+        request = GoalRequest(
+            goal_id=GOAL_ID,
+            goal_kind=goal_kind,
+            deadline_unix_seconds=deadline_unix_seconds,
+            expected_slot=self._slot,
+            expected_revision=status.revision,
+            selection_mode="external",
+        )
+        try:
+            accepted = self._client.submit_goal(request)
+        except NimControlError as exc:
+            self._tracer.emit("goal_rejected", error=str(exc))
+            return False
+        self._goal_armed = True
+        self._tracer.emit(
+            "goal_armed",
+            goal_kind=goal_kind,
+            revision=accepted.revision,
+            phase=accepted.phase,
+        )
+        return True
+
+    def close(self) -> None:
+        self._client.close()
+
+    # ---- observations ----------------------------------------------------------
+
+    def wait_for_frame(self, *, timeout_s: float = 60.0) -> EnvironmentFrame | None:
+        """Block until the controller offers a decision frame (action_ready)."""
+        deadline = time.monotonic() + timeout_s
+        while time.monotonic() < deadline:
+            try:
+                result = self._client.status(include_environment_frame=True)
+            except NimControlError as exc:
+                self._tracer.emit("status_error", error=str(exc))
+                time.sleep(FRAME_POLL_SECONDS)
+                continue
+            if isinstance(result, EnvironmentFrame) and result.action_ready:
+                self._trace_frame(result)
+                return result
+            time.sleep(FRAME_POLL_SECONDS)
+        return None
 
     def observe(self) -> Observation | None:
-        """Read the latest snapshot; None while the client has not written one."""
-        snapshot = self._client.read_snapshot()
-        if snapshot is None:
+        """Latest self-state, from the frame if offered, else ControlStatus-only ticks.
+
+        Policies that just need pose/vitals can call this anytime; per-step control
+        should use wait_for_frame() to get bindings + masks with the same data.
+        """
+        try:
+            result = self._client.status(include_environment_frame=True)
+        except NimControlError:
             return None
-        character = snapshot.character
-        if snapshot.tick != self._last_traced_tick:
-            self._last_traced_tick = snapshot.tick
-            self._tracer.emit(
-                "observation",
-                tick=snapshot.tick,
-                map_id=character.map_id,
-                zone=character.zone,
-                position=[character.x, character.y, character.z, character.orientation],
-                health=character.health,
-                max_health=character.max_health,
-                in_combat=character.in_combat,
-                is_dead=bool(character.is_dead),
-                is_ghost=bool(character.is_ghost),
-            )
-        return Observation(
-            tick=snapshot.tick,
-            captured_at=time.time(),
-            map_id=character.map_id,
-            zone=character.zone,
-            position=Position(character.x, character.y, character.z, character.orientation),
-            health=character.health,
-            max_health=character.max_health,
-            in_combat=character.in_combat,
-            is_dead=bool(character.is_dead),
-            is_ghost=bool(character.is_ghost),
-        )
+        if not isinstance(result, EnvironmentFrame):
+            return None
+        self._trace_frame(result)
+        return self._observation(result)
 
-    # ---- intents -----------------------------------------------------------
+    # ---- intents ----------------------------------------------------------------
 
-    def move_to(
+    def select_move_to(
         self,
+        frame: EnvironmentFrame,
         x: float,
         y: float,
         z: float,
         map_id: int,
-        *,
-        arrival_radius: float = 3.0,
-        trust_z: bool = False,
-    ) -> str:
-        """Queue a move intent; returns its request_id. ``trust_z=False`` lets the
-        executor's Detour projection settle the destination height (the proven default
-        for computed points)."""
-        payload: dict[str, object] = {
-            "destination": {"map_id": map_id, "x": x, "y": y, "z": z},
-            "arrival_radius": arrival_radius,
-        }
-        if not trust_z:
-            payload["target_z_known"] = False
-        return self._queue("move", payload)
+    ) -> str | None:
+        """Select a move-to-destination action on an offered frame.
+
+        Returns a synthetic request id (frame-bound) or None if the mask refuses the
+        action — the caller should then pick differently (e.g. accept the recommended
+        action or wait for the next frame).
+        """
+        action = FactorizedAction(
+            kind="move",
+            destination=WorldPoint(map_id=map_id, x=x, y=y, z=z),
+        )
+        return self._select(frame, action, label="move_to")
+
+    def select_action(self, frame: EnvironmentFrame, action: FactorizedAction) -> str | None:
+        """Select an arbitrary factorized action (T1+ policies compose these)."""
+        return self._select(frame, action, label=action.kind)
+
+    def select_recommended(self, frame: EnvironmentFrame) -> str | None:
+        """Accept the Nim planner's recommendation for this frame."""
+        if frame.recommended_action is None:
+            return None
+        return self._select(frame, frame.recommended_action, label="recommended")
+
+    # ---- results ------------------------------------------------------------------
+
+    def wait_for_settlement(
+        self, frame_id: int, *, timeout_s: float = 90.0
+    ) -> ActionOutcome | None:
+        """Block until the action selected on ``frame_id`` settles; None on timeout.
+
+        "Sent is not accepted": a timeout is failure, never success.
+        """
+        deadline = time.monotonic() + timeout_s
+        while time.monotonic() < deadline:
+            try:
+                settled = self._client.last_settlement()
+            except NimControlError:
+                settled = None
+            if settled is not None and settled.frame_id >= frame_id:
+                outcome = ActionOutcome(
+                    request_id=f"frame-{settled.frame_id}",
+                    kind=settled.action_kind or settled.action.kind,
+                    success=settled.success,
+                    settlement_kind=None,  # granular kinds live in action-results.jsonl
+                    displacement_yards=None,
+                    end_position=None,
+                    detail=settled.message,
+                )
+                self._tracer.emit(
+                    "outcome",
+                    frame_id=settled.frame_id,
+                    action_kind=outcome.kind,
+                    success=outcome.success,
+                    settled_tick=settled.settled_tick,
+                    detail=outcome.detail,
+                )
+                return outcome
+            time.sleep(FRAME_POLL_SECONDS)
+        self._tracer.emit("outcome", frame_id=frame_id, timeout=True, waited_s=timeout_s)
+        return None
+
+    # ---- breadcrumbs ----------------------------------------------------------------
 
     def say(self, text: str) -> str | None:
-        """Emit a replay-visible /say breadcrumb (CWREPLAY v4 records real chat packets —
-        the ONLY channel that survives into replays when policy logs aren't retained).
+        """Best-effort replay-visible /say breadcrumb.
 
-        Rate-limited; returns the request_id, or None when suppressed. Because
-        ``action.json`` is a single slot, we wait (briefly) for the chat action to
-        settle so the caller's next intent can't overwrite it before the Nim client
-        polls; a timeout is non-fatal — the breadcrumb is best-effort.
+        0.1.31 constraint: the ``text`` factor indexes the frame's ADMITTED vocabulary
+        (bounded ``PolicyText`` rows) — arbitrary strings are only expressible if the
+        frame admits them. We look for our text among the current frame's bindings and
+        select a chat_say when possible; otherwise we trace-and-skip. Chat is a bonus
+        channel now, never load-bearing (trace + artifact bundle carry the evidence).
         """
         now = time.monotonic()
         if now - self._last_say < SAY_MIN_INTERVAL_SECONDS:
             return None
         self._last_say = now
         self._tracer.emit("say", text=text)
-        request_id = self._queue("chat_say", {"text": text[:200]})
-        self.wait_for_result(request_id, timeout_s=3.0)
-        return request_id
+        try:
+            result = self._client.status(include_environment_frame=True)
+        except NimControlError:
+            return None
+        if not isinstance(result, EnvironmentFrame) or not result.action_ready:
+            return None
+        index = next(
+            (row.index for row in result.bindings.texts if row.value == text), None
+        )
+        if index is None:
+            self._tracer.emit("say_not_admitted", text=text)
+            return None
+        action = FactorizedAction(kind="chat_say", text=index)
+        return self._select(result, action, label="chat_say")
 
-    # ---- results -----------------------------------------------------------
+    # ---- internals --------------------------------------------------------------------
 
-    def wait_for_result(self, request_id: str, *, timeout_s: float = 90.0) -> ActionOutcome | None:
-        """Block until the executor settles the given request; None on timeout.
-
-        "Sent is not accepted": callers treat a timeout as failure, never as success.
-        """
-        deadline = time.monotonic() + timeout_s
-        while time.monotonic() < deadline:
-            self._pending_results.extend(self._drain_results())
-            match = next(
-                (r for r in self._pending_results if r.request_id == request_id), None
+    def _select(
+        self, frame: EnvironmentFrame, action: FactorizedAction, *, label: str
+    ) -> str | None:
+        if not frame.allows_action(action):
+            self._tracer.emit(
+                "selection_refused_by_mask",
+                label=label,
+                action_kind=action.kind,
+                frame_id=frame.frame_id,
             )
-            if match is not None:
-                self._pending_results.remove(match)
-                outcome = self._outcome(match)
-                self._tracer.emit(
-                    "outcome",
-                    request_id=outcome.request_id,
-                    action_kind=outcome.kind,
-                    success=outcome.success,
-                    settlement_kind=outcome.settlement_kind,
-                    displacement_yards=outcome.displacement_yards,
-                    end_position=(
-                        [outcome.end_position.x, outcome.end_position.y, outcome.end_position.z]
-                        if outcome.end_position
-                        else None
-                    ),
-                    detail=outcome.detail,
-                )
-                return outcome
-            time.sleep(0.5)
-        self._tracer.emit("outcome", request_id=request_id, timeout=True, waited_s=timeout_s)
-        return None
+            return None
+        request = ActionSelectionRequest(
+            action=action,
+            frame_id=frame.frame_id,
+            observed_tick=frame.observed_tick,
+            expected_slot=self._slot,
+            expected_revision=frame.revision,
+        )
+        try:
+            self._client.select(request)
+        except NimControlError as exc:
+            self._tracer.emit(
+                "selection_rejected",
+                label=label,
+                action_kind=action.kind,
+                frame_id=frame.frame_id,
+                error=str(exc),
+            )
+            return None
+        self._tracer.emit(
+            "intent",
+            request_id=f"frame-{frame.frame_id}",
+            action_kind=action.kind,
+            label=label,
+            frame_id=frame.frame_id,
+            destination=(
+                [action.destination.x, action.destination.y, action.destination.z]
+                if action.destination
+                else None
+            ),
+            target=action.target or None,
+        )
+        return f"frame-{frame.frame_id}"
 
-    # ---- internals ---------------------------------------------------------
+    def _observation(self, frame: EnvironmentFrame) -> Observation:
+        obs = frame.observation
+        return Observation(
+            tick=obs.tick,
+            captured_at=time.time(),
+            map_id=obs.location.map_id,
+            zone="",  # AreaTable localization exists in richer frames; T0 doesn't need it
+            position=Position(
+                obs.location.x, obs.location.y, obs.location.z, obs.location.orientation
+            ),
+            health=obs.health,
+            max_health=obs.max_health,
+            in_combat=obs.in_combat,
+            is_dead=obs.is_dead,
+            is_ghost=obs.is_ghost,
+        )
 
-    def _queue(self, kind: str, args: dict[str, object]) -> str:
-        self._sequence += 1
-        request_id = f"wowborg-{self._sequence}-{uuid.uuid4().hex[:8]}"
-        payload = {"sequence": self._sequence, "request_id": request_id, "kind": kind, **args}
-        atomic_write_json(self._client.paths.action_file, payload)
-        self._tracer.emit("intent", request_id=request_id, action_kind=kind, args=args)
-        return request_id
-
-    def _drain_results(self):
-        results, self._result_offset = self._client.read_action_results(offset=self._result_offset)
-        return results
-
-    def _outcome(self, result) -> ActionOutcome:
-        settlement = result.movement_settlement
-        client_state = result.client_state
-        end_position = None
-        if client_state is not None and client_state.player_position is not None:
-            p = client_state.player_position
-            end_position = Position(p.x, p.y, p.z, p.orientation)
-        return ActionOutcome(
-            request_id=result.request_id,
-            kind=result.kind,
-            success=result.success,
-            settlement_kind=settlement.kind if settlement is not None else None,
-            displacement_yards=settlement.displacement_yards if settlement is not None else None,
-            end_position=end_position,
-            detail=result.message,
+    def _trace_frame(self, frame: EnvironmentFrame) -> None:
+        if frame.observed_tick == self._last_traced_tick:
+            return
+        self._last_traced_tick = frame.observed_tick
+        obs = frame.observation
+        self._tracer.emit(
+            "observation",
+            tick=obs.tick,
+            frame_id=frame.frame_id,
+            phase=frame.phase,
+            map_id=obs.location.map_id,
+            position=[obs.location.x, obs.location.y, obs.location.z, obs.location.orientation],
+            health=obs.health,
+            max_health=obs.max_health,
+            in_combat=obs.in_combat,
+            is_dead=obs.is_dead,
+            is_ghost=obs.is_ghost,
+            action_ready=frame.action_ready,
+            n_entities=len(frame.bindings.entities),
+            recommended=frame.recommended_action.kind if frame.recommended_action else None,
         )

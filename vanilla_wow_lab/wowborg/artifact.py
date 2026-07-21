@@ -22,7 +22,17 @@ import zipfile
 from pathlib import Path
 
 ARTIFACT_UPLOAD_ENV = "COWORLD_PLAYER_ARTIFACT_UPLOAD_URL"
-BUNDLED_FILES = ("trace.jsonl", "action-results.jsonl", "state.json", "heartbeat.json")
+BUNDLED_FILES = (
+    "trace.jsonl",
+    "action-results.jsonl",
+    "state.json",
+    "heartbeat.json",
+    # 0.1.31 read-only supervision surfaces (bundle when present):
+    "environment-frame.json",
+    "decision-audit.jsonl",
+    "leveling-performance.jsonl",
+    "decision-loop-profile.jsonl",
+)
 
 
 def build_bundle(runtime_dir: Path, zip_path: Path) -> list[str]:
