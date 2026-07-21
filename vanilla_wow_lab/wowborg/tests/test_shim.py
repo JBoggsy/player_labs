@@ -57,14 +57,20 @@ def test_richard_environment_maps_character_creation_fields() -> None:
     assert env["KING_RICHARD_CHARACTER_GENDER"] == "male"
 
 
-def test_assets_argument_forwarded() -> None:
+def test_assets_argument_from_env_or_argv() -> None:
     from wowborg.shim import assets_argument
 
-    assert assets_argument(["--assets=http://game:8000/player/assets"]) == (
-        "--assets=http://game:8000/player/assets"
+    # Primary path: the 0.1.31 wrapper exports the asset service URL as env
+    assert assets_argument([], {"VANILLA_WOW_ASSET_SERVICE_URL": "http://g/player/assets"}) == (
+        "--assets=http://g/player/assets"
     )
-    assert assets_argument([]) is None
-    assert assets_argument(["--other=x"]) is None
+    # Fallback: an argv-passed --assets survives
+    assert assets_argument(["--assets=http://argv/assets"], {}) == "--assets=http://argv/assets"
+    # env wins on conflict (same URL in practice)
+    assert assets_argument(
+        ["--assets=http://argv/assets"], {"VANILLA_WOW_ASSET_SERVICE_URL": "http://env/assets"}
+    ) == "--assets=http://env/assets"
+    assert assets_argument([], {}) is None
 
 
 def test_session_duration_prefers_override_then_deadline(monkeypatch) -> None:

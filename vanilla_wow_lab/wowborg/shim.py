@@ -68,8 +68,20 @@ def richard_environment(runtime_dir: Path, base_env: dict[str, str] | None = Non
     return env
 
 
-def assets_argument(argv: list[str]) -> str | None:
-    """The wrapper appends --assets=<url> to our command; forward it to the Nim child."""
+def assets_argument(argv: list[str], env: dict[str, str] | None = None) -> str | None:
+    """Build the Nim child's --assets=<url> argument.
+
+    The deployed 0.1.31 wrapper exports VANILLA_WOW_ASSET_SERVICE_URL (the game's
+    authenticated world-data endpoint) and expects the KING_NIMROD_COMMAND child to
+    convert it — exactly what hosted_general_grinder does. Without it king_richard
+    fetches bare paths, loads no mmaps, and every piloted move fails with
+    "no goal-relative progress" (proven by the first v3 hosted probe). Newer wrappers
+    may append --assets= to argv directly; accept both, env winning on conflict is
+    fine because they carry the same URL.
+    """
+    source = os.environ if env is None else env
+    if url := source.get("VANILLA_WOW_ASSET_SERVICE_URL"):
+        return f"--assets={url}"
     return next((a for a in argv if a.startswith("--assets=")), None)
 
 
