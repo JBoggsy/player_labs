@@ -17,3 +17,5 @@ buffers — not in-session hit counts — is the graduation signal.
 concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
+### A doc written mid-session gets referenced (WORKING_CONTEXT, lessons) but not indexed — audit docs/README.md before committing new docs
+Evidence: top3-advantage-reporter-guidance.md sat untracked and unindexed while WORKING_CONTEXT.md and a lessons archive already linked to it; the pre-commit doc audit caught that docs/README.md's table was the only place it was missing. The doc-index table is the discoverability surface — a doc absent from it is invisible to a fresh agent.
