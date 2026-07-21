@@ -18,6 +18,23 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
 
+### The game repo's origin/main gets FORCE-REWRITTEN — sync the read-only checkout with `git reset --hard origin/main`, not merge
+
+Evidence: 2026-07-21 pull: HEAD and origin/main had diverged by ~12k/~15k commits with
+the SAME author/content (history rewrite upstream); `git pull` produced thousands of
+add/add conflicts. Since the checkout is read-only reference, `git fetch && git reset
+--hard origin/main` is the correct sync (stash untracked .recon/ first).
+
+### wow_sdk's file-bridge contract DRIFTS at HEAD — validate bridge code against the PINNED base image's SDK, not the checkout
+
+Evidence: HEAD (0.1.31-era) removed `action_file` from EmbeddedClientRuntimePaths
+("Move live bot control into Nim", cc4ad8843) — bridge tests importing wow_sdk from the
+checkout broke while our digest-pinned 0.1.19 base is unchanged and still deployed...
+EXCEPT `coworld list` now shows vanilla_wow 0.1.31 deployed, so the NEXT pin bump must
+re-verify the whole file-bridge contract (action.json may be gone at 0.1.31 — the
+Python-policy seam may have moved). Fix applied: tests import from
+vanilla_wow_lab/.sdk-snapshot/ extracted from the pinned image (recipe in conftest).
+
 ### The full evidence stack is CONFIRMED working hosted — elevated fetch returns logs+artifacts+results; all 10 slot-audits pass
 
 Evidence: 2026-07-21 elevated re-fetch of xreq_c530da3b (both eps completed, 0 failed).
