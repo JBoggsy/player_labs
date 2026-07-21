@@ -38,16 +38,9 @@ mid-session; check them back at the start of focused work.
   the new meeting length), batch/skip triggers, or longer `CREWBORG_LLM_TIMEOUT_SECONDS` now
   that the deadline budget is 5x roomier. Related: the pre-existing ~41%-fallback latency item below.
 
-- **League telemetry artifacts are EPHEMERAL (~one round's retention) — investigate + build a harvest**
-  (flagged 2026-07-01, James). With all-telemetry uploads now standard (`CREWBORG_TRACE_GROUPS=all`,
-  see `user_preferences.md`), policy artifacts from league rounds vanish after roughly one round
-  (~10-15 min): v82's 21:10 fetch found artifacts only in the newest round's episodes (6/100); same
-  pattern in the v80 pull (17/196, all newest-round). Two threads: (a) find where/why they're
-  deleted (Observatory retention? dispatch-runner cleanup?) and whether retention can be extended;
-  (b) until then, stand up a per-round artifact harvest (cron/loop every ~10 min pulling the newest
-  round's artifacts) so continuous telemetry actually accumulates. Related small fix: the
-  `vote_bar` telemetry field lies (logs legacy 0.8; the live crew gate is `WEIGHTS_VOTE_PROBABILITY=0.9`)
-  — `crewrift/crewborg/events.py:449`.
+- **Small fix: the `vote_bar` telemetry field lies** (split out of the resolved retention item,
+  2026-07-21): logs legacy 0.8; the live crew gate is `WEIGHTS_VOTE_PROBABILITY=0.9` —
+  `crewrift/crewborg/events.py:449`.
 
 - **Meeting-LLM latency / fallback — ~41% of meeting-LLM calls fall back to the silent
   deterministic floor** (held 2026-06-30, from the proactive-chat work). In a 16-game Prime XP
@@ -132,6 +125,18 @@ mid-session; check them back at the start of focused work.
   whether to commit/PR them upstream or discard.
 
 ## Done
+
+- **League telemetry artifacts "ephemeral" — investigated + harvest built** (flagged 2026-07-01;
+  DONE 2026-07-21). Verdict: artifacts are **durable, not deleted** — the July-1 "vanishing"
+  (v82 6/100, v80 17/196, newest-round-only) was a read-path/auth failure during metta's
+  artifact-route churn (v1 TEAM_AUTH routes + opt-in elevation #17028 + v2 migration #17413/#17466,
+  v1 deleted #17603); the very same v80/v82 episodes still serve their zips 20 days later, and
+  metta has no artifact TTL (only the secrets bucket has lifecycle expiry —
+  `devops/tf/observatory/policy-secrets.tf:52`). No platform ask needed. Built anyway (for
+  continuous local accumulation): `crewrift_lab/tools/harvest_artifacts.py` — idempotent,
+  lockfile-guarded, cron-able (~10 min) puller of crewborg's league `policy_artifact_*.zip` into
+  gitignored `crewrift_lab/telemetry_harvest/`. How-to + retention findings:
+  `crewrift_lab/docs/telemetry-harvest.md`. Crontab not installed — line is in the doc/script header.
 
 - **Fix `rotate_lessons.sh` re-archiving UNCHANGED buffers under new timestamps** (found 2026-07-13
   lessons sweep — 3 labs had byte-identical duplicate archives inflating the recurrence signal;

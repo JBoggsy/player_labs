@@ -167,3 +167,22 @@ from main (`git merge-base --is-ancestor <sha> HEAD`). Lesson: commit early/ofte
 branch (uncommitted work would have been LOST when the dir vanished), and if a worktree disappears,
 check `git reflog --all | grep <branch/sha>` + `git fsck --no-reflogs | grep dangling` before assuming
 loss — a parallel session may have merged it. Continue from the main checkout with absolute paths.
+
+### "Data vanished from the platform" is a read-path hypothesis until an old object 404s directly
+
+Evidence: the 2026-07-01 "league artifacts are ephemeral (~1 round, ~10-15 min)" scare
+(TODO item; v82 6/100, v80 17/196 with artifacts, newest-round-only). Re-probed 2026-07-21:
+the very same v80/v82 episodes still list has_artifact=true and download fine (HTTP 200)
+via `GET /v2/episode-requests/{ereq}/policy-artifacts` — 20 days later. Nothing with a
+15-minute TTL returns data at 20 days, so the original disappearance was a READ failure,
+not deletion: it coincided exactly with metta's artifact-route/auth churn (v1 TEAM_AUTH
+`/jobs/{id}/policy-artifact` + opt-in elevation ee7a3e27c2 #17028 landing 07-02 + the v2
+migration b548b013a4/#17413, 3c3fdb4f17/#17466; v1 deleted c4ddebd857/#17603), and our
+fetcher maps EVERY 4xx to "no artifacts" (`get_text_or_none` → None). Also verified in
+metta: no artifact TTL exists — the only S3 lifecycle expiry is the secrets bucket
+(`devops/tf/observatory/policy-secrets.tf:52`); the only backend delete is the per-job
+secrets bundle (`job_runner/event_processor.py:791`). Lesson: before concluding
+"retention", (1) directly re-fetch an OLD known-good object, (2) distinguish 403/404/empty
+in tooling instead of collapsing them, (3) check whether the platform's auth/routes were
+churning that week. Harvest tool now exists anyway: `crewrift_lab/tools/harvest_artifacts.py`
+(+ `docs/telemetry-harvest.md`).
