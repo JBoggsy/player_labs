@@ -302,29 +302,37 @@ def discover_by_container(
     client: Client,
     *,
     pool_id: str | None,
-    round_id: str | None,
+    round_ids: list[str],
     division_id: str | None,
     want: int,
 ) -> list[EpisodeRef]:
-    """Experience-request episodes filtered by pool / round / division.
+    """Experience-request episodes filtered by pool / round(s) / division.
 
     Only `pool_id`, `round_id`, `division_id` are real server-side filters on
     /v2/episode-requests (coworld_id/job_id/episode_id are silently ignored).
+    The server takes one round_id per query, so repeated --round flags fan out
+    into one query each and merge (deduped by ereq id).
     A bare pool uuid 422s -- it must carry the `pool_` prefix.
     """
     if pool_id and not pool_id.startswith("pool_"):
         pool_id = f"pool_{pool_id}"
-    params: dict[str, Any] = {"limit": min(max(want, 1), 1000), "offset": 0}
+    base_params: dict[str, Any] = {"limit": min(max(want, 1), 1000), "offset": 0}
     if pool_id:
-        params["pool_id"] = pool_id
-    if round_id:
-        params["round_id"] = round_id
+        base_params["pool_id"] = pool_id
     if division_id:
-        params["division_id"] = division_id
-    page = client.get_json("/v2/episode-requests", **params)
-    rows = page.get("entries", []) if isinstance(page, dict) else page
-    refs = [_ref_from_ereq_row(r) for r in rows]
-    refs.sort(key=lambda e: e.created_at, reverse=True)
+        base_params["division_id"] = division_id
+
+    by_id: dict[str, EpisodeRef] = {}
+    for round_id in round_ids or [None]:
+        params = dict(base_params)
+        if round_id:
+            params["round_id"] = round_id
+        page = client.get_json("/v2/episode-requests", **params)
+        rows = page.get("entries", []) if isinstance(page, dict) else page
+        for r in rows:
+            ref = _ref_from_ereq_row(r)
+            by_id.setdefault(ref.ref_id, ref)
+    refs = sorted(by_id.values(), key=lambda e: e.created_at, reverse=True)
     return refs[:want]
 
 
@@ -368,10 +376,12 @@ def episode_dirname(ref: EpisodeRef) -> str:
 
 
 def episode_is_complete(out_dir: Path, want_replay: bool, want_logs: bool,
-                        want_artifacts: bool = True) -> bool:
+                        want_artifacts: bool = True, want_results: bool = True) -> bool:
     if not (out_dir / "episode.json").exists():
         return False
     if want_replay and not (out_dir / "replay.json").exists():
+        return False
+    if want_results and not (out_dir / "results.json").exists():
         return False
     if want_logs and not (out_dir / "logs").exists():
         return False
@@ -533,6 +543,7 @@ def select_watch_fetches(
     want_replay: bool,
     want_logs: bool,
     want_artifacts: bool = True,
+    want_results: bool = True,
     max_attempts: int,
     xreq_drained: bool,
 ) -> tuple[list[EpisodeRef], list[EpisodeRef], list[EpisodeRef], list[EpisodeRef]]:
@@ -548,7 +559,8 @@ def select_watch_fetches(
     exhausted: list[EpisodeRef] = []
     done: list[EpisodeRef] = []
     for ref in refs:
-        if episode_is_complete(out_root / episode_dirname(ref), want_replay, want_logs, want_artifacts):
+        if episode_is_complete(out_root / episode_dirname(ref), want_replay, want_logs, want_artifacts,
+                               want_results):
             done.append(ref)
             continue
         status = str(ref.record.get("status") or "").lower()
@@ -622,42 +634,51 @@ def watch_loop(
         attempts = json.loads(state_path.read_text())
 
     while True:
-        detail = client.get_json(f"/v2/experience-requests/{args.xreq}")
-        drained = _xreq_drained(detail)
-        refs = discover_by_xreq(client, args.xreq, args.num)
-        to_fetch, waiting, exhausted, done = select_watch_fetches(
-            refs, args.out, attempts,
-            want_replay=want_replay, want_logs=want_logs, want_artifacts=want_artifacts,
-            max_attempts=args.max_attempts, xreq_drained=drained,
-        )
-        for ref in to_fetch:
-            ep_dir = args.out / episode_dirname(ref)
-            log(f"  [watch] fetching {ref.ref_id[:16]} {ref.label}")
-            s = fetch_episode(
-                client, ref, ep_dir,
-                want_replay=want_replay, want_results=want_results, want_logs=want_logs,
-                want_artifacts=want_artifacts,
+        # One whole poll pass is guarded: a transient network/server hiccup
+        # (httpx RemoteProtocolError, a 5xx, a timeout) used to kill the watcher
+        # silently mid-stream. The loop is resume-safe by construction, so the
+        # right response is to log loudly and retry after the poll interval.
+        try:
+            detail = client.get_json(f"/v2/experience-requests/{args.xreq}")
+            drained = _xreq_drained(detail)
+            refs = discover_by_xreq(client, args.xreq, args.num)
+            to_fetch, waiting, exhausted, done = select_watch_fetches(
+                refs, args.out, attempts,
+                want_replay=want_replay, want_logs=want_logs, want_artifacts=want_artifacts,
+                want_results=want_results,
+                max_attempts=args.max_attempts, xreq_drained=drained,
             )
-            for err in s["errors"]:
-                log(f"      ! {err}")
-            if episode_is_complete(ep_dir, want_replay, want_logs, want_artifacts):
-                attempts.pop(ref.ref_id, None)
-                done.append(ref)
-            else:
-                attempts[ref.ref_id] = attempts.get(ref.ref_id, 0) + 1
-                if attempts[ref.ref_id] >= args.max_attempts:
-                    log(f"      ! {ref.ref_id[:16]}: giving up after {args.max_attempts} attempts")
-                    exhausted.append(ref)
-        state_path.write_text(json.dumps(attempts, indent=2))
+            for ref in to_fetch:
+                ep_dir = args.out / episode_dirname(ref)
+                log(f"  [watch] fetching {ref.ref_id[:16]} {ref.label}")
+                s = fetch_episode(
+                    client, ref, ep_dir,
+                    want_replay=want_replay, want_results=want_results, want_logs=want_logs,
+                    want_artifacts=want_artifacts,
+                )
+                for err in s["errors"]:
+                    log(f"      ! {err}")
+                if episode_is_complete(ep_dir, want_replay, want_logs, want_artifacts, want_results):
+                    attempts.pop(ref.ref_id, None)
+                    done.append(ref)
+                else:
+                    attempts[ref.ref_id] = attempts.get(ref.ref_id, 0) + 1
+                    if attempts[ref.ref_id] >= args.max_attempts:
+                        log(f"      ! {ref.ref_id[:16]}: giving up after {args.max_attempts} attempts")
+                        exhausted.append(ref)
+            state_path.write_text(json.dumps(attempts, indent=2))
 
-        total = detail.get("episode_count") or len(refs)
-        pending = max(0, total - len(done) - len(exhausted))
-        _write_watch_index(args.out, args.xreq, server, refs, done, exhausted, pending, drained)
-        log(f"[watch] fetched {len(done)}/{total} "
-            f"(pending {pending}, exhausted {len(exhausted)}, drained={drained})")
-        if drained and pending == 0:
-            log(f"[watch] done: xreq drained; {len(done)} fetched, {len(exhausted)} without artifacts.")
-            return 0
+            total = detail.get("episode_count") or len(refs)
+            pending = max(0, total - len(done) - len(exhausted))
+            _write_watch_index(args.out, args.xreq, server, refs, done, exhausted, pending, drained)
+            log(f"[watch] fetched {len(done)}/{total} "
+                f"(pending {pending}, exhausted {len(exhausted)}, drained={drained})")
+            if drained and pending == 0:
+                log(f"[watch] done: xreq drained; {len(done)} fetched, {len(exhausted)} without artifacts.")
+                return 0
+        except (httpx.HTTPError, json.JSONDecodeError, OSError) as exc:
+            log(f"[watch] !!! poll pass failed ({type(exc).__name__}: {exc}); "
+                f"retrying in {args.interval:.0f}s")
         time.sleep(args.interval)
 
 
@@ -678,7 +699,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                      help="Experience-request episode id (ereq_...). Repeatable.")
     sel.add_argument("--xreq", help="Experience-request id (xreq_...); downloads all its child episodes.")
     sel.add_argument("--pool", help="Pool id (pool_...).")
-    sel.add_argument("--round", dest="round_id", help="Round id (round_...).")
+    sel.add_argument("--round", dest="round_ids", action="append", default=[],
+                     help="Round id (round_...). Repeatable; results merge across rounds.")
     sel.add_argument("--division", dest="division_id", help="Division id (div_...).")
     sel.add_argument("--episode", action="append", default=[],
                      help="League episode uuid. Repeatable.")
@@ -717,7 +739,7 @@ def resolve_refs(client: Client, args: argparse.Namespace) -> list[EpisodeRef]:
         bool(args.policy),
         bool(args.ereq),
         bool(args.xreq),
-        bool(args.pool or args.round_id or args.division_id),
+        bool(args.pool or args.round_ids or args.division_id),
         bool(args.episode),
     ]
     if sum(modes) != 1:
@@ -730,9 +752,9 @@ def resolve_refs(client: Client, args: argparse.Namespace) -> list[EpisodeRef]:
         return discover_by_ereq(client, args.ereq)
     if args.xreq:
         return discover_by_xreq(client, args.xreq, args.num)
-    if args.pool or args.round_id or args.division_id:
+    if args.pool or args.round_ids or args.division_id:
         return discover_by_container(
-            client, pool_id=args.pool, round_id=args.round_id,
+            client, pool_id=args.pool, round_ids=args.round_ids,
             division_id=args.division_id, want=args.num,
         )
     return discover_by_episode(client, args.episode)
@@ -770,7 +792,8 @@ def main(argv: list[str] | None = None) -> int:
         for i, ref in enumerate(refs, 1):
             short = ref.ref_id[:16] if ref.ref_id.startswith("ereq_") else ref.ref_id[:8]
             ep_dir = args.out / episode_dirname(ref)
-            if not args.force and episode_is_complete(ep_dir, want_replay, want_logs, want_artifacts):
+            if not args.force and episode_is_complete(ep_dir, want_replay, want_logs, want_artifacts,
+                                                      want_results):
                 log(f"  [{i}/{len(refs)}] {short} {ref.label} — already present, skipping")
                 summaries.append({"ref_id": ref.ref_id, "dir": ep_dir.name, "skipped": True})
                 continue
@@ -790,7 +813,7 @@ def main(argv: list[str] | None = None) -> int:
             k: v for k, v in {
                 "policy": args.policy, "version": args.version,
                 "ereq": args.ereq or None, "xreq": args.xreq,
-                "pool": args.pool, "round": args.round_id, "division": args.division_id,
+                "pool": args.pool, "round": args.round_ids or None, "division": args.division_id,
                 "episode": args.episode or None, "num": args.num,
             }.items() if v
         },
