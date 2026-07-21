@@ -113,3 +113,19 @@ Evidence: v6 "10-0" vs daf-actinf-ctf-v4:v1 had zero kills, zero captures, zero 
 both sides — every red seat +1, every blue -1. That's a disconnect/abandon walkover
 (0.7.4 even added a disconnected-losers fix upstream), not gameplay signal. Check the
 kills/captures columns before counting a win streak as evidence.
+
+### A stderr-quiet beacon log is NORMAL for artifact-traced versions — don't misread it as a crash
+
+Evidence: "v6 crashing constantly" investigation — v6's league logs are 2 lines (banner
++ "game over: server closed the connection") because its traces go to jsonl@artifact,
+not stderr. The agents played full games (results show ±1 scores, wins). The only real
+crash traceback in fresh rounds belonged to a co-gas policy. Before diagnosing a crash:
+(a) does results.json show the policy scoring/winning? (b) is there an actual Traceback
+in ITS log? (c) is the membership still `competing/active`? All three said healthy.
+
+### Opponents iterate against YOU specifically — read their commit log when your matchup flips
+
+Evidence: daveey's ctf-focusfire:v7 landed with commit messages naming beacon:v6 as the
+benchmark ("late all-in breaks peek-duck stalemates … Validated vs beacon:v6: 8W-0L-16D").
+The public coworld-ctf repo's recent commits are competitive intelligence — check them
+when league form shifts, not just when hash validation fails.
