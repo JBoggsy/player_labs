@@ -13,6 +13,38 @@ file is the one-screen "where are we and why."
 
 ---
 
+## Status (2026-07-21, session 5): FULL evidence stack verified hosted — all 10 slot-audits pass
+
+Elevated re-fetch of the v2 smoke (xreq_c530da3b, both eps completed / 0 failed) closed
+every open evidence question:
+
+- **All three artifact families returned** per slot: `policy_agent_N.log` (~140 KB
+  stdout: 122 `WOWBORG-TRACE` JSONL lines, 40 `WOWBORG-POLICY leg` lines, the
+  `evidence bundle: ['trace.jsonl','action-results.jsonl','state.json','heartbeat.json']`
+  confirmation, clean exit-0), `policy_artifact_N.zip` (the bundle — trace parses,
+  ~122 events/slot), and **`results.json`** (retained now; scoring =
+  `highest_character_total_xp`, session metric `top_character_xp_gained`; all 0 for the
+  random-walker, as expected).
+- **`trace_audit.py`: 10/10 slot×own-episode audits agree** (e.g. Freshwar: 269.6 yd
+  claimed vs 273.5 yd observed in the replay). Two slots show the known 1-say noise
+  (the final "done:" say suppressed by our own rate limit). "Sent is not accepted" is
+  now an automated, passing check.
+- Root causes of the session-3/4 artifact gaps: (a) 403 without `--elevated`;
+  (b) upstream deleted the v1 `/jobs` policy-artifact routes — main's `7130f40` already
+  repointed the fetcher to v2 episode-request routes.
+- Episode 2 totals: 5/5 members walked 244–290 yd, 18–23 legs. Survey re-rendered over
+  all 6 episodes (v1 retro + both v2).
+- trace_audit member auto-detection fixed for same-brain self-play (max breadcrumb
+  overlap, not first match); explicit `--member` from the trace's
+  `session_start.character` is the reliable path.
+
+**Next steps:** (1) T1 bridge growth — combat/loot/quests per the obs/action design doc,
+now measurable leg-by-leg and XP-by-XP (results.json gives per-slot xp_gained);
+(2) party formation (invite/accept via slot-0 convention) toward the RFC benchmark;
+(3) consider `wow-survey` skill packaging once T1 lands.
+
+---
+
 ## Status (2026-07-15, session 4c): wowborg v2 HOSTED SMOKE PASSED — the loop is LIVE
 
 **wowborg:v2 uploaded** (`eb6aa13e-…`, tag `purpose=v2-shim-random-walk`) and smoked on

@@ -17,3 +17,22 @@ buffers — not in-session hit counts — is the graduation signal.
 concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
+
+### The full evidence stack is CONFIRMED working hosted — elevated fetch returns logs+artifacts+results; all 10 slot-audits pass
+
+Evidence: 2026-07-21 elevated re-fetch of xreq_c530da3b (both eps completed, 0 failed).
+Per slot: `policy_agent_N.log` (~140 KB stdout incl. 122 WOWBORG-TRACE lines + the
+"evidence bundle: [trace.jsonl, action-results.jsonl, state.json, heartbeat.json]"
+confirmation), `policy_artifact_N.zip` (the bundle itself), AND `results.json` (retained
+this time). `trace_audit.py` on every slot × its own episode: 10/10 agree (e.g. Freshwar
+claimed 269.6 yd settled vs 273.5 yd observed). Root causes of session-3/4 gaps: 403
+without `--elevated` + upstream deletion of v1 /jobs routes (fixed in 7130f40 on main).
+
+### In same-brain self-play, identify "our" replay member by BEST breadcrumb overlap, not first match — and per-episode, artifacts only pair with their own replay
+
+Evidence: trace_audit's first-match member detection misattributed slots (every slot
+says similar "wowborg leg N" texts); fixed to max-overlap scoring, but explicit
+`--member` (from trace session_start.character) is the reliable path. Also: a sloppy
+audit loop cross-matched ep-1 traces against ep-2's replay → phantom findings. The
+session_end "done:" say is often rate-limit-suppressed in-game but present in the trace
+— a 1-say discrepancy is expected noise, not a violation.

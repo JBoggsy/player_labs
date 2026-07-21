@@ -60,8 +60,9 @@ def audit(trace_events: list[dict], replay, member_name: str | None) -> dict:
     trace_displacement = sum(o.get("displacement_yards") or 0.0 for o in settled)
     settlement_kinds = Counter(o.get("settlement_kind") for o in settled)
 
-    # Pick the replay member: explicit, or the one whose chat contains our breadcrumbs,
-    # else the single member.
+    # Pick the replay member: explicit, else the member whose outbound chat matches the
+    # MOST of our breadcrumbs. In same-brain self-play every slot emits similar
+    # breadcrumb texts, so "first member with any match" misidentifies — score all.
     member = None
     if member_name:
         member = next(
@@ -70,15 +71,18 @@ def audit(trace_events: list[dict], replay, member_name: str | None) -> dict:
     elif len(replay.members) == 1:
         member = replay.members[0]
     else:
-        breadcrumb_texts = {e.get("text") for e in says}
+        breadcrumb_texts = {e.get("text") for e in says if e.get("text")}
+        best_score = 0
         for candidate in replay.members:
-            for packet in candidate.packets:
-                if packet.opcode in cwreplay.CHAT_OPCODES and packet.from_client:
-                    if cwreplay._chat_text(packet) in breadcrumb_texts:
-                        member = candidate
-                        break
-            if member:
-                break
+            candidate_texts = {
+                cwreplay._chat_text(p)
+                for p in candidate.packets
+                if p.from_client and p.opcode in cwreplay.CHAT_OPCODES
+            }
+            score = len(breadcrumb_texts & candidate_texts)
+            if score > best_score:
+                best_score = score
+                member = candidate
 
     findings: list[str] = []
     replay_metrics: dict = {}
