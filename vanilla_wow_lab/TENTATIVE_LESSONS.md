@@ -18,6 +18,19 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
 
+### 0.1.31 rebuilt the policy seam: action.json is DEAD; the mutable boundary is a binary TCP control socket (nim_control.v1) with factorized, mask-validated actions
+
+Evidence: player-contract recon 2026-07-21 (docs/recon/player-contract-0131-2026-07-21.md),
+verified inside the deployed 0.1.31 image. Python policies now either submit typed GOALS
+(leveling/dungeon; Nim's planner plays) or take per-step control via
+EnvironmentFrame (observation + dense bindings + action masks) → one FactorizedAction per
+offered frame, stale-safe by frame_id/revision. state.json/action-results.jsonl survive
+as READ-ONLY evidence. KING_NIMROD_COMMAND injection + platform artifact upload are
+unchanged → wowborg's swap seam holds: bridge rewrite, policies/tracing/artifact intact.
+Watch items: free-text chat is now a bounded admitted vocabulary (breadcrumbs at risk);
+player images no longer carry world data (game serves it via --assets URL; our
+build_player.sh mmaps check is stale for 0.1.31 bases).
+
 ### The game repo's origin/main gets FORCE-REWRITTEN — sync the read-only checkout with `git reset --hard origin/main`, not merge
 
 Evidence: 2026-07-21 pull: HEAD and origin/main had diverged by ~12k/~15k commits with

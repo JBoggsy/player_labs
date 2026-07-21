@@ -13,6 +13,38 @@ file is the one-screen "where are we and why."
 
 ---
 
+## Status (2026-07-21, session 5b): 0.1.31 player contract mapped — migration is a bridge rewrite
+
+**The deployed game moved to 0.1.31 and rebuilt the policy seam** (recon:
+[`docs/recon/player-contract-0131-2026-07-21.md`](docs/recon/player-contract-0131-2026-07-21.md),
+verified inside the deployed image):
+
+- `action.json` is gone. The mutable boundary is a **binary TCP control socket**
+  (`vanilla_wow.nim_control.v1`, 127.0.0.1:41114+slot): submit a typed **goal**
+  (leveling/dungeon → Nim's planner plays) or take per-step **external selection** —
+  read an **EnvironmentFrame** (typed observation + dense bindings + action masks +
+  recommended action), submit one mask-admitted **FactorizedAction** per offered frame.
+- `state.json`/`action-results.jsonl` survive as read-only evidence;
+  `environment-frame.json` is a new atomic file mirror of the frame.
+- **Unchanged**: `KING_NIMROD_COMMAND` injection, the WS wrapper CMD, platform-side
+  `COWORLD_PLAYER_ARTIFACT_UPLOAD_URL` injection (metta dispatcher) → our
+  policies/types/trace/artifact layers port as-is; **bridge.py + shim.py rewrite** is
+  the migration (the swap seam did its job).
+- Notables: player images no longer carry world data (game serves assets via
+  `--assets` URL — our build sanity check is stale for 0.1.31 bases);
+  `rfc-five-player-clear` is now a ~50 min ceiling (300/0.1); league split into three
+  competitions (smoke variant of choice: `custom-fresh-start`, ~1000 s);
+  `dungeon` goal mode handles RFC party formation natively; free-text chat is now a
+  bounded admitted vocabulary (breadcrumbs at risk — probe needed).
+- Open probes: admitted-text vocabulary in a real frame; whether external selection
+  paces well for pure exploration; whether v2 (0.1.19) still runs on 0.1.31 infra.
+
+**Next steps:** migrate wowborg to 0.1.31 (order in the recon §Next steps: re-extract
+.sdk-snapshot → bridge rewrite vs NimControlClient → shim updates → versions.env bump →
+local fake-control smoke → hosted probe on `custom-fresh-start`).
+
+---
+
 ## Status (2026-07-21, session 5): FULL evidence stack verified hosted — all 10 slot-audits pass
 
 Elevated re-fetch of the v2 smoke (xreq_c530da3b, both eps completed / 0 failed) closed
