@@ -39,6 +39,32 @@ verified inside the deployed image):
 - Open probes: admitted-text vocabulary in a real frame; whether external selection
   paces well for pure exploration; whether v2 (0.1.19) still runs on 0.1.31 infra.
 
+**HOSTED VERIFICATION DONE (session 5d) — wowborg v4 works against the real 0.1.31 controller:**
+
+- **v3 probe** (xreq_bafc50aa, custom-fresh-start): contract PROVEN (socket connect,
+  goal armed, 139 frames offered/selected/settled, evidence bundle retained incl.
+  environment-frame.json) but **all moves failed "no goal-relative progress"** —
+  king_richard had no world data. Root cause: the wrapper exports
+  `VANILLA_WOW_ASSET_SERVICE_URL` and expects the KING_NIMROD_COMMAND child to convert
+  it to `--assets=<url>` (as hosted_general_grinder does); our shim only checked argv.
+- **v4 = the fix** (env-first assets_argument). Probe xreq_34150d19: ep1 26 legs /
+  15 reached / ~259 yd; **ep2 135 legs / 102 reached / ~1,510 yd traced — replay
+  independently shows 1,581.8 yd**. External per-step selection paces FINE for pure
+  exploration (102 settled moves in ~16 min; zero mask fallbacks). Failures are honest
+  Detour outcomes ("no goal-relative progress" on unreachable random points).
+- **Admitted-text probe answered:** our `/say` breadcrumbs did NOT appear in the replay
+  (say_not_admitted) — the vocabulary is planner-supplied; chat channel now truly
+  bonus-only. The 135 chat packets in the replay are the Nim layer's own narration.
+- trace_audit caveat vs 0.1.31: settlement_kind/displacement aren't in ActionSettled
+  (they live in action-results.jsonl) — audit's displacement check no-ops on v4 traces;
+  breadcrumb check correctly flags the unsendable says. Tool update queued.
+
+**READY FOR THE WAYPOINT RACE** — `policies/waypoint_race.py` shipped + container-smoked:
+ordered course via `WOWBORG_WAYPOINTS` (or default Valley of Trials loop), 8 yd arrival
+tolerance, 3-attempt DNF skip, per-leg `race_leg` trace events, lap counting,
+yards/second summary. Run = upload with `WOWBORG_POLICY=waypoint_race` (+ course env)
+and fire an xreq on custom-fresh-start.
+
 **MIGRATION DONE (session 5c) — wowborg v3 built + fake-server smoked, not yet uploaded:**
 bridge rewritten against `NimControlClient` (external selection over EnvironmentFrames,
 mask-checked FactorizedActions, ActionSettled results); shim updated (assets passthrough,

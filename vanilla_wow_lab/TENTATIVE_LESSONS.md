@@ -18,6 +18,24 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
 
+### The 0.1.31 wrapper hands world data via VANILLA_WOW_ASSET_SERVICE_URL env — the KING_NIMROD_COMMAND child must convert it to --assets=<url> itself
+
+Evidence: v3 hosted probe (2026-07-21): contract worked end-to-end but ALL 139 moves
+settled "piloted movement made no goal-relative progress" — king_richard logged
+"http fetch failed (No uri scheme supplied.)" for every asset and had no mmaps. The
+wrapper does NOT append --assets to the child argv; hosted_general_grinder.py:293-294
+reads the env var and builds the flag. v4 (env-first assets_argument) fixed it: ep2 =
+102/135 legs reached, ~1,510 yd traced, replay-confirmed 1,581.8 yd. When porting a
+grinder-shaped supervisor, port its ENV plumbing, not just its process tree.
+
+### 0.1.31 admitted-text vocabulary does NOT include our breadcrumb strings — /say is now planner-vocabulary-only
+
+Evidence: v4 probe traces show say_not_admitted for our texts; zero wowborg says in the
+replay (the 135 chat packets are the Nim layer's own narration). Chat is officially a
+bonus channel; trace.jsonl + artifact bundle carry all evidence. Also: ActionSettled
+carries no settlement_kind/displacement (those live in action-results.jsonl) — the
+trace_audit displacement check needs a v3-era update before it bites again.
+
 ### 0.1.31 rebuilt the policy seam: action.json is DEAD; the mutable boundary is a binary TCP control socket (nim_control.v1) with factorized, mask-validated actions
 
 Evidence: player-contract recon 2026-07-21 (docs/recon/player-contract-0131-2026-07-21.md),
