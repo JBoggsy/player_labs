@@ -10,7 +10,46 @@ startup to resume; **update it as you learn** (keep it tight).
 
 ---
 
-## Status (2026-07-14, session 3): LEAGUE REDEPLOYED ctf 0.7.4 — beacon ported to the new wire format
+## Status (2026-07-21, session 5): TOP-3 RECON DONE — full report in `scratch/recon_top3/RECON_REPORT.md`
+
+**League moved again: ctf 0.7.49** (coworld `cow_07dfad4a…`, source ref `c76e0c75b…` —
+read from `coworld show <cow_id> --json` manifest `game.runnable.source_url`). New since
+0.7.4: **shields** (6hp, 3x slower fire) + **plasma arcs** (cone weapon). Replay-reader
+pin bumped to c76e0c75 in `tools/build_expand_replay.sh` (old eras: d60dc27=0.7.4,
+761c098=0.5.4). NOTE: beacon:v6 has NOT been re-ported/validated against 0.7.49 —
+standings sank to **rank 6 of 6 (0.057, 256 rounds)**; checking v6 vs the new game
+version is an open thread.
+
+**Field (score):** 1. daveey/ctf-focusfire:v35 (0.941) · 2. softmaxwell/Picasso:v16
+(0.767) · 3. Aaron/ctf-autoresearch:v28 (0.561) · relh (0.14) · richard (0.07) · us (0.057).
+
+**Recon findings (hypothesis-tested over 95 league episodes, warehouse at
+`scratch/recon_top3/wh`):**
+- **focusfire = phase machine**: turtle+kill in own half to ~tick 2500 (0 steals before
+  tick 3000 in 101 runs), push mid-game, cash in a late capture vs a thinned defense
+  (steals at median 2 enemies alive). Focus fire confirmed (28% multi-shooter kills vs
+  Picasso's 18%, matchup-controlled). Heavy item use: 12.7% shield / 7.2% grenade /
+  4.9% arc alive-time; ~9.5% of kills are non-gun.
+- **Picasso = best marksman** (accuracy tops every matchup incl. 0.514 vs focusfire) but
+  its 88 steals convert 5.7% — median carry 23 ticks, 0px progress, stolen into 6 alive
+  defenders. Steal↔win correlation is reverse-caused (already winning before stealing).
+- **autoresearch = early escorted grab-and-run**: 42% steal conversion, escort at 96px
+  (vs 300-380px others), steals at median tick 1902 into 3 defenders; wins avg 3380
+  ticks. Only policy with seat-role structure (2 anchors + strike group). But 2-22 vs
+  focusfire when the early grab fails.
+- **Implications for beacon**: (1) don't feed focusfire's early kill-box — steal EARLY
+  (≤~2000) with a ≤100px escort (autoresearch proves the pattern); (2) shields/items are
+  uncontested strategy currency; (3) focus-fire targeting (wounded-target priority) is
+  measurable and copyable.
+
+**Warehouse upgrades this session (committed to tools/):** `expand_replay_json.nim`
+rewritten to emit positions on kill/shot/steal/capture + periodic `pos`/`flag_pos`
+snapshots (every 30 ticks) — spatial queries now possible. `event_warehouse.py` now
+also ingests league episodes (identity from `policy_results` when xreq-style
+`participants` is absent). Helper: `scratch/recon_top3/q.py` (dedup views over the
+double-fetched league episodes — same episode can arrive under 2 policies' batches).
+
+## (prior) Status (2026-07-14, session 3): LEAGUE REDEPLOYED ctf 0.7.4 — beacon ported to the new wire format
 
 **The league redeployed** (new coworld `cow_e7586b05-3b53-465a-bb87-b9847a1b7bf9`, ctf
 **0.7.4**, source ref `d60dc27` = coworld-ctf HEAD 2026-07-14; GameVersion 1→2; NOTE the

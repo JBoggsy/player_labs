@@ -74,6 +74,20 @@ def _load_episode_meta(ep_dir: Path) -> dict[str, Any] | None:
     results = json.loads(res_path.read_text()) if res_path.exists() else {}
 
     participants = episode.get("participants", [])
+    if not participants:
+        # League episodes carry identity as policy_results (one entry per policy,
+        # agents[].agent_id = slot) instead of the xreq-style participants list.
+        participants = [
+            {
+                "position": agent.get("agent_id"),
+                "policy_name": (pr.get("policy") or {}).get("name"),
+                "version": (pr.get("policy") or {}).get("version"),
+                "policy_version_id": (pr.get("policy") or {}).get("id"),
+                "player_name": None,
+            }
+            for pr in episode.get("policy_results", [])
+            for agent in pr.get("agents", [])
+        ]
     scores = results.get("scores", [])
     wins = results.get("win", [])
     teams_res = results.get("team", [])
