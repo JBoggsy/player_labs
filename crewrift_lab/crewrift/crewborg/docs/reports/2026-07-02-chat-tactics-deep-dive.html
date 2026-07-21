@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chat Tactics — What the Effective Chatters Actually Do</title>
+<style>
+  @font-face {
+    font-family: "system-serif";
+    src: local("Iowan Old Style"), local("Palatino Linotype"), local("Palatino"), local("Georgia");
+  }
+  :root {
+    --paper: #f4f6f7;
+    --paper-raised: #ffffff;
+    --ink: #14181c;
+    --ink-secondary: #4b5560;
+    --ink-muted: #7c8790;
+    --accent: #1f5c66;
+    --line: #d7dcdd;
+    --warn: #8a4a1c;
+    --warn-soft: #f3e7da;
+    --quote-bg: #eef3f2;
+
+    --s-blue: #2a78d6;
+    --s-aqua: #1baf7a;
+    --s-yellow: #b47e00;
+    --s-red: #c13a39;
+    --s-magenta: #b85c7d;
+    --s-orange: #c14e1f;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+  body { -webkit-font-smoothing: antialiased; }
+  .page { max-width: 800px; margin: 0 auto; padding: 4.5rem 1.5rem 6rem; }
+  h1, h2, h3 {
+    font-family: "system-serif", Georgia, "Times New Roman", serif;
+    font-weight: 600; text-wrap: balance; color: var(--ink);
+  }
+  h1 { font-size: 2.1rem; line-height: 1.15; margin: 0 0 0.5rem; letter-spacing: -0.01em; }
+  h2 { font-size: 1.3rem; margin: 3.2rem 0 0.4rem; padding-top: 1.6rem; border-top: 1px solid var(--line); }
+  h2 .num { color: var(--accent); font-variant-numeric: tabular-nums; margin-right: 0.5rem; }
+  h3 { font-size: 1.02rem; margin: 1.6rem 0 0.4rem; }
+  p { margin: 0.85rem 0; max-width: 66ch; }
+  .lede { font-size: 1.13rem; color: var(--ink-secondary); max-width: 62ch; margin-top: 1.1rem; }
+  .eyebrow { text-transform: uppercase; letter-spacing: 0.09em; font-size: 0.72rem; font-weight: 600; color: var(--accent); }
+
+  .callout {
+    background: var(--paper-raised); border: 1px solid var(--line); border-left: 3px solid var(--accent);
+    border-radius: 2px; padding: 0.95rem 1.2rem; margin: 1.3rem 0; font-size: 0.94rem; color: var(--ink-secondary);
+  }
+  .callout.warn { border-left-color: var(--warn); background: var(--warn-soft); }
+  .callout.warn b { color: var(--warn); }
+  .callout b { color: var(--accent); }
+  .callout p { margin: 0.4rem 0; max-width: none; }
+  .callout p:first-child { margin-top: 0; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .transcript {
+    background: var(--paper-raised); border: 1px solid var(--line); border-radius: 3px;
+    padding: 1rem 1.2rem; margin: 1.2rem 0; font-size: 0.87rem;
+  }
+  .transcript .line { display: flex; gap: 0.7rem; padding: 0.22rem 0; align-items: baseline; }
+  .transcript .who {
+    flex: 0 0 165px; font-weight: 600; font-size: 0.78rem; color: var(--accent);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .transcript .who.other { color: var(--ink-muted); font-weight: 500; }
+  .transcript .txt { color: var(--ink); }
+  .transcript .txt.skip { color: var(--ink-muted); font-style: italic; }
+  .transcript .meta { font-size: 0.76rem; color: var(--ink-muted); margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px dashed var(--line); }
+
+  .quote { background: var(--quote-bg); border-radius: 3px; padding: 0.5rem 0.9rem; margin: 0.5rem 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.84rem; color: var(--ink); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin: 1rem 0 1.4rem; }
+  .table-wrap { overflow-x: auto; }
+  th, td { text-align: right; padding: 0.42rem 0.7rem; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; font-variant-numeric: normal; white-space: normal; }
+  th { font-weight: 600; color: var(--ink-secondary); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--ink-muted); }
+  tr:last-child td { border-bottom: none; }
+  td.hi { color: var(--accent); font-weight: 600; }
+  td.lo { color: var(--warn); }
+
+  .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 3px; overflow: hidden; margin: 1.3rem 0 1.6rem; }
+  .stat { background: var(--paper-raised); padding: 0.85rem 0.9rem; }
+  .stat .n { font-family: "system-serif", Georgia, serif; font-size: 1.5rem; font-variant-numeric: tabular-nums; color: var(--ink); line-height: 1; }
+  .stat .l { font-size: 0.7rem; color: var(--ink-secondary); margin-top: 0.3rem; text-transform: uppercase; letter-spacing: 0.03em; }
+
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.87em; }
+  .divider { height: 1px; background: var(--line); margin: 2.6rem 0; border: none; }
+  footer { margin-top: 3.5rem; padding-top: 1.4rem; border-top: 1px solid var(--line); font-size: 0.8rem; color: var(--ink-muted); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="eyebrow">Crewrift Prime &middot; chat tactics deep-dive</div>
+  <h1>What are the effective chatters actually doing?</h1>
+  <p class="lede">Read the real chat text (not just the classified accusation rows) behind the top-3
+  and bottom-3 policies by same-meeting ejection conversion. The answer isn't more evidence or
+  smarter reasoning — it's silence, rigidity, and an explicit call to action.</p>
+
+  <div class="meta-strip callout" style="margin-top:1.4rem">
+    <p>Same 200-episode fresh pull as the parent study. 481 meetings where one of the six
+    policies below spoke; every message read, not sampled. Six policies: the top-3 by ejection
+    conversion (jordan-crewborg-aaln, crewborg-mv, relhalpha-hunter) and three comparison points
+    (crewborg, rowdaboat-notsus, softmaxwell-crewborg — the weakest of the six).</p>
+  </div>
+
+  <h2><span class="num">01</span>The headline pattern</h2>
+  <p>Three variables, read across all six policies' actual chat, line up almost perfectly with
+  same-meeting ejection conversion: how often they stay silent, whether they close with an explicit
+  <span class="mono">vote X</span>, and whether they speak first.</p>
+
+  <div class="table-wrap"><table>
+    <tr><th>Policy</th><th>Silent%</th><th>Distinct msg shapes</th><th>"Vote" when speaking</th><th>Speaks first</th><th>Ejected%</th></tr>
+    <tr><td>jordan&#8209;crewborg&#8209;aaln</td><td>83.9%</td><td>2 total</td><td class="hi">100%</td><td>30.2%</td><td class="hi">65.1%</td></tr>
+    <tr><td>crewborg&#8209;mv</td><td>81.7%</td><td>2 total</td><td class="hi">100%</td><td>33.3%</td><td class="hi">58.7%</td></tr>
+    <tr><td>relhalpha (hunter)</td><td>87.2%</td><td>2 total</td><td class="hi">100%</td><td>36.2%</td><td class="hi">53.2%</td></tr>
+    <tr><td>softmaxwell&#8209;crewborg</td><td>89.7%</td><td>35</td><td>38.2%</td><td>0%</td><td>23.8%</td></tr>
+    <tr><td>rowdaboat&#8209;notsus</td><td>0%</td><td>340</td><td>20.5%</td><td>0.2%</td><td>26.4%</td></tr>
+    <tr><td><b>crewborg</b></td><td><b>0%</b></td><td><b>83</b></td><td class="lo"><b>0.8%</b></td><td><b>0%</b></td><td class="lo"><b>18.0%</b></td></tr>
+  </table></div>
+  <p class="bar-legend" style="font-size:0.8rem;color:var(--ink-muted)">"Vote when speaking" and "speaks first" are computed over substantive
+  (non-silent) messages only.</p>
+
+  <div class="callout">
+    <p><b>The exact opposite of intuition.</b> The three most effective chatters say almost nothing
+    — 82&ndash;87% of every meeting they simply pass (<span class="mono">"no read, skipping"</span>).
+    Across <b>1,166</b> sampled messages from all three, there are exactly <b>two</b> distinct things
+    any of them ever say: that pass, or one fixed template &mdash;
+    <span class="mono">"saw COLOR, COLOR sus, vote COLOR"</span>. Zero hedging, zero questions, zero
+    defending, zero elaboration. crewborg, by contrast, never passes (0% silent) and has 83 distinct
+    message shapes &mdash; it is chattier and more analytically varied than all three top performers
+    combined, and it converts the worst.</p>
+  </div>
+
+  <h2><span class="num">02</span>The vocabulary, side by side</h2>
+
+  <h3>The top style — one template, said or not said</h3>
+  <div class="quote">"no read, skipping" — 84.1% of all messages (n=1,166 across the 3 policies)</div>
+  <div class="quote">"saw green, green sus, vote green" — 15.9% (color varies, structure never does)</div>
+
+  <h3>crewborg — rich, varied, evidence-heavy, and never closes</h3>
+  <div class="quote">"pink sus: lurking on a vent, they were tailing me"</div>
+  <div class="quote">"Red, you were with Pink for 46 ticks around tick 861-906 in Bridge. Pink hasn't moved since tick 907. Where are you now?"</div>
+  <div class="quote">"Green and Purple are dead. Yellow was in Hydroponics 120 ticks — longest stay. Red, Blue nearby same time. Where was Yellow really?"</div>
+  <p>Checked for alternate closing language too (<span class="mono">eject/kick/remove/get out</span>)
+  — 0 of 244 messages. crewborg names a suspect and cites real, specific evidence for it, then simply
+  stops. It never tells the room what to do with what it just said.</p>
+
+  <h3>rowdaboat-notsus — investigative, interrogates the room, moderate follow-through</h3>
+  <div class="quote">"Purple called this out of nowhere. What did you see, purple?"</div>
+  <div class="quote">"Blue was near a kill and now deflecting onto me. Vote blue."</div>
+  <p>340 distinct shapes across 415 messages — genuinely responsive to what's happening, asks
+  direct questions of the meeting-caller, and closes with an explicit vote about 1 in 5 times
+  (better than crewborg, well behind the top-3).</p>
+
+  <h3>softmaxwell-crewborg — cautious, forensic, and the field's worst accuracy</h3>
+  <div class="quote">"purple vented tick 766. need second cue before voting — anyone else see purple move weird?"</div>
+  <div class="quote">"green &amp; purple dead. blue/cyan were together at bridge doing tasks. red isolated. skip to gather info."</div>
+  <p>Also mostly silent (89.7%) like the top-3, but its rare messages are the opposite of rigid —
+  precise tick numbers and vent IDs, and explicit hedges ("need second cue") or deliberate
+  deferrals ("skip to gather info"). This is the most epistemically careful of the six — and has
+  the worst accuracy (9.5%) and near-worst conversion in the whole field. Caution about
+  <em>communicating</em> suspicion doesn't fix a weak underlying read on <em>who</em> to suspect.</p>
+
+  <h2><span class="num">03</span>A real meeting, start to finish</h2>
+  <p>One example meeting, unedited, showing the pattern collide with the room:</p>
+  <div class="transcript">
+    <div class="line"><div class="who other">notsus</div><div class="txt">Blue died. Pink, where was the body and who was nearby?</div></div>
+    <div class="line"><div class="who">jordan-crewborg-aaln</div><div class="txt">saw red, red sus, vote red</div></div>
+    <div class="line"><div class="who other">relhalpha (hunter)</div><div class="txt skip">no read, skipping</div></div>
+    <div class="line"><div class="who other">crewborg</div><div class="txt">pink sus: lurking on a vent, they were tailing me</div></div>
+    <div class="line"><div class="who other">softmaxwell-crewborg</div><div class="txt skip">no read, skipping</div></div>
+    <div class="line"><div class="who other">rowdaboat-notsus</div><div class="txt">Pink reported fast and was near a kill. Pink looks sus to me.</div></div>
+    <div class="meta">Result: 3 of 6 voters converged on the same seat (the one jordan named first and
+    explicitly) — which was in fact an imposter. Two players who said "pink" out loud didn't
+    necessarily vote pink; the room followed the terse, unambiguous, early call.</div>
+  </div>
+
+  <h2><span class="num">04</span>Is this persuasion, or just being right?</h2>
+  <p>Split same-meeting ejection by whether the accusation was actually correct — this is the test
+  for whether "effective" chat is really just "accurate" chat wearing a costume.</p>
+
+  <div class="table-wrap"><table>
+    <tr><th>Policy</th><th>Ejected% (correct accusation)</th><th>Ejected% (wrong accusation)</th><th>Gap</th></tr>
+    <tr><td>jordan&#8209;crewborg&#8209;aaln</td><td>65.9%</td><td>63.2%</td><td>3pp</td></tr>
+    <tr><td>crewborg&#8209;mv</td><td>72.0%</td><td>32.0%</td><td>40pp</td></tr>
+    <tr><td>relhalpha (hunter)</td><td>62.1%</td><td>38.9%</td><td>23pp</td></tr>
+    <tr><td>softmaxwell&#8209;crewborg</td><td>50.0% (n=2)</td><td>21.1%</td><td>29pp</td></tr>
+    <tr><td><b>crewborg</b></td><td><b>28.8%</b></td><td><b>15.3%</b></td><td>13pp</td></tr>
+    <tr><td>rowdaboat&#8209;notsus</td><td>42.2%</td><td>10.5%</td><td>32pp</td></tr>
+  </table></div>
+
+  <div class="callout warn">
+    <p><b>jordan is the outlier that answers the question.</b> Its wrong accusations get ejected
+    almost as often as its right ones (63% vs 66% — essentially no discrimination). The room isn't
+    evaluating truth when jordan speaks; it's following a confident, terse, first-mover, unhedged
+    call — <b>this is anchoring, not persuasion-by-evidence.</b> crewborg-mv and relhalpha show more
+    normal correctness-sensitivity but still convert wrong calls at rates crewborg and rowdaboat
+    never reach even when <em>right</em>. Meanwhile crewborg and rowdaboat show the healthiest
+    correctness-discrimination in the field (biggest relative right/wrong gaps) — the room is
+    comparatively harder to convince when they're wrong — but their overall persuasive power is
+    much weaker across the board. Style and substance are separate axes here, and in this field,
+    style is currently winning.</p>
+  </div>
+
+  <h2><span class="num">05</span>What this suggests for crewborg</h2>
+  <p>Two structural gaps, independent of whether crewborg's underlying suspicion model is any good
+  (it may be — its correctness-discrimination is actually reasonable):</p>
+  <ol>
+    <li><b>It never closes.</b> 0.8% of its messages include an explicit <span class="mono">vote</span>
+    (checked <span class="mono">eject/kick/remove/get out</span> too — still 0). It names a suspect
+    with real, specific evidence and then stops. Appending an explicit call to action costs
+    essentially nothing and is the single variable most correlated with conversion in this data.</li>
+    <li><b>It never speaks first.</b> 0% first-mover rate across 244 messages, vs. 30&ndash;36% for
+    the top-3. When suspicion is already high before a meeting even opens, waiting to hear everyone
+    else first cedes the anchor to whoever speaks first — which, per this data, is often enough to
+    win the room regardless of who's actually right.</li>
+  </ol>
+
+  <div class="callout">
+    <p><b>Not a verdict, a hypothesis.</b> Both are meeting/chat-generation changes, not
+    suspicion-model changes — genuinely separable from the open evidence-warming suspicion lever.
+    Neither has been designed or A/B'd yet; this is read-and-pattern evidence from one 200-episode
+    window, and the field's top-3 sharing a byte-identical template means this is really <b>one</b>
+    observed winning strategy, not three independent confirmations. Worth a small, cheap,
+    pre-registered test before trusting it further.</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <footer>
+    Source data: <span class="mono">crewrift_lab/chat_effectiveness/data/</span> (fresh pull) +
+    ad-hoc transcript extraction (not part of the durable pipeline). Parent study:
+    <span class="mono">crewrift/crewborg/docs/reports/2026-07-02-chat-accuracy-effectiveness.html</span>.
+    Lessons: <span class="mono">crewrift_lab/TENTATIVE_LESSONS.md</span> ("Chat TACTICS deep-dive").
+  </footer>
+
+</div>
+
+</body>
+</html>
