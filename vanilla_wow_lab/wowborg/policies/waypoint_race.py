@@ -1,17 +1,28 @@
-"""Nav test policy: race through pre-selected waypoints in order, timing every leg.
+"""Nav test policy: race through a randomized subset of landmark waypoints, timed.
 
-The course is a JSON list of [x, y, z] world points (map-local), supplied via
-``WOWBORG_WAYPOINTS`` (inline JSON) or ``WOWBORG_WAYPOINTS_FILE``; the default course
-is a Valley of Trials loop chosen from landmarks near the orc fresh-start spawn.
+THE CATALOG. Named, tiered landmarks in Durotar (map 1), all taken from the game
+repo's AUTHORED leveling profile (`player/bots/leveling/profiles/durotar_troll_shaman.nim`)
+— every point is a route node or hunt-area anchor King Richard's own bot provably
+navigates to, so reachability is grounded, not guessed. Tiers by distance from the
+orc/troll fresh-start spawn (-618.5, -4251.7):
 
-Race semantics: visit waypoints strictly in order; a leg completes when its move
-settles successfully AND the observed position is within ``arrival_tolerance`` of the
-waypoint (settlement alone can under-deliver, e.g. no_progress). A failed/blocked leg
-is retried up to ``MAX_LEG_ATTEMPTS`` times before being skipped (counted DNF). Laps
-repeat until the deadline; every leg emits a ``race_leg`` trace event with wall-clock
-split, straight-line distance, and attempts, so the report tier can compute
-yards/second per leg and per lap from the trace alone (replay cross-check via
-trajectory stays available).
+- near  (< 150 yd): inside the Valley of Trials bowl
+- mid   (150-450 yd): valley rim / Sarkoth's mesa / the exit gate corridor
+- far   (> 450 yd): out the valley gate — Razor Hill road, Sen'jin Village coast
+
+COURSE SELECTION. Each session builds its course by sampling a random subset (default
+5 waypoints: ~2 near / ~2 mid / ~1 far) in random order, so races vary while staying
+comparable through per-leg splits keyed to named waypoints. ``WOWBORG_RACE_SEED`` makes
+a course reproducible (A/B: same seed both arms). ``WOWBORG_WAYPOINTS`` /
+``WOWBORG_WAYPOINTS_FILE`` (JSON ``[[x,y,z], ...]``) still override with a fixed course.
+
+RACE SEMANTICS. Visit waypoints strictly in order; a leg completes when the observed
+position is within ``arrival_tolerance`` of the waypoint (settlement alone can
+under-deliver, e.g. no_progress). A failed/blocked leg retries up to
+``MAX_LEG_ATTEMPTS`` times, then is skipped (counted DNF). Laps repeat (fresh shuffle
+of the same course each lap) until the deadline. Every leg emits a ``race_leg`` trace
+event (waypoint name, wall-clock split, straight-line yards, attempts); the summary
+reports completion rate and yards/second — the race metrics.
 """
 
 from __future__ import annotations
@@ -19,19 +30,34 @@ from __future__ import annotations
 import json
 import math
 import os
+import random
 import time
 
-# Valley of Trials landmarks (map 1, Durotar). Chosen off the VMaNGOS spawn
-# (-618.5, -4251.7, 38.7): a ~4-point loop with legs 40-90 yd — long enough that
-# Detour routing matters, short enough for several laps inside a 970 s episode.
-DEFAULT_COURSE: list[list[float]] = [
-    [-618.5, -4251.7, 38.7],   # spawn / Den entrance plaza
-    [-560.0, -4212.0, 41.0],   # NE path toward the Den exit gate
-    [-543.0, -4288.0, 39.5],   # E boar fields
-    [-641.0, -4310.0, 38.0],   # S canyon pocket
-]
+# name -> (x, y, z, tier). Sources: durotar_troll_shaman.nim (authored route nodes,
+# trainer/vendor spawns, hunt-area anchors); spawn cross-checked against our own
+# hosted traces. All map 1 (Kalimdor/Durotar).
+WAYPOINT_CATALOG: dict[str, tuple[float, float, float, str]] = {
+    # --- near: the Valley of Trials bowl (< 150 yd from spawn) ---
+    "spawn-plaza":        (-618.5, -4251.7, 38.7, "near"),   # fresh-start spawn
+    "valley-trainers":    (-623.9, -4203.9, 38.4, "near"),   # class-trainer row (Shikrik spawn)
+    "boar-yard":          (-715.0, -4240.0, 40.0, "near"),   # Mottled Boar hunt anchor
+    "sleeping-peons":     (-628.5, -4340.7, 41.8, "near"),   # Lazy Peons field (south)
+    "scorpid-field-edge": (-600.1, -4186.2, 41.3, "near"),   # staging node toward the east field
+    # --- mid: rim, mesa, gate corridor (150-450 yd) ---
+    "east-scorpid-field": (-405.0, -4118.0, 51.0, "mid"),    # Hana'zua's scorpid flats
+    "sarkoth-mesa":       (-547.3, -4103.9, 70.1, "mid"),    # Sarkoth's den atop the mesa (elevation!)
+    "gate-corridor":      (-359.7, -4309.8, 49.9, "mid"),    # authored route node at the valley exit
+    "northwest-ridge":    (-753.6, -4143.2, 38.8, "mid"),    # NW hunt pocket past the boar yard
+    # --- far: out the gate (> 450 yd; real Detour road work) ---
+    "razor-hill-road":    (-825.6, -4920.8, 19.7, "far"),    # Razor Hill approach (authored node)
+    "senjin-village":     (-797.5, -4921.2, 23.0, "far"),    # Sen'jin Village center
+}
+
+DEFAULT_SUBSET_BY_TIER = {"near": 2, "mid": 2, "far": 1}
+
 WAYPOINTS_ENV = "WOWBORG_WAYPOINTS"
 WAYPOINTS_FILE_ENV = "WOWBORG_WAYPOINTS_FILE"
+RACE_SEED_ENV = "WOWBORG_RACE_SEED"
 
 ARRIVAL_TOLERANCE_YARDS = 8.0
 MAX_LEG_ATTEMPTS = 3
@@ -46,7 +72,20 @@ def log(message: str) -> None:
     print(f"WOWBORG-POLICY {message}", flush=True)
 
 
-def load_course() -> list[list[float]]:
+def sample_course(rng: random.Random) -> list[tuple[str, list[float]]]:
+    """Random subset of the catalog (tier-balanced), in random order."""
+    course: list[tuple[str, list[float]]] = []
+    for tier, count in DEFAULT_SUBSET_BY_TIER.items():
+        names = [n for n, (_, _, _, t) in WAYPOINT_CATALOG.items() if t == tier]
+        for name in rng.sample(names, min(count, len(names))):
+            x, y, z, _ = WAYPOINT_CATALOG[name]
+            course.append((name, [x, y, z]))
+    rng.shuffle(course)
+    return course
+
+
+def load_course(rng: random.Random | None = None) -> list[tuple[str, list[float]]]:
+    """Fixed course from env when supplied; else a random catalog subset."""
     raw = os.environ.get(WAYPOINTS_ENV)
     if not raw:
         path = os.environ.get(WAYPOINTS_FILE_ENV)
@@ -60,11 +99,16 @@ def load_course() -> list[list[float]]:
                 and len(course) >= 2
                 and all(isinstance(p, list) and len(p) == 3 for p in course)
             ):
-                return [[float(v) for v in p] for p in course]
-            log(f"ignoring malformed waypoint course (need >=2 [x,y,z] points)")
+                return [
+                    (f"wp{i}", [float(v) for v in p]) for i, p in enumerate(course)
+                ]
+            log("ignoring malformed waypoint course (need >=2 [x,y,z] points)")
         except json.JSONDecodeError as exc:
             log(f"ignoring unparseable waypoint course: {exc}")
-    return [list(p) for p in DEFAULT_COURSE]
+    seed = os.environ.get(RACE_SEED_ENV)
+    if rng is None:
+        rng = random.Random(int(seed)) if seed and seed.lstrip("-").isdigit() else random.Random()
+    return sample_course(rng)
 
 
 def distance_2d(ax: float, ay: float, bx: float, by: float) -> float:
@@ -72,21 +116,31 @@ def distance_2d(ax: float, ay: float, bx: float, by: float) -> float:
 
 
 class WaypointRacePolicy:
-    def __init__(self, course: list[list[float]] | None = None) -> None:
-        self.course = course if course is not None else load_course()
+    def __init__(
+        self,
+        course: list[tuple[str, list[float]]] | None = None,
+        rng: random.Random | None = None,
+    ) -> None:
+        seed = os.environ.get(RACE_SEED_ENV)
+        self._rng = rng or (
+            random.Random(int(seed)) if seed and seed.lstrip("-").isdigit() else random.Random()
+        )
+        self.course = course if course is not None else load_course(self._rng)
         self.legs_completed = 0
         self.legs_skipped = 0
         self.laps_completed = 0
         self.total_race_seconds = 0.0
-        self.splits: list[dict] = []  # per completed leg: seconds, yards, attempts
+        self.splits: list[dict] = []  # per completed leg: name, seconds, yards, attempts
 
     def summary(self) -> dict:
         yards = sum(s["yards"] for s in self.splits)
         seconds = sum(s["seconds"] for s in self.splits)
+        attempted = self.legs_completed + self.legs_skipped
         return {
-            "course_points": len(self.course),
+            "course": [name for name, _ in self.course],
             "legs_completed": self.legs_completed,
             "legs_skipped": self.legs_skipped,
+            "completion_rate": round(self.legs_completed / attempted, 3) if attempted else None,
             "laps_completed": self.laps_completed,
             "total_yards": round(yards, 1),
             "total_seconds": round(seconds, 1),
@@ -104,12 +158,13 @@ class WaypointRacePolicy:
                 tracer.emit(kind, **payload)
 
         say("wowborg waypoint_race starting")
-        trace("race_start", course=self.course)
-        log(f"course: {len(self.course)} waypoints, racing until deadline")
+        trace("race_start", course=[{"name": n, "point": p} for n, p in self.course])
+        log(f"course: {[n for n, _ in self.course]}, racing until deadline")
 
         index = 0
         attempts = 0
         leg_started_at: float | None = None
+        leg_origin: list[float] | None = None
         while time.monotonic() < until:
             remaining = until - time.monotonic()
             frame = bridge.wait_for_frame(timeout_s=min(FRAME_TIMEOUT_SECONDS, remaining))
@@ -125,23 +180,23 @@ class WaypointRacePolicy:
                     bridge.wait_for_settlement(frame.frame_id, timeout_s=LEG_TIMEOUT_SECONDS)
                 continue
 
-            target = self.course[index]
+            name, target = self.course[index]
             loc = obs.location
-            started = distance_2d(loc.x, loc.y, target[0], target[1])
+            to_target = distance_2d(loc.x, loc.y, target[0], target[1])
 
             # Already at the waypoint? (arrival check happens here so a partial leg
             # that settled short still completes once a later frame shows us close)
-            if started <= ARRIVAL_TOLERANCE_YARDS:
+            if to_target <= ARRIVAL_TOLERANCE_YARDS:
                 # A leg only COUNTS if we actually raced it (≥1 move attempt);
                 # standing at a waypoint (spawn, or after a lap of skips) advances
                 # the course silently — no phantom split.
-                if leg_started_at is not None and attempts > 0:
+                if leg_started_at is not None and attempts > 0 and leg_origin is not None:
                     seconds = time.monotonic() - leg_started_at
-                    origin = self.splits[-1]["to"] if self.splits else self.course[-1]
-                    yards = distance_2d(origin[0], origin[1], target[0], target[1])
+                    yards = distance_2d(leg_origin[0], leg_origin[1], target[0], target[1])
                     self.splits.append(
                         {
                             "leg": self.legs_completed + 1,
+                            "name": name,
                             "to": target,
                             "seconds": round(seconds, 1),
                             "yards": round(yards, 1),
@@ -152,40 +207,51 @@ class WaypointRacePolicy:
                     trace(
                         "race_leg",
                         leg=self.legs_completed,
+                        name=name,
                         waypoint=target,
                         seconds=round(seconds, 1),
                         yards=round(yards, 1),
                         attempts=attempts,
                     )
                     log(
-                        f"leg {self.legs_completed}: reached wp{index} in {seconds:.1f}s "
-                        f"({attempts} attempts)"
+                        f"leg {self.legs_completed}: reached {name} in {seconds:.1f}s "
+                        f"({yards:.0f} yd straight-line, {attempts} attempts)"
                     )
-                index = (index + 1) % len(self.course)
-                if index == 0:
+                index += 1
+                if index >= len(self.course):
+                    index = 0
                     self.laps_completed += 1
                     trace("race_lap", lap=self.laps_completed)
                     say(f"wowborg lap {self.laps_completed} complete")
-                    log(f"LAP {self.laps_completed} complete")
+                    log(f"LAP {self.laps_completed} complete — reshuffling course")
+                    self._rng.shuffle(self.course)
                 attempts = 0
                 leg_started_at = time.monotonic()
+                leg_origin = [loc.x, loc.y]
                 continue
 
             if attempts >= MAX_LEG_ATTEMPTS:
                 self.legs_skipped += 1
-                trace("race_leg_skipped", waypoint=target, attempts=attempts)
-                log(f"wp{index}: SKIPPED after {attempts} attempts (DNF)")
-                index = (index + 1) % len(self.course)
+                trace("race_leg_skipped", name=name, waypoint=target, attempts=attempts)
+                log(f"{name}: SKIPPED after {attempts} attempts (DNF)")
+                index += 1
+                if index >= len(self.course):
+                    index = 0
+                    self.laps_completed += 1
+                    trace("race_lap", lap=self.laps_completed)
+                    self._rng.shuffle(self.course)
                 attempts = 0
                 leg_started_at = time.monotonic()
+                leg_origin = [loc.x, loc.y]
                 continue
 
             if leg_started_at is None:
                 leg_started_at = time.monotonic()
+                leg_origin = [loc.x, loc.y]
             attempts += 1
             request_id = bridge.select_move_to(frame, target[0], target[1], target[2], loc.map_id)
             if request_id is None:
-                log(f"wp{index}: move refused by mask (attempt {attempts}); taking recommended")
+                log(f"{name}: move refused by mask (attempt {attempts}); taking recommended")
                 request_id = bridge.select_recommended(frame)
                 if request_id is None:
                     continue
@@ -196,9 +262,9 @@ class WaypointRacePolicy:
                 frame.frame_id, timeout_s=min(LEG_TIMEOUT_SECONDS, remaining)
             )
             if outcome is None:
-                log(f"wp{index}: settlement TIMEOUT (attempt {attempts})")
+                log(f"{name}: settlement TIMEOUT (attempt {attempts})")
             elif not outcome.success:
-                log(f"wp{index}: settled unsuccessfully ({outcome.detail!r}, attempt {attempts})")
+                log(f"{name}: settled unsuccessfully ({outcome.detail!r}, attempt {attempts})")
 
         summary = self.summary()
         trace("race_end", **summary)

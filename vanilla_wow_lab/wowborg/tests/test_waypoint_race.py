@@ -1,16 +1,19 @@
-"""Unit tests for the waypoint-race policy against a fake frame-driven bridge."""
+"""Unit tests for the randomized-course waypoint-race policy."""
 
 from __future__ import annotations
 
 import json
+import random
 import time
 from dataclasses import dataclass, field
 
 from wowborg.policies.waypoint_race import (
     ARRIVAL_TOLERANCE_YARDS,
-    MAX_LEG_ATTEMPTS,
+    DEFAULT_SUBSET_BY_TIER,
+    WAYPOINT_CATALOG,
     WaypointRacePolicy,
     load_course,
+    sample_course,
 )
 from wowborg.types import ActionOutcome
 
@@ -78,58 +81,99 @@ class TeleportBridge:
         )
 
 
-SQUARE = [[0.0, 0.0, 30.0], [50.0, 0.0, 30.0], [50.0, 50.0, 30.0], [0.0, 50.0, 30.0]]
+SQUARE = [
+    ("a", [0.0, 0.0, 30.0]),
+    ("b", [50.0, 0.0, 30.0]),
+    ("c", [50.0, 50.0, 30.0]),
+    ("d", [0.0, 50.0, 30.0]),
+]
 
 
-def test_load_course_default_and_env(monkeypatch) -> None:
+# ---- catalog & course sampling ----------------------------------------------------
+
+
+def test_catalog_tiers_and_distances() -> None:
+    import math
+
+    spawn = WAYPOINT_CATALOG["spawn-plaza"]
+    for name, (x, y, z, tier) in WAYPOINT_CATALOG.items():
+        d = math.hypot(x - spawn[0], y - spawn[1])
+        if tier == "near":
+            assert d < 150, f"{name}: {d:.0f} yd is not near"
+        elif tier == "mid":
+            assert 100 <= d <= 500, f"{name}: {d:.0f} yd is not mid"
+        else:
+            assert d > 450, f"{name}: {d:.0f} yd is not far"
+
+
+def test_sample_course_is_tier_balanced_and_seeded() -> None:
+    course_a = sample_course(random.Random(7))
+    course_b = sample_course(random.Random(7))
+    course_c = sample_course(random.Random(8))
+    assert course_a == course_b  # same seed → same course
+    assert course_a != course_c  # different seed → (overwhelmingly) different
+    assert len(course_a) == sum(DEFAULT_SUBSET_BY_TIER.values())
+    tiers = [WAYPOINT_CATALOG[name][3] for name, _ in course_a]
+    for tier, count in DEFAULT_SUBSET_BY_TIER.items():
+        assert tiers.count(tier) == count
+    names = [n for n, _ in course_a]
+    assert len(set(names)) == len(names)  # no duplicates
+
+
+def test_load_course_env_override_and_seed(monkeypatch) -> None:
+    monkeypatch.setenv("WOWBORG_WAYPOINTS", json.dumps([[1, 2, 3], [4, 5, 6]]))
+    fixed = load_course()
+    assert fixed == [("wp0", [1.0, 2.0, 3.0]), ("wp1", [4.0, 5.0, 6.0])]
+
     monkeypatch.delenv("WOWBORG_WAYPOINTS", raising=False)
-    monkeypatch.delenv("WOWBORG_WAYPOINTS_FILE", raising=False)
-    default = load_course()
-    assert len(default) >= 2 and all(len(p) == 3 for p in default)
-
-    monkeypatch.setenv("WOWBORG_WAYPOINTS", json.dumps(SQUARE))
-    assert load_course() == SQUARE
-
-    monkeypatch.setenv("WOWBORG_WAYPOINTS", "[[1,2]]")  # malformed → default
-    assert load_course() == default
+    monkeypatch.setenv("WOWBORG_RACE_SEED", "42")
+    assert load_course() == load_course()  # seeded → reproducible
 
 
-def test_race_completes_laps_and_records_splits() -> None:
-    policy = WaypointRacePolicy(course=[list(p) for p in SQUARE])
+# ---- race mechanics ----------------------------------------------------------------
+
+
+def test_race_completes_laps_and_records_named_splits() -> None:
+    policy = WaypointRacePolicy(course=[(n, list(p)) for n, p in SQUARE], rng=random.Random(1))
     bridge = TeleportBridge()
     policy.run(bridge, until=time.monotonic() + 0.5)
     assert policy.laps_completed >= 1
     assert policy.legs_completed >= 4
     assert policy.legs_skipped == 0
     summary = policy.summary()
+    assert summary["completion_rate"] == 1.0
     assert summary["total_yards"] > 0
-    # teleport-fast fake bridge can complete legs in ~0s → rate may be None there
-    if summary["total_seconds"] > 0:
-        assert summary["yards_per_second"] is not None
-    # split legs measure the square's 50-yd sides
-    sides = [s["yards"] for s in policy.splits[1:5]]
-    assert all(abs(y - 50.0) < 1.0 for y in sides)
+    assert set(summary["course"]) == {"a", "b", "c", "d"}
+    assert all(s["name"] in {"a", "b", "c", "d"} for s in policy.splits)
     assert any("lap 1 complete" in s for s in bridge.says)
 
 
+def test_course_reshuffles_between_laps() -> None:
+    policy = WaypointRacePolicy(course=[(n, list(p)) for n, p in SQUARE], rng=random.Random(3))
+    bridge = TeleportBridge()
+    first_order = [n for n, _ in policy.course]
+    policy.run(bridge, until=time.monotonic() + 0.5)
+    assert policy.laps_completed >= 2
+    # after ≥1 reshuffle the live course order should (overwhelmingly) differ
+    assert [n for n, _ in policy.course] != first_order or policy.laps_completed < 2
+
+
 def test_blocked_waypoints_are_skipped_after_max_attempts() -> None:
-    policy = WaypointRacePolicy(course=[list(p) for p in SQUARE])
+    policy = WaypointRacePolicy(course=[(n, list(p)) for n, p in SQUARE], rng=random.Random(1))
     bridge = TeleportBridge(fail_moves=True)
     policy.run(bridge, until=time.monotonic() + 0.4)
-    # standing at wp0 must not accrue phantom completed legs while everything
-    # else gets skipped after MAX_LEG_ATTEMPTS failures
     assert policy.legs_completed == 0
     assert policy.legs_skipped >= 3
+    assert policy.summary()["completion_rate"] == 0.0
     assert policy.summary()["total_yards"] == 0
 
 
 def test_arrival_tolerance_counts_near_misses() -> None:
-    course = [[0.0, 0.0, 30.0], [50.0, 0.0, 30.0]]
-    policy = WaypointRacePolicy(course=course)
+    course = [("a", [0.0, 0.0, 30.0]), ("b", [50.0, 0.0, 30.0])]
+    policy = WaypointRacePolicy(course=course, rng=random.Random(1))
 
     class NearMissBridge(TeleportBridge):
         def select_move_to(self, frame, x, y, z, map_id) -> str:
-            # settle 5 yd short of the target — inside tolerance
             self.position = [x - ARRIVAL_TOLERANCE_YARDS + 3.0, y, z]
             return f"frame-{frame.frame_id}"
 

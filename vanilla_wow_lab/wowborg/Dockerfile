@@ -25,5 +25,9 @@ COPY . /opt/wowborg/wowborg
 
 # The swap point: the base wrapper spawns this command per wow_session.
 ENV KING_NIMROD_COMMAND="python3 -m wowborg.shim"
+# Active policy for this build (see wowborg/policies/__init__.py). Hosted runs can't
+# set per-request env, so the policy ships baked into the image tag we upload.
+ARG WOWBORG_POLICY=random_walk
+ENV WOWBORG_POLICY=${WOWBORG_POLICY}
 
 # CMD inherited from the base image: python3 -m vanilla_wow_coworld.player

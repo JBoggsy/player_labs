@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Build the wowborg v2 player image (our policy layered on the deployed Nim shim).
 #
-# Usage: tools/build_player.sh [--tag REF] [--base IMAGE]
-#   --tag    image tag to build (default: players-wowborg:dev)
-#   --base   override WOWBORG_BASE_IMAGE for this build (default: versions.env pin)
+# Usage: tools/build_player.sh [--tag REF] [--base IMAGE] [--policy NAME]
+#   --tag     image tag to build (default: players-wowborg:dev)
+#   --base    override WOWBORG_BASE_IMAGE for this build (default: versions.env pin)
+#   --policy  bake WOWBORG_POLICY into the image (default: random_walk)
 #
 # Produces a linux/amd64 image (the Coworld upload contract). The base is the deployed
 # reference player image, pinned BY DIGEST in tools/versions.env; if it isn't present
@@ -20,11 +21,13 @@ source "$LAB_DIR/tools/versions.env"
 die() { echo "build_player.sh: $*" >&2; exit 1; }
 
 tag="players-wowborg:dev"
+policy="random_walk"
 while (( $# )); do
   case "$1" in
     --tag)     tag="$2";                shift 2 ;;
     --base)    WOWBORG_BASE_IMAGE="$2"; shift 2 ;;
-    -h|--help) sed -n '3,8p' "$0"; exit 0 ;;
+    --policy)  policy="$2";             shift 2 ;;
+    -h|--help) sed -n '3,9p' "$0"; exit 0 ;;
     *) die "unknown argument: $1" ;;
   esac
 done
@@ -37,6 +40,7 @@ echo "==> docker buildx build --platform=linux/amd64 -t $tag (context: $LAB_DIR/
 docker buildx build --platform=linux/amd64 --load \
   -f "$LAB_DIR/wowborg/Dockerfile" \
   --build-arg "WOWBORG_BASE_IMAGE=$WOWBORG_BASE_IMAGE" \
+  --build-arg "WOWBORG_POLICY=$policy" \
   -t "$tag" \
   "$LAB_DIR/wowborg"
 
