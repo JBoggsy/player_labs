@@ -15,6 +15,26 @@ This is *not* a log or archive: finished work lives in git history / the
 
 ---
 
+## 🎯 ACTIVE (2026-07-21, Thread 1): A/B v110 vs v107 → submit if clean (James: "Submit at will")
+
+**v110** (`028ba9f3-7dfc…`) = v109's code (HS1 compact fix + palette fix + HS default-on) re-uploaded
+with the **v107-equivalent LLM meetings recipe + `CREWBORG_HS_SECRET`** — v109 as uploaded was
+deterministic-only (no `--use-bedrock`/`CREWBORG_LLM_MEETINGS`), a confound vs the champion. A/B is
+like-for-like: matched pinned rosters (current live champion labels: daf-actinf-crewborg-v3:v1,
+softmaxwell-crewborg:v34, sasmith-crewborg-hs1:v15, notsus:v130, scott-crewborg-hs1:v13,
+crewrift-prime-crewborg-aaln-hunter-relhalpha:v6, crewborg-aaln:v25), crewborg pinned slot 0,
+natural roles, ~200 cand / 100 base eps, ≤400 concurrent (paced arms ≤100 eps each).
+
+**PRE-REGISTERED verdict criteria (written before launch):**
+1. PRIMARY: crew self-accusation chat = 0 in candidate (own-color accusations in chat telemetry);
+   no false dead-mutes (meeting_dead_mute thousands of ticks before actual death) in candidate.
+2. Imposter win rate and kills/seat NOT worse than v107 (bug fix — expect neutral-to-better).
+3. Crew win rate not worse than v107.
+4. Ops% ~0 both arms; vote timeouts ~0.
+If ALL pass → submit v110 to Crewrift Prime (standing authorization). Any fail → report, no submit.
+
+xreq ids + verdict recorded here as they land.
+
 ## 🔧 SIDE-THREAD (2026-07-21, merged to main): Honor Society was DEAD in live play — FIXED + verified (crewborg:v109, NOT submitted)
 
 Discovered the HS was a **no-op in every real game**: our code used a LEGACY 5-token `HS1` form,
