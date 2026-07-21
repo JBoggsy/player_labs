@@ -5,11 +5,18 @@ import sys
 from collections import deque
 from pathlib import Path
 
-# wow_sdk ships in the v2 base image; for local test runs, use the read-only game-repo
-# checkout's src/ when present. test_bridge.py importorskips wow_sdk if neither exists.
-_GAME_REPO_SRC = Path.home() / "coding/coworlds/coworld-vanilla-wow/src"
-if _GAME_REPO_SRC.is_dir() and str(_GAME_REPO_SRC) not in sys.path:
-    sys.path.insert(0, str(_GAME_REPO_SRC))
+# wow_sdk ships in the v2 base image; local tests MUST validate against the PINNED
+# image's copy, not the game-repo checkout's HEAD (whose file-bridge contract drifts —
+# e.g. HEAD dropped action_file on 2026-07 while our pinned 0.1.19 base still has it).
+# The snapshot is extracted from the digest-pinned base by:
+#   source vanilla_wow_lab/tools/versions.env
+#   CID=$(docker create --platform=linux/amd64 "$WOWBORG_BASE_IMAGE")
+#   docker cp "$CID:/usr/local/lib/python3.12/site-packages/wow_sdk" vanilla_wow_lab/.sdk-snapshot/
+#   docker rm "$CID"
+# Re-extract whenever versions.env bumps. test_bridge.py importorskips if absent.
+_SDK_SNAPSHOT = Path(__file__).resolve().parents[2] / ".sdk-snapshot"
+if (_SDK_SNAPSHOT / "wow_sdk").is_dir() and str(_SDK_SNAPSHOT) not in sys.path:
+    sys.path.insert(0, str(_SDK_SNAPSHOT))
 
 
 class ScriptedTunnel:

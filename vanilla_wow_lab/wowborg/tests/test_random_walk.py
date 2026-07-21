@@ -96,7 +96,8 @@ def test_run_stops_when_dead() -> None:
     assert any("died" in s for s in bridge.says)
 
 
-def test_run_emits_breadcrumbs_and_summary() -> None:
+def test_run_emits_breadcrumbs_and_summary_verbose(monkeypatch) -> None:
+    monkeypatch.setenv("WOWBORG_BREADCRUMBS", "verbose")
     bridge = FakeBridge(["reached_target"])
     policy = RandomWalkPolicy(rng=random.Random(1))
     policy.run(bridge, until=time.monotonic() + 0.05)
@@ -105,6 +106,27 @@ def test_run_emits_breadcrumbs_and_summary() -> None:
     summary = policy.summary()
     assert summary["legs_attempted"] >= 1
     assert 0 <= summary["legs_reached"] <= summary["legs_attempted"]
+
+
+def test_minimal_breadcrumbs_skip_per_leg_says(monkeypatch) -> None:
+    monkeypatch.delenv("WOWBORG_BREADCRUMBS", raising=False)  # default = minimal
+    bridge = FakeBridge(["reached_target"])
+    policy = RandomWalkPolicy(rng=random.Random(1))
+    policy.run(bridge, until=time.monotonic() + 0.05)
+    assert any("starting" in s for s in bridge.says)
+    # No per-leg chat spam (the "done:" summary mentions legs; per-leg says start "wowborg leg")
+    assert not any(s.startswith("wowborg leg") for s in bridge.says)
+    assert any("done:" in s for s in bridge.says)
+    assert policy.legs_attempted >= 1  # still walking, still tracing
+
+
+def test_breadcrumbs_off_says_nothing(monkeypatch) -> None:
+    monkeypatch.setenv("WOWBORG_BREADCRUMBS", "off")
+    bridge = FakeBridge(["reached_target"])
+    policy = RandomWalkPolicy(rng=random.Random(1))
+    policy.run(bridge, until=time.monotonic() + 0.05)
+    assert bridge.says == []
+    assert policy.legs_attempted >= 1
 
 
 def test_timeout_leg_is_not_counted_as_reached() -> None:

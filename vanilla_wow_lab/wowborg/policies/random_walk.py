@@ -9,6 +9,7 @@ one ``move``, wait for its typed settlement, log it, repeat until the deadline. 
 from __future__ import annotations
 
 import math
+import os
 import random
 import time
 
@@ -19,6 +20,15 @@ MAX_LEG_YARDS = 20.0
 ARRIVAL_RADIUS_YARDS = 3.0
 LEG_TIMEOUT_SECONDS = 90.0
 OBSERVE_RETRY_SECONDS = 1.0
+
+# /say breadcrumb verbosity. Artifact-bundle + policy-log retention is confirmed working
+# (session 5), so chat is no longer a load-bearing evidence channel — default to the
+# quiet mode and keep "verbose" for runs where the replay must self-narrate.
+#   off      — no says at all
+#   minimal  — session start, death, final summary (3 says/episode)
+#   verbose  — plus one say per settled leg (the original smoke behavior)
+BREADCRUMBS_ENV = "WOWBORG_BREADCRUMBS"
+DEFAULT_BREADCRUMBS = "minimal"
 
 
 def log(message: str) -> None:
@@ -40,8 +50,11 @@ class RandomWalkPolicy:
         return {"legs_attempted": self.legs_attempted, "legs_reached": self.legs_reached}
 
     def run(self, bridge, *, until: float) -> None:
-        say = getattr(bridge, "say", lambda _text: None)
-        say(f"wowborg random_walk starting")
+        mode = os.environ.get(BREADCRUMBS_ENV, DEFAULT_BREADCRUMBS)
+        bridge_say = getattr(bridge, "say", lambda _text: None)
+        say = bridge_say if mode != "off" else (lambda _text: None)
+        say_leg = bridge_say if mode == "verbose" else (lambda _text: None)
+        say("wowborg random_walk starting")
         while time.monotonic() < until:
             observation = bridge.observe()
             if observation is None:
@@ -80,9 +93,8 @@ class RandomWalkPolicy:
                 f"success={outcome.success} displacement={outcome.displacement_yards} "
                 f"detail={outcome.detail!r}"
             )
-            # Replay-visible breadcrumb (rate-limited inside the bridge): the /say chat
-            # packet is the one policy signal CWREPLAY v4 retains when logs are dropped.
-            say(
+            # Replay-visible breadcrumb (verbose mode only; rate-limited in the bridge).
+            say_leg(
                 f"wowborg leg {self.legs_attempted}: {outcome.settlement_kind} "
                 f"({self.legs_reached} reached)"
             )
