@@ -10,7 +10,7 @@ from __future__ import annotations
 from crewrift.crewborg.action import BTN_A, BTN_B, BTN_LEFT
 from crewrift.crewborg.events import CrewborgEventTracer
 from crewrift.crewborg.strategy.commander.trace import CommanderTrace
-from crewrift.crewborg.strategy.suspicion import VOTE_PROBABILITY
+from crewrift.crewborg.strategy.suspicion import active_vote_probability_bar
 from crewrift.crewborg.types import (
     ActionState,
     Belief,
@@ -542,7 +542,7 @@ def test_suspicion_snapshot_once_per_meeting_with_ranking_and_vote() -> None:
     assert [r["color"] for r in snap.data["ranking"]] == ["red", "blue"]  # sorted desc by P
     assert snap.data["would_vote"] == "red"
     assert snap.data["would_vote_p"] == 0.91
-    assert snap.data["vote_bar"] == VOTE_PROBABILITY
+    assert snap.data["vote_bar"] == active_vote_probability_bar("crewmate")
     assert snap.data["ranking"][0]["events"][0] == {
         "kind": "near_body", "dur": 4, "target": "green", "region": None, "min_dist": 5,
     }
@@ -553,6 +553,31 @@ def test_suspicion_snapshot_once_per_meeting_with_ranking_and_vote() -> None:
     belief.phase = "Voting"
     h.step(belief=belief)
     assert len(h.events("domain.suspicion_snapshot")) == 2
+
+
+def test_suspicion_snapshot_vote_bar_is_the_actually_applied_bar() -> None:
+    # Regression: the snapshot used to hard-code the legacy 0.8 VOTE_PROBABILITY while
+    # top_suspect() gated crewmate votes at the fitted 0.9 WEIGHTS_VOTE_PROBABILITY.
+    # The traced bar must come from active_vote_probability_bar (the single source of
+    # truth), per role: fitted bar for a crewmate, legacy bar for an imposter's
+    # deflection view.
+    from crewrift.crewborg.strategy import suspicion as suspicion_module
+
+    assert suspicion_module._WEIGHTS is not None  # vendored weights load by default
+
+    h = _Harness()
+    belief = _crewmate_belief(phase="Voting")
+    belief.suspicion = {"red": 0.85}
+    h.step(belief=belief)
+    [snap] = h.events("domain.suspicion_snapshot")
+    assert snap.data["vote_bar"] == suspicion_module.WEIGHTS_VOTE_PROBABILITY
+
+    h2 = _Harness()
+    imposter = Belief(self_role="imposter", phase="Voting", total_player_count=8)
+    imposter.suspicion = {"red": 0.85}  # deflection view
+    h2.step(belief=imposter)
+    [snap2] = h2.events("domain.suspicion_snapshot")
+    assert snap2.data["vote_bar"] == suspicion_module.VOTE_PROBABILITY
 
 
 def test_suspicion_snapshot_emits_feature_vector_and_raw_inputs_when_flag_set(monkeypatch) -> None:

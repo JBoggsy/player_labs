@@ -71,9 +71,9 @@ from crewrift.crewborg.strategy.commander.trace import CommanderTrace
 from crewrift.crewborg.strategy.opportunity import has_trackable_victim, kill_urgency_ticks
 from crewrift.crewborg.strategy.suspicion import (
     ACCUSE_TAIL_RECENCY_TICKS,
-    VOTE_PROBABILITY,
     _fitted_features,
     _prior_imposter_p,
+    active_vote_probability_bar,
     top_suspect,
     witnessed_imposters,
 )
@@ -485,7 +485,7 @@ class CrewborgEventTracer:
                 "believed": sorted(belief.believed_imposters),
                 "would_vote": target,
                 "would_vote_p": round(belief.suspicion[target], 4) if target is not None else None,
-                "vote_bar": VOTE_PROBABILITY,
+                "vote_bar": active_vote_probability_bar(belief.self_role),
             },
         )
 
