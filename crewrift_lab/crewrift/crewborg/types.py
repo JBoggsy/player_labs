@@ -468,17 +468,18 @@ class Belief(BaseModel):
     social_spoke_first_banked_tick: int | None = None
 
     # Crewrift Honor Society (strategy.honor_society; design docs/designs/
-    # honor-society.md; HS1 wire spec). All inert unless CREWBORG_HONOR_SOCIETY is
-    # set. Claims map color -> announced pubkey (first-poster-wins per episode);
-    # trusted is the claimed-crew set the crew vote/accuse paths spare; liar keys are
-    # pubkeys caught claiming crew while provably imposter; counted_chats dedupes HS1
-    # lines across the per-meeting chat_log clear; meeting_no is the 1-based meeting
-    # ordinal (the announce targets the first meeting).
+    # honor-society.md; HS1 wire spec). Inert when CREWBORG_HONOR_SOCIETY is a false
+    # value (the flag defaults ON). Claims map color -> verified pubkey (a key may be
+    # verified at several colors — a member running two seats; no first-poster-wins);
+    # trusted is the known-member claimed-crew set the crew vote/accuse paths spare;
+    # liar keys are pubkeys caught claiming crew while provably imposter; counted_chats
+    # dedupes HS1 lines across the per-meeting chat_log clear; meeting_no is the 1-based
+    # meeting ordinal (the announce targets the first meeting).
     society_claims: dict[str, str] = Field(default_factory=dict)
     society_trusted: set[str] = Field(default_factory=set)
-    # Verified claims whose key is in the vendored known-members registry
-    # (data/honor_members.json): color -> member label. Reputation-backed trust,
-    # distinct from fresh unknown keys (which are provisionally trusted only).
+    # Verified claims whose key is in the vendored known-members ledger
+    # (data/honor_members.json): color -> member label. Since the compact HS1 form has
+    # no pubkey on the wire, only ledger keys verify at all — so trusted == known here.
     society_known: dict[str, str] = Field(default_factory=dict)
     society_liar_keys: set[str] = Field(default_factory=set)
     society_counted_chats: set[tuple[int, str | None, str]] = Field(default_factory=set)

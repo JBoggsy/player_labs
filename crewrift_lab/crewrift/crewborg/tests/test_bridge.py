@@ -36,9 +36,10 @@ async def test_self_color_from_url_maps_slot_to_palette_color() -> None:
     # The engine defaults slot N's colour to PlayerColors[N] (sim.nim addPlayer), and the
     # runner puts the slot in the WS URL — so the slot IS our colour index with zero CV.
     # This is what fixed the v105 vote_timeout mis-latch (self_color known from tick 0).
+    # Names track the game's current PlayerColorNames (updated 2026-06-24, commit 1cbd4de).
     assert _self_color_from_url("ws://host/player?slot=0&token=abc") == "red"
-    assert _self_color_from_url("ws://host/player?token=x&slot=6") == "blue"
-    assert _self_color_from_url("wss://h/player?slot=13") == "green"
+    assert _self_color_from_url("ws://host/player?token=x&slot=6") == "purple"
+    assert _self_color_from_url("wss://h/player?slot=13") == "rose"
 
 
 async def test_self_color_from_url_none_when_slot_absent_or_invalid() -> None:

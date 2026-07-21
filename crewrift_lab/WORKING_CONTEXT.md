@@ -15,6 +15,22 @@ This is *not* a log or archive: finished work lives in git history / the
 
 ---
 
+## 🔧 SIDE-THREAD (2026-07-21, merged to main): Honor Society was DEAD in live play — FIXED + verified (crewborg:v109, NOT submitted)
+
+Discovered the HS was a **no-op in every real game**: our code used a LEGACY 5-token `HS1` form,
+but live members (sasmith-crewborg-hs1:v15) use the **compact** `HS1 <sig>` (sig over
+`HS1|<ts5>|<color>`, ts5=(unix//5)*5, unpadded b64url; brute-force verify over ledger keys × a
+{now5,-5,-10,+5} window; no first-poster-wins). `parse()` returned None on every real line. ALSO
+found `PLAYER_COLOR_NAMES` stale since the game's 2026-06-24 palette change (`1cbd4de`) — slots ≥1
+all wrong, corrupting v106's slot-seed self_color for non-slot-0 seats (latent bug beyond HS). Fixed
+both; `CREWBORG_HONOR_SOCIETY` now **defaults ON**. Proved the compact spec by verifying 17/17 live
+captured sigs vs sasmith's registered key. Uploaded **crewborg:v109** (traced) and verified END-TO-END
+via `xreq_25bb7e0f` (v109 crew + sasmith crew): crewborg's trace shows `society: crew announce` +
+`honor_claim`/`honor_known_member {label:alex-smith}` — we now send, verify, and register real HS1.
+641 tests green; committed on the branch. **NOT submitted** (James's gate). Next if pursued: measure
+whether HS actually helps (it's never been A/B'd in isolation), then the coordinated-vote-piling
+direction (WEEKLY_CONTEXT Direction 1). Full detail: version_log v109.
+
 ## 🎯 OBJECTIVE: v107 QUALIFIED & CHAMPION 👑 — watch league standings recover, then pick the next lever
 
 **v107 is `competing/active` and CHAMPION** in Crewrift Prime (qualified in ~5 min,
