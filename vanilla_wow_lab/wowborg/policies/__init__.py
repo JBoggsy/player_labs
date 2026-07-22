@@ -19,4 +19,8 @@ def build_policy(name: str) -> Policy:
         from wowborg.policies.waypoint_race import WaypointRacePolicy
 
         return WaypointRacePolicy()
+    if name == "world_race":
+        from wowborg.policies.world_race import WorldRacePolicy
+
+        return WorldRacePolicy()
     raise ValueError(f"unknown WOWBORG_POLICY {name!r}")

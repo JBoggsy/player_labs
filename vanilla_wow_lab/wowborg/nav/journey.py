@@ -1,0 +1,187 @@
+"""L2 — the journey planner: navigate literally anywhere, across maps and gates.
+
+journey_to(target): if same-map, delegate straight to L1. Otherwise plan over the
+world-model graph from the nearest known place to the nearest place on the target's
+map, execute edge by edge (walk edges = L1 routes; portal edges = stand at the pad
+and fire area_trigger), then L1 the final same-map stretch. Death-warps that change
+our map mid-journey trigger graph re-planning from wherever we are.
+"""
+
+from __future__ import annotations
+
+import time
+from dataclasses import dataclass, field
+from enum import Enum
+
+from wowborg.nav.route import NavState, RouteNavigator
+from wowborg.nav.world_model import Edge, Point, WorldModel
+
+PORTAL_PAD_RADIUS_YARDS = 5.0
+PORTAL_FIRE_ATTEMPTS = 3
+PORTAL_SETTLE_SECONDS = 20.0
+
+
+class JourneyStatus(Enum):
+    ARRIVED = "arrived"
+    FAILED = "failed"
+
+
+@dataclass
+class JourneyResult:
+    status: JourneyStatus
+    reason: str = ""
+    end: Point | None = None
+    legs: list[dict] = field(default_factory=list)  # per-leg summaries for tracing
+
+
+@dataclass
+class JourneyPlanner:
+    world: WorldModel = field(default_factory=WorldModel)
+    tracer: object | None = None
+    router: RouteNavigator = field(default_factory=RouteNavigator)
+
+    def __post_init__(self) -> None:
+        self.router.tracer = self.tracer
+
+    def _trace(self, kind: str, **payload) -> None:
+        if self.tracer is not None:
+            self.tracer.emit(kind, **payload)
+
+    def journey_to(self, bridge, target: Point, *, deadline: float) -> JourneyResult:
+        legs: list[dict] = []
+        replan_count = 0
+        while time.monotonic() < deadline:
+            here = self.router._observe_position(bridge)
+            if here is None:
+                return JourneyResult(JourneyStatus.FAILED, reason="no_frame", legs=legs)
+
+            if here.map_id == target.map_id:
+                result = self.router.navigate_to(bridge, target, deadline=deadline)
+                legs.append(_leg("route", target, result.state.value, result.reason))
+                if result.state == NavState.ARRIVED:
+                    return JourneyResult(JourneyStatus.ARRIVED, end=result.end, legs=legs)
+                if result.state == NavState.ESCALATE_MAP:
+                    # Death-warp etc. changed our map — re-plan the journey.
+                    replan_count += 1
+                    if replan_count > 3:
+                        return JourneyResult(JourneyStatus.FAILED,
+                                             reason="journey_thrash", legs=legs)
+                    continue
+                return JourneyResult(JourneyStatus.FAILED, reason=result.reason,
+                                     end=result.end, legs=legs)
+
+            # Cross-map: plan over the world graph.
+            start_place = self.world.nearest_place(here, same_map=True)
+            goal_place = self.world.nearest_place(target, same_map=True) or (
+                # target's map has known places? use nearest on THAT map
+                self._nearest_on_map(target)
+            )
+            if start_place is None or goal_place is None:
+                return JourneyResult(
+                    JourneyStatus.FAILED, reason="unknown_region", end=here, legs=legs)
+            path = self.world.plan(start_place.name, goal_place.name)
+            if path is None:
+                return JourneyResult(
+                    JourneyStatus.FAILED, reason="no_world_path", end=here, legs=legs)
+            self._trace("journey_planned",
+                        start=start_place.name, goal=goal_place.name,
+                        edges=[f"{e.kind}:{e.a}->{e.b}" for e in path])
+
+            # Execute edges until arrival on the target map (then loop → same-map case).
+            current = start_place.name
+            failed = False
+            for edge in path:
+                if time.monotonic() >= deadline:
+                    return JourneyResult(JourneyStatus.FAILED, reason="deadline",
+                                         end=here, legs=legs)
+                next_name = edge.b if edge.a == current else edge.a
+                ok, here = self._execute_edge(bridge, edge, current, next_name, deadline)
+                legs.append(_leg(edge.kind, self.world.place(next_name).point,
+                                 "ok" if ok else "failed", ""))
+                if not ok:
+                    failed = True
+                    break
+                current = next_name
+                if here is not None and here.map_id == target.map_id:
+                    break  # we're on the target's map — same-map L1 takes over
+            if failed:
+                replan_count += 1
+                if replan_count > 3:
+                    return JourneyResult(JourneyStatus.FAILED,
+                                         reason="journey_thrash", legs=legs)
+                continue
+        return JourneyResult(JourneyStatus.FAILED, reason="deadline", legs=legs)
+
+    # ---- edges ---------------------------------------------------------------------
+
+    def _execute_edge(
+        self, bridge, edge: Edge, from_name: str, to_name: str, deadline: float
+    ) -> tuple[bool, Point | None]:
+        destination = self.world.place(to_name).point
+        if edge.kind == "walk":
+            result = self.router.navigate_to(bridge, destination, deadline=deadline)
+            return result.state == NavState.ARRIVED, result.end
+
+        if edge.kind == "portal":
+            # Stand on the pad (from_name), fire the trigger, verify the map changed.
+            pad = self.world.place(from_name).point
+            here = self.router._observe_position(bridge)
+            if here is None:
+                return False, None
+            if here.distance(pad) > PORTAL_PAD_RADIUS_YARDS:
+                result = self.router.navigate_to(
+                    bridge, pad, deadline=deadline,
+                    arrival_radius=PORTAL_PAD_RADIUS_YARDS)
+                if result.state != NavState.ARRIVED:
+                    return False, result.end
+            for attempt in range(PORTAL_FIRE_ATTEMPTS):
+                fired = self._fire_trigger(bridge, edge.trigger_id, deadline)
+                here = self.router._observe_position(bridge)
+                if here is not None and here.map_id == destination.map_id:
+                    self._trace("journey_portal", trigger=edge.trigger_id,
+                                attempts=attempt + 1)
+                    return True, here
+                if not fired:
+                    time.sleep(1.0)
+            return False, here
+
+        self._trace("journey_edge_unsupported", kind=edge.kind)
+        return False, None
+
+    def _fire_trigger(self, bridge, trigger_id: int | None, deadline: float) -> bool:
+        """Select an area_trigger action; the frame's trigger bindings admit the stock
+        trigger when we stand on its pad."""
+        frame = bridge.wait_for_frame(
+            timeout_s=min(30.0, max(0.5, deadline - time.monotonic())))
+        if frame is None:
+            return False
+        # Find the binding index for the trigger (or any admitted trigger at the pad).
+        index = None
+        for row in frame.bindings.triggers:
+            if trigger_id is None or row.trigger_id == trigger_id:
+                index = row.index
+                break
+        if index is None:
+            return False
+        try:
+            from wow_sdk.nim_control import FactorizedAction
+
+            action = FactorizedAction(kind="area_trigger", trigger=index)
+        except Exception:  # noqa: BLE001
+            return False
+        request_id = bridge.select_action(frame, action)
+        if request_id is None:
+            return False
+        bridge.wait_for_settlement(frame.frame_id, timeout_s=PORTAL_SETTLE_SECONDS)
+        return True
+
+    def _nearest_on_map(self, point: Point):
+        candidates = [p for p in self.world.places.values() if p.point.map_id == point.map_id]
+        if not candidates:
+            return None
+        return min(candidates, key=lambda p: p.point.horizontal_distance(point))
+
+
+def _leg(kind: str, to: Point, status: str, reason: str) -> dict:
+    return {"kind": kind, "to": [to.map_id, to.x, to.y, to.z], "status": status,
+            "reason": reason}

@@ -35,7 +35,7 @@ from wow_sdk.nim_control import (
 )
 
 from wowborg.trace import NullTracer, Tracer
-from wowborg.types import ActionOutcome, Observation, Position
+from wowborg.types import ActionOutcome, Observation, PlannedRoute, Position
 
 # Replay-visible breadcrumbs cost real game actions; keep them sparse.
 SAY_MIN_INTERVAL_SECONDS = 5.0
@@ -193,6 +193,64 @@ class ShimBridge:
             return None
         return self._select(frame, frame.recommended_action, label="recommended")
 
+    # ---- route planning -------------------------------------------------------------
+
+    def plan_route(
+        self,
+        source: Position,
+        target: Position,
+        map_id: int,
+        *,
+        arrival_radius: float = 3.0,
+    ) -> PlannedRoute:
+        """Plan a Detour route via the game host's /player/navigation service.
+
+        Uses wow_sdk.navmesh.route_navmesh, which POSTs to
+        $VANILLA_WOW_NAVMESH_SERVICE_URL when set (the hosted path; the wrapper
+        exports it) and falls back to a local helper otherwise. Never raises —
+        service failure returns status="unavailable" and L1 degrades to
+        executor-only movement.
+        """
+        try:
+            from wow_sdk.navmesh import WorldPoint as NavPoint, route_navmesh
+
+            route = route_navmesh(
+                NavPoint(map_id=map_id, x=source.x, y=source.y, z=source.z),
+                NavPoint(map_id=map_id, x=target.x, y=target.y, z=target.z),
+                arrival_radius=arrival_radius,
+            )
+        except Exception as exc:  # noqa: BLE001 — planning must never kill navigation
+            self._tracer.emit("route_plan_error", error=repr(exc))
+            return PlannedRoute(
+                status="error", map_id=map_id, waypoints=[], route_distance=0.0,
+                partial=False, projected_target_distance=None, jump_required=False,
+                message=repr(exc),
+            )
+        waypoints = [
+            Position(w.x, w.y, w.z, 0.0) for w in (route.waypoints or [])
+        ]
+        partial = bool(route.partial_path_end) or route.path_type == "partial"
+        planned = PlannedRoute(
+            status=route.status,
+            map_id=route.map_id,
+            waypoints=waypoints,
+            route_distance=float(route.route_distance or 0.0),
+            partial=partial,
+            projected_target_distance=route.projected_target_distance,
+            jump_required=bool(route.jump_required),
+            message=route.message or "",
+        )
+        self._tracer.emit(
+            "route_planned",
+            status=planned.status,
+            waypoints=len(planned.waypoints),
+            route_distance=round(planned.route_distance, 1),
+            partial=planned.partial,
+            projected_target_distance=planned.projected_target_distance,
+            jump_required=planned.jump_required,
+        )
+        return planned
+
     # ---- results ------------------------------------------------------------------
 
     def wait_for_settlement(
@@ -210,6 +268,14 @@ class ShimBridge:
                 self._reconnect()
                 settled = None
             if settled is not None and settled.frame_id >= frame_id:
+                if settled.frame_id > frame_id:
+                    # A newer settlement superseded the awaited one (audit #11):
+                    # report it honestly as that frame's outcome, tagged.
+                    self._tracer.emit(
+                        "settlement_superseded",
+                        awaited_frame=frame_id,
+                        settled_frame=settled.frame_id,
+                    )
                 outcome = ActionOutcome(
                     request_id=f"frame-{settled.frame_id}",
                     kind=settled.action_kind or settled.action.kind,
@@ -218,6 +284,8 @@ class ShimBridge:
                     displacement_yards=None,
                     end_position=None,
                     detail=settled.message,
+                    frame_id=settled.frame_id,
+                    settled_tick=settled.settled_tick,
                 )
                 self._tracer.emit(
                     "outcome",
