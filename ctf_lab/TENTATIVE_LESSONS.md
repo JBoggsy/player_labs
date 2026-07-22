@@ -34,3 +34,25 @@ Evidence: Picasso "steals a lot" (88, most in field) reads as strong flag offens
 
 ### A "focus fire" claim is testable from replay events alone: count distinct same-team shooters whose aim ray intersects the victim within a lookback window
 Evidence: ray-attribution (bearing vs aim ≤7 brads, 72-tick window) separated focusfire (28% multi-shooter kills) from Picasso (18%) on the same episodes with the same estimator. No policy internals needed.
+### The player observation wire is back to 1x map pixels since ctf 0.7.8 — the "3x render scale" era is over
+Evidence: v6-v9 perception divided coords by 3 (correct for 0.6-0.7.7); at 0.7.49+ the POV stream is 1x (global.nim: boardScale=1 for player streams; RenderScale=2 is spectator-only), the aim-dot indicator is retired (self sprite id 5100+rot IS the aim readback, 16-step), and flags are labeled `<color> flag [planted]` not hearts. beacon v6 was effectively blind on the live game and sank to rank 6. Wire-format regressions across redeploys are silent — a policy that connects and idles looks "alive"; check the RULES.md + global.nim POV branch at the deployed ref after EVERY redeploy.
+
+### The deployed game version moves mid-session — pin the replay reader per batch, read the ref from each xreq's coworld
+Evidence: 0.7.49 → 0.7.51 between the recon fetch and the v10 measurement (2 hours). Each xreq reports its `coworld`; `coworld show <cow_id> --json` → manifest game.runnable.source_url gives the exact ref for expand_replay.
+
+### Accuracy is a fire-discipline metric, not an aim metric: gate on range before improving prediction
+Evidence: v10 lead-aim alone left acc at 0.234 because beacon fired 7,804 shots (~5x opponents' volume) — most beyond where the 5-brad aim quantization can hit the 14px corridor. A hold-fire gate at 350px (v11) moved acc to 0.333 with no aim change and IMPROVED wins (first-ever 7-3 Picasso, 8-2 autoresearch). Shot-volume parity matters more than per-shot cleverness.
+
+### The fire windup releases from the shooter's CURRENT position — strafing through it displaces your own shot
+Evidence: sim.nim applyFire uses the shooter's position at release (5 ticks after pull) with the ANGLE locked at the pull; a strafing shooter moves ~2.75px/tick → ~14px lateral displacement = one full hit-corridor. v12 freezes movement for FIRE_WINDUP_TICKS after each trigger pull (carrier exempt).
+
+### Items activate via deterministic seat-claims with zero radio: assignment as a pure function of (seat) is enough
+Evidence: v10's single-claimant table (seat 2→shield, 3/4→corner grenades) produced 20% shield alive-time (89% on the assigned seat) and real grenade throws in the first measured batch, with no coordination protocol — every agent computes the same table, so no two rush one pickup.
+### Glass windows (GameVersion 15/16) break the "visible = shootable" assumption — fire gates need a bullet-LoS check
+Evidence: windows pass vision but block bullets/plasma. beacon fired through them at guaranteed-miss rate until v14 added `mapdata.ray_clear` to the fire gate (windows stay in the wall mask since it models the BULLET question). Combined with boundary-crossing aim calibration this took acc 0.312 → 0.657 in one step.
+
+### The 16-step aim readback yields an exact fix at step boundaries — calibrate on the CHANGE tick, not the value
+Evidence: the self sprite's rotation quantizes aim to ±8 brads, too coarse to resync against directly; but the tick the observed step CHANGES while rotating, the true aim is at the boundary between steps (±rate/2 = ±2.5 brads). v14's boundary-crossing calibration was the biggest single accuracy lever.
+
+### An A/B regression can be a MAP-truth signal, not a code signal — check the arena/geometry pins before reverting
+Evidence: v12 (mechanically sound windup freeze) REGRESSED vs v11; the real cause was the arena changing under us (GameVersion 16 moved/removed obstacles; nav.npz was stale, agents pathed into ghosts). Reverting v12 would have been wrong; rebaking nav (v13) then v14 vindicated it. When a clean change regresses, verify the baked world model against the deployed ref first.

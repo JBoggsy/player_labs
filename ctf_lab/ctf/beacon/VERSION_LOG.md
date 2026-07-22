@@ -2,6 +2,31 @@
 
 Version → change mapping for the CTF `beacon` policy. Newest first.
 
+## v11–v14 — accuracy ladder to 0.657 (2026-07-21, same session as v10)
+
+Iterating on v10's 0.234 accuracy toward the ≥0.5 goal (10-ep 8v8 vs each top-3
+per version):
+- **v11** — `FIRE_MAX_RANGE_PX=350` hold-fire gate + aim-resync slack 12→8.
+  **0.333**; first-ever series wins vs Picasso (7-3) and autoresearch (8-2).
+- **v12** — movement freeze through the 5-tick windup (the sim fires from the
+  shooter's CURRENT position along the LOCKED angle; strafing displaced our own
+  ray ~14px). **0.273** — REGRESSED, which exposed…
+- **v13** — …the **stale nav grid**: GameVersion 16 (ctf 0.7.51) changed the
+  arena under us (midline chevrons → windowed bracket, column-3 discs thinned).
+  bake_map.py re-ported from b571dd3, nav.npz rebaked; FIRE_SLACK_PX 11→8 (the
+  old gate allowed 22px perp misses vs the 14px corridor). **0.312** (0.442 vs
+  Picasso), 9-1 autoresearch.
+- **v14** — aim **boundary-crossing calibration** (the tick the 16-step readback
+  changes while rotating pins the true aim to ±2.5 brads) + **glass-aware fire
+  gate** (`ray_clear` required: GameVersion-15/16 windows pass vision but block
+  bullets — shooting through one was a guaranteed miss). **0.657 overall**
+  (0.622 focusfire / 0.647 Picasso / 0.694 autoresearch) on ~2.9k shots —
+  beacon out-shoots the whole field per-shot. Wins: 10-0 autoresearch,
+  6-4 Picasso, 2-10 focusfire (first regulation wins vs it). Items steady:
+  shield 17.6% alive-time, grenade 10.8%, 55 non-gun kills, throws confirmed.
+
+**GOAL MET: ≥0.5 accuracy in every top-3 matchup + consistent effective item use.**
+
 ## v10 — lead aim + item skills (2026-07-21)
 
 **Why:** top-3 recon (scratch/recon_top3): beacon's warehouse accuracy was 0.163 vs

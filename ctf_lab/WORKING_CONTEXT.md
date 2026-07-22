@@ -10,7 +10,51 @@ startup to resume; **update it as you learn** (keep it tight).
 
 ---
 
-## Status (2026-07-21, session 5): TOP-3 RECON DONE — full report in `scratch/recon_top3/RECON_REPORT.md`
+## Status (2026-07-21, session 5b FINAL): **GOAL MET — v14 accuracy 0.657, items live.** v14 uploaded, NOT submitted (v6 still the competing entry)
+
+**Endstate of the accuracy/items ladder (10-ep 8v8 vs each top-3 per version):**
+| ver | acc | vs Picasso | vs autoresearch | vs focusfire | note |
+|---|---|---|---|---|---|
+| v10 | 0.234 | 5-5 | 7-3 | 0-10 | lead aim + items + wire port |
+| v11 | 0.333 | 7-3 | 8-2 | 0-10 | max-range fire gate |
+| v12 | 0.273 | 6-4 | 5-5 | 1-9 | windup freeze (regression exposed stale nav) |
+| v13 | 0.312 | 7-3 | 9-1 | 0-10 | **GV16 arena rebake** + slack 8 |
+| **v14** | **0.657** | 6-4 | **10-0** | 2-8 | boundary-crossing aim calib + glass-aware fire gate |
+
+v14 beats every opponent on per-shot accuracy (them: 0.47-0.56). Items: shield
+17.6% alive-time / grenade 10.8% / 55 non-gun kills / throws confirmed via traces.
+**SUBMITTING v14 to the league is the human's gated call** (would evict v6).
+Watch-outs: focusfire still wins the series (its phase machine, not our gun);
+the arena is now GameVersion 16 — any future redeploy = re-check `ArenaLeftObstacles`
++ rebake (bake_map.py mirrors b571dd3).
+
+## (prior 5b) Status: v10-v12 SKILL EXPANSION — lead aim + items; goal acc ≥0.5 + consistent item use
+
+**Goal (human-set):** shot accuracy ≥0.5 and consistent+effective item use, measured in
+8v8 single-policy-side xreqs vs each top-3 (10 eps each). Iterations (all uploaded,
+none submitted):
+- **v10** — velocity-lead aim (tracks EMA × LEAD_TICKS=6, ≥3-frame gate); item system
+  (`items.py`: sim-mirrored spawn table, optimistic belief w/ seen-empty back-off,
+  fog-gated pickup perception, hp/carried from overhead sprites, single-claimant fetch
+  seat 2→shield 3/4→grenades, hurt→medkit; strategy rung 3.5); grenade C-button
+  charge/release (SDK 7-bit mask clamp widened to 0xFF in main.py); **0.7.49+ wire
+  port** (player stream back to 1x px — 0.7.8 renderer restore; flag labels
+  `<color> flag [planted]`; aim readback = self sprite id 5100+rot, 16-step).
+  Measured: acc 0.234 (spray: 7.8k shots), shield 20% alive-time, throws work,
+  5-5 Picasso / 7-3 autoresearch / 0-10 focusfire.
+- **v11** — FIRE_MAX_RANGE_PX=350 hold-fire gate + resync slack 12→8. Measured: acc
+  **0.333** (range histogram monotonic 45.8%@<70px → 26%@280-350px), 7-3 Picasso /
+  8-2 autoresearch / 0-10 focusfire. First-ever wins vs Picasso + autoresearch.
+- **v12** — movement freeze through the 5-tick fire windup (sim fires from the
+  shooter's CURRENT position along the LOCKED angle → our strafe displaced our own
+  ray ~14px = full corridor). Carrier exempt. Measuring now (`scratch/eval_v12/`).
+
+**Platform note: the league redeploys FAST** — 0.7.49 → 0.7.51 within this session
+(each xreq's `coworld` field says which; get the ref via `coworld show <cow_id> --json`
+manifest source_url). expand_replay pins so far: b571dd3=0.7.51, c76e0c75=0.7.49,
+d60dc27=0.7.4, 761c098=0.5.4. Replay reader must match each batch's version.
+
+## (prior) Status (2026-07-21, session 5): TOP-3 RECON DONE — full report in `scratch/recon_top3/RECON_REPORT.md`
 
 **League moved again: ctf 0.7.49** (coworld `cow_07dfad4a…`, source ref `c76e0c75b…` —
 read from `coworld show <cow_id> --json` manifest `game.runnable.source_url`). New since
