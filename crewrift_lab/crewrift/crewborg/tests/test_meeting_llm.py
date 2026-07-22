@@ -86,7 +86,28 @@ def test_factory_selects_bedrock_backend(monkeypatch: pytest.MonkeyPatch) -> Non
     assert client.enabled
     assert client.config.model == "bedrock-default"
     assert client.config.use_bedrock is True
-    assert selected == [{"use_bedrock": True, "timeout": 3.0}]
+    assert selected == [{"use_bedrock": True, "timeout": meeting_llm.DEFAULT_MEETING_TIMEOUT_SECONDS}]
+
+
+def test_meeting_timeout_env_precedence(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Meeting-specific timeout env wins over the shared one; default is the roomier 6.0s
+    (measured 2026-07-21: success latency p90 4.0s — the old 3.0s aborted 40% of successes
+    into an SDK retry, double-spending tokens on the throttled Bedrock daily pool)."""
+    selected: list[dict[str, Any]] = []
+    monkeypatch.setattr(meeting_llm, "_load_sdk_helpers", lambda: _helpers(use_bedrock=False, selected=selected))
+
+    base = {"CREWBORG_LLM_MEETINGS": "1", "ANTHROPIC_API_KEY": "sk-test"}
+    assert meeting_llm.build_meeting_llm_client_from_env(dict(base)).timeout_seconds == 6.0
+    assert (
+        meeting_llm.build_meeting_llm_client_from_env({**base, "CREWBORG_LLM_TIMEOUT_SECONDS": "4.5"}).timeout_seconds
+        == 4.5
+    )
+    assert (
+        meeting_llm.build_meeting_llm_client_from_env(
+            {**base, "CREWBORG_LLM_TIMEOUT_SECONDS": "4.5", "CREWBORG_LLM_MEETING_TIMEOUT_SECONDS": "8"}
+        ).timeout_seconds
+        == 8.0
+    )
 
 
 def test_factory_construction_failure_disables_without_raising(monkeypatch: pytest.MonkeyPatch) -> None:

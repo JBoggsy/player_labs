@@ -39,7 +39,11 @@ from players.player_sdk import EmptyModeParams, Mode
 # Min ticks between LLM calls. 12 (one visual state) exploded into ~5x call volume at
 # the 1200-tick meetings and exhausted the Bedrock daily token quota (v86: 800 429s);
 # 120 (~5s) keeps a multi-turn conversation while staying inside the per-meeting budget.
+# Env-tunable (CREWBORG_LLM_MIN_CALL_INTERVAL_TICKS) for cadence sweeps: the 2026-07-21
+# v110 league arms showed 74.5% of calls 429ing on the shared daily-token pool with
+# 3.1 calls/meeting — interval is one of the two levers (with the call budget).
 LLM_MIN_CALL_INTERVAL_TICKS = 120
+LLM_MIN_CALL_INTERVAL_ENV = "CREWBORG_LLM_MIN_CALL_INTERVAL_TICKS"
 # Hard per-meeting call cap, on top of the interval (env-overridable).
 LLM_CALL_BUDGET_ENV = "CREWBORG_LLM_MEETING_CALL_BUDGET"
 DEFAULT_LLM_CALL_BUDGET = 5
@@ -58,7 +62,10 @@ AUTO_SUBMIT_REMAINING_TICKS = 48
 # corrupt the LLM latency-guard's seconds→ticks conversion.
 MEETING_TICKS_PER_SECOND = 24
 LLM_TIMEOUT_MARGIN_TICKS = 12
-DEFAULT_LLM_TIMEOUT_SECONDS = 3.0
+# Fallback for clients without a ``timeout_seconds`` attribute; the real default lives in
+# strategy/meeting/llm.py (DEFAULT_MEETING_TIMEOUT_SECONDS = 6.0 — the deadline geometry
+# derives from the client's actual timeout, so keep this aligned).
+DEFAULT_LLM_TIMEOUT_SECONDS = 6.0
 # Early-submit a tentative vote (LLM idle) once under half the believed time remains —
 # the belief clock can lag real time, and a submitted vote can't be lost to vote_timeout.
 EARLY_SUBMIT_REMAINING_FRACTION = 0.5
@@ -83,6 +90,7 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self._llm_pending: MeetingLLMRequest | None = None
         self._llm_calls_used = 0
         self._llm_call_budget = _llm_call_budget_from_env()
+        self._llm_min_call_interval_ticks = _llm_min_call_interval_from_env()
         self._llm_call_cost_usd = _env_float(os.environ, LLM_CALL_COST_ESTIMATE_ENV, DEFAULT_LLM_CALL_COST_USD)
         self._spend_checked_tick: int | None = None  # cache /spend read within a meeting-tick
         self._spend_remaining_usd: float | None = None  # last read; None = no limit / unknown
@@ -410,7 +418,10 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         tick = belief.last_tick
         if self._llm_calls_used >= self._llm_call_budget:
             return None
-        if self._last_llm_call_tick is not None and tick - self._last_llm_call_tick < LLM_MIN_CALL_INTERVAL_TICKS:
+        if (
+            self._last_llm_call_tick is not None
+            and tick - self._last_llm_call_tick < self._llm_min_call_interval_ticks
+        ):
             return None
         if not self._can_start_llm_call(belief):
             return None
@@ -880,6 +891,16 @@ def _llm_call_budget_from_env() -> int:
         return max(1, int(raw))
     except ValueError:
         return DEFAULT_LLM_CALL_BUDGET
+
+
+def _llm_min_call_interval_from_env() -> int:
+    raw = os.environ.get(LLM_MIN_CALL_INTERVAL_ENV)
+    if raw is None:
+        return LLM_MIN_CALL_INTERVAL_TICKS
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        return LLM_MIN_CALL_INTERVAL_TICKS
 
 
 def _env_float(env: dict[str, str], name: str, default: float) -> float:

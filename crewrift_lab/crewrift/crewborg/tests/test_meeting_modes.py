@@ -6,6 +6,7 @@ from crewrift.crewborg.action import BTN_A, BTN_DOWN, resolve_action
 from crewrift.crewborg.modes import AccuseMode, AttendMeetingMode, ReportBodyMode
 from crewrift.crewborg.perception.entities import VoteCandidate, VoteDot, VotingState
 from crewrift.crewborg.strategy.meeting import MeetingDecision, MeetingLLMResult
+from crewrift.crewborg.strategy.meeting.context import VOTE_TIMER_TICKS
 from crewrift.crewborg.strategy.meeting.worker import MeetingLLMOutcome, MeetingLLMRequest
 from crewrift.crewborg.types import ActionState, Belief, BodyEntry, ChatEvent, PlayerEvent, PlayerRecord
 from players.player_sdk import OverwriteBuffer
@@ -274,8 +275,11 @@ def test_attend_meeting_deadline_prompt_wins_over_late_chat() -> None:
 
     assert mode.decide(_meeting_belief(tick=0), ActionState()).kind == "idle"  # call in flight
     assert mode.decide(_meeting_belief(tick=0), ActionState()).kind == "idle"  # wait applied
-    belief = _meeting_belief(tick=1067)
-    belief.chat_log = [ChatEvent(tick=1060, speaker_color="red", text="blue sus")]
+    # Just inside the deadline-prompt window but still a safe start (the boundary is
+    # timeout-derived: 1200 - (48 + ceil(timeout*24) + 12 + 1) with the 6.0s default).
+    deadline_tick = VOTE_TIMER_TICKS - mode._deadline_prompt_remaining_ticks()
+    belief = _meeting_belief(tick=deadline_tick)
+    belief.chat_log = [ChatEvent(tick=deadline_tick - 7, speaker_color="red", text="blue sus")]
 
     assert mode.decide(belief, ActionState()).kind == "idle"
     assert [trigger for trigger, _ in client.calls] == ["meeting_start", "deadline"]
@@ -289,8 +293,10 @@ def test_attend_meeting_late_chat_in_danger_window_does_not_call_llm() -> None:
 
     assert mode.decide(_meeting_belief(tick=0), ActionState()).kind == "idle"  # call in flight
     assert mode.decide(_meeting_belief(tick=0), ActionState()).kind == "idle"  # wait applied
-    belief = _meeting_belief(tick=1068)
-    belief.chat_log = [ChatEvent(tick=1060, speaker_color="red", text="blue sus")]
+    # One tick past the latest safe start: an answer could no longer beat auto-submit.
+    danger_tick = VOTE_TIMER_TICKS - mode._latest_safe_llm_start_remaining_ticks()
+    belief = _meeting_belief(tick=danger_tick)
+    belief.chat_log = [ChatEvent(tick=danger_tick - 8, speaker_color="red", text="blue sus")]
 
     assert mode.decide(belief, ActionState()).kind == "idle"
     assert [trigger for trigger, _ in client.calls] == ["meeting_start"]
@@ -343,6 +349,26 @@ def test_attend_meeting_llm_call_interval_throttles_new_chat() -> None:
 
     belief = _meeting_belief(tick=120)  # interval elapsed
     belief.chat_log = [ChatEvent(tick=30, speaker_color="red", text="hm")]
+    assert mode.decide(belief, ActionState()).kind == "idle"
+    assert [trigger for trigger, _ in client.calls] == ["meeting_start", "new_chat"]
+
+
+def test_attend_meeting_llm_call_interval_env_tunable(monkeypatch) -> None:
+    """CREWBORG_LLM_MIN_CALL_INTERVAL_TICKS overrides the 120-tick default (cadence sweeps)."""
+    monkeypatch.setenv("CREWBORG_LLM_MIN_CALL_INTERVAL_TICKS", "300")
+    client = _FakeMeetingClient([MeetingDecision(action="wait"), MeetingDecision(action="wait")])
+    mode = _llm_mode(client)
+
+    assert mode.decide(_meeting_belief(tick=0), ActionState()).kind == "idle"  # meeting_start
+    assert mode.decide(_meeting_belief(tick=0), ActionState()).kind == "idle"  # wait applied
+
+    belief = _meeting_belief(tick=200)  # past the default 120 but inside the overridden 300
+    belief.chat_log = [ChatEvent(tick=150, speaker_color="red", text="hm")]
+    assert mode.decide(belief, ActionState()).kind == "idle"
+    assert [trigger for trigger, _ in client.calls] == ["meeting_start"]
+
+    belief = _meeting_belief(tick=310)  # overridden interval elapsed
+    belief.chat_log = [ChatEvent(tick=150, speaker_color="red", text="hm")]
     assert mode.decide(belief, ActionState()).kind == "idle"
     assert [trigger for trigger, _ in client.calls] == ["meeting_start", "new_chat"]
 
