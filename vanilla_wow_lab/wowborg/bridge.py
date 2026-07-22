@@ -76,10 +76,12 @@ class _LenientBindings:
             def __init__(self, r):
                 self.index = r.get("index", 0)
                 self.trigger_id = r.get("trigger_id", 0)
+                self.spell_id = r.get("spell_id", 0)
                 self.value = r.get("value", "")
 
         self.triggers = [Row(r) for r in data.get("triggers", [])]
         self.texts = [Row(r) for r in data.get("texts", [])]
+        self.spells = [Row(r) for r in data.get("spells", [])]
         self.entities = data.get("entities", [])
 
 
@@ -333,6 +335,23 @@ class ShimBridge:
         if frame.recommended_action is None:
             return None
         return self._select(frame, frame.recommended_action, label="recommended")
+
+    STUCK_SPELL_ID = 7355  # the stock "Stuck" auto-unstuck spell — the game repo's
+    # sanctioned recovery for "no physically admissible local source projection"
+    # (docs/navigation-collision-issues.md): a targetless cast that relocates the
+    # client to a safe pose. No coordinate assignment or collision bypass.
+
+    def select_stuck(self, frame: EnvironmentFrame) -> str | None:
+        """Cast Stuck (7355) if this frame's spell bindings offer it."""
+        index = None
+        for row in getattr(frame.bindings, "spells", []) or []:
+            if getattr(row, "spell_id", None) == self.STUCK_SPELL_ID:
+                index = row.index
+                break
+        if index is None:
+            return None
+        action = FactorizedAction(kind="cast", spell=index)
+        return self._select(frame, action, label="stuck")
 
     # ---- route planning -------------------------------------------------------------
 

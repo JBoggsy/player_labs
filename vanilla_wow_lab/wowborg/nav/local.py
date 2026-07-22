@@ -166,10 +166,17 @@ class LocalMover:
                                        time.monotonic() - started,
                                        detail=f"{stalls} stalled settlements")
 
-            # Unstick ladder before re-issuing.
-            if stalls >= UNSTICK_AFTER_STALLS and frame.recommended_action is not None:
+            # Unstick ladder before re-issuing: Stuck (spell 7355, the sanctioned
+            # relocation for exhausted source projections — v27: the executor
+            # refused every move AND the recommended move with
+            # "no physically admissible local source projection") → recommended.
+            if stalls >= UNSTICK_AFTER_STALLS:
                 self._trace("nav_unstick", stalls=stalls)
-                request_id = bridge.select_recommended(frame)
+                request_id = None
+                if hasattr(bridge, "select_stuck"):
+                    request_id = bridge.select_stuck(frame)
+                if request_id is None and frame.recommended_action is not None:
+                    request_id = bridge.select_recommended(frame)
                 if request_id is not None:
                     bridge.wait_for_settlement(frame.frame_id, timeout_s=SETTLE_TIMEOUT_SECONDS)
                     continue

@@ -288,10 +288,13 @@ class RouteNavigator:
                     break
 
                 if move.status == LocalMoveStatus.NO_FRAME:
-                    return RouteResult(NavState.FAILED, reason="no_frame", end=here,
-                                       walked_seconds=walked_seconds,
-                                       combat_pauses=combat_pauses, deaths=deaths,
-                                       replans=replans)
+                    # Not instantly fatal (v27: transient socket timeouts +
+                    # controller frame droughts produced 60s NO_FRAMEs while the
+                    # session was otherwise healthy). Re-plan from wherever we
+                    # are; the same-spot replan limit still bounds it honestly.
+                    here = self._observe_position(bridge) or here
+                    walk_failed = "no_frame"
+                    break
 
                 if move.status == LocalMoveStatus.DEADLINE:
                     if budget_left <= 0:
