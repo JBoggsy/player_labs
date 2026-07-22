@@ -31,3 +31,17 @@ model), the local-sim harness (probe deltas reverse on the live field), game-str
 snapshots (stale vs our live labs). Where an import diverges from its source's posture,
 state it in the imported doc (e.g. "uploads stay ungated here") so readers don't inherit
 the source repo's caution.
+
+### Re-verify a parked behavioral premise on CURRENT data before building — a 2-week-old "field-worst" can be field-BEST today
+
+Evidence: Thread 9 (imposter co-location spread nudge). The TODO's premise — crewborg-imposter
+near/following its co-imposter "32% of intervals (field-worst)", measured ~v101 on 2026-07-07 —
+was re-measured first on 200 fresh v107/v110 eps (`/tmp/wh_anchor_base_v110`) before any code:
+crewborg's co-imposter proximity share is 13.7%, the LOWEST of the 7 crewborg-family policies
+(field 15.0%, z=-1.08); following share 10.2%, 2nd-lowest overall. The consequence claim also
+failed: per-episode imposter-pair co-location is uncorrelated with imposter win (r=0.017 p=0.82)
+and the ejection trend runs OPPOSITE the "tell" theory (high-co-location eps have FEWER imposter
+ejections). Verdict REFUTED-PREMISE, zero build cost spent. Ten versions of drift (v101→v110:
+self-hunt fix, palette/self-ID fix, HS) plus a different metric window fully inverted the ranking.
+The premise-first gate in the thread brief saved an entire design→build→A/B cycle (~half a day +
+200 paced eps). Scripts: /tmp/t9_spread/premise{,2,3,4}.py.
