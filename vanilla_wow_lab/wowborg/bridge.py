@@ -23,6 +23,8 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
+from pydantic import ValidationError
+
 from wow_sdk.nim_control import (
     ActionSelectionRequest,
     ControlStatus,
@@ -134,6 +136,12 @@ class ShimBridge:
         while time.monotonic() < deadline:
             try:
                 result = self._client.status(include_environment_frame=True)
+            except ValidationError as exc:
+                # Upstream contract violation in ONE frame (e.g. its recommended
+                # action fails its own mask) — skip the frame, don't crash.
+                self._tracer.emit("frame_invalid", error=str(exc)[:200])
+                time.sleep(FRAME_POLL_SECONDS)
+                continue
             except (OSError, NimControlError) as exc:
                 self._tracer.emit("status_error", error=str(exc))
                 self._reconnect()
@@ -153,6 +161,9 @@ class ShimBridge:
         """
         try:
             result = self._client.status(include_environment_frame=True)
+        except ValidationError as exc:
+            self._tracer.emit("frame_invalid", error=str(exc)[:200])
+            return None
         except (OSError, NimControlError):
             self._reconnect()
             return None
@@ -318,6 +329,8 @@ class ShimBridge:
         self._tracer.emit("say", text=text)
         try:
             result = self._client.status(include_environment_frame=True)
+        except ValidationError:
+            return None
         except (OSError, NimControlError):
             self._reconnect()
             return None

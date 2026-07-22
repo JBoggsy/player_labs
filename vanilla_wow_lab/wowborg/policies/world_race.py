@@ -157,7 +157,11 @@ class WorldRacePolicy:
                 tracer.emit(kind, **payload)
 
         journey = JourneyPlanner(tracer=tracer)
-        trace("race_start", course=self.course)
+        # Restart-idempotent: the shim re-invokes run() after crashes; visited
+        # stations stay visited and race_start is emitted once.
+        if not hasattr(self, "_started"):
+            self._started = True
+            trace("race_start", course=self.course)
         log(f"world race course: {self.course}")
 
         # Wait until the character is genuinely in-world before racing (login can
@@ -173,7 +177,10 @@ class WorldRacePolicy:
             trace("race_end", **self.summary())
             return
 
+        done_names = {r["name"] for r in self.results}
         for name in self.course:
+            if name in done_names:
+                continue
             remaining = until - time.monotonic()
             if remaining <= 30.0:
                 log("out of session time; stopping course")
