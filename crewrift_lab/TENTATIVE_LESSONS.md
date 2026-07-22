@@ -186,3 +186,23 @@ secrets bundle (`job_runner/event_processor.py:791`). Lesson: before concluding
 in tooling instead of collapsing them, (3) check whether the platform's auth/routes were
 churning that week. Harvest tool now exists anyway: `crewrift_lab/tools/harvest_artifacts.py`
 (+ `docs/telemetry-harvest.md`).
+
+### A slot-0-pinned A/B cannot see a slots≥1 bug — match the arms' seat distribution to where the bug lives
+
+Evidence: the v110-vs-v107 A/B (palette fix — slot 0's color mapping was CORRECT in the stale
+table; only slots ≥1 were wrong). The lab's standard matched design pins crewborg at slot 0, which
+would have measured ZERO of the bug's surface. Ran a second matched pair with ALL seats round-robin
+(`xreq_276e3849` v110 / `xreq_f1f64260` v107): v107 reproduced the self-accusation ("orange sus…
+vote orange", slot 4/orange) and 6/79 false dead-mutes (mute 1200-1800 ticks pre-death) in ~80 eps,
+v110 showed 0/0 across 285 eps — the slot-0 arms alone showed 0 vs 0 (no signal). Lesson: when the
+defect is seat-/slot-conditional, the pinned-seat A/B design is blind to it; add a rotating-seat
+matched pair (and use the pinned pair for the behavior-parity check).
+
+### Submitting to Crewrift Prime auto-supersedes your ACTIVE membership only if it's active — a benched one blocks instead
+
+Evidence: submitting crewborg:v110 while crewborg:v107 sat `competing/benched` produced an instant
+`disqualified/superseded` on the NEW membership with notes "a player may field at most one active
+policy… 028ba9f3 was retired in favor of 5a4e0eae" — i.e. the platform kept the OLD version and
+killed the new one (reverse of the usual v106→v107 supersession, where the new champion benched the
+old). Fix: `coworld retire-membership <old lpm>` first, then submit. Also: the "NOT a skill
+disqualification" note only appears on the raw membership object (`notes`), not in the CLI list view.

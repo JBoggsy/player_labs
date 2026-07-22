@@ -15,7 +15,13 @@ This is *not* a log or archive: finished work lives in git history / the
 
 ---
 
-## 🎯 ACTIVE (2026-07-21, Thread 1): A/B v110 vs v107 → submit if clean (James: "Submit at will")
+## 🎯 DONE (2026-07-21, Thread 1): v110 A/B'd clean vs v107 → SUBMITTED → QUALIFIED + CHAMPION 👑
+
+**crewborg:v110 is `competing/active` and CHAMPION** (`lpm_cd2e6cbc…`; submission `sub_16bcf7fb…`,
+qualified in ~3 min). v107's membership retired (`lpm_fd1323fc` → disqualified/inactive) — REQUIRED
+first: the initial submit (`sub_326bf021`) was insta-disqualified "superseded" because the platform
+keeps the incumbent (even benched) and retires the newcomer. Watch v110's league standings recover
+(rank inherited ~14/18); HS1 is now live in league play for the first time.
 
 **v110** (`028ba9f3-7dfc…`) = v109's code (HS1 compact fix + palette fix + HS default-on) re-uploaded
 with the **v107-equivalent LLM meetings recipe + `CREWBORG_HS_SECRET`** — v109 as uploaded was
@@ -33,7 +39,29 @@ natural roles, ~200 cand / 100 base eps, ≤400 concurrent (paced arms ≤100 ep
 4. Ops% ~0 both arms; vote timeouts ~0.
 If ALL pass → submit v110 to Crewrift Prime (standing authorization). Any fail → report, no submit.
 
-xreq ids + verdict recorded here as they land.
+**RESULT (2026-07-21): VERDICT CLEAN — all 4 pre-registered criteria PASS.** Four matched arms,
+all completed 100/100, 0 failed:
+- Pinned-roster (crewborg slot 0): cand `xreq_774a384d` + `xreq_edd0f75e` (199 eps fetched),
+  base `xreq_136dd84f` (100 eps). Confirms slot-0 behavior unchanged.
+- Rotating-seat pair (all seats round-robin — slots ≥1 are where the palette bug lives):
+  cand `xreq_276e3849`, base `xreq_f1f64260` (~100 eps each; the arm's own ~2-3 no-artifact
+  eps + episodes with any seat connect/disconnect-timeout dropped as ops-dirty).
+Measured (scan: `.tmp/ab_v110_v107/primary_check.py`; compare: crewrift-ab compare.py):
+1. PRIMARY ✅ — crew self-accusation chat: **0 msgs/0 eps in v110** (285 eps incl. 74 non-slot-0);
+   v107 reproduced the bug in the same window: 2 msgs/1 ep ("orange sus… vote orange", slot 4)
+   + **6 false dead-mutes** (mute 1200-1800 ticks before death, e.g. mute@2675 death@4501; one
+   while never dying). v110 false dead-mutes: **0** (rot + pinned, 88 dead-mute eps checked).
+2. Imposter ✅ — pooled clean: win 60% (43/72) vs 61% (27/44), z=-0.18 noise; kills/ep 1.68 vs
+   1.59. (Pinned arm looked -19pp at n=30 base / rotating arm +35pp p=0.04 — opposite-signed
+   small-n noise; pooled = flat.)
+3. Crew ✅ — pooled clean: win 27% (50/186) vs 25% (26/106), z=+0.44 (noise, right direction);
+   no_vote_rate crew improved 4%→0% (p=0.01) in the pinned arm.
+4. Ops ✅ — pinned arms 0% ops both; rotating arms ~20-28% ops-dirty BOTH arms (field-side
+   connect timeouts, symmetric; dropped before comparing). vote_timeouts 2 vs 5.
+Bonus: HS1 now live — v110 announced in 138/199 pinned + 44/86 rot eps, honor_known_member in
+188/199 (v107: 0 everywhere). LLM fired both arms (cand 524 decisions/1506 fallbacks ≈ 26%,
+base 188/817 ≈ 19% — same low-rate regime as the v107-vs-v100 A/B).
+→ **SUBMITTED v110** to Crewrift Prime per James's standing "Submit at will" — see DONE header above.
 
 ## 🔧 SIDE-THREAD (2026-07-21, merged to main): Honor Society was DEAD in live play — FIXED + verified (crewborg:v109, NOT submitted)
 
@@ -51,9 +79,9 @@ via `xreq_25bb7e0f` (v109 crew + sasmith crew): crewborg's trace shows `society:
 whether HS actually helps (it's never been A/B'd in isolation), then the coordinated-vote-piling
 direction (WEEKLY_CONTEXT Direction 1). Full detail: version_log v109.
 
-## 🎯 OBJECTIVE: v107 QUALIFIED & CHAMPION 👑 — watch league standings recover, then pick the next lever
+## OBJECTIVE (superseded 2026-07-21 — v110 is champion now, see DONE above): v107 era
 
-**v107 is `competing/active` and CHAMPION** in Crewrift Prime (qualified in ~5 min,
+**v107 was `competing/active` and CHAMPION** in Crewrift Prime (qualified in ~5 min,
 2026-07-15 17:10Z; membership `lpm_fd1323fc…`, Competition division). v106 is
 `competing/benched` (no longer champion, benched by supersession). v107 = v106's fixes +
 the self-hunt fix, A/B-verified (imposter restored to v100 level; see below). Standings
