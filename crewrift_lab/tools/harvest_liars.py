@@ -10,6 +10,17 @@ telemetry.jsonl files and artifacts/policy_artifact_*.zip archives), aggregates
 liar evidence per pubkey, and writes the vendored distrust list
 crewrift_lab/crewrift/crewborg/data/honor_distrust.json.
 
+GROUND-TRUTH GATE (load-bearing): the in-game witness has false positives —
+measured 6/199 episodes (2026-07-22 HS A/B baseline) where crewborg ledgered a
+member key whose seat was ACTUALLY crew per results.json (witness misattribution
+of a kill/vent). A naive harvest would therefore permanently distrust an honest
+member from our own bad eyesight. So each honor_liar event is validated against
+the episode's results.json: the accused color maps to a slot (the game palette
+is slot-ordered) and only slots that were REALLY imposters count as confirmed
+lies; the rest are reported as refuted witness errors and kept OFF the list.
+Events with no results.json alongside are "unverifiable" and also excluded
+(fail-closed toward trusting members).
+
 The agent-side seam (strategy/honor_society.py `_load_distrust`/`is_distrusted`)
 loads that file at runtime: a distrusted key's verified announcements are ignored
 — never trusted — from the first meeting of every future game.
@@ -41,6 +52,12 @@ DISTRUST_SCHEMA = "crewborg-honor-distrust/v1"
 # The liar event as emitted by strategy/honor_society.py via EventEmitter
 # (unqualified names get the ``domain.`` prefix).
 LIAR_EVENT = "domain.honor_liar"
+
+# Slot -> color, in game palette order (mirrors crewborg's
+# perception/constants.py PLAYER_COLOR_NAMES; current since game commit 1cbd4de,
+# 2026-06-24). Used to map an accused color back to a results.json slot.
+PALETTE = ("red", "blue", "green", "pink", "orange", "yellow", "purple", "cyan",
+           "lime", "brown", "beige", "navy", "teal", "rose", "maroon")
 
 
 def iter_telemetry_sources(roots: list[Path]):
@@ -80,13 +97,45 @@ def episode_of(source: str) -> str:
     return p.name
 
 
+def _episode_dir_of(source: str) -> Path:
+    """The episode directory a telemetry source lives under (for results.json)."""
+
+    p = Path(source)
+    parent = p.parent
+    if parent.name == "artifacts":
+        parent = parent.parent
+    return parent
+
+
+def _accused_was_imposter(episode_dir: Path, color: str) -> bool | None:
+    """Ground truth for an accusation: True/False per results.json, None if unknown.
+
+    The game seats slots in palette order, so the accused color names a slot;
+    results.json's `imposter` array is the authoritative role. Missing/short
+    results, or a color outside the palette, is None (unverifiable).
+    """
+
+    rj = episode_dir / "results.json"
+    if not rj.exists():
+        return None
+    try:
+        results = json.loads(rj.read_text())
+        slot = PALETTE.index(color.lower())
+        return bool(results["imposter"][slot])
+    except (ValueError, KeyError, IndexError, json.JSONDecodeError, OSError):
+        return None
+
+
 def scan_liars(roots: list[Path]) -> tuple[dict[str, dict], int, int]:
     """Scan telemetry under roots -> (liars_by_pub, sources_scanned, episodes_scanned).
 
-    liars_by_pub: pub_b64 -> {"pub", "events", "episodes": set, "colors": set}.
+    liars_by_pub: pub_b64 -> {"pub", "events", "episodes": set, "colors": set,
+    "refuted": int, "unverified": int}. Only CONFIRMED lies (the accused color's
+    seat really was an imposter per results.json) count toward `events`; witness
+    errors are tallied in `refuted` and results-less events in `unverified`.
     An honor_liar event repeats every meeting tick after the ledgering (the liar
-    sweep re-checks claims), so `events` counts distinct (episode, color) pairs,
-    not raw lines.
+    sweep re-checks claims), so counts are per distinct (episode, color), not raw
+    lines.
     """
 
     liars: dict[str, dict] = {}
@@ -115,10 +164,21 @@ def scan_liars(roots: list[Path]) -> tuple[dict[str, dict], int, int]:
                 if key in seen_pairs:
                     continue
                 seen_pairs.add(key)
-                entry = liars.setdefault(pub, {"pub": pub, "events": 0, "episodes": set(), "colors": set()})
-                entry["events"] += 1
-                entry["episodes"].add(episode_of(source))
-                entry["colors"].add(color)
+                entry = liars.setdefault(pub, {
+                    "pub": pub, "events": 0, "episodes": set(), "colors": set(),
+                    "refuted": 0, "unverified": 0,
+                })
+                verdict = _accused_was_imposter(_episode_dir_of(source), color)
+                if verdict is True:
+                    entry["events"] += 1
+                    entry["episodes"].add(episode_of(source))
+                    entry["colors"].add(color)
+                elif verdict is False:
+                    entry["refuted"] += 1
+                else:
+                    entry["unverified"] += 1
+    # Keys with only refuted/unverified evidence carry no confirmed lie: keep them
+    # in the report (the caller prints them) but they never reach the distrust list.
     return liars, sources, len(episodes)
 
 
@@ -144,8 +204,11 @@ def render_distrust(liars: dict[str, dict], episodes_scanned: int) -> dict:
                 "lie_events": entry["events"],
                 "episodes": sorted(entry["episodes"]),
                 "colors": sorted(entry["colors"]),
+                "refuted_witness_errors": entry["refuted"],
+                "unverified": entry["unverified"],
             }
             for entry in sorted(liars.values(), key=lambda e: (-e["events"], e["pub"]))
+            if entry["events"] > 0  # confirmed lies only — witness errors never distrust
         ],
     }
 
@@ -165,12 +228,19 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"scanned {sources} telemetry sources across {episodes} episodes under: "
           f"{', '.join(str(r) for r in roots)}")
-    if liars:
-        print(f"LIARS FOUND: {len(liars)} distinct pubkey(s)")
-        for entry in sorted(liars.values(), key=lambda e: -e["events"]):
+    confirmed = {pub: e for pub, e in liars.items() if e["events"] > 0}
+    suspected_only = {pub: e for pub, e in liars.items() if e["events"] == 0}
+    if confirmed:
+        print(f"CONFIRMED LIARS: {len(confirmed)} distinct pubkey(s)")
+        for entry in sorted(confirmed.values(), key=lambda e: -e["events"]):
             print(f"  {entry['pub']}  lie_events={entry['events']} "
-                  f"episodes={len(entry['episodes'])} colors={sorted(entry['colors'])}")
-    else:
+                  f"episodes={len(entry['episodes'])} colors={sorted(entry['colors'])} "
+                  f"(refuted={entry['refuted']} unverified={entry['unverified']})")
+    if suspected_only:
+        print(f"witness errors / unverifiable only (NOT distrusted): {len(suspected_only)} pubkey(s)")
+        for entry in suspected_only.values():
+            print(f"  {entry['pub']}  refuted={entry['refuted']} unverified={entry['unverified']}")
+    if not liars:
         print("no honor_liar events found (nobody has been caught lying yet)")
 
     if args.write:

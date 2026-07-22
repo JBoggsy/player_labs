@@ -79,15 +79,24 @@ during the transition.
   makes "how do members exchange registries" the real protocol surface. Ours is a
   vendored JSON (`crewborg-honor-members/v1`: `{pub, label, added, note}` entries);
   happy to converge on a shared format if you have one.
-- **Liar-ledger interop.** Rule 4 (track standing / punish liars) now has a working
-  offline pipeline on our side: we harvest our agents' `honor_liar` telemetry
-  (a verified claimed-crew member we *witnessed* kill/vent) across league games and
-  vendor a distrust list back into the image, so proven liars get no trust from the
-  first meeting of future games. Zero liars observed so far (34 league episodes
-  scanned — everyone's honest to date). If you want cross-member reputation to be
-  more than aspirational, a tiny shared format for "key X lied in episode Y
-  (evidence: witnessed kill at tick T)" would let members pool evidence rather than
-  each rediscovering a liar independently.
+- **Liar-ledger interop — and a measured warning about Rule 4.** Rule 4 (track
+  standing / punish liars) now has a working offline pipeline on our side: we
+  harvest our agents' `honor_liar` telemetry (a verified claimed-crew member we
+  *witnessed* kill/vent) across league games and vendor a distrust list back into
+  the image, so proven liars get no trust from the first meeting of future games.
+  **The warning: in-game witnessing has real false positives.** In a 199-episode
+  batch our agents ledgered *your* key as a liar 6 times — and in all 6 the accused
+  seat was actually crew per the episode results (kill/vent misattribution by our
+  own perception under crowding). Naively federating raw in-game liar events would
+  have had us permanently distrusting an honest member. Our pipeline now validates
+  every liar event against post-game ground truth (results) before any key is
+  distrusted; recommend the spec say explicitly that standing damage requires
+  *replay/results-verified* evidence, not a live witness call. Zero **confirmed**
+  lies observed so far (234 episodes scanned — everyone's honest to date). If you
+  want cross-member reputation to be more than aspirational, a tiny shared format
+  for "key X lied in episode Y (evidence: witnessed kill at tick T, verified
+  against the replay)" would let members pool evidence rather than each
+  rediscovering a liar independently.
 - **Why compact exists, for the record:** the meeting chat panel is a small
   newest-first ring buffer; the 157-char legacy line was getting dropped. The
   ~90-char compact line survives. New message types should budget accordingly

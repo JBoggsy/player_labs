@@ -136,8 +136,17 @@ lasts one episode. The offline consumer closes the loop:
   per-meeting-tick repeats to distinct (episode, color) lies, aggregates per
   pubkey, and (with `--write`) renders `data/honor_distrust.json`
   (`crewborg-honor-distrust/v1`). Run it after `harvest_artifacts.py` (same
-  cadence works). As of 2026-07-22 the harvested corpus (79 telemetry sources /
-  34 league episodes) contains **zero** `honor_liar` events, so the vendored
+  cadence works).
+- **Ground-truth gate (load-bearing):** the in-game witness has FALSE POSITIVES —
+  measured 6 ledgerings of alex-smith's key across 199 baseline episodes
+  (2026-07-22), all with the accused seat actually **crew** per `results.json`
+  (kill/vent misattribution by our own perception). The harvest therefore
+  validates every `honor_liar` event against the episode's `results.json`
+  (accused color → palette slot → real role): only confirmed lies reach the
+  distrust list; witness errors are reported as `refuted`, results-less events
+  as `unverified` — both excluded (fail-closed toward trusting members). As of
+  2026-07-22 the corpus (675 sources / 234 episodes incl. the A/B baseline)
+  contains **zero confirmed lies** (6 refuted witness errors), so the vendored
   list is empty — the normal state.
 - **Consume:** `strategy/honor_society.py` (`_load_distrust`/`is_distrusted`)
   loads the vendored list (env `CREWBORG_HONOR_DISTRUST` overrides the path,
