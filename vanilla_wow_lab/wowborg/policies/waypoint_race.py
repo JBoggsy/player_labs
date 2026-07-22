@@ -62,10 +62,12 @@ WAYPOINT_CATALOG: dict[str, tuple[float, float, float, str, tuple[str, ...]]] = 
     # South descent to Sen'jin — sampled from wowborg's OWN successful v6 trajectory
     # (362s, gate never involved). v14 lesson: the first sampled point (-614,-4391)
     # sat in the wall pocket where two bots stalled; use the v6 path's FARTHER-south
-    # samples, which are past the choke, and let Detour handle the top of the descent.
-    "south-descent-1":    (-645.0, -4489.0, 28.0, "stage", ()),
-    "south-descent-2":    (-632.0, -4665.0, 25.0, "stage", ()),
-    "south-descent-3":    (-736.0, -4823.0, 22.0, "stage", ()),
+    # samples, which are past the choke. z values are OBSERVED terrain heights from
+    # the v6 traces (v17 lesson: guessed-low z made every descent chunk crawl through
+    # projection recovery at ~0.4 yd/s — 0.1.31 destinations carry exact z).
+    "south-descent-1":    (-645.0, -4489.0, 47.5, "stage", ()),
+    "south-descent-2":    (-632.0, -4665.0, 39.3, "stage", ()),
+    "south-descent-3":    (-736.0, -4823.0, 22.6, "stage", ()),
     # --- mid: rim / gate corridor (150-450 yd) ---
     "gate-corridor":      (-359.7, -4309.8, 49.9, "mid", ()),    # authored valley-exit node
     "field-shelf-far":    (-457.3, -4156.4, 47.6, "mid",
@@ -400,15 +402,17 @@ class WaypointRacePolicy:
                 advance(True, loc, name, target)
                 continue
 
-            # Leg failure: only on sustained no-progress or a blown time budget —
-            # but a leg that is STILL MOVING gets to keep its budget (v15: far legs
-            # died to the clock while walking steadily; a budget exists to cut
-            # wedged legs loose, not to cap honest travel time).
+            # Leg failure: sustained no-progress, a blown budget while stalled, or a
+            # HARD cap at 2x budget even while moving (v15: budgets shouldn't cap
+            # honest travel; v17 counter-lesson: a glacial-but-moving leg must still
+            # be cut loose eventually or it eats the whole episode).
+            elapsed = time.monotonic() - leg_started_at if leg_started_at is not None else 0.0
             over_budget = (
-                leg_started_at is not None
-                and leg_budget is not None
-                and time.monotonic() - leg_started_at > leg_budget
-                and no_progress_streak > 0  # moving legs never budget out
+                leg_budget is not None
+                and (
+                    (elapsed > leg_budget and no_progress_streak > 0)
+                    or elapsed > 2 * leg_budget
+                )
             )
             if no_progress_streak >= MAX_NO_PROGRESS or over_budget:
                 reason = "budget" if over_budget else "no_progress"
