@@ -130,6 +130,17 @@ class RouteNavigator:
                         planned_distance=round(plan.route_distance, 1))
 
             arrival_check = target
+            # Live-service semantics (first hosted World Race): a distant target often
+            # returns status="no_path" WITH partial waypoints — Detour tiles load
+            # progressively, so the full path only resolves as we approach. no_path is
+            # unreachable ONLY when the service offers no usable progress.
+            if plan.status in ("no_path", "unreachable_target") and plan.waypoints:
+                plan = plan.__class__(
+                    status="ok", map_id=plan.map_id, waypoints=plan.waypoints,
+                    route_distance=plan.route_distance, partial=True,
+                    projected_target_distance=plan.projected_target_distance,
+                    jump_required=plan.jump_required, message=plan.message,
+                )
             if plan.status in ("no_path", "unreachable_target"):
                 return RouteResult(NavState.FAILED, reason="unreachable", end=here,
                                    walked_seconds=walked_seconds,
@@ -279,6 +290,11 @@ class RouteNavigator:
     def _observe_position(self, bridge) -> Point | None:
         obs = bridge.observe()
         if obs is None:
+            return None
+        # During login the controller reports map 0 at the origin — not a real
+        # position (first hosted World Race: a slow login turned every station into
+        # instant unknown_region failures). Not-yet-in-world reads as "no position".
+        if obs.map_id == 0 and abs(obs.position.x) < 0.5 and abs(obs.position.y) < 0.5:
             return None
         return Point(obs.map_id, obs.position.x, obs.position.y, obs.position.z)
 

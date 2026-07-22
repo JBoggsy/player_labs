@@ -160,6 +160,19 @@ class WorldRacePolicy:
         trace("race_start", course=self.course)
         log(f"world race course: {self.course}")
 
+        # Wait until the character is genuinely in-world before racing (login can
+        # take minutes on hosted infra; frames exist but carry map 0 / origin).
+        while time.monotonic() < until:
+            here = journey.router._observe_position(bridge)
+            if here is not None:
+                log(f"in world at map {here.map_id} ({here.x:.0f},{here.y:.0f},{here.z:.0f})")
+                break
+            time.sleep(2.0)
+        else:
+            log("never entered world before deadline; aborting race")
+            trace("race_end", **self.summary())
+            return
+
         for name in self.course:
             remaining = until - time.monotonic()
             if remaining <= 30.0:

@@ -63,7 +63,7 @@ class JourneyPlanner:
                 if result.state == NavState.ESCALATE_MAP:
                     # Death-warp etc. changed our map — re-plan the journey.
                     replan_count += 1
-                    if replan_count > 3:
+                    if replan_count > 5:
                         return JourneyResult(JourneyStatus.FAILED,
                                              reason="journey_thrash", legs=legs)
                     continue
@@ -105,6 +105,12 @@ class JourneyPlanner:
                 if here is not None and here.map_id == target.map_id:
                     break  # we're on the target's map — same-map L1 takes over
             if failed:
+                # Progress-aware thrash guard: a re-plan only counts against the
+                # limit if we did NOT move meaningfully since the last one.
+                if here is not None and getattr(self, '_last_replan_at', None) is not None:
+                    if here.distance(self._last_replan_at) > 50.0:
+                        replan_count = 0
+                self._last_replan_at = here
                 replan_count += 1
                 if replan_count > 3:
                     return JourneyResult(JourneyStatus.FAILED,
