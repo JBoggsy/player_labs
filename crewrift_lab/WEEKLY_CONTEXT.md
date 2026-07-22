@@ -72,14 +72,24 @@ measure with `tools/imposter_movement/` per ready-window); (b) the older kill→
 surviving meetings after witnessed kills (deflection-when-accused has never been built;
 TODO.md's social-deception entry covers the design space).
 
-## Direction 6 — Honor Society ecosystem work
+## Direction 6 — Honor Society ecosystem work (largely DONE 2026-07-22, Thread 8)
 
-- Tell Alex: same-key multi-seat collides with first-poster-wins (distinct key per
-  concurrent seat); encoding canonicalization (we accept both, send standard).
-- Challenge/response awaits a society wire spec.
-- Liar-ledger harvest: collect `domain.honor_liar` events from league telemetry weekly →
-  vendored distrust list once any liar is observed.
-- Watch for other members' announcements in league replays (we auto-trust + auto-verify).
+- ✅ **Alex note WRITTEN** (`docs/hs1-ecosystem-notes.md`, for James to send): same-key
+  multi-seat vs first-poster-wins, encoding canonicalization (we accept both, send unpadded
+  base64url per live behavior), publish-the-compact-form, palette pinning, verifier cost at
+  scale, liar-evidence-needs-ground-truth warning, registry/liar-ledger interop formats.
+- ✅ **Liar-ledger harvest BUILT**: `tools/harvest_liars.py` → vendored
+  `data/honor_distrust.json` + the `is_distrusted` consumer seam in honor_society.py.
+  Ground-truth gate is load-bearing: the in-game witness false-positived 6× on alex-smith
+  (all actually crew) — raw honor_liar events must never distrust directly. 0 confirmed
+  liars to date (234 eps). Add to the harvest cron cadence alongside harvest_artifacts.py.
+- ✅ **HS isolated A/B DONE** (first ever): HS-NEUTRAL at episode level (crew 28% vs 28%,
+  n=200/200), mechanism-positive — HS members vote against our announced crew 3× less
+  (z=−7.1), vetoes 20/20 accurate. Keep ON; the payoff lever is Direction 1 (coordinated
+  vote-piling with trusted members — now evidence-backed: the trust channel works).
+- Challenge/response still awaits a society wire spec.
+- Open anomaly: imposter-role HS-member votes against us UP with HS on (z=+3.0, small-n) —
+  worth a look if imposter numbers sag.
 
 ## Platform / infra debts
 

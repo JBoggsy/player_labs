@@ -252,3 +252,15 @@ Evidence: `_spend_allows_followup` issued a blocking loopback HTTP GET every mee
 
 ### Warehouse triage for vote timeouts: score events with reason='failing to vote or skip' beat vote_cast-absence inference
 Evidence: the -10 penalty rows (key='score', slot>=0) directly enumerate timeout seats+ticks per episode; joining to the nearest prior player_state confirms alive+connected, and the ts equals the Voting→VoteResult phase edge, giving the exact meeting window for telemetry replay. Faster and less error-prone than reconstructing "alive all meeting with zero vote_cast".
+
+### The in-game honor_liar witness has FALSE POSITIVES — never distrust from raw events
+Evidence: 6/199 v110 baseline eps ledgered alex-smith's key as a liar while the accused seat was ACTUALLY crew per results.json (kill/vent misattribution by our perception under crowding). harvest_liars.py therefore gates every honor_liar event on results.json ground truth; only confirmed lies reach data/honor_distrust.json. General form: reputation systems must not federate uncorroborated live-witness claims.
+
+### /tmp warehouse-episode dir NAMES lie about versions — verify per episode.json before pooling arms
+Evidence: `/tmp/wh_anchor_base_v107_episodes` actually holds a crewborg **v110** arm (xreq_774a384d) and `/tmp/wh_anchor_base_v110_episodes` is HALF v107 (xreq_136dd84f, 100 eps) + half v110 (xreq_edd0f75e). The HS A/B's first compare silently used 100 mixed eps as "v110". Fix: map `episode.json` participants' `policy_version` per episode (`.tmp/map_arm_prefix.py` pattern) and assemble baselines by symlink (`/tmp/hs_on_baseline_eps`).
+
+### An A/B on an env-flag delta needs the OFF arm's zero-event check as a validity gate
+Evidence: HS isolated A/B pre-registered "OFF arm must emit exactly 0 HS events, else the run is invalid" — and byte-verified the probe image vs the baseline commit (114/114 sha256) BEFORE upload. Cheap (one scan) and it converts "we think the flag works" into measured fact; the disable path had never been exercised in production shape before.
+
+### Mechanism-level secondaries rescue underpowered episode-level A/Bs — pre-register them as the real deliverable
+Evidence: at n=200/200 the HS A/B could only detect ~+15pp crew-win; primary came back dead flat (28% vs 28%). But per-event secondaries were decisive: HS-member votes against our crew 0.31 vs 0.97/ep (z=-7.1), veto accuracy 20/20. Verdict "neutral-but-mechanism-works" is actionable (keep ON; build vote coordination); a win-rate-only design would have concluded "no effect" and lost the mechanism evidence.

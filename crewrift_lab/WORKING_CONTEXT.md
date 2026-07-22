@@ -15,6 +15,39 @@ This is *not* a log or archive: finished work lives in git history / the
 
 ---
 
+## 🎖️ DONE (2026-07-22, Thread 8): HS ecosystem follow-ups — isolated A/B (HS-NEUTRAL/mechanism-positive), liar-ledger consumer shipped, Alex note written
+
+**1. HS isolated A/B (first ever — HS always shipped bundled).** Probe `crewborg-hsoff:v1`
+(= v110's byte-identical image + recipe + `CREWBORG_HONOR_SOCIETY=0`; 114/114 image files
+hash-verified vs main `9b9606c`), 2×100 paced arms (`xreq_dacceb4c`+`xreq_07fab795`) vs the
+pooled 200 v110 HS-on eps (`xreq_774a384d`+`xreq_edd0f75e`), Thread-1 pinned roster/slot0/
+natural roles. Pre-registered BEFORE launch (`docs/designs/2026-07-22-hs-isolated-ab-prereg.md`).
+**VERDICT: HS-NEUTRAL at episode level, mechanism-positive** — crew win 28% vs 28% (z=+0.02;
+only ~+15pp detectable at this n, as pre-registered); but the trust loop is REAL: OFF arm 0 HS
+events in 200/200 artifacts (disable path verified), ON arm announced 138/199 + verified members
+188/199 + veto fired 20 eps at **20/20 accuracy** (all spared seats truly crew), and **HS members
+(sasmith/scott) vote against our crew 3× less when we announce** (0.31 vs 0.97 votes/ep, z=−7.1).
+Keep HS ON; the win-rate payoff needs Direction-1 vote coordination to monetize the trust.
+Anomaly flagged (unexplained, small-n): imposter-role HS-member votes against us UP with HS on
+(1.68 vs 1.02/ep, z=+3.0; possibly kills-confounded 1.61 vs 1.42). Artifacts: `/tmp/ab_hsoff/`.
+⚠️ Disk-dir gotcha: `/tmp/wh_anchor_base_v107_episodes` actually holds a v110 arm and
+`/tmp/wh_anchor_base_v110_episodes` is half v107 (`xreq_136dd84f`) — always re-verify per
+episode.json `policy_version`, not dir name. True 200-ep v110 baseline: `/tmp/hs_on_baseline_eps`.
+
+**2. Liar-ledger consumer BUILT (the standing TODO).** `tools/harvest_liars.py` scans harvested
+telemetry (loose jsonl + policy_artifact zips) for `domain.honor_liar`, dedupes per-tick repeats,
+**validates each accusation against results.json ground truth**, and (with `--write`) renders the
+vendored `crewrift/crewborg/data/honor_distrust.json`; `honor_society.py` gained the consumer seam
+(`is_distrusted` → verified-liar keys pre-ledgered in `process_chats`, never trusted, traced
+`honor_distrusted_announce`; `CREWBORG_HONOR_DISTRUST` override). **Key finding: the in-game liar
+witness has FALSE POSITIVES — 6/199 baseline eps ledgered alex-smith's key while the accused seat
+was actually CREW** (kill/vent misattribution); the ground-truth gate exists because of this.
+Corpus scan (675 sources/234 eps): 0 confirmed lies, 6 refuted witness errors → list ships empty.
+
+**3. Alex note written:** `crewrift_lab/docs/hs1-ecosystem-notes.md` (same-key-multi-seat vs
+first-poster-wins, encoding canonicalization, publish-the-compact-form, palette pinning, verifier
+cost at scale, registry/liar-ledger interop + the witness-false-positive warning). For James to send.
+
 ## 🔍 DONE (2026-07-21, Thread 5): residual alive-seat vote_timeout ROOT-CAUSED — client lag, not logic; FIXED on main (needs next version)
 
 **Measured** (the three anchor A/B warehouses, /tmp/wh_anchor_*): crewborg alive-seat timeouts
