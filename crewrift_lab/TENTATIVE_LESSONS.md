@@ -276,3 +276,17 @@ Evidence: success latency p90 4.0s vs 3.0s timeout meant ~40% of successes were 
 
 ### Pre-registered thresholds must be restated under the NEW regime, not the old one
 Evidence (Thread 10 C1): "≤10% of successes >3.05s" was written against the OLD 3.0s-timeout regime where >3.05s could only mean a retry; under the shipped 6.0s timeout a 3-5s success is a normal single attempt, so the literal threshold was unfailable-by-construction in one direction and meaningless in the other. The mechanism-true signatures (0 >6.05s, 0 timeout-bucket fails, max latency down) had to carry the verdict. When the change itself moves the measurement boundary, pre-register the criterion in units the change can't redefine.
+
+### Re-verify a parked behavioral premise on CURRENT data before building — a 2-week-old "field-worst" can be field-BEST today
+
+Evidence: Thread 9 (imposter co-location spread nudge). The TODO's premise — crewborg-imposter
+near/following its co-imposter "32% of intervals (field-worst)", measured ~v101 on 2026-07-07 —
+was re-measured first on 200 fresh v107/v110 eps (`/tmp/wh_anchor_base_v110`) before any code:
+crewborg's co-imposter proximity share is 13.7%, the LOWEST of the 7 crewborg-family policies
+(field 15.0%, z=-1.08); following share 10.2%, 2nd-lowest overall. The consequence claim also
+failed: per-episode imposter-pair co-location is uncorrelated with imposter win (r=0.017 p=0.82)
+and the ejection trend runs OPPOSITE the "tell" theory (high-co-location eps have FEWER imposter
+ejections). Verdict REFUTED-PREMISE, zero build cost spent. Ten versions of drift (v101→v110:
+self-hunt fix, palette/self-ID fix, HS) plus a different metric window fully inverted the ranking.
+The premise-first gate in the thread brief saved an entire design→build→A/B cycle (~half a day +
+200 paced eps). Scripts: /tmp/t9_spread/premise{,2,3,4}.py.

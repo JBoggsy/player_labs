@@ -5,15 +5,26 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
-- **Imposter incidental co-location with teammate — avoid clustering (2026-07-07, James).** Belief
-  trace refuted the "teammate detection is broken" theory (v101: 0/24 detection failures, teammate
+- **REFUTED-PREMISE 2026-07-22 (Thread 9): imposter co-location — do NOT build the spread nudge.**
+  Re-measured on 200 fresh v107/v110 eps (`/tmp/wh_anchor_base_v110`; scripts `/tmp/t9_spread/`).
+  The 32%-field-worst figure does not reproduce: crewborg-imposter's co-imposter share of proximity
+  intervals is **13.7% — field-BEST among the 7 crewborg-family policies** (field 15.0%, z=-1.08
+  p=0.28; per-seat Mann-Whitney p=0.33; following-interval share 10.2%, 2nd-lowest, only notsus-family
+  near). And the consequence claim fails too: per-episode imposter-pair co-location has **no
+  correlation with imposter win (r=0.017, p=0.82)** and the ejection trend is the WRONG direction for
+  the tell theory (high-co-location tercile has FEWER imposter ejections, spearman r=-0.14 p=0.06;
+  imposter win by co-location tercile 85/74/83%). The 32% was measured ~v101 (2026-07-07) with a
+  different metric window/field; on today's data there is nothing to fix and repulsion would risk the
+  hunt for zero expected gain. Original item kept below for context.
+  <details><summary>Original item (2026-07-07, superseded)</summary>
+  Belief trace refuted the "teammate detection is broken" theory (v101: 0/24 detection failures, teammate
   known every game — see [[crewrift-imposter-kill-lever]]). BUT the replay shows crewborg-imposter
   near/following its co-imposter 32% of intervals (field-worst), and since it correctly KNOWS the
   teammate, that's **incidental co-location** — two imposters clustering wastes coverage and reads as
   a tell to crew (two players always together). Not suspected to be a big loss driver (James), so
   LATER. Fix direction: an imposter-side "spread from known teammate" nudge in movement/search
   (repel from `teammate_colors` positions), analogous to crew dispersion. The teammate identity is
-  reliable (`teammate_colors`), so the signal to act on is already there.
+  reliable (`teammate_colors`), so the signal to act on is already there.</details>
 
 - **RESOLVED 2026-07-02 (cycle-2 fingerprint): ghost "idle" decomposed** — 70% is meetings/GameOver
   (vote-timer-inflated, unavoidable), 20% is healthy tasking, 8.5% is post-completion parking at home
