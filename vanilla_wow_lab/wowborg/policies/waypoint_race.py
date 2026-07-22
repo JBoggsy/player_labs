@@ -74,16 +74,15 @@ WAYPOINT_CATALOG: dict[str, tuple[float, float, float, str, tuple[str, ...]]] = 
                            ("scorpid-field-edge", "field-shelf-1", "field-shelf-2",
                             "field-shelf-3")),  # deepest reliably-reached shelf point
     # --- far: Sen'jin Village (> 450 yd; real Detour road work) ---
-    # Staged along wowborg's own PROVEN v6 trajectory: straight south from the valley
-    # at x≈-620, descending to the coast road (362s door-to-door). NOT via the eastern
-    # gate — v12/v13 traces show the executor jams at the gate ramp (-360,-4310) when
-    # given Sen'jin from there (Detour path crosses Tiragarde-side terrain it refuses
-    # to chunk); the authored (-100,-4980) bend is likewise the Razor-Hill-origin
-    # route, wrong for a valley origin.
-    "senjin-gadrin":      (-825.6, -4920.8, 19.7, "far",
-                           ("south-descent-1", "south-descent-2", "south-descent-3")),
-    "senjin-village":     (-797.5, -4921.2, 23.0, "far",
-                           ("south-descent-1", "south-descent-2", "south-descent-3")),
+    # DIRECT, no staging — the executor's own Detour finds the south descent and walks
+    # it at ~2 yd/s (v6: 719 yd in 362s, ~14 yd/settlement). Staging retrospective
+    # (v12→v18): every staged variant was slower or wedged — the v12 gate jam was
+    # CAUSED by our gate-corridor via node (v6 never went near the gate), and descent
+    # nodes halved chunk size (~2.5 yd/settlement, v18). Long-haul lesson: give the
+    # executor the real destination; stage only around chokes it provably cannot
+    # solve alone (the hard-tier east-field wall).
+    "senjin-gadrin":      (-825.6, -4920.8, 19.7, "far", ()),
+    "senjin-village":     (-797.5, -4921.2, 23.0, "far", ()),
     # --- hard: unreliable at this executor's pace — 4 hosted batches of evidence
     # (northwest-ridge 0/8 completions; the east-field family ~2/12 even with the full
     # authored shelf chain). Sampled ONLY by stress courses (count 0 by default); kept
