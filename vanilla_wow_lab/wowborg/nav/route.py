@@ -2,7 +2,10 @@
 state machine the codex audit prescribed.
 
 Flow per navigate_to(target):
-  plan (via /player/navigation) → walk planned waypoints as L0 hops → arrived
+  plan (via /player/navigation) → one direct L0 semantic move per plan → arrived
+  (the executor's server-side Detour owns locomotion; the plan supplies the
+  reachability verdict, the distance-derived budget, and — for partial corridors —
+  the intermediate progression target)
   Transitions handled at THIS layer (the audit's critical findings):
   - combat  → combat_paused: budget clock stops; on combat end, re-plan from here.
   - death   → recovering: defer to the planner's recovery recommendations (release/
@@ -32,7 +35,6 @@ from wowborg.nav.local import (
 from wowborg.nav.world_model import Point
 
 # Structural constants (not zone calibration):
-HOP_HORIZON_YARDS = 60.0        # hop to the farthest planned waypoint within this
 REPLAN_LIMIT_PER_REGION = 2     # planning attempts from ~the same spot before failing
 SAME_SPOT_YARDS = 20.0
 BUDGET_SLACK = 1.8              # x planned_time; generous — the pace estimate tightens it
@@ -178,7 +180,6 @@ class RouteNavigator:
                 )
             if plan.status in ("unavailable", "error") or not plan.waypoints:
                 # Degraded mode: no planner — one direct L0 move with a floor budget.
-                waypoints = [target]
                 planned_distance = here.distance(target)
             else:
                 if (
@@ -202,7 +203,6 @@ class RouteNavigator:
                             combat_pauses=combat_pauses, deaths=deaths, replans=replans)
                     # Walk to the partial end, then re-plan (loop continues from there).
                     arrival_check = partial_end
-                waypoints = [_pt(w, target.map_id) for w in plan.waypoints]
                 planned_distance = plan.route_distance
             result.planned_distance = max(result.planned_distance, planned_distance)
 
@@ -212,18 +212,28 @@ class RouteNavigator:
             )
             budget_left = budget
 
-            # ---- WALKING (hop over planned waypoints) ----
+            # ---- WALKING (one direct semantic move per plan) ----
+            # We do NOT micro-hop the service waypoints. v28 evidence: Detour
+            # findPath returns POOL-LIMITED partial corridors whose frontier is
+            # the heuristic-closest node — often up a cliff face — and hopping
+            # toward that frontier marched the executor into "no admissible
+            # source projection" traps, while our re-issue churn kept resetting
+            # its internal auto-unstuck. The executor's own server-side planner
+            # (with NavigationMemory + stock recovery) owns locomotion; our plan
+            # supplies the honesty verdict, budget, and the partial-progression
+            # target. (Same conclusion as the v19 waypoint race: far legs DIRECT.)
             walk_failed: str | None = None
-            hop_index = 0
             while True:
                 if time.monotonic() >= deadline:
                     return RouteResult(NavState.FAILED, reason="deadline", end=here,
                                        walked_seconds=walked_seconds,
                                        combat_pauses=combat_pauses, deaths=deaths,
                                        replans=replans)
-                hop, hop_index = _next_hop_index(here, waypoints, hop_index, arrival_check)
+                hop = arrival_check
                 hop_started = time.monotonic()
-                final_hop = hop.distance(arrival_check) <= ARRIVAL_RADIUS_YARDS
+                # A partial end / projection is a corridor-grade stop (stage
+                # radius); the true target keeps the caller's arrival radius.
+                final_hop = arrival_check.distance(target) <= arrival_radius
                 move = self.mover.move_to(
                     bridge, hop,
                     arrival_radius=arrival_radius if final_hop else STAGE_ARRIVAL_RADIUS_YARDS,
@@ -239,16 +249,14 @@ class RouteNavigator:
                 budget_left -= hop_seconds
 
                 if move.status == LocalMoveStatus.ARRIVED:
-                    if here.distance(arrival_check) <= arrival_radius:
-                        if arrival_check is target or arrival_check.distance(target) <= arrival_radius:
-                            self._trace("nav_state", state="arrived")
-                            return RouteResult(
-                                NavState.ARRIVED, end=here,
-                                planned_distance=result.planned_distance,
-                                walked_seconds=walked_seconds,
-                                combat_pauses=combat_pauses, deaths=deaths, replans=replans)
-                        break  # reached a partial end / projection → re-plan onward
-                    continue  # hop done, more waypoints ahead
+                    if final_hop:
+                        self._trace("nav_state", state="arrived")
+                        return RouteResult(
+                            NavState.ARRIVED, end=here,
+                            planned_distance=result.planned_distance,
+                            walked_seconds=walked_seconds,
+                            combat_pauses=combat_pauses, deaths=deaths, replans=replans)
+                    break  # reached a partial end / projection → re-plan onward
 
                 if move.status == LocalMoveStatus.COMBAT:
                     combat_pauses += 1
@@ -375,31 +383,3 @@ def _pt(position, map_id: int) -> Point:
     return Point(map_id, position.x, position.y, position.z)
 
 
-def _next_hop_index(
-    here: Point, waypoints: list[Point], start_index: int, final: Point
-) -> tuple[Point, int]:
-    """Directional hop selection: consume waypoints in ROUTE ORDER, never backwards.
-
-    Returns (hop_target, new_start_index). start_index advances past every waypoint
-    we are already within stage radius of; the hop is the farthest REMAINING waypoint
-    within the horizon (unit-test lesson: distance-only selection picked waypoints
-    BEHIND us once the list contained passed points — a 2-point oscillation).
-    """
-    index = start_index
-    while index < len(waypoints) and here.distance(waypoints[index]) <= STAGE_ARRIVAL_RADIUS_YARDS:
-        index += 1
-    if here.distance(final) <= HOP_HORIZON_YARDS:
-        return final, index
-    candidate: Point | None = None
-    scan = index
-    while scan < len(waypoints):
-        if here.distance(waypoints[scan]) <= HOP_HORIZON_YARDS:
-            candidate = waypoints[scan]
-            scan += 1
-        else:
-            break
-    if candidate is not None:
-        return candidate, index
-    if index < len(waypoints):
-        return waypoints[index], index
-    return final, index
