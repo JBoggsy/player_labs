@@ -656,3 +656,22 @@ def test_grenade_charge_holds_c_and_mask_survives():
     cmd = resolve_action(Intent(kind="hold", reason="hold_line"), b, ActionState())
     assert cmd.held_mask & BUTTON_C
     assert b.throw_charge_ticks == 1
+
+
+def test_fire_freezes_movement_through_windup():
+    # Firing must drop movement bits on the trigger tick and hold them for the
+    # windup, so the bullet leaves from where the aim was laid.
+    b = Belief(team="red", alive=True, fire_ready=True, tick=100, self_xy=(300, 329))
+    b.aim_brads = 0
+    b.enemies = (Enemy(pos=(400, 329), facing="left"),)  # due east, on-aim
+    st = ActionState()
+    cmd = resolve_action(Intent(kind="navigate_to", point=(1049, 329), reason="steal"), b, st)
+    assert cmd.held_mask & int(Button.A)
+    assert not cmd.held_mask & (int(Button.UP) | int(Button.DOWN) | int(Button.LEFT) | int(Button.RIGHT))
+    assert st.fire_hold_ticks == 5
+    # Next tick (gun now down): still frozen while the windup runs.
+    b.fire_ready = False
+    b.enemies = ()
+    cmd2 = resolve_action(Intent(kind="navigate_to", point=(1049, 329), reason="steal"), b, st)
+    assert not cmd2.held_mask & (int(Button.UP) | int(Button.DOWN) | int(Button.LEFT) | int(Button.RIGHT))
+    assert st.fire_hold_ticks == 4

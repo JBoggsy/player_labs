@@ -167,6 +167,10 @@ class ActionState:
     # Edge-triggered fire: A must be released for a frame between shots, so a held
     # trigger doesn't re-lock aim every tick.
     a_held: bool = False
+    # Ticks left of the post-trigger movement freeze (v12): the bullet leaves
+    # FIRE_WINDUP_TICKS after the pull FROM THE SHOOTER'S CURRENT POSITION, so
+    # moving during the windup shifts our own ray off the target.
+    fire_hold_ticks: int = 0
 
 
 IntentKind = Literal["navigate_to", "hold"]

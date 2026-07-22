@@ -338,7 +338,17 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
     # "hold" emits no movement (defender sitting on its line); the combat overlay
     # below still sweeps + fires. "navigate_to" routes via the flow field for the two
     # fixed strategic goals, else A* for a dynamic point (hold approach / thief chase).
-    if override is not None:
+    # Post-trigger freeze (v12): the bullet leaves FIRE_WINDUP_TICKS after the pull
+    # from our CURRENT position along the LOCKED angle (sim.nim applyFire), so
+    # strafing through the windup displaces our own ray sideways — 5 ticks of strafe
+    # is ~14px, a full hit-corridor width. Stand still until the shot is out.
+    # Exempt while carrying: the carrier's life beats its marksmanship.
+    freeze = state.fire_hold_ticks > 0 and not belief.i_carry_enemy_flag
+    if state.fire_hold_ticks > 0:
+        state.fire_hold_ticks -= 1
+    if freeze:
+        pass  # no movement bits this tick — let the windup release on target
+    elif override is not None:
         mask |= override[0]
     elif intent.kind == "navigate_to":
         team = belief.team
@@ -380,7 +390,12 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
                 and not _teammate_blocks_shot(belief, aim_pos)
             )
         if can_fire and not state.a_held:
-            # Fire this tick; do NOT rotate (lock the settled aim).
+            # Fire this tick; do NOT rotate (lock the settled aim), and freeze
+            # movement through the windup so the bullet leaves from where we aimed
+            # (drop any movement bits already in the mask for this tick too).
+            if not belief.i_carry_enemy_flag:
+                mask &= ~(int(Button.UP) | int(Button.DOWN) | int(Button.LEFT) | int(Button.RIGHT))
+                state.fire_hold_ticks = FIRE_WINDUP_TICKS
             mask |= int(Button.A)
             state.a_held = True
         else:
