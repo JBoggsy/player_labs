@@ -60,8 +60,10 @@ WAYPOINT_CATALOG: dict[str, tuple[float, float, float, str, tuple[str, ...]]] = 
     "field-shelf-3":      (-482.2, -4216.1, 50.1, "stage", ()),
     "field-shelf-4":      (-457.3, -4156.4, 47.6, "stage", ()),
     # South descent to Sen'jin — sampled from wowborg's OWN successful v6 trajectory
-    # (362s, gate never involved): straight south out of the valley at x≈-620.
-    "south-descent-1":    (-614.0, -4391.0, 30.0, "stage", ()),
+    # (362s, gate never involved). v14 lesson: the first sampled point (-614,-4391)
+    # sat in the wall pocket where two bots stalled; use the v6 path's FARTHER-south
+    # samples, which are past the choke, and let Detour handle the top of the descent.
+    "south-descent-1":    (-645.0, -4489.0, 28.0, "stage", ()),
     "south-descent-2":    (-632.0, -4665.0, 25.0, "stage", ()),
     "south-descent-3":    (-736.0, -4823.0, 22.0, "stage", ()),
     # --- mid: rim / gate corridor (150-450 yd) ---
@@ -108,6 +110,10 @@ WAYPOINTS_FILE_ENV = "WOWBORG_WAYPOINTS_FILE"
 RACE_SEED_ENV = "WOWBORG_RACE_SEED"
 
 ARRIVAL_TOLERANCE_YARDS = 8.0
+# Staging nodes are corridor GUIDES, not targets: clear them from much farther out.
+# v14 evidence: bots stalled 20-30 yd from a descent node pressed against the valley
+# wall — close enough to be through the corridor, too far for target-grade clearing.
+STAGE_CLEAR_YARDS = 35.0
 # A leg fails only when the character genuinely STOPS: a settlement counts as stalled
 # only when it neither improved goal distance NOR physically moved us (v7 evidence:
 # roads bend, so goal distance can stagnate for several chunks while the executor is
@@ -288,7 +294,7 @@ class WaypointRacePolicy:
             nearest_d = distance_2d(
                 current_x, current_y, chain[nearest][1][0], chain[nearest][1][1]
             )
-            start = nearest + 1 if nearest_d <= ARRIVAL_TOLERANCE_YARDS * 2 else nearest
+            start = nearest + 1 if nearest_d <= STAGE_CLEAR_YARDS else nearest
             for passed_name, point in chain[:start]:
                 passed_stages[passed_name] = point
             return chain[start:]
