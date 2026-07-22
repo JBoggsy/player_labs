@@ -209,13 +209,14 @@ _CHAT_CLAIM_LOG_LR = {
 
 
 def _chat_evidence_enabled_from_env() -> bool:
-    # Default OFF: the 2026-07-22 pre-registered A/B (crewborg-chatev:v1 vs v111,
-    # 200 eps/arm) REFUTED the current calibration — chat-changed votes hit
-    # imposters at 67.4% vs 69.0% for suspicion-alone (the field's chat adds vote
-    # volume, not precision) and total crew ejections rose (p=0.066). The mechanism
-    # itself validated cleanly (384 applied events, 47 changed votes, tracing +
-    # counterfactual sound); re-enable only after re-tuning the untrusted-speaker
-    # path (see the design doc's verdict + follow-up).
+    # Default OFF in code; enabled per-version via the upload recipe (like the LLM
+    # toggles). History: the un-floored calibration (chatev:v1 A/B, 2026-07-22) was
+    # REFUTED — chat-changed votes hit imposters at 67.4% ≈ suspicion-alone's 69.0%
+    # (volume, not precision). The trust-FLOORED variant (chatev:v2 A/B, same day)
+    # is SHIP RECOMMENDED: changed votes hit 92.1% (35/38), our mis-votes/crew-ep
+    # −45% (p=0.03), vote precision 83.6% vs 72.2% (p=0.03). Enable with
+    # CREWBORG_CHAT_EVIDENCE=1 and keep the default trust floor (see the design
+    # doc's W3b verdict).
     return os.environ.get(ENV_CHAT_EVIDENCE, "0").strip().lower() in ("1", "true", "yes", "on")
 
 

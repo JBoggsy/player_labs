@@ -71,9 +71,10 @@ permit silence, never a false crew claim). Receive-always / send-optional; set t
 flag to `0`/`false` for byte-identical legacy behaviour. Design + the HS1 wire
 spec: [`docs/designs/honor-society.md`](docs/designs/honor-society.md).
 
-**Chat-provided evidence** (`CREWBORG_CHAT_EVIDENCE`, **default OFF** — the
-2026-07-22 A/B refuted the current untrusted-speaker calibration; see the design
-doc's verdict before enabling): other
+**Chat-provided evidence** (`CREWBORG_CHAT_EVIDENCE`, **default OFF in code;
+recipe-enabled** — the 2026-07-22 W3b A/B ship-recommends `=1` with the default
+trust floor; the earlier un-floored calibration was refuted — both verdicts in
+the design doc): other
 players' parsed chat claims (kill/vent testimony, accusations, defenses — extracted
 by a deterministic template pass plus the spaCy parse) feed the suspicion posterior
 as a log-LR term **weighted by speaker trust**: HS-verified members count in full

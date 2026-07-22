@@ -53,7 +53,26 @@ adds vote VOLUME not precision; imp-ejections/crew-ep 0.490 vs 0.517 (primary fa
 total crew ejections 0.848 vs 0.662/ep (p=0.066, gullibility borderline).**
 `CREWBORG_CHAT_EVIDENCE` now defaults OFF. Follow-up lever (unprobed): floor the trust
 gate — testimony only from trust ≥ ~0.9 speakers (HS members + near-cleared), zeroing
-the fabrication-prone stranger path. W5: do NOT fold chatev into the next ship.
+the fabrication-prone stranger path. W5: do NOT fold chatev:v1 into the next ship.
+
+## 📬 CLOSED (2026-07-22, W3b): chat-evidence TRUST FLOOR — SHIP RECOMMENDED (recipe-carried flags)
+
+The W3 follow-up, probed. `CREWBORG_CHAT_EVIDENCE_TRUST_FLOOR` (default 0.9 when the
+term is on): speakers below the floor contribute ZERO testimony — HS-verified (1.0)
+and near-cleared (susp ≤ 0.1) only; `=0` reproduces v1; contradicted-self-alibi
+un-floored. Offline power check on W3's retained cand telemetry FIRST: would-fire
+0.57/crew-ep; claim precision by class HS kill/vent 22/22=100% vs strangers 64.4%
+vs imposter-speakers 0/158=0% — the floor keeps exactly the perfect class.
+**A/B (crewborg-chatev:v2 `977fc445`, xreq_eccbde9d+xreq_aea1ed31 200 eps 0-ops vs
+the same v111 baseline arms): chat-changed votes hit imposters 92.1% (35/38) vs
+v1's 67.4% (p=0.006); our mis-votes/crew-ep 0.127 vs 0.232 (−45%, p=0.030); vote
+precision 83.6% vs 72.2% (p=0.031); crew win flat; imposter side untouched;
+vote_timeouts 0/0.** Caveat handled: total crew-ejections elevation (p=0.089)
+decomposes ENTIRELY into field ejections with no crewborg fingerprint (our voted-for
+crew ejections 0.057/ep BELOW base; accusing chats DOWN p=0.013) — batch drift, not
+the feature. **NEXT SHIP: carry `CREWBORG_CHAT_EVIDENCE=1` (+ default floor) in the
+next `crewborg` version's recipe** — the confirmatory pre-ship A/B validates it
+in-composition. Full verdict: design doc §W3b; version_log chatev:v2 row.
 
 ## 🚢 IN FLIGHT (2026-07-22, W1): v111 confirmatory A/B → ship
 
