@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import math
 
-from ctf.beacon import items
+from ctf.beacon import items, squads
 from ctf.beacon.config import (
     GRENADE_WARN_CLEAR_PX,
     HOLD_ARRIVE_PX,
@@ -19,6 +19,7 @@ from ctf.beacon.config import (
     ITEMS,
     MEDKIT_DETOUR_PX,
     PEDESTAL,
+    SQUADS,
 )
 from ctf.beacon.types import Belief, Intent
 
@@ -104,7 +105,13 @@ def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
             return Intent(kind="hold", reason="hold_line"), None
         return Intent(kind="navigate_to", point=belief.hold_point, reason="to_hold"), None
 
-    # Attackers (and defenders with no hold point): push the enemy flag.
+    # Attackers (and defenders with no hold point): push the enemy flag — in a
+    # WAVE (v19): hold at the rally line until enough squadmates are near, so the
+    # push isn't a dribble of solo attackers (h006's blitz and focusfire's turtle
+    # both farm those). Timeout-capped; carriers/intercepts never reach here.
+    if SQUADS and squads.should_wait_for_squad(belief):
+        belief.squad_wait_ticks += 1
+        return Intent(kind="hold", reason="squad_rally"), None
     return Intent(kind="navigate_to", point=PEDESTAL[enemy], reason="steal"), "steal"
 
 

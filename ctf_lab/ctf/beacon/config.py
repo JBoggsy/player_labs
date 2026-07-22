@@ -264,6 +264,22 @@ CHAT_ENEMY_BUBBLE_FIX = _env_int("BEACON_CHAT_ENEMY_BUBBLE_FIX", 1) == 1
 GRENADE_WARN_CLEAR_PX = _env_int("BEACON_GRENADE_WARN_CLEAR_PX", 80)
 GRENADE_WARN_TTL_TICKS = _env_int("BEACON_GRENADE_WARN_TTL_TICKS", 72)
 
+# --- Squads (v19) ---------------------------------------------------------------------
+#: Master switch for squad play (formation forces, wait-gating, aim sectors).
+SQUADS = _env_int("BEACON_SQUADS", 1) == 1
+#: Cohesion: want >= MIN_BUDDIES teammates within COHESION_PX; below that, bias
+#: movement toward the nearest teammate instead of pushing alone.
+SQUAD_COHESION_PX = _env_int("BEACON_SQUAD_COHESION_PX", 120)
+SQUAD_MIN_BUDDIES = _env_int("BEACON_SQUAD_MIN_BUDDIES", 1)
+#: Separation: below this, steer apart (grenade blast 52px; bodies block shots).
+SQUAD_SEPARATION_PX = _env_int("BEACON_SQUAD_SEPARATION_PX", 40)
+#: Attackers rally at this x on their own side before committing (mirror for blue).
+SQUAD_RALLY_X = _env_int("BEACON_SQUAD_RALLY_X", 450)
+#: Give up waiting for buddies after this long (dead mate: 72t respawn + walk).
+SQUAD_WAIT_TIMEOUT_TICKS = _env_int("BEACON_SQUAD_WAIT_TIMEOUT_TICKS", 150)
+#: Aim-sector offset per rank step (brads); 50 ≈ 70°, complements the 60° cone.
+SQUAD_SECTOR_BRADS = _env_int("BEACON_SQUAD_SECTOR_BRADS", 50)
+
 # --- Roles (v2) -------------------------------------------------------------------
 # CTF games (vs the baseline) are decided by WIPE, not capture (see TENTATIVE_LESSONS):
 # nobody captures, so the team that keeps its lives wins. v1's 8 identical rushers died

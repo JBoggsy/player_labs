@@ -2,6 +2,25 @@
 
 Version → change mapping for the CTF `beacon` policy. Newest first.
 
+## v19 — squad play: formation, wave-gating, aim sectors (2026-07-22)
+
+**Why (human direction):** team tactics — squads of 2-3 that form up, stick
+together, and cover angles. Design: docs/designs/ctf-squad-play-design.md. Core
+constraint: visible teammates are ANONYMOUS, so membership is seat-deterministic
+(zero comms) and flocking is anonymous-proximity; nameplates (alpha-theta,
+upstream WIP) will later upgrade cohesion to true squadmate identity.
+
+**Changes:** (1) `squads.py`: D=seats 0-2, A1=3-4, A2=5-7; within-squad rank.
+(2) Formation bias in navigation: separation <40px pushes apart (52px grenade
+blast, FF), cohesion pulls toward the nearest teammate when <1 buddy within
+120px; exempt while carrying/fetching/intercepting. (3) **Wave-gating**: an
+attacker at the rally line (x=450 mirrored) HOLDS (`squad_rally` objective)
+until squad-size-1 buddies are near, timeout 150t — converts the dribble-in
+attack into waves. (4) **Aim sectors**: lighthouse sweep centre offset by rank
+(0/+50/-50 brads) — squads cover a cone + shoulders instead of one arc x3.
+(5) Tracing: `squad_wait_ticks`/`squad_cohesion_ticks` in snapshots. Knobs:
+`BEACON_SQUADS` (default ON — the A/B bit) + `BEACON_SQUAD_*`. 78 tests.
+
 ## v18 — team chat: the E/U/G/C/T shout protocol (2026-07-22)
 
 **Why (human direction):** teamwork substrate. Except T (and maybe E) these are

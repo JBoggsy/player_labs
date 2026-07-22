@@ -212,6 +212,9 @@ class _DiagnosticLogger:
             "heard_events": self._heard_events_total,
             "heard_duck_ticks": self._heard_duck_ticks,
             "heard_live": len(b.heard_events),
+            # v19 squad activation (cumulative).
+            "squad_wait_ticks": b.squad_wait_ticks,
+            "squad_cohesion_ticks": b.squad_cohesion_ticks,
             # v18 chat activation (cumulative per kind).
             "chat_sent": dict(b.chat_sent_counts),
             "chat_heard": dict(b.chat_heard_counts),

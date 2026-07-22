@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import math
 
-from ctf.beacon import mapdata, nav
+from ctf.beacon import mapdata, nav, squads
 from ctf.beacon.config import (
     AIM_BRADS_TURN,
     AIM_DEADBAND,
@@ -58,6 +58,7 @@ from ctf.beacon.config import (
     PEEK_DUCK_RUSH_EXEMPT_PX,
     PEEK_DUCK_SEARCH_CELLS,
     PEEK_TARGET_FRESH_TICKS,
+    SQUADS,
     STUCK_TICKS,
     SWEEP_HALF_ARC,
 )
@@ -102,8 +103,14 @@ def _threat_axis(belief: Belief) -> int:
 
 
 def _sweep_target(belief: Belief) -> int:
-    """Advance the lighthouse sweep one step and return the desired aim (brads)."""
+    """Advance the lighthouse sweep one step and return the desired aim (brads).
+
+    Squad sectors (v19): each rank's sweep centre is offset from the threat axis
+    (rank 0 on-axis, ranks 1/2 on the shoulders) so a squad covers a forward cone
+    plus flanks instead of three copies of one arc."""
     axis = _threat_axis(belief)
+    if SQUADS:
+        axis = (axis + squads.sector_offset_brads(belief.seat)) % AIM_BRADS_TURN
     belief.sweep_offset += belief.sweep_dir * AIM_TURN_RATE
     if belief.sweep_offset >= SWEEP_HALF_ARC:
         belief.sweep_offset = SWEEP_HALF_ARC
@@ -403,6 +410,21 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
         else:
             waypoint = nav.astar_waypoint(belief, self_xy, intent.point or self_xy)
         nav.note_progress(belief, self_xy)
+        # Squad formation bias (v19): blend cohesion/separation into the waypoint
+        # step. Exempt while carrying (run!), fetching (rejoin at the rally), or
+        # chasing a dynamic target (intercept/escort override formation).
+        if (
+            SQUADS
+            and intent.reason in ("steal", "to_hold")
+            and not belief.i_carry_enemy_flag
+        ):
+            bias = squads.formation_bias(belief)
+            if bias is not None:
+                belief.squad_cohesion_ticks += 1
+                waypoint = (
+                    int(waypoint[0] + bias[0] * NAV_CELL * 3),
+                    int(waypoint[1] + bias[1] * NAV_CELL * 3),
+                )
         jitter = belief.nav_stuck_ticks >= STUCK_TICKS
         mask |= nav.octant_toward(self_xy, waypoint, jitter)
 

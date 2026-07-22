@@ -915,3 +915,74 @@ def test_under_fire_set_by_nearby_fresh_impact():
     assert b.under_fire
     update_belief(b, _chat_percept(), st, tick=100)  # stale now
     assert not b.under_fire
+
+
+# --- v19: squads --------------------------------------------------------------------
+
+
+def test_squad_membership_covers_all_seats_deterministically():
+    from ctf.beacon import squads
+    seen = {}
+    for seat in range(8):
+        name, seats = squads.squad_of(seat)
+        assert seat in seats
+        assert squads.rank_of(seat) == seats.index(seat)
+        seen.setdefault(name, set()).add(seat)
+    assert seen == {"D": {0, 1, 2}, "A1": {3, 4}, "A2": {5, 6, 7}}
+
+
+def test_sector_offsets_spread_by_rank():
+    from ctf.beacon import squads
+    from ctf.beacon.config import SQUAD_SECTOR_BRADS
+    # D squad seats 0,1,2 -> ranks 0,1,2 -> offsets 0, +S, -S.
+    assert squads.sector_offset_brads(0) == 0
+    assert squads.sector_offset_brads(1) == SQUAD_SECTOR_BRADS
+    assert squads.sector_offset_brads(2) == -SQUAD_SECTOR_BRADS
+
+
+def test_separation_pushes_apart_cohesion_pulls_together():
+    from ctf.beacon import squads
+    b = Belief(team="red", seat=5, alive=True, tick=100, self_xy=(400, 300))
+    # Teammate on top of us -> separation (points away).
+    b.teammates = (Enemy(pos=(410, 300), facing="left"),)
+    bias = squads.formation_bias(b)
+    assert bias is not None and bias[0] < 0
+    # Teammate far away, nobody near -> cohesion (points toward).
+    b.teammates = (Enemy(pos=(700, 300), facing="left"),)
+    bias = squads.formation_bias(b)
+    assert bias is not None and bias[0] > 0
+
+
+def test_wait_gate_holds_then_times_out():
+    from ctf.beacon import squads
+    from ctf.beacon.config import SQUAD_WAIT_TIMEOUT_TICKS
+    b = Belief(team="red", seat=5, role="attacker", alive=True, tick=1000,
+               self_xy=(430, 300))  # near the red rally line (450), our side
+    b.teammates = ()  # alone
+    assert squads.should_wait_for_squad(b)
+    intent, _ = decide_objective(b)
+    assert intent.reason == "squad_rally"
+    # Timeout: after the cap, push anyway.
+    b.tick = 1000 + SQUAD_WAIT_TIMEOUT_TICKS + 2
+    assert not squads.should_wait_for_squad(b)
+    # With buddies near, no wait at all.
+    b2 = Belief(team="red", seat=5, role="attacker", alive=True, tick=1000,
+                self_xy=(430, 300))
+    b2.teammates = (Enemy(pos=(420, 320), facing="left"), Enemy(pos=(440, 280), facing="left"))
+    assert not squads.should_wait_for_squad(b2)
+
+
+def test_no_wait_once_committed_past_rally():
+    from ctf.beacon import squads
+    b = Belief(team="red", seat=5, role="attacker", alive=True, tick=1000,
+               self_xy=(600, 300))  # already past the line
+    b.teammates = ()
+    assert not squads.should_wait_for_squad(b)
+
+
+def test_carrier_never_waits():
+    b = Belief(team="red", seat=5, role="attacker", alive=True, tick=1000,
+               self_xy=(430, 300), i_carry_enemy_flag=True)
+    b.teammates = ()
+    intent, _ = decide_objective(b)
+    assert intent.reason == "carry_home"

@@ -201,6 +201,10 @@ class Belief:
     chat_processed: dict[str, tuple[str, int]] = field(default_factory=dict)
     #: our own last-sent payload (to skip our own bubble coming back at us).
     chat_last_sent_text: str | None = None
+    # Squads (v19): wait-gate state + activation counters (traced).
+    squad_wait_since: int = -1  # tick we started holding at the rally; -1 = not waiting
+    squad_wait_ticks: int = 0  # cumulative ticks spent waiting for buddies
+    squad_cohesion_ticks: int = 0  # cumulative ticks a formation bias was applied
     # Lead-aim activation state this tick, for tracing: brads of lead applied to the
     # snap aim (0 = no lead / target treated as stationary).
     lead_brads: int = 0
