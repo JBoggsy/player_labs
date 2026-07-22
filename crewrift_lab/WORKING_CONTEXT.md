@@ -15,6 +15,42 @@ This is *not* a log or archive: finished work lives in git history / the
 
 ---
 
+## 🚢 IN FLIGHT (2026-07-22, W1): v111 confirmatory A/B → ship
+
+**v111** (`8ec5a454-4fea-43a1-a639-1efe30a8ca42`, uploaded 2026-07-22T16:41Z from main
+`1018642`, v110 recipe exactly: LLM meetings + Haiku 4.5 + `CREWBORG_HS_SECRET`) = champion
+v110's code + four merged, individually-validated changes: (1) first-mover anchoring accusation
+(Thread 3, SAFE-POSITIVE), (2) vote-deadline fix — `SPEND_READ_CACHE_TICKS=24` +
+`AUTO_SUBMIT_REMAINING_TICKS` 48→96 (Thread 5), (3) meeting-LLM timeout 3.0→6.0s (Thread 10,
+SHIP-WITH-NEXT-VERSION), (4) palette cross-check test (no runtime effect). 666 tests green.
+
+**PRE-REGISTERED A/B (confirmatory — a combination of individually-validated changes), registered
+BEFORE firing the candidate arms:**
+- **Design:** cand = 2×100 eps v111, Thread-1 pinned roster (slot 0, natural roles:
+  daf-actinf-crewborg-v3:v1, softmaxwell-crewborg:v34, sasmith-crewborg-hs1:v15, notsus:v130,
+  scott-crewborg-hs1:v13, crewrift-prime-crewborg-aaln-hunter-relhalpha:v6, crewborg-aaln:v25).
+  Baseline = the 200 verified v110 eps in `/tmp/hs_on_baseline_eps` (`xreq_774a384d` +
+  `xreq_edd0f75e`; per-episode verified: 200/200 crewborg v110 = `028ba9f3`, slot 0, identical
+  roster). Ops-fail eps (score ≤ 0 connect/disconnect) excluded both sides.
+- **PRIMARY (gates — all must hold):**
+  1. No regression: crew win and imposter win each not worse than v110 beyond noise
+     (2-sided p < 0.05 against the null of no difference; point estimate may dip within noise).
+  2. vote_timeouts (slot-0) rate ≤ v110's rate (expect improvement from fix 2; v110 = 9/200-ish
+     from the anchor A/B window — measure both arms identically).
+  3. Zero crew self-accusations (regression check on the v110 fix).
+- **Mechanism confirmations (must fire):**
+  4. Anchor fires: `domain.meeting_decision` path=accuse on the first meeting tick / anchor
+     trace events present at ≈ the Thread-3 rate (~0.19/ep).
+  5. Zero successful meeting-LLM calls with latency > 6.05s (timeout fix; baseline had
+     successes out to 7.26s under abort-retry).
+  6. Spend-read cadence reduced: meeting_spend event frequency per meeting well below v110's.
+- **Expected improvements (directional, NOT gates):** crew accusation→ejection conversion up
+  (anchor); no_vote / vote_timeout down (deadline fix).
+- **Decision rule:** all 3 gates + mechanisms 4-6 pass → SUBMIT to Crewrift Prime (James's
+  standing "submit at will" on a clean pre-registered verdict; retire v110's membership
+  `lpm_cd2e6cbc…` FIRST, then submit, then targeted-poll the new pv to competing/active).
+  Any gate fails → NO SUBMIT, diagnose.
+
 ## ⚖️ CLOSED (2026-07-22, Thread 4): the social-rework question — VERDICT: mechanism-positive, episode-neutral at current quota → deterministic-first until the quota is fixed
 
 **The open bet since v101-v105 ("does the LLM social path, when it fires, beat the deterministic
