@@ -15,6 +15,27 @@ This is *not* a log or archive: finished work lives in git history / the
 
 ---
 
+## 📪 CLOSED (2026-07-22, W3): chat-provided evidence, trust-weighted — REFUTED as-shipped; mechanism validated; flag default OFF
+
+James's directive (incorporate other players' chat into the posterior, weighted by
+speaker trust, HS members ≈ full weight) is BUILT and A/B'd. Audit + design + verdict:
+`docs/designs/2026-07-22-chat-evidence-incorporation.md`. What shipped in code (branch
+`worktree-agent-abca9449cedbf8d00`): trust-weighted chat log-LR term in
+`strategy/suspicion.py` (`chat_evidence_log_lr`, both scoring paths, LLM on/off
+identical; capped ln 40 ≪ witnessed; applied before witnessed floor + HS pin), a
+deterministic anchored-template extraction pass in `chat_evidence.py` (new `kill`
+claim type; fixes the spaCy victim-accusation + "X killed Y"→nothing bugs), the
+spaCy-loading defer fix in `social_evidence.py`, and the
+`domain.chat_evidence_applied` counterfactual trace. 689 tests green.
+**A/B (crewborg-chatev:v1 `0873f708`, xreq_a63252e9+xreq_d38011ed 200 eps vs v111
+xreq_fab85490+xreq_2f42f740 200 eps): mechanism decisive (384 events, 47 chat-changed
+votes) but chat-changed votes hit imposters 67.4% ≈ suspicion-alone 69.0% — field chat
+adds vote VOLUME not precision; imp-ejections/crew-ep 0.490 vs 0.517 (primary fail);
+total crew ejections 0.848 vs 0.662/ep (p=0.066, gullibility borderline).**
+`CREWBORG_CHAT_EVIDENCE` now defaults OFF. Follow-up lever (unprobed): floor the trust
+gate — testimony only from trust ≥ ~0.9 speakers (HS members + near-cleared), zeroing
+the fabrication-prone stranger path. W5: do NOT fold chatev into the next ship.
+
 ## 🚢 IN FLIGHT (2026-07-22, W1): v111 confirmatory A/B → ship
 
 **v111** (`8ec5a454-4fea-43a1-a639-1efe30a8ca42`, uploaded 2026-07-22T16:41Z from main
