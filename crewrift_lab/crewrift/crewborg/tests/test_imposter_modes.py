@@ -412,6 +412,86 @@ def test_evade_falls_back_to_last_seen_crew_without_occupancy() -> None:
     assert intent.point == (400, 300)
 
 
+# --- post-kill flee: leave the scene (design 2026-07-21-imposter-kill-to-win) ---
+
+
+def _flee_map() -> MapData:
+    """Two rooms far enough apart that the flee filter separates them: Left center
+    (100, 32) and Right center (500, 32) are 400px apart (>= FLEE_SCENE_RADIUS)."""
+
+    return MapData(
+        width=600, height=64,
+        tasks=(TaskStation(name="left", x=90, y=24, w=8, h=8),
+               TaskStation(name="right", x=490, y=24, w=8, h=8)),
+        vents=(),
+        rooms=(Room(name="Left", x=0, y=0, w=200, h=64),
+               Room(name="Right", x=400, y=0, w=200, h=64)),
+        button=MapRect(x=4, y=48, w=8, h=8), home=MapPoint(x=8, y=8),
+    )
+
+
+def _flee_belief(*, crew_rooms: tuple[str, ...], self_xy=(100, 32), kill_tick: int | None = 40) -> Belief:
+    """An imposter standing at ``self_xy`` (its kill scene when ``kill_tick`` is set)
+    with expected-crew occupancy massed in ``crew_rooms``."""
+
+    map_data = _flee_map()
+    nav = build_nav_graph(np.ones((map_data.height, map_data.width), dtype=bool), map_data=map_data)
+    belief = Belief(
+        map=map_data, nav=nav, self_role="imposter",
+        self_world_x=self_xy[0], self_world_y=self_xy[1],
+        last_tick=50, last_kill_tick=kill_tick,
+    )
+    update_agent_tracking(belief)
+    cells = [c for c in belief.agent_tracking.substrate.cells.values() if c.label in crew_rooms]
+    belief.agent_tracking.snapshot = OccupancySnapshot(
+        tick=50, expected_by_cell={c.index: 0.5 for c in cells},
+        top_cell=cells[0].index, top_point=cells[0].center, top_expected=0.5,
+        tracked_count=1, support_cell_count=len(cells),
+    )
+    return belief
+
+
+def test_evade_after_a_kill_flees_the_scene_room_for_a_far_crew_room() -> None:
+    # Crew mass in BOTH rooms; the unconstrained pick would be the kill room itself
+    # (we're standing in it). The flee filter excludes it -> head to the far room.
+    belief = _flee_belief(crew_rooms=("Left", "Right"))
+    intent = EvadeMode().decide(belief, ActionState())
+    assert intent.kind == "navigate_to"
+    assert intent.point[0] > 400  # into Right, away from the (100, 32) scene
+
+
+def test_evade_after_a_kill_falls_back_to_the_farthest_room_when_crew_mass_is_at_the_scene() -> None:
+    # All occupancy mass is in the kill room -> no eligible crew room, no eligible
+    # cell -> the plausible-destination flee: the room center farthest from the scene.
+    belief = _flee_belief(crew_rooms=("Left",))
+    intent = EvadeMode().decide(belief, ActionState())
+    assert intent.kind == "navigate_to"
+    assert intent.point == (500, 32)  # Right's center — never idle over the body
+
+
+def test_evade_without_a_known_kill_keeps_the_unfiltered_crew_target() -> None:
+    # No last_kill_tick (e.g. directive without the belief edge) -> no scene, no
+    # filter: original densest-crew behavior, even in the room we stand in.
+    belief = _flee_belief(crew_rooms=("Left",), kill_tick=None)
+    intent = EvadeMode().decide(belief, ActionState())
+    assert intent.kind == "navigate_to"
+    assert intent.point[0] < 200  # Left is fine when there was no kill here
+
+
+def test_evade_traces_the_flee_once_per_kill() -> None:
+    belief = _flee_belief(crew_rooms=("Left", "Right"))
+    mode = EvadeMode()
+    trace = ListTraceSink()
+    mode.emit = EventEmitter(trace, tick=belief.last_tick)
+    mode.decide(belief, ActionState())
+    mode.decide(belief, ActionState())  # same kill: no second record
+    events = [e for e in trace.events if e.name == "domain.post_kill_flee"]
+    assert len(events) == 1
+    assert events[0].data["dest_kind"] == "crew_room"
+    assert events[0].data["scene"] == [100, 32]
+    assert events[0].data["dest_dist"] >= 160
+
+
 # --------------------------------------------------------------------------- #
 # Pretend — fake tasks at real stations in occupancy-selected rooms           #
 # --------------------------------------------------------------------------- #
