@@ -194,6 +194,15 @@ PRIOR_MIN, PRIOR_MAX = 1e-3, 0.99
 # misattributed kills in 6/199 episodes), so no volume of chat may ever reach the
 # definitional witnessed certainty or override the HS trust pin.
 ENV_CHAT_EVIDENCE = "CREWBORG_CHAT_EVIDENCE"
+# Trust FLOOR (the W3 follow-up variant, design doc §"Verdict"→follow-up): a speaker
+# whose trust is below this contributes ZERO testimony — only HS-verified members
+# (trust 1.0) and near-cleared players (1 − P(imposter) ≥ floor) count. The W3 A/B
+# refuted the un-floored version precisely because intermediate-trust strangers (×0.71
+# at the prior) carried fabrication-prone testimony over the vote bar; the floor keeps
+# the literal core of James's directive ("we totally trust HS members … weight their
+# evidence highly") with the gullibility surface removed. 0 reproduces chatev:v1.
+ENV_CHAT_EVIDENCE_TRUST_FLOOR = "CREWBORG_CHAT_EVIDENCE_TRUST_FLOOR"
+CHAT_EVIDENCE_TRUST_FLOOR_DEFAULT = 0.9
 # Per-claim base log-LRs (full-trust values; see the design doc's table):
 CHAT_KILL_LOG_LR = math.log(30.0)  # "saw X kill Y" — near-certain class, hearsay-degraded
 CHAT_VENT_LOG_LR = math.log(8.0)  # "X vented" — matches the legacy vent-dwell weight
@@ -218,28 +227,52 @@ _CHAT_CLAIM_LOG_LR = {
 
 
 def _chat_evidence_enabled_from_env() -> bool:
-    # Default OFF: the 2026-07-22 pre-registered A/B (crewborg-chatev:v1 vs v111,
-    # 200 eps/arm) REFUTED the current calibration — chat-changed votes hit
-    # imposters at 67.4% vs 69.0% for suspicion-alone (the field's chat adds vote
-    # volume, not precision) and total crew ejections rose (p=0.066). The mechanism
-    # itself validated cleanly (384 applied events, 47 changed votes, tracing +
-    # counterfactual sound); re-enable only after re-tuning the untrusted-speaker
-    # path (see the design doc's verdict + follow-up).
+    # Default OFF in code; enabled per-version via the upload recipe (like the LLM
+    # toggles). History: the un-floored calibration (chatev:v1 A/B, 2026-07-22) was
+    # REFUTED — chat-changed votes hit imposters at 67.4% ≈ suspicion-alone's 69.0%
+    # (volume, not precision). The trust-FLOORED variant (chatev:v2 A/B, same day)
+    # is SHIP RECOMMENDED: changed votes hit 92.1% (35/38), our mis-votes/crew-ep
+    # −45% (p=0.03), vote precision 83.6% vs 72.2% (p=0.03). Enable with
+    # CREWBORG_CHAT_EVIDENCE=1 and keep the default trust floor (see the design
+    # doc's W3b verdict).
     return os.environ.get(ENV_CHAT_EVIDENCE, "0").strip().lower() in ("1", "true", "yes", "on")
 
 
+def _chat_evidence_trust_floor_from_env() -> float:
+    raw = os.environ.get(ENV_CHAT_EVIDENCE_TRUST_FLOOR, "").strip()
+    if not raw:
+        return CHAT_EVIDENCE_TRUST_FLOOR_DEFAULT
+    try:
+        return min(1.0, max(0.0, float(raw)))
+    except ValueError:
+        return CHAT_EVIDENCE_TRUST_FLOOR_DEFAULT
+
+
 _CHAT_EVIDENCE_ENABLED = _chat_evidence_enabled_from_env()
+_CHAT_EVIDENCE_TRUST_FLOOR = _chat_evidence_trust_floor_from_env()
 
 
-def set_chat_evidence_for_tests(enabled: bool | None) -> None:
-    """Test/ops hook: pin the chat-evidence term on/off (None ⇒ re-read the env)."""
+def set_chat_evidence_for_tests(enabled: bool | None, *, trust_floor: float | None = None) -> None:
+    """Test/ops hook: pin the chat-evidence term on/off (None ⇒ re-read the env).
+    ``trust_floor`` pins the trust floor for the same call; enabled=None re-reads
+    both from the env."""
 
-    global _CHAT_EVIDENCE_ENABLED
-    _CHAT_EVIDENCE_ENABLED = _chat_evidence_enabled_from_env() if enabled is None else enabled
+    global _CHAT_EVIDENCE_ENABLED, _CHAT_EVIDENCE_TRUST_FLOOR
+    if enabled is None:
+        _CHAT_EVIDENCE_ENABLED = _chat_evidence_enabled_from_env()
+        _CHAT_EVIDENCE_TRUST_FLOOR = _chat_evidence_trust_floor_from_env()
+    else:
+        _CHAT_EVIDENCE_ENABLED = enabled
+        if trust_floor is not None:
+            _CHAT_EVIDENCE_TRUST_FLOOR = trust_floor
 
 
 def chat_evidence_enabled() -> bool:
     return _CHAT_EVIDENCE_ENABLED
+
+
+def chat_evidence_trust_floor() -> float:
+    return _CHAT_EVIDENCE_TRUST_FLOOR
 
 # Max distance a player can walk in one tick (MaxSpeed/MotionScale = 704/256 ≈ 2.75,
 # rounded up): a player materialising inside a vent from beyond this vented.
@@ -625,9 +658,11 @@ def chat_evidence_log_lr(belief: Belief, color: str, record: PlayerRecord) -> fl
     """The clamped chat-evidence log-LR for one target: other players' banked
     claims about them, each scaled by the speaker's trust, deduped per
     (speaker, claim_type), summed, and capped (chat is hearsay — see the module
-    constants and the design doc). Contradicted self-alibis (we watched the
-    speaker somewhere else) add caught-in-a-lie weight, unscaled — the
-    contradiction is our own observation, not testimony.
+    constants and the design doc). Speakers below the trust FLOOR (default 0.9:
+    HS-verified + near-cleared only) contribute zero. Contradicted self-alibis
+    (we watched the speaker somewhere else) add caught-in-a-lie weight,
+    unscaled and un-floored — the contradiction is our own observation, not
+    testimony.
     """
 
     if not _CHAT_EVIDENCE_ENABLED or not record.claims:
@@ -651,7 +686,11 @@ def chat_evidence_log_lr(belief: Belief, color: str, record: PlayerRecord) -> fl
         if speaker == color or speaker == self_color:
             continue  # self-referential stances / our own chat carry no testimony weight
         trust = _speaker_trust(belief, speaker, prior_p=prior_p, witnessed=witnessed)
-        if trust <= 0.0:
+        if trust <= 0.0 or trust < _CHAT_EVIDENCE_TRUST_FLOOR:
+            # Below the trust FLOOR (default 0.9) a speaker contributes NOTHING:
+            # only HS-verified members (1.0) and near-cleared players carry
+            # testimony. The W3 A/B showed intermediate-trust stranger testimony
+            # is fabrication-prone noise that only added symmetric vote volume.
             continue
         # A kill/vent report subsumes the same speaker's bare accusation (the
         # parse often yields both from one line) — don't stack severities.

@@ -1,0 +1,15 @@
+{
+  "target": {"coworld_id": "cow_0d8dcae2-0f55-40ce-a2f5-4b034ad31f49"},
+  "roster": [
+    {"player": {"policy_ref": "crewborg-chatev:v2"}, "slot": 0},
+    {"player": {"policy_ref": "daf-actinf-crewborg-v3:v1"}},
+    {"player": {"policy_ref": "softmaxwell-crewborg:v34"}},
+    {"player": {"policy_ref": "sasmith-crewborg-hs1:v15"}},
+    {"player": {"policy_ref": "notsus:v130"}},
+    {"player": {"policy_ref": "scott-crewborg-hs1:v13"}},
+    {"player": {"policy_ref": "crewrift-prime-crewborg-aaln-hunter-relhalpha:v6"}},
+    {"player": {"policy_ref": "crewborg-aaln:v25"}}
+  ],
+  "num_episodes": 100,
+  "notes": "W3b chat-evidence trust-floor A/B cand arm: crewborg-chatev:v2 (v111 code + chat evidence + TRUST_FLOOR=0.9, HS-verified/near-cleared speakers only) slot 0, Thread-1 pinned roster rotating, natural roles; baseline = xreq_fab85490+xreq_2f42f740 (v111)"
+}

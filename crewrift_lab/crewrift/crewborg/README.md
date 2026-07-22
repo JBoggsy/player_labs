@@ -71,9 +71,10 @@ permit silence, never a false crew claim). Receive-always / send-optional; set t
 flag to `0`/`false` for byte-identical legacy behaviour. Design + the HS1 wire
 spec: [`docs/designs/honor-society.md`](docs/designs/honor-society.md).
 
-**Chat-provided evidence** (`CREWBORG_CHAT_EVIDENCE`, **default OFF** — the
-2026-07-22 A/B refuted the current untrusted-speaker calibration; see the design
-doc's verdict before enabling): other
+**Chat-provided evidence** (`CREWBORG_CHAT_EVIDENCE`, **default OFF in code;
+recipe-enabled** — the 2026-07-22 W3b A/B ship-recommends `=1` with the default
+trust floor; the earlier un-floored calibration was refuted — both verdicts in
+the design doc): other
 players' parsed chat claims (kill/vent testimony, accusations, defenses — extracted
 by a deterministic template pass plus the spaCy parse) feed the suspicion posterior
 as a log-LR term **weighted by speaker trust**: HS-verified members count in full
@@ -81,6 +82,11 @@ as a log-LR term **weighted by speaker trust**: HS-verified members count in ful
 `1 − P(speaker is imposter)`, witnessed imposters count zero, and the total is
 capped below witnessed certainty (chat is hearsay). Identical on both scoring paths
 and with the meeting LLM on or off; `=1` enables.
+`CREWBORG_CHAT_EVIDENCE_TRUST_FLOOR` (default **0.9**) gates WHO may testify at
+all: speakers below the floor contribute zero, so by default only HS-verified
+members (trust 1.0) and near-cleared players (suspicion ≤ 0.1) count — the W3b
+re-tuning that removes the fabrication-prone stranger band; `=0` restores the
+un-floored (refuted) v1 weighting.
 Design + A/B verdict: `crewrift_lab/docs/designs/2026-07-22-chat-evidence-incorporation.md`;
 model reference: [`docs/suspicion.md`](docs/suspicion.md) §3.1.
 
