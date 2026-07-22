@@ -10,7 +10,20 @@ startup to resume; **update it as you learn** (keep it tight).
 
 ---
 
-## Status (2026-07-21, session 5b FINAL): **GOAL MET — v14 accuracy 0.657, items live.** v14 uploaded, NOT submitted (v6 still the competing entry)
+## Status (2026-07-22, session 6): **v15 SUBMITTED, QUALIFIED, CHAMPION** (human go-ahead)
+
+Overnight check: game still deployed at 0.7.51/b571dd3, but that ref includes
+**GameVersion 17: grenade blast radius 40→52** (only substantive delta vs c76e0c75;
+arena hash + config.json + labels identical — v14's nav bake and wire port stay
+valid). **v15 = v14 + the blast-radius constant** (widens the lob's teammate-splash
+veto to 72px). Submitted `sub_443c6a23…` → membership `lpm_4f91376e…` **QUALIFIED →
+competing → 👑 CHAMPION** (v6's old membership benched next commissioner pass).
+Standings at submission: rank 7 (score ~0.0008 — 274 rounds of blind-v6 history;
+expect the score to climb as v15 rounds accumulate). New field note: **Alex Smith
+entered at rank 1 (0.838, 20 rounds)**, above daveey — worth reconnaissance once
+they have round history.
+
+## (prior) Status (2026-07-21, session 5b FINAL): **GOAL MET — v14 accuracy 0.657, items live.** v14 uploaded, NOT submitted (v6 still the competing entry)
 
 **Endstate of the accuracy/items ladder (10-ep 8v8 vs each top-3 per version):**
 | ver | acc | vs Picasso | vs autoresearch | vs focusfire | note |

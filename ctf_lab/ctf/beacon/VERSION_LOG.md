@@ -2,6 +2,17 @@
 
 Version → change mapping for the CTF `beacon` policy. Newest first.
 
+## v15 — GameVersion-17 blast radius; SUBMITTED + CHAMPION (2026-07-22)
+
+**Why:** overnight game check before submitting v14: deployed ref unchanged
+(0.7.51/b571dd3) but it carries GameVersion 17 — grenade blast radius 40→52.
+Everything else v14 depends on (arena, config.json, labels, spawns) verified
+identical, so v15 is v14 + the one constant (widens the lob teammate-splash
+veto to 72px).
+
+**Submitted** (human go-ahead): `sub_443c6a23…` → membership `lpm_4f91376e…`
+**QUALIFIED → competing → CHAMPION** (auto-champion always; evicts v6's entry).
+
 ## v11–v14 — accuracy ladder to 0.657 (2026-07-21, same session as v10)
 
 Iterating on v10's 0.234 accuracy toward the ≥0.5 goal (10-ep 8v8 vs each top-3
