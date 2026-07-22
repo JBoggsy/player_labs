@@ -59,19 +59,27 @@ WAYPOINT_CATALOG: dict[str, tuple[float, float, float, str, tuple[str, ...]]] = 
     "field-shelf-2":      (-514.3, -4284.2, 40.7, "stage", ()),
     "field-shelf-3":      (-482.2, -4216.1, 50.1, "stage", ()),
     "field-shelf-4":      (-457.3, -4156.4, 47.6, "stage", ()),
+    # South descent to Sen'jin — sampled from wowborg's OWN successful v6 trajectory
+    # (362s, gate never involved): straight south out of the valley at x≈-620.
+    "south-descent-1":    (-614.0, -4391.0, 30.0, "stage", ()),
+    "south-descent-2":    (-632.0, -4665.0, 25.0, "stage", ()),
+    "south-descent-3":    (-736.0, -4823.0, 22.0, "stage", ()),
     # --- mid: rim / gate corridor (150-450 yd) ---
     "gate-corridor":      (-359.7, -4309.8, 49.9, "mid", ()),    # authored valley-exit node
     "field-shelf-far":    (-457.3, -4156.4, 47.6, "mid",
                            ("scorpid-field-edge", "field-shelf-1", "field-shelf-2",
                             "field-shelf-3")),  # deepest reliably-reached shelf point
-    # --- far: out the gate (> 450 yd; real Detour road work) ---
-    # Gate → Sen'jin DIRECT (~750 yd): proven at 362s in the v6 batch. (The authored
-    # (-100,-4980) road bend belongs to the Razor Hill→Sen'jin route around Tiragarde
-    # Keep — adding it to OUR gate-origin trip was a ~700 yd dogleg that made far legs
-    # unfinishable in 970s; v8-v11 evidence.) Both points are Sen'jin questgiver spawns
-    # (Gadrin / Vornal), ~30 yd apart — named for what they are now.
-    "senjin-gadrin":      (-825.6, -4920.8, 19.7, "far", ("gate-corridor",)),
-    "senjin-village":     (-797.5, -4921.2, 23.0, "far", ("gate-corridor",)),
+    # --- far: Sen'jin Village (> 450 yd; real Detour road work) ---
+    # Staged along wowborg's own PROVEN v6 trajectory: straight south from the valley
+    # at x≈-620, descending to the coast road (362s door-to-door). NOT via the eastern
+    # gate — v12/v13 traces show the executor jams at the gate ramp (-360,-4310) when
+    # given Sen'jin from there (Detour path crosses Tiragarde-side terrain it refuses
+    # to chunk); the authored (-100,-4980) bend is likewise the Razor-Hill-origin
+    # route, wrong for a valley origin.
+    "senjin-gadrin":      (-825.6, -4920.8, 19.7, "far",
+                           ("south-descent-1", "south-descent-2", "south-descent-3")),
+    "senjin-village":     (-797.5, -4921.2, 23.0, "far",
+                           ("south-descent-1", "south-descent-2", "south-descent-3")),
     # --- hard: unreliable at this executor's pace — 4 hosted batches of evidence
     # (northwest-ridge 0/8 completions; the east-field family ~2/12 even with the full
     # authored shelf chain). Sampled ONLY by stress courses (count 0 by default); kept
