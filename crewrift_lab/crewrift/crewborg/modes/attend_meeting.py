@@ -38,6 +38,7 @@ from crewrift.crewborg.strategy.suspicion import (
     chat_suspect,
     counterfactual_top_suspect_no_chat,
     top_suspect,
+    warm_anchor_suspect,
     witnessed_imposters,
 )
 from crewrift.crewborg.types import ActionState, Belief, ChatEvent, Intent
@@ -86,6 +87,10 @@ DEFAULT_LLM_TIMEOUT_SECONDS = 6.0
 # Early-submit a tentative vote (LLM idle) once under half the believed time remains —
 # the belief clock can lag real time, and a submitted vote can't be lost to vote_timeout.
 EARLY_SUBMIT_REMAINING_FRACTION = 0.5
+# Warm first-mover anchors (the social-rule eligibility route, suspicion.
+# warm_anchor_suspect; design crewrift_lab/docs/designs/2026-07-22-warm-anchor-design.md)
+# default ON; kill switch for A/B isolation and emergency rollback.
+WARM_ANCHOR_ENV = "CREWBORG_WARM_ANCHOR"
 
 
 class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
@@ -124,6 +129,11 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
             in ("1", "true", "yes", "on")
         )
         self._instant_vote_pending: str | None = None
+        # Warm first-mover anchor (default on; CREWBORG_WARM_ANCHOR=0 disables).
+        self._warm_anchor_enabled = (
+            os.environ.get(WARM_ANCHOR_ENV, "").strip().lower() not in ("0", "false", "no", "off")
+        )
+        self._warm_anchor_target: str | None = None
         self._chat_accused: str | None = None
         self._meeting_id: int | None = None
         self._deterministic_chatted = False
@@ -264,8 +274,15 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         first decide tick. Fires at most once per meeting, before the first LLM
         call; sets ``_deterministic_chatted`` so an LLM-failure fallback can't chat
         twice, and routes through ``_send_chat_intent`` so a duplicate later LLM
-        chat is suppressed by the existing gate. The coupled tentative vote passes
-        ``_vote_target_corroborated`` by construction (``top_suspect == target``).
+        chat is suppressed by the existing gate.
+
+        Two eligibility routes (design 2026-07-22-warm-anchor-design.md):
+        the HARD bar (``top_suspect`` — witnessed-catch territory), whose coupled
+        tentative vote passes ``_vote_target_corroborated`` by construction; and
+        the WARM social rule (``warm_anchor_suspect``, ~89% measured precision),
+        whose tentative vote is deliberately NOT corroborated — it becomes a real
+        ballot only via the warm pile clause or a later independent corroboration,
+        else the deadline gate converts it to skip.
         """
 
         if not self._llm_client.enabled:
@@ -276,7 +293,17 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
             return None
         if self._last_llm_call_tick is not None:
             return None  # the meeting_start call is already out — too late to anchor
+        warm = False
         target = top_suspect(belief)
+        if target is None and self._warm_anchor_enabled:
+            # Warm eligibility (the W2 lever): the fitted posterior is bimodal —
+            # non-witnessed tops max out ~0.74, so the hard bar only ever fires on
+            # witnessed catches (~0.18/ep). The social rule adds ~0.12/ep at ~89%
+            # measured precision. CHAT-only: the vote stays behind the existing
+            # corroboration gate plus the warm pile clause (see
+            # _vote_target_corroborated) — a lone warm ballot is never cast.
+            target = warm_anchor_suspect(belief)
+            warm = target is not None
         if target is None or honor_society.vote_veto(belief, target):
             return None
         accusation = build_accusation(belief, target)
@@ -284,9 +311,16 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
             return None  # no citable evidence — never bare-accuse
         self._deterministic_chatted = True
         self._tentative_vote = target
-        self.emit.event("meeting_first_mover_accusation", {"target": target, "tick": belief.last_tick})
+        if warm:
+            self._warm_anchor_target = target
+            self.emit.counter("meeting_warm_anchor")
+        self.emit.event(
+            "meeting_first_mover_accusation",
+            {"target": target, "tick": belief.last_tick, "warm": warm},
+        )
         self.emit.counter("meeting_first_mover_accusation")
-        self._trace_meeting_decision(belief, role="crewmate", path="first_mover_accuse", target=target)
+        path = "first_mover_accuse_warm" if warm else "first_mover_accuse"
+        self._trace_meeting_decision(belief, role="crewmate", path=path, target=target)
         return self._send_chat_intent(belief, accusation, reason="first-mover: anchor the pile")
 
     # --- deterministic fallback ------------------------------------------
@@ -857,6 +891,7 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self._llm_pending = None
         self._llm_calls_used = 0
         self._instant_vote_pending = None
+        self._warm_anchor_target = None
         self._chat_accused = None
         self._deterministic_chatted = False
         self._disabled_traced = False
@@ -960,7 +995,41 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
             return True
         if target in witnessed_imposters(belief):
             return True
-        return top_suspect(belief) == target
+        if top_suspect(belief) == target:
+            return True
+        return self._warm_pile_formed(belief, target)
+
+    def _warm_pile_formed(self, belief: Belief, target: str) -> bool:
+        """The warm anchor's vote-escalation clause: our warm-anchored target has
+        drawn independent heat this meeting — another player cast a vote against
+        them or accused them in chat (both signals already exclude our own ballot
+        and our own chats). The anchoring premise is that the first-named target
+        collects the pile; if others joined, our ballot is pivotal exactly when it
+        can convert, and a LONE warm ballot (~89% measured precision, below the
+        hard bar's 97-100%) is never cast — the deadline gate skips it instead
+        (design 2026-07-22-warm-anchor-design.md)."""
+
+        if target != self._warm_anchor_target:
+            return False
+        if votes_against(belief).get(target, 0) > 0:
+            return True
+        # Chat heat, from EXTERNAL messages only. _chat_accusers would count an
+        # unattributed (speaker_color None) copy of our own anchor accusation as
+        # an accuser — self-corroboration; _is_external_chat also excludes texts
+        # we sent. Same parse + cache contents as chat_evidence.chat_accusers.
+        self_color = belief.voting.self_marker_color
+        for event in belief.chat_log:
+            if not self._is_external_chat(event, self_color):
+                continue
+            if event.text not in self._chat_parse_cache:
+                self._chat_parse_cache[event.text] = {
+                    claim.target_color
+                    for claim in chat_evidence.parse_claims(belief, event)
+                    if claim.claim_type == "accusation"
+                }
+            if target in self._chat_parse_cache[event.text]:
+                return True
+        return False
 
     def _resolved_vote_target(self, belief: Belief) -> str:
         tentative = self._tentative_vote

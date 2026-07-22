@@ -1137,3 +1137,120 @@ def test_attend_meeting_emits_llm_spend_on_failure_with_free_429() -> None:
     assert any(
         e.name == "domain.meeting_llm_fallback" and e.data.get("reason") == "llm_call_failed" for e in sink.events
     )
+
+
+# --- warm first-mover anchor (design: 2026-07-22-warm-anchor) -------------------
+
+
+def _warm_belief(*, tick: int = 0) -> Belief:
+    """Crew seat with a warm-eligible (below-bar, social-rule-passing) top suspect."""
+
+    belief = _meeting_belief(tick=tick)
+    belief.self_role = "crewmate"
+    belief.self_alive = True
+    belief.suspicion = {"red": 0.5}  # below the hard bar -> top_suspect() None
+    red = belief.roster["red"]
+    red.events.append(PlayerEvent(kind="tailing_self", start_tick=0, end_tick=96))
+    red.times_accused = 1
+    red.votes_cast = 1
+    return belief
+
+
+def test_warm_anchor_fires_below_the_hard_bar(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_HONOR_SOCIETY", "0")
+    client = _FakeMeetingClient([MeetingDecision(action="wait")])
+    mode = _llm_mode(client)
+
+    first = mode.decide(_warm_belief(), ActionState())
+    assert first.kind == "chat"
+    assert first.text.startswith("red sus:")
+    assert client.calls == []  # out before the LLM round-trip, like the hard anchor
+
+
+def test_warm_anchor_vote_skips_without_a_pile(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_HONOR_SOCIETY", "0")
+    client = _FakeMeetingClient([MeetingDecision(action="wait")])
+    mode = _llm_mode(client)
+
+    assert mode.decide(_warm_belief(), ActionState()).kind == "chat"
+    assert mode.decide(_warm_belief(), ActionState()).kind == "idle"  # call in flight
+    assert mode.decide(_warm_belief(), ActionState()).kind == "idle"  # wait applied
+
+    vote = mode.decide(_warm_belief(tick=1150), ActionState())  # deadline auto-submit
+    assert vote.kind == "vote"
+    assert vote.target_color is None  # lone warm ballot converted to skip
+
+
+def test_warm_anchor_vote_fires_when_the_pile_forms(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_HONOR_SOCIETY", "0")
+    client = _FakeMeetingClient([MeetingDecision(action="wait")])
+    mode = _llm_mode(client)
+
+    assert mode.decide(_warm_belief(), ActionState()).kind == "chat"
+    assert mode.decide(_warm_belief(), ActionState()).kind == "idle"
+    assert mode.decide(_warm_belief(), ActionState()).kind == "idle"
+
+    piled = _warm_belief(tick=1150)  # deadline window; another player voted red
+    piled.voting = piled.voting.model_copy(update={"dots": (VoteDot(voter=0, target=0),)})
+    vote = mode.decide(piled, ActionState())
+    assert vote.kind == "vote"
+    assert vote.target_color == "red"  # pile formed -> the coupled ballot is cast
+
+
+def test_warm_anchor_needs_the_social_rule(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_HONOR_SOCIETY", "0")
+    for breaker in (
+        lambda r: setattr(r, "times_accused", 0),
+        lambda r: setattr(r, "votes_cast", 0),
+        lambda r: setattr(r, "button_calls_made", 1),
+        lambda r: setattr(r, "reported_bodies", 1),
+        lambda r: setattr(r, "tasks_completed_watched", 1),
+    ):
+        client = _FakeMeetingClient([MeetingDecision(action="wait")])
+        mode = _llm_mode(client)
+        belief = _warm_belief()
+        breaker(belief.roster["red"])
+        assert mode.decide(belief, ActionState()).kind == "idle"  # no warm anchor
+        assert [t for t, _ in client.calls] == ["meeting_start"]
+
+
+def test_warm_anchor_needs_a_long_tail(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_HONOR_SOCIETY", "0")
+    client = _FakeMeetingClient([MeetingDecision(action="wait")])
+    mode = _llm_mode(client)
+    belief = _warm_belief()
+    belief.roster["red"].events.clear()
+    belief.roster["red"].events.append(
+        PlayerEvent(kind="tailing_self", start_tick=0, end_tick=40)  # < 96 ticks
+    )
+    assert mode.decide(belief, ActionState()).kind == "idle"
+
+
+def test_warm_anchor_kill_switch(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_HONOR_SOCIETY", "0")
+    monkeypatch.setenv("CREWBORG_WARM_ANCHOR", "0")
+    client = _FakeMeetingClient([MeetingDecision(action="wait")])
+    mode = _llm_mode(client)
+    assert mode.decide(_warm_belief(), ActionState()).kind == "idle"  # disabled
+    assert [t for t, _ in client.calls] == ["meeting_start"]
+
+
+def test_warm_anchor_hard_bar_still_takes_priority(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_HONOR_SOCIETY", "0")
+    client = _FakeMeetingClient([MeetingDecision(action="wait")])
+    mode = _llm_mode(client)
+    belief = _warm_belief()
+    belief.suspicion = {"red": 0.95}  # clears the hard bar too
+    belief.roster["red"].events.append(PlayerEvent(kind="vent_use", start_tick=4, end_tick=4))
+
+    assert mode.decide(belief, ActionState()).kind == "chat"
+    # Hard-bar route: the vote is corroborated (top_suspect) even with no pile.
+    vote = mode.decide(_replay_hard(belief, tick=1150), ActionState())
+    assert vote.kind == "vote"
+    assert vote.target_color == "red"
+
+
+def _replay_hard(belief: Belief, *, tick: int) -> Belief:
+    later = belief.model_copy(deep=True)
+    later.last_tick = tick
+    return later
