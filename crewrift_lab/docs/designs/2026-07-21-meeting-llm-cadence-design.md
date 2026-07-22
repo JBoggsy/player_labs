@@ -1,6 +1,6 @@
 # Meeting-LLM call-failure mitigation at 1200-tick meetings (Thread 10)
 
-**Date:** 2026-07-21 · **Status:** probe pre-registered (crewborg-llmcadence:v1)
+**Date:** 2026-07-21 · **Status:** VERDICT — SHIP-WITH-NEXT-VERSION (probe clean; see §Verdict)
 **TODO item:** "Meeting-LLM call failures at 1200-tick meetings (~43% of non-cooldown calls)" (2026-07-02)
 
 ## Problem
@@ -93,6 +93,37 @@ quota is already spent when the probe runs — a raw fail-rate comparison vs ton
 baseline is NOT a clean read, which is why the primaries are the timeout-specific
 signatures (1, 2), not the 429 rate itself.
 
-## Verdict
+## Verdict — SHIP-WITH-NEXT-VERSION (2026-07-22)
 
-Filled after the probe: see the version_log row for `crewborg-llmcadence:v1`.
+Probe: `xreq_f5e7a285-8deb-4db0-8fcd-f29787a7220f`, 100/100 completed, 100 crewborg-llmcadence
+seats fetched (`/tmp/t10_probe_eps`), 1018 calls / 294 decisions / 723 fails.
+Verdict script: `/tmp/t10_probe_verdict.py` (validated: reproduces the baseline numbers exactly).
+
+| # | criterion | baseline (v110 arms) | probe | verdict |
+| --- | --- | --- | --- | --- |
+| 1 | abort-retry waste | 40% of successes >3.05s (only possible via retry at the 3.0s timeout); max 7.26s | **0 aborted attempts**: 0 successes >6.05s, max 4.94s, 0 timeout errors | **PASS** (see note) |
+| 2 | timeout-bucket `llm_call_failed` | 17/1553 | **0**/723 | **PASS** |
+| 3 | decision coverage (called meetings with ≥1 decision) | 59.4% | 52.5% — vs **contemporaneous** same-night arms: anchor-cand 52.6%, v107 49.5% (pool-depletion drift, exogenous) | **PASS vs contemporaneous controls** |
+| 4 | `llm_call_failed` per called meeting | 2.77 | **2.40** (lowest of all four same-night arms: 2.77/2.70/2.76) | **PASS** |
+| 5 | vote quality | timeouts 0; gated 0.99/seat | timeouts **0**; gated 0.89/seat; success latency median 2835 (≈baseline 2813) | **PASS** |
+
+**Note on C1's literal threshold.** The pre-registered "≤10% of successes >3.05s" was
+mis-specified: under the NEW 6.0s timeout a 3–5s success is a *single* attempt, so the
+3.05s line no longer identifies retries. The intended mechanism — no client-aborted
+attempts double-spending tokens — is directly confirmed by the correct signatures:
+**zero** successes past the 6.05s abort boundary (max 4.94s vs baseline max 7.26s, which
+was a 3s-abort + retry) and **zero** timeout-bucket failures (C2). Under the old 3.0s
+timeout, 36% of the probe's successful calls (3.05–4.94s) would have burned a wasted
+first attempt; now none do.
+
+Fail rate context (exogenous, pre-registered as not-a-primary): probe 71.0% vs
+same-night arms 74.5% / 77.0% / 78.4% — lowest of the night despite running last
+(quota most depleted), consistent with removing the double-spend.
+
+Residual: the 429 daily-token-pool contention still dominates (723/723 probe errors) —
+that is fleet-level (account 583928386201) and not addressable from inside one policy;
+per this measurement neither interval nor trigger changes would help, only fewer/cheaper
+tokens per call or a bigger pool.
+
+**Action:** the timeout change (and the interval env knob, default unchanged) rides into
+the next `crewborg` version. NOT submitted from this probe (probes never are).

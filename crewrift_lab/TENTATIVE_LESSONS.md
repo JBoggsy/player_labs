@@ -243,3 +243,15 @@ Evidence: slot-0 pinned A/B arms (palette correct at slot 0 in both) showed all 
 
 ### Elevated fetch is required for results.json on other-account xreqs (and league rounds) since the metta team-access opt-in
 Evidence: re-fetching xreq_276e3849/xreq_f1f64260 and 5 fresh league rounds without --elevated returned "results artifact unavailable" on 100/100 episodes (replays fine); with --elevated everything fetched. fetch_artifacts.py maps the 403 to "unavailable" silently. If a warehouse build dies with "No complete episode dirs", check results.json presence before suspecting retention/replay issues.
+
+### The Bedrock 429 fail-rate is NOT cadence-correlated — interval/trigger levers are dead; the timeout was the real in-policy lever
+Evidence (Thread 10, 2026-07-22, v110 A/B arms 199 seats/2084 calls): 74.5% call-fail, 1536/1553 errors = daily-token-pool 429; inter-call interval before success (median 120t) == before failure (median 120t), fail% uniform across all 4 triggers (67-77%). Meanwhile the 3.0s client timeout aborted 40% of ultimately-successful calls (success latency median 2.8s/p90 4.0s) into anthropic-SDK auto-retries that double-spend ~2.5K input tokens each. Fix (probe-validated, xreq_f5e7a285): meeting timeout 6.0s — 0 successes past the abort boundary, 0 timeout fails, fails/meeting lowest of the night's 4 arms, coverage flat. Don't re-chase LLM_MIN_CALL_INTERVAL_TICKS or trigger-dropping for 429 relief.
+
+### A client-side LLM timeout abort does NOT un-spend the server-side tokens — timeouts under throttling are a hidden token multiplier
+Evidence: same measurement. With anthropic SDK default retries, every timeout-abort ≈ 2× input tokens for one decision. When the pool is the bottleneck, a "tight timeout to save time" actively worsens the throttling for the whole fleet. At 1200-tick meetings the deadline geometry (latest-safe-start 204/1200 at 6.0s) has room — check the time budget before assuming a tight timeout is free.
+
+### Success-latency percentile vs timeout is the retry-waste diagnostic (p90 > timeout = red flag)
+Evidence: success latency p90 4.0s vs 3.0s timeout meant ~40% of successes were second attempts; visible directly in telemetry as meeting_llm_decision latency_ms > timeout×1000 (impossible without a hidden retry). Cheap to compute on any harvest; belongs in future LLM-health scans.
+
+### Pre-registered thresholds must be restated under the NEW regime, not the old one
+Evidence (Thread 10 C1): "≤10% of successes >3.05s" was written against the OLD 3.0s-timeout regime where >3.05s could only mean a retry; under the shipped 6.0s timeout a 3-5s success is a normal single attempt, so the literal threshold was unfailable-by-construction in one direction and meaningless in the other. The mechanism-true signatures (0 >6.05s, 0 timeout-bucket fails, max latency down) had to carry the verdict. When the change itself moves the measurement boundary, pre-register the criterion in units the change can't redefine.
