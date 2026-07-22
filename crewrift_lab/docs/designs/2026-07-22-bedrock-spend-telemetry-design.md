@@ -112,9 +112,12 @@ Design choices:
 ## 3. Spend profile — existing corpus (2026-07-21/22, 400 crewborg slot-0 seats)
 
 Sources: `/tmp/wh_anchor_base_v110_episodes`, `/tmp/wh_v110_league_episodes`,
-`/tmp/wh_anchor_cand_episodes` (v110-lineage, LLM-meetings recipe). Script:
-`/tmp/spend_profile.py`. Costs = tokens × haiku rates ($1/M in, $5/M out), verified to
-match the sidecar's own metering (§1).
+`/tmp/wh_anchor_cand_episodes`. Caveat (per the lessons buffer): the anchor-base dir
+actually holds v107 eps (dir names swapped vs contents) — immaterial here, since
+v107/v110/anchor all run the identical meeting-LLM recipe, model, and cadence, and the
+profile is about call economics, not policy behavior. Script:
+`crewrift_lab/tools/spend_profile.py`. Costs = tokens × haiku rates ($1/M in, $5/M out),
+verified to match the sidecar's own metering (§1).
 
 ### Per trigger
 

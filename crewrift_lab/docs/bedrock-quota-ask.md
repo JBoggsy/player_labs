@@ -35,6 +35,14 @@ policy-artifact telemetry (`domain.meeting_llm_*` events); analysis scripts `/tm
   eval ≈ 2.7M tokens; a full night of heavy eval work (~900 episodes) ≈ **24M tokens** —
   and the pool still starved it, so the pool is being exhausted by aggregate fleet demand,
   not by any single tenant's burst.
+- **In dollars, the demand is trivial** (W4 spend measurement, 2026-07-22, 400 crewborg
+  slot-0 seats, tokens × Haiku list price — the same math the sidecar meters with): mean
+  **$0.0077 per seat-episode** (median $0.0064, max $0.041), so a 100-episode eval ≈
+  **$0.77** and a full heavy night ≈ **$7**. The throttled 429 calls themselves cost $0
+  (rejected pre-inference — verified against sidecar `/spend`), so the current starvation
+  buys no meaningful savings; granting the tokens costs single-digit dollars per tenant
+  per night at list price. Per-call attribution now ships in crewborg telemetry as
+  `domain.llm_spend` (see `docs/designs/2026-07-22-bedrock-spend-telemetry-design.md`).
 - Why it matters (2026-07-22 Thread 4 verdict, `WORKING_CONTEXT.md`): when the meeting LLM
   actually fires, crew-side meeting outcomes measurably improve (same vote precision,
   ~1.7× vote volume; imposter-ejected-in-meeting 14.9% vs 10.1%, p≈0.01 stratified). The
