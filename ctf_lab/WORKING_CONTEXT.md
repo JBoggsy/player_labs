@@ -10,7 +10,28 @@ startup to resume; **update it as you learn** (keep it tight).
 
 ---
 
-## Status (2026-07-22, session 6b): RECON 2 of the current top-3 done — report `scratch/recon2_1v1/RECON_REPORT.md`
+## Status (2026-07-22, session 6c): **v16 HEARING built + measured** — uploaded, NOT submitted
+
+Direction (human): teamwork, starting with using AUDIO to understand the map (chat
+deferred). Game facts (b571dd3): `shot impact` rings = every bullet landing, audible
+MAP-WIDE through walls/fog, ±20px jitter, team-anonymous, ~0.5s; `grenade sound`
+same idea; shouts = ≤10 chars, ~247px radius, BOTH teams hear, jittered, carries
+team+shouter identity. beacon was fully deaf before v16.
+
+**v16 (uploaded):** sound-ring perception → deduped `HeardImpact` events (40px match,
+60t TTL) → danger stamps (0.5 heat/32px, first-hearing only) → duck-on-heard-fire
+(≤180px, fresh, own-fire suppression via aim-ray corridor). Tracing:
+heard_events/heard_duck_ticks. Measured (1v1 x10 vs top-3; baseline = v15 recon2):
+- Wins: h006 1-9 (same), **focusfire 4-6 (was 0-10)**, Picasso 9-1 (same). acc 0.658 (held).
+- Activation: perception HEALTHY (95 heard events/agent); duck consumer NEARLY DEAD
+  (0.5 ticks/agent — the 4-way gate rarely co-occurs). So the focusfire jump is
+  probably the danger-stamp pathway (or variance) — NOT the duck rung. Verdict on
+  hearing's win contribution: promising but unattributed; needs an A/B
+  (BEACON_HEARING=0 arm) or a bigger sample before submit/credit.
+Next levers: gate behaviors on the danger field (which hearing now feeds) rather than
+raw heard events; then the chat layer (share enemy fixes/tactics — deferred by human).
+
+## (prior) Status (2026-07-22, session 6b): RECON 2 of the current top-3 done — report `scratch/recon2_1v1/RECON_REPORT.md`
 
 1v1s (beacon:v15, 10 eps each): **1-9 ctf-h006:v1** (Alex Smith, rank 1) · **0-10
 ctf-focusfire:v36** · **9-1 Picasso:v16**. Profiles:
