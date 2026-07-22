@@ -91,6 +91,20 @@ TODO.md's social-deception entry covers the design space).
 - Open anomaly: imposter-role HS-member votes against us UP with HS on (z=+3.0, small-n) —
   worth a look if imposter numbers sag.
 
+## Direction 7 — LLM social path (CLOSED 2026-07-22, Thread 4)
+
+The v101-v105 social-rework bet is settled observationally (2,561 alive meetings across
+tonight's 5 LLM-on arms; first-call-outcome natural experiment + MH stratification +
+within-episode pairing): **crew-side the LLM path IS better when it fires** (same vote
+precision, 1.7× volume; imposter-ejected 14.9% vs 10.1% per meeting, p≈0.02; conversion
++5.5pp; clean negative control), **imposter-side neutral**, and **nothing reaches episode
+level at ~26–50% firing** (crew win 26.5% vs 25.4% by exposure, z=0.3; needs 3.3k–25k
+eps/arm to detect). Verdict: keep `CREWBORG_LLM_MEETINGS=1`, **stop investing in LLM-social
+prompts until the quota moves** — deterministic-first (Direction 1 vote coordination, the
+anchor lever). Durable fix = the Bedrock quota ask (`docs/bedrock-quota-ask.md`, account
+`583928386201`: 78% call-fail, 99% daily-token 429; fix lifts coverage to ~99%). Full
+detail: WORKING_CONTEXT Thread-4 block.
+
 ## Platform / infra debts
 
 - **/jobs/* 403 outage** ("not a softmax team member"; since 07-02 ~22:20Z): relogin

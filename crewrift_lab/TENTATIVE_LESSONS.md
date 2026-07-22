@@ -302,3 +302,15 @@ Evidence: same A/B. Mechanisms decisively on: spoke-first 0%→23.7% (z=8.7), sp
 
 ### v110-lineage baselines can pool v110 + anchor arms for IMPOSTER metrics (anchor's change was crew-only) — but /tmp/wh_anchor_base_v110 contains BOTH v110 and v107 eps
 Evidence: arm-mapping the survival A/B initially found only 100 v110 eps because that warehouse holds 100 v110 + 100 v107 (Thread-1 fired them into one dir). Always GROUP BY policy_version on episode_players before trusting a warehouse's name.
+
+### The 429-driven first-call outcome is a usable natural experiment for LLM-vs-deterministic comparisons
+Evidence: Thread 4 — every alive meeting fires call #1 unconditionally (first-call-always), and whether it succeeds is set by the shared daily-token pool state, not by game state. Stratifying to "call #1 decision vs call #1 fail" gave near-balanced covariates (meeting idx 1.24 vs 1.06, opp voters 4.01 vs 4.15) and let 5 existing arms settle the social-rework question without a single new episode. Confounds still checked 3 ways: MH over arm×hour and arm×meeting-idx, within-episode pairing, and a did-nothing negative control.
+
+### A meeting-level win doesn't imply an episode-level effect — compute the propagation MDE before proposing an A/B
+Evidence: Thread 4 — LLM meetings ejected imposters +4.8pp per meeting (p≈0.01) yet crew win by exposure was 26.5% vs 25.4% (z=0.3); implied episode effect ~1-3pp needs 3,300–25,000 eps/arm. The planned detonly-vs-v110 interventional arm (200/arm, MDE 12.3pp) was skipped as structurally uninformative — the observational design controlled field and pool-state better than the A/B would have.
+
+### Conditional-on-action rates can invert volume effects — decompose into volume × precision
+Evidence: Thread 4 — naive "vote hit imposter | voted" showed fallback 93.5% vs LLM 59.9% (fallback looks better!), but that's because the deterministic path only votes when the bar-clearing gate passes (rare, precise). In the exogenous first-call stratum precision equalized (67.7% vs 67.9%) and the real difference was volume (33.6% vs 19.7% voted) → net correct votes/meeting 22.7% vs 13.4% favoring LLM. Selection on the treated action, not treatment quality.
+
+### /tmp episode-dir names can be swapped vs contents — the anchor-base pair really is crossed
+Evidence: re-verified per episode.json: /tmp/wh_anchor_base_v110_episodes holds crewborg:v107 slot-0 and /tmp/wh_anchor_base_v107_episodes holds v110 (= same eps as /tmp/hs_on_baseline_eps). The Thread-8 warning replicates; extract.py labeled arms from episode.json, never dir names.

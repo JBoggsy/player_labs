@@ -15,6 +15,45 @@ This is *not* a log or archive: finished work lives in git history / the
 
 ---
 
+## ⚖️ CLOSED (2026-07-22, Thread 4): the social-rework question — VERDICT: mechanism-positive, episode-neutral at current quota → deterministic-first until the quota is fixed
+
+**The open bet since v101-v105 ("does the LLM social path, when it fires, beat the deterministic
+path?") is SETTLED — observationally, without new episodes.** Design: within tonight's 5 LLM-on
+arms (v110 197, v107 99, anchor 195, hsoff 197, survive 198 analyzable eps — all v110-lineage social code,
+same pinned roster/slot 0), every alive crewborg meeting attempts an LLM call (first-call-always),
+and whether *call #1* succeeds is decided by the shared-pool 429 state — near-random assignment.
+Compared LLM-decided vs fallback-decided meetings on warehouse ground truth (2,561 alive meetings;
+1,728 crew / 833 imposter), Mantel-Haenszel across arm×hour and arm×meeting-idx strata; scripts
+`/tmp/t4_social/*.py`, per-meeting table `/tmp/t4_social/meetings.csv`.
+
+**Crew side (first-call stratum, n=396 LLM vs 1,332 FB): the LLM path IS better when it fires.**
+- Vote precision identical (hit-imposter | voted: 67.7% vs 67.9%) but volume 1.7× (voted-a-player
+  33.6% vs 19.7%, p<0.001) → net correct-imposter votes/meeting **22.7% vs 13.4%**.
+- Imposter ejected in the meeting **14.9% vs 10.1%** (MH arm×hour OR=1.49 p=0.018; arm×meeting-idx
+  OR=1.47 p=0.027); accusation→ejection conversion 16.4% vs 10.9% (p≈0.007); crew mis-ejections NOT
+  up (26.0% vs 23.6%, NS). Within-episode paired (375 eps with both): imposter-ejected diff +5.1pp
+  (sign test p=0.010), conversion +7.1pp (p=0.001). Negative control clean: in meetings where we
+  neither accused nor voted, LLM-meetings show NO ejection lift (0/52 vs 7.8%) — the lift rides on
+  OUR actions, not pool-state luck. Residual selection risk stated: 429s cluster by time; hour+
+  meeting-idx strata and the within-episode pairing all agree, but assignment is not literally random.
+- Cost of the path: the LLM round-trip delays our first chat (median 77-79t vs 39-41t when call #1
+  fails → deterministic fires) — the anchor lever (merged post-v110) already mitigates at meeting start.
+**Imposter side: neutral-to-negative.** Deflection-win NS everywhere (MH OR=1.24 p=0.33); raw
+self-ejected 20.1% vs 11.9% (p=0.005) but collapses under meeting-idx stratification (OR=1.34
+p=0.23) — no evidence the LLM helps the imposter; weak evidence its extra chat/vote volume draws fire.
+**Episode level: NOTHING propagates at current firing rates.** Crew win hi-vs-lo LLM exposure 26.5%
+vs 25.4% (z=+0.30, pooled 639 crew-eps); imposter 60.7% vs 61.4% (z=−0.11); winners' mean exposure =
+losers'. Implied total effect of the whole LLM path ≈ ±1-3pp crew win → 3,300–25,000 eps/arm to detect.
+**Part B (detonly:v1 vs v110 A/B) SKIPPED — structurally uninformative:** at 200 eps/arm the MDE is
+12.3pp crew win / ~5.1pp meeting-level ejection vs an expected ~2.4pp shift (only ~50% of meetings
+change provenance); it would burn ~400 eps of the same throttled pool to learn nothing the
+observational design (which controls field + pool-state better) hasn't already.
+**VERDICT: keep `CREWBORG_LLM_MEETINGS=1` for crew (it's free upside when it fires, no downside
+measured), but further LLM-social prompt investment at ~26-38% production firing is ~zero marginal
+value — deterministic-first (anchor lever, vote coordination) until the quota moves. The durable fix
+is the quota ask: `docs/bedrock-quota-ask.md`** (9,102 calls → 78% fail, 99.0% = daily-token 429;
+removing 429s lifts meeting decision coverage ~26-50% → ~99%; ~27K tokens/seat-episode demand).
+
 ## 🎖️ DONE (2026-07-22, Thread 8): HS ecosystem follow-ups — isolated A/B (HS-NEUTRAL/mechanism-positive), liar-ledger consumer shipped, Alex note written
 
 **1. HS isolated A/B (first ever — HS always shipped bundled).** Probe `crewborg-hsoff:v1`
@@ -291,9 +330,10 @@ median ~32%), imposter 41% (7/17, field ~55-77%). Three mechanistic findings:
    throttle lines over 58 eps) — production meetings mostly run the deterministic path.
 
 **Next-lever candidates (from the 2026-07-15 session):** (1) residual ~7-9% alive-seat
-vote_timeout (cheap telemetry dig, never done); (2) the social-rework crew-win question is
-STILL open — every A/B so far under-fired the LLM (~19-27% vs the 60% gate; shared Bedrock
-pool contention) — needs either low-contention timing or the quota fix; (3) mine v107's live
+vote_timeout — ~~cheap telemetry dig, never done~~ DONE Thread 5 (root-caused + fixed on main);
+(2) ~~the social-rework crew-win question is STILL open~~ **CLOSED 2026-07-22 Thread 4** (see
+verdict block at top: mechanism-positive crew-side, episode-neutral at current quota,
+deterministic-first until the quota moves); (3) mine v107's live
 rounds with coworld-hypothesis-miner / the top-3 advantage methodology
 (docs/top3-advantage-reporter-guidance.md).
 
