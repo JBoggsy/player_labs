@@ -288,12 +288,13 @@ def test_same_mechanism_on_the_fitted_path() -> None:
 
 
 def test_env_flag_parsing(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_CHAT_EVIDENCE", "1")
+    assert suspicion_module._chat_evidence_enabled_from_env() is True
     monkeypatch.setenv("CREWBORG_CHAT_EVIDENCE", "0")
     assert suspicion_module._chat_evidence_enabled_from_env() is False
-    monkeypatch.setenv("CREWBORG_CHAT_EVIDENCE", "off")
-    assert suspicion_module._chat_evidence_enabled_from_env() is False
+    # Default OFF: the 2026-07-22 A/B refuted the current calibration (design doc).
     monkeypatch.delenv("CREWBORG_CHAT_EVIDENCE")
-    assert suspicion_module._chat_evidence_enabled_from_env() is True
+    assert suspicion_module._chat_evidence_enabled_from_env() is False
 
 
 # --- tracing surfaces -----------------------------------------------------------

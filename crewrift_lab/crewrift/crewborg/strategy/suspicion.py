@@ -200,7 +200,14 @@ _CHAT_CLAIM_LOG_LR = {
 
 
 def _chat_evidence_enabled_from_env() -> bool:
-    return os.environ.get(ENV_CHAT_EVIDENCE, "1").strip().lower() not in ("0", "false", "no", "off")
+    # Default OFF: the 2026-07-22 pre-registered A/B (crewborg-chatev:v1 vs v111,
+    # 200 eps/arm) REFUTED the current calibration — chat-changed votes hit
+    # imposters at 67.4% vs 69.0% for suspicion-alone (the field's chat adds vote
+    # volume, not precision) and total crew ejections rose (p=0.066). The mechanism
+    # itself validated cleanly (384 applied events, 47 changed votes, tracing +
+    # counterfactual sound); re-enable only after re-tuning the untrusted-speaker
+    # path (see the design doc's verdict + follow-up).
+    return os.environ.get(ENV_CHAT_EVIDENCE, "0").strip().lower() in ("1", "true", "yes", "on")
 
 
 _CHAT_EVIDENCE_ENABLED = _chat_evidence_enabled_from_env()

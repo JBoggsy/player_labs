@@ -185,8 +185,9 @@ In `chat_evidence.py`:
   deterministic vote (`top_suspect`) and the LLM context (`suspicion` payload, players
   prose, fallback vote) already read. LLM-sourced claims (`apply_llm_tags`) flow through
   the identical scoring.
-- **`CREWBORG_CHAT_EVIDENCE`** (default **ON**, `=0` kills): the whole term is one gated
-  addition; OFF reproduces today's behavior byte-for-byte.
+- **`CREWBORG_CHAT_EVIDENCE`**: the whole term is one gated addition; OFF reproduces
+  today's behavior byte-for-byte. (Designed default-ON; the probe ran with `=1`;
+  **flipped to default OFF post-verdict** — see the verdict section.)
 - Known small overlap, accepted deliberately: the fitted counters `times_accused`/
   `times_defended` (±0.13/−0.51) still fire alongside the new term. Removing them means
   refitting the weights (out of scope, same posture as layer 1); the overlap is ≤4% of
@@ -219,6 +220,41 @@ Verdict → SHIP RECOMMENDED (for W5) or REFUTED.
 
 ---
 
-## Verdict
+## Verdict (2026-07-22): REFUTED as-shipped — mechanism works exactly as designed, but no crew gain and a borderline gullibility signal. DO NOT ship default-ON without re-tuning.
 
-*(recorded after the A/B below)*
+**Arms.** Cand `crewborg-chatev:v1` (`0873f708…`) — `xreq_a63252e9` + `xreq_d38011ed`
+(200 eps, 3 ops-fail) vs baseline v111 — `xreq_fab85490` + `xreq_2f42f740` (200 eps,
+0 ops-fail), identical roster/recipe/slot-0, same day, only delta = the chat-evidence
+term. Metrics scripts `/tmp/w3_metrics.py`, `/tmp/w3_ejections.py`; episode dirs
+`/tmp/w3_cand_eps`, `/tmp/w3_base_eps`.
+
+| pre-registered criterion | cand | base | delta / p | pass? |
+|---|---|---|---|---|
+| PRIMARY: crew vote precision not worse | 100/146 = 68.5% | 91/126 = 72.2% | −3.7pp, p=0.51 | ✅ (noise) |
+| PRIMARY: imp-ejections/crew-ep not worse AND directionally up | 0.490 | 0.517 | z=−0.33, p=0.74 | ❌ **directionally DOWN** |
+| GUARD: crew mis-ejections not up | 0.848/ep (all voters) | 0.662/ep | z=+1.84, **p=0.066** | ⚠️ borderline (our own mis-votes/ep 0.317 vs 0.232, p=0.16) |
+| GUARD: crew win not down | 27.6% | 25.2% | +2.4pp, p=0.69 | ✅ |
+| GUARD: imposter untouched | win 55.8% / kills 1.44 | 63.3% / 1.59 | −7.5pp, p=0.54 | ✅ (noise) |
+| GUARD: vote_timeouts flat | 0 | 0 | — | ✅ |
+| MECHANISM: chat_evidence_applied fires; changes votes | 384 events; **47 changed-vote** instances | 0 | — | ✅ decisive |
+
+**The decisive mechanism read:** chat-CHANGED votes hit imposters at **67.4%** (31/46)
+— statistically indistinguishable from suspicion-alone votes (69.0%, 69/100). The
+field's templated chat is exactly as informative as our own posterior, no more. So the
+term adds vote *volume* (crew player-votes 146 vs 126) at unchanged precision: correct
+votes/crew-ep +0.087 (NS) **and** mis-votes/crew-ep +0.085 (NS) — symmetric, netting
+zero imposter-ejection gain, while total crew ejections rose (each extra vote of ours
+seeds piles other players complete, both ways).
+
+**Interpretation.** The infrastructure is sound and validated live (extraction,
+trust-scaling, dedup, cap, tracing, counterfactual). What failed is the *calibration
+for untrusted speakers*: at the prior, a stranger's kill-report carries ×0.71 of
+log 30 ≈ +2.4 — enough to cross the vote bar alone, and the 851-game study says
+exactly this class (evidence-styled accusations) is what imposters fabricate.
+**Follow-up worth probing (not run):** keep the mechanism but floor the trust gate —
+testimony counts only from speakers with trust ≥ ~0.9 (in practice: HS-verified
+members + near-cleared players), zeroing the stranger path. That is the literal core
+of James's directive with the gullibility surface removed. The
+`CREWBORG_CHAT_EVIDENCE` flag ships in the code default-ON but the probe verdict says
+**run crewborg with it only after that re-tuning**; W5 should NOT fold
+`crewborg-chatev:v1` into the next ship.

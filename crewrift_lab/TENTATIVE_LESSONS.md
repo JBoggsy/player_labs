@@ -326,3 +326,9 @@ Evidence: `_count_chat_stances` added the (tick,speaker,text) key to `social_cou
 
 ### Worktrees spawned for parallel work can be FAR behind local main — check merge-base before touching code
 Evidence: this W3 worktree's branch base lacked ALL of v107-v111 (80 commits, including the champion v110 HS rewrite the task depends on). `git merge-base --is-ancestor <recent-main-sha> HEAD` failed; `git merge main` brought it current. An audit written against the stale base would have described dead code (e.g. the old HS1 5-token protocol).
+
+### Field chat is exactly as informative as our own posterior — trust-weighting alone doesn't make strangers' accusations profitable
+Evidence: W3 chat-evidence A/B (200/200 eps, crewborg-chatev:v1 vs v111): chat-changed votes hit imposters 67.4% vs 69.0% for suspicion-alone votes. The term added vote volume symmetrically (correct +0.087/ep, mis +0.085/ep), netting zero — and total crew ejections rose (p=0.066) because our extra votes seed piles others complete. Next lever: floor the trust gate (≥0.9 / HS-only testimony), don't re-tune the base LRs.
+
+### A "changed_top_suspect" counterfactual trace turns an A/B null into a mechanism diagnosis
+Evidence: domain.chat_evidence_applied recorded top_suspect with vs without the chat term per meeting (47 changed votes / 384 events). That let the verdict distinguish "mechanism never fired" from "fired, but the signal is worthless" in one query — without it the flat primary would have been unattributable.

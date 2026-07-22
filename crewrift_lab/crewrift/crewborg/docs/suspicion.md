@@ -131,7 +131,9 @@ base + evidence terms by scoring path:
 ### 3.1 Chat-provided evidence (hearsay), weighted by speaker trust
 
 Design + calibration: `crewrift_lab/docs/designs/2026-07-22-chat-evidence-incorporation.md`.
-Gated by `CREWBORG_CHAT_EVIDENCE` (default on; `=0` restores the pre-feature posterior).
+Gated by `CREWBORG_CHAT_EVIDENCE` (**default OFF** — the 2026-07-22 pre-registered A/B
+refuted the untrusted-speaker calibration; the design doc's verdict has the numbers
+and the re-tuning follow-up. `=1` enables).
 
 `chat_evidence_log_lr` adds, on **both** scoring paths, a clamped term built from the
 banked `PlayerRecord.claims` (template-, spaCy-, and LLM-sourced — see
