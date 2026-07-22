@@ -1,7 +1,11 @@
 # First-mover anchoring: immediate crew accusation at meeting start
 
 **Status:** implemented on this branch; A/B'd as `crewborg-anchor:v1` (probe upload,
-not submitted). Evidence base: the 2026-07-02 chat tactics deep-dive
+not submitted). **A/B verdict (2026-07-21): SAFE-POSITIVE** — mechanism decisively
+fired (37 anchors/200 eps, decide-delay median 0, spoke-first 65% vs 11% baseline,
+97% accuracy), all guards pass, primary conversion +7-10pp directional but NS
+(the anchor fires only ~0.19/ep — see the version_log `crewborg-anchor:v1` row for
+full numbers). Evidence base: the 2026-07-02 chat tactics deep-dive
 (`crewrift/crewborg/docs/reports/2026-07-02-chat-tactics-deep-dive.html`).
 
 ## Hypothesis (mechanistic, pre-registered)
