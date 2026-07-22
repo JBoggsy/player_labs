@@ -4,8 +4,10 @@ Design: crewrift_lab/docs/designs/2026-07-22-chat-evidence-incorporation.md.
 
 Covers: the deterministic template extraction (kill/vent/accusation, no spaCy),
 the trust-weighted log-LR term (HS full weight, suspicion-scaled strangers,
-witnessed-imposter zero), fabricated-accusation resistance (spam dedup + the cap),
-the witnessed/HS-pin overrides, the feature flag, and the counterfactual tracer.
+witnessed-imposter zero), the trust FLOOR (default 0.9: HS-verified + near-cleared
+speakers only — the chatev:v2 variant; floor 0 reproduces chatev:v1), fabricated-
+accusation resistance (spam dedup + the cap), the witnessed/HS-pin overrides, the
+feature flags, and the counterfactual tracer.
 """
 
 from __future__ import annotations
@@ -33,9 +35,18 @@ _COLORS = ("red", "blue", "green", "yellow", "orange", "purple", "cyan", "pink")
 
 @pytest.fixture(autouse=True)
 def _chat_evidence_on():
-    suspicion_module.set_chat_evidence_for_tests(True)
+    """Feature ON at the DEFAULT trust floor (0.9) — the chatev:v2 shipping shape.
+    Tests exercising the un-floored (chatev:v1) weighting pin trust_floor=0.0."""
+
+    suspicion_module.set_chat_evidence_for_tests(
+        True, trust_floor=suspicion_module.CHAT_EVIDENCE_TRUST_FLOOR_DEFAULT
+    )
     yield
     suspicion_module.set_chat_evidence_for_tests(None)
+
+
+def _unfloored() -> None:
+    suspicion_module.set_chat_evidence_for_tests(True, trust_floor=0.0)
 
 
 @pytest.fixture(autouse=True)
@@ -147,6 +158,9 @@ def test_hs_member_bare_accusation_moves_but_does_not_convict() -> None:
 
 
 def test_stranger_testimony_is_scaled_by_their_own_suspicion() -> None:
+    """The chatev:v1 (un-floored) weighting, kept testable via trust_floor=0."""
+
+    _unfloored()
     belief = _belief()
     update_suspicion(belief)  # establish the prior-tick posterior for the speaker
     belief.roster["red"].claims.append(_claim("green", "red", "kill"))
@@ -158,7 +172,75 @@ def test_stranger_testimony_is_scaled_by_their_own_suspicion() -> None:
     assert chat_evidence_log_lr(belief, "red", belief.roster["red"]) == pytest.approx(CHAT_KILL_LOG_LR)
 
 
+# --- the trust FLOOR (chatev:v2) --------------------------------------------------
+
+
+def test_floor_zeroes_stranger_testimony() -> None:
+    """At the default 0.9 floor a stranger at the prior (trust ≈ 0.71 at 8p/2imp)
+    contributes NOTHING — even a kill report (the class the field fabricates)."""
+
+    belief = _belief()
+    update_suspicion(belief)
+    belief.roster["red"].claims.append(_claim("green", "red", "kill"))
+    belief.roster["red"].claims.append(_claim("blue", "red", "accusation"))
+    assert chat_evidence_log_lr(belief, "red", belief.roster["red"]) == 0.0
+    update_suspicion(belief)
+    prior = suspicion_module._prior_imposter_p(belief)
+    assert belief.suspicion["red"] == pytest.approx(prior)
+    assert top_suspect(belief) is None
+
+
+def test_floor_passes_hs_member_testimony_in_full() -> None:
+    belief = _belief()
+    belief.society_trusted.add("green")
+    belief.roster["red"].claims.append(_claim("green", "red", "kill"))
+    assert chat_evidence_log_lr(belief, "red", belief.roster["red"]) == pytest.approx(CHAT_KILL_LOG_LR)
+    update_suspicion(belief)
+    assert belief.suspicion["red"] >= 0.9  # HS kill report still clears the vote bar
+
+
+def test_floor_passes_near_cleared_speaker_at_their_trust_value() -> None:
+    belief = _belief()
+    belief.suspicion["green"] = 0.05  # near-cleared: trust 0.95 ≥ the 0.9 floor
+    belief.roster["red"].claims.append(_claim("green", "red", "kill"))
+    assert chat_evidence_log_lr(belief, "red", belief.roster["red"]) == pytest.approx(0.95 * CHAT_KILL_LOG_LR)
+    # Just below the floor: zero, not scaled-down.
+    belief.suspicion["green"] = 0.11
+    assert chat_evidence_log_lr(belief, "red", belief.roster["red"]) == 0.0
+
+
+def test_floor_does_not_gate_the_contradicted_self_alibi() -> None:
+    """Caught-in-a-lie weight is our own observation, not testimony — un-floored."""
+
+    belief = _belief()
+    belief.suspicion["red"] = 0.5  # red is well below the trust floor
+    belief.roster["red"].claims.append(
+        _claim("red", "red", "location", place_name="Reactor", verification="contradicted")
+    )
+    assert chat_evidence_log_lr(belief, "red", belief.roster["red"]) == pytest.approx(
+        suspicion_module.CHAT_CONTRADICTED_ALIBI_LOG_LR
+    )
+
+
+def test_floor_env_parsing(monkeypatch) -> None:
+    monkeypatch.delenv("CREWBORG_CHAT_EVIDENCE_TRUST_FLOOR", raising=False)
+    assert suspicion_module._chat_evidence_trust_floor_from_env() == pytest.approx(
+        suspicion_module.CHAT_EVIDENCE_TRUST_FLOOR_DEFAULT
+    )
+    monkeypatch.setenv("CREWBORG_CHAT_EVIDENCE_TRUST_FLOOR", "0.5")
+    assert suspicion_module._chat_evidence_trust_floor_from_env() == pytest.approx(0.5)
+    monkeypatch.setenv("CREWBORG_CHAT_EVIDENCE_TRUST_FLOOR", "0")
+    assert suspicion_module._chat_evidence_trust_floor_from_env() == 0.0  # chatev:v1 shape
+    monkeypatch.setenv("CREWBORG_CHAT_EVIDENCE_TRUST_FLOOR", "1.5")
+    assert suspicion_module._chat_evidence_trust_floor_from_env() == 1.0  # clamped
+    monkeypatch.setenv("CREWBORG_CHAT_EVIDENCE_TRUST_FLOOR", "nonsense")
+    assert suspicion_module._chat_evidence_trust_floor_from_env() == pytest.approx(
+        suspicion_module.CHAT_EVIDENCE_TRUST_FLOOR_DEFAULT
+    )
+
+
 def test_witnessed_imposter_speaker_carries_zero_weight() -> None:
+    _unfloored()  # so the zero comes from the witnessed check, not the floor
     belief = _belief()
     belief.roster["green"].events.append(PlayerEvent(kind="kill", start_tick=1, end_tick=1, target_color="cyan"))
     belief.roster["red"].claims.append(_claim("green", "red", "kill"))
@@ -167,8 +249,11 @@ def test_witnessed_imposter_speaker_carries_zero_weight() -> None:
 
 
 def test_imposter_spam_cannot_drag_the_posterior(_no_nlp) -> None:
-    """Fabricated-accusation resistance: one speaker spamming 'X sus' counts once."""
+    """Fabricated-accusation resistance: one speaker spamming 'X sus' counts once
+    (asserted at the un-floored chatev:v1 weighting — at the default floor the
+    spammer contributes zero outright, covered by the floor tests above)."""
 
+    _unfloored()
     belief = _belief()
     update_suspicion(belief)
     for _ in range(10):
@@ -184,6 +269,7 @@ def test_imposter_spam_cannot_drag_the_posterior(_no_nlp) -> None:
 def test_many_speakers_stack_but_the_cap_holds() -> None:
     belief = _belief()
     for speaker in ("blue", "green", "yellow", "purple", "cyan", "pink"):
+        belief.society_trusted.add(speaker)  # floor-passing speakers (HS-verified)
         belief.roster["red"].claims.append(_claim(speaker, "red", "kill"))
     lr = chat_evidence_log_lr(belief, "red", belief.roster["red"])
     assert lr == pytest.approx(CHAT_EVIDENCE_LR_MAX)
@@ -258,6 +344,7 @@ def test_chat_never_overrides_the_hs_trust_pin() -> None:
     belief = _belief()
     belief.society_trusted.add("red")  # red is a verified member
     for speaker in ("blue", "green", "yellow"):
+        belief.society_trusted.add(speaker)  # floor-passing accusers (HS-verified)
         belief.roster["red"].claims.append(_claim(speaker, "red", "kill"))
     update_suspicion(belief)
     assert belief.suspicion["red"] < 0.01  # the pin is applied after the chat term
