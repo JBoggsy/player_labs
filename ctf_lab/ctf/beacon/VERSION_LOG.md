@@ -29,6 +29,16 @@ escort rung follows the carrier heartbeat with heading projection
 → bridge packs 0x81. Tracing: `chat_sent`/`chat_heard` per kind, `under_fire`,
 fixes in snapshots. Knob: `BEACON_CHAT` (default ON). 72 tests.
 
+## v17 — A/B arm: v16 image with BEACON_HEARING=0 (2026-07-22)
+
+**Not a code change.** Same local image as v16 (`players-beacon:dev`), re-uploaded
+with `--secret-env BEACON_HEARING=0` as the hearing-OFF arm of the pre-registered
+hearing A/B vs ctf-focusfire:v36 (telemetry keys confirm the image is v16 code —
+no chat counters). Result: NULL — ON 7/40 vs OFF 8/40, Fisher p=1.0, diff −2.5pp
+CI [−19.7, +14.8]; manipulation check passed (OFF arm: 0 heard_events across 48
+sampled agents; ON arm: 4062). Report: `ctf_lab/scratch/ab_hearing/AB_REPORT.md`.
+Never submit v17 to a league; it exists only for the experiment.
+
 ## v16 — hearing: sound-ring perception + duck-on-heard-fire (2026-07-22)
 
 **Why:** beacon was deaf — `shot impact` (every bullet landing, audible MAP-WIDE
