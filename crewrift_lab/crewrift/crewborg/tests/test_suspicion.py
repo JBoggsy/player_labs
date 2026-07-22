@@ -431,6 +431,58 @@ def test_chat_suspect_skips_a_flat_field_and_never_returns_self() -> None:
     assert chat_suspect(self_high) is None
 
 
+def _warm_belief() -> Belief:
+    """A warm-eligible below-bar top suspect (design 2026-07-22-warm-anchor)."""
+
+    belief = Belief(self_role="crewmate", self_color="red")
+    belief.suspicion = {"blue": 0.5, "green": 0.2}
+    record = PlayerRecord(
+        color="blue", life_status="alive", times_accused=1, votes_cast=1,
+        events=[PlayerEvent(kind="tailing_self", start_tick=0,
+                            end_tick=suspicion_module.WARM_TAIL_MAX_RUN_TICKS)],
+    )
+    belief.roster["blue"] = record
+    belief.roster["green"] = PlayerRecord(color="green", life_status="alive")
+    return belief
+
+
+def test_warm_anchor_suspect_passes_the_social_rule() -> None:
+    assert suspicion_module.warm_anchor_suspect(_warm_belief()) == "blue"
+
+
+def test_warm_anchor_suspect_requires_every_condition() -> None:
+    for breaker in (
+        lambda b: setattr(b.roster["blue"], "times_accused", 0),
+        lambda b: setattr(b.roster["blue"], "votes_cast", 0),
+        lambda b: setattr(b.roster["blue"], "button_calls_made", 1),
+        lambda b: setattr(b.roster["blue"], "reported_bodies", 1),
+        lambda b: setattr(b.roster["blue"], "tasks_completed_watched", 1),
+        lambda b: setattr(b.roster["blue"], "life_status", "dead"),
+        lambda b: b.roster["blue"].events.clear(),  # no long tail
+    ):
+        belief = _warm_belief()
+        breaker(belief)
+        assert suspicion_module.warm_anchor_suspect(belief) is None
+
+
+def test_warm_anchor_suspect_only_considers_the_top_ranked() -> None:
+    # green outranks blue on posterior; green fails the rule -> None (the rule was
+    # measured on top-1s, never fish deeper down the ranking).
+    belief = _warm_belief()
+    belief.suspicion = {"green": 0.6, "blue": 0.5}
+    assert suspicion_module.warm_anchor_suspect(belief) is None
+
+
+def test_warm_anchor_suspect_never_fires_for_imposter_and_never_self() -> None:
+    imp = _warm_belief()
+    imp.self_role = "imposter"
+    assert suspicion_module.warm_anchor_suspect(imp) is None
+    selfy = _warm_belief()
+    selfy.suspicion = {"red": 0.9, "blue": 0.5}  # self would top the ranking
+    # self is excluded from the ranking; blue (the remaining top) still qualifies
+    assert suspicion_module.warm_anchor_suspect(selfy) == "blue"
+
+
 def test_active_tail_suspect_never_returns_self() -> None:
     belief = _crew_belief()
     belief.self_color = "red"

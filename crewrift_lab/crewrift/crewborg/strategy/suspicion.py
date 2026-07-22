@@ -160,6 +160,24 @@ VOTE_LEAD_MARGIN = 0.2
 # sharing "I'm watching X because…" drives the deduction without ejecting on thin
 # evidence. Used by chat_suspect() for the deterministic meeting voice.
 CHAT_SUSPECT_MIN_P = 0.4
+
+# --- warm-anchor eligibility (social rule; design
+# crewrift_lab/docs/designs/2026-07-22-warm-anchor-design.md) -------------------
+#
+# The first-mover anchor's SECOND eligibility route. The fitted posterior is
+# bimodal in practice — every meeting-start `top_suspect` at the 0.9 bar is a
+# witnessed catch (71/71 on 399 traced eps), and non-witnessed posteriors max out
+# at ~0.74 — so a softer posterior bar cannot add anchors at usable precision
+# (0.65 buys 0.018/ep at 57%). What DOES separate true imposters among below-bar
+# top suspects are the SOCIAL counters (strategy.social_evidence): a long tail on
+# us, prior-meeting participation, and a clean sheet on the exculpatory actions
+# imposters rarely take. Measured on 720 below-bar citable meeting-start top-1s
+# (399 eps, split-half stable 92%/86%): this rule fires 0.118/ep at 89.4%
+# precision (base rate 43.5%). Chat-only eligibility — a warm suspect is NEVER a
+# vote target by itself (the pile clause in attend_meeting escalates the vote).
+# The rule itself is ``warm_anchor_suspect`` (with top_suspect/chat_suspect below).
+WARM_TAIL_MAX_RUN_TICKS = 96  # longest single tailing_self run (≈4 s shadowing us)
+
 # Clamp the prior away from 0/1 so its log-odds stays finite.
 PRIOR_MIN, PRIOR_MAX = 1e-3, 0.99
 
@@ -694,6 +712,50 @@ def chat_suspect(belief: Belief) -> str | None:
         return None
     color, p = max(ranked, key=lambda kv: kv[1])
     return color if p >= CHAT_SUSPECT_MIN_P else None
+
+
+def warm_anchor_suspect(belief: Belief) -> str | None:
+    """The top-posterior suspect eligible for a WARM first-mover accusation, or
+    ``None`` — the anchor's second eligibility route (social rule; constants and
+    the measurement above WARM_TAIL_MAX_RUN_TICKS, design
+    crewrift_lab/docs/designs/2026-07-22-warm-anchor-design.md).
+
+    Crew-only, CHAT-only: callers must not vote this target without the
+    independent corroboration Attend Meeting requires (its pile clause).
+    Eligibility — all required, on the top-ranked suspect only (the rule was
+    measured on top-1s, not arbitrary ranks):
+
+    - longest ``tailing_self`` run ≥ ``WARM_TAIL_MAX_RUN_TICKS`` (they shadowed us);
+    - ``times_accused ≥ 1`` and ``votes_cast ≥ 1`` (another player already sussed
+      them, and they participate in votes — both need a prior meeting, so warm
+      anchors start at meeting 2 by construction);
+    - a clean exculpatory sheet: no button calls, no body reports, no watched
+      task completions (imposters almost never do these — 4.8% imposter rate
+      among below-bar button-pressers).
+
+    Like ``top_suspect``, never returns our own color.
+    """
+
+    if belief.self_role == "imposter":
+        return None  # deflection keeps its own (legacy clear-leader) machinery
+    ranked = [(c, p) for c, p in belief.suspicion.items() if c != belief.self_color]
+    if not ranked:
+        return None
+    color, _ = max(ranked, key=lambda kv: kv[1])
+    record = belief.roster.get(color)
+    if record is None or record.life_status == "dead":
+        return None
+    if record.button_calls_made or record.reported_bodies or record.tasks_completed_watched:
+        return None
+    if record.times_accused < 1 or record.votes_cast < 1:
+        return None
+    tail_max = max(
+        (e.duration_ticks for e in record.events if e.kind == "tailing_self"),
+        default=0,
+    )
+    if tail_max < WARM_TAIL_MAX_RUN_TICKS:
+        return None
+    return color
 
 
 def _logit(p: float) -> float:
