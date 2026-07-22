@@ -17,3 +17,10 @@ buffers — not in-session hit counts — is the graduation signal.
 concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
+
+### No crewrift lessons this session (2026-07-22)
+
+This session worked exclusively in vanilla_wow_lab (nav audit, T1 combat design); the
+only crewrift_lab touch was resolving a session-start merge conflict in this buffer's
+timestamp line (hook-rotation collision), which is already covered by an existing lesson
+about lesson-buffer conflicts. No gameplay/tooling work occurred here.
