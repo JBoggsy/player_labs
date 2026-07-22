@@ -1,7 +1,13 @@
 # Pre-meeting suspicion warming: a social-evidence anchor-eligibility rule (W2)
 
-**Status:** implemented on this branch; to be A/B'd as `crewborg-warm:v1` (probe
-upload, never submitted). Parent lever: the first-mover anchor
+**Status:** implemented; A/B'd as `crewborg-warm:v1` (probe upload, never
+submitted). **A/B verdict (2026-07-22): SHIP RECOMMENDED** — fires 0.266/ep vs
+0.220 baseline (+21%), warm route 0.065/ep at 84.6% live accuracy, crew win
+30.4% vs 25.2% (directional), all guards clean, zero warm-attributed
+mis-ejections, warm-meeting vote precision 100% (the pile clause worked as
+designed: 8 lone ballots gated to skip, 3 pile escalations all correct). Full
+prereg table: `2026-07-22-warm-anchor-ab-prereg.md`; version_log
+`crewborg-warm:v1` row. Parent lever: the first-mover anchor
 (`2026-07-21-first-mover-anchor-design.md`, SAFE-POSITIVE, shipped in v111) —
 rate-limited at ~0.19/ep by how rarely `top_suspect()` clears the 0.9 fitted bar
 at meeting start. This change adds a second, independently-measured eligibility

@@ -314,3 +314,15 @@ Evidence: Thread 4 — naive "vote hit imposter | voted" showed fallback 93.5% v
 
 ### /tmp episode-dir names can be swapped vs contents — the anchor-base pair really is crossed
 Evidence: re-verified per episode.json: /tmp/wh_anchor_base_v110_episodes holds crewborg:v107 slot-0 and /tmp/wh_anchor_base_v107_episodes holds v110 (= same eps as /tmp/hs_on_baseline_eps). The Thread-8 warning replicates; extract.py labeled arms from episode.json, never dir names.
+
+### The fitted suspicion posterior is BIMODAL — softer posterior bars unlock nothing
+Evidence: W2 warming-gap measurement (791 crewmate meeting-start suspicion_snapshots, 399 eps): every 0.9-bar-clearing top suspect was a witnessed catch (71/71); non-witnessed tops max out at p=0.74 (the graded evidence can't push the logit high enough). A 0.65 bar buys 0.018/ep at 57% precision. Any "lower the bar" proposal for anchor/vote eligibility is dead on arrival; the separating signal for below-bar suspects lives in the SOCIAL counters (times_accused, votes_cast, button/report/task exculpation, tail_max_run), which is how warm_anchor_suspect works.
+
+### v110's suspicion_snapshot vote_bar:0.8 is a stale trace label, not the live bar
+Evidence: events.py at v110 emitted the legacy constant VOTE_PROBABILITY (0.8) while top_suspect actually applied WEIGHTS_VOTE_PROBABILITY (default 0.9, no env override in the v110/v111 recipe). Fixed on main in b2cbefe (post-v110). When reading v110-lineage traces, trust the code at the build commit, not the label.
+
+### Verify BOTH arms' ops profile before reading an A/B — a platform connect-timeout window can invalidate one arm silently
+Evidence: W2 run 1 (xreq_8b485320/75fecd25, fired 19:00Z): 61% of episodes had connect-timeout seats (ALL slots equally, 27 slot-0 crew seats deleted) while the same-day baseline arm had 0 — win rates diverged wildly on the contaminated subset (crew 13.6%) but matched expectations on the fully-live subset (35.6%). The window was 19:03-19:08Z and self-healed; a clean rerun 25 min later had 0 ops. Slot-0 connect-timeout also means no policy_artifact_0.zip, which silently shrinks the telemetry denominator.
+
+### Decoupling anchor CHAT from the VOTE via the existing corroboration gate costs nothing and caps the mis-vote risk
+Evidence: W2 warm anchor: the v89 _vote_target_corroborated gate already converts an uncorroborated tentative to skip — a warm (sub-bar) anchor needs zero new vote machinery, just a pile clause for escalation. Live: 13 warm fires -> 8 lone ballots gated to skip, 3 pile escalations, ALL escalated votes hit true imposters (100% warm-meeting precision both runs); none of the arm's 6 mis-ejections was a warm meeting.
