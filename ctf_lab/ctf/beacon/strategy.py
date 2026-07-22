@@ -9,7 +9,14 @@ Returns an Intent plus the flow-field kind to use ("steal" / "home" / None for A
 
 from __future__ import annotations
 
-from ctf.beacon.config import HOLD_ARRIVE_PX, PEDESTAL
+from ctf.beacon import items
+from ctf.beacon.config import (
+    HOLD_ARRIVE_PX,
+    ITEM_DETOUR_PX,
+    ITEMS,
+    MEDKIT_DETOUR_PX,
+    PEDESTAL,
+)
 from ctf.beacon.types import Belief, Intent
 
 
@@ -45,6 +52,21 @@ def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
         and not belief.enemy_flag_on_pedestal
     ):
         return Intent(kind="navigate_to", point=belief.enemy_flag_pos, reason="escort_carrier"), None
+
+    # Rung 3.5 (items, v10): fetch pickups when nothing flag-urgent is happening
+    # (carry / intercept / escort all returned above). Two cases, both detour-capped
+    # so a fetch never drags an agent across the map:
+    #   * hurt + a med kit in reach -> heal (any seat; the sim only lets a HURT
+    #     player take a kit, so a healthy teammate racing it wastes nothing);
+    #   * this seat's statically-assigned pickup (single-claimant: the assignment
+    #     is a pure function of seat, so exactly one agent claims each item).
+    if ITEMS and belief.self_xy is not None:
+        kit = items.medkit_target(belief, MEDKIT_DETOUR_PX)
+        if kit is not None:
+            return Intent(kind="navigate_to", point=kit.pos, reason="fetch_medkit"), None
+        assigned = items.assigned_fetch(belief)
+        if assigned is not None and _dist(belief.self_xy, assigned.pos) <= ITEM_DETOUR_PX:
+            return Intent(kind="navigate_to", point=assigned.pos, reason="fetch_item"), None
 
     # Rung 4: role split.
     if belief.role == "defender" and belief.hold_point is not None:

@@ -29,21 +29,62 @@ HOME_DEEP = {"red": (150, 329), "blue": (MAP_W - 1 - 150, 329)}
 #: flag carrier moves at carrierSpeedPct (70%) of it.
 MAX_SPEED_PX_TICK = 704 / 256  # 2.75
 
-# --- Observation wire format (hd.nim, game >= 0.6.0) -------------------------------
-#: HD pixels per map pixel on the zoomable map/fog layers (hd.nim RenderScale).
-#: Object coordinates and sprite sizes arrive multiplied by this; perception divides
-#: once at the seam (perception._center) so everything downstream — nav.npz, all
-#: thresholds, belief, traces — stays in map pixels. (The invisible "walkability map"
-#: sprite is documented unscaled, but we never read it: nav is baked offline.)
-RENDER_SCALE = 3
+# --- Observation wire format --------------------------------------------------------
+#: Wire pixels per map pixel on the PLAYER observation stream. The 0.6-0.7.7 "HD"
+#: era carried 3x-scaled coordinates; **the 0.7.8 renderer restore put the player
+#: wire back to 1x map pixels** (global.nim: boardScale stays 1 for every player/POV
+#: stream; RenderScale supersampling is spectator/replay-only now; see also the
+#: baseline's mapPos comment). Perception still divides at the seam so a future
+#: scale change is a one-constant fix.
+RENDER_SCALE = 1
 
 # --- Aim / vision (sim.nim) -------------------------------------------------------
 AIM_BRADS_TURN = 256  # brads per full turn
 AIM_TURN_RATE = 5  # brads/tick a held rotate button turns aim (must match server)
-VISION_CONE_HALF_DEG = 45  # forward wedge half-angle
+VISION_CONE_HALF_DEG = 60  # forward wedge half-angle (config.json, 60 since 0.7.4x)
 VISION_BUBBLE = 90  # omni bubble radius, px
 #: Spawn aim by team: Red faces east (0), Blue faces west (128).
 SPAWN_AIM = {"red": 0, "blue": AIM_BRADS_TURN // 2}
+
+# --- Gun timing (sim.nim) -----------------------------------------------------------
+#: Ticks from trigger pull (aim locks) to the bullet leaving (FireWindupTicks). The
+#: bullet then travels instantly (hitscan), so the whole lead is the windup + the
+#: sighting age — a strafing enemy moves ~windup * 2.75 px between pull and release.
+FIRE_WINDUP_TICKS = 5
+
+# --- Items (sim.nim spawn formulas + tuning) ----------------------------------------
+#: The 8-bit controller's C button (bitworld ButtonC = 1 shl 7): hold to charge a
+#: grenade throw, release to let it fly. NOT in the SDK Button enum (which stops at
+#: B); the sprite bridge's 7-bit mask clamp is widened in main.py.
+BUTTON_C = 128
+_ITEM_INSET = 10 + 40  # ArenaBorder + GrenadeSpawnInset (= PlasmaArcSpawnInset)
+#: Corner grenade pickups: two per side (sim.nim grenadeSpawnPoints).
+GRENADE_SPAWNS = (
+    (_ITEM_INSET, _ITEM_INSET),                    # left top
+    (_ITEM_INSET, MAP_H - _ITEM_INSET),            # left bottom
+    (MAP_W - _ITEM_INSET, _ITEM_INSET),            # right top
+    (MAP_W - _ITEM_INSET, MAP_H - _ITEM_INSET),    # right bottom
+)
+#: Endzone shields: back columns, three quarters down (sim.nim resetShields; the
+#: sim nudges to walkable floor — belief matches by proximity so the raw point is fine).
+SHIELD_SPAWNS = ((_ITEM_INSET, 3 * MAP_H // 4), (MAP_W - _ITEM_INSET, 3 * MAP_H // 4))
+#: Plasma arcs: same columns, one quarter down (sim.nim plasmaArcSpawnPoints).
+ARC_SPAWNS = ((_ITEM_INSET, MAP_H // 4), (MAP_W - _ITEM_INSET, MAP_H // 4))
+#: Center-line med kits at one/two thirds height (sim.nim resetMedKits).
+MEDKIT_SPAWNS = ((MAP_W // 2, MAP_H // 3), (MAP_W // 2, 2 * MAP_H // 3))
+#: Respawn intervals (ticks) after a pickup is taken (sim.nim *RespawnTicks).
+GRENADE_RESPAWN_TICKS = 5 * 24
+MEDKIT_RESPAWN_TICKS = 30 * 24
+SHIELD_RESPAWN_TICKS = 30 * 24
+ARC_RESPAWN_TICKS = 30 * 24
+#: Grenade throw tuning (sim.nim): hold C GrenadeChargeTicks for a full-strength
+#: throw; release flies from GRENADE_MIN_RANGE to GRENADE_MAX_RANGE along the aim.
+GRENADE_CHARGE_TICKS = 24
+GRENADE_MIN_RANGE = 30
+GRENADE_MAX_RANGE = MAP_W // 5  # 247
+GRENADE_BLAST_RADIUS = 40
+#: A pickup is grabbed by touch within this radius (sim.nim *PickupRange).
+ITEM_PICKUP_RANGE = 12
 
 
 def _env_int(name: str, default: int) -> int:
@@ -65,6 +106,10 @@ def _env_float(name: str, default: float) -> float:
 SWEEP_HALF_ARC = _env_int("BEACON_SWEEP_HALF_ARC", 32)
 #: Deadband: don't bother rotating to close an aim error smaller than this (brads).
 AIM_DEADBAND = _env_int("BEACON_AIM_DEADBAND", 3)
+#: Resync the dead-reckoned aim to the observed self-sprite rotation only when they
+#: disagree by more than this (brads). The 0.7.8-era readback is 16-step quantized
+#: (±8 brads), so small disagreements are quantization, not drift.
+AIM_RESYNC_SLACK_BRADS = _env_int("BEACON_AIM_RESYNC_SLACK_BRADS", 12)
 #: Fire only when the target is within this perpendicular slack of the aim ray (px),
 #: i.e. range * sin(angle_error) <= this. Matches the baseline's fire-gate idea.
 FIRE_SLACK_PX = _env_int("BEACON_FIRE_SLACK_PX", 11)
@@ -121,6 +166,40 @@ PEEK_DUCK_SEARCH_CELLS = _env_int("BEACON_PEEK_DUCK_SEARCH_CELLS", 3)
 #: Within this distance (px) of the steal target, never duck/peek — grab speed wins
 #: (mirrors the baseline's pocket-rush exemption).
 PEEK_DUCK_RUSH_EXEMPT_PX = _env_int("BEACON_PEEK_DUCK_RUSH_EXEMPT_PX", 90)
+
+# --- Lead aim (v10) -----------------------------------------------------------------
+#: Master switch for velocity-lead aiming — the v10 accuracy iteration's A/B bit.
+LEAD_AIM = _env_int("BEACON_LEAD_AIM", 1) == 1
+#: Aim this many ticks ahead of a moving target: the 5-tick windup releases the
+#: bullet late, plus ~1 tick of perception latency (baseline LeadTicks = 6).
+LEAD_TICKS = _env_float("BEACON_LEAD_TICKS", 6.0)
+#: Only lead with a velocity estimated over at least this many sightings — a
+#: 2-frame velocity is one noisy difference.
+LEAD_MIN_FRAMES = _env_int("BEACON_LEAD_MIN_FRAMES", 3)
+
+# --- Item skills (v10) ---------------------------------------------------------------
+#: Master switch for the item system (fetch + use) — the other v10 A/B bit.
+ITEMS = _env_int("BEACON_ITEMS", 1) == 1
+#: Max detour (px, straight-line) an agent diverts to fetch its ASSIGNED item.
+ITEM_DETOUR_PX = _env_int("BEACON_ITEM_DETOUR_PX", 420)
+#: Max detour (px) a HURT agent diverts to a center-line med kit.
+MEDKIT_DETOUR_PX = _env_int("BEACON_MEDKIT_DETOUR_PX", 420)
+#: Grenade throwing (needs ITEMS): lob at wall-blocked remembered enemies.
+GRENADE_THROW = _env_int("BEACON_GRENADE_THROW", 1) == 1
+#: Never lob shorter than this (px) — the 40px blast hurts the thrower too.
+GRENADE_MIN_THROW_PX = 90
+#: Release the throw once aim is within this error (brads).
+GRENADE_AIM_ERR_BRADS = _env_int("BEACON_GRENADE_AIM_ERR_BRADS", 4)
+#: Abort insurance: force-release a charge this many ticks past full charge.
+GRENADE_FORCE_RELEASE_TICKS = 16
+#: Only lob at tracks seen this recently (ticks).
+GRENADE_TARGET_FRESH_TICKS = _env_int("BEACON_GRENADE_TARGET_FRESH_TICKS", 30)
+#: Plasma arc: fire the cone when a visible enemy is inside this range (px;
+#: sim reach is 136 — use a bit less so the cone's width has caught up) and
+#: within this aim error (brads). Arc pickups are NOT assigned by default (the
+#: arc disables the gun); this only governs use if one is somehow carried.
+ARC_FIRE_RANGE_PX = 120
+ARC_AIM_ERR_BRADS = 6
 
 # --- Roles (v2) -------------------------------------------------------------------
 # CTF games (vs the baseline) are decided by WIPE, not capture (see TENTATIVE_LESSONS):

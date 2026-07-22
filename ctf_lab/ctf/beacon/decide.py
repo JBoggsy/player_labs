@@ -101,6 +101,14 @@ class _DiagnosticLogger:
         # countable from the trace, so a null A/B can distinguish "never fired" from
         # "fired and didn't help".
         self._micro_ticks: dict[str, int] = {}
+        # v10 activation counters (lead aim + items), carried in every snapshot.
+        self._lead_shots = 0  # A-press ticks with a nonzero lead applied
+        self._unled_shots = 0  # A-press ticks with zero lead (gun fights only)
+        self._lead_brads_sum = 0  # total |lead| across led shots
+        self._throws = 0  # grenade releases (charge -> 0 while holding one)
+        self._last_charging = False
+        self._last_items: tuple[bool, bool, bool] | None = None  # grenade/shield/arc
+        self._last_hp: int | None = None
 
     def on_step(self, step: StepInfo) -> None:
         self._log_transitions(step)
@@ -129,6 +137,38 @@ class _DiagnosticLogger:
                           "fire_ready": b.fire_ready})
             self._last_micro = b.micro
 
+        # v10 lead-aim counters: count each fired shot as led / unled.
+        if step.command.held_mask & 32:  # Button.A pressed this tick
+            if b.lead_brads != 0:
+                self._lead_shots += 1
+                self._lead_brads_sum += abs(b.lead_brads)
+            else:
+                self._unled_shots += 1
+
+        # v10 item transitions: pickups/losses of carried items, heals, throws.
+        items_now = (b.i_have_grenade, b.i_have_shield, b.i_have_arc)
+        if self._last_items is not None and items_now != self._last_items:
+            for name, was, now in zip(
+                ("grenade", "shield", "arc"), self._last_items, items_now
+            ):
+                if now != was:
+                    self._record(step.tick, "item",
+                                 {"kind": name, "have": now, "self_xy": b.self_xy})
+        self._last_items = items_now
+        charging = b.throw_charge_ticks > 0
+        if self._last_charging and not charging and b.i_have_grenade:
+            self._throws += 1
+            self._record(step.tick, "throw", {"self_xy": b.self_xy})
+        self._last_charging = charging
+        if (
+            b.hp_pips is not None
+            and self._last_hp is not None
+            and b.hp_pips > self._last_hp
+            and step.intent.reason == "fetch_medkit"
+        ):
+            self._record(step.tick, "heal", {"hp": b.hp_pips, "self_xy": b.self_xy})
+        self._last_hp = b.hp_pips
+
     def _payload(self, step: StepInfo) -> dict:
         b = step.belief
         return {
@@ -151,6 +191,16 @@ class _DiagnosticLogger:
             "held_mask": step.command.held_mask,
             "micro": b.micro,
             "micro_ticks": dict(self._micro_ticks),
+            # v10 skill activation (cumulative): lead-aim shot split + item counters.
+            "lead_shots": self._lead_shots,
+            "unled_shots": self._unled_shots,
+            "lead_brads_sum": self._lead_brads_sum,
+            "throws": self._throws,
+            "hp_pips": b.hp_pips,
+            "have_grenade": b.i_have_grenade,
+            "have_shield": b.i_have_shield,
+            "have_arc": b.i_have_arc,
+            "items_present": sum(1 for s in b.item_spawns if s.present),
             "enemy_tracks": [_track_row(t, step.tick) for t in b.enemy_tracks],
             "teammate_tracks": [_track_row(t, step.tick) for t in b.teammate_tracks],
             "danger": _danger_grid(b.danger),

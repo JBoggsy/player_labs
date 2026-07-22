@@ -30,8 +30,10 @@ from __future__ import annotations
 import numpy as np
 
 from ctf.beacon import mapdata
+from ctf.beacon.items import update_items
 from ctf.beacon.config import (
     AIM_BRADS_TURN,
+    AIM_RESYNC_SLACK_BRADS,
     AIM_TURN_RATE,
     CENTER_X,
     DANGER_DECAY_HALF_LIFE_TICKS,
@@ -71,10 +73,17 @@ def update_belief(belief: Belief, percept: CtfState, action_state: ActionState, 
         belief.aim_brads = SPAWN_AIM[belief.team]
         belief.sweep_offset = 0
         belief.sweep_dir = 1
+    # Dead-reckon by the commanded rotation, then correct DRIFT against the observed
+    # read. Since 0.7.8 the readback is the self sprite's 16-step rotation (±8 brads
+    # quantization), so only resync when the disagreement exceeds the quantization —
+    # snapping to the coarse read every frame would add noise, not remove it.
+    belief.aim_brads = (belief.aim_brads + action_state.last_rot * AIM_TURN_RATE) % AIM_BRADS_TURN
     if percept.observed_aim is not None:
-        belief.aim_brads = percept.observed_aim
-    else:
-        belief.aim_brads = (belief.aim_brads + action_state.last_rot * AIM_TURN_RATE) % AIM_BRADS_TURN
+        err = (percept.observed_aim - belief.aim_brads) % AIM_BRADS_TURN
+        if err > AIM_BRADS_TURN // 2:
+            err -= AIM_BRADS_TURN
+        if abs(err) > AIM_RESYNC_SLACK_BRADS:
+            belief.aim_brads = percept.observed_aim
 
     belief.fire_ready = percept.fire_ready
     belief.enemies = percept.enemies
@@ -84,6 +93,14 @@ def update_belief(belief: Belief, percept: CtfState, action_state: ActionState, 
     belief.enemy_flag_pos = percept.enemy_flag_pos
     belief.own_flag_stolen = percept.own_flag_stolen
     belief.own_flag_thief_pos = percept.own_flag_thief_pos
+
+    # Items (v10): our carried state is per-frame (the overhead markers ride us);
+    # the spawn table folds sightings + line-of-sight refutations in items.py.
+    belief.hp_pips = percept.hp_pips
+    belief.i_have_grenade = percept.i_have_grenade
+    belief.i_have_shield = percept.i_have_shield
+    belief.i_have_arc = percept.i_have_arc
+    update_items(belief, percept)
 
     # Folded memory (not gated on yet — see module docstring). Still ticked while
     # dead so tracks age out and danger decays on schedule — but since 0.7.x death

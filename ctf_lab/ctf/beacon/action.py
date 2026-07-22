@@ -25,13 +25,29 @@ from ctf.beacon.config import (
     AIM_BRADS_TURN,
     AIM_DEADBAND,
     AIM_TURN_RATE,
+    ARC_AIM_ERR_BRADS,
+    ARC_FIRE_RANGE_PX,
+    BUTTON_C,
     CLOSE_RANGE_PX,
     DUCK_RANGE_PX,
     DUCK_THREAT_FRESH_TICKS,
     FIRE_SLACK_PX,
+    FIRE_WINDUP_TICKS,
     FRIENDLY_FIRE_CORRIDOR_PX,
+    GRENADE_AIM_ERR_BRADS,
+    GRENADE_BLAST_RADIUS,
+    GRENADE_CHARGE_TICKS,
+    GRENADE_FORCE_RELEASE_TICKS,
+    GRENADE_MAX_RANGE,
+    GRENADE_MIN_RANGE,
+    GRENADE_MIN_THROW_PX,
+    GRENADE_TARGET_FRESH_TICKS,
+    GRENADE_THROW,
     GRID_H,
     GRID_W,
+    LEAD_AIM,
+    LEAD_MIN_FRAMES,
+    LEAD_TICKS,
     NAV_CELL,
     PEDESTAL,
     PEEK_DUCK,
@@ -41,7 +57,7 @@ from ctf.beacon.config import (
     STUCK_TICKS,
     SWEEP_HALF_ARC,
 )
-from ctf.beacon.types import ActionState, Belief, Command, Intent, PlayerTrack
+from ctf.beacon.types import ActionState, Belief, Command, Enemy, Intent, PlayerTrack
 from players.player_sdk import Button
 
 
@@ -92,6 +108,41 @@ def _sweep_target(belief: Belief) -> int:
         belief.sweep_offset = -SWEEP_HALF_ARC
         belief.sweep_dir = 1
     return (axis + belief.sweep_offset) % AIM_BRADS_TURN
+
+
+def _lead_aim_pos(belief: Belief, enemy: Enemy) -> tuple[tuple[int, int], int]:
+    """Where to aim at a visible enemy: its velocity-extrapolated position at the
+    moment our bullet actually exists.
+
+    The gun is hitscan but NOT instant: the aim locks at the trigger pull and the
+    bullet leaves ``FIRE_WINDUP_TICKS`` later (sim.nim startFireWindup), so a strafing
+    enemy is ~LEAD_TICKS * vel px away from its sighted position when the ray is
+    cast. We find the enemy's track (updated to this sighting this tick), and if its
+    EMA velocity rests on enough frames, aim ahead. Returns (aim_pos, lead_brads);
+    lead_brads == 0 means no lead was applied (activation-traceable).
+    """
+    if not LEAD_AIM or belief.self_xy is None:
+        return enemy.pos, 0
+    track = next(
+        (
+            t
+            for t in belief.enemy_tracks
+            if t.last_tick == belief.tick and t.pos == enemy.pos
+        ),
+        None,
+    )
+    if track is None or track.vel is None or track.frames_seen < LEAD_MIN_FRAMES:
+        return enemy.pos, 0
+    from ctf.beacon.config import MAP_H, MAP_W
+
+    px = min(max(round(enemy.pos[0] + track.vel[0] * LEAD_TICKS), 0), MAP_W - 1)
+    py = min(max(round(enemy.pos[1] + track.vel[1] * LEAD_TICKS), 0), MAP_H - 1)
+    if (px, py) == enemy.pos:
+        return enemy.pos, 0
+    sx, sy = belief.self_xy
+    raw = _brads_of(enemy.pos[0] - sx, enemy.pos[1] - sy)
+    led = _brads_of(px - sx, py - sy)
+    return (px, py), _brad_error(led, raw)
 
 
 def _fire_gate(belief: Belief, target_pos: tuple[int, int]) -> bool:
@@ -267,6 +318,9 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
 
     if belief.self_xy is None:  # dead / not ready — release everything
         state.a_held = False
+        belief.lead_brads = 0
+        belief.throw_charge_ticks = 0
+        belief.throw_target = None
         return Command(held_mask=0)
 
     self_xy = belief.self_xy
@@ -297,14 +351,28 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
     # --- Combat overlay: aim + fire -----------------------------------------------
     enemy = _nearest_enemy(belief)
     if enemy is not None:
-        # Snap aim onto the target; fire when ready + gate clears.
-        want = _brads_of(enemy.pos[0] - self_xy[0], enemy.pos[1] - self_xy[1])
+        # Snap aim onto the target — led ahead of a moving one (v10): the windup
+        # delays the bullet ~LEAD_TICKS, so aim where the target will BE.
+        aim_pos, lead = _lead_aim_pos(belief, enemy)
+        belief.lead_brads = lead
+        want = _brads_of(aim_pos[0] - self_xy[0], aim_pos[1] - self_xy[1])
         err = _brad_error(want, belief.aim_brads)
-        can_fire = (
-            belief.fire_ready
-            and _fire_gate(belief, enemy.pos)
-            and not _teammate_blocks_shot(belief, enemy.pos)
-        )
+        if belief.i_have_arc:
+            # The gun is disabled while carrying an arc: A ignites the plasma cone
+            # instead. Short reach — only worth pressing with the target inside it.
+            rng = math.hypot(enemy.pos[0] - self_xy[0], enemy.pos[1] - self_xy[1])
+            can_fire = (
+                belief.fire_ready
+                and rng <= ARC_FIRE_RANGE_PX
+                and abs(err) <= ARC_AIM_ERR_BRADS
+                and not _teammate_blocks_shot(belief, enemy.pos)
+            )
+        else:
+            can_fire = (
+                belief.fire_ready
+                and _fire_gate(belief, aim_pos)
+                and not _teammate_blocks_shot(belief, aim_pos)
+            )
         if can_fire and not state.a_held:
             # Fire this tick; do NOT rotate (lock the settled aim).
             mask |= int(Button.A)
@@ -314,6 +382,7 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
             mask |= _rotation_button(err, state)
     else:
         state.a_held = False
+        belief.lead_brads = 0
         if override is not None and override[1] is not None:
             # Ducking/peeking: lay the aim on the remembered threat's arc so the
             # vision cone watches the lane (and a peek exits pre-aimed).
@@ -324,7 +393,94 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
         err = _brad_error(target, belief.aim_brads)
         mask |= _rotation_button(err, state)
 
-    return Command(held_mask=int(mask) & 0x7F)
+    # --- Grenade overlay (v10): lob at wall-blocked remembered enemies -------------
+    # Rides ON TOP of gun combat: C charges/releases independently of A, and the
+    # charge only starts when no enemy is visible (the gun handles visible ones).
+    if GRENADE_THROW and belief.i_have_grenade:
+        mask = _grenade_overlay(mask, belief, state)
+    else:
+        belief.throw_charge_ticks = 0
+        belief.throw_target = None
+
+    return Command(held_mask=int(mask) & 0xFF)
+
+
+def _lob_target(belief: Belief) -> tuple[int, int] | None:
+    """A grenade-worthy target: the nearest FRESH, WALL-BLOCKED remembered enemy in
+    throw range. Open targets belong to the gun; blocked ones are exactly what the
+    over-wall lob buys. Vetoes a landing that would splash a teammate (or us)."""
+    assert belief.self_xy is not None
+    sx, sy = belief.self_xy
+    best: tuple[int, int] | None = None
+    best_d = float(GRENADE_MAX_RANGE)
+    for t in belief.enemy_tracks:
+        if belief.tick - t.last_tick > GRENADE_TARGET_FRESH_TICKS:
+            continue
+        pos = _predicted_pos(t, belief.tick)
+        d = math.hypot(pos[0] - sx, pos[1] - sy)
+        if d < GRENADE_MIN_THROW_PX or d > best_d:
+            continue
+        if mapdata.ray_clear(belief.self_xy, pos):
+            continue  # open line: the gun handles it
+        splash = GRENADE_BLAST_RADIUS + 20.0
+        if any(
+            math.hypot(m.pos[0] - pos[0], m.pos[1] - pos[1]) <= splash
+            for m in belief.teammates
+        ):
+            continue
+        best = pos
+        best_d = d
+    return best
+
+
+def _grenade_overlay(mask: int, belief: Belief, state: ActionState) -> int:
+    """The C-button charge/release state machine, riding on top of gun combat.
+
+    Charge only starts when no enemy is visible (the gun owns visible fights); once
+    charging, C stays held while the aim lays onto the lob bearing, and releases when
+    the charge matches the throw distance and the aim has settled. A charge that
+    can't settle force-releases after a grace period — the sim throws on ANY C
+    release, so carrying a charge forever would waste the grenade anyway.
+    """
+    assert belief.self_xy is not None
+    sx, sy = belief.self_xy
+    charging = belief.throw_charge_ticks > 0
+
+    if not charging:
+        if belief.enemies:  # gun fight in progress — don't start a lob
+            belief.throw_target = None
+            return mask
+        target = _lob_target(belief)
+        belief.throw_target = target
+        if target is None:
+            return mask
+        belief.throw_charge_ticks = 1
+        return mask | BUTTON_C
+
+    target = belief.throw_target or (sx, sy)
+    belief.throw_charge_ticks += 1
+    d = math.hypot(target[0] - sx, target[1] - sy)
+    span = max(1, GRENADE_MAX_RANGE - GRENADE_MIN_RANGE)
+    charge_needed = min(
+        GRENADE_CHARGE_TICKS,
+        max(1, math.ceil((d - GRENADE_MIN_RANGE) / span * GRENADE_CHARGE_TICKS)),
+    )
+    want = _brads_of(target[0] - sx, target[1] - sy)
+    err = _brad_error(want, belief.aim_brads)
+    overdue = belief.throw_charge_ticks >= GRENADE_CHARGE_TICKS + GRENADE_FORCE_RELEASE_TICKS
+
+    if not belief.enemies:
+        # Own the aim while charging: replace any sweep rotation with the lob bearing.
+        mask &= ~(int(Button.B) | int(Button.SELECT))
+        mask |= _rotation_button(err, state)
+
+    ready = belief.throw_charge_ticks >= charge_needed and abs(err) <= GRENADE_AIM_ERR_BRADS
+    if (ready and not belief.enemies) or overdue:
+        # Release: C up this tick throws along the current aim.
+        belief.throw_charge_ticks = 0
+        belief.throw_target = None
+        return mask
+    return mask | BUTTON_C
 
 
 def _rotation_button(err: int, state: ActionState) -> int:

@@ -67,9 +67,32 @@ class CtfState:
     enemy_flag_pos: tuple[int, int] | None  # where the enemy flag is, if visible
     own_flag_stolen: bool
     own_flag_thief_pos: tuple[int, int] | None  # a live thief fix, when in view
+    # Items (v10): fog-gated pickup sightings + our own overhead-marker state.
+    visible_items: tuple[tuple[str, tuple[int, int]], ...] = ()  # (kind, pos)
+    hp_pips: int | None = None  # our "hp N/3" bar segments; None = bar not resolved
+    i_have_grenade: bool = False
+    i_have_shield: bool = False
+    i_have_arc: bool = False
 
 
 Role = Literal["attacker", "defender"]
+
+ItemKind = Literal["grenade", "shield", "arc", "medkit"]
+
+
+@dataclass
+class ItemSpawn:
+    """Belief about one fixed item spawn point (items.py owns the spawn table).
+
+    Optimistic-by-default: a spawn is believed ``present`` unless we recently
+    OBSERVED it empty, in which case ``absent_until`` backs off roughly one respawn
+    interval before we try it again (we can't know when it was actually taken)."""
+
+    kind: ItemKind
+    pos: tuple[int, int]
+    present: bool = True
+    absent_until: int = 0  # believed-absent until this tick when present=False
+    last_seen: int = -1
 
 
 @dataclass
@@ -119,6 +142,19 @@ class Belief:
     # None. Behavior changes MUST be observable — a null A/B without activation
     # counts can't distinguish "never fired" from "fired and didn't help".
     micro: str | None = None
+    # Items (v10): fixed-spawn belief table + our own carried/hp state (perception).
+    item_spawns: list[ItemSpawn] = field(default_factory=list)
+    hp_pips: int | None = None  # our hp bar segments 1..3; None = unresolved
+    i_have_grenade: bool = False
+    i_have_shield: bool = False
+    i_have_arc: bool = False
+    # Lead-aim activation state this tick, for tracing: brads of lead applied to the
+    # snap aim (0 = no lead / target treated as stationary).
+    lead_brads: int = 0
+    # Grenade-throw state machine: ticks C has been held this charge (0 = idle), and
+    # the landing point the current charge is aimed at.
+    throw_charge_ticks: int = 0
+    throw_target: tuple[int, int] | None = None
 
 
 @dataclass
@@ -161,6 +197,8 @@ __all__ = [
     "Enemy",
     "Intent",
     "IntentKind",
+    "ItemKind",
+    "ItemSpawn",
     "Observation",
     "PlayerTrack",
     "Role",

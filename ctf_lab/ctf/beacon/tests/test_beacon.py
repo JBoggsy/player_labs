@@ -297,42 +297,45 @@ def test_danger_never_on_walls():
     assert (b.danger[~mapdata.walkable_grid()] == 0.0).all()
 
 
-# --- perception at the 0.7.3 wire format --------------------------------------------
-# Since 0.6.0 the zoomable map layer is wire-scaled: object coordinates and sprite
-# sizes arrive at RENDER_SCALE (3x) map resolution, every sprite centered on its
-# scaled map point. These helpers build worlds exactly as global.nim emits them
-# (HD crew canvas 96 = 32 map px, heart canvas 60 = 20 map px).
+# --- perception at the 0.7.49 wire format --------------------------------------------
+# The 0.7.8 renderer restore put the PLAYER stream back to 1x map pixels (spectator
+# supersampling is boardScale-gated and never touches POV packets), retired the
+# aim-dot indicator (self sprite id 5100+rot IS the aim readback), and split the
+# flag into "<color> flag planted" (pedestal) / "<color> flag" (centered on its
+# carrier). Helpers build worlds exactly as global.nim's POV branch emits them.
 from ctf.beacon.config import RENDER_SCALE
 
-_HD_CREW = 96
-_HD_FLAG = 60
+_SOLDIER_CANVAS = 72
+_FLAG_BANNER = 20
+_PLANTED_W = 60  # FlagBannerW * PlantedFlagScale(3)
+_SELF_SPRITE_BASE = 5100
 
 
 def _add_player(w, obj_id, sprite_id, label, center_xy):
-    """Place a player-like sprite as addHdPlayerObject does: 3*x - canvas/2."""
-    w.sprites[sprite_id] = SpriteDef(sprite_id, _HD_CREW, _HD_CREW, label, b"")
+    """Place a soldier as the POV branch does: canvas centered on the player."""
+    w.sprites[sprite_id] = SpriteDef(sprite_id, _SOLDIER_CANVAS, _SOLDIER_CANVAS, label, b"")
     w.objects[obj_id] = SpriteObject(
         obj_id,
-        center_xy[0] * RENDER_SCALE - _HD_CREW // 2,
-        center_xy[1] * RENDER_SCALE - _HD_CREW // 2,
+        center_xy[0] * RENDER_SCALE - _SOLDIER_CANVAS // 2,
+        center_xy[1] * RENDER_SCALE - _SOLDIER_CANVAS // 2,
         0, 0, sprite_id,
     )
 
 
-def _add_heart(w, obj_id, sprite_id, label, center_xy, lift=0):
-    """Place a heart as the per-player packet does: map-px offset, wire-scaled."""
-    w.sprites[sprite_id] = SpriteDef(sprite_id, _HD_FLAG, _HD_FLAG, label, b"")
-    map_x = center_xy[0] - _HD_FLAG // (2 * RENDER_SCALE)
-    map_y = center_xy[1] - _HD_FLAG // (2 * RENDER_SCALE) - lift
+def _add_flag(w, obj_id, sprite_id, label, center_xy, planted=False):
+    """Place a flag sprite centered on its point (planted pedestal or carrier)."""
+    size = _PLANTED_W if planted else _FLAG_BANNER
+    w.sprites[sprite_id] = SpriteDef(sprite_id, size, size, label, b"")
     w.objects[obj_id] = SpriteObject(
-        obj_id, map_x * RENDER_SCALE, map_y * RENDER_SCALE, 0, 0, sprite_id
+        obj_id, center_xy[0] - size // 2, center_xy[1] - size // 2, 0, 0, sprite_id
     )
 
 
-def _world_with_self_and_heart(self_xy, heart_center, lift=0):
+def _world_with_self(self_xy, aim_rot=0):
     w = SpriteWorld()
-    _add_player(w, 10, 1, "self red right", self_xy)
-    _add_heart(w, 20, 2, "blue heart", heart_center, lift=lift)
+    _add_player(w, 10, _SELF_SPRITE_BASE + aim_rot, "self red right", self_xy)
+    # Own flag safe at home by default (so own_flag_stolen doesn't trip).
+    _add_flag(w, 30, 700, "red flag planted", (186, 329), planted=True)
     w.frame = 1
     return w
 
@@ -341,36 +344,80 @@ def _obs(w):
     return type("O", (), {"world": w, "frame": 1})()
 
 
-def test_wire_scale_recovers_map_coordinates():
-    # A self sprite placed at map (600, 329) through the 3x wire math must read
-    # back as exactly (600, 329) after perception's divide-at-the-seam.
-    st = perceive(_obs(_world_with_self_and_heart((600, 329), (1049, 329))), "red")
+def test_planted_enemy_flag_reads_stealable():
+    w = _world_with_self((600, 329))
+    _add_flag(w, 20, 701, "blue flag planted", (1049, 329), planted=True)
+    st = perceive(_obs(w), "red")
     assert st.self_xy == (600, 329)
+    assert st.enemy_flag_on_pedestal and not st.i_carry_enemy_flag
 
 
-def test_carry_detected_when_heart_rides_above_us():
-    # Carried heart sits ~10px above the carrier (CarriedFlagLift) — the old 6px
-    # threshold missed this, so beacon never ran the heart home.
-    st = perceive(_obs(_world_with_self_and_heart((600, 329), (600, 329), lift=10)), "red")
+def test_carry_detected_when_flag_centered_on_us():
+    w = _world_with_self((600, 329))
+    _add_flag(w, 20, 702, "blue flag", (600, 329))  # carried: centered on carrier
+    st = perceive(_obs(w), "red")
     assert st.i_carry_enemy_flag and not st.enemy_flag_on_pedestal
 
 
-def test_standing_on_pedestal_with_resting_heart_is_not_carry():
-    st = perceive(_obs(_world_with_self_and_heart((1049, 329), (1049, 329))), "red")
-    assert not st.i_carry_enemy_flag and st.enemy_flag_on_pedestal
+def test_teammate_carried_flag_is_not_our_carry():
+    w = _world_with_self((600, 329))
+    _add_flag(w, 20, 702, "blue flag", (400, 300))  # carried by someone far away
+    st = perceive(_obs(w), "red")
+    assert not st.i_carry_enemy_flag and not st.enemy_flag_on_pedestal
+    assert st.enemy_flag_pos == (400, 300)
 
 
-def test_grab_on_pedestal_registers_carry():
-    # The instant we grab it on the pedestal, it lifts to ~10px above -> carry.
-    st = perceive(_obs(_world_with_self_and_heart((1049, 329), (1049, 329), lift=10)), "red")
-    assert st.i_carry_enemy_flag
+def test_own_flag_stolen_with_thief_fix():
+    w = SpriteWorld()
+    _add_player(w, 10, _SELF_SPRITE_BASE, "self red right", (600, 329))
+    _add_flag(w, 30, 702, "red flag", (500, 300))  # our flag carried by a thief
+    w.frame = 1
+    st = perceive(_obs(w), "red")
+    assert st.own_flag_stolen and st.own_flag_thief_pos == (500, 300)
+
+
+def test_own_flag_stolen_when_absent():
+    w = SpriteWorld()
+    _add_player(w, 10, _SELF_SPRITE_BASE, "self red right", (600, 329))
+    w.frame = 1
+    st = perceive(_obs(w), "red")
+    assert st.own_flag_stolen and st.own_flag_thief_pos is None
 
 
 def test_enemy_players_read_at_map_scale():
-    w = _world_with_self_and_heart((300, 329), (1049, 329))
+    w = _world_with_self((300, 329))
     _add_player(w, 11, 3, "player blue left", (450, 300))
     st = perceive(_obs(w), "red")
     assert len(st.enemies) == 1 and st.enemies[0].pos == (450, 300)
+
+
+def test_observed_aim_from_self_sprite_rotation():
+    # Self sprite id 5100 + rot encodes the aim in 16-brad steps.
+    st = perceive(_obs(_world_with_self((600, 329), aim_rot=4)), "red")
+    assert st.observed_aim == 64  # rot 4 = north
+
+
+def test_item_pickups_perceived():
+    w = _world_with_self((600, 329))
+    w.sprites[40] = SpriteDef(40, 10, 10, "grenade", b"")
+    w.objects[40] = SpriteObject(40, 45, 45, 0, 0, 40)
+    w.sprites[41] = SpriteDef(41, 26, 26, "shield", b"")
+    w.objects[41] = SpriteObject(41, 37, 481, 0, 0, 41)
+    st = perceive(_obs(w), "red")
+    kinds = {k for k, _ in st.visible_items}
+    assert kinds == {"grenade", "shield"}
+
+
+def test_own_hp_and_carried_markers_read_from_overhead():
+    w = _world_with_self((600, 329))
+    # hp bar sits ~21px above the body centre; carried marker next to it.
+    w.sprites[50] = SpriteDef(50, 14, 2, "hp 2/3", b"")
+    w.objects[50] = SpriteObject(50, 593, 306, 0, 0, 50)
+    w.sprites[51] = SpriteDef(51, 10, 10, "grenade carried", b"")
+    w.objects[51] = SpriteObject(51, 580, 301, 0, 0, 51)
+    st = perceive(_obs(w), "red")
+    assert st.hp_pips == 2
+    assert st.i_have_grenade and not st.i_have_shield
 
 
 # --- peek-fire-duck micro (v7) -------------------------------------------------------
@@ -477,11 +524,135 @@ def test_corpse_is_not_a_live_player_and_we_read_dead():
     # so self is not found -> not ready/alive; and a corpse never counts as an enemy.
     w = SpriteWorld()
     _add_player(w, 10, 1, "corpse red right", (300, 329))
-    _add_heart(w, 20, 2, "blue heart", (1049, 329))
-    _add_heart(w, 21, 3, "red heart", (186, 329))
+    _add_flag(w, 20, 701, "blue flag planted", (1049, 329), planted=True)
+    _add_flag(w, 21, 700, "red flag planted", (186, 329), planted=True)
     w.frame = 1
     st = perceive(_obs(w), "red")
     assert not st.ready and st.self_xy is None
     assert st.enemies == () and st.teammates == ()
     # Pedestal hearts stay readable through death (they never fog).
     assert st.enemy_flag_on_pedestal and not st.own_flag_stolen
+
+
+# --- v10: lead aim -------------------------------------------------------------------
+
+
+def test_lead_aim_extrapolates_along_velocity():
+    from ctf.beacon.action import _lead_aim_pos
+    from ctf.beacon.config import LEAD_TICKS
+    from ctf.beacon.types import PlayerTrack
+
+    b = Belief(team="red", alive=True, tick=100, self_xy=(300, 329))
+    enemy = Enemy(pos=(500, 329), facing="left")
+    # A settled track moving straight down at 2 px/tick, seen this tick.
+    b.enemy_tracks = [
+        PlayerTrack(pos=(500, 329), last_tick=100, facing="left", vel=(0.0, 2.0), frames_seen=5)
+    ]
+    aim_pos, lead = _lead_aim_pos(b, enemy)
+    assert aim_pos == (500, 329 + round(2.0 * LEAD_TICKS))
+    assert lead != 0
+
+
+def test_lead_aim_declines_thin_tracks():
+    from ctf.beacon.action import _lead_aim_pos
+    from ctf.beacon.types import PlayerTrack
+
+    b = Belief(team="red", alive=True, tick=100, self_xy=(300, 329))
+    enemy = Enemy(pos=(500, 329), facing="left")
+    b.enemy_tracks = [
+        PlayerTrack(pos=(500, 329), last_tick=100, facing="left", vel=(0.0, 2.0), frames_seen=2)
+    ]
+    aim_pos, lead = _lead_aim_pos(b, enemy)
+    assert aim_pos == enemy.pos and lead == 0
+
+
+# --- v10: items ----------------------------------------------------------------------
+
+
+def test_spawn_table_matches_sim_formulas():
+    # Mirror sim.nim: inset = ArenaBorder(10) + GrenadeSpawnInset(40) = 50.
+    from ctf.beacon.config import ARC_SPAWNS, GRENADE_SPAWNS, MEDKIT_SPAWNS, SHIELD_SPAWNS
+
+    assert GRENADE_SPAWNS == ((50, 50), (50, 609), (1185, 50), (1185, 609))
+    assert SHIELD_SPAWNS == ((50, 494), (1185, 494))
+    assert ARC_SPAWNS == ((50, 164), (1185, 164))
+    assert MEDKIT_SPAWNS == ((617, 219), (617, 439))
+
+
+def test_single_claimant_per_item():
+    # Across all 8 seats, each fetchable spawn is claimed by at most one seat.
+    from ctf.beacon import items
+
+    claims: dict[tuple[int, int], int] = {}
+    for seat in range(8):
+        b = Belief(team="red", seat=seat, alive=True, tick=10, self_xy=(200, 329))
+        b.item_spawns = items.build_spawn_table()
+        spawn = items.assigned_fetch(b)
+        if spawn is not None:
+            assert spawn.pos not in claims, f"seats {claims[spawn.pos]} and {seat} both claim {spawn.pos}"
+            claims[spawn.pos] = seat
+    assert len(claims) == 3  # shield + two grenades on our side
+
+
+def test_assigned_fetch_respects_carried_item():
+    from ctf.beacon import items
+
+    b = Belief(team="red", seat=2, alive=True, tick=10, self_xy=(200, 329))
+    b.item_spawns = items.build_spawn_table()
+    assert items.assigned_fetch(b) is not None
+    b.i_have_shield = True
+    assert items.assigned_fetch(b) is None
+
+
+def test_absent_spawn_backs_off_then_recovers():
+    from ctf.beacon import items
+    from ctf.beacon.config import SHIELD_RESPAWN_TICKS
+    from ctf.beacon.types import CtfState
+
+    b = Belief(team="red", seat=0, alive=True, tick=100, aim_brads=180)
+    b.item_spawns = items.build_spawn_table()
+    shield = next(s for s in b.item_spawns if s.kind == "shield" and s.pos[0] < 617)
+    # Stand near the shield spawn looking at it, with NO shield sighting -> absent.
+    b.self_xy = (shield.pos[0] + 40, shield.pos[1])
+    percept = CtfState(
+        ready=True, self_xy=b.self_xy, self_facing="left", observed_aim=None,
+        fire_ready=True, enemies=(), teammates=(), i_carry_enemy_flag=False,
+        enemy_flag_on_pedestal=True, enemy_flag_pos=None, own_flag_stolen=False,
+        own_flag_thief_pos=None, visible_items=(),
+    )
+    items.update_items(b, percept)
+    assert not shield.present
+    # After the respawn back-off it turns optimistic again.
+    b.tick = 100 + SHIELD_RESPAWN_TICKS
+    b.self_xy = (300, 100)  # far away, not looking
+    items.update_items(b, percept)
+    assert shield.present
+
+
+def test_medkit_fetch_only_when_hurt():
+    from ctf.beacon import items
+
+    b = Belief(team="red", seat=0, alive=True, tick=10, self_xy=(600, 300))
+    b.item_spawns = items.build_spawn_table()
+    b.hp_pips = 3
+    assert items.medkit_target(b, 420) is None
+    b.hp_pips = 1
+    kit = items.medkit_target(b, 420)
+    assert kit is not None and kit.kind == "medkit"
+
+
+def test_grenade_charge_holds_c_and_mask_survives():
+    # The C press (bit 128) must survive resolve_action's mask clamp.
+    from ctf.beacon.config import BUTTON_C
+    from ctf.beacon.types import PlayerTrack
+
+    b = Belief(team="red", alive=True, fire_ready=True, tick=100, self_xy=(250, 40))
+    b.i_have_grenade = True
+    # A fresh wall-blocked track east of the rect obstacle (see peek/duck tests),
+    # beyond GRENADE_MIN_THROW_PX so the lob is worth it.
+    b.enemy_tracks = [
+        PlayerTrack(pos=(350, 40), last_tick=98, facing="left", vel=None, frames_seen=4)
+    ]
+    cmd = resolve_action(Intent(kind="hold", reason="hold_line"), b, ActionState())
+    assert cmd.held_mask & BUTTON_C
+    assert b.throw_charge_ticks == 1

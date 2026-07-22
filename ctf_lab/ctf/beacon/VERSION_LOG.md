@@ -2,6 +2,33 @@
 
 Version → change mapping for the CTF `beacon` policy. Newest first.
 
+## v10 — lead aim + item skills (2026-07-21)
+
+**Why:** top-3 recon (scratch/recon_top3): beacon's warehouse accuracy was 0.163 vs
+the field's 0.43-0.56, and items (shields especially) were an uncontested edge only
+focusfire used (12.7% shield alive-time). Goal gate: ≥0.5 accuracy + consistent item
+use, measured in 1v1 xreqs vs each top-3 policy.
+
+**Changes:** (1) **Velocity-lead aim** (`_lead_aim_pos`): snap aim extrapolates a
+visible enemy along its track's EMA velocity by `BEACON_LEAD_TICKS` (default 6 — the
+5-tick windup + 1 tick latency; baseline LeadTicks parity), gated on ≥3-frame tracks.
+First gate on the v6 tracks groundwork. (2) **Item system** (`items.py`): fixed spawn
+table mirroring sim.nim formulas (4 corner grenades, 2 endzone shields, 2 arcs, 2
+center med kits), optimistic present-belief with observed-empty refutation +
+respawn-interval back-off; fog-gated pickup perception (`grenade`/`shield`/`plasma
+arc`/`med kit` labels), own hp from the overhead `hp N/3` bar, carried state from
+`* carried` markers. **Single-claimant fetch**: our-side shield → seat 2, top/bottom
+grenade → seats 3/4 (pure function of seat — no radio needed); hurt agents divert to
+med kits (any seat: the sim only lets hurt players take one). Strategy rung 3.5,
+detour-capped. (3) **Grenade throw**: C-button (bit 128; SDK mask clamp widened to
+0xFF in main.py — the pinned bitworld decodes the full byte) charge/release machine
+lobbing at fresh wall-blocked tracks ≥90px, teammate-splash veto. (4) **Arc fire**
+logic if carrying (nobody fetches arcs — the gun matters more). (5) **Vision cone
+60°** (config.json changed upstream; was 45). (6) Activation tracing: `lead_shots`/
+`unled_shots`/`lead_brads_sum`/`throws` cumulative in snapshots; `item`/`throw`/`heal`
+transition events. Knobs: `BEACON_LEAD_AIM`, `BEACON_ITEMS`, `BEACON_GRENADE_THROW`
+(all default ON). 51 tests pass.
+
 ## v8/v9 — micro activation tracing (2026-07-15)
 
 **Why:** v7's A/B vs focusfire was dead flat (0-9 both arms) with no way to tell
