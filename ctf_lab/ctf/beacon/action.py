@@ -31,6 +31,7 @@ from ctf.beacon.config import (
     CLOSE_RANGE_PX,
     DUCK_RANGE_PX,
     DUCK_THREAT_FRESH_TICKS,
+    FIRE_MAX_RANGE_PX,
     FIRE_SLACK_PX,
     FIRE_WINDUP_TICKS,
     FRIENDLY_FIRE_CORRIDOR_PX,
@@ -150,7 +151,10 @@ def _fire_gate(belief: Belief, target_pos: tuple[int, int]) -> bool:
 
     Uses the baseline's geometric gate: range * sin(angle_error) <= slack, i.e. the
     aim ray passes within ``FIRE_SLACK_PX`` of the target centre. A looser gate at
-    close range where the corridor is wide relative to the distance.
+    close range where the corridor is wide relative to the distance; NO gate beyond
+    ``FIRE_MAX_RANGE_PX`` — out there the 5-brad aim quantization alone exceeds the
+    14px hit corridor, so a shot is spray, and spray is what v10's 0.23 accuracy was
+    made of. Withheld shots also keep the gun ready for the next real window.
     """
     assert belief.self_xy is not None
     sx, sy = belief.self_xy
@@ -158,6 +162,8 @@ def _fire_gate(belief: Belief, target_pos: tuple[int, int]) -> bool:
     rng = math.hypot(tx - sx, ty - sy)
     if rng < 1:
         return True
+    if rng > FIRE_MAX_RANGE_PX:
+        return False
     want = _brads_of(tx - sx, ty - sy)
     err = abs(_brad_error(want, belief.aim_brads))
     err_rad = err / AIM_BRADS_TURN * 2 * math.pi

@@ -107,9 +107,11 @@ SWEEP_HALF_ARC = _env_int("BEACON_SWEEP_HALF_ARC", 32)
 #: Deadband: don't bother rotating to close an aim error smaller than this (brads).
 AIM_DEADBAND = _env_int("BEACON_AIM_DEADBAND", 3)
 #: Resync the dead-reckoned aim to the observed self-sprite rotation only when they
-#: disagree by more than this (brads). The 0.7.8-era readback is 16-step quantized
-#: (±8 brads), so small disagreements are quantization, not drift.
-AIM_RESYNC_SLACK_BRADS = _env_int("BEACON_AIM_RESYNC_SLACK_BRADS", 12)
+#: disagree by more than this (brads). The 0.7.8-era readback is 16-step quantized:
+#: soldierRotIndex rounds to the nearest step, so a correct estimate can disagree by
+#: at most 8 — anything larger is real drift (dropped/duplicated frames desync the
+#: rotation dead-reckoning; the server holds the last mask between inputs).
+AIM_RESYNC_SLACK_BRADS = _env_int("BEACON_AIM_RESYNC_SLACK_BRADS", 8)
 #: Fire only when the target is within this perpendicular slack of the aim ray (px),
 #: i.e. range * sin(angle_error) <= this. Matches the baseline's fire-gate idea.
 FIRE_SLACK_PX = _env_int("BEACON_FIRE_SLACK_PX", 11)
@@ -176,6 +178,13 @@ LEAD_TICKS = _env_float("BEACON_LEAD_TICKS", 6.0)
 #: Only lead with a velocity estimated over at least this many sightings — a
 #: 2-frame velocity is one noisy difference.
 LEAD_MIN_FRAMES = _env_int("BEACON_LEAD_MIN_FRAMES", 3)
+#: Hold fire beyond this range (px). The hit corridor is 14px (BulletHalfWidth 8 +
+#: PlayerHalf 6) and aim settles only to ~2-3 brads (5-brad rotation steps, 3-brad
+#: deadband), so beyond ~350px the expected angular miss exceeds the corridor and a
+#: shot is luck — v10 sprayed 260 shots/ep at 0.23 accuracy, mostly long-range
+#: defender fire. Withholding those shots trades spray for hit rate (the gun is
+#: still map-wide for reactive snap shots INSIDE the gate).
+FIRE_MAX_RANGE_PX = _env_int("BEACON_FIRE_MAX_RANGE_PX", 350)
 
 # --- Item skills (v10) ---------------------------------------------------------------
 #: Master switch for the item system (fetch + use) — the other v10 A/B bit.
