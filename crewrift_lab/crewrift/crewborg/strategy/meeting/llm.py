@@ -14,6 +14,15 @@ from crewrift.crewborg.strategy.meeting.schema import VOTE_SKIP, MeetingDecision
 
 DEFAULT_MEETING_MODEL = "claude-haiku-4-5-20251001"
 
+# Meeting calls default to a 6.0s timeout (the commander stays at 3.0s). Measured on the
+# 2026-07-21 v110 league arms (507 decisions): success latency median 2.8s / p90 4.0s, and
+# with the old 3.0s timeout 40% of successes took >3.05s total — SDK-retry rescues after an
+# aborted first attempt, each burning ~2.5K input tokens into the shared Bedrock daily-token
+# pool that was already 429ing (74.5% of calls). At 1200-tick meetings the deadline budget
+# absorbs 6.0s easily: latest-safe-start = 48 + 144 + 12 = 204 of 1200 ticks.
+DEFAULT_MEETING_TIMEOUT_SECONDS = 6.0
+MEETING_TIMEOUT_ENV = "CREWBORG_LLM_MEETING_TIMEOUT_SECONDS"
+
 
 @dataclass(frozen=True)
 class MeetingLLMConfig:
@@ -21,7 +30,7 @@ class MeetingLLMConfig:
     use_bedrock: bool = False
     max_tokens: int = 512
     temperature: float = 0.2
-    timeout_seconds: float = 3.0
+    timeout_seconds: float = DEFAULT_MEETING_TIMEOUT_SECONDS
     trace_raw: bool = False
     prompt_dir: str | None = None
 
@@ -128,7 +137,7 @@ def build_meeting_llm_client_from_env(env: dict[str, str] | None = None) -> Meet
             return DisabledMeetingClient("no LLM backend configured")
         trace_raw = env.get("CREWBORG_LLM_TRACE_RAW", "").strip().lower() in {"1", "true", "yes", "on"}
         trace_raw = trace_raw or env.get("CREWBORG_TRACE", "").strip().lower() == "debug"
-        timeout_seconds = _env_float(env, "CREWBORG_LLM_TIMEOUT_SECONDS", 3.0)
+        timeout_seconds = _meeting_timeout_seconds(env)
         config = MeetingLLMConfig(
             model=helpers.resolve_model(
                 use_bedrock=use_bedrock,
@@ -194,6 +203,19 @@ def _sidecar_bedrock(env: dict[str, str]) -> bool:
     """Whether the Bedrock sidecar endpoint is present (the in-pod Bedrock signal)."""
 
     return bool(env.get(BEDROCK_SIDECAR_ENDPOINT_ENV, "").strip())
+
+
+def _meeting_timeout_seconds(env: dict[str, str]) -> float:
+    """Resolve the meeting call timeout: the meeting-specific env wins, then the shared
+    ``CREWBORG_LLM_TIMEOUT_SECONDS`` (which the commander also reads), then the roomier
+    meeting default. The shared env stays a one-knob override for both call sites."""
+
+    explicit = env.get(MEETING_TIMEOUT_ENV)
+    if explicit is not None:
+        return _env_float(env, MEETING_TIMEOUT_ENV, DEFAULT_MEETING_TIMEOUT_SECONDS)
+    if env.get("CREWBORG_LLM_TIMEOUT_SECONDS") is not None:
+        return _env_float(env, "CREWBORG_LLM_TIMEOUT_SECONDS", DEFAULT_MEETING_TIMEOUT_SECONDS)
+    return DEFAULT_MEETING_TIMEOUT_SECONDS
 
 
 def _env_int(env: dict[str, str], name: str, default: int) -> int:

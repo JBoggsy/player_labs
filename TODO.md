@@ -29,14 +29,21 @@ mid-session; check them back at the start of focused work.
   /tmp/ab_ghost/cand_wh_episodes. Suspects: post-completion parking, `_pick_target` returning None for
   ghosts in some state, dying with few tasks left (denominator), or a mode ping-pong.
 
-- **Meeting-LLM call failures at 1200-tick meetings (~43% of non-cooldown calls)** (2026-07-02).
-  v85's probe: 132 `meeting_llm_decision` vs 100 `llm_call_failed` fallbacks — the 6x-longer
-  voting phase (VOTE_TIMER 240→1200, fixed in v84) triples call attempts per meeting and the
-  Bedrock sidecar starts failing calls (rate/timeout pressure; v83's short meetings had ZERO
-  llm_call_failed). Falls back safely to the A/B-validated deterministic path, so it's lost
-  upside, not a correctness risk. Levers: raise `LLM_MIN_CALL_INTERVAL_TICKS` (12 → ~60-100 at
-  the new meeting length), batch/skip triggers, or longer `CREWBORG_LLM_TIMEOUT_SECONDS` now
-  that the deadline budget is 5x roomier. Related: the pre-existing ~41%-fallback latency item below.
+- **DONE (2026-07-22, Thread 10) — Meeting-LLM call failures at 1200-tick meetings** (2026-07-02).
+  Re-measured on the v110 A/B arms (199 seats, 2084 calls): 74.5% call-fail, but 1536/1553 errors
+  are the SHARED Bedrock daily-token-pool 429 — failure is uniform across triggers and NOT
+  pacing-correlated (fail/success inter-call intervals identical), so the TODO's interval/trigger
+  levers were refuted by the data; retries are the coverage mechanism (45/561 meetings got their
+  first decision only at call 4-5). The real self-waste: the 3.0s timeout client-aborted 40% of
+  ultimately-successful calls (latency median 2.8s/p90 4.0s) into token-double-spending SDK
+  retries. SHIPPED: meeting timeout 3.0→6.0s (`CREWBORG_LLM_MEETING_TIMEOUT_SECONDS`) +
+  `CREWBORG_LLM_MIN_CALL_INTERVAL_TICKS` knob (default 120 unchanged). Probe
+  `crewborg-llmcadence:v1` (xreq_f5e7a285, 100 eps) — all pre-registered criteria pass: abort-retry
+  waste eliminated (0 >6.05s, 0 timeout fails), coverage flat vs contemporaneous arms, fails/meeting
+  lowest of the night, vote_timeouts 0. Rides into the next crewborg version. Residual 429s are
+  fleet-level pool contention — only cheaper tokens/call or a bigger pool helps. Design + verdict:
+  `crewrift_lab/docs/designs/2026-07-21-meeting-llm-cadence-design.md`. The ~41%-fallback latency
+  item below is largely the same root cause (throttling + aborts), partially addressed here.
 
 - **Small fix: the `vote_bar` telemetry field lies** (split out of the resolved retention item,
   2026-07-21): logs legacy 0.8; the live crew gate is `WEIGHTS_VOTE_PROBABILITY=0.9` —

@@ -358,7 +358,8 @@ and the self-vote guard.
 ### Call cadence (`attend_meeting._next_llm_trigger`)
 
 The LLM is not called every tick. A call fires only on a trigger, gated by the minimum call
-interval (`LLM_MIN_CALL_INTERVAL_TICKS = 12`) and the latest-safe-start deadline. Triggers, in
+interval (`LLM_MIN_CALL_INTERVAL_TICKS = 120`, overridable via
+`CREWBORG_LLM_MIN_CALL_INTERVAL_TICKS`) and the latest-safe-start deadline. Triggers, in
 priority order:
 
 | Trigger | Fires when |
@@ -387,7 +388,7 @@ never miss the vote. The guards:
 
 - `_latest_safe_llm_start_remaining_ticks` =
   `AUTO_SUBMIT_REMAINING_TICKS (48) + ceil(timeout_s · MEETING_TICKS_PER_SECOND (24)) + LLM_TIMEOUT_MARGIN_TICKS (12)`.
-  With the default 3.0 s timeout this is `48 + 72 + 12 = 132` ticks.
+  With the default 6.0 s timeout this is `48 + 144 + 12 = 204` ticks (of the 1200-tick meeting).
 - `_can_start_llm_call` refuses to start a call once remaining ticks drop to/below that floor.
 - The `deadline` prompt threshold is `max(DEADLINE_LLM_REMAINING_TICKS (96), latest_safe + 1)`,
   so the final prompt is never scheduled too late to finish.
@@ -414,7 +415,9 @@ All meeting LLM knobs are env-driven and read in `build_meeting_llm_client_from_
 | `CREWBORG_LLM_MODEL` | SDK-resolved | Explicit model id override (else Bedrock/direct id per backend). |
 | `CREWBORG_LLM_MAX_TOKENS` | 512 | Generation cap. |
 | `CREWBORG_LLM_TEMPERATURE` | 0.2 | Low, for steadier meeting behavior. |
-| `CREWBORG_LLM_TIMEOUT_SECONDS` | 3.0 | Per-call wall-clock budget; also feeds the latest-safe-start math. |
+| `CREWBORG_LLM_MEETING_TIMEOUT_SECONDS` | 6.0 | Meeting per-call wall-clock budget; also feeds the latest-safe-start math. Raised from 3.0 (2026-07-21): success latency p90 is ~4.0 s, and the old 3.0 s aborted ~40% of ultimately-successful calls into an SDK retry — double-spending tokens on the throttled Bedrock daily pool. |
+| `CREWBORG_LLM_TIMEOUT_SECONDS` | — | Shared fallback timeout (also read by the commander); used when the meeting-specific var is unset. |
+| `CREWBORG_LLM_MIN_CALL_INTERVAL_TICKS` | 120 | Minimum ticks between meeting LLM calls (cadence sweeps). |
 | `CREWBORG_LLM_PROMPT_DIR` | `memory/` | Override directory for role prompt files. |
 | `CREWBORG_LLM_TRACE_RAW` | off | Include raw request/response in the result for `meeting_llm_debug`. |
 | `CREWBORG_TRACE` | — | `debug` also turns on raw tracing. |

@@ -78,6 +78,28 @@ disconnect-stall case (1/16) is unfixable client-side; deeper fix (server-author
 vote-timer sprite already exists as `timer_present` — could read the actual remaining time)
 deferred as not worth it at 1-2%/meeting.
 
+## 🔧 DONE (2026-07-22, Thread 10): meeting-LLM call-failure mitigation — timeout 3→6s SHIP-WITH-NEXT-VERSION
+
+Re-measured the 07-02 TODO on the v110 A/B arms (199 seats, 2084 calls): 74.5% call-fail, but
+**1536/1553 errors = the shared daily-token-pool 429** — uniform across triggers, NOT
+pacing-correlated (fail/success inter-call intervals identical, median 120 ticks both). So the
+TODO's interval-raise/trigger-drop levers are REFUTED: retries are the coverage mechanism
+(45/561 meetings got their first decision only at call 4-5). The real self-waste: the 3.0s
+timeout client-aborted **40% of ultimately-successful calls** (success latency median 2.8s /
+p90 4.0s) into SDK retries that double-spend ~2.5K input tokens each into the throttled pool.
+
+**Shipped (committed this branch):** meeting timeout default **3.0→6.0s**
+(`strategy/meeting/llm.py`, new env `CREWBORG_LLM_MEETING_TIMEOUT_SECONDS`; commander untouched;
+deadline geometry follows automatically: latest-safe-start 132→204/1200) +
+`CREWBORG_LLM_MIN_CALL_INTERVAL_TICKS` env knob (default 120 unchanged). 661 tests green.
+**Probe verdict (crewborg-llmcadence:v1, xreq_f5e7a285, 100 eps): ALL PRE-REGISTERED CRITERIA
+PASS** — abort-retry waste eliminated (0 successes >6.05s, max 4.94s vs baseline 7.26s; 0
+timeout-bucket fails vs 17), coverage 52.5% ≈ contemporaneous same-night arms (52.6%/49.5%),
+fails/meeting 2.40 = lowest of the night's 4 arms, vote_timeouts 0. → rides into the **next
+crewborg version**. Residual: 429 pool contention is fleet-level — only cheaper tokens/call or
+a bigger pool (quota bump on 583928386201) moves it. Design + criteria table:
+`docs/designs/2026-07-21-meeting-llm-cadence-design.md`; version_log has the probe row.
+
 ## 🎯 DONE (2026-07-21, Thread 1): v110 A/B'd clean vs v107 → SUBMITTED → QUALIFIED + CHAMPION 👑
 
 **crewborg:v110 is `competing/active` and CHAMPION** (`lpm_cd2e6cbc…`; submission `sub_16bcf7fb…`,
@@ -371,8 +393,9 @@ The list below is what those commits contain (kept for orientation):
   ~400 concurrent episodes** (binary search: 100/200/400 hold LLM ≥60%, zero 429s; 800 → 52% + throttles).
 - Token cost per call was the multiplier: prose-players compression cut context 2490→1340 tk, which
   is what moved LLM-use 2%→67% at equal load. `claude-haiku-4-5`, max_tokens 512.
-- Latency median 2.6s / max 10s vs `CREWBORG_LLM_TIMEOUT_SECONDS=3.0` → some calls time out at scale;
-  consider raising the eval timeout.
+- Latency median 2.6s / max 10s vs the old 3.0s timeout → DONE (Thread 10, 2026-07-22): meeting
+  timeout default is now 6.0s (`CREWBORG_LLM_MEETING_TIMEOUT_SECONDS`), probe-validated — the 3.0s
+  timeout was aborting 40% of successes into token-double-spending retries.
 - I can't read `583928386201`'s quota directly (my SSO grants sandbox/prod/infra/staging only, not
   tournament). A quota increase there is the durable fix if throttling keeps blocking evals.
 
