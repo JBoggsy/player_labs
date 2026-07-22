@@ -148,7 +148,34 @@ Bonus: HS1 now live — v110 announced in 138/199 pinned + 44/86 rot eps, honor_
 base 188/817 ≈ 19% — same low-rate regime as the v107-vs-v100 A/B).
 → **SUBMITTED v110** to Crewrift Prime per James's standing "Submit at will" — see DONE header above.
 
+## ❌ DONE (2026-07-22, Thread 13): the Thread-2 kill→WIN levers BUILT + A/B'd → REFUTED, do not ship
+
+Both pinned levers implemented (`crewborg-survive:v1` probe, pv `82c4a42e`, v110 recipe;
+code on this branch: post-kill flee in `modes/evade.py` + counter-accuse/first-mover in
+`modes/attend_meeting.py`+`strategy/meeting/imposter.py`) and A/B'd 200 cand eps
+(`xreq_9ec4f8bc`+`xreq_d998c7fb`, 0 ops) vs 300 v110-lineage eps. **All outcome criteria
+FAILED with both mechanisms decisively firing** (full prereg table:
+`docs/designs/2026-07-21-imposter-survival-ab-prereg.md`; version_log `crewborg-survive:v1`).
+1. **The "4px lies-in-wait" premise below is a MEETING-FREEZE ARTIFACT.** Kill→meeting
+   median latency is 77–91t for everyone; at +60t killers sit frozen in MeetingCall.
+   Conditional on still-Playing, v110 already moved 100px (field 131). Retire the
+   unconditional displacement metric — always phase-filter movement metrics.
+2. **Post-kill flee is HARMFUL:** kills/seat 1.81→1.38, 3+-kill seats 21.5%→5.5% (p=0.01)
+   — the kill room is the crew-dense room; leaving forfeits the snowball. The 2026-06-26
+   crowd-seeking Evade design is re-confirmed. CLOSED lever.
+3. **Meeting deflection fired (spoke-first 0→23.7%, z=8.7) but drew MORE votes**
+   (1.14→1.28/meeting); ejection/win unmoved-to-worse. Fabricated counter-accusations
+   from a seat under heat escalate rather than deflect in this field. If ever retried:
+   real-evidence-only counter-accuse, no fabrication. CLOSED as designed.
+The witnessed-kill→ejection gap itself (53% vs field ~30%) REMAINS unexplained-open, but
+neither scene-fleeing nor meeting-talking is the lever; the next candidate direction is
+pre-kill witness avoidance… which is the 3×-refuted witness-gate. Treat the whole
+imposter-survival axis as cold until a new mechanism is found.
+
 ## 📊 DONE (2026-07-21, Thread 2): imposter-conversion picture RE-DERIVED on v110 data — conversion is NOT the lever; kill→WIN (meeting survival) is
+**⚠️ 2026-07-22 UPDATE (Thread 13): the two recommended levers below were built and
+REFUTED — see the Thread-13 section above. The 4px post-kill figure is a measurement
+artifact. Numbers kept for the record.**
 
 **Read-only analysis; supersedes the imposter numbers in the 2026-07-21 live-round audit below**
 (those were v107 + palette-bug + definition-sensitive). Data: tonight's matched A/B warehouses
