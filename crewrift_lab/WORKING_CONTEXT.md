@@ -15,6 +15,22 @@ This is *not* a log or archive: finished work lives in git history / the
 
 ---
 
+## ✅ DONE (2026-07-22, W2): warm first-mover anchor — A/B SHIP RECOMMENDED (for W5's combination build)
+
+**The anchor's rate-of-fire lever, validated.** `crewborg-warm:v1` (pv `2976ec7c`, v111 code +
+`suspicion.warm_anchor_suspect` + attend_meeting warm route, branch `worktree-agent-aeed298a0eb592f2e`
+@ `da6bb75`) vs W1's v111 arms: total first-mover fires **0.266/ep vs 0.220** (PRIMARY bar met), warm
+route **0.065/ep at 84.6% accuracy**, crew win 30.4% vs 25.2% (directional), all hard guards clean,
+warm-meeting vote precision 100% (chat decoupled from vote; pile clause escalates, lone ballots gate
+to skip). KEY MEASUREMENT (reusable): the fitted posterior is **bimodal** — every 0.9-bar top suspect
+is a witnessed catch, non-witnessed tops max p=0.74, so softer POSTERIOR bars unlock nothing; the
+below-bar separation lives in the SOCIAL counters (rule: tail_max≥96t + times_accused≥1 + votes_cast≥1
++ no button/report/watched-task = 89.4% offline / 84.6% live precision; ML ceiling AUC 0.82 says more
+is the suspicion-v5 refit). Design `docs/designs/2026-07-22-warm-anchor-design.md`; prereg + verdict
+table `docs/designs/2026-07-22-warm-anchor-ab-prereg.md`; version_log `crewborg-warm:v1` row.
+GOTCHA hit: run 1 invalidated by a platform-wide connect-timeout window (19:03–19:08Z, 61% of eps,
+all slots) — always compare BOTH arms' ops profiles before reading an A/B.
+
 ## ⚖️ CLOSED (2026-07-22, Thread 4): the social-rework question — VERDICT: mechanism-positive, episode-neutral at current quota → deterministic-first until the quota is fixed
 
 **The open bet since v101-v105 ("does the LLM social path, when it fires, beat the deterministic
