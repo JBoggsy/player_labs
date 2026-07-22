@@ -314,3 +314,15 @@ Evidence: Thread 4 — naive "vote hit imposter | voted" showed fallback 93.5% v
 
 ### /tmp episode-dir names can be swapped vs contents — the anchor-base pair really is crossed
 Evidence: re-verified per episode.json: /tmp/wh_anchor_base_v110_episodes holds crewborg:v107 slot-0 and /tmp/wh_anchor_base_v107_episodes holds v110 (= same eps as /tmp/hs_on_baseline_eps). The Thread-8 warning replicates; extract.py labeled arms from episode.json, never dir names.
+
+### W3 audit: chat evidence reached the posterior ONLY via the fitted counters (+0.13/accusation), unweighted by speaker
+Evidence: `times_accused` coef +0.1288 in suspicion_weights.json was the ENTIRE chat→posterior path; legacy path chat-deaf; `PlayerRecord.claims` + `verify_claim` output banked but never read by any scorer; an HS member's accusation weighed the same as an imposter's. Fixed in the 2026-07-22 chat-evidence-incorporation design (trust-weighted log-LR term, both paths).
+
+### The spaCy parse mis-handles the dominant kill templates — victim-flagging is distance-based, not role-based
+Evidence: "saw red kill blue" produced accusation(red) AND accusation(blue) (victim accused too); "red killed blue" produced NOTHING (both colors within 2 tokens of "killed" → both victim-flagged). Measured live with en_core_web_sm before writing the template pass. Anchored templates with explicit killer/victim groups fixed it; spaCy remains the free-form fallback.
+
+### social_evidence marked chat messages counted BEFORE parsing — spaCy's load window silently ate early-meeting chat
+Evidence: `_count_chat_stances` added the (tick,speaker,text) key to `social_counted_chats` then called parse_claims; if the model was still loading (~1.5-2s hosted, first meeting can start inside it) the message returned zero claims and was never re-parsed. Fix: `chat_nlp.is_loading()` defers the whole pass (chat_log persists across ticks within a meeting).
+
+### Worktrees spawned for parallel work can be FAR behind local main — check merge-base before touching code
+Evidence: this W3 worktree's branch base lacked ALL of v107-v111 (80 commits, including the champion v110 HS rewrite the task depends on). `git merge-base --is-ancestor <recent-main-sha> HEAD` failed; `git merge main` brought it current. An audit written against the stale base would have described dead code (e.g. the old HS1 5-token protocol).
