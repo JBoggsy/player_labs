@@ -93,6 +93,14 @@ class LocalMover:
                 timeout_s=min(FRAME_TIMEOUT_SECONDS, max(0.5, until - time.monotonic()))
             )
             if frame is None:
+                # Frame starvation ≠ failure while the executor is WALKING (v23: long
+                # Detour chunks keep action_ready false >60s mid-route). If observe()
+                # shows movement since our last sample, keep waiting.
+                position = _observe(bridge)
+                if position is not None and history and position.distance(history[-1]) > PROGRESS_EPSILON_YARDS:
+                    history.append(position)
+                    del history[:-OSCILLATION_HISTORY]
+                    continue
                 return LocalMoveResult(LocalMoveStatus.NO_FRAME, _last(history), moves,
                                        time.monotonic() - started)
 
@@ -167,6 +175,13 @@ class LocalMover:
 
 def _last(history: list[Point]) -> Point | None:
     return history[-1] if history else None
+
+
+def _observe(bridge) -> Point | None:
+    obs = bridge.observe()
+    if obs is None:
+        return None
+    return Point(obs.map_id, obs.position.x, obs.position.y, obs.position.z)
 
 
 def _is_revisit(history: list[Point], here: Point) -> bool:

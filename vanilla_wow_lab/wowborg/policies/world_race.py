@@ -50,14 +50,14 @@ STATIONS: dict[str, tuple[Point, str, str]] = {
     "under-the-world":  (Point(1, -618.5, -4251.7, -200.0), "adversarial", "unreachable"),
 }
 
-DEFAULT_STATION_COUNT = 5
+DEFAULT_STATION_COUNT = 4
 MIN_REGIONS = 3
 ADVERSARIAL_COUNT = 1
 
 RACE_SEED_ENV = "WOWBORG_RACE_SEED"
 STATIONS_ENV = "WOWBORG_STATIONS"           # JSON [[name, map_id, x, y, z, expected], ...]
 STATION_COUNT_ENV = "WOWBORG_STATION_COUNT"
-STATION_DEADLINE_FRACTION = 0.45            # max fraction of remaining time per station
+STATION_DEADLINE_FRACTION = 0.55            # max fraction of remaining time per station
 
 
 def log(message: str) -> None:
