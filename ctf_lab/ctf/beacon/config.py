@@ -82,7 +82,7 @@ ARC_RESPAWN_TICKS = 30 * 24
 GRENADE_CHARGE_TICKS = 24
 GRENADE_MIN_RANGE = 30
 GRENADE_MAX_RANGE = MAP_W // 5  # 247
-GRENADE_BLAST_RADIUS = 40
+GRENADE_BLAST_RADIUS = 52  # 40 -> 52 in GameVersion 17 (b571dd3, deployed 0.7.51)
 #: A pickup is grabbed by touch within this radius (sim.nim *PickupRange).
 ITEM_PICKUP_RANGE = 12
 
