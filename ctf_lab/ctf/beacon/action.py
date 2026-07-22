@@ -384,9 +384,13 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
                 and not _teammate_blocks_shot(belief, enemy.pos)
             )
         else:
+            # ray_clear guards the GLASS WINDOWS (GameVersion 15/16): vision passes
+            # through glass but bullets don't, so a visible enemy is no longer a
+            # shootable one — firing through a window is a guaranteed miss.
             can_fire = (
                 belief.fire_ready
                 and _fire_gate(belief, aim_pos)
+                and mapdata.ray_clear(self_xy, aim_pos)
                 and not _teammate_blocks_shot(belief, aim_pos)
             )
         if can_fire and not state.a_held:

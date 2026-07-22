@@ -107,9 +107,13 @@ class Belief:
     self_xy: tuple[int, int] | None = None
     alive: bool = False
     # Aim tracking: our best estimate of the current aim angle in brads. Seeded from
-    # the spawn aim, resynced to observed_aim whenever the aim-dot is visible, and
-    # dead-reckoned by the rotation we commanded last frame otherwise.
+    # the spawn aim, dead-reckoned by the rotation we commanded last frame, calibrated
+    # against the self sprite's 16-step rotation readback (belief.py: boundary-crossing
+    # calibration to ~±3 brads, coarse resync for large drift).
     aim_brads: int = 0
+    # The previous frame's observed 16-step aim readback (brads, a multiple of 16),
+    # for boundary-crossing calibration. None until first observed.
+    prev_observed_aim: int | None = None
     fire_ready: bool = False
     enemies: tuple[Enemy, ...] = ()
     teammates: tuple[Enemy, ...] = ()

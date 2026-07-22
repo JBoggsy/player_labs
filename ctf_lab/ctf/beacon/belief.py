@@ -73,17 +73,33 @@ def update_belief(belief: Belief, percept: CtfState, action_state: ActionState, 
         belief.aim_brads = SPAWN_AIM[belief.team]
         belief.sweep_offset = 0
         belief.sweep_dir = 1
-    # Dead-reckon by the commanded rotation, then correct DRIFT against the observed
-    # read. Since 0.7.8 the readback is the self sprite's 16-step rotation (±8 brads
-    # quantization), so only resync when the disagreement exceeds the quantization —
-    # snapping to the coarse read every frame would add noise, not remove it.
+    # Dead-reckon by the commanded rotation, then calibrate against the observed
+    # read. Since 0.7.8 the readback is the self sprite's 16-step rotation (16-brad
+    # quantization, rounds to nearest), which gives two signals:
+    #   * BOUNDARY CROSSING — the exact tick the observed step CHANGES while we are
+    #     rotating, the true aim is at the midpoint boundary between the two steps
+    #     (new_step*16 - 8 going CCW, + 8 going CW): an absolute ±(rate/2) fix.
+    #   * COARSE RESYNC — any disagreement beyond the quantization (±8) is real
+    #     drift (dropped frames, server-held masks); snap to the step read.
     belief.aim_brads = (belief.aim_brads + action_state.last_rot * AIM_TURN_RATE) % AIM_BRADS_TURN
-    if percept.observed_aim is not None:
-        err = (percept.observed_aim - belief.aim_brads) % AIM_BRADS_TURN
-        if err > AIM_BRADS_TURN // 2:
-            err -= AIM_BRADS_TURN
-        if abs(err) > AIM_RESYNC_SLACK_BRADS:
-            belief.aim_brads = percept.observed_aim
+    observed = percept.observed_aim
+    if observed is not None:
+        if (
+            belief.prev_observed_aim is not None
+            and observed != belief.prev_observed_aim
+            and action_state.last_rot != 0
+        ):
+            boundary = (observed - action_state.last_rot * 8) % AIM_BRADS_TURN
+            # True aim crossed `boundary` within the last tick; it has advanced at
+            # most one rotation step past it since.
+            belief.aim_brads = (boundary + action_state.last_rot * (AIM_TURN_RATE // 2)) % AIM_BRADS_TURN
+        else:
+            err = (observed - belief.aim_brads) % AIM_BRADS_TURN
+            if err > AIM_BRADS_TURN // 2:
+                err -= AIM_BRADS_TURN
+            if abs(err) > AIM_RESYNC_SLACK_BRADS:
+                belief.aim_brads = observed
+        belief.prev_observed_aim = observed
 
     belief.fire_ready = percept.fire_ready
     belief.enemies = percept.enemies
