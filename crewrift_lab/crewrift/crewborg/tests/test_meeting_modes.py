@@ -274,8 +274,10 @@ def test_attend_meeting_deadline_prompt_wins_over_late_chat() -> None:
 
     assert mode.decide(_meeting_belief(tick=0), ActionState()).kind == "idle"  # call in flight
     assert mode.decide(_meeting_belief(tick=0), ActionState()).kind == "idle"  # wait applied
-    belief = _meeting_belief(tick=1067)
-    belief.chat_log = [ChatEvent(tick=1060, speaker_color="red", text="blue sus")]
+    # Last tick a call can still deliver before auto-submit: remaining ticks ==
+    # AUTO_SUBMIT_REMAINING_TICKS + llm timeout (72) + margin (12) + 1 = 181.
+    belief = _meeting_belief(tick=1019)
+    belief.chat_log = [ChatEvent(tick=1010, speaker_color="red", text="blue sus")]
 
     assert mode.decide(belief, ActionState()).kind == "idle"
     assert [trigger for trigger, _ in client.calls] == ["meeting_start", "deadline"]
@@ -289,8 +291,10 @@ def test_attend_meeting_late_chat_in_danger_window_does_not_call_llm() -> None:
 
     assert mode.decide(_meeting_belief(tick=0), ActionState()).kind == "idle"  # call in flight
     assert mode.decide(_meeting_belief(tick=0), ActionState()).kind == "idle"  # wait applied
-    belief = _meeting_belief(tick=1068)
-    belief.chat_log = [ChatEvent(tick=1060, speaker_color="red", text="blue sus")]
+    # One past the latest safe start (see the deadline-prompt test above): a call
+    # started now could deliver after the auto-submit fallback — don't spend it.
+    belief = _meeting_belief(tick=1020)
+    belief.chat_log = [ChatEvent(tick=1010, speaker_color="red", text="blue sus")]
 
     assert mode.decide(belief, ActionState()).kind == "idle"
     assert [trigger for trigger, _ in client.calls] == ["meeting_start"]
@@ -401,6 +405,35 @@ def test_attend_meeting_spend_guard_allows_first_call_but_gates_followups(monkey
     mode3 = _llm_mode(client)
     mode3._last_llm_call_tick = 0
     assert mode3._next_llm_trigger(b) == "new_chat"
+
+
+def test_attend_meeting_spend_read_is_cached_across_ticks(monkeypatch) -> None:
+    """REGRESSION (2026-07-21 alive-seat vote_timeout dig): the /spend sidecar read is a
+    blocking loopback HTTP GET (~20-40ms measured) — issuing it EVERY meeting tick pushed
+    the ~42ms tick budget over, queued frames, and lagged the belief clock behind the
+    server so the deadline auto-submit fired too late for the tally. The read must be
+    cached for SPEND_READ_CACHE_TICKS, not re-issued per tick."""
+
+    from crewrift.crewborg.strategy.meeting import spend
+    from crewrift.crewborg.modes.attend_meeting import SPEND_READ_CACHE_TICKS
+
+    calls = 0
+
+    def counting_read(env=None):
+        nonlocal calls
+        calls += 1
+        return spend.SpendStatus(spend_usd=0.0, spend_limit_usd=1.0, remaining_usd=1.0)
+
+    monkeypatch.setattr(spend, "read_spend", counting_read)
+    mode = _llm_mode(_FakeMeetingClient([MeetingDecision(action="wait")] * 4))
+    mode._last_llm_call_tick = 0  # follow-up territory: the spend guard is consulted
+
+    for tick in range(200, 200 + SPEND_READ_CACHE_TICKS):  # one cache window of ticks
+        mode._spend_allows_followup(_meeting_belief(tick=tick))
+    assert calls == 1  # cached — NOT one blocking GET per tick
+
+    mode._spend_allows_followup(_meeting_belief(tick=200 + SPEND_READ_CACHE_TICKS))
+    assert calls == 2  # refreshed after the cache window
 
 
 def test_attend_meeting_uncorroborated_chat_implied_fallback_gated_to_skip(monkeypatch) -> None:
@@ -585,7 +618,7 @@ def test_attend_meeting_dead_seat_mutes_llm_and_chat_then_skips_at_deadline() ->
         belief.self_alive = False
         assert mode.decide(belief, ActionState()).kind == "idle"
 
-    deadline = _meeting_belief(tick=1160)  # inside the auto-submit window (<=48 ticks left of 1200)
+    deadline = _meeting_belief(tick=1160)  # inside the auto-submit window (<=96 ticks left of 1200)
     deadline.self_alive = False
     intent = mode.decide(deadline, ActionState())
     assert intent.kind == "vote" and intent.target_color is None  # a bare SKIP, never a player

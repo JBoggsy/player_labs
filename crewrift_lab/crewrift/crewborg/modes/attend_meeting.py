@@ -52,7 +52,17 @@ LLM_CALL_COST_ESTIMATE_ENV = "CREWBORG_LLM_CALL_COST_USD"
 DEFAULT_LLM_CALL_COST_USD = 0.004
 LLM_SPEND_RESERVE_FACTOR = 1.5
 DEADLINE_LLM_REMAINING_TICKS = 96
-AUTO_SUBMIT_REMAINING_TICKS = 48
+# 48 → 96 (2026-07-21 vote_timeout dig): the belief clock is stamped from QUEUED frames,
+# so when meeting ticks run over the ~42ms frame budget the client falls behind the
+# server and "48 ticks left" can be zero real ticks. 15/16 alive-seat timeouts across
+# the anchor A/B warehouses fired the auto-submit on time by the belief clock and still
+# missed the server tally (measured lag +54..+689 frames at meeting end). Doubling the
+# margin absorbs the residual lag left after the per-tick /spend read fix below.
+AUTO_SUBMIT_REMAINING_TICKS = 96
+# Re-read the sidecar /spend at most this often (ticks). Spend only changes when WE
+# make a call, so a 1s cache is safe; the blocking loopback GET measured 20-40ms —
+# reading it every meeting tick was the main per-tick budget breaker (see above).
+SPEND_READ_CACHE_TICKS = 24
 # The sim's real tick rate (24/s). Deliberately NOT derived from VOTE_TIMER_TICKS —
 # the timer length changed (240→1200) but the tick rate did not; deriving it would
 # corrupt the LLM latency-guard's seconds→ticks conversion.
@@ -445,12 +455,16 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
     def _spend_allows_followup(self, belief: Belief) -> bool:
         """Can we afford another (follow-up) LLM call under the per-episode spend limit?
 
-        Reads the sidecar's ``GET /spend`` (cached per meeting-tick). Returns True when there's no
+        Reads the sidecar's ``GET /spend``, cached for SPEND_READ_CACHE_TICKS (~1s). The read is
+        a blocking loopback HTTP GET measured at 20-40ms — reading it every meeting tick pushed
+        the tick loop over the ~42ms frame budget, queueing frames and lagging the belief clock
+        behind the server (the 2026-07-21 vote_timeout root cause). Spend only changes when we
+        ourselves complete a call, so a ~1s cache costs nothing. Returns True when there's no
         configured limit or no sidecar (nothing to budget against), or when the remaining budget
         comfortably covers another call (RESERVE × per-call estimate). Traces the reading so the
         budget is visible per meeting."""
         tick = belief.last_tick
-        if self._spend_checked_tick != tick:
+        if self._spend_checked_tick is None or abs(tick - self._spend_checked_tick) >= SPEND_READ_CACHE_TICKS:
             self._spend_checked_tick = tick
             status = spend.read_spend()
             self._spend_remaining_usd = status.remaining_usd if status is not None else None

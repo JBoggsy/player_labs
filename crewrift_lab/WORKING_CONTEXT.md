@@ -15,6 +15,36 @@ This is *not* a log or archive: finished work lives in git history / the
 
 ---
 
+## 🔍 DONE (2026-07-21, Thread 5): residual alive-seat vote_timeout ROOT-CAUSED — client lag, not logic; FIXED on main (needs next version)
+
+**Measured** (the three anchor A/B warehouses, /tmp/wh_anchor_*): crewborg alive-seat timeouts
+9/579 alive-meeting-seats (1.6%/meeting, 3.5%/ep) cand, 6/563 (1.1%) v110, 1/279 (0.4%) v107.
+**All 16 timeout meetings reconstructed tick-by-tick from slot-0 telemetry.** Hypotheses (a)
+action-layer cursor failure, (b) mode-routing gap, (c) meeting never detected, (d) reconnect —
+ALL REFUTED in their original form: AttendMeeting was entered on the meeting's first tick in
+16/16, the auto-submit fired on time *by the belief clock* in 15/16 (48-55 ticks left), and the
+cursor walk itself is correct (the one A-press case cast skip at believed-tick 2276, 4 ticks
+before the believed deadline).
+
+**Root cause: the belief clock lies under load.** The bridge stamps ticks from *queued* frames;
+meeting ticks run over the ~42ms frame budget, frames queue, and the client falls behind the
+server — cumulative lag measured **+54..+689 frames** at the failing deadlines (OK meetings:
++17..+95). So "48 ticks left" was often ZERO real ticks: the server's tally had already fired.
+`bridge.tick_drift` is blind to this (it measures received-vs-processed, not arrival lag) —
+use cumulative `loop_gap_ms` excess instead. The per-tick budget breaker is the **blocking
+`/spend` sidecar HTTP GET issued EVERY meeting tick** (`_spend_allows_followup`): spend ticks
+median 34-55ms, 56-74% over budget vs 5-9% for playing ticks. One 321064c8 case was hypothesis
+(d)-adjacent: an 825-tick frame stall (mid-game disconnect + reconnect) swallowed the whole
+deadline window.
+
+**Fixed on main (rides the NEXT version, not uploaded):** `modes/attend_meeting.py` —
+(1) `/spend` read now cached `SPEND_READ_CACHE_TICKS=24` (~1s) instead of per-tick;
+(2) `AUTO_SUBMIT_REMAINING_TICKS` 48→96 to absorb residual lag. Regression test
+`test_attend_meeting_spend_read_is_cached_across_ticks`; 661 passed. Residual risk: the
+disconnect-stall case (1/16) is unfixable client-side; deeper fix (server-authoritative
+vote-timer sprite already exists as `timer_present` — could read the actual remaining time)
+deferred as not worth it at 1-2%/meeting.
+
 ## 🎯 DONE (2026-07-21, Thread 1): v110 A/B'd clean vs v107 → SUBMITTED → QUALIFIED + CHAMPION 👑
 
 **crewborg:v110 is `competing/active` and CHAMPION** (`lpm_cd2e6cbc…`; submission `sub_16bcf7fb…`,

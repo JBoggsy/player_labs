@@ -243,3 +243,12 @@ Evidence: slot-0 pinned A/B arms (palette correct at slot 0 in both) showed all 
 
 ### Elevated fetch is required for results.json on other-account xreqs (and league rounds) since the metta team-access opt-in
 Evidence: re-fetching xreq_276e3849/xreq_f1f64260 and 5 fresh league rounds without --elevated returned "results artifact unavailable" on 100/100 episodes (replays fine); with --elevated everything fetched. fetch_artifacts.py maps the 403 to "unavailable" silently. If a warehouse build dies with "No complete episode dirs", check results.json presence before suspecting retention/replay issues.
+
+### The belief clock lags the server under load — deadline logic on `belief.last_tick` can be structurally late even when it "fires on time"
+Evidence (Thread 5 vote_timeout dig): 15/16 alive-seat timeout meetings fired the 48-tick auto-submit on time BY THE BELIEF CLOCK yet missed the server tally. The bridge stamps ticks from queued frames; cumulative arrival lag (sum of loop_gap_ms minus ideal 41.7ms/frame) was +54..+689 frames at failing deadlines vs +17..+95 in OK meetings. `bridge.tick_drift` reads 0.0 throughout — it measures received-vs-processed, NOT arrival backlog; diagnose lag from cumulative loop_gap_ms excess instead.
+
+### Never do blocking I/O inside the per-tick decide loop — the /spend sidecar GET was the tick-budget breaker
+Evidence: `_spend_allows_followup` issued a blocking loopback HTTP GET every meeting tick (cache key was `tick`, which changes every tick). Spend-tick step_ms median 34-55ms with 56-74% of ticks over the 42ms frame budget, vs 5-9% over for playing ticks — that queued frames and produced the lag above. Fix: time-based cache (SPEND_READ_CACHE_TICKS=24 ≈ 1s); spend only changes when we ourselves complete a call.
+
+### Warehouse triage for vote timeouts: score events with reason='failing to vote or skip' beat vote_cast-absence inference
+Evidence: the -10 penalty rows (key='score', slot>=0) directly enumerate timeout seats+ticks per episode; joining to the nearest prior player_state confirms alive+connected, and the ts equals the Voting→VoteResult phase edge, giving the exact meeting window for telemetry replay. Faster and less error-prone than reconstructing "alive all meeting with zero vote_cast".
