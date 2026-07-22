@@ -37,9 +37,11 @@ def society_on(monkeypatch):
     monkeypatch.delenv(honor_society.ENV_SEED, raising=False)
     honor_society.reset_identity_for_tests()
     honor_society.reset_members_for_tests()
+    honor_society.reset_distrust_for_tests()
     yield
     honor_society.reset_identity_for_tests()
     honor_society.reset_members_for_tests()
+    honor_society.reset_distrust_for_tests()
 
 
 class _Emit:
@@ -270,6 +272,57 @@ def test_cross_seat_rebroadcast_fails(society_on, tmp_path, monkeypatch) -> None
     emit = _Emit()
     honor_society.process_chats(belief, emit, receipt_time=now)
     assert belief.society_trusted == {"green"}  # red's copy rejected
+
+
+def test_distrusted_key_announcement_is_never_trusted(society_on, tmp_path, monkeypatch) -> None:
+    # The harvested cross-game distrust list (harvest_liars.py output): a KNOWN
+    # member whose key is on it gets no trust from a valid announce, from the
+    # first meeting — no need to re-witness the lie this episode.
+    key, pub = _member_key()
+    monkeypatch.setenv(honor_society.ENV_MEMBERS, _registry(tmp_path, [{"pub": pub, "label": "peer"}]))
+    distrust = tmp_path / "distrust.json"
+    distrust.write_text(json.dumps({
+        "schema": honor_society.DISTRUST_SCHEMA,
+        "liars": [{"pub": pub, "lie_events": 2}],
+    }))
+    monkeypatch.setenv(honor_society.ENV_DISTRUST, str(distrust))
+    honor_society.reset_members_for_tests()
+    honor_society.reset_distrust_for_tests()
+    belief = _crew_belief()
+    now = time.time()
+    belief.chat_log.append(ChatEvent(tick=5, speaker_color="green", text=_compact_announce(key, "green", now=now)))
+    emit = _Emit()
+    honor_society.process_chats(belief, emit, receipt_time=now)
+    assert belief.society_trusted == set()                 # never trusted
+    assert pub in belief.society_liar_keys                 # pre-ledgered
+    assert belief.society_known.get("green") == "peer"     # identity still bound
+    assert any(name == "honor_distrusted_announce" for name, _ in emit.events)
+    assert not honor_society.vote_veto(belief, "green")    # veto never fires for them
+
+
+def test_distrust_list_missing_or_disabled_is_harmless(society_on, tmp_path, monkeypatch) -> None:
+    # "0" disables; a bad/missing file is an empty list — either way a known
+    # member still trusts normally.
+    key, pub = _member_key()
+    monkeypatch.setenv(honor_society.ENV_MEMBERS, _registry(tmp_path, [{"pub": pub, "label": "peer"}]))
+    for distrust_env in ("0", str(tmp_path / "nonexistent.json")):
+        monkeypatch.setenv(honor_society.ENV_DISTRUST, distrust_env)
+        honor_society.reset_members_for_tests()
+        honor_society.reset_distrust_for_tests()
+        belief = _crew_belief()
+        now = time.time()
+        belief.chat_log.append(ChatEvent(tick=5, speaker_color="green", text=_compact_announce(key, "green", now=now)))
+        honor_society.process_chats(belief, _Emit(), receipt_time=now)
+        assert belief.society_trusted == {"green"}
+
+
+def test_vendored_distrust_file_loads_and_is_empty(society_on, monkeypatch) -> None:
+    # The shipped data/honor_distrust.json parses under the real loader and is
+    # currently empty (no liar observed yet) — nobody is distrusted by default.
+    monkeypatch.delenv(honor_society.ENV_DISTRUST, raising=False)
+    honor_society.reset_distrust_for_tests()
+    assert not honor_society.is_distrusted(ALEX_PUB)
+    assert honor_society._load_distrust() == set()
 
 
 def test_witnessed_claimant_is_ledgered_as_liar(society_on, tmp_path, monkeypatch) -> None:

@@ -79,6 +79,16 @@ ENV_MEMBERS = "CREWBORG_HONOR_MEMBERS"
 MEMBERS_SCHEMA = "crewborg-honor-members/v1"
 _members: dict[bytes, str] | None = None
 
+# Cross-game distrust list (data/honor_distrust.json): raw-key-bytes of keys the
+# offline liar-ledger harvest (crewrift_lab/tools/harvest_liars.py) has proven to
+# lie (announced crew while a witnessed imposter). A distrusted key's verified
+# announcements are ignored — never trusted — from the FIRST meeting, rather than
+# waiting to re-witness the lie in this episode. Same lazy/failure-tolerant
+# loading contract as the members registry.
+ENV_DISTRUST = "CREWBORG_HONOR_DISTRUST"
+DISTRUST_SCHEMA = "crewborg-honor-distrust/v1"
+_distrust: set[bytes] | None = None
+
 
 def _b64e(raw: bytes) -> str:
     """Unpadded base64url — the HS1 emission encoding."""
@@ -222,6 +232,55 @@ def known_member_label(pub_b64: str) -> str | None:
 def reset_members_for_tests() -> None:
     global _members
     _members = None
+
+
+def _load_distrust() -> set[bytes]:
+    """The harvested distrust list: raw key bytes of proven liars. Never raises.
+
+    Vendored at data/honor_distrust.json (written by
+    crewrift_lab/tools/harvest_liars.py); `CREWBORG_HONOR_DISTRUST` overrides the
+    path ("0" disables). Missing/bad file => empty set, never a crash.
+    """
+
+    global _distrust
+    if _distrust is not None:
+        return _distrust
+    _distrust = set()
+    override = os.environ.get(ENV_DISTRUST, "").strip()
+    if override == "0":
+        return _distrust
+    try:
+        import importlib.resources
+        import json
+
+        if override:
+            from pathlib import Path
+
+            data = json.loads(Path(override).read_text())
+        else:
+            resource = importlib.resources.files("crewrift.crewborg.data").joinpath("honor_distrust.json")
+            data = json.loads(resource.read_text())
+        if data.get("schema") != DISTRUST_SCHEMA:
+            return _distrust
+        for entry in data.get("liars", []):
+            raw = _b64d(str(entry.get("pub", "")))
+            if raw is not None and len(raw) == 32:
+                _distrust.add(raw)
+    except Exception:
+        pass  # missing/bad list => empty; the society still works without it
+    return _distrust
+
+
+def is_distrusted(pub_b64: str) -> bool:
+    """True when a key is on the harvested cross-game distrust list."""
+
+    raw = _b64d(pub_b64)
+    return raw is not None and raw in _load_distrust()
+
+
+def reset_distrust_for_tests() -> None:
+    global _distrust
+    _distrust = None
 
 
 def _sign(context: str) -> str:
@@ -388,6 +447,14 @@ def process_chats(belief: "Belief", emit: Emitter, *, receipt_time: float | None
             continue
         belief.society_claims[event.speaker_color] = pub
         label = known_member_label(pub)
+        distrusted = is_distrusted(pub)
+        if distrusted:
+            # Harvested cross-game reputation: this key has been PROVEN to lie
+            # (announced crew while a witnessed imposter, per the offline
+            # liar-ledger harvest). Its announcements are ignored for trust from
+            # the first meeting — no waiting to re-witness the lie this episode.
+            belief.society_liar_keys.add(pub)
+            emit.event("honor_distrusted_announce", {"color": event.speaker_color, "pub": pub, "known": label})
         if label is not None:
             # A KNOWN member's verified claim: reputation-backed. Trust it (unless
             # ledgered a liar) and bind the label so the meeting/vote layers and

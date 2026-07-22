@@ -1,0 +1,7 @@
+{
+  "schema": "crewborg-honor-distrust/v1",
+  "comment": "Cross-game Honor Society distrust list — pubkeys PROVEN to lie (announced crew while a witnessed imposter). Written by crewrift_lab/tools/harvest_liars.py from harvested league telemetry (domain.honor_liar events); vendored into the image so the agent distrusts known liars from the FIRST meeting of every game. Keys compare by RAW BYTES (either base64 flavor). Empty is the normal state: no member has been caught lying yet.",
+  "generated_at": null,
+  "episodes_scanned": 0,
+  "liars": []
+}

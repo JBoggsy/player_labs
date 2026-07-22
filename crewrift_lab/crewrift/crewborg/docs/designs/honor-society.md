@@ -123,9 +123,30 @@ here — crewborg does announcements only.
 (ours + `alex-smith`). A verified claim is only **trusted** when its key is in this
 ledger (the compact form can't verify anything else). Keys compare by raw bytes, so
 either base64 flavor matches. `CREWBORG_HONOR_MEMBERS` overrides the path; `0`
-disables; missing/bad file ⇒ empty registry, never a crash. Offline liar auditing
-(scoring `announcements`/`lies` per key from replays) is a future addition; today the
-vendored file is an allow-list of clean members.
+disables; missing/bad file ⇒ empty registry, never a crash.
+
+### The cross-game distrust list (offline liar harvest — implemented 2026-07-22)
+
+The in-game liar ledger (`society_liar_keys` + `domain.honor_liar` events) only
+lasts one episode. The offline consumer closes the loop:
+
+- **Harvest:** `crewrift_lab/tools/harvest_liars.py` scans harvested telemetry
+  (`crewrift_lab/telemetry_harvest/episodes/*/` — loose `telemetry.jsonl` and
+  `artifacts/policy_artifact_*.zip`) for `domain.honor_liar` events, dedupes the
+  per-meeting-tick repeats to distinct (episode, color) lies, aggregates per
+  pubkey, and (with `--write`) renders `data/honor_distrust.json`
+  (`crewborg-honor-distrust/v1`). Run it after `harvest_artifacts.py` (same
+  cadence works). As of 2026-07-22 the harvested corpus (79 telemetry sources /
+  34 league episodes) contains **zero** `honor_liar` events, so the vendored
+  list is empty — the normal state.
+- **Consume:** `strategy/honor_society.py` (`_load_distrust`/`is_distrusted`)
+  loads the vendored list (env `CREWBORG_HONOR_DISTRUST` overrides the path,
+  `0` disables, missing/bad file ⇒ empty — same contract as the members
+  registry). In `process_chats`, a verified announcement from a distrusted key
+  is pre-ledgered into `society_liar_keys` and **never trusted** — from the
+  first meeting, without re-witnessing the lie this episode (traced
+  `honor_distrusted_announce`). The identity/label is still bound to
+  `society_known` for telemetry.
 
 ## Safety invariants (the "don't impair the player" contract)
 
@@ -152,4 +173,8 @@ vendored file is an allow-list of clean members.
 - `modes/attend_meeting.py` — the send hook (`_society_chat_intent`), the listen call,
   and the vote/accuse vetoes.
 - `data/honor_members.json` — the known-member ledger.
+- `data/honor_distrust.json` — the harvested cross-game distrust list (written by
+  `crewrift_lab/tools/harvest_liars.py`).
+- `crewrift_lab/tools/harvest_liars.py` — the offline liar-ledger harvest
+  (tests: `crewrift_lab/tools/tests/test_harvest_liars.py`).
 - `tests/test_honor_society.py` — including a real captured sasmith signature.

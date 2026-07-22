@@ -93,3 +93,9 @@ The zips are crewborg's trace telemetry — the input the
 what `crewrift-ab` / `crewrift-experiment` re-analyse. A steadily-growing
 `telemetry_harvest/episodes/` means cross-round questions ("how did behaviour shift after
 vNNN?") no longer depend on having run a fetch at the right moment.
+
+One standing consumer: `tools/harvest_liars.py` scans the corpus for the Honor Society's
+`domain.honor_liar` events and (with `--write`) maintains the vendored cross-game distrust
+list `crewrift/crewborg/data/honor_distrust.json` (see the
+[honor-society design doc](../crewrift/crewborg/docs/designs/honor-society.md) §Reputation).
+Run it after (or on the same timer as) `harvest_artifacts.py`.
