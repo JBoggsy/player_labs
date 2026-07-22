@@ -63,6 +63,75 @@ Bonus: HS1 now live — v110 announced in 138/199 pinned + 44/86 rot eps, honor_
 base 188/817 ≈ 19% — same low-rate regime as the v107-vs-v100 A/B).
 → **SUBMITTED v110** to Crewrift Prime per James's standing "Submit at will" — see DONE header above.
 
+## 📊 DONE (2026-07-21, Thread 2): imposter-conversion picture RE-DERIVED on v110 data — conversion is NOT the lever; kill→WIN (meeting survival) is
+
+**Read-only analysis; supersedes the imposter numbers in the 2026-07-21 live-round audit below**
+(those were v107 + palette-bug + definition-sensitive). Data: tonight's matched A/B warehouses
+(`/tmp/wh_anchor_base_v110` 200 eps, `/tmp/wh_anchor_base_v107` 100 eps, `/tmp/wh_anchor_cand`
+200 eps — anchor probe runs v110's imposter code, so "v110-lineage" pools it), rotating-seat
+arms rebuilt (`/tmp/wh_rot_v110`, `/tmp/wh_rot_v107`, 100 eps each), fresh league rounds
+(`/tmp/wh_v110_league`, 26 eps). Queries: `/tmp/t2_imposter/*.py`. Field = the 7 pinned opponents
+in the same episodes. trace_warning eps (6-15%) retained — they carry full kill/state events
+(trace fails partway; spot-checked).
+
+**Three conversion definitions, pre-registered, all measured (imposter seats):**
+
+| metric | v107 (n=30) | v110 (n=56) | anchor=v110 code (n=49) | field range |
+|---|---|---|---|---|
+| (a) isolation≥48t w/ crew → kill in window+60 | 23.5% | **12.2%** | 18.4% | 16.8–31.2% |
+| (b) ready+victim-visible window → kill in +60 | 73.5% | **76.9%** | 68.2% | 58.7–70.9% |
+| (c) kills/imposter-seat | 1.77 | 1.61 | 1.84 | 1.31–1.65 |
+| imposter win% | 73.3 | 53.6 | 65.3 | 59.3–77.0 |
+| ejected% of seats | 40.0 | **57.1** | 36.7 | 19.8–30.5 |
+| votes received/seat | 3.17 | **3.80** | 3.71 | 1.70–3.18 |
+| kill-ready ticks w/ victim visible | 58.3% | 25.9% | 23.9% | 10.8–42.4% |
+
+1. **Definition sensitivity is decisive (July-02 lesson replicates).** Defs (a) and (b) give
+   OPPOSITE verdicts on the same episodes: under (a) crewborg is bottom-tier; under (b) it's the
+   FIELD-BEST converter (v110 76.9% vs field pooled 66.2%, p=0.017). Def (a) counts vote-frozen/
+   cooldown-blocked isolation windows; def (b) at +0 ticks is 0% for everyone (the visibility
+   interval ends AT the kill) and jumps to ~70% at +30. The audit's "19% conversion" was def (a)
+   — retire it. **Strike-and-convert ability is fine; there is no conversion lever.**
+2. **Palette-bug decomposition: weak, seat-consistent, does not explain the ejection gap.**
+   Slot-0 pinned arms (palette correct in BOTH): all imposter diffs NS (win 53.6% vs 73.3%
+   p=0.11, kills 1.61 vs 1.77, eject 57.1% vs 40.0% p=0.18 — n=56/30). Rotating slots≥1 (where
+   the bug lived): v110 win 64.7% vs v107 35.7%, eject 41.2% vs 71.4% (both p≈0.15, directional,
+   n=17/14) — consistent with the shielded-innocent effect at bugged seats, but the belief-level
+   target-pool shrinkage is unmeasurable from replays (visibility events are role-truth, not
+   crewborg's belief). Fresh league v110 (n=8 imp seats): kills/seat 1.75, win 62.5%, eject 12.5%
+   — small-n, no red flag.
+3. **Contact starvation no longer dominates as a crewborg-specific deficit.** v110 ready ticks/
+   seat = 307 — 2nd-LOWEST in field (field 219–1414; the July-02 96%-starved figure described a
+   pre-recon/search build). Ready→kill latency 1348t = mid-field (643–2019). The recon/search
+   victim-finding work landed; **victim-finding/approach is not the open lever either.**
+4. **THE deficit (new, significant): witnessed kills + zero meeting defense → ejection.**
+   - Kills made while isolated with victim: v110-lineage 15% vs field 31% (p=1.7e-5); mean
+     witnesses at kill tick 1.4–1.6 vs best-field 0.9; 1st kill witnessed 80% vs field 67%
+     (p=0.007).
+   - Ejected AFTER a witnessed kill: v110 62.2% vs field 31.6% (p=6e-5) — caught AND convicted.
+   - Post-kill flee: median 4px moved in 60t after own kill (field 23–40px) — it lies in wait ON
+     the scene (`modes/hunt.py` post-strike / lying-in-wait).
+   - Meeting play: imposter speaks in 31.6% of meetings-alive, speaks FIRST 0.0% (field 40–98%
+     spoke, 40–98% first) — `_decide_imposter` (modes/attend_meeting.py:310) has only
+     proactive-real-evidence / bandwagon / parity-push / silent-skip paths; **no response-when-
+     accused exists**, and the LLM round-trip forfeits first-mover anchoring (which Thread 1
+     proved converts at 28.7% vs 12.5%).
+   - NOT follow-stalking: follows-emitted 6.2/seat and times-trailed 4.8/seat are field-LOW —
+     the audit's "follow-heavy stalking" reading is refuted.
+
+**RECOMMENDATION — next imposter lever: kill→WIN conversion (meeting survival), two concrete
+mechanisms, both sanctioned by best_practices (parity-push precedent +14.4pp win) and WEEKLY
+Direction 5(b) "deflection-when-accused has never been built":**
+1. **Accused-response deflection** in `modes/attend_meeting.py:_decide_imposter` +
+   `strategy/meeting/imposter.py`: when self is taking heat (votes/chat targeting self), emit a
+   counter-accusation/alibi instead of idling to a skip; pair with the Thread-1 anchor seam
+   (first-decide-tick deterministic chat) so the imposter can speak first — 0% today.
+2. **Post-kill flee** (`modes/hunt.py` after strike): leave the kill scene (field moves 23–40px
+   in 60t; we move 4px). Cheap, independently A/B-able.
+   NOT witness-gate tuning (refuted 3×), NOT victim-finding (already field-competitive), NOT
+   kill volume (structurally capped). Cross-ref: pre-meeting suspicion warming (anchor follow-up)
+   is the crew-side twin of the same "arrive at the meeting armed" principle.
+
 ## 🔧 SIDE-THREAD (2026-07-21, merged to main): Honor Society was DEAD in live play — FIXED + verified (crewborg:v109, NOT submitted)
 
 Discovered the HS was a **no-op in every real game**: our code used a LEGACY 5-token `HS1` form,
@@ -97,10 +166,12 @@ median ~32%), imposter 41% (7/17, field ~55-77%). Three mechanistic findings:
    select self as suss target (self_color missing from the candidate filter — same class as the
    v106 self-hunt bug, but in the meeting/accusation path). It skip-votes while doing it, so the
    vote self-exclusion works; the CHAT target pool doesn't exclude self.
-2. **Imposter too conspicuous + too timid:** ejected 53% of imposter seats (field median ~31%,
-   best 0-20%); votes-received/seat 2.47; kills/seat 1.29 (top: 1.9); isolated-with-crew kill
-   conversion 19% vs 34-50% for winners (e.g. 1410-tick isolated interval unconverted in
-   ereq_1cd1f049). Opponents' "X was tailing me" detectors fire on its follow-heavy stalking.
+2. **Imposter too conspicuous + too timid** — ⚠️ SUPERSEDED by Thread 2 (2026-07-21, above):
+   the "19% conversion" was definition-artifact (def (a); under kill-opportunity windows crewborg
+   is field-BEST), and "follow-heavy stalking" is refuted (follows/seat field-LOW). What survives,
+   re-measured on v110: ejected-after-witnessed-kill 62% vs field 32% (p=6e-5), isolated kills 15%
+   vs 31%, speaks in meetings 32% / speaks first 0%. Original audit numbers (v107, palette-bugged):
+   ejected 53% of seats, votes-received/seat 2.47, kills/seat 1.29.
 3. **Crew draws suspicion:** votes-received/seat 1.37 as crew (2nd-worst), 15% of crew seats
    ejected — opponents (and framing imposters) cite "tailing me / lurking on a vent", i.e. its
    crew movement pattern trips the same detectors.
