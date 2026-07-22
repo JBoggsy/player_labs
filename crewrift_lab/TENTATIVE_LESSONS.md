@@ -326,3 +326,12 @@ Evidence: W1 needed the v110 upload recipe's `CREWBORG_HS_SECRET=<seed>`; versio
 
 ### domain.meeting_llm.latency_ms measures only client.messages.create wall time — a "successful call over the timeout" is possible and not proof the timeout failed
 Evidence: v111 (6.0s timeout) shows one success at 6229ms. SDK `call_json` wraps only the messages.create call in perf_counter; crewborg's own timeout is enforced around a larger scope, so ~0.2s overshoot ≈ scheduling slop, while v110 (3.0s timeout) had successes out to 7.26s = genuine abort-retry double-spend. Compare APITimeoutError fallback counts (27→0) for the clean signal.
+
+### Failed Bedrock calls through the sidecar are FREE — 429s are rejected pre-inference; only timeout-aborts burn tokens
+Evidence: W4 spend audit (2026-07-22). metta bedrock_sidecar.py accrues spend only in _record_usage (needs a delivered usage object); verified empirically on 387 crewborg slot-0 seats: 429-only zero-decision seats read sidecar spend_usd ∈ {0, one-commander-call}, and seats-with-decisions show median(sidecar spend − token-estimate) = $0.000000. Implication: retry budgets against the 429 pool cost nothing in dollars; the only real money waste was the 3.0s-timeout abort-retry (fixed in v111). Don't design spend guards around 429 "waste".
+
+### The sidecar's spend math is exactly reproducible client-side: usage tokens × family rates
+Evidence: same audit — bedrock_cost_usd = tokens × FAMILY_PRICING_PER_1M (haiku $1/M in, $5/M out, $0.10/M cache-read, $1.25/M cache-write); 335 seats matched to ~$0 median without any /spend HTTP reads. So per-call attribution never needs a blocking sidecar read (which was the vote_timeout root cause) — strategy/llm_spend.py vendors the rates; domain.llm_spend carries the numbers.
+
+### crewborg's entire LLM bill is ~$0.008/seat-episode — dollars are not the binding budget, the daily-token pool is
+Evidence: 400-seat corpus profile (tools/spend_profile.py): mean $0.0077/seat-ep, $0.77/100-ep eval, ~$7/heavy night; all four meeting triggers cost the same ~$0.0033/success and none converts dramatically worse. Budget levers (call budget 5, 120-tick interval) are correctly sized for spend; the only real constraint is the shared 429 pool (docs/bedrock-quota-ask.md, now with the dollar counterfactual).

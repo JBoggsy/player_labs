@@ -7,6 +7,7 @@ import threading
 from time import perf_counter
 from typing import Any, Callable
 
+from crewrift.crewborg.strategy import llm_spend
 from crewrift.crewborg.strategy.commander.llm import CommanderLLMClient, DisabledCommanderClient, _truthy
 from crewrift.crewborg.strategy.commander.trace import CommanderTrace
 from players.player_sdk import OverwriteBuffer
@@ -71,14 +72,28 @@ class CommanderWorker:
             try:
                 result = self._client.decide(context)
             except Exception as exc:
+                latency_ms = (perf_counter() - started) * 1000
                 self._record(
                     "commander_call",
                     {
                         "outcome": "error",
                         "error_type": type(exc).__name__,
                         "error": str(exc),
-                        "latency_ms": (perf_counter() - started) * 1000,
+                        "latency_ms": latency_ms,
                     },
+                )
+                # Per-call spend attribution (W4): commander calls draw on the same pod
+                # budget as meeting calls; llm_spend is a domain. event that survives the
+                # lean artifact filter (commander_call does not).
+                self._record(
+                    "llm_spend",
+                    llm_spend.EPISODE_LEDGER.failure_event(
+                        surface="commander",
+                        trigger="commander",
+                        model=_client_model(self._client),
+                        latency_ms=latency_ms,
+                        error=repr(exc),
+                    ),
                 )
                 continue
             data: dict[str, Any] = {
@@ -94,6 +109,16 @@ class CommanderWorker:
             if result.raw_response is not None:
                 data["raw_response"] = result.raw_response
             self._record("commander_call", data)
+            self._record(
+                "llm_spend",
+                llm_spend.EPISODE_LEDGER.success_event(
+                    surface="commander",
+                    trigger="commander",
+                    model=result.model,
+                    latency_ms=result.latency_ms,
+                    usage=result.usage,
+                ),
+            )
             self.priorities.publish(result.priorities)
 
     def _build_client(self) -> CommanderLLMClient:

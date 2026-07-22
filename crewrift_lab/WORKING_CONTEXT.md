@@ -68,6 +68,27 @@ BEFORE firing the candidate arms:**
   `lpm_cd2e6cbc…` FIRST, then submit, then targeted-poll the new pv to competing/active).
   Any gate fails → NO SUBMIT, diagnose.
 
+## ✅ DONE (2026-07-22, W4): Bedrock spend measurement + per-call telemetry — SHIPPED & VERIFIED
+
+James's ask: "measure our own bedrock usage… track per-call spend in the policy and log it."
+- **Shipped `domain.llm_spend`** — one event per LLM call attempt (success AND failure), both
+  seams (meeting + commander): trigger, meeting_index, role, tokens, `est_cost_usd`,
+  cumulative `episode_est_cost_usd`, error_class, cached-sidecar cross-check. Core:
+  `crewrift/crewborg/strategy/llm_spend.py` (shared SpendLedger); emitters in
+  `attend_meeting.py` + `commander/worker.py`; `events.py` drains every step (llm_spend
+  always emitted; commander_* still gated). Audit + spend profile + budget recs:
+  `docs/designs/2026-07-22-bedrock-spend-telemetry-design.md`. 675 tests green.
+- **Verified hosted** on probe `crewborg-spendtrace:v1` (`xreq_e026d5fe`, 100 eps): 1,024
+  events exactly 1:1 with legacy signals; cost math matches the sidecar in production
+  (median delta +$0.000000). One live-caught bug (meeting_index stuck 0 — mode recreated
+  per meeting) fixed; confirmation probe `crewborg-spendtrace:v2` (`xreq_77c6b2e3`, 40 eps).
+- **Headline findings:** 429-failed calls are FREE (rejected pre-inference — verified);
+  whole-episode LLM bill ≈ $0.008/seat ($0.77/100-ep eval, ~$7/heavy night); all 4 triggers
+  cost the same ~$0.0033/success and none converts dramatically worse → budget=5/interval
+  120 correctly sized; **dollars are NOT the binding budget, the daily-token pool is** —
+  quota-ask doc now carries the dollar counterfactual. `domain.llm_spend` telemetry should
+  ride into the next `crewborg` version (it's in this branch's lineage for the merge).
+
 ## ⚖️ CLOSED (2026-07-22, Thread 4): the social-rework question — VERDICT: mechanism-positive, episode-neutral at current quota → deterministic-first until the quota is fixed
 
 **The open bet since v101-v105 ("does the LLM social path, when it fires, beat the deterministic

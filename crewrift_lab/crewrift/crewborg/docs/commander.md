@@ -286,6 +286,10 @@ drains it on the inner-loop thread and re-emits each record through the domain `
 a `domain.commander_*` event. A drop is surfaced as a synthetic `commander_trace_dropped`
 record so loss is visible. These events are gated behind `CREWBORG_TRACE=debug` or
 `CREWBORG_TRACE_GROUPS=commander` (off by default — see [`./trace-logs.md`](./trace-logs.md)).
+Exception: the buffer is drained EVERY step regardless of that gate, and `llm_spend`
+records (per-call spend attribution, W4 — `strategy/llm_spend.py`) always emit as
+`domain.llm_spend`, because spend telemetry must reach the hosted artifact in the default
+lean config. See `crewrift_lab/docs/designs/2026-07-22-bedrock-spend-telemetry-design.md`.
 
 Events:
 
@@ -300,6 +304,10 @@ Events:
 - `commander_danger` — when a danger lever actually fires, with its `danger_reason` (§6).
 - `commander_stopped` — worker close (emitted once).
 - `commander_trace_dropped` — synthetic, when telemetry was evicted under load.
+- `llm_spend` — per call attempt (success AND failure): `{surface: "commander", trigger:
+  "commander", ok, error_class, model, latency_ms, tokens, est_cost_usd,
+  episode_est_cost_usd}` — always emitted (not gated), shares one episode ledger with the
+  meeting seam.
 
 ## 11. Configuration (env)
 

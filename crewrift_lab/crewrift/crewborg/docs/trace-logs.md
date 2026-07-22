@@ -199,8 +199,12 @@ When the LLM meeting layer is enabled, `modes/attend_meeting.py` also emits
 `domain.meeting_tentative_vote`, and `domain.meeting_llm_fallback` (`reason` +
 detail) on each fallback to the deterministic path. Both paths emit
 `domain.meeting_chat_selected` (`text`, `reason`) and `domain.meeting_vote_selected`
-(`target`, `reason`) as the chat/vote actually goes out. The meeting machinery is
-[`./meetings.md`](./meetings.md).
+(`target`, `reason`) as the chat/vote actually goes out. Every completed LLM call attempt
+(meeting AND commander, success AND failure) additionally emits one `domain.llm_spend`
+per-call spend-attribution record — tokens, `est_cost_usd`, cumulative
+`episode_est_cost_usd`, `error_class` — from the shared `strategy/llm_spend.py` ledger
+(design: `crewrift_lab/docs/designs/2026-07-22-bedrock-spend-telemetry-design.md`). The
+meeting machinery is [`./meetings.md`](./meetings.md).
 
 ### Framework boundary events
 

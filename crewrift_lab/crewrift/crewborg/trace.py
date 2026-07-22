@@ -110,6 +110,7 @@ TRACE_GROUP_PATTERNS: dict[str, tuple[str, ...]] = {
         "domain.meeting_tentative_*",
         "domain.meeting_chat_selected",
         "domain.meeting_vote_selected",
+        "domain.llm_spend",
     ),
     "meeting": (
         "domain.vote_cast",

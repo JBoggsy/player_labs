@@ -273,14 +273,19 @@ def test_decision_trace_group_enables_compact_decision_snapshot(monkeypatch) -> 
 
 
 def test_commander_trace_is_not_emitted_by_default() -> None:
+    """Noisy commander_* records stay out of the default stream, but the buffer IS
+    drained every step now (W4): llm_spend records ride the same buffer and must reach
+    the artifact in the default lean config."""
     commander_trace = CommanderTrace()
     commander_trace.record("commander_started", {"enabled": True})
+    commander_trace.record("llm_spend", {"surface": "commander", "ok": True})
     h = _Harness(commander_trace=commander_trace)
 
     h.step()
 
-    assert not h.events("domain.commander_started")
-    assert commander_trace.drain() == [("commander_started", {"enabled": True})]
+    assert not h.events("domain.commander_started")  # noisy record suppressed
+    assert h.events("domain.llm_spend")[0].data == {"surface": "commander", "ok": True}
+    assert commander_trace.drain() == []  # buffer cleared either way
 
 
 def test_commander_trace_group_drains_and_emits_records(monkeypatch) -> None:

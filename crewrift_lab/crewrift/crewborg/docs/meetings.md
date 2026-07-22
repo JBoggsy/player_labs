@@ -444,6 +444,7 @@ The mode emits a rich set of `meeting_*` events and counters; see
 | `meeting_llm_fallback` | Why the LLM path yielded — disabled, call failed, invalid decision, duplicate/cooldown chat. |
 | `meeting_decision` | The deterministic decision: role, path, target, real-vs-fabricated, heat (imposter), NLP state. |
 | `meeting_tentative_vote` / `meeting_vote_selected` / `meeting_chat_selected` | The staged vote, committed vote, and emitted chat. |
+| `llm_spend` | Per-call spend attribution (success AND failure): surface (meeting/commander), trigger, tokens, `est_cost_usd`, cumulative `episode_est_cost_usd`, `error_class` (429s are $0 — measured pre-inference rejection; timeouts accrue a wasted-input estimate), meeting_index/role, cached sidecar cross-check. `strategy/llm_spend.py`; design `crewrift_lab/docs/designs/2026-07-22-bedrock-spend-telemetry-design.md`. |
 | `meeting_llm.latency_ms` (histogram) | Per-call latency by model and trigger. |
 
 ---
