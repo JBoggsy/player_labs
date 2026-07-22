@@ -15,7 +15,24 @@ This is *not* a log or archive: finished work lives in git history / the
 
 ---
 
-## 🚢 IN FLIGHT (2026-07-22, W1): v111 confirmatory A/B → ship
+## 👑 DONE (2026-07-22, W1): v111 SHIPPED — pre-registered confirmatory A/B CLEAN → SUBMITTED → QUALIFIED + CHAMPION
+
+**crewborg:v111 is `competing/active` and CHAMPION** (`lpm_329ad382…`, submission `sub_c2f76ee6…`,
+rank 14 / score 6553 at submit; v110's `lpm_cd2e6cbc…` retired first — the superseded gotcha).
+**VERDICT: ALL pre-registered gates + mechanisms PASS** (cand `xreq_2f42f740`+`xreq_fab85490`,
+200/200 eps 0 ops, verified v111 `8ec5a454` slot 0, identical roster to baseline):
+- Gate 1 no-regression ✅ crew 25.2% vs 28.5% (p=0.52), imposter 63.3% vs 54.5% (p=0.37) — all noise.
+- Gate 2 vote_timeouts ✅ **0/200 vs 2/199**. Gate 3 self-accusations ✅ **0**.
+- Mech 4 anchor ✅ 44 fires/28 eps (0.22/ep), 44/44 accuracy, spoke-first 70.5% vs 14.3% (z=4.2).
+- Mech 5 timeout ✅ APITimeoutError fallbacks **0/1482 vs 27/1505 (p=2e-7)**; success max 6.23s vs
+  7.26s (9 over 6.05s in base).
+- Mech 6 spend cadence ✅ **45.9 vs 1135.9 events/ep (−96%)**.
+- Directional: accuse→ejection conversion 40.9% vs 28.6% (+12.3pp, p=0.34 — underpowered as
+  pre-registered; direction confirms).
+Full row: version_log.md v111. Analysis `/tmp/v111_ab/`, warehouses `/tmp/wh_v111` + `/tmp/wh_v110_base`.
+The original prereg (registered before firing) is preserved below for the record.
+
+### The W1 prereg as registered (verdict above)
 
 **v111** (`8ec5a454-4fea-43a1-a639-1efe30a8ca42`, uploaded 2026-07-22T16:41Z from main
 `1018642`, v110 recipe exactly: LLM meetings + Haiku 4.5 + `CREWBORG_HS_SECRET`) = champion
@@ -177,7 +194,8 @@ a bigger pool (quota bump on 583928386201) moves it. Design + criteria table:
 
 ## 🎯 DONE (2026-07-21, Thread 1): v110 A/B'd clean vs v107 → SUBMITTED → QUALIFIED + CHAMPION 👑
 
-**crewborg:v110 is `competing/active` and CHAMPION** (`lpm_cd2e6cbc…`; submission `sub_16bcf7fb…`,
+*(Superseded 2026-07-22: v111 is now champion — see W1 above; v110's membership retired.)*
+**crewborg:v110 was `competing/active` and CHAMPION** (`lpm_cd2e6cbc…`; submission `sub_16bcf7fb…`,
 qualified in ~3 min). v107's membership retired (`lpm_fd1323fc` → disqualified/inactive) — REQUIRED
 first: the initial submit (`sub_326bf021`) was insta-disqualified "superseded" because the platform
 keeps the incumbent (even benched) and retires the newcomer. Watch v110's league standings recover

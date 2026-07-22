@@ -314,3 +314,15 @@ Evidence: Thread 4 — naive "vote hit imposter | voted" showed fallback 93.5% v
 
 ### /tmp episode-dir names can be swapped vs contents — the anchor-base pair really is crossed
 Evidence: re-verified per episode.json: /tmp/wh_anchor_base_v110_episodes holds crewborg:v107 slot-0 and /tmp/wh_anchor_base_v107_episodes holds v110 (= same eps as /tmp/hs_on_baseline_eps). The Thread-8 warning replicates; extract.py labeled arms from episode.json, never dir names.
+
+### Background-task Bash calls reset cwd — relative paths passed to spawned skill scripts break silently
+Evidence: W1 v111 A/B — `build_warehouse.py --expand-replay crewrift_lab/tools/bin/expand_replay-34a97a3` backgrounded from the repo root "succeeded" (exit 0) with 200/200 episodes failed (`FileNotFoundError` per episode inside the manifest, headline said "no trace_warning — binary matches"). Always pass ABSOLUTE paths to backgrounded warehouse/stream commands, and check `episodes_failed` in the manifest, not the exit code.
+
+### `coworld submit --league` requires the FULL league UUID — the truncated display id 422s
+Evidence: `coworld leagues` table shows `league_a12f5172…` (truncated); submitting with that fails the API's `^league_[0-9a-f]{8}-…$` pattern. Get the full id via `coworld leagues --json`.
+
+### The HS seed's canonical location is ~/.crewborg/honor_seed.b64 (documented in crewborg docs/designs/honor-society.md §Key management)
+Evidence: W1 needed the v110 upload recipe's `CREWBORG_HS_SECRET=<seed>`; version_log deliberately never records the literal. `--secret-env CREWBORG_HS_SECRET=$(cat ~/.crewborg/honor_seed.b64)` is the documented recipe line.
+
+### domain.meeting_llm.latency_ms measures only client.messages.create wall time — a "successful call over the timeout" is possible and not proof the timeout failed
+Evidence: v111 (6.0s timeout) shows one success at 6229ms. SDK `call_json` wraps only the messages.create call in perf_counter; crewborg's own timeout is enforced around a larger scope, so ~0.2s overshoot ≈ scheduling slop, while v110 (3.0s timeout) had successes out to 7.26s = genuine abort-retry double-spend. Compare APITimeoutError fallback counts (27→0) for the clean signal.
