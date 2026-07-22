@@ -10,7 +10,23 @@ startup to resume; **update it as you learn** (keep it tight).
 
 ---
 
-## Status (2026-07-22, session 6): **v15 SUBMITTED, QUALIFIED, CHAMPION** (human go-ahead)
+## Status (2026-07-22, session 6b): RECON 2 of the current top-3 done — report `scratch/recon2_1v1/RECON_REPORT.md`
+
+1v1s (beacon:v15, 10 eps each): **1-9 ctf-h006:v1** (Alex Smith, rank 1) · **0-10
+ctf-focusfire:v36** · **9-1 Picasso:v16**. Profiles:
+- **h006 = tick-0 blitz**: advance 356px at bucket 0, 103/214 kills in the first 1000
+  ticks at 530px depth; Picasso-tier gun (0.551); arc-forward kit (10% alive-time,
+  14% non-gun kills); mid-game escorted steals (median 4293, 67% conversion). Beats us
+  by killing our attackers mid-push (178/222 beacon deaths before tick 2500 @ 571px).
+- **focusfire v36 = same phase machine as v35** (steal gate now ≥ tick ~3900), item mix
+  shifted toward arcs. Beats us in the long-grind lives race.
+- **Picasso = solved** (9-1; its skirmish loses to our better gun + shield).
+Strategic fork (human call): blitz-proof opening (defensive first ~1500 ticks / arc
+denial) vs faster conversion vs opponent-adaptive opening — h006 and focusfire demand
+opposite postures. Note: beacon has 0.609 acc this batch, best in field; "1v1" eval
+shape now documented in `ctf_lab/user_preferences.md` + agent memory.
+
+## (prior) Status (2026-07-22, session 6): **v15 SUBMITTED, QUALIFIED, CHAMPION** (human go-ahead)
 
 Overnight check: game still deployed at 0.7.51/b571dd3, but that ref includes
 **GameVersion 17: grenade blast radius 40→52** (only substantive delta vs c76e0c75;

@@ -56,3 +56,8 @@ Evidence: the self sprite's rotation quantizes aim to ±8 brads, too coarse to r
 
 ### An A/B regression can be a MAP-truth signal, not a code signal — check the arena/geometry pins before reverting
 Evidence: v12 (mechanically sound windup freeze) REGRESSED vs v11; the real cause was the arena changing under us (GameVersion 16 moved/removed obstacles; nav.npz was stale, agents pathed into ghosts). Reverting v12 would have been wrong; rebaking nav (v13) then v14 vindicated it. When a clean change regresses, verify the baked world model against the deployed ref first.
+### "1v1" is James's standing term for the uniform-sides 8v8 eval — documented in ctf_lab/user_preferences.md
+Evidence: the shape (16 pinned slots alternating beacon/opponent by parity, 10 eps) existed only in gitignored scratch bodies; James asked whether it was stored long-term and it wasn't. Now canonical in user_preferences.md (the XP-request skill checks that file before composing) + agent memory.
+
+### Rank-1 newcomers can invert the field's known metas — profile them before tuning against the old #1
+Evidence: ctf-h006 (appeared overnight, rank 1) plays the OPPOSITE of focusfire: tick-0 blitz instead of turtle, arc-forward kit instead of shield/grenade, mid-game steals. A counter tuned for focusfire's phase machine (defensive early game) is exactly what h006's blitz would also punish least — but faster conversion (the anti-focusfire lever) walks into h006's blitz. Opposite postures; check both matchups before shipping either.
