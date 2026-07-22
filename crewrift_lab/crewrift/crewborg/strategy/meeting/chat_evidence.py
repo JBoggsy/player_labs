@@ -206,6 +206,32 @@ def chat_accusers(belief: Belief, *, cache: dict[str, set[str]] | None = None) -
     }
 
 
+def accusers_of(belief: Belief, target_color: str, *, cache: dict[str, set[str]] | None = None) -> set[str]:
+    """Distinct known-color speakers who accused ``target_color`` in chat.
+
+    The self-color variant of ``chat_accusers`` — that function deliberately drops
+    our own color from its result, which is exactly the signal the imposter's
+    counter-accuse-when-accused needs (design 2026-07-21-imposter-kill-to-win).
+    Speakers without an attributed color are skipped (nobody to counter-accuse).
+    Shares ``chat_accusers``'s per-meeting parse cache (same text → targets map)."""
+
+    cache = cache if cache is not None else {}
+    speakers: set[str] = set()
+    for event in belief.chat_log:
+        if event.speaker_color is None or event.speaker_color == target_color:
+            continue
+        key = event.text
+        if key not in cache:
+            cache[key] = {
+                claim.target_color
+                for claim in parse_claims(belief, event)
+                if claim.claim_type == "accusation"
+            }
+        if target_color in cache[key]:
+            speakers.add(event.speaker_color)
+    return speakers
+
+
 def accused_colors(text: str, colors: set[str]) -> set[str]:
     """The colors a single message accuses. Same contract as the old
     chat_read.accused_colors: used on crewborg's own outgoing chat to derive the

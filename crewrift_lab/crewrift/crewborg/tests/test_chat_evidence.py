@@ -114,6 +114,20 @@ def test_non_accusation_chatter_is_filtered_by_the_gate(nlp_model) -> None:
     assert chat_evidence.chat_accusers(_belief_with_chat([("blue", "gg everyone nice game")])) == {}
 
 
+# --- accusers of a specific color (the self-heat signal) ---------------------
+
+
+def test_accusers_of_finds_who_accused_our_color(nlp_model) -> None:
+    # chat_accusers drops our own color (orange); accusers_of is the seam that keeps it.
+    belief = _belief_with_chat([("blue", "orange sus"), ("green", "vote orange"), ("yellow", "red sus")])
+    assert chat_evidence.accusers_of(belief, "orange") == {"blue", "green"}
+
+
+def test_accusers_of_skips_unattributed_speakers_and_the_target_itself(nlp_model) -> None:
+    belief = _belief_with_chat([(None, "orange sus"), ("orange", "orange sus")])
+    assert chat_evidence.accusers_of(belief, "orange") == set()
+
+
 # --- end-to-end: chat suss drives the imposter bandwagon --------------------
 
 

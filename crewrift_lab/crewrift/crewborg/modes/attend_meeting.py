@@ -25,6 +25,8 @@ from crewrift.crewborg.strategy.meeting.context import (
 )
 from crewrift.crewborg.strategy.meeting.imposter import (
     bandwagon_target,
+    counter_accusation_target,
+    heat_on_self,
     parity_closing_vote_target,
     votes_against,
 )
@@ -143,6 +145,9 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         first_mover = self._first_mover_accusation_intent(belief)
         if first_mover is not None:
             return first_mover
+        imposter_first_mover = self._imposter_first_mover_intent(belief)
+        if imposter_first_mover is not None:
+            return imposter_first_mover
         society_intent = self._society_chat_intent(belief)
         if society_intent is not None:
             return society_intent
@@ -262,6 +267,62 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self._trace_meeting_decision(belief, role="crewmate", path="first_mover_accuse", target=target)
         return self._send_chat_intent(belief, accusation, reason="first-mover: anchor the pile")
 
+    def _imposter_first_mover_intent(self, belief: Belief) -> Intent | None:
+        """Imposter with a deflection target at meeting start: accuse IMMEDIATELY
+        (first chat slot), before the meeting_start LLM round-trip.
+
+        The imposter analog of the crew anchor above (design
+        2026-07-21-imposter-kill-to-win): anchoring works independent of the
+        target's guilt (first-named WRONG targets convert 21.7% vs 9.0% later —
+        exactly what a deflection needs), yet the imposter spoke first in 0.0% of
+        meetings (field 40-98%) because it always waited out the LLM round-trip.
+        Waiting is also a tell once the crew seat anchors at tick 0.
+
+        Target selection mirrors ``_decide_imposter`` paths 1-3 — proactive real
+        evidence, bandwagon onto existing heat, parity push — with the identical
+        real/fabricated accusation format (the anti-tell). Same virgin-state gates
+        and double-chat safety as the crew seam: fires at most once per meeting,
+        before the first LLM call, sets ``_deterministic_chatted``, and routes
+        through ``_send_chat_intent``. The coupled tentative vote is exempt from
+        the crew corroboration gate (``_vote_target_corroborated`` passes
+        imposters by design — deflection mis-ejections are the job).
+        """
+
+        if not self._llm_client.enabled:
+            return None
+        if belief.self_role != "imposter" or not belief.self_alive:
+            return None
+        if self._deterministic_chatted or self._last_chat_tick is not None:
+            return None
+        if self._last_llm_call_tick is not None:
+            return None  # the meeting_start call is already out — too late to anchor
+
+        accusers = self._chat_accusers(belief)
+        target = top_suspect(belief)
+        path = "first_mover_proactive"
+        accusation = build_accusation(belief, target) if target is not None else None
+        if accusation is None:
+            target = bandwagon_target(belief, accusers)
+            path = "first_mover_bandwagon"
+            if target is None:
+                target = parity_closing_vote_target(belief, accusers)
+                path = "first_mover_parity"
+            accusation = fabricate_accusation(belief, target) if target is not None else None
+        if target is None or accusation is None:
+            return None  # nothing safe to anchor with — the normal LLM flow proceeds
+
+        self._deterministic_chatted = True
+        self._tentative_vote = target
+        self.emit.event(
+            "meeting_imposter_first_mover", {"target": target, "path": path, "tick": belief.last_tick}
+        )
+        self.emit.counter("meeting_imposter_first_mover")
+        self._trace_meeting_decision(
+            belief, role="imposter", path=path, target=target,
+            fabricated=path != "first_mover_proactive", accusers=accusers,
+        )
+        return self._send_chat_intent(belief, accusation, reason="imposter first-mover: anchor the deflection")
+
     # --- deterministic fallback ------------------------------------------
 
     def _decide_deterministic(self, belief: Belief, *, trace_disabled: bool) -> Intent:
@@ -358,11 +419,42 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
                 return self._send_chat_intent(belief, fabricated, reason="imposter parity push: fabricated")
             return self._submit_vote_intent(belief, reason="imposter parity push vote")
 
-        # 4. No one to deflect onto yet — wait, then skip at the deadline.
+        # 4. Counter-accuse when WE are the one taking heat (design
+        #    2026-07-21-imposter-kill-to-win): paths 1-3 all exclude self from their
+        #    tallies, so an imposter whose kill was witnessed — the only heat in the
+        #    meeting is on it — used to idle here to a silent skip and get ejected
+        #    (62% after a witnessed kill vs field 32%). Deflect: accuse the accuser
+        #    with fabricated-safe evidence in the identical format. NEVER self-defend
+        #    ("not me" draws suspicion — chat study finding 4).
+        self_accusers = self._accusers_of_self(belief)
+        if heat_on_self(belief, self_accusers) > 0:
+            counter = counter_accusation_target(belief, self_accusers)
+            if counter is not None:
+                self._tentative_vote = counter
+                self._deterministic_chatted = True
+                fabricated = fabricate_accusation(belief, counter)
+                self._trace_meeting_decision(
+                    belief, role="imposter", path="counter_accuse", target=counter,
+                    fabricated=fabricated is not None, accusers=accusers,
+                )
+                if fabricated is not None:
+                    return self._send_chat_intent(belief, fabricated, reason="imposter accused: counter-accuse")
+                return self._submit_vote_intent(belief, reason="imposter accused: counter vote")
+
+        # 5. No one to deflect onto yet — wait, then skip at the deadline.
         if self._should_auto_submit(belief):
             self._trace_meeting_decision(belief, role="imposter", path="skip", target=None, accusers=accusers)
             return self._submit_vote_intent(belief, reason="imposter deadline: no deflection, skip")
         return Intent(kind="idle", reason="imposter waiting for a crewmate to take heat")
+
+    def _accusers_of_self(self, belief: Belief) -> set[str]:
+        """Distinct speakers who accused OUR color in chat this meeting (the reactive
+        half of heat_on_self; vote heat is read from the tally inside the helpers)."""
+
+        self_color = belief.voting.self_marker_color or belief.self_color
+        if self_color is None:
+            return set()
+        return chat_evidence.accusers_of(belief, self_color, cache=self._chat_parse_cache)
 
     def _trace_meeting_decision(
         self,
