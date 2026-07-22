@@ -59,20 +59,14 @@ WAYPOINT_CATALOG: dict[str, tuple[float, float, float, str, tuple[str, ...]]] = 
     "field-shelf-2":      (-514.3, -4284.2, 40.7, "stage", ()),
     "field-shelf-3":      (-482.2, -4216.1, 50.1, "stage", ()),
     "field-shelf-4":      (-457.3, -4156.4, 47.6, "stage", ()),
-    # South descent to Sen'jin — sampled from wowborg's OWN successful v6 trajectory
-    # (362s, gate never involved). v14 lesson: the first sampled point (-614,-4391)
-    # sat in the wall pocket where two bots stalled; use the v6 path's FARTHER-south
-    # samples, which are past the choke. z values are OBSERVED terrain heights from
-    # the v6 traces (v17 lesson: guessed-low z made every descent chunk crawl through
-    # projection recovery at ~0.4 yd/s — 0.1.31 destinations carry exact z).
-    "south-descent-1":    (-645.0, -4489.0, 47.5, "stage", ()),
-    "south-descent-2":    (-632.0, -4665.0, 39.3, "stage", ()),
-    "south-descent-3":    (-736.0, -4823.0, 22.6, "stage", ()),
-    # --- mid: rim / gate corridor (150-450 yd) ---
+    # --- mid: rim / gate corridor / south road (150-450 yd) ---
     "gate-corridor":      (-359.7, -4309.8, 49.9, "mid", ()),    # authored valley-exit node
-    "field-shelf-far":    (-457.3, -4156.4, 47.6, "mid",
-                           ("scorpid-field-edge", "field-shelf-1", "field-shelf-2",
-                            "field-shelf-3")),  # deepest reliably-reached shelf point
+    # Top of the south descent — on the executor's own proven Sen'jin path (v6
+    # trajectory sample), ~240 yd out: a mid-tier target on terrain it walks at
+    # full pace. Replaces field-shelf-far (wedged at (-509,-4255) in 4 straight
+    # batches: the shelf pocket is executor-hostile from the west; the full-chain
+    # variants live in the hard tier).
+    "south-rim":          (-645.0, -4489.0, 47.5, "mid", ()),
     # --- far: Sen'jin Village (> 450 yd; real Detour road work) ---
     # DIRECT, no staging — the executor's own Detour finds the south descent and walks
     # it at ~2 yd/s (v6: 719 yd in 362s, ~14 yd/settlement). Staging retrospective
