@@ -1208,7 +1208,11 @@ When the meeting LLM is enabled, `meeting_context_serialized`, `meeting_llm_call
 (per request: trigger, calls used vs the `CREWBORG_LLM_MEETING_CALL_BUDGET` cap),
 `meeting_llm_budget_exhausted`, `meeting_llm_decision`, `meeting_chat_implied_vote`,
 fallback reasons, and selected chat/vote are in the default
-trace; the LLM latency histogram is emitted when metrics are enabled. Raw LLM
+trace; the LLM latency histogram is emitted when metrics are enabled. Every completed
+LLM call attempt (meeting and commander, success and failure) also emits one
+`llm_spend` per-call spend-attribution record — tokens, estimated USD, cumulative
+episode USD, error class — from `strategy/llm_spend.py` (always in the default trace;
+see `crewrift_lab/docs/designs/2026-07-22-bedrock-spend-telemetry-design.md`). Raw LLM
 request/response tracing is opt-in via `CREWBORG_LLM_TRACE_RAW=1` or `CREWBORG_TRACE=debug`.
 
 **Viewer/debug verbosity.** `CREWBORG_TRACE=viewer` is opt-in and heavy: it emits
