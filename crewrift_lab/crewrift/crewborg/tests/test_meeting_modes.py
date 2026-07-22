@@ -249,16 +249,23 @@ def test_attend_meeting_llm_submitted_vote_keeps_driving_cursor_until_confirmed(
     assert len(client.calls) == 1
 
 
-def test_attend_meeting_invalid_llm_decision_falls_back_to_the_deterministic_accusation() -> None:
+def test_attend_meeting_invalid_llm_decision_falls_back_without_double_chat() -> None:
+    """With a bar-clearing, evidence-cited suspect the first-mover accusation now goes
+    out on tick one (before the LLM call); a later invalid LLM decision falls back to
+    the deterministic path, which must NOT chat a second time — it votes the accused."""
+
     client = _FakeMeetingClient([MeetingDecision(action="send_chat", chat_text="vote green", vote_target="green")])
     mode = _llm_mode(client)
     belief = _meeting_belief(tick=0)  # suspicion {"red": 0.95} ⇒ red the clear suspect
     belief.roster["red"].events.append(PlayerEvent(kind="vent_use", start_tick=2, end_tick=2))
 
-    assert mode.decide(belief, ActionState()).kind == "idle"  # call in flight
-    intent = mode.decide(belief, ActionState())
-    assert intent.kind == "chat"
-    assert intent.text == "red sus: saw them vent. vote red"  # fell back to the deterministic accusation
+    first = mode.decide(belief, ActionState())
+    assert first.kind == "chat"
+    assert first.text == "red sus: saw them vent. vote red"  # first-mover accusation
+    assert mode.decide(belief, ActionState()).kind == "idle"  # LLM call in flight
+    intent = mode.decide(belief, ActionState())  # invalid decision -> deterministic fallback
+    assert intent.kind == "vote"
+    assert intent.target_color == "red"  # votes whom we accused; no second chat
 
 
 def test_attend_meeting_deadline_prompt_wins_over_late_chat() -> None:
@@ -868,5 +875,119 @@ def test_instant_vote_respects_society_trust_veto(monkeypatch) -> None:
         belief.society_trusted.add("red")  # trusted member, not witnessed
         vote, _ = _drive_until(mode, belief, {"vote"})
         assert vote is not None and vote.target_color is None  # veto converts to skip
+    finally:
+        honor_society.reset_identity_for_tests()
+
+
+# --- first-mover anchoring accusation (design: 2026-07-21-first-mover-anchor) ---
+
+
+def _anchor_belief(*, tick: int = 0) -> Belief:
+    """Crew seat with a bar-clearing, evidence-cited suspect at meeting start."""
+
+    belief = _meeting_belief(tick=tick)
+    belief.self_role = "crewmate"
+    belief.self_alive = True
+    belief.roster["red"].events.append(PlayerEvent(kind="vent_use", start_tick=4, end_tick=4))
+    return belief
+
+
+def test_first_mover_accusation_fires_before_the_llm_call(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_HONOR_SOCIETY", "0")  # isolate from the HS announce chat
+    client = _FakeMeetingClient([MeetingDecision(action="wait")])
+    mode = _llm_mode(client)
+
+    first = mode.decide(_anchor_belief(), ActionState())
+    assert first.kind == "chat"
+    assert first.text == "red sus: saw them vent. vote red"
+    assert client.calls == []  # the chat went out before any LLM round-trip
+
+    # The meeting_start LLM call still happens afterwards, exactly once.
+    assert mode.decide(_anchor_belief(), ActionState()).kind == "idle"
+    assert [trigger for trigger, _ in client.calls] == ["meeting_start"]
+
+
+def test_first_mover_accusation_fires_once_and_votes_the_accused(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_HONOR_SOCIETY", "0")  # isolate from the HS announce chat
+    client = _FakeMeetingClient([MeetingDecision(action="wait")])
+    mode = _llm_mode(client)
+
+    assert mode.decide(_anchor_belief(), ActionState()).kind == "chat"
+    assert mode.decide(_anchor_belief(), ActionState()).kind == "idle"  # call in flight
+    assert mode.decide(_anchor_belief(), ActionState()).kind == "idle"  # wait applied
+
+    vote = mode.decide(_anchor_belief(tick=700), ActionState())  # early-submit window
+    assert vote.kind == "vote"
+    assert vote.target_color == "red"  # coupled: vote exactly whom we accused
+
+
+def test_first_mover_suppresses_duplicate_llm_chat() -> None:
+    client = _FakeMeetingClient(
+        [MeetingDecision(action="send_chat", chat_text="red sus: saw them vent. vote red")]
+    )
+    mode = _llm_mode(client)
+
+    assert mode.decide(_anchor_belief(), ActionState()).kind == "chat"
+    assert mode.decide(_anchor_belief(), ActionState()).kind == "idle"  # call in flight
+    intent = mode.decide(_anchor_belief(), ActionState())  # LLM echoes the same accusation
+    assert intent.kind == "idle"  # duplicate suppressed by _sent_chat_texts
+
+
+def test_first_mover_needs_a_bar_clearing_suspect(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_HONOR_SOCIETY", "0")  # isolate from the HS announce chat
+    client = _FakeMeetingClient([MeetingDecision(action="wait")])
+    mode = _llm_mode(client)
+    belief = _anchor_belief()
+    belief.suspicion = {"red": 0.4}  # under the vote bar -> top_suspect() None
+
+    assert mode.decide(belief, ActionState()).kind == "idle"  # no anchor; LLM call instead
+    assert [trigger for trigger, _ in client.calls] == ["meeting_start"]
+
+
+def test_first_mover_needs_citable_evidence(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_HONOR_SOCIETY", "0")  # isolate from the HS announce chat
+    client = _FakeMeetingClient([MeetingDecision(action="wait")])
+    mode = _llm_mode(client)
+    belief = _meeting_belief()  # bar-clearing suspect but an empty event log
+    belief.self_role = "crewmate"
+
+    assert mode.decide(belief, ActionState()).kind == "idle"  # never bare-accuse
+    assert [trigger for trigger, _ in client.calls] == ["meeting_start"]
+
+
+def test_first_mover_never_fires_for_imposter_or_dead_seat() -> None:
+    for role, alive in (("imposter", True), ("crewmate", False)):
+        client = _FakeMeetingClient([MeetingDecision(action="wait")])
+        mode = _llm_mode(client)
+        belief = _anchor_belief()
+        belief.self_role = role
+        belief.self_alive = alive
+
+        intent = mode.decide(belief, ActionState())
+        assert intent.kind == "idle", (role, alive)
+
+
+def test_first_mover_respects_society_trust_veto(monkeypatch) -> None:
+    import base64
+    from crewrift.crewborg.strategy import honor_society
+
+    monkeypatch.setenv(honor_society.ENV_FLAG, "1")
+    monkeypatch.setenv(honor_society.ENV_SEED, base64.b64encode(b"\x07" * 32).decode())
+    honor_society.reset_identity_for_tests()
+    try:
+        client = _FakeMeetingClient([MeetingDecision(action="wait")])
+        mode = _llm_mode(client)
+        belief = _meeting_belief()
+        belief.self_role = "crewmate"
+        # Citable but UNWITNESSED evidence (a long tail) — witnessed kill/vent
+        # evidence would correctly override society trust inside vote_veto.
+        belief.roster["red"].events.append(
+            PlayerEvent(kind="tailing_self", start_tick=1, end_tick=40, target_color=None)
+        )
+        belief.society_announced = True
+        belief.society_trusted.add("red")  # trusted member, not witnessed
+
+        intent = mode.decide(belief, ActionState())
+        assert intent.kind == "idle"  # no anchor against a trusted member
     finally:
         honor_society.reset_identity_for_tests()
