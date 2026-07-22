@@ -122,8 +122,11 @@ MAX_NO_PROGRESS = 6
 PROGRESS_EPSILON_YARDS = 3.0
 DISPLACEMENT_EPSILON_YARDS = 5.0
 UNSTICK_AFTER_NO_PROGRESS = 3  # interleave the planner's recommendation this early
-LEG_BUDGET_BASE_SECONDS = 45.0     # + distance-scaled component
-LEG_BUDGET_SECONDS_PER_YARD = 0.7  # ~2 yd/s observed pace; 0.7 s/yd = real slack
+LEG_BUDGET_BASE_SECONDS = 60.0     # + distance-scaled component
+# v15 evidence: far legs walk the descent steadily at ~1.3-1.5 yd/s over an actual
+# path ~1.2x the staged straight-line, then die to budget 400 yd short. 1.0 s/yd
+# funds the observed pace with slack; a still-progressing leg deserves its time.
+LEG_BUDGET_SECONDS_PER_YARD = 1.0
 FRAME_TIMEOUT_SECONDS = 60.0
 SETTLE_TIMEOUT_SECONDS = 30.0
 
@@ -396,11 +399,15 @@ class WaypointRacePolicy:
                 advance(True, loc, name, target)
                 continue
 
-            # Leg failure: only on sustained no-progress or a blown time budget.
+            # Leg failure: only on sustained no-progress or a blown time budget —
+            # but a leg that is STILL MOVING gets to keep its budget (v15: far legs
+            # died to the clock while walking steadily; a budget exists to cut
+            # wedged legs loose, not to cap honest travel time).
             over_budget = (
                 leg_started_at is not None
                 and leg_budget is not None
                 and time.monotonic() - leg_started_at > leg_budget
+                and no_progress_streak > 0  # moving legs never budget out
             )
             if no_progress_streak >= MAX_NO_PROGRESS or over_budget:
                 reason = "budget" if over_budget else "no_progress"
