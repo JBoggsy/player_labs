@@ -113,8 +113,11 @@ AIM_DEADBAND = _env_int("BEACON_AIM_DEADBAND", 3)
 #: rotation dead-reckoning; the server holds the last mask between inputs).
 AIM_RESYNC_SLACK_BRADS = _env_int("BEACON_AIM_RESYNC_SLACK_BRADS", 8)
 #: Fire only when the target is within this perpendicular slack of the aim ray (px),
-#: i.e. range * sin(angle_error) <= this. Matches the baseline's fire-gate idea.
-FIRE_SLACK_PX = _env_int("BEACON_FIRE_SLACK_PX", 11)
+#: i.e. range * sin(angle_error) <= this. The REAL hit corridor is 14px
+#: (BulletHalfWidth 8 + PlayerHalf 6); 8 leaves margin for dead-reckoning error —
+#: v11 fired at up to 22px perp miss (11 x the 2.0 close-range multiplier), which
+#: is beyond the corridor: guaranteed misses the gate itself invited.
+FIRE_SLACK_PX = _env_int("BEACON_FIRE_SLACK_PX", 8)
 #: Below this range (px) an enemy is close enough to fire on with a looser gate.
 CLOSE_RANGE_PX = _env_int("BEACON_CLOSE_RANGE_PX", 220)
 #: Hold fire if a visible teammate is within this perpendicular distance (px) of the

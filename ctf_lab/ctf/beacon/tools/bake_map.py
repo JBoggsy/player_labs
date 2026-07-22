@@ -28,8 +28,9 @@ from pathlib import Path
 
 import numpy as np
 
-# --- Arena constants (verbatim from src/ctf/sim.nim @ CTF_REF 5450c64; geometry
-# verified byte-identical to the original 761c098 port on 2026-07-14) --------------
+# --- Arena constants (verbatim from src/ctf/sim.nim @ b571dd3 = ctf 0.7.51,
+# GameVersion 16: bracket replaces the midline chevrons, column-3 discs thinned,
+# glass windows added — windows stay in the wall set, see _RECTS note) -------------
 MAP_W = 1235
 MAP_H = 659
 CENTER_X = MAP_W // 2  # 617
@@ -52,25 +53,31 @@ PEDESTAL = {"red": (186, 329), "blue": (1049, 329)}
 HOME_DEEP = {"red": (150, 329), "blue": (MAP_W - 1 - 150, 329)}
 
 # Obstacle shapes on the LEFT half; the arena mirrors each across x = center.
-# (kind, params) — verbatim from ArenaLeftObstacles.
+# (kind, params) — verbatim from ArenaLeftObstacles @ b571dd3 (ctf 0.7.51,
+# GameVersion 16). Glass windows (column-1 stubs 2 and 6; the bracket's midline
+# bar) stay in this WALL set — glass blocks movement, bullets, and plasma; it is
+# transparent only to fog-of-war, which this bake doesn't model (ray_clear serves
+# the shot/movement question, where glass is solid).
 _RECTS = [  # (x, y, w, h)
     (268, 10, 18, 62), (268, 108, 18, 60), (268, 204, 18, 60), (268, 300, 18, 59),
     (268, 395, 18, 60), (268, 491, 18, 60), (268, 587, 18, 62),
     (556, 24, 18, 66), (556, 569, 18, 66),
+    # GameVersion 16: the square bracket replacing the midline chevron zigzag —
+    # a vertical bar (its middle a window) plus short arms toward the flag ring.
+    (479, 276, 28, 12), (479, 288, 12, 24), (479, 312, 12, 36),
+    (479, 348, 12, 23), (479, 371, 28, 12),
 ]
 _DIAMONDS = [  # (cx, cy, radius)
     (349, 90, 28), (349, 186, 28), (349, 282, 28), (349, 376, 28), (349, 472, 28),
     (349, 568, 28),
     (565, 156, 30), (565, 252, 30), (565, 406, 30), (565, 502, 30),
 ]
-_DISCS = [  # (cx, cy, radius)
-    (421, 66, 28), (421, 162, 28), (421, 258, 28), (421, 400, 28), (421, 496, 28),
-    (421, 592, 28),
+_DISCS = [  # (cx, cy, radius) — GameVersion 16 thinned column 3 to every other disc.
+    (421, 66, 28), (421, 258, 28), (421, 496, 28),
 ]
-_DIAGONALS = [  # (x0, y0, x1, y1, thickness)
+_DIAGONALS = [  # (x0, y0, x1, y1, thickness) — midline zigzag replaced by the bracket.
     (479, 86, 507, 114, 12), (507, 114, 479, 142, 12), (507, 182, 479, 210, 12),
-    (479, 210, 507, 238, 12), (479, 276, 506, 303, 12), (506, 303, 479, 330, 12),
-    (479, 329, 506, 356, 12), (506, 356, 479, 383, 12), (507, 421, 479, 449, 12),
+    (479, 210, 507, 238, 12), (507, 421, 479, 449, 12),
     (479, 449, 507, 477, 12), (479, 517, 507, 545, 12), (507, 545, 479, 573, 12),
 ]
 
