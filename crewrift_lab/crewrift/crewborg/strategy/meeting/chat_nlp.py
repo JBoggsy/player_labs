@@ -51,6 +51,16 @@ def get_model() -> Any | None:
     return _model
 
 
+def is_loading() -> bool:
+    """True only while a background load is actually IN FLIGHT (thread started, no
+    result yet). Distinct from ``state() == "loading"``, which also covers "enabled
+    but nobody called ensure_loading()" — callers that want to DEFER work until the
+    model arrives (social_evidence's chat-stance pass) must not defer forever in
+    contexts where no load was ever started."""
+
+    return _thread is not None and _model is None and not _failed
+
+
 def state() -> str:
     """A one-word status for tracing: ``disabled`` / ``loading`` / ``ready`` / ``failed``."""
 

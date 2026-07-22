@@ -203,8 +203,13 @@ detail) on each fallback to the deterministic path. Both paths emit
 (meeting AND commander, success AND failure) additionally emits one `domain.llm_spend`
 per-call spend-attribution record — tokens, `est_cost_usd`, cumulative
 `episode_est_cost_usd`, `error_class` — from the shared `strategy/llm_spend.py` ledger
-(design: `crewrift_lab/docs/designs/2026-07-22-bedrock-spend-telemetry-design.md`). The
-meeting machinery is [`./meetings.md`](./meetings.md).
+(design: `crewrift_lab/docs/designs/2026-07-22-bedrock-spend-telemetry-design.md`). Crew seats with the
+chat-evidence feature on also emit `domain.chat_evidence_applied` once per meeting
+at vote-submit (`vote_target`, `top_suspect_with_chat`, `top_suspect_without_chat`,
+`changed_top_suspect`, per-target `contributions` — the "did chat evidence change
+our vote" mechanism metric; design
+`crewrift_lab/docs/designs/2026-07-22-chat-evidence-incorporation.md`). The meeting
+machinery is [`./meetings.md`](./meetings.md).
 
 ### Framework boundary events
 

@@ -335,3 +335,21 @@ Evidence: same audit — bedrock_cost_usd = tokens × FAMILY_PRICING_PER_1M (hai
 
 ### crewborg's entire LLM bill is ~$0.008/seat-episode — dollars are not the binding budget, the daily-token pool is
 Evidence: 400-seat corpus profile (tools/spend_profile.py): mean $0.0077/seat-ep, $0.77/100-ep eval, ~$7/heavy night; all four meeting triggers cost the same ~$0.0033/success and none converts dramatically worse. Budget levers (call budget 5, 120-tick interval) are correctly sized for spend; the only real constraint is the shared 429 pool (docs/bedrock-quota-ask.md, now with the dollar counterfactual).
+
+### W3 audit: chat evidence reached the posterior ONLY via the fitted counters (+0.13/accusation), unweighted by speaker
+Evidence: `times_accused` coef +0.1288 in suspicion_weights.json was the ENTIRE chat→posterior path; legacy path chat-deaf; `PlayerRecord.claims` + `verify_claim` output banked but never read by any scorer; an HS member's accusation weighed the same as an imposter's. Fixed in the 2026-07-22 chat-evidence-incorporation design (trust-weighted log-LR term, both paths).
+
+### The spaCy parse mis-handles the dominant kill templates — victim-flagging is distance-based, not role-based
+Evidence: "saw red kill blue" produced accusation(red) AND accusation(blue) (victim accused too); "red killed blue" produced NOTHING (both colors within 2 tokens of "killed" → both victim-flagged). Measured live with en_core_web_sm before writing the template pass. Anchored templates with explicit killer/victim groups fixed it; spaCy remains the free-form fallback.
+
+### social_evidence marked chat messages counted BEFORE parsing — spaCy's load window silently ate early-meeting chat
+Evidence: `_count_chat_stances` added the (tick,speaker,text) key to `social_counted_chats` then called parse_claims; if the model was still loading (~1.5-2s hosted, first meeting can start inside it) the message returned zero claims and was never re-parsed. Fix: `chat_nlp.is_loading()` defers the whole pass (chat_log persists across ticks within a meeting).
+
+### Worktrees spawned for parallel work can be FAR behind local main — check merge-base before touching code
+Evidence: this W3 worktree's branch base lacked ALL of v107-v111 (80 commits, including the champion v110 HS rewrite the task depends on). `git merge-base --is-ancestor <recent-main-sha> HEAD` failed; `git merge main` brought it current. An audit written against the stale base would have described dead code (e.g. the old HS1 5-token protocol).
+
+### Field chat is exactly as informative as our own posterior — trust-weighting alone doesn't make strangers' accusations profitable
+Evidence: W3 chat-evidence A/B (200/200 eps, crewborg-chatev:v1 vs v111): chat-changed votes hit imposters 67.4% vs 69.0% for suspicion-alone votes. The term added vote volume symmetrically (correct +0.087/ep, mis +0.085/ep), netting zero — and total crew ejections rose (p=0.066) because our extra votes seed piles others complete. Next lever: floor the trust gate (≥0.9 / HS-only testimony), don't re-tune the base LRs.
+
+### A "changed_top_suspect" counterfactual trace turns an A/B null into a mechanism diagnosis
+Evidence: domain.chat_evidence_applied recorded top_suspect with vs without the chat term per meeting (47 changed votes / 384 events). That let the verdict distinguish "mechanism never fired" from "fired, but the signal is worthless" in one query — without it the flat primary would have been unattributable.

@@ -30,7 +30,7 @@ class ChatEvidenceTag(BaseModel):
     speaker_color: str
     target_color: str
     stance: Literal["accuse", "defend", "neutral"]
-    claim_type: Literal["accusation", "defense", "location", "vent", "task"]
+    claim_type: Literal["accusation", "defense", "location", "vent", "task", "kill"]
     credibility: float | None = Field(default=None, ge=0.0, le=1.0)
     note: str | None = None
 

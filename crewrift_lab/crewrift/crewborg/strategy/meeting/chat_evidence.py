@@ -14,6 +14,7 @@ to naturally.
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from crewrift.crewborg.strategy.meeting import chat_nlp
@@ -43,20 +44,109 @@ TASK_CLAIM_WORDS = frozenset({"task", "tasks", "wire", "wires", "fuel", "fueling
 FIRST_PERSON_WORDS = frozenset({"i", "i'm", "im", "ive", "i've", "my", "myself"})
 
 
-def parse_claims(belief: Belief, event: ChatEvent) -> list[ChatClaim]:
-    """All claims one chat message makes: accusations, defenses, and any
-    location/vent/task claim (self-alibi or third-party) it names a place for.
+# --- deterministic template pass ---------------------------------------------
+# The field's meeting chat is heavily templated ("X sus", "vote X", "saw X kill Y",
+# "X vented"). These ANCHORED patterns (color token in a fixed grammatical slot, not
+# a bag-of-words match) are high-precision and need no spaCy — the extraction floor
+# for the trust-weighted posterior term (design:
+# crewrift_lab/docs/designs/2026-07-22-chat-evidence-incorporation.md §2.4). They are
+# NOT the old crude regex tally this module replaced: that matched color+hint
+# anywhere in a line; these require the exact template shape. Precision-first: any
+# negation cue or a question mark skips the whole message (a negated/interrogative
+# template is rare, and a false accusation here feeds the posterior directly).
 
-    Empty when the NLP model is disabled or still loading — no crude fallback (a
-    deliberate choice inherited from chat_read.py: false positives here are worse
-    than no signal).
+_VICTIM_PRONOUNS = r"him|her|them|me|someone|somebody"
+
+# Compiled template sets are cached per roster (the roster is stable within an
+# episode; compiling 5 regexes per chat message would be pure waste).
+_template_cache: dict[frozenset[str], list[tuple[ClaimType, "re.Pattern[str]", int, int | None]]] = {}
+
+
+def _template_patterns(colors: set[str]) -> list[tuple[ClaimType, re.Pattern[str], int, int | None]]:
+    """(claim_type, pattern, target_group, victim_group|None) for this roster."""
+
+    key = frozenset(colors)
+    cached = _template_cache.get(key)
+    if cached is not None:
+        return cached
+    c = "|".join(sorted(re.escape(color) for color in colors))
+    patterns: list[tuple[ClaimType, re.Pattern[str], int, int | None]] = [
+        # "saw red kill (blue)" / "i saw red killing" — killer is the named color.
+        ("kill", re.compile(rf"\bsaw\s+({c})\s+kill\w*\b(?:\s+(?:the\s+)?({c}))?"), 1, 2),
+        # "red killed blue" / "red killed him" — bare active form needs an explicit
+        # victim (color or pronoun) so "red killed it last round" can't fire.
+        ("kill", re.compile(rf"\b({c})\s+(?:just\s+)?kill(?:ed|s)\s+(?:the\s+)?(({c})|{_VICTIM_PRONOUNS})\b"), 1, 3),
+        # "red vented" / "saw red vent (in reactor)" — venting is imposter-definitional.
+        ("vent", re.compile(rf"\b(?:saw\s+)?({c})\s+(?:just\s+)?vent(?:ed|ing|s)?\b"), 1, None),
+        # "vote (for/out) red" / "red is (the) sus/imposter" / "red sus".
+        ("accusation", re.compile(rf"\bvote\s+(?:for\s+|out\s+)?({c})\b"), 1, None),
+        ("accusation", re.compile(rf"\b({c})\s+(?:is\s+)?(?:the\s+)?(?:sus|suspicious|imp|imposter|impostor)\b"), 1, None),
+    ]
+    if len(_template_cache) > 8:  # a test suite churning rosters must not grow this unbounded
+        _template_cache.clear()
+    _template_cache[key] = patterns
+    return patterns
+
+
+def _template_claims(belief: Belief, event: ChatEvent) -> tuple[list[ChatClaim], set[str]]:
+    """Deterministic template extraction: (claims, victim_colors_named).
+
+    ``victim_colors_named`` lets the caller suppress spaCy accusation claims that
+    mis-target a kill's VICTIM (the dependency pass attaches the "kill" cue to every
+    color in the clause, so "saw red kill blue" would otherwise accuse blue too).
     """
+
+    lowered = event.text.lower()
+    tokens = set(lowered.replace(",", " ").replace(".", " ").split())
+    if "?" in lowered or tokens & NEG_WORDS:
+        return ([], set())
+    colors = set(belief.roster)
+    claims: list[ChatClaim] = []
+    victims: set[str] = set()
+    seen: set[tuple[str, ClaimType]] = set()
+    for claim_type, pattern, target_group, victim_group in _template_patterns(colors):
+        for match in pattern.finditer(lowered):
+            target = match.group(target_group)
+            if target is None or (target, claim_type) in seen:
+                continue
+            seen.add((target, claim_type))
+            claims.append(_claim(event, target, claim_type, source="template"))
+            if victim_group is not None:
+                victim = match.group(victim_group)
+                if victim in colors:
+                    victims.add(victim)
+    return (claims, victims)
+
+
+def parse_claims(belief: Belief, event: ChatEvent) -> list[ChatClaim]:
+    """All claims one chat message makes: accusations, defenses, kill/vent
+    testimony, and any location/vent/task claim (self-alibi or third-party) it
+    names a place for.
+
+    Two passes, one output shape: the deterministic template pass always runs
+    (``source="template"``); the spaCy dependency parse adds free-form coverage
+    (negation scope, defenses, place claims) when the model is available. Template
+    claims win per (target, claim_type) — the dependency pass's output is deduped
+    against them, and a template-identified kill VICTIM never receives a spaCy
+    accusation (the parse attaches the "kill" cue to every color in the clause).
+    """
+
+    template_claims, kill_victims = _template_claims(belief, event)
+    claims: list[ChatClaim] = list(template_claims)
+    templated = {(claim.target_color, claim.claim_type) for claim in template_claims}
 
     nlp = chat_nlp.get_model()
     if nlp is None:
-        return []
+        return claims
     colors = set(belief.roster)
-    claims: list[ChatClaim] = []
+
+    def _add(claim: ChatClaim) -> None:
+        if (claim.target_color, claim.claim_type) in templated:
+            return
+        if claim.claim_type == "accusation" and claim.target_color in kill_victims:
+            return
+        claims.append(claim)
+
     lowered_words = set(event.text.lower().replace(",", " ").split())
 
     if _gate(event.text, colors):
@@ -74,19 +164,19 @@ def parse_claims(belief: Belief, event: ChatEvent) -> list[ChatClaim]:
 
             if has_sus_cue and not is_victim:
                 if negated_or_defended:
-                    claims.append(_claim(event, tok.lower_, "defense"))
+                    _add(_claim(event, tok.lower_, "defense"))
                 else:
-                    claims.append(_claim(event, tok.lower_, "accusation"))
+                    _add(_claim(event, tok.lower_, "accusation"))
             elif negated_or_defended and any(t.lower_ in DEFENSE_WORDS for t in clause):
-                claims.append(_claim(event, tok.lower_, "defense"))
+                _add(_claim(event, tok.lower_, "defense"))
 
             if clause_words & VENT_CLAIM_WORDS:
                 # Vents have no chat-nameable identity (only a synthetic group:index),
                 # so a vent claim never carries a place_name — see ChatClaim's docstring.
-                claims.append(_claim(event, tok.lower_, "vent"))
+                _add(_claim(event, tok.lower_, "vent"))
             elif place_name is not None:
                 claim_type: ClaimType = "task" if clause_words & TASK_CLAIM_WORDS else "location"
-                claims.append(_claim(event, tok.lower_, claim_type, place_name=place_name))
+                _add(_claim(event, tok.lower_, claim_type, place_name=place_name))
 
     # Self-alibi: independent of the color-mention gate above, since a
     # first-person statement usually never names the speaker's own color. Only
@@ -192,10 +282,13 @@ def chat_accusers(belief: Belief, *, cache: dict[str, set[str]] | None = None) -
             continue
         key = event.text
         if key not in cache:
+            # A kill report IS an accusation of the named killer (the template pass
+            # now suppresses the old spurious accusation-of-the-victim parse, so the
+            # kill claim carries the accusation signal for e.g. "red killed blue").
             cache[key] = {
                 claim.target_color
                 for claim in parse_claims(belief, event)
-                if claim.claim_type == "accusation"
+                if claim.claim_type in ("accusation", "kill")
             }
         for color in cache[key]:
             by_color.setdefault(color, set()).add(event.speaker_color)
@@ -232,13 +325,21 @@ def accused_colors(text: str, colors: set[str]) -> set[str]:
     return accused
 
 
-def _claim(event: ChatEvent, target_color: str, claim_type: ClaimType, *, place_name: str | None = None) -> ChatClaim:
+def _claim(
+    event: ChatEvent,
+    target_color: str,
+    claim_type: ClaimType,
+    *,
+    place_name: str | None = None,
+    source: str = "spacy",
+) -> ChatClaim:
     return ChatClaim(
         tick=event.tick,
         speaker_color=event.speaker_color,
         target_color=target_color,
         claim_type=claim_type,
         place_name=place_name,
+        source=source,
     )
 
 

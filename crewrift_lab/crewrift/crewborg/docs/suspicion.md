@@ -116,13 +116,54 @@ base + evidence terms by scoring path:
                        ┌─ fitted weights loaded? ──┐
    prior K/(P−1) ──────┤                           │
                        │  yes → logit = intercept + Σ w·x   (§4)
-                       │        (witnessed → floored to prior + WITNESSED_LOG_LR)
                        │
                        │  no  → logit = logit(prior) + Σ max-per-type logLR   (§5)
                        └───────────────────────────┘
                                   │
+                  + chat-evidence term (§3.1, both paths)
+                                  │
+                  witnessed → floored to prior + WITNESSED_LOG_LR
+                  HS-trusted (unwitnessed) → capped at prior − WITNESSED_LOG_LR
+                                  │
                             P = sigmoid(logit)
 ```
+
+### 3.1 Chat-provided evidence (hearsay), weighted by speaker trust
+
+Design + calibration: `crewrift_lab/docs/designs/2026-07-22-chat-evidence-incorporation.md`.
+Gated by `CREWBORG_CHAT_EVIDENCE` (**default OFF** — the 2026-07-22 pre-registered A/B
+refuted the untrusted-speaker calibration; the design doc's verdict has the numbers
+and the re-tuning follow-up. `=1` enables).
+
+`chat_evidence_log_lr` adds, on **both** scoring paths, a clamped term built from the
+banked `PlayerRecord.claims` (template-, spaCy-, and LLM-sourced — see
+`docs/designs/chat-evidence.md` for extraction):
+
+```
+Σ_speakers  trust(speaker) · Σ_claim-types-per-speaker  base_lr(type)
+  clamped to [CHAT_EVIDENCE_LR_MIN = −ln 8, CHAT_EVIDENCE_LR_MAX = ln 40]
+```
+
+- **Per (speaker, type) dedup** — repeating "X sus" counts once; independent speakers
+  stack. A speaker's kill/vent report subsumes their bare accusation of the same target.
+- **trust(speaker) = P(speaker is crew)**: `1.0` for `society_trusted` (HS-verified);
+  `0.0` for witnessed imposters, known teammates, unattributed lines, our own chat,
+  and self-referential stances; otherwise `1 − suspicion[speaker]` from the previous
+  tick (one-tick-lag fixed point — breaks the trust↔suspicion circularity).
+- **Base log-LRs**: kill testimony `ln 30` (hearsay-degraded — even the honest HS
+  liar-witness misattributed kills in 6/199 episodes, T8 2026-07-22), vent `ln 8`,
+  bare accusation `ln 1.5` (the fabrication-prone class), defense `−ln 2`. A
+  **contradicted self-alibi** (we watched the speaker elsewhere) adds `ln 4` on the
+  speaker, unscaled — the contradiction is our own observation.
+- **The cap is the hearsay ceiling**: one fully-trusted HS kill report clears the 0.9
+  vote bar at the 8p/2imp prior (P ≈ 0.92); saturated chat tops out ≈ 0.94 — chat can
+  never reach witnessed certainty, and the term is applied *before* the witnessed
+  floor and the HS pin, so it can never override either.
+
+Tracing: `domain.chat_evidence_applied` (once per meeting at vote-submit, crew only)
+records each target's chat term, the live `top_suspect`, and the no-chat-term
+counterfactual (`counterfactual_top_suspect_no_chat`) — the mechanism metric for
+"did chat evidence change our vote."
 
 ---
 

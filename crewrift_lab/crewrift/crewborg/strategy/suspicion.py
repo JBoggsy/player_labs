@@ -163,6 +163,66 @@ CHAT_SUSPECT_MIN_P = 0.4
 # Clamp the prior away from 0/1 so its log-odds stays finite.
 PRIOR_MIN, PRIOR_MAX = 1e-3, 0.99
 
+# --- chat-provided evidence (hearsay), weighted by speaker trust ----------------
+# Design: crewrift_lab/docs/designs/2026-07-22-chat-evidence-incorporation.md.
+# Other players' banked chat claims (PlayerRecord.claims — template/spaCy/LLM
+# sourced) contribute a log-LR to the target's posterior, scaled by P(speaker is
+# crew): an HS-verified member's testimony counts in full; a suspected player's is
+# scaled down (an imposter's accusation is deflection-likely — the 851-game chat
+# study found imposter accusations fabricated in a concrete-but-safe-cue pattern);
+# a witnessed imposter's counts zero. Per-(speaker, claim_type) dedup: repeating
+# "X sus" ten times counts once; independent speakers stack. The total is CAPPED
+# below the witnessed level — chat is hearsay (T8: even the honest HS liar-witness
+# misattributed kills in 6/199 episodes), so no volume of chat may ever reach the
+# definitional witnessed certainty or override the HS trust pin.
+ENV_CHAT_EVIDENCE = "CREWBORG_CHAT_EVIDENCE"
+# Per-claim base log-LRs (full-trust values; see the design doc's table):
+CHAT_KILL_LOG_LR = math.log(30.0)  # "saw X kill Y" — near-certain class, hearsay-degraded
+CHAT_VENT_LOG_LR = math.log(8.0)  # "X vented" — matches the legacy vent-dwell weight
+CHAT_ACCUSATION_LOG_LR = math.log(1.5)  # bare "X sus" — the fabrication-prone class
+CHAT_DEFENSE_LOG_LR = -math.log(2.0)  # "X is clear" — matches the fitted times_defended scale
+# A contradicted self-alibi (we WATCHED them somewhere else) is a caught lie about
+# the speaker themselves — full weight, no trust scaling (the contradiction is ours).
+CHAT_CONTRADICTED_ALIBI_LOG_LR = math.log(4.0)
+# Cap: one fully-trusted kill report (log 30) clears the 0.9 vote bar at the 8p/2imp
+# prior; the cap tops out around P ≈ 0.94 there — actionable, never witnessed-certain.
+CHAT_EVIDENCE_LR_MAX = math.log(40.0)
+CHAT_EVIDENCE_LR_MIN = -math.log(8.0)
+
+# Which claim types carry testimony weight (location/task claims are alibi facts,
+# consumed via their verification instead).
+_CHAT_CLAIM_LOG_LR = {
+    "kill": CHAT_KILL_LOG_LR,
+    "vent": CHAT_VENT_LOG_LR,
+    "accusation": CHAT_ACCUSATION_LOG_LR,
+    "defense": CHAT_DEFENSE_LOG_LR,
+}
+
+
+def _chat_evidence_enabled_from_env() -> bool:
+    # Default OFF: the 2026-07-22 pre-registered A/B (crewborg-chatev:v1 vs v111,
+    # 200 eps/arm) REFUTED the current calibration — chat-changed votes hit
+    # imposters at 67.4% vs 69.0% for suspicion-alone (the field's chat adds vote
+    # volume, not precision) and total crew ejections rose (p=0.066). The mechanism
+    # itself validated cleanly (384 applied events, 47 changed votes, tracing +
+    # counterfactual sound); re-enable only after re-tuning the untrusted-speaker
+    # path (see the design doc's verdict + follow-up).
+    return os.environ.get(ENV_CHAT_EVIDENCE, "0").strip().lower() in ("1", "true", "yes", "on")
+
+
+_CHAT_EVIDENCE_ENABLED = _chat_evidence_enabled_from_env()
+
+
+def set_chat_evidence_for_tests(enabled: bool | None) -> None:
+    """Test/ops hook: pin the chat-evidence term on/off (None ⇒ re-read the env)."""
+
+    global _CHAT_EVIDENCE_ENABLED
+    _CHAT_EVIDENCE_ENABLED = _chat_evidence_enabled_from_env() if enabled is None else enabled
+
+
+def chat_evidence_enabled() -> bool:
+    return _CHAT_EVIDENCE_ENABLED
+
 # Max distance a player can walk in one tick (MaxSpeed/MotionScale = 704/256 ≈ 2.75,
 # rounded up): a player materialising inside a vent from beyond this vented.
 VENT_WALK_MARGIN = 3
@@ -522,6 +582,102 @@ def _evidence_log_lr(belief: Belief, record: PlayerRecord) -> float:
     return witnessed + vent + body + follow + tail
 
 
+# --- chat-provided evidence: speaker-trust-weighted hearsay -------------------
+
+
+def _speaker_trust(belief: Belief, speaker: str, *, prior_p: float, witnessed: set[str]) -> float:
+    """P(speaker is crew) ∈ [0, 1] — the weight their testimony carries.
+
+    HS-verified members are fully trusted ("we totally trust HS members to be
+    crew"); a witnessed imposter or (imposter-role) known teammate is fully
+    distrusted; everyone else gets 1 − P(imposter) from the PREVIOUS tick's
+    posterior (breaking the trust↔suspicion circularity with a one-tick lag —
+    evidence persists, so the fixed point converges). A speaker not in the
+    posterior (e.g. now dead — often an honest victim) falls back to the prior.
+    """
+
+    if speaker in belief.society_trusted:
+        return 1.0
+    if speaker in witnessed or speaker in belief.teammate_colors:
+        return 0.0
+    return 1.0 - belief.suspicion.get(speaker, prior_p)
+
+
+def chat_evidence_log_lr(belief: Belief, color: str, record: PlayerRecord) -> float:
+    """The clamped chat-evidence log-LR for one target: other players' banked
+    claims about them, each scaled by the speaker's trust, deduped per
+    (speaker, claim_type), summed, and capped (chat is hearsay — see the module
+    constants and the design doc). Contradicted self-alibis (we watched the
+    speaker somewhere else) add caught-in-a-lie weight, unscaled — the
+    contradiction is our own observation, not testimony.
+    """
+
+    if not _CHAT_EVIDENCE_ENABLED or not record.claims:
+        return 0.0
+    self_color = belief.self_color or belief.voting.self_marker_color
+    prior_p = _prior_imposter_p(belief)
+    witnessed = witnessed_imposters(belief)
+
+    total = 0.0
+    caught_lying = False
+    testimony_types_by_speaker: dict[str, set[str]] = {}
+    for claim in record.claims:
+        if claim.speaker_color is not None and claim.claim_type in _CHAT_CLAIM_LOG_LR:
+            testimony_types_by_speaker.setdefault(claim.speaker_color, set()).add(claim.claim_type)
+        # A contradicted self-alibi: the speaker (== this target) claimed a place we
+        # watched them NOT be. Counted once however many alibis were contradicted.
+        if claim.speaker_color == color and claim.verification == "contradicted":
+            caught_lying = True
+
+    for speaker, claim_types in testimony_types_by_speaker.items():
+        if speaker == color or speaker == self_color:
+            continue  # self-referential stances / our own chat carry no testimony weight
+        trust = _speaker_trust(belief, speaker, prior_p=prior_p, witnessed=witnessed)
+        if trust <= 0.0:
+            continue
+        # A kill/vent report subsumes the same speaker's bare accusation (the
+        # parse often yields both from one line) — don't stack severities.
+        effective = set(claim_types)
+        if "kill" in effective or "vent" in effective:
+            effective.discard("accusation")
+        for claim_type in effective:
+            total += trust * _CHAT_CLAIM_LOG_LR[claim_type]
+
+    if caught_lying:
+        total += CHAT_CONTRADICTED_ALIBI_LOG_LR
+    return min(CHAT_EVIDENCE_LR_MAX, max(CHAT_EVIDENCE_LR_MIN, total))
+
+
+def chat_evidence_contributions(belief: Belief) -> dict[str, float]:
+    """Per scored (live, non-self, non-teammate) color, the chat term currently in
+    their posterior — the tracing surface for ``domain.chat_evidence_applied``."""
+
+    return {
+        color: chat_evidence_log_lr(belief, color, record)
+        for color, record in belief.roster.items()
+        if record.life_status != "dead" and color != belief.self_color and color not in belief.teammate_colors
+    }
+
+
+def counterfactual_top_suspect_no_chat(belief: Belief) -> str | None:
+    """``top_suspect`` as it would resolve with the chat-evidence term zeroed — the
+    per-meeting mechanism metric ("did chat evidence change our vote?"). Restores
+    the live posterior before returning; cheap enough for once-per-meeting use."""
+
+    if not _CHAT_EVIDENCE_ENABLED:
+        return top_suspect(belief)
+    saved_suspicion = belief.suspicion
+    saved_believed = belief.believed_imposters
+    set_chat_evidence_for_tests(False)
+    try:
+        _recompute(belief)
+        return top_suspect(belief)
+    finally:
+        set_chat_evidence_for_tests(True)
+        belief.suspicion = saved_suspicion
+        belief.believed_imposters = saved_believed
+
+
 # --- combine into the posterior ---------------------------------------------
 
 
@@ -538,12 +694,17 @@ def _recompute(belief: Belief) -> None:
         witnessed = any(e.kind in ("kill", "vent_use") for e in record.events)
         if _WEIGHTS is not None:
             logit = _fitted_log_odds(belief, record)
-            # A witnessed kill/vent stays DEFINITIONAL near-certainty (we saw it),
-            # never down-weighted by the fitted model (design: witnessed is not fit).
-            if witnessed:
-                logit = max(logit, prior_logit + WITNESSED_LOG_LR)
         else:
             logit = prior_logit + _evidence_log_lr(belief, record)
+        # Chat-provided evidence (hearsay), weighted by speaker trust — identical on
+        # both scoring paths and with the meeting LLM on or off (a belief-layer
+        # feature; design 2026-07-22-chat-evidence-incorporation.md). Applied BEFORE
+        # the witnessed floor and the HS pin, so it can never override either.
+        logit += chat_evidence_log_lr(belief, color, record)
+        # A witnessed kill/vent stays DEFINITIONAL near-certainty (we saw it),
+        # never down-weighted by the fitted model or by exculpatory chat.
+        if witnessed:
+            logit = max(logit, prior_logit + WITNESSED_LOG_LR)
         # Honor Society role-reveal trust (design docs/designs/honor-society.md):
         # a verified member claiming crew IS crew — pin their posterior near zero
         # so votes, accusations, flee logic, and the meeting-LLM context all treat
