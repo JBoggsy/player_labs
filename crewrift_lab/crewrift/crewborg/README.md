@@ -81,6 +81,11 @@ as a log-LR term **weighted by speaker trust**: HS-verified members count in ful
 `1 − P(speaker is imposter)`, witnessed imposters count zero, and the total is
 capped below witnessed certainty (chat is hearsay). Identical on both scoring paths
 and with the meeting LLM on or off; `=1` enables.
+`CREWBORG_CHAT_EVIDENCE_TRUST_FLOOR` (default **0.9**) gates WHO may testify at
+all: speakers below the floor contribute zero, so by default only HS-verified
+members (trust 1.0) and near-cleared players (suspicion ≤ 0.1) count — the W3b
+re-tuning that removes the fabrication-prone stranger band; `=0` restores the
+un-floored (refuted) v1 weighting.
 Design + A/B verdict: `crewrift_lab/docs/designs/2026-07-22-chat-evidence-incorporation.md`;
 model reference: [`docs/suspicion.md`](docs/suspicion.md) §3.1.
 

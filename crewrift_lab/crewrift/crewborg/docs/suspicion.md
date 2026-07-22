@@ -150,6 +150,13 @@ banked `PlayerRecord.claims` (template-, spaCy-, and LLM-sourced — see
   `0.0` for witnessed imposters, known teammates, unattributed lines, our own chat,
   and self-referential stances; otherwise `1 − suspicion[speaker]` from the previous
   tick (one-tick-lag fixed point — breaks the trust↔suspicion circularity).
+- **Trust FLOOR** (`CREWBORG_CHAT_EVIDENCE_TRUST_FLOOR`, default **0.9**): a speaker
+  below the floor contributes **zero** testimony — by default only HS-verified
+  members and near-cleared players (suspicion ≤ 0.1) count. The W3b re-tuning after
+  the un-floored A/B was refuted: the intermediate-trust stranger band added only
+  symmetric vote volume (offline recount: HS kill/vent testimony 22/22 accurate vs
+  strangers ≈64%, imposter-speakers 0/158). `=0` restores the v1 weighting. The
+  contradicted-self-alibi weight is not floored (our own observation, not testimony).
 - **Base log-LRs**: kill testimony `ln 30` (hearsay-degraded — even the honest HS
   liar-witness misattributed kills in 6/199 episodes, T8 2026-07-22), vent `ln 8`,
   bare accusation `ln 1.5` (the fabrication-prone class), defense `−ln 2`. A

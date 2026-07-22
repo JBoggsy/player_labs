@@ -258,3 +258,71 @@ of James's directive with the gullibility surface removed. The
 `CREWBORG_CHAT_EVIDENCE` flag ships in the code default-ON but the probe verdict says
 **run crewborg with it only after that re-tuning**; W5 should NOT fold
 `crewborg-chatev:v1` into the next ship.
+
+---
+
+## W3b — the trust-FLOOR variant (`crewborg-chatev:v2`)
+
+**Status:** implemented + probe pre-registered 2026-07-22 (W3b).
+
+### Implementation
+
+`CREWBORG_CHAT_EVIDENCE_TRUST_FLOOR` (default **0.9** whenever
+`CREWBORG_CHAT_EVIDENCE=1`): in `chat_evidence_log_lr`, a speaker whose trust is
+below the floor contributes **zero** testimony. HS-verified members (trust 1.0)
+pass in full; near-cleared players (1 − P(imposter) ≥ floor, i.e. suspicion
+≤ 0.1 at the default) pass at their trust value; everyone else — the entire
+intermediate-trust stranger band that sank v1 — contributes nothing. Floor `0`
+reproduces chatev:v1 exactly. The contradicted-self-alibi weight stays
+**un-floored** (it is our own observation, not testimony). Everything else
+(caps, per-(speaker,type) dedup, LR table, tracing) unchanged.
+
+### Offline fire-rate + precision estimate (BEFORE the probe)
+
+Replayed the retained W3 cand-arm telemetry (`/tmp/w3_cand_eps`, 145 clean crew
+eps; scripts `crewrift_lab/tmp_probe/fire_rate.py`, `claim_precision.py` —
+template-parse extraction, HS state from `honor_known_member`/`honor_liar`,
+near-cleared from the preceding `suspicion_snapshot`):
+
+- **Would-fire rate 0.57/crew-ep** (83/145 eps with ≥1 floor-passing claim;
+  114/384 traced meetings) — 10× above the ~0.05/ep structurally-unpowered bar.
+  An HS-verified member is visible in 93.8% of crew eps.
+- Floor-passing claims: **HS 127** (kill/vent 22, accusations 105), near-cleared
+  27 (all accusations). The un-floored v1 fuel was 823 any-speaker claims — the
+  floor removes ~81% of the volume.
+- **Ground-truth precision (does the claim's target turn out to be an actual
+  imposter):** HS **kill/vent 22/22 = 100%**; HS bare accusations 63.8%;
+  near-cleared accusations 59.3%; strangers (the removed band) 64.4% overall;
+  **imposter-speakers 0/158 = 0%** — pure fabrication, all floor-removed.
+  The floor keeps exactly the evidence class that is both bar-clearing
+  (log 30) and empirically perfect, and removes everything at-or-below our own
+  posterior's precision.
+- Powered-or-not: a 200-ep probe is **powered for the pre-registered
+  criteria** (not-worse + mechanism-diagnostic) but NOT for a statistically
+  significant imp-ejection gain: ~22 HS kill/vent events → expected extra
+  correct ejections ≈ +0.03–0.05/crew-ep, below 200-ep noise (±0.09). The
+  decisive read is the mechanism diagnostic (changed-vote hit rate), as in W3.
+
+### Pre-registered A/B (probe `crewborg-chatev:v2`, BEFORE firing)
+
+Candidate: v111 recipe exactly + `CREWBORG_CHAT_EVIDENCE=1` +
+`CREWBORG_CHAT_EVIDENCE_TRUST_FLOOR=0.9` (explicit for self-documentation),
+Thread-1 pinned roster, slot 0, natural roles, 2×100. Baseline: W1's v111
+confirmatory arms (`xreq_fab85490` + `xreq_2f42f740`, retained at
+`/tmp/w3_base_eps`). Ops-fail eps excluded both sides.
+
+- **PRIMARY (both must hold):** imp-ejections/crew-ep (measured as our
+  correct-imposter votes/crew-ep, same as W3) not worse; crew mis-ejections
+  NOT up (the W3 failure mode — v1 showed +0.186/ep total crew ejections,
+  p=0.066).
+- **MECHANISM (must fire + must pass):** `domain.chat_evidence_applied`
+  events present with **HS-member sources predominating** among floor-passing
+  contributions (offline source-class recount); chat-CHANGED votes hit
+  imposters at **≥ the suspicion-alone rate** (the W3 killer diagnostic:
+  67.4% vs 69.0% — now expected to pass because only 100%-precision-class
+  sources contribute at bar-clearing weight).
+- **GUARDS:** crew win not down; imposter side untouched (win, kills/seat);
+  vote_timeouts flat.
+
+Verdict → **SHIP RECOMMENDED** (default ON with floor) / **SHIP OFF** (keep
+code, off by default) / **REFUTED**.
