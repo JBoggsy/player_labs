@@ -119,7 +119,6 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self._instant_vote_pending: str | None = None
         self._chat_accused: str | None = None
         self._meeting_id: int | None = None
-        self._meeting_index = -1  # becomes 0 on the first meeting's reset
         self._deterministic_chatted = False
         self._disabled_traced = False
         self._sent_chat_texts: set[str] = set()
@@ -587,7 +586,11 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         HTTP read here (the per-tick /spend GET was the 2026-07-21 vote_timeout root
         cause; the cache is owned by ``_spend_allows_followup``).
         """
-        payload["meeting_index"] = self._meeting_index
+        # Ordinal from the process-wide ledger, not an instance counter: the mode is
+        # recreated per meeting, so an instance counter reads 0 forever (measured on the
+        # spendtrace probe).
+        meeting_id = self._meeting_id if self._meeting_id is not None else belief.phase_start_tick
+        payload["meeting_index"] = llm_spend.EPISODE_LEDGER.meeting_ordinal(meeting_id)
         payload["role"] = belief.self_role
         payload["calls_used"] = self._llm_calls_used
         payload["sidecar_spend_usd"] = self._spend_last_read_usd
@@ -813,7 +816,6 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         if meeting_id == self._meeting_id:
             return
         self._meeting_id = meeting_id
-        self._meeting_index += 1  # 0-based ordinal for spend attribution; never resets
         # A still-running call from the previous meeting delivers against a stale
         # request_id and is dropped in _collect_llm_outcome; the id itself never resets.
         self._llm_pending = None

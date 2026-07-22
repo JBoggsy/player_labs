@@ -112,6 +112,19 @@ class SpendLedger:
         self._total_usd = 0.0
         self._success_calls = 0
         self._success_input_tokens = 0
+        self._meeting_ordinals: dict[int, int] = {}
+
+    def meeting_ordinal(self, meeting_id: int) -> int:
+        """Stable 0-based ordinal for a meeting id (``belief.phase_start_tick``).
+
+        Lives on the process-wide ledger because ``AttendMeetingMode`` instances are
+        recreated per meeting (the strategy re-issues the directive), so any
+        instance-level counter resets to 0 every meeting — measured on the spendtrace
+        probe: every llm_spend event carried meeting_index 0 while seats exceeded the
+        5-call per-meeting budget.
+        """
+        with self._lock:
+            return self._meeting_ordinals.setdefault(meeting_id, len(self._meeting_ordinals))
 
     def success_event(
         self,
@@ -191,6 +204,7 @@ class SpendLedger:
             self._total_usd = 0.0
             self._success_calls = 0
             self._success_input_tokens = 0
+            self._meeting_ordinals.clear()
 
 
 #: Process-wide ledger — one player pod runs one episode, so this IS the episode ledger.

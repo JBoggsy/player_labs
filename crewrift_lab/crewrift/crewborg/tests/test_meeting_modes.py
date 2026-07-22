@@ -1085,6 +1085,30 @@ def test_attend_meeting_emits_llm_spend_on_success() -> None:
     assert event.data["calls_used"] == 1
 
 
+def test_llm_spend_meeting_index_survives_mode_recreation() -> None:
+    """REGRESSION (spendtrace probe): AttendMeetingMode is recreated per meeting, so an
+    instance-level meeting counter read 0 forever. The ordinal lives on the process
+    ledger, keyed by meeting id (phase_start_tick)."""
+    from players.player_sdk import EventEmitter, ListMetricsSink, ListTraceSink
+    from crewrift.crewborg.strategy import llm_spend
+
+    llm_spend.EPISODE_LEDGER.reset()
+
+    def run_meeting(start_tick: int) -> int:
+        client = _FakeMeetingClient([MeetingDecision(action="wait")])
+        sink = ListTraceSink()
+        mode = _llm_mode(client)  # a FRESH mode instance, as the runtime creates per meeting
+        mode.emit = EventEmitter(sink, ListMetricsSink())
+        mode.decide(_meeting_belief(tick=start_tick, start_tick=start_tick), ActionState())
+        mode.decide(_meeting_belief(tick=start_tick + 1, start_tick=start_tick), ActionState())
+        [event] = [e for e in sink.events if e.name == "domain.llm_spend"]
+        return event.data["meeting_index"]
+
+    assert run_meeting(100) == 0
+    assert run_meeting(3000) == 1  # a later meeting, a new mode instance
+    assert run_meeting(3000) == 1  # same meeting id → same ordinal
+
+
 def test_attend_meeting_emits_llm_spend_on_failure_with_free_429() -> None:
     """A 429-failed call still emits llm_spend — attributed, but at $0 (measured: the
     sidecar rejects throttled calls pre-inference)."""
