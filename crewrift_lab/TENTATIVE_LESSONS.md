@@ -18,6 +18,25 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
 
+### Before "fixing" a flagged bug, check whether a past commit already fixed it — date the evidence
+
+Evidence: Direction 2 said reported_bodies/button_calls_made "never fire" (all-zero across
+398 live meetings). That evidence was from the v90 trace batch (pre-2026-07-06); commit
+`0fe80c8` (v96) had already fixed the belief-latch self-clear, and a fresh scan of TODAY's
+v107 league telemetry showed the features firing (10 rb>0 + 19 bc>0 rows in 21 meetings;
+85% capture vs replay ground truth). `git log -S <symbol>` on the flagged code path found the
+prior fix in one command. A weekly-context direction can be stale the day you pick it up —
+re-validate the headline number against current data before writing any code.
+
+### Validate detectors against replay ground truth, not just "nonzero telemetry"
+
+Evidence: counting nonzero feature rows proved the caller parse fires, but only the
+per-event cross-check (expand_replay vote_called_body/button + slot→color map vs the seat's
+cumulative snapshot counts) measured CAPTURE (17/20) and exposed the residual failure mode:
+all 3 misses were the caller color colliding with crewborg's stale palette-derived self-color
+(pre-`2a13256`), which silently excludes that color from banking + ranking. The
+miss PATTERN (who gets missed) carried the diagnosis, not the miss rate.
+
 ### Importing another team's methodology: filter through the operating model, not topical overlap
 
 Evidence: Pulled from `Metta-AI/optimizer-skills` (an *autonomous*-optimizer library) into

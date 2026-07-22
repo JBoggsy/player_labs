@@ -21,12 +21,35 @@ bandwagon-doesn't-transfer lesson (notsus coordination worked because MULTIPLE n
 
 ## Direction 2 — Fix the caller-attribution detector, then refit suspicion v5
 
-Evidence: `reported_bodies` / `button_calls_made` are ALL-ZERO across 398 live meetings —
-the runtime MeetingCall-interstitial parse never fires; these were meaningful offline
-features. The refit pipeline is fully operational (every league round produces live feature
-vectors now), so: fix detector → accumulate a week of league data → `fit --features runtime`
-→ eval vs v4 → A/B. Also worth adding: HS-derived features (trusted/known flags) to the
-feature set.
+**STATUS 2026-07-21: the detector is ALREADY FIXED and PROVEN FIRING LIVE — no new detector
+work needed; what remains is accumulating data + the v5 refit.** Investigation findings:
+
+- The all-zero evidence was from the v90 trace batch (398 meetings, pre-2026-07-06). Root
+  cause was the belief-latch self-clear bug, fixed in `0fe80c8` (shipped v96+, 2026-07-06):
+  `derive_phase` has no MeetingCall state so phase stays "Playing" during the ~3 s
+  interstitial, and `update_belief` cleared the just-latched caller the same tick it latched.
+  The label parse itself (`perception/resolve.py` `MEETING_CALL_TEXT`) was never broken —
+  "`<Color> reported|pressed|called`" is byte-identical in the current game source
+  (34a97a3 = deployed 0.4.68, `global.nim meetingCallLines`); verified across all cached refs.
+- **Live proof (v107 league, 2026-07-21):** `telemetry_harvest/` scan — 21 crewborg meeting
+  snapshots, 10 rows `reported_bodies>0`, 19 rows `button_calls_made>0`. Replay cross-check
+  (10 harvest episodes expanded with `expand_replay-34a97a3`, `vote_called_body`/`_button`
+  ground truth): **17/20 attributable caller events correctly banked (85%)**. The v107-vs-v100
+  A/B cand arm shows the same at scale (196 eps: 195 rb>0 + 332 bc>0 rows across 364 snapshots).
+- All 3 misses share ONE signature: the caller's color == the stale `PLAYER_COLOR_NAMES[slot]`
+  crewborg wrongly believed was its own (`?slot=` seed via the pre-1cbd4de palette), so
+  `_bank_meeting_caller` saw "self" and the ranking excluded the color. **The palette fix
+  (`2a13256`, in v109/v110) already closes this** — expect ~100% capture on v110+ telemetry.
+- Added resolve-level regression tests pinned to the current game's interstitial labels
+  (`tests/test_resolve.py::test_meeting_call_interstitial_*`).
+
+Refit recipe (needs ~a week of v110+ league data via the `tools/harvest_artifacts.py` cron —
+running every 10 min as of 2026-07-21, telemetry lands in `telemetry_harvest/episodes/`):
+expand replays for labels (`suspicion_lab/tools/expand_corpus.py --ref 34a97a3`) →
+`build_dataset_runtime.py --policy crewborg --version <N≥110>` (v107 rows carry the palette
+self-ID contamination — prefer v110+) → `fit.py --features runtime --tag runtime-v5` →
+`eval.py` → A/B per `suspicion_lab/README.md`. Worth adding to the feature set while refitting:
+HS-derived trust flags (trusted/known member), per the original plan.
 
 ## Direction 3 — bar60-vs-bar90 confirmation (only if pursuing more solo votes)
 
