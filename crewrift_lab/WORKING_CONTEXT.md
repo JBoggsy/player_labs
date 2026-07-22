@@ -15,11 +15,51 @@ This is *not* a log or archive: finished work lives in git history / the
 
 ---
 
-## 🚢 IN FLIGHT (2026-07-22, W5): v112 combination build — confirmatory A/B → ship
+## 🎯 OBJECTIVE (2026-07-22, post-W5): v112 is champion — watch its league recovery, then pick the next lever
 
-**v112 uploaded** (`0feddca8-0d04-4b1e-bd5f-2babd2792add`, 2026-07-22T20:31Z, main `64abdab`,
-v111 recipe + `CREWBORG_CHAT_EVIDENCE=1`) = v111's code + warm anchor (W2) + trust-floored
-chat evidence (W3b, recipe-carried) + spend telemetry (W4). 721 tests green. Version_log row live.
+v112 (warm anchor + trust-floored chat evidence + spend telemetry) is live. Near-term:
+1. **Watch v112's leaderboard trajectory** (Competition div `div_acbde92a…`; score reset to 5.0/
+   rank 17 at submit — it rebuilds per round; v111 sat ~14/6553). Mine fresh league rounds once
+   ~50-100 accumulate (coworld-hypothesis-miner / top-3 advantage methodology).
+2. **W5 watch item:** the warm-pile/chat-evidence double-count channel is real (all 5 escalations
+   chat-fed) but currently benign (5/5 true imposters). If a future change raises warm volume,
+   re-measure interaction (b) (`/tmp/w5_ab/interaction_b.py` is the template).
+3. **Open lever candidates:** suspicion-v5 refit (ML ceiling AUC 0.82 says the social counters
+   hold more signal — W2's key measurement); vote coordination to monetize HS trust (Direction 1);
+   the Bedrock quota ask (`docs/bedrock-quota-ask.md`) remains the durable LLM-coverage fix.
+
+---
+
+## 👑 DONE (2026-07-22, W5): v112 SHIPPED — combination A/B CLEAN → SUBMITTED → COMPETING + CHAMPION
+
+**crewborg:v112 is `competing/active` and CHAMPION** (`lpm_78d02983…`, submission `sub_e61b68a1…`,
+"Selected as champion." 22:52Z; v111's `lpm_329ad382…` retired first with the audit reason —
+the superseded gotcha honored). Leaderboard: rank 17 / score 5.0 at 1 round played (score resets
+per-membership and rebuilds). **VERDICT: ALL pre-registered gates + mechanisms PASS** (cand
+`xreq_adf9eb36`+`xreq_f5cd7186`, 200/200 eps, 1 ops-excluded → 199 clean, per-episode verified
+v112 `0feddca8` slot 0, identical roster to W1's re-verified v111 baseline arms):
+- Gate 1 no-regression ✅ crew 28.9% vs 26.4% (p=0.69, direction UP), imposter 62.5% vs 63.3% (p=1.0).
+- Gate 2 mis-votes/crew-ep ✅ **0.185 vs 0.243** (bar was ≤0.232).
+- Gate 3 warm-vote precision ✅ **5/5 = 100%** (16 warm fires, 11 lone ballots gated to skip,
+  3+2 pile escalations all true imposters).
+- Gate 4 ✅ vote_timeouts 0/0, self-accusations 0, ops 1 vs 7.
+- Mech 5 anchor ✅ **0.377/ep vs 0.218** (hard 0.296 + warm 0.080, poisson p=0.004) — ABOVE W2's
+  solo 0.266/ep: interaction (a) confirmed, chat evidence pushes suspects onto the bar; hard-route
+  accuracy 91.5% vs 100% (p=0.07 NS — the new hard fires are chat-evidence bar-clearers, W3b-priced).
+- Mech 6 chat evidence ✅ 378 applied / 44 changed votes @ 79.5% imposter-hit (vs 71.5%
+  suspicion-alone; W3b solo was 92.1%, dilution NS p=0.13); HS sources 83/316 nonzero meetings.
+- Mech 7 spend ✅ llm_spend 2015 = meeting_llm_call 2015, exactly 1:1.
+- **Interaction (b) — the double-count channel is REAL: all 5 pile escalations had chat-evidence
+  contribution to the same warm target.** But all 5 ejected true imposters; no innocent pile-on:
+  total crew-ej/crew-ep 0.748 vs 0.674 (p=0.46), crew-ej-we-voted 0.104 vs 0.069 (p=0.39),
+  self-ejected 22 vs 27. WATCH ITEM for the next wave: if warm volume grows, re-measure (b).
+- Directional: crew vote precision **79.8% vs 71.5%**; imp-ej/crew-ep 0.519 vs 0.514 (flat).
+Full row: version_log.md v112. Analysis `/tmp/w5_ab/` (w5_metrics.py, interaction_b.py,
+cand/base_metrics.txt); warehouse `/tmp/wh_v112_cand` (200 eps), episodes `/tmp/wh_v112_cand_episodes`.
+Platform note: the membership-LIST route returned only 2 stale rows post-submit — confirm
+placements via `/v2/policy-membership-events` + the division leaderboard instead.
+
+### The W5 prereg as registered (verdict above)
 
 **PRE-REGISTERED A/B (combination confirmatory — W2 and W3b were validated SEPARATELY vs v111
 and both touch the suspicion posterior + meeting vote path), registered BEFORE firing the cand arms:**
