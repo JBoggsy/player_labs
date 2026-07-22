@@ -10,7 +10,33 @@ startup to resume; **update it as you learn** (keep it tight).
 
 ---
 
-## Status (2026-07-22, session 6c): **v16 HEARING built + measured** — uploaded, NOT submitted
+## Status (2026-07-22, session 6d): **v18 CHAT built + verified live; hearing A/B = NULL**
+
+**Hearing A/B (subagent, n=40/arm vs focusfire:v36, pre-registered):** REFUTED/NULL —
+ON 7/40 vs OFF 8/40 wins, Fisher p=1.0, diff −2.5pp CI [−19.7,+14.8]. Manipulation
+check decisive (OFF arm: 0 heard_events across 48 agents; v17 = the OFF upload, do
+not submit). So v16's apparent focusfire gain was noise/something else; hearing is
+retained as SUBSTRATE (danger-field feed) with no win claim. Report:
+`scratch/ab_hearing/AB_REPORT.md`.
+
+**v18 chat (uploaded, NOT submitted):** the E/U/G/C/T 10-char shout protocol
+(`chat.py`), send arbitration (C>T>G>U>E, 30t interval, E edge-triggered w/ re-arm),
+bubble perception + same-team decode into belief (phantom tracks, thief_fix,
+carrier_fix+heading, grenade_warnings, danger stamps; enemy bubbles = position fix
+only), consumers: intercept_thief_heard / escort_carrier_heard / clear_grenade.
+Smoke (10 eps ea): **6-4 vs focusfire (first series win!), 2-8 h006**, acc 0.631.
+Activation ALL LIVE: sent E1090/U735/G123/C50/T15; heard 4488 same-team decodes +
+1050 enemy-bubble fixes; consumers fired (T-intercept 11, clear_grenade 13, C-escort
+2). Human framing: these are building blocks for squad coordination — only T/E
+expected to move outcomes yet; don't over-read the focusfire 6-4 (n=10; the A/B
+lesson applies).
+
+**Version map:** v15 = league champion (competing). v16 hearing. v17 = v16+HEARING=0
+(A/B artifact, never submit). v18 = chat (current head). Next levers (human to
+direct): squad movement/responsiveness on E/U (support/flank), danger-gated routing,
+send-priority tuning (E/U dominate the budget).
+
+## (prior) Status (2026-07-22, session 6c): **v16 HEARING built + measured** — uploaded, NOT submitted
 
 Direction (human): teamwork, starting with using AUDIO to understand the map (chat
 deferred). Game facts (b571dd3): `shot impact` rings = every bullet landing, audible
