@@ -49,6 +49,10 @@ class FakeControlServer:
         self.selections: list[dict] = []
         self._pending_settlement: dict | None = None
         self._settled: dict | None = None
+        # Validation storm: emit frames whose recommended_action violates its own
+        # mask (the live 0.1.31 controller bug) — strict pydantic parsing rejects
+        # the WHOLE frame; the bridge must fall back to a lenient parse.
+        self.invalid_recommendation = False
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
@@ -89,7 +93,30 @@ class FakeControlServer:
             payload = json.loads(self._recv_exact(conn, length) or b"{}")
             self._settle_if_due()
             if frame_type == STATUS_REQUEST:
-                if payload.get("include_action_settled"):
+                # The real Nim server REQUIRES all five status_request fields —
+                # requireControlBool raises on a missing key (nim_control_server.nim,
+                # FrameStatusRequest branch). Mirror that so a hand-built raw request
+                # (the bridge's lenient-frame path) can't pass tests while failing live.
+                missing = [
+                    field
+                    for field in (
+                        "protocol", "type", "expected_slot",
+                        "include_environment_frame", "include_action_settled",
+                    )
+                    if field not in payload
+                ]
+                if missing:
+                    self._send(
+                        conn, CONTROL_ERROR, request_id,
+                        {
+                            "protocol": PROTOCOL, "type": "control_error",
+                            "code": "invalid_request",
+                            "message": f"{missing[0]} must be present",
+                            "revision": self.revision,
+                            "slot": self.slot, "tick": self.tick,
+                        },
+                    )
+                elif payload.get("include_action_settled"):
                     if self._settled is None:
                         self._send(
                             conn, CONTROL_ERROR, request_id,
@@ -207,6 +234,9 @@ class FakeControlServer:
             "target", "spell", "item", "equipment_slot", "quest", "choice",
             "recipient", "text", "trigger", "dialog")}
         recommended = {"kind": "noop", **noop, "destination": None} if ready else None
+        if ready and self.invalid_recommendation:
+            # Mirrors the live bug: use_item with an item index the mask refuses.
+            recommended = {"kind": "use_item", **noop, "item": 2, "destination": None}
         return {
             "protocol": ENV_PROTOCOL,
             "type": "environment_frame",

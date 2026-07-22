@@ -118,3 +118,30 @@ def test_bridge_traces_frames_intents_outcomes(server, tmp_path) -> None:
     assert "observation" in kinds
     assert "intent" in kinds
     assert "outcome" in kinds
+
+
+def test_validation_storm_falls_back_to_lenient_frame(server, tmp_path) -> None:
+    """Live 0.1.31 bug: frames whose recommended_action violates the mask fail strict
+    parsing. The bridge must still return a usable (lenient) frame and admit selections
+    on it — the server stays the validator (v24/v25 hosted evidence)."""
+    server.invalid_recommendation = True
+    trace_file = tmp_path / "trace.jsonl"
+    bridge = make_bridge(server, tmp_path, Tracer(trace_file, echo_stdout=False))
+    assert bridge.connect(timeout_s=5.0)
+    assert bridge.arm_external_control()
+
+    frame = bridge.wait_for_frame(timeout_s=5.0)
+    assert frame is not None and frame.action_ready
+    assert getattr(frame, "is_lenient", False), "storm frame should be the lenient fallback"
+    assert frame.recommended_action is None  # never trust an invalid frame's advice
+    assert frame.observation.location.map_id == 1
+
+    # Selection still works on a lenient frame (server-side validation).
+    request_id = bridge.select_move_to(frame, -600.0, -4260.0, 39.0, 1)
+    assert request_id == f"frame-{frame.frame_id}"
+    assert server.selections and server.selections[-1]["action"]["kind"] == "move"
+    bridge.close()
+
+    kinds = [json.loads(line)["kind"] for line in trace_file.read_text().splitlines()]
+    assert "frame_invalid" in kinds
+    assert "intent" in kinds

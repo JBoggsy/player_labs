@@ -251,15 +251,23 @@ class ShimBridge:
 
         try:
             request_id = self._client._next_request_id()
+            # The Nim server REQUIRES all five status_request fields present
+            # (requireControlBool raises on a missing key) — v25 hosted evidence:
+            # omitting include_action_settled turned every lenient request into a
+            # CONTROL_ERROR and the fallback silently never fired.
             body = _json.dumps({
                 "protocol": "vanilla_wow.nim_control.v1",
                 "type": "status_request",
                 "expected_slot": self._slot,
                 "include_environment_frame": True,
+                "include_action_settled": False,
             }).encode()
             self._client._send_frame(_FRAME_STATUS_REQUEST, request_id, body)
             frame_type, rid, payload = self._client._recv_frame()
             if frame_type != _FRAME_ENVIRONMENT_FRAME or rid != request_id:
+                self._tracer.emit(
+                    "lenient_frame_rejected", frame_type=frame_type, request_id=rid
+                )
                 return None
             return LenientFrame(_json.loads(payload))
         except Exception:  # noqa: BLE001 — lenient path never raises
