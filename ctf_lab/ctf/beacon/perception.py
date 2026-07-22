@@ -43,6 +43,13 @@ _ITEM_LABELS = {
     "shield": "shield",
     "plasma arc": "arc",
 }
+#: Sound-ring labels (v16 hearing): audible map-wide through walls and fog,
+#: jittered ±20px per event, team-anonymous. "shot impact" = a bullet LANDED
+#: near here (~0.5s ring); "grenade sound" = an unseen grenade blast.
+_SOUND_LABELS = {
+    "shot impact": "shot",
+    "grenade sound": "grenade",
+}
 
 
 def _center(world: SpriteWorld, obj: SpriteObject) -> tuple[int, int]:
@@ -108,6 +115,16 @@ def _visible_items(world: SpriteWorld) -> tuple[tuple[str, tuple[int, int]], ...
         sprite = world.sprite_for(obj)
         if sprite is not None and sprite.label in _ITEM_LABELS:
             out.append((_ITEM_LABELS[sprite.label], _center(world, obj)))
+    return tuple(out)
+
+
+def _heard_impacts(world: SpriteWorld) -> tuple[tuple[str, tuple[int, int]], ...]:
+    """Sound rings in this frame, as (kind, map-px centre) pairs (v16 hearing)."""
+    out: list[tuple[str, tuple[int, int]]] = []
+    for obj in world.objects.values():
+        sprite = world.sprite_for(obj)
+        if sprite is not None and sprite.label in _SOUND_LABELS:
+            out.append((_SOUND_LABELS[sprite.label], _center(world, obj)))
     return tuple(out)
 
 
@@ -182,6 +199,7 @@ def perceive(obs, team: Team) -> CtfState:
         own_flag_thief_pos = _center(world, own_carried[0])
 
     visible_items = _visible_items(world)
+    heard_impacts = _heard_impacts(world)
     if self_xy is not None:
         hp_pips, have_grenade, have_shield, have_arc = _overhead_state(world, self_xy)
     else:
@@ -201,6 +219,7 @@ def perceive(obs, team: Team) -> CtfState:
         own_flag_stolen=own_flag_stolen,
         own_flag_thief_pos=own_flag_thief_pos,
         visible_items=visible_items,
+        heard_impacts=heard_impacts,
         hp_pips=hp_pips,
         i_have_grenade=have_grenade,
         i_have_shield=have_shield,

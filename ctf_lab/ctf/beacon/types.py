@@ -34,6 +34,21 @@ class Enemy:
 
 
 @dataclass
+class HeardImpact:
+    """One deduplicated heard sound event (belief.py folds ring sightings).
+
+    A ring sprite persists ~12 ticks, so the same event is sighted many frames;
+    belief matches sightings to existing events by position (rings are jittered
+    but STABLE per event) and keeps `first_tick` as the event time. Team-anonymous:
+    the ring never says who fired."""
+
+    kind: str  # "shot" | "grenade"
+    pos: tuple[int, int]  # ring centre (true landing ±20px jitter)
+    first_tick: int  # when we first heard it
+    last_tick: int  # most recent frame the ring was still in view
+
+
+@dataclass
 class PlayerTrack:
     """Last-seen memory of one other player, folded across frames (belief.py).
 
@@ -69,6 +84,10 @@ class CtfState:
     own_flag_thief_pos: tuple[int, int] | None  # a live thief fix, when in view
     # Items (v10): fog-gated pickup sightings + our own overhead-marker state.
     visible_items: tuple[tuple[str, tuple[int, int]], ...] = ()  # (kind, pos)
+    # Hearing (v16): sound rings in this frame — "shot impact" / "grenade sound"
+    # sprites. Audible map-wide through walls/fog, jittered ±20px, team-anonymous.
+    # Raw per-frame positions; belief dedups them into HeardImpact events.
+    heard_impacts: tuple[tuple[str, tuple[int, int]], ...] = ()  # (kind, pos)
     hp_pips: int | None = None  # our "hp N/3" bar segments; None = bar not resolved
     i_have_grenade: bool = False
     i_have_shield: bool = False
@@ -146,12 +165,18 @@ class Belief:
     # None. Behavior changes MUST be observable — a null A/B without activation
     # counts can't distinguish "never fired" from "fired and didn't help".
     micro: str | None = None
+    # True when this tick's duck was triggered by a HEARD impact (no seen track) —
+    # the v16 activation bit, reset alongside micro each tick.
+    heard_duck: bool = False
     # Items (v10): fixed-spawn belief table + our own carried/hp state (perception).
     item_spawns: list[ItemSpawn] = field(default_factory=list)
     hp_pips: int | None = None  # our hp bar segments 1..3; None = unresolved
     i_have_grenade: bool = False
     i_have_shield: bool = False
     i_have_arc: bool = False
+    # Hearing (v16): deduplicated sound events, freshest last. Folded from
+    # percept.heard_impacts; expire HEARD_TTL_TICKS after last_tick.
+    heard_events: list[HeardImpact] = field(default_factory=list)
     # Lead-aim activation state this tick, for tracing: brads of lead applied to the
     # snap aim (0 = no lead / target treated as stationary).
     lead_brads: int = 0
@@ -203,6 +228,7 @@ __all__ = [
     "Command",
     "CtfState",
     "Enemy",
+    "HeardImpact",
     "Intent",
     "IntentKind",
     "ItemKind",

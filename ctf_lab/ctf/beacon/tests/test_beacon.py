@@ -675,3 +675,84 @@ def test_fire_freezes_movement_through_windup():
     cmd2 = resolve_action(Intent(kind="navigate_to", point=(1049, 329), reason="steal"), b, st)
     assert not cmd2.held_mask & (int(Button.UP) | int(Button.DOWN) | int(Button.LEFT) | int(Button.RIGHT))
     assert st.fire_hold_ticks == 4
+
+
+# --- v16: hearing ----------------------------------------------------------------
+
+
+def test_sound_rings_perceived():
+    w = _world_with_self((600, 329))
+    w.sprites[60] = SpriteDef(60, 16, 16, "shot impact", b"")
+    w.objects[60] = SpriteObject(60, 392, 292, 0, 0, 60)
+    w.sprites[61] = SpriteDef(61, 16, 16, "grenade sound", b"")
+    w.objects[61] = SpriteObject(61, 692, 392, 0, 0, 61)
+    st = perceive(_obs(w), "red")
+    kinds = sorted(k for k, _ in st.heard_impacts)
+    assert kinds == ["grenade", "shot"]
+
+
+def test_heard_events_dedup_and_expire():
+    from ctf.beacon.belief import _update_heard
+    from ctf.beacon.config import HEARD_TTL_TICKS
+    from ctf.beacon.types import CtfState
+
+    def percept(impacts):
+        return CtfState(
+            ready=True, self_xy=(600, 329), self_facing="right", observed_aim=None,
+            fire_ready=True, enemies=(), teammates=(), i_carry_enemy_flag=False,
+            enemy_flag_on_pedestal=True, enemy_flag_pos=None, own_flag_stolen=False,
+            own_flag_thief_pos=None, heard_impacts=impacts,
+        )
+
+    b = Belief(team="red", alive=True, self_xy=(600, 329))
+    # Same ring sighted twice (stable jittered position) -> ONE event.
+    _update_heard(b, percept((("shot", (400, 300)),)), tick=100)
+    _update_heard(b, percept((("shot", (400, 300)),)), tick=101)
+    assert len(b.heard_events) == 1 and b.heard_events[0].first_tick == 100
+    # A distinct landing far away -> a second event.
+    _update_heard(b, percept((("shot", (700, 300)),)), tick=102)
+    assert len(b.heard_events) == 2
+    # Expiry after TTL from last sighting.
+    _update_heard(b, percept(()), tick=101 + HEARD_TTL_TICKS + 1)
+    assert len(b.heard_events) == 1  # only the 102 event survives
+
+
+def test_heard_impact_triggers_duck_when_gun_down():
+    from ctf.beacon.action import _peek_duck_override
+    from ctf.beacon.types import HeardImpact
+
+    b = Belief(team="red", alive=True, fire_ready=False, tick=100, self_xy=(250, 90))
+    b.aim_brads = 0  # aiming east
+    # Fresh impact NORTH of us (off our aim line), within duck range.
+    b.heard_events = [HeardImpact(kind="shot", pos=(250, 30), first_tick=95, last_tick=100)]
+    out = _peek_duck_override(Intent(kind="navigate_to", point=(1049, 329), reason="steal"), b)
+    assert out is not None and b.micro == "duck" and b.heard_duck
+
+
+def test_own_fire_landing_does_not_trigger_duck():
+    from ctf.beacon.action import _fresh_heard_impact
+    from ctf.beacon.types import HeardImpact
+
+    b = Belief(team="red", alive=True, fire_ready=False, tick=100, self_xy=(250, 90))
+    b.aim_brads = 0  # aiming east
+    # An impact due east ON our aim ray = probably our own shot landing.
+    b.heard_events = [HeardImpact(kind="shot", pos=(360, 90), first_tick=98, last_tick=100)]
+    assert _fresh_heard_impact(b) is None
+
+
+def test_heard_impact_stamps_danger():
+    from ctf.beacon.belief import update_belief
+    from ctf.beacon.config import HEARD_DANGER_HEAT, NAV_CELL
+    from ctf.beacon.types import CtfState
+
+    b = Belief(team="red", seat=0, alive=True, self_xy=(600, 329))
+    st = ActionState()
+    percept = CtfState(
+        ready=True, self_xy=(600, 329), self_facing="right", observed_aim=None,
+        fire_ready=True, enemies=(), teammates=(), i_carry_enemy_flag=False,
+        enemy_flag_on_pedestal=True, enemy_flag_pos=None, own_flag_stolen=False,
+        own_flag_thief_pos=None, heard_impacts=(("shot", (560, 329)),),
+    )
+    update_belief(b, percept, st, tick=1)
+    gx, gy = 560 // NAV_CELL, 329 // NAV_CELL
+    assert b.danger is not None and b.danger[gy, gx] >= HEARD_DANGER_HEAT - 1e-6

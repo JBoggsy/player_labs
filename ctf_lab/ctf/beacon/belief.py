@@ -35,6 +35,11 @@ from ctf.beacon.config import (
     AIM_BRADS_TURN,
     AIM_RESYNC_SLACK_BRADS,
     AIM_TURN_RATE,
+    HEARD_DANGER_HEAT,
+    HEARD_DANGER_RADIUS_PX,
+    HEARD_MATCH_PX,
+    HEARD_TTL_TICKS,
+    HEARING,
     CENTER_X,
     DANGER_DECAY_HALF_LIFE_TICKS,
     DANGER_DIFFUSION_FACTOR,
@@ -49,7 +54,7 @@ from ctf.beacon.config import (
     TRACK_VEL_EMA,
     TRACK_VEL_MAX_GAP_TICKS,
 )
-from ctf.beacon.types import ActionState, Belief, CtfState, Enemy, PlayerTrack
+from ctf.beacon.types import ActionState, Belief, CtfState, Enemy, HeardImpact, PlayerTrack
 
 #: Per-tick decay multiplier for the chosen half-life.
 _DANGER_DECAY = 0.5 ** (1.0 / DANGER_DECAY_HALF_LIFE_TICKS)
@@ -125,6 +130,8 @@ def update_belief(belief: Belief, percept: CtfState, action_state: ActionState, 
     # the danger field decays/spreads without fresh stamps.
     _update_tracks(belief.enemy_tracks, percept.enemies, tick)
     _update_tracks(belief.teammate_tracks, percept.teammates, tick)
+    if HEARING:
+        _update_heard(belief, percept, tick)
     _update_danger(belief)
 
 
@@ -180,6 +187,35 @@ def _update_tracks(tracks: list[PlayerTrack], sightings: tuple[Enemy, ...], tick
     tracks[:] = [t for t in tracks if tick - t.last_tick <= TRACK_TTL_TICKS]
 
 
+# --- Hearing (v16) --------------------------------------------------------------------
+
+
+def _update_heard(belief: Belief, percept: CtfState, tick: int) -> None:
+    """Fold this frame's sound-ring sightings into deduplicated heard events.
+
+    A ring persists ~12 ticks at a STABLE jittered position, so the same event is
+    sighted every frame it lives; a sighting within ``HEARD_MATCH_PX`` of a known
+    event of the same kind refreshes that event instead of creating a new one.
+    Events expire ``HEARD_TTL_TICKS`` after their ring left the frame. Note dead
+    players hear nothing (the server sends no rings), so death frames just age
+    events out — no special-casing needed."""
+    for kind, pos in percept.heard_impacts:
+        matched = None
+        for ev in belief.heard_events:
+            if ev.kind == kind and max(abs(pos[0] - ev.pos[0]), abs(pos[1] - ev.pos[1])) <= HEARD_MATCH_PX:
+                matched = ev
+                break
+        if matched is not None:
+            matched.last_tick = tick
+        else:
+            belief.heard_events.append(
+                HeardImpact(kind=kind, pos=pos, first_tick=tick, last_tick=tick)
+            )
+    belief.heard_events[:] = [
+        ev for ev in belief.heard_events if tick - ev.last_tick <= HEARD_TTL_TICKS
+    ]
+
+
 # --- Danger field -------------------------------------------------------------------
 
 
@@ -226,6 +262,22 @@ def _update_danger(belief: Belief) -> None:
             max(gy - _STAMP_CELLS, 0) : gy + _STAMP_CELLS + 1,
             max(gx - _STAMP_CELLS, 0) : gx + _STAMP_CELLS + 1,
         ] = 1.0
+
+    # Heard fire stamps too (v16): weaker heat (team-anonymous — could be our own
+    # fire landing) over a wider blob (±20px jitter + the shooter being somewhere
+    # with LoS, not at the spot). Stamp only events FIRST heard this tick — the
+    # ring persists ~12 frames and re-stamping every frame would out-shout decay.
+    heard_cells = max(HEARD_DANGER_RADIUS_PX // NAV_CELL, 1)
+    for ev in belief.heard_events:
+        if ev.first_tick != belief.tick:
+            continue
+        gx = min(max(ev.pos[0] // NAV_CELL, 0), GRID_W - 1)
+        gy = min(max(ev.pos[1] // NAV_CELL, 0), GRID_H - 1)
+        region = danger[
+            max(gy - heard_cells, 0) : gy + heard_cells + 1,
+            max(gx - heard_cells, 0) : gx + heard_cells + 1,
+        ]
+        np.maximum(region, HEARD_DANGER_HEAT, out=region)
 
     danger *= walkable  # walls never hold heat (also clears wall cells a stamp hit)
     belief.danger = danger

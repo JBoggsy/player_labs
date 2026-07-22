@@ -213,6 +213,30 @@ GRENADE_TARGET_FRESH_TICKS = _env_int("BEACON_GRENADE_TARGET_FRESH_TICKS", 30)
 ARC_FIRE_RANGE_PX = 120
 ARC_AIM_ERR_BRADS = 6
 
+# --- Hearing (v16) --------------------------------------------------------------------
+#: Master switch for audio perception + its consumers — the v16 A/B bit.
+HEARING = _env_int("BEACON_HEARING", 1) == 1
+#: Sound rings are jittered up to ±20px from the true landing (SoundRingJitter) and
+#: a ring is STABLE per event — sightings within this radius of a known event are
+#: the same event, not a new shot. Slightly over 2*jitter*sqrt(2) would over-merge;
+#: distinct shots land spread out, so one jitter-diameter is the sweet spot.
+HEARD_MATCH_PX = _env_int("BEACON_HEARD_MATCH_PX", 40)
+#: Forget a heard event this many ticks after its ring was last in frame. Rings
+#: live ~12 ticks; this keeps the EVENT around long enough to inform behavior
+#: (~2.5s — comparable to the danger half-life).
+HEARD_TTL_TICKS = _env_int("BEACON_HEARD_TTL_TICKS", 60)
+#: Danger stamped per heard event: weaker than a SEEN enemy's 1.0 stamp (a ring is
+#: team-anonymous — it may be OUR OWN fire landing) and wider (jitter + "the shooter
+#: is somewhere with LoS to this spot", not at the spot).
+HEARD_DANGER_HEAT = _env_float("BEACON_HEARD_DANGER_HEAT", 0.5)
+HEARD_DANGER_RADIUS_PX = _env_int("BEACON_HEARD_DANGER_RADIUS_PX", 32)
+#: Duck-on-heard-fire (the v16 behavior consumer): while the gun is DOWN, a fresh
+#: heard impact within this range of us counts as a duck threat even with no seen
+#: enemy — bullets are landing near us, so someone has an angle on our area.
+HEARD_DUCK_RANGE_PX = _env_int("BEACON_HEARD_DUCK_RANGE_PX", 180)
+#: Only duck from impacts first heard this recently (ticks).
+HEARD_DUCK_FRESH_TICKS = _env_int("BEACON_HEARD_DUCK_FRESH_TICKS", 24)
+
 # --- Roles (v2) -------------------------------------------------------------------
 # CTF games (vs the baseline) are decided by WIPE, not capture (see TENTATIVE_LESSONS):
 # nobody captures, so the team that keeps its lives wins. v1's 8 identical rushers died

@@ -46,6 +46,9 @@ from ctf.beacon.config import (
     GRENADE_THROW,
     GRID_H,
     GRID_W,
+    HEARD_DUCK_FRESH_TICKS,
+    HEARD_DUCK_RANGE_PX,
+    HEARING,
     LEAD_AIM,
     LEAD_MIN_FRAMES,
     LEAD_TICKS,
@@ -223,6 +226,33 @@ def _fresh_track(belief: Belief, max_age: int, max_range: float | None = None) -
     return best
 
 
+def _fresh_heard_impact(belief: Belief) -> tuple[int, int] | None:
+    """The nearest fresh heard impact within duck range (v16), or None.
+
+    Own-fire suppression: an impact along OUR current aim ray is very likely our
+    own shot landing — ducking from ourselves every time we miss would freeze the
+    push. Skip impacts within the friendly-fire corridor of our aim direction."""
+    assert belief.self_xy is not None
+    sx, sy = belief.self_xy
+    best: tuple[int, int] | None = None
+    best_d = float(HEARD_DUCK_RANGE_PX)
+    aim_rad = belief.aim_brads / AIM_BRADS_TURN * 2 * math.pi
+    ux, uy = math.cos(aim_rad), -math.sin(aim_rad)
+    for ev in belief.heard_events:
+        if belief.tick - ev.first_tick > HEARD_DUCK_FRESH_TICKS:
+            continue
+        dx, dy = ev.pos[0] - sx, ev.pos[1] - sy
+        d = math.hypot(dx, dy)
+        if d >= best_d:
+            continue
+        along = dx * ux + dy * uy
+        if along > 0 and abs(dx * (-uy) + dy * ux) <= 24.0:
+            continue  # on our own firing line — probably our own landing
+        best = ev.pos
+        best_d = d
+    return best
+
+
 def _predicted_pos(track: PlayerTrack, tick: int) -> tuple[int, int]:
     """The track's velocity-extrapolated position now (clamped to the map)."""
     if track.vel is None:
@@ -279,19 +309,30 @@ def _peek_duck_override(intent: Intent, belief: Belief) -> tuple[int, int | None
 
     if not belief.fire_ready:
         # DUCK: gun is down and a fresh threat is near -> break its line and hold,
-        # keeping the aim (vision cone) on the threat's arc.
+        # keeping the aim (vision cone) on the threat's arc. A threat is a fresh
+        # SEEN track, or (v16 hearing) fresh fire LANDING near us — bullets
+        # arriving here mean someone has an angle on our area even if we never
+        # saw them; duck toward cover from the impact's direction.
         threat = _fresh_track(belief, DUCK_THREAT_FRESH_TICKS, DUCK_RANGE_PX)
-        if threat is None:
-            return None
-        tpos = _predicted_pos(threat, belief.tick)
+        from_heard = False
+        if threat is not None:
+            tpos = _predicted_pos(threat, belief.tick)
+        else:
+            heard = _fresh_heard_impact(belief) if HEARING else None
+            if heard is None:
+                return None
+            from_heard = True
+            tpos = heard
         aim = _brads_of(tpos[0] - sx, tpos[1] - sy)
         if not mapdata.ray_clear(belief.self_xy, tpos):
             belief.micro = "duck"
+            belief.heard_duck = from_heard
             return (0, aim)  # already behind cover: hold still, watch the arc
         duck = _find_sidestep_cell(belief.self_xy, tpos, want_los=False)
         if duck is None:
             return None  # no cover nearby — fight in the open as before
         belief.micro = "duck"
+        belief.heard_duck = from_heard
         return (nav.octant_toward(belief.self_xy, duck, False), aim)
 
     if not belief.enemies:
@@ -321,6 +362,7 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
     mask = 0
     state.last_rot = 0
     belief.micro = None  # set by _peek_duck_override when it engages this tick
+    belief.heard_duck = False
 
     if belief.self_xy is None:  # dead / not ready — release everything
         state.a_held = False

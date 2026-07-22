@@ -2,6 +2,24 @@
 
 Version → change mapping for the CTF `beacon` policy. Newest first.
 
+## v16 — hearing: sound-ring perception + duck-on-heard-fire (2026-07-22)
+
+**Why:** beacon was deaf — `shot impact` (every bullet landing, audible MAP-WIDE
+through walls/fog, jittered ±20px, team-anonymous) and `grenade sound` rings arrived
+in every frame and were ignored. All enemy knowledge was sight-only, so fights
+400px away behind a wall were invisible and unseen shooters never triggered cover.
+
+**Changes:** (1) perception `_heard_impacts` reads both ring labels →
+`CtfState.heard_impacts`. (2) belief `_update_heard`: dedup ring sightings (rings
+persist ~12 ticks at a STABLE jittered position; match ≤40px) into `HeardImpact`
+events, TTL 60 ticks. (3) danger field: each NEW event stamps heat 0.5 over a 32px
+blob (weaker than a seen enemy's 1.0 — anonymous; wider — jitter + shooter-not-here).
+(4) behavior consumer: **duck-on-heard-fire** — gun down + fresh impact ≤180px (and
+NOT along our own aim ray — own-fire suppression, corridor 24px) = duck threat even
+with no seen track; `belief.heard_duck` marks the activation. (5) tracing:
+`heard_events`/`heard_duck_ticks`/`heard_live` in snapshots. Knob: `BEACON_HEARING`
+(default ON — the A/B bit) + `BEACON_HEARD_*`. 61 tests.
+
 ## v15 — GameVersion-17 blast radius; SUBMITTED + CHAMPION (2026-07-22)
 
 **Why:** overnight game check before submitting v14: deployed ref unchanged

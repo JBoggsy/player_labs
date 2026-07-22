@@ -101,6 +101,10 @@ class _DiagnosticLogger:
         # countable from the trace, so a null A/B can distinguish "never fired" from
         # "fired and didn't help".
         self._micro_ticks: dict[str, int] = {}
+        # v16 hearing counters, carried in every snapshot.
+        self._heard_events_total = 0  # distinct sound events folded into belief
+        self._heard_duck_ticks = 0  # duck ticks triggered by a HEARD impact
+        self._seen_event_ids: set[tuple[str, int, int]] = set()
         # v10 activation counters (lead aim + items), carried in every snapshot.
         self._lead_shots = 0  # A-press ticks with a nonzero lead applied
         self._unled_shots = 0  # A-press ticks with zero lead (gun fights only)
@@ -136,6 +140,16 @@ class _DiagnosticLogger:
                          {"from": self._last_micro, "to": b.micro, "self_xy": b.self_xy,
                           "fire_ready": b.fire_ready})
             self._last_micro = b.micro
+
+        # v16 hearing counters: new heard events (dedup by identity key — an event's
+        # first_tick+pos is stable) and heard-triggered duck ticks.
+        for ev in b.heard_events:
+            key = (ev.kind, ev.first_tick, ev.pos[0])
+            if key not in self._seen_event_ids:
+                self._seen_event_ids.add(key)
+                self._heard_events_total += 1
+        if b.heard_duck:
+            self._heard_duck_ticks += 1
 
         # v10 lead-aim counters: count each fired shot as led / unled.
         if step.command.held_mask & 32:  # Button.A pressed this tick
@@ -191,6 +205,10 @@ class _DiagnosticLogger:
             "held_mask": step.command.held_mask,
             "micro": b.micro,
             "micro_ticks": dict(self._micro_ticks),
+            # v16 hearing activation (cumulative).
+            "heard_events": self._heard_events_total,
+            "heard_duck_ticks": self._heard_duck_ticks,
+            "heard_live": len(b.heard_events),
             # v10 skill activation (cumulative): lead-aim shot split + item counters.
             "lead_shots": self._lead_shots,
             "unled_shots": self._unled_shots,
