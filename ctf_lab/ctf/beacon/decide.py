@@ -50,8 +50,11 @@ def build_decide(
         diagnostics = None
     runtime = BeaconRuntime(team, seat, on_step=diagnostics.on_step if diagnostics else None)
 
-    def _decide(world: SpriteWorld, ctx: SpriteContext) -> int:
+    def _decide(world: SpriteWorld, ctx: SpriteContext):
         command = runtime.step(_Obs(world, ctx.frame))
+        if command.chat:
+            # The bridge accepts (mask, chat) and packs the chat packet (0x81).
+            return (int(command.held_mask), command.chat)
         return int(command.held_mask)
 
     return _decide
@@ -209,6 +212,12 @@ class _DiagnosticLogger:
             "heard_events": self._heard_events_total,
             "heard_duck_ticks": self._heard_duck_ticks,
             "heard_live": len(b.heard_events),
+            # v18 chat activation (cumulative per kind).
+            "chat_sent": dict(b.chat_sent_counts),
+            "chat_heard": dict(b.chat_heard_counts),
+            "under_fire": b.under_fire,
+            "carrier_fix": b.carrier_fix,
+            "thief_fix": b.thief_fix,
             # v10 skill activation (cumulative): lead-aim shot split + item counters.
             "lead_shots": self._lead_shots,
             "unled_shots": self._unled_shots,

@@ -88,6 +88,9 @@ class CtfState:
     # sprites. Audible map-wide through walls/fog, jittered ±20px, team-anonymous.
     # Raw per-frame positions; belief dedups them into HeardImpact events.
     heard_impacts: tuple[tuple[str, tuple[int, int]], ...] = ()  # (kind, pos)
+    # Chat (v18): shout bubbles heard this frame, parsed from their sprite label
+    # ``<team> shout <address>: <text>`` — (team, address, text, bubble pos).
+    heard_shouts: tuple[tuple[str, str, str, tuple[int, int]], ...] = ()
     hp_pips: int | None = None  # our "hp N/3" bar segments; None = bar not resolved
     i_have_grenade: bool = False
     i_have_shield: bool = False
@@ -177,6 +180,27 @@ class Belief:
     # Hearing (v16): deduplicated sound events, freshest last. Folded from
     # percept.heard_impacts; expire HEARD_TTL_TICKS after last_tick.
     heard_events: list[HeardImpact] = field(default_factory=list)
+    # Under fire (v18): fresh impacts landed near us recently (set by belief).
+    under_fire: bool = False
+    # Chat (v18) — send-side bookkeeping (chat.choose_shout):
+    chat_last_sent_tick: int = -10_000
+    chat_enemy_armed: bool = True  # edge trigger for E; re-arms after clear vision
+    chat_last_enemy_tick: int = -10_000
+    chat_enemy_seen_tick: int = -10_000
+    chat_sent_counts: dict[str, int] = field(default_factory=dict)
+    # Chat (v18) — receive-side decoded state:
+    #: teammate carrier fix from a C shout: (pos, heading octant, tick heard).
+    carrier_fix: tuple[tuple[int, int], int, int] | None = None
+    #: enemy thief fix from a T shout (or our own eyes): (pos, tick).
+    thief_fix: tuple[tuple[int, int], int] | None = None
+    #: teammate grenade landing zones to keep clear of: [(pos, tick heard)].
+    grenade_warnings: list[tuple[tuple[int, int], int]] = field(default_factory=list)
+    chat_heard_counts: dict[str, int] = field(default_factory=dict)
+    #: bubble dedup: sender address -> (text, last tick processed). A bubble
+    #: persists ~3s, so the same shout is in frame ~72 times; process it once.
+    chat_processed: dict[str, tuple[str, int]] = field(default_factory=dict)
+    #: our own last-sent payload (to skip our own bubble coming back at us).
+    chat_last_sent_text: str | None = None
     # Lead-aim activation state this tick, for tracing: brads of lead applied to the
     # snap aim (0 = no lead / target treated as stationary).
     lead_brads: int = 0

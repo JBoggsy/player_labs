@@ -27,19 +27,29 @@ corridor keeps its danger until it decays.
 
 from __future__ import annotations
 
+import math
+
 import numpy as np
 
 from ctf.beacon import mapdata
+from ctf.beacon.chat import decode as chat_decode
 from ctf.beacon.items import update_items
 from ctf.beacon.config import (
     AIM_BRADS_TURN,
     AIM_RESYNC_SLACK_BRADS,
     AIM_TURN_RATE,
+    CHAT,
+    CHAT_BUBBLE_DEDUP_TICKS,
+    CHAT_ENEMY_BUBBLE_FIX,
+    CHAT_FIX_TTL_TICKS,
+    GRENADE_WARN_TTL_TICKS,
     HEARD_DANGER_HEAT,
     HEARD_DANGER_RADIUS_PX,
     HEARD_MATCH_PX,
     HEARD_TTL_TICKS,
     HEARING,
+    UNDER_FIRE_FRESH_TICKS,
+    UNDER_FIRE_RANGE_PX,
     CENTER_X,
     DANGER_DECAY_HALF_LIFE_TICKS,
     DANGER_DIFFUSION_FACTOR,
@@ -132,6 +142,9 @@ def update_belief(belief: Belief, percept: CtfState, action_state: ActionState, 
     _update_tracks(belief.teammate_tracks, percept.teammates, tick)
     if HEARING:
         _update_heard(belief, percept, tick)
+    _update_under_fire(belief, tick)
+    if CHAT:
+        _update_chat(belief, percept, tick)
     _update_danger(belief)
 
 
@@ -214,6 +227,99 @@ def _update_heard(belief: Belief, percept: CtfState, tick: int) -> None:
     belief.heard_events[:] = [
         ev for ev in belief.heard_events if tick - ev.last_tick <= HEARD_TTL_TICKS
     ]
+
+
+# --- Chat (v18) -----------------------------------------------------------------------
+
+
+def _update_under_fire(belief: Belief, tick: int) -> None:
+    """True when a fresh heard impact landed within UNDER_FIRE_RANGE_PX of us."""
+    belief.under_fire = False
+    if belief.self_xy is None:
+        return
+    sx, sy = belief.self_xy
+    for ev in belief.heard_events:
+        if tick - ev.first_tick > UNDER_FIRE_FRESH_TICKS:
+            continue
+        if math.hypot(ev.pos[0] - sx, ev.pos[1] - sy) <= UNDER_FIRE_RANGE_PX:
+            belief.under_fire = True
+            return
+
+
+def _update_chat(belief: Belief, percept: CtfState, tick: int) -> None:
+    """Decode heard shout bubbles into belief (v18).
+
+    Same-team payloads are trusted protocol traffic: E/T refresh enemy tracks
+    (phantom sightings, no velocity), U stamps come via the danger path below,
+    C sets the carrier fix, G registers a keep-clear zone. Enemy bubbles are
+    never decoded as truth, but the bubble position itself is a live enemy fix
+    (±20px) — sighting-grade, fed to the same track fold.
+
+    A bubble persists ~3s (≈72 frames); dedup on (sender, text) so each shout is
+    processed once. Our own bubble comes back too — skip our own address by
+    matching our last-sent text (we don't know our own address string).
+    """
+    for team, address, text, bubble_pos in percept.heard_shouts:
+        prev = belief.chat_processed.get(address)
+        if prev is not None and prev[0] == text and tick - prev[1] <= CHAT_BUBBLE_DEDUP_TICKS:
+            belief.chat_processed[address] = (text, tick)
+            continue
+        belief.chat_processed[address] = (text, tick)
+
+        if team != belief.team:
+            # An enemy shouted: their payload is untrusted, their position isn't.
+            if CHAT_ENEMY_BUBBLE_FIX:
+                _update_tracks(
+                    belief.enemy_tracks,
+                    (Enemy(pos=bubble_pos, facing="left"),),
+                    tick,
+                )
+                belief.chat_heard_counts["enemy_bubble"] = (
+                    belief.chat_heard_counts.get("enemy_bubble", 0) + 1
+                )
+            continue
+
+        if text == belief.chat_last_sent_text:
+            continue  # our own bubble echoing back
+        msg = chat_decode(text)
+        if msg is None:
+            continue
+        belief.chat_heard_counts[msg.kind] = belief.chat_heard_counts.get(msg.kind, 0) + 1
+        if msg.kind in ("enemy", "thief"):
+            _update_tracks(
+                belief.enemy_tracks, (Enemy(pos=msg.pos, facing="left"),), tick
+            )
+            if msg.kind == "thief":
+                belief.thief_fix = (msg.pos, tick)
+        elif msg.kind == "carrier":
+            belief.carrier_fix = (msg.pos, msg.heading or 0, tick)
+        elif msg.kind == "grenade":
+            belief.grenade_warnings.append((msg.pos, tick))
+        elif msg.kind == "under_fire":
+            _stamp_danger_blob(belief, msg.pos, HEARD_DANGER_HEAT, HEARD_DANGER_RADIUS_PX)
+
+    # Expiry.
+    if belief.carrier_fix is not None and tick - belief.carrier_fix[2] > CHAT_FIX_TTL_TICKS:
+        belief.carrier_fix = None
+    if belief.thief_fix is not None and tick - belief.thief_fix[1] > CHAT_FIX_TTL_TICKS:
+        belief.thief_fix = None
+    belief.grenade_warnings[:] = [
+        (p, t) for (p, t) in belief.grenade_warnings if tick - t <= GRENADE_WARN_TTL_TICKS
+    ]
+
+
+def _stamp_danger_blob(belief: Belief, pos: tuple[int, int], heat: float, radius_px: int) -> None:
+    """Raise danger to at least ``heat`` in a blob around ``pos`` (walkable-masked
+    on the next _update_danger pass)."""
+    if belief.danger is None:
+        return
+    cells = max(radius_px // NAV_CELL, 1)
+    gx = min(max(pos[0] // NAV_CELL, 0), GRID_W - 1)
+    gy = min(max(pos[1] // NAV_CELL, 0), GRID_H - 1)
+    region = belief.danger[
+        max(gy - cells, 0) : gy + cells + 1, max(gx - cells, 0) : gx + cells + 1
+    ]
+    np.maximum(region, heat, out=region)
 
 
 # --- Danger field -------------------------------------------------------------------

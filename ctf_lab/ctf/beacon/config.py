@@ -237,6 +237,33 @@ HEARD_DUCK_RANGE_PX = _env_int("BEACON_HEARD_DUCK_RANGE_PX", 180)
 #: Only duck from impacts first heard this recently (ticks).
 HEARD_DUCK_FRESH_TICKS = _env_int("BEACON_HEARD_DUCK_FRESH_TICKS", 24)
 
+# --- Chat (v18) -----------------------------------------------------------------------
+#: Master switch for the team-shout protocol (send + decode) — the v18 A/B bit.
+CHAT = _env_int("BEACON_CHAT", 1) == 1
+#: Self-imposed minimum ticks between our shouts (server enforces 24 = 1/s; a bit
+#: above that keeps the single live bubble current for readers).
+CHAT_MIN_INTERVAL_TICKS = _env_int("BEACON_CHAT_MIN_INTERVAL_TICKS", 30)
+#: E (enemy seen) edge trigger: after shouting, don't re-shout until vision has
+#: been enemy-free this long (re-arm) AND this long since the last E (cooldown) —
+#: a peek-ducking enemy flickering in/out of the cone doesn't retrigger spam.
+CHAT_ENEMY_REARM_TICKS = _env_int("BEACON_CHAT_ENEMY_REARM_TICKS", 48)
+CHAT_ENEMY_RESHOUT_TICKS = _env_int("BEACON_CHAT_ENEMY_RESHOUT_TICKS", 72)
+#: Decoded fixes expire this many ticks after they were heard.
+CHAT_FIX_TTL_TICKS = _env_int("BEACON_CHAT_FIX_TTL_TICKS", 96)
+#: A bubble persists ~3s (72 frames); the same (sender, text) within this window
+#: is one shout, not a repeat. Just over bubble lifetime.
+CHAT_BUBBLE_DEDUP_TICKS = _env_int("BEACON_CHAT_BUBBLE_DEDUP_TICKS", 80)
+#: "Under fire": a heard impact within this range of us this recently.
+UNDER_FIRE_RANGE_PX = _env_int("BEACON_UNDER_FIRE_RANGE_PX", 90)
+UNDER_FIRE_FRESH_TICKS = _env_int("BEACON_UNDER_FIRE_FRESH_TICKS", 24)
+#: Decode ENEMY shout positions as sighting-grade enemy fixes (their payload is
+#: untrusted, but the bubble itself is a live position ±20px). Default ON.
+CHAT_ENEMY_BUBBLE_FIX = _env_int("BEACON_CHAT_ENEMY_BUBBLE_FIX", 1) == 1
+#: Grenade warnings from teammates: stay this far (px) from the shouted landing
+#: cell until the warning ages out (blast 52px + margin).
+GRENADE_WARN_CLEAR_PX = _env_int("BEACON_GRENADE_WARN_CLEAR_PX", 80)
+GRENADE_WARN_TTL_TICKS = _env_int("BEACON_GRENADE_WARN_TTL_TICKS", 72)
+
 # --- Roles (v2) -------------------------------------------------------------------
 # CTF games (vs the baseline) are decided by WIPE, not capture (see TENTATIVE_LESSONS):
 # nobody captures, so the team that keeps its lives wins. v1's 8 identical rushers died

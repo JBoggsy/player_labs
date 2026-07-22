@@ -9,8 +9,11 @@ Returns an Intent plus the flow-field kind to use ("steal" / "home" / None for A
 
 from __future__ import annotations
 
+import math
+
 from ctf.beacon import items
 from ctf.beacon.config import (
+    GRENADE_WARN_CLEAR_PX,
     HOLD_ARRIVE_PX,
     ITEM_DETOUR_PX,
     ITEMS,
@@ -35,23 +38,47 @@ def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
     if belief.i_carry_enemy_flag:
         return Intent(kind="navigate_to", point=None, reason="carry_home"), "home"
 
-    # Rung 2 (everyone): our flag is stolen and we can SEE the thief -> intercept.
-    # Killing the carrier returns the flag instantly; this is the anti-capture play,
-    # and it matters most for defenders sitting on the escape lanes.
-    if belief.own_flag_stolen and belief.own_flag_thief_pos is not None:
-        return Intent(kind="navigate_to", point=belief.own_flag_thief_pos, reason="intercept_thief"), None
+    # Rung 2 (everyone): our flag is stolen and we have a thief fix -> intercept.
+    # Killing the carrier returns the flag instantly; this is the anti-capture play.
+    # The fix is our OWN eyes first, else a teammate's T shout (v18) — chat turns a
+    # personal sighting into a team-wide manhunt.
+    if belief.own_flag_stolen:
+        if belief.own_flag_thief_pos is not None:
+            return Intent(kind="navigate_to", point=belief.own_flag_thief_pos, reason="intercept_thief"), None
+        if belief.thief_fix is not None:
+            return Intent(kind="navigate_to", point=belief.thief_fix[0], reason="intercept_thief_heard"), None
 
     # Rung 3 (attackers): a TEAMMATE is carrying our stolen enemy flag -> escort it.
-    # The enemy flag is off its pedestal, we don't carry it, and we can see it => a
-    # teammate has it (the flag sprite rides the carrier). Attackers converge on the
-    # carrier and move home *with* it, so the carrier isn't a lone target the baseline
-    # picks off on the return — the fix for "grabs the flag but dies before delivery".
-    if (
-        belief.role == "attacker"
-        and belief.enemy_flag_pos is not None
-        and not belief.enemy_flag_on_pedestal
-    ):
-        return Intent(kind="navigate_to", point=belief.enemy_flag_pos, reason="escort_carrier"), None
+    # Sight-based fix first (the flag sprite rides the carrier); else the carrier's
+    # C heartbeat (v18) — projected one step along its shouted heading octant, so a
+    # fogged carrier still gathers its escorts. Attackers converge and move home
+    # WITH it — the fix for "grabs the flag but dies before delivery".
+    if belief.role == "attacker" and not belief.i_carry_enemy_flag and not belief.enemy_flag_on_pedestal:
+        if belief.enemy_flag_pos is not None:
+            return Intent(kind="navigate_to", point=belief.enemy_flag_pos, reason="escort_carrier"), None
+        if belief.carrier_fix is not None:
+            (cx, cy), octant, heard_tick = belief.carrier_fix
+            dt = min(belief.tick - heard_tick, 48)
+            ang = octant * math.pi / 4
+            px = int(cx + math.cos(ang) * 1.9 * dt)  # ~70% of max speed while carrying
+            py = int(cy - math.sin(ang) * 1.9 * dt)
+            return Intent(kind="navigate_to", point=(px, py), reason="escort_carrier_heard"), None
+
+    # Rung 3.4 (v18): a teammate shouted a grenade landing near us -> step clear.
+    # The blast (52px) hurts teammates; the warning names the landing cell.
+    if belief.self_xy is not None:
+        for gpos, _t in belief.grenade_warnings:
+            d = _dist(belief.self_xy, gpos)
+            if d < GRENADE_WARN_CLEAR_PX:
+                # Flee directly away from the landing point.
+                dx = belief.self_xy[0] - gpos[0]
+                dy = belief.self_xy[1] - gpos[1]
+                n = max(d, 1.0)
+                flee = (
+                    int(belief.self_xy[0] + dx / n * GRENADE_WARN_CLEAR_PX),
+                    int(belief.self_xy[1] + dy / n * GRENADE_WARN_CLEAR_PX),
+                )
+                return Intent(kind="navigate_to", point=flee, reason="clear_grenade"), None
 
     # Rung 3.5 (items, v10): fetch pickups when nothing flag-urgent is happening
     # (carry / intercept / escort all returned above). Two cases, both detour-capped

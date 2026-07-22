@@ -2,6 +2,33 @@
 
 Version → change mapping for the CTF `beacon` policy. Newest first.
 
+## v18 — team chat: the E/U/G/C/T shout protocol (2026-07-22)
+
+**Why (human direction):** teamwork substrate. Except T (and maybe E) these are
+building blocks for later squad coordination, not expected win movers yet.
+
+**Protocol** (`chat.py`): 10-char budget, `<type><cell>[h]` — cell = 2x base-36
+nav-grid coords (≤6 chars total). `E`=enemy seen (edge-triggered per sighting
+burst, re-arms after 48 clear ticks, 72t cooldown), `U`=under fire at my cell
+(fresh impact ≤90px — new `belief.under_fire`), `G`=grenade en route to cell,
+`C`=carrier heartbeat + heading octant, `T`=enemy thief fix. Send arbitration:
+priority C>T>G>U>E, ≥30t between shouts (server: 1/s, one live bubble).
+
+**Receive** (`perception._heard_shouts` + `belief._update_chat`): bubbles parsed
+from `<team> shout <addr>: <text>` labels; dedup per (sender,text) over the ~3s
+bubble life; own-bubble echo skipped. SAME-TEAM payloads decode: E/T → phantom
+enemy-track sightings (+ thief_fix), C → carrier_fix (pos+heading+tick),
+G → grenade_warnings, U → danger blob. ENEMY bubbles: payload untrusted, but the
+bubble position itself is a live ±20px enemy fix → track fold (knob
+CHAT_ENEMY_BUBBLE_FIX).
+
+**Consumers:** intercept rung fires on heard thief fix (`intercept_thief_heard`);
+escort rung follows the carrier heartbeat with heading projection
+(`escort_carrier_heard`); teammates within 80px of a shouted grenade landing flee
+(`clear_grenade`). Send path: runtime → Command.chat → decide returns (mask, chat)
+→ bridge packs 0x81. Tracing: `chat_sent`/`chat_heard` per kind, `under_fire`,
+fixes in snapshots. Knob: `BEACON_CHAT` (default ON). 72 tests.
+
 ## v16 — hearing: sound-ring perception + duck-on-heard-fire (2026-07-22)
 
 **Why:** beacon was deaf — `shot impact` (every bullet landing, audible MAP-WIDE

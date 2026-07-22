@@ -756,3 +756,162 @@ def test_heard_impact_stamps_danger():
     update_belief(b, percept, st, tick=1)
     gx, gy = 560 // NAV_CELL, 329 // NAV_CELL
     assert b.danger is not None and b.danger[gy, gx] >= HEARD_DANGER_HEAT - 1e-6
+
+
+# --- v18: chat --------------------------------------------------------------------
+
+
+def _chat_percept(**kw):
+    from ctf.beacon.types import CtfState
+    base = dict(
+        ready=True, self_xy=(600, 329), self_facing="right", observed_aim=None,
+        fire_ready=True, enemies=(), teammates=(), i_carry_enemy_flag=False,
+        enemy_flag_on_pedestal=True, enemy_flag_pos=None, own_flag_stolen=False,
+        own_flag_thief_pos=None,
+    )
+    base.update(kw)
+    return CtfState(**base)
+
+
+def test_chat_codec_roundtrip():
+    from ctf.beacon import chat
+    for kind in ("enemy", "under_fire", "grenade", "thief"):
+        code = chat.encode(kind, (487, 315))
+        assert len(code) <= 10
+        msg = chat.decode(code)
+        assert msg.kind == kind
+        # cell-quantized: within one nav cell
+        assert abs(msg.pos[0] - 487) <= 8 and abs(msg.pos[1] - 315) <= 8
+    code = chat.encode("carrier", (1049, 329), heading=5)
+    msg = chat.decode(code)
+    assert msg.kind == "carrier" and msg.heading == 5
+
+
+def test_chat_decode_rejects_garbage():
+    from ctf.beacon import chat
+    assert chat.decode("") is None
+    assert chat.decode("hello") is None
+    assert chat.decode("Ezz~~") is None  # out-of-range cell
+    assert chat.decode("X0000") is None  # unknown type
+
+
+def test_carrier_heartbeat_wins_priority():
+    from ctf.beacon.chat import choose_shout
+    b = Belief(team="red", alive=True, tick=1000, self_xy=(700, 300))
+    b.i_carry_enemy_flag = True
+    b.enemies = (Enemy(pos=(750, 300), facing="left"),)  # would also be an E
+    shout = choose_shout(b)
+    assert shout is not None and shout.startswith("C")
+    assert b.chat_sent_counts.get("carrier") == 1
+
+
+def test_enemy_shout_edge_trigger_and_rearm():
+    from ctf.beacon.chat import choose_shout
+    from ctf.beacon.config import CHAT_ENEMY_REARM_TICKS, CHAT_MIN_INTERVAL_TICKS
+    b = Belief(team="red", alive=True, tick=1000, self_xy=(600, 329))
+    b.enemies = (Enemy(pos=(700, 329), facing="left"),)
+    assert choose_shout(b) is not None  # first sighting -> E
+    b.tick += CHAT_MIN_INTERVAL_TICKS + 1
+    assert choose_shout(b) is None  # not re-armed: enemy still in view
+    # Enemy leaves vision; wait past re-arm, then a NEW sighting fires again.
+    b.enemies = ()
+    for _ in range(CHAT_ENEMY_REARM_TICKS + 2):
+        b.tick += 1
+        choose_shout(b)
+    b.enemies = (Enemy(pos=(700, 329), facing="left"),)
+    b.tick += 1
+    assert choose_shout(b) is not None
+
+
+def test_shout_bubbles_perceived_and_parsed():
+    w = _world_with_self((600, 329))
+    w.sprites[70] = SpriteDef(70, 40, 12, "red shout James Boggs (3): T4c95", b"")
+    w.objects[70] = SpriteObject(70, 480, 294, 0, 0, 70)
+    st = perceive(_obs(w), "red")
+    assert len(st.heard_shouts) == 1
+    team, addr, text, pos = st.heard_shouts[0]
+    assert team == "red" and addr == "James Boggs (3)" and text == "T4c95"
+
+
+def test_teammate_thief_shout_sets_fix_and_intercept():
+    from ctf.beacon.belief import update_belief
+    from ctf.beacon import chat
+    b = Belief(team="red", seat=7, role="attacker", alive=True, self_xy=(300, 329))
+    st = ActionState()
+    code = chat.encode("thief", (500, 300))
+    update_belief(b, _chat_percept(
+        own_flag_stolen=True,
+        heard_shouts=(("red", "mate (2)", code, (505, 305)),),
+    ), st, tick=10)
+    assert b.thief_fix is not None
+    intent, _ = decide_objective(b)
+    assert intent.reason == "intercept_thief_heard"
+    # And the fix created an enemy track too.
+    assert any(t.last_tick == 10 for t in b.enemy_tracks)
+
+
+def test_carrier_shout_drives_escort_with_heading_projection():
+    from ctf.beacon.belief import update_belief
+    from ctf.beacon import chat
+    b = Belief(team="red", seat=7, role="attacker", alive=True, self_xy=(300, 329))
+    st = ActionState()
+    code = chat.encode("carrier", (700, 300), heading=4)  # heading west (home for red)
+    update_belief(b, _chat_percept(
+        enemy_flag_on_pedestal=False,
+        heard_shouts=(("red", "mate (4)", code, (700, 300)),),
+    ), st, tick=10)
+    assert b.carrier_fix is not None
+    b.tick = 34  # 24 ticks later
+    intent, _ = decide_objective(b)
+    assert intent.reason == "escort_carrier_heard"
+    assert intent.point[0] < 700  # projected west along the shouted heading
+
+
+def test_grenade_warning_clears_teammates():
+    from ctf.beacon.belief import update_belief
+    from ctf.beacon import chat
+    b = Belief(team="red", seat=7, role="attacker", alive=True, self_xy=(600, 329))
+    st = ActionState()
+    code = chat.encode("grenade", (610, 329))  # landing basically on us
+    update_belief(b, _chat_percept(
+        heard_shouts=(("red", "mate (6)", code, (610, 329)),),
+    ), st, tick=10)
+    intent, _ = decide_objective(b)
+    assert intent.reason == "clear_grenade"
+    # Flee point is away from the landing cell.
+    assert intent.point[0] < 600 or abs(intent.point[1] - 329) > 40
+
+
+def test_enemy_bubble_is_position_fix_not_payload():
+    from ctf.beacon.belief import update_belief
+    b = Belief(team="red", seat=0, alive=True, self_xy=(600, 329))
+    st = ActionState()
+    # A BLUE shout claiming a thief at some cell: do NOT set thief_fix; DO track
+    # the bubble position as an enemy fix.
+    update_belief(b, _chat_percept(
+        heard_shouts=(("blue", "foe (1)", "T4c95", (800, 400)),),
+    ), st, tick=10)
+    assert b.thief_fix is None
+    assert any(t.pos == (800, 400) for t in b.enemy_tracks)
+
+
+def test_same_bubble_processed_once():
+    from ctf.beacon.belief import update_belief
+    b = Belief(team="red", seat=0, alive=True, self_xy=(600, 329))
+    st = ActionState()
+    from ctf.beacon import chat
+    code = chat.encode("under_fire", (500, 300))
+    shout = (("red", "mate (2)", code, (505, 305)),)
+    update_belief(b, _chat_percept(heard_shouts=shout), st, tick=10)
+    update_belief(b, _chat_percept(heard_shouts=shout), st, tick=11)
+    assert b.chat_heard_counts.get("under_fire") == 1
+
+
+def test_under_fire_set_by_nearby_fresh_impact():
+    from ctf.beacon.belief import update_belief
+    b = Belief(team="red", seat=0, alive=True, self_xy=(600, 329))
+    st = ActionState()
+    update_belief(b, _chat_percept(heard_impacts=(("shot", (630, 329)),)), st, tick=10)
+    assert b.under_fire
+    update_belief(b, _chat_percept(), st, tick=100)  # stale now
+    assert not b.under_fire

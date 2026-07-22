@@ -128,6 +128,27 @@ def _heard_impacts(world: SpriteWorld) -> tuple[tuple[str, tuple[int, int]], ...
     return tuple(out)
 
 
+def _heard_shouts(world: SpriteWorld) -> tuple[tuple[str, str, str, tuple[int, int]], ...]:
+    """Shout bubbles in this frame (v18 chat): (team, sender address, text, pos).
+
+    Bubble label format (global.nim addShouts): ``<team> shout <address>: <text>``
+    where <address> may itself contain spaces — split on the LAST ': ' instead."""
+    out: list[tuple[str, str, str, tuple[int, int]]] = []
+    for obj in world.objects.values():
+        sprite = world.sprite_for(obj)
+        if sprite is None:
+            continue
+        label = sprite.label
+        if " shout " not in label:
+            continue
+        team, rest = label.split(" shout ", 1)
+        if team not in ("red", "blue") or ": " not in rest:
+            continue
+        address, text = rest.rsplit(": ", 1)
+        out.append((team, address, text, _center(world, obj)))
+    return tuple(out)
+
+
 def _overhead_state(world: SpriteWorld, self_xy: tuple[int, int]) -> tuple[int | None, bool, bool, bool]:
     """Our own hp pips + carried-item markers, read from the overhead UI stack.
 
@@ -200,6 +221,7 @@ def perceive(obs, team: Team) -> CtfState:
 
     visible_items = _visible_items(world)
     heard_impacts = _heard_impacts(world)
+    heard_shouts = _heard_shouts(world)
     if self_xy is not None:
         hp_pips, have_grenade, have_shield, have_arc = _overhead_state(world, self_xy)
     else:
@@ -220,6 +242,7 @@ def perceive(obs, team: Team) -> CtfState:
         own_flag_thief_pos=own_flag_thief_pos,
         visible_items=visible_items,
         heard_impacts=heard_impacts,
+        heard_shouts=heard_shouts,
         hp_pips=hp_pips,
         i_have_grenade=have_grenade,
         i_have_shield=have_shield,
