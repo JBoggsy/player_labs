@@ -177,3 +177,51 @@ def test_vote_result_ejected_color_resolves() -> None:
     )
     resolved = resolve_scene(scene, tick=1)
     assert resolved.ejected_color == "lime"
+
+
+def test_meeting_call_interstitial_body_report_resolves() -> None:
+    # Labels pinned to the CURRENT game source (34a97a3 = deployed 0.4.68,
+    # global.nim meetingCallLines): line 1 is "<Color> reported" and line 2 is
+    # "<Color>'s body", each its own ProtocolText object at 9000+i. Verified
+    # live 2026-07-21 (harvest ereq_142097f1: green's body report banked).
+    scene = SceneState()
+    scene.apply(
+        w.define_sprite(9000, 52, 8, "Pink reported")
+        + w.define_object(9000, 30, 36, 9, 0, 9000)
+        + w.define_sprite(9001, 48, 8, "Green's body")
+        + w.define_object(9001, 30, 46, 9, 0, 9001)
+    )
+    resolved = resolve_scene(scene, tick=1)
+    assert resolved.meeting_caller_color == "pink"
+    assert resolved.meeting_call_kind == "body"
+
+
+def test_meeting_call_interstitial_button_press_resolves() -> None:
+    # "<Color> pressed" / "the button" (global.nim meetingCallLines,
+    # VoteCalledButton). The second line must not clobber the parsed caller.
+    scene = SceneState()
+    scene.apply(
+        w.define_sprite(9000, 52, 8, "Yellow pressed")
+        + w.define_object(9000, 30, 36, 9, 0, 9000)
+        + w.define_sprite(9001, 44, 8, "the button")
+        + w.define_object(9001, 30, 46, 9, 0, 9001)
+    )
+    resolved = resolve_scene(scene, tick=1)
+    assert resolved.meeting_caller_color == "yellow"
+    assert resolved.meeting_call_kind == "button"
+
+
+def test_meeting_call_unknown_caller_resolves_as_someone() -> None:
+    # A departed caller renders as "Someone called" / "a meeting"
+    # (meetingCallName's fallback). resolve passes "someone" through;
+    # _bank_meeting_caller drops it because it is not a roster color.
+    scene = SceneState()
+    scene.apply(
+        w.define_sprite(9000, 56, 8, "Someone called")
+        + w.define_object(9000, 30, 36, 9, 0, 9000)
+        + w.define_sprite(9001, 40, 8, "a meeting")
+        + w.define_object(9001, 30, 46, 9, 0, 9001)
+    )
+    resolved = resolve_scene(scene, tick=1)
+    assert resolved.meeting_caller_color == "someone"
+    assert resolved.meeting_call_kind == "unknown"
