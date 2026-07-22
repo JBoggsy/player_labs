@@ -248,16 +248,29 @@ class WaypointRacePolicy:
         # Staging queue for the current leg: via nodes not yet passed. The race clock
         # covers the whole leg (via + final) — staging is a routing aid, not a split.
         stage_queue: list[tuple[str, list[float]]] = []
+        # Hysteresis: nodes stay "passed" until we drift far from them. v12 evidence:
+        # without this, Detour's first chunk toward the next goal can step slightly
+        # away from a just-passed node, the positional recompute re-arms it, and the
+        # bot flip-flops at the node forever (90-move oscillation at the gate).
+        passed_stages: dict[str, list[float]] = {}
+        STAGE_REARM_YARDS = 100.0
 
         def build_stages(name: str, current_x: float, current_y: float) -> list[tuple[str, list[float]]]:
             """Ordered staging nodes for this target, starting from where we are.
 
-            Drop the PREFIX of the chain that is already behind us: find the chain node
-            nearest our position and keep only what follows it (plus that node itself
-            if we haven't reached it). Prevents doubling back to stage 1 when a leg
-            (re)starts mid-chain — observed in the v7 senjin traces.
+            Drop the PREFIX of the chain that is already behind us (nearest-suffix),
+            and drop any node in passed_stages (hysteresis) — a passed node re-arms
+            only if we've drifted STAGE_REARM_YARDS from it (a genuine relocation,
+            e.g. a planner recovery, not Detour chunk jitter).
             """
-            chain = [(v, waypoint_point(v)) for v in waypoint_via(name)]
+            for passed_name, point in list(passed_stages.items()):
+                if distance_2d(current_x, current_y, point[0], point[1]) > STAGE_REARM_YARDS:
+                    del passed_stages[passed_name]
+            chain = [
+                (v, waypoint_point(v))
+                for v in waypoint_via(name)
+                if v not in passed_stages
+            ]
             if not chain:
                 return []
             nearest = min(
@@ -268,6 +281,8 @@ class WaypointRacePolicy:
                 current_x, current_y, chain[nearest][1][0], chain[nearest][1][1]
             )
             start = nearest + 1 if nearest_d <= ARRIVAL_TOLERANCE_YARDS * 2 else nearest
+            for passed_name, point in chain[:start]:
+                passed_stages[passed_name] = point
             return chain[start:]
 
         def advance(completed_leg: bool, loc, name: str, target: list[float]) -> None:
@@ -285,6 +300,7 @@ class WaypointRacePolicy:
             no_progress_streak = 0
             best_distance = None
             last_position = None
+            passed_stages.clear()  # hysteresis is per-leg
             leg_started_at = time.monotonic()
             leg_origin = [loc.x, loc.y]
             next_name, next_target = self.course[index]
