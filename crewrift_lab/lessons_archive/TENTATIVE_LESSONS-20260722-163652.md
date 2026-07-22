@@ -1,0 +1,391 @@
+# Crewrift tentative lessons — session buffer
+
+**Session started:** 2026-07-21 13:01. This is THIS SESSION's lesson buffer. Write candidate
+lessons here **as you go** — eagerly and noisily; most will be noise and that's
+fine. At the next session start, a hook archives this file automatically to
+[`lessons_archive/`](lessons_archive/) and creates a fresh one — nothing you
+write here is lost, and nothing carries over by hand.
+
+**Lifecycle.** Per-session buffer → automatic archive (SessionStart hook,
+`crewrift_lab/tools/rotate_lessons.sh`) → periodic human+agent review
+(`/lessons-review`) that clusters RECURRING lessons across archived sessions and
+graduates the keepers to `best_practices.md` (Crewrift-specific) or the root
+`best_practices.md` (game-agnostic). Recurrence across independent session
+buffers — not in-session hit counts — is the graduation signal.
+
+**Entry format.** `### <lesson, one line>` then `Evidence:` (what you observed,
+concrete) and optional `Status:` notes. Terse. One lesson per `###`.
+
+---
+
+### fetch_artifacts.py `--round` is NOT repeatable — only the last one wins
+Evidence: passed ten `--round` flags in one invocation; got exactly 20 episodes (one round). Looped per-round invocations into the same `--out` dir instead (incremental, safe). Note build_warehouse.py's `--round` IS repeatable — the two scripts differ.
+
+### tools/bin expand_replay binaries embed a build-time absolute path that broke when the repo moved
+Evidence: all `tools/bin/expand_replay-*` die with `No such file or directory: …/personal_labs/crewrift_lab/.cache/crewrift-src/<ref>` — the repo now lives at `personal_labs/personal_labs_crewrift/`. Fixed with `ln -sfn …/personal_labs_crewrift/crewrift_lab …/personal_labs/crewrift_lab`. Durable fix: rebuild the binaries.
+
+### expand_replay-34a97a3 is still the correct expander for live league replays (crewrift 0.4.68, 2026-07-21)
+Evidence: 182/199 trace-complete on the latest 10 rounds; `expand_replay-d9f6b30` (versions.env's CREWRIFT_REF) hash-fails on the same replays. versions.env is the *player-build* pin, not the replay-expander pin.
+
+### survey.py `--reasons` keys must be the exact episode DIR names, not full ereq ids
+Evidence: first reasons.json keyed by full `ereq_…` id produced sidecar `reason` count 0, silently — no warning. Keys are the truncated dirs like `20260721T193356_ereq_94c9f0fc-1b`.
+
+### Bedrock throttling persists in LIVE league rounds — the LLM layer fires ~38%
+Evidence: crewborg league telemetry over 58 episodes: 154 `meeting_llm_decision` vs 248 `meeting_llm_fallback`, 236 "Too many tokens" throttle lines, 40 `meeting_llm_budget_exhausted`. The social rework is still mostly untested in production, matching the A/B story.
+
+### ROOT CAUSE of self-suss (and likely the whole v107 slump): the slot→color seed table is STALE — the deployed game renamed its 16 colors
+Evidence: crewborg's `PLAYER_COLOR_NAMES` (perception/constants.py:86, "palette order (global.nim PlayerColorNames)") = red, orange, yellow, light blue, pink, lime, blue, pale blue… — matches crewrift `d9f6b30`/`42fed21` (0.1.x). The DEPLOYED game (34a97a3 / 0.4.68, sim.nim:145) uses red, blue, green, pink, orange, yellow, purple, cyan…. The `?slot=` seed (policy_player.py:384) is marked `self_color_from_marker=True` (authoritative, never corrected), so 6/8 seats latch a WRONG self color for the whole game: slot 1 believes "orange" while actually blue, slot 4 believes "pink" while actually orange, etc. Every downstream self-exclusion (kill pool, suspicion, top_suspect, accusation, census self-death) then guards the wrong color. Telemetry confirms: 12/58 episodes have crewborg's ACTUAL color inside its own `teammate_colors` (reveal ingest failed to drop self), and the self-accusation episodes are exactly the seats whose actual color ("orange", "green") differs from the seeded one ("pink", "yellow"). Only slot 0 (red) is accidentally correct. Fix: sync PLAYER_COLOR_NAMES with the deployed game's table (and add a runtime cross-check marker-vs-seed).
+
+### v107 league weakness decomposes into three mechanistic signals in one warehouse pass
+Evidence: (1) imposter ejected 9/17 = 53% (field median ~31%) with kills/seat 1.29 and isolated-kill conversion 19% vs 34-50% for the top; (2) crew votes-received/seat 1.37 (2nd-worst) with 6/41 crew ejections; (3) SMOKING GUN: crewborg chat literally accuses its own color — 5 messages across 2 episodes of "orange sus: … vote orange" / "green sus … vote green" (self-suss in the accusation template while `fabricate/report` pipeline picks self as target). Also opponents' detectors ("X was tailing me") fire on crewborg's tail-heavy movement in BOTH roles.
+### Before "fixing" a flagged bug, check whether a past commit already fixed it — date the evidence
+
+Evidence: Direction 2 said reported_bodies/button_calls_made "never fire" (all-zero across
+398 live meetings). That evidence was from the v90 trace batch (pre-2026-07-06); commit
+`0fe80c8` (v96) had already fixed the belief-latch self-clear, and a fresh scan of TODAY's
+v107 league telemetry showed the features firing (10 rb>0 + 19 bc>0 rows in 21 meetings;
+85% capture vs replay ground truth). `git log -S <symbol>` on the flagged code path found the
+prior fix in one command. A weekly-context direction can be stale the day you pick it up —
+re-validate the headline number against current data before writing any code.
+
+### Validate detectors against replay ground truth, not just "nonzero telemetry"
+
+Evidence: counting nonzero feature rows proved the caller parse fires, but only the
+per-event cross-check (expand_replay vote_called_body/button + slot→color map vs the seat's
+cumulative snapshot counts) measured CAPTURE (17/20) and exposed the residual failure mode:
+all 3 misses were the caller color colliding with crewborg's stale palette-derived self-color
+(pre-`2a13256`), which silently excludes that color from banking + ranking. The
+miss PATTERN (who gets missed) carried the diagnosis, not the miss rate.
+### Importing another team's methodology: filter through the operating model, not topical overlap
+
+Evidence: Pulled from `Metta-AI/optimizer-skills` (an *autonomous*-optimizer library) into
+this *human-gated, speed-first* lab. What transferred cleanly: executable engines fitting
+our shared-engine + per-lab-adapter pattern (their variance miner → `coworld-hypothesis-miner`),
+durable engineering doctrine (`docs/player-engineering.md`), and dense measurement heuristics
+(eval sizing from variance, opponent-field-from-goal → root `best_practices.md`). What was
+deliberately rejected despite topical fit: promotion-gate / continuous-optimizer /
+defend-leaderboard (their replacement for our human gate — importing would fight the lab's
+model), the local-sim harness (probe deltas reverse on the live field), game-strategy
+snapshots (stale vs our live labs). Where an import diverges from its source's posture,
+state it in the imported doc (e.g. "uploads stay ungated here") so readers don't inherit
+the source repo's caution.
+
+### The Honor Society is a metagame construct, not a game mechanic — grep the game rules first
+
+Evidence: Asked "what honor-society infrastructure do we have," the instinct is to search the
+game docs. But `crewrift-gameplay.md` and `crewrift-protocol.md` have ZERO mentions of honor/
+society/reputation/trust — the game only gives generic throttled meeting chat + voting. The
+Honor Society is a player-community cartel (HS1 spec authored externally by Alex Smith,
+received via Discord DM) layered on the chat channel. When mapping a "feature," first
+establish whether it's game-provided or player-invented — it changes what "further develop"
+even means (we can't rely on the game to enforce anything; every guarantee is our own crypto).
+
+### Honor Society tracing is per-episode only; cross-game reputation is emitted but never harvested
+
+Evidence: `society_*` Belief fields (types.py:477-486) fully track claims/trust/liars WITHIN
+a game, and `domain.honor_liar` events fire — but nothing consumes them. grep for consumers of
+`honor_liar`/`honor_claim` outside honor_society.py+tests returned only the emit sites. The
+liar-ledger harvest → vendored distrust list is a standing TODO (WEEKLY_CONTEXT.md:57). So
+rule 4 ("track standing, punish future") has an in-game half (implemented) and a cross-game
+half (aspirational). A natural "further develop" target with a clean seam already emitting data.
+
+### Honor Society has never been measured in isolation — it shipped bundled in full-stack champions
+
+Evidence: v91/v93/v95 each folded HS in alongside weights refits, search changes, camo, knobs
+(version_log.md:21-26). No A/B ever isolated "HS on vs off." Before developing it further,
+note that its live value is unproven — the veto is provably safe (skip-only, witnessed
+overrides) but "does trust-based cooperation actually win more crew games" is untested. Any
+new HS work should carry its own isolated A/B, not ride another full-stack ship.
+
+### CRITICAL: our HS1 wire format DOES NOT MATCH the format actually used in live games
+
+Evidence: Searched 11 recent crewrift_prime tournament games with both crewborg (us, "James
+Boggs") and sasmith-crewborg-hs1 v15 (Alex Smith). Every HS1 line in the replays is
+**2 tokens**: `HS1 <86-char base64url>` (len 90; the blob decodes to 64 bytes = a bare
+Ed25519 signature). Our spec/code (honor_society.py:222) emits **5 tokens**:
+`HS1 <10-digit ts> <8-char nonce> <44-char pubkey> <88-char sig>` (len 157). Confirmed
+`honor_society.parse(<real 2-token line>)` returns **None** — we silently ignore every real
+HS1 announcement. So even when the flag is on, we cannot verify, trust, or act on sasmith's
+claims, and our own announcements (if sent) would be unparseable to them. The design doc's
+"HS1 canonical spec (Alex Smith 2026-07-02)" has diverged from what Alex's bot actually
+emits — or was mis-transcribed. **Any HS ecosystem work must first re-derive the real HS1
+format from live replays, not the vendored doc.**
+
+### crewborg's honor state is NOT observable from league/tournament episodes
+
+Evidence: The honor_* trace events (honor_claim, honor_liar, meeting_vote_society_veto) go to
+`jsonl@artifact` (the player-artifact zip), which is only fetchable for experience-request
+episodes — league/tournament episodes 404 on the v2 policy-artifact route
+(fetch_artifacts.py:31, "no v2 route for league episodes"). The stderr policy log for our
+seat in league games is 44 bytes ("game over") — crewborg emits its trace to the artifact,
+not stderr, when an upload URL is present. So to validate honor behavior we must fire our OWN
+experience-request (crewborg + sasmith, HS flag on, trace on) and read our artifact zip —
+mining existing league replays only shows the CHAT exchange (what was broadcast), never our
+internal register/trust/veto decisions.
+
+### The deployed champion may not carry CREWBORG_HONOR_SOCIETY=1 at all
+
+Evidence: WORKING_CONTEXT.md's submit recipe (v106) has NO honor flag; only v91's recipe
+explicitly lists `--secret-env CREWBORG_HONOR_SOCIETY=1 --secret-env CREWBORG_HONOR_SEED=...`.
+The flag+seed are per-submission secret-env, not baked into the image, so a submission that
+omits them runs with HS fully inert. Before claiming "we use HS in real games," verify the
+flag is in the ACTUAL submit command of the live champion — the deployed crewborg is v107
+(newer than v106 in the version_log), whose exact secret-env set isn't recorded.
+
+### The real HS1 is the COMPACT 2-token form; verified 17/17 against sasmith's registered key
+
+Evidence: User supplied the authoritative HS1 spec. Real wire = `HS1 <sig>` (2 tokens), sig =
+Ed25519 over `HS1|<ts5>|<color>` where ts5 = (unix//5)*5 and color = observed speaker color;
+unpadded base64url; verify by brute-forcing ledger keys × a small ts5 window ({now5, -5, -10,
++5}); NO first-poster-wins (one key may verify at multiple colors = one member running 2 slots);
+freshness 10s. Our code emits/parses only the LEGACY 5-token form → parse() returns None on
+every real line. PROVED the spec by brute-forcing 17 captured compact sigs from live replays
+against sasmith's registered key WxWJy6ZO... × 16 game colors × a ±45min ts5 grid: 17/17
+verified. So spec is exact AND sasmith's registered key is still current (no rotation needed).
+Their seed env is `CREWBORG_HS_SECRET` (ours: `CREWBORG_HONOR_SEED`).
+
+### crewborg's PLAYER_COLOR_NAMES is STALE — the game changed its palette 2026-06-24 (commit 1cbd4de)
+
+Evidence: `crewrift_lab/.../perception/constants.py:86` lists `red, orange, yellow, light blue,
+pink, lime, blue, pale blue, gray, white, dark brown, brown, dark teal, green, dark navy, black`.
+The live game (`coworld-crewrift sim.nim:149 PlayerColorNames`, current on origin/master, changed
+in commit 1cbd4de "update player colors" 2026-06-24) is `red, blue, green, pink, orange, yellow,
+purple, cyan, lime, brown, beige, navy, teal, rose, maroon, gray`. My recovered sasmith palette
+(slot→verified color) matches the GAME list exactly (slot 6=purple, 7=cyan). Impact on HS1: since
+verification reconstructs the signed bytes from the color STRING, a wrong palette breaks it. Chat
+`speaker_color` and the `vote self marker <color>` self-color both come from GAME sprite labels
+(correct names), BUT `policy_player._self_color_from_url` (v106's slot→color self-ID seed) uses the
+STALE constant → our OWN announce would sign a wrong color whenever self-color is seeded from slot
+before the marker is seen. Also a latent bug beyond HS1 (any slot-indexed color lookup wrong for
+slots ≥3). Must decide: fix the constant now (re-verify v106 self-ID holds) or scope narrowly.
+
+### HS1 fix VERIFIED end-to-end in live games (crewborg:v109 + sasmith, xreq_25bb7e0f)
+
+Evidence: After rewriting honor_society.py to the compact form + fixing the palette + default-on,
+built players-crewborg:hs-fix (in-image checks passed: palette fixed, compact 2-token announce,
+our pubkey Gq5nOr6…, sasmith real sig verifies→alex-smith), uploaded v108 (no trace env) then v109
+(with CREWBORG_TRACE_GROUPS=all so the non-domain honor_* events survive the lean filter). Fired
+xreq_25bb7e0f: crewborg:v109 crew@slot0 + sasmith-crewborg-hs1:v15 crew@slot1, 2 random imposters@6,7.
+crewborg's OWN policy_artifact_0.zip trace shows, per completed episode: `society: crew announce`
+(we send compact HS1) + `domain.honor_claim {color:blue, pub:WxWJy6ZO…, known:alex-smith}` +
+`domain.honor_known_member {color:blue, label:alex-smith}` — we parse+verify sasmith's REAL compact
+signature and register them trusted. This is the exact chain that returned None (100% broken) before.
+Note: env vars (seed + trace groups) bake at UPLOAD via --secret-env, NOT per-xreq — an upload without
+CREWBORG_TRACE_GROUPS=all silently drops honor_* from the artifact (they're non-domain. → lean-filtered).
+The vote-veto/posterior-pin only *fires* when the posterior would otherwise vote a trusted member, so
+it won't appear in every game (a clean crewmate never becomes a vote target).
+
+### A worktree can be removed mid-session by another actor — commits survive only if merged/on a branch
+
+Evidence: Mid-session, the `worktree-crewrift-honor-society` worktree dir was deleted and its branch
+gone (shell cwd reset to repo root). Recovered via reflog: another session had MERGED the branch into
+main (`98439ca Merge branch 'worktree-crewrift-honor-society'`) — and independently landed the same
+stale-PLAYER_COLOR_NAMES root cause (`ffe9759`, a v107 10-round audit). Both my commits were reachable
+from main (`git merge-base --is-ancestor <sha> HEAD`). Lesson: commit early/often on the worktree
+branch (uncommitted work would have been LOST when the dir vanished), and if a worktree disappears,
+check `git reflog --all | grep <branch/sha>` + `git fsck --no-reflogs | grep dangling` before assuming
+loss — a parallel session may have merged it. Continue from the main checkout with absolute paths.
+
+### "Data vanished from the platform" is a read-path hypothesis until an old object 404s directly
+
+Evidence: the 2026-07-01 "league artifacts are ephemeral (~1 round, ~10-15 min)" scare
+(TODO item; v82 6/100, v80 17/196 with artifacts, newest-round-only). Re-probed 2026-07-21:
+the very same v80/v82 episodes still list has_artifact=true and download fine (HTTP 200)
+via `GET /v2/episode-requests/{ereq}/policy-artifacts` — 20 days later. Nothing with a
+15-minute TTL returns data at 20 days, so the original disappearance was a READ failure,
+not deletion: it coincided exactly with metta's artifact-route/auth churn (v1 TEAM_AUTH
+`/jobs/{id}/policy-artifact` + opt-in elevation ee7a3e27c2 #17028 landing 07-02 + the v2
+migration b548b013a4/#17413, 3c3fdb4f17/#17466; v1 deleted c4ddebd857/#17603), and our
+fetcher maps EVERY 4xx to "no artifacts" (`get_text_or_none` → None). Also verified in
+metta: no artifact TTL exists — the only S3 lifecycle expiry is the secrets bucket
+(`devops/tf/observatory/policy-secrets.tf:52`); the only backend delete is the per-job
+secrets bundle (`job_runner/event_processor.py:791`). Lesson: before concluding
+"retention", (1) directly re-fetch an OLD known-good object, (2) distinguish 403/404/empty
+in tooling instead of collapsing them, (3) check whether the platform's auth/routes were
+churning that week. Harvest tool now exists anyway: `crewrift_lab/tools/harvest_artifacts.py`
+(+ `docs/telemetry-harvest.md`).
+
+### A slot-0-pinned A/B cannot see a slots≥1 bug — match the arms' seat distribution to where the bug lives
+
+Evidence: the v110-vs-v107 A/B (palette fix — slot 0's color mapping was CORRECT in the stale
+table; only slots ≥1 were wrong). The lab's standard matched design pins crewborg at slot 0, which
+would have measured ZERO of the bug's surface. Ran a second matched pair with ALL seats round-robin
+(`xreq_276e3849` v110 / `xreq_f1f64260` v107): v107 reproduced the self-accusation ("orange sus…
+vote orange", slot 4/orange) and 6/79 false dead-mutes (mute 1200-1800 ticks pre-death) in ~80 eps,
+v110 showed 0/0 across 285 eps — the slot-0 arms alone showed 0 vs 0 (no signal). Lesson: when the
+defect is seat-/slot-conditional, the pinned-seat A/B design is blind to it; add a rotating-seat
+matched pair (and use the pinned pair for the behavior-parity check).
+
+### Submitting to Crewrift Prime auto-supersedes your ACTIVE membership only if it's active — a benched one blocks instead
+
+Evidence: submitting crewborg:v110 while crewborg:v107 sat `competing/benched` produced an instant
+`disqualified/superseded` on the NEW membership with notes "a player may field at most one active
+policy… 028ba9f3 was retired in favor of 5a4e0eae" — i.e. the platform kept the OLD version and
+killed the new one (reverse of the usual v106→v107 supersession, where the new champion benched the
+old). Fix: `coworld retire-membership <old lpm>` first, then submit. Also: the "NOT a skill
+disqualification" note only appears on the raw membership object (`notes`), not in the CLI list view.
+### First-mover anchoring is REAL in the live field, and crewborg's LLM round-trip forfeits it structurally
+Evidence: /tmp/wh10 (199 live eps, 446 meetings): P(target ejected | first-named in meeting) 28.7% vs 12.5% later-named (z=5.8), and it holds controlling for correctness (imposter targets 36.9% vs 20.8%, WRONG targets 21.7% vs 9.0% — anchoring, not accuracy). crewborg's median first substantive chat lands ~40-55 ticks in — exactly the meeting_start LLM latency — vs tick 1 for the top-3 converters (jordan/mv/relhalpha, median delay 1). The LLM-enabled path ALWAYS waited for the round-trip before its first chat; the fix (crewborg-anchor:v1, branch worktree-agent-af7effe1d30d90630 @0c303fa) accuses on the first decide tick when top_suspect clears the vote bar with citable evidence.
+
+### The first-mover anchor A/B: mechanism decisively fired, primary directional-only — the anchor is too RARE to be a big lever alone
+Evidence: pre-registered A/B (cand xreq_daff5d17+xreq_4ac2c2ad 200 eps vs Thread-1 v110 arms 200 eps + v107 arm 100 eps, matched roster/slot0/natural roles). Anchor fired 37×/200 eps (~0.19/ep — a vote-bar-clearing suspect at meeting START is rare); when it fired: decide-tick delay median 0, spoke-first 64.9% (vs 11.1% v110), accuracy 97.3%. Conversion of those meetings 35.1% vs 27.8%/25.0% baseline accuse-meetings (+7-10pp, Fisher p≈0.73 — n=37/18/12, hopelessly underpowered at this rate); crew win +3.3pp (NS); all guards pass (imposter untouched, vote_timeouts flat, ops clean). Lesson: to make first-mover anchoring MATTER, crewborg needs more bar-clearing suspects AT meeting start — pre-meeting suspicion warming is the multiplier, the chat timing alone is safe-positive but small. Rate-of-fire ceilings belong in the experiment design BEFORE launch: 0.19/ep × 100 eps/arm can never show a significant episode-level effect.
+
+### fetch_artifacts.py defaults to n=10 for --xreq without --watch (silent truncation)
+Evidence: build_warehouse.py --xreq on a completed 100-ep request fetched exactly 10 episodes (args.num None → 10 when not --watch, fetch_artifacts.py:744). The warehouse manifest then honestly reports 10 episodes and it LOOKS like a small run. Pass -n 100 explicitly (or use --watch/stream_eval.py, where the default is unbounded).
+### Isolation-window kill "conversion" is a definition artifact — measure opportunity windows (ready+visible) instead
+Evidence (Thread 2, 2026-07-21, /tmp/t2_imposter on the matched A/B warehouses): the same v110 episodes score 12.2% under the audit's isolation-interval definition (bottom-tier) and 76.9% under ready+victim-visible opportunity windows (field-BEST, field pooled 66.2%, p=0.017). The isolation definition counts vote-frozen and cooldown-blocked windows (the July-02 19.6%-vs-69.7% killtrace lesson, third confirmation). Also window-edge sensitivity: conversion at window+0 is 0% for EVERYONE (the visibility interval ends AT the kill tick — the victim stops being visible when dead), jumping to ~70% at +30. Retire isolation-based conversion from audits; the survey/audit metric should be def (b) opportunity windows + def (c) kills/seat.
+
+### v110 imposter's real deficit is kill→WIN (meeting survival), not conversion, contact, or stalking
+Evidence (same analysis, v110-lineage pooled n=105 imposter seats vs 7-opponent field n=859): ejection 47.6% vs field 25.5% (p=5e-6), driven by BOTH being caught — kills-while-isolated 15% vs 31% (p=1.7e-5), 1st-kill witnessed 80% vs 67% (p=0.007), median 4px moved in 60t post-kill vs field 23-40px (lying-in-wait on the scene, modes/hunt.py) — AND being convicted: ejected-after-witnessed-kill 62.2% vs 31.6% (p=6e-5); in meetings the imposter speaks 31.6% / speaks-FIRST 0.0% (field 40-98%) because _decide_imposter (modes/attend_meeting.py:310) has no response-when-accused path and the LLM round-trip forfeits the first-mover anchor. Meanwhile the old "starvation/timidity" story is dead on v110: ready ticks/seat 307 = 2nd-lowest in field, ready→kill latency mid-field, follows-emitted field-LOW. Next imposter lever: accused-response deflection + post-kill flee; NOT witness-gate (refuted 3x), NOT victim-finding.
+
+### The palette bug's imposter-side effect was real but small, and only visible in the rotating-seat arms
+Evidence: slot-0 pinned A/B arms (palette correct at slot 0 in both) showed all imposter diffs NS. Rotating slots≥1 (where the bug lived): v110 win 64.7% vs v107 35.7%, eject 41.2% vs 71.4% (n=17/14, p≈0.15 both — directional only). The bug's shielded-innocent effect can't be measured from replay events at all (player_visible_interval carries role truth, not crewborg's corrupted belief); only a trace-level probe could. Don't chase it further — v110 fixed the mechanism and league play (n=8 seats: eject 12.5%) shows no residual alarm.
+
+### Elevated fetch is required for results.json on other-account xreqs (and league rounds) since the metta team-access opt-in
+Evidence: re-fetching xreq_276e3849/xreq_f1f64260 and 5 fresh league rounds without --elevated returned "results artifact unavailable" on 100/100 episodes (replays fine); with --elevated everything fetched. fetch_artifacts.py maps the 403 to "unavailable" silently. If a warehouse build dies with "No complete episode dirs", check results.json presence before suspecting retention/replay issues.
+
+### The belief clock lags the server under load — deadline logic on `belief.last_tick` can be structurally late even when it "fires on time"
+Evidence (Thread 5 vote_timeout dig): 15/16 alive-seat timeout meetings fired the 48-tick auto-submit on time BY THE BELIEF CLOCK yet missed the server tally. The bridge stamps ticks from queued frames; cumulative arrival lag (sum of loop_gap_ms minus ideal 41.7ms/frame) was +54..+689 frames at failing deadlines vs +17..+95 in OK meetings. `bridge.tick_drift` reads 0.0 throughout — it measures received-vs-processed, NOT arrival backlog; diagnose lag from cumulative loop_gap_ms excess instead.
+
+### Never do blocking I/O inside the per-tick decide loop — the /spend sidecar GET was the tick-budget breaker
+Evidence: `_spend_allows_followup` issued a blocking loopback HTTP GET every meeting tick (cache key was `tick`, which changes every tick). Spend-tick step_ms median 34-55ms with 56-74% of ticks over the 42ms frame budget, vs 5-9% over for playing ticks — that queued frames and produced the lag above. Fix: time-based cache (SPEND_READ_CACHE_TICKS=24 ≈ 1s); spend only changes when we ourselves complete a call.
+
+### Warehouse triage for vote timeouts: score events with reason='failing to vote or skip' beat vote_cast-absence inference
+Evidence: the -10 penalty rows (key='score', slot>=0) directly enumerate timeout seats+ticks per episode; joining to the nearest prior player_state confirms alive+connected, and the ts equals the Voting→VoteResult phase edge, giving the exact meeting window for telemetry replay. Faster and less error-prone than reconstructing "alive all meeting with zero vote_cast".
+
+### The in-game honor_liar witness has FALSE POSITIVES — never distrust from raw events
+Evidence: 6/199 v110 baseline eps ledgered alex-smith's key as a liar while the accused seat was ACTUALLY crew per results.json (kill/vent misattribution by our perception under crowding). harvest_liars.py therefore gates every honor_liar event on results.json ground truth; only confirmed lies reach data/honor_distrust.json. General form: reputation systems must not federate uncorroborated live-witness claims.
+
+### /tmp warehouse-episode dir NAMES lie about versions — verify per episode.json before pooling arms
+Evidence: `/tmp/wh_anchor_base_v107_episodes` actually holds a crewborg **v110** arm (xreq_774a384d) and `/tmp/wh_anchor_base_v110_episodes` is HALF v107 (xreq_136dd84f, 100 eps) + half v110 (xreq_edd0f75e). The HS A/B's first compare silently used 100 mixed eps as "v110". Fix: map `episode.json` participants' `policy_version` per episode (`.tmp/map_arm_prefix.py` pattern) and assemble baselines by symlink (`/tmp/hs_on_baseline_eps`).
+
+### An A/B on an env-flag delta needs the OFF arm's zero-event check as a validity gate
+Evidence: HS isolated A/B pre-registered "OFF arm must emit exactly 0 HS events, else the run is invalid" — and byte-verified the probe image vs the baseline commit (114/114 sha256) BEFORE upload. Cheap (one scan) and it converts "we think the flag works" into measured fact; the disable path had never been exercised in production shape before.
+
+### Mechanism-level secondaries rescue underpowered episode-level A/Bs — pre-register them as the real deliverable
+Evidence: at n=200/200 the HS A/B could only detect ~+15pp crew-win; primary came back dead flat (28% vs 28%). But per-event secondaries were decisive: HS-member votes against our crew 0.31 vs 0.97/ep (z=-7.1), veto accuracy 20/20. Verdict "neutral-but-mechanism-works" is actionable (keep ON; build vote coordination); a win-rate-only design would have concluded "no effect" and lost the mechanism evidence.
+
+### The Bedrock 429 fail-rate is NOT cadence-correlated — interval/trigger levers are dead; the timeout was the real in-policy lever
+Evidence (Thread 10, 2026-07-22, v110 A/B arms 199 seats/2084 calls): 74.5% call-fail, 1536/1553 errors = daily-token-pool 429; inter-call interval before success (median 120t) == before failure (median 120t), fail% uniform across all 4 triggers (67-77%). Meanwhile the 3.0s client timeout aborted 40% of ultimately-successful calls (success latency median 2.8s/p90 4.0s) into anthropic-SDK auto-retries that double-spend ~2.5K input tokens each. Fix (probe-validated, xreq_f5e7a285): meeting timeout 6.0s — 0 successes past the abort boundary, 0 timeout fails, fails/meeting lowest of the night's 4 arms, coverage flat. Don't re-chase LLM_MIN_CALL_INTERVAL_TICKS or trigger-dropping for 429 relief.
+
+### A client-side LLM timeout abort does NOT un-spend the server-side tokens — timeouts under throttling are a hidden token multiplier
+Evidence: same measurement. With anthropic SDK default retries, every timeout-abort ≈ 2× input tokens for one decision. When the pool is the bottleneck, a "tight timeout to save time" actively worsens the throttling for the whole fleet. At 1200-tick meetings the deadline geometry (latest-safe-start 204/1200 at 6.0s) has room — check the time budget before assuming a tight timeout is free.
+
+### Success-latency percentile vs timeout is the retry-waste diagnostic (p90 > timeout = red flag)
+Evidence: success latency p90 4.0s vs 3.0s timeout meant ~40% of successes were second attempts; visible directly in telemetry as meeting_llm_decision latency_ms > timeout×1000 (impossible without a hidden retry). Cheap to compute on any harvest; belongs in future LLM-health scans.
+
+### Pre-registered thresholds must be restated under the NEW regime, not the old one
+Evidence (Thread 10 C1): "≤10% of successes >3.05s" was written against the OLD 3.0s-timeout regime where >3.05s could only mean a retry; under the shipped 6.0s timeout a 3-5s success is a normal single attempt, so the literal threshold was unfailable-by-construction in one direction and meaningless in the other. The mechanism-true signatures (0 >6.05s, 0 timeout-bucket fails, max latency down) had to carry the verdict. When the change itself moves the measurement boundary, pre-register the criterion in units the change can't redefine.
+
+### Re-verify a parked behavioral premise on CURRENT data before building — a 2-week-old "field-worst" can be field-BEST today
+
+Evidence: Thread 9 (imposter co-location spread nudge). The TODO's premise — crewborg-imposter
+near/following its co-imposter "32% of intervals (field-worst)", measured ~v101 on 2026-07-07 —
+was re-measured first on 200 fresh v107/v110 eps (`/tmp/wh_anchor_base_v110`) before any code:
+crewborg's co-imposter proximity share is 13.7%, the LOWEST of the 7 crewborg-family policies
+(field 15.0%, z=-1.08); following share 10.2%, 2nd-lowest overall. The consequence claim also
+failed: per-episode imposter-pair co-location is uncorrelated with imposter win (r=0.017 p=0.82)
+and the ejection trend runs OPPOSITE the "tell" theory (high-co-location eps have FEWER imposter
+ejections). Verdict REFUTED-PREMISE, zero build cost spent. Ten versions of drift (v101→v110:
+self-hunt fix, palette/self-ID fix, HS) plus a different metric window fully inverted the ranking.
+The premise-first gate in the thread brief saved an entire design→build→A/B cycle (~half a day +
+200 paced eps). Scripts: /tmp/t9_spread/premise{,2,3,4}.py.
+
+### Post-kill "4px lies-in-wait" was a meeting-freeze artifact — condition displacement metrics on phase
+Evidence: Thread-13 survival A/B. Median kill→next-meeting latency is 77–91 ticks for EVERY policy (bodies get reported fast); at +60t most killers are frozen in MeetingCall, so unconditional displacement compares phase mixes, not behavior. Conditional on still-Playing at +60t, v110's "4px" becomes 100px (field 131px) — the old Evade was NOT standing on the body. notsus also reads 4px unconditional. Any post-event movement metric must filter player_state.phase='Playing' at both endpoints.
+
+### Fleeing the kill scene costs the second kill — the 2026-06-26 crowd-seeking Evade is right; REFUTED lever, don't re-chase
+Evidence: crewborg-survive:v1 (Evade constrained to rooms ≥160px from the kill scene): kills/seat 1.81→1.38, 3+-kill seats 21.5%→5.5% (p=0.01), 1st→2nd-kill conversion 58%→43%; ejected-after-witnessed-kill did NOT improve (51.6%→53.5%). The kill room IS the crew-dense room; leaving it forfeits the snowball that hunt.py's witness-drop-after-first-kill is designed to bank. Verdict: docs/designs/2026-07-21-imposter-survival-ab-prereg.md.
+
+### Imposter meeting deflection (counter-accuse + first-mover anchor) fires cleanly but draws MORE votes in this field — speaking ≠ surviving
+Evidence: same A/B. Mechanisms decisively on: spoke-first 0%→23.7% (z=8.7), spoke-in-meeting 35.6%→48.9% (p=0.004), counter_accuse 30 decisions/12 eps. Outcomes: votes-received/meeting 1.14→1.28, seat ejection 43%→49%, win 63%→60% (all NS but wrong-signed). A fabricated accusation from the seat already under heat reads as escalation, and HS-trust opponents veto votes against trusted members anyway. If retried: counter-accuse ONLY with real citable evidence, decoupled from bandwagon/parity fabrication.
+
+### v110-lineage baselines can pool v110 + anchor arms for IMPOSTER metrics (anchor's change was crew-only) — but /tmp/wh_anchor_base_v110 contains BOTH v110 and v107 eps
+Evidence: arm-mapping the survival A/B initially found only 100 v110 eps because that warehouse holds 100 v110 + 100 v107 (Thread-1 fired them into one dir). Always GROUP BY policy_version on episode_players before trusting a warehouse's name.
+
+### The 429-driven first-call outcome is a usable natural experiment for LLM-vs-deterministic comparisons
+Evidence: Thread 4 — every alive meeting fires call #1 unconditionally (first-call-always), and whether it succeeds is set by the shared daily-token pool state, not by game state. Stratifying to "call #1 decision vs call #1 fail" gave near-balanced covariates (meeting idx 1.24 vs 1.06, opp voters 4.01 vs 4.15) and let 5 existing arms settle the social-rework question without a single new episode. Confounds still checked 3 ways: MH over arm×hour and arm×meeting-idx, within-episode pairing, and a did-nothing negative control.
+
+### A meeting-level win doesn't imply an episode-level effect — compute the propagation MDE before proposing an A/B
+Evidence: Thread 4 — LLM meetings ejected imposters +4.8pp per meeting (p≈0.01) yet crew win by exposure was 26.5% vs 25.4% (z=0.3); implied episode effect ~1-3pp needs 3,300–25,000 eps/arm. The planned detonly-vs-v110 interventional arm (200/arm, MDE 12.3pp) was skipped as structurally uninformative — the observational design controlled field and pool-state better than the A/B would have.
+
+### Conditional-on-action rates can invert volume effects — decompose into volume × precision
+Evidence: Thread 4 — naive "vote hit imposter | voted" showed fallback 93.5% vs LLM 59.9% (fallback looks better!), but that's because the deterministic path only votes when the bar-clearing gate passes (rare, precise). In the exogenous first-call stratum precision equalized (67.7% vs 67.9%) and the real difference was volume (33.6% vs 19.7% voted) → net correct votes/meeting 22.7% vs 13.4% favoring LLM. Selection on the treated action, not treatment quality.
+
+### /tmp episode-dir names can be swapped vs contents — the anchor-base pair really is crossed
+Evidence: re-verified per episode.json: /tmp/wh_anchor_base_v110_episodes holds crewborg:v107 slot-0 and /tmp/wh_anchor_base_v107_episodes holds v110 (= same eps as /tmp/hs_on_baseline_eps). The Thread-8 warning replicates; extract.py labeled arms from episode.json, never dir names.
+
+### Background-task Bash calls reset cwd — relative paths passed to spawned skill scripts break silently
+Evidence: W1 v111 A/B — `build_warehouse.py --expand-replay crewrift_lab/tools/bin/expand_replay-34a97a3` backgrounded from the repo root "succeeded" (exit 0) with 200/200 episodes failed (`FileNotFoundError` per episode inside the manifest, headline said "no trace_warning — binary matches"). Always pass ABSOLUTE paths to backgrounded warehouse/stream commands, and check `episodes_failed` in the manifest, not the exit code.
+
+### `coworld submit --league` requires the FULL league UUID — the truncated display id 422s
+Evidence: `coworld leagues` table shows `league_a12f5172…` (truncated); submitting with that fails the API's `^league_[0-9a-f]{8}-…$` pattern. Get the full id via `coworld leagues --json`.
+
+### The HS seed's canonical location is ~/.crewborg/honor_seed.b64 (documented in crewborg docs/designs/honor-society.md §Key management)
+Evidence: W1 needed the v110 upload recipe's `CREWBORG_HS_SECRET=<seed>`; version_log deliberately never records the literal. `--secret-env CREWBORG_HS_SECRET=$(cat ~/.crewborg/honor_seed.b64)` is the documented recipe line.
+
+### domain.meeting_llm.latency_ms measures only client.messages.create wall time — a "successful call over the timeout" is possible and not proof the timeout failed
+Evidence: v111 (6.0s timeout) shows one success at 6229ms. SDK `call_json` wraps only the messages.create call in perf_counter; crewborg's own timeout is enforced around a larger scope, so ~0.2s overshoot ≈ scheduling slop, while v110 (3.0s timeout) had successes out to 7.26s = genuine abort-retry double-spend. Compare APITimeoutError fallback counts (27→0) for the clean signal.
+
+### Failed Bedrock calls through the sidecar are FREE — 429s are rejected pre-inference; only timeout-aborts burn tokens
+Evidence: W4 spend audit (2026-07-22). metta bedrock_sidecar.py accrues spend only in _record_usage (needs a delivered usage object); verified empirically on 387 crewborg slot-0 seats: 429-only zero-decision seats read sidecar spend_usd ∈ {0, one-commander-call}, and seats-with-decisions show median(sidecar spend − token-estimate) = $0.000000. Implication: retry budgets against the 429 pool cost nothing in dollars; the only real money waste was the 3.0s-timeout abort-retry (fixed in v111). Don't design spend guards around 429 "waste".
+
+### The sidecar's spend math is exactly reproducible client-side: usage tokens × family rates
+Evidence: same audit — bedrock_cost_usd = tokens × FAMILY_PRICING_PER_1M (haiku $1/M in, $5/M out, $0.10/M cache-read, $1.25/M cache-write); 335 seats matched to ~$0 median without any /spend HTTP reads. So per-call attribution never needs a blocking sidecar read (which was the vote_timeout root cause) — strategy/llm_spend.py vendors the rates; domain.llm_spend carries the numbers.
+
+### crewborg's entire LLM bill is ~$0.008/seat-episode — dollars are not the binding budget, the daily-token pool is
+Evidence: 400-seat corpus profile (tools/spend_profile.py): mean $0.0077/seat-ep, $0.77/100-ep eval, ~$7/heavy night; all four meeting triggers cost the same ~$0.0033/success and none converts dramatically worse. Budget levers (call budget 5, 120-tick interval) are correctly sized for spend; the only real constraint is the shared 429 pool (docs/bedrock-quota-ask.md, now with the dollar counterfactual).
+
+### W3 audit: chat evidence reached the posterior ONLY via the fitted counters (+0.13/accusation), unweighted by speaker
+Evidence: `times_accused` coef +0.1288 in suspicion_weights.json was the ENTIRE chat→posterior path; legacy path chat-deaf; `PlayerRecord.claims` + `verify_claim` output banked but never read by any scorer; an HS member's accusation weighed the same as an imposter's. Fixed in the 2026-07-22 chat-evidence-incorporation design (trust-weighted log-LR term, both paths).
+
+### The spaCy parse mis-handles the dominant kill templates — victim-flagging is distance-based, not role-based
+Evidence: "saw red kill blue" produced accusation(red) AND accusation(blue) (victim accused too); "red killed blue" produced NOTHING (both colors within 2 tokens of "killed" → both victim-flagged). Measured live with en_core_web_sm before writing the template pass. Anchored templates with explicit killer/victim groups fixed it; spaCy remains the free-form fallback.
+
+### social_evidence marked chat messages counted BEFORE parsing — spaCy's load window silently ate early-meeting chat
+Evidence: `_count_chat_stances` added the (tick,speaker,text) key to `social_counted_chats` then called parse_claims; if the model was still loading (~1.5-2s hosted, first meeting can start inside it) the message returned zero claims and was never re-parsed. Fix: `chat_nlp.is_loading()` defers the whole pass (chat_log persists across ticks within a meeting).
+
+### Worktrees spawned for parallel work can be FAR behind local main — check merge-base before touching code
+Evidence: this W3 worktree's branch base lacked ALL of v107-v111 (80 commits, including the champion v110 HS rewrite the task depends on). `git merge-base --is-ancestor <recent-main-sha> HEAD` failed; `git merge main` brought it current. An audit written against the stale base would have described dead code (e.g. the old HS1 5-token protocol).
+
+### Field chat is exactly as informative as our own posterior — trust-weighting alone doesn't make strangers' accusations profitable
+Evidence: W3 chat-evidence A/B (200/200 eps, crewborg-chatev:v1 vs v111): chat-changed votes hit imposters 67.4% vs 69.0% for suspicion-alone votes. The term added vote volume symmetrically (correct +0.087/ep, mis +0.085/ep), netting zero — and total crew ejections rose (p=0.066) because our extra votes seed piles others complete. Next lever: floor the trust gate (≥0.9 / HS-only testimony), don't re-tune the base LRs.
+
+### A "changed_top_suspect" counterfactual trace turns an A/B null into a mechanism diagnosis
+Evidence: domain.chat_evidence_applied recorded top_suspect with vs without the chat term per meeting (47 changed votes / 384 events). That let the verdict distinguish "mechanism never fired" from "fired, but the signal is worthless" in one query — without it the flat primary would have been unattributable.
+
+### The fitted suspicion posterior is BIMODAL — softer posterior bars unlock nothing
+Evidence: W2 warming-gap measurement (791 crewmate meeting-start suspicion_snapshots, 399 eps): every 0.9-bar-clearing top suspect was a witnessed catch (71/71); non-witnessed tops max out at p=0.74 (the graded evidence can't push the logit high enough). A 0.65 bar buys 0.018/ep at 57% precision. Any "lower the bar" proposal for anchor/vote eligibility is dead on arrival; the separating signal for below-bar suspects lives in the SOCIAL counters (times_accused, votes_cast, button/report/task exculpation, tail_max_run), which is how warm_anchor_suspect works.
+
+### v110's suspicion_snapshot vote_bar:0.8 is a stale trace label, not the live bar
+Evidence: events.py at v110 emitted the legacy constant VOTE_PROBABILITY (0.8) while top_suspect actually applied WEIGHTS_VOTE_PROBABILITY (default 0.9, no env override in the v110/v111 recipe). Fixed on main in b2cbefe (post-v110). When reading v110-lineage traces, trust the code at the build commit, not the label.
+
+### Verify BOTH arms' ops profile before reading an A/B — a platform connect-timeout window can invalidate one arm silently
+Evidence: W2 run 1 (xreq_8b485320/75fecd25, fired 19:00Z): 61% of episodes had connect-timeout seats (ALL slots equally, 27 slot-0 crew seats deleted) while the same-day baseline arm had 0 — win rates diverged wildly on the contaminated subset (crew 13.6%) but matched expectations on the fully-live subset (35.6%). The window was 19:03-19:08Z and self-healed; a clean rerun 25 min later had 0 ops. Slot-0 connect-timeout also means no policy_artifact_0.zip, which silently shrinks the telemetry denominator.
+
+### Decoupling anchor CHAT from the VOTE via the existing corroboration gate costs nothing and caps the mis-vote risk
+Evidence: W2 warm anchor: the v89 _vote_target_corroborated gate already converts an uncorroborated tentative to skip — a warm (sub-bar) anchor needs zero new vote machinery, just a pile clause for escalation. Live: 13 warm fires -> 8 lone ballots gated to skip, 3 pile escalations, ALL escalated votes hit true imposters (100% warm-meeting precision both runs); none of the arm's 6 mis-ejections was a warm meeting.
+
+### A trust FLOOR (gate) beats trust SCALING for hearsay — zero-out the unreliable band instead of down-weighting it
+Evidence: W3b (crewborg-chatev:v2 vs v111, 200/200 eps). v1's continuous ×(1−suspicion) scaling let stranger kill-reports (×0.71 of ln30) cross the vote bar and netted zero. v2's 0.9 floor (HS-verified + near-cleared only) flipped the diagnostic: chat-changed votes hit imposters 92.1% (35/38) vs v1's 67.4% (p=0.006), our mis-votes/crew-ep −45% (p=0.03), vote precision 83.6% vs 72.2% (p=0.03). Ground truth for WHY: offline claim-precision split — HS kill/vent 22/22=100%, strangers 64.4% (≈ our own posterior, worthless), imposter-speakers 0/158 (pure fabrication). If a source class isn't strictly better than the prior-informed posterior, its correct weight is zero, not small.
+
+### Retained telemetry from a refuted A/B is a free power-and-precision oracle for the follow-up variant
+Evidence: W3b's go/no-go was decided offline in minutes by replaying W3's kept cand-arm zips (/tmp/w3_cand_eps): would-fire 0.57/crew-ep (10× the unpowered bar), HS member visible 93.8% of crew eps, and the per-speaker-class precision table above — all BEFORE burning 200 eps. The replay needs only chat_received + honor_known_member/honor_liar + suspicion_snapshot events plus the real template parser. Keep episode dirs after verdicts; pre-registered follow-ups get their power analysis for free.
+
+### An elevated team-level guard needs decomposition into "we caused it" vs "field did it" before it can refute
+Evidence: W3b's only yellow flag — total crew ejections 0.829 vs 0.662/crew-ep (p=0.089), superficially the same gullibility signal that helped sink v1. Decomposing by causal channel (ejections we voted for; no-vote ejections of colors our chat accused; everything else): our channels IMPROVED (we-voted-for 0.057 vs base 0.066; seeded-by-our-chat flat p=0.95; accusing chats DOWN p=0.013); the entire elevation sat in field ejections with no crewborg fingerprint (p=0.026 vs the same shared baseline batch both cand batches were compared to). Without the decomposition the guard read as a feature regression; with it, batch drift.
+
+### fetch_artifacts.py --watch downloads results.json via the deleted v1 /jobs route — backfill with `coworld episode-results <ereq_id>`
+Evidence: W3b arms streamed 200 episodes of telemetry fine but 0 results.json ("results artifact unavailable" ×200; script line ~431 GET /jobs/{job}/artifacts/results, removed upstream 2026-07-10). The v2-route fix landed for policy-artifact zips (commit 7130f40) but not results. Workaround: read the full ereq id from each episode.json and `uv run coworld episode-results $eid -o $dir/results.json` (tmp_probe/fetch_results.sh); shape is identical to the old artifact. Fix the script when touching that skill next.
+
+### A combination ship needs its own interaction-specific prereg guards, not just the union of the solo gates
+Evidence: W5 (v112 = warm anchor + trust-floored chat evidence). The solo verdicts left a specific double-count channel unexamined: one HS speaker's accusation can both warm-eligible a target (chat-evidence LR feeds times_accused/posterior) AND satisfy the pile clause (chat accuser count). Pre-registered a dedicated guard (warm-vote precision ≥85%) + a measurement plan (interaction_b.py). Live: the channel is REAL — all 5 pile escalations had chat-evidence contribution to the same target — but benign (5/5 ejected true imposters, ejection-volume guards NS). Without the dedicated guard the combo A/B would have been read as "both features still work" with the interaction invisible.
+
+### Chat evidence raises the anchor's fire rate ABOVE its solo rate — composition can super-additively move a shared upstream signal
+Evidence: W5. Anchor total fires 0.377/ep in v112 vs 0.266 solo (W2) vs 0.218 baseline — chat evidence pushes below-bar suspects onto the hard bar, so the HARD route grew (0.296/ep vs solo's ~0.20) while its accuracy dropped 100%→91.5% (the new bar-clearers are chat-fed, priced at W3b's 92% class precision). When two levers share an upstream signal (the posterior), expect the downstream consumer's rate AND precision to shift; prereg "rate up is OK, precision is guarded".
+
+### The membership-list routes went stale-only mid-session — confirm submissions via policy-membership-events + the division leaderboard
+Evidence: W5 submit. After `coworld submit crewborg:v112` returned sub_e61b68a1/pending, EVERY membership list query (CLI --mine/--league/--policy, raw /v2/league-policy-memberships with league_id/division_id) returned only 2 ancient 2026-06-08 rows — no v111, no v112, despite v111 having been visible an hour earlier. The truth was in `/v2/policy-membership-events` (v112 lpm_78d02983 "Submitted to Competition." + "Selected as champion.", v111 disqualified with our retire reason) and `coworld results <division_id>` (crewborg:v112 rank 17). A targeted events+leaderboard check beats polling a list route that can silently change its filter semantics.
+
+### A new champion membership RESETS the leaderboard score — expect a rank cliff at every supersession
+Evidence: v112 entered at rank 17 / score 5.0 / 1 round while v111 sat at ~rank 14 / score 6553 (score = mean_round_score aggregation over the MEMBERSHIP's own rounds). The retire-then-submit flow guarantees this cliff; it is not a regression signal. Judge the new version by trajectory over ~50-100 rounds, not entry rank.
