@@ -210,4 +210,8 @@ Result — **VERIFIED end-to-end** (100/100 seats):
   (`llm_spend.SpendLedger.meeting_ordinal`); regression test
   `test_llm_spend_meeting_index_survives_mode_recreation`. Confirmation probe:
   `crewborg-spendtrace:v2` (`b192a401…`), 40 eps,
-  `xreq_77c6b2e3-058f-4f94-a862-375b0b98062e`.
+  `xreq_77c6b2e3-058f-4f94-a862-375b0b98062e` — **CONFIRMED**: meeting_index
+  distributes 0..4+ (first 21 seats: {0: 80, 1: 49, 2: 22, 3: 5, 4+: 5}), event↔legacy
+  1:1 holds, per-success cost $0.00319. Bonus datapoint: this evening window ran at 64%
+  call success (vs 12.5% in the daytime v1 window) — same policy, same roster; pure
+  pool-state variance, reconfirming that decision coverage is exogenous.
