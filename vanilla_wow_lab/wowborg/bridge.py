@@ -44,6 +44,68 @@ SAY_MIN_INTERVAL_SECONDS = 5.0
 FRAME_POLL_SECONDS = 0.25
 GOAL_ID = "wowborg"
 
+# nim_control wire framing (mirrors the pinned SDK's private constants; used only by
+# the lenient-frame fallback below).
+_FRAME_STATUS_REQUEST = 4
+_FRAME_ENVIRONMENT_FRAME = 6
+
+
+class _LenientLocation:
+    def __init__(self, data: dict) -> None:
+        self.map_id = int(data.get("map_id", 0))
+        self.x = float(data.get("x", 0.0))
+        self.y = float(data.get("y", 0.0))
+        self.z = float(data.get("z", 0.0))
+        self.orientation = float(data.get("orientation", 0.0))
+
+
+class _LenientObservation:
+    def __init__(self, data: dict) -> None:
+        self.tick = int(data.get("tick", 0))
+        self.location = _LenientLocation(data.get("location", {}))
+        self.health = int(data.get("health", 0))
+        self.max_health = int(data.get("max_health", 0)) or 1
+        self.in_combat = bool(data.get("in_combat", False))
+        self.is_dead = bool(data.get("is_dead", False))
+        self.is_ghost = bool(data.get("is_ghost", False))
+
+
+class _LenientBindings:
+    def __init__(self, data: dict) -> None:
+        class Row:
+            def __init__(self, r):
+                self.index = r.get("index", 0)
+                self.trigger_id = r.get("trigger_id", 0)
+                self.value = r.get("value", "")
+
+        self.triggers = [Row(r) for r in data.get("triggers", [])]
+        self.texts = [Row(r) for r in data.get("texts", [])]
+        self.entities = data.get("entities", [])
+
+
+class LenientFrame:
+    """A validation-tolerant EnvironmentFrame stand-in (v24: the live controller
+    emits frames whose recommended_action violates its own mask in LONG storms —
+    strict parsing rejects the whole frame and navigation goes blind AND mute).
+    Carries what selection + supervision need; the SERVER remains the validator —
+    an inadmissible selection settles as a typed control error, which we handle."""
+
+    is_lenient = True
+    recommended_action = None  # never trust the recommendation on an invalid frame
+
+    def __init__(self, payload: dict) -> None:
+        self.revision = int(payload.get("revision", 0))
+        self.frame_id = int(payload.get("frame_id", 0))
+        self.phase = payload.get("phase", "")
+        self.observed_tick = int(payload.get("observed_tick", 0))
+        self.action_ready = bool(payload.get("action_ready", False))
+        self.observation = _LenientObservation(payload.get("observation", {}))
+        self.bindings = _LenientBindings(payload.get("bindings", {}))
+        self.slot = int(payload.get("slot", 0))
+
+    def allows_action(self, action) -> bool:  # noqa: ARG002 — server validates
+        return True
+
 
 class ShimBridge:
     """Drives one Nim control socket: observe frames, select actions, await settlement."""
@@ -64,6 +126,7 @@ class ShimBridge:
         self._last_say = 0.0
         self._last_traced_tick: int | None = None
         self._goal_armed = False
+        self._state_reader = None
 
     # ---- lifecycle -----------------------------------------------------------
 
@@ -137,9 +200,14 @@ class ShimBridge:
             try:
                 result = self._client.status(include_environment_frame=True)
             except ValidationError as exc:
-                # Upstream contract violation in ONE frame (e.g. its recommended
-                # action fails its own mask) — skip the frame, don't crash.
-                self._tracer.emit("frame_invalid", error=str(exc)[:200])
+                # Upstream contract violation (e.g. recommended action fails its own
+                # mask). Fall back to a LENIENT parse so navigation can still SELECT;
+                # the server stays the validator.
+                self._tracer.emit("frame_invalid", error=str(exc)[:120])
+                lenient = self._lenient_frame()
+                if lenient is not None and lenient.action_ready:
+                    self._trace_frame(lenient)
+                    return lenient
                 time.sleep(FRAME_POLL_SECONDS)
                 continue
             except (OSError, NimControlError) as exc:
@@ -154,23 +222,77 @@ class ShimBridge:
         return None
 
     def observe(self) -> Observation | None:
-        """Latest self-state, from the frame if offered, else ControlStatus-only ticks.
+        """Latest self-state, from the frame if offered, else the state.json mirror.
 
-        Policies that just need pose/vitals can call this anytime; per-step control
-        should use wait_for_frame() to get bindings + masks with the same data.
+        The state.json fallback matters operationally: the 0.1.31 controller emits
+        VALIDATION-INVALID frames in long storms (recommended-action-vs-mask upstream
+        bug, v24 evidence: 588-1044 invalid frames/episode) — during a storm the
+        socket is blind but the Nim client still writes its TelemetrySnapshot every
+        0.5s, which is all navigation supervision needs.
         """
         try:
             result = self._client.status(include_environment_frame=True)
         except ValidationError as exc:
-            self._tracer.emit("frame_invalid", error=str(exc)[:200])
-            return None
+            self._tracer.emit("frame_invalid", error=str(exc)[:120])
+            return self._observe_from_state_file()
         except (OSError, NimControlError):
             self._reconnect()
-            return None
+            return self._observe_from_state_file()
         if not isinstance(result, EnvironmentFrame):
-            return None
+            return self._observe_from_state_file()
         self._trace_frame(result)
         return self._observation(result)
+
+    def _lenient_frame(self) -> "LenientFrame | None":
+        """Raw-JSON status request over the client's wire framing (bypasses pydantic).
+        Uses the pinned SDK's private framing helpers — acceptable coupling: the
+        snapshot is digest-pinned and the bump recipe re-validates."""
+        import json as _json
+
+        try:
+            request_id = self._client._next_request_id()
+            body = _json.dumps({
+                "protocol": "vanilla_wow.nim_control.v1",
+                "type": "status_request",
+                "expected_slot": self._slot,
+                "include_environment_frame": True,
+            }).encode()
+            self._client._send_frame(_FRAME_STATUS_REQUEST, request_id, body)
+            frame_type, rid, payload = self._client._recv_frame()
+            if frame_type != _FRAME_ENVIRONMENT_FRAME or rid != request_id:
+                return None
+            return LenientFrame(_json.loads(payload))
+        except Exception:  # noqa: BLE001 — lenient path never raises
+            try:
+                self._reconnect()
+            except Exception:  # noqa: BLE001
+                pass
+            return None
+
+    def _observe_from_state_file(self) -> Observation | None:
+        try:
+            from wow_sdk.runtime import EmbeddedClientRuntimeClient
+
+            if self._state_reader is None:
+                self._state_reader = EmbeddedClientRuntimeClient(self._runtime_dir)
+            snapshot = self._state_reader.read_snapshot()
+        except Exception:  # noqa: BLE001 — fallback must never raise
+            return None
+        if snapshot is None:
+            return None
+        character = snapshot.character
+        return Observation(
+            tick=snapshot.tick,
+            captured_at=time.time(),
+            map_id=character.map_id,
+            zone=character.zone,
+            position=Position(character.x, character.y, character.z, character.orientation),
+            health=character.health,
+            max_health=character.max_health,
+            in_combat=character.in_combat,
+            is_dead=bool(character.is_dead),
+            is_ghost=bool(character.is_ghost),
+        )
 
     # ---- intents ----------------------------------------------------------------
 
