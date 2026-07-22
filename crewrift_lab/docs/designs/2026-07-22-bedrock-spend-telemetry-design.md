@@ -185,6 +185,29 @@ crewmate: 2,803 calls / 655 decisions (23.4%); imposter: 1,345 / 308 (22.9%) —
 5. **Commander (if ever re-enabled) must count against the same mental budget** — it now
    records into the same episode ledger, so `episode_est_cost_usd` covers both seams.
 
-## 5. Probe verification — appended after the hosted run
+## 5. Probe verification (hosted, 2026-07-22)
 
-(pending)
+**Probe:** `crewborg-spendtrace:v1` (= v111 code + this telemetry), 100 eps,
+`xreq_e026d5fe-dbbf-4869-99e2-498f45a397c8`, Thread-1 pinned roster, slot 0, natural
+roles, fired at ~0 concurrent load. Artifacts `/tmp/spendtrace_eps`; verifier
+`/tmp/spendtrace_verify.py`.
+
+Result — **VERIFIED end-to-end** (100/100 seats):
+
+- **1,024 `domain.llm_spend` events**, exactly 1:1 with the legacy signals: 128 ok =
+  128 `meeting_llm_decision`, 896 fail = 896 `meeting_llm_fallback{llm_call_failed}`.
+  Every failure classified `throttle_429` (and `est_cost_usd: 0` on all of them).
+- **Cost math confirmed against the sidecar in production**: at the last cached `/spend`
+  read, `median(sidecar_spend_usd − episode_est_cost_usd) = +0.000000` (n=93); the only
+  deviations are one-call-sized lags from the 24-tick read cache (min −$0.0034),
+  exactly as designed.
+- Success cost mean **$0.00324/call**; episode cumulative mean **$0.0042/seat** in this
+  window (87.5% call-fail — daytime pool contention, again all-429, reconfirming the
+  quota-ask picture).
+- **One bug caught live and fixed**: `meeting_index` was 0 on every event — the mode
+  instance is recreated per meeting, so its counter never advanced. Fixed by moving the
+  ordinal to the process-wide ledger keyed by meeting id
+  (`llm_spend.SpendLedger.meeting_ordinal`); regression test
+  `test_llm_spend_meeting_index_survives_mode_recreation`. Confirmation probe:
+  `crewborg-spendtrace:v2` (`b192a401…`), 40 eps,
+  `xreq_77c6b2e3-058f-4f94-a862-375b0b98062e`.
