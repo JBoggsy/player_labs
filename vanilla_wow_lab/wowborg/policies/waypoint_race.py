@@ -59,18 +59,19 @@ WAYPOINT_CATALOG: dict[str, tuple[float, float, float, str, tuple[str, ...]]] = 
     "field-shelf-2":      (-514.3, -4284.2, 40.7, "stage", ()),
     "field-shelf-3":      (-482.2, -4216.1, 50.1, "stage", ()),
     "field-shelf-4":      (-457.3, -4156.4, 47.6, "stage", ()),
-    "south-road-mid":     (-100.0, -4980.0, 20.0, "stage", ()),  # authored Sen'jin approach
     # --- mid: rim / gate corridor (150-450 yd) ---
     "gate-corridor":      (-359.7, -4309.8, 49.9, "mid", ()),    # authored valley-exit node
     "field-shelf-far":    (-457.3, -4156.4, 47.6, "mid",
                            ("scorpid-field-edge", "field-shelf-1", "field-shelf-2",
                             "field-shelf-3")),  # deepest reliably-reached shelf point
     # --- far: out the gate (> 450 yd; real Detour road work) ---
-    # Authored Sen'jin approach: gate → the (-100,-4980) road bend → the village.
-    "razor-hill-road":    (-825.6, -4920.8, 19.7, "far",
-                           ("gate-corridor", "south-road-mid")),
-    "senjin-village":     (-797.5, -4921.2, 23.0, "far",
-                           ("gate-corridor", "south-road-mid", "razor-hill-road")),
+    # Gate → Sen'jin DIRECT (~750 yd): proven at 362s in the v6 batch. (The authored
+    # (-100,-4980) road bend belongs to the Razor Hill→Sen'jin route around Tiragarde
+    # Keep — adding it to OUR gate-origin trip was a ~700 yd dogleg that made far legs
+    # unfinishable in 970s; v8-v11 evidence.) Both points are Sen'jin questgiver spawns
+    # (Gadrin / Vornal), ~30 yd apart — named for what they are now.
+    "senjin-gadrin":      (-825.6, -4920.8, 19.7, "far", ("gate-corridor",)),
+    "senjin-village":     (-797.5, -4921.2, 23.0, "far", ("gate-corridor",)),
     # --- hard: unreliable at this executor's pace — 4 hosted batches of evidence
     # (northwest-ridge 0/8 completions; the east-field family ~2/12 even with the full
     # authored shelf chain). Sampled ONLY by stress courses (count 0 by default); kept
