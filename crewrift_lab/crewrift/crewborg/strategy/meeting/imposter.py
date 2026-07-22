@@ -62,66 +62,6 @@ def bandwagon_target(belief: Belief, chat_accusers: dict[str, int] | None = None
     return best[0] if best is not None else None
 
 
-def heat_on_self(belief: Belief, self_accusers: set[str] | None = None) -> int:
-    """How much heat OUR seat is taking this meeting: votes cast on our slot
-    (weighted like any other heat) + distinct chat accusers of our color.
-
-    The bandwagon/parity tallies exclude self by design, so an imposter whose only
-    meeting heat is on itself sees no target and idles to a silent skip — the
-    measured 62%-ejected-after-witnessed-kill path. This is the trigger for the
-    counter-accusation response (design 2026-07-21-imposter-kill-to-win)."""
-
-    self_color = belief.voting.self_marker_color or belief.self_color
-    if self_color is None:
-        return 0
-    self_slot = next((c.slot for c in belief.voting.candidates if c.color == self_color), None)
-    votes_on_self = sum(
-        1 for dot in belief.voting.dots if not dot.is_skip and dot.target == self_slot and dot.voter != self_slot
-    )
-    accusers = self_accusers or set()
-    return votes_on_self * VOTE_WEIGHT + len(accusers) * CHAT_WEIGHT
-
-
-def counter_accusation_target(belief: Belief, self_accusers: set[str] | None = None) -> str | None:
-    """The accuser to counter-accuse when we are taking heat, or ``None``.
-
-    Accusers = the chat accusers of our color plus anyone whose ballot targets our
-    slot (heat can be votes-only, with no chat line to answer). Never a teammate,
-    never self, never the dead. Prefers the accuser who ALSO leads the general
-    votes-against tally (their eviction both removes the witness-claimer and joins
-    any existing pile), ties broken by lowest slot so two imposters under fire
-    converge. Deflection only — the chat-study rule stands: never answer an
-    accusation with "not me"."""
-
-    self_color = belief.voting.self_marker_color or belief.self_color
-    candidates = belief.voting.candidates
-    slot_by_color = {c.slot: c.color for c in candidates}
-    self_slot = next((c.slot for c in candidates if c.color == self_color), None)
-    accusers = set(self_accusers or set())
-    if self_slot is not None:
-        for dot in belief.voting.dots:
-            if not dot.is_skip and dot.target == self_slot and dot.voter != self_slot:
-                voter_color = slot_by_color.get(dot.voter)
-                if voter_color is not None:
-                    accusers.add(voter_color)
-    if not accusers:
-        return None
-    alive_colors = {c.color for c in candidates if c.alive}
-    slot_of = {c.color: c.slot for c in candidates}
-    tally = votes_against(belief)
-
-    eligible = [
-        color
-        for color in accusers
-        if color != self_color
-        and color not in belief.teammate_colors
-        and (not alive_colors or color in alive_colors)
-    ]
-    if not eligible:
-        return None
-    return max(eligible, key=lambda color: (tally.get(color, 0), -slot_of.get(color, 99)))
-
-
 def alive_imposter_count(belief: Belief) -> int:
     """How many imposters are alive *that we can account for* — ourself plus every
     known teammate the meeting census still lists alive. Self-gating value: it is 1

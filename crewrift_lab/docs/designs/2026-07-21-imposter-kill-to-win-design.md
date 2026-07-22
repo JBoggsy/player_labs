@@ -1,9 +1,16 @@
 # Imposter kill→WIN survival: post-kill flee + accused-response deflection
 
-**Status:** implemented on this branch; to be A/B'd as `crewborg-survive:v1` (probe
-upload, never submitted). Evidence base: Thread 2's re-derivation on v110-lineage
-data (2026-07-21, `/tmp/t2_imposter/*.py` over `/tmp/wh_anchor_*` + `/tmp/wh_rot_*`
-+ `/tmp/wh_v110_league`; WORKING_CONTEXT Thread-2 section).
+**Status:** implemented + A/B'd as `crewborg-survive:v1` (probe upload, never
+submitted). **REFUTED 2026-07-22 — do not ship either lever**; the full verdict
+with the prereg table is in `2026-07-21-imposter-survival-ab-prereg.md`. Key
+post-mortem: the "4px lies-in-wait" premise was a meeting-freeze measurement
+artifact (conditional on still-Playing at +60t, v110 already moved 100px), the
+flee costs the second kill (kills/seat 1.81→1.38, 3+-kill seats 21.5%→5.5%
+p=0.01), and the meeting deflection fired decisively (spoke-first 0→23.7%) but
+drew more votes than it deflected. Kept for the mechanistic analysis below.
+Evidence base: Thread 2's re-derivation on v110-lineage data (2026-07-21,
+`/tmp/t2_imposter/*.py` over `/tmp/wh_anchor_*` + `/tmp/wh_rot_*` +
+`/tmp/wh_v110_league`; WORKING_CONTEXT Thread-2 section).
 
 ## The problem (measured)
 

@@ -225,3 +225,15 @@ Evidence: slot-0 pinned A/B arms (palette correct at slot 0 in both) showed all 
 
 ### Elevated fetch is required for results.json on other-account xreqs (and league rounds) since the metta team-access opt-in
 Evidence: re-fetching xreq_276e3849/xreq_f1f64260 and 5 fresh league rounds without --elevated returned "results artifact unavailable" on 100/100 episodes (replays fine); with --elevated everything fetched. fetch_artifacts.py maps the 403 to "unavailable" silently. If a warehouse build dies with "No complete episode dirs", check results.json presence before suspecting retention/replay issues.
+
+### Post-kill "4px lies-in-wait" was a meeting-freeze artifact — condition displacement metrics on phase
+Evidence: Thread-13 survival A/B. Median kill→next-meeting latency is 77–91 ticks for EVERY policy (bodies get reported fast); at +60t most killers are frozen in MeetingCall, so unconditional displacement compares phase mixes, not behavior. Conditional on still-Playing at +60t, v110's "4px" becomes 100px (field 131px) — the old Evade was NOT standing on the body. notsus also reads 4px unconditional. Any post-event movement metric must filter player_state.phase='Playing' at both endpoints.
+
+### Fleeing the kill scene costs the second kill — the 2026-06-26 crowd-seeking Evade is right; REFUTED lever, don't re-chase
+Evidence: crewborg-survive:v1 (Evade constrained to rooms ≥160px from the kill scene): kills/seat 1.81→1.38, 3+-kill seats 21.5%→5.5% (p=0.01), 1st→2nd-kill conversion 58%→43%; ejected-after-witnessed-kill did NOT improve (51.6%→53.5%). The kill room IS the crew-dense room; leaving it forfeits the snowball that hunt.py's witness-drop-after-first-kill is designed to bank. Verdict: docs/designs/2026-07-21-imposter-survival-ab-prereg.md.
+
+### Imposter meeting deflection (counter-accuse + first-mover anchor) fires cleanly but draws MORE votes in this field — speaking ≠ surviving
+Evidence: same A/B. Mechanisms decisively on: spoke-first 0%→23.7% (z=8.7), spoke-in-meeting 35.6%→48.9% (p=0.004), counter_accuse 30 decisions/12 eps. Outcomes: votes-received/meeting 1.14→1.28, seat ejection 43%→49%, win 63%→60% (all NS but wrong-signed). A fabricated accusation from the seat already under heat reads as escalation, and HS-trust opponents veto votes against trusted members anyway. If retried: counter-accuse ONLY with real citable evidence, decoupled from bandwagon/parity fabrication.
+
+### v110-lineage baselines can pool v110 + anchor arms for IMPOSTER metrics (anchor's change was crew-only) — but /tmp/wh_anchor_base_v110 contains BOTH v110 and v107 eps
+Evidence: arm-mapping the survival A/B initially found only 100 v110 eps because that warehouse holds 100 v110 + 100 v107 (Thread-1 fired them into one dir). Always GROUP BY policy_version on episode_players before trusting a warehouse's name.

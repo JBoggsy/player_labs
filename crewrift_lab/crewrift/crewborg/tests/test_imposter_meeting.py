@@ -8,8 +8,6 @@ from crewrift.crewborg.strategy.meeting.accusation import build_accusation, fabr
 from crewrift.crewborg.strategy.meeting.imposter import (
     alive_imposter_count,
     bandwagon_target,
-    counter_accusation_target,
-    heat_on_self,
     parity_closing_vote_target,
     votes_against,
 )
@@ -248,86 +246,6 @@ def test_imposter_parity_pushes_instead_of_skipping_one_removal_short() -> None:
     assert chat.kind == "chat" and chat.text.startswith("red sus:")  # manufactured pile
     vote = mode.decide(belief, ActionState())
     assert vote.kind == "vote" and vote.target_color == "red"
-
-
-# --- counter-accuse when accused (design 2026-07-21-imposter-kill-to-win) ---
-
-
-def test_heat_on_self_counts_votes_on_our_slot_and_chat_accusers() -> None:
-    belief = Belief(self_role="imposter")
-    belief.voting = _voting(self_color="red", dots=(VoteDot(voter=1, target=0),))  # blue -> us (red)
-    assert heat_on_self(belief) == 2  # one vote, VOTE_WEIGHT=2
-    assert heat_on_self(belief, {"yellow"}) == 3  # + one chat accuser
-    assert heat_on_self(Belief(self_role="imposter")) == 0  # no marker -> no heat known
-
-
-def test_counter_accusation_targets_the_voter_who_accused_us() -> None:
-    belief = Belief(self_role="imposter")
-    belief.voting = _voting(self_color="red", dots=(VoteDot(voter=1, target=0),))  # blue -> us
-    assert counter_accusation_target(belief) == "blue"
-
-
-def test_counter_accusation_prefers_a_chat_accuser_already_drawing_votes() -> None:
-    belief = Belief(self_role="imposter")
-    belief.voting = _voting(
-        self_color="red",
-        dots=(VoteDot(voter=1, target=2),),  # blue -> yellow: yellow already has a pile
-    )
-    # Both blue and yellow accused us in chat; yellow is the better deflection (piled).
-    assert counter_accusation_target(belief, {"blue", "yellow"}) == "yellow"
-
-
-def test_counter_accusation_never_targets_a_teammate_or_self() -> None:
-    belief = Belief(self_role="imposter", teammate_colors={"blue"})
-    belief.voting = _voting(self_color="red", dots=(VoteDot(voter=1, target=0),))  # teammate voted us
-    assert counter_accusation_target(belief) is None  # never expose the team
-    assert counter_accusation_target(belief, {"red"}) is None  # self never eligible
-
-
-def test_imposter_counter_accuses_its_accuser_instead_of_idling() -> None:
-    # The witnessed-kill scenario: the only heat in the meeting is on US (blue voted
-    # for us). Bandwagon/parity see nothing (they exclude self) — the old path idled
-    # to a silent skip; now we counter-accuse blue with fabricated-safe evidence.
-    mode = AttendMeetingMode()
-    belief = Belief(phase="Voting", self_role="imposter", last_tick=0)
-    belief.suspicion = {"blue": 0.3, "yellow": 0.3}  # flat — no real lead
-    belief.voting = _voting(self_color="red", dots=(VoteDot(voter=1, target=0),))  # blue -> us
-    belief.roster["blue"] = PlayerRecord(color="blue", life_status="alive")
-
-    chat = mode.decide(belief, ActionState())
-    assert chat.kind == "chat" and chat.text.startswith("blue sus:")  # deflect, never "not me"
-    assert "not me" not in chat.text and "innocent" not in chat.text
-    vote = mode.decide(belief, ActionState())
-    assert vote.kind == "vote" and vote.target_color == "blue"  # coupled: vote whom we accused
-
-
-def test_imposter_counter_accuse_is_traced_as_its_own_path() -> None:
-    sink = ListTraceSink()
-    mode = AttendMeetingMode()
-    mode.emit = EventEmitter(sink, ListMetricsSink())
-    belief = Belief(phase="Voting", self_role="imposter", last_tick=0)
-    belief.suspicion = {}
-    belief.voting = _voting(self_color="red", dots=(VoteDot(voter=1, target=0),))  # blue -> us
-    belief.roster["blue"] = PlayerRecord(color="blue", life_status="alive")
-
-    mode.decide(belief, ActionState())
-
-    [event] = [e for e in sink.events if e.name == "domain.meeting_decision"]
-    assert event.data["path"] == "counter_accuse"
-    assert event.data["target"] == "blue"
-    assert event.data["fabricated"] is True
-
-
-def test_imposter_still_skips_when_the_only_accuser_is_a_teammate() -> None:
-    mode = AttendMeetingMode()
-    belief = Belief(phase="Voting", self_role="imposter", teammate_colors={"blue"}, phase_start_tick=0, last_tick=0)
-    belief.suspicion = {}
-    belief.voting = _voting(self_color="red", dots=(VoteDot(voter=1, target=0),))  # teammate -> us
-
-    assert mode.decide(belief, ActionState()).kind == "idle"  # no safe counter-target
-    belief.last_tick = 1160
-    vote = mode.decide(belief, ActionState())
-    assert vote.kind == "vote" and vote.target_color is None  # deadline skip unchanged
 
 
 def test_imposter_without_a_known_teammate_still_skips_a_flat_endgame() -> None:

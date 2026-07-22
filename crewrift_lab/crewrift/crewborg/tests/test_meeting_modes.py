@@ -8,7 +8,7 @@ from crewrift.crewborg.perception.entities import VoteCandidate, VoteDot, Voting
 from crewrift.crewborg.strategy.meeting import MeetingDecision, MeetingLLMResult
 from crewrift.crewborg.strategy.meeting.worker import MeetingLLMOutcome, MeetingLLMRequest
 from crewrift.crewborg.types import ActionState, Belief, BodyEntry, ChatEvent, PlayerEvent, PlayerRecord
-from players.player_sdk import EventEmitter, ListTraceSink, OverwriteBuffer
+from players.player_sdk import OverwriteBuffer
 
 
 class _FakeMeetingClient:
@@ -696,13 +696,12 @@ def test_attend_meeting_imposter_fallback_votes_exempt_from_gate() -> None:
         }
     )
 
-    # The imposter first-mover anchors the bandwagon at tick 0 (red is taking heat),
-    # before the LLM call; the failed call then falls back onto the deterministic
-    # path, which stays coupled to the accused target — never a gated skip.
-    first = mode.decide(belief, ActionState())
-    assert first.kind == "chat" and "red" in first.text
     assert mode.decide(belief, ActionState()).kind == "idle"  # call in flight
     intent = mode.decide(belief, ActionState())  # failure -> deterministic imposter
+    # bandwagon: chat (fabricated) or a direct vote for red — never a gated skip.
+    if intent.kind == "chat":
+        late = belief.model_copy(update={"last_tick": 601})  # early-submit window
+        intent = mode.decide(late, ActionState())
     assert intent.kind == "vote"
     assert intent.target_color == "red"
 
@@ -956,46 +955,16 @@ def test_first_mover_needs_citable_evidence(monkeypatch) -> None:
     assert [trigger for trigger, _ in client.calls] == ["meeting_start"]
 
 
-def test_first_mover_never_fires_for_a_dead_seat() -> None:
-    client = _FakeMeetingClient([MeetingDecision(action="wait")])
-    mode = _llm_mode(client)
-    belief = _anchor_belief()
-    belief.self_alive = False
+def test_first_mover_never_fires_for_imposter_or_dead_seat() -> None:
+    for role, alive in (("imposter", True), ("crewmate", False)):
+        client = _FakeMeetingClient([MeetingDecision(action="wait")])
+        mode = _llm_mode(client)
+        belief = _anchor_belief()
+        belief.self_role = role
+        belief.self_alive = alive
 
-    intent = mode.decide(belief, ActionState())
-    assert intent.kind == "idle"
-
-
-def test_imposter_first_mover_stands_down_with_nothing_to_anchor(monkeypatch) -> None:
-    # No suspect, no heat, no parity moment -> no anchor; the meeting_start LLM
-    # call proceeds normally (the imposter waits like before).
-    monkeypatch.setenv("CREWBORG_HONOR_SOCIETY", "0")
-    client = _FakeMeetingClient([MeetingDecision(action="wait")])
-    mode = _llm_mode(client)
-    belief = _meeting_belief()
-    belief.self_role = "imposter"
-    belief.suspicion = {}
-
-    assert mode.decide(belief, ActionState()).kind == "idle"
-    assert [trigger for trigger, _ in client.calls] == ["meeting_start"]
-
-
-def test_an_imposter_anchors_via_its_own_seam_not_the_crew_one() -> None:
-    # An imposter seat with a citable suspect fires the IMPOSTER first-mover
-    # (proactive deflection), traced as such — never the crew anchor event.
-    client = _FakeMeetingClient([MeetingDecision(action="wait")])
-    mode = _llm_mode(client)
-    trace = ListTraceSink()
-    mode.emit = EventEmitter(trace, tick=0)
-    belief = _anchor_belief()
-    belief.self_role = "imposter"
-
-    intent = mode.decide(belief, ActionState())
-    assert intent.kind == "chat"
-    assert intent.text == "red sus: saw them vent. vote red"
-    names = [e.name for e in trace.events]
-    assert "domain.meeting_imposter_first_mover" in names
-    assert "domain.meeting_first_mover_accusation" not in names
+        intent = mode.decide(belief, ActionState())
+        assert intent.kind == "idle", (role, alive)
 
 
 def test_first_mover_respects_society_trust_veto(monkeypatch) -> None:
