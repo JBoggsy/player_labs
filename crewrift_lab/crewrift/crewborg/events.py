@@ -149,8 +149,11 @@ class CrewborgEventTracer:
     def __call__(self, context: StepContext[Belief, ActionState, Intent, Command]) -> None:
         belief = context.belief
         emit = context.emit
-        if self._emit_commander:
-            self._observe_commander_trace(emit)
+        # Always drain (cheap: one lock + list swap): the buffer also carries the
+        # per-call llm_spend attribution records (W4), which must reach the artifact in
+        # the DEFAULT lean config; the noisy commander_* records drained alongside them
+        # are only emitted when commander tracing is enabled.
+        self._observe_commander_trace(emit)
         self._observe_phase(belief, emit)
         self._observe_role(belief, emit)
         self._observe_teammate(belief, emit)
@@ -188,12 +191,19 @@ class CrewborgEventTracer:
     # --- gameplay commander telemetry -------------------------------------
 
     def _observe_commander_trace(self, emit: EventEmitter) -> None:
-        """Drain background-thread commander telemetry on the inner-loop thread."""
+        """Drain background-thread commander telemetry on the inner-loop thread.
+
+        ``llm_spend`` records (W4 per-call spend attribution) are always emitted — they
+        are lean-by-design and must reach the hosted artifact in the default config. The
+        noisy ``commander_*`` records only emit when commander tracing is enabled, same
+        as before; a disabled-tracing drain still clears the buffer.
+        """
 
         if self._commander_trace is None:
             return
         for event, data in self._commander_trace.drain():
-            emit.event(event, data)
+            if event == "llm_spend" or self._emit_commander:
+                emit.event(event, data)
 
     def _observe_commander_applied(self, belief: Belief, emit: EventEmitter) -> None:
         """Trace the sanitized priorities currently installed in belief."""

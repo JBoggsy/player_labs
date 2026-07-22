@@ -257,6 +257,60 @@ def test_build_commander_client_disabled_without_backend() -> None:
     assert client.disabled_reason == "no LLM backend configured"
 
 
+def test_worker_records_llm_spend_on_success_and_error() -> None:
+    """W4 spend telemetry: the commander seam records one llm_spend per call attempt into
+    the trace buffer (drained to a domain. event, which survives the lean artifact filter
+    unlike commander_call)."""
+    from crewrift.crewborg.strategy import llm_spend
+
+    llm_spend.EPISODE_LEDGER.reset()
+
+    class _UsageClient(_FakeClient):
+        def decide(self, context: dict) -> CommanderLLMResult:
+            return CommanderLLMResult(
+                priorities={"reason": "fake"},
+                model="us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                latency_ms=900.0,
+                usage={"input_tokens": 1000, "output_tokens": 50},
+            )
+
+    trace = CommanderTrace()
+    worker = CommanderWorker(lambda: _UsageClient(), trace=trace)
+    worker.start()
+    try:
+        worker.snapshots.publish({"legal_rooms": ["electrical"], "legal_players": []})
+        assert _wait_for_priority(worker) is not None
+        events = _drain_until(trace, "llm_spend")
+    finally:
+        worker.close()
+
+    [spend] = [data for event, data in events if event == "llm_spend"]
+    assert spend["surface"] == "commander"
+    assert spend["ok"] is True
+    assert spend["input_tokens"] == 1000 and spend["output_tokens"] == 50
+    assert abs(spend["est_cost_usd"] - 0.00125) < 1e-9
+
+    # Error path: a throttled call is recorded, attributed, and free.
+    trace2 = CommanderTrace()
+
+    class _ThrottledClient(_FakeClient):
+        def decide(self, context: dict) -> CommanderLLMResult:
+            raise RuntimeError("RateLimitError: Error code: 429 - Too many tokens per day")
+
+    worker2 = CommanderWorker(lambda: _ThrottledClient(), trace=trace2)
+    worker2.start()
+    try:
+        worker2.snapshots.publish({"legal_rooms": ["electrical"], "legal_players": []})
+        events2 = _drain_until(trace2, "llm_spend")
+    finally:
+        worker2.close()
+
+    [spend2] = [data for event, data in events2 if event == "llm_spend"]
+    assert spend2["ok"] is False
+    assert spend2["error_class"] == "throttle_429"
+    assert spend2["est_cost_usd"] == 0.0
+
+
 def test_prompt_loader_uses_baked_fallback_for_missing_prompt_dir() -> None:
     prompt = system_prompt_for_role("imposter", prompt_dir="/does/not/exist")
 

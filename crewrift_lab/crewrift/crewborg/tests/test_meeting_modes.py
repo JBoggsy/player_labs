@@ -58,7 +58,9 @@ class _InlineMeetingWorker:
             result = self._client.decide(request.context, trigger=request.trigger)
         except Exception as exc:
             self.results.publish(
-                MeetingLLMOutcome(request_id=request.request_id, trigger=request.trigger, error=repr(exc))
+                MeetingLLMOutcome(
+                    request_id=request.request_id, trigger=request.trigger, error=repr(exc), latency_ms=1.0
+                )
             )
             return
         self.results.publish(
@@ -1046,3 +1048,68 @@ def test_first_mover_respects_society_trust_veto(monkeypatch) -> None:
         assert intent.kind == "idle"  # no anchor against a trusted member
     finally:
         honor_society.reset_identity_for_tests()
+
+
+def test_attend_meeting_emits_llm_spend_on_success() -> None:
+    """W4 spend telemetry: every delivered meeting call emits one domain.llm_spend event
+    with tokens, estimated USD, and meeting/role attribution."""
+    from players.player_sdk import EventEmitter, ListMetricsSink, ListTraceSink
+    from crewrift.crewborg.strategy import llm_spend
+
+    llm_spend.EPISODE_LEDGER.reset()
+
+    class _UsageClient(_FakeMeetingClient):
+        def decide(self, context: dict, *, trigger: str) -> MeetingLLMResult:
+            self.calls.append((trigger, context))
+            return MeetingLLMResult(
+                decision=self.decisions.pop(0),
+                model="us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                latency_ms=2500.0,
+                usage={"input_tokens": 2000, "output_tokens": 100},
+            )
+
+    sink = ListTraceSink()
+    mode = _llm_mode(_UsageClient([MeetingDecision(action="wait")]))
+    mode.emit = EventEmitter(sink, ListMetricsSink())
+
+    mode.decide(_meeting_belief(tick=0), ActionState())  # submit
+    mode.decide(_meeting_belief(tick=1), ActionState())  # collect
+
+    [event] = [e for e in sink.events if e.name == "domain.llm_spend"]
+    assert event.data["surface"] == "meeting"
+    assert event.data["ok"] is True
+    assert event.data["trigger"] == "meeting_start"
+    assert event.data["input_tokens"] == 2000 and event.data["output_tokens"] == 100
+    assert abs(event.data["est_cost_usd"] - 0.0025) < 1e-9
+    assert event.data["meeting_index"] == 0
+    assert event.data["calls_used"] == 1
+
+
+def test_attend_meeting_emits_llm_spend_on_failure_with_free_429() -> None:
+    """A 429-failed call still emits llm_spend — attributed, but at $0 (measured: the
+    sidecar rejects throttled calls pre-inference)."""
+    from players.player_sdk import EventEmitter, ListMetricsSink, ListTraceSink
+    from crewrift.crewborg.strategy import llm_spend
+
+    llm_spend.EPISODE_LEDGER.reset()
+
+    class _ThrottledClient(_FakeMeetingClient):
+        def decide(self, context: dict, *, trigger: str) -> MeetingLLMResult:
+            raise RuntimeError("RateLimitError: Error code: 429 - Too many tokens per day")
+
+    sink = ListTraceSink()
+    mode = _llm_mode(_ThrottledClient([]))
+    mode.emit = EventEmitter(sink, ListMetricsSink())
+
+    mode.decide(_meeting_belief(tick=0), ActionState())  # submit
+    mode.decide(_meeting_belief(tick=1), ActionState())  # collect the failure
+
+    [event] = [e for e in sink.events if e.name == "domain.llm_spend"]
+    assert event.data["ok"] is False
+    assert event.data["error_class"] == "throttle_429"
+    assert event.data["est_cost_usd"] == 0.0
+    assert event.data["latency_ms"] is not None  # the worker timed the failed attempt
+    # The failure fallback path also still fires.
+    assert any(
+        e.name == "domain.meeting_llm_fallback" and e.data.get("reason") == "llm_call_failed" for e in sink.events
+    )

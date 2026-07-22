@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import threading
 from dataclasses import dataclass
+from time import perf_counter
 from typing import Any
 
 from crewrift.crewborg.strategy.meeting.llm import MeetingLLMClient, MeetingLLMResult
@@ -33,12 +34,18 @@ class MeetingLLMRequest:
 
 @dataclass(frozen=True)
 class MeetingLLMOutcome:
-    """The worker's answer to a request: a parsed result or the call error."""
+    """The worker's answer to a request: a parsed result or the call error.
+
+    ``latency_ms`` is the wall time of the failed call attempt (errors only — successes
+    carry their latency inside ``result``); it feeds the per-call ``domain.llm_spend``
+    attribution, where a timeout's latency distinguishes a slow-abort from a fast reject.
+    """
 
     request_id: int
     trigger: str
     result: MeetingLLMResult | None = None
     error: str | None = None
+    latency_ms: float | None = None
 
 
 class MeetingLLMWorker:
@@ -79,11 +86,17 @@ class MeetingLLMWorker:
             request = self.requests.wait_take(timeout=self._wait_timeout)
             if request is None:
                 continue
+            started = perf_counter()
             try:
                 result = self._client.decide(request.context, trigger=request.trigger)
             except Exception as exc:
                 self.results.publish(
-                    MeetingLLMOutcome(request_id=request.request_id, trigger=request.trigger, error=repr(exc))
+                    MeetingLLMOutcome(
+                        request_id=request.request_id,
+                        trigger=request.trigger,
+                        error=repr(exc),
+                        latency_ms=(perf_counter() - started) * 1000.0,
+                    )
                 )
                 continue
             self.results.publish(

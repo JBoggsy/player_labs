@@ -29,7 +29,7 @@ from crewrift.crewborg.strategy.meeting.imposter import (
     votes_against,
 )
 from crewrift.crewborg.strategy.meeting import chat_evidence, chat_nlp, spend
-from crewrift.crewborg.strategy import honor_society
+from crewrift.crewborg.strategy import honor_society, llm_spend
 from crewrift.crewborg.strategy.meeting.schema import normalize_vote_target
 from crewrift.crewborg.strategy.meeting.worker import MeetingLLMRequest, MeetingLLMWorker
 from crewrift.crewborg.strategy.suspicion import chat_suspect, top_suspect, witnessed_imposters
@@ -104,6 +104,7 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self._llm_call_cost_usd = _env_float(os.environ, LLM_CALL_COST_ESTIMATE_ENV, DEFAULT_LLM_CALL_COST_USD)
         self._spend_checked_tick: int | None = None  # cache /spend read within a meeting-tick
         self._spend_remaining_usd: float | None = None  # last read; None = no limit / unknown
+        self._spend_last_read_usd: float | None = None  # last sidecar spend_usd (llm_spend cross-check)
         # Instant suss-vote (CREWBORG_LLM_SUSS_INSTANT_VOTE, default off): when the
         # meeting LLM NAMES a suspect — a chat accusation or a tentative vote_target —
         # the crew seat votes them on the next tick instead of holding to the
@@ -118,6 +119,7 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self._instant_vote_pending: str | None = None
         self._chat_accused: str | None = None
         self._meeting_id: int | None = None
+        self._meeting_index = -1  # becomes 0 on the first meeting's reset
         self._deterministic_chatted = False
         self._disabled_traced = False
         self._sent_chat_texts: set[str] = set()
@@ -480,6 +482,7 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
             status = spend.read_spend()
             self._spend_remaining_usd = status.remaining_usd if status is not None else None
             if status is not None:
+                self._spend_last_read_usd = status.spend_usd
                 self.emit.event(
                     "meeting_spend",
                     {
@@ -547,14 +550,52 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
                 "meeting_llm_fallback",
                 {"reason": "llm_call_failed", "trigger": trigger, "error": outcome.error},
             )
+            self._emit_llm_spend(
+                belief,
+                llm_spend.EPISODE_LEDGER.failure_event(
+                    surface="meeting",
+                    trigger=trigger,
+                    model=getattr(getattr(self._llm_client, "config", None), "model", None),
+                    latency_ms=outcome.latency_ms,
+                    error=outcome.error,
+                ),
+            )
             return self._decide_after_llm_failure(belief, trigger)
         result = outcome.result
+        self._emit_llm_spend(
+            belief,
+            llm_spend.EPISODE_LEDGER.success_event(
+                surface="meeting",
+                trigger=trigger,
+                model=result.model,
+                latency_ms=result.latency_ms,
+                usage=result.usage,
+            ),
+        )
         self.emit.histogram("meeting_llm.latency_ms", result.latency_ms, tags={"model": result.model, "trigger": trigger})
         decision = self._validate_decision(belief, result.decision)
         if decision is None:
             return self._decide_after_llm_failure(belief, trigger)
         self._trace_decision(trigger, decision, result)
         return self._apply_decision(belief, decision)
+
+    def _emit_llm_spend(self, belief: Belief, payload: dict[str, Any]) -> None:
+        """Emit the per-call ``domain.llm_spend`` attribution event (W4 spend telemetry).
+
+        Enriches the ledger payload with the meeting/role context the budget analysis
+        keys on, plus the CACHED sidecar spend reading as a cross-check — never a fresh
+        HTTP read here (the per-tick /spend GET was the 2026-07-21 vote_timeout root
+        cause; the cache is owned by ``_spend_allows_followup``).
+        """
+        payload["meeting_index"] = self._meeting_index
+        payload["role"] = belief.self_role
+        payload["calls_used"] = self._llm_calls_used
+        payload["sidecar_spend_usd"] = self._spend_last_read_usd
+        self.emit.event("llm_spend", payload)
+        self.emit.counter(
+            "llm_spend_calls",
+            tags={"surface": "meeting", "ok": str(payload["ok"]).lower(), "error_class": payload["error_class"] or ""},
+        )
 
     def _ensure_worker(self) -> MeetingLLMWorker:
         if self._worker is None:
@@ -772,6 +813,7 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         if meeting_id == self._meeting_id:
             return
         self._meeting_id = meeting_id
+        self._meeting_index += 1  # 0-based ordinal for spend attribution; never resets
         # A still-running call from the previous meeting delivers against a stale
         # request_id and is dropped in _collect_llm_outcome; the id itself never resets.
         self._llm_pending = None
