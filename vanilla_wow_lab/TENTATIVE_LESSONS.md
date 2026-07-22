@@ -18,6 +18,28 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
 
+### For LONG hauls, staging waypoints make the 0.1.31 executor WORSE — hand it the real destination; stage only around provably-unsolvable chokes
+
+Evidence: 9 race batches (v5→v20). Direct 740yd Sen'jin: ~2 yd/s, ~14 yd/settlement
+(completes in ~360s). Every staged variant was slower or wedged: gate-corridor via
+node CAUSED a permanent oscillation jam at the gate ramp; descent stage nodes halved
+chunk size to ~2.5 yd/settlement; a guessed-low z on stage nodes forced projection
+recovery at 0.4 yd/s. The executor's own Detour handles long routes; our value-add is
+only at genuine chokes (east-field wall — even authored approachRoute chains only
+partially help there) and course design. Corollaries: stage-clear radius must be
+corridor-grade (35yd not 16yd); passed stages need hysteresis or Detour jitter
+re-arms them; time budgets should never cap a leg that is still displacing
+(zero false DNFs after v16), with a hard 2x cap for glacial legs.
+
+### Race-iteration method that worked: per-leg trace events + a batch scoreboard turn every hosted run into a falsifiable verdict
+
+Evidence: race_leg/race_leg_skipped trace events (name, seconds, yards, moves, reason,
+remaining_yd) + race_report.py per-waypoint difficulty table let each 4-episode batch
+name its dominant failure mode in minutes (oscillation coords, budget-vs-stall split,
+z-recovery crawl). 9 uploads in one session, each fixing a measured failure; endpoint
+6/8 clean episodes at ~1.9 yd/s. The waypoint catalog encodes reachability knowledge
+as data (tiers incl. a quarantined 'hard' benchmark tier + via chains).
+
 ### The 0.1.31 wrapper hands world data via VANILLA_WOW_ASSET_SERVICE_URL env — the KING_NIMROD_COMMAND child must convert it to --assets=<url> itself
 
 Evidence: v3 hosted probe (2026-07-21): contract worked end-to-end but ALL 139 moves

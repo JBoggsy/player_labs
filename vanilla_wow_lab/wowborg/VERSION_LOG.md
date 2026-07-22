@@ -1,5 +1,21 @@
 # wowborg version log
 
+## v5-v20 - waypoint races: iteration to consistency (2026-07-21/22)
+
+- v3 (`b10f3bb0`): first 0.1.31 contract probe — seam works, no world data (all moves
+  failed). v4 (`6242a51a`): VANILLA_WOW_ASSET_SERVICE_URL→--assets fix; random_walk
+  102/135 legs, 1,510 yd (replay-confirmed).
+- v5 (`purpose=v5-waypoint-race`) → v20 (`purpose=v20-south-rim`): the waypoint_race
+  ladder. Key versions: v6 progress-based legs; v8 authored staging chains; v10
+  socket-timeout resilience (reconnect + resumable loop); v13 staging hysteresis;
+  v16 moving-legs-never-budget-out (zero false DNFs since); v17 course sizing
+  (2 near+1 mid+1 far); v19 far-legs-DIRECT (staging retired for long hauls);
+  v20 south-rim mid target.
+- Endpoint (v19+v20, 8 episodes): 6/8 fully clean, ~1.9 yd/s overall, 740-yd far legs
+  in 356-391 s, laps completing. Residual: rare coastal-rock wedge (~1/8); hard tier
+  (east field / mesa / NW ridge) quarantined as the future-nav benchmark.
+
+
 ## v3 - nim_control migration (built + fake-server smoked, not yet uploaded)
 
 - Migrated to the game's 0.1.31 policy seam: `action.json` no longer exists upstream;

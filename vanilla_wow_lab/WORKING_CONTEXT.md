@@ -65,6 +65,24 @@ tolerance, 3-attempt DNF skip, per-leg `race_leg` trace events, lap counting,
 yards/second summary. Run = upload with `WOWBORG_POLICY=waypoint_race` (+ course env)
 and fire an xreq on custom-fresh-start.
 
+**WAYPOINT RACES CONSISTENT (session 5e, v5→v20, 9 hosted batches):** the
+`waypoint_race` policy races randomized tier-balanced courses (2 near + 1 mid + 1 far
+from an 11-landmark Durotar catalog, all authored-profile coordinates; seedable via
+`WOWBORG_RACE_SEED`; `WOWBORG_COURSE_TIERS` overrides). **Final state (v19+v20):
+6/8 episodes fully clean, ~1.9 yd/s (executor ceiling ~2.0), far legs (740 yd
+Sen'jin) completing in 356-391 s.** The iteration ladder (each verdict from
+race_report.py over trace bundles): v6 progress-based legs (chunked settlements) →
+v7/v8 authored staging → v9 positional staging → v10 socket-timeout resilience →
+v13 stage hysteresis (oscillation) → v16 moving-legs-keep-budget (zero false DNFs) →
+v17 course sizing → v18 true-z on nodes → **v19 far-legs-DIRECT (staging made long
+hauls WORSE — halved Detour chunk size; the executor solves the south descent alone)**
+→ v20 south-rim replaces the executor-hostile shelf pocket. Residuals: (1) rare
+permanent wedge in the Sen'jin coastal rocks (~1/8 episodes; unstick can't recover —
+next idea: rescue-point recovery, move to nearest proven waypoint when
+stalls>2×MAX); (2) hard tier (east field/mesa/NW ridge) quarantined as the
+benchmark for future nav work (`{"hard": N}` course for stress tests).
+`tools/race_report.py` scores batches (per-episode + per-waypoint difficulty).
+
 **MIGRATION DONE (session 5c) — wowborg v3 built + fake-server smoked, not yet uploaded:**
 bridge rewritten against `NimControlClient` (external selection over EnvironmentFrames,
 mask-checked FactorizedActions, ActionSettled results); shim updated (assets passthrough,
