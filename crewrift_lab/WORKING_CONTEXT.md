@@ -15,6 +15,45 @@ This is *not* a log or archive: finished work lives in git history / the
 
 ---
 
+## 🚢 IN FLIGHT (2026-07-22, W5): v112 combination build — confirmatory A/B → ship
+
+**v112 uploaded** (`0feddca8-0d04-4b1e-bd5f-2babd2792add`, 2026-07-22T20:31Z, main `64abdab`,
+v111 recipe + `CREWBORG_CHAT_EVIDENCE=1`) = v111's code + warm anchor (W2) + trust-floored
+chat evidence (W3b, recipe-carried) + spend telemetry (W4). 721 tests green. Version_log row live.
+
+**PRE-REGISTERED A/B (combination confirmatory — W2 and W3b were validated SEPARATELY vs v111
+and both touch the suspicion posterior + meeting vote path), registered BEFORE firing the cand arms:**
+- **Design:** cand = 2×100 eps v112, Thread-1 pinned roster (slot 0, natural roles:
+  daf-actinf-crewborg-v3:v1, softmaxwell-crewborg:v34, sasmith-crewborg-hs1:v15, notsus:v130,
+  scott-crewborg-hs1:v13, crewrift-prime-crewborg-aaln-hunter-relhalpha:v6, crewborg-aaln:v25).
+  Baseline = W1's v111 arms `xreq_fab85490`+`xreq_2f42f740` — RE-VERIFIED per-episode this session
+  (`/tmp/wh_v111_episodes`: 200/200 episode.json say crewborg v111 `8ec5a454`, slot 0, identical
+  roster, all completed). Ops-fail eps excluded both sides; compare both arms' ops profiles first
+  (the W2 platform-window gotcha).
+- **GATES (all must hold):**
+  1. No regression: crew win AND imposter win each not worse than v111 beyond noise (2-sided
+     p < 0.05 against no-difference; point dips within noise OK).
+  2. Mis-votes/crew-ep ≤ v111's measured baseline **0.232** (the combined-volume guard; W3b solo
+     measured 0.127).
+  3. **Warm-vote precision ≥ 85%** in warm-anchored meetings (the interaction guard: chat evidence
+     + pile clause could double-count one HS speaker — an HS accusation is only ~63.8% precise —
+     eroding W2's 100% warm-vote story).
+  4. vote_timeouts ≈ 0 (slot 0); zero crew self-accusations; ops ~0 both arms.
+- **MECHANISMS (must fire):**
+  5. Anchor fires ≥ v111's 0.22/ep (expect ≥0.26 from W2; possibly higher if chat evidence pushes
+     below-bar suspects onto eligibility — rate UP is fine, precision is what's guarded).
+  6. `chat_evidence_applied` firing with HS-source predominance (W3b: 76% HS).
+  7. `llm_spend` events 1:1 with LLM call attempts.
+- **DIRECTIONAL (not gates):** crew vote precision toward 80%+ (W3b: 83.6%); imp-ejections/crew-ep up.
+- **Interaction analyses to report regardless:** (a) warm fire-rate delta vs W2's 0.266/ep;
+  (b) count of meetings where ONE external speaker both warm-eligibled the target AND satisfied
+  the pile clause (the double-count channel) and their vote outcomes; (c) mis-ejections-per-crew-ep
+  vs v111 (the W3b batch-drift yellow flag, now with a same-day-fresh cand arm).
+- **Decision rule:** all gates + mechanisms pass → retire v111's membership `lpm_329ad382…` FIRST
+  (audit reason), then SUBMIT v112 to Crewrift Prime (James's standing "submit at will" on a clean
+  pre-registered verdict; league `league_a12f5172-0907-4d04-8bcb-ca02f5360e3a`), then targeted-poll
+  the new pv to competing/active. Any gate fails → NO SUBMIT, diagnose.
+
 ## 👑 DONE (2026-07-22, W1): v111 SHIPPED — pre-registered confirmatory A/B CLEAN → SUBMITTED → QUALIFIED + CHAMPION
 
 **crewborg:v111 is `competing/active` and CHAMPION** (`lpm_329ad382…`, submission `sub_c2f76ee6…`,
