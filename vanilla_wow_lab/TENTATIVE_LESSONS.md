@@ -106,3 +106,36 @@ says similar "wowborg leg N" texts); fixed to max-overlap scoring, but explicit
 audit loop cross-matched ep-1 traces against ep-2's replay → phantom findings. The
 session_end "done:" say is often rate-limit-suppressed in-game but present in the trace
 — a 1-say discrepancy is expected noise, not a violation.
+
+## Nim control status_request requires ALL five fields (v25 lenient-frame silent no-op)
+The 0.1.31 Nim server's `requireControlBool` raises on a MISSING key, not just a wrong
+type — a hand-built raw `status_request` that omits `include_action_settled` gets a
+CONTROL_ERROR, never a frame. Our v25 lenient-frame fallback silently never fired
+because of this; the fake test server accepted the malformed request so tests stayed
+green. Lesson: when bypassing an SDK to talk raw wire protocol, mirror the SERVER's
+validation strictness in the test fake (read the Nim source, don't guess), and trace
+the fallback's rejection path so "fallback never fired" is visible in episode traces.
+
+## Bare no_path ≠ unreachable: self-probe the planner before declaring targets off-mesh
+v25/v26: after two navmesh-service timeouts, EVERY plan returned bare no_path/0
+waypoints — including for stations that planned fine minutes earlier — and L1 reported
+reachable stations as "unreachable" (honesty metric poisoned). A here→here plan is a
+free planner-health probe: it trivially succeeds on a working planner. Probe ok →
+honest unreachable; probe fails → planner broken → degrade to direct moves (the
+executor's server-side Detour still routes). Generic lesson: before trusting a
+negative result from an external service, verify the service can still produce a
+known-positive.
+
+## Corridor tile loading returns partials on long hauls; ask for "all" once
+wow_sdk route_navmesh tile_load_mode="auto" loads only corridor tiles and (helper
+source fact) returns partial_poly corridors WITHOUT retrying all-tiles. Long hauls
+then plan 150-300yd at a time, forcing a re-plan cycle per corridor end. First plan
+per navigate_to should use tile_load_mode="all" (definitive full route or definitive
+no_path); re-plans can stay cheap.
+
+## Nav must run THROUGH trivial combat, not fight every road aggro
+v26: every wolf pull paused a 2000yd haul for a full fight → 0.86 yd/s effective pace
+(vs ~3 yd/s walking), 533s deadline failures. Movement in WoW is not interrupted by
+being in combat; only yield to the fight when health is actually threatened (<50%) or
+the executor keeps getting interrupted (stall streak). "Pause on combat" is the
+correct-looking but wrong default for a navigation layer.
