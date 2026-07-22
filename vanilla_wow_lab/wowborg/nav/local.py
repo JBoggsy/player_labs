@@ -30,6 +30,11 @@ MAX_STALLS = 4                     # consecutive stalled settlements before fail
 UNSTICK_AFTER_STALLS = 2
 SETTLE_TIMEOUT_SECONDS = 30.0
 FRAME_TIMEOUT_SECONDS = 60.0
+# Run-through-combat: v26 hosted evidence — stopping to fight every road aggro made a
+# 2000yd haul cost >533s (0.86 yd/s effective vs ~3 yd/s walking). While healthy we
+# keep MOVING through combat; only a real threat (health below this fraction) or a
+# combat-caused stall (executor keeps interrupting the move) yields to the fight.
+COMBAT_HEALTH_FLOOR = 0.5
 
 
 class LocalMoveStatus(Enum):
@@ -61,6 +66,16 @@ class LocalMover:
     def _trace(self, kind: str, **payload) -> None:
         if self.tracer is not None:
             self.tracer.emit(kind, **payload)
+
+    @staticmethod
+    def _combat_needs_attention(obs, stalls: int) -> bool:
+        """Run through trivial road aggro; yield to combat only when it is actually
+        winning: health under the floor, or the fight keeps interrupting the move
+        (stall streak while in combat)."""
+        low_health = (
+            obs.max_health > 0 and obs.health / obs.max_health < COMBAT_HEALTH_FLOOR
+        )
+        return low_health or stalls >= UNSTICK_AFTER_STALLS
 
     def move_to(
         self,
@@ -114,7 +129,7 @@ class LocalMover:
             if here.map_id != target.map_id:
                 return LocalMoveResult(LocalMoveStatus.MAP_CHANGED, here, moves,
                                        time.monotonic() - started)
-            if obs.in_combat:
+            if obs.in_combat and self._combat_needs_attention(obs, stalls):
                 return LocalMoveResult(LocalMoveStatus.COMBAT, here, moves,
                                        time.monotonic() - started)
 

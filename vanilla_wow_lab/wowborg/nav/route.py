@@ -123,9 +123,22 @@ class RouteNavigator:
                                    combat_pauses=combat_pauses, deaths=deaths, replans=replans)
 
             # ---- PLANNING ----
+            # First plan per navigate_to loads ALL map tiles: a definitive full
+            # route (true distance → honest budget) or a definitive no_path —
+            # v26 evidence: "auto" corridor loading returned 150-300yd partials
+            # that forced a re-plan cycle every corridor end on long hauls.
+            # Re-plans use the cheap corridor mode; "all" falls back to "auto"
+            # if the heavyweight query itself fails.
+            tile_mode = "all" if replans == 0 else "auto"
             plan = bridge.plan_route(
-                _pos(here), _pos(target), target.map_id, arrival_radius=arrival_radius
+                _pos(here), _pos(target), target.map_id,
+                arrival_radius=arrival_radius, tile_load_mode=tile_mode,
             )
+            if tile_mode == "all" and (plan.status not in ("ok", "no_path")):
+                plan = bridge.plan_route(
+                    _pos(here), _pos(target), target.map_id,
+                    arrival_radius=arrival_radius,
+                )
             self._trace("nav_state", state="planning", plan_status=plan.status,
                         planned_distance=round(plan.route_distance, 1))
 

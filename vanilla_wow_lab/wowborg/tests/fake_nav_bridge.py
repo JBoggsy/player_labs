@@ -29,6 +29,8 @@ class FakeObservation:
     is_dead: bool = False
     is_ghost: bool = False
     in_combat: bool = False
+    health: int = 60
+    max_health: int = 60
 
 
 @dataclass
