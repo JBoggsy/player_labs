@@ -98,11 +98,12 @@ WAYPOINT_CATALOG: dict[str, tuple[float, float, float, str, tuple[str, ...]]] = 
     "northwest-ridge":    (-753.6, -4143.2, 38.8, "hard", ("boar-yard",)),
 }
 
-# Course composition for a ~970s episode at the executor's observed ~2 yd/s: near legs
-# run 60-130s, mid 130-180s, a far leg 350-650s. 3 near + 1 mid + 1 far ≈ 800-950s of
-# racing — full course, tight but completable. "hard" defaults to 0 (stress-only);
-# override via WOWBORG_COURSE_TIERS (JSON, e.g. {"near":1,"mid":1,"hard":2}).
-DEFAULT_SUBSET_BY_TIER = {"near": 3, "mid": 1, "far": 1}
+# Course composition for a ~970s episode at the executor's observed ~2 yd/s ceiling:
+# near legs 30-150s, mid 130-180s, a far leg 450-650s (v16 measurements). 2 near +
+# 1 mid + 1 far ≈ 700-900s typical — completable with the far leg anywhere in the
+# random order. "hard" defaults to 0 (stress-only); override via WOWBORG_COURSE_TIERS
+# (JSON, e.g. {"near":1,"mid":1,"hard":2}).
+DEFAULT_SUBSET_BY_TIER = {"near": 2, "mid": 1, "far": 1}
 COURSE_TIERS_ENV = "WOWBORG_COURSE_TIERS"
 
 WAYPOINTS_ENV = "WOWBORG_WAYPOINTS"
