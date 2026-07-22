@@ -32,7 +32,14 @@ from crewrift.crewborg.strategy.meeting import chat_evidence, chat_nlp, spend
 from crewrift.crewborg.strategy import honor_society
 from crewrift.crewborg.strategy.meeting.schema import normalize_vote_target
 from crewrift.crewborg.strategy.meeting.worker import MeetingLLMRequest, MeetingLLMWorker
-from crewrift.crewborg.strategy.suspicion import chat_suspect, top_suspect, witnessed_imposters
+from crewrift.crewborg.strategy.suspicion import (
+    chat_evidence_contributions,
+    chat_evidence_enabled,
+    chat_suspect,
+    counterfactual_top_suspect_no_chat,
+    top_suspect,
+    witnessed_imposters,
+)
 from crewrift.crewborg.types import ActionState, Belief, ChatEvent, Intent
 from players.player_sdk import EmptyModeParams, Mode
 
@@ -140,6 +147,7 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self._dead_mute_traced = False
         self._chat_parse_cache: dict[str, set[str]] = {}
         self._decision_traced = False
+        self._chat_evidence_traced = False
 
     def is_legal(self, belief: Belief) -> bool:
         return belief.phase == "Voting"
@@ -748,10 +756,38 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self_color = belief.self_color or belief.voting.self_marker_color
         if self_color is not None and vote_target == self_color:
             vote_target = VOTE_SKIP
+        self._trace_chat_evidence(belief, vote_target)
         self._active_vote_target = vote_target
         self._active_vote_reason = reason
         self.emit.event("meeting_vote_selected", {"target": vote_target, "reason": reason})
         return self._vote_intent(vote_target, reason=reason)
+
+    def _trace_chat_evidence(self, belief: Belief, vote_target: str) -> None:
+        """Once per meeting, at vote-submit: the chat-evidence mechanism record —
+        each live target's chat log-LR term, the actual suspicion vote, and the
+        no-chat-evidence counterfactual (the A/B's "did chat change our vote?"
+        metric; design 2026-07-22-chat-evidence-incorporation.md §2.6). Crew-side
+        only (an imposter's deflection reads are not beliefs); skipped entirely
+        with the feature off."""
+
+        if self._chat_evidence_traced or not chat_evidence_enabled() or belief.self_role == "imposter":
+            return
+        self._chat_evidence_traced = True
+        contributions = {c: round(v, 4) for c, v in chat_evidence_contributions(belief).items() if v != 0.0}
+        with_chat = top_suspect(belief)
+        without_chat = counterfactual_top_suspect_no_chat(belief)
+        self.emit.event(
+            "chat_evidence_applied",
+            {
+                "vote_target": vote_target,
+                "top_suspect_with_chat": with_chat,
+                "top_suspect_without_chat": without_chat,
+                "changed_top_suspect": with_chat != without_chat,
+                "contributions": contributions,
+            },
+        )
+        if with_chat != without_chat:
+            self.emit.counter("chat_evidence_changed_vote")
 
     def _vote_intent(self, vote_target: str, *, reason: str) -> Intent:
         if vote_target == VOTE_SKIP:
@@ -795,6 +831,7 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self._dead_mute_traced = False
         self._chat_parse_cache = {}
         self._decision_traced = False
+        self._chat_evidence_traced = False
 
     def _external_chat_signature(self, belief: Belief) -> tuple[tuple[int, str | None, str], ...]:
         self_color = belief.voting.self_marker_color

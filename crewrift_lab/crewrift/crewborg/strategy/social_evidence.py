@@ -27,7 +27,7 @@ and live on ``PlayerRecord``; ``suspicion._fitted_features`` reads them.
 
 from __future__ import annotations
 
-from crewrift.crewborg.strategy.meeting import chat_evidence
+from crewrift.crewborg.strategy.meeting import chat_evidence, chat_nlp
 from crewrift.crewborg.types import Belief, VoteCast
 
 # A real task completion requires TaskCompleteTicks (72) of standing at the site.
@@ -61,6 +61,13 @@ def update_social_evidence(belief: Belief) -> None:
 
 def _count_chat_stances(belief: Belief) -> None:
     if not belief.chat_log:
+        return
+    # spaCy still warming up: DEFER the whole pass rather than consuming messages
+    # with only partial (template-level) extraction — chat_log persists through the
+    # meeting, so the messages are re-offered next tick and parsed in full once the
+    # model lands (previously they were marked counted and dropped forever). If the
+    # model is disabled or failed to load, proceed template-only.
+    if chat_nlp.is_loading():
         return
     for event in belief.chat_log:
         key = (event.tick, event.speaker_color, event.text)

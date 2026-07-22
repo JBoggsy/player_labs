@@ -66,13 +66,17 @@ def test_disabled_flag_turns_chat_nlp_off(monkeypatch) -> None:
     assert chat_nlp.is_enabled() is True
 
 
-def test_no_model_means_no_chat_signal() -> None:
-    # Without a loaded model (disabled / still loading), there is no chat signal at all.
+def test_no_model_still_gets_template_signal_only() -> None:
+    # Without a loaded model (disabled / still loading), the deterministic template
+    # pass still fires on exact template shapes ("red sus"), but the free-form
+    # dependency-parse coverage is absent (design
+    # 2026-07-22-chat-evidence-incorporation.md §2.4).
     saved = chat_nlp._model
     chat_nlp._model = None
     try:
-        belief = _belief_with_chat([("blue", "red sus")])
-        assert chat_evidence.chat_accusers(belief) == {}
+        assert chat_evidence.chat_accusers(_belief_with_chat([("blue", "red sus")])) == {"red": 1}
+        # Free-form phrasing (no template) needs spaCy — no signal without it.
+        assert chat_evidence.chat_accusers(_belief_with_chat([("blue", "pretty sure red did it")])) == {}
     finally:
         chat_nlp._model = saved
 

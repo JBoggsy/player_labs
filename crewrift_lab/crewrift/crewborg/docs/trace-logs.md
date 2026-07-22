@@ -199,8 +199,13 @@ When the LLM meeting layer is enabled, `modes/attend_meeting.py` also emits
 `domain.meeting_tentative_vote`, and `domain.meeting_llm_fallback` (`reason` +
 detail) on each fallback to the deterministic path. Both paths emit
 `domain.meeting_chat_selected` (`text`, `reason`) and `domain.meeting_vote_selected`
-(`target`, `reason`) as the chat/vote actually goes out. The meeting machinery is
-[`./meetings.md`](./meetings.md).
+(`target`, `reason`) as the chat/vote actually goes out. Crew seats with the
+chat-evidence feature on also emit `domain.chat_evidence_applied` once per meeting
+at vote-submit (`vote_target`, `top_suspect_with_chat`, `top_suspect_without_chat`,
+`changed_top_suspect`, per-target `contributions` — the "did chat evidence change
+our vote" mechanism metric; design
+`crewrift_lab/docs/designs/2026-07-22-chat-evidence-incorporation.md`). The meeting
+machinery is [`./meetings.md`](./meetings.md).
 
 ### Framework boundary events
 

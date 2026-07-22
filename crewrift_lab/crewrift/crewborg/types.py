@@ -264,23 +264,28 @@ class ChatEvent(BaseModel):
     text: str
 
 
-ClaimType = Literal["accusation", "defense", "location", "vent", "task"]
+ClaimType = Literal["accusation", "defense", "location", "vent", "task", "kill"]
 VerificationStatus = Literal["confirmed", "contradicted", "unconfirmed"]
 
 
 class ChatClaim(BaseModel):
-    """One claim extracted from a chat message (design: docs/designs/chat-evidence.md).
+    """One claim extracted from a chat message (design: docs/designs/chat-evidence.md;
+    trust-weighted posterior consumption:
+    crewrift_lab/docs/designs/2026-07-22-chat-evidence-incorporation.md).
 
     ``target_color`` is who the claim is ABOUT — equal to ``speaker_color`` for a
-    self-alibi. ``place_name`` is the matched room/task-station name, set only for
+    self-alibi. A ``kill`` claim targets the ACCUSED KILLER (the victim, if named,
+    is not recorded — the claim's evidentiary weight is about the killer).
+    ``place_name`` is the matched room/task-station name, set only for
     ``location``/``task`` claims — ``vent`` claims never carry one: crewrift vents
     have no chat-nameable identity (only a synthetic ``group:group_index``, which no
     real message would say, especially post the tick/coordinate-avoidance prompt
     rule). ``verification`` is set for all three of location/vent/task (accusation/
-    defense are suspicion stances, not checkable facts) and stays ``None`` until
-    ``chat_evidence.verify_claim`` runs. ``source`` distinguishes the always-on spaCy
-    extraction from optional LLM-bundled enrichment — both land in the same list on
-    the same shape.
+    defense/kill are stances/testimony, not self-checkable facts) and stays ``None``
+    until ``chat_evidence.verify_claim`` runs. ``source`` distinguishes the always-on
+    deterministic template pass (``template``) and the spaCy dependency parse
+    (``spacy``) from optional LLM-bundled enrichment (``llm``) — all land in the same
+    list on the same shape.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -291,7 +296,7 @@ class ChatClaim(BaseModel):
     claim_type: ClaimType
     place_name: str | None = None
     verification: VerificationStatus | None = None
-    source: Literal["spacy", "llm"] = "spacy"
+    source: Literal["spacy", "llm", "template"] = "spacy"
 
 
 class VoteCast(BaseModel):

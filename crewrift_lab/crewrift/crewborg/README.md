@@ -71,6 +71,17 @@ permit silence, never a false crew claim). Receive-always / send-optional; set t
 flag to `0`/`false` for byte-identical legacy behaviour. Design + the HS1 wire
 spec: [`docs/designs/honor-society.md`](docs/designs/honor-society.md).
 
+**Chat-provided evidence** (`CREWBORG_CHAT_EVIDENCE`, **default ON**): other
+players' parsed chat claims (kill/vent testimony, accusations, defenses — extracted
+by a deterministic template pass plus the spaCy parse) feed the suspicion posterior
+as a log-LR term **weighted by speaker trust**: HS-verified members count in full
+(a trusted "saw X kill" clears the vote bar on its own), everyone else is scaled by
+`1 − P(speaker is imposter)`, witnessed imposters count zero, and the total is
+capped below witnessed certainty (chat is hearsay). Identical on both scoring paths
+and with the meeting LLM on or off; `=0` restores the pre-feature posterior.
+Design: `crewrift_lab/docs/designs/2026-07-22-chat-evidence-incorporation.md`;
+model reference: [`docs/suspicion.md`](docs/suspicion.md) §3.1.
+
 A separate, opt-in **LLM gameplay commander** (`CREWBORG_LLM_COMMANDER=1`) can steer the
 Playing phase by writing *priorities* into belief that the modes read to bias which room to
 task/hunt in, which player to chase, and how hard (a soft/hard strength dial), plus an
