@@ -70,6 +70,7 @@ class NavWorldBridge:
         route_status: str = "ok",
         route_detour: float = 1.15,  # planned distance multiplier vs straight line
         planner_available: bool = True,
+        probe_broken: bool = False,  # self-probe (here→here) also fails: broken planner
     ) -> None:
         self.map_id, self.x, self.y, self.z = start
         self.walls = walls or []
@@ -84,6 +85,7 @@ class NavWorldBridge:
         self.route_status = route_status
         self.route_detour = route_detour
         self.planner_available = planner_available
+        self.probe_broken = probe_broken
         self._frame = 0
         self._tracer = None
         self.plan_calls = 0
@@ -162,10 +164,18 @@ class NavWorldBridge:
 
     # ---- planning --------------------------------------------------------------
 
-    def plan_route(self, source, target, map_id, *, arrival_radius=3.0) -> PlannedRoute:
+    def plan_route(self, source, target, map_id, *, arrival_radius=3.0,
+                   tile_load_mode="auto") -> PlannedRoute:
         self.plan_calls += 1
         if not self.planner_available:
             return PlannedRoute("unavailable", map_id, [], 0.0, False, None, False, "off")
+        if (not self.probe_broken
+                and math.dist((source.x, source.y, source.z),
+                              (target.x, target.y, target.z)) < 1.0):
+            # Self-probe (L1's planner-health check): a working planner always
+            # routes a point to itself, regardless of the scripted route status.
+            return PlannedRoute("ok", map_id, [Position(target.x, target.y, target.z, 0.0)],
+                                0.0, False, 0.0, False, "")
         if self.route_status != "ok":
             return PlannedRoute(self.route_status, map_id, [], 0.0,
                                 self.route_status == "partial", None, False, "scripted")

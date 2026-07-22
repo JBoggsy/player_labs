@@ -142,9 +142,27 @@ class RouteNavigator:
                     jump_required=plan.jump_required, message=plan.message,
                 )
             if plan.status in ("no_path", "unreachable_target"):
-                return RouteResult(NavState.FAILED, reason="unreachable", end=here,
-                                   walked_seconds=walked_seconds,
-                                   combat_pauses=combat_pauses, deaths=deaths, replans=replans)
+                # Bare no_path (zero waypoints) has two very different causes:
+                # a genuinely off-mesh target, or a BROKEN planner (v25 hosted
+                # evidence: after service timeouts, EVERY plan — including for
+                # known-good targets — returned bare no_path, and reachable
+                # stations were reported "unreachable"). Disambiguate with a
+                # self-probe: planning here→here trivially succeeds on a working
+                # planner. Probe fails → degrade (the executor's own server-side
+                # Detour still routes direct moves); probe passes → honest fail.
+                probe = bridge.plan_route(_pos(here), _pos(here), here.map_id)
+                if probe.status == "ok":
+                    return RouteResult(NavState.FAILED, reason="unreachable", end=here,
+                                       walked_seconds=walked_seconds,
+                                       combat_pauses=combat_pauses, deaths=deaths,
+                                       replans=replans)
+                self._trace("nav_planner_broken", probe_status=probe.status)
+                plan = plan.__class__(
+                    status="unavailable", map_id=plan.map_id, waypoints=[],
+                    route_distance=0.0, partial=False,
+                    projected_target_distance=None, jump_required=False,
+                    message="planner self-probe failed; degrading",
+                )
             if plan.status in ("unavailable", "error") or not plan.waypoints:
                 # Degraded mode: no planner — one direct L0 move with a floor budget.
                 waypoints = [target]

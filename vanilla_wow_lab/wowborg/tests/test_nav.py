@@ -75,6 +75,18 @@ def test_l1_unreachable_fails_fast() -> None:
     assert bridge.move_selections == 0
 
 
+def test_l1_broken_planner_degrades_instead_of_lying() -> None:
+    """v25 hosted evidence: after service timeouts every plan returned bare no_path —
+    including for known-good targets — and reachable stations were reported
+    'unreachable'. A failed here→here self-probe means the PLANNER is broken, not the
+    target: degrade to direct movement (server-side Detour still routes it)."""
+    bridge = NavWorldBridge(route_status="no_path", probe_broken=True)
+    result = RouteNavigator().navigate_to(bridge, Point(1, 200.0, 150.0, 0.0),
+                                          deadline=deadline(30.0))
+    assert result.state == NavState.ARRIVED  # degraded direct move still lands
+    assert result.reason != "unreachable"
+
+
 def test_l1_combat_pause_then_arrival() -> None:
     bridge = NavWorldBridge(combat_at=(100.0, 75.0, 15.0))
     result = RouteNavigator().navigate_to(bridge, Point(1, 200.0, 150.0, 0.0),

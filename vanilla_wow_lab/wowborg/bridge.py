@@ -343,6 +343,7 @@ class ShimBridge:
         map_id: int,
         *,
         arrival_radius: float = 3.0,
+        tile_load_mode: str = "auto",
     ) -> PlannedRoute:
         """Plan a Detour route via the game host's /player/navigation service.
 
@@ -351,6 +352,11 @@ class ShimBridge:
         exports it) and falls back to a local helper otherwise. Never raises —
         service failure returns status="unavailable" and L1 degrades to
         executor-only movement.
+
+        ``tile_load_mode``: "auto" loads corridor tiles and — helper source fact
+        (vmangos_navmesh_helper.cpp): when the corridor is partial_poly it returns
+        the PARTIAL without retrying — so long hauls plan ~60yd at a time. "all"
+        loads every map tile for a definitive full route / genuine no_path.
         """
         try:
             from wow_sdk.navmesh import WorldPoint as NavPoint, route_navmesh
@@ -359,6 +365,7 @@ class ShimBridge:
                 NavPoint(map_id=map_id, x=source.x, y=source.y, z=source.z),
                 NavPoint(map_id=map_id, x=target.x, y=target.y, z=target.z),
                 arrival_radius=arrival_radius,
+                tile_load_mode=tile_load_mode,
             )
         except Exception as exc:  # noqa: BLE001 — planning must never kill navigation
             self._tracer.emit("route_plan_error", error=repr(exc))
@@ -389,6 +396,10 @@ class ShimBridge:
             partial=planned.partial,
             projected_target_distance=planned.projected_target_distance,
             jump_required=planned.jump_required,
+            # The helper's own reason (e.g. "no mmap corridor tiles could be
+            # loaded") — v25 evidence: bare no_path/0-waypoint responses from a
+            # live on-mesh position were undiagnosable without it.
+            message=planned.message[:160] if planned.message else None,
         )
         return planned
 
