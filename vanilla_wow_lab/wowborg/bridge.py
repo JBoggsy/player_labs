@@ -336,6 +336,15 @@ class ShimBridge:
             return None
         return self._select(frame, frame.recommended_action, label="recommended")
 
+    def select_kind(self, frame: EnvironmentFrame, kind: str) -> str | None:
+        """Select a bare factorized action by kind (release_spirit, reclaim_corpse…).
+
+        Recovery must not depend on recommended_action: lenient frames null it
+        (codex audit #9 — death recovery went inert during validation storms).
+        The mask/server still validates admissibility.
+        """
+        return self._select(frame, FactorizedAction(kind=kind), label=kind)
+
     STUCK_SPELL_ID = 7355  # the stock "Stuck" auto-unstuck spell — the game repo's
     # sanctioned recovery for "no physically admissible local source projection"
     # (docs/navigation-collision-issues.md): a targetless cast that relocates the
@@ -439,9 +448,11 @@ class ShimBridge:
                 self._reconnect()
                 settled = None
             if settled is not None and settled.frame_id >= frame_id:
-                if settled.frame_id > frame_id:
-                    # A newer settlement superseded the awaited one (audit #11):
-                    # report it honestly as that frame's outcome, tagged.
+                superseded = settled.frame_id > frame_id
+                if superseded:
+                    # A newer settlement superseded the awaited one. Its result
+                    # belongs to a DIFFERENT action — never report its success as
+                    # the awaited action's (codex audit #13: misattribution).
                     self._tracer.emit(
                         "settlement_superseded",
                         awaited_frame=frame_id,
@@ -450,7 +461,7 @@ class ShimBridge:
                 outcome = ActionOutcome(
                     request_id=f"frame-{settled.frame_id}",
                     kind=settled.action_kind or settled.action.kind,
-                    success=settled.success,
+                    success=settled.success and not superseded,
                     settlement_kind=None,  # granular kinds live in action-results.jsonl
                     displacement_yards=None,
                     end_position=None,

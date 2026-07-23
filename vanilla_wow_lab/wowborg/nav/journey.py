@@ -19,6 +19,10 @@ from wowborg.nav.world_model import Edge, Point, WorldModel
 PORTAL_PAD_RADIUS_YARDS = 5.0
 PORTAL_FIRE_ATTEMPTS = 3
 PORTAL_SETTLE_SECONDS = 20.0
+# A correct portal lands NEAR the declared destination — same map elsewhere
+# (death warp, unexpected teleport) is NOT success (codex audit #16). Generous:
+# instance entrances place the party in a room, not on a point.
+PORTAL_DESTINATION_RADIUS_YARDS = 150.0
 
 
 class JourneyStatus(Enum):
@@ -50,6 +54,8 @@ class JourneyPlanner:
     def journey_to(self, bridge, target: Point, *, deadline: float) -> JourneyResult:
         legs: list[dict] = []
         replan_count = 0
+        last_replan_at: Point | None = None  # local: journeys must not share it
+        # (codex audit #17: the old instance attribute leaked across stations)
         while time.monotonic() < deadline:
             here = self.router._observe_position(bridge)
             if here is None:
@@ -57,7 +63,8 @@ class JourneyPlanner:
 
             if here.map_id == target.map_id:
                 result = self.router.navigate_to(bridge, target, deadline=deadline)
-                legs.append(_leg("route", target, result.state.value, result.reason))
+                legs.append(_leg("route", target, result.state.value, result.reason,
+                                 route=result))
                 if result.state == NavState.ARRIVED:
                     return JourneyResult(JourneyStatus.ARRIVED, end=result.end, legs=legs)
                 if result.state == NavState.ESCALATE_MAP:
@@ -106,11 +113,13 @@ class JourneyPlanner:
                     break  # we're on the target's map — same-map L1 takes over
             if failed:
                 # Progress-aware thrash guard: a re-plan only counts against the
-                # limit if we did NOT move meaningfully since the last one.
-                if here is not None and getattr(self, '_last_replan_at', None) is not None:
-                    if here.distance(self._last_replan_at) > 50.0:
-                        replan_count = 0
-                self._last_replan_at = here
+                # limit if we did NOT move meaningfully since the last one
+                # (same-map only — cross-map distances are meaningless).
+                if (here is not None and last_replan_at is not None
+                        and here.map_id == last_replan_at.map_id
+                        and here.distance(last_replan_at) > 50.0):
+                    replan_count = 0
+                last_replan_at = here
                 replan_count += 1
                 if replan_count > 3:
                     return JourneyResult(JourneyStatus.FAILED,
@@ -143,10 +152,18 @@ class JourneyPlanner:
             for attempt in range(PORTAL_FIRE_ATTEMPTS):
                 fired = self._fire_trigger(bridge, edge.trigger_id, deadline)
                 here = self.router._observe_position(bridge)
-                if here is not None and here.map_id == destination.map_id:
+                if (here is not None and here.map_id == destination.map_id
+                        and here.distance(destination)
+                        <= PORTAL_DESTINATION_RADIUS_YARDS):
                     self._trace("journey_portal", trigger=edge.trigger_id,
                                 attempts=attempt + 1)
                     return True, here
+                if (here is not None and here.map_id == destination.map_id):
+                    # Right map, wrong place — an unexpected teleport, not a
+                    # portal success; surface it instead of silently accepting.
+                    self._trace("journey_portal_offsite", trigger=edge.trigger_id,
+                                at=[here.x, here.y, here.z])
+                    return False, here
                 if not fired:
                     time.sleep(1.0)
             return False, here
@@ -188,6 +205,17 @@ class JourneyPlanner:
         return min(candidates, key=lambda p: p.point.horizontal_distance(point))
 
 
-def _leg(kind: str, to: Point, status: str, reason: str) -> dict:
-    return {"kind": kind, "to": [to.map_id, to.x, to.y, to.z], "status": status,
-            "reason": reason}
+def _leg(kind: str, to: Point, status: str, reason: str, route=None) -> dict:
+    """Per-leg summary; route legs carry the RouteResult's robustness metrics
+    (codex audit #11: they were dropped here, so the benchmark hardcoded zeros)."""
+    row = {"kind": kind, "to": [to.map_id, to.x, to.y, to.z], "status": status,
+           "reason": reason}
+    if route is not None:
+        row.update(
+            deaths=route.deaths,
+            combat_pauses=route.combat_pauses,
+            replans=route.replans,
+            walked_seconds=round(route.walked_seconds, 1),
+            planned_distance=round(route.planned_distance, 1),
+        )
+    return row

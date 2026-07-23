@@ -156,7 +156,13 @@ def test_l2_same_map_delegates_to_l1() -> None:
 
 
 def test_l2_cross_map_via_portal() -> None:
-    bridge = NavWorldBridge(portals={2230: (389, 5.0, 5.0, -10.0)})
+    # The trigger binding is SPATIAL: it only appears when standing at the pad
+    # (codex audit #6 — the old fake offered portals everywhere, so a wrong pad
+    # coordinate in the world model could never fail this test).
+    bridge = NavWorldBridge(
+        portals={2230: (389, 5.0, 5.0, -10.0)},
+        portal_pads={2230: (100.0, 0.0, 0.0)},  # must match small_world's "pad"
+    )
     journey = JourneyPlanner(world=small_world())
     result = journey.journey_to(bridge, Point(389, 80.0, 40.0, -20.0),
                                 deadline=deadline(60.0))
@@ -164,6 +170,21 @@ def test_l2_cross_map_via_portal() -> None:
     assert bridge.map_id == 389
     kinds = [leg["kind"] for leg in result.legs]
     assert "portal" in kinds and "walk" in kinds
+
+
+def test_l2_portal_with_wrong_pad_fails_honestly() -> None:
+    # If the world model's pad coordinate is wrong (the binding never appears
+    # because we're standing in the wrong place), the journey must FAIL, not
+    # pretend the portal worked.
+    bridge = NavWorldBridge(
+        portals={2230: (389, 5.0, 5.0, -10.0)},
+        portal_pads={2230: (400.0, 400.0, 0.0)},  # real pad is elsewhere
+    )
+    journey = JourneyPlanner(world=small_world())
+    result = journey.journey_to(bridge, Point(389, 80.0, 40.0, -20.0),
+                                deadline=deadline(30.0))
+    assert result.status == JourneyStatus.FAILED
+    assert bridge.map_id == 1  # never teleported
 
 
 def test_l2_unknown_region_fails_honestly() -> None:

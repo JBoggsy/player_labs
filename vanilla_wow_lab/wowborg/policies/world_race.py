@@ -157,23 +157,41 @@ class WorldRacePolicy:
         self.results: list[dict] = []
 
     def summary(self) -> dict:
-        reached = sum(1 for r in self.results if r["outcome"] == "arrived")
+        # Reachability counts ONLY expected-reachable rows in both numerator and
+        # denominator (codex audit #15: adversarial arrivals inflated it >100%),
+        # and skips are NOT censored out — they fail reachability and surface
+        # separately as coverage (audit #1: the old skip exclusion made the
+        # benchmark structurally unable to test the long-range cases the
+        # generality claim is about).
+        reachable_rows = [r for r in self.results if r["expected"] == "reachable"]
+        reached = sum(1 for r in reachable_rows if r["outcome"] == "arrived")
+        skipped = sum(
+            1 for r in reachable_rows
+            if r["outcome"] == "skipped_insufficient_time"
+        )
         honest = sum(
             1 for r in self.results
             if r["expected"] == "unreachable" and r["outcome"] == "failed_unreachable"
         )
-        expected_reachable = sum(
+        surprise_arrivals = sum(
             1 for r in self.results
-            if r["expected"] == "reachable"
-            and r["outcome"] != "skipped_insufficient_time"
+            if r["expected"] == "unreachable" and r["outcome"] == "arrived"
         )
         expected_unreachable = sum(1 for r in self.results if r["expected"] == "unreachable")
         return {
             "course": self.course,
             "stations_attempted": len(self.results),
             "reached": reached,
-            "reachability": round(reached / expected_reachable, 3) if expected_reachable else None,
+            "reachability": (
+                round(reached / len(reachable_rows), 3) if reachable_rows else None
+            ),
+            "coverage": (
+                round((len(reachable_rows) - skipped) / len(reachable_rows), 3)
+                if reachable_rows else None
+            ),
+            "skipped": skipped,
             "honesty": round(honest / expected_unreachable, 3) if expected_unreachable else None,
+            "surprise_arrivals": surprise_arrivals,
             "deaths": sum(r["deaths"] for r in self.results),
             "combat_pauses": sum(r["combat_pauses"] for r in self.results),
             "replans": sum(r["replans"] for r in self.results),
@@ -281,9 +299,15 @@ class WorldRacePolicy:
                 "outcome": outcome,
                 "seconds": round(seconds, 1),
                 "legs": len(result.legs),
-                "deaths": 0,
-                "combat_pauses": 0,
-                "replans": 0,
+                "deaths": sum(leg.get("deaths", 0) for leg in result.legs),
+                "combat_pauses": sum(leg.get("combat_pauses", 0) for leg in result.legs),
+                "replans": sum(leg.get("replans", 0) for leg in result.legs),
+                "walked_seconds": round(
+                    sum(leg.get("walked_seconds", 0.0) for leg in result.legs), 1
+                ),
+                "planned_distance": round(
+                    sum(leg.get("planned_distance", 0.0) for leg in result.legs), 1
+                ),
             }
             self.results.append(row)
             trace("nav_station", **row)

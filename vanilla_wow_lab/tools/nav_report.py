@@ -52,7 +52,8 @@ def score_episode(episode_dir: Path) -> dict | None:
         ],
         "plans": len(plans),
         "plan_statuses": sorted({p.get("status") for p in plans}),
-        "summary": {k: end.get(k) for k in ("reached", "reachability", "honesty",
+        "summary": {k: end.get(k) for k in ("reached", "reachability", "coverage",
+                                             "skipped", "honesty", "surprise_arrivals",
                                              "deaths", "combat_pauses", "replans")},
     }
 
@@ -71,17 +72,22 @@ def main(argv: list[str] | None = None) -> int:
         print("no world-race episodes found")
         return 1
 
-    print(f"{'episode':<36} {'stations':>8} {'reach':>6} {'honest':>7} {'deaths':>7} {'replans':>8}")
+    print(f"{'episode':<36} {'stations':>8} {'reach':>6} {'cover':>6} {'honest':>7} "
+          f"{'deaths':>7} {'replans':>8}")
     for e in episodes:
         s = e["summary"]
         reach = s.get("reachability")
+        cover = s.get("coverage")
         honest = s.get("honesty")
         print(
             f"{e['dir']:<36} {len(e['stations']):>8} "
             f"{('%.0f%%' % (reach * 100)) if reach is not None else '—':>6} "
+            f"{('%.0f%%' % (cover * 100)) if cover is not None else '—':>6} "
             f"{('%.0f%%' % (honest * 100)) if honest is not None else '—':>7} "
             f"{s.get('deaths') or 0:>7} {s.get('replans') or 0:>8}"
         )
+        if s.get("surprise_arrivals"):
+            print(f"  ⚠ {s['surprise_arrivals']} adversarial station(s) unexpectedly ARRIVED")
 
     by_station: dict[str, dict] = defaultdict(lambda: {"attempts": 0, "arrived": 0,
                                                        "honest_fails": 0, "outcomes": []})

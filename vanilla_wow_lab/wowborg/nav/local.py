@@ -99,6 +99,13 @@ class LocalMover:
         stalls = 0
         best_distance: float | None = None
         history: list[tuple[Point, float]] = []  # (position, goal distance there)
+        # Baseline before the first wait: frame starvation on the FIRST poll
+        # (a prior action still walking) must compare against something, or the
+        # fallback below misfires into NO_FRAME while we are visibly moving
+        # (codex audit #7).
+        baseline = _observe(bridge)
+        if baseline is not None:
+            history.append((baseline, baseline.distance(check)))
 
         while True:
             if time.monotonic() >= until:

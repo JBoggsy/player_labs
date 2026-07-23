@@ -191,13 +191,32 @@ class RouteNavigator:
                     plan.projected_target_distance is not None
                     and plan.projected_target_distance > UNREACHABLE_PROJECTION_YARDS
                 ):
-                    # The target itself is off-mesh; the walkable end is the projection.
-                    if plan.partial or not plan.waypoints:
+                    # The target itself is off-mesh. TERMINAL — never an
+                    # intermediate hop (codex audit #2: walking to the projection
+                    # and re-planning looped unbounded when the character stood
+                    # within stage radius of it, since that path bypassed the
+                    # same-spot limiter). A corridor-mode projection can be an
+                    # artifact of unloaded tiles, so confirm with a definitive
+                    # all-tiles query before declaring unreachable.
+                    if tile_mode != "all":
+                        confirm = bridge.plan_route(
+                            _pos(here), _pos(target), target.map_id,
+                            arrival_radius=arrival_radius, tile_load_mode="all",
+                        )
+                        if confirm.status == "ok" and (
+                            confirm.projected_target_distance is None
+                            or confirm.projected_target_distance
+                            <= UNREACHABLE_PROJECTION_YARDS
+                        ):
+                            plan = confirm
+                    if (
+                        plan.projected_target_distance is not None
+                        and plan.projected_target_distance > UNREACHABLE_PROJECTION_YARDS
+                    ):
                         return RouteResult(
                             NavState.FAILED, reason="unreachable", end=here,
                             walked_seconds=walked_seconds,
                             combat_pauses=combat_pauses, deaths=deaths, replans=replans)
-                    arrival_check = _pt(plan.waypoints[-1], target.map_id)
                 planned_distance = plan.route_distance
                 if plan.partial:
                     partial_end = _pt(plan.waypoints[-1], target.map_id)
@@ -232,18 +251,21 @@ class RouteNavigator:
                     else:
                         # Walk to the partial end, then re-plan onward from there.
                         arrival_check = partial_end
-                if stage_attempt > 0 and len(plan.waypoints) >= 4:
+                if stage_attempt > 0 and len(plan.waypoints) >= 2:
                     # Post-stall staging ladder: the direct semantic move keeps
                     # failing on the same local terrain (v32: sarkoth ramp — six
                     # oscillation re-plans, each retrying the same heading).
-                    # Route one leg to a corridor interior point — midpoint first,
-                    # then closer fractions (1/4, 1/8 …) on repeated stalls: a
-                    # NEARBY intermediate goal makes the executor commit to the
-                    # corridor's own geometry (the ramp / canyon mouth) instead
-                    # of the straight-line heading (v36: the midpoint alone was
-                    # still past the canyon lip and reproduced the oscillation).
-                    index = max(1, len(plan.waypoints) // (2 ** stage_attempt))
-                    stage_point = _pt(plan.waypoints[index], target.map_id)
+                    # Route one leg to a corridor interior point — halfway by ARC
+                    # LENGTH first, then closer fractions (1/4, 1/8 …): a NEARBY
+                    # intermediate goal makes the executor commit to the
+                    # corridor's own geometry (ramp / canyon mouth) instead of
+                    # the straight-line heading. Arc length, not waypoint index —
+                    # Detour spacing is uneven, so index ratios are meaningless
+                    # (codex audit #5); corridors are re-planned from `here`, so
+                    # interior points are forward by construction.
+                    fraction = 1.0 / (2 ** stage_attempt)
+                    stage_raw = _point_at_corridor_fraction(plan.waypoints, fraction)
+                    stage_point = _pt(stage_raw, target.map_id)
                     if here.distance(stage_point) > STAGE_ARRIVAL_RADIUS_YARDS:
                         arrival_check = stage_point
                         self._trace("nav_state", state="staging",
@@ -289,7 +311,12 @@ class RouteNavigator:
                 hop_seconds = time.monotonic() - hop_started
 
                 if move.end is not None:
-                    self.pace.record(here.distance(move.end), hop_seconds)
+                    # Pace samples only from uninterrupted hops — combat/death
+                    # legs record short displacement over long wall time and a
+                    # polluted estimate cascades into false budget failures
+                    # (codex audit #10).
+                    if move.status not in (LocalMoveStatus.COMBAT, LocalMoveStatus.DEAD):
+                        self.pace.record(here.distance(move.end), hop_seconds)
                     here = move.end
                 walked_seconds += hop_seconds
                 budget_left -= hop_seconds
@@ -410,7 +437,10 @@ class RouteNavigator:
 
     def _recover_from_death(self, bridge, deadline: float) -> bool:
         """Defer to the planner's recovery recommendations (release → corpse run →
-        reclaim are its masked recommended actions) until alive again."""
+        reclaim are its masked recommended actions) until alive again. When the
+        recommendation is unavailable (lenient frames during validation storms —
+        codex audit #9), fall back to the typed recovery kinds directly; the
+        mask/server rejects whichever doesn't apply yet."""
         while time.monotonic() < deadline:
             frame = bridge.wait_for_frame(timeout_s=min(30.0, max(0.5, deadline - time.monotonic())))
             if frame is None:
@@ -420,6 +450,9 @@ class RouteNavigator:
             if not obs.is_dead and not obs.is_ghost:
                 return True
             request_id = bridge.select_recommended(frame)
+            if request_id is None and hasattr(bridge, "select_kind"):
+                kind = "release_spirit" if obs.is_dead and not obs.is_ghost else "reclaim_corpse"
+                request_id = bridge.select_kind(frame, kind)
             if request_id is not None:
                 bridge.wait_for_settlement(frame.frame_id, timeout_s=RECOVERY_STEP_TIMEOUT_S)
         return False
@@ -429,6 +462,21 @@ def _pos(point: Point):
     from wowborg.types import Position
 
     return Position(point.x, point.y, point.z, 0.0)
+
+
+def _point_at_corridor_fraction(waypoints, fraction: float):
+    """The waypoint nearest to ``fraction`` of the corridor's cumulative ARC length
+    (never the first or last point — staging needs an interior goal)."""
+    import math
+
+    if len(waypoints) <= 2:
+        return waypoints[len(waypoints) // 2]
+    lengths = [0.0]
+    for a, b in zip(waypoints, waypoints[1:]):
+        lengths.append(lengths[-1] + math.dist((a.x, a.y, a.z), (b.x, b.y, b.z)))
+    goal = lengths[-1] * fraction
+    best = min(range(1, len(waypoints) - 1), key=lambda i: abs(lengths[i] - goal))
+    return waypoints[best]
 
 
 def _pt(position, map_id: int) -> Point:

@@ -69,6 +69,7 @@ class NavWorldBridge:
         death_at: tuple[float, float, float] | None = None,      # entering radius → die once
         graveyard: tuple[int, float, float, float] | None = None,
         portals: dict[int, tuple[int, float, float, float]] | None = None,  # trigger_id → dest
+        portal_pads: dict[int, tuple[float, float, float]] | None = None,   # trigger_id → pad pos
         route_status: str = "ok",
         route_detour: float = 1.15,  # planned distance multiplier vs straight line
         planner_available: bool = True,
@@ -84,6 +85,11 @@ class NavWorldBridge:
         self.dead_frames_left = 0
         self.graveyard = graveyard or start
         self.portals = portals or {}
+        # Trigger bindings are SPATIAL (codex audit #6: the fake used to offer
+        # every portal everywhere, so a wrong pad coordinate could never fail
+        # a test). Default pads sit at the trigger's destination-facing spot.
+        self.portal_pads = portal_pads or {}
+        self.portal_pad_radius = 10.0
         self.route_status = route_status
         self.route_detour = route_detour
         self.planner_available = planner_available
@@ -104,10 +110,10 @@ class NavWorldBridge:
             is_ghost=False,
             in_combat=self.combat_frames_left > 0,
         )
+        near = [tid for tid in self.portals if self._near_portal(tid)]
         triggers = [
             FakeTriggerRow(index=i + 1, trigger_id=tid)
-            for i, tid in enumerate(self.portals)
-            if self._near_any_portal()
+            for i, tid in enumerate(near)
         ]
         return FakeFrame(self._frame, obs, FakeBindings(triggers=triggers))
 
@@ -222,5 +228,8 @@ class NavWorldBridge:
                 self.died_once = True
                 self.dead_frames_left = 3
 
-    def _near_any_portal(self) -> bool:
-        return True  # bindings list portals whenever asked; pad checks live in L2
+    def _near_portal(self, trigger_id: int) -> bool:
+        pad = self.portal_pads.get(trigger_id)
+        if pad is None:
+            return True  # no declared pad: binding offered anywhere (legacy tests)
+        return math.dist((self.x, self.y, self.z), pad) <= self.portal_pad_radius
