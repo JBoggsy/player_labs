@@ -12,13 +12,12 @@ This README orients newcomers (human or agent). Two pointers do most of the work
 - **[`../README.md`](../README.md)** — lab-wide setup (`uv sync` / Observatory auth) and
   the ground rules.
 
-> **Status (2026-07-10): first player `beacon` built and competing.** The game repo
-> (`Metta-AI/coworld-ctf`) is cloned for reference at `~/coding/coworlds/coworld-ctf`.
-> **`beacon` (Python, at [`ctf/beacon/`](ctf/beacon/)) is uploaded and submitted to the
-> CTF league** (currently `beacon:v5`) — it dominates the co-gas opponents (20-0, by
-> capture) and, as of v5, takes games off the elite Nim `ctf-baseline-16` too (4-11, via
-> carrier escort). Live state + open threads: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md);
-> version history: [`ctf/beacon/VERSION_LOG.md`](ctf/beacon/VERSION_LOG.md).
+> **Status: `beacon` competing in the CTF league** (rank 3 as of 2026-07-23, v23
+> champion / v24 qualifying). The game repo (`Metta-AI/coworld-ctf`) is cloned for
+> reference at `~/coding/coworlds/coworld-ctf` — **the league redeploys often**; the
+> deployed version at last audit is **ctf 0.7.69 (`72fb1b1`, GameVersion 21)**. Live
+> state + open threads: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md); version history:
+> [`ctf/beacon/VERSION_LOG.md`](ctf/beacon/VERSION_LOG.md).
 
 ## The game (one paragraph)
 
@@ -30,8 +29,9 @@ continuous angle *decoupled from movement* (B/Select rotate it), and **shoot** a
 instant hitscan gun (A). Vision is **fog-of-war**: the static map is always visible, but
 enemies only appear inside your **forward vision cone** (±45° around your aim) or a small
 **omnidirectional bubble**. Steal the enemy flag and carry it home — or wipe the enemy
-team — to win. **Scoring is win-only: +100 to the winning team, 0 otherwise** — so the
-objective is purely **team victory**, not kills.
+team — to win. **Scoring is win-only: winners +1, losers -1, and a time-limit draw is
+-1 for both sides** (no tiebreak; stalling never beats losing) — so the objective is
+purely **team victory before the clock**, not kills.
 
 **Full game reference — rules, arena, aim/vision/combat mechanics, the wire protocol,
 exact tuning numbers, the baseline bot, and strategy — is

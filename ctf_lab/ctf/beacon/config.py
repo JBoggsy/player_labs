@@ -41,7 +41,12 @@ RENDER_SCALE = 1
 # --- Aim / vision (sim.nim) -------------------------------------------------------
 AIM_BRADS_TURN = 256  # brads per full turn
 AIM_TURN_RATE = 5  # brads/tick a held rotate button turns aim (must match server)
-VISION_CONE_HALF_DEG = 60  # forward wedge half-angle (config.json, 60 since 0.7.4x)
+#: Forward wedge half-angle. The LEAGUE runs 45: episodes use the manifest's Default
+#: variant game_config (visionConeDeg 45, verified in live episode.json at 0.7.69),
+#: which overrides the repo config.json's 60. Was wrongly 60 here until the 2026-07-23
+#: audit — that over-estimated our own vision in items._in_view (false "checked,
+#: absent" item reads) and in any cone math.
+VISION_CONE_HALF_DEG = 45
 VISION_BUBBLE = 90  # omni bubble radius, px
 #: Spawn aim by team: Red faces east (0), Blue faces west (128).
 SPAWN_AIM = {"red": 0, "blue": AIM_BRADS_TURN // 2}
@@ -284,7 +289,7 @@ SQUAD_WAIT_TIMEOUT_TICKS = _env_int("BEACON_SQUAD_WAIT_TIMEOUT_TICKS", 150)
 SQUAD_WAVE_GATE = _env_int("BEACON_SQUAD_WAVE_GATE", 0) == 1
 SQUAD_WAVE_PERIOD_TICKS = _env_int("BEACON_SQUAD_WAVE_PERIOD_TICKS", 120)
 SQUAD_WAVE_WINDOW_TICKS = _env_int("BEACON_SQUAD_WAVE_WINDOW_TICKS", 36)
-#: Aim-sector offset per rank step (brads); 50 ≈ 70°, complements the 60° cone.
+#: Aim-sector offset per rank step (brads); 50 ≈ 70°, complements the ±45° cone.
 SQUAD_SECTOR_BRADS = _env_int("BEACON_SQUAD_SECTOR_BRADS", 50)
 
 # --- Squad command (v22): leader orders + presence pings + respawn discipline --------

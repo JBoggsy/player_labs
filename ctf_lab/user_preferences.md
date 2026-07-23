@@ -29,10 +29,19 @@ arms). Existing examples: `scratch/eval_v1{0..4}/xreq_body_*.json`.
 ## Strategic principle: lives > flag captures (posited 2026-07-23)
 
 We'd rather tie than lose. Throwing lives at an entrenched enemy hands them a
-life advantage they convert into a wipe or an uncontested capture. Mechanical
-support at 0.7.69: timeout = scoreless DRAW for both sides (no lives tiebreak,
-no rewards), so a preserved-lives stalemate costs 0 while a feed-and-collapse
-costs -1. Design implications: prefer holding ground over re-pushing at a
-numeric disadvantage; respawned agents rejoin cautiously instead of trickling
-into contact; pushes want full squads. (Posited — subject to revision if data
-shows aggressive tempo outperforms.)
+life advantage they convert into a wipe or an uncontested capture. Design
+implications: prefer holding ground over re-pushing at a numeric disadvantage;
+respawned agents rejoin cautiously instead of trickling into contact; pushes
+want full squads. (Posited — subject to revision if data shows aggressive
+tempo outperforms.)
+
+**FACT CORRECTION (2026-07-23 audit):** the mechanical support originally cited
+here ("timeout = scoreless draw, costs 0") is wrong at the deployed 0.7.69.
+GameVersion 21 makes a **time-limit draw -1 for BOTH sides** — the same as
+losing (verified in the deployed sim's `TimeoutReward* = -1` AND empirically:
+every drawn v24 episode's results.json scores all 16 players -1). Score-wise,
+a tie IS a loss now; only a capture or wipe pays +1. The half of the principle
+that survives: feeding lives still *enables the enemy's win paths*. The half
+that doesn't: holding to a draw banks nothing — preserved lives are worthless
+unless converted before tick 5000 (which is why the convert trigger is the
+current lever).

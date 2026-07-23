@@ -79,8 +79,9 @@ def leader_of(seat: int) -> int:
 def sector_offset_brads(seat: int) -> int:
     """Lighthouse-sweep centre offset for my rank: 0, +SECTOR, -SECTOR, ...
 
-    Rank 0 watches the threat axis; ranks 1/2 take the shoulders. With the 60°
-    half-angle vision cone this yields overlapping-but-complementary coverage."""
+    Rank 0 watches the threat axis; ranks 1/2 take the shoulders. With the 45°
+    half-angle vision cone (league variant config) this yields complementary
+    coverage with a small overlap."""
     rank = rank_of(seat)
     if rank == 0:
         return 0

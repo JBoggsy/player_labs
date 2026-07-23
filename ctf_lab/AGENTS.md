@@ -24,8 +24,9 @@ edges of a symmetric, cover-dense arena, each guarding a flag. You move (d-pad),
 continuous angle **decoupled from movement** (B/Select), and shoot an instant hitscan gun
 (A). Vision is **fog-of-war** riding your aim (±45° cone + small omni bubble; walls
 block). Win by **capturing** the enemy flag (carry it into your home zone) or **wiping**
-the enemy team. **Scoring is win-only: +100 to the winning team, 0 otherwise** — the
-objective is purely team victory, not kills.
+the enemy team. **Scoring is win-only: winners +1, losers -1; a time-limit draw is -1
+for BOTH sides** (no tiebreak) — the objective is purely team victory before the clock,
+not kills.
 
 For the full game — arena, aim/vision/combat mechanics, flags, exact tuning numbers, the
 wire protocol, the baseline bot, and a strategy treatment — read
@@ -49,8 +50,9 @@ human gate → submit) runs **unchanged** here. The CTF-specific instruments:
   under optimization. The game is **team-symmetric (8v8)**, so the natural cuts are
   **team (Red/Blue) and seat/role** (slot parity = team; `slot div 2` = seat), **win
   rate** (the only scored outcome), and the **win path** taken (capture vs wipe vs
-  timeout-tiebreak). Because scoring is win-only (+100/0), win rate — not kills — is the
-  metric; kills/deaths/captures are recorded for diagnosis but never scored.
+  timeout draw — the draw pays -1 to both sides, same as losing). Because scoring is
+  win-only (+1/-1), win rate — not kills — is the metric; kills/deaths/captures are
+  recorded for diagnosis but never scored.
 - **Report** (step 2) — pull artifacts with the game-agnostic `coworld-episode-artifacts`
   skill, then distill. **There is no CTF-specific report skill yet** — see
   [Skills](#skills); building one (a per-episode win-path / kill-map / flag-event survey,

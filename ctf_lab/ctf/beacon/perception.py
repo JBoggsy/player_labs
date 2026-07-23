@@ -55,10 +55,10 @@ _SOUND_LABELS = {
 def _center(world: SpriteWorld, obj: SpriteObject) -> tuple[int, int]:
     """Map-space centre of an object (camera sits at origin in CTF).
 
-    Since game 0.6.0 the zoomable map layer is wire-scaled: object coordinates and
-    sprite sizes arrive at RENDER_SCALE (3x) map resolution, with every entity sprite
-    centered on its scaled map point — so the wire centre divided by the scale is the
-    exact map-pixel centre (RULES.md, "Observation render scale").
+    The player wire is 1x map pixels since the 0.7.8 renderer restore (the 0.6-0.7.7
+    "HD" era carried 3x coordinates; RULES.md's "Observation render scale" section
+    describes the spectator/replay stream, not the player stream). RENDER_SCALE (=1)
+    is kept at this seam so a future wire-scale change is a one-constant fix.
     """
     sprite = world.sprite_for(obj)
     w = sprite.width if sprite else 0

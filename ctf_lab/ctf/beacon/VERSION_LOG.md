@@ -25,7 +25,9 @@ overrides immediately. 91 tests.
 and stop the respawn trickle (agents feeding 1-by-1 back into contact). Standing
 principle recorded in user_preferences.md: lives > flag captures (verified sharper
 at 0.7.69: timeout = scoreless draw, NO lives tiebreak — hold when weak, convert
-before the clock when strong).
+before the clock when strong). *[Correction, 2026-07-23 audit: "scoreless" was
+wrong — a timeout draw is -1 for BOTH sides (GameVersion 21 TimeoutReward), the
+same score as losing. The no-tiebreak part stands. See user_preferences.md.]*
 
 **Chat additions:** ``O<seat><goal><cell>`` orders (goals H hold / S scout / P push
 / F flag / T thief-hunt; priority below C/T, above G/U/E; rebroadcast 72t) and

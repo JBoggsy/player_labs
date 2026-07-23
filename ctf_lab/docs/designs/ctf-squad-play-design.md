@@ -67,8 +67,9 @@ The lighthouse sweep currently points everyone at the threat axis. Squad version
 offset each member's sweep centre by rank — rank 0 sweeps the axis, rank 1 sweeps
 axis + `SECTOR_OFFSET` (~50 brads ≈ 70°), rank 2 axis − offset. Moving squads get
 a forward cone + two shoulders; a holding squad covers complementary arcs instead
-of three copies of one arc. Zero comms; pure seat math. (Vision cone is 60° half-
-angle, so ±70° centres give overlapping but complementary coverage.)
+of three copies of one arc. Zero comms; pure seat math. (Vision cone half-angle is
+45° in league play — the variant config, not config.json's 60 — so ±70° centres
+give complementary coverage with small overlaps.)
 
 ### 4. Squad objectives — globally-observable inputs only
 

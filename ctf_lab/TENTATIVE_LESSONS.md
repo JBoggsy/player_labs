@@ -1,6 +1,6 @@
 # CTF tentative lessons — session buffer
 
-**Session started:** 2026-07-23 13:38. This is THIS SESSION's lesson buffer. Write candidate
+**Session started:** 2026-07-23 13:46. This is THIS SESSION's lesson buffer. Write candidate
 lessons here **as you go** — eagerly and noisily; most will be noise and that's
 fine. At the next session start, a hook archives this file automatically to
 [`lessons_archive/`](lessons_archive/) and creates a fresh one — nothing you
@@ -17,3 +17,38 @@ buffers — not in-session hit counts — is the graduation signal.
 concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
+
+### Both teams' total lives remaining ARE readable from the player POV stream — beacon ignores them
+Evidence: `global.nim buildSpriteProtocolPlayerUpdates` (player websocket stream, server.nim:1202/1291)
+emits (a) own `"lives <hp>hp x<lives>"` HUD label (own remaining respawns) and (b) the
+`addTeamScoreboard` labels `"team score RED <kills>/<deaths>"` / `"team score BLUE …"` every Playing
+frame. Team lives remaining = 24 − team deaths (8 players × 3 lives; exact while nobody disconnects).
+`perception.py` parses neither label today. Per-player permadeath of teammates is NOT observable
+in-round (dead teammates render nothing to a live viewer; per-player lives only appear in the
+spectator scoreboard and the GameOver interstitial). CORRECTION (James caught this): the lives
+TIEBREAK is gone — fac8704 (0.7.6x era, 2026-07-14) made timeout a scoreless draw, and GV21
+(a768a0e) makes a timeout draw -1 for EVERY player. So lives-lead has no endgame-tiebreak value;
+the remaining uses are (a) enemy team lives (24 − enemy deaths) to gauge wipe feasibility and
+(b) own remaining respawns for risk calibration. docs/ctf-gameplay.md is stale on tiebreak,
+scoring (+100→+1/-1/-1), maxTicks (10000→5000), and spawn protect (removed GV20) — needs reconcile.
+
+### The league runs the manifest VARIANT game_config, which overrides config.json — visionConeDeg is 45, not 60
+Evidence: repo config.json says visionConeDeg 60 (commit 15856d8 widened it), but the manifest's
+Default-variant game_config still says 45 — and a fresh v24 episode.json's game_config confirms 45
+live at 0.7.69. beacon's VISION_CONE_HALF_DEG had been 60 (from config.json) since ~v13; fixed to 45
+in this audit (affects items._in_view negative-confirmation and squad sector-coverage math). Rule:
+the deployed truth is episode.json's game_config, not any file in the game repo.
+
+### A timeout draw is -1 for BOTH sides (GV21), not scoreless — session-7's premise was wrong
+Evidence: deployed sim (`72fb1b1`) TimeoutReward = -1 applied to every player; empirically every
+drawn v24 episode's results.json scores all 16 players -1. WORKING_CONTEXT/user_preferences/
+VERSION_LOG all said "timeout = scoreless draw, tie costs 0". Corrected everywhere this audit.
+Strategic consequence: v24's 14 draws each PAID -1; draws only beat losses by denying the enemy +1.
+The convert trigger matters more than session 7 thought.
+
+### docs/ctf-gameplay.md is stale vs the deployed game — verify rules against the repo before citing
+Evidence: answered a rules question from the doc (lives tiebreak, +100 win-only scoring) and both
+were wrong vs coworld-ctf origin/main (fac8704: no tiebreak; WinReward +1 / LossReward -1 /
+TimeoutReward -1 GV21; maxTicks 5000; spawn protect removed GV20). WORKING_CONTEXT.md already knew
+("0.7.69: timeout = SCORELESS DRAW (no lives tiebreak)"). Also: ctf_lab/tools/versions.env CTF_REF
+(761c098, 2026-07-10) predates these league redeploys.

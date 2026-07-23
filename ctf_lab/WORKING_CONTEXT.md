@@ -18,6 +18,14 @@ v23 (=v22 image) is the currently-competing champion. Standings: rank 3 @ 0.5495
 (daveey 0.697, Alex Smith 0.552 — we're 0.003 behind #2). New entrant NanosaurusX
 (rank 4, 11 rounds) — unprofiled, recon when they have history.
 
+**RULES CORRECTION (2026-07-23 audit): a timeout draw is NOT scoreless — it's -1
+for BOTH sides** (GameVersion 21 `TimeoutReward`; verified in the deployed `72fb1b1`
+sim AND empirically — every drawn v24 episode scores all 16 players -1 in
+results.json). The session-7 "timeout = scoreless draw, tie costs 0" premise was
+wrong; score-wise a draw IS a loss. This *raises* the convert trigger's value: v24's
+14 draws in 20 games each paid -1, not 0. Draws still beat losses only in that they
+deny the opponent's +1.
+
 **THE NEXT LEVER (designed, not built): the CONVERT TRIGGER.** v24's hold doctrine
 is saturated: 14 draws in 20 eval games, several with banked lives leads (11-5,
 8-5), zero conversion attempts. Build the leader escalation rule:
