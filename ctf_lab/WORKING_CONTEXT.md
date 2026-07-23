@@ -10,7 +10,35 @@ startup to resume; **update it as you learn** (keep it tight).
 
 ---
 
-## Status (2026-07-22, session 6f): **v21 — nameplates + wave-gate OFF; 0.7.69 caught up**
+## Status (2026-07-23, session 7): **v22 SQUAD COMMAND — leader orders + respawn discipline; wins→draws shift**
+
+**Principle recorded** (user_preferences.md): lives > captures. Verified sharper at
+0.7.69: timeout = SCORELESS DRAW (no lives tiebreak) — so lives are the resource to
+convert before tick 5000, not a win condition themselves.
+
+**v22 (uploaded, NOT submitted):** `O<seat><goal><cell>` leader orders (goals
+H/S/P/F/T; leader = lowest seat; members obey own leader only; TTL 240t → graceful
+fallback to static roles) + `P<seat><cell>` presence pings (60t). Leader engine:
+thief→T, carrier→F, past-rally + mate-presence-stale → **H stepped 70px home**
+(back off, hold gained ground); defaults D-hold/A1-flag/A2-push. Respawn
+discipline: death snapshots rejoin point (freshest identity-tagged squadmate
+track); respawn REJOIN rung (below carry) navigates there cautiously, exits on
+badge contact ≤160px or 360t. 88 tests; live-wire verified.
+
+**v22 measurement (10-ep 1v1s): outcome DISTRIBUTION shifted exactly as the
+principle predicts — vs focusfire 0W/6D/4L (v21: 0/0/10); vs h006 0W/3D/7L.**
+Command layer fully live: 2,258 orders sent / 2,304 heard, 4,883 pings sent /
+14,830 heard, 227 backoff events, 214 rejoin-ticks/agent. Deaths 428 vs 340 —
+still net-negative on kills but no longer collapsing.
+**IDENTIFIED GAP: no CONVERT trigger.** "Hold when weak" works; nothing re-orders
+a PUSH when strength recovers (presence refreshes / respawners rejoin) — squads
+that back off stay backed off, so preserved lives never cash in. That's the next
+lever: leader rule "presence recovered + past mid-game → P/F again" (+ possibly
+enemy-weakness signals: kill-confirms via chat).
+
+League entry: v18 (champion). Uploads v19-v22 inert. WATCH: arena-large map flip.
+
+## (prior) Status (2026-07-22, session 6f): **v21 — nameplates + wave-gate OFF; 0.7.69 caught up**
 
 **Game catch-up (0.7.66→0.7.69):** (1) **Nameplates landed** — `identity <color>
 <name>` badges, alpha..theta assigned by slot order within team (== our seat
