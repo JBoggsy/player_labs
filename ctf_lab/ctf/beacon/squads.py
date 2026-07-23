@@ -27,9 +27,11 @@ from __future__ import annotations
 
 import math
 
+from ctf.beacon import mapdata
 from ctf.beacon.config import (
     BACKOFF_STEP_PX,
     CHOKE_X,
+    MAP_H,
     MAP_W,
     PRESENCE_STALE_TICKS,
     REJOIN_CONTACT_PX,
@@ -40,6 +42,7 @@ from ctf.beacon.config import (
     SQUAD_SEPARATION_PX,
     SQUAD_SIDE_HOLD_Y_BOTTOM,
     SQUAD_SIDE_HOLD_Y_TOP,
+    SQUAD_SPREAD_PX,
     SQUAD_WAVE_GATE,
     SQUAD_WAVE_PERIOD_TICKS,
     SQUAD_WAVE_WINDOW_TICKS,
@@ -128,6 +131,24 @@ def buddies_near(belief: Belief, radius_px: float) -> int:
 # --- Formation forces -------------------------------------------------------------
 
 
+def separation_bias(belief: Belief) -> tuple[float, float] | None:
+    """A unit push-apart vector when ANY teammate is closer than SEPARATION_PX,
+    else None. (One grenade blast is 52px; stacked bodies block each other's
+    shots and eat friendly fire.) Split out of formation_bias (v25) so HOLDING
+    agents — which emit no other movement — can still unstack."""
+    if belief.self_xy is None:
+        return None
+    sx, sy = belief.self_xy
+    mates = _teammate_positions(belief)
+    if not mates:
+        return None
+    nearest = min(mates, key=lambda p: (p[0] - sx) ** 2 + (p[1] - sy) ** 2)
+    d = math.hypot(nearest[0] - sx, nearest[1] - sy)
+    if 0.5 < d < SQUAD_SEPARATION_PX:
+        return ((sx - nearest[0]) / d, (sy - nearest[1]) / d)
+    return None
+
+
 def formation_bias(belief: Belief) -> tuple[float, float] | None:
     """A movement-bias vector (unit-ish) from cohesion + separation, or None.
 
@@ -143,11 +164,12 @@ def formation_bias(belief: Belief) -> tuple[float, float] | None:
     if not mates:
         return None
 
+    sep = separation_bias(belief)
+    if sep is not None:
+        return sep
+
     nearest = min(mates, key=lambda p: (p[0] - sx) ** 2 + (p[1] - sy) ** 2)
     d = math.hypot(nearest[0] - sx, nearest[1] - sy)
-
-    if 0.5 < d < SQUAD_SEPARATION_PX:
-        return ((sx - nearest[0]) / d, (sy - nearest[1]) / d)
 
     if buddies_near(belief, SQUAD_COHESION_PX) < SQUAD_MIN_BUDDIES and d > SQUAD_COHESION_PX:
         squadmates = _teammate_positions(belief, squad_only=True)
@@ -162,6 +184,30 @@ def formation_bias(belief: Belief) -> tuple[float, float] | None:
         return ((target[0] - sx) / td, (target[1] - sy) / td)
 
     return None
+
+
+def spread_point(seat: int, pos: tuple[int, int]) -> tuple[int, int]:
+    """``pos`` offset by my rank so squadmates sharing an order fan out (v25).
+
+    Every member of a squad receives the SAME order point, and every member's A*
+    converges on the same cell — the root cause of the v24 stack-ups (teammates
+    body-blocking shots, FF kills at <15px, one grenade hitting the pile).
+    Rank-offset the point along y (0 / +SPREAD / -SPREAD — same scheme as the aim
+    sectors) so a 3-man squad holds a short vertical line across its lane instead
+    of one cell. Pure seat math, zero coordination; snapped to the nearest cover
+    cell so the spread doesn't push anyone into the open (falls back to the raw
+    offset point clamped on-map)."""
+    rank = rank_of(seat)
+    if rank == 0:
+        offset = 0
+    else:
+        sign = 1 if rank % 2 == 1 else -1
+        offset = sign * SQUAD_SPREAD_PX * ((rank + 1) // 2)
+    x, y = pos[0], min(max(pos[1] + offset, 20), MAP_H - 21)
+    if offset == 0:
+        return (x, y)
+    cover = mapdata.nearest_cover(x, y)
+    return cover if cover is not None else (x, y)
 
 
 # --- Wait-for-squad gating ----------------------------------------------------------
@@ -346,7 +392,9 @@ __all__ = [
     "rank_of",
     "rejoin_target",
     "sector_offset_brads",
+    "separation_bias",
     "should_wait_for_squad",
+    "spread_point",
     "squad_of",
     "squad_size",
     "squadmates_alive",

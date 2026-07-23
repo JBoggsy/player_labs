@@ -140,6 +140,10 @@ def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
                 belief.tick,
             )
             goal, opos, set_tick = belief.order
+        # Spread (v25): rank-offset the shared order point so the squad fans out
+        # across its lane instead of stacking on one cell (FF + splash safety).
+        if goal in ("H", "S", "P"):
+            opos = squads.spread_point(belief.seat, opos)
         if goal in ("H", "S"):
             if _dist(belief.self_xy, opos) <= HOLD_ARRIVE_PX * 2:
                 return Intent(kind="hold", reason="order_hold"), None

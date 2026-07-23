@@ -412,10 +412,13 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
         nav.note_progress(belief, self_xy)
         # Squad formation bias (v19): blend cohesion/separation into the waypoint
         # step. Exempt while carrying (run!), fetching (rejoin at the rally), or
-        # chasing a dynamic target (intercept/escort override formation).
+        # chasing a dynamic target (intercept/escort override formation). v25:
+        # the order-driven reasons (order_*) are included — v22-v24 never applied
+        # separation to ordered movement, so squads stacked on the order point.
         if (
             SQUADS
-            and intent.reason in ("steal", "to_hold")
+            and intent.reason
+            in ("steal", "to_hold", "order_to_hold", "order_push", "order_hunt")
             and not belief.i_carry_enemy_flag
         ):
             bias = squads.formation_bias(belief)
@@ -427,6 +430,18 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
                 )
         jitter = belief.nav_stuck_ticks >= STUCK_TICKS
         mask |= nav.octant_toward(self_xy, waypoint, jitter)
+    elif intent.kind == "hold" and SQUADS and not belief.i_carry_enemy_flag:
+        # Separation while HOLDING (v25): a holding agent emits no movement, so
+        # two stacked holders never unstack (FF kills at <15px, shared grenade
+        # splash). Push-apart is the only movement a hold makes.
+        sep = squads.separation_bias(belief)
+        if sep is not None:
+            belief.squad_cohesion_ticks += 1
+            step = (
+                int(self_xy[0] + sep[0] * NAV_CELL * 2),
+                int(self_xy[1] + sep[1] * NAV_CELL * 2),
+            )
+            mask |= nav.octant_toward(self_xy, step, False)
 
     # --- Combat overlay: aim + fire -----------------------------------------------
     enemy = _nearest_enemy(belief)

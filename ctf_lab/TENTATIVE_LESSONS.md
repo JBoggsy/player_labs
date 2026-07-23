@@ -32,6 +32,14 @@ the remaining uses are (a) enemy team lives (24 − enemy deaths) to gauge wipe 
 (b) own remaining respawns for risk calibration. docs/ctf-gameplay.md is stale on tiebreak,
 scoring (+100→+1/-1/-1), maxTicks (10000→5000), and spawn protect (removed GV20) — needs reconcile.
 
+### A shared order point + per-member A* = a stacked squad; spread must be structural, not a force
+Evidence: v22-v24 orders send every squad member to the SAME cell; the v19 separation force never
+applied to order-driven movement, and a HOLDING agent emits no movement at all — so squads stacked
+permanently at hold anchors (9,006 pair-snapshots <25px in the v24 batches; 3/5 beacon TKs at
+≤14px). Fix shape (v25): rank-offset the shared point (pure seat math, like aim sectors) + a
+separation-only nudge as the hold state's one permitted movement. Reactive forces can't fix a
+converged-target problem — the targets themselves must differ.
+
 ### The league runs the manifest VARIANT game_config, which overrides config.json — visionConeDeg is 45, not 60
 Evidence: repo config.json says visionConeDeg 60 (commit 15856d8 widened it), but the manifest's
 Default-variant game_config still says 45 — and a fresh v24 episode.json's game_config confirms 45

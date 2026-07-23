@@ -278,6 +278,12 @@ SQUAD_COHESION_PX = _env_int("BEACON_SQUAD_COHESION_PX", 120)
 SQUAD_MIN_BUDDIES = _env_int("BEACON_SQUAD_MIN_BUDDIES", 1)
 #: Separation: below this, steer apart (grenade blast 52px; bodies block shots).
 SQUAD_SEPARATION_PX = _env_int("BEACON_SQUAD_SEPARATION_PX", 40)
+#: Per-rank spread of a squad's ordered position (v25): members offset the shared
+#: order point by rank along y (0 / +SPREAD / -SPREAD), so a 3-man squad holds a
+#: short line instead of one cell. Must exceed SEPARATION_PX (or the separation
+#: force fights the anchors) and the 52px grenade blast diameter matters too:
+#: at 70px spacing one grenade can no longer hit two of us.
+SQUAD_SPREAD_PX = _env_int("BEACON_SQUAD_SPREAD_PX", 70)
 #: Attackers rally at this x on their own side before committing (mirror for blue).
 SQUAD_RALLY_X = _env_int("BEACON_SQUAD_RALLY_X", 450)
 #: Give up waiting for buddies after this long (dead mate: 72t respawn + walk).

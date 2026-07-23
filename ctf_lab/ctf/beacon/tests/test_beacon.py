@@ -957,6 +957,54 @@ def test_separation_pushes_apart_cohesion_pulls_together():
     assert bias is not None and bias[0] > 0
 
 
+def test_spread_point_fans_squad_across_lane():
+    from ctf.beacon import squads
+    from ctf.beacon.config import SQUAD_SPREAD_PX
+    # Squad A = seats 0,1,2 share one order point; spread must give 3 distinct
+    # points, rank 0 on the anchor, ranks 1/2 offset ~SPREAD_PX up/down (the
+    # exact y may snap to the nearest cover cell).
+    anchor = (390, 165)
+    pts = [squads.spread_point(seat, anchor) for seat in (0, 1, 2)]
+    assert len(set(pts)) == 3
+    assert pts[0] == anchor  # rank 0 holds the anchor itself
+    offsets = sorted(p[1] - anchor[1] for p in pts)
+    assert offsets[0] < -SQUAD_SPREAD_PX // 2  # one member well above
+    assert offsets[-1] > SQUAD_SPREAD_PX // 2  # one member well below
+
+
+def test_spread_point_clamps_on_map():
+    from ctf.beacon import squads
+    # An anchor at the map edge must not push a member off-map.
+    for seat in (0, 1, 2):
+        x, y = squads.spread_point(seat, (390, 10))
+        assert 0 <= y <= 658
+
+
+def test_ordered_hold_uses_spread_point():
+    from ctf.beacon import squads
+    # Two members of squad A obeying the same H order must navigate to
+    # DIFFERENT points (the v24 stacking root cause).
+    points = {}
+    for seat in (1, 2):
+        b = Belief(team="red", seat=seat, role="defender", alive=True, tick=100,
+                   self_xy=(200, 300))
+        b.order = ("H", (390, 165), 90)
+        intent, _ = decide_objective(b)
+        assert intent.kind == "navigate_to" and intent.reason == "order_to_hold"
+        points[seat] = intent.point
+    assert points[1] != points[2]
+
+
+def test_separation_bias_fires_only_when_stacked():
+    from ctf.beacon import squads
+    b = Belief(team="red", seat=5, alive=True, tick=100, self_xy=(400, 300))
+    b.teammates = (Enemy(pos=(410, 300), facing="left"),)  # 10px: stacked
+    sep = squads.separation_bias(b)
+    assert sep is not None and sep[0] < 0
+    b.teammates = (Enemy(pos=(500, 300), facing="left"),)  # 100px: fine
+    assert squads.separation_bias(b) is None
+
+
 def test_wave_gate_holds_outside_window_when_enabled(monkeypatch):
     from ctf.beacon import squads
     from ctf.beacon.config import SQUAD_WAVE_PERIOD_TICKS, SQUAD_WAVE_WINDOW_TICKS

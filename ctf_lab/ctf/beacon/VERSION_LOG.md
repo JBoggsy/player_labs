@@ -2,6 +2,27 @@
 
 Version → change mapping for the CTF `beacon` policy. Newest first.
 
+## v25 — squad spread: stop stacking on the order point (2026-07-23)
+
+**Why (human direction):** squads stack on top of each other — team kills from
+being right on top of each other are costing games. Warehouse (v24 batches):
+9,006 teammate-pair snapshots at <25px (vs 2,246 at 25-40), 3 of beacon's 5 team
+kills at ≤14px, stacks concentrated at the hold anchors (x≈336-344/368-378).
+Root cause: every squad member receives the SAME order point and A*s to the same
+cell; the v19 separation force only ever applied to `steal`/`to_hold` movement —
+never to order-driven movement (`order_*` reasons), and never to a HOLDING agent
+(hold emits no movement at all), so stacked holders stayed stacked forever.
+
+**Changes:** (1) **`squads.spread_point`** — members rank-offset a shared H/S/P
+order point along y (0 / +70 / -70 px, `BEACON_SQUAD_SPREAD_PX`, same scheme as
+the aim sectors; snapped to nearest cover, clamped on-map) so a 3-man squad
+holds a short line across its lane, one grenade can't splash two of us, and
+bodies don't block each other's lanes. (2) **Separation for ordered movement** —
+the formation bias now also applies to `order_to_hold`/`order_push`/`order_hunt`
+navigation. (3) **`squads.separation_bias`** (split out of formation_bias) —
+a HOLDING agent's only movement is now the push-apart nudge when a teammate is
+inside 40px. 95 tests.
+
 ## v24 — squad defaults: side-holds + middle push; order decay -> backoff (2026-07-23)
 
 **Why (human direction):** three command-layer changes. (v23 = the v22 image
