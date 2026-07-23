@@ -25,6 +25,10 @@ PORTAL_SETTLE_SECONDS = 20.0
 PORTAL_DESTINATION_RADIUS_YARDS = 150.0
 # Road anchors are corridor waypoints, not destinations — corridor-grade arrival.
 ROAD_ANCHOR_RADIUS_YARDS = 30.0
+# Proactive road routing kicks in for trips at least this long, when both ends
+# sit near graph anchors (structural: short trips are one corridor anyway).
+ROAD_TRIP_MIN_YARDS = 400.0
+ROAD_ANCHOR_NEAR_YARDS = 250.0
 
 
 class JourneyStatus(Enum):
@@ -64,6 +68,20 @@ class JourneyPlanner:
                 return JourneyResult(JourneyStatus.FAILED, reason="no_frame", legs=legs)
 
             if here.map_id == target.map_id:
+                # Proactive road routing: when the target is beyond one Detour
+                # corridor AND the world graph knows a road between here and
+                # there, walk the road anchors FIRST. v41 long-session evidence:
+                # recovery-only road use fired after the character was already
+                # wedged in the canyon dead-end (every move from inside the
+                # pocket stalls); the graph's own edge note says to take the
+                # south road instead of cutting straight — declared knowledge
+                # must shape the route before the trap, not after.
+                if self._should_take_road(here, target):
+                    graph_result = self._same_map_via_graph(
+                        bridge, target, deadline, legs)
+                    if graph_result is not None:
+                        return graph_result
+                    here = self.router._observe_position(bridge) or here
                 result = self.router.navigate_to(bridge, target, deadline=deadline)
                 legs.append(_leg("route", target, result.state.value, result.reason,
                                  route=result))
@@ -138,6 +156,24 @@ class JourneyPlanner:
                                          reason="journey_thrash", legs=legs)
                 continue
         return JourneyResult(JourneyStatus.FAILED, reason="deadline", legs=legs)
+
+    def _should_take_road(self, here: Point, target: Point) -> bool:
+        """Take the graph road when the trip is long and both ends have nearby
+        anchors whose road path is meaningfully articulated (≥2 walk edges —
+        a single edge adds nothing over the direct corridor)."""
+        if here.horizontal_distance(target) < ROAD_TRIP_MIN_YARDS:
+            return False
+        start = self.world.nearest_place(here, same_map=True)
+        goal = self.world.nearest_place(target, same_map=True)
+        if start is None or goal is None or start.name == goal.name:
+            return False
+        if start.point.horizontal_distance(here) > ROAD_ANCHOR_NEAR_YARDS:
+            return False
+        if goal.point.horizontal_distance(target) > ROAD_ANCHOR_NEAR_YARDS:
+            return False
+        path = self.world.plan(start.name, goal.name)
+        return path is not None and len(path) >= 2 and all(
+            e.kind == "walk" for e in path)
 
     def _same_map_via_graph(
         self, bridge, target: Point, deadline: float, legs: list[dict]
