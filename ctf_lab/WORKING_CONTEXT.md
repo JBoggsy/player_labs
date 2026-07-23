@@ -10,7 +10,27 @@ startup to resume; **update it as you learn** (keep it tight).
 
 ---
 
-## Status (2026-07-23, session 7): **v22 SQUAD COMMAND — leader orders + respawn discipline; wins→draws shift**
+## Status (2026-07-23, session 7b): **v23 SUBMITTED+CHAMPION; v24 side-holds — near-stalemate-proof vs focusfire**
+
+**v23 = v22 image, re-uploaded + submitted under the DEFAULT player** (v22 had
+silently bound to the secondary player `seedtest-base-newcomer` — the bare coworld
+tool did this with NO active session; check bindings via
+`/stats/policy-versions?player_id=…` before submitting). Qualified → champion.
+
+**v24 (uploaded, NOT submitted):** (1) squads renamed **A(0-2)/B(5-7) side squads,
+C(3-4) middle pair**; (2) new defaults: A holds TOP lane, B holds BOTTOM (choke
+line y 165/494), C pushes middle; (3) **order decay → backoff-hold** (stale order =
+self-issued H stepped 70px home if forward of rally, in place otherwise; live
+leader O overrides). 91 tests.
+
+**v24 measurement: vs focusfire 0W/9D/1L** (v22: 0/6/4; v21: 0/0/10) — the
+side-hold structure nearly stalemate-proofs the phase machine. **vs h006 1W/5D/4L**
+(v22: 0/3/7). Draw lives-margins: we out-bank them in some (11-5, 8-5) but most
+draws show 1-2 lives ours vs 4-8 theirs — h006 wins the attrition inside the draws.
+**The CONVERT-TRIGGER gap is now the single dominant lever**: 14 draws in 20 games,
+several with big banked leads, zero conversion attempts. League entry: v23.
+
+## (prior) Status (2026-07-23, session 7): **v22 SQUAD COMMAND — leader orders + respawn discipline; wins→draws shift**
 
 **Principle recorded** (user_preferences.md): lives > captures. Verified sharper at
 0.7.69: timeout = SCORELESS DRAW (no lives tiebreak) — so lives are the resource to
