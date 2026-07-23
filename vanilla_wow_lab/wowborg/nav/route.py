@@ -35,7 +35,11 @@ from wowborg.nav.local import (
 from wowborg.nav.world_model import Point
 
 # Structural constants (not zone calibration):
-REPLAN_LIMIT_PER_REGION = 2     # planning attempts from ~the same spot before failing
+# Planning attempts from ~the same spot before failing. 4 gives the recovery
+# ladder room to run: direct retry → midpoint staging → quarter staging → fail
+# (v36 one-shot proof: canyon-mouth arrived 1/4 — oscillation at the canyon lip
+# burned both replans before the second staging rung could try).
+REPLAN_LIMIT_PER_REGION = 4
 SAME_SPOT_YARDS = 20.0
 BUDGET_SLACK = 1.8              # x planned_time; generous — the pace estimate tightens it
 BUDGET_FLOOR_SECONDS = 45.0
@@ -111,7 +115,7 @@ class RouteNavigator:
         combat_pauses = deaths = replans = 0
         walked_seconds = 0.0
         replan_spots: list[Point] = []
-        stage_next = False  # after a stall/oscillation: stage via mid-corridor once
+        stage_attempt = 0  # consecutive stalls: 0 = direct, then corridor 1/2, 1/4…
 
         here = self._observe_position(bridge)
         if here is None:
@@ -228,21 +232,24 @@ class RouteNavigator:
                     else:
                         # Walk to the partial end, then re-plan onward from there.
                         arrival_check = partial_end
-                if stage_next and len(plan.waypoints) >= 4:
-                    # Post-stall staging: the direct semantic move keeps failing on
-                    # the same local terrain (v32: sarkoth ramp — six oscillation
-                    # re-plans at the mesa base, each retrying the same heading).
-                    # Route one leg to the corridor MIDPOINT: a different local
-                    # goal makes the executor commit to the corridor's own geometry
-                    # (the ramp) rather than the straight-line heading.
-                    midpoint = _pt(plan.waypoints[len(plan.waypoints) // 2],
-                                   target.map_id)
-                    if here.distance(midpoint) > STAGE_ARRIVAL_RADIUS_YARDS:
-                        arrival_check = midpoint
+                if stage_attempt > 0 and len(plan.waypoints) >= 4:
+                    # Post-stall staging ladder: the direct semantic move keeps
+                    # failing on the same local terrain (v32: sarkoth ramp — six
+                    # oscillation re-plans, each retrying the same heading).
+                    # Route one leg to a corridor interior point — midpoint first,
+                    # then closer fractions (1/4, 1/8 …) on repeated stalls: a
+                    # NEARBY intermediate goal makes the executor commit to the
+                    # corridor's own geometry (the ramp / canyon mouth) instead
+                    # of the straight-line heading (v36: the midpoint alone was
+                    # still past the canyon lip and reproduced the oscillation).
+                    index = max(1, len(plan.waypoints) // (2 ** stage_attempt))
+                    stage_point = _pt(plan.waypoints[index], target.map_id)
+                    if here.distance(stage_point) > STAGE_ARRIVAL_RADIUS_YARDS:
+                        arrival_check = stage_point
                         self._trace("nav_state", state="staging",
-                                    via=[round(midpoint.x), round(midpoint.y),
-                                         round(midpoint.z)])
-                stage_next = False
+                                    rung=stage_attempt,
+                                    via=[round(stage_point.x), round(stage_point.y),
+                                         round(stage_point.z)])
             result.planned_distance = max(result.planned_distance, planned_distance)
 
             budget = max(
@@ -295,7 +302,8 @@ class RouteNavigator:
                             planned_distance=result.planned_distance,
                             walked_seconds=walked_seconds,
                             combat_pauses=combat_pauses, deaths=deaths, replans=replans)
-                    break  # reached a partial end / projection → re-plan onward
+                    stage_attempt = 0  # a leg landed — the stall is behind us
+                    break  # reached a partial end / projection / stage → re-plan onward
 
                 if move.status == LocalMoveStatus.COMBAT:
                     combat_pauses += 1
@@ -336,7 +344,7 @@ class RouteNavigator:
 
                 if move.status in (LocalMoveStatus.STALLED, LocalMoveStatus.OSCILLATING):
                     walk_failed = move.status.value
-                    stage_next = True  # try the corridor midpoint on the re-plan
+                    stage_attempt += 1  # next re-plan stages deeper into the corridor
                     break
 
                 if move.status == LocalMoveStatus.NO_FRAME:
