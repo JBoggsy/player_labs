@@ -167,3 +167,32 @@ The nav /goal closed by baking BRAND-NEW station JSON into the image (--stations
 and racing it untouched: v37 4/4 episodes 100% reach + 100% honesty, v38 repeat with only
 deadline (physics) misses. "Generalize" claims need this shape of evidence — a fresh
 challenge, zero code deltas, first try.
+
+## The fast nav-iteration loop: run the real planner locally (route lab)
+Hosted batches cost ~20min (custom-fresh-start) to ~1h (persistent) per signal. The
+pinned GAME image carries the complete world navmesh (1,783 mmap tiles) + the
+vmangos-navmesh-helper binary — mounting our nav code into it and driving L1/L2 with an
+idealized executor that walks REAL Detour corridors validates every planning decision
+(reachability verdicts, partials, road routing, world-model coordinates, portal pads)
+in ~10min for a 13-station catalog. tools/route_lab.sh. Split what each channel owns:
+route lab = planning correctness; hosted = executor locomotion + control-seam behavior.
+Lesson generalizes: when the hosted loop is slow, find which HALF of the system the
+iteration actually exercises and build a local rig for just that half.
+
+## Nav must FLEE losing fights, not fight them (mobs leash)
+v42: a level-1 character crossing Razormane territory (level 6-10 camps) 'yielded to
+the combat planner' on every pull and died 7 times in one road leg. Real low-level
+players run through hostile territory — open-world mobs leash. The combat pause
+handler should keep selecting the movement action (flee toward the hop) and only fall
+back to fighting when movement itself is refused. 'Yield to combat' is the
+correct-looking wrong default, second edition (v26 was pause-vs-run-through; this is
+fight-vs-flee once paused).
+
+## Authoritative world data lives in the game repo's decision graph — never guess coordinates
+bots/decision/graph_data.py carries the executor's own navigation anchors (exact _jp
+points incl. the south-road chain with the note 'leave the starter valley through the
+southern road pass instead of cutting straight') and bots/decision/fast_travel.py
+carries portal pads/destinations with evidence citations (AreaTrigger.dbc, VMAP/MMAP
+floor). Our guessed Orgrimmar coordinates were 50-90yd off and the Cleft z was wrong by
+56yd; the guessed direct-line route was exactly the canyon trap the road chain exists
+to avoid. Check the game repo for declared knowledge BEFORE hand-authoring world data.
