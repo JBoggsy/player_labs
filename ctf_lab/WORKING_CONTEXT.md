@@ -10,7 +10,37 @@ startup to resume; **update it as you learn** (keep it tight).
 
 ---
 
-## Status (2026-07-22, session 6d): **v18 CHAT built + verified live; hearing A/B = NULL**
+## Status (2026-07-22, session 6e): **v18 SUBMITTED+CHAMPION (rank 3-4!); v19/v20 squad play built; platform churning**
+
+**v18 submitted (human go-ahead) → qualified → champion.** Standings recovered
+dramatically as blind-v6 rounds washed out: rank 3 @ 0.62 at submission, rank 4
+@ 0.48 later (Alex Smith 1st, daveey 2nd, softmaxwell 3rd — close race).
+
+**v19 squad play** (design: docs/designs/ctf-squad-play-design.md): seat-deterministic
+squads (D=0-2, A1=3-4, A2=5-7) + anonymous flocking (separation<40px, cohesion@120px)
++ rally wave-gating + rank-offset aim sectors (0/±50 brads). **v19's buddy-sensing
+rally gate DEADLOCKED** (fog hides squadmates — everyone aims enemy-ward; 153
+wait-ticks/agent, wins collapsed). **v20 fix: tick-synchronized wave windows**
+(commit only in first 36t of each 120t period — pure tick function, zero sensing).
+NOTE: nameplates (alpha-theta IDs) are being added upstream (human) — when they land,
+cohesion can upgrade to true squadmate identity in squads.py locally.
+
+**v20 measurement PARTIAL, and the numbers are murky for platform reasons:**
+- League redeployed 0.7.66 mid-iteration: **maxTicks 10000→5000, spawnProtectTicks
+  REMOVED** (arena/labels/constants otherwise unchanged; reader re-pinned 2641542).
+  All cross-version baselines invalid; games now often end at the 5000t limit.
+- vs h006: **0-10** (v20), acc 0.661 held, wave-gate still expensive (162 wait
+  ticks/agent — the window idles attackers h006's blitz punishes).
+- vs focusfire: TWO consecutive xreqs deleted server-side (404 minutes after
+  create); division memberships list currently EMPTY — platform restructure in
+  progress. Measurement blocked until it settles.
+**Open decision:** squad wave-gating looks net-negative vs blitz opponents under
+maxTicks 5000 (tempo cost doubled). Candidates: shrink period/window, gate waves to
+non-blitz opponents, or drop wave-gating and keep sectors+flocking (knobs allow
+BEACON_SQUAD_* A/B). v15 remains prior champion entry; v18 current champion; v19/v20
+uploads inert.
+
+## (prior) Status (2026-07-22, session 6d): **v18 CHAT built + verified live; hearing A/B = NULL**
 
 **Hearing A/B (subagent, n=40/arm vs focusfire:v36, pre-registered):** REFUTED/NULL —
 ON 7/40 vs OFF 8/40 wins, Fisher p=1.0, diff −2.5pp CI [−19.7,+14.8]. Manipulation
