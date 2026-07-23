@@ -178,13 +178,29 @@ class WorldRacePolicy:
             return
 
         done_names = {r["name"] for r in self.results}
-        for name in self.course:
-            if name in done_names:
-                continue
+        while True:
+            pending = [n for n in self.course if n not in done_names]
+            if not pending:
+                break
             remaining = until - time.monotonic()
             if remaining <= 30.0:
                 log("out of session time; stopping course")
                 break
+            # Nearest-first visiting order (v31: random order criss-crossed the
+            # map — Orgrimmar out, back past the start to Razor Hill — and later
+            # stations starved). Straight-line is a fine ordering heuristic;
+            # journeys still follow real routes.
+            here = journey.router._observe_position(bridge)
+            if here is not None:
+                pending.sort(
+                    key=lambda n: (
+                        self.stations[n][0].map_id != here.map_id,  # same map first
+                        self.stations[n][0].horizontal_distance(here)
+                        if self.stations[n][0].map_id == here.map_id else 0.0,
+                    )
+                )
+            name = pending[0]
+            done_names.add(name)
             point, region, expected = self.stations[name]
             station_deadline = time.monotonic() + max(
                 60.0, remaining * STATION_DEADLINE_FRACTION

@@ -290,7 +290,11 @@ class RouteNavigator:
                                            combat_pauses=combat_pauses, deaths=deaths,
                                            replans=replans)
                     here = self._observe_position(bridge) or here
-                    break  # re-plan from wherever combat left us (budget clock was paused)
+                    # Same target, same plan — resume the walk directly (v31: a
+                    # full re-plan after every canyon fight cost a plan round
+                    # trip + empty-partial churn per pull; budget clock was
+                    # paused either way).
+                    continue
 
                 if move.status == LocalMoveStatus.DEAD:
                     deaths += 1
