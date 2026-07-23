@@ -128,20 +128,30 @@ def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
     if SQUAD_COMMAND and belief.order is not None and belief.self_xy is not None:
         goal, opos, set_tick = belief.order
         if belief.tick - set_tick > ORDER_TTL_TICKS:
-            belief.order = None  # stale — fall through to the static defaults
-        else:
-            if goal in ("H", "S"):
-                if _dist(belief.self_xy, opos) <= HOLD_ARRIVE_PX * 2:
-                    return Intent(kind="hold", reason="order_hold"), None
-                return Intent(kind="navigate_to", point=opos, reason="order_to_hold"), None
-            if goal == "P":
-                if _dist(belief.self_xy, opos) <= HOLD_ARRIVE_PX * 2:
-                    return Intent(kind="hold", reason="order_push_arrived"), None
-                return Intent(kind="navigate_to", point=opos, reason="order_push"), None
-            if goal == "T":
-                return Intent(kind="navigate_to", point=opos, reason="order_hunt"), None
-            if goal == "F":
-                return Intent(kind="navigate_to", point=PEDESTAL[enemy], reason="steal"), "steal"
+            # Order DECAY (v24): a member whose order went stale (leader dead /
+            # out of earshot) backs off into a HOLD at its position stepped
+            # toward home — the same posture as losing a teammate. No orders =
+            # no coordination = no business pushing (lives > captures). The
+            # self-issued hold refreshes its own TTL; a live leader overrides
+            # it on the next heard O.
+            belief.order = (
+                "H",
+                squads.decay_hold_point(belief),
+                belief.tick,
+            )
+            goal, opos, set_tick = belief.order
+        if goal in ("H", "S"):
+            if _dist(belief.self_xy, opos) <= HOLD_ARRIVE_PX * 2:
+                return Intent(kind="hold", reason="order_hold"), None
+            return Intent(kind="navigate_to", point=opos, reason="order_to_hold"), None
+        if goal == "P":
+            if _dist(belief.self_xy, opos) <= HOLD_ARRIVE_PX * 2:
+                return Intent(kind="hold", reason="order_push_arrived"), None
+            return Intent(kind="navigate_to", point=opos, reason="order_push"), None
+        if goal == "T":
+            return Intent(kind="navigate_to", point=opos, reason="order_hunt"), None
+        if goal == "F":
+            return Intent(kind="navigate_to", point=PEDESTAL[enemy], reason="steal"), "steal"
 
     # Rung 4 fallback (no live order / SQUAD_COMMAND off): the static role split.
     if belief.role == "defender" and belief.hold_point is not None:

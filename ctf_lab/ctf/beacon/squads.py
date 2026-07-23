@@ -5,8 +5,9 @@ visible teammates are ANONYMOUS (`player <color> <side>` — no identity), so sq
 logic splits into:
 
   * **membership** — a pure function of seat (like roles and item claims): every
-    agent computes the same table, no negotiation. D = seats 0-2 (defenders),
-    A1 = 3-4 (steal pair), A2 = 5-7 (second wave). Within-squad **rank** = my
+    agent computes the same table, no negotiation. A = seats 0-2 and B = 5-7
+    (the 3-person side squads), C = 3-4 (the 2-person middle squad, v24).
+    Within-squad **rank** = my
     index in the squad tuple; rank drives aim sectors.
   * **anonymous flocking** — cohesion/separation forces computed from visible or
     tracked teammates; any nearby teammate is squad-enough. (When nameplates land
@@ -30,7 +31,6 @@ from ctf.beacon.config import (
     BACKOFF_STEP_PX,
     CHOKE_X,
     MAP_W,
-    PEDESTAL,
     PRESENCE_STALE_TICKS,
     REJOIN_CONTACT_PX,
     SQUAD_COHESION_PX,
@@ -38,6 +38,8 @@ from ctf.beacon.config import (
     SQUAD_RALLY_X,
     SQUAD_SECTOR_BRADS,
     SQUAD_SEPARATION_PX,
+    SQUAD_SIDE_HOLD_Y_BOTTOM,
+    SQUAD_SIDE_HOLD_Y_TOP,
     SQUAD_WAVE_GATE,
     SQUAD_WAVE_PERIOD_TICKS,
     SQUAD_WAVE_WINDOW_TICKS,
@@ -46,15 +48,16 @@ from ctf.beacon.config import (
 from ctf.beacon.types import Belief, Team
 
 #: The squad tables: seat -> (squad name, member seats in rank order).
+#: A and B are the 3-person side squads; C is the 2-person middle squad (v24).
 _SQUAD_OF: dict[int, tuple[str, tuple[int, ...]]] = {}
-for _name, _seats in (("D", (0, 1, 2)), ("A1", (3, 4)), ("A2", (5, 6, 7))):
+for _name, _seats in (("A", (0, 1, 2)), ("C", (3, 4)), ("B", (5, 6, 7))):
     for _s in _seats:
         _SQUAD_OF[_s] = (_name, _seats)
 
 
 def squad_of(seat: int) -> tuple[str, tuple[int, ...]]:
     """(squad name, member seats in rank order) for a seat."""
-    return _SQUAD_OF.get(seat, ("A2", (5, 6, 7)))
+    return _SQUAD_OF.get(seat, ("B", (5, 6, 7)))
 
 
 def rank_of(seat: int) -> int:
@@ -269,16 +272,34 @@ def lead_squad(belief: Belief) -> None:
         if belief.order is None or belief.order[0] != "H":
             belief.backoff_events += 1
     else:
-        enemy = "blue" if team == "red" else "red"
-        if name == "D":
-            goal, pos = "H", (CHOKE_X[team], 329)
-        elif name == "A1":
-            goal, pos = "F", PEDESTAL[enemy]
-        else:  # A2: push the midfield approach to the enemy pedestal
-            goal, pos = "P", ((PEDESTAL[enemy][0] + 617) // 2, 329)
+        # Defaults (v24): the two 3-person squads HOLD the two side lanes on our
+        # choke line (top for A, bottom for B — sectors watch the approaches);
+        # the 2-person C squad PUSHES the middle. Side-holds anchor the field
+        # and punish flanking blitzes; C probes and creates flag pressure.
+        if name == "A":
+            goal, pos = "H", (CHOKE_X[team], SQUAD_SIDE_HOLD_Y_TOP)
+        elif name == "B":
+            goal, pos = "H", (CHOKE_X[team], SQUAD_SIDE_HOLD_Y_BOTTOM)
+        else:  # C: push the middle
+            goal, pos = "P", (617, 329)
 
     if belief.order is None or belief.order[0] != goal or belief.order[1] != pos:
         belief.order = (goal, pos, tick)
+
+
+def decay_hold_point(belief: Belief) -> tuple[int, int]:
+    """Where a member whose ORDER went stale should back off to and hold (v24):
+    its own position stepped toward home — the same posture as a squad losing a
+    member. A stale order means the leader is dead or out of earshot; without
+    coordination, holding beats pushing (lives > captures).
+
+    The step applies only FORWARD of the rally line; behind it we hold in place —
+    otherwise repeated decays (leader stays dead) would creep us all the way to
+    our own wall."""
+    assert belief.self_xy is not None and belief.team is not None
+    if past_rally(belief.team, belief.self_xy[0]):
+        return _home_step(belief.team, belief.self_xy, BACKOFF_STEP_PX)
+    return belief.self_xy
 
 
 def rejoin_target(belief: Belief) -> tuple[int, int] | None:
@@ -314,6 +335,7 @@ def in_squad_contact(belief: Belief) -> bool:
 
 __all__ = [
     "buddies_near",
+    "decay_hold_point",
     "formation_bias",
     "in_squad_contact",
     "lead_squad",

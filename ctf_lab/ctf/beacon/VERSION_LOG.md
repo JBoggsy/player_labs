@@ -2,6 +2,23 @@
 
 Version → change mapping for the CTF `beacon` policy. Newest first.
 
+## v24 — squad defaults: side-holds + middle push; order decay -> backoff (2026-07-23)
+
+**Why (human direction):** three command-layer changes. (v23 = the v22 image
+re-uploaded under the default player after v22 silently bound to the secondary
+player 'seedtest-base-newcomer' — identity fix only, SUBMITTED + champion.)
+
+**Changes:** (1) **Squads renamed A/B/C**: A = seats 0-2 and B = 5-7 (3-person
+side squads), C = 3-4 (2-person middle squad). (2) **New defaults**: A holds the
+TOP side lane and B the BOTTOM (both at the choke line, y 165/494 — the map's
+lane bands); C PUSHES the middle (617, 329). Anchors the field against flank
+blitzes; C probes and creates pressure. (3) **Order decay -> backoff-hold**: a
+member whose order goes stale (leader dead/out of earshot) now self-issues H at
+its position stepped 70px toward home — same posture as losing a teammate —
+instead of falling through to the old static role split. Behind the rally line
+it holds in place (no home-creep from repeated decays). A live leader's next O
+overrides immediately. 91 tests.
+
 ## v22 — squad command: leader orders, flexible goals, respawn discipline (2026-07-23)
 
 **Why (human direction):** squads' fixed behaviors -> flexible, leader-set goals;

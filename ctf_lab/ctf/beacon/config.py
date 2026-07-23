@@ -308,6 +308,11 @@ BACKOFF_STEP_PX = _env_int("BEACON_BACKOFF_STEP_PX", 70)
 REJOIN_TIMEOUT_TICKS = _env_int("BEACON_REJOIN_TIMEOUT_TICKS", 360)
 #: Rejoin ends when a squadmate is confirmed within this range (badge or ping).
 REJOIN_CONTACT_PX = _env_int("BEACON_REJOIN_CONTACT_PX", 160)
+#: Default squad-hold anchors (v24): A holds the TOP side lane, B the BOTTOM,
+#: both on the choke line; C pushes the middle. Y values match the map's lane
+#: structure (obstacles column y-bands; map height 659).
+SQUAD_SIDE_HOLD_Y_TOP = _env_int("BEACON_SQUAD_SIDE_HOLD_Y_TOP", 165)
+SQUAD_SIDE_HOLD_Y_BOTTOM = _env_int("BEACON_SQUAD_SIDE_HOLD_Y_BOTTOM", 494)
 
 # --- Roles (v2) -------------------------------------------------------------------
 # CTF games (vs the baseline) are decided by WIPE, not capture (see TENTATIVE_LESSONS):

@@ -932,7 +932,7 @@ def test_squad_membership_covers_all_seats_deterministically():
         assert seat in seats
         assert squads.rank_of(seat) == seats.index(seat)
         seen.setdefault(name, set()).add(seat)
-    assert seen == {"D": {0, 1, 2}, "A1": {3, 4}, "A2": {5, 6, 7}}
+    assert seen == {"A": {0, 1, 2}, "C": {3, 4}, "B": {5, 6, 7}}
 
 
 def test_sector_offsets_spread_by_rank():
@@ -1091,7 +1091,9 @@ def test_leader_backs_off_when_squadmate_lost():
                 self_xy=(700, 300))
     b2.presence = {6: 4950, 7: 4990}
     squads.lead_squad(b2)
-    assert b2.order is not None and b2.order[0] == "P"
+    # v24 default for B (seats 5-7): HOLD the bottom side lane.
+    assert b2.order is not None and b2.order[0] == "H"
+    assert b2.order[1][1] > 400  # bottom-side anchor
 
 
 def test_death_snapshots_rejoin_and_respawn_enters_rejoin():
@@ -1121,3 +1123,47 @@ def test_rejoin_exits_on_squad_contact():
     b.teammates = (Enemy(pos=(660, 350), facing="left", identity=7),)
     intent, _ = decide_objective(b)
     assert b.rejoin_until == -1 and intent.reason != "rejoin"
+
+
+# --- v24: squad defaults + order decay ------------------------------------------------
+
+
+def test_v24_default_orders_side_holds_and_middle_push():
+    from ctf.beacon import squads
+    from ctf.beacon.config import CHOKE_X
+    # A leader (seat 0): hold TOP side at the choke.
+    a = Belief(team="red", seat=0, alive=True, tick=100, self_xy=(200, 329))
+    a.presence = {1: 95, 2: 96}
+    squads.lead_squad(a)
+    assert a.order[0] == "H" and a.order[1] == (CHOKE_X["red"], 165)
+    # B leader (seat 5): hold BOTTOM side.
+    b = Belief(team="red", seat=5, alive=True, tick=100, self_xy=(200, 329))
+    b.presence = {6: 95, 7: 96}
+    squads.lead_squad(b)
+    assert b.order[0] == "H" and b.order[1] == (CHOKE_X["red"], 494)
+    # C leader (seat 3): push the middle.
+    c = Belief(team="red", seat=3, alive=True, tick=100, self_xy=(200, 329))
+    c.presence = {4: 95}
+    squads.lead_squad(c)
+    assert c.order[0] == "P" and c.order[1] == (617, 329)
+
+
+def test_order_decay_becomes_backoff_hold():
+    from ctf.beacon.config import ORDER_TTL_TICKS
+    # Seat 6 (member, not leader) holds a stale P order, forward of the rally.
+    b = Belief(team="red", seat=6, role="attacker", alive=True, self_xy=(700, 300))
+    b.tick = 1000
+    b.order = ("P", (900, 329), 1000 - ORDER_TTL_TICKS - 1)  # stale
+    intent, _ = decide_objective(b)
+    # Decayed into a self-issued hold, stepped back toward home.
+    assert b.order[0] == "H" and b.order[1][0] < 700
+    assert intent.reason in ("order_to_hold", "order_hold")
+
+
+def test_order_decay_behind_rally_holds_in_place():
+    from ctf.beacon.config import ORDER_TTL_TICKS
+    b = Belief(team="red", seat=6, role="attacker", alive=True, self_xy=(300, 300))
+    b.tick = 1000
+    b.order = ("P", (900, 329), 1000 - ORDER_TTL_TICKS - 1)  # stale, we're home-side
+    decide_objective(b)
+    assert b.order[0] == "H" and b.order[1] == (300, 300)  # no home-creep
