@@ -139,3 +139,31 @@ v26: every wolf pull paused a 2000yd haul for a full fight → 0.86 yd/s effecti
 being in combat; only yield to the fight when health is actually threatened (<50%) or
 the executor keeps getting interrupted (stall streak). "Pause on combat" is the
 correct-looking but wrong default for a navigation layer.
+
+## Detour findPath pool truncation: partial corridors end at a heuristic frontier, not at truth
+The navmesh helper's findPath has a node-pool limit; long queries return partial corridors
+whose last waypoint is the pool's heuristic-closest node — often up a cliff face or 26yd
+into a 1000yd route. Never treat a partial's reach as evidence about the TARGET. Corollary:
+"walk my own plan waypoint-by-waypoint" is worse than "hand the executor the semantic goal"
+when the executor has its own server-side planner — our micro-hops toward pool frontiers
+drove it into projection-exhaustion traps its own corridor logic avoids.
+
+## The recovery ladder needs replan budget to run
+A one-shot recovery (single midpoint stage) silently degrades to zero recoveries when the
+same-spot replan limit is smaller than the ladder length. Size REPLAN_LIMIT ≥ ladder rungs
++ 1, and reset the ladder on any successful leg (v36 canyon-mouth: 1/4 → 4/4 after making
+staging a 1/2→1/4→… ladder with limit 4).
+
+## Benchmark scoring must separate navigation verdicts from session-length verdicts
+Once nav was correct, remaining "failures" were physics: the nim_control seam moves ~17yd
+per ~7.6s settle cycle (server caps 8 corridor waypoints/settlement) ≈ 2.2yd/s best case.
+A 970s session simply cannot reach a 2000yd station. Score those as
+skipped_insufficient_time (excluded from reachability) via a world-graph travel estimate,
+or the benchmark punishes the policy for the platform's pace and every batch reads as a
+nav regression.
+
+## One-shot generality is provable: ship the challenge as data and change nothing
+The nav /goal closed by baking BRAND-NEW station JSON into the image (--stations build arg)
+and racing it untouched: v37 4/4 episodes 100% reach + 100% honesty, v38 repeat with only
+deadline (physics) misses. "Generalize" claims need this shape of evidence — a fresh
+challenge, zero code deltas, first try.
