@@ -69,6 +69,27 @@ def log(message: str) -> None:
     print(f"WOWBORG-POLICY {message}", flush=True)
 
 
+def _travel_estimate_yards(world, here: Point | None, target: Point) -> float | None:
+    """Straight-line travel estimate; cross-map targets route over the world graph
+    (walk-edge cost hints + the final same-map stretch). None when unknown."""
+    if here is None:
+        return None
+    if target.map_id == here.map_id:
+        return here.horizontal_distance(target)
+    start = world.nearest_place(here, same_map=True)
+    candidates = [p for p in world.places.values() if p.point.map_id == target.map_id]
+    if start is None or not candidates:
+        return None
+    goal = min(candidates, key=lambda p: p.point.horizontal_distance(target))
+    path = world.plan(start.name, goal.name)
+    if path is None:
+        return None
+    yards = here.horizontal_distance(start.point)
+    yards += sum(e.cost_hint for e in path)
+    yards += goal.point.horizontal_distance(target)
+    return yards
+
+
 def load_stations() -> dict[str, tuple[Point, str, str]]:
     raw = os.environ.get(STATIONS_ENV)
     if not raw:
@@ -211,16 +232,21 @@ class WorldRacePolicy:
             name = pending[0]
             done_names.add(name)
             point, region, expected = self.stations[name]
-            share = remaining * STATION_DEADLINE_FRACTION
+            # The last pending station gets the whole remaining session; otherwise
+            # the fair-share fraction protects the rest of the course.
+            share = (remaining - 30.0 if len(pending) == 1
+                     else remaining * STATION_DEADLINE_FRACTION)
             # Physically-honest skip: if even at full moving pace (no combat, no
             # replans) the station can't be reached inside its fair share of the
             # session, don't burn the course walking toward it — record
             # skipped_insufficient_time and move on. v33 evidence: Orgrimmar
             # stations ~2000yd out need ~15-25min through the seam; walking at
             # them ate 340-530s per episode and starved everything after.
-            if (expected == "reachable" and here is not None
-                    and point.map_id == here.map_id):
-                optimistic_seconds = point.horizontal_distance(here) / OPTIMISTIC_PACE_YDS_PER_S
+            # Cross-map stations estimate over the world graph (v34: RFC journeys
+            # route through Orgrimmar — ~2500yd the same-map check never saw).
+            travel_yards = _travel_estimate_yards(journey.world, here, point)
+            if expected == "reachable" and travel_yards is not None:
+                optimistic_seconds = travel_yards / OPTIMISTIC_PACE_YDS_PER_S
                 if optimistic_seconds > share:
                     row = {
                         "name": name, "region": region, "expected": expected,
