@@ -111,6 +111,7 @@ class RouteNavigator:
         combat_pauses = deaths = replans = 0
         walked_seconds = 0.0
         replan_spots: list[Point] = []
+        stage_next = False  # after a stall/oscillation: stage via mid-corridor once
 
         here = self._observe_position(bridge)
         if here is None:
@@ -227,6 +228,21 @@ class RouteNavigator:
                     else:
                         # Walk to the partial end, then re-plan onward from there.
                         arrival_check = partial_end
+                if stage_next and len(plan.waypoints) >= 4:
+                    # Post-stall staging: the direct semantic move keeps failing on
+                    # the same local terrain (v32: sarkoth ramp — six oscillation
+                    # re-plans at the mesa base, each retrying the same heading).
+                    # Route one leg to the corridor MIDPOINT: a different local
+                    # goal makes the executor commit to the corridor's own geometry
+                    # (the ramp) rather than the straight-line heading.
+                    midpoint = _pt(plan.waypoints[len(plan.waypoints) // 2],
+                                   target.map_id)
+                    if here.distance(midpoint) > STAGE_ARRIVAL_RADIUS_YARDS:
+                        arrival_check = midpoint
+                        self._trace("nav_state", state="staging",
+                                    via=[round(midpoint.x), round(midpoint.y),
+                                         round(midpoint.z)])
+                stage_next = False
             result.planned_distance = max(result.planned_distance, planned_distance)
 
             budget = max(
@@ -320,6 +336,7 @@ class RouteNavigator:
 
                 if move.status in (LocalMoveStatus.STALLED, LocalMoveStatus.OSCILLATING):
                     walk_failed = move.status.value
+                    stage_next = True  # try the corridor midpoint on the re-plan
                     break
 
                 if move.status == LocalMoveStatus.NO_FRAME:
