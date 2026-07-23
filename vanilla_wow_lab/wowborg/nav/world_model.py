@@ -70,6 +70,18 @@ PLACES: dict[str, Place] = {
     "valley-spawn": Place("valley-spawn", Point(1, -618.518, -4251.67, 38.718)),
     "valley-gate": Place("valley-gate", Point(1, -359.7, -4309.8, 49.9)),
     "senjin-village": Place("senjin-village", Point(1, -797.5, -4921.2, 23.0)),
+    # The south road out of the Valley of Trials (graph_data.py chain; its own
+    # note: "leave the starter valley through the southern road pass instead of
+    # cutting straight at Razor Hill" — the direct east line dead-ends at the
+    # canyon wall, which is where v25-v40 razor-hill attempts all died).
+    "valley-south-pass": Place("valley-south-pass", Point(1, -582.795, -4550.96, 42.725)),
+    "south-road-west": Place("south-road-west", Point(1, -610.798, -4599.89, 41.444)),
+    "canyon-west": Place("canyon-west", Point(1, -498.031, -4687.444, 38.529)),
+    "canyon-mid": Place("canyon-mid", Point(1, -298.267, -4687.733, 43.585)),
+    "canyon-lower-west": Place("canyon-lower-west", Point(1, -225.0, -4684.0, 39.0)),
+    "canyon-lower-east": Place("canyon-lower-east", Point(1, -190.0, -4660.0, 38.0)),
+    "canyon-east": Place("canyon-east", Point(1, -104.735, -4650.149, 35.219)),
+    "razormane-road": Place("razormane-road", Point(1, 18.233, -4617.23, 44.73)),
     "razor-hill-south": Place("razor-hill-south", Point(1, 267.9, -4625.4, 17.1)),
     "razor-hill": Place("razor-hill", Point(1, 315.0, -4743.0, 9.0)),
     "northern-durotar": Place("northern-durotar", Point(1, 1031.733, -4597.333, 23.819)),
@@ -89,7 +101,16 @@ PLACES: dict[str, Place] = {
 EDGES: list[Edge] = [
     Edge("walk", "valley-spawn", "valley-gate", cost_hint=280),
     Edge("walk", "valley-spawn", "senjin-village", cost_hint=740),
-    Edge("walk", "valley-gate", "razor-hill-south", cost_hint=700),
+    # The authoritative south road to Razor Hill (graph_data.py edge chain).
+    Edge("walk", "valley-spawn", "valley-south-pass", cost_hint=300),
+    Edge("walk", "valley-south-pass", "south-road-west", cost_hint=60),
+    Edge("walk", "south-road-west", "canyon-west", cost_hint=145),
+    Edge("walk", "canyon-west", "canyon-mid", cost_hint=200),
+    Edge("walk", "canyon-mid", "canyon-lower-west", cost_hint=75),
+    Edge("walk", "canyon-lower-west", "canyon-lower-east", cost_hint=45),
+    Edge("walk", "canyon-lower-east", "canyon-east", cost_hint=85),
+    Edge("walk", "canyon-east", "razormane-road", cost_hint=125),
+    Edge("walk", "razormane-road", "razor-hill-south", cost_hint=250),
     Edge("walk", "razor-hill-south", "razor-hill", cost_hint=130),
     Edge("walk", "razor-hill-south", "northern-durotar", cost_hint=770),
     Edge("walk", "northern-durotar", "orgrimmar-gate", cost_hint=420),

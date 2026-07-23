@@ -187,6 +187,31 @@ def test_l2_portal_with_wrong_pad_fails_honestly() -> None:
     assert bridge.map_id == 1  # never teleported
 
 
+def test_l2_road_recovery_when_direct_route_dead_ends() -> None:
+    """The v25-v40 canyon-wall class: the direct line hits terrain the corridor
+    can't solve (no_progress), but the world graph KNOWS a road around it —
+    journey_to must walk the road anchors instead of giving up."""
+    # Wall blocks the straight line home→far; the road detours south around it.
+    world = WorldModel(places={}, edges=[])
+    world.places = {
+        "home": Place("home", Point(1, 0.0, 0.0, 0.0)),
+        "road-south": Place("road-south", Point(1, 60.0, -120.0, 0.0)),
+        "road-east": Place("road-east", Point(1, 180.0, -120.0, 0.0)),
+        "far": Place("far", Point(1, 240.0, 0.0, 0.0)),
+    }
+    world.edges = [
+        Edge("walk", "home", "road-south", cost_hint=134),
+        Edge("walk", "road-south", "road-east", cost_hint=120),
+        Edge("walk", "road-east", "far", cost_hint=134),
+    ]
+    bridge = NavWorldBridge(walls=[(120.0, 0.0, 80.0)])  # dead across the direct line
+    journey = JourneyPlanner(world=world)
+    result = journey.journey_to(bridge, Point(1, 240.0, 0.0, 0.0), deadline=deadline(60.0))
+    assert result.status == JourneyStatus.ARRIVED
+    kinds = [leg["kind"] for leg in result.legs]
+    assert "road" in kinds  # recovery actually walked the graph
+
+
 def test_l2_unknown_region_fails_honestly() -> None:
     bridge = NavWorldBridge()
     journey = JourneyPlanner(world=small_world())

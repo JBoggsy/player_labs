@@ -23,6 +23,8 @@ PORTAL_SETTLE_SECONDS = 20.0
 # (death warp, unexpected teleport) is NOT success (codex audit #16). Generous:
 # instance entrances place the party in a room, not on a point.
 PORTAL_DESTINATION_RADIUS_YARDS = 150.0
+# Road anchors are corridor waypoints, not destinations — corridor-grade arrival.
+ROAD_ANCHOR_RADIUS_YARDS = 30.0
 
 
 class JourneyStatus(Enum):
@@ -74,6 +76,16 @@ class JourneyPlanner:
                         return JourneyResult(JourneyStatus.FAILED,
                                              reason="journey_thrash", legs=legs)
                     continue
+                if result.reason in ("no_progress", "budget"):
+                    # Direct route dead-ended (terrain trap the local corridor
+                    # can't solve — the v25-v40 canyon wall). If the world graph
+                    # KNOWS a road between here and the target, walk it via the
+                    # graph waypoints once before giving up (declared road
+                    # knowledge as recovery, not requirement).
+                    graph_result = self._same_map_via_graph(
+                        bridge, target, deadline, legs)
+                    if graph_result is not None:
+                        return graph_result
                 return JourneyResult(JourneyStatus.FAILED, reason=result.reason,
                                      end=result.end, legs=legs)
 
@@ -126,6 +138,54 @@ class JourneyPlanner:
                                          reason="journey_thrash", legs=legs)
                 continue
         return JourneyResult(JourneyStatus.FAILED, reason="deadline", legs=legs)
+
+    def _same_map_via_graph(
+        self, bridge, target: Point, deadline: float, legs: list[dict]
+    ) -> JourneyResult | None:
+        """Recovery: walk the world graph's road between here and the target.
+
+        Returns None when the graph can't help (no nearby anchors / no path) —
+        the caller then reports the direct route's failure honestly.
+        """
+        here = self.router._observe_position(bridge)
+        if here is None:
+            return None
+        start_place = self.world.nearest_place(here, same_map=True)
+        goal_place = self.world.nearest_place(target, same_map=True)
+        if start_place is None or goal_place is None:
+            return None
+        if start_place.name == goal_place.name:
+            return None
+        path = self.world.plan(start_place.name, goal_place.name)
+        if path is None or not all(e.kind == "walk" for e in path):
+            return None
+        self._trace("journey_road_recovery",
+                    start=start_place.name, goal=goal_place.name,
+                    edges=[f"{e.a}->{e.b}" for e in path])
+        current = start_place.name
+        for edge in path:
+            if time.monotonic() >= deadline:
+                return JourneyResult(JourneyStatus.FAILED, reason="deadline",
+                                     end=here, legs=legs)
+            next_name = edge.b if edge.a == current else edge.a
+            waypoint = self.world.place(next_name).point
+            result = self.router.navigate_to(
+                bridge, waypoint, deadline=deadline,
+                arrival_radius=ROAD_ANCHOR_RADIUS_YARDS)
+            legs.append(_leg("road", waypoint, result.state.value, result.reason,
+                             route=result))
+            if result.state != NavState.ARRIVED:
+                return JourneyResult(JourneyStatus.FAILED, reason=result.reason,
+                                     end=result.end, legs=legs)
+            current = next_name
+            here = result.end or here
+        final = self.router.navigate_to(bridge, target, deadline=deadline)
+        legs.append(_leg("route", target, final.state.value, final.reason,
+                         route=final))
+        if final.state == NavState.ARRIVED:
+            return JourneyResult(JourneyStatus.ARRIVED, end=final.end, legs=legs)
+        return JourneyResult(JourneyStatus.FAILED, reason=final.reason,
+                             end=final.end, legs=legs)
 
     # ---- edges ---------------------------------------------------------------------
 
