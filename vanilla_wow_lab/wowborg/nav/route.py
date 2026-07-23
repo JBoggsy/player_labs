@@ -45,6 +45,7 @@ BUDGET_SLACK = 1.8              # x planned_time; generous — the pace estimate
 BUDGET_FLOOR_SECONDS = 45.0
 DEFAULT_PACE_YDS_PER_S = 1.8    # prior; replaced by the online estimate as legs complete
 RECOVERY_STEP_TIMEOUT_S = 45.0
+CORPSE_RECLAIM_RADIUS_YARDS = 30.0  # server accepts reclaim within ~39yd; margin
 UNREACHABLE_PROJECTION_YARDS = 12.0  # planned-target projection beyond this = off-mesh target
 
 
@@ -350,7 +351,7 @@ class RouteNavigator:
                 if move.status == LocalMoveStatus.DEAD:
                     deaths += 1
                     self._trace("nav_state", state="recovering")
-                    if not self._recover_from_death(bridge, deadline):
+                    if not self._recover_from_death(bridge, deadline, corpse=here):
                         return RouteResult(NavState.FAILED, reason="deadline", end=here,
                                            walked_seconds=walked_seconds,
                                            combat_pauses=combat_pauses, deaths=deaths,
@@ -445,12 +446,14 @@ class RouteNavigator:
                 bridge.wait_for_settlement(frame.frame_id, timeout_s=RECOVERY_STEP_TIMEOUT_S)
         return False
 
-    def _recover_from_death(self, bridge, deadline: float) -> bool:
-        """Defer to the planner's recovery recommendations (release → corpse run →
-        reclaim are its masked recommended actions) until alive again. When the
-        recommendation is unavailable (lenient frames during validation storms —
-        codex audit #9), fall back to the typed recovery kinds directly; the
-        mask/server rejects whichever doesn't apply yet."""
+    def _recover_from_death(
+        self, bridge, deadline: float, corpse: Point | None = None
+    ) -> bool:
+        """Typed recovery: release → ghost-RUN to the corpse (we know where we
+        died) → reclaim. v43 hosted evidence: deferring the whole recovery to
+        recommended actions cost 1400s for ONE corpse run (203 cycles) — the
+        planner ambles; a direct semantic move to the corpse uses the executor's
+        fast pathing. Recommended remains the fallback when a step is refused."""
         while time.monotonic() < deadline:
             frame = bridge.wait_for_frame(timeout_s=min(30.0, max(0.5, deadline - time.monotonic())))
             if frame is None:
@@ -459,10 +462,20 @@ class RouteNavigator:
             obs = frame.observation
             if not obs.is_dead and not obs.is_ghost:
                 return True
-            request_id = bridge.select_recommended(frame)
-            if request_id is None and hasattr(bridge, "select_kind"):
-                kind = "release_spirit" if obs.is_dead and not obs.is_ghost else "reclaim_corpse"
-                request_id = bridge.select_kind(frame, kind)
+            request_id = None
+            if hasattr(bridge, "select_kind"):
+                if obs.is_dead and not obs.is_ghost:
+                    request_id = bridge.select_kind(frame, "release_spirit")
+                elif corpse is not None:
+                    here = Point(obs.location.map_id, obs.location.x,
+                                 obs.location.y, obs.location.z)
+                    if here.distance(corpse) <= CORPSE_RECLAIM_RADIUS_YARDS:
+                        request_id = bridge.select_kind(frame, "reclaim_corpse")
+                    else:
+                        request_id = bridge.select_move_to(
+                            frame, corpse.x, corpse.y, corpse.z, corpse.map_id)
+            if request_id is None:
+                request_id = bridge.select_recommended(frame)
             if request_id is not None:
                 bridge.wait_for_settlement(frame.frame_id, timeout_s=RECOVERY_STEP_TIMEOUT_S)
         return False
