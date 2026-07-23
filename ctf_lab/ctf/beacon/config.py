@@ -277,10 +277,11 @@ SQUAD_SEPARATION_PX = _env_int("BEACON_SQUAD_SEPARATION_PX", 40)
 SQUAD_RALLY_X = _env_int("BEACON_SQUAD_RALLY_X", 450)
 #: Give up waiting for buddies after this long (dead mate: 72t respawn + walk).
 SQUAD_WAIT_TIMEOUT_TICKS = _env_int("BEACON_SQUAD_WAIT_TIMEOUT_TICKS", 150)
-#: Wave windows (v19.1): pushes commit only during the first WINDOW ticks of each
-#: PERIOD (tick-synchronized — the one squad signal fog can't hide). An attacker
-#: reaching the rally mid-period holds up to PERIOD-WINDOW ticks; everyone who
-#: gathered commits together at the window edge.
+#: Wave-gating (v19/v20): OFF by default since v21 (human call) — the tempo cost
+#: under maxTicks=5000 outweighed the synchronization benefit, and squads now
+#: cohere via nameplate identity instead. The tick-window machinery stays for a
+#: future game-state-reactive gate; re-enable via BEACON_SQUAD_WAVE_GATE=1.
+SQUAD_WAVE_GATE = _env_int("BEACON_SQUAD_WAVE_GATE", 0) == 1
 SQUAD_WAVE_PERIOD_TICKS = _env_int("BEACON_SQUAD_WAVE_PERIOD_TICKS", 120)
 SQUAD_WAVE_WINDOW_TICKS = _env_int("BEACON_SQUAD_WAVE_WINDOW_TICKS", 36)
 #: Aim-sector offset per rank step (brads); 50 ≈ 70°, complements the 60° cone.

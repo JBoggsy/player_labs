@@ -2,6 +2,29 @@
 
 Version → change mapping for the CTF `beacon` policy. Newest first.
 
+## v21 — nameplates + wave-gate off (2026-07-22, 0.7.69 catch-up)
+
+**Why (human direction):** drop wave-gating (tempo cost > sync benefit under
+maxTicks 5000; keep the machinery for a future game-state-reactive gate);
+squads cohere by being CLOSER, now with real identity — the upstream nameplate
+feature landed (0.7.69: `identity <color> <name>` badges, alpha..theta by slot
+order within team = exactly our seat notion, fog-gated with their player).
+
+**Game catch-up (0.7.66 -> 0.7.69):** identity badges added; gunRange moved from
+config.json into per-map CtfMap (still 1300 on `arena`); a second map
+"arena-large" (1606x858, gunRange 1690) EXISTS but the deployed config still
+selects `mapPath: "arena"` — standard-arena geometry verified shape-identical,
+nav.npz stays valid. WATCH: if the league ever flips to arena-large, beacon
+needs a full re-bake + geometry port.
+
+**Changes:** (1) `SQUAD_WAVE_GATE` off by default (BEACON_SQUAD_WAVE_GATE=1 to
+re-enable). (2) Perception: identity badges parsed and associated to player
+sprites (30px radius) -> `Enemy.identity` (0=alpha..7=theta). (3) Tracks carry
+sticky identity; association gate: an identified sighting never claims a track
+known to be a different player. (4) Cohesion pulls toward the nearest identified
+SQUADMATE (identity==squadmate seat) when one is known, else nearest teammate.
+82 tests.
+
 ## v20 — tick-synchronized wave windows (2026-07-22, v19 fix)
 
 **Why:** v19's buddy-sensing rally gate DEADLOCKED — teammates at the rally are

@@ -27,10 +27,15 @@ class Observation:
 
 @dataclass(frozen=True)
 class Enemy:
-    """A visible player (enemy or teammate) resolved from its labeled sprite this frame."""
+    """A visible player (enemy or teammate) resolved from its labeled sprite this frame.
+
+    ``identity`` is the player's nameplate seat index (0=alpha .. 7=theta, from the
+    0.7.69 identity badges — slot order within team, i.e. exactly our seat notion),
+    or None when no badge resolved (badge fog-gated separately, association miss)."""
 
     pos: tuple[int, int]
     facing: str  # "left" | "right"
+    identity: int | None = None
 
 
 @dataclass
@@ -63,6 +68,9 @@ class PlayerTrack:
     #: time to difference (frames_seen >= 2 with a small tick gap).
     vel: tuple[float, float] | None = None
     frames_seen: int = 1
+    #: nameplate identity (0=alpha..7=theta) from the 0.7.69 badges; None if the
+    #: track has never had a badge resolve. Sticky: kept once known.
+    identity: int | None = None
 
 
 @dataclass(frozen=True)

@@ -33,6 +33,7 @@ from ctf.beacon.config import (
     SQUAD_RALLY_X,
     SQUAD_SECTOR_BRADS,
     SQUAD_SEPARATION_PX,
+    SQUAD_WAVE_GATE,
     SQUAD_WAVE_PERIOD_TICKS,
     SQUAD_WAVE_WINDOW_TICKS,
     TRACK_TTL_TICKS,
@@ -76,13 +77,25 @@ def sector_offset_brads(seat: int) -> int:
 # --- Anonymous teammate proximity -----------------------------------------------------
 
 
-def _teammate_positions(belief: Belief) -> list[tuple[int, int]]:
-    """Positions of teammates we can see or remember (fresh tracks). Anonymous —
-    that's fine: any teammate near me is squad-enough for cohesion/wait purposes."""
-    out = [e.pos for e in belief.teammates]
+def _teammate_positions(belief: Belief, squad_only: bool = False) -> list[tuple[int, int]]:
+    """Positions of teammates we can see or remember (fresh tracks).
+
+    With ``squad_only`` (0.7.69 nameplates), restrict to identified SQUADMATES —
+    identity index == seat (both are slot-order-within-team). Unidentified
+    sightings are excluded in squad_only mode; falls back to all teammates when
+    no squadmate is identifiable (badges fog with their player)."""
+    my_squad = set(squad_of(belief.seat)[1]) - {belief.seat}
+    out: list[tuple[int, int]] = []
+    for e in belief.teammates:
+        if squad_only and e.identity not in my_squad:
+            continue
+        out.append(e.pos)
     for t in belief.teammate_tracks:
-        if belief.tick - t.last_tick <= TRACK_TTL_TICKS // 2 and t.pos not in out:
-            out.append(t.pos)
+        if belief.tick - t.last_tick > TRACK_TTL_TICKS // 2 or t.pos in out:
+            continue
+        if squad_only and t.identity not in my_squad:
+            continue
+        out.append(t.pos)
     return out
 
 
@@ -103,9 +116,10 @@ def buddies_near(belief: Belief, radius_px: float) -> int:
 def formation_bias(belief: Belief) -> tuple[float, float] | None:
     """A movement-bias vector (unit-ish) from cohesion + separation, or None.
 
-    Cohesion: too few buddies nearby -> pull toward the nearest teammate.
-    Separation: a teammate closer than SQUAD_SEPARATION_PX -> push apart (one
+    Separation: ANY teammate closer than SQUAD_SEPARATION_PX -> push apart (one
     grenade blast is 52px; stacked bodies also block each other's shots).
+    Cohesion: too few buddies nearby -> pull toward the nearest identified
+    SQUADMATE (0.7.69 nameplates) when one is known, else the nearest teammate.
     Separation wins when both apply."""
     if belief.self_xy is None:
         return None
@@ -121,7 +135,16 @@ def formation_bias(belief: Belief) -> tuple[float, float] | None:
         return ((sx - nearest[0]) / d, (sy - nearest[1]) / d)
 
     if buddies_near(belief, SQUAD_COHESION_PX) < SQUAD_MIN_BUDDIES and d > SQUAD_COHESION_PX:
-        return ((nearest[0] - sx) / d, (nearest[1] - sy) / d)
+        squadmates = _teammate_positions(belief, squad_only=True)
+        target = (
+            min(squadmates, key=lambda p: (p[0] - sx) ** 2 + (p[1] - sy) ** 2)
+            if squadmates
+            else nearest
+        )
+        td = math.hypot(target[0] - sx, target[1] - sy)
+        if td < 0.5:
+            return None
+        return ((target[0] - sx) / td, (target[1] - sy) / td)
 
     return None
 
@@ -149,6 +172,8 @@ def should_wait_for_squad(belief: Belief) -> bool:
     the rally hold until the window opens, then all commit together. Cost: up to
     one window period of tempo; traced via squad_wait_ticks.
     """
+    if not SQUAD_WAVE_GATE:
+        return False  # v21: gating off by default (tempo cost > sync benefit)
     if belief.self_xy is None or belief.team is None:
         return False
     x = belief.self_xy[0]

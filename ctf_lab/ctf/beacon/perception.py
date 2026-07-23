@@ -95,12 +95,50 @@ def _find_self(world: SpriteWorld, color: Team):
     return None, None, None
 
 
+#: The identity badge (0.7.69 nameplates) sits on the soldier body's bottom-right
+#: corner — its centre is ~SoldierBodyPx/2 = 17px diagonal from the body centre.
+#: A badge within this radius of a player sprite belongs to that player.
+_BADGE_RADIUS = 30.0
+_IDENTITY_NAMES = ("alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta")
+_IDENTITY_INDEX = {n: i for i, n in enumerate(_IDENTITY_NAMES)}
+
+
+def _identity_badges(world: SpriteWorld, color: Team) -> list[tuple[int, tuple[int, int]]]:
+    """Visible identity badges of ``color``: (identity index, badge centre)."""
+    out: list[tuple[int, tuple[int, int]]] = []
+    prefix = f"identity {color} "
+    for obj in world.objects.values():
+        sprite = world.sprite_for(obj)
+        if sprite is None or not sprite.label.startswith(prefix):
+            continue
+        idx = _IDENTITY_INDEX.get(sprite.label[len(prefix):])
+        if idx is not None:
+            out.append((idx, _center(world, obj)))
+    return out
+
+
 def _players_of_color(world: SpriteWorld, color: Team) -> tuple[Enemy, ...]:
-    """Visible players of ``color`` (the Enemy dataclass is just pos+facing)."""
-    out: list[Enemy] = []
+    """Visible players of ``color``, with nameplate identity where a badge resolves.
+
+    Badges are emitted per visible player (fog-gated with the player, like the hp
+    bar), so a greedy nearest-badge association within _BADGE_RADIUS is reliable —
+    ambiguity only in a tight scrum, where a wrong same-team identity is harmless
+    for cohesion purposes."""
+    players: list[tuple[tuple[int, int], str]] = []
     for facing in ("right", "left"):
         for obj in _objects_with_label(world, f"player {color} {facing}"):
-            out.append(Enemy(pos=_center(world, obj), facing=facing))
+            players.append((_center(world, obj), facing))
+    badges = _identity_badges(world, color)
+    out: list[Enemy] = []
+    for pos, facing in players:
+        best_idx: int | None = None
+        best_d = _BADGE_RADIUS
+        for idx, bpos in badges:
+            d = math.hypot(bpos[0] - pos[0], bpos[1] - pos[1])
+            if d < best_d:
+                best_d = d
+                best_idx = idx
+        out.append(Enemy(pos=pos, facing=facing, identity=best_idx))
     return tuple(out)
 
 

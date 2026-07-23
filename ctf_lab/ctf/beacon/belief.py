@@ -165,6 +165,14 @@ def _update_tracks(tracks: list[PlayerTrack], sightings: tuple[Enemy, ...], tick
         best_d2 = float("inf")
         for i in unclaimed:
             t = tracks[i]
+            # Nameplate gate (0.7.69): a badge-identified sighting never claims a
+            # track KNOWN to be a different player — identity beats proximity.
+            if (
+                s.identity is not None
+                and t.identity is not None
+                and s.identity != t.identity
+            ):
+                continue
             dt = tick - t.last_tick
             gate = dt * MAX_SPEED_PX_TICK + TRACK_MATCH_SLACK_PX
             dx = s.pos[0] - t.pos[0]
@@ -176,10 +184,14 @@ def _update_tracks(tracks: list[PlayerTrack], sightings: tuple[Enemy, ...], tick
                 best_d2 = d2
                 best_i = i
         if best_i is None:
-            tracks.append(PlayerTrack(pos=s.pos, last_tick=tick, facing=s.facing))
+            tracks.append(
+                PlayerTrack(pos=s.pos, last_tick=tick, facing=s.facing, identity=s.identity)
+            )
             continue
         unclaimed.discard(best_i)
         t = tracks[best_i]
+        if s.identity is not None:
+            t.identity = s.identity  # sticky nameplate identity (0.7.69)
         dt = tick - t.last_tick
         if 0 < dt <= TRACK_VEL_MAX_GAP_TICKS:
             vx = (s.pos[0] - t.pos[0]) / dt

@@ -953,16 +953,15 @@ def test_separation_pushes_apart_cohesion_pulls_together():
     assert bias is not None and bias[0] > 0
 
 
-def test_wave_gate_holds_outside_window_commits_inside():
+def test_wave_gate_holds_outside_window_when_enabled(monkeypatch):
     from ctf.beacon import squads
     from ctf.beacon.config import SQUAD_WAVE_PERIOD_TICKS, SQUAD_WAVE_WINDOW_TICKS
+    monkeypatch.setattr(squads, "SQUAD_WAVE_GATE", True)  # off by default since v21
     b = Belief(team="red", seat=5, role="attacker", alive=True,
                self_xy=(430, 300))  # near the red rally line (450), our side
     # Mid-period (outside the commit window): hold.
     b.tick = SQUAD_WAVE_PERIOD_TICKS * 10 + SQUAD_WAVE_WINDOW_TICKS + 5
     assert squads.should_wait_for_squad(b)
-    intent, _ = decide_objective(b)
-    assert intent.reason == "squad_rally"
     # Inside the window: commit.
     b.tick = SQUAD_WAVE_PERIOD_TICKS * 10 + 2
     assert not squads.should_wait_for_squad(b)
@@ -983,3 +982,52 @@ def test_carrier_never_waits():
     b.teammates = ()
     intent, _ = decide_objective(b)
     assert intent.reason == "carry_home"
+
+
+# --- v21: nameplates + squadmate cohesion ------------------------------------------
+
+
+def test_identity_badge_resolves_on_players():
+    w = _world_with_self((600, 329))
+    _add_player(w, 11, 3, "player red left", (450, 300))
+    # Badge at the body's bottom-right corner (~17px diagonal).
+    w.sprites[80] = SpriteDef(80, 11, 11, "identity red gamma", b"")
+    w.objects[80] = SpriteObject(80, 462, 312, 0, 0, 80)
+    st = perceive(_obs(w), "red")
+    assert len(st.teammates) == 1 and st.teammates[0].identity == 2  # gamma
+
+
+def test_identity_sticks_to_track_and_gates_association():
+    from ctf.beacon.belief import _update_tracks
+    from ctf.beacon.types import PlayerTrack
+    tracks: list = []
+    _update_tracks(tracks, (Enemy(pos=(400, 300), facing="left", identity=3),), tick=10)
+    assert tracks[0].identity == 3
+    # A sighting with a DIFFERENT identity nearby must NOT claim delta's track.
+    _update_tracks(tracks, (Enemy(pos=(405, 300), facing="left", identity=5),), tick=11)
+    assert len(tracks) == 2
+    idents = {t.identity for t in tracks}
+    assert idents == {3, 5}
+
+
+def test_cohesion_prefers_identified_squadmate():
+    from ctf.beacon import squads
+    # Seat 5 (squad A2 = 5,6,7). Two teammates visible: an identified NON-squad
+    # mate (beta=1) nearby-ish, and an identified squadmate (eta=6) farther.
+    b = Belief(team="red", seat=5, alive=True, tick=100, self_xy=(400, 300))
+    b.teammates = (
+        Enemy(pos=(700, 300), facing="left", identity=1),   # beta: not in A2
+        Enemy(pos=(400, 600), facing="left", identity=6),   # eta: squadmate
+    )
+    bias = squads.formation_bias(b)
+    assert bias is not None
+    # Pull should point toward the SQUADMATE (south), not beta (east).
+    assert bias[1] > 0.7
+
+
+def test_wave_gate_disabled_by_default():
+    from ctf.beacon import squads
+    from ctf.beacon.config import SQUAD_WAVE_PERIOD_TICKS, SQUAD_WAVE_WINDOW_TICKS
+    b = Belief(team="red", seat=5, role="attacker", alive=True, self_xy=(430, 300))
+    b.tick = SQUAD_WAVE_PERIOD_TICKS * 10 + SQUAD_WAVE_WINDOW_TICKS + 5  # outside window
+    assert not squads.should_wait_for_squad(b)  # gate off (v21 default)
