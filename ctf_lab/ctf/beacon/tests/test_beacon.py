@@ -953,30 +953,27 @@ def test_separation_pushes_apart_cohesion_pulls_together():
     assert bias is not None and bias[0] > 0
 
 
-def test_wait_gate_holds_then_times_out():
+def test_wave_gate_holds_outside_window_commits_inside():
     from ctf.beacon import squads
-    from ctf.beacon.config import SQUAD_WAIT_TIMEOUT_TICKS
-    b = Belief(team="red", seat=5, role="attacker", alive=True, tick=1000,
+    from ctf.beacon.config import SQUAD_WAVE_PERIOD_TICKS, SQUAD_WAVE_WINDOW_TICKS
+    b = Belief(team="red", seat=5, role="attacker", alive=True,
                self_xy=(430, 300))  # near the red rally line (450), our side
-    b.teammates = ()  # alone
+    # Mid-period (outside the commit window): hold.
+    b.tick = SQUAD_WAVE_PERIOD_TICKS * 10 + SQUAD_WAVE_WINDOW_TICKS + 5
     assert squads.should_wait_for_squad(b)
     intent, _ = decide_objective(b)
     assert intent.reason == "squad_rally"
-    # Timeout: after the cap, push anyway.
-    b.tick = 1000 + SQUAD_WAIT_TIMEOUT_TICKS + 2
+    # Inside the window: commit.
+    b.tick = SQUAD_WAVE_PERIOD_TICKS * 10 + 2
     assert not squads.should_wait_for_squad(b)
-    # With buddies near, no wait at all.
-    b2 = Belief(team="red", seat=5, role="attacker", alive=True, tick=1000,
-                self_xy=(430, 300))
-    b2.teammates = (Enemy(pos=(420, 320), facing="left"), Enemy(pos=(440, 280), facing="left"))
-    assert not squads.should_wait_for_squad(b2)
 
 
 def test_no_wait_once_committed_past_rally():
     from ctf.beacon import squads
-    b = Belief(team="red", seat=5, role="attacker", alive=True, tick=1000,
+    from ctf.beacon.config import SQUAD_WAVE_PERIOD_TICKS, SQUAD_WAVE_WINDOW_TICKS
+    b = Belief(team="red", seat=5, role="attacker", alive=True,
                self_xy=(600, 300))  # already past the line
-    b.teammates = ()
+    b.tick = SQUAD_WAVE_PERIOD_TICKS * 10 + SQUAD_WAVE_WINDOW_TICKS + 5  # outside window
     assert not squads.should_wait_for_squad(b)
 
 

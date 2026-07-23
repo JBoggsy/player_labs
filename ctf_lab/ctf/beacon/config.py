@@ -277,6 +277,12 @@ SQUAD_SEPARATION_PX = _env_int("BEACON_SQUAD_SEPARATION_PX", 40)
 SQUAD_RALLY_X = _env_int("BEACON_SQUAD_RALLY_X", 450)
 #: Give up waiting for buddies after this long (dead mate: 72t respawn + walk).
 SQUAD_WAIT_TIMEOUT_TICKS = _env_int("BEACON_SQUAD_WAIT_TIMEOUT_TICKS", 150)
+#: Wave windows (v19.1): pushes commit only during the first WINDOW ticks of each
+#: PERIOD (tick-synchronized — the one squad signal fog can't hide). An attacker
+#: reaching the rally mid-period holds up to PERIOD-WINDOW ticks; everyone who
+#: gathered commits together at the window edge.
+SQUAD_WAVE_PERIOD_TICKS = _env_int("BEACON_SQUAD_WAVE_PERIOD_TICKS", 120)
+SQUAD_WAVE_WINDOW_TICKS = _env_int("BEACON_SQUAD_WAVE_WINDOW_TICKS", 36)
 #: Aim-sector offset per rank step (brads); 50 ≈ 70°, complements the 60° cone.
 SQUAD_SECTOR_BRADS = _env_int("BEACON_SQUAD_SECTOR_BRADS", 50)
 

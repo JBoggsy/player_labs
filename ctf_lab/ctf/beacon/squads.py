@@ -33,7 +33,8 @@ from ctf.beacon.config import (
     SQUAD_RALLY_X,
     SQUAD_SECTOR_BRADS,
     SQUAD_SEPARATION_PX,
-    SQUAD_WAIT_TIMEOUT_TICKS,
+    SQUAD_WAVE_PERIOD_TICKS,
+    SQUAD_WAVE_WINDOW_TICKS,
     TRACK_TTL_TICKS,
 )
 from ctf.beacon.types import Belief, Team
@@ -138,32 +139,24 @@ def past_rally(team: Team, x: int) -> bool:
 
 
 def should_wait_for_squad(belief: Belief) -> bool:
-    """True when an ATTACKER about to cross the rally line should hold for buddies.
+    """True when an ATTACKER at the rally line should hold for the next wave window.
 
-    Gate: I'm alive, attacking (steal objective handles this at the call site),
-    near-but-not-past the rally line, with fewer than (squad size - 1) buddies
-    nearby, and I haven't already waited past the timeout (a dead squadmate takes
-    72t to respawn + walk; waiting forever loses tempo — cap and go).
+    v19's buddy-SENSING gate deadlocked: teammates are fog-gated (everyone at the
+    rally aims enemy-ward, so squadmates 60px apart see nothing), buddies_near read
+    0, and every attacker burned the full timeout every push. v19.1 uses the one
+    squad signal fog can't hide: the TICK. Waves are synchronized windows — a pure
+    function of tick every agent computes identically — so attackers arriving at
+    the rally hold until the window opens, then all commit together. Cost: up to
+    one window period of tempo; traced via squad_wait_ticks.
     """
     if belief.self_xy is None or belief.team is None:
         return False
     x = belief.self_xy[0]
     if past_rally(belief.team, x):
-        belief.squad_wait_since = -1  # committed; don't re-gate mid-push
-        return False
-    dist_to_line = abs(x - rally_line_x(belief.team))
-    if dist_to_line > 90:
-        belief.squad_wait_since = -1  # not at the line yet
-        return False
-    need = squad_size(belief.seat) - 1
-    if buddies_near(belief, SQUAD_COHESION_PX) >= need:
-        belief.squad_wait_since = -1
-        return False
-    if belief.squad_wait_since < 0:
-        belief.squad_wait_since = belief.tick
-    if belief.tick - belief.squad_wait_since > SQUAD_WAIT_TIMEOUT_TICKS:
-        return False  # timeout: push anyway
-    return True
+        return False  # committed; don't re-gate mid-push
+    if abs(x - rally_line_x(belief.team)) > 90:
+        return False  # not at the line yet
+    return belief.tick % SQUAD_WAVE_PERIOD_TICKS >= SQUAD_WAVE_WINDOW_TICKS
 
 
 __all__ = [

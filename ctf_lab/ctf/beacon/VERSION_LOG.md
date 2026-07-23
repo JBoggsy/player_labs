@@ -2,6 +2,22 @@
 
 Version → change mapping for the CTF `beacon` policy. Newest first.
 
+## v20 — tick-synchronized wave windows (2026-07-22, v19 fix)
+
+**Why:** v19's buddy-sensing rally gate DEADLOCKED — teammates at the rally are
+fog-hidden (everyone aims enemy-ward; 60° cone + 90px bubble miss a mate 60px
+behind), so buddies_near read 0 and every attacker burned the full 150t timeout
+every push (traces: 153 wait-ticks/agent, wins collapsed to 1-9/0-10 — though the
+league ALSO redeployed mid-iteration: 0.7.66, maxTicks 10000→5000, spawn
+protection removed; re-baseline needed). ALSO: with games now ending at the time
+limit (avg end ~5049), tempo is twice as expensive.
+
+**Change:** `should_wait_for_squad` now gates on the TICK — the one squad signal
+fog can't hide. Pushes commit only in the first SQUAD_WAVE_WINDOW_TICKS (36) of
+each SQUAD_WAVE_PERIOD_TICKS (120); attackers reaching the rally mid-period hold
+(≤84t) and commit together at the window edge. Pure function of tick — every
+agent computes it identically, zero comms, no sensing. 78 tests.
+
 ## v19 — squad play: formation, wave-gating, aim sectors (2026-07-22)
 
 **Why (human direction):** team tactics — squads of 2-3 that form up, stick
