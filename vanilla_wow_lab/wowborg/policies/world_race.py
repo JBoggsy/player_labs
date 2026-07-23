@@ -36,14 +36,15 @@ STATIONS: dict[str, tuple[Point, str, str]] = {
     "valley-gate":      (Point(1, -359.7, -4309.8, 49.9), "durotar", "reachable"),
     "senjin-village":   (Point(1, -797.5, -4921.2, 23.0), "durotar", "reachable"),
     "sarkoth-mesa":     (Point(1, -547.3, -4103.9, 70.1), "durotar-hard", "reachable"),
-    # Razor Hill / the road north (fresh region — never raced before)
-    "razor-hill":       (Point(1, 315.0, -4743.0, 10.5), "razor-hill", "reachable"),
-    # Orgrimmar (urban; verify-and-correct coordinates from first traces)
-    "orgrimmar-gate":   (Point(1, 1295.0, -4377.0, 26.1), "orgrimmar", "reachable"),
-    "org-valley-of-strength": (Point(1, 1629.0, -4373.0, 31.3), "orgrimmar", "reachable"),
-    "cleft-of-shadow":  (Point(1, 1811.0, -4420.0, -18.5), "orgrimmar", "reachable"),
-    # Ragefire Chasm (dungeon; cross-map via the portal edge)
-    "rfc-entrance":     (Point(389, 0.8, -8.2, -15.5), "rfc", "reachable"),
+    # Razor Hill / the road north (coordinates: game repo graph_data.py anchors)
+    "razor-hill":       (Point(1, 315.0, -4743.0, 9.0), "razor-hill", "reachable"),
+    # Orgrimmar (urban; coordinates: game repo graph_data.py anchors — the old
+    # guessed set had the gate 90yd off and the Cleft z wrong by 56yd)
+    "orgrimmar-gate":   (Point(1, 1385.0, -4374.0, 27.0), "orgrimmar", "reachable"),
+    "org-valley-of-strength": (Point(1, 1629.36, -4373.39, 31.3), "orgrimmar", "reachable"),
+    "cleft-of-shadow":  (Point(1, 1750.667, -4382.667, 37.863), "orgrimmar", "reachable"),
+    # Ragefire Chasm (dungeon; cross-map via the portal edge — fast_travel.py)
+    "rfc-entrance":     (Point(389, 0.798, -8.234, -15.529), "rfc", "reachable"),
     "rfc-entry-cavern": (Point(389, -142.3, -6.2, -53.2), "rfc", "reachable"),
     # Adversarial: honesty probes — correct behavior is FAST, CLEAN failure.
     "midair-over-sea":  (Point(1, -1200.0, -5800.0, 150.0), "adversarial", "unreachable"),

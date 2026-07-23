@@ -53,37 +53,50 @@ class Edge:
 
 # ---------------------------------------------------------------------------------
 # The seed graph: Durotar ↔ Orgrimmar ↔ Ragefire Chasm.
-# Sources: authored leveling profile (durotar_troll_shaman.nim), the game repo's
-# dungeon registry (dungeon.py: areatrigger 2230 → map 389 at 0.797/-8.234/-15.529),
-# our own hosted traces (v6 trajectories), and VMaNGOS-era public coordinates for
-# Orgrimmar anchors (marked; verify from traces when first walked).
+# AUTHORITATIVE sources (codex audit #6 flagged the old guessed coordinates —
+# several were 50-60yd off; the Cleft z was wrong by 56 yards):
+# - game repo bots/decision/graph_data.py (the executor's own decision-graph
+#   anchors: valley_of_trials, razor_hill, orgrimmar_gate,
+#   orgrimmar_valley_of_strength, cleft_of_shadow — exact _jp() coordinates)
+# - game repo bots/decision/fast_travel.py FastTravelLink
+#   dungeon_portal:ragefire_chasm:2230 (walk_source = the walkable pad,
+#   destination = map 389 arrival; evidence: vmangos areatrigger_teleport +
+#   AreaTrigger.dbc + VMAP/MMAP portal floor)
+# - our own hosted traces (v6 trajectories) for valley-gate / senjin.
 # ---------------------------------------------------------------------------------
 
 PLACES: dict[str, Place] = {
     # Durotar (map 1)
-    "valley-spawn": Place("valley-spawn", Point(1, -618.5, -4251.7, 38.7)),
+    "valley-spawn": Place("valley-spawn", Point(1, -618.518, -4251.67, 38.718)),
     "valley-gate": Place("valley-gate", Point(1, -359.7, -4309.8, 49.9)),
     "senjin-village": Place("senjin-village", Point(1, -797.5, -4921.2, 23.0)),
-    "razor-hill": Place("razor-hill", Point(1, 315.0, -4743.0, 10.5)),  # VMaNGOS-era; verify
+    "razor-hill-south": Place("razor-hill-south", Point(1, 267.9, -4625.4, 17.1)),
+    "razor-hill": Place("razor-hill", Point(1, 315.0, -4743.0, 9.0)),
+    "northern-durotar": Place("northern-durotar", Point(1, 1031.733, -4597.333, 23.819)),
     # Orgrimmar (map 1 — the city is on the continent map)
-    "orgrimmar-gate": Place("orgrimmar-gate", Point(1, 1295.0, -4377.0, 26.1)),  # front gate; verify
-    "org-valley-of-strength": Place("org-valley-of-strength", Point(1, 1629.0, -4373.0, 31.3)),  # verify
-    "cleft-of-shadow": Place("cleft-of-shadow", Point(1, 1811.0, -4420.0, -18.5)),  # verify
-    # The RFC portal pad inside the Cleft (areatrigger 2230's world side).
-    "rfc-portal": Place("rfc-portal", Point(1, 1815.0, -4418.0, -18.5)),  # verify from trace
-    # Ragefire Chasm (map 389) — entrance + stations from the dungeon definition.
-    "rfc-entrance": Place("rfc-entrance", Point(389, 0.8, -8.2, -15.5)),
+    "orgrimmar-gate": Place("orgrimmar-gate", Point(1, 1385.0, -4374.0, 27.0)),
+    "org-valley-of-strength": Place(
+        "org-valley-of-strength", Point(1, 1629.36, -4373.39, 31.3)),
+    "org-drag": Place("org-drag", Point(1, 1643.253, -4380.884, 26.498)),
+    "cleft-of-shadow": Place("cleft-of-shadow", Point(1, 1750.667, -4382.667, 37.863)),
+    # The RFC portal pad (fast_travel.py walk_source: the walkable floor point).
+    "rfc-portal": Place("rfc-portal", Point(1, 1818.4, -4427.26, -20.56)),
+    # Ragefire Chasm (map 389) — fast_travel.py destination + spine data.
+    "rfc-entrance": Place("rfc-entrance", Point(389, 0.798, -8.234, -15.529)),
     "rfc-entry-cavern": Place("rfc-entry-cavern", Point(389, -142.3, -6.2, -53.2)),
 }
 
 EDGES: list[Edge] = [
     Edge("walk", "valley-spawn", "valley-gate", cost_hint=280),
     Edge("walk", "valley-spawn", "senjin-village", cost_hint=740),
-    Edge("walk", "valley-gate", "razor-hill", cost_hint=800),
-    Edge("walk", "razor-hill", "orgrimmar-gate", cost_hint=1100),
-    Edge("walk", "orgrimmar-gate", "org-valley-of-strength", cost_hint=350),
-    Edge("walk", "org-valley-of-strength", "cleft-of-shadow", cost_hint=300),
-    Edge("walk", "cleft-of-shadow", "rfc-portal", cost_hint=30),
+    Edge("walk", "valley-gate", "razor-hill-south", cost_hint=700),
+    Edge("walk", "razor-hill-south", "razor-hill", cost_hint=130),
+    Edge("walk", "razor-hill-south", "northern-durotar", cost_hint=770),
+    Edge("walk", "northern-durotar", "orgrimmar-gate", cost_hint=420),
+    Edge("walk", "orgrimmar-gate", "org-valley-of-strength", cost_hint=250),
+    Edge("walk", "org-valley-of-strength", "org-drag", cost_hint=20),
+    Edge("walk", "org-drag", "cleft-of-shadow", cost_hint=110),
+    Edge("walk", "cleft-of-shadow", "rfc-portal", cost_hint=90),
     Edge("portal", "rfc-portal", "rfc-entrance", bidirectional=False,
          trigger_id=2230, cost_hint=1),
     Edge("walk", "rfc-entrance", "rfc-entry-cavern", cost_hint=160),
