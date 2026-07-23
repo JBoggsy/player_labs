@@ -41,8 +41,18 @@ def test_l0_wall_stall_detected() -> None:
     assert bridge.recommended_selections > 0  # unstick ladder ran
 
 
-def test_l0_combat_surfaces_immediately() -> None:
+def test_l0_combat_runs_through_when_healthy() -> None:
+    # Healthy characters run THROUGH trivial aggro (v26/v42 hosted lessons:
+    # yielding to every roadside pull is both slow and — against higher-level
+    # camps — lethal). Combat only surfaces when we're actually losing.
     bridge = NavWorldBridge(combat_at=(30.0, 0.0, 10.0))
+    result = LocalMover().move_to(bridge, Point(1, 100.0, 0.0, 0.0), until=deadline())
+    assert result.status == LocalMoveStatus.ARRIVED
+
+
+def test_l0_combat_surfaces_when_losing() -> None:
+    bridge = NavWorldBridge(combat_at=(30.0, 0.0, 10.0))
+    bridge.health = 20  # under the 50% floor — a real threat
     result = LocalMover().move_to(bridge, Point(1, 100.0, 0.0, 0.0), until=deadline())
     assert result.status == LocalMoveStatus.COMBAT
 
@@ -87,8 +97,11 @@ def test_l1_broken_planner_degrades_instead_of_lying() -> None:
     assert result.reason != "unreachable"
 
 
-def test_l1_combat_pause_then_arrival() -> None:
-    bridge = NavWorldBridge(combat_at=(100.0, 75.0, 15.0))
+def test_l1_combat_pause_flees_then_arrives() -> None:
+    # A LOSING fight (health under the floor) pauses the walk; the pause handler
+    # FLEES toward the hop (mobs leash) rather than fighting, then resumes.
+    bridge = NavWorldBridge(combat_at=(100.0, 75.0, 15.0), combat_frames=2)
+    bridge.health = 20
     result = RouteNavigator().navigate_to(bridge, Point(1, 200.0, 150.0, 0.0),
                                           deadline=deadline(30.0))
     assert result.state == NavState.ARRIVED

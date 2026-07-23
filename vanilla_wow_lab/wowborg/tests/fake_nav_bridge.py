@@ -77,6 +77,7 @@ class NavWorldBridge:
     ) -> None:
         self.map_id, self.x, self.y, self.z = start
         self.walls = walls or []
+        self.health = 60  # tests set <30 to model a losing fight (yield threshold)
         self.combat_at = combat_at
         self.combat_frames_left = 0
         self.combat_frames = combat_frames
@@ -109,6 +110,8 @@ class NavWorldBridge:
             is_dead=self.dead_frames_left > 0,
             is_ghost=False,
             in_combat=self.combat_frames_left > 0,
+            health=self.health,
+            max_health=60,
         )
         near = [tid for tid in self.portals if self._near_portal(tid)]
         triggers = [
@@ -126,7 +129,7 @@ class NavWorldBridge:
             map_id=self.map_id,
             zone="",
             position=Position(self.x, self.y, self.z, 0.0),
-            health=60,
+            health=self.health,
             max_health=60,
             in_combat=self.combat_frames_left > 0,
             is_dead=self.dead_frames_left > 0,
@@ -203,13 +206,19 @@ class NavWorldBridge:
     # ---- world physics -----------------------------------------------------------
 
     def _advance_toward(self, x: float, y: float, z: float) -> None:
-        if self.dead_frames_left > 0 or self.combat_frames_left > 0:
+        if self.dead_frames_left > 0:
             return
+        in_combat = self.combat_frames_left > 0
+        if in_combat:
+            # Fleeing works: moving while in combat runs out of the mob's leash
+            # (combat ticks down); movement continues at reduced pace — the live
+            # executor keeps walking between interrupts.
+            self.combat_frames_left -= 1
         dx, dy, dz = x - self.x, y - self.y, z - self.z
         dist = math.sqrt(dx * dx + dy * dy + dz * dz)
         if dist < 0.01:
             return
-        step = min(self.CHUNK_YARDS, dist)
+        step = min(self.CHUNK_YARDS * (0.5 if in_combat else 1.0), dist)
         nx = self.x + dx / dist * step
         ny = self.y + dy / dist * step
         nz = self.z + dz / dist * step

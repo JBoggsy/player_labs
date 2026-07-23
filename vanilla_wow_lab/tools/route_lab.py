@@ -196,8 +196,13 @@ def run_station(name: str, target: Point, expected: str) -> dict:
     wall = time.monotonic() - started
     outcome = ("arrived" if result.status == JourneyStatus.ARRIVED
                else f"failed_{result.reason}")
+    # An expected-unreachable station is handled honestly by ANY fast typed
+    # refusal: off-mesh targets → unreachable; unrepresented maps (other
+    # continent, no transport edges) → unknown_region. Both are correct
+    # "I cannot go there" verdicts; grinding or false arrival is the failure.
     ok = (outcome == "arrived") if expected == "reachable" else (
-        outcome == "failed_unreachable")
+        outcome in ("failed_unreachable", "failed_unknown_region",
+                    "failed_no_world_path"))
     return {
         "name": name, "expected": expected, "outcome": outcome, "ok": ok,
         "sim_seconds": round(bridge.sim_seconds, 1),

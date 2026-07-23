@@ -335,7 +335,7 @@ class RouteNavigator:
                 if move.status == LocalMoveStatus.COMBAT:
                     combat_pauses += 1
                     self._trace("nav_state", state="combat_paused")
-                    if not self._wait_out_combat(bridge, deadline):
+                    if not self._wait_out_combat(bridge, deadline, flee_to=hop):
                         return RouteResult(NavState.FAILED, reason="deadline", end=here,
                                            walked_seconds=walked_seconds,
                                            combat_pauses=combat_pauses, deaths=deaths,
@@ -419,10 +419,15 @@ class RouteNavigator:
             return None
         return Point(obs.map_id, obs.position.x, obs.position.y, obs.position.z)
 
-    def _wait_out_combat(self, bridge, deadline: float) -> bool:
+    def _wait_out_combat(self, bridge, deadline: float, flee_to: Point | None = None) -> bool:
         """Budget clock is paused by construction (walk loop measures only hops).
-        Nav never fights: defer to the recommended action (the authored combat stack)
-        until in_combat clears."""
+
+        Nav FLEES, it doesn't fight: keep moving toward ``flee_to`` — open-world
+        mobs leash (v42 long-session evidence: a level-1 character crossing
+        Razormane territory died 7 times because yielding meant fighting level
+        6-10 camps; running through is how real low-level players make this
+        trip). Fall back to the recommended action (the authored combat stack)
+        only when movement itself is refused."""
         while time.monotonic() < deadline:
             frame = bridge.wait_for_frame(timeout_s=min(30.0, max(0.5, deadline - time.monotonic())))
             if frame is None:
@@ -430,7 +435,12 @@ class RouteNavigator:
                 continue
             if not frame.observation.in_combat:
                 return True
-            request_id = bridge.select_recommended(frame)
+            request_id = None
+            if flee_to is not None:
+                request_id = bridge.select_move_to(
+                    frame, flee_to.x, flee_to.y, flee_to.z, flee_to.map_id)
+            if request_id is None:
+                request_id = bridge.select_recommended(frame)
             if request_id is not None:
                 bridge.wait_for_settlement(frame.frame_id, timeout_s=RECOVERY_STEP_TIMEOUT_S)
         return False
