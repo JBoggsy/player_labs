@@ -58,6 +58,11 @@ RACE_SEED_ENV = "WOWBORG_RACE_SEED"
 STATIONS_ENV = "WOWBORG_STATIONS"           # JSON [[name, map_id, x, y, z, expected], ...]
 STATION_COUNT_ENV = "WOWBORG_STATION_COUNT"
 STATION_DEADLINE_FRACTION = 0.55            # max fraction of remaining time per station
+# Best-case moving pace through the nim_control seam, measured across v25-v33
+# hosted batches (the executor advances ≤8 corridor waypoints ≈ 17yd per ~7.6s
+# settle cycle ≈ 2.2 yd/s; overhead only lowers it). Seam fact, not zone
+# calibration — used only to skip stations that provably can't fit their share.
+OPTIMISTIC_PACE_YDS_PER_S = 2.5
 
 
 def log(message: str) -> None:
@@ -136,7 +141,11 @@ class WorldRacePolicy:
             1 for r in self.results
             if r["expected"] == "unreachable" and r["outcome"] == "failed_unreachable"
         )
-        expected_reachable = sum(1 for r in self.results if r["expected"] == "reachable")
+        expected_reachable = sum(
+            1 for r in self.results
+            if r["expected"] == "reachable"
+            and r["outcome"] != "skipped_insufficient_time"
+        )
         expected_unreachable = sum(1 for r in self.results if r["expected"] == "unreachable")
         return {
             "course": self.course,
@@ -202,9 +211,29 @@ class WorldRacePolicy:
             name = pending[0]
             done_names.add(name)
             point, region, expected = self.stations[name]
-            station_deadline = time.monotonic() + max(
-                60.0, remaining * STATION_DEADLINE_FRACTION
-            )
+            share = remaining * STATION_DEADLINE_FRACTION
+            # Physically-honest skip: if even at full moving pace (no combat, no
+            # replans) the station can't be reached inside its fair share of the
+            # session, don't burn the course walking toward it — record
+            # skipped_insufficient_time and move on. v33 evidence: Orgrimmar
+            # stations ~2000yd out need ~15-25min through the seam; walking at
+            # them ate 340-530s per episode and starved everything after.
+            if (expected == "reachable" and here is not None
+                    and point.map_id == here.map_id):
+                optimistic_seconds = point.horizontal_distance(here) / OPTIMISTIC_PACE_YDS_PER_S
+                if optimistic_seconds > share:
+                    row = {
+                        "name": name, "region": region, "expected": expected,
+                        "outcome": "skipped_insufficient_time",
+                        "seconds": 0.0, "legs": 0,
+                        "deaths": 0, "combat_pauses": 0, "replans": 0,
+                    }
+                    self.results.append(row)
+                    trace("nav_station", **row)
+                    log(f"station {name}: skipped (needs ≥{optimistic_seconds:.0f}s "
+                        f"of travel, share is {share:.0f}s)")
+                    continue
+            station_deadline = time.monotonic() + max(60.0, share)
             started = time.monotonic()
             log(f"station {name} ({region}, expect {expected}): "
                 f"map {point.map_id} ({point.x:.0f},{point.y:.0f},{point.z:.0f})")
