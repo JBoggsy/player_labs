@@ -10,7 +10,37 @@ startup to resume; **update it as you learn** (keep it tight).
 
 ---
 
-## Status (2026-07-23, session 7b): **v23 SUBMITTED+CHAMPION; v24 side-holds — near-stalemate-proof vs focusfire**
+## Status (2026-07-23, session 7 END): **v24 SUBMITTED (qualifying); rank 3 @ 0.55. NEXT: the convert trigger**
+
+**League state at close:** v24 submitted (`sub_c047199b…`, membership in the NEW
+Qualifiers(staging) division — the league re-added staging; promotion is async).
+v23 (=v22 image) is the currently-competing champion. Standings: rank 3 @ 0.5495
+(daveey 0.697, Alex Smith 0.552 — we're 0.003 behind #2). New entrant NanosaurusX
+(rank 4, 11 rounds) — unprofiled, recon when they have history.
+
+**THE NEXT LEVER (designed, not built): the CONVERT TRIGGER.** v24's hold doctrine
+is saturated: 14 draws in 20 eval games, several with banked lives leads (11-5,
+8-5), zero conversion attempts. Build the leader escalation rule:
+- presence recovered to full strength → re-order P/F (exit backoff);
+- enemy-weakness read → all-in (needs a kill-confirm chat message or
+  time-since-enemy-contact heuristic; recall the 6-lives-vs-1 draw and the
+  13-vs-9-lives LOSS in scratch/eval_v22).
+Design sketch in session-7 conversation; goals vocabulary + order machinery
+(v22-v24) all ready for it. Also parked: cross-squad coordination (leaders never
+conspire), S-scout distinct behavior, squad-scoped chat (seat digit spare bytes).
+
+**v24 details:** A(0-2) holds TOP lane / B(5-7) BOTTOM (choke y 165/494), C(3-4)
+pushes mid; order decay → backoff-hold (no home-creep behind rally). Measured:
+**0W/9D/1L vs focusfire** (near-stalemate-proof), 1W/5D/4L vs h006. 91 tests.
+
+**Standing watch items:** (1) arena-large map flip (mapPath in the deployed
+config — needs full rebake if it flips); (2) game redeploys mid-session (check
+each xreq's coworld version; reader pins per era in build_expand_replay.sh);
+(3) player-binding trap on upload (verify /stats/policy-versions?player_id=
+before any submit); (4) results.json deaths/kills fields NULL at 0.7.69+ —
+compute from replay kill events.
+
+## (prior) Status (2026-07-23, session 7b): **v23 SUBMITTED+CHAMPION; v24 side-holds — near-stalemate-proof vs focusfire**
 
 **v23 = v22 image, re-uploaded + submitted under the DEFAULT player** (v22 had
 silently bound to the secondary player `seedtest-base-newcomer` — the bare coworld
