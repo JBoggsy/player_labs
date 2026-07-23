@@ -10,7 +10,31 @@ startup to resume; **update it as you learn** (keep it tight).
 
 ---
 
-## Status (2026-07-22, session 6e): **v18 SUBMITTED+CHAMPION (rank 3-4!); v19/v20 squad play built; platform churning**
+## Status (2026-07-22, session 6f): **v21 — nameplates + wave-gate OFF; 0.7.69 caught up**
+
+**Game catch-up (0.7.66→0.7.69):** (1) **Nameplates landed** — `identity <color>
+<name>` badges, alpha..theta assigned by slot order within team (== our seat
+notion!), fog-gated with their player, `slotIdentityIndex` in sim.nim. (2) gunRange
+moved into per-map CtfMap (still 1300 on `arena`). (3) A SECOND MAP exists:
+**"arena-large" (1606×858, gunRange 1690)** — deployed config still `mapPath:
+"arena"` (standard arena verified shape-identical; nav valid) — **WATCH for a map
+flip; it needs a full geometry port + rebake.**
+
+**v21 (uploaded, NOT submitted):** wave-gate OFF by default (human call; machinery
+kept behind BEACON_SQUAD_WAVE_GATE for a future game-state-reactive gate);
+`Enemy.identity`/track identity from badges (sticky, association-gated: identified
+sighting never claims a different player's track); cohesion pulls toward the nearest
+identified SQUADMATE. 82 tests.
+
+**v21 measurement (10-ep 1v1s @ 0.7.69): 1-9 h006, 0-10 focusfire, acc 0.610;
+wait-ticks 0 (gate off confirmed), cohesion 558 t/agent.** IMPORTANT unknown: the
+v18 champion's 6-4-vs-focusfire was measured at 0.7.51 (maxTicks 10000, spawn
+protection); the game is different now — no current baseline says whether squad
+flocking helps or hurts. **Next: A/B BEACON_SQUADS=0 vs =1 at 0.7.69** (subagent,
+strong power, same method as the hearing A/B) before believing cohesion's 558
+t/agent is net-positive. League entry: v18 (champion, rank ~3-4).
+
+## (prior) Status (2026-07-22, session 6e): **v18 SUBMITTED+CHAMPION (rank 3-4!); v19/v20 squad play built; platform churning**
 
 **v18 submitted (human go-ahead) → qualified → champion.** Standings recovered
 dramatically as blind-v6 rounds washed out: rank 3 @ 0.62 at submission, rank 4

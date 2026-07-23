@@ -72,3 +72,8 @@ Evidence: v19's rally gate ("hold until N teammates visible nearby") never relea
 
 ### Platform churn is now the dominant iteration hazard — xreqs can be deleted server-side mid-flight
 Evidence (2026-07-22 evening): league redeployed 0.7.51→0.7.66 mid-iteration (maxTicks 10000→5000, spawnProtectTicks removed — invalidates cross-version baselines), then two consecutive focusfire xreqs 404'd server-side minutes after creation, and the division memberships list went empty (restructure in progress). When an xreq 404s, check platform state before re-posting; when standings look weird, check whether the field itself is mid-migration.
+### Nameplate identity == seat: alpha-theta is slot-order-within-team, exactly beacon's seat notion
+Evidence: 0.7.69 slotIdentityIndex assigns identities by rank among same-team slots — identical to beacon's seat = slot//2 derivation. So a badge read IS a seat read: squad membership checks reduce to `identity in squad_seats`. No mapping table needed.
+
+### A second map ("arena-large", 1606x858) now exists in the game — check mapPath on every redeploy
+Evidence: 0.7.69 refactored CtfMap to carry per-map geometry (incl. gunRange 1300→1690 on large) and added ArenaLargeLeftObstacles. Deployed config still selects "arena", but a flip would invalidate nav.npz, PEDESTAL, HOME_DEEP, CHOKE_X, rally lines, and item spawn formulas simultaneously. The bake and config constants all assume 1235x659.
