@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # Build the wowborg v2 player image (our policy layered on the deployed Nim shim).
 #
-# Usage: tools/build_player.sh [--tag REF] [--base IMAGE] [--policy NAME]
-#   --tag     image tag to build (default: players-wowborg:dev)
-#   --base    override WOWBORG_BASE_IMAGE for this build (default: versions.env pin)
-#   --policy  bake WOWBORG_POLICY into the image (default: random_walk)
+# Usage: tools/build_player.sh [--tag REF] [--base IMAGE] [--policy NAME] [--stations JSON]
+#   --tag      image tag to build (default: players-wowborg:dev)
+#   --base     override WOWBORG_BASE_IMAGE for this build (default: versions.env pin)
+#   --policy   bake WOWBORG_POLICY into the image (default: random_walk)
+#   --stations bake WOWBORG_STATIONS (JSON [[name,map,x,y,z,expected],...]) — the
+#              world_race data seam; new courses need no code change
 #
 # Produces a linux/amd64 image (the Coworld upload contract). The base is the deployed
 # reference player image, pinned BY DIGEST in tools/versions.env; if it isn't present
@@ -22,12 +24,14 @@ die() { echo "build_player.sh: $*" >&2; exit 1; }
 
 tag="players-wowborg:dev"
 policy="random_walk"
+stations=""
 while (( $# )); do
   case "$1" in
-    --tag)     tag="$2";                shift 2 ;;
-    --base)    WOWBORG_BASE_IMAGE="$2"; shift 2 ;;
-    --policy)  policy="$2";             shift 2 ;;
-    -h|--help) sed -n '3,9p' "$0"; exit 0 ;;
+    --tag)      tag="$2";                shift 2 ;;
+    --base)     WOWBORG_BASE_IMAGE="$2"; shift 2 ;;
+    --policy)   policy="$2";             shift 2 ;;
+    --stations) stations="$2";           shift 2 ;;
+    -h|--help)  sed -n '3,11p' "$0"; exit 0 ;;
     *) die "unknown argument: $1" ;;
   esac
 done
@@ -41,6 +45,7 @@ docker buildx build --platform=linux/amd64 --load \
   -f "$LAB_DIR/wowborg/Dockerfile" \
   --build-arg "WOWBORG_BASE_IMAGE=$WOWBORG_BASE_IMAGE" \
   --build-arg "WOWBORG_POLICY=$policy" \
+  --build-arg "WOWBORG_STATIONS=$stations" \
   -t "$tag" \
   "$LAB_DIR/wowborg"
 

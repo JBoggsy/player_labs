@@ -30,4 +30,10 @@ ENV KING_NIMROD_COMMAND="python3 -m wowborg.shim"
 ARG WOWBORG_POLICY=random_walk
 ENV WOWBORG_POLICY=${WOWBORG_POLICY}
 
+# Optional station override for the world_race policy — pure DATA, JSON
+# [[name, map_id, x, y, z, expected], ...]. Empty = the in-code catalog.
+# This is the one-shot generality seam: new courses ship as data, never code.
+ARG WOWBORG_STATIONS=""
+ENV WOWBORG_STATIONS=${WOWBORG_STATIONS}
+
 # CMD inherited from the base image: python3 -m vanilla_wow_coworld.player
