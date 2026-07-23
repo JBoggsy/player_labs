@@ -215,6 +215,15 @@ class _DiagnosticLogger:
             # v19 squad activation (cumulative).
             "squad_wait_ticks": b.squad_wait_ticks,
             "squad_cohesion_ticks": b.squad_cohesion_ticks,
+            # v22 squad command (cumulative + live).
+            "order": list(b.order[:2]) + [b.order[2]] if b.order else None,
+            "orders_sent": b.orders_sent,
+            "orders_heard": b.orders_heard,
+            "pings_sent": b.pings_sent,
+            "pings_heard": b.pings_heard,
+            "backoff_events": b.backoff_events,
+            "rejoin_ticks": b.rejoin_ticks,
+            "squadmates_alive": _squadmates_alive_safe(b),
             # v18 chat activation (cumulative per kind).
             "chat_sent": dict(b.chat_sent_counts),
             "chat_heard": dict(b.chat_heard_counts),
@@ -238,6 +247,15 @@ class _DiagnosticLogger:
 
     def _record(self, tick: int, name: str, data: dict) -> None:
         self._sink.record(TraceEvent(tick=tick, name=name, data=data))
+
+
+def _squadmates_alive_safe(b) -> int | None:
+    from ctf.beacon import squads
+
+    try:
+        return squads.squadmates_alive(b)
+    except Exception:
+        return None
 
 
 def _track_row(t: PlayerTrack, tick: int) -> dict:

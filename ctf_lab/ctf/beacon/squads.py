@@ -27,7 +27,12 @@ from __future__ import annotations
 import math
 
 from ctf.beacon.config import (
+    BACKOFF_STEP_PX,
+    CHOKE_X,
     MAP_W,
+    PEDESTAL,
+    PRESENCE_STALE_TICKS,
+    REJOIN_CONTACT_PX,
     SQUAD_COHESION_PX,
     SQUAD_MIN_BUDDIES,
     SQUAD_RALLY_X,
@@ -60,6 +65,12 @@ def rank_of(seat: int) -> int:
 
 def squad_size(seat: int) -> int:
     return len(squad_of(seat)[1])
+
+
+def leader_of(seat: int) -> int:
+    """The squad's leader seat: the LOWEST seat in the squad (static, so every
+    member knows its leader with zero negotiation)."""
+    return min(squad_of(seat)[1])
 
 
 def sector_offset_brads(seat: int) -> int:
@@ -184,14 +195,137 @@ def should_wait_for_squad(belief: Belief) -> bool:
     return belief.tick % SQUAD_WAVE_PERIOD_TICKS >= SQUAD_WAVE_WINDOW_TICKS
 
 
+# --- Squad command (v22): leader decisions + respawn discipline -----------------------
+
+
+def update_presence(belief: Belief) -> None:
+    """Refresh the presence table from badge sightings (identity == seat). Pings
+    and orders refresh it in belief._update_chat when heard."""
+    my_squad = set(squad_of(belief.seat)[1]) - {belief.seat}
+    for e in belief.teammates:
+        if e.identity in my_squad:
+            belief.presence[e.identity] = belief.tick
+
+
+def squadmates_alive(belief: Belief) -> int:
+    """Squadmates confirmed alive recently (badge/ping/order within the stale
+    window). Conservative: an unconfirmed mate counts as DOWN — the cheap error
+    under lives>captures is holding when we didn't need to."""
+    my_squad = set(squad_of(belief.seat)[1]) - {belief.seat}
+    return sum(
+        1
+        for s in my_squad
+        if belief.tick - belief.presence.get(s, -10_000) <= PRESENCE_STALE_TICKS
+    )
+
+
+def _home_step(team: Team, pos: tuple[int, int], step: int) -> tuple[int, int]:
+    """``pos`` stepped ``step`` px toward our home edge (clamped to the map)."""
+    x = pos[0] - step if team == "red" else pos[0] + step
+    return (min(max(x, 12), MAP_W - 13), pos[1])
+
+
+def lead_squad(belief: Belief) -> None:
+    """The leader's per-tick rule engine: set/refresh ``belief.order``.
+
+    Runs only on the squad's leader (lowest seat). Rules, first match wins:
+      1. Own flag stolen + a thief fix known -> T (thief hunt) at the fix.
+      2. A teammate carries the enemy flag -> F (escort/flag) at the carrier fix.
+      3. Mid-push squad LOST a member (presence went stale while we're past the
+         rally line) -> H at our position stepped back toward home: hold the
+         ground we gained instead of feeding the enemy 1-by-1 (lives>captures).
+      4. Defaults by squad: D holds its choke, A1 flags, A2 pushes mid.
+    An existing order is kept until its rule stops applying (hysteresis via the
+    rebroadcast cadence; rules are ordered so upgrades preempt defaults).
+    """
+    if leader_of(belief.seat) != belief.seat or belief.self_xy is None:
+        return
+    team = belief.team
+    assert team is not None
+    tick = belief.tick
+    name, _seats = squad_of(belief.seat)
+
+    goal: str
+    pos: tuple[int, int]
+    if belief.own_flag_stolen and (
+        belief.own_flag_thief_pos is not None or belief.thief_fix is not None
+    ):
+        goal = "T"
+        pos = belief.own_flag_thief_pos or belief.thief_fix[0]
+    elif belief.carrier_fix is not None or (
+        not belief.enemy_flag_on_pedestal
+        and belief.enemy_flag_pos is not None
+        and not belief.i_carry_enemy_flag
+    ):
+        goal = "F"
+        pos = belief.carrier_fix[0] if belief.carrier_fix else belief.enemy_flag_pos
+    elif (
+        past_rally(team, belief.self_xy[0])
+        and squadmates_alive(belief) < squad_size(belief.seat) - 1
+    ):
+        # 3: we're committed forward and at least one mate is down/silent.
+        goal = "H"
+        pos = _home_step(team, belief.self_xy, BACKOFF_STEP_PX)
+        if belief.order is None or belief.order[0] != "H":
+            belief.backoff_events += 1
+    else:
+        enemy = "blue" if team == "red" else "red"
+        if name == "D":
+            goal, pos = "H", (CHOKE_X[team], 329)
+        elif name == "A1":
+            goal, pos = "F", PEDESTAL[enemy]
+        else:  # A2: push the midfield approach to the enemy pedestal
+            goal, pos = "P", ((PEDESTAL[enemy][0] + 617) // 2, 329)
+
+    if belief.order is None or belief.order[0] != goal or belief.order[1] != pos:
+        belief.order = (goal, pos, tick)
+
+
+def rejoin_target(belief: Belief) -> tuple[int, int] | None:
+    """Where a dead agent should regroup on respawn: the freshest squadmate
+    position we know (ping table has no positions — use identity-tagged teammate
+    tracks), else our own last position stepped toward home."""
+    my_squad = set(squad_of(belief.seat)[1]) - {belief.seat}
+    best: tuple[int, int] | None = None
+    best_tick = -1
+    for t in belief.teammate_tracks:
+        if t.identity in my_squad and t.last_tick > best_tick:
+            best_tick = t.last_tick
+            best = t.pos
+    if best is not None:
+        return best
+    if belief.self_xy is not None and belief.team is not None:
+        return _home_step(belief.team, belief.self_xy, BACKOFF_STEP_PX * 2)
+    return None
+
+
+def in_squad_contact(belief: Belief) -> bool:
+    """Rejoin exit test: a squadmate confirmed near us (badge sighting within
+    contact range, or a fresh ping placing one nearby via presence freshness +
+    any teammate visibly close)."""
+    assert belief.self_xy is not None
+    sx, sy = belief.self_xy
+    my_squad = set(squad_of(belief.seat)[1]) - {belief.seat}
+    for e in belief.teammates:
+        if e.identity in my_squad and math.hypot(e.pos[0] - sx, e.pos[1] - sy) <= REJOIN_CONTACT_PX:
+            return True
+    return False
+
+
 __all__ = [
     "buddies_near",
     "formation_bias",
+    "in_squad_contact",
+    "lead_squad",
+    "leader_of",
     "past_rally",
     "rally_line_x",
     "rank_of",
+    "rejoin_target",
     "sector_offset_brads",
     "should_wait_for_squad",
     "squad_of",
     "squad_size",
+    "squadmates_alive",
+    "update_presence",
 ]

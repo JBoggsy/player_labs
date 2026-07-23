@@ -2,6 +2,38 @@
 
 Version → change mapping for the CTF `beacon` policy. Newest first.
 
+## v22 — squad command: leader orders, flexible goals, respawn discipline (2026-07-23)
+
+**Why (human direction):** squads' fixed behaviors -> flexible, leader-set goals;
+and stop the respawn trickle (agents feeding 1-by-1 back into contact). Standing
+principle recorded in user_preferences.md: lives > flag captures (verified sharper
+at 0.7.69: timeout = scoreless draw, NO lives tiebreak — hold when weak, convert
+before the clock when strong).
+
+**Chat additions:** ``O<seat><goal><cell>`` orders (goals H hold / S scout / P push
+/ F flag / T thief-hunt; priority below C/T, above G/U/E; rebroadcast 72t) and
+``P<seat><cell>`` presence pings (lowest priority, 60t cadence). Members obey only
+their OWN leader's order (leader = lowest seat, static); orders live 240t then
+fall back to the static role split — squads degrade gracefully to v21 behavior
+when the leader is dead/out of earshot.
+
+**Leader engine** (squads.lead_squad, first match wins): thief fix -> T; carrier
+fix -> F; PAST RALLY + squadmate presence-stale (~190t without badge/ping/order)
+-> **H stepped 70px back toward home** (back off + hold the gained ground);
+defaults D hold choke / A1 flag / A2 push mid.
+
+**Respawn discipline:** on death, snapshot rejoin point = freshest identity-tagged
+squadmate track (else own position stepped home); on respawn, REJOIN rung (below
+carry, above all else) navigates there cautiously (existing micro + danger field),
+exits on squad contact (squadmate badge <=160px) or 360t timeout, then resumes
+orders. Because the squad now HOLDS on member loss, the dead member's stale
+memory stays accurate — the two halves reinforce.
+
+**Tracing:** live order + orders_sent/heard, pings_sent/heard, backoff_events,
+rejoin_ticks, squadmates_alive per snapshot. Knob: BEACON_SQUAD_COMMAND (default
+ON — the A/B bit). Live-wire verified (leader broadcasts O at tick 1, pings
+between, rebroadcasts on cadence). 88 tests.
+
 ## v21 — nameplates + wave-gate off (2026-07-22, 0.7.69 catch-up)
 
 **Why (human direction):** drop wave-gating (tempo cost > sync benefit under

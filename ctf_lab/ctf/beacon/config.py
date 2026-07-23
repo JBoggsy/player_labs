@@ -287,6 +287,28 @@ SQUAD_WAVE_WINDOW_TICKS = _env_int("BEACON_SQUAD_WAVE_WINDOW_TICKS", 36)
 #: Aim-sector offset per rank step (brads); 50 ≈ 70°, complements the 60° cone.
 SQUAD_SECTOR_BRADS = _env_int("BEACON_SQUAD_SECTOR_BRADS", 50)
 
+# --- Squad command (v22): leader orders + presence pings + respawn discipline --------
+#: Master switch for the leader/order/rejoin layer — the v22 A/B bit.
+SQUAD_COMMAND = _env_int("BEACON_SQUAD_COMMAND", 1) == 1
+#: An order (O message) is obeyed this long after it was heard/issued.
+ORDER_TTL_TICKS = _env_int("BEACON_ORDER_TTL_TICKS", 240)
+#: Leaders re-broadcast their current order at this cadence (also on change).
+ORDER_REBROADCAST_TICKS = _env_int("BEACON_ORDER_REBROADCAST_TICKS", 72)
+#: Presence pings (P message): each agent pings at this cadence when it has had
+#: nothing higher-priority to say for the interval.
+PING_INTERVAL_TICKS = _env_int("BEACON_PING_INTERVAL_TICKS", 60)
+#: The leader treats a squadmate as DOWN when neither a badge sighting nor a
+#: ping/order has been seen from that seat for this long (~3 ping periods).
+PRESENCE_STALE_TICKS = _env_int("BEACON_PRESENCE_STALE_TICKS", 190)
+#: Back-off: when a pushing squad loses a member, the leader orders HOLD at its
+#: position stepped this far back toward home.
+BACKOFF_STEP_PX = _env_int("BEACON_BACKOFF_STEP_PX", 70)
+#: Rejoin (respawn discipline): a respawned agent moves to its rejoin point and
+#: gives up after this long without squad contact, resuming normal orders.
+REJOIN_TIMEOUT_TICKS = _env_int("BEACON_REJOIN_TIMEOUT_TICKS", 360)
+#: Rejoin ends when a squadmate is confirmed within this range (badge or ping).
+REJOIN_CONTACT_PX = _env_int("BEACON_REJOIN_CONTACT_PX", 160)
+
 # --- Roles (v2) -------------------------------------------------------------------
 # CTF games (vs the baseline) are decided by WIPE, not capture (see TENTATIVE_LESSONS):
 # nobody captures, so the team that keeps its lives wins. v1's 8 identical rushers died

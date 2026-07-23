@@ -213,6 +213,26 @@ class Belief:
     squad_wait_since: int = -1  # tick we started holding at the rally; -1 = not waiting
     squad_wait_ticks: int = 0  # cumulative ticks spent waiting for buddies
     squad_cohesion_ticks: int = 0  # cumulative ticks a formation bias was applied
+    # Squad command (v22) — the order I currently obey: (goal letter, target pos,
+    # tick set). Set by my own leader logic (if I lead) or a heard O message.
+    order: tuple[str, tuple[int, int], int] | None = None
+    #: presence table: squadmate seat -> last tick we confirmed them alive (badge
+    #: sighting or heard ping/order). Leaders read this for strength estimates.
+    presence: dict[int, int] = field(default_factory=dict)
+    #: my last presence ping tick (send-side cadence).
+    last_ping_tick: int = -10_000
+    #: leader bookkeeping: last order broadcast tick + the goal it carried.
+    last_order_sent_tick: int = -10_000
+    #: rejoin (respawn discipline): where to regroup after respawn, or None.
+    rejoin_point: tuple[int, int] | None = None
+    rejoin_until: int = -1  # give-up deadline (tick); -1 = not rejoining
+    # v22 activation counters (traced).
+    orders_sent: int = 0
+    orders_heard: int = 0
+    pings_sent: int = 0
+    pings_heard: int = 0
+    backoff_events: int = 0
+    rejoin_ticks: int = 0
     # Lead-aim activation state this tick, for tracing: brads of lead applied to the
     # snap aim (0 = no lead / target treated as stationary).
     lead_brads: int = 0

@@ -40,6 +40,8 @@ from ctf.beacon.config import (
     AIM_TURN_RATE,
     CHAT,
     CHAT_BUBBLE_DEDUP_TICKS,
+    REJOIN_TIMEOUT_TICKS,
+    SQUAD_COMMAND,
     CHAT_ENEMY_BUBBLE_FIX,
     CHAT_FIX_TTL_TICKS,
     GRENADE_WARN_TTL_TICKS,
@@ -81,6 +83,18 @@ def update_belief(belief: Belief, percept: CtfState, action_state: ActionState, 
     belief.alive = percept.self_xy is not None
     if percept.self_xy is not None:
         belief.self_xy = percept.self_xy
+
+    # Respawn discipline (v22): on DEATH, snapshot where to regroup (the freshest
+    # squadmate memory); on RESPAWN, enter rejoin mode toward it. Import here is
+    # cycle-safe (squads imports config/types only).
+    if SQUAD_COMMAND:
+        from ctf.beacon import squads as _squads
+
+        if was_alive and not belief.alive:
+            belief.rejoin_point = _squads.rejoin_target(belief)
+            belief.rejoin_until = -1
+        elif not was_alive and belief.alive and belief.rejoin_point is not None:
+            belief.rejoin_until = tick + REJOIN_TIMEOUT_TICKS
 
     # Aim estimate: prefer the observed aim-dot read; else dead-reckon by the rotation
     # we commanded last frame. On (re)spawn, reseed to the spawn aim.
@@ -297,7 +311,20 @@ def _update_chat(belief: Belief, percept: CtfState, tick: int) -> None:
         if msg is None:
             continue
         belief.chat_heard_counts[msg.kind] = belief.chat_heard_counts.get(msg.kind, 0) + 1
-        if msg.kind in ("enemy", "thief"):
+        if msg.kind == "order":
+            # Obey only MY squad leader's order (v22).
+            from ctf.beacon import squads as _squads
+
+            if msg.seat == _squads.leader_of(belief.seat) and msg.seat != belief.seat:
+                belief.order = (msg.goal or "H", msg.pos, tick)
+                belief.orders_heard += 1
+            if msg.seat is not None:
+                belief.presence[msg.seat] = tick
+        elif msg.kind == "ping":
+            if msg.seat is not None:
+                belief.presence[msg.seat] = tick
+                belief.pings_heard += 1
+        elif msg.kind in ("enemy", "thief"):
             _update_tracks(
                 belief.enemy_tracks, (Enemy(pos=msg.pos, facing="left"),), tick
             )

@@ -129,10 +129,14 @@ def test_hold_points_snap_to_cover():
 
 
 def test_defender_holds_when_arrived():
+    # Seat 0 is the D-squad LEADER (v22): it orders itself to hold its choke, so
+    # the reason is order-driven; the behavior (hold on our turf) is unchanged.
     b = Belief(team="red", seat=0, role="defender", hold_point=(390, 300),
                alive=True, self_xy=(390, 300))
     intent, flow = decide_objective(b)
-    assert intent.kind == "hold" and intent.reason == "hold_line"
+    assert intent.kind in ("hold", "navigate_to")
+    assert intent.reason in ("hold_line", "order_hold", "order_to_hold")
+    assert b.order is not None and b.order[0] == "H"  # leader set a hold order
 
 
 def test_carrier_overrides_role():
@@ -1031,3 +1035,89 @@ def test_wave_gate_disabled_by_default():
     b = Belief(team="red", seat=5, role="attacker", alive=True, self_xy=(430, 300))
     b.tick = SQUAD_WAVE_PERIOD_TICKS * 10 + SQUAD_WAVE_WINDOW_TICKS + 5  # outside window
     assert not squads.should_wait_for_squad(b)  # gate off (v21 default)
+
+
+# --- v22: squad command ---------------------------------------------------------------
+
+
+def test_order_codec_roundtrip():
+    from ctf.beacon import chat
+    code = chat.encode_order(3, "P", (800, 400))
+    assert len(code) <= 10
+    msg = chat.decode(code)
+    assert msg.kind == "order" and msg.seat == 3 and msg.goal == "P"
+    assert abs(msg.pos[0] - 800) <= 8 and abs(msg.pos[1] - 400) <= 8
+    ping = chat.decode(chat.encode_ping(6, (200, 300)))
+    assert ping.kind == "ping" and ping.seat == 6
+
+
+def test_leader_is_lowest_seat():
+    from ctf.beacon import squads
+    assert squads.leader_of(0) == 0 and squads.leader_of(2) == 0
+    assert squads.leader_of(4) == 3
+    assert squads.leader_of(7) == 5
+
+
+def test_member_obeys_own_leaders_order_only():
+    from ctf.beacon.belief import update_belief
+    from ctf.beacon import chat
+    # Seat 6 (A2, leader = 5): obeys seat 5's order, ignores seat 0's (D leader).
+    b = Belief(team="red", seat=6, role="attacker", alive=True, self_xy=(400, 300))
+    st = ActionState()
+    good = chat.encode_order(5, "H", (500, 300))
+    bad = chat.encode_order(0, "P", (900, 300))
+    update_belief(b, _chat_percept(heard_shouts=(
+        ("red", "mate (0)", bad, (400, 320)),
+        ("red", "mate (5)", good, (420, 300)),
+    )), st, tick=10)
+    assert b.order is not None and b.order[0] == "H"
+    intent, _ = decide_objective(b)
+    assert intent.reason in ("order_to_hold", "order_hold")
+
+
+def test_leader_backs_off_when_squadmate_lost():
+    from ctf.beacon import squads
+    # Seat 5 leads A2 (5,6,7). Past the rally line, mates silent -> H order
+    # stepped back toward home, and a backoff event is counted.
+    b = Belief(team="red", seat=5, role="attacker", alive=True, tick=5000,
+               self_xy=(700, 300))
+    b.presence = {6: 100, 7: 120}  # long stale
+    squads.lead_squad(b)
+    assert b.order is not None and b.order[0] == "H"
+    assert b.order[1][0] < 700  # stepped back toward red home
+    assert b.backoff_events == 1
+    # With mates fresh, the default push order returns instead.
+    b2 = Belief(team="red", seat=5, role="attacker", alive=True, tick=5000,
+                self_xy=(700, 300))
+    b2.presence = {6: 4950, 7: 4990}
+    squads.lead_squad(b2)
+    assert b2.order is not None and b2.order[0] == "P"
+
+
+def test_death_snapshots_rejoin_and_respawn_enters_rejoin():
+    from ctf.beacon.belief import update_belief
+    from ctf.beacon.types import PlayerTrack
+    b = Belief(team="red", seat=6, role="attacker", alive=True, self_xy=(700, 300))
+    st = ActionState()
+    # Freshest squadmate memory: seat 7 at (650, 350).
+    b.teammate_tracks = [PlayerTrack(pos=(650, 350), last_tick=90, facing="left", identity=7)]
+    update_belief(b, _chat_percept(self_xy=(700, 300)), st, tick=100)
+    # Die: percept has no self.
+    update_belief(b, _chat_percept(self_xy=None, ready=False), st, tick=101)
+    assert not b.alive and b.rejoin_point == (650, 350)
+    # Respawn: rejoin mode armed; objective is the rejoin rung.
+    update_belief(b, _chat_percept(self_xy=(80, 300)), st, tick=180)
+    assert b.rejoin_until > 180
+    intent, _ = decide_objective(b)
+    assert intent.reason == "rejoin" and intent.point == (650, 350)
+
+
+def test_rejoin_exits_on_squad_contact():
+    b = Belief(team="red", seat=6, role="attacker", alive=True, self_xy=(640, 340))
+    b.rejoin_point = (650, 350)
+    b.rejoin_until = 10_000
+    b.tick = 200
+    # A squadmate (seat 7 badge) right next to us -> contact -> rejoin ends.
+    b.teammates = (Enemy(pos=(660, 350), facing="left", identity=7),)
+    intent, _ = decide_objective(b)
+    assert b.rejoin_until == -1 and intent.reason != "rejoin"

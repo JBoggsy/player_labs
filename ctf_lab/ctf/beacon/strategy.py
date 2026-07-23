@@ -18,7 +18,9 @@ from ctf.beacon.config import (
     ITEM_DETOUR_PX,
     ITEMS,
     MEDKIT_DETOUR_PX,
+    ORDER_TTL_TICKS,
     PEDESTAL,
+    SQUAD_COMMAND,
     SQUADS,
 )
 from ctf.beacon.types import Belief, Intent
@@ -34,10 +36,33 @@ def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
     assert team is not None
     enemy = "blue" if team == "red" else "red"
 
+    # Squad command upkeep (v22): refresh presence from badge sightings; leaders
+    # run the rule engine (sets belief.order); heard orders arrive via belief.
+    if SQUAD_COMMAND:
+        squads.update_presence(belief)
+        squads.lead_squad(belief)
+
     # Rung 1 (everyone): carrying the enemy flag -> run it home. A carried flag is a
     # win one delivery away, and dying returns it instantly. Overrides role.
     if belief.i_carry_enemy_flag:
         return Intent(kind="navigate_to", point=None, reason="carry_home"), "home"
+
+    # Rung 1.5 (v22 respawn discipline): freshly respawned -> REJOIN the squad
+    # first. Move to the snapshotted regroup point (the squad HOLDS on member
+    # loss, so the stale memory is accurate); the peek/duck micro + danger field
+    # supply the caution en route. Exits on squad contact or timeout. Sits below
+    # carry (a flag in hand always runs home) and above everything else — a lone
+    # agent trickling into contact is the exact feed this rung exists to stop.
+    if SQUAD_COMMAND and belief.rejoin_until >= 0 and belief.self_xy is not None:
+        if belief.tick >= belief.rejoin_until or squads.in_squad_contact(belief):
+            belief.rejoin_until = -1
+            belief.rejoin_point = None
+        elif belief.rejoin_point is not None:
+            belief.rejoin_ticks += 1
+            if _dist(belief.self_xy, belief.rejoin_point) > 40:
+                return Intent(kind="navigate_to", point=belief.rejoin_point, reason="rejoin"), None
+            # At the point but no contact yet: hold there (sweep covers the arc).
+            return Intent(kind="hold", reason="rejoin_hold"), None
 
     # Rung 2 (everyone): our flag is stolen and we have a thief fix -> intercept.
     # Killing the carrier returns the flag instantly; this is the anti-capture play.
@@ -96,7 +121,29 @@ def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
         if assigned is not None and _dist(belief.self_xy, assigned.pos) <= ITEM_DETOUR_PX:
             return Intent(kind="navigate_to", point=assigned.pos, reason="fetch_item"), None
 
-    # Rung 4: role split.
+    # Rung 4 (v22): obey the squad order when one is live. Goals map onto the
+    # existing machinery: H/S hold a point (sectors cover the approaches), P
+    # pushes a point fighting en route, F flags (steal / the escort rungs above
+    # already handle a live carrier), T hunts at the ordered fix.
+    if SQUAD_COMMAND and belief.order is not None and belief.self_xy is not None:
+        goal, opos, set_tick = belief.order
+        if belief.tick - set_tick > ORDER_TTL_TICKS:
+            belief.order = None  # stale — fall through to the static defaults
+        else:
+            if goal in ("H", "S"):
+                if _dist(belief.self_xy, opos) <= HOLD_ARRIVE_PX * 2:
+                    return Intent(kind="hold", reason="order_hold"), None
+                return Intent(kind="navigate_to", point=opos, reason="order_to_hold"), None
+            if goal == "P":
+                if _dist(belief.self_xy, opos) <= HOLD_ARRIVE_PX * 2:
+                    return Intent(kind="hold", reason="order_push_arrived"), None
+                return Intent(kind="navigate_to", point=opos, reason="order_push"), None
+            if goal == "T":
+                return Intent(kind="navigate_to", point=opos, reason="order_hunt"), None
+            if goal == "F":
+                return Intent(kind="navigate_to", point=PEDESTAL[enemy], reason="steal"), "steal"
+
+    # Rung 4 fallback (no live order / SQUAD_COMMAND off): the static role split.
     if belief.role == "defender" and belief.hold_point is not None:
         # Hold cover on our turf: the enemy dies attacking us (we respawn close),
         # and our flag stops being undefended. Once at the hold point, stop

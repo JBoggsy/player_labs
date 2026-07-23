@@ -15,6 +15,9 @@ fit in two base-36 digits, so every message is ≤6 chars, well under the cap:
   ``G<cell>``    my grenade is en route to cell — clear the blast
   ``C<cell><h>`` I carry the enemy flag at cell, heading octant h (0-7)
   ``T<cell>``    the enemy THIEF (carrying OUR flag) is at cell
+  ``O<s><g><cell>`` ORDER (v22): leader seat s sets squad goal g at cell
+                    (g: H hold / S scout / P push / F flag / T thief-hunt)
+  ``P<s><cell>`` presence ping (v22): seat s is alive at cell
 
 Sender arbitration: one bubble/sec, so one message wins per window — priority
 C > T > G > U > E (carrier state beats intel; grenade warning beats chatter).
@@ -38,8 +41,12 @@ from ctf.beacon.config import (
     GRID_H,
     GRID_W,
     NAV_CELL,
+    ORDER_REBROADCAST_TICKS,
+    PING_INTERVAL_TICKS,
+    SQUAD_COMMAND,
 )
 from ctf.beacon.types import Belief, Team
+from ctf.beacon import squads
 
 _B36 = "0123456789abcdefghijklmnopqrstuvwxyz"
 
@@ -72,13 +79,19 @@ def decode_cell(code: str) -> tuple[int, int] | None:
     return (gx * NAV_CELL + NAV_CELL // 2, gy * NAV_CELL + NAV_CELL // 2)
 
 
+#: Order goal letters (v22): what a leader can set a squad to do.
+ORDER_GOALS = ("H", "S", "P", "F", "T")  # hold / scout / push / flag / thief-hunt
+
+
 @dataclass(frozen=True)
 class ChatMessage:
     """One decoded same-team message."""
 
-    kind: str  # "enemy" | "under_fire" | "grenade" | "carrier" | "thief"
+    kind: str  # "enemy"|"under_fire"|"grenade"|"carrier"|"thief"|"order"|"ping"
     pos: tuple[int, int]
     heading: int | None = None  # carrier heading octant 0-7 (E, NE, N, ... CCW)
+    seat: int | None = None  # sender seat (order/ping)
+    goal: str | None = None  # order goal letter (H/S/P/F/T)
 
 
 def encode(kind: str, pos: tuple[int, int], heading: int | None = None) -> str:
@@ -90,10 +103,31 @@ def encode(kind: str, pos: tuple[int, int], heading: int | None = None) -> str:
     return code
 
 
+def encode_order(seat: int, goal: str, pos: tuple[int, int]) -> str:
+    """``O<seat><goal><cell>`` — 7 chars."""
+    assert goal in ORDER_GOALS
+    return f"O{seat % 8}{goal}" + encode_cell(pos)
+
+
+def encode_ping(seat: int, pos: tuple[int, int]) -> str:
+    """``P<seat><cell>`` — 6 chars."""
+    return f"P{seat % 8}" + encode_cell(pos)
+
+
 def decode(text: str) -> ChatMessage | None:
     """Parse one same-team shout payload; None if it isn't protocol traffic."""
     if not text:
         return None
+    if text[0] == "O" and len(text) >= 7 and text[1].isdigit() and text[2] in ORDER_GOALS:
+        pos = decode_cell(text[3:7])
+        if pos is None:
+            return None
+        return ChatMessage(kind="order", pos=pos, seat=int(text[1]), goal=text[2])
+    if text[0] == "P" and len(text) >= 6 and text[1].isdigit():
+        pos = decode_cell(text[2:6])
+        if pos is None:
+            return None
+        return ChatMessage(kind="ping", pos=pos, seat=int(text[1]))
     kind = {"E": "enemy", "U": "under_fire", "G": "grenade",
             "C": "carrier", "T": "thief"}.get(text[0])
     if kind is None:
@@ -134,6 +168,16 @@ def choose_shout(belief: Belief) -> str | None:
     msg: str | None = None
     kind: str | None = None
 
+    # O: leader order broadcast (v22) — on change or on cadence. Sits below the
+    # carrier heartbeat / thief fix (those are the two live-or-die messages) and
+    # above everything else: a squad without orders is a squad without shape.
+    def _order_due() -> bool:
+        if not SQUAD_COMMAND or belief.order is None:
+            return False
+        if squads.leader_of(belief.seat) != belief.seat:
+            return False  # only the leader broadcasts
+        return tick - belief.last_order_sent_tick >= ORDER_REBROADCAST_TICKS
+
     # C: carrier heartbeat — while carrying, this is ALL we say (escorts need it
     # fresh, and our position is already blazing via the carried-flag sprite, so
     # the shout's position leak costs nothing).
@@ -151,6 +195,13 @@ def choose_shout(belief: Belief) -> str | None:
     elif belief.own_flag_stolen and belief.own_flag_thief_pos is not None:
         msg = encode("thief", belief.own_flag_thief_pos)
         kind = "thief"
+    # O: leader broadcasts the squad order (v22).
+    elif _order_due():
+        goal, pos, _ = belief.order
+        msg = encode_order(belief.seat, goal, pos)
+        kind = "order"
+        belief.last_order_sent_tick = tick
+        belief.orders_sent += 1
     # G: our grenade is in the air / charging toward a target.
     elif belief.throw_target is not None and belief.throw_charge_ticks > 0:
         msg = encode("grenade", belief.throw_target)
@@ -172,6 +223,13 @@ def choose_shout(belief: Belief) -> str | None:
             kind = "enemy"
             belief.chat_enemy_armed = False
             belief.chat_last_enemy_tick = tick
+    # P: presence ping (v22) — lowest priority; the squad's heartbeat. Feeds the
+    # leader's strength table and the rejoin contact check.
+    elif SQUAD_COMMAND and tick - belief.last_ping_tick >= PING_INTERVAL_TICKS:
+        msg = encode_ping(belief.seat, belief.self_xy)
+        kind = "ping"
+        belief.last_ping_tick = tick
+        belief.pings_sent += 1
 
     if belief.enemies:
         belief.chat_enemy_seen_tick = tick
