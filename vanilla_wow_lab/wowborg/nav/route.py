@@ -196,13 +196,32 @@ class RouteNavigator:
                 if plan.partial:
                     partial_end = _pt(plan.waypoints[-1], target.map_id)
                     progress = here.distance(target) - partial_end.distance(target)
-                    if progress < STAGE_ARRIVAL_RADIUS_YARDS:
-                        return RouteResult(
-                            NavState.FAILED, reason="unreachable", end=here,
-                            walked_seconds=walked_seconds,
-                            combat_pauses=combat_pauses, deaths=deaths, replans=replans)
-                    # Walk to the partial end, then re-plan (loop continues from there).
-                    arrival_check = partial_end
+                    if progress < ARRIVAL_RADIUS_YARDS:
+                        # A corridor that buys us nothing is NOT proof the target
+                        # is unreachable — findPath's node pool truncates long
+                        # corridors at a heuristic frontier (v29: razor-hill was
+                        # declared unreachable off a 26yd partial). Genuine
+                        # unreachability shows as off-mesh projection (handled
+                        # above) or a zero-waypoint no_path. This is a stall:
+                        # bounded by the same-spot replan limit → no_progress.
+                        nearby = sum(1 for s in replan_spots
+                                     if s.distance(here) <= SAME_SPOT_YARDS)
+                        if nearby >= REPLAN_LIMIT_PER_REGION:
+                            return RouteResult(
+                                NavState.FAILED, reason="no_progress", end=here,
+                                walked_seconds=walked_seconds,
+                                combat_pauses=combat_pauses, deaths=deaths,
+                                replans=replans)
+                        replan_spots.append(here)
+                        replans += 1
+                        self._trace("nav_state", state="replanning",
+                                    cause="empty_partial")
+                        # Nudge outward first: walk toward the target directly for
+                        # one L0 leg so the next corridor query starts elsewhere.
+                        arrival_check = target
+                    else:
+                        # Walk to the partial end, then re-plan onward from there.
+                        arrival_check = partial_end
                 planned_distance = plan.route_distance
             result.planned_distance = max(result.planned_distance, planned_distance)
 

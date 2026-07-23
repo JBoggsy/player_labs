@@ -98,7 +98,7 @@ class LocalMover:
         moves = 0
         stalls = 0
         best_distance: float | None = None
-        history: list[Point] = []
+        history: list[tuple[Point, float]] = []  # (position, goal distance there)
 
         while True:
             if time.monotonic() >= until:
@@ -112,8 +112,8 @@ class LocalMover:
                 # Detour chunks keep action_ready false >60s mid-route). If observe()
                 # shows movement since our last sample, keep waiting.
                 position = _observe(bridge)
-                if position is not None and history and position.distance(history[-1]) > PROGRESS_EPSILON_YARDS:
-                    history.append(position)
+                if position is not None and history and position.distance(history[-1][0]) > PROGRESS_EPSILON_YARDS:
+                    history.append((position, position.distance(check)))
                     del history[:-OSCILLATION_HISTORY]
                     continue
                 return LocalMoveResult(LocalMoveStatus.NO_FRAME, _last(history), moves,
@@ -138,20 +138,23 @@ class LocalMover:
                 return LocalMoveResult(LocalMoveStatus.ARRIVED, here, moves,
                                        time.monotonic() - started)
 
-            # Oscillation: back within revisit range of a non-adjacent prior position.
-            if _is_revisit(history, here):
+            # Oscillation: back within revisit range of a non-adjacent prior position
+            # WITHOUT goal progress since that visit. The progress condition matters:
+            # legitimate switchback routes (mesa ramps, v29 sarkoth evidence) revisit
+            # positions laterally while the goal distance keeps improving.
+            if _is_revisit(history, here, here.distance(check)):
                 self._trace("nav_oscillation", at=[here.x, here.y, here.z])
                 return LocalMoveResult(LocalMoveStatus.OSCILLATING, here, moves,
                                        time.monotonic() - started,
                                        detail="position-history revisit loop")
-            history.append(here)
+            history.append((here, here.distance(check)))
             del history[:-OSCILLATION_HISTORY]
 
             # Progress bookkeeping: goal distance improved OR real displacement.
             distance_now = here.distance(check)
             displaced = (
                 len(history) >= 2
-                and history[-2].distance(here) > PROGRESS_EPSILON_YARDS
+                and history[-2][0].distance(here) > PROGRESS_EPSILON_YARDS
             )
             if best_distance is None or distance_now < best_distance - PROGRESS_EPSILON_YARDS:
                 best_distance = distance_now
@@ -195,8 +198,8 @@ class LocalMover:
             )
 
 
-def _last(history: list[Point]) -> Point | None:
-    return history[-1] if history else None
+def _last(history: list[tuple[Point, float]]) -> Point | None:
+    return history[-1][0] if history else None
 
 
 def _observe(bridge) -> Point | None:
@@ -206,16 +209,22 @@ def _observe(bridge) -> Point | None:
     return Point(obs.map_id, obs.position.x, obs.position.y, obs.position.z)
 
 
-def _is_revisit(history: list[Point], here: Point) -> bool:
-    """True when we LEFT a position and came back — an A→B→A or A→B→C→A loop.
+def _is_revisit(
+    history: list[tuple[Point, float]], here: Point, goal_distance: float
+) -> bool:
+    """True when we LEFT a position and came back NO CLOSER to the goal — a real
+    A→B→A loop, not a switchback.
 
-    Requires an excursion: some position between the prior visit and now must be
-    beyond the revisit radius. Standing still is a STALL (no excursion), not an
-    oscillation — the two need different reporting even though both re-plan.
+    Requires an excursion (some position between the prior visit and now beyond the
+    revisit radius — standing still is a STALL, not an oscillation) AND no goal
+    progress since the prior visit (switchback ramps legitimately revisit positions
+    laterally while goal distance improves — v29 sarkoth-mesa evidence).
     """
-    for i, prior in enumerate(history[:-1]):
+    for i, (prior, prior_goal_distance) in enumerate(history[:-1]):
         if prior.distance(here) <= OSCILLATION_REVISIT_YARDS:
+            if goal_distance < prior_goal_distance - PROGRESS_EPSILON_YARDS:
+                continue
             between = history[i + 1:]
-            if any(p.distance(here) > OSCILLATION_REVISIT_YARDS for p in between):
+            if any(p.distance(here) > OSCILLATION_REVISIT_YARDS for p, _ in between):
                 return True
     return False
