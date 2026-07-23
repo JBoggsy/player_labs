@@ -174,3 +174,40 @@ regress the others in the same batch.
    level 1? May need the dungeon variant or a level override for dungeon stations —
    worst case the dungeon tier runs on `rfc-five-player-clear`'s variant config.
 3. Zeppelin mechanics (stretch): defer until L2 is proven on foot?
+
+## Outcome (2026-07-23, v21→v38 campaign) — SHIPPED, one-shot bar met
+
+Fourteen hosted batches iterated this design to the /goal bar. Final validation: two
+consecutive fresh courses shipped as pure data (`--stations` build arg → `WOWBORG_STATIONS`)
+with zero code changes — v37: 4/4 episodes at 100% reachability / 100% honesty; v38:
+100/67/67/100 where every miss was a session-length deadline (~800yd at the seam's
+effective pace vs the station's time share), not a navigation failure.
+
+Key deltas from the design as written (each earned by a hosted failure — see the
+lessons buffer and `git log v21..v38` for evidence):
+
+- **L1 does not walk service waypoints.** One direct semantic move per plan; the
+  executor's server-side Detour owns locomotion (waypoint micro-hopping marched it into
+  "no physically admissible source projection" traps and reset its auto-unstuck).
+  The plan supplies reachability verdicts, distance-derived budgets, and partial
+  progression targets. HOP_HORIZON is gone.
+- **The honesty classifier is subtler than status codes.** Bare no_path ≠ unreachable:
+  a here→here self-probe distinguishes a broken planner (degrade) from an off-mesh
+  target (fail fast). Empty partials (findPath pool truncation) are stalls, bounded by
+  the same-spot replan limit (4), never "unreachable".
+- **Staging is a ladder, not a hop policy**: after a stall, stage at corridor 1/2 →
+  1/4 → …; reset on any landed leg. Plus the stock Stuck spell (7355) as L0's first
+  unstick rung.
+- **Combat is run-through by default** (yield at <50% health or combat-stall), and a
+  finished fight resumes the same walk without re-planning.
+- **The race layer owns time-physics**: nearest-first ordering, world-graph travel
+  estimates, `skipped_insufficient_time` for stations that provably can't fit their
+  fair share (excluded from reachability), last station gets the remaining session.
+- **0.1.31 contract hazards**: the controller emits validation-invalid frames in long
+  storms (recommended-vs-mask upstream bug) — survive via a lenient raw-JSON frame
+  parse (ALL five status_request fields are required by the Nim server) and the
+  state.json TelemetrySnapshot observation fallback.
+
+Open items carried forward: RFC portal edge (area_trigger 2230) unproven hosted —
+needs a longer variant than custom-fresh-start (~970s) since the journey routes
+~3000yd through Orgrimmar; zeppelins untouched.

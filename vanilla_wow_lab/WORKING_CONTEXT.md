@@ -13,6 +13,51 @@ file is the one-screen "where are we and why."
 
 ---
 
+## Status (2026-07-23, session 5g): NAV V2 ONE-SHOT BAR MET — World Race generalizes to fresh courses
+
+**The /goal is closed (v21→v38, 14 hosted batches):** add stations as pure DATA and the
+agent one-shots them. Two consecutive fresh courses (never-raced coordinates baked via the
+new `--stations` build seam, zero code changes) validated it:
+
+- **v37** (canyon-mouth / trial-road / sarkoth-approach + adversarial): **4/4 episodes,
+  100% reachability, 100% honesty**, adversarial probes failed-fast in ~8.5s.
+- **v38** (valley-crossroads / canyon-interior / west-rise / senjin-coast + under-canyon):
+  100/67/67/100 — the only misses were senjin-coast **deadline** losses (~800yd at the
+  seam's ~1.5yd/s effective pace vs a 533s share: session-length physics, not navigation;
+  the one senjin attempt with enough runway ARRIVED at 540.7s).
+
+**Architecture that got there** (`wowborg/nav/`: local.py L0 / route.py L1 / journey.py L2,
+`policies/world_race.py`, design: `docs/designs/wowborg-nav-v2.md`):
+- **One direct semantic move per plan** — never micro-hop service waypoints; the executor's
+  server-side Detour owns locomotion (v28: waypoint-feeding marched it into "no admissible
+  source projection" traps). `/player/navigation` supplies reachability verdicts,
+  true-distance budgets, partial progression targets.
+- **Honesty machinery**: off-mesh projection / zero-waypoint no_path → fail fast (~8-13s);
+  planner self-probe (here→here) distinguishes broken planner from unreachable target;
+  empty partials (corridor end inside stage radius) are STALLS counted by the same-spot
+  replan limit (4), never "unreachable".
+- **Staging ladder** on stalls/oscillation: direct → corridor 1/2 → 1/4 → … (v37 fixed
+  canyon-mouth 1/4 → 4/4); ladder resets when a leg lands. Stuck spell 7355 in L0's
+  unstick (sanctioned relocation). Oscillation = revisit WITHOUT goal progress
+  (switchback ramps are legal).
+- **Run through trivial combat** (yield only <50% health or combat-stall); resume the same
+  walk after combat (no re-plan). Lenient frames + state.json fallback survive the 0.1.31
+  validation storms ("recommended action must be admitted" upstream bug — raw status_request
+  needs ALL 5 fields or the Nim server errors).
+- **Race policy**: nearest-first ordering, physically-honest skip (world-graph travel
+  estimate vs fair-share deadline → `skipped_insufficient_time`, excluded from
+  reachability), last station gets the whole remaining session.
+
+**Known limits:** seam pace is ~2.2yd/s moving / ~1.5yd/s effective (executor advances ≤8
+corridor waypoints ≈ 17yd per ~7.6s settle cycle — `ControlMoveMaxWaypoints=8` server-side),
+so ~800yd is the practical single-station radius on a 970s `custom-fresh-start` session;
+Orgrimmar/RFC stations need longer variants (rfc-five-player-clear: ~50min). RFC portal edge
+(area_trigger 2230) still unproven hosted. **Next:** T1 combat modules per
+`docs/designs/wowborg-t1-combat-modules.md` (start: combat_state + target_selector +
+minimal rotation_engine; shaman first).
+
+---
+
 ## Status (2026-07-21, session 5b): 0.1.31 player contract mapped — migration is a bridge rewrite
 
 **The deployed game moved to 0.1.31 and rebuilt the policy seam** (recon:
