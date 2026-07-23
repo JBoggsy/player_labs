@@ -32,6 +32,20 @@ the remaining uses are (a) enemy team lives (24 − enemy deaths) to gauge wipe 
 (b) own remaining respawns for risk calibration. docs/ctf-gameplay.md is stale on tiebreak,
 scoring (+100→+1/-1/-1), maxTicks (10000→5000), and spawn protect (removed GV20) — needs reconcile.
 
+### v25 spread A/B: the mechanism can work and the outcome still regress — measure the outcome
+Evidence: stacked-ticks collapsed (67→5.6/appearance vs h006) and losses went to ZERO in both
+matchups, but wins fell (7→5 vs focusfire, 2→0 vs h006) and draws exploded — every focusfire draw
+had beacon at 21-23 kills, 1-2 short of the 24-kill wipe, with spread holders never collapsing to
+finish. Under GV21 (draw = -1) "safer" without "converts" is a strict regression. The spread needs
+a finisher: when the wipe is within reach (enemy lives low / long since enemy contact), collapse
+and hunt. Also: team kills were only ~0.4/game in v24 — the visible stacking was real but its TK
+cost was small; the draw problem dominates everything.
+
+### The league redeployed AGAIN mid-session (0.7.69→0.7.70) — matched arms saved the A/B
+Evidence: yesterday's v24 measurement (0W/9D/1L vs focusfire) vs today's v24 arm (7W/0D/3L vs the
+SAME opponent) — wildly different, because the game moved under us overnight. Only the same-window
+matched pair is interpretable. Reflex confirmed: never diff against a stale batch.
+
 ### A shared order point + per-member A* = a stacked squad; spread must be structural, not a force
 Evidence: v22-v24 orders send every squad member to the SAME cell; the v19 separation force never
 applied to order-driven movement, and a HOLDING agent emits no movement at all — so squads stacked

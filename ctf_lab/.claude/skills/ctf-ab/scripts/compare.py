@@ -43,9 +43,9 @@ class Rec:
     win: bool
     draw: bool
     score: int
-    captures: int
-    kills: int
-    deaths: int
+    captures: int | None  # None = results artifact missing (episode-scores fallback)
+    kills: int | None
+    deaths: int | None
     team_kills: int | None  # from the warehouse; None = no warehouse for this batch
     stacked_ticks: int | None  # pos snapshots with a teammate <25px (warehouse)
     ops_fail: bool
@@ -128,17 +128,19 @@ def load_batch(root: Path, policy: str, version: int | None) -> list[Rec]:
     recs: list[Rec] = []
     for ep in sorted(p for p in root.iterdir() if p.is_dir() and p.name != "wh"):
         ej, rj = ep / "episode.json", ep / "results.json"
-        if not (ej.exists() and rj.exists()):
+        if not ej.exists():
             continue
         try:
-            episode, results = json.loads(ej.read_text()), json.loads(rj.read_text())
+            episode = json.loads(ej.read_text())
+            results = json.loads(rj.read_text()) if rj.exists() else None
         except json.JSONDecodeError:
             continue
         eid = episode.get("id") or ep.name
         slots = [pos for pos, name, ver in slot_entries(episode)
                  if name == policy and (version is None or ver == version)]
         for slot in slots:
-            rec = _record(results, slot, episode)
+            rec = (_record(results, slot, episode) if results is not None
+                   else _record_from_episode(episode, slot))
             if rec is None:
                 continue
             if have_wh:
@@ -168,6 +170,35 @@ def _record(results: dict, slot: int, episode: dict) -> Rec | None:
         captures=int(col("captures") or 0),
         kills=int(col("kills") or 0),
         deaths=int(col("deaths") or 0),
+        team_kills=None,
+        stacked_ticks=None,
+        ops_fail=bool(episode.get("error")),
+    )
+
+
+def _record_from_episode(episode: dict, slot: int) -> Rec | None:
+    """Fallback when the results artifact is unavailable (observed 2026-07-23:
+    /jobs/{id}/artifacts/results 404s on fresh xreq episodes). episode.json's
+    `scores` maps policy_version_id -> score; join via `participants`. Win/draw
+    derive from GV21 scoring (+1 winners; a timeout draw has NO positive score).
+    kills/deaths/captures aren't present here — they come from the warehouse
+    (team_kills/stacked) or stay 0; captures_mean is meaningless in this mode."""
+    part = next((p for p in episode.get("participants") or []
+                 if p.get("position") == slot), None)
+    if part is None:
+        return None
+    score_by_pvid = {s["policy_version_id"]: s["score"]
+                     for s in episode.get("scores") or []}
+    my = score_by_pvid.get(part.get("policy_version_id"))
+    if my is None:
+        return None
+    return Rec(
+        win=my > 0,
+        draw=not any(v > 0 for v in score_by_pvid.values()),
+        score=int(my),
+        captures=None,
+        kills=None,
+        deaths=None,
         team_kills=None,
         stacked_ticks=None,
         ops_fail=bool(episode.get("error")),
@@ -205,11 +236,14 @@ def metric_value(recs: list[Rec], key: str) -> tuple[float, int] | None:
     if key == "score_mean":
         return statistics.mean(r.score for r in recs), n
     if key == "captures_mean":
-        return statistics.mean(r.captures for r in recs), n
+        vals = [r.captures for r in recs if r.captures is not None]
+        return (statistics.mean(vals), len(vals)) if vals else None
     if key == "kills_mean":
-        return statistics.mean(r.kills for r in recs), n
+        vals = [r.kills for r in recs if r.kills is not None]
+        return (statistics.mean(vals), len(vals)) if vals else None
     if key == "deaths_mean":
-        return statistics.mean(r.deaths for r in recs), n
+        vals = [r.deaths for r in recs if r.deaths is not None]
+        return (statistics.mean(vals), len(vals)) if vals else None
     if key == "team_kills_mean":
         vals = [r.team_kills for r in recs if r.team_kills is not None]
         return (statistics.mean(vals), len(vals)) if vals else None
@@ -224,9 +258,9 @@ def metric_value(recs: list[Rec], key: str) -> tuple[float, int] | None:
 def value_fn(recs: list[Rec], key: str) -> list[float]:
     """Per-appearance values for a metric (for the continuous significance test)."""
     if key == "score_mean":    return [float(r.score) for r in recs]
-    if key == "captures_mean": return [float(r.captures) for r in recs]
-    if key == "kills_mean":    return [float(r.kills) for r in recs]
-    if key == "deaths_mean":   return [float(r.deaths) for r in recs]
+    if key == "captures_mean": return [float(r.captures) for r in recs if r.captures is not None]
+    if key == "kills_mean":    return [float(r.kills) for r in recs if r.kills is not None]
+    if key == "deaths_mean":   return [float(r.deaths) for r in recs if r.deaths is not None]
     if key == "team_kills_mean":
         return [float(r.team_kills) for r in recs if r.team_kills is not None]
     if key == "stacked_ticks_mean":

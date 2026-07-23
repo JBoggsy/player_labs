@@ -10,7 +10,28 @@ startup to resume; **update it as you learn** (keep it tight).
 
 ---
 
-## Status (2026-07-23, session 7 END): **v24 SUBMITTED (qualifying); rank 3 @ 0.55. NEXT: the convert trigger**
+## Status (2026-07-23, session 8): **v25 spread built+measured — mechanism works, outcome REGRESSED; needs the finisher. League on 0.7.70**
+
+**v25 (uploaded, NOT submitted): squad spread** — rank-offset shared order points
+(0/±70px y, `spread_point`), separation applied to order_* movement, and a
+push-apart nudge as the hold state's only movement. Stacking is FIXED: stacked-ticks
+67→5.6/appearance (h006), 28.6→5.9 (focusfire). But the matched A/B (10 eps/arm,
+same-window, 0.7.70) says **outcome regressed**: focusfire 7W/0D/3L (v24) → 5W/5D/0L
+(v25); h006 2W/5D/3L → 0W/10D/0L. Losses → ZERO (spread strictly helps defense);
+draws exploded, and under GV21 draw = -1 = loss. Every focusfire draw: beacon ahead
+21-23 kills vs ~15, 1-2 kills short of the 24-kill wipe, holders never collapse to
+finish. **v25's spread makes the CONVERT TRIGGER mandatory, not optional**: safer
+posture + no finisher = permanent stalemate. Reports:
+`scratch/eval_v25_ab/ab_{focusfire,h006}.html`; per-opponent matched arms in
+`scratch/eval_v25_ab/`. NEW: `ctf-ab` skill (adapter over coworld-ab engine) built
+this session — use it for every future A/B.
+
+**League redeployed 0.7.69→0.7.70 overnight** (episode.json coworld_version). v24's
+yesterday numbers (0W/9D/1L vs focusfire) vs today's v24 arm (7W/0D/3L) are
+incomparable — the game changed. Diff 0.7.70's source vs 72fb1b1 before trusting any
+geometry/rules assumption; audit docs pinned to 0.7.69/72fb1b1 (2026-07-23 audit).
+
+## (prior) Status (2026-07-23, session 7 END): **v24 SUBMITTED (qualifying); rank 3 @ 0.55. NEXT: the convert trigger**
 
 **League state at close:** v24 submitted (`sub_c047199b…`, membership in the NEW
 Qualifiers(staging) division — the league re-added staging; promotion is async).
