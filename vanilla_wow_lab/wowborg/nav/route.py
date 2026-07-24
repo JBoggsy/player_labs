@@ -449,11 +449,16 @@ class RouteNavigator:
     def _recover_from_death(
         self, bridge, deadline: float, corpse: Point | None = None
     ) -> bool:
-        """Typed recovery: release → ghost-RUN to the corpse (we know where we
-        died) → reclaim. v43 hosted evidence: deferring the whole recovery to
-        recommended actions cost 1400s for ONE corpse run (203 cycles) — the
-        planner ambles; a direct semantic move to the corpse uses the executor's
-        fast pathing. Recommended remains the fallback when a step is refused."""
+        """Typed recovery: release → ghost-run the PLANNED corridor to the
+        corpse → reclaim. Two hosted lessons shaped this: deferring recovery to
+        recommended actions ambled 1400s per corpse run (v43); and a direct
+        semantic move to the corpse re-hits the terrain that killed us — v44:
+        died ON the sarkoth mesa, the ghost oscillated 1700s at its base. The
+        ghost walks the corpse route corridor waypoint-by-waypoint (the ramp),
+        exactly the way the living character had to arrive. Recommended remains
+        the fallback for any refused step."""
+        corridor: list[Point] = []
+        corridor_index = 0
         while time.monotonic() < deadline:
             frame = bridge.wait_for_frame(timeout_s=min(30.0, max(0.5, deadline - time.monotonic())))
             if frame is None:
@@ -472,8 +477,21 @@ class RouteNavigator:
                     if here.distance(corpse) <= CORPSE_RECLAIM_RADIUS_YARDS:
                         request_id = bridge.select_kind(frame, "reclaim_corpse")
                     else:
+                        if not corridor:
+                            plan = bridge.plan_route(
+                                _pos(here), _pos(corpse), corpse.map_id,
+                                tile_load_mode="all")
+                            corridor = [_pt(w, corpse.map_id)
+                                        for w in plan.waypoints]
+                            corridor_index = 0
+                        while (corridor_index < len(corridor)
+                               and here.distance(corridor[corridor_index])
+                               <= STAGE_ARRIVAL_RADIUS_YARDS):
+                            corridor_index += 1
+                        step = (corridor[corridor_index]
+                                if corridor_index < len(corridor) else corpse)
                         request_id = bridge.select_move_to(
-                            frame, corpse.x, corpse.y, corpse.z, corpse.map_id)
+                            frame, step.x, step.y, step.z, corpse.map_id)
             if request_id is None:
                 request_id = bridge.select_recommended(frame)
             if request_id is not None:
