@@ -10,7 +10,36 @@ startup to resume; **update it as you learn** (keep it tight).
 
 ---
 
-## Status (2026-07-23, session 8): **v25 spread built+measured — mechanism works, outcome REGRESSED; needs the finisher. League on 0.7.70**
+## Status (2026-07-24, session 8): **v25 SUBMITTED+competing; v26 convert trigger built+uploaded, A/B in flight**
+
+**v25 submitted on human go-ahead** (sub_652bd0cb…) → qualified → **competing**
+(entry rank 8 @ 0.075 — post-restructure standings, expect climb as rounds
+accrue). Binding verified from live episode participants (default player).
+
+**v26 (uploaded, NOT submitted): the CONVERT TRIGGER** — session 7's designed
+lever, built on the fog-independent team scoreboard (`team score RED k/d`
+labels, discovered in the 2026-07-23 rules audit): `enemy_lives_left` = 24 −
+enemy deaths; leaders order T (all-in hunt at freshest enemy evidence) when
+enemy lives ≤ 6 (`BEACON_CONVERT_ENEMY_LIVES`); stale-order members self-convert
+instead of backing off. Traced: `enemy_lives_left`, `convert_events`. 99 tests.
+**A/B v26 vs v25 MEASURED (matched, 0.7.76): vs focusfire 5W/5D/0L → 10W/0D/0L
+(p<0.001) — every draw converted, zero losses, stacking still fixed. Vs h006
+0W/10D both arms, but the trigger FIRES (4/10 eps crossed enemy-lives ≤ 6; v25's
+best was 5 lives) — the all-in trades 1:1 with h006 (21-22 kills each) and the
+clock ends it. v26 strictly dominates v25.** Reports:
+`scratch/eval_v26_ab/ab_{focusfire,h006}.html`. **Next lever: the h006 FIGHT**
+(win the traded engagements — accuracy/cover/grenades — or open a capture path;
+doctrine is no longer the constraint). v26 uploaded, NOT submitted — submit is
+the human's call (v26 > v25 on evidence). League on **0.7.76** (`d78450e`) —
+cone 45 / maxTicks 5000 / arena unchanged; team-score labels intact; replay
+reader re-pinned d78450e (0.7.70-0.7.76 era; 72fb1b1 kept for the 0.7.69 era).
+
+**Platform gotcha (2026-07-24): fresh xreqs 404 on GET for seconds-to-minutes
+after create (indexing lag), then appear as completed. Don't re-fire on a 404 —
+wait and re-check (we burned ~6 duplicate xreqs learning this). The artifact
+fetcher's --watch crashes on that 404 (retry patch = TODO).**
+
+## (prior) Status (2026-07-23, session 8): **v25 spread built+measured — mechanism works, outcome REGRESSED; needs the finisher. League on 0.7.70**
 
 **v25 (uploaded, NOT submitted): squad spread** — rank-offset shared order points
 (0/±70px y, `spread_point`), separation applied to order_* movement, and a

@@ -23,13 +23,12 @@ set -euo pipefail
 #   How you'll know to bump: build_expand_replay starts hash-failing on FRESH replays
 #   — that's the signal the league redeployed; try a newer commit until a fresh replay
 #   expands cleanly, and update this.
-# Current value (72fb1b1f) is the deployed ctf 0.7.69 (league coworld
-# cow_96eff6dc…, canonical as of 2026-07-23; ref read from the coworld manifest's
-# game.runnable.source_url — `coworld show <cow_id> --json`). GameVersion 21:
-# no spawn protection, partial cover, maxTicks 5000, timeout draw -1 both sides,
-# identity badges. Earlier replays need their era's pin (2641542 = 0.7.66;
-# b571dd3 = 0.7.51; c76e0c75 = 0.7.49; d60dc27 = 0.7.4; 761c098 = 0.5.4).
-CTF_REF="${CTF_REF:-72fb1b1ff01ac435e7f9c9aa393026011f12497e}"
+# Current value (d78450e5) is the deployed ctf 0.7.70-0.7.76 era (league coworld
+# cow_f65b21ce…, canonical as of 2026-07-24; ref read from the coworld manifest's
+# game.runnable.source_url — `coworld show <cow_id> --json`). Earlier replays need
+# their era's pin (72fb1b1f = 0.7.69; 2641542 = 0.7.66; b571dd3 = 0.7.51;
+# c76e0c75 = 0.7.49; d60dc27 = 0.7.4; 761c098 = 0.5.4).
+CTF_REF="${CTF_REF:-d78450e553d465d0cdca11aa90a563df9a0875cb}"
 GAME_REPO_SLUG="Metta-AI/coworld-ctf"
 
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # ctf_lab/

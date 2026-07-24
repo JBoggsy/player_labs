@@ -32,6 +32,20 @@ the remaining uses are (a) enemy team lives (24 − enemy deaths) to gauge wipe 
 (b) own remaining respawns for risk calibration. docs/ctf-gameplay.md is stale on tiebreak,
 scoring (+100→+1/-1/-1), maxTicks (10000→5000), and spawn protect (removed GV20) — needs reconcile.
 
+### v26 convert A/B: reading the global scoreboard converted every focusfire draw to a win
+Evidence: v26 (enemy_lives ≤ 6 → all squads order T at freshest enemy fix) vs v25 matched A/B:
+focusfire 5W/5D/0L → 10W/0D/0L (p<0.001), zero losses, stacking still fixed. Vs h006 the trigger
+fires (4/10 episodes crossed ≤6 lives; v25 never did) but the fight trades 1:1 (21-22 kills each)
+and the clock ends it — the remaining h006 gap is fight quality/captures, not doctrine. Pattern:
+fog-independent GLOBAL signals (scoreboard, pedestal state, tick) are the coordination currency in
+this game — they need no comms and every agent reads the same value.
+
+### xreq 404s right after create are INDEXING LAG, not deletion — wait before re-firing
+Evidence: 5 "vanished" v25 arms (404 on GET seconds-to-minutes after create, one still 404 at
+t+30s) ALL later showed completed — burning ~6 duplicate xreqs and an hour of refires. The
+fetcher's --watch also dies on the 404 (crash, not retry). Rule: on a fresh xreq 404, wait several
+minutes and re-check before re-creating; consider a fetcher retry patch.
+
 ### v25 spread A/B: the mechanism can work and the outcome still regress — measure the outcome
 Evidence: stacked-ticks collapsed (67→5.6/appearance vs h006) and losses went to ZERO in both
 matchups, but wins fell (7→5 vs focusfire, 2→0 vs h006) and draws exploded — every focusfire draw
