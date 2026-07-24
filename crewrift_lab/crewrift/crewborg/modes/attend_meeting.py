@@ -91,6 +91,22 @@ EARLY_SUBMIT_REMAINING_FRACTION = 0.5
 # warm_anchor_suspect; design crewrift_lab/docs/designs/2026-07-22-warm-anchor-design.md)
 # default ON; kill switch for A/B isolation and emergency rollback.
 WARM_ANCHOR_ENV = "CREWBORG_WARM_ANCHOR"
+# Vote-coordination levers (2026-07-24 wave-2 mining: our correct crew ballots convert to
+# ejections at 31.9% vs the top converters' 61-71%; we vote earliest — votes_before_ours
+# 1.71, lowest in the corpus — and alone — pile_before 0.12 vs field 0.7-1.6; the target
+# ends ~2.6 total votes vs the ~3.4 an ejection needs). Both default OFF; recipe-enabled
+# separately for the A/B arms (design 2026-07-24-vote-coordination-prereg.md).
+#
+# CHAT_PUSH: re-send our accusation once, mid-meeting, if our target has drawn no votes —
+# the second call for the pile. Top converters' accusations pull ~1.7-2.3 followers when
+# cue-first and terse; ours pull 1.1-1.5 with one send.
+CHAT_PUSH_ENV = "CREWBORG_VOTE_CHAT_PUSH"
+CHAT_PUSH_REMAINING_TICKS = 480  # re-push when under this remaining and target vote-less
+# BALLOT_RETIME: hold the deterministic crew ballot back from the first decide tick;
+# cast it once ANY other vote lands on our target (join the pile we seeded), or at the
+# early-submit point otherwise. The chat still goes out first-tick (anchoring is right —
+# the top converters chat FIRST but vote 2-3 votes IN; we currently do both first).
+BALLOT_RETIME_ENV = "CREWBORG_VOTE_BALLOT_RETIME"
 
 
 class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
@@ -134,6 +150,14 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
             os.environ.get(WARM_ANCHOR_ENV, "").strip().lower() not in ("0", "false", "no", "off")
         )
         self._warm_anchor_target: str | None = None
+        # Vote-coordination levers (default OFF; see module constants above).
+        self._chat_push_enabled = (
+            os.environ.get(CHAT_PUSH_ENV, "").strip().lower() in ("1", "true", "yes", "on")
+        )
+        self._chat_pushed = False
+        self._ballot_retime_enabled = (
+            os.environ.get(BALLOT_RETIME_ENV, "").strip().lower() in ("1", "true", "yes", "on")
+        )
         self._chat_accused: str | None = None
         self._meeting_id: int | None = None
         self._deterministic_chatted = False
@@ -174,6 +198,11 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
             # inert when the flag is off (design docs/designs/honor-society.md).
             honor_society.process_chats(belief, self.emit)
         if self._vote_submitted:
+            # The chat-push lever still speaks after our ballot is in — persuasion
+            # is exactly the post-vote channel (our vote can't change; the pile can).
+            push = self._post_vote_chat_push_intent(belief)
+            if push is not None:
+                return push
             return Intent(kind="idle", reason="vote already confirmed")
         if self._active_vote_target is not None:
             return self._vote_intent(self._active_vote_target, reason=self._active_vote_reason)
@@ -366,7 +395,68 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
                     self._trace_meeting_decision(belief, role="crewmate", path="share_read", target=soft)
                     return self._send_chat_intent(belief, read, reason="sharing read (no vote)")
                 self._trace_meeting_decision(belief, role="crewmate", path="silent_skip", target=None)
+        retime = self._ballot_retime_intent(belief)
+        if retime is not None:
+            return retime
         return self._submit_vote_intent(belief, reason="deterministic meeting vote")
+
+    def _ballot_retime_intent(self, belief: Belief) -> Intent | None:
+        """BALLOT_RETIME lever (2026-07-24 mining; flag default OFF): instead of
+        submitting our crew ballot on the tick after the accusation — the
+        corpus-earliest vote (votes_before_ours 1.71 vs the top converters' 2.5-3.5)
+        — hold it while the pile forms: cast once ANY other vote lands on our
+        target (join the pile we seeded), or once under the early-submit fraction /
+        at the deadline otherwise, so vote_timeouts stay 0. Returning None falls
+        through to the normal immediate submit."""
+
+        target = self._tentative_vote
+        if (
+            not self._ballot_retime_enabled
+            or target is None
+            or target == VOTE_SKIP
+            or belief.self_role == "imposter"
+            or self._should_auto_submit(belief)
+        ):
+            return None
+        if votes_against(belief).get(target, 0) > 0:
+            self.emit.counter("meeting_retime_join")
+            return self._submit_vote_intent(belief, reason="retime: joining pile on our target")
+        if self._remaining_ticks(belief) >= VOTE_TIMER_TICKS * EARLY_SUBMIT_REMAINING_FRACTION:
+            return Intent(kind="idle", reason="retime: holding ballot while pile forms")
+        self.emit.counter("meeting_retime_expire")
+        return self._submit_vote_intent(belief, reason="retime: no pile formed, casting")
+
+    def _post_vote_chat_push_intent(self, belief: Belief) -> Intent | None:
+        """CHAT_PUSH lever (2026-07-24 mining; flag default OFF): our accusation and
+        ballot are in, but the target has drawn no other votes and the meeting is
+        aging — send ONE more explicit call for the pile ("vote X. <evidence>").
+        Fires after our vote is confirmed, so ballot timing is untouched — this
+        tests the persuasion channel in isolation. The dedupe gate in
+        _send_chat_intent suppresses identical texts, so the push leads with the
+        vote call instead of repeating the accusation verbatim."""
+
+        if (
+            not self._chat_push_enabled
+            or self._chat_pushed
+            or belief.self_role == "imposter"
+            or not belief.self_alive
+        ):
+            return None
+        target = self._tentative_vote
+        if target is None or target == VOTE_SKIP:
+            return None
+        if self._remaining_ticks(belief) > CHAT_PUSH_REMAINING_TICKS:
+            return None
+        if votes_against(belief).get(target, 0) > 0:
+            return None  # the pile formed on its own; no push needed
+        if not self._chat_cooldown_ready(belief):
+            return None
+        self._chat_pushed = True
+        push = f"vote {target}. {build_accusation(belief, target) or f'{target} sus'}"
+        self.emit.counter("meeting_chat_push")
+        return self._send_chat_intent(
+            belief, push[:CHAT_MAX_CHARS], reason="chat-push: second call for the pile"
+        )
 
     def _decide_imposter(self, belief: Belief) -> Intent:
         """Deflect onto crewmates, never teammates. Prefer a **real** accusation against
@@ -892,6 +982,7 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self._llm_calls_used = 0
         self._instant_vote_pending = None
         self._warm_anchor_target = None
+        self._chat_pushed = False
         self._chat_accused = None
         self._deterministic_chatted = False
         self._disabled_traced = False

@@ -1254,3 +1254,98 @@ def _replay_hard(belief: Belief, *, tick: int) -> Belief:
     later = belief.model_copy(deep=True)
     later.last_tick = tick
     return later
+
+
+# --- vote-coordination levers (2026-07-24; flags default OFF) -----------------
+
+
+def _coordination_belief(*, tick: int = 0) -> Belief:
+    """Crew belief with red a clear suspect and a live voting grid (blue = self)."""
+    belief = Belief(
+        phase="Voting", phase_start_tick=0, last_tick=tick,
+        self_role="crewmate", self_color="blue", total_player_count=3,
+    )
+    belief.voting = VotingState(
+        timer_present=True,
+        self_marker_color="blue",
+        candidates=(
+            VoteCandidate(slot=0, color="red", alive=True),
+            VoteCandidate(slot=1, color="blue", alive=True),
+            VoteCandidate(slot=2, color="green", alive=True),
+        ),
+        cursor_slot=0,
+    )
+    belief.roster["red"] = PlayerRecord(
+        color="red", life_status="alive",
+        events=[PlayerEvent(kind="vent_use", start_tick=4, end_tick=4)],
+    )
+    belief.roster["green"] = PlayerRecord(color="green", life_status="alive")
+    belief.suspicion = {"red": 0.95, "green": 0.2}
+    return belief
+
+
+def test_coordination_flags_off_by_default_ballot_immediate(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_HONOR_SOCIETY", "0")
+    mode = AttendMeetingMode()
+    belief = _coordination_belief()
+    assert mode.decide(belief, ActionState()).kind == "chat"
+    vote = mode.decide(belief, ActionState())
+    assert vote.kind == "vote" and vote.target_color == "red"  # unchanged: vote right after chat
+
+
+def test_ballot_retime_holds_then_joins_pile(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_HONOR_SOCIETY", "0")
+    monkeypatch.setenv("CREWBORG_VOTE_BALLOT_RETIME", "1")
+    mode = AttendMeetingMode()
+    belief = _coordination_belief()
+    assert mode.decide(belief, ActionState()).kind == "chat"
+    held = mode.decide(belief, ActionState())
+    assert held.kind == "idle" and "holding ballot" in held.reason  # no pile yet -> hold
+    # green (slot 2) votes red (slot 0): the pile formed -> we join immediately
+    belief.voting = belief.voting.model_copy(update={"dots": (VoteDot(voter=2, target=0),)})
+    vote = mode.decide(belief, ActionState())
+    assert vote.kind == "vote" and vote.target_color == "red"
+
+
+def test_ballot_retime_casts_when_no_pile_by_early_submit(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_HONOR_SOCIETY", "0")
+    monkeypatch.setenv("CREWBORG_VOTE_BALLOT_RETIME", "1")
+    mode = AttendMeetingMode()
+    belief = _coordination_belief()
+    assert mode.decide(belief, ActionState()).kind == "chat"
+    assert mode.decide(belief, ActionState()).kind == "idle"
+    # past the early-submit fraction with no pile: cast anyway (never risk the deadline)
+    belief.last_tick = int(VOTE_TIMER_TICKS * 0.55)
+    vote = mode.decide(belief, ActionState())
+    assert vote.kind == "vote" and vote.target_color == "red"
+
+
+def test_chat_push_second_call_when_target_voteless(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_HONOR_SOCIETY", "0")
+    monkeypatch.setenv("CREWBORG_VOTE_CHAT_PUSH", "1")
+    mode = AttendMeetingMode()
+    belief = _coordination_belief()
+    assert mode.decide(belief, ActionState()).kind == "chat"
+    vote = mode.decide(belief, ActionState())
+    assert vote.kind == "vote" and vote.target_color == "red"  # ballot timing untouched
+    mode.decide(belief, ActionState(vote_confirmed=True))  # confirm our ballot
+    # meeting ages, target still vote-less -> one explicit push leading with the vote call
+    belief.last_tick = VOTE_TIMER_TICKS - 400
+    push = mode.decide(belief, ActionState())
+    assert push.kind == "chat" and push.text.startswith("vote red")
+    # only once
+    belief.last_tick = VOTE_TIMER_TICKS - 300
+    assert mode.decide(belief, ActionState()).kind == "idle"
+
+
+def test_chat_push_skipped_when_pile_already_formed(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_HONOR_SOCIETY", "0")
+    monkeypatch.setenv("CREWBORG_VOTE_CHAT_PUSH", "1")
+    mode = AttendMeetingMode()
+    belief = _coordination_belief()
+    assert mode.decide(belief, ActionState()).kind == "chat"
+    assert mode.decide(belief, ActionState()).kind == "vote"
+    mode.decide(belief, ActionState(vote_confirmed=True))
+    belief.voting = belief.voting.model_copy(update={"dots": (VoteDot(voter=2, target=0),)})
+    belief.last_tick = VOTE_TIMER_TICKS - 400
+    assert mode.decide(belief, ActionState()).kind == "idle"  # pile formed on its own
