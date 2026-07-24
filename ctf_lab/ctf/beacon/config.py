@@ -301,6 +301,14 @@ SQUAD_SECTOR_BRADS = _env_int("BEACON_SQUAD_SECTOR_BRADS", 50)
 # --- Squad command (v22): leader orders + presence pings + respawn discipline --------
 #: Master switch for the leader/order/rejoin layer — the v22 A/B bit.
 SQUAD_COMMAND = _env_int("BEACON_SQUAD_COMMAND", 1) == 1
+#: Convert trigger (v26): when the ENEMY team's lives remaining (24 - their deaths,
+#: read off the fog-independent team scoreboard) drop to this or below, leaders
+#: order an all-in HUNT — the wipe is in reach and under GV21 a draw pays -1 like a
+#: loss, so once we're this far ahead aggression is nearly free (worst case the -1
+#: we'd get anyway; upside +1). v25's draws all sat at enemy 1-3 lives, holding.
+CONVERT_ENEMY_LIVES = _env_int("BEACON_CONVERT_ENEMY_LIVES", 6)
+#: Total lives a full 8-player team starts with (8 x 3) — the deaths->lives base.
+TEAM_TOTAL_LIVES = 24
 #: An order (O message) is obeyed this long after it was heard/issued.
 ORDER_TTL_TICKS = _env_int("BEACON_ORDER_TTL_TICKS", 240)
 #: Leaders re-broadcast their current order at this cadence (also on change).

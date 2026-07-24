@@ -223,6 +223,9 @@ class _DiagnosticLogger:
             "pings_heard": b.pings_heard,
             "backoff_events": b.backoff_events,
             "rejoin_ticks": b.rejoin_ticks,
+            # v26 convert trigger (live + cumulative).
+            "enemy_lives_left": _enemy_lives_left_safe(b),
+            "convert_events": b.convert_events,
             "squadmates_alive": _squadmates_alive_safe(b),
             # v18 chat activation (cumulative per kind).
             "chat_sent": dict(b.chat_sent_counts),
@@ -254,6 +257,15 @@ def _squadmates_alive_safe(b) -> int | None:
 
     try:
         return squads.squadmates_alive(b)
+    except Exception:
+        return None
+
+
+def _enemy_lives_left_safe(b) -> int | None:
+    from ctf.beacon import squads
+
+    try:
+        return squads.enemy_lives_left(b)
     except Exception:
         return None
 

@@ -133,12 +133,17 @@ def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
             # toward home — the same posture as losing a teammate. No orders =
             # no coordination = no business pushing (lives > captures). The
             # self-issued hold refreshes its own TTL; a live leader overrides
-            # it on the next heard O.
-            belief.order = (
-                "H",
-                squads.decay_hold_point(belief),
-                belief.tick,
-            )
+            # it on the next heard O. v26: unless the WIPE IS IN REACH — the
+            # scoreboard is global, so a leaderless member can still convert
+            # (backing off 2 kills from a wipe is the worst move in the game).
+            if squads.wipe_in_reach(belief):
+                belief.order = ("T", squads.convert_hunt_point(belief), belief.tick)
+            else:
+                belief.order = (
+                    "H",
+                    squads.decay_hold_point(belief),
+                    belief.tick,
+                )
             goal, opos, set_tick = belief.order
         # Spread (v25): rank-offset the shared order point so the squad fans out
         # across its lane instead of stacking on one cell (FF + splash safety).

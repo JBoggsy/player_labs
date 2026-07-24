@@ -187,6 +187,34 @@ def _heard_shouts(world: SpriteWorld) -> tuple[tuple[str, str, str, tuple[int, i
     return tuple(out)
 
 
+def _team_scores(world: SpriteWorld) -> tuple[tuple[int, int] | None, tuple[int, int] | None]:
+    """Both teams' (kills, deaths) from the top-center scoreboard, or (None, None).
+
+    The player stream draws ``team score RED <k>/<d>`` / ``team score BLUE <k>/<d>``
+    every Playing frame (global.nim addTeamScoreboard) — aggregate, both teams,
+    fog-independent. Deaths are the wipe clock: team lives remaining =
+    3*8 - deaths while every slot stays connected."""
+    red: tuple[int, int] | None = None
+    blue: tuple[int, int] | None = None
+    for obj in world.objects.values():
+        sprite = world.sprite_for(obj)
+        if sprite is None or not sprite.label.startswith("team score "):
+            continue
+        # "team score RED 12/9" -> ("RED", "12/9")
+        parts = sprite.label[len("team score "):].split(" ")
+        if len(parts) != 2 or "/" not in parts[1]:
+            continue
+        try:
+            kills, deaths = (int(v) for v in parts[1].split("/", 1))
+        except ValueError:
+            continue
+        if parts[0] == "RED":
+            red = (kills, deaths)
+        elif parts[0] == "BLUE":
+            blue = (kills, deaths)
+    return red, blue
+
+
 def _overhead_state(world: SpriteWorld, self_xy: tuple[int, int]) -> tuple[int | None, bool, bool, bool]:
     """Our own hp pips + carried-item markers, read from the overhead UI stack.
 
@@ -264,6 +292,9 @@ def perceive(obs, team: Team) -> CtfState:
         hp_pips, have_grenade, have_shield, have_arc = _overhead_state(world, self_xy)
     else:
         hp_pips, have_grenade, have_shield, have_arc = None, False, False, False
+    red_score, blue_score = _team_scores(world)
+    own_team_score = red_score if team == "red" else blue_score
+    enemy_team_score = blue_score if team == "red" else red_score
 
     return CtfState(
         ready=ready,
@@ -285,6 +316,8 @@ def perceive(obs, team: Team) -> CtfState:
         i_have_grenade=have_grenade,
         i_have_shield=have_shield,
         i_have_arc=have_arc,
+        own_team_score=own_team_score,
+        enemy_team_score=enemy_team_score,
     )
 
 

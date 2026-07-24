@@ -138,6 +138,12 @@ def update_belief(belief: Belief, percept: CtfState, action_state: ActionState, 
     belief.enemy_flag_pos = percept.enemy_flag_pos
     belief.own_flag_stolen = percept.own_flag_stolen
     belief.own_flag_thief_pos = percept.own_flag_thief_pos
+    # Team scoreboard (v26): fold monotonically — the label is drawn every Playing
+    # frame, but keep the last-seen value through any frame it fails to parse.
+    if percept.own_team_score is not None:
+        belief.own_team_score = percept.own_team_score
+    if percept.enemy_team_score is not None:
+        belief.enemy_team_score = percept.enemy_team_score
 
     # Items (v10): our carried state is per-frame (the overhead markers ride us);
     # the spawn table folds sightings + line-of-sight refutations in items.py.

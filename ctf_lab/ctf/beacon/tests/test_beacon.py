@@ -980,6 +980,60 @@ def test_spread_point_clamps_on_map():
         assert 0 <= y <= 658
 
 
+def test_team_scores_parse_from_scoreboard_labels():
+    w = _world_with_self((600, 329))
+    w.sprites[90] = SpriteDef(90, 40, 8, "team score RED 12/9", b"")
+    w.objects[90] = SpriteObject(90, 500, 1, 0, 11, 90)
+    w.sprites[91] = SpriteDef(91, 40, 8, "team score BLUE 9/18", b"")
+    w.objects[91] = SpriteObject(91, 560, 1, 0, 11, 91)
+    st = perceive(_obs(w), "red")
+    assert st.own_team_score == (12, 9)
+    assert st.enemy_team_score == (9, 18)
+
+
+def test_enemy_lives_left_derives_from_deaths():
+    from ctf.beacon import squads
+    b = Belief(team="red", seat=0, alive=True, tick=100, self_xy=(400, 300))
+    assert squads.enemy_lives_left(b) is None  # no scoreboard read yet
+    b.enemy_team_score = (9, 18)  # 18 enemy deaths
+    assert squads.enemy_lives_left(b) == 6  # 24 - 18
+    assert squads.wipe_in_reach(b)  # <= CONVERT_ENEMY_LIVES (6)
+    b.enemy_team_score = (9, 10)
+    assert squads.enemy_lives_left(b) == 14
+    assert not squads.wipe_in_reach(b)
+
+
+def test_leader_orders_convert_hunt_when_wipe_in_reach():
+    from ctf.beacon import squads
+    # Seat 0 leads squad A; enemy down to 5 lives -> T order, not the default H.
+    b = Belief(team="red", seat=0, role="defender", alive=True, tick=500,
+               self_xy=(390, 165))
+    b.enemy_team_score = (0, 19)
+    squads.lead_squad(b)
+    assert b.order is not None and b.order[0] == "T"
+    assert b.convert_events == 1
+    # Enemy at full strength -> the default side-hold, no convert.
+    b2 = Belief(team="red", seat=0, role="defender", alive=True, tick=500,
+                self_xy=(390, 165))
+    b2.enemy_team_score = (0, 2)
+    squads.lead_squad(b2)
+    assert b2.order is not None and b2.order[0] == "H"
+    assert b2.convert_events == 0
+
+
+def test_order_decay_converts_instead_of_backing_off_when_wipe_in_reach():
+    from ctf.beacon.config import ORDER_TTL_TICKS
+    # A member (non-leader seat 1) with a STALE order and the wipe in reach must
+    # flip to T (hunt), not the v24 backoff-hold.
+    b = Belief(team="red", seat=1, role="defender", alive=True,
+               tick=1000 + ORDER_TTL_TICKS + 1, self_xy=(600, 300))
+    b.order = ("P", (617, 329), 1000)  # stale
+    b.enemy_team_score = (0, 20)  # 4 enemy lives left
+    intent, _ = decide_objective(b)
+    assert b.order[0] == "T"
+    assert intent.reason == "order_hunt"
+
+
 def test_ordered_hold_uses_spread_point():
     from ctf.beacon import squads
     # Two members of squad A obeying the same H order must navigate to

@@ -103,6 +103,10 @@ class CtfState:
     i_have_grenade: bool = False
     i_have_shield: bool = False
     i_have_arc: bool = False
+    # Team scoreboard (v26): both teams' aggregate (kills, deaths) from the
+    # top-center "team score RED k/d" labels — fog-independent, every frame.
+    own_team_score: tuple[int, int] | None = None
+    enemy_team_score: tuple[int, int] | None = None
 
 
 Role = Literal["attacker", "defender"]
@@ -182,6 +186,11 @@ class Belief:
     # Items (v10): fixed-spawn belief table + our own carried/hp state (perception).
     item_spawns: list[ItemSpawn] = field(default_factory=list)
     hp_pips: int | None = None  # our hp bar segments 1..3; None = unresolved
+    # Team scoreboard (v26): both teams' aggregate (kills, deaths), folded from the
+    # fog-independent "team score" labels. enemy_lives_left derives from deaths:
+    # 8 players x 3 lives - enemy deaths (exact while all 16 slots stay connected).
+    own_team_score: tuple[int, int] | None = None
+    enemy_team_score: tuple[int, int] | None = None
     i_have_grenade: bool = False
     i_have_shield: bool = False
     i_have_arc: bool = False
@@ -233,6 +242,7 @@ class Belief:
     pings_heard: int = 0
     backoff_events: int = 0
     rejoin_ticks: int = 0
+    convert_events: int = 0  # v26: times a leader flipped into the convert hunt
     # Lead-aim activation state this tick, for tracing: brads of lead applied to the
     # snap aim (0 = no lead / target treated as stationary).
     lead_brads: int = 0

@@ -2,6 +2,28 @@
 
 Version → change mapping for the CTF `beacon` policy. Newest first.
 
+## v26 — convert trigger: read the team scoreboard, collapse to finish (2026-07-24)
+
+**Why (v25 A/B + human direction "start trying to close"):** v25's spread
+holders sat 1-2 kills from the wipe for whole halves (focusfire draws: beacon
+21-23 kills vs ~15; 5D/10D exploded). Under GV21 a draw pays -1 like a loss, so
+a near-wipe hold is the worst posture in the game. Session-7's designed convert
+trigger, now built on a NEW signal: the fog-independent top-center team
+scoreboard ("team score RED k/d" labels — found in the 2026-07-23 rules audit),
+which gives the ENEMY team's aggregate deaths every frame.
+
+**Changes:** (1) **perception `_team_scores`** parses both teams' (kills,
+deaths); folded into belief (`own/enemy_team_score`). (2)
+**`squads.enemy_lives_left`** = 24 - enemy deaths (exact while 16 slots stay
+connected; a disconnect makes us under-trigger — safe direction).
+(3) **Leader rule 3 (CONVERT)**: enemy lives <= `BEACON_CONVERT_ENEMY_LIVES`
+(default 6) -> order T at the freshest enemy evidence (visible > fresh track >
+their pedestal); preempts backoff and the side-hold defaults, sits below
+thief/carrier fixes. (4) **Order decay override**: a stale-order member with
+the wipe in reach self-issues T instead of the v24 backoff-hold (the scoreboard
+is global — no leader needed to know it's time). Traced: `enemy_lives_left`
+live + `convert_events` cumulative. 99 tests.
+
 ## v25 — squad spread: stop stacking on the order point (2026-07-23)
 
 **Why (human direction):** squads stack on top of each other — team kills from

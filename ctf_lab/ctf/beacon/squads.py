@@ -31,8 +31,10 @@ from ctf.beacon import mapdata
 from ctf.beacon.config import (
     BACKOFF_STEP_PX,
     CHOKE_X,
+    CONVERT_ENEMY_LIVES,
     MAP_H,
     MAP_W,
+    PEDESTAL,
     PRESENCE_STALE_TICKS,
     REJOIN_CONTACT_PX,
     SQUAD_COHESION_PX,
@@ -46,6 +48,7 @@ from ctf.beacon.config import (
     SQUAD_WAVE_GATE,
     SQUAD_WAVE_PERIOD_TICKS,
     SQUAD_WAVE_WINDOW_TICKS,
+    TEAM_TOTAL_LIVES,
     TRACK_TTL_TICKS,
 )
 from ctf.beacon.types import Belief, Team
@@ -257,6 +260,44 @@ def update_presence(belief: Belief) -> None:
             belief.presence[e.identity] = belief.tick
 
 
+def enemy_lives_left(belief: Belief) -> int | None:
+    """The enemy team's total lives remaining, from the team scoreboard (v26).
+
+    24 (8 players x 3 lives) minus their aggregate deaths — exact while all 16
+    slots stay connected, an overcount if an enemy disconnected (safe direction:
+    we under-trigger the convert, never over-trigger). None before the first
+    scoreboard parse."""
+    if belief.enemy_team_score is None:
+        return None
+    _kills, deaths = belief.enemy_team_score
+    return max(0, TEAM_TOTAL_LIVES - deaths)
+
+
+def wipe_in_reach(belief: Belief) -> bool:
+    """Whether the enemy is weak enough that leaders should order the all-in
+    hunt (v26 convert trigger): their lives at or below CONVERT_ENEMY_LIVES.
+    Under GV21 a draw pays -1 exactly like a loss, so once the wipe is this
+    close the downside of committing is ~zero and the upside is +1."""
+    lives = enemy_lives_left(belief)
+    return lives is not None and lives <= CONVERT_ENEMY_LIVES
+
+
+def convert_hunt_point(belief: Belief) -> tuple[int, int]:
+    """Where the all-in should converge: the freshest enemy evidence, else their
+    pedestal (respawns walk from the home edge; the pedestal is the anchor all
+    remaining enemies must eventually defend or abandon)."""
+    team = belief.team
+    assert team is not None
+    if belief.enemies:
+        return belief.enemies[0].pos
+    fresh = [t for t in belief.enemy_tracks
+             if belief.tick - t.last_tick <= TRACK_TTL_TICKS]
+    if fresh:
+        newest = max(fresh, key=lambda t: t.last_tick)
+        return newest.pos
+    return PEDESTAL["blue" if team == "red" else "red"]
+
+
 def squadmates_alive(belief: Belief) -> int:
     """Squadmates confirmed alive recently (badge/ping/order within the stale
     window). Conservative: an unconfirmed mate counts as DOWN — the cheap error
@@ -281,10 +322,15 @@ def lead_squad(belief: Belief) -> None:
     Runs only on the squad's leader (lowest seat). Rules, first match wins:
       1. Own flag stolen + a thief fix known -> T (thief hunt) at the fix.
       2. A teammate carries the enemy flag -> F (escort/flag) at the carrier fix.
-      3. Mid-push squad LOST a member (presence went stale while we're past the
+      3. CONVERT (v26): the wipe is in reach (enemy lives <= CONVERT_ENEMY_LIVES
+         off the team scoreboard) -> T at the freshest enemy evidence — all
+         squads collapse and finish. Preempts backoff/holds: v25's A/B showed
+         spread holders sitting 1-2 kills from the wipe for whole halves, and a
+         GV21 draw pays -1 exactly like a loss, so committing here risks nothing.
+      4. Mid-push squad LOST a member (presence went stale while we're past the
          rally line) -> H at our position stepped back toward home: hold the
          ground we gained instead of feeding the enemy 1-by-1 (lives>captures).
-      4. Defaults by squad: D holds its choke, A1 flags, A2 pushes mid.
+      5. Defaults by squad: A/B hold their side chokes, C pushes mid.
     An existing order is kept until its rule stops applying (hysteresis via the
     rebroadcast cadence; rules are ordered so upgrades preempt defaults).
     """
@@ -309,6 +355,12 @@ def lead_squad(belief: Belief) -> None:
     ):
         goal = "F"
         pos = belief.carrier_fix[0] if belief.carrier_fix else belief.enemy_flag_pos
+    elif wipe_in_reach(belief):
+        # 3 (v26 convert): finish it — all squads hunt the freshest enemy fix.
+        goal = "T"
+        pos = convert_hunt_point(belief)
+        if belief.order is None or belief.order[0] != "T":
+            belief.convert_events += 1
     elif (
         past_rally(team, belief.self_xy[0])
         and squadmates_alive(belief) < squad_size(belief.seat) - 1
@@ -382,7 +434,9 @@ def in_squad_contact(belief: Belief) -> bool:
 
 __all__ = [
     "buddies_near",
+    "convert_hunt_point",
     "decay_hold_point",
+    "enemy_lives_left",
     "formation_bias",
     "in_squad_contact",
     "lead_squad",
@@ -399,4 +453,5 @@ __all__ = [
     "squad_size",
     "squadmates_alive",
     "update_presence",
+    "wipe_in_reach",
 ]
