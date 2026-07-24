@@ -196,3 +196,19 @@ carries portal pads/destinations with evidence citations (AreaTrigger.dbc, VMAP/
 floor). Our guessed Orgrimmar coordinates were 50-90yd off and the Cleft z was wrong by
 56yd; the guessed direct-line route was exactly the canyon trap the road chain exists
 to avoid. Check the game repo for declared knowledge BEFORE hand-authoring world data.
+
+## Ghost corpse-runs must walk the CORRIDOR, not the straight line to the corpse
+v44: died on top of sarkoth mesa; the typed corpse-run selected 229 direct semantic
+moves at the corpse and the ghost oscillated 1700s at the mesa base — the direct line
+re-hits exactly the terrain that killed you ('terrain slope is too steep'). Plan the
+corpse route once (all-tiles) and ghost-run it waypoint-by-waypoint like the living
+character had to. General shape: ANY recovery that must reach a specific point needs
+the same routing machinery as normal travel — recovery is navigation, not a special case.
+
+## Know when the residual failure is out of the subsystem's scope
+v45 long-session: roads correct, flee working, ghost-runs completing — and Orgrimmar
+still deadlines because a level-1 character dies every ~500yd in level-10 territory.
+No routing change fixes survivability; that's the leveling/combat capability. The
+tell: the route lab (same planning code, executor that can't die) one-shots the same
+journeys. When a local rig passes and hosted fails, the delta names the missing
+capability precisely — and it may belong to the NEXT goal, not this one.
