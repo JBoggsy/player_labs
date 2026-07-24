@@ -13,6 +13,37 @@ file is the one-screen "where are we and why."
 
 ---
 
+## Status (2026-07-24, session 5h): nav v2 audited, remediated, and RE-validated — planning generalizes; survivability is the residual
+
+**The codex audit invalidated the 5g one-shot claim** (`docs/recon/nav-v2-audit-codex-2026-07-23.md`,
+18 findings): the benchmark's skip logic censored exactly the long-range/cross-map
+cases the claim needed, v37 wasn't held-out (code changed for its course), reachability
+could exceed 100%, and the "validated" world coordinates were guesses (Cleft z wrong
+by 56yd). All mechanical findings fixed (v39-v45, commits 841b071→ee360c7): un-censored
+scoring (skips fail reachability; coverage/surprise_arrivals surfaced), off-mesh
+projection terminal, arc-length staging ladder, spatial portal fakes, typed recovery,
+authoritative coordinates + the south-road chain from the game repo's decision graph
+(`bots/decision/graph_data.py`, `fast_travel.py`).
+
+**The route lab** (`tools/route_lab.sh`) is the new fast loop: real planner + full
+1,783-tile world navmesh + spatial area triggers inside the pinned game image, actual
+L1/L2 code, idealized executor — full 13-station catalog in ~15min vs ~1h hosted.
+**Re-validation through it: 13/13 catalog (incl. Orgrimmar 376s, RFC-entrance via
+portal 2230 527s, deep-RFC cavern 606s sim), plus TWO held-out courses with zero code
+changes: Barrens gate / Crossroads / Bloodhoof Village (Mulgore, 3000+yd) / Bazzalan's
+ledge (deep RFC) 5/5, and Camp Narache / Scytheclaw plateau / Jergosh's rostrum /
+razor-north-field 5/5.** Cross-continent probes fail fast+typed (unknown_region).
+
+**Hosted long-session truth (persistent-leveling, 3470s, v41-v45):** roads walked
+correctly, flee-through-combat works (deaths 7→1 on the razor leg), corridor
+ghost-runs recover properly — and Orgrimmar/RFC still deadline because a LEVEL-1
+character dies every ~500yd crossing level-10 territory. Route lab passes the same
+journeys: the residual is **survivability, not navigation** — exactly the T1 combat
+capability queued next. Nav planning is done; hosted long-range proof needs either
+leveled variants (five-geared-party, rfc-five-player-clear) or T1 combat.
+
+---
+
 ## Status (2026-07-23, session 5g): NAV V2 ONE-SHOT BAR MET — World Race generalizes to fresh courses
 
 **The /goal is closed (v21→v38, 14 hosted batches):** add stations as pure DATA and the
