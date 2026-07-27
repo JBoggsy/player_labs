@@ -332,7 +332,10 @@ Starting points — three reference players, all **vendored** under
 - **`suspectra`** *(Nim + Python LLM)* — [`crewrift_lab/crewrift/suspectra/`](../crewrift/suspectra/);
   a `notsus` fork that adds evidence voting and a **bounded meeting LLM**
   (`llm_meeting.py`, prompts in `memory/`). The reference for **wiring an LLM into the
-  meeting/voting phase** under a latency budget.
+  meeting/voting phase** under a latency budget. Crewrift agents must use Haiku
+  4.5 (`us.anthropic.claude-haiku-4-5-20251001-v1:0`) and remain below 1,800
+  quota-weighted tokens per policy episode across all LLM calls
+  (input + cache-write + 5 × output tokens).
 
 Once the player runs, evaluate it through the lab loop ([`AGENTS.md`](../../AGENTS.md))
 — experience requests, then read the replays/logs

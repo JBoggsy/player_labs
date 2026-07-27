@@ -287,7 +287,10 @@ Meetings are where the game is often decided, under a **brutal 10-second clock**
   noted by the game authors: LLMs tend to **cosplay** the game (say dramatic things)
   rather than **play** it (make the locally-correct deductive move), so prompts must
   push toward the actual game objective, and the model must be fast enough for the
-  10-second window.
+  10-second window. Always use Haiku 4.5
+  (`us.anthropic.claude-haiku-4-5-20251001-v1:0`) and keep each policy pod below
+  1,800 quota-weighted tokens per episode across all calls
+  (input + cache-write + 5 × output tokens).
 
 ---
 

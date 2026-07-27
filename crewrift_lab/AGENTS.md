@@ -161,6 +161,10 @@ Docker-only with no credentials**.
   [`crewrift/suspectra/`](crewrift/suspectra/), a fork of notsus
   (`suspectra.nim`) that adds evidence voting and a bounded Bedrock/Anthropic
   **meeting LLM** (`llm_meeting.py`, invoked by path; prompts in `memory/`).
+  Crewrift LLM agents must use Haiku 4.5
+  (`us.anthropic.claude-haiku-4-5-20251001-v1:0`) and stay below 1,800
+  quota-weighted tokens per policy episode, cumulative across all calls
+  (input + cache-write + 5 × output tokens).
   Upstream: `Metta-AI/players` (`players/crewrift/suspectra`). Builds in-lab via
   `tools/build_player.sh suspectra` (same Nim path as notsus).
 </content>
