@@ -18,13 +18,15 @@
 ## Exit non-zero on a hash mismatch (after emitting the rows up to the failure).
 
 import
-  std/[json, os],
+  std/[json, os, strutils],
   ../src/ctf/replays,
   ../src/ctf/sim
 
 const
   GameDir = currentSourcePath().parentDir().parentDir()
-  PosEvery = 30            ## ticks between periodic position snapshots
+
+var posEvery = 30          ## ticks between periodic position snapshots
+                           ## (CLI arg 2; the replay viewer bundles use 1)
 
 type
   TrackState = object
@@ -182,7 +184,7 @@ proc emitReplayJson(path: string) =
         track.rewards[i] = p.reward
 
     # Periodic spatial snapshots: every player + both flags.
-    if tick mod PosEvery == 0:
+    if tick mod posEvery == 0:
       for i, p in sim.players:
         emitRow(tick, sim.slotOf(i), "pos", posValue(p))
       for team in Team:
@@ -212,6 +214,8 @@ proc emitReplayJson(path: string) =
 
 when isMainModule:
   if paramCount() < 1:
-    stderr.writeLine("Usage: expand_replay_json <replay.bitreplay>")
+    stderr.writeLine("Usage: expand_replay_json <replay.bitreplay> [pos_every]")
     quit(1)
+  if paramCount() >= 2:
+    posEvery = max(1, parseInt(paramStr(2)))
   emitReplayJson(paramStr(1))

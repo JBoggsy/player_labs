@@ -10,7 +10,37 @@ startup to resume; **update it as you learn** (keep it tight).
 
 ---
 
-## Status (2026-07-27, session 8 cont): **v27 (=v26 image) SUBMITTED → champion. FIELD SHIFTED: h035 + swarm new; focusfire at v56; game 0.7.81**
+## Status (2026-07-27, session 8 cont 2): **OBSERVABILITY BUILD-OUT — v28 uploaded (trace-only), belief-overlay viewer shipped**
+
+**Chat is FREE** (verified: 0x81 chat + 0x84 mask are separate packets in the
+same frame flush; server folds both into one tick; shouts never touch the mask).
+
+**v28 uploaded (NOT submitted; trace-only, plays identically to v27):** every
+trace event seat/team-stamped; NEW events `order` (every squad-command change
+with source: leader/heard/decay/convert), `sync`, `heard_chat`, `heard_sound`;
+snapshots add order_source/order_age/presence_age/intent_point/nav_path/
+item_spawns/heard_events_live/visible_enemies+teammates. Warehouse now ingests
+traces from artifact zips (was silently 0 since v18 — only the stderr fallback
+was read!) and stamps **eng_tick** (engine-tick alignment per episode+slot via
+first-spawn ↔ phase=Playing; raw trace ticks are per-bot frame counters,
+offsets 51-108 observed). Cross-bot queries MUST use eng_tick.
+
+**NEW: belief-overlay replay viewer** — `tools/viewer.html` + bundler
+`tools/viewer_bundle.py <episode_dir>` (needs episodes fetched WITH artifacts;
+expand_replay_json now takes pos_every arg — bundles use 1). Overlays per
+selected bot (dropdown, or global): vision polygon (wall-clipped rays), chat
+hearing radius, heard chats/sounds, enemy/ally tracks (age-faded), squadmate
+presence staleness, item beliefs, danger heatmap, goal+order (goal/source/age),
+nav path, state card. All toggleable; tick-by-tick stepping (←/→, shift=24) +
+play/scrub. Verified in-browser on a v26 episode. NOTE: overlay resolution =
+snapshot cadence — record viewer batches with **BEACON_DIAG_EVERY_TICKS=1**
+(default 96 → overlays up to ~4s stale; the belief-age readout shows it).
+
+**NEXT: the traced h035 batch** — BEACON_DIAG_EVERY_TICKS=1 xreq vs ctf-h035
+with artifacts, then (a) count order decay/backoff vs 247px earshot (the
+hang-back hypothesis), (b) watch the mid-fight in the viewer.
+
+## (prior) Status (2026-07-27, session 8 cont): **v27 (=v26 image) SUBMITTED → champion. FIELD SHIFTED: h035 + swarm new; focusfire at v56; game 0.7.81**
 
 **v26 hit the player-binding trap AGAIN** — a leftover `coworld player use` session
 (`seedtest-loop1-newcomer` active) bound the v26 upload to the seedtest player
