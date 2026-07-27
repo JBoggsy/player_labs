@@ -43,6 +43,12 @@ reuse **Attend Meeting**. With `CREWBORG_LLM_MEETINGS=1` and `ANTHROPIC_API_KEY`
 Attend Meeting uses a fast Haiku-class LLM call on the meeting fast path to chat,
 respond to other players, keep a tentative vote, and submit early when requested;
 otherwise it preserves the deterministic canned-chat + suspicion-vote fallback.
+
+For Crewrift, always use Haiku 4.5
+(`us.anthropic.claude-haiku-4-5-20251001-v1:0`). Keep the policy pod below 1,800
+quota-weighted tokens per episode across every meeting call, counted as input
+tokens + cache-write tokens + 5 × output tokens. Fall back to the deterministic
+path when the remaining budget cannot cover another call.
 Hunt is gated on a visible kill opportunity whose isolation bar relaxes with
 urgency, not merely on the cooldown ending. The action layer covers `kill` (edge-A
 in KillRange) and `vent` (level-B in VentRange).

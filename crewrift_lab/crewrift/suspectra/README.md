@@ -12,6 +12,13 @@ the Nim binary, and copies a small Python helper into the runtime image.
 
 ## LLM meetings
 
+Crewrift policies must always use Haiku 4.5
+(`us.anthropic.claude-haiku-4-5-20251001-v1:0`) and keep each policy pod below
+1,800 quota-weighted tokens per episode, summed across every call as input tokens
+
+- cache-write tokens + 5 × output tokens. Use the deterministic voting path when
+  the remaining budget cannot cover another call.
+
 `SUSPECTRA_LLM_MEETINGS=1` enables the helper. `USE_BEDROCK=1` uses
 Anthropic Bedrock via the tournament-provided AWS environment; pass the upload or
 runner option that injects Bedrock credentials when submitting this image. Without
