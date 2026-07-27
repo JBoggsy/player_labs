@@ -32,6 +32,12 @@ the remaining uses are (a) enemy team lives (24 − enemy deaths) to gauge wipe 
 (b) own remaining respawns for risk calibration. docs/ctf-gameplay.md is stale on tiebreak,
 scoring (+100→+1/-1/-1), maxTicks (10000→5000), and spawn protect (removed GV20) — needs reconcile.
 
+### The lifecycle monitor verdicts off the NEWEST membership — stale right after a submit
+Evidence: monitoring the v28 submission, `policy_lifecycle.py monitor --name beacon --watch` exited
+immediately with "competing" because the newest membership at first poll was still v27's champion
+membership (v28's didn't exist yet). The real verdict needs the poll pinned to the submission id:
+/v2/league-submissions → its membership → status. Candidate fix: monitor should take --submission.
+
 ### The trace pipeline was silently dead for ~9 versions — the warehouse read the fallback transport, not the default
 Evidence: every warehouse build since v18 printed "0 trace events" and nobody noticed until the
 squad-tactics investigation needed traces. Beacon wrote traces to `jsonl@artifact` (the default)

@@ -36,6 +36,13 @@ play/scrub. Verified in-browser on a v26 episode. NOTE: overlay resolution =
 snapshot cadence — record viewer batches with **BEACON_DIAG_EVERY_TICKS=1**
 (default 96 → overlays up to ~4s stale; the belief-age readout shows it).
 
+**v28 SUBMITTED → qualified → 👑 CHAMPION** (sub_4fabc37f…, lpm_fa09ccb7…, one
+qualifier round, no crashes). League games now emit full telemetry. Standing:
+**rank 5 @ 0.417** (was rank 8 @ 0.06 at v27 entry — convert rounds accruing).
+Monitor gotcha: `policy_lifecycle.py monitor` verdicts off the NEWEST membership
+— right after a submit that's still the PRIOR version's; pin to the submission id
+(/v2/league-submissions → memberships) for the real verdict.
+
 **NEXT: the traced h035 batch** — BEACON_DIAG_EVERY_TICKS=1 xreq vs ctf-h035
 with artifacts, then (a) count order decay/backoff vs 247px earshot (the
 hang-back hypothesis), (b) watch the mid-fight in the viewer.
