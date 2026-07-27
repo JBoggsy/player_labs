@@ -32,6 +32,22 @@ the remaining uses are (a) enemy team lives (24 − enemy deaths) to gauge wipe 
 (b) own remaining respawns for risk calibration. docs/ctf-gameplay.md is stale on tiebreak,
 scoring (+100→+1/-1/-1), maxTicks (10000→5000), and spawn protect (removed GV20) — needs reconcile.
 
+### The trace pipeline was silently dead for ~9 versions — the warehouse read the fallback transport, not the default
+Evidence: every warehouse build since v18 printed "0 trace events" and nobody noticed until the
+squad-tactics investigation needed traces. Beacon wrote traces to `jsonl@artifact` (the default)
+but `_load_trace_events` only parsed the stderr-fallback `CTF_DIAG` log lines. Two lessons:
+(a) when a pipeline has a default transport and a fallback, the reader must cover the DEFAULT
+first; (b) "0 rows" from a component that should always produce rows is an error, not a skip —
+the build log line even showed it every time. Also: recon fetches used --no-artifacts, which
+discards the trace zips — episodes fetched for behavioral analysis need artifacts.
+
+### Trace ticks are per-bot frame counters, not engine ticks — align via first-spawn ↔ phase=Playing
+Evidence: first alive=true trace ticks for the same episode's spawn varied 122-179 across seats
+(connect-order dependent) while the replay's Playing tick was 230 — offsets of 51-108 ticks that
+would smear any cross-bot analysis keyed on raw tick. Warehouse now stamps eng_tick per
+(episode, slot) using the shared spawn moment. Any future per-tick trace consumer must use
+eng_tick for cross-bot or trace-vs-replay joins.
+
 ### The player-binding trap fired a THIRD time — check `coworld player list` before UPLOAD, not submit
 Evidence: a leftover `coworld player use seedtest-loop1-newcomer` session (likely from unrelated
 seedtest work) silently bound the v26 upload to the seedtest player — caught only because the A/B

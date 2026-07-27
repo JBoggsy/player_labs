@@ -2,6 +2,33 @@
 
 Version → change mapping for the CTF `beacon` policy. Newest first.
 
+## (pending v28) — observability: seat/tick-keyed tracing for cross-bot analysis (2026-07-27)
+
+**Why (human direction):** debugging squad tactics needs to sync all 8 bots'
+beliefs in one match; the old traces couldn't (transition events lacked seat,
+trace ticks are per-bot frame counters, and the warehouse silently ingested 0
+trace events because it only read the stderr fallback, not the artifact zips).
+
+**Changes (trace-only, no behavior):** (1) every trace event now carries
+seat+team (self-describing; no join-to-snapshot needed). (2) NEW `order`
+transition event — every squad-command change with its **source**
+(leader rule / heard O / decay backoff / decay convert; `belief.order_source`)
+— the coordination state machine is now directly observable. (3) NEW `sync`
+event at first spawn (the shared Playing-start moment). (4) Snapshots add
+`order_source`, `order_age`, `presence_age` (per-squadmate staleness — the
+backoff rule's raw input), `intent_point`. (5) Warehouse: reads
+`telemetry.jsonl` from artifact zips (fixes the 0-trace bug), stamps every
+trace row with **`eng_tick`** (engine-tick alignment via first-spawn ↔ replay
+phase=Playing), first-class `order_goal`/`order_source`/`enemy_lives_left`
+columns. Verified end-to-end on the v26 A/B batch: 16,859 trace events, all 8
+seats aligned on one engine-tick axis against replay kills. 105 tests.
+
+**Chat-cost check (same session):** chatting is FREE — the bridge sends the
+0x81 chat packet alongside the 0x84 mask packet in the same frame flush
+(sprite_bridge `_pack_outbound`), the server folds both into the same tick's
+input, and the sim applies shouts without touching movement/fire state.
+`choose_shout` never modifies the mask. No action is ever displaced by chat.
+
 ## v26 — convert trigger: read the team scoreboard, collapse to finish (2026-07-24)
 
 **Why (v25 A/B + human direction "start trying to close"):** v25's spread

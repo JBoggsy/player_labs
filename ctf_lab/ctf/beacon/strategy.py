@@ -138,12 +138,14 @@ def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
             # (backing off 2 kills from a wipe is the worst move in the game).
             if squads.wipe_in_reach(belief):
                 belief.order = ("T", squads.convert_hunt_point(belief), belief.tick)
+                belief.order_source = "convert"
             else:
                 belief.order = (
                     "H",
                     squads.decay_hold_point(belief),
                     belief.tick,
                 )
+                belief.order_source = "decay"
             goal, opos, set_tick = belief.order
         # Spread (v25): rank-offset the shared order point so the squad fans out
         # across its lane instead of stacking on one cell (FF + splash safety).

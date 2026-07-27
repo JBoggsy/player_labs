@@ -45,7 +45,7 @@ def build_decide(
     """
     if _diagnostics_enabled():
         sink = trace_sink if trace_sink is not None else _StderrTraceSink()
-        diagnostics: _DiagnosticLogger | None = _DiagnosticLogger(sink)
+        diagnostics: _DiagnosticLogger | None = _DiagnosticLogger(sink, team=team, seat=seat)
     else:
         diagnostics = None
     runtime = BeaconRuntime(team, seat, on_step=diagnostics.on_step if diagnostics else None)
@@ -93,11 +93,18 @@ class _DiagnosticLogger:
     ``objective`` / ``alive`` / ``engage`` transition events.
     """
 
-    def __init__(self, sink: TraceSink) -> None:
+    def __init__(self, sink: TraceSink, *, team: str | None = None, seat: int | None = None) -> None:
         self._sink = sink
+        # Seat/team stamped on EVERY event (v27 tracing): transition events must be
+        # self-describing so cross-bot analysis can key on (seat, tick) without
+        # joining back to the nearest snapshot.
+        self._seat = seat
+        self._team = team
         self._last_objective: str | None = None
         self._last_alive: bool | None = None
         self._last_engaged: bool | None = None
+        self._last_order: tuple | None = None
+        self._sync_recorded = False
         self._last_micro: str | None = None
         # Cumulative activation tick-counts per micro mode ("duck"/"peek"), carried in
         # every snapshot. Behavior-change discipline: any new gated behavior must be
@@ -131,11 +138,37 @@ class _DiagnosticLogger:
             self._last_objective = objective
         if b.alive != self._last_alive:
             self._record(step.tick, "alive", {"alive": b.alive, "self_xy": b.self_xy})
+            # Sync anchor (v27): belief.tick is this bot's FRAME COUNTER since its
+            # own websocket connect — NOT the engine tick — so tick N differs
+            # across seats. All 16 players spawn on the same engine tick (Playing
+            # start), so the FIRST alive=true is a shared moment: align each bot's
+            # tick axis to the replay's phase=Playing engine tick via this event.
+            if b.alive and not self._sync_recorded:
+                self._sync_recorded = True
+                self._record(step.tick, "sync", {
+                    "anchor": "first_spawn",
+                    "spawn_xy": b.self_xy,
+                    "note": "local tick of Playing-start spawn; replay phase=Playing gives the engine tick",
+                })
             self._last_alive = b.alive
         engaged = len(b.enemies) > 0
         if engaged != self._last_engaged:
             self._record(step.tick, "engage", {"engaged": engaged, "n_enemies": len(b.enemies)})
             self._last_engaged = engaged
+        # Order transitions (v27): the squad-command state machine is the core of
+        # coordination analysis — record every change with WHERE IT CAME FROM
+        # (leader rule / heard / decay backoff / decay convert), so hang-backs can
+        # be attributed to comms loss vs deliberate doctrine.
+        order_now = (b.order[0], tuple(b.order[1]), b.order_source) if b.order else None
+        if order_now != self._last_order:
+            self._record(step.tick, "order", {
+                "goal": order_now[0] if order_now else None,
+                "pos": list(order_now[1]) if order_now else None,
+                "source": order_now[2] if order_now else None,
+                "set_tick": b.order[2] if b.order else None,
+                "self_xy": b.self_xy,
+            })
+            self._last_order = order_now
         if b.micro is not None:
             self._micro_ticks[b.micro] = self._micro_ticks.get(b.micro, 0) + 1
         if b.micro != self._last_micro:
@@ -217,6 +250,14 @@ class _DiagnosticLogger:
             "squad_cohesion_ticks": b.squad_cohesion_ticks,
             # v22 squad command (cumulative + live).
             "order": list(b.order[:2]) + [b.order[2]] if b.order else None,
+            "order_source": b.order_source,
+            "order_age": (b.tick - b.order[2]) if b.order else None,
+            #: presence AGE per squadmate seat (ticks since last confirmation) — the
+            #: raw input to the stale-mate backoff rule; None = never confirmed.
+            "presence_age": {
+                str(s): (b.tick - t) for s, t in b.presence.items()
+            },
+            "intent_point": list(step.intent.point) if step.intent.point else None,
             "orders_sent": b.orders_sent,
             "orders_heard": b.orders_heard,
             "pings_sent": b.pings_sent,
@@ -249,6 +290,9 @@ class _DiagnosticLogger:
         }
 
     def _record(self, tick: int, name: str, data: dict) -> None:
+        # Every event is self-describing: (seat, team, tick) key on all of them, so
+        # cross-bot analysis never needs a join back to the nearest snapshot.
+        data = {"seat": self._seat, "team": self._team, **data}
         self._sink.record(TraceEvent(tick=tick, name=name, data=data))
 
 

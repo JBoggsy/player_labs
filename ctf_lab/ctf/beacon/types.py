@@ -225,6 +225,10 @@ class Belief:
     # Squad command (v22) — the order I currently obey: (goal letter, target pos,
     # tick set). Set by my own leader logic (if I lead) or a heard O message.
     order: tuple[str, tuple[int, int], int] | None = None
+    #: How the current order arrived (v27 tracing): "leader" (own lead_squad rule),
+    #: "heard" (a squadmate leader's O message), "decay" (stale order -> self-issued
+    #: backoff-hold), "convert" (stale order + wipe in reach -> self-issued hunt).
+    order_source: str | None = None
     #: presence table: squadmate seat -> last tick we confirmed them alive (badge
     #: sighting or heard ping/order). Leaders read this for strength estimates.
     presence: dict[int, int] = field(default_factory=dict)

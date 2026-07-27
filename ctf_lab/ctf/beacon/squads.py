@@ -384,6 +384,7 @@ def lead_squad(belief: Belief) -> None:
 
     if belief.order is None or belief.order[0] != goal or belief.order[1] != pos:
         belief.order = (goal, pos, tick)
+        belief.order_source = "leader"
 
 
 def decay_hold_point(belief: Belief) -> tuple[int, int]:

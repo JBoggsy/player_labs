@@ -323,6 +323,7 @@ def _update_chat(belief: Belief, percept: CtfState, tick: int) -> None:
 
             if msg.seat == _squads.leader_of(belief.seat) and msg.seat != belief.seat:
                 belief.order = (msg.goal or "H", msg.pos, tick)
+                belief.order_source = "heard"
                 belief.orders_heard += 1
             if msg.seat is not None:
                 belief.presence[msg.seat] = tick

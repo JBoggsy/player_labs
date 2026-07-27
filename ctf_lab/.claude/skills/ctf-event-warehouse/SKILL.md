@@ -16,8 +16,17 @@ The tool is `ctf_lab/tools/event_warehouse.py` (one file, run via `uv`). It inge
 - **replay events** (ground truth) — via the version-matched `expand_replay_json` binary
   (build it first, below): `kill`, `flag_steal`, `flag_return_home`, `capture`, `respawn`,
   `score`, `phase`, `game_over`, each with tick + actor slot.
-- **beacon trace events** — from beacon's per-episode trace (the `jsonl@artifact` member, or
-  the folded `CTF_DIAG` policy log): `snapshot` (full belief), `objective`, `alive`, `engage`.
+- **beacon trace events** — from beacon's per-episode trace: the `telemetry.jsonl` inside
+  each `artifacts/policy_artifact_<slot>.zip` (the default transport — **download episodes
+  WITH artifacts**, i.e. don't pass `--no-artifacts` to the fetcher), falling back to the
+  folded `CTF_DIAG` policy log. Events: `snapshot` (full belief incl. order/source/age,
+  presence ages, enemy_lives_left), `order` (every squad-command change, with its source:
+  leader/heard/decay/convert), `objective`, `alive`, `engage`, `micro`, `item`, `throw`,
+  `heal`, `sync`. Every event carries seat+team in its data (beacon v28+).
+- **`eng_tick`** — every trace row also carries the ENGINE tick (aligned per episode+slot
+  via first-spawn ↔ replay `phase=Playing`; trace `tick` is the bot's own frame counter and
+  differs across seats). **Cross-bot / trace-vs-replay queries must key on `eng_tick`**,
+  not `tick`.
 
 **Use it when** a survey/A-B question needs the actual behaviour: capture-conversion /
 delivery rate, where carriers die, escort proximity, engagement outcomes, objective
