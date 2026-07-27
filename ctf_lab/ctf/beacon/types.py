@@ -247,6 +247,7 @@ class Belief:
     backoff_events: int = 0
     rejoin_ticks: int = 0
     convert_events: int = 0  # v26: times a leader flipped into the convert hunt
+    converting: bool = False  # v29: currently in the standalone convert-hunt rung
     # Lead-aim activation state this tick, for tracing: brads of lead applied to the
     # snap aim (0 = no lead / target treated as stationary).
     lead_brads: int = 0

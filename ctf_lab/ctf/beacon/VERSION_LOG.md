@@ -2,6 +2,34 @@
 
 Version → change mapping for the CTF `beacon` policy. Newest first.
 
+## v29 — squad layer OFF: back to the static role split (+ convert kept) (2026-07-27)
+
+**Why (human direction):** watching the h035 games, our squads read as "a
+chaotic mess, several hanging back" vs Alex's disciplined midline. Rather than
+keep tuning a coordination layer we can't yet see into, roll back to the
+pre-squad strategy and let the new tracing/viewer explain the failure first.
+
+**Changes:** (1) `SQUADS` and `SQUAD_COMMAND` default **0** — no leader orders,
+no pings, no rejoin rung, no order decay/backoff, no formation forces, no
+wave-gating, no spread points, no aim sectors. Strategy falls through to the
+**static role split** (v2-v18 shape): defenders hold their cover-snapped choke
+points, attackers push the flag; carry/intercept/escort/item rungs unchanged.
+All machinery kept + tests pinned via a `squads_on` fixture — re-enable with
+env flags for A/Bs. (2) **The convert trigger survives the rollback** as a
+standalone rung (`convert_hunt`, above the role split): it's a global-signal
+read, not coordination, and it's the single biggest measured win (v26 A/B).
+(3) Chat: protocol sends (O/P) gate off with SQUAD_COMMAND; the intel messages
+(carrier heartbeat C, thief fix T, enemy E, under-fire U, grenade G) still
+send and still fold into belief — they inform individports, not orders.
+
+**Rotating diamonds (same session, viewer question):** verified in the deployed
+sim — the near-midline column-5 diamonds are DRAWN spinning but "COLLISION,
+LOS, and the fog masks keep the exact static diamond — the spin is pure
+decoration and never enters gameHash" (sim.nim buildAnimatedDiamonds). The
+static nav bake is CORRECT; no pathing change needed. Documented in
+bake_map.py; the viewer draws the static truth, which is what the game
+actually enforces.
+
 ## (pending v28) — observability: seat/tick-keyed tracing for cross-bot analysis (2026-07-27)
 
 **Why (human direction):** debugging squad tactics needs to sync all 8 bots'

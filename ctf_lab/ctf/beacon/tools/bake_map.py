@@ -68,6 +68,13 @@ _RECTS = [  # (x, y, w, h)
     (479, 348, 12, 23), (479, 371, 28, 12),
 ]
 _DIAMONDS = [  # (cx, cy, radius)
+    # NOTE (verified vs deployed sim, 2026-07-27): the column-5 diamonds nearest
+    # the midline (cx within 80px of center x=617 — the 565-column here and its
+    # mirror) are DRAWN as slowly rotating sprites in every view, but the spin is
+    # PURE DECORATION: sim.nim buildAnimatedDiamonds keeps "COLLISION, LOS, and
+    # the fog masks … the exact static diamond — the spin … never enters
+    # gameHash". So this static bake is CORRECT for movement, bullets, and
+    # vision; do not model rotation in nav or planning.
     (349, 90, 28), (349, 186, 28), (349, 282, 28), (349, 376, 28), (349, 472, 28),
     (349, 568, 28),
     (565, 156, 30), (565, 252, 30), (565, 406, 30), (565, 502, 30),

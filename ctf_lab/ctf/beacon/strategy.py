@@ -164,6 +164,22 @@ def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
         if goal == "F":
             return Intent(kind="navigate_to", point=PEDESTAL[enemy], reason="steal"), "steal"
 
+    # Rung 3.8 (v29): the CONVERT TRIGGER, standalone. Preserved through the
+    # squad rollback because it is NOT coordination — it reads the global team
+    # scoreboard (fog-independent, same value for every agent) and it is the
+    # single biggest measured win (v26 A/B: every focusfire draw became a win).
+    # When the wipe is in reach, everyone hunts the freshest enemy evidence.
+    if squads.wipe_in_reach(belief) and belief.self_xy is not None:
+        if not belief.converting:
+            belief.converting = True
+            belief.convert_events += 1
+        return Intent(
+            kind="navigate_to",
+            point=squads.convert_hunt_point(belief),
+            reason="convert_hunt",
+        ), None
+    belief.converting = False
+
     # Rung 4 fallback (no live order / SQUAD_COMMAND off): the static role split.
     if belief.role == "defender" and belief.hold_point is not None:
         # Hold cover on our turf: the enemy dies attacking us (we respawn close),

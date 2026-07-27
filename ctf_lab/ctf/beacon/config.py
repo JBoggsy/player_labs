@@ -271,7 +271,12 @@ GRENADE_WARN_TTL_TICKS = _env_int("BEACON_GRENADE_WARN_TTL_TICKS", 72)
 
 # --- Squads (v19) ---------------------------------------------------------------------
 #: Master switch for squad play (formation forces, wait-gating, aim sectors).
-SQUADS = _env_int("BEACON_SQUADS", 1) == 1
+#: OFF by default since v29 (human call, 2026-07-27): the squad layer produced
+#: stacked-then-scattered shapes vs h035's disciplined midline while several
+#: members hung back on decay-backoff; rolled back to the pre-squad static role
+#: split until the traced batches explain the coordination failure. Re-enable
+#: via BEACON_SQUADS=1 / BEACON_SQUAD_COMMAND=1 for A/Bs.
+SQUADS = _env_int("BEACON_SQUADS", 0) == 1
 #: Cohesion: want >= MIN_BUDDIES teammates within COHESION_PX; below that, bias
 #: movement toward the nearest teammate instead of pushing alone.
 SQUAD_COHESION_PX = _env_int("BEACON_SQUAD_COHESION_PX", 120)
@@ -300,7 +305,8 @@ SQUAD_SECTOR_BRADS = _env_int("BEACON_SQUAD_SECTOR_BRADS", 50)
 
 # --- Squad command (v22): leader orders + presence pings + respawn discipline --------
 #: Master switch for the leader/order/rejoin layer — the v22 A/B bit.
-SQUAD_COMMAND = _env_int("BEACON_SQUAD_COMMAND", 1) == 1
+#: OFF by default since v29 (see SQUADS above; same rollback).
+SQUAD_COMMAND = _env_int("BEACON_SQUAD_COMMAND", 0) == 1
 #: Convert trigger (v26): when the ENEMY team's lives remaining (24 - their deaths,
 #: read off the fog-independent team scoreboard) drop to this or below, leaders
 #: order an all-in HUNT — the wipe is in reach and under GV21 a draw pays -1 like a

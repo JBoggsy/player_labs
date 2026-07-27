@@ -21,6 +21,25 @@ from ctf.beacon.strategy import decide_objective
 from ctf.beacon.types import ActionState, Belief, Enemy, Intent
 from players.player_sdk import Button
 
+import pytest
+
+
+@pytest.fixture
+def squads_on(monkeypatch):
+    """Force the squad layer ON for tests of squad behavior.
+
+    SQUADS / SQUAD_COMMAND default OFF since v29 (rollback to the static role
+    split), but the machinery stays maintained for A/Bs — these tests pin the
+    behavior for whenever a flag-on build runs. Both flags are baked into each
+    consuming module's namespace at import, so patch them everywhere."""
+    from ctf.beacon import action as _action, belief as _belief, chat as _chat
+    from ctf.beacon import strategy as _strategy
+
+    for mod in (_strategy, _belief, _chat):
+        monkeypatch.setattr(mod, "SQUAD_COMMAND", True, raising=False)
+    for mod in (_strategy, _action):
+        monkeypatch.setattr(mod, "SQUADS", True, raising=False)
+
 
 # --- brad arithmetic --------------------------------------------------------------
 def test_brads_of_cardinals():
@@ -128,7 +147,7 @@ def test_hold_points_snap_to_cover():
             assert cover[gy, gx], f"{team} seat {seat} hold {(hx,hy)} not on cover"
 
 
-def test_defender_holds_when_arrived():
+def test_defender_holds_when_arrived(squads_on):
     # Seat 0 is the D-squad LEADER (v22): it orders itself to hold its choke, so
     # the reason is order-driven; the behavior (hold on our turf) is unchanged.
     b = Belief(team="red", seat=0, role="defender", hold_point=(390, 300),
@@ -1021,7 +1040,7 @@ def test_leader_orders_convert_hunt_when_wipe_in_reach():
     assert b2.convert_events == 0
 
 
-def test_order_decay_converts_instead_of_backing_off_when_wipe_in_reach():
+def test_order_decay_converts_instead_of_backing_off_when_wipe_in_reach(squads_on):
     from ctf.beacon.config import ORDER_TTL_TICKS
     # A member (non-leader seat 1) with a STALE order and the wipe in reach must
     # flip to T (hunt), not the v24 backoff-hold.
@@ -1034,7 +1053,7 @@ def test_order_decay_converts_instead_of_backing_off_when_wipe_in_reach():
     assert intent.reason == "order_hunt"
 
 
-def test_ordered_hold_uses_spread_point():
+def test_ordered_hold_uses_spread_point(squads_on):
     from ctf.beacon import squads
     # Two members of squad A obeying the same H order must navigate to
     # DIFFERENT points (the v24 stacking root cause).
@@ -1160,7 +1179,7 @@ def test_leader_is_lowest_seat():
     assert squads.leader_of(7) == 5
 
 
-def test_member_obeys_own_leaders_order_only():
+def test_member_obeys_own_leaders_order_only(squads_on):
     from ctf.beacon.belief import update_belief
     from ctf.beacon import chat
     # Seat 6 (A2, leader = 5): obeys seat 5's order, ignores seat 0's (D leader).
@@ -1198,7 +1217,7 @@ def test_leader_backs_off_when_squadmate_lost():
     assert b2.order[1][1] > 400  # bottom-side anchor
 
 
-def test_death_snapshots_rejoin_and_respawn_enters_rejoin():
+def test_death_snapshots_rejoin_and_respawn_enters_rejoin(squads_on):
     from ctf.beacon.belief import update_belief
     from ctf.beacon.types import PlayerTrack
     b = Belief(team="red", seat=6, role="attacker", alive=True, self_xy=(700, 300))
@@ -1216,7 +1235,7 @@ def test_death_snapshots_rejoin_and_respawn_enters_rejoin():
     assert intent.reason == "rejoin" and intent.point == (650, 350)
 
 
-def test_rejoin_exits_on_squad_contact():
+def test_rejoin_exits_on_squad_contact(squads_on):
     b = Belief(team="red", seat=6, role="attacker", alive=True, self_xy=(640, 340))
     b.rejoin_point = (650, 350)
     b.rejoin_until = 10_000
@@ -1250,7 +1269,7 @@ def test_v24_default_orders_side_holds_and_middle_push():
     assert c.order[0] == "P" and c.order[1] == (617, 329)
 
 
-def test_order_decay_becomes_backoff_hold():
+def test_order_decay_becomes_backoff_hold(squads_on):
     from ctf.beacon.config import ORDER_TTL_TICKS
     # Seat 6 (member, not leader) holds a stale P order, forward of the rally.
     b = Belief(team="red", seat=6, role="attacker", alive=True, self_xy=(700, 300))
@@ -1262,7 +1281,7 @@ def test_order_decay_becomes_backoff_hold():
     assert intent.reason in ("order_to_hold", "order_hold")
 
 
-def test_order_decay_behind_rally_holds_in_place():
+def test_order_decay_behind_rally_holds_in_place(squads_on):
     from ctf.beacon.config import ORDER_TTL_TICKS
     b = Belief(team="red", seat=6, role="attacker", alive=True, self_xy=(300, 300))
     b.tick = 1000
