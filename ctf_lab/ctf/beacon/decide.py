@@ -184,6 +184,17 @@ class _DiagnosticLogger:
             if key not in self._seen_event_ids:
                 self._seen_event_ids.add(key)
                 self._heard_events_total += 1
+                # Viewer overlay (v28): each newly-heard SOUND as its own event.
+                self._record(step.tick, "heard_sound",
+                             {"kind": ev.kind, "pos": list(ev.pos)})
+        # Viewer overlay (v28): every chat bubble perceived this frame (protocol
+        # traffic and human text alike), with the jittered position it appeared at.
+        for shout_team, address, text, pos in step.percept.heard_shouts:
+            if text == b.chat_last_sent_text and shout_team == b.team:
+                continue  # our own bubble echoing back
+            self._record(step.tick, "heard_chat",
+                         {"from_team": shout_team, "address": address,
+                          "text": text, "pos": list(pos)})
         if b.heard_duck:
             self._heard_duck_ticks += 1
 
@@ -287,6 +298,19 @@ class _DiagnosticLogger:
             "enemy_tracks": [_track_row(t, step.tick) for t in b.enemy_tracks],
             "teammate_tracks": [_track_row(t, step.tick) for t in b.teammate_tracks],
             "danger": _danger_grid(b.danger),
+            # Viewer overlays (v28): the bot's live pathing, item-spawn beliefs, and
+            # heard sound events — everything the replay-viewer belief overlay draws.
+            "nav_path": [list(p) for p in b.nav_path[b.nav_cursor:]] if b.nav_path else None,
+            "item_spawns": [
+                {"kind": s.kind, "pos": list(s.pos), "present": s.present}
+                for s in b.item_spawns
+            ],
+            "heard_events_live": [
+                {"kind": ev.kind, "pos": list(ev.pos), "age": b.tick - ev.last_tick}
+                for ev in b.heard_events
+            ],
+            "visible_enemies": [list(e.pos) for e in b.enemies],
+            "visible_teammates": [list(m.pos) for m in b.teammates],
         }
 
     def _record(self, tick: int, name: str, data: dict) -> None:
