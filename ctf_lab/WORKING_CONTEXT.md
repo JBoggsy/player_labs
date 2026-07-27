@@ -10,7 +10,40 @@ startup to resume; **update it as you learn** (keep it tight).
 
 ---
 
-## Status (2026-07-24, session 8): **v25 SUBMITTED+competing; v26 convert trigger built+uploaded, A/B in flight**
+## Status (2026-07-27, session 8 cont): **v27 (=v26 image) SUBMITTED → champion. FIELD SHIFTED: h035 + swarm new; focusfire at v56; game 0.7.81**
+
+**v26 hit the player-binding trap AGAIN** — a leftover `coworld player use` session
+(`seedtest-loop1-newcomer` active) bound the v26 upload to the seedtest player
+(verified from A/B episode participants: `seedtest-base-veteran`). Fix: `coworld
+player unset`, re-upload same image → **beacon:v27**, 1-ep probe confirmed default
+player, submitted (sub_092e439f…) → **qualified → competing → 👑 CHAMPION**
+(lineage). The old v25 membership shows disqualified substatus=broken — superseded;
+v27 is the live entry. RULE HARDENED: `coworld player list` + check the ● active
+marker BEFORE every upload, not just before submit.
+
+**FIELD RECON (2026-07-27, beacon:v27 1v1s, 10 eps each, game 0.7.81):**
+- **ctf-focusfire:v56** (daveey, rank 1 @ 0.70; was v1): **4W/6D/0L** — we no
+  longer lose to it, but it stopped feeding kills (steals 15 vs our 1; kills
+  221-174 us): draws are back vs the leader. Their v1→v56 pace = daily iteration.
+- **ctf-h035:v1** (Alex Smith, rank 2 @ 0.56; REPLACED h006): **2W/2D/6L — the
+  new problem.** Beats us by ATTRITION: out-kills us at mid (122 vs 92 kill
+  events), 23 flag steals/10 games (constant pressure that pulls our holds; 3
+  captures slip through, ~20 carriers die), losses end tick ~3900-4600 (wipes +
+  captures, before the clock). Our own flag pressure: 3 steals in 10 games.
+- **swarm:v1** (Michael Smith, rank 3 @ 0.44, NEW): **6W/0D/4L** — decisive
+  games both ways (their 25 steals + 3 caps vs our 4+1); high mutual TK (8 vs
+  11) suggests a melee-ball style. Winnable but volatile.
+- Rest: Picasso v26, co-gas relh v27 / richard v34, autoresearch v41.
+  NanosaurusX gone. **The division iterates DAILY — recon before every submit.**
+
+**NEXT LEVERS (evidence-ranked):** (1) **the h035 gap** — mid-lane fight quality
++ carrier-hunting (their steals) + our own flag pressure (3 steals/10 games is
+nothing; C-squad push isn't generating steals); (2) keep the convert trigger —
+focusfire draws at 21-23 kills suggest CONVERT_ENEMY_LIVES=6 may be too tight
+for their v56 (they stopped over-extending); consider 8-10 A/B; (3) swarm TK
+noise — our 8 TKs vs their melee ball, check FF gate under crowding.
+
+## (prior) Status (2026-07-24, session 8): **v25 SUBMITTED+competing; v26 convert trigger built+uploaded, A/B in flight**
 
 **v25 submitted on human go-ahead** (sub_652bd0cb…) → qualified → **competing**
 (entry rank 8 @ 0.075 — post-restructure standings, expect climb as rounds

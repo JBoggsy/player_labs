@@ -32,6 +32,22 @@ the remaining uses are (a) enemy team lives (24 − enemy deaths) to gauge wipe 
 (b) own remaining respawns for risk calibration. docs/ctf-gameplay.md is stale on tiebreak,
 scoring (+100→+1/-1/-1), maxTicks (10000→5000), and spawn protect (removed GV20) — needs reconcile.
 
+### The player-binding trap fired a THIRD time — check `coworld player list` before UPLOAD, not submit
+Evidence: a leftover `coworld player use seedtest-loop1-newcomer` session (likely from unrelated
+seedtest work) silently bound the v26 upload to the seedtest player — caught only because the A/B
+episodes' participants showed `seedtest-base-veteran`. v22 had the same failure. The pre-submit
+binding check is too late: the UPLOAD is what binds. New reflex: `coworld player unset` (or verify
+no ● active marker) immediately before every `upload-policy`, then a 1-ep probe xreq to confirm
+`player_name` before submitting.
+
+### Division opponents iterate daily — recon the CURRENT field before every submit/measure
+Evidence (2026-07-27): three days after the v26 A/B, focusfire went v1→v56 (stopped feeding kills;
+our 10W/0D became 4W/6D), h006 was REPLACED by h035 (rank 2, beats us 6L/10 by mid-lane attrition +
+23 steals/10 games), and a brand-new `swarm` sits rank 3. Any tuning targeted at last week's
+opponent (e.g. our convert threshold tuned on focusfire v1's over-extension) may be stale on
+arrival. Matched same-window A/Bs remain the only valid comparison; opponent-specific tuning needs
+a freshness check first.
+
 ### v26 convert A/B: reading the global scoreboard converted every focusfire draw to a win
 Evidence: v26 (enemy_lives ≤ 6 → all squads order T at freshest enemy fix) vs v25 matched A/B:
 focusfire 5W/5D/0L → 10W/0D/0L (p<0.001), zero losses, stacking still fixed. Vs h006 the trigger
