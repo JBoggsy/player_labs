@@ -17,3 +17,44 @@ buffers — not in-session hit counts — is the graduation signal.
 concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
+
+### The game ships deterministic combat testbeds — z7-class-combat-lab and spell-lab-* variants
+Evidence: `infra/coworld_manifest_template.json` (repo @ da32437e8) defines `z7-class-combat-lab`
+(level-29 twink warrior+rogue on GM Island beside a cloned hostile with target_health_multiplier
+200 / target_damage_multiplier 0.001 — a can't-kill-you training dummy, 10s respawn) and four
+spell-lab fixtures. For rotation/combat-module development this is the route-lab equivalent:
+iterate combat logic against a deterministic target before hosted grind batches.
+Status: found during combat-report research 2026-07-24; not yet tried.
+
+### The deleted 0.1.31 seam is our re-add reference — it lives in git history AND our .sdk-snapshot
+Evidence: path decision (2026-07-27) is to fork the client and re-open per-step external
+selection at the v2 `step()` boundary with a Gym facade. The exact prior implementation
+(nim_control_server external mode, FactorizedBotEnv/gymnasium_env.py space design) is
+recoverable from the game repo's git history (deleted by 51aa3869d/b27cded53 era commits)
+and our pinned `.sdk-snapshot` — don't design the seam from scratch.
+
+### Re-pull before trusting ANY report older than a day — this repo moves at contract-rewriting speed
+Evidence: 327 commits in 3 days (da32437e8 → 788e22147) deleted the entire external-selection
+contract (FactorizedAction/masks/ActionSettled → `step(observation)` v2), replaced the hosted
+Python wrapper with a native Nim binary, split the game into three coworlds
+(accelerated/persistent/speedrun-wow @ 0.1.121), and re-formatted RFC to level-19 mixed
+parties scored in minutes. A 3-day-old deep-research report needed a full rewrite, not a
+line-number touch-up. Audit reports against a fresh pull before acting on them.
+
+### Deployed-package truth: `coworld list` no longer shows `vanilla_wow` — look for speedrun-wow / accelerated-wow / persistent-wow
+Evidence: 2026-07-27 `coworld list` has speedrun-wow/persistent-wow/accelerated-wow 0.1.121
+(canonical) and no vanilla_wow entry. The release pipeline cuts three single-variant
+packages from one commit (release/build_coworld_package.py COWORLD_RELEASE_PROFILES).
+
+### The pinned SDK snapshot is the cheap way to answer "what does OUR contract actually have"
+Evidence: HEAD's nim_control.py has BotThreatObservation, combo_points, shapeshift_form,
+spell_power_costs, combat_distance — none exist in `.sdk-snapshot/wow_sdk/nim_control.py`
+(the 0.1.31 pin). Reading the snapshot directly resolved a conflict between two lab docs
+(recon said "threat summary in frame", t1 design said "HEAD only" — t1 was right) in
+minutes, no container needed. Always diff pin-vs-HEAD before designing against frame fields.
+
+### Game repo reorganized — `player/bots/` → `player/behavior/`, manifest → `infra/`
+Evidence: pull to da32437e8 (2026-07-24) moved rotations to `player/behavior/rotations/`
+(per-class files: shaman.nim, warrior.nim, …, model.nim, selectors.nim), leveling to
+`player/behavior/leveling/`, SDK to `player/sdk/`, manifest to `infra/coworld_manifest_template.json`.
+All lab-doc citations using `player/bots/...` paths are stale.

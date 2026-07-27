@@ -13,6 +13,89 @@ file is the one-screen "where are we and why."
 
 ---
 
+## Status (2026-07-27, session 5j): UPSTREAM CONTRACT REWRITTEN — combat report re-audited and rewritten; wowborg path decision is the gate
+
+**A line-by-line audit of the combat report against the freshly-pulled game repo
+(788e22147, +327 commits in 3 days) found the seam wowborg v4 is built on was DELETED
+upstream.** The report is rewritten in place
+(`../docs/reports/coworld-wow-combat-2026-07-24.md`, "revised 2026-07-27") around the new
+v2 contract. What changed upstream (all verified in code, key commits f68817e35 /
+b27cded53 / fa050a369 / 51aa3869d / 81d3aaf7b):
+
+- **Contract v2:** no FactorizedActions, no masks, no external selection, no
+  recommended_action, no ActionSettled. Bot boundary = in-process Nim
+  `actions = step(observation)` at 1s sim cadence; actions are semantic verbs with REAL
+  arguments (GUIDs/spell ids/world points); server is the only validity oracle; policy
+  never consumes action results. Python = goal supervision only (nim_control.v2:
+  submit_goal/hold/resume/cancel + observer frames).
+- **Hosted player is a native Nim binary** (`vanilla-wow-reference-player
+  --scenario=coworld-session`); the Python wrapper + KING_NIMROD_COMMAND seam are gone.
+  Our 0.1.31 pinned image still runs (v1 session payload explicitly preserved for
+  immutable players) but is a FROZEN ISLAND.
+- **Three separate hosted coworlds now:** accelerated-wow (720s @ 10x, score
+  level+xp/next), persistent-wow (10-min windows), speedrun-wow (RFC). Deployed at
+  0.1.121; the old vanilla_wow package is gone from `coworld list`.
+- **RFC format rfc-19-v1:** level-19 normalized chars (was 30), submitted role profiles
+  (2 tank / 3 healer / 8 dps ids; druid now playable incl. RFC), all-role self-play
+  qualifier then MIXED-POLICY scored parties, tank-invoked `.rfcreset` launch (4-attempt
+  budget), godview timing, score = rfc_elapsed_minutes lower-is-better (failed run = 60.0).
+  Old 1e6−seconds formula deleted. Per-slot deaths now actually count (−10k, wired).
+- **Observation got richer** (threat, combo, shapeshift, spell costs, combat_distance,
+  visible action bar, local_world Detour geometry in-frame); interrupt_watch verb and
+  interrupt_reflex/action_bar reconciler deleted; ~1s reflex floor is real.
+- **The 25-capability catalog SURVIVES** (decision-level, seam-agnostic; +P9 local_scene,
+  −the mask/oracle leverage). Report §3.5 lays out the fork — with the boundary stated
+  precisely: the PLATFORM contract is unchanged (any image speaking 1.12.1 over the byte
+  pipes; our repo, our language). The in-process-Nim `step()` rule binds only reuse of
+  THEIR client. Paths: (a) stay on the 0.1.31 island, (b) goal-supervision player on
+  current packages, (c) fork their client with decisions in Nim (our pinned fork, our
+  image), (d) fork their client and re-open a Python per-step seam (we own the seam they
+  deleted), (e) own client from scratch (legal; still the ~20-45k-line session-4 price).
+  Step 0 was the human path decision — made below.
+
+**DECIDED (2026-07-27, James): path (d) — fork their client, RE-OPEN the per-step seam,
+wrap it in a Gym-like Python interface.** Key facts feeding the decision: (i) the v2 body
+ships NO gym env — the 0.1.31 `gymnasium_env.py` + external selection were deleted; we
+restore and own that seam in our fork (bounded: one `nim_control` server mode + one
+Python client; the v2 single-decision `step()` boundary makes the re-add simpler than the
+0.1.31 original); (ii) today we maintain NO translation layer — their pinned client does
+all wire work, our ~700-line bridge/shim just speaks its socket; (iii) (d) is the only
+path where the proven Python nav/policy stack (v5-v45) carries over nearly intact.
+Gym facade: obs space from HEAD `BotObservation` (threat/combo/costs/action-bar/
+local_world), action space from `SemanticAction` (real GUIDs/ids/points; NO masks —
+selector-style legality checks on our side, server rejection as ground truth; deleted
+`gymnasium_env.py` in git history is the space-design reference). Revised build order in
+the report §9: fork+toolchain spike → re-open seam + Gym facade → port nav brain →
+combat capabilities (shaman first) → RFC. Costs accepted: seam ownership + fork rebase
+burden; mitigate with a minimal mechanical seam patch and per-iteration fork pins.
+
+**Also:** upstream ships two RFC pace identities (richard-rfc 50% vs relh-rfc 65% party-
+mana advance gate) — a free A/B on the knob they think is binding. Lab docs
+(player-contract recon, gameplay, rfc-roles, strategy-guide engine citations) are now
+stale on contract/scoring — the revised report supersedes them where they conflict.
+
+---
+
+## Status (2026-07-24, session 5i): combat capability report published — T1 combat is fully scoped
+
+**The combat research is done:** `../docs/reports/coworld-wow-combat-2026-07-24.md` — deep
+research (game repo @ da32437e8 + pinned 0.1.31 SDK snapshot + web) into WoW 1.12 combat,
+the nim-control obs/action contract, and the authored combat stack, distilled into a
+**25-capability atomic catalog** (8 perception / 12 decision / 5 group) + arbiter spine,
+dependency graph, build order (shaman first), and measurement plan. Load-bearing findings:
+(1) the **pin-vs-HEAD observation diff** — our 0.1.31 pin lacks threat summary, combo
+points, shapeshift form, spell costs, combat_distance (all at HEAD); perception capabilities
+derive them behind HEAD-shaped interfaces so a pin bump deletes code; (2) the game ships
+**deterministic combat testbeds** we haven't used (`z7-class-combat-lab` training dummy,
+`five-geared-party` RFC party sans clock) — the combat route-lab equivalents; (3) the game
+repo REORGANIZED (`player/bots/` → `player/behavior/`, manifest → `infra/`; King Richard
+policy gone, binary name remains) — old lab-doc citations are stale; (4) RFC budget is now
+300/0.1 ≈ 50 min (gameplay doc's 10000/0.1 is stale). **Next:** the combat design doc
+(per-capability dataclass contracts, shaman profile, arbiter loop), then build step 1
+(P1+P4+D1+D3-minimal+D11 = "kill safe things, loot them" → first nonzero XP).
+
+---
+
 ## Status (2026-07-24, session 5h): nav v2 audited, remediated, and RE-validated — planning generalizes; survivability is the residual
 
 **The codex audit invalidated the 5g one-shot claim** (`docs/recon/nav-v2-audit-codex-2026-07-23.md`,
