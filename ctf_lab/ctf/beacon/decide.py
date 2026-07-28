@@ -284,6 +284,8 @@ class _DiagnosticLogger:
             "plan_advances": b.plan_advances,
             "plan_milestone_hit": b.plan_milestone_hit,
             "plan_fell_back": b.plan_fell_back,
+            "plan_buddy_wait_ticks": b.plan_buddy_wait_ticks,
+            "plan_buddy_waiting": b.plan_buddy_waiting,
             "squadmates_alive": _squadmates_alive_safe(b),
             # v18 chat activation (cumulative per kind).
             "chat_sent": dict(b.chat_sent_counts),

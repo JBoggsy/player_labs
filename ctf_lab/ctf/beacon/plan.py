@@ -40,7 +40,10 @@ from pathlib import Path
 from ctf.beacon import poi
 from ctf.beacon.config import (
     PLAN_ARRIVE_PX,
+    PLAN_BUDDY_RADIUS_PX,
+    PLAN_BUDDY_WAIT_TICKS,
     PLAN_PHASE_TIMEOUT_TICKS,
+    TRACK_TTL_TICKS,
 )
 from ctf.beacon.types import Belief, Team
 
@@ -196,7 +199,47 @@ def advance(belief: Belief, book: PlanBook) -> None:
     belief.plan_phase_tick = belief.tick
     belief.plan_milestone_hit = milestone
     belief.plan_fell_back = False
+    belief.plan_buddy_wait_ticks = 0
+    belief.plan_buddy_waiting = False
     belief.plan_advances += 1
+
+
+def _mirror_x(x: int) -> int:
+    return 1234 - x
+
+
+def _dangerous(belief: Belief, target_xy: tuple[int, int]) -> bool:
+    """A push into the enemy half is dangerous; our own half is home ground."""
+    team: Team = belief.team or "red"
+    x = target_xy[0]
+    return x > 617 if team == "red" else x < 617
+
+
+def buddy_near(belief: Belief, group_seats: list[int]) -> bool:
+    """Is any GROUP-mate confirmed near me right now? Confirmation = a visible
+    teammate badge, or a teammate identity-track fresh within half its TTL,
+    inside PLAN_BUDDY_RADIUS_PX. Conservative: an unbadged sighting counts as
+    nobody (same stance as squads.squadmates_alive)."""
+    if belief.self_xy is None:
+        return False
+    sx, sy = belief.self_xy
+    mates = set(group_seats) - {belief.seat}
+    r2 = PLAN_BUDDY_RADIUS_PX * PLAN_BUDDY_RADIUS_PX
+
+    def near(pos) -> bool:
+        return (pos[0] - sx) ** 2 + (pos[1] - sy) ** 2 <= r2
+
+    for e in belief.teammates:
+        if e.identity in mates and near(e.pos):
+            return True
+    for t in belief.teammate_tracks:
+        if (
+            t.identity in mates
+            and belief.tick - t.last_tick <= TRACK_TTL_TICKS // 2
+            and near(t.pos)
+        ):
+            return True
+    return False
 
 
 def current_objective(belief: Belief, book: PlanBook) -> tuple[str, tuple[int, int], object] | None:
@@ -223,6 +266,19 @@ def current_objective(belief: Belief, book: PlanBook) -> tuple[str, tuple[int, i
     xy = poi.resolve(target, team)
     if xy is None:
         return None
+    # Buddy-wait (v31): a lone bot on a DANGEROUS move pauses (hold in place)
+    # until a group-mate is confirmed near — moving up to a flank is a "wait for
+    # your buddy" skill, not a solo charge. Budgeted per phase (v19 lesson): after
+    # PLAN_BUDDY_WAIT_TICKS of total waiting this phase, push regardless. Solo
+    # groups (1 seat) never wait; holds never wait (holding alone is fine).
+    if order.kind == "move" and _dangerous(belief, xy):
+        group_seats = book.groups_at(belief.plan_phase).get(order.group, [])
+        if len(group_seats) > 1 and belief.plan_buddy_wait_ticks < PLAN_BUDDY_WAIT_TICKS:
+            if not buddy_near(belief, group_seats):
+                belief.plan_buddy_wait_ticks += 1
+                belief.plan_buddy_waiting = True
+                return ("hold", belief.self_xy or xy, order)
+        belief.plan_buddy_waiting = False
     return (order.kind, xy, order)
 
 

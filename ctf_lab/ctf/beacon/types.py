@@ -255,6 +255,8 @@ class Belief:
     plan_milestone_hit: bool = False  # last advance was milestone (vs timeout)
     plan_fell_back: bool = False    # hold-order fallback tripped this phase
     plan_advances: int = 0          # cumulative phase advances (traced)
+    plan_buddy_wait_ticks: int = 0  # v31: ticks spent buddy-waiting this phase
+    plan_buddy_waiting: bool = False  # v31: currently paused for a group-mate
     # Lead-aim activation state this tick, for tracing: brads of lead applied to the
     # snap aim (0 = no lead / target treated as stationary).
     lead_brads: int = 0

@@ -317,6 +317,13 @@ PLAN_ARRIVE_PX = _env_int("BEACON_PLAN_ARRIVE_PX", 60)
 #: Phase clock fallback: advance regardless after this many ticks in one phase
 #: (the v19 rally-gate lesson — every stage gate needs a timeout). ~37s.
 PLAN_PHASE_TIMEOUT_TICKS = _env_int("BEACON_PLAN_PHASE_TIMEOUT_TICKS", 900)
+#: Buddy-wait (v31): a bot on a DANGEROUS plan move (target on the enemy half)
+#: with no group-mate confirmed within this radius pauses instead of pushing
+#: alone. Confirmation = a visible identity badge or a fresh identity track.
+PLAN_BUDDY_RADIUS_PX = _env_int("BEACON_PLAN_BUDDY_RADIUS_PX", 170)
+#: …but never forever (v19): per phase, wait at most this many ticks total,
+#: then push regardless. ~6s.
+PLAN_BUDDY_WAIT_TICKS = _env_int("BEACON_PLAN_BUDDY_WAIT_TICKS", 150)
 #: Convert trigger (v26): when the ENEMY team's lives remaining (24 - their deaths,
 #: read off the fog-independent team scoreboard) drop to this or below, leaders
 #: order an all-in HUNT — the wipe is in reach and under GV21 a draw pays -1 like a

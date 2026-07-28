@@ -1138,6 +1138,38 @@ def test_plan_hold_fallback_trips_under_fire():
     assert xy == poi.point("red_lineup")  # retreat target, not the forward hold
 
 
+def test_plan_buddy_wait_gates_dangerous_solo_pushes():
+    from ctf.beacon import plan as planmod
+    from ctf.beacon.config import PLAN_BUDDY_WAIT_TICKS
+    book = planmod.PlanBook.load("staged_push_top")
+    # Phase 3, seat 3 = flank_n (2 seats): its move target (802,27) is on the
+    # enemy half -> dangerous. Alone (no teammate evidence): buddy-wait holds.
+    b = Belief(team="red", seat=3, role="attacker", alive=True, tick=2000,
+               self_xy=(630, 60))
+    b.plan_phase = 2
+    kind, xy, _ = planmod.current_objective(b, book)
+    assert b.plan_buddy_waiting and kind == "hold" and xy == (630, 60)
+    # With its flank buddy (seat 4) visible nearby: pushes.
+    b2 = Belief(team="red", seat=3, role="attacker", alive=True, tick=2000,
+                self_xy=(630, 60))
+    b2.plan_phase = 2
+    b2.teammates = (Enemy(pos=(660, 70), facing="right", identity=4),)
+    kind2, xy2, _ = planmod.current_objective(b2, book)
+    assert kind2 == "move" and not b2.plan_buddy_waiting
+    # Wait budget exhausted: pushes alone (no deadlock — the v19 lesson).
+    b3 = Belief(team="red", seat=3, role="attacker", alive=True, tick=2000,
+                self_xy=(630, 60))
+    b3.plan_phase = 2
+    b3.plan_buddy_wait_ticks = PLAN_BUDDY_WAIT_TICKS
+    kind3, _, _ = planmod.current_objective(b3, book)
+    assert kind3 == "move"
+    # A non-dangerous move (own half, phase 0) never waits.
+    b4 = Belief(team="red", seat=3, role="attacker", alive=True, tick=50,
+                self_xy=(110, 329))
+    kind4, _, _ = planmod.current_objective(b4, book)
+    assert kind4 == "move" and not b4.plan_buddy_waiting
+
+
 def test_plan_blue_frame_mirrors_targets():
     from ctf.beacon import plan as planmod, poi
     book = planmod.PlanBook.load("staged_push_top")

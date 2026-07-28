@@ -2,6 +2,20 @@
 
 Version → change mapping for the CTF `beacon` policy. Newest first.
 
+## v31 — buddy-wait: no solo pushes into danger (2026-07-28)
+
+**Why (human direction):** "moving up to flank is … waiting for your other
+flank" — a group member shouldn't charge a dangerous objective alone just
+because the plan says go.
+
+**Changes:** on a plan MOVE whose target is on the ENEMY half, a bot with no
+group-mate confirmed within `BEACON_PLAN_BUDDY_RADIUS_PX` (visible badge or
+fresh identity track, conservative like squadmates_alive) HOLDS in place
+instead — budgeted at `BEACON_PLAN_BUDDY_WAIT_TICKS` (~6s) total per phase,
+then pushes regardless (the v19 no-deadlock rule). Solo groups and holds never
+wait. Cleared on phase advance. Traced: plan_buddy_wait_ticks/_waiting.
+106 tests.
+
 ## v30 — POI vocabulary + battle-plan interpreter (2026-07-27)
 
 **Why (human direction):** execute the co-general battle plans directly —
