@@ -1,32 +1,295 @@
 {
-  "_comment": "Canonical named points on the CTF arena (1235x659, mirror line x=617). Shared language: humans use the names in discussion; beacon imports them for strategy targets (mapdata.poi). Red attacks east, Blue west; mirrored twins use red_/blue_ prefixes. Edit with tools/poi_editor.html. DRAFT: agent-seeded 2026-07-27, pending human curation.",
+  "_comment": "Canonical named points + areas on the CTF arena (1235x659, mirror line x=617). Shared language: humans use the names in discussion; beacon imports them for strategy targets (mapdata.poi). Points curated by James 2026-07-27. Areas are rotated rects: cx/cy center, w/h size, angle degrees CCW. Edit with tools/poi_editor.html.",
   "points": [
-    {"name": "red_pedestal", "x": 186, "y": 329, "note": "red flag home"},
-    {"name": "blue_pedestal", "x": 1049, "y": 329, "note": "blue flag home"},
-    {"name": "center", "x": 617, "y": 329, "note": "dead center, inside the bracket ring"},
-    {"name": "red_choke", "x": 390, "y": 329, "note": "red defensive line x (CHOKE_X)"},
-    {"name": "blue_choke", "x": 845, "y": 329, "note": "blue defensive line x (mirror)"},
-    {"name": "red_rally", "x": 450, "y": 329, "note": "red attack staging x (pre-commit)"},
-    {"name": "blue_rally", "x": 785, "y": 329, "note": "blue attack staging x (mirror)"},
-    {"name": "top_lane", "x": 617, "y": 120, "note": "north route past the bracket"},
-    {"name": "bottom_lane", "x": 617, "y": 540, "note": "south route past the bracket"},
-    {"name": "red_top_hold", "x": 390, "y": 165, "note": "red top-lane hold (choke x, arc row)"},
-    {"name": "red_bottom_hold", "x": 390, "y": 494, "note": "red bottom-lane hold (choke x, shield row)"},
-    {"name": "blue_top_hold", "x": 845, "y": 165, "note": "blue top-lane hold (mirror)"},
-    {"name": "blue_bottom_hold", "x": 845, "y": 494, "note": "blue bottom-lane hold (mirror)"},
-    {"name": "north_medkit", "x": 617, "y": 219, "note": "center-line med kit (upper)"},
-    {"name": "south_medkit", "x": 617, "y": 439, "note": "center-line med kit (lower)"},
-    {"name": "bracket_north_window", "x": 617, "y": 240, "note": "glass window in the north bracket bar — see-through, bullet-proof"},
-    {"name": "bracket_south_window", "x": 617, "y": 418, "note": "glass window in the south bracket bar (approx) — verify"},
-    {"name": "red_arc", "x": 50, "y": 164, "note": "red-side plasma arc spawn"},
-    {"name": "blue_arc", "x": 1185, "y": 164, "note": "blue-side plasma arc spawn"},
-    {"name": "red_shield", "x": 50, "y": 494, "note": "red-side shield spawn"},
-    {"name": "blue_shield", "x": 1185, "y": 494, "note": "blue-side shield spawn"},
-    {"name": "red_nw_grenade", "x": 50, "y": 50, "note": "grenade spawn, red top corner"},
-    {"name": "red_sw_grenade", "x": 50, "y": 609, "note": "grenade spawn, red bottom corner"},
-    {"name": "blue_ne_grenade", "x": 1185, "y": 50, "note": "grenade spawn, blue top corner"},
-    {"name": "blue_se_grenade", "x": 1185, "y": 609, "note": "grenade spawn, blue bottom corner"},
-    {"name": "midfield_top", "x": 500, "y": 165, "note": "contested top-lane midfield (h035 fight zone)"},
-    {"name": "midfield_bottom", "x": 500, "y": 494, "note": "contested bottom-lane midfield"}
+    {
+      "name": "red_pedestal",
+      "x": 186,
+      "y": 329,
+      "note": "red flag home"
+    },
+    {
+      "name": "blue_pedestal",
+      "x": 1049,
+      "y": 329,
+      "note": "blue flag home"
+    },
+    {
+      "name": "center",
+      "x": 617,
+      "y": 329,
+      "note": "dead center, inside the bracket ring"
+    },
+    {
+      "name": "red_rally_mid",
+      "x": 453,
+      "y": 328,
+      "note": "open area on red's side of mid which is fairly protected from blue's half, window provides vision & cover through center"
+    },
+    {
+      "name": "top_lane",
+      "x": 617,
+      "y": 120,
+      "note": "north route past the bracket"
+    },
+    {
+      "name": "bottom_lane",
+      "x": 617,
+      "y": 540,
+      "note": "south route past the bracket"
+    },
+    {
+      "name": "red_top_hold",
+      "x": 369,
+      "y": 42,
+      "note": "red top-lane defensive spot with vision of red's top sneak and top rally point"
+    },
+    {
+      "name": "red_bot_hold",
+      "x": 374,
+      "y": 495,
+      "note": "red bottom-lane defensive spot with vision of red's bot sneak and bottom center choke "
+    },
+    {
+      "name": "north_medkit",
+      "x": 617,
+      "y": 219,
+      "note": "center-line med kit (upper)"
+    },
+    {
+      "name": "south_medkit",
+      "x": 617,
+      "y": 439,
+      "note": "center-line med kit (lower)"
+    },
+    {
+      "name": "red_arc",
+      "x": 50,
+      "y": 164,
+      "note": "red-side plasma arc spawn"
+    },
+    {
+      "name": "blue_arc",
+      "x": 1185,
+      "y": 164,
+      "note": "blue-side plasma arc spawn"
+    },
+    {
+      "name": "red_shield",
+      "x": 50,
+      "y": 494,
+      "note": "red-side shield spawn"
+    },
+    {
+      "name": "blue_shield",
+      "x": 1185,
+      "y": 494,
+      "note": "blue-side shield spawn"
+    },
+    {
+      "name": "red_nw_grenade",
+      "x": 50,
+      "y": 50,
+      "note": "grenade spawn, red top corner"
+    },
+    {
+      "name": "red_sw_grenade",
+      "x": 50,
+      "y": 609,
+      "note": "grenade spawn, red bottom corner"
+    },
+    {
+      "name": "blue_ne_grenade",
+      "x": 1185,
+      "y": 50,
+      "note": "grenade spawn, blue top corner"
+    },
+    {
+      "name": "blue_se_grenade",
+      "x": 1185,
+      "y": 609,
+      "note": "grenade spawn, blue bottom corner"
+    },
+    {
+      "name": "red_top_vee",
+      "x": 461,
+      "y": 211,
+      "note": "outward-vee on red's side of top, provides frontal cover but provides vision of the top sneak and the center  "
+    },
+    {
+      "name": "red_bot_triangle",
+      "x": 479,
+      "y": 546,
+      "note": "full-cover defensive triangle on red's side of bottom; total cover from front but no offensive vision"
+    },
+    {
+      "name": "blue_top_vee",
+      "x": 774,
+      "y": 211,
+      "note": "outward-vee on blue's side of top, provides frontal cover but provides vision of the top sneak and the center"
+    },
+    {
+      "name": "red_bot_vee",
+      "x": 466,
+      "y": 449,
+      "note": "outward-vee on red's side of bottom, provides frontal cover but provides vision of the bottom sneak and the center  "
+    },
+    {
+      "name": "blue_bottom_vee",
+      "x": 772,
+      "y": 449,
+      "note": "outward-vee on blue's side of bottom, provides frontal cover but provides vision of the bottom sneak and the center"
+    },
+    {
+      "name": "bottom_diamond",
+      "x": 617,
+      "y": 467,
+      "note": "open area between rotating diamonds on bottom lane, near medkit"
+    },
+    {
+      "name": "top_diamond",
+      "x": 618,
+      "y": 199,
+      "note": "open area between rotating diamonds on top lane, near medkit"
+    },
+    {
+      "name": "red_top_sneak",
+      "x": 566,
+      "y": 17,
+      "note": "small player-sized gap at the very top of the map on red's side"
+    },
+    {
+      "name": "blue_top_sneak",
+      "x": 668,
+      "y": 17,
+      "note": "small player-sized gap at the very top of the map on blue's side (mirror)"
+    },
+    {
+      "name": "red_bot_sneak",
+      "x": 565,
+      "y": 644,
+      "note": "small player-sized gap at the very bottom of the map on red's side"
+    },
+    {
+      "name": "blue_bot_triangle",
+      "x": 755,
+      "y": 546,
+      "note": "full-cover defensive triangle on blue's side of bottom; total cover from front but no offensive vision"
+    },
+    {
+      "name": "red_top_triangle",
+      "x": 479,
+      "y": 115,
+      "note": "full-cover top triangle on red's side of bottom; total cover from front but no offensive vision"
+    },
+    {
+      "name": "blue_top_triangle",
+      "x": 755,
+      "y": 115,
+      "note": "full-cover top triangle on blue's side of bottom; total cover from front but no offensive vision"
+    },
+    {
+      "name": "blue_bot_sneak",
+      "x": 669,
+      "y": 644,
+      "note": "small player-sized gap at the very bottom of the map on red's side (mirror)"
+    },
+    {
+      "name": "blue_bot_hold",
+      "x": 860,
+      "y": 495,
+      "note": "blue bottom-lane defensive position with vision of blue's bot sneak and bottom center choke"
+    },
+    {
+      "name": "blue_top_hold_2",
+      "x": 865,
+      "y": 42,
+      "note": "blue top-lane defensive spot with vision of blue's top sneak and top rally point"
+    },
+    {
+      "name": "red_top_rally",
+      "x": 420,
+      "y": 158,
+      "note": "Open area on the top of red's side which is fairly protected from blue's half"
+    },
+    {
+      "name": "blue_top_rally",
+      "x": 815,
+      "y": 158,
+      "note": "Open area on the top of blue's side which is fairly protected from red's half"
+    },
+    {
+      "name": "blue_rally_mid",
+      "x": 781,
+      "y": 328,
+      "note": "open area on blue's side of mid which is fairly protected from red's half, window provides vision & cover through center"
+    },
+    {
+      "name": "red_rally_bot",
+      "x": 427,
+      "y": 617,
+      "note": "open area on the bottom of red's side which is fairly protected from blue's half"
+    },
+    {
+      "name": "blue_rally_bot",
+      "x": 807,
+      "y": 617,
+      "note": "open area on the bottom of blue's side which is fairly protected from red's half"
+    }
+  ],
+  "areas": [
+    {
+      "name": "red_endzone",
+      "cx": 103,
+      "cy": 329,
+      "w": 206,
+      "h": 659,
+      "angle": 0,
+      "note": "red capture zone (x<=206) \u2014 carry the blue flag here to win"
+    },
+    {
+      "name": "blue_endzone",
+      "cx": 1132,
+      "cy": 329,
+      "w": 206,
+      "h": 659,
+      "angle": 0,
+      "note": "blue capture zone (x>=1029)"
+    },
+    {
+      "name": "center_ring",
+      "cx": 617,
+      "cy": 329,
+      "w": 170,
+      "h": 190,
+      "angle": 0,
+      "note": "inside the bracket walls around center \u2014 glass sightline through the bars"
+    },
+    {
+      "name": "top_corridor",
+      "cx": 617,
+      "cy": 110,
+      "w": 400,
+      "h": 150,
+      "angle": 0,
+      "note": "the north push lane, red_top_rally to blue_top_rally"
+    },
+    {
+      "name": "bottom_corridor",
+      "cx": 617,
+      "cy": 545,
+      "w": 400,
+      "h": 160,
+      "angle": 0,
+      "note": "the south push lane"
+    },
+    {
+      "name": "mid_battleground",
+      "cx": 617,
+      "cy": 329,
+      "w": 330,
+      "h": 240,
+      "angle": 0,
+      "note": "the contested middle where h035 wins its attrition (kill-density hotspot)"
+    }
   ]
 }
