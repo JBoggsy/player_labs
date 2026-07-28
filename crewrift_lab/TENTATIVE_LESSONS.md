@@ -17,3 +17,24 @@ buffers — not in-session hit counts — is the graduation signal.
 concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
+
+## belief-audit build (2026-07-28)
+
+- **`build_warehouse.py --expand-replay` must be an ABSOLUTE path** — it subprocess-runs
+  `crewrift-event-warehouse build` with `cwd=` the vendored package dir, so a repo-relative
+  binary path fails per-episode with FileNotFoundError while the manifest still says
+  "✓ no trace_warning". Failure mode looks like "0 events, 8 failed", not an error. (The
+  SKILL.md examples use /tmp paths, which is why this never bit before.)
+- **`--policy crewborg -n N` league episodes have NO policy artifacts** — the fetcher says
+  "no v2 route for league episodes (only episode requests)". Belief-audit (any artifact-
+  telemetry consumer) needs xreq/ereq episodes, not league rounds. Fetch by `--xreq`.
+- **The xreq listing route is `GET <api>/observatory/v2/experience-requests` → `{entries: […]}`**;
+  short ids from notes (xreq_61f440b3) must be resolved to full UUIDs before `--xreq` fetch
+  (the episodes sub-route 422s on a short id).
+- **`imposter_unranked` needs an alive filter** — a dead imposter legitimately drops out of
+  the suspicion ranking; comparing rankings to the full-roster imposter set produced 4 false
+  divergences in an 8-seat smoke (all were post-death meetings). Filter live_imposters by
+  `truth_death_ts > snapshot_ts`.
+- **Real-data smoke check found real signal immediately**: crewborg's belief notices deaths
+  via census 300-650 ticks late (`death_belief_lag`, source=census), and `ranking_top_crew`
+  at p≈0.5-0.53 barely over the current 0.5 vote bar — both plausible hypothesis fuel.

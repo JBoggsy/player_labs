@@ -164,6 +164,8 @@ events — a new proximity/visibility/movement pattern — the extractor is the 
 ## See also
 
 - **`crewrift-survey`** — the fast batch pass that flags *what* to deep-dive here.
+- **`crewrift-belief-audit`** — extends a built warehouse with crewborg's own belief
+  telemetry (`belief_*` partitions) and scans belief vs ground truth for divergences.
 - **`coworld-episode-artifacts`** — pulls the episodes (with replays) the warehouse builds from.
 - [`crewrift-replays.md`](../../../docs/crewrift-replays.md) — the single-episode `expand_replay`
   path + the same version-coupling caveat.

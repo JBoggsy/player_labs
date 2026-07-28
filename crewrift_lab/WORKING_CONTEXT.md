@@ -33,6 +33,20 @@ limit). Demand ~3.2M tok/min vs ~496K/min refill ≈ 6× oversubscribed → pred
 measured 17-28%. Daily quotas are `adjustable=False` — the standard quota-raise ask may be
 ungrantable; update `docs/bedrock-quota-ask.md`.
 
+## 🔧 BUILT (2026-07-28): crewrift-belief-audit skill — belief↔ground-truth sync + divergence scan
+
+New skill `crewrift_lab/.claude/skills/crewrift-belief-audit/` (tests:
+`tools/tests/test_belief_audit.py`, 2 green; smoke-verified on 8 real crewborg-coord seats
+from `xreq_61f440b3-828c-…`): `build_belief_log.py` extracts crewborg's belief telemetry
+from policy-artifact zips into native warehouse `belief_*` partitions (each row enriched
+with `truth_roles` for every mentioned color + self identity; per-seat phase-alignment
+clock check → `belief_sync_report.json`), and `scan_divergences.py` flags 11 divergence
+kinds (confirmed_crew, ranking_top_crew, phantom_death, vote_crew_over_imposter, …) with
+per-kind rates → `belief_divergences.jsonl`. This is loop-step-3+5 tooling for the
+tournament-scale improvement loop. Smoke findings worth a real batch: census death-lag
+300-650 ticks; ranking_top_crew at p≈0.5 right at the vote bar. Gotchas learned →
+TENTATIVE_LESSONS (absolute --expand-replay path; league eps have no artifacts — xreq only).
+
 ## 👑 SHIPPED (2026-07-28): v116 = v115 + BALLOT RETIME — competing/active + CHAMPION
 
 `crewborg:v116` (`23b03ef8…`, main `565a1ea`, v115 recipe + `CREWBORG_VOTE_BALLOT_RETIME=1`)

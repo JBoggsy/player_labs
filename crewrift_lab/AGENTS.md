@@ -102,6 +102,12 @@ Crewrift-specific skills live here in `.claude/skills/`:
   `scripts/compare.py` supplies crewrift's metrics + crew/imposter grouping and imports the shared
   `ab_stats` engine (significance, verdicts) at `../.claude/skills/coworld-ab/`; the HTML renderer
   lives there too. (Distinct from `crewrift-survey`, which surveys *one* batch descriptively.)
+- **`crewrift-belief-audit`** — join crewborg's **belief telemetry** (policy-artifact traces)
+  into the event warehouse as `belief_*` partitions (ground-truth-enriched, clock-verified),
+  then **scan for belief-vs-truth divergences** (wrong confirmed imposters, crew-topped
+  rankings, phantom/lagged deaths, votes against own belief, clock desync) with per-kind
+  rates + a JSONL report. The subjective/objective join behind the deepest diagnose
+  questions; divergence rows are hypothesis fuel for `crewrift-diagnose`.
 - **`crewrift-diagnose`** — turn a survey's signals into **evidence-grounded, mechanistic
   improvement hypotheses**: investigate replays/logs/code for *why* a behavior happens (or fails
   to), then **present candidate directions to the human** as options (not directives). An
