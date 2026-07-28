@@ -209,19 +209,28 @@ rest of the lab's deferred tasks. Check it at the start of focused work.
   (`players.player_sdk.run_sprite_bridge` — no vendored wire layer, build path 1):
   `perceive` reads the raw `SpriteWorld` labels into a `CtfState`, `belief` folds it
   (team/seat from slot, dead-reckoned aim), a seat-based `strategy` picks one objective
-  (carry-home > intercept-visible-thief > defender-hold / attacker-steal), and
+  (a priority ladder: carry-home > rejoin > intercept-thief > escort-carrier >
+  grenade-clear > items > squad orders > convert-hunt > battle plan > the static role
+  split), and
   `action` emits a `Button` mask — d-pad movement + a **lighthouse aim sweep** across the
   threat axis that snaps to a visible enemy, behind a fire-gate with a **friendly-fire
   guard**. Navigation is **offline-baked** (`tools/bake_map.py` → `mapdata/nav.npz`: an 8px
-  walkable grid, two Dijkstra flow fields per team, and a cover-cell grid); online A*
-  handles dynamic goals. Design:
+  walkable grid, two Dijkstra flow fields per team, a cover-cell grid, and a
+  32-direction `uint8` sightline field in 4px distance units); online A* handles
+  dynamic goals. `posts.py` derives directional cover from that field and, behind
+  `BEACON_POSTS`, turns nearby plan/order/hold waypoints into covered fighting
+  positions with a committed watch direction. Design:
   [`docs/designs/ctf-player-v1-design.html`](docs/designs/ctf-player-v1-design.html).
-  **Current: `beacon:v5`** — seat-based roles (**3 defenders** on cover / **5 attackers**),
-  friendly-fire gate, carry-detection fix (a carried flag rides ~10px above its carrier),
-  and **carrier escort** (attackers converge on a teammate carrier and move home with it).
-  Beats both co-gas opponents 20-0 **by capture**, and **takes games off `ctf-baseline-16`**
-  (4-11 vs the champion, up from 0-20 — it wins by capturing before being wiped, not by
-  out-fighting). Version history: [`ctf/beacon/VERSION_LOG.md`](ctf/beacon/VERSION_LOG.md).
+  **Current: `beacon:v33` (competing champion, submitted 2026-07-28)** — the **covered-posts**
+  version: plan/order/hold waypoints act as *search centres*, and a bot latches a nearby
+  **post** (a cell plus the sightline direction it watches) chosen for forward reach,
+  directional cover, stance, and danger, claimed over chat with `K<seat><cell>`. Measured vs
+  the field: **40% wins vs ctf-focusfire:v56** (from 20%, p=0.01) and **20% vs ctf-h050:v1**
+  (from 0%, p=0.00). Built on the v22-v31 stack: seat-based roles, friendly-fire gate, carrier
+  escort, squad orders + presence, the **convert trigger** (all-in when the wipe is in reach),
+  the **battle-plan interpreter** (rung 3.9, goals not motion), and **buddy-wait**.
+  Version history: [`ctf/beacon/VERSION_LOG.md`](ctf/beacon/VERSION_LOG.md) — current through
+  v33; read it before assuming what a version contains.
   Behavior knobs are env vars in `ctf/beacon/config.py` (`BEACON_DEFENDERS`,
   `BEACON_FF_CORRIDOR_PX`, …), set at upload time for A/B. Build: `tools/build_player.sh beacon`.
   **Next (open thread):** raise the baseline win rate above 26% — survive the grab-and-run

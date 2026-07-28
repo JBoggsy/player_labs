@@ -7,8 +7,8 @@ Plans live in this directory, one file each, edited with
 open `/tools/plan_editor.html`). They are the co-general artifact: either party
 (James or the agent) proposes, the other edits phases and annotates, converge in
 the `notes` fields. Today they are human-readable documents; the schema
-deliberately accumulates optional machine-readable tags so a future beacon plan
-interpreter can execute them (see WORKING_CONTEXT).
+deliberately accumulates optional machine-readable tags for beacon's plan
+interpreter (see WORKING_CONTEXT).
 
 ## Document
 
@@ -68,6 +68,11 @@ interpreter can execute them (see WORKING_CONTEXT).
   naming; if one recurs across plans, promote it to the POI map).
 - **Order kinds:** `move` (arrow), `hold` (position marker; optional `facing`),
   `watch` (secondary attention marker, e.g. rear glancing at the advance).
+  With `BEACON_POSTS=1`, a primary move/hold order's target becomes the centre
+  of a nearby-post search after the bot enters its arrival radius. `facing`
+  resolves to a point and supplies the static threat-axis prior for that search;
+  fresh enemy tracks and a danger gradient can override it. `watch` remains
+  descriptive rather than a primary movement order.
 - **Groups** are named sets of seats. The document `groups` block is the
   starting assignment; a phase's `splits` reassigns from that phase onward.
   Names are free-form; keep them evocative (`pushers`, `flank_n`, `bait`).
@@ -76,4 +81,5 @@ interpreter can execute them (see WORKING_CONTEXT).
 - **entry/exit tags** use the global-signal vocabulary (all fog-independent):
   `tick>=N`, `enemy_lives<=N`, `own_deaths>=N`, `presence(<poi>)>=N`,
   `flag(own|enemy)==home|taken`. Prose is authoritative today; tags are hints
-  for the future interpreter — accumulate them, don't force them.
+  for the interpreter; currently only `tick`, `enemy_lives`, and `own_deaths`
+  are machine-evaluated.

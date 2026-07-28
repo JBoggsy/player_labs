@@ -2,6 +2,63 @@
 
 Version → change mapping for the CTF `beacon` policy. Newest first.
 
+## v32/v33/v34 — covered posts: cover + sightlines + a spreading instinct (2026-07-28)
+
+**One image, three env-flipped uploads** (`--secret-env`; the arms of a single A/B):
+- **v32** — `BEACON_POSTS=0` (control; plays as v31 did).
+- **v33** — `BEACON_POSTS=1 BEACON_POST_FACING=1 BEACON_POST_STANCE_WEIGHT=0.12`. **SUBMITTED
+  -> qualified -> 👑 CHAMPION** (`sub_df9f3ac2…`, `lpm_b2f96151…`, auto-champion lineage).
+- **v34** — same but `BEACON_POST_STANCE_WEIGHT=0.18` (past the 0.1727 stance crossover).
+
+**Why (human direction):** beacon followed battle plans literally — it *stood at waypoints*
+rather than understanding area control, supporting fire, and sight lines. Measured from the v31
+replay: pushers arrived 13-47px apart (inside the FF corridor and one 52px grenade blast) with
+only 0-3 of 16 sampled rays open past 200px, and `cover_grid` *passed* those positions because
+it is non-directional — the wall was between them and the threat, not beside them.
+
+**Changes:**
+- **Baked `sightlines` field** (`bake_map.py` → `nav.npz`): `(32, 83, 155)` `uint8`, 4px units,
+  400px cap, direction 0 = east advancing counter-clockwise on screen. 3.9s bake; nav.npz
+  19,626 → 106,614 bytes. Directional cover is *derived* (short rays at ±4 indices = ±45°),
+  not baked separately. Convention: free distance to the first blocked 4px sample.
+- **New `posts.py`**: a *post* = nav cell + the direction it watches. Bounded, vectorised
+  ranking over ~600 cells (no runtime raycasting): `reach` (sightline along the threat axis),
+  `cover` (short flank rays), `stance` (signed; forward when pushing, back when holding),
+  `danger` (penalty), with qualification gates so open ground yields no post.
+- **Threat axis**: fresh enemy track > danger gradient > plan `facing` > enemy-pedestal prior.
+  This makes the plan schema's `facing` load-bearing for the first time.
+- **`K<seat><cell>` claim shout** (6 chars), arbitration `C > T > O > G > U > K > E > P`,
+  48t refresh / 120t expiry. Selection skips posts claimed by a lower seat or occupied by a
+  visible teammate — chat makes "occupied" knowable, which is what v19's fog-blind rally gate
+  lacked.
+- **Post facing** (`BEACON_POST_FACING`): a settled post centres the sweep on its own
+  direction with a narrowed arc; the squad sector offset is suppressed while it owns the sweep
+  (`SQUAD_SECTOR_BRADS`=50 exceeds `SWEEP_HALF_ARC`=32 and would aim bots off their own lane).
+- **Integration**: plan rung 3.9, `order_hold`/`order_push`, and the static defender hold each
+  treat their waypoint as a *search centre* once inside the arrival radius. Rung altitude is
+  unchanged, so carry/rejoin/intercept/escort/grenade/medkit/convert all still preempt, and
+  A*/danger/peek-duck/combat still govern the approach. `plan.advance` gained
+  `milestone_ready` so arriving at the raw waypoint no longer advances the phase and discards
+  the post (a latent ordering bug: `advance()` ran before `current_objective()` sharing the
+  same `PLAN_ARRIVE_PX`). `spread_point`/`separation_bias` remain the floor.
+
+**Measured (matched arms, 10 eps/arm, ctf 0.7.95, 60/60 episodes, 0 failures):**
+- vs **ctf-focusfire:v56** — win 20% → **40%** (p=0.01), score -0.60 → -0.20.
+- vs **ctf-h050:v1** — win 0% → **20%** (p=0.00), score -1.00 → -0.60 (first wins off the h0xx line).
+- v34 (0.18) beats the control by less (30%/10%); 0.12-vs-0.18 is **not significant** at n=10
+  (p=0.18/p=0.08), so 0.12 stays the default.
+- **Activation** (control: 0): 1,942 active post-ticks, 181 distinct posts, max 525 ticks on
+  one post; threat sources enemy_track 1125 / plan_facing 448 / pedestal 288 / danger 81;
+  claim sources uncontested 811 / visible_teammate 641 / heard_K 490 across six seats.
+- **Stance verified mechanically despite the null**: 0.12→0.18 moved PUSH posts from +21.5px to
+  +32.9px mean forward offset (65% → 72% chosen forward of the waypoint) — "more forward isn't
+  better vs these two", not "the term is inert".
+
+117 tests pass. Knobs: `BEACON_POSTS`, `BEACON_POST_FACING`, `BEACON_POST_STANCE_WEIGHT`,
+`BEACON_POST_SEARCH_RADIUS_PX`, `BEACON_POST_MIN_SEPARATION_PX`, and the rest of the
+`BEACON_POST_*` family in `config.py`. Design:
+`docs/designs/beacon-posts-cover-sightlines-2026-07-28.html`.
+
 ## v31 — buddy-wait: no solo pushes into danger (2026-07-28)
 
 **Why (human direction):** "moving up to flank is … waiting for your other

@@ -10,6 +10,83 @@ startup to resume; **update it as you learn** (keep it tight).
 
 ---
 
+## Status (2026-07-28): **v33 (POSTS) SUBMITTED -> QUALIFIED -> 👑 CHAMPION.** Posts help on both opponents; stance sweep null
+
+**v33 SUBMITTED on human go-ahead** (`sub_df9f3ac2-7f1d-448f-a08f-63b95eeface0`,
+membership `lpm_b2f96151-7cbd-4f25-9369-cf09a319efd0`, `--auto-champion lineage`,
+league `league_3243d905-d32d-4ec6-978b-fa94751d4a37`) -> **qualified -> competing ->
+👑 CHAMPION** (replaced our own v28 per lineage). Placement took ~2 min (status=pending
+with NO membership for the first poll — that is normal async placement, not a failure).
+
+**MONITOR GOTCHA RE-CONFIRMED (3rd time):** `policy_lifecycle.py monitor --watch` printed
+`DONE — terminal verdict: competing` while OUR submission was still `status=pending`. It
+verdicts off the NEWEST membership, which right after a submit is the PRIOR version's. Always
+grep the submission id (`sub_…`) for `membership=lpm_…`, then read THAT membership's block.
+
+**STANDINGS ARE PER-PLAYER, NOT PER-VERSION:** the division leaderboard shows "James Boggs
+rank 5 @ 1559.21, 157 rounds" — that is cumulative account history (v28-era), NOT v33's
+performance. v33 has 0 competition rounds at submit time; expect the score to move only as
+rounds accrue. Field at submit: 1 Andre von Houck 2255.9, 2 daveey 1887.0, 3 Alex Smith 1756.1,
+4 Jordan 1730.3 (36 rounds), **5 us 1559.2**, 6 softmaxwell, 7 Michael Smith, 8 Andrew Brower.
+NOTE a NEW league exists — **"Ctf Doubles"** (`league_79796d56…`, created 2026-07-28) — we are
+NOT in it; do not submit there by accident when re-resolving league ids.
+
+## (measurement detail) Status (2026-07-28): **POSTS MEASURED — posts ON helps on both opponents; stance sweep null. v32/v33/v34 uploaded, NOT submitted**
+
+**A/B RESULT (matched arms, one image env-flipped via `--secret-env`, 10 eps/arm,
+ctf 0.7.95, 60/60 episodes, 0 failures):**
+- **v32 = posts OFF** (control), **v33 = posts ON stance 0.12** (shipped default),
+  **v34 = posts ON stance 0.18** (past the 0.1727 crossover).
+- vs **ctf-focusfire:v56**: win 20% -> **40%** (v33, p=0.01), score -0.60 -> -0.20.
+- vs **ctf-h050:v1**: win 0% -> **20%** (v33, p=0.00), score -1.00 -> -0.60 — first wins
+  ever off the h0xx line.
+- v34 (0.18) also beats off but less (30% / 10%). Direct 0.12-vs-0.18: 0.12 ahead on both,
+  **p=0.18 / p=0.08 — not significant at n=10.** 0.12 stays default.
+- Reports: `scratch/eval_posts_ab/reports/*.html`; xreq ids in
+  `scratch/eval_posts_ab/xreq_ids.txt`.
+
+**ACTIVATION (all live, control shows 0):** 1,942 active post-ticks / 181 distinct post
+cells / max 525 ticks on one post. threat_source: enemy_track 1125, plan_facing 448,
+enemy_pedestal 288, danger_gradient 81 (live evidence beats the static prior ~4:1, and the
+plan's `facing` is now load-bearing). claim_source: uncontested 811, visible_teammate 641,
+heard_K 490 across six seats — **the K protocol works in real games.**
+**Stance term verified mechanically despite the null outcome:** 0.12 -> 0.18 moved PUSH posts
+forward +21.5px -> +32.9px mean (65% -> 72% chosen forward of the waypoint), so the honest
+reading is "more forward isn't better vs these two", not "the term is inert".
+
+**FIELD MOVED AGAIN (recon this session):** rank 1 is now **alphashot-ghost-red-ca3e95f:v1**
+(Andre von Houck), 2 focusfire:v56, 3 **ctf-h050:v1** (h035 is gone), 4 jordan-ctf-candidate:v9,
+6 Picasso:v28, 7 swarm:v1. Game is **0.7.95**. Both losses-heavy baselines mean beacon is
+currently mid-field — posts close part of the gap but do not make us favourites.
+
+**NEXT:** (a) the stance sweep needs power (n=30+) or should be parked; (b) alphashot-ghost-red
+is unprofiled and is the new rank 1 — recon it; (c) posts are untested against Picasso/swarm/
+jordan; (d) submission is the human's gate — v33 is the candidate on this evidence.
+
+## (prior) Status (2026-07-28): **covered posts implementation in working tree, not uploaded**
+
+Beacon now has an offline-baked `sightlines` field (`32 x 83 x 155`, `uint8`,
+4px units, 400px cap) and a `posts.py` decision layer. Behind
+`BEACON_POSTS=1`, battle-plan move/hold targets, live H/S/P squad orders, and
+the static defender hold fallback become search centres for separated covered
+positions with a committed threat direction. `BEACON_POST_FACING` independently
+centres a narrower lighthouse sweep on that direction. The `K<seat><cell>`
+claim message decays after 120 ticks and sits in arbitration
+`C > T > O > G > U > K > E > P`. Traces expose post cell/direction, score
+terms, threat and claim source, live settlement ticks, cumulative ticks on
+posts, and claim send/hear counts.
+
+The motivating replay baseline was **measured on a 16-direction fan**: pushers
+arrived 13-47px apart with only 0-3 sampled rays open beyond 200px. Do not call
+that a 32-direction measurement. Future post A/B reporting should compare
+forward-reach distance distributions rather than counts of open directions;
+distance is invariant to the fan resolution.
+
+Plan milestones under posts advance on arrival at the latched post, not on the
+raw waypoint and not after the 96-tick anti-oscillation dwell. The phase timeout
+remains unconditional. With posts disabled, the original
+`advance()`-before-`current_objective()` behavior is retained exactly.
+
 ## Status (2026-07-27, session 8 cont 2): **OBSERVABILITY BUILD-OUT — v28 uploaded (trace-only), belief-overlay viewer shipped**
 
 **Chat is FREE** (verified: 0x81 chat + 0x84 mask are separate packets in the
