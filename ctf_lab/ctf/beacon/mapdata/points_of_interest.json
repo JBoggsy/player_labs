@@ -1,5 +1,5 @@
 {
-  "_comment": "Canonical named points + areas on the CTF arena (1235x659, mirror line x=617). Shared language: humans use the names in discussion; beacon imports them for strategy targets (mapdata.poi). Points curated by James 2026-07-27. Areas are rotated rects: cx/cy center, w/h size, angle degrees CCW. Edit with tools/poi_editor.html.",
+  "_comment": "Canonical named points + areas on the CTF arena (1235x659, mirror line x=617). Shared language: humans use the names in discussion; beacon imports them for strategy targets. Areas are rotated rects: cx/cy center, w/h size, angle degrees CCW. Human-curated (James, 2026-07-27, rev 5). Edit with tools/poi_editor.html.",
   "points": [
     {
       "name": "red_pedestal",
@@ -20,22 +20,10 @@
       "note": "dead center, inside the bracket ring"
     },
     {
-      "name": "red_rally_mid",
-      "x": 453,
-      "y": 328,
-      "note": "open area on red's side of mid which is fairly protected from blue's half, window provides vision & cover through center"
-    },
-    {
-      "name": "top_lane",
-      "x": 617,
-      "y": 120,
-      "note": "north route past the bracket"
-    },
-    {
-      "name": "bottom_lane",
-      "x": 617,
-      "y": 540,
-      "note": "south route past the bracket"
+      "name": "red_window",
+      "x": 483,
+      "y": 327,
+      "note": "cover- and vision-providing glass window in the center of the red-side central bracket wall"
     },
     {
       "name": "red_top_hold",
@@ -152,24 +140,6 @@
       "note": "open area between rotating diamonds on top lane, near medkit"
     },
     {
-      "name": "red_top_sneak",
-      "x": 566,
-      "y": 17,
-      "note": "small player-sized gap at the very top of the map on red's side"
-    },
-    {
-      "name": "blue_top_sneak",
-      "x": 668,
-      "y": 17,
-      "note": "small player-sized gap at the very top of the map on blue's side (mirror)"
-    },
-    {
-      "name": "red_bot_sneak",
-      "x": 565,
-      "y": 644,
-      "note": "small player-sized gap at the very bottom of the map on red's side"
-    },
-    {
       "name": "blue_bot_triangle",
       "x": 755,
       "y": 546,
@@ -188,12 +158,6 @@
       "note": "full-cover top triangle on blue's side of bottom; total cover from front but no offensive vision"
     },
     {
-      "name": "blue_bot_sneak",
-      "x": 669,
-      "y": 644,
-      "note": "small player-sized gap at the very bottom of the map on red's side (mirror)"
-    },
-    {
       "name": "blue_bot_hold",
       "x": 860,
       "y": 495,
@@ -206,34 +170,10 @@
       "note": "blue top-lane defensive spot with vision of blue's top sneak and top rally point"
     },
     {
-      "name": "red_top_rally",
-      "x": 420,
-      "y": 158,
-      "note": "Open area on the top of red's side which is fairly protected from blue's half"
-    },
-    {
-      "name": "blue_top_rally",
-      "x": 815,
-      "y": 158,
-      "note": "Open area on the top of blue's side which is fairly protected from red's half"
-    },
-    {
-      "name": "blue_rally_mid",
-      "x": 781,
-      "y": 328,
-      "note": "open area on blue's side of mid which is fairly protected from red's half, window provides vision & cover through center"
-    },
-    {
-      "name": "red_rally_bot",
-      "x": 427,
-      "y": 617,
-      "note": "open area on the bottom of red's side which is fairly protected from blue's half"
-    },
-    {
-      "name": "blue_rally_bot",
-      "x": 807,
-      "y": 617,
-      "note": "open area on the bottom of blue's side which is fairly protected from red's half"
+      "name": "blue_window",
+      "x": 751,
+      "y": 327,
+      "note": "cover- and vision-providing glass window in the center of the blue-side central bracket wall"
     }
   ],
   "areas": [
@@ -259,10 +199,10 @@
       "name": "center_ring",
       "cx": 617,
       "cy": 329,
-      "w": 170,
-      "h": 190,
+      "w": 256,
+      "h": 156,
       "angle": 0,
-      "note": "inside the bracket walls around center \u2014 glass sightline through the bars"
+      "note": "inside the bracket walls around center \u2014 glass sightline through the middle"
     },
     {
       "name": "top_corridor",
@@ -283,13 +223,94 @@
       "note": "the south push lane"
     },
     {
-      "name": "mid_battleground",
-      "cx": 617,
-      "cy": 329,
-      "w": 330,
-      "h": 240,
+      "name": "blue_rally_bot",
+      "cx": 813,
+      "cy": 597,
+      "w": 74,
+      "h": 94,
       "angle": 0,
-      "note": "the contested middle where h035 wins its attrition (kill-density hotspot)"
+      "note": "open area on the bottom of blue's side which is fairly protected from red's half"
+    },
+    {
+      "name": "red_rally_bot",
+      "cx": 421,
+      "cy": 597,
+      "w": 74,
+      "h": 94,
+      "angle": 0,
+      "note": "open area on the bottom of red's side which is fairly protected from blue's half"
+    },
+    {
+      "name": "red_rally_mid",
+      "cx": 423,
+      "cy": 375,
+      "w": 84,
+      "h": 158,
+      "angle": 0,
+      "note": "open area in the middle of red's side which is fairly protected from blue's half"
+    },
+    {
+      "name": "blue_rally_mid",
+      "cx": 811,
+      "cy": 375,
+      "w": 84,
+      "h": 158,
+      "angle": 0,
+      "note": "open area in the middle of blue's side which is fairly protected from red's half"
+    },
+    {
+      "name": "red_rally_top",
+      "cx": 425,
+      "cy": 162,
+      "w": 74,
+      "h": 108,
+      "angle": 0,
+      "note": "open area on the top of red's side which is fairly protected from blue's half"
+    },
+    {
+      "name": "blue_rally_top",
+      "cx": 809,
+      "cy": 162,
+      "w": 74,
+      "h": 108,
+      "angle": 0,
+      "note": "open area on the top of blue's side which is fairly protected from red's half"
+    },
+    {
+      "name": "top_sneak",
+      "cx": 620,
+      "cy": 17,
+      "w": 134,
+      "h": 14,
+      "angle": 0,
+      "note": "small player-sized gap at the very top of the map"
+    },
+    {
+      "name": "bot_sneak",
+      "cx": 618,
+      "cy": 643,
+      "w": 132,
+      "h": 16,
+      "angle": 0,
+      "note": "small player-sized gap at the very bottom of the map"
+    },
+    {
+      "name": "red_lineup",
+      "cx": 277,
+      "cy": 330,
+      "w": 36,
+      "h": 638,
+      "angle": 0,
+      "note": "series of walls separating red's area from the map"
+    },
+    {
+      "name": "blue_lineup",
+      "cx": 957,
+      "cy": 330,
+      "w": 36,
+      "h": 638,
+      "angle": 0,
+      "note": "series of walls separating blue's area from the map"
     }
   ]
 }
