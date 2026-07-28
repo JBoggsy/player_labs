@@ -63,8 +63,10 @@
   .row .del { color: var(--ink-soft); border: none; background: none; padding: 0 3px; }
   .row .del:hover { color: var(--red); }
   #inspector { border-top: 1px solid var(--hairline); padding-top: 10px; margin-top: 10px; }
-  #inspector .grid { display: grid; grid-template-columns: 46px 1fr 46px 1fr; gap: 6px 8px; align-items: center; }
+  #inspector .grid { display: grid; grid-template-columns: 42px minmax(0,1fr) 42px minmax(0,1fr);
+                     gap: 6px 8px; align-items: center; }
   #inspector .grid label { color: var(--ink-soft); font-size: 12px; }
+  #inspector .grid input, #inspector .grid textarea { width: 100%; min-width: 0; }
   #inspector .grid .wide { grid-column: 2 / 5; }
   #actions { display: flex; gap: 8px; margin-top: 12px; }
   #fileRow { display: flex; gap: 8px; }
