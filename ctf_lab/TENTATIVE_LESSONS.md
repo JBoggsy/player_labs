@@ -253,3 +253,78 @@ Evidence: `coworld leagues | grep -i ctf` returns TWO leagues: `league_79796d56�
 (created today) and `league_3243d905…` "Ctf" (the one beacon competes in, created 2026-07-01).
 Status: a name-based grep could submit into the wrong league. Match the exact id from
 WORKING_CONTEXT / the division you actually ran recon against.
+
+### PLATFORM STALL (2026-07-28 ~16:00-16:35): xreqs accept but never dispatch, while LEAGUE rounds keep running
+
+Evidence: 4 experience requests (2x10 eps vs alphashot + two 1-episode canaries) all sat at
+`status=pending, completed=0, running=0, failed=0, error=None` for 30+ minutes. Earlier the same
+session, 6 identical-shape xreqs drained in ~10 min. Isolation done:
+- a canary vs **focusfire** (an opponent that worked an hour earlier) ALSO stalled -> not
+  alphashot-specific, not a roster/policy problem;
+- the API is healthy (older xreqs still read back `completed 10/10`);
+- the **division leaderboard advanced 157 -> 158 rounds** during the stall -> the cluster IS
+  executing league/commissioner episodes; only ad-hoc xreq dispatch is wedged.
+- Coincides with the game redeploying THREE times in ~30 min: 0.7.95 -> 0.7.96 -> 0.7.97 (each
+  xreq records the version it was created against, so a stalled batch can be pinned to a
+  now-superseded version).
+Status: distinguish "my request is malformed" from "the platform isn't dispatching" with a
+1-episode canary against a KNOWN-GOOD opponent, plus a leaderboard-rounds check. Cheap and
+decisive. Also: a stalled xreq created at 0.7.96 while the deploy is now 0.7.97 is probably worth
+re-firing rather than waiting, since arms must be version-matched to compare.
+
+### Version pinning caveat for cross-batch comparison: the game moved under us mid-session
+
+Evidence: the posts A/B ran entirely on **0.7.95** (all 6 arms, verified). The alphashot recon was
+created against **0.7.96**, and canaries minutes later reported **0.7.97**. So alphashot results
+will NOT be strictly comparable to the morning's focusfire/h050 numbers.
+Status: the v33-vs-v32 alphashot comparison stays internally valid (both arms same version), but
+do not put alphashot win rates in the same table as the 0.7.95 focusfire/h050 numbers without
+saying so. This is the v24/v25 "league redeployed overnight" lesson recurring intra-session.
+
+### ALPHASHOT PROFILE (div rank 1): it beats us on GUNFIGHTING, not on ground — forward sightline reach is IDENTICAL
+
+Evidence: 4 league doubles rounds, beacon:v28 vs alphashot-ghost-red-ca3e95f:v1 (GV23 replays,
+`scratch/recon_alphashot/league`). beacon went 1W/3L.
+- **Kills 60 vs our 39; kill differential +25 (60-35) vs our -1 (39-40).** It wins the attrition
+  war outright, same as h050's pattern.
+- **Accuracy 0.202 vs our 0.181** (kills/shot) and it shoots MORE per alive-tick (0.25 vs 0.19) —
+  so it is both more accurate AND more aggressive with the trigger.
+- **11 clustered kills (two kills by the same policy within 48t) vs beacon's 0** — evidence of
+  focus fire / trading in groups. beacon's kills are isolated.
+- **It hugs cover far harder: mean distance to nearest wall 146px vs our 321px; 70% of alive
+  ticks within 24px of a wall vs our 55%.**
+- **BUT forward sightline reach along the threat axis is statistically IDENTICAL** — measured with
+  our own baked 32-dir field: alphashot mean 93px / median 80px / 10% open >=200px; beacon mean
+  93px / median 80px / 9%. Own-team nearest-neighbour spacing also near-identical (137px vs 132px).
+- Neither side steals or captures much (alphashot 0 steals in 4 rounds; the games are pure wipes).
+- Item use is low for both (shield 2% vs our 4%, grenade 5% vs our 8%).
+**Interpretation: posts give us comparable GROUND to the rank-1 policy; the remaining gap is
+marksmanship + trigger discipline + fighting in groups (focus fire), not positioning.** That is a
+different lever than the one we just shipped, and it argues the next iteration should target the
+FIGHT (accuracy/lead/target selection/focus fire), not more position work.
+Caveat: n=4 doubles rounds, beacon:v28 (pre-posts). The 1v1 posts-vs-alphashot xreqs are queued
+but the platform stalled; re-run them before trusting this as a v33 baseline.
+
+### Replays carry their OWN GameVersion and the coworld record can be STALE — read the header, don't trust the manifest
+
+Evidence: `coworld show cow_aa3ab14f… --json` reported ctf **0.7.91** / source ref
+`e2b7b3c971…`, but a reader built at that ref failed with `Replay game version does not match`.
+The replay header is `COWLDCTF` + u16 1 + u16 3 + `"ctf"` + a length-prefixed version string —
+which read as **"23"** (I first misparsed it as "238"). GameVersion 23 = coworld-ctf `cdd567f`
+("GV23: shield-expiry break + action clock floor, overtimeTicks 500"), NOT the manifest's ref.
+Built `tools/bin/expand_replay_json-cdd567f` and it parsed cleanly.
+Status: to pin a reader, decode the replay header's version string and map it to the commit whose
+`src/ctf/sim.nim` has that `GameVersion*` — `git log --all -- src/ctf/sim.nim` finds it fast.
+NOTE GV23 is NEWER than the GV21/GV22 our config/docs assume; the shield now BREAKS on depletion
+and there is an overtime clock floor (overtimeTicks 500) — worth auditing against beacon's
+assumptions.
+
+### `--policy <name>` artifact fetch returns episodes by RECENCY, not episodes containing that policy's opponents
+
+Evidence: `fetch_artifacts.py --policy alphashot-ghost-red-ca3e95f` failed outright ("No policy
+versions found" — it resolves OUR policies only). Fetching `--policy beacon -n 25` returned 25
+recent beacon episodes of which only **4** contained alphashot; 17 were vs `ctf-exp:v18/v53`
+(someone else's experiment policies, not even in the standings).
+Status: to profile a specific opponent from league history, over-fetch our own episodes and FILTER
+on `policy_results[].policy.name`. Also note league episodes use `policy_results`, not
+`participants` — and `coworld_version` is None on them, so version must come from the replay header.
