@@ -1338,6 +1338,53 @@ def test_chat_push_second_call_when_target_voteless(monkeypatch) -> None:
     assert mode.decide(belief, ActionState()).kind == "idle"
 
 
+def test_prevote_push_fires_once_during_retime_hold(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_HONOR_SOCIETY", "0")
+    monkeypatch.setenv("CREWBORG_VOTE_BALLOT_RETIME", "1")
+    monkeypatch.setenv("CREWBORG_VOTE_CHAT_PUSH_PREVOTE", "1")
+    mode = AttendMeetingMode()
+    belief = _coordination_belief()
+    assert mode.decide(belief, ActionState()).kind == "chat"  # first-tick accusation
+    assert mode.decide(belief, ActionState()).kind == "idle"  # holding, too early to push
+    belief.last_tick = 300  # ≥ PREVOTE_PUSH_DELAY_TICKS, still in the hold window
+    push = mode.decide(belief, ActionState())
+    assert push.kind == "chat" and push.text.startswith("vote red")
+    assert push.text.count("vote red") == 1  # duplicated-call defect fixed
+    # only once; the hold continues
+    belief.last_tick = 400
+    assert mode.decide(belief, ActionState()).kind == "idle"
+    # pile forms -> join immediately (retime path untouched)
+    belief.voting = belief.voting.model_copy(update={"dots": (VoteDot(voter=2, target=0),)})
+    vote = mode.decide(belief, ActionState())
+    assert vote.kind == "vote" and vote.target_color == "red"
+
+
+def test_prevote_push_off_by_default(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_HONOR_SOCIETY", "0")
+    monkeypatch.setenv("CREWBORG_VOTE_BALLOT_RETIME", "1")
+    mode = AttendMeetingMode()
+    belief = _coordination_belief()
+    assert mode.decide(belief, ActionState()).kind == "chat"
+    belief.last_tick = 300
+    held = mode.decide(belief, ActionState())
+    assert held.kind == "idle" and "holding ballot" in held.reason
+
+
+def test_prevote_push_still_expires_to_cast(monkeypatch) -> None:
+    monkeypatch.setenv("CREWBORG_HONOR_SOCIETY", "0")
+    monkeypatch.setenv("CREWBORG_VOTE_BALLOT_RETIME", "1")
+    monkeypatch.setenv("CREWBORG_VOTE_CHAT_PUSH_PREVOTE", "1")
+    mode = AttendMeetingMode()
+    belief = _coordination_belief()
+    assert mode.decide(belief, ActionState()).kind == "chat"
+    belief.last_tick = 300
+    assert mode.decide(belief, ActionState()).kind == "chat"  # the push
+    # past the early-submit fraction with no pile: cast anyway (deadline safety intact)
+    belief.last_tick = int(VOTE_TIMER_TICKS * 0.55)
+    vote = mode.decide(belief, ActionState())
+    assert vote.kind == "vote" and vote.target_color == "red"
+
+
 def test_chat_push_skipped_when_pile_already_formed(monkeypatch) -> None:
     monkeypatch.setenv("CREWBORG_HONOR_SOCIETY", "0")
     monkeypatch.setenv("CREWBORG_VOTE_CHAT_PUSH", "1")

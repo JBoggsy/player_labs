@@ -107,6 +107,15 @@ CHAT_PUSH_REMAINING_TICKS = 480  # re-push when under this remaining and target 
 # early-submit point otherwise. The chat still goes out first-tick (anchoring is right —
 # the top converters chat FIRST but vote 2-3 votes IN; we currently do both first).
 BALLOT_RETIME_ENV = "CREWBORG_VOTE_BALLOT_RETIME"
+# CHAT_PUSH_PREVOTE: the loop-alpha L1 lever (2026-07-28 prereg). The retime hold's
+# expire path converts at ~0% (lone ballot into a locked field — votes can't change
+# once cast; the field's median ballot lands ~dt 312 while our expire cast lands ~601),
+# so persuasion must happen DURING the hold, not after our ballot like CHAT_PUSH.
+# While holding: once the meeting is ≥ PREVOTE_PUSH_DELAY_TICKS old (our first-tick
+# accusation has been read, the field's vote wave hasn't crested) and the target is
+# still vote-less, send ONE "vote X. <cues>" call, then keep holding.
+CHAT_PUSH_PREVOTE_ENV = "CREWBORG_VOTE_CHAT_PUSH_PREVOTE"
+PREVOTE_PUSH_DELAY_TICKS = 240
 
 
 class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
@@ -158,6 +167,10 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self._ballot_retime_enabled = (
             os.environ.get(BALLOT_RETIME_ENV, "").strip().lower() in ("1", "true", "yes", "on")
         )
+        self._prevote_push_enabled = (
+            os.environ.get(CHAT_PUSH_PREVOTE_ENV, "").strip().lower() in ("1", "true", "yes", "on")
+        )
+        self._prevote_pushed = False
         self._chat_accused: str | None = None
         self._meeting_id: int | None = None
         self._deterministic_chatted = False
@@ -422,9 +435,41 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
             self.emit.counter("meeting_retime_join")
             return self._submit_vote_intent(belief, reason="retime: joining pile on our target")
         if self._remaining_ticks(belief) >= VOTE_TIMER_TICKS * EARLY_SUBMIT_REMAINING_FRACTION:
+            push = self._prevote_push_intent(belief, target)
+            if push is not None:
+                return push
             return Intent(kind="idle", reason="retime: holding ballot while pile forms")
         self.emit.counter("meeting_retime_expire")
         return self._submit_vote_intent(belief, reason="retime: no pile formed, casting")
+
+    def _prevote_push_intent(self, belief: Belief, target: str) -> Intent | None:
+        """CHAT_PUSH_PREVOTE lever (loop-alpha L1, prereg 2026-07-28; flag default
+        OFF): while the retime hold is waiting for a pile, send ONE explicit
+        "vote X. <cues>" call — early enough (≥ PREVOTE_PUSH_DELAY_TICKS into the
+        meeting, before the field's median ballot) that not-yet-committed voters can
+        still join. The ballot stays held; only the persuasion timing changes.
+
+        Text defect fixed here: build_accusation already closes with ". vote X", so
+        the push strips that suffix instead of repeating it (the 2026-07-24 combo
+        arm's duplicated "vote X … vote X")."""
+
+        if not self._prevote_push_enabled or self._prevote_pushed:
+            return None
+        elapsed = max(0, belief.last_tick - belief.phase_start_tick)
+        if elapsed < PREVOTE_PUSH_DELAY_TICKS:
+            return None
+        if not self._chat_cooldown_ready(belief):
+            return None
+        self._prevote_pushed = True
+        cues = build_accusation(belief, target) or f"{target} sus"
+        suffix = f". vote {target}"
+        if cues.endswith(suffix):
+            cues = cues[: -len(suffix)]
+        push = f"vote {target}. {cues}"
+        self.emit.counter("meeting_chat_push_prevote")
+        return self._send_chat_intent(
+            belief, push[:CHAT_MAX_CHARS], reason="prevote-push: call the pile during hold"
+        )
 
     def _post_vote_chat_push_intent(self, belief: Belief) -> Intent | None:
         """CHAT_PUSH lever (2026-07-24 mining; flag default OFF): our accusation and
@@ -983,6 +1028,7 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
         self._instant_vote_pending = None
         self._warm_anchor_target = None
         self._chat_pushed = False
+        self._prevote_pushed = False
         self._chat_accused = None
         self._deterministic_chatted = False
         self._disabled_traced = False
