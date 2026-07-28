@@ -129,8 +129,12 @@
   <textarea id="phaseJson" class="mono" rows="8"></textarea>
   <div class="rowline" style="margin-top:4px"><button id="btnApplyJson">Apply JSON</button></div>
 
-  <p class="hint">arrows start where the group ENDED last phase. Targets snap to
-  POIs (stored by name). Enemy = blue rings w/ counts. Schema:
+  <p class="hint"><b>How to edit:</b> pick a group + order kind, hit <b>+ place</b>,
+  then click the map. Drag any marker/arrowhead to retarget (snaps to POIs, stored
+  by name). <b>Grab an arrow's shaft to bend it</b> (adds a draggable waypoint;
+  double-click a waypoint to remove). Hold markers: drag the small ring to re-aim
+  facing. Arrows start where the group ENDED last phase. <b>Download saves</b> —
+  browser edits are lost on refresh otherwise. Schema:
   <code>battle_plans/SCHEMA.md</code>.</p>
 </div>
 
@@ -156,6 +160,7 @@ function resolveLoc(loc) {
   return null;
 }
 function locLabel(loc) { return typeof loc === "string" ? loc : loc ? `${loc.x},${loc.y}` : "?"; }
+function viaPoints(o) { return (o.via || []).map(resolveLoc).filter(Boolean); }
 function snapLoc(x, y) {
   // Prefer a named POI within 18px — store the NAME (live reference).
   let best = null, bd = 18 * 18;
@@ -366,13 +371,38 @@ cv.addEventListener("mousedown", (ev) => {
   if (!plan || clickMode) return;
   const [x, y] = canvasXY(ev);
   const ph = plan.phases[cur];
-  // Hit an order's target or facing handle?
+  // Hit an order's target, waypoint, facing handle, or a move arrow's SHAFT?
   for (let i = (ph.orders || []).length - 1; i >= 0; i--) {
     const o = ph.orders[i];
     const t = resolveLoc(o.to ?? o.at);
     if (t && (t[0] - x) ** 2 + (t[1] - y) ** 2 <= 12 ** 2) { drag = { orderIdx: i, field: o.to != null ? "to" : "at" }; return; }
+    for (let vi = 0; vi < (o.via || []).length; vi++) {
+      const v = resolveLoc(o.via[vi]);
+      if (v && (v[0] - x) ** 2 + (v[1] - y) ** 2 <= 10 ** 2) { drag = { orderIdx: i, field: "via", viaIdx: vi }; return; }
+    }
     const f = resolveLoc(o.facing);
     if (f && (f[0] - x) ** 2 + (f[1] - y) ** 2 <= 10 ** 2) { drag = { orderIdx: i, field: "facing" }; return; }
+  }
+  // Grab an arrow shaft => insert a NEW waypoint there and drag it (curve the route).
+  const starts = groupLocationsAt(cur);
+  for (let i = (ph.orders || []).length - 1; i >= 0; i--) {
+    const o = ph.orders[i];
+    if (o.kind !== "move") continue;
+    const t = resolveLoc(o.to);
+    if (!t) continue;
+    const pts = [starts[o.group] ?? [110, 329], ...viaPoints(o), t];
+    for (let s = 0; s < pts.length - 1; s++) {
+      const [x0, y0] = pts[s], [x1, y1] = pts[s + 1];
+      const len2 = (x1 - x0) ** 2 + (y1 - y0) ** 2;
+      if (!len2) continue;
+      const u = Math.max(0, Math.min(1, ((x - x0) * (x1 - x0) + (y - y0) * (y1 - y0)) / len2));
+      const px = x0 + u * (x1 - x0), py = y0 + u * (y1 - y0);
+      if ((px - x) ** 2 + (py - y) ** 2 <= 7 ** 2) {
+        (o.via ??= []).splice(s, 0, { x, y });   // segment s => waypoint index s
+        drag = { orderIdx: i, field: "via", viaIdx: s };
+        return;
+      }
+    }
   }
   for (let i = (ph.enemy_belief || []).length - 1; i >= 0; i--) {
     const t = resolveLoc(ph.enemy_belief[i].at);
@@ -385,10 +415,27 @@ cv.addEventListener("mousemove", (ev) => {
   const ph = plan.phases[cur];
   const loc = snapLoc(x, y);
   if (drag.enemyIdx != null) ph.enemy_belief[drag.enemyIdx].at = loc;
+  else if (drag.field === "via") ph.orders[drag.orderIdx].via[drag.viaIdx] = loc;
   else ph.orders[drag.orderIdx][drag.field] = loc;
   refreshPhasePanel(); draw();
 });
 window.addEventListener("mouseup", () => { drag = null; });
+cv.addEventListener("dblclick", (ev) => {
+  // Double-click a waypoint handle to remove it (straighten the route).
+  if (!plan) return;
+  const [x, y] = canvasXY(ev);
+  const ph = plan.phases[cur];
+  for (const o of ph.orders || []) {
+    for (let vi = 0; vi < (o.via || []).length; vi++) {
+      const v = resolveLoc(o.via[vi]);
+      if (v && (v[0] - x) ** 2 + (v[1] - y) ** 2 <= 10 ** 2) {
+        o.via.splice(vi, 1);
+        if (!o.via.length) delete o.via;
+        refresh(); return;
+      }
+    }
+  }
+});
 cv.addEventListener("click", (ev) => {
   if (!plan || !clickMode) return;
   const [x, y] = canvasXY(ev);
@@ -468,7 +515,18 @@ function draw() {
     const n = (seats[o.group] || []).length || "?";
     if (o.kind === "move") {
       const from = starts[o.group] ?? [110, 329];
-      arrow(from[0], from[1], target[0], target[1], col);
+      // Polyline route: from -> via… -> target; arrowhead on the last leg only.
+      const pts = [from, ...viaPoints(o), target];
+      ctx.strokeStyle = col; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+      for (let s = 1; s < pts.length - 1; s++) ctx.lineTo(pts[s][0], pts[s][1]);
+      ctx.stroke(); ctx.lineWidth = 1;
+      const [lx, ly] = pts[pts.length - 2];
+      arrow(lx, ly, target[0], target[1], col);
+      for (const [vx, vy] of viaPoints(o)) {        // waypoint handles
+        ctx.beginPath(); ctx.arc(vx, vy, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = "#faf9f6"; ctx.fill(); ctx.strokeStyle = col; ctx.stroke();
+      }
       ctx.beginPath(); ctx.arc(from[0], from[1], 8, 0, 2 * Math.PI);
       ctx.fillStyle = col; ctx.fill();
       ctx.font = "700 10px sans-serif"; ctx.fillStyle = "#faf9f6";
