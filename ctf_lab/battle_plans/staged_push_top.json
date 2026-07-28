@@ -2,7 +2,7 @@
   "name": "staged_push_top",
   "author": "both",
   "status": "proposal",
-  "summary": "The staged push, drawn as a plan (mirrors the v30 background build): 5 push the top lane in stages while 3 cover their rear from the rally boxes; the rear leapfrogs forward on signal; on heavy defense the pushers split to flank. Local 5v~3 superiority anywhere we meet a spread defense.",
+  "summary": "The staged push: 5 push the top lane in stages while 3 cover the rear. ACCEPTED RISKS (named): the bottom is deliberately naked \u2014 the rear trades space for time (delay, then fall back behind the lineup wall) and we bet on winning the top race first; after phase 2 the rear is beyond shout range and fights autonomously.",
   "team": "red",
   "groups": {
     "pushers": [
@@ -109,7 +109,7 @@
     },
     {
       "name": "break_or_flank",
-      "intent": "If the lane is lightly held, push straight through toward the pedestal. If we meet a concentrated defense (3+ tracked in the corridor ahead), split: flank_n squeezes through the top sneak to get behind them while flank_s fixes them frontally from the vee \u2014 crossfire, then re-merge on the far side.",
+      "intent": "If the lane is lightly held, push straight through toward the pedestal. If we meet a concentrated defense (3+ tracked in the corridor ahead), split and pincer IN SEQUENCE: flank_s takes the inside shelf first and FIXES them (they have targets, they engage); only once flank_s has contact does flank_n sweep the top sneak line \u2014 hugging the wall through the sneak corridor \u2014 to arrive behind blue_top_hold_2 while the defense is busy frontally.",
       "entry": {
         "prose": "contact at midfield, or the corridor reads clear"
       },
@@ -138,7 +138,8 @@
           "at": {
             "x": 323,
             "y": 333
-          }
+          },
+          "fallback": "red_lineup"
         },
         {
           "group": "rear",
@@ -154,7 +155,17 @@
           "to": {
             "x": 802,
             "y": 27
-          }
+          },
+          "via": [
+            {
+              "x": 566,
+              "y": 20
+            },
+            {
+              "x": 700,
+              "y": 20
+            }
+          ]
         },
         {
           "group": "flank_s",
@@ -184,6 +195,14 @@
         {
           "who": "claude",
           "text": "Adopted your retargets: flank_n sweeps wide to (802,27) \u2014 deeper than top_sneak, behind blue_top_hold_2; flank_s cuts to (654,206) \u2014 top_diamond shelf, pinching the corridor from the inside instead of holding back at our vee. Rear anchors at (323,333) with eyes mid + bottom. Phase 4 kept."
+        },
+        {
+          "who": "claude",
+          "text": "Issue-2 fix applied: flank_n now routes via the sneak corridor (566,20)->(700,20), wall-hugging, and the intent sequences it AFTER flank_s makes contact \u2014 the fixing attack covers the sweep. Also recorded the phase-3 comms reality: rear is out of shout range from here on; the rear fights autonomously (accepted)."
+        },
+        {
+          "who": "claude",
+          "text": "Rear doctrine (from James): delay forward first; if mid/bottom pressure looks like a PUSH (multiple tracked), fall back behind the lineup wall and defend from cover \u2014 holding 3-4 of theirs while the flanks catch the rest is the win condition for this phase. Encoded as fallback:red_lineup on the rear hold order (schema addition: a hold may carry a fallback location)."
         }
       ]
     },

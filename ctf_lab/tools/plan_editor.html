@@ -7,7 +7,9 @@
   markers), enemy-belief markers, intent/entry/exit prose (+ optional machine
   tags), and an append-only notes thread for the back-and-forth.
 
-  Serve ctf_lab/:  python3 -m http.server -d ctf_lab   → /tools/plan_editor.html
+  Serve with tools/plan_server.py (adds save + live sync):
+    uv run python ctf_lab/tools/plan_server.py   → /tools/plan_editor.html
+  (plain http.server works too, but Save falls back to Download-only.)
   Loads the canonical POI map as a faint underlay; drag targets SNAP to POIs
   (within 18px) and store the NAME (a live reference), else raw {x,y}.
 
@@ -20,7 +22,7 @@
     click an order row ✕      remove it
     Split… button             split a group into children (prompted)
     phase JSON box            full control for anything the UI doesn't cover
-  Save = Download → commit into battle_plans/.
+  Save = POST to the server; both generals see each other's edits live.
 -->
 <html lang="en">
 <head>
@@ -84,11 +86,12 @@
   <h1>Plan editor</h1>
   <p class="sub" id="planMeta">no plan loaded</p>
 
-  <div class="label">Plan file</div>
+  <div class="label">Plan file <span id="syncState" style="float:right;font-weight:400;text-transform:none;letter-spacing:0"></span></div>
   <div class="rowline">
     <input id="planName" placeholder="staged_push_top" title="plan name under battle_plans/">
     <button id="btnFetch" title="fetch battle_plans/<name>.json">Load</button>
-    <button id="btnDownload" class="primary">Download</button>
+    <button id="btnSave" class="primary" title="save to the server (live-sync with the agent)">Save</button>
+    <button id="btnDownload" title="download a copy instead">↓</button>
   </div>
   <input type="file" id="filePick" accept=".json">
   <div class="rowline" style="margin-top:6px">
@@ -133,8 +136,9 @@
   then click the map. Drag any marker/arrowhead to retarget (snaps to POIs, stored
   by name). <b>Grab an arrow's shaft to bend it</b> (adds a draggable waypoint;
   double-click a waypoint to remove). Hold markers: drag the small ring to re-aim
-  facing. Arrows start where the group ENDED last phase. <b>Download saves</b> —
-  browser edits are lost on refresh otherwise. Schema:
+  facing. Arrows start where the group ENDED last phase. <b>Save</b> writes to the server
+  (live-sync: the agent sees it immediately, and the map auto-reloads when the
+  agent edits — ↓ downloads a copy instead). Schema:
   <code>battle_plans/SCHEMA.md</code>.</p>
 </div>
 
@@ -224,12 +228,46 @@ async function boot() {
   try { poi = await fetchJson("../ctf/beacon/mapdata/points_of_interest.json"); } catch (e) {}
   try { await loadPlan("staged_push_top"); } catch (e) { draw(); }
 }
+let serverTag = null;    // ETag of the last server state we loaded/saved
+let dirty = false;       // local edits not yet saved
+function markDirty() { dirty = true; syncUi("unsaved edits"); }
+function syncUi(msg, ok) {
+  const el = $("syncState");
+  el.textContent = msg || "";
+  el.style.color = ok === false ? "var(--red)" : "var(--ink-soft)";
+}
 async function loadPlan(name) {
-  plan = await fetchJson(`../battle_plans/${name}.json`);
+  const r = await fetch(`../battle_plans/${name}.json`, { cache: "no-cache" });
+  if (!r.ok) throw new Error("not found");
+  serverTag = r.headers.get("ETag");
+  plan = await r.json();
   $("planName").value = plan.name;
-  cur = 0; refresh();
+  dirty = false; syncUi("in sync", true);
+  cur = Math.min(cur, (plan.phases?.length ?? 1) - 1); refresh();
 }
 $("btnFetch").onclick = () => loadPlan($("planName").value.trim()).catch(() => alert("not found"));
+$("btnSave").onclick = async () => {
+  if (!plan) return;
+  const name = plan.name || $("planName").value.trim();
+  const r = await fetch(`../battle_plans/${name}.json`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(plan),
+  });
+  if (r.ok) { serverTag = `"${(await r.json()).etag}"`; dirty = false; syncUi("saved ✓", true); }
+  else syncUi(`save failed (${r.status}) — is plan_server.py running?`, false);
+};
+// Live sync: poll the server ETag; if the OTHER general changed the file and we
+// have no local edits, reload silently. With local edits, warn instead.
+setInterval(async () => {
+  if (!plan?.name) return;
+  try {
+    const r = await fetch(`../battle_plans/${plan.name}.json`, { method: "HEAD", cache: "no-cache" });
+    const tag = r.headers.get("ETag");
+    if (!tag || tag === serverTag) return;
+    if (dirty) syncUi("⚠ server changed under your unsaved edits", false);
+    else { await loadPlan(plan.name); syncUi("updated from server ✓", true); }
+  } catch (e) {}
+}, 2000);
 $("filePick").addEventListener("change", async (e) => {
   const f = e.target.files[0];
   if (f) { plan = JSON.parse(await f.text()); $("planName").value = plan.name || ""; cur = 0; refresh(); }
@@ -240,7 +278,7 @@ $("btnDownload").onclick = () => {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob); a.download = `${plan.name || "plan"}.json`; a.click();
 };
-$("f_status").onchange = () => { if (plan) { plan.status = $("f_status").value; refreshMeta(); } };
+$("f_status").onchange = () => { if (plan) { plan.status = $("f_status").value; markDirty(); refreshMeta(); } };
 $("t_poi").onchange = draw;
 
 // ---------- phase bar ----------
@@ -254,7 +292,7 @@ function refreshPhasebar() {
     t.onclick = (ev) => {
       if (ev.target.classList.contains("x")) {
         if (confirm(`remove phase "${ph.name}"?`)) {
-          plan.phases.splice(i, 1); cur = Math.max(0, Math.min(cur, plan.phases.length - 1)); refresh();
+          plan.phases.splice(i, 1); markDirty(); cur = Math.max(0, Math.min(cur, plan.phases.length - 1)); refresh();
         }
       } else { cur = i; refresh(); }
     };
@@ -265,7 +303,7 @@ function refreshPhasebar() {
   add.onclick = () => {
     const name = prompt("phase name:", `phase_${(plan.phases?.length || 0) + 1}`);
     if (!name) return;
-    plan.phases.push({ name, intent: "", entry: { prose: "" }, orders: [], enemy_belief: [], notes: [] });
+    plan.phases.push({ name, intent: "", entry: { prose: "" }, orders: [], enemy_belief: [], notes: [] }); markDirty();
     cur = plan.phases.length - 1; refresh();
   };
   bar.appendChild(add);
@@ -302,7 +340,7 @@ function refreshPhasePanel() {
     row.innerHTML = `<span class="sw" style="background:${groupColor(o.group)}"></span>` +
       `<span class="txt"><b>${o.group}</b> ${glyph} ${locLabel(o.to ?? o.at)}` +
       `${o.facing ? " ⌖" + locLabel(o.facing) : ""}</span><button class="del">✕</button>`;
-    row.querySelector(".del").onclick = () => { ph.orders.splice(i, 1); refresh(); };
+    row.querySelector(".del").onclick = () => { ph.orders.splice(i, 1); markDirty(); refresh(); };
     $("orders").appendChild(row);
   });
   $("enemies").innerHTML = "";
@@ -312,7 +350,7 @@ function refreshPhasePanel() {
     row.innerHTML = `<span class="sw" style="background:var(--blue)"></span>` +
       `<span class="txt">${e.count ?? "?"} @ ${locLabel(e.at)}${e.note ? " — " + e.note : ""}</span>` +
       `<button class="del">✕</button>`;
-    row.querySelector(".del").onclick = () => { ph.enemy_belief.splice(i, 1); refresh(); };
+    row.querySelector(".del").onclick = () => { ph.enemy_belief.splice(i, 1); markDirty(); refresh(); };
     $("enemies").appendChild(row);
   });
   $("notes").innerHTML = (ph.notes || []).map(n =>
@@ -324,7 +362,7 @@ for (const [id, apply] of [
   ["f_intent", v => plan.phases[cur].intent = v],
   ["f_entry", v => (plan.phases[cur].entry ??= {}).prose = v],
   ["f_entry_tag", v => (plan.phases[cur].entry ??= {}).tag = v],
-]) $(id).addEventListener("input", () => { if (plan?.phases[cur]) { apply($(id).value); refreshPhasebar(); } });
+]) $(id).addEventListener("input", () => { if (plan?.phases[cur]) { apply($(id).value); markDirty(); refreshPhasebar(); } });
 
 $("btnAddOrder").onclick = () => {
   if (!plan) return;
@@ -335,11 +373,11 @@ $("btnAddEnemy").onclick = () => { clickMode = { type: "enemy" }; $("btnAddEnemy
 $("btnNote").onclick = () => {
   const t = $("noteText").value.trim();
   if (!t || !plan) return;
-  (plan.phases[cur].notes ??= []).push({ who: "james", text: t });
+  (plan.phases[cur].notes ??= []).push({ who: "james", text: t }); markDirty();
   $("noteText").value = ""; refreshPhasePanel();
 };
 $("btnApplyJson").onclick = () => {
-  try { plan.phases[cur] = JSON.parse($("phaseJson").value); refresh(); }
+  try { plan.phases[cur] = JSON.parse($("phaseJson").value); markDirty(); refresh(); }
   catch (e) { alert("bad JSON: " + e.message); }
 };
 $("btnSplit").onclick = () => {
@@ -357,7 +395,7 @@ $("btnSplit").onclick = () => {
     if (k && seats) kids[k.trim()] = seats.split(",").map(s => +s.trim());
   }
   if (Object.keys(kids).length < 2) return alert("need at least two children");
-  (plan.phases[cur].splits ??= {})[parent] = kids;
+  (plan.phases[cur].splits ??= {})[parent] = kids; markDirty();
   refresh();
 };
 
@@ -417,6 +455,7 @@ cv.addEventListener("mousemove", (ev) => {
   if (drag.enemyIdx != null) ph.enemy_belief[drag.enemyIdx].at = loc;
   else if (drag.field === "via") ph.orders[drag.orderIdx].via[drag.viaIdx] = loc;
   else ph.orders[drag.orderIdx][drag.field] = loc;
+  markDirty();
   refreshPhasePanel(); draw();
 });
 window.addEventListener("mouseup", () => { drag = null; });
@@ -429,7 +468,7 @@ cv.addEventListener("dblclick", (ev) => {
     for (let vi = 0; vi < (o.via || []).length; vi++) {
       const v = resolveLoc(o.via[vi]);
       if (v && (v[0] - x) ** 2 + (v[1] - y) ** 2 <= 10 ** 2) {
-        o.via.splice(vi, 1);
+        o.via.splice(vi, 1); markDirty();
         if (!o.via.length) delete o.via;
         refresh(); return;
       }
@@ -444,11 +483,11 @@ cv.addEventListener("click", (ev) => {
   if (clickMode.type === "order") {
     const o = { group: clickMode.group, kind: clickMode.kind };
     if (clickMode.kind === "move") o.to = loc; else o.at = loc;
-    (ph.orders ??= []).push(o);
+    (ph.orders ??= []).push(o); markDirty();
     $("btnAddOrder").textContent = "+ place";
   } else {
     const count = parseInt(prompt("how many enemies here?", "3") || "0", 10);
-    (ph.enemy_belief ??= []).push({ at: loc, count });
+    (ph.enemy_belief ??= []).push({ at: loc, count }); markDirty();
     $("btnAddEnemy").textContent = "+ place";
   }
   clickMode = null; refresh();
