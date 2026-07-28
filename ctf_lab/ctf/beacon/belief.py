@@ -16,9 +16,8 @@ Three genuinely stateful parts:
     metric), and cools with an exponential half-life so old heat fades instead of
     saturating the map. Initialized hot on the enemy half, cold on ours.
 
-Tracks and the danger field are groundwork: **nothing gates on them yet** — they are
-folded and traced so we can see what beacon believes before we act on it. Flag state
-stays per-frame (pedestals never fog).
+Tracks and the danger field feed post threat/scoring while retaining their existing
+navigation and trace roles. Flag state stays per-frame (pedestals never fog).
 
 Known limits (acceptable for now): kills aren't in the percept, so a dead enemy's
 track lingers until TTL; and our own vision clears nothing — a swept, provably-empty
@@ -60,13 +59,22 @@ from ctf.beacon.config import (
     GRID_W,
     MAX_SPEED_PX_TICK,
     NAV_CELL,
+    POST_CLAIM_TTL_TICKS,
     SPAWN_AIM,
     TRACK_MATCH_SLACK_PX,
     TRACK_TTL_TICKS,
     TRACK_VEL_EMA,
     TRACK_VEL_MAX_GAP_TICKS,
 )
-from ctf.beacon.types import ActionState, Belief, CtfState, Enemy, HeardImpact, PlayerTrack
+from ctf.beacon.types import (
+    ActionState,
+    Belief,
+    CtfState,
+    Enemy,
+    HeardImpact,
+    PlayerTrack,
+    PostClaim,
+)
 
 #: Per-tick decay multiplier for the chosen half-life.
 _DANGER_DECAY = 0.5 ** (1.0 / DANGER_DECAY_HALF_LIFE_TICKS)
@@ -100,6 +108,13 @@ def update_belief(belief: Belief, percept: CtfState, action_state: ActionState, 
     # respawning shouldn't restart the plan).
     if was_alive and not belief.alive:
         belief.plan_fell_back = False
+        belief.post_active = False
+        belief.post_cell = None
+        belief.post_direction = None
+        belief.post_center = None
+        belief.post_mode = None
+        belief.post_context = None
+        belief.post_settled_ticks = 0
 
     # Aim estimate: prefer the observed aim-dot read; else dead-reckon by the rotation
     # we commanded last frame. On (re)spawn, reseed to the spawn aim.
@@ -336,6 +351,10 @@ def _update_chat(belief: Belief, percept: CtfState, tick: int) -> None:
             if msg.seat is not None:
                 belief.presence[msg.seat] = tick
                 belief.pings_heard += 1
+        elif msg.kind == "post_claim":
+            if msg.seat is not None and msg.seat != belief.seat:
+                belief.post_claims[msg.seat] = PostClaim(msg.seat, msg.pos, tick)
+                belief.post_claims_heard += 1
         elif msg.kind in ("enemy", "thief"):
             _update_tracks(
                 belief.enemy_tracks, (Enemy(pos=msg.pos, facing="left"),), tick
@@ -357,6 +376,11 @@ def _update_chat(belief: Belief, percept: CtfState, tick: int) -> None:
     belief.grenade_warnings[:] = [
         (p, t) for (p, t) in belief.grenade_warnings if tick - t <= GRENADE_WARN_TTL_TICKS
     ]
+    belief.post_claims = {
+        seat: claim
+        for seat, claim in belief.post_claims.items()
+        if tick - claim.tick <= POST_CLAIM_TTL_TICKS
+    }
 
 
 def _stamp_danger_blob(belief: Belief, pos: tuple[int, int], heat: float, radius_px: int) -> None:

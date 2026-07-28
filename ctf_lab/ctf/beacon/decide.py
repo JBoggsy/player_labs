@@ -4,7 +4,7 @@
 ``run_sprite_bridge`` backed by one BeaconRuntime. When diagnostics are on (default;
 disable with ``CTF_DIAG=0``) it records structured **TraceEvents** through the SDK
 trace sink — periodic full-state ``snapshot`` events plus immediate transition events
-(``objective`` / ``alive`` / ``engage``). Wired to ``TraceOutputs`` in ``main.py``, those
+(``objective`` / ``alive`` / ``engage`` / ``post``). Wired to ``TraceOutputs`` in ``main.py``, those
 land as a ``jsonl``/``parquet`` member of the episode's player-artifact zip (queryable by
 the event warehouse), not just as stderr lines. With no trace sink (e.g. an ad-hoc local
 call) it falls back to printing ``CTF_DIAG`` lines to stderr.
@@ -104,6 +104,7 @@ class _DiagnosticLogger:
         self._last_alive: bool | None = None
         self._last_engaged: bool | None = None
         self._last_order: tuple | None = None
+        self._last_post: tuple | None = None
         self._sync_recorded = False
         self._last_micro: str | None = None
         # Cumulative activation tick-counts per micro mode ("duck"/"peek"), carried in
@@ -169,6 +170,28 @@ class _DiagnosticLogger:
                 "self_xy": b.self_xy,
             })
             self._last_order = order_now
+        post_now = (
+            b.post_active,
+            b.post_cell,
+            b.post_direction,
+            b.post_context,
+            b.post_threat_source,
+            b.post_claim_source,
+        )
+        if post_now != self._last_post:
+            self._record(step.tick, "post", {
+                "active": b.post_active,
+                "cell": list(b.post_cell) if b.post_cell else None,
+                "direction": b.post_direction,
+                "center": list(b.post_center) if b.post_center else None,
+                "context": b.post_context,
+                "mode": b.post_mode,
+                "score": b.post_score,
+                "threat_source": b.post_threat_source,
+                "claim_source": b.post_claim_source,
+                "ticks_on_post": b.post_settled_ticks,
+            })
+            self._last_post = post_now
         if b.micro is not None:
             self._micro_ticks[b.micro] = self._micro_ticks.get(b.micro, 0) + 1
         if b.micro != self._last_micro:
@@ -287,6 +310,33 @@ class _DiagnosticLogger:
             "plan_buddy_wait_ticks": b.plan_buddy_wait_ticks,
             "plan_buddy_waiting": b.plan_buddy_waiting,
             "squadmates_alive": _squadmates_alive_safe(b),
+            # Covered-post activation: live choice, score decomposition, threat
+            # provenance, arbitration provenance, and both current/cumulative
+            # settlement counters make null A/B results diagnosable.
+            "post_active": b.post_active,
+            "post_cell": list(b.post_cell) if b.post_cell else None,
+            "post_direction": b.post_direction,
+            "post_center": list(b.post_center) if b.post_center else None,
+            "post_mode": b.post_mode,
+            "post_context": b.post_context,
+            "post_score": b.post_score,
+            "post_reach": b.post_reach,
+            "post_cover": b.post_cover,
+            "post_stance": b.post_stance,
+            "post_danger": b.post_danger,
+            "post_threat_source": b.post_threat_source,
+            "post_claim_source": b.post_claim_source,
+            "post_settled_ticks": b.post_settled_ticks,
+            "post_ticks_total": b.post_ticks_total,
+            "post_claims": {
+                str(seat): {
+                    "cell": list(claim.cell),
+                    "age": b.tick - claim.tick,
+                }
+                for seat, claim in b.post_claims.items()
+            },
+            "post_claims_sent": b.post_claims_sent,
+            "post_claims_heard": b.post_claims_heard,
             # v18 chat activation (cumulative per kind).
             "chat_sent": dict(b.chat_sent_counts),
             "chat_heard": dict(b.chat_heard_counts),

@@ -41,6 +41,16 @@ RENDER_SCALE = 1
 # --- Aim / vision (sim.nim) -------------------------------------------------------
 AIM_BRADS_TURN = 256  # brads per full turn
 AIM_TURN_RATE = 5  # brads/tick a held rotate button turns aim (must match server)
+#: Offline sightline-field contract. These are deliberately not env-overridable:
+#: the runtime must interpret the shipped nav artifact exactly as it was baked.
+SIGHTLINE_DIRECTIONS = 32
+SIGHTLINE_STEP_PX = 4
+SIGHTLINE_CAP_PX = 400
+SIGHTLINE_DISTANCE_UNIT_PX = SIGHTLINE_STEP_PX
+SIGHTLINE_BRADS_PER_DIRECTION = AIM_BRADS_TURN // SIGHTLINE_DIRECTIONS
+#: Directional cover samples the two rays 45 degrees off the threat bearing.
+POST_FLANK_ANGLE_DEG = 45
+POST_FLANK_DIRECTION_OFFSET = SIGHTLINE_DIRECTIONS * POST_FLANK_ANGLE_DEG // 360
 #: Forward wedge half-angle. The LEAGUE runs 45: episodes use the manifest's Default
 #: variant game_config (visionConeDeg 45, verified in live episode.json at 0.7.69),
 #: which overrides the repo config.json's 60. Was wrongly 60 here until the 2026-07-23
@@ -324,6 +334,51 @@ PLAN_BUDDY_RADIUS_PX = _env_int("BEACON_PLAN_BUDDY_RADIUS_PX", 170)
 #: …but never forever (v19): per phase, wait at most this many ticks total,
 #: then push regardless. ~6s.
 PLAN_BUDDY_WAIT_TICKS = _env_int("BEACON_PLAN_BUDDY_WAIT_TICKS", 150)
+
+# --- Posts: covered sightlines near tactical waypoints -----------------------------
+#: Master switches. Position selection and facing are separate so one image can
+#: isolate whether better ground or the narrower lane watch changes the outcome.
+POSTS = _env_int("BEACON_POSTS", 0) == 1
+POST_FACING = _env_int("BEACON_POST_FACING", 0) == 1
+#: Candidate geometry around the waypoint/search centre.
+POST_SEARCH_RADIUS_PX = _env_int("BEACON_POST_SEARCH_RADIUS_PX", 110)
+POST_MIN_SEPARATION_PX = _env_int("BEACON_POST_MIN_SEPARATION_PX", 56)
+#: Four-term score. Reach and cover retain the prototype weights; stance is a
+#: conservative directional bias and danger penalizes locally hot ground.
+POST_REACH_WEIGHT = _env_float("BEACON_POST_REACH_WEIGHT", 0.55)
+POST_COVER_WEIGHT = _env_float("BEACON_POST_COVER_WEIGHT", 0.45)
+POST_STANCE_WEIGHT = _env_float("BEACON_POST_STANCE_WEIGHT", 0.12)
+POST_DANGER_WEIGHT = _env_float("BEACON_POST_DANGER_WEIGHT", 0.20)
+POST_COVER_CAP_PX = _env_int("BEACON_POST_COVER_CAP_PX", 64)
+#: Reject an open firing lane with no flank wall, or a blind pocket with no
+#: forward reach, instead of calling every nearby walkable cell a post.
+POST_MIN_REACH_PX = _env_int("BEACON_POST_MIN_REACH_PX", 80)
+POST_MIN_COVER_SCORE = _env_float("BEACON_POST_MIN_COVER_SCORE", 0.25)
+POST_MIN_SCORE = _env_float("BEACON_POST_MIN_SCORE", 0.20)
+#: A post is settled within this distance. Minimum dwell affects RE-SELECTION
+#: only; plan milestones observe arrival at the post immediately.
+POST_SETTLE_PX = _env_int("BEACON_POST_SETTLE_PX", 12)
+POST_MIN_DWELL_TICKS = _env_int("BEACON_POST_MIN_DWELL_TICKS", 96)
+POST_REEVALUATE_TICKS = _env_int("BEACON_POST_REEVALUATE_TICKS", 48)
+POST_SWITCH_MARGIN = _env_float("BEACON_POST_SWITCH_MARGIN", 0.10)
+#: Live threat evidence and direction hysteresis.
+POST_THREAT_FRESH_TICKS = _env_int("BEACON_POST_THREAT_FRESH_TICKS", 48)
+POST_THREAT_HYSTERESIS_DIRECTIONS = _env_int(
+    "BEACON_POST_THREAT_HYSTERESIS_DIRECTIONS", 2
+)
+POST_DANGER_GRADIENT_PX = _env_int("BEACON_POST_DANGER_GRADIENT_PX", 64)
+POST_DANGER_GRADIENT_MIN = _env_float("BEACON_POST_DANGER_GRADIENT_MIN", 0.10)
+#: K-claim coordination. A dead or preempted claimant stops refreshing and frees
+#: its post on the TTL clock.
+POST_CLAIM_REBROADCAST_TICKS = _env_int(
+    "BEACON_POST_CLAIM_REBROADCAST_TICKS", 48
+)
+POST_CLAIM_TTL_TICKS = _env_int("BEACON_POST_CLAIM_TTL_TICKS", 120)
+#: A visible enemy actually standing on the candidate makes it contested ground,
+#: not a post to path directly onto.
+POST_ENEMY_OCCUPIED_PX = _env_int("BEACON_POST_ENEMY_OCCUPIED_PX", 24)
+#: Settled posts watch a narrower arc around their baked direction.
+POST_SWEEP_HALF_ARC = _env_int("BEACON_POST_SWEEP_HALF_ARC", 16)
 #: Convert trigger (v26): when the ENEMY team's lives remaining (24 - their deaths,
 #: read off the fog-independent team scoreboard) drop to this or below, leaders
 #: order an all-in HUNT — the wipe is in reach and under GV21 a draw pays -1 like a

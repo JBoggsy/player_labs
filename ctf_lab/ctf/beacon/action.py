@@ -5,8 +5,9 @@ This is where the tactical design lives (§3, §5):
   * **Movement**: step toward the navigation waypoint (flow-field or A*) as a d-pad
     octant. Movement is fully decoupled from aim.
   * **Aim (the lighthouse)**: default is a sweep panning ±SWEEP_HALF_ARC across the
-    *threat axis* (unit vector from us toward the enemy pedestal). The moment an
-    enemy is visible, the sweep aborts and aim snaps onto the nearest enemy.
+    *threat axis* (unit vector from us toward the enemy pedestal). A settled post
+    instead watches its baked sightline through a narrower arc. The moment an enemy
+    is visible, either sweep aborts and aim snaps onto the nearest enemy.
   * **Fire**: press A (edge-triggered) when an enemy is visible, the gun is ready,
     and the shot geometry clears the fire-gate (aim close enough that the shot ray
     passes through the target). Never rotate on the firing tick, so the locked aim
@@ -20,7 +21,7 @@ from __future__ import annotations
 
 import math
 
-from ctf.beacon import mapdata, nav, squads
+from ctf.beacon import mapdata, nav, posts, squads
 from ctf.beacon.config import (
     AIM_BRADS_TURN,
     AIM_DEADBAND,
@@ -58,6 +59,8 @@ from ctf.beacon.config import (
     PEEK_DUCK_RUSH_EXEMPT_PX,
     PEEK_DUCK_SEARCH_CELLS,
     PEEK_TARGET_FRESH_TICKS,
+    POST_FACING,
+    POST_SWEEP_HALF_ARC,
     SQUADS,
     STUCK_TICKS,
     SWEEP_HALF_ARC,
@@ -108,15 +111,29 @@ def _sweep_target(belief: Belief) -> int:
     Squad sectors (v19): each rank's sweep centre is offset from the threat axis
     (rank 0 on-axis, ranks 1/2 on the shoulders) so a squad covers a forward cone
     plus flanks instead of three copies of one arc."""
-    axis = _threat_axis(belief)
-    if SQUADS:
+    post_facing = (
+        POST_FACING
+        and belief.post_active
+        and belief.post_direction is not None
+        and belief.post_settled_ticks > 0
+    )
+    if post_facing:
+        # A post is position + direction. The 50-brad squad sector offset would
+        # turn shoulder ranks away from the line their post exists to watch, so
+        # sectors apply only when no settled post owns the sweep.
+        axis = posts.direction_to_brads(belief.post_direction)
+        half_arc = POST_SWEEP_HALF_ARC
+    else:
+        axis = _threat_axis(belief)
+        half_arc = SWEEP_HALF_ARC
+    if SQUADS and not post_facing:
         axis = (axis + squads.sector_offset_brads(belief.seat)) % AIM_BRADS_TURN
     belief.sweep_offset += belief.sweep_dir * AIM_TURN_RATE
-    if belief.sweep_offset >= SWEEP_HALF_ARC:
-        belief.sweep_offset = SWEEP_HALF_ARC
+    if belief.sweep_offset >= half_arc:
+        belief.sweep_offset = half_arc
         belief.sweep_dir = -1
-    elif belief.sweep_offset <= -SWEEP_HALF_ARC:
-        belief.sweep_offset = -SWEEP_HALF_ARC
+    elif belief.sweep_offset <= -half_arc:
+        belief.sweep_offset = -half_arc
         belief.sweep_dir = 1
     return (axis + belief.sweep_offset) % AIM_BRADS_TURN
 
@@ -416,6 +433,19 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
         # the order-driven reasons (order_*) are included — v22-v24 never applied
         # separation to ordered movement, so squads stacked on the order point.
         if (
+            intent.reason in ("plan_post", "order_post", "hold_post")
+            and not belief.i_carry_enemy_flag
+        ):
+            # Posts replace cohesion with deliberate geometry, but separation
+            # remains the floor while two bodies are still stacked en route.
+            bias = squads.separation_bias(belief)
+            if bias is not None:
+                belief.squad_cohesion_ticks += 1
+                waypoint = (
+                    int(waypoint[0] + bias[0] * NAV_CELL * 3),
+                    int(waypoint[1] + bias[1] * NAV_CELL * 3),
+                )
+        elif (
             SQUADS
             and intent.reason
             in ("steal", "to_hold", "order_to_hold", "order_push", "order_hunt")
@@ -430,7 +460,11 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
                 )
         jitter = belief.nav_stuck_ticks >= STUCK_TICKS
         mask |= nav.octant_toward(self_xy, waypoint, jitter)
-    elif intent.kind == "hold" and SQUADS and not belief.i_carry_enemy_flag:
+    elif (
+        intent.kind == "hold"
+        and (SQUADS or intent.reason in ("plan_post", "order_post", "hold_post"))
+        and not belief.i_carry_enemy_flag
+    ):
         # Separation while HOLDING (v25): a holding agent emits no movement, so
         # two stacked holders never unstack (FF kills at <15px, shared grenade
         # splash). Push-apart is the only movement a hold makes.

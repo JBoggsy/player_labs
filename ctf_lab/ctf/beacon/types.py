@@ -129,6 +129,15 @@ class ItemSpawn:
     last_seen: int = -1
 
 
+@dataclass(frozen=True)
+class PostClaim:
+    """A teammate's fresh K claim on one nav-cell-centred fighting post."""
+
+    seat: int
+    cell: tuple[int, int]
+    tick: int
+
+
 @dataclass
 class Belief:
     """Long-lived state folded across frames."""
@@ -257,6 +266,34 @@ class Belief:
     plan_advances: int = 0          # cumulative phase advances (traced)
     plan_buddy_wait_ticks: int = 0  # v31: ticks spent buddy-waiting this phase
     plan_buddy_waiting: bool = False  # v31: currently paused for a group-mate
+    # Posts: one latched covered sightline near the current tactical waypoint.
+    # `post_active` is per-tick: higher strategy rungs leave it false, which
+    # suspends both K claims and post-facing without destroying the reusable latch.
+    post_active: bool = False
+    post_cell: tuple[int, int] | None = None
+    post_direction: int | None = None
+    post_center: tuple[int, int] | None = None
+    post_mode: str | None = None  # "push" | "hold"
+    post_context: str | None = None  # "plan" | "order" | "static_hold"
+    # Score components are retained for activation tracing and A/B diagnosis.
+    post_score: float | None = None
+    post_reach: float | None = None
+    post_cover: float | None = None
+    post_stance: float | None = None
+    post_danger: float | None = None
+    post_threat_source: str | None = None
+    post_claim_source: str | None = None
+    # Dwell affects re-selection only. Plan milestones observe post arrival
+    # directly and never wait for this counter.
+    post_selected_tick: int = -1
+    post_last_evaluated_tick: int = -1
+    post_settled_ticks: int = 0
+    post_ticks_total: int = 0
+    # Same-team K claims, keyed by claimant seat; stale entries decay on a clock.
+    post_claims: dict[int, PostClaim] = field(default_factory=dict)
+    post_last_claim_sent_tick: int = -10_000
+    post_claims_sent: int = 0
+    post_claims_heard: int = 0
     # Lead-aim activation state this tick, for tracing: brads of lead applied to the
     # snap aim (0 = no lead / target treated as stationary).
     lead_brads: int = 0
@@ -315,6 +352,7 @@ __all__ = [
     "ItemSpawn",
     "Observation",
     "PlayerTrack",
+    "PostClaim",
     "Role",
     "Team",
 ]

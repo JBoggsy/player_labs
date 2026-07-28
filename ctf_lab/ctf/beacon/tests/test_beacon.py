@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import math
 
+import numpy as np
+
 from ctf.beacon import mapdata, nav
 from ctf.beacon.perception import perceive
 from players.player_sdk import SpriteDef, SpriteObject, SpriteWorld
@@ -39,6 +41,15 @@ def squads_on(monkeypatch):
         monkeypatch.setattr(mod, "SQUAD_COMMAND", True, raising=False)
     for mod in (_strategy, _action):
         monkeypatch.setattr(mod, "SQUADS", True, raising=False)
+
+
+@pytest.fixture
+def posts_on(monkeypatch):
+    """Enable post positioning without implicitly enabling post-facing."""
+    from ctf.beacon import chat as _chat, strategy as _strategy
+
+    monkeypatch.setattr(_strategy, "POSTS", True)
+    monkeypatch.setattr(_chat, "POSTS", True)
 
 
 # --- brad arithmetic --------------------------------------------------------------
@@ -1203,6 +1214,251 @@ def test_separation_bias_fires_only_when_stacked():
     assert sep is not None and sep[0] < 0
     b.teammates = (Enemy(pos=(500, 300), facing="left"),)  # 100px: fine
     assert squads.separation_bias(b) is None
+
+
+# --- covered posts + sightlines ----------------------------------------------------
+
+
+def test_sightline_artifact_shape_dtype_and_orientation():
+    """Fail loudly when tests are run against a stale, pre-posts nav artifact."""
+    from ctf.beacon import posts
+    from ctf.beacon.config import GRID_H, GRID_W, SIGHTLINE_DIRECTIONS
+
+    field = mapdata.sightline_field()
+    assert field.shape == (SIGHTLINE_DIRECTIONS, GRID_H, GRID_W)
+    assert field.dtype == np.uint8
+    # At the verified top-lane post, east is open to the 400px cap. Direction
+    # 29 (-33.75 degrees) reaches the nearby wall after two 4px samples.
+    assert posts.sightline((548, 20), 0) == 400
+    assert posts.sightline((548, 20), 29) == 8
+
+
+def test_cover_toward_distinguishes_side_wall_from_blocked_lane():
+    from ctf.beacon import posts
+
+    # Looking east, the wall is useful flank cover while the firing lane is open.
+    assert posts.sightline((548, 20), 0) == 400
+    assert posts.cover_toward((548, 20), 0) == pytest.approx(0.875)
+    # Looking toward the nearby wall does not mistake that blocked forward ray
+    # for useful directional cover.
+    assert posts.sightline((548, 20), 29) == 8
+    assert posts.cover_toward((548, 20), 29) < 0.5
+
+
+def test_phase_two_push_waypoint_selects_verified_rank_zero_post():
+    from ctf.beacon import posts
+    from ctf.beacon.config import GRID_H, GRID_W
+
+    belief = Belief(
+        team="red",
+        seat=3,
+        alive=True,
+        self_xy=(628, 59),
+        danger=np.zeros((GRID_H, GRID_W), dtype=np.float32),
+    )
+    post = posts.choose_post(belief, (628, 59), 0, mode="push")
+    assert post is not None
+    assert post.cell == (548, 20)
+    assert post.reach == pytest.approx(1.0)
+    assert post.cover == pytest.approx(0.875)
+
+
+def test_threat_axis_quantisation_mirrors_for_blue():
+    from ctf.beacon import posts
+
+    red = Belief(team="red", alive=True, self_xy=(548, 20))
+    blue = Belief(team="blue", alive=True, self_xy=(686, 20))
+    assert posts.threat_axis(red, (548, 20)).direction == 29
+    assert posts.threat_axis(blue, (686, 20)).direction == 19
+    assert posts.direction_to_brads(29) == 232
+
+
+def test_stance_flips_preferred_side_for_push_and_hold(monkeypatch):
+    from ctf.beacon import posts
+    from ctf.beacon.config import GRID_H, GRID_W, NAV_CELL, SIGHTLINE_DIRECTIONS
+
+    walkable = np.zeros((GRID_H, GRID_W), dtype=bool)
+    field = np.zeros((SIGHTLINE_DIRECTIONS, GRID_H, GRID_W), dtype=np.uint8)
+    behind = (84, 100)
+    ahead = (116, 100)
+    for x, y in (behind, ahead):
+        gx, gy = x // NAV_CELL, y // NAV_CELL
+        walkable[gy, gx] = True
+        field[0, gy, gx] = 100  # equal 400px reach
+        field[4, gy, gx] = 1
+        field[28, gy, gx] = 1  # equal strong flank cover
+    monkeypatch.setattr(posts.mapdata, "walkable_grid", lambda: walkable)
+    monkeypatch.setattr(posts.mapdata, "sightline_field", lambda: field)
+
+    belief = Belief(
+        team="red",
+        seat=3,
+        alive=True,
+        self_xy=(100, 100),
+        danger=np.zeros((GRID_H, GRID_W), dtype=np.float32),
+    )
+    push = posts.choose_post(belief, (100, 100), 0, mode="push")
+    hold = posts.choose_post(belief, (100, 100), 0, mode="hold")
+    assert push is not None and push.cell == ahead
+    assert hold is not None and hold.cell == behind
+
+
+def test_post_claim_codec_and_arbitration(monkeypatch):
+    from ctf.beacon import chat
+
+    code = chat.encode_claim(5, (548, 20))
+    assert len(code) == 6
+    decoded = chat.decode(code)
+    assert decoded is not None
+    assert decoded.kind == "post_claim"
+    assert decoded.seat == 5
+    assert decoded.pos == (548, 20)
+
+    monkeypatch.setattr(chat, "POSTS", True)
+    monkeypatch.setattr(chat, "SQUAD_COMMAND", True)
+
+    # Existing O orders retain priority over K.
+    ordered = Belief(team="red", seat=0, alive=True, tick=1000, self_xy=(600, 300))
+    ordered.order = ("H", (500, 300), 999)
+    ordered.post_active = True
+    ordered.post_cell = (548, 20)
+    assert chat.choose_shout(ordered).startswith("O")
+
+    # U remains live intel and wins over K.
+    under_fire = Belief(team="red", seat=3, alive=True, tick=1000, self_xy=(600, 300))
+    under_fire.under_fire = True
+    under_fire.post_active = True
+    under_fire.post_cell = (548, 20)
+    assert chat.choose_shout(under_fire).startswith("U")
+
+    # K wins over both E and the lowest-priority P heartbeat.
+    claiming = Belief(team="red", seat=3, alive=True, tick=1000, self_xy=(600, 300))
+    claiming.post_active = True
+    claiming.post_cell = (548, 20)
+    claiming.enemies = (Enemy(pos=(700, 300), facing="left"),)
+    assert chat.choose_shout(claiming).startswith("K")
+
+
+def test_lower_seat_claim_displaces_post_choice():
+    from ctf.beacon import posts
+    from ctf.beacon.config import GRID_H, GRID_W
+    from ctf.beacon.types import PostClaim
+
+    belief = Belief(
+        team="red",
+        seat=4,
+        tick=100,
+        alive=True,
+        self_xy=(628, 59),
+        danger=np.zeros((GRID_H, GRID_W), dtype=np.float32),
+    )
+    belief.post_claims[2] = PostClaim(seat=2, cell=(548, 20), tick=100)
+    post = posts.choose_post(belief, (628, 59), 0, mode="push")
+    assert post is not None
+    assert post.cell == (604, 20)
+    assert post.claim_source == "heard_K:2"
+
+
+def test_post_claim_decays_and_under_fire_is_not_a_bearing():
+    from ctf.beacon import chat
+    from ctf.beacon.belief import update_belief
+    from ctf.beacon.config import POST_CLAIM_TTL_TICKS
+
+    belief = Belief(team="red", seat=4, alive=True, self_xy=(600, 329))
+    state = ActionState()
+    claim = chat.encode_claim(2, (548, 20))
+    update_belief(
+        belief,
+        _chat_percept(
+            heard_shouts=(("red", "mate (2)", claim, (550, 20)),),
+        ),
+        state,
+        tick=10,
+    )
+    assert belief.post_claims[2].cell == (548, 20)
+
+    under_fire = chat.encode("under_fire", (700, 300))
+    update_belief(
+        belief,
+        _chat_percept(
+            heard_shouts=(("red", "mate (3)", under_fire, (700, 300)),),
+        ),
+        state,
+        tick=11,
+    )
+    assert belief.enemy_tracks == []
+
+    update_belief(
+        belief,
+        _chat_percept(heard_shouts=()),
+        state,
+        tick=10 + POST_CLAIM_TTL_TICKS + 1,
+    )
+    assert 2 not in belief.post_claims
+
+
+def test_post_plan_milestone_waits_for_post_arrival_not_dwell(posts_on):
+    from ctf.beacon import poi
+
+    center = poi.point("red_rally_top")
+    belief = Belief(
+        team="red",
+        seat=3,
+        role="attacker",
+        alive=True,
+        tick=100,
+        self_xy=center,
+    )
+    intent, _ = decide_objective(belief)
+    assert belief.plan_phase == 0
+    assert belief.post_cell is not None
+    assert intent.reason == "plan_post"
+
+    belief.tick += 1
+    belief.self_xy = belief.post_cell
+    decide_objective(belief)
+    assert belief.plan_phase == 1
+    assert belief.plan_milestone_hit
+    assert belief.post_settled_ticks < 96
+
+
+def test_carrying_preempts_and_deactivates_latched_post(posts_on):
+    belief = Belief(
+        team="red",
+        seat=3,
+        role="attacker",
+        alive=True,
+        tick=100,
+        self_xy=(548, 20),
+        i_carry_enemy_flag=True,
+        post_active=True,
+        post_cell=(548, 20),
+        post_direction=0,
+    )
+    intent, flow = decide_objective(belief)
+    assert intent.reason == "carry_home"
+    assert flow == "home"
+    assert not belief.post_active
+
+
+def test_settled_post_facing_ignores_squad_sector(monkeypatch):
+    from ctf.beacon import action
+
+    monkeypatch.setattr(action, "POST_FACING", True)
+    monkeypatch.setattr(action, "SQUADS", True)
+    belief = Belief(
+        team="red",
+        seat=2,
+        alive=True,
+        self_xy=(548, 20),
+        post_active=True,
+        post_cell=(548, 20),
+        post_direction=29,
+        post_settled_ticks=1,
+    )
+    # Direction 29 is 232 brads; the first lighthouse step adds 5. Seat 2's
+    # ordinary sector offset must not move this post-owned centre.
+    assert action._sweep_target(belief) == 237
 
 
 def test_wave_gate_holds_outside_window_when_enabled(monkeypatch):

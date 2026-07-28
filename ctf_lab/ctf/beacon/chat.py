@@ -17,12 +17,14 @@ fit in two base-36 digits, so every message is ≤6 chars, well under the cap:
   ``T<cell>``    the enemy THIEF (carrying OUR flag) is at cell
   ``O<s><g><cell>`` ORDER (v22): leader seat s sets squad goal g at cell
                     (g: H hold / S scout / P push / F flag / T thief-hunt)
+  ``K<s><cell>`` seat s is taking the fighting post at cell
   ``P<s><cell>`` presence ping (v22): seat s is alive at cell
 
 Sender arbitration: one bubble/sec, so one message wins per window — priority
-C > T > G > U > E (carrier state beats intel; grenade warning beats chatter).
-Messages are events, not state: the decoder turns them into belief updates
-(phantom tracks / danger stamps / carrier fixes) and the message itself is dropped.
+C > T > O > G > U > K > E > P (carrier state beats intel; squad orders retain
+their existing priority; a post claim beats chatter/presence only). Messages are
+events, not state: the decoder turns them into belief updates (phantom tracks /
+danger stamps / carrier fixes / expiring post claims) and drops the message.
 
 Enemy shouts are heard too. We do NOT decode enemy payloads as truth (they could
 lie), but an enemy shout is at least a live-enemy position fix (±20px) — the
@@ -43,6 +45,8 @@ from ctf.beacon.config import (
     NAV_CELL,
     ORDER_REBROADCAST_TICKS,
     PING_INTERVAL_TICKS,
+    POSTS,
+    POST_CLAIM_REBROADCAST_TICKS,
     SQUAD_COMMAND,
 )
 from ctf.beacon.types import Belief, Team
@@ -87,7 +91,7 @@ ORDER_GOALS = ("H", "S", "P", "F", "T")  # hold / scout / push / flag / thief-hu
 class ChatMessage:
     """One decoded same-team message."""
 
-    kind: str  # "enemy"|"under_fire"|"grenade"|"carrier"|"thief"|"order"|"ping"
+    kind: str  # enemy|under_fire|grenade|carrier|thief|order|post_claim|ping
     pos: tuple[int, int]
     heading: int | None = None  # carrier heading octant 0-7 (E, NE, N, ... CCW)
     seat: int | None = None  # sender seat (order/ping)
@@ -114,6 +118,11 @@ def encode_ping(seat: int, pos: tuple[int, int]) -> str:
     return f"P{seat % 8}" + encode_cell(pos)
 
 
+def encode_claim(seat: int, pos: tuple[int, int]) -> str:
+    """``K<seat><cell>`` — 6 chars."""
+    return f"K{seat % 8}" + encode_cell(pos)
+
+
 def decode(text: str) -> ChatMessage | None:
     """Parse one same-team shout payload; None if it isn't protocol traffic."""
     if not text:
@@ -128,6 +137,11 @@ def decode(text: str) -> ChatMessage | None:
         if pos is None:
             return None
         return ChatMessage(kind="ping", pos=pos, seat=int(text[1]))
+    if text[0] == "K" and len(text) >= 6 and text[1].isdigit():
+        pos = decode_cell(text[2:6])
+        if pos is None:
+            return None
+        return ChatMessage(kind="post_claim", pos=pos, seat=int(text[1]))
     kind = {"E": "enemy", "U": "under_fire", "G": "grenade",
             "C": "carrier", "T": "thief"}.get(text[0])
     if kind is None:
@@ -156,8 +170,9 @@ def choose_shout(belief: Belief) -> str | None:
     """The one message worth this tick's bubble, or None. Mutates the belief's
     chat bookkeeping (last-sent ticks, seen-enemy edge state).
 
-    Priority C > T > G > U > E. Rate: the server enforces 1/s; we self-limit to
-    CHAT_MIN_INTERVAL_TICKS so the bubble a teammate reads is usually current.
+    Priority C > T > O > G > U > K > E > P. Rate: the server enforces 1/s; we
+    self-limit to CHAT_MIN_INTERVAL_TICKS so the bubble a teammate reads is
+    usually current.
     """
     if belief.self_xy is None:
         return None
@@ -210,6 +225,19 @@ def choose_shout(belief: Belief) -> str | None:
     elif belief.under_fire and not belief.enemies:
         msg = encode("under_fire", belief.self_xy)
         kind = "under_fire"
+    # K: while a post objective is actually active, refresh our claim. It sits
+    # below live intel and above enemy chatter/presence; a higher strategy rung
+    # leaves post_active false and releases the claim on the receiver TTL.
+    elif (
+        POSTS
+        and belief.post_active
+        and belief.post_cell is not None
+        and tick - belief.post_last_claim_sent_tick >= POST_CLAIM_REBROADCAST_TICKS
+    ):
+        msg = encode_claim(belief.seat, belief.post_cell)
+        kind = "post_claim"
+        belief.post_last_claim_sent_tick = tick
+        belief.post_claims_sent += 1
     # E: enemies in view — edge-triggered: shout on a FRESH sighting burst, then
     # stay quiet until vision has been enemy-free for a while (re-arm), so a
     # peek-ducking enemy doesn't retrigger spam.
@@ -242,4 +270,13 @@ def choose_shout(belief: Belief) -> str | None:
     return msg
 
 
-__all__ = ["ChatMessage", "choose_shout", "decode", "decode_cell", "encode", "encode_cell", "heading_octant"]
+__all__ = [
+    "ChatMessage",
+    "choose_shout",
+    "decode",
+    "decode_cell",
+    "encode",
+    "encode_cell",
+    "encode_claim",
+    "heading_octant",
+]

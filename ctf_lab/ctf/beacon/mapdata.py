@@ -2,7 +2,8 @@
 
 The artifact is produced offline by ``ctf.beacon.tools.bake_map`` and shipped in the
 image. This module loads it once and exposes the walkable grid + the four flow fields
-(steal/home × red/blue) as read-only numpy arrays. See the design doc §4.
+(steal/home × red/blue) and 32-direction sightline field as read-only numpy
+arrays. See the design doc §4.
 """
 
 from __future__ import annotations
@@ -61,6 +62,15 @@ def cover_grid() -> np.ndarray:
     return _load()["cover"]
 
 
+def sightline_field() -> np.ndarray:
+    """uint8 [32, GRID_H, GRID_W] free rays, stored in 4px units.
+
+    Direction 0 is east and indices advance counter-clockwise on screen. This
+    field is the shared source for post reach and directional flank cover.
+    """
+    return _load()["sightlines"]
+
+
 def flow_field(team: str, kind: str) -> np.ndarray:
     """Next-hop field for a team's fixed goal. ``kind`` is 'steal' or 'home'.
 
@@ -102,6 +112,7 @@ __all__ = [
     "flow_field",
     "nearest_cover",
     "ray_clear",
+    "sightline_field",
     "walkable_grid",
     "wall_mask",
 ]

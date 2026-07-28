@@ -24,10 +24,11 @@ them roughly aligned, and divergence self-heals at the next timeout.
 Mirroring: plans are authored red-frame; ``poi.resolve(loc, team)`` flips for
 blue, so one plan file drives both sides.
 
-Not yet executed (traced only): ``watch`` orders (aim-bias hooks come later)
-and multi-group coordination conditions. ``fallback`` on a hold IS live: under
-fire with 2+ enemies visible while holding, the group's target becomes the
-fallback location for the rest of the phase.
+Not yet executed (traced only): ``watch`` orders and multi-group coordination
+conditions. A primary order's optional ``facing`` is a post-axis prior when the
+posts feature is enabled. ``fallback`` on a hold IS live: under fire with 2+
+enemies visible while holding, the group's target becomes the fallback location
+for the rest of the phase.
 """
 
 from __future__ import annotations
@@ -174,10 +175,17 @@ def _arrived(belief: Belief, target_xy: tuple[int, int]) -> bool:
     return dx * dx + dy * dy <= PLAN_ARRIVE_PX * PLAN_ARRIVE_PX
 
 
-def advance(belief: Belief, book: PlanBook) -> None:
+def advance(
+    belief: Belief,
+    book: PlanBook,
+    *,
+    milestone_ready: bool | None = None,
+) -> None:
     """Per-tick phase bookkeeping: advance my phase pointer when my milestone is
-    hit (or the phase times out) AND the next phase's entry tag (if evaluable)
-    holds. Monotonic; never blocks forever (timeout is unconditional-eligible)."""
+    hit and permitted (or the phase times out) AND the next phase's entry tag
+    holds. Posts set ``milestone_ready`` only after reaching their substituted
+    cell; feature-off callers retain today's raw-waypoint behavior. Monotonic;
+    never blocks forever because timeout is unconditional."""
     if belief.plan_phase >= len(book.phases) - 1:
         return  # terminal phase: ride it out
     team: Team = belief.team or "red"
@@ -188,6 +196,8 @@ def advance(belief: Belief, book: PlanBook) -> None:
     if order is not None:
         target = poi.resolve(order.target, team)
         milestone = target is not None and _arrived(belief, target)
+        if milestone_ready is not None:
+            milestone = milestone_ready
     timeout = belief.tick - belief.plan_phase_tick >= PLAN_PHASE_TIMEOUT_TICKS
 
     if not (milestone or timeout):

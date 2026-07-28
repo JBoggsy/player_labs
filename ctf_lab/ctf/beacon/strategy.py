@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import math
 
-from ctf.beacon import items, squads
+from ctf.beacon import items, poi, posts, squads
 from ctf.beacon import plan as _plan
 from ctf.beacon.config import (
     GRENADE_WARN_CLEAR_PX,
@@ -21,7 +21,9 @@ from ctf.beacon.config import (
     MEDKIT_DETOUR_PX,
     ORDER_TTL_TICKS,
     PEDESTAL,
+    PLAN_ARRIVE_PX,
     PLAN_NAME,
+    POSTS,
     SQUAD_COMMAND,
     SQUADS,
 )
@@ -32,11 +34,22 @@ def _dist(a: tuple[int, int], b: tuple[int, int]) -> float:
     return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5
 
 
+def _post_objective(belief: Belief, post: posts.Post, reason: str) -> tuple[Intent, None]:
+    """Hold a settled post; otherwise reach it through the normal motion stack."""
+
+    if belief.post_settled_ticks > 0:
+        return Intent(kind="hold", reason=reason), None
+    return Intent(kind="navigate_to", point=post.cell, reason=reason), None
+
+
 def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
     """Pick the single movement objective. Returns (intent, flow_kind)."""
     team = belief.team
     assert team is not None
     enemy = "blue" if team == "red" else "red"
+    # Activation is recomputed every tick. Higher rungs therefore suppress post
+    # claims and post-facing without needing to know that posts exist.
+    belief.post_active = False
 
     # Squad command upkeep (v22): refresh presence from badge sightings; leaders
     # run the rule engine (sets belief.order); heard orders arrive via belief.
@@ -149,10 +162,32 @@ def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
                 )
                 belief.order_source = "decay"
             goal, opos, set_tick = belief.order
+        order_center = opos
+        if (
+            POSTS
+            and goal in ("H", "S", "P")
+            and (
+                _dist(belief.self_xy, order_center) <= HOLD_ARRIVE_PX * 2
+                or (
+                    belief.post_context == "order"
+                    and belief.post_center == order_center
+                )
+            )
+        ):
+            mode: posts.PostMode = "push" if goal == "P" else "hold"
+            post = posts.resolve_post_target(
+                belief,
+                order_center,
+                mode=mode,
+                context="order",
+            )
+            if post is not None:
+                return _post_objective(belief, post, "order_post")
+
         # Spread (v25): rank-offset the shared order point so the squad fans out
         # across its lane instead of stacking on one cell (FF + splash safety).
         if goal in ("H", "S", "P"):
-            opos = squads.spread_point(belief.seat, opos)
+            opos = squads.spread_point(belief.seat, order_center)
         if goal in ("H", "S"):
             if _dist(belief.self_xy, opos) <= HOLD_ARRIVE_PX * 2:
                 return Intent(kind="hold", reason="order_hold"), None
@@ -190,10 +225,62 @@ def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
     if PLAN_NAME and belief.self_xy is not None:
         book = _plan.PlanBook.load(PLAN_NAME)
         if book is not None and book.phases:
-            _plan.advance(belief, book)
-            obj = _plan.current_objective(belief, book)
+            post: posts.Post | None = None
+            if POSTS:
+                phase_before = belief.plan_phase
+                obj = _plan.current_objective(belief, book)
+                # With posts enabled, raw-waypoint proximity is never a phase
+                # milestone. No acceptable post means the unconditional phase
+                # timeout is the escape hatch.
+                milestone_ready = False
+                if obj is not None:
+                    kind, xy, order = obj
+                    latched_here = (
+                        belief.post_context == "plan"
+                        and belief.post_center == xy
+                    )
+                    if (
+                        kind == order.kind
+                        and (
+                            _dist(belief.self_xy, xy) <= PLAN_ARRIVE_PX
+                            or latched_here
+                        )
+                    ):
+                        facing = (
+                            poi.resolve(order.facing, team)
+                            if order.facing is not None
+                            else None
+                        )
+                        mode: posts.PostMode = "push" if order.kind == "move" else "hold"
+                        post = posts.resolve_post_target(
+                            belief,
+                            xy,
+                            mode=mode,
+                            facing=facing,
+                            context="plan",
+                        )
+                        if post is not None:
+                            # Arrival at the selected post advances the plan.
+                            # POST_MIN_DWELL_TICKS only governs re-selection.
+                            milestone_ready = belief.post_settled_ticks > 0
+                _plan.advance(belief, book, milestone_ready=milestone_ready)
+                if belief.plan_phase != phase_before:
+                    belief.post_active = False
+                    post = None
+                    obj = _plan.current_objective(belief, book)
+            else:
+                # Preserve the original call order exactly with the feature off.
+                _plan.advance(belief, book)
+                obj = _plan.current_objective(belief, book)
+
             if obj is not None:
                 kind, xy, order = obj
+                if post is not None:
+                    return _post_objective(belief, post, "plan_post")
+                if POSTS and _dist(belief.self_xy, xy) <= PLAN_ARRIVE_PX:
+                    # Formation spreading remains the floor when no post clears
+                    # the geometry and danger thresholds.
+                    xy = squads.spread_point(belief.seat, xy)
                 if kind == "hold" or _dist(belief.self_xy, xy) <= HOLD_ARRIVE_PX:
                     if _dist(belief.self_xy, xy) <= HOLD_ARRIVE_PX * 2:
                         return Intent(kind="hold", reason="plan_hold"), None
@@ -206,6 +293,25 @@ def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
         # Hold cover on our turf: the enemy dies attacking us (we respawn close),
         # and our flag stops being undefended. Once at the hold point, stop
         # advancing (A* returns ~self) and let the combat overlay work the lane.
+        if (
+            POSTS
+            and belief.self_xy is not None
+            and (
+                _dist(belief.self_xy, belief.hold_point) <= HOLD_ARRIVE_PX
+                or (
+                    belief.post_context == "static_hold"
+                    and belief.post_center == belief.hold_point
+                )
+            )
+        ):
+            post = posts.resolve_post_target(
+                belief,
+                belief.hold_point,
+                mode="hold",
+                context="static_hold",
+            )
+            if post is not None:
+                return _post_objective(belief, post, "hold_post")
         if belief.self_xy is not None and _dist(belief.self_xy, belief.hold_point) <= HOLD_ARRIVE_PX:
             return Intent(kind="hold", reason="hold_line"), None
         return Intent(kind="navigate_to", point=belief.hold_point, reason="to_hold"), None

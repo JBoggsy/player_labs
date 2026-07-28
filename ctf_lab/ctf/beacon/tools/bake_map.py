@@ -7,6 +7,7 @@ player image. This tool ports the wall function faithfully, erodes it by the pla
 footprint, and precomputes:
 
   * ``walkable``  — an 8px-cell boolean grid (True = a body fits here)
+  * ``sightlines`` — 32 free-ray distances per walkable cell, in 4px units
   * ``flow_steal`` / ``flow_home`` — for each team, a next-hop flow field (Dijkstra
     from the goal outward) that turns "go to the enemy pedestal / my capture zone"
     into an O(1) grid lookup at run time.
@@ -27,6 +28,12 @@ import math
 from pathlib import Path
 
 import numpy as np
+
+from ctf.beacon.config import (
+    SIGHTLINE_CAP_PX,
+    SIGHTLINE_DIRECTIONS,
+    SIGHTLINE_STEP_PX,
+)
 
 # --- Arena constants (verbatim from src/ctf/sim.nim @ b571dd3 = ctf 0.7.51,
 # GameVersion 16: bracket replaces the midline chevrons, column-3 discs thinned,
@@ -267,12 +274,62 @@ def build_cover_grid(grid: np.ndarray) -> np.ndarray:
     return cover
 
 
+def build_sightline_field(wall_px: np.ndarray, grid: np.ndarray) -> np.ndarray:
+    """Free distance from each walkable nav-cell centre in 32 directions.
+
+    Values are uint8 counts of ``SIGHTLINE_STEP_PX`` and cap at
+    ``SIGHTLINE_CAP_PX``. Direction 0 is east; indices advance counter-clockwise
+    on screen (``dy = -sin(angle)``).
+
+    The convention deliberately checks the NEXT 4px sample before advancing the
+    stored distance. Thus the value is the free distance to the first blocked
+    sample. Runtime post scoring reads this field directly, so baked and runtime
+    cover measurements cannot disagree by the old one-step ray-caster offset.
+    """
+    field = np.zeros((SIGHTLINE_DIRECTIONS, GRID_H, GRID_W), dtype=np.uint8)
+    grid_y, grid_x = np.nonzero(grid)
+    centers_x = grid_x * NAV_CELL + NAV_CELL // 2
+    centers_y = grid_y * NAV_CELL + NAV_CELL // 2
+    max_units = SIGHTLINE_CAP_PX // SIGHTLINE_STEP_PX
+
+    for direction in range(SIGHTLINE_DIRECTIONS):
+        angle = 2 * math.pi * direction / SIGHTLINE_DIRECTIONS
+        dx = math.cos(angle)
+        dy = -math.sin(angle)
+        active = np.ones(grid_x.shape, dtype=bool)
+        distances = np.zeros(grid_x.shape, dtype=np.uint8)
+        for units in range(1, max_units + 1):
+            distance_px = units * SIGHTLINE_STEP_PX
+            sample_x = (centers_x + dx * distance_px).astype(np.intp)
+            sample_y = (centers_y + dy * distance_px).astype(np.intp)
+            in_bounds = (
+                (sample_x >= 0)
+                & (sample_x < MAP_W)
+                & (sample_y >= 0)
+                & (sample_y < MAP_H)
+            )
+            clear = np.zeros(active.shape, dtype=bool)
+            checked = active & in_bounds
+            clear[checked] = ~wall_px[sample_y[checked], sample_x[checked]]
+            active &= clear
+            distances[active] = units
+            if not active.any():
+                break
+        field[direction, grid_y, grid_x] = distances
+    return field
+
+
 def bake() -> dict[str, np.ndarray]:
     wall_px = build_wall_mask()
     grid = build_walkable_grid(wall_px)
     # The raw per-pixel mask ships too: line-of-sight rays (peek/duck micro) must
     # test true walls, not the footprint-eroded grid (sight has no 6px body).
-    fields = {"wall": wall_px, "walkable": grid, "cover": build_cover_grid(grid)}
+    fields = {
+        "wall": wall_px,
+        "walkable": grid,
+        "cover": build_cover_grid(grid),
+        "sightlines": build_sightline_field(wall_px, grid),
+    }
     for team in ("red", "blue"):
         enemy = "blue" if team == "red" else "red"
         fields[f"flow_steal_{team}"] = build_flow_field(grid, PEDESTAL[enemy])
@@ -300,6 +357,10 @@ def main() -> None:
     walk_frac = grid.mean()
     cover_n = int(fields["cover"].sum())
     print(f"grid {GRID_W}x{GRID_H} cells @ {NAV_CELL}px  walkable={walk_frac:.1%}  cover_cells={cover_n}")
+    print(
+        f"  sightlines: {fields['sightlines'].shape} {fields['sightlines'].dtype} "
+        f"@ {SIGHTLINE_STEP_PX}px units, cap={SIGHTLINE_CAP_PX}px"
+    )
     for team in ("red", "blue"):
         for kind in ("steal", "home"):
             f = fields[f"flow_{kind}_{team}"]
