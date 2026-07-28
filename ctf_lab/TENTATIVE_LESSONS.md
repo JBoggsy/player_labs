@@ -18,6 +18,14 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
 
+### First plan-interpreter outing: execution ≠ advantage — the plan ran faithfully and scored at parity
+Evidence: v31 (staged_push_top via the interpreter) vs champion v28, matched 10-ep arms: h035
+2W/0D/8L IDENTICAL both arms; focusfire 3W/5D/2L → 4W/2D/4L (draws became decisive both directions;
+noise at n=10). Traces prove the plan executed (every bot walked all 4 phases, ~3 advances/ep,
+buddy-wait armed but 0 ticks used — group cohesion kept buddies inside 170px organically). Lesson:
+the interpreter is a VEHICLE, not a win; the plan CONTENT is now the experimental variable, and
+plan-vs-plan A/Bs (same build, different BEACON_PLAN) are the new iteration loop.
+
 ### Human-curated POIs beat agent-seeded ones — and areas beat points for tactical vocabulary
 Evidence: James's curation pass replaced my geometric seeds with tactically-load-bearing spots I
 couldn't have named from code (vees, cover triangles, sneak gaps, diamond clearings), then rev 5
