@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<!--
+  CTF points-of-interest editor.
+
+  Edits the canonical named-point map (ctf/beacon/mapdata/points_of_interest.json)
+  over the real arena walls (tools/arena_walls.json, exported from nav.npz).
+  Serve the tools dir so both JSONs load:  python3 -m http.server -d ctf_lab/tools
+  …or load either file by hand with the pickers.
+
+  Interactions:
+    click empty ground        add a point there (prompted for a name)
+    drag a point              move it
+    click a point / list row  select it (edit name/x/y/note in the inspector)
+    double-click a point      rename inline
+    delete key / ✕ button     remove the selected point
+    mirror button             add the x-mirrored twin (red_/blue_ swapped)
+  Save with the Download button and commit the file over
+  ctf/beacon/mapdata/points_of_interest.json.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CTF POI editor</title>
+<style>
+  :root {
+    --paper: #faf9f6; --ink: #1a1815; --ink-soft: #5f5a52; --hairline: #e3ded6;
+    --red: #b3402e; --blue: #2e5cb3; --accent: #8a6d1f;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink);
+         font: 13px/1.45 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+         display: flex; height: 100vh; overflow: hidden; }
+  #stage { flex: 1; display: flex; align-items: center; justify-content: center; min-width: 0; }
+  canvas { max-width: 100%; max-height: 100%; cursor: crosshair; }
+  #panel { width: 320px; padding: 18px 20px; overflow-y: auto; border-left: 1px solid var(--hairline);
+           display: flex; flex-direction: column; }
+  h1 { font-size: 15px; font-weight: 650; margin: 0 0 2px; }
+  .sub { color: var(--ink-soft); font-size: 12px; margin: 0 0 12px; }
+  .label { font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: .07em;
+           color: var(--ink-soft); margin: 14px 0 5px; }
+  input, textarea, button, select {
+    font: inherit; color: var(--ink); background: var(--paper);
+    border: 1px solid var(--hairline); border-radius: 3px; padding: 4px 7px;
+  }
+  input:focus, textarea:focus { outline: none; border-color: var(--ink-soft); }
+  button { cursor: pointer; }
+  button:hover { border-color: var(--ink-soft); }
+  button.primary { border-color: var(--ink); font-weight: 600; }
+  #list { flex: 1; overflow-y: auto; margin-top: 4px; min-height: 120px; }
+  .row { display: flex; align-items: baseline; gap: 6px; padding: 2.5px 4px;
+         border-radius: 3px; cursor: pointer; }
+  .row:hover { background: #f1ede5; }
+  .row.sel { background: #ece5d6; }
+  .row .nm { font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .xy { color: var(--ink-soft); font-variant-numeric: tabular-nums; font-size: 12px; }
+  .row .del { color: var(--ink-soft); border: none; background: none; padding: 0 3px; }
+  .row .del:hover { color: var(--red); }
+  #inspector { border-top: 1px solid var(--hairline); padding-top: 10px; margin-top: 10px; }
+  #inspector .grid { display: grid; grid-template-columns: 46px 1fr; gap: 6px 8px; align-items: center; }
+  #inspector .grid label { color: var(--ink-soft); font-size: 12px; }
+  #actions { display: flex; gap: 8px; margin-top: 12px; }
+  #fileRow { display: flex; gap: 8px; }
+  #fileRow > * { flex: 1; }
+  .hint { color: var(--ink-soft); font-size: 11.5px; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="cv" width="1235" height="659"></canvas></div>
+<div id="panel">
+  <h1>POI editor</h1>
+  <p class="sub">the shared point language for humans + bots</p>
+
+  <div class="label">Files</div>
+  <div id="fileRow">
+    <button id="btnLoad" title="reload points_of_interest.json from the server">Reload</button>
+    <button id="btnDownload" class="primary" title="download the edited JSON">Download</button>
+  </div>
+  <input type="file" id="filePick" accept=".json" style="margin-top:6px" title="or load a POI json by hand">
+
+  <div class="label">Points (<span id="count">0</span>)</div>
+  <input id="filter" placeholder="filter…" style="width:100%">
+  <div id="list"></div>
+
+  <div id="inspector">
+    <div class="label" style="margin-top:0">Selected</div>
+    <div class="grid">
+      <label>name</label><input id="f_name">
+      <label>x</label><input id="f_x" type="number" min="0" max="1234">
+      <label>y</label><input id="f_y" type="number" min="0" max="658">
+      <label>note</label><textarea id="f_note" rows="2"></textarea>
+    </div>
+    <div id="actions">
+      <button id="btnMirror" title="add the x-mirrored twin (swaps red_/blue_ in the name)">Mirror ⇄</button>
+      <button id="btnRemove">Remove ✕</button>
+    </div>
+  </div>
+
+  <p class="hint">click ground = add · drag = move · dbl-click = rename · del = remove.
+  Save = Download, then commit over <code>ctf/beacon/mapdata/points_of_interest.json</code>.</p>
+</div>
+
+<script>
+"use strict";
+const MAP_W = 1235, MAP_H = 659, MIRROR_X = 617;
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+let walls = null;      // RLE rows
+let doc = { _comment: "", points: [] };
+let sel = -1;          // selected index
+let dragging = false, dragMoved = false;
+
+// ---------- load ----------
+async function loadWalls() {
+  try { walls = await (await fetch("arena_walls.json")).json(); } catch (e) { walls = null; }
+  draw();
+}
+async function loadPoints() {
+  try {
+    doc = await (await fetch("../ctf/beacon/mapdata/points_of_interest.json")).json();
+  } catch (e) {
+    try { doc = await (await fetch("points_of_interest.json")).json(); }
+    catch (e2) { /* keep current */ }
+  }
+  sel = doc.points.length ? 0 : -1;
+  refresh();
+}
+document.getElementById("btnLoad").onclick = loadPoints;
+document.getElementById("filePick").addEventListener("change", async (e) => {
+  const f = e.target.files[0];
+  if (f) { doc = JSON.parse(await f.text()); sel = doc.points.length ? 0 : -1; refresh(); }
+});
+document.getElementById("btnDownload").onclick = () => {
+  doc._comment = (doc._comment || "").replace(/DRAFT.*$/, "") ||
+    "Canonical named points on the CTF arena (1235x659, mirror line x=617).";
+  const blob = new Blob([JSON.stringify(doc, null, 2) + "\n"], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "points_of_interest.json"; a.click();
+};
+
+// ---------- canvas interactions ----------
+function canvasXY(ev) {
+  const r = cv.getBoundingClientRect();
+  return [Math.round((ev.clientX - r.left) * (MAP_W / r.width)),
+          Math.round((ev.clientY - r.top) * (MAP_H / r.height))];
+}
+function hit(x, y) {
+  for (let i = doc.points.length - 1; i >= 0; i--) {
+    const p = doc.points[i];
+    if ((p.x - x) ** 2 + (p.y - y) ** 2 <= 12 ** 2) return i;
+  }
+  return -1;
+}
+cv.addEventListener("mousedown", (ev) => {
+  const [x, y] = canvasXY(ev);
+  const i = hit(x, y);
+  if (i >= 0) { sel = i; dragging = true; dragMoved = false; refresh(); }
+});
+cv.addEventListener("mousemove", (ev) => {
+  if (!dragging || sel < 0) return;
+  const [x, y] = canvasXY(ev);
+  doc.points[sel].x = Math.max(0, Math.min(MAP_W - 1, x));
+  doc.points[sel].y = Math.max(0, Math.min(MAP_H - 1, y));
+  dragMoved = true;
+  refresh();
+});
+window.addEventListener("mouseup", (ev) => {
+  if (dragging) { dragging = false; return; }
+});
+cv.addEventListener("click", (ev) => {
+  if (dragMoved) { dragMoved = false; return; }   // end of a drag, not an add
+  const [x, y] = canvasXY(ev);
+  if (hit(x, y) >= 0) return;                      // select handled on mousedown
+  const name = prompt("name for this point:", suggestName(x, y));
+  if (!name) return;
+  doc.points.push({ name: uniq(name.trim()), x, y, note: "" });
+  sel = doc.points.length - 1;
+  refresh();
+});
+cv.addEventListener("dblclick", (ev) => {
+  const [x, y] = canvasXY(ev);
+  const i = hit(x, y);
+  if (i < 0) return;
+  const name = prompt("rename:", doc.points[i].name);
+  if (name) { doc.points[i].name = uniq(name.trim(), i); refresh(); }
+});
+document.addEventListener("keydown", (ev) => {
+  if (["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) return;
+  if ((ev.key === "Delete" || ev.key === "Backspace") && sel >= 0) { removeSel(); }
+});
+
+function suggestName(x, y) {
+  const side = x < MIRROR_X - 60 ? "red_" : x > MIRROR_X + 60 ? "blue_" : "";
+  const band = y < 220 ? "top_" : y > 440 ? "bottom_" : "mid_";
+  return side + band + "point";
+}
+function uniq(name, skip = -1) {
+  let n = name, k = 2;
+  while (doc.points.some((p, i) => i !== skip && p.name === n)) n = `${name}_${k++}`;
+  return n;
+}
+
+// ---------- inspector + list ----------
+const F = id => document.getElementById(id);
+for (const [id, key] of [["f_name", "name"], ["f_x", "x"], ["f_y", "y"], ["f_note", "note"]]) {
+  F(id).addEventListener("input", () => {
+    if (sel < 0) return;
+    const p = doc.points[sel];
+    if (key === "name") p.name = F(id).value.trim();
+    else if (key === "note") p.note = F(id).value;
+    else p[key] = Math.max(0, Math.min(key === "x" ? MAP_W - 1 : MAP_H - 1, +F(id).value || 0));
+    refreshList(); draw();
+  });
+}
+document.getElementById("btnRemove").onclick = removeSel;
+function removeSel() {
+  if (sel < 0) return;
+  doc.points.splice(sel, 1);
+  sel = Math.min(sel, doc.points.length - 1);
+  refresh();
+}
+document.getElementById("btnMirror").onclick = () => {
+  if (sel < 0) return;
+  const p = doc.points[sel];
+  const swapped = p.name.includes("red_") ? p.name.replaceAll("red_", "blue_")
+                : p.name.includes("blue_") ? p.name.replaceAll("blue_", "red_")
+                : p.name + "_mirror";
+  doc.points.push({ name: uniq(swapped), x: 2 * MIRROR_X - p.x, y: p.y,
+                    note: p.note ? p.note + " (mirror)" : "" });
+  sel = doc.points.length - 1;
+  refresh();
+};
+document.getElementById("filter").addEventListener("input", refreshList);
+
+function refresh() { refreshList(); refreshInspector(); draw(); }
+function refreshInspector() {
+  const p = sel >= 0 ? doc.points[sel] : null;
+  F("f_name").value = p ? p.name : "";
+  F("f_x").value = p ? p.x : "";
+  F("f_y").value = p ? p.y : "";
+  F("f_note").value = p ? (p.note || "") : "";
+}
+function refreshList() {
+  document.getElementById("count").textContent = doc.points.length;
+  const filter = document.getElementById("filter").value.toLowerCase();
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+  doc.points.forEach((p, i) => {
+    if (filter && !p.name.toLowerCase().includes(filter)) return;
+    const row = document.createElement("div");
+    row.className = "row" + (i === sel ? " sel" : "");
+    row.innerHTML = `<span class="nm">${p.name}</span>` +
+                    `<span class="xy">${p.x},${p.y}</span>` +
+                    `<button class="del" title="remove">✕</button>`;
+    row.onclick = (ev) => {
+      if (ev.target.classList.contains("del")) { sel = i; removeSel(); }
+      else { sel = i; refresh(); }
+    };
+    list.appendChild(row);
+  });
+}
+
+// ---------- draw ----------
+function draw() {
+  ctx.fillStyle = "#f5f2ec"; ctx.fillRect(0, 0, MAP_W, MAP_H);
+  if (walls) {
+    ctx.fillStyle = "#c9c1b2";
+    walls.rows.forEach((runs, y) => {
+      for (let i = 0; i < runs.length; i += 2) ctx.fillRect(runs[i], y, runs[i + 1], 1);
+    });
+  }
+  // mirror line
+  ctx.strokeStyle = "#e3ded6"; ctx.setLineDash([4, 6]);
+  ctx.beginPath(); ctx.moveTo(MIRROR_X, 0); ctx.lineTo(MIRROR_X, MAP_H); ctx.stroke();
+  ctx.setLineDash([]);
+
+  doc.points.forEach((p, i) => {
+    const col = p.name.startsWith("red_") ? "#b3402e"
+              : p.name.startsWith("blue_") ? "#2e5cb3" : "#8a6d1f";
+    const isSel = i === sel;
+    ctx.beginPath(); ctx.arc(p.x, p.y, isSel ? 7 : 5, 0, 2 * Math.PI);
+    ctx.fillStyle = col; ctx.fill();
+    if (isSel) { ctx.strokeStyle = "#1a1815"; ctx.lineWidth = 2;
+                 ctx.beginPath(); ctx.arc(p.x, p.y, 10, 0, 2 * Math.PI); ctx.stroke(); ctx.lineWidth = 1; }
+    ctx.font = `${isSel ? 700 : 600} 11px sans-serif`;
+    ctx.fillStyle = "#1a1815";
+    const tx = p.x + 10, ty = p.y - 8;
+    ctx.strokeStyle = "rgba(250,249,246,0.85)"; ctx.lineWidth = 3;
+    ctx.strokeText(p.name, tx, ty); ctx.fillText(p.name, tx, ty);
+    ctx.lineWidth = 1;
+  });
+}
+
+loadWalls().then(loadPoints);
+</script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+{
+  "_comment": "Canonical named points on the CTF arena (1235x659, mirror line x=617). Shared language: humans use the names in discussion; beacon imports them for strategy targets (mapdata.poi). Red attacks east, Blue west; mirrored twins use red_/blue_ prefixes. Edit with tools/poi_editor.html. DRAFT: agent-seeded 2026-07-27, pending human curation.",
+  "points": [
+    {"name": "red_pedestal", "x": 186, "y": 329, "note": "red flag home"},
+    {"name": "blue_pedestal", "x": 1049, "y": 329, "note": "blue flag home"},
+    {"name": "center", "x": 617, "y": 329, "note": "dead center, inside the bracket ring"},
+    {"name": "red_choke", "x": 390, "y": 329, "note": "red defensive line x (CHOKE_X)"},
+    {"name": "blue_choke", "x": 845, "y": 329, "note": "blue defensive line x (mirror)"},
+    {"name": "red_rally", "x": 450, "y": 329, "note": "red attack staging x (pre-commit)"},
+    {"name": "blue_rally", "x": 785, "y": 329, "note": "blue attack staging x (mirror)"},
+    {"name": "top_lane", "x": 617, "y": 120, "note": "north route past the bracket"},
+    {"name": "bottom_lane", "x": 617, "y": 540, "note": "south route past the bracket"},
+    {"name": "red_top_hold", "x": 390, "y": 165, "note": "red top-lane hold (choke x, arc row)"},
+    {"name": "red_bottom_hold", "x": 390, "y": 494, "note": "red bottom-lane hold (choke x, shield row)"},
+    {"name": "blue_top_hold", "x": 845, "y": 165, "note": "blue top-lane hold (mirror)"},
+    {"name": "blue_bottom_hold", "x": 845, "y": 494, "note": "blue bottom-lane hold (mirror)"},
+    {"name": "north_medkit", "x": 617, "y": 219, "note": "center-line med kit (upper)"},
+    {"name": "south_medkit", "x": 617, "y": 439, "note": "center-line med kit (lower)"},
+    {"name": "bracket_north_window", "x": 617, "y": 240, "note": "glass window in the north bracket bar — see-through, bullet-proof"},
+    {"name": "bracket_south_window", "x": 617, "y": 418, "note": "glass window in the south bracket bar (approx) — verify"},
+    {"name": "red_arc", "x": 50, "y": 164, "note": "red-side plasma arc spawn"},
+    {"name": "blue_arc", "x": 1185, "y": 164, "note": "blue-side plasma arc spawn"},
+    {"name": "red_shield", "x": 50, "y": 494, "note": "red-side shield spawn"},
+    {"name": "blue_shield", "x": 1185, "y": 494, "note": "blue-side shield spawn"},
+    {"name": "red_nw_grenade", "x": 50, "y": 50, "note": "grenade spawn, red top corner"},
+    {"name": "red_sw_grenade", "x": 50, "y": 609, "note": "grenade spawn, red bottom corner"},
+    {"name": "blue_ne_grenade", "x": 1185, "y": 50, "note": "grenade spawn, blue top corner"},
+    {"name": "blue_se_grenade", "x": 1185, "y": 609, "note": "grenade spawn, blue bottom corner"},
+    {"name": "midfield_top", "x": 500, "y": 165, "note": "contested top-lane midfield (h035 fight zone)"},
+    {"name": "midfield_bottom", "x": 500, "y": 494, "note": "contested bottom-lane midfield"}
+  ]
+}

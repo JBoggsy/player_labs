@@ -43,9 +43,26 @@ Monitor gotcha: `policy_lifecycle.py monitor` verdicts off the NEWEST membership
 — right after a submit that's still the PRIOR version's; pin to the submission id
 (/v2/league-submissions → memberships) for the real verdict.
 
-**NEXT: the traced h035 batch** — BEACON_DIAG_EVERY_TICKS=1 xreq vs ctf-h035
-with artifacts, then (a) count order decay/backoff vs 247px earshot (the
-hang-back hypothesis), (b) watch the mid-fight in the viewer.
+**v29 (squads OFF) A/B vs v28 (matched, 10 eps/arm, game 0.7.8x, FIELD MOVED
+AGAIN — h035 now rank 1 @ 0.651, focusfire v56 rank 2, new alphashot:v2 rank 4):**
+- vs focusfire v56: **v28 2W/7D/1L → v29 0W/4D/6L (REGRESSED, p<0.001)** —
+  the squad layer was load-bearing against focusfire; the static split feeds it.
+- vs h035: v28 2W/0D/8L → v29 1W/0D/9L (noise, p=0.08) — squads weren't the
+  h035 gap either way; h035 beats both shapes decisively.
+- ALSO: h035 now beats v28 too (2W/8L vs the 2W/2D/6L three days ago at v27) —
+  either h035 improved in place or 0.7.8x rules shifted the matchup.
+**VERDICT: do NOT submit v29 — the rollback loses more than the squad chaos
+did.** v28 stays champion. The rollback build stays useful as the clean baseline
+arm for squad-layer A/Bs (BEACON_SQUADS env-flips on one image).
+NOTE: these arms were recorded at default trace cadence but with the v28+
+tracing — 1M trace events in the v28_focusfire warehouse alone; the
+decay/backoff + earshot analysis can run on THIS data (no new batch needed).
+
+**NEXT: mine the v29_ab warehouses** — (a) order-source/decay timeline vs
+earshot (hang-back hypothesis, now answerable from data on disk), (b) what
+changed in the focusfire matchup that squads were absorbing, (c) h035 mid-lane
+fight quality. POI map (points_of_interest.json + tools/poi_editor.html) is
+seeded and awaiting human curation — it becomes the strategy vocabulary.
 
 ## (prior) Status (2026-07-27, session 8 cont): **v27 (=v26 image) SUBMITTED → champion. FIELD SHIFTED: h035 + swarm new; focusfire at v56; game 0.7.81**
 
