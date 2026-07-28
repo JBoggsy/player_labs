@@ -215,6 +215,8 @@ cv.addEventListener("mousedown", (ev) => {
              grabDX: hit.kind === "point" ? t.x - x : t.cx - x,
              grabDY: hit.kind === "point" ? t.y - y : t.cy - y,
              moved: false };
+    if (hit.mode === "resize")   // pin the corner opposite the grabbed one
+      drag.anchor = areaCorners(t)[(hit.corner + 2) % 4];
     refresh();
   }
 });
@@ -234,11 +236,16 @@ cv.addEventListener("mousemove", (ev) => {
   } else if (drag.mode === "rotate") {
     t.angle = Math.round((Math.atan2(y - t.cy, x - t.cx) * 180 / Math.PI + 90) % 360);
   } else if (drag.mode === "resize") {
-    // Local-frame distance from center to the dragged corner = new half-extents.
+    // Anchor the OPPOSITE corner (captured at mousedown) and let the dragged
+    // corner follow the mouse: new center = midpoint, new extents = the anchor→
+    // mouse diagonal expressed in the rect's local frame. Angle preserved.
+    const [ax, ay] = drag.anchor;
     const c = Math.cos(-rad(t.angle || 0)), s = Math.sin(-rad(t.angle || 0));
-    const dx = x - t.cx, dy = y - t.cy;
-    t.w = Math.max(4, Math.round(Math.abs(dx * c - dy * s) * 2));
-    t.h = Math.max(4, Math.round(Math.abs(dx * s + dy * c) * 2));
+    const dx = x - ax, dy = y - ay;
+    t.w = Math.max(4, Math.round(Math.abs(dx * c - dy * s)));
+    t.h = Math.max(4, Math.round(Math.abs(dx * s + dy * c)));
+    t.cx = Math.round((ax + x) / 2);
+    t.cy = Math.round((ay + y) / 2);
   }
   refreshInspector(); refreshList(); draw();
 });
@@ -331,16 +338,22 @@ function removeSel() {
 document.getElementById("btnMirror").onclick = () => {
   const t = selected();
   if (!t) return;
-  const swap = n => n.includes("red_") ? n.replaceAll("red_", "blue_")
-              : n.includes("blue_") ? n.replaceAll("blue_", "red_") : n + "_mirror";
+  // Swap every red/blue reference — word-ish tokens so "red_" prefixes and
+  // prose ("red's side") both flip in one pass without double-swapping.
+  const swapText = s => (s || "").replace(/\b(red|blue|Red|Blue)\b|(?:red|blue)(?=_)/g, m =>
+    ({red: "blue", blue: "red", Red: "Blue", Blue: "Red"})[m]);
+  const swapName = n => {
+    const sw = swapText(n);
+    return sw === n ? n + "_mirror" : sw;
+  };
   if (sel.kind === "point") {
-    doc.points.push({ name: uniqName(swap(t.name)), x: 2 * MIRROR_X - t.x, y: t.y,
-                      note: t.note ? t.note + " (mirror)" : "" });
+    doc.points.push({ name: uniqName(swapName(t.name)), x: 2 * MIRROR_X - t.x, y: t.y,
+                      note: swapText(t.note) });
     sel = { kind: "point", i: doc.points.length - 1 };
   } else {
-    doc.areas.push({ name: uniqName(swap(t.name)), cx: 2 * MIRROR_X - t.cx, cy: t.cy,
+    doc.areas.push({ name: uniqName(swapName(t.name)), cx: 2 * MIRROR_X - t.cx, cy: t.cy,
                      w: t.w, h: t.h, angle: -(t.angle || 0),
-                     note: t.note ? t.note + " (mirror)" : "" });
+                     note: swapText(t.note) });
     sel = { kind: "area", i: doc.areas.length - 1 };
   }
   refresh();
