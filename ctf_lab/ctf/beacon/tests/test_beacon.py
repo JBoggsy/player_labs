@@ -1053,6 +1053,101 @@ def test_order_decay_converts_instead_of_backing_off_when_wipe_in_reach(squads_o
     assert intent.reason == "order_hunt"
 
 
+# --- v30: POI loader + battle-plan interpreter --------------------------------------
+
+
+def test_poi_resolves_names_and_mirrors():
+    from ctf.beacon import poi
+    assert poi.point("red_pedestal") == (186, 329)
+    # Blue frame: prefix-swap when the twin exists…
+    assert poi.point("red_rally_top", "blue") == poi.point("blue_rally_top")
+    # …and geometric mirror for side-neutral names.
+    nm = poi.point("north_medkit")
+    assert poi.point("north_medkit", "blue") == nm  # medkit is on the mirror line
+    assert poi.resolve({"x": 100, "y": 200}, "blue") == (1134, 200)
+    assert poi.resolve("no_such_poi") is None
+    assert poi.area("center_ring").contains(617, 329)
+
+
+def test_plan_book_groups_and_splits():
+    from ctf.beacon.plan import PlanBook
+    book = PlanBook.load("staged_push_top")
+    assert book is not None and len(book.phases) == 4
+    g0 = book.groups_at(0)
+    assert set(g0) == {"pushers", "rear"}
+    g2 = book.groups_at(2)  # phase 3 splits pushers -> flank_n/flank_s
+    assert set(g2) == {"rear", "flank_n", "flank_s"}
+    assert book.group_of(3, 0) == "pushers"
+    assert book.group_of(3, 2) == "flank_n"
+    assert book.group_of(0, 2) == "rear"
+
+
+def test_plan_objective_drives_intent_and_emergencies_preempt():
+    from ctf.beacon import poi
+    # Seat 3 (pushers) at spawn in phase 0: plan sends it toward red_rally_top.
+    b = Belief(team="red", seat=3, role="attacker", alive=True, tick=50,
+               self_xy=(110, 329))
+    intent, _ = decide_objective(b)
+    assert intent.reason == "plan_move"
+    assert intent.point == poi.point("red_rally_top")
+    # Carrying the flag preempts the plan entirely.
+    b2 = Belief(team="red", seat=3, role="attacker", alive=True, tick=50,
+                self_xy=(110, 329), i_carry_enemy_flag=True)
+    intent2, flow = decide_objective(b2)
+    assert intent2.reason == "carry_home" and flow == "home"
+    # Convert trigger preempts the plan too.
+    b3 = Belief(team="red", seat=3, role="attacker", alive=True, tick=50,
+                self_xy=(110, 329))
+    b3.enemy_team_score = (0, 20)  # 4 enemy lives -> wipe in reach
+    intent3, _ = decide_objective(b3)
+    assert intent3.reason == "convert_hunt"
+
+
+def test_plan_phase_advances_on_milestone_and_timeout():
+    from ctf.beacon import plan as planmod, poi
+    from ctf.beacon.config import PLAN_PHASE_TIMEOUT_TICKS
+    book = planmod.PlanBook.load("staged_push_top")
+    # Milestone: seat 3 standing on its phase-0 target advances to phase 1.
+    b = Belief(team="red", seat=3, role="attacker", alive=True, tick=100,
+               self_xy=poi.point("red_rally_top"))
+    planmod.advance(b, book)
+    assert b.plan_phase == 1 and b.plan_milestone_hit
+    # Timeout: far from any target, but the phase clock expires -> advance.
+    b2 = Belief(team="red", seat=3, role="attacker", alive=True,
+                tick=PLAN_PHASE_TIMEOUT_TICKS + 5, self_xy=(110, 329))
+    planmod.advance(b2, book)
+    assert b2.plan_phase == 1 and not b2.plan_milestone_hit
+    # No advance when neither holds.
+    b3 = Belief(team="red", seat=3, role="attacker", alive=True, tick=100,
+                self_xy=(110, 329))
+    planmod.advance(b3, book)
+    assert b3.plan_phase == 0
+
+
+def test_plan_hold_fallback_trips_under_fire():
+    from ctf.beacon import plan as planmod, poi
+    book = planmod.PlanBook.load("staged_push_top")
+    # Seat 0 (rear) in phase 3 holds at (323,333) with fallback red_lineup.
+    b = Belief(team="red", seat=0, role="defender", alive=True, tick=2000,
+               self_xy=(323, 333))
+    b.plan_phase = 2
+    b.under_fire = True
+    b.enemies = (Enemy(pos=(400, 340), facing="left"), Enemy(pos=(410, 320), facing="left"))
+    kind, xy, order = planmod.current_objective(b, book)
+    assert b.plan_fell_back
+    assert xy == poi.point("red_lineup")  # retreat target, not the forward hold
+
+
+def test_plan_blue_frame_mirrors_targets():
+    from ctf.beacon import plan as planmod, poi
+    book = planmod.PlanBook.load("staged_push_top")
+    b = Belief(team="blue", seat=3, role="attacker", alive=True, tick=50,
+               self_xy=(1124, 329))
+    kind, xy, _ = planmod.current_objective(b, book)
+    # Phase 0 pushers -> red_rally_top; in blue's frame that's blue_rally_top.
+    assert xy == poi.point("blue_rally_top")
+
+
 def test_ordered_hold_uses_spread_point(squads_on):
     from ctf.beacon import squads
     # Two members of squad A obeying the same H order must navigate to

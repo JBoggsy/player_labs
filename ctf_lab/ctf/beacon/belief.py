@@ -95,6 +95,11 @@ def update_belief(belief: Belief, percept: CtfState, action_state: ActionState, 
             belief.rejoin_until = -1
         elif not was_alive and belief.alive and belief.rejoin_point is not None:
             belief.rejoin_until = tick + REJOIN_TIMEOUT_TICKS
+    # Plan interpreter (v30): a death clears the hold-fallback latch — the new
+    # life re-evaluates the phase fresh (the phase pointer itself persists;
+    # respawning shouldn't restart the plan).
+    if was_alive and not belief.alive:
+        belief.plan_fell_back = False
 
     # Aim estimate: prefer the observed aim-dot read; else dead-reckon by the rotation
     # we commanded last frame. On (re)spawn, reseed to the spawn aim.

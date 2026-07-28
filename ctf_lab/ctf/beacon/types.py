@@ -248,6 +248,13 @@ class Belief:
     rejoin_ticks: int = 0
     convert_events: int = 0  # v26: times a leader flipped into the convert hunt
     converting: bool = False  # v29: currently in the standalone convert-hunt rung
+    # Battle-plan interpreter (v30) — per-bot phase pointer (no comms; the shared
+    # tick clock + shared milestones keep the team roughly aligned).
+    plan_phase: int = 0
+    plan_phase_tick: int = 0        # tick my current phase began
+    plan_milestone_hit: bool = False  # last advance was milestone (vs timeout)
+    plan_fell_back: bool = False    # hold-order fallback tripped this phase
+    plan_advances: int = 0          # cumulative phase advances (traced)
     # Lead-aim activation state this tick, for tracing: brads of lead applied to the
     # snap aim (0 = no lead / target treated as stationary).
     lead_brads: int = 0

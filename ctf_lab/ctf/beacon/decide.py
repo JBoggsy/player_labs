@@ -278,6 +278,12 @@ class _DiagnosticLogger:
             # v26 convert trigger (live + cumulative).
             "enemy_lives_left": _enemy_lives_left_safe(b),
             "convert_events": b.convert_events,
+            # v30 plan interpreter (live + cumulative).
+            "plan_phase": b.plan_phase,
+            "plan_phase_age": b.tick - b.plan_phase_tick,
+            "plan_advances": b.plan_advances,
+            "plan_milestone_hit": b.plan_milestone_hit,
+            "plan_fell_back": b.plan_fell_back,
             "squadmates_alive": _squadmates_alive_safe(b),
             # v18 chat activation (cumulative per kind).
             "chat_sent": dict(b.chat_sent_counts),

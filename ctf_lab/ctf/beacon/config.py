@@ -307,6 +307,16 @@ SQUAD_SECTOR_BRADS = _env_int("BEACON_SQUAD_SECTOR_BRADS", 50)
 #: Master switch for the leader/order/rejoin layer — the v22 A/B bit.
 #: OFF by default since v29 (see SQUADS above; same rollback).
 SQUAD_COMMAND = _env_int("BEACON_SQUAD_COMMAND", 0) == 1
+
+# --- Battle-plan interpreter (v30) ----------------------------------------------------
+#: The plan to execute, by name (beacon/plans/<name>.json baked into the image, or
+#: the lab's battle_plans/ when running from the repo). Empty = no plan (static split).
+PLAN_NAME = os.getenv("BEACON_PLAN", "staged_push_top").strip()
+#: "I reached my phase target" radius (px) — the per-bot milestone.
+PLAN_ARRIVE_PX = _env_int("BEACON_PLAN_ARRIVE_PX", 60)
+#: Phase clock fallback: advance regardless after this many ticks in one phase
+#: (the v19 rally-gate lesson — every stage gate needs a timeout). ~37s.
+PLAN_PHASE_TIMEOUT_TICKS = _env_int("BEACON_PLAN_PHASE_TIMEOUT_TICKS", 900)
 #: Convert trigger (v26): when the ENEMY team's lives remaining (24 - their deaths,
 #: read off the fog-independent team scoreboard) drop to this or below, leaders
 #: order an all-in HUNT — the wipe is in reach and under GV21 a draw pays -1 like a

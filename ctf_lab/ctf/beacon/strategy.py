@@ -12,6 +12,7 @@ from __future__ import annotations
 import math
 
 from ctf.beacon import items, squads
+from ctf.beacon import plan as _plan
 from ctf.beacon.config import (
     GRENADE_WARN_CLEAR_PX,
     HOLD_ARRIVE_PX,
@@ -20,6 +21,7 @@ from ctf.beacon.config import (
     MEDKIT_DETOUR_PX,
     ORDER_TTL_TICKS,
     PEDESTAL,
+    PLAN_NAME,
     SQUAD_COMMAND,
     SQUADS,
 )
@@ -179,6 +181,25 @@ def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
             reason="convert_hunt",
         ), None
     belief.converting = False
+
+    # Rung 3.9 (v30): the BATTLE-PLAN interpreter — the co-general plan as
+    # OBJECTIVES at exactly this altitude. Everything above (carry, intercept,
+    # escort, medkit, grenade-clear, convert) preempts the plan; everything
+    # below the intent (A* + danger field, peek/duck, cover, combat overlay)
+    # still governs HOW we move to a plan target. Goalposts, not a death march.
+    if PLAN_NAME and belief.self_xy is not None:
+        book = _plan.PlanBook.load(PLAN_NAME)
+        if book is not None and book.phases:
+            _plan.advance(belief, book)
+            obj = _plan.current_objective(belief, book)
+            if obj is not None:
+                kind, xy, order = obj
+                if kind == "hold" or _dist(belief.self_xy, xy) <= HOLD_ARRIVE_PX:
+                    if _dist(belief.self_xy, xy) <= HOLD_ARRIVE_PX * 2:
+                        return Intent(kind="hold", reason="plan_hold"), None
+                    return Intent(kind="navigate_to", point=xy, reason="plan_to_hold"), None
+                return Intent(kind="navigate_to", point=xy, reason="plan_move"), None
+            # No order for my seat this phase: fall through to the static split.
 
     # Rung 4 fallback (no live order / SQUAD_COMMAND off): the static role split.
     if belief.role == "defender" and belief.hold_point is not None:

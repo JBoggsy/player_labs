@@ -2,6 +2,39 @@
 
 Version → change mapping for the CTF `beacon` policy. Newest first.
 
+## v30 — POI vocabulary + battle-plan interpreter (2026-07-27)
+
+**Why (human direction):** execute the co-general battle plans directly —
+"feed it these plans and see how they play out" — with the hard constraint
+that the plan supplies GOALPOSTS, not motion: every existing skill (A* +
+danger field, peek/duck, cover routing, combat overlay) still governs HOW a
+bot moves, and every emergency rung still preempts the plan. No death marches.
+
+**Changes:** (1) **`poi.py`** — the canonical named points/areas map
+(`mapdata/points_of_interest.json`, human-curated rev 5) as the single source
+of truth; red-frame authoring with automatic blue mirroring (prefix-swap when
+the twin exists, geometric mirror otherwise). Strategy code and plans share
+the same names. (2) **`plan.py`** — the interpreter: loads
+`plans/<BEACON_PLAN>.json` (baked snapshot of battle_plans/, see plans/README),
+maps my seat → group through per-phase splits, emits the group's primary
+order as a `plan_move`/`plan_hold`/`plan_to_hold` intent at rung 3.9 (below
+carry/intercept/escort/medkit/convert; above the static split, which remains
+the no-plan/no-order fallback). Phase advancement is PER-BOT, no comms:
+milestone (arrived at my phase target, `BEACON_PLAN_ARRIVE_PX`) or timeout
+(`BEACON_PLAN_PHASE_TIMEOUT_TICKS`, the v19 lesson) — gated by the next
+phase's entry TAG when machine-evaluable (tick/enemy_lives/own_deaths ≤/≥ N).
+(3) **Contingencies v1**: a hold order's `fallback` location engages when
+pressed (under_fire + 2 visible enemies) — the rear's delay-then-fall-back
+doctrine; death clears the latch, phase advance clears it. (4) Traced:
+`plan_phase`, `plan_phase_age`, `plan_advances`, `plan_milestone_hit`,
+`plan_fell_back` in every snapshot (+ objective transitions show plan_*
+reasons). `BEACON_PLAN=` empty disables the whole layer. 105 tests.
+
+**Known gaps (deliberate, for the next iterations):** `watch` orders traced
+but not yet steering aim; no branch conditions (the break-vs-flank choice
+runs both as written); waypoints (`via`) not yet threaded into nav (A* polyline
+is close); presence() tags un-evaluable without the squad presence table.
+
 ## v29 — squad layer OFF: back to the static role split (+ convert kept) (2026-07-27)
 
 **Why (human direction):** watching the h035 games, our squads read as "a
