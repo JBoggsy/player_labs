@@ -15,18 +15,123 @@ This is *not* a log or archive: finished work lives in git history / the
 
 ---
 
-## 🎯 OBJECTIVE (2026-07-22, post-W5): v112 is champion — watch its league recovery, then pick the next lever
+## 🎯 OBJECTIVE (2026-07-23): v114 submitted — v112's code with LLM meetings OFF (deterministic)
 
-v112 (warm anchor + trust-floored chat evidence + spend telemetry) is live. Near-term:
-1. **Watch v112's leaderboard trajectory** (Competition div `div_acbde92a…`; score reset to 5.0/
-   rank 17 at submit — it rebuilds per round; v111 sat ~14/6553). Mine fresh league rounds once
-   ~50-100 accumulate (coworld-hypothesis-miner / top-3 advantage methodology).
-2. **W5 watch item:** the warm-pile/chat-evidence double-count channel is real (all 5 escalations
-   chat-fed) but currently benign (5/5 true imposters). If a future change raises warm volume,
-   re-measure interaction (b) (`/tmp/w5_ab/interaction_b.py` is the template).
-3. **Open lever candidates:** suspicion-v5 refit (ML ceiling AUC 0.82 says the social counters
-   hold more signal — W2's key measurement); vote coordination to monetize HS trust (Direction 1);
-   the Bedrock quota ask (`docs/bedrock-quota-ask.md`) remains the durable LLM-coverage fix.
+**James's call: "turn off LLM meetings for now and use our deterministic fallback."** v114 =
+v112's byte-identical code (main `64abdab`), recipe minus `--use-bedrock`/`CREWBORG_LLM_MEETINGS`
+(everything else kept: HS secret, chat evidence + 0.9 floor, NLP, traces). Submitted to Crewrift
+Prime 2026-07-23 (`sub_82aa6f35…`, placed; v112's `lpm_78d02983…` retired first). Poller template:
+`/tmp/poll_v114_qualify.py`. ⚠️ v113 is an ORPHAN (bound to wrong player `seedtest-run002` by a
+stale player session — see version_log + TENTATIVE_LESSONS); never submit it.
+
+**Why (2026-07-23 Bedrock investigation, CloudWatch on the tournament acct — we CAN read it,
+`--profile tournament`):** the 429s are the AWS DAILY pool, structurally oversubscribed — fleet
+burns ~592M of 714M/day Haiku tokens with 0.9–1.5M throttles/day, FLAT across all 24h (not
+eval-driven; something burns ~23.5M input tokens/hour around the clock). Minute quotas never bind
+(peak 1.4M/5M TPM, 569/10K RPM); sidecar spend-limit ruled out (different message; xreqs have no
+limit). Demand ~3.2M tok/min vs ~496K/min refill ≈ 6× oversubscribed → predicted 15-25% success =
+measured 17-28%. Daily quotas are `adjustable=False` — the standard quota-raise ask may be
+ungrantable; update `docs/bedrock-quota-ask.md`.
+
+## 👑 SHIPPED (2026-07-28): v116 = v115 + BALLOT RETIME — competing/active + CHAMPION
+
+`crewborg:v116` (`23b03ef8…`, main `565a1ea`, v115 recipe + `CREWBORG_VOTE_BALLOT_RETIME=1`)
+submitted 2026-07-28 (James: "go for it"); v115's membership retired first → v116
+`lpm_288949ba…` competing/active + champion. Version_log has the full row. League at ship:
+rank 12/18, Elo 1451, WR 37.7% (fresh 3k window 07-25..27), imposter 78.3% (FIELD-BEST),
+crew 25.5% (15th — retime's target). WATCH: crew WR + ballot→ejection conversion over the
+next ~100 rounds (A/B predicted conv 13.8%→35.3%, crew +8.4pp directional). Follow-ups
+queued: pre-vote chat-push variant (fix "vote X… vote X" dup text first), sub-0.5 bar probe
+(env clamp floors at 0.5, needs code), suspicion-v5 refit (precision at volume).
+
+## ✅ DONE (2026-07-24): vote-coordination A/B — VERDICT: SHIP RETIME ALONE
+
+**Full verdict in prereg doc (`docs/designs/2026-07-24-vote-coordination-prereg.md` §VERDICT).**
+Both singles passed (clean arms): chat-push conv 32.5% vs base 13.8% (p=0.009; first arm 32%
+ops-dirty → RERUN per rule), retime conv **35.3% (p=0.005)**, impEj-eps/cep 0.523 (+62%,
+p=0.08), crew WR +8.4pp directional, all guards clean. **COMBO FAILED its prereg bar** (conv
+24.1% < 35.3%−noise): the levers interfere — push fires only post-ballot, retime delays the
+ballot → pushes land too late (47 fires but 27 joins vs retime-solo 42). Per decision rule:
+**next ship = `CREWBORG_VOTE_BALLOT_RETIME=1` added to v115's recipe** (needs James's gate).
+Chat-push validated as mechanism; revisit later as PRE-vote push + fix duplicated "vote X…
+vote X" text. Arms: base `xreq_8c20ec6d`, push1 `xreq_e6c817ca` (invalid), push2
+`xreq_0f6b2542`, retime `xreq_61f440b3`, combo `xreq_ed97ed89`; probes crewborg-coord:v1-v4.
+
+## 🔬 superseded header: vote-coordination A/B — 3 arms firing (P, R, baseline)
+
+**Both levers BUILT + committed (main `565a1ea`, both flags default OFF, 721 tests):**
+`CREWBORG_VOTE_CHAT_PUSH` (post-vote "vote X. <evidence>" push when target vote-less <480
+ticks; persuasion only) + `CREWBORG_VOTE_BALLOT_RETIME` (hold ballot after accusation; cast
+on first co-vote or at early-submit; timing only). Prereg BEFORE firing:
+`docs/designs/2026-07-24-vote-coordination-prereg.md`. Probes `crewborg-coord:v1/v2/v3`
+(baseline/push/retime, all on v115 recipe + bar 0.5), 100 eps each, Thread-1 roster:
+baseline `xreq_8c20ec6d`, push `xreq_e6c817ca`, retime `xreq_61f440b3`. PRIMARY: correct-
+ballot→ejection conversion up (crewborg 31.9% vs top 61-71% in league). Per James: test
+separately; if BOTH pass, fire the P+R combination arm; chat-push is the priority lever.
+Chat study result: everyone chats pre-ballot; converters differ by VOTING LATER (2-3 votes
+in) not by text — our verbose cue-format already pulls above-field followers (1.13 vs 0.75
+social_cue class). Artifacts → /tmp/coord/eps_{base,push,retime}.
+
+## 🎯 WAVE 2 (2026-07-24): mining rerun post-v115 — next lever = BALLOT→EJECTION CONVERSION
+
+v115 (bar 0.5) shipped + champion, but leaderboard WR ~flat (42.6% @ 742 eps; note score/WR
+rebuilds — v114+v115 pooled, not pure v115). Fresh 400-ep league warehouse (`/tmp/wh_league2`,
+corpus2, 07-24 16:44-17:55Z window; analysis `/tmp/league_ds2`):
+- **The bar change WORKED mechanically:** crew votes/ep 0.54→1.27, hits/ep 0.52→0.76,
+  skip-rate 0.81→0.52 (live league telemetry-free measurement via warehouse).
+- **Crew WR still bottom-tier (17.6%)** — field crew WR also dropped (34%→30%) this window;
+  imposter share ran unlucky (18.8% vs ~23%).
+- **NEW FINDING: imp-ejected-in-episode is THE crew-win correlate (r=+0.70) and we are LAST
+  at converting correct ballots→ejections: 31.9% vs top 61-71%.** Mechanism measured: we vote
+  EARLY (votes_before_ours 1.71, lowest) and ALONE (pile_before 0.12 vs field 0.7-1.6),
+  pulling only ~1.5 followers → our correct target ends ~2.6 total votes vs converters' ~3.4.
+- **NEXT LEVER: vote coordination (Direction 1)** — (a) chat-accuse with evidence cue
+  before/with every correct ballot ("vote X" + cue = 64% persuasion, chat-study), (b) prefer
+  joining forming piles / retime our ballot vs seeding lone ones. Design + probe next session.
+
+## ✅ DONE (2026-07-23): vote-gate sweep — VERDICT: bar=0.5 SHIP RECOMMENDED
+
+**All 4 arms completed 100/100, verdict in prereg doc
+(`docs/designs/2026-07-23-vote-gate-sweep-prereg.md` §VERDICT): bar=0.5 passes the
+pre-registered PRIMARY + all guards** — net correct votes/crew-ep **0.836 vs 0.406** (hits
+p<0.0001), live precision 77%, crew WR 34.2% vs 26.1% (+8.1pp directional, underpowered),
+imposter side better, vote_timeouts 0, self-votes 0. bar=0.8 modest (NS), bar=0.6 worst arm
+(non-monotonic mid-band — noise at n=58 ballots, flag if recurs). NEXT: carry
+`CREWBORG_VOTE_PROBABILITY=0.5` in the next `crewborg` version's recipe (needs James's
+submit gate as usual; upload + confirmatory A/B vs v114 first). Env clamp floors at 0.5 —
+probing lower needs code. Analysis `/tmp/vote_sweep/`; arms in eps_{base,bar08,bar06,bar05}.
+
+## 🔬 superseded header (kept for arm ids): vote-gate sweep — 4 matched arms firing
+
+**The mining wave found the lever** (400 fresh league eps, `/tmp/wh_league`, `/tmp/league_ds`):
+crew ballot VOLUME beats precision — mv-model coefs hit_imp +0.51 / mis −0.22 / tasks +0.56 /
+died −0.57; crew win 22%→44%→63% at 0/1/2 correct votes/ep. Crewborg as crew: 97.7% precision
+(corpus-best) at HALF the top-5's ballot volume, skip-only in 43/82 crew eps, corpus-worst crew
+WR 22%. Offline gate replay over 185 real crew meetings (`/tmp/vote_sweep/offline_sweep.py`):
+bar=0.8 dominates 0.9 (87.5% precision, +30% hits); 0.6 → 74% prec / +70% hits; 0.5 → 63% / 2.2×.
+
+**Live sweep (prereg BEFORE firing: `docs/designs/2026-07-23-vote-gate-sweep-prereg.md`):**
+4 arms × 100 eps, Thread-1 pinned roster slot 0 natural roles, v114's image, arms differ ONLY in
+`CREWBORG_VOTE_PROBABILITY`: baseline crewborg:v114 (0.9) `xreq_5f3cf7b7`, crewborg-votebar:v1
+(0.8) `xreq_d91a92cb`, :v2 (0.6) `xreq_78bbd3d5`, :v3 (0.5) `xreq_8a4df2c6`. Probes NEVER
+submitted. PRIMARY: net correct votes/crew-ep + imposter-ejections/crew-ep beat baseline (p<0.05
+on one). GUARDS: crew win not worse, mis-ejections-we-voted ≤2× base, vote_timeouts 0, imposter
+untouched, ops ~0. Artifacts streaming to `/tmp/vote_sweep/eps_{base,bar08,bar06,bar05}`.
+NOTE: env bar clamps at [0.5,0.99] — deeper sweep needs code.
+
+Near-term:
+1. **Watch v114 qualify → competing** — DONE: competing/active + CHAMPION (`lpm_d5217689…`);
+   tournament eval (xreq_b63cde8b, 100 eps): 45% overall (3rd/16 in sample), imposter 80%,
+   crew 33%, 0 vote timeouts, telemetry verified 0 LLM calls.
+2. **LLM re-entry options when wanted:** `global.anthropic.claude-haiku-4-5…` inference profile
+   (separate ~714M/day pool, currently ZERO fleet traffic — needs a probe) or Sonnet 5
+   (`us.anthropic.claude-sonnet-5`, own 500M/day pool, ~2× cost, needs latency probe vs 6s timeout).
+   Attribution of the 24/7 592M/day burner (CloudTrail / sidecar S3 completions) would tell us if
+   per-tenant budgets fix everyone.
+3. **Open lever candidates:** suspicion-v5 refit (ML ceiling AUC 0.82 — W2's key measurement);
+   vote coordination to monetize HS trust (Direction 1).
+4. **W5 watch item:** the warm-pile/chat-evidence double-count channel is real but benign (5/5 true
+   imposters). If warm volume grows, re-measure interaction (b) (`/tmp/w5_ab/interaction_b.py`).
 
 ---
 
