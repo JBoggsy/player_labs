@@ -15,7 +15,21 @@ This is *not* a log or archive: finished work lives in git history / the
 
 ---
 
-## 🔁 RUNNING (2026-07-28): improvement-loop alpha — autonomous ~5-loop run (spec: `docs/designs/2026-07-28-improvement-loop-alpha.md`)
+## 👑 SHIPPED (2026-07-29, loop-alpha L4/L5): v118 = v117 + CHAT-SWALLOW FIX — submitted, qualification in flight
+
+`crewborg:v118` (`912f94cb…`, main `1a71c6b`, v117 recipe + CHAT_COOLDOWN 60→104 +
+HS1-defers-to-accusation) submitted 2026-07-29 (`sub_a6f38a7f…`; v117's `lpm_fca1ad4b…`
+retired FIRST). Three-stage evidence, all pre-registered: L3 probe (honest NO-SHIP on a
+noisy guard) → L4 powered re-test ALL PASS (mis-ej question settled: L3 was noise) →
+4-arm pooled confirmatory ALL PASS (votes-on-imp-target 1.10 vs 0.96 MW p=0.0274,
+acceptance 100% vs 82.2%, crew WR 35.0% vs 30.1%, mis-ej 0.148 under bar 0.213,
+hits/cep 1.434 vs 1.326). Preregs + gate tables:
+`docs/designs/2026-07-29-chat-swallow-fix-prereg.md` + `…chatfix-powered-prereg.md`.
+Poller template: scratchpad `poll_v118_qualify.py` (v117 pattern). **LEAGUE WATCH: crew WR
+and mis-ej on fresh league data; the acceptance win should show as more votes landing on
+our targets.**
+
+## ✅ COMPLETE (2026-07-29): improvement-loop alpha — 5-loop autonomous run (spec: `docs/designs/2026-07-28-improvement-loop-alpha.md`; final report: `docs/designs/2026-07-29-improvement-loop-alpha-run-report.md`)
 
 **Loop 1 DONE — NO-SHIP (lever closed, honestly refuted).** Step-1 batch: 4×100 matched
 xreqs (`xreq_f42ce4c9/83cae9d4/fd660882/c48a86c2`, 397 clean eps, v116 slot 0, Thread-1
@@ -35,7 +49,7 @@ roster) → warehouse `/tmp/loop1/wh` + belief log + divergence scan. Key reads:
 Next lever candidates for the conversion axis: make the FIRST accusation harder
 (suspicion-v5 refit — the W2 measured ceiling AUC 0.82). Loop 2 starting.
 
-## 👑 SHIPPED (2026-07-29, loop-alpha L2): v117 = v116 + SUSPICION-V5 REFIT — competing/active + CHAMPION
+## 👑 SHIPPED (2026-07-29, loop-alpha L2): v117 = v116 + SUSPICION-V5 REFIT — superseded by v118 same day
 
 `crewborg:v117` (`54bb6cc5…`, main `32c7b48`, v116 recipe + the runtime-v116-L2 weights —
 NO code change) submitted 2026-07-29 after James's approval on the clean two-stage verdict
