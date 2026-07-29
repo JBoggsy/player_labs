@@ -31,7 +31,11 @@ MAX_EVENTS_PER_PLAYER = 10
 VOTE_TIMER_TICKS = 1200
 # Min ticks between our own chats. Kept well under VOTE_TIMER_TICKS so a proactive
 # meeting voice can speak more than once (share a read, then react/follow up).
-CHAT_COOLDOWN_TICKS = 60
+# MUST exceed the game's MessageCooldownTicks=100 (sim.nim): the server SILENTLY
+# drops a chat sent within 100 ticks of our previous one — measured 2026-07-29
+# (loop-alpha L3): 203/674 accusations swallowed at the old 60-tick client gate,
+# 98% of them 1 tick after the HS1 announce. 104 = server cooldown + margin.
+CHAT_COOLDOWN_TICKS = 104
 
 
 def serialize_meeting_context(

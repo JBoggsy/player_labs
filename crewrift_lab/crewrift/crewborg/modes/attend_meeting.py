@@ -911,6 +911,15 @@ class AttendMeetingMode(Mode[Belief, ActionState, Intent]):
             return None
         if not self._chat_cooldown_ready(belief):
             return None
+        # Defer to the accusation (loop-alpha L3, 2026-07-29): the server's
+        # MessageCooldownTicks=100 silently drops our accusation when the HS1
+        # announce takes the first chat slot one tick earlier (98% swallow rate
+        # measured). The persuasion payload goes first; the once-per-game announce
+        # (in-meeting timing has no measured value) follows once the accusation is
+        # out — or at meeting-age 240 in meetings where we have nothing to say.
+        elapsed = max(0, belief.last_tick - belief.phase_start_tick)
+        if not self._deterministic_chatted and elapsed < PREVOTE_PUSH_DELAY_TICKS:
+            return None
         self_color = belief.self_color or belief.voting.self_marker_color
         if self_color is None:
             return None

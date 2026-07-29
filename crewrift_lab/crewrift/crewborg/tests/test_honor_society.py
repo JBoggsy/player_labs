@@ -345,18 +345,36 @@ def test_witnessed_claimant_is_ledgered_as_liar(society_on, tmp_path, monkeypatc
 
 
 def test_crew_announces_once_at_first_meeting_then_plays_normally(society_on) -> None:
+    # Ordering contract since 2026-07-29 (loop-alpha L3): the ACCUSATION takes the
+    # first chat slot — the server's MessageCooldownTicks=100 silently drops the
+    # second chat, and the accusation is the persuasion payload — then the
+    # once-per-game HS1 announce follows after the cooldown.
     mode = AttendMeetingMode()
     belief = _crew_belief()
     belief.society_meeting_no = 1
     belief.suspicion = {"red": 0.95}
     belief.roster["red"].events = [PlayerEvent(kind="vent_use", start_tick=4, end_tick=4)]
     first = mode.decide(belief, ActionState())
-    assert first.kind == "chat" and first.text.startswith("HS1 ") and len(first.text.split()) == 2
-    assert belief.society_announced
-    # Cooldown passed: the normal accusation still happens; the announce is not repeated.
+    assert first.kind == "chat" and "HS1" not in first.text  # the accusation goes first
+    assert not belief.society_announced
+    # Cooldown passed: the announce follows; not repeated afterwards.
     belief.last_tick = 400
     second = mode.decide(belief, ActionState())
-    assert second.kind == "chat" and "HS1" not in second.text
+    assert second.kind == "chat" and second.text.startswith("HS1 ") and len(second.text.split()) == 2
+    assert belief.society_announced
+
+
+def test_crew_announce_falls_back_when_no_accusation(society_on) -> None:
+    # A silent-skip meeting (nothing to accuse) still announces once the meeting
+    # ages past the deferral window — the announce is not lost.
+    mode = AttendMeetingMode()
+    belief = _crew_belief()
+    belief.society_meeting_no = 1
+    belief.suspicion = {}
+    belief.last_tick = 300  # >= PREVOTE_PUSH_DELAY_TICKS
+    intent = mode.decide(belief, ActionState())
+    assert intent.kind == "chat" and intent.text.startswith("HS1 ")
+    assert belief.society_announced
 
 
 def test_imposter_never_announces(society_on) -> None:
