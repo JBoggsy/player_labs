@@ -89,6 +89,7 @@
   <div class="label">Plan file <span id="syncState" style="float:right;font-weight:400;text-transform:none;letter-spacing:0"></span></div>
   <div class="rowline">
     <input id="planName" placeholder="staged_push_top" title="plan name under battle_plans/">
+    <button id="btnNew" title="start a blank plan (not saved until you press Save)">New</button>
     <button id="btnFetch" title="fetch battle_plans/<name>.json">Load</button>
     <button id="btnSave" class="primary" title="save to the server (live-sync with the agent)">Save</button>
     <button id="btnDownload" title="download a copy instead">↓</button>
@@ -246,6 +247,26 @@ async function loadPlan(name) {
   cur = Math.min(cur, (plan.phases?.length ?? 1) - 1); refresh();
 }
 $("btnFetch").onclick = () => loadPlan($("planName").value.trim()).catch(() => alert("not found"));
+// A blank plan to draw on. Held in memory only — nothing is written until Save,
+// so a mistyped name never clobbers an existing file. serverTag is cleared so the
+// 2s live-sync poll can't mistake an unrelated file's ETag for ours.
+$("btnNew").onclick = () => {
+  if (dirty && !confirm("discard unsaved edits and start a new plan?")) return;
+  const name = prompt("new plan name (battle_plans/<name>.json):", "");
+  if (!name) return;
+  const clean = name.trim().replace(/\.json$/i, "");
+  if (!/^[A-Za-z0-9_-]+$/.test(clean)) { alert("letters, digits, _ and - only"); return; }
+  plan = {
+    name: clean, author: "both", status: "proposal", summary: "", team: "red",
+    groups: { alpha: [0, 1, 2, 3], bravo: [4, 5, 6, 7] },
+    phases: [{
+      name: "phase_1", intent: "", entry: { prose: "game start", tag: "tick>=0" },
+      orders: [], enemy_belief: [], notes: [],
+    }],
+  };
+  serverTag = null; cur = 0; $("planName").value = clean;
+  markDirty(); syncUi("new plan — unsaved"); refresh();
+};
 $("btnSave").onclick = async () => {
   if (!plan) return;
   const name = plan.name || $("planName").value.trim();

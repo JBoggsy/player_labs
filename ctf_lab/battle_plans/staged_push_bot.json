@@ -1,0 +1,62 @@
+{
+  "name": "staged_push_bot",
+  "author": "both",
+  "status": "proposal",
+  "summary": "Staged push down the BOTTOM — the same stage-by-stage structure as staged_push_top, aimed at the route the data says actually produces steals. EVIDENCE (360 eps, GV23 ladder): our steal->capture CONVERSION is already fine (20-26% vs their 17-29%), but we steal 5-9x less often (19 vs 106 vs h050; 15 vs 143 vs focusfire). Their approaches swing wide — 54% bottom, 25% top, 20% straight mid — while 85% of ours grind straight up the middle. staged_push_top called the bottom 'deliberately naked', which is both the route they raid us through AND the route we never use. ACCEPTED RISKS (named): the TOP is now the thin side, held by a screen that is meant to be seen rather than to win; and a bottom spear that stalls is 4 seats out of position. Orders are intentionally EMPTY — draw them.",
+  "team": "red",
+  "groups": {
+    "spear": [4, 5, 6, 7],
+    "screen": [2, 3],
+    "home": [0, 1]
+  },
+  "phases": [
+    {
+      "name": "split_out",
+      "intent": "Stage 1 — get bodies onto their lanes before contact. The spear drops low toward the bottom rally; the screen goes high to be VISIBLE (it is a feint, not an attack); home takes the bottom approach we have been leaving open, because that is where 54% of their steals come from. Draw: spear -> a bottom staging spot, screen -> a top spot they will see, home -> covering our bottom lane.",
+      "entry": { "prose": "game start", "tag": "tick>=0" },
+      "orders": [],
+      "enemy_belief": [
+        { "at": "blue_lineup", "count": 8, "note": "assume an even spread at start" }
+      ],
+      "notes": [
+        { "who": "claude", "text": "Deliberately no enemy_lives gate anywhere in this plan: attrition is NOT our bottleneck (we already remove ~19-20 of their 24 lives per game). staged_push_top gated its steal phase on enemy_lives<=18, which made the objective wait on a fight we were already winning." }
+      ]
+    },
+    {
+      "name": "advance_low",
+      "intent": "Stage 2 — the spear works along the bottom under cover toward their half, while the screen makes noise up top so their defense commits high. Draw: spear -> the next bottom waypoint (cover-to-cover, not a straight line), screen -> a top position with a sightline they must answer.",
+      "entry": { "prose": "spear is staged low and the screen is in place (or timeout)", "tag": "tick>=300" },
+      "orders": [],
+      "enemy_belief": [],
+      "notes": []
+    },
+    {
+      "name": "infiltrate",
+      "intent": "Stage 3 — the spear enters their half low and sets up within reach of the pedestal WITHOUT committing yet. This is the stage staged_push_top never really reached: our pushers died at ~615-670px, about 380px short of their flag at x=1049. Draw: spear -> a held position inside their bottom rally, home -> unchanged, screen -> keep the top honest.",
+      "entry": { "prose": "the spear is in their half on the bottom (or timeout)", "tag": "tick>=900" },
+      "orders": [],
+      "enemy_belief": [],
+      "notes": [
+        { "who": "claude", "text": "Bots ordered to blue_pedestal in the old plan arrived within 60px only 1-7 times in 118 episodes, while the held-back rear arrived 14-25 times. Staging BEFORE the grab, rather than ordering a long run at it, is the thing being tested here." }
+      ]
+    },
+    {
+      "name": "steal",
+      "intent": "Stage 4 — take it. One or two of the spear go for the heart while the rest hold the ground that keeps the exit open. Draw: the grabbers -> blue_pedestal, the holders -> the cover between the pedestal and the bottom exit.",
+      "entry": { "prose": "the spear is set inside their bottom half", "tag": "tick>=1200" },
+      "orders": [],
+      "enemy_belief": [],
+      "notes": []
+    },
+    {
+      "name": "exfil_low",
+      "intent": "Stage 5 — carry out the way we came in. GV26(b) is new and matters here: a heart carrier now fires at 1/3 rate (CarrierFireSlowdown=3), so the carrier must not be the one trading shots — the escorts do the shooting and the carrier just moves. Draw: carrier route home along the bottom, escorts on the cover flanking that route, home covering the last stretch.",
+      "entry": { "prose": "we have their heart", "tag": "flag(enemy)==taken" },
+      "orders": [],
+      "enemy_belief": [],
+      "notes": [
+        { "who": "claude", "text": "Emergency rungs already own the mechanics of carrying and escorting (they preempt the plan), so this phase is about WHERE the escort screen stands, not about telling the carrier to go home." }
+      ]
+    }
+  ]
+}
