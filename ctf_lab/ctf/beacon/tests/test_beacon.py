@@ -20,7 +20,15 @@ from ctf.beacon.config import AIM_BRADS_TURN, DEFENDER_COUNT, PEDESTAL
 from ctf.beacon.main import seat_from_url, team_from_url
 from ctf.beacon.roles import hold_point_for_seat, role_for_seat
 from ctf.beacon.strategy import decide_objective
-from ctf.beacon.types import ActionState, Belief, Enemy, Intent
+from ctf.beacon.types import (
+    ActionState,
+    Belief,
+    Command,
+    Enemy,
+    Intent,
+    TargetCandidate,
+    TargetRef,
+)
 from players.player_sdk import Button
 
 import pytest
@@ -235,6 +243,7 @@ def test_no_fire_through_teammate():
     b.teammates = (Enemy(pos=(350, 329), facing="right"),)  # teammate in the corridor
     cmd = resolve_action(Intent(kind="hold", reason="hold_line"), b, ActionState())
     assert not (cmd.held_mask & int(Button.A))  # holds fire — would hit the teammate
+    assert b.friendly_fire_suppressed == 1
 
 
 def test_lighthouse_sweeps_when_no_enemy():
@@ -1627,6 +1636,663 @@ def test_rejoin_exits_on_squad_contact(squads_on):
     b.teammates = (Enemy(pos=(660, 350), facing="left", identity=7),)
     intent, _ = decide_objective(b)
     assert b.rejoin_until == -1 and intent.reason != "rejoin"
+
+
+# --- firefight target selection + focus claims --------------------------------------
+
+
+def _ff_candidate(
+    identity: int,
+    *,
+    distance: float = 250.0,
+    hp_segments: int | None = 3,
+    shootable: bool = True,
+    aim_cost: float = 0.0,
+    shielded: bool = False,
+) -> TargetCandidate:
+    enemy = Enemy(
+        pos=(200 + identity * 10, 100),
+        facing="left",
+        identity=identity,
+        hp_segments=hp_segments,
+        shielded=shielded,
+    )
+    return TargetCandidate(
+        enemy=enemy,
+        target=TargetRef(identity=identity, pos=enemy.pos),
+        aim_pos=enemy.pos,
+        lead_brads=0,
+        distance_px=distance,
+        aim_cost=aim_cost,
+        line_clear=shootable,
+        teammate_blocked=False,
+        shootable=shootable,
+    )
+
+
+@pytest.mark.parametrize(
+    ("term", "first", "second"),
+    (
+        ("wound", {"hp_segments": 3}, {"hp_segments": 1}),
+        ("range", {"distance": 60.0}, {"distance": 260.0}),
+        ("claim", {}, {}),
+        ("shootability", {"shootable": False}, {"shootable": True}),
+        ("aim_cost", {"aim_cost": 1.0}, {"aim_cost": 0.0}),
+        ("shield", {"shielded": True}, {"shielded": False}),
+    ),
+)
+def test_each_firefight_score_term_changes_choice_in_isolation(
+    monkeypatch,
+    term,
+    first,
+    second,
+):
+    from ctf.beacon import fight
+    from ctf.beacon.types import FocusClaim
+
+    weight_names = {
+        "wound": "FF_WOUND_WEIGHT",
+        "range": "FF_RANGE_WEIGHT",
+        "claim": "FF_CLAIM_WEIGHT",
+        "shootability": "FF_SHOOTABILITY_WEIGHT",
+        "aim_cost": "FF_AIM_COST_WEIGHT",
+        "shield": "FF_SHIELD_WEIGHT",
+    }
+    for name in weight_names.values():
+        monkeypatch.setattr(fight, name, 0.0)
+    monkeypatch.setattr(fight, weight_names[term], 1.0)
+    monkeypatch.setattr(fight, "FIREFIGHT", True)
+    monkeypatch.setattr(fight, "FOCUS_CLAIMS", term == "claim")
+
+    candidates = (_ff_candidate(0, **first), _ff_candidate(1, **second))
+    belief = Belief(
+        team="red",
+        seat=3,
+        tick=100,
+        alive=True,
+        self_xy=(100, 100),
+        firefight_active=True,
+    )
+    if term == "claim":
+        belief.focus_claim = FocusClaim(
+            claimant_seat=2,
+            target=candidates[1].target,
+            first_tick=100,
+            refreshed_tick=100,
+            last_seen_tick=100,
+            enemy_deaths_at_last_seen=None,
+        )
+
+    selected = fight.select_target(belief, candidates)
+    assert selected is not None
+    assert selected.candidate.target.identity == 1
+
+
+def test_wound_score_distinguishes_unknown_from_confirmed_healthy():
+    from ctf.beacon import fight
+
+    healthy = fight.score_target(_ff_candidate(0, hp_segments=3), claimed=False)
+    unknown = fight.score_target(_ff_candidate(1, hp_segments=None), claimed=False)
+    wounded = fight.score_target(_ff_candidate(2, hp_segments=1), claimed=False)
+    assert healthy.wound == 0.0
+    assert unknown.wound == 0.15
+    assert wounded.wound == 1.0
+    assert wounded.score > unknown.score > healthy.score
+
+
+def test_firefight_range_band_rejects_too_close_and_beyond_gate():
+    from ctf.beacon import fight
+    from ctf.beacon.config import FIRE_MAX_RANGE_PX
+
+    assert fight._range_term(60.0) == 0.0
+    assert fight._range_term(260.0) == 1.0
+    assert fight._range_term(FIRE_MAX_RANGE_PX + 1.0) == 0.0
+
+
+def test_shootability_default_swing_is_point_seven():
+    from ctf.beacon import fight
+
+    blocked = fight.score_target(_ff_candidate(0, shootable=False), claimed=False)
+    clear = fight.score_target(_ff_candidate(0, shootable=True), claimed=False)
+    assert clear.score - blocked.score == pytest.approx(0.70)
+
+
+def test_firefight_target_latch_prevents_thrash_then_switches(monkeypatch):
+    from ctf.beacon import fight
+
+    monkeypatch.setattr(fight, "FIREFIGHT", True)
+    for name in (
+        "FF_WOUND_WEIGHT",
+        "FF_RANGE_WEIGHT",
+        "FF_CLAIM_WEIGHT",
+        "FF_SHOOTABILITY_WEIGHT",
+        "FF_SHIELD_WEIGHT",
+    ):
+        monkeypatch.setattr(fight, name, 0.0)
+    monkeypatch.setattr(fight, "FF_AIM_COST_WEIGHT", 1.0)
+
+    belief = Belief(
+        team="red",
+        tick=100,
+        alive=True,
+        self_xy=(100, 100),
+        firefight_active=True,
+    )
+    selected = fight.select_target(
+        belief,
+        (_ff_candidate(0, aim_cost=0.0), _ff_candidate(1, aim_cost=0.2)),
+    )
+    assert selected.candidate.target.identity == 0
+
+    belief.tick = 104
+    selected = fight.select_target(
+        belief,
+        (_ff_candidate(0, aim_cost=0.2), _ff_candidate(1, aim_cost=0.0)),
+    )
+    assert selected.candidate.target.identity == 0
+    assert belief.firefight_target_switches == 0
+
+    belief.tick = 108
+    selected = fight.select_target(
+        belief,
+        (_ff_candidate(0, aim_cost=0.2), _ff_candidate(1, aim_cost=0.0)),
+    )
+    assert selected.candidate.target.identity == 1
+    assert belief.firefight_target_switches == 1
+
+
+def test_unshootable_current_target_switches_immediately(monkeypatch):
+    from ctf.beacon import fight
+
+    monkeypatch.setattr(fight, "FIREFIGHT", True)
+    belief = Belief(
+        team="red",
+        tick=100,
+        alive=True,
+        self_xy=(100, 100),
+        firefight_active=True,
+    )
+    fight.select_target(
+        belief,
+        (_ff_candidate(0), _ff_candidate(1, aim_cost=0.5)),
+    )
+    belief.tick = 101
+    selected = fight.select_target(
+        belief,
+        (
+            _ff_candidate(0, shootable=False),
+            _ff_candidate(1, aim_cost=0.5),
+        ),
+    )
+    assert selected.candidate.target.identity == 1
+    assert belief.firefight_target_switches == 1
+
+
+def test_anonymous_target_promotes_to_late_badge_without_switch(monkeypatch):
+    from ctf.beacon import fight
+
+    monkeypatch.setattr(fight, "FIREFIGHT", True)
+    belief = Belief(
+        team="red",
+        tick=100,
+        alive=True,
+        self_xy=(100, 100),
+        firefight_active=True,
+        firefight_target=TargetRef(identity=None, pos=(230, 100)),
+        firefight_target_selected_tick=90,
+        firefight_target_last_seen_tick=99,
+    )
+    selected = fight.select_target(belief, (_ff_candidate(3),))
+    assert selected is not None
+    assert belief.firefight_target.identity == 3
+    assert belief.firefight_target_switches == 0
+
+
+def test_firefight_mode_hysteresis_and_arc_exemption(monkeypatch):
+    from ctf.beacon import fight
+    from ctf.beacon.config import FF_DWELL_TICKS
+
+    monkeypatch.setattr(fight, "FIREFIGHT", True)
+    belief = Belief(
+        team="red",
+        tick=10,
+        alive=True,
+        self_xy=(100, 100),
+        enemies=(Enemy(pos=(300, 100), facing="left"),),
+    )
+    fight.update_firefight(belief)
+    assert belief.firefight_active
+    assert belief.firefight_engagements == 1
+
+    belief.enemies = ()
+    belief.tick = 10 + FF_DWELL_TICKS
+    fight.update_firefight(belief)
+    assert belief.firefight_active
+    belief.tick += 1
+    fight.update_firefight(belief)
+    assert not belief.firefight_active
+
+    belief.tick += 1
+    belief.enemies = (Enemy(pos=(300, 100), facing="left"),)
+    belief.i_have_arc = True
+    fight.update_firefight(belief)
+    assert not belief.firefight_active
+    assert belief.firefight_arc_exempt_ticks == 1
+
+
+def test_enemy_hp_and_shield_attach_without_stealing_own_bar():
+    w = _world_with_self((600, 329))
+    _add_player(w, 11, 3, "player blue left", (650, 329))
+    w.sprites[50] = SpriteDef(50, 14, 2, "hp 3/3", b"")
+    w.objects[50] = SpriteObject(50, 593, 306, 0, 0, 50)
+    w.sprites[51] = SpriteDef(51, 14, 2, "hp 1/3", b"")
+    w.objects[51] = SpriteObject(51, 643, 306, 0, 0, 51)
+    w.sprites[52] = SpriteDef(52, 10, 10, "shield carried", b"")
+    w.objects[52] = SpriteObject(52, 655, 301, 0, 0, 52)
+
+    state = perceive(_obs(w), "red")
+    assert state.hp_pips == 3
+    assert not state.i_have_shield
+    assert state.enemies[0].hp_segments == 1
+    assert state.enemies[0].shielded
+
+
+def test_focus_claim_codec_roundtrip():
+    from ctf.beacon import chat
+
+    for target, expected_len in (
+        (TargetRef(identity=6, pos=(487, 315)), 8),
+        (TargetRef(identity=None, pos=(487, 315)), 7),
+    ):
+        code = chat.encode_focus_claim(3, target)
+        message = chat.decode(code)
+        assert len(code) == expected_len
+        assert message is not None
+        assert message.kind == "focus_claim"
+        assert message.seat == 3
+        assert message.target_identity == target.identity
+        assert abs(message.pos[0] - target.pos[0]) <= 8
+        assert abs(message.pos[1] - target.pos[1]) <= 8
+
+
+def test_focus_claim_arbitration_preserves_existing_priority(monkeypatch):
+    from ctf.beacon import chat
+
+    target = TargetRef(identity=1, pos=(700, 300))
+    monkeypatch.setattr(chat.fight, "focus_claim_to_send", lambda _belief: target)
+    monkeypatch.setattr(chat.fight, "note_focus_claim_sent", lambda _belief, _target: None)
+    monkeypatch.setattr(chat, "POSTS", True)
+    monkeypatch.setattr(chat, "SQUAD_COMMAND", True)
+
+    def base() -> Belief:
+        return Belief(
+            team="red",
+            seat=0,
+            alive=True,
+            tick=1000,
+            self_xy=(600, 300),
+        )
+
+    cases: list[tuple[Belief, str]] = []
+    carrier = base()
+    carrier.i_carry_enemy_flag = True
+    cases.append((carrier, "C"))
+    thief = base()
+    thief.own_flag_stolen = True
+    thief.own_flag_thief_pos = (700, 300)
+    cases.append((thief, "T"))
+    ordered = base()
+    ordered.order = ("H", (500, 300), 999)
+    cases.append((ordered, "O"))
+    grenade = base()
+    grenade.throw_target = (700, 300)
+    grenade.throw_charge_ticks = 1
+    cases.append((grenade, "G"))
+    under_fire = base()
+    under_fire.under_fire = True
+    cases.append((under_fire, "U"))
+    post = base()
+    post.post_active = True
+    post.post_cell = (548, 20)
+    cases.append((post, "K"))
+    enemy = base()
+    enemy.enemies = (Enemy(pos=(700, 300), facing="left"),)
+    cases.append((enemy, "F"))
+    presence = base()
+    cases.append((presence, "F"))
+
+    for belief, expected_prefix in cases:
+        shout = chat.choose_shout(belief)
+        assert shout is not None
+        assert shout.startswith(expected_prefix)
+
+
+def test_focus_claim_exclusivity_is_local_to_one_fight(monkeypatch):
+    from ctf.beacon import fight
+    from ctf.beacon.types import FocusClaim
+
+    monkeypatch.setattr(fight, "FIREFIGHT", True)
+    monkeypatch.setattr(fight, "FOCUS_CLAIMS", True)
+    selected = fight.score_target(_ff_candidate(1), claimed=False)
+    belief = Belief(
+        team="red",
+        seat=3,
+        tick=100,
+        alive=True,
+        self_xy=(100, 100),
+        firefight_active=True,
+        firefight_target_score=selected,
+    )
+    belief.focus_claim = FocusClaim(
+        claimant_seat=2,
+        target=_ff_candidate(0).target,
+        first_tick=99,
+        refreshed_tick=99,
+        last_seen_tick=99,
+        enemy_deaths_at_last_seen=None,
+    )
+    assert fight.focus_claim_to_send(belief) is None
+    assert belief.focus_claims_suppressed == 1
+
+    belief.focus_claim = FocusClaim(
+        claimant_seat=2,
+        target=TargetRef(identity=0, pos=(900, 600)),
+        first_tick=99,
+        refreshed_tick=99,
+        last_seen_tick=99,
+        enemy_deaths_at_last_seen=None,
+    )
+    assert fight.focus_claim_to_send(belief) == selected.candidate.target
+
+
+def test_focus_claim_releases_on_ttl_missing_and_scoreboard_death(monkeypatch):
+    from ctf.beacon import fight
+    from ctf.beacon.config import (
+        FF_CLAIM_TTL_TICKS,
+        FF_DEATH_MISSING_TICKS,
+        FF_TARGET_MISSING_TICKS,
+    )
+    from ctf.beacon.types import FocusClaim
+
+    monkeypatch.setattr(fight, "FIREFIGHT", True)
+    target = _ff_candidate(1).target
+
+    ttl = Belief(team="red", tick=100, alive=True, self_xy=(100, 100))
+    ttl.focus_claim = FocusClaim(2, target, 1, 100 - FF_CLAIM_TTL_TICKS - 1, 100, None)
+    ttl.enemies = (_ff_candidate(1).enemy,)
+    fight.update_firefight(ttl)
+    assert ttl.focus_claim is None
+    assert ttl.focus_last_release_reason == "claim_ttl"
+
+    missing = Belief(
+        team="red",
+        tick=100,
+        alive=True,
+        self_xy=(100, 100),
+        focus_claim=FocusClaim(
+            2,
+            target,
+            90,
+            100,
+            100 - FF_TARGET_MISSING_TICKS,
+            None,
+        ),
+    )
+    fight.update_firefight(missing)
+    assert missing.focus_claim is None
+    assert missing.focus_last_release_reason == "target_missing"
+
+    death = Belief(
+        team="red",
+        tick=100,
+        alive=True,
+        self_xy=(100, 100),
+        enemy_team_score=(0, 5),
+        focus_claim=FocusClaim(
+            2,
+            target,
+            90,
+            100,
+            100 - FF_DEATH_MISSING_TICKS,
+            4,
+        ),
+    )
+    fight.update_firefight(death)
+    assert death.focus_claim is None
+    assert death.focus_last_release_reason == "scoreboard_death"
+
+
+def test_focus_claim_refresh_rebases_death_inference_and_claimant_death_releases(
+    monkeypatch,
+):
+    from ctf.beacon import fight
+
+    monkeypatch.setattr(fight, "FIREFIGHT", True)
+    monkeypatch.setattr(fight, "FOCUS_CLAIMS", True)
+    belief = Belief(
+        team="red",
+        seat=3,
+        tick=100,
+        alive=True,
+        self_xy=(100, 100),
+        enemy_team_score=(0, 4),
+    )
+    fight.receive_focus_claim(
+        belief,
+        claimant_seat=2,
+        target_identity=1,
+        target_cell=(210, 100),
+    )
+    belief.tick = 110
+    belief.enemy_team_score = (0, 5)
+    fight.receive_focus_claim(
+        belief,
+        claimant_seat=2,
+        target_identity=1,
+        target_cell=(220, 100),
+    )
+    assert belief.focus_claim is not None
+    assert belief.focus_claim.last_seen_tick == 110
+    assert belief.focus_claim.enemy_deaths_at_last_seen == 5
+
+    belief.focus_claim = type(belief.focus_claim)(
+        claimant_seat=belief.seat,
+        target=belief.focus_claim.target,
+        first_tick=100,
+        refreshed_tick=110,
+        last_seen_tick=110,
+        enemy_deaths_at_last_seen=5,
+    )
+    belief.alive = False
+    belief.self_xy = None
+    fight.update_firefight(belief)
+    assert belief.focus_claim is None
+    assert belief.focus_last_release_reason == "claimant_dead"
+
+
+def test_firefight_off_path_command_is_identical(monkeypatch):
+    from copy import deepcopy
+    from ctf.beacon import action, fight
+
+    monkeypatch.setattr(action, "FIREFIGHT", False)
+    monkeypatch.setattr(fight, "FIREFIGHT", False)
+    legacy = Belief(
+        team="red",
+        alive=True,
+        self_xy=(300, 329),
+        aim_brads=0,
+        fire_ready=True,
+        enemies=(
+            Enemy(pos=(360, 329), facing="left", hp_segments=3),
+            Enemy(pos=(300, 579), facing="left", hp_segments=1),
+        ),
+    )
+    primed = deepcopy(legacy)
+    primed.firefight_active = True
+    primed.firefight_target = TargetRef(identity=None, pos=(300, 579))
+
+    expected = resolve_action(Intent(kind="hold", reason="hold_line"), legacy, ActionState())
+    actual = resolve_action(Intent(kind="hold", reason="hold_line"), primed, ActionState())
+    assert expected == actual
+    assert actual.held_mask == int(Button.A)
+
+
+def test_firefight_does_not_preempt_carrier_movement(monkeypatch):
+    from ctf.beacon import fight
+
+    monkeypatch.setattr(fight, "FIREFIGHT", True)
+    belief = Belief(
+        team="red",
+        seat=7,
+        role="attacker",
+        tick=100,
+        alive=True,
+        self_xy=(800, 300),
+        i_carry_enemy_flag=True,
+        firefight_active=True,
+        enemies=(Enemy(pos=(850, 300), facing="left"),),
+    )
+    intent, flow = decide_objective(belief)
+    assert intent.reason == "carry_home"
+    assert flow == "home"
+
+
+def test_firefight_snapshot_contains_activation_and_range_traces():
+    from ctf.beacon.decide import _DiagnosticLogger
+    from ctf.beacon.runtime import StepInfo
+
+    sink = type("Sink", (), {"record": lambda self, event: None})()
+    logger = _DiagnosticLogger(sink, team="red", seat=3)
+    belief = Belief(
+        team="red",
+        seat=3,
+        tick=100,
+        alive=True,
+        self_xy=(100, 100),
+        firefight_active=True,
+        firefight_arc_exempt_ticks=4,
+        firefight_target_switches=2,
+        friendly_fire_suppressed=3,
+        firefight_target_range_counts={"200_299": 9},
+        firefight_shot_range_counts={"200_299": 4},
+    )
+    step = StepInfo(
+        tick=100,
+        percept=_chat_percept(self_xy=(100, 100)),
+        belief=belief,
+        intent=Intent(kind="hold", reason="hold_line"),
+        flow_kind=None,
+        command=Command(held_mask=0),
+    )
+    payload = logger._payload(step)
+    assert payload["firefight_target_switches"] == 2
+    assert payload["firefight_arc_exempt_ticks"] == 4
+    assert payload["friendly_fire_suppressed"] == 3
+    assert payload["firefight_target_ranges"] == {"200_299": 9}
+    assert payload["firefight_shot_ranges"] == {"200_299": 4}
+
+
+def test_firefight_tunable_registry_drives_defaults_and_covers_all_ff_envs():
+    import re
+    from pathlib import Path
+    from ctf.beacon import config
+
+    specs = {
+        name: spec
+        for name, spec in config.TUNABLE_REGISTRY.items()
+        if spec.family == "firefight"
+    }
+    assert specs
+    for name, spec in specs.items():
+        assert getattr(config, name) == spec.default
+        assert spec.description and "\n" not in spec.description
+        assert spec.choices is not None or spec.minimum is not None
+
+    source = Path(config.__file__).read_text()
+    ff_envs_in_config = set(
+        re.findall(r'"(BEACON_FF_[A-Z0-9_]+)"', source)
+    )
+    registered_ff_envs = {
+        spec.env_var
+        for spec in specs.values()
+        if spec.env_var.startswith("BEACON_FF_")
+    }
+    assert registered_ff_envs == ff_envs_in_config
+    assert specs["FIREFIGHT"].env_var == "BEACON_FIREFIGHT"
+    assert specs["FOCUS_CLAIMS"].env_var == "BEACON_FOCUS_CLAIMS"
+
+
+@pytest.mark.parametrize(
+    "assignment",
+    (
+        {"FF_RANGE_CLOSE_PX": 220},
+        {"FF_RANGE_IDEAL_MAX_PX": 351},
+        {"FF_RADIUS_PX": 349},
+        {"FF_TARGET_MIN_DWELL_TICKS": 49},
+        {"FF_CLAIM_REBROADCAST_TICKS": 72},
+        {"FF_DEATH_MISSING_TICKS": 36},
+        {"FF_TARGET_MISSING_TICKS": 72},
+        {"FF_CLAIM_MATCH_PX": 401},
+        {"FOCUS_CLAIMS": True},
+        {"FF_CLAIM_WEIGHT": 0.26},
+        {"FF_SHOOTABILITY_WEIGHT": -0.01},
+        {"FF_WOUND_WEIGHT": "nan"},
+    ),
+)
+def test_firefight_tunable_validation_rejects_invalid_assignments(assignment):
+    from ctf.beacon.config import validate_tunable_values
+
+    with pytest.raises(ValueError):
+        validate_tunable_values(assignment)
+
+
+def test_firefight_tunable_validation_normalizes_names_and_env_vars():
+    from ctf.beacon.config import validate_tunable_values
+
+    values = validate_tunable_values(
+        {
+            "BEACON_FIREFIGHT": "1",
+            "BEACON_FOCUS_CLAIMS": "true",
+            "BEACON_FF_WOUND_WEIGHT": "0.6",
+            "FF_CLAIM_WEIGHT": 0.15,
+        }
+    )
+    assert values["FIREFIGHT"] is True
+    assert values["FOCUS_CLAIMS"] is True
+    assert values["FF_WOUND_WEIGHT"] == 0.6
+    assert values["FF_CLAIM_WEIGHT"] == 0.15
+
+
+def test_firefight_tuning_cli_dump_and_secret_env(capsys):
+    import json
+    from ctf.beacon import tuning
+
+    tuning.main(["dump", "--family", "firefight"])
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["schema_version"] == 1
+    assert payload["tunables"]
+    assert all(item["family"] == "firefight" for item in payload["tunables"])
+    assert {item["name"] for item in payload["invariants"]} >= {
+        "range_band_order",
+        "claim_release_clock_order",
+        "focus_requires_firefight",
+    }
+
+    tuning.main(
+        [
+            "secret-env",
+            "FIREFIGHT=true",
+            "FOCUS_CLAIMS=true",
+            "FF_WOUND_WEIGHT=0.6",
+            "FF_CLAIM_WEIGHT=0.15",
+        ]
+    )
+    assert capsys.readouterr().out.strip() == (
+        "--secret-env BEACON_FIREFIGHT=1 "
+        "--secret-env BEACON_FOCUS_CLAIMS=1 "
+        "--secret-env BEACON_FF_WOUND_WEIGHT=0.6 "
+        "--secret-env BEACON_FF_CLAIM_WEIGHT=0.15"
+    )
 
 
 # --- v24: squad defaults + order decay ------------------------------------------------

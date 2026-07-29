@@ -215,33 +215,144 @@ def _team_scores(world: SpriteWorld) -> tuple[tuple[int, int] | None, tuple[int,
     return red, blue
 
 
-def _overhead_state(world: SpriteWorld, self_xy: tuple[int, int]) -> tuple[int | None, bool, bool, bool]:
-    """Our own hp pips + carried-item markers, read from the overhead UI stack.
+def _nearest_marker_assignments(
+    actors: list[tuple[int, int]],
+    markers: list[tuple[int, int]],
+) -> dict[int, int]:
+    """Globally assign nearby overhead markers to actors, one-to-one.
 
-    Every living player we can see carries the same overhead sprites (a wounded
-    enemy's hp is readable intel), so ownership is by proximity: the marker whose
-    centre is nearest us — within the overhead stack radius — is ours.
+    A tight scrum can put more than one body inside ``_OVERHEAD_RADIUS``. Sorting
+    all feasible actor/marker pairs by distance prevents one marker from being
+    claimed twice or our own marker from being independently selected as an
+    enemy's.
     """
-    hp: int | None = None
-    hp_d = _OVERHEAD_RADIUS
-    have = {"grenade carried": False, "shield carried": False, "plasma arc carried": False}
+    pairs: list[tuple[float, int, int]] = []
+    for actor_i, actor_pos in enumerate(actors):
+        for marker_i, marker_pos in enumerate(markers):
+            d = _dist(actor_pos, marker_pos)
+            if d <= _OVERHEAD_RADIUS:
+                pairs.append((d, actor_i, marker_i))
+    assigned_actors: set[int] = set()
+    assigned_markers: set[int] = set()
+    out: dict[int, int] = {}
+    for _distance, actor_i, marker_i in sorted(pairs):
+        if actor_i in assigned_actors or marker_i in assigned_markers:
+            continue
+        assigned_actors.add(actor_i)
+        assigned_markers.add(marker_i)
+        out[actor_i] = marker_i
+    return out
+
+
+def _attach_overhead_state(
+    world: SpriteWorld,
+    self_xy: tuple[int, int],
+    enemies: tuple[Enemy, ...],
+    teammates: tuple[Enemy, ...],
+) -> tuple[int | None, bool, bool, bool, tuple[Enemy, ...], tuple[Enemy, ...]]:
+    """Attach ordinal HP bars and carried markers to every visible player.
+
+    ``labels.nim`` defines ``hp <lit>/<total>`` as lit BAR SEGMENTS over
+    ``hp + shieldHp``. The numerator is retained as an ordinal 1..3 value; it is
+    never interpreted as hit points. Markers are scanned once. Self ownership is
+    resolved first with the exact legacy proximity rules so flags-off item behavior
+    is unchanged; remaining markers are then assigned one-to-one across enemies and
+    teammates.
+    """
+    hp_values: list[int] = []
+    hp_positions: list[tuple[int, int]] = []
+    carried_positions: dict[str, list[tuple[int, int]]] = {
+        "grenade carried": [],
+        "shield carried": [],
+        "plasma arc carried": [],
+    }
     for obj in world.objects.values():
         sprite = world.sprite_for(obj)
         if sprite is None:
             continue
         label = sprite.label
         if label.startswith("hp "):
-            d = _dist(_center(world, obj), self_xy)
-            if d < hp_d:
-                hp_d = d
-                try:
-                    hp = int(label.split(" ")[1].split("/")[0])
-                except (IndexError, ValueError):
-                    hp = None
-        elif label in have:
-            if _dist(_center(world, obj), self_xy) <= _OVERHEAD_RADIUS:
-                have[label] = True
-    return hp, have["grenade carried"], have["shield carried"], have["plasma arc carried"]
+            try:
+                lit = int(label.split(" ", 1)[1].split("/", 1)[0])
+            except (IndexError, ValueError):
+                continue
+            hp_values.append(lit)
+            hp_positions.append(_center(world, obj))
+        elif label in carried_positions:
+            carried_positions[label].append(_center(world, obj))
+
+    self_hp: int | None = None
+    self_hp_marker: int | None = None
+    self_hp_distance = _OVERHEAD_RADIUS
+    for marker_i, marker_pos in enumerate(hp_positions):
+        distance = _dist(self_xy, marker_pos)
+        if distance < self_hp_distance:
+            self_hp_distance = distance
+            self_hp = hp_values[marker_i]
+            self_hp_marker = marker_i
+
+    actors = [*(enemy.pos for enemy in enemies), *(mate.pos for mate in teammates)]
+    remaining_hp = [
+        (marker_i, marker_pos)
+        for marker_i, marker_pos in enumerate(hp_positions)
+        if marker_i != self_hp_marker
+    ]
+    hp_by_actor = {
+        actor_i: hp_values[remaining_hp[marker_i][0]]
+        for actor_i, marker_i in _nearest_marker_assignments(
+            actors,
+            [pos for _original_i, pos in remaining_hp],
+        ).items()
+    }
+
+    self_carried: dict[str, bool] = {}
+    carried_by_actor: dict[str, set[int]] = {}
+    for label, positions in carried_positions.items():
+        self_markers = {
+            marker_i
+            for marker_i, marker_pos in enumerate(positions)
+            if _dist(self_xy, marker_pos) <= _OVERHEAD_RADIUS
+        }
+        self_carried[label] = bool(self_markers)
+        remaining = [
+            marker_pos
+            for marker_i, marker_pos in enumerate(positions)
+            if marker_i not in self_markers
+        ]
+        carried_by_actor[label] = set(
+            _nearest_marker_assignments(actors, remaining)
+        )
+
+    enemy_start = 0
+    teammate_start = len(enemies)
+    attached_enemies = tuple(
+        Enemy(
+            pos=enemy.pos,
+            facing=enemy.facing,
+            identity=enemy.identity,
+            hp_segments=hp_by_actor.get(enemy_start + i),
+            shielded=enemy_start + i in carried_by_actor["shield carried"],
+        )
+        for i, enemy in enumerate(enemies)
+    )
+    attached_teammates = tuple(
+        Enemy(
+            pos=mate.pos,
+            facing=mate.facing,
+            identity=mate.identity,
+            hp_segments=hp_by_actor.get(teammate_start + i),
+            shielded=teammate_start + i in carried_by_actor["shield carried"],
+        )
+        for i, mate in enumerate(teammates)
+    )
+    return (
+        self_hp,
+        self_carried["grenade carried"],
+        self_carried["shield carried"],
+        self_carried["plasma arc carried"],
+        attached_enemies,
+        attached_teammates,
+    )
 
 
 def perceive(obs, team: Team) -> CtfState:
@@ -289,7 +400,14 @@ def perceive(obs, team: Team) -> CtfState:
     heard_impacts = _heard_impacts(world)
     heard_shouts = _heard_shouts(world)
     if self_xy is not None:
-        hp_pips, have_grenade, have_shield, have_arc = _overhead_state(world, self_xy)
+        (
+            hp_pips,
+            have_grenade,
+            have_shield,
+            have_arc,
+            enemies,
+            teammates,
+        ) = _attach_overhead_state(world, self_xy, enemies, teammates)
     else:
         hp_pips, have_grenade, have_shield, have_arc = None, False, False, False
     red_score, blue_score = _team_scores(world)

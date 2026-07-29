@@ -36,6 +36,11 @@ class Enemy:
     pos: tuple[int, int]
     facing: str  # "left" | "right"
     identity: int | None = None
+    #: Ordinal lit-bar segments from ``hp <lit>/<total>`` (labels.nim), not hit
+    #: points. Includes shield health; None when the overhead marker did not resolve.
+    hp_segments: int | None = None
+    #: A visible ``shield carried`` marker is attached to this player.
+    shielded: bool = False
 
 
 @dataclass
@@ -71,6 +76,64 @@ class PlayerTrack:
     #: nameplate identity (0=alpha..7=theta) from the 0.7.69 badges; None if the
     #: track has never had a badge resolve. Sticky: kept once known.
     identity: int | None = None
+    #: Last resolved ordinal HP-bar segments. Retained through an association miss.
+    hp_segments: int | None = None
+    #: Shield state at the most recent sighting; shields break on depletion.
+    shielded: bool = False
+
+
+@dataclass(frozen=True)
+class TargetRef:
+    """Cross-frame handle for one enemy.
+
+    Nameplate identity is authoritative once known. ``pos`` is the latest actual
+    or cell-centred position and keeps anonymous targets useful until a badge
+    resolves.
+    """
+
+    identity: int | None
+    pos: tuple[int, int]
+
+
+@dataclass(frozen=True)
+class FocusClaim:
+    """The one first-heard local focus-fire claim this bot currently recognizes."""
+
+    claimant_seat: int
+    target: TargetRef
+    first_tick: int
+    refreshed_tick: int
+    last_seen_tick: int
+    enemy_deaths_at_last_seen: int | None
+
+
+@dataclass(frozen=True)
+class TargetCandidate:
+    """One visible enemy plus the per-shooter geometry needed for scoring."""
+
+    enemy: Enemy
+    target: TargetRef
+    aim_pos: tuple[int, int]
+    lead_brads: int
+    distance_px: float
+    aim_cost: float
+    line_clear: bool
+    teammate_blocked: bool
+    shootable: bool
+
+
+@dataclass(frozen=True)
+class TargetScore:
+    """A target's weighted total plus normalized, traceable score terms."""
+
+    candidate: TargetCandidate
+    score: float
+    wound: float
+    range_band: float
+    claim: float
+    shootability: float
+    aim_cost: float
+    shield: float
 
 
 @dataclass(frozen=True)
@@ -208,6 +271,31 @@ class Belief:
     heard_events: list[HeardImpact] = field(default_factory=list)
     # Under fire (v18): fresh impacts landed near us recently (set by belief).
     under_fire: bool = False
+    # Firefight overlay: target intent and local focus claims. This never changes
+    # the movement priority ladder; fight.py/action.py are the only consumers.
+    firefight_active: bool = False
+    firefight_entered_tick: int = -1
+    firefight_last_trigger_tick: int = -10_000
+    firefight_ticks_total: int = 0
+    firefight_engagements: int = 0
+    firefight_target: TargetRef | None = None
+    firefight_target_score: TargetScore | None = None
+    firefight_target_selected_tick: int = -1
+    firefight_target_last_seen_tick: int = -1
+    firefight_target_switches: int = 0
+    focus_claim: FocusClaim | None = None
+    focus_last_claim_sent_tick: int = -10_000
+    focus_claims_sent: int = 0
+    focus_claims_heard: int = 0
+    focus_claims_suppressed: int = 0
+    focus_claim_release_counts: dict[str, int] = field(default_factory=dict)
+    focus_last_release_reason: str | None = None
+    friendly_fire_suppressed: int = 0
+    firefight_target_range_counts: dict[str, int] = field(default_factory=dict)
+    firefight_shot_range_counts: dict[str, int] = field(default_factory=dict)
+    #: Arc holders deliberately keep legacy short-range targeting; count frames
+    #: that would otherwise have entered firefight so the exclusion is visible.
+    firefight_arc_exempt_ticks: int = 0
     # Chat (v18) — send-side bookkeeping (chat.choose_shout):
     chat_last_sent_tick: int = -10_000
     chat_enemy_armed: bool = True  # edge trigger for E; re-arms after clear vision
@@ -345,6 +433,7 @@ __all__ = [
     "Command",
     "CtfState",
     "Enemy",
+    "FocusClaim",
     "HeardImpact",
     "Intent",
     "IntentKind",
@@ -355,4 +444,7 @@ __all__ = [
     "PostClaim",
     "Role",
     "Team",
+    "TargetCandidate",
+    "TargetRef",
+    "TargetScore",
 ]

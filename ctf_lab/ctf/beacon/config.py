@@ -1,13 +1,22 @@
 """Tunable knobs and static game geometry for beacon.
 
 Knobs live here, isolated from logic, so each iteration is attributable and can be
-A/B'd (root AGENTS.md). Geometry constants mirror ``src/ctf/sim.nim`` at the pinned
+A/B'd (root AGENTS.md). Sweepable families use ``TUNABLE_REGISTRY`` entries that
+directly construct their live values, so domains and defaults cannot drift from
+runtime config. Geometry constants mirror ``src/ctf/sim.nim`` at the pinned
 ``CTF_REF`` and must match the deployed arena.
 """
 
 from __future__ import annotations
 
+import math
 import os
+from collections.abc import Mapping
+from dataclasses import dataclass
+from typing import Literal
+
+TunableType = Literal["boolean", "integer", "number"]
+TunableValue = bool | int | float
 
 # --- Static arena geometry (verbatim from sim.nim) --------------------------------
 MAP_W = 1235
@@ -116,6 +125,210 @@ def _env_float(name: str, default: float) -> float:
         return default
 
 
+@dataclass(frozen=True)
+class TunableSpec:
+    """One sweepable policy parameter and its machine-readable domain."""
+
+    name: str
+    family: str
+    env_var: str
+    default: TunableValue
+    value_type: TunableType
+    description: str
+    minimum: int | float | None = None
+    maximum: int | float | None = None
+    choices: tuple[TunableValue, ...] | None = None
+
+    def coerce(self, value: object) -> TunableValue:
+        """Parse one assignment and enforce this knob's independent domain."""
+        if self.value_type == "boolean":
+            if isinstance(value, bool):
+                parsed: TunableValue = value
+            elif isinstance(value, int) and value in (0, 1):
+                parsed = bool(value)
+            elif isinstance(value, str) and value.strip().lower() in {
+                "0",
+                "1",
+                "false",
+                "true",
+                "off",
+                "on",
+            }:
+                parsed = value.strip().lower() in {"1", "true", "on"}
+            else:
+                raise ValueError(f"{self.name} must be boolean")
+        elif self.value_type == "integer":
+            if isinstance(value, bool):
+                raise ValueError(f"{self.name} must be an integer")
+            try:
+                parsed = int(value)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(f"{self.name} must be an integer") from exc
+            if isinstance(value, float) and not value.is_integer():
+                raise ValueError(f"{self.name} must be an integer")
+            if isinstance(value, str) and str(parsed) != value.strip():
+                raise ValueError(f"{self.name} must be an integer")
+        else:
+            if isinstance(value, bool):
+                raise ValueError(f"{self.name} must be a number")
+            try:
+                parsed = float(value)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(f"{self.name} must be a number") from exc
+            if not math.isfinite(parsed):
+                raise ValueError(f"{self.name} must be finite")
+
+        if self.choices is not None and parsed not in self.choices:
+            raise ValueError(
+                f"{self.name} must be one of {list(self.choices)}"
+            )
+        if self.minimum is not None and parsed < self.minimum:
+            raise ValueError(f"{self.name} must be >= {self.minimum}")
+        if self.maximum is not None and parsed > self.maximum:
+            raise ValueError(f"{self.name} must be <= {self.maximum}")
+        return parsed
+
+    def to_dict(self) -> dict[str, object]:
+        """JSON-safe registry row."""
+        return {
+            "name": self.name,
+            "family": self.family,
+            "env_var": self.env_var,
+            "default": self.default,
+            "type": self.value_type,
+            "range": (
+                {"minimum": self.minimum, "maximum": self.maximum}
+                if self.choices is None
+                else None
+            ),
+            "choices": list(self.choices) if self.choices is not None else None,
+            "description": self.description,
+        }
+
+
+@dataclass(frozen=True)
+class TunableInvariant:
+    """A named cross-knob constraint exposed alongside the registry."""
+
+    name: str
+    description: str
+    family: str = "firefight"
+
+    def to_dict(self) -> dict[str, str]:
+        return {
+            "name": self.name,
+            "family": self.family,
+            "description": self.description,
+        }
+
+
+# Family-tagged so post, squad, or item knobs can join without changing the schema.
+TUNABLE_REGISTRY: dict[str, TunableSpec] = {}
+
+
+def _tunable(
+    name: str,
+    env_var: str,
+    default: TunableValue,
+    value_type: TunableType,
+    description: str,
+    *,
+    family: str,
+    minimum: int | float | None = None,
+    maximum: int | float | None = None,
+    choices: tuple[TunableValue, ...] | None = None,
+) -> TunableValue:
+    """Register one knob and resolve its current environment-backed value."""
+    if name in TUNABLE_REGISTRY:
+        raise ValueError(f"duplicate tunable name: {name}")
+    if any(spec.env_var == env_var for spec in TUNABLE_REGISTRY.values()):
+        raise ValueError(f"duplicate tunable env var: {env_var}")
+    spec = TunableSpec(
+        name=name,
+        family=family,
+        env_var=env_var,
+        default=default,
+        value_type=value_type,
+        description=description,
+        minimum=minimum,
+        maximum=maximum,
+        choices=choices,
+    )
+    spec.coerce(default)
+    TUNABLE_REGISTRY[name] = spec
+    raw = os.getenv(env_var)
+    return default if raw is None or raw == "" else spec.coerce(raw)
+
+
+def _bool_tunable(
+    name: str,
+    env_var: str,
+    default: bool,
+    description: str,
+    *,
+    family: str,
+) -> bool:
+    return bool(
+        _tunable(
+            name,
+            env_var,
+            default,
+            "boolean",
+            description,
+            family=family,
+            choices=(False, True),
+        )
+    )
+
+
+def _int_tunable(
+    name: str,
+    env_var: str,
+    default: int,
+    description: str,
+    *,
+    family: str,
+    minimum: int | None = None,
+    maximum: int | None = None,
+) -> int:
+    return int(
+        _tunable(
+            name,
+            env_var,
+            default,
+            "integer",
+            description,
+            family=family,
+            minimum=minimum,
+            maximum=maximum,
+        )
+    )
+
+
+def _float_tunable(
+    name: str,
+    env_var: str,
+    default: float,
+    description: str,
+    *,
+    family: str,
+    minimum: float | None = None,
+    maximum: float | None = None,
+) -> float:
+    return float(
+        _tunable(
+            name,
+            env_var,
+            default,
+            "number",
+            description,
+            family=family,
+            minimum=minimum,
+            maximum=maximum,
+        )
+    )
+
+
 # --- Tunable behaviour knobs (env-overridable for A/B at upload time) -------------
 #: Lighthouse sweep half-arc, in brads (±). 32 brads ≈ ±45°.
 SWEEP_HALF_ARC = _env_int("BEACON_SWEEP_HALF_ARC", 32)
@@ -138,7 +351,14 @@ CLOSE_RANGE_PX = _env_int("BEACON_CLOSE_RANGE_PX", 220)
 #: Hold fire if a visible teammate is within this perpendicular distance (px) of the
 #: shot ray and closer than the target (friendly fire is ON; the bullet stops at the
 #: first body). A bit wider than the sim's ~14px corridor for safety margin.
-FRIENDLY_FIRE_CORRIDOR_PX = _env_int("BEACON_FF_CORRIDOR_PX", 22)
+FRIENDLY_FIRE_CORRIDOR_PX = _int_tunable(
+    "FRIENDLY_FIRE_CORRIDOR_PX",
+    "BEACON_FF_CORRIDOR_PX",
+    22,
+    "Friendly-fire veto corridor around the shot ray, in pixels.",
+    family="firefight",
+    minimum=14,
+)
 #: Re-plan the A* path if the goal cell moves more than this many cells.
 REPLAN_GOAL_CELLS = _env_int("BEACON_REPLAN_GOAL_CELLS", 2)
 #: Frames of no navigation progress before forcing a re-plan + jitter.
@@ -203,6 +423,342 @@ LEAD_MIN_FRAMES = _env_int("BEACON_LEAD_MIN_FRAMES", 3)
 #: defender fire. Withholding those shots trades spray for hit rate (the gun is
 #: still map-wide for reactive snap shots INSIDE the gate).
 FIRE_MAX_RANGE_PX = _env_int("BEACON_FIRE_MAX_RANGE_PX", 350)
+
+# --- Firefight target selection + focus claims --------------------------------------
+# Firefight is a combat overlay, never a strategy rung: it changes which visible
+# enemy the gun watches, not where the bot moves. Both switches default OFF so one
+# uploaded image can supply clean control / scoring / scoring+claims A/B arms.
+FIREFIGHT = _bool_tunable(
+    "FIREFIGHT",
+    "BEACON_FIREFIGHT",
+    False,
+    "Enable firefight state and scored gun-target selection.",
+    family="firefight",
+)
+FOCUS_CLAIMS = _bool_tunable(
+    "FOCUS_CLAIMS",
+    "BEACON_FOCUS_CLAIMS",
+    False,
+    "Enable local F target claims as a soft scoring bias.",
+    family="firefight",
+)
+#: Enter when a visible enemy is this close (or whenever under_fire is true).
+#: Slightly beyond the 350px fire gate so a target is chosen before it enters range.
+FF_RADIUS_PX = _int_tunable(
+    "FF_RADIUS_PX",
+    "BEACON_FF_RADIUS_PX",
+    400,
+    "Visible-enemy radius that triggers firefight state, in map pixels.",
+    family="firefight",
+    minimum=FIRE_MAX_RANGE_PX,
+    maximum=SIGHTLINE_CAP_PX,
+)
+#: Stay in firefight this long after the last trigger (~2s at 24 ticks/s).
+FF_DWELL_TICKS = _int_tunable(
+    "FF_DWELL_TICKS",
+    "BEACON_FF_DWELL_TICKS",
+    48,
+    "Ticks firefight remains active after its last trigger.",
+    family="firefight",
+    minimum=1,
+)
+#: Target latch: pay a short commitment before a merely-better challenger can win.
+FF_TARGET_MIN_DWELL_TICKS = _int_tunable(
+    "FF_TARGET_MIN_DWELL_TICKS",
+    "BEACON_FF_TARGET_MIN_DWELL_TICKS",
+    8,
+    "Minimum ticks on a shootable target before a scored switch.",
+    family="firefight",
+    minimum=1,
+)
+#: Challenger score advantage required after the minimum dwell. The 0.12 claim
+#: bonus can break an exact latched tie; a one-segment wound edge (0.25) remains
+#: materially larger.
+FF_TARGET_SWITCH_MARGIN = _float_tunable(
+    "FF_TARGET_SWITCH_MARGIN",
+    "BEACON_FF_TARGET_SWITCH_MARGIN",
+    0.10,
+    "Minimum score advantage required to switch a shootable latched target.",
+    family="firefight",
+    minimum=0.0,
+)
+#: Effective gun band. The far ideal edge deliberately stays INSIDE the existing
+#: 350px fire gate; do not add a second far-gate knob that can contradict it.
+FF_RANGE_CLOSE_PX = _int_tunable(
+    "FF_RANGE_CLOSE_PX",
+    "BEACON_FF_RANGE_CLOSE_PX",
+    120,
+    "Range at or below which the range-band score is zero, in pixels.",
+    family="firefight",
+    minimum=0,
+    maximum=FIRE_MAX_RANGE_PX,
+)
+FF_RANGE_IDEAL_MIN_PX = _int_tunable(
+    "FF_RANGE_IDEAL_MIN_PX",
+    "BEACON_FF_RANGE_IDEAL_MIN_PX",
+    220,
+    "Near edge of the peak target range band, bounded by the fire gate.",
+    family="firefight",
+    minimum=0,
+    maximum=FIRE_MAX_RANGE_PX,
+)
+FF_RANGE_IDEAL_MAX_PX = _int_tunable(
+    "FF_RANGE_IDEAL_MAX_PX",
+    "BEACON_FF_RANGE_IDEAL_MAX_PX",
+    300,
+    "Far edge of the peak target range band, bounded by the fire gate.",
+    family="firefight",
+    minimum=0,
+    maximum=FIRE_MAX_RANGE_PX,
+)
+#: Normalized target-score weights. Shootability is signed (-1 blocked/+1 clear):
+#: 0.35 gives a 0.70 clear-vs-blocked swing, decisive over one wound level (0.25)
+#: without drowning out wound/range in the A/B.
+FF_WOUND_WEIGHT = _float_tunable(
+    "FF_WOUND_WEIGHT",
+    "BEACON_FF_WOUND_WEIGHT",
+    0.50,
+    "Weight for preferring enemies with fewer lit health-bar segments.",
+    family="firefight",
+    minimum=0.0,
+)
+FF_WOUND_UNKNOWN = _float_tunable(
+    "FF_WOUND_UNKNOWN",
+    "BEACON_FF_WOUND_UNKNOWN",
+    0.15,
+    "Normalized wound value used when an enemy HP bar is unresolved.",
+    family="firefight",
+    minimum=0.0,
+    maximum=1.0,
+)
+FF_RANGE_WEIGHT = _float_tunable(
+    "FF_RANGE_WEIGHT",
+    "BEACON_FF_RANGE_WEIGHT",
+    0.30,
+    "Weight for preferring targets in the effective gun range band.",
+    family="firefight",
+    minimum=0.0,
+)
+FF_CLAIM_WEIGHT = _float_tunable(
+    "FF_CLAIM_WEIGHT",
+    "BEACON_FF_CLAIM_WEIGHT",
+    0.12,
+    "Bounded score bonus for matching a fresh local focus claim.",
+    family="firefight",
+    minimum=0.0,
+)
+FF_SHOOTABILITY_WEIGHT = _float_tunable(
+    "FF_SHOOTABILITY_WEIGHT",
+    "BEACON_FF_SHOOTABILITY_WEIGHT",
+    0.35,
+    "Weight for signed clear-versus-blocked shootability.",
+    family="firefight",
+    minimum=0.0,
+)
+FF_AIM_COST_WEIGHT = _float_tunable(
+    "FF_AIM_COST_WEIGHT",
+    "BEACON_FF_AIM_COST_WEIGHT",
+    0.18,
+    "Penalty weight for normalized aim traverse to the target.",
+    family="firefight",
+    minimum=0.0,
+)
+FF_SHIELD_WEIGHT = _float_tunable(
+    "FF_SHIELD_WEIGHT",
+    "BEACON_FF_SHIELD_WEIGHT",
+    0.10,
+    "Penalty weight for a visibly shielded target.",
+    family="firefight",
+    minimum=0.0,
+)
+#: Focus-claim clocks. The global chat interval is also 30 ticks; this cadence
+#: therefore refreshes at the first available F slot without consuming extra chat.
+FF_CLAIM_REBROADCAST_TICKS = _int_tunable(
+    "FF_CLAIM_REBROADCAST_TICKS",
+    "BEACON_FF_CLAIM_REBROADCAST_TICKS",
+    30,
+    "Minimum ticks between this bot's focus-claim broadcasts.",
+    family="firefight",
+    minimum=1,
+)
+FF_CLAIM_TTL_TICKS = _int_tunable(
+    "FF_CLAIM_TTL_TICKS",
+    "BEACON_FF_CLAIM_TTL_TICKS",
+    72,
+    "Ticks without a broadcast before a focus claim expires.",
+    family="firefight",
+    minimum=1,
+)
+#: An anonymous cell claim can move ~83px between 30-tick broadcasts at max
+#: per-axis speed; 96px includes one-cell quantization margin.
+FF_CLAIM_MATCH_PX = _int_tunable(
+    "FF_CLAIM_MATCH_PX",
+    "BEACON_FF_CLAIM_MATCH_PX",
+    96,
+    "Maximum position error for associating an anonymous focus claim.",
+    family="firefight",
+    minimum=NAV_CELL,
+)
+#: Claims are exclusive only in this bot's local fight, never team-global.
+FF_CLAIM_LOCALITY_PX = _int_tunable(
+    "FF_CLAIM_LOCALITY_PX",
+    "BEACON_FF_CLAIM_LOCALITY_PX",
+    400,
+    "Receiver-to-target radius that scopes focus-claim exclusivity.",
+    family="firefight",
+    minimum=NAV_CELL,
+)
+#: Release an unobserved target quickly; aggregate deaths provide a faster but
+#: deliberately corroborative path because the scoreboard cannot name the victim.
+FF_TARGET_MISSING_TICKS = _int_tunable(
+    "FF_TARGET_MISSING_TICKS",
+    "BEACON_FF_TARGET_MISSING_TICKS",
+    36,
+    "Ticks unseen before a claimed target is released as missing.",
+    family="firefight",
+    minimum=1,
+)
+FF_DEATH_MISSING_TICKS = _int_tunable(
+    "FF_DEATH_MISSING_TICKS",
+    "BEACON_FF_DEATH_MISSING_TICKS",
+    8,
+    "Minimum unseen ticks before an enemy death can release a claim.",
+    family="firefight",
+    minimum=1,
+)
+
+TUNABLE_INVARIANTS: tuple[TunableInvariant, ...] = (
+    TunableInvariant(
+        "range_band_order",
+        "0 <= close < ideal_min <= ideal_max <= FIRE_MAX_RANGE_PX.",
+    ),
+    TunableInvariant(
+        "firefight_radius_geometry",
+        "FIRE_MAX_RANGE_PX <= firefight radius <= SIGHTLINE_CAP_PX.",
+    ),
+    TunableInvariant(
+        "target_latch_within_mode",
+        "Target minimum dwell must not exceed firefight dwell.",
+    ),
+    TunableInvariant(
+        "claim_refresh_before_expiry",
+        "Claim rebroadcast interval must be shorter than claim TTL.",
+    ),
+    TunableInvariant(
+        "claim_release_clock_order",
+        "Death-missing ticks < target-missing ticks < claim TTL.",
+    ),
+    TunableInvariant(
+        "claim_match_within_locality",
+        "Anonymous claim match radius must not exceed claim locality.",
+    ),
+    TunableInvariant(
+        "focus_requires_firefight",
+        "FOCUS_CLAIMS may be enabled only when FIREFIGHT is enabled.",
+    ),
+    TunableInvariant(
+        "claim_bias_bounded_by_wound",
+        "Claim bonus may not exceed one health-bar segment of wound score.",
+    ),
+)
+
+
+def tunable_spec(name_or_env: str) -> TunableSpec:
+    """Look up a registry entry by config name or environment variable."""
+    by_name = TUNABLE_REGISTRY.get(name_or_env)
+    if by_name is not None:
+        return by_name
+    by_env = next(
+        (
+            spec
+            for spec in TUNABLE_REGISTRY.values()
+            if spec.env_var == name_or_env
+        ),
+        None,
+    )
+    if by_env is None:
+        raise ValueError(f"unknown tunable: {name_or_env}")
+    return by_env
+
+
+def validate_tunable_values(
+    assignments: Mapping[str, object] | None = None,
+) -> dict[str, TunableValue]:
+    """Normalize a partial assignment against defaults and validate all invariants.
+
+    Keys may be config names (``FF_WOUND_WEIGHT``) or environment names
+    (``BEACON_FF_WOUND_WEIGHT``). The returned mapping always uses config names.
+    """
+    values = {
+        name: spec.coerce(spec.default)
+        for name, spec in TUNABLE_REGISTRY.items()
+    }
+    assigned_names: set[str] = set()
+    for key, raw_value in (assignments or {}).items():
+        spec = tunable_spec(key)
+        if spec.name in assigned_names:
+            raise ValueError(f"duplicate assignment for {spec.name}")
+        assigned_names.add(spec.name)
+        values[spec.name] = spec.coerce(raw_value)
+
+    def require(condition: bool, invariant: str) -> None:
+        if not condition:
+            description = next(
+                item.description
+                for item in TUNABLE_INVARIANTS
+                if item.name == invariant
+            )
+            raise ValueError(f"{invariant}: {description}")
+
+    require(
+        0
+        <= values["FF_RANGE_CLOSE_PX"]
+        < values["FF_RANGE_IDEAL_MIN_PX"]
+        <= values["FF_RANGE_IDEAL_MAX_PX"]
+        <= FIRE_MAX_RANGE_PX,
+        "range_band_order",
+    )
+    require(
+        FIRE_MAX_RANGE_PX
+        <= values["FF_RADIUS_PX"]
+        <= SIGHTLINE_CAP_PX,
+        "firefight_radius_geometry",
+    )
+    require(
+        values["FF_TARGET_MIN_DWELL_TICKS"] <= values["FF_DWELL_TICKS"],
+        "target_latch_within_mode",
+    )
+    require(
+        values["FF_CLAIM_REBROADCAST_TICKS"]
+        < values["FF_CLAIM_TTL_TICKS"],
+        "claim_refresh_before_expiry",
+    )
+    require(
+        values["FF_DEATH_MISSING_TICKS"]
+        < values["FF_TARGET_MISSING_TICKS"]
+        < values["FF_CLAIM_TTL_TICKS"],
+        "claim_release_clock_order",
+    )
+    require(
+        values["FF_CLAIM_MATCH_PX"] <= values["FF_CLAIM_LOCALITY_PX"],
+        "claim_match_within_locality",
+    )
+    require(
+        not values["FOCUS_CLAIMS"] or bool(values["FIREFIGHT"]),
+        "focus_requires_firefight",
+    )
+    require(
+        values["FF_CLAIM_WEIGHT"] <= values["FF_WOUND_WEIGHT"] * 0.5,
+        "claim_bias_bounded_by_wound",
+    )
+    return values
+
+
+# Validate the actual environment-backed values too. A malformed hosted arm should
+# fail at process startup, while the tuning CLI catches it before upload.
+validate_tunable_values(
+    {name: globals()[name] for name in TUNABLE_REGISTRY}
+)
 
 # --- Item skills (v10) ---------------------------------------------------------------
 #: Master switch for the item system (fetch + use) — the other v10 A/B bit.

@@ -7,7 +7,8 @@ This is where the tactical design lives (§3, §5):
   * **Aim (the lighthouse)**: default is a sweep panning ±SWEEP_HALF_ARC across the
     *threat axis* (unit vector from us toward the enemy pedestal). A settled post
     instead watches its baked sightline through a narrower arc. The moment an enemy
-    is visible, either sweep aborts and aim snaps onto the nearest enemy.
+    is visible, either sweep aborts and aim snaps onto the nearest enemy by default,
+    or fight.py's intentional scored target while firefight is enabled.
   * **Fire**: press A (edge-triggered) when an enemy is visible, the gun is ready,
     and the shot geometry clears the fire-gate (aim close enough that the shot ray
     passes through the target). Never rotate on the firing tick, so the locked aim
@@ -21,7 +22,7 @@ from __future__ import annotations
 
 import math
 
-from ctf.beacon import mapdata, nav, posts, squads
+from ctf.beacon import fight, mapdata, nav, posts, squads
 from ctf.beacon.config import (
     AIM_BRADS_TURN,
     AIM_DEADBAND,
@@ -35,6 +36,7 @@ from ctf.beacon.config import (
     FIRE_MAX_RANGE_PX,
     FIRE_SLACK_PX,
     FIRE_WINDUP_TICKS,
+    FIREFIGHT,
     FRIENDLY_FIRE_CORRIDOR_PX,
     GRENADE_AIM_ERR_BRADS,
     GRENADE_BLAST_RADIUS,
@@ -65,7 +67,15 @@ from ctf.beacon.config import (
     STUCK_TICKS,
     SWEEP_HALF_ARC,
 )
-from ctf.beacon.types import ActionState, Belief, Command, Enemy, Intent, PlayerTrack
+from ctf.beacon.types import (
+    ActionState,
+    Belief,
+    Command,
+    Enemy,
+    Intent,
+    PlayerTrack,
+    TargetCandidate,
+)
 from players.player_sdk import Button
 
 
@@ -221,6 +231,45 @@ def _teammate_blocks_shot(belief: Belief, target_pos: tuple[int, int]) -> bool:
         if perp <= FRIENDLY_FIRE_CORRIDOR_PX:
             return True
     return False
+
+
+def _target_candidates(belief: Belief) -> tuple[TargetCandidate, ...]:
+    """Visible gun targets with cheap per-shooter geometry for fight.py.
+
+    The baked sightline field answers the bullet-wall question for every
+    candidate without per-target raycasting. resolve_action retains one exact
+    ray_clear check for the selected target before firing.
+    """
+    assert belief.self_xy is not None
+    sx, sy = belief.self_xy
+    out: list[TargetCandidate] = []
+    for enemy in belief.enemies:
+        aim_pos, lead = _lead_aim_pos(belief, enemy)
+        want = _brads_of(aim_pos[0] - sx, aim_pos[1] - sy)
+        aim_cost = abs(_brad_error(want, belief.aim_brads)) / (
+            AIM_BRADS_TURN // 2
+        )
+        aim_range = math.hypot(aim_pos[0] - sx, aim_pos[1] - sy)
+        line_clear = fight.baked_line_clear(belief.self_xy, aim_pos)
+        teammate_blocked = _teammate_blocks_shot(belief, aim_pos)
+        out.append(
+            TargetCandidate(
+                enemy=enemy,
+                target=fight.target_ref_for(belief, enemy),
+                aim_pos=aim_pos,
+                lead_brads=lead,
+                distance_px=math.hypot(enemy.pos[0] - sx, enemy.pos[1] - sy),
+                aim_cost=aim_cost,
+                line_clear=line_clear,
+                teammate_blocked=teammate_blocked,
+                shootable=(
+                    aim_range <= FIRE_MAX_RANGE_PX
+                    and line_clear
+                    and not teammate_blocked
+                ),
+            )
+        )
+    return tuple(out)
 
 
 # --- Peek-fire-duck micro (v7) --------------------------------------------------------
@@ -478,11 +527,24 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
             mask |= nav.octant_toward(self_xy, step, False)
 
     # --- Combat overlay: aim + fire -----------------------------------------------
-    enemy = _nearest_enemy(belief)
+    selected = (
+        fight.select_target(belief, _target_candidates(belief))
+        if FIREFIGHT and belief.firefight_active and not belief.i_have_arc
+        else None
+    )
+    enemy = (
+        selected.candidate.enemy
+        if selected is not None
+        else _nearest_enemy(belief)
+    )
     if enemy is not None:
         # Snap aim onto the target — led ahead of a moving one (v10): the windup
         # delays the bullet ~LEAD_TICKS, so aim where the target will BE.
-        aim_pos, lead = _lead_aim_pos(belief, enemy)
+        if selected is not None:
+            aim_pos = selected.candidate.aim_pos
+            lead = selected.candidate.lead_brads
+        else:
+            aim_pos, lead = _lead_aim_pos(belief, enemy)
         belief.lead_brads = lead
         want = _brads_of(aim_pos[0] - self_xy[0], aim_pos[1] - self_xy[1])
         err = _brad_error(want, belief.aim_brads)
@@ -500,12 +562,18 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
             # ray_clear guards the GLASS WINDOWS (GameVersion 15/16): vision passes
             # through glass but bullets don't, so a visible enemy is no longer a
             # shootable one — firing through a window is a guaranteed miss.
-            can_fire = (
+            otherwise_fireable = (
                 belief.fire_ready
                 and _fire_gate(belief, aim_pos)
                 and mapdata.ray_clear(self_xy, aim_pos)
-                and not _teammate_blocks_shot(belief, aim_pos)
             )
+            teammate_blocked = (
+                otherwise_fireable
+                and _teammate_blocks_shot(belief, aim_pos)
+            )
+            if teammate_blocked and not state.a_held:
+                belief.friendly_fire_suppressed += 1
+            can_fire = otherwise_fireable and not teammate_blocked
         if can_fire and not state.a_held:
             # Fire this tick; do NOT rotate (lock the settled aim), and freeze
             # movement through the windup so the bullet leaves from where we aimed
@@ -515,6 +583,16 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
                 state.fire_hold_ticks = FIRE_WINDUP_TICKS
             mask |= int(Button.A)
             state.a_held = True
+            if not belief.i_have_arc:
+                bucket = fight.range_bucket(
+                    math.hypot(
+                        enemy.pos[0] - self_xy[0],
+                        enemy.pos[1] - self_xy[1],
+                    )
+                )
+                belief.firefight_shot_range_counts[bucket] = (
+                    belief.firefight_shot_range_counts.get(bucket, 0) + 1
+                )
         else:
             state.a_held = False
             mask |= _rotation_button(err, state)

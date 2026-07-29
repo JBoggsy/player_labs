@@ -4,7 +4,8 @@
 ``run_sprite_bridge`` backed by one BeaconRuntime. When diagnostics are on (default;
 disable with ``CTF_DIAG=0``) it records structured **TraceEvents** through the SDK
 trace sink — periodic full-state ``snapshot`` events plus immediate transition events
-(``objective`` / ``alive`` / ``engage`` / ``post``). Wired to ``TraceOutputs`` in ``main.py``, those
+(``objective`` / ``alive`` / ``engage`` / ``post`` / ``firefight`` /
+``firefight_target`` / ``focus_claim``). Wired to ``TraceOutputs`` in ``main.py``, those
 land as a ``jsonl``/``parquet`` member of the episode's player-artifact zip (queryable by
 the event warehouse), not just as stderr lines. With no trace sink (e.g. an ad-hoc local
 call) it falls back to printing ``CTF_DIAG`` lines to stderr.
@@ -16,6 +17,7 @@ per-tick, full-resolution trace.
 from __future__ import annotations
 
 import json
+import math
 import os
 import sys
 from collections.abc import Callable
@@ -105,6 +107,10 @@ class _DiagnosticLogger:
         self._last_engaged: bool | None = None
         self._last_order: tuple | None = None
         self._last_post: tuple | None = None
+        self._last_firefight: bool | None = None
+        self._last_firefight_target: tuple | None = None
+        self._last_focus_claim: tuple | None = None
+        self._last_focus_suppressed = 0
         self._sync_recorded = False
         self._last_micro: str | None = None
         # Cumulative activation tick-counts per micro mode ("duck"/"peek"), carried in
@@ -156,6 +162,82 @@ class _DiagnosticLogger:
         if engaged != self._last_engaged:
             self._record(step.tick, "engage", {"engaged": engaged, "n_enemies": len(b.enemies)})
             self._last_engaged = engaged
+        if b.firefight_active != self._last_firefight:
+            if b.firefight_active:
+                reason = "under_fire" if b.under_fire else "visible_enemy"
+            else:
+                reason = "dead" if not b.alive else "decay"
+            self._record(step.tick, "firefight", {
+                "active": b.firefight_active,
+                "reason": reason,
+                "entered_tick": b.firefight_entered_tick,
+                "engagements": b.firefight_engagements,
+                "ticks_total": b.firefight_ticks_total,
+            })
+            self._last_firefight = b.firefight_active
+        score = b.firefight_target_score
+        target_now = (
+            score.candidate.target.identity,
+            score.candidate.target.pos,
+        ) if score is not None else None
+        if target_now != self._last_firefight_target:
+            self._record(step.tick, "firefight_target", {
+                "identity": target_now[0] if target_now else None,
+                "cell": list(target_now[1]) if target_now else None,
+                "range_px": round(score.candidate.distance_px, 2) if score else None,
+                "score": round(score.score, 4) if score else None,
+                "wound": score.wound if score else None,
+                "range_band": score.range_band if score else None,
+                "claim": score.claim if score else None,
+                "shootability": score.shootability if score else None,
+                "aim_cost": score.aim_cost if score else None,
+                "shield": score.shield if score else None,
+                "shootable": score.candidate.shootable if score else None,
+                "switches": b.firefight_target_switches,
+            })
+            self._last_firefight_target = target_now
+        claim = b.focus_claim
+        claim_now = (
+            claim.claimant_seat,
+            claim.target.identity,
+            claim.target.pos,
+            claim.refreshed_tick,
+        ) if claim is not None else None
+        if claim_now != self._last_focus_claim:
+            if claim_now is None:
+                action = "released"
+            elif self._last_focus_claim is None:
+                action = "acquired"
+            elif (
+                self._last_focus_claim[1] is None
+                and claim_now[1] is not None
+                and self._last_focus_claim[0] == claim_now[0]
+            ):
+                action = "upgraded"
+            elif self._last_focus_claim[:3] == claim_now[:3]:
+                action = "refreshed"
+            else:
+                action = "acquired"
+            self._record(step.tick, "focus_claim", {
+                "action": action,
+                "claimant_seat": claim.claimant_seat if claim else None,
+                "identity": claim.target.identity if claim else None,
+                "cell": list(claim.target.pos) if claim else None,
+                "age": step.tick - claim.first_tick if claim else None,
+                "release_reason": (
+                    b.focus_last_release_reason if claim is None else None
+                ),
+            })
+            self._last_focus_claim = claim_now
+        if b.focus_claims_suppressed != self._last_focus_suppressed:
+            self._record(step.tick, "focus_claim", {
+                "action": "suppressed",
+                "count": b.focus_claims_suppressed,
+                "claimant_seat": claim.claimant_seat if claim else None,
+                "identity": claim.target.identity if claim else None,
+                "cell": list(claim.target.pos) if claim else None,
+            })
+            self._last_focus_suppressed = b.focus_claims_suppressed
         # Order transitions (v27): the squad-command state machine is the core of
         # coordination analysis — record every change with WHERE IT CAME FROM
         # (leader rule / heard / decay backoff / decay convert), so hang-backs can
@@ -228,6 +310,33 @@ class _DiagnosticLogger:
                 self._lead_brads_sum += abs(b.lead_brads)
             else:
                 self._unled_shots += 1
+            if not b.i_have_arc:
+                if b.firefight_target_score is not None:
+                    shot_range = b.firefight_target_score.candidate.distance_px
+                    shot_target = b.firefight_target_score.candidate.target
+                elif b.self_xy is not None and b.enemies:
+                    nearest = min(
+                        b.enemies,
+                        key=lambda enemy: (
+                            enemy.pos[0] - b.self_xy[0]
+                        ) ** 2 + (
+                            enemy.pos[1] - b.self_xy[1]
+                        ) ** 2,
+                    )
+                    shot_range = math.hypot(
+                        nearest.pos[0] - b.self_xy[0],
+                        nearest.pos[1] - b.self_xy[1],
+                    )
+                    shot_target = None
+                else:
+                    shot_range = None
+                    shot_target = None
+                self._record(step.tick, "shot", {
+                    "range_px": round(shot_range, 2) if shot_range is not None else None,
+                    "identity": shot_target.identity if shot_target else None,
+                    "cell": list(shot_target.pos) if shot_target else None,
+                    "firefight": b.firefight_active,
+                })
 
         # v10 item transitions: pickups/losses of carried items, heals, throws.
         items_now = (b.i_have_grenade, b.i_have_shield, b.i_have_arc)
@@ -341,6 +450,70 @@ class _DiagnosticLogger:
             "chat_sent": dict(b.chat_sent_counts),
             "chat_heard": dict(b.chat_heard_counts),
             "under_fire": b.under_fire,
+            # Firefight activation, score decomposition, local claim lifecycle,
+            # and the two range distributions the policy can truthfully observe.
+            "firefight_active": b.firefight_active,
+            "firefight_age": (
+                b.tick - b.firefight_entered_tick
+                if b.firefight_active and b.firefight_entered_tick >= 0
+                else None
+            ),
+            "firefight_ticks_total": b.firefight_ticks_total,
+            "firefight_engagements": b.firefight_engagements,
+            "firefight_arc_exempt_ticks": b.firefight_arc_exempt_ticks,
+            "firefight_target": (
+                {
+                    "identity": b.firefight_target.identity,
+                    "cell": list(b.firefight_target.pos),
+                    "selected_age": (
+                        b.tick - b.firefight_target_selected_tick
+                        if b.firefight_target_selected_tick >= 0
+                        else None
+                    ),
+                    "last_seen_age": (
+                        b.tick - b.firefight_target_last_seen_tick
+                        if b.firefight_target_last_seen_tick >= 0
+                        else None
+                    ),
+                }
+                if b.firefight_target is not None
+                else None
+            ),
+            "firefight_score": (
+                {
+                    "total": b.firefight_target_score.score,
+                    "range_px": b.firefight_target_score.candidate.distance_px,
+                    "wound": b.firefight_target_score.wound,
+                    "range_band": b.firefight_target_score.range_band,
+                    "claim": b.firefight_target_score.claim,
+                    "shootability": b.firefight_target_score.shootability,
+                    "aim_cost": b.firefight_target_score.aim_cost,
+                    "shield": b.firefight_target_score.shield,
+                    "shootable": b.firefight_target_score.candidate.shootable,
+                }
+                if b.firefight_target_score is not None
+                else None
+            ),
+            "firefight_target_switches": b.firefight_target_switches,
+            "focus_claim": (
+                {
+                    "claimant_seat": b.focus_claim.claimant_seat,
+                    "identity": b.focus_claim.target.identity,
+                    "cell": list(b.focus_claim.target.pos),
+                    "first_age": b.tick - b.focus_claim.first_tick,
+                    "refresh_age": b.tick - b.focus_claim.refreshed_tick,
+                }
+                if b.focus_claim is not None
+                else None
+            ),
+            "focus_claims_sent": b.focus_claims_sent,
+            "focus_claims_heard": b.focus_claims_heard,
+            "focus_claims_suppressed": b.focus_claims_suppressed,
+            "focus_claim_release_counts": dict(b.focus_claim_release_counts),
+            "focus_last_release_reason": b.focus_last_release_reason,
+            "friendly_fire_suppressed": b.friendly_fire_suppressed,
+            "firefight_target_ranges": dict(b.firefight_target_range_counts),
+            "firefight_shot_ranges": dict(b.firefight_shot_range_counts),
             "carrier_fix": b.carrier_fix,
             "thief_fix": b.thief_fix,
             # v10 skill activation (cumulative): lead-aim shot split + item counters.
@@ -368,6 +541,15 @@ class _DiagnosticLogger:
                 for ev in b.heard_events
             ],
             "visible_enemies": [list(e.pos) for e in b.enemies],
+            "visible_enemy_details": [
+                {
+                    "pos": list(e.pos),
+                    "identity": e.identity,
+                    "hp_segments": e.hp_segments,
+                    "shielded": e.shielded,
+                }
+                for e in b.enemies
+            ],
             "visible_teammates": [list(m.pos) for m in b.teammates],
         }
 
@@ -404,6 +586,9 @@ def _track_row(t: PlayerTrack, tick: int) -> dict:
         "facing": t.facing,
         "vel": [round(t.vel[0], 2), round(t.vel[1], 2)] if t.vel is not None else None,
         "frames_seen": t.frames_seen,
+        "identity": t.identity,
+        "hp_segments": t.hp_segments,
+        "shielded": t.shielded,
     }
 
 

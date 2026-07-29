@@ -1,6 +1,6 @@
 """Belief update — fold a per-frame CtfState into the long-lived Belief.
 
-Three genuinely stateful parts:
+Four genuinely stateful parts:
 
   * **Aim estimate**: the aim-dot sprite gives an absolute read (~2 brad resolution)
     but isn't always visible, so between reads we dead-reckon by the rotation we
@@ -15,6 +15,8 @@ Three genuinely stateful parts:
     per-axis velocity clamping makes a Chebyshev 3x3-max dilation the right spread
     metric), and cools with an exponential half-life so old heat fades instead of
     saturating the map. Initialized hot on the enemy half, cold on ours.
+  * **Firefight**: a hysteretic combat overlay plus one first-heard local focus
+    claim. It selects no movement objective; fight.py/action.py are its consumers.
 
 Tracks and the danger field feed post threat/scoring while retaining their existing
 navigation and trace roles. Flag state stays per-frame (pedestals never fog).
@@ -30,7 +32,7 @@ import math
 
 import numpy as np
 
-from ctf.beacon import mapdata
+from ctf.beacon import fight, mapdata
 from ctf.beacon.chat import decode as chat_decode
 from ctf.beacon.items import update_items
 from ctf.beacon.config import (
@@ -186,6 +188,7 @@ def update_belief(belief: Belief, percept: CtfState, action_state: ActionState, 
     if CHAT:
         _update_chat(belief, percept, tick)
     _update_danger(belief)
+    fight.update_firefight(belief)
 
 
 # --- Player tracks ------------------------------------------------------------------
@@ -225,13 +228,23 @@ def _update_tracks(tracks: list[PlayerTrack], sightings: tuple[Enemy, ...], tick
                 best_i = i
         if best_i is None:
             tracks.append(
-                PlayerTrack(pos=s.pos, last_tick=tick, facing=s.facing, identity=s.identity)
+                PlayerTrack(
+                    pos=s.pos,
+                    last_tick=tick,
+                    facing=s.facing,
+                    identity=s.identity,
+                    hp_segments=s.hp_segments,
+                    shielded=s.shielded,
+                )
             )
             continue
         unclaimed.discard(best_i)
         t = tracks[best_i]
         if s.identity is not None:
             t.identity = s.identity  # sticky nameplate identity (0.7.69)
+        if s.hp_segments is not None:
+            t.hp_segments = s.hp_segments
+        t.shielded = s.shielded
         dt = tick - t.last_tick
         if 0 < dt <= TRACK_VEL_MAX_GAP_TICKS:
             vx = (s.pos[0] - t.pos[0]) / dt
@@ -355,6 +368,14 @@ def _update_chat(belief: Belief, percept: CtfState, tick: int) -> None:
             if msg.seat is not None and msg.seat != belief.seat:
                 belief.post_claims[msg.seat] = PostClaim(msg.seat, msg.pos, tick)
                 belief.post_claims_heard += 1
+        elif msg.kind == "focus_claim":
+            if msg.seat is not None:
+                fight.receive_focus_claim(
+                    belief,
+                    claimant_seat=msg.seat,
+                    target_identity=msg.target_identity,
+                    target_cell=msg.pos,
+                )
         elif msg.kind in ("enemy", "thief"):
             _update_tracks(
                 belief.enemy_tracks, (Enemy(pos=msg.pos, facing="left"),), tick
