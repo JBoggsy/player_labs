@@ -15,6 +15,26 @@ This is *not* a log or archive: finished work lives in git history / the
 
 ---
 
+## 🔁 RUNNING (2026-07-28): improvement-loop alpha — autonomous ~5-loop run (spec: `docs/designs/2026-07-28-improvement-loop-alpha.md`)
+
+**Loop 1 DONE — NO-SHIP (lever closed, honestly refuted).** Step-1 batch: 4×100 matched
+xreqs (`xreq_f42ce4c9/83cae9d4/fd660882/c48a86c2`, 397 clean eps, v116 slot 0, Thread-1
+roster) → warehouse `/tmp/loop1/wh` + belief log + divergence scan. Key reads:
+- **v116 WATCH satisfied:** crew WR 28.9% (ship-time 25.5%), conversion 27.5%; retime
+  decomposes join 53.1% / expire **0.8%** conv — the expire path is dead weight.
+- Both fresh smoke signals (census death-lag 0.178/seat, ranking_top_crew 0.186/seat)
+  verified REAL but mined INVARIANT (not win/loss separators) → closed, don't design on them.
+- L1 hypothesis (pre-vote push during retime hold, probe `crewborg-coord:v5`
+  `fa075cb9…`, prereg `docs/designs/2026-07-28-prevote-push-prereg.md`): **REFUTED** —
+  mechanism fired 136×/84 eps, but late-join share 21.0% vs 21.2%: a second explicit
+  vote call recruits nobody; the field locks on the first accusation wave. The whole
+  "more chat calls" channel on the conversion axis is closed (2× with the combo failure).
+- Gotchas: warehouse `chat` caps at 6/meeting (extractor sees only the visible buffer
+  grow — mechanism reads need telemetry counters); within-arm pushed-vs-unpushed is
+  selection-biased.
+Next lever candidates for the conversion axis: make the FIRST accusation harder
+(suspicion-v5 refit — the W2 measured ceiling AUC 0.82). Loop 2 starting.
+
 ## 🎯 OBJECTIVE (2026-07-23): v114 submitted — v112's code with LLM meetings OFF (deterministic)
 
 **James's call: "turn off LLM meetings for now and use our deterministic fallback."** v114 =

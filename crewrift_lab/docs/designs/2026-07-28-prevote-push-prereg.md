@@ -99,6 +99,45 @@ PRIMARY flat → implementation bug, one diagnose-and-refire allowed.
 
 ---
 
-## VERDICT (2026-07-28, filled after the arms ran — see §below)
+## VERDICT (2026-07-28): **REFUTED — NO-SHIP.** Mechanism fired decisively; the causal channel is dead.
 
-*(pending at registration)*
+Cand = `crewborg-coord:v5` (`fa075cb9…`), arms `xreq_932d3d16` + `xreq_8d47dc27`
+(198 clean eps, 0 ops-excluded, 149 crew / 49 imp; 2 platform-failed episodes not fetched;
+ops profiles match the baseline batch — 0 vs 0). Baseline = the step-1 v116 batch
+(397 eps). Analysis `/tmp/loop1/verdict.py`.
+
+| criterion | cand | base | verdict |
+|---|---|---|---|
+| PRIMARY-1 conversion | 31/124 = **25.0%** | 76/276 = 27.5% | ❌ FAIL (wrong direction; fisher 1s p=0.74) |
+| PRIMARY-2 impEj-eps/crew-ep | 40.3% | 39.1% | ✅ not down |
+| MECH-3 push fires | **136 fires / 84 of 198 eps** (telemetry counters) | 0 | ✅ FIRED |
+| MECH-4 join share (on-imp retime) | 44/105 = **41.9%** | 113/237 = 47.7% | ❌ DOWN, not up |
+| GUARD-5 crew WR | 30.9% | 28.9% | ✅ (p=0.67) |
+| GUARD-6 vote_timeouts | 0 | 0 | ✅ |
+| GUARD-7 mis-ballots/cep | 0.255 | 0.252 | ✅ (bar 0.378) |
+| GUARD-8 imposter WR | 69.4% | 54.5% | ✅ noise (p=0.08, favorable direction) |
+| GUARD-9 chats/crew-ep | 2.04 | 2.13 | ✅ |
+
+**The decisive read — the push's exact target population** (hold meetings with no early
+pile; "did anyone join our target late"): late-join share cand **17/81 = 21.0%** vs base
+**34/160 = 21.2%**. The pre-vote push recruits NOBODY. The field's late voters (~2.0
+ballots arrive after our expire cast) do not respond to a second explicit vote call —
+they were already going to join or not based on the first-tick accusation. Retime-solo
+already harvests every pile that forms.
+
+**Two measurement gotchas found (both resolved, both logged in TENTATIVE_LESSONS):**
+1. The warehouse `chat` partition caps at 6 events/meeting (expand_replay's `printChats`
+   only sees the sim's `VoteChatVisibleMessages=6` buffer *grow*) — a mechanism-fire read
+   from warehouse chats says 2 when telemetry says 136. Deliveries verified in the raw
+   replay bytes; mechanism reads must use policy telemetry counters.
+2. Within-arm pushed-vs-unpushed comparisons are selection-biased (the push only fires in
+   meetings that were already pile-less at dt 240); only the cross-arm cut is honest.
+
+**CLOSED LEVER: pre-vote chat-push (and with the 2026-07-24 combo failure, the whole
+"second explicit call" channel while retime holds).** Post-vote chat-push solo remains
+mechanism-validated but composes badly with retime, and this arm shows the persuasion
+window during the hold is not the binding constraint — the field's vote decisions are
+effectively locked by the first accusation wave. The expire path's 0.8% conversion is
+real but not addressable by more chat volume. Remaining directions for the conversion
+axis: make the FIRST accusation land harder (suspicion-v5 refit → earlier/more confident
+bar-clearing accusations), not more calls.
