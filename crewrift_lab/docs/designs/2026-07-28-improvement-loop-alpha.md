@@ -1,7 +1,10 @@
-# Improvement Loop — alpha (2026-07-28)
+# Improvement Loop — beta (2026-07-28, revised 2026-07-29 post-run)
 
-**Status:** alpha — first autonomous multi-loop run dispatched 2026-07-28. This document is
-the operating spec for that run and the template to revise from afterwards.
+**Status:** beta — the alpha run completed 2026-07-29 (5 loops, 2 ships: v117 + v118, 2
+levers closed; final report:
+[`2026-07-29-improvement-loop-alpha-run-report.md`](2026-07-29-improvement-loop-alpha-run-report.md)).
+The pipeline below is unchanged from alpha except where marked **[beta]** — rules added
+from what the run taught.
 
 The 9-step, tournament-scale improvement loop for crewborg, as specified by James, with
 each step bound to the lab tooling that executes it. One **loop** = steps 1→9 (or an
@@ -62,6 +65,26 @@ early exit where the evidence says stop). The runner executes ~5 loops back-to-b
   levers (the standing v114+ posture) over waiting.
 - Version log + WORKING_CONTEXT updated at every ship/no-ship; lessons to
   TENTATIVE_LESSONS as they happen.
+- **[beta] Powered re-test rule:** a GUARD tripping its *point-estimate bar* at low n
+  with a non-significant p is not "close the lever" — it is "register a powered re-test
+  with a pooled pre-specification sized to answer THE one question" (the L3→L4 path
+  that recovered the chat-swallow fix). Symmetrically, a *primary* missing significance
+  while every point estimate replicates across independent datasets → pre-register an
+  extension with the pooled analysis specified before firing (the L4 confirmatory →
+  extension path). Never rerun-until-pass: each re-test gets its own registered rule.
+- **[beta] State durability:** the runner's crash-recovery mechanism is git, not /tmp.
+  Prereg → commit → fire → verdict → commit, always in that order (this run survived
+  ~6 API-error deaths, one user stop, and a full /tmp wipe with zero lost results).
+  Additionally: **commit every verdict/analysis instrument to
+  `crewrift_lab/tools/experiments/` in the same commit as its prereg** — the one asset
+  that nearly died in the /tmp wipe was the verdict script. Warehouses/episodes are
+  re-fetchable from the platform; instruments and decisions are not.
+- **[beta] Post-interrupt recovery:** on resume, first x-ray the run from the platform
+  (`GET /observatory/v2/experience-requests` = which arms exist/completed) + `git log`
+  (which preregs/verdicts landed) before re-doing anything; completed arms are data
+  already bought.
+- **[beta] The extension IS allowed to double as the final loop** when the budget says
+  so — declare it in the prereg (as L5 was declared inside the L4 extension prereg).
 
 ## Success criteria for the alpha run itself
 
@@ -70,3 +93,6 @@ before firing, (b) no submit without a clean verdict + orchestrator approval, (c
 belief-divergence channel (steps 3+5) demonstrably feeding at least one hypothesis,
 (d) honest verdicts — refuted hypotheses closed, not massaged. Revise this doc to beta
 with what the run teaches.
+
+**[beta] Verdict: all four criteria PASSED** — the per-criterion assessment is in the
+[run report](2026-07-29-improvement-loop-alpha-run-report.md).
