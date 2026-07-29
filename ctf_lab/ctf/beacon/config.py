@@ -661,6 +661,11 @@ TUNABLE_INVARIANTS: tuple[TunableInvariant, ...] = (
         "Claim bonus may not exceed one health-bar segment of wound score.",
     ),
     TunableInvariant(
+        "post_facing_requires_posts",
+        "POST_FACING may be enabled only when POSTS is enabled.",
+        family="spacing",
+    ),
+    TunableInvariant(
         "post_separation_exceeds_squad_separation",
         "Post separation must exceed squad separation, or the push-apart floor "
         "fights the chosen posts.",
@@ -772,6 +777,11 @@ def validate_tunable_values(
     # validate call made during import (before the spacing block runs) sees them
     # absent. Skip rather than KeyError; by the time any caller validates a real
     # sweep assignment the whole registry exists.
+    if {"POSTS", "POST_FACING"} <= values.keys():
+        require(
+            values["POSTS"] or not values["POST_FACING"],
+            "post_facing_requires_posts",
+        )
     if {"POST_MIN_SEPARATION_PX", "SQUAD_SEPARATION_PX", "POST_SEARCH_RADIUS_PX"} <= values.keys():
         require(
             values["POST_MIN_SEPARATION_PX"] > values["SQUAD_SEPARATION_PX"],
@@ -935,8 +945,20 @@ PLAN_BUDDY_WAIT_TICKS = _env_int("BEACON_PLAN_BUDDY_WAIT_TICKS", 150)
 # --- Posts: covered sightlines near tactical waypoints -----------------------------
 #: Master switches. Position selection and facing are separate so one image can
 #: isolate whether better ground or the narrower lane watch changes the outcome.
-POSTS = _env_int("BEACON_POSTS", 0) == 1
-POST_FACING = _env_int("BEACON_POST_FACING", 0) == 1
+POSTS = _bool_tunable(
+    "POSTS",
+    "BEACON_POSTS",
+    False,
+    "Enable covered-post selection near plan/order/hold waypoints.",
+    family="spacing",
+)
+POST_FACING = _bool_tunable(
+    "POST_FACING",
+    "BEACON_POST_FACING",
+    False,
+    "Centre the aim sweep on a settled post's watched sightline.",
+    family="spacing",
+)
 #: Candidate geometry around the waypoint/search centre. Both are SPACING
 #: tunables: post separation is how far apart converging shooters end up, which
 #: is the other side of the focus-fire friendly-fire tension (see

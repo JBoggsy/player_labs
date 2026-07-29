@@ -454,3 +454,58 @@ Evidence: generated 60 varied beliefs and compared `resolve_action` held_mask be
 is good (it pre-seeds firefight state to prove the flag gates it) but tests the new tree against
 itself; the cross-checkout comparison is what actually proves no regression risk in the champion
 path.
+
+### FIREFIGHT LADDER dispatched: 4 arms x 3 opponents x 30 eps = 360 episodes (v35-v38)
+
+Evidence: one image `players-beacon:fight`, four env-flipped uploads, each layering ONE change so
+the axes are separable:
+- **v35 postsonly** — POSTS+POST_FACING (the v33 champion equivalent; the baseline)
+- **v36 noclaim** — + FIREFIGHT (scored target selection, NO coordination)
+- **v37 claims** — + FOCUS_CLAIMS (adds the F claim nudge)
+- **v38 wide** — + POST_MIN_SEPARATION_PX=80 (wider spread, testing James's "tune spreading and
+  focus fire to avoid friendly fire" hypothesis)
+Opponents are the current top three, re-resolved at dispatch: **focusfire:v62** (rank 1),
+**alphashot:v180** (rank 3), **h050:v1** (rank 5 — Jordan is rank 4 but has only 125 rounds vs
+everyone else's 247, so excluded as an immature entry). 30 eps/arm chosen because the stance sweep
+was null at n=10 (p=0.18); 30 roughly triples the power.
+Status: xreq ids in `scratch/eval_fight_ab/xreq_ids.txt`. Read `friendly_fire_suppressed` per arm —
+it is the metric that distinguishes "focus fire didn't help" from "focus fire made us hold fire".
+
+### v33 (posts) CLIMBED THE LEAGUE: rank 5 @ 1559 -> rank 2 @ 1929 as rounds accrued
+
+Evidence: at submit time the standings showed rank 5 @ 1559.21/157 rounds, which was v28-era
+inherited history (the leaderboard is per-PLAYER, not per-version). 247 rounds later we are **rank 2
+@ 1929.39**, behind only daveey (2293). This is independent confirmation that the posts A/B result
+(40% vs focusfire, 20% vs h050) translated into league standing.
+Status: the earlier lesson stands — post-submit standings are lagging and confounded, so judge a
+version by its A/B and let the standings confirm days later.
+
+### THE FIELD MOVED HARD AGAIN — re-resolve opponents at DISPATCH time, not from notes
+
+Evidence: our alphashot profile was against **alphashot-ghost-red-ca3e95f:v1**. At dispatch the
+division shows **alphashot:v180** (different policy name AND 180 versions on) and
+**ctf-focusfire:v62** (was v56, and now rank 1 at 2293 — it overtook everyone). h035 -> h050 earlier
+in the session was the same pattern.
+Status: a policy_version_id from even a few hours ago may profile a policy that no longer exists.
+Always `experience_request.py resolve --division ... --top N` immediately before composing bodies.
+
+### The tunable registry caught TWO missing knobs the moment I tried to compose real arms
+
+Evidence: composing the ladder required `POSTS`/`POST_FACING`, which were NOT registered — only the
+posts *spacing* knobs were. `tuning secret-env POSTS=true` errored with "unknown tunable: POSTS",
+which is exactly the drift the registry exists to surface. Registered both (28 tunables now) plus a
+`post_facing_requires_posts` invariant mirroring `focus_requires_firefight`.
+Status: the registry earns its keep at ARM-COMPOSITION time. Build the arms through the CLI rather
+than hand-writing --secret-env flags; hand-written flags would have silently shipped an arm with
+posts OFF, making every firefight number incomparable to the v33 champion.
+
+### PLATFORM STALL RECURRED on a 360-episode batch (2026-07-29)
+
+Evidence: all 12 xreqs sat `pending, 0 completed, 0 running, 0 failed` for 7+ minutes while the
+division leaderboard advanced 246 -> 247 rounds — the cluster is executing league work, only ad-hoc
+xreq dispatch is queued. Same signature as the ~16:00 stall yesterday. Earlier platform inspection
+showed CTF sitting at its 100-job league cap with a p95 experience-request admission delay of ~65
+minutes, which is a plausible mechanism for a 360-episode submission.
+Status: budget HOURS not minutes for large batches; background a watcher and do other work rather
+than polling. A 1-episode canary against a known-good opponent remains the fast way to tell
+"malformed request" from "platform queued".
