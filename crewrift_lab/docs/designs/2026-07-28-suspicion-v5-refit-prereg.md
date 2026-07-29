@@ -129,6 +129,24 @@ the confirmatory A/B — prereg below, registered BEFORE the confirmatory arms f
 - **Decision rule:** all pass → STOP AND ASK James for submit approval with the full
   combined gate table (probe + confirmatory). Any fail → NO-SHIP, diagnose.
 
-## CONFIRMATORY VERDICT
+## CONFIRMATORY VERDICT (2026-07-29): **ALL GATES PASS — submitted to James for approval**
 
-*(pending at registration)*
+v117 (`54bb6cc5…`) arms `xreq_48f8d06a` + `xreq_2b990201` (200 eps, 0 ops; 155 crew /
+45 imp; identity verified 200/200 = `54bb6cc5`, slot-0 artifact present) vs the same
+fresh v116 baseline (300 eps). Ops profiles match (0 vs 0).
+
+| gate | v117 | v116 base | verdict |
+|---|---|---|---|
+| 1. identity | 200/200 `54bb6cc5` slot 0 | — | ✅ |
+| 2. replication: hits/crew-ep | **1.335** (net 1.045) | 1.030 (net 0.774) | ✅ p=0.0038 |
+| 3. precision | **82.1%** | 80.1% | ✅ (bar 75.1%) |
+| 4. crew WR / imposter WR | 32.9% / 73.3% | 30.0% / 68.6% | ✅ both directionally UP, noise |
+| 5. mis-ej-we-voted/cep; vt; self-votes | 0.103; 0; 0 | 0.096; 0; 0 | ✅ (bar 0.143; probe's WATCH resolved — 0.133→0.103) |
+| 6. mechanism: bar-clearing/snapshot | **1.005**; top-clear 57.6% | 0.589; 45.4% | ✅ |
+
+Directional (not gates): impEj-in-ep/cep **51.6% vs 43.0%** (p=0.098) and conversion
+**30.9% vs 24.1%** — the refit's better rankings are pulling the L1-diagnosed
+conversion metric with them (more/earlier bar-clearing accusations → piles form on
+our targets). Probe + confirmatory replicate on independent arms.
+
+Awaiting James's explicit submit approval (loop-alpha procedure).
