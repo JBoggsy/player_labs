@@ -59,9 +59,21 @@ reading is "more forward isn't better vs these two", not "the term is inert".
 6 Picasso:v28, 7 swarm:v1. Game is **0.7.95**. Both losses-heavy baselines mean beacon is
 currently mid-field — posts close part of the gap but do not make us favourites.
 
-**NEXT:** (a) the stance sweep needs power (n=30+) or should be parked; (b) alphashot-ghost-red
-is unprofiled and is the new rank 1 — recon it; (c) posts are untested against Picasso/swarm/
-jordan; (d) submission is the human's gate — v33 is the candidate on this evidence.
+**ALPHASHOT RECON DONE (n=10/arm, 0.7.96):** v32(off) 10% win -> **v33(posts) 20%** (p=0.08,
+non-significant but positive) — **no regression vs the field leader.** kills 136 -> 174.
+**The gap is the FIGHT, not the ground:** forward sightline reach is IDENTICAL (beacon 92px
+mean/84 median vs alphashot 93/84, both 7-9% open >=200px, measured with our own baked field),
+but alphashot kills at **222px mean vs our 187px** (59% of our kills inside 200px vs their 44%;
+we take 0% beyond 400px vs their 4%) and logs **101 clustered kills vs our 61**. Posts had little
+room: max dwell only **71 ticks** (vs 525 vs focusfire) because beacon lives just **407 ticks**
+against alphashot. Report: `scratch/recon_alphashot/reports/`.
+
+**NEXT:** (a) **the FIGHT is now the lever** — we kill at 187px while `FIRE_MAX_RANGE_PX`=350
+allows much longer, so a range/hold-fire audit plus wounded-target priority and focus fire are the
+evidence-ranked candidates; (b) **audit beacon against GameVersion 23** (replays are GV23 =
+`cdd567f`: shield BREAKS on depletion, overtimeTicks 500 — our config/docs assume GV21/22);
+(c) the stance sweep needs n>=30 or should be parked; (d) posts still untested vs Picasso/swarm/
+jordan.
 
 ## (prior) Status (2026-07-28): **covered posts implementation in working tree, not uploaded**
 

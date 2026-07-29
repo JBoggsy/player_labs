@@ -328,3 +328,43 @@ recent beacon episodes of which only **4** contained alphashot; 17 were vs `ctf-
 Status: to profile a specific opponent from league history, over-fetch our own episodes and FILTER
 on `policy_results[].policy.name`. Also note league episodes use `policy_results`, not
 `participants` — and `coworld_version` is None on them, so version must come from the replay header.
+
+### ALPHASHOT 1v1 CONFIRMED (n=10/arm, 0.7.96): posts do NOT regress vs the field leader, and the league profile REPLICATES
+
+Evidence: v32(off) 10% win / -0.80 vs v33(posts) 20% win / -0.60, p=0.08 (non-significant but
+positive). 20/20 episodes, 0 failures, both arms same version. Report:
+`scratch/recon_alphashot/reports/v33_vs_v32_alphashot.html`.
+- kills 136 -> 174 with posts (deaths 238 -> 227); alphashot 234 -> 222 kills.
+- **The n=4 league doubles finding replicated exactly at n=10 1v1: forward sightline reach is
+  IDENTICAL** (beacon 92px mean/84 median, alphashot 93/84; both 7-9% open >=200px).
+Status: the regression check passes — posts are safe against an opponent they were never tuned on.
+
+### THE ALPHASHOT GAP IS ENGAGEMENT RANGE + FOCUS FIRE, not positioning
+
+Evidence (kill rows carry killer_x/y and victim_x/y — use them):
+- **Kill range: alphashot 222px mean / 218px median vs beacon 187px / 182px.** 59% of OUR kills
+  are inside 200px vs their 44%; we take **0%** of kills beyond 400px vs their 4%. They fight at
+  a longer, safer range; we get pulled into close trades where trading is even at best.
+- **Focus fire: 101 clustered kills (same side, two kills within 48t) vs our 61.**
+- Ground is even (see above), team spacing comparable (110px vs 143px).
+Status: this is the same conclusion the league sample gave, now at 10x the sample. **Positioning
+is no longer the binding constraint vs the field leader.** Next lever candidates: a hold-fire
+range gate tuned upward (FIRE_MAX_RANGE_PX is 350 — we're killing at ~187px, so we're fighting
+much closer than our own gate allows), wounded-target priority, and real focus-fire coordination.
+
+### Posts had almost no room to work vs alphashot — max dwell 71 ticks because beacon only LIVES 407 ticks
+
+Evidence: 472 active post-ticks / 113 distinct cells, but max ticks_on_post = **71** (vs **525**
+against focusfire). Cause: mean beacon lifespan vs alphashot is 407t with posts (366t without) —
+median 331t. Posts DID extend survival ~9% (+41t) and raise kills 136->174, but a bot that dies
+in ~5 seconds cannot settle, hold a sightline, and profit from it.
+Status: a positional mechanism's value is bounded by SURVIVAL TIME. Against a fast-killing
+opponent, fix the dying before expecting position work to pay. Also explains why the same feature
+produced 1942 active post-ticks vs focusfire and only 472 here.
+
+### Kill events DO carry positions (killer_x/y, victim_x/y) — my first pass wrongly concluded they didn't
+
+Evidence: I filtered on `'x' in v` and got zero rows, concluding position was absent. The actual
+schema is `{"victim_slot":12,"victim_label":"...","victim_x":461,"victim_y":217,"killer_x":713,
+"killer_y":401}` — and `r['player']` is the KILLER slot. Dumping one raw row settled it in seconds.
+Status: dump one raw event row before writing any extraction over an unfamiliar reader build.
