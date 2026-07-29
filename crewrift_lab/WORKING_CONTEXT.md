@@ -15,11 +15,11 @@ This is *not* a log or archive: finished work lives in git history / the
 
 ---
 
-## 👑 SHIPPED (2026-07-29, loop-alpha L4/L5): v118 = v117 + CHAT-SWALLOW FIX — submitted, qualification in flight
+## 👑 SHIPPED (2026-07-29, loop-alpha L4/L5): v118 = v117 + CHAT-SWALLOW FIX — competing/active + CHAMPION
 
 `crewborg:v118` (`912f94cb…`, main `1a71c6b`, v117 recipe + CHAT_COOLDOWN 60→104 +
 HS1-defers-to-accusation) submitted 2026-07-29 (`sub_a6f38a7f…`; v117's `lpm_fca1ad4b…`
-retired FIRST). Three-stage evidence, all pre-registered: L3 probe (honest NO-SHIP on a
+retired FIRST) → **qualified 16:39, `lpm_53214866…` competing/active + champion.** Three-stage evidence, all pre-registered: L3 probe (honest NO-SHIP on a
 noisy guard) → L4 powered re-test ALL PASS (mis-ej question settled: L3 was noise) →
 4-arm pooled confirmatory ALL PASS (votes-on-imp-target 1.10 vs 0.96 MW p=0.0274,
 acceptance 100% vs 82.2%, crew WR 35.0% vs 30.1%, mis-ej 0.148 under bar 0.213,

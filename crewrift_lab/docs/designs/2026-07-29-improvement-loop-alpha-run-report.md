@@ -69,6 +69,6 @@ natural roles / ≤400 concurrent. Zero ops-dirty arms.
 
 ## League state at close
 
-v118 `912f94cb…` submitted and qualifying (`lpm_53214866…`); v117 retired with audit
-reason. LEAGUE WATCH: crew WR and mis-ej on fresh league data; the acceptance win should
-surface as more votes landing on our targets.
+v118 `912f94cb…` qualified 2026-07-29 16:39 — `lpm_53214866…` **competing/active +
+champion**; v117 retired with audit reason. LEAGUE WATCH: crew WR and mis-ej on fresh
+league data; the acceptance win should surface as more votes landing on our targets.
