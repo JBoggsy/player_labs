@@ -95,6 +95,35 @@ the confirmatory arms fired.**
 - **Decision rule:** all pass → STOP AND ASK James for submit approval with the full
   gate table (powered test + confirmatory). Any fail → NO-SHIP, diagnose.
 
-## CONFIRMATORY VERDICT
+## CONFIRMATORY VERDICT (2026-07-29, arms 1–2): **GATE 2 SIGNIFICANCE MISS at n=200 — extension registered below, no submit yet.**
+
+v118 (`912f94cb…`, identity 200/200) arms `xreq_b2c2f986` + `xreq_e8bd162e` (200 eps,
+0 ops; 152 crew / 48 imp) vs the pooled L3+L4 v117 baseline (500 eps; 359 crew).
+
+| gate | v118 | v117 base | verdict |
+|---|---|---|---|
+| 1. identity | 200/200 `912f94cb` slot 0 | — | ✅ |
+| 2a. accusations accepted | **452/452 = 100%** | 82.2% | ✅ |
+| 2b. votes-on-imp-target | 1.10 (n=247) | 0.96 (n=551) | ❌ **p=0.081 > 0.05** (direction + magnitude replicate the probe's 1.12 and the pooled 1.16; underpowered at 152 crew eps) |
+| 3. crew WR / imposter WR | **36.8%** / 70.8% | 30.1% / 69.5% | ✅ both up, within noise |
+| 4. mis-ej/cep; vt; self-votes | **0.132**; 0; 0 | 0.142 | ✅ (below baseline) |
+| 5. hits/crew-ep | **1.500** | 1.326 | ✅ |
+
+Per the registered rule this is a fail → no submit on these arms. Every point estimate
+replicates (three independent datasets now show votes-on-imp-target 1.10–1.16 vs 0.96,
+acceptance 100%, crew WR up, mis-ej clean); the miss is power, not direction.
+
+## CONFIRMATORY EXTENSION prereg (registered 2026-07-29 BEFORE firing arms 3–4)
+
+- **Arms 3–4:** 2×100 more v118, identical shape, fired sequentially.
+- **Analysis set (pre-specified):** ALL FOUR confirmatory arms pooled (~400 eps,
+  ~300 crew) vs the same pooled v117 baseline (500 eps).
+- **GATES:** identical to the confirmatory gates above, evaluated once on the pooled
+  set. Gate 2b at the pooled n has ~85% power for the observed ~+0.15 effect.
+- **Decision rule:** all pass on the pooled set → STOP AND ASK James with the full
+  gate table. Gate 2b misses again at pooled power → the effect is smaller than
+  measured; NO-SHIP, close (v118 stays inert), v117 remains champion.
+
+## CONFIRMATORY EXTENSION VERDICT
 
 *(pending at registration)*
