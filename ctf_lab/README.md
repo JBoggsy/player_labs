@@ -89,12 +89,22 @@ in [`AGENTS.md`](AGENTS.md) (CTF layer) and [`../AGENTS.md`](../AGENTS.md) (the 
 
 ## Beacon tuning sweeps
 
-Firefight sweep parameters are declared once in
+Sweep parameters are declared once in
 [`ctf/beacon/config.py`](ctf/beacon/config.py): each registry entry supplies the live
 config value and exposes its config name, environment variable, default, type, domain,
 family, and description. Cross-knob invariants cover range geometry, target/claim
 clocks, locality, and the bounded claim bias. An invalid assignment fails before an
 upload command is emitted.
+
+Two families are registered today: **`firefight`** (target scoring, claim lifecycle,
+mode hysteresis) and **`spacing`** (`POST_MIN_SEPARATION_PX`, `POST_SEARCH_RADIUS_PX`,
+`SQUAD_SEPARATION_PX`). They are registered together deliberately: focus fire converges
+several bots' shot rays on one enemy, which makes mutual friendly-fire corridor blocking
+more likely, while spacing decides how far apart those shooters stand. The two must be
+tuned **jointly**, and `friendly_fire_suppressed` in the traces is the metric that tells
+you whether a given arm traded kills for held fire. Cross-family invariants keep the
+pair coherent (post separation must exceed the squad push-apart floor and fit inside the
+post search radius).
 
 Dump the machine-readable registry:
 

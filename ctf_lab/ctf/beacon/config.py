@@ -660,6 +660,18 @@ TUNABLE_INVARIANTS: tuple[TunableInvariant, ...] = (
         "claim_bias_bounded_by_wound",
         "Claim bonus may not exceed one health-bar segment of wound score.",
     ),
+    TunableInvariant(
+        "post_separation_exceeds_squad_separation",
+        "Post separation must exceed squad separation, or the push-apart floor "
+        "fights the chosen posts.",
+        family="spacing",
+    ),
+    TunableInvariant(
+        "post_separation_within_search_radius",
+        "Post separation must fit inside the search radius, or only one post "
+        "can ever be chosen.",
+        family="spacing",
+    ),
 )
 
 
@@ -751,6 +763,24 @@ def validate_tunable_values(
         values["FF_CLAIM_WEIGHT"] <= values["FF_WOUND_WEIGHT"] * 0.5,
         "claim_bias_bounded_by_wound",
     )
+    # Spacing is the other half of the focus-fire friendly-fire tension: posts
+    # decide how far apart converging shooters stand, and the separation bias is
+    # the floor that unstacks them. If separation exceeded post spacing the two
+    # would fight each other every tick; if post separation exceeded the search
+    # radius only one post could ever qualify and the squad would restack.
+    # These knobs register later in this module than the firefight family, so a
+    # validate call made during import (before the spacing block runs) sees them
+    # absent. Skip rather than KeyError; by the time any caller validates a real
+    # sweep assignment the whole registry exists.
+    if {"POST_MIN_SEPARATION_PX", "SQUAD_SEPARATION_PX", "POST_SEARCH_RADIUS_PX"} <= values.keys():
+        require(
+            values["POST_MIN_SEPARATION_PX"] > values["SQUAD_SEPARATION_PX"],
+            "post_separation_exceeds_squad_separation",
+        )
+        require(
+            values["POST_MIN_SEPARATION_PX"] <= values["POST_SEARCH_RADIUS_PX"],
+            "post_separation_within_search_radius",
+        )
     return values
 
 
@@ -848,7 +878,18 @@ SQUADS = _env_int("BEACON_SQUADS", 0) == 1
 SQUAD_COHESION_PX = _env_int("BEACON_SQUAD_COHESION_PX", 120)
 SQUAD_MIN_BUDDIES = _env_int("BEACON_SQUAD_MIN_BUDDIES", 1)
 #: Separation: below this, steer apart (grenade blast 52px; bodies block shots).
-SQUAD_SEPARATION_PX = _env_int("BEACON_SQUAD_SEPARATION_PX", 40)
+#: Registered as a SPACING tunable: it is one of the two sides of the focus-fire
+#: friendly-fire tension (converging fire on one target makes mutual corridor
+#: blocking likelier), so it must be sweepable jointly with the firefight weights.
+SQUAD_SEPARATION_PX = _int_tunable(
+    "SQUAD_SEPARATION_PX",
+    "BEACON_SQUAD_SEPARATION_PX",
+    40,
+    "Teammate distance below which a bot steers apart, in map pixels.",
+    family="spacing",
+    minimum=16,
+    maximum=120,
+)
 #: Per-rank spread of a squad's ordered position (v25): members offset the shared
 #: order point by rank along y (0 / +SPREAD / -SPREAD), so a 3-man squad holds a
 #: short line instead of one cell. Must exceed SEPARATION_PX (or the separation
@@ -896,9 +937,28 @@ PLAN_BUDDY_WAIT_TICKS = _env_int("BEACON_PLAN_BUDDY_WAIT_TICKS", 150)
 #: isolate whether better ground or the narrower lane watch changes the outcome.
 POSTS = _env_int("BEACON_POSTS", 0) == 1
 POST_FACING = _env_int("BEACON_POST_FACING", 0) == 1
-#: Candidate geometry around the waypoint/search centre.
-POST_SEARCH_RADIUS_PX = _env_int("BEACON_POST_SEARCH_RADIUS_PX", 110)
-POST_MIN_SEPARATION_PX = _env_int("BEACON_POST_MIN_SEPARATION_PX", 56)
+#: Candidate geometry around the waypoint/search centre. Both are SPACING
+#: tunables: post separation is how far apart converging shooters end up, which
+#: is the other side of the focus-fire friendly-fire tension (see
+#: SQUAD_SEPARATION_PX). Sweep them jointly with the firefight weights.
+POST_SEARCH_RADIUS_PX = _int_tunable(
+    "POST_SEARCH_RADIUS_PX",
+    "BEACON_POST_SEARCH_RADIUS_PX",
+    110,
+    "Radius around a waypoint searched for candidate posts, in map pixels.",
+    family="spacing",
+    minimum=32,
+    maximum=240,
+)
+POST_MIN_SEPARATION_PX = _int_tunable(
+    "POST_MIN_SEPARATION_PX",
+    "BEACON_POST_MIN_SEPARATION_PX",
+    56,
+    "Minimum distance between two chosen posts, in map pixels.",
+    family="spacing",
+    minimum=24,
+    maximum=160,
+)
 #: Four-term score. Reach and cover retain the prototype weights; stance is a
 #: conservative directional bias and danger penalizes locally hot ground.
 POST_REACH_WEIGHT = _env_float("BEACON_POST_REACH_WEIGHT", 0.55)
