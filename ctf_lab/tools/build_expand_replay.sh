@@ -23,12 +23,20 @@ set -euo pipefail
 #   How you'll know to bump: build_expand_replay starts hash-failing on FRESH replays
 #   — that's the signal the league redeployed; try a newer commit until a fresh replay
 #   expands cleanly, and update this.
-# Current value (d78450e5) is the deployed ctf 0.7.70-0.7.76 era (league coworld
-# cow_f65b21ce…, canonical as of 2026-07-24; ref read from the coworld manifest's
-# game.runnable.source_url — `coworld show <cow_id> --json`). Earlier replays need
-# their era's pin (72fb1b1f = 0.7.69; 2641542 = 0.7.66; b571dd3 = 0.7.51;
-# c76e0c75 = 0.7.49; d60dc27 = 0.7.4; 761c098 = 0.5.4).
-CTF_REF="${CTF_REF:-d78450e553d465d0cdca11aa90a563df9a0875cb}"
+# Current value (a2ec0cc) is the deployed ctf 0.7.108 / GameVersion 26 (league
+# coworld cow_8b47c4c8…, canonical as of 2026-07-29). Resolve the deployed ref by
+# grepping a 40-hex sha out of `coworld show <cow_id> --json` — the parsed
+# game.runnable.source_url field reads None, but the sha is in the raw payload.
+#
+# READERS ARE MUTUALLY EXCLUSIVE BY ERA: a GV26 binary REFUSES a GV23 replay and
+# vice versa ("Replay game version does not match"). The stable symlink tracks the
+# CURRENT league era, so analysing an OLDER batch means naming that era's binary
+# explicitly, e.g. for the 2026-07-29 firefight ladder (0.7.102 / GV23):
+#   event_warehouse.py --expand-replay tools/bin/expand_replay_json-cdd567f
+# Era pins: a2ec0cc = 0.7.108 (GV26); cdd567f = 0.7.102 (GV23);
+# d78450e5 = 0.7.70-0.7.76; 72fb1b1f = 0.7.69; 2641542 = 0.7.66; b571dd3 = 0.7.51;
+# c76e0c75 = 0.7.49; d60dc27 = 0.7.4; 761c098 = 0.5.4.
+CTF_REF="${CTF_REF:-a2ec0cc66fd1d2397ff93f3aabd2140f933ed1f3}"
 GAME_REPO_SLUG="Metta-AI/coworld-ctf"
 
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # ctf_lab/

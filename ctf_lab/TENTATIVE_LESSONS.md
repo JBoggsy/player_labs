@@ -80,3 +80,62 @@ Status: alphashot:v180 is not a fighting problem, it is a CAPTURE problem — ne
 Fight tuning cannot help here; this needs a different lever (grab-and-run timing, or exploiting the
 GV23 clock-extension rule). Do not blend alphashot into pooled fight statistics — it dilutes a real
 effect with a cell where the mechanism cannot apply.
+
+### WAREHOUSE BUG: every outcome column is dead because results.json is no longer served
+
+Evidence: `event_warehouse.py:92-97` reads `participants.score/win/kills/deaths/captures` and
+`episodes.winner/red_score/blue_score` from a per-job **results.json** artifact. On a fresh
+120-episode warehouse (ctf 0.7.102): all five participants columns **null in 1920/1920 rows**, and
+`episodes.winner` = **"draw" for all 120 episodes** — while episode.json ground truth shows 17 wins.
+Re-fetching one episode with DEFAULT flags still reports `! results artifact unavailable`, and
+results.json is absent from older batches too, so it is not a `--no-logs` mistake. The tables still
+build without error, which is what makes it dangerous.
+Status: derive win/draw/loss from episode.json `scores` joined via `participants` on **policy_name**
+(the field is `position`, NOT `slot` — I used `slot` first and silently got zero rows), and
+kills/captures from `replay_events` (kill 4876, capture 63, flag_steal 283 — all populated).
+`tools/fight_ab_report.py::outcome_of` is the working reference. Handover written to
+`scratch/HANDOVER-warehouse-findings.md`.
+
+### The warehouse has shot/hit events with position + aim — undocumented and underused
+
+Evidence: `replay_events` key='shot' (24,979 rows) and key='hit' (15,774) carry
+`{x, y, aim}` re-keyed to policy/version/team/seat. The module docstring lists only
+kill/steal/return/capture/respawn/score/phase/game_over, so they are easy to miss.
+Status: these make shot-level questions answerable — accuracy (hit/shot) per policy, fire-range
+distributions, and two-sided engagement detection. Built `tools/find_firefights.py` on them: slide a
+window, require opposing-team shooters within a radius, merge contested ticks bridging short lulls.
+406 firefights in v36, 407 in v37 at >=3s.
+
+### Snapshots are a SPARSE periodic dump; the transition events carry the detail
+
+Evidence: per bot per episode there are only ~35 `event='snapshot'` records, but 174
+`firefight_target` (with the FULL score decomposition — range_px/score/wound/range_band/claim/
+shootability/aim_cost/shield/shootable), 215 `focus_claim` (action + claimant_seat + release_reason),
+21 `firefight` mode transitions, and 5,485 `heard_chat`.
+Status: any analysis or overlay that reads only snapshots gets ~1 sample per 140 ticks and will look
+like the feature barely fired. Read the transition events. Also: `firefight_target.cell` is in the
+same PIXEL space as `self_xy` despite the key name — do not scale it by a grid size.
+
+### THE REAL BOTTLENECK IS CAPTURES, NOT FIGHTING — and I falsified my own hypothesis
+
+Evidence: replay ground truth over 60 episodes each — vs h050 **5 captures to their 31**; vs
+focusfire **3 to their 24**. Yet we remove ~19-20 of 24 enemy lives per game. I hypothesised that
+extended brawling was itself the losing strategy (every top-intensity firefight was in a loss) and
+TESTED it: wins average MORE contested time than losses (54.7s vs 50.4s vs h050) and high-firefight
+episodes have MORE captures (0.13 vs 0.03/ep). Hypothesis wrong — fighting is not hurting, it simply
+is not the constraint.
+Status: this explains why all four firefight arms landed within noise. The next lever is capture
+conversion, not combat. Note the trap I nearly fell into: "all the big fights are losses" was an
+artifact of ranking by intensity plus the dead `participants.win` column.
+
+### 63-69% of firefight target selections are UNSHOOTABLE — the mechanism has no "no target" state
+
+Evidence: from `firefight_target` transition events across v36/v37: **63-69%** of selections have
+`shootable: false`, and **24-30%** are beyond the 350px `FIRE_MAX_RANGE_PX` gate entirely (seen
+directly, e.g. range_px 424.12 with shootability -1.0). Selected range averages ~270px while actual
+shots land at ~207px (barely moved from the 187px pre-firefight baseline).
+Status: the `shootability` term (-1, weight 0.35) only ranks AMONG visible candidates — when every
+candidate is unreachable it still picks the least-bad one and LATCHES it (min dwell 8t, switch
+margin 0.10). Concrete fix for any future firefight work: add a "no acceptable target" state that
+declines to latch, and re-centre the ideal range band on where shots actually connect rather than
+220-300px.

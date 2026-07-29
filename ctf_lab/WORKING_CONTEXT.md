@@ -10,7 +10,120 @@ startup to resume; **update it as you learn** (keep it tight).
 
 ---
 
-## Status (2026-07-29): **FIREFIGHT MODE IMPLEMENTED IN WORKING TREE, NOT UPLOADED**
+## Status (2026-07-29, session 9 END): **GAME JUMPED 0.7.102/GV23 → 0.7.108/GV26. Firefight measured over 360 eps: NOT significant, DO NOT SUBMIT. Real bottleneck = CAPTURES, not combat.**
+
+**Competing entry: v33 (posts), now league RANK 2 @ 1929 over 247 rounds** (up from
+rank 5 @ 1559 at submit — the posts A/B translated). Champion is daveey @ 2293.
+v35–v38 uploaded as A/B arms only; **nothing new submitted.**
+
+### The game changed — what it means for beacon (all verified this session)
+
+Deployed **ctf 0.7.108 = commit `a2ec0cc` = GameVersion 26** (resolve the ref by
+grepping a 40-hex sha out of `coworld show <cow_id> --json`; the parsed
+`game.runnable.source_url` field reads None but the sha is in the raw payload).
+60 commits landed since our GV23 pin. What actually touches us:
+
+| change | effect on beacon |
+|---|---|
+| **GV24: enemy sprite gun rotation FUZZED ±14 brads (~±20°)**, re-rolled every 12 ticks | **No functional impact.** The `<side>` label is derived from the *fuzzed* rotation (`soldierFacingRight`), so enemy `facing` is now noisy near the vertical boundary — but beacon only stores `facing` on tracks and traces it. Nothing decides on it (`strategy.py:250` is a *battle-plan* order facing, unrelated). beacon reads no enemy aim. |
+| **GV26(a): SELF marker renders TRUE aim again** | **Good — and note the window.** beacon reads its OWN aim from the self sprite's rotation id (`perception._find_self`, `5100 + rot`). GV24 fuzzed self too, so during GV24–GV25 that readback was corrupted; GV26 exempts self. Used only to correct dead-reckoning drift, so impact was bounded. Our 360-ep ladder ran on GV23 (pre-fuzz) and is unaffected. |
+| **GV25: respawn at a RANDOM spot in the home endzone** | Neutral structurally — beacon has no fixed-respawn assumption (all its `*_RESPAWN_TICKS` are ITEM respawns). Kills spawn-camping as a tactic. |
+| **GV26(b): HEART carriers fire at 1/3 rate** (`CarrierFireSlowdown=3`) | **NEW and unmodelled.** beacon mirrors `carrierSpeedPct` (70%) but knows nothing about carrier fire rate. Directly relevant to the capture problem: a carrier that stops to fight is now much weaker, so carrying should be evasion + escort-does-the-shooting, and *enemy* carriers are soft targets. |
+| **GV26(c): column-1's fifth vertical bar → glass window** | **NO NAV REBAKE.** Commit `3412b24` flipped an EXISTING rect `(268,395,18×60)` to `window: true`. beacon's `bake_map.py` `_RECTS` holds that exact rect and its comment already documents that glass stays in the WALL set (glass blocks movement, bullets, plasma; transparent only to fog-of-war, which the bake does not model). Walls, flow fields and shot sightlines all unchanged. |
+| **Server randomizes the game seed** (`c3e3d9a`) | Visible live: `game_config.seed` is now `None` (was `679961`). Better A/B independence; specific episodes are no longer reproducible. |
+| `ctf-doubles` variant now uploaded alongside every ctf build | Unexplored. |
+
+Unchanged and re-verified against a live 0.7.108 episode: `maxTicks 5000`,
+`visionConeDeg 45`, `lives 3`.
+
+### BREAKING: the replay reader is era-locked — rebuilt at GV26
+
+A GV23 reader on a fresh GV26 replay dies with `Replay game version does not
+match`, and the reverse is equally true. This blocks the **event warehouse** and the
+**viewer bundler** on new episodes. Fixed: rebuilt at `a2ec0cc` and
+`tools/build_expand_replay.sh` now pins it, with the era table in its header.
+
+**The stable symlink tracks the CURRENT league era, so analysing an OLDER batch
+requires naming that era's binary explicitly.** For the 2026-07-29 ladder (GV23):
+
+```
+uv run python ctf_lab/tools/event_warehouse.py --episodes <dir> --out <wh> \
+  --expand-replay ctf_lab/tools/bin/expand_replay_json-cdd567f
+```
+
+### Firefight ladder: 360 episodes, 4 arms × 3 opponents × 30 eps
+
+Pooled over the two decisive opponents (alphashot excluded — draw-locked):
+
+| arm | wins | rate | vs baseline |
+|---|---|---|---|
+| v35 postsonly (= v33 baseline) | 11/60 | 18.3% | — |
+| v36 firefight, NO claims | 17/60 | **28.3%** | p=0.140 |
+| v37 + focus claims | 13/58 | 22.4% | p=0.374 |
+| v38 + wider spacing | 8/60 | 13.3% | p=0.841 |
+
+**Verdict: DO NOT SUBMIT.** v36 is best at +10pp but p=0.14, and **kills are flat
+across all four arms** (enemy lives removed/ep vs h050: 19.4 / 20.2 / 19.0 / 19.3) —
+a fight change that doesn't move kills almost certainly didn't move win rate. The
+ordering v36 > v37 > v38 does hold on *both* opponents, which is weak evidence it's
+real. **Coordination and wider spacing both HURT** — if firefight ever ships, ship it
+WITHOUT claims.
+
+### The actual bottleneck: captures, not combat
+
+- **Out-captured 6–8×**: vs h050 **5 to 31**; vs focusfire **3 to 24** (60 eps each,
+  replay ground truth) — while removing ~19–20 of 24 enemy lives per game.
+- **Falsified my own hypothesis** that brawling causes losses: wins average *more*
+  contested firefight time than losses (54.7s vs 50.4s vs h050) and high-firefight
+  episodes have *more* captures. Fighting isn't hurting; it isn't the constraint.
+- **vs alphashot:v180 we are draw-locked**: 0% wins, 25–30/30 draws, only 7.9 of 24
+  enemy lives removed (vs ~19.4 elsewhere). A capture problem, not a fighting one —
+  exclude it from pooled *fight* statistics.
+
+### Firefight's own design bug, if it's ever revisited
+
+**63–69% of target selections are unshootable at selection**, and 24–30% are beyond
+the 350px fire gate (seen directly: `range_px 424.12`, `shootability -1.0`). Selected
+range averages ~270px while shots land at ~207px. `shootability` only ranks *among*
+visible candidates, so when all are unreachable it still picks one and latches (min
+dwell 8t, margin 0.10). Needs a "no acceptable target" state that declines to latch,
+and an ideal band re-centred on where shots actually connect.
+
+### Warehouse traps (see `scratch/HANDOVER-warehouse-findings.md`)
+
+- **Every outcome column is dead.** `participants.score/win/kills/deaths/captures` are
+  null in 1920/1920 rows and `episodes.winner` is `"draw"` for all 120 episodes,
+  because `event_warehouse.py:92-97` reads them from a `results.json` the platform no
+  longer serves (`! results artifact unavailable` even with default flags). The tables
+  build without error, which is what makes it dangerous. Derive win/draw/loss from
+  `episode.json` `scores` joined on **`policy_name`** (the participant field is
+  **`position`**, not `slot`); see `tools/fight_ab_report.py::outcome_of`. Kills and
+  captures come from `replay_events`.
+- **`shot`/`hit` events exist but aren't in the module docstring** — 24,979 and 15,774
+  rows with shooter `{x,y,aim}`. They enable accuracy, fire-range and engagement
+  analysis; `tools/find_firefights.py` segments two-sided firefights from them.
+- **`event='snapshot'` is a sparse periodic dump** (~35/bot/episode). The detail is in
+  transition events: 174 `firefight_target` (full score decomposition) and 215
+  `focus_claim` per bot. Read those, not snapshots. `firefight_target.cell` is in
+  PIXEL space despite the name.
+
+### Coordination note
+
+Another agent is expanding the warehouse reporter. I deliberately did **not** modify
+`event_warehouse.py`, `viewer.html`, or `viewer_bundle.py`. `viewer.html` still has NO
+firefight overlay — 8 ready bundles sit in `scratch/fight_bundles/` (2 wins + 2 losses
+per arm, firefight tick ranges in the filenames) and load in the current viewer today.
+
+### Next
+1. **Capture conversion** — the evidence says this is where the wins are. Steal→deliver
+   rate, where carriers die, and GV26(b)'s carrier fire penalty as a reason to escort
+   rather than brawl.
+2. The draw-lock vs alphashot:v180 (0% across all arms).
+3. Optional: the firefight viewer overlay, in an ISOLATED WORKTREE.
+
+---
+
+## (measurement detail) Status (2026-07-29): firefight implementation reference — flags, protocol, tracing, tunables
 
 Beacon now has intentional gun targeting behind `BEACON_FIREFIGHT=1`: `fight.py`
 scores at most eight visible enemies by ordinal wound level, a 220–300px effective
