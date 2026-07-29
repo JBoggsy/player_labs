@@ -84,6 +84,41 @@ loop. MECHANISM fail (HS broken) → fix or revert the deferral, one refire allo
 
 ---
 
-## VERDICT
+## VERDICT (2026-07-29): **NO-SHIP per the pre-registered rule — GUARD-7 exceeded its bar.** Mechanism decisively fixed; the guard failure is marginal and carries to a NEW, powered prereg (L4).
 
-*(pending at registration)*
+Cand = `crewborg-chatfix:v1` (`714cbd59…`, identity 200/200), arms `xreq_7c2ba7bd` +
+`xreq_5ca6fda7` (200 eps, 0 ops; 155 crew / 45 imp). Baseline = loop-3's fresh v117
+batch (300 eps, 0 ops; 215 crew / 85 imp). Analysis `/tmp/loop3/verdict.py` + the
+sim-acceptance instrument below.
+
+**Instrument correction (pre-verdict, applies to PRIMARY-1's wording):** raw replay
+bytes contain even server-DROPPED chats — `server.nim` `writeChat`s every client
+message *before* `addVotingChat` applies the cooldown filter — so "appears in the
+replay file" is not visibility. The honest instrument is re-applying `addVotingChat`'s
+acceptance rule (≥100t since our last *accepted* chat) to the believed send stream;
+the warehouse `chat` partition stays capped at 6/meeting (L1 finding) and undercounts
+both arms.
+
+| criterion | cand (chatfix) | base (v117) | verdict |
+|---|---|---|---|
+| PRIMARY-1 accusations accepted by the server | **413/413 = 100%** | 554/680 = 81.5% | ✅ (bar ≥90%) |
+| PRIMARY-2 votes-on-our-imposter-target per landed accusation | **1.12** (n=228) | 0.94 (n=343) | ✅ MW 1-sided p=0.025 |
+| MECH-3 HS1 announce accepted / member verification | 100%; known_member 194/200 eps | 100%; 283/300 | ✅ |
+| GUARD-4 crew WR | **34.2%** | 30.2% | ✅ (directionally up, p=0.42) |
+| GUARD-5 imposter WR | 64.4% | 70.6% | ✅ within noise (p=0.47) |
+| GUARD-6 vote_timeouts / self-votes | 0 / 0 | 0 / 0 | ✅ |
+| GUARD-7 mis-ej-we-voted/cep | **0.181** | 0.116 | ❌ **FAIL — bar was ≤0.174 (1.5×)**; fisher p=0.098 NS |
+| GUARD-8 hits/cep | 1.406 | 1.377 | ✅ not down |
+
+**Honest read.** The fix does exactly what it claims — zero swallowed accusations, +19%
+votes recruited onto our true-imposter targets, crew WR +4pp directional, and the L3
+baseline independently confirms v117's refit gains persist (hits/cep 1.377 vs v116's
+1.030). But louder accusations recruit onto our *wrong* targets too (~20% of our
+accusations hit crew), and the mis-ejection guard tripped its point-estimate bar
+(0.181 > 0.174; 28/155 vs 25/215 eps, p=0.098 — underpowered). Per the registered
+decision rule — any guard failure disqualifies — **NO-SHIP**. No post-hoc gate
+adjustment.
+
+**Disposition:** the L3 verdict stands. The guard failure is a noisy point estimate on
+a mechanism that measurably works; a NEW pre-registered, powered test (L4) is the
+correct next step — registered separately BEFORE its arms fire, pooling pre-specified.
