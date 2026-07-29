@@ -82,6 +82,53 @@ loading), one diagnose-and-refire allowed.
 
 ---
 
-## VERDICT
+## VERDICT (2026-07-29): **ALL PRE-REGISTERED GATES PASS → proceed to v117 confirmatory**
+
+Cand = `crewborg-suspv5:v1` (`9a6274e0…`, identity verified 200/200 episodes), arms
+`xreq_17d5a55b` + `xreq_8945fc9a` (200 eps, 0 ops; 150 crew / 50 imp). Baseline =
+loop-2's fresh same-day v116 batch `xreq_f8d90abd`/`xreq_d27cc1fe`/`xreq_1ac203ea`
+(300 eps, 0 ops; 230 crew / 70 imp). Ops profiles match (0 vs 0). Analysis
+`/tmp/loop2/verdict.py`.
+
+| criterion | cand (suspv5) | base (v116) | verdict |
+|---|---|---|---|
+| PRIMARY-1 net correct votes/crew-ep | **1.080** (hits 1.420/cep) | 0.774 (hits 1.030/cep) | ✅ hits 1-sided p=0.0004 |
+| PRIMARY-2 live precision | **80.7%** | 80.1% | ✅ (bar 75.1%) |
+| MECH-3 bar-clearing suspects/snapshot | **1.013**; top-clear 63.2% | 0.589; 45.4% | ✅ FIRED |
+| GUARD-4 crew WR | 27.3% | 30.0% | ✅ within noise (p=0.58) |
+| GUARD-5 mis-ej-we-voted/cep | 0.133 | 0.096 | ✅ under bar 0.143 (but WATCH: +38% point estimate) |
+| GUARD-6 vote_timeouts / self-votes | 0 / 0 | 0 / 0 | ✅ |
+| GUARD-7 imposter WR | 74.0% | 68.6% | ✅ noise (p=0.52) |
+| GUARD-8 impEj-in-ep/cep | 41.3% | 43.0% | ✅ not down beyond noise (p=0.74) |
+
+Context (not gates): conversion 22.1% vs 24.1% (flat — as expected; conversion is the
+L1-closed channel), crew WR dipped directionally (within noise) while vote volume ×
+precision moved exactly as the refit predicts. The mis-ejection WATCH (GUARD-5 margin
+was thin) carries into the confirmatory read.
+
+**Per the decision rule: build `crewborg:v117` (same code+weights, v116 recipe) and run
+the confirmatory A/B — prereg below, registered BEFORE the confirmatory arms fired.**
+
+---
+
+## CONFIRMATORY prereg (v117 vs v116, registered 2026-07-29 BEFORE firing)
+
+- **v117** = byte-identical build lineage to `crewborg-suspv5:v1` (main `32c7b48`)
+  uploaded under the `crewborg` name, v116's exact recipe. The confirmatory validates
+  the SHIPPING artifact (name/upload/recipe correctness — the v113-orphan class of
+  error) and replicates the probe read on fresh arms.
+- **Arms:** 2×100 v117, Thread-1 pinned roster, slot 0, natural roles, sequential.
+- **Baseline:** the same L2 fresh v116 batch (300 eps, same-day). Ops-profile gate as before.
+- **GATES (all must hold, pooled 200 v117 eps):**
+  1. Identity: 200/200 episodes seat v117's policy_version_id at slot 0.
+  2. Replication: hits/crew-ep > baseline (1-sided p < 0.05) AND net correct votes/crew-ep up.
+  3. Precision ≥ baseline − 5pp.
+  4. Crew WR and imposter WR each not worse beyond noise (2-sided p < 0.05).
+  5. Mis-ejections-we-voted/cep ≤ 1.5× baseline; vote_timeouts 0; self-votes 0.
+  6. Mechanism: bar-clearing/snapshot ≥ probe's direction (> baseline).
+- **Decision rule:** all pass → STOP AND ASK James for submit approval with the full
+  combined gate table (probe + confirmatory). Any fail → NO-SHIP, diagnose.
+
+## CONFIRMATORY VERDICT
 
 *(pending at registration)*
