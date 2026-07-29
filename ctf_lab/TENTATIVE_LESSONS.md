@@ -368,3 +368,89 @@ Evidence: I filtered on `'x' in v` and got zero rows, concluding position was ab
 schema is `{"victim_slot":12,"victim_label":"...","victim_x":461,"victim_y":217,"killer_x":713,
 "killer_y":401}` — and `r['player']` is the KILLER slot. Dumping one raw row settled it in seconds.
 Status: dump one raw event row before writing any extraction over an unfamiliar reader build.
+
+### FIREFIGHT MODE built (v34-pending, flags OFF): intentional target selection + local focus claims
+
+Evidence: beacon's combat WAS one line — `min(visible_enemies, key=distance)` (action.py:87-91).
+New `fight.py` scores each visible enemy on wound / range-band / claim / shootability / aim-cost /
+shield and latches with hysteresis; new `FI`/`FC` claim shouts sit at `C>T>O>G>U>K>F>E>P`.
+Verified numerically: a claim (0.12) breaks a tie above the 0.10 switch margin but CANNOT drag a bot
+off a better target (wounded@150px 0.940 vs claimed-healthy@340px 0.530); one wound level (0.25)
+outweighs a claim. Behaviour change confirmed on the measured gap: two healthy enemies at 187px
+(our habit) and 260px (ideal band) -> old rule picks 187, firefight picks 260.
+154 tests pass (was 117). Both flags default OFF.
+Status: NOT uploaded. `BEACON_FIREFIGHT` / `BEACON_FOCUS_CLAIMS` gate it independently so the A/B
+can separate better target choice from coordination.
+
+### Enemy HP was observable all along and beacon was discarding it — the docstring even said so
+
+Evidence: the game emits `hp <lit>/3` as a distinct object **fog-gated with each player**
+(`labels.nim` LabelPrefixHp), so any visible enemy's health is readable. beacon's
+`perception._overhead_state` scanned every `hp ` object, kept only the one nearest ITSELF, and
+dropped the rest — while its own docstring said "a wounded enemy's hp is readable intel".
+Status: two traps encoded in the new code: (1) the numerator is LIT BAR SEGMENTS, not hit points
+(`hp + shieldHp` mapped onto thirds; the game source warns they coincide today only because
+hitPoints also defaults to 3), and (2) it INCLUDES shield, so a shielded enemy reads high — which
+usefully doubles as shield detection.
+
+### GV23 changes fight economics: shields BREAK, and kills EXTEND the clock
+
+Evidence: `absorbDamage` (sim.nim:4523-4539) — a shield absorbs up to 3hp and the moment it empties
+the shield is GONE along with the wearer's 3x `ShieldFireSlowdown`. So the first 3hp into a shielded
+enemy buys no kill but strips armor AND removes their fire penalty (an externality: good for the
+team, briefly better for them). `floorGameClock` + `ActionClockFloorTicks = 500` — any kill or steal
+within 500 ticks of the limit banks overtime, so late aggression BUYS time instead of risking it.
+Status: both now reflected in scoring (small shield penalty, 0.10) and both argue for finishing
+kills rather than stalling. Neither was known to beacon before.
+
+### Verify a mechanism by RUNNING it, not by reading the diff — but check your fixture first
+
+Evidence: my first two firefight checks reported `firefight_active=False` and `select_target=None`,
+looking like dead code. Both were MY fixtures: `update_firefight` requires `belief.alive` (I left it
+False) and `select_target` requires `firefight_active` (never set). Third attempt with a correct
+fixture showed the mechanism working exactly as designed. This is the SECOND time this session an
+ad-hoc fixture produced a false "feature is dead" reading (the first was `PlayerTrack.identity`
+being an int seat, not a nameplate string).
+Status: when an ad-hoc check says a new feature does nothing, suspect the fixture before the code.
+
+### Sweepable knobs need a REGISTRY, not just env vars — and the registry must generate the values
+
+Evidence: James asked for the weights to be "surfaced somewhere easy to change" for optimization
+sweeps. All 21 firefight knobs were already `_env_float`-backed (so sweepable via `--secret-env`),
+but config.py has **122** env knobs and NOTHING enumerated them — a sweep harness would hardcode the
+list and drift. Built `TUNABLE_REGISTRY` + `ctf.beacon.tuning` CLI: 23 registered tunables with
+ranges, 8 cross-knob invariants, `dump` (JSON for a harness) and `secret-env` (emits the exact
+upload flags).
+Status: the strong form is that the registry **generates** the config values (`_float_tunable(...)`),
+so a default cannot disagree with its registration by construction. A test additionally asserts the
+registered `BEACON_FF_*` set equals the env vars found in the config source — I PROVED it fails by
+injecting a raw `_env_float("BEACON_FF_BOGUS")` that bypassed the registry.
+
+### Encode cross-knob invariants so a sweep can't propose an incoherent arm
+
+Evidence: 8 invariants now reject bad configs BEFORE any hosted episodes are burned. Verified by
+running them: `FF_CLAIM_WEIGHT=0.9` -> rejected ("claim bonus may not exceed one health-bar segment
+of wound score" — machine-enforcing James's soft-bias-not-order rule); `FF_RANGE_IDEAL_MAX_PX=500`
+-> rejected (band must stay inside the 350px fire gate); `FOCUS_CLAIMS=true` alone -> rejected
+(claims require firefight). Also encoded: `FF_DEATH_MISSING_TICKS < FF_TARGET_MISSING_TICKS <
+FF_CLAIM_TTL_TICKS`, a real ordering the claim lifecycle depends on.
+Status: this is the cheapest possible place to catch a bad sweep arm — an invalid config costs one
+CLI error instead of a 10-episode batch.
+
+### Codex caught an unobservable requirement in my spec: beacon cannot trace kill range
+
+Evidence: I specified a "kill-range distribution" trace as the primary mechanism metric. Codex
+correctly refused — beacon has NO kill percept (no corpse reading, no damage event). Corrected
+split: beacon traces SHOT range and SELECTED-TARGET range (which it knows); true kill range comes
+from replay ground truth via `killer_x/y` + `victim_x/y`, which is how the 187px-vs-222px figure was
+computed in the first place.
+Status: when specifying tracing, check each field is derivable from the POLICY's observations, not
+from the analysis pipeline's.
+
+### Flags-off byte-identity is worth proving against the committed baseline, not just a unit test
+
+Evidence: generated 60 varied beliefs and compared `resolve_action` held_mask between the real HEAD
+(v33) checkout and the new code with both flags off: **IDENTICAL, 60/60**. Codex's own off-path test
+is good (it pre-seeds firefight state to prove the flag gates it) but tests the new tree against
+itself; the cross-checkout comparison is what actually proves no regression risk in the champion
+path.

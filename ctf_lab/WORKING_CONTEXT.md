@@ -10,6 +10,44 @@ startup to resume; **update it as you learn** (keep it tight).
 
 ---
 
+## Status (2026-07-29): **FIREFIGHT MODE IMPLEMENTED IN WORKING TREE, NOT UPLOADED**
+
+Beacon now has intentional gun targeting behind `BEACON_FIREFIGHT=1`: `fight.py`
+scores at most eight visible enemies by ordinal wound level, a 220–300px effective
+range band, bounded focus-claim bias, baked bullet sightline + friendly-fire
+shootability, aim traverse, and shield state. A short target latch prevents
+thrash, while an unshootable current target may switch immediately. The overlay
+does not alter `strategy.py` or any movement rung. Plasma-arc carriers keep the
+legacy short-range weapon behavior, with excluded firefight-eligible ticks counted
+as `firefight_arc_exempt_ticks`.
+
+`BEACON_FOCUS_CLAIMS=1` adds identity-first `FI<seat><identity><cell>` and
+cell-fallback `FC<seat><cell>` shouts at the exact arbitration position
+`C > T > O > G > U > K > F > E > P`. Exclusivity is local to one fight
+(400px), not team-global. Claims are a bounded score bias, not orders, but they
+are load-bearing convergence machinery: the score is not literally shared because
+range, aim cost, visibility, and friendly-fire corridors differ by bot. Claims
+expire on their communication clock even if the target remains visible; missing
+targets release earlier on a corroborating aggregate enemy death or on a fixed
+missing-target fallback.
+
+Both flags default OFF. Trace output includes mode transitions/ticks, decomposed
+target scores, one cumulative `firefight_target_switches` counter, claim
+send/hear/suppression/release data, friendly-fire suppression, arc exemptions,
+and distributions of selected-target and actual-shot ranges. Beacon cannot
+observe kills, so true kill ranges remain replay-ground-truth analysis.
+
+Firefight parameters now come from the family-tagged `TUNABLE_REGISTRY` in
+`config.py`, including the pre-existing FF corridor. `python -m
+ctf.beacon.tuning dump` exposes JSON domains/invariants; `secret-env NAME=VALUE
+...` validates a sweep assignment and emits the repeated Coworld upload flags.
+The README documents the build → upload → matched hosted-arm workflow.
+
+**Hard mechanism bound:** this iteration can move the 187px measured kill-range
+baseline toward the 220–300px target band, but cannot produce a meaningful 400px+
+kill tail. `FIRE_MAX_RANGE_PX=350` and the aim/fire geometry are deliberately
+unchanged; a 400px+ tail needs a separate fire-gate/accuracy iteration.
+
 ## Status (2026-07-28): **v33 (POSTS) SUBMITTED -> QUALIFIED -> 👑 CHAMPION.** Posts help on both opponents; stance sweep null
 
 **v33 SUBMITTED on human go-ahead** (`sub_df9f3ac2-7f1d-448f-a08f-63b95eeface0`,

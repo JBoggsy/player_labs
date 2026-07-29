@@ -213,8 +213,14 @@ rest of the lab's deferred tasks. Check it at the start of focused work.
   grenade-clear > items > squad orders > convert-hunt > battle plan > the static role
   split), and
   `action` emits a `Button` mask — d-pad movement + a **lighthouse aim sweep** across the
-  threat axis that snaps to a visible enemy, behind a fire-gate with a **friendly-fire
-  guard**. Navigation is **offline-baked** (`tools/bake_map.py` → `mapdata/nav.npz`: an 8px
+  threat axis that snaps to the nearest visible enemy by default, or (behind
+  `BEACON_FIREFIGHT`) to `fight.py`'s wound/range/shootability-scored target.
+  `BEACON_FOCUS_CLAIMS` adds local, soft-bias `F` claims beneath `K` and above `E`
+  in chat arbitration; these claims are load-bearing convergence because range,
+  aim cost, visibility, and friendly-fire corridors are bot-relative. Both new
+  flags default OFF. Fire remains behind the existing 350px fire gate and a
+  **friendly-fire guard**. Navigation is **offline-baked** (`tools/bake_map.py` →
+  `mapdata/nav.npz`: an 8px
   walkable grid, two Dijkstra flow fields per team, a cover-cell grid, and a
   32-direction `uint8` sightline field in 4px distance units); online A* handles
   dynamic goals. `posts.py` derives directional cover from that field and, behind
@@ -231,7 +237,14 @@ rest of the lab's deferred tasks. Check it at the start of focused work.
   the **battle-plan interpreter** (rung 3.9, goals not motion), and **buddy-wait**.
   Version history: [`ctf/beacon/VERSION_LOG.md`](ctf/beacon/VERSION_LOG.md) — current through
   v33; read it before assuming what a version contains.
+  Firefight can move selected-target and shot ranges from the measured 187px
+  baseline toward its deliberate 220–300px ideal band, but it cannot create a
+  meaningful 400px+ kill tail: `FIRE_MAX_RANGE_PX=350` and the aim/fire geometry
+  are unchanged. That requires a separate fire-gate/accuracy iteration.
   Behavior knobs are env vars in `ctf/beacon/config.py` (`BEACON_DEFENDERS`,
   `BEACON_FF_CORRIDOR_PX`, …), set at upload time for A/B. Build: `tools/build_player.sh beacon`.
+  Firefight sweep knobs are registered in that same config module; dump their
+  machine-readable domains or emit validated upload arguments with
+  `uv run python -m ctf.beacon.tuning` (see the README's tuning-sweeps section).
   **Next (open thread):** raise the baseline win rate above 26% — survive the grab-and-run
   better (tighter escort, staggered pushes), enemy-track memory, exposure-aware routing.

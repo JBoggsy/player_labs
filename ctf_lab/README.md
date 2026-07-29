@@ -61,6 +61,7 @@ ctf_lab/
   best_practices.md               CTF-specific practices (near-empty until lessons graduate)
   TENTATIVE_LESSONS.md            this session's candidate-lessons buffer (auto-rotated)
   ctf/beacon/                     THE PLAYER — Python Player-SDK SpriteV1 policy (see below)
+    tuning.py                     tunable-registry JSON + validated sweep-arm CLI
   docs/
     ctf-gameplay.md               self-contained game reference (rules, protocol, tuning, strategy)
     designs/ctf-player-v1-design.html   beacon's strategic/tactical design
@@ -85,3 +86,42 @@ cyborg — perception / belief / strategy / nav / action modules, offline-baked 
 
 The full evaluate → report → improve → submit cycle, and which skill drives each step, is
 in [`AGENTS.md`](AGENTS.md) (CTF layer) and [`../AGENTS.md`](../AGENTS.md) (the loop).
+
+## Beacon tuning sweeps
+
+Firefight sweep parameters are declared once in
+[`ctf/beacon/config.py`](ctf/beacon/config.py): each registry entry supplies the live
+config value and exposes its config name, environment variable, default, type, domain,
+family, and description. Cross-knob invariants cover range geometry, target/claim
+clocks, locality, and the bounded claim bias. An invalid assignment fails before an
+upload command is emitted.
+
+Dump the machine-readable registry:
+
+```bash
+uv run python -m ctf.beacon.tuning dump --family firefight \
+  > /tmp/beacon-firefight-tunables.json
+```
+
+Build the image once, then upload each sweep arm with a validated assignment. The
+`secret-env` command accepts config names or full `BEACON_*` names and prints the
+repeatable Coworld arguments:
+
+```bash
+ctf_lab/tools/build_player.sh beacon --tag players-beacon:firefight-sweep
+
+uv run coworld upload-policy players-beacon:firefight-sweep --name beacon \
+  $(uv run python -m ctf.beacon.tuning secret-env \
+    FIREFIGHT=true \
+    FOCUS_CLAIMS=true \
+    FF_WOUND_WEIGHT=0.60 \
+    FF_RANGE_WEIGHT=0.25 \
+    FF_CLAIM_WEIGHT=0.15) \
+  --tag sweep=firefight-w060-r025-c015
+```
+
+Record the returned immutable beacon version and its full assignment, then create the
+arm's matched hosted experience request with the same opponent, role, episode count,
+and time window as the other arms. Start artifact streaming immediately, per the
+root `coworld-experience-requests` workflow. Uploading is inert; do not submit a sweep
+arm to the league without the human submission gate.
