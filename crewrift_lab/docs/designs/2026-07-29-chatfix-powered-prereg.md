@@ -124,6 +124,29 @@ acceptance 100%, crew WR up, mis-ej clean); the miss is power, not direction.
   gate table. Gate 2b misses again at pooled power → the effect is smaller than
   measured; NO-SHIP, close (v118 stays inert), v117 remains champion.
 
-## CONFIRMATORY EXTENSION VERDICT
+## CONFIRMATORY EXTENSION VERDICT (2026-07-29): **ALL GATES PASS on the pooled set — SHIP v118**
 
-*(pending at registration)*
+Pooled per the pre-specification: all four confirmatory arms `xreq_b2c2f986` +
+`xreq_e8bd162e` + `xreq_ccefecb2` + `xreq_de8408bd` (400 eps, 0 ops; 297 crew /
+103 imp) vs the pooled L3+L4 v117 baseline (500 eps, 0 ops; 359 crew / 141 imp).
+Prereg-discipline audit: extension prereg committed 18:00:31Z (4f11a5b); arm 3
+created 18:00:33Z, arm 4 18:29:26Z — registration precedes firing.
+
+*(Note: the run was interrupted and /tmp wiped between arm completion and this
+analysis; all nine arms were re-fetched from the platform and warehouses+belief
+logs rebuilt with the same instrument — verdict.py recovered verbatim from the
+runner transcript. Identity re-verified both sides.)*
+
+| gate | v118 (pooled 400) | v117 base (pooled 500) | verdict |
+|---|---|---|---|
+| 1. identity | 400/400 `912f94cb` slot 0 | 500/500 `54bb6cc5` | ✅ |
+| 2a. accusations accepted (server-rule sim) | **886/886 = 100%** | 921/1121 = 82.2% | ✅ (bar ≥95%) |
+| 2b. votes-on-our-imposter-target | **1.10** (n=458) | 0.96 (n=551) | ✅ **MW 1-sided p=0.0274** — the n=200 miss was power, as the extension predicted |
+| 3. crew WR / imposter WR | **35.0%** / 72.8% | 30.1% / 69.5% | ✅ both up, within noise (p=0.18 / p=0.57) |
+| 4. mis-ej-we-voted/cep; vote_timeouts; self-votes | **0.148**; 0; 0 | 0.142; 0; 0 | ✅ (bar 0.213) |
+| 5. hits/crew-ep | **1.434** | 1.326 | ✅ (the v117 refit gain persists through the fix) |
+
+Four independent datasets now replicate every point estimate (votes-on-imp-target
+1.10–1.16 vs 0.94–0.96; acceptance 100% vs ~82%; crew WR up 3–7pp; mis-ej clean;
+HS1 100%). Per the decision rule: STOP AND ASK → submitted to the orchestrator gate
+with this table; James's standing permission for this run (2026-07-28) applies.
