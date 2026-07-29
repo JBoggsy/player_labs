@@ -35,6 +35,19 @@ roster) → warehouse `/tmp/loop1/wh` + belief log + divergence scan. Key reads:
 Next lever candidates for the conversion axis: make the FIRST accusation harder
 (suspicion-v5 refit — the W2 measured ceiling AUC 0.82). Loop 2 starting.
 
+## 👑 SHIPPED (2026-07-29, loop-alpha L2): v117 = v116 + SUSPICION-V5 REFIT — competing/active + CHAMPION
+
+`crewborg:v117` (`54bb6cc5…`, main `32c7b48`, v116 recipe + the runtime-v116-L2 weights —
+NO code change) submitted 2026-07-29 after James's approval on the clean two-stage verdict
+(probe `crewborg-suspv5:v1` ALL PASS: hits/cep 1.420 vs 1.030 p=0.0004; confirmatory v117
+ALL PASS: hits/cep 1.335 vs 1.030 p=0.0038, precision 82.1%, crew+imposter WR both
+directionally up, impEj-eps/cep 51.6% vs 43.0% p=0.098, conversion 30.9% vs 24.1%).
+Prereg + both gate tables: `docs/designs/2026-07-28-suspicion-v5-refit-prereg.md`.
+v116's `lpm_288949ba…` retired FIRST → v117 `lpm_fca1ad4b…` competing/active + champion.
+Poller: `/tmp/poll_v117_qualify.py`. **LEAGUE WATCH (L3+): (1) mis-ejection rate on fresh
+league data (probe point estimate +38% before the clean confirmatory); (2) crew WR /
+hits-per-ep holding up at league scale.**
+
 ## 🎯 OBJECTIVE (2026-07-23): v114 submitted — v112's code with LLM meetings OFF (deterministic)
 
 **James's call: "turn off LLM meetings for now and use our deterministic fallback."** v114 =
