@@ -72,3 +72,10 @@ Evidence: pull to da32437e8 (2026-07-24) moved rotations to `player/behavior/rot
 (per-class files: shaman.nim, warrior.nim, …, model.nim, selectors.nim), leveling to
 `player/behavior/leveling/`, SDK to `player/sdk/`, manifest to `infra/coworld_manifest_template.json`.
 All lab-doc citations using `player/bots/...` paths are stale.
+
+### A clean `/env` close before the first frame can be a game startup failure
+Evidence: two wowborg:v46 hosted requests on accelerated-wow 0.1.122 produced only
+`ConnectionClosedOK(1000)` and `replay_missing`. The owner traced this to the hosted
+environment failing to apply its per-session asset base before loading the DBC character
+catalog. Accelerated-wow 0.1.124 fixes the asset initialization and now sends typed
+pre-session close reasons instead of making policy and game failures indistinguishable.

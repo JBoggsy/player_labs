@@ -23,7 +23,7 @@ from environment.contract.agent import (
     WaitAction,
     WorldPoint,
 )
-from environment.runtime.hosted_session import hosted_runtime_factory
+from environment.runtime.episode import hosted_runtime_factory
 from player.sdk.navmesh import route_navmesh
 
 from wowborg.trace import NullTracer, Tracer
@@ -238,7 +238,7 @@ class GymSession:
             route_distance=float(route.route_distance or 0.0),
             partial=bool(route.partial_path_end) or route.path_type == "partial",
             projected_target_distance=route.projected_target_distance,
-            jump_required=bool(route.jump_required),
+            jump_required=bool(getattr(route, "jump_required", False)),
             message=route.message or "",
         )
 

@@ -13,7 +13,7 @@ file is the one-screen "where are we and why."
 
 ---
 
-## Status (2026-07-29): OWNER-PROVIDED `/env` REPLACES THE CLIENT-ADAPTER PLAN
+## Status (2026-07-30): 0.1.124 `/env` FIX SHIPPED; REBUILD + HOSTED NAV PROOF NEXT
 
 The current accelerated-wow release now ships the convenient Gymnasium interface the
 lab previously expected to own. `wowborg` has been rewritten against that canonical
@@ -24,13 +24,19 @@ surface:
 - The game owns the WoW client, projection, action admission/execution, settlement,
   reconnects, and transport. Wowborg contains no client binary, mask adapter, or
   compatibility path.
-- The deployed accelerated-wow 0.1.122 image
-  (`sha256:608ac6685...e5e4`) and its source commit
-  (`5bde7b590533ef8b87b2586c69156a029e450574`) are pinned in
+- The deployed accelerated-wow 0.1.124 image
+  (`sha256:ed11e79d...d173a`) and its source/image-set commit
+  (`bda33bf9c321fa9a6f01398423c36c513b3db622`) are pinned in
   `tools/versions.env` and the root lockfile.
 - Navigation uses the owner SDK's authenticated `/player/navigation` query while the
   policy loop uses `/env`. The full wowborg test suite is the current focused gate;
   real-navmesh catalog and held-out course results belong in `wowborg/VERSION_LOG.md`.
+- Hosted certification is complete for canonical Coworld
+  `cow_4dedf501-86de-4457-b303-c552975501d9`. Versions through 0.1.123 had a
+  game-side asset-base startup defect that closed `/env` before the first frame;
+  0.1.124 fixes it and surfaces typed pre-session failures.
+- Next: build/upload v47 against this pin, establish a hosted navigation baseline,
+  then verify known and untouched held-out station courses before any league submission.
 
 The older status sections below are historical context. In particular, the 2026-07-27
 decision to fork/re-open a Gym seam has been superseded by the owner's shipped `/env`.

@@ -75,7 +75,8 @@ class NavmeshWorldSession:
             status=route.status, map_id=route.map_id, waypoints=waypoints,
             route_distance=float(route.route_distance or 0.0), partial=partial,
             projected_target_distance=route.projected_target_distance,
-            jump_required=bool(route.jump_required), message=route.message or "",
+            jump_required=bool(getattr(route, "jump_required", False)),
+            message=route.message or "",
         )
 
     # ---- idealized executor ------------------------------------------------------

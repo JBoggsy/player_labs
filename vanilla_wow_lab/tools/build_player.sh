@@ -41,7 +41,7 @@ docker buildx build --platform=linux/amd64 --load \
 echo "==> verifying /env-only player surface"
 docker run --rm --entrypoint python3 "$tag" -c '
 from environment import VanillaWowEnv
-from environment.runtime.hosted_session import hosted_runtime_factory
+from environment.runtime.episode import hosted_runtime_factory
 from environment.contract.agent import AgentFrame, MoveAction
 from player.sdk.navmesh import route_navmesh
 import wowborg.environment, wowborg.main, wowborg.policies

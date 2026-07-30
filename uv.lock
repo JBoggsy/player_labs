@@ -1884,7 +1884,7 @@ requires-dist = [
     { name = "scikit-learn", specifier = ">=1.9.0" },
     { name = "scipy", specifier = ">=1.17.1" },
     { name = "spacy", specifier = ">=3.8.0,<3.9.0" },
-    { name = "vanilla-wow-coworld", git = "https://github.com/Metta-AI/coworld-vanilla-wow.git?rev=5bde7b590533ef8b87b2586c69156a029e450574" },
+    { name = "vanilla-wow-coworld", git = "https://github.com/Metta-AI/coworld-vanilla-wow.git?rev=bda33bf9c321fa9a6f01398423c36c513b3db622" },
     { name = "websockets", specifier = ">=16.0" },
 ]
 
@@ -2989,7 +2989,7 @@ wheels = [
 [[package]]
 name = "vanilla-wow-coworld"
 version = "0.1.4"
-source = { git = "https://github.com/Metta-AI/coworld-vanilla-wow.git?rev=5bde7b590533ef8b87b2586c69156a029e450574#5bde7b590533ef8b87b2586c69156a029e450574" }
+source = { git = "https://github.com/Metta-AI/coworld-vanilla-wow.git?rev=bda33bf9c321fa9a6f01398423c36c513b3db622#bda33bf9c321fa9a6f01398423c36c513b3db622" }
 dependencies = [
     { name = "boto3" },
     { name = "fastapi" },
