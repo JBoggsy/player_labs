@@ -1,5 +1,16 @@
 # wowborg version log
 
+## v55 - final 0.1.124 default-catalog artifact (2026-07-30)
+
+- Version UUID: `94c46921-5c5d-4486-b780-1d1d31f43591`
+  (`wowborg:v55`, uploaded inert; not submitted to a league).
+- Built `linux/amd64` from the same source commit `4d6b434` proven by v54, with
+  the normal station catalog restored for future evaluation or submission review.
+- Local image manifest:
+  `sha256:22b7fe797abb62aecd709a3a076604436ab808c28af48b300fa7ff039953dd4e`.
+- Evidence is compositional: v52 proved default-catalog known navigation, while
+  v54 proved this exact final runtime code on the held-out course.
+
 ## v54 - held-out course with queued-error drain (2026-07-30)
 
 - Version UUID: `d7ffc80c-8c73-468f-9a17-62f8f42d2f54`

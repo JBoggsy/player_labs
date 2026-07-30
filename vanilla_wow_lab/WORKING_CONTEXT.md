@@ -55,7 +55,8 @@ surface:
   episodes with score 1.0 and replay: both independently reached the never-before-used
   `novel-east-rise` coordinate (332.9s / 341.8s) and correctly failed the deliberately
   impossible `novel-high-air` target as unreachable. No version was submitted to a
-  league.
+  league. V55 (`94c46921-5c5d-4486-b780-1d1d31f43591`) is the final inert
+  default-catalog artifact from the same proven source.
 
 The older status sections below are historical context. In particular, the 2026-07-27
 decision to fork/re-open a Gym seam has been superseded by the owner's shipped `/env`.
