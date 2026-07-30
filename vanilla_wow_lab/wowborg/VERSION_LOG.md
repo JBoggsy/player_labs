@@ -1,5 +1,25 @@
 # wowborg version log
 
+## v54 - held-out course with queued-error drain (2026-07-30)
+
+- Version UUID: `d7ffc80c-8c73-468f-9a17-62f8f42d2f54`
+  (`wowborg:v54`, uploaded inert; not submitted to a league).
+- Built `linux/amd64` from source commit `4d6b434`; the runtime drains consecutive
+  typed request errors before accepting the host's newer pushed frame.
+- Local image manifest:
+  `sha256:4a1247ae9ef4948092a6b169df16d02aea157b6b219105b022aab0f597276e1e`.
+- Hosted held-out request:
+  `xreq_c0d63be1-8ef3-4192-825a-380e84843f0c` on certified accelerated-wow
+  0.1.124 / `custom-fresh-start-10x`.
+- Verdict: held-out navigation confirmed in two independent episodes. Both
+  completed with score 1.0 and replay, reached `novel-east-rise` in 332.9 /
+  341.8 seconds, correctly classified `novel-high-air` as unreachable, and had
+  five advancing frame refreshes.
+- Episodes: `ereq_ae6a184a-741d-4125-ab8f-e681189f97d1`
+  ([replay](https://softmax-public.s3.amazonaws.com/replays/01f12e1a-232f-4908-a12a-7bfcd598071b.replay))
+  and `ereq_c47138c9-e9e3-42b7-b4fe-c30725ba21ca`
+  ([replay](https://softmax-public.s3.amazonaws.com/replays/26c188cd-6d7b-4969-a579-4777e59e3b21.replay)).
+
 ## v53 - held-out course with transient retry (2026-07-30)
 
 - Version UUID: `c210ad97-fc1b-486a-ba5a-6f1f7d4d0d3a`
@@ -28,6 +48,10 @@
 - Verdict: known challenge completion demonstrated. Both episodes completed with
   score 1.0 and replay; one reached `valley-gate` in 207.7 seconds. The other
   activated `nav_station_retry` on Sarkoth but did not finish before teardown.
+- Episodes: `ereq_da240441-192c-4e29-9059-0683d8ca680b`
+  ([replay](https://softmax-public.s3.amazonaws.com/replays/6f88d2db-2807-4e26-9551-b204642323d1.replay))
+  and `ereq_07a29d3a-afe6-48a4-b605-854e4235f160`
+  ([replay](https://softmax-public.s3.amazonaws.com/replays/5b0db2c0-6259-4303-a2b4-707d6a537eae.replay)).
 
 ## v51 - held-out course with current-socket refresh (2026-07-30)
 

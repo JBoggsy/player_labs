@@ -13,7 +13,7 @@ file is the one-screen "where are we and why."
 
 ---
 
-## Status (2026-07-30): 0.1.124 `/env` FIX SHIPPED; REBUILD + HOSTED NAV PROOF NEXT
+## Status (2026-07-30): WOWBORG WORKS ON 0.1.124; KNOWN + HELD-OUT NAV PROVED
 
 The current accelerated-wow release now ships the convenient Gymnasium interface the
 lab previously expected to own. `wowborg` has been rewritten against that canonical
@@ -51,8 +51,11 @@ surface:
   expired during a repeatable ~20-second startup movement stall just as movement
   began. V52 reached the known `valley-gate`; the other episode activated the
   one-time retry on Sarkoth. V53 exposed multiple queued typed request errors
-  before the current frame, so the next candidate drains consecutive errors before
-  accepting the newer frame and reruns the untouched held-out course.
+  before the current frame. V54 drained them and completed 2/2 hosted held-out
+  episodes with score 1.0 and replay: both independently reached the never-before-used
+  `novel-east-rise` coordinate (332.9s / 341.8s) and correctly failed the deliberately
+  impossible `novel-high-air` target as unreachable. No version was submitted to a
+  league.
 
 The older status sections below are historical context. In particular, the 2026-07-27
 decision to fork/re-open a Gym seam has been superseded by the owner's shipped `/env`.

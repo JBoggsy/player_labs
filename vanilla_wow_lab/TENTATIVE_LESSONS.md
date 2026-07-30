@@ -79,3 +79,14 @@ Evidence: two wowborg:v46 hosted requests on accelerated-wow 0.1.122 produced on
 environment failing to apply its per-session asset base before loading the DBC character
 catalog. Accelerated-wow 0.1.124 fixes the asset initialization and now sends typed
 pre-session close reasons instead of making policy and game failures indistinguishable.
+
+### A stale `/env` rejection may be followed by more typed errors before the current frame
+Evidence: v53 handled the first stale-frame rejection, then both hosted episodes exited
+when another queued `EnvironmentRequestError` arrived where the adapter expected a frame.
+V54 drained consecutive typed request errors until a newer `AgentFrame`; both held-out
+episodes then completed with score 1.0 and replay.
+
+### Prove navigation with novel coordinates, not only the declared station catalog
+Evidence: v54 embedded a data-only course whose coordinates had never appeared in wowborg
+code or docs. Two independent hosted episodes reached `novel-east-rise` in 332.9 / 341.8s
+and honestly rejected a same-horizontal-position target 180 yards in the air.
