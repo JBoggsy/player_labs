@@ -19,15 +19,18 @@ and the buffer.
 
 ## Winning — score and win paths
 
-- **Scoring is win-only (+100/0): optimize win rate, never K/D.** Kills, deaths,
-  and captures are recorded but award zero points; a kill-farming bot that never
-  captures or wipes scores nothing. Evaluate by win rate (by team/seat) and by
-  the *win path* — capture vs wipe vs time-limit tiebreak.
-- **There are two live win paths; know which one a matchup runs on.** A capture
-  ends the game instantly. When neither side captures (common vs the baseline
-  before beacon's carry fix), the game is decided by wipe or the lives-remaining
-  tiebreak — so survival is worth at least as much as attack, and eight identical
-  rushers into a defended pedestal is a losing shape.
+- **Scoring is win-only (winners +1, losers -1; timeout draw -1 for BOTH sides):
+  optimize win rate, never K/D.** Kills, deaths, and captures are recorded but award
+  zero points; a kill-farming bot that never captures or wipes still loses points.
+  Evaluate by win rate (by team/seat) and by the *win path* — capture vs wipe vs
+  timeout draw. (Updated 2026-07-23: the original +100/0 win-only scoring and the
+  lives-remaining timeout tiebreak were both replaced in the 0.7.6x redeploys.)
+- **There are exactly two win paths; a timeout is a shared loss.** A capture ends
+  the game instantly; a wipe ends it too. **There is no timeout tiebreak anymore** —
+  at tick 5000 both sides eat -1, so banked lives have no terminal value. Survival
+  still matters (it feeds the wipe path and denies the enemy theirs), but preserved
+  strength must be *converted* before the clock; eight identical rushers into a
+  defended pedestal and a pure hold-forever doctrine are both losing shapes.
 - **Against a superior fighter, capture faster instead of out-fighting.** Beacon
   could not win the attrition war with the elite baseline (0-20 across two
   versions of combat improvements), but adding an escort rung (attackers converge

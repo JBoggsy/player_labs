@@ -7,6 +7,7 @@ player image. This tool ports the wall function faithfully, erodes it by the pla
 footprint, and precomputes:
 
   * ``walkable``  — an 8px-cell boolean grid (True = a body fits here)
+  * ``sightlines`` — 32 free-ray distances per walkable cell, in 4px units
   * ``flow_steal`` / ``flow_home`` — for each team, a next-hop flow field (Dijkstra
     from the goal outward) that turns "go to the enemy pedestal / my capture zone"
     into an O(1) grid lookup at run time.
@@ -28,8 +29,15 @@ from pathlib import Path
 
 import numpy as np
 
-# --- Arena constants (verbatim from src/ctf/sim.nim @ CTF_REF 5450c64; geometry
-# verified byte-identical to the original 761c098 port on 2026-07-14) --------------
+from ctf.beacon.config import (
+    SIGHTLINE_CAP_PX,
+    SIGHTLINE_DIRECTIONS,
+    SIGHTLINE_STEP_PX,
+)
+
+# --- Arena constants (verbatim from src/ctf/sim.nim @ b571dd3 = ctf 0.7.51,
+# GameVersion 16: bracket replaces the midline chevrons, column-3 discs thinned,
+# glass windows added — windows stay in the wall set, see _RECTS note) -------------
 MAP_W = 1235
 MAP_H = 659
 CENTER_X = MAP_W // 2  # 617
@@ -52,25 +60,38 @@ PEDESTAL = {"red": (186, 329), "blue": (1049, 329)}
 HOME_DEEP = {"red": (150, 329), "blue": (MAP_W - 1 - 150, 329)}
 
 # Obstacle shapes on the LEFT half; the arena mirrors each across x = center.
-# (kind, params) — verbatim from ArenaLeftObstacles.
+# (kind, params) — verbatim from ArenaLeftObstacles @ b571dd3 (ctf 0.7.51,
+# GameVersion 16). Glass windows (column-1 stubs 2 and 6; the bracket's midline
+# bar) stay in this WALL set — glass blocks movement, bullets, and plasma; it is
+# transparent only to fog-of-war, which this bake doesn't model (ray_clear serves
+# the shot/movement question, where glass is solid).
 _RECTS = [  # (x, y, w, h)
     (268, 10, 18, 62), (268, 108, 18, 60), (268, 204, 18, 60), (268, 300, 18, 59),
     (268, 395, 18, 60), (268, 491, 18, 60), (268, 587, 18, 62),
     (556, 24, 18, 66), (556, 569, 18, 66),
+    # GameVersion 16: the square bracket replacing the midline chevron zigzag —
+    # a vertical bar (its middle a window) plus short arms toward the flag ring.
+    (479, 276, 28, 12), (479, 288, 12, 24), (479, 312, 12, 36),
+    (479, 348, 12, 23), (479, 371, 28, 12),
 ]
 _DIAMONDS = [  # (cx, cy, radius)
+    # NOTE (verified vs deployed sim, 2026-07-27): the column-5 diamonds nearest
+    # the midline (cx within 80px of center x=617 — the 565-column here and its
+    # mirror) are DRAWN as slowly rotating sprites in every view, but the spin is
+    # PURE DECORATION: sim.nim buildAnimatedDiamonds keeps "COLLISION, LOS, and
+    # the fog masks … the exact static diamond — the spin … never enters
+    # gameHash". So this static bake is CORRECT for movement, bullets, and
+    # vision; do not model rotation in nav or planning.
     (349, 90, 28), (349, 186, 28), (349, 282, 28), (349, 376, 28), (349, 472, 28),
     (349, 568, 28),
     (565, 156, 30), (565, 252, 30), (565, 406, 30), (565, 502, 30),
 ]
-_DISCS = [  # (cx, cy, radius)
-    (421, 66, 28), (421, 162, 28), (421, 258, 28), (421, 400, 28), (421, 496, 28),
-    (421, 592, 28),
+_DISCS = [  # (cx, cy, radius) — GameVersion 16 thinned column 3 to every other disc.
+    (421, 66, 28), (421, 258, 28), (421, 496, 28),
 ]
-_DIAGONALS = [  # (x0, y0, x1, y1, thickness)
+_DIAGONALS = [  # (x0, y0, x1, y1, thickness) — midline zigzag replaced by the bracket.
     (479, 86, 507, 114, 12), (507, 114, 479, 142, 12), (507, 182, 479, 210, 12),
-    (479, 210, 507, 238, 12), (479, 276, 506, 303, 12), (506, 303, 479, 330, 12),
-    (479, 329, 506, 356, 12), (506, 356, 479, 383, 12), (507, 421, 479, 449, 12),
+    (479, 210, 507, 238, 12), (507, 421, 479, 449, 12),
     (479, 449, 507, 477, 12), (479, 517, 507, 545, 12), (507, 545, 479, 573, 12),
 ]
 
@@ -253,12 +274,62 @@ def build_cover_grid(grid: np.ndarray) -> np.ndarray:
     return cover
 
 
+def build_sightline_field(wall_px: np.ndarray, grid: np.ndarray) -> np.ndarray:
+    """Free distance from each walkable nav-cell centre in 32 directions.
+
+    Values are uint8 counts of ``SIGHTLINE_STEP_PX`` and cap at
+    ``SIGHTLINE_CAP_PX``. Direction 0 is east; indices advance counter-clockwise
+    on screen (``dy = -sin(angle)``).
+
+    The convention deliberately checks the NEXT 4px sample before advancing the
+    stored distance. Thus the value is the free distance to the first blocked
+    sample. Runtime post scoring reads this field directly, so baked and runtime
+    cover measurements cannot disagree by the old one-step ray-caster offset.
+    """
+    field = np.zeros((SIGHTLINE_DIRECTIONS, GRID_H, GRID_W), dtype=np.uint8)
+    grid_y, grid_x = np.nonzero(grid)
+    centers_x = grid_x * NAV_CELL + NAV_CELL // 2
+    centers_y = grid_y * NAV_CELL + NAV_CELL // 2
+    max_units = SIGHTLINE_CAP_PX // SIGHTLINE_STEP_PX
+
+    for direction in range(SIGHTLINE_DIRECTIONS):
+        angle = 2 * math.pi * direction / SIGHTLINE_DIRECTIONS
+        dx = math.cos(angle)
+        dy = -math.sin(angle)
+        active = np.ones(grid_x.shape, dtype=bool)
+        distances = np.zeros(grid_x.shape, dtype=np.uint8)
+        for units in range(1, max_units + 1):
+            distance_px = units * SIGHTLINE_STEP_PX
+            sample_x = (centers_x + dx * distance_px).astype(np.intp)
+            sample_y = (centers_y + dy * distance_px).astype(np.intp)
+            in_bounds = (
+                (sample_x >= 0)
+                & (sample_x < MAP_W)
+                & (sample_y >= 0)
+                & (sample_y < MAP_H)
+            )
+            clear = np.zeros(active.shape, dtype=bool)
+            checked = active & in_bounds
+            clear[checked] = ~wall_px[sample_y[checked], sample_x[checked]]
+            active &= clear
+            distances[active] = units
+            if not active.any():
+                break
+        field[direction, grid_y, grid_x] = distances
+    return field
+
+
 def bake() -> dict[str, np.ndarray]:
     wall_px = build_wall_mask()
     grid = build_walkable_grid(wall_px)
     # The raw per-pixel mask ships too: line-of-sight rays (peek/duck micro) must
     # test true walls, not the footprint-eroded grid (sight has no 6px body).
-    fields = {"wall": wall_px, "walkable": grid, "cover": build_cover_grid(grid)}
+    fields = {
+        "wall": wall_px,
+        "walkable": grid,
+        "cover": build_cover_grid(grid),
+        "sightlines": build_sightline_field(wall_px, grid),
+    }
     for team in ("red", "blue"):
         enemy = "blue" if team == "red" else "red"
         fields[f"flow_steal_{team}"] = build_flow_field(grid, PEDESTAL[enemy])
@@ -286,6 +357,10 @@ def main() -> None:
     walk_frac = grid.mean()
     cover_n = int(fields["cover"].sum())
     print(f"grid {GRID_W}x{GRID_H} cells @ {NAV_CELL}px  walkable={walk_frac:.1%}  cover_cells={cover_n}")
+    print(
+        f"  sightlines: {fields['sightlines'].shape} {fields['sightlines'].dtype} "
+        f"@ {SIGHTLINE_STEP_PX}px units, cap={SIGHTLINE_CAP_PX}px"
+    )
     for team in ("red", "blue"):
         for kind in ("steal", "home"):
             f = fields[f"flow_{kind}_{team}"]

@@ -37,6 +37,7 @@ import ast
 import json
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -74,6 +75,20 @@ def _load_episode_meta(ep_dir: Path) -> dict[str, Any] | None:
     results = json.loads(res_path.read_text()) if res_path.exists() else {}
 
     participants = episode.get("participants", [])
+    if not participants:
+        # League episodes carry identity as policy_results (one entry per policy,
+        # agents[].agent_id = slot) instead of the xreq-style participants list.
+        participants = [
+            {
+                "position": agent.get("agent_id"),
+                "policy_name": (pr.get("policy") or {}).get("name"),
+                "version": (pr.get("policy") or {}).get("version"),
+                "policy_version_id": (pr.get("policy") or {}).get("id"),
+                "player_name": None,
+            }
+            for pr in episode.get("policy_results", [])
+            for agent in pr.get("agents", [])
+        ]
     scores = results.get("scores", [])
     wins = results.get("win", [])
     teams_res = results.get("team", [])
@@ -173,12 +188,41 @@ def _expand_replay_events(replay: Path, expand_bin: Path) -> tuple[list[dict], d
 # beacon trace events (belief/decision side)
 # --------------------------------------------------------------------------- #
 def _load_trace_events(ep_dir: Path) -> list[dict]:
-    """Beacon trace records from the folded CTF_DIAG policy logs (one per beacon slot).
+    """Beacon trace records for one episode, from BOTH trace transports:
 
-    Records look like ``CTF_DIAG <name> {json}`` (stderr fallback) or structured
-    ``{"kind":"trace","tick":..,"name":..,"data":{..}}`` lines (artifact). We accept both
-    and tag each with the emitting slot (parsed from the log's header line)."""
+    1. **Artifact zips** (the default since v18: ``jsonl@artifact``):
+       ``artifacts/policy_artifact_<slot>.zip`` containing ``telemetry.jsonl`` with
+       ``{"kind":"trace","tick":..,"event":..,"name":..,"data":{..}}`` lines. The
+       slot is parsed from the zip filename (the runner names them by slot).
+    2. **Policy logs** (the stderr fallback): ``logs/*.log`` with
+       ``CTF_DIAG <name> {json}`` lines, slot parsed from the log's header line.
+
+    Both are tagged with the emitting slot. Prior to 2026-07-27 only (2) was read,
+    so the trace table was silently EMPTY whenever traces went to the artifact
+    (which is the default) — every event also carries seat/team in its data since
+    beacon v28, so downstream queries should prefer those fields."""
     out: list[dict] = []
+    art_dir = ep_dir / "artifacts"
+    if art_dir.is_dir():
+        for zpath in sorted(art_dir.glob("policy_artifact_*.zip")):
+            try:
+                slot = int(zpath.stem.rsplit("_", 1)[1])
+            except (ValueError, IndexError):
+                continue
+            try:
+                with zipfile.ZipFile(zpath) as zf:
+                    names = [n for n in zf.namelist() if n.endswith("telemetry.jsonl")]
+                    for name in names:
+                        for line in zf.read(name).decode("utf-8", "replace").splitlines():
+                            rec = _parse_trace_line(line)
+                            if rec is not None:
+                                rec["slot"] = slot
+                                out.append(rec)
+            except (zipfile.BadZipFile, OSError):
+                continue
+    if out:
+        return out
+    # Fallback: stderr-format traces folded into the policy logs.
     logs_dir = ep_dir / "logs"
     if not logs_dir.is_dir():
         return out
@@ -320,8 +364,40 @@ def build_warehouse(episode_paths: list[Path], out_dir: Path, expand_bin: Path) 
                 "alive": data.get("alive"),
                 "i_carry": data.get("i_carry"),
                 "n_enemies": data.get("n_enemies"),
+                # Squad-command state (v27+ traces; None on older data). For `order`
+                # transition events these are the event payload; for snapshots the
+                # live order state.
+                "order_goal": data.get("goal") or (data.get("order") or [None])[0],
+                "order_source": data.get("source") or data.get("order_source"),
+                "enemy_lives_left": data.get("enemy_lives_left"),
                 "data_json": json.dumps(data),
             })
+
+    # Engine-tick alignment (v27 tracing): a bot's trace `tick` is its own frame
+    # counter since websocket connect — NOT the engine tick — and the offset varies
+    # per slot (connect order) and per episode. All players spawn at the engine's
+    # phase=Playing tick, so per (episode, slot):
+    #   eng_tick = tick + (replay Playing tick - first trace alive=true tick).
+    # Stamped as a real column so cross-bot queries just GROUP BY eng_tick.
+    playing_tick: dict[str, int] = {}
+    for r in replay_events:
+        if r["key"] == "phase" and "Playing" in r["value_json"]:
+            playing_tick.setdefault(r["episode_id"], r["tick"])
+    first_spawn: dict[tuple[str, int], int] = {}
+    for t in trace_events:
+        if t["name"] == "alive" and t.get("alive") and t.get("tick") is not None:
+            key = (t["episode_id"], t["slot"])
+            if key not in first_spawn or t["tick"] < first_spawn[key]:
+                first_spawn[key] = t["tick"]
+    for t in trace_events:
+        key = (t["episode_id"], t["slot"])
+        base = playing_tick.get(t["episode_id"])
+        spawn = first_spawn.get(key)
+        t["eng_tick"] = (
+            t["tick"] + (base - spawn)
+            if t.get("tick") is not None and base is not None and spawn is not None
+            else None
+        )
 
     con = duckdb.connect(str(out_dir / "warehouse.duckdb"))
     _write_table(con, "episodes", episodes, out_dir)

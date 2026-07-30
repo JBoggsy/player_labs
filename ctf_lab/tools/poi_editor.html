@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<!--
+  CTF points/areas-of-interest editor.
+
+  Edits the canonical named-point + named-area map
+  (ctf/beacon/mapdata/points_of_interest.json) over the real arena walls
+  (tools/arena_walls.json, exported from nav.npz).
+  Serve ctf_lab/ so both JSONs load:  python3 -m http.server -d ctf_lab
+  …then open /tools/poi_editor.html. Or load a JSON by hand with the picker.
+
+  Points: {name, x, y, note}
+  Areas:  {name, cx, cy, w, h, angle, note} — rotated rects, angle in degrees CCW.
+
+  Interactions:
+    click empty ground            add a POINT there (prompted for a name)
+    shift+drag empty ground       add an AREA (drag out the rect, then name it)
+    drag a point / area body      move it
+    drag an area corner handle    resize it (angle preserved)
+    drag an area rotate handle ⟳  rotate around its center
+    click / list row              select (edit fields in the inspector)
+    double-click                  rename inline
+    delete key / ✕                remove selected
+    mirror button                 add the x-mirrored twin (red_/blue_ swapped)
+  Save with Download and commit over ctf/beacon/mapdata/points_of_interest.json.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CTF POI editor</title>
+<style>
+  :root {
+    --paper: #faf9f6; --ink: #1a1815; --ink-soft: #5f5a52; --hairline: #e3ded6;
+    --red: #b3402e; --blue: #2e5cb3; --accent: #8a6d1f;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink);
+         font: 13px/1.45 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+         display: flex; height: 100vh; overflow: hidden; }
+  #stage { flex: 1; display: flex; align-items: center; justify-content: center; min-width: 0; }
+  canvas { max-width: 100%; max-height: 100%; cursor: crosshair; }
+  #panel { width: 330px; padding: 18px 20px; overflow-y: auto; border-left: 1px solid var(--hairline);
+           display: flex; flex-direction: column; }
+  h1 { font-size: 15px; font-weight: 650; margin: 0 0 2px; }
+  .sub { color: var(--ink-soft); font-size: 12px; margin: 0 0 12px; }
+  .label { font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: .07em;
+           color: var(--ink-soft); margin: 14px 0 5px; }
+  input, textarea, button, select {
+    font: inherit; color: var(--ink); background: var(--paper);
+    border: 1px solid var(--hairline); border-radius: 3px; padding: 4px 7px;
+  }
+  input:focus, textarea:focus { outline: none; border-color: var(--ink-soft); }
+  button { cursor: pointer; }
+  button:hover { border-color: var(--ink-soft); }
+  button.primary { border-color: var(--ink); font-weight: 600; }
+  #list { flex: 1; overflow-y: auto; margin-top: 4px; min-height: 100px; }
+  .row { display: flex; align-items: baseline; gap: 6px; padding: 2.5px 4px;
+         border-radius: 3px; cursor: pointer; }
+  .row:hover { background: #f1ede5; }
+  .row.sel { background: #ece5d6; }
+  .row .kind { color: var(--ink-soft); font-size: 10px; width: 14px; }
+  .row .nm { font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .xy { color: var(--ink-soft); font-variant-numeric: tabular-nums; font-size: 12px; }
+  .row .del { color: var(--ink-soft); border: none; background: none; padding: 0 3px; }
+  .row .del:hover { color: var(--red); }
+  #inspector { border-top: 1px solid var(--hairline); padding-top: 10px; margin-top: 10px; }
+  #inspector .grid { display: grid; grid-template-columns: 42px minmax(0,1fr) 42px minmax(0,1fr);
+                     gap: 6px 8px; align-items: center; }
+  #inspector .grid label { color: var(--ink-soft); font-size: 12px; }
+  #inspector .grid input, #inspector .grid textarea { width: 100%; min-width: 0; }
+  #inspector .grid .wide { grid-column: 2 / 5; }
+  #actions { display: flex; gap: 8px; margin-top: 12px; }
+  #fileRow { display: flex; gap: 8px; }
+  #fileRow > * { flex: 1; }
+  .hint { color: var(--ink-soft); font-size: 11.5px; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="cv" width="1235" height="659"></canvas></div>
+<div id="panel">
+  <h1>POI editor</h1>
+  <p class="sub">named points + areas — the shared field language</p>
+
+  <div class="label">Files</div>
+  <div id="fileRow">
+    <button id="btnLoad" title="reload from the server">Reload</button>
+    <button id="btnDownload" class="primary">Download</button>
+  </div>
+  <input type="file" id="filePick" accept=".json" style="margin-top:6px">
+
+  <div class="label">Entries (<span id="count">0</span>)</div>
+  <input id="filter" placeholder="filter…" style="width:100%">
+  <div id="list"></div>
+
+  <div id="inspector">
+    <div class="label" style="margin-top:0">Selected <span id="selKind" style="color:var(--ink-soft)"></span></div>
+    <div class="grid">
+      <label>name</label><input id="f_name" class="wide" style="grid-column:2/5">
+      <label id="l_x">x</label><input id="f_x" type="number">
+      <label id="l_y">y</label><input id="f_y" type="number">
+      <label id="l_w">w</label><input id="f_w" type="number" min="4">
+      <label id="l_h">h</label><input id="f_h" type="number" min="4">
+      <label id="l_angle">angle°</label><input id="f_angle" type="number" step="1">
+      <label></label><span></span>
+      <label>note</label><textarea id="f_note" rows="2" class="wide" style="grid-column:2/5"></textarea>
+    </div>
+    <div id="actions">
+      <button id="btnMirror" title="add the x-mirrored twin (red_/blue_ swapped)">Mirror ⇄</button>
+      <button id="btnRemove">Remove ✕</button>
+    </div>
+  </div>
+
+  <p class="hint">click = add point · <b>shift+drag = add area</b> · drag = move ·
+  corner handle = resize · ⟳ handle = rotate · dbl-click = rename · del = remove.
+  Save = Download → commit over <code>ctf/beacon/mapdata/points_of_interest.json</code>.</p>
+</div>
+
+<script>
+"use strict";
+const MAP_W = 1235, MAP_H = 659, MIRROR_X = 617;
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+let walls = null;
+let doc = { _comment: "", points: [], areas: [] };
+let sel = null;               // {kind:"point"|"area", i}
+let drag = null;              // {mode:"move"|"resize"|"rotate"|"create", ...}
+
+// ---------- geometry ----------
+const rad = d => d * Math.PI / 180;
+function areaCorners(a) {
+  const c = Math.cos(rad(a.angle || 0)), s = Math.sin(rad(a.angle || 0));
+  const hw = a.w / 2, hh = a.h / 2;
+  return [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]]
+    .map(([dx, dy]) => [a.cx + dx * c - dy * s, a.cy + dx * s + dy * c]);
+}
+function inArea(a, x, y) {
+  const c = Math.cos(-rad(a.angle || 0)), s = Math.sin(-rad(a.angle || 0));
+  const dx = x - a.cx, dy = y - a.cy;
+  const lx = dx * c - dy * s, ly = dx * s + dy * c;
+  return Math.abs(lx) <= a.w / 2 && Math.abs(ly) <= a.h / 2;
+}
+function rotateHandle(a) {
+  // A handle floating above the rect's top edge (rotates with it).
+  const c = Math.cos(rad(a.angle || 0)), s = Math.sin(rad(a.angle || 0));
+  return [a.cx + 0 * c - (-a.h / 2 - 22) * s, a.cy + 0 * s + (-a.h / 2 - 22) * c];
+}
+
+// ---------- load / save ----------
+async function loadWalls() {
+  try { walls = await (await fetch("arena_walls.json")).json(); } catch (e) { walls = null; }
+  draw();
+}
+async function loadDoc() {
+  try { doc = await (await fetch("../ctf/beacon/mapdata/points_of_interest.json")).json(); }
+  catch (e) { /* keep */ }
+  doc.points = doc.points || []; doc.areas = doc.areas || [];
+  sel = doc.points.length ? { kind: "point", i: 0 } : null;
+  refresh();
+}
+document.getElementById("btnLoad").onclick = loadDoc;
+document.getElementById("filePick").addEventListener("change", async (e) => {
+  const f = e.target.files[0];
+  if (f) { doc = JSON.parse(await f.text()); doc.points = doc.points || []; doc.areas = doc.areas || [];
+           sel = null; refresh(); }
+});
+document.getElementById("btnDownload").onclick = () => {
+  const blob = new Blob([JSON.stringify(doc, null, 2) + "\n"], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "points_of_interest.json"; a.click();
+};
+
+// ---------- selection helpers ----------
+const selected = () => sel === null ? null
+  : sel.kind === "point" ? doc.points[sel.i] : doc.areas[sel.i];
+
+function hitTest(x, y) {
+  // Points first (small targets beat big areas), then area handles, then bodies.
+  for (let i = doc.points.length - 1; i >= 0; i--) {
+    const p = doc.points[i];
+    if ((p.x - x) ** 2 + (p.y - y) ** 2 <= 12 ** 2) return { kind: "point", i, mode: "move" };
+  }
+  if (sel?.kind === "area") {                       // handles only on the selected area
+    const a = doc.areas[sel.i];
+    if (a) {
+      const [rx, ry] = rotateHandle(a);
+      if ((rx - x) ** 2 + (ry - y) ** 2 <= 10 ** 2) return { kind: "area", i: sel.i, mode: "rotate" };
+      const corners = areaCorners(a);
+      for (let ci = 0; ci < 4; ci++) {
+        const [cx2, cy2] = corners[ci];
+        if ((cx2 - x) ** 2 + (cy2 - y) ** 2 <= 10 ** 2) return { kind: "area", i: sel.i, mode: "resize", corner: ci };
+      }
+    }
+  }
+  for (let i = doc.areas.length - 1; i >= 0; i--) {
+    if (inArea(doc.areas[i], x, y)) return { kind: "area", i, mode: "move" };
+  }
+  return null;
+}
+
+// ---------- mouse ----------
+function canvasXY(ev) {
+  const r = cv.getBoundingClientRect();
+  return [Math.round((ev.clientX - r.left) * (MAP_W / r.width)),
+          Math.round((ev.clientY - r.top) * (MAP_H / r.height))];
+}
+cv.addEventListener("mousedown", (ev) => {
+  const [x, y] = canvasXY(ev);
+  if (ev.shiftKey) {                                 // shift+drag = create area
+    drag = { mode: "create", x0: x, y0: y, x1: x, y1: y };
+    return;
+  }
+  const hit = hitTest(x, y);
+  if (hit) {
+    sel = { kind: hit.kind, i: hit.i };
+    const t = selected();
+    drag = { ...hit, lastX: x, lastY: y,
+             grabDX: hit.kind === "point" ? t.x - x : t.cx - x,
+             grabDY: hit.kind === "point" ? t.y - y : t.cy - y,
+             moved: false };
+    if (hit.mode === "resize")   // pin the corner opposite the grabbed one
+      drag.anchor = areaCorners(t)[(hit.corner + 2) % 4];
+    refresh();
+  }
+});
+cv.addEventListener("mousemove", (ev) => {
+  if (!drag) return;
+  const [x, y] = canvasXY(ev);
+  if (drag.mode === "create") { drag.x1 = x; drag.y1 = y; draw(); return; }
+  const t = selected();
+  if (!t) return;
+  drag.moved = true;
+  if (drag.mode === "move") {
+    if (sel.kind === "point") {
+      t.x = clamp(x + drag.grabDX, 0, MAP_W - 1); t.y = clamp(y + drag.grabDY, 0, MAP_H - 1);
+    } else {
+      t.cx = clamp(x + drag.grabDX, 0, MAP_W - 1); t.cy = clamp(y + drag.grabDY, 0, MAP_H - 1);
+    }
+  } else if (drag.mode === "rotate") {
+    t.angle = Math.round((Math.atan2(y - t.cy, x - t.cx) * 180 / Math.PI + 90) % 360);
+  } else if (drag.mode === "resize") {
+    // Anchor the OPPOSITE corner (captured at mousedown) and let the dragged
+    // corner follow the mouse: new center = midpoint, new extents = the anchor→
+    // mouse diagonal expressed in the rect's local frame. Angle preserved.
+    const [ax, ay] = drag.anchor;
+    const c = Math.cos(-rad(t.angle || 0)), s = Math.sin(-rad(t.angle || 0));
+    const dx = x - ax, dy = y - ay;
+    t.w = Math.max(4, Math.round(Math.abs(dx * c - dy * s)));
+    t.h = Math.max(4, Math.round(Math.abs(dx * s + dy * c)));
+    t.cx = Math.round((ax + x) / 2);
+    t.cy = Math.round((ay + y) / 2);
+  }
+  refreshInspector(); refreshList(); draw();
+});
+window.addEventListener("mouseup", (ev) => {
+  if (!drag) return;
+  if (drag.mode === "create") {
+    const w = Math.abs(drag.x1 - drag.x0), h = Math.abs(drag.y1 - drag.y0);
+    if (w >= 8 && h >= 8) {
+      const name = prompt("name for this area:", "new_area");
+      if (name) {
+        doc.areas.push({ name: uniqName(name.trim()), cx: Math.round((drag.x0 + drag.x1) / 2),
+                         cy: Math.round((drag.y0 + drag.y1) / 2), w: Math.round(w), h: Math.round(h),
+                         angle: 0, note: "" });
+        sel = { kind: "area", i: doc.areas.length - 1 };
+      }
+    }
+    drag = null; refresh(); return;
+  }
+  const wasClick = !drag.moved;
+  drag = null;
+  if (!wasClick) refresh();
+});
+cv.addEventListener("click", (ev) => {
+  if (ev.shiftKey) return;
+  const [x, y] = canvasXY(ev);
+  if (hitTest(x, y)) return;                        // selection handled on mousedown
+  const name = prompt("name for this point:", suggestName(x, y));
+  if (!name) return;
+  doc.points.push({ name: uniqName(name.trim()), x, y, note: "" });
+  sel = { kind: "point", i: doc.points.length - 1 };
+  refresh();
+});
+cv.addEventListener("dblclick", (ev) => {
+  const [x, y] = canvasXY(ev);
+  const hit = hitTest(x, y);
+  if (!hit) return;
+  sel = { kind: hit.kind, i: hit.i };
+  const t = selected();
+  const name = prompt("rename:", t.name);
+  if (name) { t.name = uniqName(name.trim(), sel); refresh(); }
+});
+document.addEventListener("keydown", (ev) => {
+  if (["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) return;
+  if ((ev.key === "Delete" || ev.key === "Backspace") && sel) removeSel();
+});
+
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+function suggestName(x, y) {
+  const side = x < MIRROR_X - 60 ? "red_" : x > MIRROR_X + 60 ? "blue_" : "";
+  const band = y < 220 ? "top_" : y > 440 ? "bottom_" : "mid_";
+  return side + band + "point";
+}
+function uniqName(name, skip = null) {
+  const taken = (n) =>
+    doc.points.some((p, i) => p.name === n && !(skip?.kind === "point" && skip.i === i)) ||
+    doc.areas.some((a, i) => a.name === n && !(skip?.kind === "area" && skip.i === i));
+  let n = name, k = 2;
+  while (taken(n)) n = `${name}_${k++}`;
+  return n;
+}
+
+// ---------- inspector ----------
+const F = id => document.getElementById(id);
+const AREA_FIELDS = ["f_w", "f_h", "f_angle", "l_w", "l_h", "l_angle"];
+for (const [id, key] of [["f_name", "name"], ["f_x", "x"], ["f_y", "y"],
+                         ["f_w", "w"], ["f_h", "h"], ["f_angle", "angle"], ["f_note", "note"]]) {
+  F(id).addEventListener("input", () => {
+    const t = selected();
+    if (!t) return;
+    if (key === "name") t.name = F(id).value.trim();
+    else if (key === "note") t.note = F(id).value;
+    else if (sel.kind === "point" && (key === "x" || key === "y"))
+      t[key] = clamp(+F(id).value || 0, 0, key === "x" ? MAP_W - 1 : MAP_H - 1);
+    else if (sel.kind === "area") {
+      if (key === "x") t.cx = clamp(+F(id).value || 0, 0, MAP_W - 1);
+      else if (key === "y") t.cy = clamp(+F(id).value || 0, 0, MAP_H - 1);
+      else if (key === "angle") t.angle = (+F(id).value || 0) % 360;
+      else t[key] = Math.max(4, +F(id).value || 4);
+    }
+    refreshList(); draw();
+  });
+}
+document.getElementById("btnRemove").onclick = removeSel;
+function removeSel() {
+  if (!sel) return;
+  (sel.kind === "point" ? doc.points : doc.areas).splice(sel.i, 1);
+  sel = null;
+  refresh();
+}
+document.getElementById("btnMirror").onclick = () => {
+  const t = selected();
+  if (!t) return;
+  // Swap every red/blue reference — word-ish tokens so "red_" prefixes and
+  // prose ("red's side") both flip in one pass without double-swapping.
+  const swapText = s => (s || "").replace(/\b(red|blue|Red|Blue)\b|(?:red|blue)(?=_)/g, m =>
+    ({red: "blue", blue: "red", Red: "Blue", Blue: "Red"})[m]);
+  const swapName = n => {
+    const sw = swapText(n);
+    return sw === n ? n + "_mirror" : sw;
+  };
+  if (sel.kind === "point") {
+    doc.points.push({ name: uniqName(swapName(t.name)), x: 2 * MIRROR_X - t.x, y: t.y,
+                      note: swapText(t.note) });
+    sel = { kind: "point", i: doc.points.length - 1 };
+  } else {
+    doc.areas.push({ name: uniqName(swapName(t.name)), cx: 2 * MIRROR_X - t.cx, cy: t.cy,
+                     w: t.w, h: t.h, angle: -(t.angle || 0),
+                     note: swapText(t.note) });
+    sel = { kind: "area", i: doc.areas.length - 1 };
+  }
+  refresh();
+};
+document.getElementById("filter").addEventListener("input", refreshList);
+
+function refresh() { refreshList(); refreshInspector(); draw(); }
+function refreshInspector() {
+  const t = selected();
+  document.getElementById("selKind").textContent = sel ? `· ${sel.kind}` : "";
+  F("f_name").value = t ? t.name : "";
+  F("f_note").value = t ? (t.note || "") : "";
+  const isArea = sel?.kind === "area";
+  for (const id of AREA_FIELDS) F(id).style.display = isArea ? "" : "none";
+  F("l_x").textContent = isArea ? "cx" : "x";
+  F("l_y").textContent = isArea ? "cy" : "y";
+  if (!t) { F("f_x").value = F("f_y").value = ""; return; }
+  F("f_x").value = isArea ? t.cx : t.x;
+  F("f_y").value = isArea ? t.cy : t.y;
+  if (isArea) { F("f_w").value = t.w; F("f_h").value = t.h; F("f_angle").value = t.angle || 0; }
+}
+function refreshList() {
+  document.getElementById("count").textContent = doc.points.length + doc.areas.length;
+  const filter = document.getElementById("filter").value.toLowerCase();
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+  const addRow = (kind, t, i, label, xy) => {
+    if (filter && !t.name.toLowerCase().includes(filter)) return;
+    const row = document.createElement("div");
+    const isSel = sel?.kind === kind && sel.i === i;
+    row.className = "row" + (isSel ? " sel" : "");
+    row.innerHTML = `<span class="kind">${label}</span><span class="nm">${t.name}</span>` +
+                    `<span class="xy">${xy}</span><button class="del" title="remove">✕</button>`;
+    row.onclick = (ev) => {
+      sel = { kind, i };
+      if (ev.target.classList.contains("del")) removeSel(); else refresh();
+    };
+    list.appendChild(row);
+  };
+  doc.areas.forEach((a, i) => addRow("area", a, i, "▭", `${a.cx},${a.cy}`));
+  doc.points.forEach((p, i) => addRow("point", p, i, "•", `${p.x},${p.y}`));
+}
+
+// ---------- draw ----------
+function colorFor(name) {
+  return name.startsWith("red_") ? "#b3402e"
+       : name.startsWith("blue_") ? "#2e5cb3" : "#8a6d1f";
+}
+function draw() {
+  ctx.fillStyle = "#f5f2ec"; ctx.fillRect(0, 0, MAP_W, MAP_H);
+  if (walls) {
+    ctx.fillStyle = "#c9c1b2";
+    walls.rows.forEach((runs, y) => {
+      for (let i = 0; i < runs.length; i += 2) ctx.fillRect(runs[i], y, runs[i + 1], 1);
+    });
+  }
+  ctx.strokeStyle = "#e3ded6"; ctx.setLineDash([4, 6]);
+  ctx.beginPath(); ctx.moveTo(MIRROR_X, 0); ctx.lineTo(MIRROR_X, MAP_H); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Areas under points.
+  doc.areas.forEach((a, i) => {
+    const col = colorFor(a.name);
+    const isSel = sel?.kind === "area" && sel.i === i;
+    const corners = areaCorners(a);
+    ctx.beginPath();
+    corners.forEach(([x, y], ci) => ci === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y));
+    ctx.closePath();
+    ctx.fillStyle = col + (isSel ? "2e" : "1a");    // hex alpha
+    ctx.fill();
+    ctx.strokeStyle = col; ctx.lineWidth = isSel ? 2 : 1; ctx.stroke(); ctx.lineWidth = 1;
+    ctx.font = `${isSel ? 700 : 600} 11px sans-serif`;
+    ctx.fillStyle = "#1a1815";
+    ctx.strokeStyle = "rgba(250,249,246,0.85)"; ctx.lineWidth = 3;
+    ctx.strokeText(a.name, a.cx + 6, a.cy - 6); ctx.fillText(a.name, a.cx + 6, a.cy - 6);
+    ctx.lineWidth = 1;
+    if (isSel) {
+      for (const [x, y] of corners) {
+        ctx.fillStyle = "#faf9f6"; ctx.strokeStyle = "#1a1815";
+        ctx.fillRect(x - 4, y - 4, 8, 8); ctx.strokeRect(x - 4, y - 4, 8, 8);
+      }
+      const [rx, ry] = rotateHandle(a);
+      ctx.beginPath(); ctx.arc(rx, ry, 6, 0, 2 * Math.PI);
+      ctx.fillStyle = "#faf9f6"; ctx.fill(); ctx.strokeStyle = "#1a1815"; ctx.stroke();
+      ctx.font = "600 9px sans-serif"; ctx.fillStyle = "#1a1815";
+      ctx.fillText("⟳", rx - 4, ry + 3);
+      ctx.setLineDash([2, 3]);
+      ctx.beginPath(); ctx.moveTo(a.cx, a.cy); ctx.lineTo(rx, ry); ctx.strokeStyle = "#5f5a52"; ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  });
+
+  // Points.
+  doc.points.forEach((p, i) => {
+    const col = colorFor(p.name);
+    const isSel = sel?.kind === "point" && sel.i === i;
+    ctx.beginPath(); ctx.arc(p.x, p.y, isSel ? 7 : 5, 0, 2 * Math.PI);
+    ctx.fillStyle = col; ctx.fill();
+    if (isSel) { ctx.strokeStyle = "#1a1815"; ctx.lineWidth = 2;
+                 ctx.beginPath(); ctx.arc(p.x, p.y, 10, 0, 2 * Math.PI); ctx.stroke(); ctx.lineWidth = 1; }
+    ctx.font = `${isSel ? 700 : 600} 11px sans-serif`;
+    ctx.fillStyle = "#1a1815";
+    ctx.strokeStyle = "rgba(250,249,246,0.85)"; ctx.lineWidth = 3;
+    ctx.strokeText(p.name, p.x + 10, p.y - 8); ctx.fillText(p.name, p.x + 10, p.y - 8);
+    ctx.lineWidth = 1;
+  });
+
+  // Create-drag preview.
+  if (drag?.mode === "create") {
+    ctx.strokeStyle = "#8a6d1f"; ctx.setLineDash([4, 4]);
+    ctx.strokeRect(Math.min(drag.x0, drag.x1), Math.min(drag.y0, drag.y1),
+                   Math.abs(drag.x1 - drag.x0), Math.abs(drag.y1 - drag.y0));
+    ctx.setLineDash([]);
+  }
+}
+
+loadWalls().then(loadDoc);
+</script>
+</body>
+</html>

@@ -1,15 +1,16 @@
 ## expand_replay_json — emit a CTF replay's event timeline as JSONL for the warehouse.
 ##
-## The game ships tools/expand_replay.nim, whose `main` prints a HUMAN timeline. This
-## thin sibling reuses its public API (`expandReplayTimeline` + `jsonRow`) to emit one
-## JSON object per event instead, so the event warehouse can ingest ground-truth game
-## events (Kill / FlagSteal / FlagReturnHome / Capture / Respawn / ScoreChanged /
-## PhaseChanged / GameOver) with tick + slot.
+## Runs its own re-sim loop (the same counter-diffing pattern as tools/expand_replay.nim,
+## which the game ships) so every event can be enriched with LIVE sim state at the tick
+## it happened — positions, aim, hp, carried items — which the human-timeline tool's
+## position-less events cannot provide. Also emits a periodic `pos` snapshot row per
+## player (every PosEvery ticks) plus per-flag `flag_pos` rows, so the warehouse can
+## answer spatial questions (where kills happen, carrier paths, territory control).
 ##
 ## It is built by ctf_lab/tools/build_expand_replay.sh, which stages it INTO the fetched
-## game repo's tools/ dir (so the `../src/ctf/...` relative imports resolve) alongside the
-## version-matched expand_replay it imports. Re-sim validates a per-tick hash, so it must
-## be built at the SAME game ref that recorded the replay (a hash mismatch => bump CTF_REF).
+## game repo's tools/ dir (so the `../src/ctf/...` relative imports resolve). Re-sim
+## validates a per-tick hash, so it must be built at the SAME game ref that recorded the
+## replay (a hash mismatch => bump CTF_REF).
 ##
 ## Usage:  expand_replay_json <replay.bitreplay>
 ##   stdout: one JSON row per event: {"ts": <tick>, "player": <slot>, "key": <event>, "value": {...}}
@@ -17,9 +18,58 @@
 ## Exit non-zero on a hash mismatch (after emitting the rows up to the failure).
 
 import
-  std/[json, os],
-  ./expand_replay,
-  ../src/ctf/replays
+  std/[json, os, strutils],
+  ../src/ctf/replays,
+  ../src/ctf/sim
+
+const
+  GameDir = currentSourcePath().parentDir().parentDir()
+
+var posEvery = 30          ## ticks between periodic position snapshots
+                           ## (CLI arg 2; the replay viewer bundles use 1)
+
+type
+  TrackState = object
+    alive: seq[bool]
+    kills: seq[int]
+    deaths: seq[int]
+    captures: seq[int]
+    rewards: seq[int]
+    shotsFired: seq[int]
+    shotsHit: seq[int]
+
+proc slotOf(sim: SimServer, i: int): int =
+  ## A player's stable join slot (the identity the warehouse re-keys on).
+  if i >= 0 and i < sim.players.len:
+    return sim.players[i].joinOrder
+  -1
+
+proc labelOf(sim: SimServer, i: int): string =
+  let p = sim.players[i]
+  teamText(p.team) & " " & playerColorText(p.color) & "(" & p.address & ")"
+
+proc emitRow(tick, slot: int, key: string, value: JsonNode) =
+  echo $(%*{"ts": tick, "player": slot, "key": key, "value": value})
+
+proc posValue(p: Player): JsonNode =
+  ## Live state snapshot for one player (map pixels; aim in brads 0..255 CCW-from-east).
+  %*{
+    "x": p.x, "y": p.y, "aim": p.aimBrads, "alive": p.alive, "hp": p.hp,
+    "carry": p.carryingFlag, "shield": p.hasShield, "grenade": p.hasGrenade,
+    "arc": p.hasPlasmaArc,
+  }
+
+proc killerThisTick(sim: SimServer, track: TrackState): int =
+  ## The single player whose kill count just rose this tick, or -1 when none or
+  ## SEVERAL did (the sim cannot attribute simultaneous kills — never guess).
+  result = -1
+  var killerCount = 0
+  for i, player in sim.players:
+    if i < track.kills.len and player.kills > track.kills[i]:
+      inc killerCount
+      result = i
+  if killerCount > 1:
+    result = -1
 
 proc emitReplayJson(path: string) =
   if not fileExists(path):
@@ -27,29 +77,145 @@ proc emitReplayJson(path: string) =
     quit(1)
 
   let data = loadReplay(path)
-  let timeline = expandReplayTimeline(data)
+  var config = defaultGameConfig()
+  config.update(data.configJson)
 
-  for event in timeline.events:
-    echo $jsonRow(event)
+  let previousDir = getCurrentDir()
+  setCurrentDir(GameDir)
+
+  var
+    sim = initSimServer(config)
+    replay = initReplayPlayer(data)
+    track: TrackState
+    phase = sim.phase
+    prevCarriers: array[Team, int]
+    tickCount = 0
+    hashFailed = false
+    failTick = -1
+  for team in Team:
+    prevCarriers[team] = sim.flags[team].carrier
+
+  sim.gameEventLoggingEnabled = false
+  replay.looping = false
+  replay.mismatchQuit = true
+
+  while replay.playing:
+    let tick = sim.tickCount + 1
+    tickCount = tick
+    try:
+      replay.stepReplay(sim)
+    except ReplayError:
+      hashFailed = true
+      failTick = tick
+      break
+
+    # Phase transitions + game over.
+    if phase != sim.phase:
+      emitRow(tick, -1, "phase", %*{"phase": $sim.phase})
+      if sim.phase == GameOver:
+        var v = %*{"draw": sim.isDraw}
+        if not sim.isDraw:
+          v["winner"] = %teamText(sim.winner)
+        emitRow(tick, -1, "game_over", v)
+      phase = sim.phase
+
+    # Newly joined players.
+    while track.alive.len < sim.players.len:
+      let i = track.alive.len
+      track.alive.add(sim.players[i].alive)
+      track.kills.add(sim.players[i].kills)
+      track.deaths.add(sim.players[i].deaths)
+      track.captures.add(sim.players[i].captures)
+      track.rewards.add(sim.players[i].reward)
+      track.shotsFired.add(sim.players[i].shotsFired)
+      track.shotsHit.add(sim.players[i].shotsHit)
+      emitRow(tick, sim.slotOf(i), "player_joined", %*{"label": sim.labelOf(i)})
+
+    # Shots + hits, with the shooter's live position/aim.
+    for i, p in sim.players:
+      if p.shotsFired > track.shotsFired[i]:
+        emitRow(tick, sim.slotOf(i), "shot", %*{"x": p.x, "y": p.y, "aim": p.aimBrads})
+      if p.shotsHit > track.shotsHit[i]:
+        emitRow(tick, sim.slotOf(i), "hit", %*{"x": p.x, "y": p.y, "aim": p.aimBrads})
+      track.shotsFired[i] = p.shotsFired
+      track.shotsHit[i] = p.shotsHit
+
+    # Kills / respawns, with both parties' positions.
+    let killer = sim.killerThisTick(track)
+    for i, p in sim.players:
+      if p.deaths > track.deaths[i]:
+        var v = %*{
+          "victim_slot": sim.slotOf(i), "victim_label": sim.labelOf(i),
+          "victim_x": p.x, "victim_y": p.y,
+        }
+        if killer >= 0:
+          v["killer_x"] = %sim.players[killer].x
+          v["killer_y"] = %sim.players[killer].y
+        emitRow(tick, if killer >= 0: sim.slotOf(killer) else: -1, "kill", v)
+      elif p.alive and not track.alive[i]:
+        emitRow(tick, sim.slotOf(i), "respawn", %*{"x": p.x, "y": p.y})
+      track.alive[i] = p.alive
+      track.kills[i] = p.kills
+      track.deaths[i] = p.deaths
+
+    # Flag steals / returns (diff each flag's carrier), with the thief's position.
+    for team in Team:
+      let carrier = sim.flags[team].carrier
+      if carrier != prevCarriers[team]:
+        if prevCarriers[team] >= 0:
+          emitRow(tick, -1, "flag_return_home", %*{"flag": teamText(team)})
+        if carrier >= 0:
+          let p = sim.players[carrier]
+          emitRow(tick, sim.slotOf(carrier), "flag_steal",
+                  %*{"flag": teamText(team), "x": p.x, "y": p.y})
+        prevCarriers[team] = carrier
+
+    # Captures, with the capturer's position.
+    for i, p in sim.players:
+      if p.captures > track.captures[i]:
+        emitRow(tick, sim.slotOf(i), "capture",
+                %*{"flag": teamText(enemy(p.team)), "x": p.x, "y": p.y})
+      track.captures[i] = p.captures
+
+    # Score changes.
+    for i, p in sim.players:
+      if p.reward != track.rewards[i]:
+        emitRow(tick, sim.slotOf(i), "score", %*{"amount": p.reward - track.rewards[i]})
+        track.rewards[i] = p.reward
+
+    # Periodic spatial snapshots: every player + both flags.
+    if tick mod posEvery == 0:
+      for i, p in sim.players:
+        emitRow(tick, sim.slotOf(i), "pos", posValue(p))
+      for team in Team:
+        let f = sim.flags[team]
+        emitRow(tick, -1, "flag_pos", %*{
+          "flag": teamText(team), "x": f.x, "y": f.y,
+          "carrier_slot": if f.carrier >= 0: sim.slotOf(f.carrier) else: -1,
+        })
+
+  setCurrentDir(previousDir)
 
   # Trailing meta row: lets the warehouse ingest detect a truncated / hash-failed
   # expansion instead of silently trusting a partial timeline.
   echo $(%*{
     "key": "_meta",
     "value": {
-      "tick_count": timeline.tickCount,
-      "hash_failed": timeline.hashFailed,
-      "fail_tick": timeline.failTick,
+      "tick_count": tickCount,
+      "hash_failed": hashFailed,
+      "fail_tick": failTick,
     },
   })
 
-  if timeline.hashFailed:
-    stderr.writeLine("expand_replay_json: hash failed at tick " & $timeline.failTick &
+  if hashFailed:
+    stderr.writeLine("expand_replay_json: hash failed at tick " & $failTick &
       " (build ref does not match the replay's game version)")
     quit(2)
 
 when isMainModule:
   if paramCount() < 1:
-    stderr.writeLine("Usage: expand_replay_json <replay.bitreplay>")
+    stderr.writeLine("Usage: expand_replay_json <replay.bitreplay> [pos_every]")
     quit(1)
+  if paramCount() >= 2:
+    posEvery = max(1, parseInt(paramStr(2)))
   emitReplayJson(paramStr(1))
