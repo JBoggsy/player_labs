@@ -41,9 +41,12 @@ surface:
   outcomes were stale-frame rejections and reachability was 0/3 per episode.
 - Current hypothesis: route planning crosses the game-wide action deadline; the SDK
   returns the rejected old frame, so wowborg resubmits stale IDs. The candidate
-  reconnects only on stale/deadline rejection, traces `frame_refresh`, and otherwise
-  leaves navigation unchanged. Next: build/upload and run the two-episode candidate,
-  then verify known and untouched held-out station courses before any league submission.
+  consumes the host's next pushed frame on stale/deadline rejection, traces
+  `frame_refresh`, and otherwise leaves navigation unchanged. V48 proved that
+  `VanillaWowEnv.reset()` is not a reattachment API: both candidate episodes ended
+  as player errors when reset opened a new lifecycle against the retained session.
+  Next: rebuild the same hypothesis with in-connection frame consumption, then verify
+  known and untouched held-out station courses before any league submission.
 
 The older status sections below are historical context. In particular, the 2026-07-27
 decision to fork/re-open a Gym seam has been superseded by the owner's shipped `/env`.

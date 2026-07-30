@@ -23,7 +23,10 @@ from environment.contract.agent import (
     WaitAction,
     WorldPoint,
 )
-from environment.runtime.episode import hosted_runtime_factory
+from environment.runtime.episode import (
+    EnvironmentTransition,
+    HostedSessionRuntime,
+)
 from player.sdk.navmesh import route_navmesh
 
 from wowborg.trace import NullTracer, Tracer
@@ -32,6 +35,45 @@ from wowborg.types import ActionOutcome, PlannedRoute, Position
 PLAYER_WS_URL_ENV = "COWORLD_PLAYER_WS_URL"
 NAVMESH_SERVICE_URL_ENV = "VANILLA_WOW_NAVMESH_SERVICE_URL"
 STUCK_SPELL_ID = 7355
+STALE_FRAME_REJECTIONS = (
+    "submission does not match the current AgentFrame",
+    "no AgentFrame is awaiting an action",
+    "action submission arrived after the game-wide deadline",
+)
+
+
+class FrameRefreshingHostedRuntime(HostedSessionRuntime):
+    """Consume the frame pushed immediately after a stale-action rejection."""
+
+    def step(
+        self,
+        action: AgentAction,
+        frame: AgentFrame,
+    ) -> EnvironmentTransition:
+        transition = super().step(action, frame)
+        if (
+            transition.action_status != "rejected"
+            or not any(
+                marker in transition.action_detail
+                for marker in STALE_FRAME_REJECTIONS
+            )
+            or self._client is None
+        ):
+            return transition
+
+        deadline = time.monotonic() + self.step_timeout_seconds
+        while time.monotonic() < deadline:
+            self._client.set_timeout(max(0.001, deadline - time.monotonic()))
+            observed = self._client.frame()
+            if observed.frame_id > frame.frame_id:
+                self._current = observed
+                return self._frame_transition(
+                    observed,
+                    action_status=transition.action_status,
+                    action_detail=transition.action_detail,
+                    metrics=transition.metrics,
+                )
+        return transition
 
 
 def hosted_endpoints(player_ws_url: str) -> tuple[str, str, int, str]:
@@ -66,15 +108,17 @@ def build_hosted_env(
 ) -> VanillaWowEnv:
     env_url, navigation_url, slot, token = hosted_endpoints(player_ws_url)
     os.environ[NAVMESH_SERVICE_URL_ENV] = navigation_url
-    return VanillaWowEnv(
-        runtime_factory=hosted_runtime_factory(
+
+    def runtime_factory() -> FrameRefreshingHostedRuntime:
+        return FrameRefreshingHostedRuntime(
             env_url,
             slot,
             token,
             startup_timeout_seconds=startup_timeout_seconds,
             step_timeout_seconds=step_timeout_seconds,
         )
-    )
+
+    return VanillaWowEnv(runtime_factory=runtime_factory)
 
 
 class GymSession:
@@ -135,24 +179,19 @@ class GymSession:
         next_frame, _reward, terminated, truncated, info = self.env.step(action)
         action_status = str(info.get("action_status") or "")
         action_detail = str(info.get("action_detail") or "")
-        refreshed = False
-        if action_status == "rejected" and any(
-            marker in action_detail
-            for marker in (
-                "submission does not match the current AgentFrame",
-                "no AgentFrame is awaiting an action",
-                "action submission arrived after the game-wide deadline",
+        refreshed = (
+            action_status == "rejected"
+            and next_frame.frame_id > frame.frame_id
+            and any(
+                marker in action_detail
+                for marker in STALE_FRAME_REJECTIONS
             )
-        ):
-            stale_frame_id = next_frame.frame_id
-            next_frame, info = self.env.reset()
-            terminated = next_frame.environment.terminal
-            truncated = False
-            refreshed = True
+        )
+        if refreshed:
             self._tracer.emit(
                 "frame_refresh",
                 submitted_frame_id=frame.frame_id,
-                stale_frame_id=stale_frame_id,
+                stale_frame_id=frame.frame_id,
                 refreshed_frame_id=next_frame.frame_id,
                 rejection=action_detail,
             )

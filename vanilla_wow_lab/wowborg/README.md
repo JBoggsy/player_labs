@@ -21,8 +21,9 @@ resolution is pinned to the matching owner commit in the root `pyproject.toml`.
 
 - `environment.py` — hosted endpoint derivation and the thin `GymSession` convenience
   around `VanillaWowEnv.reset()` / `step()`. It also calls the upstream read-only
-  navmesh SDK. If the game advances past a submitted frame, the session reconnects
-  to the retained `/env` lifecycle and traces `frame_refresh` before continuing.
+  navmesh SDK. If the game advances past a submitted frame, the hosted runtime
+  consumes the current frame already pushed on that `/env` connection and traces
+  `frame_refresh` before continuing.
 - `main.py` — resets the environment, runs one synchronous policy loop, closes the
   session, and uploads evidence.
 - `policies/` — policy registry selected by `WOWBORG_POLICY`; `world_race` is the

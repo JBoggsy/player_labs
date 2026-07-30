@@ -1,5 +1,32 @@
 # wowborg version log
 
+## v49 - held-out Durotar navigation course (2026-07-30)
+
+- Version UUID: `821fe38c-ac0c-4852-ad77-493797f6ad40`
+  (`wowborg:v49`, uploaded inert; not submitted to a league).
+- Built `linux/amd64` from source commit `34ba007` with a data-only course that
+  had never appeared in wowborg code or documentation: east rise, north basin,
+  canyon approach, and an intentionally unreachable high-air target.
+- Local image manifest:
+  `sha256:34288844bb4b36403e51e51d2ab9936c538781d18a67b6468e273127827fdecb`.
+- Purpose: held-out hosted evaluation after frame-refresh is established
+  independently. This build retains v48's unsuccessful reset-based recovery and
+  is superseded before evaluation.
+
+## v48 - stale AgentFrame recovery (2026-07-30)
+
+- Version UUID: `5ef2cfc8-054f-4721-9cdd-503a16d78922`
+  (`wowborg:v48`, uploaded inert; not submitted to a league).
+- Built `linux/amd64` from source commit `34ba007`; this candidate attempted to
+  refresh a stale `AgentFrame` with `VanillaWowEnv.reset()`.
+- Local image manifest:
+  `sha256:4ddb52f05715c6da3d6268caffaef14f7c3c3c6aa25b85af919704fec645f3c7`.
+- Hosted experiment:
+  `xreq_2b5eabc9-9a92-4c0a-8055-63f1b77b4796` on certified accelerated-wow
+  0.1.124 / `custom-fresh-start-10x`.
+- Verdict: rejected. Both episodes ended as `player_error`; reset opened a new
+  Gym lifecycle instead of reattaching to the retained session.
+
 ## v47 - accelerated-wow 0.1.124 compatibility baseline (2026-07-30)
 
 - Version UUID: `57583ca8-476e-430a-ad3b-bc7c33ce40d0`
