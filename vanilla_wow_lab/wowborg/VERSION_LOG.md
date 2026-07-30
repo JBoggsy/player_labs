@@ -1,5 +1,19 @@
 # wowborg version log
 
+## v47 - accelerated-wow 0.1.124 compatibility baseline (2026-07-30)
+
+- Version UUID: `57583ca8-476e-430a-ad3b-bc7c33ce40d0`
+  (`wowborg:v47`, uploaded inert; not submitted to a league).
+- Built `linux/amd64` from source commit `0a4bc2c` against the certified
+  accelerated-wow 0.1.124 contract and deployed game image
+  `sha256:ed11e79d...d173a`.
+- Adopted the upstream `environment.runtime.episode` module and the consolidated
+  `NavmeshRoute` shape. The route lab uses the same compatibility interpretation.
+- Local image manifest:
+  `sha256:fe23e6c526b05ea88ecae024622322f26bae7442281fdc0ffa54555e011af729`.
+- Purpose: establish the first hosted `/env` navigation baseline after the
+  game-side session startup fix; no navigation behavior change from v46.
+
 ## v46 - canonical `/env` migration (2026-07-29)
 
 - Version UUID: `13b4b697-54d0-4cfe-941a-ed6a3e913211`
