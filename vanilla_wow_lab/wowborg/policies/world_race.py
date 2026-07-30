@@ -230,6 +230,7 @@ class WorldRacePolicy:
             return
 
         done_names = {r["name"] for r in self.results}
+        no_progress_retries: dict[str, int] = {}
         while True:
             if getattr(bridge, "finished", False):
                 break
@@ -254,7 +255,6 @@ class WorldRacePolicy:
                     )
                 )
             name = pending[0]
-            done_names.add(name)
             point, region, expected = self.stations[name]
             # The last pending station gets the whole remaining session; otherwise
             # the fair-share fraction protects the rest of the course.
@@ -279,6 +279,7 @@ class WorldRacePolicy:
                         "deaths": 0, "combat_pauses": 0, "replans": 0,
                     }
                     self.results.append(row)
+                    done_names.add(name)
                     trace("nav_station", **row)
                     log(f"station {name}: skipped (needs ≥{optimistic_seconds:.0f}s "
                         f"of travel, share is {share:.0f}s)")
@@ -289,6 +290,19 @@ class WorldRacePolicy:
                 f"map {point.map_id} ({point.x:.0f},{point.y:.0f},{point.z:.0f})")
             result = journey.journey_to(bridge, point, deadline=min(station_deadline, until))
             seconds = time.monotonic() - started
+            if (
+                result.reason == "no_progress"
+                and no_progress_retries.get(name, 0) < 1
+            ):
+                no_progress_retries[name] = no_progress_retries.get(name, 0) + 1
+                trace(
+                    "nav_station_retry",
+                    name=name,
+                    reason=result.reason,
+                    seconds=round(seconds, 1),
+                )
+                log(f"station {name}: retrying after transient no-progress")
+                continue
 
             if result.status == JourneyStatus.ARRIVED:
                 outcome = "arrived"
@@ -316,6 +330,7 @@ class WorldRacePolicy:
                 ),
             }
             self.results.append(row)
+            done_names.add(name)
             trace("nav_station", **row)
             log(f"station {name}: {outcome} in {seconds:.0f}s ({len(result.legs)} legs)")
 

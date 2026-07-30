@@ -1,5 +1,33 @@
 # wowborg version log
 
+## v51 - held-out course with current-socket refresh (2026-07-30)
+
+- Version UUID: `221a8b82-09f7-4424-9316-caeb20282cbd`
+  (`wowborg:v51`, uploaded inert; not submitted to a league).
+- Built `linux/amd64` from source commit `15e6a13` with the same untouched
+  Durotar course prepared in v49 and v50's current-socket frame recovery.
+- Local image manifest:
+  `sha256:f3f1bc089da5d0175c67ce26ccf18ad0413aef7356a8a97e2a10648016587256`.
+- Purpose: hosted held-out navigation evaluation after v50 clears the recovery
+  mechanism gate.
+
+## v50 - current-socket AgentFrame recovery (2026-07-30)
+
+- Version UUID: `04a59594-63fa-477e-86d2-e897917e07ef`
+  (`wowborg:v50`, uploaded inert; not submitted to a league).
+- Built `linux/amd64` from source commit `15e6a13`; after a stale/deadline
+  rejection, the hosted runtime consumes the next pushed frame on the existing
+  `/env` connection instead of resetting the Gym lifecycle.
+- Local image manifest:
+  `sha256:6060e515d0354b9621d24ad7cddadae9d9af6067a710fb31bb4d7ffa4c00ad73`.
+- Hosted experiment:
+  `xreq_92f74d1c-5a12-49a9-8579-36d435e3d6c2` on certified accelerated-wow
+  0.1.124 / `custom-fresh-start-10x`.
+- Verdict: frame recovery confirmed, station completion not yet confirmed. Both
+  episodes completed with score 1.0 and replay; every refresh advanced, stale
+  runs capped at one, and positions changed 264/337 times. Both first reachable
+  stations exhausted their no-progress replans during the startup movement stall.
+
 ## v49 - held-out Durotar navigation course (2026-07-30)
 
 - Version UUID: `821fe38c-ac0c-4852-ad77-493797f6ad40`

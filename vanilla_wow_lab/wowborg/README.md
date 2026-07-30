@@ -27,7 +27,8 @@ resolution is pinned to the matching owner commit in the root `pyproject.toml`.
 - `main.py` — resets the environment, runs one synchronous policy loop, closes the
   session, and uploads evidence.
 - `policies/` — policy registry selected by `WOWBORG_POLICY`; `world_race` is the
-  image default.
+  image default. World Race retries one station journey once when its first
+  attempt ends in transient `no_progress`.
 - `nav/` — local movement supervision, route planning, and world-graph journeys.
 - `trace.py` and `artifact.py` — structured `trace.jsonl` output and optional
   session-end artifact upload.

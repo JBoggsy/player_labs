@@ -45,8 +45,12 @@ surface:
   `frame_refresh`, and otherwise leaves navigation unchanged. V48 proved that
   `VanillaWowEnv.reset()` is not a reattachment API: both candidate episodes ended
   as player errors when reset opened a new lifecycle against the retained session.
-  Next: rebuild the same hypothesis with in-connection frame consumption, then verify
-  known and untouched held-out station courses before any league submission.
+  V50 proved the in-connection mechanism: both episodes completed, every refresh
+  advanced the frame, the maximum stale run fell to one, and position diversity
+  rose from one to 264/337. Its first station still failed because four replans
+  expired during a repeatable ~20-second startup movement stall just as movement
+  began. The next candidate retries that specific `no_progress` result once, then
+  verifies known and untouched held-out station courses before any league submission.
 
 The older status sections below are historical context. In particular, the 2026-07-27
 decision to fork/re-open a Gym seam has been superseded by the owner's shipped `/env`.
