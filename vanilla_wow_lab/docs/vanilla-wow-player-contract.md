@@ -1,5 +1,11 @@
 # Vanilla WoW — player contract
 
+> **Historical reference (superseded 2026-07-29).** This document describes the
+> 2026-07-13 direct-client contract. Current wowborg policies use the owner-provided
+> Gymnasium `WS /env` contract and do not own a WoW client. For current behavior, read
+> [`../wowborg/README.md`](../wowborg/README.md) and the owner repo's
+> `docs/bot-environment-contract.md` plus `environment/contract/agent.py`.
+
 **What any Vanilla WoW Coworld player must do over the wire, and how it's shipped.** This
 is the counterpart to [`vanilla-wow-gameplay.md`](vanilla-wow-gameplay.md) (the game
 itself): here we cover how a player *connects*, what it *observes*, what it *emits*, the

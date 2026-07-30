@@ -18,6 +18,20 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
 
+### Verify the live owner contract before implementing a planned fork
+Evidence: the 2026-07-27 working context correctly said the then-current owner tree had
+deleted its Gym seam and proposed rebuilding one. Freshness preflight on 2026-07-29 found
+accelerated-wow 0.1.122 had since shipped canonical `WS /env`, `VanillaWowEnv`, semantic
+`AgentAction`, and the hosted runtime. Reverification deleted an entire client-adapter
+project from scope.
+
+### Policy images can copy a deployed Python contract without inheriting the game client
+Evidence: wowborg's image copies only `/app/environment` and `/app/player` from the exact
+deployed game image into a clean Python runtime. Build validation imports
+`VanillaWowEnv`, hosted runtime, and navmesh SDK, then rejects historical client binaries.
+This keeps policy and deployed contract aligned while preserving game ownership of the
+client.
+
 ### The game ships deterministic combat testbeds — z7-class-combat-lab and spell-lab-* variants
 Evidence: `infra/coworld_manifest_template.json` (repo @ da32437e8) defines `z7-class-combat-lab`
 (level-29 twink warrior+rogue on GM Island beside a cloned hostile with target_health_multiplier

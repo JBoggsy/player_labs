@@ -1,21 +1,10 @@
 #!/usr/bin/env bash
-# Build the wowborg v2 player image (our policy layered on the deployed Nim shim).
+# Build wowborg's Python WS /env policy image.
 #
 # Usage: tools/build_player.sh [--tag REF] [--base IMAGE] [--policy NAME] [--stations JSON]
-#   --tag      image tag to build (default: players-wowborg:dev)
-#   --base     override WOWBORG_BASE_IMAGE for this build (default: versions.env pin)
-#   --policy   bake WOWBORG_POLICY into the image (default: random_walk)
-#   --stations bake WOWBORG_STATIONS (JSON [[name,map,x,y,z,expected],...]) — the
-#              world_race data seam; new courses need no code change
-#
-# Produces a linux/amd64 image (the Coworld upload contract). The base is the deployed
-# reference player image, pinned BY DIGEST in tools/versions.env; if it isn't present
-# locally, docker pulls it from the public ECR. After building, sanity-checks that the
-# base still provides everything the shim relies on. Design:
-# docs/designs/wowborg-v2-shim-adoption.md.
 set -euo pipefail
 
-LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # vanilla_wow_lab/
+LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # shellcheck source=/dev/null
 source "$LAB_DIR/tools/versions.env"
@@ -23,43 +12,45 @@ source "$LAB_DIR/tools/versions.env"
 die() { echo "build_player.sh: $*" >&2; exit 1; }
 
 tag="players-wowborg:dev"
-policy="random_walk"
+policy="world_race"
 stations=""
 while (( $# )); do
   case "$1" in
-    --tag)      tag="$2";                shift 2 ;;
-    --base)     WOWBORG_BASE_IMAGE="$2"; shift 2 ;;
-    --policy)   policy="$2";             shift 2 ;;
-    --stations) stations="$2";           shift 2 ;;
-    -h|--help)  sed -n '3,11p' "$0"; exit 0 ;;
+    --tag)      tag="$2";                         shift 2 ;;
+    --base)     WOWBORG_ENVIRONMENT_IMAGE="$2";  shift 2 ;;
+    --policy)   policy="$2";                      shift 2 ;;
+    --stations) stations="$2";                    shift 2 ;;
+    -h|--help)  sed -n '2,4p' "$0"; exit 0 ;;
     *) die "unknown argument: $1" ;;
   esac
 done
 
 command -v docker >/dev/null 2>&1 || die "docker not found on PATH"
-[ -n "${WOWBORG_BASE_IMAGE:-}" ] || die "WOWBORG_BASE_IMAGE not set (tools/versions.env)"
+[ -n "${WOWBORG_ENVIRONMENT_IMAGE:-}" ] \
+  || die "WOWBORG_ENVIRONMENT_IMAGE not set"
 
-echo "==> base: $WOWBORG_BASE_IMAGE"
-echo "==> docker buildx build --platform=linux/amd64 -t $tag (context: $LAB_DIR/wowborg)"
+echo "==> environment contract: $WOWBORG_ENVIRONMENT_IMAGE"
 docker buildx build --platform=linux/amd64 --load \
   -f "$LAB_DIR/wowborg/Dockerfile" \
-  --build-arg "WOWBORG_BASE_IMAGE=$WOWBORG_BASE_IMAGE" \
+  --build-arg "WOWBORG_ENVIRONMENT_IMAGE=$WOWBORG_ENVIRONMENT_IMAGE" \
   --build-arg "WOWBORG_POLICY=$policy" \
   --build-arg "WOWBORG_STATIONS=$stations" \
   -t "$tag" \
   "$LAB_DIR/wowborg"
 
-echo "==> sanity-checking built image (base contract + our layer)"
-# 0.1.31 base: world data is NOT bundled (game serves it via --assets URL); the control
-# seam is wow_sdk.nim_control (binary TCP socket), not the old action.json file bridge.
-docker run --rm --entrypoint sh "$tag" -c '
-  set -e
-  test -x /usr/local/bin/king_richard
-  python3 -c "import wow_sdk.nim_control, wow_sdk.runtime, wow_sdk.protocol"
-  python3 -c "from wow_sdk.nim_control import NimControlClient, EnvironmentFrame, FactorizedAction"
-  python3 -c "import vanilla_wow_coworld.player"
-  python3 -c "import wowborg.shim, wowborg.bridge, wowborg.policies"
-  [ "$KING_NIMROD_COMMAND" = "python3 -m wowborg.shim" ]
-' || die "sanity check FAILED — the base image contract moved; see versions.env bump notes"
+echo "==> verifying /env-only player surface"
+docker run --rm --entrypoint python3 "$tag" -c '
+from environment import VanillaWowEnv
+from environment.runtime.hosted_session import hosted_runtime_factory
+from environment.contract.agent import AgentFrame, MoveAction
+from player.sdk.navmesh import route_navmesh
+import wowborg.environment, wowborg.main, wowborg.policies
+' || die "sanity check FAILED"
+
+if docker run --rm --entrypoint sh "$tag" -c \
+  'test -e /usr/local/bin/vanilla-wow-reference-player -o -e /usr/local/bin/king_richard'
+then
+  die "player unexpectedly contains a bundled WoW client"
+fi
 
 echo "==> OK: $tag"

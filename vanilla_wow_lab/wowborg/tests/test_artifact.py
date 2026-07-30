@@ -12,16 +12,14 @@ def make_runtime_dir(tmp_path: Path) -> Path:
     rt = tmp_path / "rt"
     rt.mkdir()
     (rt / "trace.jsonl").write_text('{"kind":"session_start"}\n', encoding="utf-8")
-    (rt / "action-results.jsonl").write_text('{"sequence":1}\n', encoding="utf-8")
-    (rt / "state.json").write_text("{}", encoding="utf-8")
     return rt
 
 
 def test_build_bundle_includes_only_existing_files(tmp_path: Path) -> None:
-    rt = make_runtime_dir(tmp_path)  # no heartbeat.json
+    rt = make_runtime_dir(tmp_path)
     zip_path = tmp_path / "bundle.zip"
     members = build_bundle(rt, zip_path)
-    assert members == ["trace.jsonl", "action-results.jsonl", "state.json"]
+    assert members == ["trace.jsonl"]
     with zipfile.ZipFile(zip_path) as bundle:
         assert sorted(bundle.namelist()) == sorted(members)
         assert bundle.read("trace.jsonl") == b'{"kind":"session_start"}\n'
@@ -31,7 +29,7 @@ def test_upload_evidence_via_file_url(tmp_path: Path) -> None:
     rt = make_runtime_dir(tmp_path)
     destination = tmp_path / "out" / "evidence.zip"
     members = upload_evidence(rt, upload_url=f"file://{destination}")
-    assert members == ["trace.jsonl", "action-results.jsonl", "state.json"]
+    assert members == ["trace.jsonl"]
     with zipfile.ZipFile(destination) as bundle:
         assert "trace.jsonl" in bundle.namelist()
 

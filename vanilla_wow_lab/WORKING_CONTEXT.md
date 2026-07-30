@@ -13,6 +13,30 @@ file is the one-screen "where are we and why."
 
 ---
 
+## Status (2026-07-29): OWNER-PROVIDED `/env` REPLACES THE CLIENT-ADAPTER PLAN
+
+The current accelerated-wow release now ships the convenient Gymnasium interface the
+lab previously expected to own. `wowborg` has been rewritten against that canonical
+surface:
+
+- `VanillaWowEnv.reset()` yields `AgentFrame`; policies submit canonical
+  `AgentAction` values with synchronous `step()`.
+- The game owns the WoW client, projection, action admission/execution, settlement,
+  reconnects, and transport. Wowborg contains no client binary, mask adapter, or
+  compatibility path.
+- The deployed accelerated-wow 0.1.122 image
+  (`sha256:608ac6685...e5e4`) and its source commit
+  (`5bde7b590533ef8b87b2586c69156a029e450574`) are pinned in
+  `tools/versions.env` and the root lockfile.
+- Navigation uses the owner SDK's authenticated `/player/navigation` query while the
+  policy loop uses `/env`. The full wowborg test suite is the current focused gate;
+  real-navmesh catalog and held-out course results belong in `wowborg/VERSION_LOG.md`.
+
+The older status sections below are historical context. In particular, the 2026-07-27
+decision to fork/re-open a Gym seam has been superseded by the owner's shipped `/env`.
+
+---
+
 ## Status (2026-07-27, session 5j): UPSTREAM CONTRACT REWRITTEN — combat report re-audited and rewritten; wowborg path decision is the gate
 
 **A line-by-line audit of the combat report against the freshly-pulled game repo

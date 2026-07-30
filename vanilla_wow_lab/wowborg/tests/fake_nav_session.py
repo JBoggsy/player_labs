@@ -1,4 +1,4 @@
-"""A frame-driven fake bridge with a scripted WORLD for nav-layer tests.
+"""A frame-driven fake Gym session with a scripted world for nav-layer tests.
 
 Simulates: chunked movement (the executor's ~14yd settlements), walls (regions that
 block movement), combat zones, death zones, portals (map transitions), and a scripted
@@ -24,36 +24,19 @@ class FakeLocation:
 
 
 @dataclass
-class FakeObservation:
+class FakeFrame:
+    frame_id: int
     location: FakeLocation = field(default_factory=FakeLocation)
     is_dead: bool = False
     is_ghost: bool = False
     in_combat: bool = False
     health: int = 60
     max_health: int = 60
+    active_area_trigger_ids: list[int] = field(default_factory=list)
+    known_spells: list[int] = field(default_factory=list)
 
 
-@dataclass
-class FakeTriggerRow:
-    index: int
-    trigger_id: int
-
-
-@dataclass
-class FakeBindings:
-    triggers: list[FakeTriggerRow] = field(default_factory=list)
-
-
-@dataclass
-class FakeFrame:
-    frame_id: int
-    observation: FakeObservation
-    bindings: FakeBindings = field(default_factory=FakeBindings)
-    action_ready: bool = True
-    recommended_action: object | None = object()
-
-
-class NavWorldBridge:
+class NavWorldSession:
     """Scripted world: movement advances CHUNK_YARDS toward the destination per
     settlement, unless blocked by a wall segment. Configurable hazards."""
 
@@ -99,36 +82,29 @@ class NavWorldBridge:
         self._tracer = None
         self.plan_calls = 0
         self.move_selections = 0
-        self.recommended_selections = 0
+        self.wait_selections = 0
 
     # ---- frames -------------------------------------------------------------
 
     def wait_for_frame(self, *, timeout_s: float = 60.0) -> FakeFrame:
         self._frame += 1
-        obs = FakeObservation(
+        return FakeFrame(
+            frame_id=self._frame,
             location=FakeLocation(self.map_id, self.x, self.y, self.z),
             is_dead=self.dead_frames_left > 0,
             is_ghost=False,
             in_combat=self.combat_frames_left > 0,
             health=self.health,
             max_health=60,
+            active_area_trigger_ids=[
+                tid for tid in self.portals if self._near_portal(tid)
+            ],
         )
-        near = [tid for tid in self.portals if self._near_portal(tid)]
-        triggers = [
-            FakeTriggerRow(index=i + 1, trigger_id=tid)
-            for i, tid in enumerate(near)
-        ]
-        return FakeFrame(self._frame, obs, FakeBindings(triggers=triggers))
 
     def observe(self):
-        from wowborg.types import Observation
-
-        return Observation(
-            tick=self._frame,
-            captured_at=0.0,
-            map_id=self.map_id,
-            zone="",
-            position=Position(self.x, self.y, self.z, 0.0),
+        return FakeFrame(
+            frame_id=self._frame,
+            location=FakeLocation(self.map_id, self.x, self.y, self.z),
             health=self.health,
             max_health=60,
             in_combat=self.combat_frames_left > 0,
@@ -143,8 +119,8 @@ class NavWorldBridge:
         self._advance_toward(x, y, z)
         return f"frame-{frame.frame_id}"
 
-    def select_recommended(self, frame) -> str:
-        self.recommended_selections += 1
+    def select_wait(self, frame) -> str:
+        self.wait_selections += 1
         # Recommended action resolves hazards: combat ticks down, death→revive at
         # graveyard, otherwise a small shuffle (unstick).
         if self.dead_frames_left > 0:
@@ -157,13 +133,13 @@ class NavWorldBridge:
             self.x += 1.0
         return f"frame-{frame.frame_id}"
 
-    def select_action(self, frame, action) -> str | None:
-        if action.kind == "area_trigger" and action.trigger:
-            rows = frame.bindings.triggers
-            row = next((r for r in rows if r.index == action.trigger), None)
-            if row and row.trigger_id in self.portals:
-                self.map_id, self.x, self.y, self.z = self.portals[row.trigger_id]
-                return f"frame-{frame.frame_id}"
+    def select_area_trigger(self, frame, trigger_id) -> str | None:
+        selected = trigger_id
+        if selected is None and frame.active_area_trigger_ids:
+            selected = frame.active_area_trigger_ids[0]
+        if selected in frame.active_area_trigger_ids and selected in self.portals:
+            self.map_id, self.x, self.y, self.z = self.portals[selected]
+            return f"frame-{frame.frame_id}"
         return None
 
     def wait_for_settlement(self, frame_id, *, timeout_s=90.0) -> ActionOutcome:

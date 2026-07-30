@@ -28,18 +28,11 @@ class FakeLocation:
 
 
 @dataclass
-class FakeObservation:
-    location: FakeLocation = field(default_factory=FakeLocation)
-    is_dead: bool = False
-    is_ghost: bool = False
-
-
-@dataclass
 class FakeFrame:
     frame_id: int
-    observation: FakeObservation
-    action_ready: bool = True
-    recommended_action: object | None = object()
+    location: FakeLocation
+    is_dead: bool = False
+    is_ghost: bool = False
 
 
 class TeleportBridge:
@@ -60,7 +53,7 @@ class TeleportBridge:
     def wait_for_frame(self, *, timeout_s: float = 60.0) -> FakeFrame:
         self._frame += 1
         loc = FakeLocation(x=self.position[0], y=self.position[1], z=self.position[2])
-        return FakeFrame(frame_id=self._frame, observation=FakeObservation(location=loc))
+        return FakeFrame(frame_id=self._frame, location=loc)
 
     def select_move_to(self, frame, x, y, z, map_id) -> str:
         self.moves.append([x, y, z])
@@ -68,7 +61,7 @@ class TeleportBridge:
             self.position = [x, y, z]
         return f"frame-{frame.frame_id}"
 
-    def select_recommended(self, frame) -> str:
+    def select_wait(self, frame) -> str:
         return f"frame-{frame.frame_id}"
 
     def wait_for_settlement(self, frame_id, *, timeout_s=90.0) -> ActionOutcome:

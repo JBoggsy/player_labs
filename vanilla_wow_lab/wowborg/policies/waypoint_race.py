@@ -22,9 +22,9 @@ only one route CHUNK (~30-50 yd on the live controller — first race batch evid
 legs are PROGRESS-based, not attempt-capped: keep re-issuing the move while distance to
 the target shrinks; a DNF requires ``MAX_NO_PROGRESS`` consecutive settlements without
 progress OR blowing the distance-scaled time budget. After two consecutive
-no-progress settlements the policy interleaves the planner's recommended action (its
-unstick logic) before retrying — the first batch showed a bot wedged repeating "no safe
-adjacent edge" 174 times with no recovery. Laps repeat (fresh shuffle each lap) until
+no-progress settlements the policy yields one step before retrying — the first batch
+showed a bot wedged repeating "no safe adjacent edge" 174 times with no recovery.
+Laps repeat (fresh shuffle each lap) until
 the deadline. Every leg emits a ``race_leg`` trace event (waypoint name, wall-clock
 split, straight-line yards, move count); the summary reports completion rate and
 yards/second — the race metrics.
@@ -330,13 +330,15 @@ class WaypointRacePolicy:
             remaining = until - time.monotonic()
             frame = bridge.wait_for_frame(timeout_s=min(FRAME_TIMEOUT_SECONDS, remaining))
             if frame is None:
+                if getattr(bridge, "finished", False):
+                    break
                 log("no decision frame offered before timeout; retrying")
                 continue
 
-            obs = frame.observation
+            obs = frame
             if obs.is_dead or obs.is_ghost:
-                log("character dead/ghost — accepting recommended recovery action")
-                request_id = bridge.select_recommended(frame)
+                log("character dead/ghost — yielding for explicit recovery")
+                request_id = bridge.select_wait(frame)
                 if request_id is not None:
                     bridge.wait_for_settlement(frame.frame_id, timeout_s=SETTLE_TIMEOUT_SECONDS)
                 continue
@@ -448,12 +450,11 @@ class WaypointRacePolicy:
                 no_progress_streak += 1
             last_position = (loc.x, loc.y)
 
-            # Wedged? Let the planner's own recommendation run once (its unstick logic)
-            # before re-issuing our move — the observed failure mode is a bot repeating
-            # "no safe adjacent edge" forever from the same spot.
-            if no_progress_streak >= UNSTICK_AFTER_NO_PROGRESS and frame.recommended_action is not None:
-                log(f"{name}: {no_progress_streak} stalled settlements — taking recommended (unstick)")
-                request_id = bridge.select_recommended(frame)
+            # Wedged? Yield once before re-issuing the move so the next frame can
+            # expose upstream recovery progress.
+            if no_progress_streak >= UNSTICK_AFTER_NO_PROGRESS:
+                log(f"{name}: {no_progress_streak} stalled settlements — yielding")
+                request_id = bridge.select_wait(frame)
                 if request_id is not None:
                     bridge.wait_for_settlement(frame.frame_id, timeout_s=SETTLE_TIMEOUT_SECONDS)
                     continue
@@ -463,8 +464,8 @@ class WaypointRacePolicy:
                 frame, steer_point[0], steer_point[1], steer_point[2], loc.map_id
             )
             if request_id is None:
-                log(f"{name}: move refused by mask (move {moves}); taking recommended")
-                request_id = bridge.select_recommended(frame)
+                log(f"{name}: move rejected (move {moves}); yielding")
+                request_id = bridge.select_wait(frame)
                 if request_id is None:
                     continue
             remaining = until - time.monotonic()

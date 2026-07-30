@@ -4,7 +4,7 @@ Responsibilities (and nothing more):
 - issue `move` selections toward ONE destination until 3D-arrived,
 - classify each settlement into progress / detour / stall using position history
   (detects A↔B oscillation, which displacement-only checks cannot — v13 lesson),
-- run the unstick ladder on stalls (recommended action → escalate),
+- run the unstick ladder on stalls (brief wait → escalate),
 - report an honest typed result upward; the caller owns re-planning and budgets.
 
 Constants here are EXECUTOR FACTS (chunk size, arrival radius convention) or structural
@@ -126,7 +126,7 @@ class LocalMover:
                 return LocalMoveResult(LocalMoveStatus.NO_FRAME, _last(history), moves,
                                        time.monotonic() - started)
 
-            obs = frame.observation
+            obs = frame
             here = Point(obs.location.map_id, obs.location.x, obs.location.y, obs.location.z)
 
             # Typed interruptions — surface immediately, caller owns the transition.
@@ -178,15 +178,15 @@ class LocalMover:
 
             # Unstick ladder before re-issuing: Stuck (spell 7355, the sanctioned
             # relocation for exhausted source projections — v27: the executor
-            # refused every move AND the recommended move with
-            # "no physically admissible local source projection") → recommended.
+            # refused every move with "no physically admissible local source
+            # projection") → briefly yield after the explicit Stuck action.
             if stalls >= UNSTICK_AFTER_STALLS:
                 self._trace("nav_unstick", stalls=stalls)
                 request_id = None
                 if hasattr(bridge, "select_stuck"):
                     request_id = bridge.select_stuck(frame)
-                if request_id is None and frame.recommended_action is not None:
-                    request_id = bridge.select_recommended(frame)
+                if request_id is None:
+                    request_id = bridge.select_wait(frame)
                 if request_id is not None:
                     bridge.wait_for_settlement(frame.frame_id, timeout_s=SETTLE_TIMEOUT_SECONDS)
                     continue
@@ -194,9 +194,9 @@ class LocalMover:
             moves += 1
             request_id = bridge.select_move_to(frame, target.x, target.y, target.z, target.map_id)
             if request_id is None:
-                # Mask refused the destination — treat like a stall step.
+                # The environment refused the destination — treat it like a stall.
                 stalls += 1
-                request_id = bridge.select_recommended(frame)
+                request_id = bridge.select_wait(frame)
                 if request_id is None:
                     continue
             bridge.wait_for_settlement(
@@ -213,7 +213,7 @@ def _observe(bridge) -> Point | None:
     obs = bridge.observe()
     if obs is None:
         return None
-    return Point(obs.map_id, obs.position.x, obs.position.y, obs.position.z)
+    return Point(obs.location.map_id, obs.location.x, obs.location.y, obs.location.z)
 
 
 def _is_revisit(

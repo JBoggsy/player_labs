@@ -6,10 +6,8 @@ bundle is later fetchable per slot via ``GET /jobs/{job_id}/policy-artifact/{idx
 policy-scoped and NOT subject to the hosted stdout log cap or the log-retention gap that
 blanked our first smoke's evidence (session 3).
 
-We bundle the shim runtime dir's evidence files at session end: our ``trace.jsonl``, the
-Nim client's ``action-results.jsonl`` and final ``state.json``/``heartbeat.json``. No
-dependency on the players SDK — the upload is a plain PUT (mirrors
-``players.player_sdk.trace_outputs._upload_zip``).
+We bundle wowborg's ``trace.jsonl`` at session end. No dependency on the players SDK:
+the upload is a plain PUT.
 """
 
 from __future__ import annotations
@@ -24,14 +22,6 @@ from pathlib import Path
 ARTIFACT_UPLOAD_ENV = "COWORLD_PLAYER_ARTIFACT_UPLOAD_URL"
 BUNDLED_FILES = (
     "trace.jsonl",
-    "action-results.jsonl",
-    "state.json",
-    "heartbeat.json",
-    # 0.1.31 read-only supervision surfaces (bundle when present):
-    "environment-frame.json",
-    "decision-audit.jsonl",
-    "leveling-performance.jsonl",
-    "decision-loop-profile.jsonl",
 )
 
 
@@ -81,5 +71,5 @@ def upload_evidence(runtime_dir: Path, *, upload_url: str | None = None) -> list
             upload_bundle(zip_path, url)
             return members
     except Exception as exc:  # noqa: BLE001
-        print(f"WOWBORG-SHIM evidence upload failed (non-fatal): {exc!r}", flush=True)
+        print(f"WOWBORG evidence upload failed (non-fatal): {exc!r}", flush=True)
         return None

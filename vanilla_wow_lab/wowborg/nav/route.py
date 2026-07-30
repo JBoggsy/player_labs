@@ -416,9 +416,18 @@ class RouteNavigator:
         # During login the controller reports map 0 at the origin — not a real
         # position (first hosted World Race: a slow login turned every station into
         # instant unknown_region failures). Not-yet-in-world reads as "no position".
-        if obs.map_id == 0 and abs(obs.position.x) < 0.5 and abs(obs.position.y) < 0.5:
+        if (
+            obs.location.map_id == 0
+            and abs(obs.location.x) < 0.5
+            and abs(obs.location.y) < 0.5
+        ):
             return None
-        return Point(obs.map_id, obs.position.x, obs.position.y, obs.position.z)
+        return Point(
+            obs.location.map_id,
+            obs.location.x,
+            obs.location.y,
+            obs.location.z,
+        )
 
     def _wait_out_combat(self, bridge, deadline: float, flee_to: Point | None = None) -> bool:
         """Budget clock is paused by construction (walk loop measures only hops).
@@ -427,21 +436,20 @@ class RouteNavigator:
         mobs leash (v42 long-session evidence: a level-1 character crossing
         Razormane territory died 7 times because yielding meant fighting level
         6-10 camps; running through is how real low-level players make this
-        trip). Fall back to the recommended action (the authored combat stack)
-        only when movement itself is refused."""
+        trip). Briefly yield when movement itself is refused."""
         while time.monotonic() < deadline:
             frame = bridge.wait_for_frame(timeout_s=min(30.0, max(0.5, deadline - time.monotonic())))
             if frame is None:
                 time.sleep(1.0)
                 continue
-            if not frame.observation.in_combat:
+            if not frame.in_combat:
                 return True
             request_id = None
             if flee_to is not None:
                 request_id = bridge.select_move_to(
                     frame, flee_to.x, flee_to.y, flee_to.z, flee_to.map_id)
             if request_id is None:
-                request_id = bridge.select_recommended(frame)
+                request_id = bridge.select_wait(frame)
             if request_id is not None:
                 bridge.wait_for_settlement(frame.frame_id, timeout_s=RECOVERY_STEP_TIMEOUT_S)
         return False
@@ -451,12 +459,12 @@ class RouteNavigator:
     ) -> bool:
         """Typed recovery: release → ghost-run the PLANNED corridor to the
         corpse → reclaim. Two hosted lessons shaped this: deferring recovery to
-        recommended actions ambled 1400s per corpse run (v43); and a direct
+        passive recovery ambled 1400s per corpse run (v43); and a direct
         semantic move to the corpse re-hits the terrain that killed us — v44:
         died ON the sarkoth mesa, the ghost oscillated 1700s at its base. The
         ghost walks the corpse route corridor waypoint-by-waypoint (the ramp),
-        exactly the way the living character had to arrive. Recommended remains
-        the fallback for any refused step."""
+        exactly the way the living character had to arrive. A brief wait remains
+        the fallback for a refused step."""
         corridor: list[Point] = []
         corridor_index = 0
         while time.monotonic() < deadline:
@@ -464,7 +472,7 @@ class RouteNavigator:
             if frame is None:
                 time.sleep(1.0)
                 continue
-            obs = frame.observation
+            obs = frame
             if not obs.is_dead and not obs.is_ghost:
                 return True
             request_id = None
@@ -493,7 +501,7 @@ class RouteNavigator:
                         request_id = bridge.select_move_to(
                             frame, step.x, step.y, step.z, corpse.map_id)
             if request_id is None:
-                request_id = bridge.select_recommended(frame)
+                request_id = bridge.select_wait(frame)
             if request_id is not None:
                 bridge.wait_for_settlement(frame.frame_id, timeout_s=RECOVERY_STEP_TIMEOUT_S)
         return False
@@ -522,5 +530,3 @@ def _point_at_corridor_fraction(waypoints, fraction: float):
 
 def _pt(position, map_id: int) -> Point:
     return Point(map_id, position.x, position.y, position.z)
-
-

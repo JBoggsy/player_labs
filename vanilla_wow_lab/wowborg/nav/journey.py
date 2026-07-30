@@ -268,27 +268,12 @@ class JourneyPlanner:
         return False, None
 
     def _fire_trigger(self, bridge, trigger_id: int | None, deadline: float) -> bool:
-        """Select an area_trigger action; the frame's trigger bindings admit the stock
-        trigger when we stand on its pad."""
+        """Select an area trigger currently exposed by the canonical frame."""
         frame = bridge.wait_for_frame(
             timeout_s=min(30.0, max(0.5, deadline - time.monotonic())))
         if frame is None:
             return False
-        # Find the binding index for the trigger (or any admitted trigger at the pad).
-        index = None
-        for row in frame.bindings.triggers:
-            if trigger_id is None or row.trigger_id == trigger_id:
-                index = row.index
-                break
-        if index is None:
-            return False
-        try:
-            from wow_sdk.nim_control import FactorizedAction
-
-            action = FactorizedAction(kind="area_trigger", trigger=index)
-        except Exception:  # noqa: BLE001
-            return False
-        request_id = bridge.select_action(frame, action)
+        request_id = bridge.select_area_trigger(frame, trigger_id)
         if request_id is None:
             return False
         bridge.wait_for_settlement(frame.frame_id, timeout_s=PORTAL_SETTLE_SECONDS)

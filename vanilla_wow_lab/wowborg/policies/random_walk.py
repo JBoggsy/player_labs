@@ -3,8 +3,8 @@
 Frame-driven loop: wait for the Nim controller to OFFER a decision frame, select a
 ``move`` with a random destination 10–20 yd away (executor plans the Detour route and
 corrects z server-side), wait for that frame's settlement, repeat until the deadline.
-When the mask refuses our move (e.g. destination off-mesh), fall back to the frame's
-recommended action so the controller keeps making progress rather than stalling.
+When the environment rejects a move (for example, a destination is off-mesh), yield
+one step so the next observation can drive a new attempt.
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ class RandomWalkPolicy:
         self._rng = rng or random.Random()
         self.legs_attempted = 0
         self.legs_reached = 0
-        self.legs_fallback = 0  # frames where the mask refused our move
+        self.legs_fallback = 0  # moves rejected by the environment
 
     def next_destination(self, x: float, y: float) -> tuple[float, float]:
         angle = self._rng.uniform(0.0, 2.0 * math.pi)
@@ -59,15 +59,17 @@ class RandomWalkPolicy:
             remaining = until - time.monotonic()
             frame = bridge.wait_for_frame(timeout_s=min(FRAME_TIMEOUT_SECONDS, remaining))
             if frame is None:
+                if getattr(bridge, "finished", False):
+                    break
                 log("no decision frame offered before timeout; retrying")
                 continue
 
-            obs = frame.observation
+            obs = frame
             if obs.is_dead or obs.is_ghost:
                 # Death recovery is T1; defer to the planner's recommendation (it knows
                 # release/reclaim) instead of stopping cold.
-                log("character dead/ghost — accepting recommended recovery action")
-                request_id = bridge.select_recommended(frame)
+                log("character dead/ghost — yielding for explicit recovery")
+                request_id = bridge.select_wait(frame)
                 if request_id is not None:
                     bridge.wait_for_settlement(frame.frame_id, timeout_s=LEG_TIMEOUT_SECONDS)
                 continue
@@ -83,8 +85,8 @@ class RandomWalkPolicy:
             if request_id is None:
                 # Mask refused our destination — take the recommendation to keep moving.
                 self.legs_fallback += 1
-                log(f"leg {self.legs_attempted}: move refused by mask; taking recommended")
-                request_id = bridge.select_recommended(frame)
+                log(f"leg {self.legs_attempted}: move rejected; yielding one step")
+                request_id = bridge.select_wait(frame)
                 if request_id is None:
                     continue
 
@@ -107,6 +109,6 @@ class RandomWalkPolicy:
 
         log(
             f"done: {self.legs_reached}/{self.legs_attempted} legs settled successfully "
-            f"({self.legs_fallback} mask fallbacks)"
+            f"({self.legs_fallback} rejected moves)"
         )
         say("wowborg random_walk done")

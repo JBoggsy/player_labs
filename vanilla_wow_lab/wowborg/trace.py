@@ -9,8 +9,8 @@ event to BOTH:
 2. stdout with a ``WOWBORG-TRACE`` prefix — greppable in whatever log capture exists.
 
 A third, replay-visible channel (``/say`` breadcrumbs, which the CWREPLAY v4 format
-records as real chat packets) is emitted by policies via the bridge — see
-``ShimBridge.say`` — not by the tracer; it costs game actions and is rate-limited.
+records as real chat packets) is emitted by policies via the environment session — see
+``GymSession.say`` — not by the tracer; it costs game actions and is rate-limited.
 
 Event shape: one JSON object per line — ``{"ts": <unix>, "seq": <int>, "kind": <str>,
 **payload}``. Kinds are free-form strings; established ones: ``session_start``,

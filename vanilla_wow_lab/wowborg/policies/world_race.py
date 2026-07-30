@@ -59,9 +59,9 @@ RACE_SEED_ENV = "WOWBORG_RACE_SEED"
 STATIONS_ENV = "WOWBORG_STATIONS"           # JSON [[name, map_id, x, y, z, expected], ...]
 STATION_COUNT_ENV = "WOWBORG_STATION_COUNT"
 STATION_DEADLINE_FRACTION = 0.55            # max fraction of remaining time per station
-# Best-case moving pace through the nim_control seam, measured across v25-v33
-# hosted batches (the executor advances ≤8 corridor waypoints ≈ 17yd per ~7.6s
-# settle cycle ≈ 2.2 yd/s; overhead only lowers it). Seam fact, not zone
+# Best-case moving pace measured across v25-v33 hosted batches (the executor
+# advanced ≤8 corridor waypoints ≈ 17yd per ~7.6s settle cycle ≈ 2.2 yd/s;
+# overhead only lowers it). Runtime fact, not zone
 # calibration — used only to skip stations that provably can't fit their share.
 OPTIMISTIC_PACE_YDS_PER_S = 2.5
 
@@ -216,6 +216,9 @@ class WorldRacePolicy:
         # Wait until the character is genuinely in-world before racing (login can
         # take minutes on hosted infra; frames exist but carry map 0 / origin).
         while time.monotonic() < until:
+            if getattr(bridge, "finished", False):
+                trace("race_end", **self.summary())
+                return
             here = journey.router._observe_position(bridge)
             if here is not None:
                 log(f"in world at map {here.map_id} ({here.x:.0f},{here.y:.0f},{here.z:.0f})")
@@ -228,6 +231,8 @@ class WorldRacePolicy:
 
         done_names = {r["name"] for r in self.results}
         while True:
+            if getattr(bridge, "finished", False):
+                break
             pending = [n for n in self.course if n not in done_names]
             if not pending:
                 break

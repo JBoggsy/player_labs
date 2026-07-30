@@ -7,10 +7,11 @@ actual L1/L2 code with real Detour plans and an idealized executor that walks th
 returned corridors. This validates every PLANNING decision — reachability verdicts,
 partial/projection handling, road routing, budgets, world-model coordinates — in
 seconds instead of a ~1-hour hosted batch. What it cannot validate: the live
-executor's locomotion quirks and the control-socket seam (hosted still owns those).
+environment's locomotion and transport behavior (hosted evaluation still owns those).
 
 Usage (from the repo root, via tools/route_lab.sh):
     route_lab.py stations              # every catalog station from the spawn
+    route_lab.py course                # all configured stations, sequentially
     route_lab.py station NAME         # one station
     route_lab.py route X Y Z [MAP]    # ad-hoc target
 """
@@ -39,7 +40,7 @@ AREA_TRIGGERS = {
 }
 
 
-class NavmeshWorldBridge:
+class NavmeshWorldSession:
     """The real planner + an idealized executor.
 
     plan_route → the actual navmesh helper (real world geometry).
@@ -58,7 +59,8 @@ class NavmeshWorldBridge:
 
     def plan_route(self, source, target, map_id, *, arrival_radius=3.0,
                    tile_load_mode="auto") -> PlannedRoute:
-        from wow_sdk.navmesh import WorldPoint as NavPoint, route_navmesh
+        from environment.contract.agent import WorldPoint as NavPoint
+        from player.sdk.navmesh import route_navmesh
 
         self.plan_calls += 1
         route = route_navmesh(
@@ -84,35 +86,18 @@ class NavmeshWorldBridge:
         class Loc:
             pass
 
-        class Obs:
-            pass
-
         class Frame:
             pass
 
         loc = Loc()
         loc.map_id, loc.x, loc.y, loc.z = (
             self.here.map_id, self.here.x, self.here.y, self.here.z)
-        obs = Obs()
-        obs.location = loc
-        obs.is_dead = obs.is_ghost = obs.in_combat = False
-        obs.health, obs.max_health = 100, 100
         frame = Frame()
         frame.frame_id = self._frame
-        frame.observation = obs
-        frame.action_ready = True
-        frame.recommended_action = None
-
-        class Row:
-            def __init__(self, index, trigger_id):
-                self.index, self.trigger_id = index, trigger_id
-
-        class Bindings:
-            triggers = []
-            spells = []
-            entities = []
-
-        frame.bindings = Bindings()
+        frame.location = loc
+        frame.is_dead = frame.is_ghost = frame.in_combat = False
+        frame.health, frame.max_health = 100, 100
+        frame.known_spells = []
         # Spatial trigger bindings — offered only when standing on a pad,
         # exactly like the live controller.
         near = [
@@ -121,18 +106,11 @@ class NavmeshWorldBridge:
             and math.dist((self.here.x, self.here.y, self.here.z),
                           (px, py, pz)) <= radius
         ]
-        frame.bindings.triggers = [Row(i + 1, tid) for i, tid in enumerate(near)]
+        frame.active_area_trigger_ids = near
         return frame
 
     def observe(self):
-        from wowborg.types import Observation
-
-        return Observation(
-            tick=self._frame, captured_at=0.0, map_id=self.here.map_id, zone="",
-            position=Position(self.here.x, self.here.y, self.here.z, 0.0),
-            health=100, max_health=100, in_combat=False,
-            is_dead=False, is_ghost=False,
-        )
+        return self.wait_for_frame()
 
     def select_move_to(self, frame, x, y, z, map_id) -> str:
         """Walk a REAL corridor toward (x,y,z), like the live executor's
@@ -154,19 +132,20 @@ class NavmeshWorldBridge:
         self.sim_seconds += walked / RUN_SPEED_YDS_PER_S
         return f"frame-{frame.frame_id}"
 
-    def select_action(self, frame, action) -> str | None:
-        if getattr(action, "kind", "") == "area_trigger" and action.trigger:
-            row = next((r for r in frame.bindings.triggers
-                        if r.index == action.trigger), None)
-            if row and row.trigger_id in AREA_TRIGGERS:
-                spec = AREA_TRIGGERS[row.trigger_id]
+    def select_area_trigger(self, frame, trigger_id) -> str | None:
+        selected = trigger_id
+        if selected is None and frame.active_area_trigger_ids:
+            selected = frame.active_area_trigger_ids[0]
+        if selected in frame.active_area_trigger_ids:
+            if selected in AREA_TRIGGERS:
+                spec = AREA_TRIGGERS[selected]
                 _pm, _px, _py, _pz, _rad, dm, dx, dy, dz = spec
                 self.here = Point(dm, dx, dy, dz)
                 self.sim_seconds += 3.0  # loading screen
                 return f"frame-{frame.frame_id}"
         return None
 
-    def select_recommended(self, frame) -> str | None:
+    def select_wait(self, frame) -> str | None:
         return None
 
     def select_stuck(self, frame) -> str | None:
@@ -187,7 +166,7 @@ class InstantDeadline:
 
 
 def run_station(name: str, target: Point, expected: str) -> dict:
-    bridge = NavmeshWorldBridge(SPAWN)
+    bridge = NavmeshWorldSession(SPAWN)
     journey = JourneyPlanner()
     started = time.monotonic()
     # Wall deadline generous — helper plan calls cost ~1-2s each and long
@@ -214,6 +193,55 @@ def run_station(name: str, target: Point, expected: str) -> dict:
     }
 
 
+def run_course(stations: dict) -> list[dict]:
+    """Run configured stations in insertion order as one continuous race."""
+
+    session = NavmeshWorldSession(SPAWN)
+    journey = JourneyPlanner()
+    rows = []
+    prior_sim_seconds = 0.0
+    prior_plans = 0
+    prior_moves = 0
+    for name, (target, _region, expected) in stations.items():
+        started = time.monotonic()
+        result = journey.journey_to(
+            session, target, deadline=time.monotonic() + 600.0
+        )
+        outcome = (
+            "arrived"
+            if result.status == JourneyStatus.ARRIVED
+            else f"failed_{result.reason}"
+        )
+        ok = (outcome == "arrived") if expected == "reachable" else (
+            outcome in (
+                "failed_unreachable",
+                "failed_unknown_region",
+                "failed_no_world_path",
+            )
+        )
+        rows.append(
+            {
+                "name": name,
+                "expected": expected,
+                "outcome": outcome,
+                "ok": ok,
+                "sim_seconds": round(session.sim_seconds - prior_sim_seconds, 1),
+                "plans": session.plan_calls - prior_plans,
+                "moves": session.moves - prior_moves,
+                "wall_seconds": round(time.monotonic() - started, 1),
+                "end": (
+                    f"{session.here.map_id}:{session.here.x:.0f},"
+                    f"{session.here.y:.0f},{session.here.z:.0f}"
+                ),
+                "legs": [f"{leg['kind']}:{leg['status']}" for leg in result.legs],
+            }
+        )
+        prior_sim_seconds = session.sim_seconds
+        prior_plans = session.plan_calls
+        prior_moves = session.moves
+    return rows
+
+
 def main() -> int:
     # load_stations() honors WOWBORG_STATIONS (pass -e to docker) — the same
     # data seam as hosted, so held-out courses run here unchanged.
@@ -222,7 +250,9 @@ def main() -> int:
     STATIONS = load_stations()
 
     args = sys.argv[1:]
-    if args and args[0] == "route":
+    if args and args[0] == "course":
+        rows = run_course(STATIONS)
+    elif args and args[0] == "route":
         x, y, z = float(args[1]), float(args[2]), float(args[3])
         map_id = int(args[4]) if len(args) > 4 else 1
         rows = [run_station("adhoc", Point(map_id, x, y, z), "reachable")]

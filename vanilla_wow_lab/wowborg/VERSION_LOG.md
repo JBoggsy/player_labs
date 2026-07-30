@@ -1,5 +1,24 @@
 # wowborg version log
 
+## v46 - canonical `/env` migration (2026-07-29)
+
+- Version UUID: `13b4b697-54d0-4cfe-941a-ed6a3e913211`
+  (`wowborg:v46`, uploaded inert; not submitted to a league).
+- Replaced every wowborg-owned client path and adapter with the owner-provided
+  synchronous Gymnasium contract: `AgentFrame` observations and `AgentAction`
+  submissions over hosted `WS /env`.
+- Policy image: `linux/amd64`, local manifest
+  `sha256:8c3ef0560ba95e024580b0cfe6b42696d006e5f053166d2f8b24f3edbe4cb406`;
+  copies only `environment/` and `player/sdk/` from accelerated-wow 0.1.122
+  (`sha256:608ac6685...e5e4`). The build rejects historical client binaries.
+- Validation before upload: 62/62 wowborg tests; 13/13 declared real-navmesh
+  stations; two untouched data-only sequential held-out courses passed 3/3 each:
+  scorpid basin → Razor Hill vendor → Razor north field, and south-road west →
+  lower canyon west → Barrens gate.
+- Hosted runtime request:
+  `xreq_52b27d01-17e1-4f5b-860f-cbd096e606bc`, canonical accelerated-wow
+  0.1.122 / `custom-fresh-start-10x`.
+
 ## v5-v20 - waypoint races: iteration to consistency (2026-07-21/22)
 
 - v3 (`b10f3bb0`): first 0.1.31 contract probe — seam works, no world data (all moves

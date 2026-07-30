@@ -1,39 +1,37 @@
-# Wowborg v2 player image — our policy layered on the DEPLOYED reference player (the
-# Nim shim). Design: docs/designs/wowborg-v2-shim-adoption.md.
-#
-# The base image (pinned by digest in tools/versions.env, passed as WOWBORG_BASE_IMAGE)
-# already contains king_richard, the navmesh helper + Valley-of-Trials mmaps, the
-# installed wow_sdk + vanilla_wow_coworld packages, and the CMD
-# ["python3", "-m", "vanilla_wow_coworld.player"] WS session wrapper — which we keep.
-# We add only the wowborg package and repoint KING_NIMROD_COMMAND at our shim
-# supervisor, exactly the injection seam the reference image itself uses for its
-# general-grinder policy.
-#
-# Build via tools/build_player.sh (sources versions.env, forces --platform=linux/amd64).
+# Wowborg v5: a Python policy over the game's canonical hosted WS /env.
 
-ARG WOWBORG_BASE_IMAGE
-FROM ${WOWBORG_BASE_IMAGE}
+ARG WOWBORG_ENVIRONMENT_IMAGE=scratch
+FROM ${WOWBORG_ENVIRONMENT_IMAGE} AS environment_contract
+
+FROM python:3.12-slim@sha256:57cd7c3a7a273101a6485ba99423ee568157882804b1124b4dd04266317710de
 
 ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/opt/wowborg:/opt/vanilla-wow
 
-# Prepend /opt/wowborg so `import wowborg` resolves; the shim itself appends
-# /opt/coworld-player (the game repo's bots/ package) for king_richard's use.
-ENV PYTHONPATH=/opt/wowborg
+RUN pip install --no-cache-dir \
+    "gymnasium>=1.3,<2" \
+    "msgpack>=1.1" \
+    "pydantic>=2.11" \
+    "websockets>=15"
 
+# Copy the exact Python environment and navmesh SDK shipped by the deployed game
+# image. The policy image contains no WoW client: the game owns that process.
+COPY --from=environment_contract \
+    /usr/local/lib/python3.11/dist-packages/environment \
+    /opt/vanilla-wow/environment
+COPY --from=environment_contract \
+    /usr/local/lib/python3.11/dist-packages/player/__init__.py \
+    /opt/vanilla-wow/player/__init__.py
+COPY --from=environment_contract \
+    /usr/local/lib/python3.11/dist-packages/player/sdk \
+    /opt/vanilla-wow/player/sdk
 COPY . /opt/wowborg/wowborg
 
-# The swap point: the base wrapper spawns this command per wow_session.
-ENV KING_NIMROD_COMMAND="python3 -m wowborg.shim"
-# Active policy for this build (see wowborg/policies/__init__.py). Hosted runs can't
-# set per-request env, so the policy ships baked into the image tag we upload.
-ARG WOWBORG_POLICY=random_walk
+ARG WOWBORG_POLICY=world_race
 ENV WOWBORG_POLICY=${WOWBORG_POLICY}
 
-# Optional station override for the world_race policy — pure DATA, JSON
-# [[name, map_id, x, y, z, expected], ...]. Empty = the in-code catalog.
-# This is the one-shot generality seam: new courses ship as data, never code.
 ARG WOWBORG_STATIONS=""
 ENV WOWBORG_STATIONS=${WOWBORG_STATIONS}
 
-# CMD inherited from the base image: python3 -m vanilla_wow_coworld.player
+CMD ["python3", "-m", "wowborg"]
