@@ -40,6 +40,8 @@ from ctf.beacon.config import (
     POST_MIN_SEPARATION_PX,
     POST_REACH_WEIGHT,
     POST_REEVALUATE_TICKS,
+    POST_SCAN_MAX_OFFSET_DIRECTIONS,
+    POST_SCAN_MIN_OFFSET_DIRECTIONS,
     POST_SEARCH_RADIUS_PX,
     POST_SETTLE_PX,
     POST_STANCE_WEIGHT,
@@ -238,9 +240,6 @@ def _candidate_arrays(
         -1.0,
         1.0,
     )
-    if mode == "hold":
-        stance = -stance
-
     if belief.danger is None:
         danger = np.zeros(reach.shape, dtype=np.float32)
     else:
@@ -374,10 +373,43 @@ def _direction_delta(a: int, b: int) -> int:
     return min(delta, SIGHTLINE_DIRECTIONS - delta)
 
 
+def scan_directions(cell: tuple[int, int], primary_direction: int) -> tuple[int, ...]:
+    """Return post-specific lanes in scan order, weighted toward the primary.
+
+    The post's own baked sightline field decides which ray on each shoulder is
+    worth watching. This makes scanning dwell on actual corridors from this
+    position rather than panning uniformly across walls and blind pockets.
+    """
+    primary = primary_direction % SIGHTLINE_DIRECTIONS
+
+    def best_side(sign: int) -> int | None:
+        candidates = [
+            (sightline(cell, primary + sign * offset), offset)
+            for offset in range(
+                POST_SCAN_MIN_OFFSET_DIRECTIONS,
+                POST_SCAN_MAX_OFFSET_DIRECTIONS + 1,
+            )
+        ]
+        reach, offset = max(candidates, default=(0, 0))
+        if reach < POST_MIN_REACH_PX:
+            return None
+        return (primary + sign * offset) % SIGHTLINE_DIRECTIONS
+
+    left = best_side(1)
+    right = best_side(-1)
+    lanes = [primary]
+    if left is not None:
+        lanes.append(left)
+    lanes.append(primary)
+    if right is not None and right != left:
+        lanes.append(right)
+    return tuple(lanes)
+
+
 def _current_post_invalid(belief: Belief) -> bool:
     if belief.post_cell is None:
         return True
-    if belief.nav_stuck_ticks >= STUCK_TICKS:
+    if not belief.post_committed and belief.nav_stuck_ticks >= STUCK_TICKS:
         return True
     gx = belief.post_cell[0] // NAV_CELL
     gy = belief.post_cell[1] // NAV_CELL
@@ -390,6 +422,8 @@ def _current_post_invalid(belief: Belief) -> bool:
             and _near(belief.post_cell, claim.cell, POST_MIN_SEPARATION_PX)
         ):
             return True
+    if belief.post_committed:
+        return False
     if any(
         _near(belief.post_cell, teammate.pos, POST_MIN_SEPARATION_PX)
         for teammate in belief.teammates
@@ -427,6 +461,9 @@ def _set_post(
     belief.post_settled_ticks = 0
     if changed:
         belief.sweep_offset = 0
+        belief.post_committed = False
+        belief.post_committed_tick = -1
+        belief.post_scan_direction = None
 
 
 def _clear_post(belief: Belief, claim_source: str | None = None) -> None:
@@ -446,12 +483,18 @@ def _clear_post(belief: Belief, claim_source: str | None = None) -> None:
     belief.post_selected_tick = -1
     belief.post_last_evaluated_tick = belief.tick
     belief.post_settled_ticks = 0
+    belief.post_committed = False
+    belief.post_committed_tick = -1
+    belief.post_scan_direction = None
 
 
 def _activate_post(belief: Belief) -> None:
     belief.post_active = True
     assert belief.self_xy is not None and belief.post_cell is not None
     if _within(belief.self_xy, belief.post_cell, POST_SETTLE_PX):
+        if not belief.post_committed:
+            belief.post_committed = True
+            belief.post_committed_tick = belief.tick
         belief.post_settled_ticks += 1
         belief.post_ticks_total += 1
     else:
@@ -491,7 +534,8 @@ def resolve_post_target(
     assert belief.post_cell is not None and belief.post_direction is not None
     _activate_post(belief)
     can_reconsider = (
-        belief.post_settled_ticks >= POST_MIN_DWELL_TICKS
+        belief.post_committed
+        and belief.tick - belief.post_committed_tick >= POST_MIN_DWELL_TICKS
         and belief.tick - belief.post_last_evaluated_tick >= POST_REEVALUATE_TICKS
         and _direction_delta(axis.direction, belief.post_direction)
         >= POST_THREAT_HYSTERESIS_DIRECTIONS
@@ -540,6 +584,7 @@ __all__ = [
     "cover_toward",
     "direction_to_brads",
     "resolve_post_target",
+    "scan_directions",
     "sightline",
     "threat_axis",
 ]

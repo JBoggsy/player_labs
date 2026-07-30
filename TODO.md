@@ -5,6 +5,15 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
+- **Continue CTF item capability 4 from the validated v57 candidate (2026-07-30).**
+  v57 (`4c1c0723-3dc5-42fc-ac39-dd031a11e94d`) preserves v56's legacy item
+  decisions and adds only nearby own-side grenade pickups, with extra latitude
+  just after respawn. It activated 11 times across 6/10 traced games, matched
+  v56's 5-5 result against live leader `deltashot:v3`, then went 10-0 in the
+  independent Richard replication. It is uploaded but not submitted. Next:
+  tactical grenade selection for groups and wall-blocked enemies, with rare use
+  on a single shootable target; retain v57 as the control.
+
 - **Imposter incidental co-location with teammate — avoid clustering (2026-07-07, James).** Belief
   trace refuted the "teammate detection is broken" theory (v101: 0/24 detection failures, teammate
   known every game — see [[crewrift-imposter-kill-lever]]). BUT the replay shows crewborg-imposter

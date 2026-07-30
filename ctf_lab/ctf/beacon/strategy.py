@@ -16,9 +16,12 @@ from ctf.beacon import plan as _plan
 from ctf.beacon.config import (
     GRENADE_WARN_CLEAR_PX,
     HOLD_ARRIVE_PX,
-    ITEM_DETOUR_PX,
+    ITEM_ASSIGNED_DETOUR_PX,
+    ITEM_CONVENIENCE,
     ITEMS,
-    MEDKIT_DETOUR_PX,
+    ITEM_RESPAWN_WINDOW_TICKS,
+    ITEM_SHADOW_EVERY_TICKS,
+    MEDKIT_CONVENIENT_DETOUR_PX,
     ORDER_TTL_TICKS,
     PEDESTAL,
     PLAN_ARRIVE_PX,
@@ -42,6 +45,70 @@ def _post_objective(belief: Belief, post: posts.Post, reason: str) -> tuple[Inte
     return Intent(kind="navigate_to", point=post.cell, reason=reason), None
 
 
+def _item_anchor(belief: Belief, enemy: str) -> tuple[tuple[int, int], str]:
+    """Current non-emergency objective used to price a pickup detour."""
+    if belief.post_cell is not None and (
+        belief.post_committed or belief.post_settled_ticks > 0
+    ):
+        return belief.post_cell, "post"
+    if (
+        belief.order is not None
+        and belief.tick - belief.order[2] <= ORDER_TTL_TICKS
+    ):
+        return belief.order[1], "order"
+    if PLAN_NAME:
+        book = _plan.PlanBook.load(PLAN_NAME)
+        if book is not None:
+            # Do not call current_objective here: buddy-wait accounting makes
+            # that accessor stateful. The actual plan rung owns that mutation;
+            # item pricing needs only a pure approximation of its destination.
+            group = book.group_of(belief.seat, belief.plan_phase)
+            order = (
+                book.primary_order(group, belief.plan_phase)
+                if group is not None
+                else None
+            )
+            if order is not None:
+                target = (
+                    order.fallback
+                    if (
+                        order.kind == "hold"
+                        and belief.plan_fell_back
+                        and order.fallback is not None
+                    )
+                    else order.target
+                )
+                objective_xy = poi.resolve(target, belief.team)
+                if objective_xy is not None:
+                    return objective_xy, "plan"
+    if belief.role == "defender" and belief.hold_point is not None:
+        return belief.hold_point, "role"
+    return PEDESTAL[enemy], "role"
+
+
+def _item_intent(
+    belief: Belief,
+    anchor: tuple[int, int],
+    anchor_kind: str,
+    *,
+    respawning: bool = False,
+    incidental_only: bool = False,
+) -> tuple[Intent, None] | None:
+    if not ITEMS:
+        return None
+    choice = items.evaluate_fetch(
+        belief,
+        anchor,
+        anchor_kind=anchor_kind,
+        respawning=respawning,
+        incidental_only=incidental_only,
+    )
+    if choice is None or not choice.accepted:
+        return None
+    reason = "fetch_medkit" if choice.spawn.kind == "medkit" else "fetch_item"
+    return Intent(kind="navigate_to", point=choice.spawn.pos, reason=reason), None
+
+
 def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
     """Pick the single movement objective. Returns (intent, flow_kind)."""
     team = belief.team
@@ -50,6 +117,9 @@ def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
     # Activation is recomputed every tick. Higher rungs therefore suppress post
     # claims and post-facing without needing to know that posts exist.
     belief.post_active = False
+    if ITEM_CONVENIENCE:
+        belief.item_options = []
+        belief.item_choice = None
 
     # Squad command upkeep (v22): refresh presence from badge sightings; leaders
     # run the rule engine (sets belief.order); heard orders arrive via belief.
@@ -73,6 +143,16 @@ def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
             belief.rejoin_until = -1
             belief.rejoin_point = None
         elif belief.rejoin_point is not None:
+            if ITEM_CONVENIENCE:
+                item_intent = _item_intent(
+                    belief,
+                    belief.rejoin_point,
+                    "rejoin",
+                    respawning=True,
+                    incidental_only=True,
+                )
+                if item_intent is not None:
+                    return item_intent
             belief.rejoin_ticks += 1
             if _dist(belief.self_xy, belief.rejoin_point) > 40:
                 return Intent(kind="navigate_to", point=belief.rejoin_point, reason="rejoin"), None
@@ -121,20 +201,68 @@ def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
                 )
                 return Intent(kind="navigate_to", point=flee, reason="clear_grenade"), None
 
-    # Rung 3.5 (items, v10): fetch pickups when nothing flag-urgent is happening
-    # (carry / intercept / escort all returned above). Two cases, both detour-capped
-    # so a fetch never drags an agent across the map:
-    #   * hurt + a med kit in reach -> heal (any seat; the sim only lets a HURT
-    #     player take a kit, so a healthy teammate racing it wastes nothing);
-    #   * this seat's statically-assigned pickup (single-claimant: the assignment
-    #     is a pure function of seat, so exactly one agent claims each item).
-    if ITEMS and belief.self_xy is not None:
-        kit = items.medkit_target(belief, MEDKIT_DETOUR_PX)
-        if kit is not None:
-            return Intent(kind="navigate_to", point=kit.pos, reason="fetch_medkit"), None
-        assigned = items.assigned_fetch(belief)
-        if assigned is not None and _dist(belief.self_xy, assigned.pos) <= ITEM_DETOUR_PX:
-            return Intent(kind="navigate_to", point=assigned.pos, reason="fetch_item"), None
+    # Rung 3.5: insert a pickup only when its extra walkable-route cost relative
+    # to the current post/order/plan/role objective is genuinely convenient.
+    if belief.self_xy is not None:
+        if ITEMS and not ITEM_CONVENIENCE:
+            # Shadow the route scorer while preserving v48's active behavior.
+            if (
+                belief.tick + belief.seat
+            ) % ITEM_SHADOW_EVERY_TICKS == 0:
+                anchor, anchor_kind = _item_anchor(belief, enemy)
+                items.evaluate_fetch(
+                    belief,
+                    anchor,
+                    anchor_kind=anchor_kind,
+                    respawning=(
+                        belief.tick - belief.respawned_tick
+                        <= ITEM_RESPAWN_WINDOW_TICKS
+                    ),
+                )
+        if ITEMS:
+            # Preserve v48's medkit and assigned-item decisions exactly. The
+            # convenience capability is additive only after both decline.
+            kit = items.medkit_target(
+                belief,
+                MEDKIT_CONVENIENT_DETOUR_PX,
+            )
+            if kit is not None:
+                return (
+                    Intent(
+                        kind="navigate_to",
+                        point=kit.pos,
+                        reason="fetch_medkit",
+                    ),
+                    None,
+                )
+            assigned = items.assigned_fetch(belief)
+            if (
+                assigned is not None
+                and _dist(belief.self_xy, assigned.pos)
+                <= ITEM_ASSIGNED_DETOUR_PX
+            ):
+                return (
+                    Intent(
+                        kind="navigate_to",
+                        point=assigned.pos,
+                        reason="fetch_item",
+                    ),
+                    None,
+                )
+        if ITEM_CONVENIENCE:
+            anchor, anchor_kind = _item_anchor(belief, enemy)
+            item_intent = _item_intent(
+                belief,
+                anchor,
+                anchor_kind,
+                respawning=(
+                    belief.tick - belief.respawned_tick
+                    <= ITEM_RESPAWN_WINDOW_TICKS
+                ),
+                incidental_only=True,
+            )
+            if item_intent is not None:
+                return item_intent
 
     # Rung 4 (v22): obey the squad order when one is live. Goals map onto the
     # existing machinery: H/S hold a point (sectors cover the approaches), P

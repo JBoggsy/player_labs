@@ -10,6 +10,113 @@ startup to resume; **update it as you learn** (keep it tight).
 
 ---
 
+## Status (2026-07-30, session 12): v56 champion; v57 nearby-grenade convenience validated, not submitted
+
+**Competing CTF and Paintbot champion:** `beacon:v56`, immutable version
+`3e40a528-71ec-42c7-b6eb-3b1f5188dc00`. v56 prevents formation, separation,
+and peek/duck movement overlays from crossing the glass lineup walls; it passed a
+fresh matched gate 10–0 versus v48 at 9–1 before explicit submission.
+
+**Latest inert candidate:** `beacon:v57`, immutable version
+`4c1c0723-3dc5-42fc-ac39-dd031a11e94d`, image digest
+`sha256:096478b7332bcbc69176da26da46ea7ab09b9810f40ef79766207fe0455608a6`.
+It preserves v56's medkit and assigned-item decisions, then lets another bot take
+an own-side grenade only when its route is at most 64 px, or 96 px during the
+fresh-respawn window. Shield and spray acquisition remain gated until their
+tactical doctrines are ready. **v57 was uploaded for evaluation and was not
+submitted.**
+
+Activation and hosted gate on CTF 0.7.124:
+
+- 11 convenience starts across 6/10 traced games, all fresh-respawn corner
+  grenades; no ordinary pickup fired in that matchup.
+- Against live leader `deltashot:v3`, v56 and v57 both finished 5–5 with the
+  identical 5–0 Red / 0–5 Blue split.
+- Replication versus `co-gas-ctf-simple-richard:v38`: v57 finished 10–0
+  (`xreq_6ee9ab0f-490a-4d3b-b258-ba3e16fca3a2`). The v56 control had eight wins
+  and one loss in nine indexed completed episodes; one episode remained
+  abnormally long-running without an error at handoff
+  (`xreq_f028dbe8-afd8-4c2b-9131-d4269fb0782f`). Its eventual result cannot
+  overturn v57's outcome non-regression verdict.
+
+The current Coworld source is `Metta-AI/coworld-ctf`
+`beae1614ea28c3d7761bae614ae974477db35b2d`, deployed as CTF 0.7.124 /
+GameVersion 27. Next item capability: tactical grenade selection for groups and
+wall-blocked enemies, with rare use on a single shootable target. Use v57 as the
+control. Episode search should screen outcome equivalence first; download one
+traced candidate batch only, because dense artifacts are roughly 11–12 MB per
+bot and redundant downloads now dominate analysis time.
+
+## Status (2026-07-29, session 11): v40 post discipline evaluated; Reporter Lab adapter + reciprocal firefight detector ready
+
+**Evaluation artifact only:** `beacon:v40`, immutable version
+`c8ab6032-20bc-4600-80af-f1c52d9a7cea`, image digest
+`sha256:11ad6866c6407ce6ce94240d480a5a0159c920a602d171967afb1e351b0f6d01`.
+It keeps v39's `firefight_training_line`, but makes both hold and push posts prefer
+forward ground, commits reached posts through local traffic/contact, raises post-switch
+hysteresis, and scans the post's best baked primary/shoulder sightlines.
+**It was not submitted.**
+
+Three matched 10-episode 8v8 evaluations completed with zero failures:
+
+| opponent | XP request | Beacon result | captures | kills |
+|---|---|---:|---:|---:|
+| `ctf-focusfire:v63` | `xreq_211ef2e1-d263-465e-8eeb-b253549e0061` | 1-9 | 1-6 | 174-222 |
+| `ctf-h050:v1` | `xreq_f6c93f22-ee67-43d9-a180-76271f59d5c8` | 8-2 | 1-0 | 230-208 |
+| `alphashot:v222` | `xreq_d5e48a00-7be6-4a4a-9620-fddeca28563c` | 0-1-9 draws | 0-1 | 59-58 |
+
+Against the v39 batches, raw Beacon telemetry shows 9,540 -> 6,122 total post
+transitions (-36%), 7,185 -> 3,894 active reselections (-46%), 55% -> 68% of
+post-active snapshots settled, and 64% -> 68% selecting positive forward stance.
+One of 80 Beacon artifacts is absent in the alpha arm; trace totals use 239/240
+agent-games, while episode results are complete.
+
+`tools/run_roundwarehouse_local.py` is now the thin local host adapter for Reporter
+Lab's unchanged, unpublished CTF roundwarehouse Wasm; replay event semantics remain
+owned by Reporter Lab. `tools/find_firefights.py` consumes its rich Parquet events,
+deduplicates released weapon actions, forms reciprocal spatiotemporal exchanges, and
+weights them by activity, balance, damage, casualties, breadth, and duration. On v39:
+30/30 expansions, 44,962 events, 184 fights. On v40: 30/30, 41,503 events, 174
+fights; action volume is nearly flat (5,507 -> 5,422) and attributed fight kills rise
+860 -> 875, so the training plan still produces dense combat despite fewer post moves.
+Method/provenance: `docs/replay-firefight-detection.md`.
+
+The live Coworld is **ctf 0.7.112 at
+`f24943a10dd7383e8e92e77be28d2d75e091a577`**. Its only change from 0.7.111 is
+config-gated procedural terrain; these XP requests retain `mapPath: arena`, and there
+was no GameVersion bump.
+
+## Status (2026-07-29, session 10): firefight-training v39 uploaded and observed; opponent-plan inference tool added
+
+**Evaluation artifact only:** `beacon:v39`, immutable version
+`8c7e2943-d9f9-4faa-96ec-f022509a93df`, image digest
+`sha256:71284f83971404328045c168faa1c8bcac55f0b8c69f4bad80d7a58628113417`.
+It runs `firefight_training_line` with firefight scoring on, focus claims off, posts on,
+and dense artifact tracing. **It was not submitted.**
+
+The live Coworld is now **ctf 0.7.111 at `f9e0889466dcd05489d13b51846b5aa5f1527ef2`**
+(still GameVersion 26, now 10,000 max ticks). The replay readers and `versions.env`
+were advanced to that exact source ref.
+
+Three 10-episode 8v8 hosted evaluations completed against the then-current top three:
+
+| opponent | XP request | Beacon result | captures | kills |
+|---|---|---:|---:|---:|
+| `ctf-focusfire:v63` | `xreq_0c252cfd-31a2-41dd-96ab-9ebd5a538971` | 5-5 | 2-3 | 216-221 |
+| `ctf-h050:v1` | `xreq_f6c91d31-2f10-4a94-ad78-a45ea2f0b3d6` | 8-2 | 2-0 | 216-200 |
+| `alphashot:v222` | `xreq_47955bc5-086c-4954-874d-3d5c59fe03e8` | 0-0-10 draws | 0-0 | 62-53 |
+
+The h050 traces alone record 74,031 firefight ticks, 485 engagements, and all four
+plan phases. This is evidence that the training instrument activated, not evidence that
+v39 is competitively better; the samples are small and deliberately lack a matched
+control.
+
+`tools/infer_battle_plan.py` now converts repeated, hash-validated replay trajectories
+into JSON/Markdown timelines of persistent groups and inferred move/hold/maneuver
+orders. Seed reports for all three opponents are under
+`scratch/eval_v39_training/*_inferred_plan.{json,md}` (gitignored); the method and
+interpretation limits are documented in `docs/opponent-plan-analysis.md`.
+
 ## Status (2026-07-29, session 9 END): **GAME JUMPED 0.7.102/GV23 → 0.7.108/GV26. Firefight measured over 360 eps: NOT significant, DO NOT SUBMIT. Real bottleneck = CAPTURES, not combat.**
 
 **Competing entry: v33 (posts), now league RANK 2 @ 1929 over 247 rounds** (up from
@@ -182,6 +289,17 @@ until Save, so a mistyped name can't clobber a file).
    which is why the bottom push is six hops rather than one arrow with waypoints.
 3. **A plan with `orders: []` renders a blank canvas** — the renderer is fine. If you
    want something to drag, author the orders.
+
+### Firefight-training battle plan (2026-07-29)
+
+**Executed evaluation plan: `battle_plans/firefight_training_line.json`.** This is deliberately
+an evaluation instrument, not a competitive plan: four bots establish and hold
+`red_rally_mid`, with two each at `red_top_vee` and `red_bot_vee`. At tick 600
+(25 seconds at 24 ticks/sec), the groups advance to center, `top_diamond`, and
+`bottom_diamond`, then hold those positions for the rest of the game. Its objective
+is dense, varied engagement traces for improving firefight mechanics; do not judge
+it by win rate and do not submit it. It was baked into `beacon:v39`, uploaded without
+submission, and evaluated in the three session-10 XP batches summarized above.
 
 ### In flight / unanalysed
 

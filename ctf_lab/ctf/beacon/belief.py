@@ -93,6 +93,8 @@ def update_belief(belief: Belief, percept: CtfState, action_state: ActionState, 
     belief.alive = percept.self_xy is not None
     if percept.self_xy is not None:
         belief.self_xy = percept.self_xy
+    if not was_alive and belief.alive:
+        belief.respawned_tick = tick
 
     # Respawn discipline (v22): on DEATH, snapshot where to regroup (the freshest
     # squadmate memory); on RESPAWN, enter rejoin mode toward it. Import here is
@@ -117,6 +119,9 @@ def update_belief(belief: Belief, percept: CtfState, action_state: ActionState, 
         belief.post_mode = None
         belief.post_context = None
         belief.post_settled_ticks = 0
+        belief.post_committed = False
+        belief.post_committed_tick = -1
+        belief.post_scan_direction = None
 
     # Aim estimate: prefer the observed aim-dot read; else dead-reckon by the rotation
     # we commanded last frame. On (re)spawn, reseed to the spawn aim.
@@ -124,32 +129,38 @@ def update_belief(belief: Belief, percept: CtfState, action_state: ActionState, 
         belief.aim_brads = SPAWN_AIM[belief.team]
         belief.sweep_offset = 0
         belief.sweep_dir = 1
-    # Dead-reckon by the commanded rotation, then calibrate against the observed
-    # read. Since 0.7.8 the readback is the self sprite's 16-step rotation (16-brad
-    # quantization, rounds to nearest), which gives two signals:
-    #   * BOUNDARY CROSSING — the exact tick the observed step CHANGES while we are
-    #     rotating, the true aim is at the midpoint boundary between the two steps
-    #     (new_step*16 - 8 going CCW, + 8 going CW): an absolute ±(rate/2) fix.
-    #   * COARSE RESYNC — any disagreement beyond the quantization (±8) is real
-    #     drift (dropped frames, server-held masks); snap to the step read.
+    # Dead-reckon by the commanded rotation. The server starts at a known aim and
+    # moves by exactly AIM_TURN_RATE, so this is more precise than the 16-brad
+    # sprite readback. In particular, do not "calibrate" to the midpoint when the
+    # observed sprite step changes: the true server aim advances discretely by
+    # five brads and the midpoint approximation introduced 2-5 brads of error on
+    # most shots. Use the coarse sprite only to recover from genuine input drift.
     belief.aim_brads = (belief.aim_brads + action_state.last_rot * AIM_TURN_RATE) % AIM_BRADS_TURN
     observed = percept.observed_aim
     if observed is not None:
-        if (
-            belief.prev_observed_aim is not None
-            and observed != belief.prev_observed_aim
-            and action_state.last_rot != 0
-        ):
-            boundary = (observed - action_state.last_rot * 8) % AIM_BRADS_TURN
-            # True aim crossed `boundary` within the last tick; it has advanced at
-            # most one rotation step past it since.
-            belief.aim_brads = (boundary + action_state.last_rot * (AIM_TURN_RATE // 2)) % AIM_BRADS_TURN
-        else:
-            err = (observed - belief.aim_brads) % AIM_BRADS_TURN
-            if err > AIM_BRADS_TURN // 2:
-                err -= AIM_BRADS_TURN
-            if abs(err) > AIM_RESYNC_SLACK_BRADS:
-                belief.aim_brads = observed
+        err = (observed - belief.aim_brads) % AIM_BRADS_TURN
+        if err > AIM_BRADS_TURN // 2:
+            err -= AIM_BRADS_TURN
+        if abs(err) > AIM_RESYNC_SLACK_BRADS:
+            # A stale/duplicated input can only move the server aim in whole
+            # AIM_TURN_RATE steps. Pick the nearest such correction compatible
+            # with the observed 16-brad bucket instead of snapping to its centre.
+            compatible: list[tuple[int, int]] = []
+            for steps in range(-8, 9):
+                candidate = (
+                    belief.aim_brads + steps * AIM_TURN_RATE
+                ) % AIM_BRADS_TURN
+                candidate_err = (observed - candidate) % AIM_BRADS_TURN
+                if candidate_err > AIM_BRADS_TURN // 2:
+                    candidate_err -= AIM_BRADS_TURN
+                if abs(candidate_err) <= AIM_RESYNC_SLACK_BRADS:
+                    compatible.append((abs(steps), steps))
+            if compatible:
+                steps = min(compatible)[1]
+                belief.aim_brads = (
+                    belief.aim_brads + steps * AIM_TURN_RATE
+                ) % AIM_BRADS_TURN
+                belief.aim_resyncs += 1
         belief.prev_observed_aim = observed
 
     belief.fire_ready = percept.fire_ready

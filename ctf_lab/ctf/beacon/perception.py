@@ -42,6 +42,7 @@ _ITEM_LABELS = {
     "med kit": "medkit",
     "shield": "shield",
     "plasma arc": "arc",
+    "spray can": "arc",
 }
 #: Sound-ring labels (v16 hearing): audible map-wide through walls and fog,
 #: jittered ±20px per event, team-anonymous. "shot impact" = a bullet LANDED
@@ -265,6 +266,7 @@ def _attach_overhead_state(
         "grenade carried": [],
         "shield carried": [],
         "plasma arc carried": [],
+        "spray can carried": [],
     }
     for obj in world.objects.values():
         sprite = world.sprite_for(obj)
@@ -349,7 +351,10 @@ def _attach_overhead_state(
         self_hp,
         self_carried["grenade carried"],
         self_carried["shield carried"],
-        self_carried["plasma arc carried"],
+        (
+            self_carried["plasma arc carried"]
+            or self_carried["spray can carried"]
+        ),
         attached_enemies,
         attached_teammates,
     )
@@ -408,6 +413,10 @@ def perceive(obs, team: Team) -> CtfState:
             enemies,
             teammates,
         ) = _attach_overhead_state(world, self_xy, enemies, teammates)
+        # Current CTF exposes an explicit own-weapon HUD label. It is the
+        # authoritative seam; the overhead carrier marker is retained for old
+        # replays and for attaching visible state to other actors.
+        have_arc = have_arc or bool(_objects_with_label(world, "weapon spray"))
     else:
         hp_pips, have_grenade, have_shield, have_arc = None, False, False, False
     red_score, blue_score = _team_scores(world)

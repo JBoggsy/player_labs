@@ -24,7 +24,12 @@ from collections.abc import Callable
 
 import numpy as np
 
-from ctf.beacon.config import DANGER_TRACE_DOWNSAMPLE, DIAG_EVERY_TICKS, NAV_CELL
+from ctf.beacon.config import (
+    DANGER_TRACE_DOWNSAMPLE,
+    DIAG_EVERY_TICKS,
+    ITEM_CONVENIENCE,
+    NAV_CELL,
+)
 from ctf.beacon.runtime import BeaconRuntime, StepInfo
 from ctf.beacon.types import PlayerTrack, Team
 from players.player_sdk import SpriteContext, SpriteWorld, TraceEvent, TraceSink
@@ -126,10 +131,12 @@ class _DiagnosticLogger:
         self._lead_shots = 0  # A-press ticks with a nonzero lead applied
         self._unled_shots = 0  # A-press ticks with zero lead (gun fights only)
         self._lead_brads_sum = 0  # total |lead| across led shots
+        self._spray_fires = 0
         self._throws = 0  # grenade releases (charge -> 0 while holding one)
         self._last_charging = False
         self._last_items: tuple[bool, bool, bool] | None = None  # grenade/shield/arc
         self._last_hp: int | None = None
+        self._last_item_choice: tuple | None = None
 
     def on_step(self, step: StepInfo) -> None:
         self._log_transitions(step)
@@ -272,6 +279,7 @@ class _DiagnosticLogger:
                 "threat_source": b.post_threat_source,
                 "claim_source": b.post_claim_source,
                 "ticks_on_post": b.post_settled_ticks,
+                "committed": b.post_committed,
             })
             self._last_post = post_now
         if b.micro is not None:
@@ -305,12 +313,14 @@ class _DiagnosticLogger:
 
         # v10 lead-aim counters: count each fired shot as led / unled.
         if step.command.held_mask & 32:  # Button.A pressed this tick
-            if b.lead_brads != 0:
-                self._lead_shots += 1
-                self._lead_brads_sum += abs(b.lead_brads)
+            if b.i_have_arc:
+                self._spray_fires += 1
             else:
-                self._unled_shots += 1
-            if not b.i_have_arc:
+                if b.lead_brads != 0:
+                    self._lead_shots += 1
+                    self._lead_brads_sum += abs(b.lead_brads)
+                else:
+                    self._unled_shots += 1
                 if b.firefight_target_score is not None:
                     shot_range = b.firefight_target_score.candidate.distance_px
                     shot_target = b.firefight_target_score.candidate.target
@@ -348,6 +358,31 @@ class _DiagnosticLogger:
                     self._record(step.tick, "item",
                                  {"kind": name, "have": now, "self_xy": b.self_xy})
         self._last_items = items_now
+        choice = b.item_choice
+        choice_now = (
+            choice.spawn.kind,
+            choice.spawn.pos,
+            choice.anchor,
+            choice.anchor_kind,
+            choice.accepted,
+            choice.reason,
+        ) if choice is not None else None
+        if choice_now != self._last_item_choice:
+            self._record(step.tick, "item_decision", {
+                "mode": "active" if ITEM_CONVENIENCE else "shadow",
+                "kind": choice.spawn.kind if choice else None,
+                "spawn": list(choice.spawn.pos) if choice else None,
+                "anchor": list(choice.anchor) if choice else None,
+                "anchor_kind": choice.anchor_kind if choice else None,
+                "route_to_item_px": round(choice.route_to_item_px, 1) if choice else None,
+                "route_via_item_px": round(choice.route_via_item_px, 1) if choice else None,
+                "direct_route_px": round(choice.direct_route_px, 1) if choice else None,
+                "detour_px": round(choice.detour_px, 1) if choice else None,
+                "threshold_px": round(choice.threshold_px, 1) if choice else None,
+                "accepted": choice.accepted if choice else False,
+                "reason": choice.reason if choice else "no_opportunity",
+            })
+            self._last_item_choice = choice_now
         charging = b.throw_charge_ticks > 0
         if self._last_charging and not charging and b.i_have_grenade:
             self._throws += 1
@@ -437,6 +472,9 @@ class _DiagnosticLogger:
             "post_claim_source": b.post_claim_source,
             "post_settled_ticks": b.post_settled_ticks,
             "post_ticks_total": b.post_ticks_total,
+            "post_committed": b.post_committed,
+            "post_committed_tick": b.post_committed_tick,
+            "post_scan_direction": b.post_scan_direction,
             "post_claims": {
                 str(seat): {
                     "cell": list(claim.cell),
@@ -512,6 +550,11 @@ class _DiagnosticLogger:
             "focus_claim_release_counts": dict(b.focus_claim_release_counts),
             "focus_last_release_reason": b.focus_last_release_reason,
             "friendly_fire_suppressed": b.friendly_fire_suppressed,
+            "aim_resyncs": b.aim_resyncs,
+            "firing_turns": b.firing_turns,
+            "spray_pursuit_ticks": b.spray_pursuit_ticks,
+            "visible_grenade_starts": b.visible_grenade_starts,
+            "visible_grenade_releases": b.visible_grenade_releases,
             "firefight_target_ranges": dict(b.firefight_target_range_counts),
             "firefight_shot_ranges": dict(b.firefight_shot_range_counts),
             "carrier_fix": b.carrier_fix,
@@ -520,11 +563,21 @@ class _DiagnosticLogger:
             "lead_shots": self._lead_shots,
             "unled_shots": self._unled_shots,
             "lead_brads_sum": self._lead_brads_sum,
+            "spray_fires": self._spray_fires,
             "throws": self._throws,
             "hp_pips": b.hp_pips,
             "have_grenade": b.i_have_grenade,
             "have_shield": b.i_have_shield,
             "have_arc": b.i_have_arc,
+            "item_convenience_mode": (
+                "active" if ITEM_CONVENIENCE else "shadow"
+            ),
+            "item_opportunity_ticks": b.item_opportunity_ticks,
+            "item_fetch_ticks": b.item_fetch_ticks,
+            "item_yield_ticks": b.item_yield_ticks,
+            "item_option_ticks": dict(b.item_option_ticks),
+            "item_reason_ticks": dict(b.item_reason_ticks),
+            "item_options_live": len(b.item_options),
             "items_present": sum(1 for s in b.item_spawns if s.present),
             "enemy_tracks": [_track_row(t, step.tick) for t in b.enemy_tracks],
             "teammate_tracks": [_track_row(t, step.tick) for t in b.teammate_tracks],

@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import heapq
 import math
+from functools import lru_cache
 
 from ctf.beacon import mapdata
 from ctf.beacon.config import GRID_H, GRID_W, NAV_CELL, REPLAN_GOAL_CELLS, STUCK_TICKS
@@ -22,6 +23,7 @@ from ctf.beacon.types import Belief
 from players.player_sdk import Button
 
 _SQRT2 = math.sqrt(2)
+_PLAYER_HALF = 6  # sim.nim PlayerHalf; the baked grid uses the same footprint.
 
 
 def _cell_of(x: int, y: int) -> tuple[int, int]:
@@ -95,6 +97,63 @@ def _astar(grid, start: tuple[int, int], goal: tuple[int, int]) -> list[tuple[in
     return None
 
 
+@lru_cache(maxsize=64)
+def _route_distances(goal_cell: tuple[int, int]):
+    """Shortest walkable distance in grid cells from every cell to ``goal_cell``."""
+    import numpy as np
+
+    grid = mapdata.walkable_grid()
+    gx, gy = _nearest_walkable(grid, *goal_cell)
+    distances = np.full(grid.shape, np.inf, dtype=np.float64)
+    distances[gy, gx] = 0.0
+    queue: list[tuple[float, int, int]] = [(0.0, gx, gy)]
+    while queue:
+        distance, x, y = heapq.heappop(queue)
+        if distance > float(distances[y, x]):
+            continue
+        for dx, dy in mapdata.NEIGHBORS:
+            nx, ny = x + dx, y + dy
+            if not (0 <= nx < GRID_W and 0 <= ny < GRID_H) or not grid[ny, nx]:
+                continue
+            if dx != 0 and dy != 0 and not (grid[y, nx] and grid[ny, x]):
+                continue
+            next_distance = distance + (_SQRT2 if dx and dy else 1.0)
+            if next_distance < float(distances[ny, nx]):
+                distances[ny, nx] = next_distance
+                heapq.heappush(queue, (next_distance, nx, ny))
+    return distances
+
+
+def route_distance(start: tuple[int, int], goal: tuple[int, int]) -> float:
+    """Shortest static-map walking distance in pixels between two map points."""
+    grid = mapdata.walkable_grid()
+    sx, sy = _nearest_walkable(grid, *_cell_of(*start))
+    distances = _route_distances(_cell_of(*goal))
+    return float(distances[sy, sx]) * NAV_CELL
+
+
+def walkable_segment(start: tuple[int, int], end: tuple[int, int]) -> bool:
+    """Whether a short straight movement keeps the full player footprint clear."""
+    wall = mapdata.wall_mask()
+    distance = _dist(start, end)
+    samples = max(1, math.ceil(distance / 2))
+    for index in range(samples + 1):
+        t = index / samples
+        x = round(start[0] + (end[0] - start[0]) * t)
+        y = round(start[1] + (end[1] - start[1]) * t)
+        x0, x1 = x - _PLAYER_HALF, x + _PLAYER_HALF
+        y0, y1 = y - _PLAYER_HALF, y + _PLAYER_HALF
+        if (
+            x0 < 0
+            or y0 < 0
+            or x1 >= wall.shape[1]
+            or y1 >= wall.shape[0]
+            or wall[y0 : y1 + 1, x0 : x1 + 1].any()
+        ):
+            return False
+    return True
+
+
 def astar_waypoint(belief: Belief, self_xy: tuple[int, int], goal: tuple[int, int]) -> tuple[int, int]:
     """Next waypoint toward an arbitrary goal, with a cached, stuck-aware path."""
     grid = mapdata.walkable_grid()
@@ -162,4 +221,11 @@ def _dist(a: tuple[int, int], b: tuple[int, int]) -> float:
     return math.hypot(a[0] - b[0], a[1] - b[1])
 
 
-__all__ = ["astar_waypoint", "flow_waypoint", "note_progress", "octant_toward"]
+__all__ = [
+    "astar_waypoint",
+    "flow_waypoint",
+    "note_progress",
+    "octant_toward",
+    "route_distance",
+    "walkable_segment",
+]

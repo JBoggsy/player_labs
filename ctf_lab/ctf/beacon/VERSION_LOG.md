@@ -2,6 +2,372 @@
 
 Version → change mapping for the CTF `beacon` policy. Newest first.
 
+## v57 — additive, nearby grenade convenience (2026-07-30)
+
+**Immutable version:** `4c1c0723-3dc5-42fc-ac39-dd031a11e94d`.
+
+Evaluation-only upload built from image digest
+`sha256:096478b7332bcbc69176da26da46ea7ab09b9810f40ef79766207fe0455608a6`.
+
+Activates the first deliberately narrow convenience capability without replacing
+v56 behavior: hurt bots still take the same med kits first, legacy shield/grenade
+owners still take their same assignments, and only then may another bot collect a
+nearby own-side grenade. Ordinary pickups require a route of at most 64 px; fresh
+respawns may reach 96 px and retain the existing respawn detour allowance. Visible
+closer teammates still win contention. Shield and spray acquisition remain gated
+until their tactical doctrines are ready.
+
+Upload configuration matches v56 plus `BEACON_ITEM_CONVENIENCE=1`. **Uploaded
+inertly; never submitted.**
+
+Hosted non-regression evidence on CTF 0.7.124:
+
+- Automatic field screen `xreq_8043c52b-8470-4ccc-8e8c-9df2b16f6637`:
+  7–3 across five current opponents. The three losses were not consistently
+  associated with the new behavior.
+- Matched live-leader A/B against `deltashot:v3`: v56 and v57 both finished
+  5–5 with the same 5–0 Red / 0–5 Blue split. v57 recorded 165 kills and 59
+  deaths versus v56's 171 and 54.
+- Independent matched replication against
+  `co-gas-ctf-simple-richard:v38`: v57 finished 10–0 with 240 kills and 153
+  deaths (`xreq_6ee9ab0f-490a-4d3b-b258-ba3e16fca3a2`). The v56 control had
+  eight wins and one loss among nine indexed completed episodes, with one
+  abnormally long-running episode still non-terminal at the verdict
+  (`xreq_f028dbe8-afd8-4c2b-9131-d4269fb0782f`).
+
+Activation was real: the first matched v57 batch logged 11 convenience starts
+across 6/10 episodes, all fresh-respawn corner grenades. Ordinary pickups did
+not activate in that matchup. The capability clears its outcome
+non-regression gate; the small first-batch combat delta remains noise rather
+than a demonstrated improvement or regression.
+
+## v56 — wall-aware local movement overlays (2026-07-30)
+
+**Immutable version:** `3e40a528-71ec-42c7-b6eb-3b1f5188dc00`.
+
+Evaluation-only upload built from image digest
+`sha256:97afbc4b293aa6dfc3acd26089a633014a47641dd5c592557ad616bf343752c8`.
+
+Squad formation, post separation, and peek/duck sidesteps now apply only when
+the entire short movement segment clears static collision geometry for the
+player's full footprint. This prevents a valid A*/flow-field route around a
+lineup wall from being overwritten by a local bias through its glass pane.
+Upload configuration is identical to v55.
+
+A fresh same-window evaluation against `co-gas-ctf-simple-richard:v41` finished
+10-0 with 239-173 kills, versus v48 at 9-1 with 237-172 kills. Submitted to the
+live CTF league with explicit human approval as
+`sub_4214ee4f-dcd1-423b-9d04-b5029f0b931b`; membership
+`lpm_0ad26e70-0df1-4f5e-a937-18b52d3c02d5` qualified, is competing, and became
+champion. The platform also auto-entered v56 into Paintbot as
+`sub_1cfe523e-988f-4995-8e93-49dbf5cc7b6e`; membership
+`lpm_937f1b70-9d54-426d-9c34-ac15ba1fce2b` is likewise competing and champion.
+
+## v55 — sampled, behavior-inert item observability (2026-07-30)
+
+**Immutable version:** `40cb39be-3edf-4fdd-b791-f51887fb5d6c`.
+
+Evaluation-only upload built from image digest
+`sha256:b1ce45fde072027eeb7dc64e56412d1bdb80a77916187202b49df96731dd7e06`.
+
+Restores v48 item behavior, runs the convenience scorer shadow-only at 2 Hz,
+removes its detailed payload from every dense snapshot, and eliminates the
+shadow scorer's accidental mutation of plan buddy-wait state. Initial
+Alphashot screen: 6 wins, 1 draw, 3 losses. **Uploaded inertly; never
+submitted.**
+
+## v54 — pure shadow item scorer (2026-07-30)
+
+**Immutable version:** `05d7b872-510d-4a65-a4c9-c86e04d43771`.
+
+Evaluation-only upload built from image digest
+`sha256:15c557f1e36b8f7c6454abfe7fb2cb1e783f4ee64ca666eedf33c592bc696839`.
+
+Makes item-objective lookup pure after finding that `current_objective()`
+mutated buddy-wait state when called by shadow telemetry. A fresh matched
+Alphashot check was 9-2-9 versus v48 at 10-0-10, so it did not clear the
+non-regression gate. **Uploaded inertly; never submitted.**
+
+## v53 — legacy item behavior with shadow scoring (2026-07-30)
+
+**Immutable version:** `c1229953-c113-4ac7-bfcd-e51aa32edef0`.
+
+Evaluation-only upload built from image digest
+`sha256:84c15d19a635e872bf18bbfc56f0f37e191f879b56c72a29407ce58f615d6316`.
+
+Restores v48's active pickup decisions and leaves the new route-price scorer in
+shadow mode. Superseded after its shadow lookup was found to mutate battle-plan
+state. **Uploaded inertly; never submitted.**
+
+## v52 — side-correct assigned-item gating (2026-07-30)
+
+**Immutable version:** `f643ee1e-f559-46b6-b862-b3e3e559217c`.
+
+Evaluation-only upload built from image digest
+`sha256:d12b16a06964f01f7385a2d9472b6d5402c76f36369ac957a61b37382309e29c`.
+
+Restricts legacy long-detour allowances to each seat's exact own-side assigned
+pickup and tightens ordinary detours. Failed the Alphashot screen and was not
+advanced. **Uploaded inertly; never submitted.**
+
+## v51 — conservative convenience gating (2026-07-30)
+
+**Immutable version:** `d7eacaf8-b7c9-458f-b1e7-71ec80feb29c`.
+
+Evaluation-only upload built from image digest
+`sha256:44573631e9fbdbf42dd74b16fc0d2113ceda939cf9a9393efff442ad2a89b516`.
+
+First conservative revision after v50, later found to grant the assigned-item
+allowance to enemy-side copies too. Failed the Alphashot screen and was
+superseded by v52. **Uploaded inertly; never submitted.**
+
+## v50 — shield-state and pickup-tie revision (2026-07-30)
+
+**Immutable version:** `db909d3b-a8d0-4c5d-b28b-63b4377422ed`.
+
+Evaluation-only upload built from image digest
+`sha256:705b5009f89ce8d23e9da8ad1dc811404e7dc52f7ecc54faf1a708b8ec18ff60`.
+
+Revision of the v49 item-acquisition foundation based on its first hosted
+telemetry:
+
+- recognizes the intact `shield bubble` and deformed `shield bubble hit`
+  render states as carried shields for self and visible teammates, rather than
+  recognizing a shield only after its protective HP is exhausted;
+- near-equidistant visible teammates use a stable positional tie-break so
+  exactly one pursues the pickup.
+
+Upload configuration is identical to v49/v48. **Uploaded inertly; never
+submitted.**
+
+## v49 — route-priced item acquisition foundation (2026-07-30)
+
+**Immutable version:** `a19fdf94-914f-4f9d-a29f-1aaa7d977285`.
+
+Evaluation-only upload built from image digest
+`sha256:853ab0dd5170363b9ed584418715b1da59a6bcd71beb447dddab9490fda06364`.
+
+Capabilities 1–3 of the item-strategy program:
+
+- every pickup opportunity records its walkable route to the item, direct route
+  to the current objective, marginal detour, threshold, decision, and reason;
+- ordinary pickup convenience is based on marginal route cost, with a tighter
+  settled-post allowance and a larger own-side grenade/shield allowance during
+  the fresh-respawn window;
+- bots yield a pickup when a visible teammate has a clearly shorter route;
+- full-health bots ignore med kits, bots do not deliberately fetch an item type
+  they already carry, and spray-can detours remain deliberately tiny until its
+  spearpoint and friendly-fire doctrine is implemented.
+
+Upload configuration is identical to v48:
+`BEACON_PLAN=firefight_training_line`, `BEACON_FIREFIGHT=1`,
+`BEACON_FOCUS_CLAIMS=0`, `BEACON_POSTS=1`, `BEACON_POST_FACING=1`,
+`BEACON_DIAG_EVERY_TICKS=1`, `BEACON_TRACE_OUTPUTS=jsonl@artifact`.
+The first hosted batch exposed intact-shield detection and near-tie contention
+gaps, so this version was superseded by v50. **Uploaded inertly; never
+submitted.**
+
+## v48 — traced live-target grenade iteration (2026-07-30)
+
+**Immutable version:** `27182094-79af-4835-95e1-7a1159565e38`.
+
+Evaluation-only upload built from image digest
+`sha256:7409fbf59bc3edc1db22eb978adc74c908f579afc05bf6291c56bbc0bfb4d5c3`.
+
+Same fighting behavior and upload configuration as v47, with cumulative
+`visible_grenade_starts` and `visible_grenade_releases` snapshot counters so
+the hosted A/B can distinguish activation failure from accuracy failure.
+
+Submitted to the live CTF league on 2026-07-30 after a 60-episode matched
+v46/v48 evaluation. CTF membership
+`lpm_ee7694ee-d48e-40c9-a5c4-5f01dfa5b67b` is active, competing, and champion.
+The platform also auto-entered the same version into Paintbot as
+`lpm_8159c632-3656-432f-b0e0-b5b08c20e2a3`, likewise active and champion.
+
+## v47 — live-tracked grenades without stealing gun inputs (2026-07-30)
+
+**Immutable version:** `511b4f7b-ea01-4fb7-9ee5-ccd710628585`.
+
+Evaluation-only upload built from image digest
+`sha256:0e24d9ad1dce5a94a23a167fbc3ac00886772f790d680be89223327341ad991b`.
+
+Fighting-logic-only iteration over v46:
+
+- a carried grenade may charge C in parallel with an ordinary visible gun
+  fight; movement, gun target selection, A presses, and tactical intent are
+  untouched;
+- the landing point refreshes from the current visible body throughout the
+  charge instead of relying exclusively on a hidden track that can be 30 ticks
+  stale;
+- release requires the correct charge distance and the server's post-input aim,
+  allowing the final five-brad correction and throw on the same tick;
+- hidden over-wall lobs remain the fallback when no live target is available,
+  with the same teammate blast gate.
+
+Purpose: beat v40/v46 grenade accuracy without reducing gun releases while
+retaining v46's effective spray behavior. Upload configuration remains
+identical to v46. Superseded for evaluation by v48 because this artifact lacks
+the direct visible-grenade activation counters. **Uploaded inertly; never
+submitted.**
+
+## v46 — useful spray-contact radius (2026-07-29)
+
+**Immutable version:** `993fadda-4e8a-4b9d-9082-ae3dd4a3007f`.
+
+Evaluation-only upload built from image digest
+`sha256:eb3615b3f015980e52381b9dac43690e1137ec536bfc9e22c6672d1c6ab2769a`.
+Fighting-logic-only iteration over v45:
+
+- a spray carrier may close on an already-visible, unobstructed enemy within
+  400px instead of 300px;
+- v44 dense traces contained 3,325 spray-carrier frames with a visible enemy,
+  but only 174 (5.2%) were inside 300px versus 1,827 (54.9%) inside 400px;
+- the close stops at the same 100px ideal range, flag carriers remain exempt,
+  and strategic target selection, item routing, posts, and battle plans remain
+  unchanged.
+
+All v45 gun and grenade logic remains. Upload configuration is identical to
+v45. **Uploaded inertly; never submitted.**
+
+## v45 — spray closing footwork + blast-safe grenade lead (2026-07-29)
+
+**Immutable version:** `88387025-d4b6-4a96-b592-93ff9764301e`.
+
+Evaluation-only upload built from image digest
+`sha256:219093ab20c039cadd845b3b56e5a2eecb636fb8d6ce33874316c6ea48efff51`.
+Fighting-logic-only iteration over v44:
+
+- a spray carrier locally closes on an already-visible, unobstructed enemy
+  within 300px until the real 136px cone is usable; strategic target selection
+  and the battle plan resume unchanged outside contact;
+- `spray_pursuit_ticks` traces that combat footwork;
+- grenade lead covers only the fixed ten-tick flight. At maximum target speed
+  this is about 30px, still inside the 52px blast if a wall-bound target stops;
+  the unstable charge-plus-flight extrapolation could overshoot cover by
+  80–100px.
+
+All v44 gun-centering and current spray-label fixes remain. Upload configuration
+is identical to v44/v41/v40. **Uploaded inertly; never submitted.**
+
+## v44 — recognize the live spray-can weapon contract (2026-07-29)
+
+**Immutable version:** `6cc82654-801c-42e3-b6b3-01c43d100e90`.
+
+Evaluation-only upload built from image digest
+`sha256:0630c87e15a44616081188f2ca88329f6502f8d42abdb4ff343fbeb4a25b1123`.
+Adds a perception-seam correction to v43: own weapon state now reads the
+current authoritative `weapon spray` HUD label, recognizes current pickup and
+carrier labels (`spray can`, `spray can carried`), and retains the legacy
+plasma-arc aliases for old replays. Before this fix, all 39 v41 server-side
+spray activations were traced locally as `have_arc=false`, so Beacon applied
+gun range, lead, and timing to a 136px immediate cone.
+
+This does not assign or route agents to spray pickups; it only changes fighting
+execution after a can is already carried. All v43 gun changes and v42
+activation tracing remain. Upload configuration is identical to v43/v41/v40.
+**Uploaded inertly; never submitted.**
+
+## v43 — rotate and fire in the same tick (2026-07-29)
+
+**Immutable version:** `2a71540d-5732-41f1-9ee4-073fd3fa6af5`.
+
+Evaluation-only upload built from image digest
+`sha256:b4bc1bd0bb539e8a549ef93c5c588856079b47d7f09f7bec3ed0c265ab9b3ad2`.
+Fighting-logic-only iteration over v42: when a fresh authorized gun or spray
+attack is more than two brads off-centre, Beacon now issues the improving
+five-brad turn and the A press together. The server applies rotation before
+locking the attack, so this centres the same trigger rather than withholding
+one. `firing_turns` in dense snapshots counts activation.
+
+Movement, fire authorization, target scoring, posts, item pickup, and battle
+plan are unchanged. Upload configuration is identical to v42/v41/v40.
+**Uploaded inertly; never submitted.**
+
+## v42 — nearest attainable gun bearing + latency-led spray (2026-07-29)
+
+**Immutable version:** `64b6f684-5165-4f2b-8bbc-781a7d312ca8`.
+
+Evaluation-only upload built from image digest
+`sha256:e57cc2781de10a26a6aff41f0b58b50b84f0e18dd8d54c95f701345de88367f7`.
+Fighting-logic-only iteration over v41:
+
+- aim deadband is two brads instead of three, choosing the nearest attainable
+  bearing under the server's fixed five-brad turn step;
+- spray aims one frame ahead using the current enemy-track velocity, covering
+  observation-to-input latency without reintroducing the gun's windup lead;
+- dense snapshots now count `spray_fires` and `aim_resyncs`; spray activations
+  no longer pollute the gun-only led/unled shot counters.
+
+Movement, target scoring, posts, item pickup, and battle plan are unchanged.
+Upload configuration is identical to v41/v40. **Uploaded inertly; never
+submitted.**
+
+## v41 — exact aim state + immediate spray + led grenades (2026-07-29)
+
+**Immutable version:** `2bbcc28c-4f2e-4c4d-b512-32bb8b300853`.
+
+Evaluation-only upload built from image digest
+`sha256:cad37f614bfa781c83bcaa82e92f2a94ffe0a418ebba861543fa7145e8c7e892`.
+Fighting-logic-only iteration over v40; movement, target scoring, posts, item
+pickup, and the `firefight_training_line` battle plan are unchanged:
+
+- gun aim keeps exact five-brad server dead reckoning instead of replacing it
+  with a coarse sprite-bucket midpoint; coarse readback now only recovers real
+  drift using whole server-turn steps;
+- gun lead is 3.5 ticks, the minimum-error value in 854 matched v40 shot traces
+  (the former six-tick lead over-predicted);
+- spray selects a visible, unobstructed in-range body, aims at its current
+  position rather than applying gun windup lead, and fires only when the live
+  cone contains that body;
+- grenades lead remembered moving targets through their remaining charge plus
+  fixed ten-tick flight time.
+
+Upload configuration is identical to v40:
+`BEACON_PLAN=firefight_training_line`, `BEACON_FIREFIGHT=1`,
+`BEACON_FOCUS_CLAIMS=0`, `BEACON_POSTS=1`, `BEACON_POST_FACING=1`,
+`BEACON_DIAG_EVERY_TICKS=1`, `BEACON_TRACE_OUTPUTS=jsonl@artifact`.
+**Uploaded inertly; never submitted.**
+
+## v40 — forward, sticky, sightline-aware posts (2026-07-29)
+
+**Immutable version:** `c8ab6032-20bc-4600-80af-f1c52d9a7cea`.
+
+Evaluation-only upload built from image digest
+`sha256:11ad6866c6407ce6ce94240d480a5a0159c920a602d171967afb1e351b0f6d01`.
+Changes one tactical component from v39:
+
+- stance is forward along the watched threat axis for both push and hold posts,
+  with the default weight raised from 0.12 to 0.18;
+- reaching a post commits it, so nearby teammates, enemies, nav-stuck recovery,
+  and temporary displacement no longer trigger immediate reselection;
+- post changes require 10 seconds committed, a 5-second reevaluation cadence,
+  a 45-degree threat change, and a 0.20 score improvement;
+- settled aim now dwells on the primary watched lane and the best open baked
+  sightline on each shoulder, giving the primary lane half of scan time.
+
+Upload configuration matches v39 plus `BEACON_POST_FACING=1`:
+`BEACON_PLAN=firefight_training_line`, `BEACON_FIREFIGHT=1`,
+`BEACON_FOCUS_CLAIMS=0`, `BEACON_POSTS=1`,
+`BEACON_DIAG_EVERY_TICKS=1`, `BEACON_TRACE_OUTPUTS=jsonl@artifact`.
+Purpose is to reduce v39's 9,540 post transitions across 240 agent-games while
+keeping the firefight-training line aggressive. **Uploaded inertly; never
+submitted.**
+
+## v39 — firefight-training line (2026-07-29)
+
+**Immutable version:** `8c7e2943-d9f9-4faa-96ec-f022509a93df`.
+
+Evaluation-only upload built from image digest
+`sha256:71284f83971404328045c168faa1c8bcac55f0b8c69f4bad80d7a58628113417`.
+Runs `firefight_training_line`: seats 0–3 establish `red_rally_mid`, seats 4–5
+take `red_top_vee`, and seats 6–7 take `red_bot_vee`; the line holds through
+tick 600, then advances to center/top-diamond/bottom-diamond terminal holds.
+
+Upload configuration: `BEACON_PLAN=firefight_training_line`,
+`BEACON_FIREFIGHT=1`, `BEACON_FOCUS_CLAIMS=0`, `BEACON_POSTS=1`,
+`BEACON_DIAG_EVERY_TICKS=1`, `BEACON_TRACE_OUTPUTS=jsonl@artifact`. Purpose is
+dense firefight evidence, not wins. **Uploaded inertly; never submitted.**
+
 ## v32/v33/v34 — covered posts: cover + sightlines + a spreading instinct (2026-07-28)
 
 **One image, three env-flipped uploads** (`--secret-env`; the arms of a single A/B):
@@ -23,7 +389,8 @@ it is non-directional — the wall was between them and the threat, not beside t
   not baked separately. Convention: free distance to the first blocked 4px sample.
 - **New `posts.py`**: a *post* = nav cell + the direction it watches. Bounded, vectorised
   ranking over ~600 cells (no runtime raycasting): `reach` (sightline along the threat axis),
-  `cover` (short flank rays), `stance` (signed; forward when pushing, back when holding),
+  `cover` (short flank rays), `stance` (signed; forward when pushing, back when holding in
+  v32-v34; changed to forward for both modes in v40),
   `danger` (penalty), with qualification gates so open ground yields no post.
 - **Threat axis**: fresh enemy track > danger gradient > plan `facing` > enemy-pedestal prior.
   This makes the plan schema's `facing` load-bearing for the first time.

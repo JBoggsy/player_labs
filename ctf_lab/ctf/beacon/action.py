@@ -6,7 +6,7 @@ This is where the tactical design lives (§3, §5):
     octant. Movement is fully decoupled from aim.
   * **Aim (the lighthouse)**: default is a sweep panning ±SWEEP_HALF_ARC across the
     *threat axis* (unit vector from us toward the enemy pedestal). A settled post
-    instead watches its baked sightline through a narrower arc. The moment an enemy
+    instead dwells on its primary and shoulder baked sightlines. The moment an enemy
     is visible, either sweep aborts and aim snaps onto the nearest enemy by default,
     or fight.py's intentional scored target while firefight is enabled.
   * **Fire**: press A (edge-triggered) when an enemy is visible, the gun is ready,
@@ -27,8 +27,10 @@ from ctf.beacon.config import (
     AIM_BRADS_TURN,
     AIM_DEADBAND,
     AIM_TURN_RATE,
-    ARC_AIM_ERR_BRADS,
     ARC_FIRE_RANGE_PX,
+    ARC_IDEAL_RANGE_PX,
+    ARC_MAX_WIDTH_PX,
+    ARC_PURSUIT_RANGE_PX,
     BUTTON_C,
     CLOSE_RANGE_PX,
     DUCK_RANGE_PX,
@@ -42,6 +44,7 @@ from ctf.beacon.config import (
     GRENADE_BLAST_RADIUS,
     GRENADE_CHARGE_TICKS,
     GRENADE_FORCE_RELEASE_TICKS,
+    GRENADE_FLIGHT_TICKS,
     GRENADE_MAX_RANGE,
     GRENADE_MIN_RANGE,
     GRENADE_MIN_THROW_PX,
@@ -62,7 +65,7 @@ from ctf.beacon.config import (
     PEEK_DUCK_SEARCH_CELLS,
     PEEK_TARGET_FRESH_TICKS,
     POST_FACING,
-    POST_SWEEP_HALF_ARC,
+    POST_SCAN_DWELL_TICKS,
     SQUADS,
     STUCK_TICKS,
     SWEEP_HALF_ARC,
@@ -101,6 +104,84 @@ def _nearest_enemy(belief: Belief):
     return min(belief.enemies, key=lambda e: (e.pos[0] - sx) ** 2 + (e.pos[1] - sy) ** 2)
 
 
+def _spray_target(belief: Belief) -> Enemy | None:
+    """Best visible body for the immediate, live-tracking spray cone.
+
+    Gun lead is actively harmful here: spray resolves immediately from the
+    current aim, then follows that aim for four more ticks. Prefer a clear body
+    already closest to the cone centre, without changing movement or item logic.
+    """
+    if belief.self_xy is None:
+        return None
+    sx, sy = belief.self_xy
+    candidates = [
+        enemy
+        for enemy in belief.enemies
+        if math.hypot(enemy.pos[0] - sx, enemy.pos[1] - sy)
+        <= ARC_PURSUIT_RANGE_PX
+        and mapdata.ray_clear(belief.self_xy, enemy.pos)
+    ]
+    if not candidates:
+        return None
+    return min(
+        candidates,
+        key=lambda enemy: (
+            abs(
+                _brad_error(
+                    _brads_of(
+                        _spray_aim_pos(belief, enemy)[0] - sx,
+                        _spray_aim_pos(belief, enemy)[1] - sy,
+                    ),
+                    belief.aim_brads,
+                )
+            ),
+            (enemy.pos[0] - sx) ** 2 + (enemy.pos[1] - sy) ** 2,
+        ),
+    )
+
+
+def _spray_aim_pos(
+    belief: Belief,
+    enemy: Enemy,
+) -> tuple[int, int]:
+    """One-frame lead for observation-to-input latency, never gun windup lead."""
+    track = next(
+        (
+            item
+            for item in belief.enemy_tracks
+            if item.last_tick == belief.tick and item.pos == enemy.pos
+        ),
+        None,
+    )
+    if track is None or track.vel is None:
+        return enemy.pos
+    from ctf.beacon.config import MAP_H, MAP_W
+
+    return (
+        min(max(round(enemy.pos[0] + track.vel[0]), 0), MAP_W - 1),
+        min(max(round(enemy.pos[1] + track.vel[1]), 0), MAP_H - 1),
+    )
+
+
+def _spray_contains(
+    belief: Belief,
+    target_pos: tuple[int, int],
+) -> bool:
+    """Whether the current server-aim estimate contains a target centre."""
+    assert belief.self_xy is not None
+    sx, sy = belief.self_xy
+    angle = belief.aim_brads / AIM_BRADS_TURN * 2 * math.pi
+    ux, uy = math.cos(angle), -math.sin(angle)
+    vx, vy = target_pos[0] - sx, target_pos[1] - sy
+    forward = vx * ux + vy * uy
+    perpendicular = abs(vx * uy - vy * ux)
+    return (
+        0 < forward <= ARC_FIRE_RANGE_PX
+        and perpendicular
+        <= forward * ARC_MAX_WIDTH_PX / (2 * ARC_FIRE_RANGE_PX)
+    )
+
+
 def _threat_axis(belief: Belief) -> int:
     """Brads toward the enemy pedestal — the sweep centre. Forward while advancing,
     back across the field once we've turned for home."""
@@ -128,14 +209,18 @@ def _sweep_target(belief: Belief) -> int:
         and belief.post_settled_ticks > 0
     )
     if post_facing:
-        # A post is position + direction. The 50-brad squad sector offset would
-        # turn shoulder ranks away from the line their post exists to watch, so
-        # sectors apply only when no settled post owns the sweep.
-        axis = posts.direction_to_brads(belief.post_direction)
-        half_arc = POST_SWEEP_HALF_ARC
-    else:
-        axis = _threat_axis(belief)
-        half_arc = SWEEP_HALF_ARC
+        # A post is position + a small vocabulary of useful baked sightlines.
+        # Dwell on those actual corridors instead of continuously sweeping walls.
+        assert belief.post_cell is not None and belief.post_direction is not None
+        lanes = posts.scan_directions(belief.post_cell, belief.post_direction)
+        index = (belief.tick // POST_SCAN_DWELL_TICKS + belief.seat) % len(lanes)
+        belief.post_scan_direction = lanes[index]
+        belief.sweep_offset = 0
+        return posts.direction_to_brads(belief.post_scan_direction)
+
+    belief.post_scan_direction = None
+    axis = _threat_axis(belief)
+    half_arc = SWEEP_HALF_ARC
     if SQUADS and not post_facing:
         axis = (axis + squads.sector_offset_brads(belief.seat)) % AIM_BRADS_TURN
     belief.sweep_offset += belief.sweep_dir * AIM_TURN_RATE
@@ -356,7 +441,7 @@ def _find_sidestep_cell(
             if not (0 <= nx < GRID_W and 0 <= ny < GRID_H) or not walkable[ny, nx]:
                 continue
             p = _cell_center(nx, ny)
-            if not mapdata.ray_clear(self_xy, p):
+            if not nav.walkable_segment(self_xy, p):
                 continue  # can't walk straight there
             if mapdata.ray_clear(p, ref) != want_los:
                 continue
@@ -489,11 +574,13 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
             # remains the floor while two bodies are still stacked en route.
             bias = squads.separation_bias(belief)
             if bias is not None:
-                belief.squad_cohesion_ticks += 1
-                waypoint = (
+                biased_waypoint = (
                     int(waypoint[0] + bias[0] * NAV_CELL * 3),
                     int(waypoint[1] + bias[1] * NAV_CELL * 3),
                 )
+                if nav.walkable_segment(self_xy, biased_waypoint):
+                    belief.squad_cohesion_ticks += 1
+                    waypoint = biased_waypoint
         elif (
             SQUADS
             and intent.reason
@@ -502,11 +589,13 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
         ):
             bias = squads.formation_bias(belief)
             if bias is not None:
-                belief.squad_cohesion_ticks += 1
-                waypoint = (
+                biased_waypoint = (
                     int(waypoint[0] + bias[0] * NAV_CELL * 3),
                     int(waypoint[1] + bias[1] * NAV_CELL * 3),
                 )
+                if nav.walkable_segment(self_xy, biased_waypoint):
+                    belief.squad_cohesion_ticks += 1
+                    waypoint = biased_waypoint
         jitter = belief.nav_stuck_ticks >= STUCK_TICKS
         mask |= nav.octant_toward(self_xy, waypoint, jitter)
     elif (
@@ -519,12 +608,13 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
         # splash). Push-apart is the only movement a hold makes.
         sep = squads.separation_bias(belief)
         if sep is not None:
-            belief.squad_cohesion_ticks += 1
             step = (
                 int(self_xy[0] + sep[0] * NAV_CELL * 2),
                 int(self_xy[1] + sep[1] * NAV_CELL * 2),
             )
-            mask |= nav.octant_toward(self_xy, step, False)
+            if nav.walkable_segment(self_xy, step):
+                belief.squad_cohesion_ticks += 1
+                mask |= nav.octant_toward(self_xy, step, False)
 
     # --- Combat overlay: aim + fire -----------------------------------------------
     selected = (
@@ -533,14 +623,23 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
         else None
     )
     enemy = (
-        selected.candidate.enemy
-        if selected is not None
-        else _nearest_enemy(belief)
+        _spray_target(belief)
+        if belief.i_have_arc
+        else (
+            selected.candidate.enemy
+            if selected is not None
+            else _nearest_enemy(belief)
+        )
     )
     if enemy is not None:
         # Snap aim onto the target — led ahead of a moving one (v10): the windup
         # delays the bullet ~LEAD_TICKS, so aim where the target will BE.
-        if selected is not None:
+        if belief.i_have_arc:
+            # Spray is immediate and follows our live aim for five ticks. Aim at
+            # the body one input-latency frame ahead; gun windup lead points the
+            # narrow cone far ahead.
+            aim_pos, lead = _spray_aim_pos(belief, enemy), 0
+        elif selected is not None:
             aim_pos = selected.candidate.aim_pos
             lead = selected.candidate.lead_brads
         else:
@@ -549,13 +648,30 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
         want = _brads_of(aim_pos[0] - self_xy[0], aim_pos[1] - self_xy[1])
         err = _brad_error(want, belief.aim_brads)
         if belief.i_have_arc:
-            # The gun is disabled while carrying an arc: A ignites the plasma cone
-            # instead. Short reach — only worth pressing with the target inside it.
-            rng = math.hypot(enemy.pos[0] - self_xy[0], enemy.pos[1] - self_xy[1])
+            # A spray carrier has no gun. Close locally on an already-visible,
+            # unobstructed opponent until the real cone can reach; this is combat
+            # footwork only, and the unchanged strategic intent resumes as soon
+            # as contact leaves the bounded pursuit radius.
+            rng = math.hypot(
+                enemy.pos[0] - self_xy[0],
+                enemy.pos[1] - self_xy[1],
+            )
+            if (
+                ARC_IDEAL_RANGE_PX < rng <= ARC_PURSUIT_RANGE_PX
+                and not belief.i_carry_enemy_flag
+            ):
+                belief.spray_pursuit_ticks += 1
+                mask &= ~(
+                    int(Button.UP)
+                    | int(Button.DOWN)
+                    | int(Button.LEFT)
+                    | int(Button.RIGHT)
+                )
+                mask |= nav.octant_toward(self_xy, enemy.pos, False)
+            # The gun is disabled while carrying spray: A ignites the cone.
             can_fire = (
                 belief.fire_ready
-                and rng <= ARC_FIRE_RANGE_PX
-                and abs(err) <= ARC_AIM_ERR_BRADS
+                and _spray_contains(belief, aim_pos)
                 and not _teammate_blocks_shot(belief, enemy.pos)
             )
         else:
@@ -575,12 +691,16 @@ def resolve_action(intent: Intent, belief: Belief, state: ActionState) -> Comman
                 belief.friendly_fire_suppressed += 1
             can_fire = otherwise_fireable and not teammate_blocked
         if can_fire and not state.a_held:
-            # Fire this tick; do NOT rotate (lock the settled aim), and freeze
-            # movement through the windup so the bullet leaves from where we aimed
-            # (drop any movement bits already in the mask for this tick too).
+            # The server applies rotation before it locks a fresh A press. If one
+            # five-brad step brings the target closer, turn and fire together:
+            # this centres the shot without withholding a trigger. Freeze movement
+            # through gun windup so the release origin stays where we aimed.
             if not belief.i_carry_enemy_flag:
                 mask &= ~(int(Button.UP) | int(Button.DOWN) | int(Button.LEFT) | int(Button.RIGHT))
                 state.fire_hold_ticks = FIRE_WINDUP_TICKS
+            if abs(err) > AIM_TURN_RATE // 2:
+                mask |= _rotation_button(err, state)
+                belief.firing_turns += 1
             mask |= int(Button.A)
             state.a_held = True
             if not belief.i_have_arc:
@@ -632,7 +752,31 @@ def _lob_target(belief: Belief) -> tuple[int, int] | None:
     for t in belief.enemy_tracks:
         if belief.tick - t.last_tick > GRENADE_TARGET_FRESH_TICKS:
             continue
+        # Lead through the fixed ten-tick flight, but not through the whole
+        # charge. A wall-blocked target's last velocity usually ends at cover;
+        # full charge+flight extrapolation often put the blast 80-100px beyond
+        # that cover. Ten ticks moves at most ~30px, still inside the 52px blast
+        # envelope if the target stops.
         pos = _predicted_pos(t, belief.tick)
+        if t.vel is not None:
+            from ctf.beacon.config import MAP_H, MAP_W
+
+            pos = (
+                min(
+                    max(
+                        round(pos[0] + t.vel[0] * GRENADE_FLIGHT_TICKS),
+                        0,
+                    ),
+                    MAP_W - 1,
+                ),
+                min(
+                    max(
+                        round(pos[1] + t.vel[1] * GRENADE_FLIGHT_TICKS),
+                        0,
+                    ),
+                    MAP_H - 1,
+                ),
+            )
         d = math.hypot(pos[0] - sx, pos[1] - sy)
         if d < GRENADE_MIN_THROW_PX or d > best_d:
             continue
@@ -649,30 +793,66 @@ def _lob_target(belief: Belief) -> tuple[int, int] | None:
     return best
 
 
+def _visible_lob_target(belief: Belief, mask: int) -> tuple[int, int] | None:
+    """A live grenade target already aligned with the ordinary gun fight.
+
+    Charging C does not disturb movement, gun targeting, or A presses. Prefer
+    the visible body closest to the aim that this input will leave on the
+    server, so a grenade can charge in parallel and release without stealing
+    the gun's aim.
+    """
+    assert belief.self_xy is not None
+    sx, sy = belief.self_xy
+    aim = belief.aim_brads
+    if mask & int(Button.B):
+        aim = (aim + AIM_TURN_RATE) % AIM_BRADS_TURN
+    elif mask & int(Button.SELECT):
+        aim = (aim - AIM_TURN_RATE) % AIM_BRADS_TURN
+
+    candidates: list[tuple[int, float, tuple[int, int]]] = []
+    splash = GRENADE_BLAST_RADIUS + 20.0
+    for enemy in belief.enemies:
+        d = math.hypot(enemy.pos[0] - sx, enemy.pos[1] - sy)
+        if d < GRENADE_MIN_THROW_PX or d > GRENADE_MAX_RANGE:
+            continue
+        if any(
+            math.hypot(m.pos[0] - enemy.pos[0], m.pos[1] - enemy.pos[1])
+            <= splash
+            for m in belief.teammates
+        ):
+            continue
+        want = _brads_of(enemy.pos[0] - sx, enemy.pos[1] - sy)
+        candidates.append((abs(_brad_error(want, aim)), d, enemy.pos))
+    return min(candidates)[2] if candidates else None
+
+
 def _grenade_overlay(mask: int, belief: Belief, state: ActionState) -> int:
     """The C-button charge/release state machine, riding on top of gun combat.
 
-    Charge only starts when no enemy is visible (the gun owns visible fights); once
-    charging, C stays held while the aim lays onto the lob bearing, and releases when
-    the charge matches the throw distance and the aim has settled. A charge that
-    can't settle force-releases after a grace period — the sim throws on ANY C
-    release, so carrying a charge forever would waste the grenade anyway.
+    During a visible fight C charges in parallel with the untouched gun inputs,
+    continuously refreshing the landing point and releasing only when that same
+    aim has enough charge. With no visible target, the original over-wall lob owns
+    the aim. A charge that can't settle force-releases after a grace period — the
+    sim throws on ANY C release, so carrying a charge forever would waste the
+    grenade anyway.
     """
     assert belief.self_xy is not None
     sx, sy = belief.self_xy
     charging = belief.throw_charge_ticks > 0
+    visible_target = _visible_lob_target(belief, mask)
 
     if not charging:
-        if belief.enemies:  # gun fight in progress — don't start a lob
-            belief.throw_target = None
-            return mask
-        target = _lob_target(belief)
+        target = visible_target or _lob_target(belief)
         belief.throw_target = target
         if target is None:
             return mask
+        if visible_target is not None:
+            belief.visible_grenade_starts += 1
         belief.throw_charge_ticks = 1
         return mask | BUTTON_C
 
+    if visible_target is not None:
+        belief.throw_target = visible_target
     target = belief.throw_target or (sx, sy)
     belief.throw_charge_ticks += 1
     d = math.hypot(target[0] - sx, target[1] - sy)
@@ -690,9 +870,24 @@ def _grenade_overlay(mask: int, belief: Belief, state: ActionState) -> int:
         mask &= ~(int(Button.B) | int(Button.SELECT))
         mask |= _rotation_button(err, state)
 
-    ready = belief.throw_charge_ticks >= charge_needed and abs(err) <= GRENADE_AIM_ERR_BRADS
-    if (ready and not belief.enemies) or overdue:
+    # Rotation is applied before a C release, just as it is before an A press.
+    # Judge the actual post-input bearing so the correcting turn and throw can
+    # happen together instead of adding another stale-target frame.
+    release_aim = belief.aim_brads
+    if mask & int(Button.B):
+        release_aim = (release_aim + AIM_TURN_RATE) % AIM_BRADS_TURN
+    elif mask & int(Button.SELECT):
+        release_aim = (release_aim - AIM_TURN_RATE) % AIM_BRADS_TURN
+    release_err = _brad_error(want, release_aim)
+    ready = (
+        belief.throw_charge_ticks >= charge_needed
+        and abs(release_err) <= GRENADE_AIM_ERR_BRADS
+        and (not belief.enemies or visible_target is not None)
+    )
+    if ready or overdue:
         # Release: C up this tick throws along the current aim.
+        if ready and visible_target is not None:
+            belief.visible_grenade_releases += 1
         belief.throw_charge_ticks = 0
         belief.throw_target = None
         return mask

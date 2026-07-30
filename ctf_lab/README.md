@@ -12,10 +12,13 @@ This README orients newcomers (human or agent). Two pointers do most of the work
 - **[`../README.md`](../README.md)** — lab-wide setup (`uv sync` / Observatory auth) and
   the ground rules.
 
-> **Status: `beacon` competing in the CTF league** (rank 3 as of 2026-07-23, v23
-> champion / v24 qualifying). The game repo (`Metta-AI/coworld-ctf`) is cloned for
+> **Status: `beacon:v56` is the submitted CTF and Paintbot champion;
+> `beacon:v57` is the latest inert item-convenience candidate and was not
+> submitted.** The game repo
+> (`Metta-AI/coworld-ctf`) is cloned for
 > reference at `~/coding/coworlds/coworld-ctf` — **the league redeploys often**; the
-> deployed version at last audit is **ctf 0.7.69 (`72fb1b1`, GameVersion 21)**. Live
+> deployed version at the latest 2026-07-30 audit is **ctf 0.7.124
+> (`beae1614`, GameVersion 27)**. Live
 > state + open threads: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md); version history:
 > [`ctf/beacon/VERSION_LOG.md`](ctf/beacon/VERSION_LOG.md).
 
@@ -71,6 +74,9 @@ ctf_lab/
     build_expand_replay.sh        build version-matched replay readers (human + JSONL)
     expand_replay_json.nim        JSONL event emitter (feeds the warehouse)
     event_warehouse.py            build a DuckDB/Parquet event warehouse from episodes
+    run_roundwarehouse_local.py   run Reporter Lab's canonical rich-event Wasm locally
+    find_firefights.py            detect and weight reciprocal replay firefights
+    infer_battle_plan.py          infer opponent groups + move/hold orders from replays
     agg_eval.py                   aggregate an eval results dir into a scoreline
     rotate_lessons.sh             SessionStart hook (archive the lesson buffer)
   .claude/skills/
@@ -86,6 +92,24 @@ cyborg — perception / belief / strategy / nav / action modules, offline-baked 
 
 The full evaluate → report → improve → submit cycle, and which skill drives each step, is
 in [`AGENTS.md`](AGENTS.md) (CTF layer) and [`../AGENTS.md`](../AGENTS.md) (the loop).
+
+## Opponent battle-plan inference
+
+[`tools/infer_battle_plan.py`](tools/infer_battle_plan.py) converts a batch of
+hash-validated opponent replays into an evidence-backed timeline of inferred groups
+and `move` / `hold` / `maneuver` orders. See
+[`docs/opponent-plan-analysis.md`](docs/opponent-plan-analysis.md) for the workflow,
+method, output contract, and interpretation limits.
+
+## Replay firefight detection
+
+[`tools/run_roundwarehouse_local.py`](tools/run_roundwarehouse_local.py) supplies local
+episode artifacts to Reporter Lab's unchanged CTF roundwarehouse Wasm and records the
+component SHA and reporter manifest beside its Parquet outputs.
+[`tools/find_firefights.py`](tools/find_firefights.py) then detects reciprocal,
+spatiotemporally connected weapon exchanges and exposes auditable weight/confidence
+terms. See [`docs/replay-firefight-detection.md`](docs/replay-firefight-detection.md)
+for the event contract, method, usage, and calibration limits.
 
 ## Beacon tuning sweeps
 

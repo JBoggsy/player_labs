@@ -18,6 +18,25 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
 
+### Infer authored openings from repeated trajectories, and stop before reactions dominate
+
+Evidence: the same 10 replays per opponent produced stable, high-support opening shapes:
+focusfire settled into three defensive post groups, h050 opened 2 top / 5 middle / 1 runner,
+and alphashot held four seats deep in its endzone while using sparse runners. Exact simulator
+positions, team-frame mirroring, 5-second windows, bounded-diameter holds, and persistent
+proximity/co-motion were enough; no large clustering dependency was needed. After roughly
+60 seconds, deaths, respawns, item emergencies, and contact increasingly described reactions
+rather than the authored opening, so the analyzer defaults to an opening horizon and labels
+low-agreement motion as `maneuver`.
+
+### A configured battle plan and observed field behavior are different artifacts
+
+Evidence: v39's traces show every plan phase executed, but replay trajectories also show
+item-retrieval and combat rungs pulling individual bots away from their nominal rally/vee
+orders. The inferred report is therefore an observation of the whole policy priority ladder,
+not a source-code reconstruction. Always report confidence/support and retain `maneuver`
+rather than forcing every path into a move or hold.
+
 ### FIREFIGHT LADDER RESULT (360 eps): promising but NOT significant; claims and wider spacing both HURT
 
 Evidence, pooled over the two decisive opponents (alphashot excluded — draw-locked, see below):

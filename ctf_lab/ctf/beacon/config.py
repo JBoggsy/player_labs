@@ -107,6 +107,7 @@ GRENADE_CHARGE_TICKS = 24
 GRENADE_MIN_RANGE = 30
 GRENADE_MAX_RANGE = MAP_W // 5  # 247
 GRENADE_BLAST_RADIUS = 52  # 40 -> 52 in GameVersion 17 (b571dd3, deployed 0.7.51)
+GRENADE_FLIGHT_TICKS = 2 * FIRE_WINDUP_TICKS
 #: A pickup is grabbed by touch within this radius (sim.nim *PickupRange).
 ITEM_PICKUP_RANGE = 12
 
@@ -333,7 +334,10 @@ def _float_tunable(
 #: Lighthouse sweep half-arc, in brads (±). 32 brads ≈ ±45°.
 SWEEP_HALF_ARC = _env_int("BEACON_SWEEP_HALF_ARC", 32)
 #: Deadband: don't bother rotating to close an aim error smaller than this (brads).
-AIM_DEADBAND = _env_int("BEACON_AIM_DEADBAND", 3)
+#: With a five-brad turn step, two brads is the nearest attainable side of a
+#: target bearing; stopping at three chooses the farther side and caused a large
+#: measured accuracy cliff.
+AIM_DEADBAND = _env_int("BEACON_AIM_DEADBAND", 2)
 #: Resync the dead-reckoned aim to the observed self-sprite rotation only when they
 #: disagree by more than this (brads). The 0.7.8-era readback is 16-step quantized:
 #: soldierRotIndex rounds to the nearest step, so a correct estimate can disagree by
@@ -412,7 +416,7 @@ PEEK_DUCK_RUSH_EXEMPT_PX = _env_int("BEACON_PEEK_DUCK_RUSH_EXEMPT_PX", 90)
 LEAD_AIM = _env_int("BEACON_LEAD_AIM", 1) == 1
 #: Aim this many ticks ahead of a moving target: the 5-tick windup releases the
 #: bullet late, plus ~1 tick of perception latency (baseline LeadTicks = 6).
-LEAD_TICKS = _env_float("BEACON_LEAD_TICKS", 6.0)
+LEAD_TICKS = _env_float("BEACON_LEAD_TICKS", 3.5)
 #: Only lead with a velocity estimated over at least this many sightings — a
 #: 2-frame velocity is one noisy difference.
 LEAD_MIN_FRAMES = _env_int("BEACON_LEAD_MIN_FRAMES", 3)
@@ -803,10 +807,36 @@ validate_tunable_values(
 # --- Item skills (v10) ---------------------------------------------------------------
 #: Master switch for the item system (fetch + use) — the other v10 A/B bit.
 ITEMS = _env_int("BEACON_ITEMS", 1) == 1
-#: Max detour (px, straight-line) an agent diverts to fetch its ASSIGNED item.
-ITEM_DETOUR_PX = _env_int("BEACON_ITEM_DETOUR_PX", 420)
-#: Max detour (px) a HURT agent diverts to a center-line med kit.
-MEDKIT_DETOUR_PX = _env_int("BEACON_MEDKIT_DETOUR_PX", 420)
+#: Add nearby non-owner grenade pickups after legacy item decisions decline.
+#: When disabled, the general route scorer remains sampled shadow telemetry.
+ITEM_CONVENIENCE = _env_int("BEACON_ITEM_CONVENIENCE", 0) == 1
+#: Shadow scoring is observability, not control; 2 Hz is enough to characterize
+#: opportunities without bloating every dense action-frame snapshot.
+ITEM_SHADOW_EVERY_TICKS = _env_int("BEACON_ITEM_SHADOW_EVERY_TICKS", 12)
+#: Maximum extra walkable-route distance for an ordinary convenient pickup.
+ITEM_CONVENIENT_DETOUR_PX = _env_int("BEACON_ITEM_CONVENIENT_DETOUR_PX", 48)
+#: Additive convenience is deliberately limited to items only a few steps away.
+ITEM_INCIDENTAL_ROUTE_PX = _env_int("BEACON_ITEM_INCIDENTAL_ROUTE_PX", 64)
+#: Fresh respawns may reach a little farther for their nearby corner grenade.
+ITEM_RESPAWN_INCIDENTAL_ROUTE_PX = _env_int(
+    "BEACON_ITEM_RESPAWN_INCIDENTAL_ROUTE_PX", 96
+)
+#: A settled post is load-bearing; only take pickups that are nearly route-free.
+ITEM_POST_DETOUR_PX = _env_int("BEACON_ITEM_POST_DETOUR_PX", 48)
+#: Before rejoining after a respawn, own-side pickups receive this extra allowance.
+ITEM_RESPAWN_BONUS_PX = _env_int("BEACON_ITEM_RESPAWN_BONUS_PX", 240)
+#: Opening window in which a newly spawned bot can cheaply collect an own-side item.
+ITEM_RESPAWN_WINDOW_TICKS = _env_int("BEACON_ITEM_RESPAWN_WINDOW_TICKS", 240)
+#: Spray friendly-fire doctrine is not complete yet, so deliberate fetches remain
+#: limited to pickups that are effectively underfoot.
+ITEM_ARC_DETOUR_PX = _env_int("BEACON_ITEM_ARC_DETOUR_PX", 32)
+#: Preserve v48's established shield/grenade owners while the generic scorer
+#: broadens only genuinely cheap opportunities for the other seats.
+ITEM_ASSIGNED_DETOUR_PX = _env_int("BEACON_ITEM_ASSIGNED_DETOUR_PX", 420)
+#: Yield when a visible teammate has at least this much shorter a route to the item.
+ITEM_YIELD_MARGIN_PX = _env_int("BEACON_ITEM_YIELD_MARGIN_PX", 16)
+#: Low-health center occupants may take a somewhat larger marginal med-kit detour.
+MEDKIT_CONVENIENT_DETOUR_PX = _env_int("BEACON_MEDKIT_CONVENIENT_DETOUR_PX", 420)
 #: Grenade throwing (needs ITEMS): lob at wall-blocked remembered enemies.
 GRENADE_THROW = _env_int("BEACON_GRENADE_THROW", 1) == 1
 #: Never lob shorter than this (px) — the 40px blast hurts the thrower too.
@@ -817,12 +847,14 @@ GRENADE_AIM_ERR_BRADS = _env_int("BEACON_GRENADE_AIM_ERR_BRADS", 4)
 GRENADE_FORCE_RELEASE_TICKS = 16
 #: Only lob at tracks seen this recently (ticks).
 GRENADE_TARGET_FRESH_TICKS = _env_int("BEACON_GRENADE_TARGET_FRESH_TICKS", 30)
-#: Plasma arc: fire the cone when a visible enemy is inside this range (px;
-#: sim reach is 136 — use a bit less so the cone's width has caught up) and
-#: within this aim error (brads). Arc pickups are NOT assigned by default (the
-#: arc disables the gun); this only governs use if one is somehow carried.
-ARC_FIRE_RANGE_PX = 120
-ARC_AIM_ERR_BRADS = 6
+#: Spray-can geometry from sim.nim. Pickups are NOT assigned by default (the
+#: spray disables the gun); these constants only govern fighting once carried.
+ARC_FIRE_RANGE_PX = 136
+ARC_MAX_WIDTH_PX = 68
+#: Local fighting pursuit only: close on an already-visible spray target, but
+#: never turn the weapon into a strategic movement objective across the map.
+ARC_PURSUIT_RANGE_PX = 400
+ARC_IDEAL_RANGE_PX = 100
 
 # --- Hearing (v16) --------------------------------------------------------------------
 #: Master switch for audio perception + its consumers — the v16 A/B bit.
@@ -981,11 +1013,12 @@ POST_MIN_SEPARATION_PX = _int_tunable(
     minimum=24,
     maximum=160,
 )
-#: Four-term score. Reach and cover retain the prototype weights; stance is a
-#: conservative directional bias and danger penalizes locally hot ground.
+#: Four-term score. Reach and cover retain the prototype weights; stance favors
+#: ground forward along the watched lane for both push and hold posts, while
+#: danger penalizes locally hot ground.
 POST_REACH_WEIGHT = _env_float("BEACON_POST_REACH_WEIGHT", 0.55)
 POST_COVER_WEIGHT = _env_float("BEACON_POST_COVER_WEIGHT", 0.45)
-POST_STANCE_WEIGHT = _env_float("BEACON_POST_STANCE_WEIGHT", 0.12)
+POST_STANCE_WEIGHT = _env_float("BEACON_POST_STANCE_WEIGHT", 0.18)
 POST_DANGER_WEIGHT = _env_float("BEACON_POST_DANGER_WEIGHT", 0.20)
 POST_COVER_CAP_PX = _env_int("BEACON_POST_COVER_CAP_PX", 64)
 #: Reject an open firing lane with no flank wall, or a blind pocket with no
@@ -996,13 +1029,13 @@ POST_MIN_SCORE = _env_float("BEACON_POST_MIN_SCORE", 0.20)
 #: A post is settled within this distance. Minimum dwell affects RE-SELECTION
 #: only; plan milestones observe arrival at the post immediately.
 POST_SETTLE_PX = _env_int("BEACON_POST_SETTLE_PX", 12)
-POST_MIN_DWELL_TICKS = _env_int("BEACON_POST_MIN_DWELL_TICKS", 96)
-POST_REEVALUATE_TICKS = _env_int("BEACON_POST_REEVALUATE_TICKS", 48)
-POST_SWITCH_MARGIN = _env_float("BEACON_POST_SWITCH_MARGIN", 0.10)
+POST_MIN_DWELL_TICKS = _env_int("BEACON_POST_MIN_DWELL_TICKS", 240)
+POST_REEVALUATE_TICKS = _env_int("BEACON_POST_REEVALUATE_TICKS", 120)
+POST_SWITCH_MARGIN = _env_float("BEACON_POST_SWITCH_MARGIN", 0.20)
 #: Live threat evidence and direction hysteresis.
 POST_THREAT_FRESH_TICKS = _env_int("BEACON_POST_THREAT_FRESH_TICKS", 48)
 POST_THREAT_HYSTERESIS_DIRECTIONS = _env_int(
-    "BEACON_POST_THREAT_HYSTERESIS_DIRECTIONS", 2
+    "BEACON_POST_THREAT_HYSTERESIS_DIRECTIONS", 4
 )
 POST_DANGER_GRADIENT_PX = _env_int("BEACON_POST_DANGER_GRADIENT_PX", 64)
 POST_DANGER_GRADIENT_MIN = _env_float("BEACON_POST_DANGER_GRADIENT_MIN", 0.10)
@@ -1015,8 +1048,15 @@ POST_CLAIM_TTL_TICKS = _env_int("BEACON_POST_CLAIM_TTL_TICKS", 120)
 #: A visible enemy actually standing on the candidate makes it contested ground,
 #: not a post to path directly onto.
 POST_ENEMY_OCCUPIED_PX = _env_int("BEACON_POST_ENEMY_OCCUPIED_PX", 24)
-#: Settled posts watch a narrower arc around their baked direction.
-POST_SWEEP_HALF_ARC = _env_int("BEACON_POST_SWEEP_HALF_ARC", 16)
+#: Settled posts dwell on the primary watched lane and the best open baked ray
+#: on either side. Repeating the primary direction gives it half of scan time.
+POST_SCAN_DWELL_TICKS = _env_int("BEACON_POST_SCAN_DWELL_TICKS", 18)
+POST_SCAN_MIN_OFFSET_DIRECTIONS = _env_int(
+    "BEACON_POST_SCAN_MIN_OFFSET_DIRECTIONS", 2
+)
+POST_SCAN_MAX_OFFSET_DIRECTIONS = _env_int(
+    "BEACON_POST_SCAN_MAX_OFFSET_DIRECTIONS", 6
+)
 #: Convert trigger (v26): when the ENEMY team's lives remaining (24 - their deaths,
 #: read off the fog-independent team scoreboard) drop to this or below, leaders
 #: order an all-in HUNT — the wipe is in reach and under GV21 a draw pays -1 like a

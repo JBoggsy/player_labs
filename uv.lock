@@ -506,7 +506,7 @@ wheels = [
 
 [[package]]
 name = "coworld"
-version = "0.1.30"
+version = "0.1.34"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
@@ -522,9 +522,9 @@ dependencies = [
     { name = "typer" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fd/1b/7679f4857293ad051b16090d7ea7452a25f47c60214aa8ef60e51fb05f03/coworld-0.1.30.tar.gz", hash = "sha256:18671866a8ad93878b93729fad020f4b8a6016e78898dc3f14dee525c0106885", size = 1889569, upload-time = "2026-07-08T23:53:06.693Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9a/d8/1fc347f4e2319771d2f4e2e6c8767cbbd42c2987e32bf6c8321aa56ccdd8/coworld-0.1.34.tar.gz", hash = "sha256:ef471eff03078817bec9fb4ede4c9368639265577eea4ce341c4d14969137f4b", size = 1887159, upload-time = "2026-07-19T18:20:24.478Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b1/ff/28564c4990f3c6f00e15994e405cc84cf1e9dc0514568a80564716f777a6/coworld-0.1.30-py3-none-any.whl", hash = "sha256:9f25f3f7cea6c811ed8189d5e2e530e848905e6a6ac85f3e725383da64522cc7", size = 280252, upload-time = "2026-07-08T23:53:04.841Z" },
+    { url = "https://files.pythonhosted.org/packages/71/50/f0d293932a4e847bc9fcc7938d3174a2c580f2dd43b0deeb4ae84fedae99/coworld-0.1.34-py3-none-any.whl", hash = "sha256:71a7f3f37f8f33c924ce7bec7708bab3326b3281a21edf58cf19c2802a4a1565", size = 295945, upload-time = "2026-07-19T18:20:22.717Z" },
 ]
 
 [package.optional-dependencies]
@@ -2544,7 +2544,7 @@ wheels = [
 
 [[package]]
 name = "softmax-cli"
-version = "0.26.26"
+version = "0.26.27"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fastapi" },
@@ -2555,9 +2555,9 @@ dependencies = [
     { name = "typer" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7f/a9/2b1bcb7c7731a2aa6d588a338841a42fc73212216133972afbe7e867de3b/softmax_cli-0.26.26.tar.gz", hash = "sha256:d1bdce90c5f61b0eae88d40930c91797df00cee64b198501243681de08e1b9ee", size = 18462, upload-time = "2026-07-08T23:50:27.098Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/81/64/2ec16d4b6455542d79286c7698288a545d3ebc8505699aa67ab25be4be75/softmax_cli-0.26.27.tar.gz", hash = "sha256:de3e438adabffd86a0c900628ffffa82291abce2019449b3d5dde49dc61f491a", size = 18449, upload-time = "2026-07-16T04:32:07.4Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b9/6e/89bd511dd653485fa0dc459a5beb52c7a6d8b0b90fdf98ee7b5c48658c96/softmax_cli-0.26.26-py3-none-any.whl", hash = "sha256:12a0760787ac6d1e2f653d6d647ca116cd70caa71b1d2158f8be1742f8bb2ce8", size = 15142, upload-time = "2026-07-08T23:50:25.926Z" },
+    { url = "https://files.pythonhosted.org/packages/45/20/18677a091be14e3c8691aaa4c7e91be09690f2903828c851e60237080874/softmax_cli-0.26.27-py3-none-any.whl", hash = "sha256:42c1bad24d5ab91ecd512c7b15b32d895b3b64ba8ba1045ef86dd1107205dd77", size = 15143, upload-time = "2026-07-16T04:32:06.179Z" },
 ]
 
 [[package]]

@@ -24,6 +24,7 @@ Usage:
     uv run python ctf_lab/tools/event_warehouse.py \
         --episodes ctf_lab/scratch/eval_v5_baseline \
         --out ctf_lab/scratch/wh_v5 \
+        [--replay-only] \
         [--expand-replay ctf_lab/tools/bin/expand_replay_json]
 
 `--episodes` may be repeated / point at a dir of episode subdirs. The replay-JSON binary
@@ -303,7 +304,13 @@ def _episode_dirs(paths: Iterable[Path]) -> list[Path]:
     return dirs
 
 
-def build_warehouse(episode_paths: list[Path], out_dir: Path, expand_bin: Path) -> None:
+def build_warehouse(
+    episode_paths: list[Path],
+    out_dir: Path,
+    expand_bin: Path,
+    *,
+    include_traces: bool = True,
+) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     dirs = _episode_dirs(episode_paths)
     if not dirs:
@@ -345,7 +352,7 @@ def build_warehouse(episode_paths: list[Path], out_dir: Path, expand_bin: Path) 
                     "value_json": json.dumps(r.get("value", {})),
                 })
 
-        for t in _load_trace_events(ep_dir):
+        for t in _load_trace_events(ep_dir) if include_traces else ():
             ident = slot_identity.get((eid, t.get("slot")), {})
             data = t.get("data", {})
             trace_events.append({
@@ -435,12 +442,19 @@ def main() -> None:
     ap.add_argument("--out", required=True, type=Path, help="output dir for warehouse.duckdb + parquet")
     ap.add_argument("--expand-replay", type=Path, default=DEFAULT_EXPAND,
                     help="path to the expand_replay_json binary (default: tools/bin/expand_replay_json)")
+    ap.add_argument("--replay-only", action="store_true",
+                    help="skip policy telemetry when only ground-truth replay events are needed")
     args = ap.parse_args()
 
     if not args.expand_replay.exists():
         log(f"WARNING: expand_replay_json not found at {args.expand_replay} — "
             f"replay events will be empty. Build it: ctf_lab/tools/build_expand_replay.sh")
-    build_warehouse(args.episodes, args.out, args.expand_replay)
+    build_warehouse(
+        args.episodes,
+        args.out,
+        args.expand_replay,
+        include_traces=not args.replay_only,
+    )
 
 
 if __name__ == "__main__":

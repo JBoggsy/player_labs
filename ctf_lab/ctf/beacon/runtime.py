@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from ctf.beacon import items, nav
 from ctf.beacon.action import resolve_action
 from ctf.beacon.belief import update_belief
 from ctf.beacon.chat import choose_shout
@@ -41,11 +42,17 @@ class BeaconRuntime:
 
     def __init__(self, team: Team, seat: int = 0, *, on_step: StepHook | None = None) -> None:
         role = role_for_seat(seat)
+        item_spawns = items.build_spawn_table()
+        # Build the ten fixed-goal route fields before the websocket starts. The
+        # first live frame then pays only for its current objective anchor.
+        for spawn in item_spawns:
+            nav.route_distance(spawn.pos, spawn.pos)
         self.belief = Belief(
             team=team,
             seat=seat,
             role=role,
             hold_point=hold_point_for_seat(team, seat) if role == "defender" else None,
+            item_spawns=item_spawns,
         )
         self.action_state = ActionState()
         self.on_step = on_step
