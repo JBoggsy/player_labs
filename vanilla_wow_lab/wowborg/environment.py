@@ -23,6 +23,7 @@ from environment.contract.agent import (
     WaitAction,
     WorldPoint,
 )
+from environment.control import EnvironmentRequestError
 from environment.runtime.episode import (
     EnvironmentTransition,
     HostedSessionRuntime,
@@ -64,7 +65,10 @@ class FrameRefreshingHostedRuntime(HostedSessionRuntime):
         deadline = time.monotonic() + self.step_timeout_seconds
         while time.monotonic() < deadline:
             self._client.set_timeout(max(0.001, deadline - time.monotonic()))
-            observed = self._client.frame()
+            try:
+                observed = self._client.frame()
+            except EnvironmentRequestError:
+                continue
             if observed.frame_id > frame.frame_id:
                 self._current = observed
                 return self._frame_transition(

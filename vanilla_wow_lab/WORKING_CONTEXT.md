@@ -49,8 +49,10 @@ surface:
   advanced the frame, the maximum stale run fell to one, and position diversity
   rose from one to 264/337. Its first station still failed because four replans
   expired during a repeatable ~20-second startup movement stall just as movement
-  began. The next candidate retries that specific `no_progress` result once, then
-  verifies known and untouched held-out station courses before any league submission.
+  began. V52 reached the known `valley-gate`; the other episode activated the
+  one-time retry on Sarkoth. V53 exposed multiple queued typed request errors
+  before the current frame, so the next candidate drains consecutive errors before
+  accepting the newer frame and reruns the untouched held-out course.
 
 The older status sections below are historical context. In particular, the 2026-07-27
 decision to fork/re-open a Gym seam has been superseded by the owner's shipped `/env`.

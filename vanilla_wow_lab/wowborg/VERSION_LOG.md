@@ -1,5 +1,34 @@
 # wowborg version log
 
+## v53 - held-out course with transient retry (2026-07-30)
+
+- Version UUID: `c210ad97-fc1b-486a-ba5a-6f1f7d4d0d3a`
+  (`wowborg:v53`, uploaded inert; not submitted to a league).
+- Built `linux/amd64` from source commit `a2636f1` with the preregistered
+  held-out Durotar course and v52's single transient no-progress retry.
+- Local image manifest:
+  `sha256:41102802debe3637f90c70137c9ad58da16536a2c209dbc96d47f2a1fbd12ef7`.
+- Hosted request:
+  `xreq_62bf9b89-e840-4637-a64a-29c55b143d23` on certified accelerated-wow
+  0.1.124 / `custom-fresh-start-10x`.
+- Verdict: operational failure. Both episodes exited when a second queued stale
+  request error arrived while the runtime was waiting for the current frame.
+
+## v52 - transient no-progress retry (2026-07-30)
+
+- Version UUID: `9d876528-9dba-4945-9498-6bdff9a3625f`
+  (`wowborg:v52`, uploaded inert; not submitted to a league).
+- Built `linux/amd64` from source commit `a2636f1`; World Race retries a station
+  once when its first journey ends specifically as `no_progress`.
+- Local image manifest:
+  `sha256:80f2a8a759bfa5af04b4ad48a472a2edc64298e1ff644f0e1086e77a7664a8a4`.
+- Hosted request:
+  `xreq_62dd5b9b-3b83-4950-a9ec-a3ca902d179d` on certified accelerated-wow
+  0.1.124 / `custom-fresh-start-10x`.
+- Verdict: known challenge completion demonstrated. Both episodes completed with
+  score 1.0 and replay; one reached `valley-gate` in 207.7 seconds. The other
+  activated `nav_station_retry` on Sarkoth but did not finish before teardown.
+
 ## v51 - held-out course with current-socket refresh (2026-07-30)
 
 - Version UUID: `221a8b82-09f7-4424-9316-caeb20282cbd`
