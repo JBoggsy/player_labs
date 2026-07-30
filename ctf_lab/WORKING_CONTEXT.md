@@ -69,16 +69,40 @@ ordering v36 > v37 > v38 does hold on *both* opponents, which is weak evidence i
 real. **Coordination and wider spacing both HURT** — if firefight ever ships, ship it
 WITHOUT claims.
 
-### The actual bottleneck: captures, not combat
+### The actual bottleneck: we don't STEAL. Delivery is already fine.
+
+This is the most important result in the session and it is narrower than "captures".
 
 - **Out-captured 6–8×**: vs h050 **5 to 31**; vs focusfire **3 to 24** (60 eps each,
   replay ground truth) — while removing ~19–20 of 24 enemy lives per game.
+- **But steal→capture CONVERSION is NOT the problem.** vs h050 we convert **26%** to
+  their 29%; vs focusfire **20%** to their **17%** — we are *better* than focusfire at
+  finishing a steal. Escort/return work would be fixing something that isn't broken.
+- **The deficit is entirely in REACHING their flag**: 19 steals vs their 106 (h050),
+  15 vs their 143 (focusfire) — 5–9× fewer attempts.
+- **We stall at their defensive line.** Our bots die at median depth 614–672px past
+  our own wall (midfield is 617), dying past midfield 49–63% of the time — but the
+  flag is at x=1049, so we expire ~380px short.
+- **THE ROUTE FINDING.** Approach route in the 10s before a steal (extreme y reached):
+
+  | | top swing (y<140) | **bottom swing (y>520)** | straight mid |
+  |---|---|---|---|
+  | them (n=249) | 25% | **54%** | 20% |
+  | us (n=34) | 9% | 6% | **85%** |
+
+  They swing wide, favouring the bottom. We grind up the middle. `staged_push_top`'s
+  own summary calls the bottom *"deliberately naked"* — it is simultaneously the route
+  they raid us through and the route we never use.
+- **Suggestive but CONFOUNDED:** bots *ordered* to `blue_pedestal` (flank_n) arrived
+  within 60px only **1–7 times in 118 episodes**, while the held-back rear arrived
+  **14–25** times. The rear also lives longer, so this is not proof the plan causes
+  the low steal rate. **A `BEACON_PLAN=""` control arm would settle it** and is cheap.
 - **Falsified my own hypothesis** that brawling causes losses: wins average *more*
   contested firefight time than losses (54.7s vs 50.4s vs h050) and high-firefight
   episodes have *more* captures. Fighting isn't hurting; it isn't the constraint.
-- **vs alphashot:v180 we are draw-locked**: 0% wins, 25–30/30 draws, only 7.9 of 24
-  enemy lives removed (vs ~19.4 elsewhere). A capture problem, not a fighting one —
-  exclude it from pooled *fight* statistics.
+- **vs alphashot we are draw-locked**: 0% wins, 25–30/30 draws, only 7.9 of 24 enemy
+  lives removed (vs ~19.4 elsewhere). A capture problem, not a fighting one — exclude
+  it from pooled *fight* statistics.
 
 ### Firefight's own design bug, if it's ever revisited
 
@@ -107,19 +131,93 @@ and an ideal band re-centred on where shots actually connect.
   `focus_claim` per bot. Read those, not snapshots. `firefight_target.cell` is in
   PIXEL space despite the name.
 
-### Coordination note
+### Coordination note — READ THIS IF SEVERAL SESSIONS ARE RUNNING
 
-Another agent is expanding the warehouse reporter. I deliberately did **not** modify
-`event_warehouse.py`, `viewer.html`, or `viewer_bundle.py`. `viewer.html` still has NO
-firefight overlay — 8 ready bundles sit in `scratch/fight_bundles/` (2 wins + 2 losses
-per arm, firefight tick ranges in the filenames) and load in the current viewer today.
+Another agent is expanding the **warehouse reporter**. As of session 9 end I had NOT
+modified `event_warehouse.py`, `viewer.html`, or `viewer_bundle.py` — check `git log`
+before assuming that is still true.
 
-### Next
-1. **Capture conversion** — the evidence says this is where the wins are. Steal→deliver
-   rate, where carriers die, and GV26(b)'s carrier fire penalty as a reason to escort
-   rather than brawl.
-2. The draw-lock vs alphashot:v180 (0% across all arms).
-3. Optional: the firefight viewer overlay, in an ISOLATED WORKTREE.
+Hazards for parallel sessions in this one repo:
+- **Never run a background writer against the MAIN working tree.** I pointed a Codex
+  job at the main checkout to edit `viewer.html`; it happened to finish without
+  writing, but that is exactly how two agents clobber each other. Use a git worktree.
+- **Shared files to touch with care:** `WORKING_CONTEXT.md`, `TENTATIVE_LESSONS.md`
+  (append-only; a SessionStart hook rotates it into `lessons_archive/`),
+  `ctf/beacon/config.py` (every path wants knobs here), `tools/versions.env`.
+- **A running `plan_server.py` writes `battle_plans/*.json`** on the editor's Save —
+  do not hand-edit the same plan file while a human has it open in the editor (its 2s
+  ETag poll will warn, but only if it has unsaved edits).
+- `scratch/` is gitignored; treat it as per-session workspace, not a handoff channel.
+  Cross-session handoffs go in this file or in a committed doc.
+
+### Battle-plan work started (session 9 END)
+
+`BEACON_PLAN` defaults to **`staged_push_top`**, so the plan interpreter is **already
+live in the champion** — editing a plan changes shipped behaviour. Confirmed executing:
+bots advance ~2.17 phases, ~half end in phase 3, the hold `fallback` never fired
+(0/60), buddy-wait ~82 ticks per agent-game.
+
+**New: `battle_plans/staged_push_bot.json`** — same cover-to-cover staged shape aimed
+down the bottom, 6 phases / 20 draft orders, all on named POIs so they drag. The spear
+walks `red_rally_bot(421,597) → red_bot_triangle(479,546) → bottom_diamond(617,467) →
+blue_bot_triangle(755,546) → blue_pedestal(1049,329)`, splitting only at the steal
+(`grabbers [4,5]` / `holders [6,7]`) so it stays together through the exposed crossing.
+`screen [2,3]` feints at `red_rally_top`; `home [0,1]` finally covers `red_bot_hold`.
+Status **proposal — not wired to any upload.** All 33 locations verified via
+`poi.resolve`; interpreter reads back 6 phases / 20 orders / the split.
+
+**Editor:** `uv run python ctf_lab/tools/plan_server.py --port 8792` then
+`http://localhost:8792/tools/plan_editor.html`. Added a **New** button (in-memory only
+until Save, so a mistyped name can't clobber a file).
+
+**Three plan-authoring gotchas learned the hard way:**
+1. **A late entry tag STALLS the push.** Only `tick`/`enemy_lives`/`own_deaths` are
+   machine-evaluated (`plan.py:142` `_TAG_RE`), and a phase's entry tag must ALSO hold
+   before a bot advances — so `tick>=900` freezes a bot that already arrived. With
+   ~407-tick mean lifespan vs alphashot, that is how bots never reach the steal phase.
+   Keep tags permissive and let MILESTONE drive; the 900-tick timeout is the fallback.
+   `staged_push_top` has this flaw: its steal phase gates on `enemy_lives<=18`.
+2. **`via` waypoints are parsed but never consumed** (`plan.py:64,109`; no `.via`
+   reader downstream) — editor-only decoration. The per-phase target IS the routing,
+   which is why the bottom push is six hops rather than one arrow with waypoints.
+3. **A plan with `orders: []` renders a blank canvas** — the renderer is fine. If you
+   want something to drag, author the orders.
+
+### In flight / unanalysed
+
+- **30 GV26 baseline episodes DRAINED but NOT fetched or analysed.** `beacon:v35`
+  (posts on, firefight off ⇒ v33 behaviour) × 10 eps vs each of `ctf-focusfire:v63`,
+  `ctf-h050:v1`, `alphashot:v222`. IDs: `scratch/eval_gv26_base/xreq_ids.txt`. This is
+  the comparison point any new plan must beat, and it also shows whether the GV26 rule
+  changes moved anything on their own.
+- **Field moved again (2026-07-29 late):** focusfire **v63** rank 1 @1991,
+  **h050:v1 now rank 2** @1911, osprey:v12 rank 3, alphashot **v222** rank 4 @1620.
+  Re-resolve before composing any roster.
+
+### Next — INDEPENDENT paths (safe to run in parallel sessions)
+
+Each path names the files it owns. **Stay inside your path's files** so parallel
+sessions don't collide, and remember another agent owns the warehouse reporter.
+
+1. **Battle plan / steal rate** — owns `battle_plans/*.json`, `ctf/beacon/plan.py`.
+   Finish `staged_push_bot`, then A/B it vs `staged_push_top`. Run the
+   `BEACON_PLAN=""` control arm at the same time to settle whether the plan helps at
+   all. Primary metric: **steals**, not win rate (steals are ~5× more frequent, so far
+   cheaper to resolve at n=10-30).
+2. **Fire gate / accuracy** — owns `ctf/beacon/action.py`, `ctf/beacon/fight.py`,
+   `config.py` FF knobs. The measured constraint: selection moved to long range but
+   shots did not (0-199px share only 47%→45%). Fix the "no acceptable target" latch bug
+   and re-centre the ideal band on where shots actually connect (~207px).
+3. **The alphashot draw-lock** — 0% wins across all four arms, 25–30/30 draws, only
+   7.9/24 enemy lives removed. Needs its own diagnosis; fight tuning cannot touch it.
+   GV26(b) (carrier fires at 1/3) and GV25 (random respawn) are both unexploited.
+4. **Firefight viewer overlay** — owns `tools/viewer.html`, `tools/viewer_bundle.py`.
+   **Use an ISOLATED WORKTREE.** 8 bundles ready in `scratch/fight_bundles/`. Render
+   the transition events (174 `firefight_target`, 215 `focus_claim` per bot), NOT the
+   sparse snapshots.
+
+**Do NOT submit anything** without a fresh A/B that clears significance; v33 is the
+competing champion at rank 2 and the firefight ladder did not beat it.
 
 ---
 

@@ -139,3 +139,50 @@ candidate is unreachable it still picks the least-bad one and LATCHES it (min dw
 margin 0.10). Concrete fix for any future firefight work: add a "no acceptable target" state that
 declines to latch, and re-centre the ideal range band on where shots actually connect rather than
 220-300px.
+
+### THE STEAL, NOT THE DELIVERY: our capture deficit is entirely about reaching their flag
+
+Evidence (360 eps): steal->capture conversion is vs h050 **26%** (theirs 29%) and vs focusfire
+**20%** (theirs **17%** — we are BETTER). But steals are 19 vs 106 and 15 vs 143 — 5-9x fewer
+attempts. Our bots die at median depth 614-672px from our wall (midfield 617) while their flag is at
+x=1049, so we expire ~380px short. Approach route in the 10s before a steal: THEY swing wide (54%
+bottom, 25% top, 20% mid); WE go 85% straight mid.
+Status: escort/return work would fix something that is not broken. The lever is arriving, and the
+bottom is the empirically best route — which `staged_push_top` explicitly calls "deliberately naked".
+Primary metric for any plan A/B should be **steals**, not win rate: steals are ~5x more frequent so
+far cheaper to resolve at n=10-30.
+
+### A LATE PLAN ENTRY TAG STALLS THE PUSH — the tag gates advancement, not just phase start
+
+Evidence: `plan.py:142` `_TAG_RE` matches ONLY `tick|enemy_lives|own_deaths` with `<=`/`>=`, and the
+next phase's entry tag must ALSO hold for a bot to advance. So `tick>=900` freezes a bot that already
+reached its target at tick 200. With mean lifespan ~407 ticks vs alphashot, that is exactly how bots
+never reach the steal phase — and `staged_push_top` has this flaw, gating its steal phase on
+`enemy_lives<=18`. I shipped the same bug in a scaffold (tick>=300/900/1200) and caught it before it
+ran.
+Status: keep entry tags permissive and let MILESTONE (arrival) drive advancement; the 900-tick phase
+timeout is the fallback. Un-evaluable tags (`presence(...)`, `flag(...)`) are harmless — they gate on
+milestone/timeout alone.
+
+### `via` waypoints in a battle plan are EDITOR-ONLY decoration
+
+Evidence: `via` is parsed into the Order dataclass (`plan.py:64,109`) but nothing reads `.via`
+downstream — the editor draws the polyline, the interpreter ignores it.
+Status: a multi-leg route must be expressed as SEPARATE PHASES, not one order with waypoints. The
+per-phase target IS the routing. This is why the bottom push is six hops.
+
+### A plan with empty `orders` renders a blank canvas — that is the plan, not a viewer bug
+
+Evidence: I committed a "scaffold to draw on" with `orders: []` in every phase and James reported no
+markers or arrows. The renderer was fine (move -> polyline + arrowhead, hold -> filled square with
+seat count). I had read "a plan to draw on" as blank canvas when a shape to ADJUST was wanted.
+Status: author draft orders on named POIs so they are draggable. Verify with `poi.resolve` on every
+`to`/`at`/`facing` — a typo'd POI name silently renders nothing.
+
+### The battle-plan interpreter is ALREADY LIVE in the champion — editing a plan ships behaviour
+
+Evidence: `BEACON_PLAN` defaults to `"staged_push_top"` (config.py:931), not empty. Traces confirm it
+executes: bots advance ~2.17 phases, ~half end in phase 3, buddy-wait ~82 ticks/agent-game, and the
+hold `fallback` never fired (0/60).
+Status: a plan edit is not a sandbox experiment. Also worth noting the `fallback` path has never once
+been exercised in measurement, so it is effectively untested behaviour.
