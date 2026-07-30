@@ -133,14 +133,41 @@ class GymSession:
             action=action.model_dump(mode="json"),
         )
         next_frame, _reward, terminated, truncated, info = self.env.step(action)
+        action_status = str(info.get("action_status") or "")
+        action_detail = str(info.get("action_detail") or "")
+        refreshed = False
+        if action_status == "rejected" and any(
+            marker in action_detail
+            for marker in (
+                "submission does not match the current AgentFrame",
+                "no AgentFrame is awaiting an action",
+                "action submission arrived after the game-wide deadline",
+            )
+        ):
+            stale_frame_id = next_frame.frame_id
+            next_frame, info = self.env.reset()
+            terminated = next_frame.environment.terminal
+            truncated = False
+            refreshed = True
+            self._tracer.emit(
+                "frame_refresh",
+                submitted_frame_id=frame.frame_id,
+                stale_frame_id=stale_frame_id,
+                refreshed_frame_id=next_frame.frame_id,
+                rejection=action_detail,
+            )
         self.frame = next_frame
         self.info = info
         self.finished = terminated or truncated
         self._trace_frame(next_frame)
         action_state = next_frame.action_state
-        success = info.get("action_status") not in ("rejected", "timeout")
-        detail = str(info.get("action_detail") or "")
-        if action_state is not None and action_state.submitted_frame_id == frame.frame_id:
+        success = action_status not in ("rejected", "timeout")
+        detail = action_detail
+        if (
+            not refreshed
+            and action_state is not None
+            and action_state.submitted_frame_id == frame.frame_id
+        ):
             success = action_state.status == "succeeded"
             detail = action_state.detail or action_state.reason_code
         self._last_outcome = ActionOutcome(

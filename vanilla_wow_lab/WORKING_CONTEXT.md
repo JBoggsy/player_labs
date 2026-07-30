@@ -35,7 +35,14 @@ surface:
   `cow_4dedf501-86de-4457-b303-c552975501d9`. Versions through 0.1.123 had a
   game-side asset-base startup defect that closed `/env` before the first frame;
   0.1.124 fixes it and surfaces typed pre-session failures.
-- Next: build/upload v47 against this pin, establish a hosted navigation baseline,
+- V47 (`57583ca8-476e-430a-ad3b-bc7c33ce40d0`) completed two hosted 0.1.124
+  episodes (`xreq_49d36c6a-b479-4246-bce3-acf975d2490f`) with replay and score
+  1.0, proving `/env` startup. Both characters remained at spawn: 90/92 of 120
+  outcomes were stale-frame rejections and reachability was 0/3 per episode.
+- Current hypothesis: route planning crosses the game-wide action deadline; the SDK
+  returns the rejected old frame, so wowborg resubmits stale IDs. The candidate
+  reconnects only on stale/deadline rejection, traces `frame_refresh`, and otherwise
+  leaves navigation unchanged. Next: build/upload and run the two-episode candidate,
   then verify known and untouched held-out station courses before any league submission.
 
 The older status sections below are historical context. In particular, the 2026-07-27
