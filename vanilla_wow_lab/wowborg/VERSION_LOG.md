@@ -1,5 +1,62 @@
 # wowborg version log
 
+## v59 - behavior-neutral `/player` progress observer (2026-07-30)
+
+- Version UUID: `fc660a1d-2ec2-45d2-bf9a-e7725d8be246`
+  (`wowborg:v59`, uploaded inert; not submitted to a league).
+- Built `linux/amd64` from source commit `6df4d2d`. `/env` remains the sole
+  gameplay owner with its original policy budget. A read-only `/player` socket
+  reports canonical level/XP/displacement samples and sends `done` at the
+  owner-standard handoff deadline minus 35 seconds.
+- Local image manifest:
+  `sha256:7bb7e532a112c2cad42da37719ce9e2ef97df6564f6ef681ff85ade97f052349`.
+- Hosted request:
+  `xreq_50048077-8098-4ece-a725-460866e70ed4` on certified accelerated-wow
+  0.1.124 / `custom-fresh-start-10x`.
+- Verdict: 2/2 completed with score 1.0, retained replay, no retry or error.
+  The observer emitted 248 / 247 progress reports, ended both sessions with
+  `player_session_done`, and reported 1,314.4 / 1,309.9 yards. The replays
+  contain 4,115 / 4,097 movement packets.
+- Episodes: `ereq_292052b7-c092-404b-91de-c55d29b180dc`
+  ([replay](https://softmax-public.s3.amazonaws.com/replays/249d8681-6c05-4fdb-ae14-ae6070d42506.replay))
+  and `ereq_422085f1-9ec7-4554-b2ba-9942947e5dc2`
+  ([replay](https://softmax-public.s3.amazonaws.com/replays/22800b03-b0b6-4e97-ae71-57a596a48680.replay)).
+- Solo overworld replay intentionally has no Godview sidecar; the packaged
+  viewer reconstructs movement from the selected POV's recorded client packets.
+
+## v58 - exact policy-budget cap (superseded, 2026-07-30)
+
+- Version UUID: `d21a35e7-f4e6-4247-a658-9df91c900c46`
+  (`wowborg:v58`, uploaded inert; not submitted to a league).
+- Built from source commit `2f9e751`, image manifest
+  `sha256:948568fb2b063886a182d118826c98932cdc496c97497d3cf5a50c12036703b0`.
+- Correctly measured the teardown margin from the `/player` handoff, but still
+  capped the policy's own budget and therefore changed station selection. Its
+  request `xreq_b56f2696-860e-4614-9057-140e55edf5f4` was cancelled before
+  evaluation; v59 removes the behavioral confound.
+
+## v57 - `/player` teardown margin (superseded, 2026-07-30)
+
+- Version UUID: `1c645f35-0d52-4fdc-89d3-47f0f921b9d4`
+  (`wowborg:v57`, uploaded inert; not submitted to a league).
+- Built from source commit `3722172`, image manifest
+  `sha256:6f5f99f21b3bd58196c83e6e92cee7a06bf970fb5a4daf7fa11da4c50b7f2dd7`.
+- Request `xreq_cef1458f-ad8d-4b00-82d9-ed3debf65aa1` completed 2/2 with score
+  1.0 and replay. One episode emitted 153 progress reports, reported 738.4
+  yards, retained 2,451 movement packets, and sent clean `done`.
+- Superseded because its policy-duration cap changed World Race's time-share
+  calculation; v59 moves deadline ownership entirely into the observer.
+
+## v56 - first `/player` progress observer (failed, 2026-07-30)
+
+- Version UUID: `84b7a8c2-fe4e-4013-95a8-cc1375b4727b`
+  (`wowborg:v56`, uploaded inert; not submitted to a league).
+- Built from source commit `ad891af`, image manifest
+  `sha256:db32ed339b6795c82ce666f7f3d3886a4bd6f8ee4b2b9b4b005c5170961ae438`.
+- The observer connected and emitted real progress, but wowborg sent no `done`
+  before the `/player` deadline. Both jobs failed as `session deadline reached`;
+  retry request `xreq_573bf3a4-8983-41ba-a4b4-4eb6ea28d7a7` was cancelled.
+
 ## v55 - final 0.1.124 default-catalog artifact (2026-07-30)
 
 - Version UUID: `94c46921-5c5d-4486-b780-1d1d31f43591`

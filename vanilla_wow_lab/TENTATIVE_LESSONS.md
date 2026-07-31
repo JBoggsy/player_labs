@@ -32,6 +32,21 @@ deployed game image into a clean Python runtime. Build validation imports
 This keeps policy and deployed contract aligned while preserving game ownership of the
 client.
 
+### `/player` progress must remain an observer, including time-budget ownership
+Evidence: v56 proved that opening `/player` without an early `done` makes an otherwise
+healthy `/env` episode fail at the player-session deadline. V57/v58 fixed teardown by
+capping the policy duration, but that changed World Race station selection and produced
+an avoidable zero-move course. V59 leaves the policy budget untouched and has the observer
+send `done` at the handoff deadline minus the owner-standard 35-second margin. Its 2/2
+hosted episodes completed with about 1,310 yards reported live and about 4,100 movement
+packets retained each.
+
+### Solo overworld replay movement comes from POV packets, not Godview
+Evidence: v59 replays contain zero Godview frames by design yet retain 4,115 / 4,097 client
+movement packets. The owner viewer contract says solo/overworld playback follows the
+selected POV and reconstructs motion through the normal player reducer; Godview is an
+optional RFC camera/boundary sidecar, not a requirement for movement.
+
 ### The game ships deterministic combat testbeds — z7-class-combat-lab and spell-lab-* variants
 Evidence: `infra/coworld_manifest_template.json` (repo @ da32437e8) defines `z7-class-combat-lab`
 (level-29 twink warrior+rogue on GM Island beside a cloned hostile with target_health_multiplier

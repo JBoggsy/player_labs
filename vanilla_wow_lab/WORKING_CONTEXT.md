@@ -13,7 +13,7 @@ file is the one-screen "where are we and why."
 
 ---
 
-## Status (2026-07-30): WOWBORG WORKS ON 0.1.124; KNOWN + HELD-OUT NAV PROVED
+## Status (2026-07-30): WOWBORG WORKS ON 0.1.124; NAV + LIVE PROGRESS PROVED
 
 The current accelerated-wow release now ships the convenient Gymnasium interface the
 lab previously expected to own. `wowborg` has been rewritten against that canonical
@@ -60,8 +60,14 @@ surface:
   episodes with score 1.0 and replay: both independently reached the never-before-used
   `novel-east-rise` coordinate (332.9s / 341.8s) and correctly failed the deliberately
   impossible `novel-high-air` target as unreachable. No version was submitted to a
-  league. V55 (`94c46921-5c5d-4486-b780-1d1d31f43591`) is the final inert
+  league. V55 (`94c46921-5c5d-4486-b780-1d1d31f43591`) is the pre-observer
   default-catalog artifact from the same proven source.
+- V59 (`fc660a1d-2ec2-45d2-bf9a-e7725d8be246`) adds behavior-neutral `/player`
+  participation: `/env` keeps the original policy budget and sole action ownership,
+  while the observer reports live progress and sends `done` 35 seconds before its
+  handoff deadline. Hosted request `xreq_50048077-8098-4ece-a725-460866e70ed4`
+  completed 2/2 with score 1.0 and replay; both reported about 1,310 yards and
+  retained about 4,100 movement packets. No version was submitted to a league.
 
 The older status sections below are historical context. In particular, the 2026-07-27
 decision to fork/re-open a Gym seam has been superseded by the owner's shipped `/env`.
