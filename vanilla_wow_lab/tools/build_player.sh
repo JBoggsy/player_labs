@@ -38,13 +38,13 @@ docker buildx build --platform=linux/amd64 --load \
   -t "$tag" \
   "$LAB_DIR/wowborg"
 
-echo "==> verifying /env-only player surface"
+echo "==> verifying /env policy and /player observer surface"
 docker run --rm --entrypoint python3 "$tag" -c '
 from environment import VanillaWowEnv
 from environment.runtime.episode import hosted_runtime_factory
 from environment.contract.agent import AgentFrame, MoveAction
 from player.sdk.navmesh import route_navmesh
-import wowborg.environment, wowborg.main, wowborg.policies
+import wowborg.environment, wowborg.main, wowborg.player_progress, wowborg.policies
 ' || die "sanity check FAILED"
 
 if docker run --rm --entrypoint sh "$tag" -c \

@@ -15,6 +15,8 @@ records as real chat packets) is emitted by policies via the environment session
 Event shape: one JSON object per line — ``{"ts": <unix>, "seq": <int>, "kind": <str>,
 **payload}``. Kinds are free-form strings; established ones: ``session_start``,
 ``observation``, ``intent``, ``outcome``, ``leg``, ``say``, ``error``, ``session_end``.
+The `/player` observer adds ``player_session_connected``, ``player_progress``,
+``player_session_final``, ``player_session_done``, and ``player_session_error``.
 """
 
 from __future__ import annotations

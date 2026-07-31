@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import time
+from collections.abc import Callable
 from urllib.parse import parse_qs, urlsplit, urlunsplit
 
 from environment import VanillaWowEnv
@@ -134,12 +135,14 @@ class GymSession:
         frame: AgentFrame,
         info: dict[str, object],
         tracer: Tracer | None = None,
+        frame_observer: Callable[[AgentFrame], None] | None = None,
     ) -> None:
         self.env = env
         self.frame = frame
         self.info = info
         self.finished = False
         self._tracer = tracer or NullTracer()
+        self._frame_observer = frame_observer
         self._last_outcome: ActionOutcome | None = None
         self._trace_frame(frame)
 
@@ -313,6 +316,8 @@ class GymSession:
         )
 
     def _trace_frame(self, frame: AgentFrame) -> None:
+        if self._frame_observer is not None:
+            self._frame_observer(frame)
         self._tracer.emit(
             "observation",
             frame_id=frame.frame_id,

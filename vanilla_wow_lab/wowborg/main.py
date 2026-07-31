@@ -8,6 +8,7 @@ from pathlib import Path
 
 from wowborg.artifact import upload_evidence
 from wowborg.environment import GymSession, PLAYER_WS_URL_ENV, build_hosted_env
+from wowborg.player_progress import PlayerProgressReporter
 from wowborg.policies import build_policy
 from wowborg.trace import Tracer
 
@@ -20,6 +21,7 @@ def main() -> None:
         raise SystemExit(f"{PLAYER_WS_URL_ENV} is required")
     runtime_dir = Path(os.environ.get("WOWBORG_RUNTIME_DIR", "/tmp/wowborg-runtime"))
     tracer = Tracer.from_env(runtime_dir)
+    progress = PlayerProgressReporter(player_ws_url, tracer)
     policy = build_policy(os.environ.get("WOWBORG_POLICY", "world_race"))
     duration = float(os.environ.get("WOWBORG_DURATION_SECONDS", "86400"))
     env = build_hosted_env(
@@ -32,9 +34,17 @@ def main() -> None:
         ),
     )
     session: GymSession | None = None
+    succeeded = False
     try:
+        progress.connect()
         frame, info = env.reset()
-        session = GymSession(env, frame, info, tracer)
+        session = GymSession(
+            env,
+            frame,
+            info,
+            tracer,
+            frame_observer=progress.observe,
+        )
         tracer.emit(
             "session_start",
             protocol="vanilla_wow.environment.v1",
@@ -48,6 +58,7 @@ def main() -> None:
             summary=getattr(policy, "summary", lambda: None)(),
             info=session.info,
         )
+        succeeded = True
     except Exception as exc:
         tracer.emit("error", error=repr(exc))
         raise
@@ -56,4 +67,12 @@ def main() -> None:
             session.close()
         else:
             env.close()
+        progress.close(
+            success=succeeded,
+            detail=(
+                "wowborg environment policy completed"
+                if succeeded
+                else "wowborg environment policy failed"
+            ),
+        )
         upload_evidence(runtime_dir)

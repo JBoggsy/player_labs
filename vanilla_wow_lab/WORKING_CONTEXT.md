@@ -29,8 +29,10 @@ surface:
   (`bda33bf9c321fa9a6f01398423c36c513b3db622`) are pinned in
   `tools/versions.env` and the root lockfile.
 - Navigation uses the owner SDK's authenticated `/player/navigation` query while the
-  policy loop uses `/env`. The full wowborg test suite is the current focused gate;
-  real-navmesh catalog and held-out course results belong in `wowborg/VERSION_LOG.md`.
+  policy loop uses `/env`. A read-only `/player` observer reports the canonical
+  frames as live level/XP/displacement progress without owning gameplay actions.
+  The full wowborg test suite is the current focused gate; real-navmesh catalog and
+  held-out course results belong in `wowborg/VERSION_LOG.md`.
 - Hosted certification is complete for canonical Coworld
   `cow_4dedf501-86de-4457-b303-c552975501d9`. Versions through 0.1.123 had a
   game-side asset-base startup defect that closed `/env` before the first frame;

@@ -5,6 +5,7 @@ game-owned Gymnasium environment directly:
 
 ```text
 policy -> VanillaWowEnv.step(AgentAction) -> WS /env -> game-owned WoW client
+       -> read-only progress samples       -> WS /player
 ```
 
 The policy image contains no WoW client and no client adapter. The game owns login,
@@ -26,6 +27,9 @@ resolution is pinned to the matching owner commit in the root `pyproject.toml`.
   pushed on that `/env` connection, and traces `frame_refresh` before continuing.
 - `main.py` — resets the environment, runs one synchronous policy loop, closes the
   session, and uploads evidence.
+- `player_progress.py` — opens the owner-supported `/player` observer channel and
+  projects canonical frames into live level/XP/displacement progress. It never
+  submits gameplay actions; `/env` remains the sole controller.
 - `policies/` — policy registry selected by `WOWBORG_POLICY`; `world_race` is the
   image default. World Race retries one station journey once when its first
   attempt ends in transient `no_progress`.
@@ -40,6 +44,8 @@ resolution is pinned to the matching owner commit in the root `pyproject.toml`.
 The hosted runner provides `COWORLD_PLAYER_WS_URL`. Wowborg derives:
 
 - the authenticated WebSocket `/env` endpoint used by `VanillaWowEnv`; and
+- the authenticated WebSocket `/player` endpoint used for live session identity
+  and progress reporting; and
 - the authenticated HTTP `/player/navigation` endpoint used by
   `player.sdk.navmesh`.
 
