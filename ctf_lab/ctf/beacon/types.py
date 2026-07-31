@@ -248,6 +248,18 @@ class Belief:
     # Player tracks + danger field (folded in belief.py; nothing gates on them yet):
     enemy_tracks: list[PlayerTrack] = field(default_factory=list)
     teammate_tracks: list[PlayerTrack] = field(default_factory=list)
+    # Anti-turtle classifier: count alive observation ticks and ticks with at
+    # least one enemy visibly outside its defended lineup. The terminal hold is
+    # latched once the late-game threshold is met, so death/fog cannot make the
+    # strategy oscillate back into an assault.
+    enemy_observation_ticks: int = 0
+    enemy_outside_base_ticks: int = 0
+    anti_turtle_latched: bool = False
+    anti_turtle_activations: int = 0
+    anti_turtle_ticks: int = 0
+    base_caution_active: bool = False
+    base_caution_ticks: int = 0
+    base_assault_blocked_ticks: int = 0
     #: Danger scalar field over the nav grid, float32 [GRID_H, GRID_W] in 0..1 —
     #: stamped hot by visible enemies, spreading at DANGER_DIFFUSION_FACTOR x max
     #: player speed, cooling with a half-life. Initialized hot on the enemy half.
@@ -319,6 +331,11 @@ class Belief:
     spray_pursuit_ticks: int = 0
     visible_grenade_starts: int = 0
     visible_grenade_releases: int = 0
+    grenade_target_starts: dict[str, int] = field(default_factory=dict)
+    grenade_target_releases: dict[str, int] = field(default_factory=dict)
+    grenade_targeted_enemies: int = 0
+    grenade_safety_vetoes: int = 0
+    grenade_force_releases: int = 0
     firefight_target_range_counts: dict[str, int] = field(default_factory=dict)
     firefight_shot_range_counts: dict[str, int] = field(default_factory=dict)
     #: Arc holders deliberately keep legacy short-range targeting; count frames
@@ -398,6 +415,7 @@ class Belief:
     post_cover: float | None = None
     post_stance: float | None = None
     post_danger: float | None = None
+    post_exposure: float | None = None
     post_threat_source: str | None = None
     post_claim_source: str | None = None
     # Dwell affects re-selection only. Plan milestones observe post arrival
@@ -406,12 +424,21 @@ class Belief:
     post_last_evaluated_tick: int = -1
     post_settled_ticks: int = 0
     post_ticks_total: int = 0
+    post_reselections: int = 0
+    post_danger_reselections: int = 0
+    post_degraded_clears: int = 0
+    post_last_reselection_reason: str | None = None
     # Once reached, a post remains owned through local traffic, combat contact,
     # and temporary displacement. Only a better post after the dwell/hysteresis
     # gate or a lower-seat claim can move it.
     post_committed: bool = False
     post_committed_tick: int = -1
     post_scan_direction: int | None = None
+    # A committed post is the persistent cover home for the peek/fire/return
+    # cycle. The peek cell is latched until the shot/cooldown sends us home.
+    post_peek_cell: tuple[int, int] | None = None
+    post_return_ticks: int = 0
+    post_peek_ticks: int = 0
     # Same-team K claims, keyed by claimant seat; stale entries decay on a clock.
     post_claims: dict[int, PostClaim] = field(default_factory=dict)
     post_last_claim_sent_tick: int = -10_000
@@ -424,6 +451,9 @@ class Belief:
     # the landing point the current charge is aimed at.
     throw_charge_ticks: int = 0
     throw_target: tuple[int, int] | None = None
+    throw_reason: str | None = None
+    throw_enemy_count: int = 0
+    throw_live_target: bool = False
 
 
 @dataclass

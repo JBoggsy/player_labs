@@ -9,11 +9,11 @@ This file is the **CTF-specific layer** on top of it: the game, the docs, the
 practices/preferences, and the policies we optimize. When the two disagree, the root
 defines *process*; this file defines *CTF*.
 
-> **Lab status (2026-07-10): first player `beacon` built, uploaded, and competing.** The
+> **Lab status (2026-07-31): `beacon:v67` is the submitted CTF champion.** The
 > game repo (`Metta-AI/coworld-ctf`) is cloned for reference at `~/coding/coworlds/coworld-ctf`.
-> **`beacon` (Python, [`ctf/beacon/`](ctf/beacon/)) is on `beacon:v5`** (v4 is the currently
-> submitted/competing version). It beats the co-gas opponents 20-0 by capture and, as of v5,
-> takes games off the elite Nim `ctf-baseline-16` too (4-11, via carrier escort). Live state:
+> **`beacon` (Python, [`ctf/beacon/`](ctf/beacon/)) is on `beacon:v67`**, combining
+> the `outer_echelon` plan, sight-line cover discipline, anti-turtle base caution,
+> uncapped gun eligibility, and crown-compatible aim readback. Live state:
 > [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md); versions: [`ctf/beacon/VERSION_LOG.md`](ctf/beacon/VERSION_LOG.md).
 
 ## What CTF is
@@ -218,8 +218,9 @@ rest of the lab's deferred tasks. Check it at the start of focused work.
   `BEACON_FOCUS_CLAIMS` adds local, soft-bias `F` claims beneath `K` and above `E`
   in chat arbitration; these claims are load-bearing convergence because range,
   aim cost, visibility, and friendly-fire corridors are bot-relative. Both new
-  flags default OFF. Fire remains behind the existing 350px fire gate and a
-  **friendly-fire guard**. Navigation is **offline-baked** (`tools/bake_map.py` →
+  flags default OFF. Fire uses distance only as a soft target-scoring preference;
+  exact aim, line clearance, and the **friendly-fire guard** determine eligibility.
+  Navigation is **offline-baked** (`tools/bake_map.py` →
   `mapdata/nav.npz`: an 8px
   walkable grid, two Dijkstra flow fields per team, a cover-cell grid, and a
   32-direction `uint8` sightline field in 4px distance units); online A* handles
@@ -227,20 +228,14 @@ rest of the lab's deferred tasks. Check it at the start of focused work.
   `BEACON_POSTS`, turns nearby plan/order/hold waypoints into covered fighting
   positions with a committed watch direction. Design:
   [`docs/designs/ctf-player-v1-design.html`](docs/designs/ctf-player-v1-design.html).
-  **Current: `beacon:v33` (competing champion, submitted 2026-07-28)** — the **covered-posts**
-  version: plan/order/hold waypoints act as *search centres*, and a bot latches a nearby
-  **post** (a cell plus the sightline direction it watches) chosen for forward reach,
-  directional cover, stance, and danger, claimed over chat with `K<seat><cell>`. Measured vs
-  the field: **40% wins vs ctf-focusfire:v56** (from 20%, p=0.01) and **20% vs ctf-h050:v1**
-  (from 0%, p=0.00). Built on the v22-v31 stack: seat-based roles, friendly-fire gate, carrier
-  escort, squad orders + presence, the **convert trigger** (all-in when the wipe is in reach),
-  the **battle-plan interpreter** (rung 3.9, goals not motion), and **buddy-wait**.
-  Version history: [`ctf/beacon/VERSION_LOG.md`](ctf/beacon/VERSION_LOG.md) — current through
-  v33; read it before assuming what a version contains.
-  Firefight can move selected-target and shot ranges from the measured 187px
-  baseline toward its deliberate 220–300px ideal band, but it cannot create a
-  meaningful 400px+ kill tail: `FIRE_MAX_RANGE_PX=350` and the aim/fire geometry
-  are unchanged. That requires a separate fire-gate/accuracy iteration.
+  **Current: `beacon:v67` (competing champion, submitted 2026-07-31).** Plan/order/hold
+  waypoints act as search centres for stable covered posts; the active `outer_echelon`
+  plan assigns four two-agent pairs to separated top and bottom corridor positions.
+  v65 added anti-turtle base caution, v66 removed the hard 350px firing veto, and v67
+  made absolute aim readback work under the champion's crown skin. A fresh 540-game
+  top-player screen finished 508-3-29. Version history:
+  [`ctf/beacon/VERSION_LOG.md`](ctf/beacon/VERSION_LOG.md); read it before assuming
+  what a version contains.
   Behavior knobs are env vars in `ctf/beacon/config.py` (`BEACON_DEFENDERS`,
   `BEACON_FF_CORRIDOR_PX`, …), set at upload time for A/B. Build: `tools/build_player.sh beacon`.
   Firefight sweep knobs are registered in that same config module; dump their

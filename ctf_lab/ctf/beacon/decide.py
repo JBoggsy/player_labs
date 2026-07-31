@@ -29,6 +29,7 @@ from ctf.beacon.config import (
     DIAG_EVERY_TICKS,
     ITEM_CONVENIENCE,
     NAV_CELL,
+    TEAM_TOTAL_LIVES,
 )
 from ctf.beacon.runtime import BeaconRuntime, StepInfo
 from ctf.beacon.types import PlayerTrack, Team
@@ -134,6 +135,7 @@ class _DiagnosticLogger:
         self._spray_fires = 0
         self._throws = 0  # grenade releases (charge -> 0 while holding one)
         self._last_charging = False
+        self._last_throw_plan: tuple[str | None, tuple[int, int] | None, int] | None = None
         self._last_items: tuple[bool, bool, bool] | None = None  # grenade/shield/arc
         self._last_hp: int | None = None
         self._last_item_choice: tuple | None = None
@@ -266,6 +268,7 @@ class _DiagnosticLogger:
             b.post_context,
             b.post_threat_source,
             b.post_claim_source,
+            b.post_exposure,
         )
         if post_now != self._last_post:
             self._record(step.tick, "post", {
@@ -276,10 +279,18 @@ class _DiagnosticLogger:
                 "context": b.post_context,
                 "mode": b.post_mode,
                 "score": b.post_score,
+                "exposure": b.post_exposure,
                 "threat_source": b.post_threat_source,
                 "claim_source": b.post_claim_source,
                 "ticks_on_post": b.post_settled_ticks,
                 "committed": b.post_committed,
+                "reselections": b.post_reselections,
+                "danger_reselections": b.post_danger_reselections,
+                "degraded_clears": b.post_degraded_clears,
+                "last_reselection_reason": b.post_last_reselection_reason,
+                "peek_cell": list(b.post_peek_cell) if b.post_peek_cell else None,
+                "return_ticks": b.post_return_ticks,
+                "peek_ticks": b.post_peek_ticks,
             })
             self._last_post = post_now
         if b.micro is not None:
@@ -384,9 +395,22 @@ class _DiagnosticLogger:
             })
             self._last_item_choice = choice_now
         charging = b.throw_charge_ticks > 0
+        if charging:
+            self._last_throw_plan = (
+                b.throw_reason,
+                b.throw_target,
+                b.throw_enemy_count,
+            )
         if self._last_charging and not charging and b.i_have_grenade:
             self._throws += 1
-            self._record(step.tick, "throw", {"self_xy": b.self_xy})
+            reason, target, enemy_count = self._last_throw_plan or (None, None, 0)
+            self._record(step.tick, "throw", {
+                "self_xy": b.self_xy,
+                "reason": reason,
+                "target": list(target) if target is not None else None,
+                "enemy_count": enemy_count,
+            })
+            self._last_throw_plan = None
         self._last_charging = charging
         if (
             b.hp_pips is not None
@@ -444,7 +468,22 @@ class _DiagnosticLogger:
             "rejoin_ticks": b.rejoin_ticks,
             # v26 convert trigger (live + cumulative).
             "enemy_lives_left": _enemy_lives_left_safe(b),
+            "own_lives_left": _own_lives_left_safe(b),
+            "enemy_life_advantage": _enemy_life_advantage_safe(b),
             "convert_events": b.convert_events,
+            "enemy_observation_ticks": b.enemy_observation_ticks,
+            "enemy_outside_base_ticks": b.enemy_outside_base_ticks,
+            "enemy_outside_base_rate": (
+                b.enemy_outside_base_ticks / b.enemy_observation_ticks
+                if b.enemy_observation_ticks
+                else None
+            ),
+            "anti_turtle_latched": b.anti_turtle_latched,
+            "anti_turtle_activations": b.anti_turtle_activations,
+            "anti_turtle_ticks": b.anti_turtle_ticks,
+            "base_caution_active": b.base_caution_active,
+            "base_caution_ticks": b.base_caution_ticks,
+            "base_assault_blocked_ticks": b.base_assault_blocked_ticks,
             # v30 plan interpreter (live + cumulative).
             "plan_phase": b.plan_phase,
             "plan_phase_age": b.tick - b.plan_phase_tick,
@@ -468,13 +507,21 @@ class _DiagnosticLogger:
             "post_cover": b.post_cover,
             "post_stance": b.post_stance,
             "post_danger": b.post_danger,
+            "post_exposure": b.post_exposure,
             "post_threat_source": b.post_threat_source,
             "post_claim_source": b.post_claim_source,
             "post_settled_ticks": b.post_settled_ticks,
             "post_ticks_total": b.post_ticks_total,
+            "post_reselections": b.post_reselections,
+            "post_danger_reselections": b.post_danger_reselections,
+            "post_degraded_clears": b.post_degraded_clears,
+            "post_last_reselection_reason": b.post_last_reselection_reason,
             "post_committed": b.post_committed,
             "post_committed_tick": b.post_committed_tick,
             "post_scan_direction": b.post_scan_direction,
+            "post_peek_cell": list(b.post_peek_cell) if b.post_peek_cell else None,
+            "post_return_ticks": b.post_return_ticks,
+            "post_peek_ticks": b.post_peek_ticks,
             "post_claims": {
                 str(seat): {
                     "cell": list(claim.cell),
@@ -555,6 +602,14 @@ class _DiagnosticLogger:
             "spray_pursuit_ticks": b.spray_pursuit_ticks,
             "visible_grenade_starts": b.visible_grenade_starts,
             "visible_grenade_releases": b.visible_grenade_releases,
+            "grenade_target_starts": dict(b.grenade_target_starts),
+            "grenade_target_releases": dict(b.grenade_target_releases),
+            "grenade_targeted_enemies": b.grenade_targeted_enemies,
+            "grenade_safety_vetoes": b.grenade_safety_vetoes,
+            "grenade_force_releases": b.grenade_force_releases,
+            "grenade_throw_reason": b.throw_reason,
+            "grenade_throw_target": b.throw_target,
+            "grenade_throw_enemy_count": b.throw_enemy_count,
             "firefight_target_ranges": dict(b.firefight_target_range_counts),
             "firefight_shot_ranges": dict(b.firefight_shot_range_counts),
             "carrier_fix": b.carrier_fix,
@@ -629,6 +684,20 @@ def _enemy_lives_left_safe(b) -> int | None:
         return squads.enemy_lives_left(b)
     except Exception:
         return None
+
+
+def _own_lives_left_safe(b) -> int | None:
+    if b.own_team_score is None:
+        return None
+    return max(0, TEAM_TOTAL_LIVES - b.own_team_score[1])
+
+
+def _enemy_life_advantage_safe(b) -> int | None:
+    own = _own_lives_left_safe(b)
+    enemy = _enemy_lives_left_safe(b)
+    if own is None or enemy is None:
+        return None
+    return enemy - own
 
 
 def _track_row(t: PlayerTrack, tick: int) -> dict:

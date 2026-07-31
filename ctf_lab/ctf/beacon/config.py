@@ -420,13 +420,10 @@ LEAD_TICKS = _env_float("BEACON_LEAD_TICKS", 3.5)
 #: Only lead with a velocity estimated over at least this many sightings — a
 #: 2-frame velocity is one noisy difference.
 LEAD_MIN_FRAMES = _env_int("BEACON_LEAD_MIN_FRAMES", 3)
-#: Hold fire beyond this range (px). The hit corridor is 14px (BulletHalfWidth 8 +
-#: PlayerHalf 6) and aim settles only to ~2-3 brads (5-brad rotation steps, 3-brad
-#: deadband), so beyond ~350px the expected angular miss exceeds the corridor and a
-#: shot is luck — v10 sprayed 260 shots/ep at 0.23 accuracy, mostly long-range
-#: defender fire. Withholding those shots trades spray for hit rate (the gun is
-#: still map-wide for reactive snap shots INSIDE the gate).
-FIRE_MAX_RANGE_PX = _env_int("BEACON_FIRE_MAX_RANGE_PX", 350)
+#: Target-scoring range band fades to zero here. This is deliberately not a fire
+#: gate: exact aim, wall, and friendly-fire geometry decide whether any visible
+#: target is shootable, including across long base sightlines.
+FF_RANGE_SCORE_FALLOFF_PX = 350
 
 # --- Firefight target selection + focus claims --------------------------------------
 # Firefight is a combat overlay, never a strategy rung: it changes which visible
@@ -447,14 +444,14 @@ FOCUS_CLAIMS = _bool_tunable(
     family="firefight",
 )
 #: Enter when a visible enemy is this close (or whenever under_fire is true).
-#: Slightly beyond the 350px fire gate so a target is chosen before it enters range.
+#: Visible-enemy radius that activates scored target selection.
 FF_RADIUS_PX = _int_tunable(
     "FF_RADIUS_PX",
     "BEACON_FF_RADIUS_PX",
     400,
     "Visible-enemy radius that triggers firefight state, in map pixels.",
     family="firefight",
-    minimum=FIRE_MAX_RANGE_PX,
+    minimum=FF_RANGE_SCORE_FALLOFF_PX,
     maximum=SIGHTLINE_CAP_PX,
 )
 #: Stay in firefight this long after the last trigger (~2s at 24 ticks/s).
@@ -486,8 +483,7 @@ FF_TARGET_SWITCH_MARGIN = _float_tunable(
     family="firefight",
     minimum=0.0,
 )
-#: Effective gun band. The far ideal edge deliberately stays INSIDE the existing
-#: 350px fire gate; do not add a second far-gate knob that can contradict it.
+#: Preferred target-scoring band. Targets beyond it remain shootable.
 FF_RANGE_CLOSE_PX = _int_tunable(
     "FF_RANGE_CLOSE_PX",
     "BEACON_FF_RANGE_CLOSE_PX",
@@ -495,25 +491,25 @@ FF_RANGE_CLOSE_PX = _int_tunable(
     "Range at or below which the range-band score is zero, in pixels.",
     family="firefight",
     minimum=0,
-    maximum=FIRE_MAX_RANGE_PX,
+    maximum=FF_RANGE_SCORE_FALLOFF_PX,
 )
 FF_RANGE_IDEAL_MIN_PX = _int_tunable(
     "FF_RANGE_IDEAL_MIN_PX",
     "BEACON_FF_RANGE_IDEAL_MIN_PX",
     220,
-    "Near edge of the peak target range band, bounded by the fire gate.",
+    "Near edge of the peak target-scoring range band.",
     family="firefight",
     minimum=0,
-    maximum=FIRE_MAX_RANGE_PX,
+    maximum=FF_RANGE_SCORE_FALLOFF_PX,
 )
 FF_RANGE_IDEAL_MAX_PX = _int_tunable(
     "FF_RANGE_IDEAL_MAX_PX",
     "BEACON_FF_RANGE_IDEAL_MAX_PX",
     300,
-    "Far edge of the peak target range band, bounded by the fire gate.",
+    "Far edge of the peak target-scoring range band.",
     family="firefight",
     minimum=0,
-    maximum=FIRE_MAX_RANGE_PX,
+    maximum=FF_RANGE_SCORE_FALLOFF_PX,
 )
 #: Normalized target-score weights. Shootability is signed (-1 blocked/+1 clear):
 #: 0.35 gives a 0.70 clear-vs-blocked swing, decisive over one wound level (0.25)
@@ -634,11 +630,11 @@ FF_DEATH_MISSING_TICKS = _int_tunable(
 TUNABLE_INVARIANTS: tuple[TunableInvariant, ...] = (
     TunableInvariant(
         "range_band_order",
-        "0 <= close < ideal_min <= ideal_max <= FIRE_MAX_RANGE_PX.",
+        "0 <= close < ideal_min <= ideal_max <= FF_RANGE_SCORE_FALLOFF_PX.",
     ),
     TunableInvariant(
         "firefight_radius_geometry",
-        "FIRE_MAX_RANGE_PX <= firefight radius <= SIGHTLINE_CAP_PX.",
+        "FF_RANGE_SCORE_FALLOFF_PX <= firefight radius <= SIGHTLINE_CAP_PX.",
     ),
     TunableInvariant(
         "target_latch_within_mode",
@@ -736,11 +732,11 @@ def validate_tunable_values(
         <= values["FF_RANGE_CLOSE_PX"]
         < values["FF_RANGE_IDEAL_MIN_PX"]
         <= values["FF_RANGE_IDEAL_MAX_PX"]
-        <= FIRE_MAX_RANGE_PX,
+        <= FF_RANGE_SCORE_FALLOFF_PX,
         "range_band_order",
     )
     require(
-        FIRE_MAX_RANGE_PX
+        FF_RANGE_SCORE_FALLOFF_PX
         <= values["FF_RADIUS_PX"]
         <= SIGHTLINE_CAP_PX,
         "firefight_radius_geometry",
@@ -847,6 +843,12 @@ GRENADE_AIM_ERR_BRADS = _env_int("BEACON_GRENADE_AIM_ERR_BRADS", 4)
 GRENADE_FORCE_RELEASE_TICKS = 16
 #: Only lob at tracks seen this recently (ticks).
 GRENADE_TARGET_FRESH_TICKS = _env_int("BEACON_GRENADE_TARGET_FRESH_TICKS", 30)
+#: A teammate track must be this fresh to veto a predicted landing.
+GRENADE_TEAMMATE_FRESH_TICKS = _env_int(
+    "BEACON_GRENADE_TEAMMATE_FRESH_TICKS", 12
+)
+#: An open single is worth a cooldown throw only when the blast can finish it.
+GRENADE_SINGLE_HP_MAX = _env_int("BEACON_GRENADE_SINGLE_HP_MAX", 2)
 #: Spray-can geometry from sim.nim. Pickups are NOT assigned by default (the
 #: spray disables the gun); these constants only govern fighting once carried.
 ARC_FIRE_RANGE_PX = 136
@@ -974,6 +976,21 @@ PLAN_BUDDY_RADIUS_PX = _env_int("BEACON_PLAN_BUDDY_RADIUS_PX", 170)
 #: then push regardless. ~6s.
 PLAN_BUDDY_WAIT_TICKS = _env_int("BEACON_PLAN_BUDDY_WAIT_TICKS", 150)
 
+#: Anti-turtle discipline. After 60% of a 5,000-tick game, a bot that has
+#: established its terminal plan post treats an enemy seen outside its lineup
+#: on at most this fraction of alive ticks as a base turtle. It then keeps the
+#: rally as a defensive hold instead of converting that control into a base
+#: assault. The separate life-gap gate applies immediately: three lives is one
+#: whole player and is the smallest meaningful "handful" at team scale.
+ANTI_TURTLE = _env_int("BEACON_ANTI_TURTLE", 1) == 1
+ANTI_TURTLE_MIN_TICK = _env_int("BEACON_ANTI_TURTLE_MIN_TICK", 3000)
+ANTI_TURTLE_OUTSIDE_RATE_MAX = _env_float(
+    "BEACON_ANTI_TURTLE_OUTSIDE_RATE_MAX", 0.08
+)
+BASE_ASSAULT_LIFE_DEFICIT = _env_int("BEACON_BASE_ASSAULT_LIFE_DEFICIT", 3)
+#: Inner edge of each lineup wall: beyond this boundary is the defended base.
+BASE_FRONT_X = {"red": 295, "blue": 939}
+
 # --- Posts: covered sightlines near tactical waypoints -----------------------------
 #: Master switches. Position selection and facing are separate so one image can
 #: isolate whether better ground or the narrower lane watch changes the outcome.
@@ -1020,6 +1037,7 @@ POST_REACH_WEIGHT = _env_float("BEACON_POST_REACH_WEIGHT", 0.55)
 POST_COVER_WEIGHT = _env_float("BEACON_POST_COVER_WEIGHT", 0.45)
 POST_STANCE_WEIGHT = _env_float("BEACON_POST_STANCE_WEIGHT", 0.18)
 POST_DANGER_WEIGHT = _env_float("BEACON_POST_DANGER_WEIGHT", 0.20)
+POST_EXPOSURE_WEIGHT = _env_float("BEACON_POST_EXPOSURE_WEIGHT", 1.25)
 POST_COVER_CAP_PX = _env_int("BEACON_POST_COVER_CAP_PX", 64)
 #: Reject an open firing lane with no flank wall, or a blind pocket with no
 #: forward reach, instead of calling every nearby walkable cell a post.

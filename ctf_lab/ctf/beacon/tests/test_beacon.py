@@ -451,6 +451,12 @@ def test_observed_aim_from_self_sprite_rotation():
     assert st.observed_aim == 64  # rot 4 = north
 
 
+def test_observed_aim_from_crown_self_sprite_rotation():
+    # Crown is the next 16-sprite skin block; its rotation still starts at zero.
+    st = perceive(_obs(_world_with_self((600, 329), aim_rot=16 + 4)), "red")
+    assert st.observed_aim == 64
+
+
 def test_item_pickups_perceived():
     w = _world_with_self((600, 329))
     w.sprites[40] = SpriteDef(40, 10, 10, "grenade", b"")
@@ -522,9 +528,9 @@ def test_peek_pre_lays_aim_at_blocked_track():
     from ctf.beacon.action import _peek_duck_override
     from ctf.beacon.types import PlayerTrack
     b = _combat_belief()  # gun UP
-    # Near the rect's south end (y=72): a ~2-cell sidestep south opens the line.
-    b.self_xy = (250, 56)
-    b.enemy_tracks = [PlayerTrack(pos=(300, 56), last_tick=90, facing="left")]  # blocked
+    # Near the rect's south end (y=72): a short sidestep south opens the line.
+    b.self_xy = (250, 64)
+    b.enemy_tracks = [PlayerTrack(pos=(300, 64), last_tick=90, facing="left")]  # blocked
     out = _peek_duck_override(Intent(kind="navigate_to", point=(1049, 329), reason="steal"), b)
     assert out is not None
     mask, aim = out
@@ -975,6 +981,96 @@ def test_grenade_charge_holds_c_and_mask_survives():
     cmd = resolve_action(Intent(kind="hold", reason="hold_line"), b, ActionState())
     assert cmd.held_mask & BUTTON_C
     assert b.throw_charge_ticks == 1
+    assert b.throw_reason == "wall_blocked"
+
+
+def test_grenade_skips_ordinary_open_single():
+    from ctf.beacon.config import BUTTON_C
+
+    b = Belief(
+        team="red",
+        alive=True,
+        fire_ready=True,
+        tick=100,
+        self_xy=(300, 329),
+        aim_brads=0,
+        enemies=(Enemy(pos=(440, 329), facing="left", hp_segments=3),),
+    )
+    b.i_have_grenade = True
+    cmd = resolve_action(Intent(kind="hold", reason="hold_line"), b, ActionState())
+    assert not cmd.held_mask & BUTTON_C
+    assert b.throw_reason is None
+
+
+def test_grenade_targets_tight_visible_group_without_stealing_gun_aim():
+    from ctf.beacon.config import BUTTON_C
+
+    b = Belief(
+        team="red",
+        alive=True,
+        fire_ready=True,
+        tick=100,
+        self_xy=(300, 600),
+        aim_brads=0,
+        enemies=(
+            Enemy(pos=(440, 600), facing="left"),
+            Enemy(pos=(480, 600), facing="left"),
+        ),
+    )
+    b.i_have_grenade = True
+    cmd = resolve_action(Intent(kind="hold", reason="hold_line"), b, ActionState())
+    assert cmd.held_mask & BUTTON_C
+    assert b.throw_target == (440, 600)
+    assert b.throw_reason == "group"
+    assert b.throw_enemy_count == 2
+
+
+def test_grenade_uses_open_single_for_final_enemy_life():
+    from ctf.beacon.config import BUTTON_C
+
+    b = Belief(
+        team="red",
+        alive=True,
+        fire_ready=True,
+        tick=100,
+        self_xy=(300, 329),
+        aim_brads=0,
+        enemies=(Enemy(pos=(440, 329), facing="left"),),
+        enemy_team_score=(0, 23),
+    )
+    b.i_have_grenade = True
+    cmd = resolve_action(Intent(kind="hold", reason="hold_line"), b, ActionState())
+    assert cmd.held_mask & BUTTON_C
+    assert b.throw_reason == "final_life"
+
+
+def test_flag_carrier_does_not_start_grenade_charge():
+    from ctf.beacon.config import BUTTON_C
+
+    b = Belief(
+        team="red",
+        alive=True,
+        fire_ready=True,
+        tick=100,
+        self_xy=(300, 329),
+        aim_brads=0,
+        enemies=(
+            Enemy(pos=(440, 329), facing="left"),
+            Enemy(pos=(480, 329), facing="left"),
+        ),
+        i_carry_enemy_flag=True,
+    )
+    b.i_have_grenade = True
+    cmd = resolve_action(Intent(kind="hold", reason="carry_home"), b, ActionState())
+    assert not cmd.held_mask & BUTTON_C
+    assert b.throw_reason is None
+
+    b.throw_charge_ticks = 4
+    b.throw_target = (440, 600)
+    b.throw_reason = "group"
+    cmd = resolve_action(Intent(kind="hold", reason="carry_home"), b, ActionState())
+    assert cmd.held_mask & BUTTON_C
+    assert b.throw_charge_ticks == 4
 
 
 def test_fire_freezes_movement_through_windup():
@@ -1362,7 +1458,7 @@ def test_poi_resolves_names_and_mirrors():
     assert poi.point("north_medkit", "blue") == nm  # medkit is on the mirror line
     assert poi.resolve({"x": 100, "y": 200}, "blue") == (1134, 200)
     assert poi.resolve("no_such_poi") is None
-    assert poi.area("center_ring").contains(617, 329)
+    assert poi.area("mid_danger_zone").contains(617, 329)
 
 
 def test_plan_book_groups_and_splits():
@@ -1549,14 +1645,17 @@ def test_phase_two_push_waypoint_selects_forward_rank_zero_post():
     assert post.stance > 0.8
 
 
-def test_threat_axis_quantisation_mirrors_for_blue():
+def test_baked_threat_axis_uses_forward_open_lane_and_mirrors():
     from ctf.beacon import posts
 
     red = Belief(team="red", alive=True, self_xy=(548, 20))
-    blue = Belief(team="blue", alive=True, self_xy=(686, 20))
-    assert posts.threat_axis(red, (548, 20)).direction == 29
-    assert posts.threat_axis(blue, (686, 20)).direction == 19
-    assert posts.direction_to_brads(29) == 232
+    # The 8px nav grid mirrors red x=548 onto blue x=688.
+    blue = Belief(team="blue", alive=True, self_xy=(688, 20))
+    red_axis = posts.threat_axis(red, (548, 20))
+    blue_axis = posts.threat_axis(blue, (688, 20))
+    assert (red_axis.direction, red_axis.source) == (0, "baked_sightline")
+    assert (blue_axis.direction, blue_axis.source) == (16, "baked_sightline")
+    assert posts.direction_to_brads(16) == 128
 
 
 def test_stance_prefers_forward_side_for_push_and_hold(monkeypatch):
@@ -2070,13 +2169,13 @@ def test_wound_score_distinguishes_unknown_from_confirmed_healthy():
     assert wounded.score > unknown.score > healthy.score
 
 
-def test_firefight_range_band_rejects_too_close_and_beyond_gate():
+def test_firefight_range_band_fades_outside_preferred_distance():
     from ctf.beacon import fight
-    from ctf.beacon.config import FIRE_MAX_RANGE_PX
+    from ctf.beacon.config import FF_RANGE_SCORE_FALLOFF_PX
 
     assert fight._range_term(60.0) == 0.0
     assert fight._range_term(260.0) == 1.0
-    assert fight._range_term(FIRE_MAX_RANGE_PX + 1.0) == 0.0
+    assert fight._range_term(FF_RANGE_SCORE_FALLOFF_PX + 1.0) == 0.0
 
 
 def test_shootability_default_swing_is_point_seven():

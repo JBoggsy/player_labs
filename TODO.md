@@ -5,14 +5,20 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
-- **Continue CTF item capability 4 from the validated v57 candidate (2026-07-30).**
-  v57 (`4c1c0723-3dc5-42fc-ac39-dd031a11e94d`) preserves v56's legacy item
-  decisions and adds only nearby own-side grenade pickups, with extra latitude
-  just after respawn. It activated 11 times across 6/10 traced games, matched
-  v56's 5-5 result against live leader `deltashot:v3`, then went 10-0 in the
-  independent Richard replication. It is uploaded but not submitted. Next:
-  tactical grenade selection for groups and wall-blocked enemies, with rare use
-  on a single shootable target; retain v57 as the control.
+- **Project large CTF snapshot fields during warehouse ingestion (found 2026-07-30).**
+  A 60-episode `BEACON_DIAG_EVERY_TICKS=1` build reached 12 GB and about
+  9.5 GB RSS because every snapshot stores the full danger grid in `data_json`.
+  Add an ingestion projection/side table or omit `danger.rows` from the general
+  trace table while retaining the small decision fields. Until then, stream
+  cumulative activation fields directly from telemetry ZIPs for full-tick
+  batches.
+
+- **Fix CTF A/B team-outcome significance units (found 2026-07-30).**
+  `ctf-ab` repeats one episode's team win/loss across all eight Beacon result
+  rows, then treats those 80 rows as independent. In the v58 Nancy replication
+  it reported `p=0.002` for 9/10 → 7/10, while the correct episode-level
+  two-sided Fisher test is `p=0.582`. Team outcomes must use one record per
+  episode; per-seat kills/deaths can remain seat-level.
 
 - **Imposter incidental co-location with teammate — avoid clustering (2026-07-07, James).** Belief
   trace refuted the "teammate detection is broken" theory (v101: 0/24 detection failures, teammate
@@ -141,6 +147,16 @@ mid-session; check them back at the start of focused work.
   whether to commit/PR them upstream or discard.
 
 ## Done
+
+- **CTF item capability 4: tactical grenade selection (DONE 2026-07-30).**
+  `beacon:v58` (`8fcbbb68-949d-48cd-8c66-11cbd1a9b660`) now prioritizes
+  wall-blocked enemies and tight groups, permits only narrow single-target
+  finishes, predicts teammate positions for a safety veto, and never releases
+  while carrying the flag. Against current `deltashot:v5`, v57 and v58 both
+  went 10-0 with 239 kills; v58's 43 ground-truth throws produced 35 enemy hits,
+  70 enemy HP removed, 9 multi-target impacts, and 3 friendly hits versus
+  v57's 45 / 33 / 66 / 7 / 4. Mechanism-positive non-regression, not a proven
+  outcome improvement. Uploaded inertly; not submitted.
 
 - **Fix `rotate_lessons.sh` re-archiving UNCHANGED buffers under new timestamps** (found 2026-07-13
   lessons sweep — 3 labs had byte-identical duplicate archives inflating the recurrence signal;

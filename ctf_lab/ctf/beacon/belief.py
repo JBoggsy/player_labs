@@ -54,6 +54,7 @@ from ctf.beacon.config import (
     UNDER_FIRE_FRESH_TICKS,
     UNDER_FIRE_RANGE_PX,
     CENTER_X,
+    BASE_FRONT_X,
     DANGER_DECAY_HALF_LIFE_TICKS,
     DANGER_DIFFUSION_FACTOR,
     DANGER_STAMP_RADIUS_PX,
@@ -166,6 +167,18 @@ def update_belief(belief: Belief, percept: CtfState, action_state: ActionState, 
     belief.fire_ready = percept.fire_ready
     belief.enemies = percept.enemies
     belief.teammates = percept.teammates
+    if belief.alive and belief.team is not None:
+        belief.enemy_observation_ticks += 1
+        enemy_team = "blue" if belief.team == "red" else "red"
+        front_x = BASE_FRONT_X[enemy_team]
+        outside = any(
+            enemy.pos[0] < front_x
+            if enemy_team == "blue"
+            else enemy.pos[0] > front_x
+            for enemy in percept.enemies
+        )
+        if outside:
+            belief.enemy_outside_base_ticks += 1
     belief.i_carry_enemy_flag = percept.i_carry_enemy_flag
     belief.enemy_flag_on_pedestal = percept.enemy_flag_on_pedestal
     belief.enemy_flag_pos = percept.enemy_flag_pos

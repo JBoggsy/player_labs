@@ -1,0 +1,142 @@
+{
+  "name": "outer_echelon",
+  "author": "both",
+  "status": "proposal",
+  "summary": "Preserve staged_advance's four two-agent teams, but pull the two inner teams out of the bracket approaches and establish four separated forward posts through the outer corridors.",
+  "team": "red",
+  "groups": {
+    "alpha": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "bravo": [
+      4,
+      5,
+      6,
+      7
+    ]
+  },
+  "phases": [
+    {
+      "name": "initial_push",
+      "intent": "Push past our rally points to cover the top, bottom, and middle approaches before committing across midfield.",
+      "entry": {
+        "prose": "game start",
+        "tag": "tick>=0"
+      },
+      "orders": [
+        {
+          "group": "top_1",
+          "kind": "move",
+          "to": {
+            "x": 514,
+            "y": 153
+          }
+        },
+        {
+          "group": "top_2",
+          "kind": "move",
+          "to": {
+            "x": 487,
+            "y": 257
+          }
+        },
+        {
+          "group": "bot_1",
+          "kind": "move",
+          "to": {
+            "x": 484,
+            "y": 404
+          }
+        },
+        {
+          "group": "bot_2",
+          "kind": "move",
+          "to": {
+            "x": 515,
+            "y": 507
+          }
+        }
+      ],
+      "enemy_belief": [
+        {
+          "at": "blue_pedestal",
+          "count": 8
+        }
+      ],
+      "notes": [],
+      "splits": {
+        "alpha": {
+          "top_1": [
+            0,
+            1
+          ],
+          "top_2": [
+            2,
+            3
+          ]
+        },
+        "bravo": {
+          "bot_1": [
+            4,
+            5
+          ],
+          "bot_2": [
+            6,
+            7
+          ]
+        }
+      }
+    },
+    {
+      "name": "outer_echelon",
+      "intent": "Advance through the top and bottom corridors, avoiding the center and bracket approaches, then occupy four separated forward posts.",
+      "entry": {
+        "prose": "once each pair establishes its first position, move through the outer lanes"
+      },
+      "orders": [
+        {
+          "group": "top_1",
+          "kind": "move",
+          "to": {
+            "x": 760,
+            "y": 50
+          }
+        },
+        {
+          "group": "top_2",
+          "kind": "move",
+          "to": {
+            "x": 760,
+            "y": 150
+          }
+        },
+        {
+          "group": "bot_1",
+          "kind": "move",
+          "to": {
+            "x": 760,
+            "y": 510
+          }
+        },
+        {
+          "group": "bot_2",
+          "kind": "move",
+          "to": {
+            "x": 760,
+            "y": 610
+          }
+        }
+      ],
+      "enemy_belief": [],
+      "notes": [
+        {
+          "who": "claude",
+          "text": "v62 losses against Nancy and RowDaBoat spent more alive time moving through the center and less time established forward than wins. This plan tests whether outer goals reduce that transition exposure; the relationship may partly reflect reverse causation, so the matched evaluation is the verdict."
+        }
+      ]
+    }
+  ]
+}

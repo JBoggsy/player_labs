@@ -14,6 +14,11 @@ import math
 from ctf.beacon import items, poi, posts, squads
 from ctf.beacon import plan as _plan
 from ctf.beacon.config import (
+    ANTI_TURTLE,
+    ANTI_TURTLE_MIN_TICK,
+    ANTI_TURTLE_OUTSIDE_RATE_MAX,
+    BASE_ASSAULT_LIFE_DEFICIT,
+    BASE_FRONT_X,
     GRENADE_WARN_CLEAR_PX,
     HOLD_ARRIVE_PX,
     ITEM_ASSIGNED_DETOUR_PX,
@@ -29,6 +34,7 @@ from ctf.beacon.config import (
     POSTS,
     SQUAD_COMMAND,
     SQUADS,
+    TEAM_TOTAL_LIVES,
 )
 from ctf.beacon.types import Belief, Intent
 
@@ -43,6 +49,59 @@ def _post_objective(belief: Belief, post: posts.Post, reason: str) -> tuple[Inte
     if belief.post_settled_ticks > 0:
         return Intent(kind="hold", reason=reason), None
     return Intent(kind="navigate_to", point=post.cell, reason=reason), None
+
+
+def _own_lives_left(belief: Belief) -> int | None:
+    if belief.own_team_score is None:
+        return None
+    return max(0, TEAM_TOTAL_LIVES - belief.own_team_score[1])
+
+
+def _enemy_life_advantage(belief: Belief) -> int | None:
+    own = _own_lives_left(belief)
+    enemy = squads.enemy_lives_left(belief)
+    if own is None or enemy is None:
+        return None
+    return enemy - own
+
+
+def _inside_enemy_base(belief: Belief, point: tuple[int, int]) -> bool:
+    assert belief.team is not None
+    enemy = "blue" if belief.team == "red" else "red"
+    front_x = BASE_FRONT_X[enemy]
+    return point[0] >= front_x if enemy == "blue" else point[0] <= front_x
+
+
+def _update_anti_turtle(belief: Belief) -> None:
+    """Latch a rally hold for opponents that remain behind their lineup."""
+    advantage = _enemy_life_advantage(belief)
+    belief.base_caution_active = (
+        advantage is not None and advantage >= BASE_ASSAULT_LIFE_DEFICIT
+    )
+    if belief.base_caution_active:
+        belief.base_caution_ticks += 1
+
+    if belief.anti_turtle_latched:
+        belief.anti_turtle_ticks += 1
+        return
+    if (
+        not ANTI_TURTLE
+        or belief.tick < ANTI_TURTLE_MIN_TICK
+        or belief.enemy_observation_ticks == 0
+        or not belief.post_committed
+        or belief.post_context != "plan"
+    ):
+        return
+    book = _plan.PlanBook.load(PLAN_NAME) if PLAN_NAME else None
+    if book is None or belief.plan_phase != len(book.phases) - 1:
+        return
+    outside_rate = (
+        belief.enemy_outside_base_ticks / belief.enemy_observation_ticks
+    )
+    if outside_rate <= ANTI_TURTLE_OUTSIDE_RATE_MAX:
+        belief.anti_turtle_latched = True
+        belief.anti_turtle_activations += 1
+        belief.anti_turtle_ticks += 1
 
 
 def _item_anchor(belief: Belief, enemy: str) -> tuple[tuple[int, int], str]:
@@ -120,6 +179,7 @@ def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
     if ITEM_CONVENIENCE:
         belief.item_options = []
         belief.item_choice = None
+    _update_anti_turtle(belief)
 
     # Squad command upkeep (v22): refresh presence from badge sightings; leaders
     # run the rule engine (sets belief.order); heard orders arrive via belief.
@@ -335,14 +395,22 @@ def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
     # single biggest measured win (v26 A/B: every focusfire draw became a win).
     # When the wipe is in reach, everyone hunts the freshest enemy evidence.
     if squads.wipe_in_reach(belief) and belief.self_xy is not None:
-        if not belief.converting:
-            belief.converting = True
-            belief.convert_events += 1
-        return Intent(
-            kind="navigate_to",
-            point=squads.convert_hunt_point(belief),
-            reason="convert_hunt",
-        ), None
+        hunt_point = squads.convert_hunt_point(belief)
+        base_assault_blocked = (
+            _inside_enemy_base(belief, hunt_point)
+            and (belief.anti_turtle_latched or belief.base_caution_active)
+        )
+        if base_assault_blocked:
+            belief.base_assault_blocked_ticks += 1
+        else:
+            if not belief.converting:
+                belief.converting = True
+                belief.convert_events += 1
+            return Intent(
+                kind="navigate_to",
+                point=hunt_point,
+                reason="convert_hunt",
+            ), None
     belief.converting = False
 
     # Rung 3.9 (v30): the BATTLE-PLAN interpreter — the co-general plan as
@@ -357,6 +425,11 @@ def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
             if POSTS:
                 phase_before = belief.plan_phase
                 obj = _plan.current_objective(belief, book)
+                if obj is not None and (
+                    belief.anti_turtle_latched or belief.base_caution_active
+                ):
+                    _kind, xy, order = obj
+                    obj = ("hold", xy, order)
                 # With posts enabled, raw-waypoint proximity is never a phase
                 # milestone. No acceptable post means the unconditional phase
                 # timeout is the escape hatch.
@@ -368,7 +441,7 @@ def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
                         and belief.post_center == xy
                     )
                     if (
-                        kind == order.kind
+                        (kind == order.kind or kind == "hold")
                         and (
                             _dist(belief.self_xy, xy) <= PLAN_ARRIVE_PX
                             or latched_here
@@ -379,7 +452,7 @@ def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
                             if order.facing is not None
                             else None
                         )
-                        mode: posts.PostMode = "push" if order.kind == "move" else "hold"
+                        mode: posts.PostMode = "push" if kind == "move" else "hold"
                         post = posts.resolve_post_target(
                             belief,
                             xy,
@@ -404,14 +477,28 @@ def decide_objective(belief: Belief) -> tuple[Intent, str | None]:
             if obj is not None:
                 kind, xy, order = obj
                 if post is not None:
-                    return _post_objective(belief, post, "plan_post")
+                    reason = (
+                        "anti_turtle_post"
+                        if belief.anti_turtle_latched
+                        else "base_caution_post"
+                        if belief.base_caution_active
+                        else "plan_post"
+                    )
+                    return _post_objective(belief, post, reason)
                 if POSTS and _dist(belief.self_xy, xy) <= PLAN_ARRIVE_PX:
                     # Formation spreading remains the floor when no post clears
                     # the geometry and danger thresholds.
                     xy = squads.spread_point(belief.seat, xy)
                 if kind == "hold" or _dist(belief.self_xy, xy) <= HOLD_ARRIVE_PX:
                     if _dist(belief.self_xy, xy) <= HOLD_ARRIVE_PX * 2:
-                        return Intent(kind="hold", reason="plan_hold"), None
+                        reason = (
+                            "anti_turtle_hold"
+                            if belief.anti_turtle_latched
+                            else "base_caution_hold"
+                            if belief.base_caution_active
+                            else "plan_hold"
+                        )
+                        return Intent(kind="hold", reason=reason), None
                     return Intent(kind="navigate_to", point=xy, reason="plan_to_hold"), None
                 return Intent(kind="navigate_to", point=xy, reason="plan_move"), None
             # No order for my seat this phase: fall through to the static split.

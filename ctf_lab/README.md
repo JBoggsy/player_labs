@@ -12,13 +12,13 @@ This README orients newcomers (human or agent). Two pointers do most of the work
 - **[`../README.md`](../README.md)** — lab-wide setup (`uv sync` / Observatory auth) and
   the ground rules.
 
-> **Status: `beacon:v56` is the submitted CTF and Paintbot champion;
-> `beacon:v57` is the latest inert item-convenience candidate and was not
-> submitted.** The game repo
+> **Status: `beacon:v67` is the submitted CTF champion.** It combines the
+> `outer_echelon` plan, stronger post/cover discipline, anti-turtle base caution,
+> uncapped gun eligibility, and crown-compatible aim readback. Its fresh top-player
+> screen finished 508-3-29 across 540 scored games. The game repo
 > (`Metta-AI/coworld-ctf`) is cloned for
 > reference at `~/coding/coworlds/coworld-ctf` — **the league redeploys often**; the
-> deployed version at the latest 2026-07-30 audit is **ctf 0.7.124
-> (`beae1614`, GameVersion 27)**. Live
+> canonical league version at the 2026-07-31 submission is **ctf 0.7.138**. Live
 > state + open threads: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md); version history:
 > [`ctf/beacon/VERSION_LOG.md`](ctf/beacon/VERSION_LOG.md).
 

@@ -2,6 +2,495 @@
 
 Version → change mapping for the CTF `beacon` policy. Newest first.
 
+## v67 — crown-compatible aim readback (2026-07-31)
+
+**Immutable version:** `6ff12c1f-d1c8-456d-991b-c19e19165783`.
+
+Inert evaluation upload built from linux/amd64 image
+`sha256:894bff13fef07bf3992dbf25a5a64faacda325306eb6e8438e11aa38c6d5e2e2`.
+It keeps v66's strategy and uncapped gun range, and fixes the self-sprite aim
+decoder to read rotation within every 16-sprite skin block. The league applies
+the `crown` skin to its leader, moving Beacon's self sprites from 5100..5115 to
+5116..5131; v66 rejected those IDs and silently disabled absolute aim-drift
+correction in tournament games.
+
+Matched CTF 0.7.138 controls isolated the regression. Uncrowned v66 went 30-0
+against `ctf-focusfire:v66` from both red and blue, while crowned v66 went 15-15
+from red and 14-16 from blue. Against `Picasso:v30`, uncrowned v66 went 30-0
+while crowned v66 went 22-8. Crowned telemetry recorded
+zero aim resynchronizations; the uncrowned sample recorded 84 across 32 agent
+artifacts. Requests: crowned focusfire red
+`xreq_d3fba65a-8f5a-402c-9b22-4d39f532df74`, crowned focusfire blue
+`xreq_e2b62495-36dd-4bd5-a631-8e015129fdaf`, and crowned Picasso red
+`xreq_323f3699-4980-4d1b-96ad-6051f9c5a6ac`.
+
+Upload configuration is identical to v66. Tagged `purpose=crown-aim-decode`
+and `baseline=beacon-v66`.
+
+**Submitted with James's approval on 2026-07-31.** Submission
+`sub_25293fed-4cab-4861-9808-45a68145268e` placed membership
+`lpm_0b70538b-ca00-4215-ae69-3aeb06975b6f`; it immediately entered Competition,
+became competing, and was promoted to champion. A first pending submission
+(`sub_0927cdf6-a4f8-43f4-bd5f-7c78d5c32466`) was rejected because the
+asynchronous placement worker observed the restored submission lock; the retry
+kept the temporary unlock active through placement. Final administrative state:
+submissions locked, rounds unpaused, and game version lock off at canonical CTF
+0.7.138.
+
+Post-upload crowned validation restored the expected performance across both
+field sides: 29-0-1 against `ctf-focusfire:v66` as red, 29-0 as blue with one
+unscored game-container infrastructure failure, and 30-0 against `Picasso:v30`
+as red. Pooled scored result: 88 wins, 0 losses, 1 draw. Combat totals were
+706-352 kills / 11.3 Beacon deaths per game against focusfire red, 686-406 /
+13.7 against focusfire blue, and 718-417 / 13.8 against Picasso. In one crowned
+v67 telemetry sample, seven of eight agents performed 1-19 aim resyncs (the
+eighth needed none), proving the repaired decoder is active. Requests:
+`xreq_069d890f-091b-4fca-bba5-c68fc92e7510`,
+`xreq_5e21b4ea-5851-4d9f-b5fb-560609bf9996`, and
+`xreq_d4a3b339-d0d1-46ad-be16-b62ebb358a3a`.
+
+A subsequent crowned top-10 gauntlet used 30 episodes per side. Across the nine
+opponents that returned scores, v67 went **508-3-29 in 540 games**: 60-0 versus
+RowDaBoat, Jordan, nadecal, and relhalpha; 59-1 versus focusfire, Nancy, and
+h050; 57-0-3 versus attrition; and 34-0-26 versus `alphashot:v356`. This is a
+94.1% win rate and 99.4% non-loss rate. The tenth opponent, DAF, was not
+scorable: all 60 jobs repeatedly reached the hosted runner's
+`episode_timeout` before emitting `results.json` or a replay. DAF requests:
+`xreq_a98d71df-1868-45fe-8523-f62114c254e2` (red) and
+`xreq_1868183f-8630-46f4-abdd-82059051bd4f` (blue).
+
+## v66 — remove the gun range cap (2026-07-31)
+
+**Immutable version:** `febf94c4-a251-4472-a460-4a4061275ff4`.
+
+Inert evaluation upload built from linux/amd64 image
+`sha256:627d54ede48ccc9c55e7f870083c25a35b25426babc3a3b456b1133ae18a5edf`.
+It keeps v65's anti-turtle and base-caution strategy but removes both hard
+350-pixel gun vetoes: long-range targets are no longer marked unshootable, and
+the final fire gate no longer rejects them by distance. Exact angular hit
+geometry, wall clearance, and friendly-fire suppression still apply.
+
+The former 350-pixel limit remains only as a target-scoring falloff horizon,
+renamed `FF_RANGE_SCORE_FALLOFF_PX`; it may prefer a closer clean target but
+cannot suppress a long shot. Existing selected-target and actual-shot telemetry
+has a `400_plus` range bucket, providing activation evidence for this iteration.
+
+Upload configuration is otherwise identical to v65. Tagged
+`purpose=uncapped-fire-range` and `baseline=beacon-v65`.
+
+The pinned 30-episode Alpha run on CTF 0.7.138
+(`xreq_8b7035e9-5e1d-4e32-87c8-36f0c95015d9`) finished 21 wins, 0 losses, and
+9 draws, with 642 Beacon kills against 380 and 12.5 deaths/game against Alpha's
+21.5. The same-window v63 control
+(`xreq_5c7ab27e-f1a5-4fa5-8683-5109b95a26f8`) finished 0-10-20 with 288-598
+kills and 19.3 Beacon deaths/game; v65
+(`xreq_5d2192b6-25b8-443d-83a6-ed8372e677f2`) finished 0-6-24 with 267-446
+kills and 14.4 Beacon deaths/game. Downloaded traces recorded 86 actual
+`400_plus` shots in the first two episodes, confirming that uncapped fire was
+active.
+
+**Submitted with James's approval on 2026-07-31.** Submission
+`sub_8c7b9496-408f-4af1-8099-fab1f6c002b0` placed membership
+`lpm_62824948-543f-43d2-90dc-8eaf1241bb54`; it is active, competing, and the
+CTF champion. The temporary administrative submission unlock was closed after
+submission. Final league state: submissions locked, rounds unpaused, and game
+version lock unchanged off (canonical CTF 0.7.138).
+
+## v65 — complete anti-turtle and base-assault caution (2026-07-31)
+
+**Immutable version:** `ca070c4b-20ef-44d7-8fe8-4012ae2f9060`.
+
+Inert evaluation upload built from linux/amd64 image
+`sha256:1ccbd1a56a4291d9f16876e8027825113f68f663a9e74ae7164020b822dca02b`.
+It completes v64's base-sightline rule: every non-urgent bot now breaks and holds
+the line to a fresh threat still inside the enemy base when either strategic gate
+is active, including while the bot is approaching a post. If no short sidestep
+fully breaks the ray, it chooses a nearby threat-relative covered post. Gun and
+spray fire remain suppressed throughout `micro="base_cover"` so firing cannot
+freeze the cover movement. Carry, thief interception, escort, grenade-clear, and
+item emergencies remain exempt.
+
+The classifier, thresholds, plan/convert gates, tracing, upload configuration, and
+tags are otherwise identical to v64. **Uploaded inertly; not submitted.** v64 is
+superseded and must not be evaluated or submitted.
+
+Fresh 30-episode arms against `alphashot:v356` completed on CTF 0.7.138. v63
+(`xreq_5c7ab27e-f1a5-4fa5-8683-5109b95a26f8`) finished 0-10-20 with 288-598
+kills; v65 (`xreq_5d2192b6-25b8-443d-83a6-ed8372e677f2`) improved survival to
+0-6-24 with 267-446 kills, but still did not win. v66 subsequently exposed the
+remaining hard gun-range veto and superseded v65.
+
+## v64 — anti-turtle and base-assault caution (2026-07-31)
+
+**Immutable version:** `7ead4b35-9cd5-457d-bea9-ca1c47f19996`.
+
+Inert evaluation upload built from linux/amd64 image
+`sha256:ea83e7d885fd041e7d8e814338df9294c6610b29fb9db31f1e273d7b7245392e`.
+It preserves v63's `outer_echelon` battle plan and adds one opponent-agnostic
+strategy change for entrenched teams:
+
+- At tick 3,000 (60% of the current 5,000-tick game), a bot that has reached a
+  committed post in the terminal plan phase latches an anti-turtle hold when an
+  enemy was visibly outside its defended lineup on no more than 8% of its alive
+  observation ticks.
+- Independently, a three-life enemy advantage activates base caution immediately.
+  Either gate turns further plan advances into holds, vetoes convert hunts whose
+  freshest target lies inside the enemy base, and makes committed post holders
+  break and hold the sightline to a fresh enemy still inside its base. Gun and
+  spray fire are suppressed while that `base_cover` response is active.
+
+The classifier is geometric, not keyed to Alpha's name. Urgent carry, thief
+interception, escort, grenade-clear, and item rungs remain above it; enemies that
+leave their base remain ordinary engagements. Activation tracing records outside-
+base observation rate, anti-turtle latching/ticks, base-caution ticks, blocked
+assault ticks, and `micro="base_cover"`.
+
+Upload configuration is identical to v63 plus explicit
+`BEACON_ANTI_TURTLE=1`, `BEACON_ANTI_TURTLE_MIN_TICK=3000`,
+`BEACON_ANTI_TURTLE_OUTSIDE_RATE_MAX=0.08`, and
+`BEACON_BASE_ASSAULT_LIFE_DEFICIT=3`. Tagged
+`purpose=anti-turtle-base-caution` and `baseline=beacon-v63`.
+**Uploaded inertly; not submitted. Superseded by v65:** a pre-evaluation scope
+audit found that base-sightline breaking applied only to committed post holders,
+not bots still approaching their posts. Do not evaluate or submit v64.
+
+The undispatched v63/v64 arms were cancelled with zero completed episodes:
+v63 `xreq_c7e3bf18-360b-45d9-83a1-8406b61eabe0`, v64
+`xreq_63cb7845-c7b4-40cb-b101-9cbf3473647e`.
+
+## v63 — outer-echelon battle plan (2026-07-30)
+
+**Immutable version:** `0f45a851-796e-4067-941c-612f21760eab`.
+
+Evaluation-only upload built from the linux/amd64 image digest
+`sha256:b8d33211aa94d38cbf2bbf56c82b88b299c367a696a30ce310d62e986513db77`.
+
+Keeps v62's sight-line cover discipline unchanged and changes only the battle
+plan. `outer_echelon` preserves the four two-agent groups and their first-stage
+positions, then moves the two inner groups out of the bracket approaches. All
+four pairs advance through the top/bottom corridors toward separated forward
+search centers at x=760. An offline claim-sequenced geometry check found eight
+distinct zero-authored-exposure posts in both team orientations.
+
+This tests the v62 loss/win correlation: Nancy and RowDaBoat losses spent more
+alive time in `plan_move` and the center band and less time established forward.
+That may partly be reverse causation from losing, so only a matched hosted
+evaluation can decide the plan.
+
+Upload configuration is identical to v62 except
+`BEACON_PLAN=outer_echelon`. Tagged `purpose=outer-echelon-plan` and
+`baseline=v62-sightline-cover`. Originally uploaded inertly.
+
+**Submitted 2026-07-31 with James's explicit approval.** Submission
+`sub_b169971a-541d-4724-a4c1-eccd1d68333f` placed membership
+`lpm_7a09905b-241c-4717-9b3a-7aa9bf522df3`; it qualified immediately and became
+the active CTF champion. The league's `entrants_from_coworld` automation also
+created submission `sub_9b5a609e-7660-4b8a-b643-b37821df801a` and membership
+`lpm_17411fb5-9894-4722-95cf-4b91fe5b1e07` for the same immutable version.
+
+Fresh matched v62/v63 evaluation completed 40 clean candidate episodes on CTF
+0.7.124:
+
+- `ctf-focusfire:v65`: wins 9/10 → 10/10, kills 230 → 234, deaths 185 → 159.
+- `ctf-h050:v1`: wins held 10/10, kills 238 → 235, deaths 138 → 144.
+- `nancy-ctf:v4`: wins 7/10 → 6/10, kills 216 → 228, deaths 194 → 200.
+- RowDaBoat / `reardenr-ctf-heist:v8`: wins 8/10 → 9/10, kills 220 → 226,
+  deaths 171 → 165.
+- Pooled: wins 34/40 → 35/40, kills 904 → 923, deaths 688 → 668.
+
+At the episode unit, those aggregate changes remain unresolved (win Fisher
+p=1.0; death Welch/Mann–Whitney p=0.548/0.412; kill p=0.201/0.707). The plan
+mechanism did fire: center-band occupancy fell by 5–8 percentage points,
+authored danger/sight-line exposure roughly halved, and forward occupancy rose
+2–4 points across focusfire, Nancy, and RowDaBoat. Farther goals also raised
+`plan_move` and reduced settled-post occupancy. Games shortened sharply:
+pooled deaths per 1,000 episode ticks rose 3.96 → 6.10 while kills rose
+5.20 → 8.42. **Verdict:** faster and more lethal with a favorable raw
+win/kill/death aggregate, but not a pure survival-rate gain. v63 was retained as
+the latest candidate through the subsequent current-opponent screen; Nancy was
+its clear matchup regression in this earlier matched batch.
+
+Requests: focusfire `xreq_f0b2a35f-b02b-48c3-be22-748a3ad8970c`, Nancy
+`xreq_73e77f40-1db1-41e2-8027-82c8709d8a45`, RowDaBoat
+`xreq_46ec4304-ac19-42f5-bf34-a996fec6daeb`, and h050
+`xreq_2c6055f2-8349-4a22-88ca-b753e3aea0fa`. One h050 child remained stuck in
+backend `running`; it was replaced by correctly version-pinned CTF 0.7.124
+request `xreq_c0608522-269f-4e05-9313-0555bd7f8190`, then the redundant
+straggler was cancelled. A first replacement resolved after the division
+drifted to CTF 0.7.131 and was cancelled without being counted.
+
+A fresh current-opponent screen on 2026-07-31 ran 50 episodes on CTF 0.7.137.
+This was an absolute screen, not a matched A/B, so it does not isolate the v63
+increment from opponent or game-version changes:
+
+- RowDaBoat / `reardenr-ctf-heist:v10`: 10/10 wins, 239 kills, 169 deaths.
+- NanosaurusX / `nancy-ctf-solo:v1`: 9/10 wins, 235 kills, 186 deaths.
+- daveey / `ctf-focusfire:v66`: 10/10 wins, 226 kills, 161 deaths.
+- Andre / `deltashot:v23`: 20/20 wins, 478 kills, 256 deaths. Every Delta team
+  exhausted all 24 lives; Beacon averaged 23.9 kills and 12.8 deaths per game.
+- Pooled: 49/50 wins, 1,178 kills, 772 deaths.
+
+The lone loss was against NanosaurusX: kills tied 23–23, Beacon exhausted all
+24 lives while NanosaurusX recorded 22 deaths, and neither side captured. The
+screen strongly clears the requested current-roster matchup check, especially
+Andre, while leaving causal cover-discipline attribution to a matched A/B.
+Requests: RowDaBoat `xreq_72cb260e-5b01-4acf-92b1-8cc68168a785`, NanosaurusX
+`xreq_b5e707f8-29fe-4beb-9c64-efb5513bfe57`, daveey
+`xreq_7c635acf-e096-47a9-86c4-300c7ec98aab`, and Andre
+`xreq_61c5fb99-d7a4-4f6a-9ba7-c357a5679048`.
+
+## v62 — sight-line cover discipline (2026-07-30)
+
+**Immutable version:** `cba42825-d643-42a8-b972-6836fc03c361`.
+
+Evaluation-only upload built from the linux/amd64 image digest
+`sha256:04406092d2d102125d00cc04b7b624f1eb408d0eb29dbee9d78cb7f7c5446e26`.
+
+Keeps v61's `staged_advance` plan while making post occupancy explicit and
+stable. Authored `mid_danger_zone` and bracket sight-line rectangles are hard
+exclusions for settled posts. With no live threat evidence, baked open firing
+lanes now determine the post's watch direction instead of the enemy pedestal.
+Once committed, a post becomes a latched cover home: an agent holds there while
+idle or cooling down, uses one latched firing shoulder for a blocked remembered
+target, and returns home rather than recomputing a new sidestep every tick.
+Committed post holders also stop applying separation nudges after arrival.
+
+The original v60 gun-down contract remains intact away from committed posts:
+hold existing cover, take a short ray-breaking sidestep when available, or fall
+through to ordinary combat/navigation when none exists. Tracing adds authored
+exposure, the latched peek cell, and cumulative post-return/peek ticks.
+
+Upload configuration:
+`BEACON_PLAN=staged_advance`, `BEACON_FIREFIGHT=1`,
+`BEACON_FOCUS_CLAIMS=0`, `BEACON_POSTS=1`, `BEACON_POST_FACING=1`,
+`BEACON_DIAG_EVERY_TICKS=1`, `BEACON_TRACE_OUTPUTS=jsonl@artifact`, and
+`BEACON_ITEM_CONVENIENCE=1`. Tagged `purpose=sightline-cover-discipline` and
+`baseline=v61-staged-advance`. **Uploaded inertly; never submitted.**
+
+Fresh matched v61/v62 evaluation completed 80/80 episodes without operational
+failures:
+
+- `ctf-focusfire:v65`: wins 4/10 → 9/10, kills 192 → 230, deaths 197 → 185.
+- `ctf-h050:v1`: wins held 10/10, kills held at 238, deaths 166 → 138.
+- `nancy-ctf:v4`: wins held 7/10, kills 219 → 216, deaths 191 → 194.
+- RowDaBoat / `reardenr-ctf-heist:v8`: wins held 8/10, kills 223 → 220,
+  deaths 203 → 171.
+- Pooled: wins 29/40 → 34/40, kills 872 → 904, deaths 757 → 688.
+
+At the correct episode unit, the pooled death reduction resolves across both
+Welch and rank tests (p=0.029/0.023); kills remain stable (p=0.167/0.214).
+The pooled win increase is promising but unresolved (two-sided Fisher p=0.274);
+focusfire's 4/10 → 9/10 move is borderline (p=0.057), not the highly
+significant result incorrectly emitted when the current adapter repeats each
+team outcome over eight seat rows. RowDaBoat's death reduction resolves at the
+episode level (Welch/Mann–Whitney p=0.004/0.006).
+
+Mechanism traces were decisive. Every sampled active v62 post had authored
+exposure 0. During idle `plan_post` ticks, movement fell from 18–26% across
+the hard matchups to 6–12%; direction changes fell from 30–44 per 1,000 ticks
+to 5–8, and reversals from 9–19 to below 3. `post_hold`, `post_return`, and
+latched `post_peek` all activated. **Verdict:** capability-positive and
+outcome-positive; retain v62 as the new inert baseline. Do not submit without
+the human gate.
+
+Requests: focusfire v61/v62
+`xreq_34d82de0-7205-4f2a-a11a-b49056f57794` /
+`xreq_808bd660-d111-4b1a-ba14-e0085b595328`; h050
+`xreq_feb1d079-91f0-48b0-a6d8-8fe243d92097` /
+`xreq_4cb74c1d-2a52-434e-871f-ca0e68f7d865`; Nancy
+`xreq_9f26907c-6c64-460f-b065-8ce6bb4dd789` /
+`xreq_35f64b3a-94ff-4a28-9388-f8ed3a3f83e4`; RowDaBoat
+`xreq_d92f0e70-6d77-4ab9-9ea8-0e386663f2d8` /
+`xreq_6435fa4b-2ad0-4efd-8459-e88eb9e695f1`.
+
+## v61 — staged advance battle plan (2026-07-30)
+
+**Immutable version:** `aab240a4-3a9a-4f48-9de6-4add1ceac312`.
+
+Evaluation-only upload built from the linux/amd64 image digest
+`sha256:278716dc1e98793598cbf546b9bee87cd0475fe0b63d8ea57b42e150fcd90c4b`.
+
+Changes only the executed battle plan relative to v60. The new
+`staged_advance` plan splits Beacon into four two-agent groups, establishes
+forward top and bottom positions on its own side, then advances each pair to
+covered positions across midfield. The v60 bounded threat-relative cover and
+danger-aware post lifecycle remain unchanged.
+
+Upload configuration:
+`BEACON_PLAN=staged_advance`, `BEACON_FIREFIGHT=1`,
+`BEACON_FOCUS_CLAIMS=0`, `BEACON_POSTS=1`, `BEACON_POST_FACING=1`,
+`BEACON_DIAG_EVERY_TICKS=1`, `BEACON_TRACE_OUTPUTS=jsonl@artifact`, and
+`BEACON_ITEM_CONVENIENCE=1`. Tagged `purpose=staged-advance-plan` and
+`baseline=v60-cover`. **Uploaded inertly; never submitted.**
+
+Matched 10-episode v60/v61 arms against three opponents:
+
+- `nancy-ctf:v4`: wins held 6–4, kills 220 → 218, deaths 206 → 210.
+- `ctf-focusfire:v65`: wins 8–2 → 5–5, kills held at 219, deaths 198 → 192.
+- `ctf-h050:v1`: wins 9–1 → 10–0, kills held at 238, deaths 167 → 134.
+- Pooled: wins 23/30 → 21/30, kills 677 → 675, deaths 571 → 536.
+
+The pooled win and death changes were unresolved at episode level (two-sided
+Fisher p=0.771 and Welch/Mann–Whitney death p=0.257/0.278). The h050 death
+change was suggestive but borderline across mean and rank tests (p=0.049/0.063).
+Telemetry confirmed all 240 candidate bot-episodes advanced into phase two, but
+the plan reduced rather than increased cover use: post occupancy moved
+24% → 9% against Nancy, 35% → 17% against focusfire, and 2.6% → 0.1% against
+h050. Candidate games were 19–24% shorter. After normalizing for game length,
+deaths per 1,000 team-ticks moved 5.21 → 6.56, 3.76 → 4.66, and 8.30 → 8.04.
+
+**Verdict:** `staged_advance` is a faster, denser-contact plan, not stronger
+cover discipline. Raw deaths fell because games shortened; the difficult
+focusfire matchup also moved adversely. Keep v61 inert and implement the
+settled-post/idle-exposure discipline separately before reconsidering it.
+
+Requests: Nancy v60/v61
+`xreq_0401649a-dda8-45e5-a0e2-05c738e765dd` /
+`xreq_69677c6e-d93e-456d-aa36-c99ac6874d30`; focusfire
+`xreq_d42aa9a6-d382-4631-9c51-3e978f00b66c` /
+`xreq_df35ea44-6863-4ef8-81f4-c51f7e0533b5`; h050
+`xreq_e7feb3c5-4aaa-4099-adaf-58b30ebe8be8` /
+`xreq_c76dd60d-9bed-4afe-84d5-ae6dd9a1b4d0`.
+
+## v60 — bounded threat-relative cover (2026-07-30)
+
+**Immutable version:** `791b4df2-3ddf-4a51-9c83-e3a2b663af9f`.
+
+Evaluation-only upload built from linux/amd64 image digest
+`sha256:b8ff36ae105a1cf68ad31d33490c265b4cbd3ac40aa885ecc2bdc4b04d790d01`.
+
+Narrows v59's universal cover layer after hosted traces showed it controlling
+27–53% of all Beacon agent-ticks and obstructing strategic progress. Gun-ready
+cover remains available for hold intents; navigating agents use it only while
+under fire or after a fresh nearby heard impact. A remembered enemy alone no
+longer diverts purposeful navigation. The original gun-down duck contract is
+restored exactly: hold if already covered, use a short ray-breaking sidestep
+when available, otherwise fall through to ordinary navigation/combat.
+
+The independently reviewed danger-post lifecycle is unchanged from v59.
+Upload configuration is identical to v59/v58. **Uploaded inertly; never
+submitted.**
+
+Matched hosted screen against the same-session v58 controls:
+
+- `nancy-ctf:v4`: wins 5–5 → 6–4, kills 216 → 229, deaths 206 → 209.
+- `ctf-focusfire:v65`: wins 8–2 → 7–3, kills 225 → 220, deaths 175 → 195.
+- `ctf-h050:v1`: wins held 10–0, kills 233 → 232, deaths 178 → 158.
+- Pooled: wins held at 23/30, kills 674 → 681, deaths 559 → 562.
+
+`micro="cover"` occupied 11.7% of Nancy ticks, 16.5% of focusfire ticks, and
+6.9% of h050 ticks. The h050 regression was removed and duck/peek returned to
+their v58 density. Danger-post changes remained dwell-bounded with no degraded
+clears. **Verdict: capability-positive competitive non-regression, but the
+pre-registered death-reduction objective was not met. Keep v60 inert as the
+baseline for the next cover/sight-line discipline discussion; do not promote
+or submit.**
+
+Requests: Nancy `xreq_dd45a2f6-ad98-4466-90f3-4a54ca3813ad`, focusfire
+`xreq_4f1d6299-d049-48d4-9e25-5504517ffda1`, h050
+`xreq_b09489b6-d37a-4267-893d-9939ae4f27be`.
+
+## v59 — threat-relative cover capabilities (2026-07-30)
+
+**Immutable version:** `6a7d6d39-4405-4725-ad13-4f67f416e71c`.
+
+Evaluation-only upload built from linux/amd64 image digest
+`sha256:8ac76c1fbd35f672efd19884ba45f83d0f34af2bf10b563ecef956190ea0aa5d`.
+
+Adds two safety capabilities on top of v58. First, a gun-ready agent with fresh
+threat evidence and no clear, in-range engagement seeks or holds nearby
+threat-relative cover even when its strategic objective bypasses posts. Clear
+engagements and urgent carry, grenade-clear, medkit, thief-intercept, and final
+pedestal actions remain exempt. Activations trace separately as
+`micro="cover"`.
+
+Second, committed posts re-evaluate live danger and exposure after the existing
+dwell interval. They move only to another qualified covered sightline that is
+materially safer or better, and clear an unviable post when no qualified
+replacement exists. Traces count total and danger-driven reselections,
+degraded clears, and the last reselection reason.
+
+Upload configuration is identical to v58:
+`BEACON_PLAN=firefight_training_line`, `BEACON_FIREFIGHT=1`,
+`BEACON_FOCUS_CLAIMS=0`, `BEACON_POSTS=1`, `BEACON_POST_FACING=1`,
+`BEACON_DIAG_EVERY_TICKS=1`, `BEACON_TRACE_OUTPUTS=jsonl@artifact`, and
+`BEACON_ITEM_CONVENIENCE=1`. **Uploaded inertly; never submitted.**
+
+Matched hosted A/B against v58 across three current opponents:
+
+- `nancy-ctf:v4`: wins 5–5 → 8–2, kills 216 → 225, deaths 206 → 191.
+- `ctf-focusfire:v65`: wins held 8–2, kills 225 → 232, deaths 175 → 162.
+- `ctf-h050:v1`: wins regressed 10–0 → 6–4, kills 233 → 230, deaths
+  178 → 197.
+
+Pooled, wins moved 23/30 → 22/30, kills 674 → 687, and deaths 559 → 550;
+none of those pooled differences was significant. The mechanism was
+overactive: `micro="cover"` occupied 51%, 27%, and 43% of agent-ticks against
+focusfire, h050, and Nancy. Games against h050 lasted roughly 49% longer.
+Danger-post reselections were bounded (48/19/1 across those matchups, maximum
+three per active bot-episode, no degraded clears); the single h050 activation
+cannot explain that regression. **Verdict: do not promote v59; narrow the
+universal cover gate, yielding v60.**
+
+## v58 — tactical grenade selection (2026-07-30)
+
+**Immutable version:** `8fcbbb68-949d-48cd-8c66-11cbd1a9b660`.
+
+Evaluation-only upload built from linux/amd64 image digest
+`sha256:6cb97978a3ca67b1498207f2481924ee80c8acef7f602103574a1760184fa8fa`.
+
+Replaces opportunistic throws at every visible target with grenade-only-value
+selection. Fresh wall-blocked enemies take first priority, followed by tight
+visible groups whose best body-centered landing covers at least two enemies.
+An open single is eligible only when it is carrying Beacon's flag, represents
+the enemy's final life, or is vulnerable and unshielded while Beacon's gun is
+unavailable. Predicted fresh teammate positions veto unsafe blasts, and a flag
+carrier never starts or releases a grenade. Trace events and snapshots record
+the reason, covered-enemy count, safety vetoes, and release counts.
+
+Upload configuration is identical to v57:
+`BEACON_PLAN=firefight_training_line`, `BEACON_FIREFIGHT=1`,
+`BEACON_FOCUS_CLAIMS=0`, `BEACON_POSTS=1`, `BEACON_POST_FACING=1`,
+`BEACON_DIAG_EVERY_TICKS=1`, `BEACON_TRACE_OUTPUTS=jsonl@artifact`, and
+`BEACON_ITEM_CONVENIENCE=1`. **Uploaded inertly; never submitted.**
+
+Matched hosted A/B against current `deltashot:v5`: v57 control
+`xreq_eede1573-20b6-42f1-974c-7a9cfb4fdc64` and v58 candidate
+`xreq_5d94623e-d368-41ee-a7a7-32ea88df46c3` both finished 10–0 with 239 enemy
+kills and zero captures. Beacon deaths moved 86 → 79, which is noise at ten
+episodes.
+
+The behavior activated in 49 traced releases across 38/80 Beacon bot-games:
+48 wall-blocked and one cooldown finish. Seven releases targeted two enemies,
+188 unsafe candidate-ticks were vetoed, and two releases used the force-release
+deadline. Replay ground truth moved from v57 → v58 as follows: actual throws
+45 → 43, enemy hits 33 → 35, enemy HP removed 66 → 70, multi-target impacts
+7 → 9, and friendly hits 4 → 3. Enemy grenade-lethal hits moved 28 → 26 while
+total kills stayed identical. Verdict: mechanism-positive non-regression, not
+demonstrated win-rate lift.
+
+Three additional matched 10-episode pairs weakened that verdict:
+
+- `nancy-ctf:v4`: v57 9–1, v58 7–3; enemy kills 237 → 221.
+- `ctf-focusfire:v65`: v57 3–7, v58 2–8; enemy kills 216 → 207.
+- `ctf-h050:v1`: both 10–0; Beacon deaths improved 180 → 157.
+
+The win deltas are not individually significant at the episode level, but both
+difficult matchups moved against v58 and neither produced a compensating
+mechanism gain. Across the three candidate arms, only 7/177 traced releases
+targeted two enemies. Focusfire enemy grenade hits fell 39 → 29 and HP removed
+78 → 58. The safety gate did eliminate h050 friendly grenade hits (4 → 0), but
+enemy lethal grenade hits there also fell 27 → 18. **Expanded-field verdict:
+do not promote v58 over v57; keep it inert and return to the tactical model.**
+
+Requests: Nancy v57/v58
+`xreq_0d9de21b-93c6-414d-88bd-c3be2c45d58d` /
+`xreq_877b1fa4-984a-4665-aaf2-670aa93a5490`; focusfire
+`xreq_d5f8728a-495f-4ccd-b20c-c6f847c75de4` /
+`xreq_a5ba3872-eea3-4750-bbd0-30617abe3002`; h050
+`xreq_c36d058f-8e23-468d-aa5d-3fc981472299` /
+`xreq_4a8a7fda-8d94-4932-9ed8-1f5a714c95fe`.
+
 ## v57 — additive, nearby grenade convenience (2026-07-30)
 
 **Immutable version:** `4c1c0723-3dc5-42fc-ac39-dd031a11e94d`.

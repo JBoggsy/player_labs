@@ -50,7 +50,7 @@ from ctf.beacon.config import (
     FF_WOUND_UNKNOWN,
     FF_WOUND_WEIGHT,
     FIREFIGHT,
-    FIRE_MAX_RANGE_PX,
+    FF_RANGE_SCORE_FALLOFF_PX,
     FOCUS_CLAIMS,
     GRID_H,
     GRID_W,
@@ -218,17 +218,19 @@ def _claim_is_local(belief: Belief, claim: FocusClaim) -> bool:
 
 
 def _range_term(distance_px: float) -> float:
-    ideal_min = min(FF_RANGE_IDEAL_MIN_PX, FIRE_MAX_RANGE_PX)
-    ideal_max = min(max(FF_RANGE_IDEAL_MAX_PX, ideal_min), FIRE_MAX_RANGE_PX)
+    ideal_min = min(FF_RANGE_IDEAL_MIN_PX, FF_RANGE_SCORE_FALLOFF_PX)
+    ideal_max = min(
+        max(FF_RANGE_IDEAL_MAX_PX, ideal_min), FF_RANGE_SCORE_FALLOFF_PX
+    )
     close = min(FF_RANGE_CLOSE_PX, ideal_min)
-    if distance_px <= close or distance_px > FIRE_MAX_RANGE_PX:
+    if distance_px <= close or distance_px > FF_RANGE_SCORE_FALLOFF_PX:
         return 0.0
     if distance_px < ideal_min:
         return (distance_px - close) / max(ideal_min - close, 1)
     if distance_px <= ideal_max:
         return 1.0
-    return (FIRE_MAX_RANGE_PX - distance_px) / max(
-        FIRE_MAX_RANGE_PX - ideal_max,
+    return (FF_RANGE_SCORE_FALLOFF_PX - distance_px) / max(
+        FF_RANGE_SCORE_FALLOFF_PX - ideal_max,
         1,
     )
 
