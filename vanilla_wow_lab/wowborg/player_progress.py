@@ -18,6 +18,7 @@ SESSION_EXTENSIONS = (
 )
 PING_INTERVAL_SECONDS = 5.0
 PROGRESS_INTERVAL_SECONDS = 1.0
+TEARDOWN_MARGIN_SECONDS = 35.0
 
 XP_TO_NEXT_LEVEL = (
     400,
@@ -95,6 +96,7 @@ class PlayerProgressReporter:
         self._tracer = tracer
         self._socket: ClientConnection | None = None
         self._slot: int | None = None
+        self._deadline_seconds: float | None = None
         self._started_at = 0.0
         self._last_sample_at = 0.0
         self._last_progress_at = 0.0
@@ -139,17 +141,29 @@ class PlayerProgressReporter:
             ):
                 raise ValueError("Coworld /player did not send a wow_session handoff")
             self._slot = int(message["slot"])
+            self._deadline_seconds = float(message["deadline_seconds"])
             self._socket = socket
             self._tracer.emit(
                 "player_session_connected",
                 protocol=SESSION_PROTOCOL,
                 slot=self._slot,
                 character_name=message.get("character_name"),
+                deadline_seconds=self._deadline_seconds,
             )
         except Exception as exc:
             self._close_socket(socket)
             self._socket = None
             self._tracer.emit("player_session_error", phase="connect", error=repr(exc))
+
+    def policy_duration(self, requested_seconds: float) -> float:
+        """Leave the owner-standard margin for ``done`` and replay finalization."""
+
+        if self._deadline_seconds is None:
+            return requested_seconds
+        return min(
+            requested_seconds,
+            max(1.0, self._deadline_seconds - TEARDOWN_MARGIN_SECONDS),
+        )
 
     def observe(self, frame: AgentFrame) -> None:
         """Sample one canonical frame and report it at the supported cadence."""

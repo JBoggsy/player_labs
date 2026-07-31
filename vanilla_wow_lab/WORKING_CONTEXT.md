@@ -30,7 +30,9 @@ surface:
   `tools/versions.env` and the root lockfile.
 - Navigation uses the owner SDK's authenticated `/player/navigation` query while the
   policy loop uses `/env`. A read-only `/player` observer reports the canonical
-  frames as live level/XP/displacement progress without owning gameplay actions.
+  frames as live level/XP/displacement progress without owning gameplay actions,
+  and reserves the owner-standard 35-second teardown margin before the handed-off
+  session deadline.
   The full wowborg test suite is the current focused gate; real-navmesh catalog and
   held-out course results belong in `wowborg/VERSION_LOG.md`.
 - Hosted certification is complete for canonical Coworld
