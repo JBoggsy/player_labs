@@ -68,6 +68,13 @@ surface:
   handoff deadline. Hosted request `xreq_50048077-8098-4ece-a725-460866e70ed4`
   completed 2/2 with score 1.0 and replay; both reported about 1,310 yards and
   retained about 4,100 movement packets. No version was submitted to a league.
+- V60 (`99a2c257-bbad-4bb2-9eb5-1eefa8920f06`) is the same behavior rebuilt against
+  accelerated-wow 0.1.127's strict `AgentFrame` SDK. A complete exact-image local episode passed
+  with score 1.0, replay, 312 observations / 311 intents, and 1,391.080 trajectory yards. Versus
+  the hosted v59 baseline, movement packets fell 4,097 -> 1,376 and forward start/stop pairs fell
+  239/243 -> 22/25, proving PR #7391's continuation locally. Hosted request
+  `xreq_d2255259-ee1b-4647-bc71-2ea93133ab54` never dispatched because 0.1.127 certification
+  failed its 3,600-second smoke episode; packet-count validation waits for a corrected release.
 
 The older status sections below are historical context. In particular, the 2026-07-27
 decision to fork/re-open a Gym seam has been superseded by the owner's shipped `/env`.

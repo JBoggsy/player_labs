@@ -5,6 +5,35 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
+- **Finish wowborg's hosted retest on the corrected successor to accelerated-wow 0.1.127** (2026-07-31).
+  PR #7394 published `accelerated-wow:0.1.127`
+  (`cow_be2dfbf4-ad71-40a3-b6e1-9dfe21a2b586`) from frozen source `59497e551`, which
+  contains PR #7391 commit `3203b9c766aa892f9db449c999a96767dffa2991`. Its certification
+  remained `certifying` with no transcript through 20:27 UTC. Direct hosted request
+  `xreq_15ac079a-2f19-4b3c-8ac1-17f4dddfe4da` was admitted while certification was still
+  running, but episode `ereq_31ac43dd-788b-483d-91b0-72288fb5784e` failed before `/env`
+  hello: WebSocket 1011 `environment session ended before hello`; zero actions, zero progress
+  reports, and no replay/results were produced. A second fresh request
+  (`xreq_6a93f6a2-174c-4311-b46b-597c715b7357`, episode
+  `ereq_5fd1d140-dfe9-4c66-bc1b-8db65a61b446`) reproduced the identical pre-hello 1011
+  after an 8.4-second `/env` wait, again with zero observations/actions and no replay; 0.1.127
+  was still non-canonical and `certifying`. An exact-image local reproduction then proved v59 is
+  contract-incompatible with 0.1.127: it receives hello, but rejects the first AgentFrame with 128
+  `extra_forbidden` validation errors because 0.1.127 added strict frame fields without a negotiated
+  contract revision. Wowborg v60 (`99a2c257-bbad-4bb2-9eb5-1eefa8920f06`) was rebuilt and
+  uploaded against the exact 0.1.127 SDK. A complete exact-image local episode passed with score 1.0,
+  replay, 312 observations / 311 intents, and 1,391.080 trajectory yards. Movement packets fell
+  4,097 -> 1,376 versus the hosted v59 baseline, with forward starts 239 -> 22 and stops 243 -> 25,
+  proving the continuation fix locally. Its hosted request
+  (`xreq_d2255259-ee1b-4647-bc71-2ea93133ab54`) never dispatched because 0.1.127 certification
+  ultimately failed the smoke episode after 3,600 seconds (`ereq_8f12b169-dff2-4c73-b9ef-f316f50e805b`).
+  Once a corrected Coworld certifies, rebuild v60 only if that successor changes the SDK, run one
+  `custom-fresh-start-10x` episode, stream artifacts, and compare the replay
+  against baseline episode `ereq_422085f1-9ec7-4554-b2ba-9942947e5dc2`: 4,097 movement
+  packets, 239 forward starts, 243 forward stops, 326 turn starts, 356 turn stops, 2,907
+  heartbeats, and 1,309.923 yards displacement. Report the new request/episode/Coworld IDs
+  and before/after counts. Spell 7355 cooldown spam is a separate wowborg issue.
+
 - **Imposter incidental co-location with teammate — avoid clustering (2026-07-07, James).** Belief
   trace refuted the "teammate detection is broken" theory (v101: 0/24 detection failures, teammate
   known every game — see [[crewrift-imposter-kill-lever]]). BUT the replay shows crewborg-imposter

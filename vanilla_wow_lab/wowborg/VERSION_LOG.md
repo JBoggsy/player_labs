@@ -1,5 +1,28 @@
 # wowborg version log
 
+## v60 - accelerated-wow 0.1.127 SDK rebuild (2026-07-31)
+
+- Version UUID: `99a2c257-bbad-4bb2-9eb5-1eefa8920f06`
+  (`wowborg:v60`, uploaded inert; not submitted to a league).
+- Behavior is unchanged from v59 (`6df4d2d`). The `linux/amd64` image was rebuilt
+  against accelerated-wow 0.1.127's exact game-image SDK
+  (`sha256:7262b629ce02ac230ffa3a375c7e1ba8307293a5c94258b87412153cb5d9a5ba`)
+  so its strict `AgentFrame` model accepts the release's added observation fields.
+- Local image manifest:
+  `sha256:25a675ecab81416f781679dd89f3cacf69a1f66df608a4c7ccaad1435c9b8a63`.
+- Hosted movement-continuity retest:
+  `xreq_d2255259-ee1b-4647-bc71-2ea93133ab54` on accelerated-wow 0.1.127 /
+  `custom-fresh-start-10x`. It did not dispatch: 0.1.127 certification failed its
+  smoke episode after 3,600 seconds, so the request remained pending without a
+  job ID, replay, or results. Retest v60 against the corrected successor release.
+- Full exact-image local `custom-fresh-start-10x` episode completed cleanly with
+  score 1.0, 312 observations, 311 intents, a replay, and 1,391.080 yards of replay
+  trajectory. Versus the hosted v59 baseline, movement packets fell 4,097 -> 1,376
+  (-66.4%): forward starts 239 -> 22 (-90.8%), forward stops 243 -> 25 (-89.7%),
+  heartbeats 2,907 -> 600 (-79.4%), turn starts 326 -> 347 (+6.4%), and turn stops
+  356 -> 357 (+0.3%). The environment-owned forward continuation is therefore
+  working locally; hosted confirmation still waits for a certifiable release.
+
 ## v59 - behavior-neutral `/player` progress observer (2026-07-30)
 
 - Version UUID: `fc660a1d-2ec2-45d2-bf9a-e7725d8be246`
