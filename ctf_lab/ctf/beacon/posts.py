@@ -19,7 +19,7 @@ from typing import Literal
 
 import numpy as np
 
-from ctf.beacon import mapdata
+from ctf.beacon import mapdata, poi
 from ctf.beacon.config import (
     GRID_H,
     GRID_W,
@@ -32,6 +32,7 @@ from ctf.beacon.config import (
     POST_DANGER_GRADIENT_PX,
     POST_DANGER_WEIGHT,
     POST_ENEMY_OCCUPIED_PX,
+    POST_EXPOSURE_WEIGHT,
     POST_FLANK_DIRECTION_OFFSET,
     POST_MIN_COVER_SCORE,
     POST_MIN_DWELL_TICKS,
@@ -40,6 +41,8 @@ from ctf.beacon.config import (
     POST_MIN_SEPARATION_PX,
     POST_REACH_WEIGHT,
     POST_REEVALUATE_TICKS,
+    POST_SCAN_MAX_OFFSET_DIRECTIONS,
+    POST_SCAN_MIN_OFFSET_DIRECTIONS,
     POST_SEARCH_RADIUS_PX,
     POST_SETTLE_PX,
     POST_STANCE_WEIGHT,
@@ -76,6 +79,7 @@ class Post:
     cover: float
     stance: float
     danger: float
+    exposure: float
     claim_source: str
 
 
@@ -87,6 +91,16 @@ class _Candidate:
     cover: float
     stance: float
     danger: float
+    exposure: float
+
+
+EXPOSED_AREAS = (
+    "mid_danger_zone",
+    "red_bracket_sightline_top",
+    "red_bracket_sightline_bot",
+    "blue_bracket_sightline_top",
+    "blue_bracket_sightline_bot",
+)
 
 
 def direction_to_brads(direction: int) -> int:
@@ -120,6 +134,49 @@ def _direction_toward(origin: tuple[int, int], target: tuple[int, int]) -> int:
     dy = target[1] - origin[1]
     angle = math.atan2(-dy, dx)
     return round(angle / (2 * math.pi) * SIGHTLINE_DIRECTIONS) % SIGHTLINE_DIRECTIONS
+
+
+def sightline_exposure(cell: tuple[int, int]) -> float:
+    """Authored enemy-fire lanes containing ``cell``.
+
+    These thin PoI rectangles describe where bullets travel, independent of
+    which enemy happens to be visible this tick. A settled post must not occupy
+    one; the danger zone and four bracket lanes are therefore hard tactical
+    conditions, not another weak preference competing with forward stance.
+    """
+    return float(
+        sum(poi.area(name).contains(*cell) for name in EXPOSED_AREAS)
+    )
+
+
+def _base_sightline_direction(
+    belief: Belief,
+    center: tuple[int, int],
+) -> int:
+    """Best baked firing lane from ``center`` toward the enemy half.
+
+    Enemy evidence still overrides this. With no evidence, however, the map's
+    actual open rays—not the pedestal bearing—define what a post watches.
+    """
+    assert belief.team is not None
+    forward = 1 if belief.team == "red" else -1
+    toward_enemy = _direction_toward(
+        center,
+        (PEDESTAL["blue"] if belief.team == "red" else PEDESTAL["red"]),
+    )
+    directions = [
+        direction
+        for direction in range(SIGHTLINE_DIRECTIONS)
+        if math.cos(2 * math.pi * direction / SIGHTLINE_DIRECTIONS) * forward
+        >= 0.25
+    ]
+    return max(
+        directions,
+        key=lambda direction: (
+            sightline(center, direction),
+            -_direction_delta(direction, toward_enemy),
+        ),
+    )
 
 
 def _danger_gradient(belief: Belief, center: tuple[int, int]) -> tuple[float, float]:
@@ -173,10 +230,10 @@ def threat_axis(
     if facing is not None and facing != center:
         return ThreatAxis(_direction_toward(center, facing), "plan_facing")
 
-    team = belief.team
-    assert team is not None
-    enemy = "blue" if team == "red" else "red"
-    return ThreatAxis(_direction_toward(center, PEDESTAL[enemy]), "enemy_pedestal")
+    return ThreatAxis(
+        _base_sightline_direction(belief, center),
+        "baked_sightline",
+    )
 
 
 def _candidate_arrays(
@@ -238,22 +295,29 @@ def _candidate_arrays(
         -1.0,
         1.0,
     )
-    if mode == "hold":
-        stance = -stance
-
     if belief.danger is None:
         danger = np.zeros(reach.shape, dtype=np.float32)
     else:
         danger = belief.danger[grid_y, grid_x].astype(np.float32)
+    exposure = np.fromiter(
+        (
+            sightline_exposure((int(x), int(y)))
+            for x, y in zip(cell_x, cell_y, strict=True)
+        ),
+        dtype=np.float32,
+        count=len(cell_x),
+    )
     score = (
         POST_REACH_WEIGHT * reach
         + POST_COVER_WEIGHT * cover
         + POST_STANCE_WEIGHT * stance
         - POST_DANGER_WEIGHT * danger
+        - POST_EXPOSURE_WEIGHT * exposure
     )
     qualifies = (
         (reach_px >= POST_MIN_REACH_PX)
         & (cover >= POST_MIN_COVER_SCORE)
+        & (exposure == 0)
         & (score >= POST_MIN_SCORE)
     )
     return (
@@ -267,6 +331,7 @@ def _candidate_arrays(
         cover[qualifies],
         stance[qualifies],
         danger[qualifies],
+        exposure[qualifies],
     )
 
 
@@ -287,6 +352,7 @@ def _ranked_candidates(
         cover,
         stance,
         danger,
+        exposure,
     ) = _candidate_arrays(belief, center, threat_direction, mode)
     order = np.lexsort((grid_x, grid_y, distance_sq, -cover, -reach, -score))
     return [
@@ -297,6 +363,7 @@ def _ranked_candidates(
             cover=float(cover[i]),
             stance=float(stance[i]),
             danger=float(danger[i]),
+            exposure=float(exposure[i]),
         )
         for i in order
     ]
@@ -364,6 +431,7 @@ def choose_post(
             cover=candidate.cover,
             stance=candidate.stance,
             danger=candidate.danger,
+            exposure=candidate.exposure,
             claim_source=displaced_by or "uncontested",
         )
     return None
@@ -374,10 +442,43 @@ def _direction_delta(a: int, b: int) -> int:
     return min(delta, SIGHTLINE_DIRECTIONS - delta)
 
 
+def scan_directions(cell: tuple[int, int], primary_direction: int) -> tuple[int, ...]:
+    """Return post-specific lanes in scan order, weighted toward the primary.
+
+    The post's own baked sightline field decides which ray on each shoulder is
+    worth watching. This makes scanning dwell on actual corridors from this
+    position rather than panning uniformly across walls and blind pockets.
+    """
+    primary = primary_direction % SIGHTLINE_DIRECTIONS
+
+    def best_side(sign: int) -> int | None:
+        candidates = [
+            (sightline(cell, primary + sign * offset), offset)
+            for offset in range(
+                POST_SCAN_MIN_OFFSET_DIRECTIONS,
+                POST_SCAN_MAX_OFFSET_DIRECTIONS + 1,
+            )
+        ]
+        reach, offset = max(candidates, default=(0, 0))
+        if reach < POST_MIN_REACH_PX:
+            return None
+        return (primary + sign * offset) % SIGHTLINE_DIRECTIONS
+
+    left = best_side(1)
+    right = best_side(-1)
+    lanes = [primary]
+    if left is not None:
+        lanes.append(left)
+    lanes.append(primary)
+    if right is not None and right != left:
+        lanes.append(right)
+    return tuple(lanes)
+
+
 def _current_post_invalid(belief: Belief) -> bool:
     if belief.post_cell is None:
         return True
-    if belief.nav_stuck_ticks >= STUCK_TICKS:
+    if not belief.post_committed and belief.nav_stuck_ticks >= STUCK_TICKS:
         return True
     gx = belief.post_cell[0] // NAV_CELL
     gy = belief.post_cell[1] // NAV_CELL
@@ -390,6 +491,8 @@ def _current_post_invalid(belief: Belief) -> bool:
             and _near(belief.post_cell, claim.cell, POST_MIN_SEPARATION_PX)
         ):
             return True
+    if belief.post_committed:
+        return False
     if any(
         _near(belief.post_cell, teammate.pos, POST_MIN_SEPARATION_PX)
         for teammate in belief.teammates
@@ -420,6 +523,7 @@ def _set_post(
     belief.post_cover = post.cover
     belief.post_stance = post.stance
     belief.post_danger = post.danger
+    belief.post_exposure = post.exposure
     belief.post_threat_source = axis.source
     belief.post_claim_source = post.claim_source
     belief.post_selected_tick = belief.tick
@@ -427,6 +531,10 @@ def _set_post(
     belief.post_settled_ticks = 0
     if changed:
         belief.sweep_offset = 0
+        belief.post_committed = False
+        belief.post_committed_tick = -1
+        belief.post_scan_direction = None
+        belief.post_peek_cell = None
 
 
 def _clear_post(belief: Belief, claim_source: str | None = None) -> None:
@@ -441,17 +549,25 @@ def _clear_post(belief: Belief, claim_source: str | None = None) -> None:
     belief.post_cover = None
     belief.post_stance = None
     belief.post_danger = None
+    belief.post_exposure = None
     belief.post_threat_source = None
     belief.post_claim_source = claim_source
     belief.post_selected_tick = -1
     belief.post_last_evaluated_tick = belief.tick
     belief.post_settled_ticks = 0
+    belief.post_committed = False
+    belief.post_committed_tick = -1
+    belief.post_scan_direction = None
+    belief.post_peek_cell = None
 
 
 def _activate_post(belief: Belief) -> None:
     belief.post_active = True
     assert belief.self_xy is not None and belief.post_cell is not None
     if _within(belief.self_xy, belief.post_cell, POST_SETTLE_PX):
+        if not belief.post_committed:
+            belief.post_committed = True
+            belief.post_committed_tick = belief.tick
         belief.post_settled_ticks += 1
         belief.post_ticks_total += 1
     else:
@@ -466,7 +582,11 @@ def resolve_post_target(
     context: str,
     facing: tuple[int, int] | None = None,
 ) -> Post | None:
-    """Maintain one latched post; dwell and hysteresis affect re-selection only."""
+    """Maintain one latched post, reconsidering material danger or exposure.
+
+    Minimum dwell and the reevaluation interval keep live danger updates from
+    turning a useful sightline into per-tick post churn.
+    """
     if belief.self_xy is None:
         _clear_post(belief)
         return None
@@ -490,35 +610,69 @@ def resolve_post_target(
 
     assert belief.post_cell is not None and belief.post_direction is not None
     _activate_post(belief)
-    can_reconsider = (
-        belief.post_settled_ticks >= POST_MIN_DWELL_TICKS
+    reevaluation_due = (
+        belief.post_committed
+        and belief.tick - belief.post_committed_tick >= POST_MIN_DWELL_TICKS
         and belief.tick - belief.post_last_evaluated_tick >= POST_REEVALUATE_TICKS
-        and _direction_delta(axis.direction, belief.post_direction)
-        >= POST_THREAT_HYSTERESIS_DIRECTIONS
     )
-    if can_reconsider:
+    if reevaluation_due:
         belief.post_last_evaluated_tick = belief.tick
-        selected = choose_post(belief, center, axis.direction, mode=mode)
-        if selected is not None:
-            current = next(
-                (
-                    candidate
-                    for candidate in _ranked_candidates(
-                        belief,
-                        center,
-                        axis.direction,
-                        mode,
-                    )
-                    if candidate.cell == belief.post_cell
-                ),
-                None,
-            )
-            current_score = current.score if current is not None else -math.inf
-            if (
-                selected.cell == belief.post_cell
-                or selected.score >= current_score + POST_SWITCH_MARGIN
-            ):
-                _set_post(belief, selected, axis, center, mode, context)
+        current = next(
+            (
+                candidate
+                for candidate in _ranked_candidates(
+                    belief,
+                    center,
+                    axis.direction,
+                    mode,
+                )
+                if candidate.cell == belief.post_cell
+            ),
+            None,
+        )
+        previous_score = float(belief.post_score or 0.0)
+        previous_danger = float(belief.post_danger or 0.0)
+        direction_changed = (
+            _direction_delta(axis.direction, belief.post_direction)
+            >= POST_THREAT_HYSTERESIS_DIRECTIONS
+        )
+        exposure_worsened = (
+            current is None or previous_score - current.score >= POST_SWITCH_MARGIN
+        )
+        danger_worsened = (
+            current is None
+            or current.danger - previous_danger >= POST_SWITCH_MARGIN
+        )
+        if direction_changed or exposure_worsened or danger_worsened:
+            selected = choose_post(belief, center, axis.direction, mode=mode)
+            if selected is None:
+                if current is None:
+                    belief.post_degraded_clears += 1
+                    belief.post_last_reselection_reason = "degraded_clear"
+                    _clear_post(belief, "degraded_fallback")
+                    return None
+            else:
+                current_score = current.score if current is not None else -math.inf
+                materially_safer = (
+                    current is not None
+                    and current.danger - selected.danger >= POST_SWITCH_MARGIN
+                )
+                if (
+                    current is None
+                    or selected.cell == belief.post_cell
+                    or selected.score >= current_score + POST_SWITCH_MARGIN
+                    or materially_safer
+                ):
+                    if selected.cell != belief.post_cell:
+                        belief.post_reselections += 1
+                        if materially_safer or danger_worsened:
+                            belief.post_danger_reselections += 1
+                            belief.post_last_reselection_reason = "danger"
+                        elif exposure_worsened:
+                            belief.post_last_reselection_reason = "exposure"
+                        else:
+                            belief.post_last_reselection_reason = "threat_axis"
+                    _set_post(belief, selected, axis, center, mode, context)
 
     return Post(
         cell=belief.post_cell,
@@ -528,6 +682,7 @@ def resolve_post_target(
         cover=float(belief.post_cover or 0.0),
         stance=float(belief.post_stance or 0.0),
         danger=float(belief.post_danger or 0.0),
+        exposure=float(belief.post_exposure or 0.0),
         claim_source=belief.post_claim_source or "uncontested",
     )
 
@@ -540,6 +695,8 @@ __all__ = [
     "cover_toward",
     "direction_to_brads",
     "resolve_post_target",
+    "scan_directions",
     "sightline",
+    "sightline_exposure",
     "threat_axis",
 ]

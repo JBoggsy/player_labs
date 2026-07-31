@@ -196,11 +196,20 @@
       "note": "blue capture zone (x>=1029)"
     },
     {
-      "name": "center_ring",
-      "cx": 617,
-      "cy": 329,
-      "w": 256,
-      "h": 156,
+      "name": "red_center",
+      "cx": 548,
+      "cy": 333,
+      "w": 115,
+      "h": 153,
+      "angle": 0,
+      "note": "inside the bracket walls around center \u2014 glass sightline through the middle"
+    },
+    {
+      "name": "blue_center",
+      "cx": 686,
+      "cy": 333,
+      "w": 115,
+      "h": 153,
       "angle": 0,
       "note": "inside the bracket walls around center \u2014 glass sightline through the middle"
     },
@@ -311,6 +320,51 @@
       "h": 638,
       "angle": 0,
       "note": "series of walls separating blue's area from the map"
+    },
+    {
+      "name": "mid_danger_zone",
+      "cx": 616,
+      "cy": 330,
+      "w": 171,
+      "h": 93,
+      "angle": 0,
+      "note": "Standing around here exposes you badly"
+    },
+    {
+      "name": "red_bracket_sightline_top",
+      "cx": 455,
+      "cy": 225,
+      "w": 248,
+      "h": 26,
+      "angle": 34,
+      "note": "sight line between the top of red's base and the center along the red window bracket"
+    },
+    {
+      "name": "blue_bracket_sightline_top",
+      "cx": 780,
+      "cy": 225,
+      "w": 248,
+      "h": 26,
+      "angle": -34,
+      "note": "sight line between the top of blue's base and the center along the blue window bracket"
+    },
+    {
+      "name": "red_bracket_sightline_bot",
+      "cx": 455,
+      "cy": 437,
+      "w": 248,
+      "h": 26,
+      "angle": -34,
+      "note": "sight line between the bottom of red's base and the center along the red window bracket"
+    },
+    {
+      "name": "blue_bracket_sightline_bot",
+      "cx": 779,
+      "cy": 437,
+      "w": 248,
+      "h": 26,
+      "angle": 34,
+      "note": "sight line between the bottom of blue's base and the center along the blue window bracket"
     }
   ]
 }

@@ -51,6 +51,48 @@ proc labelOf(sim: SimServer, i: int): string =
 proc emitRow(tick, slot: int, key: string, value: JsonNode) =
   echo $(%*{"ts": tick, "player": slot, "key": key, "value": value})
 
+proc richValue(event: SimEvent): JsonNode =
+  result = %*{
+    "action_id": event.actionId,
+    "weapon": event.weapon,
+    "heading_brads": event.headingBrads,
+    "heading_degrees": event.headingBrads.float * 360.0 / AimBradsTurn.float,
+    "x": event.x,
+    "y": event.y,
+    "distance": event.distance,
+  }
+  case event.kind
+  of GrenadeThrow, GrenadeImpact, Pickup:
+    result["item"] = %event.item
+  of ShoutEvent:
+    result["content"] = %event.content
+  else:
+    discard
+  if event.kind in {ShotImpact, GrenadeImpact, SprayUse}:
+    result["damages"] = newJArray()
+    for damage in event.damages:
+      result["damages"].add %*{
+        "slot": damage.slot,
+        "amount": damage.amount,
+        "hp": damage.hp,
+        "blocked": damage.blocked,
+      }
+
+proc emitRichEvents(events: openArray[SimEvent]) =
+  for event in events:
+    let key =
+      case event.kind
+      of GunTrigger: "gun_trigger"
+      of Shot: "gun_fire"
+      of ShotImpact: "shot_impact"
+      of GrenadeThrow: "grenade_throw"
+      of GrenadeImpact: "grenade_impact"
+      of SprayUse: "spray_use"
+      of Pickup: "item_pickup"
+      of ShoutEvent: "shout"
+      else: continue
+    emitRow(event.tick, event.source, key, event.richValue())
+
 proc posValue(p: Player): JsonNode =
   ## Live state snapshot for one player (map pixels; aim in brads 0..255 CCW-from-east).
   %*{
@@ -96,6 +138,7 @@ proc emitReplayJson(path: string) =
     prevCarriers[team] = sim.flags[team].carrier
 
   sim.gameEventLoggingEnabled = false
+  sim.collectEvents = true
   replay.looping = false
   replay.mismatchQuit = true
 
@@ -108,6 +151,9 @@ proc emitReplayJson(path: string) =
       hashFailed = true
       failTick = tick
       break
+
+    emitRichEvents(sim.events)
+    sim.events.setLen(0)
 
     # Phase transitions + game over.
     if phase != sim.phase:
@@ -173,8 +219,13 @@ proc emitReplayJson(path: string) =
     # Captures, with the capturer's position.
     for i, p in sim.players:
       if p.captures > track.captures[i]:
+        var captured = ""
+        for team in sim.teams():
+          if sim.flags[team].carrier == i:
+            captured = teamText(team)
+        doAssert captured.len > 0, "capture event with no carried flag"
         emitRow(tick, sim.slotOf(i), "capture",
-                %*{"flag": teamText(enemy(p.team)), "x": p.x, "y": p.y})
+                %*{"flag": captured, "x": p.x, "y": p.y})
       track.captures[i] = p.captures
 
     # Score changes.

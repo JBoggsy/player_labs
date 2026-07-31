@@ -34,6 +34,21 @@ mid-session; check them back at the start of focused work.
   heartbeats, and 1,309.923 yards displacement. Report the new request/episode/Coworld IDs
   and before/after counts. Spell 7355 cooldown spam is a separate wowborg issue.
 
+- **Project large CTF snapshot fields during warehouse ingestion (found 2026-07-30).**
+  A 60-episode `BEACON_DIAG_EVERY_TICKS=1` build reached 12 GB and about
+  9.5 GB RSS because every snapshot stores the full danger grid in `data_json`.
+  Add an ingestion projection/side table or omit `danger.rows` from the general
+  trace table while retaining the small decision fields. Until then, stream
+  cumulative activation fields directly from telemetry ZIPs for full-tick
+  batches.
+
+- **Fix CTF A/B team-outcome significance units (found 2026-07-30).**
+  `ctf-ab` repeats one episode's team win/loss across all eight Beacon result
+  rows, then treats those 80 rows as independent. In the v58 Nancy replication
+  it reported `p=0.002` for 9/10 → 7/10, while the correct episode-level
+  two-sided Fisher test is `p=0.582`. Team outcomes must use one record per
+  episode; per-seat kills/deaths can remain seat-level.
+
 - **Imposter incidental co-location with teammate — avoid clustering (2026-07-07, James).** Belief
   trace refuted the "teammate detection is broken" theory (v101: 0/24 detection failures, teammate
   known every game — see [[crewrift-imposter-kill-lever]]). BUT the replay shows crewborg-imposter
@@ -161,6 +176,16 @@ mid-session; check them back at the start of focused work.
   whether to commit/PR them upstream or discard.
 
 ## Done
+
+- **CTF item capability 4: tactical grenade selection (DONE 2026-07-30).**
+  `beacon:v58` (`8fcbbb68-949d-48cd-8c66-11cbd1a9b660`) now prioritizes
+  wall-blocked enemies and tight groups, permits only narrow single-target
+  finishes, predicts teammate positions for a safety veto, and never releases
+  while carrying the flag. Against current `deltashot:v5`, v57 and v58 both
+  went 10-0 with 239 kills; v58's 43 ground-truth throws produced 35 enemy hits,
+  70 enemy HP removed, 9 multi-target impacts, and 3 friendly hits versus
+  v57's 45 / 33 / 66 / 7 / 4. Mechanism-positive non-regression, not a proven
+  outcome improvement. Uploaded inertly; not submitted.
 
 - **Fix `rotate_lessons.sh` re-archiving UNCHANGED buffers under new timestamps** (found 2026-07-13
   lessons sweep — 3 labs had byte-identical duplicate archives inflating the recurrence signal;

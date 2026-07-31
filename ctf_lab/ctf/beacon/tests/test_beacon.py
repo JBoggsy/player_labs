@@ -124,6 +124,17 @@ def test_every_walkable_cell_routes_to_goal():
     assert routed >= walkable - 1  # all but the single goal cell have a hop
 
 
+def test_local_movement_bias_cannot_cross_lineup_wall():
+    # The middle lineup pane is glass, but remains solid to the full player body.
+    assert not nav.walkable_segment((260, 340), (292, 340))
+    assert not nav.walkable_segment((975, 340), (943, 340))
+
+
+def test_local_movement_bias_can_use_lineup_gap():
+    assert nav.walkable_segment((260, 380), (292, 380))
+    assert nav.walkable_segment((975, 380), (943, 380))
+
+
 # --- team / seat from slot --------------------------------------------------------
 def test_team_from_slot():
     assert team_from_url("ws://h:2000/player?slot=0&token=x") == "red"
@@ -440,6 +451,12 @@ def test_observed_aim_from_self_sprite_rotation():
     assert st.observed_aim == 64  # rot 4 = north
 
 
+def test_observed_aim_from_crown_self_sprite_rotation():
+    # Crown is the next 16-sprite skin block; its rotation still starts at zero.
+    st = perceive(_obs(_world_with_self((600, 329), aim_rot=16 + 4)), "red")
+    assert st.observed_aim == 64
+
+
 def test_item_pickups_perceived():
     w = _world_with_self((600, 329))
     w.sprites[40] = SpriteDef(40, 10, 10, "grenade", b"")
@@ -511,9 +528,9 @@ def test_peek_pre_lays_aim_at_blocked_track():
     from ctf.beacon.action import _peek_duck_override
     from ctf.beacon.types import PlayerTrack
     b = _combat_belief()  # gun UP
-    # Near the rect's south end (y=72): a ~2-cell sidestep south opens the line.
-    b.self_xy = (250, 56)
-    b.enemy_tracks = [PlayerTrack(pos=(300, 56), last_tick=90, facing="left")]  # blocked
+    # Near the rect's south end (y=72): a short sidestep south opens the line.
+    b.self_xy = (250, 64)
+    b.enemy_tracks = [PlayerTrack(pos=(300, 64), last_tick=90, facing="left")]  # blocked
     out = _peek_duck_override(Intent(kind="navigate_to", point=(1049, 329), reason="steal"), b)
     assert out is not None
     mask, aim = out
@@ -622,29 +639,293 @@ def test_spawn_table_matches_sim_formulas():
     assert MEDKIT_SPAWNS == ((617, 219), (617, 439))
 
 
-def test_single_claimant_per_item():
-    # Across all 8 seats, each fetchable spawn is claimed by at most one seat.
+def test_convenience_uses_marginal_route_cost():
     from ctf.beacon import items
 
-    claims: dict[tuple[int, int], int] = {}
-    for seat in range(8):
-        b = Belief(team="red", seat=seat, alive=True, tick=10, self_xy=(200, 329))
-        b.item_spawns = items.build_spawn_table()
-        spawn = items.assigned_fetch(b)
-        if spawn is not None:
-            assert spawn.pos not in claims, f"seats {claims[spawn.pos]} and {seat} both claim {spawn.pos}"
-            claims[spawn.pos] = seat
-    assert len(claims) == 3  # shield + two grenades on our side
-
-
-def test_assigned_fetch_respects_carried_item():
-    from ctf.beacon import items
-
-    b = Belief(team="red", seat=2, alive=True, tick=10, self_xy=(200, 329))
+    b = Belief(team="red", seat=0, alive=True, tick=10, self_xy=(600, 300), hp_pips=1)
     b.item_spawns = items.build_spawn_table()
-    assert items.assigned_fetch(b) is not None
-    b.i_have_shield = True
-    assert items.assigned_fetch(b) is None
+    choice = items.evaluate_fetch(b, (1049, 329), anchor_kind="role")
+    assert choice is not None
+    assert choice.spawn.kind == "medkit"
+    assert choice.accepted
+    assert choice.detour_px <= choice.threshold_px
+    assert choice.route_via_item_px >= choice.route_to_item_px
+
+
+def test_route_distance_is_finite_and_symmetric():
+    from ctf.beacon import nav
+
+    start = (100, 100)
+    goal = (1049, 329)
+    forward = nav.route_distance(start, goal)
+    reverse = nav.route_distance(goal, start)
+    assert math.isfinite(forward)
+    assert forward == pytest.approx(reverse)
+
+
+def test_settled_post_rejects_a_long_item_excursion():
+    from ctf.beacon import items
+
+    b = Belief(team="red", seat=2, alive=True, tick=10, self_xy=(200, 329), hp_pips=3)
+    b.item_spawns = items.build_spawn_table()
+    choice = items.evaluate_fetch(b, b.self_xy, anchor_kind="post")
+    assert choice is not None
+    assert not choice.accepted
+    assert choice.reason == "too_far"
+    assert choice.threshold_px == 48
+
+
+def test_respawn_bonus_makes_a_corner_grenade_convenient():
+    from ctf.beacon import items
+
+    b = Belief(team="red", seat=2, alive=True, tick=10, self_xy=(100, 100), hp_pips=3)
+    b.item_spawns = items.build_spawn_table()
+    choice = items.evaluate_fetch(
+        b,
+        (1049, 329),
+        anchor_kind="rejoin",
+        respawning=True,
+    )
+    assert choice is not None
+    assert choice.spawn.kind == "grenade"
+    assert choice.spawn.pos == (50, 50)
+    assert choice.accepted
+    assert choice.threshold_px == 288
+
+
+def test_fresh_respawn_fetches_corner_item_with_squads_disabled(monkeypatch):
+    from ctf.beacon import items, strategy
+
+    monkeypatch.setattr(strategy, "SQUAD_COMMAND", False)
+    monkeypatch.setattr(strategy, "ITEM_CONVENIENCE", True)
+    b = Belief(
+        team="red",
+        seat=0,
+        role="attacker",
+        alive=True,
+        tick=100,
+        respawned_tick=100,
+        self_xy=(100, 100),
+        hp_pips=3,
+    )
+    b.item_spawns = items.build_spawn_table()
+    intent, flow = strategy.decide_objective(b)
+    assert intent.kind == "navigate_to"
+    assert intent.point == (50, 50)
+    assert intent.reason == "fetch_item"
+    assert flow is None
+
+
+def test_active_convenience_preserves_legacy_assignment(monkeypatch):
+    from ctf.beacon import items, strategy
+
+    monkeypatch.setattr(strategy, "ITEM_CONVENIENCE", True)
+    b = Belief(
+        team="red",
+        seat=2,
+        role="attacker",
+        alive=True,
+        tick=100,
+        respawned_tick=100,
+        self_xy=(100, 100),
+        hp_pips=3,
+    )
+    b.item_spawns = items.build_spawn_table()
+    intent, flow = strategy.decide_objective(b)
+    assert intent.point == (50, 494)
+    assert intent.reason == "fetch_item"
+    assert flow is None
+
+
+def test_incidental_fetch_rejects_nonlegacy_grenade_beyond_route_cap():
+    from ctf.beacon import items
+
+    b = Belief(
+        team="red",
+        seat=0,
+        alive=True,
+        tick=500,
+        self_xy=(150, 100),
+        hp_pips=3,
+    )
+    b.item_spawns = items.build_spawn_table()
+    choice = items.evaluate_fetch(
+        b,
+        (1049, 329),
+        anchor_kind="role",
+        incidental_only=True,
+    )
+    assert choice is not None
+    assert not choice.accepted
+    assert choice.reason == "too_far"
+
+
+def test_shadow_convenience_preserves_legacy_item_assignment(monkeypatch):
+    from ctf.beacon import items, strategy
+
+    monkeypatch.setattr(strategy, "ITEM_CONVENIENCE", False)
+    b = Belief(
+        team="red",
+        seat=3,
+        role="attacker",
+        alive=True,
+        tick=105,
+        self_xy=(100, 100),
+        hp_pips=3,
+    )
+    b.item_spawns = items.build_spawn_table()
+    intent, flow = strategy.decide_objective(b)
+    assert intent.point == (50, 50)
+    assert intent.reason == "fetch_item"
+    assert flow is None
+    assert b.item_options
+
+
+def test_item_anchor_does_not_advance_plan_buddy_wait(monkeypatch):
+    from types import SimpleNamespace
+
+    from ctf.beacon import strategy
+
+    order = SimpleNamespace(
+        kind="move",
+        target="enemy_pedestal",
+        fallback=None,
+    )
+    book = SimpleNamespace(
+        group_of=lambda seat, phase: "push",
+        primary_order=lambda group, phase: order,
+    )
+    monkeypatch.setattr(strategy, "PLAN_NAME", "test")
+    monkeypatch.setattr(
+        strategy._plan.PlanBook,
+        "load",
+        lambda name: book,
+    )
+    monkeypatch.setattr(
+        strategy.poi,
+        "resolve",
+        lambda target, team: (1049, 329),
+    )
+    b = Belief(
+        team="red",
+        seat=3,
+        alive=True,
+        self_xy=(400, 329),
+        plan_buddy_wait_ticks=17,
+    )
+    assert strategy._item_anchor(b, "blue") == ((1049, 329), "plan")
+    assert b.plan_buddy_wait_ticks == 17
+
+
+def test_unassigned_shield_and_distant_spray_wait_for_tactical_doctrine():
+    from ctf.beacon import items
+
+    b = Belief(
+        team="red",
+        seat=0,
+        alive=True,
+        tick=10,
+        self_xy=(100, 329),
+        hp_pips=3,
+    )
+    b.item_spawns = items.build_spawn_table()
+    items.evaluate_fetch(b, (1049, 329), anchor_kind="role")
+    gated = [
+        option
+        for option in b.item_options
+        if option.spawn.kind in ("shield", "arc")
+    ]
+    assert gated
+    assert all(not option.accepted for option in gated)
+    assert all(option.reason == "tactics_not_ready" for option in gated)
+
+
+def test_legacy_item_owner_only_gets_its_own_side_assignment():
+    from ctf.beacon import items
+
+    b = Belief(
+        team="red",
+        seat=2,
+        alive=True,
+        tick=10,
+        self_xy=(200, 329),
+        hp_pips=3,
+    )
+    b.item_spawns = items.build_spawn_table()
+    items.evaluate_fetch(b, (1049, 329), anchor_kind="role")
+    shields = [
+        option for option in b.item_options if option.spawn.kind == "shield"
+    ]
+    own = next(option for option in shields if option.spawn.pos[0] < 617)
+    enemy = next(option for option in shields if option.spawn.pos[0] > 617)
+    assert own.threshold_px == 420
+    assert enemy.reason == "tactics_not_ready"
+
+
+def test_visible_closer_teammate_wins_item_contention():
+    from ctf.beacon import items
+
+    b = Belief(
+        team="red",
+        seat=2,
+        alive=True,
+        tick=10,
+        self_xy=(100, 100),
+        hp_pips=3,
+        teammates=(Enemy(pos=(50, 50), facing="right"),),
+    )
+    b.item_spawns = items.build_spawn_table()
+    choice = items.evaluate_fetch(b, (1049, 329), anchor_kind="role")
+    grenade = next(
+        option
+        for option in b.item_options
+        if option.spawn.kind == "grenade" and option.spawn.pos == (50, 50)
+    )
+    assert not grenade.accepted
+    assert grenade.reason == "closer_teammate"
+    assert choice is not None
+
+
+def test_equidistant_teammates_choose_exactly_one_item_pursuer():
+    from ctf.beacon import items
+
+    left = Belief(
+        team="red",
+        seat=2,
+        alive=True,
+        tick=10,
+        self_xy=(40, 60),
+        hp_pips=3,
+        teammates=(Enemy(pos=(60, 40), facing="right"),),
+    )
+    right = Belief(
+        team="red",
+        seat=3,
+        alive=True,
+        tick=10,
+        self_xy=(60, 40),
+        hp_pips=3,
+        teammates=(Enemy(pos=(40, 60), facing="right"),),
+    )
+    for belief in (left, right):
+        belief.item_spawns = items.build_spawn_table()
+        items.evaluate_fetch(
+            belief,
+            (1049, 329),
+            anchor_kind="role",
+            respawning=True,
+        )
+    left_grenade = next(
+        option
+        for option in left.item_options
+        if option.spawn.kind == "grenade" and option.spawn.pos == (50, 50)
+    )
+    right_grenade = next(
+        option
+        for option in right.item_options
+        if option.spawn.kind == "grenade" and option.spawn.pos == (50, 50)
+    )
+    assert left_grenade.accepted != right_grenade.accepted
 
 
 def test_absent_spawn_backs_off_then_recovers():
@@ -678,10 +959,11 @@ def test_medkit_fetch_only_when_hurt():
     b = Belief(team="red", seat=0, alive=True, tick=10, self_xy=(600, 300))
     b.item_spawns = items.build_spawn_table()
     b.hp_pips = 3
-    assert items.medkit_target(b, 420) is None
+    items.evaluate_fetch(b, (1049, 329), anchor_kind="role")
+    assert all(option.spawn.kind != "medkit" for option in b.item_options)
     b.hp_pips = 1
-    kit = items.medkit_target(b, 420)
-    assert kit is not None and kit.kind == "medkit"
+    choice = items.evaluate_fetch(b, (1049, 329), anchor_kind="role")
+    assert choice is not None and choice.spawn.kind == "medkit"
 
 
 def test_grenade_charge_holds_c_and_mask_survives():
@@ -699,6 +981,96 @@ def test_grenade_charge_holds_c_and_mask_survives():
     cmd = resolve_action(Intent(kind="hold", reason="hold_line"), b, ActionState())
     assert cmd.held_mask & BUTTON_C
     assert b.throw_charge_ticks == 1
+    assert b.throw_reason == "wall_blocked"
+
+
+def test_grenade_skips_ordinary_open_single():
+    from ctf.beacon.config import BUTTON_C
+
+    b = Belief(
+        team="red",
+        alive=True,
+        fire_ready=True,
+        tick=100,
+        self_xy=(300, 329),
+        aim_brads=0,
+        enemies=(Enemy(pos=(440, 329), facing="left", hp_segments=3),),
+    )
+    b.i_have_grenade = True
+    cmd = resolve_action(Intent(kind="hold", reason="hold_line"), b, ActionState())
+    assert not cmd.held_mask & BUTTON_C
+    assert b.throw_reason is None
+
+
+def test_grenade_targets_tight_visible_group_without_stealing_gun_aim():
+    from ctf.beacon.config import BUTTON_C
+
+    b = Belief(
+        team="red",
+        alive=True,
+        fire_ready=True,
+        tick=100,
+        self_xy=(300, 600),
+        aim_brads=0,
+        enemies=(
+            Enemy(pos=(440, 600), facing="left"),
+            Enemy(pos=(480, 600), facing="left"),
+        ),
+    )
+    b.i_have_grenade = True
+    cmd = resolve_action(Intent(kind="hold", reason="hold_line"), b, ActionState())
+    assert cmd.held_mask & BUTTON_C
+    assert b.throw_target == (440, 600)
+    assert b.throw_reason == "group"
+    assert b.throw_enemy_count == 2
+
+
+def test_grenade_uses_open_single_for_final_enemy_life():
+    from ctf.beacon.config import BUTTON_C
+
+    b = Belief(
+        team="red",
+        alive=True,
+        fire_ready=True,
+        tick=100,
+        self_xy=(300, 329),
+        aim_brads=0,
+        enemies=(Enemy(pos=(440, 329), facing="left"),),
+        enemy_team_score=(0, 23),
+    )
+    b.i_have_grenade = True
+    cmd = resolve_action(Intent(kind="hold", reason="hold_line"), b, ActionState())
+    assert cmd.held_mask & BUTTON_C
+    assert b.throw_reason == "final_life"
+
+
+def test_flag_carrier_does_not_start_grenade_charge():
+    from ctf.beacon.config import BUTTON_C
+
+    b = Belief(
+        team="red",
+        alive=True,
+        fire_ready=True,
+        tick=100,
+        self_xy=(300, 329),
+        aim_brads=0,
+        enemies=(
+            Enemy(pos=(440, 329), facing="left"),
+            Enemy(pos=(480, 329), facing="left"),
+        ),
+        i_carry_enemy_flag=True,
+    )
+    b.i_have_grenade = True
+    cmd = resolve_action(Intent(kind="hold", reason="carry_home"), b, ActionState())
+    assert not cmd.held_mask & BUTTON_C
+    assert b.throw_reason is None
+
+    b.throw_charge_ticks = 4
+    b.throw_target = (440, 600)
+    b.throw_reason = "group"
+    cmd = resolve_action(Intent(kind="hold", reason="carry_home"), b, ActionState())
+    assert cmd.held_mask & BUTTON_C
+    assert b.throw_charge_ticks == 4
 
 
 def test_fire_freezes_movement_through_windup():
@@ -1086,7 +1458,7 @@ def test_poi_resolves_names_and_mirrors():
     assert poi.point("north_medkit", "blue") == nm  # medkit is on the mirror line
     assert poi.resolve({"x": 100, "y": 200}, "blue") == (1134, 200)
     assert poi.resolve("no_such_poi") is None
-    assert poi.area("center_ring").contains(617, 329)
+    assert poi.area("mid_danger_zone").contains(617, 329)
 
 
 def test_plan_book_groups_and_splits():
@@ -1254,7 +1626,7 @@ def test_cover_toward_distinguishes_side_wall_from_blocked_lane():
     assert posts.cover_toward((548, 20), 29) < 0.5
 
 
-def test_phase_two_push_waypoint_selects_verified_rank_zero_post():
+def test_phase_two_push_waypoint_selects_forward_rank_zero_post():
     from ctf.beacon import posts
     from ctf.beacon.config import GRID_H, GRID_W
 
@@ -1267,22 +1639,26 @@ def test_phase_two_push_waypoint_selects_verified_rank_zero_post():
     )
     post = posts.choose_post(belief, (628, 59), 0, mode="push")
     assert post is not None
-    assert post.cell == (548, 20)
-    assert post.reach == pytest.approx(1.0)
-    assert post.cover == pytest.approx(0.875)
+    assert post.cell == (724, 20)
+    assert post.reach == pytest.approx(0.56)
+    assert post.cover == pytest.approx(0.8125)
+    assert post.stance > 0.8
 
 
-def test_threat_axis_quantisation_mirrors_for_blue():
+def test_baked_threat_axis_uses_forward_open_lane_and_mirrors():
     from ctf.beacon import posts
 
     red = Belief(team="red", alive=True, self_xy=(548, 20))
-    blue = Belief(team="blue", alive=True, self_xy=(686, 20))
-    assert posts.threat_axis(red, (548, 20)).direction == 29
-    assert posts.threat_axis(blue, (686, 20)).direction == 19
-    assert posts.direction_to_brads(29) == 232
+    # The 8px nav grid mirrors red x=548 onto blue x=688.
+    blue = Belief(team="blue", alive=True, self_xy=(688, 20))
+    red_axis = posts.threat_axis(red, (548, 20))
+    blue_axis = posts.threat_axis(blue, (688, 20))
+    assert (red_axis.direction, red_axis.source) == (0, "baked_sightline")
+    assert (blue_axis.direction, blue_axis.source) == (16, "baked_sightline")
+    assert posts.direction_to_brads(16) == 128
 
 
-def test_stance_flips_preferred_side_for_push_and_hold(monkeypatch):
+def test_stance_prefers_forward_side_for_push_and_hold(monkeypatch):
     from ctf.beacon import posts
     from ctf.beacon.config import GRID_H, GRID_W, NAV_CELL, SIGHTLINE_DIRECTIONS
 
@@ -1309,7 +1685,7 @@ def test_stance_flips_preferred_side_for_push_and_hold(monkeypatch):
     push = posts.choose_post(belief, (100, 100), 0, mode="push")
     hold = posts.choose_post(belief, (100, 100), 0, mode="hold")
     assert push is not None and push.cell == ahead
-    assert hold is not None and hold.cell == behind
+    assert hold is not None and hold.cell == ahead
 
 
 def test_post_claim_codec_and_arbitration(monkeypatch):
@@ -1361,10 +1737,10 @@ def test_lower_seat_claim_displaces_post_choice():
         self_xy=(628, 59),
         danger=np.zeros((GRID_H, GRID_W), dtype=np.float32),
     )
-    belief.post_claims[2] = PostClaim(seat=2, cell=(548, 20), tick=100)
+    belief.post_claims[2] = PostClaim(seat=2, cell=(724, 20), tick=100)
     post = posts.choose_post(belief, (628, 59), 0, mode="push")
     assert post is not None
-    assert post.cell == (604, 20)
+    assert post.cell == (548, 20)
     assert post.claim_source == "heard_K:2"
 
 
@@ -1450,14 +1826,20 @@ def test_carrying_preempts_and_deactivates_latched_post(posts_on):
     assert not belief.post_active
 
 
-def test_settled_post_facing_ignores_squad_sector(monkeypatch):
+def test_settled_post_scans_baked_sightlines_and_ignores_squad_sector(monkeypatch):
     from ctf.beacon import action
 
     monkeypatch.setattr(action, "POST_FACING", True)
     monkeypatch.setattr(action, "SQUADS", True)
+    monkeypatch.setattr(
+        action.posts,
+        "scan_directions",
+        lambda cell, direction: (direction, 3, direction, 27),
+    )
     belief = Belief(
         team="red",
         seat=2,
+        tick=0,
         alive=True,
         self_xy=(548, 20),
         post_active=True,
@@ -1465,9 +1847,56 @@ def test_settled_post_facing_ignores_squad_sector(monkeypatch):
         post_direction=29,
         post_settled_ticks=1,
     )
-    # Direction 29 is 232 brads; the first lighthouse step adds 5. Seat 2's
-    # ordinary sector offset must not move this post-owned centre.
-    assert action._sweep_target(belief) == 237
+    # Seat 2 starts on the repeated primary lane: direction 29 is 232 brads.
+    # Its ordinary squad-sector offset must not move this post-owned sightline.
+    assert action._sweep_target(belief) == 232
+    assert belief.post_scan_direction == 29
+
+
+def test_post_scan_directions_choose_open_lane_on_each_side(monkeypatch):
+    from ctf.beacon import posts
+
+    reach = {0: 400, 3: 260, 5: 120, 29: 180, 27: 300}
+    monkeypatch.setattr(
+        posts,
+        "sightline",
+        lambda cell, direction: reach.get(direction % 32, 20),
+    )
+    assert posts.scan_directions((548, 20), 0) == (0, 3, 0, 27)
+
+
+def test_committed_post_survives_local_traffic_and_contact(monkeypatch):
+    from ctf.beacon import posts
+
+    belief = Belief(
+        team="red",
+        seat=3,
+        tick=100,
+        alive=True,
+        self_xy=(100, 100),
+        post_cell=(100, 100),
+        post_direction=0,
+        post_center=(100, 100),
+        post_mode="hold",
+        post_context="plan",
+        post_committed=True,
+        post_committed_tick=90,
+        post_score=1.0,
+    )
+    belief.teammates = (Enemy(pos=(102, 100), facing="right"),)
+    belief.enemies = (Enemy(pos=(104, 100), facing="left"),)
+    monkeypatch.setattr(
+        posts,
+        "threat_axis",
+        lambda belief, center, facing=None: posts.ThreatAxis(0, "plan_facing"),
+    )
+    assert posts.resolve_post_target(
+        belief,
+        (100, 100),
+        mode="hold",
+        context="plan",
+    ).cell == (100, 100)
+    assert belief.post_committed
 
 
 def test_wave_gate_holds_outside_window_when_enabled(monkeypatch):
@@ -1740,13 +2169,13 @@ def test_wound_score_distinguishes_unknown_from_confirmed_healthy():
     assert wounded.score > unknown.score > healthy.score
 
 
-def test_firefight_range_band_rejects_too_close_and_beyond_gate():
+def test_firefight_range_band_fades_outside_preferred_distance():
     from ctf.beacon import fight
-    from ctf.beacon.config import FIRE_MAX_RANGE_PX
+    from ctf.beacon.config import FF_RANGE_SCORE_FALLOFF_PX
 
     assert fight._range_term(60.0) == 0.0
     assert fight._range_term(260.0) == 1.0
-    assert fight._range_term(FIRE_MAX_RANGE_PX + 1.0) == 0.0
+    assert fight._range_term(FF_RANGE_SCORE_FALLOFF_PX + 1.0) == 0.0
 
 
 def test_shootability_default_swing_is_point_seven():

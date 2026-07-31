@@ -223,7 +223,7 @@ function groupColor(name) {
 }
 
 // ---------- load / save ----------
-async function fetchJson(url) { const r = await fetch(url); if (!r.ok) throw new Error(url); return r.json(); }
+async function fetchJson(url) { const r = await fetch(url, { cache: "no-cache" }); if (!r.ok) throw new Error(url); return r.json(); }
 async function boot() {
   try { walls = await fetchJson("arena_walls.json"); } catch (e) {}
   try { poi = await fetchJson("../ctf/beacon/mapdata/points_of_interest.json"); } catch (e) {}

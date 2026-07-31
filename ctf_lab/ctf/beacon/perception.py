@@ -22,10 +22,11 @@ from players.player_sdk import SpriteObject, SpriteWorld
 #: carrier's centre), so our own carry reads at ~0px; 24 leaves margin while staying
 #: well under the distance to a teammate carrier.
 _CARRY_DIST = 24.0
-#: The white-outlined self soldier sprite pool: 5100 + rot, one per 16-brad aim step
-#: (global.nim SpritePlayerSelfSpriteBase / sim.nim SoldierRotations). The aim-dot
-#: indicator was retired in the renderer restore; the self sprite's rotation id is
-#: now the only absolute aim readback (coarse: ±8 brads).
+#: The white-outlined self soldier sprite pool: 5100 + skin*16 + rot, one per
+#: 16-brad aim step (global.nim SpritePlayerSelfSpriteBase / sim.nim
+#: SoldierRotations). The aim-dot indicator was retired in the renderer restore;
+#: the self sprite's rotation id is now the only absolute aim readback (coarse:
+#: ±8 brads).
 _SELF_SPRITE_BASE = 5100
 _SOLDIER_ROTATIONS = 16
 #: Only resync the dead-reckoned aim estimate when it disagrees with the quantized
@@ -42,6 +43,7 @@ _ITEM_LABELS = {
     "med kit": "medkit",
     "shield": "shield",
     "plasma arc": "arc",
+    "spray can": "arc",
 }
 #: Sound-ring labels (v16 hearing): audible map-wide through walls and fog,
 #: jittered ±20px per event, team-anonymous. "shot impact" = a bullet LANDED
@@ -79,16 +81,18 @@ def _find_self(world: SpriteWorld, color: Team):
     """Our self marker: (centre, facing, observed_aim_brads|None).
 
     The aim-dot indicator was retired in the 0.7.8 renderer restore; the aim
-    readback is now the self sprite's rotation id (5100 + rot, 16 steps of 16
-    brads) — coarse but absolute, used only to correct dead-reckoning drift."""
+    readback is now the self sprite's rotation id (5100 + skin*16 + rot, 16
+    steps of 16 brads) — coarse but absolute, used only to correct
+    dead-reckoning drift."""
     for facing in ("right", "left"):
         objs = _objects_with_label(world, f"self {color} {facing}")
         if objs:
             obj = objs[0]
-            rot = obj.sprite_id - _SELF_SPRITE_BASE
+            offset = obj.sprite_id - _SELF_SPRITE_BASE
+            rot = offset % _SOLDIER_ROTATIONS
             aim = (
                 rot * (AIM_BRADS_TURN // _SOLDIER_ROTATIONS)
-                if 0 <= rot < _SOLDIER_ROTATIONS
+                if offset >= 0
                 else None
             )
             return _center(world, obj), facing, aim
@@ -265,6 +269,7 @@ def _attach_overhead_state(
         "grenade carried": [],
         "shield carried": [],
         "plasma arc carried": [],
+        "spray can carried": [],
     }
     for obj in world.objects.values():
         sprite = world.sprite_for(obj)
@@ -349,7 +354,10 @@ def _attach_overhead_state(
         self_hp,
         self_carried["grenade carried"],
         self_carried["shield carried"],
-        self_carried["plasma arc carried"],
+        (
+            self_carried["plasma arc carried"]
+            or self_carried["spray can carried"]
+        ),
         attached_enemies,
         attached_teammates,
     )
@@ -408,6 +416,10 @@ def perceive(obs, team: Team) -> CtfState:
             enemies,
             teammates,
         ) = _attach_overhead_state(world, self_xy, enemies, teammates)
+        # Current CTF exposes an explicit own-weapon HUD label. It is the
+        # authoritative seam; the overhead carrier marker is retained for old
+        # replays and for attaching visible state to other actors.
+        have_arc = have_arc or bool(_objects_with_label(world, "weapon spray"))
     else:
         hp_pips, have_grenade, have_shield, have_arc = None, False, False, False
     red_score, blue_score = _team_scores(world)

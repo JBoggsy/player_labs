@@ -1,0 +1,244 @@
+{
+  "name": "firefight_training_line",
+  "author": "both",
+  "status": "proposal",
+  "summary": "A deliberately non-competitive firefight-training plan. Four bots establish the middle rally while two-bot wings take the top and bottom vees. The line holds until tick 600 to invite sustained contact, then advances into the top diamond, center, and bottom diamond and holds there for the rest of the game. The purpose is to generate many varied engagements for improving beacon's firefight mechanics; steals, captures, and win rate are explicitly not this plan's objective, and this plan is not a submission candidate.",
+  "team": "red",
+  "groups": {
+    "mid_force": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "top_pair": [
+      4,
+      5
+    ],
+    "bot_pair": [
+      6,
+      7
+    ]
+  },
+  "phases": [
+    {
+      "name": "establish_contact_line",
+      "intent": "Deploy four bots to our middle rally and one pair to each outward vee. This broad three-lane frontage is meant to find enemy pressure early rather than concentrate on a capture route.",
+      "entry": {
+        "prose": "game start",
+        "tag": "tick>=0"
+      },
+      "orders": [
+        {
+          "group": "mid_force",
+          "kind": "move",
+          "to": "red_rally_mid"
+        },
+        {
+          "group": "top_pair",
+          "kind": "move",
+          "to": "red_top_vee"
+        },
+        {
+          "group": "bot_pair",
+          "kind": "move",
+          "to": "red_bot_vee"
+        }
+      ],
+      "enemy_belief": [
+        {
+          "at": "blue_rally_mid",
+          "count": 4,
+          "note": "expect the densest contact in the middle"
+        },
+        {
+          "at": "blue_top_vee",
+          "count": 2
+        },
+        {
+          "at": "blue_bottom_vee",
+          "count": 2
+        }
+      ],
+      "notes": []
+    },
+    {
+      "name": "hold_contact_line",
+      "intent": "Hold the rally-and-vees line long enough to accumulate repeated firefights. The middle four create the main engagement mass; each wing pair contests a separate sightline so the trace set includes different ranges and cover geometry.",
+      "entry": {
+        "prose": "each group has reached its initial position, or its local phase times out"
+      },
+      "orders": [
+        {
+          "group": "mid_force",
+          "kind": "hold",
+          "at": "red_rally_mid",
+          "facing": "center"
+        },
+        {
+          "group": "top_pair",
+          "kind": "hold",
+          "at": "red_top_vee",
+          "facing": "top_diamond"
+        },
+        {
+          "group": "bot_pair",
+          "kind": "hold",
+          "at": "red_bot_vee",
+          "facing": "bottom_diamond"
+        },
+        {
+          "group": "mid_force",
+          "kind": "watch",
+          "at": "bottom_diamond"
+        },
+        {
+          "group": "mid_force",
+          "kind": "watch",
+          "at": "top_diamond"
+        },
+        {
+          "group": "top_pair",
+          "kind": "watch",
+          "at": "top_corridor"
+        },
+        {
+          "group": "top_pair",
+          "kind": "watch",
+          "at": "center"
+        },
+        {
+          "group": "bot_pair",
+          "kind": "watch",
+          "at": "center"
+        },
+        {
+          "group": "mid_force",
+          "kind": "watch",
+          "at": "bottom_corridor"
+        }
+      ],
+      "enemy_belief": [],
+      "notes": [
+        {
+          "who": "codex",
+          "text": "A separate hold phase is required because arriving at a move target advances immediately. The next phase's tick>=600 entry gate keeps early arrivals here until tick 600; the interpreter's unconditional 900-tick timeout still prevents a deadlock."
+        }
+      ]
+    },
+    {
+      "name": "advance_to_midfield",
+      "intent": "After the first contact period, advance all three groups one step into the midfield fighting line: the wings take the open diamond approaches while the four-bot mass takes center.",
+      "entry": {
+        "prose": "the initial line has been held through tick 600",
+        "tag": "tick>=600"
+      },
+      "orders": [
+        {
+          "group": "mid_force",
+          "kind": "move",
+          "to": "center"
+        },
+        {
+          "group": "top_pair",
+          "kind": "move",
+          "to": "top_diamond"
+        },
+        {
+          "group": "bot_pair",
+          "kind": "move",
+          "to": "bottom_diamond"
+        }
+      ],
+      "enemy_belief": [
+        {
+          "at": "center_ring",
+          "count": 4,
+          "note": "the center force advances expecting direct resistance"
+        },
+        {
+          "at": "top_diamond",
+          "count": 2
+        },
+        {
+          "at": "bottom_diamond",
+          "count": 2
+        }
+      ],
+      "notes": []
+    },
+    {
+      "name": "hold_midfield",
+      "intent": "Terminal training posture. Hold the top diamond, center, and bottom diamond for the rest of the game, accepting deaths and a poor objective game in exchange for dense firefight traces across three lanes.",
+      "entry": {
+        "prose": "each group reaches its midfield position, or its local phase times out"
+      },
+      "orders": [
+        {
+          "group": "mid_force",
+          "kind": "hold",
+          "at": "center",
+          "facing": "blue_window"
+        },
+        {
+          "group": "top_pair",
+          "kind": "hold",
+          "at": "top_diamond",
+          "facing": "blue_top_vee"
+        },
+        {
+          "group": "bot_pair",
+          "kind": "hold",
+          "at": "bottom_diamond",
+          "facing": "blue_bottom_vee"
+        },
+        {
+          "group": "mid_force",
+          "kind": "watch",
+          "at": "blue_top_vee"
+        },
+        {
+          "group": "mid_force",
+          "kind": "watch",
+          "at": "blue_bottom_vee"
+        },
+        {
+          "group": "top_pair",
+          "kind": "watch",
+          "at": {
+            "x": 734,
+            "y": 45
+          }
+        },
+        {
+          "group": "bot_pair",
+          "kind": "watch",
+          "at": {
+            "x": 739,
+            "y": 619
+          }
+        },
+        {
+          "group": "top_pair",
+          "kind": "watch",
+          "at": "blue_rally_top"
+        },
+        {
+          "group": "bot_pair",
+          "kind": "watch",
+          "at": {
+            "x": 762,
+            "y": 498
+          }
+        }
+      ],
+      "enemy_belief": [],
+      "notes": [
+        {
+          "who": "james",
+          "text": "This plan is intended to maximize fighting experience, not to win."
+        }
+      ]
+    }
+  ]
+}

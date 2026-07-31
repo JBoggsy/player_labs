@@ -193,6 +193,22 @@ class ItemSpawn:
 
 
 @dataclass(frozen=True)
+class ItemOption:
+    """One evaluated pickup opportunity relative to the current objective."""
+
+    spawn: ItemSpawn
+    anchor: tuple[int, int]
+    anchor_kind: str
+    route_to_item_px: float
+    route_via_item_px: float
+    direct_route_px: float
+    detour_px: float
+    threshold_px: float
+    accepted: bool
+    reason: str
+
+
+@dataclass(frozen=True)
 class PostClaim:
     """A teammate's fresh K claim on one nav-cell-centred fighting post."""
 
@@ -232,6 +248,18 @@ class Belief:
     # Player tracks + danger field (folded in belief.py; nothing gates on them yet):
     enemy_tracks: list[PlayerTrack] = field(default_factory=list)
     teammate_tracks: list[PlayerTrack] = field(default_factory=list)
+    # Anti-turtle classifier: count alive observation ticks and ticks with at
+    # least one enemy visibly outside its defended lineup. The terminal hold is
+    # latched once the late-game threshold is met, so death/fog cannot make the
+    # strategy oscillate back into an assault.
+    enemy_observation_ticks: int = 0
+    enemy_outside_base_ticks: int = 0
+    anti_turtle_latched: bool = False
+    anti_turtle_activations: int = 0
+    anti_turtle_ticks: int = 0
+    base_caution_active: bool = False
+    base_caution_ticks: int = 0
+    base_assault_blocked_ticks: int = 0
     #: Danger scalar field over the nav grid, float32 [GRID_H, GRID_W] in 0..1 —
     #: stamped hot by visible enemies, spreading at DANGER_DIFFUSION_FACTOR x max
     #: player speed, cooling with a half-life. Initialized hot on the enemy half.
@@ -257,6 +285,13 @@ class Belief:
     heard_duck: bool = False
     # Items (v10): fixed-spawn belief table + our own carried/hp state (perception).
     item_spawns: list[ItemSpawn] = field(default_factory=list)
+    item_options: list[ItemOption] = field(default_factory=list)
+    item_choice: ItemOption | None = None
+    item_opportunity_ticks: int = 0
+    item_fetch_ticks: int = 0
+    item_yield_ticks: int = 0
+    item_option_ticks: dict[str, int] = field(default_factory=dict)
+    item_reason_ticks: dict[str, int] = field(default_factory=dict)
     hp_pips: int | None = None  # our hp bar segments 1..3; None = unresolved
     # Team scoreboard (v26): both teams' aggregate (kills, deaths), folded from the
     # fog-independent "team score" labels. enemy_lives_left derives from deaths:
@@ -291,6 +326,16 @@ class Belief:
     focus_claim_release_counts: dict[str, int] = field(default_factory=dict)
     focus_last_release_reason: str | None = None
     friendly_fire_suppressed: int = 0
+    aim_resyncs: int = 0
+    firing_turns: int = 0
+    spray_pursuit_ticks: int = 0
+    visible_grenade_starts: int = 0
+    visible_grenade_releases: int = 0
+    grenade_target_starts: dict[str, int] = field(default_factory=dict)
+    grenade_target_releases: dict[str, int] = field(default_factory=dict)
+    grenade_targeted_enemies: int = 0
+    grenade_safety_vetoes: int = 0
+    grenade_force_releases: int = 0
     firefight_target_range_counts: dict[str, int] = field(default_factory=dict)
     firefight_shot_range_counts: dict[str, int] = field(default_factory=dict)
     #: Arc holders deliberately keep legacy short-range targeting; count frames
@@ -336,6 +381,7 @@ class Belief:
     #: rejoin (respawn discipline): where to regroup after respawn, or None.
     rejoin_point: tuple[int, int] | None = None
     rejoin_until: int = -1  # give-up deadline (tick); -1 = not rejoining
+    respawned_tick: int = -10_000
     # v22 activation counters (traced).
     orders_sent: int = 0
     orders_heard: int = 0
@@ -369,6 +415,7 @@ class Belief:
     post_cover: float | None = None
     post_stance: float | None = None
     post_danger: float | None = None
+    post_exposure: float | None = None
     post_threat_source: str | None = None
     post_claim_source: str | None = None
     # Dwell affects re-selection only. Plan milestones observe post arrival
@@ -377,6 +424,21 @@ class Belief:
     post_last_evaluated_tick: int = -1
     post_settled_ticks: int = 0
     post_ticks_total: int = 0
+    post_reselections: int = 0
+    post_danger_reselections: int = 0
+    post_degraded_clears: int = 0
+    post_last_reselection_reason: str | None = None
+    # Once reached, a post remains owned through local traffic, combat contact,
+    # and temporary displacement. Only a better post after the dwell/hysteresis
+    # gate or a lower-seat claim can move it.
+    post_committed: bool = False
+    post_committed_tick: int = -1
+    post_scan_direction: int | None = None
+    # A committed post is the persistent cover home for the peek/fire/return
+    # cycle. The peek cell is latched until the shot/cooldown sends us home.
+    post_peek_cell: tuple[int, int] | None = None
+    post_return_ticks: int = 0
+    post_peek_ticks: int = 0
     # Same-team K claims, keyed by claimant seat; stale entries decay on a clock.
     post_claims: dict[int, PostClaim] = field(default_factory=dict)
     post_last_claim_sent_tick: int = -10_000
@@ -389,6 +451,9 @@ class Belief:
     # the landing point the current charge is aimed at.
     throw_charge_ticks: int = 0
     throw_target: tuple[int, int] | None = None
+    throw_reason: str | None = None
+    throw_enemy_count: int = 0
+    throw_live_target: bool = False
 
 
 @dataclass

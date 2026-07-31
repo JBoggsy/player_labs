@@ -18,6 +18,59 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
 
+### A universal safety layer must distinguish idle exposure from purposeful movement
+
+Evidence: beacon v59 sought cover whenever it lacked a viable shot, controlling
+27–53% of all agent-ticks. Against h050, games lasted 49% longer and wins
+regressed 10–0 → 6–4. v60 limited new cover movement to holds or navigation
+under recent fire, reducing activation to 7–17%; pooled wins held at 23/30 and
+kills rose 674→681, though deaths stayed flat at 559→562. “Not shooting” alone
+is too broad a safety gate.
+
+### Per-tick danger grids make the general CTF warehouse pathologically large
+
+Evidence: building one warehouse from 60 `BEACON_DIAG_EVERY_TICKS=1` episodes
+expanded to 12 GB and consumed roughly 9.5 GB resident memory because every
+snapshot embeds the full danger grid. The build was stopped and the derived
+warehouse deleted before disk exhaustion; streaming only cumulative activation
+fields directly from the artifact ZIPs answered the question in under a minute.
+Status: project or omit large snapshot fields during ingestion before using the
+warehouse on another full per-tick batch.
+
+### Grenade targeting should optimize hit quality, not throw volume
+
+Evidence: in the matched v57→v58 `deltashot:v5` A/B, tactical selection reduced
+ground-truth throws 45→43 but increased enemy hits 33→35, enemy HP removed
+66→70, and multi-target impacts 7→9 while reducing friendly hits 4→3. Both arms
+went 10-0 with the same 239 enemy kills, so this is mechanism-positive
+non-regression rather than demonstrated outcome lift.
+
+### Team outcomes cannot be treated as independent per-seat observations
+
+Evidence: the CTF A/B adapter expanded Nancy's 9/10 versus 7/10 team result to
+80 Beacon rows per arm and reported `p=0.002`. The eight rows within each
+episode share the same outcome; an episode-level two-sided Fisher test gives
+`p=0.582`. Keep team outcomes episode-level and seat metrics seat-level.
+
+### Infer authored openings from repeated trajectories, and stop before reactions dominate
+
+Evidence: the same 10 replays per opponent produced stable, high-support opening shapes:
+focusfire settled into three defensive post groups, h050 opened 2 top / 5 middle / 1 runner,
+and alphashot held four seats deep in its endzone while using sparse runners. Exact simulator
+positions, team-frame mirroring, 5-second windows, bounded-diameter holds, and persistent
+proximity/co-motion were enough; no large clustering dependency was needed. After roughly
+60 seconds, deaths, respawns, item emergencies, and contact increasingly described reactions
+rather than the authored opening, so the analyzer defaults to an opening horizon and labels
+low-agreement motion as `maneuver`.
+
+### A configured battle plan and observed field behavior are different artifacts
+
+Evidence: v39's traces show every plan phase executed, but replay trajectories also show
+item-retrieval and combat rungs pulling individual bots away from their nominal rally/vee
+orders. The inferred report is therefore an observation of the whole policy priority ladder,
+not a source-code reconstruction. Always report confidence/support and retain `maneuver`
+rather than forcing every path into a move or hold.
+
 ### FIREFIGHT LADDER RESULT (360 eps): promising but NOT significant; claims and wider spacing both HURT
 
 Evidence, pooled over the two decisive opponents (alphashot excluded — draw-locked, see below):
@@ -186,3 +239,12 @@ executes: bots advance ~2.17 phases, ~half end in phase 3, buddy-wait ~82 ticks/
 hold `fallback` never fired (0/60).
 Status: a plan edit is not a sandbox experiment. Also worth noting the `fallback` path has never once
 been exercised in measurement, so it is effectively untested behaviour.
+
+### A target-scoring range preference must not become a fire-eligibility veto
+
+Evidence: v63 and v65 could see entrenched Alpha agents and peek toward them, but two independent
+350px checks prevented the gun from firing. Removing only those hard vetoes in v66 changed the fresh
+30-episode Alpha result from v65's 0-6-24 and 267-446 kills to 21-0-9 and 642-380 kills; the first
+two downloaded episodes alone contained 86 actual shots beyond 400px.
+Status: CTF's gun can connect across the map. Keep distance as a soft target-ranking falloff, while
+line clearance, exact angular intersection, and friendly-fire geometry decide whether a shot is legal.
