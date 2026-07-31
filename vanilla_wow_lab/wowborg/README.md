@@ -29,10 +29,10 @@ resolution is pinned to the matching owner commit in the root `pyproject.toml`.
   session, and uploads evidence.
 - `player_progress.py` — opens the owner-supported `/player` observer channel and
   projects canonical frames into live level/XP/displacement progress. It never
-  submits gameplay actions; `/env` remains the sole controller. The policy stops
-  35 seconds before the handed-off session deadline so it can send `done` and
-  leave the game time to finalize replay/results, matching the owner reference
-  player.
+  submits gameplay actions or changes the policy's budget; `/env` remains the sole
+  controller. The observer sends `done` 35 seconds before the handed-off session
+  deadline to leave the game time to finalize replay/results, matching the owner
+  reference player.
 - `policies/` — policy registry selected by `WOWBORG_POLICY`; `world_race` is the
   image default. World Race retries one station journey once when its first
   attempt ends in transient `no_progress`.

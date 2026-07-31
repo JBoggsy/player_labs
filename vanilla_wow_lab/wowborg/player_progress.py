@@ -97,7 +97,7 @@ class PlayerProgressReporter:
         self._socket: ClientConnection | None = None
         self._slot: int | None = None
         self._deadline_seconds: float | None = None
-        self._connected_at = 0.0
+        self._closes_at = 0.0
         self._started_at = 0.0
         self._last_sample_at = 0.0
         self._last_progress_at = 0.0
@@ -143,7 +143,11 @@ class PlayerProgressReporter:
                 raise ValueError("Coworld /player did not send a wow_session handoff")
             self._slot = int(message["slot"])
             self._deadline_seconds = float(message["deadline_seconds"])
-            self._connected_at = time.monotonic()
+            self._closes_at = (
+                time.monotonic()
+                + self._deadline_seconds
+                - TEARDOWN_MARGIN_SECONDS
+            )
             self._socket = socket
             self._tracer.emit(
                 "player_session_connected",
@@ -157,26 +161,18 @@ class PlayerProgressReporter:
             self._socket = None
             self._tracer.emit("player_session_error", phase="connect", error=repr(exc))
 
-    def policy_duration(self, requested_seconds: float) -> float:
-        """Leave the owner-standard margin for ``done`` and replay finalization."""
-
-        if self._deadline_seconds is None:
-            return requested_seconds
-        elapsed = max(0.0, time.monotonic() - self._connected_at)
-        return min(
-            requested_seconds,
-            max(
-                1.0,
-                self._deadline_seconds - TEARDOWN_MARGIN_SECONDS - elapsed,
-            ),
-        )
-
     def observe(self, frame: AgentFrame) -> None:
         """Sample one canonical frame and report it at the supported cadence."""
 
         if self._socket is None or self._slot is None:
             return
         now = time.monotonic()
+        if now >= self._closes_at:
+            self.close(
+                success=True,
+                detail="wowborg environment episode window complete",
+            )
+            return
         if self._started_at == 0:
             self._started_at = now
             self._last_sample_at = now

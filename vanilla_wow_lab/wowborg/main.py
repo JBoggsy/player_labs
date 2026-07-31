@@ -51,10 +51,7 @@ def main() -> None:
             policy=policy.__class__.__name__,
             episode_id=frame.episode_id,
         )
-        policy.run(
-            session,
-            until=time.monotonic() + progress.policy_duration(duration),
-        )
+        policy.run(session, until=time.monotonic() + duration)
         tracer.emit(
             "session_end",
             terminated=session.finished,
