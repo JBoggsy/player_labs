@@ -131,8 +131,10 @@ The report normalizes action and objective metrics per player-game, records inpu
 hashes and the pinned Warehouse version, and labels its inference limits. Use it to
 screen the next hypothesis; a matched hosted evaluation remains the promotion test.
 Drop to `event_warehouse.py` when the question needs Beacon's internal trace or a
-sequence-preserving spatial query. For an already-downloaded run, replace `--latest`
-and `--download-dir` with `--manifest`, `--events`, and `--player-stats`.
+sequence-preserving spatial query. `--focus` matches an exact (case-insensitive)
+`policy_name` and errors if that policy is absent from the run. For an already-downloaded
+run, replace `--latest` and `--download-dir` with `--manifest`, `--events`, and
+`--player-stats`.
 
 ## Beacon tuning sweeps
 

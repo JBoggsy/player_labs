@@ -46,9 +46,10 @@ uv run python ctf_lab/tools/analyze_reporter_warehouse.py \
   --latest --download-dir <output-dir> --focus beacon
 ```
 
-The output compares normalized combat, item, survival, territory, steal, and delivery
-metrics and carries hashes for all three inputs. Treat it as a hypothesis screen, not
-as causal proof or a promotion verdict.
+The output compares normalized combat, survival, territory, steal, and delivery metrics
+and carries hashes for all three inputs. `--focus` takes an exact (case-insensitive)
+`policy_name` and fails if that policy is absent from the run. Treat it as a hypothesis
+screen, not as causal proof or a promotion verdict.
 
 ## Build it
 
