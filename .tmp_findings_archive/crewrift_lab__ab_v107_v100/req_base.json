@@ -1,0 +1,50 @@
+{
+  "target": {
+    "division_id": "div_acbde92a-df21-4489-859c-4510bd4445f2"
+  },
+  "roster": [
+    {
+      "player": {
+        "policy_ref": "2096f6fc-c06c-48a2-8370-6bcd11a0d854"
+      },
+      "slot": 0
+    },
+    {
+      "player": {
+        "policy_ref": "4b936593-364c-4742-a5b9-3802520b3b22"
+      }
+    },
+    {
+      "player": {
+        "policy_ref": "80ae2bc8-fe6f-4f14-bbd2-f2763e4dfb7f"
+      }
+    },
+    {
+      "player": {
+        "policy_ref": "131eca73-655b-4500-9555-5b164e88054f"
+      }
+    },
+    {
+      "player": {
+        "policy_ref": "32c24d31-4d33-47db-9ad1-5aaf258a5e4c"
+      }
+    },
+    {
+      "player": {
+        "policy_ref": "5ff31143-1a5e-4532-be07-1b462a439654"
+      }
+    },
+    {
+      "player": {
+        "policy_ref": "51b672ae-bea2-4759-9f94-955b39dbb90a"
+      }
+    },
+    {
+      "player": {
+        "policy_ref": "ad6a3766-6dd0-4161-8493-97e331e6cbab"
+      }
+    }
+  ],
+  "num_episodes": 100,
+  "notes": "AB v107-vs-v100 arm=base paced 2026-07-15 (self-hunt fix; same 7 pinned champions, natural roles, crewborg slot 0)"
+}

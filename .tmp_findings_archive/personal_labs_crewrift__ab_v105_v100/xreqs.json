@@ -1,0 +1,12 @@
+{
+  "description": "v105-vs-v100 social-rework A/B, fired 2026-07-09. crewborg pinned seat 0, 7 fixed champions (crewborg-aaln:v25, crewrift-prime-crewborg-aaln-hunter-relhalpha:v1, forgeling-focusfire:v5, notsus:v130, sasmith-crewborg-hs1:v1, scott-crewborg-hs1:v2, softmaxwell-crewborg:v25) rotating seats 1-7, natural roles, coworld cow_fcab34b2 (crewrift_prime). 200 eps/arm.",
+  "baseline": {
+    "version": "crewborg:v100",
+    "xreqs": ["xreq_275b8886-8d2f-43ca-9edd-28bd28593b85", "xreq_6175f417-c538-4ffb-94d1-9761c747a029"]
+  },
+  "candidate": {
+    "version": "crewborg:v105",
+    "xreqs": ["xreq_d9fc9e69-e015-4a2c-b9e0-3463a77e49a6", "xreq_1deb2ce7-f48b-4657-8893-56c8b74212a3"]
+  },
+  "gate": "verify v105 seat-0 meeting_llm_decision rate >=60% before trusting the compare (domain.meeting_llm_decision vs _fallback in artifacts/policy_artifact_0.zip telemetry.jsonl)"
+}

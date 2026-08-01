@@ -1,0 +1,7 @@
+{
+  "description": "v106-vs-v105 self-ID/vote_timeout fix A/B, fired 2026-07-09. crewborg pinned seat 0, same 7 fixed champions, natural roles, coworld cow_fcab34b2. 200 eps/arm.",
+  "baseline": {"version": "crewborg:v105", "xreqs": ["xreq_3f4ff475-f544-45ee-9631-59c8741cd520", "xreq_f76d668e-8159-44f1-8614-a346f063f8a3"]},
+  "candidate": {"version": "crewborg:v106", "xreqs": ["xreq_48117409-903f-4080-9faa-51ad0a02f750", "xreq_63791231-676d-4569-9a57-c6d6d683edb6"]},
+  "gate": "PRIMARY: seat-0 vote_timeout rate should drop v105(~10%)->v106(~0). SECONDARY: LLM decision rate >=60% both arms; win-rate not regressed.",
+  "note": "v106 = self_color slot-seed + source-hierarchy + dead-mute deadline-skip. This A/B isolates the fix vs v105."
+}

@@ -1,0 +1,15 @@
+{
+  "target": {"division_id": "div_acbde92a-df21-4489-859c-4510bd4445f2"},
+  "roster": [
+    {"player": {"policy_ref": "crewborg:v110"}, "slot": 0},
+    {"player": {"policy_ref": "daf-actinf-crewborg-v3:v1"}},
+    {"player": {"policy_ref": "softmaxwell-crewborg:v34"}},
+    {"player": {"policy_ref": "sasmith-crewborg-hs1:v15"}},
+    {"player": {"policy_ref": "notsus:v130"}},
+    {"player": {"policy_ref": "scott-crewborg-hs1:v13"}},
+    {"player": {"policy_ref": "crewrift-prime-crewborg-aaln-hunter-relhalpha:v6"}},
+    {"player": {"policy_ref": "crewborg-aaln:v25"}}
+  ],
+  "num_episodes": 100,
+  "notes": "A/B cand arm 2/2: crewborg:v110 (v109 code + LLM recipe + HS seed) vs pinned champion roster, natural roles"
+}

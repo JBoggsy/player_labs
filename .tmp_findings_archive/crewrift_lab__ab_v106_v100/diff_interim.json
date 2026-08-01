@@ -1,0 +1,172 @@
+{
+  "baseline": "crewborg:v100",
+  "candidate": "crewborg:v106",
+  "target": "win_rate",
+  "deltas": [
+    {
+      "metric": "win_rate",
+      "group": "crew",
+      "base": 0.23376623376623376,
+      "cand": 0.20382165605095542,
+      "n_base": 77,
+      "n_cand": 157,
+      "p": 0.5995259649457887,
+      "effect": -0.5250823216106416,
+      "verdict": "noise"
+    },
+    {
+      "metric": "win_rate",
+      "group": "imposter",
+      "base": 0.7083333333333334,
+      "cand": 0.3488372093023256,
+      "n_base": 24,
+      "n_cand": 43,
+      "p": 0.004733439297145203,
+      "effect": -2.8246357469084717,
+      "verdict": "regressed"
+    },
+    {
+      "metric": "score_mean",
+      "group": "crew",
+      "base": 0.23376623376623376,
+      "cand": 0.20382165605095542,
+      "n_base": 77,
+      "n_cand": 157,
+      "p": 0.607415788547168,
+      "effect": -0.07211949512275502,
+      "verdict": "noise"
+    },
+    {
+      "metric": "score_mean",
+      "group": "imposter",
+      "base": 2.125,
+      "cand": 1.0465116279069768,
+      "n_base": 24,
+      "n_cand": 43,
+      "p": 0.002728683588686609,
+      "effect": -0.7594573633617782,
+      "verdict": "regressed"
+    },
+    {
+      "metric": "tasks_mean",
+      "group": "crew",
+      "base": 6.571428571428571,
+      "cand": 6.248407643312102,
+      "n_base": 77,
+      "n_cand": 157,
+      "p": 0.194898137631478,
+      "effect": -0.17939239007048216,
+      "verdict": "noise"
+    },
+    {
+      "metric": "kills_mean",
+      "group": "imposter",
+      "base": 1.5833333333333333,
+      "cand": 0.5813953488372093,
+      "n_base": 24,
+      "n_cand": 43,
+      "p": 2.091064565945544e-08,
+      "effect": -1.4950653826478622,
+      "verdict": "regressed"
+    },
+    {
+      "metric": "penalty_mean",
+      "group": "crew",
+      "base": 29.714285714285715,
+      "cand": 26.426751592356688,
+      "n_base": 77,
+      "n_cand": 157,
+      "p": 0.5717933536081818,
+      "effect": -0.07938226740614007,
+      "verdict": "noise"
+    },
+    {
+      "metric": "penalty_mean",
+      "group": "imposter",
+      "base": 84.54166666666667,
+      "cand": 39.651162790697676,
+      "n_base": 24,
+      "n_cand": 43,
+      "p": 0.0003020009488079456,
+      "effect": -0.9250511740263273,
+      "verdict": "improved"
+    },
+    {
+      "metric": "no_vote_rate",
+      "group": "crew",
+      "base": 0.0,
+      "cand": 0.0,
+      "n_base": 77,
+      "n_cand": 157,
+      "p": 1.0,
+      "effect": 0.0,
+      "verdict": "noise"
+    },
+    {
+      "metric": "no_vote_rate",
+      "group": "imposter",
+      "base": 0.0,
+      "cand": 0.0,
+      "n_base": 24,
+      "n_cand": 43,
+      "p": 1.0,
+      "effect": 0.0,
+      "verdict": "noise"
+    },
+    {
+      "metric": "ops_fail_rate",
+      "group": "crew",
+      "base": 0.0,
+      "cand": 0.012738853503184714,
+      "n_base": 77,
+      "n_cand": 157,
+      "p": 0.3199018587739866,
+      "effect": 0.9946595813877603,
+      "verdict": "noise"
+    },
+    {
+      "metric": "ops_fail_rate",
+      "group": "imposter",
+      "base": 0.0,
+      "cand": 0.0,
+      "n_base": 24,
+      "n_cand": 43,
+      "p": 1.0,
+      "effect": 0.0,
+      "verdict": "noise"
+    },
+    {
+      "metric": "imposter_no_kills_rate",
+      "group": "imposter",
+      "base": 0.041666666666666664,
+      "cand": 0.4418604651162791,
+      "n_base": 24,
+      "n_cand": 43,
+      "p": 0.0005985123834708617,
+      "effect": 3.4322876492711973,
+      "verdict": "regressed"
+    },
+    {
+      "metric": "crew_low_tasks_rate",
+      "group": "crew",
+      "base": 0.18181818181818182,
+      "cand": 0.17197452229299362,
+      "n_base": 77,
+      "n_cand": 157,
+      "p": 0.8523519774063593,
+      "effect": -0.18611831774159848,
+      "verdict": "noise"
+    },
+    {
+      "metric": "crew_lost_nearly_won_rate",
+      "group": "crew",
+      "base": 0.2727272727272727,
+      "cand": 0.15286624203821655,
+      "n_base": 77,
+      "n_cand": 157,
+      "p": 0.0288178853220058,
+      "effect": -2.1859688371071773,
+      "verdict": "improved"
+    }
+  ]
+}

@@ -1,0 +1,172 @@
+{
+  "baseline": "crewborg:v107",
+  "candidate": "crewborg:v110",
+  "target": "win_rate",
+  "deltas": [
+    {
+      "metric": "win_rate",
+      "group": "crew",
+      "base": 0.12941176470588237,
+      "cand": 0.1111111111111111,
+      "n_base": 85,
+      "n_cand": 81,
+      "p": 0.7173067928193828,
+      "effect": -0.3620605369178358,
+      "verdict": "noise"
+    },
+    {
+      "metric": "win_rate",
+      "group": "imposter",
+      "base": 0.3333333333333333,
+      "cand": 0.6842105263157895,
+      "n_base": 15,
+      "n_cand": 19,
+      "p": 0.041824300483755295,
+      "effect": 2.035264158514018,
+      "verdict": "improved"
+    },
+    {
+      "metric": "score_mean",
+      "group": "crew",
+      "base": 0.12941176470588237,
+      "cand": 0.1111111111111111,
+      "n_base": 85,
+      "n_cand": 81,
+      "p": 0.718408457800372,
+      "effect": -0.05594599821286756,
+      "verdict": "noise"
+    },
+    {
+      "metric": "score_mean",
+      "group": "imposter",
+      "base": 1,
+      "cand": 2.0526315789473686,
+      "n_base": 15,
+      "n_cand": 19,
+      "p": 0.035594979644188784,
+      "effect": 0.7267752238451002,
+      "verdict": "improved"
+    },
+    {
+      "metric": "tasks_mean",
+      "group": "crew",
+      "base": 2.8588235294117648,
+      "cand": 3.5185185185185186,
+      "n_base": 85,
+      "n_cand": 81,
+      "p": 0.2147190168747246,
+      "effect": 0.19256310896142412,
+      "verdict": "noise"
+    },
+    {
+      "metric": "kills_mean",
+      "group": "imposter",
+      "base": 1.2,
+      "cand": 1.7894736842105263,
+      "n_base": 15,
+      "n_cand": 19,
+      "p": 0.03535414591591479,
+      "effect": 0.7225889998054937,
+      "verdict": "improved"
+    },
+    {
+      "metric": "penalty_mean",
+      "group": "crew",
+      "base": 15.670588235294117,
+      "cand": 14.518518518518519,
+      "n_base": 85,
+      "n_cand": 81,
+      "p": 0.8278524825427129,
+      "effect": -0.033736006553731504,
+      "verdict": "noise"
+    },
+    {
+      "metric": "penalty_mean",
+      "group": "imposter",
+      "base": 44.333333333333336,
+      "cand": 84.26315789473684,
+      "n_base": 15,
+      "n_cand": 19,
+      "p": 0.023295901141409336,
+      "effect": 0.783152961036808,
+      "verdict": "regressed"
+    },
+    {
+      "metric": "no_vote_rate",
+      "group": "crew",
+      "base": 0.0,
+      "cand": 0.0,
+      "n_base": 85,
+      "n_cand": 81,
+      "p": 1.0,
+      "effect": 0.0,
+      "verdict": "noise"
+    },
+    {
+      "metric": "no_vote_rate",
+      "group": "imposter",
+      "base": 0.0,
+      "cand": 0.0,
+      "n_base": 15,
+      "n_cand": 19,
+      "p": 1.0,
+      "effect": 0.0,
+      "verdict": "noise"
+    },
+    {
+      "metric": "ops_fail_rate",
+      "group": "crew",
+      "base": 0.2823529411764706,
+      "cand": 0.19753086419753085,
+      "n_base": 85,
+      "n_cand": 81,
+      "p": 0.20148935954805003,
+      "effect": -1.2773198185180696,
+      "verdict": "noise"
+    },
+    {
+      "metric": "ops_fail_rate",
+      "group": "imposter",
+      "base": 0.0,
+      "cand": 0.0,
+      "n_base": 15,
+      "n_cand": 19,
+      "p": 1.0,
+      "effect": 0.0,
+      "verdict": "noise"
+    },
+    {
+      "metric": "imposter_no_kills_rate",
+      "group": "imposter",
+      "base": 0.13333333333333333,
+      "cand": 0.0,
+      "n_base": 15,
+      "n_cand": 19,
+      "p": 0.1008742518673087,
+      "effect": -1.6406299603099617,
+      "verdict": "noise"
+    },
+    {
+      "metric": "crew_low_tasks_rate",
+      "group": "crew",
+      "base": 0.611764705882353,
+      "cand": 0.49382716049382713,
+      "n_base": 85,
+      "n_cand": 81,
+      "p": 0.12649072349510937,
+      "effect": -1.5280878669385893,
+      "verdict": "noise"
+    },
+    {
+      "metric": "crew_lost_nearly_won_rate",
+      "group": "crew",
+      "base": 0.07058823529411765,
+      "cand": 0.012345679012345678,
+      "n_base": 85,
+      "n_cand": 81,
+      "p": 0.06198894611969474,
+      "effect": -1.866374801046302,
+      "verdict": "noise"
+    }
+  ]
+}

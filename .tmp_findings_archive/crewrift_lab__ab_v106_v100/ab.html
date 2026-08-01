@@ -1,0 +1,89 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>A/B — crewborg:v100 vs crewborg:v106</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Merriweather+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fffdf4;--alt:#f8f6ef;--fg:#111827;--sub:#555;--muted:#999;--navy:#1a3875;
+ --sage:#6e8050;--terra:#b36e4e;--gold:#d4a853;--exclusive:#8f5b3f;--border:#e4dac8;--border-strong:#d4c9b5;}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);margin:0;font:400 15px/1.6 'Merriweather Sans',sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:40px 36px 72px}
+.mono,.num{font-family:'IBM Plex Mono',monospace;font-feature-settings:"tnum" 1}
+header{border-bottom:2px solid var(--fg);padding-bottom:14px;margin-bottom:6px}
+.eyebrow{font:700 11px/1 'Merriweather Sans';text-transform:uppercase;letter-spacing:.16em;color:var(--terra);margin:0 0 10px}
+h1{font:900 28px/1.2 'Merriweather',Georgia,serif;margin:0;letter-spacing:-.01em}
+h1 .arrow{color:var(--muted);font-weight:400}
+h2{font:700 12px/1 'Merriweather Sans';text-transform:uppercase;letter-spacing:.12em;color:var(--navy);margin:34px 0 10px}
+.headline{display:flex;gap:22px;flex-wrap:wrap;margin:18px 0 4px}
+.hcard{flex:1;min-width:190px;background:var(--alt);border:1px solid var(--border);border-radius:3px;padding:12px 15px}
+.hcard .l{font:700 9.5px 'Merriweather Sans';text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.hcard .v{font:600 22px 'IBM Plex Mono';margin-top:3px}
+.hcard .vd{font-size:12px;color:var(--sub);margin-top:1px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:6px 9px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap}
+thead th{font:700 10px 'Merriweather Sans';text-transform:uppercase;letter-spacing:.07em;color:var(--sub);border-bottom:2px solid var(--border-strong)}
+td.metric,th:first-child{text-align:left;font:600 13px 'IBM Plex Mono'}
+td.group{text-align:left;color:var(--sub);font-size:12px}
+.v-improved{color:var(--sage);font-weight:700} .v-regressed{color:var(--terra);font-weight:700} .v-noise,.v-na{color:var(--muted)}
+.chip{font:700 9px 'Merriweather Sans';text-transform:uppercase;letter-spacing:.05em;padding:1px 7px;border-radius:999px}
+.c-improved{background:rgba(110,128,80,.16);color:var(--sage)} .c-regressed{background:rgba(179,110,78,.14);color:var(--terra)}
+.c-noise{background:#efe9dd;color:var(--muted)} .c-na{background:#efe9dd;color:var(--muted)}
+/* delta bar (effect size, centred at 0) */
+.bar{position:relative;width:120px;height:14px;background:linear-gradient(90deg,rgba(179,110,78,.10),#f3eee2 50%,rgba(110,128,80,.10));border-radius:2px;display:inline-block;vertical-align:middle}
+.bar .mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--border-strong)}
+.bar .fill{position:absolute;top:2px;bottom:2px;border-radius:2px}
+.regr{background:rgba(179,110,78,.08);border-left:3px solid var(--terra);padding:11px 15px;font-size:14px;margin:6px 0}
+.ok{background:rgba(110,128,80,.08);border-left:3px solid var(--sage);padding:11px 15px;font-size:14px;margin:6px 0}
+.finding{background:var(--alt);border-left:3px solid var(--navy);padding:14px 17px;font-size:14.5px;color:var(--fg)}
+.finding h3{font:700 11px 'Merriweather Sans';text-transform:uppercase;letter-spacing:.1em;color:var(--navy);margin:0 0 7px}
+.verdict{font:600 16px 'Merriweather',serif;margin:8px 0 0}
+.note{font-size:11.5px;color:var(--muted);font-style:italic;margin-top:22px}
+@media(max-width:680px){.wrap{padding:24px 16px}.bar{width:70px}h1{font-size:22px}}
+</style></head><body><div class="wrap">
+<header><p class="eyebrow">Crewrift · A/B comparison · v106 vs v100</p>
+<h1>crewborg:v100 <span class="arrow">→</span> crewborg:v106</h1></header>
+<div class="headline"><div class="hcard"><div class="l">Target · win_rate</div><div class="v v-noise">23% → 20%</div><div class="vd">Δ -3% · <span class="chip c-noise">· noise</span> · p=0.54</div></div><div class="hcard"><div class="l">Overall win rate</div><div class="v v-noise">23% → 20%</div><div class="vd">Δ -3% · <span class="chip c-noise">· noise</span> · p=0.54</div></div></div>
+
+<h2>All metrics — baseline → candidate, group-split</h2>
+<div style="overflow-x:auto"><table><thead><tr>
+  <th>Metric</th><th>Group</th><th>Base</th><th>Cand</th><th>Δ</th><th>Effect</th><th>Verdict</th><th>p</th><th>n b/c</th>
+</tr></thead><tbody><tr><td class="metric">win_rate</td><td class="group">crew</td><td class="num">23%</td><td class="num">20%</td><td class="num v-noise">-3%</td><td><span class="bar"><span class="mid"></span></span></td><td><span class="chip c-noise">· noise</span></td><td class="num dim">0.54</td><td class="num dim">150/205</td></tr><tr><td class="metric">win_rate</td><td class="group">imposter</td><td class="num">64%</td><td class="num">45%</td><td class="num v-regressed">-19%</td><td><span class="bar"><span class="mid"></span><span class="fill" style="right:50%;width:50%;background:var(--terra)"></span></span></td><td><span class="chip c-regressed">▼ regressed</span></td><td class="num dim">0.05</td><td class="num dim">50/58</td></tr><tr><td class="metric">score_mean</td><td class="group">crew</td><td class="num">0.23</td><td class="num">0.20</td><td class="num v-noise">-0.03</td><td><span class="bar"><span class="mid"></span></span></td><td><span class="chip c-noise">· noise</span></td><td class="num dim">0.55</td><td class="num dim">150/205</td></tr><tr><td class="metric">score_mean</td><td class="group">imposter</td><td class="num">1.92</td><td class="num">1.34</td><td class="num v-regressed">-0.58</td><td><span class="bar"><span class="mid"></span><span class="fill" style="right:50%;width:16%;background:var(--terra)"></span></span></td><td><span class="chip c-regressed">▼ regressed</span></td><td class="num dim">0.04</td><td class="num dim">50/58</td></tr><tr><td class="metric">tasks_mean</td><td class="group">crew</td><td class="num">6.47</td><td class="num">6.22</td><td class="num v-noise">-0.25</td><td><span class="bar"><span class="mid"></span></span></td><td><span class="chip c-noise">· noise</span></td><td class="num dim">0.20</td><td class="num dim">150/205</td></tr><tr><td class="metric">kills_mean</td><td class="group">imposter</td><td class="num">1.60</td><td class="num">0.67</td><td class="num v-regressed">-0.93</td><td><span class="bar"><span class="mid"></span><span class="fill" style="right:50%;width:50%;background:var(--terra)"></span></span></td><td><span class="chip c-regressed">▼ regressed</span></td><td class="num dim">0.00</td><td class="num dim">50/58</td></tr><tr><td class="metric">penalty_mean</td><td class="group">crew</td><td class="num">28.91</td><td class="num">26.02</td><td class="num v-noise">-2.89</td><td><span class="bar"><span class="mid"></span></span></td><td><span class="chip c-noise">· noise</span></td><td class="num dim">0.51</td><td class="num dim">150/205</td></tr><tr><td class="metric">penalty_mean</td><td class="group">imposter</td><td class="num">78.08</td><td class="num">50.21</td><td class="num v-improved">-27.87</td><td><span class="bar"><span class="mid"></span><span class="fill" style="left:50%;width:23%;background:var(--sage)"></span></span></td><td><span class="chip c-improved">▲ improved</span></td><td class="num dim">0.00</td><td class="num dim">50/58</td></tr><tr><td class="metric">no_vote_rate</td><td class="group">crew</td><td class="num">0%</td><td class="num">0%</td><td class="num v-noise">+0%</td><td><span class="bar"><span class="mid"></span></span></td><td><span class="chip c-noise">· noise</span></td><td class="num dim">1.00</td><td class="num dim">150/205</td></tr><tr><td class="metric">no_vote_rate</td><td class="group">imposter</td><td class="num">0%</td><td class="num">0%</td><td class="num v-noise">+0%</td><td><span class="bar"><span class="mid"></span></span></td><td><span class="chip c-noise">· noise</span></td><td class="num dim">1.00</td><td class="num dim">50/58</td></tr><tr><td class="metric">ops_fail_rate</td><td class="group">crew</td><td class="num">0%</td><td class="num">1%</td><td class="num v-noise">+1%</td><td><span class="bar"><span class="mid"></span></span></td><td><span class="chip c-noise">· noise</span></td><td class="num dim">0.23</td><td class="num dim">150/205</td></tr><tr><td class="metric">ops_fail_rate</td><td class="group">imposter</td><td class="num">0%</td><td class="num">0%</td><td class="num v-noise">+0%</td><td><span class="bar"><span class="mid"></span></span></td><td><span class="chip c-noise">· noise</span></td><td class="num dim">1.00</td><td class="num dim">50/58</td></tr><tr><td class="metric">imposter_no_kills_rate</td><td class="group">imposter</td><td class="num">2%</td><td class="num">40%</td><td class="num v-regressed">+38%</td><td><span class="bar"><span class="mid"></span><span class="fill" style="right:50%;width:50%;background:var(--terra)"></span></span></td><td><span class="chip c-regressed">▼ regressed</span></td><td class="num dim">0.00</td><td class="num dim">50/58</td></tr><tr><td class="metric">crew_low_tasks_rate</td><td class="group">crew</td><td class="num">17%</td><td class="num">17%</td><td class="num v-noise">-1%</td><td><span class="bar"><span class="mid"></span></span></td><td><span class="chip c-noise">· noise</span></td><td class="num dim">0.85</td><td class="num dim">150/205</td></tr><tr><td class="metric">crew_lost_nearly_won_rate</td><td class="group">crew</td><td class="num">23%</td><td class="num">16%</td><td class="num v-noise">-7%</td><td><span class="bar"><span class="mid"></span></span></td><td><span class="chip c-noise">· noise</span></td><td class="num dim">0.09</td><td class="num dim">150/205</td></tr></tbody></table></div>
+<p class="note">Effect bar = standardized effect size (Cohen's d / z), centred at 0 — right/sage =
+candidate better, left/terracotta = worse; noise = no bar. compare.py errs conservative: a borderline
+move reads as <i>noise</i>, not a win. Rates need a few hundred appearances/side to separate from noise.</p>
+<div class="regr"><b>⚠ Regression scan:</b> 4 metric(s) regressed — win_rate (imposter), score_mean (imposter), kills_mean (imposter), imposter_no_kills_rate (imposter). Check you didn't fix one group by breaking another.</div>
+<h2>Qualitative finding — what the numbers can't say</h2><div class="finding"><h3>Side-by-side read</h3>## Finding: v106&#x27;s imposter hunts ITSELF — the reveal self-exclusion removed an accidental protection
+
+**The numbers.** Imposter win 71%→35% (p=0.005), kills_mean 1.58→0.58, zero-kill
+imposter games 4%→44%. Crew unchanged (noise). This is not a social-rework effect —
+the LLM fired only ~27%/19% (cand/base), well under the 60% gate; the regression is
+in the deterministic hunt path.
+
+**The mechanism (telemetry-confirmed across 53 cand / 50 base imposter episodes).**
+crewborg is pinned slot 0 ⇒ its own color is **red** (`PlayerColors[slot mod 16]`).
+In the candidate arm, 45/53 imposter episodes show hunt strikes at victim **&quot;red&quot;**
+— crewborg&#x27;s own sprite, at victim_dist ≈ 6.3 (its own body), `in_range=True`,
+`unwitnessed=True` — 111,568 self-strike events vs 24 real-victim strikes, each
+emitting `kill_attempted {target_id: null}` (the engine can&#x27;t resolve a self-kill).
+The baseline arm has **zero** self-strikes (517 real ones).
+
+**Why v106 and not v100.** `visible_victims()` (strategy/opportunity.py:147) filters
+only `color not in teammate_colors` — it has never excluded `self_color`. In v100,
+imposter reveal ingestion did `teammate_colors |= reveal_player_colors`, and the
+reveal icons include SELF — so self sat in teammate_colors and was *accidentally*
+excluded from the victim pool. v106&#x27;s fix for the v102 kill regression
+(types.py:868-871) now correctly drops self from teammate_colors at ingest — which
+silently un-protected the hunt path. The most-isolated victim heuristic then loves
+the self sprite (always visible, always in range).
+
+**Why the league hasn&#x27;t collapsed [caveat].** In league play crewborg isn&#x27;t always
+slot 0; whether the self-sprite wins victim selection may vary by seat/color. Rank
+14/16 with score 1464 suggests real damage is likely already occurring in imposter
+rounds.
+
+**The lever.** One-line fix: exclude `belief.self_color` in `visible_victims()`.
+</div>
+<h2>Verdict</h2><p class="verdict">v106 imposter REGRESSED hard (win 71%→35%): the reveal self-exclusion fix un-protected the hunt path — the imposter now hunts its own sprite (45/53 episodes strike at self). Crew unchanged; LLM under-fired (27%/19%), so the social rework remains untested.</p>
+<p class="note">Quantitative half from compare.py; the qualitative finding is your side-by-side read of
+the two batches' replays/logs. Adapt this layout to the comparison — see your lab's report-style doc.</p>
+</div></body></html>
