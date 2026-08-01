@@ -1,5 +1,11 @@
 # Vanilla WoW — interface-protocol reference
 
+> **Historical reference (superseded 2026-07-29).** This document freezes the
+> 2026-07-13 low-level protocol. The current external policy boundary is canonical
+> `WS /env` with `AgentFrame` / `AgentAction`; see
+> [`../wowborg/README.md`](../wowborg/README.md) and the owner repo's
+> `docs/bot-environment-contract.md`.
+
 **The exhaustive, field-level specification of the interface between the Vanilla WoW Coworld
 game and its players.** This is the *reference* doc: every message family, every schema, the
 transport, the binary tensor/action/replay formats, and the end-to-end sequence — with

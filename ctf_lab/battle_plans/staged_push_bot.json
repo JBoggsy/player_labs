@@ -1,0 +1,100 @@
+{
+  "name": "staged_push_bot",
+  "author": "both",
+  "status": "proposal",
+  "summary": "Staged push down the BOTTOM — the same cover-to-cover stage structure as staged_push_top, aimed at the route the data says actually produces steals. EVIDENCE (360 eps): our steal->capture CONVERSION is already fine (26% vs h050's 29%, 20% vs focusfire's 17%), but we steal 5-9x less often (19 vs 106; 15 vs 143). Their approaches swing wide — 54% bottom, 25% top, 20% straight mid — while 85% of ours grind straight up the middle and die at ~615-670px, about 380px short of their flag. staged_push_top called the bottom 'deliberately naked', which is both the route they raid us through AND the route we never use. ACCEPTED RISKS (named): the TOP is now the thin side, held by a 2-man screen meant to be SEEN rather than to win, so a determined top push will get through; and a bottom spear that stalls is 4 seats out of position with the screen too far away to help. These are draft positions — drag them.",
+  "team": "red",
+  "groups": {
+    "spear": [4, 5, 6, 7],
+    "screen": [2, 3],
+    "home": [0, 1]
+  },
+  "phases": [
+    {
+      "name": "split_out",
+      "intent": "Stage 1 — get onto our lanes before contact. The spear drops low to the protected bottom rally; the screen goes high to be VISIBLE (it is a feint, not an attack); home finally covers our own bottom approach, which is where 54% of THEIR steals come from and which the old plan left naked.",
+      "entry": { "prose": "game start", "tag": "tick>=0" },
+      "orders": [
+        { "group": "spear", "kind": "move", "to": "red_rally_bot" },
+        { "group": "screen", "kind": "move", "to": "red_rally_top" },
+        { "group": "home", "kind": "hold", "at": "red_bot_hold", "facing": "bottom_corridor" }
+      ],
+      "enemy_belief": [
+        { "at": "blue_lineup", "count": 8, "note": "assume an even spread at start" }
+      ],
+      "notes": [
+        { "who": "claude", "text": "No enemy_lives gate anywhere in this plan. staged_push_top gated its steal phase on enemy_lives<=18, which made the objective wait on a fight we already win (we remove ~19-20 of their 24 lives per game). Attrition is not our bottleneck; arriving is." },
+        { "who": "claude", "text": "Entry tags are deliberately permissive (tick>=0). Only tick/enemy_lives/own_deaths are machine-evaluated (plan.py _TAG_RE), and an entry tag must ALSO hold for a bot to advance — so a late tag like tick>=900 would stall a bot that had already reached its target. With mean lifespan ~407 ticks vs alphashot, that is how you get bots that never reach the steal phase. Milestone (arrive) drives advancement here; the 900-tick phase timeout is the fallback." }
+      ]
+    },
+    {
+      "name": "advance_low",
+      "intent": "Stage 2 — the spear moves up to the full-cover triangle on our side of the bottom lane, still on our half. The screen holds high where it can be seen so their defense commits away from the bottom.",
+      "entry": { "prose": "spear is staged at the bottom rally and the screen is visible up top (or timeout)" },
+      "orders": [
+        { "group": "spear", "kind": "move", "to": "red_bot_triangle" },
+        { "group": "screen", "kind": "hold", "at": "red_rally_top", "facing": "top_corridor" },
+        { "group": "home", "kind": "hold", "at": "red_bot_hold", "facing": "bottom_corridor" }
+      ],
+      "enemy_belief": [],
+      "notes": []
+    },
+    {
+      "name": "cross_low",
+      "intent": "Stage 3 — cross midfield along the bottom, into the open ground between the rotating diamonds near the south medkit. This is the exposed leg; it is short and it ends in cover.",
+      "entry": { "prose": "spear holds the bottom triangle (or timeout)" },
+      "orders": [
+        { "group": "spear", "kind": "move", "to": "bottom_diamond" },
+        { "group": "screen", "kind": "hold", "at": "red_rally_top", "facing": "top_corridor" },
+        { "group": "home", "kind": "hold", "at": "red_bot_hold", "facing": "bottom_corridor" }
+      ],
+      "enemy_belief": [
+        { "at": "blue_bottom_vee", "count": 2, "note": "expect their bottom lane watch here" }
+      ],
+      "notes": []
+    },
+    {
+      "name": "infiltrate",
+      "intent": "Stage 4 — take the full-cover triangle on THEIR side of the bottom. Stage here first rather than running at the pedestal from midfield: bots ORDERED straight to blue_pedestal in the old plan arrived within 60px only 1-7 times in 118 episodes.",
+      "entry": { "prose": "spear is across midfield on the bottom (or timeout)" },
+      "orders": [
+        { "group": "spear", "kind": "move", "to": "blue_bot_triangle" },
+        { "group": "screen", "kind": "hold", "at": "red_rally_top", "facing": "top_corridor" },
+        { "group": "home", "kind": "hold", "at": "red_bot_hold", "facing": "bottom_corridor" }
+      ],
+      "enemy_belief": [],
+      "notes": []
+    },
+    {
+      "name": "steal",
+      "intent": "Stage 5 — take it. Two grab the heart; two hold the outward vee that keeps the bottom exit open behind them. Splitting here rather than earlier keeps the spear together through the dangerous crossing.",
+      "entry": { "prose": "spear is set in cover inside their bottom half" },
+      "splits": { "spear": { "grabbers": [4, 5], "holders": [6, 7] } },
+      "orders": [
+        { "group": "grabbers", "kind": "move", "to": "blue_pedestal" },
+        { "group": "holders", "kind": "hold", "at": "blue_bottom_vee", "facing": "blue_pedestal" },
+        { "group": "screen", "kind": "hold", "at": "red_rally_top", "facing": "top_corridor" },
+        { "group": "home", "kind": "hold", "at": "red_bot_hold", "facing": "bottom_corridor" }
+      ],
+      "enemy_belief": [
+        { "at": "blue_pedestal", "count": 2, "note": "their flag guard" }
+      ],
+      "notes": []
+    },
+    {
+      "name": "exfil_low",
+      "intent": "Stage 6 — carry out the way we came in. GV26(b) is new and decisive here: a heart carrier now fires at 1/3 rate (CarrierFireSlowdown=3), so the carrier must not be the one trading shots. The holders drop back to the diamond to cover the crossing and do the shooting; home covers the last stretch.",
+      "entry": { "prose": "we have their heart", "tag": null },
+      "orders": [
+        { "group": "grabbers", "kind": "move", "to": "red_endzone" },
+        { "group": "holders", "kind": "hold", "at": "bottom_diamond", "facing": "blue_rally_bot" },
+        { "group": "home", "kind": "hold", "at": "red_bot_triangle", "facing": "bottom_corridor" },
+        { "group": "screen", "kind": "hold", "at": "red_rally_top", "facing": "top_corridor" }
+      ],
+      "enemy_belief": [],
+      "notes": [
+        { "who": "claude", "text": "The emergency rungs already own carrying and escorting and they preempt the plan, so this phase is really about WHERE the covering screen stands, not about telling the carrier to go home. 'flag(enemy)==taken' is NOT machine-evaluable, so this phase gates on milestone/timeout like the others — left as prose deliberately." }
+      ]
+    }
+  ]
+}

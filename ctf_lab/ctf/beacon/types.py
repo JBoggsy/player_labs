@@ -27,10 +27,35 @@ class Observation:
 
 @dataclass(frozen=True)
 class Enemy:
-    """A visible player (enemy or teammate) resolved from its labeled sprite this frame."""
+    """A visible player (enemy or teammate) resolved from its labeled sprite this frame.
+
+    ``identity`` is the player's nameplate seat index (0=alpha .. 7=theta, from the
+    0.7.69 identity badges — slot order within team, i.e. exactly our seat notion),
+    or None when no badge resolved (badge fog-gated separately, association miss)."""
 
     pos: tuple[int, int]
     facing: str  # "left" | "right"
+    identity: int | None = None
+    #: Ordinal lit-bar segments from ``hp <lit>/<total>`` (labels.nim), not hit
+    #: points. Includes shield health; None when the overhead marker did not resolve.
+    hp_segments: int | None = None
+    #: A visible ``shield carried`` marker is attached to this player.
+    shielded: bool = False
+
+
+@dataclass
+class HeardImpact:
+    """One deduplicated heard sound event (belief.py folds ring sightings).
+
+    A ring sprite persists ~12 ticks, so the same event is sighted many frames;
+    belief matches sightings to existing events by position (rings are jittered
+    but STABLE per event) and keeps `first_tick` as the event time. Team-anonymous:
+    the ring never says who fired."""
+
+    kind: str  # "shot" | "grenade"
+    pos: tuple[int, int]  # ring centre (true landing ±20px jitter)
+    first_tick: int  # when we first heard it
+    last_tick: int  # most recent frame the ring was still in view
 
 
 @dataclass
@@ -48,6 +73,67 @@ class PlayerTrack:
     #: time to difference (frames_seen >= 2 with a small tick gap).
     vel: tuple[float, float] | None = None
     frames_seen: int = 1
+    #: nameplate identity (0=alpha..7=theta) from the 0.7.69 badges; None if the
+    #: track has never had a badge resolve. Sticky: kept once known.
+    identity: int | None = None
+    #: Last resolved ordinal HP-bar segments. Retained through an association miss.
+    hp_segments: int | None = None
+    #: Shield state at the most recent sighting; shields break on depletion.
+    shielded: bool = False
+
+
+@dataclass(frozen=True)
+class TargetRef:
+    """Cross-frame handle for one enemy.
+
+    Nameplate identity is authoritative once known. ``pos`` is the latest actual
+    or cell-centred position and keeps anonymous targets useful until a badge
+    resolves.
+    """
+
+    identity: int | None
+    pos: tuple[int, int]
+
+
+@dataclass(frozen=True)
+class FocusClaim:
+    """The one first-heard local focus-fire claim this bot currently recognizes."""
+
+    claimant_seat: int
+    target: TargetRef
+    first_tick: int
+    refreshed_tick: int
+    last_seen_tick: int
+    enemy_deaths_at_last_seen: int | None
+
+
+@dataclass(frozen=True)
+class TargetCandidate:
+    """One visible enemy plus the per-shooter geometry needed for scoring."""
+
+    enemy: Enemy
+    target: TargetRef
+    aim_pos: tuple[int, int]
+    lead_brads: int
+    distance_px: float
+    aim_cost: float
+    line_clear: bool
+    teammate_blocked: bool
+    shootable: bool
+
+
+@dataclass(frozen=True)
+class TargetScore:
+    """A target's weighted total plus normalized, traceable score terms."""
+
+    candidate: TargetCandidate
+    score: float
+    wound: float
+    range_band: float
+    claim: float
+    shootability: float
+    aim_cost: float
+    shield: float
 
 
 @dataclass(frozen=True)
@@ -67,9 +153,68 @@ class CtfState:
     enemy_flag_pos: tuple[int, int] | None  # where the enemy flag is, if visible
     own_flag_stolen: bool
     own_flag_thief_pos: tuple[int, int] | None  # a live thief fix, when in view
+    # Items (v10): fog-gated pickup sightings + our own overhead-marker state.
+    visible_items: tuple[tuple[str, tuple[int, int]], ...] = ()  # (kind, pos)
+    # Hearing (v16): sound rings in this frame — "shot impact" / "grenade sound"
+    # sprites. Audible map-wide through walls/fog, jittered ±20px, team-anonymous.
+    # Raw per-frame positions; belief dedups them into HeardImpact events.
+    heard_impacts: tuple[tuple[str, tuple[int, int]], ...] = ()  # (kind, pos)
+    # Chat (v18): shout bubbles heard this frame, parsed from their sprite label
+    # ``<team> shout <address>: <text>`` — (team, address, text, bubble pos).
+    heard_shouts: tuple[tuple[str, str, str, tuple[int, int]], ...] = ()
+    hp_pips: int | None = None  # our "hp N/3" bar segments; None = bar not resolved
+    i_have_grenade: bool = False
+    i_have_shield: bool = False
+    i_have_arc: bool = False
+    # Team scoreboard (v26): both teams' aggregate (kills, deaths) from the
+    # top-center "team score RED k/d" labels — fog-independent, every frame.
+    own_team_score: tuple[int, int] | None = None
+    enemy_team_score: tuple[int, int] | None = None
 
 
 Role = Literal["attacker", "defender"]
+
+ItemKind = Literal["grenade", "shield", "arc", "medkit"]
+
+
+@dataclass
+class ItemSpawn:
+    """Belief about one fixed item spawn point (items.py owns the spawn table).
+
+    Optimistic-by-default: a spawn is believed ``present`` unless we recently
+    OBSERVED it empty, in which case ``absent_until`` backs off roughly one respawn
+    interval before we try it again (we can't know when it was actually taken)."""
+
+    kind: ItemKind
+    pos: tuple[int, int]
+    present: bool = True
+    absent_until: int = 0  # believed-absent until this tick when present=False
+    last_seen: int = -1
+
+
+@dataclass(frozen=True)
+class ItemOption:
+    """One evaluated pickup opportunity relative to the current objective."""
+
+    spawn: ItemSpawn
+    anchor: tuple[int, int]
+    anchor_kind: str
+    route_to_item_px: float
+    route_via_item_px: float
+    direct_route_px: float
+    detour_px: float
+    threshold_px: float
+    accepted: bool
+    reason: str
+
+
+@dataclass(frozen=True)
+class PostClaim:
+    """A teammate's fresh K claim on one nav-cell-centred fighting post."""
+
+    seat: int
+    cell: tuple[int, int]
+    tick: int
 
 
 @dataclass
@@ -84,9 +229,13 @@ class Belief:
     self_xy: tuple[int, int] | None = None
     alive: bool = False
     # Aim tracking: our best estimate of the current aim angle in brads. Seeded from
-    # the spawn aim, resynced to observed_aim whenever the aim-dot is visible, and
-    # dead-reckoned by the rotation we commanded last frame otherwise.
+    # the spawn aim, dead-reckoned by the rotation we commanded last frame, calibrated
+    # against the self sprite's 16-step rotation readback (belief.py: boundary-crossing
+    # calibration to ~±3 brads, coarse resync for large drift).
     aim_brads: int = 0
+    # The previous frame's observed 16-step aim readback (brads, a multiple of 16),
+    # for boundary-crossing calibration. None until first observed.
+    prev_observed_aim: int | None = None
     fire_ready: bool = False
     enemies: tuple[Enemy, ...] = ()
     teammates: tuple[Enemy, ...] = ()
@@ -99,6 +248,18 @@ class Belief:
     # Player tracks + danger field (folded in belief.py; nothing gates on them yet):
     enemy_tracks: list[PlayerTrack] = field(default_factory=list)
     teammate_tracks: list[PlayerTrack] = field(default_factory=list)
+    # Anti-turtle classifier: count alive observation ticks and ticks with at
+    # least one enemy visibly outside its defended lineup. The terminal hold is
+    # latched once the late-game threshold is met, so death/fog cannot make the
+    # strategy oscillate back into an assault.
+    enemy_observation_ticks: int = 0
+    enemy_outside_base_ticks: int = 0
+    anti_turtle_latched: bool = False
+    anti_turtle_activations: int = 0
+    anti_turtle_ticks: int = 0
+    base_caution_active: bool = False
+    base_caution_ticks: int = 0
+    base_assault_blocked_ticks: int = 0
     #: Danger scalar field over the nav grid, float32 [GRID_H, GRID_W] in 0..1 —
     #: stamped hot by visible enemies, spreading at DANGER_DIFFUSION_FACTOR x max
     #: player speed, cooling with a half-life. Initialized hot on the enemy half.
@@ -119,6 +280,180 @@ class Belief:
     # None. Behavior changes MUST be observable — a null A/B without activation
     # counts can't distinguish "never fired" from "fired and didn't help".
     micro: str | None = None
+    # True when this tick's duck was triggered by a HEARD impact (no seen track) —
+    # the v16 activation bit, reset alongside micro each tick.
+    heard_duck: bool = False
+    # Items (v10): fixed-spawn belief table + our own carried/hp state (perception).
+    item_spawns: list[ItemSpawn] = field(default_factory=list)
+    item_options: list[ItemOption] = field(default_factory=list)
+    item_choice: ItemOption | None = None
+    item_opportunity_ticks: int = 0
+    item_fetch_ticks: int = 0
+    item_yield_ticks: int = 0
+    item_option_ticks: dict[str, int] = field(default_factory=dict)
+    item_reason_ticks: dict[str, int] = field(default_factory=dict)
+    hp_pips: int | None = None  # our hp bar segments 1..3; None = unresolved
+    # Team scoreboard (v26): both teams' aggregate (kills, deaths), folded from the
+    # fog-independent "team score" labels. enemy_lives_left derives from deaths:
+    # 8 players x 3 lives - enemy deaths (exact while all 16 slots stay connected).
+    own_team_score: tuple[int, int] | None = None
+    enemy_team_score: tuple[int, int] | None = None
+    i_have_grenade: bool = False
+    i_have_shield: bool = False
+    i_have_arc: bool = False
+    # Hearing (v16): deduplicated sound events, freshest last. Folded from
+    # percept.heard_impacts; expire HEARD_TTL_TICKS after last_tick.
+    heard_events: list[HeardImpact] = field(default_factory=list)
+    # Under fire (v18): fresh impacts landed near us recently (set by belief).
+    under_fire: bool = False
+    # Firefight overlay: target intent and local focus claims. This never changes
+    # the movement priority ladder; fight.py/action.py are the only consumers.
+    firefight_active: bool = False
+    firefight_entered_tick: int = -1
+    firefight_last_trigger_tick: int = -10_000
+    firefight_ticks_total: int = 0
+    firefight_engagements: int = 0
+    firefight_target: TargetRef | None = None
+    firefight_target_score: TargetScore | None = None
+    firefight_target_selected_tick: int = -1
+    firefight_target_last_seen_tick: int = -1
+    firefight_target_switches: int = 0
+    focus_claim: FocusClaim | None = None
+    focus_last_claim_sent_tick: int = -10_000
+    focus_claims_sent: int = 0
+    focus_claims_heard: int = 0
+    focus_claims_suppressed: int = 0
+    focus_claim_release_counts: dict[str, int] = field(default_factory=dict)
+    focus_last_release_reason: str | None = None
+    friendly_fire_suppressed: int = 0
+    aim_resyncs: int = 0
+    firing_turns: int = 0
+    spray_pursuit_ticks: int = 0
+    visible_grenade_starts: int = 0
+    visible_grenade_releases: int = 0
+    grenade_target_starts: dict[str, int] = field(default_factory=dict)
+    grenade_target_releases: dict[str, int] = field(default_factory=dict)
+    grenade_targeted_enemies: int = 0
+    grenade_safety_vetoes: int = 0
+    grenade_force_releases: int = 0
+    firefight_target_range_counts: dict[str, int] = field(default_factory=dict)
+    firefight_shot_range_counts: dict[str, int] = field(default_factory=dict)
+    #: Arc holders deliberately keep legacy short-range targeting; count frames
+    #: that would otherwise have entered firefight so the exclusion is visible.
+    firefight_arc_exempt_ticks: int = 0
+    # Chat (v18) — send-side bookkeeping (chat.choose_shout):
+    chat_last_sent_tick: int = -10_000
+    chat_enemy_armed: bool = True  # edge trigger for E; re-arms after clear vision
+    chat_last_enemy_tick: int = -10_000
+    chat_enemy_seen_tick: int = -10_000
+    chat_sent_counts: dict[str, int] = field(default_factory=dict)
+    # Chat (v18) — receive-side decoded state:
+    #: teammate carrier fix from a C shout: (pos, heading octant, tick heard).
+    carrier_fix: tuple[tuple[int, int], int, int] | None = None
+    #: enemy thief fix from a T shout (or our own eyes): (pos, tick).
+    thief_fix: tuple[tuple[int, int], int] | None = None
+    #: teammate grenade landing zones to keep clear of: [(pos, tick heard)].
+    grenade_warnings: list[tuple[tuple[int, int], int]] = field(default_factory=list)
+    chat_heard_counts: dict[str, int] = field(default_factory=dict)
+    #: bubble dedup: sender address -> (text, last tick processed). A bubble
+    #: persists ~3s, so the same shout is in frame ~72 times; process it once.
+    chat_processed: dict[str, tuple[str, int]] = field(default_factory=dict)
+    #: our own last-sent payload (to skip our own bubble coming back at us).
+    chat_last_sent_text: str | None = None
+    # Squads (v19): wait-gate state + activation counters (traced).
+    squad_wait_since: int = -1  # tick we started holding at the rally; -1 = not waiting
+    squad_wait_ticks: int = 0  # cumulative ticks spent waiting for buddies
+    squad_cohesion_ticks: int = 0  # cumulative ticks a formation bias was applied
+    # Squad command (v22) — the order I currently obey: (goal letter, target pos,
+    # tick set). Set by my own leader logic (if I lead) or a heard O message.
+    order: tuple[str, tuple[int, int], int] | None = None
+    #: How the current order arrived (v27 tracing): "leader" (own lead_squad rule),
+    #: "heard" (a squadmate leader's O message), "decay" (stale order -> self-issued
+    #: backoff-hold), "convert" (stale order + wipe in reach -> self-issued hunt).
+    order_source: str | None = None
+    #: presence table: squadmate seat -> last tick we confirmed them alive (badge
+    #: sighting or heard ping/order). Leaders read this for strength estimates.
+    presence: dict[int, int] = field(default_factory=dict)
+    #: my last presence ping tick (send-side cadence).
+    last_ping_tick: int = -10_000
+    #: leader bookkeeping: last order broadcast tick + the goal it carried.
+    last_order_sent_tick: int = -10_000
+    #: rejoin (respawn discipline): where to regroup after respawn, or None.
+    rejoin_point: tuple[int, int] | None = None
+    rejoin_until: int = -1  # give-up deadline (tick); -1 = not rejoining
+    respawned_tick: int = -10_000
+    # v22 activation counters (traced).
+    orders_sent: int = 0
+    orders_heard: int = 0
+    pings_sent: int = 0
+    pings_heard: int = 0
+    backoff_events: int = 0
+    rejoin_ticks: int = 0
+    convert_events: int = 0  # v26: times a leader flipped into the convert hunt
+    converting: bool = False  # v29: currently in the standalone convert-hunt rung
+    # Battle-plan interpreter (v30) — per-bot phase pointer (no comms; the shared
+    # tick clock + shared milestones keep the team roughly aligned).
+    plan_phase: int = 0
+    plan_phase_tick: int = 0        # tick my current phase began
+    plan_milestone_hit: bool = False  # last advance was milestone (vs timeout)
+    plan_fell_back: bool = False    # hold-order fallback tripped this phase
+    plan_advances: int = 0          # cumulative phase advances (traced)
+    plan_buddy_wait_ticks: int = 0  # v31: ticks spent buddy-waiting this phase
+    plan_buddy_waiting: bool = False  # v31: currently paused for a group-mate
+    # Posts: one latched covered sightline near the current tactical waypoint.
+    # `post_active` is per-tick: higher strategy rungs leave it false, which
+    # suspends both K claims and post-facing without destroying the reusable latch.
+    post_active: bool = False
+    post_cell: tuple[int, int] | None = None
+    post_direction: int | None = None
+    post_center: tuple[int, int] | None = None
+    post_mode: str | None = None  # "push" | "hold"
+    post_context: str | None = None  # "plan" | "order" | "static_hold"
+    # Score components are retained for activation tracing and A/B diagnosis.
+    post_score: float | None = None
+    post_reach: float | None = None
+    post_cover: float | None = None
+    post_stance: float | None = None
+    post_danger: float | None = None
+    post_exposure: float | None = None
+    post_threat_source: str | None = None
+    post_claim_source: str | None = None
+    # Dwell affects re-selection only. Plan milestones observe post arrival
+    # directly and never wait for this counter.
+    post_selected_tick: int = -1
+    post_last_evaluated_tick: int = -1
+    post_settled_ticks: int = 0
+    post_ticks_total: int = 0
+    post_reselections: int = 0
+    post_danger_reselections: int = 0
+    post_degraded_clears: int = 0
+    post_last_reselection_reason: str | None = None
+    # Once reached, a post remains owned through local traffic, combat contact,
+    # and temporary displacement. Only a better post after the dwell/hysteresis
+    # gate or a lower-seat claim can move it.
+    post_committed: bool = False
+    post_committed_tick: int = -1
+    post_scan_direction: int | None = None
+    # A committed post is the persistent cover home for the peek/fire/return
+    # cycle. The peek cell is latched until the shot/cooldown sends us home.
+    post_peek_cell: tuple[int, int] | None = None
+    post_return_ticks: int = 0
+    post_peek_ticks: int = 0
+    # Same-team K claims, keyed by claimant seat; stale entries decay on a clock.
+    post_claims: dict[int, PostClaim] = field(default_factory=dict)
+    post_last_claim_sent_tick: int = -10_000
+    post_claims_sent: int = 0
+    post_claims_heard: int = 0
+    # Lead-aim activation state this tick, for tracing: brads of lead applied to the
+    # snap aim (0 = no lead / target treated as stationary).
+    lead_brads: int = 0
+    # Grenade-throw state machine: ticks C has been held this charge (0 = idle), and
+    # the landing point the current charge is aimed at.
+    throw_charge_ticks: int = 0
+    throw_target: tuple[int, int] | None = None
+    throw_reason: str | None = None
+    throw_enemy_count: int = 0
+    throw_live_target: bool = False
 
 
 @dataclass
@@ -131,6 +466,10 @@ class ActionState:
     # Edge-triggered fire: A must be released for a frame between shots, so a held
     # trigger doesn't re-lock aim every tick.
     a_held: bool = False
+    # Ticks left of the post-trigger movement freeze (v12): the bullet leaves
+    # FIRE_WINDUP_TICKS after the pull FROM THE SHOOTER'S CURRENT POSITION, so
+    # moving during the windup shifts our own ray off the target.
+    fire_hold_ticks: int = 0
 
 
 IntentKind = Literal["navigate_to", "hold"]
@@ -159,10 +498,18 @@ __all__ = [
     "Command",
     "CtfState",
     "Enemy",
+    "FocusClaim",
+    "HeardImpact",
     "Intent",
     "IntentKind",
+    "ItemKind",
+    "ItemSpawn",
     "Observation",
     "PlayerTrack",
+    "PostClaim",
     "Role",
     "Team",
+    "TargetCandidate",
+    "TargetRef",
+    "TargetScore",
 ]

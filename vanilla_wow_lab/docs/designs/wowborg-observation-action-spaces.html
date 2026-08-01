@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wowborg — Typed Observation &amp; Action Spaces</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Merriweather+Sans:wght@400;600;700&display=swap');
+
+  :root {
+    --bg: #fffdf4;
+    --surface: #fffaf0;
+    --surface-alt: #f8f6ef;
+    --fg: #111827;
+    --fg-subtle: #555555;
+    --fg-muted: #999999;
+    --ink-navy: #1a3875;
+    --ink-sage: #6e8050;
+    --ink-terracotta: #b36e4e;
+    --ink-gold: #d4a853;
+    --accent: #859ebe;
+    --accent-soft: #eef2f7;
+    --cta: #0e2758;
+    --border: #e4dac8;
+    --border-strong: #d4c9b5;
+    --border-subtle: #f0ebe1;
+    --exclusive: #8f5b3f;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Merriweather Sans', -apple-system, sans-serif;
+    font-size: 0.82rem;
+    line-height: 1.62;
+  }
+  main { max-width: 1080px; margin: 0 auto; padding: 0 32px 96px; }
+
+  /* ---- masthead ---- */
+  header.masthead { border-bottom: 2px solid var(--border-strong); padding: 44px 0 20px; margin-bottom: 8px; }
+  .eyebrow {
+    font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.12em; color: var(--fg-subtle); margin: 0 0 10px;
+  }
+  h1 {
+    font-family: Merriweather, Georgia, serif; font-weight: 900;
+    font-size: 2.15rem; line-height: 1.15; margin: 0 0 12px; color: var(--fg);
+  }
+  .dek { font-size: 0.95rem; color: var(--fg-subtle); max-width: 68ch; margin: 0 0 16px; }
+  .byline { font-size: 0.68rem; color: var(--fg-muted); }
+  .byline b { color: var(--fg-subtle); font-weight: 600; }
+
+  /* ---- sections ---- */
+  section { margin-top: 52px; }
+  h2 {
+    font-family: Merriweather, Georgia, serif; font-weight: 700;
+    font-size: 0.86rem; text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--ink-navy); border-bottom: 1px solid var(--border);
+    padding-bottom: 8px; margin: 0 0 18px;
+  }
+  h2 .secno { color: var(--fg-muted); font-weight: 400; margin-right: 10px; }
+  h3 {
+    font-family: Merriweather, Georgia, serif; font-weight: 700;
+    font-size: 0.98rem; margin: 34px 0 6px;
+  }
+  h3 code { font-size: 0.85em; }
+  p { margin: 0 0 12px; max-width: 76ch; }
+  .lede { font-size: 0.9rem; }
+  a { color: var(--ink-navy); }
+
+  code, .mono {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 0.85em; font-feature-settings: "tnum" 1;
+    background: var(--surface-alt); padding: 0.05em 0.3em; border-radius: 3px;
+  }
+  table code, td code, .tree code { background: none; padding: 0; }
+
+  /* ---- chips ---- */
+  .chip {
+    display: inline-block; font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; padding: 1.5px 7px; border-radius: 999px;
+    vertical-align: 1px; white-space: nowrap;
+    font-family: 'Merriweather Sans', sans-serif;
+  }
+  .t0 { background: rgba(26,56,117,0.12); color: var(--ink-navy); }
+  .t1 { background: rgba(110,128,80,0.16); color: var(--ink-sage); }
+  .t2 { background: rgba(212,168,83,0.20); color: #8a6a1f; }
+  .tx { background: var(--surface-alt); color: var(--fg-muted); }
+  .warnchip { background: rgba(179,110,78,0.14); color: var(--ink-terracotta); }
+
+  /* ---- tables ---- */
+  table {
+    width: 100%; border-collapse: collapse; margin: 14px 0 26px;
+    font-size: 0.76rem; line-height: 1.5;
+  }
+  th {
+    text-align: left; font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--fg-subtle);
+    border-bottom: 2px solid var(--border-strong); padding: 6px 14px 6px 0;
+    vertical-align: bottom;
+  }
+  td {
+    border-bottom: 1px solid var(--border-subtle); padding: 6.5px 14px 6.5px 0;
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: 1px solid var(--border); }
+  td.f { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.72rem; white-space: nowrap; }
+  td.num { text-align: right; font-family: ui-monospace, Menlo, monospace; font-feature-settings: "tnum" 1; }
+  .tablewrap { overflow-x: auto; }
+  .rowgroup td {
+    border-bottom: 1px solid var(--border);
+    font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--ink-navy); padding-top: 18px;
+  }
+  .subtle { color: var(--fg-subtle); }
+  .muted { color: var(--fg-muted); }
+
+  /* ---- callouts ---- */
+  .rule-note {
+    border-left: 3px solid var(--ink-navy); background: var(--accent-soft);
+    padding: 12px 18px; margin: 18px 0; max-width: 78ch; font-size: 0.78rem;
+  }
+  .rule-note.warn { border-left-color: var(--ink-terracotta); background: rgba(179,110,78,0.06); }
+  .rule-note.gold { border-left-color: var(--ink-gold); background: rgba(212,168,83,0.08); }
+  .rule-note b:first-child { font-family: Merriweather, serif; }
+
+  /* ---- the snapshot tree ---- */
+  .tree {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.73rem;
+    line-height: 1.85; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 3px; padding: 20px 26px; margin: 16px 0 8px; overflow-x: auto;
+  }
+  .tree .k { color: var(--ink-navy); font-weight: 600; }
+  .tree .c { color: var(--fg-muted); }
+  .tree .dim { color: var(--border-strong); }
+  .tree a { text-decoration: none; }
+  .tree a:hover .k { text-decoration: underline; }
+
+  /* ---- pipeline diagram ---- */
+  .pipeline { margin: 22px 0 10px; overflow-x: auto; }
+  .pipeline svg { display: block; min-width: 860px; }
+
+  figcaption {
+    font-size: 0.66rem; color: var(--fg-muted); margin-top: 6px;
+    font-style: italic; max-width: 80ch;
+  }
+  figure { margin: 0; }
+
+  ul { margin: 0 0 14px; padding-left: 1.3em; max-width: 78ch; }
+  li { margin-bottom: 5px; }
+
+  .legend { font-size: 0.7rem; color: var(--fg-subtle); margin: 4px 0 10px; }
+  .legend .chip { margin-right: 4px; }
+
+  /* toc */
+  nav.toc { font-size: 0.74rem; columns: 2; column-gap: 48px; margin: 18px 0 4px; max-width: 860px; }
+  nav.toc a { display: block; padding: 3px 0; text-decoration: none; color: var(--fg); border-bottom: 1px solid var(--border-subtle); }
+  nav.toc a:hover { color: var(--ink-navy); }
+  nav.toc .n { color: var(--fg-muted); font-family: Menlo, monospace; font-size: 0.66rem; margin-right: 8px; }
+
+  @media (max-width: 768px) {
+    main { padding: 0 18px 64px; }
+    h1 { font-size: 1.6rem; }
+    nav.toc { columns: 1; }
+  }
+  @media print {
+    body { font-size: 9.5pt; }
+    .pipeline svg { min-width: 0; width: 100%; }
+  }
+</style>
+</head>
+<body>
+<main>
+
+<header class="masthead">
+  <p class="eyebrow">Vanilla WoW Lab · Design · Interface Contract</p>
+  <h1>The Wowborg Interface:<br>Typed Observations &amp; Actions</h1>
+  <p class="dek">
+    The complete symbolic surface we will build between the raw WoW&nbsp;1.12.1 wire protocol and a
+    Python policy — every observation the policy can read, every action it can take. Spaces only;
+    implementation is a later document.
+  </p>
+  <p class="byline">
+    <b>Status</b> proposed design, awaiting review &nbsp;·&nbsp; <b>Date</b> 2026-07-15 &nbsp;·&nbsp;
+    <b>Evidence</b> coworld-vanilla-wow @ <span class="mono">312d1d0c7</span> (reference Nim client,
+    King Richard / King Nimrod policies, wow_sdk protocol) + recon
+    <span class="mono">docs/recon/navigation-obs-actions-2026-07-14.md</span>
+  </p>
+</header>
+
+<nav class="toc">
+  <a href="#s1"><span class="n">1</span>Where the bridge sits</a>
+  <a href="#s2"><span class="n">2</span>Design principles</a>
+  <a href="#s3"><span class="n">3</span>The observation space</a>
+  <a href="#s3-self"><span class="n">3.1</span>Self</a>
+  <a href="#s3-move"><span class="n">3.2</span>Movement authority</a>
+  <a href="#s3-ent"><span class="n">3.3</span>Entities</a>
+  <a href="#s3-spell"><span class="n">3.4</span>Spellbook, auras, cooldowns</a>
+  <a href="#s3-inv"><span class="n">3.5</span>Inventory &amp; money</a>
+  <a href="#s3-quest"><span class="n">3.6</span>Quests</a>
+  <a href="#s3-party"><span class="n">3.7</span>Party &amp; social</a>
+  <a href="#s3-win"><span class="n">3.8</span>Interaction windows</a>
+  <a href="#s3-prompt"><span class="n">3.9</span>Pending prompts</a>
+  <a href="#s3-events"><span class="n">3.10</span>The event feed</a>
+  <a href="#s3-world"><span class="n">3.11</span>World &amp; session meta</a>
+  <a href="#s4"><span class="n">4</span>The action space</a>
+  <a href="#s4-results"><span class="n">4.9</span>Action results</a>
+  <a href="#s5"><span class="n">5</span>Bridge automatic behaviors</a>
+  <a href="#s6"><span class="n">6</span>Static data requirements</a>
+  <a href="#s7"><span class="n">7</span>Exclusions &amp; open questions</a>
+</nav>
+
+<!-- ============================================================ -->
+<section id="s1">
+<h2><span class="secno">1</span>Where the bridge sits</h2>
+<p class="lede">
+  A hosted Vanilla WoW policy receives no structured API from the platform — the Coworld
+  <code>/player</code> socket carries credentials and lifecycle only, and the two
+  <code>/tcp/*</code> tunnels are unfiltered byte pipes speaking the real 1.12.1 binary protocol.
+  The bundled Nim player solves this by maintaining a client-state mirror and exposing typed
+  snapshots and actions to <em>its own</em> bot brain. We are building the same seam for wowborg,
+  in Python: a <b>bridge</b> that parses server packets into one coherent typed observation, and
+  compiles typed intents back down into legal client packets.
+</p>
+
+<figure class="pipeline">
+<svg viewBox="0 0 980 268" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Data-flow diagram: VMaNGOS server packets flow through the wowborg bridge into a typed observation consumed by the policy; the policy emits typed intents which the bridge compiles back into client packets; action results feed back to the policy.">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#555555"/>
+    </marker>
+    <marker id="arrnavy" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a3875"/>
+    </marker>
+  </defs>
+  <!-- server -->
+  <rect x="10" y="66" width="150" height="128" fill="#fffaf0" stroke="#d4c9b5" rx="3"/>
+  <text x="85" y="92" text-anchor="middle" font-family="Merriweather, Georgia, serif" font-weight="700" font-size="14" fill="#111827">VMaNGOS</text>
+  <text x="85" y="110" text-anchor="middle" font-size="10.5" fill="#555555">real 1.12.1 realm</text>
+  <text x="85" y="140" text-anchor="middle" font-family="Menlo, monospace" font-size="10" fill="#555555">SMSG_* packets</text>
+  <text x="85" y="156" text-anchor="middle" font-family="Menlo, monospace" font-size="10" fill="#555555">CMSG_* packets</text>
+  <text x="85" y="182" text-anchor="middle" font-size="9.5" fill="#999999">via WS /tcp/world</text>
+
+  <!-- bridge -->
+  <rect x="235" y="26" width="270" height="208" fill="#fffaf0" stroke="#1a3875" stroke-width="1.5" rx="3"/>
+  <text x="370" y="52" text-anchor="middle" font-family="Merriweather, Georgia, serif" font-weight="700" font-size="14" fill="#1a3875">wowborg bridge</text>
+  <text x="370" y="68" text-anchor="middle" font-size="10.5" fill="#555555">this design's subject</text>
+  <line x1="253" y1="80" x2="487" y2="80" stroke="#e4dac8"/>
+  <text x="253" y="100" font-size="10.5" fill="#111827">▸ packet parse &amp; header crypt</text>
+  <text x="253" y="118" font-size="10.5" fill="#111827">▸ world-state tracking (object store)</text>
+  <text x="253" y="136" font-size="10.5" fill="#111827">▸ protocol upkeep: ACKs, pings, queries</text>
+  <text x="253" y="154" font-size="10.5" fill="#111827">▸ movement execution (dead reckoning)</text>
+  <text x="253" y="172" font-size="10.5" fill="#111827">▸ intent → packet compilation</text>
+  <text x="253" y="190" font-size="10.5" fill="#111827">▸ confirmation watching → results</text>
+  <text x="253" y="216" font-size="9.5" fill="#999999" font-style="italic">"sent is not accepted" enforced here</text>
+
+  <!-- policy -->
+  <rect x="640" y="66" width="150" height="128" fill="#fffaf0" stroke="#d4c9b5" rx="3"/>
+  <text x="715" y="92" text-anchor="middle" font-family="Merriweather, Georgia, serif" font-weight="700" font-size="14" fill="#111827">policy</text>
+  <text x="715" y="110" text-anchor="middle" font-size="10.5" fill="#555555">the deciding brain</text>
+  <text x="715" y="140" text-anchor="middle" font-size="10" fill="#555555">reads observations</text>
+  <text x="715" y="156" text-anchor="middle" font-size="10" fill="#555555">emits intents</text>
+  <text x="715" y="182" text-anchor="middle" font-size="9.5" fill="#999999">never sees raw bytes</text>
+
+  <!-- arrows server<->bridge -->
+  <line x1="160" y1="100" x2="233" y2="100" stroke="#555555" stroke-width="1.2" marker-end="url(#arr)"/>
+  <text x="196" y="92" text-anchor="middle" font-size="9" fill="#999999">inbound</text>
+  <line x1="233" y1="160" x2="162" y2="160" stroke="#555555" stroke-width="1.2" marker-end="url(#arr)"/>
+  <text x="196" y="176" text-anchor="middle" font-size="9" fill="#999999">outbound</text>
+
+  <!-- arrows bridge<->policy -->
+  <line x1="505" y1="92" x2="638" y2="92" stroke="#1a3875" stroke-width="1.4" marker-end="url(#arrnavy)"/>
+  <text x="571" y="84" text-anchor="middle" font-size="10" font-weight="600" fill="#1a3875">Observation  (§3)</text>
+  <line x1="638" y1="140" x2="507" y2="140" stroke="#1a3875" stroke-width="1.4" marker-end="url(#arrnavy)"/>
+  <text x="571" y="132" text-anchor="middle" font-size="10" font-weight="600" fill="#1a3875">Action intent  (§4)</text>
+  <line x1="505" y1="186" x2="638" y2="186" stroke="#555555" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+  <text x="571" y="178" text-anchor="middle" font-size="10" fill="#555555">ActionResult  (§4.9)</text>
+</svg>
+<figcaption>
+  Fig. 1 — the seam. The two contracts this document defines are the navy arrows: the observation the
+  policy reads and the intent vocabulary it emits. Everything left of them is bridge machinery
+  (a later design); everything right is policy intelligence (later still).
+</figcaption>
+</figure>
+</section>
+
+<!-- ============================================================ -->
+<section id="s2">
+<h2><span class="secno">2</span>Design principles</h2>
+
+<p><b>Client honesty, inherited.</b> The reference engine's core integrity rule carries over
+unchanged: the observation reports what a real client could know, and unknown facts stay
+explicitly unknown rather than defaulting to zero or false. Every model gets
+<code>None</code>-able fields with the same "known-mask" discipline the tensor contract uses —
+<em>"zero is not silently promoted to observed truth."</em></p>
+
+<p><b>State and events are different things.</b> Most of the observation is <em>latest-truth
+state</em> (your health, who is nearby, what the loot window holds). But a large class of
+wire facts are <em>transient events</em> — an XP gain, a cast failure, a chat line, a damage tick —
+that would be lost if we only kept latest state. The observation therefore has two halves: a
+<b>state snapshot</b> (§3.1–3.9, 3.11) and an <b>event feed</b> (§3.10) of typed, sequenced events
+since the policy's last read. This mirrors what the proven policies actually needed: King Richard's
+loop is built on snapshot state <em>plus</em> <code>recent_action_feedback</code> windows.</p>
+
+<p><b>Actions are intents with results, not packets.</b> A policy action is a typed intent
+(<code>move_to</code>, <code>cast</code>, <code>loot</code>); the bridge compiles it into however many
+packets it takes and watches for authoritative confirmation. Every action produces a typed
+<code>ActionResult</code>; "sent" is never "done". This is the exact contract shape the reference
+engine proved (its <code>action.json</code> → <code>action-results.jsonl</code> loop), reproduced
+at our seam.</p>
+
+<p><b>Completeness over minimalism, tiered by need.</b> The space below includes everything a
+competitive policy will plausibly want — but implementation order matters, so every component and
+action carries a tier tag:</p>
+
+<p class="legend">
+  <span class="chip t0">T0 · navigate</span> needed for the current sub-goal (random-point navigation) &nbsp;
+  <span class="chip t1">T1 · play</span> needed to level and clear RFC (combat, loot, quests, vendor, death, party) &nbsp;
+  <span class="chip t2">T2 · breadth</span> full protocol breadth (taxi, guild, mail, AH, trade…) &nbsp;
+  <span class="chip tx">defer</span> identified, deliberately not built until demanded
+</p>
+
+<div class="rule-note">
+  <b>What this is not.</b> No module layout, no parser architecture, no schedule — this document
+  fixes only <em>what the policy can see and do</em>. When we disagree with the reference engine's
+  shapes we say so explicitly and why; silence means we adopted its proven shape.
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="s3">
+<h2><span class="secno">3</span>The observation space</h2>
+
+<p class="lede">One object, rebuilt continuously by the bridge, read atomically by the policy
+whenever it decides. The full shape at a glance — each node links to its field table:</p>
+
+<div class="tree">
+<span class="k">Observation</span><br>
+├─ <a href="#s3-world"><span class="k">meta</span></a><span class="c">          seq · captured_at · slot · deadline · connection health          </span><span class="chip t0">T0</span><br>
+├─ <a href="#s3-self"><span class="k">self</span></a><span class="c">          identity · pose · vitals · combat state · death state             </span><span class="chip t0">T0</span><br>
+├─ <a href="#s3-move"><span class="k">movement</span></a><span class="c">      speeds · control flags · transport · fall · integrity            </span><span class="chip t0">T0</span><br>
+├─ <a href="#s3-ent"><span class="k">entities</span></a><span class="c">      units[] · game_objects[] · corpses[] — the visible world          </span><span class="chip t1">T1</span><br>
+├─ <a href="#s3-spell"><span class="k">spellbook</span></a><span class="c">     known spells · cooldowns · self auras with durations              </span><span class="chip t1">T1</span><br>
+├─ <a href="#s3-inv"><span class="k">inventory</span></a><span class="c">     money · bags · items · equipment · durability                     </span><span class="chip t1">T1</span><br>
+├─ <a href="#s3-quest"><span class="k">quests</span></a><span class="c">        log · objectives · questgiver statuses                            </span><span class="chip t1">T1</span><br>
+├─ <a href="#s3-party"><span class="k">party</span></a><span class="c">         members · leader · loot rules · member vitals                     </span><span class="chip t1">T1</span><br>
+├─ <a href="#s3-party"><span class="k">social</span></a><span class="c">        chat inbox · friends · guild · who results                        </span><span class="chip t2">T2</span><br>
+├─ <a href="#s3-win"><span class="k">windows</span></a><span class="c">       loot · gossip · quest frame · vendor · trainer · taxi …           </span><span class="chip t1">T1</span><br>
+├─ <a href="#s3-prompt"><span class="k">prompts</span></a><span class="c">       pending confirmations: party invite · resurrect · duel …          </span><span class="chip t1">T1</span><br>
+├─ <a href="#s3-events"><span class="k">events</span></a><span class="c">        typed, sequenced feed since last read                             </span><span class="chip t1">T1</span><br>
+└─ <a href="#s3-world"><span class="k">world</span></a><span class="c">         zone · bind point · weather · game time · world states            </span><span class="chip t2">T2</span>
+</div>
+<p class="legend">Tier tags mark when each component must first exist; every component's
+<em>schema</em> is fixed now so later tiers extend without breaking.</p>
+
+<!-- ---------------- 3.1 self ---------------- -->
+<h3 id="s3-self">3.1 &nbsp;<code>self</code> — the character <span class="chip t0">T0</span></h3>
+<p>Everything about our own character. Provenance: login verify, own-GUID
+<code>SMSG_UPDATE_OBJECT</code> values + movement block, mirror timers, corpse query.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:20%">Field</th><th style="width:22%">Type</th><th style="width:33%">Meaning</th><th>Source (wire)</th></tr></thead>
+<tbody>
+<tr class="rowgroup"><td colspan="4">Identity</td></tr>
+<tr><td class="f">guid</td><td><code>int</code></td><td>own 64-bit GUID</td><td><code>SMSG_CHAR_ENUM</code></td></tr>
+<tr><td class="f">name / race / class_id / gender</td><td><code>str, int, int, int</code></td><td>fixed identity</td><td><code>SMSG_CHAR_ENUM</code></td></tr>
+<tr><td class="f">level</td><td><code>int</code> 1–60</td><td>current level</td><td>field <code>UNIT_FIELD_LEVEL 0x022</code></td></tr>
+<tr class="rowgroup"><td colspan="4">Pose</td></tr>
+<tr><td class="f">map_id / zone_id</td><td><code>int, int|None</code></td><td>continent map + zone (zone is client-derived; see §7)</td><td>login verify · <code>SMSG_NEW_WORLD</code></td></tr>
+<tr><td class="f">position</td><td><code>Position(x,y,z,o)</code></td><td>world yards; <code>o</code> radians [0,2π)</td><td>login verify → dead reckoning → teleport acks</td></tr>
+<tr class="rowgroup"><td colspan="4">Vitals &amp; resources</td></tr>
+<tr><td class="f">health / max_health</td><td><code>int, int</code></td><td>hit points</td><td>fields <code>0x016 / 0x01C</code></td></tr>
+<tr><td class="f">power_type</td><td><code>"mana"|"rage"|"energy"</code></td><td>class-active resource</td><td><code>UNIT_FIELD_BYTES_0 0x024</code></td></tr>
+<tr><td class="f">power / max_power</td><td><code>int, int</code></td><td>active resource (rage stored ×10 on wire; we normalize)</td><td>fields <code>0x017–0x021</code></td></tr>
+<tr><td class="f">combo_points</td><td><code>int</code> 0–5</td><td>valid only vs. <code>combo_target_guid</code></td><td><code>PLAYER_FIELD_BYTES 0x4C6</code> + <code>0x2CA</code></td></tr>
+<tr class="rowgroup"><td colspan="4">Combat state</td></tr>
+<tr><td class="f">in_combat</td><td><code>bool</code></td><td>derived from <code>UNIT_FIELD_FLAGS</code> bit <code>0x00080000</code></td><td>field <code>0x02E</code></td></tr>
+<tr><td class="f">target_guid</td><td><code>int|None</code></td><td>current selection</td><td>field <code>UNIT_FIELD_TARGET 0x010</code></td></tr>
+<tr><td class="f">auto_attacking</td><td><code>int|None</code></td><td>GUID under melee auto-attack</td><td><code>SMSG_ATTACKSTART/STOP</code> 323/324</td></tr>
+<tr><td class="f">casting</td><td><code>CastState|None</code></td><td><code>{spell_id, ends_at_ms, target}</code> — own cast in flight</td><td><code>SMSG_SPELL_START</code> 305 (own GUID)</td></tr>
+<tr><td class="f">channeling</td><td><code>CastState|None</code></td><td>channel with remaining time</td><td><code>MSG_CHANNEL_START/UPDATE</code> 313/314</td></tr>
+<tr class="rowgroup"><td colspan="4">Stance &amp; status</td></tr>
+<tr><td class="f">stand_state</td><td><code>"standing"|"sitting"|…</code></td><td>must stand to cast/attack</td><td><code>SMSG_STANDSTATE_UPDATE</code> 669 · <code>UNIT_FIELD_BYTES_1</code></td></tr>
+<tr><td class="f">mounted</td><td><code>bool</code></td><td>mount display id ≠ 0</td><td>field <code>0x085</code></td></tr>
+<tr><td class="f">is_resting</td><td><code>bool</code></td><td>inn/city rest state (rested XP accrual)</td><td><code>PLAYER_FLAGS 0x0BE</code></td></tr>
+<tr><td class="f">breath</td><td><code>MirrorTimer|None</code></td><td><code>{remaining_ms, max_ms}</code> underwater breath; also fatigue</td><td><code>SMSG_START/STOP_MIRROR_TIMER</code> 473–475</td></tr>
+<tr class="rowgroup"><td colspan="4">Death</td></tr>
+<tr><td class="f">is_dead / is_ghost</td><td><code>bool, bool</code></td><td>dead = hp 0; ghost = released spirit</td><td>hp fields + <code>PLAYER_FLAGS</code> ghost bit</td></tr>
+<tr><td class="f">corpse</td><td><code>CorpseInfo|None</code></td><td><code>{map_id, position, distance}</code></td><td><code>MSG_CORPSE_QUERY</code> 534</td></tr>
+<tr><td class="f">reclaim_delay_s</td><td><code>float|None</code></td><td>wait before reclaim allowed</td><td><code>SMSG_CORPSE_RECLAIM_DELAY</code> 617</td></tr>
+<tr class="rowgroup"><td colspan="4">Progression</td></tr>
+<tr><td class="f">xp / next_level_xp / rested_xp</td><td><code>int ×3</code></td><td>the persistent-realm score signal</td><td>fields <code>0x2CC / 0x2CD / 0x497</code></td></tr>
+<tr><td class="f">skills</td><td><code>list[SkillLine]</code></td><td><code>{skill_id, value, max}</code> — weapon skills matter for melee</td><td>fields <code>0x2CE+</code> (128×3)</td></tr>
+<tr><td class="f">talent_points</td><td><code>int</code></td><td>unspent points</td><td>field <code>0x44E</code></td></tr>
+<tr><td class="f">money_copper</td><td><code>int</code></td><td>duplicated under <code>inventory</code>; single source of truth</td><td>field <code>PLAYER_FIELD_COINAGE 0x498</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- ---------------- 3.2 movement ---------------- -->
+<h3 id="s3-move">3.2 &nbsp;<code>movement</code> — movement authority <span class="chip t0">T0</span></h3>
+<p>The contract between our dead-reckoned position and the server's. Because 1.12 movement is
+client-authoritative, this component is less "where am I" (that's <code>self.position</code>) and
+more "am I allowed to move, how fast, and does the server agree with me".</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:22%">Field</th><th style="width:24%">Type</th><th style="width:32%">Meaning</th><th>Source</th></tr></thead>
+<tbody>
+<tr><td class="f">move_flags</td><td><code>int</code> + decoded <code>set[str]</code></td><td>our current movement flag word (forward/strafe/swim/…)</td><td>bridge state (we set them)</td></tr>
+<tr><td class="f">speeds</td><td><code>Speeds</code></td><td><code>{run, walk, run_back, swim, swim_back, turn_rate}</code> — defaults 7.0 / 2.5 / 4.5 / 4.722 / 2.5 / π</td><td><code>SMSG_FORCE_*_SPEED_CHANGE</code> 226+</td></tr>
+<tr><td class="f">movement_allowed</td><td><code>bool</code></td><td>server control gate</td><td><code>SMSG_CLIENT_CONTROL_UPDATE</code> 345</td></tr>
+<tr><td class="f">rooted</td><td><code>bool</code></td><td>rooted/stunned — translation forbidden</td><td><code>SMSG_FORCE_MOVE_ROOT/UNROOT</code> 232/234</td></tr>
+<tr><td class="f">server_spline</td><td><code>SplineState|None</code></td><td><code>{spline_id, destination, ends_at}</code> — server owns motion (charge, taxi, knockback); client packets ignored until done</td><td><code>SMSG_MONSTER_MOVE</code> 221 at own GUID</td></tr>
+<tr><td class="f">on_taxi</td><td><code>bool</code></td><td>flight in progress</td><td><code>SMSG_ACTIVATETAXIREPLY</code> 430 + spline</td></tr>
+<tr><td class="f">transport</td><td><code>TransportRef|None</code></td><td><code>{guid, local_position}</code> boat/zeppelin attachment</td><td>MovementInfo transport block</td></tr>
+<tr><td class="f">falling / fall_time_ms</td><td><code>bool, int</code></td><td>airborne state (fall damage risk)</td><td>bridge physics + MovementInfo</td></tr>
+<tr><td class="f">last_server_position</td><td><code>StampedPosition|None</code></td><td>most recent position the <em>server</em> asserted, with age</td><td>teleport ack · own-GUID update block</td></tr>
+<tr><td class="f">correction_count / last_correction_yd</td><td><code>int, float|None</code></td><td>times the server relocated us &gt; 1.5 yd from our reckoning — the desync health meter</td><td>bridge comparison (reference threshold: <code>movement_authority.nim:7</code>)</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="rule-note">
+  <b>Why corrections are first-class.</b> Our position between authoritative packets is our own
+  claim. The <em>only</em> observable ground truth is the stream of server corrections — a rising
+  <code>correction_count</code> is how a policy (or our eval harness) learns the movement layer is
+  desyncing before it fails an episode.
+</div>
+
+<!-- ---------------- 3.3 entities ---------------- -->
+<h3 id="s3-ent">3.3 &nbsp;<code>entities</code> — the visible world <span class="chip t1">T1</span></h3>
+<p>Everything the server has spawned into our visibility bubble, maintained from
+<code>SMSG_UPDATE_OBJECT</code> / <code>SMSG_COMPRESSED_UPDATE_OBJECT</code> create/update/destroy
+blocks (169 / 502 / 170) plus movement broadcasts. Three lists by kind — <code>units</code>
+(creatures, NPCs, other players, pets), <code>game_objects</code> (chests, ore nodes, doors,
+mailboxes…), <code>corpses</code>. Sorted by distance; each row carries its provenance timestamp.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:20%">Field</th><th style="width:24%">Type</th><th style="width:34%">Meaning</th><th>Source</th></tr></thead>
+<tbody>
+<tr class="rowgroup"><td colspan="4">Unit — identity</td></tr>
+<tr><td class="f">guid / entry_id</td><td><code>int, int|None</code></td><td>instance GUID + template id (players have no entry)</td><td>update block</td></tr>
+<tr><td class="f">kind</td><td><code>"player"|"creature"|"pet"</code></td><td>from GUID high bits + summon fields</td><td>update block</td></tr>
+<tr><td class="f">name</td><td><code>str|None</code></td><td>resolved lazily by the bridge</td><td><code>SMSG_NAME_QUERY</code> 81 · creature query 97</td></tr>
+<tr><td class="f">level</td><td><code>int|None</code></td><td>drives XP-eligibility &amp; danger judgment</td><td>field <code>0x022</code></td></tr>
+<tr><td class="f">creature_type / rank</td><td><code>str|None ×2</code></td><td>humanoid/beast/… · normal/elite/boss</td><td>creature query cache</td></tr>
+<tr><td class="f">reaction</td><td><code>"friendly"|"neutral"|"hostile"</code></td><td>derived from faction template vs. ours (needs static faction table, §6)</td><td>field <code>0x023</code> + static data</td></tr>
+<tr><td class="f">owner_guid</td><td><code>int|None</code></td><td>pet/summon owner</td><td>fields <code>0x006–0x00E</code></td></tr>
+<tr class="rowgroup"><td colspan="4">Unit — pose &amp; motion</td></tr>
+<tr><td class="f">position / distance</td><td><code>Position, float</code></td><td>distance from self, yards</td><td>movement block · <code>MSG_MOVE_*</code> broadcasts</td></tr>
+<tr><td class="f">motion</td><td><code>Motion|None</code></td><td><code>{moving, destination, speed, eta_s}</code> — sampled from active spline</td><td><code>SMSG_MONSTER_MOVE</code> 221</td></tr>
+<tr class="rowgroup"><td colspan="4">Unit — vitals &amp; combat</td></tr>
+<tr><td class="f">health / max_health</td><td><code>int|None ×2</code></td><td>absent ⇒ genuinely unknown, never 0</td><td>fields <code>0x016/0x01C</code></td></tr>
+<tr><td class="f">power / max_power / power_type</td><td><code>int|None ×2, str|None</code></td><td>e.g. caster mana for interrupt decisions</td><td>fields <code>0x017+</code></td></tr>
+<tr><td class="f">target_guid</td><td><code>int|None</code></td><td>who it's attacking — the threat picture is built from these</td><td>field <code>0x010</code></td></tr>
+<tr><td class="f">in_combat</td><td><code>bool|None</code></td><td>unit flags bit</td><td>field <code>0x02E</code></td></tr>
+<tr><td class="f">casting</td><td><code>UnitCast|None</code></td><td><code>{spell_id|None, is_channel}</code> — spell id from <code>SPELL_START</code>/channel field when seen</td><td><code>SMSG_SPELL_START</code> 305 · field <code>0x090</code></td></tr>
+<tr><td class="f">auras</td><td><code>list[AuraSlot]</code></td><td><code>{slot, spell_id, is_debuff}</code> — up to 48; no durations for others (not on the wire)</td><td>fields <code>0x02F–0x07D</code></td></tr>
+<tr class="rowgroup"><td colspan="4">Unit — decoded flags</td></tr>
+<tr><td class="f">is_dead</td><td><code>bool|None</code></td><td>hp 0 · dynamic-flag dead · create-block omission rule</td><td>dyn flags <code>0x08F</code></td></tr>
+<tr><td class="f">is_lootable / tapped_by_other</td><td><code>bool|None ×2</code></td><td>loot rights; tapped = no XP/loot for us</td><td>dynamic flags</td></tr>
+<tr><td class="f">not_attackable / pacified</td><td><code>bool|None</code></td><td>unit-flag decode</td><td>field <code>0x02E</code></td></tr>
+<tr><td class="f">npc_services</td><td><code>set[str]</code></td><td>gossip · questgiver · vendor · trainer · flightmaster · banker · innkeeper · repair · spirit_healer · auctioneer · stable</td><td><code>UNIT_NPC_FLAGS 0x093</code></td></tr>
+<tr><td class="f">questgiver_status</td><td><code>str|None</code></td><td>the "!" / "?" marker state</td><td><code>SMSG_QUESTGIVER_STATUS</code> 387</td></tr>
+<tr class="rowgroup"><td colspan="4">GameObject</td></tr>
+<tr><td class="f">guid / entry_id / name</td><td><code>int, int, str|None</code></td><td>identity (name via GO query)</td><td>update block · GO query</td></tr>
+<tr><td class="f">go_type</td><td><code>str</code></td><td>chest · door · button · quest object · mailbox · meeting stone · spell focus · mining/herb node · transport…</td><td>GO fields <code>0x006–0x018</code> + query</td></tr>
+<tr><td class="f">position / distance</td><td><code>Position, float</code></td><td>GOs don't move (except transports)</td><td>GO position fields</td></tr>
+<tr><td class="f">is_active / flags</td><td><code>bool|None, int</code></td><td>usable state (opened chest, locked door)</td><td>GO state/flags fields</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="rule-note gold">
+  <b>Deliberate derivation: a threat view, not a threat table.</b> 1.12 has no threat packets.
+  Like the reference engine, we expose only what is observable — <code>unit.target_guid</code> for
+  every visible unit — and let the policy (or a bridge convenience view
+  <code>units_targeting(guid)</code>) derive "who is on me". No invented threat numbers.
+</div>
+
+<!-- ---------------- 3.4 spellbook ---------------- -->
+<h3 id="s3-spell">3.4 &nbsp;<code>spellbook</code> — spells, cooldowns, self-auras <span class="chip t1">T1</span></h3>
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:22%">Field</th><th style="width:26%">Type</th><th style="width:30%">Meaning</th><th>Source</th></tr></thead>
+<tbody>
+<tr><td class="f">known_spells</td><td><code>list[KnownSpell]</code></td><td><code>{spell_id, name†, rank†, cost†, range†, cast_time†, is_ready}</code> — † from static spell table (§6)</td><td><code>SMSG_INITIAL_SPELLS</code> 298 · learned/removed 299/515</td></tr>
+<tr><td class="f">cooldowns</td><td><code>list[Cooldown]</code></td><td><code>{spell_id, ready_at_ms, category}</code>; includes item categories (potions share one)</td><td><code>SMSG_SPELL_COOLDOWN</code> 308 · events 309/478 · item cd 176</td></tr>
+<tr><td class="f">gcd_ready_at</td><td><code>int|None</code></td><td>global cooldown estimate, bridge-tracked from own casts</td><td>derived</td></tr>
+<tr><td class="f">buffs / debuffs</td><td><code>list[SelfAura]</code></td><td><code>{slot, spell_id, name†, applications, remaining_ms|None}</code> — durations for self only</td><td>aura fields + <code>SMSG_UPDATE_AURA_DURATION</code> 311</td></tr>
+<tr><td class="f">interrupt_lockouts</td><td><code>list[Lockout]</code></td><td>school lockouts after being kicked <span class="chip tx">defer</span></td><td>derived from cast failures</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- ---------------- 3.5 inventory ---------------- -->
+<h3 id="s3-inv">3.5 &nbsp;<code>inventory</code> — items, bags, money <span class="chip t1">T1</span></h3>
+<p>Item GUIDs arrive in our own player's slot fields; item objects arrive as separate create
+blocks; templates (name, quality, class, vendor price) are fetched once per item id via
+<code>SMSG_ITEM_QUERY_SINGLE_RESPONSE</code> 88 and cached.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:22%">Field</th><th style="width:26%">Type</th><th style="width:30%">Meaning</th><th>Source</th></tr></thead>
+<tbody>
+<tr><td class="f">money_copper</td><td><code>int</code></td><td>1g = 100s = 10 000c; render with units</td><td>field <code>0x498</code></td></tr>
+<tr><td class="f">items</td><td><code>list[Item]</code></td><td><code>{item_guid, item_id, name, bag, slot, count, quality, max_stack†, durability, max_durability, cooldown_ready_at, is_quest_item†, vendor_price†, equip_slot†}</code></td><td>slot fields + item objects + item query</td></tr>
+<tr><td class="f">equipment</td><td><code>dict[slot_name → Item]</code></td><td>19 equip slots (head…ranged)</td><td>fields <code>0x1E6+</code></td></tr>
+<tr><td class="f">bags</td><td><code>list[Bag]</code></td><td><code>{bag_index, capacity, free}</code>; backpack + 4 bags</td><td>container fields</td></tr>
+<tr><td class="f">free_slots</td><td><code>int</code></td><td>rollup — the "can I loot" gate</td><td>derived</td></tr>
+<tr><td class="f">worst_durability_pct</td><td><code>float|None</code></td><td>rollup — the "must repair" gate</td><td>derived</td></tr>
+<tr><td class="f">buyback</td><td><code>list[Item]</code> <span class="chip t2">T2</span></td><td>recently vendored items</td><td>buyback slot fields</td></tr>
+<tr><td class="f">bank</td><td><code>list[Item]</code> <span class="chip t2">T2</span></td><td>bank contents (fields always present)</td><td>bank slot fields</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- ---------------- 3.6 quests ---------------- -->
+<h3 id="s3-quest">3.6 &nbsp;<code>quests</code> — log &amp; objectives <span class="chip t1">T1</span></h3>
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:22%">Field</th><th style="width:26%">Type</th><th style="width:30%">Meaning</th><th>Source</th></tr></thead>
+<tbody>
+<tr><td class="f">log</td><td><code>list[QuestLogEntry]</code></td><td><code>{slot 0–19, quest_id, title, state: active|complete|failed, kill_counts[4], timer_s|None}</code></td><td>fields <code>0x0C6+</code> (20×3) + quest query 93</td></tr>
+<tr><td class="f">objectives</td><td><code>list[Objective]</code></td><td><code>{quest_id, index, kind: kill|collect|object|event|explore, description, target_entry|item_id, current, required, complete}</code></td><td>quest query 93 + <code>QUESTUPDATE_ADD_KILL/ITEM</code> 409/410</td></tr>
+<tr><td class="f">rewarded_quest_ids</td><td><code>set[int]</code></td><td>turned-in this session (server truth is the completed-quest DB; we track observed turn-ins)</td><td><code>SMSG_QUESTGIVER_QUEST_COMPLETE</code> 401</td></tr>
+<tr><td class="f">questgiver_status</td><td><code>dict[guid → status]</code></td><td>available / reward-ready / repeatable / none — mirrors the overhead markers</td><td><code>SMSG_QUESTGIVER_STATUS</code> 387</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- ---------------- 3.7 party & social ---------------- -->
+<h3 id="s3-party">3.7 &nbsp;<code>party</code> &amp; <code>social</code> <span class="chip t1">T1</span> <span class="chip t2">T2</span></h3>
+<p>Party state is T1 — RFC is a five-character party problem. Wider social state is T2.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:22%">Field</th><th style="width:26%">Type</th><th style="width:30%">Meaning</th><th>Source</th></tr></thead>
+<tbody>
+<tr class="rowgroup"><td colspan="4">party <span class="chip t1">T1</span></td></tr>
+<tr><td class="f">in_party / is_raid</td><td><code>bool, bool</code></td><td>grouped state</td><td><code>SMSG_GROUP_LIST</code> 125</td></tr>
+<tr><td class="f">leader_guid</td><td><code>int|None</code></td><td>party leader</td><td>group list</td></tr>
+<tr><td class="f">loot_method / threshold</td><td><code>str, int</code></td><td>group loot rules</td><td>group list</td></tr>
+<tr><td class="f">members</td><td><code>list[PartyMember]</code></td><td><code>{guid, name, online, subgroup, health, max_health, power, max_power, level, zone_id, position_2d|None, aura_spell_ids[]}</code> — u16-precision vitals; positions are 2-D</td><td><code>SMSG_PARTY_MEMBER_STATS</code> 126/754</td></tr>
+<tr class="rowgroup"><td colspan="4">social <span class="chip t2">T2</span> (chat inbox is <span class="chip t1">T1</span>)</td></tr>
+<tr><td class="f">chat_inbox</td><td><code>list[ChatLine]</code></td><td><code>{seq, at, type: say|party|yell|whisper|emote|system|channel|monster_*, sender_guid|None, sender_name, channel|None, text}</code> — ring buffer, also surfaced as events</td><td><code>SMSG_MESSAGECHAT</code> 150</td></tr>
+<tr><td class="f">friends / ignore</td><td><code>list</code></td><td>status, online, area, level</td><td><code>SMSG_FRIEND_LIST</code> 103</td></tr>
+<tr><td class="f">guild</td><td><code>GuildState|None</code></td><td>name, motd, roster, events</td><td>guild query/roster/event</td></tr>
+<tr><td class="f">who_results</td><td><code>list[WhoRow]</code></td><td>latest <code>/who</code> answer</td><td><code>SMSG_WHO</code> 99</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- ---------------- 3.8 windows ---------------- -->
+<h3 id="s3-win">3.8 &nbsp;<code>windows</code> — server-driven interaction UIs <span class="chip t1">T1</span></h3>
+<p>Each window is <code>None</code> when closed; when open it holds exactly what the server sent.
+<b>This is our largest deliberate addition over the reference snapshot</b>, which exports none of
+these to its Python policy (its Nim executor consumes them internally inside composite actions).
+Exposing them lets a Python policy make menu-level decisions — choose a gossip option, buy a
+specific item, pick a quest reward — that the reference policy delegates to hard-coded Nim.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:16%">Window</th><th style="width:44%">Contents</th><th style="width:22%">Source</th><th>Tier</th></tr></thead>
+<tbody>
+<tr><td class="f">loot</td><td><code>{source_guid, loot_type, money_copper, items: [{slot, item_id, name, count, quality, slot_type}]}</code></td><td><code>SMSG_LOOT_RESPONSE</code> 352 · removed 354 · money 355/357</td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">gossip</td><td><code>{npc_guid, text_id, greeting|None, options: [{option_id, icon, text}], quests: [{quest_id, icon, level, title}]}</code></td><td><code>SMSG_GOSSIP_MESSAGE</code> 381 · NPC text 384 · POI 548</td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">quest_frame</td><td><code>{mode: list|details|request_items|offer_reward|complete, npc_guid, quest_id, title, text, objectives_text, can_complete, required_items/money, reward_choice_items, reward_items, reward_money, reward_xp†}</code></td><td>389 / 392 / 395 / 397 / 401</td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">vendor</td><td><code>{vendor_guid, items: [{slot, item_id, name, price_copper, stock: n|∞, buy_count}]}</code></td><td><code>SMSG_LIST_INVENTORY</code> 415</td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">trainer</td><td><code>{trainer_guid, trainer_type, spells: [{spell_id, state: available|unavailable|known, cost_copper, required_level, required_skill}]}</code></td><td><code>SMSG_TRAINER_LIST</code> 433</td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">taxi</td><td><code>{flightmaster_guid, current_node, known_node_ids: set[int]}</code></td><td><code>SMSG_SHOWTAXINODES</code> 425</td><td><span class="chip t2">T2</span></td></tr>
+<tr><td class="f">bank</td><td><code>{banker_guid, purchasable_slot_cost}</code></td><td><code>SMSG_SHOW_BANK</code> 440</td><td><span class="chip t2">T2</span></td></tr>
+<tr><td class="f">mail</td><td><code>{entries: [{message_id, sender, subject, money, cod, attachment|None, expires_days}]}</code></td><td><code>SMSG_MAIL_LIST_RESULT</code> 571</td><td><span class="chip t2">T2</span></td></tr>
+<tr><td class="f">trade</td><td><code>{partner_guid, my_offer, their_offer, status}</code></td><td><code>SMSG_TRADE_STATUS(_EXTENDED)</code> 288/289</td><td><span class="chip t2">T2</span></td></tr>
+<tr><td class="f">auction</td><td><code>{auctioneer_guid, listings: [...]}</code></td><td>604/605/613</td><td><span class="chip tx">defer</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- ---------------- 3.9 prompts ---------------- -->
+<h3 id="s3-prompt">3.9 &nbsp;<code>prompts</code> — pending confirmations <span class="chip t1">T1</span></h3>
+<p>Server offers awaiting a yes/no. Each carries <code>received_at</code> and, where the protocol
+gives one, an expiry. A prompt disappears when answered or expired.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:20%">Prompt</th><th style="width:36%">Payload</th><th style="width:24%">Source</th><th>Answered by</th></tr></thead>
+<tbody>
+<tr><td class="f">party_invite</td><td><code>{inviter_name}</code></td><td><code>SMSG_GROUP_INVITE</code> 111</td><td><code>accept_party</code> / <code>decline_party</code></td></tr>
+<tr><td class="f">resurrect_offer</td><td><code>{resurrector_guid, name, causes_sickness, timer}</code></td><td><code>SMSG_RESURRECT_REQUEST</code> 347</td><td><code>accept_resurrect</code> / decline</td></tr>
+<tr><td class="f">duel_request</td><td><code>{challenger_guid}</code> <span class="chip t2">T2</span></td><td><code>SMSG_DUEL_REQUESTED</code> 359</td><td>accept / cancel duel</td></tr>
+<tr><td class="f">summon_request</td><td><code>{summoner_guid, zone_id, auto_decline_ms}</code> <span class="chip t2">T2</span></td><td><code>SMSG_SUMMON_REQUEST</code> 683</td><td>summon confirm</td></tr>
+<tr><td class="f">guild_invite</td><td><code>{inviter, guild_name}</code> <span class="chip t2">T2</span></td><td><code>SMSG_GUILD_INVITE</code> 0x083</td><td><code>guild_accept</code> / decline</td></tr>
+<tr><td class="f">trade_request</td><td><code>{initiator_guid}</code> <span class="chip t2">T2</span></td><td>trade status 288</td><td>trade accept / cancel</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- ---------------- 3.10 events ---------------- -->
+<h3 id="s3-events">3.10 &nbsp;<code>events</code> — the typed event feed <span class="chip t1">T1</span></h3>
+<p>An ordered feed (monotonic <code>seq</code>, wall-clock stamp) of transient facts since the
+policy's last read. The policy consumes it cursor-style; the bridge retains a bounded ring.
+Movement-relevant events are T0.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:22%">Event</th><th style="width:40%">Payload</th><th style="width:26%">Source</th><th>Tier</th></tr></thead>
+<tbody>
+<tr class="rowgroup"><td colspan="4">Movement &amp; world</td></tr>
+<tr><td class="f">teleported</td><td><code>{to: Position, map_changed: bool}</code> — includes worldport</td><td>teleport ack 199 · <code>SMSG_NEW_WORLD</code> 62</td><td><span class="chip t0">T0</span></td></tr>
+<tr><td class="f">server_corrected_position</td><td><code>{from, to, distance_yd}</code></td><td>bridge comparison</td><td><span class="chip t0">T0</span></td></tr>
+<tr><td class="f">movement_blocked</td><td><code>{at: Position, heading}</code> — no progress while flags say moving <span class="chip warnchip">derived</span></td><td>bridge dead-reckoning watchdog</td><td><span class="chip t0">T0</span></td></tr>
+<tr><td class="f">fall_damage</td><td><code>{amount}</code> · also lava/drown/fatigue</td><td><code>SMSG_ENVIRONMENTALDAMAGELOG</code> 508</td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">zone_changed</td><td><code>{zone_id}</code></td><td>bridge area detection (see §7)</td><td><span class="chip t2">T2</span></td></tr>
+<tr class="rowgroup"><td colspan="4">Combat</td></tr>
+<tr><td class="f">damage_taken / damage_dealt</td><td><code>{attacker, victim, amount, absorbed, resisted, blocked, school, is_crit, kind: melee|spell|dot}</code></td><td>330 · 592 · 590</td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">healed</td><td><code>{caster, target, amount, is_crit}</code></td><td><code>SMSG_SPELLHEALLOG</code> 336</td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">unit_cast_started</td><td><code>{caster, spell_id, cast_time_ms, target}</code> — the interrupt trigger</td><td><code>SMSG_SPELL_START</code> 305</td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">unit_cast_go</td><td><code>{caster, spell_id, hit_guids, miss_guids}</code></td><td><code>SMSG_SPELL_GO</code> 306</td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">own_cast_result</td><td><code>{spell_id, ok, fail_reason|None}</code> — full 1.12 failure-reason enum</td><td><code>SMSG_CAST_RESULT</code> 304</td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">swing_error</td><td><code>{reason: not_in_range|bad_facing|not_standing|dead_target|cant_attack}</code></td><td>opcodes 325–329</td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">unit_died</td><td><code>{guid, killer|None}</code> — kill credit via party-kill log + tap state</td><td>hp→0 · dyn flags · <code>SMSG_PARTY_KILL_LOG</code> 501</td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">aggroed</td><td><code>{guid}</code> — AI reaction "hostile"</td><td><code>SMSG_AI_REACTION</code> 316</td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">combat_entered / combat_left</td><td><code>{}</code> — own flag transition</td><td>derived from field <code>0x02E</code></td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">self_aura_gained / lost</td><td><code>{spell_id, is_debuff}</code></td><td>aura field transitions</td><td><span class="chip t1">T1</span></td></tr>
+<tr class="rowgroup"><td colspan="4">Progression &amp; items</td></tr>
+<tr><td class="f">xp_gained</td><td><code>{amount, source: kill|quest|explore, victim_guid|None, raw_base, group_bonus}</code></td><td><code>SMSG_LOG_XPGAIN</code> 464 · exploration 504</td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">leveled_up</td><td><code>{new_level, stat_gains}</code></td><td><code>SMSG_LEVELUP_INFO</code> 468</td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">item_received</td><td><code>{item_id, count, via: loot|quest|create}</code></td><td><code>SMSG_ITEM_PUSH_RESULT</code> 358</td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">money_changed</td><td><code>{delta_copper, via: loot|vendor|quest|…}</code></td><td>coinage transitions + loot money 355</td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">quest_progress</td><td><code>{quest_id, objective_index, current, required}</code></td><td>409 / 410</td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">quest_completable / quest_failed</td><td><code>{quest_id}</code></td><td>408 · 406/407</td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">skill_up</td><td><code>{skill_id, value}</code> — from skill-field transitions</td><td>fields <code>0x2CE+</code></td><td><span class="chip t2">T2</span></td></tr>
+<tr class="rowgroup"><td colspan="4">Social &amp; system</td></tr>
+<tr><td class="f">chat</td><td>same shape as <code>social.chat_inbox</code> rows</td><td><code>SMSG_MESSAGECHAT</code> 150</td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">server_notification</td><td><code>{text, kind: notification|server_message|area_trigger_message|error}</code></td><td>459 · 657 · 696 · 274</td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">member_joined / left / party_disbanded</td><td><code>{guid|name}</code></td><td>group list transitions</td><td><span class="chip t1">T1</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- ---------------- 3.11 world/meta ---------------- -->
+<h3 id="s3-world">3.11 &nbsp;<code>meta</code> &amp; <code>world</code> <span class="chip t0">T0</span> <span class="chip t2">T2</span></h3>
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:22%">Field</th><th style="width:26%">Type</th><th style="width:30%">Meaning</th><th>Source</th></tr></thead>
+<tbody>
+<tr class="rowgroup"><td colspan="4">meta <span class="chip t0">T0</span></td></tr>
+<tr><td class="f">seq / captured_at</td><td><code>int, float</code></td><td>snapshot identity + freshness</td><td>bridge</td></tr>
+<tr><td class="f">slot / character_name</td><td><code>int, str</code></td><td>Coworld session identity</td><td><code>wow_session</code></td></tr>
+<tr><td class="f">deadline_remaining_s</td><td><code>float</code></td><td>episode budget left — the signal wowborg v1 ignored (27.8 h lesson)</td><td><code>wow_session.deadline_seconds</code></td></tr>
+<tr><td class="f">connection</td><td><code>{world_connected, latency_ms|None}</code></td><td>liveness + <code>SMSG_PONG</code> RTT</td><td>bridge</td></tr>
+<tr><td class="f">integrity</td><td><code>{unknown_opcode_count, parse_error_count}</code></td><td>bridge health — how much of the wire we're not understanding</td><td>bridge</td></tr>
+<tr class="rowgroup"><td colspan="4">world <span class="chip t2">T2</span></td></tr>
+<tr><td class="f">bind_point</td><td><code>{map_id, position, area_id}</code></td><td>hearthstone destination</td><td><code>SMSG_BINDPOINTUPDATE</code> 341</td></tr>
+<tr><td class="f">weather</td><td><code>{type, intensity}</code></td><td>ambience (rarely decision-relevant)</td><td><code>SMSG_WEATHER</code> 756</td></tr>
+<tr><td class="f">game_time / time_speed</td><td><code>int, float</code></td><td>server clock</td><td>66 / 67</td></tr>
+<tr><td class="f">world_states</td><td><code>dict[int → int]</code></td><td>zone script variables (BG/PvP)</td><td>706 / 707</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="s4">
+<h2><span class="secno">4</span>The action space</h2>
+
+<p class="lede">
+  Typed intents, adopted from the reference engine's proven <code>BotAction</code> vocabulary
+  wherever it fits and adjusted where our seam differs. Every action returns an
+  <code>ActionResult</code> (§4.9). Two deliberate divergences from the reference vocabulary,
+  both consequences of exposing windows (§3.8): a first-class <code>gossip_select</code>
+  (the reference buries menu choice inside Nim), and explicit <code>buy_item</code> /
+  <code>sell_items</code> / <code>repair</code> instead of only the composite
+  <code>sell_junk</code>.
+</p>
+
+<h3>4.1 &nbsp;Movement <span class="chip t0">T0</span></h3>
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:16%">Action</th><th style="width:38%">Arguments</th><th style="width:26%">Bridge emits</th><th>Confirmed by</th></tr></thead>
+<tbody>
+<tr><td class="f">move_to</td><td><code>dest: Position | guid</code> · <code>arrival_radius = 3.0 yd</code> · <code>gait: run|walk = run</code> · <code>timeout_s = 60</code>; moving-target chase re-aims each step</td><td>facing + start/heartbeat/stop stream at 200 ms, dead-reckoned</td><td>movement settlement (§4.9): arrival within radius, or blocked / interrupted / timeout</td></tr>
+<tr><td class="f">stop</td><td>—</td><td><code>MSG_MOVE_STOP</code></td><td>flags cleared</td></tr>
+<tr><td class="f">face</td><td><code>orientation | point | guid</code></td><td><code>MSG_MOVE_SET_FACING</code> 218</td><td>own state</td></tr>
+<tr><td class="f">jump</td><td><code>xy_speed|None</code> (standing vs. running jump)</td><td><code>MSG_MOVE_JUMP</code> 187 + fall/land</td><td>landing settled</td></tr>
+<tr><td class="f">follow</td><td><code>guid</code> · <code>distance = 4.0 yd</code> — persistent until superseded <span class="chip t1">T1</span></td><td>continuous chase loop on target's observed motion</td><td>continuous; reports leash break</td></tr>
+<tr><td class="f">take_taxi</td><td><code>flightmaster_guid, node_id</code> <span class="chip t2">T2</span></td><td><code>CMSG_ACTIVATETAXI</code></td><td>taxi reply 430 + spline start/end</td></tr>
+<tr><td class="f">area_trigger</td><td><code>trigger_id</code> — instance portals <span class="chip t1">T1</span> (RFC entry!)</td><td><code>CMSG_AREA_TRIGGER</code> 180</td><td>world transfer packets</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="rule-note">
+  <b>One movement intent at a time.</b> A new movement action supersedes the previous one
+  (result status <code>superseded</code>). The bridge refuses movement while
+  <code>movement.rooted</code>, <code>!movement_allowed</code>, or a server spline is active, and
+  reports that as an immediate typed failure rather than silently queuing — the reference
+  engine's route pilot does exactly this.
+</div>
+
+<h3>4.2 &nbsp;Targeting &amp; combat <span class="chip t1">T1</span></h3>
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:16%">Action</th><th style="width:38%">Arguments</th><th style="width:26%">Bridge emits</th><th>Confirmed by</th></tr></thead>
+<tbody>
+<tr><td class="f">set_target</td><td><code>guid | None</code> (None clears)</td><td><code>CMSG_SET_SELECTION</code></td><td>own target field echo</td></tr>
+<tr><td class="f">start_attack</td><td><code>guid</code> — selects, faces, opens melee auto-attack</td><td>selection + <code>CMSG_ATTACKSWING</code></td><td><code>SMSG_ATTACKSTART</code> 323; swing errors surface as events</td></tr>
+<tr><td class="f">stop_attack</td><td>—</td><td><code>CMSG_ATTACKSTOP</code></td><td><code>SMSG_ATTACKSTOP</code> 324</td></tr>
+<tr><td class="f">cast</td><td><code>spell_id</code> · <code>target: guid | "self" | point | item_ref | None</code> — rank is the spell_id; point targets for ground AoE; item_ref for weapon enchants; None for untargeted. Bridge stands up, faces, then casts</td><td><code>CMSG_CAST_SPELL</code> with target mask</td><td><code>SMSG_SPELL_GO</code> hit/miss, or <code>SMSG_CAST_RESULT</code> 304 failure with typed reason</td></tr>
+<tr><td class="f">cancel_cast</td><td><code>spell_id|None</code></td><td><code>CMSG_CANCEL_CAST</code></td><td>cast state cleared</td></tr>
+<tr><td class="f">cancel_aura</td><td><code>spell_id</code> — drop own buff <span class="chip t2">T2</span></td><td><code>CMSG_CANCEL_AURA</code></td><td>aura field transition</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>4.3 &nbsp;Interaction, loot &amp; items <span class="chip t1">T1</span></h3>
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:16%">Action</th><th style="width:38%">Arguments</th><th style="width:26%">Bridge emits</th><th>Confirmed by</th></tr></thead>
+<tbody>
+<tr><td class="f">interact</td><td><code>guid</code> — NPC: gossip hello (opens gossip/vendor/trainer per NPC); GameObject: use/open. Range ≈ 5 yd NPC / 8 yd GO (reference thresholds)</td><td>selection + <code>CMSG_GOSSIP_HELLO</code> / GO use</td><td>a window opening (§3.8), or typed out-of-range failure</td></tr>
+<tr><td class="f">gossip_select</td><td><code>option_id</code> (from open gossip window)</td><td><code>CMSG_GOSSIP_SELECT_OPTION</code></td><td>follow-on window / gossip complete</td></tr>
+<tr><td class="f">loot</td><td><code>guid</code> · <code>mode: all|slots[] = all</code> — requires ≤ 5 yd; default auto-takes money + every slot then releases (proven composite)</td><td><code>CMSG_LOOT</code> + money + autostore per slot + release</td><td>loot window drained; <code>item_received</code> / <code>money_changed</code> events</td></tr>
+<tr><td class="f">use_item</td><td><code>bag, slot</code> · <code>target: guid|self|None</code> — food, potions, hearthstone, quest items</td><td><code>CMSG_USE_ITEM</code></td><td>cast go / inventory-change failure 274 with typed reason</td></tr>
+<tr><td class="f">equip_item</td><td><code>bag, slot</code> — auto-equip to natural slot</td><td><code>CMSG_AUTOEQUIP_ITEM</code></td><td>equipment slot transition</td></tr>
+<tr><td class="f">destroy_item</td><td><code>bag, slot, count|all</code> <span class="chip t2">T2</span> (bag-space recovery)</td><td><code>CMSG_DESTROY_ITEM</code></td><td>slot cleared</td></tr>
+<tr><td class="f">split_stack</td><td><code>src, dst, count</code> <span class="chip tx">defer</span></td><td><code>CMSG_SPLIT_ITEM</code></td><td>slot transitions</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>4.4 &nbsp;Quests <span class="chip t1">T1</span></h3>
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:16%">Action</th><th style="width:38%">Arguments</th><th style="width:26%">Bridge emits</th><th>Confirmed by</th></tr></thead>
+<tbody>
+<tr><td class="f">accept_quest</td><td><code>questgiver_guid, quest_id</code></td><td>hello → <code>CMSG_QUESTGIVER_ACCEPT_QUEST</code></td><td>quest appears in log fields</td></tr>
+<tr><td class="f">complete_quest</td><td><code>questgiver_guid, quest_id</code> · <code>reward_choice = 0</code> — with an open <code>quest_frame</code>, the policy can choose from visible <code>reward_choice_items</code></td><td>request-items → complete → choose reward</td><td><code>SMSG_QUESTGIVER_QUEST_COMPLETE</code> 401 + XP/item events</td></tr>
+<tr><td class="f">abandon_quest</td><td><code>quest_id</code> <span class="chip t2">T2</span></td><td><code>CMSG_QUESTLOG_REMOVE_QUEST</code></td><td>log slot cleared</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>4.5 &nbsp;Economy &amp; training <span class="chip t1">T1</span></h3>
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:16%">Action</th><th style="width:38%">Arguments</th><th style="width:26%">Bridge emits</th><th>Confirmed by</th></tr></thead>
+<tbody>
+<tr><td class="f">buy_item</td><td><code>vendor_guid, item_id | vendor_slot, count = 1</code> (open vendor window)</td><td><code>CMSG_BUY_ITEM</code></td><td>buy ok 420 / buy failed 421</td></tr>
+<tr><td class="f">sell_items</td><td><code>vendor_guid</code> · <code>items: junk | [(bag,slot)]</code> — <code>junk</code> = greys + configured allowlist (the proven default)</td><td><code>CMSG_SELL_ITEM</code> per item</td><td>sell ok 417 per item + money event</td></tr>
+<tr><td class="f">repair</td><td><code>vendor_guid</code> · <code>scope: all</code></td><td><code>CMSG_REPAIR_ITEM</code> (all)</td><td>durability fields recover + money delta</td></tr>
+<tr><td class="f">train_spell</td><td><code>trainer_guid</code> · <code>spell_id | all</code> — <code>all</code> trains everything affordable (reference: spell_id 0)</td><td><code>CMSG_TRAINER_BUY_SPELL</code> per spell</td><td>buy succeeded 435 + spellbook truth change</td></tr>
+<tr><td class="f">learn_talent</td><td><code>talent_id, rank</code> <span class="chip t2">T2</span></td><td><code>CMSG_LEARN_TALENT</code></td><td>talent points field decrement</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>4.6 &nbsp;Death recovery <span class="chip t1">T1</span></h3>
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:16%">Action</th><th style="width:38%">Arguments</th><th style="width:26%">Bridge emits</th><th>Confirmed by</th></tr></thead>
+<tbody>
+<tr><td class="f">release_spirit</td><td>—</td><td><code>CMSG_REPOP_REQUEST</code></td><td>ghost state + graveyard teleport</td></tr>
+<tr><td class="f">reclaim_corpse</td><td>— (requires ghost, ≤ 39 yd of corpse, delay elapsed)</td><td><code>CMSG_RECLAIM_CORPSE</code></td><td>alive transition</td></tr>
+<tr><td class="f">accept_resurrect</td><td>— (answers <code>prompts.resurrect_offer</code>)</td><td><code>CMSG_RESURRECT_RESPONSE</code></td><td>alive transition</td></tr>
+<tr><td class="f">spirit_healer_resurrect</td><td><code>healer_guid</code> — takes res sickness + durability hit</td><td><code>CMSG_SPIRIT_HEALER_ACTIVATE</code></td><td>alive transition</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>4.7 &nbsp;Party &amp; social <span class="chip t1">T1</span> / <span class="chip t2">T2</span></h3>
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:16%">Action</th><th style="width:38%">Arguments</th><th style="width:26%">Bridge emits</th><th>Confirmed by</th></tr></thead>
+<tbody>
+<tr><td class="f">invite_party</td><td><code>player_name</code></td><td><code>CMSG_GROUP_INVITE</code></td><td>party command result 127</td></tr>
+<tr><td class="f">accept_party / decline_party</td><td>— (answers <code>prompts.party_invite</code>)</td><td>accept/decline</td><td>group list 125</td></tr>
+<tr><td class="f">leave_party</td><td>— <span class="chip t2">T2</span></td><td><code>CMSG_GROUP_DISBAND</code></td><td>group destroyed</td></tr>
+<tr><td class="f">assist</td><td><code>guid</code> — adopt that unit's target as selection</td><td>resolved selection</td><td>own target echo</td></tr>
+<tr><td class="f">chat</td><td><code>type: say|party|yell|emote, text</code> · whisper adds <code>target_name</code> · channel adds <code>channel</code> — RFC replay shows only real <code>/say</code>, so this is also our rationale channel</td><td><code>CMSG_MESSAGECHAT</code></td><td>own chat echo</td></tr>
+<tr><td class="f">who_query / friends / guild family</td><td>per reference vocabulary <span class="chip t2">T2</span></td><td>respective CMSGs</td><td>respective SMSGs</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>4.8 &nbsp;Meta <span class="chip t0">T0</span></h3>
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:16%">Action</th><th style="width:38%">Arguments</th><th style="width:26%">Bridge emits</th><th>Confirmed by</th></tr></thead>
+<tbody>
+<tr><td class="f">wait</td><td><code>duration_s | until: event_kind</code> — explicit no-op; keepalive continues</td><td>nothing</td><td>timer / event</td></tr>
+<tr><td class="f">set_stand_state</td><td><code>sit | stand</code> — sit to eat/drink faster? No — sitting is required for some food-buff logic; bridge auto-stands before cast/attack</td><td><code>CMSG_STANDSTATECHANGE</code></td><td>stand state echo 669</td></tr>
+<tr><td class="f">done</td><td><code>success, detail</code> — ends the Coworld slot (session plane, not WoW)</td><td><code>done</code> on <code>/player</code></td><td>session <code>final</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- ---------------- 4.9 results ---------------- -->
+<h3 id="s4-results">4.9 &nbsp;<code>ActionResult</code> — the confirmation contract <span class="chip t0">T0</span></h3>
+<p>Every intent produces exactly one result. The reference engine's hardest-won lesson is encoded
+here: policies must classify outcomes from <em>typed</em> results, never by parsing human-readable
+message strings (its Python policies grep result text like <code>"move into melee before auto
+attack"</code> — a fragility we will not reproduce).</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:22%">Field</th><th style="width:30%">Type</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td class="f">request_id / kind</td><td><code>str, str</code></td><td>echo of the intent</td></tr>
+<tr><td class="f">status</td><td><code>confirmed | rejected | failed | timeout | superseded | invalid</code></td><td><code>rejected</code> = server said no (typed reason); <code>failed</code> = accepted but outcome bad; <code>invalid</code> = bridge refused (precondition unmet)</td></tr>
+<tr><td class="f">reason</td><td><code>enum|None</code></td><td>typed reason where the wire gives one — the full <code>SMSG_CAST_RESULT</code> reason set, swing errors, inventory-change reasons, buy/sell failures</td></tr>
+<tr><td class="f">started_at / settled_at</td><td><code>float ×2</code></td><td>latency observability</td></tr>
+<tr><td class="f">evidence</td><td><code>enum</code></td><td>what confirmed it: packet opcode · state transition · window transition · timeout</td></tr>
+<tr><td class="f">movement</td><td><code>MovementSettlement|None</code></td><td>for movement intents: <code>{kind: reached | blocked | interrupted_by_combat | rooted_or_controlled | no_progress | superseded | world_transition | timeout, end_position, displacement_yd, corrections}</code> — kinds adapted from the reference's proven 9-kind taxonomy, minus the navmesh-specific ones we can't source yet (corridor/polygon kinds return with navmesh data, §7)</td></tr>
+<tr><td class="f">detail</td><td><code>str</code></td><td>human-readable — for logs only, <b>never</b> load-bearing</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="s5">
+<h2><span class="secno">5</span>What the bridge does on its own</h2>
+<p>Not actions, not observations — protocol obligations the bridge discharges automatically.
+Listed because the policy must be able to <em>rely</em> on them, and the observation exposes their
+health (<code>meta.integrity</code>, <code>movement.correction_count</code>):</p>
+<ul>
+  <li><b>Force ACKs</b> — every speed / root / knockback / teleport / feather-fall / water-walk
+      force is ACKed with its counter immediately (desync otherwise).</li>
+  <li><b>Keepalive &amp; time sync</b> — <code>CMSG_PING</code> every 15 s (wowborg v1 already);
+      pong RTT feeds <code>meta.connection.latency_ms</code>.</li>
+  <li><b>World transfers</b> — worldport ack + <code>CMSG_SET_ACTIVE_MOVER</code> on
+      <code>SMSG_NEW_WORLD</code>; login-flow packets.</li>
+  <li><b>Identity resolution</b> — name / creature / gameobject / item / quest queries issued
+      lazily on first sight, cached forever; <code>None</code> until resolved.</li>
+  <li><b>Movement upkeep</b> — heartbeat stream while moving (200 ms), stationary heartbeat,
+      stand-up before cast/attack, one-flag-transition-per-packet encoding, spline-done acks.</li>
+  <li><b>Deadline discipline</b> — the bridge itself honors <code>deadline_seconds</code> and ends
+      the slot (the 27.8-hour-episode lesson from session 3 becomes structurally impossible).</li>
+</ul>
+</section>
+
+<!-- ============================================================ -->
+<section id="s6">
+<h2><span class="secno">6</span>Static data requirements</h2>
+<p>Facts marked <b>†</b> above are not on the wire at all — the real client reads them from its
+DBC/MPQ files. The observation is honest about them: they come from bundled static tables, and
+absence means <code>None</code>, never a guess. Minimum set, in need order:</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:22%">Table</th><th style="width:38%">Feeds</th><th style="width:22%">Sourcing</th><th>Tier</th></tr></thead>
+<tbody>
+<tr><td class="f">spells</td><td>name, rank, cost, range, cast time, school, GCD category for <code>spellbook.known_spells</code></td><td>DBC extract (the game repo's data pipeline shows the shape)</td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">faction_reactions</td><td><code>unit.reaction</code> from faction-template pairs</td><td>DBC <code>FactionTemplate</code></td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">area_triggers</td><td>instance-portal locations (RFC entrance!) for <code>area_trigger</code></td><td>DBC <code>AreaTrigger</code> (a handful hand-curated is enough for RFC)</td><td><span class="chip t1">T1</span></td></tr>
+<tr><td class="f">zones/areas</td><td><code>self.zone_id</code> from position (client-derived in 1.12)</td><td>map area tables — or defer and leave zone <code>None</code></td><td><span class="chip t2">T2</span></td></tr>
+<tr><td class="f">navmesh (mmaps)</td><td>real pathfinding; restores corridor-grade movement settlement kinds</td><td>the server container's own extracted Detour tiles</td><td><span class="chip tx">defer</span></td></tr>
+</tbody>
+</table>
+</div>
+<p class="subtle">Item, creature, gameobject, and quest metadata need <em>no</em> static tables —
+1.12 serves those via query opcodes (88, 97, GO query, 93), which the bridge already issues.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="s7">
+<h2><span class="secno">7</span>Deliberate exclusions &amp; open questions</h2>
+
+<h3>Excluded, with reasons</h3>
+<ul>
+  <li><b>Threat/aggro tables</b> — not in the 1.12 protocol; we expose per-unit
+      <code>target_guid</code> and refuse to fabricate numbers.</li>
+  <li><b>Other units' aura durations &amp; cast progress</b> — not on the wire; booleans and
+      spell ids only, matching the reference model's honesty.</li>
+  <li><b>Pet control actions</b> — the RFC party (warrior/priest/shaman/rogue/mage) has no pet
+      class; seedable classes include hunter/warlock, so this is a known T2+ gap, not an oversight.</li>
+  <li><b>Battlegrounds, dueling mechanics, stables, petitions/guild charters</b> — no competitive
+      surface today; the event/window schemas leave room.</li>
+  <li><b>Auction house</b> — parse-later; economically irrelevant to episode scoring.</li>
+  <li><b>Navmesh-grade observations</b> (local polygon graph à la tensor frame v3) — requires the
+      mmap static data we deliberately deferred; the schema slot is <code>movement</code> +
+      settlement kinds, so it bolts on without breaking the contract.</li>
+</ul>
+
+<h3>Open questions for review</h3>
+<ul>
+  <li><b>Snapshot cadence &amp; delivery</b> — pull (policy reads when deciding) vs. push
+      (bridge invokes policy per event batch)? Affects the policy loop shape, not the spaces;
+      flagged now because the event-feed cursor design leans pull.</li>
+  <li><b>How much window flow to compose</b> — <code>loot</code> defaults to the proven
+      auto-take-all composite; <code>complete_quest</code> composes request-items → complete.
+      Is that the right altitude, or should T1 expose only primitives and grow composites later?</li>
+  <li><b>Reward choice</b> — <code>complete_quest.reward_choice = 0</code> default matches the
+      reference (blind). With the quest frame visible we <em>can</em> choose; do we want a
+      bridge-level "best upgrade" heuristic or leave it to the policy?</li>
+  <li><b>Chat as rationale channel</b> — replays only preserve <code>/say</code>; adopting
+      "narrate decisions via <code>chat</code>" costs packets but buys replay-visible
+      debuggability. Recommend yes, rate-limited.</li>
+</ul>
+
+<p class="byline" style="margin-top:40px; border-top:1px solid var(--border); padding-top:14px;">
+  Next step after review: the implementation design (bridge architecture, packet coverage order,
+  test strategy), then T0 — <b>navigate to a random nearby point</b> — exercised end-to-end against
+  a hosted <span class="mono">orc-fresh-start</span> smoke.
+</p>
+</section>
+
+</main>
+</body>
+</html>

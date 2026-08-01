@@ -26,6 +26,50 @@ mid-session; check them back at the start of focused work.
   (repel from `teammate_colors` positions), analogous to crew dispersion. The teammate identity is
   reliable (`teammate_colors`), so the signal to act on is already there.</details>
 
+- **Finish wowborg's hosted retest on the corrected successor to accelerated-wow 0.1.127** (2026-07-31).
+  PR #7394 published `accelerated-wow:0.1.127`
+  (`cow_be2dfbf4-ad71-40a3-b6e1-9dfe21a2b586`) from frozen source `59497e551`, which
+  contains PR #7391 commit `3203b9c766aa892f9db449c999a96767dffa2991`. Its certification
+  remained `certifying` with no transcript through 20:27 UTC. Direct hosted request
+  `xreq_15ac079a-2f19-4b3c-8ac1-17f4dddfe4da` was admitted while certification was still
+  running, but episode `ereq_31ac43dd-788b-483d-91b0-72288fb5784e` failed before `/env`
+  hello: WebSocket 1011 `environment session ended before hello`; zero actions, zero progress
+  reports, and no replay/results were produced. A second fresh request
+  (`xreq_6a93f6a2-174c-4311-b46b-597c715b7357`, episode
+  `ereq_5fd1d140-dfe9-4c66-bc1b-8db65a61b446`) reproduced the identical pre-hello 1011
+  after an 8.4-second `/env` wait, again with zero observations/actions and no replay; 0.1.127
+  was still non-canonical and `certifying`. An exact-image local reproduction then proved v59 is
+  contract-incompatible with 0.1.127: it receives hello, but rejects the first AgentFrame with 128
+  `extra_forbidden` validation errors because 0.1.127 added strict frame fields without a negotiated
+  contract revision. Wowborg v60 (`99a2c257-bbad-4bb2-9eb5-1eefa8920f06`) was rebuilt and
+  uploaded against the exact 0.1.127 SDK. A complete exact-image local episode passed with score 1.0,
+  replay, 312 observations / 311 intents, and 1,391.080 trajectory yards. Movement packets fell
+  4,097 -> 1,376 versus the hosted v59 baseline, with forward starts 239 -> 22 and stops 243 -> 25,
+  proving the continuation fix locally. Its hosted request
+  (`xreq_d2255259-ee1b-4647-bc71-2ea93133ab54`) never dispatched because 0.1.127 certification
+  ultimately failed the smoke episode after 3,600 seconds (`ereq_8f12b169-dff2-4c73-b9ef-f316f50e805b`).
+  Once a corrected Coworld certifies, rebuild v60 only if that successor changes the SDK, run one
+  `custom-fresh-start-10x` episode, stream artifacts, and compare the replay
+  against baseline episode `ereq_422085f1-9ec7-4554-b2ba-9942947e5dc2`: 4,097 movement
+  packets, 239 forward starts, 243 forward stops, 326 turn starts, 356 turn stops, 2,907
+  heartbeats, and 1,309.923 yards displacement. Report the new request/episode/Coworld IDs
+  and before/after counts. Spell 7355 cooldown spam is a separate wowborg issue.
+
+- **Project large CTF snapshot fields during warehouse ingestion (found 2026-07-30).**
+  A 60-episode `BEACON_DIAG_EVERY_TICKS=1` build reached 12 GB and about
+  9.5 GB RSS because every snapshot stores the full danger grid in `data_json`.
+  Add an ingestion projection/side table or omit `danger.rows` from the general
+  trace table while retaining the small decision fields. Until then, stream
+  cumulative activation fields directly from telemetry ZIPs for full-tick
+  batches.
+
+- **Fix CTF A/B team-outcome significance units (found 2026-07-30).**
+  `ctf-ab` repeats one episode's team win/loss across all eight Beacon result
+  rows, then treats those 80 rows as independent. In the v58 Nancy replication
+  it reported `p=0.002` for 9/10 → 7/10, while the correct episode-level
+  two-sided Fisher test is `p=0.582`. Team outcomes must use one record per
+  episode; per-seat kills/deaths can remain seat-level.
+
 - **RESOLVED 2026-07-02 (cycle-2 fingerprint): ghost "idle" decomposed** — 70% is meetings/GameOver
   (vote-timer-inflated, unavoidable), 20% is healthy tasking, 8.5% is post-completion parking at home
   (`normal.py:_return_to_start` — bounded, ~-1 score/40 eps, not worth a slot). Decide layer is FINE;
@@ -155,6 +199,16 @@ mid-session; check them back at the start of focused work.
   lockfile-guarded, cron-able (~10 min) puller of crewborg's league `policy_artifact_*.zip` into
   gitignored `crewrift_lab/telemetry_harvest/`. How-to + retention findings:
   `crewrift_lab/docs/telemetry-harvest.md`. Crontab not installed — line is in the doc/script header.
+
+- **CTF item capability 4: tactical grenade selection (DONE 2026-07-30).**
+  `beacon:v58` (`8fcbbb68-949d-48cd-8c66-11cbd1a9b660`) now prioritizes
+  wall-blocked enemies and tight groups, permits only narrow single-target
+  finishes, predicts teammate positions for a safety veto, and never releases
+  while carrying the flag. Against current `deltashot:v5`, v57 and v58 both
+  went 10-0 with 239 kills; v58's 43 ground-truth throws produced 35 enemy hits,
+  70 enemy HP removed, 9 multi-target impacts, and 3 friendly hits versus
+  v57's 45 / 33 / 66 / 7 / 4. Mechanism-positive non-regression, not a proven
+  outcome improvement. Uploaded inertly; not submitted.
 
 - **Fix `rotate_lessons.sh` re-archiving UNCHANGED buffers under new timestamps** (found 2026-07-13
   lessons sweep — 3 labs had byte-identical duplicate archives inflating the recurrence signal;

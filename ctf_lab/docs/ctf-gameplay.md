@@ -7,10 +7,15 @@ rarely need to leave the lab.
 
 The **authoritative source** is the game repo `Metta-AI/coworld-ctf` (Nim server
 `src/ctf.nim` + `src/ctf/`, baseline player `players/baseline/`, rules
-`docs/RULES.md`), cloned for reference at **`~/coding/coworlds/coworld-ctf`**. Every
-tuning number below is mirrored in that repo's `config.json` and
-`coworld_manifest.json`; if this doc and the repo disagree, the repo wins — treat the
-mismatch as a finding and reconcile it. CTF is a **fork of Crewrift** and keeps
+`docs/RULES.md`), cloned for reference at **`~/coding/coworlds/coworld-ctf`**. If this
+doc and the repo disagree, the repo wins — treat the mismatch as a finding and
+reconcile it. **But "the repo" means the *deployed* ref, and the *league's* config:**
+league episodes run the manifest's **Default variant** `game_config`, which overrides
+`config.json` where they differ (notably `visionConeDeg`: the variant says **45**,
+`config.json` says 60 — episodes run **45**). To verify what's live, read a fresh
+episode's `episode.json` (`coworld_version` + full `game_config`) or `coworld show
+<cow_id> --json`. **Deployed at last audit (2026-07-23): ctf 0.7.69 = repo commit
+`72fb1b1` (GameVersion 21).** CTF is a **fork of Crewrift** and keeps
 Crewrift's continuous 2D movement, line-of-sight, Sprite-v1 protocol, websocket
 server, and replay infrastructure; it replaces the social-deduction layer (roles,
 tasks, voting) with **teams, guns, flags, and fog-of-war vision**.
@@ -22,26 +27,42 @@ Engine tick rate: **24 ticks/sec**.
 ## The game in one paragraph
 
 Two teams of eight (**Red** on the left edge, **Blue** on the right) spawn in a
-symmetric, cover-dense arena, each guarding a flag on a home pedestal. You **move**
-with the d-pad, **aim** a continuous per-player angle (decoupled from movement), and
-**shoot** an instant hitscan gun. Vision is **fog-of-war**: the static map is always
-visible, but enemies only appear inside your **forward vision cone** (±45° around your
-aim, unlimited range, blocked by walls) or a small **omnidirectional bubble** (~90px).
-Steal the enemy flag and carry it into your home capture zone — or wipe the enemy team
-— to win. **Scoring is win-only: +100 to every player on the winning team, 0
-otherwise.** Kills, deaths, and captures are recorded but award no points, so the
-objective is purely **team victory**.
+symmetric, cover-dense arena, each guarding a flag (drawn as a **heart** since 0.7.0)
+on a home pedestal. You **move** with the d-pad, **aim** a continuous per-player angle
+(decoupled from movement), and **shoot** an instant hitscan gun. Vision is
+**fog-of-war**: the static map is always visible, but enemies only appear inside your
+**forward vision cone** (±45° around your aim in league play, unlimited range, blocked
+by walls) or a small **omnidirectional bubble** (~90px). Pickups dot the arena —
+grenades, med kits, shields, plasma arcs — and players can **shout** short messages
+heard nearby. Steal the enemy flag and carry it into your home capture zone — or wipe
+the enemy team — to win. **Scoring is win-only: +1 to every winner, -1 to every loser
+on a decisive round (capture or wipe); a time-limit draw is -1 for EVERYONE**
+(GameVersion 21 — stalling out the clock is never better than losing). Kills, deaths,
+and captures are recorded but award no points, so the objective is purely **team
+victory before the clock**.
 
 ---
 
 ## Arena & teams
 
 - **Map:** symmetric, **1235 × 659 px**, center **(617, 329)**, mirror line x = 617.
-  Dense staggered cover (offset wall stubs, diamonds, discs, diagonal chevrons)
-  mirrored across the vertical axis — **no straight sightline crosses the field**;
-  every approach is a series of corners. `mapPath: "arena"` (procedurally generated).
+  Dense staggered cover (offset wall stubs, diamonds, discs) mirrored across the
+  vertical axis — **no straight sightline crosses the field**; every approach is a
+  series of corners. `mapPath: "arena"` (procedurally generated). GameVersion 16
+  reshaped it: the midline chevrons became a **square-bracket wall pair framing the
+  flag ring**, and the column-3 discs were thinned to every other disc. **Glass
+  windows** (GameVersion 15): the second stub from the top and bottom of each half's
+  outer stub column, plus the middle of each bracket bar on the center row, block
+  movement and bullets like stone but **pass vision** — cover you can be seen behind
+  is not cover. A **second map exists** (`arena-large`, 1606×858, gunRange 1690) in
+  the multi-map registry — the league still deploys `arena`; a `mapPath` flip
+  requires a full geometry rebake (see WORKING_CONTEXT watch items).
 - **16 players, 8 v 8.** Team is assigned by **slot parity**: **even slot = Red**
   (left), **odd slot = Blue** (right). Seat within a team = `slot div 2` (0–7).
+- **Player identities** (0.7.69): each seat gets a fixed Greek identity `alpha`…`theta`
+  by slot order within the team — deterministic across matches. A badge object labeled
+  `identity <color> <name>` rides each living player's sprite, fog-gated with the
+  player: seeing a player means seeing who it is.
 - **Geometry landmarks** (baseline README): capture zones roughly `x ≤ 206` (Red home)
   and `x ≥ 1029` (Blue home); pedestals at **(186, 329)** Red / **(1049, 329)** Blue.
 - **Phases:** Lobby → Playing → GameOver (`startWaitTicks` lobby countdown, then play
@@ -52,7 +73,10 @@ objective is purely **team victory**.
 Continuous — acceleration, friction, max speed, wall-sliding — driven by the
 **d-pad** (Up/Down/Left/Right, combinable into 8 octants). Movement is **pure
 locomotion**: it *never* changes your aim or your vision. You see where you point, not
-where you walk.
+where you walk. **Player bodies are solid** (GameVersion ~14): you cannot drive
+through another live player, friend or foe — contact is a slightly elastic collision
+(`playerBouncePct` = 40% restitution); glancing contact slides around the body like
+wall-sliding. Corpses never block.
 
 ## Aim (the dominant lever)
 
@@ -66,27 +90,38 @@ where you walk.
   direction, and the sprite flip. **Managing aim = managing both what you can kill and
   what you can see** — this is the single most important tactical variable.
 - On spawn/respawn, aim points toward the enemy side (Red → east/0, Blue → west/128).
-- A short **aim-indicator line** is drawn from every player you can currently see (and
-  from yourself) — readable enemy intel about where an opponent is about to shoot/look.
+- **The old floating aim-dot indicator is retired** (0.7.8 renderer restore): a
+  player's facing is shown by the soldier sprite itself — the held gun sweeps to the
+  aim angle, and the sprite label reports a coarse `right`/`left` side. For anyone you
+  can see, the lane their body faces is exactly where they can shoot.
 
 ## Vision / fog-of-war
 
 - The **full static map is always drawn** (terrain is permanent knowledge). Moving
   entities are fogged.
-- Your vision = a **forward cone**, half-angle `visionConeDeg` (default **±45°**)
-  around your **aim**, **unlimited range**, **plus** a small **omnidirectional bubble**
-  `visionBubble` (default **~90 px**). **Walls block vision** (the same walls block
-  bullets).
+- Your vision = a **forward cone**, half-angle `visionConeDeg` (**±45° in league
+  play** — the manifest's Default-variant `game_config`, confirmed in live episode
+  configs; the repo's `config.json` says 60, but the variant wins) around your
+  **aim**, **unlimited range**, **plus** a small **omnidirectional bubble**
+  `visionBubble` (default **~90 px**). **Stone walls block vision** (the same walls
+  block bullets) — but **glass windows pass vision while blocking bullets** (see
+  Arena above).
 - **Always visible regardless of fog:** the static map, **both flag pedestals**, your
   **own flag's state** (an empty own pedestal = it's been stolen — but the thief is
   fogged), and **yourself** (a distinct self marker).
 - **Teammates ARE fogged — there is no team radio.** You cannot see allies unless they
   fall in your cone/bubble, and there is no shared position channel.
-- Unseen gunshots leave a brief (~0.5 s) semi-transparent **sound ring** near the
-  muzzle, deterministically **offset up to ~20 px** — it tells you someone fired
-  *roughly there*, never the exact spot, never which team.
-- No global flag tracking. Dead players spectate as ghosts (inputs ignored, see whole
-  map).
+- **Sound marks landings, not muzzles.** Firing itself is silent; every shot leaves
+  every living player a brief (~0.5 s) **impact ring** (label `shot impact`) near
+  where the bullet *landed*, deterministically **offset up to ~20 px** — audible
+  through walls and fog, team-anonymous, never the shooter's position. Grenade blasts
+  leave a similar `grenade sound` ring. **Bullets themselves are invisible to
+  players** — tracers and muzzle flashes are spectator/replay rendering only.
+- No global flag tracking. Dead players spectate as ghosts (inputs ignored, whole
+  map unfogged, corpses visible — labeled `corpse <color> <side>` so they never read
+  as live soldiers). NOTE: the game repo's RULES.md claims death no longer lifts the
+  fog, but the deployed renderer (0.7.69/`72fb1b1`, `buildSpriteProtocolPlayerUpdates`)
+  draws ghost viewers no fog overlay and all players — the code wins.
 
 ## Combat
 
@@ -97,14 +132,18 @@ where you walk.
   **locks at the trigger pull**, and the bullet leaves at the end of the windup. A
   target that ducks back behind cover before release survives.
 - **Bullet = hitscan** along the locked aim ray: it hits the **first player whose
-  footprint crosses its narrow corridor** (~14 px half-width in the baseline), never
-  passes through a body, and is **stopped by walls**. Range is effectively map-wide
-  (`gunRange` = 1300 px).
+  footprint crosses its narrow corridor** (8 px half-width, `BulletHalfWidth`), never
+  passes through a body, and is **stopped by stone walls and glass alike**. Range is
+  effectively map-wide (`gunRange` = 1300 px on `arena`; per-map since 0.7.69).
+- **Cover is partial, not binary** (GameVersion 20): the target's body is sampled
+  across its silhouette — only the part both inside the bullet corridor AND visible
+  from the shooter can be hit. A corner-hugger showing a sliver is exactly as hittable
+  as that sliver; the poking shoulder is fair game even when the center is covered.
 - **Friendly fire is ON** — a shot hits the first valid target regardless of team.
 - **Same-tick shots resolve simultaneously** against the same snapshot (mutual duels
   kill both; no input-order advantage).
-- Brief **spawn protection** (`spawnProtectTicks` = 24, ~1 s invulnerability) on
-  respawn.
+- **NO spawn protection** (removed in GameVersion 20): a freshly respawned player can
+  shoot and be shot (and blocks bullets) from their first tick.
 
 ## Lives & respawn
 
@@ -124,43 +163,84 @@ round.
 - Your own flag's state is always observable (empty pedestal = stolen), but the thief
   carrying it is fogged unless in your cone/bubble.
 
+## Items & shouts
+
+All pickups are taken by **touch**, are **fog-gated** (visible only where you have
+vision), never block movement/bullets/sight, and respawn at a fixed spot after their
+interval. Carried items are **lost on death** (nothing drops). Full mechanics:
+RULES.md at the deployed ref; the numbers are in the tuning table below.
+
+- **Grenades** (4, one per arena corner; refill 5 s): hold **C** to charge, release
+  to throw along your aim — a lob **over every obstacle** up to ~247 px, bursting a
+  fixed ~0.4 s after release. Blast (~52 px radius) removes 2 hp from *everyone*
+  inside — enemies, teammates, the thrower. Throwing is silent; an unseen landing
+  leaves a jittered `grenade sound` ring. One carried grenade max.
+- **Med kits** (2, on the center line; respawn 30 s): touching one while hurt heals
+  to full; a healthy player walks over it untouched.
+- **Shields** (2, one deep in each endzone, bottom half; respawn 30 s): pickup heals
+  +3 (up to a **6 hp ceiling**) and raises your ceiling to 6, but your fire cooldown
+  triples while carried.
+- **Plasma arcs** (2, side back columns, top half; respawn 30 s): while carried, **A**
+  ignites a forward cone (136 px reach, 68 px tip width) instead of the gun — 3 hp
+  per touch (lethal to a bare cog), 5-tick burn, 20-tick reset, needs line of sight,
+  hits teammates too.
+- **Shouts**: any living player can send a ≤10-char chat message; everyone (both
+  teams) within ~247 px hears it as a bubble labeled `<team> shout <player>: <text>`
+  at jittered (~±20 px) coordinates. One shout/second; bubbles fade after 3 s. This
+  is the only in-game communication channel — short-range and public.
+
 ## Winning & scoring
 
 The round ends immediately on either:
 1. **Capture** — carry the enemy flag into your own home capture zone; or
 2. **Wipe** — the entire enemy team is out of lives.
 
-Otherwise, at the time limit (`maxTicks`), tiebreak by: most **total lives
-remaining** → **closest flag progress toward home** → **draw**.
+Otherwise, at the time limit (`maxTicks` = 5000, ~3.5 min), the round is a
+**lose-lose draw** — **there is no tiebreak** (the old lives-remaining → flag-progress
+tiebreak was removed in the 0.7.6x era).
 
-**Scoring is sparse and win-only:** the winning team gets **+100** to every player;
-losing team and draw get **0**. Kills/deaths/captures are recorded in the results but
-**award no points**. The whole objective is team victory (capture or wipe).
+**Scoring is sparse and win-only** (GameVersion 21):
+- **Decisive round** (capture or wipe): every winner **+1**, every loser **-1**.
+- **Time-limit draw: -1 for BOTH sides** — running out the clock is never better
+  than losing, so stalling has no upside for anyone.
+- **Mutual-wipe draw** (both teams eliminated same tick): 0 for both.
 
-## Tuning defaults (config.json / manifest)
+Kills/deaths/captures are recorded in the results but **award no points**. The whole
+objective is team victory (capture or wipe) **before tick 5000**.
 
-| Parameter | Default | Meaning |
+## Tuning values (league Default-variant `game_config`, verified vs live episodes)
+
+| Parameter | League value | Meaning |
 |---|---|---|
 | players | 16 (8v8) | `num_agents` / `minPlayers` = 16 |
 | `lives` | 3 | lives per player per round |
-| `hitPoints` | 3 | HP per life |
+| `hitPoints` | 3 | HP per life (6 while carrying a shield) |
 | `respawnTicks` | 72 (~3 s) | respawn delay |
-| `spawnProtectTicks` | 24 (~1 s) | post-respawn invulnerability |
-| `gunRange` | 1300 px | effectively map-wide |
+| spawn protection | **none** | removed GameVersion 20 — live from first tick |
+| `gunRange` | 1300 px | per-map since 0.7.69 (`arena-large`: 1690) |
 | `fireWindupTicks` | 5 (~0.2 s) | aim locks at pull, bullet leaves after windup |
-| `fireCooldownTicks` | 12 (~0.5 s) | between shots |
+| `fireCooldownTicks` | 12 (~0.5 s) | between shots (3x while carrying a shield) |
 | `carrierSpeedPct` | 70 | flag carrier speed (% of normal) |
+| `playerBouncePct` | 40 | player-player collision restitution (bodies solid) |
 | `aimTurnRate` | 5 brads/tick | ~7°/tick; full turn ~2.1 s |
-| `visionConeDeg` | 45 | forward cone **half-angle** |
+| `visionConeDeg` | 45 | forward cone **half-angle** (variant; `config.json` says 60 — variant wins) |
 | `visionBubble` | 90 px | omnidirectional vision radius |
 | `startWaitTicks` | 120 | lobby countdown |
 | `gameOverTicks` | 360 | game-over tail |
-| `maxTicks` | 10000 | round time limit (0 = no limit) |
-| map | 1235 × 659 | arena size, center (617, 329) |
+| `maxTicks` | **5000** (~3.5 min) | round time limit → lose-lose draw (was 10000 pre-0.7.66) |
+| map | 1235 × 659 | `arena`; `arena-large` (1606×858) exists but is not deployed |
 | `seed` | 679961 | default map/game seed |
 
-Controls (browser): D-pad = move, **A** = fire, **B** (or X / K) = rotate aim CCW,
-**Select** (or Space / L) = rotate aim CW.
+Item tuning (sim.nim constants at the deployed ref): grenade blast radius 52 px /
+2 hp damage / corner pickups refill 5 s; med kits ×2 on the center line, heal to
+full, respawn 30 s; shields ×2 (endzone back columns, bottom half), 6 hp ceiling +
+3x slower fire, respawn 30 s; plasma arcs ×2 (side back columns, top half), forward
+cone 136 px reach / 68 px tip width / 3 hp per touch / 5-tick burn / 20-tick reset,
+respawn 30 s; shouts ≤10 chars, heard within ~247 px (map width / 5), 1/s rate limit.
+
+Controls (browser): D-pad = move, **A** = fire (plasma cone while carrying an arc),
+**B** (or X / K) = rotate aim CCW, **Select** (or Space / L) = rotate aim CW, **C** =
+hold to charge a grenade throw, Enter = shout.
 
 ---
 
@@ -178,17 +258,27 @@ team; `slot div 2` is your seat.**
 **sprite definitions** (id → width/height/**label**/compressed RGBA pixels) and
 **object placements** (object id at x,y,z,layer,sprite id). The map object sits at
 (0,0), so **object x,y are map coordinates directly**. Perception is done by **sprite
-label lookup** — the baseline reads labels like `"self <color> right|left"` (own
-avatar; absent when dead), `"player <color> right|left"` (visible players), `"aim dot
-<color>"` (aim readback), `"<color> flag"` (flag state), `"fire icon"` (gun ready),
-and the `"walkability map"` sprite (decoded into a nav mask). The SDK bridge accumulates
-this stream but does **not** decompress pixels or resolve palettes — decoding labels /
-the walkability mask is the policy's job (see the SDK notes below).
+label lookup** — key labels at 0.7.69: `"self <color> right|left"` (own avatar; absent
+when dead), `"player <color> right|left"` (visible players), `"identity <color>
+<name>"` (per-player Greek identity badge, fog-gated), `"<color> flag planted"` (flag
+on its pedestal) vs `"<color> flag"` (centered on its carrier), `"fire icon"` /
+`"fire icon cooldown"` (gun readiness), `"hp N/M"` (overhead HP pips), item labels
+(`"grenade"`, `"med kit"`, `"shield"`, `"plasma arc"`, carried variants like
+`"grenade carried"`), sound rings (`"shot impact"`, `"grenade sound"`), shout bubbles
+(`"<team> shout <player>: <text>"`), `"corpse <color> <side>"` (ghost view only), and
+the `"walkability map"` sprite (decoded into a nav mask). The old `"aim dot"` readback
+is retired (0.7.8 renderer restore) — read facing from the self sprite's coarse
+right/left instead, or dead-reckon the aim. The SDK bridge accumulates this stream but
+does **not** decompress pixels or resolve palettes — decoding labels / the walkability
+mask is the policy's job (see the SDK notes below).
 
 **Input (client → server):** each world-changing frame, the policy emits a single
 **8-bit gamepad button mask**. Button bits: `UP=1, DOWN=2, LEFT=4, RIGHT=8,
-SELECT=16, A=32, B=64`. So: d-pad = move, **A** = fire, **B** = aim CCW, **Select** =
-aim CW. Send only when the mask changes (the server holds the previous mask).
+SELECT=16, A=32, B=64, C=128`. So: d-pad = move, **A** = fire, **B** = aim CCW,
+**Select** = aim CW, **C** = charge/release a grenade throw. Send only when the mask
+changes (the server holds the previous mask). NOTE: the SDK `Button` enum stops at B —
+beacon widens the bridge's 7-bit mask clamp to 0xFF in `main.py` to reach C. Shouts go
+out as a chat packet (`0x81`), e.g. the `(mask, "text")` return from `decide`.
 
 ### The Player SDK (Python) — the recommended build path
 
@@ -270,13 +360,20 @@ confirm or kill them.
   tension is likely the richest tuning surface.
 - **Win-only scoring means team play, not K/D.** Kills are instrumental (enable a
   capture or a wipe), never the point. A bot that farms kills but never captures/escorts
-  scores exactly 0. The two win paths — capture and wipe — should both be first-class.
+  still loses points. The two win paths — capture and wipe — should both be first-class.
+- **The clock is an opponent** (GameVersion 21): a timeout draw pays -1 to *everyone*,
+  same as losing. Banking lives has no terminal value — preserved strength must be
+  *converted* into a capture or wipe before tick 5000. "Play safe and hold" is only
+  half a strategy; the other half is a convert trigger.
 - **The flag carrier is a fragile, slow, high-value asset.** Killing a carrier returns
   the flag instantly. Escorting your own carrier and hunting the enemy carrier (whom you
   can't see through fog until they enter your cone) are both core.
 - **Cover-dense map + hitscan + windup ⇒ peek-fire-duck.** No straight sightline
   crosses the field; the windup lets a target duck. Corner discipline and pre-aiming
-  likely dominate raw reflex.
-- **No team radio.** Coordination must be emergent from a shared deterministic role/
-  plan (like the baseline's seat-based roles), not communicated — chat exists in the
-  protocol but the game gives no team channel.
+  likely dominate raw reflex. Cover is partial (GameVersion 20): the exposed sliver
+  of a corner-hugger is hittable, so *how much* body you show matters, not just
+  whether you're "behind" cover.
+- **Limited team radio: shouts.** Coordination rests on shared deterministic
+  roles/plans (like the baseline's seat-based roles) plus the **shout channel** —
+  ≤10 chars, heard within ~247 px by BOTH teams at jittered coordinates. Short-range,
+  public, and rate-limited, but real (beacon's v22+ leader orders ride it).

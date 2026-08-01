@@ -9,16 +9,12 @@ the **Vanilla-WoW-specific layer** on top of it: the game, the docs, the practic
 policies we optimize. When the two disagree, the root defines *process*; this file defines
 *Vanilla WoW*.
 
-> **Lab status (2026-07-14): `wowborg` v1 (idle-login skeleton) uploaded and hosted
-> XP-requests work; the league exists but its scoring is unconfirmed.** The Observatory
-> league **"Vanilla Wow"** (division "Leveling Ladder") exists as of 2026-07-12 and the
-> deployed game is **v0.1.6**, but the game repo's README badge still reads **"coworld
-> verify: not ready"** — the badge and the league's existence disagree, so treat the ladder's
-> scoring/retention as unverified. A 4-episode hosted smoke on `orc-fresh-start` completed
-> (score 0.0, no crash) though per-agent policy logs weren't retained. **Episode-duration
-> trap:** wowborg v1 never self-terminates, so episodes run to the full variant deadline —
-> `rfc-five-player-clear` is ~27.8 h/episode; smoke on `orc-fresh-start` (~17 min) or
-> override `max_ticks`. Live state + next steps: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
+> **Lab status (2026-07-29): `wowborg` is a Python policy over the game's canonical
+> Gymnasium `/env` interface.** The game owns the WoW client, projection, admission,
+> execution, settlement, and reconnects. Wowborg consumes `AgentFrame`, submits
+> `AgentAction`, and uses the upstream navmesh SDK. The deployed accelerated-wow image
+> and matching source commit are pinned in `tools/versions.env`. Live state + next steps:
+> [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
 
 ## What Vanilla WoW is
 
@@ -37,14 +33,12 @@ are split into [`docs/vanilla-wow-player-contract.md`](docs/vanilla-wow-player-c
 [`docs/vanilla-wow-rfc-roles.md`](docs/vanilla-wow-rfc-roles.md). The game source in the
 `coworld-vanilla-wow` repo remains the ultimate authority.
 
-**The one architectural fact that shapes everything here:** unlike the other three labs
-(Python SDK players on a sprite/text protocol — crewborg, cady, mentalist), a **Vanilla WoW
-player is a Nim, packet-level WoW client** (the headless bot **King Nimrod**, compiled
-`-d:noGui`) that plays a *real* VMaNGOS realm through a WebSocket→TCP bridge. It must obey a
-strict client-honesty contract — **read a snapshot → queue one typed action → wait for the
-settled authoritative result → repeat; "action selected" is not success** — with no teleport,
-packet injection, synthetic state, disabled collision, or DB intervention. That makes building
-a competitive player heavier here than a prompt swap (see [Player build paths](#player-build-paths)).
+**The one architectural fact that shapes everything here:** a Vanilla WoW policy is now a
+synchronous Gymnasium agent. It must obey a strict client-honesty contract — **read the
+current `AgentFrame` → submit one typed `AgentAction` → consume the next authoritative
+frame → repeat; submission is not success**. The game-owned environment is the sole owner
+of the packet-level client and validates all actions. Policies must not add a second client,
+projection layer, admission mask, or settlement adapter.
 
 ## The loop, in Vanilla-WoW terms
 
@@ -67,37 +61,31 @@ compete in yet. When that clears, the Vanilla-WoW-specific instruments will be:
   [Player build paths](#player-build-paths)); keep tunable knobs (rotation priorities, farm
   thresholds, route choices, party roles) in a config layer separate from logic so each
   iteration is attributable.
-- **Rebuild / upload / submit** (steps 5–8) — build the Nim player image (two-stage Docker;
-  see [`docs/vanilla-wow-player-contract.md`](docs/vanilla-wow-player-contract.md#the-submittable-image)),
-  then the game-agnostic skills + [`../player-build.md`](../player-build.md) for upload/submit.
+- **Rebuild / upload / submit** (steps 5–8) — build the wowborg Python image with
+  `tools/build_player.sh`, then use the game-agnostic skills +
+  [`../player-build.md`](../player-build.md) for upload/submit.
   The hosted eval is the test; **do not** buy pre-upload confidence with local runs
   (`coworld-local-run` is a debugging tool for a broken artifact, not a gate).
 
 ## Player build paths
 
-Because the game ships working reference bots (King Nimrod, King Richard) with a full Nim
-behavior stack — perception → navmesh pathfinding → per-class combat rotations →
-quest/loot/vendor/train → death recovery → grouping — there are several paths, cheapest
-first. **Which one to pursue is a human-direction decision (loop step 3), not a default** —
-surface the fork, don't pre-commit.
+**Chosen path (2026-07-29): our Python policy uses the owner-provided `/env` contract
+directly.** `wowborg/environment.py` is only a policy convenience around
+`VanillaWowEnv`; it does not adapt a client protocol. The image copies `environment/`
+and `player/sdk/` from the exact **deployed** accelerated-wow image pinned in
+[`tools/versions.env`](tools/versions.env), while the game runs the client.
+
+The original fork of alternatives, kept for when this path hits a ceiling (revisiting is a
+human-direction decision, not a default):
 
 1. **Tune the bundled policy** — new/better leveling profiles (the authored zone JSONs) or
    sharper class rotations (`player/bots/rotations.nim`) on top of the existing engine.
-   Cheapest; tests whether the shipped bots are tuning-limited.
-2. **Fork King Nimrod / the shared bot policy** — change the decision layer (farm/follow
-   strategy, party coordination for the 5-slot RFC clear) while reusing the perception/
-   navigation/action plumbing. Medium lift; where the RFC clear problem likely lives.
+2. **Fork King Nimrod / the shared bot policy in Nim** — change the Nim decision layer
+   while reusing the plumbing (needs a Nim build path + pinned game commit).
 3. **The identity-blind general-grinding lane** — build on the experimental `--policy
-   general-grinding` (opt-in, default-off) that selects from client-observed affordances
-   instead of authored content. Bet on *transfer*; more speculative.
-4. **A new player from the protocol up** — only if 1–3 hit a ceiling; this is "write more of a
-   WoW client," the heaviest option.
-
-Because the player is **Nim**, every path needs a Nim build path, and any fork of the bundled
-engine needs a **pinned game commit** (the `versions.env` pattern from `crewrift_lab/tools/`).
-When a path is chosen, vendor the policy under this lab (e.g. `vanilla_wow_lab/<policy>/`),
-mirroring `crewrift_lab/crewrift/` / `heartleaf_lab/cady/`, and record a design doc under
-[`docs/designs/`](docs/designs/).
+   general-grinding` (opt-in, default-off). Bet on *transfer*; more speculative.
+4. **A new player from the protocol up** — "write a WoW client" (sized 2026-07-15 at a
+   20–45k-line port; rejected in favor of the shim — see the v2 design doc).
 
 ## Vanilla WoW lab docs
 
@@ -106,18 +94,13 @@ mirroring `crewrift_lab/crewrift/` / `heartleaf_lab/cady/`, and record a design 
   episodes), the `rfc-five-player-clear` benchmark, the scoring math, and the strategically-
   relevant mechanics (classes, combat, leveling, navigation, the 15 manifest variants).
   **Start here** to build a mental model.
-- **[`docs/vanilla-wow-player-contract.md`](docs/vanilla-wow-player-contract.md)** — what any
-  player must do over the wire: the `/player` handshake + `wow_session` message, the two
-  network planes + `wsproxy` WS→TCP bridge, what a policy observes (TelemetrySnapshot +
-  Tensor-Frame-v3), what it emits (the BotAction vocabulary + 64-byte record), the "sent is
-  not accepted" integrity rules, and the two-stage submittable image.
-- **[`docs/vanilla-wow-protocol.md`](docs/vanilla-wow-protocol.md)** — the **exhaustive
-  interface-protocol reference**: every `vanilla_wow.*` message and schema (session/done,
-  bot_action + per-kind args + the 64-byte binary record, movement_settlement,
-  navmesh_traversal, control_adapter_report), the full `TelemetrySnapshot` field list, the
-  Tensor-Frame-v3 + `CWBT` binary layout, the transport/ports contract + the WS↔TCP bridge, and
-  the `CWREPLAY` v4 format — verbatim field names + `file:line` citations. Consult this for the
-  exact field/byte/opcode; the player-contract doc is the narrative version.
+- **[`wowborg/README.md`](wowborg/README.md)** — the current policy contract,
+  `/env` lifecycle, layout, knobs, validation, and build commands.
+- **[`docs/vanilla-wow-player-contract.md`](docs/vanilla-wow-player-contract.md)** and
+  **[`docs/vanilla-wow-protocol.md`](docs/vanilla-wow-protocol.md)** — historical
+  low-level contract references from 2026-07-13. They are useful for protocol archaeology,
+  but are superseded for current policy work by the owner repo's
+  `docs/bot-environment-contract.md` and `environment/contract/agent.py`.
 - **[`docs/vanilla-wow-rfc-roles.md`](docs/vanilla-wow-rfc-roles.md)** — the five RFC support
   roles (commissioner/grader/diagnoser/optimizer/reporter): images, env-var contracts,
   outputs, auto-vs-on-demand, and the exact commissioner round-scoring math.

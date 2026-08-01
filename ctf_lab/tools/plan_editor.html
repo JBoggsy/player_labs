@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<!--
+  CTF battle-plan editor — the co-general whiteboard.
+
+  Edits battle_plans/<name>.json (schema: battle_plans/SCHEMA.md): a sequence of
+  PHASES over the arena, each with group orders (move arrows, hold/watch
+  markers), enemy-belief markers, intent/entry/exit prose (+ optional machine
+  tags), and an append-only notes thread for the back-and-forth.
+
+  Serve with tools/plan_server.py (adds save + live sync):
+    uv run python ctf_lab/tools/plan_server.py   → /tools/plan_editor.html
+  (plain http.server works too, but Save falls back to Download-only.)
+  Loads the canonical POI map as a faint underlay; drag targets SNAP to POIs
+  (within 18px) and store the NAME (a live reference), else raw {x,y}.
+
+  Interactions (current phase):
+    phase tabs                switch / + adds / ✕ removes
+    "+ move/hold/watch"       pick group, then click the map to place the target
+    "+ enemy"                 click the map, prompted for count
+    drag an arrowhead/marker  retarget (snaps to POIs)
+    drag a facing handle      re-aim a hold's facing
+    click an order row ✕      remove it
+    Split… button             split a group into children (prompted)
+    phase JSON box            full control for anything the UI doesn't cover
+  Save = POST to the server; both generals see each other's edits live.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CTF plan editor</title>
+<style>
+  :root {
+    --paper: #faf9f6; --ink: #1a1815; --ink-soft: #5f5a52; --hairline: #e3ded6;
+    --red: #b3402e; --blue: #2e5cb3; --accent: #8a6d1f;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink);
+         font: 13px/1.45 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+         display: flex; height: 100vh; overflow: hidden; }
+  #stage { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  #canvasWrap { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; }
+  canvas { max-width: 100%; max-height: 100%; cursor: crosshair; }
+  #phasebar { display: flex; gap: 4px; align-items: center; padding: 8px 14px;
+              border-top: 1px solid var(--hairline); flex-wrap: wrap; }
+  .ptab { padding: 3px 10px; border: 1px solid var(--hairline); border-radius: 3px;
+          cursor: pointer; display: flex; gap: 6px; align-items: center; }
+  .ptab.cur { border-color: var(--ink); font-weight: 650; }
+  .ptab .x { color: var(--ink-soft); }
+  .ptab .x:hover { color: var(--red); }
+  #panel { width: 340px; padding: 16px 18px; overflow-y: auto; border-left: 1px solid var(--hairline); }
+  h1 { font-size: 15px; font-weight: 650; margin: 0 0 2px; }
+  .sub { color: var(--ink-soft); font-size: 12px; margin: 0 0 10px; }
+  .label { font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: .07em;
+           color: var(--ink-soft); margin: 13px 0 5px; }
+  input, textarea, button, select {
+    font: inherit; color: var(--ink); background: var(--paper);
+    border: 1px solid var(--hairline); border-radius: 3px; padding: 4px 7px;
+    max-width: 100%;
+  }
+  input, textarea, select { width: 100%; min-width: 0; }
+  input:focus, textarea:focus { outline: none; border-color: var(--ink-soft); }
+  button { cursor: pointer; width: auto; }
+  button:hover { border-color: var(--ink-soft); }
+  button.primary { border-color: var(--ink); font-weight: 600; }
+  .rowline { display: flex; gap: 6px; margin-bottom: 6px; }
+  .rowline > * { flex: 1; }
+  .order { display: flex; align-items: baseline; gap: 6px; padding: 2.5px 4px; border-radius: 3px; }
+  .order:hover { background: #f1ede5; }
+  .order .sw { width: 9px; height: 9px; border-radius: 2px; flex: none; align-self: center; }
+  .order .txt { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .order .del { color: var(--ink-soft); border: none; background: none; padding: 0 3px; }
+  .order .del:hover { color: var(--red); }
+  .note { margin: 4px 0; padding-left: 8px; border-left: 2px solid var(--hairline); font-size: 12.5px; }
+  .note b { font-weight: 650; }
+  #groups .grp { font-size: 12.5px; padding: 1px 0; }
+  textarea.mono { font: 11px/1.4 ui-monospace, Menlo, monospace; }
+  .hint { color: var(--ink-soft); font-size: 11.5px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="canvasWrap"><canvas id="cv" width="1235" height="659"></canvas></div>
+  <div id="phasebar"></div>
+</div>
+<div id="panel">
+  <h1>Plan editor</h1>
+  <p class="sub" id="planMeta">no plan loaded</p>
+
+  <div class="label">Plan file <span id="syncState" style="float:right;font-weight:400;text-transform:none;letter-spacing:0"></span></div>
+  <div class="rowline">
+    <input id="planName" placeholder="staged_push_top" title="plan name under battle_plans/">
+    <button id="btnNew" title="start a blank plan (not saved until you press Save)">New</button>
+    <button id="btnFetch" title="fetch battle_plans/<name>.json">Load</button>
+    <button id="btnSave" class="primary" title="save to the server (live-sync with the agent)">Save</button>
+    <button id="btnDownload" title="download a copy instead">↓</button>
+  </div>
+  <input type="file" id="filePick" accept=".json">
+  <div class="rowline" style="margin-top:6px">
+    <label style="flex:none;color:var(--ink-soft);align-self:center">status</label>
+    <select id="f_status"><option>proposal</option><option>agreed</option><option>superseded</option></select>
+    <label style="flex:none;color:var(--ink-soft);align-self:center"><input type="checkbox" id="t_poi" checked style="width:auto"> POI underlay</label>
+  </div>
+
+  <div class="label">Groups <button id="btnSplit" style="float:right;padding:1px 7px">Split…</button></div>
+  <div id="groups"></div>
+
+  <div class="label">Phase</div>
+  <input id="f_phase_name" placeholder="phase name">
+  <textarea id="f_intent" rows="3" placeholder="intent (prose)" style="margin-top:6px"></textarea>
+  <div class="rowline" style="margin-top:6px">
+    <input id="f_entry" placeholder="entry (prose)">
+    <input id="f_entry_tag" placeholder="tag (optional)" style="flex:0.7">
+  </div>
+
+  <div class="label">Orders</div>
+  <div class="rowline">
+    <select id="selGroup"></select>
+    <select id="selKind" style="flex:0.8">
+      <option value="move">move →</option><option value="hold">hold ■</option><option value="watch">watch ◌</option>
+    </select>
+    <button id="btnAddOrder" style="flex:0.6">+ place</button>
+  </div>
+  <div id="orders"></div>
+
+  <div class="label">Enemy belief <button id="btnAddEnemy" style="float:right;padding:1px 7px">+ place</button></div>
+  <div id="enemies"></div>
+
+  <div class="label">Notes</div>
+  <div id="notes"></div>
+  <div class="rowline"><input id="noteText" placeholder="add a note…"><button id="btnNote" style="flex:0.3">Add</button></div>
+
+  <div class="label">Phase JSON (full control)</div>
+  <textarea id="phaseJson" class="mono" rows="8"></textarea>
+  <div class="rowline" style="margin-top:4px"><button id="btnApplyJson">Apply JSON</button></div>
+
+  <p class="hint"><b>How to edit:</b> pick a group + order kind, hit <b>+ place</b>,
+  then click the map. Drag any marker/arrowhead to retarget (snaps to POIs, stored
+  by name). <b>Grab an arrow's shaft to bend it</b> (adds a draggable waypoint;
+  double-click a waypoint to remove). Hold markers: drag the small ring to re-aim
+  facing. Arrows start where the group ENDED last phase. <b>Save</b> writes to the server
+  (live-sync: the agent sees it immediately, and the map auto-reloads when the
+  agent edits — ↓ downloads a copy instead). Schema:
+  <code>battle_plans/SCHEMA.md</code>.</p>
+</div>
+
+<script>
+"use strict";
+const MAP_W = 1235, MAP_H = 659;
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+const $ = id => document.getElementById(id);
+let walls = null, poi = { points: [], areas: [] };
+let plan = null, cur = 0;             // current phase index
+let clickMode = null;                 // {type:"order"|"enemy", group?, kind?}
+let drag = null;                      // {phase, orderIdx, field:"to"|"at"|"facing"} | {enemyIdx}
+const GROUP_COLORS = ["#b3402e", "#8a6d1f", "#3f7d3a", "#5b4a8a", "#a35b2c", "#2c7a8a"];
+
+// ---------- data helpers ----------
+function resolveLoc(loc) {
+  if (loc == null) return null;
+  if (typeof loc === "object") return [loc.x, loc.y];
+  const p = poi.points.find(p => p.name === loc);
+  if (p) return [p.x, p.y];
+  const a = poi.areas.find(a => a.name === loc);
+  if (a) return [a.cx, a.cy];
+  return null;
+}
+function locLabel(loc) { return typeof loc === "string" ? loc : loc ? `${loc.x},${loc.y}` : "?"; }
+function viaPoints(o) { return (o.via || []).map(resolveLoc).filter(Boolean); }
+function snapLoc(x, y) {
+  // Prefer a named POI within 18px — store the NAME (live reference).
+  let best = null, bd = 18 * 18;
+  for (const p of poi.points) {
+    const d = (p.x - x) ** 2 + (p.y - y) ** 2;
+    if (d < bd) { bd = d; best = p.name; }
+  }
+  for (const a of poi.areas) {
+    const d = (a.cx - x) ** 2 + (a.cy - y) ** 2;
+    if (d < bd) { bd = d; best = a.name; }
+  }
+  return best ?? { x, y };
+}
+function activeGroups(phaseIdx) {
+  // Group -> seats after applying splits through phaseIdx.
+  const g = {};
+  for (const [k, v] of Object.entries(plan.groups || {})) g[k] = [...v];
+  for (let i = 0; i <= phaseIdx; i++) {
+    for (const [parent, kids] of Object.entries(plan.phases[i]?.splits || {})) {
+      if (!(parent in g)) continue;
+      delete g[parent];
+      for (const [k, seats] of Object.entries(kids)) g[k] = [...seats];
+    }
+  }
+  return g;
+}
+function groupLocationsAt(phaseIdx) {
+  // Group -> [x,y] at the START of phaseIdx (walk prior phases' orders).
+  const SPAWN = [110, 329];
+  const loc = {};
+  for (const k of Object.keys(plan.groups || {})) loc[k] = SPAWN;
+  for (let i = 0; i < phaseIdx; i++) {
+    const ph = plan.phases[i];
+    for (const [parent, kids] of Object.entries(ph?.splits || {})) {
+      const from = loc[parent] ?? SPAWN;
+      delete loc[parent];
+      for (const k of Object.keys(kids)) loc[k] = from;
+    }
+    for (const o of ph?.orders || []) {
+      const t = resolveLoc(o.to ?? o.at);
+      if (t && o.kind !== "watch") loc[o.group] = t;
+    }
+  }
+  // splits AT the current phase also inherit (they happen at phase start)
+  for (const [parent, kids] of Object.entries(plan.phases[phaseIdx]?.splits || {})) {
+    const from = loc[parent] ?? SPAWN;
+    delete loc[parent];
+    for (const k of Object.keys(kids)) loc[k] = from;
+  }
+  return loc;
+}
+function groupColor(name) {
+  const names = Object.keys(activeGroups(cur)).sort();
+  return GROUP_COLORS[Math.max(0, names.indexOf(name)) % GROUP_COLORS.length];
+}
+
+// ---------- load / save ----------
+async function fetchJson(url) { const r = await fetch(url, { cache: "no-cache" }); if (!r.ok) throw new Error(url); return r.json(); }
+async function boot() {
+  try { walls = await fetchJson("arena_walls.json"); } catch (e) {}
+  try { poi = await fetchJson("../ctf/beacon/mapdata/points_of_interest.json"); } catch (e) {}
+  try { await loadPlan("staged_push_top"); } catch (e) { draw(); }
+}
+let serverTag = null;    // ETag of the last server state we loaded/saved
+let dirty = false;       // local edits not yet saved
+function markDirty() { dirty = true; syncUi("unsaved edits"); }
+function syncUi(msg, ok) {
+  const el = $("syncState");
+  el.textContent = msg || "";
+  el.style.color = ok === false ? "var(--red)" : "var(--ink-soft)";
+}
+async function loadPlan(name) {
+  const r = await fetch(`../battle_plans/${name}.json`, { cache: "no-cache" });
+  if (!r.ok) throw new Error("not found");
+  serverTag = r.headers.get("ETag");
+  plan = await r.json();
+  $("planName").value = plan.name;
+  dirty = false; syncUi("in sync", true);
+  cur = Math.min(cur, (plan.phases?.length ?? 1) - 1); refresh();
+}
+$("btnFetch").onclick = () => loadPlan($("planName").value.trim()).catch(() => alert("not found"));
+// A blank plan to draw on. Held in memory only — nothing is written until Save,
+// so a mistyped name never clobbers an existing file. serverTag is cleared so the
+// 2s live-sync poll can't mistake an unrelated file's ETag for ours.
+$("btnNew").onclick = () => {
+  if (dirty && !confirm("discard unsaved edits and start a new plan?")) return;
+  const name = prompt("new plan name (battle_plans/<name>.json):", "");
+  if (!name) return;
+  const clean = name.trim().replace(/\.json$/i, "");
+  if (!/^[A-Za-z0-9_-]+$/.test(clean)) { alert("letters, digits, _ and - only"); return; }
+  plan = {
+    name: clean, author: "both", status: "proposal", summary: "", team: "red",
+    groups: { alpha: [0, 1, 2, 3], bravo: [4, 5, 6, 7] },
+    phases: [{
+      name: "phase_1", intent: "", entry: { prose: "game start", tag: "tick>=0" },
+      orders: [], enemy_belief: [], notes: [],
+    }],
+  };
+  serverTag = null; cur = 0; $("planName").value = clean;
+  markDirty(); syncUi("new plan — unsaved"); refresh();
+};
+$("btnSave").onclick = async () => {
+  if (!plan) return;
+  const name = plan.name || $("planName").value.trim();
+  const r = await fetch(`../battle_plans/${name}.json`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(plan),
+  });
+  if (r.ok) { serverTag = `"${(await r.json()).etag}"`; dirty = false; syncUi("saved ✓", true); }
+  else syncUi(`save failed (${r.status}) — is plan_server.py running?`, false);
+};
+// Live sync: poll the server ETag; if the OTHER general changed the file and we
+// have no local edits, reload silently. With local edits, warn instead.
+setInterval(async () => {
+  if (!plan?.name) return;
+  try {
+    const r = await fetch(`../battle_plans/${plan.name}.json`, { method: "HEAD", cache: "no-cache" });
+    const tag = r.headers.get("ETag");
+    if (!tag || tag === serverTag) return;
+    if (dirty) syncUi("⚠ server changed under your unsaved edits", false);
+    else { await loadPlan(plan.name); syncUi("updated from server ✓", true); }
+  } catch (e) {}
+}, 2000);
+$("filePick").addEventListener("change", async (e) => {
+  const f = e.target.files[0];
+  if (f) { plan = JSON.parse(await f.text()); $("planName").value = plan.name || ""; cur = 0; refresh(); }
+});
+$("btnDownload").onclick = () => {
+  if (!plan) return;
+  const blob = new Blob([JSON.stringify(plan, null, 2) + "\n"], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = `${plan.name || "plan"}.json`; a.click();
+};
+$("f_status").onchange = () => { if (plan) { plan.status = $("f_status").value; markDirty(); refreshMeta(); } };
+$("t_poi").onchange = draw;
+
+// ---------- phase bar ----------
+function refreshPhasebar() {
+  const bar = $("phasebar");
+  bar.innerHTML = "";
+  (plan?.phases || []).forEach((ph, i) => {
+    const t = document.createElement("div");
+    t.className = "ptab" + (i === cur ? " cur" : "");
+    t.innerHTML = `<span>${i + 1}. ${ph.name}</span><span class="x">✕</span>`;
+    t.onclick = (ev) => {
+      if (ev.target.classList.contains("x")) {
+        if (confirm(`remove phase "${ph.name}"?`)) {
+          plan.phases.splice(i, 1); markDirty(); cur = Math.max(0, Math.min(cur, plan.phases.length - 1)); refresh();
+        }
+      } else { cur = i; refresh(); }
+    };
+    bar.appendChild(t);
+  });
+  const add = document.createElement("button");
+  add.textContent = "+ phase";
+  add.onclick = () => {
+    const name = prompt("phase name:", `phase_${(plan.phases?.length || 0) + 1}`);
+    if (!name) return;
+    plan.phases.push({ name, intent: "", entry: { prose: "" }, orders: [], enemy_belief: [], notes: [] }); markDirty();
+    cur = plan.phases.length - 1; refresh();
+  };
+  bar.appendChild(add);
+}
+
+// ---------- panel ----------
+function refreshMeta() {
+  $("planMeta").textContent = plan
+    ? `${plan.name} · ${plan.status} · by ${plan.author} — ${plan.summary?.slice(0, 90) ?? ""}…`
+    : "no plan loaded";
+  if (plan) $("f_status").value = plan.status || "proposal";
+}
+function refreshGroups() {
+  const g = activeGroups(cur);
+  $("groups").innerHTML = Object.entries(g).map(([k, seats]) =>
+    `<div class="grp"><span style="color:${groupColor(k)}">●</span> <b>${k}</b> — seats ${seats.join(", ")}</div>`
+  ).join("") || '<div class="grp" style="color:var(--ink-soft)">none</div>';
+  const sel = $("selGroup");
+  sel.innerHTML = "";
+  for (const k of Object.keys(g)) sel.add(new Option(k, k));
+}
+function refreshPhasePanel() {
+  const ph = plan?.phases[cur];
+  if (!ph) return;
+  $("f_phase_name").value = ph.name || "";
+  $("f_intent").value = ph.intent || "";
+  $("f_entry").value = ph.entry?.prose || "";
+  $("f_entry_tag").value = ph.entry?.tag || "";
+  $("orders").innerHTML = "";
+  (ph.orders || []).forEach((o, i) => {
+    const row = document.createElement("div");
+    row.className = "order";
+    const glyph = { move: "→", hold: "■", watch: "◌" }[o.kind] || "?";
+    row.innerHTML = `<span class="sw" style="background:${groupColor(o.group)}"></span>` +
+      `<span class="txt"><b>${o.group}</b> ${glyph} ${locLabel(o.to ?? o.at)}` +
+      `${o.facing ? " ⌖" + locLabel(o.facing) : ""}</span><button class="del">✕</button>`;
+    row.querySelector(".del").onclick = () => { ph.orders.splice(i, 1); markDirty(); refresh(); };
+    $("orders").appendChild(row);
+  });
+  $("enemies").innerHTML = "";
+  (ph.enemy_belief || []).forEach((e, i) => {
+    const row = document.createElement("div");
+    row.className = "order";
+    row.innerHTML = `<span class="sw" style="background:var(--blue)"></span>` +
+      `<span class="txt">${e.count ?? "?"} @ ${locLabel(e.at)}${e.note ? " — " + e.note : ""}</span>` +
+      `<button class="del">✕</button>`;
+    row.querySelector(".del").onclick = () => { ph.enemy_belief.splice(i, 1); markDirty(); refresh(); };
+    $("enemies").appendChild(row);
+  });
+  $("notes").innerHTML = (ph.notes || []).map(n =>
+    `<div class="note"><b>${n.who}:</b> ${n.text}</div>`).join("");
+  $("phaseJson").value = JSON.stringify(ph, null, 2);
+}
+for (const [id, apply] of [
+  ["f_phase_name", v => plan.phases[cur].name = v],
+  ["f_intent", v => plan.phases[cur].intent = v],
+  ["f_entry", v => (plan.phases[cur].entry ??= {}).prose = v],
+  ["f_entry_tag", v => (plan.phases[cur].entry ??= {}).tag = v],
+]) $(id).addEventListener("input", () => { if (plan?.phases[cur]) { apply($(id).value); markDirty(); refreshPhasebar(); } });
+
+$("btnAddOrder").onclick = () => {
+  if (!plan) return;
+  clickMode = { type: "order", group: $("selGroup").value, kind: $("selKind").value };
+  $("btnAddOrder").textContent = "click map…";
+};
+$("btnAddEnemy").onclick = () => { clickMode = { type: "enemy" }; $("btnAddEnemy").textContent = "click map…"; };
+$("btnNote").onclick = () => {
+  const t = $("noteText").value.trim();
+  if (!t || !plan) return;
+  (plan.phases[cur].notes ??= []).push({ who: "james", text: t }); markDirty();
+  $("noteText").value = ""; refreshPhasePanel();
+};
+$("btnApplyJson").onclick = () => {
+  try { plan.phases[cur] = JSON.parse($("phaseJson").value); markDirty(); refresh(); }
+  catch (e) { alert("bad JSON: " + e.message); }
+};
+$("btnSplit").onclick = () => {
+  if (!plan) return;
+  const g = activeGroups(cur);
+  const parent = prompt(`split which group? (${Object.keys(g).join(", ")})`);
+  if (!parent || !g[parent]) return;
+  const spec = prompt(
+    `"${parent}" has seats ${g[parent].join(",")}. New groups as name:seats;name:seats\n` +
+    `e.g. flank_n:3,4;flank_s:5,6,7`);
+  if (!spec) return;
+  const kids = {};
+  for (const part of spec.split(";")) {
+    const [k, seats] = part.split(":");
+    if (k && seats) kids[k.trim()] = seats.split(",").map(s => +s.trim());
+  }
+  if (Object.keys(kids).length < 2) return alert("need at least two children");
+  (plan.phases[cur].splits ??= {})[parent] = kids; markDirty();
+  refresh();
+};
+
+// ---------- canvas ----------
+function canvasXY(ev) {
+  const r = cv.getBoundingClientRect();
+  return [Math.round((ev.clientX - r.left) * (MAP_W / r.width)),
+          Math.round((ev.clientY - r.top) * (MAP_H / r.height))];
+}
+cv.addEventListener("mousedown", (ev) => {
+  if (!plan || clickMode) return;
+  const [x, y] = canvasXY(ev);
+  const ph = plan.phases[cur];
+  // Hit an order's target, waypoint, facing handle, or a move arrow's SHAFT?
+  for (let i = (ph.orders || []).length - 1; i >= 0; i--) {
+    const o = ph.orders[i];
+    const t = resolveLoc(o.to ?? o.at);
+    if (t && (t[0] - x) ** 2 + (t[1] - y) ** 2 <= 12 ** 2) { drag = { orderIdx: i, field: o.to != null ? "to" : "at" }; return; }
+    for (let vi = 0; vi < (o.via || []).length; vi++) {
+      const v = resolveLoc(o.via[vi]);
+      if (v && (v[0] - x) ** 2 + (v[1] - y) ** 2 <= 10 ** 2) { drag = { orderIdx: i, field: "via", viaIdx: vi }; return; }
+    }
+    const f = resolveLoc(o.facing);
+    if (f && (f[0] - x) ** 2 + (f[1] - y) ** 2 <= 10 ** 2) { drag = { orderIdx: i, field: "facing" }; return; }
+  }
+  // Grab an arrow shaft => insert a NEW waypoint there and drag it (curve the route).
+  const starts = groupLocationsAt(cur);
+  for (let i = (ph.orders || []).length - 1; i >= 0; i--) {
+    const o = ph.orders[i];
+    if (o.kind !== "move") continue;
+    const t = resolveLoc(o.to);
+    if (!t) continue;
+    const pts = [starts[o.group] ?? [110, 329], ...viaPoints(o), t];
+    for (let s = 0; s < pts.length - 1; s++) {
+      const [x0, y0] = pts[s], [x1, y1] = pts[s + 1];
+      const len2 = (x1 - x0) ** 2 + (y1 - y0) ** 2;
+      if (!len2) continue;
+      const u = Math.max(0, Math.min(1, ((x - x0) * (x1 - x0) + (y - y0) * (y1 - y0)) / len2));
+      const px = x0 + u * (x1 - x0), py = y0 + u * (y1 - y0);
+      if ((px - x) ** 2 + (py - y) ** 2 <= 7 ** 2) {
+        (o.via ??= []).splice(s, 0, { x, y });   // segment s => waypoint index s
+        drag = { orderIdx: i, field: "via", viaIdx: s };
+        return;
+      }
+    }
+  }
+  for (let i = (ph.enemy_belief || []).length - 1; i >= 0; i--) {
+    const t = resolveLoc(ph.enemy_belief[i].at);
+    if (t && (t[0] - x) ** 2 + (t[1] - y) ** 2 <= 12 ** 2) { drag = { enemyIdx: i }; return; }
+  }
+});
+cv.addEventListener("mousemove", (ev) => {
+  if (!drag || !plan) return;
+  const [x, y] = canvasXY(ev);
+  const ph = plan.phases[cur];
+  const loc = snapLoc(x, y);
+  if (drag.enemyIdx != null) ph.enemy_belief[drag.enemyIdx].at = loc;
+  else if (drag.field === "via") ph.orders[drag.orderIdx].via[drag.viaIdx] = loc;
+  else ph.orders[drag.orderIdx][drag.field] = loc;
+  markDirty();
+  refreshPhasePanel(); draw();
+});
+window.addEventListener("mouseup", () => { drag = null; });
+cv.addEventListener("dblclick", (ev) => {
+  // Double-click a waypoint handle to remove it (straighten the route).
+  if (!plan) return;
+  const [x, y] = canvasXY(ev);
+  const ph = plan.phases[cur];
+  for (const o of ph.orders || []) {
+    for (let vi = 0; vi < (o.via || []).length; vi++) {
+      const v = resolveLoc(o.via[vi]);
+      if (v && (v[0] - x) ** 2 + (v[1] - y) ** 2 <= 10 ** 2) {
+        o.via.splice(vi, 1); markDirty();
+        if (!o.via.length) delete o.via;
+        refresh(); return;
+      }
+    }
+  }
+});
+cv.addEventListener("click", (ev) => {
+  if (!plan || !clickMode) return;
+  const [x, y] = canvasXY(ev);
+  const ph = plan.phases[cur];
+  const loc = snapLoc(x, y);
+  if (clickMode.type === "order") {
+    const o = { group: clickMode.group, kind: clickMode.kind };
+    if (clickMode.kind === "move") o.to = loc; else o.at = loc;
+    (ph.orders ??= []).push(o); markDirty();
+    $("btnAddOrder").textContent = "+ place";
+  } else {
+    const count = parseInt(prompt("how many enemies here?", "3") || "0", 10);
+    (ph.enemy_belief ??= []).push({ at: loc, count }); markDirty();
+    $("btnAddEnemy").textContent = "+ place";
+  }
+  clickMode = null; refresh();
+});
+
+// ---------- draw ----------
+function arrow(x0, y0, x1, y1, col) {
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+  const a = Math.atan2(y1 - y0, x1 - x0);
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x1 - 11 * Math.cos(a - 0.45), y1 - 11 * Math.sin(a - 0.45));
+  ctx.lineTo(x1 - 11 * Math.cos(a + 0.45), y1 - 11 * Math.sin(a + 0.45));
+  ctx.closePath(); ctx.fill();
+  ctx.lineWidth = 1;
+}
+function draw() {
+  ctx.fillStyle = "#f5f2ec"; ctx.fillRect(0, 0, MAP_W, MAP_H);
+  if (walls) {
+    ctx.fillStyle = "#c9c1b2";
+    walls.rows.forEach((runs, y) => {
+      for (let i = 0; i < runs.length; i += 2) ctx.fillRect(runs[i], y, runs[i + 1], 1);
+    });
+  }
+  if ($("t_poi").checked) {
+    ctx.globalAlpha = 0.4;
+    for (const a of poi.areas || []) {
+      ctx.strokeStyle = "#b9b1a0";
+      ctx.strokeRect(a.cx - a.w / 2, a.cy - a.h / 2, a.w, a.h);   // POI-underlay areas are axis-aligned today
+      ctx.font = "9px sans-serif"; ctx.fillStyle = "#8a8375";
+      ctx.fillText(a.name, a.cx - a.w / 2 + 3, a.cy - a.h / 2 + 10);
+    }
+    for (const p of poi.points || []) {
+      ctx.beginPath(); ctx.arc(p.x, p.y, 2.5, 0, 2 * Math.PI); ctx.fillStyle = "#8a8375"; ctx.fill();
+      ctx.font = "8px sans-serif"; ctx.fillText(p.name, p.x + 5, p.y - 4);
+    }
+    ctx.globalAlpha = 1;
+  }
+  if (!plan?.phases[cur]) return;
+  const ph = plan.phases[cur];
+  const starts = groupLocationsAt(cur);
+  const seats = activeGroups(cur);
+
+  // Enemy beliefs first (under our arrows).
+  for (const e of ph.enemy_belief || []) {
+    const t = resolveLoc(e.at);
+    if (!t) continue;
+    ctx.strokeStyle = "#2e5cb3"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(t[0], t[1], 13, 0, 2 * Math.PI); ctx.stroke();
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.arc(t[0], t[1], 19, 0, 2 * Math.PI); ctx.stroke();
+    ctx.setLineDash([]); ctx.lineWidth = 1;
+    ctx.font = "700 12px sans-serif"; ctx.fillStyle = "#2e5cb3";
+    ctx.fillText(String(e.count ?? "?"), t[0] - 3.5, t[1] + 4.5);
+    if (e.note) { ctx.font = "10px sans-serif"; ctx.fillText(e.note, t[0] + 22, t[1] + 3); }
+  }
+
+  // Orders.
+  for (const o of ph.orders || []) {
+    const col = groupColor(o.group);
+    const target = resolveLoc(o.to ?? o.at);
+    if (!target) continue;
+    const n = (seats[o.group] || []).length || "?";
+    if (o.kind === "move") {
+      const from = starts[o.group] ?? [110, 329];
+      // Polyline route: from -> via… -> target; arrowhead on the last leg only.
+      const pts = [from, ...viaPoints(o), target];
+      ctx.strokeStyle = col; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+      for (let s = 1; s < pts.length - 1; s++) ctx.lineTo(pts[s][0], pts[s][1]);
+      ctx.stroke(); ctx.lineWidth = 1;
+      const [lx, ly] = pts[pts.length - 2];
+      arrow(lx, ly, target[0], target[1], col);
+      for (const [vx, vy] of viaPoints(o)) {        // waypoint handles
+        ctx.beginPath(); ctx.arc(vx, vy, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = "#faf9f6"; ctx.fill(); ctx.strokeStyle = col; ctx.stroke();
+      }
+      ctx.beginPath(); ctx.arc(from[0], from[1], 8, 0, 2 * Math.PI);
+      ctx.fillStyle = col; ctx.fill();
+      ctx.font = "700 10px sans-serif"; ctx.fillStyle = "#faf9f6";
+      ctx.fillText(String(n), from[0] - 3, from[1] + 3.5);
+    } else if (o.kind === "hold") {
+      ctx.fillStyle = col;
+      ctx.fillRect(target[0] - 8, target[1] - 8, 16, 16);
+      ctx.font = "700 10px sans-serif"; ctx.fillStyle = "#faf9f6";
+      ctx.fillText(String(n), target[0] - 3, target[1] + 3.5);
+      const f = resolveLoc(o.facing);
+      if (f) {
+        const a = Math.atan2(f[1] - target[1], f[0] - target[0]);
+        ctx.strokeStyle = col; ctx.setLineDash([4, 3]);
+        ctx.beginPath(); ctx.moveTo(target[0], target[1]);
+        ctx.lineTo(target[0] + 46 * Math.cos(a), target[1] + 46 * Math.sin(a)); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.beginPath(); ctx.arc(f[0], f[1], 4, 0, 2 * Math.PI);
+        ctx.strokeStyle = col; ctx.stroke();
+      }
+    } else if (o.kind === "watch") {
+      ctx.strokeStyle = col; ctx.setLineDash([2, 3]);
+      ctx.beginPath(); ctx.arc(target[0], target[1], 11, 0, 2 * Math.PI); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.font = "600 9px sans-serif"; ctx.fillStyle = col;
+      ctx.fillText("watch", target[0] - 12, target[1] - 15);
+    }
+    // Label the order's group at the target.
+    ctx.font = "600 10px sans-serif"; ctx.fillStyle = col;
+    ctx.strokeStyle = "rgba(250,249,246,0.85)"; ctx.lineWidth = 3;
+    const lbl = o.group + (typeof (o.to ?? o.at) === "string" ? ` @ ${o.to ?? o.at}` : "");
+    ctx.strokeText(lbl, target[0] + 12, target[1] + 14); ctx.fillText(lbl, target[0] + 12, target[1] + 14);
+    ctx.lineWidth = 1;
+  }
+}
+
+function refresh() { refreshMeta(); refreshPhasebar(); refreshGroups(); refreshPhasePanel(); draw(); }
+boot();
+</script>
+</body>
+</html>

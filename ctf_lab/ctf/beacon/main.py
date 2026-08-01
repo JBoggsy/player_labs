@@ -26,6 +26,15 @@ from players.player_sdk import (
     parse_trace_output_specs,
     run_sprite_bridge,
 )
+import players.player_sdk.sprite_bridge as _sprite_bridge
+
+# CTF's grenade throw is the 8th controller bit (bitworld ButtonC = 128; RULES.md
+# "C | Hold to charge a grenade throw"), but the SDK bridge still clamps input masks
+# to 7 bits — pack_input_packet and its & INPUT_MASK_MAX would silently strip the C
+# press. The game's pinned bitworld (nimby.lock 5d229acd) decodes the full byte
+# (`mask and 0xff`), so widening the bridge's limit is safe on the wire. Remove once
+# the SDK's INPUT_MASK_MAX learns about ButtonC upstream.
+_sprite_bridge.INPUT_MASK_MAX = 0xFF
 
 DEFAULT_TRACE_OUTPUTS = "jsonl@artifact"
 FALLBACK_TRACE_OUTPUTS = "jsonl@stderr"

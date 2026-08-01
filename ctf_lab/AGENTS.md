@@ -9,11 +9,11 @@ This file is the **CTF-specific layer** on top of it: the game, the docs, the
 practices/preferences, and the policies we optimize. When the two disagree, the root
 defines *process*; this file defines *CTF*.
 
-> **Lab status (2026-07-10): first player `beacon` built, uploaded, and competing.** The
+> **Lab status (2026-07-31): `beacon:v67` is the submitted CTF champion.** The
 > game repo (`Metta-AI/coworld-ctf`) is cloned for reference at `~/coding/coworlds/coworld-ctf`.
-> **`beacon` (Python, [`ctf/beacon/`](ctf/beacon/)) is on `beacon:v5`** (v4 is the currently
-> submitted/competing version). It beats the co-gas opponents 20-0 by capture and, as of v5,
-> takes games off the elite Nim `ctf-baseline-16` too (4-11, via carrier escort). Live state:
+> **`beacon` (Python, [`ctf/beacon/`](ctf/beacon/)) is on `beacon:v67`**, combining
+> the `outer_echelon` plan, sight-line cover discipline, anti-turtle base caution,
+> uncapped gun eligibility, and crown-compatible aim readback. Live state:
 > [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md); versions: [`ctf/beacon/VERSION_LOG.md`](ctf/beacon/VERSION_LOG.md).
 
 ## What CTF is
@@ -24,8 +24,9 @@ edges of a symmetric, cover-dense arena, each guarding a flag. You move (d-pad),
 continuous angle **decoupled from movement** (B/Select), and shoot an instant hitscan gun
 (A). Vision is **fog-of-war** riding your aim (±45° cone + small omni bubble; walls
 block). Win by **capturing** the enemy flag (carry it into your home zone) or **wiping**
-the enemy team. **Scoring is win-only: +100 to the winning team, 0 otherwise** — the
-objective is purely team victory, not kills.
+the enemy team. **Scoring is win-only: winners +1, losers -1; a time-limit draw is -1
+for BOTH sides** (no tiebreak) — the objective is purely team victory before the clock,
+not kills.
 
 For the full game — arena, aim/vision/combat mechanics, flags, exact tuning numbers, the
 wire protocol, the baseline bot, and a strategy treatment — read
@@ -49,8 +50,9 @@ human gate → submit) runs **unchanged** here. The CTF-specific instruments:
   under optimization. The game is **team-symmetric (8v8)**, so the natural cuts are
   **team (Red/Blue) and seat/role** (slot parity = team; `slot div 2` = seat), **win
   rate** (the only scored outcome), and the **win path** taken (capture vs wipe vs
-  timeout-tiebreak). Because scoring is win-only (+100/0), win rate — not kills — is the
-  metric; kills/deaths/captures are recorded for diagnosis but never scored.
+  timeout draw — the draw pays -1 to both sides, same as losing). Because scoring is
+  win-only (+1/-1), win rate — not kills — is the metric; kills/deaths/captures are
+  recorded for diagnosis but never scored.
 - **Report** (step 2) — pull artifacts with the game-agnostic `coworld-episode-artifacts`
   skill, then distill. **There is no CTF-specific report skill yet** — see
   [Skills](#skills); building one (a per-episode win-path / kill-map / flag-event survey,
@@ -207,20 +209,37 @@ rest of the lab's deferred tasks. Check it at the start of focused work.
   (`players.player_sdk.run_sprite_bridge` — no vendored wire layer, build path 1):
   `perceive` reads the raw `SpriteWorld` labels into a `CtfState`, `belief` folds it
   (team/seat from slot, dead-reckoned aim), a seat-based `strategy` picks one objective
-  (carry-home > intercept-visible-thief > defender-hold / attacker-steal), and
+  (a priority ladder: carry-home > rejoin > intercept-thief > escort-carrier >
+  grenade-clear > items > squad orders > convert-hunt > battle plan > the static role
+  split), and
   `action` emits a `Button` mask — d-pad movement + a **lighthouse aim sweep** across the
-  threat axis that snaps to a visible enemy, behind a fire-gate with a **friendly-fire
-  guard**. Navigation is **offline-baked** (`tools/bake_map.py` → `mapdata/nav.npz`: an 8px
-  walkable grid, two Dijkstra flow fields per team, and a cover-cell grid); online A*
-  handles dynamic goals. Design:
+  threat axis that snaps to the nearest visible enemy by default, or (behind
+  `BEACON_FIREFIGHT`) to `fight.py`'s wound/range/shootability-scored target.
+  `BEACON_FOCUS_CLAIMS` adds local, soft-bias `F` claims beneath `K` and above `E`
+  in chat arbitration; these claims are load-bearing convergence because range,
+  aim cost, visibility, and friendly-fire corridors are bot-relative. Both new
+  flags default OFF. Fire uses distance only as a soft target-scoring preference;
+  exact aim, line clearance, and the **friendly-fire guard** determine eligibility.
+  Navigation is **offline-baked** (`tools/bake_map.py` →
+  `mapdata/nav.npz`: an 8px
+  walkable grid, two Dijkstra flow fields per team, a cover-cell grid, and a
+  32-direction `uint8` sightline field in 4px distance units); online A* handles
+  dynamic goals. `posts.py` derives directional cover from that field and, behind
+  `BEACON_POSTS`, turns nearby plan/order/hold waypoints into covered fighting
+  positions with a committed watch direction. Design:
   [`docs/designs/ctf-player-v1-design.html`](docs/designs/ctf-player-v1-design.html).
-  **Current: `beacon:v5`** — seat-based roles (**3 defenders** on cover / **5 attackers**),
-  friendly-fire gate, carry-detection fix (a carried flag rides ~10px above its carrier),
-  and **carrier escort** (attackers converge on a teammate carrier and move home with it).
-  Beats both co-gas opponents 20-0 **by capture**, and **takes games off `ctf-baseline-16`**
-  (4-11 vs the champion, up from 0-20 — it wins by capturing before being wiped, not by
-  out-fighting). Version history: [`ctf/beacon/VERSION_LOG.md`](ctf/beacon/VERSION_LOG.md).
+  **Current: `beacon:v67` (competing champion, submitted 2026-07-31).** Plan/order/hold
+  waypoints act as search centres for stable covered posts; the active `outer_echelon`
+  plan assigns four two-agent pairs to separated top and bottom corridor positions.
+  v65 added anti-turtle base caution, v66 removed the hard 350px firing veto, and v67
+  made absolute aim readback work under the champion's crown skin. A fresh 540-game
+  top-player screen finished 508-3-29. Version history:
+  [`ctf/beacon/VERSION_LOG.md`](ctf/beacon/VERSION_LOG.md); read it before assuming
+  what a version contains.
   Behavior knobs are env vars in `ctf/beacon/config.py` (`BEACON_DEFENDERS`,
   `BEACON_FF_CORRIDOR_PX`, …), set at upload time for A/B. Build: `tools/build_player.sh beacon`.
+  Firefight sweep knobs are registered in that same config module; dump their
+  machine-readable domains or emit validated upload arguments with
+  `uv run python -m ctf.beacon.tuning` (see the README's tuning-sweeps section).
   **Next (open thread):** raise the baseline win rate above 26% — survive the grab-and-run
   better (tighter escort, staggered pushes), enemy-track memory, exposure-aware routing.

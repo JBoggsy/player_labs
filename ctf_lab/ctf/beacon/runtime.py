@@ -11,8 +11,11 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from ctf.beacon import items, nav
 from ctf.beacon.action import resolve_action
 from ctf.beacon.belief import update_belief
+from ctf.beacon.chat import choose_shout
+from ctf.beacon.config import CHAT
 from ctf.beacon.perception import perceive
 from ctf.beacon.roles import hold_point_for_seat, role_for_seat
 from ctf.beacon.strategy import decide_objective
@@ -39,11 +42,17 @@ class BeaconRuntime:
 
     def __init__(self, team: Team, seat: int = 0, *, on_step: StepHook | None = None) -> None:
         role = role_for_seat(seat)
+        item_spawns = items.build_spawn_table()
+        # Build the ten fixed-goal route fields before the websocket starts. The
+        # first live frame then pays only for its current objective anchor.
+        for spawn in item_spawns:
+            nav.route_distance(spawn.pos, spawn.pos)
         self.belief = Belief(
             team=team,
             seat=seat,
             role=role,
             hold_point=hold_point_for_seat(team, seat) if role == "defender" else None,
+            item_spawns=item_spawns,
         )
         self.action_state = ActionState()
         self.on_step = on_step
@@ -61,6 +70,11 @@ class BeaconRuntime:
         else:
             intent, flow_kind = decide_objective(self.belief)
             command = resolve_action(intent, self.belief, self.action_state)
+            if CHAT:
+                shout = choose_shout(self.belief)
+                if shout is not None:
+                    self.belief.chat_last_sent_text = shout
+                    command = Command(held_mask=command.held_mask, chat=shout)
 
         if self.on_step is not None:
             self.on_step(StepInfo(self.tick, percept, self.belief, intent, flow_kind, command))

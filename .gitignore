@@ -47,3 +47,4 @@ posviz_*.png
 .playwright-mcp/
 .claude/worktrees/
 crewrift_lab/.claude/worktrees/
+vanilla_wow_lab/.sdk-snapshot/

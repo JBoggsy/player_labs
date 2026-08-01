@@ -1,6 +1,6 @@
 """Belief update — fold a per-frame CtfState into the long-lived Belief.
 
-Three genuinely stateful parts:
+Four genuinely stateful parts:
 
   * **Aim estimate**: the aim-dot sprite gives an absolute read (~2 brad resolution)
     but isn't always visible, so between reads we dead-reckon by the rotation we
@@ -15,10 +15,11 @@ Three genuinely stateful parts:
     per-axis velocity clamping makes a Chebyshev 3x3-max dilation the right spread
     metric), and cools with an exponential half-life so old heat fades instead of
     saturating the map. Initialized hot on the enemy half, cold on ours.
+  * **Firefight**: a hysteretic combat overlay plus one first-heard local focus
+    claim. It selects no movement objective; fight.py/action.py are its consumers.
 
-Tracks and the danger field are groundwork: **nothing gates on them yet** — they are
-folded and traced so we can see what beacon believes before we act on it. Flag state
-stays per-frame (pedestals never fog).
+Tracks and the danger field feed post threat/scoring while retaining their existing
+navigation and trace roles. Flag state stays per-frame (pedestals never fog).
 
 Known limits (acceptable for now): kills aren't in the percept, so a dead enemy's
 track lingers until TTL; and our own vision clears nothing — a swept, provably-empty
@@ -27,13 +28,33 @@ corridor keeps its danger until it decays.
 
 from __future__ import annotations
 
+import math
+
 import numpy as np
 
-from ctf.beacon import mapdata
+from ctf.beacon import fight, mapdata
+from ctf.beacon.chat import decode as chat_decode
+from ctf.beacon.items import update_items
 from ctf.beacon.config import (
     AIM_BRADS_TURN,
+    AIM_RESYNC_SLACK_BRADS,
     AIM_TURN_RATE,
+    CHAT,
+    CHAT_BUBBLE_DEDUP_TICKS,
+    REJOIN_TIMEOUT_TICKS,
+    SQUAD_COMMAND,
+    CHAT_ENEMY_BUBBLE_FIX,
+    CHAT_FIX_TTL_TICKS,
+    GRENADE_WARN_TTL_TICKS,
+    HEARD_DANGER_HEAT,
+    HEARD_DANGER_RADIUS_PX,
+    HEARD_MATCH_PX,
+    HEARD_TTL_TICKS,
+    HEARING,
+    UNDER_FIRE_FRESH_TICKS,
+    UNDER_FIRE_RANGE_PX,
     CENTER_X,
+    BASE_FRONT_X,
     DANGER_DECAY_HALF_LIFE_TICKS,
     DANGER_DIFFUSION_FACTOR,
     DANGER_STAMP_RADIUS_PX,
@@ -41,13 +62,22 @@ from ctf.beacon.config import (
     GRID_W,
     MAX_SPEED_PX_TICK,
     NAV_CELL,
+    POST_CLAIM_TTL_TICKS,
     SPAWN_AIM,
     TRACK_MATCH_SLACK_PX,
     TRACK_TTL_TICKS,
     TRACK_VEL_EMA,
     TRACK_VEL_MAX_GAP_TICKS,
 )
-from ctf.beacon.types import ActionState, Belief, CtfState, Enemy, PlayerTrack
+from ctf.beacon.types import (
+    ActionState,
+    Belief,
+    CtfState,
+    Enemy,
+    HeardImpact,
+    PlayerTrack,
+    PostClaim,
+)
 
 #: Per-tick decay multiplier for the chosen half-life.
 _DANGER_DECAY = 0.5 ** (1.0 / DANGER_DECAY_HALF_LIFE_TICKS)
@@ -64,6 +94,35 @@ def update_belief(belief: Belief, percept: CtfState, action_state: ActionState, 
     belief.alive = percept.self_xy is not None
     if percept.self_xy is not None:
         belief.self_xy = percept.self_xy
+    if not was_alive and belief.alive:
+        belief.respawned_tick = tick
+
+    # Respawn discipline (v22): on DEATH, snapshot where to regroup (the freshest
+    # squadmate memory); on RESPAWN, enter rejoin mode toward it. Import here is
+    # cycle-safe (squads imports config/types only).
+    if SQUAD_COMMAND:
+        from ctf.beacon import squads as _squads
+
+        if was_alive and not belief.alive:
+            belief.rejoin_point = _squads.rejoin_target(belief)
+            belief.rejoin_until = -1
+        elif not was_alive and belief.alive and belief.rejoin_point is not None:
+            belief.rejoin_until = tick + REJOIN_TIMEOUT_TICKS
+    # Plan interpreter (v30): a death clears the hold-fallback latch — the new
+    # life re-evaluates the phase fresh (the phase pointer itself persists;
+    # respawning shouldn't restart the plan).
+    if was_alive and not belief.alive:
+        belief.plan_fell_back = False
+        belief.post_active = False
+        belief.post_cell = None
+        belief.post_direction = None
+        belief.post_center = None
+        belief.post_mode = None
+        belief.post_context = None
+        belief.post_settled_ticks = 0
+        belief.post_committed = False
+        belief.post_committed_tick = -1
+        belief.post_scan_direction = None
 
     # Aim estimate: prefer the observed aim-dot read; else dead-reckon by the rotation
     # we commanded last frame. On (re)spawn, reseed to the spawn aim.
@@ -71,19 +130,74 @@ def update_belief(belief: Belief, percept: CtfState, action_state: ActionState, 
         belief.aim_brads = SPAWN_AIM[belief.team]
         belief.sweep_offset = 0
         belief.sweep_dir = 1
-    if percept.observed_aim is not None:
-        belief.aim_brads = percept.observed_aim
-    else:
-        belief.aim_brads = (belief.aim_brads + action_state.last_rot * AIM_TURN_RATE) % AIM_BRADS_TURN
+    # Dead-reckon by the commanded rotation. The server starts at a known aim and
+    # moves by exactly AIM_TURN_RATE, so this is more precise than the 16-brad
+    # sprite readback. In particular, do not "calibrate" to the midpoint when the
+    # observed sprite step changes: the true server aim advances discretely by
+    # five brads and the midpoint approximation introduced 2-5 brads of error on
+    # most shots. Use the coarse sprite only to recover from genuine input drift.
+    belief.aim_brads = (belief.aim_brads + action_state.last_rot * AIM_TURN_RATE) % AIM_BRADS_TURN
+    observed = percept.observed_aim
+    if observed is not None:
+        err = (observed - belief.aim_brads) % AIM_BRADS_TURN
+        if err > AIM_BRADS_TURN // 2:
+            err -= AIM_BRADS_TURN
+        if abs(err) > AIM_RESYNC_SLACK_BRADS:
+            # A stale/duplicated input can only move the server aim in whole
+            # AIM_TURN_RATE steps. Pick the nearest such correction compatible
+            # with the observed 16-brad bucket instead of snapping to its centre.
+            compatible: list[tuple[int, int]] = []
+            for steps in range(-8, 9):
+                candidate = (
+                    belief.aim_brads + steps * AIM_TURN_RATE
+                ) % AIM_BRADS_TURN
+                candidate_err = (observed - candidate) % AIM_BRADS_TURN
+                if candidate_err > AIM_BRADS_TURN // 2:
+                    candidate_err -= AIM_BRADS_TURN
+                if abs(candidate_err) <= AIM_RESYNC_SLACK_BRADS:
+                    compatible.append((abs(steps), steps))
+            if compatible:
+                steps = min(compatible)[1]
+                belief.aim_brads = (
+                    belief.aim_brads + steps * AIM_TURN_RATE
+                ) % AIM_BRADS_TURN
+                belief.aim_resyncs += 1
+        belief.prev_observed_aim = observed
 
     belief.fire_ready = percept.fire_ready
     belief.enemies = percept.enemies
     belief.teammates = percept.teammates
+    if belief.alive and belief.team is not None:
+        belief.enemy_observation_ticks += 1
+        enemy_team = "blue" if belief.team == "red" else "red"
+        front_x = BASE_FRONT_X[enemy_team]
+        outside = any(
+            enemy.pos[0] < front_x
+            if enemy_team == "blue"
+            else enemy.pos[0] > front_x
+            for enemy in percept.enemies
+        )
+        if outside:
+            belief.enemy_outside_base_ticks += 1
     belief.i_carry_enemy_flag = percept.i_carry_enemy_flag
     belief.enemy_flag_on_pedestal = percept.enemy_flag_on_pedestal
     belief.enemy_flag_pos = percept.enemy_flag_pos
     belief.own_flag_stolen = percept.own_flag_stolen
     belief.own_flag_thief_pos = percept.own_flag_thief_pos
+    # Team scoreboard (v26): fold monotonically — the label is drawn every Playing
+    # frame, but keep the last-seen value through any frame it fails to parse.
+    if percept.own_team_score is not None:
+        belief.own_team_score = percept.own_team_score
+    if percept.enemy_team_score is not None:
+        belief.enemy_team_score = percept.enemy_team_score
+
+    # Items (v10): our carried state is per-frame (the overhead markers ride us);
+    # the spawn table folds sightings + line-of-sight refutations in items.py.
+    belief.hp_pips = percept.hp_pips
+    belief.i_have_grenade = percept.i_have_grenade
+    belief.i_have_shield = percept.i_have_shield
+    belief.i_have_arc = percept.i_have_arc
+    update_items(belief, percept)
 
     # Folded memory (not gated on yet — see module docstring). Still ticked while
     # dead so tracks age out and danger decays on schedule — but since 0.7.x death
@@ -92,7 +206,13 @@ def update_belief(belief: Belief, percept: CtfState, action_state: ActionState, 
     # the danger field decays/spreads without fresh stamps.
     _update_tracks(belief.enemy_tracks, percept.enemies, tick)
     _update_tracks(belief.teammate_tracks, percept.teammates, tick)
+    if HEARING:
+        _update_heard(belief, percept, tick)
+    _update_under_fire(belief, tick)
+    if CHAT:
+        _update_chat(belief, percept, tick)
     _update_danger(belief)
+    fight.update_firefight(belief)
 
 
 # --- Player tracks ------------------------------------------------------------------
@@ -112,6 +232,14 @@ def _update_tracks(tracks: list[PlayerTrack], sightings: tuple[Enemy, ...], tick
         best_d2 = float("inf")
         for i in unclaimed:
             t = tracks[i]
+            # Nameplate gate (0.7.69): a badge-identified sighting never claims a
+            # track KNOWN to be a different player — identity beats proximity.
+            if (
+                s.identity is not None
+                and t.identity is not None
+                and s.identity != t.identity
+            ):
+                continue
             dt = tick - t.last_tick
             gate = dt * MAX_SPEED_PX_TICK + TRACK_MATCH_SLACK_PX
             dx = s.pos[0] - t.pos[0]
@@ -123,10 +251,24 @@ def _update_tracks(tracks: list[PlayerTrack], sightings: tuple[Enemy, ...], tick
                 best_d2 = d2
                 best_i = i
         if best_i is None:
-            tracks.append(PlayerTrack(pos=s.pos, last_tick=tick, facing=s.facing))
+            tracks.append(
+                PlayerTrack(
+                    pos=s.pos,
+                    last_tick=tick,
+                    facing=s.facing,
+                    identity=s.identity,
+                    hp_segments=s.hp_segments,
+                    shielded=s.shielded,
+                )
+            )
             continue
         unclaimed.discard(best_i)
         t = tracks[best_i]
+        if s.identity is not None:
+            t.identity = s.identity  # sticky nameplate identity (0.7.69)
+        if s.hp_segments is not None:
+            t.hp_segments = s.hp_segments
+        t.shielded = s.shielded
         dt = tick - t.last_tick
         if 0 < dt <= TRACK_VEL_MAX_GAP_TICKS:
             vx = (s.pos[0] - t.pos[0]) / dt
@@ -145,6 +287,159 @@ def _update_tracks(tracks: list[PlayerTrack], sightings: tuple[Enemy, ...], tick
         t.last_tick = tick
         t.frames_seen += 1
     tracks[:] = [t for t in tracks if tick - t.last_tick <= TRACK_TTL_TICKS]
+
+
+# --- Hearing (v16) --------------------------------------------------------------------
+
+
+def _update_heard(belief: Belief, percept: CtfState, tick: int) -> None:
+    """Fold this frame's sound-ring sightings into deduplicated heard events.
+
+    A ring persists ~12 ticks at a STABLE jittered position, so the same event is
+    sighted every frame it lives; a sighting within ``HEARD_MATCH_PX`` of a known
+    event of the same kind refreshes that event instead of creating a new one.
+    Events expire ``HEARD_TTL_TICKS`` after their ring left the frame. Note dead
+    players hear nothing (the server sends no rings), so death frames just age
+    events out — no special-casing needed."""
+    for kind, pos in percept.heard_impacts:
+        matched = None
+        for ev in belief.heard_events:
+            if ev.kind == kind and max(abs(pos[0] - ev.pos[0]), abs(pos[1] - ev.pos[1])) <= HEARD_MATCH_PX:
+                matched = ev
+                break
+        if matched is not None:
+            matched.last_tick = tick
+        else:
+            belief.heard_events.append(
+                HeardImpact(kind=kind, pos=pos, first_tick=tick, last_tick=tick)
+            )
+    belief.heard_events[:] = [
+        ev for ev in belief.heard_events if tick - ev.last_tick <= HEARD_TTL_TICKS
+    ]
+
+
+# --- Chat (v18) -----------------------------------------------------------------------
+
+
+def _update_under_fire(belief: Belief, tick: int) -> None:
+    """True when a fresh heard impact landed within UNDER_FIRE_RANGE_PX of us."""
+    belief.under_fire = False
+    if belief.self_xy is None:
+        return
+    sx, sy = belief.self_xy
+    for ev in belief.heard_events:
+        if tick - ev.first_tick > UNDER_FIRE_FRESH_TICKS:
+            continue
+        if math.hypot(ev.pos[0] - sx, ev.pos[1] - sy) <= UNDER_FIRE_RANGE_PX:
+            belief.under_fire = True
+            return
+
+
+def _update_chat(belief: Belief, percept: CtfState, tick: int) -> None:
+    """Decode heard shout bubbles into belief (v18).
+
+    Same-team payloads are trusted protocol traffic: E/T refresh enemy tracks
+    (phantom sightings, no velocity), U stamps come via the danger path below,
+    C sets the carrier fix, G registers a keep-clear zone. Enemy bubbles are
+    never decoded as truth, but the bubble position itself is a live enemy fix
+    (±20px) — sighting-grade, fed to the same track fold.
+
+    A bubble persists ~3s (≈72 frames); dedup on (sender, text) so each shout is
+    processed once. Our own bubble comes back too — skip our own address by
+    matching our last-sent text (we don't know our own address string).
+    """
+    for team, address, text, bubble_pos in percept.heard_shouts:
+        prev = belief.chat_processed.get(address)
+        if prev is not None and prev[0] == text and tick - prev[1] <= CHAT_BUBBLE_DEDUP_TICKS:
+            belief.chat_processed[address] = (text, tick)
+            continue
+        belief.chat_processed[address] = (text, tick)
+
+        if team != belief.team:
+            # An enemy shouted: their payload is untrusted, their position isn't.
+            if CHAT_ENEMY_BUBBLE_FIX:
+                _update_tracks(
+                    belief.enemy_tracks,
+                    (Enemy(pos=bubble_pos, facing="left"),),
+                    tick,
+                )
+                belief.chat_heard_counts["enemy_bubble"] = (
+                    belief.chat_heard_counts.get("enemy_bubble", 0) + 1
+                )
+            continue
+
+        if text == belief.chat_last_sent_text:
+            continue  # our own bubble echoing back
+        msg = chat_decode(text)
+        if msg is None:
+            continue
+        belief.chat_heard_counts[msg.kind] = belief.chat_heard_counts.get(msg.kind, 0) + 1
+        if msg.kind == "order":
+            # Obey only MY squad leader's order (v22).
+            from ctf.beacon import squads as _squads
+
+            if msg.seat == _squads.leader_of(belief.seat) and msg.seat != belief.seat:
+                belief.order = (msg.goal or "H", msg.pos, tick)
+                belief.order_source = "heard"
+                belief.orders_heard += 1
+            if msg.seat is not None:
+                belief.presence[msg.seat] = tick
+        elif msg.kind == "ping":
+            if msg.seat is not None:
+                belief.presence[msg.seat] = tick
+                belief.pings_heard += 1
+        elif msg.kind == "post_claim":
+            if msg.seat is not None and msg.seat != belief.seat:
+                belief.post_claims[msg.seat] = PostClaim(msg.seat, msg.pos, tick)
+                belief.post_claims_heard += 1
+        elif msg.kind == "focus_claim":
+            if msg.seat is not None:
+                fight.receive_focus_claim(
+                    belief,
+                    claimant_seat=msg.seat,
+                    target_identity=msg.target_identity,
+                    target_cell=msg.pos,
+                )
+        elif msg.kind in ("enemy", "thief"):
+            _update_tracks(
+                belief.enemy_tracks, (Enemy(pos=msg.pos, facing="left"),), tick
+            )
+            if msg.kind == "thief":
+                belief.thief_fix = (msg.pos, tick)
+        elif msg.kind == "carrier":
+            belief.carrier_fix = (msg.pos, msg.heading or 0, tick)
+        elif msg.kind == "grenade":
+            belief.grenade_warnings.append((msg.pos, tick))
+        elif msg.kind == "under_fire":
+            _stamp_danger_blob(belief, msg.pos, HEARD_DANGER_HEAT, HEARD_DANGER_RADIUS_PX)
+
+    # Expiry.
+    if belief.carrier_fix is not None and tick - belief.carrier_fix[2] > CHAT_FIX_TTL_TICKS:
+        belief.carrier_fix = None
+    if belief.thief_fix is not None and tick - belief.thief_fix[1] > CHAT_FIX_TTL_TICKS:
+        belief.thief_fix = None
+    belief.grenade_warnings[:] = [
+        (p, t) for (p, t) in belief.grenade_warnings if tick - t <= GRENADE_WARN_TTL_TICKS
+    ]
+    belief.post_claims = {
+        seat: claim
+        for seat, claim in belief.post_claims.items()
+        if tick - claim.tick <= POST_CLAIM_TTL_TICKS
+    }
+
+
+def _stamp_danger_blob(belief: Belief, pos: tuple[int, int], heat: float, radius_px: int) -> None:
+    """Raise danger to at least ``heat`` in a blob around ``pos`` (walkable-masked
+    on the next _update_danger pass)."""
+    if belief.danger is None:
+        return
+    cells = max(radius_px // NAV_CELL, 1)
+    gx = min(max(pos[0] // NAV_CELL, 0), GRID_W - 1)
+    gy = min(max(pos[1] // NAV_CELL, 0), GRID_H - 1)
+    region = belief.danger[
+        max(gy - cells, 0) : gy + cells + 1, max(gx - cells, 0) : gx + cells + 1
+    ]
+    np.maximum(region, heat, out=region)
 
 
 # --- Danger field -------------------------------------------------------------------
@@ -193,6 +488,22 @@ def _update_danger(belief: Belief) -> None:
             max(gy - _STAMP_CELLS, 0) : gy + _STAMP_CELLS + 1,
             max(gx - _STAMP_CELLS, 0) : gx + _STAMP_CELLS + 1,
         ] = 1.0
+
+    # Heard fire stamps too (v16): weaker heat (team-anonymous — could be our own
+    # fire landing) over a wider blob (±20px jitter + the shooter being somewhere
+    # with LoS, not at the spot). Stamp only events FIRST heard this tick — the
+    # ring persists ~12 frames and re-stamping every frame would out-shout decay.
+    heard_cells = max(HEARD_DANGER_RADIUS_PX // NAV_CELL, 1)
+    for ev in belief.heard_events:
+        if ev.first_tick != belief.tick:
+            continue
+        gx = min(max(ev.pos[0] // NAV_CELL, 0), GRID_W - 1)
+        gy = min(max(ev.pos[1] // NAV_CELL, 0), GRID_H - 1)
+        region = danger[
+            max(gy - heard_cells, 0) : gy + heard_cells + 1,
+            max(gx - heard_cells, 0) : gx + heard_cells + 1,
+        ]
+        np.maximum(region, HEARD_DANGER_HEAT, out=region)
 
     danger *= walkable  # walls never hold heat (also clears wall cells a stamp hit)
     belief.danger = danger

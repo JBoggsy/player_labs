@@ -1,0 +1,244 @@
+{
+  "name": "staged_push_top",
+  "author": "both",
+  "status": "proposal",
+  "summary": "The staged push: 5 push the top lane in stages while 3 cover the rear. ACCEPTED RISKS (named): the bottom is deliberately naked \u2014 the rear trades space for time (delay, then fall back behind the lineup wall) and we bet on winning the top race first; after phase 2 the rear is beyond shout range and fights autonomously.",
+  "team": "red",
+  "groups": {
+    "pushers": [
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "rear": [
+      0,
+      1,
+      2
+    ]
+  },
+  "phases": [
+    {
+      "name": "form_up",
+      "intent": "Pushers assemble in the top rally box; rear takes the lineup strip behind them covering the mid and bottom approaches (we are deliberately weak bottom \u2014 the rear's job is early warning + delay, not winning that fight).",
+      "entry": {
+        "prose": "game start",
+        "tag": "tick>=0"
+      },
+      "orders": [
+        {
+          "group": "pushers",
+          "kind": "move",
+          "to": "red_rally_top"
+        },
+        {
+          "group": "rear",
+          "kind": "watch",
+          "at": "red_rally_bot"
+        },
+        {
+          "group": "rear",
+          "kind": "hold",
+          "at": {
+            "x": 327,
+            "y": 523
+          }
+        },
+        {
+          "group": "rear",
+          "kind": "watch",
+          "at": "red_rally_mid"
+        }
+      ],
+      "enemy_belief": [
+        {
+          "at": "blue_lineup",
+          "count": 8,
+          "note": "assume an even spread at start"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "name": "advance_to_midfield",
+      "intent": "Pushers advance as one 5-stack to the top-lane midfield (top_diamond / north_medkit shelf). Rear steps up to the vacated rally box \u2014 staying within shout range (~247px) of the pushers so the stage signal is heard.",
+      "entry": {
+        "prose": "pushers assembled at the rally (or timeout)",
+        "tag": "presence(red_rally_top)>=4"
+      },
+      "orders": [
+        {
+          "group": "rear",
+          "kind": "watch",
+          "at": "red_window"
+        },
+        {
+          "group": "pushers",
+          "kind": "move",
+          "to": {
+            "x": 628,
+            "y": 59
+          }
+        },
+        {
+          "group": "rear",
+          "kind": "move",
+          "to": {
+            "x": 324,
+            "y": 310
+          }
+        }
+      ],
+      "enemy_belief": [
+        {
+          "at": "blue_rally_top",
+          "count": 2,
+          "note": "expected lane pickets"
+        },
+        {
+          "at": "blue_rally_mid",
+          "count": 3
+        },
+        {
+          "at": "blue_rally_bot",
+          "count": 3
+        }
+      ],
+      "notes": []
+    },
+    {
+      "name": "break_or_flank",
+      "intent": "If the lane is lightly held, push straight through toward the pedestal. If we meet a concentrated defense (3+ tracked in the corridor ahead), split and pincer IN SEQUENCE: flank_s takes the inside shelf first and FIXES them (they have targets, they engage); only once flank_s has contact does flank_n sweep the top sneak line \u2014 hugging the wall through the sneak corridor \u2014 to arrive behind blue_top_hold_2 while the defense is busy frontally.",
+      "entry": {
+        "prose": "contact at midfield, or the corridor reads clear"
+      },
+      "splits": {
+        "pushers": {
+          "flank_n": [
+            3,
+            4
+          ],
+          "flank_s": [
+            5,
+            6,
+            7
+          ]
+        }
+      },
+      "orders": [
+        {
+          "group": "rear",
+          "kind": "watch",
+          "at": "red_rally_mid"
+        },
+        {
+          "group": "rear",
+          "kind": "hold",
+          "at": {
+            "x": 323,
+            "y": 333
+          },
+          "fallback": "red_lineup"
+        },
+        {
+          "group": "rear",
+          "kind": "watch",
+          "at": {
+            "x": 308,
+            "y": 619
+          }
+        },
+        {
+          "group": "flank_n",
+          "kind": "move",
+          "to": {
+            "x": 802,
+            "y": 27
+          },
+          "via": [
+            {
+              "x": 566,
+              "y": 20
+            },
+            {
+              "x": 700,
+              "y": 20
+            }
+          ]
+        },
+        {
+          "group": "flank_s",
+          "kind": "move",
+          "to": {
+            "x": 654,
+            "y": 206
+          }
+        }
+      ],
+      "enemy_belief": [
+        {
+          "at": "blue_rally_top",
+          "count": 3,
+          "note": "the defense we're flanking"
+        }
+      ],
+      "notes": [
+        {
+          "who": "claude",
+          "text": "The split is the granularity demo: pushers exists until this phase splits it; flank_n/flank_s inherit and can split further. If the corridor is clear, skip the split \u2014 that branch needs its own phase or a condition vocabulary we don't have yet. Flagging rather than hiding it."
+        },
+        {
+          "who": "james",
+          "text": "Rear plays a DELAYING ACTION: if they see an enemy push (watching rally_mid and the bottom), they run toward it and fight to slow it down, not to win it \u2014 buy the flankers time."
+        },
+        {
+          "who": "claude",
+          "text": "Adopted your retargets: flank_n sweeps wide to (802,27) \u2014 deeper than top_sneak, behind blue_top_hold_2; flank_s cuts to (654,206) \u2014 top_diamond shelf, pinching the corridor from the inside instead of holding back at our vee. Rear anchors at (323,333) with eyes mid + bottom. Phase 4 kept."
+        },
+        {
+          "who": "claude",
+          "text": "Issue-2 fix applied: flank_n now routes via the sneak corridor (566,20)->(700,20), wall-hugging, and the intent sequences it AFTER flank_s makes contact \u2014 the fixing attack covers the sweep. Also recorded the phase-3 comms reality: rear is out of shout range from here on; the rear fights autonomously (accepted)."
+        },
+        {
+          "who": "claude",
+          "text": "Rear doctrine (from James): delay forward first; if mid/bottom pressure looks like a PUSH (multiple tracked), fall back behind the lineup wall and defend from cover \u2014 holding 3-4 of theirs while the flanks catch the rest is the win condition for this phase. Encoded as fallback:red_lineup on the rear hold order (schema addition: a hold may carry a fallback location)."
+        }
+      ]
+    },
+    {
+      "name": "steal_and_convert",
+      "intent": "Merged pushers take the pedestal; fastest grabs, rest escort home along the top. Rear holds the lineup as the carrier's safety corridor. If the scoreboard says wipe-in-reach instead, everyone converts to the hunt (the standing convert trigger overrides this plan).",
+      "entry": {
+        "prose": "the lane defense is broken",
+        "tag": "enemy_lives<=18"
+      },
+      "orders": [
+        {
+          "group": "flank_n",
+          "kind": "move",
+          "to": "blue_pedestal"
+        },
+        {
+          "group": "flank_s",
+          "kind": "move",
+          "to": "blue_rally_top"
+        },
+        {
+          "group": "rear",
+          "kind": "hold",
+          "at": "red_lineup",
+          "facing": "top_corridor"
+        }
+      ],
+      "enemy_belief": [
+        {
+          "at": "blue_endzone",
+          "count": 2,
+          "note": "home defense + respawners"
+        }
+      ],
+      "notes": []
+    }
+  ]
+}
