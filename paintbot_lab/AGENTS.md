@@ -31,9 +31,17 @@ league, and why it reshapes the lab:
 - **2-or-4 teams** (red/blue/green/yellow), pure FFA when 4: capturing a heart
   **eliminates** that team; last team standing wins.
 - **Pot scoring**: +2/-2 (2-team) or +4/-1/-1/-1 (4-team); timeout draw = -1
-  for everyone. Win rate is still the only metric that matters.
-- **Variable seating**: 4 variants seat one policy for 4-8 agents; live rounds
-  pad with fillers (7+7+2 observed). Never assume you own the whole team.
+  for everyone. Win rate is still the only metric that matters per battle.
+- **The CAMPAIGN replaces the ladder** (live, verified): league standings are
+  **territory** on a 10x10 cell board; an LLM commander per player (steered by
+  a private standing-orders prompt) picks where to invade each 600s round, and
+  each cell **permanently owns a map** (variant + pinned terrain seed + size),
+  so battles over a cell replay the same terrain every time. Campaign rounds
+  stamp `purpose: "ladder"` — don't misread them. Full model: the recon
+  addendum + [`docs/paintbot-gameplay.md`](docs/paintbot-gameplay.md).
+- **Variable seating**: campaign 2v2-mode battles seat captains (7-8 seats) +
+  mirrored allies (1 seat); ffa4-mode battles seat ≤4 policies with recruits/
+  filler. Never assume you own the whole team.
 
 Full reference: [`docs/paintbot-gameplay.md`](docs/paintbot-gameplay.md). The
 founding recon (with `file:line` citations into the game repo, metta, and the
@@ -45,10 +53,13 @@ The root loop (evaluate → report → direction → implement → rebuild+reupl
 repeat → human gate → submit) runs **unchanged**. Paintbot-specific instruments:
 
 - **Evaluate** (step 1) — experience requests against the uploaded stencil
-  version. Natural cuts: **variant** (default / 2v2 / 4ffa / 4ffa8 — the live
-  rotation is ~half `default`), **team color**, **seat**, **win path**
-  (capture-elimination vs wipe vs survival vs timeout). Because scoring is
-  win-only, win rate per variant is the metric; kills/captures diagnose.
+  version. Natural cuts: **variant/battle mode** (default / 2v2 / 4ffa /
+  4ffa8; in league play the mix follows the campaign's contested cells),
+  **map size class**, **seats owned** (captain vs ally vs one-of-four),
+  **team color**, **win path** (capture-elimination vs wipe vs survival vs
+  timeout). Because scoring is win-only, win rate per cut is the metric.
+  League-side, the ultimate KPI is **territory** — battle win rate is the
+  instrument; the commander prompt (see WORKING_CONTEXT) is a second lever.
 - **Report** (step 2) — pull artifacts with `coworld-episode-artifacts`. There
   is **no paintbot survey/warehouse skill yet**; ctf_lab's `event_warehouse.py`
   re-keying machinery and `analyze_reporter_warehouse.py` pattern are the

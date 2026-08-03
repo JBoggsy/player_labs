@@ -40,14 +40,51 @@ sentinel).
 
 - **There is no "1v1" variant** — the near-1v1 experience is `default` (two
   main entrants each owning ~a team, i.e. plain CTF under the paintbot name).
-- **Live rotation** (observed rounds 512-513, ~22 episodes each): ~10-12x
-  `default`, ~8-10x `2v2`, 1x `4ffa`, 1x `4ffa8`. Roughly half the score still
-  flows through the fixed arena today.
-- **Live seating is messy**: observed `default` = 7+7+1+1 seats across four
-  policies; `2v2` = 7+7+2 with baseline filler. **A policy must handle owning
-  anywhere from 1 to 8 of its team's seats and treat unknown same-team seats as
-  allies.**
+- **Episodes are scheduled by the CAMPAIGN, not a ladder rotation** (next
+  section): the observed variant mix per round (~half `default`) reflects
+  which territory cells are being fought over, not a scheduler.
+- **Live seating decodes as campaign rosters**: 7+7+1+1 on a 16-seat map is a
+  2v2-mode battle (two captains + one mirrored ally each, repeats
+  filler-marked); clean 4x4 / 4x8 are ffa4-mode battles. **A policy must
+  handle owning anywhere from 1 to 8 of its team's seats and treat unknown
+  same-team seats as allies.**
 - Time-limit draw pays **-1 to every player** (GV21); mutual wipe = 0/0.
+
+## The campaign (territory) league — how games are actually scheduled
+
+The live Paintbot league does **not** run a ladder: it runs metta's **campaign
+round brain** (spec 0075; league settings hold ladder XOR campaign — verified
+live via `GET /v2/leagues/{id}/campaign`, `enabled: true`). The war model:
+
+- A **10x10 board of 100 cells**, 4-neighbor adjacency. Players enter by
+  **airdrop** and expand by **invading adjacent cells** (max 3/round, one
+  round every **600s**). Standings = **territory** (cells owned) — the
+  division "score" leaderboard IS cell count.
+- **Each cell permanently owns a map**: at board creation it is stamped a
+  variant (`map_ref` — live mix 29x 4ffa8 / 26x 4ffa / 25x default /
+  20x 2v2), a persistent **terrain seed** (`map_seed` — *"a cell IS a map"*),
+  and a **size class** (40 standard / 25 large / 14 small / 14 huge /
+  7 giant). Episodes fought over a cell pin the **target cell's**
+  `mapSeed`+`mapSize` into the game config (the deployed manifest declares
+  both knobs), so **the same cell replays the same generated terrain every
+  round** — defense is always on your own fixed map; assaulting a cell
+  replays its map every attempt. The per-episode `seed` still varies
+  (respawn/RNG), only terrain is pinned.
+- **Battle modes** derive from the cell's variant: 2-team variants
+  (`default`, `2v2`) fight **2v2** (attacker + defender captains with
+  mirrored allies; both seatings played, captains swapped); 4-team variants
+  fight **ffa4** (≤4 policies: attackers, defender, ex-owner recruits,
+  filler). Stakes: attacker sweep takes the cell; defender sweep takes the
+  attacker's staked source; split = status quo.
+- **An LLM strategist (claude-sonnet-5) plays commander** for each player —
+  it picks *where* to fight each round, steered by the player's **private
+  standing-orders prompt** (settable via the campaign API / newer
+  `coworld campaign set-prompt`). The policies decide who wins the battles.
+  A paintbot competitor is therefore policy + commander prompt.
+- The board's 100 `(map_ref, map_seed, map_size)` triples are public API data
+  and the generator is deterministic public code — **every cell's exact
+  terrain can be regenerated offline** for per-cell preparation. (The policy
+  still can't read seeds from the wire; in-game it can only *recognize* maps.)
 
 ## Multi-team rules (the 4-team layer)
 

@@ -14,8 +14,11 @@ This README orients newcomers (human or agent). Two pointers do most of the work
 
 > **Status: lab bootstrapped 2026-08-03.** `stencil` (a beacon fork with online
 > per-episode navigation) is implemented and tested but **not yet uploaded or
-> evaluated**. The live Paintbot league is at round ~514; `beacon:v67` is
-> auto-mirrored in from CTF and scoring 0 (its fixed-arena bake can't navigate
+> evaluated**. The live Paintbot league runs the **campaign (territory)
+> round brain, not a ladder**: an LLM commander per player invades cells on a
+> 10x10 board where **each cell permanently owns a map** (pinned terrain seed +
+> size); standings are territory — daveey holds 84/100 cells, and the
+> auto-mirrored `beacon:v67` holds 0 (its fixed-arena bake can't navigate
 > generated maps). Deployed game: paintbot **0.7.178**. Live state + open
 > threads: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
 
@@ -43,8 +46,12 @@ deep recon with citations:
 | `4ffa` | 16 | 4 | generated | 4 (one policy per team) |
 | `4ffa8` | 32 | 4 | generated giant | 8 (one policy per team) |
 
-Live rotation ≈ half `default`, most of the rest `2v2`, a sprinkle of the FFA
-shapes. There is **no "1v1" variant**; a policy must handle owning 1–8 seats.
+There is **no "1v1" variant**; a policy must handle owning 1-8 seats. Which
+variant an episode plays is decided by the **campaign**: each territory cell
+permanently owns a variant + terrain seed + size class (live board: 29x
+`4ffa8`, 26x `4ffa`, 25x `default`, 20x `2v2`), and battles replay the target
+cell's exact map — see the campaign section of
+[`docs/paintbot-gameplay.md`](docs/paintbot-gameplay.md).
 
 ## Layout
 

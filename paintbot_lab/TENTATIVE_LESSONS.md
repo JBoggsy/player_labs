@@ -49,3 +49,27 @@ checked in review whenever new map-derived state appears.
 Wrote the tracer against an imagined `sink(name, dict)` API; the real protocol
 is `sink.record(TraceEvent(tick=, name=, data=))` (pydantic, extra=forbid).
 Check `players/player_sdk/trace.py` before wiring telemetry.
+
+### Campaign rounds stamp purpose:"ladder" — round metadata cannot distinguish the two
+Misread the live Paintbot league as a variant-rotation ladder because campaign
+rounds create ordinary Rounds with purpose "ladder" (campaign/episodes.py) and
+the CLI leaderboard renders territory as a bare "Score" column. The tell that
+cracked it: standings summed to exactly 100 (the cell count), and the odd
+7+7+1+1 seatings matched the campaign's 2v2 captain+ally rosters. Check
+`GET /v2/leagues/{id}/campaign` (enabled flag) before classifying any league
+as ladder-run.
+
+### Under the campaign, terrain is per-cell PINNED — map prep is viable again
+Each cell carries a permanent map_seed/map_size injected into episodes as
+mapSeed/mapSize overrides (target cell's map; deployed paintbot manifest
+declares both knobs). All 100 triples are API-public and the generator is
+deterministic public code — every board map can be regenerated offline. The
+online WorldMap stays necessary (the wire still carries no seed), but a
+per-cell knowledge layer (recognize the map by signature, load precomputed
+data) is a legitimate future iteration.
+
+### The pinned coworld CLI lags the platform — the API + softmax token fills the gap
+`coworld campaign ...` exists in metta packages/coworld but not in our pinned
+install. `softmax.auth.load_current_token(server="https://softmax.com/api")` +
+httpx against `/observatory/v2/leagues/{id}/campaign` worked immediately.
+Freshness preflight for campaign work should include a CLI-version check.
