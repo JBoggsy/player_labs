@@ -37,9 +37,28 @@ retest was built to answer is still unanswered.
   (33/34 of all movement failures). wowborg then casts the unstick spell 7355, the server
   returns it to spawn z, and it falls again — the z trace oscillates 38.7 → 28 → 38.7 for
   720 s. Movement failures rose 13 → 44/47 versus baseline.
+- **ROOT CAUSE: the character never lands — it is permanently in the falling state.**
+  `FALLING` (0x2000) is set on **175/175 and 157/157 = 100.0%** of both episodes' movement
+  packets (many also `FALLINGFAR`), against **3.8%** in the v59 baseline. A falling character
+  ignores forward input horizontally, which is exactly why x/y never changes while
+  `MSG_MOVE_START_FORWARD` is still being sent. The chain: spawn pose is valid → never
+  grounded → z drifts below the terrain → the navmesh refuses the pose → wowborg unsticks with
+  7355 → server returns it to spawn z → it resumes falling. For 720 s.
+- **The navmesh and the world data are innocent, both verified directly:**
+  - `maps` / `vmaps` / `mmaps` tiles covering the spawn (map 1, grid 33/39-40) are
+    **byte-identical** between 0.1.124 and 0.1.146 (same md5s, same sizes).
+  - Querying 0.1.146's own `vmangos-navmesh-helper` at the spawn pose z=38.718 **plans a
+    48-yard route with waypoints**; the identical query at z=27.988 and z=18.558 returns
+    `no_path` / "no physically admissible source triangle". The mesh is right — the
+    character's z is wrong.
 - **This is game-side, not our SDK pin.** wowborg **v61** was rebuilt against 0.1.146's exact
   image and run as a full local exact-image episode: same spawn, same fall, **1 distinct x/y,
   0.0 trajectory yards**. Three episodes, two builds, hosted and local — one signature.
+- Note the 0.1.146 image set is now **three images**: the Python adapter
+  (`sha256:ab5f989c…`, packages under `/app`, no world data) and the VMaNGOS runtime
+  (`sha256:38880c23…`) that carries `/vmangos-data` and `vmangos-navmesh-helper`. 0.1.124 was
+  a single all-in-one. `tools/route_lab.sh` assumes the pinned image carries `/vmangos-data`,
+  so it needs the runtime image, not the `versions.env` pin, on 0.1.146+.
 - Build-contract change found while rebuilding: the game image now serves its Python
   packages from **`/app`**, not `/usr/local/lib/python3.11/dist-packages`. The Dockerfile
   COPY paths are updated; without that the build fails outright.

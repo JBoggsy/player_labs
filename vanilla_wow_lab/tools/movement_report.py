@@ -47,6 +47,11 @@ HEARTBEAT = 238
 
 TURN_STARTS = (START_TURN_LEFT, START_TURN_RIGHT)
 
+# MovementInfo flag bits (VMaNGOS 1.12). A falling character ignores forward input
+# horizontally, so a high falling share explains "start_forward is flowing but x/y never
+# changes" — the accelerated-wow 0.1.146 failure, where it was 100% against a 3.8% baseline.
+MOVEFLAG_FALLING = 0x00002000
+
 # A STOP is "boundary-only" when forward motion resumes afterwards and the character
 # went nowhere in between: it halted, stood still, and started again, so the stop was
 # pure executor overhead rather than an arrival.
@@ -71,6 +76,7 @@ class MovementReport:
     turn_stops: int = 0
     heartbeats: int = 0
     other_movement: int = 0
+    falling_packets: int = 0
     trajectory_yards: float = 0.0
     forward_spans: int = 0
     boundary_only_stops: int = 0
@@ -86,6 +92,17 @@ class MovementReport:
     observations: int = -1
     progress_reports: int = -1
     failure_details: dict[str, int] = field(default_factory=dict, repr=False)
+
+    @property
+    def falling_percent(self) -> float:
+        """Share of movement packets flagged FALLING.
+
+        The absolute count misleads: 0.1.146 sent FEWER falling packets than the baseline in
+        total, but 100% of its movement was falling versus the baseline's 3.8%.
+        """
+        if not self.movement_packets:
+            return 0.0
+        return round(self.falling_packets / self.movement_packets * 100, 1)
 
     @property
     def continuous_prefix(self) -> bool:
@@ -186,6 +203,8 @@ def _report_member(path: Path, member) -> MovementReport:
 
         info = _movement_info(packet)
         if info is not None:
+            if info["move_flags"] & MOVEFLAG_FALLING:
+                report.falling_packets += 1
             if previous_xy is not None:
                 report.trajectory_yards += (
                     (info["x"] - previous_xy[0]) ** 2
@@ -246,6 +265,7 @@ REPLAY_ROWS = [
     ("turn starts", "turn_starts"),
     ("turn stops", "turn_stops"),
     ("heartbeats", "heartbeats"),
+    ("falling %", "falling_percent"),
     ("trajectory yards", "trajectory_yards"),
     ("forward spans", "forward_spans"),
     ("boundary-only stops", "boundary_only_stops"),

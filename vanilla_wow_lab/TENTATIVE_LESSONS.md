@@ -48,6 +48,26 @@ correctly scores 239/239 and FAILs. A metric that passes the case it was built t
 worthless, and only the negative control reveals it.
 Status: candidate — generalizes well beyond this lab.
 
+### Decode the replay's movement FLAGS, not just opcodes — they name the failure outright
+
+Evidence: "character doesn't move" was diagnosable but vague from positions and opcode counts
+alone. Decoding the `MovementInfo` flag word settled it in one query: `FALLING` (0x2000) on
+**100.0%** of movement packets in both 0.1.146 episodes vs **3.8%** in the baseline. The
+character was never grounded, and a falling character ignores forward input horizontally —
+which explains why `MSG_MOVE_START_FORWARD` kept flowing while x/y never changed. The flags
+are already in `cwreplay._movement_info`'s `move_flags`; nothing was reading them.
+Status: candidate — add flag decoding to `movement_report.py`.
+
+### Prove a data/tooling layer innocent by direct query before blaming the layer above it
+
+Evidence: "no physically admissible source triangle" reads like a navmesh problem. Two direct
+checks refuted that: the spawn-area `maps`/`vmaps`/`mmaps` tiles are byte-identical between
+0.1.124 and 0.1.146 (same md5s), and running 0.1.146's own `vmangos-navmesh-helper` at the
+spawn pose z=38.718 planned a 48-yard route while the same query at z=27.988 refused. The mesh
+was right; the character's z was wrong. That inverted the search from "navmesh regressed" to
+"character placement regressed" — the actual bug.
+Status: candidate — the helper takes a JSON request on stdin and is trivially scriptable.
+
 ### "Episode completed, score 1.0" says nothing about whether the player did anything
 
 Evidence: both 0.1.146 episodes completed with score 1.0, a retained replay, and zero errors —

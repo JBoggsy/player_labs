@@ -37,9 +37,16 @@ mid-session; check them back at the start of focused work.
   position and 0.0 trajectory yards** versus the baseline's 1,315.8 yd. The character spawns
   at (-618.518, -4251.670, 38.718), falls to z≈28–18.6, and the navmesh refuses it — *"no
   physically admissible source triangle was found near the client pose"* (33/34 of movement
-  failures); the unstick spell 7355 returns it to spawn z and it falls again. **Not our SDK
-  pin:** wowborg v61, rebuilt against 0.1.146's exact image, reproduces it in a full local
-  exact-image episode (1 distinct x/y, 0.0 yd). Report upstream, then re-run the comparison
+  failures); the unstick spell 7355 returns it to spawn z and it falls again.
+  **ROOT CAUSE — the character is never grounded:** the `FALLING` flag (0x2000) is set on
+  **100.0%** of both episodes' movement packets (175/175 and 157/157, many also `FALLINGFAR`)
+  versus **3.8%** in the baseline. A falling character ignores forward input horizontally, so
+  x/y never changes even though `MSG_MOVE_START_FORWARD` keeps being sent. World data is
+  innocent: the `maps`/`vmaps`/`mmaps` tiles covering the spawn are **byte-identical** to
+  0.1.124, and 0.1.146's own `vmangos-navmesh-helper` plans a 48-yard route from the spawn pose
+  (z=38.718) while refusing z=27.988 — the mesh is right, the character's z is wrong.
+  **Not our SDK pin:** wowborg v61, rebuilt against 0.1.146's exact image, reproduces it in a
+  full local exact-image episode (1 distinct x/y, 0.0 yd). Report upstream, then re-run the comparison
   against baseline `ereq_422085f1-9ec7-4554-b2ba-9942947e5dc2` (4,097 movement packets, 239
   forward starts, 243 stops, 326 turn starts, 356 turn stops, 2,907 heartbeats, 1,315.8 replay
   yd / 1,309.9 reported yd) once a release lands where the character can walk — use
