@@ -66,7 +66,9 @@ vanilla_wow_lab/
     designs/                         player design docs (obs/action spaces, v2 shim adoption)
     recon/                           citation-backed recon reports (navigation obs/actions)
   wowborg/                           our player: Python policy over canonical /env (own README)
-  tools/                             versions.env (environment pin), build_player.sh, route_lab.py, lessons hooks
+  tools/                             versions.env (environment pin), build_player.sh, route_lab.py,
+                                     cwreplay.py (replay decoder), movement_report.py (movement
+                                     continuity from a replay), lessons hooks
   .claude/skills/lessons-review/     the ≈weekly lessons-graduation skill
   lessons_archive/                   rotated per-session lesson buffers
 ```

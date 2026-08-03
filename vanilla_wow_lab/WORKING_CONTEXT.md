@@ -13,6 +13,48 @@ file is the one-screen "where are we and why."
 
 ---
 
+## Status (2026-08-03): 0.1.146 DISPATCHES BUT THE CHARACTER CANNOT MOVE — game-side blocker
+
+The accelerated-wow 0.1.146 retest ran. Episodes dispatch and complete (unlike 0.1.127),
+but **the character never moves a single yard**, so the movement-continuity question the
+retest was built to answer is still unanswered.
+
+- Canonical target `accelerated-wow:0.1.146` = `cow_ff82f1c4-d1f5-4291-810e-039e67ac8173`,
+  game image `sha256:ab5f989c…` (now pinned in `tools/versions.env`).
+- **v59 was not runnable** and the plan to reuse it was not executable: its copied 0.1.124
+  contract is `extra="forbid"`, and 0.1.146 adds a required top-level
+  `queued_melee_spell_id` plus nested `units[].class_id` / new `spell_facts` fields, so every
+  frame would be rejected exactly as on 0.1.127. **v60's `AgentFrame` JSON schema is
+  byte-identical to 0.1.146's**, and v60 is documented behavior-identical to v59 — so v60 is
+  the controlled comparison, and it is what ran.
+- Hosted `xreq_45fa56c4-1b49-4f4c-9a08-f819cd9be62a` (wowborg:v60, `custom-fresh-start-10x`,
+  2 episodes) — both **completed, score 1.0, replay retained, no errors**. Score 1.0 is
+  `level_progress` for a level-1 character with 0 XP; it is NOT a success signal here.
+- **Both episodes recorded exactly ONE distinct x/y position** for the whole session.
+  Trajectory 0.0 yd vs the baseline's 1,315.8 yd. The character spawns at
+  (-618.518, -4251.670, 38.718), falls to z≈28 (down to 18.6), and lands where the navmesh
+  refuses it: *"no physically admissible source triangle was found near the client pose"*
+  (33/34 of all movement failures). wowborg then casts the unstick spell 7355, the server
+  returns it to spawn z, and it falls again — the z trace oscillates 38.7 → 28 → 38.7 for
+  720 s. Movement failures rose 13 → 44/47 versus baseline.
+- **This is game-side, not our SDK pin.** wowborg **v61** was rebuilt against 0.1.146's exact
+  image and run as a full local exact-image episode: same spawn, same fall, **1 distinct x/y,
+  0.0 trajectory yards**. Three episodes, two builds, hosted and local — one signature.
+- Build-contract change found while rebuilding: the game image now serves its Python
+  packages from **`/app`**, not `/usr/local/lib/python3.11/dist-packages`. The Dockerfile
+  COPY paths are updated; without that the build fails outright.
+- New instrument: [`tools/movement_report.py`](tools/movement_report.py) scores movement
+  continuity from a replay plus the policy's own trace. Validated against the v59 baseline —
+  it reproduces every independently recorded figure (4,097 packets / 239 forward starts /
+  243 stops / 326 turn starts / 356 turn stops / 2,907 heartbeats).
+
+**Next:** this needs a game-side fix at the `custom-fresh-start-10x` spawn (character falls
+below the walkable surface on 0.1.146). Report upstream with the three episode IDs; re-run the
+movement-continuity comparison once a release lands where the character can walk. v61 is built
+and validated locally but **not uploaded** — rebuild against whatever release carries the fix.
+
+---
+
 ## Status (2026-07-30): WOWBORG WORKS ON 0.1.124; NAV + LIVE PROGRESS PROVED
 
 The current accelerated-wow release now ships the convenient Gymnasium interface the

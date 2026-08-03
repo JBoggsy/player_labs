@@ -17,15 +17,12 @@ RUN pip install --no-cache-dir \
 
 # Copy the exact Python environment and navmesh SDK shipped by the deployed game
 # image. The policy image contains no WoW client: the game owns that process.
-COPY --from=environment_contract \
-    /usr/local/lib/python3.11/dist-packages/environment \
-    /opt/vanilla-wow/environment
-COPY --from=environment_contract \
-    /usr/local/lib/python3.11/dist-packages/player/__init__.py \
-    /opt/vanilla-wow/player/__init__.py
-COPY --from=environment_contract \
-    /usr/local/lib/python3.11/dist-packages/player/sdk \
-    /opt/vanilla-wow/player/sdk
+#
+# The game image serves these from /app as of accelerated-wow 0.1.146; releases
+# through 0.1.127 installed them under /usr/local/lib/python3.11/dist-packages.
+COPY --from=environment_contract /app/environment /opt/vanilla-wow/environment
+COPY --from=environment_contract /app/player/__init__.py /opt/vanilla-wow/player/__init__.py
+COPY --from=environment_contract /app/player/sdk /opt/vanilla-wow/player/sdk
 COPY . /opt/wowborg/wowborg
 
 ARG WOWBORG_POLICY=world_race

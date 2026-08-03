@@ -1,5 +1,22 @@
 # wowborg version log
 
+## v61 - accelerated-wow 0.1.146 SDK rebuild (2026-08-03, built + locally run, NOT uploaded)
+
+- Behavior is unchanged from v59/v60. Rebuilt `linux/amd64` against accelerated-wow
+  0.1.146's exact game image
+  (`sha256:ab5f989cbdde51c5ae3ca80550365798f780c483927cb54a19c1c624632be01c`), now
+  pinned in `tools/versions.env`.
+- **Build-contract change:** the game image serves its Python packages from `/app`;
+  releases through 0.1.127 used `/usr/local/lib/python3.11/dist-packages`. The
+  Dockerfile COPY paths were updated — the build fails outright without it.
+- Local image manifest: `sha256:f40218f7a055375e04b1a61d86e2c355d820d2a1ca83f858072c272f8ecd8676`.
+- Built solely to isolate whether the 0.1.146 movement failure was our stale SDK copy.
+  It is not: a full local exact-image `custom-fresh-start-10x` episode reproduced the
+  hosted failure exactly — **1 distinct x/y position, 0.0 trajectory yards**, 144 replay
+  movement packets, 33 forward starts, character falling from spawn z 38.718 to 18.6.
+- Not uploaded: uploading is pointless until a release lands where the character can
+  walk. Rebuild against that release rather than shipping this one.
+
 ## v60 - accelerated-wow 0.1.127 SDK rebuild (2026-07-31)
 
 - Version UUID: `99a2c257-bbad-4bb2-9eb5-1eefa8920f06`
@@ -14,7 +31,13 @@
   `xreq_d2255259-ee1b-4647-bc71-2ea93133ab54` on accelerated-wow 0.1.127 /
   `custom-fresh-start-10x`. It did not dispatch: 0.1.127 certification failed its
   smoke episode after 3,600 seconds, so the request remained pending without a
-  job ID, replay, or results. Retest v60 against the corrected successor release.
+  job ID, replay, or results.
+- **Retested on accelerated-wow 0.1.146 (2026-08-03):** `xreq_45fa56c4-1b49-4f4c-9a08-f819cd9be62a`,
+  episodes `ereq_c0454d48-b8…` and `ereq_635799dd-9c…`. Both completed with score 1.0 and a
+  retained replay — but the character never moved: 1 distinct x/y position and 0.0 trajectory
+  yards in each, against the v59 baseline's 1,315.8 yd. v60's `AgentFrame` schema is
+  byte-identical to 0.1.146's, so this is not a contract mismatch; v61 rebuilt against 0.1.146
+  reproduces it locally. The movement-continuity comparison remains unanswered.
 - Full exact-image local `custom-fresh-start-10x` episode completed cleanly with
   score 1.0, 312 observations, 311 intents, a replay, and 1,391.080 yards of replay
   trajectory. Versus the hosted v59 baseline, movement packets fell 4,097 -> 1,376

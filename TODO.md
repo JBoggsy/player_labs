@@ -26,6 +26,27 @@ mid-session; check them back at the start of focused work.
   (repel from `teammate_colors` positions), analogous to crew dispersion. The teammate identity is
   reliable (`teammate_colors`), so the signal to act on is already there.</details>
 
+- **BLOCKED ON A GAME FIX (2026-08-03): wowborg cannot move on accelerated-wow 0.1.146.**
+  The retest ran on canonical `accelerated-wow:0.1.146`
+  (`cow_ff82f1c4-d1f5-4291-810e-039e67ac8173`, image `sha256:ab5f989c…`) as
+  `xreq_45fa56c4-1b49-4f4c-9a08-f819cd9be62a` with **wowborg:v60** — v59 was not runnable
+  (its 0.1.124 `extra="forbid"` contract rejects 0.1.146's added `queued_melee_spell_id` /
+  `units[].class_id`), while v60 is behavior-identical to v59 and its `AgentFrame` schema is
+  byte-identical to 0.1.146's. Both episodes (`ereq_c0454d48-b8…`, `ereq_635799dd-9c…`)
+  completed with score 1.0 and a retained replay, but recorded **exactly one distinct x/y
+  position and 0.0 trajectory yards** versus the baseline's 1,315.8 yd. The character spawns
+  at (-618.518, -4251.670, 38.718), falls to z≈28–18.6, and the navmesh refuses it — *"no
+  physically admissible source triangle was found near the client pose"* (33/34 of movement
+  failures); the unstick spell 7355 returns it to spawn z and it falls again. **Not our SDK
+  pin:** wowborg v61, rebuilt against 0.1.146's exact image, reproduces it in a full local
+  exact-image episode (1 distinct x/y, 0.0 yd). Report upstream, then re-run the comparison
+  against baseline `ereq_422085f1-9ec7-4554-b2ba-9942947e5dc2` (4,097 movement packets, 239
+  forward starts, 243 stops, 326 turn starts, 356 turn stops, 2,907 heartbeats, 1,315.8 replay
+  yd / 1,309.9 reported yd) once a release lands where the character can walk — use
+  `vanilla_wow_lab/tools/movement_report.py`. Also note the game image moved its Python
+  packages to `/app`. Spell 7355 cooldown spam remains a separate wowborg issue.
+  <details><summary>Original item (2026-07-31, superseded)</summary>
+
 - **Finish wowborg's hosted retest on the corrected successor to accelerated-wow 0.1.127** (2026-07-31).
   PR #7394 published `accelerated-wow:0.1.127`
   (`cow_be2dfbf4-ad71-40a3-b6e1-9dfe21a2b586`) from frozen source `59497e551`, which
@@ -53,7 +74,7 @@ mid-session; check them back at the start of focused work.
   against baseline episode `ereq_422085f1-9ec7-4554-b2ba-9942947e5dc2`: 4,097 movement
   packets, 239 forward starts, 243 forward stops, 326 turn starts, 356 turn stops, 2,907
   heartbeats, and 1,309.923 yards displacement. Report the new request/episode/Coworld IDs
-  and before/after counts. Spell 7355 cooldown spam is a separate wowborg issue.
+  and before/after counts. Spell 7355 cooldown spam is a separate wowborg issue.</details>
 
 - **Project large CTF snapshot fields during warehouse ingestion (found 2026-07-30).**
   A 60-episode `BEACON_DIAG_EVERY_TICKS=1` build reached 12 GB and about

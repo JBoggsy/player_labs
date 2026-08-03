@@ -17,3 +17,69 @@ buffers — not in-session hit counts — is the graduation signal.
 concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
+
+### Diff the game image's `AgentFrame` JSON schema against the policy image's BEFORE running a hosted retest
+
+Evidence: the retest plan said "run the same wowborg:v59". v59 physically cannot run on
+accelerated-wow 0.1.146: its copied 0.1.124 contract is `extra="forbid"`, and 0.1.146 adds a
+required top-level `queued_melee_spell_id` plus nested `units[].class_id` — so every frame
+would be rejected, exactly as it was on 0.1.127 (128 `extra_forbidden` errors). Two hosted
+episodes were already burned that way. The check is cheap and decisive: run
+`AgentFrame.model_json_schema()` inside both images and `cmp` the output. It showed v60's
+schema is BYTE-IDENTICAL to 0.1.146's, so v60 was runnable with no rebuild.
+Status: candidate — cheap preflight that would have saved two dead hosted episodes.
+
+### A "same policy" comparison survives an SDK rebuild; a version-number match does not
+
+Evidence: v60 is documented as "behavior unchanged from v59", rebuilt only against a newer
+game SDK. So v60-on-0.1.146 vs v59-on-0.1.124 is still a controlled comparison of the
+game-side movement fix — the policy behavior is the constant, the version number isn't.
+Insisting on the literal v59 would have produced no episode at all.
+Status: candidate.
+
+### Validate a new analysis metric against a known-BAD control before trusting it on new data
+
+Evidence: `movement_report.py`'s first "boundary-only stop" definition (stop followed by a
+restart within 1 s) scored the known-broken v59 baseline as 0 boundary-only stops — PASS.
+Measuring the actual distributions showed why: baseline pauses last 3-91 s, so timing is not
+the discriminator. Displacement is — across all 239 baseline pauses the character moved under
+0.9 yd, i.e. it halted, stood still, and restarted. Redefined on displacement, the baseline
+correctly scores 239/239 and FAILs. A metric that passes the case it was built to catch is
+worthless, and only the negative control reveals it.
+Status: candidate — generalizes well beyond this lab.
+
+### "Episode completed, score 1.0" says nothing about whether the player did anything
+
+Evidence: both 0.1.146 episodes completed with score 1.0, a retained replay, and zero errors —
+and the character never moved one yard. `results.json` shows why: `score_metric` is
+`level_progress`, so 1.0 is just "level 1", and `xp_gained` was 0. The baseline scored an
+identical 1.0 while walking 1,315 yards. Read the behavioral metric, never the score, when the
+question is whether the policy functioned.
+Status: candidate — this score would have made a green-looking false pass.
+
+### Rebuild against the exact target image to separate "our pin is stale" from "the game regressed"
+
+Evidence: the 0.1.146 movement failure had two candidate causes — v60's 0.1.127-era SDK copy, or
+a game regression. Rebuilding v61 against 0.1.146's exact image and running one local
+exact-image episode settled it in ~20 minutes: v61 reproduced the failure exactly (1 distinct
+x/y, 0.0 yd), so the game is at fault. Without that control the finding would have been an
+unfalsifiable "something is broken".
+Status: candidate — the exact-image local episode is the lab's decisive instrument.
+
+### The game image moved its Python packages from dist-packages to `/app`
+
+Evidence: `wowborg/Dockerfile` copied `environment/` and `player/sdk` from
+`/usr/local/lib/python3.11/dist-packages`. On accelerated-wow 0.1.146 that path does not exist —
+the build fails at COPY with "not found". They now live under `/app`. Releases through 0.1.127
+used the old path. The `player/sdk` layout also changed (`navmesh_domain/` → `navmesh/`,
+`nim_client_domain/` → `nim_client/`), though those were pure renames with no protocol change.
+Status: candidate — a build-contract change with no deprecation window.
+
+### `versions.env` can silently lag the version actually built and uploaded
+
+Evidence: `tools/versions.env` still pins accelerated-wow 0.1.124 on a clean working tree,
+but v60 was built against 0.1.127's image digest (recorded only in `VERSION_LOG.md`). The
+build pin was passed via `--base` and never committed, so the repo cannot reproduce v60 from
+`versions.env` alone. VERSION_LOG's per-version "Local image manifest" hash was what let me
+identify the local `players-wowborg:diag-0127` image as v60.
+Status: candidate — record the base digest in `versions.env` when a version ships against it.
