@@ -40,6 +40,7 @@ player_labs/
   heartleaf_lab/       third game lab — Heartleaf, a 9-gnome garden-dinner game (own README)
   ctf_lab/             fourth game lab — CTF, an 8v8 capture-the-flag shooter (own README)
   vanilla_wow_lab/     fifth game lab — Vanilla WoW, a real WoW 1.12.1/VMaNGOS realm (own README)
+  paintbot_lab/        sixth game lab — Paintbot, a 2-or-4-team capture-the-heart shooter on procgen maps (own README)
   pyproject.toml       uv project: coworld[auth] + the pinned players SDK (from git) + deps
 ```
 

@@ -19,7 +19,7 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 STATE_DIR="${TMPDIR:-/tmp}"
 TOOL_USE_MIN=15        # substantive-work proxy: tool uses in the transcript
 LAB_MENTION_MIN=12     # lab-path hits in tool_use lines for it to count as worked-on
-LABS=(crewrift_lab cue_n_woo_lab heartleaf_lab ctf_lab vanilla_wow_lab)
+LABS=(crewrift_lab cue_n_woo_lab heartleaf_lab ctf_lab vanilla_wow_lab paintbot_lab)
 
 INPUT="$(cat 2>/dev/null || true)"
 SESSION_ID="$(printf '%s' "$INPUT" | jq -r '.session_id // empty' 2>/dev/null || true)"
