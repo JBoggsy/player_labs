@@ -5,8 +5,11 @@ description: "Build and query the CTF event warehouse — a policy-indexed DuckD
 
 # CTF Event Warehouse
 
-The deep-dig tool for CTF. `agg_eval.py` gives a one-line scoreline from results.json; the
-warehouse tells you **how** — it re-simulates every episode's replay into ground-truth game
+The deep-dig tool for CTF. Start a league-round diagnosis with the hosted CTF Round
+Warehouse v5 and `tools/analyze_reporter_warehouse.py`; it provides authoritative rich
+events and player statistics without local replay re-simulation. Use this local warehouse
+when the hosted comparison reveals a question that needs Beacon's internal trace or a
+sequence-preserving spatial join. It re-simulates every episode's replay into ground-truth game
 events, reads beacon's per-episode belief trace, **re-keys both from episode *slot* to
 policy / version / team / seat / role**, and collates them into a queryable **DuckDB +
 Parquet** store. Ask cross-episode, by-policy, by-role behavioural questions in SQL.
@@ -30,7 +33,23 @@ The tool is `ctf_lab/tools/event_warehouse.py` (one file, run via `uv`). It inge
 
 **Use it when** a survey/A-B question needs the actual behaviour: capture-conversion /
 delivery rate, where carriers die, escort proximity, engagement outcomes, objective
-time-share. **Don't** use it for a quick batch scoreline — that's `tools/agg_eval.py`.
+time-share. **Don't** use it for a quick batch scoreline (`tools/agg_eval.py`) or a first
+cross-policy league-round comparison (`tools/analyze_reporter_warehouse.py`).
+
+## Hosted reporter first
+
+Analyze and retain the latest completed CTF Round Warehouse v5
+`rv_bf89a010-14be-4c76-a73c-2fd280e83779` run with:
+
+```bash
+uv run python ctf_lab/tools/analyze_reporter_warehouse.py \
+  --latest --download-dir <output-dir> --focus beacon
+```
+
+The output compares normalized combat, survival, territory, steal, and delivery metrics
+and carries hashes for all three inputs. `--focus` takes an exact (case-insensitive)
+`policy_name` and fails if that policy is absent from the run. Treat it as a hypothesis
+screen, not as causal proof or a promotion verdict.
 
 ## Build it
 

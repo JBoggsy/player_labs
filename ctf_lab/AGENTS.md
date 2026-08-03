@@ -131,6 +131,9 @@ build-and-upload, policy lifecycle) live at the **lab root** (`../.claude/skills
 in [`../AGENTS.md`](../AGENTS.md)) — use those to *create*, *pull*, and *ship* episodes.
 
 **Observability quick reference:**
+- `tools/analyze_reporter_warehouse.py --latest --download-dir <dir>` — first-line
+  cross-policy league-round comparison from the hosted Round Warehouse v5, no local
+  replay re-simulation. A hypothesis screen, not a promotion verdict.
 - `tools/agg_eval.py <dir>` — fast one-line scoreline from a results dir.
 - `tools/build_expand_replay.sh` — builds two host-native, version-matched replay readers:
   `expand_replay` (human timeline) and `expand_replay_json` (JSONL for the warehouse).

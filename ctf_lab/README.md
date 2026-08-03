@@ -74,6 +74,7 @@ ctf_lab/
     build_expand_replay.sh        build version-matched replay readers (human + JSONL)
     expand_replay_json.nim        JSONL event emitter (feeds the warehouse)
     event_warehouse.py            build a DuckDB/Parquet event warehouse from episodes
+    analyze_reporter_warehouse.py compare policies from hosted Round Warehouse outputs
     run_roundwarehouse_local.py   run Reporter Lab's canonical rich-event Wasm locally
     find_firefights.py            detect and weight reciprocal replay firefights
     infer_battle_plan.py          infer opponent groups + move/hold orders from replays
@@ -110,6 +111,30 @@ component SHA and reporter manifest beside its Parquet outputs.
 spatiotemporally connected weapon exchanges and exposes auditable weight/confidence
 terms. See [`docs/replay-firefight-detection.md`](docs/replay-firefight-detection.md)
 for the event contract, method, usage, and calibration limits.
+
+## Fast league-round diagnosis from the hosted Warehouse
+
+Use the immutable CTF Round Warehouse v5 outputs for the first policy comparison. This
+path reads the hosted reporter's authoritative `events` and `player_stats` parts and
+does not require local replay re-simulation:
+
+```sh
+uv run python ctf_lab/tools/analyze_reporter_warehouse.py \
+  --latest \
+  --download-dir /tmp/ctf-latest-warehouse \
+  --focus beacon \
+  --json-out /tmp/ctf-player-report.json \
+  --markdown-out /tmp/ctf-player-report.md
+```
+
+The report normalizes action and objective metrics per player-game, records input
+hashes and the pinned Warehouse version, and labels its inference limits. Use it to
+screen the next hypothesis; a matched hosted evaluation remains the promotion test.
+Drop to `event_warehouse.py` when the question needs Beacon's internal trace or a
+sequence-preserving spatial query. `--focus` matches an exact (case-insensitive)
+`policy_name` and errors if that policy is absent from the run. For an already-downloaded
+run, replace `--latest` and `--download-dir` with `--manifest`, `--events`, and
+`--player-stats`.
 
 ## Beacon tuning sweeps
 
