@@ -18,7 +18,7 @@ proc updateHearts(belief: Belief, percept: PaintState) =
     for color, heart in percept.hearts:
       if heart.planted and heart.pos.isSome:
         map.pedestals[color] = heart.pos.get
-    let totalLives = map.teamTotalLives
+    let totalLives = belief.seatsPerTeam * LivesPerPlayer
     for color, heart in percept.hearts:
       if color in belief.heartsRetired or heart.planted or heart.carriedPos.isSome:
         continue
@@ -344,6 +344,16 @@ proc updateBeliefCore*(
   belief.fireReady = percept.fireReady
   belief.enemies = percept.enemies
   belief.teammates = percept.teammates
+  # Campaign map size is independent of variant/muster, and the wire does not
+  # state seat count. Grow the lower-bound estimate from identities actually
+  # observed; unlike map width, this can never mistake giant 4ffa for 4ffa8.
+  for player in percept.enemies & percept.teammates:
+    if player.identity.isSome:
+      let observedSeats = player.identity.get + 1
+      if belief.colors.len == 2 and observedSeats > 1:
+        belief.seatsPerTeam = 8
+      elif belief.colors.len == 4 and observedSeats > 4:
+        belief.seatsPerTeam = 8
   belief.updateHearts(percept)
   for color, score in percept.teamScores:
     belief.teamScores[color] = score

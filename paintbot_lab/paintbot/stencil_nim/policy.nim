@@ -32,6 +32,10 @@ proc decide*(policy: StencilPolicy, client: ProtocolClient): Command =
     if percept.selfColor.isNone:
       policy.belief.team = teamForSlot(policy.slot, teams)
     policy.belief.seat = min(policy.slot div teams, 7)
+    policy.belief.seatsPerTeam = if teams == 2:
+      (if policy.belief.seat == 0: 1 else: 8)
+    else:
+      (if policy.belief.seat < 4: 4 else: 8)
     policy.teamsKnown = true
   if percept.walkability.len > 0 and percept.gameTeams.isSome and
       percept.endzones.len >= policy.belief.colors.len:
@@ -45,9 +49,12 @@ proc decide*(policy: StencilPolicy, client: ProtocolClient): Command =
       discard policy.belief.worldmap.routeDistance(
         policy.belief.worldmap.center,
         policy.belief.worldmap.capturePoint(policy.belief.team))
+  let previousSeatsPerTeam = policy.belief.seatsPerTeam
   updateBeliefCore(policy.belief, percept, policy.actionState, policy.tick)
+  if policy.belief.seatsPerTeam != previousSeatsPerTeam:
+    policy.rolesAssigned = false
   if not policy.rolesAssigned and not policy.belief.worldmap.isNil:
-    let seats = policy.belief.worldmap.seatsPerTeam
+    let seats = policy.belief.seatsPerTeam
     policy.belief.role = roleForSeat(policy.belief.seat, seats)
     policy.belief.holdPoint = if policy.belief.role == Defender:
       some(holdPointForSeat(policy.belief.worldmap, policy.belief.team,

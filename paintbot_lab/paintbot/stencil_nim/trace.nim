@@ -81,7 +81,7 @@ proc snapshot(policy: StencilPolicy, command: Command): JsonNode =
       "w": map.width,
       "h": map.height,
       "teams": map.teams,
-      "seats_per_team": map.seatsPerTeam,
+      "seats_per_team": belief.seatsPerTeam,
       "grid": [map.gridW, map.gridH],
       "nav_init": navMetrics(map),
     }

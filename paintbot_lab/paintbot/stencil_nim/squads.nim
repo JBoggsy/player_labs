@@ -5,9 +5,6 @@ import belief_state, config, types, worldmap
 
 type Squad* = tuple[name: char, seats: seq[int]]
 
-proc seatsPerTeam(belief: Belief): int =
-  if belief.worldmap.isNil: 8 else: belief.worldmap.seatsPerTeam
-
 proc squadTable(seats: int): seq[Squad] =
   if seats <= 4:
     @[('A', @[0, 1]), ('B', @[2, 3])]
@@ -125,7 +122,7 @@ proc updatePresence*(belief: Belief) =
 proc enemyLivesLeft*(belief: Belief): Option[int] =
   if belief.worldmap.isNil or belief.teamScores.len == 0:
     return none(int)
-  let total = belief.worldmap.teamTotalLives
+  let total = belief.seatsPerTeam * LivesPerPlayer
   var best = high(int)
   for color in belief.colors:
     if color == belief.team or not belief.teamScores.hasKey(color):
@@ -138,7 +135,7 @@ proc enemyLivesLeft*(belief: Belief): Option[int] =
 proc weakestEnemyColor*(belief: Belief): Option[Team] =
   if belief.worldmap.isNil or belief.teamScores.len == 0:
     return none(Team)
-  let total = belief.worldmap.teamTotalLives
+  let total = belief.seatsPerTeam * LivesPerPlayer
   var bestLives = high(int)
   for color in belief.colors:
     if color == belief.team or not belief.teamScores.hasKey(color):

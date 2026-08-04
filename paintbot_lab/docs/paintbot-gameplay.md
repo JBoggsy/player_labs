@@ -25,8 +25,9 @@ splatter; no territory scoring).
 
 ## Variants (deployed manifest, verified live)
 
-Every episode seats **four entrant policies** (nominally — live seating pads
-with fillers; see below). All variants: `lives 3`, `hitPoints 3`,
+Every episode seats **four entrant policies** nominally (except the two-policy
+`1v1`; live campaign seating also pads with fillers; see below). All variants:
+`lives 3`, `hitPoints 3`, `gunRange 1300`,
 `respawnTicks 72`, `carrierSpeedPct 70`, `maxGames 1`, seed randomized
 per-episode from OS entropy (the manifest's `679961` is the "unpinned"
 sentinel).
@@ -37,7 +38,7 @@ sentinel).
 | `default` | 16 | 2 | **fixed classic arena** (1235x659) | classic +1/-1 | 5000 | ±60° | ~8 (2 main entrants) |
 | `2v2` | 16 | 2 | generated (size drawn) | pot **+2/-2** | 5000 | ±60° | 4 (each team split between 2 policies) |
 | `4ffa` | 16 | 4 | generated (size drawn) | pot **+4/-1/-1/-1** | 5000 | ±60° | 4 (one policy per team) |
-| `4ffa8` | 32 | 4 | generated, **locked giant** | pot +4/-1/-1/-1 | **7500** | **±45°** | 8 (one policy per team) |
+| `4ffa8` | 32 | 4 | generated, manifest defaults giant | pot +4/-1/-1/-1 | **7500** | **±45°** | 8 (one policy per team) |
 
 - **`1v1` is a duel instrument**, added in 0.7.179: two seats on generated
   terrain. The campaign's two-team cells still use captain/ally `2v2` battles;
@@ -71,7 +72,9 @@ live via `GET /v2/leagues/{id}/campaign`, `enabled: true`). The war model:
   both knobs), so **the same cell replays the same generated terrain every
   round** — defense is always on your own fixed map; assaulting a cell
   replays its map every attempt. The per-episode `seed` still varies
-  (respawn/RNG), only terrain is pinned.
+  (respawn/RNG), only terrain is pinned. The cell's `mapSize` overrides the
+  variant default: live round 202 has standard-size `4ffa8` cells and a giant
+  `4ffa` cell, so map dimensions are not a muster signal.
 - **Battle modes** derive from the cell's variant: 2-team variants
   (`default`, `2v2`) fight **2v2** (attacker + defender captains with
   mirrored allies; both seatings played, captains swapped); 4-team variants
@@ -115,7 +118,8 @@ generate → validate → retry seed+1). What a policy must absorb:
 - **Size classes** `small/standard/large/huge/giant` = 0.85/1.0/1.3/1.8/2.6 x
   the base shell — 2-team: 1235x659 scaled (1050x560 … **3211x1713**); 4-team:
   square 960 scaled (816 … **2496**). Drawn uniformly unless the variant pins
-  `mapSize` (only `4ffa8`: giant).
+  `mapSize` (the standalone `4ffa8` variant defaults to giant; campaign cells
+  override it with their pinned size).
 - **Terrain**: vertical obstacle columns from families (stubs / diamonds /
   discs / chevrons), trenches, a center feature (bracket/ring/walls), glass
   windows (vision passes, bullets don't), plugged sightlines. Validators
@@ -126,7 +130,10 @@ generate → validate → retry seed+1). What a policy must absorb:
 - **The seed is never on the wire** — a policy cannot regenerate the map. It
   must read the map from the observation (below). Replays DO carry the exact
   geometry (`mapSpec`), so post-hoc tools can reconstruct terrain.
-- `gunRange` is fixed (GV34) — bigger maps do NOT extend the gun.
+- `gunRange` is fixed per episode (GV34) — bigger maps do NOT extend the gun.
+  The engine stock default is 1050px, but every deployed Paintbot 0.7.182
+  variant explicitly overrides it to **1300px** (vision reach is therefore
+  1950px except for the 90px omnidirectional bubble).
 - Grenade max range and shout radius scale with the map (`mapWidth/5`).
 
 ## What the wire tells you (the whole map contract, at t=0)
@@ -146,7 +153,10 @@ The init snapshot states everything about terrain; fog hides only entities:
    visible as its carrier.
 6. **Not on the wire**: variant id, game name, seed, scoring rule, muster.
    Distinguish `default` vs `2v2` only by geometry (fixed 1235x659 vs
-   generated); infer seats-per-team (4 vs 8) from teams + map size.
+   generated). Do **not** infer seats-per-team from map size: campaign size is
+   independent of `4ffa` vs `4ffa8`. Stencil starts from the minimum roster
+   consistent with its own seat and grows the estimate only from observed
+   identity badges.
 
 Protocol deltas from Sprite-v1 (shared with CTF): input bit 7 = **C** (hold to
 charge a grenade throw — the SDK bridge's 7-bit clamp must be widened);
@@ -157,8 +167,9 @@ camera object (id 1) present ⇔ match running; player stream is 1x.
 
 - Movement 2.75 px/tick per axis (diagonal √2 faster); carrier at 70%.
 - Aim: 256 brads/turn, 5 brads/tick turn rate; 16-step sprite readback.
-- Gun: hitscan, 5-tick windup (aim locks at pull; don't strafe through it),
-  12-tick cooldown, aim jitter grows to 80% at max range, friendly fire ON
+- Gun: 1300px hitscan in the deployed manifest, 5-tick windup (aim locks at
+  pull; don't strafe through it), 12-tick cooldown, aim jitter grows to 80% at
+  max range, friendly fire ON
   (first body on the ray eats the bullet).
 - Vision: cone (±60° paintbot / ±45° on 4ffa8) riding the aim + 90px bubble.
 - Items: med kits (heal), shields (6hp, 3x slower fire), grenades (C charge,

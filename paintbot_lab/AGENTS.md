@@ -41,7 +41,8 @@ league, and why it reshapes the lab:
   addendum + [`docs/paintbot-gameplay.md`](docs/paintbot-gameplay.md).
 - **Variable seating**: campaign 2v2-mode battles seat captains (7-8 seats) +
   mirrored allies (1 seat); ffa4-mode battles seat ≤4 policies with recruits/
-  filler. Never assume you own the whole team.
+  filler. Campaign cell size overrides the variant's default size, so map
+  dimensions do not reveal 4-vs-8 muster. Never assume you own the whole team.
 
 Full reference: [`docs/paintbot-gameplay.md`](docs/paintbot-gameplay.md). The
 founding recon (with `file:line` citations into the game repo, metta, and the

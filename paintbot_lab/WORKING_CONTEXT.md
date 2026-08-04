@@ -30,20 +30,23 @@ Next concrete steps:
 3. First-eval survey: does it connect/play/exit cleanly on ALL variants
    (especially a 4-team board and a giant board)? Then win-path diagnosis.
 
-## Facts worth carrying forward (verified 2026-08-03)
+## Facts worth carrying forward (verified 2026-08-04)
 
 - **The Paintbot league runs the CAMPAIGN round brain, not a ladder**
   (`league_b8fa9b35-ac22-48cf-a03f-07b397aff1c7`; `GET .../campaign` →
-  enabled, campaign round ~123, 10x10 board, 600s rounds, outcomes=episodes,
+  enabled, campaign round 202, 10x10 board, 600s rounds, outcomes=episodes,
   strategist claude-sonnet-5). Campaign rounds stamp `purpose: "ladder"` — do
   not be fooled again. Full model: the recon addendum + gameplay doc.
-- **Standings = territory**: daveey owns 84/100 cells, richard 10, Jordan 6;
-  everyone else (incl. the mirrored `beacon:v67` as "James Botts") 0.
+- **Standings = territory**: at round 202 daveey owned 80/100 cells, richard
+  8, and six other owners split the remaining 12.
 - **Every cell permanently owns a map**: variant mix 29x 4ffa8 / 26x 4ffa /
   25x default / 20x 2v2; ALL 100 cells have pinned `map_seed` + `map_size`
   (40 standard/25 large/14 small/14 huge/7 giant). Battles pin the TARGET
   cell's mapSeed+mapSize (deployed 0.7.182 manifest declares both), so cell
-  terrain is stable and offline-reproducible from the public generator.
+  terrain is stable and offline-reproducible from the public generator. The
+  cell size overrides the variant default: the live board includes 16
+  standard-size `4ffa8` cells and one giant `4ffa` cell, so size cannot infer
+  muster.
 - Battle modes: 2-team cells → 2v2 (captains + mirrored allies, both
   seatings); 4-team cells → ffa4 (≤4 policies + recruits/filler). Observed
   seatings (7+7+1+1 etc.) are these rosters.
@@ -53,9 +56,8 @@ Next concrete steps:
   landed PR #219's reduced bot sprite traffic; 0.7.181 fixed the 32-seat replay
   viewer's hash mask, and 0.7.182 adds campaign documentation. Neither alters
   simulation or player traffic.
-- Our pinned `coworld` CLI predates `coworld campaign ...`; direct API calls
-  with `softmax.auth.load_current_token(server="https://softmax.com/api")`
-  work (see the recon addendum).
+- Project-local `coworld` is pinned at **0.1.35**, which provides the campaign
+  commands (`board`, `history`, `prompt`, `set-prompt`, and related views).
 
 ## Open threads
 

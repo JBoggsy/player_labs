@@ -69,7 +69,10 @@ const
   LivesPerPlayer* = 3
   AimBradsTurn* = 256
   AimTurnRate* = 5
-  VisionConeHalfDeg* = 60
+  # The wire does not identify the variant. Use the narrowest deployed cone so
+  # absence-based item tracking never claims a 4ffa8 pickup was visible when it
+  # was actually outside that variant's 45-degree cone.
+  GuaranteedVisionConeHalfDeg* = 45
   VisionBubble* = 90
   FireWindupTicks* = 5
   GrenadeRespawnTicks* = 5 * 24

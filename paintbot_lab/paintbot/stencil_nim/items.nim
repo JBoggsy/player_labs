@@ -32,7 +32,7 @@ proc inView(belief: Belief, pos: Point): bool =
   let error = abs(floorModFloat(
     wanted - belief.aimBrads.float + AimBradsTurn.float / 2.0,
     AimBradsTurn.float) - AimBradsTurn.float / 2.0)
-  if error > VisionConeHalfDeg.float / 360.0 * AimBradsTurn.float:
+  if error > GuaranteedVisionConeHalfDeg.float / 360.0 * AimBradsTurn.float:
     return false
   belief.worldmap.rayClear(belief.selfXy.get, pos)
 

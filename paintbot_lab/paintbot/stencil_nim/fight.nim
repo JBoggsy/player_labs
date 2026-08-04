@@ -10,7 +10,7 @@ proc enemyDeaths(belief: Belief): Option[int] =
     return none(int)
   let lives = belief.enemyLivesLeft
   if lives.isNone: none(int)
-  else: some(belief.worldmap.teamTotalLives - lives.get)
+  else: some(belief.seatsPerTeam * LivesPerPlayer - lives.get)
 
 proc rangeBucket*(distancePx: float): string =
   if distancePx < 200: "0_199"

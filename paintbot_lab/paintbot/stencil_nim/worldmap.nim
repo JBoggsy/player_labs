@@ -334,12 +334,5 @@ proc spawnAim*(map: WorldMap, color: Team): int =
 
 proc grenadeMaxRange*(map: WorldMap): int = map.width div 5
 
-proc seatsPerTeam*(map: WorldMap): int =
-  if map.teams == 2: 8
-  elif map.width >= 2000: 8
-  else: 4
-
-proc teamTotalLives*(map: WorldMap): int = map.seatsPerTeam * LivesPerPlayer
-
 proc signature*(map: WorldMap): tuple[width, height, teams: int] =
   (map.width, map.height, map.teams)

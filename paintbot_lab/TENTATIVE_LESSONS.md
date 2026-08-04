@@ -68,8 +68,41 @@ online WorldMap stays necessary (the wire still carries no seed), but a
 per-cell knowledge layer (recognize the map by signature, load precomputed
 data) is a legitimate future iteration.
 
-### The pinned coworld CLI lags the platform — the API + softmax token fills the gap
-`coworld campaign ...` exists in metta packages/coworld but not in our pinned
-install. `softmax.auth.load_current_token(server="https://softmax.com/api")` +
-httpx against `/observatory/v2/leagues/{id}/campaign` worked immediately.
-Freshness preflight for campaign work should include a CLI-version check.
+### A stale Coworld CLI can hide current platform capabilities
+Our 0.1.34 pin lacked `coworld campaign ...`; the API + softmax token filled the
+gap during recon. Version 0.1.35 now ships those commands and is pinned locally.
+Freshness preflight for campaign work should include a CLI-version check before
+building an API workaround.
+
+### Sprite-v1 ready pacing is the local self-play unlock
+Paintbot already supports the one-byte `0x85` player-ready packet and defaults
+`fastMode=true`, but the shared Python Sprite bridge never sends it. Opting
+stencil into ready-after-decision took a native 300-tick 1v1 from 13.75s to
+2.38s (22.2 to 129 ticks/s) without changing simulator ticks or actions.
+
+### Native game plus host players beats the generic Docker runner for iteration
+The generic runner starts one amd64 container per seat plus an amd64 game under
+Rosetta on this arm64 Mac. A small command mistake (`--run` omitted) also made
+it invoke the manifest's `/bin/baseline` inside the stencil image and wait until
+timeout. Running the exact source-built Nim server natively and stencil from the
+uv environment avoids both costs while retaining results, replay, events, and
+per-seat logs.
+
+### Local self-play is a high-throughput screen, not the field verdict
+Four workers completed eight full 5,000-tick 1v1s in about 39s wall time, and a
+16-seat 2v2 resolved in 16.17s. That makes matched knob screening cheap, but the
+opponent is still stencil and campaign rosters/third-party dynamics differ;
+rotate candidate teams locally, then use a smaller hosted field check to promote.
+
+### Resolve the deployed game before every optimization batch
+"Latest" for self-play means the live canonical Paintbot manifest, not local
+`main`. Resolve its commit-pinned source URL, fetch that exact commit, and build
+from a clean managed worktree. If resolution or verification fails, abort; a
+fast batch against the wrong simulator creates confidently misleading signal.
+
+### Freeze startup metrics before first-tick gameplay branches
+The first navigation trace initially included item-routing flow fields on some
+medium maps but not on slower giant maps, making cross-size timings incomparable.
+Freeze the metric immediately after invariant startup work. In the corrected
+100-game profile every seat built exactly two startup Dijkstra fields; giant
+p95 was 419 ms under 16-process contention, with Dijkstra ~82% of the cost.

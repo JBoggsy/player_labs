@@ -17,9 +17,8 @@ This README orients newcomers (human or agent). Two pointers do most of the work
 > evaluated**. The live Paintbot league runs the **campaign (territory)
 > round brain, not a ladder**: an LLM commander per player invades cells on a
 > 10x10 board where **each cell permanently owns a map** (pinned terrain seed +
-> size); standings are territory — daveey holds 84/100 cells, and the
-> auto-mirrored `beacon:v67` holds 0 (its fixed-arena bake can't navigate
-> generated maps). Deployed game: paintbot **0.7.182**. Live state + open
+> size); standings are territory — at campaign round 202, daveey held 80/100
+> cells and richard held 8. Deployed game: paintbot **0.7.182**. Live state + open
 > threads: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
 
 ## The game (one paragraph)
@@ -45,7 +44,7 @@ deep recon with citations:
 | `default` | 16 | 2 | fixed classic arena | ~8 (near-1v1 of policies) |
 | `2v2` | 16 | 2 | generated | 4 (team split across 2 policies) |
 | `4ffa` | 16 | 4 | generated | 4 (one policy per team) |
-| `4ffa8` | 32 | 4 | generated giant | 8 (one policy per team) |
+| `4ffa8` | 32 | 4 | generated (manifest defaults giant; campaign cell size wins) | 8 (one policy per team) |
 
 The `1v1` variant was added in 0.7.179 as a cheap duel instrument; campaign
 battles still use the four established variants, where a policy must handle
@@ -53,7 +52,8 @@ owning 1-8 seats. Which variant a campaign episode plays is decided by the
 **campaign**: each territory cell
 permanently owns a variant + terrain seed + size class (live board: 29x
 `4ffa8`, 26x `4ffa`, 25x `default`, 20x `2v2`), and battles replay the target
-cell's exact map — see the campaign section of
+cell's exact map. Campaign `mapSize` overrides the variant default, so map
+dimensions do not identify 16-seat `4ffa` versus 32-seat `4ffa8` — see the campaign section of
 [`docs/paintbot-gameplay.md`](docs/paintbot-gameplay.md).
 
 ## Layout

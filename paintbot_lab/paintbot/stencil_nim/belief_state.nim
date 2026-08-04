@@ -11,7 +11,7 @@ type
 
   Belief* = ref object
     team*: Team
-    seat*, slot*, tick*: int
+    seat*, slot*, tick*, seatsPerTeam*: int
     role*: Role
     holdPoint*: Option[Point]
     selfXy*: Option[Point]
@@ -92,6 +92,7 @@ type
 proc newBelief*(slot: int): Belief =
   Belief(
     team: teamForSlot(slot, 2), seat: min(slot div 2, 7), slot: slot,
+    seatsPerTeam: 1,
     role: Attacker, colors: @[Red, Blue], sweepDir: 1,
     firefightEnteredTick: -1, firefightLastTriggerTick: -10_000,
     firefightTargetSelectedTick: -1, firefightTargetLastSeenTick: -1,

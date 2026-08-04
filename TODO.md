@@ -5,6 +5,15 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
+- **Expose player muster in Paintbot's Sprite-v1 init contract** (found
+  2026-08-04). The current marker states teams and map dimensions but not
+  `num_agents`/seats per team, while campaign `mapSize` independently overrides
+  the `4ffa`/`4ffa8` variant default. Stencil now removes the false width-based
+  inference and grows a conservative roster estimate from observed identity
+  badges, but low-index seats cannot know 4-vs-8 muster until they see an
+  epsilon-or-higher identity. Add muster to the owner game's init marker, then
+  consume it directly and delete the estimate.
+
 - **REFUTED-PREMISE 2026-07-22 (Thread 9): imposter co-location — do NOT build the spread nudge.**
   Re-measured on 200 fresh v107/v110 eps (`/tmp/wh_anchor_base_v110`; scripts `/tmp/t9_spread/`).
   The 32%-field-worst figure does not reproduce: crewborg-imposter's co-imposter share of proximity
@@ -187,6 +196,13 @@ mid-session; check them back at the start of focused work.
   whether to commit/PR them upstream or discard.
 
 ## Done
+
+- **Paintbot Sprite-v1 `sprites off` landed upstream and deployed (2026-08-03).**
+  coworld-ctf PR #219 is in canonical Paintbot 0.7.180 at source `052b058`.
+  The self-play harness now resolves that canonical version before every batch
+  and opts stencil into `0x87`, adopting the optimization without a private
+  fork. A fresh giant-board benchmark remains useful when optimization work
+  targets 4ffa8.
 
 - **League telemetry artifacts "ephemeral" — investigated + harvest built** (flagged 2026-07-01;
   DONE 2026-07-21). Verdict: artifacts are **durable, not deleted** — the July-1 "vanishing"

@@ -3,7 +3,7 @@ name = "player-labs"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
-    "coworld[auth]>=0.1.34",
+    "coworld[auth]>=0.1.35",
     # Exact Python /env contract shipped by accelerated-wow 0.1.124. Keep this
     # aligned with WOWBORG_ENVIRONMENT_IMAGE in vanilla_wow_lab/tools/versions.env.
     "vanilla-wow-coworld @ git+https://github.com/Metta-AI/coworld-vanilla-wow.git@bda33bf9c321fa9a6f01398423c36c513b3db622",

@@ -17,3 +17,6 @@ tooling and failure modes. Starts near-empty; fills via the lessons pipeline
 - **Check behavior per-variant.** A change can help `2v2` and hurt `4ffa8`
   (different vision cone, roster, map scale); always cut eval results by
   variant before concluding.
+- **Never infer muster from map size.** Campaign cells pin `mapSize`
+  independently of `map_ref`, so a standard board can be 32-seat `4ffa8` and
+  a giant board can be 16-seat `4ffa`. Use stated or observed roster evidence.
