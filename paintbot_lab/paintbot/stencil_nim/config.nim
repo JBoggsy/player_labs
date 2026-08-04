@@ -108,6 +108,7 @@ let
   ReplanGoalCells* = envInt("STENCIL_REPLAN_GOAL_CELLS", 2)
   StuckTicks* = envInt("STENCIL_STUCK_TICKS", 8)
   DiagEveryTicks* = envInt("STENCIL_DIAG_EVERY_TICKS", 96)
+  TraceNavigation* = envTunableBool("STENCIL_TRACE_NAVIGATION", false)
   TrackTtlTicks* = envInt("STENCIL_TRACK_TTL_TICKS", 120)
   DangerDiffusionFactor* = envFloat("STENCIL_DANGER_DIFFUSION_FACTOR", 0.75)
   DangerDecayHalfLifeTicks* = envInt("STENCIL_DANGER_HALF_LIFE_TICKS", 48)

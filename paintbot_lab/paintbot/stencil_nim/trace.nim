@@ -1,7 +1,7 @@
 ## Structured diagnostics and player-artifact delivery.
 ## Telemetry is isolated from gameplay: failures are reported and swallowed.
 
-import std/[json, options, os, sequtils, sets, strutils, tables]
+import std/[json, math, options, os, sequtils, sets, strutils, tables]
 import curly, zippy/ziparchives
 import belief_state, config, policy, types, worldmap
 
@@ -25,6 +25,7 @@ type
     lastCarry: Option[Team]
     carryInitialized: bool
     lastWorldSignature: Option[tuple[width, height, teams: int]]
+    navigationFieldKeys: HashSet[int]
 
 proc pointJson(point: Option[Point]): JsonNode =
   if point.isSome: %*[point.get.x, point.get.y] else: newJNull()
@@ -42,6 +43,74 @@ proc countJson(counts: CountTable[string]): JsonNode =
 
 proc rounded4(value: float): float =
   pyRound(value * 10_000.0).float / 10_000.0
+
+proc pointJson(point: Point): JsonNode = %*[point.x, point.y]
+
+proc boolRows(values: openArray[bool], width: int): JsonNode =
+  result = newJArray()
+  for y in 0 ..< values.len div width:
+    var row = newString(width)
+    for x in 0 ..< width:
+      row[x] = if values[y * width + x]: '1' else: '0'
+    result.add(%row)
+
+proc hopRows(values: openArray[uint8], width: int): JsonNode =
+  result = newJArray()
+  for y in 0 ..< values.len div width:
+    var row = newString(width)
+    for x in 0 ..< width:
+      row[x] = char(ord('0') + values[y * width + x].int)
+    result.add(%row)
+
+proc distanceRows(values: openArray[float], width: int): JsonNode =
+  result = newJArray()
+  for y in 0 ..< values.len div width:
+    var row = newJArray()
+    for x in 0 ..< width:
+      let distance = values[y * width + x]
+      row.add(if classify(distance) == fcInf: newJNull() else: %rounded4(distance))
+    result.add(row)
+
+proc navigationMap(map: WorldMap): JsonNode =
+  var teams = newJArray()
+  for index in 0 ..< map.teams:
+    let color = Team(index)
+    var entry = %*{
+      "team": teamName(color),
+      "home_center": pointJson(map.homeCenter(color)),
+      "capture": pointJson(map.capturePoint(color)),
+      "choke": pointJson(map.chokePoint(color)),
+      "rally": pointJson(map.rallyPoint(color)),
+      "spawn_aim_brads": map.spawnAim(color),
+    }
+    if map.endzones.hasKey(color):
+      let zone = map.endzones[color]
+      entry["endzone"] = %*{
+        "shape": zone.shape,
+        "box": [zone.x0, zone.y0, zone.x1, zone.y1],
+      }
+    if map.pedestals.hasKey(color):
+      entry["pedestal"] = pointJson(map.pedestals[color])
+    teams.add(entry)
+  %*{
+    "schema_version": 1,
+    "map": [map.width, map.height],
+    "grid": [map.gridW, map.gridH],
+    "cell_size": NavCell,
+    "center": pointJson(map.center),
+    "walkable_rows": boolRows(map.walkable, map.gridW),
+    "cover_rows": boolRows(map.cover, map.gridW),
+    "teams": teams,
+  }
+
+proc navigationFlow(field: CachedRouteField, map: WorldMap): JsonNode =
+  %*{
+    "schema_version": 1,
+    "goal_cell": pointJson(field.goalCell),
+    "goal": pointJson(cellCenter(field.goalCell)),
+    "distance_cells": distanceRows(field.distances, map.gridW),
+    "hop_rows": hopRows(field.hops, map.gridW),
+  }
 
 proc navMetrics(map: WorldMap): JsonNode =
   var total = 0.0
@@ -229,7 +298,17 @@ proc record*(trace: TraceState, policy: StencilPolicy, command: Command) =
     if not belief.worldmap.isNil: signature = some(belief.worldmap.signature)
     if signature != trace.lastWorldSignature:
       trace.lastWorldSignature = signature
+      trace.navigationFieldKeys.clear()
       trace.emit(policy.tick, "worldmap", snapshot(policy, command))
+      if TraceNavigation and not belief.worldmap.isNil:
+        trace.emit(policy.tick, "navigation_map", navigationMap(belief.worldmap))
+    if TraceNavigation and not belief.worldmap.isNil:
+      let map = belief.worldmap
+      for field in map.cachedRouteFields:
+        let key = field.goalCell.y * map.gridW + field.goalCell.x
+        if key notin trace.navigationFieldKeys:
+          trace.navigationFieldKeys.incl(key)
+          trace.emit(policy.tick, "navigation_flow", navigationFlow(field, map))
     if trace.lastAlive.isNone or trace.lastAlive.get != belief.alive:
       trace.lastAlive = some(belief.alive)
       trace.emit(policy.tick, if belief.alive: "alive" else: "dead", newJObject())

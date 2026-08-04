@@ -5,10 +5,10 @@ Update as you learn; clear/reseed on a pivot.*
 
 ## Current objective
 
-**Run the native Nim `stencil` through its first hosted evaluation.** The
-Python-to-Nim port is complete and exact under the local differential corpus;
-the release image connects and completes canonical local play. It has never
-been uploaded or run in a hosted episode.
+**Review `stencil:v1`'s first hosted navigation maps, then choose the first
+competitive evaluation.** v1 is uploaded with full tracing but is not submitted
+to the Paintbot league. Its upload/runtime and online navigation construction
+now work across every competitive variant.
 
 Fast local path: `tools/self_play.py` runs native `coworld-ctf`, enables
 Sprite-v1 ready pacing, rotates candidate teams, supports candidate-only env
@@ -23,12 +23,11 @@ ticks/s.
 
 Next concrete steps:
 
-1. `paintbot_lab/tools/build_player.sh stencil` (needs Docker) → upload as
-   policy `stencil`.
-2. Create an experience request against the Paintbot roster (start with the
-   default/2v2-heavy live mix); stream artifacts.
-3. First-eval survey: does it connect/play/exit cleanly on ALL variants
-   (especially a 4-team board and a giant board)? Then win-path diagnosis.
+1. Review the four hosted nav viewers with James, especially whether the
+   derived choke/rally anchors match the terrain.
+2. Human-led choice of the first competitive field-eval shape.
+3. Run that eval, stream artifacts, and diagnose win paths before any behavior
+   change. League submission remains human-gated.
 
 ## Facts worth carrying forward (verified 2026-08-04)
 
@@ -42,7 +41,7 @@ Next concrete steps:
 - **Every cell permanently owns a map**: variant mix 29x 4ffa8 / 26x 4ffa /
   25x default / 20x 2v2; ALL 100 cells have pinned `map_seed` + `map_size`
   (40 standard/25 large/14 small/14 huge/7 giant). Battles pin the TARGET
-  cell's mapSeed+mapSize (deployed 0.7.182 manifest declares both), so cell
+  cell's mapSeed+mapSize (the deployed manifest declares both), so cell
   terrain is stable and offline-reproducible from the public generator. The
   cell size overrides the variant default: the live board includes 16
   standard-size `4ffa8` cells and one giant `4ffa` cell, so size cannot infer
@@ -50,22 +49,23 @@ Next concrete steps:
 - Battle modes: 2-team cells → 2v2 (captains + mirrored allies, both
   seatings); 4-team cells → ffa4 (≤4 policies + recruits/filler). Observed
   seatings (7+7+1+1 etc.) are these rosters.
-- Deployed game **paintbot 0.7.182**, source `3151a47`. Game repo = the
+- Deployed game **paintbot 0.7.183**, source `95bb768`. Game repo = the
   coworld-ctf clone (`~/coding/coworlds/coworld-ctf`); no paintbot-specific Nim
   source exists. 0.7.179 added the two-seat generated-map `1v1` variant; 0.7.180
   landed PR #219's reduced bot sprite traffic; 0.7.181 fixed the 32-seat replay
-  viewer's hash mask, and 0.7.182 adds campaign documentation. Neither alters
-  simulation or player traffic.
+  viewer's hash mask; 0.7.182 added campaign documentation; and 0.7.183 made
+  Sprite-v1 object placements retained/delta-encoded plus FOV optimizations.
 - Project-local `coworld` is pinned at **0.1.35**, which provides the campaign
   commands (`board`, `history`, `prompt`, `set-prompt`, and related views).
 
 ## Open threads
 
-- Exact canonical local episodes now validate real Sprite frames, walkability
-  decode, marker parsing, navigation construction, and the packaged native
-  image. The Nim replay oracle matched all **169,235** captured decisions
-  exactly, including feature-disabled and squads/command configurations. A
-  hosted run is still needed to validate the upload/runtime boundary.
+- `stencil:v1` (`8af80cb6-022a-4d1b-b1eb-dfb08374b826`) is uploaded with full
+  artifact tracing and **not submitted**. Four bounded hosted XP probes
+  (`default`, `2v2`, `4ffa`, `4ffa8`) all completed on 0.7.183 with telemetry
+  from every seat, validating the upload/runtime, retained Sprite-v1 stream,
+  map construction, and artifact delivery boundaries. The Nim replay oracle
+  separately matched all **169,235** captured decisions exactly.
 - **Commander prompt** (new, campaign-specific): each player steers its LLM
   strategist with a private standing-orders prompt — a cheap, high-leverage
   competitive axis independent of the policy image. Needs a first draft when
@@ -81,6 +81,12 @@ Next concrete steps:
   five sizes under 16-process contention. Giant p95 is 419 ms, max 454 ms;
   standard p95 is 68 ms. Dijkstra is ~82% of giant startup. Full report:
   `docs/reports/nav-init-profile-2026-08-03.md`.
+- Navigation knowledge is now directly inspectable: `self_play.py
+  --visualize-nav` enables the opt-in `STENCIL_TRACE_NAVIGATION=1` payload, and
+  `tools/render_nav.py` renders its walkability, cover, tactical anchors, and
+  cached distance/next-hop fields from either JSONL or a hosted artifact ZIP.
+  Validated locally on 0.7.182 / `3151a47`, then hosted across all competitive
+  variants on 0.7.183 / `95bb768`.
 - Choke/rally fractions (`STENCIL_CHOKE_FRACTION` 0.45 / `RALLY_FRACTION`
   0.65) are educated guesses, not tuned.
 - v1 scope cuts to revisit if evals demand: posts, item-spawn seeding from

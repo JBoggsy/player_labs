@@ -17,3 +17,10 @@ buffers — not in-session hit counts — is the graduation signal.
 concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
+
+### A downloader can label an XP bundle incomplete even when every policy artifact is present
+Evidence: all four stencil:v1 map probes completed and downloaded 16/16/16/32
+navigation ZIPs, but `fetch_artifacts.py` exhausted the episodes because the
+separate results artifact and policy-log listing were unavailable. Inspect the
+requested artifact class directly before treating the aggregate fetch verdict
+as loss of evidence.

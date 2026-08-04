@@ -352,7 +352,7 @@ def run_episode(spec: dict[str, Any]) -> dict[str, Any]:
                             [
                                 *(
                                     [f"jsonl@file:{trace_path}"]
-                                    if spec["profile_nav_init"]
+                                    if spec["profile_nav_init"] or spec["visualize_nav"]
                                     else []
                                 ),
                                 *(["jsonl@artifact"] if spec["player_artifacts"] else []),
@@ -369,6 +369,8 @@ def run_episode(spec: dict[str, Any]) -> dict[str, Any]:
                     )
                 if spec["fast_ready"]:
                     player_env["STENCIL_FAST_READY"] = "1"
+                if spec["visualize_nav"]:
+                    player_env["STENCIL_TRACE_NAVIGATION"] = "1"
                 if spec["record_wire"]:
                     player_env["STENCIL_WIRE_RECORD"] = str(
                         output_dir / "players" / f"slot-{slot:02d}.wire.jsonl"
@@ -502,6 +504,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="image used by --candidate-runtime=docker",
     )
     parser.add_argument("--profile-nav-init", action="store_true")
+    parser.add_argument(
+        "--visualize-nav", action="store_true",
+        help="record navigation-map and flow-field traces for render_nav.py",
+    )
     parser.add_argument("--record-wire", action="store_true")
     parser.add_argument("--player-artifacts", action="store_true")
     return parser
@@ -538,6 +544,7 @@ def main() -> None:
         "startup_timeout": args.startup_timeout,
         "fast_ready": args.fast_ready,
         "profile_nav_init": args.profile_nav_init,
+        "visualize_nav": args.visualize_nav,
         "record_wire": args.record_wire,
         "player_artifacts": args.player_artifacts,
     }

@@ -12,13 +12,14 @@ This README orients newcomers (human or agent). Two pointers do most of the work
 - **[`../README.md`](../README.md)** — lab-wide setup (`uv sync` / Observatory
   auth) and the ground rules.
 
-> **Status: lab bootstrapped 2026-08-03.** `stencil` (a beacon fork with online
-> per-episode navigation) is implemented and tested but **not yet uploaded or
-> evaluated**. The live Paintbot league runs the **campaign (territory)
+> **Status: first hosted probes complete 2026-08-04.** `stencil:v1` (a beacon
+> fork with online per-episode navigation) is uploaded with full tracing and
+> validated across all competitive variants, but **not submitted**. The live
+> Paintbot league runs the **campaign (territory)
 > round brain, not a ladder**: an LLM commander per player invades cells on a
 > 10x10 board where **each cell permanently owns a map** (pinned terrain seed +
 > size); standings are territory — at campaign round 202, daveey held 80/100
-> cells and richard held 8. Deployed game: paintbot **0.7.182**. Live state + open
+> cells and richard held 8. Deployed game: paintbot **0.7.183**. Live state + open
 > threads: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
 
 ## The game (one paragraph)
@@ -134,7 +135,20 @@ uv run python paintbot_lab/tools/self_play.py --variant 4ffa8
 uv run python paintbot_lab/tools/self_play.py \
   --variant 1v1 --map-size giant --episodes 20 --workers 8 \
   --max-ticks 40 --profile-nav-init
+
+# Capture the exact nav grid, cover, anchors, and lazy flow fields, then view them.
+uv run python paintbot_lab/tools/self_play.py \
+  --variant 1v1 --episodes 1 --max-ticks 40 --visualize-nav
+uv run python paintbot_lab/tools/render_nav.py \
+  paintbot_lab/self_play/<run>/episode-0000/players/slot-00.trace.jsonl
 ```
+
+`--visualize-nav` enables the otherwise off `STENCIL_TRACE_NAVIGATION=1`
+payload. The trace contains `navigation_map` once per map and a
+`navigation_flow` event whenever the policy lazily computes a new Dijkstra
+goal. `render_nav.py` accepts either that JSONL trace or a hosted player artifact
+ZIP and writes a standalone HTML viewer with toggles and per-cell inspection.
+The opt-in keeps routine multi-seat telemetry from duplicating large grids.
 
 The harness uses `~/coding/coworlds/coworld-ctf` only as a source clone: it
 fetches `origin` but never changes that checkout's branch or working tree. Every

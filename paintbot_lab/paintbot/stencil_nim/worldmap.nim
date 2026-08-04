@@ -1,6 +1,6 @@
 ## Episode-scoped terrain, route fields, and derived tactical geometry.
 
-import std/[heapqueue, math, monotimes, options, tables, times]
+import std/[algorithm, heapqueue, math, monotimes, options, tables, times]
 import config, types
 
 const
@@ -21,6 +21,11 @@ type
   RouteFields = object
     distances: seq[float]
     hops: seq[uint8]
+
+  CachedRouteField* = tuple[
+    goalCell: Point,
+    distances: seq[float],
+    hops: seq[uint8]]
 
   WorldMap* = ref object
     width*, height*, teams*: int
@@ -248,6 +253,19 @@ proc routeDistance*(map: WorldMap, start, goal: Point): float =
   let fields = map.fieldsFor(goal)
   let cell = map.nearestWalkable(map.cellOf(start))
   fields.distances[map.gridIndex(cell.x, cell.y)] * NavCell.float
+
+proc cachedRouteFields*(map: WorldMap): seq[CachedRouteField] =
+  ## Read-only snapshots of the lazy Dijkstra cache for diagnostics.
+  var keys: seq[int]
+  for key in map.fields.keys:
+    keys.add(key)
+  keys.sort()
+  for key in keys:
+    let fields = map.fields[key]
+    result.add((
+      goalCell: (key mod map.gridW, key div map.gridW),
+      distances: fields.distances,
+      hops: fields.hops))
 
 proc nearestCover*(map: WorldMap, point: Point, maxCells = 6): Option[Point] =
   let cell = map.cellOf(point)

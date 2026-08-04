@@ -9,11 +9,12 @@ game-agnostic skills. This file is the **Paintbot-specific layer**: the game,
 the docs, the practices, and the policy we optimize. When the two disagree, the
 root defines *process*; this file defines *Paintbot*.
 
-> **Lab status (2026-08-03): bootstrapped.** `stencil` (native Nim,
-> [`paintbot/stencil_nim/`](paintbot/stencil_nim/)) is implemented + tested, **not yet
-> uploaded/evaluated**. The game repo is the SAME clone as CTF's
+> **Lab status (2026-08-04): first hosted probes complete.** `stencil:v1`
+> (native Nim, [`paintbot/stencil_nim/`](paintbot/stencil_nim/)) is uploaded
+> with full tracing and hosted-validated across all competitive variants, but
+> **not submitted**. The game repo is the SAME clone as CTF's
 > (`~/coding/coworlds/coworld-ctf` — paintbot is a second manifest over the
-> same binary). Deployed paintbot **0.7.182** currently; the league
+> same binary). Deployed paintbot **0.7.183** currently; the league
 > redeploys often — check `uv run coworld list | grep paintbot`. Live state:
 > [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
 
@@ -149,8 +150,8 @@ Paintbot-specific parked work lives in the shared [`../TODO.md`](../TODO.md).
 
 - **stencil** *(native Nim)* — at
   [`paintbot/stencil_nim/`](paintbot/stencil_nim/), the primary (only) Paintbot
-  policy. **Current: unreleased (pre-v1)** — built and
-  differentially validated, awaiting first upload + hosted evaluation. Version
+  policy. **Current: `stencil:v1` uploaded, hosted-validated, not submitted**.
+  Version
   history: [`paintbot/stencil_nim/VERSION_LOG.md`](paintbot/stencil_nim/VERSION_LOG.md).
   Behavior knobs are `STENCIL_*` env vars declared in `config.nim` and set at
   upload time for A/B.

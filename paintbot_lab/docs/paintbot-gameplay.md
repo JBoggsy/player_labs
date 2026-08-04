@@ -5,7 +5,7 @@ contract, and strategy notes — enough to reason about play without leaving the
 repo. Authoritative sources: the **`Metta-AI/coworld-ctf`** repo (paintbot and
 CTF are the *same Nim binary*; clone at `~/coding/coworlds/coworld-ctf`, server
 `src/ctf/`, rules `docs/RULES.md`, manifest `coworld_manifest_paintbot.json`)
-and the deployed league game (paintbot **0.7.182** as of 2026-08-04).
+and the deployed league game (paintbot **0.7.183** as of 2026-08-04).
 The full recon with `file:line` citations:
 [`recon/paintbot-2026-08-03.md`](recon/paintbot-2026-08-03.md).
 
@@ -131,7 +131,7 @@ generate → validate → retry seed+1). What a policy must absorb:
   must read the map from the observation (below). Replays DO carry the exact
   geometry (`mapSpec`), so post-hoc tools can reconstruct terrain.
 - `gunRange` is fixed per episode (GV34) — bigger maps do NOT extend the gun.
-  The engine stock default is 1050px, but every deployed Paintbot 0.7.182
+  The engine stock default is 1050px, but every deployed Paintbot 0.7.183
   variant explicitly overrides it to **1300px** (vision reach is therefore
   1950px except for the 90px omnidirectional bubble).
 - Grenade max range and shout radius scale with the map (`mapWidth/5`).
