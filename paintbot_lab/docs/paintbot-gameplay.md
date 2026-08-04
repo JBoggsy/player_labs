@@ -5,7 +5,7 @@ contract, and strategy notes — enough to reason about play without leaving the
 repo. Authoritative sources: the **`Metta-AI/coworld-ctf`** repo (paintbot and
 CTF are the *same Nim binary*; clone at `~/coding/coworlds/coworld-ctf`, server
 `src/ctf/`, rules `docs/RULES.md`, manifest `coworld_manifest_paintbot.json`)
-and the deployed league game (paintbot **0.7.178** at lab creation, 2026-08-03).
+and the deployed league game (paintbot **0.7.181** as of 2026-08-03).
 The full recon with `file:line` citations:
 [`recon/paintbot-2026-08-03.md`](recon/paintbot-2026-08-03.md).
 
@@ -33,13 +33,15 @@ sentinel).
 
 | variant | seats | teams | map | scoring | maxTicks | vision cone | agents per policy |
 |---|---|---|---|---|---|---|---|
+| `1v1` | 2 | 2 | generated | classic +1/-1 | 5000 | ±60° | 1 |
 | `default` | 16 | 2 | **fixed classic arena** (1235x659) | classic +1/-1 | 5000 | ±60° | ~8 (2 main entrants) |
 | `2v2` | 16 | 2 | generated (size drawn) | pot **+2/-2** | 5000 | ±60° | 4 (each team split between 2 policies) |
 | `4ffa` | 16 | 4 | generated (size drawn) | pot **+4/-1/-1/-1** | 5000 | ±60° | 4 (one policy per team) |
 | `4ffa8` | 32 | 4 | generated, **locked giant** | pot +4/-1/-1/-1 | **7500** | **±45°** | 8 (one policy per team) |
 
-- **There is no "1v1" variant** — the near-1v1 experience is `default` (two
-  main entrants each owning ~a team, i.e. plain CTF under the paintbot name).
+- **`1v1` is a duel instrument**, added in 0.7.179: two seats on generated
+  terrain. The campaign's two-team cells still use captain/ally `2v2` battles;
+  `1v1` is especially useful for cheap local micro and navigation screening.
 - **Episodes are scheduled by the CAMPAIGN, not a ladder rotation** (next
   section): the observed variant mix per round (~half `default`) reflects
   which territory cells are being fought over, not a scheduler.

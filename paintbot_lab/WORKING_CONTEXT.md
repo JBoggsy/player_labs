@@ -5,10 +5,23 @@ Update as you learn; clear/reseed on a pivot.*
 
 ## Current objective
 
-**Get `stencil` its first hosted evaluation.** The lab was bootstrapped
-2026-08-03 (full adaptation from ctf_lab; recon + design docs in `docs/`).
-stencil v1 is implemented and unit-tested but has never been built as an image,
-uploaded, or run in a hosted episode. Next concrete steps:
+**Run the native Nim `stencil` through its first hosted evaluation.** The
+Python-to-Nim port is complete and exact under the local differential corpus;
+the release image connects and completes canonical local play. It has never
+been uploaded or run in a hosted episode.
+
+Fast local path: `tools/self_play.py` runs native `coworld-ctf`, enables
+Sprite-v1 ready pacing, rotates candidate teams, supports candidate-only env
+overrides, and parallelizes episodes. Before every batch it resolves the live
+canonical Paintbot manifest and fetches/builds its exact source commit in a
+managed detached worktree; resolution or verification failure aborts the run.
+Measured on this machine at game source
+`b6545a3`: 300-tick 1v1 = 2.38s / 129 ticks/s (versus 13.75s / 22.2 ticks/s
+without ready); 8 full 5,000-tick 1v1 draws with 4 workers = ~39s wall; full
+16-seat 2v2 = 16.17s / 131 ticks/s; full giant 32-seat 4ffa8 = 110.45s / 18.3
+ticks/s.
+
+Next concrete steps:
 
 1. `paintbot_lab/tools/build_player.sh stencil` (needs Docker) → upload as
    policy `stencil`.
@@ -29,23 +42,27 @@ uploaded, or run in a hosted episode. Next concrete steps:
 - **Every cell permanently owns a map**: variant mix 29x 4ffa8 / 26x 4ffa /
   25x default / 20x 2v2; ALL 100 cells have pinned `map_seed` + `map_size`
   (40 standard/25 large/14 small/14 huge/7 giant). Battles pin the TARGET
-  cell's mapSeed+mapSize (deployed 0.7.178 manifest declares both), so cell
+  cell's mapSeed+mapSize (deployed 0.7.181 manifest declares both), so cell
   terrain is stable and offline-reproducible from the public generator.
 - Battle modes: 2-team cells → 2v2 (captains + mirrored allies, both
   seatings); 4-team cells → ffa4 (≤4 policies + recruits/filler). Observed
   seatings (7+7+1+1 etc.) are these rosters.
-- Deployed game **paintbot 0.7.178** (ahead of ctf's 0.7.174). Game repo =
-  the coworld-ctf clone (`~/coding/coworlds/coworld-ctf`), main `1633b7e` at
-  lab creation; no paintbot-specific Nim source exists.
+- Deployed game **paintbot 0.7.181**, source `347deef`. Game repo = the
+  coworld-ctf clone (`~/coding/coworlds/coworld-ctf`); no paintbot-specific Nim
+  source exists. 0.7.179 added the two-seat generated-map `1v1` variant; 0.7.180
+  landed PR #219's reduced bot sprite traffic; 0.7.181 only fixes the 32-seat
+  replay viewer's hash mask and does not alter simulation or player traffic.
 - Our pinned `coworld` CLI predates `coworld campaign ...`; direct API calls
   with `softmax.auth.load_current_token(server="https://softmax.com/api")`
   work (see the recon addendum).
 
 ## Open threads
 
-- stencil has never seen a real frame — the walkability decode (cramjam raw
-  snappy) and marker parsing are tested against synthetic data only; the first
-  hosted run validates the real wire.
+- Exact canonical local episodes now validate real Sprite frames, walkability
+  decode, marker parsing, navigation construction, and the packaged native
+  image. The Nim replay oracle matched all **169,235** captured decisions
+  exactly, including feature-disabled and squads/command configurations. A
+  hosted run is still needed to validate the upload/runtime boundary.
 - **Commander prompt** (new, campaign-specific): each player steers its LLM
   strategist with a private standing-orders prompt — a cheap, high-leverage
   competitive axis independent of the policy image. Needs a first draft when
@@ -57,8 +74,10 @@ uploaded, or run in a hosted episode. Next concrete steps:
   walkability/choke data, and ship a map-recognition lookup (keyed by map
   signature) in the image. Decide after first evals whether it beats pure
   online play.
-- WorldMap Dijkstra cost on a giant board (~86k cells) is untested against the
-  24 tps frame budget — measure in the first eval.
+- Navigation startup profiling is complete: 100 maps / 200 seats across all
+  five sizes under 16-process contention. Giant p95 is 419 ms, max 454 ms;
+  standard p95 is 68 ms. Dijkstra is ~82% of giant startup. Full report:
+  `docs/reports/nav-init-profile-2026-08-03.md`.
 - Choke/rally fractions (`STENCIL_CHOKE_FRACTION` 0.45 / `RALLY_FRACTION`
   0.65) are educated guesses, not tuned.
 - v1 scope cuts to revisit if evals demand: posts, item-spawn seeding from

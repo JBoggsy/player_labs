@@ -31,5 +31,11 @@ Forked from ctf_lab beacon (post-v67 lineage) and adapted for Paintbot:
   command layer (stays OFF as in beacon v29+).
 - Tests: 20 passing (`paintbot/stencil/tests/`) including an end-to-end
   synthetic-frame pipeline smoke test.
+- Local-only fast-ready transport is available behind `STENCIL_FAST_READY=1`;
+  the native self-play harness enables it to remove the 24 Hz pacing sleep.
+- The deployable implementation is now the modular native Nim port at
+  `paintbot/stencil_nim/`; the Python tree remains the exact differential
+  oracle and tuning-registry CLI. Across six representative configurations,
+  replay comparison matched 169,235 controller/chat decisions exactly.
 
 Never uploaded; no hosted evidence yet.

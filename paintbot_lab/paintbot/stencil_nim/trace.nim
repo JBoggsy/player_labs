@@ -1,0 +1,288 @@
+## Structured diagnostics and player-artifact delivery.
+## Telemetry is isolated from gameplay: failures are reported and swallowed.
+
+import std/[json, options, os, sequtils, sets, strutils, tables]
+import curly, zippy/ziparchives
+import belief_state, config, policy, types, worldmap
+
+type
+  OutputKind = enum
+    JsonlFile, JsonlStdout, JsonlStderr, JsonlArtifact
+
+  TraceOutput = ref object
+    kind: OutputKind
+    file: File
+    ownsFile: bool
+    member: string
+    records: seq[string]
+
+  TraceState* = ref object
+    outputs: seq[TraceOutput]
+    artifactUrl: string
+    enabled: bool
+    lastAlive: Option[bool]
+    lastIntent: Option[string]
+    lastCarry: Option[Team]
+    carryInitialized: bool
+    lastWorldSignature: Option[tuple[width, height, teams: int]]
+
+proc pointJson(point: Option[Point]): JsonNode =
+  if point.isSome: %*[point.get.x, point.get.y] else: newJNull()
+
+proc teamJson(team: Option[Team]): JsonNode =
+  if team.isSome: %teamName(team.get) else: newJNull()
+
+proc roleName(role: Role): string =
+  if role == Attacker: "attacker" else: "defender"
+
+proc countJson(counts: CountTable[string]): JsonNode =
+  result = newJObject()
+  for key, value in counts:
+    result[key] = %value
+
+proc rounded4(value: float): float =
+  pyRound(value * 10_000.0).float / 10_000.0
+
+proc navMetrics(map: WorldMap): JsonNode =
+  var total = 0.0
+  var maximum = 0.0
+  for elapsed in map.dijkstraMs:
+    total += elapsed
+    maximum = max(maximum, elapsed)
+  var walkable = 0
+  for value in map.walkable:
+    if value: inc walkable
+  %*{
+    "base_ms": map.baseInitMs,
+    "erode_ms": map.erodeMs,
+    "cover_ms": map.coverMs,
+    "dijkstra_count": map.dijkstraMs.len,
+    "dijkstra_total_ms": total,
+    "dijkstra_max_ms": maximum,
+    "total_ms": map.baseInitMs + total,
+    "decode_ms": 0.0,
+    "map_pixels": map.width * map.height,
+    "grid_cells": map.gridW * map.gridH,
+    "walkable_cells": walkable,
+  }
+
+proc snapshot(policy: StencilPolicy, command: Command): JsonNode =
+  let belief = policy.belief
+  var retired = newJArray()
+  for color in Team:
+    if color in belief.heartsRetired: retired.add(%teamName(color))
+  var scores = newJObject()
+  for color, score in belief.teamScores:
+    scores[teamName(color)] = %*[score.kills, score.deaths]
+  var world = newJNull()
+  if not belief.worldmap.isNil:
+    let map = belief.worldmap
+    world = %*{
+      "w": map.width,
+      "h": map.height,
+      "teams": map.teams,
+      "seats_per_team": map.seatsPerTeam,
+      "grid": [map.gridW, map.gridH],
+      "nav_init": navMetrics(map),
+    }
+  result = %*{
+    "tick": policy.tick,
+    "team": teamName(belief.team),
+    "seat": belief.seat,
+    "slot": belief.slot,
+    "role": roleName(belief.role),
+    "alive": belief.alive,
+    "self_xy": pointJson(belief.selfXy),
+    "aim_brads": belief.aimBrads,
+    "intent": policy.lastIntent.reason,
+    "intent_point": pointJson(policy.lastIntent.point),
+    "flow_goal": pointJson(policy.lastFlowGoal),
+    "micro": belief.micro,
+    "carrying": teamJson(belief.iCarryHeartOf),
+    "steal_target": teamJson(belief.stealTarget),
+    "own_heart_stolen": belief.ownHeartStolen,
+    "hearts_retired": retired,
+    "enemies_visible": belief.enemies.len,
+    "teammates_visible": belief.teammates.len,
+    "enemy_tracks": belief.enemyTracks.len,
+    "hp_pips": (if belief.hpPips.isSome: %belief.hpPips.get else: newJNull()),
+    "have": {
+      "grenade": belief.iHaveGrenade,
+      "shield": belief.iHaveShield,
+      "arc": belief.iHaveArc,
+    },
+    "team_scores": scores,
+    "firefight_active": belief.firefightActive,
+    "converting": belief.converting,
+    "under_fire": belief.underFire,
+    "worldmap": world,
+    "mask": int(command.heldMask),
+    "chat": (if command.chat.len > 0: %command.chat else: newJNull()),
+  }
+  if belief.danger.len > 0:
+    var total = 0.0
+    var maximum = 0.0
+    var count = 0
+    let map = belief.worldmap
+    for y in countup(0, map.gridH - 1, DangerTraceDownsample):
+      for x in countup(0, map.gridW - 1, DangerTraceDownsample):
+        let value = belief.danger[y * map.gridW + x].float
+        total += value
+        maximum = max(maximum, value)
+        inc count
+    result["danger_mean"] = %rounded4(total / count.float)
+    result["danger_max"] = %rounded4(maximum)
+
+proc counters(policy: StencilPolicy): JsonNode =
+  let b = policy.belief
+  %*{
+    "friendly_fire_suppressed": b.friendlyFireSuppressed,
+    "aim_resyncs": b.aimResyncs,
+    "firing_turns": b.firingTurns,
+    "firefight_ticks_total": b.firefightTicksTotal,
+    "firefight_engagements": b.firefightEngagements,
+    "firefight_target_switches": b.firefightTargetSwitches,
+    "focus_claims_sent": b.focusClaimsSent,
+    "focus_claims_heard": b.focusClaimsHeard,
+    "focus_claims_suppressed": b.focusClaimsSuppressed,
+    "shots_by_range": countJson(b.firefightShotRangeCounts),
+    "targets_by_range": countJson(b.firefightTargetRangeCounts),
+    "grenade_starts": countJson(b.grenadeTargetStarts),
+    "grenade_releases": countJson(b.grenadeTargetReleases),
+    "grenade_safety_vetoes": b.grenadeSafetyVetoes,
+    "chat_sent": countJson(b.chatSentCounts),
+    "chat_heard": countJson(b.chatHeardCounts),
+    "item_fetch_ticks": b.itemFetchTicks,
+    "item_yield_ticks": b.itemYieldTicks,
+    "convert_events": b.convertEvents,
+    "spray_pursuit_ticks": b.sprayPursuitTicks,
+  }
+
+proc write(output: TraceOutput, record: JsonNode) =
+  let line = $record
+  case output.kind
+  of JsonlArtifact: output.records.add(line)
+  of JsonlStdout: stdout.writeLine(line); stdout.flushFile()
+  of JsonlStderr: stderr.writeLine(line); stderr.flushFile()
+  of JsonlFile: output.file.writeLine(line); output.file.flushFile()
+
+proc emit(trace: TraceState, tick: int, name: string, data: JsonNode) =
+  let record = %*{
+    "kind": "trace", "tick": tick, "event": name, "name": name, "data": data,
+  }
+  for output in trace.outputs:
+    output.write(record)
+
+proc addJsonlOutput(trace: TraceState, destination: string) =
+  if destination == "stdout":
+    trace.outputs.add(TraceOutput(kind: JsonlStdout))
+  elif destination == "stderr":
+    trace.outputs.add(TraceOutput(kind: JsonlStderr))
+  elif destination == "artifact" or destination.startsWith("artifact:"):
+    if trace.artifactUrl.len == 0:
+      raise newException(ValueError,
+        "artifact trace output requires COWORLD_PLAYER_ARTIFACT_UPLOAD_URL")
+    let member = if destination == "artifact": "telemetry.jsonl"
+      else: destination["artifact:".len .. ^1]
+    if member.len == 0 or member.startsWith("/") or ".." in member.split('/'):
+      raise newException(ValueError, "invalid artifact member path")
+    trace.outputs.add(TraceOutput(kind: JsonlArtifact, member: member))
+  elif destination.startsWith("file://") or destination.startsWith("file:"):
+    let prefix = if destination.startsWith("file://"): "file://" else: "file:"
+    let path = destination[prefix.len .. ^1]
+    if path.len == 0: raise newException(ValueError, "file trace output requires a path")
+    if path.parentDir.len > 0: createDir(path.parentDir)
+    trace.outputs.add(TraceOutput(
+      kind: JsonlFile, file: open(path, fmWrite), ownsFile: true))
+  else:
+    raise newException(ValueError, "unsupported trace output destination")
+
+proc configure(trace: TraceState, raw: string) =
+  if raw.strip.toLowerAscii in ["", "none", "off", "0", "false"]: return
+  for chunk in raw.replace(';', ',').split(','):
+    let spec = chunk.strip
+    if spec.len == 0: continue
+    let at = spec.find('@')
+    if at < 0: raise newException(ValueError, "trace output must use format@destination")
+    let format = spec[0 ..< at].toLowerAscii
+    if format notin ["jsonl", "ndjson"]:
+      raise newException(ValueError, "native stencil trace output supports jsonl")
+    trace.addJsonlOutput(spec[at + 1 .. ^1])
+
+proc newTraceState*(): TraceState =
+  result = TraceState(artifactUrl: getEnv("COWORLD_PLAYER_ARTIFACT_UPLOAD_URL"))
+  let configured = getEnv("STENCIL_TRACE_OUTPUTS", "jsonl@artifact")
+  try:
+    result.configure(configured)
+  except CatchableError as error:
+    stderr.writeLine("WARNING: trace outputs unavailable (" & error.msg &
+      "); falling back to jsonl@stderr")
+    result.outputs.setLen(0)
+    result.addJsonlOutput("stderr")
+  result.enabled = result.outputs.len > 0
+
+proc record*(trace: TraceState, policy: StencilPolicy, command: Command) =
+  if not trace.enabled: return
+  try:
+    let belief = policy.belief
+    var signature = none(tuple[width, height, teams: int])
+    if not belief.worldmap.isNil: signature = some(belief.worldmap.signature)
+    if signature != trace.lastWorldSignature:
+      trace.lastWorldSignature = signature
+      trace.emit(policy.tick, "worldmap", snapshot(policy, command))
+    if trace.lastAlive.isNone or trace.lastAlive.get != belief.alive:
+      trace.lastAlive = some(belief.alive)
+      trace.emit(policy.tick, if belief.alive: "alive" else: "dead", newJObject())
+    if trace.lastIntent.isNone or trace.lastIntent.get != policy.lastIntent.reason:
+      trace.lastIntent = some(policy.lastIntent.reason)
+      trace.emit(policy.tick, "objective", %*{
+        "reason": policy.lastIntent.reason,
+        "point": pointJson(policy.lastIntent.point),
+      })
+    if trace.carryInitialized and trace.lastCarry != belief.iCarryHeartOf:
+      trace.emit(policy.tick, "carry", %*{"color": teamJson(belief.iCarryHeartOf)})
+    trace.carryInitialized = true
+    trace.lastCarry = belief.iCarryHeartOf
+    if DiagEveryTicks > 0 and policy.tick mod DiagEveryTicks == 0:
+      var data = snapshot(policy, command)
+      for key, value in counters(policy): data[key] = value
+      trace.emit(policy.tick, "snapshot", data)
+  except CatchableError as error:
+    stderr.writeLine("stencil trace error: " & error.msg)
+    trace.enabled = false
+
+proc close*(trace: TraceState) =
+  if trace.isNil: return
+  for output in trace.outputs:
+    if output.ownsFile: output.file.close()
+  let artifacts = trace.outputs.filterIt(it.kind == JsonlArtifact)
+  if artifacts.len == 0: return
+  try:
+    var entries = initOrderedTable[string, string]()
+    var files = newJArray()
+    for output in artifacts:
+      entries[output.member] = output.records.join("\n") &
+        (if output.records.len > 0: "\n" else: "")
+      files.add(%output.member)
+    entries["manifest.json"] = pretty(%*{
+      "schema_version": 1,
+      "producer": "players.player_sdk.TraceOutputs",
+      "files": files,
+    })
+    let payload = createZipArchive(entries)
+    if trace.artifactUrl.startsWith("file://"):
+      let path = trace.artifactUrl["file://".len .. ^1]
+      if path.parentDir.len > 0: createDir(path.parentDir)
+      writeFile(path, payload)
+    elif trace.artifactUrl.startsWith("http://") or
+        trace.artifactUrl.startsWith("https://"):
+      let curl = newCurlPool(1)
+      defer: curl.close()
+      let response = curl.put(trace.artifactUrl,
+        @[("Content-Type", "application/zip")], payload, 30.0'f32)
+      if response.code < 200 or response.code >= 300:
+        raise newException(IOError, "artifact PUT failed: HTTP " & $response.code)
+    else:
+      raise newException(ValueError, "unsupported artifact upload URL")
+  except CatchableError as error:
+    stderr.writeLine("WARNING: failed to close trace output: " & error.msg)

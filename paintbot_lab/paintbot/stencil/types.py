@@ -164,6 +164,8 @@ class PaintState:
     )
     #: Decoded walkability mask (bool [H, W]), when the sprite has arrived.
     walkability: np.ndarray | None = None
+    #: One-time snappy decode + bool-mask conversion cost for that map.
+    walkability_decode_ms: float = 0.0
     visible_items: tuple[tuple[str, tuple[int, int]], ...] = ()
     heard_impacts: tuple[tuple[str, tuple[int, int]], ...] = ()
     #: Shout bubbles heard this frame: (team color, sender address, text, pos).

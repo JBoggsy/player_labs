@@ -31,7 +31,8 @@ from __future__ import annotations
 
 import heapq
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from time import perf_counter
 
 import numpy as np
 
@@ -96,6 +97,7 @@ class WorldMap:
         teams: int,
         endzones: dict[str, Endzone],
     ) -> None:
+        build_started = perf_counter()
         self.height, self.width = walkable_mask.shape
         self.teams = teams
         self.endzones = endzones
@@ -106,15 +108,24 @@ class WorldMap:
         self.grid_h = max(1, self.height // NAV_CELL)
         #: Footprint-eroded nav grid: a cell is walkable when a player body
         #: centred on the cell centre fits (no wall pixel within PLAYER_HALF).
+        erode_started = perf_counter()
         self.walkable: np.ndarray = self._erode(walkable_mask)
+        erode_ms = (perf_counter() - erode_started) * 1000
         #: Walkable cells adjacent (8-neighbourhood) to a non-walkable cell.
+        cover_started = perf_counter()
         self.cover: np.ndarray = self._cover_cells(self.walkable)
+        cover_ms = (perf_counter() - cover_started) * 1000
         #: Heart pedestal positions by color, folded in from planted-heart
         #: sightings (perception). Falls back to the endzone centre until seen.
         self.pedestals: dict[str, tuple[int, int]] = {}
         #: Lazy per-goal-cell caches, episode-scoped by construction.
         self._flow_fields: dict[tuple[int, int], np.ndarray] = {}
         self._route_fields: dict[tuple[int, int], np.ndarray] = {}
+        self._dijkstra_ms: list[float] = []
+        self._nav_init_snapshot: dict[str, float | int] | None = None
+        self._base_init_ms = (perf_counter() - build_started) * 1000
+        self._erode_ms = erode_ms
+        self._cover_ms = cover_ms
 
     # --- construction helpers ---------------------------------------------------
 
@@ -266,10 +277,38 @@ class WorldMap:
     def _fields_for(self, goal: tuple[int, int]) -> tuple[np.ndarray, np.ndarray]:
         goal_cell = self.cell_of(*goal)
         if goal_cell not in self._flow_fields:
+            started = perf_counter()
             dist, hop = self._dijkstra(goal_cell)
+            self._dijkstra_ms.append((perf_counter() - started) * 1000)
             self._route_fields[goal_cell] = dist
             self._flow_fields[goal_cell] = hop
         return self._route_fields[goal_cell], self._flow_fields[goal_cell]
+
+    def _current_nav_init_metrics(self) -> dict[str, float | int]:
+        dijkstra_total = sum(self._dijkstra_ms)
+        return {
+            "base_ms": self._base_init_ms,
+            "erode_ms": self._erode_ms,
+            "cover_ms": self._cover_ms,
+            "dijkstra_count": len(self._dijkstra_ms),
+            "dijkstra_total_ms": dijkstra_total,
+            "dijkstra_max_ms": max(self._dijkstra_ms, default=0.0),
+            "total_ms": self._base_init_ms + dijkstra_total,
+            "map_pixels": self.width * self.height,
+            "grid_cells": self.grid_w * self.grid_h,
+            "walkable_cells": int(self.walkable.sum()),
+        }
+
+    def finalize_nav_init_metrics(self, decode_ms: float = 0.0) -> None:
+        """Freeze startup timings before ordinary first-tick routing begins."""
+        if self._nav_init_snapshot is None:
+            self._nav_init_snapshot = self._current_nav_init_metrics()
+            self._nav_init_snapshot["decode_ms"] = decode_ms
+            self._nav_init_snapshot["total_ms"] += decode_ms
+
+    def nav_init_metrics(self) -> dict[str, float | int]:
+        """Return frozen startup timings, or current timings during construction."""
+        return dict(self._nav_init_snapshot or self._current_nav_init_metrics())
 
     def flow_waypoint(self, goal: tuple[int, int], self_xy: tuple[int, int]) -> tuple[int, int]:
         """Next-hop waypoint toward ``goal`` from the cached flow field."""

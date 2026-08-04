@@ -121,6 +121,8 @@ class StencilRuntime:
         self._adopt_game_params(percept)
         self._ensure_worldmap(percept)
         update_belief(self.belief, percept, self.action_state, self.tick)
+        if self.belief.worldmap is not None:
+            self.belief.worldmap.finalize_nav_init_metrics(percept.walkability_decode_ms)
         self._ensure_roles()
 
         from paintbot.stencil.strategy import decide_objective

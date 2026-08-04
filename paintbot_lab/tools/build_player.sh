@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build a Paintbot player image in-lab (Docker-only on the host).
+# Build the native Paintbot player image in-lab (Docker-only on the host).
 #
 # Usage: tools/build_player.sh <policy> [--tag REF] [--push REF]
 #   <policy>   stencil
@@ -7,8 +7,8 @@
 #   --push     re-tag the built image as REF and `docker push` it
 #
 # Produces a linux/amd64 image (the Coworld upload contract). All inputs are public,
-# so the host needs only Docker — no credentials. Unlike ctf_lab's beacon there is
-# NO baked nav artifact to check: stencil builds its world model online per episode.
+# so the host needs only Docker — no credentials. Stencil builds its world model
+# online from the Sprite-v1 init snapshot; no map artifact is baked into the image.
 set -euo pipefail
 
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # paintbot_lab/
@@ -41,27 +41,14 @@ command -v docker >/dev/null 2>&1 || die "docker not found on PATH"
 
 case "$policy" in
   stencil)
-    # Resolve PLAYERS_SDK_REF=main to a SHA via ls-remote (a literal `main` build-arg
-    # is a Docker layer-cache trap: the pip layer caches on the unchanged tarball URL).
-    if [ "$PLAYERS_SDK_REF" = "main" ]; then
-      remote_sha="$(git ls-remote https://github.com/Metta-AI/coworld-tools.git refs/heads/main | awk '{print $1}' | head -1)"
-      if [ -n "$remote_sha" ]; then
-        echo "==> PLAYERS_SDK_REF=main resolved to coworld-tools main $remote_sha"
-        PLAYERS_SDK_REF="$remote_sha"
-      else
-        echo "WARNING: could not resolve coworld-tools main; building at 'main' (Docker may reuse a stale SDK layer)" >&2
-      fi
-    fi
-    dir="$PKG_DIR/stencil"
+    dir="$PKG_DIR/stencil_nim"
     [ -f "$dir/Dockerfile" ] || die "no Dockerfile at $dir"
     stage="$(mktemp -d)"; trap 'rm -rf "$stage"' EXIT
-    cp "$PKG_DIR/__init__.py" "$stage/paintbot_init.py"
-    rsync -a --exclude '__pycache__' --exclude '*.egg-info' --exclude '.cache' \
-      --exclude 'tests' "$dir/" "$stage/stencil/"
+    rsync -a --exclude 'Dockerfile' "$dir/" "$stage/"
     echo "==> docker buildx build --platform=linux/amd64 -t $tag"
     docker buildx build --platform=linux/amd64 --load \
       -f "$dir/Dockerfile" -t "$tag" \
-      --build-arg "PLAYERS_SDK_REF=$PLAYERS_SDK_REF" "$stage"
+      --build-arg "PAINTBOT_GAME_REF=$PAINTBOT_GAME_REF" "$stage"
     ;;
   *)
     die "unknown policy '$policy' (want: stencil)" ;;

@@ -68,6 +68,7 @@ def _snapshot(info: StepInfo) -> dict:
                 "teams": wm.teams,
                 "seats_per_team": wm.seats_per_team(),
                 "grid": [wm.grid_w, wm.grid_h],
+                "nav_init": wm.nav_init_metrics(),
             }
             if wm is not None
             else None

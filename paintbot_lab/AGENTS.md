@@ -9,11 +9,11 @@ game-agnostic skills. This file is the **Paintbot-specific layer**: the game,
 the docs, the practices, and the policy we optimize. When the two disagree, the
 root defines *process*; this file defines *Paintbot*.
 
-> **Lab status (2026-08-03): bootstrapped.** `stencil` (Python,
-> [`paintbot/stencil/`](paintbot/stencil/)) is implemented + tested, **not yet
+> **Lab status (2026-08-03): bootstrapped.** `stencil` (native Nim,
+> [`paintbot/stencil_nim/`](paintbot/stencil_nim/)) is implemented + tested, **not yet
 > uploaded/evaluated**. The game repo is the SAME clone as CTF's
 > (`~/coding/coworlds/coworld-ctf` — paintbot is a second manifest over the
-> same binary). Deployed paintbot **0.7.178** at lab creation; the league
+> same binary). Deployed paintbot **0.7.181** currently; the league
 > redeploys often — check `uv run coworld list | grep paintbot`. Live state:
 > [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
 
@@ -60,14 +60,19 @@ repeat → human gate → submit) runs **unchanged**. Paintbot-specific instrume
   timeout). Because scoring is win-only, win rate per cut is the metric.
   League-side, the ultimate KPI is **territory** — battle win rate is the
   instrument; the commander prompt (see WORKING_CONTEXT) is a second lever.
+- **Screen/tune locally** — `tools/self_play.py` runs the native production
+  simulator with ready-paced self-play and parallel episodes. Use `1v1` for
+  cheap micro screens and full variants for structural checks; candidate-only
+  env overrides plus rotating candidate teams support controlled knob tests.
+  This is a fast proxy, not a substitute for the live-field verdict.
 - **Report** (step 2) — pull artifacts with `coworld-episode-artifacts`. There
   is **no paintbot survey/warehouse skill yet**; ctf_lab's `event_warehouse.py`
   re-keying machinery and `analyze_reporter_warehouse.py` pattern are the
   templates when episodes exist (replays carry exact `mapSpec` geometry, so
   per-map analysis is possible post-hoc). Building a paintbot warehouse is the
   highest-leverage tooling investment once we have batches.
-- **Implement** (step 4) — change [`paintbot/stencil/`](paintbot/stencil/);
-  knobs live in `config.py` (`STENCIL_*` env vars, tunables registry —
+- **Implement** (step 4) — change [`paintbot/stencil_nim/`](paintbot/stencil_nim/);
+  knobs live in `config.nim` (`STENCIL_*` env vars; the Python oracle retains the tunables registry —
   `uv run python -m paintbot.stencil.tuning`) so each iteration is attributable.
 - **Rebuild / upload / submit** (steps 5-8) — `tools/build_player.sh stencil`,
   then the game-agnostic skills. The hosted eval is the test; `coworld-local-run`
@@ -75,7 +80,8 @@ repeat → human gate → submit) runs **unchanged**. Paintbot-specific instrume
 
 ## The player: stencil
 
-A deterministic cyborg forked from ctf_lab's **beacon** (read
+A deterministic native Nim cyborg ported exactly from the Python policy forked
+from ctf_lab's **beacon** (read
 [`docs/designs/stencil-v1-design.md`](docs/designs/stencil-v1-design.md) — it
 carries the scrap-vs-port ledger). The architecture in one breath: `perception`
 reads labels **plus** the walkability sprite pixels and wire markers; the
@@ -94,7 +100,7 @@ Key invariants to respect when editing:
 - **No module-level map caches.** All map state lives on `belief.worldmap`
   (episode-scoped). This was a deliberate fix to a latent beacon bug class.
 - **The wire is the only map source.** If you need a map fact, derive it in
-  `worldmap.py` from the init snapshot; never constant-ize a generated map.
+  `worldmap.nim` from the init snapshot; never constant-ize a generated map.
 - **Multi-team throughout**: any code touching "the enemy" must handle 1-3
   enemy colors and hearts leaving play (`belief.hearts_retired`).
 - Seat conventions must degrade when we own only part of a team.
@@ -141,10 +147,12 @@ Paintbot-specific parked work lives in the shared [`../TODO.md`](../TODO.md).
 
 ## Player policies
 
-- **stencil** *(Python)* — at [`paintbot/stencil/`](paintbot/stencil/), the
+- **stencil** *(native Nim)* — at [`paintbot/stencil_nim/`](paintbot/stencil_nim/), the
   primary (only) Paintbot policy. **Current: unreleased (pre-v1)** — built and
   unit-tested, awaiting first upload + hosted evaluation. Version history:
   [`paintbot/stencil/VERSION_LOG.md`](paintbot/stencil/VERSION_LOG.md).
   Behavior knobs are `STENCIL_*` env vars set at upload time for A/B
-  (`uv run python -m paintbot.stencil.tuning secret-env ...`).
+  (`uv run python -m paintbot.stencil.tuning secret-env ...`). The Python
+  implementation at `paintbot/stencil/` is retained as the differential oracle
+  and tuning-registry CLI; it is not included in the player image.
   Build: `tools/build_player.sh stencil`.

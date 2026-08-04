@@ -16,6 +16,7 @@ locked from the first ``self <color>`` sighting (belief handles the lock).
 from __future__ import annotations
 
 import math
+from time import perf_counter
 
 import numpy as np
 
@@ -62,6 +63,7 @@ _IDENTITY_INDEX = {n: i for i, n in enumerate(_IDENTITY_NAMES)}
 #: Decoded walkability masks keyed by (sprite_id, width, height) — a pure decode
 #: cache, safe across episodes because a different map defines a different sprite.
 _walkability_cache: dict[tuple[int, int, int], np.ndarray] = {}
+_walkability_decode_ms = 0.0
 
 
 def _center(world: SpriteWorld, obj: SpriteObject) -> tuple[int, int]:
@@ -136,6 +138,7 @@ def decode_walkability(world: SpriteWorld) -> np.ndarray | None:
     payload is snappy RAW block format (no stream framing) — cramjam's
     ``decompress_raw`` matches the server's supersnappy output.
     """
+    global _walkability_decode_ms
     for sprite in world.sprites.values():
         if sprite.label != "walkability map":
             continue
@@ -145,6 +148,7 @@ def decode_walkability(world: SpriteWorld) -> np.ndarray | None:
             return cached
         if cramjam is None or sprite.width <= 0 or sprite.height <= 0:
             return None
+        started = perf_counter()
         try:
             raw = bytes(cramjam.snappy.decompress_raw(sprite.data))
         except Exception:
@@ -155,6 +159,7 @@ def decode_walkability(world: SpriteWorld) -> np.ndarray | None:
             sprite.height, sprite.width, 4
         )[:, :, 3]
         mask = alpha > 0
+        _walkability_decode_ms = (perf_counter() - started) * 1000
         _walkability_cache.clear()  # keep exactly one map resident
         _walkability_cache[key] = mask
         return mask
@@ -492,6 +497,7 @@ def perceive(obs, team: Team, colors: tuple[Team, ...]) -> PaintState:
         map_size=params[1] if params else None,
         endzones=parse_endzones(world),
         walkability=decode_walkability(world),
+        walkability_decode_ms=_walkability_decode_ms,
         visible_items=visible_items,
         heard_impacts=heard_impacts,
         heard_shouts=heard_shouts,
