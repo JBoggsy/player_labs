@@ -63,6 +63,7 @@ vanilla_wow_lab/
     vanilla-wow-protocol.md          exhaustive interface-protocol reference (every message/schema/format)
     vanilla-wow-rfc-roles.md         the 5 RFC roles (commissioner/grader/…) + round scoring
     vanilla-wow-strategy-guide.md    how to PLAY WoW well: beginner's guide + pro tips + RFC/leveling strategy
+    status-archive.md                retired WORKING_CONTEXT status sections (2026-07-13..07-27; all stale)
     designs/                         player design docs (obs/action spaces, v2 shim adoption)
     recon/                           citation-backed recon reports (navigation obs/actions)
   wowborg/                           our player: Python policy over canonical /env (own README)
