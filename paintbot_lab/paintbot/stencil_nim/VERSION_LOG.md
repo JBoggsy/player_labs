@@ -4,6 +4,108 @@ Read this before assuming what a version contains. Format mirrors
 `ctf_lab/ctf/beacon/VERSION_LOG.md`: one entry per uploaded version — what
 changed, why, and what the evidence said.
 
+## v12 — accepted aim fix + observable homeward posts, uploaded 2026-08-04
+
+Immutable policy-version UUID: `5889dc2e-170a-4082-8f52-b149333d552a`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Preserves v9's strategy and homeward-ranked defensive-post behavior while
+  retaining the accepted 32-slot/five-slot aim controller.
+- Adds trace-only `defensive_post_heart_distance` and
+  `defensive_post_forward` fields so a post selection can be judged directly
+  without changing how it is selected.
+- Reverts v10/v11's post-ranking experiments after the locked-map A/B showed
+  that forcing defenders farther forward reduced combat output.
+
+Two final hosted probes on canonical Paintbot 0.7.184 completed without
+failure. On locked small-plus 4FFA seed 202, v12 won `+4` against daveey,
+richard, and Andre (`xreq_af902ca9-55b0-4168-94c7-b0f77e9a946a`). On locked
+standard-sides 2v2 seed 808, v12 and richard won `+2` against daveey and Andre
+(`xreq_4eae7ddd-79dd-40c9-b42f-8769730da1cb`). Defender traces contained
+generated post coordinates, associated opponent fronts, score, heart distance,
+and forwardness; attacker traces contained no post assignment.
+
+## v11 — rejected forced-forward post ranking, uploaded 2026-08-04
+
+Immutable policy-version UUID: `4b731d4c-2c6c-4b83-a05a-2bed892b7db2`;
+never submitted.
+
+- Restricted defender assignments to generated posts forward of the heart and
+  within gun range of it, then ranked those candidates by post score.
+- Added trace fields for the selected post's heart distance and forwardness.
+- Activation was correct: all 12 defender assignments in the locked 4FFA
+  matrix reported `defensive_post_forward=true`.
+
+The six-map locked 4FFA A/B rejected the behavior. v9 drew one and lost five;
+v11 lost all six. More importantly, v11 fell from 285 shots / 156 hits / 56
+kills (54.7% hit rate) to 205 / 90 / 23 (43.9%). Both arms recovered all seven
+observed thefts of Stencil's heart, so the forward constraint did not improve
+the defense mechanism it was meant to strengthen. In the separate locked
+four-map 2v2 matrix both versions won all four, which was insufficient to
+rescue the clear 4FFA combat regression.
+
+## v10 — rejected opponent-route post ordering, uploaded 2026-08-04
+
+Immutable policy-version UUID: `284654a3-507d-4504-bd46-0cba8b2bcf29`;
+never submitted.
+
+- Assigned distinct opponent fronts and ranked posts by the shortest enemy
+  route to the defended heart.
+- Initial score comparisons were run with the generic `seed` field. Inspection
+  showed that this did not lock Paintbot terrain: reproducibility requires
+  `mapSeed`, `mapSize`, and `mapLayout`. Those comparisons were therefore
+  discarded rather than treated as evidence, and v11 was evaluated with a
+  properly locked matrix.
+
+## v9 — deployed five-slot aim controller, uploaded 2026-08-04
+
+Immutable policy-version UUID: `30ee0431-1f3d-4ecd-9686-208c3894a1f4`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Models the live 0.7.184/GV36 combination exactly: 32 aim slots and the
+  variants' explicit `aimTurnRate=5`, yielding a 40-brad jump per held tick.
+- Replaces greedy angular-sign turning with modular slot routing. It compares
+  the number of +5 and -5 slot commands required to reach the nearest target
+  slot, preventing unreachable-angle oscillation.
+- Keeps defensive strategy, generated posts, cover decisions, target
+  selection, and fire gating unchanged. Full traces retain v8's aim target,
+  error, grid error, and authoritative wire resync fields.
+
+Against the current top 4FFA field over eight natural generated maps, v9 won
+two, drew one, and lost five versus v7's zero wins, three draws, and five
+losses. Replay-derived combat improved from 4.63 to 11.13 kills/episode and
+from 20.9% to 51.5% hit rate; deaths fell from 10.13 to 8.50 per episode.
+Stencil captured four hearts versus zero for v7. Both arms experienced 1.13
+own-heart steals per episode, and all nine v9 thefts were returned before a
+capture. Requests: v9 `xreq_c104f2ee-625f-4bbb-a9ee-c245f50e0c86`; v7
+`xreq_4d287287-945f-40f8-89a1-ea85a267b746`.
+
+## v8 — rejected incomplete GameVersion 36 compatibility, uploaded 2026-08-04
+
+Immutable policy-version UUID: `c849fad4-645a-44ca-8c7f-32e7f0358525`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Pins canonical Paintbot 0.7.184 at source ref
+  `352d0e5408245710874abcfb861ad88491156238` (GameVersion 36).
+- Updated Stencil's aim integrator from the removed 5-brad continuous turn to
+  an assumed one-slot / 8-brad step and made each wire marker authoritative.
+  Live XP episode configuration then showed that 0.7.184's variants still
+  explicitly set `aimTurnRate=5`; under GV36 that means five slots / 40 brads.
+  v8 was therefore rejected before evaluation.
+- Adds per-tick `aim_target_brads`, `aim_error_brads`, and
+  `aim_grid_error_brads` tracing. Strategy, roles, objectives, posts, cover,
+  target selection, and fire gating are otherwise unchanged.
+
+The v8 request `xreq_1d7e54b5-af94-4a4a-a7da-1b0f81961b08` was cancelled
+before any episode completed. Baseline request
+`xreq_2833a2c2-2036-4e16-8bf4-427763938bb4` continued for diagnosis.
+
 ## v7 — distinct homeward-ranked defensive posts, uploaded 2026-08-04
 
 Immutable policy-version UUID: `91cd9b6d-df02-4887-8ed0-24cc8379030b`.
@@ -11,8 +113,8 @@ Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
 `STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
 to a league.
 
-- Deduplicates the generated post union and ranks it by distance from the
-  team's heart, then assigns defender seat N to rank N. This fixes v6's
+- Deduplicates the generated post union and ranks it by Euclidean distance from
+  the team's home center, then assigns defender seat N to rank N. This fixes v6's
   duplicate assignment while keeping the behavior explicitly defensive.
 - Defenders travel to and hold their assigned post, sweeping toward the
   associated opponent front. Heart-theft interception remains higher priority;

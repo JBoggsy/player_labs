@@ -12,16 +12,18 @@ This README orients newcomers (human or agent). Two pointers do most of the work
 - **[`../README.md`](../README.md)** — lab-wide setup (`uv sync` / Observatory
   auth) and the ground rules.
 
-> **Status: generated-post defense hosted-validated 2026-08-04.** `stencil:v7`
-> (a beacon fork with online per-episode navigation) is uploaded with full
-> tracing; defenders now occupy distinct homeward-ranked firing posts. It is
+> **Status: aim fix + generated-post defense hosted-validated 2026-08-04.**
+> `stencil:v12` (a beacon fork with online per-episode navigation) is uploaded
+> with full tracing; defenders occupy distinct homeward-ranked firing posts and
+> the aim controller matches GameVersion 36's 32-slot/five-slot turn. It is
 > **not submitted**. The live
 > Paintbot league runs the **campaign (territory)
 > round brain, not a ladder**: an LLM commander per player invades cells on a
 > 10x10 board where **each cell permanently owns a map** (pinned terrain seed +
 > size); standings are territory — at campaign round 202, daveey held 80/100
-> cells and richard held 8. Deployed game: paintbot **0.7.183**. Live state + open
-> threads: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
+> cells and richard held 8. Deployed game: paintbot **0.7.184**. Live state + open
+> threads: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md). Defensive experiment
+> verdict: [`docs/reports/stencil-defensive-mechanics-2026-08-04.md`](docs/reports/stencil-defensive-mechanics-2026-08-04.md).
 
 ## The game (one paragraph)
 
@@ -71,6 +73,7 @@ paintbot_lab/
   docs/
     paintbot-gameplay.md   self-contained game reference
     recon/                 the founding deep-dive (citations into game + metta)
+    reports/               hosted experiment evidence and verdicts
     designs/stencil-v1-design.md   stencil's architecture + scrap/port ledger
     designs/stencil-nim-port.md    native port contract + parity evidence
   tools/

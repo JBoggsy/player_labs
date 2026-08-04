@@ -37,3 +37,25 @@ Evidence: stencil:v6 assigned defensive posts in `1v1`, but every trace stayed
 in the higher-priority convert hunt because one enemy has only three lives. The
 7-4-1 duel result therefore said nothing about post defense; `2v2` traces were
 required to observe `to_post` and `hold_post` activation.
+
+### Lock generated Paintbot terrain with mapSeed, mapSize, and mapLayout
+Evidence: generic experience-request `seed` values produced different map
+dimensions across intended A/B arms. The explicit map fields reproduced the
+same geometry and made the six-map 4FFA post-selection matrix valid.
+
+### Read aim units from the deployed game version and variant together
+Evidence: GameVersion 36 changed aim to a 32-slot ring, while Paintbot 0.7.184
+retained `aimTurnRate=5` in each variant. Treating that value as one slot was
+wrong; it means five slots / 40 brads per command. The corrected modular
+controller raised replay hit rate from 20.9% to 51.5% against the top field.
+
+### More forward defensive posts can reduce both coverage and combat output
+Evidence: v11 correctly assigned all 12 sampled defenders to forward posts,
+but versus homeward-ranked v9 on six locked 4FFA maps it fell from 285 shots / 156
+hits / 56 kills to 205 / 90 / 23, while both arms returned every stolen heart.
+
+### Own-heart defense cannot control every terminal event in multi-team FFA
+Evidence: in the locked 4FFA matrix Stencil returned every observed theft of
+its own heart yet still lost games when one opponent captured another
+opponent's heart. An all-map draw-or-win target therefore crosses from local
+defensive mechanics into third-party FFA strategy.

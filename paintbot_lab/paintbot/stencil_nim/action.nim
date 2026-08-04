@@ -96,7 +96,7 @@ proc threatAxis(belief: Belief): int =
 proc sweepTarget(belief: Belief): int =
   var axis = belief.threatAxis
   if Squads: axis = floorMod(axis + belief.sectorOffsetBrads, AimBradsTurn)
-  belief.sweepOffset += belief.sweepDir * AimTurnRate
+  belief.sweepOffset += belief.sweepDir * AimSweepStepBrads
   if belief.sweepOffset >= SweepHalfArc:
     belief.sweepOffset = SweepHalfArc; belief.sweepDir = -1
   elif belief.sweepOffset <= -SweepHalfArc:
@@ -266,9 +266,20 @@ proc peekDuckOverride(belief: Belief, intent: Intent): Option[MicroOverride] =
   if distance(peek.get, belief.selfXy.get) < 5.0: return some((0'u8, some(aim)))
   some((octantToward(belief.selfXy.get, peek.get, false), some(aim)))
 
-proc rotationButton(error: int, state: var ActionState): uint8 =
-  if abs(error) <= AimDeadband: state.lastRot = 0; return 0
-  if error > 0: state.lastRot = 1; ButtonB
+proc rotationButton(target, current: int, state: var ActionState): uint8 =
+  # GV36's deployed five-slot turn is not a small angular step. Greedy
+  # clockwise/counter-clockwise steering can oscillate forever, so solve in
+  # the 32-slot ring and choose the direction needing fewer 5-slot commands.
+  let
+    targetSlot = floorMod(pyRound(target.float / AimStepBrads.float), AimRotations)
+    currentSlot = floorMod(current div AimStepBrads, AimRotations)
+    delta = floorMod(targetSlot - currentSlot, AimRotations)
+  if delta == 0: state.lastRot = 0; return 0
+  var forwardSteps = 0
+  while floorMod(forwardSteps * AimSlotsPerTick, AimRotations) != delta:
+    inc forwardSteps
+  let reverseSteps = AimRotations - forwardSteps
+  if forwardSteps <= reverseSteps: state.lastRot = 1; ButtonB
   else: state.lastRot = -1; ButtonSelect
 
 proc blastSafe(belief: Belief, target: Point): bool =
@@ -384,7 +395,7 @@ proc grenadeOverlay(mask: uint8, belief: Belief, state: var ActionState): uint8 
   result = mask
   if belief.enemies.len == 0 and not belief.throwLiveTarget:
     result = result and not (ButtonB or ButtonSelect)
-    result = result or rotationButton(bradError(wanted, belief.aimBrads), state)
+    result = result or rotationButton(wanted, belief.aimBrads, state)
   let releaseError = bradError(wanted, postInputAim(result, belief))
   let ready = belief.throwChargeTicks >= needed and
     abs(releaseError) <= GrenadeAimErrBrads and
@@ -402,6 +413,7 @@ proc grenadeOverlay(mask: uint8, belief: Belief, state: var ActionState): uint8 
 proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Command =
   var mask = 0'u8
   state.lastRot = 0; belief.micro = ""; belief.heardDuck = false
+  belief.aimTargetBrads = belief.aimBrads; belief.aimErrorBrads = 0
   if belief.selfXy.isNone or belief.worldmap.isNil:
     state.aHeld = false; belief.leadBrads = 0; belief.throwChargeTicks = 0
     belief.throwTarget = none(Point); belief.throwReason = ""
@@ -446,8 +458,10 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
       elif selected.isSome: (selected.get.candidate.aimPos, selected.get.candidate.leadBrads)
       else: belief.leadAimPos(enemy.get)
     belief.leadBrads = aim.lead
-    let error = bradError(bradsOf((aim.pos.x-selfXy.x).float,
-      (aim.pos.y-selfXy.y).float), belief.aimBrads)
+    belief.aimTargetBrads = bradsOf((aim.pos.x-selfXy.x).float,
+      (aim.pos.y-selfXy.y).float)
+    let error = bradError(belief.aimTargetBrads, belief.aimBrads)
+    belief.aimErrorBrads = error
     var canFire: bool
     if belief.iHaveArc:
       let range = distance(enemy.get.pos, selfXy)
@@ -465,18 +479,19 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
     if canFire and not state.aHeld:
       if not carrying:
         mask = mask and not MovementMask; state.fireHoldTicks = FireWindupTicks
-      if abs(error) > AimTurnRate div 2:
-        mask = mask or rotationButton(error, state); inc belief.firingTurns
       mask = mask or ButtonA; state.aHeld = true
       if not belief.iHaveArc:
         belief.firefightShotRangeCounts.inc(rangeBucket(distance(enemy.get.pos, selfXy)))
     else:
-      state.aHeld = false; mask = mask or rotationButton(error, state)
+      state.aHeld = false
+      mask = mask or rotationButton(belief.aimTargetBrads, belief.aimBrads, state)
   else:
     state.aHeld = false; belief.leadBrads = 0
     let target = if override.isSome and override.get.aim.isSome:
       override.get.aim.get else: belief.sweepTarget
-    mask = mask or rotationButton(bradError(target, belief.aimBrads), state)
+    belief.aimTargetBrads = target
+    belief.aimErrorBrads = bradError(target, belief.aimBrads)
+    mask = mask or rotationButton(belief.aimTargetBrads, belief.aimBrads, state)
   if GrenadeThrow and belief.iHaveGrenade and
       (not carrying or belief.throwChargeTicks > 0):
     mask = grenadeOverlay(mask, belief, state)

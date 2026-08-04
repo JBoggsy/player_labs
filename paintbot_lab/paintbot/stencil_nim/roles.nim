@@ -31,7 +31,7 @@ proc holdPointForSeat*(map: WorldMap, team: Team, seat, seats: int): Point =
 proc defensivePostForSeat*(
   map: WorldMap, team: Team, seat, seats: int
 ): Option[tuple[post: PostCandidate, opponent: Team]] =
-  ## Give defenders distinct generated posts, ordered from the heart outward.
+  ## Give defenders distinct generated posts, ordered from home center outward.
   if seat >= defenderCount(seats):
     return none(tuple[post: PostCandidate, opponent: Team])
   let home = map.homeCenter(team)

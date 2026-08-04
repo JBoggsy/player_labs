@@ -5,12 +5,12 @@ Update as you learn; clear/reseed on a pivot.*
 
 ## Current objective
 
-**Evaluate `stencil:v7`'s generated-post defense against broader maps and the
-live field.** v7 is uploaded with full tracing but is not submitted to the
-Paintbot league. Defenders take distinct generated posts ranked from their
-heart outward, aim down the associated opponent front, and fall back to generic
-choke cover when no post exists. Heart-theft interception remains higher
-priority.
+**Decide whether the mechanics-only constraint can be relaxed for the remaining
+4FFA loss mode.** `stencil:v12` is the accepted upload with full tracing and is
+not submitted to the Paintbot league. It keeps the fixed defensive strategy,
+uses distinct homeward-ranked generated posts, and carries the corrected
+GameVersion 36 five-slot aim controller. Forced-forward post ranking was tested
+and rejected.
 
 Fast local path: `tools/self_play.py` runs native `coworld-ctf`, enables
 Sprite-v1 ready pacing, rotates candidate teams, supports candidate-only env
@@ -25,10 +25,11 @@ ticks/s.
 
 Next concrete steps:
 
-1. Run a larger, varied-map v7-vs-v5 batch; the four paired seed-707 probes
-   validate activation but are far too small for a win-rate conclusion.
-2. Inspect heart-defense outcomes and defender trajectories, then decide whether
-   homeward rank or post score needs tuning.
+1. Human decision: preserve the fixed strategy and accept that it cannot stop
+   one opponent capturing another opponent's heart, or reopen third-party FFA
+   positioning/targeting as a strategy change.
+2. If strategy remains fixed, use v12 as the mechanics baseline; its final
+   locked probes won both 4FFA small-plus and 2v2 standard-sides.
 3. League submission remains human-gated.
 
 ## Facts worth carrying forward (verified 2026-08-04)
@@ -51,7 +52,8 @@ Next concrete steps:
 - Battle modes: 2-team cells → 2v2 (captains + mirrored allies, both
   seatings); 4-team cells → ffa4 (≤4 policies + recruits/filler). Observed
   seatings (7+7+1+1 etc.) are these rosters.
-- Deployed game **paintbot 0.7.183**, source `95bb768`. Game repo = the
+- Deployed game **paintbot 0.7.184**, source
+  `352d0e5408245710874abcfb861ad88491156238` (GameVersion 36). Game repo = the
   coworld-ctf clone (`~/coding/coworlds/coworld-ctf`); no paintbot-specific Nim
   source exists. 0.7.179 added the two-seat generated-map `1v1` variant; 0.7.180
   landed PR #219's reduced bot sprite traffic; 0.7.181 fixed the 32-seat replay
@@ -62,18 +64,16 @@ Next concrete steps:
 
 ## Open threads
 
-- `stencil:v7` (`91cd9b6d-df02-4887-8ed0-24cc8379030b`) is the current upload,
-  with full artifact tracing and **not submitted**. It assigns defenders unique
-  homeward-ranked posts; four paired seed-707 `2v2` probes completed without
-  failures, all 12 defender-episode assignments traveled to posts, 10 reached
-  `hold_post`, attackers received no posts, and fallbacks were zero. The 2-2
-  result is activation evidence only. v5 added the underlying own-team,
-  per-opponent firing/duck post knowledge. Five pinned hosted probes (small and
-  large sides; standard corners; huge plus; giant corners) completed on
-  0.7.183 with zero failures. The final post pass measured 20 ms / 109 ms /
-  164 ms / 1.16 s / 2.78 s respectively. `stencil:v1` remains the accepted
-  bootstrap/parity baseline; the Nim replay oracle matched **169,235** captured
-  decisions exactly.
+- `stencil:v12` (`5889dc2e-170a-4082-8f52-b149333d552a`) is the current upload,
+  with full artifact tracing and **not submitted**. It is v9's accepted gameplay
+  plus trace-only post heart-distance/forwardness fields. Against the natural
+  top-policy 4FFA field, the v9 aim behavior improved replay hit rate from
+  20.9% to 51.5% and kills/episode from 4.63 to 11.13 versus v7. Every one of
+  nine observed own-heart thefts was recovered. A six-map locked 4FFA A/B
+  rejected v11's forced-forward selector (56 to 23 kills; 54.7% to 43.9% hit
+  rate) and restored v9's homeward selection in v12. Final v12 probes won +4
+  on small-plus seed 202 and +2 on standard-sides seed 808. Full report:
+  `docs/reports/stencil-defensive-mechanics-2026-08-04.md`.
 - **Commander prompt** (new, campaign-specific): each player steers its LLM
   strategist with a private standing-orders prompt — a cheap, high-leverage
   competitive axis independent of the policy image. Needs a first draft when
@@ -99,7 +99,8 @@ Next concrete steps:
 - Choke/rally fractions (`STENCIL_CHOKE_FRACTION` 0.45 / `RALLY_FRACTION`
   0.65) are educated guesses, not tuned.
 - Remaining v1 scope cuts to revisit if evals demand: item-spawn seeding from
-  layout rules, battle plans, and third-party FFA reasoning (relevant: ffa4 battles have a
-  defender + recruits — "which team is the real enemy" now has an answer).
+  layout rules, battle plans, and third-party FFA reasoning. The latter is now
+  the observed limit on an all-map draw-or-win target: own-heart defense cannot
+  prevent one opponent from ending 4FFA by capturing another opponent's heart.
 - Consider whether the mirrored beacon entrant should be retired once stencil
   is submitted (human call; `coworld-player-swap` if identity matters).

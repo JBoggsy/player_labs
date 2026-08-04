@@ -68,7 +68,13 @@ const
   RenderScale* = 1
   LivesPerPlayer* = 3
   AimBradsTurn* = 256
-  AimTurnRate* = 5
+  AimRotations* = 32
+  AimStepBrads* = AimBradsTurn div AimRotations
+  # The deployed 0.7.184 variants explicitly retain aimTurnRate=5. GV36 now
+  # interprets that value as SLOTS per tick, so one held input moves 40 brads.
+  AimSlotsPerTick* = 5
+  AimTurnRate* = AimSlotsPerTick * AimStepBrads
+  AimSweepStepBrads* = AimStepBrads
   # The wire does not identify the variant. Use the narrowest deployed cone so
   # absence-based item tracking never claims a 4ffa8 pickup was visible when it
   # was actually outside that variant's 45-degree cone.
@@ -104,8 +110,6 @@ const
 
 let
   SweepHalfArc* = envInt("STENCIL_SWEEP_HALF_ARC", 32)
-  AimDeadband* = envInt("STENCIL_AIM_DEADBAND", 2)
-  AimResyncSlackBrads* = envInt("STENCIL_AIM_RESYNC_SLACK_BRADS", 8)
   FireSlackPx* = envInt("STENCIL_FIRE_SLACK_PX", 8)
   CloseRangePx* = envInt("STENCIL_CLOSE_RANGE_PX", 220)
   FriendlyFireCorridorPx* = envTunableInt("STENCIL_FF_CORRIDOR_PX", 22, 14)

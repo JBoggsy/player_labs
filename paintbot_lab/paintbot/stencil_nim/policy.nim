@@ -61,6 +61,8 @@ proc decide*(policy: StencilPolicy, client: ProtocolClient): Command =
     policy.belief.defensivePostDuck = none(Point)
     policy.belief.defensivePostOpponent = none(Team)
     policy.belief.defensivePostScore = 0.0
+    policy.belief.defensivePostHeartDistance = 0
+    policy.belief.defensivePostForward = false
     if policy.belief.role == Defender:
       let assignment = if DefensivePosts:
         defensivePostForSeat(policy.belief.worldmap, policy.belief.team,
@@ -74,6 +76,14 @@ proc decide*(policy: StencilPolicy, client: ProtocolClient): Command =
         policy.belief.defensivePostDuck = some(selected.post.duck)
         policy.belief.defensivePostOpponent = some(selected.opponent)
         policy.belief.defensivePostScore = selected.post.score
+        let
+          heart = policy.belief.worldmap.pedestal(policy.belief.team)
+          enemyHome = policy.belief.worldmap.homeCenter(selected.opponent)
+        policy.belief.defensivePostHeartDistance = pyRound(
+          policy.belief.worldmap.routeDistance(selected.post.pos, heart))
+        policy.belief.defensivePostForward =
+          policy.belief.worldmap.routeDistance(enemyHome, selected.post.pos) <
+          policy.belief.worldmap.routeDistance(enemyHome, heart)
       else:
         policy.belief.holdPoint = some(holdPointForSeat(
           policy.belief.worldmap, policy.belief.team, policy.belief.seat, seats))

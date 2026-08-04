@@ -317,28 +317,13 @@ proc updateBeliefCore*(
     belief.aimBrads + actionState.lastRot * AimTurnRate, AimBradsTurn)
   if percept.observedAim.isSome:
     let observed = percept.observedAim.get
-    var error = floorMod(observed - belief.aimBrads, AimBradsTurn)
-    if error > AimBradsTurn div 2:
-      error -= AimBradsTurn
-    if abs(error) > AimResyncSlackBrads:
-      var
-        found = false
-        bestAbs = high(int)
-        bestSteps = 0
-      for steps in -8 .. 8:
-        let candidate = floorMod(belief.aimBrads + steps * AimTurnRate, AimBradsTurn)
-        var candidateError = floorMod(observed - candidate, AimBradsTurn)
-        if candidateError > AimBradsTurn div 2:
-          candidateError -= AimBradsTurn
-        if abs(candidateError) <= AimResyncSlackBrads and
-            (abs(steps) < bestAbs or (abs(steps) == bestAbs and steps < bestSteps)):
-          found = true
-          bestAbs = abs(steps)
-          bestSteps = steps
-      if found:
-        belief.aimBrads = floorMod(
-          belief.aimBrads + bestSteps * AimTurnRate, AimBradsTurn)
-        inc belief.aimResyncs
+    # The wire marker is authoritative for this rendered tick. GV36 makes it
+    # especially important not to tolerate a one-slot discrepancy: carrying a
+    # stale estimate causes the controller to oscillate around an unreachable
+    # fine-grained angle.
+    if observed != belief.aimBrads:
+      inc belief.aimResyncs
+    belief.aimBrads = observed
     belief.prevObservedAim = percept.observedAim
 
   belief.fireReady = percept.fireReady

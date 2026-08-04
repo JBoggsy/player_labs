@@ -5,7 +5,8 @@ contract, and strategy notes — enough to reason about play without leaving the
 repo. Authoritative sources: the **`Metta-AI/coworld-ctf`** repo (paintbot and
 CTF are the *same Nim binary*; clone at `~/coding/coworlds/coworld-ctf`, server
 `src/ctf/`, rules `docs/RULES.md`, manifest `coworld_manifest_paintbot.json`)
-and the deployed league game (paintbot **0.7.183** as of 2026-08-04).
+and the deployed league game (paintbot **0.7.184** as of 2026-08-04,
+GameVersion 36).
 The full recon with `file:line` citations:
 [`recon/paintbot-2026-08-03.md`](recon/paintbot-2026-08-03.md).
 
@@ -13,8 +14,10 @@ The full recon with `file:line` citations:
 
 Paintbot is CTF's expanded sibling on the **BitWorld Sprite-v1** protocol: a
 top-down paintball shooter where teams guard a **heart** (CTF's flag, reskinned)
-on a pedestal inside their **endzone**. You move with the d-pad, aim a
-continuous angle *decoupled from movement* (B/Select rotate; 5 brads/tick),
+on a pedestal inside their **endzone**. You move with the d-pad and aim at
+one of 32 discrete angles *decoupled from movement*. GameVersion 36 interprets
+B/Select's `aimTurnRate` in slots; the currently deployed variants explicitly
+set it to 5, so one tick jumps 40 brads / 56.25 degrees,
 and shoot an instant hitscan paintball gun (A). Vision is fog-of-war (aim-riding
 cone + small omni bubble; walls block). What paintbot adds over the CTF league:
 **2-or-4 teams** (red/blue/green/yellow), **procedurally generated maps** in
@@ -131,7 +134,7 @@ generate → validate → retry seed+1). What a policy must absorb:
   must read the map from the observation (below). Replays DO carry the exact
   geometry (`mapSpec`), so post-hoc tools can reconstruct terrain.
 - `gunRange` is fixed per episode (GV34) — bigger maps do NOT extend the gun.
-  The engine stock default is 1050px, but every deployed Paintbot 0.7.183
+  The engine stock default is 1050px, but every deployed Paintbot 0.7.184
   variant explicitly overrides it to **1300px** (vision reach is therefore
   1950px except for the 90px omnidirectional bubble).
 - Grenade max range and shout radius scale with the map (`mapWidth/5`).
@@ -166,7 +169,8 @@ camera object (id 1) present ⇔ match running; player stream is 1x.
 ## Mechanics carried over from CTF (unchanged)
 
 - Movement 2.75 px/tick per axis (diagonal √2 faster); carrier at 70%.
-- Aim: 256 brads/turn, 5 brads/tick turn rate; 16-step sprite readback.
+- Aim: 256 brads/turn split into 32 slots; B/Select moves 5 slots (40 brads)
+  per held tick; the wire readback is authoritative.
 - Gun: 1300px hitscan in the deployed manifest, 5-tick windup (aim locks at
   pull; don't strafe through it), 12-tick cooldown, aim jitter grows to 80% at
   max range, friendly fire ON

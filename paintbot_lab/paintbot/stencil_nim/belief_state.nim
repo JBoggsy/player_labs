@@ -17,6 +17,8 @@ type
     defensivePost*, defensivePostDuck*: Option[Point]
     defensivePostOpponent*: Option[Team]
     defensivePostScore*: float
+    defensivePostHeartDistance*: int
+    defensivePostForward*: bool
     defensivePostTravelTicks*, defensivePostHoldTicks*: int
     defensivePostFallbacks*: int
     selfXy*: Option[Point]
@@ -26,6 +28,7 @@ type
     colorLocked*: bool
     stealTarget*: Option[Team]
     aimBrads*: int
+    aimTargetBrads*, aimErrorBrads*: int
     prevObservedAim*: Option[int]
     fireReady*: bool
     enemies*, teammates*: seq[Enemy]

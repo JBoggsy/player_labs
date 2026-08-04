@@ -59,11 +59,13 @@ near the opponent→home shortest-route corridor are bucketed by route progress;
 a bounded, spatially distributed subset is scored with nine forward firing
 rays. The final score combines firing-line depth, corridor relevance, and the
 contrast to a nearby reachable duck cell. Six spatially separated posts per
-front are retained when enough valid pairs exist. `stencil:v7` makes defenders
-consume this knowledge: unique post positions are ranked from the team's heart
-outward, assigned by defender seat, and used as hold targets with the sweep axis
-aimed toward the post's opponent front. Heart-theft interception retains higher
-priority, and generic choke cover remains the no-post fallback.
+front are retained when enough valid pairs exist. `stencil:v12` makes defenders
+consume this knowledge: unique post positions are ranked from the team's home
+center outward, assigned by defender seat, and used as hold targets with the sweep axis
+aimed toward the post's opponent front. A forced-forward ranking was tested and
+rejected because it reduced shots, hits, and kills without improving heart
+recovery. Heart-theft interception retains higher priority, and generic choke
+cover remains the no-post fallback.
 
 ## Multi-team generalization
 
