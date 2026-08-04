@@ -65,6 +65,7 @@ type
     firefightTargetScore*: Option[TargetScore]
     firefightTargetSelectedTick*, firefightTargetLastSeenTick*: int
     firefightTargetSwitches*: int
+    defensiveTargetMultiTicks*, defensiveTargetChoiceChanges*: int
     focusClaim*: Option[FocusClaim]
     focusLastClaimSentTick*: int
     focusClaimsSent*, focusClaimsHeard*, focusClaimsSuppressed*: int

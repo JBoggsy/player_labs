@@ -77,3 +77,15 @@ swept toward the distant pedestal; the axes differed by mean 23.2 degrees and
 up to 90 degrees. Using the generated axis still regressed defender kills, so
 the viewer now overlays it as trace-only knowledge rather than implying it is
 the accepted runtime action.
+
+### Prioritize the threat to the defended asset inside combat scoring
+Evidence: defenders saw multiple enemies on 2,164 of 4,402 alive ticks in the
+120 ticks before red-heart steals, but generic target scoring had no heart
+input. A bounded heart-threat bonus changed only 6.8% of multi-target choices
+yet improved two fresh combined fields from 2W/1D/33L to 8W/2D/26L and raised
+defender kills from 5.11 to 6.42 per episode.
+
+### Do not use the CTF warehouse winner projection for four-team Paintbot
+Evidence: `episodes.winner` only compares red and blue, so green/yellow wins
+were mislabeled draws. Paintbot W/D/L must come from the complete `results.json`
+team/win vectors until the warehouse projection is generalized.

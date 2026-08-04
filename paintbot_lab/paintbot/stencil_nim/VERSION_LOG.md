@@ -4,6 +4,74 @@ Read this before assuming what a version contains. Format mirrors
 `ctf_lab/ctf/beacon/VERSION_LOG.md`: one entry per uploaded version — what
 changed, why, and what the evidence said.
 
+## v20 — defensive heart-threat target selection, uploaded 2026-08-04
+
+Immutable policy-version UUID: `bf6f3048-4fa2-4015-bf75-dc7bf0928149`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Changes only defender gun-target scoring. Before a theft, visible enemies
+  receive a bonus that increases with route progress toward Stencil's heart;
+  after a theft, the bonus identifies the visible enemy nearest the observed
+  thief position. Roles, movement, objectives, post generation/assignment,
+  aim, and the fire gate are unchanged.
+- `STENCIL_DEFENSIVE_TARGETING`,
+  `STENCIL_DEFENSIVE_TARGET_THREAT_WEIGHT`,
+  `STENCIL_DEFENSIVE_TARGET_THREAT_RADIUS_PX`, and
+  `STENCIL_DEFENSIVE_THIEF_MATCH_PX` isolate the new mechanic.
+- Full snapshots expose the selected enemy, team, original generic score,
+  defensive threat bonus, and heart distance. End counters record multi-target
+  defender ticks and cases where the new term changes the top-scored target.
+
+Accepted after two fresh matched runs on the same six locked 4FFA maps, three
+episodes per map and arm. Combined results improved from v19's 2W/1D/33L to
+8W/2D/26L (episode-level non-loss Fisher p=0.063). Defender kills rose from
+5.11 to 6.42 per episode and team kills from 8.92 to 11.00. The term changed
+the generic top target on 1,771 of 26,150 multi-target defender ticks (6.8%).
+
+The tradeoff is lower precision and slightly higher defender mortality: replay
+hit rate fell 61.0% to 51.0%, while defender deaths rose 4.36 to 4.97 per
+episode. The added volume still produced more hits, kills, wins, and non-losses
+in both independent batches. Red-heart steals fell only 43 to 40, so this is a
+combat-output improvement rather than a clean theft-prevention result.
+
+First-run v19/v20 request IDs, in small-corners, small-plus,
+standard-corners, standard-plus, large-corners, large-plus order:
+
+- v19: `xreq_caa6084e-0177-4011-b694-987ada8f260a`,
+  `xreq_48a5714f-f5b9-4b2b-a6a3-185723d28882`,
+  `xreq_37ee6e25-7d56-4af5-8cda-88108b02f5e4`,
+  `xreq_f381e238-4ce4-41ba-9843-3b7060fc300e`,
+  `xreq_e3c0fa37-053d-4a83-8525-b00ab93c1ddc`,
+  `xreq_1924b415-3b08-47bd-b365-91956cda8746`.
+- v20: `xreq_887e9059-6e79-4bbc-952b-d01ca3935c44`,
+  `xreq_c5e35a0c-a62a-4fc6-a486-8c69d6ecec30`,
+  `xreq_82acaf8d-9b6d-4d47-9300-bdd597c3e991`,
+  `xreq_e651caf9-bebb-4372-8704-d9a6b9ab526d`,
+  `xreq_25340901-b7a0-4287-9363-16105087feb5`,
+  `xreq_588ca6df-68f4-43a6-817e-445f10e94b21`.
+
+Replication v19/v20 request IDs in the same order:
+
+- v19: `xreq_889e8609-f7d6-46ba-803b-e4673cdc3ce0`,
+  `xreq_5dd5b6ac-a6d2-41fb-b8ab-aae8ac585fa8`,
+  `xreq_f8e78291-6536-452d-a58c-058892706137`,
+  `xreq_5c68f7b0-3423-42f4-bf2f-20a5ed856556`,
+  `xreq_e273a730-7ed6-42f8-b185-a3451a80424f`,
+  `xreq_aaf8e7f4-53dd-4886-a7ac-fc20f3bae1df`.
+- v20: `xreq_689ee7ff-ad50-4a70-a0ce-7939539dc8a8`,
+  `xreq_b7e15319-1df6-43b6-b18b-39832d0699b5`,
+  `xreq_b1ce8500-e040-4724-a7d9-a985f6b15d52`,
+  `xreq_f3841c61-ae75-465e-93eb-e65142b0a0c8`,
+  `xreq_4fdbeb86-44c5-4cac-895f-ec26287dd4ab`,
+  `xreq_fae640d2-7a52-4bca-ae4f-6eab54343557`.
+
+All 72 episodes completed and all requested artifact bundles were fetched.
+The warehouse's legacy `episodes.winner` projection only understands red/blue;
+the W/D/L verdict above comes directly from the four-team `results.json` win
+vectors.
+
 ## v19 — accepted behavior + complete defense diagnostics, uploaded 2026-08-04
 
 Immutable policy-version UUID: `e1b5dfa1-6755-4c4f-99ac-1582dfceec94`.

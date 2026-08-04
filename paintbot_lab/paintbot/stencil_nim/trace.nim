@@ -170,6 +170,7 @@ proc navMetrics(map: WorldMap): JsonNode =
 
 proc snapshot(policy: StencilPolicy, command: Command): JsonNode =
   let belief = policy.belief
+  let targetScore = belief.firefightTargetScore
   var retired = newJArray()
   for color in Team:
     if color in belief.heartsRetired: retired.add(%teamName(color))
@@ -232,6 +233,19 @@ proc snapshot(policy: StencilPolicy, command: Command): JsonNode =
     },
     "team_scores": scores,
     "firefight_active": belief.firefightActive,
+    "target_enemy": (if targetScore.isSome:
+      pointJson(targetScore.get.candidate.enemy.pos) else: newJNull()),
+    "target_enemy_team": (if targetScore.isSome:
+      %teamName(targetScore.get.candidate.enemy.color) else: newJNull()),
+    "target_score": (if targetScore.isSome:
+      %rounded4(targetScore.get.score) else: newJNull()),
+    "target_generic_score": (if targetScore.isSome:
+      %rounded4(targetScore.get.genericScore) else: newJNull()),
+    "target_defensive_threat": (if targetScore.isSome:
+      %rounded4(targetScore.get.defensiveThreat) else: newJNull()),
+    "target_heart_distance_px": (if targetScore.isSome and
+        classify(targetScore.get.heartDistancePx) != fcInf:
+      %rounded4(targetScore.get.heartDistancePx) else: newJNull()),
     "converting": belief.converting,
     "under_fire": belief.underFire,
     "worldmap": world,
@@ -261,6 +275,8 @@ proc counters(policy: StencilPolicy): JsonNode =
     "firefight_ticks_total": b.firefightTicksTotal,
     "firefight_engagements": b.firefightEngagements,
     "firefight_target_switches": b.firefightTargetSwitches,
+    "defensive_target_multi_ticks": b.defensiveTargetMultiTicks,
+    "defensive_target_choice_changes": b.defensiveTargetChoiceChanges,
     "focus_claims_sent": b.focusClaimsSent,
     "focus_claims_heard": b.focusClaimsHeard,
     "focus_claims_suppressed": b.focusClaimsSuppressed,

@@ -69,13 +69,14 @@ type
 
   TargetScore* = object
     candidate*: TargetCandidate
-    score*: float
+    score*, genericScore*: float
     wound*: float
     rangeBand*: float
     claim*: float
     shootability*: float
     aimCost*: float
     shield*: float
+    defensiveThreat*, heartDistancePx*: float
 
   HeartState* = object
     planted*: bool

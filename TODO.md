@@ -5,6 +5,13 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
+- **Generalize event-warehouse outcomes beyond red/blue** (found 2026-08-04).
+  `ctf_lab/tools/event_warehouse.py` projects only `red_score`, `blue_score`,
+  and a red/blue `winner`; on four-team Paintbot it labels green/yellow wins as
+  draws. Add all-team score/win projection or a game-agnostic result table.
+  Until then, compute Paintbot W/D/L directly from each `results.json` team/win
+  vector.
+
 - **Expose player muster in Paintbot's Sprite-v1 init contract** (found
   2026-08-04). The current marker states teams and map dimensions but not
   `num_agents`/seats per team, while campaign `mapSize` independently overrides

@@ -109,19 +109,36 @@ proc woundTerm(enemy: Enemy): float =
   if enemy.hpSegments.isNone: FirefightWoundUnknown
   else: (3 - enemy.hpSegments.get).float / 2.0
 
-proc scoreTarget*(candidate: TargetCandidate, claimed: bool): TargetScore =
+proc defensiveThreatTerm(
+  belief: Belief, candidate: TargetCandidate
+): tuple[term, heartDistancePx: float] =
+  if not DefensiveTargeting or belief.role != Defender or belief.worldmap.isNil:
+    return (0.0, Inf)
+  if belief.ownHeartStolen and belief.ownHeartThiefPos.isSome:
+    let d = distance(candidate.enemy.pos, belief.ownHeartThiefPos.get)
+    return (max(0.0, 1.0 - d / DefensiveThiefMatchPx.float), d)
+  let d = belief.worldmap.routeDistance(candidate.enemy.pos,
+    belief.worldmap.pedestal(belief.team))
+  (max(0.0, 1.0 - d / DefensiveTargetThreatRadiusPx.float), d)
+
+proc scoreTarget*(
+  candidate: TargetCandidate, claimed: bool,
+  defensiveThreat = 0.0, heartDistancePx = Inf
+): TargetScore =
   let
     wound = woundTerm(candidate.enemy)
     rangeBand = rangeTerm(candidate.distancePx)
     claim = if claimed: 1.0 else: 0.0
     shootability = if candidate.shootable: 1.0 else: -1.0
     shield = if candidate.enemy.shielded: 1.0 else: 0.0
-    score = FirefightWoundWeight * wound + FirefightRangeWeight * rangeBand +
+    genericScore = FirefightWoundWeight * wound + FirefightRangeWeight * rangeBand +
       FirefightClaimWeight * claim + FirefightShootabilityWeight * shootability -
       FirefightAimCostWeight * candidate.aimCost - FirefightShieldWeight * shield
-  TargetScore(candidate: candidate, score: score, wound: wound,
+    score = genericScore + DefensiveTargetThreatWeight * defensiveThreat
+  TargetScore(candidate: candidate, score: score, genericScore: genericScore, wound: wound,
     rangeBand: rangeBand, claim: claim, shootability: shootability,
-    aimCost: candidate.aimCost, shield: shield)
+    aimCost: candidate.aimCost, shield: shield, defensiveThreat: defensiveThreat,
+    heartDistancePx: heartDistancePx)
 
 proc scoreCmp(a, b: TargetScore): int =
   result = cmp(b.score, a.score)
@@ -141,6 +158,10 @@ proc scoreCmp(a, b: TargetScore): int =
   if result == 0:
     result = cmp(a.candidate.target.pos.x div NavCell,
                  b.candidate.target.pos.x div NavCell)
+
+proc genericScoreCmp(a, b: TargetScore): int =
+  result = cmp(b.genericScore, a.genericScore)
+  if result == 0: result = scoreCmp(a, b)
 
 proc claimedTarget(belief: Belief, target: TargetRef): bool =
   FocusClaims and belief.focusClaim.isSome and
@@ -169,9 +190,19 @@ proc selectTarget*(
     return none(TargetScore)
   var scored: seq[TargetScore]
   for candidate in candidates:
-    scored.add(scoreTarget(candidate, belief.claimedTarget(candidate.target)))
+    let threat = belief.defensiveThreatTerm(candidate)
+    scored.add(scoreTarget(candidate, belief.claimedTarget(candidate.target),
+      threat.term, threat.heartDistancePx))
   scored.sort(scoreCmp)
   let best = scored[0]
+  if DefensiveTargeting and belief.role == Defender and scored.len > 1:
+    inc belief.defensiveTargetMultiTicks
+    var genericBest = scored[0]
+    for index in 1 .. scored.high:
+      if genericScoreCmp(scored[index], genericBest) < 0:
+        genericBest = scored[index]
+    if not belief.refsMatch(best.candidate.target, genericBest.candidate.target):
+      inc belief.defensiveTargetChoiceChanges
   if belief.firefightTarget.isNone:
     belief.recordSelectedTarget(best)
     return some(best)

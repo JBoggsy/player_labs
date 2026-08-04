@@ -2,18 +2,19 @@
 
 ## Verdict
 
-`stencil:v19` is the accepted upload. Its gameplay is identical to v12/v13 and
-keeps Stencil's strategy fixed. The accepted mechanics underneath it are the
-live 32-slot/five-slot aim controller and generated homeward cover posts; full
-traces expose aim, fire-gate, and post geometry. It is uploaded with full
-artifact tracing and is **not submitted**.
+`stencil:v20` is the accepted upload and keeps Stencil's strategy fixed. The
+accepted mechanics are the live 32-slot/five-slot aim controller, generated
+homeward cover posts, and defender-only heart-threat gun-target scoring; full
+traces expose aim, fire-gate, post geometry, and target-score components. It is
+uploaded with full artifact tracing and is **not submitted**.
 
 The aim fix is a clear improvement. Forcing posts farther forward is not: the
 locked-map A/B sharply reduced shots, hits, kills, and hit rate, so v12 restores
 the homeward-ranked selector and retains the forward/heart-distance fields only
 as observability. A second, fresh 18-episode-per-arm search rejected five more
-mechanics candidates; none improved defender outcomes. v19 keeps their added
-diagnostics and viewer improvements, but none of their gameplay changes.
+mechanics candidates; none improved defender outcomes. v19 kept their added
+diagnostics and viewer improvements, then v20's heart-threat target term
+improved outcomes in two fresh matched batches and was accepted.
 
 ## What changed
 
@@ -148,14 +149,52 @@ standard-plus, large-corners, large-plus respectively):
   `xreq_1adc243f-81ad-499c-b468-537aa0cce542`,
   `xreq_3a74dcaa-28bd-4e20-b23a-408f73b495cb`.
 
+## v20 accepted — heart-threat target selection
+
+Warehouse mining found that defenders saw multiple enemies on 2,164 of 4,402
+alive ticks in the 120 ticks before red-heart steals, while the existing target
+score had no defended-heart input. v20 adds a defender-only threat term: route
+progress toward the home heart before a theft, then proximity to the observed
+thief after one. It does not change roles, movement, objectives, post
+generation/assignment, aim, or the fire gate.
+
+Two independent fresh matched batches used v19 and v20 on the same six locked
+4FFA maps, three episodes per map and arm. Combined result:
+
+| metric | v19 | v20 |
+|---|---:|---:|
+| W / D / L | 2 / 1 / 33 | 8 / 2 / 26 |
+| non-loss | 8.3% | 27.8% |
+| team kills / episode | 8.92 | 11.00 |
+| defender kills / episode | 5.11 | 6.42 |
+| defender deaths / episode | 4.36 | 4.97 |
+| defender replay hit rate | 61.0% | 51.0% |
+| red-heart steals | 43 | 40 |
+
+The non-loss Fisher p-value is 0.063 and defender-kill Welch p-value is 0.098.
+Those are not conventional 0.05 significance, but the outcome and kill
+direction repeated independently, and the mechanism activated narrowly: it
+changed the generic top target on 1,771 of 26,150 multi-target defender ticks
+(6.8%). The lower precision is an accepted tradeoff because increased firing
+volume produced more hits, kills, wins, and non-losses in both batches.
+
+The CTF-derived warehouse's `episodes.winner` field is red/blue-only and
+mislabels green/yellow wins as draws. All W/D/L figures in this section were
+therefore computed from the complete four-team `results.json` win vectors.
+
+Of v20's 26 losses, Stencil recovered its own heart in 21 and never lost it in
+four; only one loss ended with red's heart unrecovered. Thus 25 of 26 remaining
+losses terminated when blue or green completed a capture elsewhere after red's
+local defense had succeeded.
+
 ## Remaining limit
 
 The desired all-map draw-or-win outcome is not yet demonstrated. In the locked
-4FFA matrix, Stencil recovered every theft of its own heart but still lost when
-one opponent captured another opponent's heart. A policy posted defensively at
-its own heart cannot directly prevent that terminal event. Closing that gap
-requires revisiting third-party FFA strategy; doing so was explicitly out of
-scope for this mechanics-only iteration.
+v20 matrix, 25 of 26 losses happened after Stencil had recovered or never lost
+its own heart, then one opponent captured another opponent's heart. A policy
+posted defensively at its own heart cannot directly prevent that terminal
+event. Closing that gap requires revisiting third-party FFA strategy; doing so
+was explicitly out of scope for this mechanics-only iteration.
 
 ## Reproducibility note
 

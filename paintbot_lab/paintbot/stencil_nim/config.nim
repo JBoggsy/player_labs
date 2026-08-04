@@ -153,6 +153,13 @@ let
     "STENCIL_FF_SHOOTABILITY_WEIGHT", 0.35, 0.0)
   FirefightAimCostWeight* = envTunableFloat("STENCIL_FF_AIM_COST_WEIGHT", 0.18, 0.0)
   FirefightShieldWeight* = envTunableFloat("STENCIL_FF_SHIELD_WEIGHT", 0.10, 0.0)
+  DefensiveTargeting* = envTunableBool("STENCIL_DEFENSIVE_TARGETING", true)
+  DefensiveTargetThreatWeight* = envTunableFloat(
+    "STENCIL_DEFENSIVE_TARGET_THREAT_WEIGHT", 0.65, 0.0)
+  DefensiveTargetThreatRadiusPx* = envTunableInt(
+    "STENCIL_DEFENSIVE_TARGET_THREAT_RADIUS_PX", 500, NavCell)
+  DefensiveThiefMatchPx* = envTunableInt(
+    "STENCIL_DEFENSIVE_THIEF_MATCH_PX", 96, NavCell)
   FirefightClaimRebroadcastTicks* = envTunableInt(
     "STENCIL_FF_CLAIM_REBROADCAST_TICKS", 30, 1)
   FirefightClaimTtlTicks* = envTunableInt("STENCIL_FF_CLAIM_TTL_TICKS", 72, 1)
