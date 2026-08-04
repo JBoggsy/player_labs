@@ -3,7 +3,7 @@
 import std/[algorithm, math, options, tables]
 import belief_state, config, fight, nav, squads, types, worldmap
 
-const FlowReasons = ["carry_home", "steal", "to_hold"]
+const FlowReasons = ["carry_home", "steal", "to_hold", "to_post"]
 const MovementMask = ButtonUp or ButtonDown or ButtonLeft or ButtonRight
 
 type
@@ -81,8 +81,13 @@ proc sprayContains(belief: Belief, target: Point): bool =
 
 proc threatAxis(belief: Belief): int =
   if belief.worldmap.isNil: return belief.aimBrads
-  let target = if belief.stealTarget.isSome:
-    belief.worldmap.pedestal(belief.stealTarget.get) else: belief.worldmap.center
+  let target = if belief.role == Defender and not belief.ownHeartStolen and
+      belief.defensivePostOpponent.isSome:
+    belief.worldmap.pedestal(belief.defensivePostOpponent.get)
+  elif belief.stealTarget.isSome:
+    belief.worldmap.pedestal(belief.stealTarget.get)
+  else:
+    belief.worldmap.center
   let delta: Point = (target.x - belief.selfXy.get.x, target.y - belief.selfXy.get.y)
   if abs(delta.x) < 1 and abs(delta.y) < 1:
     belief.worldmap.spawnAim(belief.team)

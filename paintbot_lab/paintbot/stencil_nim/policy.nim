@@ -56,11 +56,29 @@ proc decide*(policy: StencilPolicy, client: ProtocolClient): Command =
   if not policy.rolesAssigned and not policy.belief.worldmap.isNil:
     let seats = policy.belief.seatsPerTeam
     policy.belief.role = roleForSeat(policy.belief.seat, seats)
-    policy.belief.holdPoint = if policy.belief.role == Defender:
-      some(holdPointForSeat(policy.belief.worldmap, policy.belief.team,
-        policy.belief.seat, seats))
-    else:
-      none(Point)
+    policy.belief.holdPoint = none(Point)
+    policy.belief.defensivePost = none(Point)
+    policy.belief.defensivePostDuck = none(Point)
+    policy.belief.defensivePostOpponent = none(Team)
+    policy.belief.defensivePostScore = 0.0
+    if policy.belief.role == Defender:
+      let assignment = if DefensivePosts:
+        defensivePostForSeat(policy.belief.worldmap, policy.belief.team,
+          policy.belief.seat, seats)
+      else:
+        none(tuple[post: PostCandidate, opponent: Team])
+      if assignment.isSome:
+        let selected = assignment.get
+        policy.belief.holdPoint = some(selected.post.pos)
+        policy.belief.defensivePost = some(selected.post.pos)
+        policy.belief.defensivePostDuck = some(selected.post.duck)
+        policy.belief.defensivePostOpponent = some(selected.opponent)
+        policy.belief.defensivePostScore = selected.post.score
+      else:
+        policy.belief.holdPoint = some(holdPointForSeat(
+          policy.belief.worldmap, policy.belief.team, policy.belief.seat, seats))
+        if DefensivePosts:
+          inc policy.belief.defensivePostFallbacks
     policy.rolesAssigned = true
   let objective = if policy.belief.alive:
     policy.belief.decideObjective()

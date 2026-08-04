@@ -205,6 +205,7 @@ let
   PostDuckSearchCells* = envInt("STENCIL_POST_DUCK_SEARCH_CELLS", 3)
   PostCount* = envInt("STENCIL_POST_COUNT", 6)
   PostSeparationPx* = envInt("STENCIL_POST_SEPARATION_PX", 120)
+  DefensivePosts* = envTunableBool("STENCIL_DEFENSIVE_POSTS", true)
   ConvertEnemyLives* = envInt("STENCIL_CONVERT_ENEMY_LIVES", 6)
   OrderTtlTicks* = envInt("STENCIL_ORDER_TTL_TICKS", 240)
   OrderRebroadcastTicks* = envInt("STENCIL_ORDER_REBROADCAST_TICKS", 72)

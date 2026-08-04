@@ -31,3 +31,9 @@ cell and took 29.6 s on a hosted giant map. Bucketing cheaply by route progress,
 evaluating a bounded candidate set, simplifying duck contrast to three threat
 rays, and computing only the agent's own team fronts reduced the same pinned
 giant map to 2.78 s without changing the selected-position model.
+
+### An eval variant must actually reach the strategy rung being tested
+Evidence: stencil:v6 assigned defensive posts in `1v1`, but every trace stayed
+in the higher-priority convert hunt because one enemy has only three lives. The
+7-4-1 duel result therefore said nothing about post defense; `2v2` traces were
+required to observe `to_post` and `hold_post` activation.

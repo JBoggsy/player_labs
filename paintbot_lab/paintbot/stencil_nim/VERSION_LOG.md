@@ -4,6 +4,61 @@ Read this before assuming what a version contains. Format mirrors
 `ctf_lab/ctf/beacon/VERSION_LOG.md`: one entry per uploaded version — what
 changed, why, and what the evidence said.
 
+## v7 — distinct homeward-ranked defensive posts, uploaded 2026-08-04
+
+Immutable policy-version UUID: `91cd9b6d-df02-4887-8ed0-24cc8379030b`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Deduplicates the generated post union and ranks it by distance from the
+  team's heart, then assigns defender seat N to rank N. This fixes v6's
+  duplicate assignment while keeping the behavior explicitly defensive.
+- Defenders travel to and hold their assigned post, sweeping toward the
+  associated opponent front. Heart-theft interception remains higher priority;
+  attackers are unchanged; generic choke cover is the no-post fallback.
+- `STENCIL_DEFENSIVE_POSTS=0` disables the behavior. Traces expose assignment,
+  duck cell, opponent, score, travel/hold ticks, and fallback count.
+
+Four paired hosted `2v2` episodes used the same standard-sides map (seed 707),
+with v7 and v5 each playing both colors. All completed without failures. Across
+12 v7 defender-episode assignments, every defender emitted `to_post`, 10 reached
+`hold_post`, all assigned positions were distinct within a team, and fallbacks
+were zero; all 20 attacker-episode assignments remained unposted. The result
+split 2-2 and is too small for a win-rate conclusion.
+
+Requests: red v7 `xreq_688bd557-c881-479d-995e-988e12911cef`; blue v7
+`xreq_0e1f7106-58ca-4263-9f7e-4cbea6a97a94`.
+
+## v6 — initial defensive-post assignment, uploaded then rejected 2026-08-04
+
+Immutable policy-version UUID: `794f3db1-f552-43d5-b1a8-f9b7f9ec1a2e`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Each defender attempted to snap its hold target to the generated post nearest
+  its old seat-spread lane. If a map produces no usable post,
+  that defender falls back to the old geometry-derived choke cover.
+- Posted defenders sweep toward the opponent front used to generate their
+  position. Heart-carrier return and heart-thief interception remain above the
+  posting rung in the objective ladder.
+- `STENCIL_DEFENSIVE_POSTS=0` disables the behavior for controlled comparisons.
+  Full traces expose the assigned position, duck cell, opponent, post score,
+  travel ticks, hold ticks, and fallback count.
+
+Hosted tracing found two problems. `1v1` never reaches the defender rung because
+its three enemy lives immediately activate the higher-priority convert hunt, so
+its 7-4-1 result against v5 is not post-defense evidence. In paired `2v2`, post
+behavior did activate but defender seats 0 and 1 sometimes chose the same point.
+v6 was rejected and never submitted. The standard-corners four-team probe did
+confirm activation across all eight defenders with zero fallbacks.
+
+Requests: `xreq_4aa4eb07-39a5-4488-8b7f-df9f055be511`,
+`xreq_31745e93-1855-4931-b952-b1347a243130`,
+`xreq_59840e62-4ca5-40ec-99a5-e876be8d9c7c`, and
+`xreq_36ed443a-de7b-41fa-b6e5-c745c505ee4e`.
+
 ## v5 — generated own-team post knowledge, uploaded 2026-08-04
 
 Immutable policy-version UUID: `6f571639-7a5b-42b7-bf2e-113be8377602`.

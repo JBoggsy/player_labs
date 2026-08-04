@@ -53,14 +53,17 @@ Derived anchors replace authored ones: `CHOKE_X` → `choke_point(color)`
 
 ### Post-v1 addendum: generated post knowledge
 
-`stencil:v5` reintroduces posts without restoring fixed-map data. Each agent
+`stencil:v5` reintroduced posts without restoring fixed-map data. Each agent
 generates only its own team's front against each live opponent. Cover cells
 near the opponent→home shortest-route corridor are bucketed by route progress;
 a bounded, spatially distributed subset is scored with nine forward firing
 rays. The final score combines firing-line depth, corridor relevance, and the
 contrast to a nearby reachable duck cell. Six spatially separated posts per
-front are retained when enough valid pairs exist. The knowledge is traced and
-visualized but no behavior consumes it yet.
+front are retained when enough valid pairs exist. `stencil:v7` makes defenders
+consume this knowledge: unique post positions are ranked from the team's heart
+outward, assigned by defender seat, and used as hold targets with the sweep axis
+aimed toward the post's opponent front. Heart-theft interception retains higher
+priority, and generic choke cover remains the no-post fallback.
 
 ## Multi-team generalization
 

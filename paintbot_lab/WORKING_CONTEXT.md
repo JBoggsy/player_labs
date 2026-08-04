@@ -5,10 +5,12 @@ Update as you learn; clear/reseed on a pivot.*
 
 ## Current objective
 
-**Review `stencil:v5`'s generated firing/duck posts, then decide whether to tune
-the metric or wire posts into one behavior.** v5 is uploaded with full tracing
-but is not submitted to the Paintbot league. Post knowledge is diagnostic only:
-no role, objective, or movement behavior consumes it yet.
+**Evaluate `stencil:v7`'s generated-post defense against broader maps and the
+live field.** v7 is uploaded with full tracing but is not submitted to the
+Paintbot league. Defenders take distinct generated posts ranked from their
+heart outward, aim down the associated opponent front, and fall back to generic
+choke cover when no post exists. Heart-theft interception remains higher
+priority.
 
 Fast local path: `tools/self_play.py` runs native `coworld-ctf`, enables
 Sprite-v1 ready pacing, rotates candidate teams, supports candidate-only env
@@ -23,12 +25,11 @@ ticks/s.
 
 Next concrete steps:
 
-1. Review the five pinned-map post viewers with James, including each
-   per-opponent front in the four-team maps.
-2. Human-led choice: tune the static post metric, or make one defender behavior
-   consume it with activation tracing.
-3. Run a matched hosted evaluation for that one behavioral change. League
-   submission remains human-gated.
+1. Run a larger, varied-map v7-vs-v5 batch; the four paired seed-707 probes
+   validate activation but are far too small for a win-rate conclusion.
+2. Inspect heart-defense outcomes and defender trajectories, then decide whether
+   homeward rank or post score needs tuning.
+3. League submission remains human-gated.
 
 ## Facts worth carrying forward (verified 2026-08-04)
 
@@ -61,8 +62,12 @@ Next concrete steps:
 
 ## Open threads
 
-- `stencil:v5` (`6f571639-7a5b-42b7-bf2e-113be8377602`) is the current upload,
-  with full artifact tracing and **not submitted**. It adds online, own-team,
+- `stencil:v7` (`91cd9b6d-df02-4887-8ed0-24cc8379030b`) is the current upload,
+  with full artifact tracing and **not submitted**. It assigns defenders unique
+  homeward-ranked posts; four paired seed-707 `2v2` probes completed without
+  failures, all 12 defender-episode assignments traveled to posts, 10 reached
+  `hold_post`, attackers received no posts, and fallbacks were zero. The 2-2
+  result is activation evidence only. v5 added the underlying own-team,
   per-opponent firing/duck post knowledge. Five pinned hosted probes (small and
   large sides; standard corners; huge plus; giant corners) completed on
   0.7.183 with zero failures. The final post pass measured 20 ms / 109 ms /

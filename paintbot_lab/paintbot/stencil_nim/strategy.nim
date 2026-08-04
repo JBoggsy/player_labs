@@ -138,9 +138,16 @@ proc decideObjective*(belief: Belief): Objective =
   belief.converting = false
 
   if belief.role == Defender and belief.holdPoint.isSome:
+    let usingPost = belief.defensivePost.isSome
     if belief.selfXy.isSome and
         distance(belief.selfXy.get, belief.holdPoint.get) <= HoldArrivePx.float:
+      if usingPost:
+        inc belief.defensivePostHoldTicks
+        return hold("hold_post")
       return hold("hold_line")
+    if usingPost:
+      inc belief.defensivePostTravelTicks
+      return navigate(belief.holdPoint.get, "to_post", belief.holdPoint)
     return navigate(belief.holdPoint.get, "to_hold", belief.holdPoint)
 
   let steal = belief.stealGoal

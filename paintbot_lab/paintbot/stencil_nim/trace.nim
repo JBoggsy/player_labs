@@ -193,6 +193,10 @@ proc snapshot(policy: StencilPolicy, command: Command): JsonNode =
     "seat": belief.seat,
     "slot": belief.slot,
     "role": roleName(belief.role),
+    "defensive_post": pointJson(belief.defensivePost),
+    "defensive_post_duck": pointJson(belief.defensivePostDuck),
+    "defensive_post_opponent": teamJson(belief.defensivePostOpponent),
+    "defensive_post_score": rounded4(belief.defensivePostScore),
     "alive": belief.alive,
     "self_xy": pointJson(belief.selfXy),
     "aim_brads": belief.aimBrads,
@@ -257,6 +261,9 @@ proc counters(policy: StencilPolicy): JsonNode =
     "item_fetch_ticks": b.itemFetchTicks,
     "item_yield_ticks": b.itemYieldTicks,
     "convert_events": b.convertEvents,
+    "defensive_post_travel_ticks": b.defensivePostTravelTicks,
+    "defensive_post_hold_ticks": b.defensivePostHoldTicks,
+    "defensive_post_fallbacks": b.defensivePostFallbacks,
     "spray_pursuit_ticks": b.sprayPursuitTicks,
   }
 

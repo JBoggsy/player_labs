@@ -14,6 +14,11 @@ type
     seat*, slot*, tick*, seatsPerTeam*: int
     role*: Role
     holdPoint*: Option[Point]
+    defensivePost*, defensivePostDuck*: Option[Point]
+    defensivePostOpponent*: Option[Team]
+    defensivePostScore*: float
+    defensivePostTravelTicks*, defensivePostHoldTicks*: int
+    defensivePostFallbacks*: int
     selfXy*: Option[Point]
     alive*: bool
     worldmap*: WorldMap

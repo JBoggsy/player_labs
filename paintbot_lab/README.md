@@ -12,9 +12,10 @@ This README orients newcomers (human or agent). Two pointers do most of the work
 - **[`../README.md`](../README.md)** — lab-wide setup (`uv sync` / Observatory
   auth) and the ground rules.
 
-> **Status: online post knowledge hosted-validated 2026-08-04.** `stencil:v5`
+> **Status: generated-post defense hosted-validated 2026-08-04.** `stencil:v7`
 > (a beacon fork with online per-episode navigation) is uploaded with full
-> tracing and validated across five pinned generated maps, but **not submitted**. The live
+> tracing; defenders now occupy distinct homeward-ranked firing posts. It is
+> **not submitted**. The live
 > Paintbot league runs the **campaign (territory)
 > round brain, not a ladder**: an LLM commander per player invades cells on a
 > 10x10 board where **each cell permanently owns a map** (pinned terrain seed +
@@ -86,7 +87,8 @@ defining difference from beacon: **no offline map bake** — an episode-scoped `
 (`worldmap.nim`) is built online from the walkability sprite + wire markers
 (nav grid, cover, lazy Dijkstra flow fields, derived chokes/rallies/spawn-aim,
 and per-opponent firing/duck posts). Beacon's authored POIs and battle plans
-remain scrapped. Multi-team support: color lock from the self sprite, per-color
+remain scrapped. Defenders consume the online posts while heart-theft
+interception remains higher priority. Multi-team support: color lock from the self sprite, per-color
 hearts with retirement tracking, steal target = nearest live enemy heart, and
 the convert trigger generalized to the weakest enemy team.
 
