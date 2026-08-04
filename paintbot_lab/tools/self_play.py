@@ -375,9 +375,7 @@ def run_episode(spec: dict[str, Any]) -> dict[str, Any]:
                     )
                 log = (output_dir / "players" / f"slot-{slot:02d}.log").open("wb")
                 is_candidate = team_for_slot(config, slot) == candidate_team
-                if is_candidate and spec["candidate_runtime"] == "nim":
-                    command = [spec["nim_binary"]]
-                elif is_candidate and spec["candidate_runtime"] == "docker":
+                if is_candidate and spec["candidate_runtime"] == "docker":
                     container_env = {
                         key: value
                         for key, value in player_env.items()
@@ -396,7 +394,7 @@ def run_episode(spec: dict[str, Any]) -> dict[str, Any]:
                         command.extend(("--env", f"{key}={value}"))
                     command.append(spec["candidate_image"])
                 else:
-                    command = [sys.executable, "-m", "paintbot.stencil"]
+                    command = [spec["nim_binary"]]
                 process = subprocess.Popen(
                     command,
                     cwd=REPO_ROOT,
@@ -496,11 +494,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--candidate-env", action="append", default=[], metavar="KEY=VALUE")
     parser.add_argument("--candidate-team", default="rotate")
     parser.add_argument(
-        "--candidate-runtime", choices=("python", "nim", "docker"), default="python",
-        help="run the candidate team with the Python oracle, local Nim binary, or image",
+        "--candidate-runtime", choices=("nim", "docker"), default="nim",
+        help="run the candidate team with the local Nim binary or release image",
     )
     parser.add_argument(
-        "--candidate-image", default="players-stencil:nim-parity",
+        "--candidate-image", default="players-stencil:dev",
         help="image used by --candidate-runtime=docker",
     )
     parser.add_argument("--profile-nav-init", action="store_true")
@@ -517,10 +515,8 @@ def main() -> None:
     source_repo = args.game_repo.resolve()
     game_repo = prepare_game_source(source_repo, live["source_commit"])
     binary = ensure_game_binary(game_repo, rebuild=args.rebuild)
-    nim_binary = (
-        ensure_stencil_nim_binary(game_repo, live["source_commit"], rebuild=args.rebuild)
-        if args.candidate_runtime == "nim"
-        else None
+    nim_binary = ensure_stencil_nim_binary(
+        game_repo, live["source_commit"], rebuild=args.rebuild
     )
     variant_config = load_variant(live["manifest"], args.variant)
     if args.map_size is not None:
@@ -533,7 +529,7 @@ def main() -> None:
         "variant_config": variant_config,
         "candidate_team": args.candidate_team,
         "candidate_runtime": args.candidate_runtime,
-        "nim_binary": str(nim_binary) if nim_binary is not None else None,
+        "nim_binary": str(nim_binary),
         "candidate_image": args.candidate_image,
         "common_env": parse_env(args.env),
         "candidate_env": parse_env(args.candidate_env),

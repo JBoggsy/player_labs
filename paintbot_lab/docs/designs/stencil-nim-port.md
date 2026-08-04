@@ -3,9 +3,9 @@
 ## Status
 
 Complete locally as of 2026-08-03. The native policy is the deployable
-implementation; the Python policy remains an executable behavioral oracle and
-the source of the tuning-registry CLI. No policy version has been uploaded or
-submitted.
+implementation. Its accepted Python oracle is preserved in Git commit `1129931`
+and was then removed from the working tree. No policy version has been uploaded
+or submitted.
 
 ## Contract
 
@@ -43,10 +43,12 @@ global generated-map cache was introduced.
 
 ## Differential method
 
-`tools/self_play.py --record-wire` wraps the Python oracle connection and saves
-every inbound binary frame plus the exact outbound decision. `replay.nim`
-consumes those frames without a server. `tools/compare_stencil.py` compiles the
-replay target and rejects the first mask or chat mismatch.
+For the acceptance proof, `tools/self_play.py --record-wire` wrapped the legacy
+Python connection and saved every inbound binary frame plus the exact outbound
+decision. `replay.nim` consumed those frames without a server, and
+`tools/compare_stencil.py` rejected the first mask or chat mismatch. Native
+Stencil now implements the same wire recorder for diagnostics; the historical
+oracle is available at commit `1129931` if the original proof must be repeated.
 
 The final corpus covers:
 
@@ -80,8 +82,7 @@ check; `--candidate-runtime nim` is the faster native development path.
 
 ## Maintenance rule
 
-Behavior changes should be made in Nim. When exact compatibility with the
-bootstrap policy matters, record a targeted Python-oracle stream and run the
-differential comparator. Keep Python only as long as it provides useful oracle
-or tuning-registry value; do not accidentally restore it to the production
-image.
+Behavior changes should be made in Nim. Use native wire captures and local play
+for current diagnostics. If exact compatibility with the bootstrap policy must
+be re-proven, recover the accepted oracle from commit `1129931` in a separate
+worktree; do not restore it to the production tree or image.

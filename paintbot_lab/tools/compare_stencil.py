@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Replay Python Stencil wire captures through Nim and require exact decisions."""
+"""Replay captured Stencil wire decisions through Nim and require exact output."""
 
 from __future__ import annotations
 
@@ -56,7 +56,7 @@ def compile_replay(game_repo: Path) -> Path:
     return binary
 
 
-def python_decisions(path: Path) -> list[dict[str, int | str | None]]:
+def captured_decisions(path: Path) -> list[dict[str, int | str | None]]:
     decisions: list[dict[str, int | str | None]] = []
     current: dict[str, int | str | None] | None = None
     for line in path.read_text().splitlines():
@@ -94,14 +94,14 @@ def compare(binary: Path, path: Path) -> tuple[int, list[str]]:
     match = SLOT_RE.search(path.name)
     if match is None:
         raise ValueError(f"cannot infer slot from wire filename: {path}")
-    expected = python_decisions(path)
+    expected = captured_decisions(path)
     actual = nim_decisions(binary, path, int(match.group(1)))
     errors: list[str] = []
     if len(expected) != len(actual):
-        errors.append(f"decision count: python={len(expected)} nim={len(actual)}")
-    for tick, (python, nim) in enumerate(zip(expected, actual), 1):
-        if python["mask"] != nim["mask"] or python["chat"] != nim["chat"]:
-            errors.append(f"tick {tick}: python={python} nim={nim}")
+        errors.append(f"decision count: captured={len(expected)} nim={len(actual)}")
+    for tick, (captured, nim) in enumerate(zip(expected, actual), 1):
+        if captured["mask"] != nim["mask"] or captured["chat"] != nim["chat"]:
+            errors.append(f"tick {tick}: captured={captured} nim={nim}")
             if len(errors) >= 20:
                 break
     return len(actual), errors

@@ -5,7 +5,7 @@ contract, and strategy notes — enough to reason about play without leaving the
 repo. Authoritative sources: the **`Metta-AI/coworld-ctf`** repo (paintbot and
 CTF are the *same Nim binary*; clone at `~/coding/coworlds/coworld-ctf`, server
 `src/ctf/`, rules `docs/RULES.md`, manifest `coworld_manifest_paintbot.json`)
-and the deployed league game (paintbot **0.7.181** as of 2026-08-03).
+and the deployed league game (paintbot **0.7.182** as of 2026-08-04).
 The full recon with `file:line` citations:
 [`recon/paintbot-2026-08-03.md`](recon/paintbot-2026-08-03.md).
 

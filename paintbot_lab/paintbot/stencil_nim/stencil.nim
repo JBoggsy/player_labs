@@ -1,11 +1,31 @@
 ## Native stencil entry point.
 
 import
-  std/[net, os, strutils],
+  std/[base64, json, net, os, strutils],
   whisky,
   protocols,
   policy,
   trace
+
+type WireRecorder = ref object
+  file: File
+
+proc newWireRecorder(): WireRecorder =
+  let path = getEnv("STENCIL_WIRE_RECORD")
+  if path.len > 0:
+    result = WireRecorder(file: open(path, fmWrite))
+
+proc record(recorder: WireRecorder, direction: string, data: string) =
+  if recorder.isNil: return
+  recorder.file.writeLine($(%*{
+    "direction": direction,
+    "type": "binary",
+    "data": encode(data),
+  }))
+  recorder.file.flushFile()
+
+proc close(recorder: WireRecorder) =
+  if not recorder.isNil: recorder.file.close()
 
 proc slotFromUrl(url: string): int =
   for part in url.split({'?', '&'}):
@@ -23,7 +43,9 @@ proc run(url: string) =
     fastReady = getEnv("STENCIL_FAST_READY") == "1"
     client = initProtocolClient()
     telemetry = newTraceState()
+    recorder = newWireRecorder()
   defer: telemetry.close()
+  defer: recorder.close()
   echo "stencil-nim: slot=", slot, " url=", endpoint
 
   var everConnected = false
@@ -31,7 +53,9 @@ proc run(url: string) =
     try:
       let socket = newWebSocket(endpoint)
       socket.socket.setSockOpt(OptNoDelay, true, level = IPPROTO_TCP.cint)
-      socket.send(spritesOffBlob(), BinaryMessage)
+      let spritesOff = spritesOffBlob()
+      recorder.record("out", spritesOff)
+      socket.send(spritesOff, BinaryMessage)
       everConnected = true
       client.reset()
       while true:
@@ -40,6 +64,7 @@ proc run(url: string) =
           continue
         case message.get.kind
         of BinaryMessage:
+          recorder.record("in", message.get.data)
           if not client.applyFrame(message.get.data):
             raise newException(ValueError, "Malformed sprite protocol packet.")
         of Ping:
@@ -49,11 +74,17 @@ proc run(url: string) =
           continue
         let command = policy.decide(client)
         telemetry.record(policy, command)
-        socket.send(inputBlob(command.heldMask), BinaryMessage)
+        let input = inputBlob(command.heldMask)
+        recorder.record("out", input)
+        socket.send(input, BinaryMessage)
         if command.chat.len > 0:
-          socket.send(chatBlob(command.chat), BinaryMessage)
+          let chat = chatBlob(command.chat)
+          recorder.record("out", chat)
+          socket.send(chat, BinaryMessage)
         if fastReady:
-          socket.send(readyBlob(), BinaryMessage)
+          let ready = readyBlob()
+          recorder.record("out", ready)
+          socket.send(ready, BinaryMessage)
     except Exception as error:
       if everConnected:
         echo "stencil-nim: game over, exiting: ", error.msg

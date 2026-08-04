@@ -42,16 +42,17 @@ Next concrete steps:
 - **Every cell permanently owns a map**: variant mix 29x 4ffa8 / 26x 4ffa /
   25x default / 20x 2v2; ALL 100 cells have pinned `map_seed` + `map_size`
   (40 standard/25 large/14 small/14 huge/7 giant). Battles pin the TARGET
-  cell's mapSeed+mapSize (deployed 0.7.181 manifest declares both), so cell
+  cell's mapSeed+mapSize (deployed 0.7.182 manifest declares both), so cell
   terrain is stable and offline-reproducible from the public generator.
 - Battle modes: 2-team cells → 2v2 (captains + mirrored allies, both
   seatings); 4-team cells → ffa4 (≤4 policies + recruits/filler). Observed
   seatings (7+7+1+1 etc.) are these rosters.
-- Deployed game **paintbot 0.7.181**, source `347deef`. Game repo = the
+- Deployed game **paintbot 0.7.182**, source `3151a47`. Game repo = the
   coworld-ctf clone (`~/coding/coworlds/coworld-ctf`); no paintbot-specific Nim
   source exists. 0.7.179 added the two-seat generated-map `1v1` variant; 0.7.180
-  landed PR #219's reduced bot sprite traffic; 0.7.181 only fixes the 32-seat
-  replay viewer's hash mask and does not alter simulation or player traffic.
+  landed PR #219's reduced bot sprite traffic; 0.7.181 fixed the 32-seat replay
+  viewer's hash mask, and 0.7.182 adds campaign documentation. Neither alters
+  simulation or player traffic.
 - Our pinned `coworld` CLI predates `coworld campaign ...`; direct API calls
   with `softmax.auth.load_current_token(server="https://softmax.com/api")`
   work (see the recon addendum).

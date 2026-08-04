@@ -72,7 +72,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["crewrift_lab", "heartleaf_lab", "ctf_lab", "vanilla_wow_lab", "paintbot_lab"]
-include = ["crewrift*", "cady*", "ctf*", "wowborg*", "paintbot*"]
+include = ["crewrift*", "cady*", "ctf*", "wowborg*"]
 exclude = ["crewrift.notsus*", "crewrift.suspectra*"]
 
 [tool.pytest.ini_options]

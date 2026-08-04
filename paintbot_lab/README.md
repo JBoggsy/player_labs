@@ -19,7 +19,7 @@ This README orients newcomers (human or agent). Two pointers do most of the work
 > 10x10 board where **each cell permanently owns a map** (pinned terrain seed +
 > size); standings are territory — daveey holds 84/100 cells, and the
 > auto-mirrored `beacon:v67` holds 0 (its fixed-arena bake can't navigate
-> generated maps). Deployed game: paintbot **0.7.181**. Live state + open
+> generated maps). Deployed game: paintbot **0.7.182**. Live state + open
 > threads: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
 
 ## The game (one paragraph)
@@ -66,7 +66,6 @@ paintbot_lab/
   best_practices.md        Paintbot-specific practices (fills via lessons)
   TENTATIVE_LESSONS.md     this session's candidate-lessons buffer (auto-rotated)
   paintbot/stencil_nim/    THE PLAYER — native Nim Sprite-v1 policy
-  paintbot/stencil/        Python behavioral oracle + tuning registry
   docs/
     paintbot-gameplay.md   self-contained game reference
     recon/                 the founding deep-dive (citations into game + metta)
@@ -80,10 +79,9 @@ paintbot_lab/
   lessons_archive/         rotated per-session lesson buffers
 ```
 
-The deployable player lives at [`paintbot/stencil_nim/`](paintbot/stencil_nim/):
-a deterministic native Nim Sprite-v1 cyborg ported from the Python stencil
-fork of ctf_lab's beacon. The defining
-difference from beacon: **no offline map bake** — an episode-scoped `WorldMap`
+The player lives at [`paintbot/stencil_nim/`](paintbot/stencil_nim/): a
+deterministic native Nim Sprite-v1 cyborg descended from ctf_lab's beacon. The
+defining difference from beacon: **no offline map bake** — an episode-scoped `WorldMap`
 (`worldmap.nim`) is built online from the walkability sprite + wire markers
 (nav grid, cover, lazy Dijkstra flow fields, derived chokes/rallies/spawn-aim),
 and everything map-shaped that beacon hand-authored (POIs, battle plans, posts)
@@ -94,12 +92,10 @@ the convert trigger generalized to the weakest enemy team.
 ## Quick commands
 
 ```sh
-uv run pytest paintbot_lab/paintbot/stencil/tests    # the invariant suite
 paintbot_lab/tools/build_player.sh stencil           # build the image (amd64)
 uv run coworld upload-policy players-stencil:dev --name stencil   # upload (inert)
-uv run python -m paintbot.stencil.tuning dump        # tunables registry
 uv run python paintbot_lab/tools/self_play.py --variant 1v1 --episodes 20 --workers 4
-uv run python paintbot_lab/tools/self_play.py --variant 1v1 --candidate-runtime nim
+uv run python paintbot_lab/tools/self_play.py --variant 1v1 --candidate-runtime docker
 ```
 
 ## Fast local self-play
@@ -110,10 +106,10 @@ managed detached worktree under `.cache/`, synchronizing the commit's pinned
 Nim dependencies first. It fails without starting episodes
 if live resolution, fetching, or source verification fails, so a stale or dirty
 local checkout cannot silently contaminate an optimization run. It runs that
-Nim simulator as a native process and starts stencil directly from this uv
-environment by default; `--candidate-runtime nim` runs the compiled native
-candidate and `--candidate-runtime docker` exercises the release image. It avoids
-Docker/Rosetta and sends Sprite-v1's `0x87` sprites-off and `0x85` ready packets
+Nim simulator and every control seat as native processes;
+`--candidate-runtime docker` exercises the release image for the candidate
+team. The default avoids Docker/Rosetta and sends Sprite-v1's `0x87`
+sprites-off and `0x85` ready packets
 after every decision, reducing bot-only traffic and letting the server advance
 as soon as every seat has acted instead of sleeping at 24 ticks/s. Every
 episode writes `results.json`, replay, events, game log, and
@@ -149,14 +145,14 @@ after a broader hosted check. In `2v2`, the local candidate owns the full team
 rather than one campaign captain block, so it does not reproduce split-policy
 ally coordination.
 
-## Python-to-Nim parity
+## Native parity evidence
 
-The Python policy remains an executable oracle, not a production dependency.
-`tools/self_play.py --record-wire` captures the exact Sprite-v1 input stream,
-and `tools/compare_stencil.py` replays it through native Nim and compares every
-controller mask and chat message. The completed port matched **169,235 exact
-decisions** across 1v1, 2v2, 4-player FFA, giant 8-player FFA, a major-features-
-disabled profile, and squads/command mode. See
+The accepted port matched **169,235 exact decisions** against its legacy Python
+implementation across 1v1, 2v2, 4-player FFA, giant 8-player FFA, a major-
+features-disabled profile, and squads/command mode. That oracle is preserved
+in Git commit `1129931` and no longer exists in the working tree.
+`tools/self_play.py --record-wire` now records native streams for diagnostics;
+`tools/compare_stencil.py` can replay historical captured decisions. See
 [`docs/designs/stencil-nim-port.md`](docs/designs/stencil-nim-port.md) for the
 module mapping, equivalence boundary, and performance evidence.
 

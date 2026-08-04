@@ -30,7 +30,7 @@ ladder's shape) is proven and portable.
 
 Beacon's one clean seam was `mapdata.py` — eight functions every consumer went
 through. stencil rebuilds that seam as an **episode-scoped object**
-(`worldmap.py: WorldMap`) constructed the first frame the init snapshot is
+(`worldmap.nim: WorldMap`) constructed the first frame the init snapshot is
 complete:
 
 | input (wire) | product |
@@ -82,26 +82,26 @@ action (movement/aim/fire/peek-duck/grenade, minus post paths), fight
 (grid dims from the map; protocol unchanged), squads (roster-aware tables,
 derived geometry; command layer still OFF), items (spawn table now
 **discovered from sightings** — generator placements are per-map), strategy
-(the ladder minus plan/POI/post rungs), runtime/main/decide/tuning
-(STENCIL_* env prefix).
+(the ladder minus plan/POI/post rungs), policy orchestration, tracing, and the
+`STENCIL_*` configuration layer.
 
 Notable default flips vs beacon: `FIREFIGHT`/`FOCUS_CLAIMS` default **ON**
 (they were beacon's champion configuration, set per-upload there).
 
 ## Performance envelope
 
-The one-time WorldMap build is the only heavy step: erosion + cover are
-vectorized numpy; one Dijkstra over the largest grid (giant 2-team, ~402x215 =
-~86k cells) is sub-second Python and runs during the 5s `startWaitTicks`
-lobby. Per-tick work is unchanged from beacon (label scans + O(1) lookups +
-occasional A*). Keepalive is disabled so a slow first frame can't drop the
-socket.
+The one-time WorldMap build is the only heavy step: native summed-area erosion,
+cover extraction, and lazy Dijkstra over the largest grid (giant 2-team,
+~402x215 = ~86k cells). The measured giant-map p95 was 419 ms under 16-process
+contention; per-tick work is label scans, constant-time lookups, and occasional
+A*. The native websocket loop has no keepalive timeout that can interrupt a
+slow first frame.
 
 ## Risks / open questions
 
-- **Seats-per-team inference** (teams + width≥2000 → 8) is a heuristic; if a
-  new variant lands (e.g. a true 2-seat duel), revisit. The wire states no
-  muster.
+- **Seats-per-team inference** (teams + width≥2000 → 8) is a heuristic. The
+  `1v1` duel now exists and intentionally degrades through this approximation;
+  the wire still states no muster.
 - **Item discovery** starts blind — early-game fetches only happen after
   sightings. If evals show med-kit latency mattering, seed guesses from the
   RULES layout rules per shape.
