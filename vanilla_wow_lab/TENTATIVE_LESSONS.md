@@ -59,6 +59,18 @@ signal is that the grounding fix landed and likely introduced a readiness wait t
 satisfies.
 Status: candidate.
 
+### An authenticated asset URL is inert until every runtime data owner installs it
+
+Evidence: accelerated-wow 0.1.152's `/env` attach carried the correct authenticated
+`/player/assets` URL and the host applied it to presentation assets, yet every wowborg move
+timed out on `world collision residency pending`. The host binary is compiled with
+`simulationDataHttp`; unlike the normal player runtime, `environment/host/session.nim` never
+called `setSimulationDataBaseUrl`, so VMap collision fetched through an unset simulation-data
+origin. Local owner commit `97f4d36c` installs the same attach URL for simulation data before
+client construction, and the complete environment-host asset proof now asserts both bases.
+Status: candidate — inspect runtime initialization for every compile-time data owner before
+blaming the fetcher or adding movement fallback behavior.
+
 ### `build_player.sh`'s import sanity check is the cheapest SDK-break detector in the lab
 
 Evidence: 0.1.152 removed the re-exports from `player/sdk/navmesh/__init__.py`, so

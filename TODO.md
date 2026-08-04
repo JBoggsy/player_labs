@@ -26,8 +26,8 @@ mid-session; check them back at the start of focused work.
   (repel from `teammate_colors` positions), analogous to crew dispersion. The teammate identity is
   reliable (`teammate_colors`), so the signal to act on is already there.</details>
 
-- **STILL BLOCKED (2026-08-04): 0.1.152 fixed the fall; movement is now blocked on collision
-  readiness.** Retested on canonical `accelerated-wow:0.1.152`
+- **GAME FIX PROVEN LOCALLY; AWAITING PUBLICATION (2026-08-04): 0.1.152 fixed the fall;
+  movement is blocked on collision-data routing.** Retested on canonical `accelerated-wow:0.1.152`
   (`cow_1acc54b8-80f9-4965-adb5-9325c0472619`) as
   `xreq_03d44ab9-1e00-4ec5-9cce-522f17d5a601` with **wowborg:v61**
   (`e3493732-4c72-4204-9e57-4976a1ce18c6`, rebuilt against 0.1.152's SDK).
@@ -42,6 +42,14 @@ mid-session; check them back at the start of focused work.
   `finishEnvHostSessionStartup`. Completed episode:
   `ereq_7e785792-9895-4b3b-bb92-f2301ec84abe`. Report both to Richard, then re-run the
   comparison below once the character can walk.
+  **Root cause/fix:** the `/env` host never installed its authenticated `/player/assets` URL
+  as the `simulationDataHttp` base, so VMap collision stayed permanently pending. Owner-repo
+  local commit `97f4d36c` on `codex/env-host-simulation-data` calls
+  `setSimulationDataBaseUrl` before client construction and extends the complete env-host
+  proof; that proof and the 38-test architecture gate pass. Nothing is published yet. Push/
+  review the fix, release a new accelerated-wow, then rerun known and held-out navigation.
+  Keep the startup assertion as a separate verification target until a fixed build proves it
+  gone.
   <details><summary>0.1.146 report (2026-08-03, superseded — the fall itself is fixed)</summary>
 
 - **BLOCKED ON A GAME FIX (2026-08-03): wowborg cannot move on accelerated-wow 0.1.146.**

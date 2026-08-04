@@ -13,7 +13,7 @@ file is the one-screen "where are we and why."
 
 ---
 
-## Status (2026-08-04): 0.1.152 FIXED THE FALL, BUT MOVEMENT IS STILL BLOCKED
+## Status (2026-08-04): COLLISION-DATA ROOT CAUSE FIXED LOCALLY; AWAITING RELEASE
 
 Richard acknowledged the 0.1.146 report on Discord ("spotted this and am investigating",
 2026-08-03 20:26 UTC). Six releases later, canonical is **accelerated-wow 0.1.152**
@@ -28,6 +28,15 @@ Richard acknowledged the 0.1.146 report on Discord ("spotted this and am investi
   failures are a new gate: *"piloted movement controls settled: movement collision readiness
   timed out"*. Trajectory 0.0 yd, 1 distinct x/y. So the fix appears to have added a
   collision-readiness wait that never becomes satisfied.
+- **Root cause found in the owner game.** The `/env` host applies the authenticated
+  `/player/assets` URL as the presentation asset base, but unlike the normal player runtime
+  it never applies that URL with `setSimulationDataBaseUrl`. Its `simulationDataHttp` build
+  therefore cannot resolve the VMap collision data that movement waits for, matching the
+  artifact's exact terminal reason: `world collision residency pending`. Local owner-repo
+  commit `97f4d36c` (`codex/env-host-simulation-data`) installs the simulation-data base
+  before client construction and adds the invariant to the complete environment-host asset
+  proof. That proof passes, as do all 38 architecture-gate tests. The fix is local only: no
+  branch push, PR, Coworld publication, or policy upload has occurred.
 - **A second, separate defect: a startup race.** 1 of 2 hosted episodes failed
   `player_error` with WebSocket 1011 `environment session ended before hello`. Locally the
   same path dies deterministically (2/2) on a game assertion:
@@ -44,9 +53,11 @@ Richard acknowledged the 0.1.146 report on Discord ("spotted this and am investi
   local 0.1.146 rebuild was never uploaded and holds no number; `wowborg:v61` is the 0.1.152
   build.
 
-**Next:** report the two remaining defects to Richard (collision-readiness timeout; the
-`httpAssetFetchesActive` assertion), then re-run the movement-continuity comparison once the
-character can actually walk.
+**Next:** publish/review the owner-game fix, build a new accelerated-wow release, then rebuild
+wowborg only if its copied SDK contract changes. Run the movement-continuity comparison and
+the known + held-out navigation battery on that release. The `httpAssetFetchesActive`
+assertion may share the asset-routing cause, but that is not yet proven; retain it as a
+separate verification target.
 
 ---
 
