@@ -1,6 +1,37 @@
 # wowborg version log
 
-## v61 - accelerated-wow 0.1.146 SDK rebuild (2026-08-03, built + locally run, NOT uploaded)
+## v61 - accelerated-wow 0.1.152 SDK rebuild (2026-08-04)
+
+- Version UUID: `e3493732-4c72-4204-9e57-4976a1ce18c6` (`wowborg:v61`, uploaded inert;
+  not submitted to a league). Behavior unchanged from v59/v60.
+- **Numbering note:** upload numbering follows the last *uploaded* version (v60). The
+  2026-08-03 local 0.1.146 rebuild below was never uploaded, so it never took a version
+  number — `wowborg:v61` is this 0.1.152 build, not that one.
+- Built against 0.1.152's game image
+  (`sha256:e479e11a4ea45c4ca36bf8d03c283e8f0da1fc26f2feb27d81807fc472efcc4f`), pinned in
+  `tools/versions.env`. Canonical Coworld `cow_1acc54b8-80f9-4965-adb5-9325c0472619`.
+- **SDK break fixed:** `player/sdk/navmesh/__init__.py` stopped re-exporting, so
+  `from player.sdk.navmesh import route_navmesh` now fails. Import moved to
+  `player.sdk.navmesh.client` (matching the SDK's own `cli/commands.py`) in
+  `wowborg/environment.py`, `tools/build_player.sh`, and `tools/route_lab.py`.
+  `build_player.sh`'s sanity check caught this before any episode ran.
+- 0.1.152 also adds chat observation fields (`chat_messages`, `chat_input_text`,
+  `chat_messages_first_sequence`/`_last_sequence`/`_truncated`, `ChatMessageObservation`),
+  so the pre-0.1.152 builds' `extra="forbid"` frame model would reject its frames.
+- Hosted `xreq_03d44ab9-1e00-4ec5-9cce-522f17d5a601`, `custom-fresh-start-10x`, 2 episodes:
+  **1 completed, 1 failed.**
+  - `ereq_e950ddfa-e04c-45cd-8d47-8577fee2d785` — failed `player_error`, WebSocket 1011
+    `environment session ended before hello`, no replay. Locally the same startup path dies
+    on a game assertion, twice out of two: `session.nim(310) httpAssetFetchesActive() == 0`
+    in `finishEnvHostSessionStartup`.
+  - `ereq_7e785792-9895-4b3b-bb92-f2301ec84abe` — completed, score 1.0, replay retained.
+- **The 0.1.146 falling bug is gone; the character still cannot move.** Across all 84
+  observations z holds at exactly the spawn 38.718 and never sinks (0.1.146 fell to 28/18.6).
+  But the replay contains **zero movement packets** — not even one `MSG_MOVE_START_FORWARD`
+  — and 32 of 36 movement failures are a new gate: *"piloted movement controls settled:
+  movement collision readiness timed out"*. Trajectory 0.0 yd, 1 distinct x/y.
+
+## (unnumbered) - accelerated-wow 0.1.146 SDK rebuild (2026-08-03, built + locally run, NEVER uploaded)
 
 - Behavior is unchanged from v59/v60. Rebuilt `linux/amd64` against accelerated-wow
   0.1.146's exact game image
@@ -10,7 +41,8 @@
   releases through 0.1.127 used `/usr/local/lib/python3.11/dist-packages`. The
   Dockerfile COPY paths were updated — the build fails outright without it.
 - Local image manifest: `sha256:f40218f7a055375e04b1a61d86e2c355d820d2a1ca83f858072c272f8ecd8676`.
-- Built solely to isolate whether the 0.1.146 movement failure was our stale SDK copy.
+- Never uploaded, so it holds no `wowborg:vN` number (see the numbering note above).
+  Built solely to isolate whether the 0.1.146 movement failure was our stale SDK copy.
   It is not: a full local exact-image `custom-fresh-start-10x` episode reproduced the
   hosted failure exactly — **1 distinct x/y position, 0.0 trajectory yards**, 144 replay
   movement packets, 33 forward starts, character falling from spawn z 38.718 to 18.6.
@@ -36,8 +68,8 @@
   episodes `ereq_c0454d48-b8…` and `ereq_635799dd-9c…`. Both completed with score 1.0 and a
   retained replay — but the character never moved: 1 distinct x/y position and 0.0 trajectory
   yards in each, against the v59 baseline's 1,315.8 yd. v60's `AgentFrame` schema is
-  byte-identical to 0.1.146's, so this is not a contract mismatch; v61 rebuilt against 0.1.146
-  reproduces it locally. The movement-continuity comparison remains unanswered.
+  byte-identical to 0.1.146's, so this is not a contract mismatch; the unnumbered 0.1.146
+  rebuild reproduces it locally. The movement-continuity comparison remains unanswered.
 - Full exact-image local `custom-fresh-start-10x` episode completed cleanly with
   score 1.0, 312 observations, 311 intents, a replay, and 1,391.080 yards of replay
   trajectory. Versus the hosted v59 baseline, movement packets fell 4,097 -> 1,376

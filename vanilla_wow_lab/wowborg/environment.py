@@ -29,7 +29,7 @@ from environment.runtime.episode import (
     EnvironmentTransition,
     HostedSessionRuntime,
 )
-from player.sdk.navmesh import route_navmesh
+from player.sdk.navmesh.client import route_navmesh
 
 from wowborg.trace import NullTracer, Tracer
 from wowborg.types import ActionOutcome, PlannedRoute, Position

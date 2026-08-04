@@ -43,7 +43,7 @@ docker run --rm --entrypoint python3 "$tag" -c '
 from environment import VanillaWowEnv
 from environment.runtime.episode import hosted_runtime_factory
 from environment.contract.agent import AgentFrame, MoveAction
-from player.sdk.navmesh import route_navmesh
+from player.sdk.navmesh.client import route_navmesh
 import wowborg.environment, wowborg.main, wowborg.player_progress, wowborg.policies
 ' || die "sanity check FAILED"
 

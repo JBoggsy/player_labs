@@ -26,6 +26,24 @@ mid-session; check them back at the start of focused work.
   (repel from `teammate_colors` positions), analogous to crew dispersion. The teammate identity is
   reliable (`teammate_colors`), so the signal to act on is already there.</details>
 
+- **STILL BLOCKED (2026-08-04): 0.1.152 fixed the fall; movement is now blocked on collision
+  readiness.** Retested on canonical `accelerated-wow:0.1.152`
+  (`cow_1acc54b8-80f9-4965-adb5-9325c0472619`) as
+  `xreq_03d44ab9-1e00-4ec5-9cce-522f17d5a601` with **wowborg:v61**
+  (`e3493732-4c72-4204-9e57-4976a1ce18c6`, rebuilt against 0.1.152's SDK).
+  **Fixed:** z now holds at exactly the spawn 38.718 for all 84 observations and never sinks
+  (0.1.146 fell to 28/18.6 with `FALLING` on 100% of movement packets).
+  **Not fixed:** the replay has **zero movement packets** — not one `MSG_MOVE_START_FORWARD`,
+  where 0.1.146 emitted 175 — and 32/36 movement failures are a new gate, *"piloted movement
+  controls settled: movement collision readiness timed out"*. Trajectory 0.0 yd, 1 distinct
+  x/y. **Separate defect:** 1 of 2 hosted episodes failed with WebSocket 1011 `environment
+  session ended before hello` (`ereq_e950ddfa-e04c-45cd-8d47-8577fee2d785`); locally that path
+  dies deterministically 2/2 on `session.nim(310) httpAssetFetchesActive() == 0` in
+  `finishEnvHostSessionStartup`. Completed episode:
+  `ereq_7e785792-9895-4b3b-bb92-f2301ec84abe`. Report both to Richard, then re-run the
+  comparison below once the character can walk.
+  <details><summary>0.1.146 report (2026-08-03, superseded — the fall itself is fixed)</summary>
+
 - **BLOCKED ON A GAME FIX (2026-08-03): wowborg cannot move on accelerated-wow 0.1.146.**
   The retest ran on canonical `accelerated-wow:0.1.146`
   (`cow_ff82f1c4-d1f5-4291-810e-039e67ac8173`, image `sha256:ab5f989c…`) as
@@ -51,7 +69,7 @@ mid-session; check them back at the start of focused work.
   forward starts, 243 stops, 326 turn starts, 356 turn stops, 2,907 heartbeats, 1,315.8 replay
   yd / 1,309.9 reported yd) once a release lands where the character can walk — use
   `vanilla_wow_lab/tools/movement_report.py`. Also note the game image moved its Python
-  packages to `/app`. Spell 7355 cooldown spam remains a separate wowborg issue.
+  packages to `/app`. Spell 7355 cooldown spam remains a separate wowborg issue.</details>
   <details><summary>Original item (2026-07-31, superseded)</summary>
 
 - **Finish wowborg's hosted retest on the corrected successor to accelerated-wow 0.1.127** (2026-07-31).

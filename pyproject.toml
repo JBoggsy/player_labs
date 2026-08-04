@@ -4,9 +4,17 @@ version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
     "coworld[auth]>=0.1.34",
-    # Exact Python /env contract shipped by accelerated-wow 0.1.124. Keep this
-    # aligned with WOWBORG_ENVIRONMENT_IMAGE in vanilla_wow_lab/tools/versions.env.
-    "vanilla-wow-coworld @ git+https://github.com/Metta-AI/coworld-vanilla-wow.git@bda33bf9c321fa9a6f01398423c36c513b3db622",
+    # Python /env contract for local tests, kept in step with WOWBORG_ENVIRONMENT_IMAGE in
+    # vanilla_wow_lab/tools/versions.env (currently accelerated-wow 0.1.152).
+    #
+    # NB this is the NEAREST source commit, not an exact release mapping: the owner
+    # publishes no version->commit map, and 0.1.152's image blobs for
+    # environment/contract/agent.py and player/sdk/navmesh/client.py never coexist in this
+    # repo's main history, so the release was not built from a plain main commit. This pin
+    # (`Bind navigation to checked VMaNGOS data`, 2026-08-03) carries 0.1.152's exact
+    # navmesh client and the flattened `player.sdk.navmesh.client` layout we import, which
+    # is the property the tests need. The authoritative contract remains the pinned image.
+    "vanilla-wow-coworld @ git+https://github.com/Metta-AI/coworld-vanilla-wow.git@04d57ede8777541190385936a523522248406fd7",
     "httpx>=0.28.1",
     # The shared player SDK that vendored players import as `players.player_sdk`,
     # plus its base deps (anthropic, boto3 for Bedrock, etc.). The `players` repo moved

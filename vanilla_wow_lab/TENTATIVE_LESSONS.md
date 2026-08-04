@@ -48,6 +48,46 @@ correctly scores 239/239 and FAILs. A metric that passes the case it was built t
 worthless, and only the negative control reveals it.
 Status: candidate — generalizes well beyond this lab.
 
+### A fix that changes the failure mode is progress — report the delta, not "still broken"
+
+Evidence: 0.1.152 did fix the 0.1.146 fall (z holds at spawn 38.718 across all 84
+observations; 0.1.146 sank to 28/18.6 with FALLING on 100% of packets). But the character
+still cannot move, now blocked on a NEW gate — *"piloted movement controls settled: movement
+collision readiness timed out"*, 32/36 failures, and **zero** movement packets where 0.1.146
+emitted 175. Reporting this as "still broken" would have wasted Richard's time; the useful
+signal is that the grounding fix landed and likely introduced a readiness wait that never
+satisfies.
+Status: candidate.
+
+### `build_player.sh`'s import sanity check is the cheapest SDK-break detector in the lab
+
+Evidence: 0.1.152 removed the re-exports from `player/sdk/navmesh/__init__.py`, so
+`from player.sdk.navmesh import route_navmesh` broke. The build's post-build import check
+caught it in seconds, before any episode ran — the fix was a one-line path change to
+`player.sdk.navmesh.client` (matching the SDK's own `cli/commands.py`, and upstream commit
+`b337a12ef "Collapse package re-export wrappers"` confirms the intent). Keep that check
+current whenever wowborg adds an SDK import.
+Status: candidate.
+
+### Upload version numbers follow the last UPLOADED version, not your local tags
+
+Evidence: the 2026-08-03 build was tagged `players-wowborg:v61` locally and documented as
+"v61", but never uploaded. Uploading the next (0.1.152) build produced `wowborg:v61` —
+because numbering increments from v60, the last uploaded version. Two different builds
+briefly shared the name in the docs. Don't write a `vN` into VERSION_LOG until the upload
+returns it.
+Status: candidate.
+
+### There is no published version -> commit map for accelerated-wow releases
+
+Evidence: trying to align the local test SDK pin with 0.1.152, the image's
+`environment/contract/agent.py` and `player/sdk/navmesh/client.py` blobs **never coexist in
+any commit** of the game repo's main history — so the release wasn't built from a plain main
+commit, and the image records no source SHA. Pin to the nearest commit carrying the shipped
+SDK layout and say so explicitly; treat the pinned IMAGE as the authoritative contract and
+the git pin as a test-only approximation.
+Status: candidate — cost ~15 min of blob archaeology to establish; write it down once.
+
 ### Decode the replay's movement FLAGS, not just opcodes — they name the failure outright
 
 Evidence: "character doesn't move" was diagnosable but vague from positions and opcode counts

@@ -60,7 +60,7 @@ class NavmeshWorldSession:
     def plan_route(self, source, target, map_id, *, arrival_radius=3.0,
                    tile_load_mode="auto") -> PlannedRoute:
         from environment.contract.agent import WorldPoint as NavPoint
-        from player.sdk.navmesh import route_navmesh
+        from player.sdk.navmesh.client import route_navmesh
 
         self.plan_calls += 1
         route = route_navmesh(

@@ -13,6 +13,43 @@ file is the one-screen "where are we and why."
 
 ---
 
+## Status (2026-08-04): 0.1.152 FIXED THE FALL, BUT MOVEMENT IS STILL BLOCKED
+
+Richard acknowledged the 0.1.146 report on Discord ("spotted this and am investigating",
+2026-08-03 20:26 UTC). Six releases later, canonical is **accelerated-wow 0.1.152**
+(`cow_1acc54b8-80f9-4965-adb5-9325c0472619`, image `sha256:e479e11a…`). Retested with
+**wowborg:v61** (`e3493732-4c72-4204-9e57-4976a1ce18c6`), rebuilt against 0.1.152's SDK.
+
+- **The falling bug IS fixed.** Across all 84 observations z holds at exactly the spawn
+  38.718 and never sinks — 0.1.146 fell to 28 / 18.6 and had `FALLING` on 100% of movement
+  packets.
+- **The character still cannot move.** The replay now contains **zero movement packets** —
+  not one `MSG_MOVE_START_FORWARD`, where 0.1.146 at least emitted 175. 32 of 36 movement
+  failures are a new gate: *"piloted movement controls settled: movement collision readiness
+  timed out"*. Trajectory 0.0 yd, 1 distinct x/y. So the fix appears to have added a
+  collision-readiness wait that never becomes satisfied.
+- **A second, separate defect: a startup race.** 1 of 2 hosted episodes failed
+  `player_error` with WebSocket 1011 `environment session ended before hello`. Locally the
+  same path dies deterministically (2/2) on a game assertion:
+  `session.nim(310) httpAssetFetchesActive() == 0` in `finishEnvHostSessionStartup`.
+- Hosted `xreq_03d44ab9-1e00-4ec5-9cce-522f17d5a601`: completed
+  `ereq_7e785792-9895-4b3b-bb92-f2301ec84abe`, failed
+  `ereq_e950ddfa-e04c-45cd-8d47-8577fee2d785`.
+- **SDK break in 0.1.152:** `player/sdk/navmesh/__init__.py` stopped re-exporting, so
+  `from player.sdk.navmesh import route_navmesh` fails; the import moved to
+  `player.sdk.navmesh.client`. Fixed in `wowborg/environment.py`, `tools/build_player.sh`,
+  `tools/route_lab.py`. 0.1.152 also adds chat observation fields, so older builds'
+  `extra="forbid"` frame model would reject its frames.
+- **Version numbering:** upload numbering follows the last *uploaded* version. The 2026-08-03
+  local 0.1.146 rebuild was never uploaded and holds no number; `wowborg:v61` is the 0.1.152
+  build.
+
+**Next:** report the two remaining defects to Richard (collision-readiness timeout; the
+`httpAssetFetchesActive` assertion), then re-run the movement-continuity comparison once the
+character can actually walk.
+
+---
+
 ## Status (2026-08-03): 0.1.146 DISPATCHES BUT THE CHARACTER CANNOT MOVE — game-side blocker
 
 The accelerated-wow 0.1.146 retest ran. Episodes dispatch and complete (unlike 0.1.127),
