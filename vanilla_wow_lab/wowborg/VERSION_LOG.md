@@ -65,7 +65,8 @@
   smoke episode after 3,600 seconds, so the request remained pending without a
   job ID, replay, or results.
 - **Retested on accelerated-wow 0.1.146 (2026-08-03):** `xreq_45fa56c4-1b49-4f4c-9a08-f819cd9be62a`,
-  episodes `ereq_c0454d48-b8…` and `ereq_635799dd-9c…`. Both completed with score 1.0 and a
+  episodes `ereq_c0454d48-b8a4-4a31-89f5-3c22d4b653cb` and
+  `ereq_635799dd-9c48-4b3e-8ac4-2a63ed7c53fd`. Both completed with score 1.0 and a
   retained replay — but the character never moved: 1 distinct x/y position and 0.0 trajectory
   yards in each, against the v59 baseline's 1,315.8 yd. v60's `AgentFrame` schema is
   byte-identical to 0.1.146's, so this is not a contract mismatch; the unnumbered 0.1.146
@@ -359,3 +360,23 @@
 - First hosted smoke 2026-07-14: `xreq_23feebad-…`, 4 episodes on `orc-fresh-start`
   (5× self-play), all completed, score 0.0, no crash. Policy logs not retained; login
   success not yet confirmed from artifacts.
+
+---
+
+## Re-fetching episode artifacts
+
+`vanilla_wow_lab/episode_data/` is a local cache (gitignored) and was cleared on 2026-08-04.
+Every episode referenced above is re-downloadable from the Observatory by id:
+
+```sh
+uv run python .claude/skills/coworld-episode-artifacts/scripts/fetch_artifacts.py \
+  --ereq <ereq_id> --out vanilla_wow_lab/episode_data --elevated
+```
+
+`--elevated` is required — without it `results.json` and the policy logs 403 and you get a
+replay-only directory. Score it with `tools/movement_report.py <episode_dir>`.
+
+The movement-continuity baseline is `ereq_422085f1-9ec7-4554-b2ba-9942947e5dc2` (v59 on
+0.1.124): 4,097 movement packets, 239 forward starts, 243 stops, 326 turn starts, 356 turn
+stops, 2,907 heartbeats, 3.8% falling, 1,315.812 replay yards, 249 move actions, 13 movement
+failures, 4 stale-frame rejections.
