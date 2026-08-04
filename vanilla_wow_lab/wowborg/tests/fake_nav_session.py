@@ -145,7 +145,7 @@ class NavWorldSession:
     def wait_for_settlement(self, frame_id, *, timeout_s=90.0) -> ActionOutcome:
         return ActionOutcome(
             request_id=f"frame-{frame_id}", kind="move", success=True,
-            settlement_kind=None, displacement_yards=None, end_position=None,
+            settlement_kind="succeeded", displacement_yards=None, end_position=None,
             detail="fake settlement", frame_id=frame_id, settled_tick=self._frame,
         )
 

@@ -26,7 +26,7 @@ mid-session; check them back at the start of focused work.
   (repel from `teammate_colors` positions), analogous to crew dispersion. The teammate identity is
   reliable (`teammate_colors`), so the signal to act on is already there.</details>
 
-- **GAME FIX PROVEN LOCALLY; AWAITING PUBLICATION (2026-08-04): 0.1.152 fixed the fall;
+- **GAME FIX + LOCAL NAV BATTERY PROVEN; AWAITING PUBLICATION (2026-08-04): 0.1.152 fixed the fall;
   movement is blocked on collision-data routing.** Retested on canonical `accelerated-wow:0.1.152`
   (`cow_1acc54b8-80f9-4965-adb5-9325c0472619`) as
   `xreq_03d44ab9-1e00-4ec5-9cce-522f17d5a601` with **wowborg:v61**
@@ -36,20 +36,23 @@ mid-session; check them back at the start of focused work.
   **Not fixed:** the replay has **zero movement packets** — not one `MSG_MOVE_START_FORWARD`,
   where 0.1.146 emitted 175 — and 32/36 movement failures are a new gate, *"piloted movement
   controls settled: movement collision readiness timed out"*. Trajectory 0.0 yd, 1 distinct
-  x/y. **Separate defect:** 1 of 2 hosted episodes failed with WebSocket 1011 `environment
-  session ended before hello` (`ereq_e950ddfa-e04c-45cd-8d47-8577fee2d785`); locally that path
-  dies deterministically 2/2 on `session.nim(310) httpAssetFetchesActive() == 0` in
-  `finishEnvHostSessionStartup`. Completed episode:
-  `ereq_7e785792-9895-4b3b-bb92-f2301ec84abe`. Report both to Richard, then re-run the
-  comparison below once the character can walk.
+  x/y. **Startup consequence:** 1 of 2 hosted episodes failed with WebSocket 1011 `environment
+  session ended before hello` (`ereq_e950ddfa-e04c-45cd-8d47-8577fee2d785`). Once collision
+  routing is fixed locally, two legitimate collision fetches make
+  `httpAssetFetchesActive() == 0` deterministically false; startup must not require the shared
+  fetch pool to be empty. Completed hosted episode:
+  `ereq_7e785792-9895-4b3b-bb92-f2301ec84abe`.
   **Root cause/fix:** the `/env` host never installed its authenticated `/player/assets` URL
   as the `simulationDataHttp` base, so VMap collision stayed permanently pending. Owner-repo
-  local commit `97f4d36c` on `codex/env-host-simulation-data` calls
-  `setSimulationDataBaseUrl` before client construction and extends the complete env-host
-  proof; that proof and the 38-test architecture gate pass. Nothing is published yet. Push/
-  review the fix, release a new accelerated-wow, then rerun known and held-out navigation.
-  Keep the startup assertion as a separate verification target until a fixed build proves it
-  gone.
+  landed commit `1608da7a` from owner-repo PR #7809 calls
+  `setSimulationDataBaseUrl` before client construction, removes the invalid zero-active-fetch
+  assertion, and extends the complete env-host proof; that proof and the 38-test architecture
+  gate pass. An exact patched local episode then walked 115.2 yards without falling. The focused
+  wowborg candidate also passed the known battery (2/2 reachable, 1/1 impossible, 0 replans,
+  165.3 replay yards) and a held-out data-only battery (novel target reached in one 121.8-yard
+  forward span; impossible high-air target rejected). Richard Higgins merged owner-repo
+  PR #7809 with both CI checks green; neither a Coworld containing the fix nor the candidate
+  policy is uploaded yet. Release accelerated-wow, then repeat those batteries hosted.
   <details><summary>0.1.146 report (2026-08-03, superseded — the fall itself is fixed)</summary>
 
 - **BLOCKED ON A GAME FIX (2026-08-03): wowborg cannot move on accelerated-wow 0.1.146.**

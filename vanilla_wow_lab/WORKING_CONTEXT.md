@@ -13,7 +13,7 @@ file is the one-screen "where are we and why."
 
 ---
 
-## Status (2026-08-04): COLLISION-DATA ROOT CAUSE FIXED LOCALLY; AWAITING RELEASE
+## Status (2026-08-04): LOCAL NAVIGATION BATTERIES PASS; OWNER FIX LANDED
 
 Richard acknowledged the 0.1.146 report on Discord ("spotted this and am investigating",
 2026-08-03 20:26 UTC). Six releases later, canonical is **accelerated-wow 0.1.152**
@@ -28,19 +28,32 @@ Richard acknowledged the 0.1.146 report on Discord ("spotted this and am investi
   failures are a new gate: *"piloted movement controls settled: movement collision readiness
   timed out"*. Trajectory 0.0 yd, 1 distinct x/y. So the fix appears to have added a
   collision-readiness wait that never becomes satisfied.
-- **Root cause found in the owner game.** The `/env` host applies the authenticated
+- **Root cause found and fixed locally in the owner game.** The `/env` host applies the authenticated
   `/player/assets` URL as the presentation asset base, but unlike the normal player runtime
   it never applies that URL with `setSimulationDataBaseUrl`. Its `simulationDataHttp` build
   therefore cannot resolve the VMap collision data that movement waits for, matching the
   artifact's exact terminal reason: `world collision residency pending`. Local owner-repo
-  commit `97f4d36c` (`codex/env-host-simulation-data`) installs the simulation-data base
+  commit `1608da7a` installs the simulation-data base
   before client construction and adds the invariant to the complete environment-host asset
-  proof. That proof passes, as do all 38 architecture-gate tests. The fix is local only: no
-  branch push, PR, Coworld publication, or policy upload has occurred.
-- **A second, separate defect: a startup race.** 1 of 2 hosted episodes failed
-  `player_error` with WebSocket 1011 `environment session ended before hello`. Locally the
-  same path dies deterministically (2/2) on a game assertion:
-  `session.nim(310) httpAssetFetchesActive() == 0` in `finishEnvHostSessionStartup`.
+  proof. That proof passes, as do all 38 architecture-gate tests. The same patch removes the
+  startup assertion that required the shared HTTP fetch pool to be empty: once collision
+  routing works, world entry legitimately leaves two authenticated collision requests in
+  flight. The host already reports that count in hello, while movement readiness gates the
+  collision data it actually needs. Richard Higgins merged owner-repo
+  [PR #7809](https://github.com/Metta-AI/coworld-vanilla-wow/pull/7809) after both CI checks
+  passed; the landed squash has the same stable patch ID as the simplified topic commit. No
+  Coworld publication has occurred.
+- **Exact local end-to-end proof passes.** A disposable derivative of the 0.1.152 runtime,
+  containing only the patched environment host, completed with the owner HEAD SDK. Unchanged
+  wowborg:v61 held spawn height, emitted movement, traversed 115.2 yards with zero falls, and
+  exited cleanly in a deliberately short 180-second episode.
+- **Known + held-out navigation batteries pass locally.** A focused wowborg candidate no
+  longer treats already-pushed frames with no observed action result as movement stalls.
+  The known course reached 2/2 reachable targets and rejected 1/1 impossible target with
+  zero replans; its replay shows 165.3 yards and exactly one uninterrupted forward span per
+  journey. A data-only coordinate absent from the repository (`-500,-4300,46`) was reached
+  in one 121.8-yard forward span, while the matching high-air target was rejected; again,
+  zero replans and zero falls. The candidate is local only and not uploaded.
 - Hosted `xreq_03d44ab9-1e00-4ec5-9cce-522f17d5a601`: completed
   `ereq_7e785792-9895-4b3b-bb92-f2301ec84abe`, failed
   `ereq_e950ddfa-e04c-45cd-8d47-8577fee2d785`.
@@ -53,11 +66,9 @@ Richard acknowledged the 0.1.146 report on Discord ("spotted this and am investi
   local 0.1.146 rebuild was never uploaded and holds no number; `wowborg:v61` is the 0.1.152
   build.
 
-**Next:** publish/review the owner-game fix, build a new accelerated-wow release, then rebuild
-wowborg only if its copied SDK contract changes. Run the movement-continuity comparison and
-the known + held-out navigation battery on that release. The `httpAssetFetchesActive`
-assertion may share the asset-routing cause, but that is not yet proven; retain it as a
-separate verification target.
+**Next:** build a new accelerated-wow release from landed owner-game PR #7809, then rebuild
+and upload the candidate against that release's exact SDK. Run the known + held-out battery
+hosted and finish the pending long movement-continuity comparison against the v59 baseline.
 
 ---
 
@@ -225,14 +236,12 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
 
 ## Open threads (next steps)
 
-1. **Blocked on the game, not on us.** wowborg cannot move on `accelerated-wow` 0.1.152.
-   Two defects to report to Richard Higgins (Discord `relh.net` — see the memory note; the
-   `discord.send-message` skill lives in the metta checkout, not this repo):
-   - *"piloted movement controls settled: movement collision readiness timed out"* — 32/36
-     movement failures, zero movement packets emitted.
-   - `session.nim(310) httpAssetFetchesActive() == 0` in `finishEnvHostSessionStartup` —
-     killed 1 of 2 hosted episodes; reproduces deterministically locally (2/2).
-2. **Then finish the movement-continuity retest** that has been pending since 0.1.127:
+1. **Release the landed owner-game fix.** Commit `1608da7a` routes authenticated
+   simulation data and removes the invalid zero-active-fetch startup assertion. Focused Nim,
+   architecture, scope, and exact local episode proofs pass. Richard Higgins merged owner-repo
+   PR #7809 with both CI checks green; it still needs a released accelerated-wow build before
+   hosted wowborg can move.
+2. **Then finish the hosted movement-continuity retest** that has been pending since 0.1.127:
    compare a fresh episode against baseline `ereq_422085f1-9ec7-4554-b2ba-9942947e5dc2`
    with `tools/movement_report.py --baseline`. Baseline figures: 4,097 movement packets,
    239 forward starts, 243 stops, 326 turn starts, 356 turn stops, 2,907 heartbeats,

@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
-from environment.contract.agent import AgentFrame, EnvironmentContext, MoveAction, WorldPoint
+from environment.contract.agent import (
+    ActionState,
+    AgentFrame,
+    EnvironmentContext,
+    MoveAction,
+    WorldPoint,
+)
 
 from wowborg.environment import GymSession, hosted_endpoints
 
 
-def _frame(frame_id: int, *, x: float = 1.0) -> AgentFrame:
+def _frame(frame_id: int, *, x: float = 1.0, action_state=None) -> AgentFrame:
     return AgentFrame.model_construct(
         episode_id="00000000-0000-0000-0000-000000000001",
         frame_id=frame_id,
@@ -21,7 +27,7 @@ def _frame(frame_id: int, *, x: float = 1.0) -> AgentFrame:
         is_ghost=False,
         known_spells=[],
         active_area_trigger_ids=[],
-        action_state=None,
+        action_state=action_state,
     )
 
 
@@ -77,7 +83,37 @@ def test_move_uses_upstream_action_and_advances_to_next_frame() -> None:
     action = env.actions[0]
     assert isinstance(action, MoveAction)
     assert action.destination == WorldPoint(map_id=1, x=10.0, y=20.0, z=30.0)
-    assert session.wait_for_settlement(1).success is True
+    outcome = session.wait_for_settlement(1)
+    assert outcome.success is True
+    assert outcome.settlement_kind is None
+
+
+def test_matching_action_state_marks_the_action_settled() -> None:
+    class SettledEnv(FakeEnv):
+        def step(self, action):
+            self.actions.append(action)
+            state = ActionState(
+                action_id=1,
+                submitted_frame_id=1,
+                action=action,
+                status="succeeded",
+                completion_frame_id=2,
+                detail="advanced one observation horizon",
+            )
+            return (
+                _frame(2, x=10.0, action_state=state),
+                0.0,
+                False,
+                False,
+                {"action_status": "accepted", "action_detail": ""},
+            )
+
+    session = GymSession(SettledEnv(), _frame(1), {})
+    session.select_move_to(session.frame, 10.0, 20.0, 30.0, 1)
+
+    outcome = session.wait_for_settlement(1)
+    assert outcome.success is True
+    assert outcome.settlement_kind == "succeeded"
 
 
 def test_stale_frame_does_not_submit_an_action() -> None:

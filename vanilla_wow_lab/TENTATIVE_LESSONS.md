@@ -66,8 +66,8 @@ Evidence: accelerated-wow 0.1.152's `/env` attach carried the correct authentica
 timed out on `world collision residency pending`. The host binary is compiled with
 `simulationDataHttp`; unlike the normal player runtime, `environment/host/session.nim` never
 called `setSimulationDataBaseUrl`, so VMap collision fetched through an unset simulation-data
-origin. Local owner commit `97f4d36c` installs the same attach URL for simulation data before
-client construction, and the complete environment-host asset proof now asserts both bases.
+origin. Landed owner-repo PR #7809 commit `1608da7a` installs the same attach URL for simulation data
+before client construction, and the complete environment-host asset proof now asserts both bases.
 Status: candidate — inspect runtime initialization for every compile-time data owner before
 blaming the fetcher or adding movement fallback behavior.
 
@@ -155,3 +155,21 @@ build pin was passed via `--base` and never committed, so the repo cannot reprod
 `versions.env` alone. VERSION_LOG's per-version "Local image manifest" hash was what let me
 identify the local `players-wowborg:diag-0127` image as v60.
 Status: candidate — record the base digest in `versions.env` when a version ships against it.
+
+### Active shared HTTP fetches are startup telemetry, not a safe quiescence invariant
+
+Evidence: after the `/env` host correctly installed the authenticated simulation-data base,
+world entry immediately started two legitimate collision requests and deterministically hit
+`httpAssetFetchesActive() == 0`. Removing that assertion let hello complete; movement's own
+collision-readiness gate then waited for the required residency, and the exact patched local
+episode walked normally. A process-global fetch count cannot prove one session is ready.
+Status: candidate — gate the required resource, and report unrelated in-flight work as telemetry.
+
+### Do not classify an already-pushed frame as a failed movement settlement
+
+Evidence: the synchronous `/env` SDK exposed three startup frames before the submitted move's
+`action_state` appeared. Position was unchanged and no typed result was present, so wowborg
+counted them as stalls, cast Stuck, and replanned immediately before movement began. Preserving
+the typed "no action result observed" state removed the false recovery: known-course replans
+fell 1 -> 0, and a novel 121.8-yard route completed as one uninterrupted forward span.
+Status: candidate — action settlement must be explicit; a newer observation alone is not failure.

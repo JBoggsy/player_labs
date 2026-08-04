@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from dataclasses import replace
 
 from fake_nav_session import NavWorldSession
 from wowborg.nav.journey import JourneyPlanner, JourneyStatus
@@ -39,6 +40,34 @@ def test_l0_wall_stall_detected() -> None:
     result = LocalMover().move_to(bridge, Point(1, 100.0, 0.0, 0.0), until=deadline())
     assert result.status == LocalMoveStatus.STALLED
     assert bridge.wait_selections > 0  # unstick ladder ran
+
+
+def test_l0_does_not_treat_unsettled_startup_frames_as_stalls() -> None:
+    class StartupLagSession(NavWorldSession):
+        def __init__(self) -> None:
+            super().__init__()
+            self.startup_moves_remaining = 3
+            self.last_move_unsettled = False
+
+        def _advance_toward(self, x: float, y: float, z: float) -> None:
+            if self.startup_moves_remaining:
+                self.startup_moves_remaining -= 1
+                self.last_move_unsettled = True
+                return
+            self.last_move_unsettled = False
+            super()._advance_toward(x, y, z)
+
+        def wait_for_settlement(self, frame_id, *, timeout_s=90.0):
+            outcome = super().wait_for_settlement(frame_id, timeout_s=timeout_s)
+            if self.last_move_unsettled:
+                return replace(outcome, settlement_kind=None, detail="")
+            return outcome
+
+    bridge = StartupLagSession()
+    result = LocalMover().move_to(bridge, Point(1, 50.0, 0.0, 0.0), until=deadline())
+
+    assert result.status == LocalMoveStatus.ARRIVED
+    assert bridge.wait_selections == 0
 
 
 def test_l0_combat_runs_through_when_healthy() -> None:

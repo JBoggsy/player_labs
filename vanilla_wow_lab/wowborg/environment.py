@@ -209,6 +209,9 @@ class GymSession:
         action_state = next_frame.action_state
         success = action_status not in ("rejected", "timeout")
         detail = action_detail
+        settlement_kind = (
+            action_status if action_status in ("rejected", "timeout") else None
+        )
         if (
             not refreshed
             and action_state is not None
@@ -216,11 +219,12 @@ class GymSession:
         ):
             success = action_state.status == "succeeded"
             detail = action_state.detail or action_state.reason_code
+            settlement_kind = action_state.status
         self._last_outcome = ActionOutcome(
             request_id=request_id,
             kind=action.kind,
             success=success,
-            settlement_kind=None,
+            settlement_kind=settlement_kind,
             displacement_yards=None,
             end_position=Position(
                 next_frame.location.x,

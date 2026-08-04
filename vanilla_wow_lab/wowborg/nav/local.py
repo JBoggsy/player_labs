@@ -97,6 +97,7 @@ class LocalMover:
         started = time.monotonic()
         moves = 0
         stalls = 0
+        prior_move_unsettled = False
         best_distance: float | None = None
         history: list[tuple[Point, float]] = []  # (position, goal distance there)
         # Baseline before the first wait: frame starvation on the FIRST poll
@@ -168,6 +169,11 @@ class LocalMover:
                 stalls = 0
             elif displaced:
                 stalls = 0
+            elif prior_move_unsettled:
+                # The synchronous SDK can expose already-pushed startup frames
+                # before the move's action_state settles. Such a frame is not
+                # evidence that the character failed to move.
+                pass
             else:
                 stalls += 1
 
@@ -199,10 +205,11 @@ class LocalMover:
                 request_id = bridge.select_wait(frame)
                 if request_id is None:
                     continue
-            bridge.wait_for_settlement(
+            outcome = bridge.wait_for_settlement(
                 frame.frame_id,
                 timeout_s=min(SETTLE_TIMEOUT_SECONDS, max(0.5, until - time.monotonic())),
             )
+            prior_move_unsettled = outcome is None or outcome.settlement_kind is None
 
 
 def _last(history: list[tuple[Point, float]]) -> Point | None:

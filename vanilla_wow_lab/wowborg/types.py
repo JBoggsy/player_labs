@@ -19,7 +19,7 @@ class ActionOutcome:
     request_id: str
     kind: str
     success: bool
-    settlement_kind: str | None  # movement intents only
+    settlement_kind: str | None  # typed action result; None until one is observed
     displacement_yards: float | None
     end_position: Position | None
     detail: str  # human-readable, for logs only

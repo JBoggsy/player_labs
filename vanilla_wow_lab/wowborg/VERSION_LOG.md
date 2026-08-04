@@ -1,5 +1,23 @@
 # wowborg version log
 
+## (unnumbered) - typed startup-settlement supervision (2026-08-04, locally proven, NEVER uploaded)
+
+- Preserves the upstream distinction between a submitted action with an observed typed result
+  and an already-pushed frame where no matching `action_state` has arrived. L0 no longer counts
+  the latter as a movement stall, preventing the startup Stuck cast and false replan without
+  weakening the two-settlement unstick threshold for genuine settled stalls.
+- Built against a disposable owner-HEAD SDK and exercised only with an exact 0.1.152 runtime
+  derivative containing owner fix `1608da7a` (owner-repo PR #7809); no game or policy artifact
+  was published.
+- Known data-only course: 2/2 reachable arrivals, 1/1 impossible target rejected, zero replans,
+  zero falls, 165.3 replay yards, and one uninterrupted forward span per reachable journey.
+- Held-out course: repository search confirmed `(-500,-4300,46)` was absent before the run;
+  it arrived in 97.5 seconds as one 121.8-yard forward span with zero replans/falls, while the
+  matching z=226 high-air target failed fast as unreachable.
+- Full wowborg regression suite: 64/64 tests passed. Never
+  uploaded: it must be rebuilt against the released game SDK and verified hosted after the
+  owner fix ships.
+
 ## v61 - accelerated-wow 0.1.152 SDK rebuild (2026-08-04)
 
 - Version UUID: `e3493732-4c72-4204-9e57-4976a1ce18c6` (`wowborg:v61`, uploaded inert;
