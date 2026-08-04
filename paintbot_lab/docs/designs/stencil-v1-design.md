@@ -67,6 +67,14 @@ rejected because it reduced shots, hits, and kills without improving heart
 recovery. Heart-theft interception retains higher priority, and generic choke
 cover remains the no-post fallback.
 
+`stencil:v19` keeps that behavior and makes the boundary between generated
+knowledge and runtime action inspectable. Each defender snapshot identifies its
+assigned post, duck point, opponent front, score, heart distance, forwardness,
+and trace-only scored sightline center; the HTML navigation viewer overlays the
+assignment on the full per-front map. Follow-up attempts to change alignment
+movement, the fire corridor, duck use, post ranking, and sweep axis were all
+rejected by hosted replication and are recorded in `VERSION_LOG.md`.
+
 ## Multi-team generalization
 
 - `Team` is a color token; active colors = wire-stated prefix of

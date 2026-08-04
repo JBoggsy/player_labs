@@ -4,6 +4,169 @@ Read this before assuming what a version contains. Format mirrors
 `ctf_lab/ctf/beacon/VERSION_LOG.md`: one entry per uploaded version — what
 changed, why, and what the evidence said.
 
+## v19 — accepted behavior + complete defense diagnostics, uploaded 2026-08-04
+
+Immutable policy-version UUID: `e1b5dfa1-6755-4c4f-99ac-1582dfceec94`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Behavior is identical to v13/v12: accepted five-slot aim, exact homeward post
+  ordering, and the existing live-threat cover micro.
+- Retains v13's per-tick fire-gate inputs/reason and adds the generated post's
+  center sightline point as trace-only `defensive_post_sightline_aim`.
+- The navigation viewer now overlays this agent's assigned post, paired duck
+  point, and scored sightline axis on the generated map knowledge.
+- v14-v18's rejected alignment strafe, wider fire gate, paired-post duck,
+  home-banded ranking, and runtime sweep-axis changes are absent.
+
+This is the accepted fully traced inert upload after the mechanics search. It
+has not been submitted to a league. Two one-episode runtime probes on canonical
+Paintbot 0.7.184 completed with no failed episodes and emitted the new
+assignment/sightline fields for both defenders: standard-corners seed 303
+(`xreq_6606c47a-731e-4bcc-8153-acaf2127b589`) and large-plus seed 606
+(`xreq_4af94dbe-e965-410b-a0d9-a4b7194b336a`). Both episodes were losses to
+richard, consistent with the accepted baseline's unresolved 4FFA limit; these
+probes validate tracing and rendering, not an outcome improvement.
+
+## v18 — rejected post-corridor sweep axis, uploaded 2026-08-04
+
+Immutable policy-version UUID: `5bef60d2-3c31-4297-87f7-80bcb3b95359`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Restores v13's post assignment, firing, and cover behavior and retains its
+  fire-gate diagnostics.
+- A posted defender now centers its idle sweep on the middle ray of the
+  generated post sightline. Previously generation scored rays along the next
+  route waypoint, but runtime aimed directly at the distant opponent pedestal,
+  which could point through a bend or wall.
+- Adds `defensive_post_aim` to each snapshot so the exact runtime sweep axis is
+  visible beside the navigation-map rays.
+- Does not change strategy, roles, objective priority, post selection, target
+  selection, or active target aiming.
+
+Across the 36 v13 assignments in the locked field, the old runtime axis differed
+from the scored center ray by median 9.8 degrees and mean 23.2 degrees; six
+assignments exceeded 45 degrees and three were 90 degrees off.
+
+Rejected after the matched 18-episode-per-arm six-map evaluation. Defender hit
+rate rose from 51.05% to 55.15% and deaths fell from 5.11 to 4.89 per episode,
+but defender kills fell from 6.44 to 4.72 and outcomes fell from 3 to 2 wins
+(Fisher p=1.0; defender-kill Welch p=0.194). The runtime sweep change was
+removed; the generated center ray remains trace-only navigation knowledge.
+
+## v17 — rejected home-banded post score selection, uploaded 2026-08-04
+
+Immutable policy-version UUID: `d2127c91-28d3-4056-bcb7-d3eca7f13e25`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Restores v13's firing and cover behavior and retains its diagnostic fields.
+- Preserves homeward post selection, but groups candidates into 64 px
+  home-distance bands and ranks by the generated sightline/corridor/duck score
+  within a band. Previously score only broke an exact-distance tie, so the
+  generated metric was usually ignored during assignment.
+- `STENCIL_POST_HOME_BAND_PX` controls the local band size.
+- Does not change strategy, roles, objective priority, target selection, or
+  post generation.
+
+Rejected after the matched 18-episode-per-arm six-map evaluation. Assignment
+changed on small and standard maps, but the outcome shift from 3 to 4 wins was
+noise (Fisher p=0.691), and the defensive mechanism was flat: defender kills
+6.44 to 6.22, deaths 5.11 to 5.17, and normalized fire 7.58 to 7.50 per 1,000
+alive ticks. The team-kill increase from 10.17 to 11.78 came from attackers,
+not the changed posts. Exact homeward ordering was restored.
+
+## v16 — rejected paired post-duck cover, uploaded 2026-08-04
+
+Immutable policy-version UUID: `0db06dde-21c9-45f6-aeac-839297fdcf00`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Restores v13's firing behavior and retains its diagnostic fields.
+- When a defender is holding a generated post and its gun is cooling down, it
+  uses that post's generated duck point if the point is reachable and blocks
+  the current threat ray. Otherwise the existing live-threat cover search
+  remains the fallback.
+- `micro=post_duck` and `defensive_post_duck_ticks` trace activation.
+- Does not change strategy, role assignment, objective priority, post
+  selection, target selection, or firing behavior.
+
+Rejected after the matched 18-episode-per-arm six-map evaluation. v16 activated
+`post_duck` for 127 defender ticks and increased normalized defender firing
+from 7.58 to 8.50 shots per 1,000 alive ticks, but defender hit rate fell from
+51.05% to 45.05% and defender kills fell from 6.44 to 4.67 per episode. The
+outcome moved from 3 to 4 wins (no draws), which was noise at this sample size;
+defender-kill Welch p=0.109. The paired-duck runtime behavior was removed.
+
+## v15 — exact gun-hit corridor, uploaded 2026-08-04
+
+Immutable policy-version UUID: `0f2f918b-504b-4661-8bd1-79e823070eda`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Keeps v13's behavior and fire-gate diagnostics, except that the gun alignment
+  gate now uses the live simulation's exact centered-body hit corridor:
+  `PlayerHalf` (6 px) + `BulletHalfWidth` (8 px) = 14 px.
+- Removes the old guessed split of 8 px beyond 220 px and 16 px within it.
+- Does not change strategy, role assignment, post selection, target selection,
+  movement, cover use, or objective priority.
+
+Rejected after the matched 18-episode-per-arm six-map evaluation tied v13 at
+3 wins / 15 losses. Defender kills fell from 6.44 to 5.44 per episode, while
+defender deaths fell from 5.11 to 4.61; neither combat change was significant
+(Welch p=0.471 and p=0.384 respectively), and the outcome Fisher p-value was
+1.0. The wider gate modestly raised hit rate (52.75% to 54.70%) but lowered
+normalized defender firing from 7.58 to 5.83 shots per 1,000 alive ticks. The
+fire-gate change was removed; v13's diagnostics remain.
+
+## v14 — rejected cover-preserving discrete-aim alignment, uploaded 2026-08-04
+
+Immutable policy-version UUID: `1706a574-4c47-46d2-860d-3adcbe38c250`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- When a defender holding its assigned post has a ready, unobstructed target
+  that no legal aim slot can hit from the current position, it may strafe to
+  the nearest walkable cover cell within three nav cells where a legal slot
+  intersects that target.
+- Does not change strategy, role assignment, post selection, target selection,
+  or objective priority. `STENCIL_AIM_ALIGN_STRAFE=0` disables the mechanic.
+- `micro=aim_align` and cumulative `aim_alignment_strafe_ticks` trace
+  activation. The v13 fire-gate probe motivated the change: aim alignment was
+  the dominant visible-target blocker (1,858 ticks), and 943 cases could not
+  be solved by rotation alone; at `hold_post`, 173/323 blocked ticks were
+  geometrically unshootable from the current point.
+
+Rejected after the encouraging six-game screen failed replication. In the
+matched 18-episode-per-arm six-map field, v13 went 3 wins / 15 losses while v14
+went 1 win / 17 losses (loss/non-loss Fisher p=0.603); defender kills fell from
+6.44 to 5.06 per episode and team deaths rose from 10.78 to 10.94. The candidate did
+raise attacker kills and produce four captures, but those are outside the
+defensive-mechanics target and did not improve outcomes. Its movement code was
+removed before v15.
+
+## v13 — fire-gate diagnostic probe, uploaded 2026-08-04
+
+Immutable policy-version UUID: `46cb093a-5310-4ace-9dcf-6d9d0b88f755`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Behavior is identical to v12.
+- Adds per-tick target range, nearest-slot angular/lateral error, fire-ready
+  state, ray-clear and teammate-blocked inputs, and a normalized fire-gate
+  reason (`cooldown`, `aim_alignment`, `wall`, `teammate`, `fire`, or trigger
+  `release`).
+- Purpose: distinguish the dominant cause of visible-but-not-firing defender
+  ticks before changing aim movement, cover micro, or fire cadence.
+
 ## v12 — accepted aim fix + observable homeward posts, uploaded 2026-08-04
 
 Immutable policy-version UUID: `5889dc2e-170a-4082-8f52-b149333d552a`.

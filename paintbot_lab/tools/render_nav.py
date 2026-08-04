@@ -23,6 +23,7 @@ def trace_lines(path: Path) -> list[str]:
 def load_navigation(path: Path) -> dict:
     navigation_map = None
     flows: list[dict] = []
+    assignment = None
     for line in trace_lines(path):
         row = json.loads(line)
         if row.get("event") == "navigation_map":
@@ -30,12 +31,31 @@ def load_navigation(path: Path) -> dict:
             flows = []
         elif row.get("event") == "navigation_flow" and navigation_map is not None:
             flows.append(row["data"])
+        elif (
+            row.get("event") == "snapshot"
+            and assignment is None
+            and row["data"].get("defensive_post") is not None
+        ):
+            snapshot = row["data"]
+            assignment = {
+                "slot": snapshot.get("slot"),
+                "role": snapshot.get("role"),
+                "position": snapshot["defensive_post"],
+                "duck": snapshot.get("defensive_post_duck"),
+                "sightline_aim": snapshot.get(
+                    "defensive_post_sightline_aim",
+                    snapshot.get("defensive_post_aim"),
+                ),
+                "opponent": snapshot.get("defensive_post_opponent"),
+                "score": snapshot.get("defensive_post_score"),
+            }
     if navigation_map is None:
         raise ValueError(
             "trace has no navigation_map event; run with STENCIL_TRACE_NAVIGATION=1 "
             "or self_play.py --visualize-nav"
         )
     navigation_map["flows"] = flows
+    navigation_map["assignment"] = assignment
     return navigation_map
 
 
@@ -65,9 +85,11 @@ canvas {{ background:#0b0e11; box-shadow:0 2px 16px #0008; image-rendering:pixel
 <label><input id="anchors" type="checkbox" checked> tactical anchors</label>
 <label><input id="candidates" type="checkbox" checked> post candidates</label>
 <label><input id="posts" type="checkbox" checked> selected posts + firing rays</label>
+<label><input id="assignment" type="checkbox" checked> this agent's post + scored axis</label>
 <div class="legend"><span class="swatch" style="background:#d9d4c7"></span>walkable<br>
 <span class="swatch" style="background:#49c6e5"></span>cover<br>
 <span class="swatch" style="background:#ff6b6b"></span>post score: red low → green high<br>
+<span class="swatch" style="background:#f06595"></span>assigned post + scored sightline axis<br>
 Distance: dark near goal → orange far away</div><div id="tip"></div></aside>
 <main><canvas id="map"></canvas></main><script>
 const data={payload}; const [gw,gh]=data.grid, [mw,mh]=data.map, cell=data.cell_size;
@@ -130,6 +152,7 @@ function draw(){{
   }}
   if(checked('#anchors')) drawAnchors();
   drawPostKnowledge();
+  if(checked('#assignment')) drawAssignment();
 }}
 function dot(point,color,label){{
   const x=point[0]/cell*scale,y=point[1]/cell*scale;
@@ -179,6 +202,24 @@ function drawPostKnowledge(){{
     ctx.fillStyle='#fff'; ctx.font='bold 11px system-ui';
     ctx.fillText(`${{index+1}} · ${{post.score.toFixed(2)}}`,x+6,y-5);
   }});
+}}
+function drawAssignment(){{
+  const assignment=data.assignment; if(!assignment) return;
+  const x=assignment.position[0]/cell*scale,y=assignment.position[1]/cell*scale;
+  if(assignment.sightline_aim){{
+    ctx.strokeStyle='#f06595'; ctx.lineWidth=Math.max(2,scale*.30);
+    ctx.beginPath(); ctx.moveTo(x,y);
+    ctx.lineTo(assignment.sightline_aim[0]/cell*scale,
+      assignment.sightline_aim[1]/cell*scale); ctx.stroke();
+  }}
+  if(assignment.duck){{
+    const dx=assignment.duck[0]/cell*scale,dy=assignment.duck[1]/cell*scale;
+    ctx.strokeStyle='#f8f9fa'; ctx.lineWidth=Math.max(1.5,scale*.20); ctx.setLineDash([5,3]);
+    ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(dx,dy); ctx.stroke(); ctx.setLineDash([]);
+    dot(assignment.duck,'#74c0fc','assigned duck');
+  }}
+  dot(assignment.position,'#f06595',
+    `slot ${{assignment.slot}} post → ${{assignment.opponent}}`);
 }}
 for(const element of document.querySelectorAll('input,select'))
   element.addEventListener('change',draw);

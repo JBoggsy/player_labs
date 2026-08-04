@@ -13,8 +13,9 @@ This README orients newcomers (human or agent). Two pointers do most of the work
   auth) and the ground rules.
 
 > **Status: aim fix + generated-post defense hosted-validated 2026-08-04.**
-> `stencil:v12` (a beacon fork with online per-episode navigation) is uploaded
-> with full tracing; defenders occupy distinct homeward-ranked firing posts and
+> `stencil:v19` (a beacon fork with online per-episode navigation) is uploaded
+> with full tracing; its gameplay retains the accepted v12 aim/post behavior,
+> defenders occupy distinct homeward-ranked firing posts, and
 > the aim controller matches GameVersion 36's 32-slot/five-slot turn. It is
 > **not submitted**. The live
 > Paintbot league runs the **campaign (territory)
@@ -155,7 +156,8 @@ goal. `render_nav.py` accepts either that JSONL trace or a hosted player artifac
 ZIP and writes a standalone HTML viewer with toggles and per-cell inspection.
 Post-front selection overlays the bounded candidates, selected firing cells,
 nearby duck cells, score components, and forward firing rays actually computed
-by that team-colored agent.
+by that team-colored agent. Fully traced artifacts also overlay that specific
+agent's assigned post, paired duck point, and scored sightline axis.
 The opt-in keeps routine multi-seat telemetry from duplicating large grids.
 
 The harness uses `~/coding/coworlds/coworld-ctf` only as a source clone: it

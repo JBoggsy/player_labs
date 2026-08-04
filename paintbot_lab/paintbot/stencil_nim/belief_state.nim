@@ -14,7 +14,7 @@ type
     seat*, slot*, tick*, seatsPerTeam*: int
     role*: Role
     holdPoint*: Option[Point]
-    defensivePost*, defensivePostDuck*: Option[Point]
+    defensivePost*, defensivePostDuck*, defensivePostSightlineAim*: Option[Point]
     defensivePostOpponent*: Option[Team]
     defensivePostScore*: float
     defensivePostHeartDistance*: int
@@ -29,6 +29,10 @@ type
     stealTarget*: Option[Team]
     aimBrads*: int
     aimTargetBrads*, aimErrorBrads*: int
+    aimSlotErrorBrads*: int
+    aimLateralErrorPx*, targetRangePx*: float
+    fireGateReason*: string
+    targetRayClear*, targetTeammateBlocked*: bool
     prevObservedAim*: Option[int]
     fireReady*: bool
     enemies*, teammates*: seq[Enemy]

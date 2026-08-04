@@ -414,6 +414,9 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
   var mask = 0'u8
   state.lastRot = 0; belief.micro = ""; belief.heardDuck = false
   belief.aimTargetBrads = belief.aimBrads; belief.aimErrorBrads = 0
+  belief.aimSlotErrorBrads = 0; belief.aimLateralErrorPx = 0.0
+  belief.targetRangePx = 0.0; belief.targetRayClear = false
+  belief.targetTeammateBlocked = false; belief.fireGateReason = "no_target"
   if belief.selfXy.isNone or belief.worldmap.isNil:
     state.aHeld = false; belief.leadBrads = 0; belief.throwChargeTicks = 0
     belief.throwTarget = none(Point); belief.throwReason = ""
@@ -462,27 +465,50 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
       (aim.pos.y-selfXy.y).float)
     let error = bradError(belief.aimTargetBrads, belief.aimBrads)
     belief.aimErrorBrads = error
+    belief.targetRangePx = distance(aim.pos, selfXy)
+    let nearestSlot = floorMod(pyRound(
+      belief.aimTargetBrads.float / AimStepBrads.float) * AimStepBrads,
+      AimBradsTurn)
+    belief.aimSlotErrorBrads = bradError(belief.aimTargetBrads, nearestSlot)
+    belief.aimLateralErrorPx = belief.targetRangePx * sin(
+      abs(belief.aimSlotErrorBrads).float / AimBradsTurn.float * 2.0 * PI)
     var canFire: bool
     if belief.iHaveArc:
       let range = distance(enemy.get.pos, selfXy)
       if range > ArcIdealRangePx.float and range <= ArcPursuitRangePx.float and not carrying:
         inc belief.sprayPursuitTicks
         mask = (mask and not MovementMask) or octantToward(selfXy, enemy.get.pos, false)
-      canFire = belief.fireReady and belief.sprayContains(aim.pos) and
-        not belief.teammateBlocksShot(enemy.get.pos)
+      let contains = belief.sprayContains(aim.pos)
+      belief.targetRayClear = contains
+      belief.targetTeammateBlocked = belief.teammateBlocksShot(enemy.get.pos)
+      canFire = belief.fireReady and contains and not belief.targetTeammateBlocked
+      belief.fireGateReason = if not belief.fireReady: "cooldown"
+        elif not contains: "arc_alignment"
+        elif belief.targetTeammateBlocked: "teammate"
+        else: "ready"
     else:
-      let otherwise = belief.fireReady and belief.fireGate(aim.pos) and
-        belief.worldmap.rayClear(selfXy, aim.pos)
-      let blocked = otherwise and belief.teammateBlocksShot(aim.pos)
-      if blocked and not state.aHeld: inc belief.friendlyFireSuppressed
-      canFire = otherwise and not blocked
+      let aimAligned = belief.fireGate(aim.pos)
+      belief.targetRayClear = belief.worldmap.rayClear(selfXy, aim.pos)
+      belief.targetTeammateBlocked = belief.teammateBlocksShot(aim.pos)
+      if belief.fireReady and aimAligned and belief.targetRayClear and
+          belief.targetTeammateBlocked and not state.aHeld:
+        inc belief.friendlyFireSuppressed
+      canFire = belief.fireReady and aimAligned and belief.targetRayClear and
+        not belief.targetTeammateBlocked
+      belief.fireGateReason = if not belief.fireReady: "cooldown"
+        elif not aimAligned: "aim_alignment"
+        elif not belief.targetRayClear: "wall"
+        elif belief.targetTeammateBlocked: "teammate"
+        else: "ready"
     if canFire and not state.aHeld:
       if not carrying:
         mask = mask and not MovementMask; state.fireHoldTicks = FireWindupTicks
       mask = mask or ButtonA; state.aHeld = true
+      belief.fireGateReason = "fire"
       if not belief.iHaveArc:
         belief.firefightShotRangeCounts.inc(rangeBucket(distance(enemy.get.pos, selfXy)))
     else:
+      if canFire and state.aHeld: belief.fireGateReason = "release"
       state.aHeld = false
       mask = mask or rotationButton(belief.aimTargetBrads, belief.aimBrads, state)
   else:

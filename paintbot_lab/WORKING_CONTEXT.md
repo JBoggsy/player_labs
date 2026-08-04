@@ -5,12 +5,13 @@ Update as you learn; clear/reseed on a pivot.*
 
 ## Current objective
 
-**Decide whether the mechanics-only constraint can be relaxed for the remaining
-4FFA loss mode.** `stencil:v12` is the accepted upload with full tracing and is
-not submitted to the Paintbot league. It keeps the fixed defensive strategy,
-uses distinct homeward-ranked generated posts, and carries the corrected
-GameVersion 36 five-slot aim controller. Forced-forward post ranking was tested
-and rejected.
+**The fixed-strategy defensive-mechanics search is complete; decide whether to
+relax the strategy constraint.** `stencil:v19` is the accepted upload with full
+tracing and is not submitted to the Paintbot league. It keeps v12/v13 gameplay:
+distinct homeward-ranked generated posts, the corrected GameVersion 36
+five-slot aim controller, and existing live-threat cover micro. It adds complete
+fire-gate diagnostics, trace-only post sightline axes, and an assignment overlay
+in the navigation viewer. Five follow-up mechanics candidates were rejected.
 
 Fast local path: `tools/self_play.py` runs native `coworld-ctf`, enables
 Sprite-v1 ready pacing, rotates candidate teams, supports candidate-only env
@@ -28,8 +29,8 @@ Next concrete steps:
 1. Human decision: preserve the fixed strategy and accept that it cannot stop
    one opponent capturing another opponent's heart, or reopen third-party FFA
    positioning/targeting as a strategy change.
-2. If strategy remains fixed, use v12 as the mechanics baseline; its final
-   locked probes won both 4FFA small-plus and 2v2 standard-sides.
+2. If strategy remains fixed, use v19 as the fully observable mechanics
+   baseline; its gameplay is identical to v12/v13.
 3. League submission remains human-gated.
 
 ## Facts worth carrying forward (verified 2026-08-04)
@@ -64,15 +65,17 @@ Next concrete steps:
 
 ## Open threads
 
-- `stencil:v12` (`5889dc2e-170a-4082-8f52-b149333d552a`) is the current upload,
+- `stencil:v19` (`e1b5dfa1-6755-4c4f-99ac-1582dfceec94`) is the current upload,
   with full artifact tracing and **not submitted**. It is v9's accepted gameplay
-  plus trace-only post heart-distance/forwardness fields. Against the natural
+  plus complete fire-gate and post-geometry diagnostics. Against the natural
   top-policy 4FFA field, the v9 aim behavior improved replay hit rate from
   20.9% to 51.5% and kills/episode from 4.63 to 11.13 versus v7. Every one of
   nine observed own-heart thefts was recovered. A six-map locked 4FFA A/B
   rejected v11's forced-forward selector (56 to 23 kills; 54.7% to 43.9% hit
-  rate) and restored v9's homeward selection in v12. Final v12 probes won +4
-  on small-plus seed 202 and +2 on standard-sides seed 808. Full report:
+  rate) and restored v9's homeward selection in v12. A fresh replicated
+  18-episode field then rejected alignment strafe, exact 14 px fire gating,
+  paired-post ducking, home-banded score ranking, and generated-axis sweeping;
+  none improved defender outcomes. Full report:
   `docs/reports/stencil-defensive-mechanics-2026-08-04.md`.
 - **Commander prompt** (new, campaign-specific): each player steers its LLM
   strategist with a private standing-orders prompt — a cheap, high-leverage

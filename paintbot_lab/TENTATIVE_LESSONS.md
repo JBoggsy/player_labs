@@ -59,3 +59,21 @@ Evidence: in the locked 4FFA matrix Stencil returned every observed theft of
 its own heart yet still lost games when one opponent captured another
 opponent's heart. An all-map draw-or-win target therefore crosses from local
 defensive mechanics into third-party FFA strategy.
+
+### Trace the complete fire gate before changing movement or aim tolerance
+Evidence: per-tick cooldown/alignment/wall/teammate reasons showed alignment as
+the dominant visible-target blocker, but both alignment strafe and the exact
+14 px collision corridor failed replicated defender outcomes. A dominant gate
+counter identifies where time is spent, not which intervention will help.
+
+### A promising six-episode mechanics screen must be replicated
+Evidence: v14 improved from 1 win / 4 draws / 1 loss to 1 win / 5 draws in its
+six-map screen, then fell from 3 to 1 wins in the 18-episode-per-arm replication
+and reduced defender kills from 6.44 to 5.06 per episode.
+
+### Keep generated navigation knowledge and runtime use separately visible
+Evidence: post generation scored a route-waypoint sightline axis while runtime
+swept toward the distant pedestal; the axes differed by mean 23.2 degrees and
+up to 90 degrees. Using the generated axis still regressed defender kills, so
+the viewer now overlays it as trace-only knowledge rather than implying it is
+the accepted runtime action.

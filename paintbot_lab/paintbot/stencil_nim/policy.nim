@@ -59,6 +59,7 @@ proc decide*(policy: StencilPolicy, client: ProtocolClient): Command =
     policy.belief.holdPoint = none(Point)
     policy.belief.defensivePost = none(Point)
     policy.belief.defensivePostDuck = none(Point)
+    policy.belief.defensivePostSightlineAim = none(Point)
     policy.belief.defensivePostOpponent = none(Team)
     policy.belief.defensivePostScore = 0.0
     policy.belief.defensivePostHeartDistance = 0
@@ -74,6 +75,9 @@ proc decide*(policy: StencilPolicy, client: ProtocolClient): Command =
         policy.belief.holdPoint = some(selected.post.pos)
         policy.belief.defensivePost = some(selected.post.pos)
         policy.belief.defensivePostDuck = some(selected.post.duck)
+        if selected.post.rayEnds.len > 0:
+          policy.belief.defensivePostSightlineAim = some(
+            selected.post.rayEnds[selected.post.rayEnds.len div 2])
         policy.belief.defensivePostOpponent = some(selected.opponent)
         policy.belief.defensivePostScore = selected.post.score
         let
