@@ -44,7 +44,7 @@ proc decide*(policy: StencilPolicy, client: ProtocolClient): Command =
     if policy.belief.worldmap.isNil or policy.belief.worldmap.signature != signature:
       policy.belief.worldmap = newWorldMap(
         percept.walkability, percept.walkabilityWidth, percept.walkabilityHeight,
-        percept.gameTeams.get, percept.endzones)
+        percept.gameTeams.get, percept.endzones, policy.belief.team)
       policy.rolesAssigned = false
       discard policy.belief.worldmap.routeDistance(
         policy.belief.worldmap.center,

@@ -92,8 +92,39 @@ proc navigationMap(map: WorldMap): JsonNode =
     if map.pedestals.hasKey(color):
       entry["pedestal"] = pointJson(map.pedestals[color])
     teams.add(entry)
+  var fronts = newJArray()
+  for front in map.postFronts:
+    var candidates = newJArray()
+    for candidate in front.candidates:
+      candidates.add(%*{
+        "position": pointJson(candidate.pos),
+        "duck": pointJson(candidate.duck),
+        "score": rounded4(candidate.score),
+        "sightline": rounded4(candidate.sightline),
+        "corridor": rounded4(candidate.corridor),
+        "duck_contrast": rounded4(candidate.duckContrast),
+      })
+    var posts = newJArray()
+    for post in front.posts:
+      var rays = newJArray()
+      for endpoint in post.rayEnds: rays.add(pointJson(endpoint))
+      posts.add(%*{
+        "position": pointJson(post.pos),
+        "duck": pointJson(post.duck),
+        "score": rounded4(post.score),
+        "sightline": rounded4(post.sightline),
+        "corridor": rounded4(post.corridor),
+        "duck_contrast": rounded4(post.duckContrast),
+        "ray_ends": rays,
+      })
+    fronts.add(%*{
+      "team": teamName(front.team),
+      "opponent": teamName(front.opponent),
+      "candidates": candidates,
+      "posts": posts,
+    })
   %*{
-    "schema_version": 1,
+    "schema_version": 2,
     "map": [map.width, map.height],
     "grid": [map.gridW, map.gridH],
     "cell_size": NavCell,
@@ -101,6 +132,7 @@ proc navigationMap(map: WorldMap): JsonNode =
     "walkable_rows": boolRows(map.walkable, map.gridW),
     "cover_rows": boolRows(map.cover, map.gridW),
     "teams": teams,
+    "post_fronts": fronts,
   }
 
 proc navigationFlow(field: CachedRouteField, map: WorldMap): JsonNode =
@@ -125,10 +157,11 @@ proc navMetrics(map: WorldMap): JsonNode =
     "base_ms": map.baseInitMs,
     "erode_ms": map.erodeMs,
     "cover_ms": map.coverMs,
+    "post_ms": map.postMs,
     "dijkstra_count": map.dijkstraMs.len,
     "dijkstra_total_ms": total,
     "dijkstra_max_ms": maximum,
-    "total_ms": map.baseInitMs + total,
+    "total_ms": map.baseInitMs + total + map.postMs,
     "decode_ms": 0.0,
     "map_pixels": map.width * map.height,
     "grid_cells": map.gridW * map.gridH,

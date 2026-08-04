@@ -27,6 +27,15 @@ type
     distances: seq[float],
     hops: seq[uint8]]
 
+  PostCandidate* = object
+    pos*, duck*: Point
+    score*, sightline*, corridor*, duckContrast*: float
+    rayEnds*: seq[Point]
+
+  PostFront* = object
+    team*, opponent*: Team
+    candidates*, posts*: seq[PostCandidate]
+
   WorldMap* = ref object
     width*, height*, teams*: int
     center*: Point
@@ -34,11 +43,16 @@ type
     gridW*, gridH*: int
     walkable*: seq[bool]
     cover*: seq[bool]
+    postFronts*: seq[PostFront]
     endzones*: Table[Team, Endzone]
     pedestals*: Table[Team, Point]
     fields: Table[int, RouteFields]
-    baseInitMs*, erodeMs*, coverMs*: float
+    baseInitMs*, erodeMs*, coverMs*, postMs*: float
     dijkstraMs*: seq[float]
+
+proc fieldsFor(map: WorldMap, goal: Point): RouteFields
+proc homeCenter*(map: WorldMap, color: Team): Point
+proc generatePosts(map: WorldMap, team: Team): seq[PostFront]
 
 proc elapsedMs(started: MonoTime): float =
   (getMonoTime() - started).inNanoseconds.float / 1_000_000.0
@@ -114,7 +128,7 @@ proc coverCells(map: WorldMap): seq[bool] =
 
 proc newWorldMap*(
   pixelWalkable: openArray[bool], width, height, teams: int,
-  markers: Table[Team, EndzoneMarker]
+  markers: Table[Team, EndzoneMarker], team: Team
 ): WorldMap =
   let started = getMonoTime()
   result = WorldMap(
@@ -135,6 +149,11 @@ proc newWorldMap*(
   result.cover = result.coverCells()
   result.coverMs = elapsedMs(coverStarted)
   result.baseInitMs = elapsedMs(started)
+  for index in 0 ..< result.teams:
+    discard result.fieldsFor(result.homeCenter(Team(index)))
+  let postStarted = getMonoTime()
+  result.postFronts = result.generatePosts(team)
+  result.postMs = elapsedMs(postStarted)
 
 proc cellOf*(map: WorldMap, point: Point): Point =
   (clamp(point.x div NavCell, 0, map.gridW - 1),
@@ -266,6 +285,164 @@ proc cachedRouteFields*(map: WorldMap): seq[CachedRouteField] =
       goalCell: (key mod map.gridW, key div map.gridW),
       distances: fields.distances,
       hops: fields.hops))
+
+proc distanceAt(map: WorldMap, point, goal: Point): float =
+  let
+    fields = map.fieldsFor(goal)
+    cell = map.nearestWalkable(map.cellOf(point))
+  fields.distances[map.gridIndex(cell.x, cell.y)] * NavCell.float
+
+proc forwardRayEnds(map: WorldMap, point, goal: Point): tuple[score: float, ends: seq[Point]] =
+  let waypoint = map.flowWaypoint(goal, point)
+  var
+    dx = waypoint.x - point.x
+    dy = waypoint.y - point.y
+  if dx == 0 and dy == 0:
+    dx = goal.x - point.x
+    dy = goal.y - point.y
+  let
+    centerAngle = arctan2(dy.float, dx.float)
+    rayCount = max(3, PostRayCount or 1)
+    halfArc = PostRayHalfArcDeg * PI / 180.0
+  for rayIndex in 0 ..< rayCount:
+    let
+      fraction = rayIndex.float / (rayCount - 1).float
+      angle = centerAngle - halfArc + 2.0 * halfArc * fraction
+      rayDx = cos(angle)
+      rayDy = sin(angle)
+    var last = point
+    var distance = NavCell
+    while distance <= PostGunRangePx:
+      let sample: Point = (
+        pyRound(point.x.float + rayDx * distance.float),
+        pyRound(point.y.float + rayDy * distance.float))
+      if sample.x < 0 or sample.x >= map.width or
+          sample.y < 0 or sample.y >= map.height or
+          map.wall[map.pixelIndex(sample.x, sample.y)]:
+        break
+      last = sample
+      distance += NavCell
+    result.ends.add(last)
+    result.score += min(hypot((last.x - point.x).float,
+      (last.y - point.y).float) / PostGunRangePx.float, 1.0)
+  result.score /= rayCount.float
+
+proc duckFor(map: WorldMap, candidate: PostCandidate): tuple[pos: Point, contrast: float] =
+  let cell = map.cellOf(candidate.pos)
+  var threatEnds: seq[Point]
+  if candidate.rayEnds.len > 0:
+    for index in [0, candidate.rayEnds.len div 2, candidate.rayEnds.high]:
+      if candidate.rayEnds[index] notin threatEnds:
+        threatEnds.add(candidate.rayEnds[index])
+  result.pos = candidate.pos
+  var bestUtility = 0.0
+  for dy in -PostDuckSearchCells .. PostDuckSearchCells:
+    for dx in -PostDuckSearchCells .. PostDuckSearchCells:
+      if dx == 0 and dy == 0:
+        continue
+      if dx != 0 and dy != 0 and abs(dx) != abs(dy):
+        continue
+      let hideCell: Point = (cell.x + dx, cell.y + dy)
+      if hideCell.x < 0 or hideCell.x >= map.gridW or
+          hideCell.y < 0 or hideCell.y >= map.gridH or
+          not map.walkable[map.gridIndex(hideCell.x, hideCell.y)]:
+        continue
+      let hide = cellCenter(hideCell)
+      if not map.walkableSegment(candidate.pos, hide):
+        continue
+      var blocked = 0
+      for endpoint in threatEnds:
+        if endpoint != candidate.pos and
+            not map.rayClear(hide, endpoint, NavCell.float):
+          inc blocked
+      let
+        contrast = blocked.float / max(threatEnds.len, 1).float
+        travel = hypot(dx.float, dy.float) /
+          max(PostDuckSearchCells.float * sqrt(2.0), 1.0)
+        utility = contrast - 0.15 * travel
+      if utility > bestUtility:
+        bestUtility = utility
+        result = (hide, contrast)
+
+proc generateFront(map: WorldMap, team, opponent: Team): PostFront =
+  result.team = team
+  result.opponent = opponent
+  let
+    home = map.homeCenter(team)
+    enemyHome = map.homeCenter(opponent)
+    direct = map.distanceAt(enemyHome, home)
+    stride = max(PostCandidateStrideCells, 1)
+  var buckets = newSeq[seq[PostCandidate]](PostProgressBuckets)
+  if classify(direct) == fcInf:
+    return
+  for gy in 0 ..< map.gridH:
+    for gx in 0 ..< map.gridW:
+      let index = map.gridIndex(gx, gy)
+      if not map.cover[index] or (gx + gy) mod stride != 0:
+        continue
+      let
+        point = cellCenter((gx, gy))
+        fromHome = map.distanceAt(point, home)
+        toEnemy = map.distanceAt(point, enemyHome)
+        via = fromHome + toEnemy
+        detour = max(0.0, via - direct)
+      if classify(via) == fcInf or detour > PostCorridorPx.float * 3.0:
+        continue
+      let corridor = exp(-detour / max(PostCorridorPx.float, 1.0))
+      let bucket = clamp(int(fromHome / direct * PostProgressBuckets.float),
+        0, PostProgressBuckets - 1)
+      buckets[bucket].add(PostCandidate(
+        pos: point, duck: point,
+        score: corridor, corridor: corridor))
+  for bucket in buckets.mitems:
+    bucket.sort(proc(a, b: PostCandidate): int = cmp(b.corridor, a.corridor))
+    var retained: seq[PostCandidate]
+    for candidate in bucket:
+      var separated = true
+      for previous in retained:
+        if hypot((candidate.pos.x - previous.pos.x).float,
+            (candidate.pos.y - previous.pos.y).float) <
+            PostRayCandidateSeparationPx.float:
+          separated = false
+          break
+      if separated:
+        retained.add(candidate)
+        result.candidates.add(candidate)
+        if retained.len >= PostRayCandidatesPerBucket:
+          break
+  for candidate in result.candidates.mitems:
+    let rays = map.forwardRayEnds(candidate.pos, enemyHome)
+    candidate.rayEnds = rays.ends
+    candidate.sightline = rays.score
+    candidate.score = 0.8 * candidate.sightline + 0.2 * candidate.corridor
+  result.candidates.sort(proc(a, b: PostCandidate): int = cmp(b.score, a.score))
+  if result.candidates.len > PostShortlistCount:
+    result.candidates.setLen(PostShortlistCount)
+  for candidate in result.candidates.mitems:
+    let duck = map.duckFor(candidate)
+    candidate.duck = duck.pos
+    candidate.duckContrast = duck.contrast
+    candidate.score = 0.65 * candidate.sightline +
+      0.20 * candidate.corridor + 0.15 * candidate.duckContrast
+  result.candidates.sort(proc(a, b: PostCandidate): int = cmp(b.score, a.score))
+  for candidate in result.candidates:
+    if candidate.duck == candidate.pos:
+      continue
+    var separated = true
+    for selected in result.posts:
+      if hypot((candidate.pos.x - selected.pos.x).float,
+          (candidate.pos.y - selected.pos.y).float) < PostSeparationPx.float:
+        separated = false
+        break
+    if separated:
+      result.posts.add(candidate)
+      if result.posts.len >= PostCount:
+        break
+
+proc generatePosts(map: WorldMap, team: Team): seq[PostFront] =
+  for opponentIndex in 0 ..< map.teams:
+    if Team(opponentIndex) != team:
+      result.add(map.generateFront(team, Team(opponentIndex)))
 
 proc nearestCover*(map: WorldMap, point: Point, maxCells = 6): Option[Point] =
   let cell = map.cellOf(point)

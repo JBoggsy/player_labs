@@ -12,9 +12,9 @@ This README orients newcomers (human or agent). Two pointers do most of the work
 - **[`../README.md`](../README.md)** — lab-wide setup (`uv sync` / Observatory
   auth) and the ground rules.
 
-> **Status: first hosted probes complete 2026-08-04.** `stencil:v1` (a beacon
-> fork with online per-episode navigation) is uploaded with full tracing and
-> validated across all competitive variants, but **not submitted**. The live
+> **Status: online post knowledge hosted-validated 2026-08-04.** `stencil:v5`
+> (a beacon fork with online per-episode navigation) is uploaded with full
+> tracing and validated across five pinned generated maps, but **not submitted**. The live
 > Paintbot league runs the **campaign (territory)
 > round brain, not a ladder**: an LLM commander per player invades cells on a
 > 10x10 board where **each cell permanently owns a map** (pinned terrain seed +
@@ -84,9 +84,9 @@ The player lives at [`paintbot/stencil_nim/`](paintbot/stencil_nim/): a
 deterministic native Nim Sprite-v1 cyborg descended from ctf_lab's beacon. The
 defining difference from beacon: **no offline map bake** — an episode-scoped `WorldMap`
 (`worldmap.nim`) is built online from the walkability sprite + wire markers
-(nav grid, cover, lazy Dijkstra flow fields, derived chokes/rallies/spawn-aim),
-and everything map-shaped that beacon hand-authored (POIs, battle plans, posts)
-is scrapped. Multi-team support: color lock from the self sprite, per-color
+(nav grid, cover, lazy Dijkstra flow fields, derived chokes/rallies/spawn-aim,
+and per-opponent firing/duck posts). Beacon's authored POIs and battle plans
+remain scrapped. Multi-team support: color lock from the self sprite, per-color
 hearts with retirement tracking, steal target = nearest live enemy heart, and
 the convert trigger generalized to the weakest enemy team.
 
@@ -136,7 +136,7 @@ uv run python paintbot_lab/tools/self_play.py \
   --variant 1v1 --map-size giant --episodes 20 --workers 8 \
   --max-ticks 40 --profile-nav-init
 
-# Capture the exact nav grid, cover, anchors, and lazy flow fields, then view them.
+# Capture the exact nav grid, cover, posts, anchors, and lazy flow fields, then view them.
 uv run python paintbot_lab/tools/self_play.py \
   --variant 1v1 --episodes 1 --max-ticks 40 --visualize-nav
 uv run python paintbot_lab/tools/render_nav.py \
@@ -148,6 +148,9 @@ payload. The trace contains `navigation_map` once per map and a
 `navigation_flow` event whenever the policy lazily computes a new Dijkstra
 goal. `render_nav.py` accepts either that JSONL trace or a hosted player artifact
 ZIP and writes a standalone HTML viewer with toggles and per-cell inspection.
+Post-front selection overlays the bounded candidates, selected firing cells,
+nearby duck cells, score components, and forward firing rays actually computed
+by that team-colored agent.
 The opt-in keeps routine multi-seat telemetry from duplicating large grids.
 
 The harness uses `~/coding/coworlds/coworld-ctf` only as a source clone: it

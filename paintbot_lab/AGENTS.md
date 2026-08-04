@@ -9,9 +9,9 @@ game-agnostic skills. This file is the **Paintbot-specific layer**: the game,
 the docs, the practices, and the policy we optimize. When the two disagree, the
 root defines *process*; this file defines *Paintbot*.
 
-> **Lab status (2026-08-04): first hosted probes complete.** `stencil:v1`
+> **Lab status (2026-08-04): online post knowledge added.** `stencil:v5`
 > (native Nim, [`paintbot/stencil_nim/`](paintbot/stencil_nim/)) is uploaded
-> with full tracing and hosted-validated across all competitive variants, but
+> with full tracing and hosted-validated across five pinned generated maps, but
 > **not submitted**. The game repo is the SAME clone as CTF's
 > (`~/coding/coworlds/coworld-ctf` — paintbot is a second manifest over the
 > same binary). Deployed paintbot **0.7.183** currently; the league
@@ -94,8 +94,10 @@ danger, hearing, chat, per-color hearts (with retirement + steal-target
 choice); `strategy` runs the ladder (carry-home > intercept-thief >
 escort-carrier > grenade-clear > items > convert-hunt > role split);
 `action` emits the mask (lighthouse sweep, snap/lead aim, fire gate,
-friendly-fire guard, peek-fire-duck, grenade overlay). Deliberately **cut from
-v1**: posts, battle plans, POIs, anti-turtle (all fixed-arena machinery).
+friendly-fire guard, peek-fire-duck, grenade overlay). The post-v1 WorldMap
+derives per-opponent firing/duck post candidates from online geometry;
+behavior does not consume them yet. Battle plans, general POIs, and
+anti-turtle remain cut.
 
 Key invariants to respect when editing:
 
@@ -150,7 +152,7 @@ Paintbot-specific parked work lives in the shared [`../TODO.md`](../TODO.md).
 
 - **stencil** *(native Nim)* — at
   [`paintbot/stencil_nim/`](paintbot/stencil_nim/), the primary (only) Paintbot
-  policy. **Current: `stencil:v1` uploaded, hosted-validated, not submitted**.
+  policy. **Current: `stencil:v5` uploaded, hosted-validated, not submitted**.
   Version
   history: [`paintbot/stencil_nim/VERSION_LOG.md`](paintbot/stencil_nim/VERSION_LOG.md).
   Behavior knobs are `STENCIL_*` env vars declared in `config.nim` and set at

@@ -97,6 +97,10 @@ const
   ArcMaxWidthPx* = 85
   ArcPursuitRangePx* = 400
   ArcIdealRangePx* = 100
+  PostGunRangePx* = 1300
+  PostProgressBuckets* = 12
+  PostRayCandidatesPerBucket* = 6
+  PostRayCandidateSeparationPx* = 32
 
 let
   SweepHalfArc* = envInt("STENCIL_SWEEP_HALF_ARC", 32)
@@ -193,6 +197,14 @@ let
   SquadCommand* = envBool("STENCIL_SQUAD_COMMAND", false)
   ChokeFraction* = envFloat("STENCIL_CHOKE_FRACTION", 0.45)
   RallyFraction* = envFloat("STENCIL_RALLY_FRACTION", 0.65)
+  PostCorridorPx* = envInt("STENCIL_POST_CORRIDOR_PX", 240)
+  PostCandidateStrideCells* = envInt("STENCIL_POST_CANDIDATE_STRIDE_CELLS", 2)
+  PostRayCount* = envInt("STENCIL_POST_RAY_COUNT", 9)
+  PostRayHalfArcDeg* = envFloat("STENCIL_POST_RAY_HALF_ARC_DEG", 60.0)
+  PostShortlistCount* = envInt("STENCIL_POST_SHORTLIST_COUNT", 16)
+  PostDuckSearchCells* = envInt("STENCIL_POST_DUCK_SEARCH_CELLS", 3)
+  PostCount* = envInt("STENCIL_POST_COUNT", 6)
+  PostSeparationPx* = envInt("STENCIL_POST_SEPARATION_PX", 120)
   ConvertEnemyLives* = envInt("STENCIL_CONVERT_ENEMY_LIVES", 6)
   OrderTtlTicks* = envInt("STENCIL_ORDER_TTL_TICKS", 240)
   OrderRebroadcastTicks* = envInt("STENCIL_ORDER_REBROADCAST_TICKS", 72)

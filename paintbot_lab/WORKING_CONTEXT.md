@@ -5,10 +5,10 @@ Update as you learn; clear/reseed on a pivot.*
 
 ## Current objective
 
-**Review `stencil:v1`'s first hosted navigation maps, then choose the first
-competitive evaluation.** v1 is uploaded with full tracing but is not submitted
-to the Paintbot league. Its upload/runtime and online navigation construction
-now work across every competitive variant.
+**Review `stencil:v5`'s generated firing/duck posts, then decide whether to tune
+the metric or wire posts into one behavior.** v5 is uploaded with full tracing
+but is not submitted to the Paintbot league. Post knowledge is diagnostic only:
+no role, objective, or movement behavior consumes it yet.
 
 Fast local path: `tools/self_play.py` runs native `coworld-ctf`, enables
 Sprite-v1 ready pacing, rotates candidate teams, supports candidate-only env
@@ -23,11 +23,12 @@ ticks/s.
 
 Next concrete steps:
 
-1. Review the four hosted nav viewers with James, especially whether the
-   derived choke/rally anchors match the terrain.
-2. Human-led choice of the first competitive field-eval shape.
-3. Run that eval, stream artifacts, and diagnose win paths before any behavior
-   change. League submission remains human-gated.
+1. Review the five pinned-map post viewers with James, including each
+   per-opponent front in the four-team maps.
+2. Human-led choice: tune the static post metric, or make one defender behavior
+   consume it with activation tracing.
+3. Run a matched hosted evaluation for that one behavioral change. League
+   submission remains human-gated.
 
 ## Facts worth carrying forward (verified 2026-08-04)
 
@@ -60,12 +61,14 @@ Next concrete steps:
 
 ## Open threads
 
-- `stencil:v1` (`8af80cb6-022a-4d1b-b1eb-dfb08374b826`) is uploaded with full
-  artifact tracing and **not submitted**. Four bounded hosted XP probes
-  (`default`, `2v2`, `4ffa`, `4ffa8`) all completed on 0.7.183 with telemetry
-  from every seat, validating the upload/runtime, retained Sprite-v1 stream,
-  map construction, and artifact delivery boundaries. The Nim replay oracle
-  separately matched all **169,235** captured decisions exactly.
+- `stencil:v5` (`6f571639-7a5b-42b7-bf2e-113be8377602`) is the current upload,
+  with full artifact tracing and **not submitted**. It adds online, own-team,
+  per-opponent firing/duck post knowledge. Five pinned hosted probes (small and
+  large sides; standard corners; huge plus; giant corners) completed on
+  0.7.183 with zero failures. The final post pass measured 20 ms / 109 ms /
+  164 ms / 1.16 s / 2.78 s respectively. `stencil:v1` remains the accepted
+  bootstrap/parity baseline; the Nim replay oracle matched **169,235** captured
+  decisions exactly.
 - **Commander prompt** (new, campaign-specific): each player steers its LLM
   strategist with a private standing-orders prompt — a cheap, high-leverage
   competitive axis independent of the policy image. Needs a first draft when
@@ -83,14 +86,15 @@ Next concrete steps:
   `docs/reports/nav-init-profile-2026-08-03.md`.
 - Navigation knowledge is now directly inspectable: `self_play.py
   --visualize-nav` enables the opt-in `STENCIL_TRACE_NAVIGATION=1` payload, and
-  `tools/render_nav.py` renders its walkability, cover, tactical anchors, and
-  cached distance/next-hop fields from either JSONL or a hosted artifact ZIP.
+  `tools/render_nav.py` renders its walkability, cover, tactical anchors,
+  per-front post scores/fire rays/duck pairs, and cached distance/next-hop
+  fields from either JSONL or a hosted artifact ZIP.
   Validated locally on 0.7.182 / `3151a47`, then hosted across all competitive
   variants on 0.7.183 / `95bb768`.
 - Choke/rally fractions (`STENCIL_CHOKE_FRACTION` 0.45 / `RALLY_FRACTION`
   0.65) are educated guesses, not tuned.
-- v1 scope cuts to revisit if evals demand: posts, item-spawn seeding from
-  layout rules, third-party FFA reasoning (relevant: ffa4 battles have a
+- Remaining v1 scope cuts to revisit if evals demand: item-spawn seeding from
+  layout rules, battle plans, and third-party FFA reasoning (relevant: ffa4 battles have a
   defender + recruits — "which team is the real enemy" now has an answer).
 - Consider whether the mirrored beacon entrant should be retired once stencil
   is submitted (human call; `coworld-player-swap` if identity matters).

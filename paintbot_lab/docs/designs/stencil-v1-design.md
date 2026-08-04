@@ -51,6 +51,17 @@ Derived anchors replace authored ones: `CHOKE_X` → `choke_point(color)`
 `past_rally` (65% projection), `BASE_FRONT_X` → `inside_base(color, margin)`,
 `PEDESTAL` → learned pedestals, POIs/plans → gone.
 
+### Post-v1 addendum: generated post knowledge
+
+`stencil:v5` reintroduces posts without restoring fixed-map data. Each agent
+generates only its own team's front against each live opponent. Cover cells
+near the opponent→home shortest-route corridor are bucketed by route progress;
+a bounded, spatially distributed subset is scored with nine forward firing
+rays. The final score combines firing-line depth, corridor relevance, and the
+contrast to a nearby reachable duck cell. Six spatially separated posts per
+front are retained when enough valid pairs exist. The knowledge is traced and
+visualized but no behavior consumes it yet.
+
 ## Multi-team generalization
 
 - `Team` is a color token; active colors = wire-stated prefix of
@@ -91,17 +102,18 @@ Notable default flips vs beacon: `FIREFIGHT`/`FOCUS_CLAIMS` default **ON**
 ## Performance envelope
 
 The one-time WorldMap build is the only heavy step: native summed-area erosion,
-cover extraction, and lazy Dijkstra over the largest grid (giant 2-team,
-~402x215 = ~86k cells). The measured giant-map p95 was 419 ms under 16-process
-contention; per-tick work is label scans, constant-time lookups, and occasional
-A*. The native websocket loop has no keepalive timeout that can interrupt a
-slow first frame.
+cover extraction, lazy Dijkstra, and post generation over the largest grid.
+The pre-post measured giant-map p95 was 419 ms under 16-process contention.
+The final hosted v5 post pass added 20 ms small, 109 ms large, 164 ms standard
+four-team, 1.16 s huge, and 2.78 s giant on representative slots. It runs once
+inside the normal five-second start countdown; per-tick work remains label
+scans, constant-time lookups, and occasional A*.
 
 ## Risks / open questions
 
-- **Seats-per-team inference** (teams + width≥2000 → 8) is a heuristic. The
-  `1v1` duel now exists and intentionally degrades through this approximation;
-  the wire still states no muster.
+- **Seats-per-team inference** grows conservatively from observed identity
+  badges because the wire still states no muster. Low-index seats cannot know
+  4-vs-8 muster until they observe a sufficiently high identity.
 - **Item discovery** starts blind — early-game fetches only happen after
   sightings. If evals show med-kit latency mattering, seed guesses from the
   RULES layout rules per shape.

@@ -4,6 +4,66 @@ Read this before assuming what a version contains. Format mirrors
 `ctf_lab/ctf/beacon/VERSION_LOG.md`: one entry per uploaded version — what
 changed, why, and what the evidence said.
 
+## v5 — generated own-team post knowledge, uploaded 2026-08-04
+
+Immutable policy-version UUID: `6f571639-7a5b-42b7-bf2e-113be8377602`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Generates post knowledge online from the episode `WorldMap`; no fixed map
+  coordinates or authored POIs return.
+- For each opponent front belonging to the agent's own team, finds cover near
+  the opponent→home shortest-route corridor, distributes candidates across 12
+  route-progress buckets, scores nine forward firing rays, pairs the firing
+  cell with a nearby reachable duck cell, and retains up to six posts with
+  120px spatial separation.
+- `navigation_map` schema v2 traces each candidate's combined, sightline,
+  corridor, and duck-contrast scores plus selected firing rays and duck cells.
+  `tools/render_nav.py` adds a front selector, candidate heat, post labels,
+  firing rays, duck links, and hover score inspection.
+- Diagnostic only: no gameplay behavior consumes posts in v5.
+
+Five pinned-seed hosted probes on canonical Paintbot 0.7.183 all completed
+with zero failed episodes:
+
+| map | XP request | grid | fronts / posts | post pass |
+|---|---|---:|---:|---:|
+| small sides, seed 101 | `xreq_4c5e4d79-b248-4cbc-8f95-bc7ee428f283` | 131x70 | 1 / 3 | 20.3 ms |
+| large sides, seed 202 | `xreq_381f0f56-5fa7-4a81-b9f9-ba7e6ea25a13` | 200x107 | 1 / 4 | 109.0 ms |
+| standard corners, seed 303 | `xreq_79e63a93-e2d2-4770-93b8-0023740c5a14` | 120x120 | 3 / 10 | 164.0 ms |
+| huge plus, seed 404 | `xreq_e600af70-768a-4d63-948f-379bc9fb5442` | 216x216 | 3 / 15 | 1,157.9 ms |
+| giant corners, seed 505 | `xreq_8d02bb4b-29fe-45aa-acf1-911fe083c676` | 312x312 | 3 / 17 | 2,775.6 ms |
+
+The artifact downloader exhausted each otherwise-complete episode because the
+separate results artifact and policy-log listing were unavailable, but the
+requested navigation ZIPs were present for 2/2, 2/2, 16/16, 16/16, and 15/16
+seats respectively; representative traces rendered successfully.
+
+## v4 — bounded duck-ray probe, uploaded then rejected 2026-08-04
+
+Immutable policy-version UUID: `88ccf5d1-45e0-4e59-b257-19b3fa41167f`.
+Reduced duck contrast from all nine rays to left/center/right threat rays and
+24 shortlisted candidates. Hosted post time improved to 43 ms small, 220 ms
+large, 687 ms standard, 4.87 s huge, and 14.0 s giant. Rejected because every
+agent still computed all 12 four-team fronts. Never submitted.
+
+## v3 — route-progress candidate bound, uploaded then rejected 2026-08-04
+
+Immutable policy-version UUID: `69d03cb3-cfe2-4a7f-a35b-f88b4e59c75d`.
+Bucketed corridor cover by route progress before exact firing-ray evaluation.
+This fixed two-team maps but left exact duck testing combinatorial: hosted post
+time was 129 ms small, 357 ms large, 1.46 s standard, 18.7 s huge, and 23.9 s
+giant. Never submitted.
+
+## v2 — unbounded post-metric probe, uploaded then rejected 2026-08-04
+
+Immutable policy-version UUID: `1ab24204-1582-4cc9-9fdd-26a61432c3f8`.
+First complete implementation of the agreed firing/duck metric and viewer.
+Hosted tracing exposed the scaling failure: every corridor cover cell was
+ray-scored before shortlisting, costing 818 ms standard, 3.72 s huge, and
+29.6 s giant. Kept only as diagnostic evidence; never submitted.
+
 ## v1 — bootstrap + navigation diagnostics, uploaded 2026-08-04
 
 Immutable policy-version UUID: `8af80cb6-022a-4d1b-b1eb-dfb08374b826`.

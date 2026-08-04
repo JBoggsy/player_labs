@@ -58,12 +58,16 @@ canvas {{ background:#0b0e11; box-shadow:0 2px 16px #0008; image-rendering:pixel
 </style></head><body><aside><h1>Stencil navigation knowledge</h1>
 <div id="summary"></div>
 <label>Flow field<select id="flow"></select></label>
+<label>Post front<select id="front"></select></label>
 <label><input id="distance" type="checkbox" checked> route distance heatmap</label>
 <label><input id="cover" type="checkbox" checked> cover cells</label>
 <label><input id="arrows" type="checkbox" checked> next-hop arrows</label>
 <label><input id="anchors" type="checkbox" checked> tactical anchors</label>
+<label><input id="candidates" type="checkbox" checked> post candidates</label>
+<label><input id="posts" type="checkbox" checked> selected posts + firing rays</label>
 <div class="legend"><span class="swatch" style="background:#d9d4c7"></span>walkable<br>
 <span class="swatch" style="background:#49c6e5"></span>cover<br>
+<span class="swatch" style="background:#ff6b6b"></span>post score: red low → green high<br>
 Distance: dark near goal → orange far away</div><div id="tip"></div></aside>
 <main><canvas id="map"></canvas></main><script>
 const data={payload}; const [gw,gh]=data.grid, [mw,mh]=data.map, cell=data.cell_size;
@@ -71,6 +75,7 @@ const canvas=document.querySelector('#map'), ctx=canvas.getContext('2d');
 const scale=Math.min(8,1200/gw,850/gh);
 canvas.width=Math.ceil(gw*scale); canvas.height=Math.ceil(gh*scale);
 const flowSelect=document.querySelector('#flow');
+const fronts=data.post_fronts||[], frontSelect=document.querySelector('#front');
 data.flows.forEach((flow,i)=>{{
   const option=document.createElement('option'); option.value=i;
   option.textContent=`${{i+1}}: goal (${{flow.goal[0]}}, ${{flow.goal[1]}})`;
@@ -80,8 +85,18 @@ if(!data.flows.length){{
   const option=document.createElement('option'); option.textContent='none cached';
   flowSelect.append(option);
 }}
+fronts.forEach((front,i)=>{{
+  const option=document.createElement('option'); option.value=i;
+  option.textContent=`${{front.team}} → ${{front.opponent}} (${{front.posts.length}} posts)`;
+  frontSelect.append(option);
+}});
+if(!fronts.length){{
+  const option=document.createElement('option'); option.textContent='none computed';
+  frontSelect.append(option);
+}}
 document.querySelector('#summary').textContent=
-  `${{mw}}×${{mh}} px · ${{gw}}×${{gh}} cells · ${{data.flows.length}} cached goals`;
+  `${{mw}}×${{mh}} px · ${{gw}}×${{gh}} cells · ${{data.flows.length}} cached goals · `+
+  `${{fronts.length}} post fronts`;
 const neighbors=[[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]];
 function checked(id){{ return document.querySelector(id).checked }}
 function draw(){{
@@ -114,6 +129,7 @@ function draw(){{
     }}
   }}
   if(checked('#anchors')) drawAnchors();
+  drawPostKnowledge();
 }}
 function dot(point,color,label){{
   const x=point[0]/cell*scale,y=point[1]/cell*scale;
@@ -136,6 +152,34 @@ function drawAnchors(){{
     if(team.pedestal) dot(team.pedestal,'#fff3bf',team.team+' heart');
   }}
 }}
+function drawPostKnowledge(){{
+  const front=fronts[Number(frontSelect.value)]; if(!front) return;
+  const candidates=front.candidates||[], scores=candidates.map(c=>c.score);
+  const lo=Math.min(...scores), hi=Math.max(...scores), span=Math.max(hi-lo,.0001);
+  if(checked('#candidates')) for(const candidate of candidates){{
+    const t=(candidate.score-lo)/span, x=candidate.position[0]/cell*scale;
+    const y=candidate.position[1]/cell*scale;
+    ctx.fillStyle=`hsl(${{120*t}} 85% 50% / .7)`;
+    ctx.beginPath(); ctx.arc(x,y,Math.max(1.5,scale*.28),0,Math.PI*2); ctx.fill();
+  }}
+  if(!checked('#posts')) return;
+  front.posts.forEach((post,index)=>{{
+    const x=post.position[0]/cell*scale,y=post.position[1]/cell*scale;
+    ctx.strokeStyle='#ffe06666'; ctx.lineWidth=Math.max(.6,scale*.10);
+    for(const endpoint of post.ray_ends||[]){{
+      ctx.beginPath(); ctx.moveTo(x,y);
+      ctx.lineTo(endpoint[0]/cell*scale,endpoint[1]/cell*scale); ctx.stroke();
+    }}
+    const dx=post.duck[0]/cell*scale,dy=post.duck[1]/cell*scale;
+    ctx.strokeStyle='#fff'; ctx.lineWidth=Math.max(1,scale*.16); ctx.setLineDash([3,2]);
+    ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(dx,dy); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='#74c0fc'; ctx.fillRect(dx-2,dy-2,4,4);
+    ctx.fillStyle='#51cf66'; ctx.strokeStyle='#fff';
+    ctx.beginPath(); ctx.arc(x,y,Math.max(3,scale*.6),0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.font='bold 11px system-ui';
+    ctx.fillText(`${{index+1}} · ${{post.score.toFixed(2)}}`,x+6,y-5);
+  }});
+}}
 for(const element of document.querySelectorAll('input,select'))
   element.addEventListener('change',draw);
 canvas.addEventListener('mousemove',event=>{{
@@ -144,11 +188,23 @@ canvas.addEventListener('mousemove',event=>{{
   const y=Math.min(gh-1,Math.floor((event.clientY-rect.top)*canvas.height/rect.height/scale));
   const flow=data.flows[Number(flowSelect.value)], d=flow?.distance_cells[y][x];
   const hop=flow?Number(flow.hop_rows[y][x]):0;
+  const front=fronts[Number(frontSelect.value)]; let candidateText='';
+  if(front){{
+    let nearest=null, nearestDistance=Infinity;
+    for(const candidate of front.candidates||[]){{
+      const dx=candidate.position[0]/cell-x-.5,dy=candidate.position[1]/cell-y-.5;
+      const distance=dx*dx+dy*dy;
+      if(distance<nearestDistance){{ nearest=candidate; nearestDistance=distance }}
+    }}
+    if(nearest&&nearestDistance<=4) candidateText=
+      `\npost score=${{nearest.score.toFixed(3)}} sightline=${{nearest.sightline.toFixed(3)}} `+
+      `corridor=${{nearest.corridor.toFixed(3)}} duck=${{nearest.duck_contrast.toFixed(3)}}`;
+  }}
   document.querySelector('#tip').textContent=
     `cell (${{x}}, ${{y}}) · world (${{x*cell+cell/2}}, ${{y*cell+cell/2}})\n`+
     `walkable=${{data.walkable_rows[y][x]==='1'}} cover=${{data.cover_rows[y][x]==='1'}}\n`+
     `distance=${{d===null||d===undefined?'unreachable':(d*cell).toFixed(1)+' px'}} `+
-    `next-hop=${{hop?neighbors[hop-1]:'none'}}`;
+    `next-hop=${{hop?neighbors[hop-1]:'none'}}${{candidateText}}`;
 }});
 draw();
 </script></body></html>"""
