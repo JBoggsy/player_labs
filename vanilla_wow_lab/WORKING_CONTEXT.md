@@ -55,6 +55,11 @@ Round 144 (`round_6061ea14-fdb6-4ab5-bec2-36085a7f8b6a`) scored **1,357.49**,
 sixth of seven scored entrants; the retained best and rank remain unchanged after three rounds.
 No round-143 or round-144 entrant reached the goal.
 
+Round 145 (`round_97932121-2e61-47b0-8aaa-0eeb27d5774b`) improved v63's retained best to
+**1,834.47**, sixth of nine, but `reached_goal=false`. Round 146
+(`round_5c914794-356e-4433-81f1-31958799a10d`) scored **1,624.98**, sixth in the round.
+The leaderboard retains 1,834.47 and ranks wowborg 8 after five rounds; round 147 is running.
+
 Three independent optimization reads agree on the first attributable change: maintain Druid
 Travel Form (spell 783) during navigation. The owner reference policy activates it, and rank-1
 `wow-walker:v24` casts 783 at startup and again after losing it while moving at roughly
@@ -105,8 +110,12 @@ chunks and 5,673.4 yards. It is 1,031.1 yards shorter than v67 and crosses 15 st
 detection ranges instead of 49 (69% fewer), though nine Centipaar Wasps remain a real risk.
 The next candidate changes the prefix to this one semantic target only.
 
-**Next:** build/upload the direct-dock candidate and run the same hosted evaluation. Add the
-Great Lift state machine only if it reaches the lower dock.
+The direct-dock candidate is uploaded inert as **wowborg:v68**
+(`bb7f59cc-a684-4ab4-b485-7071170502d1`) from source `fa083a6`. Matched hosted request
+`xreq_3864dc6e-0e6f-45bd-8bae-fc9f3529da5a` has artifact streaming enabled.
+
+**Next:** analyze v68's terminal score, death/ghost time, and whether the dock guidepoint
+arrived. Add the Great Lift state machine only if it reaches the lower dock.
 
 ---
 

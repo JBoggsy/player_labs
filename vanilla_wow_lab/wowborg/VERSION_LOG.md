@@ -1,5 +1,19 @@
 # wowborg version log
 
+## v68 - direct Detour route to the Great Lift (2026-08-05)
+
+- Version UUID: `bb7f59cc-a684-4ab4-b485-7071170502d1` (`wowborg:v68`, uploaded inert;
+  not submitted). Built from source `fa083a6` with private tags `strategy=traverse`,
+  `source=fa083a6`, and `experiment=direct-great-lift`; amd64 image manifest
+  `sha256:d4251fcac43969e84393c1052cd42c2d62aedae227d3c99d76f0ac7d2056b0bc`.
+- Changes only the route table to one semantic target: the existing Great Lift lower dock.
+  Exact 0.1.160 Detour continuation reaches it in 13 chunks and 5,673.4 yards. Compared with
+  v67, this is 1,031.1 yards shorter and crosses 15 rather than 49 static hostile detection
+  ranges. Travel Form, combat, recovery, lift behavior, and navigation control are unchanged.
+  Focused strategy checks: 6/6 passed.
+- Matched hosted request: `xreq_3864dc6e-0e6f-45bd-8bae-fc9f3529da5a`. Evaluation is
+  pending/running with artifact streaming enabled.
+
 ## v67 - bypass the observed southern mob corridors (2026-08-05)
 
 - Version UUID: `a59a5117-1678-4c80-894d-c44a180c4052` (`wowborg:v67`, uploaded inert;
@@ -101,6 +115,15 @@
   The leaderboard retains 1,776.98 and rank 7 after three rounds. Round-result ID:
   `rres_29a8de20-c032-4819-866a-4f96dd5448e9`; replay job:
   `14d24b45-89cb-42e4-8455-490adf2f6280`.
+- Round 145 (`round_97932121-2e61-47b0-8aaa-0eeb27d5774b`) completed with a new retained
+  best of **1,834.47** (`world_x=-7352.53`, `reached_goal=false`), sixth of nine. Round-result
+  ID: `rres_66f89a96-6599-4750-90ed-4b35ccd6c3b1`; replay job:
+  `fb41c199-140a-4729-8ccd-501ead206ebc`.
+- Round 146 (`round_5c914794-356e-4433-81f1-31958799a10d`) scored **1,624.98**
+  (`world_x=-7562.02`, `reached_goal=false`), sixth in the round. The leaderboard retains
+  1,834.47 and places wowborg rank 8 after five rounds. Round-result ID:
+  `rres_d35a7fb5-b394-4d6a-93db-4f071921b19b`; replay job:
+  `a5c374eb-0eae-472f-b5f0-2769dd9656c1`. Round 147 is running.
 
 ## v62 - Traverse strategy boundary and northbound frontier objective (2026-08-05)
 
