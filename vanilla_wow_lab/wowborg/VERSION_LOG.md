@@ -1,5 +1,18 @@
 # wowborg version log
 
+## v65 - follow the semantic Traverse route to the Great Lift (2026-08-05)
+
+- Version UUID: `f1c58c43-9a1c-402b-98d8-b1ced0074ddc` (`wowborg:v65`, uploaded inert;
+  not submitted). Built from source commit `b2e58e4` with private tags
+  `strategy=traverse`, `source=b2e58e4`, and `experiment=semantic-route-prefix`.
+- Adds only the current owner policy's 23-guidepoint smooth Tanaris/Thousand Needles route
+  prefix through the Great Lift lower dock. Travel Form, combat, recovery, and the adaptive
+  northbound fallback remain unchanged from v64. Each guidepoint activation and arrival is
+  traced; route failure abandons the prefix and restores the existing fallback.
+- Local image manifest:
+  `sha256:8459bf415324f5e4d0c39dedbe1ce5739318adaa0190d07babfa3710a1682f31`.
+  Full focused suite: 72/72 tests passed.
+
 ## v64 - maintain Travel Form before Traverse frontiers (2026-08-05)
 
 - Version UUID: `b7a35d49-d39c-4cd8-aa06-d6562d0f4037` (`wowborg:v64`, uploaded inert;
