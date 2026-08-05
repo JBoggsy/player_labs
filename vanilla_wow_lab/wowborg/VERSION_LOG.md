@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v66 - semantic Traverse route with the image default command (2026-08-05)
+
+- Version UUID: `415de479-47fe-4bd0-877a-1238a29ebd96` (`wowborg:v66`, uploaded inert;
+  not submitted). It is byte-for-byte the v65 image from source `b2e58e4`, uploaded without
+  a command override so the image's working `python3 -m wowborg` command is retained.
+- Matched hosted request: `xreq_288ca227-6bcc-44a9-8a5d-92ca4cb60ca6`. This is the
+  authoritative semantic-route experiment; v65 produced no gameplay evidence.
+
 ## v65 - follow the semantic Traverse route to the Great Lift (2026-08-05)
 
 - Version UUID: `f1c58c43-9a1c-402b-98d8-b1ced0074ddc` (`wowborg:v65`, uploaded inert;
@@ -12,6 +20,13 @@
 - Local image manifest:
   `sha256:8459bf415324f5e4d0c39dedbe1ce5739318adaa0190d07babfa3710a1682f31`.
   Full focused suite: 72/72 tests passed.
+- Packaging failure: its upload metadata overrode the image command with
+  `python -m wowborg.main`. That module defines `main()` but does not invoke it, so the
+  container exited before `player_session_connected`. The first hosted job
+  (`fe82ac3c-0e3f-4810-b17e-16a922026ede`) exhausted the episode deadline with
+  `player did not connect`; its automatic retry showed the same missing policy log. Request
+  `xreq_32a6f4d3-3ba0-48d1-a64d-b460fd6ed3e2` was cancelled. v66 repackages the identical
+  image with its correct default command.
 
 ## v64 - maintain Travel Form before Traverse frontiers (2026-08-05)
 

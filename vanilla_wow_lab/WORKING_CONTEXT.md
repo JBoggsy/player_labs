@@ -68,17 +68,20 @@ faster policy reached the lethal greedy corridor sooner: deaths at 239.0s, 1,339
 2,508.3s. It traveled 11,098 yards yet finished at `world_x=-7446.23`.
 
 The owner repository is current at `a7e26edce`; that commit replaces its own failed greedy
-Traverse frontier with shared semantic world travel. **wowborg:v65**
-(`f1c58c43-9a1c-402b-98d8-b1ced0074ddc`) ports only its 23-edge smooth
+Traverse frontier with shared semantic world travel. **wowborg:v66**
+(`415de479-47fe-4bd0-877a-1238a29ebd96`) ports only its 23-edge smooth
 Tanaris/Thousand Needles prefix through the Great Lift lower dock, retaining the existing
 adaptive fallback. It was built from `b2e58e4`, uploaded inert, and is not submitted; 72 tests
-pass. Exact 0.1.160 Detour measurements show a complete route can cover about 19,431 ground
-yards excluding the lift, or 33:03 at Travel Form speed, leaving almost 12 minutes for
-lift/control/combat.
+pass. v65 contained the same image but incorrectly overrode its working `python3 -m wowborg`
+image command with `python -m wowborg.main`; that module defines but does not invoke `main()`,
+so two hosted jobs never connected. Request `xreq_32a6f4d3-3ba0-48d1-a64d-b460fd6ed3e2`
+was cancelled, and v66 restores the image default command. Exact 0.1.160 Detour measurements
+show a complete route can cover about 19,431 ground yards excluding the lift, or 33:03 at
+Travel Form speed, leaving almost 12 minutes for lift/control/combat.
 
-**Next:** run v65's matched hosted episode. If it reaches the Great Lift lower dock without
-the early deaths, add the owner-proven ordinary-input Great Lift state machine as the next
-isolated capability. v62, v64, and v65 remain unsubmitted.
+**Next:** monitor v66 request `xreq_288ca227-6bcc-44a9-8a5d-92ca4cb60ca6`. If it reaches
+the Great Lift lower dock without the early deaths, add the owner-proven ordinary-input Great
+Lift state machine as the next isolated capability. v62, v64, v65, and v66 remain unsubmitted.
 
 ---
 
