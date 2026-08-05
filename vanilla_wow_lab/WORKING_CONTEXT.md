@@ -48,7 +48,10 @@ northing. Submission `sub_941c5190-13a5-4ca5-93b1-d0bba19d8b19` placed it immedi
 active competing membership `lpm_059413b3-fa38-4c8f-b218-8521406d24a2`. Its first
 official run, round 142 (`round_d1a45aeb-00d6-4fce-bb53-06f066f2ad56`), scored
 **1,776.98 northing**, fifth of seven in the round and sixth on the division leaderboard
-after one round; `reached_goal=false`.
+after one round; `reached_goal=false`. Round 143
+(`round_36c2f641-d101-425b-aa3d-6c2ef7f9db03`) scored **1,308.52**, fifth of eight;
+the retained leaderboard score remains 1,776.98 and wowborg is rank 7 after two rounds.
+No round-143 entrant reached the goal.
 
 Three independent optimization reads agree on the first attributable change: maintain Druid
 Travel Form (spell 783) during navigation. The owner reference policy activates it, and rank-1

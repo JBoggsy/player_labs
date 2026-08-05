@@ -51,7 +51,11 @@
   `lpm_059413b3-fa38-4c8f-b218-8521406d24a2`. Official round 142
   (`round_d1a45aeb-00d6-4fce-bb53-06f066f2ad56`) completed with a valid **1,776.98**
   northing score (`world_x=-7410.02`, `reached_goal=false`), fifth of seven in the round.
-  Its first leaderboard readback is rank 6 after one round.
+  Round 143 (`round_36c2f641-d101-425b-aa3d-6c2ef7f9db03`) completed with **1,308.52**
+  northing (`world_x=-7878.48`, `reached_goal=false`), fifth of eight. The leaderboard
+  retains its 1,776.98 best score and places it rank 7 after two rounds. Round-result ID:
+  `rres_e12c47a3-a88a-4f26-9d0a-91675299e5ba`; replay job:
+  `f91c061b-1ef5-4878-b2a6-50d755d2c131`.
 
 ## v62 - Traverse strategy boundary and northbound frontier objective (2026-08-05)
 
