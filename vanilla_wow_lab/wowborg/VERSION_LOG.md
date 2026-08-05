@@ -12,7 +12,10 @@
   ranges. Travel Form, combat, recovery, lift behavior, and navigation control are unchanged.
   Focused strategy checks: 6/6 passed.
 - Matched hosted request: `xreq_3864dc6e-0e6f-45bd-8bae-fc9f3529da5a`. Evaluation is
-  pending/running with artifact streaming enabled.
+  **cancelled before gameplay** (`running_at` absent; zero completed episodes). The expanded
+  hazard audit found the direct Detour polyline passes 2.3 yards from an active Centipaar
+  Wasp and 11.6 yards from v67's fatal Wasp onset, so running it would knowingly reproduce
+  the lethal corridor. This cancellation provides no gameplay or performance evidence.
 
 ## v67 - bypass the observed southern mob corridors (2026-08-05)
 

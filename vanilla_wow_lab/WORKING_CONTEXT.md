@@ -112,10 +112,14 @@ The next candidate changes the prefix to this one semantic target only.
 
 The direct-dock candidate is uploaded inert as **wowborg:v68**
 (`bb7f59cc-a684-4ab4-b485-7071170502d1`) from source `fa083a6`. Matched hosted request
-`xreq_3864dc6e-0e6f-45bd-8bae-fc9f3529da5a` has artifact streaming enabled.
+`xreq_3864dc6e-0e6f-45bd-8bae-fc9f3529da5a` was cancelled before gameplay after the
+expanded hazard audit found the direct polyline passes 2.3 yards from an active Centipaar
+Wasp and 11.6 yards from v67's fatal Wasp onset. It produced zero completed episodes and no
+performance evidence. A named-coordinate bypass was also rejected after the full spawn
+snapshot exposed six different Wasps and two Workers, including one Wasp 0.34 yards away.
 
-**Next:** analyze v68's terminal score, death/ghost time, and whether the dock guidepoint
-arrived. Add the Great Lift state machine only if it reaches the lower dock.
+**Next:** find an exact route that avoids the full active Centipaar spawn set, then upload
+and evaluate that route. Add the Great Lift state machine only after reaching the lower dock.
 
 ---
 
