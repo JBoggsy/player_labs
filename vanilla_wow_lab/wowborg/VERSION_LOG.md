@@ -1,5 +1,29 @@
 # wowborg version log
 
+## v62 - Traverse strategy boundary and northbound frontier objective (2026-08-05)
+
+- Version UUID: `b2f6f022-90a9-48b2-a5ac-cd37464046ec` (`wowborg:v62`, uploaded inert;
+  not submitted to a league). Built from source commit `683b0af` with private tags
+  `strategy=traverse` and `source=683b0af`.
+- Bakes `WOWBORG_STRATEGY=traverse` into this immutable version. The new strategy registry
+  isolates competition objectives from shared navigation/recovery so later competitions can
+  receive their own one-strategy version without forking the bot.
+- Traverse repeatedly queries the canonical connected local-navmesh graph and chooses the
+  safest untried frontier with greatest Kalimdor world X. Its trace records strategy startup,
+  every frontier activation, authoritative northing gain, route failures, and final goal
+  fraction.
+- Built against certified traverse-wow 0.1.160
+  (`cow_3eca82b6-2ad7-476b-88af-832d1faa666d`, game image
+  `sha256:bc2aec56961cd2d106b4d9d52a7ec63f49517b2421fcef6b5fe168bd33183cdb`).
+  This release publishes the copied Python contract from `/opt/coworld-python`.
+- Local image manifest: `sha256:e51bf00f8c7b3f45ccba5ed4e2a6b01bee6fb0c22256100fbcb20b0f3a09ec00`.
+  Full focused suite: 67/67 tests passed; real amd64 build verified both `/env` and `/player`
+  imports.
+- Targeted hosted request `xreq_9b9bd8b7-45c3-4bf9-af54-d62c0cac6cbb`, episode
+  `ereq_0bae0bd3-2fcc-4942-9475-257aa7e30200`, is pending on the exact 0.1.160
+  `kalimdor-south-to-north` variant. Its resolved roster contains only the v62 UUID above;
+  artifact streaming is active under `/tmp/wowborg-traverse-v62-xreq`.
+
 ## (unnumbered) - typed startup-settlement supervision (2026-08-04, locally proven, NEVER uploaded)
 
 - Preserves the upstream distinction between a submitted action with an observed typed result

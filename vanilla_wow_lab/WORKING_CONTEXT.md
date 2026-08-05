@@ -28,12 +28,16 @@ northing and every frontier activation in the trace.
 - The 0.1.160 image publishes its Python contract from `/opt/coworld-python`, replacing the
   previous `/app` build path. Wowborg's real amd64 image build and `/env` + `/player` import
   verification pass with that layout.
-- The focused wowborg suite passes (67 tests). The candidate is local and has not been
-  uploaded or submitted.
+- The focused wowborg suite passes (67 tests). The candidate is uploaded inert as
+  **wowborg:v62** (`b2f6f022-90a9-48b2-a5ac-cd37464046ec`) and has not been submitted.
 
-**Next:** upload this Traverse-specific version, run a targeted hosted Traverse evaluation,
-then inspect its trace/replay before choosing the next gameplay improvement. League submission
-remains human-gated.
+**Next:** inspect the targeted hosted Traverse evaluation's trace/replay when it completes,
+then choose the next gameplay improvement. League submission remains human-gated.
+
+That evaluation is now pending as `xreq_9b9bd8b7-45c3-4bf9-af54-d62c0cac6cbb`
+(`ereq_0bae0bd3-2fcc-4942-9475-257aa7e30200`); it resolved to v62 on the exact
+`kalimdor-south-to-north` variant, and its artifact watcher writes to
+`/tmp/wowborg-traverse-v62-xreq`.
 
 ---
 
