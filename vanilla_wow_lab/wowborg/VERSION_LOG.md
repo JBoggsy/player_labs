@@ -71,6 +71,11 @@
   retains its 1,776.98 best score and places it rank 7 after two rounds. Round-result ID:
   `rres_e12c47a3-a88a-4f26-9d0a-91675299e5ba`; replay job:
   `f91c061b-1ef5-4878-b2a6-50d755d2c131`.
+- Round 144 (`round_6061ea14-fdb6-4ab5-bec2-36085a7f8b6a`) completed with **1,357.49**
+  northing (`world_x=-7829.51`, `reached_goal=false`), sixth of seven scored entrants.
+  The leaderboard retains 1,776.98 and rank 7 after three rounds. Round-result ID:
+  `rres_29a8de20-c032-4819-866a-4f96dd5448e9`; replay job:
+  `14d24b45-89cb-42e4-8455-490adf2f6280`.
 
 ## v62 - Traverse strategy boundary and northbound frontier objective (2026-08-05)
 

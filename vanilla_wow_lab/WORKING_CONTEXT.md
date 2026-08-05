@@ -51,7 +51,9 @@ official run, round 142 (`round_d1a45aeb-00d6-4fce-bb53-06f066f2ad56`), scored
 after one round; `reached_goal=false`. Round 143
 (`round_36c2f641-d101-425b-aa3d-6c2ef7f9db03`) scored **1,308.52**, fifth of eight;
 the retained leaderboard score remains 1,776.98 and wowborg is rank 7 after two rounds.
-No round-143 entrant reached the goal.
+Round 144 (`round_6061ea14-fdb6-4ab5-bec2-36085a7f8b6a`) scored **1,357.49**,
+sixth of seven scored entrants; the retained best and rank remain unchanged after three rounds.
+No round-143 or round-144 entrant reached the goal.
 
 Three independent optimization reads agree on the first attributable change: maintain Druid
 Travel Form (spell 783) during navigation. The owner reference policy activates it, and rank-1
