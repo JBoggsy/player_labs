@@ -20,6 +20,7 @@ from environment.contract.agent import (
     CastAction,
     MoveAction,
     NoArgumentAction,
+    SpellObservation,
     TextAction,
     WaitAction,
     WorldPoint,
@@ -43,6 +44,17 @@ STALE_FRAME_REJECTIONS = (
     "no AgentFrame is awaiting an action",
     "action submission arrived after the game-wide deadline",
 )
+
+
+def _accept_host_spell_intents() -> None:
+    """Match the host's open spell-intent vocabulary at the JSON trust boundary."""
+    intent_names = SpellObservation.model_fields["intent_names"]
+    intent_names.annotation = list[str]
+    SpellObservation.model_rebuild(force=True)
+    AgentFrame.model_rebuild(force=True)
+
+
+_accept_host_spell_intents()
 
 
 class FrameRefreshingHostedRuntime(HostedSessionRuntime):

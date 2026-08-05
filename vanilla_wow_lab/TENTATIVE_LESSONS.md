@@ -35,6 +35,16 @@ old COPY sources; inspecting the certified image showed the replacement path, af
 same real amd64 build and both contract-surface sanity checks passed.
 Status: candidate — the image is authoritative for packaging layout.
 
+### A game image can package a consumer contract that rejects its own producer output
+
+Evidence: traverse-wow 0.1.160's hosted frame included spell intent labels `threat` and
+`threat_reduction`, but the exact image's `environment.contract.agent.SpellObservation`
+allowed only an older closed Literal set. Wowborg v62 therefore failed before its first frame,
+even though it copied that exact packaged contract. The owner client's adjacent spell model
+already uses `list[str]`, and current upstream main retains the mismatch. Treat an exact image
+pin as necessary provenance, not proof of producer/consumer self-consistency.
+Status: candidate — validate the actual hosted boundary and narrow compatibility at that boundary.
+
 ### Diff the game image's `AgentFrame` JSON schema against the policy image's BEFORE running a hosted retest
 
 Evidence: the retest plan said "run the same wowborg:v59". v59 physically cannot run on

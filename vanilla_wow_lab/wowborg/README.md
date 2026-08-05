@@ -27,6 +27,10 @@ resolution is pinned to the matching owner commit in the root `pyproject.toml`.
   navmesh SDK. If the game advances past a submitted frame, the hosted runtime
   drains any queued typed request errors, consumes the current frame already
   pushed on that `/env` connection, and traces `frame_refresh` before continuing.
+  The Traverse 0.1.160 host can emit open-ended spell intent labels (including
+  `threat` and `threat_reduction`) despite its packaged `AgentFrame` retaining an
+  older closed enum; wowborg widens only that field to the owner client's `list[str]`
+  contract before parsing frames.
 - `main.py` — resets the environment, runs one synchronous strategy, closes the
   session, and uploads evidence.
 - `player_progress.py` — opens the owner-supported `/player` observer channel and

@@ -20,9 +20,11 @@
   Full focused suite: 67/67 tests passed; real amd64 build verified both `/env` and `/player`
   imports.
 - Targeted hosted request `xreq_9b9bd8b7-45c3-4bf9-af54-d62c0cac6cbb`, episode
-  `ereq_0bae0bd3-2fcc-4942-9475-257aa7e30200`, is pending on the exact 0.1.160
-  `kalimdor-south-to-north` variant. Its resolved roster contains only the v62 UUID above;
-  artifact streaming is active under `/tmp/wowborg-traverse-v62-xreq`.
+  `ereq_0bae0bd3-2fcc-4942-9475-257aa7e30200`, failed before the first parsed frame on the
+  exact 0.1.160 `kalimdor-south-to-north` variant. The host emitted spell intents `threat`
+  and `threat_reduction`, which its own packaged closed `AgentFrame` enum rejects. The policy
+  artifact contains the exact `ControlProtocolError`; there are no results or replay. Do not
+  submit v62.
 
 ## (unnumbered) - typed startup-settlement supervision (2026-08-04, locally proven, NEVER uploaded)
 

@@ -28,16 +28,19 @@ northing and every frontier activation in the trace.
 - The 0.1.160 image publishes its Python contract from `/opt/coworld-python`, replacing the
   previous `/app` build path. Wowborg's real amd64 image build and `/env` + `/player` import
   verification pass with that layout.
-- The focused wowborg suite passes (67 tests). The candidate is uploaded inert as
-  **wowborg:v62** (`b2f6f022-90a9-48b2-a5ac-cd37464046ec`) and has not been submitted.
+- The original focused wowborg suite passed (67 tests), but the uploaded inert
+  **wowborg:v62** (`b2f6f022-90a9-48b2-a5ac-cd37464046ec`) failed its hosted canary before
+  parsing the first frame and must not be submitted.
 
-**Next:** inspect the targeted hosted Traverse evaluation's trace/replay when it completes,
-then choose the next gameplay improvement. League submission remains human-gated.
+Hosted request `xreq_9b9bd8b7-45c3-4bf9-af54-d62c0cac6cbb`
+(`ereq_0bae0bd3-2fcc-4942-9475-257aa7e30200`) exposed an owner-contract mismatch: the
+0.1.160 host emits spell intents `threat` and `threat_reduction`, while the exact packaged
+`AgentFrame` has an older closed Literal that rejects them. The adjacent owner client model
+and current producer use an open string vocabulary. A local compatibility candidate widens
+only `SpellObservation.intent_names` to `list[str]`; 68 tests and the real amd64 build pass.
 
-That evaluation is now pending as `xreq_9b9bd8b7-45c3-4bf9-af54-d62c0cac6cbb`
-(`ereq_0bae0bd3-2fcc-4942-9475-257aa7e30200`); it resolved to v62 on the exact
-`kalimdor-south-to-north` variant, and its artifact watcher writes to
-`/tmp/wowborg-traverse-v62-xreq`.
+**Next:** upload the compatibility candidate, prove it starts in a fresh hosted Traverse
+episode, then submit that exact version and monitor qualification. v62 remains unsubmitted.
 
 ---
 

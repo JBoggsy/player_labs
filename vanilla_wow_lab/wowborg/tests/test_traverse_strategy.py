@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+from environment.contract.agent import AgentFrame, SpellObservation
 from player.sdk.navmesh.models import NAV_SEMANTIC_HAZARD
 
+import wowborg.environment  # noqa: F401 - installs host contract compatibility
 from wowborg.strategies import build_strategy
 from wowborg.strategies.traverse import TraverseStrategy, _select_frontier
 
@@ -21,6 +23,23 @@ def node(key: str, *, x: float, distance: float, semantic_flags: int = 0):
 
 def test_registry_builds_traverse_strategy() -> None:
     assert isinstance(build_strategy("traverse"), TraverseStrategy)
+
+
+def test_host_spell_intents_are_open_strings() -> None:
+    required = {
+        name: 1 if name == "spell_id" else True
+        for name, field in SpellObservation.model_fields.items()
+        if field.is_required()
+    }
+    spell = SpellObservation.model_validate(
+        {**required, "intent_names": ["threat", "threat_reduction"]}
+    )
+
+    assert spell.intent_names == ["threat", "threat_reduction"]
+    intent_schema = AgentFrame.model_json_schema()["$defs"]["SpellObservation"][
+        "properties"
+    ]["intent_names"]["items"]
+    assert intent_schema == {"type": "string"}
 
 
 def test_frontier_prefers_farthest_safe_northing() -> None:
