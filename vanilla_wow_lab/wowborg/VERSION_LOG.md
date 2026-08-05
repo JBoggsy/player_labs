@@ -1,5 +1,20 @@
 # wowborg version log
 
+## v67 - bypass the observed southern mob corridors (2026-08-05)
+
+- Version UUID: `a59a5117-1678-4c80-894d-c44a180c4052` (`wowborg:v67`, uploaded inert;
+  not submitted). Built from source `cee622a` with private tags `strategy=traverse`,
+  `source=cee622a`, and `experiment=east-bypass`; amd64 image manifest
+  `sha256:8735805ca7cfc72a51b4aaaa0ccfda52ffef96c6410c4f6176de266f19f59dad`.
+- Changes only the route table: the 23-point populated Tanaris/Thousand Needles road is
+  replaced by the exact-0.1.160-Detour-proven east bypass at
+  `(-8033.689,-2283.733,23.1)` and `(-6960.3,-3739.2,46.1)`, then the existing Great Lift
+  lower dock. Travel Form, combat, recovery, lift behavior, and navigation control are
+  unchanged. Focused strategy checks: 6/6 passed.
+- Matched hosted request: `xreq_3293f9ba-ad00-4fdd-aefa-f71617e590a7`. Its purpose is to
+  determine whether the geometrically valid bypass avoids v66's three observed hostile
+  corridors and reaches the Great Lift lower dock. Evaluation is still running.
+
 ## v66 - semantic Traverse route with the image default command (2026-08-05)
 
 - Version UUID: `415de479-47fe-4bd0-877a-1238a29ebd96` (`wowborg:v66`, uploaded inert;

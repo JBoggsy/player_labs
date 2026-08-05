@@ -91,8 +91,12 @@ east bypass `(-8033.689,-2283.733,23.1)` → `(-6960.3,-3739.2,46.1)` → Great 
 dock. It stays 164 and 716 yards from the two death sites; hosted evaluation must establish
 whether it avoids other mobs. v62, v64, v65, and v66 remain unsubmitted.
 
-**Next:** build/upload the east-bypass candidate and run the same single-episode hosted
-Traverse evaluation. Add the Great Lift state machine only if it reaches the lower dock.
+The east-bypass candidate is uploaded inert as **wowborg:v67**
+(`a59a5117-1678-4c80-894d-c44a180c4052`) from source `cee622a`. Matched hosted request
+`xreq_3293f9ba-ad00-4fdd-aefa-f71617e590a7` is running with artifact streaming enabled.
+
+**Next:** analyze v67's score, death/ghost time, and guidepoint arrivals. Add the Great Lift
+state machine only if it reaches the lower dock.
 
 ---
 
