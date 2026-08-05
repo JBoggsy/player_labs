@@ -4,7 +4,9 @@
 
 `stencil:v22` met every acceptance condition against the fresh matched v21
 control: **74.3% gun accuracy**, more shots, fewer deaths, and more kills. The
-change is accepted and remains unsubmitted.
+change was accepted, then submitted on 2026-08-05; it qualified and became the
+James Botts champion as membership
+`lpm_f0764d92-c162-4a1d-be5e-fb4cf0e9833b`.
 
 | metric | v21 control | v22 exact aim | change |
 |---|---:|---:|---:|

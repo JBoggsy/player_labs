@@ -8,8 +8,13 @@ changed, why, and what the evidence said.
 
 Immutable policy-version UUID: `74d04f89-43f0-4968-bc94-787e81f982cd`.
 Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
-`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
-to a league.
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`.
+
+Submitted to Paintbot on 2026-08-05 with automatic champion promotion:
+
+- submission: `sub_97082b2c-88ab-4fb2-8ae2-63ee17c4402a`;
+- membership: `lpm_f0764d92-c162-4a1d-be5e-fb4cf0e9833b`;
+- terminal state: `competing`, `active`, and **champion** for James Botts.
 
 - Reads the authoritative Sprite-v1 `own aim <brads>` marker for Stencil's gun
   angle. The prior code inferred aim from the self soldier sprite, which has

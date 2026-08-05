@@ -5,8 +5,8 @@ Update as you learn; clear/reseed on a pivot.*
 
 ## Current objective
 
-**The exact-aim accuracy iteration is complete.** `stencil:v22` is the accepted
-inert upload and is not submitted. Recon against deployed Paintbot 0.7.186 found
+**The exact-aim accuracy iteration is complete.** `stencil:v22` is the accepted,
+qualified James Botts champion. Recon against deployed Paintbot 0.7.186 found
 that v21 ignored the authoritative `own aim <brads>` marker and inferred aim
 from a soldier sprite with only 16 visual rotations, erasing half of GV36's 32
 gun slots. v22 changes only that readback; strategy, movement, target selection,
@@ -28,11 +28,11 @@ ticks/s.
 Next concrete steps:
 
 1. Keep v22 as the accepted mechanics baseline.
-2. Decide whether to submit it to Paintbot; league submission remains
-   human-gated.
-3. After submission, return to the separate third-party FFA strategy question.
+2. Observe its first live campaign rounds under Paintbot 0.7.190.
+3. Return to the separate commander-prompt and third-party FFA strategy
+   questions with that evidence.
 
-## Facts worth carrying forward (verified 2026-08-04)
+## Facts worth carrying forward (verified 2026-08-05)
 
 - **The Paintbot league runs the CAMPAIGN round brain, not a ladder**
   (`league_b8fa9b35-ac22-48cf-a03f-07b397aff1c7`; `GET .../campaign` →
@@ -52,8 +52,8 @@ Next concrete steps:
 - Battle modes: 2-team cells → 2v2 (captains + mirrored allies, both
   seatings); 4-team cells → ffa4 (≤4 policies + recruits/filler). Observed
   seatings (7+7+1+1 etc.) are these rosters.
-- Deployed game **paintbot 0.7.186**, source
-  `61f504c1463ee18dd1a3c1bf07fb15bea98311f1` (GameVersion 36). Game repo = the
+- Deployed game **paintbot 0.7.190**, source
+  `6b3cd70cab070b48a50250dffea2cf1e7fca5d4e` (GameVersion 36). Game repo = the
   coworld-ctf clone (`~/coding/coworlds/coworld-ctf`); no paintbot-specific Nim
   source exists. 0.7.179 added the two-seat generated-map `1v1` variant; 0.7.180
   landed PR #219's reduced bot sprite traffic; 0.7.181 fixed the 32-seat replay
@@ -83,14 +83,17 @@ Next concrete steps:
   Full report:
   `docs/reports/stencil-defensive-mechanics-2026-08-04.md`.
 - `stencil:v22` (`74d04f89-43f0-4968-bc94-787e81f982cd`) fixes exact own-aim
-  observation and is now the accepted upload. A fresh locked-map A/B against
+  observation and is now the accepted James Botts champion. Submission
+  `sub_97082b2c-88ab-4fb2-8ae2-63ee17c4402a` placed it as membership
+  `lpm_f0764d92-c162-4a1d-be5e-fb4cf0e9833b`; it qualified and became champion
+  on 2026-08-05. A fresh locked-map A/B against
   v21 produced 847/1,140 hits/shots (74.3%) versus 488/916 (53.3%), 299 versus
-  177 kills, and 195 versus 203 combat deaths. It is not submitted. Full
+  177 kills, and 195 versus 203 combat deaths. Full
   report: `docs/reports/stencil-aim-accuracy-2026-08-04.md`.
 - **Commander prompt** (new, campaign-specific): each player steers its LLM
   strategist with a private standing-orders prompt — a cheap, high-leverage
-  competitive axis independent of the policy image. Needs a first draft when
-  stencil is submitted (what cells to prefer: modes/sizes stencil is best at,
+  competitive axis independent of the policy image. Now needs a first draft
+  (what cells to prefer: modes/sizes stencil is best at,
   weak owners, adjacency consolidation).
 - **Per-cell map-knowledge layer** (optional, now possible): the 100
   (variant, map_seed, map_size) triples are API-readable and the generator is
@@ -115,5 +118,5 @@ Next concrete steps:
   layout rules, battle plans, and third-party FFA reasoning. The latter is now
   the observed limit on an all-map draw-or-win target: own-heart defense cannot
   prevent one opponent from ending 4FFA by capturing another opponent's heart.
-- Consider whether the mirrored beacon entrant should be retired once stencil
-  is submitted (human call; `coworld-player-swap` if identity matters).
+- Consider whether the mirrored beacon entrant should be retired now that
+  stencil is champion (human call; `coworld-player-swap` if identity matters).
