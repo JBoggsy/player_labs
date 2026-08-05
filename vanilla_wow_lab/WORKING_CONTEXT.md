@@ -93,10 +93,20 @@ whether it avoids other mobs. v62, v64, v65, and v66 remain unsubmitted.
 
 The east-bypass candidate is uploaded inert as **wowborg:v67**
 (`a59a5117-1678-4c80-894d-c44a180c4052`) from source `cee622a`. Matched hosted request
-`xreq_3293f9ba-ad00-4fdd-aefa-f71617e590a7` is running with artifact streaming enabled.
+`xreq_3293f9ba-ad00-4fdd-aefa-f71617e590a7` completed with **1,300.82 northing
+(8.19%)** and `reached_goal=false`, regressing 505.56 from v66. It reached only the first
+guidepoint, then failed the Tanaris-entry leg with `no_progress`; two deaths consumed 1,741
+seconds (65.3% of the episode). The Great Lift was never attempted. The apparent replay
+maximum near `world_x=-7191` was a ghost cemetery position; authoritative final and maximum
+living x were both `-7886.18`.
 
-**Next:** analyze v67's score, death/ghost time, and guidepoint arrivals. Add the Great Lift
-state machine only if it reaches the lower dock.
+Exact 0.1.160 Detour planning proves a direct spawn-to-lower-dock route in 13 continuation
+chunks and 5,673.4 yards. It is 1,031.1 yards shorter than v67 and crosses 15 static hostile
+detection ranges instead of 49 (69% fewer), though nine Centipaar Wasps remain a real risk.
+The next candidate changes the prefix to this one semantic target only.
+
+**Next:** build/upload the direct-dock candidate and run the same hosted evaluation. Add the
+Great Lift state machine only if it reaches the lower dock.
 
 ---
 

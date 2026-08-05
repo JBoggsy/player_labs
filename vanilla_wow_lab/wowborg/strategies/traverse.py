@@ -19,12 +19,10 @@ MAX_BACKTRACK_YARDS = 100.0
 GOAL_RADIUS_YARDS = 8.0
 TRAVEL_FORM_SPELL_ID = 783
 
-# Exact 0.1.160 Detour routes prove this east bypass reaches the Great Lift lower
-# dock while avoiding all three hostile corridors observed in v66. Riding the
-# lift remains a separate capability so its hosted result stays attributable.
+# Exact 0.1.160 Detour continuation reaches this semantic target in 13 chunks.
+# It crosses 69% fewer hostile detection ranges than v67's east bypass. Riding
+# the lift remains a separate capability so its hosted result stays attributable.
 TRAVERSE_ROUTE_PREFIX = (
-    ("tanaris-east-bypass", Point(1, -8033.689, -2283.733, 23.1)),
-    ("tanaris-east-entry", Point(1, -6960.3, -3739.2, 46.1)),
     ("great-lift-lower-dock", Point(1, -4677.066, -1853.667, -43.857)),
 )
 

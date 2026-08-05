@@ -13,7 +13,11 @@
   unchanged. Focused strategy checks: 6/6 passed.
 - Matched hosted request: `xreq_3293f9ba-ad00-4fdd-aefa-f71617e590a7`. Its purpose is to
   determine whether the geometrically valid bypass avoids v66's three observed hostile
-  corridors and reaches the Great Lift lower dock. Evaluation is still running.
+  corridors and reaches the Great Lift lower dock. It completed with **1,300.82 northing
+  (8.19%)**, final `world_x=-7886.18`, and `reached_goal=false`, 505.56 below v66. It reached
+  only `tanaris-east-bypass`; `tanaris-east-entry` failed with `no_progress`, and the Great
+  Lift was never attempted. Two deaths consumed 1,741 seconds (65.3% of the episode). The
+  next iteration replaces the bypass with the shorter, lower-exposure direct Detour corridor.
 
 ## v66 - semantic Traverse route with the image default command (2026-08-05)
 
