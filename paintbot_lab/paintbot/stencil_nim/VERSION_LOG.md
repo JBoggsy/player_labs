@@ -4,6 +4,528 @@ Read this before assuming what a version contains. Format mirrors
 `ctf_lab/ctf/beacon/VERSION_LOG.md`: one entry per uploaded version — what
 changed, why, and what the evidence said.
 
+## v47 — giant guard Arc acquisition, uploaded 2026-08-05
+
+Immutable policy-version UUID: `5bca7a62-d996-4f58-92eb-915ec7ea5d41`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Restores v26's exact-heart guard strategy and item thresholds.
+- Before own-heart theft in giant 1v1, allows a discovered Arc within 500px
+  route-to-item to be fetched despite `tactics_not_ready`, using own
+  heart/pedestal as item anchor; all other items use existing thresholds.
+- Once carrying Arc, suppresses automatic Arc pursuit when intent is
+  `guard_heart` or `to_guard_heart`, so Stencil returns to and holds the exact
+  heart position and uses the wide spray cone against Daveey's committed close
+  pass. Arc pursuit for other intents remains unchanged.
+- `STENCIL_GIANT_GUARD_ARC_MAX_ROUTE_PX` controls the acquisition threshold;
+  behavior below 2700px map width is unchanged.
+
+The target comes from v31 artifacts: v31 fetched Arc but then auto-pursued it
+away from the guard position and went 2/20. This experiment isolates the
+stationary wide-cone defense by suppressing pursuit during guard. Daveey's
+close passes commit geometry; the wide Arc cone should land more hits than the
+narrow gun.
+
+Rejected after a fresh giant-map gate: 2/19 against Daveey v25, with one
+episode still non-terminal. Fetching a nearby Arc and holding the heart did not
+improve on v26's 6/20 exact-heart guard. Request
+`xreq_f610a48b-6524-4b48-9c4e-fea2f00de3ab`.
+
+## v46 — giant guard shield preparation, uploaded 2026-08-05
+
+Immutable policy-version UUID: `6dac0b8a-2f31-4b21-8636-ec3039f4faa8`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Restores v26's exact-heart guard strategy and action behavior.
+- Before own-heart theft in giant 1v1, allows already-discovered shield spawns
+  on routes adding at most 400px versus going directly to the heart (using
+  `itemAnchor = guard_heart` with a dedicated threshold).
+- `STENCIL_GIANT_GUARD_SHIELD_DETOUR_PX` controls the detour; all other item
+  kinds use existing thresholds. Behavior below 2700px map width is unchanged.
+
+The target comes from v26 artifacts: all Daveey damage was exclusively gun;
+every shield pickup blocked exactly 3 damage. Shield episodes went 2/4 wins
+versus 4/16 without shield (small sample).
+
+Mathematically rejected at 3/15 with five episodes still non-terminal. The
+shield preparation hypothesis did not improve on v26's 6/20 baseline; episodes
+with shields did not show the expected survival benefit. Request
+`xreq_bbe187f1-ec2d-4358-a594-94d8f7d7c9b5`.
+
+## v45 — giant guard combat strafe, uploaded 2026-08-05
+
+Immutable policy-version UUID: `0f6f40ee-ca27-4494-8c09-71ebb96168e3`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Restores v26's exact-heart guard position and original `fireGate` (no veto,
+  original close-range slack doubling).
+- While the giant 1v1 guard has a visible enemy within `FirefightRadiusPx` of
+  the heart, strafes on a small orbit (~48px tangent to enemy-to-heart vector,
+  alternating sides every ~24 ticks) instead of holding stationary.
+- The `guard_strafe` intent retains movement during `fireHoldTicks` (gun windup)
+  so Stencil moves while shooting, forcing Daveey to track a moving target.
+- `STENCIL_GIANT_GUARD_STRAFE_RADIUS_PX` and
+  `STENCIL_GIANT_GUARD_STRAFE_PHASE_TICKS` control the orbit; behavior below
+  2700px map width is unchanged.
+
+The target comes from v26 artifacts: Daveey landed 64/82 shots (78%) when
+Stencil moved <1px during his five-tick shot window, versus 50-56% when moving.
+All Daveey damage was gun-based.
+
+Rejected after a fresh giant-map gate: 5/20 against Daveey v25. The small-orbit
+strafe did not reduce Daveey's hit rate enough to improve win rate over v26's
+stationary guard. Request
+`xreq_5ee32ca8-1e54-4c12-b58e-2ee630e94762`.
+
+## v44 — guard-only close-range slack removal, uploaded 2026-08-05
+
+Immutable policy-version UUID: `a9d45fc1-99b7-4d90-9fb2-326d81069daf`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Retains v43's rear-hemisphere veto and v26's exact-heart guard position.
+- While `guard_heart` intent is active, removes the close-range slack doubling
+  (uses 1x `FireSlackPx` instead of 2x inside `CloseRangePx`).
+- Preserves the 2x close-range slack for all other intents and all Arc behavior.
+
+The target comes from v26 artifacts: while intent was `guard_heart` and Daveey
+approached at 150-220px (inside `CloseRangePx`), shots with 3 brads absolute
+aim error landed only 2/52 hits because the doubled slack passed marginal aim
+that missed at close range.
+
+Rejected after a fresh giant-map gate: 3/20 against Daveey v25. Tightening the
+close-range fire gate for the stationary guard reduced wasted shots but did not
+improve hit rate enough to win more fights. Request
+`xreq_b2d308f3-c9ed-4095-a4c4-4aa4b7d90915`.
+
+## v43 — rear-hemisphere fire veto, uploaded 2026-08-05
+
+Immutable policy-version UUID: `1b22adf4-f3d4-4ef0-8f7f-0dd0e75b8c66`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Restores v26's exact-heart guard position.
+- Before applying lateral tolerance in `fireGate`, rejects targets outside the
+  forward hemisphere (absolute aim error must be ≤64 brads, i.e. ≤90 degrees).
+- Does not change strategy positioning, range behavior, Arc logic, or any
+  non-gun fire gate.
+
+The target comes from v26 artifacts: 34 shots with absolute aim error 100-128
+brads (rear approaches near 180 degrees) landed 0 hits, caused by Daveey close
+pass-throughs where the lateral-only geometric gate passed but the target was
+effectively behind Stencil.
+
+Rejected after a fresh giant-map gate: 4/20 against Daveey v25. The
+rear-hemisphere veto reduced wasted shots but did not improve close-range hit
+rate enough to recover wins. Request
+`xreq_7cca0046-579c-4bce-a8da-3d17eb5bdeba`.
+
+## v42 — giant close-range fire discipline, uploaded 2026-08-05
+
+Immutable policy-version UUID: `f5930f53-a331-4a4f-9b4e-af25284ab519`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Restores v26's exact-heart position and cooldown evasions.
+- While the `guard_heart` intent is active, tracks Daveey but withholds normal
+  gun fire beyond 700 pixels, preserving cooldown for the close approach.
+- `STENCIL_GIANT_GUARD_MAX_FIRE_RANGE_PX=0` disables the cap; `guard_range`
+  traces gated shots. Behavior outside the giant guard is unchanged.
+
+The target comes from v26 artifacts: wins landed 54/76 gun shots and losses
+66/169; the losing 800-999px band landed only 2/51.
+
+Rejected after a fresh giant-map gate: 3/19 against Daveey v25, with one
+episode still non-terminal. Capping fire range beyond 700px did not preserve
+enough cooldown to recover the 800-999px miss rate. Request
+`xreq_9979aa86-1f18-45c0-8949-175f45e50275`.
+
+## v41 — weakened-team forward guard, uploaded 2026-08-05
+
+Immutable policy-version UUID: `269dda73-111a-4885-8116-e5c78ff65181`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Uses v26's exact-heart guard until Stencil earns the first kill.
+- At two or one remaining Daveey lives, shifts the guard 400 pixels toward
+  map center to force earlier repeat contact without starting a cross-map hunt.
+- `STENCIL_GIANT_WEAKENED_GUARD_FORWARD_PX=0` restores v26's exact-heart
+  control; behavior below 2700 pixels of map width is unchanged.
+
+Rejected after a fresh giant-map gate: 3/20 against Daveey v25. Even after the
+first kill, shifting 400 pixels forward exposed too much heart space and did
+not create enough additional encounters. Request
+`xreq_c2e6a3d1-8b19-41e1-a1c5-e06c724b9070`.
+
+## v40 — giant post-first-kill hunt, uploaded 2026-08-05
+
+Immutable policy-version UUID: `6819579e-2fe4-48da-9d56-a4c132f8881a`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Restores v26's exact-heart guard while Daveey is at all three lives.
+- After Stencil's first kill leaves Daveey at two lives, bypasses the guard
+  and reuses `convert_hunt` to pressure the predictable respawn before the
+  late-game clock becomes the limiting factor.
+- Uses the exact 1v1 scoreboard state rather than the unscaled conversion
+  threshold; behavior below 2700 pixels of map width is unchanged.
+
+Rejected after a fresh giant-map gate: 6/20 against Daveey v25. Starting a
+cross-map hunt after the first kill recovered no win rate over v26 and conceded
+the defensive position that generated its kills. Request
+`xreq_256ea522-fd92-4733-a5b2-f2fa28e3097d`.
+
+## v39 — giant exact last-life hunt, uploaded 2026-08-05
+
+Immutable policy-version UUID: `656d85da-a96e-425c-ab10-34b0035811af`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Restores v26's exact-heart guard while Daveey has three or two lives.
+- When the scoreboard reports exactly one enemy life, bypasses the guard and
+  reuses the existing `convert_hunt` objective to pursue the winning third kill.
+- Uses `enemyLivesLeft == 1` rather than the unscaled `wipeInReach` threshold;
+  behavior below 2700 pixels of map width is unchanged.
+
+Rejected after a fresh giant-map gate: 4/20 against Daveey v25. The hunt did
+produce four three-kill wipes, but nine other losses still ended at exactly two
+Stencil kills; in most, the second kill arrived around ticks 3500-4800, too
+late for a cross-map final-life hunt. Request
+`xreq_45a52aa3-444f-4bbd-a6a3-983d215d2c32`.
+
+## v38 — giant final-life hunt, uploaded 2026-08-05
+
+Immutable policy-version UUID: `fce3e2ca-b172-40c4-b2e9-f3e719f1f60d`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Restores v26's exact-heart guard and normal cooldown evasions while Daveey
+  has more than one life.
+- Once a wipe is in reach, lets the existing `convert_hunt` objective take
+  precedence over the giant guard so Stencil pursues Daveey's last life.
+- The change reuses `wipeInReach` and `convertHuntPoint`; behavior below 2700
+  pixels of map width is unchanged.
+
+The causal target came from all 20 v26 giant artifacts: every one of its six
+wins was a three-kill wipe with no steal or capture, while the 14 losses
+averaged 1.4 kills and frequently stopped at two because the guard suppressed
+the existing final-life hunt.
+
+Rejected before accepting hosted evidence: `wipeInReach` uses the unscaled
+eight-seat threshold of six lives, so it is already true at all three starting
+lives in 1v1. The guard was therefore bypassed from the start rather than only
+on Daveey's last life. Request `xreq_31bf2791-fd8b-4719-85d7-dbcdb0e2c0fa`
+was already created when the configuration mismatch was found; it subsequently
+finished at 6/20, which does not change the causal rejection.
+
+## v37 — giant leashed heart engagement, uploaded 2026-08-05
+
+Immutable policy-version UUID: `1cea1e9b-0a57-4a4c-9af4-d06e3f24e1d2`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Restores v26's cooldown evasions and exact-heart guard when no opponent is
+  near the objective.
+- When the visible 1v1 opponent comes within 600 pixels of the heart, engages
+  within an 800-pixel leash rather than conceding initiative to the approach.
+- `STENCIL_GIANT_GUARD_ENGAGE_RADIUS_PX=0` restores the v26 control;
+  `leashed_engage` and `leash_return` trace activation. Behavior below 2700
+  pixels of map width is unchanged.
+
+Rejected after a fresh giant-map gate: 4/20 against Daveey v25. Closing on a
+visible approach inside the heart leash gave Daveey favorable fights and
+regressed below v26's stationary guard. Request
+`xreq_bb4057c9-fe5e-48a4-a165-5edee62e46bd`.
+
+## v36 — giant heart stand-ground, uploaded 2026-08-05
+
+Immutable policy-version UUID: `62fc974c-fa52-4f2a-bf02-1a99fe2bbce3`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Restores v26's exact-heart guard and normal post-steal pursuit.
+- While holding the heart, suppresses peek/duck displacement so Stencil keeps
+  occupying Daveey's committed theft route and maintains its firing cycle.
+- `STENCIL_GIANT_GUARD_STAND_GROUND=0` restores v26's cooldown evasions.
+  Behavior below 2700 pixels of map width is unchanged.
+
+Rejected after a fresh giant-map gate: 5/20 against Daveey v25. Suppressing
+cooldown evasions did not improve on v26's 6/20 exact-heart guard; holding
+still converted too many slips into lost stationary fights. Request
+`xreq_c70ef567-e3ff-4327-9627-9ac99a89a2bb`.
+
+## v35 — covered giant route ambush, uploaded 2026-08-05
+
+Immutable policy-version UUID: `109de140-ce83-4b3e-85a3-0c94e4eec0fc`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Restores normal post-steal pursuit.
+- Before theft, stages about 500 pixels along Daveey's actual approach route
+  at cover within four navigation cells, forcing first contact before the
+  exposed heart and retaining existing peek/duck micro.
+- `STENCIL_GIANT_ROUTE_AMBUSH_PX=0` restores v26's exact-heart control;
+  `to_route_ambush` and `route_ambush` trace activation. Sub-2700 behavior is
+  unchanged.
+
+Rejected after a fresh giant-map gate: 1/20 against Daveey v25. Leaving the
+heart to force earlier corridor contact was substantially worse than guarding
+the objective itself. Request `xreq_eec46f58-06ec-40a7-a88c-5f47a641f7d9`.
+
+## v34 — predictive giant carrier intercept, uploaded 2026-08-05
+
+Immutable policy-version UUID: `ed4038c3-9a55-43ce-8c87-5eda71c6176f`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Retains v26's exact-heart guard.
+- After a giant 1v1 theft, leads Daveey by up to 600 pixels along his actual
+  flow-field path, capped at half the remaining route, rather than chasing
+  behind or conceding the capture boundary.
+- `STENCIL_GIANT_LEAD_INTERCEPT_PX=0` is the control and
+  `lead_intercept_thief` traces activation. Sub-2700 behavior is unchanged.
+
+Rejected after a fresh giant-map gate: 3/19 against Daveey v25, with one
+episode still non-terminal. A 600-pixel moving lead did not improve on the
+original direct chase. Request `xreq_5ab1aab4-e100-4073-b994-a9e173e41d48`.
+
+## v33 — giant carrier cutoff, uploaded 2026-08-05
+
+Immutable policy-version UUID: `608bd7b6-bc55-4f47-8231-38da1ea66589`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Restores v26's exact-heart guard and removes the loadout/timing imitation.
+- After Daveey steals on giant 1v1, routes directly to Daveey's fixed capture
+  zone instead of trailing his current position, exploiting carrier slowdown
+  and the observed 1127-1437 tick return commitment.
+- `STENCIL_GIANT_CUTOFF_THIEF` is the control and `cutoff_thief_home` traces
+  activation. Sub-2700 behavior remains v22-equivalent.
+
+Rejected after a fresh giant-map gate: 3/19 against Daveey v25, with one
+episode still non-terminal. Camping the fixed capture zone conceded too much
+route and left a single scoring-boundary engagement. Request
+`xreq_6a9be9c4-92d5-4df9-bfa7-915ecd39e84b`.
+
+## v32 — loaded giant-map push, uploaded 2026-08-05
+
+Immutable policy-version UUID: `23ca938d-b9bb-4832-8567-a30127823823`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Retains v31's giant-only spray acquisition and exact-heart staging.
+- At tick 1400, explicitly pushes the enemy heart with
+  `giant_armed_push`, matching Daveey's observed loadout-then-depart loop.
+- `STENCIL_GIANT_ARMED_PUSH_TICK` controls timing. Sub-2700 behavior remains
+  v22-equivalent.
+
+Rejected after a fresh giant-map gate: 4/20 against Daveey v25. Combining
+spray acquisition with Daveey's observed departure timing improved neither
+piece enough to approach the target. Request
+`xreq_b82f9db7-af2f-4359-9693-4d26c04ff634`.
+
+## v31 — spray-armed giant heart guard, uploaded 2026-08-05
+
+Immutable policy-version UUID: `c530ef34-034d-4d4e-9116-167c4d54328f`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Restores v26's exact-heart giant guard and v22's normal sweep behavior.
+- Before guarding in giant 1v1, deliberately fetches a discovered Arc/spray
+  weapon within 800 route pixels, matching Daveey's repeated early loadout.
+- `STENCIL_GIANT_GUARD_ARC_MAX_ROUTE_PX=0` disables the capability and
+  `fetch_giant_guard_arc` traces activation. Sub-2700 behavior is unchanged.
+
+Rejected after a fresh giant-map gate: 2/20 against Daveey v25. Deliberate
+spray acquisition alone did not improve the stationary heart guard. Request
+`xreq_6f69e5cc-f3af-461f-b7f1-e389057d04a0`.
+
+## v30 — route-aware giant heart guard sweep, uploaded 2026-08-05
+
+Immutable policy-version UUID: `e4cefef5-1981-45b4-857d-58d5d15cc271`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Restores v26's exact-heart giant guard.
+- While no enemy is visible, centers the guard's sweep on the first flow-field
+  waypoint toward Daveey's pedestal rather than the straight pedestal vector,
+  facing the generated map's actual approach corridor.
+- `STENCIL_GIANT_GUARD_ROUTE_SWEEP` is the control and `micro=route_sweep`
+  traces activation. Behavior below 2700 pixels remains v22-equivalent.
+
+Rejected after a fresh giant-map gate: 3/20 against Daveey v25. Route-facing
+changed the pre-contact rotation path but did not improve the heart duel over
+v26's straight-axis guard. Request
+`xreq_93a79344-5c30-4a50-8326-eb40167f1aa8`.
+
+## v29 — timed giant-map counterpush, uploaded 2026-08-05
+
+Immutable policy-version UUID: `ca4ea1e6-fc24-452f-84b7-7cc6bb5de79d`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- In giant-map 1v1, guards the own heart through tick 1199, then explicitly
+  targets the enemy heart with the `giant_early_push` intent.
+- The tick-1200 push precedes Daveey's observed station-hold departures and is
+  controlled by `STENCIL_GIANT_EARLY_PUSH_TICK`.
+- Behavior below 2700 pixels of map width remains v22-equivalent.
+
+Rejected after a fresh giant-map gate: 2/20 against Daveey v25. Explicitly
+pushing before Daveey's observed departure window reproduced v22's 10% giant
+win rate rather than disrupting Daveey's tempo. Request
+`xreq_d9196fcc-ce65-48a0-9502-c35484504d78`.
+
+## v28 — rear giant-map heart guard, uploaded 2026-08-05
+
+Immutable policy-version UUID: `65dba88d-7b7e-49c5-a96e-90fb8aca5849`.
+Same image as v27, uploaded with `STENCIL_SOLO_HEART_GUARD_FORWARD_PX=-200`
+plus the standard trace settings; not submitted to a league.
+
+- Positions the giant-map solo guard 200 pixels behind the heart, preserving
+  heart coverage while extending the trailing-fire window on a retreating
+  carrier.
+- Behavior below 2700 pixels of map width remains v22-equivalent.
+
+Rejected after a fresh giant-map gate: 5/20 against Daveey v25. The rear offset
+did not improve on v26's 6/20 at the heart itself. Request
+`xreq_53362eb8-8e7e-4e78-a3c7-de18d8925702`.
+
+## v27 — forward giant-map heart guard, uploaded 2026-08-05
+
+Immutable policy-version UUID: `3d32bab6-91c1-492f-9678-ee1a6523e7d9`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Retains v26's giant-only guard, but moves the guard point 400 pixels forward
+  along the home-to-center axis so Stencil can engage before Daveey reaches the
+  heart.
+- `STENCIL_SOLO_HEART_GUARD_FORWARD_PX` controls the offset. Behavior below
+  2700 pixels of map width remains v22-equivalent.
+
+Rejected after a fresh giant-map gate: 5/20 against Daveey v25, down from
+v26's 6/20 at the heart itself. Request
+`xreq_75ccd6e8-f858-4432-afee-c57885f7004f`.
+
+## v26 — giant-map solo heart guard, uploaded 2026-08-05
+
+Immutable policy-version UUID: `143c88da-5287-4c3a-ab9d-a610036f9232`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Restores v22 behavior unchanged below 2700 pixels of map width.
+- On giant geometry, a solo agent guards its currently planted own heart (or
+  the own pedestal fallback) instead of crossing the map to hunt. An active
+  theft still takes the earlier interception path.
+- `STENCIL_SOLO_HEART_GUARD_MIN_MAP_WIDTH` controls the geometry threshold;
+  `to_guard_heart` and `guard_heart` intents trace activation.
+
+The change targets the v22 giant baseline, where Stencil stole 5 hearts and
+captured 2 while Daveey stole 19 and captured 9. It improved the fresh giant
+gate to 6/20, but remained below the 50% acceptance threshold; request
+`xreq_ad6e166d-bbb4-4a7d-8899-b8531158db52`.
+
+## v25 — solo defender with heart objective, uploaded 2026-08-05
+
+Immutable policy-version UUID: `94c05f94-e0b9-4c31-8b90-275ac3a5328a`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Keeps the sole 1v1 agent in the defender role, preserving defender-specific
+  combat and heart-threat targeting, but bypasses the passive defensive-post
+  objective so it advances on the enemy heart.
+- Retains v23's roster-scaled conversion threshold and all existing
+  own-heart-stolen interception behavior.
+- Does not change combat, navigation, items, or multi-seat behavior.
+
+Rejected after a fresh evaluation against Daveey v25: v25 scored 5W/1D/14L
+small, 8/20 standard, 6/19 large, 1/19 huge, and 0/19 giant; one episode in
+each of the latter three requests remained non-terminal. Keeping defender
+targeting while advancing on the enemy heart did not recover the large-map
+regression. Request IDs, small through giant:
+`xreq_85eee21b-3943-4b08-8c25-87d760e52dcb`,
+`xreq_ce2ea110-61fd-4cf7-90d0-aba010dfeacf`,
+`xreq_39f5861c-7dc5-41bc-af1c-7eecd7488dab`,
+`xreq_74282ccd-eed9-4611-b985-24fd6f79e454`, and
+`xreq_b277f7a8-1cce-4116-9276-11838df24368`.
+
+## v24 — solo attacker role, uploaded 2026-08-05
+
+Immutable policy-version UUID: `e8376377-9c9b-4dcf-a6e4-2c8b79b3f954`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Assigns the sole agent on a one-seat team to the attacker role so normal
+  objective selection pursues the enemy heart.
+- Retains v23's roster-scaled conversion threshold. Own-heart-stolen
+  interception still precedes role-specific strategy, so the solo attacker
+  continues to defend an active theft.
+- Does not change combat, navigation, items, or multi-seat role assignment.
+
+Rejected after a fresh evaluation against Daveey v25: v24 scored 10/20 small,
+8/19 standard (one episode remained non-terminal), 7/20 large, 0/20 huge, and
+0/20 giant. The offensive role helped on small maps but removed defender combat
+and heart-threat behavior, producing complete failure on the two largest map
+sizes. Request IDs, small through giant:
+`xreq_1b677d35-1aef-4fda-b160-f6aa4a021a42`,
+`xreq_a5d36241-84e3-459e-9a75-05d00121f9b8`,
+`xreq_b12f6597-6566-428e-800f-42ca1bfa21a4`,
+`xreq_e86d942d-1bb3-4e1d-88aa-876dad6734c2`, and
+`xreq_1e2254ef-ff22-4fe4-8208-8cf407b28d9d`.
+
+## v23 — roster-scaled conversion threshold, uploaded 2026-08-05
+
+Immutable policy-version UUID: `2683f8b3-0ebd-4cab-999d-b0e11cc9c9cd`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Scales the conversion-hunt threshold from its eight-seat reference instead
+  of applying the six-life default unchanged to every roster size. In 1v1,
+  conversion now begins with one enemy life remaining rather than at spawn.
+- Does not change combat, navigation, roles, items, or the normal heart
+  objective.
+
+The pre-change v22 baseline against Daveey v25 was 7/20 small, 11/20 standard,
+10/20 large, 11/20 huge, and 2/20 giant. Giant-map telemetry showed
+`convert_hunt` active for nearly every live tick because all three starting
+enemy lives satisfied the unscaled six-life threshold.
+
+Rejected after a fresh 20-episode-per-size evaluation against Daveey v25: v23
+scored 8/20 small, 10/20 standard, 5/20 large, 2/20 huge, and 1/20 giant. The
+threshold fix exposed a second root cause: the only 1v1 seat remained a
+defender and returned to its post instead of pursuing the enemy heart. Request
+IDs, small through giant: `xreq_bf6ba117-b2ff-4f87-bef0-4dbceee1d2b4`,
+`xreq_97050d4e-4cbf-4a92-a021-4ac2bdaffc86`,
+`xreq_88cda4b2-8c33-41f7-8f6c-589aed07c86e`,
+`xreq_67708e8c-bc6d-4264-9680-a10384fc6e50`, and
+`xreq_16813a19-89aa-4fc9-be62-a61097fd6876`.
+
 ## v22 — exact 32-slot own-aim readback, uploaded 2026-08-04
 
 Immutable policy-version UUID: `74d04f89-43f0-4968-bc94-787e81f982cd`.

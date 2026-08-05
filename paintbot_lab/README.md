@@ -80,6 +80,7 @@ paintbot_lab/
     designs/stencil-v1-design.md   stencil's architecture + scrap/port ledger
     designs/stencil-nim-port.md    native port contract + parity evidence
   tools/
+    analyze_giant_carries.py  analyze v22 giant 1v1 steal/capture outcomes
     build_player.sh        build the stencil image (linux/amd64)
     self_play.py           native, fast-ready, parallel local self-play
     versions.env           pinned game/dependency provenance
