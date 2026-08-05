@@ -19,10 +19,14 @@ MAX_BACKTRACK_YARDS = 100.0
 GOAL_RADIUS_YARDS = 8.0
 TRAVEL_FORM_SPELL_ID = 783
 
-# Exact 0.1.160 Detour continuation reaches this semantic target in 13 chunks.
-# It crosses 69% fewer hostile detection ranges than v67's east bypass. Riding
-# the lift remains a separate capability so its hosted result stays attributable.
+# Exact 0.1.160 Detour routes prove this prefix reaches the lower dock while
+# avoiding every active Centipaar Wasp/Worker detection and wander envelope.
+# Riding the lift remains separate so its hosted result stays attributable.
 TRAVERSE_ROUTE_PREFIX = (
+    ("tanaris-centipaar-bypass-1", Point(1, -8132.53, -2196.98, 7.41)),
+    ("tanaris-centipaar-bypass-2", Point(1, -8032.96, -2228.0, -14.77)),
+    ("tanaris-centipaar-bypass-3", Point(1, -7897.90, -2283.90, 22.30)),
+    ("tanaris-centipaar-bypass-4", Point(1, -7577.28, -2467.20, -9.47)),
     ("great-lift-lower-dock", Point(1, -4677.066, -1853.667, -43.857)),
 )
 

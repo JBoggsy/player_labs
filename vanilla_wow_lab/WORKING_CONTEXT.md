@@ -118,8 +118,13 @@ Wasp and 11.6 yards from v67's fatal Wasp onset. It produced zero completed epis
 performance evidence. A named-coordinate bypass was also rejected after the full spawn
 snapshot exposed six different Wasps and two Workers, including one Wasp 0.34 yards away.
 
-**Next:** find an exact route that avoids the full active Centipaar spawn set, then upload
-and evaluate that route. Add the Great Lift state machine only after reaching the lower dock.
+The next candidate uses four exact bypass guidepoints before the dock. Its 5,995.5-yard,
+17-chunk exact Detour proof clears both v67 Silithid coordinates by at least 41 yards and
+crosses zero static or conservative-wander encounters across all 112 active Centipaar
+Wasp/Worker spawns. Eight other static hostile exposures remain, down from direct's 15.
+
+**Next:** build/upload and evaluate the full Centipaar-bypass route. Add the Great Lift state
+machine only after reaching the lower dock.
 
 ---
 
