@@ -1,5 +1,20 @@
 # wowborg version log
 
+## v69 - avoid the full active Centipaar spawn set (2026-08-05)
+
+- Version UUID: `69885bb8-34f4-4e7c-9d90-56e6d91edd71` (`wowborg:v69`, uploaded inert;
+  not submitted). Built from source `61a8e84` with private tags `strategy=traverse`,
+  `source=61a8e84`, and `experiment=centipaar-bypass`; amd64 image manifest
+  `sha256:ea144443231965ec4deff0ac287428e78b23727eb8538493d753f56811eff53a`.
+- Changes only the route table to four exact bypass guidepoints followed by the existing
+  Great Lift lower dock. The 5,995.5-yard, 17-chunk exact 0.1.160 Detour proof reaches the
+  dock, clears v67's Silithid coordinates by at least 41 yards, and crosses zero static or
+  conservative-wander encounters across all 112 active Centipaar Wasp/Worker spawns. Eight
+  other static hostile exposures remain. Travel Form, combat, recovery, lift behavior, and
+  navigation control are unchanged. Focused strategy checks: 6/6 passed.
+- Matched hosted request: `xreq_e1288518-2403-460e-8a5a-12a43c02bfee`. Evaluation is
+  pending/running with artifact streaming enabled.
+
 ## v68 - direct Detour route to the Great Lift (2026-08-05)
 
 - Version UUID: `bb7f59cc-a684-4ab4-b485-7071170502d1` (`wowborg:v68`, uploaded inert;

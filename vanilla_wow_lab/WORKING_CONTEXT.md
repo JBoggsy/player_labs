@@ -123,8 +123,12 @@ The next candidate uses four exact bypass guidepoints before the dock. Its 5,995
 crosses zero static or conservative-wander encounters across all 112 active Centipaar
 Wasp/Worker spawns. Eight other static hostile exposures remain, down from direct's 15.
 
-**Next:** build/upload and evaluate the full Centipaar-bypass route. Add the Great Lift state
-machine only after reaching the lower dock.
+The full Centipaar-bypass candidate is uploaded inert as **wowborg:v69**
+(`69885bb8-34f4-4e7c-9d90-56e6d91edd71`) from source `61a8e84`. Matched hosted request
+`xreq_e1288518-2403-460e-8a5a-12a43c02bfee` has artifact streaming enabled.
+
+**Next:** analyze v69's terminal score, death/ghost time, and dock arrival. Add the Great Lift
+state machine only after reaching the lower dock.
 
 ---
 
