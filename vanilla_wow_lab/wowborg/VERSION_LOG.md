@@ -13,7 +13,13 @@
   other static hostile exposures remain. Travel Form, combat, recovery, lift behavior, and
   navigation control are unchanged. Focused strategy checks: 6/6 passed.
 - Matched hosted request: `xreq_e1288518-2403-460e-8a5a-12a43c02bfee`. Evaluation is
-  pending/running with artifact streaming enabled.
+  completed with **662.68 northing (4.17%)**, final/max living `world_x=-8524.32`, and
+  `reached_goal=false`, regressing sharply. It attempted only the first bypass guidepoint,
+  arrived at none, then failed `no_progress`. Two deaths consumed 2,193 seconds (82.3% of
+  the episode): Rabid Blisterpaw plus Glasshide Petrifier caused the first, and another
+  Rabid Blisterpaw caused the second. The Great Lift was never attempted. Eliminating
+  Centipaar exposure was insufficient because remaining early-route hostiles kill wowborg
+  before it reaches the protected corridor.
 
 ## v68 - direct Detour route to the Great Lift (2026-08-05)
 

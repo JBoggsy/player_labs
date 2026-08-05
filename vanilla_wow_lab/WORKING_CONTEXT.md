@@ -125,10 +125,16 @@ Wasp/Worker spawns. Eight other static hostile exposures remain, down from direc
 
 The full Centipaar-bypass candidate is uploaded inert as **wowborg:v69**
 (`69885bb8-34f4-4e7c-9d90-56e6d91edd71`) from source `61a8e84`. Matched hosted request
-`xreq_e1288518-2403-460e-8a5a-12a43c02bfee` has artifact streaming enabled.
+`xreq_e1288518-2403-460e-8a5a-12a43c02bfee` completed with **662.68 northing (4.17%)**
+and `reached_goal=false`. It attempted only the first guidepoint, arrived at none, and failed
+`no_progress`; two deaths consumed 2,193 seconds (82.3% of the episode). Rabid Blisterpaw
+plus Glasshide Petrifier caused the first death, and another Rabid Blisterpaw caused the
+second. The Great Lift was never attempted. Route-only avoidance is not enough: remaining
+early hostiles kill wowborg before it reaches the protected corridor.
 
-**Next:** analyze v69's terminal score, death/ghost time, and dock arrival. Add the Great Lift
-state machine only after reaching the lower dock.
+**Next:** add one attributable survival capability for the unavoidable early hostile band;
+the leading owner-supported option is Druid Cat Form plus Prowl. Re-evaluate the v69 route
+before any Great Lift work.
 
 ---
 
