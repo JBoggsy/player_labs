@@ -18,9 +18,9 @@ file is the one-screen "where are we and why."
 Wowborg now separates competition objectives from shared navigation/recovery. The image
 bakes exactly one objective with `tools/build_player.sh --strategy NAME`; the only current
 registry entry is `traverse`, selected by `WOWBORG_STRATEGY=traverse` in that immutable
-version. Traverse repeatedly queries the canonical connected local-navmesh graph, selects
-the safest untried frontier with greatest Kalimdor world X, and records authoritative
-northing and every frontier activation in the trace.
+version. Traverse maintains Travel Form, follows an explicit competition route when one is
+available, and falls back to the safest untried local northbound frontier. It records
+authoritative northing and every route/frontier activation in the trace.
 
 - Canonical target is **traverse-wow 0.1.160**
   (`cow_3eca82b6-2ad7-476b-88af-832d1faa666d`, image `sha256:bc2aec5696…`). Its SDK source
@@ -59,15 +59,21 @@ Travel Form (spell 783) during navigation. The owner reference policy activates 
 The Travel Form candidate is uploaded inert as **wowborg:v64**
 (`b7a35d49-d39c-4cd8-aa06-d6562d0f4037`). Matched request
 `xreq_422da653-5c3f-45dc-a5e5-804ad77757a0` (`ereq_6b3a8f57-bcd1-4187-89cb-12b4f3dcd184`)
-is running against the exact v63 world/variant. Pre-registered evidence: spell-783 activation,
-sustained moving speed at least 9 yd/s, no earlier first death, and northing above 1,959.23.
+completed against the exact v63 world/variant with **1,740.77 northing (10.97%)**, below
+v63's 1,959.23 hosted baseline. Replay confirms spell 783 casts at 8.0s and 1,293.7s, but the
+faster policy reached the lethal greedy corridor sooner: deaths at 239.0s, 1,339.9s, and
+2,508.3s. It traveled 11,098 yards yet finished at `world_x=-7446.23`.
 
-**Next:** compare v64 speed, deaths, recovery time, and northing against v63. If Travel Form
-activates but the due-north corridor still kills it, bootstrap through the winner-evidenced
-Tanaris/Shimmering-Flats diagonal before returning to adaptive frontiers. A complete safe
-all-ground route is about 31,335 yards, so Travel Form and guideposts alone do not fit the
-45-minute deadline; completion also requires a legitimate shortcut such as handling the Great
-Lift transport. v62 remains unsubmitted.
+The owner repository is current at `a7e26edce`; that commit replaces its own failed greedy
+Traverse frontier with shared semantic world travel. The local next candidate ports only its
+23-edge smooth Tanaris/Thousand Needles prefix through the Great Lift lower dock, retaining
+the existing adaptive fallback; 72 tests pass. Exact 0.1.160 Detour measurements show a
+complete route can cover about 19,431 ground yards excluding the lift, or 33:03 at Travel
+Form speed, leaving almost 12 minutes for lift/control/combat.
+
+**Next:** commit, build, and upload the semantic-prefix candidate, then run the matched hosted
+episode. If it reaches the Great Lift lower dock without the early deaths, add the owner-proven
+ordinary-input Great Lift state machine as the next isolated capability. v62 remains unsubmitted.
 
 ---
 

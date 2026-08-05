@@ -19,6 +19,36 @@ MAX_BACKTRACK_YARDS = 100.0
 GOAL_RADIUS_YARDS = 8.0
 TRAVEL_FORM_SPELL_ID = 783
 
+# Current owner route from coworld-vanilla-wow a7e26edce. Each adjacent edge was
+# proven as a complete, smooth VMaNGOS navmesh route before that route landed.
+# Stop at the Great Lift lower dock; riding the observed platform is a separate
+# capability so its hosted result remains attributable.
+TRAVERSE_ROUTE_PREFIX = (
+    ("tanaris-north-road-1", Point(1, -8974.0117, -2741.5291, 41.0118)),
+    ("tanaris-north-road-2", Point(1, -8761.0234, -2952.8083, 24.5674)),
+    ("tanaris-north-road-3", Point(1, -8548.0352, -3164.0835, 10.1670)),
+    ("tanaris-north-road-4", Point(1, -8278.7275, -3284.8706, 23.8400)),
+    ("tanaris-north-road-5", Point(1, -8085.3330, -3349.3330, 43.3455)),
+    ("tanaris-north-road-6", Point(1, -7866.4028, -3550.8655, 58.3285)),
+    ("tanaris-north-road-7", Point(1, -7577.2563, -3602.6570, 15.3188)),
+    ("tanaris-north-road-8", Point(1, -7314.9946, -3715.9453, 9.9459)),
+    ("tanaris-north-road-9", Point(1, -6948.5264, -3856.7524, 28.9407)),
+    ("shimmering-flats-south-ramp", Point(1, -6794.0220, -3953.5276, 100.8641)),
+    ("shimmering-flats-south-road", Point(1, -6624.2671, -4050.1333, -41.6139)),
+    ("shimmering-flats-road", Point(1, -6239.9995, -4085.3330, -58.0107)),
+    ("thousand-needles-east-road-1", Point(1, -6035.5581, -3865.7529, -59.6654)),
+    ("thousand-needles-east-road-2", Point(1, -5894.7827, -3611.1252, -58.0235)),
+    ("thousand-needles-east-road-3", Point(1, -5866.8999, -3499.5984, -57.5426)),
+    ("thousand-needles-central-road-1", Point(1, -5745.3672, -3200.0486, -40.1584)),
+    ("thousand-needles-central-road-2", Point(1, -5629.6523, -2928.8188, -44.9830)),
+    ("thousand-needles-central-road-3", Point(1, -5504.7778, -2670.9585, -49.1217)),
+    ("thousand-needles-west-road-1", Point(1, -5349.2344, -2439.9663, -31.8258)),
+    ("thousand-needles-west-road-2", Point(1, -5312.8003, -2325.3333, -31.6509)),
+    ("thousand-needles-west-3", Point(1, -5116.142, -1794.543, -55.277)),
+    ("great-lift-south-road", Point(1, -4971.3, -1718.92, -59.379)),
+    ("great-lift-lower-dock", Point(1, -4677.066, -1853.667, -43.857)),
+)
+
 
 def _select_frontier(graph, *, best_world_x: float, visited: set[str]):
     candidates = [
@@ -70,6 +100,8 @@ class TraverseStrategy:
     frontiers_attempted: int = 0
     frontiers_arrived: int = 0
     route_failures: int = 0
+    route_guidepoints_arrived: int = 0
+    route_prefix_abandoned: bool = False
     visited_frontiers: set[str] = field(default_factory=set)
 
     def summary(self) -> dict[str, object]:
@@ -83,6 +115,10 @@ class TraverseStrategy:
             "frontiers_attempted": self.frontiers_attempted,
             "frontiers_arrived": self.frontiers_arrived,
             "route_failures": self.route_failures,
+            "route_guidepoints_arrived": self.route_guidepoints_arrived,
+            "route_prefix_completed": (
+                self.route_guidepoints_arrived == len(TRAVERSE_ROUTE_PREFIX)
+            ),
         }
 
     def run(self, bridge, *, until: float) -> None:
@@ -120,6 +156,39 @@ class TraverseStrategy:
             if here.x >= TRAVERSE_GOAL_WORLD_X - GOAL_RADIUS_YARDS:
                 self.best_world_x = max(self.best_world_x, TRAVERSE_GOAL_WORLD_X)
                 break
+
+            if (
+                not self.route_prefix_abandoned
+                and self.route_guidepoints_arrived < len(TRAVERSE_ROUTE_PREFIX)
+            ):
+                name, target = TRAVERSE_ROUTE_PREFIX[self.route_guidepoints_arrived]
+                trace(
+                    "traverse_route_guidepoint",
+                    activation=self.route_guidepoints_arrived + 1,
+                    name=name,
+                    target=[target.x, target.y, target.z],
+                )
+                result = navigator.navigate_to(bridge, target, deadline=until)
+                if result.end is not None:
+                    self.best_world_x = max(self.best_world_x, result.end.x)
+                if result.state == NavState.ARRIVED:
+                    self.route_guidepoints_arrived += 1
+                    trace(
+                        "traverse_route_guidepoint_arrived",
+                        activation=self.route_guidepoints_arrived,
+                        name=name,
+                        world_x=(round(result.end.x, 3) if result.end else None),
+                    )
+                else:
+                    self.route_failures += 1
+                    self.route_prefix_abandoned = True
+                    trace(
+                        "traverse_route_guidepoint_failed",
+                        activation=self.route_guidepoints_arrived + 1,
+                        name=name,
+                        reason=result.reason,
+                    )
+                continue
 
             graph = bridge.local_navigation_graph(
                 here,

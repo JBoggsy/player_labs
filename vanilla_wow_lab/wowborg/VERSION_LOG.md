@@ -10,9 +10,12 @@
   v63. Local image manifest:
   `sha256:87303ffdcadb349a619ea8237d5d9d7bc4e5a785c9c49b4fac016d74657b83d7`.
 - Matched hosted request `xreq_422da653-5c3f-45dc-a5e5-804ad77757a0`, episode
-  `ereq_6b3a8f57-bcd1-4187-89cb-12b4f3dcd184`, is running on the exact 0.1.160
-  Traverse variant. Pre-registered evidence: spell-783 activation, sustained moving speed at
-  least 9 yd/s, no earlier first death, and northing above v63's 1,959.23 baseline.
+  `ereq_6b3a8f57-bcd1-4187-89cb-12b4f3dcd184`, completed on the exact 0.1.160
+  Traverse variant with **1,740.77 northing (10.97%)**, below v63's 1,959.23 baseline.
+  Replay confirms spell-783 casts at 8.0s and 1,293.7s, but it died at 239.0s, 1,339.9s,
+  and 2,508.3s and traveled 11,098 yards for a final `world_x=-7446.23`. Travel Form
+  activated, but accelerating the same greedy path reached the lethal corridor sooner; the
+  next iteration changes only the route prefix.
 
 ## v63 - open hosted spell-intent compatibility (2026-08-05)
 

@@ -8,8 +8,10 @@ from environment.contract.agent import AgentFrame, SpellObservation
 from player.sdk.navmesh.models import NAV_SEMANTIC_HAZARD
 
 import wowborg.environment  # noqa: F401 - installs host contract compatibility
+from wowborg.nav.world_model import Point
 from wowborg.strategies import build_strategy
 from wowborg.strategies.traverse import (
+    TRAVERSE_ROUTE_PREFIX,
     TRAVEL_FORM_SPELL_ID,
     TraverseStrategy,
     _activate_travel_form,
@@ -102,3 +104,12 @@ def test_summary_uses_authoritative_northing_formula() -> None:
 
     assert summary["northing_yards"] == 10663.91
     assert summary["reached_goal"] is False
+
+
+def test_traverse_route_prefix_reaches_great_lift_lower_dock() -> None:
+    names = [name for name, _point in TRAVERSE_ROUTE_PREFIX]
+
+    assert names[:2] == ["tanaris-north-road-1", "tanaris-north-road-2"]
+    assert names[-2:] == ["great-lift-south-road", "great-lift-lower-dock"]
+    assert TRAVERSE_ROUTE_PREFIX[-1][1] == Point(1, -4677.066, -1853.667, -43.857)
+    assert len(names) == len(set(names)) == 23

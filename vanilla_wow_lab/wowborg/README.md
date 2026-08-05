@@ -40,9 +40,11 @@ resolution is pinned to the matching owner commit in the root `pyproject.toml`.
   deadline to leave the game time to finalize replay/results, matching the owner
   reference player.
 - `strategies/` — competition-level objectives selected by `WOWBORG_STRATEGY`.
-  `traverse` maintains Druid Travel Form before each frontier, then chooses the
+  `traverse` maintains Druid Travel Form and first follows the current owner's
+  smooth semantic road sequence from Tanaris to the Great Lift lower dock. If that
+  prefix is unavailable, or after it completes, the strategy falls back to the
   safest untried reachable frontier with the greatest authoritative Kalimdor world
-  X and traces every activation and gain.
+  X. Both route-guide and frontier activations are traced.
 - `policies/` — retained experiment and navigation-benchmark policies; they are
   not selected by the production entry point.
 - `nav/` — local movement supervision, route planning, and world-graph journeys.
