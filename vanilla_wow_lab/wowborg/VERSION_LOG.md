@@ -1,5 +1,19 @@
 # wowborg version log
 
+## v70 - Prowl through the early hostile band (2026-08-05)
+
+- Version UUID: `c330d793-586b-4cc6-a7ec-0c15a1109ab2` (`wowborg:v70`, uploaded inert;
+  not submitted). Built from source `d072d11` with private tags `strategy=traverse`,
+  `source=d072d11`, and `experiment=early-prowl`; amd64 image manifest
+  `sha256:566565115de4734969e7f67a6020a4a3fbc334621f4e04d1282c299d361b946f`.
+- Changes only survival through the early predicted hostile band: enter Cat Form (768), cast
+  the highest known Prowl rank, remain stealthy through the four bypass guidepoints, then
+  switch back to Travel Form (783) for the long dock leg. The v69 route, navigation, combat,
+  recovery, and lift behavior are unchanged. Cat, Prowl, and Travel activation/settlement are
+  traced separately. Focused strategy checks: 6/6 passed.
+- Matched hosted request: `xreq_36167fe8-b19a-4989-b634-c332c5d908bf`. Evaluation is
+  pending/running with artifact streaming enabled.
+
 ## v69 - avoid the full active Centipaar spawn set (2026-08-05)
 
 - Version UUID: `69885bb8-34f4-4e7c-9d90-56e6d91edd71` (`wowborg:v69`, uploaded inert;

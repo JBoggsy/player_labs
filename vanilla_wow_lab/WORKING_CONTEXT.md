@@ -137,6 +137,15 @@ early hostiles kill wowborg before it reaches the protected corridor.
 the leading owner-supported option is Druid Cat Form plus Prowl. Re-evaluate the v69 route
 before any Great Lift work.
 
+The stealth candidate is uploaded inert as **wowborg:v70**
+(`c330d793-586b-4cc6-a7ec-0c15a1109ab2`) from source `d072d11`. It enters Cat Form and
+Prowl through the four early bypass guidepoints, then restores Travel Form for the dock leg.
+Matched hosted request `xreq_36167fe8-b19a-4989-b634-c332c5d908bf` has artifact streaming
+enabled.
+
+**Next:** verify Cat/Prowl activation and compare v70's deaths, guidepoint progress, and score
+with v69. If stealth fails, add targeted auto-attack as the next isolated survival capability.
+
 ---
 
 ## Status (2026-08-04): LOCAL NAVIGATION BATTERIES PASS; OWNER FIX LANDED
