@@ -5,7 +5,7 @@ contract, and strategy notes — enough to reason about play without leaving the
 repo. Authoritative sources: the **`Metta-AI/coworld-ctf`** repo (paintbot and
 CTF are the *same Nim binary*; clone at `~/coding/coworlds/coworld-ctf`, server
 `src/ctf/`, rules `docs/RULES.md`, manifest `coworld_manifest_paintbot.json`)
-and the deployed league game (paintbot **0.7.184** as of 2026-08-04,
+and the deployed league game (paintbot **0.7.186** as of 2026-08-04,
 GameVersion 36).
 The full recon with `file:line` citations:
 [`recon/paintbot-2026-08-03.md`](recon/paintbot-2026-08-03.md).
@@ -25,6 +25,10 @@ five size classes, **pot scoring**, and **capture-eliminates-team** hearts —
 steal any rival's heart and carry it into *your* endzone to knock that team out
 of the game; **last team standing wins**. Paint itself is cosmetic (board-only
 splatter; no territory scoring).
+
+Player code must read the exact `own aim <brads>` marker. The self soldier has
+only 16 visual rotations, so deriving aim from its sprite erases half of the
+gun's 32 legal slots and makes the controller act on false state.
 
 ## Variants (deployed manifest, verified live)
 
@@ -134,7 +138,7 @@ generate → validate → retry seed+1). What a policy must absorb:
   must read the map from the observation (below). Replays DO carry the exact
   geometry (`mapSpec`), so post-hoc tools can reconstruct terrain.
 - `gunRange` is fixed per episode (GV34) — bigger maps do NOT extend the gun.
-  The engine stock default is 1050px, but every deployed Paintbot 0.7.184
+  The engine stock default is 1050px, but every deployed Paintbot 0.7.186
   variant explicitly overrides it to **1300px** (vision reach is therefore
   1950px except for the 90px omnidirectional bubble).
 - Grenade max range and shout radius scale with the map (`mapWidth/5`).

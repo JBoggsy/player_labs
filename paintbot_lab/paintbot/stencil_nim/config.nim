@@ -70,7 +70,7 @@ const
   AimBradsTurn* = 256
   AimRotations* = 32
   AimStepBrads* = AimBradsTurn div AimRotations
-  # The deployed 0.7.184 variants explicitly retain aimTurnRate=5. GV36 now
+  # The deployed 0.7.186 variants explicitly retain aimTurnRate=5. GV36 now
   # interprets that value as SLOTS per tick, so one held input moves 40 brads.
   AimSlotsPerTick* = 5
   AimTurnRate* = AimSlotsPerTick * AimStepBrads

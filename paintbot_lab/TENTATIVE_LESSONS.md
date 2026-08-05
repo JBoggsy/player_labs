@@ -18,6 +18,12 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
 
+### Read exact gameplay state from its marker, not a lower-resolution render sprite
+Evidence: Stencil inferred GV36's 32-slot gun aim from a soldier sprite with only
+16 visual rotations and accumulated 85,885 aim resyncs across a fresh 18-episode
+arm. Reading `own aim <brads>` cut that to 196 and raised matched replay accuracy
+from 53.3% to 74.3% while shots and kills increased and deaths fell.
+
 ### A downloader can label an XP bundle incomplete even when every policy artifact is present
 Evidence: all four stencil:v1 map probes completed and downloaded 16/16/16/32
 navigation ZIPs, but `fetch_artifacts.py` exhausted the episodes because the

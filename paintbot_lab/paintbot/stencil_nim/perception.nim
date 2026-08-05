@@ -53,6 +53,16 @@ proc parseEndzones*(client: ProtocolClient): Table[Team, EndzoneMarker] =
 proc findSelf(
   scene: SceneIndex, colors: openArray[Team]
 ): tuple[pos: Option[Point], color: Option[Team], facing: Option[Facing], aim: Option[int]] =
+  var exactAim = none(int)
+  for item in scene.objects:
+    if not item.label.startsWith("own aim "):
+      continue
+    try:
+      let value = parseInt(item.label["own aim ".len .. ^1])
+      if value >= 0 and value < AimBradsTurn:
+        exactAim = some(value)
+    except ValueError:
+      discard
   for color in colors:
     for facing in [FacingRight, FacingLeft]:
       let label = "self " & color.teamName & " " &
@@ -62,7 +72,11 @@ proc findSelf(
         continue
       let item = match.get
       return (some(item.center), some(color), some(facing),
-        block:
+        if exactAim.isSome:
+          exactAim
+        else:
+          # The soldier has only 16 visual rotations while GV36's gun has 32
+          # slots. Keep this as a compatibility fallback, never as live truth.
           let spriteId = item.spriteId
           if spriteId >= SelfSpriteBase:
             some(((spriteId - SelfSpriteBase) mod SoldierRotations) *

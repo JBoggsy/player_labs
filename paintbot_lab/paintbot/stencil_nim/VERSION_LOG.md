@@ -4,6 +4,50 @@ Read this before assuming what a version contains. Format mirrors
 `ctf_lab/ctf/beacon/VERSION_LOG.md`: one entry per uploaded version — what
 changed, why, and what the evidence said.
 
+## v22 — exact 32-slot own-aim readback, uploaded 2026-08-04
+
+Immutable policy-version UUID: `74d04f89-43f0-4968-bc94-787e81f982cd`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Reads the authoritative Sprite-v1 `own aim <brads>` marker for Stencil's gun
+  angle. The prior code inferred aim from the self soldier sprite, which has
+  only 16 visual rotations and therefore erased every odd slot from GV36's
+  32-slot gun.
+- Keeps the sprite-derived angle only as a compatibility fallback. Strategy,
+  roles, movement, target selection, lead prediction, and the fire gate are
+  unchanged.
+
+The pre-change hosted trace logged about 1,450 aim resyncs in one episode and
+reported only multiples of 16 brads despite the live gun's 8-brad slots.
+
+Accepted after a fresh matched 18-episode-per-arm A/B against v21 on six locked
+4FFA maps under deployed Paintbot 0.7.186. Replay-expanded gun accuracy rose
+from 488/916 (**53.3%**) to 847/1,140 (**74.3%**). Released shots increased
+24.5%, kills increased from 177 to 299, and combat deaths fell from 203 to 195.
+Every map cleared 70% accuracy (70.1%-80.9%). Wins rose from 3/18 to 7/18.
+Across 72 agent traces per arm, cumulative aim resyncs fell from 85,885 to 196.
+
+Request IDs, in small-corners, small-plus, standard-corners, standard-plus,
+large-corners, large-plus order:
+
+- v21: `xreq_2479eff3-a2ce-48e0-9c98-8e92c7ece424`,
+  `xreq_a5d87427-3d17-4870-bb9a-0ddd8c8b4b98`,
+  `xreq_fa1406f4-1550-491b-a55c-1674a0edb230`,
+  `xreq_e36fbedd-1e39-4008-8dba-3a1de3bbc1c5`,
+  `xreq_922e008a-ae02-4cf7-a498-108bd8ccd792`, and
+  `xreq_4ecec622-bbaa-4243-8261-a251c02ef16d`.
+- v22: `xreq_3d506be2-cff3-4a12-ba55-2ba2795d3563`,
+  `xreq_cbf8d509-5a1e-4feb-87d9-5a3354b057eb`,
+  `xreq_ecada834-afb2-4ade-839d-59c7403d9fb7`,
+  `xreq_bbce90e2-e355-41ce-8bf9-a66516bbea81`,
+  `xreq_770cd6b7-0b82-4971-a166-0aca2392acac`, and
+  `xreq_e29d5d6f-0e4f-4885-8924-6d84e3d00025`.
+
+All 36 episodes completed without an episode failure. Full analysis:
+`docs/reports/stencil-aim-accuracy-2026-08-04.md`.
+
 ## v21 — visible-carrier target override, uploaded 2026-08-04
 
 Immutable policy-version UUID: `da064362-fc5a-4902-9a04-b33b00d9005b`.

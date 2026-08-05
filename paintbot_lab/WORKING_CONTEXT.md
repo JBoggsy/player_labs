@@ -5,13 +5,14 @@ Update as you learn; clear/reseed on a pivot.*
 
 ## Current objective
 
-**The fixed-strategy defensive-mechanics search is complete; decide whether to
-relax the strategy constraint.** `stencil:v21` is the accepted upload with full
-tracing and is not submitted to the Paintbot league. It keeps the generated
-homeward posts, corrected GameVersion 36 five-slot aim, and live-threat cover,
-then adds defender-only heart-threat gun-target scoring and immediate switching
-to a visible high-confidence heart carrier. Roles, movement, objectives, post
-assignment, aim, and the fire gate are unchanged.
+**The exact-aim accuracy iteration is complete.** `stencil:v22` is the accepted
+inert upload and is not submitted. Recon against deployed Paintbot 0.7.186 found
+that v21 ignored the authoritative `own aim <brads>` marker and inferred aim
+from a soldier sprite with only 16 visual rotations, erasing half of GV36's 32
+gun slots. v22 changes only that readback; strategy, movement, target selection,
+lead, and the fire gate remain v21-identical. A fresh matched six-map 4FFA A/B
+raised accuracy from 53.3% to 74.3%, shots from 916 to 1,140, kills from 177 to
+299, and reduced combat deaths from 203 to 195. All 36 episodes completed.
 
 Fast local path: `tools/self_play.py` runs native `coworld-ctf`, enables
 Sprite-v1 ready pacing, rotates candidate teams, supports candidate-only env
@@ -26,12 +27,10 @@ ticks/s.
 
 Next concrete steps:
 
-1. Human decision: preserve the fixed strategy and accept that it cannot stop
-   one opponent capturing another opponent's heart, or reopen third-party FFA
-   positioning/targeting as a strategy change.
-2. If strategy remains fixed, use v21 as the fully observable accepted
-   mechanics baseline.
-3. League submission remains human-gated.
+1. Keep v22 as the accepted mechanics baseline.
+2. Decide whether to submit it to Paintbot; league submission remains
+   human-gated.
+3. After submission, return to the separate third-party FFA strategy question.
 
 ## Facts worth carrying forward (verified 2026-08-04)
 
@@ -53,8 +52,8 @@ Next concrete steps:
 - Battle modes: 2-team cells → 2v2 (captains + mirrored allies, both
   seatings); 4-team cells → ffa4 (≤4 policies + recruits/filler). Observed
   seatings (7+7+1+1 etc.) are these rosters.
-- Deployed game **paintbot 0.7.184**, source
-  `352d0e5408245710874abcfb861ad88491156238` (GameVersion 36). Game repo = the
+- Deployed game **paintbot 0.7.186**, source
+  `61f504c1463ee18dd1a3c1bf07fb15bea98311f1` (GameVersion 36). Game repo = the
   coworld-ctf clone (`~/coding/coworlds/coworld-ctf`); no paintbot-specific Nim
   source exists. 0.7.179 added the two-seat generated-map `1v1` variant; 0.7.180
   landed PR #219's reduced bot sprite traffic; 0.7.181 fixed the 32-seat replay
@@ -65,8 +64,9 @@ Next concrete steps:
 
 ## Open threads
 
-- `stencil:v21` (`da064362-fc5a-4902-9a04-b33b00d9005b`) is the current upload,
-  with full artifact tracing and **not submitted**. Against the natural
+- `stencil:v21` (`da064362-fc5a-4902-9a04-b33b00d9005b`) is the previous
+  accepted defensive baseline, with full artifact tracing and **not
+  submitted**. Against the natural
   top-policy 4FFA field, the v9 aim behavior improved replay hit rate from
   20.9% to 51.5% and kills/episode from 4.63 to 11.13 versus v7. Every one of
   nine observed own-heart thefts was recovered. A six-map locked 4FFA A/B
@@ -82,6 +82,11 @@ Next concrete steps:
   fell 5.06 to 4.86, hit rate rose 47.8% to 52.5%, and steals fell 51 to 45.
   Full report:
   `docs/reports/stencil-defensive-mechanics-2026-08-04.md`.
+- `stencil:v22` (`74d04f89-43f0-4968-bc94-787e81f982cd`) fixes exact own-aim
+  observation and is now the accepted upload. A fresh locked-map A/B against
+  v21 produced 847/1,140 hits/shots (74.3%) versus 488/916 (53.3%), 299 versus
+  177 kills, and 195 versus 203 combat deaths. It is not submitted. Full
+  report: `docs/reports/stencil-aim-accuracy-2026-08-04.md`.
 - **Commander prompt** (new, campaign-specific): each player steers its LLM
   strategist with a private standing-orders prompt — a cheap, high-leverage
   competitive axis independent of the policy image. Needs a first draft when
