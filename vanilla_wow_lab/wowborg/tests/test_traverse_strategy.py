@@ -109,7 +109,10 @@ def test_summary_uses_authoritative_northing_formula() -> None:
 def test_traverse_route_prefix_reaches_great_lift_lower_dock() -> None:
     names = [name for name, _point in TRAVERSE_ROUTE_PREFIX]
 
-    assert names[:2] == ["tanaris-north-road-1", "tanaris-north-road-2"]
-    assert names[-2:] == ["great-lift-south-road", "great-lift-lower-dock"]
+    assert names == [
+        "tanaris-east-bypass",
+        "tanaris-east-entry",
+        "great-lift-lower-dock",
+    ]
     assert TRAVERSE_ROUTE_PREFIX[-1][1] == Point(1, -4677.066, -1853.667, -43.857)
-    assert len(names) == len(set(names)) == 23
+    assert len(names) == len(set(names)) == 3

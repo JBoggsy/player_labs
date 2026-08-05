@@ -81,9 +81,18 @@ was cancelled, and v66 restores the image default command. Exact 0.1.160 Detour 
 show a complete route can cover about 19,431 ground yards excluding the lift, or 33:03 at
 Travel Form speed, leaving almost 12 minutes for lift/control/combat.
 
-**Next:** monitor v66 request `xreq_288ca227-6bcc-44a9-8a5d-92ca4cb60ca6`. If it reaches
-the Great Lift lower dock without the early deaths, add the owner-proven ordinary-input Great
-Lift state machine as the next isolated capability. v62, v64, v65, and v66 remain unsubmitted.
+v66 request `xreq_288ca227-6bcc-44a9-8a5d-92ca4cb60ca6` completed with **1,806.38
+northing (11.38%)** and `reached_goal=false`. Its trace attempted eight guidepoints, arrived
+at seven, and recorded no typed route failure, but two deaths after aggro by Scorpid
+Dunestalker near `(-9025,-2690)` and Glasshide Gazer near `(-8170,-3326)` consumed 1,568
+seconds. A third hostile contact near guidepoint 8 left it alive but damaged at timeout. The next isolated
+candidate replaces all 23 populated-road guidepoints with the exact-0.1.160-Detour-proven
+east bypass `(-8033.689,-2283.733,23.1)` → `(-6960.3,-3739.2,46.1)` → Great Lift lower
+dock. It stays 164 and 716 yards from the two death sites; hosted evaluation must establish
+whether it avoids other mobs. v62, v64, v65, and v66 remain unsubmitted.
+
+**Next:** build/upload the east-bypass candidate and run the same single-episode hosted
+Traverse evaluation. Add the Great Lift state machine only if it reaches the lower dock.
 
 ---
 

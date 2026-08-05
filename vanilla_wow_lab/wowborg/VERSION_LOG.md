@@ -6,7 +6,13 @@
   not submitted). It is byte-for-byte the v65 image from source `b2e58e4`, uploaded without
   a command override so the image's working `python3 -m wowborg` command is retained.
 - Matched hosted request: `xreq_288ca227-6bcc-44a9-8a5d-92ca4cb60ca6`. This is the
-  authoritative semantic-route experiment; v65 produced no gameplay evidence.
+  authoritative semantic-route experiment; v65 produced no gameplay evidence. It completed
+  with **1,806.38 northing (11.38%)**, final `world_x=-7380.62`, and
+  `reached_goal=false`. The trace attempted eight guidepoints, arrived at seven, and recorded
+  no typed route failure. Two deaths after aggro by Scorpid Dunestalker near
+  `(-9025,-2690)` and Glasshide Gazer near `(-8170,-3326)` consumed 1,568 seconds; a third
+  hostile corridor began near guidepoint 8. The next iteration changes only the southern
+  route to avoid all three.
 
 ## v65 - follow the semantic Traverse route to the Great Lift (2026-08-05)
 
