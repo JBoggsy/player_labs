@@ -69,11 +69,13 @@ compete in yet. When that clears, the Vanilla-WoW-specific instruments will be:
 
 ## Player build paths
 
-**Chosen path (2026-07-29): our Python policy uses the owner-provided `/env` contract
-directly.** `wowborg/environment.py` is only a policy convenience around
+**Chosen path (2026-07-29): our Python bot uses the owner-provided `/env` contract
+directly.** `wowborg/environment.py` is only a bot convenience around
 `VanillaWowEnv`; it does not adapt a client protocol. The image copies `environment/`
-and `player/sdk/` from the exact **deployed** accelerated-wow image pinned in
+and `player/sdk/` from the exact **deployed target Coworld** image pinned in
 [`tools/versions.env`](tools/versions.env), while the game runs the client.
+Each uploaded wowborg version bakes one competition objective selected by the
+`--strategy` build flag; shared navigation and recovery stay below that boundary.
 
 The original fork of alternatives, kept for when this path hits a ceiling (revisiting is a
 human-direction decision, not a default):
@@ -82,8 +84,8 @@ human-direction decision, not a default):
    sharper class rotations (`player/bots/rotations.nim`) on top of the existing engine.
 2. **Fork King Nimrod / the shared bot policy in Nim** — change the Nim decision layer
    while reusing the plumbing (needs a Nim build path + pinned game commit).
-3. **The identity-blind general-grinding lane** — build on the experimental `--policy
-   general-grinding` (opt-in, default-off). Bet on *transfer*; more speculative.
+3. **The identity-blind general-grinding lane** — revive the archived experiment as its
+   own strategy (opt-in, default-off). Bet on *transfer*; more speculative.
 4. **A new player from the protocol up** — "write a WoW client" (sized 2026-07-15 at a
    20–45k-line port; rejected in favor of the shim — see the v2 design doc).
 

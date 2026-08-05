@@ -9,7 +9,7 @@ from pathlib import Path
 from wowborg.artifact import upload_evidence
 from wowborg.environment import GymSession, PLAYER_WS_URL_ENV, build_hosted_env
 from wowborg.player_progress import PlayerProgressReporter
-from wowborg.policies import build_policy
+from wowborg.strategies import build_strategy
 from wowborg.trace import Tracer
 
 
@@ -22,7 +22,8 @@ def main() -> None:
     runtime_dir = Path(os.environ.get("WOWBORG_RUNTIME_DIR", "/tmp/wowborg-runtime"))
     tracer = Tracer.from_env(runtime_dir)
     progress = PlayerProgressReporter(player_ws_url, tracer)
-    policy = build_policy(os.environ.get("WOWBORG_POLICY", "world_race"))
+    strategy_name = os.environ.get("WOWBORG_STRATEGY", "traverse")
+    strategy = build_strategy(strategy_name)
     duration = float(os.environ.get("WOWBORG_DURATION_SECONDS", "86400"))
     env = build_hosted_env(
         player_ws_url,
@@ -48,14 +49,14 @@ def main() -> None:
         tracer.emit(
             "session_start",
             protocol="vanilla_wow.environment.v1",
-            policy=policy.__class__.__name__,
+            strategy=strategy_name,
             episode_id=frame.episode_id,
         )
-        policy.run(session, until=time.monotonic() + duration)
+        strategy.run(session, until=time.monotonic() + duration)
         tracer.emit(
             "session_end",
             terminated=session.finished,
-            summary=getattr(policy, "summary", lambda: None)(),
+            summary=strategy.summary(),
             info=session.info,
         )
         succeeded = True

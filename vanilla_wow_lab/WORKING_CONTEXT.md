@@ -13,6 +13,30 @@ file is the one-screen "where are we and why."
 
 ---
 
+## Status (2026-08-05): TRAVERSE STRATEGY LAYER BUILDS AGAINST THE CERTIFIED WORLD
+
+Wowborg now separates competition objectives from shared navigation/recovery. The image
+bakes exactly one objective with `tools/build_player.sh --strategy NAME`; the only current
+registry entry is `traverse`, selected by `WOWBORG_STRATEGY=traverse` in that immutable
+version. Traverse repeatedly queries the canonical connected local-navmesh graph, selects
+the safest untried frontier with greatest Kalimdor world X, and records authoritative
+northing and every frontier activation in the trace.
+
+- Canonical target is **traverse-wow 0.1.160**
+  (`cow_3eca82b6-2ad7-476b-88af-832d1faa666d`, image `sha256:bc2aec5696…`). Its SDK source
+  pin is `b11cbac8a50e9a019848f4001c54f834e22c340b`.
+- The 0.1.160 image publishes its Python contract from `/opt/coworld-python`, replacing the
+  previous `/app` build path. Wowborg's real amd64 image build and `/env` + `/player` import
+  verification pass with that layout.
+- The focused wowborg suite passes (67 tests). The candidate is local and has not been
+  uploaded or submitted.
+
+**Next:** upload this Traverse-specific version, run a targeted hosted Traverse evaluation,
+then inspect its trace/replay before choosing the next gameplay improvement. League submission
+remains human-gated.
+
+---
+
 ## Status (2026-08-04): LOCAL NAVIGATION BATTERIES PASS; OWNER FIX LANDED
 
 Richard acknowledged the 0.1.146 report on Discord ("spotted this and am investigating",

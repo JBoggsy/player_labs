@@ -18,6 +18,23 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
 
+### Bake competition strategy into each immutable player version
+
+Evidence: Coworld policy submission preferences select versions and league behavior but do
+not provide an arbitrary environment-variable channel into the policy container. A runtime
+strategy flag therefore cannot reliably vary one uploaded artifact per competition. Wowborg
+now accepts `--strategy NAME` at build time and bakes `WOWBORG_STRATEGY` into the resulting
+image; one version has one attributable competition objective.
+Status: candidate — preserves version provenance and keeps submission configuration simple.
+
+### Inspect the exact target image filesystem before carrying forward Docker COPY paths
+
+Evidence: traverse-wow 0.1.160 moved the published Python `environment/` and `player/sdk/`
+contract from `/app` to `/opt/coworld-python`. The first exact-image build failed on all three
+old COPY sources; inspecting the certified image showed the replacement path, after which the
+same real amd64 build and both contract-surface sanity checks passed.
+Status: candidate — the image is authoritative for packaging layout.
+
 ### Diff the game image's `AgentFrame` JSON schema against the policy image's BEFORE running a hosted retest
 
 Evidence: the retest plan said "run the same wowborg:v59". v59 physically cannot run on

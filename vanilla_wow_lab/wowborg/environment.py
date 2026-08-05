@@ -29,8 +29,9 @@ from environment.runtime.episode import (
     EnvironmentTransition,
     HostedSessionRuntime,
 )
-from player.sdk.navmesh.client import route_navmesh
+from player.sdk.navmesh.client import local_navmesh_graph, route_navmesh
 
+from wowborg.nav.world_model import Point
 from wowborg.trace import NullTracer, Tracer
 from wowborg.types import ActionOutcome, PlannedRoute, Position
 
@@ -317,6 +318,23 @@ class GymSession:
             projected_target_distance=route.projected_target_distance,
             jump_required=bool(getattr(route, "jump_required", False)),
             message=route.message or "",
+        )
+
+    def local_navigation_graph(
+        self,
+        source: Point,
+        *,
+        radius: float,
+    ):
+        """Return the canonical read-only connected navmesh neighborhood."""
+        return local_navmesh_graph(
+            WorldPoint(
+                map_id=source.map_id,
+                x=source.x,
+                y=source.y,
+                z=source.z,
+            ),
+            radius=radius,
         )
 
     def _trace_frame(self, frame: AgentFrame) -> None:
