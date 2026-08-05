@@ -32,9 +32,10 @@
   net northing. This is the baseline for the Travel Form iteration.
 - Submitted to Traverse Wow as submission `sub_941c5190-13a5-4ca5-93b1-d0bba19d8b19`.
   It was placed immediately as active competing membership
-  `lpm_059413b3-fa38-4c8f-b218-8521406d24a2`; `auto_champion=never`, so it is not champion.
-  It joined after round `round_4977aa0b-76ce-41aa-b18d-559cc7e1ac78` started and therefore
-  has no leaderboard result yet.
+  `lpm_059413b3-fa38-4c8f-b218-8521406d24a2`. Official round 142
+  (`round_d1a45aeb-00d6-4fce-bb53-06f066f2ad56`) completed with a valid **1,776.98**
+  northing score (`world_x=-7410.02`, `reached_goal=false`), fifth of seven in the round.
+  Its first leaderboard readback is rank 6 after one round.
 
 ## v62 - Traverse strategy boundary and northbound frontier objective (2026-08-05)
 

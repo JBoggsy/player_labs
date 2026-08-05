@@ -45,9 +45,10 @@ The compatibility candidate is uploaded as **wowborg:v63**
 scoring **1,959.23 northing (12.34%)**. It died twice and spent about 1,574 seconds—59% of
 strategy time—recovering corpses; its replay traveled 8,707.5 yards for only 1,959.23 net
 northing. Submission `sub_941c5190-13a5-4ca5-93b1-d0bba19d8b19` placed it immediately as
-active competing membership `lpm_059413b3-fa38-4c8f-b218-8521406d24a2` with
-`auto_champion=never`; it is not champion. It joined after the current round started, so no
-leaderboard row exists yet.
+active competing membership `lpm_059413b3-fa38-4c8f-b218-8521406d24a2`. Its first
+official run, round 142 (`round_d1a45aeb-00d6-4fce-bb53-06f066f2ad56`), scored
+**1,776.98 northing**, fifth of seven in the round and sixth on the division leaderboard
+after one round; `reached_goal=false`.
 
 Three independent optimization reads agree on the first attributable change: maintain Druid
 Travel Form (spell 783) during navigation. The owner reference policy activates it, and rank-1
@@ -63,7 +64,10 @@ sustained moving speed at least 9 yd/s, no earlier first death, and northing abo
 
 **Next:** compare v64 speed, deaths, recovery time, and northing against v63. If Travel Form
 activates but the due-north corridor still kills it, bootstrap through the winner-evidenced
-Tanaris/Shimmering-Flats diagonal before returning to adaptive frontiers. v62 remains unsubmitted.
+Tanaris/Shimmering-Flats diagonal before returning to adaptive frontiers. A complete safe
+all-ground route is about 31,335 yards, so Travel Form and guideposts alone do not fit the
+45-minute deadline; completion also requires a legitimate shortcut such as handling the Great
+Lift transport. v62 remains unsubmitted.
 
 ---
 
