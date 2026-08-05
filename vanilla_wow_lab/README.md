@@ -69,7 +69,8 @@ vanilla_wow_lab/
   wowborg/                           our player: Python policy over canonical /env (own README)
   tools/                             versions.env (environment pin), build_player.sh, route_lab.py,
                                      cwreplay.py (replay decoder), movement_report.py (movement
-                                     continuity from a replay), lessons hooks
+                                     continuity), traverse_report.py (Traverse score/cast/death/
+                                     frontier/speed metrics), lessons hooks
   .claude/skills/lessons-review/     the ≈weekly lessons-graduation skill
   lessons_archive/                   rotated per-session lesson buffers
 ```
