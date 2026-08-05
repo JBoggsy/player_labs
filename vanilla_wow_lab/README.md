@@ -70,7 +70,7 @@ vanilla_wow_lab/
   tools/                             versions.env (environment pin), build_player.sh, route_lab.py,
                                      cwreplay.py (replay decoder), movement_report.py (movement
                                      continuity), traverse_report.py (Traverse score/cast/death/
-                                     frontier/speed metrics), lessons hooks
+                                     guidepoint/frontier/speed metrics), lessons hooks
   .claude/skills/lessons-review/     the ≈weekly lessons-graduation skill
   lessons_archive/                   rotated per-session lesson buffers
 ```

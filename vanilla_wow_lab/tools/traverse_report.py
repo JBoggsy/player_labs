@@ -5,7 +5,8 @@ The episode directory is the layout produced by the artifact fetcher:
 
 * ``episode.json`` supplies the authoritative scored northing and Traverse fixture;
 * ``replay.json`` supplies the character's accepted movement and spell casts;
-* ``artifacts/policy_artifact_0.zip`` supplies wowborg's ``trace.jsonl``.
+* ``artifacts/policy_artifact_0.zip`` or ``logs/policy_agent_0.log`` supplies
+  wowborg's structured trace.
 
 Usage:
   uv run python vanilla_wow_lab/tools/traverse_report.py EPISODE_DIR
@@ -15,6 +16,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import ast
 import bisect
 import importlib.util
 import io
@@ -43,14 +45,36 @@ def _load_trace(episode_dir: Path) -> list[dict]:
         raw = direct.read_bytes()
     else:
         bundle = episode_dir / "artifacts" / "policy_artifact_0.zip"
-        if not bundle.is_file():
-            return []
-        with zipfile.ZipFile(bundle) as zf:
-            try:
-                raw = zf.read("trace.jsonl")
-            except KeyError:
-                return []
-    return [json.loads(line) for line in io.BytesIO(raw).read().decode().splitlines() if line]
+        if bundle.is_file():
+            with zipfile.ZipFile(bundle) as zf:
+                try:
+                    raw = zf.read("trace.jsonl")
+                except KeyError:
+                    raw = b""
+        else:
+            raw = b""
+
+    if raw:
+        return [
+            json.loads(line)
+            for line in io.BytesIO(raw).read().decode().splitlines()
+            if line
+        ]
+
+    policy_log = episode_dir / "logs" / "policy_agent_0.log"
+    if not policy_log.is_file():
+        return []
+    log_text = policy_log.read_text(encoding="utf-8")
+    if log_text.startswith(("b'", 'b"')):
+        decoded = ast.literal_eval(log_text)
+        if isinstance(decoded, bytes):
+            log_text = decoded.decode("utf-8")
+    prefix = "WOWBORG-TRACE "
+    return [
+        json.loads(line.removeprefix(prefix))
+        for line in log_text.splitlines()
+        if line.startswith(prefix)
+    ]
 
 
 def _score_metrics(episode: dict) -> dict:
@@ -145,6 +169,29 @@ def _trace_metrics(events: list[dict]) -> dict:
             ),
         },
         "travel_form_events": travel_form_events,
+        "guidepoints": {
+            "attempted": (
+                sum(event.get("kind") == "traverse_route_guidepoint" for event in events)
+                if trace_available
+                else None
+            ),
+            "arrived": (
+                sum(
+                    event.get("kind") == "traverse_route_guidepoint_arrived"
+                    for event in events
+                )
+                if trace_available
+                else None
+            ),
+            "failures": (
+                sum(
+                    event.get("kind") == "traverse_route_guidepoint_failed"
+                    for event in events
+                )
+                if trace_available
+                else None
+            ),
+        },
         "frontiers": {
             "attempted": (
                 strategy_end.get(
@@ -288,6 +335,7 @@ def report_episode(episode_dir: Path) -> dict:
             "activation_trace": trace.pop("travel_form_events"),
         },
         "lifecycle": trace.pop("lifecycle"),
+        "guidepoints": trace.pop("guidepoints"),
         "frontiers": trace.pop("frontiers"),
         "replay": replay,
     }
@@ -297,6 +345,7 @@ def _render(report: dict) -> None:
     score = report["score"]
     travel = report["travel_form"]
     lifecycle = report["lifecycle"]
+    guidepoints = report["guidepoints"]
     frontiers = report["frontiers"]
     replay = report["replay"]
     speed = replay.get("living_forward_speed_yards_per_second", {})
@@ -316,11 +365,16 @@ def _render(report: dict) -> None:
             f"dead-or-ghost={lifecycle['dead_or_ghost_seconds']:.1f}s"
         )
         print(
+            f"guidepoints: attempted={guidepoints['attempted']}  "
+            f"arrived={guidepoints['arrived']}  failures={guidepoints['failures']}"
+        )
+        print(
             f"frontiers: attempted={frontiers['attempted']}  "
             f"arrived={frontiers['arrived']}  failures={frontiers['failures']}"
         )
     else:
         print("lifecycle: unavailable (policy trace artifact missing)")
+        print("guidepoints: unavailable (policy trace artifact missing)")
         print("frontiers: unavailable (policy trace artifact missing)")
     print(
         f"replay: trajectory={replay['trajectory_yards']:.1f} yd  "

@@ -51,6 +51,8 @@ def test_reports_score_trace_and_living_replay_metrics(tmp_path: Path) -> None:
         {"ts": 1784000002.0, "kind": "observation", "is_dead": False, "is_ghost": True},
         {"ts": 1784000005.0, "kind": "observation", "is_dead": False, "is_ghost": False},
         {"ts": 1784000005.0, "kind": "traverse_travel_form", "activation": 1, "success": True},
+        {"ts": 1784000005.1, "kind": "traverse_route_guidepoint", "activation": 1},
+        {"ts": 1784000005.2, "kind": "traverse_route_guidepoint_arrived", "activation": 1},
         {
             "ts": 1784000006.0,
             "kind": "strategy_end",
@@ -74,6 +76,7 @@ def test_reports_score_trace_and_living_replay_metrics(tmp_path: Path) -> None:
         "dead_or_ghost_seconds": 4.0,
     }
     assert report["frontiers"] == {"attempted": 4, "arrived": 3, "failures": 1}
+    assert report["guidepoints"] == {"attempted": 1, "arrived": 1, "failures": 0}
     assert report["travel_form"]["activation_trace"][0]["success"] is True
     assert report["replay"]["trajectory_yards"] == 5.0
     speed = report["replay"]["living_forward_speed_yards_per_second"]
@@ -116,3 +119,24 @@ def test_marks_trace_only_metrics_unavailable_when_artifact_is_missing(
         "arrived": None,
         "failures": None,
     }
+    assert report["guidepoints"] == {
+        "attempted": None,
+        "arrived": None,
+        "failures": None,
+    }
+
+
+def test_loads_trace_from_bytes_repr_policy_log(tmp_path: Path) -> None:
+    episode_dir = tmp_path / "episode"
+    logs = episode_dir / "logs"
+    logs.mkdir(parents=True)
+    events = [
+        {"ts": 1.0, "kind": "observation", "is_dead": False},
+        {"ts": 2.0, "kind": "traverse_frontier", "frontier": 1},
+    ]
+    raw = "".join(
+        f"WOWBORG-TRACE {json.dumps(event)}\n" for event in events
+    ).encode()
+    (logs / "policy_agent_0.log").write_text(repr(raw), encoding="utf-8")
+
+    assert traverse_report._load_trace(episode_dir) == events
