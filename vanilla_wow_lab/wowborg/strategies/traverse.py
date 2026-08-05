@@ -17,7 +17,10 @@ FRONTIER_RADIUS_YARDS = 700.0
 MIN_FRONTIER_DISTANCE_YARDS = 50.0
 MAX_BACKTRACK_YARDS = 100.0
 GOAL_RADIUS_YARDS = 8.0
+CAT_FORM_SPELL_ID = 768
+PROWL_SPELL_IDS = (9913, 6783, 5215)
 TRAVEL_FORM_SPELL_ID = 783
+PROWL_ROUTE_GUIDEPOINTS = 4
 
 # Exact 0.1.160 Detour routes prove this prefix reaches the lower dock while
 # avoiding every active Centipaar Wasp/Worker detection and wander envelope.
@@ -45,6 +48,64 @@ def _select_frontier(graph, *, best_world_x: float, visited: set[str]):
     return max(candidates, key=lambda node: (node.centroid.x, node.distance_from_source))
 
 
+def _activate_prowl(bridge, trace) -> None:
+    frame = bridge.observe()
+    if frame is None:
+        trace("traverse_prowl", activation=0, reason="no_frame")
+        return
+    if frame.in_combat:
+        trace("traverse_prowl", activation=0, reason="in_combat")
+        return
+    if any(spell_id in frame.active_aura_spell_ids for spell_id in PROWL_SPELL_IDS):
+        trace("traverse_prowl", activation=0, reason="already_active")
+        return
+
+    if not frame.shapeshift_form_known or frame.shapeshift_form_id != 1:
+        request_id = bridge.select_cast_without_target(
+            frame,
+            CAT_FORM_SPELL_ID,
+            purpose="enter Cat Form for stealth Traverse",
+        )
+        if request_id is None:
+            trace("traverse_cat_form", activation=0, reason="spell_unavailable")
+            return
+        outcome = bridge.wait_for_settlement(frame.frame_id)
+        trace(
+            "traverse_cat_form",
+            activation=1,
+            success=outcome is not None and outcome.success,
+            detail=outcome.detail if outcome is not None else "unsettled",
+        )
+        frame = bridge.observe()
+        if frame is None or not frame.shapeshift_form_known or frame.shapeshift_form_id != 1:
+            trace("traverse_prowl", activation=0, reason="cat_form_not_active")
+            return
+
+    prowl_spell_id = next(
+        (spell_id for spell_id in PROWL_SPELL_IDS if spell_id in frame.known_spells),
+        None,
+    )
+    if prowl_spell_id is None:
+        trace("traverse_prowl", activation=0, reason="spell_unavailable")
+        return
+    request_id = bridge.select_cast_without_target(
+        frame,
+        prowl_spell_id,
+        purpose="activate Prowl for stealth Traverse",
+    )
+    if request_id is None:
+        trace("traverse_prowl", activation=0, reason="cast_unavailable")
+        return
+    outcome = bridge.wait_for_settlement(frame.frame_id)
+    trace(
+        "traverse_prowl",
+        activation=1,
+        spell_id=prowl_spell_id,
+        success=outcome is not None and outcome.success,
+        detail=outcome.detail if outcome is not None else "unsettled",
+    )
+
+
 def _activate_travel_form(bridge, trace) -> None:
     frame = bridge.observe()
     if frame is None:
@@ -59,7 +120,7 @@ def _activate_travel_form(bridge, trace) -> None:
     request_id = bridge.select_cast_without_target(
         frame,
         TRAVEL_FORM_SPELL_ID,
-        purpose="activate Travel Form for Traverse",
+        purpose="activate Travel Form after hostile bypass",
     )
     if request_id is None:
         trace("traverse_travel_form", activation=0, reason="spell_unavailable")
@@ -117,7 +178,10 @@ class TraverseStrategy:
             goal_world_x=TRAVERSE_GOAL_WORLD_X,
         )
         while time.monotonic() < until and not getattr(bridge, "finished", False):
-            _activate_travel_form(bridge, trace)
+            if self.route_guidepoints_arrived < PROWL_ROUTE_GUIDEPOINTS:
+                _activate_prowl(bridge, trace)
+            else:
+                _activate_travel_form(bridge, trace)
             here = navigator._observe_position(bridge)
             if here is None:
                 time.sleep(1.0)

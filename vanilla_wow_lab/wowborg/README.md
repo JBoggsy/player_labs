@@ -40,8 +40,9 @@ resolution is pinned to the matching owner commit in the root `pyproject.toml`.
   deadline to leave the game time to finalize replay/results, matching the owner
   reference player.
 - `strategies/` — competition-level objectives selected by `WOWBORG_STRATEGY`.
-  `traverse` maintains Druid Travel Form and first follows the current owner's
-  smooth semantic road sequence from Tanaris to the Great Lift lower dock. If that
+  `traverse` uses Druid Cat Form plus Prowl through the early hostile bypass,
+  switches to Travel Form afterward, and follows the semantic route to the Great
+  Lift lower dock. If that
   prefix is unavailable, or after it completes, the strategy falls back to the
   safest untried reachable frontier with the greatest authoritative Kalimdor world
   X. Both route-guide and frontier activations are traced.

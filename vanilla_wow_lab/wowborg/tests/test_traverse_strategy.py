@@ -11,10 +11,11 @@ import wowborg.environment  # noqa: F401 - installs host contract compatibility
 from wowborg.nav.world_model import Point
 from wowborg.strategies import build_strategy
 from wowborg.strategies.traverse import (
+    CAT_FORM_SPELL_ID,
+    PROWL_SPELL_IDS,
     TRAVERSE_ROUTE_PREFIX,
-    TRAVEL_FORM_SPELL_ID,
     TraverseStrategy,
-    _activate_travel_form,
+    _activate_prowl,
     _select_frontier,
 )
 
@@ -49,30 +50,54 @@ def test_host_spell_intents_are_open_strings() -> None:
     assert intent_schema == {"type": "string"}
 
 
-def test_traverse_activates_travel_form() -> None:
+def test_traverse_enters_cat_form_and_activates_prowl() -> None:
     events = []
-    frame = SimpleNamespace(
+    caster_frame = SimpleNamespace(
         frame_id=7,
-        shapeshift_form_spell_known=True,
-        shapeshift_form_spell_id=0,
+        in_combat=False,
+        shapeshift_form_known=True,
+        shapeshift_form_id=0,
+        active_aura_spell_ids=[],
+        known_spells=[CAT_FORM_SPELL_ID, PROWL_SPELL_IDS[-1]],
+    )
+    cat_frame = SimpleNamespace(
+        frame_id=8,
+        in_combat=False,
+        shapeshift_form_known=True,
+        shapeshift_form_id=1,
+        active_aura_spell_ids=[],
+        known_spells=[CAT_FORM_SPELL_ID, PROWL_SPELL_IDS[-1]],
     )
     outcome = SimpleNamespace(success=True, detail="")
+    selected = []
+
+    def cast(frame, spell_id, purpose):
+        selected.append((frame.frame_id, spell_id, purpose))
+        return f"frame-{frame.frame_id}"
+
     bridge = SimpleNamespace(
-        observe=lambda: frame,
-        select_cast_without_target=lambda observed, spell_id, purpose: (
-            "frame-7"
-            if observed is frame
-            and spell_id == TRAVEL_FORM_SPELL_ID
-            and purpose == "activate Travel Form for Traverse"
-            else None
-        ),
-        wait_for_settlement=lambda frame_id: outcome if frame_id == 7 else None,
+        observe=lambda: cat_frame if selected else caster_frame,
+        select_cast_without_target=cast,
+        wait_for_settlement=lambda _frame_id: outcome,
     )
 
-    _activate_travel_form(bridge, lambda kind, **payload: events.append((kind, payload)))
+    _activate_prowl(bridge, lambda kind, **payload: events.append((kind, payload)))
 
+    assert selected == [
+        (7, CAT_FORM_SPELL_ID, "enter Cat Form for stealth Traverse"),
+        (8, PROWL_SPELL_IDS[-1], "activate Prowl for stealth Traverse"),
+    ]
     assert events == [
-        ("traverse_travel_form", {"activation": 1, "success": True, "detail": ""})
+        ("traverse_cat_form", {"activation": 1, "success": True, "detail": ""}),
+        (
+            "traverse_prowl",
+            {
+                "activation": 1,
+                "spell_id": PROWL_SPELL_IDS[-1],
+                "success": True,
+                "detail": "",
+            },
+        ),
     ]
 
 

@@ -18,8 +18,9 @@ file is the one-screen "where are we and why."
 Wowborg now separates competition objectives from shared navigation/recovery. The image
 bakes exactly one objective with `tools/build_player.sh --strategy NAME`; the only current
 registry entry is `traverse`, selected by `WOWBORG_STRATEGY=traverse` in that immutable
-version. Traverse maintains Travel Form, follows an explicit competition route when one is
-available, and falls back to the safest untried local northbound frontier. It records
+version. Traverse uses Prowl through its early hostile bypass and Travel Form afterward,
+follows an explicit competition route when one is available, and falls back to the safest
+untried local northbound frontier. It records
 authoritative northing and every route/frontier activation in the trace.
 
 - Canonical target is **traverse-wow 0.1.160**
