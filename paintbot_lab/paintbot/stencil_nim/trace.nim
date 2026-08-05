@@ -277,6 +277,8 @@ proc counters(policy: StencilPolicy): JsonNode =
     "firefight_target_switches": b.firefightTargetSwitches,
     "defensive_target_multi_ticks": b.defensiveTargetMultiTicks,
     "defensive_target_choice_changes": b.defensiveTargetChoiceChanges,
+    "defensive_carrier_override_ticks": b.defensiveCarrierOverrideTicks,
+    "defensive_carrier_immediate_switches": b.defensiveCarrierImmediateSwitches,
     "focus_claims_sent": b.focusClaimsSent,
     "focus_claims_heard": b.focusClaimsHeard,
     "focus_claims_suppressed": b.focusClaimsSuppressed,

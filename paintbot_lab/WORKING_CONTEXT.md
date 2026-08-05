@@ -6,11 +6,12 @@ Update as you learn; clear/reseed on a pivot.*
 ## Current objective
 
 **The fixed-strategy defensive-mechanics search is complete; decide whether to
-relax the strategy constraint.** `stencil:v20` is the accepted upload with full
+relax the strategy constraint.** `stencil:v21` is the accepted upload with full
 tracing and is not submitted to the Paintbot league. It keeps the generated
 homeward posts, corrected GameVersion 36 five-slot aim, and live-threat cover,
-then adds defender-only heart-threat gun-target scoring. Roles, movement,
-objectives, post assignment, aim, and the fire gate are unchanged.
+then adds defender-only heart-threat gun-target scoring and immediate switching
+to a visible high-confidence heart carrier. Roles, movement, objectives, post
+assignment, aim, and the fire gate are unchanged.
 
 Fast local path: `tools/self_play.py` runs native `coworld-ctf`, enables
 Sprite-v1 ready pacing, rotates candidate teams, supports candidate-only env
@@ -28,7 +29,7 @@ Next concrete steps:
 1. Human decision: preserve the fixed strategy and accept that it cannot stop
    one opponent capturing another opponent's heart, or reopen third-party FFA
    positioning/targeting as a strategy change.
-2. If strategy remains fixed, use v20 as the fully observable accepted
+2. If strategy remains fixed, use v21 as the fully observable accepted
    mechanics baseline.
 3. League submission remains human-gated.
 
@@ -64,7 +65,7 @@ Next concrete steps:
 
 ## Open threads
 
-- `stencil:v20` (`bf6f3048-4fa2-4015-bf75-dc7bf0928149`) is the current upload,
+- `stencil:v21` (`da064362-fc5a-4902-9a04-b33b00d9005b`) is the current upload,
   with full artifact tracing and **not submitted**. Against the natural
   top-policy 4FFA field, the v9 aim behavior improved replay hit rate from
   20.9% to 51.5% and kills/episode from 4.63 to 11.13 versus v7. Every one of
@@ -74,9 +75,12 @@ Next concrete steps:
   18-episode field then rejected alignment strafe, exact 14 px fire gating,
   paired-post ducking, home-banded score ranking, and generated-axis sweeping;
   none improved defender outcomes. v20's defender-only heart-threat target
-  term then replicated in the same direction across two fresh 18-per-arm
-  batches: 2W/1D/33L to 8W/2D/26L, defender kills 5.11 to 6.42 per episode,
-  and non-loss Fisher p=0.063. Full report:
+  term replicated in the same direction across two fresh 18-per-arm batches.
+  v21 then made a visible high-confidence carrier override generic targeting
+  and the eight-tick latch: two further fresh batches each improved 4 to 5
+  wins; combined defender kills rose 4.78 to 6.67 per episode (p=0.024), deaths
+  fell 5.06 to 4.86, hit rate rose 47.8% to 52.5%, and steals fell 51 to 45.
+  Full report:
   `docs/reports/stencil-defensive-mechanics-2026-08-04.md`.
 - **Commander prompt** (new, campaign-specific): each player steers its LLM
   strategist with a private standing-orders prompt — a cheap, high-leverage

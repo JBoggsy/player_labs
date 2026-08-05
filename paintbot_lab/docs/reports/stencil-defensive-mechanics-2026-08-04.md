@@ -2,10 +2,11 @@
 
 ## Verdict
 
-`stencil:v20` is the accepted upload and keeps Stencil's strategy fixed. The
+`stencil:v21` is the accepted upload and keeps Stencil's strategy fixed. The
 accepted mechanics are the live 32-slot/five-slot aim controller, generated
-homeward cover posts, and defender-only heart-threat gun-target scoring; full
-traces expose aim, fire-gate, post geometry, and target-score components. It is
+homeward cover posts, defender-only heart-threat gun-target scoring, and
+immediate engagement of a visible high-confidence heart carrier; full traces
+expose aim, fire-gate, post geometry, and target-score components. It is
 uploaded with full artifact tracing and is **not submitted**.
 
 The aim fix is a clear improvement. Forcing posts farther forward is not: the
@@ -14,7 +15,9 @@ the homeward-ranked selector and retains the forward/heart-distance fields only
 as observability. A second, fresh 18-episode-per-arm search rejected five more
 mechanics candidates; none improved defender outcomes. v19 kept their added
 diagnostics and viewer improvements, then v20's heart-threat target term
-improved outcomes in two fresh matched batches and was accepted.
+improved outcomes in two fresh matched batches. v21's immediate visible-carrier
+override then increased defender kills significantly and improved wins in two
+more independent matched batches, so it was accepted.
 
 ## What changed
 
@@ -187,10 +190,46 @@ four; only one loss ended with red's heart unrecovered. Thus 25 of 26 remaining
 losses terminated when blue or green completed a capture elsewhere after red's
 local defense had succeeded.
 
+## v21 accepted — immediate visible-carrier engagement
+
+Trace review showed a remaining mechanical delay after theft: v20 could keep a
+generic target latched for eight ticks even when a high-confidence carrier was
+already visible and shootable. v21 lets that carrier override both the generic
+weighted score and target dwell. The change is limited to defender target
+selection; roles, movement, objectives, post generation and assignment, aim,
+and firing remain unchanged.
+
+Two independent fresh matched batches used v20 and v21 on the same six locked
+4FFA maps, three episodes per map and arm. Combined result:
+
+| metric | v20 | v21 |
+|---|---:|---:|
+| W / D / L | 8 / 0 / 28 | 10 / 0 / 26 |
+| team kills / episode | 9.67 | 10.44 |
+| defender kills / episode | 4.78 | 6.67 |
+| defender deaths / episode | 5.06 | 4.86 |
+| defender replay hit rate | 47.8% | 52.5% |
+| red-heart steals | 51 | 45 |
+
+Each batch independently moved from 4 wins to 5. The combined outcome change
+is not significant (Fisher p=0.786), while the defender-kill increase is
+significant (Welch p=0.024). The trace confirms a narrow causal mechanism: 77
+weighted-score overrides and 174 immediate carrier switches across 28,168
+multi-target defender ticks.
+
+All 26 v21 losses occurred after Stencil had recovered its own heart or had
+never lost it: 24 followed a recovery and two had no red-heart steal. This
+removes the final observed local-defense failure from the matched matrix while
+leaving third-party FFA captures as the terminal loss mode.
+
+Full immutable request provenance is recorded in
+`paintbot/stencil_nim/VERSION_LOG.md`; all 72 episodes completed and all
+artifact bundles were fetched.
+
 ## Remaining limit
 
 The desired all-map draw-or-win outcome is not yet demonstrated. In the locked
-v20 matrix, 25 of 26 losses happened after Stencil had recovered or never lost
+v21 matrix, all 26 losses happened after Stencil had recovered or never lost
 its own heart, then one opponent captured another opponent's heart. A policy
 posted defensively at its own heart cannot directly prevent that terminal
 event. Closing that gap requires revisiting third-party FFA strategy; doing so

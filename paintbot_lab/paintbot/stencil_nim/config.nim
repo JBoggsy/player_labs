@@ -160,6 +160,8 @@ let
     "STENCIL_DEFENSIVE_TARGET_THREAT_RADIUS_PX", 500, NavCell)
   DefensiveThiefMatchPx* = envTunableInt(
     "STENCIL_DEFENSIVE_THIEF_MATCH_PX", 96, NavCell)
+  DefensiveCarrierThreatMin* = envTunableFloat(
+    "STENCIL_DEFENSIVE_CARRIER_THREAT_MIN", 0.75, 0.0, 1.0)
   FirefightClaimRebroadcastTicks* = envTunableInt(
     "STENCIL_FF_CLAIM_REBROADCAST_TICKS", 30, 1)
   FirefightClaimTtlTicks* = envTunableInt("STENCIL_FF_CLAIM_TTL_TICKS", 72, 1)

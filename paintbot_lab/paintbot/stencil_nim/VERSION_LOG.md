@@ -4,6 +4,70 @@ Read this before assuming what a version contains. Format mirrors
 `ctf_lab/ctf/beacon/VERSION_LOG.md`: one entry per uploaded version — what
 changed, why, and what the evidence said.
 
+## v21 — visible-carrier target override, uploaded 2026-08-04
+
+Immutable policy-version UUID: `da064362-fc5a-4902-9a04-b33b00d9005b`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Retains v20's accepted heart-threat score. Once the heart is stolen, a
+  high-confidence, shootable carrier match now overrides competing generic
+  targets and bypasses the normal eight-tick target latch.
+- `STENCIL_DEFENSIVE_CARRIER_THREAT_MIN` controls the match threshold. End
+  counters expose weighted-score overrides and immediate carrier switches.
+- Does not change roles, movement, objectives, posts, cover, aim, or the fire
+  gate.
+
+Accepted after two independent fresh matched batches against v20 on the same
+six locked 4FFA maps, three episodes per map and arm. Both batches improved
+from 4W/0D/14L to 5W/0D/13L. Combined, defender kills rose from 4.78 to 6.67
+per episode (Welch p=0.024), defender deaths fell from 5.06 to 4.86, replay hit
+rate rose from 47.8% to 52.5%, and red-heart steals fell from 51 to 45. The
+outcome change from 8W/0D/28L to 10W/0D/26L was directional but not significant
+(Fisher p=0.786).
+
+The mechanic activated narrowly and as designed: 77 weighted-score overrides
+and 174 immediate carrier switches across 28,168 multi-target defender ticks.
+All 26 v21 losses occurred after Stencil had recovered its own heart or never
+lost it; the remaining all-map loss mode is third-party FFA capture, outside
+this fixed-strategy mechanics iteration.
+
+First-run v20/v21 request IDs, in small-corners, small-plus,
+standard-corners, standard-plus, large-corners, large-plus order:
+
+- v20: `xreq_b5fb272e-42ba-4c3d-954c-969d23242d93`,
+  `xreq_9f476a6e-a658-4a7b-a7db-1051a2eb6b0f`,
+  `xreq_6bb863e7-4cb0-4d1b-9cc2-402a44bbd3dd`,
+  `xreq_e411d17f-bf8f-464f-96f6-d251aefa196d`,
+  `xreq_afb6c9ec-ead2-4dcd-9550-1adc4befae85`,
+  `xreq_ec4701bd-fec5-4279-b66e-1add00caa7c0`.
+- v21: `xreq_900110b7-3345-40b6-bda7-89965c414394`,
+  `xreq_46ad41e8-c6b4-4e82-8bcb-929f19f93be2`,
+  `xreq_768d32da-5c0a-4075-a9c8-daabbe3fe5a0`,
+  `xreq_7b028023-d216-4df0-897d-9e291252c4be`,
+  `xreq_002bec69-d457-4672-8a70-9e5cba67a4ab`,
+  `xreq_832a833a-7667-41fb-a4f3-dbf8baec7633`.
+
+Replication request IDs in the same order:
+
+- v20: `xreq_b45c5327-4f75-45be-8770-dde23293210c`,
+  `xreq_f561dfa2-0f54-4d72-83f8-fa45972d0fa6`,
+  `xreq_85896369-4933-4f01-ad49-73451299d358`,
+  `xreq_12df2f52-436e-45b6-a9e7-13848e055168`,
+  `xreq_e8a28dea-3e0b-4497-9924-79dea573a580`,
+  `xreq_732201fa-4790-4704-b85c-fa5a81f0b83c`.
+- v21: `xreq_216efd5a-dfaf-4602-b7e0-e981c7e695bc`,
+  `xreq_bc668bf5-da4c-4142-a14e-71f1e1c21766`,
+  `xreq_11e5e195-68cc-4fc9-bebe-2f9276b95c24`,
+  `xreq_d5b7d747-a947-4722-9a5e-0afdbd4388bf`,
+  `xreq_6a7b32e2-85fb-4e5a-b1cc-df235220567a`,
+  `xreq_dd569dba-1b42-43fc-b072-3ffe4e453d48`.
+
+All 72 episodes completed and every artifact bundle was fetched. W/D/L was
+computed from the four-team `results.json` win vectors, not the warehouse's
+red/blue-only legacy `episodes.winner` projection.
+
 ## v20 — defensive heart-threat target selection, uploaded 2026-08-04
 
 Immutable policy-version UUID: `bf6f3048-4fa2-4015-bf75-dc7bf0928149`.

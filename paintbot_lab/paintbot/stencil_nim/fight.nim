@@ -194,7 +194,18 @@ proc selectTarget*(
     scored.add(scoreTarget(candidate, belief.claimedTarget(candidate.target),
       threat.term, threat.heartDistancePx))
   scored.sort(scoreCmp)
-  let best = scored[0]
+  var best = scored[0]
+  if DefensiveTargeting and belief.role == Defender and belief.ownHeartStolen:
+    var carrier = none(TargetScore)
+    for item in scored:
+      if item.candidate.shootable and
+          item.defensiveThreat >= DefensiveCarrierThreatMin and
+          (carrier.isNone or item.defensiveThreat > carrier.get.defensiveThreat):
+        carrier = some(item)
+    if carrier.isSome and
+        not belief.refsMatch(best.candidate.target, carrier.get.candidate.target):
+      best = carrier.get
+      inc belief.defensiveCarrierOverrideTicks
   if DefensiveTargeting and belief.role == Defender and scored.len > 1:
     inc belief.defensiveTargetMultiTicks
     var genericBest = scored[0]
@@ -218,10 +229,15 @@ proc selectTarget*(
     belief.recordSelectedTarget(current.get)
     return current
   let age = belief.tick - belief.firefightTargetSelectedTick
-  let immediate = not current.get.candidate.shootable and best.candidate.shootable
+  let carrierImmediate = belief.ownHeartStolen and
+    best.defensiveThreat >= DefensiveCarrierThreatMin and
+    current.get.defensiveThreat < DefensiveCarrierThreatMin
+  let immediate = carrierImmediate or
+    (not current.get.candidate.shootable and best.candidate.shootable)
   let materiallyBetter = age >= FirefightTargetMinDwellTicks and
     best.score >= current.get.score + FirefightTargetSwitchMargin
   let selected = if immediate or materiallyBetter: best else: current.get
+  if carrierImmediate: inc belief.defensiveCarrierImmediateSwitches
   belief.recordSelectedTarget(selected)
   some(selected)
 

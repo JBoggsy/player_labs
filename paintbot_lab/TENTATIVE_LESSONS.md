@@ -89,3 +89,10 @@ defender kills from 5.11 to 6.42 per episode.
 Evidence: `episodes.winner` only compares red and blue, so green/yellow wins
 were mislabeled draws. Paintbot W/D/L must come from the complete `results.json`
 team/win vectors until the warehouse projection is generalized.
+
+### A verified carrier match should bypass a generic combat target latch
+Evidence: after Stencil's heart was stolen, v20 could retain an unrelated target
+for eight ticks despite a high-confidence carrier being visible and shootable.
+Across two fresh matched batches, 77 score overrides and 174 immediate switches
+raised defender kills from 4.78 to 6.67 per episode (p=0.024), reduced steals
+from 51 to 45, and improved both batches from 4 to 5 wins.

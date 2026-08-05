@@ -13,10 +13,11 @@ This README orients newcomers (human or agent). Two pointers do most of the work
   auth) and the ground rules.
 
 > **Status: aim fix + generated-post defense hosted-validated 2026-08-04.**
-> `stencil:v20` (a beacon fork with online per-episode navigation) is uploaded
+> `stencil:v21` (a beacon fork with online per-episode navigation) is uploaded
 > with full tracing; it retains the accepted aim/post behavior, defenders
 > occupy distinct homeward-ranked firing posts, defender gun targets are
-> biased toward threats to the home heart, and
+> biased toward threats to the home heart with immediate engagement of a
+> visible high-confidence heart carrier, and
 > the aim controller matches GameVersion 36's 32-slot/five-slot turn. It is
 > **not submitted**. The live
 > Paintbot league runs the **campaign (territory)
