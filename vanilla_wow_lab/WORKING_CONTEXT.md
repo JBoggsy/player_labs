@@ -39,8 +39,16 @@ Hosted request `xreq_9b9bd8b7-45c3-4bf9-af54-d62c0cac6cbb`
 and current producer use an open string vocabulary. A local compatibility candidate widens
 only `SpellObservation.intent_names` to `list[str]`; 68 tests and the real amd64 build pass.
 
-**Next:** upload the compatibility candidate, prove it starts in a fresh hosted Traverse
-episode, then submit that exact version and monitor qualification. v62 remains unsubmitted.
+The compatibility candidate is uploaded as **wowborg:v63**
+(`7b3e2eb7-9b3f-47a7-b096-7217fc2daa06`). Hosted canary
+`xreq_17763e42-3a8f-4cca-9ea1-d1172ebde234` entered `running` beyond v62's failure
+boundary. Submission `sub_941c5190-13a5-4ca5-93b1-d0bba19d8b19` placed it immediately as
+active competing membership `lpm_059413b3-fa38-4c8f-b218-8521406d24a2` with
+`auto_champion=never`; it is not champion. It joined after the current round started, so no
+leaderboard row exists yet.
+
+**Next:** inspect the completed canary artifacts and v63's first eligible league round, then
+report authoritative northing and activation evidence. v62 remains unsubmitted.
 
 ---
 

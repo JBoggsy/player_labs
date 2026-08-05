@@ -1,5 +1,24 @@
 # wowborg version log
 
+## v63 - open hosted spell-intent compatibility (2026-08-05)
+
+- Version UUID: `7b3e2eb7-9b3f-47a7-b096-7217fc2daa06` (`wowborg:v63`). Built from
+  source commit `02ab0ce` with private tags `strategy=traverse` and `source=02ab0ce`;
+  local image manifest `sha256:11921bb1b4522a70bc6f104858d3148adf5a33a737a1f2d1bd066cf85078f1bf`.
+- Behavior is unchanged from v62. Before frame parsing, it widens only
+  `SpellObservation.intent_names` from the stale packaged Literal to `list[str]`, matching
+  the owner client's open vocabulary and accepting the host's observed `threat` and
+  `threat_reduction` labels. Focused suite: 68/68 tests passed; real amd64 build verified
+  both `/env` and `/player` imports.
+- Hosted canary `xreq_17763e42-3a8f-4cca-9ea1-d1172ebde234`, episode
+  `ereq_58e8eed3-79e3-47d4-8440-c031790dfcd1`, entered `running` on the exact 0.1.160
+  Traverse variant and remained alive beyond v62's first-frame failure boundary.
+- Submitted to Traverse Wow as submission `sub_941c5190-13a5-4ca5-93b1-d0bba19d8b19`.
+  It was placed immediately as active competing membership
+  `lpm_059413b3-fa38-4c8f-b218-8521406d24a2`; `auto_champion=never`, so it is not champion.
+  It joined after round `round_4977aa0b-76ce-41aa-b18d-559cc7e1ac78` started and therefore
+  has no leaderboard result yet.
+
 ## v62 - Traverse strategy boundary and northbound frontier objective (2026-08-05)
 
 - Version UUID: `b2f6f022-90a9-48b2-a5ac-cd37464046ec` (`wowborg:v62`, uploaded inert;
