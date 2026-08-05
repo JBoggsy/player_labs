@@ -133,23 +133,38 @@ def _trace_metrics(events: list[dict]) -> dict:
         ),
         {},
     )
+    trace_available = bool(events)
     return {
+        "available": trace_available,
         "observations": observations,
         "lifecycle": {
-            "deaths": deaths,
-            "ghost_seconds": round(ghost_seconds, 1),
-            "dead_or_ghost_seconds": round(dead_or_ghost_seconds, 1),
+            "deaths": deaths if trace_available else None,
+            "ghost_seconds": round(ghost_seconds, 1) if trace_available else None,
+            "dead_or_ghost_seconds": (
+                round(dead_or_ghost_seconds, 1) if trace_available else None
+            ),
         },
         "travel_form_events": travel_form_events,
         "frontiers": {
-            "attempted": strategy_end.get(
-                "frontiers_attempted",
-                sum(event.get("kind") == "traverse_frontier" for event in events),
+            "attempted": (
+                strategy_end.get(
+                    "frontiers_attempted",
+                    sum(event.get("kind") == "traverse_frontier" for event in events),
+                )
+                if trace_available
+                else None
             ),
-            "arrived": strategy_end.get("frontiers_arrived"),
-            "failures": strategy_end.get(
-                "route_failures",
-                sum(event.get("kind") == "traverse_route_failed" for event in events),
+            "arrived": strategy_end.get("frontiers_arrived") if trace_available else None,
+            "failures": (
+                strategy_end.get(
+                    "route_failures",
+                    sum(
+                        event.get("kind") == "traverse_route_failed"
+                        for event in events
+                    ),
+                )
+                if trace_available
+                else None
             ),
         },
     }
@@ -266,6 +281,7 @@ def report_episode(episode_dir: Path) -> dict:
             if participant.get("policy_name") is not None
             else None
         ),
+        "trace_available": trace.pop("available"),
         "score": _score_metrics(episode),
         "travel_form": {
             **replay.pop("travel_form_783_casts", {"count": 0, "seconds_from_replay_start": []}),
@@ -293,14 +309,19 @@ def _render(report: dict) -> None:
         f"Travel Form 783: replay casts={travel['count']}  "
         f"trace events={len(travel['activation_trace'])}"
     )
-    print(
-        f"lifecycle: deaths={lifecycle['deaths']}  ghost={lifecycle['ghost_seconds']:.1f}s  "
-        f"dead-or-ghost={lifecycle['dead_or_ghost_seconds']:.1f}s"
-    )
-    print(
-        f"frontiers: attempted={frontiers['attempted']}  arrived={frontiers['arrived']}  "
-        f"failures={frontiers['failures']}"
-    )
+    if report["trace_available"]:
+        print(
+            f"lifecycle: deaths={lifecycle['deaths']}  "
+            f"ghost={lifecycle['ghost_seconds']:.1f}s  "
+            f"dead-or-ghost={lifecycle['dead_or_ghost_seconds']:.1f}s"
+        )
+        print(
+            f"frontiers: attempted={frontiers['attempted']}  "
+            f"arrived={frontiers['arrived']}  failures={frontiers['failures']}"
+        )
+    else:
+        print("lifecycle: unavailable (policy trace artifact missing)")
+        print("frontiers: unavailable (policy trace artifact missing)")
     print(
         f"replay: trajectory={replay['trajectory_yards']:.1f} yd  "
         f"living forward speed p25/median/p90="
