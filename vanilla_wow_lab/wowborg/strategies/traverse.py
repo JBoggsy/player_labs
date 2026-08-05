@@ -17,6 +17,7 @@ FRONTIER_RADIUS_YARDS = 700.0
 MIN_FRONTIER_DISTANCE_YARDS = 50.0
 MAX_BACKTRACK_YARDS = 100.0
 GOAL_RADIUS_YARDS = 8.0
+TRAVEL_FORM_SPELL_ID = 783
 
 
 def _select_frontier(graph, *, best_world_x: float, visited: set[str]):
@@ -31,6 +32,34 @@ def _select_frontier(graph, *, best_world_x: float, visited: set[str]):
     if not candidates:
         return None
     return max(candidates, key=lambda node: (node.centroid.x, node.distance_from_source))
+
+
+def _activate_travel_form(bridge, trace) -> None:
+    frame = bridge.observe()
+    if frame is None:
+        trace("traverse_travel_form", activation=0, reason="no_frame")
+        return
+    if (
+        frame.shapeshift_form_spell_known
+        and frame.shapeshift_form_spell_id == TRAVEL_FORM_SPELL_ID
+    ):
+        trace("traverse_travel_form", activation=0, reason="already_active")
+        return
+    request_id = bridge.select_cast_without_target(
+        frame,
+        TRAVEL_FORM_SPELL_ID,
+        purpose="activate Travel Form for Traverse",
+    )
+    if request_id is None:
+        trace("traverse_travel_form", activation=0, reason="spell_unavailable")
+        return
+    outcome = bridge.wait_for_settlement(frame.frame_id)
+    trace(
+        "traverse_travel_form",
+        activation=1,
+        success=outcome is not None and outcome.success,
+        detail=outcome.detail if outcome is not None else "unsettled",
+    )
 
 
 @dataclass
@@ -70,8 +99,8 @@ class TraverseStrategy:
             map_id=KALIMDOR_MAP_ID,
             goal_world_x=TRAVERSE_GOAL_WORLD_X,
         )
-
         while time.monotonic() < until and not getattr(bridge, "finished", False):
+            _activate_travel_form(bridge, trace)
             here = navigator._observe_position(bridge)
             if here is None:
                 time.sleep(1.0)

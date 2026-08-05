@@ -9,7 +9,12 @@ from player.sdk.navmesh.models import NAV_SEMANTIC_HAZARD
 
 import wowborg.environment  # noqa: F401 - installs host contract compatibility
 from wowborg.strategies import build_strategy
-from wowborg.strategies.traverse import TraverseStrategy, _select_frontier
+from wowborg.strategies.traverse import (
+    TRAVEL_FORM_SPELL_ID,
+    TraverseStrategy,
+    _activate_travel_form,
+    _select_frontier,
+)
 
 
 def node(key: str, *, x: float, distance: float, semantic_flags: int = 0):
@@ -40,6 +45,33 @@ def test_host_spell_intents_are_open_strings() -> None:
         "properties"
     ]["intent_names"]["items"]
     assert intent_schema == {"type": "string"}
+
+
+def test_traverse_activates_travel_form() -> None:
+    events = []
+    frame = SimpleNamespace(
+        frame_id=7,
+        shapeshift_form_spell_known=True,
+        shapeshift_form_spell_id=0,
+    )
+    outcome = SimpleNamespace(success=True, detail="")
+    bridge = SimpleNamespace(
+        observe=lambda: frame,
+        select_cast_without_target=lambda observed, spell_id, purpose: (
+            "frame-7"
+            if observed is frame
+            and spell_id == TRAVEL_FORM_SPELL_ID
+            and purpose == "activate Travel Form for Traverse"
+            else None
+        ),
+        wait_for_settlement=lambda frame_id: outcome if frame_id == 7 else None,
+    )
+
+    _activate_travel_form(bridge, lambda kind, **payload: events.append((kind, payload)))
+
+    assert events == [
+        ("traverse_travel_form", {"activation": 1, "success": True, "detail": ""})
+    ]
 
 
 def test_frontier_prefers_farthest_safe_northing() -> None:

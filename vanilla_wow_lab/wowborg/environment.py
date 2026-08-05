@@ -269,14 +269,27 @@ class GymSession:
         )
 
     def select_stuck(self, frame: AgentFrame) -> str | None:
-        if STUCK_SPELL_ID not in frame.known_spells:
+        return self.select_cast_without_target(
+            frame,
+            STUCK_SPELL_ID,
+            purpose="recover from navigation stall",
+        )
+
+    def select_cast_without_target(
+        self,
+        frame: AgentFrame,
+        spell_id: int,
+        *,
+        purpose: str,
+    ) -> str | None:
+        if spell_id not in frame.known_spells:
             return None
         return self.select_action(
             frame,
             CastAction(
-                spell_id=STUCK_SPELL_ID,
+                spell_id=spell_id,
                 cast_without_target=True,
-                purpose="recover from navigation stall",
+                purpose=purpose,
             ),
         )
 

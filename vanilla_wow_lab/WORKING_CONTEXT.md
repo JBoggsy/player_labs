@@ -41,14 +41,22 @@ only `SpellObservation.intent_names` to `list[str]`; 68 tests and the real amd64
 
 The compatibility candidate is uploaded as **wowborg:v63**
 (`7b3e2eb7-9b3f-47a7-b096-7217fc2daa06`). Hosted canary
-`xreq_17763e42-3a8f-4cca-9ea1-d1172ebde234` entered `running` beyond v62's failure
-boundary. Submission `sub_941c5190-13a5-4ca5-93b1-d0bba19d8b19` placed it immediately as
+`xreq_17763e42-3a8f-4cca-9ea1-d1172ebde234` completed beyond v62's failure boundary,
+scoring **1,959.23 northing (12.34%)**. It died twice and spent about 1,574 seconds—59% of
+strategy time—recovering corpses; its replay traveled 8,707.5 yards for only 1,959.23 net
+northing. Submission `sub_941c5190-13a5-4ca5-93b1-d0bba19d8b19` placed it immediately as
 active competing membership `lpm_059413b3-fa38-4c8f-b218-8521406d24a2` with
 `auto_champion=never`; it is not champion. It joined after the current round started, so no
 leaderboard row exists yet.
 
-**Next:** inspect the completed canary artifacts and v63's first eligible league round, then
-report authoritative northing and activation evidence. v62 remains unsubmitted.
+Three independent optimization reads agree on the first attributable change: maintain Druid
+Travel Form (spell 783) during navigation. The owner reference policy activates it, and rank-1
+`wow-walker:v24` casts 783 at startup and again after losing it while moving at roughly
+9.8-9.9 yd/s. The local candidate adds only a traced pre-frontier activation/reacquisition;
+69 tests pass.
+
+**Next:** upload the Travel Form candidate, run a matched hosted Traverse episode, and compare
+speed, deaths, recovery time, and northing against v63. v62 remains unsubmitted.
 
 ---
 

@@ -45,6 +45,14 @@ already uses `list[str]`, and current upstream main retains the mismatch. Treat 
 pin as necessary provenance, not proof of producer/consumer self-consistency.
 Status: candidate — validate the actual hosted boundary and narrow compatibility at that boundary.
 
+### Optimize the dominant behavioral waste before route-selection nuance
+
+Evidence: wowborg v63 scored 1,959.23 northing while its replay traveled 8,707.5 yards. Two
+deaths forced about 1,574 seconds of corpse recovery—59% of the strategy window—so frontier
+heuristics cannot be the first-order fix. The owner reference and rank-1 league player both
+cast Druid Travel Form 783 at startup; the winner holds about 9.8-9.9 yd/s while active.
+Status: candidate — first isolate speed/survival with Travel Form, then revisit routing.
+
 ### Diff the game image's `AgentFrame` JSON schema against the policy image's BEFORE running a hosted retest
 
 Evidence: the retest plan said "run the same wowborg:v59". v59 physically cannot run on

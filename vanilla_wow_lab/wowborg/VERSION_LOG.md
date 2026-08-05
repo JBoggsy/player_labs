@@ -11,13 +11,26 @@
   `threat_reduction` labels. Focused suite: 68/68 tests passed; real amd64 build verified
   both `/env` and `/player` imports.
 - Hosted canary `xreq_17763e42-3a8f-4cca-9ea1-d1172ebde234`, episode
-  `ereq_58e8eed3-79e3-47d4-8440-c031790dfcd1`, entered `running` on the exact 0.1.160
-  Traverse variant and remained alive beyond v62's first-frame failure boundary.
+  `ereq_58e8eed3-79e3-47d4-8440-c031790dfcd1`, completed on the exact 0.1.160 Traverse
+  variant with score/northing **1,959.23** (12.34% of the 15,874.33-yard goal). It attempted
+  four frontiers and arrived at three, but died twice and spent about 1,574 seconds (59% of
+  strategy runtime) on corpse recovery. Replay trajectory was 8,707.5 yards for only 1,959.23
+  net northing. This is the baseline for the Travel Form iteration.
 - Submitted to Traverse Wow as submission `sub_941c5190-13a5-4ca5-93b1-d0bba19d8b19`.
   It was placed immediately as active competing membership
   `lpm_059413b3-fa38-4c8f-b218-8521406d24a2`; `auto_champion=never`, so it is not champion.
   It joined after round `round_4977aa0b-76ce-41aa-b18d-559cc7e1ac78` started and therefore
   has no leaderboard result yet.
+
+## (candidate after v63) - maintain Travel Form before Traverse frontiers
+
+- Adds a traced cast of Druid Travel Form (spell 783) before the first frontier and
+  reactivates it before later frontiers if it was lost, leaving frontier selection, route
+  navigation, combat handling, and recovery unchanged for attribution.
+- The owner reference leveling policy performs the same startup action. Independent winner
+  analysis found rank-1 `wow-walker:v24` also casts 783 at startup and moves at approximately
+  9.8-9.9 yd/s while active.
+- Full focused suite: 69/69 tests passed. Awaiting immutable upload and hosted comparison.
 
 ## v62 - Traverse strategy boundary and northbound frontier objective (2026-08-05)
 
