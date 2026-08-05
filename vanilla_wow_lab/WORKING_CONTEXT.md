@@ -55,8 +55,15 @@ Travel Form (spell 783) during navigation. The owner reference policy activates 
 9.8-9.9 yd/s. The local candidate adds only a traced pre-frontier activation/reacquisition;
 69 tests pass.
 
-**Next:** upload the Travel Form candidate, run a matched hosted Traverse episode, and compare
-speed, deaths, recovery time, and northing against v63. v62 remains unsubmitted.
+The Travel Form candidate is uploaded inert as **wowborg:v64**
+(`b7a35d49-d39c-4cd8-aa06-d6562d0f4037`). Matched request
+`xreq_422da653-5c3f-45dc-a5e5-804ad77757a0` (`ereq_6b3a8f57-bcd1-4187-89cb-12b4f3dcd184`)
+is running against the exact v63 world/variant. Pre-registered evidence: spell-783 activation,
+sustained moving speed at least 9 yd/s, no earlier first death, and northing above 1,959.23.
+
+**Next:** compare v64 speed, deaths, recovery time, and northing against v63. If Travel Form
+activates but the due-north corridor still kills it, bootstrap through the winner-evidenced
+Tanaris/Shimmering-Flats diagonal before returning to adaptive frontiers. v62 remains unsubmitted.
 
 ---
 

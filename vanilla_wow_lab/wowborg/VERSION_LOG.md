@@ -1,5 +1,19 @@
 # wowborg version log
 
+## v64 - maintain Travel Form before Traverse frontiers (2026-08-05)
+
+- Version UUID: `b7a35d49-d39c-4cd8-aa06-d6562d0f4037` (`wowborg:v64`, uploaded inert;
+  not submitted). Built from source commit `1f93d76` with private tags
+  `strategy=traverse`, `source=1f93d76`, and `experiment=travel-form`.
+- Adds only traced activation/reacquisition of Druid Travel Form (spell 783) before each
+  frontier. Navigation, frontier selection, combat behavior, and recovery are unchanged from
+  v63. Local image manifest:
+  `sha256:87303ffdcadb349a619ea8237d5d9d7bc4e5a785c9c49b4fac016d74657b83d7`.
+- Matched hosted request `xreq_422da653-5c3f-45dc-a5e5-804ad77757a0`, episode
+  `ereq_6b3a8f57-bcd1-4187-89cb-12b4f3dcd184`, is running on the exact 0.1.160
+  Traverse variant. Pre-registered evidence: spell-783 activation, sustained moving speed at
+  least 9 yd/s, no earlier first death, and northing above v63's 1,959.23 baseline.
+
 ## v63 - open hosted spell-intent compatibility (2026-08-05)
 
 - Version UUID: `7b3e2eb7-9b3f-47a7-b096-7217fc2daa06` (`wowborg:v63`). Built from
@@ -21,16 +35,6 @@
   `lpm_059413b3-fa38-4c8f-b218-8521406d24a2`; `auto_champion=never`, so it is not champion.
   It joined after round `round_4977aa0b-76ce-41aa-b18d-559cc7e1ac78` started and therefore
   has no leaderboard result yet.
-
-## (candidate after v63) - maintain Travel Form before Traverse frontiers
-
-- Adds a traced cast of Druid Travel Form (spell 783) before the first frontier and
-  reactivates it before later frontiers if it was lost, leaving frontier selection, route
-  navigation, combat handling, and recovery unchanged for attribution.
-- The owner reference leveling policy performs the same startup action. Independent winner
-  analysis found rank-1 `wow-walker:v24` also casts 783 at startup and moves at approximately
-  9.8-9.9 yd/s while active.
-- Full focused suite: 69/69 tests passed. Awaiting immutable upload and hosted comparison.
 
 ## v62 - Traverse strategy boundary and northbound frontier objective (2026-08-05)
 
