@@ -152,12 +152,19 @@ graveyard teleport and ghost movement: maximum living x was only `-8423.30` (763
 first hostile detection and never reacquired because the first `navigate_to` call occupied the
 rest of the episode. It reached zero guidepoints; three deaths consumed 2,220 seconds (83.3%).
 
-The next isolated candidate adds a game-agnostic safe-resume hook to `RouteNavigator` and uses
-it to reacquire the existing traced Prowl after combat ends or corpse recovery completes during
-the first four guidepoints. Prediction: Prowl activation will occur more than once and later
-lives will spend more time stealthy; this cannot prevent the first Scorpid death because Prowl
-was already active at that detection. If it still stalls before guidepoint one, targeted
-auto-attack is the next isolated survival capability.
+The safe-resume candidate is uploaded inert as **wowborg:v71**
+(`d5960580-8056-4026-b2a8-f79f3799f896`) from source `fe11437`. It adds a game-agnostic
+callback at `RouteNavigator`'s verified living, out-of-combat resume seams and uses it to
+reacquire the existing traced Prowl after combat ends or corpse recovery completes during the
+first four guidepoints. Matched request `xreq_2604d7d8-8d51-489f-b310-d9017b83bd42` is
+complete with **1,139.61 northing (7.18%)** and `reached_goal=false`. The prediction passed:
+Prowl activated successfully after both corpse recoveries (three successful activations total),
+deaths fell from three to two, dead/ghost time fell from 2,219.6 to 2,003.6 seconds, and maximum
+living x improved from `-8423.30` to `-8047.39`. It reached the first bypass guidepoint for the
+first time, but only after 2,570.5 seconds; the two avoidable deaths and roughly 1,000-second
+corpse runs still consumed most of the episode. The first fight began with Prowl already active.
+The next isolated survival capability is therefore exact-attacker melee engagement during the
+existing combat pause, retaining flee/wait when the typed frame cannot identify the attacker.
 
 ---
 

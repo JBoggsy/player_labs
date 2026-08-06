@@ -1,5 +1,25 @@
 # wowborg version log
 
+## v71 - reacquire Prowl after recovery (2026-08-05)
+
+- Version UUID: `d5960580-8056-4026-b2a8-f79f3799f896` (`wowborg:v71`, uploaded inert;
+  not submitted). Built from source `fe11437` with private tags `strategy=traverse`,
+  `source=fe11437`, and `experiment=prowl-reacquire`.
+- Changes only the recovery seam for the existing early Prowl behavior: the game-agnostic route
+  navigator can notify a strategy after combat ends or corpse recovery restores a living,
+  out-of-combat frame. Traverse uses that hook during its first four guidepoints to run the
+  already traced, idempotent Cat/Prowl activation before movement resumes. The route, initial
+  stealth, combat fleeing, corpse recovery, and post-bypass Travel Form are unchanged. Focused
+  checks: 2 recovery-hook tests and 6/6 Traverse strategy tests passed.
+- Matched hosted request: `xreq_2604d7d8-8d51-489f-b310-d9017b83bd42` completed valid with
+  **1,139.61 northing (7.18%)** and `reached_goal=false`. The pre-registered mechanism passed:
+  Prowl activated successfully after both corpse recoveries (three successful activations total),
+  deaths fell from three to two, dead/ghost time fell from 2,219.6 to 2,003.6 seconds, and maximum
+  living x improved from `-8423.30` to `-8047.39`. It reached the first bypass guidepoint for the
+  first time, but only after 2,570.5 seconds because two deaths still incurred roughly 1,000-second
+  corpse runs. The first fight began with Prowl already active, so the next experiment adds only
+  exact-attacker melee engagement to the existing combat pause.
+
 ## v70 - Prowl through the early hostile band (2026-08-05)
 
 - Version UUID: `c330d793-586b-4cc6-a7ec-0c15a1109ab2` (`wowborg:v70`, uploaded inert;
