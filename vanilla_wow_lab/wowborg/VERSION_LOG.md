@@ -16,9 +16,10 @@
   comparative result because the 10x episode clock outruns ordinary locomotion, but the targeted
   mechanism passed: first hostile contact surfaced before any Stuck action; three exact attackers
   were faced and attacked successfully; outgoing damage reached 7,695; all three fights ended;
-  and wowborg had zero deaths. Full-duration matched request
-  `xreq_c317e459-ee91-4bab-a0fb-b789f2709bed` is streaming on the 0.1.160 fixture to measure actual
-  northing and survival against the v71 baseline.
+  and wowborg had zero deaths. A full-duration 0.1.160 request
+  (`xreq_c317e459-ee91-4bab-a0fb-b789f2709bed`) was cancelled after live league inspection showed
+  that its 45-wall-minute format is obsolete; the active league now uses the same 270-wall-second
+  10x format as the mechanism request.
 
 ## v72 - engage exact Traverse attackers (2026-08-05)
 

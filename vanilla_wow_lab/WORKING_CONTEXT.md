@@ -194,8 +194,9 @@ not comparable to normal Traverse because the scaled episode clock outran ordina
 but the targeted capability passed: the first hostile frame surfaced before any Stuck action,
 three exact attackers were faced and attacked successfully, wowborg dealt 7,695 damage, killed all
 three, and had zero deaths. Full-duration matched request
-`xreq_c317e459-ee91-4bab-a0fb-b789f2709bed` is now streaming against the 0.1.160 fixture to measure
-the actual northing/death tradeoff.
+`xreq_c317e459-ee91-4bab-a0fb-b789f2709bed` was cancelled after live league inspection proved
+0.1.160's 45-wall-minute format is obsolete. The league now runs the same 270-wall-second 10x
+format as the v73 mechanism request, so a long-fixture result would not guide the current goal.
 
 ---
 
