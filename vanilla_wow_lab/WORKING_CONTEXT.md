@@ -33,6 +33,16 @@ reacquire Travel Form after combat or revival; route and lift behavior are uncha
 uploaded inert as **wowborg:v76** (`5a13f3cf-89d0-4f52-a8b8-ea6a7668021f`, source
 `d3216d7`) and awaits current-format hosted proof.
 
+Independent stateful replay inspection corrected the causal read: v75 retained Travel Form at
+9.8 yd/s until a Scorpid Dunestalker killed it near `(-9050,-2508)`, then never revived; its
+headline score was ghost/graveyard-derived. The still-pending v76 request
+`xreq_5d974b37-303d-4175-b218-9c59d9b0d329` was cancelled before dispatch because its
+safe-resume callback would not execute. A proposed owner-authored
+`tanaris-north-road-1` leg was rejected before commit/upload: it clears the fatal Scorpid but
+the full pinned-spawn audit increases conservative hostile-envelope intersections from 17 to
+18 and introduces 11 contacts, several within 3.7-6.8 yards. The next route change must use a
+multi-point ordinary-Detour corridor proven against the full pinned spawn set.
+
 Speed-first **wowborg:v74** (`621ee466-2caf-4325-881d-0ba483dc1bfd`, source `d421042`)
 completed current-format request `xreq_3bad8628-4872-4422-a805-41f74ac3c256` on
 `traverse-wow 0.1.166` with **1,797.73 northing** and `reached_goal=false`. It failed the

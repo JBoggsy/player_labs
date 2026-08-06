@@ -8,7 +8,10 @@
   `sha256:caec163ab8ff035d5df3b7ab99324ef3a53c06ece50fecb43405d71b2209f93d`.
 - The route's existing verified living, out-of-combat safe-resume seam now reacquires Travel
   Form after combat or corpse recovery. The route, normal lift boarding, and healthy
-  run-through behavior are unchanged. Focused checks: 39/39 passed. Hosted proof is pending.
+  run-through behavior are unchanged. Focused checks: 39/39 passed. Hosted request
+  `xreq_5d974b37-303d-4175-b218-9c59d9b0d329` was cancelled while still pending after the
+  independent replay reducer proved v75 never revived, so the safe-resume callback would not
+  execute on the observed blocker. v76 produced no episode evidence and remains inert.
 
 ## v75 - board and ride the observed Great Lift (2026-08-05)
 
