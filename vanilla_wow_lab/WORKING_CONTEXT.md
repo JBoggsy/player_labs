@@ -188,9 +188,14 @@ attempt, so the first face came too late. **wowborg:v73**
 existing `engage_attackers` flag now makes the local mover surface the first combat frame before
 stall handling; other strategies retain healthy run-through behavior. If control is already
 blocked, it attacks the exact target and retries face when movement authority returns. Canonical
-10x request `xreq_0be069a7-204b-47a9-a39d-be483e820180` is streaming on 0.1.164. The mechanism
-fails if another move/Stuck occurs between hostile contact and face, face still lands after spell
-11020, or outgoing damage remains zero.
+10x request `xreq_0be069a7-204b-47a9-a39d-be483e820180` completed with **408.57 northing** and
+`reached_goal=false`. That score is
+not comparable to normal Traverse because the scaled episode clock outran ordinary locomotion,
+but the targeted capability passed: the first hostile frame surfaced before any Stuck action,
+three exact attackers were faced and attacked successfully, wowborg dealt 7,695 damage, killed all
+three, and had zero deaths. Full-duration matched request
+`xreq_c317e459-ee91-4bab-a0fb-b789f2709bed` is now streaming against the 0.1.160 fixture to measure
+the actual northing/death tradeoff.
 
 ---
 

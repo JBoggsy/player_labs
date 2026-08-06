@@ -11,10 +11,14 @@
   healthy run-through behavior. Exact-target face then attack remains the primary sequence; if
   server movement authority is already blocked, attack starts and face is retried when authority
   returns. Focused checks: 32/32 passed.
-- Canonical 10x hosted request `xreq_0be069a7-204b-47a9-a39d-be483e820180` is streaming on
-  `traverse-wow 0.1.164`, with the child resolved to the exact v73 UUID. The mechanism fails if a
-  move/Stuck occurs between first hostile contact and face, face still follows Petrify spell 11020,
-  or cumulative outgoing damage remains zero.
+- Canonical 10x hosted request `xreq_0be069a7-204b-47a9-a39d-be483e820180` completed valid on
+  `traverse-wow 0.1.164` with **408.57 northing** and `reached_goal=false`. That northing is not a
+  comparative result because the 10x episode clock outruns ordinary locomotion, but the targeted
+  mechanism passed: first hostile contact surfaced before any Stuck action; three exact attackers
+  were faced and attacked successfully; outgoing damage reached 7,695; all three fights ended;
+  and wowborg had zero deaths. Full-duration matched request
+  `xreq_c317e459-ee91-4bab-a0fb-b789f2709bed` is streaming on the 0.1.160 fixture to measure actual
+  northing and survival against the v71 baseline.
 
 ## v72 - engage exact Traverse attackers (2026-08-05)
 
