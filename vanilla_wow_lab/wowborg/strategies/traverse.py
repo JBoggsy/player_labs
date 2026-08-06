@@ -6,7 +6,7 @@ import math
 import time
 from dataclasses import dataclass, field
 
-from player.sdk.navmesh.models import NAV_SEMANTIC_HAZARD
+from environment.navigation import NAV_SEMANTIC_HAZARD
 
 from wowborg.nav.route import NavState, RouteNavigator
 from wowborg.nav.world_model import Point

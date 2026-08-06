@@ -5,7 +5,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from environment.contract.agent import AgentFrame, SpellObservation
-from player.sdk.navmesh.models import NAV_SEMANTIC_HAZARD
+from environment.navigation import NAV_SEMANTIC_HAZARD
 
 import wowborg.environment  # noqa: F401 - installs host contract compatibility
 from wowborg.nav.world_model import Point
