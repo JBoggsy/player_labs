@@ -1,5 +1,21 @@
 # wowborg version log
 
+## v73 - hand hostile contact to combat immediately (2026-08-05)
+
+- Version UUID: `45f04501-7e76-4511-a9b7-892b421cc607` (`wowborg:v73`, uploaded inert;
+  not submitted). Built from source `351126e` with private tags `strategy=traverse`,
+  `source=351126e`, and `experiment=early-combat-handoff`; amd64 image manifest
+  `sha256:ae5fe98ab7971f64d13e6d9cee26ebc0adf5bafd3af821e49b0e520317054fc6`.
+- Only Traverse's existing `engage_attackers` flag now makes the local mover surface the first
+  combat frame before generic run-through, stall bookkeeping, or Stuck. Other strategies retain
+  healthy run-through behavior. Exact-target face then attack remains the primary sequence; if
+  server movement authority is already blocked, attack starts and face is retried when authority
+  returns. Focused checks: 32/32 passed.
+- Canonical 10x hosted request `xreq_0be069a7-204b-47a9-a39d-be483e820180` is streaming on
+  `traverse-wow 0.1.164`, with the child resolved to the exact v73 UUID. The mechanism fails if a
+  move/Stuck occurs between first hostile contact and face, face still follows Petrify spell 11020,
+  or cumulative outgoing damage remains zero.
+
 ## v72 - engage exact Traverse attackers (2026-08-05)
 
 - Version UUID: `c6e67ab5-cbe3-4e1e-8970-8be5e27d2638` (`wowborg:v72`, uploaded inert;

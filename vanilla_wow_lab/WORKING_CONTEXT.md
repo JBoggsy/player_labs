@@ -181,6 +181,16 @@ but its face action failed while the authoritative frame reported movement unava
 hold observations it dealt zero outgoing damage, so the pre-registered mechanism and behavioral
 criteria both failed. The next isolated correction is to start the valid exact-target attack while
 movement is unavailable and defer facing until the frame reports movement authority restored.
+Replay inspection refined the root cause: a Glasshide Petrifier landed Petrify while the local
+mover was still applying its generic run-through/stall policy, including an unnecessary Stuck
+attempt, so the first face came too late. **wowborg:v73**
+(`45f04501-7e76-4511-a9b7-892b421cc607`) is uploaded inert from `351126e`. Only Traverse's
+existing `engage_attackers` flag now makes the local mover surface the first combat frame before
+stall handling; other strategies retain healthy run-through behavior. If control is already
+blocked, it attacks the exact target and retries face when movement authority returns. Canonical
+10x request `xreq_0be069a7-204b-47a9-a39d-be483e820180` is streaming on 0.1.164. The mechanism
+fails if another move/Stuck occurs between hostile contact and face, face still lands after spell
+11020, or outgoing damage remains zero.
 
 ---
 
