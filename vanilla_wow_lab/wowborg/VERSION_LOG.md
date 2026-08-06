@@ -1,5 +1,18 @@
 # wowborg version log
 
+## v77 - spawn-safe Tanaris opening (2026-08-05)
+
+- Version UUID: `e9cfde9d-5ac5-41a2-ac56-0977de5401b5` (`wowborg:v77`, uploaded inert;
+  not submitted). Built from source `4217916` with private tags `strategy=traverse`,
+  `source=4217916`, and `experiment=spawn-safe-opening`; amd64 image manifest
+  `sha256:bfdac1b1f1297b357d68add23e50211ba0ccaa15f3a0dc7b55a45e5004fdc62c`.
+- Prepends three ordinary-navmesh graph-center guidepoints before the existing first bypass.
+  Their exact chained Detour route is 1,249.0415 yards (+9.03% versus v75) and has zero
+  conservative-envelope intersections across all 48 pinned hostile spawns in the 1,500-yard
+  opening region. The tightest positive margin is 2.324 yards; the fatal v75 Scorpid has
+  12.085 yards of margin. Travel Form, recovery, the remaining route, and normal Great Lift
+  boarding are unchanged. Focused checks: 39/39 passed. Hosted proof is pending.
+
 ## v76 - reacquire Travel Form after recovery (2026-08-05)
 
 - Version UUID: `5a13f3cf-89d0-4f52-a8b8-ea6a7668021f` (`wowborg:v76`, uploaded inert;

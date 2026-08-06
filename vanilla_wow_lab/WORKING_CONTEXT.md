@@ -52,6 +52,10 @@ detection-plus-wander envelope intersections; the tightest positive margin is 2.
 Hosted proof must show living progress beyond v75's `x=-9049.86` frontier without entry 5424
 attacking before the first existing bypass.
 
+This candidate is uploaded inert as **wowborg:v77**
+(`e9cfde9d-5ac5-41a2-ac56-0977de5401b5`, source `4217916`) and awaits current-format hosted
+proof. v63 remains the only submitted league version.
+
 Speed-first **wowborg:v74** (`621ee466-2caf-4325-881d-0ba483dc1bfd`, source `d421042`)
 completed current-format request `xreq_3bad8628-4872-4422-a805-41f74ac3c256` on
 `traverse-wow 0.1.166` with **1,797.73 northing** and `reached_goal=false`. It failed the
