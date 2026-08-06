@@ -3,8 +3,8 @@
 **Session started:** 2026-08-03 (lab bootstrap session). This is THIS SESSION's
 lesson buffer. Write candidate lessons here **as you go** — eagerly and
 noisily; most will be noise and that's fine. At the next session start, a hook
-archives this file automatically to [`lessons_archive/`](lessons_archive/) and
-creates a fresh one.
+archives this file automatically and creates a fresh
+[`../TENTATIVE_LESSONS.md`](../TENTATIVE_LESSONS.md).
 
 **Lifecycle.** Per-session buffer → automatic archive (SessionStart hook,
 `paintbot_lab/tools/rotate_lessons.sh`) → periodic human+agent review that
