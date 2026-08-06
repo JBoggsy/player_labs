@@ -172,10 +172,15 @@ typed active attacker (current auto-attack, visible recent damage source, or a l
 targeting wowborg), faces and starts melee within five yards, and holds the swing. The old flee/wait
 path remains unchanged when no exact adjacent attacker is available. Activation traces record the
 target GUID, face/attack settlement, and cumulative outgoing damage. Canonical 10x request
-`xreq_90ef6893-552c-4f08-8360-1c1c299203ca` is streaming on `traverse-wow 0.1.164` with the
-resolved v72 UUID. A combat-free run leaves the mechanism unevaluated. Mechanism success requires
-actual outgoing damage; behavioral success requires zero deaths before guidepoint one, arrival
-there before 600 seconds, and maximum living x beyond v71's `-8047.39`.
+`xreq_90ef6893-552c-4f08-8360-1c1c299203ca` completed on `traverse-wow 0.1.164` in about
+4.5 wall-clock minutes with **1,860.96 northing** and `reached_goal=false`, but the score was
+ghost-derived rather than an improvement. The only living advance reached `x=-8905.77`; wowborg
+died at 154.8 simulation seconds before reaching any guidepoint, then spent the remaining 80.3
+wall-clock seconds as a ghost. The mechanism resolved the exact attacker and started auto-attack,
+but its face action failed while the authoritative frame reported movement unavailable. Across 335
+hold observations it dealt zero outgoing damage, so the pre-registered mechanism and behavioral
+criteria both failed. The next isolated correction is to start the valid exact-target attack while
+movement is unavailable and defer facing until the frame reports movement authority restored.
 
 ---
 

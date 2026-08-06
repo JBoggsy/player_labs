@@ -13,10 +13,13 @@
   traces include target GUID, face/attack settlement, and cumulative outgoing damage. Route,
   Prowl, recovery, and every other strategy are unchanged. Focused checks: 30/30 passed.
 - Canonical 10x hosted request: `xreq_90ef6893-552c-4f08-8360-1c1c299203ca` on
-  `traverse-wow 0.1.164`, with artifact streaming enabled and the child resolved to the v72 UUID.
-  A combat-free run leaves the mechanism unevaluated. Mechanism success requires actual outgoing
-  damage; behavioral success requires zero deaths before guidepoint one, arrival there before 600
-  seconds, and maximum living x beyond v71's `-8047.39`.
+  `traverse-wow 0.1.164` completed valid in about 4.5 wall-clock minutes with **1,860.96
+  northing** and `reached_goal=false`. The score was ghost-derived: maximum living x was only
+  `-8905.77`, wowborg died at 154.8 simulation seconds before any guidepoint, and it spent the
+  remaining 80.3 wall-clock seconds as a ghost. The mechanism resolved the exact attacker and
+  started auto-attack, but the face action failed while the authoritative frame reported movement
+  unavailable. It dealt zero outgoing damage across 335 hold observations. Both pre-registered
+  criteria failed; the next experiment defers facing until movement authority returns.
 
 ## v71 - reacquire Prowl after recovery (2026-08-05)
 
