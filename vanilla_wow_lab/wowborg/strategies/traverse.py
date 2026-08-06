@@ -263,7 +263,7 @@ class TraverseStrategy:
                 safe_resume = (
                     (lambda: _activate_prowl(bridge, trace))
                     if self.route_guidepoints_arrived < PROWL_ROUTE_GUIDEPOINTS
-                    else None
+                    else (lambda: _activate_travel_form(bridge, trace))
                 )
                 result = navigator.navigate_to(
                     bridge,

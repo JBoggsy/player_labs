@@ -24,6 +24,13 @@ at the upper road. It does not inject coordinates, bridge the disconnected navme
 or manipulate death. All 39 focused lift/environment/navigation checks pass; hosted proof is
 still required.
 
+v75 hosted request `xreq_f658f8de-ab1c-44a9-ae11-f12fb3e48478` completed with **1,764.21
+northing** and `reached_goal=false`. It traveled 2,807.5 yards and ended on the normal Tanaris
+road chain at `(-7422.79,-3726.72,10.16)`, never reaching the lift. The stateful owned-replay
+reducer found one death, but the replay contains only the startup Travel Form cast. The active
+v76 source candidate therefore changes only the route's existing safe-resume callback to
+reacquire Travel Form after combat or revival; route and lift behavior are unchanged.
+
 Speed-first **wowborg:v74** (`621ee466-2caf-4325-881d-0ba483dc1bfd`, source `d421042`)
 completed current-format request `xreq_3bad8628-4872-4422-a805-41f74ac3c256` on
 `traverse-wow 0.1.166` with **1,797.73 northing** and `reached_goal=false`. It failed the

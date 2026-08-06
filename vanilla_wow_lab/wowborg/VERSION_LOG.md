@@ -11,7 +11,13 @@
   piloting once authoritative `on_transport` is observed, then walks toward the upper dock
   above z=80 and resumes navmesh travel at the upper road. It does not inject coordinates,
   teleport, bridge the disconnected navmesh, or use death routing. Focused checks: 39/39
-  passed. Hosted boarding evidence is pending.
+  passed. Current-format request `xreq_f658f8de-ab1c-44a9-ae11-f12fb3e48478`
+  (`ereq_6781dd4f-4ba8-492a-84a9-39344f8c5cb8`) completed with **1,764.21 northing**
+  and `reached_goal=false`. It traveled 2,807.5 yards and ended on the normal Tanaris road
+  chain at `(-7422.79,-3726.72,10.16)`, so the lift mechanism was not reached and remains
+  inconclusive. The stateful owned-replay reducer recorded one death, while the replay contains
+  only the startup Travel Form cast. The next isolated change reacquires Travel Form through
+  the existing safe post-combat/post-revival route callback.
 
 ## v74 - speed-first Travel Form (2026-08-05)
 
