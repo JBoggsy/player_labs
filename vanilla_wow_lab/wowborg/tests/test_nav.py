@@ -80,6 +80,18 @@ def test_l0_combat_runs_through_when_healthy() -> None:
     assert result.status == LocalMoveStatus.ARRIVED
 
 
+def test_l0_combat_surfaces_immediately_when_engaging_attackers() -> None:
+    bridge = NavWorldSession(combat_at=(30.0, 0.0, 10.0))
+    result = LocalMover().move_to(
+        bridge,
+        Point(1, 100.0, 0.0, 0.0),
+        until=deadline(),
+        engage_attackers=True,
+    )
+    assert result.status == LocalMoveStatus.COMBAT
+    assert bridge.wait_selections == 0
+
+
 def test_l0_combat_surfaces_when_losing() -> None:
     bridge = NavWorldSession(combat_at=(30.0, 0.0, 10.0))
     bridge.health = 20  # under the 50% floor — a real threat
@@ -198,6 +210,57 @@ def test_l1_combat_does_not_guess_an_attacker() -> None:
     )
 
     assert RouteNavigator()._engage_exact_attacker(SimpleNamespace(), frame) is False
+
+
+def test_l1_combat_defers_face_until_movement_authority_returns() -> None:
+    target_guid = "123"
+    unit = SimpleNamespace(
+        guid=target_guid,
+        target_guid_known=True,
+        target_guid="456",
+        death_known=True,
+        is_dead=False,
+        health_known=True,
+        health=100,
+        combat_distance_known=True,
+        combat_distance=3.0,
+    )
+    blocked_frame = SimpleNamespace(
+        frame_id=7,
+        in_combat=True,
+        is_dead=False,
+        is_ghost=False,
+        player_guid="456",
+        auto_attack_guid="0",
+        combat_damage_done_total=0,
+        movement_allowed=False,
+        threat=SimpleNamespace(
+            recent_damage_source_visible=True,
+            recent_damage_source_guid=target_guid,
+        ),
+        units=[unit],
+    )
+    active_frame = SimpleNamespace(
+        frame_id=8,
+        auto_attack_guid=target_guid,
+        combat_damage_done_total=0,
+        movement_allowed=True,
+    )
+    selected = []
+    bridge = SimpleNamespace(
+        select_target_action=lambda selected_frame, kind, guid: (
+            selected.append((selected_frame.frame_id, kind, guid)) or "request"
+        ),
+        wait_for_settlement=lambda *_args, **_kwargs: SimpleNamespace(success=True),
+        observe=lambda: blocked_frame,
+    )
+    navigator = RouteNavigator()
+
+    assert navigator._engage_exact_attacker(bridge, blocked_frame) is True
+    assert selected == [(7, "attack", target_guid)]
+
+    assert navigator._engage_exact_attacker(bridge, active_frame) is True
+    assert selected == [(7, "attack", target_guid), (8, "face", target_guid)]
 
 
 def test_l1_death_recovery_then_arrival() -> None:

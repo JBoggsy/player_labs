@@ -85,6 +85,7 @@ class LocalMover:
         arrival_radius: float = ARRIVAL_RADIUS_YARDS,
         until: float,
         arrival_target: Point | None = None,
+        engage_attackers: bool = False,
     ) -> LocalMoveResult:
         """Drive toward ``target`` until 3D-arrived or a typed non-arrival status.
 
@@ -137,7 +138,9 @@ class LocalMover:
             if here.map_id != target.map_id:
                 return LocalMoveResult(LocalMoveStatus.MAP_CHANGED, here, moves,
                                        time.monotonic() - started)
-            if obs.in_combat and self._combat_needs_attention(obs, stalls):
+            if obs.in_combat and (
+                engage_attackers or self._combat_needs_attention(obs, stalls)
+            ):
                 return LocalMoveResult(LocalMoveStatus.COMBAT, here, moves,
                                        time.monotonic() - started)
 

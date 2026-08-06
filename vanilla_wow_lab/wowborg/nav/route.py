@@ -96,6 +96,7 @@ class RouteNavigator:
     tracer: object | None = None
     pace: PaceEstimator = field(default_factory=PaceEstimator)
     mover: LocalMover = field(default_factory=LocalMover)
+    _faced_attacker_guid: str = field(default="0", init=False, repr=False)
 
     def __post_init__(self) -> None:
         self.mover.tracer = self.tracer
@@ -312,6 +313,7 @@ class RouteNavigator:
                     arrival_radius=arrival_radius if final_hop else STAGE_ARRIVAL_RADIUS_YARDS,
                     until=min(deadline, time.monotonic() + budget_left),
                     arrival_target=None,
+                    engage_attackers=engage_attackers,
                 )
                 hop_seconds = time.monotonic() - hop_started
 
@@ -470,6 +472,7 @@ class RouteNavigator:
                 time.sleep(1.0)
                 continue
             if not frame.in_combat:
+                self._faced_attacker_guid = "0"
                 return True
             if engage_attackers and self._engage_exact_attacker(bridge, frame):
                 continue
@@ -487,6 +490,29 @@ class RouteNavigator:
         """Start or hold melee only when the frame proves combat ownership."""
         active_guid = frame.auto_attack_guid
         if active_guid != "0":
+            if (
+                active_guid != self._faced_attacker_guid
+                and getattr(frame, "movement_allowed", True)
+            ):
+                face_id = bridge.select_target_action(frame, "face", active_guid)
+                if face_id is not None:
+                    face_outcome = bridge.wait_for_settlement(
+                        frame.frame_id,
+                        timeout_s=RECOVERY_STEP_TIMEOUT_S,
+                    )
+                    face_succeeded = (
+                        face_outcome is not None and face_outcome.success
+                    )
+                    if face_succeeded:
+                        self._faced_attacker_guid = active_guid
+                    self._trace(
+                        "nav_combat_engage",
+                        phase="face",
+                        target_guid=active_guid,
+                        success=face_succeeded,
+                        damage_done=frame.combat_damage_done_total,
+                    )
+                    return True
             self._trace(
                 "nav_combat_engage",
                 phase="holding",
@@ -522,20 +548,31 @@ class RouteNavigator:
             if unit.combat_distance > MELEE_ENGAGE_DISTANCE_YARDS:
                 continue
 
-            face_id = bridge.select_target_action(frame, "face", target_guid)
-            if face_id is None:
-                return False
-            face_outcome = bridge.wait_for_settlement(
-                frame.frame_id,
-                timeout_s=RECOVERY_STEP_TIMEOUT_S,
-            )
-            self._trace(
-                "nav_combat_engage",
-                phase="face",
-                target_guid=target_guid,
-                success=face_outcome is not None and face_outcome.success,
-                damage_done=frame.combat_damage_done_total,
-            )
+            if getattr(frame, "movement_allowed", True):
+                face_id = bridge.select_target_action(frame, "face", target_guid)
+                if face_id is None:
+                    return False
+                face_outcome = bridge.wait_for_settlement(
+                    frame.frame_id,
+                    timeout_s=RECOVERY_STEP_TIMEOUT_S,
+                )
+                face_succeeded = face_outcome is not None and face_outcome.success
+                if face_succeeded:
+                    self._faced_attacker_guid = target_guid
+                self._trace(
+                    "nav_combat_engage",
+                    phase="face",
+                    target_guid=target_guid,
+                    success=face_succeeded,
+                    damage_done=frame.combat_damage_done_total,
+                )
+            else:
+                self._trace(
+                    "nav_combat_engage",
+                    phase="face_deferred",
+                    target_guid=target_guid,
+                    damage_done=frame.combat_damage_done_total,
+                )
 
             attack_frame = bridge.observe()
             if (
