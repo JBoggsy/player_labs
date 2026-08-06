@@ -32,6 +32,11 @@ sessions. Keep it tidy: one bullet per preference, drop ones that are superseded
   destroying data. Encoded in `AGENTS.md` ("Speed is the meta-priority") and
   `best_practices.md` ("Speed first").
 
+- **Create hosted experience requests without asking first** (James, 2026-08-06).
+  Hosted episodes are cheap and routine: whenever they would answer the current question,
+  create the targeted request immediately and stream its artifacts. Do not pause merely to
+  request permission for an evaluation; league submission remains separately gated.
+
 - **XP requests > 16 episodes: always bring up the dashboard** (James, 2026-07-01).
   Whenever you create an experience request with more than 16 episodes, start the
   XP dashboard for it (`.claude/skills/coworld-experience-requests/scripts/xp_dashboard.py
