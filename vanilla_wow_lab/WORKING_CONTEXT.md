@@ -29,7 +29,9 @@ northing** and `reached_goal=false`. It traveled 2,807.5 yards and ended on the 
 road chain at `(-7422.79,-3726.72,10.16)`, never reaching the lift. The stateful owned-replay
 reducer found one death, but the replay contains only the startup Travel Form cast. The active
 v76 source candidate therefore changes only the route's existing safe-resume callback to
-reacquire Travel Form after combat or revival; route and lift behavior are unchanged.
+reacquire Travel Form after combat or revival; route and lift behavior are unchanged. This is
+uploaded inert as **wowborg:v76** (`5a13f3cf-89d0-4f52-a8b8-ea6a7668021f`, source
+`d3216d7`) and awaits current-format hosted proof.
 
 Speed-first **wowborg:v74** (`621ee466-2caf-4325-881d-0ba483dc1bfd`, source `d421042`)
 completed current-format request `xreq_3bad8628-4872-4422-a805-41f74ac3c256` on

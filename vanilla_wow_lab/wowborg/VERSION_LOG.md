@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v76 - reacquire Travel Form after recovery (2026-08-05)
+
+- Version UUID: `5a13f3cf-89d0-4f52-a8b8-ea6a7668021f` (`wowborg:v76`, uploaded inert;
+  not submitted). Built from source `d3216d7` with private tags `strategy=traverse`,
+  `source=d3216d7`, and `experiment=travel-form-safe-resume`; amd64 image manifest
+  `sha256:caec163ab8ff035d5df3b7ab99324ef3a53c06ece50fecb43405d71b2209f93d`.
+- The route's existing verified living, out-of-combat safe-resume seam now reacquires Travel
+  Form after combat or corpse recovery. The route, normal lift boarding, and healthy
+  run-through behavior are unchanged. Focused checks: 39/39 passed. Hosted proof is pending.
+
 ## v75 - board and ride the observed Great Lift (2026-08-05)
 
 - Version UUID: `c75e24cc-166f-43df-9d52-d77724cc4b16` (`wowborg:v75`, uploaded inert;
