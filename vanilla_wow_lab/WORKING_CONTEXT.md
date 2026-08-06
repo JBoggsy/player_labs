@@ -13,7 +13,7 @@ file is the one-screen "where are we and why."
 
 ---
 
-## Status (2026-08-05): IMPLEMENTING LEGITIMATE GREAT LIFT BOARDING
+## Status (2026-08-05): PREPARING THE COMPLETE SPAWN-SAFE V78 OPENING
 
 Inert **wowborg:v75** (`c75e24cc-166f-43df-9d52-d77724cc4b16`, source `aed90c9`)
 adds the required Great Lift transition after the lower-dock route.
@@ -43,26 +43,28 @@ the full pinned-spawn audit increases conservative hostile-envelope intersection
 18 and introduces 11 contacts, several within 3.7-6.8 yards. The next route change must use a
 multi-point ordinary-Detour corridor proven against the full pinned spawn set.
 
-The active v77 source candidate prepends three normal-navmesh graph centers:
-`(-9056,-2421.3333,12.2515)`, `(-8334.84375,-2138.84448,26.49644)`, and
-`(-8281.73242,-2198.66650,30.01727)`. Exact chained Detour length to the existing first
-bypass is 1,249.0415 yards, 103.4337 yards (+9.03%) longer than the lethal current path.
-Against all 48 pinned hostile spawns in the 1,500-yard start region it has zero conservative
-detection-plus-wander envelope intersections; the tightest positive margin is 2.324 yards.
-Hosted proof must show living progress beyond v75's `x=-9049.86` frontier without entry 5424
-attacking before the first existing bypass.
-
-This candidate is uploaded inert as **wowborg:v77**
+The prior candidate is uploaded inert as **wowborg:v77**
 (`e9cfde9d-5ac5-41a2-ac56-0977de5401b5`, source `4217916`) and awaits current-format hosted
 proof. v63 remains the only submitted league version.
 
-v77 request `xreq_227bf53a-a8f3-42a0-bc00-1a367d5b9457` falsified that audit. It died before
+v77 request `xreq_227bf53a-a8f3-42a0-bc00-1a367d5b9457` falsified its 48-spawn audit. It died before
 GP1 completed at maximum living `x=-9056.248`; the 1,752.34 headline was ghost-derived. A
 Rabid Blisterpaw (entry 5427, GUID 22586) had been omitted because the prior 48-row audit was
 route-local, not regional. The correct region contains 136 pinned hostile rows, and v77's exact
-route crosses seven conservative envelopes. The active v78 investigation is regenerating only
-the opening against all 136 rows; combat, recovery, the later route, and normal lift boarding
+route crosses seven conservative envelopes.
+
+The v78 source candidate replaces only that opening with eight ordinary-navmesh guidepoints,
+then rejoins the existing first Centipaar bypass. Its exact chained Detour route is 2,122.1609
+yards and crosses zero conservative envelopes across all 136 regional hostile rows; the
+tightest margin is +0.226 yards. Combat, recovery, the later route, and normal lift boarding
 remain unchanged.
+
+Independent replay/source profiling also proved the current hosted Coworld's semantic movement
+is effectively 1x inside its advertised 10x world: EnvHost created a 10x frame clock but left
+the movement delay's process gameplay clock at 1x. Owner-repo commit `fd425e550` fixes that
+locally and passes the focused host proof plus 40 architecture checks, but it is not pushed or
+published. A v78 hosted result is not decision-grade until Traverse runs a Coworld containing
+that owner fix. Publication and league update require explicit human authorization.
 
 Speed-first **wowborg:v74** (`621ee466-2caf-4325-881d-0ba483dc1bfd`, source `d421042`)
 completed current-format request `xreq_3bad8628-4872-4422-a805-41f74ac3c256` on

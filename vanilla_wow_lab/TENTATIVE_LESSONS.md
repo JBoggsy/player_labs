@@ -27,6 +27,15 @@ now accepts `--strategy NAME` at build time and bakes `WOWBORG_STRATEGY` into th
 image; one version has one attributable competition objective.
 Status: candidate — preserves version provenance and keeps submission configuration simple.
 
+### Compare every advertised simulation clock with the actuator's delay clock
+
+Evidence: Traverse frames and the realm advanced at 10x, but wowborg's ordinary semantic
+movement advanced only about 500 movement milliseconds per 0.5 wall seconds. EnvHost owned a
+correct 10x per-session frame clock while `MoveAction` delays read an unconfigured process
+gameplay clock that remained at 1x. Owner commit `fd425e550` applies the attached world scale
+before client startup without changing navmesh, collision, or movement packets.
+Status: candidate — timestamp metadata does not prove the actuator consumes the same clock.
+
 ### Inspect the exact target image filesystem before carrying forward Docker COPY paths
 
 Evidence: traverse-wow 0.1.160 moved the published Python `environment/` and `player/sdk/`

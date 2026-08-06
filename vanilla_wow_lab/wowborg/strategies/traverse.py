@@ -32,21 +32,41 @@ GREAT_LIFT_EXIT_Z = 80.0
 GREAT_LIFT_TURN_DEADBAND = 0.20
 GREAT_LIFT_INPUT_SECONDS = 0.75
 
-# The three initial graph-center legs avoid every conservative hostile envelope
-# in the pinned 1,500-yard start region. The remaining Detour-proven bypass
-# reaches the lower dock without crossing active Centipaar Wasp/Worker envelopes.
+# Eight opening guidepoints form nine exact Detour legs through zero pinned
+# detection-plus-wander envelopes across all 136 regional hostile spawns. The
+# remaining Detour-proven bypass clears the active Centipaar envelopes.
 TRAVERSE_ROUTE_PREFIX = (
     (
         "tanaris-start-safe-1",
-        Point(1, -9056.0, -2421.333251953125, 12.2515287399292),
+        Point(1, -9311.9990234375, -2677.333251953125, 9.571125984191895),
     ),
     (
         "tanaris-start-safe-2",
-        Point(1, -8334.84375, -2138.844482421875, 26.496440887451172),
+        Point(1, -9311.9990234375, -2784.0, 14.883625984191895),
     ),
     (
         "tanaris-start-safe-3",
-        Point(1, -8281.732421875, -2198.66650390625, 30.01727294921875),
+        Point(1, -9141.3330078125, -2933.3330078125, 36.94612503051758),
+    ),
+    (
+        "tanaris-start-safe-4",
+        Point(1, -8693.3330078125, -2933.3330078125, 14.039186477661133),
+    ),
+    (
+        "tanaris-start-safe-5",
+        Point(1, -8241.955078125, -2775.288818359375, 33.05540084838867),
+    ),
+    (
+        "tanaris-start-safe-6",
+        Point(1, -8181.3330078125, -2357.333251953125, 10.32977294921875),
+    ),
+    (
+        "tanaris-start-safe-7",
+        Point(1, -8166.4, -2259.6, 10.0),
+    ),
+    (
+        "tanaris-start-safe-8",
+        Point(1, -8168.0, -2210.0, 10.0),
     ),
     ("tanaris-centipaar-bypass-1", Point(1, -8132.53, -2196.98, 7.41)),
     ("tanaris-centipaar-bypass-2", Point(1, -8032.96, -2228.0, -14.77)),
