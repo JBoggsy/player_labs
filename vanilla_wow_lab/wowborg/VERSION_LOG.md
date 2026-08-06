@@ -1,5 +1,23 @@
 # wowborg version log
 
+## v78 - complete regional spawn-safe opening (2026-08-05)
+
+- Version UUID: `36f3f0bf-2261-42ec-9d8a-4a084e145b81` (`wowborg:v78`, uploaded inert;
+  not submitted). Built from source `3e95dcb` with private tags `strategy=traverse`,
+  `source=3e95dcb`, and `experiment=complete-spawn-safe-opening`; amd64 image manifest
+  `sha256:5150e1ddf8985a836fcd9f8a31c30efaa658059b185c0f38829e3a10466b5059`.
+- Replaces only v77's unsafe three-point opening with eight exact ordinary-navmesh
+  guidepoints, then rejoins the existing first Centipaar bypass. The 2,122.1609-yard
+  nine-leg exact Detour route has zero conservative detection-plus-wander envelope
+  intersections across all 136 pinned regional hostile rows and 704 smooth-route points.
+  The tightest clearance is +0.226 yards, so an exact first-nine-entry regression pins the
+  coordinates. Combat, recovery, the later route, and normal Great Lift boarding are
+  unchanged. Focused checks: 8/8 passed.
+- Hosted evaluation is deferred until Traverse uses a Coworld containing owner commit
+  `fd425e550`, which corrects the semantic movement delay from effective 1x to the league's
+  advertised 10x. Evaluating v78 on the current 0.1.166 world would not answer whether this
+  route can complete within the actual accelerated contract.
+
 ## v77 - spawn-safe Tanaris opening (2026-08-05)
 
 - Version UUID: `e9cfde9d-5ac5-41a2-ac56-0977de5401b5` (`wowborg:v77`, uploaded inert;

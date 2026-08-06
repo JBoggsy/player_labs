@@ -53,11 +53,12 @@ Rabid Blisterpaw (entry 5427, GUID 22586) had been omitted because the prior 48-
 route-local, not regional. The correct region contains 136 pinned hostile rows, and v77's exact
 route crosses seven conservative envelopes.
 
-The v78 source candidate replaces only that opening with eight ordinary-navmesh guidepoints,
+Inert **wowborg:v78** (`36f3f0bf-2261-42ec-9d8a-4a084e145b81`, source `3e95dcb`)
+replaces only that opening with eight ordinary-navmesh guidepoints,
 then rejoins the existing first Centipaar bypass. Its exact chained Detour route is 2,122.1609
 yards and crosses zero conservative envelopes across all 136 regional hostile rows; the
 tightest margin is +0.226 yards. Combat, recovery, the later route, and normal lift boarding
-remain unchanged.
+remain unchanged. v78 is uploaded but not submitted; v63 remains the only submitted version.
 
 Independent replay/source profiling also proved the current hosted Coworld's semantic movement
 is effectively 1x inside its advertised 10x world: EnvHost created a 10x frame clock but left
