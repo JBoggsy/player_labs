@@ -20,6 +20,7 @@ from environment.contract.agent import (
     AreaTriggerAction,
     CastAction,
     MoveAction,
+    MoveVectorAction,
     NoArgumentAction,
     SpellObservation,
     TargetAction,
@@ -185,6 +186,26 @@ class GymSession:
                 destination=WorldPoint(map_id=map_id, x=x, y=y, z=z),
                 arrival_radius=3.0,
                 purpose="wowborg navigation",
+            ),
+        )
+
+    def select_move_vector(
+        self,
+        frame: AgentFrame,
+        *,
+        forward: float = 0.0,
+        turn: float = 0.0,
+        duration: float,
+        purpose: str,
+    ) -> str | None:
+        return self.select_action(
+            frame,
+            MoveVectorAction(
+                forward=forward,
+                strafe=0.0,
+                turn=turn,
+                duration=duration,
+                purpose=purpose,
             ),
         )
 

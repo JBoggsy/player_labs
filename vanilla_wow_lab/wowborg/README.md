@@ -40,12 +40,13 @@ resolution is pinned to the matching owner commit in the root `pyproject.toml`.
   deadline to leave the game time to finalize replay/results, matching the owner
   reference player.
 - `strategies/` — competition-level objectives selected by `WOWBORG_STRATEGY`.
-  `traverse` uses Druid Cat Form plus Prowl through the early hostile bypass,
-  reacquires Prowl after combat or corpse recovery, switches to Travel Form
-  afterward, and follows the semantic route to the Great Lift lower dock. If that
-  prefix is unavailable, or after it completes, the strategy falls back to the
-  safest untried reachable frontier with the greatest authoritative Kalimdor world
-  X. Both route-guide and frontier activations are traced.
+  `traverse` activates Travel Form immediately and follows the semantic route to
+  the Great Lift lower dock. It waits for an actually observed lift platform,
+  boards with bounded ordinary movement input, confirms transport attachment,
+  rides without piloting, and walks onto the upper dock before resuming normal
+  navmesh travel. If the prefix is unavailable, or after the lift completes, the
+  strategy falls back to the safest untried reachable frontier with the greatest
+  authoritative Kalimdor world X. Route, lift, and frontier activations are traced.
 - `policies/` — retained experiment and navigation-benchmark policies; they are
   not selected by the production entry point.
 - `nav/` — local movement supervision, route planning, and world-graph journeys.

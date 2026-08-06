@@ -13,7 +13,23 @@ file is the one-screen "where are we and why."
 
 ---
 
-## Status (2026-08-05): TRAVERSE STRATEGY LAYER BUILDS AGAINST THE CERTIFIED WORLD
+## Status (2026-08-05): IMPLEMENTING LEGITIMATE GREAT LIFT BOARDING
+
+The active local candidate adds the required Great Lift transition after the lower-dock route.
+It selects only visible platform entries 11898/11899 at lower-dock height, turns and walks onto
+the platform through bounded `move_vector` ordinary-client input, waits after authoritative
+`on_transport`, and walks toward the upper dock only above z=80 before resuming navmesh travel
+at the upper road. It does not inject coordinates, bridge the disconnected navmesh, teleport,
+or manipulate death. Focused lift/action checks pass; hosted proof is still required.
+
+Speed-first **wowborg:v74** (`621ee466-2caf-4325-881d-0ba483dc1bfd`, source `d421042`)
+completed current-format request `xreq_3bad8628-4872-4422-a805-41f74ac3c256` on
+`traverse-wow 0.1.166` with **1,797.73 northing** and `reached_goal=false`. It failed the
+preregistered 2,000-yard floor and did not reach the lift. Ordinary-permission artifact fetch
+returned the replay but no owned trace/results/log artifact. v63 remains the only submitted
+league version; v74 and the lift candidate are inert.
+
+## Earlier status: TRAVERSE STRATEGY LAYER BUILDS AGAINST THE CERTIFIED WORLD
 
 Wowborg now separates competition objectives from shared navigation/recovery. The image
 bakes exactly one objective with `tools/build_player.sh --strategy NAME`; the only current

@@ -1,5 +1,20 @@
 # wowborg version log
 
+## v74 - speed-first Travel Form (2026-08-05)
+
+- Version UUID: `621ee466-2caf-4325-881d-0ba483dc1bfd` (`wowborg:v74`, uploaded inert;
+  not submitted). Built from source `d421042` with private tags `strategy=traverse`,
+  `source=d421042`, and `experiment=speed-first-travel-form`; amd64 image manifest
+  `sha256:2a0465e3157a66524715d24dbd47c81b831b3995e68b947ae7c32d44d1b2fe98`.
+- Traverse now activates Travel Form immediately and uses the existing healthy run-through
+  navigation behavior instead of deliberately engaging early attackers. No movement or
+  recovery bypass was added. Focused checks: 32/32 passed.
+- Current-format request `xreq_3bad8628-4872-4422-a805-41f74ac3c256` completed on
+  `traverse-wow 0.1.166` with **1,797.73 northing** and `reached_goal=false`, below the
+  preregistered 2,000-yard failure floor. The ordinary-permission fetch returned its replay
+  but no owned policy trace, results artifact, or policy log. The replay confirms one Travel
+  Form cast and 2,790.9 yards of trajectory. This result did not reach or test the Great Lift.
+
 ## v73 - hand hostile contact to combat immediately (2026-08-05)
 
 - Version UUID: `45f04501-7e76-4511-a9b7-892b421cc607` (`wowborg:v73`, uploaded inert;
@@ -645,11 +660,12 @@ Every episode referenced above is re-downloadable from the Observatory by id:
 
 ```sh
 uv run python .claude/skills/coworld-episode-artifacts/scripts/fetch_artifacts.py \
-  --ereq <ereq_id> --out vanilla_wow_lab/episode_data --elevated
+  --ereq <owned_ereq_id> --out vanilla_wow_lab/episode_data
 ```
 
-`--elevated` is required — without it `results.json` and the policy logs 403 and you get a
-replay-only directory. Score it with `tools/movement_report.py <episode_dir>`.
+Only retrieve another player's logs or artifacts when ordinary non-elevated access permits it.
+Never use elevated permissions for competitor intelligence. Some ordinary-permission fetches
+return only a replay; score that evidence with `tools/movement_report.py <episode_dir>`.
 
 The movement-continuity baseline is `ereq_422085f1-9ec7-4554-b2ba-9942947e5dc2` (v59 on
 0.1.124): 4,097 movement packets, 239 forward starts, 243 stops, 326 turn starts, 356 turn

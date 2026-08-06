@@ -12,11 +12,14 @@ from wowborg.nav.world_model import Point
 from wowborg.strategies import build_strategy
 from wowborg.strategies.traverse import (
     CAT_FORM_SPELL_ID,
+    GREAT_LIFT_LOWER_DOCK,
     PROWL_SPELL_IDS,
     TRAVERSE_ROUTE_PREFIX,
     TraverseStrategy,
     _activate_prowl,
+    _observed_lift_at_lower_dock,
     _select_frontier,
+    _steer_toward,
 )
 
 
@@ -143,3 +146,40 @@ def test_traverse_route_prefix_reaches_great_lift_lower_dock() -> None:
     ]
     assert TRAVERSE_ROUTE_PREFIX[-1][1] == Point(1, -4677.066, -1853.667, -43.857)
     assert len(names) == len(set(names)) == 5
+
+
+def test_lift_detection_uses_only_visible_platform_at_lower_dock() -> None:
+    upper = SimpleNamespace(
+        entry=11898,
+        distance=10.0,
+        location=SimpleNamespace(z=85.7),
+    )
+    lower = SimpleNamespace(
+        entry=11899,
+        distance=8.0,
+        location=SimpleNamespace(z=GREAT_LIFT_LOWER_DOCK.z),
+    )
+
+    selected = _observed_lift_at_lower_dock(
+        SimpleNamespace(objects=[upper, lower])
+    )
+
+    assert selected is lower
+
+
+def test_lift_steering_turns_before_walking_forward() -> None:
+    actions = []
+    bridge = SimpleNamespace(
+        select_move_vector=lambda frame, **action: actions.append(action)
+    )
+    frame = SimpleNamespace(
+        location=SimpleNamespace(x=0.0, y=0.0, orientation=0.0)
+    )
+
+    _steer_toward(bridge, frame, Point(1, 0.0, 10.0, 0.0), purpose="board")
+    _steer_toward(bridge, frame, Point(1, 10.0, 0.0, 0.0), purpose="board")
+
+    assert actions[0]["turn"] == 1.0
+    assert actions[0].get("forward", 0.0) == 0.0
+    assert actions[1]["forward"] == 1.0
+    assert actions[1].get("turn", 0.0) == 0.0

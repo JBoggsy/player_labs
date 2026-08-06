@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import time
 from dataclasses import dataclass, field
 
@@ -21,6 +22,15 @@ CAT_FORM_SPELL_ID = 768
 PROWL_SPELL_IDS = (9913, 6783, 5215)
 TRAVEL_FORM_SPELL_ID = 783
 PROWL_ROUTE_GUIDEPOINTS = 0
+GREAT_LIFT_ENTRIES = (11898, 11899)
+GREAT_LIFT_LOWER_DOCK = Point(1, -4677.066, -1853.667, -43.857)
+GREAT_LIFT_UPPER_DOCK = Point(1, -4650.066, -1850.482, 85.705)
+GREAT_LIFT_UPPER_ROAD = Point(1, -4583.315, -1908.142, 95.58)
+GREAT_LIFT_VISIBLE_RANGE = 42.0
+GREAT_LIFT_DOCK_Z_SLACK = 2.0
+GREAT_LIFT_EXIT_Z = 80.0
+GREAT_LIFT_TURN_DEADBAND = 0.20
+GREAT_LIFT_INPUT_SECONDS = 0.75
 
 # Exact 0.1.160 Detour routes prove this prefix reaches the lower dock while
 # avoiding every active Centipaar Wasp/Worker detection and wander envelope.
@@ -30,8 +40,39 @@ TRAVERSE_ROUTE_PREFIX = (
     ("tanaris-centipaar-bypass-2", Point(1, -8032.96, -2228.0, -14.77)),
     ("tanaris-centipaar-bypass-3", Point(1, -7897.90, -2283.90, 22.30)),
     ("tanaris-centipaar-bypass-4", Point(1, -7577.28, -2467.20, -9.47)),
-    ("great-lift-lower-dock", Point(1, -4677.066, -1853.667, -43.857)),
+    ("great-lift-lower-dock", GREAT_LIFT_LOWER_DOCK),
 )
+
+
+def _observed_lift_at_lower_dock(frame):
+    lifts = (
+        obj
+        for obj in frame.objects
+        if obj.entry in GREAT_LIFT_ENTRIES
+        and obj.distance <= GREAT_LIFT_VISIBLE_RANGE
+        and abs(obj.location.z - GREAT_LIFT_LOWER_DOCK.z)
+        <= GREAT_LIFT_DOCK_Z_SLACK
+    )
+    return min(lifts, key=lambda obj: obj.distance, default=None)
+
+
+def _steer_toward(bridge, frame, target: Point, *, purpose: str) -> None:
+    desired = math.atan2(target.y - frame.location.y, target.x - frame.location.x)
+    delta = (desired - frame.location.orientation + math.pi) % (2 * math.pi) - math.pi
+    if abs(delta) > GREAT_LIFT_TURN_DEADBAND:
+        bridge.select_move_vector(
+            frame,
+            turn=1.0 if delta > 0 else -1.0,
+            duration=min(GREAT_LIFT_INPUT_SECONDS, max(0.15, abs(delta) / math.pi)),
+            purpose=purpose,
+        )
+        return
+    bridge.select_move_vector(
+        frame,
+        forward=1.0,
+        duration=GREAT_LIFT_INPUT_SECONDS,
+        purpose=purpose,
+    )
 
 
 def _select_frontier(graph, *, best_world_x: float, visited: set[str]):
@@ -144,6 +185,9 @@ class TraverseStrategy:
     route_failures: int = 0
     route_guidepoints_arrived: int = 0
     route_prefix_abandoned: bool = False
+    great_lift_boarded: bool = False
+    great_lift_completed: bool = False
+    great_lift_upper_road_arrived: bool = False
     visited_frontiers: set[str] = field(default_factory=set)
 
     def summary(self) -> dict[str, object]:
@@ -161,6 +205,9 @@ class TraverseStrategy:
             "route_prefix_completed": (
                 self.route_guidepoints_arrived == len(TRAVERSE_ROUTE_PREFIX)
             ),
+            "great_lift_boarded": self.great_lift_boarded,
+            "great_lift_completed": self.great_lift_completed,
+            "great_lift_upper_road_arrived": self.great_lift_upper_road_arrived,
         }
 
     def run(self, bridge, *, until: float) -> None:
@@ -242,6 +289,89 @@ class TraverseStrategy:
                         "traverse_route_guidepoint_failed",
                         activation=self.route_guidepoints_arrived + 1,
                         name=name,
+                        reason=result.reason,
+                    )
+                continue
+
+            if (
+                self.route_guidepoints_arrived == len(TRAVERSE_ROUTE_PREFIX)
+                and not self.great_lift_completed
+            ):
+                frame = bridge.observe()
+                if frame is None:
+                    time.sleep(1.0)
+                    continue
+                if frame.on_transport:
+                    if not self.great_lift_boarded:
+                        self.great_lift_boarded = True
+                        trace(
+                            "traverse_great_lift_boarded",
+                            world_z=round(frame.location.z, 3),
+                        )
+                    if frame.location.z >= GREAT_LIFT_EXIT_Z:
+                        _steer_toward(
+                            bridge,
+                            frame,
+                            GREAT_LIFT_UPPER_DOCK,
+                            purpose="walk off the observed Great Lift at its upper dock",
+                        )
+                        trace(
+                            "traverse_great_lift_disembarking",
+                            world_z=round(frame.location.z, 3),
+                        )
+                    else:
+                        bridge.select_wait(frame)
+                    continue
+
+                if frame.location.z >= GREAT_LIFT_EXIT_Z:
+                    self.great_lift_completed = True
+                    trace(
+                        "traverse_great_lift_completed",
+                        world_z=round(frame.location.z, 3),
+                    )
+                    continue
+
+                lift = _observed_lift_at_lower_dock(frame)
+                if lift is None:
+                    bridge.select_wait(frame)
+                    trace("traverse_great_lift_waiting")
+                    continue
+                _steer_toward(
+                    bridge,
+                    frame,
+                    Point(
+                        frame.location.map_id,
+                        lift.location.x,
+                        lift.location.y,
+                        lift.location.z,
+                    ),
+                    purpose="board the observed Great Lift through ordinary movement",
+                )
+                trace(
+                    "traverse_great_lift_boarding",
+                    lift_entry=lift.entry,
+                    lift_guid=lift.guid,
+                    lift_distance=round(lift.distance, 3),
+                    lift_z=round(lift.location.z, 3),
+                )
+                continue
+
+            if self.great_lift_completed and not self.great_lift_upper_road_arrived:
+                result = navigator.navigate_to(
+                    bridge,
+                    GREAT_LIFT_UPPER_ROAD,
+                    deadline=until,
+                    engage_attackers=False,
+                )
+                if result.end is not None:
+                    self.best_world_x = max(self.best_world_x, result.end.x)
+                if result.state == NavState.ARRIVED:
+                    self.great_lift_upper_road_arrived = True
+                    trace("traverse_great_lift_upper_road_arrived")
+                else:
+                    self.route_failures += 1
+                    trace(
+                        "traverse_great_lift_upper_road_failed",
                         reason=result.reason,
                     )
                 continue
