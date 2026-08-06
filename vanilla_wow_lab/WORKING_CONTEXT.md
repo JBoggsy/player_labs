@@ -43,6 +43,15 @@ the full pinned-spawn audit increases conservative hostile-envelope intersection
 18 and introduces 11 contacts, several within 3.7-6.8 yards. The next route change must use a
 multi-point ordinary-Detour corridor proven against the full pinned spawn set.
 
+The active v77 source candidate prepends three normal-navmesh graph centers:
+`(-9056,-2421.3333,12.2515)`, `(-8334.84375,-2138.84448,26.49644)`, and
+`(-8281.73242,-2198.66650,30.01727)`. Exact chained Detour length to the existing first
+bypass is 1,249.0415 yards, 103.4337 yards (+9.03%) longer than the lethal current path.
+Against all 48 pinned hostile spawns in the 1,500-yard start region it has zero conservative
+detection-plus-wander envelope intersections; the tightest positive margin is 2.324 yards.
+Hosted proof must show living progress beyond v75's `x=-9049.86` frontier without entry 5424
+attacking before the first existing bypass.
+
 Speed-first **wowborg:v74** (`621ee466-2caf-4325-881d-0ba483dc1bfd`, source `d421042`)
 completed current-format request `xreq_3bad8628-4872-4422-a805-41f74ac3c256` on
 `traverse-wow 0.1.166` with **1,797.73 northing** and `reached_goal=false`. It failed the

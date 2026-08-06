@@ -138,6 +138,9 @@ def test_traverse_route_prefix_reaches_great_lift_lower_dock() -> None:
     names = [name for name, _point in TRAVERSE_ROUTE_PREFIX]
 
     assert names == [
+        "tanaris-start-safe-1",
+        "tanaris-start-safe-2",
+        "tanaris-start-safe-3",
         "tanaris-centipaar-bypass-1",
         "tanaris-centipaar-bypass-2",
         "tanaris-centipaar-bypass-3",
@@ -145,7 +148,7 @@ def test_traverse_route_prefix_reaches_great_lift_lower_dock() -> None:
         "great-lift-lower-dock",
     ]
     assert TRAVERSE_ROUTE_PREFIX[-1][1] == Point(1, -4677.066, -1853.667, -43.857)
-    assert len(names) == len(set(names)) == 5
+    assert len(names) == len(set(names)) == 8
 
 
 def test_lift_detection_uses_only_visible_platform_at_lower_dock() -> None:
