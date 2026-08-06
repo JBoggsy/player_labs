@@ -1,5 +1,23 @@
 # wowborg version log
 
+## v72 - engage exact Traverse attackers (2026-08-05)
+
+- Version UUID: `c6e67ab5-cbe3-4e1e-8970-8be5e27d2638` (`wowborg:v72`, uploaded inert;
+  not submitted). Built from source `c0cc241` with private tags `strategy=traverse`,
+  `source=c0cc241`, and `experiment=exact-attacker-melee`; amd64 image manifest
+  `sha256:5a07cc5e0057d129f0b4b2d515082b49d4506fb239f00b8803cc597af17c3b29`.
+- Changes only Traverse's existing combat pause. It resolves a typed active attacker from the
+  current auto-attack GUID, visible recent damage source, or a live visible unit targeting
+  wowborg; within five yards it faces, starts semantic melee, and holds the swing. When no exact
+  adjacent attacker is available, the prior flee/wait behavior remains unchanged. Activation
+  traces include target GUID, face/attack settlement, and cumulative outgoing damage. Route,
+  Prowl, recovery, and every other strategy are unchanged. Focused checks: 30/30 passed.
+- Canonical 10x hosted request: `xreq_90ef6893-552c-4f08-8360-1c1c299203ca` on
+  `traverse-wow 0.1.164`, with artifact streaming enabled and the child resolved to the v72 UUID.
+  A combat-free run leaves the mechanism unevaluated. Mechanism success requires actual outgoing
+  damage; behavioral success requires zero deaths before guidepoint one, arrival there before 600
+  seconds, and maximum living x beyond v71's `-8047.39`.
+
 ## v71 - reacquire Prowl after recovery (2026-08-05)
 
 - Version UUID: `d5960580-8056-4026-b2a8-f79f3799f896` (`wowborg:v71`, uploaded inert;

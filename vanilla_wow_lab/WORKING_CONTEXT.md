@@ -166,6 +166,17 @@ corpse runs still consumed most of the episode. The first fight began with Prowl
 The next isolated survival capability is therefore exact-attacker melee engagement during the
 existing combat pause, retaining flee/wait when the typed frame cannot identify the attacker.
 
+That candidate is uploaded inert as **wowborg:v72**
+(`c6e67ab5-cbe3-4e1e-8970-8be5e27d2638`) from source `c0cc241`. Traverse now resolves only a
+typed active attacker (current auto-attack, visible recent damage source, or a live visible unit
+targeting wowborg), faces and starts melee within five yards, and holds the swing. The old flee/wait
+path remains unchanged when no exact adjacent attacker is available. Activation traces record the
+target GUID, face/attack settlement, and cumulative outgoing damage. Canonical 10x request
+`xreq_90ef6893-552c-4f08-8360-1c1c299203ca` is streaming on `traverse-wow 0.1.164` with the
+resolved v72 UUID. A combat-free run leaves the mechanism unevaluated. Mechanism success requires
+actual outgoing damage; behavioral success requires zero deaths before guidepoint one, arrival
+there before 600 seconds, and maximum living x beyond v71's `-8047.39`.
+
 ---
 
 ## Status (2026-08-04): LOCAL NAVIGATION BATTERIES PASS; OWNER FIX LANDED
