@@ -223,6 +223,7 @@ class TraverseStrategy:
                     target,
                     deadline=until,
                     on_safe_resume=safe_resume,
+                    engage_attackers=True,
                 )
                 if result.end is not None:
                     self.best_world_x = max(self.best_world_x, result.end.x)
@@ -281,7 +282,12 @@ class TraverseStrategy:
                 target=[target.x, target.y, target.z],
                 northing_gain=round(target.x - here.x, 3),
             )
-            result = navigator.navigate_to(bridge, target, deadline=until)
+            result = navigator.navigate_to(
+                bridge,
+                target,
+                deadline=until,
+                engage_attackers=True,
+            )
             if result.end is not None:
                 self.best_world_x = max(self.best_world_x, result.end.x)
             if result.state == NavState.ARRIVED:

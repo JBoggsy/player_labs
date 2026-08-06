@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import replace
+from types import SimpleNamespace
 
 from fake_nav_session import NavWorldSession
 from wowborg.nav.journey import JourneyPlanner, JourneyStatus
@@ -138,6 +139,65 @@ def test_l1_combat_pause_flees_then_arrives() -> None:
     assert result.state == NavState.ARRIVED
     assert result.combat_pauses >= 1
     assert safe_resumes == [True]
+
+
+def test_l1_combat_engages_exact_adjacent_attacker() -> None:
+    target_guid = "123"
+    unit = SimpleNamespace(
+        guid=target_guid,
+        target_guid_known=True,
+        target_guid="456",
+        death_known=True,
+        is_dead=False,
+        health_known=True,
+        health=100,
+        combat_distance_known=True,
+        combat_distance=3.0,
+    )
+    frame = SimpleNamespace(
+        frame_id=7,
+        in_combat=True,
+        is_dead=False,
+        is_ghost=False,
+        player_guid="456",
+        auto_attack_guid="0",
+        combat_damage_done_total=0,
+        threat=SimpleNamespace(
+            recent_damage_source_visible=True,
+            recent_damage_source_guid=target_guid,
+        ),
+        units=[unit],
+    )
+    selected = []
+    bridge = SimpleNamespace(
+        select_target_action=lambda selected_frame, kind, guid: (
+            selected.append((selected_frame.frame_id, kind, guid)) or "request"
+        ),
+        wait_for_settlement=lambda *_args, **_kwargs: SimpleNamespace(success=True),
+        observe=lambda: frame,
+    )
+
+    engaged = RouteNavigator()._engage_exact_attacker(bridge, frame)
+
+    assert engaged is True
+    assert selected == [
+        (7, "face", target_guid),
+        (7, "attack", target_guid),
+    ]
+
+
+def test_l1_combat_does_not_guess_an_attacker() -> None:
+    frame = SimpleNamespace(
+        player_guid="456",
+        auto_attack_guid="0",
+        threat=SimpleNamespace(
+            recent_damage_source_visible=False,
+            recent_damage_source_guid="0",
+        ),
+        units=[],
+    )
+
+    assert RouteNavigator()._engage_exact_attacker(SimpleNamespace(), frame) is False
 
 
 def test_l1_death_recovery_then_arrival() -> None:

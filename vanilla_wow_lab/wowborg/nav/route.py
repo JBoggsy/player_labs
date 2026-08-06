@@ -48,6 +48,7 @@ DEFAULT_PACE_YDS_PER_S = 1.8    # prior; replaced by the online estimate as legs
 RECOVERY_STEP_TIMEOUT_S = 45.0
 CORPSE_RECLAIM_RADIUS_YARDS = 30.0  # server accepts reclaim within ~39yd; margin
 UNREACHABLE_PROJECTION_YARDS = 12.0  # planned-target projection beyond this = off-mesh target
+MELEE_ENGAGE_DISTANCE_YARDS = 5.0
 
 
 class NavState(Enum):
@@ -113,6 +114,7 @@ class RouteNavigator:
         deadline: float,
         arrival_radius: float = ARRIVAL_RADIUS_YARDS,
         on_safe_resume: Callable[[], None] | None = None,
+        engage_attackers: bool = False,
     ) -> RouteResult:
         result = RouteResult(state=NavState.PLANNING)
         combat_pauses = deaths = replans = 0
@@ -338,7 +340,12 @@ class RouteNavigator:
                 if move.status == LocalMoveStatus.COMBAT:
                     combat_pauses += 1
                     self._trace("nav_state", state="combat_paused")
-                    if not self._wait_out_combat(bridge, deadline, flee_to=hop):
+                    if not self._wait_out_combat(
+                        bridge,
+                        deadline,
+                        flee_to=hop,
+                        engage_attackers=engage_attackers,
+                    ):
                         return RouteResult(NavState.FAILED, reason="deadline", end=here,
                                            walked_seconds=walked_seconds,
                                            combat_pauses=combat_pauses, deaths=deaths,
@@ -443,14 +450,20 @@ class RouteNavigator:
             return
         callback()
 
-    def _wait_out_combat(self, bridge, deadline: float, flee_to: Point | None = None) -> bool:
+    def _wait_out_combat(
+        self,
+        bridge,
+        deadline: float,
+        flee_to: Point | None = None,
+        *,
+        engage_attackers: bool = False,
+    ) -> bool:
         """Budget clock is paused by construction (walk loop measures only hops).
 
-        Nav FLEES, it doesn't fight: keep moving toward ``flee_to`` — open-world
-        mobs leash (v42 long-session evidence: a level-1 character crossing
-        Razormane territory died 7 times because yielding meant fighting level
-        6-10 camps; running through is how real low-level players make this
-        trip). Briefly yield when movement itself is refused."""
+        Traverse engages an exact adjacent attacker when requested. Otherwise
+        keep moving toward ``flee_to`` so open-world mobs can leash (v42
+        long-session evidence: a level-1 character crossing Razormane territory
+        died 7 times when it stopped). Briefly yield when movement is refused."""
         while time.monotonic() < deadline:
             frame = bridge.wait_for_frame(timeout_s=min(30.0, max(0.5, deadline - time.monotonic())))
             if frame is None:
@@ -458,6 +471,8 @@ class RouteNavigator:
                 continue
             if not frame.in_combat:
                 return True
+            if engage_attackers and self._engage_exact_attacker(bridge, frame):
+                continue
             request_id = None
             if flee_to is not None:
                 request_id = bridge.select_move_to(
@@ -466,6 +481,89 @@ class RouteNavigator:
                 request_id = bridge.select_wait(frame)
             if request_id is not None:
                 bridge.wait_for_settlement(frame.frame_id, timeout_s=RECOVERY_STEP_TIMEOUT_S)
+        return False
+
+    def _engage_exact_attacker(self, bridge, frame) -> bool:
+        """Start or hold melee only when the frame proves combat ownership."""
+        active_guid = frame.auto_attack_guid
+        if active_guid != "0":
+            self._trace(
+                "nav_combat_engage",
+                phase="holding",
+                target_guid=active_guid,
+                damage_done=frame.combat_damage_done_total,
+            )
+            request_id = bridge.select_wait(frame)
+            if request_id is not None:
+                bridge.wait_for_settlement(
+                    frame.frame_id,
+                    timeout_s=RECOVERY_STEP_TIMEOUT_S,
+                )
+            return request_id is not None
+
+        candidate_guids: list[str] = []
+        if frame.threat.recent_damage_source_visible:
+            candidate_guids.append(frame.threat.recent_damage_source_guid)
+        candidate_guids.extend(
+            unit.guid
+            for unit in frame.units
+            if unit.target_guid_known and unit.target_guid == frame.player_guid
+        )
+        for target_guid in candidate_guids:
+            if target_guid == "0":
+                continue
+            unit = next((unit for unit in frame.units if unit.guid == target_guid), None)
+            if unit is None:
+                continue
+            if (unit.death_known and unit.is_dead) or (unit.health_known and unit.health == 0):
+                continue
+            if not unit.combat_distance_known:
+                continue
+            if unit.combat_distance > MELEE_ENGAGE_DISTANCE_YARDS:
+                continue
+
+            face_id = bridge.select_target_action(frame, "face", target_guid)
+            if face_id is None:
+                return False
+            face_outcome = bridge.wait_for_settlement(
+                frame.frame_id,
+                timeout_s=RECOVERY_STEP_TIMEOUT_S,
+            )
+            self._trace(
+                "nav_combat_engage",
+                phase="face",
+                target_guid=target_guid,
+                success=face_outcome is not None and face_outcome.success,
+                damage_done=frame.combat_damage_done_total,
+            )
+
+            attack_frame = bridge.observe()
+            if (
+                attack_frame is None
+                or not attack_frame.in_combat
+                or attack_frame.is_dead
+                or attack_frame.is_ghost
+            ):
+                return True
+            attack_id = bridge.select_target_action(
+                attack_frame,
+                "attack",
+                target_guid,
+            )
+            if attack_id is None:
+                return False
+            attack_outcome = bridge.wait_for_settlement(
+                attack_frame.frame_id,
+                timeout_s=RECOVERY_STEP_TIMEOUT_S,
+            )
+            self._trace(
+                "nav_combat_engage",
+                phase="attack",
+                target_guid=target_guid,
+                success=attack_outcome is not None and attack_outcome.success,
+                damage_done=attack_frame.combat_damage_done_total,
+            )
+            return True
         return False
 
     def _recover_from_death(

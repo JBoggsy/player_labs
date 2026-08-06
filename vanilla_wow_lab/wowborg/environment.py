@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 import time
 from collections.abc import Callable
+from typing import Literal
 from urllib.parse import parse_qs, urlsplit, urlunsplit
 
 from environment import VanillaWowEnv
@@ -21,6 +22,7 @@ from environment.contract.agent import (
     MoveAction,
     NoArgumentAction,
     SpellObservation,
+    TargetAction,
     TextAction,
     WaitAction,
     WorldPoint,
@@ -266,6 +268,17 @@ class GymSession:
     def select_wait(self, frame: AgentFrame) -> str | None:
         return self.select_action(
             frame, WaitAction(duration=0.25, reason="wowborg supervision")
+        )
+
+    def select_target_action(
+        self,
+        frame: AgentFrame,
+        kind: Literal["face", "attack"],
+        target_guid: str,
+    ) -> str | None:
+        return self.select_action(
+            frame,
+            TargetAction(kind=kind, target_guid=target_guid),
         )
 
     def select_stuck(self, frame: AgentFrame) -> str | None:
