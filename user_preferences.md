@@ -10,6 +10,12 @@ sessions. Keep it tidy: one bullet per preference, drop ones that are superseded
 
 ## Preferences
 
+- **No cheating or privileged competitor intelligence** (James, 2026-08-05). Gameplay
+  optimization must use intended, server-validated mechanics: no clipping, coordinate injection,
+  unauthorized teleporting, intentional graveyard exploits, or similar bypasses. Inspect another
+  player's logs or artifacts only when ordinary non-elevated access permits it; never use elevated
+  permissions to retrieve competitor evidence for optimization.
+
 - **Every behavior change ships with activation tracing** (James, 2026-07-15). Whenever
   a change gates a new behavior (or meaningfully alters when an existing one fires),
   add (possibly temporary) tracing/logging in the SAME iteration that counts how often

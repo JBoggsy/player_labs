@@ -20,7 +20,7 @@ GOAL_RADIUS_YARDS = 8.0
 CAT_FORM_SPELL_ID = 768
 PROWL_SPELL_IDS = (9913, 6783, 5215)
 TRAVEL_FORM_SPELL_ID = 783
-PROWL_ROUTE_GUIDEPOINTS = 4
+PROWL_ROUTE_GUIDEPOINTS = 0
 
 # Exact 0.1.160 Detour routes prove this prefix reaches the lower dock while
 # avoiding every active Centipaar Wasp/Worker detection and wander envelope.
@@ -120,7 +120,7 @@ def _activate_travel_form(bridge, trace) -> None:
     request_id = bridge.select_cast_without_target(
         frame,
         TRAVEL_FORM_SPELL_ID,
-        purpose="activate Travel Form after hostile bypass",
+        purpose="activate Travel Form for speed-first Traverse",
     )
     if request_id is None:
         trace("traverse_travel_form", activation=0, reason="spell_unavailable")
@@ -223,7 +223,7 @@ class TraverseStrategy:
                     target,
                     deadline=until,
                     on_safe_resume=safe_resume,
-                    engage_attackers=True,
+                    engage_attackers=False,
                 )
                 if result.end is not None:
                     self.best_world_x = max(self.best_world_x, result.end.x)
@@ -286,7 +286,7 @@ class TraverseStrategy:
                 bridge,
                 target,
                 deadline=until,
-                engage_attackers=True,
+                engage_attackers=False,
             )
             if result.end is not None:
                 self.best_world_x = max(self.best_world_x, result.end.x)
