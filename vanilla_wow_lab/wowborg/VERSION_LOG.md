@@ -11,7 +11,15 @@
   conservative-envelope intersections across all 48 pinned hostile spawns in the 1,500-yard
   opening region. The tightest positive margin is 2.324 yards; the fatal v75 Scorpid has
   12.085 yards of margin. Travel Form, recovery, the remaining route, and normal Great Lift
-  boarding are unchanged. Focused checks: 39/39 passed. Hosted proof is pending.
+  boarding are unchanged. Focused checks: 39/39 passed.
+- Current-format request `xreq_227bf53a-a8f3-42a0-bc00-1a367d5b9457`
+  (`ereq_2284a7b1-9cde-4dfe-a5ea-bb5239934536`) completed with a ghost-derived
+  **1,752.34 score** and `reached_goal=false`. Maximum living x was only `-9056.248`.
+  A Rabid Blisterpaw (entry 5427, low GUID 22586) wandered onto GP1 and killed wowborg
+  before the guidepoint completed. The claimed 48-spawn audit was incomplete: it reused a
+  route-local subset while the correct regional query contains 136 hostile rows. Re-auditing
+  v77 against all 136 finds seven envelope intersections. The next candidate must regenerate
+  only the opening against that complete set; a one-off nudge leaves six known crossings.
 
 ## v76 - reacquire Travel Form after recovery (2026-08-05)
 

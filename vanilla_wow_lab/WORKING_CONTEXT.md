@@ -56,6 +56,14 @@ This candidate is uploaded inert as **wowborg:v77**
 (`e9cfde9d-5ac5-41a2-ac56-0977de5401b5`, source `4217916`) and awaits current-format hosted
 proof. v63 remains the only submitted league version.
 
+v77 request `xreq_227bf53a-a8f3-42a0-bc00-1a367d5b9457` falsified that audit. It died before
+GP1 completed at maximum living `x=-9056.248`; the 1,752.34 headline was ghost-derived. A
+Rabid Blisterpaw (entry 5427, GUID 22586) had been omitted because the prior 48-row audit was
+route-local, not regional. The correct region contains 136 pinned hostile rows, and v77's exact
+route crosses seven conservative envelopes. The active v78 investigation is regenerating only
+the opening against all 136 rows; combat, recovery, the later route, and normal lift boarding
+remain unchanged.
+
 Speed-first **wowborg:v74** (`621ee466-2caf-4325-881d-0ba483dc1bfd`, source `d421042`)
 completed current-format request `xreq_3bad8628-4872-4422-a805-41f74ac3c256` on
 `traverse-wow 0.1.166` with **1,797.73 northing** and `reached_goal=false`. It failed the
