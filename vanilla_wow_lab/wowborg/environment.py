@@ -160,6 +160,7 @@ class GymSession:
         self._tracer = tracer or NullTracer()
         self._frame_observer = frame_observer
         self._last_outcome: ActionOutcome | None = None
+        self._frame_received_at = time.monotonic()
         self._trace_frame(frame)
 
     def close(self) -> None:
@@ -210,16 +211,35 @@ class GymSession:
         )
 
     def select_action(self, frame: AgentFrame, action: AgentAction) -> str | None:
+        frame_age_ms = round(
+            (time.monotonic() - self._frame_received_at) * 1000,
+            3,
+        )
         if self.finished or frame.frame_id != self.frame.frame_id:
+            self._tracer.emit(
+                "action_skipped",
+                reason="finished" if self.finished else "stale_frame",
+                submitted_frame_id=frame.frame_id,
+                current_frame_id=self.frame.frame_id,
+                action_kind=action.kind,
+                frame_age_ms=frame_age_ms,
+            )
             return None
         request_id = f"frame-{frame.frame_id}"
         self._tracer.emit(
             "intent",
             request_id=request_id,
             frame_id=frame.frame_id,
+            frame_age_ms=frame_age_ms,
             action=action.model_dump(mode="json"),
         )
+        step_started_at = time.monotonic()
         next_frame, _reward, terminated, truncated, info = self.env.step(action)
+        next_frame_received_at = time.monotonic()
+        step_round_trip_ms = round(
+            (next_frame_received_at - step_started_at) * 1000,
+            3,
+        )
         action_status = str(info.get("action_status") or "")
         action_detail = str(info.get("action_detail") or "")
         refreshed = (
@@ -239,6 +259,7 @@ class GymSession:
                 rejection=action_detail,
             )
         self.frame = next_frame
+        self._frame_received_at = next_frame_received_at
         self.info = info
         self.finished = terminated or truncated
         self._trace_frame(next_frame)
@@ -280,6 +301,12 @@ class GymSession:
             detail=detail,
             frame_id=next_frame.frame_id,
             tick=next_frame.tick,
+            submitted_frame_id=frame.frame_id,
+            returned_frame_id=next_frame.frame_id,
+            frame_age_ms=frame_age_ms,
+            step_round_trip_ms=step_round_trip_ms,
+            action_status=action_status,
+            stale_refresh=refreshed,
         )
         return request_id
 

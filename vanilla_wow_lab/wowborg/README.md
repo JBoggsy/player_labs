@@ -51,7 +51,14 @@ resolution is pinned to the matching owner commit in the root `pyproject.toml`.
   not selected by the production entry point.
 - `nav/` — local movement supervision, route planning, and world-graph journeys.
 - `trace.py` and `artifact.py` — structured `trace.jsonl` output and optional
-  session-end artifact upload.
+  session-end artifact upload. Every submitted action records `frame_age_ms`
+  (policy processing time from receipt of the offered frame to submission),
+  `step_round_trip_ms`, submitted/returned frame IDs, raw action status, and whether
+  stale-frame refresh occurred. An `action_skipped` event records a locally rejected
+  stale or terminal frame. These fields can prove whether Wowborg answered each
+  offered frame promptly; continuation retain/release reasons and host
+  `action_stall` counters remain `/env`-owned telemetry and cannot be inferred by
+  the policy.
 - `Dockerfile` — copies only `environment/` and `player/sdk/` from the pinned game
   image into a small Python policy image.
 
