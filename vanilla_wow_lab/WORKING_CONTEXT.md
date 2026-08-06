@@ -15,12 +15,14 @@ file is the one-screen "where are we and why."
 
 ## Status (2026-08-05): IMPLEMENTING LEGITIMATE GREAT LIFT BOARDING
 
-The active local candidate adds the required Great Lift transition after the lower-dock route.
+Inert **wowborg:v75** (`c75e24cc-166f-43df-9d52-d77724cc4b16`, source `aed90c9`)
+adds the required Great Lift transition after the lower-dock route.
 It selects only visible platform entries 11898/11899 at lower-dock height, turns and walks onto
 the platform through bounded `move_vector` ordinary-client input, waits after authoritative
 `on_transport`, and walks toward the upper dock only above z=80 before resuming navmesh travel
 at the upper road. It does not inject coordinates, bridge the disconnected navmesh, teleport,
-or manipulate death. Focused lift/action checks pass; hosted proof is still required.
+or manipulate death. All 39 focused lift/environment/navigation checks pass; hosted proof is
+still required.
 
 Speed-first **wowborg:v74** (`621ee466-2caf-4325-881d-0ba483dc1bfd`, source `d421042`)
 completed current-format request `xreq_3bad8628-4872-4422-a805-41f74ac3c256` on

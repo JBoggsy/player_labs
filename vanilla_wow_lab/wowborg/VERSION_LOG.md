@@ -1,5 +1,18 @@
 # wowborg version log
 
+## v75 - board and ride the observed Great Lift (2026-08-05)
+
+- Version UUID: `c75e24cc-166f-43df-9d52-d77724cc4b16` (`wowborg:v75`, uploaded inert;
+  not submitted). Built from source `aed90c9` with private tags `strategy=traverse`,
+  `source=aed90c9`, and `experiment=great-lift-normal-boarding`; amd64 image manifest
+  `sha256:42f891392315a497a46e5f76226500113cb46e898108871308377237cda73d7d`.
+- After reaching the lower dock, Traverse waits for visible platform entry 11898/11899 at
+  dock height, turns and walks onto it with bounded ordinary `move_vector` input, stops
+  piloting once authoritative `on_transport` is observed, then walks toward the upper dock
+  above z=80 and resumes navmesh travel at the upper road. It does not inject coordinates,
+  teleport, bridge the disconnected navmesh, or use death routing. Focused checks: 39/39
+  passed. Hosted boarding evidence is pending.
+
 ## v74 - speed-first Travel Form (2026-08-05)
 
 - Version UUID: `621ee466-2caf-4325-881d-0ba483dc1bfd` (`wowborg:v74`, uploaded inert;
