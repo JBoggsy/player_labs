@@ -41,8 +41,8 @@ resolution is pinned to the matching owner commit in the root `pyproject.toml`.
   reference player.
 - `strategies/` — competition-level objectives selected by `WOWBORG_STRATEGY`.
   `traverse` uses Druid Cat Form plus Prowl through the early hostile bypass,
-  switches to Travel Form afterward, and follows the semantic route to the Great
-  Lift lower dock. If that
+  reacquires Prowl after combat or corpse recovery, switches to Travel Form
+  afterward, and follows the semantic route to the Great Lift lower dock. If that
   prefix is unavailable, or after it completes, the strategy falls back to the
   safest untried reachable frontier with the greatest authoritative Kalimdor world
   X. Both route-guide and frontier activations are traced.

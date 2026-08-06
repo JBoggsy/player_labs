@@ -23,6 +23,7 @@ straight-line distance, never zone constants.
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -111,6 +112,7 @@ class RouteNavigator:
         *,
         deadline: float,
         arrival_radius: float = ARRIVAL_RADIUS_YARDS,
+        on_safe_resume: Callable[[], None] | None = None,
     ) -> RouteResult:
         result = RouteResult(state=NavState.PLANNING)
         combat_pauses = deaths = replans = 0
@@ -341,6 +343,7 @@ class RouteNavigator:
                                            walked_seconds=walked_seconds,
                                            combat_pauses=combat_pauses, deaths=deaths,
                                            replans=replans)
+                    self._notify_safe_resume(bridge, on_safe_resume)
                     here = self._observe_position(bridge) or here
                     # Same target, same plan — resume the walk directly (v31: a
                     # full re-plan after every canyon fight cost a plan round
@@ -362,6 +365,8 @@ class RouteNavigator:
                                            walked_seconds=walked_seconds,
                                            combat_pauses=combat_pauses, deaths=deaths,
                                            replans=replans)
+                    self._notify_safe_resume(bridge, on_safe_resume)
+                    here = self._observe_position(bridge) or here
                     break  # re-plan from the revival point
 
                 if move.status == LocalMoveStatus.MAP_CHANGED:
@@ -428,6 +433,15 @@ class RouteNavigator:
             obs.location.y,
             obs.location.z,
         )
+
+    @staticmethod
+    def _notify_safe_resume(bridge, callback: Callable[[], None] | None) -> None:
+        if callback is None:
+            return
+        frame = bridge.observe()
+        if frame is None or frame.in_combat or frame.is_dead or frame.is_ghost:
+            return
+        callback()
 
     def _wait_out_combat(self, bridge, deadline: float, flee_to: Point | None = None) -> bool:
         """Budget clock is paused by construction (walk loop measures only hops).

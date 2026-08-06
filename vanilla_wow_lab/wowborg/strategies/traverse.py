@@ -213,7 +213,17 @@ class TraverseStrategy:
                     name=name,
                     target=[target.x, target.y, target.z],
                 )
-                result = navigator.navigate_to(bridge, target, deadline=until)
+                safe_resume = (
+                    (lambda: _activate_prowl(bridge, trace))
+                    if self.route_guidepoints_arrived < PROWL_ROUTE_GUIDEPOINTS
+                    else None
+                )
+                result = navigator.navigate_to(
+                    bridge,
+                    target,
+                    deadline=until,
+                    on_safe_resume=safe_resume,
+                )
                 if result.end is not None:
                     self.best_world_x = max(self.best_world_x, result.end.x)
                 if result.state == NavState.ARRIVED:

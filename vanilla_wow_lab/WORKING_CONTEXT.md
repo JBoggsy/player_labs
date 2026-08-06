@@ -46,7 +46,8 @@ The compatibility candidate is uploaded as **wowborg:v63**
 scoring **1,959.23 northing (12.34%)**. It died twice and spent about 1,574 seconds—59% of
 strategy time—recovering corpses; its replay traveled 8,707.5 yards for only 1,959.23 net
 northing. Submission `sub_941c5190-13a5-4ca5-93b1-d0bba19d8b19` placed it immediately as
-active competing membership `lpm_059413b3-fa38-4c8f-b218-8521406d24a2`. Its first
+active competing membership `lpm_059413b3-fa38-4c8f-b218-8521406d24a2`, now marked as
+James's champion version. Its first
 official run, round 142 (`round_d1a45aeb-00d6-4fce-bb53-06f066f2ad56`), scored
 **1,776.98 northing**, fifth of seven in the round and sixth on the division leaderboard
 after one round; `reached_goal=false`. Round 143
@@ -59,7 +60,11 @@ No round-143 or round-144 entrant reached the goal.
 Round 145 (`round_97932121-2e61-47b0-8aaa-0eeb27d5774b`) improved v63's retained best to
 **1,834.47**, sixth of nine, but `reached_goal=false`. Round 146
 (`round_5c914794-356e-4433-81f1-31958799a10d`) scored **1,624.98**, sixth in the round.
-The leaderboard retains 1,834.47 and ranks wowborg 8 after five rounds; round 147 is running.
+Round 149 raised v63's retained best to **2,169.13**, fourth in that round. Rounds 150-152
+scored 1,700.15, 1,789.51, and 1,752.34; none reached the goal. The division leaderboard
+ranks wowborg 8 with 2,169.13 after ten scored rounds, and round 153 is running. Round 148
+failed before play because a Kubernetes pod remained `PodInitializing`; it was an infra round
+failure, not a policy disqualification.
 
 Three independent optimization reads agree on the first attributable change: maintain Druid
 Travel Form (spell 783) during navigation. The owner reference policy activates it, and rank-1
@@ -140,11 +145,19 @@ before any Great Lift work.
 The stealth candidate is uploaded inert as **wowborg:v70**
 (`c330d793-586b-4cc6-a7ec-0c15a1109ab2`) from source `d072d11`. It enters Cat Form and
 Prowl through the four early bypass guidepoints, then restores Travel Form for the dock leg.
-Matched hosted request `xreq_36167fe8-b19a-4989-b634-c332c5d908bf` has artifact streaming
-enabled.
+Matched hosted request `xreq_36167fe8-b19a-4989-b634-c332c5d908bf` completed valid with a
+reported **1,751.51 score (11.03%)** and `reached_goal=false`, but that score includes a
+graveyard teleport and ghost movement: maximum living x was only `-8423.30` (763.70 yards,
+4.81%). Cat Form and Prowl rank 1 both settled successfully at startup. Prowl was lost at the
+first hostile detection and never reacquired because the first `navigate_to` call occupied the
+rest of the episode. It reached zero guidepoints; three deaths consumed 2,220 seconds (83.3%).
 
-**Next:** verify Cat/Prowl activation and compare v70's deaths, guidepoint progress, and score
-with v69. If stealth fails, add targeted auto-attack as the next isolated survival capability.
+The next isolated candidate adds a game-agnostic safe-resume hook to `RouteNavigator` and uses
+it to reacquire the existing traced Prowl after combat ends or corpse recovery completes during
+the first four guidepoints. Prediction: Prowl activation will occur more than once and later
+lives will spend more time stealthy; this cannot prevent the first Scorpid death because Prowl
+was already active at that detection. If it still stalls before guidepoint one, targeted
+auto-attack is the next isolated survival capability.
 
 ---
 

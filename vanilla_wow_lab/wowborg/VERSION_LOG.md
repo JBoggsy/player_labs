@@ -11,8 +11,14 @@
   switch back to Travel Form (783) for the long dock leg. The v69 route, navigation, combat,
   recovery, and lift behavior are unchanged. Cat, Prowl, and Travel activation/settlement are
   traced separately. Focused strategy checks: 6/6 passed.
-- Matched hosted request: `xreq_36167fe8-b19a-4989-b634-c332c5d908bf`. Evaluation is
-  pending/running with artifact streaming enabled.
+- Matched hosted request: `xreq_36167fe8-b19a-4989-b634-c332c5d908bf`. It completed valid
+  with a reported **1,751.51 score (11.03%)** and `reached_goal=false`, but the headline
+  includes a graveyard teleport and ghost movement. Maximum living x was `-8423.30`, only
+  763.70 yards (4.81%) north of spawn. Cat Form and Prowl rank 1 both settled successfully at
+  startup, then Prowl was lost at the first hostile detection and never reacquired because the
+  blocking first-guidepoint navigation call occupied the rest of the episode. It reached zero
+  guidepoints; three deaths consumed 2,220 seconds (83.3%). The next experiment changes only
+  Prowl reacquisition at the navigator's safe post-combat and post-revival resume seams.
 
 ## v69 - avoid the full active Centipaar spawn set (2026-08-05)
 

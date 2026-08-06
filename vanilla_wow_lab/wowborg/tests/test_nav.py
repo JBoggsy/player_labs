@@ -131,18 +131,24 @@ def test_l1_combat_pause_flees_then_arrives() -> None:
     # FLEES toward the hop (mobs leash) rather than fighting, then resumes.
     bridge = NavWorldSession(combat_at=(100.0, 75.0, 15.0), combat_frames=2)
     bridge.health = 20
+    safe_resumes = []
     result = RouteNavigator().navigate_to(bridge, Point(1, 200.0, 150.0, 0.0),
-                                          deadline=deadline(30.0))
+                                          deadline=deadline(30.0),
+                                          on_safe_resume=lambda: safe_resumes.append(True))
     assert result.state == NavState.ARRIVED
     assert result.combat_pauses >= 1
+    assert safe_resumes == [True]
 
 
 def test_l1_death_recovery_then_arrival() -> None:
     bridge = NavWorldSession(death_at=(100.0, 75.0, 12.0), graveyard=(1, 20.0, 10.0, 0.0))
+    safe_resumes = []
     result = RouteNavigator().navigate_to(bridge, Point(1, 200.0, 150.0, 0.0),
-                                          deadline=deadline(40.0))
+                                          deadline=deadline(40.0),
+                                          on_safe_resume=lambda: safe_resumes.append(True))
     assert result.state == NavState.ARRIVED
     assert result.deaths == 1
+    assert safe_resumes == [True]
 
 
 def test_l1_wall_replans_then_honest_failure() -> None:
