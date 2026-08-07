@@ -18,9 +18,12 @@ root defines *process*; this file defines *Paintbot*.
 > [`VERSION_LOG.md`](paintbot/stencil_nim/VERSION_LOG.md). The game repo is
 > the SAME clone as CTF's
 > (`~/coding/coworlds/coworld-ctf` — paintbot is a second manifest over the
-> same binary). Deployed paintbot **0.7.208** currently; the league
-> redeploys often — check `uv run coworld list | grep paintbot`. Live state:
-> [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
+> same binary). Deployed paintbot is **0.7.211 / GameVersion 41** as of
+> 2026-08-07, which added the endgame grenade barrage and paint puddles; the lab
+> is still pinned to **0.7.208 / GV40** and Stencil is unaware of both hazards
+> (see [`docs/recon/paintbot-gv41-hazards-2026-08-07.md`](docs/recon/paintbot-gv41-hazards-2026-08-07.md)).
+> The league redeploys often — check `uv run coworld list | grep paintbot`. Live
+> state: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
 
 ## What Paintbot is
 

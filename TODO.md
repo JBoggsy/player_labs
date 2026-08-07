@@ -5,6 +5,21 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
+- **Make Stencil survive the GV41 endgame barrage** (found 2026-08-07). Canonical
+  Paintbot is 0.7.211 / GV41 (`coworld-ctf@9dedac0`); the lab is pinned to
+  0.7.208 / GV40. Every variant now ends in a grenade barrage — normal 5:00
+  variants ramp 4→15 shells/s from 4:30 and reach full-board coverage at 5:00,
+  and reaching 0:00 no longer ends the game — and paint puddles are live.
+  Stencil parses neither. Recommended next iteration is P1 only: parse the
+  `grenade barrage`/`grenade air` markers, track airborne shells, feed projected
+  landings into the existing `clear_grenade` seam with the 58px body-hit reach,
+  and trace the evasion decision. Rebuild inert, then evaluate campaign-shaped
+  on 0.7.211 targeting episodes that reach 4:30. Hold the broader P2 doctrine so
+  the shell-awareness effect stays attributable. Also bump the project-local
+  CLIs (`coworld` 0.1.35→0.1.37, `softmax-cli` 0.26.27→0.26.29) before
+  operational use, and stop reusing 0.7.208 A/B results for endgame questions.
+  Full analysis: `paintbot_lab/docs/recon/paintbot-gv41-hazards-2026-08-07.md`.
+
 - **Teach the Paintbot RL policy action transitions, not held-state persistence**
   (found 2026-08-07). The first mettabox1 sweep/full run completed, but its
   94.45% token / 77.13% exact held-out GV40 result merely tied repeating the
