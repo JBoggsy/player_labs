@@ -5,14 +5,14 @@ layer selects the competition objective while shared capabilities use the
 game-owned Gymnasium environment directly:
 
 ```text
-strategy -> shared navigation/recovery -> VanillaWowEnv.step(AgentAction)
-         -> WS /env -> game-owned WoW client
+strategy -> shared navigation/recovery -> VanillaWowEnv.step(Action)
+         -> WS /player -> game-owned WoW client
 ```
 
 The policy image contains no WoW client and no client adapter. The game owns login,
 observation projection, action admission and execution, settlement, reconnects, and
-the binary WoW protocol. Wowborg receives canonical `AgentFrame` observations and
-submits canonical flat `AgentAction` values for movement, invocation, input, and
+the binary WoW protocol. Wowborg receives canonical `Observation` values and
+submits canonical flat `Action` values for movement, invocation, input, and
 waiting.
 
 The exact environment contract is copied from the deployed traverse-wow game image
@@ -25,17 +25,12 @@ resolution is pinned to the matching owner commit in the root `pyproject.toml`.
   around `VanillaWowEnv.reset()` / `step()`. It also calls the upstream read-only
   navmesh SDK. If the game advances past a submitted frame, the hosted runtime
   drains any queued typed request errors, consumes the current frame already
-  pushed on that `/env` connection, and traces `frame_refresh` before continuing.
-  The Traverse 0.1.160 host can emit open-ended spell intent labels (including
-  `threat` and `threat_reduction`) despite its packaged `AgentFrame` retaining an
-  older closed enum; wowborg widens only that field to the owner client's `list[str]`
-  contract before parsing frames.
+  pushed on that `/player` connection, and traces `frame_refresh` before continuing.
 - `main.py` — resets the environment, runs one synchronous strategy, closes the
   session, and uploads evidence.
-- `player_progress.py` — retained legacy `/player` progress projection. The
-  semantic policy does not open it: 0.1.178 assigns one immutable interaction mode
-  per slot, so a direct `/player` session would prevent the semantic `/env` session
-  from attaching.
+- `player_progress.py` — retained legacy progress projection. The semantic policy
+  does not open a second connection because the canonical `/player` session owns
+  the slot.
 - `strategies/` — competition-level objectives selected by `WOWBORG_STRATEGY`.
   `traverse` activates Travel Form immediately and follows the semantic route to
   the Great Lift lower dock. It waits for an actually observed lift platform,
@@ -54,7 +49,7 @@ resolution is pinned to the matching owner commit in the root `pyproject.toml`.
   stale-frame refresh occurred. An `action_skipped` event records a locally rejected
   stale or terminal frame. These fields can prove whether Wowborg answered each
   offered frame promptly; continuation retain/release reasons and host
-  `action_stall` counters remain `/env`-owned telemetry and cannot be inferred by
+  `action_stall` counters remain environment-owned telemetry and cannot be inferred by
   the policy.
 - `Dockerfile` — copies only `environment/` and `player/sdk/` from the pinned game
   image into a small Python policy image.
@@ -63,7 +58,7 @@ resolution is pinned to the matching owner commit in the root `pyproject.toml`.
 
 The hosted runner provides `COWORLD_PLAYER_WS_URL`. Wowborg derives:
 
-- the authenticated WebSocket `/env` endpoint used by `VanillaWowEnv`; and
+- the injected authenticated WebSocket `/player` endpoint used by `VanillaWowEnv`; and
 - the authenticated HTTP `/player/navigation` endpoint used by
   `player.sdk.navmesh`.
 
@@ -83,7 +78,7 @@ vanilla_wow_lab/tools/route_lab.sh stations
 vanilla_wow_lab/tools/build_player.sh --strategy traverse
 ```
 
-The tests cover the direct `/env` wrapper and navigation behavior. The route lab
+The tests cover the direct `/player` wrapper and navigation behavior. The route lab
 mounts current wowborg source into the pinned deployed game image and uses its real
 navmesh data and helper. The build check verifies the canonical environment imports
 and rejects an image containing either historical bundled WoW client.

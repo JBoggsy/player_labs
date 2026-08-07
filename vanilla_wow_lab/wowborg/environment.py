@@ -1,4 +1,4 @@
-"""Wowborg's policy runtime over the canonical Gymnasium ``WS /env`` interface.
+"""Wowborg's policy runtime over the canonical Gymnasium ``WS /player`` interface.
 
 The game owns the client, observation projection, action admission, execution,
 settlement, reconnects, and transport.  This module only adds policy conveniences:
@@ -14,10 +14,9 @@ from typing import Literal
 from urllib.parse import parse_qs, urlsplit, urlunsplit
 
 from environment import VanillaWowEnv
-from environment.contract.agent import (
-    AgentAction,
-    AgentFrame,
-    SpellObservation,
+from environment.contract.policy import (
+    Action as AgentAction,
+    Observation as AgentFrame,
     WorldPoint,
 )
 from environment.control import EnvironmentRequestError
@@ -40,17 +39,6 @@ STALE_FRAME_REJECTIONS = (
     "no AgentFrame is awaiting an action",
     "action submission arrived after the game-wide deadline",
 )
-
-
-def _accept_host_spell_intents() -> None:
-    """Match the host's open spell-intent vocabulary at the JSON trust boundary."""
-    intent_names = SpellObservation.model_fields["intent_names"]
-    intent_names.annotation = list[str]
-    SpellObservation.model_rebuild(force=True)
-    AgentFrame.model_rebuild(force=True)
-
-
-_accept_host_spell_intents()
 
 
 class FrameRefreshingHostedRuntime(HostedSessionRuntime):
@@ -106,9 +94,7 @@ def hosted_endpoints(player_ws_url: str) -> tuple[str, str, int, str]:
         raise ValueError("COWORLD_PLAYER_WS_URL token must be non-empty")
     ws_scheme = "wss" if parts.scheme in ("wss", "https") else "ws"
     http_scheme = "https" if ws_scheme == "wss" else "http"
-    env_url = urlunsplit(
-        (ws_scheme, parts.netloc, "/env", "interaction=semantic", "")
-    )
+    env_url = player_ws_url
     navigation_url = urlunsplit(
         (http_scheme, parts.netloc, "/player/navigation", parts.query, "")
     )
@@ -193,8 +179,7 @@ class GymSession:
         return self.select_action(
             frame,
             AgentAction(
-                kind="move",
-                mode="destination",
+                kind="move_to",
                 destination=WorldPoint(map_id=map_id, x=x, y=y, z=z),
                 arrival_radius=3.0,
             ),
@@ -212,8 +197,8 @@ class GymSession:
         return self.select_action(
             frame,
             AgentAction(
-                kind="move",
-                mode="vector",
+                kind="move_vector",
+                intent=purpose,
                 forward=forward,
                 strafe=0.0,
                 turn=turn,
@@ -337,7 +322,7 @@ class GymSession:
         if kind == "face":
             return self.select_action(
                 frame,
-                AgentAction(kind="move", mode="face", target_guid=target_guid),
+                AgentAction(kind="face", target_guid=target_guid),
             )
         action = self._invocation(
             frame,
@@ -406,7 +391,7 @@ class GymSession:
         text: str | None = None,
     ) -> AgentAction | None:
         for available in frame.available_actions:
-            if available.label != label:
+            if available.verb != label:
                 continue
             if source_kind is not None and available.source_kind != source_kind:
                 continue
@@ -414,7 +399,9 @@ class GymSession:
                 continue
             return AgentAction(
                 kind="invoke",
-                action_id=available.id,
+                verb=available.verb,
+                source_kind=available.source_kind,
+                source_id=available.source_id,
                 text=text,
             )
         return None

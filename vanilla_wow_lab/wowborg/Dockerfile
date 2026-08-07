@@ -1,4 +1,4 @@
-# Wowborg v5: a Python policy over the game's canonical hosted WS /env.
+# Wowborg v5: a Python policy over the game's canonical hosted WS /player.
 
 ARG WOWBORG_ENVIRONMENT_IMAGE=scratch
 FROM ${WOWBORG_ENVIRONMENT_IMAGE} AS environment_contract

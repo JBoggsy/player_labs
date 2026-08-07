@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build wowborg's Python WS /env policy image.
+# Build wowborg's Python WS /player policy image.
 #
 # Usage: tools/build_player.sh [--tag REF] [--base IMAGE] [--strategy NAME]
 set -euo pipefail
@@ -35,11 +35,11 @@ docker buildx build --platform=linux/amd64 --load \
   -t "$tag" \
   "$LAB_DIR/wowborg"
 
-echo "==> verifying /env policy and navmesh SDK surface"
+echo "==> verifying /player policy and navmesh SDK surface"
 docker run --rm --entrypoint python3 "$tag" -c '
 from environment import VanillaWowEnv
 from environment.runtime.episode import hosted_runtime_factory
-from environment.contract.agent import AgentAction, AgentFrame
+from environment.contract.policy import Action, Observation
 from player.sdk.navmesh.client import route_navmesh
 import wowborg.environment, wowborg.main, wowborg.player_progress, wowborg.strategies
 ' || die "sanity check FAILED"

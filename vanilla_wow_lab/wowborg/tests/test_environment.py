@@ -1,20 +1,20 @@
-"""Contract tests for wowborg's thin wrapper around the upstream `/env` API."""
+"""Contract tests for wowborg's thin wrapper around the upstream `/player` API."""
 
 from __future__ import annotations
 
-from environment.contract.agent import (
+from environment.contract.policy import (
     ActionState,
-    AgentAction,
-    AgentFrame,
+    Action,
     EnvironmentContext,
+    Observation,
     WorldPoint,
 )
 
 from wowborg.environment import GymSession, hosted_endpoints
 
 
-def _frame(frame_id: int, *, x: float = 1.0, action_state=None) -> AgentFrame:
-    return AgentFrame.model_construct(
+def _frame(frame_id: int, *, x: float = 1.0, action_state=None) -> Observation:
+    return Observation.model_construct(
         episode_id="00000000-0000-0000-0000-000000000001",
         frame_id=frame_id,
         environment=EnvironmentContext.model_construct(terminal=False),
@@ -54,7 +54,7 @@ def test_hosted_endpoints_leave_environment_auth_to_pinned_client() -> None:
     env_url, navigation_url, slot, token = hosted_endpoints(
         "wss://game.example/player?slot=7&token=secret"
     )
-    assert env_url == "wss://game.example/env?interaction=semantic"
+    assert env_url == "wss://game.example/player?slot=7&token=secret"
     assert navigation_url == (
         "https://game.example/player/navigation?slot=7&token=secret"
     )
@@ -81,9 +81,8 @@ def test_move_uses_upstream_action_and_advances_to_next_frame() -> None:
     assert session.frame.frame_id == 2
     assert len(env.actions) == 1
     action = env.actions[0]
-    assert isinstance(action, AgentAction)
-    assert action.kind == "move"
-    assert action.mode == "destination"
+    assert isinstance(action, Action)
+    assert action.kind == "move_to"
     assert action.destination == WorldPoint(map_id=1, x=10.0, y=20.0, z=30.0)
     outcome = session.wait_for_settlement(1)
     assert outcome.success is True

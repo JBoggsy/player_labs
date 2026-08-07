@@ -7,7 +7,7 @@ import json
 import math
 import time
 
-from environment.contract.agent import AgentFrame
+from environment.contract.policy import Observation as AgentFrame
 from websockets.sync.client import ClientConnection, connect
 
 from wowborg.trace import Tracer
