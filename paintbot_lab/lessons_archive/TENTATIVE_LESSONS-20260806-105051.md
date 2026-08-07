@@ -1,9 +1,13 @@
 # Paintbot tentative lessons — session buffer
 
+> **Historical session record.** The GV36 aim-unit lesson below was correct for
+> its deployed game but is superseded by Paintbot 0.7.204+/GV40, which restored
+> continuous headings and interprets `aimTurnRate=5` as 5 brads per tick.
+
 **Session started:** 2026-08-04 10:34. This is THIS SESSION's lesson buffer. Write candidate
 lessons here **as you go** — eagerly and noisily; most will be noise and that's
 fine. At the next session start, a hook archives this file automatically to
-[`lessons_archive/`](lessons_archive/) and creates a fresh one — nothing you
+[`lessons_archive/`](.) and creates a fresh one — nothing you
 write here is lost, and nothing carries over by hand.
 
 **Lifecycle.** Per-session buffer → automatic archive (SessionStart hook,
@@ -49,7 +53,7 @@ Evidence: generic experience-request `seed` values produced different map
 dimensions across intended A/B arms. The explicit map fields reproduced the
 same geometry and made the six-map 4FFA post-selection matrix valid.
 
-### Read aim units from the deployed game version and variant together
+### Read aim units from the deployed game version and variant together (GV36 historical)
 Evidence: GameVersion 36 changed aim to a 32-slot ring, while Paintbot 0.7.184
 retained `aimTurnRate=5` in each variant. Treating that value as one slot was
 wrong; it means five slots / 40 brads per command. The corrected modular
