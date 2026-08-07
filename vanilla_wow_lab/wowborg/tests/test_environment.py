@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from environment.contract.agent import (
     ActionState,
+    AgentAction,
     AgentFrame,
     EnvironmentContext,
-    MoveAction,
     WorldPoint,
 )
 
@@ -81,7 +81,9 @@ def test_move_uses_upstream_action_and_advances_to_next_frame() -> None:
     assert session.frame.frame_id == 2
     assert len(env.actions) == 1
     action = env.actions[0]
-    assert isinstance(action, MoveAction)
+    assert isinstance(action, AgentAction)
+    assert action.kind == "move"
+    assert action.mode == "destination"
     assert action.destination == WorldPoint(map_id=1, x=10.0, y=20.0, z=30.0)
     outcome = session.wait_for_settlement(1)
     assert outcome.success is True

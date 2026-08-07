@@ -17,15 +17,7 @@ from environment import VanillaWowEnv
 from environment.contract.agent import (
     AgentAction,
     AgentFrame,
-    AreaTriggerAction,
-    CastAction,
-    MoveAction,
-    MoveVectorAction,
-    NoArgumentAction,
     SpellObservation,
-    TargetAction,
-    TextAction,
-    WaitAction,
     WorldPoint,
 )
 from environment.control import EnvironmentRequestError
@@ -182,10 +174,11 @@ class GymSession:
     ) -> str | None:
         return self.select_action(
             frame,
-            MoveAction(
+            AgentAction(
+                kind="move",
+                mode="destination",
                 destination=WorldPoint(map_id=map_id, x=x, y=y, z=z),
                 arrival_radius=3.0,
-                purpose="wowborg navigation",
             ),
         )
 
@@ -200,12 +193,13 @@ class GymSession:
     ) -> str | None:
         return self.select_action(
             frame,
-            MoveVectorAction(
+            AgentAction(
+                kind="move",
+                mode="vector",
                 forward=forward,
                 strafe=0.0,
                 turn=turn,
                 duration=duration,
-                purpose=purpose,
             ),
         )
 
@@ -310,12 +304,11 @@ class GymSession:
         return request_id
 
     def select_kind(self, frame: AgentFrame, kind: str) -> str | None:
-        return self.select_action(frame, NoArgumentAction(kind=kind))
+        action = self._invocation(frame, label=kind)
+        return None if action is None else self.select_action(frame, action)
 
     def select_wait(self, frame: AgentFrame) -> str | None:
-        return self.select_action(
-            frame, WaitAction(duration=0.25, reason="wowborg supervision")
-        )
+        return self.select_action(frame, AgentAction(kind="wait", duration=0.25))
 
     def select_target_action(
         self,
@@ -323,10 +316,18 @@ class GymSession:
         kind: Literal["face", "attack"],
         target_guid: str,
     ) -> str | None:
-        return self.select_action(
+        if kind == "face":
+            return self.select_action(
+                frame,
+                AgentAction(kind="move", mode="face", target_guid=target_guid),
+            )
+        action = self._invocation(
             frame,
-            TargetAction(kind=kind, target_guid=target_guid),
+            label=kind,
+            source_kind="unit",
+            source_id=target_guid,
         )
+        return None if action is None else self.select_action(frame, action)
 
     def select_stuck(self, frame: AgentFrame) -> str | None:
         return self.select_cast_without_target(
@@ -344,14 +345,13 @@ class GymSession:
     ) -> str | None:
         if spell_id not in frame.known_spells:
             return None
-        return self.select_action(
+        action = self._invocation(
             frame,
-            CastAction(
-                spell_id=spell_id,
-                cast_without_target=True,
-                purpose=purpose,
-            ),
+            label="cast",
+            source_kind="spell",
+            source_id=str(spell_id),
         )
+        return None if action is None else self.select_action(frame, action)
 
     def select_area_trigger(
         self, frame: AgentFrame, trigger_id: int | None
@@ -361,12 +361,45 @@ class GymSession:
             selected = frame.active_area_trigger_ids[0]
         if selected is None or selected not in frame.active_area_trigger_ids:
             return None
-        return self.select_action(frame, AreaTriggerAction(target_entry=selected))
+        action = self._invocation(
+            frame,
+            label="area_trigger",
+            source_id=str(selected),
+        )
+        return None if action is None else self.select_action(frame, action)
 
     def say(self, text: str) -> str | None:
-        return self.select_action(
-            self.frame, TextAction(kind="chat_say", text=text)
+        action = self._invocation(
+            self.frame,
+            label="chat_say",
+            source_kind="frame",
+            source_id="player",
+            text=text,
         )
+        return None if action is None else self.select_action(self.frame, action)
+
+    @staticmethod
+    def _invocation(
+        frame: AgentFrame,
+        *,
+        label: str,
+        source_kind: str | None = None,
+        source_id: str | None = None,
+        text: str | None = None,
+    ) -> AgentAction | None:
+        for available in frame.available_actions:
+            if available.label != label:
+                continue
+            if source_kind is not None and available.source_kind != source_kind:
+                continue
+            if source_id is not None and available.source_id != source_id:
+                continue
+            return AgentAction(
+                kind="invoke",
+                action_id=available.id,
+                text=text,
+            )
+        return None
 
     def wait_for_settlement(
         self, frame_id: int, *, timeout_s: float = 90.0
