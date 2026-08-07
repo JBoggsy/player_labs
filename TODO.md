@@ -5,6 +5,16 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
+- **Decide whether to retire beacon from the CTF league** (found 2026-08-07).
+  `ctf_lab/` is archived, but that is a repo action only — Coworld CTF is still
+  live (`ctf 0.7.203` canonical) and CTF champions are auto-mirrored into the
+  Paintbot league (metta `seed.py`, `("paintbot","ctf")`) under the same **James
+  Botts** identity, where beacon's offline arena bake is blind on generated maps
+  and scored 0.0. If beacon still holds a CTF seat, it keeps competing in
+  Paintbot under the same player as Stencil. Confirm its current league standing,
+  then either retire it or accept the visible losses. Retiring is a league action
+  and a human call, not a repo change.
+
 - **Make Stencil survive the GV41 endgame barrage** (found 2026-08-07). Canonical
   Paintbot is 0.7.211 / GV41 (`coworld-ctf@9dedac0`); the lab is pinned to
   0.7.208 / GV40. Every variant now ends in a grenade barrage — normal 5:00
