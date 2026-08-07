@@ -35,7 +35,7 @@ docker buildx build --platform=linux/amd64 --load \
   -t "$tag" \
   "$LAB_DIR/wowborg"
 
-echo "==> verifying /env policy and /player observer surface"
+echo "==> verifying /env policy and navmesh SDK surface"
 docker run --rm --entrypoint python3 "$tag" -c '
 from environment import VanillaWowEnv
 from environment.runtime.episode import hosted_runtime_factory

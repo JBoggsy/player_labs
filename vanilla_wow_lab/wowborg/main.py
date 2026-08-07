@@ -13,7 +13,6 @@ from wowborg.environment import (
     build_hosted_env,
     hosted_endpoint_diagnostics,
 )
-from wowborg.player_progress import PlayerProgressReporter
 from wowborg.strategies import build_strategy
 from wowborg.trace import Tracer
 
@@ -27,7 +26,6 @@ def main() -> None:
     runtime_dir = Path(os.environ.get("WOWBORG_RUNTIME_DIR", "/tmp/wowborg-runtime"))
     tracer = Tracer.from_env(runtime_dir)
     tracer.emit("environment_endpoint", **hosted_endpoint_diagnostics(player_ws_url))
-    progress = PlayerProgressReporter(player_ws_url, tracer)
     strategy_name = os.environ.get("WOWBORG_STRATEGY", "traverse")
     strategy = build_strategy(strategy_name)
     duration = float(os.environ.get("WOWBORG_DURATION_SECONDS", "86400"))
@@ -41,16 +39,13 @@ def main() -> None:
         ),
     )
     session: GymSession | None = None
-    succeeded = False
     try:
-        progress.connect()
         frame, info = env.reset()
         session = GymSession(
             env,
             frame,
             info,
             tracer,
-            frame_observer=progress.observe,
         )
         tracer.emit(
             "session_start",
@@ -65,7 +60,6 @@ def main() -> None:
             summary=strategy.summary(),
             info=session.info,
         )
-        succeeded = True
     except Exception as exc:
         tracer.emit("error", error=repr(exc))
         raise
@@ -74,12 +68,4 @@ def main() -> None:
             session.close()
         else:
             env.close()
-        progress.close(
-            success=succeeded,
-            detail=(
-                "wowborg environment policy completed"
-                if succeeded
-                else "wowborg environment policy failed"
-            ),
-        )
         upload_evidence(runtime_dir)

@@ -7,14 +7,13 @@ game-owned Gymnasium environment directly:
 ```text
 strategy -> shared navigation/recovery -> VanillaWowEnv.step(AgentAction)
          -> WS /env -> game-owned WoW client
-         -> read-only progress samples -> WS /player
 ```
 
 The policy image contains no WoW client and no client adapter. The game owns login,
 observation projection, action admission and execution, settlement, reconnects, and
 the binary WoW protocol. Wowborg receives canonical `AgentFrame` observations and
-submits canonical actions such as `MoveAction`, `CastAction`, and
-`AreaTriggerAction`.
+submits canonical flat `AgentAction` values for movement, invocation, input, and
+waiting.
 
 The exact environment contract is copied from the deployed traverse-wow game image
 pinned in [`../tools/versions.env`](../tools/versions.env). Source-level dependency
@@ -33,12 +32,10 @@ resolution is pinned to the matching owner commit in the root `pyproject.toml`.
   contract before parsing frames.
 - `main.py` — resets the environment, runs one synchronous strategy, closes the
   session, and uploads evidence.
-- `player_progress.py` — opens the owner-supported `/player` observer channel and
-  projects canonical frames into live level/XP/displacement progress. It never
-  submits gameplay actions or changes the policy's budget; `/env` remains the sole
-  controller. The observer sends `done` 35 seconds before the handed-off session
-  deadline to leave the game time to finalize replay/results, matching the owner
-  reference player.
+- `player_progress.py` — retained legacy `/player` progress projection. The
+  semantic policy does not open it: 0.1.178 assigns one immutable interaction mode
+  per slot, so a direct `/player` session would prevent the semantic `/env` session
+  from attaching.
 - `strategies/` — competition-level objectives selected by `WOWBORG_STRATEGY`.
   `traverse` activates Travel Form immediately and follows the semantic route to
   the Great Lift lower dock. It waits for an actually observed lift platform,
@@ -67,8 +64,6 @@ resolution is pinned to the matching owner commit in the root `pyproject.toml`.
 The hosted runner provides `COWORLD_PLAYER_WS_URL`. Wowborg derives:
 
 - the authenticated WebSocket `/env` endpoint used by `VanillaWowEnv`; and
-- the authenticated WebSocket `/player` endpoint used for live session identity
-  and progress reporting; and
 - the authenticated HTTP `/player/navigation` endpoint used by
   `player.sdk.navmesh`.
 
