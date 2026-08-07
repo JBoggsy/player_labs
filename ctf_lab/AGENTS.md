@@ -140,6 +140,14 @@ in [`../AGENTS.md`](../AGENTS.md)) — use those to *create*, *pull*, and *ship*
   `expand_replay_json <replay> [pos_every] [walkability]` — the optional third arg emits
   the exact startup wall map as `wall-runs-v1`, which `viewer_bundle.py` requires. The
   build script rebuilds when `expand_replay_json.nim` is newer than the cached binary.
+- ⚠️ **`viewer.html`, `viewer_bundle.py`, and `expand_replay_json.nim` are SHARED with
+  paintbot_lab** (paintbot is a second manifest over the same engine) and paintbot is
+  now their heaviest consumer. Do not reintroduce assumptions that only hold for CTF's
+  one fixed arena: map geometry must come from the replay's own walkability mask, and
+  team colors from the episode's slot-team config — red/blue slot parity silently
+  mislabels paintbot's four-team FFA. Paintbot builds the reader through
+  `paintbot_lab/tools/build_expand_replay.sh`, which overrides `CTF_REF`; the two labs
+  share one `expand_replay_json` symlink, so pass `--expand-replay` for a specific ref.
 - **beacon tracing** — structured `TraceEvent`s to the SDK `TraceOutputs` (default
   `jsonl@artifact`; `BEACON_TRACE_OUTPUTS` to override, `BEACON_DIAG_EVERY_TICKS=1` for a
   per-tick trace); falls back to `CTF_DIAG` stderr lines with no artifact URL.

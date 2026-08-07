@@ -41,11 +41,15 @@ its full list.
   [`tournament-like-experience-requests.md`](tournament-like-experience-requests.md),
   then use the root `coworld-experience-requests` and
   `coworld-episode-artifacts` skills.
-- Agent belief replay overlay: bundle a fetched episode with the shared
-  [`viewer bundler`](../../ctf_lab/tools/viewer_bundle.py), then load it in the
-  [`belief viewer`](../../ctf_lab/tools/viewer.html). The version-matched replay
-  reader supplies the episode's startup walkability mask, including generated
-  Paintbot terrain. Stencil snapshots supply full enemy/teammate tracks, item
+- Agent belief replay overlay: build the reader with
+  [`../tools/build_expand_replay.sh`](../tools/build_expand_replay.sh) — **not** the
+  ctf_lab script it wraps, which defaults to a CTF game ref and will hash-fail on
+  Paintbot replays — then bundle a fetched episode with the shared
+  [`viewer bundler`](../../ctf_lab/tools/viewer_bundle.py) and load it in the
+  [`belief viewer`](../../ctf_lab/tools/viewer.html). The viewer and bundler are
+  shared with ctf_lab; commands are in [`../README.md`](../README.md). The
+  version-matched replay reader supplies the episode's startup walkability mask,
+  including generated Paintbot terrain. Stencil snapshots supply full enemy/teammate tracks, item
   beliefs, danger, and conservative ally-vision coverage clipped by terrain.
   The viewer also reports coverage/danger summary values and uses the episode's
   slot-team configuration for correct two-team and FFA ground-truth colors.

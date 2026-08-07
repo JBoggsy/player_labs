@@ -209,16 +209,28 @@ These are different tools:
 For one fetched, full-seat hosted episode:
 
 ```sh
-ctf_lab/tools/build_expand_replay.sh
-uv run python ctf_lab/tools/viewer_bundle.py <episode-dir>
+# Builds at PAINTBOT_GAME_REF and prints the exact per-ref reader path.
+paintbot_lab/tools/build_expand_replay.sh
+uv run python ctf_lab/tools/viewer_bundle.py <episode-dir> \
+  --expand-replay ctf_lab/tools/bin/expand_replay_json-<PAINTBOT_GAME_REF>
 python3 -m http.server -d ctf_lab/tools 8766
 # Open http://localhost:8766/viewer.html and load <episode-dir>/viewer_bundle.json.
 ```
 
+**Use the paintbot wrapper, not `ctf_lab/tools/build_expand_replay.sh` directly.**
+The viewer and its replay reader are shared with ctf_lab (paintbot is a second
+manifest over the same engine), and the ctf script defaults to `CTF_REF` — a CTF
+game commit. The re-sim validates a per-tick hash, so running it bare against a
+Paintbot replay fails the hash and produces no usable events. The wrapper sources
+this lab's `tools/versions.env` and builds at `PAINTBOT_GAME_REF`.
+
+Both labs share one `expand_replay_json` symlink, so whichever built last owns
+it; passing `--expand-replay` with the per-ref path keeps the choice explicit
+rather than order-dependent.
+
 The bundle needs the fetched replay plus Stencil `policy_artifact_<slot>.zip`
-files for overlays. Start with the shipped replay-reader build script. If the
-bundler reports a replay/source hash mismatch, rebuild the reader at the
-episode's exact source commit before trusting tick alignment or events.
+files for overlays. To expand an **older** episode, pass
+`--ref <that episode's source commit>` — the current pin will hash-fail on it.
 
 ## Native parity evidence
 

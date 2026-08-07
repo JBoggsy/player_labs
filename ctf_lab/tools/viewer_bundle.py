@@ -66,7 +66,14 @@ def _expand(replay: Path, expand_bin: Path) -> list[dict]:
             continue
     meta = next((r["value"] for r in rows if r.get("key") == "_meta"), {})
     if meta.get("hash_failed"):
-        log(f"! hash failed at tick {meta.get('fail_tick')} — bump CTF_REF (build_expand_replay.sh)")
+        # Lab-neutral: this bundler serves both CTF and Paintbot episodes, and a
+        # Paintbot user following "bump CTF_REF" would build at the wrong game.
+        log(
+            f"! hash failed at tick {meta.get('fail_tick')} — the reader was built from a "
+            f"different game version than recorded this replay. Rebuild at the episode's "
+            f"source commit: ctf_lab/tools/build_expand_replay.sh (CTF) or "
+            f"paintbot_lab/tools/build_expand_replay.sh (Paintbot)."
+        )
     return rows
 
 
