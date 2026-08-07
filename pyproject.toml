@@ -41,19 +41,38 @@ dependencies = [
     "duckdb>=1.5.4",
     "scipy>=1.17.1",
     "matplotlib>=3.11.0",
+    "huggingface-hub>=1.26.1",
+    "tokenizers>=0.22,<0.24",
 ]
 
 [tool.uv.sources]
 # coworld-tools tarball (NOT git) — see the `players` dependency comment above for why
 # (avoids the broken co-gas submodule that breaks uv's recursive clone). SHA = coworld-tools
-# `main` as of 2026-06-26, matching the hosted image build.
-players = { url = "https://github.com/Metta-AI/coworld-tools/archive/e8921a6b18484030d8704277e4c52d3aae5c8917.tar.gz", subdirectory = "players" }
+# `main` as of 2026-08-06. This revision preserves all eight Sprite-v1 input
+# bits; older revisions clamped masks to 0x7f and silently dropped Button C.
+players = { url = "https://github.com/Metta-AI/coworld-tools/archive/4dd923d1adf4d805efb3efe55f1351aeae9c9075.tar.gz", subdirectory = "players" }
+torch = [
+    { index = "pytorch-cu128", marker = "sys_platform == 'linux'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
 
 [dependency-groups]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=1.3.0",
     "pytest-xdist",
+]
+rl = [
+    "accelerate>=1.10,<2",
+    "cramjam>=2.8.0",
+    "numpy>=2.0.0",
+    "peft>=0.17,<1",
+    "torch>=2.8,<2.12",
+    "transformers>=4.51,<6",
 ]
 
 # Vendored players live under each game lab, grouped by game (e.g. crewrift.crewborg
@@ -77,3 +96,11 @@ exclude = ["crewrift.notsus*", "crewrift.suspectra*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# The RL corpus dir holds full game-repo worktrees (untracked); collecting their
+# CI tests raises duplicate-basename import errors. This setting REPLACES pytest's
+# defaults, so they are restated here — dropping `.*` would start collecting the
+# labs' `.cache/` game checkouts, which fail the same way.
+norecursedirs = [
+    "*.egg", ".*", "_darcs", "build", "CVS", "dist", "node_modules", "venv", "{arch}",
+    "paintbot_lab/paintbot/rl/data",
+]

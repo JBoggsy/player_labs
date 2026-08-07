@@ -15,6 +15,8 @@ episode_data/
 analysis/
 paintbot_lab/self_play/
 paintbot_lab/.cache/
+paintbot_lab/paintbot/rl/data/
+paintbot_lab/paintbot/rl/results/
 # Scratch/downloaded-coworld dir only (top-level). Do NOT ignore a player
 # package's source `coworld/` subdir (e.g. agricogla/farmhand/coworld,
 # crewborg/coworld) — those hold the bridge + Dockerfile and must be tracked.

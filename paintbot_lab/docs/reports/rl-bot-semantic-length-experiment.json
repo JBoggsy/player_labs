@@ -1,0 +1,23 @@
+{
+  "hypothesis": "A source-derived bot-semantic filter makes the cross-era Sprite-v1 text representation fit comfortably in Qwen3-0.6B-Base without dropping unknown or newly introduced semantic labels.",
+  "what_changes": "On the exact same balanced GV16/24/30/35/40 corpus used by the failed all-label experiment, exclude only the four human-visual label families that the current engine's `spritesOff` bot path explicitly omits: exact `fog`, prefixes `splatter `, `hit splat `, and `damage pop `. All other labels and geometry remain byte-for-byte governed by the existing serializer.",
+  "instrument": {
+    "kind": "instrumentation",
+    "summary": "Paired offline tokenizer-length audit over the existing exact-version replay corpus.",
+    "detail": "Model: Qwen/Qwen3-0.6B-Base\nRevision: da87bfb608c14b7cf20ba1ce41287e8de496c0cd\nCorpus: the same 5,000 observations, exactly 1,000 each from GV16, GV24, GV30, GV35, and GV40\nFilter source: coworld-ctf buildSpriteProtocolPlayerUpdates(spritesOff=true)\nExcluded: label == `fog`; label starts with `splatter `, `hit splat `, or `damage pop `\nUnknown labels remain included\nNo truncation; no grammar compaction; no changed sampling"
+  },
+  "if_true": "Every era's 99th-percentile filtered observation is at most 8,192 tokens and the largest filtered observation is at most 16,384 tokens. This supports adopting the filter as the canonical entity view for the first SFT dataset.",
+  "if_false": "At least one era has a filtered p99 above 8,192 tokens or any filtered observation exceeds 16,384 tokens. The denylist alone is insufficient, so we need grammar compaction, salience filtering, or a non-text spatial encoder before SFT.",
+  "decision_rule": "Confirm only if all five era buckets are present, every per-era p99 is <= 8,192, and the global maximum is <= 16,384. Otherwise refute. An incomplete era corpus is not a result.",
+  "confounds": [
+    "Choosing exclusions after seeing lengths could overfit the corpus. Control: derive the complete exclusion set from the engine's independent `spritesOff` bot-view branches, including all four families rather than selecting labels by measured token contribution.",
+    "A semantic allowlist would silently delete future labels and fake robustness. Control: use a narrow human-visual denylist and retain every unknown label by default.",
+    "Different samples could explain an apparent improvement. Control: reuse the exact 5,000 observations and deterministic per-version sampling from the first experiment.",
+    "Current-source rendering could rewrite history. Control: snapshots were already reconstructed and hash-validated with the exact five historical source commits; this experiment changes only the post-reconstruction filter.",
+    "The walkability pixel payload remains excluded. This test decides text length only; it does not establish observation completeness or gameplay sufficiency."
+  ],
+  "verdict": {
+    "result": "confirmed",
+    "evidence": "The same 5,000 balanced observations passed without truncation. Global median was 1,722 tokens, p99 was 3,178, and max was 4,424. Per-era p99 values were GV16 2,252; GV24 3,332; GV30 2,553; GV35 3,419; and GV40 3,020—every one well below 8,192. Unknown labels remained included. The paired all-label view reproduced the prior global p99 30,297 and max 43,672, so the result is attributable only to the source-derived bot-semantic filter. Adopt this denylist as the canonical entity view for the initial SFT dataset."
+  }
+}
