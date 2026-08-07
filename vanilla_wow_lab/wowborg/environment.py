@@ -21,6 +21,7 @@ from environment.contract.agent import (
     WorldPoint,
 )
 from environment.control import EnvironmentRequestError
+from environment.control import EnvironmentWebSocketClient
 from environment.runtime.episode import (
     EnvironmentTransition,
     HostedSessionRuntime,
@@ -131,6 +132,21 @@ def build_hosted_env(
         )
 
     return VanillaWowEnv(runtime_factory=runtime_factory)
+
+
+def hosted_endpoint_diagnostics(player_ws_url: str) -> dict[str, object]:
+    """Describe hosted endpoint routing without exposing credential values."""
+
+    env_url, _navigation_url, slot, token = hosted_endpoints(player_ws_url)
+    client = EnvironmentWebSocketClient(url=env_url, slot=slot, token=token)
+    player_parts = urlsplit(player_ws_url)
+    client_parts = urlsplit(client.url)
+    return {
+        "player_path": player_parts.path,
+        "player_query_keys": sorted(parse_qs(player_parts.query)),
+        "environment_path": client_parts.path,
+        "environment_query_keys": sorted(parse_qs(client_parts.query)),
+    }
 
 
 class GymSession:
