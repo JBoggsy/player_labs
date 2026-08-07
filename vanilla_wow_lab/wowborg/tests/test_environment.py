@@ -50,11 +50,11 @@ class FakeEnv:
         self.closed = True
 
 
-def test_hosted_endpoints_preserve_auth_for_navigation() -> None:
+def test_hosted_endpoints_preserve_auth_for_environment_and_navigation() -> None:
     env_url, navigation_url, slot, token = hosted_endpoints(
         "wss://game.example/player?slot=7&token=secret"
     )
-    assert env_url == "wss://game.example/env"
+    assert env_url == "wss://game.example/env?slot=7&token=secret"
     assert navigation_url == (
         "https://game.example/player/navigation?slot=7&token=secret"
     )

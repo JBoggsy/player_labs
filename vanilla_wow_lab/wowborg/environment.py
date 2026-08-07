@@ -113,8 +113,7 @@ def hosted_endpoints(player_ws_url: str) -> tuple[str, str, int, str]:
         raise ValueError("COWORLD_PLAYER_WS_URL token must be non-empty")
     ws_scheme = "wss" if parts.scheme in ("wss", "https") else "ws"
     http_scheme = "https" if ws_scheme == "wss" else "http"
-    clean_query = ""
-    env_url = urlunsplit((ws_scheme, parts.netloc, "/env", clean_query, ""))
+    env_url = urlunsplit((ws_scheme, parts.netloc, "/env", parts.query, ""))
     navigation_url = urlunsplit(
         (http_scheme, parts.netloc, "/player/navigation", parts.query, "")
     )
