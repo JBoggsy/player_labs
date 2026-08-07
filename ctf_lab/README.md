@@ -72,7 +72,7 @@ ctf_lab/
     build_player.sh               build the beacon image (linux/amd64)
     versions.env                  pinned SDK + game refs for builds
     build_expand_replay.sh        build version-matched replay readers (human + JSONL)
-    expand_replay_json.nim        JSONL event emitter (feeds the warehouse)
+    expand_replay_json.nim        JSONL event emitter (feeds the warehouse; `walkability` arg adds the startup wall map for the viewer)
     event_warehouse.py            build a DuckDB/Parquet event warehouse from episodes
     analyze_reporter_warehouse.py compare policies from hosted Round Warehouse outputs
     run_roundwarehouse_local.py   run Reporter Lab's canonical rich-event Wasm locally

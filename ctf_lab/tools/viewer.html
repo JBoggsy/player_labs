@@ -1,16 +1,17 @@
 <!DOCTYPE html>
 <!--
-  CTF belief-overlay replay viewer.
+  CTF-family belief-overlay replay viewer.
 
   Feed it a bundle from tools/viewer_bundle.py (ground-truth per-tick positions +
-  events from the re-sim, beacon belief traces from the artifact zips, the wall
+  events from the re-sim, agent belief traces from the artifact zips, the wall
   mask). Renders the game on canvas and overlays ONE selected bot's perception
   and beliefs: vision polygon, hearing radius, heard chats/sounds, enemy/ally
-  track beliefs, danger heatmap, goal + path, squadmate presence, item beliefs.
+  track beliefs, danger and ally-coverage heatmaps, goal + path, squadmate
+  presence, item beliefs.
 
-  Overlay data comes from trace SNAPSHOTS (cadence BEACON_DIAG_EVERY_TICKS,
-  default 96) — the "belief age" readout shows how stale the overlay is at the
-  current tick. Record traced batches with BEACON_DIAG_EVERY_TICKS=1 for
+  Overlay data comes from trace SNAPSHOTS (cadence STENCIL_DIAG_EVERY_TICKS or
+  BEACON_DIAG_EVERY_TICKS, default 96) — the "belief age" readout shows how
+  stale the overlay is at the current tick. Set the applicable cadence to 1 for
   frame-accurate overlays.
 
   Keyboard: space = play/pause · ←/→ = step one tick · shift+←/→ = jump 24.
@@ -18,11 +19,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>CTF belief viewer</title>
+<title>Belief replay viewer</title>
 <style>
   :root {
     --paper: #faf9f6; --ink: #1a1815; --ink-soft: #5f5a52; --hairline: #e3ded6;
-    --red: #b3402e; --blue: #2e5cb3; --accent: #8a6d1f;
+    --red: #b3402e; --blue: #2e5cb3; --green: #3f7d3a; --yellow: #b28a16;
+    --accent: #8a6d1f;
   }
   * { box-sizing: border-box; }
   body {
@@ -87,7 +89,7 @@
 </div>
 
 <div id="panel">
-  <h1>CTF belief viewer</h1>
+  <h1>Belief replay viewer</h1>
   <p class="sub">ground truth below, one bot's head above it</p>
 
   <div class="section">
@@ -111,10 +113,12 @@
   <div class="section">
     <div class="label">Beliefs</div>
     <label class="toggle"><input type="checkbox" id="t_enemies" checked><span class="swatch" style="background:#b3402e"></span>enemy tracks (age-faded)</label>
-    <label class="toggle"><input type="checkbox" id="t_allies" checked><span class="swatch" style="background:#2e5cb3"></span>ally tracks</label>
+    <label class="toggle"><input type="checkbox" id="t_allies" checked><span class="swatch" style="background:#2e5cb3"></span>ally tracks + observed headings</label>
     <label class="toggle"><input type="checkbox" id="t_squad" checked><span class="swatch" style="background:#2e5cb3"></span>squadmate presence (staleness rings)</label>
     <label class="toggle"><input type="checkbox" id="t_items" checked><span class="swatch" style="background:#3f7d3a"></span>item beliefs (present / believed-absent)</label>
+    <label class="toggle"><input type="checkbox" id="t_covered" checked><span class="swatch" style="background:#2e8b5733"></span>ally-covered heatmap (projected vision + LoS)</label>
     <label class="toggle"><input type="checkbox" id="t_danger"><span class="swatch" style="background:#b3402e33"></span>danger heatmap</label>
+    <div class="sub" id="beliefStats" style="margin-top:7px">select an agent to inspect heatmap telemetry</div>
   </div>
 
   <div class="section">
@@ -133,9 +137,10 @@
 
 <script>
 "use strict";
-const MAP_W = 1235, MAP_H = 659;
-const CONE_HALF_DEG = 45, BUBBLE = 90, CHAT_RANGE = Math.floor(MAP_W / 5);
+let MAP_W = 1235, MAP_H = 659, CHAT_RANGE = Math.floor(MAP_W / 5);
+const CONE_HALF_DEG = 45, BUBBLE = 90;
 const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+const queryParams = new URLSearchParams(location.search);
 
 let B = null;            // the loaded bundle
 let wall = null;         // Uint8Array MAP_W*MAP_H
@@ -144,24 +149,30 @@ let posByTick = new Map();   // tick -> [{slot,x,y,aim,alive,hp,carry,...}]
 let flagsByTick = new Map();
 let eventsByTick = new Map();
 let tracesBySlot = new Map(); // slot -> {snapshots:[...], events:[...]} engine-tick sorted
+let participantsBySlot = new Map();
 let cur = 0;             // index into ticks
 let playing = false, speedMul = 1, acc = 0, lastT = 0;
 
 // ---------- load ----------
+async function loadBundle(bundle, name) {
+  status(`parsing ${name}…`);
+  B = bundle;
+  index();
+  status(`${name} · ${B.episode?.coworld_version ?? "?"} · ${ticks.length} ticks · ` +
+         `${Object.keys(B.traces || {}).length} traced bots`);
+  draw();
+}
 document.getElementById("file").addEventListener("change", async (e) => {
   const f = e.target.files[0];
   if (!f) return;
-  status(`parsing ${f.name}…`);
-  B = JSON.parse(await f.text());
-  index();
-  status(`${f.name} · ${B.episode?.coworld_version ?? "?"} · ${ticks.length} ticks · ` +
-         `${Object.keys(B.traces || {}).length} traced bots`);
-  draw();
+  await loadBundle(JSON.parse(await f.text()), f.name);
 });
 
 function status(s) { document.getElementById("status").innerHTML = s; }
 
 function index() {
+  MAP_W = B.wall.w; MAP_H = B.wall.h; CHAT_RANGE = Math.floor(MAP_W / 5);
+  cv.width = MAP_W; cv.height = MAP_H;
   // Wall RLE -> bitmask.
   wall = new Uint8Array(MAP_W * MAP_H);
   B.wall.rows.forEach((runs, y) => {
@@ -169,6 +180,9 @@ function index() {
       wall.fill(1, y * MAP_W + runs[i], y * MAP_W + runs[i] + runs[i + 1]);
   });
   posByTick.clear(); flagsByTick.clear(); eventsByTick.clear();
+  participantsBySlot = new Map(
+    (B.episode?.participants || []).map(participant => [participant.slot, participant])
+  );
   for (const r of B.pos) {
     if (!posByTick.has(r.ts)) posByTick.set(r.ts, []);
     posByTick.get(r.ts).push({ slot: r.player, ...r.value });
@@ -194,15 +208,24 @@ function index() {
     const snapshots = [], events = [];
     for (const r of recs) {
       const et = (r.tick ?? 0) + off;
-      if (r.name === "snapshot") snapshots.push({ t: et, d: r.data });
+      if (r.name === "snapshot" || (r.name === "worldmap" && r.data?.covered)) {
+        snapshots.push({ t: et, d: r.data });
+      }
       else events.push({ t: et, name: r.name, d: r.data });
     }
     snapshots.sort((a, b) => a.t - b.t); events.sort((a, b) => a.t - b.t);
     tracesBySlot.set(slot, { snapshots, events });
-    const p = (B.episode?.participants || []).find(p => p.slot === slot) || {};
+    const p = participantsBySlot.get(slot) || {};
     const seat = recs.find(r => r.data?.seat != null)?.data.seat ?? (slot >> 1);
-    const team = slot % 2 === 0 ? "red" : "blue";
+    const team = recs.find(r => r.data?.team)?.data.team ?? p.team ??
+      (slot % 2 === 0 ? "red" : "blue");
     agentSel.add(new Option(`${p.policy ?? "bot"}:${p.version ?? "?"} seat ${seat} (${team}, slot ${slot})`, slot));
+  }
+  const requestedAgent = queryParams.get("agent");
+  if (requestedAgent != null && tracesBySlot.has(+requestedAgent)) {
+    agentSel.value = requestedAgent;
+  } else if (tracesBySlot.size === 1) {
+    agentSel.value = tracesBySlot.keys().next().value;
   }
 }
 
@@ -254,6 +277,10 @@ function ray(x0, y0, ang, maxLen) {
   return [x0 + dx * maxLen, y0 + dy * maxLen];
 }
 function brads2rad(b) { return -b / 256 * 2 * Math.PI; }  // brads are CCW on screen; canvas y is down
+function teamColor(team, slot = 0) {
+  const colors = { red: "#b3402e", blue: "#2e5cb3", green: "#3f7d3a", yellow: "#b28a16" };
+  return colors[team] || (slot % 2 === 0 ? colors.red : colors.blue);
+}
 function snapAt(slot, t) {
   const tr = tracesBySlot.get(slot);
   if (!tr) return null;
@@ -281,8 +308,35 @@ function draw() {
   const snap = overlaySlot !== "" ? snapAt(+overlaySlot, t) : null;
   document.getElementById("beliefAge").textContent =
     snap ? `${t - snap.t} ticks (snapshot @ ${snap.t})` : "—";
+  const stats = document.getElementById("beliefStats");
+  if (!snap) {
+    stats.textContent = overlaySlot === ""
+      ? "select an agent to inspect heatmap telemetry"
+      : "no belief snapshot at this tick";
+  } else {
+    const coverage = snap.d.covered;
+    const cells = coverage?.rows?.flat() || [];
+    const coveredPct = cells.length
+      ? (100 * cells.filter(value => value > 0).length / cells.length).toFixed(1)
+      : "—";
+    const headed = (snap.d.teammate_tracks || [])
+      .filter(track => track.heading_brads != null).length;
+    const headingStep = coverage?.heading_precision_brads != null
+      ? (coverage.heading_precision_brads / 256 * 360).toFixed(1) : "—";
+    const dangerMean = snap.d.danger_mean != null ? snap.d.danger_mean.toFixed(3) : "—";
+    const dangerMax = snap.d.danger_max != null ? snap.d.danger_max.toFixed(3) : "—";
+    stats.textContent = `covered ${coveredPct}% · allies ${snap.d.teammates_visible ?? "?"} visible / ${headed} headed · ` +
+      `heading step ${headingStep}° · danger μ ${dangerMean}, max ${dangerMax}`;
+  }
 
-  // Danger heatmap (under everything else).
+  // Ally-covered and danger heatmaps (under everything else).
+  if (me && snap && on("t_covered") && snap.d.covered) {
+    const g = snap.d.covered, cell = g.cell_px;
+    g.rows.forEach((row, gy) => row.forEach((v, gx) => {
+      if (v > 0) { ctx.fillStyle = `rgba(46,139,87,${(v / 255 * 0.28).toFixed(3)})`;
+                   ctx.fillRect(gx * cell, gy * cell, cell, cell); }
+    }));
+  }
   if (me && snap && on("t_danger") && snap.d.danger) {
     const g = snap.d.danger, cell = g.cell_px;
     g.rows.forEach((row, gy) => row.forEach((v, gx) => {
@@ -317,6 +371,12 @@ function draw() {
 
   // Heard chats + sounds: trace point-events within the last ~36 ticks.
   if (me && snap && on("t_heard")) {
+    for (const ev of snap.d.heard_events_live || []) {
+      if (!ev.pos || ev.age > 36) continue;
+      const fade = 1 - ev.age / 36;
+      ctx.beginPath(); ctx.arc(ev.pos[0], ev.pos[1], 8 + (1 - fade) * 10, 0, 2 * Math.PI);
+      ctx.strokeStyle = `rgba(138,109,31,${0.8 * fade})`; ctx.stroke();
+    }
     const tr = tracesBySlot.get(+overlaySlot);
     for (const ev of tr.events) {
       if (ev.t > t || ev.t < t - 36) continue;
@@ -346,8 +406,10 @@ function draw() {
 
   // Enemy / ally track beliefs.
   if (me && snap) {
-    if (on("t_enemies")) for (const tr of snap.d.enemy_tracks || []) trackGlyph(tr, "#b3402e");
-    if (on("t_allies")) for (const tr of snap.d.teammate_tracks || []) trackGlyph(tr, "#2e5cb3");
+    const enemyTracks = Array.isArray(snap.d.enemy_tracks) ? snap.d.enemy_tracks : [];
+    const allyTracks = Array.isArray(snap.d.teammate_tracks) ? snap.d.teammate_tracks : [];
+    if (on("t_enemies")) for (const tr of enemyTracks) trackGlyph(tr, "#b3402e");
+    if (on("t_allies")) for (const tr of allyTracks) trackGlyph(tr, "#2e5cb3");
     if (on("t_squad") && snap.d.presence_age) {
       // Squadmate presence: ring at last-known ally-track pos per stale seat, or a
       // panel-corner list when no position is known.
@@ -383,14 +445,14 @@ function draw() {
   // Flags.
   for (const f of flagsByTick.get(t) || []) {
     ctx.font = "700 14px sans-serif";
-    ctx.fillStyle = f.flag === "red" ? "#b3402e" : "#2e5cb3";
+    ctx.fillStyle = teamColor(f.flag);
     ctx.fillText("⚑", f.x - 5, f.y + 5);
   }
 
   // Players (ground truth).
   for (const p of players) {
     if (!p.alive) continue;
-    const col = p.slot % 2 === 0 ? "#b3402e" : "#2e5cb3";
+    const col = teamColor(participantsBySlot.get(p.slot)?.team, p.slot);
     const isMe = me && p.slot === me.slot;
     dot(p.x, p.y, isMe ? 7 : 5, col);
     if (isMe) { ctx.strokeStyle = "#1a1815"; ctx.lineWidth = 2;
@@ -425,7 +487,7 @@ function draw() {
   if (me && snap && on("t_state")) {
     const d = snap.d;
     const lines = [
-      `${d.team} seat ${d.seat} · ${d.objective ?? "?"}${d.micro ? " · " + d.micro : ""}`,
+      `${d.team} seat ${d.seat} · ${d.objective ?? d.intent ?? "?"}${d.micro ? " · " + d.micro : ""}`,
       `hp ${d.hp_pips ?? "?"} · enemy lives ${d.enemy_lives_left ?? "?"} · converts ${d.convert_events ?? 0}`,
       `orders ${d.orders_heard ?? 0}♫/${d.orders_sent ?? 0}↑ · pings ${d.pings_heard ?? 0}♫ · backoffs ${d.backoff_events ?? 0}`,
     ];
@@ -453,12 +515,26 @@ function trackGlyph(tr, col) {
   if (tr.vel && (tr.vel[0] || tr.vel[1])) {
     ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + tr.vel[0] * 10, y + tr.vel[1] * 10); ctx.stroke();
   }
+  if (tr.heading_brads != null) {
+    const a = brads2rad(tr.heading_brads);
+    ctx.beginPath(); ctx.moveTo(x, y);
+    ctx.lineTo(x + Math.cos(a) * 12, y + Math.sin(a) * 12); ctx.stroke();
+  }
   ctx.font = "9px sans-serif"; ctx.fillStyle = col;
   ctx.fillText(`${tr.age}t`, x + 8, y - 6);
   ctx.globalAlpha = 1;
 }
 
-draw();
+const bundleUrl = queryParams.get("bundle");
+if (bundleUrl) {
+  fetch(bundleUrl).then(response => {
+    if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+    return response.json();
+  }).then(bundle => loadBundle(bundle, bundleUrl.split("/").pop()))
+    .catch(error => status(`failed to load ${bundleUrl}: ${error}`));
+} else {
+  draw();
+}
 </script>
 </body>
 </html>

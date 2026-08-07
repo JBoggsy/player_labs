@@ -83,7 +83,7 @@ link_stable() {
 }
 
 # Fast path: already built for this ref (both binaries present).
-if [[ -x "$out_bin" && -x "$json_bin" && $force -eq 0 ]]; then
+if [[ -x "$out_bin" && -x "$json_bin" && "$json_bin" -nt "$LAB_JSON_SRC" && $force -eq 0 ]]; then
   echo "build_expand_replay.sh: cached binaries up to date: $out_bin, $json_bin"
   link_stable
   [[ -n "$run_replay" ]] && exec "$out_bin" "$run_replay"

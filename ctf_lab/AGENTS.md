@@ -137,6 +137,9 @@ in [`../AGENTS.md`](../AGENTS.md)) — use those to *create*, *pull*, and *ship*
 - `tools/agg_eval.py <dir>` — fast one-line scoreline from a results dir.
 - `tools/build_expand_replay.sh` — builds two host-native, version-matched replay readers:
   `expand_replay` (human timeline) and `expand_replay_json` (JSONL for the warehouse).
+  `expand_replay_json <replay> [pos_every] [walkability]` — the optional third arg emits
+  the exact startup wall map as `wall-runs-v1`, which `viewer_bundle.py` requires. The
+  build script rebuilds when `expand_replay_json.nim` is newer than the cached binary.
 - **beacon tracing** — structured `TraceEvent`s to the SDK `TraceOutputs` (default
   `jsonl@artifact`; `BEACON_TRACE_OUTPUTS` to override, `BEACON_DIAG_EVERY_TICKS=1` for a
   per-tick trace); falls back to `CTF_DIAG` stderr lines with no artifact URL.

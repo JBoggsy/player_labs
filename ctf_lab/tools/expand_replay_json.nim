@@ -27,6 +27,7 @@ const
 
 var posEvery = 30          ## ticks between periodic position snapshots
                            ## (CLI arg 2; the replay viewer bundles use 1)
+var emitWalkability = false  ## viewer-only startup geometry (CLI arg 3)
 
 type
   TrackState = object
@@ -50,6 +51,36 @@ proc labelOf(sim: SimServer, i: int): string =
 
 proc emitRow(tick, slot: int, key: string, value: JsonNode) =
   echo $(%*{"ts": tick, "player": slot, "key": key, "value": value})
+
+proc walkabilityValue(sim: SimServer): JsonNode =
+  ## The exact startup walkability sprite, encoded as blocked x/length runs.
+  ## The viewer consumes walls, so emitting blocked runs avoids expanding the
+  ## full RGBA sprite or a width*height JSON boolean array.
+  var rows = newJArray()
+  for y in 0 ..< sim.gameMap.height:
+    var
+      runs: seq[int]
+      x = 0
+    while x < sim.gameMap.width:
+      let index = y * sim.gameMap.width + x
+      if index >= sim.walkMask.len or not sim.walkMask[index]:
+        let start = x
+        while x < sim.gameMap.width:
+          let runIndex = y * sim.gameMap.width + x
+          if runIndex < sim.walkMask.len and sim.walkMask[runIndex]:
+            break
+          inc x
+        runs.add(start)
+        runs.add(x - start)
+      else:
+        inc x
+    rows.add(%runs)
+  %*{
+    "encoding": "wall-runs-v1",
+    "w": sim.gameMap.width,
+    "h": sim.gameMap.height,
+    "rows": rows,
+  }
 
 proc richValue(event: SimEvent): JsonNode =
   result = %*{
@@ -141,6 +172,9 @@ proc emitReplayJson(path: string) =
   sim.collectEvents = true
   replay.looping = false
   replay.mismatchQuit = true
+
+  if emitWalkability:
+    emitRow(0, -1, "walkability_map", walkabilityValue(sim))
 
   while replay.playing:
     let tick = sim.tickCount + 1
@@ -265,8 +299,11 @@ proc emitReplayJson(path: string) =
 
 when isMainModule:
   if paramCount() < 1:
-    stderr.writeLine("Usage: expand_replay_json <replay.bitreplay> [pos_every]")
+    stderr.writeLine(
+      "Usage: expand_replay_json <replay.bitreplay> [pos_every] [walkability]")
     quit(1)
   if paramCount() >= 2:
     posEvery = max(1, parseInt(paramStr(2)))
+  if paramCount() >= 3:
+    emitWalkability = paramStr(3) == "walkability"
   emitReplayJson(paramStr(1))
