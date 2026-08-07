@@ -7,7 +7,14 @@ type
   CarrierFix* = tuple[pos: Point, heading, heardTick: int]
   ThiefFix* = tuple[pos: Point, tick: int]
   GrenadeWarning* = tuple[pos: Point, tick: int]
-  SquadOrder* = tuple[goal: char, pos: Point, setTick: int]
+  SquadDirective* = object
+    kind*: char
+    pos*: Point
+    opponent*: Team
+  SquadOrder* = object
+    directive*: SquadDirective
+    setTick*: int
+    epoch*: int
 
   Belief* = ref object
     team*: Team
@@ -21,6 +28,8 @@ type
     defensivePostForward*: bool
     defensivePostTravelTicks*, defensivePostHoldTicks*: int
     defensivePostFallbacks*: int
+    earlyDefenseComplete*: bool
+    earlyDefensePoint*: Option[Point]
     selfXy*: Option[Point]
     alive*: bool
     worldmap*: WorldMap
@@ -29,7 +38,6 @@ type
     stealTarget*: Option[Team]
     aimBrads*: int
     aimTargetBrads*, aimErrorBrads*: int
-    aimSlotErrorBrads*: int
     aimLateralErrorPx*, targetRangePx*: float
     fireGateReason*: string
     targetRayClear*, targetTeammateBlocked*: bool
@@ -90,11 +98,26 @@ type
     squadWaitSince*, squadWaitTicks*, squadCohesionTicks*: int
     order*: Option[SquadOrder]
     orderSource*: string
+    orderArrived*: bool
+    squadOrderPost*, squadOrderPostDuck*, squadOrderPostSightlineAim*: Option[Point]
+    squadOrderPostOpponent*: Option[Team]
+    squadOrderPostScore*: float
+    squadOrderPostActive*: bool
     presence*: Table[int, int]
-    lastPingTick*, lastOrderSentTick*: int
+    lastPingTick*, lastProposalSentTick*, lastVoteSentTick*, lastCommitSentTick*: int
     rejoinPoint*: Option[Point]
     rejoinUntil*, respawnedTick*: int
-    ordersSent*, ordersHeard*, pingsSent*, pingsHeard*: int
+    consensusEpoch*, consensusStartedTick*: int
+    consensusState*: string
+    consensusProposal*, consensusVote*: Option[SquadDirective]
+    consensusProposals*, consensusVotes*: Table[int, SquadDirective]
+    squadAdvanceStage*: int
+    proposalsSent*, proposalsHeard*, votesSent*, votesHeard*: int
+    commitsSent*, commitsHeard*: int
+    consensusCommits*, consensusTimeouts*, consensusResyncs*: int
+    orderFollowTicks*, orderMoveTicks*, orderHoldTicks*, orderWatchTicks*: int
+    orderArrivals*: int
+    pingsSent*, pingsHeard*: int
     backoffEvents*, rejoinTicks*, convertEvents*: int
     converting*: bool
     leadBrads*, throwChargeTicks*: int
@@ -114,5 +137,7 @@ proc newBelief*(slot: int): Belief =
     chatLastSentTick: -10_000, chatEnemyArmed: true,
     chatLastEnemyTick: -10_000, chatEnemySeenTick: -10_000,
     squadWaitSince: -1, lastPingTick: -10_000,
-    lastOrderSentTick: -10_000, rejoinUntil: -1,
+    lastProposalSentTick: -10_000, lastVoteSentTick: -10_000,
+    lastCommitSentTick: -10_000,
+    consensusStartedTick: -1, consensusState: "idle", rejoinUntil: -1,
     respawnedTick: -10_000)

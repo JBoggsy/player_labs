@@ -68,13 +68,12 @@ const
   RenderScale* = 1
   LivesPerPlayer* = 3
   AimBradsTurn* = 256
-  AimRotations* = 32
-  AimStepBrads* = AimBradsTurn div AimRotations
-  # The deployed 0.7.190 variants explicitly retain aimTurnRate=5. GV36 now
-  # interprets that value as SLOTS per tick, so one held input moves 40 brads.
-  AimSlotsPerTick* = 5
-  AimTurnRate* = AimSlotsPerTick * AimStepBrads
-  AimSweepStepBrads* = AimStepBrads
+  ObservedHeadingSteps* = 16
+  # GV40 restored continuous integer-brad aim. Every deployed Paintbot 0.7.207
+  # variant turns five brads per held B/Select tick; there is no slot grid.
+  AimTurnRate* = 5
+  AimTurnDeadbandBrads* = AimTurnRate div 2
+  AimSweepStepBrads* = AimTurnRate
   # The wire does not identify the variant. Use the narrowest deployed cone so
   # absence-based item tracking never claims a 4ffa8 pickup was visible when it
   # was actually outside that variant's 45-degree cone.
@@ -162,6 +161,7 @@ let
     "STENCIL_DEFENSIVE_THIEF_MATCH_PX", 96, NavCell)
   DefensiveCarrierThreatMin* = envTunableFloat(
     "STENCIL_DEFENSIVE_CARRIER_THREAT_MIN", 0.75, 0.0, 1.0)
+  EarlyDefense* = envTunableBool("STENCIL_EARLY_DEFENSE", true)
   FirefightClaimRebroadcastTicks* = envTunableInt(
     "STENCIL_FF_CLAIM_REBROADCAST_TICKS", 30, 1)
   FirefightClaimTtlTicks* = envTunableInt("STENCIL_FF_CLAIM_TTL_TICKS", 72, 1)
@@ -190,7 +190,7 @@ let
   HeardDuckRangePx* = envInt("STENCIL_HEARD_DUCK_RANGE_PX", 180)
   HeardDuckFreshTicks* = envInt("STENCIL_HEARD_DUCK_FRESH_TICKS", 24)
   Chat* = envBool("STENCIL_CHAT", true)
-  ChatMinIntervalTicks* = envInt("STENCIL_CHAT_MIN_INTERVAL_TICKS", 30)
+  ChatMinIntervalTicks* = envInt("STENCIL_CHAT_MIN_INTERVAL_TICKS", 24)
   ChatEnemyRearmTicks* = envInt("STENCIL_CHAT_ENEMY_REARM_TICKS", 48)
   ChatEnemyReshoutTicks* = envInt("STENCIL_CHAT_ENEMY_RESHOUT_TICKS", 72)
   ChatFixTtlTicks* = envInt("STENCIL_CHAT_FIX_TTL_TICKS", 96)
@@ -200,14 +200,14 @@ let
   ChatEnemyBubbleFix* = envBool("STENCIL_CHAT_ENEMY_BUBBLE_FIX", true)
   GrenadeWarnClearPx* = envInt("STENCIL_GRENADE_WARN_CLEAR_PX", 80)
   GrenadeWarnTtlTicks* = envInt("STENCIL_GRENADE_WARN_TTL_TICKS", 72)
-  Squads* = envBool("STENCIL_SQUADS", false)
+  Squads* = envBool("STENCIL_SQUADS", true)
   SquadCohesionPx* = envInt("STENCIL_SQUAD_COHESION_PX", 120)
   SquadMinBuddies* = envInt("STENCIL_SQUAD_MIN_BUDDIES", 1)
   SquadSeparationPx* = envTunableInt("STENCIL_SQUAD_SEPARATION_PX", 40, 16, 120)
   SquadSpreadPx* = envInt("STENCIL_SQUAD_SPREAD_PX", 70)
   SquadWaitTimeoutTicks* = envInt("STENCIL_SQUAD_WAIT_TIMEOUT_TICKS", 150)
   SquadSectorBrads* = envInt("STENCIL_SQUAD_SECTOR_BRADS", 50)
-  SquadCommand* = envBool("STENCIL_SQUAD_COMMAND", false)
+  SquadCommand* = envBool("STENCIL_SQUAD_COMMAND", true)
   ChokeFraction* = envFloat("STENCIL_CHOKE_FRACTION", 0.45)
   RallyFraction* = envFloat("STENCIL_RALLY_FRACTION", 0.65)
   PostCorridorPx* = envInt("STENCIL_POST_CORRIDOR_PX", 240)
@@ -220,8 +220,16 @@ let
   PostSeparationPx* = envInt("STENCIL_POST_SEPARATION_PX", 120)
   DefensivePosts* = envTunableBool("STENCIL_DEFENSIVE_POSTS", true)
   ConvertEnemyLives* = envInt("STENCIL_CONVERT_ENEMY_LIVES", 6)
-  OrderTtlTicks* = envInt("STENCIL_ORDER_TTL_TICKS", 240)
-  OrderRebroadcastTicks* = envInt("STENCIL_ORDER_REBROADCAST_TICKS", 72)
+  OrderTtlTicks* = envInt("STENCIL_ORDER_TTL_TICKS", 720)
+  ConsensusRebroadcastTicks* = envInt(
+    "STENCIL_CONSENSUS_REBROADCAST_TICKS", 45)
+  ConsensusCommitEchoTicks* = envInt("STENCIL_CONSENSUS_COMMIT_ECHO_TICKS", 120)
+  ConsensusTimeoutTicks* = envInt("STENCIL_CONSENSUS_TIMEOUT_TICKS", 480)
+  SquadMoveMinTicks* = envInt("STENCIL_SQUAD_MOVE_MIN_TICKS", 120)
+  SquadWatchTicks* = envInt("STENCIL_SQUAD_WATCH_TICKS", 240)
+  SquadHoldTicks* = envInt("STENCIL_SQUAD_HOLD_TICKS", 180)
+  SquadPostSearchPx* = envInt("STENCIL_SQUAD_POST_SEARCH_PX", 360)
+  SquadPostSeparationPx* = envInt("STENCIL_SQUAD_POST_SEPARATION_PX", 64)
   PingIntervalTicks* = envInt("STENCIL_PING_INTERVAL_TICKS", 60)
   PresenceStaleTicks* = envInt("STENCIL_PRESENCE_STALE_TICKS", 190)
   BackoffStepPx* = envInt("STENCIL_BACKOFF_STEP_PX", 70)

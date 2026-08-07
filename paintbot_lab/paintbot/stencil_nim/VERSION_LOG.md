@@ -4,12 +4,278 @@ Read this before assuming what a version contains. Format mirrors
 `ctf_lab/ctf/beacon/VERSION_LOG.md`: one entry per uploaded version — what
 changed, why, and what the evidence said.
 
+## v57 — full engine-rate communication, uploaded 2026-08-07
+
+Immutable policy-version UUID: `c4a663a4-f6d4-4be4-92ca-cfffa891202e`.
+Uploaded with tag `purpose=chat-engine-rate`; not submitted to a league.
+
+- Reduces `STENCIL_CHAT_MIN_INTERVAL_TICKS` from 30 to the engine's exact
+  24-tick shout cooldown, raising maximum protocol throughput from 0.8 to 1.0
+  messages per second and removing up to six ticks of avoidable sender delay.
+- Retains the existing message-specific cadences and strict sender priority;
+  only the shared transport limiter changed.
+- Pins the build to canonical Paintbot 0.7.208 / source
+  `871ace1e5bd1a47171451e2ce3dc9004ee0a9c2b` (GameVersion 40). The game update
+  adds initialization-time trench bounding-box markers; its shout contract is
+  unchanged.
+
+The `linux/amd64` image compiled successfully. Hosted evaluation has not run;
+v57 is inert and v54 remains the active champion.
+
+## v56 — restored belief tracing and ally coverage, uploaded 2026-08-06
+
+Immutable policy-version UUID: `e49b4d94-6410-41bb-94c4-8120f05afca6`.
+Uploaded with tag `purpose=belief-tracing-covered-heatmap`; not submitted to a
+league.
+
+- Restores complete belief snapshots for the replay viewer: enemy and teammate
+  tracks, visible players, item and heard-event beliefs, presence ages, paths,
+  objectives/orders, lives, and the downsampled danger heatmap.
+- Decodes the fuzzed 16-step heading exposed by visible ally sprites and traces
+  it with ally tracks.
+- Adds a `covered` heatmap derived from currently visible allies' projected
+  vision. It uses the conservative guaranteed vision cone and exact pixel-wall
+  ray tests, so cover blocks projected line of sight.
+- Updates the viewer to render the coverage heatmap, ally headings, and live
+  heard-sound beliefs. Replay geometry continues to come from each replay's
+  startup walkability map.
+- Pins the build to canonical Paintbot 0.7.207 / source
+  `c8fa5558fb9a5c83af4cf973da16913d6b06f2e4` (GameVersion 40).
+
+V56 retains v55's rejected early-defense behavior; this upload exists to make
+belief diagnosis complete, not as a champion candidate. The `linux/amd64`
+image compiled successfully. A one-episode exact-source local diagnostic
+confirmed non-empty 32-pixel danger and coverage grids and headed teammate
+tracks, but is not gameplay evidence. V54 remains the active champion.
+
+## v55 — covered spawn-box opening, uploaded 2026-08-06
+
+Immutable policy-version UUID: `bc7c1079-5684-47b0-82b2-7d2f69e75089`.
+Uploaded with tag `purpose=early-defense`; not submitted to a league.
+
+- Adds a one-way opening phase enabled by `STENCIL_EARLY_DEFENSE=1`.
+- Every agent takes a distinct wall-adjacent cover cell inside its exact
+  generated endzone and suppresses peek, pursuit, separation, item, squad,
+  convert, and steal movement while the phase is active.
+- The phase ends permanently for that episode only after every still-live
+  enemy team has strictly fewer aggregate lives than our team. Because all
+  teams start with equal lives, the fog-independent team-score death counters
+  provide the exact comparison without estimating roster size.
+- Carry-home, own-heart-thief interception, and nearby-grenade evasion retain
+  higher priority. Combat aim and firing remain active from cover, and an
+  endzone-boundary clamp prevents combat micro from drifting outside the box.
+
+The release image compiled successfully for `linux/amd64`. Hosted evaluation
+against v54 has not run yet, so v55 is an unvalidated candidate and v54 remains
+the active champion.
+
+## v54 — GV40 continuous-aim controller, champion 2026-08-06
+
+Immutable policy-version UUID: `cf88a169-2f85-403e-bb54-6b8bdc751ea5`.
+Uploaded with tag `purpose=gv40-continuous-aim`.
+
+Submitted to Paintbot with automatic champion promotion:
+
+- submission: `sub_e52dd65c-717f-4aab-b761-d6e83189ccab`;
+- membership: `lpm_890ebd66-ad82-48c3-93e4-c0a9d8d85e52`;
+- terminal state: `competing`, `active`, and **champion** for James Botts.
+
+- Pins the native build to canonical Paintbot 0.7.206 / source
+  `ec244e6b01485e8c7acd7a7929a9268354d50957` (GameVersion 40).
+- Replaces the obsolete GV36 32-slot/five-slot solver with signed
+  shortest-angle steering at the deployed rate of 5 brads per held tick.
+- Stops within a 2-brad deadband, the nearest representable result when a
+  five-brad actuator cannot land exactly on an arbitrary integer target.
+- Keeps exact `own aim <brads>` resynchronization, but removes the slot-grid
+  error state and telemetry that no longer describe the game.
+- Retains v52's accepted squad behavior. The controller correction applies to
+  combat aim, scanning, spray alignment, and grenade post-input aim.
+
+The previous controller could limit-cycle even on a static target: for example,
+from 0 toward 37 brads it predicted 40-brad actions and could alternate around
+the target while the real game advanced only 5 brads. The 0.7.206 sim and its
+tests establish that every integer heading is legal and B/Select applies ±5.
+The release image compiled successfully for `linux/amd64`. A six-episode,
+campaign-shaped hosted A/B then placed v54 and v52 in both captain seatings on
+round-381 cell `(0,0)` (`1v1`, seed `344807463`), with the live allied policies
+held fixed. v54 won all six episodes. Its seven captain seats produced 137
+kills / 24 deaths and 436 hits / 565 shots (77.2%), versus v52's 17 / 126 and
+87 / 120 (72.5%). Exact-version replay expansion found 42,987 live v54 heading
+changes: every one was exactly `+5` or `-5` brads. Immediate direction reversals
+fell from 30,382 / 38,838 v52 turn ticks (78.2%) to 3,733 / 42,987 (8.7%). All
+565 completed v54 gun actions retained their trigger heading across the
+five-tick firing delay. Full evidence and request IDs are in
+[`../../docs/reports/stencil-v54-gv40-aim-validation-2026-08-06.md`](../../docs/reports/stencil-v54-gv40-aim-validation-2026-08-06.md).
+
+The controller correction was accepted and v54 replaced v52 as champion.
+
+A subsequent round-383 top-champions field test ran six full-seat episodes on
+each current map ref. v54 finished 13 wins / three draws / two losses, scoring
++26 with 351 kills / 214 deaths and 1,121 hits / 1,539 shots (72.8%). It swept
+all six `1v1` games, went 4-1-1 on `2v2`, and 3-2-1 on `4ffa`. The sampled
+`2v2` result was side-sensitive (3-0 as blue captain, 1-1-1 as red), while the
+two FFA fields containing both daveey and relh yielded a draw and a loss. Full
+design, exact versions, results, and request IDs are in
+[`../../docs/reports/stencil-v54-top-champions-r383-2026-08-06.md`](../../docs/reports/stencil-v54-top-champions-r383-2026-08-06.md).
+
+A larger round-385 field test then ran 60 full-seat episodes in the board's
+26/26/48 proportions: 16 `1v1`, 16 `2v2`, and 28 `4ffa`, using all 19 other
+active champions. V54 finished **49-3-8** (81.7% wins, 86.7% non-loss), +124,
+with 1,283 kills / 513 deaths and 4,057 hits / 5,247 shots (77.3%). It went
+14-0-2 on `1v1`, 15-0-1 on `2v2`, and 20-3-5 on `4ffa`. The earlier sampled
+red-side weakness did not replicate. The clearest remaining failure was a
+paired capture loss against Max Yankov on `1v1` cell `(3,2)` in both colors
+despite favorable combat exchanges. Full design, integrity checks, results,
+and all request IDs are in
+[`../../docs/reports/stencil-v54-large-field-r385-2026-08-06.md`](../../docs/reports/stencil-v54-large-field-r385-2026-08-06.md).
+
+## v53 — refresh regroup targets until contact, uploaded 2026-08-05
+
+Immutable policy-version UUID: `0984111b-1a4a-41cd-9934-d4ebf2a7b6ba`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Retains v52's timeout-triggered rejoin and v51's conflict-free vote lock.
+- Refreshes an active rejoin target every tick. Teammate tracks older than the
+  existing presence-staleness window are ignored; without a fresh track, the
+  agent keeps stepping homeward instead of holding at an obsolete coordinate.
+
+v52 preserved safety and improved the worst live gap from four epochs/1,226
+ticks to two epochs/555 ticks, but traces showed agents reaching stale
+last-known teammate positions and holding there. v53's attempted target refresh
+was rejected: it retained 24/24 adoption and zero conflicts but raised timeouts
+from 13 to 36 and produced a four-epoch live gap lasting 967 ticks. The checked-in
+source was restored to v52 behavior; v53 remains uploaded and unsubmitted only
+as an immutable rejected experiment.
+
+## v52 — regroup after a live consensus timeout, champion 2026-08-06
+
+Immutable policy-version UUID: `409a341b-dfda-4c1c-8f66-01b7ce4eb82c`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`.
+
+Submitted to Paintbot with automatic champion promotion:
+
+- submission: `sub_9795e4b3-2db9-440c-a85e-74886dc442e5`;
+- membership: `lpm_5753c1be-67c8-410f-bbce-67e857ec2c66`;
+- terminal state: `competing`, `active`, and **champion** for James Botts.
+
+- Retains v51's enforced vote lock and v50's forward-epoch resync.
+- When a live member times out forming consensus, it now enters the existing
+  bounded rejoin path toward the last observed squad position. Previously only
+  respawns rejoined; ordinary shout separation fell through to independent
+  role behavior indefinitely.
+
+The v51 stress gate proved safety (24/24 artifacts committed/followed, 159
+commits, 13 timeouts, 27 resyncs, zero conflicts) but one live member remained
+four epochs behind for 1,226 ticks. Its trace showed the expired order fall
+through to independent `to_post`/`hold_post`. v52 changes that timeout recovery
+only. Its gate improved but did not bound live isolation. v53's follow-up
+regressed that signal, so v52 was selected as the squad champion candidate.
+
+## v51 — enforce the locked vote in quorum counting, uploaded 2026-08-05
+
+Immutable policy-version UUID: `5f70ba1e-d447-4d35-b8d8-2101f3844b06`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Corrects v50's incomplete vote lock: proposal changes no longer replace the
+  locked vote in the member's local vote table or quorum count.
+- Retains v50's forward-epoch resynchronization and resync counter.
+
+Three fresh giant-4FFA8 v50 episodes made the defect explicit: traces showed a
+member record `W`, receive a late proposal, then replace its local table entry
+with `M` two ticks later. Four same-epoch conflicts resulted. v51 fixed that
+safety defect but was superseded by v52 after its liveness gate found prolonged
+spatial isolation.
+
+## v50 — locked votes and epoch resynchronization, uploaded 2026-08-05
+
+Immutable policy-version UUID: `6987403a-ca99-4945-bfce-e83a62fe0490`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Locks each member's first vote for an epoch. Late proposals can no longer
+  change a vote and allow overlapping quorums to commit different directives.
+- Treats a fresh forward epoch (within half the 36-value wire ring) as evidence
+  that a lagging member missed a commit, advances its local epoch, and restarts
+  proposal collection there. Delayed older messages cannot move it backward.
+- Adds `squad_consensus_resyncs` to artifact snapshots.
+
+The v49 full-seat gate covered six 2v2, two 4FFA, and two 4FFA8 games: all 48
+Stencil seats committed and followed orders (272 commits versus 45 timeouts),
+but one three-member squad committed both move and watch at epoch 1 and two
+isolated 4FFA8 seats ended two epochs behind with seven timeouts each. Those
+observations directly motivated this refinement. The matched ten-game gate
+removed its original conflict and cut timeouts from 45 to 24, but a subsequent
+three-game giant-4FFA8 stress gate found four same-epoch conflicts because
+quorum counting still used a freshly recomputed choice. v50 was superseded by
+v51.
+
+## v49 — convergent squad commit acknowledgements, uploaded 2026-08-05
+
+Immutable policy-version UUID: `1f6612b0-a16e-4034-8b77-f241a61f3405`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Retains v48's leaderless squad consensus, tactical orders, generated-post
+  execution, and cooperation traces.
+- Adds a compact `C` commit acknowledgement. A member that observes quorum
+  echoes the committed directive for 120 ticks; a peer accepts it only when it
+  matches that peer's own vote or independently derived consensus choice.
+- Records commit messages sent/heard. This closes the case where one member
+  observed all votes and advanced its epoch while a peer missed one vote and
+  remained permanently on the old epoch.
+
+The representative v49 mechanic gate is recorded in
+`../../docs/reports/stencil-v49-squad-consensus-experiment.html`. It was
+refuted by a same-squad/epoch conflict despite universal adoption and was
+superseded by v50.
+
+## v48 — leaderless squad consensus and tactical orders, uploaded 2026-08-05
+
+Immutable policy-version UUID: `ca6a5010-6a7e-4f47-b7d9-a0a87e758c98`.
+Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
+to a league.
+
+- Enables tournament-aware squads by default. In 2v2, each Stencil squad pairs
+  identities of the same entrant parity, never the allied policy that cannot
+  speak Stencil's protocol; four-team games use groups of two or three.
+- Removes designated leaders. Every member proposes an `H` (hold), `W`
+  (watch), or `M` (move) directive, votes on a deterministic majority/medoid
+  choice, and commits only after a quorum of identical votes. Ties prefer the
+  safer order kind rather than a privileged sender.
+- Advances through map-derived tactical fronts at 22%, 38%, 55%, 70%, and 84%
+  route progress, alternating move and watch orders before the final pedestal.
+  Missing squad presence proposes a hold/backoff instead of a solo rush.
+- Each member selects a distinct generated firing/duck post near the agreed
+  point. Existing danger-aware A*, cover movement, formation, combat,
+  sightline sweep, and peek/fire/duck micro execute the order; emergency carry,
+  theft, escort, grenade, item, and wipe behaviors retain priority.
+- Adds compact `Q` proposal and `V` vote shouts plus `squad_consensus`,
+  `squad_order`, and `squad_follow` trace events. Snapshots and counters expose
+  membership, quorum, proposals, votes, commits/timeouts, chosen posts,
+  arrivals, and per-order following time.
+
+This was the first squad branch intended for representative full-seat random-map
+play, but it was superseded before evaluation by v49's commit acknowledgement.
+It deliberately starts from the checked-in tournament policy rather than
+the v23-v47 giant-1v1 experiments, whose transient source and tests are not a
+valid tournament baseline. The next test must be a full-seat 2v2/4FFA batch.
+
 ## v47 — giant guard Arc acquisition, uploaded 2026-08-05
 
 Immutable policy-version UUID: `5bca7a62-d996-4f58-92eb-915ec7ea5d41`.
 Uploaded with `STENCIL_TRACE_OUTPUTS=jsonl@artifact`,
-`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`; not submitted
-to a league.
+`STENCIL_TRACE_NAVIGATION=1`, and `STENCIL_DIAG_EVERY_TICKS=1`. Submitted to
+the Paintbot league on 2026-08-05 with auto-champion `always`; placement
+`sub_3767de5d-80d1-47c2-8053-a089517581d4` became the active James Botts
+champion.
 
 - Restores v26's exact-heart guard strategy and item thresholds.
 - Before own-heart theft in giant 1v1, allows a discovered Arc within 500px

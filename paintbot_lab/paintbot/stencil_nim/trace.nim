@@ -1,9 +1,9 @@
 ## Structured diagnostics and player-artifact delivery.
 ## Telemetry is isolated from gameplay: failures are reported and swallowed.
 
-import std/[json, math, options, os, sequtils, sets, strutils, tables]
+import std/[algorithm, json, math, options, os, sequtils, sets, strutils, tables]
 import curly, zippy/ziparchives
-import belief_state, config, policy, types, worldmap
+import belief_state, config, policy, squads, types, worldmap
 
 type
   OutputKind = enum
@@ -24,6 +24,8 @@ type
     lastIntent: Option[string]
     lastCarry: Option[Team]
     carryInitialized: bool
+    lastConsensusSignature: string
+    lastOrderSignature: string
     lastWorldSignature: Option[tuple[width, height, teams: int]]
     navigationFieldKeys: HashSet[int]
 
@@ -45,6 +47,164 @@ proc rounded4(value: float): float =
   pyRound(value * 10_000.0).float / 10_000.0
 
 proc pointJson(point: Point): JsonNode = %*[point.x, point.y]
+
+proc facingName(facing: Facing): string =
+  if facing == FacingRight: "right" else: "left"
+
+proc trackJson(track: PlayerTrack, tick: int): JsonNode =
+  %*{
+    "pos": pointJson(track.pos),
+    "age": tick - track.lastTick,
+    "facing": facingName(track.facing),
+    "heading_brads": (if track.aimBrads.isSome:
+      %track.aimBrads.get else: newJNull()),
+    "vel": (if track.vel.isSome:
+      %*[rounded4(track.vel.get.x), rounded4(track.vel.get.y)] else: newJNull()),
+    "frames_seen": track.framesSeen,
+    "identity": (if track.identity.isSome: %track.identity.get else: newJNull()),
+    "hp_segments": (if track.hpSegments.isSome:
+      %track.hpSegments.get else: newJNull()),
+    "shielded": track.shielded,
+  }
+
+proc itemKindName(kind: ItemKind): string =
+  case kind
+  of Arc: "arc"
+  of Grenade: "grenade"
+  of Medkit: "medkit"
+  of Shield: "shield"
+
+proc scalarGrid(values: openArray[float32], map: WorldMap): JsonNode =
+  ## Block-max downsample and quantize a nav-grid scalar to compact 0..255 rows.
+  let
+    scale = DangerTraceDownsample
+    outW = (map.gridW + scale - 1) div scale
+    outH = (map.gridH + scale - 1) div scale
+  var rows = newJArray()
+  for outY in 0 ..< outH:
+    var row = newJArray()
+    for outX in 0 ..< outW:
+      var peak = 0'f32
+      for y in outY * scale .. min((outY + 1) * scale, map.gridH) - 1:
+        for x in outX * scale .. min((outX + 1) * scale, map.gridW) - 1:
+          peak = max(peak, values[y * map.gridW + x])
+      row.add(%clamp(pyRound(peak.float * 255.0), 0, 255))
+    rows.add(row)
+  %*{"cell_px": scale * NavCell, "rows": rows}
+
+proc coveredGrid(belief: Belief): JsonNode =
+  ## Conservative instantaneous ally vision. Other players expose a fuzzed
+  ## 16-step heading, not their exact aim, so coverage uses that observable
+  ## heading, the narrowest deployed cone, and exact pixel-wall LoS.
+  let map = belief.worldmap
+  if map.isNil:
+    return newJNull()
+  var allies: seq[Enemy]
+  for teammate in belief.teammates:
+    if teammate.aimBrads.isSome:
+      allies.add(teammate)
+  let
+    scale = DangerTraceDownsample
+    cellPx = scale * NavCell
+    outW = (map.gridW + scale - 1) div scale
+    outH = (map.gridH + scale - 1) div scale
+    coneHalfBrads = GuaranteedVisionConeHalfDeg.float /
+      360.0 * AimBradsTurn.float
+    visionRange = PostGunRangePx.float * 1.5
+  var rows = newJArray()
+  for outY in 0 ..< outH:
+    var row = newJArray()
+    for outX in 0 ..< outW:
+      let point: Point = (
+        min(outX * cellPx + cellPx div 2, map.width - 1),
+        min(outY * cellPx + cellPx div 2, map.height - 1))
+      var isCovered = false
+      if map.wall[point.y * map.width + point.x]:
+        row.add(%0)
+        continue
+      for ally in allies:
+        let
+          dx = point.x - ally.pos.x
+          dy = point.y - ally.pos.y
+          distance = hypot(dx.float, dy.float)
+        if distance > VisionBubble.float:
+          if distance > visionRange:
+            continue
+          let
+            wanted = arctan2(-dy.float, dx.float) /
+              (2.0 * PI) * AimBradsTurn.float
+            error = abs(floorMod(
+              pyRound(wanted - ally.aimBrads.get.float + AimBradsTurn.float / 2.0),
+              AimBradsTurn) - AimBradsTurn div 2).float
+          if error > coneHalfBrads:
+            continue
+        if map.rayClear(ally.pos, point):
+          isCovered = true
+          break
+      row.add(%(if isCovered: 255 else: 0))
+    rows.add(row)
+  %*{
+    "cell_px": cellPx,
+    "rows": rows,
+    "source": "visible_allies",
+    "heading_precision_brads": AimBradsTurn div ObservedHeadingSteps,
+  }
+
+proc directiveJson(directive: SquadDirective): JsonNode =
+  %*{
+    "kind": $directive.kind,
+    "point": pointJson(directive.pos),
+    "opponent": teamName(directive.opponent),
+  }
+
+proc consensusJson(belief: Belief): JsonNode =
+  var
+    proposals = newJArray()
+    votes = newJArray()
+    proposalSeats: seq[int]
+    voteSeats: seq[int]
+  for seat in belief.consensusProposals.keys: proposalSeats.add(seat)
+  for seat in belief.consensusVotes.keys: voteSeats.add(seat)
+  proposalSeats.sort()
+  voteSeats.sort()
+  for seat in proposalSeats:
+    proposals.add(%*{
+      "seat": seat,
+      "directive": directiveJson(belief.consensusProposals[seat]),
+    })
+  for seat in voteSeats:
+    votes.add(%*{
+      "seat": seat,
+      "directive": directiveJson(belief.consensusVotes[seat]),
+    })
+  %*{
+    "epoch": belief.consensusEpoch,
+    "state": belief.consensusState,
+    "started_tick": (if belief.consensusStartedTick >= 0:
+      %belief.consensusStartedTick else: newJNull()),
+    "squad": $belief.squadOf.name,
+    "members": belief.squadOf.seats,
+    "rank": belief.rankOf,
+    "quorum": belief.consensusQuorum,
+    "proposal": (if belief.consensusProposal.isSome:
+      directiveJson(belief.consensusProposal.get) else: newJNull()),
+    "vote": (if belief.consensusVote.isSome:
+      directiveJson(belief.consensusVote.get) else: newJNull()),
+    "proposals": proposals,
+    "votes": votes,
+  }
+
+proc orderJson(belief: Belief): JsonNode =
+  if belief.order.isNone:
+    return newJNull()
+  let order = belief.order.get
+  %*{
+    "directive": directiveJson(order.directive),
+    "epoch": order.epoch,
+    "set_tick": order.setTick,
+    "source": belief.orderSource,
+    "arrived": belief.orderArrived,
+  }
 
 proc boolRows(values: openArray[bool], width: int): JsonNode =
   result = newJArray()
@@ -188,12 +348,87 @@ proc snapshot(policy: StencilPolicy, command: Command): JsonNode =
       "grid": [map.gridW, map.gridH],
       "nav_init": navMetrics(map),
     }
+  var enemyTracks = newJArray()
+  for track in belief.enemyTracks:
+    enemyTracks.add(trackJson(track, belief.tick))
+  var teammateTracks = newJArray()
+  for track in belief.teammateTracks:
+    teammateTracks.add(trackJson(track, belief.tick))
+  var itemSpawns = newJArray()
+  for spawn in belief.itemSpawns:
+    itemSpawns.add(%*{
+      "kind": itemKindName(spawn.kind),
+      "pos": pointJson(spawn.pos),
+      "present": spawn.present,
+      "absent_until": spawn.absentUntil,
+      "last_seen": spawn.lastSeen,
+    })
+  var heardEvents = newJArray()
+  for event in belief.heardEvents:
+    heardEvents.add(%*{
+      "kind": event.kind,
+      "pos": pointJson(event.pos),
+      "age": belief.tick - event.lastTick,
+    })
+  var visibleEnemies = newJArray()
+  var visibleEnemyDetails = newJArray()
+  for enemy in belief.enemies:
+    visibleEnemies.add(pointJson(enemy.pos))
+    visibleEnemyDetails.add(%*{
+      "pos": pointJson(enemy.pos),
+      "heading_brads": (if enemy.aimBrads.isSome:
+        %enemy.aimBrads.get else: newJNull()),
+      "identity": (if enemy.identity.isSome: %enemy.identity.get else: newJNull()),
+      "hp_segments": (if enemy.hpSegments.isSome:
+        %enemy.hpSegments.get else: newJNull()),
+      "shielded": enemy.shielded,
+    })
+  var visibleTeammates = newJArray()
+  for teammate in belief.teammates:
+    visibleTeammates.add(%*{
+      "pos": pointJson(teammate.pos),
+      "heading_brads": (if teammate.aimBrads.isSome:
+        %teammate.aimBrads.get else: newJNull()),
+      "identity": (if teammate.identity.isSome:
+        %teammate.identity.get else: newJNull()),
+    })
+  var presenceAge = newJObject()
+  for seat, seenTick in belief.presence:
+    presenceAge[$seat] = %(belief.tick - seenTick)
+  var navPath = newJArray()
+  if belief.nav.hasPath:
+    for index in belief.nav.cursor .. belief.nav.path.high:
+      navPath.add(pointJson(belief.nav.path[index]))
+  var viewerOrder = newJNull()
+  var orderAge = newJNull()
+  if belief.order.isSome:
+    let order = belief.order.get
+    viewerOrder = %*[$order.directive.kind, pointJson(order.directive.pos), order.setTick]
+    orderAge = %(belief.tick - order.setTick)
+  let enemyLives = belief.enemyLivesLeft
+  var ownLives = newJNull()
+  if belief.teamScores.hasKey(belief.team):
+    ownLives = %(max(0, belief.seatsPerTeam * LivesPerPlayer -
+      belief.teamScores[belief.team].deaths))
   result = %*{
     "tick": policy.tick,
     "team": teamName(belief.team),
     "seat": belief.seat,
     "slot": belief.slot,
     "role": roleName(belief.role),
+    "squad": $belief.squadOf.name,
+    "squad_members": belief.squadOf.seats,
+    "squad_rank": belief.rankOf,
+    "squad_quorum": belief.consensusQuorum,
+    "squad_consensus": consensusJson(belief),
+    "squad_order": orderJson(belief),
+    "squad_order_post": pointJson(belief.squadOrderPost),
+    "squad_order_post_duck": pointJson(belief.squadOrderPostDuck),
+    "squad_order_post_sightline_aim": pointJson(
+      belief.squadOrderPostSightlineAim),
+    "squad_order_post_opponent": teamJson(belief.squadOrderPostOpponent),
+    "squad_order_post_score": rounded4(belief.squadOrderPostScore),
+    "squad_order_post_active": belief.squadOrderPostActive,
     "defensive_post": pointJson(belief.defensivePost),
     "defensive_post_duck": pointJson(belief.defensivePostDuck),
     "defensive_post_sightline_aim": pointJson(belief.defensivePostSightlineAim),
@@ -206,8 +441,6 @@ proc snapshot(policy: StencilPolicy, command: Command): JsonNode =
     "aim_brads": belief.aimBrads,
     "aim_target_brads": belief.aimTargetBrads,
     "aim_error_brads": belief.aimErrorBrads,
-    "aim_grid_error_brads": belief.aimBrads mod AimStepBrads,
-    "aim_slot_error_brads": belief.aimSlotErrorBrads,
     "aim_lateral_error_px": rounded4(belief.aimLateralErrorPx),
     "target_range_px": rounded4(belief.targetRangePx),
     "fire_ready": belief.fireReady,
@@ -224,7 +457,27 @@ proc snapshot(policy: StencilPolicy, command: Command): JsonNode =
     "hearts_retired": retired,
     "enemies_visible": belief.enemies.len,
     "teammates_visible": belief.teammates.len,
-    "enemy_tracks": belief.enemyTracks.len,
+    "enemy_tracks": enemyTracks,
+    "teammate_tracks": teammateTracks,
+    "visible_enemies": visibleEnemies,
+    "visible_enemy_details": visibleEnemyDetails,
+    "visible_teammates": visibleTeammates,
+    "item_spawns": itemSpawns,
+    "heard_events_live": heardEvents,
+    "presence_age": presenceAge,
+    "nav_path": navPath,
+    "objective": policy.lastIntent.reason,
+    "order": viewerOrder,
+    "order_source": belief.orderSource,
+    "order_age": orderAge,
+    "orders_sent": belief.commitsSent,
+    "orders_heard": belief.commitsHeard,
+    "pings_sent": belief.pingsSent,
+    "pings_heard": belief.pingsHeard,
+    "backoff_events": belief.backoffEvents,
+    "enemy_lives_left": (if enemyLives.isSome:
+      %enemyLives.get else: newJNull()),
+    "own_lives_left": ownLives,
     "hp_pips": (if belief.hpPips.isSome: %belief.hpPips.get else: newJNull()),
     "have": {
       "grenade": belief.iHaveGrenade,
@@ -265,6 +518,8 @@ proc snapshot(policy: StencilPolicy, command: Command): JsonNode =
         inc count
     result["danger_mean"] = %rounded4(total / count.float)
     result["danger_max"] = %rounded4(maximum)
+    result["danger"] = scalarGrid(belief.danger, map)
+  result["covered"] = coveredGrid(belief)
 
 proc counters(policy: StencilPolicy): JsonNode =
   let b = policy.belief
@@ -289,6 +544,20 @@ proc counters(policy: StencilPolicy): JsonNode =
     "grenade_safety_vetoes": b.grenadeSafetyVetoes,
     "chat_sent": countJson(b.chatSentCounts),
     "chat_heard": countJson(b.chatHeardCounts),
+    "squad_proposals_sent": b.proposalsSent,
+    "squad_proposals_heard": b.proposalsHeard,
+    "squad_votes_sent": b.votesSent,
+    "squad_votes_heard": b.votesHeard,
+    "squad_commits_sent": b.commitsSent,
+    "squad_commits_heard": b.commitsHeard,
+    "squad_consensus_commits": b.consensusCommits,
+    "squad_consensus_timeouts": b.consensusTimeouts,
+    "squad_consensus_resyncs": b.consensusResyncs,
+    "squad_order_follow_ticks": b.orderFollowTicks,
+    "squad_order_move_ticks": b.orderMoveTicks,
+    "squad_order_hold_ticks": b.orderHoldTicks,
+    "squad_order_watch_ticks": b.orderWatchTicks,
+    "squad_order_arrivals": b.orderArrivals,
     "item_fetch_ticks": b.itemFetchTicks,
     "item_yield_ticks": b.itemYieldTicks,
     "convert_events": b.convertEvents,
@@ -388,6 +657,29 @@ proc record*(trace: TraceState, policy: StencilPolicy, command: Command) =
       trace.emit(policy.tick, "objective", %*{
         "reason": policy.lastIntent.reason,
         "point": pointJson(policy.lastIntent.point),
+      })
+      if policy.lastIntent.reason.startsWith("squad_"):
+        trace.emit(policy.tick, "squad_follow", %*{
+          "reason": policy.lastIntent.reason,
+          "point": pointJson(policy.lastIntent.point),
+          "order": orderJson(belief),
+          "post": pointJson(belief.squadOrderPost),
+          "post_duck": pointJson(belief.squadOrderPostDuck),
+        })
+    let consensus = consensusJson(belief)
+    let consensusSignature = $consensus
+    if consensusSignature != trace.lastConsensusSignature:
+      trace.lastConsensusSignature = consensusSignature
+      trace.emit(policy.tick, "squad_consensus", consensus)
+    let order = orderJson(belief)
+    let orderSignature = $order
+    if orderSignature != trace.lastOrderSignature:
+      trace.lastOrderSignature = orderSignature
+      trace.emit(policy.tick, "squad_order", %*{
+        "order": order,
+        "post": pointJson(belief.squadOrderPost),
+        "post_duck": pointJson(belief.squadOrderPostDuck),
+        "post_sightline_aim": pointJson(belief.squadOrderPostSightlineAim),
       })
     if trace.carryInitialized and trace.lastCarry != belief.iCarryHeartOf:
       trace.emit(policy.tick, "carry", %*{"color": teamJson(belief.iCarryHeartOf)})

@@ -2,18 +2,20 @@
 
 ## Status
 
-Complete locally as of 2026-08-03. The native policy is the deployable
-implementation. Its accepted Python oracle is preserved in Git commit `1129931`
-and was then removed from the working tree. No policy version has been uploaded
-or submitted.
+Completed locally on 2026-08-03. The native policy is the production
+implementation; `stencil:v52` was the active Paintbot champion when this status
+was refreshed on 2026-08-06. Its accepted Python oracle is preserved in Git
+commit `1129931` and was then removed from the working tree.
 
 ## Contract
 
 The port preserves the externally observable policy behavior for a given
 Sprite-v1 byte stream and `STENCIL_*` environment: the ordered controller masks
-and chat payloads must be identical. It also preserves all 91 policy environment
-variables, their parsing and validation, the connection lifecycle, and the
-default JSONL trace/artifact contract. Host scheduling time and performance
+and chat payloads must be identical. The acceptance proof also covered all 91
+policy environment variables then present, their parsing and validation, the
+connection lifecycle, and the default JSONL trace/artifact contract. Subsequent
+native-only iterations raised `config.nim` to 111 variables; those additions
+are outside the original parity corpus. Host scheduling time and performance
 counters are not deterministic and are outside byte equivalence.
 
 The production process is native from socket to decision. It connects with
@@ -34,7 +36,7 @@ policy's existing responsibilities:
 - `fight.nim`, `items.nim`, `action.nim`: combat scoring and final controls.
 - `chat.nim`, `trace.nim`: team protocol and operational evidence.
 - `policy.nim`, `stencil.nim`: orchestration and native process lifecycle.
-- `config.nim`, `types.nim`: the complete 91-variable configuration contract
+- `config.nim`, `types.nim`: the current configuration contract
   and shared domain types.
 
 The split intentionally mirrors behavior boundaries rather than translating
@@ -54,7 +56,7 @@ The final corpus covers:
 
 | profile | exact decisions |
 |---|---:|
-| 1v1 | 5,004 |
+| historical two-seat `1v1` | 5,004 |
 | 2v2 | 32,741 |
 | 4-player FFA | 33,674 |
 | giant 8-player FFA | 50,221 |
@@ -66,6 +68,11 @@ The comparison exposed semantic traps that ordinary outcome tests would not:
 Python's ties-to-even rounding, scene dictionary insertion order, the distinction
 between an uncached path and a cached failed path, one decision per world-changing
 packet, controller bit numbering, and initialization-time sprite metadata.
+
+That corpus predates Paintbot 0.7.205's change to a 16-seat `1v1` and GV40's
+return to continuous aim. It proves the historical native-port boundary, not
+compatibility with those later mechanics; current compatibility comes from the
+maintained Nim source and new hosted evaluations.
 
 ## Performance and packaging
 

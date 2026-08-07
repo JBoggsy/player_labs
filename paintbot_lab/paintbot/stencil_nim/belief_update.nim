@@ -79,6 +79,7 @@ proc updateTracks(
     if bestIndex < 0:
       tracks.add(PlayerTrack(
         pos: sighting.pos, lastTick: tick, facing: sighting.facing,
+        aimBrads: sighting.aimBrads,
         color: sighting.color, framesSeen: 1, identity: sighting.identity,
         hpSegments: sighting.hpSegments, shielded: sighting.shielded))
       continue
@@ -103,6 +104,8 @@ proc updateTracks(
       tracks[bestIndex].vel = none(tuple[x, y: float])
     tracks[bestIndex].pos = sighting.pos
     tracks[bestIndex].facing = sighting.facing
+    if sighting.aimBrads.isSome:
+      tracks[bestIndex].aimBrads = sighting.aimBrads
     tracks[bestIndex].lastTick = tick
     inc tracks[bestIndex].framesSeen
   var retained: seq[PlayerTrack]
@@ -157,7 +160,7 @@ proc updateChat(belief: Belief, percept: PaintState, tick: int) =
       continue
     if shoutTeam.get != belief.team:
       if ChatEnemyBubbleFix:
-        let sighting = Enemy(pos: shout.pos, facing: FacingLeft,
+        let sighting = Enemy(pos: shout.pos, facing: FacingLeft, aimBrads: none(int),
           color: shoutTeam.get, identity: none(int), hpSegments: none(int))
         updateTracks(belief.enemyTracks, [sighting], tick)
         belief.chatHeardCounts.inc("enemy_bubble")
@@ -170,15 +173,21 @@ proc updateChat(belief: Belief, percept: PaintState, tick: int) =
     let message = decoded.get
     belief.chatHeardCounts.inc(message.kind)
     case message.kind
-    of "order":
-      if message.seat.isSome and message.seat.get == belief.leaderOf and
-          message.seat.get != belief.seat:
-        let goal = if message.goal.isSome: message.goal.get else: 'H'
-        belief.order = some((goal, message.pos, tick))
-        belief.orderSource = "heard"
-        inc belief.ordersHeard
-      if message.seat.isSome:
-        belief.presence[message.seat.get] = tick
+    of "squad_proposal":
+      if message.seat.isSome and message.epoch.isSome and
+          message.directive.isSome:
+        belief.receiveProposal(
+          message.seat.get, message.epoch.get, message.directive.get)
+    of "squad_vote":
+      if message.seat.isSome and message.epoch.isSome and
+          message.directive.isSome:
+        belief.receiveVote(
+          message.seat.get, message.epoch.get, message.directive.get)
+    of "squad_commit":
+      if message.seat.isSome and message.epoch.isSome and
+          message.directive.isSome:
+        belief.receiveCommit(
+          message.seat.get, message.epoch.get, message.directive.get)
     of "ping":
       if message.seat.isSome:
         belief.presence[message.seat.get] = tick
@@ -188,7 +197,7 @@ proc updateChat(belief: Belief, percept: PaintState, tick: int) =
         belief.receiveFocusClaim(
           message.seat.get, message.targetIdentity, message.pos)
     of "enemy", "thief":
-      let sighting = Enemy(pos: message.pos, facing: FacingLeft,
+      let sighting = Enemy(pos: message.pos, facing: FacingLeft, aimBrads: none(int),
         color: Red, identity: none(int), hpSegments: none(int))
       updateTracks(belief.enemyTracks, [sighting], tick)
       if message.kind == "thief":
@@ -317,10 +326,8 @@ proc updateBeliefCore*(
     belief.aimBrads + actionState.lastRot * AimTurnRate, AimBradsTurn)
   if percept.observedAim.isSome:
     let observed = percept.observedAim.get
-    # The wire marker is authoritative for this rendered tick. GV36 makes it
-    # especially important not to tolerate a one-slot discrepancy: carrying a
-    # stale estimate causes the controller to oscillate around an unreachable
-    # fine-grained angle.
+    # The wire marker is authoritative for this rendered tick and corrects any
+    # dead-reckoning drift from elapsed sim ticks between rendered frames.
     if observed != belief.aimBrads:
       inc belief.aimResyncs
     belief.aimBrads = observed

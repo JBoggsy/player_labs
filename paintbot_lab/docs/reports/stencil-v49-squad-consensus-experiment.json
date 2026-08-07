@@ -1,0 +1,22 @@
+{
+  "hypothesis": "Stencil v49's leaderless protocol converges each live squad on shared orders in full-seat tournament games, so squad behavior is actually governed by consensus rather than timing out into independent role behavior.",
+  "what_changes": "Nothing in the first gate: observe the uploaded v49 mechanism on current campaign maps before choosing one refinement. Daveey is present in every episode and all four entrant blocks are pinned.",
+  "instrument": {
+    "kind": "experience-request",
+    "summary": "Ten full-seat hosted episodes sampled 6/2/2 across 2v2, 4ffa, and 4ffa8, with artifacts streamed as episodes finish.",
+    "detail": "Canonical Paintbot 0.7.199; current round-320 campaign map tuples; stencil:v49 and paintbot-focusfire:v25 in opposing entrant blocks; two additional current champions; exact 16/32-seat modulo-four expansion. Inspect per-agent squad_consensus, squad_order, squad_follow, and terminal counters. No 1v1 or partial-seat probes."
+  },
+  "if_true": "At least 90% of Stencil agent artifacts record one or more consensus commits, at least 80% record order-following ticks, aggregate commits exceed timeouts, and committed directives agree within each squad epoch.",
+  "if_false": "Fewer than 75% of Stencil agents commit or follow an order, aggregate timeouts equal/exceed commits, or members of one squad commit conflicting directives for the same epoch.",
+  "decision_rule": "Confirm only if every true-side threshold passes and no same-squad/epoch conflict exists. Refute if any false-side condition occurs. Otherwise call the gate inconclusive and inspect the trace distribution before changing behavior.",
+  "confounds": [
+    "Map and mode masking: use complete tuples from the current campaign and the live 60/20/20 scheduler mix; report every variant separately.",
+    "Roster/seating bias: pin exactly four current entrants across every seat, rotate Stencil and Daveey entrant indices, and keep them on opposing alliances in 2v2.",
+    "Outcome noise: this gate judges consensus mechanics from per-agent traces, not win rate from ten games; outcome metrics are directional only.",
+    "Transient source lineage: v49 is evaluated as its own uploaded artifact; no claim that v47 is a clean code-identical control on giant maps."
+  ],
+  "verdict": {
+    "result": "refuted",
+    "evidence": "All 48 Stencil artifacts across ten full-seat games committed and followed orders (272 commits, 45 timeouts), and commits exceeded timeouts in every variant. However, one 4ffa8 squad committed both move and watch directives at epoch 1, triggering the preregistered safety failure. Traces also showed two isolated 4ffa8 seats ending two epochs behind their squadmates with seven timeouts each. Mutable votes caused the safety failure; strict epoch equality made missed commits permanent. Directional outcomes were 4 wins and 6 losses and were not used for the mechanic verdict."
+  }
+}

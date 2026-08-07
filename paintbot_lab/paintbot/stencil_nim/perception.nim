@@ -6,7 +6,9 @@ import config, protocols, types
 const
   CarryDistance = 24.0
   SelfSpriteBase = 5100
-  SoldierRotations = 16
+  PlayerSpriteBase = 100
+  SelectedPlayerSpriteBase = 6000
+  SoldierSkins = 2
   OverheadRadius = 34.0
   BadgeRadius = 30.0
   IdentityNames = ["alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta"]
@@ -75,12 +77,12 @@ proc findSelf(
         if exactAim.isSome:
           exactAim
         else:
-          # The soldier has only 16 visual rotations while GV36's gun has 32
-          # slots. Keep this as a compatibility fallback, never as live truth.
+          # The soldier has only 16 visual rotations while the turret uses all
+          # 256 integer-brad headings. Keep this as a compatibility fallback.
           let spriteId = item.spriteId
           if spriteId >= SelfSpriteBase:
-            some(((spriteId - SelfSpriteBase) mod SoldierRotations) *
-              (AimBradsTurn div SoldierRotations))
+            some(((spriteId - SelfSpriteBase) mod ObservedHeadingSteps) *
+              (AimBradsTurn div ObservedHeadingSteps))
           else:
             none(int))
 
@@ -103,6 +105,19 @@ proc playersOfColor(scene: SceneIndex, color: Team): seq[Enemy] =
       (if facing == FacingRight: "right" else: "left")
     for item in objectsWithLabel(scene, label):
       let pos = item.center
+      let aimBrads =
+        if item.spriteId >= PlayerSpriteBase and
+            item.spriteId < PlayerSpriteBase +
+              SoldierSkins * TeamColors.len * ObservedHeadingSteps:
+          some(((item.spriteId - PlayerSpriteBase) mod ObservedHeadingSteps) *
+            (AimBradsTurn div ObservedHeadingSteps))
+        elif item.spriteId >= SelectedPlayerSpriteBase and
+            item.spriteId < SelectedPlayerSpriteBase +
+              SoldierSkins * TeamColors.len * ObservedHeadingSteps:
+          some(((item.spriteId - SelectedPlayerSpriteBase) mod ObservedHeadingSteps) *
+            (AimBradsTurn div ObservedHeadingSteps))
+        else:
+          none(int)
       var
         bestIdentity = none(int)
         bestDistance = BadgeRadius
@@ -111,7 +126,7 @@ proc playersOfColor(scene: SceneIndex, color: Team): seq[Enemy] =
         if d < bestDistance:
           bestDistance = d
           bestIdentity = some(badge.identity)
-      result.add(Enemy(pos: pos, facing: facing, color: color,
+      result.add(Enemy(pos: pos, facing: facing, aimBrads: aimBrads, color: color,
         identity: bestIdentity, hpSegments: none(int)))
 
 proc visibleItems(scene: SceneIndex): seq[VisibleItem] =

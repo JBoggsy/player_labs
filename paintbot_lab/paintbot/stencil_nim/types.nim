@@ -22,6 +22,7 @@ type
   Enemy* = object
     pos*: Point
     facing*: Facing
+    aimBrads*: Option[int]
     color*: Team
     identity*: Option[int]
     hpSegments*: Option[int]
@@ -37,6 +38,7 @@ type
     pos*: Point
     lastTick*: int
     facing*: Facing
+    aimBrads*: Option[int]
     color*: Team
     vel*: Option[tuple[x, y: float]]
     framesSeen*: int

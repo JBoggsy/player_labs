@@ -3,7 +3,7 @@
 import std/[algorithm, math, options, tables]
 import belief_state, config, fight, nav, squads, types, worldmap
 
-const FlowReasons = ["carry_home", "steal", "to_hold", "to_post"]
+const FlowReasons = ["carry_home", "steal", "to_hold", "to_post", "early_defense"]
 const MovementMask = ButtonUp or ButtonDown or ButtonLeft or ButtonRight
 
 type
@@ -81,7 +81,10 @@ proc sprayContains(belief: Belief, target: Point): bool =
 
 proc threatAxis(belief: Belief): int =
   if belief.worldmap.isNil: return belief.aimBrads
-  let target = if belief.role == Defender and not belief.ownHeartStolen and
+  let target = if belief.squadOrderPostActive and
+      belief.squadOrderPostSightlineAim.isSome:
+    belief.squadOrderPostSightlineAim.get
+  elif belief.role == Defender and not belief.ownHeartStolen and
       belief.defensivePostOpponent.isSome:
     belief.worldmap.pedestal(belief.defensivePostOpponent.get)
   elif belief.stealTarget.isSome:
@@ -95,7 +98,9 @@ proc threatAxis(belief: Belief): int =
 
 proc sweepTarget(belief: Belief): int =
   var axis = belief.threatAxis
-  if Squads: axis = floorMod(axis + belief.sectorOffsetBrads, AimBradsTurn)
+  if Squads and not belief.squadOrderPostActive and
+      belief.defensivePost.isNone:
+    axis = floorMod(axis + belief.sectorOffsetBrads, AimBradsTurn)
   belief.sweepOffset += belief.sweepDir * AimSweepStepBrads
   if belief.sweepOffset >= SweepHalfArc:
     belief.sweepOffset = SweepHalfArc; belief.sweepDir = -1
@@ -221,10 +226,29 @@ proc coverFromThreat(
 proc peekDuckOverride(belief: Belief, intent: Intent): Option[MicroOverride] =
   if belief.worldmap.isNil or belief.iCarryHeartOf.isSome or intent.reason in
       ["carry_home", "clear_grenade", "fetch_medkit", "intercept_thief",
-       "intercept_thief_heard"]: return none(MicroOverride)
+       "intercept_thief_heard", "early_defense"]: return none(MicroOverride)
   if intent.reason == "steal" and intent.point.isSome and
       distance(intent.point.get, belief.selfXy.get) <= PeekDuckRushExemptPx.float:
     return none(MicroOverride)
+  if belief.squadOrderPostActive and intent.kind == Hold:
+    let threat = belief.freshTrack(DuckThreatFreshTicks, DuckRangePx.float)
+    if threat.isSome or belief.enemies.len > 0:
+      let aimPoint = if threat.isSome:
+        belief.predictedPos(threat.get, belief.tick)
+      elif belief.squadOrderPostSightlineAim.isSome:
+        belief.squadOrderPostSightlineAim.get
+      else:
+        belief.enemies[0].pos
+      let aim = bradsOf((aimPoint.x - belief.selfXy.get.x).float,
+        (aimPoint.y - belief.selfXy.get.y).float)
+      let stance = if belief.fireReady:
+        belief.squadOrderPost
+      else:
+        belief.squadOrderPostDuck
+      if stance.isSome and distance(stance.get, belief.selfXy.get) >= 5.0 and
+          belief.worldmap.walkableSegment(belief.selfXy.get, stance.get):
+        belief.micro = if belief.fireReady: "squad_post_peek" else: "squad_post_duck"
+        return some((octantToward(belief.selfXy.get, stance.get, false), some(aim)))
   if not belief.fireReady:
     let threat = belief.freshTrack(DuckThreatFreshTicks, DuckRangePx.float)
     var fromHeard = false
@@ -267,19 +291,11 @@ proc peekDuckOverride(belief: Belief, intent: Intent): Option[MicroOverride] =
   some((octantToward(belief.selfXy.get, peek.get, false), some(aim)))
 
 proc rotationButton(target, current: int, state: var ActionState): uint8 =
-  # GV36's deployed five-slot turn is not a small angular step. Greedy
-  # clockwise/counter-clockwise steering can oscillate forever, so solve in
-  # the 32-slot ring and choose the direction needing fewer 5-slot commands.
-  let
-    targetSlot = floorMod(pyRound(target.float / AimStepBrads.float), AimRotations)
-    currentSlot = floorMod(current div AimStepBrads, AimRotations)
-    delta = floorMod(targetSlot - currentSlot, AimRotations)
-  if delta == 0: state.lastRot = 0; return 0
-  var forwardSteps = 0
-  while floorMod(forwardSteps * AimSlotsPerTick, AimRotations) != delta:
-    inc forwardSteps
-  let reverseSteps = AimRotations - forwardSteps
-  if forwardSteps <= reverseSteps: state.lastRot = 1; ButtonB
+  let error = bradError(target, current)
+  if abs(error) <= AimTurnDeadbandBrads:
+    state.lastRot = 0
+    return 0
+  if error > 0: state.lastRot = 1; ButtonB
   else: state.lastRot = -1; ButtonSelect
 
 proc blastSafe(belief: Belief, target: Point): bool =
@@ -414,7 +430,7 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
   var mask = 0'u8
   state.lastRot = 0; belief.micro = ""; belief.heardDuck = false
   belief.aimTargetBrads = belief.aimBrads; belief.aimErrorBrads = 0
-  belief.aimSlotErrorBrads = 0; belief.aimLateralErrorPx = 0.0
+  belief.aimLateralErrorPx = 0.0
   belief.targetRangePx = 0.0; belief.targetRayClear = false
   belief.targetTeammateBlocked = false; belief.fireGateReason = "no_target"
   if belief.selfXy.isNone or belief.worldmap.isNil:
@@ -434,8 +450,8 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
       belief.worldmap.flowWaypoint(intent.point.get, selfXy)
     else: astarWaypoint(belief.nav, belief.worldmap, selfXy, intent.point.get)
     noteProgress(belief.nav, selfXy)
-    if Squads and intent.reason in ["steal", "to_hold", "order_to_hold",
-        "order_push", "order_hunt"] and not carrying:
+    if Squads and intent.reason in ["steal", "to_hold", "squad_move",
+        "squad_to_hold", "squad_to_watch"] and not carrying:
       let bias = belief.formationBias
       if bias.isSome:
         let biased: Point = (int(waypoint.x.float + bias.get.x * NavCell.float * 3.0),
@@ -443,7 +459,7 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
         if belief.worldmap.walkableSegment(selfXy, biased):
           inc belief.squadCohesionTicks; waypoint = biased
     mask = mask or octantToward(selfXy, waypoint, belief.nav.stuckTicks >= StuckTicks)
-  elif intent.kind == Hold and not carrying:
+  elif intent.kind == Hold and not carrying and intent.reason != "early_defense":
     let separation = belief.separationBias
     if separation.isSome:
       let step: Point = (int(selfXy.x.float + separation.get.x * NavCell.float * 2.0),
@@ -466,16 +482,13 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
     let error = bradError(belief.aimTargetBrads, belief.aimBrads)
     belief.aimErrorBrads = error
     belief.targetRangePx = distance(aim.pos, selfXy)
-    let nearestSlot = floorMod(pyRound(
-      belief.aimTargetBrads.float / AimStepBrads.float) * AimStepBrads,
-      AimBradsTurn)
-    belief.aimSlotErrorBrads = bradError(belief.aimTargetBrads, nearestSlot)
     belief.aimLateralErrorPx = belief.targetRangePx * sin(
-      abs(belief.aimSlotErrorBrads).float / AimBradsTurn.float * 2.0 * PI)
+      abs(belief.aimErrorBrads).float / AimBradsTurn.float * 2.0 * PI)
     var canFire: bool
     if belief.iHaveArc:
       let range = distance(enemy.get.pos, selfXy)
-      if range > ArcIdealRangePx.float and range <= ArcPursuitRangePx.float and not carrying:
+      if range > ArcIdealRangePx.float and range <= ArcPursuitRangePx.float and
+          not carrying and intent.reason != "early_defense":
         inc belief.sprayPursuitTicks
         mask = (mask and not MovementMask) or octantToward(selfXy, enemy.get.pos, false)
       let contains = belief.sprayContains(aim.pos)
@@ -518,6 +531,15 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
     belief.aimTargetBrads = target
     belief.aimErrorBrads = bradError(target, belief.aimBrads)
     mask = mask or rotationButton(belief.aimTargetBrads, belief.aimBrads, state)
+  if intent.reason == "early_defense" and
+      belief.worldmap.insideEndzone(belief.team, selfXy):
+    var next = selfXy
+    if (mask and ButtonLeft) != 0: next.x -= 4
+    if (mask and ButtonRight) != 0: next.x += 4
+    if (mask and ButtonUp) != 0: next.y -= 4
+    if (mask and ButtonDown) != 0: next.y += 4
+    if not belief.worldmap.insideEndzone(belief.team, next):
+      mask = mask and not MovementMask
   if GrenadeThrow and belief.iHaveGrenade and
       (not carrying or belief.throwChargeTicks > 0):
     mask = grenadeOverlay(mask, belief, state)

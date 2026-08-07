@@ -52,6 +52,8 @@ type
 
 proc fieldsFor(map: WorldMap, goal: Point): RouteFields
 proc homeCenter*(map: WorldMap, color: Team): Point
+proc pedestal*(map: WorldMap, color: Team): Point
+proc capturePoint*(map: WorldMap, color: Team): Point
 proc generatePosts(map: WorldMap, team: Team): seq[PostFront]
 
 proc elapsedMs(started: MonoTime): float =
@@ -467,6 +469,44 @@ proc nearestCover*(map: WorldMap, point: Point, maxCells = 6): Option[Point] =
     if found:
       return some(best)
 
+proc spawnCoverPoint*(map: WorldMap, color: Team, seat, seats: int): Point =
+  ## Assign distinct wall-adjacent cells inside the exact spawn endzone,
+  ## ordered outward from the heart. Fall back to the capture point only when
+  ## generated terrain offers no covered cell in the box.
+  if not map.endzones.hasKey(color):
+    return map.capturePoint(color)
+  let
+    zone = map.endzones[color]
+    heart = map.pedestal(color)
+  var candidates: seq[tuple[pos: Point, distance: int]]
+  for gy in 0 ..< map.gridH:
+    for gx in 0 ..< map.gridW:
+      let index = gy * map.gridW + gx
+      if not map.cover[index]:
+        continue
+      let point = cellCenter((gx, gy))
+      if zone.contains(point):
+        let dx = point.x - heart.x
+        let dy = point.y - heart.y
+        candidates.add((point, dx * dx + dy * dy))
+  candidates.sort(proc(a, b: tuple[pos: Point, distance: int]): int =
+    cmp(a.distance, b.distance))
+  var selected: seq[Point]
+  for candidate in candidates:
+    var separated = true
+    for previous in selected:
+      if hypot((candidate.pos.x - previous.x).float,
+          (candidate.pos.y - previous.y).float) < 32.0:
+        separated = false
+        break
+    if separated:
+      selected.add(candidate.pos)
+      if selected.len >= max(seats, 1):
+        break
+  if selected.len == 0:
+    return map.capturePoint(color)
+  selected[floorMod(seat, selected.len)]
+
 proc homeCenter*(map: WorldMap, color: Team): Point =
   if map.endzones.hasKey(color): map.endzones[color].center else: map.center
 
@@ -519,6 +559,9 @@ proc insideBase*(map: WorldMap, color: Team, point: Point, margin = 80): bool =
   let zone = map.endzones[color]
   point.x >= zone.x0 - margin and point.x <= zone.x1 + margin and
     point.y >= zone.y0 - margin and point.y <= zone.y1 + margin
+
+proc insideEndzone*(map: WorldMap, color: Team, point: Point): bool =
+  map.endzones.hasKey(color) and map.endzones[color].contains(point)
 
 proc spawnAim*(map: WorldMap, color: Team): int =
   let home = map.homeCenter(color)

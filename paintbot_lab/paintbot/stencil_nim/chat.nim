@@ -1,18 +1,19 @@
 ## Stencil's compact ten-character team shout protocol.
 
 import std/[math, options, strutils, tables]
-import belief_state, config, fight, squads, types, worldmap
+import belief_state, config, fight, types, worldmap
 
 const
   Base36 = "0123456789abcdefghijklmnopqrstuvwxyz"
-  OrderGoals* = ['H', 'S', 'P', 'F', 'T']
+  OrderKinds* = ['H', 'W', 'M']
 
 type ChatMessage* = object
   kind*: string
   pos*: Point
   heading*: Option[int]
   seat*: Option[int]
-  goal*: Option[char]
+  epoch*: Option[int]
+  directive*: Option[SquadDirective]
   targetIdentity*: Option[int]
 
 proc encode2(value: int): string =
@@ -53,10 +54,28 @@ proc encode*(map: WorldMap, kind: string, pos: Point, heading = 0): string =
   if kind == "carrier":
     result.add($(floorMod(heading, 8)))
 
-proc encodeOrder*(map: WorldMap, seat: int, goal: char, pos: Point): string =
-  if goal notin OrderGoals:
-    raise newException(ValueError, "unknown order goal")
-  "O" & $(floorMod(seat, 8)) & $goal & map.encodeCell(pos)
+proc encodeConsensus(
+  map: WorldMap, prefix: char, seat, epoch: int, directive: SquadDirective
+): string =
+  if directive.kind notin OrderKinds:
+    raise newException(ValueError, "unknown squad directive")
+  $prefix & $(floorMod(seat, 8)) & $Base36[floorMod(epoch, 36)] &
+    $directive.kind & map.encodeCell(directive.pos) & $ord(directive.opponent)
+
+proc encodeProposal*(
+  map: WorldMap, seat, epoch: int, directive: SquadDirective
+): string =
+  map.encodeConsensus('Q', seat, epoch, directive)
+
+proc encodeVote*(
+  map: WorldMap, seat, epoch: int, directive: SquadDirective
+): string =
+  map.encodeConsensus('V', seat, epoch, directive)
+
+proc encodeCommit*(
+  map: WorldMap, seat, epoch: int, directive: SquadDirective
+): string =
+  map.encodeConsensus('C', seat, epoch, directive)
 
 proc encodePing*(map: WorldMap, seat: int, pos: Point): string =
   "P" & $(floorMod(seat, 8)) & map.encodeCell(pos)
@@ -85,11 +104,22 @@ proc decode*(map: WorldMap, text: string): Option[ChatMessage] =
       return some(ChatMessage(kind: "focus_claim", pos: pos.get,
         seat: some(digitValue(text[2]))))
     return none(ChatMessage)
-  if text[0] == 'O' and text.len >= 7 and text[1].isDigit and text[2] in OrderGoals:
-    let pos = map.decodeCell(text[3 .. 6])
-    if pos.isSome:
-      return some(ChatMessage(kind: "order", pos: pos.get,
-        seat: some(digitValue(text[1])), goal: some(text[2])))
+  if text[0] in {'Q', 'V', 'C'} and text.len >= 9 and text[1].isDigit and
+      text[3] in OrderKinds and text[8].isDigit:
+    let
+      epoch = Base36.find(text[2])
+      opponent = digitValue(text[8])
+      pos = map.decodeCell(text[4 .. 7])
+    if pos.isSome and epoch >= 0 and opponent >= 0 and opponent <= ord(high(Team)):
+      return some(ChatMessage(
+        kind: (case text[0]
+          of 'Q': "squad_proposal"
+          of 'V': "squad_vote"
+          else: "squad_commit"),
+        pos: pos.get,
+        seat: some(digitValue(text[1])), epoch: some(epoch),
+        directive: some(SquadDirective(
+          kind: text[3], pos: pos.get, opponent: Team(opponent)))))
     return none(ChatMessage)
   if text[0] == 'P' and text.len >= 6 and text[1].isDigit:
     let pos = map.decodeCell(text[2 .. 5])
@@ -129,9 +159,14 @@ proc chooseShout*(belief: Belief): Option[string] =
   var
     message = ""
     kind = ""
-  let orderDue = SquadCommand and belief.order.isSome and
-    belief.leaderOf == belief.seat and
-    tick - belief.lastOrderSentTick >= OrderRebroadcastTicks
+  let voteDue = SquadCommand and belief.consensusVote.isSome and
+    tick - belief.lastVoteSentTick >= ConsensusRebroadcastTicks
+  let proposalDue = SquadCommand and belief.consensusProposal.isSome and
+    tick - belief.lastProposalSentTick >= ConsensusRebroadcastTicks
+  let commitDue = SquadCommand and belief.order.isSome and
+    belief.orderSource == "consensus" and
+    tick - belief.order.get.setTick <= ConsensusCommitEchoTicks and
+    tick - belief.lastCommitSentTick >= ConsensusRebroadcastTicks
   if belief.iCarryHeartOf.isSome:
     var velocity = none(tuple[x, y: float])
     if belief.nav.lastXy.isSome:
@@ -143,12 +178,25 @@ proc chooseShout*(belief: Belief): Option[string] =
   elif belief.ownHeartStolen and belief.ownHeartThiefPos.isSome:
     message = belief.worldmap.encode("thief", belief.ownHeartThiefPos.get)
     kind = "thief"
-  elif orderDue:
+  elif commitDue:
     let order = belief.order.get
-    message = belief.worldmap.encodeOrder(belief.seat, order.goal, order.pos)
-    kind = "order"
-    belief.lastOrderSentTick = tick
-    inc belief.ordersSent
+    message = belief.worldmap.encodeCommit(
+      belief.seat, order.epoch, order.directive)
+    kind = "squad_commit"
+    belief.lastCommitSentTick = tick
+    inc belief.commitsSent
+  elif voteDue:
+    message = belief.worldmap.encodeVote(
+      belief.seat, belief.consensusEpoch, belief.consensusVote.get)
+    kind = "squad_vote"
+    belief.lastVoteSentTick = tick
+    inc belief.votesSent
+  elif proposalDue:
+    message = belief.worldmap.encodeProposal(
+      belief.seat, belief.consensusEpoch, belief.consensusProposal.get)
+    kind = "squad_proposal"
+    belief.lastProposalSentTick = tick
+    inc belief.proposalsSent
   elif belief.throwTarget.isSome and belief.throwChargeTicks > 0:
     message = belief.worldmap.encode("grenade", belief.throwTarget.get)
     kind = "grenade"

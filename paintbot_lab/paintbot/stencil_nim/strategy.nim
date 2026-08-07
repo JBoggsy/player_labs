@@ -29,7 +29,7 @@ proc stealGoal(belief: Belief): Option[Point] =
 
 proc itemAnchor(belief: Belief): tuple[pos: Point, kind: string] =
   if belief.order.isSome and belief.tick - belief.order.get.setTick <= OrderTtlTicks:
-    return (belief.order.get.pos, "order")
+    return (belief.order.get.directive.pos, "order")
   if belief.role == Defender and belief.holdPoint.isSome:
     return (belief.holdPoint.get, "role")
   let steal = belief.stealGoal
@@ -40,13 +40,50 @@ proc decideObjective*(belief: Belief): Objective =
   if map.isNil:
     return hold("no_worldmap")
 
-  if SquadCommand:
-    belief.updatePresence()
-    belief.leadSquad()
+  belief.squadOrderPostActive = false
+  belief.squadOrderPost = none(Point)
+  belief.squadOrderPostDuck = none(Point)
+  belief.squadOrderPostSightlineAim = none(Point)
+  belief.squadOrderPostOpponent = none(Team)
+  belief.squadOrderPostScore = 0.0
+
+  if EarlyDefense and not belief.earlyDefenseComplete and
+      belief.everyEnemyTrailsLives:
+    belief.earlyDefenseComplete = true
+
+  if SquadCommand and (not EarlyDefense or belief.earlyDefenseComplete):
+    belief.updateConsensus()
 
   if belief.iCarryHeartOf.isSome:
     let home = map.capturePoint(belief.team)
     return navigate(home, "carry_home", some(home))
+
+  if belief.ownHeartStolen:
+    if belief.ownHeartThiefPos.isSome:
+      return navigate(belief.ownHeartThiefPos.get, "intercept_thief")
+    if belief.thiefFix.isSome:
+      return navigate(belief.thiefFix.get.pos, "intercept_thief_heard")
+
+  if belief.selfXy.isSome:
+    for warning in belief.grenadeWarnings:
+      let distanceFromGrenade = distance(belief.selfXy.get, warning.pos)
+      if distanceFromGrenade < GrenadeWarnClearPx.float:
+        let dx = belief.selfXy.get.x - warning.pos.x
+        let dy = belief.selfXy.get.y - warning.pos.y
+        let norm = max(distanceFromGrenade, 1.0)
+        return navigate((
+          int(belief.selfXy.get.x.float + dx.float / norm * GrenadeWarnClearPx.float),
+          int(belief.selfXy.get.y.float + dy.float / norm * GrenadeWarnClearPx.float)),
+          "clear_grenade")
+
+  if EarlyDefense and not belief.earlyDefenseComplete and belief.selfXy.isSome:
+    if belief.earlyDefensePoint.isNone:
+      belief.earlyDefensePoint = some(map.spawnCoverPoint(
+        belief.team, belief.seat, belief.seatsPerTeam))
+    let point = belief.earlyDefensePoint.get
+    if distance(belief.selfXy.get, point) <= HoldArrivePx.float:
+      return hold("early_defense")
+    return navigate(point, "early_defense", some(point))
 
   if SquadCommand and belief.rejoinUntil >= 0 and belief.selfXy.isSome:
     if belief.tick >= belief.rejoinUntil or belief.inSquadContact:
@@ -57,12 +94,6 @@ proc decideObjective*(belief: Belief): Objective =
       if distance(belief.selfXy.get, belief.rejoinPoint.get) > 40.0:
         return navigate(belief.rejoinPoint.get, "rejoin")
       return hold("rejoin_hold")
-
-  if belief.ownHeartStolen:
-    if belief.ownHeartThiefPos.isSome:
-      return navigate(belief.ownHeartThiefPos.get, "intercept_thief")
-    if belief.thiefFix.isSome:
-      return navigate(belief.thiefFix.get.pos, "intercept_thief_heard")
 
   if belief.role == Attacker and belief.iCarryHeartOf.isNone:
     for color in belief.colors:
@@ -81,18 +112,6 @@ proc decideObjective*(belief: Belief): Objective =
         int(fix.pos.y.float - sin(angle) * 1.9 * elapsed.float)),
         "escort_carrier_heard")
 
-  if belief.selfXy.isSome:
-    for warning in belief.grenadeWarnings:
-      let distanceFromGrenade = distance(belief.selfXy.get, warning.pos)
-      if distanceFromGrenade < GrenadeWarnClearPx.float:
-        let dx = belief.selfXy.get.x - warning.pos.x
-        let dy = belief.selfXy.get.y - warning.pos.y
-        let norm = max(distanceFromGrenade, 1.0)
-        return navigate((
-          int(belief.selfXy.get.x.float + dx.float / norm * GrenadeWarnClearPx.float),
-          int(belief.selfXy.get.y.float + dy.float / norm * GrenadeWarnClearPx.float)),
-          "clear_grenade")
-
   if belief.selfXy.isSome and Items:
     let kit = belief.medkitTarget(MedkitConvenientDetourPx.float)
     if kit.isSome:
@@ -102,40 +121,52 @@ proc decideObjective*(belief: Belief): Objective =
     if choice.isSome and choice.get.accepted:
       return navigate(belief.itemSpawns[choice.get.spawnIndex].pos, "fetch_item")
 
-  if SquadCommand and belief.order.isSome and belief.selfXy.isSome:
-    var order = belief.order.get
-    if belief.tick - order.setTick > OrderTtlTicks:
-      if belief.wipeInReach:
-        belief.order = some(('T', belief.convertHuntPoint, belief.tick))
-        belief.orderSource = "convert"
-      else:
-        belief.order = some(('H', belief.decayHoldPoint, belief.tick))
-        belief.orderSource = "decay"
-      order = belief.order.get
-    var orderPos = order.pos
-    if order.goal in {'H', 'S', 'P'}:
-      orderPos = belief.spreadPoint(orderPos)
-    case order.goal
-    of 'H', 'S':
-      if distance(belief.selfXy.get, orderPos) <= HoldArrivePx.float * 2.0:
-        return hold("order_hold")
-      return navigate(orderPos, "order_to_hold")
-    of 'P':
-      if distance(belief.selfXy.get, orderPos) <= HoldArrivePx.float * 2.0:
-        return hold("order_push_arrived")
-      return navigate(orderPos, "order_push")
-    of 'T': return navigate(orderPos, "order_hunt")
-    of 'F':
-      let steal = belief.stealGoal
-      if steal.isSome: return navigate(steal.get, "steal", steal)
-    else: discard
-
   if belief.wipeInReach and belief.selfXy.isSome:
     if not belief.converting:
       belief.converting = true
       inc belief.convertEvents
     return navigate(belief.convertHuntPoint, "convert_hunt")
   belief.converting = false
+
+  if SquadCommand and belief.order.isSome and belief.selfXy.isSome and
+      belief.tick - belief.order.get.setTick <= OrderTtlTicks:
+    let directive = belief.order.get.directive
+    var orderPos = belief.spreadPoint(directive.pos)
+    let post = belief.orderPost(directive)
+    if post.isSome:
+      let selected = post.get
+      orderPos = selected.pos
+      belief.squadOrderPostActive = true
+      belief.squadOrderPost = some(selected.pos)
+      belief.squadOrderPostDuck = some(selected.duck)
+      belief.squadOrderPostOpponent = some(directive.opponent)
+      belief.squadOrderPostScore = selected.score
+      if selected.rayEnds.len > 0:
+        belief.squadOrderPostSightlineAim = some(
+          selected.rayEnds[selected.rayEnds.len div 2])
+    let arrived = distance(belief.selfXy.get, orderPos) <= HoldArrivePx.float * 2.0
+    if arrived and not belief.orderArrived:
+      belief.orderArrived = true
+      inc belief.orderArrivals
+    inc belief.orderFollowTicks
+    case directive.kind
+    of 'M':
+      inc belief.orderMoveTicks
+      if arrived:
+        return hold("squad_move_arrived")
+      return navigate(orderPos, "squad_move")
+    of 'W':
+      inc belief.orderWatchTicks
+      if arrived:
+        return hold("squad_watch")
+      return navigate(orderPos, "squad_to_watch")
+    of 'H':
+      inc belief.orderHoldTicks
+      if arrived:
+        return hold("squad_hold")
+      return navigate(orderPos, "squad_to_hold")
+    else:
+      discard
 
   if belief.role == Defender and belief.holdPoint.isSome:
     let usingPost = belief.defensivePost.isSome

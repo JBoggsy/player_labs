@@ -1,0 +1,22 @@
+{
+  "hypothesis": "Stencil v53's continuously refreshed regroup target bounds live epoch isolation while preserving conflict-free consensus in stressed full-seat giant 4FFA8 games.",
+  "what_changes": "Only Stencil changes from v52 to v53: active rejoin targets refresh every tick, stale teammate tracks are ignored, and the fallback advances homeward. Map, roster, Daveey, protocol, and all other behavior are unchanged.",
+  "instrument": {
+    "kind": "experience-request",
+    "summary": "Three full-seat 32-agent giant-4FFA8 hosted episodes with streamed artifacts.",
+    "detail": "Paintbot 0.7.199, campaign cell 4 mapSeed 327479547 mapSize giant; entrant blocks paintbot-focusfire:v25, alphashot:v368, co-gas-ctf-simple-relhalpha:v38, stencil:v53 repeated modulo four. Inspect consensus/order/rejoin traces and per-tick live epoch gaps."
+  },
+  "if_true": "No same-squad/epoch conflict; at least 90% of available Stencil artifacts commit and follow; commits exceed timeouts; and no epoch gap greater than one among concurrently alive squadmates persists for 90 consecutive ticks.",
+  "if_false": "Any directive conflict recurs, fewer than 75% of available seats commit or follow, timeouts equal/exceed commits, or a live epoch gap greater than one persists for at least 90 consecutive ticks.",
+  "decision_rule": "Confirm only if every true-side threshold passes. Refute if any false-side condition occurs. Otherwise call the result inconclusive, including if fewer than 22 of 24 Stencil artifacts are available.",
+  "confounds": [
+    "Use the exact v52 stress map and roster, changing only the Stencil version.",
+    "Exclude permanently dead members from live epoch-gap duration.",
+    "Emergency objectives can delay rejoin; report objective traces for any bound failure.",
+    "Three games validate the mechanism, not competitive win-rate superiority."
+  ],
+  "verdict": {
+    "result": "refuted",
+    "evidence": "All 24 Stencil artifacts committed and followed orders, with 153 commits, 36 timeouts, 34 resyncs, and zero conflicts. The liveness change regressed: one live squad reached a four-epoch gap lasting 967 consecutive ticks, compared with v52's two epochs for 555 ticks, while timeouts rose from 13 to 36. The source was restored to v52 behavior; v53 remains an unsubmitted rejected artifact."
+  }
+}
