@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+from environment.contract.policy import Observation, SpellObservation
 from environment.navigation import NAV_SEMANTIC_HAZARD
 
+import wowborg.environment  # noqa: F401 - installs host contract compatibility
 from wowborg.nav.world_model import Point
 from wowborg.strategies import build_strategy
 from wowborg.strategies.traverse import (
@@ -32,6 +34,23 @@ def node(key: str, *, x: float, distance: float, semantic_flags: int = 0):
 
 def test_registry_builds_traverse_strategy() -> None:
     assert isinstance(build_strategy("traverse"), TraverseStrategy)
+
+
+def test_host_spell_intents_are_open_strings() -> None:
+    required = {
+        name: 1 if name == "spell_id" else True
+        for name, field in SpellObservation.model_fields.items()
+        if field.is_required()
+    }
+    spell = SpellObservation.model_validate(
+        {**required, "intent_names": ["threat", "threat_reduction"]}
+    )
+
+    assert spell.intent_names == ["threat", "threat_reduction"]
+    intent_schema = Observation.model_json_schema()["$defs"]["SpellObservation"][
+        "properties"
+    ]["intent_names"]["items"]
+    assert intent_schema == {"type": "string"}
 
 
 def test_traverse_enters_cat_form_and_activates_prowl() -> None:

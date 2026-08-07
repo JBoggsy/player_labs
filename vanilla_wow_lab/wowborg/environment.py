@@ -17,6 +17,7 @@ from environment import VanillaWowEnv
 from environment.contract.policy import (
     Action as AgentAction,
     Observation as AgentFrame,
+    SpellObservation,
     WorldPoint,
 )
 from environment.control import EnvironmentRequestError
@@ -39,6 +40,17 @@ STALE_FRAME_REJECTIONS = (
     "no AgentFrame is awaiting an action",
     "action submission arrived after the game-wide deadline",
 )
+
+
+def _accept_host_spell_intents() -> None:
+    """Match the host's open spell-intent vocabulary at the wire boundary."""
+    intent_names = SpellObservation.model_fields["intent_names"]
+    intent_names.annotation = list[str]
+    SpellObservation.model_rebuild(force=True)
+    AgentFrame.model_rebuild(force=True)
+
+
+_accept_host_spell_intents()
 
 
 class FrameRefreshingHostedRuntime(HostedSessionRuntime):

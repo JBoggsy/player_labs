@@ -26,6 +26,9 @@ resolution is pinned to the matching owner commit in the root `pyproject.toml`.
   navmesh SDK. If the game advances past a submitted frame, the hosted runtime
   drains any queued typed request errors, consumes the current frame already
   pushed on that `/player` connection, and traces `frame_refresh` before continuing.
+  The host can emit open-ended spell intent labels such as `threat_reduction`
+  despite its packaged `SpellObservation` retaining a closed literal set; Wowborg
+  widens only that field to `list[str]` before parsing frames.
 - `main.py` — resets the environment, runs one synchronous strategy, closes the
   session, and uploads evidence.
 - `player_progress.py` — retained legacy progress projection. The semantic policy
