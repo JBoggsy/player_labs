@@ -10,7 +10,7 @@ from environment.contract.policy import (
     WorldPoint,
 )
 
-from wowborg.environment import GymSession, hosted_endpoints
+from wowborg.environment import GymSession, STALE_FRAME_REJECTIONS, hosted_endpoints
 
 
 def _frame(frame_id: int, *, x: float = 1.0, action_state=None) -> Observation:
@@ -69,6 +69,13 @@ def test_hosted_endpoints_require_slot_and_token() -> None:
         assert "slot and token" in str(exc)
     else:
         raise AssertionError("missing hosted authentication was accepted")
+
+
+def test_stale_frame_markers_use_the_current_observation_contract() -> None:
+    assert STALE_FRAME_REJECTIONS[:2] == (
+        "submission does not match the current Observation",
+        "no Observation is awaiting an action",
+    )
 
 
 def test_move_uses_upstream_action_and_advances_to_next_frame() -> None:

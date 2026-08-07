@@ -36,8 +36,8 @@ PLAYER_WS_URL_ENV = "COWORLD_PLAYER_WS_URL"
 NAVMESH_SERVICE_URL_ENV = "VANILLA_WOW_NAVMESH_SERVICE_URL"
 STUCK_SPELL_ID = 7355
 STALE_FRAME_REJECTIONS = (
-    "submission does not match the current AgentFrame",
-    "no AgentFrame is awaiting an action",
+    "submission does not match the current Observation",
+    "no Observation is awaiting an action",
     "action submission arrived after the game-wide deadline",
 )
 
