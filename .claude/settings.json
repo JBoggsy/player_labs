@@ -23,12 +23,6 @@
           },
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/ctf_lab/tools/rotate_lessons.sh\"",
-            "timeout": 15,
-            "statusMessage": "Rotating CTF tentative-lessons buffer"
-          },
-          {
-            "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR/vanilla_wow_lab/tools/rotate_lessons.sh\"",
             "timeout": 15,
             "statusMessage": "Rotating Vanilla WoW tentative-lessons buffer"

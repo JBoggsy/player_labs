@@ -20,19 +20,16 @@ mid-session; check them back at the start of focused work.
   operational use, and stop reusing 0.7.208 A/B results for endgame questions.
   Full analysis: `paintbot_lab/docs/recon/paintbot-gv41-hazards-2026-08-07.md`.
 
-- **Teach the Paintbot RL policy action transitions, not held-state persistence**
-  (found 2026-08-07). The first mettabox1 sweep/full run completed, but its
-  94.45% token / 77.13% exact held-out GV40 result merely tied repeating the
-  prior mask (94.42% / 77.06%); only 1/309 changed actions was exact. A matched
-  1×/3×/class-balanced/16× component-loss sweep proved weighting alone trades
-  persistence for false changes: class balance reached 29/309 exact GV40
-  changes but only 13.7% change precision and 35.3% overall exact. Build the next
-  corpus around all button-state transitions plus a controlled held-frame
-  sample, add short temporal context, and select on changed-action/per-slot
-  metrics. Then expand replay and
-  expert diversity before map-encoder, temporal-context, token-initialization,
-  LoRA/full-tuning, or decoder-latency ablations. Preserve the current run as
-  the control; see `paintbot_lab/docs/reports/rl-mettabox1-sft-2026-08-07.md`.
+- **Expand Paintbot RL replay/expert diversity, then refine temporal state**
+  (updated 2026-08-07). A matched 2x2 showed transition-centered sampling alone
+  is flat while four-tick causal delta history is informative. The selected
+  combined arm improved sealed-GV40 changed-action exact from 1/309 to 12/309
+  and changed-component accuracy from 0.7% to 8.8%, but overall exact fell to
+  74.7% and change precision to 45.2%. Keep history; do not deploy this seed
+  checkpoint. Add substantially more high-performing replay and policy
+  diversity, then compare compact deltas with short full self/nearby-state
+  history and report movement/turn/fire/grenade changes separately. See
+  `paintbot_lab/docs/reports/rl-transition-temporal-2x2-2026-08-07.md`.
 
 - **Make Stencil squads roster-aware under campaign 7+7+1+1 seating** (found
   2026-08-06). Current `squadTable` partitions two-team identities by parity,
@@ -54,7 +51,7 @@ mid-session; check them back at the start of focused work.
   do not resume v53 target tuning.
 
 - **Generalize event-warehouse outcomes beyond red/blue** (found 2026-08-04).
-  `ctf_lab/tools/event_warehouse.py` projects only `red_score`, `blue_score`,
+  `paintbot_lab/tools/event_warehouse.py` (moved from ctf_lab) projects only `red_score`, `blue_score`,
   and a red/blue `winner`; on four-team Paintbot it labels green/yellow wins as
   draws. Add all-team score/win projection or a game-agnostic result table.
   Until then, compute Paintbot W/D/L directly from each `results.json` team/win

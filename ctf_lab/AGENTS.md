@@ -1,4 +1,18 @@
-# ctf_lab — agent guide
+# ctf_lab — agent guide — 🗄️ ARCHIVED 2026-08-07
+
+> **STOP. This lab is archived — do not do new work here.** Active work is in
+> [`../paintbot_lab/AGENTS.md`](../paintbot_lab/AGENTS.md).
+>
+> The replay viewer, replay reader, event warehouse, and `lessons-review` skill
+> **moved to `paintbot_lab/tools/`** — edit them there, not here. Instructions
+> below that reference `tools/viewer.html`, `tools/viewer_bundle.py`,
+> `tools/expand_replay_json.nim`, `tools/build_expand_replay.sh`, or
+> `tools/event_warehouse.py` are stale; those files no longer exist in this lab.
+>
+> Everything else is a historical snapshot, accurate as of 2026-07-31 and
+> unmaintained since. See [`README.md`](README.md) for the full archive note,
+> including the caveat that archiving the directory did **not** retire beacon
+> from the still-live CTF league.
 
 The **CTF** corner of player_labs: where we build, evaluate, and improve **player
 policies** for Coworld CTF. This file orients agents working here.

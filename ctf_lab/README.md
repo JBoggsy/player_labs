@@ -1,4 +1,30 @@
-# ctf_lab
+# ctf_lab — 🗄️ ARCHIVED 2026-08-07
+
+> **This lab is archived and is no longer worked on.** Active work is in
+> [`paintbot_lab/`](../paintbot_lab/). Everything below is preserved as a
+> historical snapshot: accurate as of the last CTF session (2026-07-31), and not
+> maintained since.
+>
+> **What moved to `paintbot_lab/tools/`** (paintbot is a second manifest over the
+> same engine, so these were always the same tools):
+> `build_expand_replay.sh`, `expand_replay_json.nim`, `viewer.html`,
+> `viewer_bundle.py`, `event_warehouse.py`, and a copy of the `lessons-review`
+> skill. Use the paintbot copies — the ones described below are gone.
+>
+> **What stayed here**, unmaintained: the beacon player (`ctf/beacon/`), its
+> baked arena and battle plans, CTF-specific analysis tools
+> (`analyze_reporter_warehouse.py`, `find_firefights.py`, `infer_battle_plan.py`,
+> `plan_server.py`, `agg_eval.py`, `run_roundwarehouse_local.py`), the `ctf-ab`
+> and `ctf-event-warehouse` skills, and the docs/lessons archive.
+>
+> **The SessionStart lesson-rotation hook was removed for this lab**, so
+> `TENTATIVE_LESSONS.md` is frozen at its final state and will not rotate again.
+>
+> ⚠️ **Archiving the directory did not retire the player.** Coworld CTF is still
+> live (`ctf 0.7.203` canonical), and CTF champions are auto-mirrored into the
+> Paintbot league under the same player identity. If beacon still holds a CTF
+> league seat, it keeps competing — and scoring 0 — in Paintbot. Retiring it is a
+> league action, not a repo action.
 
 The **CTF** corner of [player_labs](../README.md) — where we build, evaluate, and
 improve player policies for **Coworld CTF**, a two-team capture-the-flag shooter on the

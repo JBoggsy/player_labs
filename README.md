@@ -38,7 +38,7 @@ player_labs/
   crewrift_lab/        first game lab — Crewrift (has its own README + AGENTS)
   cue_n_woo_lab/       second game lab — Cue-n-Woo, a text theory-of-mind game (own README)
   heartleaf_lab/       third game lab — Heartleaf, a 9-gnome garden-dinner game (own README)
-  ctf_lab/             fourth game lab — CTF, an 8v8 capture-the-flag shooter (own README)
+  ctf_lab/             fourth game lab — CTF, an 8v8 capture-the-flag shooter — ARCHIVED 2026-08-07
   vanilla_wow_lab/     fifth game lab — Vanilla WoW, a real WoW 1.12.1/VMaNGOS realm (own README)
   paintbot_lab/        sixth game lab — Paintbot, a 2-or-4-team capture-the-heart shooter on procgen maps (README + docs index)
   pyproject.toml       uv project: coworld[auth] + the pinned players SDK (from git) + deps
@@ -47,6 +47,11 @@ player_labs/
 Each **game** gets its own lab directory (`crewrift_lab/`, …). Anything game-specific
 — a player's source, that game's rules, its result analysis — lives under its game
 lab; the root stays game-agnostic.
+
+**`ctf_lab/` is archived (2026-08-07)** — see [`ctf_lab/README.md`](ctf_lab/README.md).
+Active work is Paintbot. The belief replay viewer, replay reader, and event warehouse
+moved to `paintbot_lab/tools/`, since Paintbot is a second manifest over the same
+engine and is now their only consumer.
 
 ## Skills
 
