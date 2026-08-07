@@ -1,5 +1,11 @@
 # Stencil exact-aim accuracy A/B — 2026-08-04
 
+> **Historical experiment record.** v22 was champion at this report's cutoff;
+> see `../../WORKING_CONTEXT.md` and `../README.md` for current state.
+> Its GV36 32-slot/five-slot controller was correct for the recorded 0.7.186
+> episodes but is superseded by GV40: current Paintbot uses continuous headings
+> and turns 5 brads per tick.
+
 ## Verdict
 
 `stencil:v22` met every acceptance condition against the fresh matched v21

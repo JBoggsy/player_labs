@@ -5,6 +5,39 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
+- **Teach the Paintbot RL policy action transitions, not held-state persistence**
+  (found 2026-08-07). The first mettabox1 sweep/full run completed, but its
+  94.45% token / 77.13% exact held-out GV40 result merely tied repeating the
+  prior mask (94.42% / 77.06%); only 1/309 changed actions was exact. A matched
+  1×/3×/class-balanced/16× component-loss sweep proved weighting alone trades
+  persistence for false changes: class balance reached 29/309 exact GV40
+  changes but only 13.7% change precision and 35.3% overall exact. Build the next
+  corpus around all button-state transitions plus a controlled held-frame
+  sample, add short temporal context, and select on changed-action/per-slot
+  metrics. Then expand replay and
+  expert diversity before map-encoder, temporal-context, token-initialization,
+  LoRA/full-tuning, or decoder-latency ablations. Preserve the current run as
+  the control; see `paintbot_lab/docs/reports/rl-mettabox1-sft-2026-08-07.md`.
+
+- **Make Stencil squads roster-aware under campaign 7+7+1+1 seating** (found
+  2026-08-06). Current `squadTable` partitions two-team identities by parity,
+  which matched the disabled ladder's equal four-agent entrant blocks. Normal
+  campaign invasions instead give each captain seven team seats and its ally
+  only the team's second seat. Static parity can therefore wait on the foreign
+  ally or omit owned Stencil seats. Preserve v52 behavior during the GV40 aim
+  test; redesign membership from observed Stencil chat/presence before the next
+  squad iteration.
+
+- **Redesign Paintbot fixed-squad reconnection over proximity chat** (deferred
+  2026-08-06). v51 made same-epoch consensus conflict-free, but giant-map live
+  drift lasted 1,226 ticks; v52's static timeout rendezvous improved that to
+  555 ticks, and v53's continuously refreshed target regressed to 967 ticks.
+  Before another implementation, specify how separated living members discover
+  one another, rendezvous, and rejoin without a designated leader, plus a
+  preregistered concurrent-live drift bound. Start from
+  `paintbot_lab/docs/reports/stencil-squad-consensus-retrospective-2026-08-06.md`;
+  do not resume v53 target tuning.
+
 - **Generalize event-warehouse outcomes beyond red/blue** (found 2026-08-04).
   `ctf_lab/tools/event_warehouse.py` projects only `red_score`, `blue_score`,
   and a red/blue `winner`; on four-team Paintbot it labels green/yellow wins as
@@ -14,10 +47,11 @@ mid-session; check them back at the start of focused work.
 
 - **Expose player muster in Paintbot's Sprite-v1 init contract** (found
   2026-08-04). The current marker states teams and map dimensions but not
-  `num_agents`/seats per team, while campaign `mapSize` independently overrides
-  the `4ffa`/`4ffa8` variant default. Stencil now removes the false width-based
-  inference and grows a conservative roster estimate from observed identity
-  badges, but low-index seats cannot know 4-vs-8 muster until they see an
+  `num_agents`/seats per team. Current campaign `1v1` means eight seats per
+  team, while `2v2`/`4ffa` mean four per entrant and historical `4ffa8` means
+  eight; `mapSize` is not a reliable proxy and is currently unset on every
+  campaign cell. Stencil grows a conservative roster estimate from observed
+  identity badges, but low-index seats cannot know muster until they see an
   epsilon-or-higher identity. Add muster to the owner game's init marker, then
   consume it directly and delete the estimate.
 
@@ -203,6 +237,14 @@ mid-session; check them back at the start of focused work.
   whether to commit/PR them upstream or discard.
 
 ## Done
+
+- **Paintbot RL mettabox1 canary, sweep, and full training (DONE 2026-08-07).**
+  Provisioned a locked CUDA 12.8/BF16 environment on the RTX 4090, passed two
+  canaries, swept 1e-4/2e-4/4e-4, selected the full three-epoch 2e-4 arm, and
+  evaluated the sealed GV40 split. The artifact is archived locally and
+  remotely with matching SHA-256. It is a pipeline control, not a live-policy
+  candidate, because it did not beat previous-mask persistence. Report:
+  `paintbot_lab/docs/reports/rl-mettabox1-sft-2026-08-07.md`.
 
 - **Paintbot Sprite-v1 `sprites off` landed upstream and deployed (2026-08-03).**
   coworld-ctf PR #219 is in canonical Paintbot 0.7.180 at source `052b058`.

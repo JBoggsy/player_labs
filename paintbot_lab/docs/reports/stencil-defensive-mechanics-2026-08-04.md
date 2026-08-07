@@ -1,5 +1,10 @@
 # Stencil defensive mechanics — 2026-08-04
 
+> **Historical experiment record.** “Accepted” and “current” below refer to
+> this experiment's cutoff. See `../../WORKING_CONTEXT.md` for live state.
+> Its GV36 32-slot/five-slot aim claims are correct historical evidence, not the
+> current game contract. GV40 restored continuous headings at 5 brads per tick.
+
 ## Verdict
 
 `stencil:v21` is the accepted upload and keeps Stencil's strategy fixed. The

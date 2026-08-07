@@ -1,5 +1,8 @@
 # Stencil online navigation initialization profile — 2026-08-03
 
+> **Historical experiment record.** Version, source, and “current” language in
+> this report refer to the dated experiment, not today's deployment.
+
 ## Verdict
 
 Online navigation initialization is fast enough to keep. Across 100 real local

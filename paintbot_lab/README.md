@@ -5,28 +5,23 @@ evaluate, and improve player policies for **Coworld Paintbot**, a 2-or-4-team
 capture-the-heart paintball shooter on the **BitWorld Sprite-v1** protocol, with
 **procedurally generated maps**.
 
-This README orients newcomers (human or agent). Two pointers do most of the work:
+This README orients newcomers (human or agent). Three pointers do most of the work:
 
 - **[`AGENTS.md`](AGENTS.md)** — the operating model *for this lab*: the
   improvement loop in Paintbot terms, the player, and the lab's practices.
+- **[`docs/README.md`](docs/README.md)** — the documentation index: current
+  references, operations, designs, historical reports, and audit status.
 - **[`../README.md`](../README.md)** — lab-wide setup (`uv sync` / Observatory
   auth) and the ground rules.
 
-> **Status: aim fix + generated-post defense hosted-validated 2026-08-04.**
-> `stencil:v21` (a beacon fork with online per-episode navigation) is uploaded
-> with full tracing; it retains the accepted aim/post behavior, defenders
-> occupy distinct homeward-ranked firing posts, defender gun targets are
-> biased toward threats to the home heart with immediate engagement of a
-> visible high-confidence heart carrier, and
-> the aim controller matches GameVersion 36's 32-slot/five-slot turn. It is
-> **not submitted**. The live
-> Paintbot league runs the **campaign (territory)
-> round brain, not a ladder**: an LLM commander per player invades cells on a
-> 10x10 board where **each cell permanently owns a map** (pinned terrain seed +
-> size); standings are territory — at campaign round 202, daveey held 80/100
-> cells and richard held 8. Deployed game: paintbot **0.7.184**. Live state + open
-> threads: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md). Defensive experiment
-> verdict: [`docs/reports/stencil-defensive-mechanics-2026-08-04.md`](docs/reports/stencil-defensive-mechanics-2026-08-04.md).
+> **Status (verified 2026-08-06): `stencil:v54` is the active James Botts
+> champion; `stencil:v53` was rejected and `stencil:v52` is the previous
+> champion.** V54's 60-episode round-385 field test finished 49-3-8. The canonical game is
+> Paintbot **0.7.208**. The live league uses a
+> 10x10 campaign board; normal invasions use four policies, with 7+7+1+1
+> captain/ally seating on two-team maps and one policy per team in FFA. Current work and live IDs:
+> [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md). The required evaluation shape:
+> [`docs/tournament-like-experience-requests.md`](docs/tournament-like-experience-requests.md).
 
 ## The game (one paragraph)
 
@@ -35,9 +30,10 @@ Paintbot is CTF's expanded sibling — **the same engine, repo, and Nim binary**
 adds variants. Teams (2 or 4: red/blue/green/yellow) guard a **heart** on a
 pedestal inside their endzone; steal any rival's heart and carry it home to
 **eliminate that team** — last team standing wins. Maps are **procedurally
-generated per episode** (five size classes; sides / corners / plus layouts) for
-every competitive variant except `default`, which is literally the classic CTF
-arena. Scoring is **pot**: every team antes 1, winner takes all (+2/-2 two-team,
+generated per episode** (five size classes; sides / corners / plus layouts).
+The historical `default` fixed-arena behavior changed; canonical 0.7.208 also
+uses generated terrain for `default`. Scoring is **pot** for the tournament
+variants: every team antes 1, winner takes all (+2/-2 two-team,
 +4/-1/-1/-1 four-team); a timeout draw pays -1 to everyone. Paint is cosmetic.
 **Full reference: [`docs/paintbot-gameplay.md`](docs/paintbot-gameplay.md)**;
 deep recon with citations:
@@ -47,20 +43,22 @@ deep recon with citations:
 
 | variant | seats | teams | map | our agents |
 |---|---|---|---|---|
-| `1v1` | 2 | 2 | generated | 1 (fast local micro/self-play) |
-| `default` | 16 | 2 | fixed classic arena | ~8 (near-1v1 of policies) |
-| `2v2` | 16 | 2 | generated | 4 (team split across 2 policies) |
+| `1v1` | 16 | 2 | generated | campaign mode `2v2`: normally captain 7 + ally 1 per team |
+| `default` | 16 | 2 | generated | scheduler-dependent; absent from the current campaign board |
+| `2v2` | 16 | 2 | generated | normally captain 7 + ally 1 per team |
 | `4ffa` | 16 | 4 | generated | 4 (one policy per team) |
 | `4ffa8` | 32 | 4 | generated (manifest defaults giant; campaign cell size wins) | 8 (one policy per team) |
 
-The `1v1` variant was added in 0.7.179 as a cheap duel instrument; campaign
-battles still use the four established variants, where a policy must handle
-owning 1-8 seats. Which variant a campaign episode plays is decided by the
+The `1v1` variant was added in 0.7.179 as a two-agent custom game, then changed
+in 0.7.205 to a 16-seat two-team format. The campaign classifies it as mode
+`2v2` and normally seats four policies 7+7+1+1; the variant name does not mean
+two policies. A correctly seated full campaign cell is representative;
+partial-seat and arbitrary-map variants remain debug-only. Which map a
+campaign episode plays is decided by the
 **campaign**: each territory cell
-permanently owns a variant + terrain seed + size class (live board: 29x
-`4ffa8`, 26x `4ffa`, 25x `default`, 20x `2v2`), and battles replay the target
-cell's exact map. Campaign `mapSize` overrides the variant default, so map
-dimensions do not identify 16-seat `4ffa` versus 32-seat `4ffa8` — see the campaign section of
+permanently owns a variant + terrain seed (round-381 board: 26x `1v1`, 26x
+`2v2`, 48x `4ffa`; every `map_size` is currently unset), and battles replay
+the target cell's map identity. See the campaign section of
 [`docs/paintbot-gameplay.md`](docs/paintbot-gameplay.md).
 
 ## Layout
@@ -73,18 +71,28 @@ paintbot_lab/
   best_practices.md        Paintbot-specific practices (fills via lessons)
   TENTATIVE_LESSONS.md     this session's candidate-lessons buffer (auto-rotated)
   paintbot/stencil_nim/    THE PLAYER — native Nim Sprite-v1 policy
+  paintbot/rl/             cross-era Qwen policy experiments
   docs/
+    README.md             documentation index + source-of-truth map
     paintbot-gameplay.md   self-contained game reference
+    tournament-like-experience-requests.md  required hosted-eval contract
+    audits/                dated documentation-audit records
     recon/                 the founding deep-dive (citations into game + metta)
     reports/               hosted experiment evidence and verdicts
     designs/stencil-v1-design.md   stencil's architecture + scrap/port ledger
     designs/stencil-nim-port.md    native port contract + parity evidence
+    designs/rl-policy.md           Qwen policy architecture + decisions
   tools/
-    analyze_giant_carries.py  analyze v22 giant 1v1 steal/capture outcomes
+    analyze_giant_carries.py  one-off historical v22 giant-duel analyzer
     build_player.sh        build the stencil image (linux/amd64)
     self_play.py           native, fast-ready, parallel local self-play
+    render_nav.py          static navigation-knowledge viewer
+    compare_stencil.py     A/B metric adapter over the shared stats engine
+    campaign_order_controller.py        campaign standing-orders controller
+    manage_campaign_order_launch_agent.py  install/status the macOS LaunchAgent
     versions.env           pinned game/dependency provenance
     rotate_lessons.sh      SessionStart hook (archive the lesson buffer)
+  infra/campaign_order_controller/  the controller's service docs + cycle test
   lessons_archive/         rotated per-session lesson buffers
 ```
 
@@ -93,8 +101,9 @@ deterministic native Nim Sprite-v1 cyborg descended from ctf_lab's beacon. The
 defining difference from beacon: **no offline map bake** — an episode-scoped `WorldMap`
 (`worldmap.nim`) is built online from the walkability sprite + wire markers
 (nav grid, cover, lazy Dijkstra flow fields, derived chokes/rallies/spawn-aim,
-and per-opponent firing/duck posts). Beacon's authored POIs and battle plans
-remain scrapped. Defenders consume the online posts while heart-theft
+and per-opponent firing/duck posts). Beacon's authored POIs and fixed-map
+battle-plan data remain scrapped; leaderless squads now form consensus on
+hold/watch/move orders and ground them in the generated posts. Defenders consume the online posts while heart-theft
 interception remains higher priority. Multi-team support: color lock from the self sprite, per-color
 hearts with retirement tracking, steal target = nearest live enemy heart, and
 the convert trigger generalized to the weakest enemy team.
@@ -104,11 +113,16 @@ the convert trigger generalized to the weakest enemy team.
 ```sh
 paintbot_lab/tools/build_player.sh stencil           # build the image (amd64)
 uv run coworld upload-policy players-stencil:dev --name stencil   # upload (inert)
-uv run python paintbot_lab/tools/self_play.py --variant 1v1 --episodes 20 --workers 4
-uv run python paintbot_lab/tools/self_play.py --variant 1v1 --candidate-runtime docker
+uv run python paintbot_lab/tools/self_play.py --variant 1v1 --episodes 1  # debug only
 ```
 
-## Fast local self-play
+## Local debugging
+
+Local self-play—including full-seat variants—is not a tournament test because
+it does not reproduce the live opponent field and campaign cell contract. Use it to profile, reproduce,
+or inspect a mechanism. Use hosted requests that satisfy the
+[`tournament-like experience-request contract`](docs/tournament-like-experience-requests.md)
+for every gameplay conclusion.
 
 Before every batch, `tools/self_play.py` resolves the live canonical Paintbot
 version, fetches its exact commit-pinned `coworld-ctf` source, and builds in a
@@ -128,16 +142,16 @@ end card; gameplay ticks, observations, decisions, and outcomes use the real
 simulator unchanged.
 
 ```sh
-# High-throughput micro/combat screening (candidate side rotates by episode).
+# Local debug reproduction; current 1v1 itself has 16 seats.
 uv run python paintbot_lab/tools/self_play.py \
   --variant 1v1 --episodes 20 --workers 4
 
-# Candidate-vs-control knob test. Only the candidate team's processes get this env.
+# Local mechanism probe. Only the candidate team's processes get this env.
 uv run python paintbot_lab/tools/self_play.py \
   --variant 2v2 --episodes 20 --workers 2 \
   --candidate-env STENCIL_CHOKE_FRACTION=0.52
 
-# Full worst-case board validation.
+# Full-roster local structural/debug run (still not a tournament verdict).
 uv run python paintbot_lab/tools/self_play.py --variant 4ffa8
 
 # Profile online WorldMap construction and first-decision flow fields.
@@ -166,11 +180,45 @@ The opt-in keeps routine multi-seat telemetry from duplicating large grids.
 The harness uses `~/coding/coworlds/coworld-ctf` only as a source clone: it
 fetches `origin` but never changes that checkout's branch or working tree. Every
 summary records the live Coworld ID/version, manifest hash, source URL, and
-exact source commit. Local self-play is a fast screening and tuning
-instrument, not proof against the live opponent field; promote candidates only
-after a broader hosted check. In `2v2`, the local candidate owns the full team
-rather than one campaign captain block, so it does not reproduce split-policy
-ally coordination.
+exact source commit. Local self-play is a debugging instrument, never evidence
+against the live opponent field. In campaign `2v2` mode, a normal captain owns
+seven seats and an allied entrant owns one seat; local candidate/control
+seating does not automatically reproduce that commissioner layout.
+
+## Replay viewers: belief overlay versus navigation knowledge
+
+These are different tools:
+
+- **Agent belief replay overlay** — [`ctf_lab/tools/viewer.html`](../ctf_lab/tools/viewer.html), fed by a
+  `viewer_bundle.json` from [`ctf_lab/tools/viewer_bundle.py`](../ctf_lab/tools/viewer_bundle.py). It synchronizes
+  ground-truth replay positions with each Stencil agent's tick-by-tick belief,
+  objective, tracks, item state, danger field, and heard-event traces. It also
+  shows a conservative ally-covered heatmap: currently visible allies' fuzzed
+  16-step headings projected through the guaranteed vision cone and clipped by
+  pixel-wall line of sight. The belief panel reports covered-cell share,
+  visible/headed ally counts, heading precision, and danger mean/max at the
+  selected snapshot. Ground-truth player and flag colors come from the
+  episode's authoritative slot-team configuration, including four-team FFA.
+  The exact-version replay reader
+  supplies the episode's startup walkability mask; generated Paintbot maps do
+  not use Beacon's baked arena. Use this for gameplay diagnosis.
+- **Navigation knowledge viewer** — `paintbot_lab/tools/render_nav.py`. It
+  renders one agent's static/generated map knowledge, posts, rays, and cached
+  flows. It does not replay the agent's changing belief state.
+
+For one fetched, full-seat hosted episode:
+
+```sh
+ctf_lab/tools/build_expand_replay.sh
+uv run python ctf_lab/tools/viewer_bundle.py <episode-dir>
+python3 -m http.server -d ctf_lab/tools 8766
+# Open http://localhost:8766/viewer.html and load <episode-dir>/viewer_bundle.json.
+```
+
+The bundle needs the fetched replay plus Stencil `policy_artifact_<slot>.zip`
+files for overlays. Start with the shipped replay-reader build script. If the
+bundler reports a replay/source hash mismatch, rebuild the reader at the
+episode's exact source commit before trusting tick alignment or events.
 
 ## Native parity evidence
 
