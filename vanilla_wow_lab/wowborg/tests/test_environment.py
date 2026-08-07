@@ -54,7 +54,7 @@ def test_hosted_endpoints_leave_environment_auth_to_pinned_client() -> None:
     env_url, navigation_url, slot, token = hosted_endpoints(
         "wss://game.example/player?slot=7&token=secret"
     )
-    assert env_url == "wss://game.example/env"
+    assert env_url == "wss://game.example/env?interaction=semantic"
     assert navigation_url == (
         "https://game.example/player/navigation?slot=7&token=secret"
     )
