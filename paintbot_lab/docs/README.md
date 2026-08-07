@@ -42,12 +42,11 @@ its full list.
   then use the root `coworld-experience-requests` and
   `coworld-episode-artifacts` skills.
 - Agent belief replay overlay: build the reader with
-  [`../tools/build_expand_replay.sh`](../tools/build_expand_replay.sh) — **not** the
-  ctf_lab script it wraps, which defaults to a CTF game ref and will hash-fail on
-  Paintbot replays — then bundle a fetched episode with the shared
-  [`viewer bundler`](../../ctf_lab/tools/viewer_bundle.py) and load it in the
-  [`belief viewer`](../../ctf_lab/tools/viewer.html). The viewer and bundler are
-  shared with ctf_lab; commands are in [`../README.md`](../README.md). The
+  [`../tools/build_expand_replay.sh`](../tools/build_expand_replay.sh) (defaults to
+  `versions.env`'s `PAINTBOT_GAME_REF`), then bundle a fetched episode with the
+  [`viewer bundler`](../tools/viewer_bundle.py) and load it in the
+  [`belief viewer`](../tools/viewer.html). These moved here from ctf_lab when that
+  lab was archived; commands are in [`../README.md`](../README.md). The
   version-matched replay reader supplies the episode's startup walkability mask,
   including generated Paintbot terrain. Stencil snapshots supply full enemy/teammate tracks, item
   beliefs, danger, and conservative ally-vision coverage clipped by terrain.
@@ -89,6 +88,7 @@ champions applies only to the document's cutoff.
 | [`reports/rl-observation-length-corpus.json`](reports/rl-observation-length-corpus.json) | exact GameVersions, Coworld IDs, source commits, policies, and episode IDs used by the length experiment |
 | [`reports/rl-mettabox1-sft-2026-08-07.md`](reports/rl-mettabox1-sft-2026-08-07.md) | CUDA/BF16 canaries, LR/epoch sweep, full cross-era checkpoint, and persistence-baseline verdict |
 | [`reports/rl-action-change-weighting-2026-08-07.md`](reports/rl-action-change-weighting-2026-08-07.md) | matched 1×/3×/class-balanced/16× changed-component loss sweep and held-out-era verdict |
+| [`reports/rl-transition-temporal-2x2-2026-08-07.md`](reports/rl-transition-temporal-2x2-2026-08-07.md) | matched transition-sampling x four-tick-history ablation and selected-model GV40 result |
 | [`reports/stencil-squad-consensus-retrospective-2026-08-06.md`](reports/stencil-squad-consensus-retrospective-2026-08-06.md) | v49-v53 leaderless-squad experiment retrospective and next-session handoff |
 | [`reports/stencil-v7-top-field-4ffa-16seat-request.json`](reports/stencil-v7-top-field-4ffa-16seat-request.json) | immutable historical request fixture |
 | [`reports/stencil-v9-top-field-4ffa-16seat-request.json`](reports/stencil-v9-top-field-4ffa-16seat-request.json) | immutable historical request fixture |

@@ -371,7 +371,7 @@ V56 artifacts expose communication through:
 - point events: `squad_consensus`, `squad_order`, and related follow-state
   transitions.
 
-Use the [belief replay viewer](../../ctf_lab/tools/viewer.html) to inspect one
+Use the [belief replay viewer](../tools/viewer.html) to inspect one
 agent's local state. Do not infer delivery from a visible speech bubble alone:
 the receiver may be dead, outside range, deduplicating the bubble, ignoring a
 self-text echo, rejecting its embedded seat/epoch, or prioritizing a different

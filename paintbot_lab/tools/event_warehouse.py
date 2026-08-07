@@ -21,11 +21,11 @@ Tables written (DuckDB `warehouse.duckdb` + one Parquet per table):
   * ``trace_events`` — one row per beacon trace event (belief snapshots + transitions)
 
 Usage:
-    uv run python ctf_lab/tools/event_warehouse.py \
-        --episodes ctf_lab/scratch/eval_v5_baseline \
-        --out ctf_lab/scratch/wh_v5 \
+    uv run python paintbot_lab/tools/event_warehouse.py \
+        --episodes paintbot_lab/scratch/eval_v5_baseline \
+        --out paintbot_lab/scratch/wh_v5 \
         [--replay-only] \
-        [--expand-replay ctf_lab/tools/bin/expand_replay_json]
+        [--expand-replay paintbot_lab/tools/bin/expand_replay_json]
 
 `--episodes` may be repeated / point at a dir of episode subdirs. The replay-JSON binary
 defaults to the stable symlink built by build_expand_replay.sh; build it first.
@@ -448,7 +448,7 @@ def main() -> None:
 
     if not args.expand_replay.exists():
         log(f"WARNING: expand_replay_json not found at {args.expand_replay} — "
-            f"replay events will be empty. Build it: ctf_lab/tools/build_expand_replay.sh")
+            f"replay events will be empty. Build it: paintbot_lab/tools/build_expand_replay.sh")
     build_warehouse(
         args.episodes,
         args.out,

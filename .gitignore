@@ -41,6 +41,8 @@ paintbot_lab/paintbot/rl/results/
 # In-lab expand_replay build: fetched game source + built binaries
 crewrift_lab/.cache/
 crewrift_lab/tools/bin/
+paintbot_lab/tools/bin/
+ctf_lab/tools/bin/
 
 # League telemetry harvest (raw artifact zips; regenerable while retention lasts)
 crewrift_lab/telemetry_harvest/

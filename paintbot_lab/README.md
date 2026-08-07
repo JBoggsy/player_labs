@@ -88,6 +88,11 @@ paintbot_lab/
     self_play.py           native, fast-ready, parallel local self-play
     render_nav.py          static navigation-knowledge viewer
     compare_stencil.py     A/B metric adapter over the shared stats engine
+    build_expand_replay.sh  build the version-matched replay reader (from versions.env)
+    expand_replay_json.nim  JSONL event + startup wall-map emitter (feeds the viewer)
+    viewer_bundle.py       bundle one episode for the belief viewer
+    viewer.html            belief replay overlay (ground truth + agent belief)
+    event_warehouse.py     DuckDB/Parquet event warehouse (still red/blue — see TODO)
     campaign_order_controller.py        campaign standing-orders controller
     manage_campaign_order_launch_agent.py  install/status the macOS LaunchAgent
     versions.env           pinned game/dependency provenance
@@ -189,8 +194,8 @@ seating does not automatically reproduce that commissioner layout.
 
 These are different tools:
 
-- **Agent belief replay overlay** — [`ctf_lab/tools/viewer.html`](../ctf_lab/tools/viewer.html), fed by a
-  `viewer_bundle.json` from [`ctf_lab/tools/viewer_bundle.py`](../ctf_lab/tools/viewer_bundle.py). It synchronizes
+- **Agent belief replay overlay** — [`tools/viewer.html`](tools/viewer.html), fed by a
+  `viewer_bundle.json` from [`tools/viewer_bundle.py`](tools/viewer_bundle.py). It synchronizes
   ground-truth replay positions with each Stencil agent's tick-by-tick belief,
   objective, tracks, item state, danger field, and heard-event traces. It also
   shows a conservative ally-covered heatmap: currently visible allies' fuzzed
@@ -209,28 +214,32 @@ These are different tools:
 For one fetched, full-seat hosted episode:
 
 ```sh
-# Builds at PAINTBOT_GAME_REF and prints the exact per-ref reader path.
+# Builds at versions.env's PAINTBOT_GAME_REF into tools/bin/.
 paintbot_lab/tools/build_expand_replay.sh
-uv run python ctf_lab/tools/viewer_bundle.py <episode-dir> \
-  --expand-replay ctf_lab/tools/bin/expand_replay_json-<PAINTBOT_GAME_REF>
-python3 -m http.server -d ctf_lab/tools 8766
+uv run python paintbot_lab/tools/viewer_bundle.py <episode-dir>
+python3 -m http.server -d paintbot_lab/tools 8766
 # Open http://localhost:8766/viewer.html and load <episode-dir>/viewer_bundle.json.
 ```
 
-**Use the paintbot wrapper, not `ctf_lab/tools/build_expand_replay.sh` directly.**
-The viewer and its replay reader are shared with ctf_lab (paintbot is a second
-manifest over the same engine), and the ctf script defaults to `CTF_REF` — a CTF
-game commit. The re-sim validates a per-tick hash, so running it bare against a
-Paintbot replay fails the hash and produces no usable events. The wrapper sources
-this lab's `tools/versions.env` and builds at `PAINTBOT_GAME_REF`.
+These tools moved here from `ctf_lab/tools/` on 2026-08-07 when that lab was
+archived; paintbot is a second manifest over the same engine, so the replay
+reader is the same binary built at a different game ref.
 
-Both labs share one `expand_replay_json` symlink, so whichever built last owns
-it; passing `--expand-replay` with the per-ref path keeps the choice explicit
-rather than order-dependent.
+The reader re-simulates the replay and validates a per-tick hash, so it must be
+built from the game version that recorded the episode. The default comes from
+this lab's [`tools/versions.env`](tools/versions.env) — bump it there, not in the
+script. The bundle needs the fetched replay plus Stencil
+`policy_artifact_<slot>.zip` files for overlays.
 
-The bundle needs the fetched replay plus Stencil `policy_artifact_<slot>.zip`
-files for overlays. To expand an **older** episode, pass
-`--ref <that episode's source commit>` — the current pin will hash-fail on it.
+To expand an **older** episode, build that era and name its binary explicitly —
+readers are mutually exclusive by GameVersion, and the stable symlink tracks
+whatever was built last:
+
+```sh
+paintbot_lab/tools/build_expand_replay.sh --ref <that episode's source commit>
+uv run python paintbot_lab/tools/viewer_bundle.py <episode-dir> \
+  --expand-replay paintbot_lab/tools/bin/expand_replay_json-<sha>
+```
 
 ## Native parity evidence
 

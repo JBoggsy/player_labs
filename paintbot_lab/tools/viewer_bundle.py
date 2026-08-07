@@ -17,8 +17,8 @@ Packages everything the viewer needs into a single JSON file:
     clips vision rays against them.
 
 Usage:
-    uv run python ctf_lab/tools/viewer_bundle.py <episode_dir> [-o out.json]
-    # then open ctf_lab/tools/viewer.html and pick the bundle,
+    uv run python paintbot_lab/tools/viewer_bundle.py <episode_dir> [-o out.json]
+    # then open paintbot_lab/tools/viewer.html and pick the bundle,
     # or serve both:  python -m http.server -d <dir>
 
 ``<episode_dir>`` is one fetched episode (needs replay.json/replay.bitreplay +
@@ -35,9 +35,12 @@ import sys
 import zipfile
 from pathlib import Path
 
-LAB_DIR = Path(__file__).resolve().parent.parent
+LAB_DIR = Path(__file__).resolve().parent.parent          # paintbot_lab/
 DEFAULT_EXPAND = LAB_DIR / "tools" / "bin" / "expand_replay_json"
-NAV_NPZ = LAB_DIR / "ctf" / "beacon" / "mapdata" / "nav.npz"
+# Beacon's baked CTF arena, used ONLY for fixed-map CTF episodes (allow_baked).
+# ctf_lab is archived, so this reaches into the archive rather than moving with the
+# tool; Paintbot episodes never touch it — they carry their own walkability mask.
+NAV_NPZ = LAB_DIR.parent / "ctf_lab" / "ctf" / "beacon" / "mapdata" / "nav.npz"
 
 
 def log(msg: str) -> None:
@@ -71,8 +74,7 @@ def _expand(replay: Path, expand_bin: Path) -> list[dict]:
         log(
             f"! hash failed at tick {meta.get('fail_tick')} — the reader was built from a "
             f"different game version than recorded this replay. Rebuild at the episode's "
-            f"source commit: ctf_lab/tools/build_expand_replay.sh (CTF) or "
-            f"paintbot_lab/tools/build_expand_replay.sh (Paintbot)."
+            f"source commit: paintbot_lab/tools/build_expand_replay.sh --ref <sha>."
         )
     return rows
 
@@ -310,7 +312,7 @@ def main() -> None:
     out = args.out or (args.episode_dir / "viewer_bundle.json")
     out.write_text(json.dumps(bundle, separators=(",", ":")))
     log(f"wrote {out} ({out.stat().st_size // 1024} KB)")
-    log(f"view: open ctf_lab/tools/viewer.html and load it, or "
+    log(f"view: open paintbot_lab/tools/viewer.html and load it, or "
         f"python3 -m http.server — file:// works too (single fetch via file picker)")
 
 
