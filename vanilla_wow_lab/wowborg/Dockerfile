@@ -18,7 +18,7 @@ RUN pip install --no-cache-dir \
 # Copy the exact Python environment and navmesh SDK shipped by the deployed game
 # image. The policy image contains no WoW client: the game owns that process.
 #
-# The deployed traverse-wow image pinned by tools/versions.env publishes this
+# The deployed vanilla-wow-episodic image pinned by tools/versions.env publishes this
 # contract from /opt/coworld-python.
 COPY --from=environment_contract /opt/coworld-python/environment /opt/vanilla-wow/environment
 COPY --from=environment_contract /opt/coworld-python/player/__init__.py /opt/vanilla-wow/player/__init__.py
