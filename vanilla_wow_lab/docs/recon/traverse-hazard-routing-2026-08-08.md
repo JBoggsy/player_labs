@@ -278,6 +278,8 @@ left; the router still selected right, then pulled one Basilisk at 5.6 yards. Th
 route edge: when neither bypass meets the existing 15-yard floor, remain outside ordinary aggro
 and let the accelerated patrol move. The next candidate emits wait start/end, suspends the
 no-progress timer while intentionally stationary, and resumes as soon as one side becomes safe.
+That temporal edge is uploaded inert as wowborg:v109
+(`6ada5206-cb39-4c3f-8b8b-db9b93fd86d6`, source `dc8fe3d`).
 
 ## Open uncertainties
 

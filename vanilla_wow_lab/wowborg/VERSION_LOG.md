@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v109 - wait for a safe patrol edge (2026-08-08)
+
+- Version UUID: `6ada5206-cb39-4c3f-8b8b-db9b93fd86d6` (`wowborg:v109`, uploaded
+  inert; not submitted). Built from source `dc8fe3d` against canonical vanilla-wow 0.1.209.
+- When the retained avoidance side remains below the existing 15-yard clearance floor, wowborg
+  waits for the moving patrol instead of entering a known-unsafe edge. Wait start/end are traced,
+  and intentional waiting refreshes the road-stall budget. Hosted proof is pending.
+
 ## v108 - cross-guidepoint hazard continuity (2026-08-08)
 
 - Version UUID: `c2896a36-05a4-4a0c-ba88-83d8ae57c48c` (`wowborg:v108`, uploaded

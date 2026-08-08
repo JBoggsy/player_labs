@@ -44,6 +44,8 @@ reached 1,784.9 living northing yards. It later encountered two Glasshide Basili
 11.9 yards of best candidate clearance, moved anyway, and pulled at 5.6 yards. The active source
 candidate treats “both sides below 15 yards” as a wait edge, traces wait start/end, and suspends
 the route-stall timer until a moving patrol opens a safe bypass.
+It is uploaded inert as **wowborg:v109**
+(`6ada5206-cb39-4c3f-8b8b-db9b93fd86d6`, source `dc8fe3d`); hosted proof is pending.
 
 ### Previous 0.1.208 movement baseline
 
