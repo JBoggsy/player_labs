@@ -76,6 +76,13 @@ proc decideObjective*(belief: Belief): Objective =
           int(belief.selfXy.get.y.float + dy.float / norm * GrenadeWarnClearPx.float)),
           "clear_grenade")
 
+  if BarrageCentering and belief.barrage.isSome and
+      belief.barrage.get.depth > 0 and belief.selfXy.isSome:
+    inc belief.barrageCenterTicks
+    if distance(belief.selfXy.get, map.center) <= BarrageCenterRadiusPx.float:
+      return hold("barrage_center")
+    return navigate(map.center, "barrage_center", some(map.center))
+
   if EarlyDefense and not belief.earlyDefenseComplete and belief.selfXy.isSome:
     if belief.earlyDefensePoint.isNone:
       belief.earlyDefensePoint = some(map.spawnCoverPoint(

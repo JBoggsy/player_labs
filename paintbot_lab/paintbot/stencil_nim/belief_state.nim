@@ -63,6 +63,8 @@ type
     itemOptionTicks*, itemReasonTicks*: CountTable[string]
     hpPips*: Option[int]
     teamScores*: Table[Team, tuple[kills, deaths: int]]
+    barrage*: Option[BarrageState]
+    barrageCenterTicks*: int
     iHaveGrenade*, iHaveShield*, iHaveArc*: bool
     heardEvents*: seq[HeardImpact]
     underFire*: bool

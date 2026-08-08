@@ -162,6 +162,9 @@ let
   DefensiveCarrierThreatMin* = envTunableFloat(
     "STENCIL_DEFENSIVE_CARRIER_THREAT_MIN", 0.75, 0.0, 1.0)
   EarlyDefense* = envTunableBool("STENCIL_EARLY_DEFENSE", true)
+  BarrageCentering* = envTunableBool("STENCIL_BARRAGE_CENTERING", true)
+  BarrageCenterRadiusPx* = envTunableInt(
+    "STENCIL_BARRAGE_CENTER_RADIUS_PX", 80, NavCell)
   FirefightClaimRebroadcastTicks* = envTunableInt(
     "STENCIL_FF_CLAIM_REBROADCAST_TICKS", 30, 1)
   FirefightClaimTtlTicks* = envTunableInt("STENCIL_FF_CLAIM_TTL_TICKS", 72, 1)

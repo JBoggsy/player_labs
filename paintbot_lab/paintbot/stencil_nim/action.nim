@@ -3,7 +3,8 @@
 import std/[algorithm, math, options, tables]
 import belief_state, config, fight, nav, squads, types, worldmap
 
-const FlowReasons = ["carry_home", "steal", "to_hold", "to_post", "early_defense"]
+const FlowReasons = [
+  "carry_home", "steal", "to_hold", "to_post", "early_defense", "barrage_center"]
 const MovementMask = ButtonUp or ButtonDown or ButtonLeft or ButtonRight
 
 type
@@ -226,7 +227,8 @@ proc coverFromThreat(
 proc peekDuckOverride(belief: Belief, intent: Intent): Option[MicroOverride] =
   if belief.worldmap.isNil or belief.iCarryHeartOf.isSome or intent.reason in
       ["carry_home", "clear_grenade", "fetch_medkit", "intercept_thief",
-       "intercept_thief_heard", "early_defense"]: return none(MicroOverride)
+       "intercept_thief_heard", "early_defense", "barrage_center"]:
+    return none(MicroOverride)
   if intent.reason == "steal" and intent.point.isSome and
       distance(intent.point.get, belief.selfXy.get) <= PeekDuckRushExemptPx.float:
     return none(MicroOverride)
@@ -459,7 +461,8 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
         if belief.worldmap.walkableSegment(selfXy, biased):
           inc belief.squadCohesionTicks; waypoint = biased
     mask = mask or octantToward(selfXy, waypoint, belief.nav.stuckTicks >= StuckTicks)
-  elif intent.kind == Hold and not carrying and intent.reason != "early_defense":
+  elif intent.kind == Hold and not carrying and
+      intent.reason notin ["early_defense", "barrage_center"]:
     let separation = belief.separationBias
     if separation.isSome:
       let step: Point = (int(selfXy.x.float + separation.get.x * NavCell.float * 2.0),
@@ -488,7 +491,7 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
     if belief.iHaveArc:
       let range = distance(enemy.get.pos, selfXy)
       if range > ArcIdealRangePx.float and range <= ArcPursuitRangePx.float and
-          not carrying and intent.reason != "early_defense":
+          not carrying and intent.reason notin ["early_defense", "barrage_center"]:
         inc belief.sprayPursuitTicks
         mask = (mask and not MovementMask) or octantToward(selfXy, enemy.get.pos, false)
       let contains = belief.sprayContains(aim.pos)

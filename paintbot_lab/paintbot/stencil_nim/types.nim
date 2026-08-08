@@ -89,6 +89,9 @@ type
     shape*: string
     x0*, y0*, x1*, y1*: int
 
+  BarrageState* = object
+    depth*, rate*, startSec*, saturateSec*: int
+
   VisibleItem* = tuple[kind: string, pos: Point]
   HeardSound* = tuple[kind: string, pos: Point]
   HeardShout* = tuple[team, address, text: string, pos: Point]
@@ -119,6 +122,7 @@ type
     iHaveShield*: bool
     iHaveArc*: bool
     teamScores*: Table[Team, tuple[kills, deaths: int]]
+    barrage*: Option[BarrageState]
 
   ItemKind* = enum
     Arc

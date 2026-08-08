@@ -410,6 +410,15 @@ proc snapshot(policy: StencilPolicy, command: Command): JsonNode =
   if belief.teamScores.hasKey(belief.team):
     ownLives = %(max(0, belief.seatsPerTeam * LivesPerPlayer -
       belief.teamScores[belief.team].deaths))
+  let barrage = if belief.barrage.isSome:
+    %*{
+      "depth": belief.barrage.get.depth,
+      "rate": belief.barrage.get.rate,
+      "start_sec": belief.barrage.get.startSec,
+      "saturate_sec": belief.barrage.get.saturateSec,
+    }
+  else:
+    newJNull()
   result = %*{
     "tick": policy.tick,
     "team": teamName(belief.team),
@@ -478,6 +487,8 @@ proc snapshot(policy: StencilPolicy, command: Command): JsonNode =
     "enemy_lives_left": (if enemyLives.isSome:
       %enemyLives.get else: newJNull()),
     "own_lives_left": ownLives,
+    "barrage": barrage,
+    "barrage_center_ticks": belief.barrageCenterTicks,
     "hp_pips": (if belief.hpPips.isSome: %belief.hpPips.get else: newJNull()),
     "have": {
       "grenade": belief.iHaveGrenade,

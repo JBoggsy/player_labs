@@ -180,6 +180,22 @@ proc teamScores(scene: SceneIndex): Table[Team, tuple[kills, deaths: int]] =
     except ValueError:
       discard
 
+proc barrageState(scene: SceneIndex): Option[BarrageState] =
+  const Prefix = "grenade barrage depth "
+  for item in scene.objects:
+    if not item.label.startsWith(Prefix):
+      continue
+    let parts = item.label[Prefix.len .. ^1].split(' ')
+    if parts.len != 7 or parts[1] != "rate" or parts[3] != "start" or
+        parts[5] != "sat":
+      continue
+    try:
+      return some(BarrageState(
+        depth: parseInt(parts[0]), rate: parseInt(parts[2]),
+        startSec: parseInt(parts[4]), saturateSec: parseInt(parts[6])))
+    except ValueError:
+      discard
+
 proc markerAssignments(
   actors, markers: openArray[Point]
 ): Table[int, int] =
@@ -335,3 +351,4 @@ proc perceive*(
     result.walkabilityWidth = client.walkabilityWidth
     result.walkabilityHeight = client.walkabilityHeight
   result.teamScores = teamScores(scene)
+  result.barrage = barrageState(scene)

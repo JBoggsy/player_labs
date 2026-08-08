@@ -4,6 +4,86 @@ Read this before assuming what a version contains. Format mirrors
 `ctf_lab/ctf/beacon/VERSION_LOG.md`: one entry per uploaded version — what
 changed, why, and what the evidence said.
 
+## v58 — barrage-center evacuation, uploaded 2026-08-07
+
+Immutable policy-version UUID: `1f7f7c75-5edb-4b35-aba8-241264bbd611`.
+Uploaded with tag `purpose=barrage-center`. Submitted to Paintbot on
+2026-08-07 with auto-champion enabled; submission
+`sub_a1298aee-c6d1-4141-bca4-b42133b3058e` was placed into membership
+`lpm_c6ccaa63-6a6f-47c0-bea5-2a04ad6454fc`. Live readback showed the membership
+competing, active, qualified, and champion; v54 became benched.
+
+- Parses the GV41 `grenade barrage depth … rate … start … sat …` marker and
+  folds its current values into belief state.
+- Once `depth > 0`, routes each live Stencil agent toward the generated map
+  center using the existing walkability-aware flow field and holds on entering
+  the configurable 80-pixel central ring. Carry-home, heart-thief interception,
+  and immediate grenade warnings retain higher priority.
+- Suppresses peek-duck, formation drift, and spray pursuit while evacuating or
+  holding, while retaining combat aim and fire. The behavior can be disabled
+  with `STENCIL_BARRAGE_CENTERING=0`; its ring radius is controlled by
+  `STENCIL_BARRAGE_CENTER_RADIUS_PX`.
+- Traces the complete barrage marker and cumulative `barrage_center_ticks`,
+  while objective transitions identify each activation.
+- Pins the build to canonical Paintbot 0.7.211 / source
+  `9dedac0ed6011aeca92bf2c6403b0e70c955f461` (GameVersion 41).
+
+The `linux/amd64` image compiled successfully and was uploaded with
+`STENCIL_TRACE_OUTPUTS=jsonl@artifact`, `STENCIL_TRACE_NAVIGATION=1`, and
+`STENCIL_DIAG_EVERY_TICKS=1`. A one-episode, full 16-seat v58 mechanism probe
+on GV41 `1v1` with a giant generated map completed successfully:
+`xreq_34bd90b7-1d97-4dd1-a77f-aa1aabf975a6`, episode
+`178292c1-a143-47a7-bdc7-c5fa0a5c985b`. All 16 agents activated
+`barrage_center` within ticks 6602–6604 when the marker became positive and
+targeted the generated center `[1605,856]`. Twelve reached and held within the
+80-pixel ring; the other four resumed the route after each respawn but exhausted
+all three lives before arrival. This validates marker consumption and determined
+center routing, while leaving individual-grenade evasion as the next capability.
+The probe is mechanism evidence only, not a performance comparison.
+
+A 30-episode tournament-like evaluation was launched on 2026-08-07 against the
+current Paintbot 0.7.212 campaign field and round-492 board cells. It contains
+10 episodes per live map ref: five `1v1` cells with both captain seatings, five
+`2v2` cells with both captain seatings, and ten `4ffa` cells with whole-color
+Stencil ownership rotated across colors. No synthetic `4ffa8` game was added
+because that map ref was absent from the live board. Requests:
+
+All 30 episodes completed without operational failures. V58 finished 22-8:
+6-4 on `1v1`, 9-1 on `2v2`, and 7-3 on `4ffa`, with 563 kills and 369 deaths
+across its controlled seats. Because v54 was not run on the same cells and
+opponents, this is absolute performance evidence rather than a matched A/B.
+
+- `1v1`: `xreq_6605e638-8ea0-4fda-b956-446f4d519ceb`,
+  `xreq_205efcb6-42f5-4aa3-b083-2c32ec692f42`,
+  `xreq_bba704b5-a106-4456-8b65-eb42e76068fb`,
+  `xreq_311a387f-b304-44f5-9f3b-5071ea93cb68`,
+  `xreq_97c6da34-b84f-4030-afdf-b1c1b9f5770f`,
+  `xreq_0325f0f7-1e9b-428f-9a8b-1e055b8c2240`,
+  `xreq_a1b93e8a-f762-4fd0-8279-dc1957b05ea2`,
+  `xreq_e6306df6-eb65-4f75-ac89-81f7887e44ff`,
+  `xreq_1de5c88b-17ba-45e9-b68e-1e5304a8a3be`, and
+  `xreq_95aa66c5-0d40-4773-bb94-22d3a2438b9e`.
+- `2v2`: `xreq_d7722dc7-e33d-495e-840d-e0bd413b931f`,
+  `xreq_2b739ed8-bcf2-4161-8311-24435fc62d86`,
+  `xreq_51b1002d-7ca0-4778-809d-1edb11f3bec1`,
+  `xreq_63a67dee-7bba-400a-9d72-ef97414e7f32`,
+  `xreq_a6e947ba-e502-4b45-a445-fcc323408d24`,
+  `xreq_1c390135-1e85-409f-a732-eedfc095fe95`,
+  `xreq_c2c847b1-ea38-486d-a363-f38b6fbbc9e0`,
+  `xreq_2543c34e-c4c5-48dc-bef1-80213c9d3d48`,
+  `xreq_84ab3e35-54ff-423c-b27a-5107a969c567`, and
+  `xreq_d628181a-fc08-4892-8191-c5fb669499b8`.
+- `4ffa`: `xreq_251cf413-8842-4447-890d-b26836d674d2`,
+  `xreq_ab2ef26c-fd0c-4058-aec0-fbb126f15d2a`,
+  `xreq_c54901ae-6167-415f-873e-6dfac0e1c4f3`,
+  `xreq_729eeb0e-c88d-4197-811b-94e015931355`,
+  `xreq_91c12b52-72f7-40f0-82d6-2f49070b1abf`,
+  `xreq_ea4ec521-64e0-42c2-bae8-ea4e879b5ece`,
+  `xreq_7084c3bc-9b12-4c2b-abc2-ce80877584c8`,
+  `xreq_55065723-f3aa-4895-add3-3ef4403ce99c`,
+  `xreq_d2bcc4c8-8084-411a-bf5b-40b634ffa4d9`, and
+  `xreq_8c28c84b-3f2b-475d-b60c-33cd3462d0ce`.
+
 ## v57 — full engine-rate communication, uploaded 2026-08-07
 
 Immutable policy-version UUID: `c4a663a4-f6d4-4be4-92ca-cfffa891202e`.

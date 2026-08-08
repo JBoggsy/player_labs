@@ -349,6 +349,7 @@ proc updateBeliefCore*(
   belief.updateHearts(percept)
   for color, score in percept.teamScores:
     belief.teamScores[color] = score
+  belief.barrage = percept.barrage
   belief.hpPips = percept.hpPips
   belief.iHaveGrenade = percept.iHaveGrenade
   belief.iHaveShield = percept.iHaveShield
