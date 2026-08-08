@@ -33,6 +33,10 @@ GREAT_LIFT_TURN_DEADBAND = 0.20
 GREAT_LIFT_INPUT_SECONDS = 0.75
 ROAD_ARRIVAL_RADIUS_YARDS = 8.0
 ROAD_STALL_SECONDS = 8.0
+ROAD_HAZARD_ENTER_YARDS = 30.0
+ROAD_HAZARD_EXIT_YARDS = 40.0
+ROAD_HAZARD_FORWARD_YARDS = 20.0
+ROAD_HAZARD_LATERAL_YARDS = 30.0
 
 # Follow the deployed owner's level-51 Tanaris and Thousand Needles road spine
 # to the Great Lift lower dock. Great Lift boarding is a separate campaign.
@@ -103,10 +107,71 @@ def _steer_toward(bridge, frame, target: Point, *, purpose: str) -> None:
     )
 
 
+def _hazard_avoidance_target(frame, target: Point, *, side: float | None):
+    route_x = target.x - frame.location.x
+    route_y = target.y - frame.location.y
+    route_length = math.hypot(route_x, route_y)
+    if route_length == 0:
+        return target, None, []
+    route_x /= route_length
+    route_y /= route_length
+    left_x, left_y = -route_y, route_x
+    detection_radius = ROAD_HAZARD_EXIT_YARDS if side is not None else ROAD_HAZARD_ENTER_YARDS
+    hazards = [
+        unit
+        for unit in frame.units
+        if unit.player_reaction_hostile
+        and not unit.is_dead
+        and unit.distance <= detection_radius
+        and (
+            (unit.location.x - frame.location.x) * route_x
+            + (unit.location.y - frame.location.y) * route_y
+        )
+        >= -5.0
+    ]
+    if not hazards:
+        return target, None, []
+
+    if side is None:
+        def clearance(candidate_side: float) -> float:
+            candidate_x = (
+                frame.location.x
+                + route_x * ROAD_HAZARD_FORWARD_YARDS
+                + left_x * candidate_side * ROAD_HAZARD_LATERAL_YARDS
+            )
+            candidate_y = (
+                frame.location.y
+                + route_y * ROAD_HAZARD_FORWARD_YARDS
+                + left_y * candidate_side * ROAD_HAZARD_LATERAL_YARDS
+            )
+            return min(
+                math.hypot(candidate_x - unit.location.x, candidate_y - unit.location.y)
+                for unit in hazards
+            )
+
+        side = max((-1.0, 1.0), key=clearance)
+
+    return (
+        Point(
+            frame.location.map_id,
+            frame.location.x
+            + route_x * ROAD_HAZARD_FORWARD_YARDS
+            + left_x * side * ROAD_HAZARD_LATERAL_YARDS,
+            frame.location.y
+            + route_y * ROAD_HAZARD_FORWARD_YARDS
+            + left_y * side * ROAD_HAZARD_LATERAL_YARDS,
+            frame.location.z,
+        ),
+        side,
+        hazards,
+    )
+
+
 def _steer_road_leg(bridge, target: Point, *, deadline: float, trace):
     closest = math.inf
     last_progress = time.monotonic()
     combat_escape_started: float | None = None
+    avoidance_side: float | None = None
     while time.monotonic() < deadline and not getattr(bridge, "finished", False):
         frame = bridge.observe()
         if frame is None:
@@ -164,11 +229,43 @@ def _steer_road_leg(bridge, target: Point, *, deadline: float, trace):
             trace("traverse_road_stalled", distance=round(distance, 3))
             return None, "no_progress"
 
+        steering_target, next_avoidance_side, hazards = _hazard_avoidance_target(
+            frame,
+            target,
+            side=avoidance_side,
+        )
+        if next_avoidance_side is not None and avoidance_side is None:
+            trace(
+                "traverse_hazard_avoidance",
+                activation=1,
+                side="left" if next_avoidance_side > 0 else "right",
+                hazards=[
+                    {
+                        "entry": unit.entry,
+                        "name": unit.name,
+                        "distance": round(unit.distance, 3),
+                        "location": [
+                            round(unit.location.x, 3),
+                            round(unit.location.y, 3),
+                            round(unit.location.z, 3),
+                        ],
+                    }
+                    for unit in hazards
+                ],
+            )
+        elif next_avoidance_side is None and avoidance_side is not None:
+            trace("traverse_hazard_avoidance_ended", activation=1)
+        avoidance_side = next_avoidance_side
+
         _steer_toward(
             bridge,
             frame,
-            target,
-            purpose="steer the canonical Traverse road after movement bootstrap",
+            steering_target,
+            purpose=(
+                "steer around visible Traverse hazards"
+                if hazards
+                else "steer the canonical Traverse road after movement bootstrap"
+            ),
         )
         settle_frame = bridge.observe()
         if settle_frame is None:

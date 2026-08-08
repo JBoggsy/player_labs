@@ -7,7 +7,12 @@
 - Keeps v102's measured route unchanged. A road leg now continues its bounded steering while in
   combat rather than declaring route failure and disconnecting. It emits
   `traverse_combat_escape` with health and visible attacker evidence on activation, then
-  `traverse_combat_escape_ended` after leashing the pull. Hosted proof is pending.
+  `traverse_combat_escape_ended` after leashing the pull.
+- Request `xreq_46900459-a4be-465a-8a34-d54006fa5746` proved the escape activates and
+  continues moving, but a seed-dependent Glasshide Gazer pulled earlier at 7.9 yards and dealt
+  lethal damage while following wowborg for roughly 100 route yards. Post-pull escape is too
+  late. The next candidate uses visible hostile locations before aggro to bend steering pulses
+  toward the higher-clearance side of the road, with 30/40-yard hysteresis and activation traces.
 
 ## v102 - measured channel between Brute and Gazer (2026-08-08)
 

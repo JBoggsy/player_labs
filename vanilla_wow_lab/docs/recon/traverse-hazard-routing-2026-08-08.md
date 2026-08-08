@@ -226,6 +226,15 @@ combat and traces the live attacker set plus combat exit. This is an escape edge
 it preserves route-first handling and measures whether ordinary leash distance is cheaper than
 another static detour.
 
+v103 falsified run-through escape as a sufficient fallback. Its trace confirms continued physical
+progress for roughly 100 yards, but one seed-dependent Glasshide Gazer had already pulled at 7.9
+yards and remained engaged until death. This also proves fixed patrol coordinates are not a
+complete model. The next probe consumes the canonical complete visible-unit set before contact:
+hostiles within 30 yards ahead bend the next bounded pulse toward whichever side yields greater
+clearance, the chosen side is retained until 40 yards clear, and activation/end are traced. The
+30/40-yard hysteresis is deliberately wider than the measured 4.1-7.9-yard pull distances while
+remaining local enough to avoid abandoning the road corridor.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.

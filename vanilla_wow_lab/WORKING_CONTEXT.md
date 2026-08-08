@@ -113,7 +113,12 @@ and disconnected because the road-leg loop treats any combat as terminal. It sti
 2,754 health. The active candidate retains the measured route but continues steering along it
 during incidental combat, tracing attacker identity and escape start/end instead of freezing.
 It is uploaded inert as **wowborg:v103**
-(`a7b0bc17-80b6-4e7c-b909-dbefe9486428`, source `928cb29`); hosted proof is pending.
+(`a7b0bc17-80b6-4e7c-b909-dbefe9486428`, source `928cb29`). Request
+`xreq_46900459-a4be-465a-8a34-d54006fa5746` proved the fallback activated and kept
+moving, but a seed-dependent Glasshide Gazer pulled earlier at 7.9 yards and followed for roughly
+100 route yards until death. The active candidate adds pre-aggro dynamic steering: a hostile
+within 30 yards ahead bends pulses toward the higher-clearance side of the road, holds that side
+until 40 yards clear, and traces avoidance activation/end with exact unit evidence.
 
 ## Historical status (2026-08-06): V78 SUBMITTED AND QUALIFYING ON THE CORRECTED CLOCK
 
