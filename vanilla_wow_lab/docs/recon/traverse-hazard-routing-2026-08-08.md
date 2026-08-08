@@ -263,6 +263,13 @@ and every tracked destination so the next failure is attributable.
 That evaluator is uploaded inert as wowborg:v107
 (`d7f5fe7d-3d99-4924-88a1-e78865dcc3fd`, source `d33799e`).
 
+V107 cleared the former Scorpid failure and reached road node 7 with 1,684.8 living northing
+yards. It had already selected a right-side path around a Starving Blisterpaw at 46.9 yards, but
+`_steer_road_leg` returned on guidepoint arrival and discarded that live routing state. The next
+leg reactivated only when the same mob was 10.3 yards away, with predicted clearances of 10.0
+yards right and 1.0 left; combat began one pulse later at 5.4 yards. The next change carries the
+selected side across road-leg boundaries without changing the hazard geometry or thresholds.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.

@@ -7,7 +7,12 @@
 - Tracks visible hostiles out to 80 yards, tests their advertised movement segments against the
   forward corridor and both candidate player segments, and retains a chosen side unless its
   predicted clearance falls below 15 yards. Activation traces now record both side clearances
-  and every tracked hostile destination. Hosted proof is pending.
+  and every tracked hostile destination.
+- Request `xreq_3a8dc2f1-fdae-4bb5-81a8-1936f01ae2d2` cleared the earlier Scorpid
+  cluster and reached 10 guidepoints / 1,684.8 living northing yards. It then discarded an active
+  right-side avoidance at road node 7 and restarted it on node 8 only when the same Starving
+  Blisterpaw was 10.3 yards away; both candidate clearances were already unsafe. The next source
+  candidate preserves the avoidance side across guidepoint boundaries.
 
 ## v106 - live 0.1.209 observation contract (2026-08-08)
 

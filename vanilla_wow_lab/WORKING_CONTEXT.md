@@ -31,7 +31,12 @@ movement segments, ends avoidance when the projected forward corridor clears, an
 when retained clearance falls below 15 yards. Activation traces include both side scores and all
 tracked destinations. V78 remains the submitted Traverse champion.
 That candidate is uploaded inert as **wowborg:v107**
-(`d7f5fe7d-3d99-4924-88a1-e78865dcc3fd`, source `d33799e`); hosted proof is pending.
+(`d7f5fe7d-3d99-4924-88a1-e78865dcc3fd`, source `d33799e`). Request
+`xreq_3a8dc2f1-fdae-4bb5-81a8-1936f01ae2d2` survived the earlier cluster and reached
+10 guidepoints / 1,684.8 living northing yards. At road node 7, `_steer_road_leg` returned while
+avoidance was active for a Starving Blisterpaw 46.9 yards away; the next leg reset the chosen side
+and did not react again until the mob was 10.3 yards away. The active source candidate carries
+that hazard state across guidepoint boundaries; geometry and thresholds are unchanged.
 
 ### Previous 0.1.208 movement baseline
 

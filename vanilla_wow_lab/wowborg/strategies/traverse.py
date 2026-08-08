@@ -303,11 +303,22 @@ def _combat_escape_target(frame, target: Point) -> Point:
     )
 
 
-def _steer_road_leg(bridge, target: Point, *, deadline: float, trace):
+@dataclass
+class HazardAvoidanceState:
+    side: float | None = None
+
+
+def _steer_road_leg(
+    bridge,
+    target: Point,
+    *,
+    deadline: float,
+    trace,
+    avoidance: HazardAvoidanceState,
+):
     closest = math.inf
     last_progress = time.monotonic()
     combat_escape_started: float | None = None
-    avoidance_side: float | None = None
     while time.monotonic() < deadline and not getattr(bridge, "finished", False):
         frame = bridge.observe()
         if frame is None:
@@ -367,7 +378,7 @@ def _steer_road_leg(bridge, target: Point, *, deadline: float, trace):
 
         if frame.in_combat:
             steering_target = _combat_escape_target(frame, target)
-            next_avoidance_side = avoidance_side
+            next_avoidance_side = avoidance.side
             hazards = []
         else:
             (
@@ -376,8 +387,8 @@ def _steer_road_leg(bridge, target: Point, *, deadline: float, trace):
                 hazards,
                 tracked_hazards,
                 side_clearances,
-            ) = _hazard_avoidance_target(frame, target, side=avoidance_side)
-        if next_avoidance_side is not None and avoidance_side is None:
+            ) = _hazard_avoidance_target(frame, target, side=avoidance.side)
+        if next_avoidance_side is not None and avoidance.side is None:
             trace(
                 "traverse_hazard_avoidance",
                 activation=1,
@@ -417,12 +428,12 @@ def _steer_road_leg(bridge, target: Point, *, deadline: float, trace):
                     for unit in tracked_hazards
                 ],
             )
-        elif next_avoidance_side is None and avoidance_side is not None:
+        elif next_avoidance_side is None and avoidance.side is not None:
             trace("traverse_hazard_avoidance_ended", activation=1)
         elif (
             next_avoidance_side is not None
-            and avoidance_side is not None
-            and next_avoidance_side != avoidance_side
+            and avoidance.side is not None
+            and next_avoidance_side != avoidance.side
         ):
             trace(
                 "traverse_hazard_avoidance_switched",
@@ -433,7 +444,7 @@ def _steer_road_leg(bridge, target: Point, *, deadline: float, trace):
                     "left": round(side_clearances[1.0], 3),
                 },
             )
-        avoidance_side = next_avoidance_side
+        avoidance.side = next_avoidance_side
 
         _steer_toward(
             bridge,
@@ -570,6 +581,9 @@ class TraverseStrategy:
     great_lift_boarded: bool = False
     great_lift_completed: bool = False
     great_lift_upper_road_arrived: bool = False
+    hazard_avoidance: HazardAvoidanceState = field(
+        default_factory=HazardAvoidanceState
+    )
     visited_frontiers: set[str] = field(default_factory=set)
 
     def summary(self) -> dict[str, object]:
@@ -648,6 +662,7 @@ class TraverseStrategy:
                         target,
                         deadline=until,
                         trace=trace,
+                        avoidance=self.hazard_avoidance,
                     )
                     if end is not None:
                         self.best_world_x = max(self.best_world_x, end.x)
