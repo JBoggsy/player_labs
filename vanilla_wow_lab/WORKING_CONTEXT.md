@@ -106,7 +106,12 @@ Dunemaul Brute at `(-8396.0,-3178.9)` pulled from 4.1 yards and killed wowborg a
 proven center road through `(-8401.8,-3220.7)`, then crosses due east at `y=-3220`, 42 yards
 south of the observed Brute and 57 yards north of the observed Gazer, before rejoining node 4.
 It is uploaded inert as **wowborg:v102**
-(`775f286c-aa9d-4834-86e1-75730cfb3762`, source `48db44c`); hosted proof is pending.
+(`775f286c-aa9d-4834-86e1-75730cfb3762`, source `48db44c`). Request
+`xreq_f0744efc-7573-4b44-b978-0934c83cc599` cleared both measured hazards at full
+health and reached road node 5. At `(-7989.2,-3488.8)` it took one 62-damage hit, then stopped
+and disconnected because the road-leg loop treats any combat as terminal. It still had 2,692 of
+2,754 health. The active candidate retains the measured route but continues steering along it
+during incidental combat, tracing attacker identity and escape start/end instead of freezing.
 
 ## Historical status (2026-08-06): V78 SUBMITTED AND QUALIFYING ON THE CORRECTED CLOCK
 

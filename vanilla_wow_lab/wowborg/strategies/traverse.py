@@ -106,6 +106,7 @@ def _steer_toward(bridge, frame, target: Point, *, purpose: str) -> None:
 def _steer_road_leg(bridge, target: Point, *, deadline: float, trace):
     closest = math.inf
     last_progress = time.monotonic()
+    combat_escape_started: float | None = None
     while time.monotonic() < deadline and not getattr(bridge, "finished", False):
         frame = bridge.observe()
         if frame is None:
@@ -113,7 +114,37 @@ def _steer_road_leg(bridge, target: Point, *, deadline: float, trace):
         if frame.is_dead or frame.is_ghost:
             return None, "death"
         if frame.in_combat:
-            return None, "combat"
+            if combat_escape_started is None:
+                combat_escape_started = time.monotonic()
+                visible_attackers = [
+                    {
+                        "entry": unit.entry,
+                        "name": unit.name,
+                        "distance": round(unit.distance, 3),
+                    }
+                    for unit in frame.units
+                    if unit.player_reaction_hostile
+                    and not unit.is_dead
+                    and unit.target_guid_known
+                    and unit.target_guid == frame.player_guid
+                ]
+                trace(
+                    "traverse_combat_escape",
+                    activation=1,
+                    health=frame.health,
+                    max_health=frame.max_health,
+                    attacker_count=frame.threat.attacker_count,
+                    visible_attackers=visible_attackers,
+                )
+        elif combat_escape_started is not None:
+            trace(
+                "traverse_combat_escape_ended",
+                activation=1,
+                duration_seconds=round(time.monotonic() - combat_escape_started, 3),
+                health=frame.health,
+                max_health=frame.max_health,
+            )
+            combat_escape_started = None
 
         distance = math.dist(
             (frame.location.x, frame.location.y, frame.location.z),

@@ -7,7 +7,12 @@
 - Replaces v101's premature northern turn with two measured gates: v100's already-traversed
   center-road point `(-8401.8,-3220.7)` south of the Brute, then `(-8300,-3220,17.4)` north of
   the Gazer. This keeps 42 and 57 yards of observed positional clearance, respectively, before
-  reconnecting to road node 4. Hosted proof is pending.
+  reconnecting to road node 4.
+- Request `xreq_f0744efc-7573-4b44-b978-0934c83cc599` cleared both hazards at full
+  health and reached road node 5, then took one 62-damage hit at `(-7989.2,-3488.8)`. The route
+  policy stopped and disconnected solely because `in_combat` was true, despite retaining 97.7%
+  health. The next candidate keeps steering along the route during incidental combat and traces
+  both escape activation and combat exit instead of freezing to death.
 
 ## v101 - first live Gazer bypass (2026-08-08)
 

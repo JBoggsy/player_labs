@@ -217,6 +217,15 @@ The next probe therefore delays its deviation until the original road has passed
 crosses between the two measured patrol positions. This remains route-first hazard handling; both
 fights had zero policy damage and prohibit a fight-through inference.
 
+v102 validated that channel at full health and reached road node 5. Its next contact at
+`(-7989.2,-3488.8)` exposed a policy-level failure independent of route geometry: the first hit
+dealt only 62 damage, leaving 2,692/2,754 health, but `_steer_road_leg` treated `in_combat` as a
+terminal route failure and disconnected. The character then has no actor and is inevitably
+killed during retention. The next probe keeps moving toward the road target during incidental
+combat and traces the live attacker set plus combat exit. This is an escape edge, not a fight:
+it preserves route-first handling and measures whether ordinary leash distance is cheaper than
+another static detour.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.
