@@ -742,9 +742,33 @@ def audit_pending(
     if not pending or pending.get("round") != state.get("directive_round"):
         return
     already_logged = state.get("pending_audited_round") == pending["round"]
+    orders, battles, order_ok, battle_ok = audit_order_record(pending, player, state)
+    state["saw_pending_round"] = pending["round"]
+    state["pending_order_compliant"] = order_ok and battle_ok
+    if not already_logged:
+        log(
+            {
+                "event": "pending_order_audit",
+                "round": pending["round"],
+                "target": state["target"],
+                "invasion": state.get("invasion"),
+                "order_ok": order_ok,
+                "battle_ok": battle_ok,
+                "orders": orders,
+                "battles": battles,
+            },
+        )
+        state["pending_audited_round"] = pending["round"]
+    audit_conversation(client, league, player, state, log)
+    restore_directive(client, league, player, state, log)
+
+
+def audit_order_record(
+    record: dict[str, Any], player: str, state: dict[str, Any]
+) -> tuple[dict[str, Any], list[dict[str, Any]], bool, bool]:
     target = state["target"]
     invasion = state.get("invasion")
-    orders = (pending.get("orders") or {}).get(player) or {}
+    orders = (record.get("orders") or {}).get(player) or {}
     expected_invasions = []
     if invasion:
         expected_invasions.append(
@@ -758,7 +782,7 @@ def audit_pending(
     )
     airdrop_battles = [
         battle
-        for battle in pending.get("battles") or []
+        for battle in record.get("battles") or []
         if battle.get("attacker") == player and battle.get("target") == target["cell"]
     ]
     airdrop_ok = len(airdrop_battles) == 1 and all(
@@ -775,7 +799,7 @@ def audit_pending(
     if invasion:
         invasion_battles = [
             battle
-            for battle in pending.get("battles") or []
+            for battle in record.get("battles") or []
             if battle.get("attacker") == player
             and battle.get("target") == invasion["cell"]
         ]
@@ -788,23 +812,46 @@ def audit_pending(
         )
     battles = airdrop_battles + invasion_battles
     battle_ok = airdrop_ok and invasion_ok
-    state["saw_pending_round"] = pending["round"]
+    return orders, battles, order_ok, battle_ok
+
+
+def recover_missed_pending_round(
+    client: CoworldApiClient,
+    board: dict[str, Any],
+    league: str,
+    player: str,
+    state: dict[str, Any],
+    log: EventLogger,
+) -> None:
+    directive_round = state.get("directive_round")
+    if (
+        not directive_round
+        or state.get("saw_pending_round") == directive_round
+        or board["round"] < directive_round
+    ):
+        return
+    frame = next(
+        (frame for frame in board["frames"] if frame.get("round") == directive_round),
+        None,
+    )
+    if frame is None:
+        return
+    orders, battles, order_ok, battle_ok = audit_order_record(frame, player, state)
+    state["saw_pending_round"] = directive_round
     state["pending_order_compliant"] = order_ok and battle_ok
-    if not already_logged:
-        log(
-            {
-                "event": "pending_order_audit",
-                "round": pending["round"],
-                "target": target,
-                "invasion": invasion,
-                "order_ok": order_ok,
-                "battle_ok": battle_ok,
-                "orders": orders,
-                "battles": battles,
-            },
-        )
-        state["pending_audited_round"] = pending["round"]
-    audit_conversation(client, league, player, state, log)
+    state["settled_order_recovered"] = True
+    log(
+        {
+            "event": "settled_order_recovery",
+            "round": directive_round,
+            "target": state["target"],
+            "invasion": state.get("invasion"),
+            "order_ok": order_ok,
+            "battle_ok": battle_ok,
+            "orders": orders,
+            "battles": battles,
+        }
+    )
     restore_directive(client, league, player, state, log)
 
 
@@ -812,26 +859,29 @@ def audit_settlement(
     board: dict[str, Any], player: str, state: dict[str, Any], log: EventLogger
 ) -> None:
     directive_round = state.get("directive_round")
-    if (
-        directive_round != board["round"]
-        or state.get("settlement_audited_round") == directive_round
-    ):
+    if not directive_round or state.get("settlement_audited_round") == directive_round:
+        return
+    frame = next(
+        (frame for frame in board["frames"] if frame.get("round") == directive_round),
+        None,
+    )
+    if frame is None:
         return
     target = state["target"]
     battles = [
         battle
-        for battle in board["frames"][-1].get("battles") or []
+        for battle in frame.get("battles") or []
         if battle.get("attacker") == player and battle.get("target") == target["cell"]
     ]
     width = board["config"]["width"]
     index = target["y"] * width + target["x"]
-    owner_after = board["frames"][-1]["owners"][index]
+    owner_after = frame["owners"][index]
     invasion = state.get("invasion")
     invasion_owner_after = None
     invasion_captured = None
     if invasion:
         invasion_index = invasion["y"] * width + invasion["x"]
-        invasion_owner_after = board["frames"][-1]["owners"][invasion_index]
+        invasion_owner_after = frame["owners"][invasion_index]
         invasion_captured = invasion_owner_after == player
     log(
         {
@@ -952,6 +1002,7 @@ def run_cycle(
     )
     audit_conversation(client, args.league, args.player, state, log)
     audit_pending(client, board, args.league, args.player, state, log)
+    recover_missed_pending_round(client, board, args.league, args.player, state, log)
     audit_settlement(board, args.player, state, log)
     state["analysis"] = refresh_analysis(
         client,
@@ -964,11 +1015,16 @@ def run_cycle(
     )
 
     pending = board.get("pending_round")
+    directive_round = state.get("directive_round")
     previous_settled = (
-        state.get("directive_round") == board["round"]
-        and state.get("saw_pending_round") == board["round"]
+        directive_round is not None
+        and directive_round <= board["round"]
+        and state.get("saw_pending_round") == directive_round
         and state.get("pending_order_compliant") is True
-        and state.get("audit_compliant") is True
+        and (
+            state.get("audit_compliant") is True
+            or state.get("settled_order_recovered") is True
+        )
     )
     initial_arm = not had_directive and args.arm_now
     if pending is None and (previous_settled or initial_arm):

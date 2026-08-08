@@ -402,3 +402,61 @@ def test_cycle_audits_airdrop_and_statistically_gated_invasion():
     assert state["pending_order_compliant"] is True
     assert state["directive_restored"] is True
     assert client.prompt == "Standing campaign guidance."
+
+
+def test_cycle_recovers_settled_directive_when_pending_window_was_missed():
+    client = FakeClient(board())
+    target = controller.choose_target(client.board, PLAYER)
+    nonce = "r6-missed-pending"
+    base = client.prompt
+    state = {
+        "phase": "armed",
+        "directive_round": 6,
+        "board_round_when_written": 5,
+        "target": target,
+        "invasion": None,
+        "nonce": nonce,
+        "base_prompt_sha256": hashlib.sha256(base.encode()).hexdigest(),
+        "written_at": controller.now(),
+    }
+    client.prompt = base + "\n\n" + controller.directive(6, target, nonce)
+    settled = {
+        "round": 6,
+        "owners": [PLAYER, PLAYER],
+        "orders": {
+            PLAYER: {
+                "airdrops": ["0,0"],
+                "invasions": [],
+                "auto_airdrops": 0,
+                "dropped": [],
+            }
+        },
+        "battles": [
+            {
+                "attacker": PLAYER,
+                "defender": OPPONENT,
+                "target": "0,0",
+                "source": None,
+                "staked": False,
+                "map_ref": "1v1",
+                "mode": "2v2",
+            }
+        ],
+    }
+    latest = {"round": 7, "owners": [OPPONENT, PLAYER], "battles": []}
+    client.board = board(round_no=7)
+    client.board["frames"] = [settled, latest]
+    events = []
+
+    recovered = controller.run_cycle(
+        args(), client, state, events.append, lambda value: None
+    )
+
+    assert recovered["phase"] == "armed"
+    assert recovered["directive_round"] == 8
+    assert nonce not in client.prompt
+    assert recovered["nonce"] in client.prompt
+    assert any(event["event"] == "settled_order_recovery" for event in events)
+    assert any(
+        event["event"] == "settlement_audit" and event["round"] == 6 for event in events
+    )

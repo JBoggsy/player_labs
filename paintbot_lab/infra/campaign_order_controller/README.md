@@ -24,6 +24,11 @@ readback because the composed full prompt can lag a successful write. Repeated
 API or authentication failures back off exponentially to five minutes and
 reset to the normal 15-second poll after recovery.
 
+If an outage spans the short pending-order window, the controller recovers from
+the settled round in campaign frame history. It verifies the recorded orders
+and battle metadata against the saved directive, audits the historical
+settlement, removes the stale prompt block, and resumes with the next round.
+
 ## Statistical order selection
 
 Every poll resolves the player's active champion membership. A champion-version
