@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v97 - post-bootstrap vector steering (2026-08-08)
+
+- Version UUID: `864ec7ce-66ef-407a-b1ef-fe8a83588f2d` (`wowborg:v97`, uploaded
+  inert; not submitted). Built from source `2b7a586` with the published 0.1.188 contract.
+- Request `xreq_160ce10a-d3d4-4634-80c6-9b503d44c153` again completed the semantic
+  bootstrap. Its first 0.75-second turn-only road action returned frame 11 successfully; the
+  following 0.239-second turn-only action made no positional progress and timed out on frame 11.
+- The next candidate turns with forward input held, making every bounded steering action
+  physically productive rather than asking the host to settle consecutive in-place turns.
+
 ## v96 - southwest movement bootstrap (2026-08-08)
 
 - Version UUID: `087e081b-a163-4377-977f-8439c3f9cbd7` (`wowborg:v96`, uploaded

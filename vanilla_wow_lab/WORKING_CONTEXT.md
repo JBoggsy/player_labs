@@ -83,6 +83,9 @@ following frame. v96 proved that bootstrap across frames 2 through 10, then stal
 eastbound semantic action. The active candidate keeps the successful bootstrap and uses bounded
 ordinary keyboard steering for the canonical road, testing vector control only after movement is
 already established.
+v97 proved the first post-bootstrap turn advances to frame 11, but a second consecutive
+turn-only action wedges without displacement. The active candidate holds forward while turning,
+so every bounded steering action produces physical route progress.
 
 ## Historical status (2026-08-06): V78 SUBMITTED AND QUALIFYING ON THE CORRECTED CLOCK
 

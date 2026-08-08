@@ -85,6 +85,7 @@ def _steer_toward(bridge, frame, target: Point, *, purpose: str) -> None:
     if abs(delta) > GREAT_LIFT_TURN_DEADBAND:
         bridge.select_move_vector(
             frame,
+            forward=1.0,
             turn=1.0 if delta > 0 else -1.0,
             duration=min(GREAT_LIFT_INPUT_SECONDS, max(0.15, abs(delta) / math.pi)),
             purpose=purpose,
