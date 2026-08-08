@@ -295,6 +295,8 @@ seven-yard movement pulse, but the implementation reused the eight-yard road-gui
 radius and therefore considered that holding point already reached. The next candidate changes
 only safe-holding arrival to two yards, allowing the intended retreat to activate without
 altering threat projection or the 15-yard clearance floor.
+That radius-only correction is uploaded inert as wowborg:v111
+(`3202f1c4-8a65-4f9b-b05a-f41523e11f3c`, source `3fd1b9c`).
 
 ## Open uncertainties
 

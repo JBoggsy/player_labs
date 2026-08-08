@@ -1,5 +1,12 @@
 # wowborg version log
 
+## v111 - two-yard safe-holding arrival (2026-08-08)
+
+- Version UUID: `3202f1c4-8a65-4f9b-b05a-f41523e11f3c` (`wowborg:v111`, uploaded
+  inert; not submitted). Built from source `3fd1b9c` against canonical vanilla-wow 0.1.209.
+- Changes only safe-holding arrival from the eight-yard road-guidepoint radius to a dedicated
+  two-yard radius, allowing the retreat added in v110 to activate. Hosted proof is pending.
+
 ## v110 - retreat to a safe holding point (2026-08-08)
 
 - Version UUID: `e33c39e7-3653-4e45-957f-bad88258b67b` (`wowborg:v110`, uploaded

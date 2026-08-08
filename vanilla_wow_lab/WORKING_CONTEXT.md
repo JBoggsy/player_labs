@@ -57,6 +57,8 @@ It is uploaded inert as **wowborg:v110**
 last-safe observations were commonly one seven-yard pulse behind, but the reused eight-yard
 guidepoint radius treated them as already reached. The active source candidate changes only the
 safe-holding arrival radius to two yards so retreat can actually activate.
+It is uploaded inert as **wowborg:v111**
+(`3202f1c4-8a65-4f9b-b05a-f41523e11f3c`, source `3fd1b9c`); hosted proof is pending.
 
 ### Previous 0.1.208 movement baseline
 
