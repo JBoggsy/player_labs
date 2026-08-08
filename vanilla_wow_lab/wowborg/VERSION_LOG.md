@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v99 - wait-separated vector pulses (2026-08-08)
+
+- Version UUID: `24514f4d-25c9-4da3-bed4-e8dbb844e692` (`wowborg:v99`, uploaded
+  inert; not submitted). Built from source `b227100` with the published 0.1.188 contract.
+- Request `xreq_4d5365af-50cb-4f11-9aa5-02b569f992bc` completed the 0.75-second
+  forward-turn and advanced a wait from frame 11 to frame 12. The following 0.431-second vector
+  still timed out, disproving the vector-continuation reset hypothesis.
+- Every observed 0.75-second vector has settled; every shorter vector has timed out. The next
+  candidate therefore uses one fixed 0.75-second duration for all steering pulses.
+
 ## v98 - physically productive turn arcs (2026-08-08)
 
 - Version UUID: `cda8fa1c-0c7a-41d1-b240-afdadce677f3` (`wowborg:v98`, uploaded

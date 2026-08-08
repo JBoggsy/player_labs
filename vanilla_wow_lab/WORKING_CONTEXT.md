@@ -89,6 +89,9 @@ so every bounded steering action produces physical route progress.
 v98's first forward-turn arc displaced 6.4 yards and returned frame 11, but a second consecutive
 vector action wedged. The active candidate inserts one contract-native wait between vector pulses
 to break the failing continuation chain; activation emits `traverse_road_pulse_settled`.
+v99 advanced that wait to frame 12 but its following 0.431-second vector still wedged. Across all
+four vector probes, 0.75-second actions settle and every shorter action times out. The active
+candidate fixes every steering pulse at the proven 0.75-second duration.
 
 ## Historical status (2026-08-06): V78 SUBMITTED AND QUALIFYING ON THE CORRECTED CLOCK
 
