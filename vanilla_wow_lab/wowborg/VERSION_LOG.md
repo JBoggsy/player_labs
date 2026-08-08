@@ -1,6 +1,20 @@
 # wowborg version log
 
-## v94 - proven client package with rejected micro-targets (2026-08-08)
+## v95 - canonical long-movement contract probe (2026-08-08)
+
+- Version UUID: `a6f5493e-d1b0-47bc-91ae-f5afefa03081` (`wowborg:v95`, uploaded
+  inert; not submitted). Built from source `f14e439` with the published
+  `vanilla-wow:0.1.188` game contract image
+  `sha256:4e560ebcd9eec85f09305e15ae51cdc216715ee0135aa5968c26793fde334ac3`.
+- Request `xreq_2f5ba9c4-db30-40d2-83dd-47a353c8a1f0` reproduced v90 exactly:
+  the host acquired the canonical eastbound route and advanced 4.94 yards, but the policy never
+  received frame 3 and timed out on frame 2. The local planner independently reported
+  `helper_error`; there was no combat, damage, or death.
+- Fresh v88's southwest opening returned successive frames on the same host. The next candidate
+  therefore adds a short southwest movement bootstrap, safely before v88's lethal old endpoint,
+  then turns onto the canonical road on the following frame.
+
+## v94 - published 0.1.188 contract with rejected micro-targets (2026-08-08)
 
 - Version UUID: `f7a4329f-d383-40e6-a88b-0168d3b8bedb` (`wowborg:v94`, uploaded
   inert; not submitted). Built from source `ce25c1d` with the exact
@@ -91,11 +105,11 @@
 ## v88 - 0.1.188 bring-up and unchanged 0.1.208 seamless-movement control (2026-08-07–08)
 
 - Version UUID: `3f955f79-6404-4d51-8efe-c04675d22926` (`wowborg:v88`, uploaded
-  inert; not submitted). Built from runtime source `cbbbee0` against the exact
-  `vanilla-wow:0.1.188` linux/amd64 game image
-  `sha256:88b2140777b3df5127c4d5ab0e8fa33936c45afae8c403b7b9e44741a9c17d03`;
-  policy image manifest `sha256:f68a44b47e13b0ff5b8a79fb39c996371a962132e3edac1d7a2e966a01b11579`.
-  The exact-image import check and 14 focused contract/Traverse tests passed.
+  inert; not submitted). Built from runtime source `cbbbee0`. Registry evidence identifies
+  policy image digest `sha256:c2174abab0852777bcedbc182bfac67695a9a6b07e57f40c19a631a43189afdf`
+  and client hash `sha256:ae8a99cc2ecf5e96319f80f2b0a949def74db37cc93a372a8de64ea9c141e78a`.
+  The older claim that `88b214…` was its base image digest was wrong: that value is the
+  0.1.188 game container's registry `client_hash`, whose actual image digest is `4e560eb…`.
 - Updates stale-frame recovery to match the canonical `Observation` rejection
   messages. Hosted canary `xreq_9d61f4e7-b776-45af-8956-5f3fafadff02`, episode
   `ereq_3c0ea5fd-26ac-4ff4-9fb9-b5f0fdb81102`, completed without an operational

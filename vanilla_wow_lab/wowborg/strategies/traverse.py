@@ -35,6 +35,10 @@ GREAT_LIFT_INPUT_SECONDS = 0.75
 # Follow the deployed owner's level-51 Tanaris and Thousand Needles road spine
 # to the Great Lift lower dock. Great Lift boarding is a separate campaign.
 TRAVERSE_ROUTE_PREFIX = (
+    # The current host drops the next Observation when the opening movement
+    # prefix turns east from the exact spawn. A short southwest prefix settles
+    # normally and leaves the canonical road reachable on the following frame.
+    ("tanaris-movement-bootstrap", Point(1, -9200.0, -2545.0, 13.5)),
     ("tanaris-north-road-1", Point(1, -8974.0117, -2741.5291, 41.0118)),
     ("tanaris-north-road-2", Point(1, -8761.0234, -2952.8083, 24.5674)),
     ("tanaris-north-road-3", Point(1, -8548.0352, -3164.0835, 10.1670)),

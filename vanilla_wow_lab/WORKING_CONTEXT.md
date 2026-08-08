@@ -72,11 +72,14 @@ candidate is uploaded inert as **wowborg:v92**
 `xreq_3f2afccb-a366-446e-a201-a431bd5ff07f` still timed out without advancing frame 2.
 v93 advanced an explicit wait from frame 2 to frame 3, then wedged on movement there, ruling
 out a Travel Form race. Fresh control `xreq_d53a387d-906d-4dfd-9372-abfc3018f1ed` confirmed
-that unchanged v88's 0.1.188 policy package still drives movement against today's 0.1.208 game,
+that unchanged v88 still drives movement against today's 0.1.208 game,
 although its old southwest route died and spent 84.2% of the episode as a ghost. v94 combined
-the older package with the failed micro-target experiment and again did not move. The active
-candidate therefore combines the proven 0.1.188 client package with the original long semantic
-movement shape and v90's canonical road; experimental waits and micro-targets are removed.
+the published 0.1.188 game contract with the failed micro-target experiment and again did not
+move. v95 restored the long semantic movement shape, but again the host advanced 4.94 yards
+eastbound while the policy never received frame 3. The fresh v88 control's southwest opening did
+return successive frames. The active candidate therefore adds one short southwest movement
+bootstrap, safely before v88's lethal old endpoint, then turns onto v90's canonical road on the
+following frame.
 
 ## Historical status (2026-08-06): V78 SUBMITTED AND QUALIFYING ON THE CORRECTED CLOCK
 
