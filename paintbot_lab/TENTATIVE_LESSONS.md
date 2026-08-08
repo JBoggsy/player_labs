@@ -138,3 +138,41 @@ as telemetry.
 Status: this is a PATTERN worth naming, not two coincidences. When adding a belief product, decide
 up front whether a behavior consumes it; a rich trace makes an unused computation look load-bearing
 in the viewer. v59 promotes coverage to a real `coverageAt()` primitive; danger is still orphaned.
+
+### I built a finding on a stale engine COMMENT instead of tracing the state transition — and it was wrong
+
+Evidence: `global.nim` says, at the `shield carried` emit site, "once it is spent the bubble pops
+and the marker takes over, because the shield's fire slowdown is still in effect." I took that as
+the engine's behavior and wrote a whole design section around "`shield carried` means SPENT shield".
+`absorbDamage` (`sim.nim:802-818` at 6c7a4c0e, identical at 9dedac0e) actually does the opposite:
+when the layer breaks it sets `hasShield = false` and re-clamps the cooldown — "A broken shield is
+GONE: the carry icon, the ' shield' label, and the fire slowdown all end with the bubble."
+
+Status: the comment contradicts the code sitting ~4000 lines away in the same repo. CLAUDE.md's rule
+("when documentation and code disagree, determine which source is stale before relying on either")
+applies to *engine comments*, not just prose docs. For a state-machine question, trace the writes to
+the field. Grepping `hasShield = ` would have taken 10 seconds and settled it.
+
+### `shield carried` is unreachable — so stencil's shield awareness is silently dead, not inverted
+
+Evidence: the emit site guards `if not player.hasShield: continue`, then only emits the marker when
+`player.shieldHp <= 0`. Since `absorbDamage` clears `hasShield` exactly when `shieldHp` hits 0, and
+pickup sets both together (`sim.nim:1865`), `hasShield` implies `shieldHp > 0` — the branch cannot
+fire. Stencil sources `enemy.shielded` and `iHaveShield` from that marker alone
+(`perception.nim:281-286,337`), so both are permanently false. The shield weight in
+`fight.nim:133` and the gate at `action.nim:336` are dead code, and `items.nim:71` never skips a
+shield it already holds.
+
+Status: a "dead observable" fails in the quietest possible way — the weight exists, the trace field
+exists, the value is just always false. When adopting a label, verify the producer can actually reach
+its emit branch, not merely that the label is in the vocabulary.
+
+### Citations pinned to the wrong ref: I verified against 0.7.211 and cited 0.7.215
+
+Evidence: the v59 spec opens "Every engine citation below is `file:line` in that ref [6c7a4c0e]",
+but most were read from the cached 9dedac0e tree before the re-pin. PRs 252/255 inserted code into
+`sim.nim` and `labels.nim`, shifting nearly every line number (`labelIdentity` 406 -> 477;
+`canFire` 699 -> 820; shield pickup 1632 -> 1850).
+
+Status: re-pinning the game invalidates every line citation written before it. Either re-verify
+citations after a re-pin, or cite by symbol name rather than line.
