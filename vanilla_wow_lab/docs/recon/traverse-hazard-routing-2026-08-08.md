@@ -260,6 +260,8 @@ tracks 80 yards, compares the entire candidate segment with each hostile's adver
 segment, clears stale avoidance when the projected forward corridor is empty, and permits a side
 switch only below a 15-yard safety floor. Its activation trace records both candidate clearances
 and every tracked destination so the next failure is attributable.
+That evaluator is uploaded inert as wowborg:v107
+(`d7f5fe7d-3d99-4924-88a1-e78865dcc3fd`, source `d33799e`).
 
 ## Open uncertainties
 

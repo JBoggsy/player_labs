@@ -30,6 +30,8 @@ unstable. The source candidate now tracks hostiles to 80 yards, scores player an
 movement segments, ends avoidance when the projected forward corridor clears, and switches only
 when retained clearance falls below 15 yards. Activation traces include both side scores and all
 tracked destinations. V78 remains the submitted Traverse champion.
+That candidate is uploaded inert as **wowborg:v107**
+(`d7f5fe7d-3d99-4924-88a1-e78865dcc3fd`, source `d33799e`); hosted proof is pending.
 
 ### Previous 0.1.208 movement baseline
 

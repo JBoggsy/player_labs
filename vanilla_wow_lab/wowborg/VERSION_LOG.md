@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v107 - moving-hostile path projection (2026-08-08)
+
+- Version UUID: `d7f5fe7d-3d99-4924-88a1-e78865dcc3fd` (`wowborg:v107`, uploaded
+  inert; not submitted). Built from source `d33799e` against canonical vanilla-wow 0.1.209.
+- Tracks visible hostiles out to 80 yards, tests their advertised movement segments against the
+  forward corridor and both candidate player segments, and retains a chosen side unless its
+  predicted clearance falls below 15 yards. Activation traces now record both side clearances
+  and every tracked hostile destination. Hosted proof is pending.
+
 ## v106 - live 0.1.209 observation contract (2026-08-08)
 
 - Version UUID: `ec727f01-fbe8-45e9-b1c7-b129c3d2c54a` (`wowborg:v106`, uploaded
