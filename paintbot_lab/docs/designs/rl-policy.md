@@ -311,6 +311,28 @@ and a separately encoded walkability map. Full verdict:
   convolution over static pixels; gathering from cached spatial features retains
   the same location dependence.
 
+## Large-corpus training execution
+
+The exhaustive expert replay corpus is stored for training as Hugging Face
+Datasets Arrow shards, not as an in-memory Python list. Arrow is the established
+memory-mapped path in the Hugging Face/PyTorch stack and preserves random access
+for balanced sampling. The sample payload remains the versioned JSON contract;
+Arrow adds only changed-action, GameVersion, expert player ID, and world index
+columns. New Sprite labels therefore do not require a storage-schema change.
+
+The first full run bounds an epoch at 250,000 distinct samples. It assigns half
+the budget to action transitions and half to held actions, then water-fills each
+half across GameVersion, expert, and CTF/Paintbot strata. Scarce strata are
+consumed and their unused quota is redistributed. This prevents both the held
+action baseline and newer or higher-volume experts from dominating an epoch.
+The exact budget, balance dimensions, and epoch count remain experiment knobs.
+
+Training writes resumable state every 1,000 optimizer updates and at epoch
+boundaries. A deterministic per-epoch permutation makes mid-epoch recovery
+repeatable. An independent launcher waits for merged preprocessing, builds the
+Arrow corpus and indices, requires a complete BF16 GPU canary and validation
+evaluation, then starts the full job automatically.
+
 ## Open decisions
 
 - Exact spatial-pyramid architecture, resolution, and number of Qwen map tokens.

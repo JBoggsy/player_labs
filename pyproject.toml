@@ -69,6 +69,7 @@ dev = [
 rl = [
     "accelerate>=1.10,<2",
     "cramjam>=2.8.0",
+    "datasets>=4.8,<5",
     "numpy>=2.0.0",
     "peft>=0.17,<1",
     "torch>=2.8,<2.12",

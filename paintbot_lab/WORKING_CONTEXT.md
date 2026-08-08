@@ -94,6 +94,10 @@ GameVersion/expert/world, runs a 1,024-example BF16 canary, then starts a
 three-epoch 2e-4 LoRA job. Full training checkpoints every 1,000 optimizer
 updates and can resume at the next deterministic batch. These are conservative
 initial settings and remain open to later budget and sampling experiments.
+The handoff is live under a detached 60-second retry supervisor, with an
+`@reboot` crontab recovery entry and the checked-in user service enabled.
+Systemd lingering could not be enabled without sudo, so cron—not the user
+unit—is the reboot guarantee.
 
 ## Current objective
 

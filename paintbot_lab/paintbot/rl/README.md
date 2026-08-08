@@ -41,6 +41,11 @@ The implementation now covers the complete replay-to-checkpoint path:
 - `shard_expert_manifest.py`, `prepare_expert_corpus.py`, and
   `merge_prepared_shards.py` turn that catalog into a coverage-balanced,
   resumable multi-process corpus without allowing a replay into two splits.
+- `corpus_store.py` converts merged JSONL into memory-mapped Hugging Face
+  Datasets Arrow shards and builds finite balanced training indices.
+- `run_expert_training.py` waits for preparation, builds Arrow plus indices,
+  runs and evaluates a GPU canary, then launches resumable full training and
+  sealed-test evaluation without a human handoff.
 - `assemble_corpus.py` deduplicates maps and samples a balanced cross-era corpus
   from what the pipeline extracted.
 - `train_sft.py` is the CLI entry point that fine-tunes a run end to end (the
@@ -94,6 +99,35 @@ also removed; after the final merge, redundant shard corpora are removed. Raw
 replays, exact-source extractors, per-trajectory and per-shard provenance, and
 the single merged `prepared/` training corpus remain.
 
+Production-scale training uses the disk-backed handoff rather than passing the
+merged JSONL directly to `train_sft.py`. The conservative first run uses
+250,000 distinct examples per epoch for three epochs, 10,000-example
+validation/test subsets, LoRA at 2e-4, BF16, and four-tick history. Each index
+is balanced 50/50 between changed and held actions, then across GameVersion,
+expert identity, and CTF/Paintbot world. These are initial experiment settings,
+not claims that the budget or balance is optimal.
+
+```sh
+uv run python paintbot_lab/paintbot/rl/run_expert_training.py \
+  --manifest "$CATALOG/expert-replay-pool-v1.json" \
+  --workspace "$CORPUS" \
+  --output "$CORPUS/training-v1"
+```
+
+`training-v1/status.json` is the machine-readable state. The launcher skips
+completed stages and resumes full training from the newest valid state. It
+runs a 1,024-example GPU canary first and starts full training immediately when
+the canary and its validation evaluation complete. Full training checkpoints
+every 1,000 optimizer updates and retains the newest two step checkpoints plus
+each completed epoch.
+
+`supervise_expert_training.sh` retries a failed handoff after 60 seconds;
+`paintbot-rl-training.service` is the checked-in mettabox1 user-unit definition.
+On the current host, that supervisor is detached and an `@reboot` crontab entry
+provides reboot recovery because the `metta` account does not have systemd
+lingering enabled. The enabled user unit is a secondary login-time recovery
+path; the shared lock prevents concurrent launchers.
+
 ### Full run
 
 The tracked GPU-oriented manifest uses winning POVs from GV16/24/30/35 for
@@ -126,8 +160,10 @@ uv run python paintbot_lab/paintbot/rl/pipeline.py evaluate \
   --manifest "$MANIFEST" --workspace "$RUN"
 ```
 
-Resume after a preemption from an epoch directory under
-`checkpoint/trainer_state/` with `--resume-from`. The final model is in
+Resume after a preemption from a step or epoch directory under
+`checkpoint/trainer_state/` with `--resume-from`. Mid-epoch checkpoints use a
+deterministic epoch permutation, so completed batches can be skipped without
+changing the remaining order. The final model is in
 `checkpoint/`, the lowest-validation-loss copy is in `checkpoint/best/`, and
 validation/test metrics are written alongside them. `provenance.json` records
 every replay, source commit, selected seat/policy/reward, raw/retained entity

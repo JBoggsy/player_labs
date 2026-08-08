@@ -15,6 +15,8 @@ def main() -> int:
     parser.add_argument("--maps", type=Path, required=True)
     parser.add_argument("--validation-samples", type=Path)
     parser.add_argument("--validation-maps", type=Path)
+    parser.add_argument("--sample-indices", type=Path)
+    parser.add_argument("--validation-indices", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--tuning", choices=("lora", "full"), default="lora")
     parser.add_argument("--epochs", type=int, default=1)
@@ -35,11 +37,15 @@ def main() -> int:
     parser.add_argument("--resume-from", type=Path)
     parser.add_argument("--no-gradient-checkpointing", action="store_true")
     parser.add_argument("--log-every", type=int, default=10)
+    parser.add_argument("--checkpoint-every-updates", type=int, default=0)
+    parser.add_argument("--keep-step-checkpoints", type=int, default=2)
     args = parser.parse_args()
     if args.log_every <= 0:
         parser.error("--log-every must be positive")
     if (args.validation_samples is None) != (args.validation_maps is None):
         parser.error("--validation-samples and --validation-maps must be supplied together")
+    if args.validation_indices is not None and args.validation_samples is None:
+        parser.error("--validation-indices requires --validation-samples")
     if not 0 <= args.warmup_ratio < 1:
         parser.error("--warmup-ratio must be in [0, 1)")
     action_change_weight: float | str
@@ -58,6 +64,8 @@ def main() -> int:
         args.output,
         validation_samples_path=args.validation_samples,
         validation_maps_path=args.validation_maps,
+        sample_indices_path=args.sample_indices,
+        validation_indices_path=args.validation_indices,
         tuning=args.tuning,
         epochs=args.epochs,
         batch_size=args.batch_size,
@@ -73,6 +81,8 @@ def main() -> int:
         resume_from=args.resume_from,
         gradient_checkpointing=not args.no_gradient_checkpointing,
         log_every=args.log_every,
+        checkpoint_every_updates=args.checkpoint_every_updates,
+        keep_step_checkpoints=args.keep_step_checkpoints,
     )
     return 0
 

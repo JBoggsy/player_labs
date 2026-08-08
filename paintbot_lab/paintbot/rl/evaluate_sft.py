@@ -55,13 +55,14 @@ def main() -> int:
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--samples", type=Path, required=True)
     parser.add_argument("--maps", type=Path, required=True)
+    parser.add_argument("--sample-indices", type=Path)
     parser.add_argument("--max-text-tokens", type=int, default=2048)
     parser.add_argument("--out", type=Path)
     args = parser.parse_args()
 
     device = evaluation_device()
     tokenizer, model = load_policy(args.checkpoint, device=device)
-    dataset = PolicyDataset(args.samples, args.maps)
+    dataset = PolicyDataset(args.samples, args.maps, args.sample_indices)
     collator = PolicyCollator(tokenizer, dataset.maps, max_text_tokens=args.max_text_tokens)
     totals = defaultdict(
         lambda: {
@@ -91,7 +92,7 @@ def main() -> int:
         for allowed in (*ACTION_TOKEN_SLOTS, (STOP_TOKEN,))
     ]
     with torch.no_grad():
-        for sample in dataset.samples:
+        for sample in dataset:
             batch = collator([sample])
             batch = {
                 key: [item.to(device) for item in value] if key == "maps" else value.to(device) if torch.is_tensor(value) else value
