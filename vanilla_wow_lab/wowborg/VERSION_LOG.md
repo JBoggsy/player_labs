@@ -1,5 +1,19 @@
 # wowborg version log
 
+## v100 - continuous road steering exposes the first live hazard (2026-08-08)
+
+- Version UUID: `a3249a32-7436-4165-ab67-3359a716d279` (`wowborg:v100`, uploaded
+  inert; not submitted). Built from source `9266477` with the published 0.1.188 contract.
+- Request `xreq_0d41a1ff-baf6-4f0c-9aa7-fce4681903f7` proved the movement
+  mechanism: fixed 0.75-second steering pulses advanced through frame 400 with no host stalls,
+  environmental damage, or movement failures. Wowborg reached four guidepoints and gained
+  872.08 living northing yards before entering combat at `(-8314.9,-3269.0)`.
+- Replay inspection identifies one Glasshide Gazer (entry 5420) at roughly
+  `(-8331.1,-3277.4)`. It dealt 2,808 damage over 108.7 seconds while the stopped policy dealt
+  none, killing wowborg at 630.5 seconds. The next candidate adds one real-navmesh-verified
+  northern waypoint at `(-8350,-3180,14.1)`, more than 40 yards clear of the observed patrol,
+  then rejoins the unchanged road at node 4.
+
 ## v99 - wait-separated vector pulses (2026-08-08)
 
 - Version UUID: `24514f4d-25c9-4da3-bed4-e8dbb844e692` (`wowborg:v99`, uploaded

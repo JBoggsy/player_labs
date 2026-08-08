@@ -44,6 +44,10 @@ TRAVERSE_ROUTE_PREFIX = (
     ("tanaris-north-road-1", Point(1, -8974.0117, -2741.5291, 41.0118)),
     ("tanaris-north-road-2", Point(1, -8761.0234, -2952.8083, 24.5674)),
     ("tanaris-north-road-3", Point(1, -8548.0352, -3164.0835, 10.1670)),
+    # v100 observed a Glasshide Gazer patrolling the road at roughly
+    # (-8331, -3277). Stay north of its level-adjusted aggro corridor before
+    # rejoining the owner road at node 4.
+    ("tanaris-gazer-bypass-north", Point(1, -8350.0, -3180.0, 14.1056)),
     ("tanaris-north-road-4", Point(1, -8278.7275, -3284.8706, 23.8400)),
     ("tanaris-north-road-5", Point(1, -8085.3330, -3349.3330, 43.3455)),
     ("tanaris-north-road-6", Point(1, -7866.4028, -3550.8655, 58.3285)),

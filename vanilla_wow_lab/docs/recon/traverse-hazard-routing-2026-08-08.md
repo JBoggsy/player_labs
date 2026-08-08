@@ -198,6 +198,17 @@ assumption.
 5. **Stealth:** park for this fixture. Re-open only if a higher Prowl rank becomes available or an
    empirical hosted test contradicts the exact DBC/core calculation.
 
+### First live road contact
+
+v100 supplied the first usable baseline. Fixed-duration ordinary steering followed the road for
+872.08 living northing yards with no movement failure or damage, then contacted one Glasshide
+Gazer near `(-8331,-3277)`. The replay measured 2,808 incoming damage over 108.7 seconds and zero
+outgoing damage because the route policy stopped on combat; this is an avoidance case, not
+evidence that fighting is cheap. The pinned navmesh accepts a northern waypoint at
+`(-8350,-3180,14.1)` and a clean reconnection to road node 4. That two-leg corridor stays more
+than 40 yards from the observed patrol position, compared with the baseline's 18.2-yard contact
+sample, and is the next attributable dynamic-avoidance probe.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.

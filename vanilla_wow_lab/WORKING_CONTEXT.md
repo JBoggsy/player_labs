@@ -92,6 +92,13 @@ to break the failing continuation chain; activation emits `traverse_road_pulse_s
 v99 advanced that wait to frame 12 but its following 0.431-second vector still wedged. Across all
 four vector probes, 0.75-second actions settle and every shorter action times out. The active
 candidate fixes every steering pulse at the proven 0.75-second duration.
+v100 proved that mechanism continuously through frame 400: it reached four guidepoints, gained
+872.08 living northing yards, and had no movement failures or damage before the first real route
+hazard. A Glasshide Gazer at roughly `(-8331,-3277)` pulled wowborg at
+`(-8314.9,-3269.0)`, then dealt 2,808 damage over 108.7 seconds while the stopped policy dealt
+none. The active candidate inserts one pinned-navmesh-verified northern bypass at
+`(-8350,-3180,14.1)`, over 40 yards clear of that observed patrol, and rejoins the unchanged
+owner road at node 4.
 
 ## Historical status (2026-08-06): V78 SUBMITTED AND QUALIFYING ON THE CORRECTED CLOCK
 
