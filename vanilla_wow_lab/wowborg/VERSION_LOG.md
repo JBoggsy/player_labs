@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v113 - calibrated single-pull combat (2026-08-08)
+
+- Version UUID: `ad98cbe0-d091-4f2b-8f73-3de152516a3a` (`wowborg:v113`, uploaded
+  inert; not submitted). Built from source `1e8ca0b` against canonical vanilla-wow 0.1.209.
+- Fights exactly one visible, known non-elite attacker when wowborg is at least ten levels higher
+  and has at least 80% health. It closes to melee and reuses the v73-proven exact-target engagement
+  owner. Multiple, elite, unknown-strength, near-level, and low-health pulls retain direct escape.
+  Fight/escape transitions trace the decision inputs, duration, health, and realized damage.
+  Hosted proof is pending.
+
 ## v112 - stable per-encounter safe anchor (2026-08-08)
 
 - Version UUID: `9b8831af-2095-4505-98a5-ddf1e814fe54` (`wowborg:v112`, uploaded

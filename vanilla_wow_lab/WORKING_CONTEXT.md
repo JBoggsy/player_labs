@@ -72,6 +72,8 @@ Glasshide Basilisk at road node 8. Direct escape lost 2,098 health over 7.9 seco
 aborted at 595 health. The active source candidate instead fights exactly one known non-elite
 attacker when wowborg has at least a ten-level advantage and 80% health; all unsafe cases retain
 escape. Fight/escape activation and strength inputs are traced.
+It is uploaded inert as **wowborg:v113**
+(`ad98cbe0-d091-4f2b-8f73-3de152516a3a`, source `1e8ca0b`); hosted proof is pending.
 
 ### Previous 0.1.208 movement baseline
 

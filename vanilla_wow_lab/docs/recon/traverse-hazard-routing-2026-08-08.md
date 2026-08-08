@@ -316,6 +316,8 @@ v73 already proving that exact-attacker melee can kill three such attackers with
 next candidate fights only when attacker count is one, the attacker is known non-elite and at
 least ten levels lower, and player health is at least 80%; it preserves escape for every other
 case and traces the decision inputs and outcome.
+That calibrated single-pull combat edge is uploaded inert as wowborg:v113
+(`ad98cbe0-d091-4f2b-8f73-3de152516a3a`, source `1e8ca0b`).
 
 ## Open uncertainties
 
