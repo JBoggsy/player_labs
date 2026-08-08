@@ -575,13 +575,14 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
 
 ## Open threads (next steps)
 
-1. **Return to the death cells with a reusable navigation model, not another exact script.**
-   Movement continuity is closed: unchanged v88 has zero active nonterminal stops on two
-   independent five-run 0.1.208 batches. The current-family replay profile localizes 106/121
-   deaths and 88.6% of incoming damage to four adjacent opening cells. The next human-led
-   choice is the capability model for travel between waypoints—hazard-aware routing around,
-   deliberate combat through, or stealth/travel-form passage—so the same intelligence applies
-   to later danger rather than encoding this one corridor.
+1. **Evaluate the canonical Tanaris road before generalizing hazard-aware routing.**
+   [The 2026-08-08 recon](docs/recon/traverse-hazard-routing-2026-08-08.md) finds that the owner
+   route begins at the exact league spawn while the current static-envelope detour crosses the
+   hosted death cells. Use road/navmesh routing as the baseline, then add live-unit avoidance and
+   only later a calibrated fight-cost selector. The fixture's Prowl rank 1 is not a viable
+   fallback: its 100 stealth value gives these level-45–49 mobs roughly 22–25 yards of frontal
+   detection (13–16 from behind), versus only 5–7 yards of ordinary level-adjusted aggro, while
+   also slowing movement by 40%. The next attributable change is the opening road prefix alone.
 
 ## Reference
 
