@@ -49,6 +49,9 @@ without deleting shared images or volumes. `tools/route_lab.sh` again executes t
 0.1.208 navmesh after adopting the current `environment.contract.policy.WorldPoint` import.
 Wowborg now suppresses spell 7355 while the authoritative frame lists it on cooldown, emits a
 `stuck_skipped` trace, and uses the existing wait fallback instead of submitting another cast.
+That behavior is uploaded inert as **wowborg:v89**
+(`18b5df77-d270-4f43-a168-2b4a8d389255`, source `a5c9c01`); v78 remains the submitted
+Traverse champion.
 
 ## Historical status (2026-08-06): V78 SUBMITTED AND QUALIFYING ON THE CORRECTED CLOCK
 

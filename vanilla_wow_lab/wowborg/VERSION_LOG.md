@@ -1,5 +1,22 @@
 # wowborg version log
 
+## v89 - navigation tooling and Stuck cooldown cleanup (2026-08-08)
+
+- Version UUID: `18b5df77-d270-4f43-a168-2b4a8d389255` (`wowborg:v89`, uploaded
+  inert; not submitted). Built from source `a5c9c01` against the exact
+  `vanilla-wow:0.1.208` environment image. Policy image manifest
+  `sha256:ae8a99cc2ecf5e96319f80f2b0a949def74db37cc93a372a8de64ea9c141e78a`.
+- Wowborg now checks the authoritative `cooldown_spell_ids` projection before invoking the
+  Stuck spell 7355. A cooldown suppresses the redundant cast, emits
+  `stuck_skipped(reason=cooldown)`, and lets the existing local-mover wait fallback advance
+  the frame. Navigation, route selection, combat, stealth, and recovery behavior are otherwise
+  unchanged.
+- Local cleanup reclaimed 658.6 MB of disposable BuildKit cache without removing shared images
+  or volumes. `tools/route_lab.sh` now runs its pinned amd64 image explicitly, and
+  `route_lab.py` imports `WorldPoint` from the current `environment.contract.policy` module.
+  One focused cooldown regression passed, an ad-hoc real-navmesh route arrived, and the exact
+  amd64 build/import verification completed. Hosted activation evidence remains pending.
+
 ## v88 - 0.1.188 bring-up and unchanged 0.1.208 seamless-movement control (2026-08-07–08)
 
 - Version UUID: `3f955f79-6404-4d51-8efe-c04675d22926` (`wowborg:v88`, uploaded
