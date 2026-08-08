@@ -52,7 +52,11 @@ pull at close range, and back out to its 29.5-yard casting distance. The active 
 records the last observation with a safe edge, retreats to it when both bypasses become unsafe,
 and waits only after reaching that holding point. The 15-yard criterion is unchanged.
 It is uploaded inert as **wowborg:v110**
-(`e33c39e7-3653-4e45-957f-bad88258b67b`, source `e95156e`); hosted proof is pending.
+(`e33c39e7-3653-4e45-957f-bad88258b67b`, source `e95156e`). Request
+`xreq_da39a3f7-4160-4291-b288-753be45a9b48` emitted no retreat activations: its
+last-safe observations were commonly one seven-yard pulse behind, but the reused eight-yard
+guidepoint radius treated them as already reached. The active source candidate changes only the
+safe-holding arrival radius to two yards so retreat can actually activate.
 
 ### Previous 0.1.208 movement baseline
 

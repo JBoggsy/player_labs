@@ -6,7 +6,10 @@
   inert; not submitted). Built from source `e95156e` against canonical vanilla-wow 0.1.209.
 - Records the latest position with a safe local hazard edge. When both bypasses fall below the
   15-yard floor, wowborg retreats to that point before waiting; retreat start/end are traced.
-  Hosted proof is pending.
+  Request `xreq_da39a3f7-4160-4291-b288-753be45a9b48` showed no retreat activations:
+  the last-safe point was commonly one seven-yard pulse behind, but v110 reused the eight-yard
+  route-arrival radius and misclassified it as already reached. The next candidate uses a
+  dedicated two-yard holding-point radius.
 
 ## v109 - wait for a safe patrol edge (2026-08-08)
 

@@ -290,6 +290,12 @@ holding position.
 That safe-holding edge is uploaded inert as wowborg:v110
 (`e33c39e7-3653-4e45-957f-bad88258b67b`, source `e95156e`).
 
+V110 emitted no `traverse_hazard_retreat`. The stored safe point was often the previous
+seven-yard movement pulse, but the implementation reused the eight-yard road-guidepoint arrival
+radius and therefore considered that holding point already reached. The next candidate changes
+only safe-holding arrival to two yards, allowing the intended retreat to activate without
+altering threat projection or the 15-yard clearance floor.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.

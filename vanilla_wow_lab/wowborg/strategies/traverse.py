@@ -40,6 +40,7 @@ ROAD_HAZARD_TRACK_YARDS = 80.0
 ROAD_HAZARD_FORWARD_YARDS = 20.0
 ROAD_HAZARD_LATERAL_YARDS = 30.0
 ROAD_HAZARD_MIN_CLEARANCE_YARDS = 15.0
+ROAD_HAZARD_HOLD_RADIUS_YARDS = 2.0
 ROAD_HAZARD_SWITCH_MARGIN_YARDS = 5.0
 
 # Follow the deployed owner's level-51 Tanaris and Thousand Needles road spine
@@ -470,7 +471,7 @@ def _steer_road_leg(
             if unsafe and avoidance.safe_point is not None
             else 0.0
         )
-        should_retreat = unsafe and retreat_distance > ROAD_ARRIVAL_RADIUS_YARDS
+        should_retreat = unsafe and retreat_distance > ROAD_HAZARD_HOLD_RADIUS_YARDS
         should_wait = unsafe and not should_retreat
         if should_wait:
             if not avoidance.waiting:
