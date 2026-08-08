@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v108 - cross-guidepoint hazard continuity (2026-08-08)
+
+- Version UUID: `c2896a36-05a4-4a0c-ba88-83d8ae57c48c` (`wowborg:v108`, uploaded
+  inert; not submitted). Built from source `8376f77` against canonical vanilla-wow 0.1.209.
+- Preserves v107's live avoidance side across road-guidepoint arrivals instead of restarting the
+  edge evaluator at each leg. Geometry, tracking horizon, clearance threshold, and steering are
+  unchanged. Hosted proof is pending.
+
 ## v107 - moving-hostile path projection (2026-08-08)
 
 - Version UUID: `d7f5fe7d-3d99-4924-88a1-e78865dcc3fd` (`wowborg:v107`, uploaded

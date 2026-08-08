@@ -269,6 +269,8 @@ yards. It had already selected a right-side path around a Starving Blisterpaw at
 leg reactivated only when the same mob was 10.3 yards away, with predicted clearances of 10.0
 yards right and 1.0 left; combat began one pulse later at 5.4 yards. The next change carries the
 selected side across road-leg boundaries without changing the hazard geometry or thresholds.
+That state-lifetime fix is uploaded inert as wowborg:v108
+(`c2896a36-05a4-4a0c-ba88-83d8ae57c48c`, source `8376f77`).
 
 ## Open uncertainties
 

@@ -37,6 +37,8 @@ That candidate is uploaded inert as **wowborg:v107**
 avoidance was active for a Starving Blisterpaw 46.9 yards away; the next leg reset the chosen side
 and did not react again until the mob was 10.3 yards away. The active source candidate carries
 that hazard state across guidepoint boundaries; geometry and thresholds are unchanged.
+It is uploaded inert as **wowborg:v108**
+(`c2896a36-05a4-4a0c-ba88-83d8ae57c48c`, source `8376f77`); hosted proof is pending.
 
 ### Previous 0.1.208 movement baseline
 
