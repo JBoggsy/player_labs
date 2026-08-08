@@ -87,10 +87,14 @@ changed-component accuracy from 0.7% to 8.8%, but overall exact fell from
 do not deploy this checkpoint; expand replay/expert diversity next. Report:
 [`docs/reports/rl-transition-temporal-2x2-2026-08-07.md`](docs/reports/rl-transition-temporal-2x2-2026-08-07.md).
 
-The exhaustive expert corpus is preprocessing on mettabox1. Its unattended
-handoff now converts merged JSONL to memory-mapped Hugging Face Arrow, builds a
-250,000-example epoch balanced 50/50 on action transitions and across
-GameVersion/expert/world, runs a 1,024-example BF16 canary, then starts a
+The exhaustive expert corpus is preprocessing on mettabox1. All 327,188 replay
+downloads completed, and preprocessing resumed from its trajectory markers
+after a disk-bounded storage upgrade. Each worker now converts deterministic
+512-trajectory groups to verified memory-mapped Arrow parts and deletes their
+source JSON incrementally; the global dataset is a virtual nested manifest, so
+neither shard consolidation nor global merge duplicates the ~2 TB corpus. The
+handoff builds a 250,000-example epoch balanced 50/50 on action transitions and
+across GameVersion/expert/world, runs a 1,024-example BF16 canary, then starts a
 three-epoch 2e-4 LoRA job. Full training checkpoints every 1,000 optimizer
 updates and can resume at the next deterministic batch. These are conservative
 initial settings and remain open to later budget and sampling experiments.

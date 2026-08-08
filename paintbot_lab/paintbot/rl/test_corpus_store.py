@@ -2,8 +2,17 @@ import json
 
 import numpy as np
 
-from corpus_store import balanced_indices, convert_corpus
+from corpus_store import (
+    balanced_indices,
+    convert_corpus,
+    load_arrow_dataset,
+    write_balanced_indices,
+)
 from dataset import SFTSample, write_jsonl
+from episode_map import EpisodeMap
+from merge_prepared_shards import merge_shards
+from pipeline import prepare_large_arrow_corpus
+from pipeline_manifest import PipelineManifest, PreparationConfig, TrainingConfig
 from training import EpochSampler, PolicyDataset
 
 
@@ -72,6 +81,81 @@ def test_balanced_indices_split_transition_budget_across_strata() -> None:
     assert summary["held"] == 10
 
 
+def test_merge_converts_shards_incrementally_without_global_sample_copy(tmp_path) -> None:
+    episode_map = EpisodeMap.from_mask(np.ones((2, 2), dtype=bool))
+    for shard_number in range(2):
+        shard_name = f"shard-{shard_number:03d}"
+        episode_id = f"episode-{shard_number}"
+        prepared = tmp_path / "shards" / shard_name / "prepared"
+        prepared.mkdir(parents=True)
+        sample = SFTSample(
+            episode_id, "41", shard_number, 10, 10, episode_map.map_hash, {}, 0, shard_number
+        )
+        write_jsonl(prepared / "train.samples.jsonl", [sample])
+        for split in ("validation", "test"):
+            write_jsonl(prepared / f"{split}.samples.jsonl", [])
+        for split in ("train", "validation", "test"):
+            write_jsonl(prepared / f"{split}.maps.jsonl", [episode_map])
+        (prepared / "provenance.json").write_text(
+            json.dumps(
+                {
+                    "split_counts": {"train": 1, "validation": 0, "test": 0},
+                    "trajectories": [
+                        {
+                            "episode_id": episode_id,
+                            "seat": shard_number,
+                            "policy": "expert:7",
+                        }
+                    ],
+                    "failures": [],
+                }
+            )
+        )
+        manifests = tmp_path / "manifests"
+        manifests.mkdir(exist_ok=True)
+        (manifests / f"{shard_name}.json").write_text(
+            json.dumps(
+                {
+                    "episodes": [
+                        {
+                            "episode_id": episode_id,
+                            "coworld_name": "paintbot",
+                            "expert_policies": [
+                                {
+                                    "policy_name": "expert",
+                                    "version": 7,
+                                    "player_id": f"player-{shard_number}",
+                                }
+                            ],
+                        }
+                    ]
+                }
+            )
+        )
+
+    first = merge_shards(tmp_path / "shards", tmp_path / "prepared")
+    second = merge_shards(tmp_path / "shards", tmp_path / "prepared")
+    dataset = load_arrow_dataset(tmp_path / "arrow/train")
+    index_summary = write_balanced_indices(
+        tmp_path / "arrow/train", tmp_path / "indices/train.npy", 2, 1
+    )
+    policy_dataset = PolicyDataset(
+        tmp_path / "arrow/train",
+        tmp_path / "prepared/train.maps.jsonl",
+        tmp_path / "indices/train.npy",
+    )
+
+    assert first["split_counts"]["train"] == 2
+    assert second["split_counts"]["train"] == 2
+    assert len(dataset) == 2
+    assert index_summary["selected"] == 2
+    assert len(policy_dataset) == 2
+    assert not list((tmp_path / "shards").glob("shard-*/prepared/*.samples.jsonl"))
+    assert (tmp_path / "prepared/train.maps.jsonl").samefile(
+        tmp_path / "prepared/maps.jsonl"
+    )
+
+
 def test_epoch_sampler_is_repeatable_and_changes_between_epochs() -> None:
     sampler = EpochSampler(list(range(20)), seed=5)
     first = list(sampler)
@@ -81,3 +165,61 @@ def test_epoch_sampler_is_repeatable_and_changes_between_epochs() -> None:
 
     assert list(sampler) == first
     assert second != first
+
+
+def test_large_prepare_converts_bounded_parts_before_pruning_json(tmp_path) -> None:
+    shard = tmp_path / "shards/shard-000"
+    episode_map = EpisodeMap.from_mask(np.ones((2, 2), dtype=bool))
+    records = []
+    for number in range(2):
+        trajectory = shard / "trajectories" / f"trajectory-{number}"
+        sample = SFTSample(
+            f"episode-{number}", "41", number, 10, 10, episode_map.map_hash, {}, 0, number
+        )
+        write_jsonl(trajectory / "samples.jsonl", [sample])
+        write_jsonl(trajectory / "map.jsonl", [episode_map])
+        records.append(
+            {
+                "episode_id": sample.replay_id,
+                "game_version": "41",
+                "source_commit": "commit",
+                "split": "train",
+                "seat": number,
+                "policy": "expert:7",
+                "expert_player_id": "player",
+                "world": "paintbot",
+                "reward": 1,
+                "observations": 1,
+                "samples": 1,
+                "raw_entities": 0,
+                "retained_entities": 0,
+                "wire_source": "wire",
+                "map_hash": episode_map.map_hash,
+                "trajectory": trajectory.name,
+            }
+        )
+    manifest = PipelineManifest(
+        source_repository="repo",
+        episodes=(),
+        preparation=PreparationConfig(
+            balance_versions=False,
+            prune_trajectory_artifacts_after_prepare=True,
+        ),
+        training=TrainingConfig(),
+    )
+
+    summary = prepare_large_arrow_corpus(
+        manifest,
+        shard,
+        records,
+        [],
+        {episode_map.map_hash: episode_map},
+        trajectories_per_part=1,
+    )
+    merged = merge_shards(tmp_path / "shards", tmp_path / "prepared")
+    dataset = load_arrow_dataset(tmp_path / "arrow/train")
+
+    assert summary["split_counts"]["train"] == 2
+    assert merged["split_counts"]["train"] == 2
+    assert len(dataset) == 2
+    assert not list(shard.glob("trajectories/*/*.jsonl"))

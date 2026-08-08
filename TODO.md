@@ -54,10 +54,11 @@ mid-session; check them back at the start of focused work.
   diversity, then compare compact deltas with short full self/nearby-state
   history and report movement/turn/fire/grenade changes separately. See
   `paintbot_lab/docs/reports/rl-transition-temporal-2x2-2026-08-07.md`.
-  **In progress:** the exhaustive reproducible expert pool is preprocessing on
-  mettabox1 with an unattended Arrow-to-canary-to-full-training handoff. After
-  this run, compare compact deltas against short full self/nearby snapshots; do
-  not change the representation while the attributable baseline is active.
+  **In progress:** all 327,188 replay downloads are complete and the exhaustive
+  expert pool is preprocessing on mettabox1 with a disk-bounded virtual-Arrow
+  handoff. After this run, compare compact deltas against short full self/nearby
+  snapshots; do not change the representation while the attributable baseline
+  is active.
 
 - **Make Stencil squads roster-aware under campaign 7+7+1+1 seating** (found
   2026-08-06). Current `squadTable` partitions two-team identities by parity,
