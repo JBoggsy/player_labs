@@ -31,6 +31,8 @@ GREAT_LIFT_DOCK_Z_SLACK = 2.0
 GREAT_LIFT_EXIT_Z = 80.0
 GREAT_LIFT_TURN_DEADBAND = 0.20
 GREAT_LIFT_INPUT_SECONDS = 0.75
+ROAD_ARRIVAL_RADIUS_YARDS = 8.0
+ROAD_STALL_SECONDS = 8.0
 
 # Follow the deployed owner's level-51 Tanaris and Thousand Needles road spine
 # to the Great Lift lower dock. Great Lift boarding is a separate campaign.
@@ -90,6 +92,45 @@ def _steer_toward(bridge, frame, target: Point, *, purpose: str) -> None:
         duration=GREAT_LIFT_INPUT_SECONDS,
         purpose=purpose,
     )
+
+
+def _steer_road_leg(bridge, target: Point, *, deadline: float, trace):
+    closest = math.inf
+    last_progress = time.monotonic()
+    while time.monotonic() < deadline and not getattr(bridge, "finished", False):
+        frame = bridge.observe()
+        if frame is None:
+            return None, "no_frame"
+        if frame.is_dead or frame.is_ghost:
+            return None, "death"
+        if frame.in_combat:
+            return None, "combat"
+
+        distance = math.dist(
+            (frame.location.x, frame.location.y, frame.location.z),
+            (target.x, target.y, target.z),
+        )
+        if distance <= ROAD_ARRIVAL_RADIUS_YARDS:
+            return Point(
+                frame.location.map_id,
+                frame.location.x,
+                frame.location.y,
+                frame.location.z,
+            ), ""
+        if distance < closest - 1.0:
+            closest = distance
+            last_progress = time.monotonic()
+        elif time.monotonic() - last_progress >= ROAD_STALL_SECONDS:
+            trace("traverse_road_stalled", distance=round(distance, 3))
+            return None, "no_progress"
+
+        _steer_toward(
+            bridge,
+            frame,
+            target,
+            purpose="follow the authored Traverse road",
+        )
+    return None, "deadline"
 
 
 def _select_frontier(graph, *, best_world_x: float, visited: set[str]):
@@ -277,34 +318,27 @@ class TraverseStrategy:
                     name=name,
                     target=[target.x, target.y, target.z],
                 )
-                safe_resume = (
-                    (lambda: _activate_prowl(bridge, trace))
-                    if self.route_guidepoints_arrived < PROWL_ROUTE_GUIDEPOINTS
-                    else (lambda: _activate_travel_form(bridge, trace))
-                )
-                result = navigator.navigate_to(
+                end, failure_reason = _steer_road_leg(
                     bridge,
                     target,
                     deadline=until,
-                    on_safe_resume=safe_resume,
-                    engage_attackers=False,
+                    trace=trace,
                 )
-                if result.end is not None:
-                    self.best_world_x = max(self.best_world_x, result.end.x)
-                if result.state == NavState.ARRIVED:
+                if end is not None:
+                    self.best_world_x = max(self.best_world_x, end.x)
                     self.route_guidepoints_arrived += 1
                     trace(
                         "traverse_route_guidepoint_arrived",
                         activation=self.route_guidepoints_arrived,
                         name=name,
-                        world_x=(round(result.end.x, 3) if result.end else None),
+                        world_x=round(end.x, 3),
                     )
                     if self.route_guidepoints_arrived == len(TRAVERSE_ROUTE_PREFIX):
                         trace(
                             "traverse_great_lift_arrived",
-                            world_x=(round(result.end.x, 3) if result.end else None),
-                            world_y=(round(result.end.y, 3) if result.end else None),
-                            world_z=(round(result.end.z, 3) if result.end else None),
+                            world_x=round(end.x, 3),
+                            world_y=round(end.y, 3),
+                            world_z=round(end.z, 3),
                         )
                         break
                 else:
@@ -314,7 +348,7 @@ class TraverseStrategy:
                         "traverse_route_guidepoint_failed",
                         activation=self.route_guidepoints_arrived + 1,
                         name=name,
-                        reason=result.reason,
+                        reason=failure_reason,
                     )
                 continue
 

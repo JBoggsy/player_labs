@@ -1,5 +1,22 @@
 # wowborg version log
 
+## v90 - canonical road to the Great Lift lower dock (2026-08-08)
+
+- Version UUID: `6593c92d-2c1a-46f8-abe5-658300d5a7eb` (`wowborg:v90`, uploaded
+  inert; not submitted). Built from source `fb09adc` against the exact
+  `vanilla-wow:0.1.208` environment image. Policy image manifest
+  `sha256:60f8460cb9a7e9c0fff156f46989be78d33dc83900b2c2a99240003dad798b3d`.
+- Replaces the static opening detour and partial route with the deployed owner's canonical
+  level-51 road spine: 23 connected ordinary-navmesh legs and 6,560.2 route yards through
+  Tanaris, the Shimmering Flats, and Thousand Needles. On lower-dock settlement it emits
+  `traverse_great_lift_arrived` and ends; it does not wait for or board the lift.
+- First five-episode hosted request `xreq_0e577780-d491-4ac5-9a4f-256258d15c7a`
+  deterministically failed before combat: all five runs remained alive at spawn, and the first
+  302-yard semantic move timed out after advancing only 4.94 yards. Environment telemetry
+  records an `advanced_corridor` settlement followed by `action_deadline_expired`; every policy
+  trace ended with zero guidepoints and `reason=no_progress`. This falsifies the coarse hosted
+  movement activation, not the navmesh route, whose exact pinned plan is connected.
+
 ## v89 - navigation tooling and Stuck cooldown cleanup (2026-08-08)
 
 - Version UUID: `18b5df77-d270-4f43-a168-2b4a8d389255` (`wowborg:v89`, uploaded

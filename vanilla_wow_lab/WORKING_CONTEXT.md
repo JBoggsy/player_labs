@@ -56,7 +56,13 @@ Traverse champion.
 The active Great-Lift-arrival candidate replaces the static Tanaris detour with the exact
 deployed owner road chain: 23 connected ordinary-navmesh legs and 6,560.2 route yards through
 Tanaris, the Shimmering Flats, and Thousand Needles. It ends at the lower dock and deliberately
-does not board the lift. Hosted consistency and efficiency evidence is pending.
+does not board the lift. It is uploaded inert as **wowborg:v90**
+(`6593c92d-2c1a-46f8-abe5-658300d5a7eb`, source `fb09adc`). First five-episode hosted
+request `xreq_0e577780-d491-4ac5-9a4f-256258d15c7a` failed 5/5 before combat: its first
+302-yard semantic move advanced one 4.94-yard corridor horizon and then hit the environment's
+action deadline, leaving all five characters alive at spawn with zero guidepoints. The next
+candidate keeps the exact road but drives its legs with bounded ordinary steering so the next
+hosted trace can expose the first real route or hazard failure.
 
 ## Historical status (2026-08-06): V78 SUBMITTED AND QUALIFYING ON THE CORRECTED CLOCK
 

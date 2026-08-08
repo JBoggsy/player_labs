@@ -138,51 +138,33 @@ def test_traverse_route_prefix_reaches_great_lift_lower_dock() -> None:
     names = [name for name, _point in TRAVERSE_ROUTE_PREFIX]
 
     assert names == [
-        "tanaris-start-safe-1",
-        "tanaris-start-safe-2",
-        "tanaris-start-safe-3",
-        "tanaris-start-safe-4",
-        "tanaris-start-safe-5",
-        "tanaris-start-safe-6",
-        "tanaris-start-safe-7",
-        "tanaris-start-safe-8",
-        "tanaris-centipaar-bypass-1",
-        "tanaris-centipaar-bypass-2",
-        "tanaris-centipaar-bypass-3",
-        "tanaris-centipaar-bypass-4",
+        "tanaris-north-road-1",
+        "tanaris-north-road-2",
+        "tanaris-north-road-3",
+        "tanaris-north-road-4",
+        "tanaris-north-road-5",
+        "tanaris-north-road-6",
+        "tanaris-north-road-7",
+        "tanaris-north-road-8",
+        "tanaris-north-road-9",
+        "shimmering-flats-south-ramp",
+        "shimmering-flats-south-road",
+        "shimmering-flats-road",
+        "thousand-needles-east-road-1",
+        "thousand-needles-east-road-2",
+        "thousand-needles-east-road-3",
+        "thousand-needles-central-road-1",
+        "thousand-needles-central-road-2",
+        "thousand-needles-central-road-3",
+        "thousand-needles-west-road-1",
+        "thousand-needles-west-road-2",
+        "thousand-needles-west-3",
+        "great-lift-south-road",
         "great-lift-lower-dock",
     ]
-    assert TRAVERSE_ROUTE_PREFIX[:9] == (
-        (
-            "tanaris-start-safe-1",
-            Point(1, -9311.9990234375, -2677.333251953125, 9.571125984191895),
-        ),
-        (
-            "tanaris-start-safe-2",
-            Point(1, -9311.9990234375, -2784.0, 14.883625984191895),
-        ),
-        (
-            "tanaris-start-safe-3",
-            Point(1, -9141.3330078125, -2933.3330078125, 36.94612503051758),
-        ),
-        (
-            "tanaris-start-safe-4",
-            Point(1, -8693.3330078125, -2933.3330078125, 14.039186477661133),
-        ),
-        (
-            "tanaris-start-safe-5",
-            Point(1, -8241.955078125, -2775.288818359375, 33.05540084838867),
-        ),
-        (
-            "tanaris-start-safe-6",
-            Point(1, -8181.3330078125, -2357.333251953125, 10.32977294921875),
-        ),
-        ("tanaris-start-safe-7", Point(1, -8166.4, -2259.6, 10.0)),
-        ("tanaris-start-safe-8", Point(1, -8168.0, -2210.0, 10.0)),
-        ("tanaris-centipaar-bypass-1", Point(1, -8132.53, -2196.98, 7.41)),
-    )
+    assert TRAVERSE_ROUTE_PREFIX[0][1] == Point(1, -8974.0117, -2741.5291, 41.0118)
     assert TRAVERSE_ROUTE_PREFIX[-1][1] == Point(1, -4677.066, -1853.667, -43.857)
-    assert len(names) == len(set(names)) == 13
+    assert len(names) == len(set(names)) == 23
 
 
 def test_lift_detection_uses_only_visible_platform_at_lower_dock() -> None:
