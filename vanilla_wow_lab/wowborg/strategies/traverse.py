@@ -306,6 +306,7 @@ def _combat_escape_target(frame, target: Point) -> Point:
 @dataclass
 class HazardAvoidanceState:
     side: float | None = None
+    waiting: bool = False
 
 
 def _steer_road_leg(
@@ -445,6 +446,28 @@ def _steer_road_leg(
                 },
             )
         avoidance.side = next_avoidance_side
+
+        should_wait = (
+            not frame.in_combat
+            and avoidance.side is not None
+            and side_clearances[avoidance.side]
+            < ROAD_HAZARD_MIN_CLEARANCE_YARDS
+        )
+        if should_wait:
+            if not avoidance.waiting:
+                trace(
+                    "traverse_hazard_wait",
+                    activation=1,
+                    side="left" if avoidance.side > 0 else "right",
+                    clearance=round(side_clearances[avoidance.side], 3),
+                )
+                avoidance.waiting = True
+            last_progress = time.monotonic()
+            bridge.select_wait(frame)
+            continue
+        if avoidance.waiting:
+            trace("traverse_hazard_wait_ended", activation=1)
+            avoidance.waiting = False
 
         _steer_toward(
             bridge,

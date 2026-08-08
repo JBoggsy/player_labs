@@ -38,7 +38,12 @@ avoidance was active for a Starving Blisterpaw 46.9 yards away; the next leg res
 and did not react again until the mob was 10.3 yards away. The active source candidate carries
 that hazard state across guidepoint boundaries; geometry and thresholds are unchanged.
 It is uploaded inert as **wowborg:v108**
-(`c2896a36-05a4-4a0c-ba88-83d8ae57c48c`, source `8376f77`); hosted proof is pending.
+(`c2896a36-05a4-4a0c-ba88-83d8ae57c48c`, source `8376f77`). Request
+`xreq_b64d45bd-4169-470d-bd03-634192fe700f` proved the cross-node state survives and
+reached 1,784.9 living northing yards. It later encountered two Glasshide Basilisks with only
+11.9 yards of best candidate clearance, moved anyway, and pulled at 5.6 yards. The active source
+candidate treats “both sides below 15 yards” as a wait edge, traces wait start/end, and suspends
+the route-stall timer until a moving patrol opens a safe bypass.
 
 ### Previous 0.1.208 movement baseline
 

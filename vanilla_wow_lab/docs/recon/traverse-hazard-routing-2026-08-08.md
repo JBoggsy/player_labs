@@ -272,6 +272,13 @@ selected side across road-leg boundaries without changing the hazard geometry or
 That state-lifetime fix is uploaded inert as wowborg:v108
 (`c2896a36-05a4-4a0c-ba88-83d8ae57c48c`, source `8376f77`).
 
+V108 preserved the side through road node 7 and gained another 100 living northing yards. Its
+next Glasshide Basilisk cluster produced only 11.9 yards of predicted right clearance and 2.2
+left; the router still selected right, then pulled one Basilisk at 5.6 yards. This is a temporal
+route edge: when neither bypass meets the existing 15-yard floor, remain outside ordinary aggro
+and let the accelerated patrol move. The next candidate emits wait start/end, suspends the
+no-progress timer while intentionally stationary, and resumes as soon as one side becomes safe.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.

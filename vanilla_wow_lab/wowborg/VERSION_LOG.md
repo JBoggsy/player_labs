@@ -6,7 +6,12 @@
   inert; not submitted). Built from source `8376f77` against canonical vanilla-wow 0.1.209.
 - Preserves v107's live avoidance side across road-guidepoint arrivals instead of restarting the
   edge evaluator at each leg. Geometry, tracking horizon, clearance threshold, and steering are
-  unchanged. Hosted proof is pending.
+  unchanged.
+- Request `xreq_b64d45bd-4169-470d-bd03-634192fe700f` proved continuity across road
+  node 7 and reached 1,784.9 living northing yards. It later chose a route with only 11.9 yards
+  of best predicted clearance through two Glasshide Basilisks and pulled at 5.6 yards. The next
+  candidate waits when neither side meets the existing 15-yard floor, then resumes when the
+  moving patrol opens a safe edge.
 
 ## v107 - moving-hostile path projection (2026-08-08)
 
