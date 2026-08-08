@@ -53,6 +53,11 @@ That behavior is uploaded inert as **wowborg:v89**
 (`18b5df77-d270-4f43-a168-2b4a8d389255`, source `a5c9c01`); v78 remains the submitted
 Traverse champion.
 
+The active Great-Lift-arrival candidate replaces the static Tanaris detour with the exact
+deployed owner road chain: 23 connected ordinary-navmesh legs and 6,560.2 route yards through
+Tanaris, the Shimmering Flats, and Thousand Needles. It ends at the lower dock and deliberately
+does not board the lift. Hosted consistency and efficiency evidence is pending.
+
 ## Historical status (2026-08-06): V78 SUBMITTED AND QUALIFYING ON THE CORRECTED CLOCK
 
 Inert **wowborg:v75** (`c75e24cc-166f-43df-9d52-d77724cc4b16`, source `aed90c9`)
