@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
 import random
 import shutil
@@ -12,10 +13,18 @@ import sys
 import tarfile
 import time
 from collections import defaultdict
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from pathlib import Path
 
-from dataset import ActionTimeline, build_samples, read_actions, read_maps, write_jsonl
+from dataset import (
+    ActionTimeline,
+    build_samples,
+    read_actions,
+    read_maps,
+    read_samples,
+    write_jsonl,
+)
+from observation_text import temporal_delta
 from pipeline_manifest import EpisodeSpec, PipelineManifest, load_manifest
 
 
@@ -37,20 +46,22 @@ def download(manifest: PipelineManifest, workspace: Path, *, elevated: bool) -> 
     if not ARTIFACT_DOWNLOADER.exists():
         raise FileNotFoundError(f"artifact downloader not found: {ARTIFACT_DOWNLOADER}")
     output = workspace / "raw"
-    command = [
-        sys.executable,
-        str(ARTIFACT_DOWNLOADER),
-        "--out",
-        str(output),
-        "--no-logs",
-        "--no-artifacts",
-        "--no-results",
-    ]
-    if elevated:
-        command.append("--elevated")
-    for episode in manifest.episodes:
-        command.extend(("--episode", episode.episode_id))
-    run_command(command, cwd=REPOSITORY_ROOT)
+    episode_ids = [episode.episode_id for episode in manifest.episodes]
+    for start in range(0, len(episode_ids), 100):
+        command = [
+            sys.executable,
+            str(ARTIFACT_DOWNLOADER),
+            "--out",
+            str(output),
+            "--no-logs",
+            "--no-artifacts",
+            "--no-results",
+        ]
+        if elevated:
+            command.append("--elevated")
+        for episode_id in episode_ids[start : start + 100]:
+            command.extend(("--episode", episode_id))
+        run_command(command, cwd=REPOSITORY_ROOT)
     return output
 
 
@@ -72,21 +83,51 @@ def find_episode_directory(artifacts_root: Path, episode_id: str) -> Path:
     return matches[0]
 
 
+def index_episode_directories(artifacts_root: Path) -> dict[str, Path]:
+    """Index a large artifact tree once instead of rescanning it per replay."""
+    indexed: dict[str, Path] = {}
+    duplicates = set()
+    for metadata_path in artifacts_root.rglob("episode.json"):
+        try:
+            episode_id = str(json.loads(metadata_path.read_text())["id"])
+        except (KeyError, json.JSONDecodeError, OSError):
+            continue
+        if episode_id in indexed:
+            duplicates.add(episode_id)
+        indexed[episode_id] = metadata_path.parent
+    if duplicates:
+        raise ValueError(f"duplicate artifact directories for episodes: {sorted(duplicates)}")
+    return indexed
+
+
 def resolve_povs(spec: EpisodeSpec, metadata_path: Path) -> list[tuple[int, float, str]]:
     metadata = json.loads(metadata_path.read_text())
     agents: dict[int, tuple[float, str]] = {}
+    policy_agents: dict[str, list[int]] = {}
     for policy_result in metadata.get("policy_results") or ():
         policy = policy_result.get("policy") or {}
         policy_label = f"{policy.get('name', 'unknown')}:{policy.get('version', 'unknown')}"
+        policy_version_id = str(policy.get("id", ""))
         for agent in policy_result.get("agents") or ():
-            agents[int(agent["agent_id"])] = (float(agent.get("reward", 0)), policy_label)
+            seat = int(agent["agent_id"])
+            agents[seat] = (float(agent.get("reward", 0)), policy_label)
+            policy_agents.setdefault(policy_version_id, []).append(seat)
     if not agents:
         raise ValueError(f"{metadata_path} has no policy_results agent metadata")
-    seats = (
-        [max(agents, key=lambda seat: (agents[seat][0], -seat))]
-        if spec.povs == "best_reward"
-        else list(spec.povs)
-    )
+    if spec.povs == "best_reward":
+        seats = [max(agents, key=lambda seat: (agents[seat][0], -seat))]
+    elif spec.povs == "expert_policies":
+        seats = []
+        for policy_version_id in spec.expert_policy_version_ids:
+            candidates = sorted(policy_agents.get(policy_version_id, ()))
+            if not candidates:
+                raise ValueError(
+                    f"episode {spec.episode_id} has no agents for expert policy "
+                    f"{policy_version_id}"
+                )
+            seats.extend(candidates[: spec.max_povs_per_policy])
+    else:
+        seats = list(spec.povs)
     resolved = []
     for seat in seats:
         if seat not in agents:
@@ -113,6 +154,7 @@ class SourceManager:
         self.existing_source_root = (
             existing_source_root.resolve() if existing_source_root is not None else None
         )
+        self._binary_cache: dict[str, tuple[Path, Path, Path]] = {}
 
     def checkout(self, commit: str) -> Path:
         existing = self._existing_checkout(commit)
@@ -146,6 +188,8 @@ class SourceManager:
         return checkout
 
     def binaries(self, commit: str) -> tuple[Path, Path, Path]:
+        if commit in self._binary_cache:
+            return self._binary_cache[commit]
         checkout = self.checkout(commit)
         generated = checkout / ".paintbot_rl"
         wire_binary = generated / "extract_replay_wire"
@@ -169,21 +213,28 @@ class SourceManager:
         )
         if needs_compile:
             # The exact checkout's nimby.lock is part of replay provenance.
-            run_command(["nimby", "sync", "-g", "nimby.lock"], cwd=checkout)
-            for source, copied_source, binary in sources:
-                shutil.copy2(source, copied_source)
-                run_command(
-                    [
-                        "nim",
-                        "c",
-                        "-d:release",
-                        f"--path:{checkout / 'src'}",
-                        f"--out:{binary}",
-                        str(copied_source),
-                    ],
-                    cwd=checkout,
-                )
-        return checkout, wire_binary, action_binary
+            nimby_lock = Path.home() / ".nimby" / "paintbot-rl-sync.lock"
+            nimby_lock.parent.mkdir(parents=True, exist_ok=True)
+            with nimby_lock.open("w") as lock_file:
+                fcntl.flock(lock_file, fcntl.LOCK_EX)
+                run_command(["nimby", "sync", "-g", "nimby.lock"], cwd=checkout)
+                for source, copied_source, binary in sources:
+                    shutil.copy2(source, copied_source)
+                    run_command(
+                        [
+                            "nim",
+                            "c",
+                            "-d:release",
+                            f"--nimcache:{generated / ('nimcache-' + binary.name)}",
+                            f"--path:{checkout / 'src'}",
+                            f"--out:{binary}",
+                            str(copied_source),
+                        ],
+                        cwd=checkout,
+                    )
+        binaries = (checkout, wire_binary, action_binary)
+        self._binary_cache[commit] = binaries
+        return binaries
 
     def _existing_checkout(self, commit: str) -> Path | None:
         if self.existing_source_root is None:
@@ -211,6 +262,51 @@ def find_cached_wire(root: Path | None, episode_id: str, seat: int) -> Path | No
     return matches[0] if matches else None
 
 
+def add_temporal_history(
+    samples,
+    *,
+    wire: Path,
+    game_version: str,
+    timeline: ActionTimeline,
+    history_ticks: int,
+    extract,
+):
+    """Attach bounded past-only deltas to already aligned, strided samples."""
+    if history_ticks == 0:
+        return samples
+    target_ticks = {sample.observation_tick for sample in samples}
+    selected_ticks = {
+        tick - offset
+        for tick in target_ticks
+        for offset in range(history_ticks + 2)
+        if tick - offset >= 0
+    }
+    snapshots = extract(
+        wire,
+        game_version=game_version,
+        stride=1,
+        selected_ticks=selected_ticks,
+    )
+    by_tick = {snapshot.tick: snapshot for snapshot in snapshots if snapshot.tick is not None}
+    temporal_samples = []
+    for sample in samples:
+        tick = sample.observation_tick
+        if any(tick - offset not in by_tick for offset in range(history_ticks + 2)):
+            continue
+        history = []
+        for offset in range(history_ticks, 0, -1):
+            history.append(
+                temporal_delta(
+                    by_tick[tick - offset - 1],
+                    by_tick[tick - offset],
+                    action_mask=timeline.mask_at(tick - offset),
+                    target_tick=tick,
+                )
+            )
+        temporal_samples.append(replace(sample, history=tuple(history)))
+    return temporal_samples
+
+
 def prepare(
     manifest: PipelineManifest,
     workspace: Path,
@@ -226,105 +322,181 @@ def prepare(
     all_samples: dict[str, list] = defaultdict(list)
     all_maps = {}
     records = []
+    failures = []
+    artifact_directories = index_episode_directories(artifacts_root)
     for episode in manifest.episodes:
-        episode_dir = find_episode_directory(artifacts_root, episode.episode_id)
-        replay = episode_dir / "replay.json"
-        for seat, reward, policy in resolve_povs(episode, episode_dir / "episode.json"):
+        try:
+            episode_dir = artifact_directories[episode.episode_id]
+            replay = episode_dir / "replay.json"
+            if not replay.exists():
+                raise FileNotFoundError(f"downloaded episode has no replay: {replay}")
+            resolved_povs = resolve_povs(episode, episode_dir / "episode.json")
+        except Exception as error:
+            if not manifest.preparation.continue_on_error:
+                raise
+            failures.append({"episode_id": episode.episode_id, "error": str(error)})
+            continue
+        for seat, reward, policy in resolved_povs:
             stem = f"gv{episode.game_version}-{episode.episode_id[:8]}-seat{seat}"
             output = trajectories / stem
             output.mkdir(parents=True, exist_ok=True)
-            wire = find_cached_wire(wire_cache_root, episode.episode_id, seat)
-            checkout: Path | None = None
-            if wire is None:
-                checkout, wire_binary, action_binary = manager.binaries(episode.source_commit)
-                wire = output / "wire.jsonl"
-                run_command(
-                    [str(wire_binary), str(replay.resolve()), str(seat), str(wire.resolve())],
-                    cwd=checkout,
-                )
-            else:
-                checkout, _, action_binary = manager.binaries(episode.source_commit)
+            record_path = output / "trajectory.json"
+            try:
+                if record_path.exists():
+                    record = json.loads(record_path.read_text())
+                    samples = read_samples(output / "samples.jsonl")
+                    episode_maps = read_maps(output / "map.jsonl")
+                    if len(episode_maps) != 1:
+                        raise ValueError(f"expected one map in {output / 'map.jsonl'}")
+                    map_hash, episode_map = next(iter(episode_maps.items()))
+                else:
+                    wire = find_cached_wire(wire_cache_root, episode.episode_id, seat)
+                    checkout: Path | None = None
+                    if wire is None:
+                        checkout, wire_binary, action_binary = manager.binaries(
+                            episode.source_commit
+                        )
+                        wire = output / "wire.jsonl"
+                        run_command(
+                            [
+                                str(wire_binary),
+                                str(replay.resolve()),
+                                str(seat),
+                                str(wire.resolve()),
+                            ],
+                            cwd=checkout,
+                        )
+                    else:
+                        checkout, _, action_binary = manager.binaries(
+                            episode.source_commit
+                        )
 
-            actions = output / "actions.jsonl"
-            run_command(
-                [
-                    str(action_binary),
-                    str(replay.resolve()),
-                    episode.game_version,
-                    str(seat),
-                    str(actions.resolve()),
-                ],
-                cwd=checkout,
-            )
-            snapshots_path = output / "observations.jsonl"
-            map_path = output / "map.jsonl"
-            snapshots = extract(
-                wire,
-                game_version=episode.game_version,
-                stride=manifest.preparation.stride,
-                map_out=map_path,
-            )
-            write_jsonl(snapshots_path, snapshots)
-            episode_maps = read_maps(map_path)
-            if len(episode_maps) != 1:
-                raise ValueError(f"expected one map in {map_path}")
-            map_hash, episode_map = next(iter(episode_maps.items()))
-            samples = build_samples(
-                snapshots,
-                ActionTimeline(read_actions(actions)),
-                replay_id=episode.episode_id,
-                pov=seat,
-                map_hash=map_hash,
-                action_delay_ticks=manifest.preparation.action_delay_ticks,
-            )
-            write_jsonl(output / "samples.jsonl", samples)
-            all_samples[episode.split].extend(samples)
-            all_maps[map_hash] = episode_map
-            raw_entities = sum(len(snapshot.entities) for snapshot in snapshots)
-            retained_entities = sum(
-                len(sample.observation["entities"]) for sample in samples
-            )
-            records.append(
-                {
-                    "episode_id": episode.episode_id,
-                    "game_version": episode.game_version,
-                    "source_commit": episode.source_commit,
-                    "split": episode.split,
-                    "seat": seat,
-                    "policy": policy,
-                    "reward": reward,
-                    "observations": len(snapshots),
-                    "samples": len(samples),
-                    "raw_entities": raw_entities,
-                    "retained_entities": retained_entities,
-                    "wire_source": str(wire),
-                }
-            )
+                    actions = output / "actions.jsonl"
+                    run_command(
+                        [
+                            str(action_binary),
+                            str(replay.resolve()),
+                            episode.game_version,
+                            str(seat),
+                            str(actions.resolve()),
+                        ],
+                        cwd=checkout,
+                    )
+                    snapshots_path = output / "observations.jsonl"
+                    map_path = output / "map.jsonl"
+                    snapshots = extract(
+                        wire,
+                        game_version=episode.game_version,
+                        stride=manifest.preparation.stride,
+                        map_out=map_path,
+                    )
+                    write_jsonl(snapshots_path, snapshots)
+                    episode_maps = read_maps(map_path)
+                    if len(episode_maps) != 1:
+                        raise ValueError(f"expected one map in {map_path}")
+                    map_hash, episode_map = next(iter(episode_maps.items()))
+                    timeline = ActionTimeline(read_actions(actions))
+                    samples = build_samples(
+                        snapshots,
+                        timeline,
+                        replay_id=episode.episode_id,
+                        pov=seat,
+                        map_hash=map_hash,
+                        action_delay_ticks=manifest.preparation.action_delay_ticks,
+                    )
+                    samples = add_temporal_history(
+                        samples,
+                        wire=wire,
+                        game_version=episode.game_version,
+                        timeline=timeline,
+                        history_ticks=manifest.preparation.history_ticks,
+                        extract=extract,
+                    )
+                    write_jsonl(output / "samples.jsonl", samples)
+                    raw_entities = sum(len(snapshot.entities) for snapshot in snapshots)
+                    retained_entities = sum(
+                        len(sample.observation["entities"]) for sample in samples
+                    )
+                    record = {
+                        "episode_id": episode.episode_id,
+                        "game_version": episode.game_version,
+                        "source_commit": episode.source_commit,
+                        "split": episode.split,
+                        "seat": seat,
+                        "policy": policy,
+                        "reward": reward,
+                        "observations": len(snapshots),
+                        "samples": len(samples),
+                        "raw_entities": raw_entities,
+                        "retained_entities": retained_entities,
+                        "wire_source": str(wire),
+                        "map_hash": map_hash,
+                        "trajectory": stem,
+                    }
+                    record_path.write_text(json.dumps(record, indent=2) + "\n")
+                if not manifest.preparation.retain_intermediates:
+                    for intermediate in ("wire.jsonl", "actions.jsonl", "observations.jsonl"):
+                        (output / intermediate).unlink(missing_ok=True)
+                if manifest.preparation.balance_versions:
+                    all_samples[episode.split].extend(samples)
+                all_maps[map_hash] = episode_map
+                records.append(record)
+            except Exception as error:
+                if not manifest.preparation.continue_on_error:
+                    raise
+                failures.append(
+                    {
+                        "episode_id": episode.episode_id,
+                        "seat": seat,
+                        "game_version": episode.game_version,
+                        "source_commit": episode.source_commit,
+                        "error": str(error),
+                    }
+                )
 
     prepared = workspace / "prepared"
     prepared.mkdir(parents=True, exist_ok=True)
     split_counts = {}
     for split in ("train", "validation", "test"):
-        selected = balanced_by_version_and_trajectory(
-            all_samples.get(split, []),
-            manifest.preparation.max_samples_per_version,
-            manifest.preparation.seed,
-        )
-        write_jsonl(prepared / f"{split}.samples.jsonl", selected)
-        used_maps = {sample.map_hash for sample in selected}
+        if manifest.preparation.balance_versions:
+            selected = balanced_by_version_and_trajectory(
+                all_samples.get(split, []),
+                manifest.preparation.max_samples_per_version,
+                manifest.preparation.seed,
+            )
+            write_jsonl(prepared / f"{split}.samples.jsonl", selected)
+            used_maps = {sample.map_hash for sample in selected}
+            split_counts[split] = len(selected)
+        else:
+            split_records = [record for record in records if record["split"] == split]
+            samples_path = prepared / f"{split}.samples.jsonl"
+            count = 0
+            with samples_path.open("w") as destination:
+                for record in split_records:
+                    source_path = trajectories / record["trajectory"] / "samples.jsonl"
+                    with source_path.open() as source:
+                        shutil.copyfileobj(source, destination)
+                    count += int(record["samples"])
+            used_maps = {record["map_hash"] for record in split_records}
+            split_counts[split] = count
         write_jsonl(
             prepared / f"{split}.maps.jsonl",
             (all_maps[map_hash] for map_hash in sorted(used_maps)),
         )
-        split_counts[split] = len(selected)
     summary = {
         "schema_version": 1,
         "created_at_unix": time.time(),
         "manifest": asdict(manifest),
         "split_counts": split_counts,
         "trajectories": records,
+        "failures": failures,
     }
     (prepared / "provenance.json").write_text(json.dumps(summary, indent=2) + "\n")
+    if manifest.preparation.prune_trajectory_artifacts_after_prepare:
+        for record in records:
+            trajectory = trajectories / record["trajectory"]
+            (trajectory / "samples.jsonl").unlink(missing_ok=True)
+            (trajectory / "map.jsonl").unlink(missing_ok=True)
     print(json.dumps({"prepared": str(prepared), "split_counts": split_counts}, indent=2))
     return summary
 

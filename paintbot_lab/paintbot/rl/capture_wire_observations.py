@@ -81,32 +81,33 @@ def extract(
     world = SpriteWorld()
     snapshots = []
     episode_map: EpisodeMap | None = None
-    for line in path.read_text().splitlines():
-        event = json.loads(line)
-        if event.get("direction") != "in" or event.get("type") != "binary":
-            continue
-        if not world.apply_frame(base64.b64decode(event["data"])):
-            continue
-        if episode_map is None:
-            episode_map = episode_map_from_world(world)
-        event_tick = int(event["tick"]) if event.get("tick") is not None else None
-        if selected_ticks is not None:
-            if event_tick not in selected_ticks:
+    with path.open() as source:
+        for line in source:
+            event = json.loads(line)
+            if event.get("direction") != "in" or event.get("type") != "binary":
                 continue
-        elif world.frame != 1 and world.frame % stride != 0:
-            continue
-        try:
-            snapshots.append(
-                snapshot_world(
-                    world,
-                    game_version=game_version,
-                    source=str(path),
-                    tick=event_tick,
+            if not world.apply_frame(base64.b64decode(event["data"])):
+                continue
+            if episode_map is None:
+                episode_map = episode_map_from_world(world)
+            event_tick = int(event["tick"]) if event.get("tick") is not None else None
+            if selected_ticks is not None:
+                if event_tick not in selected_ticks:
+                    continue
+            elif world.frame != 1 and world.frame % stride != 0:
+                continue
+            try:
+                snapshots.append(
+                    snapshot_world(
+                        world,
+                        game_version=game_version,
+                        source=str(path),
+                        tick=event_tick,
+                    )
                 )
-            )
-        except ValueError:
-            # Early init packets may precede the map metadata.
-            continue
+            except ValueError:
+                # Early init packets may precede the map metadata.
+                continue
     if map_out is not None:
         if episode_map is None:
             raise ValueError("wire stream did not contain walkability sprite pixels")

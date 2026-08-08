@@ -1,10 +1,13 @@
 from observation_text import (
+    MAX_TEMPORAL_CHANGES_PER_TICK,
     EntitySnapshot,
     ObservationSnapshot,
     bot_semantic_observation,
     is_bot_semantic_label,
     serialize_observation,
+    serialize_temporal_history,
     split_label_numbers,
+    temporal_delta,
 )
 from measure_observation_lengths import evenly_sample_by_version, era_for, percentile
 
@@ -81,6 +84,42 @@ def test_bot_semantic_filter_removes_only_source_defined_human_visuals() -> None
     assert 'semantic="fog"' in serialize_observation(
         snapshot, include_human_visuals=True
     )
+
+
+def test_temporal_history_is_causal_filtered_and_bounded() -> None:
+    before = ObservationSnapshot(
+        game_version="40",
+        frame=9,
+        map_width=100,
+        map_height=100,
+        entities=(
+            EntitySnapshot(1, "self red right", 10, 10, 0, 0, 10, 10),
+            EntitySnapshot(2, "fog", 0, 0, 0, 0, 100, 100),
+        ),
+        tick=9,
+    )
+    after = ObservationSnapshot(
+        game_version="40",
+        frame=10,
+        map_width=100,
+        map_height=100,
+        entities=(
+            EntitySnapshot(1, "self red right", 11, 10, 0, 0, 10, 10),
+            EntitySnapshot(2, "fog", 0, 0, 0, 0, 100, 100),
+            *(EntitySnapshot(index, f"pickup {index}", index, index, 0, 0, 1, 1)
+              for index in range(3, 9)),
+        ),
+        tick=10,
+    )
+
+    step = temporal_delta(before, after, action_mask=1, target_tick=12)
+    serialized = serialize_temporal_history((step,))
+
+    assert step["tick_offset"] == -2
+    assert len(step["changes"]) == MAX_TEMPORAL_CHANGES_PER_TICK
+    assert step["changes"][0]["semantic"] == "self red right"
+    assert "fog" not in serialized
+    assert "tick_offset=-2" in serialized
 
 
 def test_length_audit_era_boundaries_and_balanced_sampling() -> None:

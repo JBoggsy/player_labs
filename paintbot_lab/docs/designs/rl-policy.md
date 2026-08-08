@@ -135,8 +135,8 @@ Sprite-v1 observations or duplicating a large raster in every sample.
 - The first stage is cross-era supervised behavior cloning, not online RL.
 - The map encoder is trained for policy utility; natural-image reconstruction is
   not its objective.
-- Episode memory beyond the static map and previous action is deferred until the
-  single-frame baseline establishes what temporal information is missing.
+- Episode memory is initially limited to four compact, past-only entity deltas;
+  recurrent state and longer histories remain deferred.
 - A deterministic protocol fallback may be added for malformed model output,
   but scripted gameplay behavior is outside this first learned-policy design.
 
@@ -154,7 +154,7 @@ shape. These defaults are conservative starting points, not closed decisions:
 | Text ceiling | 2,048 tokens for the Mac baseline, preserving the nearest/self-first prefix and all targets | `--max-text-tokens` |
 | Replay alignment | observation at tick `t` predicts held mask at tick `t` | `--action-delay-ticks`; both ticks stored |
 | Decoding | five constrained greedy steps without a KV cache | isolated `greedy_action()` method |
-| Temporal state | previous transmitted action only | explicit `previous_action` prompt field |
+| Temporal training input | four compact causal deltas plus previous transmitted action | `history` sample field; history length and `max_history_tokens` remain experiment knobs |
 
 The action decoder uses the actual Sprite-v1 layout: directions occupy bits
 1/2/4/8, Select (clockwise turn) is 16, A/fire is 32, B (counterclockwise turn)
@@ -314,7 +314,8 @@ and a separately encoded walkability map. Full verdict:
 ## Open decisions
 
 - Exact spatial-pyramid architecture, resolution, and number of Qwen map tokens.
-- How many temporal frames, if any, should accompany the current frame.
+- Whether four compact entity deltas or short full self/nearby-state snapshots
+  are the better temporal representation at larger data scale.
 - Action-token embedding initialization.
 - Whether the factorized autoregressive decoder meets the live decision latency
   budget; if not, the same targets can feed four parallel prediction heads.
@@ -386,3 +387,26 @@ exact but only 13.7% change precision and 35.3% overall exact. Weighting alone
 is rejected; transition-centered sampling and temporal context are now the
 next representation experiments. Full record:
 [`../reports/rl-action-change-weighting-2026-08-07.md`](../reports/rl-action-change-weighting-2026-08-07.md).
+
+### Transition sampling and temporal-history result
+
+A matched 2x2 independently varied uniform versus 50/50 transition/hold
+sampling and current-frame versus four-tick causal history. Sampling alone was
+flat. On the natural validation distribution, history raised changed-action
+exact accuracy from 0% to 7.9%; the combined arm reached 8.4% with 73.1%
+change precision. The selected combined arm improved sealed-GV40
+changed-action exact from 0.3% to 3.9% and changed-component accuracy from
+0.7% to 8.8%, but reduced overall exact from 77.1% to 74.7% and achieved only
+45.2% change precision.
+
+Decision: retain compact causal history in the architecture. Transition
+sampling remains optional because its incremental effect is small. The seed
+checkpoint is not deployable; expand replay and expert diversity before
+comparing the delta grammar with short full self/nearby-state history. Full
+result:
+[`../reports/rl-transition-temporal-2x2-2026-08-07.md`](../reports/rl-transition-temporal-2x2-2026-08-07.md).
+
+The current live inference shell still serializes only the current frame and
+previous action. Wire the rolling history buffer into `policy.py` only after a
+checkpoint clears the offline quality gate; this experiment intentionally did
+not package or upload a player.

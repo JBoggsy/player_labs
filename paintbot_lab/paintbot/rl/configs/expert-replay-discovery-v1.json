@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "coworld_names": ["ctf", "paintbot"],
+  "source_repository": "https://github.com/Metta-AI/coworld-ctf.git",
+  "discovery_not_before": "2026-06-30T00:00:00Z",
+  "discovery_window_hours": 24,
+  "experts": [
+    {"label": "Andre von Houck", "player_id": "ply_607f17a2-3acf-405b-91fe-d12ef1001c00"},
+    {"label": "relh", "player_id": "ply_18302115-9fc9-482d-a2f3-f4c592bf9e57"},
+    {"label": "richard", "player_id": "ply_ded11f40-3e30-4921-b019-f7f6bc3e9c83"},
+    {"label": "James Botts", "player_id": "ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce"},
+    {"label": "RowDaBoat", "player_id": "ply_eeb732fa-5f40-4fa1-beac-6571738f8108"},
+    {"label": "Alex Smith", "player_id": "ply_4e9a2db0-dbc2-4283-b4cc-3ce79e9f8d40"},
+    {"label": "softmaxwell", "player_id": "ply_281ba4ec-d1a2-4e37-a609-a391d30421d2"},
+    {"label": "daveey", "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3"},
+    {"label": "NanosaurusX", "player_id": "ply_ac95b848-2475-4901-9344-95c88f33f8e6"}
+  ],
+  "split_percentages": {"train": 90, "validation": 5, "test": 5},
+  "max_povs_per_policy": 1,
+  "preparation": {
+    "stride": 6,
+    "action_delay_ticks": 0,
+    "max_samples_per_version": null,
+    "balance_versions": false,
+    "history_ticks": 4,
+    "continue_on_error": true,
+    "retain_intermediates": false,
+    "prune_trajectory_artifacts_after_prepare": true,
+    "seed": 1
+  },
+  "training": {
+    "tuning": "lora",
+    "epochs": 3,
+    "batch_size": 2,
+    "gradient_accumulation": 8,
+    "learning_rate": 0.0002,
+    "weight_decay": 0.01,
+    "warmup_ratio": 0.03,
+    "max_text_tokens": 4096,
+    "max_history_tokens": 832,
+    "mixed_precision": "bf16",
+    "seed": 1
+  }
+}

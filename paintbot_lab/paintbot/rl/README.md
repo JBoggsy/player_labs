@@ -22,6 +22,9 @@ The implementation now covers the complete replay-to-checkpoint path:
 - `extract_replay_actions.nim` extracts one POV's raw held-mask changes from an
   exact-version replay; `dataset.py` and `build_sft_dataset.py` align those with
   observations.
+- `build_temporal_experiment.py` derives matched uniform/transition and
+  current/history corpora. Four-tick histories store bounded bot-semantic
+  entity deltas and prior actions at offsets `-4` through `-1` only.
 - `pipeline.py` downloads declared episodes with the shared artifact tool,
   creates exact-source worktrees, compiles both extractors against each pinned
   revision, validates replay hashes and expert rewards, and writes balanced,
@@ -31,12 +34,65 @@ The implementation now covers the complete replay-to-checkpoint path:
 - `training.py` provides Accelerate training, cosine scheduling, validation,
   best/final checkpoints, and resumable optimizer/model/RNG state; `policy.py`
   is the Sprite-v1 inference shell with opt-in per-decision activation tracing.
+- `pipeline_manifest.py` is the validated manifest contract a run is declared
+  against — episode IDs, source commits, reward-qualified POVs, split sizes.
+  `discover_expert_replays.py` populates it by finding and manifesting every
+  replay-bearing CTF/Paintbot expert episode.
+- `shard_expert_manifest.py`, `prepare_expert_corpus.py`, and
+  `merge_prepared_shards.py` turn that catalog into a coverage-balanced,
+  resumable multi-process corpus without allowing a replay into two splits.
+- `assemble_corpus.py` deduplicates maps and samples a balanced cross-era corpus
+  from what the pipeline extracted.
+- `train_sft.py` is the CLI entry point that fine-tunes a run end to end (the
+  `training.py`/`modeling.py` machinery is the library beneath it);
+  `evaluate_sft.py` scores a checkpoint against a sealed split.
+- `measure_action_alignment.py` measures which replay action tick explains each
+  observed aim transition — the instrument that settled zero-tick alignment.
+  `measure_observation_lengths.py` is the corresponding token-length instrument.
 
 Install the optional training stack separately from the existing player labs:
 
 ```sh
 uv sync --group rl
 ```
+
+### Large expert corpus
+
+`configs/expert-replay-discovery-v1.json` is the canonical identity map for the
+nine requested expert accounts. Discovery queries CTF and Paintbot separately,
+then deduplicates shared episodes globally and records the exact expert policy
+version IDs present in each replay. This prevents preprocessing from silently
+choosing a higher-reward non-expert seat.
+
+The August 7, 2026 exhaustive scan found 333,253 unique episodes. Of those,
+327,188 have immutable source commits and form the reproducible corpus: 271,590
+CTF and 55,598 Paintbot episodes, containing 584,873 selected expert-policy
+trajectories across 35 recorded GameVersions spanning 1–41. The other 6,065 are
+retained in discovery provenance but excluded because their Coworld source URLs
+pointed at mutable `main`, so exact historical reconstruction is impossible.
+
+```sh
+CATALOG=paintbot_lab/paintbot/rl/data/runs/expert-replay-pool-v1
+CONFIG=paintbot_lab/paintbot/rl/configs/expert-replay-discovery-v1.json
+CORPUS=paintbot_lab/paintbot/rl/data/runs/expert-corpus-v1
+
+uv run python paintbot_lab/paintbot/rl/discover_expert_replays.py \
+  --config "$CONFIG" --workspace "$CATALOG" --workers 4
+
+uv run python paintbot_lab/paintbot/rl/prepare_expert_corpus.py \
+  --manifest "$CATALOG/expert-replay-pool-v1.json" \
+  --workspace "$CORPUS" --shards 8 --workers 8
+```
+
+With no `--max-episodes`, the preparation command includes the entire
+discoverable catalog. A bounded run uses coverage-balanced round-robin selection
+across expert, world, and GameVersion before sharding. Each shard resumes at the
+trajectory level, and rerunning the launcher skips completed shards. Generated
+wire/action/observation intermediates are removed after durable samples and maps
+are written. Once a shard completes, its per-trajectory sample/map copies are
+also removed; after the final merge, redundant shard corpora are removed. Raw
+replays, exact-source extractors, per-trajectory and per-shard provenance, and
+the single merged `prepared/` training corpus remain.
 
 ### Full run
 
@@ -114,6 +170,23 @@ The first mettabox1 run and its negative behavioral verdict are recorded in the
 [`GPU training report`](../../docs/reports/rl-mettabox1-sft-2026-08-07.md).
 The matched weighting follow-up is in the
 [`action-change report`](../../docs/reports/rl-action-change-weighting-2026-08-07.md).
+The subsequent 2x2 found that history, not transition sampling alone, carries
+the useful signal. Its selected arm improved action changes on held-out GV40
+but is not deployment-ready; see the
+[`temporal-history report`](../../docs/reports/rl-transition-temporal-2x2-2026-08-07.md).
+
+History-aware training uses `--max-history-tokens` (default 832) to reserve the
+entire compact history before allocating the remaining text budget to the
+nearest-first current observation. The previous action and all five targets
+are always retained. This is currently an offline training/evaluation path;
+`policy.py` does not yet maintain the rolling history required by these
+checkpoints. The experiment builder can reproduce the matched corpora:
+
+```sh
+uv run python paintbot_lab/paintbot/rl/build_temporal_experiment.py \
+  --source-workspace paintbot_lab/paintbot/rl/data/runs/historical-cross-era-v1 \
+  --out paintbot_lab/paintbot/rl/data/runs/temporal-2x2-v1
+```
 
 ## Observation-length experiment
 

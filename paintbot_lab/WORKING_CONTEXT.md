@@ -76,6 +76,17 @@ validation knee. On sealed GV40 it reached 9.4% changed-action exact versus
 solution; next change the transition sampling and temporal information. Report:
 [`docs/reports/rl-action-change-weighting-2026-08-07.md`](docs/reports/rl-action-change-weighting-2026-08-07.md).
 
+The matched transition-sampling x four-tick-history experiment is complete.
+Transition-centered sampling alone was flat; compact causal history was the
+material intervention. On natural validation, history raised changed-action
+exact from 0% to 7.9%, and adding balanced transition sampling reached 8.4%
+with 73.1% change precision. The selected combined model generalized only
+partly to sealed GV40: changed-action exact improved from 0.3% to 3.9% and
+changed-component accuracy from 0.7% to 8.8%, but overall exact fell from
+77.1% to 74.7% and change precision fell to 45.2%. Keep temporal history, but
+do not deploy this checkpoint; expand replay/expert diversity next. Report:
+[`docs/reports/rl-transition-temporal-2x2-2026-08-07.md`](docs/reports/rl-transition-temporal-2x2-2026-08-07.md).
+
 ## Current objective
 
 **v54 is the active James Botts champion.** v54

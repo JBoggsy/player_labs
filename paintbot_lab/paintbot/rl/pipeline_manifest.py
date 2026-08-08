@@ -17,8 +17,10 @@ class EpisodeSpec:
     game_version: str
     source_commit: str
     split: Split
-    povs: tuple[int, ...] | Literal["best_reward"]
+    povs: tuple[int, ...] | Literal["best_reward", "expert_policies"]
     minimum_reward: float | None = None
+    expert_policy_version_ids: tuple[str, ...] = ()
+    max_povs_per_policy: int | None = None
 
 
 @dataclass(frozen=True)
@@ -26,6 +28,11 @@ class PreparationConfig:
     stride: int = 24
     action_delay_ticks: int = 0
     max_samples_per_version: int | None = None
+    balance_versions: bool = True
+    history_ticks: int = 0
+    continue_on_error: bool = False
+    retain_intermediates: bool = True
+    prune_trajectory_artifacts_after_prepare: bool = False
     seed: int = 1
 
 
@@ -83,6 +90,10 @@ def load_manifest(path: Path) -> PipelineManifest:
         and preparation.max_samples_per_version <= 0
     ):
         raise ValueError("preparation.max_samples_per_version must be positive")
+    if preparation.history_ticks not in {0, 4}:
+        raise ValueError("preparation.history_ticks must currently be 0 or 4")
+    if not preparation.balance_versions and preparation.max_samples_per_version is not None:
+        raise ValueError("max_samples_per_version requires balance_versions")
 
     training = TrainingConfig(**value.get("training", {}))
     if training.tuning not in {"lora", "full"}:
@@ -117,14 +128,24 @@ def _episode(value: dict[str, Any]) -> EpisodeSpec:
     if split not in {"train", "validation", "test"}:
         raise ValueError(f"invalid split {split!r}")
     raw_povs = value.get("povs", "best_reward")
-    if raw_povs == "best_reward":
-        povs: tuple[int, ...] | Literal["best_reward"] = "best_reward"
+    if raw_povs in {"best_reward", "expert_policies"}:
+        povs: tuple[int, ...] | Literal["best_reward", "expert_policies"] = raw_povs
     elif isinstance(raw_povs, list) and raw_povs:
         povs = tuple(int(item) for item in raw_povs)
         if len(povs) != len(set(povs)) or any(item < 0 for item in povs):
             raise ValueError("episode povs must be unique non-negative seat indices")
     else:
-        raise ValueError("episode povs must be 'best_reward' or a non-empty list")
+        raise ValueError(
+            "episode povs must be 'best_reward', 'expert_policies', or a non-empty list"
+        )
+    expert_policy_version_ids = tuple(
+        str(item) for item in value.get("expert_policy_version_ids", ())
+    )
+    if raw_povs == "expert_policies" and not expert_policy_version_ids:
+        raise ValueError("expert_policies POV selection requires policy version ids")
+    max_povs_per_policy = value.get("max_povs_per_policy")
+    if max_povs_per_policy is not None and int(max_povs_per_policy) <= 0:
+        raise ValueError("max_povs_per_policy must be positive")
     return EpisodeSpec(
         episode_id=str(value["episode_id"]),
         game_version=str(value["game_version"]),
@@ -135,5 +156,9 @@ def _episode(value: dict[str, Any]) -> EpisodeSpec:
             float(value["minimum_reward"])
             if value.get("minimum_reward") is not None
             else None
+        ),
+        expert_policy_version_ids=expert_policy_version_ids,
+        max_povs_per_policy=(
+            int(max_povs_per_policy) if max_povs_per_policy is not None else None
         ),
     )

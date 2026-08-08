@@ -77,3 +77,34 @@ def test_best_reward_pov_and_minimum_are_validated(tmp_path) -> None:
     spec = EpisodeSpec("episode", "40", "commit", "train", "best_reward", 1)
 
     assert resolve_povs(spec, path) == [(3, 2.0, "strong:7")]
+
+
+def test_expert_policy_selection_never_chooses_non_expert(tmp_path) -> None:
+    metadata = {
+        "policy_results": [
+            {
+                "policy": {"id": "expert-pv", "name": "expert", "version": 4},
+                "agents": [
+                    {"agent_id": 3, "reward": -1},
+                    {"agent_id": 5, "reward": -1},
+                ],
+            },
+            {
+                "policy": {"id": "winner-pv", "name": "other", "version": 9},
+                "agents": [{"agent_id": 0, "reward": 4}],
+            },
+        ]
+    }
+    path = tmp_path / "episode.json"
+    path.write_text(json.dumps(metadata))
+    spec = EpisodeSpec(
+        "episode",
+        "41",
+        "commit",
+        "train",
+        "expert_policies",
+        expert_policy_version_ids=("expert-pv",),
+        max_povs_per_policy=1,
+    )
+
+    assert resolve_povs(spec, path) == [(3, -1.0, "expert:4")]
