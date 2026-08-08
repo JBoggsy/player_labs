@@ -174,8 +174,9 @@ the macOS LaunchAgent
 `com.softmax.paintbot-stencil-campaign-controller`, with persistent state and
 logs under `~/Library/Application Support/Stencil Campaign Controller/`,
 atomic checkpoints, prompt-propagation retries, duplicate exclusion, login
-startup, crash restart, and exact audits for both airdrops and cell-to-cell
-invasions. Operations and the statistical contract are documented under
+startup, crash restart, settled-frame recovery after a missed pending window,
+and exact audits for both airdrops and cell-to-cell invasions. Operations and
+the statistical contract are documented under
 [`infra/campaign_order_controller/`](infra/campaign_order_controller/).
 
 The previous controller was not a vision failure. It read the authoritative
@@ -287,10 +288,12 @@ Next concrete steps:
   allies 7+7+1+1 and author a second seating with captains swapped. `4ffa` is
   mode `ffa4`, one policy per color. The disabled ladder's equal-block 3:1:1
   rotation is not the live sampler.
-- Deployed game **paintbot 0.7.211**
+- Barrage implementation baseline **paintbot 0.7.211**
   (`cow_01cb32e5-…`, source
-  `9dedac0ed6011aeca92bf2c6403b0e70c955f461`, **GameVersion 41**), which the lab
-  is pinned to. GV41 added the endgame grenade barrage (every variant; 0:00 no
+  `9dedac0ed6011aeca92bf2c6403b0e70c955f461`, **GameVersion 41**), used for the
+  hazard investigation. Current campaign episode rows report **paintbot
+  0.7.215**; re-resolve its source and GameVersion before making new mechanic
+  claims. GV41 added the endgame grenade barrage (every variant; 0:00 no
   longer ends a barrage game) and paint puddles (implemented but inactive — no
   deployed variant sets `mapPuddles`). Game repo = the
   coworld-ctf clone (`~/coding/coworlds/coworld-ctf`); no paintbot-specific Nim
@@ -299,8 +302,9 @@ Next concrete steps:
   classifies it as `2v2` and normally adds one allied entrant per side.
   The engine also now emits per-team handicap markers, locks spray direction
   for a burst, supports polygon/mapkit terrain, and supports `quadmirror` maps.
-- Project-local `coworld` is pinned at **0.1.35**, which provides the campaign
-  commands (`board`, `history`, `prompt`, `set-prompt`, and related views).
+- Project-local `coworld` is pinned at **0.1.38**, which provides the campaign
+  commands (`board`, `history`, `prompt`, `set-prompt`, and related views) and
+  requires `softmax-cli 0.26.27`.
 
 ## Open threads
 

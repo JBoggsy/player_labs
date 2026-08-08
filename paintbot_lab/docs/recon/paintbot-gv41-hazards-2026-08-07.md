@@ -255,6 +255,12 @@ the restamp implementation at `src/ctf/sim.nim:2734-2755`).
 
 ## Required Stencil changes, prioritized
 
+> **Status update (2026-08-08):** The P0 versions below record this report's
+> cutoff, not current operational advice. Live campaign episodes now report
+> Paintbot 0.7.215, and the project uses the supported `coworld 0.1.38` /
+> `softmax-cli 0.26.27` combination. Re-resolve the live source and GameVersion
+> before the next mechanic evaluation.
+
 ### P0 — update provenance and evaluation inputs
 
 1. Update the lab's canonical game pin/docs from 0.7.208 / GV40 to **0.7.211 /

@@ -25,8 +25,10 @@ mid-session; check them back at the start of focused work.
   and a human call, not a repo change.
 
 - **Evaluate v58's barrage evacuation, then decide on shell-level evasion**
-  (updated 2026-08-07). The lab is now pinned to 0.7.211 / GV41
-  (`coworld-ctf@9dedac0`) and v58 implements the coarse half of the recon's P1:
+  (updated 2026-08-07). The hazard investigation was pinned to 0.7.211 / GV41
+  (`coworld-ctf@9dedac0`); current campaign episode rows report 0.7.215, so
+  re-resolve its source and GameVersion before the next mechanic evaluation.
+  V58 implements the coarse half of the recon's P1:
   it parses the `grenade barrage depth/rate/start/sat` marker and evacuates to
   the generated map center once `depth > 0`, tracing `barrage_center_ticks`.
   **Still open:** (a) v58 has only a one-episode mechanism probe — it needs a
@@ -36,10 +38,9 @@ mid-session; check them back at the start of focused work.
   seam with the 58px body-hit reach — centering is a positional heuristic, not
   shell awareness; (c) hold the broader P2 doctrine until (a) settles, so the
   effect stays attributable. Note the marker's rate field truncates downward
-  (`rate 9` at the true 9.5/s), so use the schedule math for density. Also bump
-  the project-local CLIs (`coworld` 0.1.35→0.1.37, `softmax-cli`
-  0.26.27→0.26.29) before operational use, and stop reusing 0.7.208 A/B results
-  for endgame questions.
+  (`rate 9` at the true 9.5/s), so use the schedule math for density. The
+  supported project CLI combination is now `coworld 0.1.38` with its required
+  `softmax-cli 0.26.27`; stop reusing 0.7.208 A/B results for endgame questions.
   Full analysis: `paintbot_lab/docs/recon/paintbot-gv41-hazards-2026-08-07.md`.
 
 - **Expand Paintbot RL replay/expert diversity, then refine temporal state**
