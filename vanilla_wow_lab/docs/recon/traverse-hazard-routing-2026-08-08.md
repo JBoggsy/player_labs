@@ -306,6 +306,17 @@ anchor for the entire encounter and updates it only after avoidance ends.
 That anchor-lifetime correction is uploaded inert as wowborg:v112
 (`9b8831af-2095-4505-98a5-ddf1e814fe54`, source `a20766f`).
 
+V112 request `xreq_f8931af8-bc85-4073-85da-021d50524465` cleared 11 guidepoints and
+reached 1,869.4 living northing yards, improving on every earlier 0.1.209 candidate. It then
+pulled one Glasshide Basilisk at road node 8. The direct-away escape remained in combat for
+7.9 seconds, moved 146 yards away from the road target, and lost 2,098 health before the generic
+target-progress watchdog aborted at 595 health. This is the calibrated fight case described
+above: one known non-elite level-45–49 attacker versus a level-60 player near full health, with
+v73 already proving that exact-attacker melee can kill three such attackers without death. The
+next candidate fights only when attacker count is one, the attacker is known non-elite and at
+least ten levels lower, and player health is at least 80%; it preserves escape for every other
+case and traces the decision inputs and outcome.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.

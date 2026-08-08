@@ -64,7 +64,14 @@ but each pulse that temporarily restored 15 yards overwrote the anchor inside th
 Retreats collapsed into 6–7-yard oscillations until a Scorpid pulled. The active source candidate
 freezes the anchor until the projected corridor is fully clear.
 It is uploaded inert as **wowborg:v112**
-(`9b8831af-2095-4505-98a5-ddf1e814fe54`, source `a20766f`); hosted proof is pending.
+(`9b8831af-2095-4505-98a5-ddf1e814fe54`, source `a20766f`). Request
+`xreq_f8931af8-bc85-4073-85da-021d50524465` cleared 11 guidepoints and reached
+1,869.4 living northing yards, the best current-contract result. It then pulled one level-45–49
+Glasshide Basilisk at road node 8. Direct escape lost 2,098 health over 7.9 seconds while moving
+146 yards away from the route target, and the generic eight-second route-progress watchdog
+aborted at 595 health. The active source candidate instead fights exactly one known non-elite
+attacker when wowborg has at least a ten-level advantage and 80% health; all unsafe cases retain
+escape. Fight/escape activation and strength inputs are traced.
 
 ### Previous 0.1.208 movement baseline
 

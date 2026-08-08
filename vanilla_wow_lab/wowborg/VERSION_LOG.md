@@ -6,7 +6,13 @@
   inert; not submitted). Built from source `a20766f` against canonical vanilla-wow 0.1.209.
 - Keeps the safe holding point fixed while any projected corridor hazard remains active, updating
   it only after avoidance ends. All projection, clearance, and steering knobs are unchanged.
-  Hosted proof is pending.
+- Request `xreq_f8931af8-bc85-4073-85da-021d50524465` completed cleanly with score
+  1,996.05, cleared 11 guidepoints, and reached 1,869.4 living northing yards. A single Glasshide
+  Basilisk then aggroed at road node 8. Escape moved 146 yards away from the route target while
+  health fell from 2,693 to 595; the route watchdog aborted after eight seconds of no targetward
+  progress. The next candidate fights one known non-elite attacker only with a ten-level advantage
+  and at least 80% health, reusing the v73-proven exact-attacker melee owner. Multiple, elite,
+  unknown-strength, near-level, and low-health cases keep the existing escape behavior.
 
 ## v111 - two-yard safe-holding arrival (2026-08-08)
 
