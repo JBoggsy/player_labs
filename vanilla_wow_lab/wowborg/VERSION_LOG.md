@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v105 - corridor-filtered cluster clearance (2026-08-08)
+
+- Version UUID: `af1d041f-61d2-45a5-bb44-6051762f2934` (`wowborg:v105`, uploaded
+  inert; not submitted). Built from source `d763b81` with the published 0.1.188 contract.
+- Refines v104 without changing the road: avoidance activates only for an 18-yard forward
+  corridor intersection, side clearance includes every hostile within the 30/40-yard envelope,
+  and switching requires five yards of benefit. Actual combat uses a direct attacker-radial flee
+  target. Side switches emit `traverse_hazard_avoidance_switched`. Hosted proof is pending.
+
 ## v104 - pre-aggro live-hostile steering (2026-08-08)
 
 - Version UUID: `6472b8dc-0499-4a05-b28d-070c029b950d` (`wowborg:v104`, uploaded

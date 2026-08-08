@@ -125,7 +125,9 @@ still died. The trace explains why: any nearby unit triggered a turn while only 
 unit influenced side choice, so avoiding a Rabid Blisterpaw exposed a Glasshide Gazer and the
 stale side persisted. The active candidate triggers only on an 18-yard forward-corridor
 intersection, scores both sides against every nearby hostile, switches only for five yards more
-clearance, and flees directly away from attackers if a pull still occurs.
+clearance, and flees directly away from attackers if a pull still occurs. It is uploaded inert as
+**wowborg:v105** (`af1d041f-61d2-45a5-bb44-6051762f2934`, source `d763b81`); hosted
+proof is pending.
 
 ## Historical status (2026-08-06): V78 SUBMITTED AND QUALIFYING ON THE CORRECTED CLOCK
 
