@@ -235,6 +235,14 @@ clearance, the chosen side is retained until 40 yards clear, and activation/end 
 30/40-yard hysteresis is deliberately wider than the measured 4.1-7.9-yard pull distances while
 remaining local enough to avoid abandoning the road corridor.
 
+v104 proved visibility is early enough—nine avoidance activations occurred before death—but
+falsified “nearest unit plus sticky side.” It turned for off-corridor mobs and scored clearance
+against only the trigger, so one avoidance could enter another hostile's envelope. The refined
+edge test activates only when a hostile lies within an 18-yard forward corridor, evaluates both
+side candidates against *all* nearby hostiles, changes the retained side only when the alternative
+adds at least five yards of clearance, and uses an attacker-radial escape vector after contact.
+This directly implements the geometry/live-overlay separation in the router shape above.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.

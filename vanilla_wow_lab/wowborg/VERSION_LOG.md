@@ -7,7 +7,13 @@
 - Keeps the measured road and combat escape, then adds the first live hazard overlay. A hostile
   within 30 yards ahead creates two local side candidates; wowborg bends bounded steering toward
   the one with greater clearance and holds that side until 40 yards clear. Activation and exit
-  emit `traverse_hazard_avoidance` and `traverse_hazard_avoidance_ended`. Hosted proof is pending.
+  emit `traverse_hazard_avoidance` and `traverse_hazard_avoidance_ended`.
+- Request `xreq_f77ed886-9df8-4b54-98ff-7a88222840ff` activated avoidance nine times,
+  proving that live units arrive early enough to plan around. It still died because any nearby
+  unit triggered a turn while only that unit influenced side choice; avoiding a Rabid Blisterpaw
+  exposed a Glasshide Gazer, and the stale side persisted. The next candidate triggers only on an
+  18-yard forward-corridor intersection, scores both sides against every nearby hostile, switches
+  sides only for a five-yard clearance gain, and flees directly away after an actual pull.
 
 ## v103 - run-through escape on incidental combat (2026-08-08)
 

@@ -120,7 +120,12 @@ moving, but a seed-dependent Glasshide Gazer pulled earlier at 7.9 yards and fol
 within 30 yards ahead bends pulses toward the higher-clearance side of the road, holds that side
 until 40 yards clear, and traces avoidance activation/end with exact unit evidence. It is uploaded
 inert as **wowborg:v104** (`6472b8dc-0499-4a05-b28d-070c029b950d`, source `1d44515`);
-hosted proof is pending.
+request `xreq_f77ed886-9df8-4b54-98ff-7a88222840ff` activated avoidance nine times but
+still died. The trace explains why: any nearby unit triggered a turn while only the triggering
+unit influenced side choice, so avoiding a Rabid Blisterpaw exposed a Glasshide Gazer and the
+stale side persisted. The active candidate triggers only on an 18-yard forward-corridor
+intersection, scores both sides against every nearby hostile, switches only for five yards more
+clearance, and flees directly away from attackers if a pull still occurs.
 
 ## Historical status (2026-08-06): V78 SUBMITTED AND QUALIFYING ON THE CORRECTED CLOCK
 
