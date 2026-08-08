@@ -70,8 +70,13 @@ v90's telemetry proves that semantic movement can advance 4.94 yards inside that
 candidate is uploaded inert as **wowborg:v92**
 (`e05dc2ad-be49-4e9f-b9c2-a971ca6a7c31`, source `c5881ed`), but request
 `xreq_3f2afccb-a366-446e-a201-a431bd5ff07f` still timed out without advancing frame 2.
-The active candidate advances one explicit wait frame after Travel Form activation before
-movement, isolating the remaining cast-to-movement synchronization boundary.
+v93 advanced an explicit wait from frame 2 to frame 3, then wedged on movement there, ruling
+out a Travel Form race. Fresh control `xreq_d53a387d-906d-4dfd-9372-abfc3018f1ed` confirmed
+that unchanged v88's 0.1.188 policy package still drives movement against today's 0.1.208 game,
+although its old southwest route died and spent 84.2% of the episode as a ghost. v94 combined
+the older package with the failed micro-target experiment and again did not move. The active
+candidate therefore combines the proven 0.1.188 client package with the original long semantic
+movement shape and v90's canonical road; experimental waits and micro-targets are removed.
 
 ## Historical status (2026-08-06): V78 SUBMITTED AND QUALIFYING ON THE CORRECTED CLOCK
 

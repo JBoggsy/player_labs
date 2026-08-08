@@ -1,5 +1,30 @@
 # wowborg version log
 
+## v94 - proven client package with rejected micro-targets (2026-08-08)
+
+- Version UUID: `f7a4329f-d383-40e6-a88b-0168d3b8bedb` (`wowborg:v94`, uploaded
+  inert; not submitted). Built from source `ce25c1d` with the exact
+  `vanilla-wow:0.1.188` policy-side package image
+  `sha256:4e560ebcd9eec85f09305e15ae51cdc216715ee0135aa5968c26793fde334ac3`.
+  Policy image manifest:
+  `sha256:358691b96f66d32754ac2f46584e44010f950cbe107878827bf8e08f5ce653f7`.
+- Request `xreq_5b2351c5-bcc7-4cf6-ae05-f5c47305a133` proved that the experimental
+  seven-yard micro-target still times out without motion under the older package. It does not
+  test the original long semantic movement shape that worked in v88.
+- Fresh control `xreq_d53a387d-906d-4dfd-9372-abfc3018f1ed` reran unchanged v88 against the
+  current 0.1.208 game and confirmed real movement. It later died at the old southwest detour
+  `(-9313.6,-2689.8)` and spent 84.2% of the episode as a ghost, so it validates transport only.
+
+## v93 - post-form wait activation probe (2026-08-08)
+
+- Version UUID: `b300526c-5f90-47f4-bb79-cbfef0e80e98` (`wowborg:v93`, uploaded
+  inert; not submitted). Built from source `ce25c1d` against `vanilla-wow:0.1.208`.
+  Policy image manifest:
+  `sha256:b277bbf68e7443901c446bebdc1fce28e57e51c2f6e09dc49025b39a2297b7de`.
+- Request `xreq_12df99ec-6d9f-419f-8a33-71e1d7f8ea39` accepted an explicit wait from frame 2
+  to frame 3, then timed out on the first movement action without advancing frame 3. This rules
+  out a simple Travel Form settlement race.
+
 ## v92 - semantic micro-target activation probe (2026-08-08)
 
 - Version UUID: `e05dc2ad-be49-4e9f-b9c2-a971ca6a7c31` (`wowborg:v92`, uploaded
