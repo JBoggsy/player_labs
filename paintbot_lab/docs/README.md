@@ -28,6 +28,7 @@ The root [`../../AGENTS.md`](../../AGENTS.md),
 | [`designs/stencil-v1-design.md`](designs/stencil-v1-design.md) | Stencil architecture, online `WorldMap`, port/scrap decisions, risks | living design with post-v1 addenda |
 | [`designs/stencil-nim-port.md`](designs/stencil-nim-port.md) | native-port contract, parity corpus, packaging | completed design + maintained status |
 | [`designs/rl-policy.md`](designs/rl-policy.md) | Qwen policy decisions, cross-era data/training pipeline, observation representation | living design; full replay-to-checkpoint pipeline implemented |
+| [`designs/spray-avoidance-v59-design.md`](designs/spray-avoidance-v59-design.md) | v59: enemy loadout belief (weapon/grenade/barrier/shield), spray-can keep-out with ally-coverage-aware flee, spray shout, spray-carrier target priority | approved design; not yet implemented |
 | [`../paintbot/stencil_nim/VERSION_LOG.md`](../paintbot/stencil_nim/VERSION_LOG.md) | immutable upload/version provenance | append-only; newest version first |
 | [`../../player-build.md`](../../player-build.md) | game-agnostic hosted-player image contract | root reference |
 
