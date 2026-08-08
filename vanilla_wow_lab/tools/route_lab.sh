@@ -13,7 +13,7 @@ LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$LAB_DIR/tools/versions.env"
 GAME_IMAGE="$WOWBORG_ENVIRONMENT_IMAGE"
 
-exec docker run --rm \
+exec docker run --rm --platform=linux/amd64 \
   -v "$LAB_DIR/wowborg:/opt/wowborg/wowborg:ro" \
   -v "$LAB_DIR/tools/route_lab.py:/opt/route_lab.py:ro" \
   -e VANILLA_WOW_NAVMESH_HELPER=/usr/local/bin/vmangos-navmesh-helper \

@@ -26,6 +26,7 @@ def _frame(frame_id: int, *, x: float = 1.0, action_state=None) -> Observation:
         is_dead=False,
         is_ghost=False,
         known_spells=[],
+        cooldown_spell_ids=[],
         active_area_trigger_ids=[],
         action_state=action_state,
     )
@@ -129,4 +130,15 @@ def test_stale_frame_does_not_submit_an_action() -> None:
     session = GymSession(env, _frame(2), {})
 
     assert session.select_wait(_frame(1)) is None
+    assert env.actions == []
+
+
+def test_stuck_spell_is_not_retried_while_on_cooldown() -> None:
+    env = FakeEnv()
+    frame = _frame(1)
+    frame.known_spells = [7355]
+    frame.cooldown_spell_ids = [7355]
+    session = GymSession(env, frame, {})
+
+    assert session.select_stuck(frame) is None
     assert env.actions == []

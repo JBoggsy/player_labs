@@ -18,6 +18,24 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
 
+### Inspect image contents before adding split-image routing to local tools
+
+Evidence: the open thread claimed canonical 0.1.208's pinned adapter image lacked
+`/vmangos-data`, but direct inspection found both the mmaps and navmesh helper in that exact
+digest. `route_lab.sh` was actually blocked by its removed `environment.contract.agent`
+import; changing it to the current policy contract restored a real route.
+Status: candidate — verify the current artifact rather than extending tooling around an older
+packaging layout.
+
+### Gate recovery spells on the authoritative cooldown projection
+
+Evidence: every Observation carries `cooldown_spell_ids`, while Wowborg's Stuck path checked
+only that spell 7355 was known and invokable. The local mover could therefore submit the same
+recovery cast on successive stalled frames. The cooldown gate now traces the skip and uses the
+existing wait fallback.
+Status: candidate — availability describes the control surface; cooldown state decides whether
+the action is useful now.
+
 ### Separate death transitions and terminal scoring controls from active movement churn
 
 Evidence: the 0.1.208 five-run acceptance contains three stationary stop/restart pairs, but

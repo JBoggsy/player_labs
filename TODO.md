@@ -5,12 +5,6 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
-- **LOCAL TOOLING 2026-08-08: reclaim Docker VM space before the next Wowborg build.**
-  The 0.1.208 exact-image contract imports successfully, but `tools/build_player.sh` stopped
-  during its dependency install with `OSError: [Errno 28] No space left on device`. Docker
-  currently reports substantial image, volume, and build-cache usage. Inspect ownership and
-  reclaim only disposable cache/artifacts before rebuilding; do not blindly prune shared
-  images or volumes.
 - **Re-sync crewborg's player SDK, or accept the split** (found 2026-08-07 during a
   docs audit). `pyproject.toml` now pins coworld-tools `4dd923d` (paintbot needs it —
   earlier revisions clamped Sprite-v1 masks to `0x7f` and dropped Button C), but

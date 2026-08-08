@@ -44,6 +44,12 @@ The lab source dependency and exact environment-image pin now match 0.1.208. Use
 with `game_logs.log` present it reports nonterminal versus terminal stops, host counters,
 short turns, direct reversals, and the former bearing-disappearance signature.
 
+Local engineering cleanup is complete. BuildKit's 658.6 MB of disposable cache was reclaimed
+without deleting shared images or volumes. `tools/route_lab.sh` again executes the real pinned
+0.1.208 navmesh after adopting the current `environment.contract.policy.WorldPoint` import.
+Wowborg now suppresses spell 7355 while the authoritative frame lists it on cooldown, emits a
+`stuck_skipped` trace, and uses the existing wait fallback instead of submitting another cast.
+
 ## Historical status (2026-08-06): V78 SUBMITTED AND QUALIFYING ON THE CORRECTED CLOCK
 
 Inert **wowborg:v75** (`c75e24cc-166f-43df-9d52-d77724cc4b16`, source `aed90c9`)
@@ -573,15 +579,6 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    choice is the capability model for travel between waypoints—hazard-aware routing around,
    deliberate combat through, or stealth/travel-form passage—so the same intelligence applies
    to later danger rather than encoding this one corridor.
-2. **Reclaim Docker VM space before the next rebuild.** The exact 0.1.208 image contract
-   imports correctly, but a full `tools/build_player.sh` run exhausted Docker storage during
-   dependency installation. The shared root TODO records the safe cleanup requirement.
-3. **`tools/route_lab.sh` is stale for 0.1.146+.** It assumes the `versions.env` image
-   carries `/vmangos-data`, but the release now splits into a Python adapter image (no world
-   data) and a separate VMaNGOS runtime image. Point it at the runtime image before relying
-   on it.
-4. **Spell 7355 cooldown spam** remains an unaddressed wowborg issue, separate from all of
-   the above.
 
 ## Reference
 

@@ -345,6 +345,14 @@ class GymSession:
         return None if action is None else self.select_action(frame, action)
 
     def select_stuck(self, frame: AgentFrame) -> str | None:
+        if STUCK_SPELL_ID in frame.cooldown_spell_ids:
+            self._tracer.emit(
+                "stuck_skipped",
+                reason="cooldown",
+                spell_id=STUCK_SPELL_ID,
+                frame_id=frame.frame_id,
+            )
+            return None
         return self.select_cast_without_target(
             frame,
             STUCK_SPELL_ID,
