@@ -61,8 +61,12 @@ does not board the lift. It is uploaded inert as **wowborg:v90**
 request `xreq_0e577780-d491-4ac5-9a4f-256258d15c7a` failed 5/5 before combat: its first
 302-yard semantic move advanced one 4.94-yard corridor horizon and then hit the environment's
 action deadline, leaving all five characters alive at spawn with zero guidepoints. The next
-candidate keeps the exact road but drives its legs with bounded ordinary steering so the next
-hosted trace can expose the first real route or hazard failure.
+candidate kept the exact road but drove its legs with bounded ordinary steering. It is uploaded
+inert as **wowborg:v91** (`b2cc42e5-822d-4459-89eb-6c16195a7e3c`, source `0b21234`). Request
+`xreq_ba3e0d47-539f-4e3d-8f89-44c776e050fb` showed that even its first 0.249-second turn-only
+`move_vector` timed out without advancing frame 2. The active candidate therefore uses short
+semantic micro-targets sized to settle within the five-second environment action horizon;
+v90's telemetry proves that semantic movement can advance 4.94 yards inside that horizon.
 
 ## Historical status (2026-08-06): V78 SUBMITTED AND QUALIFYING ON THE CORRECTED CLOCK
 

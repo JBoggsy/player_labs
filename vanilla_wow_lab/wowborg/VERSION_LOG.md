@@ -1,5 +1,19 @@
 # wowborg version log
 
+## v91 - bounded road steering activation probe (2026-08-08)
+
+- Version UUID: `b2cc42e5-822d-4459-89eb-6c16195a7e3c` (`wowborg:v91`, uploaded
+  inert; not submitted). Built from source `0b21234` against the exact
+  `vanilla-wow:0.1.208` environment image. Policy image manifest
+  `sha256:faf0824538516d715a22efd27f4b38756a142878ef30c1f4245a42e25a443987`.
+- Keeps v90's canonical road but replaces long semantic moves with bounded ordinary steering.
+  Activation request `xreq_ba3e0d47-539f-4e3d-8f89-44c776e050fb` narrowed the failure further:
+  its first 0.249-second turn-only `move_vector` timed out for 30 wall-seconds without advancing
+  frame 2. No route motion, combat, damage, death, or ghost state occurred.
+- The next candidate uses short semantic micro-targets instead. v90 proved that `move_to`
+  advanced 4.94 yards before the five-second environment action deadline, so a target within
+  that settlement horizon can complete rather than retaining a long movement continuation.
+
 ## v90 - canonical road to the Great Lift lower dock (2026-08-08)
 
 - Version UUID: `6593c92d-2c1a-46f8-abe5-658300d5a7eb` (`wowborg:v90`, uploaded

@@ -32,6 +32,7 @@ GREAT_LIFT_EXIT_Z = 80.0
 GREAT_LIFT_TURN_DEADBAND = 0.20
 GREAT_LIFT_INPUT_SECONDS = 0.75
 ROAD_ARRIVAL_RADIUS_YARDS = 8.0
+ROAD_MICRO_TARGET_YARDS = 7.0
 ROAD_STALL_SECONDS = 8.0
 
 # Follow the deployed owner's level-51 Tanaris and Thousand Needles road spine
@@ -124,11 +125,13 @@ def _steer_road_leg(bridge, target: Point, *, deadline: float, trace):
             trace("traverse_road_stalled", distance=round(distance, 3))
             return None, "no_progress"
 
-        _steer_toward(
-            bridge,
+        fraction = min(1.0, ROAD_MICRO_TARGET_YARDS / distance)
+        bridge.select_move_to(
             frame,
-            target,
-            purpose="follow the authored Traverse road",
+            frame.location.x + (target.x - frame.location.x) * fraction,
+            frame.location.y + (target.y - frame.location.y) * fraction,
+            frame.location.z + (target.z - frame.location.z) * fraction,
+            target.map_id,
         )
     return None, "deadline"
 
