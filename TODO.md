@@ -5,6 +5,15 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
+- **Re-sync crewborg's player SDK, or accept the split** (found 2026-08-07 during a
+  docs audit). `pyproject.toml` now pins coworld-tools `4dd923d` (paintbot needs it —
+  earlier revisions clamped Sprite-v1 masks to `0x7f` and dropped Button C), but
+  `crewrift_lab/tools/versions.env` `PLAYERS_SDK_REF` is still `e8921a6`. Local `uv`
+  and the crewborg **image** therefore run different SDKs, breaking the "local dev and
+  the built image run one SDK" invariant both files document. Left diverged on purpose:
+  bumping it rebuilds a live player against an untested SDK. Either rebuild + retest
+  crewborg at `4dd923d`, or record the split as permanent and drop the invariant.
+
 - **Decide whether to retire beacon from the CTF league** (found 2026-08-07).
   `ctf_lab/` is archived, but that is a repo action only — Coworld CTF is still
   live (`ctf 0.7.203` canonical) and CTF champions are auto-mirrored into the

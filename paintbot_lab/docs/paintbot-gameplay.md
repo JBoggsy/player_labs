@@ -5,12 +5,14 @@ contract, and strategy notes — enough to reason about play without leaving the
 repo. Authoritative sources: the **`Metta-AI/coworld-ctf`** repo (paintbot and
 CTF are the *same Nim binary*; clone at `~/coding/coworlds/coworld-ctf`, server
 `src/ctf/`, rules `docs/RULES.md`, manifest `coworld_manifest_paintbot.json`)
-and the deployed league game (paintbot **0.7.207**, source
-`c8fa5558fb9a5c83af4cf973da16913d6b06f2e4`, verified 2026-08-06,
-GameVersion 40). Re-resolve the canonical game before relying on these live
+and the deployed league game (paintbot **0.7.211**, source
+`9dedac0ed6011aeca92bf2c6403b0e70c955f461`, verified 2026-08-07,
+**GameVersion 41**). Re-resolve the canonical game before relying on these live
 values; Paintbot redeploys frequently.
 The full recon with `file:line` citations:
-[`recon/paintbot-2026-08-03.md`](recon/paintbot-2026-08-03.md).
+[`recon/paintbot-2026-08-03.md`](recon/paintbot-2026-08-03.md); the GV41
+barrage/puddle recon is
+[`recon/paintbot-gv41-hazards-2026-08-07.md`](recon/paintbot-gv41-hazards-2026-08-07.md).
 
 ## One paragraph
 
@@ -63,6 +65,66 @@ separate concerns, so do not use that value as terrain identity.
   the captain. A paired seating swaps captains across colors while allies stay
   fixed. Four-team modes give one complete color to each of four policies.
 - Time-limit draw pays **-1 to every player** (GV21); mutual wipe = 0/0.
+
+## The GV41 endgame barrage (new in 0.7.210 — changes how games end)
+
+**Reaching 0:00 no longer ends a barrage-enabled game.** Every current gameplay
+variant ends in an escalating grenade barrage that fires from the map edges
+inward until someone dies or the heart falls.
+
+| Variant | Clock | Latches at | Saturates | Rate |
+|---|---:|---:|---:|---:|
+| `1v1`, `2v2`, `4ffa`, `default` | 7,200 ticks = 5:00 | 4:30 elapsed | 5:00 | 4/s → 15/s |
+| `4ffa8` | 7,500 ticks = 5:12.5 | 4:42.5 elapsed | 5:12.5 | 4/s → 15/s |
+
+After the latch, both rate and depth follow the same linear 30-second ramp
+`p(t) = clamp(t / 30s, 0, 1)`:
+
+```text
+rate(t)  = 4 + 11·p(t)  shells/s
+depth(t) = 40 + (D - 40)·p(t)  pixels,  D = floor(min(W, H) / 2) + 1
+```
+
+So the true midpoint rate is **9.5/s**, and the 30-second ramp launches about
+**285 shells**. Each shell picks one of the four edges uniformly, an inset in
+`[0, depth)`, and a coordinate along that edge — so the danger zone is a union
+of four edge bands contracting toward center, reaching full-board eligibility at
+saturation. On a giant 2-team map that is 7.0% of possible centers at the latch
+and ~65.6% by 15 seconds. **Center is the safe region early, and eligibility is
+not a flood wall** — blasts are stochastic and their radius reaches past the band.
+
+What a policy can observe every rendered state:
+
+```text
+grenade barrage depth <n> rate <n> start <n> sat <n>
+```
+
+Depth and rate are zero before the latch. ⚠️ The marker publishes
+`ratePermille div 1000`, so it **truncates downward** — at the true 9.5/s
+midpoint the label reads `rate 9`. Use the schedule math for exact density and
+the marker only as a coarse readback. Airborne shells appear as ordinary
+fog-gated `grenade air` objects flying linearly from edge to landing over ten
+ticks; blasts use `blast stage <n>` and unseen landings produce the usual
+jittered `grenade sound` ring.
+
+Stencil's response (v58) is to evacuate toward map center on the marker and hold
+a central ring; see `VERSION_LOG.md`.
+
+## Paint puddles (implemented, NOT active in current campaign episodes)
+
+Puddles exist in 0.7.211 but **no deployed variant config sets `mapPuddles`, and
+the engine default is zero — so normal campaign episodes have none.** Documented
+here so the mechanic is not rediscovered from scratch if it is ever enabled.
+
+A puddle is a **union of discs** — one 26-30px core plus 2-4 smaller lobes, hard
+capped at 45px reach from the anchor. Its init marker `puddle <x0>,<y0> <x1>,<y1>`
+is a **conservative bounding box, not exact membership**, so treating the box as
+the hazard over-avoids. For each full **24 ticks of continuous center-point
+occupancy**, the game rolls a **10% chance of 1 damage** (shield first); leaving
+for even one tick, dying, or respawning resets the clock. Puddles do **not** slow
+movement or firing, and do not block shots or vision. `mapPuddles` is an exact
+0-64 count on **generated two-team maps only** — four-team generation rejects a
+positive request.
 
 ## The campaign (territory) league — how games are actually scheduled
 

@@ -65,6 +65,8 @@ drive the mechanical halves of the loop:
 - **`coworld-local-run`** — run your built policy locally (debugging tool only —
   not part of the standard loop).
 - **`coworld-policy-lifecycle`** — upload a new version → (gated) submit → monitor.
+- **`build-and-upload`** — build a player image and upload it as a new policy version;
+  the routine, inert, every-iteration action. Uploading enters no competition.
 - **`coworld-experiment`** — design + run **one** falsifiable hypothesis test (design →
   criticize → cheapest instrument → pre-registered verdict). Game-agnostic method.
 - **`coworld-ab`** — decide whether a change actually helped via a matched, fresh A/B. Ships
@@ -127,8 +129,13 @@ upload → run an experience request → report + diagnose. After that you're in
   broken `co-gas` submodule that breaks uv's recursive clone (issue #13). `uv.lock` pins the
   exact tarball SHA for reproducible installs; to adopt a newer SDK, bump that SHA (in
   `pyproject.toml` + `crewrift_lab/tools/versions.env`) and `uv lock` (a tarball can't
-  auto-track `main`). The **game** ref (`CREWRIFT_REF`) stays deliberately pinned — it must
-  match the deployed league game, not latest (see `crewrift_lab/tools/versions.env`).
+  auto-track `main`). **These two are currently DIVERGED (2026-08-07):** `pyproject.toml`
+  is on `4dd923d` (needed for paintbot — earlier revisions clamped Sprite-v1 input masks
+  to `0x7f` and dropped Button C), while `PLAYERS_SDK_REF` stays on `e8921a6` so crewborg's
+  image is not rebuilt against an untested SDK. Local `uv` and the crewborg image therefore
+  run different SDKs until someone rebuilds and retests crewborg. The **game** ref
+  (`CREWRIFT_REF`) stays deliberately pinned — it must match the deployed league game, not
+  latest (see `crewrift_lab/tools/versions.env`).
 - The Coworld platform contract (PLAYER.md/GAME.md, runner) lives in the `metta` repo
   if you need to consult it — **read-only; never write to a `metta` checkout.**
 

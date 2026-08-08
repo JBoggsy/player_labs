@@ -9,18 +9,21 @@ game-agnostic skills. This file is the **Paintbot-specific layer**: the game,
 the docs, the practices, and the policy we optimize. When the two disagree, the
 root defines *process*; this file defines *Paintbot*.
 
-> **Lab status (2026-08-06): v54 champion.** `stencil:v54` is the active James
-> Botts champion, a hosted-validated GV40 continuous-aim correction retaining
-> v52's squad behavior; v52 is the previous champion (always verify live rather
-> than trusting this snapshot).
+> **Lab status (2026-08-07): v54 champion, v58 newest.** `stencil:v54` is the
+> active James Botts champion, a hosted-validated GV40 continuous-aim correction
+> retaining v52's squad behavior; v52 is the previous champion. Versions v55-v58
+> are uploaded but **inert** (never submitted); v53 is rejected. Always verify
+> live rather than trusting this snapshot.
 > Stencil lives at [`paintbot/stencil_nim/`](paintbot/stencil_nim/) and its
 > immutable upload history is recorded in
 > [`VERSION_LOG.md`](paintbot/stencil_nim/VERSION_LOG.md). The game repo is
 > the SAME clone as CTF's
 > (`~/coding/coworlds/coworld-ctf` — paintbot is a second manifest over the
-> same binary). Deployed paintbot is **0.7.211 / GameVersion 41** as of
-> 2026-08-07, which added the endgame grenade barrage and paint puddles; the lab
-> is still pinned to **0.7.208 / GV40** and Stencil is unaware of both hazards
+> same binary; **ctf_lab itself is archived** — see [`../ctf_lab/README.md`](../ctf_lab/README.md)).
+> Deployed paintbot is **0.7.211 / GameVersion 41**, which added the endgame
+> grenade barrage and paint puddles, and the lab is now pinned there
+> (`tools/versions.env`). v58 evacuates toward map center on the barrage marker;
+> **paint puddles remain unmodeled**
 > (see [`docs/recon/paintbot-gv41-hazards-2026-08-07.md`](docs/recon/paintbot-gv41-hazards-2026-08-07.md)).
 > The league redeploys often — check `uv run coworld list | grep paintbot`. Live
 > state: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
@@ -83,11 +86,13 @@ repeat → human gate → submit) runs **unchanged**. Paintbot-specific instrume
   full 16-seat campaign roster. All performance conclusions require the
   campaign-shaped hosted format above.
 - **Report** (step 2) — pull artifacts with `coworld-episode-artifacts`. There
-  is **no paintbot survey/warehouse skill yet**; ctf_lab's `event_warehouse.py`
-  re-keying machinery and `analyze_reporter_warehouse.py` pattern are the
-  templates when episodes exist (replays carry exact `mapSpec` geometry, so
-  per-map analysis is possible post-hoc). Building a paintbot warehouse is the
-  highest-leverage tooling investment once we have batches.
+  is **no paintbot survey/warehouse skill yet**. [`tools/event_warehouse.py`](tools/event_warehouse.py)
+  (adopted from the archived ctf_lab) supplies the re-keying machinery, and
+  ctf_lab's `analyze_reporter_warehouse.py` remains a pattern to copy. The
+  warehouse is **not yet Paintbot-correct**: it projects only red/blue and scores
+  green/yellow wins as draws (see `../TODO.md`). Replays carry exact `mapSpec`
+  geometry, so per-map analysis is possible post-hoc. Building a paintbot
+  warehouse is the highest-leverage tooling investment once we have batches.
 - **Implement** (step 4) — change [`paintbot/stencil_nim/`](paintbot/stencil_nim/);
   knobs live in `config.nim` (`STENCIL_*` env vars) so each iteration is
   attributable.
@@ -175,9 +180,9 @@ Paintbot-specific parked work lives in the shared [`../TODO.md`](../TODO.md).
 - **stencil** *(native Nim)* — at
   [`paintbot/stencil_nim/`](paintbot/stencil_nim/), the primary competing
   Paintbot policy. **Current as of 2026-08-07: `stencil:v54` is the active
-  champion; `stencil:v57` is the newest uploaded version but is inert
-  (never hosted-evaluated); `stencil:v53` is rejected; `stencil:v52` is the
-  previous champion**.
+  champion; `stencil:v58` is the newest uploaded version and is inert — its only
+  hosted run is a one-episode mechanism probe, not a performance verdict;
+  `stencil:v53` is rejected; `stencil:v52` is the previous champion**.
   Version
   history: [`paintbot/stencil_nim/VERSION_LOG.md`](paintbot/stencil_nim/VERSION_LOG.md).
   Behavior knobs are `STENCIL_*` env vars declared in `config.nim` and set at

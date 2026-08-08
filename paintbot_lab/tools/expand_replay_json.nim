@@ -7,7 +7,7 @@
 ## player (every PosEvery ticks) plus per-flag `flag_pos` rows, so the warehouse can
 ## answer spatial questions (where kills happen, carrier paths, territory control).
 ##
-## It is built by ctf_lab/tools/build_expand_replay.sh, which stages it INTO the fetched
+## It is built by paintbot_lab/tools/build_expand_replay.sh, which stages it INTO the fetched
 ## game repo's tools/ dir (so the `../src/ctf/...` relative imports resolve). Re-sim
 ## validates a per-tick hash, so it must be built at the SAME game ref that recorded the
 ## replay (a hash mismatch => bump CTF_REF).

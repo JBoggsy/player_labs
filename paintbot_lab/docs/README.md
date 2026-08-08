@@ -89,7 +89,11 @@ champions applies only to the document's cutoff.
 | [`reports/rl-mettabox1-sft-2026-08-07.md`](reports/rl-mettabox1-sft-2026-08-07.md) | CUDA/BF16 canaries, LR/epoch sweep, full cross-era checkpoint, and persistence-baseline verdict |
 | [`reports/rl-action-change-weighting-2026-08-07.md`](reports/rl-action-change-weighting-2026-08-07.md) | matched 1×/3×/class-balanced/16× changed-component loss sweep and held-out-era verdict |
 | [`reports/rl-transition-temporal-2x2-2026-08-07.md`](reports/rl-transition-temporal-2x2-2026-08-07.md) | matched transition-sampling x four-tick-history ablation and selected-model GV40 result |
-| [`reports/stencil-squad-consensus-retrospective-2026-08-06.md`](reports/stencil-squad-consensus-retrospective-2026-08-06.md) | v49-v53 leaderless-squad experiment retrospective and next-session handoff |
+| [`reports/stencil-squad-consensus-retrospective-2026-08-06.md`](reports/stencil-squad-consensus-retrospective-2026-08-06.md) | v49-v53 leaderless-squad experiment retrospective and next-session handoff — **read this first**; it synthesizes the per-version artifacts below |
+| `reports/stencil-v49…v53-*-experiment.{html,json}` | the underlying per-version squad-consensus and rejoin experiment renders + their exact request/result fixtures (v49 squad, v50 squad + live, v51 live, v52 timeout-rejoin, v53 refresh-rejoin) |
+| [`reports/stencil-v55-early-defense-r399-2026-08-06.md`](reports/stencil-v55-early-defense-r399-2026-08-06.md) | v55 spawn-box opening / early-defense round-399 field test |
+| [`reports/rl-initial-sft-2026-08-06.md`](reports/rl-initial-sft-2026-08-06.md) | first Mac SFT plumbing pass: 125 balanced samples, holdout barely above the majority baseline |
+| [`reports/rl-action-alignment-investigation-2026-08-06.md`](reports/rl-action-alignment-investigation-2026-08-06.md) | zero-tick vs neighboring-tick action-alignment investigation that settled the corpus offset |
 | [`reports/stencil-v7-top-field-4ffa-16seat-request.json`](reports/stencil-v7-top-field-4ffa-16seat-request.json) | immutable historical request fixture |
 | [`reports/stencil-v9-top-field-4ffa-16seat-request.json`](reports/stencil-v9-top-field-4ffa-16seat-request.json) | immutable historical request fixture |
 
@@ -111,5 +115,6 @@ When live state changes:
    rather than rewriting their evidence.
 6. Append uploads/submissions to `VERSION_LOG.md`.
 
-The latest audit record is
-[`audits/2026-08-06-game-contract-audit.md`](audits/2026-08-06-game-contract-audit.md).
+Dated audit records live in [`audits/`](audits/): the documentation audit
+([`2026-08-05`](audits/2026-08-05-documentation-audit.md)) and the game-contract
+audit ([`2026-08-06`](audits/2026-08-06-game-contract-audit.md)).
