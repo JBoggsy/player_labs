@@ -234,6 +234,10 @@ def _activate_travel_form(bridge, trace) -> None:
         success=outcome is not None and outcome.success,
         detail=outcome.detail if outcome is not None else "unsettled",
     )
+    settle_frame = bridge.observe()
+    if settle_frame is not None:
+        bridge.select_wait(settle_frame)
+        trace("traverse_travel_form_settled", frame_id=settle_frame.frame_id)
 
 
 @dataclass

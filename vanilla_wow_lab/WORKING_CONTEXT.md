@@ -66,7 +66,12 @@ inert as **wowborg:v91** (`b2cc42e5-822d-4459-89eb-6c16195a7e3c`, source `0b2123
 `xreq_ba3e0d47-539f-4e3d-8f89-44c776e050fb` showed that even its first 0.249-second turn-only
 `move_vector` timed out without advancing frame 2. The active candidate therefore uses short
 semantic micro-targets sized to settle within the five-second environment action horizon;
-v90's telemetry proves that semantic movement can advance 4.94 yards inside that horizon.
+v90's telemetry proves that semantic movement can advance 4.94 yards inside that horizon. That
+candidate is uploaded inert as **wowborg:v92**
+(`e05dc2ad-be49-4e9f-b9c2-a971ca6a7c31`, source `c5881ed`), but request
+`xreq_3f2afccb-a366-446e-a201-a431bd5ff07f` still timed out without advancing frame 2.
+The active candidate advances one explicit wait frame after Travel Form activation before
+movement, isolating the remaining cast-to-movement synchronization boundary.
 
 ## Historical status (2026-08-06): V78 SUBMITTED AND QUALIFYING ON THE CORRECTED CLOCK
 

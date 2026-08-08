@@ -1,5 +1,20 @@
 # wowborg version log
 
+## v92 - semantic micro-target activation probe (2026-08-08)
+
+- Version UUID: `e05dc2ad-be49-4e9f-b9c2-a971ca6a7c31` (`wowborg:v92`, uploaded
+  inert; not submitted). Built from source `c5881ed` against the exact
+  `vanilla-wow:0.1.208` environment image. Policy image manifest
+  `sha256:a76c87619a92d1aca52ec6f95f1bb050d784297b460b9d5bd8ea942f94755929`.
+- Replaces v91's bounded vector input with seven-yard semantic micro-targets intended to settle
+  inside the five-second host action horizon. Request
+  `xreq_3f2afccb-a366-446e-a201-a431bd5ff07f` still timed out on the first movement action
+  without advancing frame 2. Target length therefore is not the discriminator.
+- The older moving v88 image carried the 0.1.188 policy-side environment package; the current
+  package removed its remote navmesh setup but did not change `VanillaWowEnv.step`. The next
+  candidate explicitly advances one contract-native wait frame after Travel Form activation
+  before submitting movement, testing the remaining cast-to-movement synchronization boundary.
+
 ## v91 - bounded road steering activation probe (2026-08-08)
 
 - Version UUID: `b2cc42e5-822d-4459-89eb-6c16195a7e3c` (`wowborg:v91`, uploaded
