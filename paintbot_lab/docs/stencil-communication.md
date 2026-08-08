@@ -5,7 +5,8 @@ native Stencil player. It is a reference for humans inspecting behavior and for
 agents changing or interoperating with Stencil. It describes existing behavior,
 not a proposed redesign.
 
-**Implementation baseline:** `stencil:v59` (not yet uploaded), Paintbot 0.7.215,
+**Implementation baseline:** `stencil:v59` (uploaded 2026-08-08, inert), built
+against Paintbot 0.7.215 / `6c7a4c0e`,
 GameVersion 41. V59 adds the spray-carrier report. V57 aligned Stencil's shared
 sender interval with the engine's 24-tick limit; the other formats remain
 inherited from v56/v55 and the retained v52 consensus core.

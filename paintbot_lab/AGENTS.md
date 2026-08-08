@@ -20,8 +20,10 @@ root defines *process*; this file defines *Paintbot*.
 > the SAME clone as CTF's
 > (`~/coding/coworlds/coworld-ctf` — paintbot is a second manifest over the
 > same binary; **ctf_lab itself is archived** — see [`../ctf_lab/README.md`](../ctf_lab/README.md)).
-> Deployed paintbot is **0.7.215 / GameVersion 41** and the lab is pinned there
-> (`tools/versions.env`, source `6c7a4c0e`). GV41 brought the endgame grenade
+> Deployed paintbot is **0.7.216 / GameVersion 41**; the lab **builds** against
+> 0.7.215 / `6c7a4c0e` (`tools/versions.env`), one sprite-only release behind —
+> 0.7.216's `config_schema` and `variants` are byte-identical to 0.7.215's, so
+> nothing in the pin's contract moved. GV41 brought the endgame grenade
 > barrage and paint puddles; 0.7.212-215 added **team perks** and **cardboard
 > barriers**, both config-gated and OFF in every deployed variant. v58 evacuates
 > toward map center on the barrage marker; **paint puddles, perks, and barriers

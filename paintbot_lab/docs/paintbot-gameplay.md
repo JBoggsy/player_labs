@@ -5,12 +5,13 @@ contract, and strategy notes — enough to reason about play without leaving the
 repo. Authoritative sources: the **`Metta-AI/coworld-ctf`** repo (paintbot and
 CTF are the *same Nim binary*; clone at `~/coding/coworlds/coworld-ctf`, server
 `src/ctf/`, rules `docs/RULES.md`, manifest `coworld_manifest_paintbot.json`)
-and the deployed league game (paintbot **0.7.215**, source
-`6c7a4c0e0be35bdcf738137595ccbcb4b4c79bf9`, verified 2026-08-08,
-**GameVersion 41**). Re-resolve the canonical game before relying on these live
-values; Paintbot redeploys frequently — an upstream manifest merge auto-uploads
-the next version, so the pin goes stale with nobody in this lab acting (0.7.211
-→ 0.7.215 took about a day).
+and the deployed league game (paintbot **0.7.216**, **GameVersion 41**; the lab
+builds against 0.7.215 / source `6c7a4c0e0be35bdcf738137595ccbcb4b4c79bf9`,
+verified 2026-08-08, whose `config_schema` and `variants` are byte-identical to
+0.7.216's). Re-resolve the canonical game before relying on these live values;
+Paintbot redeploys frequently — an upstream manifest merge auto-uploads the next
+version, so the pin goes stale with nobody in this lab acting. 0.7.211 → 0.7.215
+took about a day, and 0.7.216 landed under two hours after that.
 The full recon with `file:line` citations:
 [`recon/paintbot-2026-08-03.md`](recon/paintbot-2026-08-03.md); the GV41
 barrage/puddle recon is
@@ -240,7 +241,7 @@ generate → validate → retry seed+1). What a policy must absorb:
   must read the map from the observation (below). Replays DO carry the exact
   geometry (`mapSpec`), so post-hoc tools can reconstruct terrain.
 - `gunRange` is fixed per episode (GV34) — bigger maps do NOT extend the gun.
-  The engine stock default is 1050px, but every deployed Paintbot 0.7.215
+  The engine stock default is 1050px, but every deployed Paintbot 0.7.216
   variant explicitly overrides it to **1300px** (vision reach is therefore
   1950px except for the 90px omnidirectional bubble).
 - Grenade max range and shout radius scale with the map (`mapWidth/5`).

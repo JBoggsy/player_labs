@@ -4,7 +4,11 @@ Read this before assuming what a version contains. Format mirrors
 `ctf_lab/ctf/beacon/VERSION_LOG.md`: one entry per uploaded version — what
 changed, why, and what the evidence said.
 
-## v59 — spray-carrier avoidance, not yet uploaded
+## v59 — spray-carrier avoidance, uploaded 2026-08-08
+
+Immutable policy-version UUID: `73caf241-9198-4245-bcf5-e9ddec986311`.
+Uploaded with tag `purpose=spray-avoidance`. **Not submitted to any league** —
+uploading is inert; submission is the gated human call.
 
 - Parses identity-badge loadouts into visible players and persistent tracks,
   including truthful weapon, grenade, and shield state, plus the existing
@@ -30,8 +34,23 @@ changed, why, and what the evidence said.
 - Pins the build to canonical Paintbot 0.7.215 / source
   `6c7a4c0e0be35bdcf738137595ccbcb4b4c79bf9` (GameVersion 41).
 
-No immutable policy-version UUID exists yet. Hosted mechanism-probe and matched
-A/B evidence are pending upload.
+**Evidence status: none yet.** `stencil_nim` has no test suite, so seven staged
+clean `linux/amd64` compiles are the only pre-upload signal; no runtime behavior
+is verified. The first hosted signal is the mechanism probe
+`xreq_33b25248-0e6b-4909-b903-fe4300253bb7` (2 episodes, all 16 seats v59,
+canonical paintbot 0.7.216) — a **debug probe**, not campaign-shaped, so it is
+excluded from gameplay claims by
+[`../../docs/tournament-like-experience-requests.md`](../../docs/tournament-like-experience-requests.md).
+It exists to answer only whether the mechanism fires: weapon tokens parsing onto
+enemies, `shielded` ever becoming true (proving the repaired dead observable),
+`clear_spray` activating and agents leaving the disc, no activation while
+shielded, and the per-tick cost of coverage plus candidate validation. A matched
+campaign-shaped A/B against v58 follows once the mechanism is confirmed.
+
+**Built against 0.7.215 / `6c7a4c0e`, run on 0.7.216.** Canonical advanced during
+the session (upstream #259, "Center the planted heart sprite on its grab point" —
+sprite geometry only, no spray, movement, or observation change), so the build
+pin deliberately lags the canonical version by one sprite-level release.
 
 ## v58 — barrage-center evacuation, uploaded 2026-08-07
 

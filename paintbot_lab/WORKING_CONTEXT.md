@@ -105,6 +105,32 @@ unit—is the reboot guarantee.
 
 ## Current objective
 
+**v59 is uploaded and awaiting its first evidence (2026-08-08).** v59
+(`73caf241-9198-4245-bcf5-e9ddec986311`, tag `purpose=spray-avoidance`) adds
+enemy-loadout belief (weapon/grenade/barrier/shield off the identity badge) and
+the `clear_spray` keep-out rung, plus a spray shout and spray-carrier target
+priority. Design:
+[`docs/designs/spray-avoidance-v59-design.md`](docs/designs/spray-avoidance-v59-design.md)
+— read revisions 2-3, which record what two adversarial review rounds corrected,
+including a shield model that was simply wrong in revision 1.
+
+It also repairs a **dead observable**: `shield carried` is unreachable in the
+engine, so `enemy.shielded` and `iHaveShield` had been permanently false and
+three consumers were dead code (the shield weight in `fight.nim`, the grenade
+gate in `action.nim`, the shield skip in `items.nim`). That revives three
+behaviors at once, which is an A/B confound — `STENCIL_SHIELD_AWARENESS`
+(default on) isolates it.
+
+**No runtime evidence yet.** `stencil_nim` has no tests; clean compiles are the
+only pre-upload signal. First hosted signal is the mechanism probe
+`xreq_33b25248-0e6b-4909-b903-fe4300253bb7` (2 episodes, 16 seats all v59, run
+on canonical **paintbot 0.7.216** while the build pin is 0.7.215/`6c7a4c0e`).
+That probe is a **debug probe**, not campaign-shaped, so it cannot support a
+gameplay claim — it only answers whether the mechanism fires. The verdict needs
+a matched campaign-shaped A/B against v58: one live `2v2`-mode cell with its
+exact `map_ref`/`mode`/`map_seed`, v58 and v59 as opposing captains, two pinned
+live champion allies, and both captain seatings.
+
 **v58 is the active James Botts champion.** v58
 (`1f7f7c75-5edb-4b35-aba8-241264bbd611`) adds GV41 barrage-center evacuation
 on top of the fully traced v57 line. It was submitted on 2026-08-07 as
@@ -295,12 +321,16 @@ Next concrete steps:
 - Barrage implementation baseline **paintbot 0.7.211**
   (`cow_01cb32e5-…`, source
   `9dedac0ed6011aeca92bf2c6403b0e70c955f461`, **GameVersion 41**), used for the
-  hazard investigation. **RESOLVED 2026-08-08:** canonical is now **paintbot
-  0.7.215** (`cow_4be22f60-d630-4816-9931-d872a06ac33f`, source
-  `6c7a4c0e0be35bdcf738137595ccbcb4b4c79bf9`, still **GameVersion 41**), matched
-  by content — that commit's `coworld_manifest_paintbot.json` `config_schema`
-  and `variants` are byte-identical to the manifest downloaded from the
-  platform. The lab pin (`tools/versions.env`) moved with it. 0.7.212-215 added
+  hazard investigation. **RESOLVED 2026-08-08:** the lab **build pin** is
+  **paintbot 0.7.215** (`cow_4be22f60-d630-4816-9931-d872a06ac33f`, source
+  `6c7a4c0e0be35bdcf738137595ccbcb4b4c79bf9`, **GameVersion 41**), matched by
+  content — that commit's `coworld_manifest_paintbot.json` `config_schema` and
+  `variants` are byte-identical to the manifest downloaded from the platform.
+  **Canonical has since advanced to 0.7.216**
+  (`cow_6fd2d525-015c-4763-a411-635b9c9de513`, upstream #259 — planted-heart
+  sprite centering only), whose `config_schema` and `variants` are in turn
+  byte-identical to 0.7.215's, so the pin's contract is intact and no rebuild is
+  warranted. 0.7.212-215 added
   **team perks** and **cardboard barriers**, both config-gated and off in every
   deployed variant, both without a GameVersion bump; every spray-can constant is
   unchanged across the bump. GV41 added the endgame grenade barrage (every variant; 0:00 no

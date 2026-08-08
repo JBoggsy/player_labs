@@ -3,9 +3,13 @@
 *2026-08-08. Living document; updated as the implementation reveals new
 information.*
 
-Built against canonical **Paintbot 0.7.215 / GameVersion 41**, source
-`6c7a4c0e0be35bdcf738137595ccbcb4b4c79bf9` (`tools/versions.env`). **Every
-engine `file:line` below was re-verified against that ref on 2026-08-08.**
+Built against **Paintbot 0.7.215 / GameVersion 41**, source
+`6c7a4c0e0be35bdcf738137595ccbcb4b4c79bf9` (`tools/versions.env`) — canonical
+when this was written. **Every engine `file:line` below was re-verified against
+that ref on 2026-08-08.** Canonical is now 0.7.216 (upstream #259, planted-heart
+sprite centering); its `config_schema` and `variants` are byte-identical to
+0.7.215's and no spray, movement, or observation behavior changed, so every
+citation here still holds.
 
 > **Revision 2** — the first draft was reviewed adversarially (by Codex) against
 > the engine source and did not survive intact. Corrected here: the shield model
