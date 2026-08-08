@@ -135,6 +135,11 @@ def _steer_road_leg(bridge, target: Point, *, deadline: float, trace):
             target,
             purpose="steer the canonical Traverse road after movement bootstrap",
         )
+        settle_frame = bridge.observe()
+        if settle_frame is None:
+            return None, "no_frame"
+        bridge.select_wait(settle_frame)
+        trace("traverse_road_pulse_settled", frame_id=settle_frame.frame_id)
     return None, "deadline"
 
 

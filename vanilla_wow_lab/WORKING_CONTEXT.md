@@ -86,6 +86,9 @@ already established.
 v97 proved the first post-bootstrap turn advances to frame 11, but a second consecutive
 turn-only action wedges without displacement. The active candidate holds forward while turning,
 so every bounded steering action produces physical route progress.
+v98's first forward-turn arc displaced 6.4 yards and returned frame 11, but a second consecutive
+vector action wedged. The active candidate inserts one contract-native wait between vector pulses
+to break the failing continuation chain; activation emits `traverse_road_pulse_settled`.
 
 ## Historical status (2026-08-06): V78 SUBMITTED AND QUALIFYING ON THE CORRECTED CLOCK
 

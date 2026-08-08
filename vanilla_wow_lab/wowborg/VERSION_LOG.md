@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v98 - physically productive turn arcs (2026-08-08)
+
+- Version UUID: `cda8fa1c-0c7a-41d1-b240-afdadce677f3` (`wowborg:v98`, uploaded
+  inert; not submitted). Built from source `4aee96b` with the published 0.1.188 contract.
+- Request `xreq_b1b28122-0177-414e-b977-72a94a70b2b7` completed the bootstrap and
+  made the first forward-turn arc productive: it displaced 6.4 yards and returned frame 11.
+  A second consecutive vector action then timed out on frame 11.
+- The next candidate inserts one proven contract-native wait frame between steering pulses,
+  breaking the vector continuation chain while keeping every actual movement pulse productive.
+
 ## v97 - post-bootstrap vector steering (2026-08-08)
 
 - Version UUID: `864ec7ce-66ef-407a-b1ef-fe8a83588f2d` (`wowborg:v97`, uploaded
