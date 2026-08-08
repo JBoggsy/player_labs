@@ -58,7 +58,11 @@ last-safe observations were commonly one seven-yard pulse behind, but the reused
 guidepoint radius treated them as already reached. The active source candidate changes only the
 safe-holding arrival radius to two yards so retreat can actually activate.
 It is uploaded inert as **wowborg:v111**
-(`3202f1c4-8a65-4f9b-b05a-f41523e11f3c`, source `3fd1b9c`); hosted proof is pending.
+(`3202f1c4-8a65-4f9b-b05a-f41523e11f3c`, source `3fd1b9c`). Request
+`xreq_24ae35ee-7dac-4035-9f65-8792bd5d4f89` produced repeated retreat activations,
+but each pulse that temporarily restored 15 yards overwrote the anchor inside the live encounter.
+Retreats collapsed into 6–7-yard oscillations until a Scorpid pulled. The active source candidate
+freezes the anchor until the projected corridor is fully clear.
 
 ### Previous 0.1.208 movement baseline
 

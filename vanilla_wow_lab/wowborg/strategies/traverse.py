@@ -456,7 +456,7 @@ def _steer_road_leg(
             and side_clearances[avoidance.side]
             < ROAD_HAZARD_MIN_CLEARANCE_YARDS
         )
-        if not unsafe:
+        if avoidance.side is None:
             avoidance.safe_point = Point(
                 frame.location.map_id,
                 frame.location.x,

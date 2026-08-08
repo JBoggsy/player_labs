@@ -5,7 +5,11 @@
 - Version UUID: `3202f1c4-8a65-4f9b-b05a-f41523e11f3c` (`wowborg:v111`, uploaded
   inert; not submitted). Built from source `3fd1b9c` against canonical vanilla-wow 0.1.209.
 - Changes only safe-holding arrival from the eight-yard road-guidepoint radius to a dedicated
-  two-yard radius, allowing the retreat added in v110 to activate. Hosted proof is pending.
+  two-yard radius, allowing the retreat added in v110 to activate.
+- Request `xreq_24ae35ee-7dac-4035-9f65-8792bd5d4f89` produced repeated retreat
+  activations, but every temporarily safe pulse overwrote the anchor inside the same encounter.
+  Retreats therefore collapsed into 6–7-yard oscillations until a Scorpid pulled. The next
+  candidate updates the safe point only after the projected hazard corridor fully clears.
 
 ## v110 - retreat to a safe holding point (2026-08-08)
 

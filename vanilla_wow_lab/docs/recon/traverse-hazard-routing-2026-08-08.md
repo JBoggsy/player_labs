@@ -298,6 +298,12 @@ altering threat projection or the 15-yard clearance floor.
 That radius-only correction is uploaded inert as wowborg:v111
 (`3202f1c4-8a65-4f9b-b05a-f41523e11f3c`, source `3fd1b9c`).
 
+V111 emitted repeated retreat start/end events, proving the radius correction activated the new
+edge. It still pulled a Scorpid because every pulse that briefly restored 15 yards of clearance
+overwrote the safe point while the encounter remained live; subsequent retreats collapsed into
+6–7-yard oscillations around the hazard. The next candidate freezes the last clear-corridor
+anchor for the entire encounter and updates it only after avoidance ends.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.
