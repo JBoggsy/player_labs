@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v103 - run-through escape on incidental combat (2026-08-08)
+
+- Version UUID: `a7b0bc17-80b6-4e7c-b909-dbefe9486428` (`wowborg:v103`, uploaded
+  inert; not submitted). Built from source `928cb29` with the published 0.1.188 contract.
+- Keeps v102's measured route unchanged. A road leg now continues its bounded steering while in
+  combat rather than declaring route failure and disconnecting. It emits
+  `traverse_combat_escape` with health and visible attacker evidence on activation, then
+  `traverse_combat_escape_ended` after leashing the pull. Hosted proof is pending.
+
 ## v102 - measured channel between Brute and Gazer (2026-08-08)
 
 - Version UUID: `775f286c-aa9d-4834-86e1-75730cfb3762` (`wowborg:v102`, uploaded

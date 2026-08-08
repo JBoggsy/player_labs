@@ -112,6 +112,8 @@ health and reached road node 5. At `(-7989.2,-3488.8)` it took one 62-damage hit
 and disconnected because the road-leg loop treats any combat as terminal. It still had 2,692 of
 2,754 health. The active candidate retains the measured route but continues steering along it
 during incidental combat, tracing attacker identity and escape start/end instead of freezing.
+It is uploaded inert as **wowborg:v103**
+(`a7b0bc17-80b6-4e7c-b909-dbefe9486428`, source `928cb29`); hosted proof is pending.
 
 ## Historical status (2026-08-06): V78 SUBMITTED AND QUALIFYING ON THE CORRECTED CLOCK
 
