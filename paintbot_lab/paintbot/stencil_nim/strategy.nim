@@ -7,6 +7,8 @@ type Objective* = object
   intent*: Intent
   flowGoal*: Option[Point]
 
+type SprayThreat = tuple[track: PlayerTrack, pos: Point, raw, effective: float]
+
 proc distance(a, b: Point): float = hypot((a.x - b.x).float, (a.y - b.y).float)
 
 proc navigate(point: Point, reason: string, flow = none(Point)): Objective =
@@ -16,6 +18,171 @@ proc navigate(point: Point, reason: string, flow = none(Point)): Objective =
 proc hold(reason: string): Objective =
   Objective(intent: Intent(kind: Hold, point: none(Point), reason: reason),
     flowGoal: none(Point))
+
+proc coverageAt*(
+  belief: Belief, point: Point, cache: var Table[int, float]
+): float =
+  let
+    map = belief.worldmap
+    cell = map.cellOf(point)
+    key = cell.y * map.gridW + cell.x
+  if cache.hasKey(key):
+    return cache[key]
+  let coneHalfBrads = GuaranteedVisionConeHalfDeg.float /
+    360.0 * AimBradsTurn.float
+
+  proc contribution(pos: Point, aim: Option[int], weight: float): float =
+    if aim.isNone:
+      return 0.0
+    let
+      dx = point.x - pos.x
+      dy = point.y - pos.y
+      range = hypot(dx.float, dy.float)
+    if range > PostGunRangePx.float:
+      return 0.0
+    let
+      wanted = arctan2(-dy.float, dx.float) /
+        (2.0 * PI) * AimBradsTurn.float
+      error = abs(floorMod(
+        pyRound(wanted - aim.get.float + AimBradsTurn.float / 2.0),
+        AimBradsTurn) - AimBradsTurn div 2).float
+    if error > coneHalfBrads or not map.rayClear(pos, point):
+      return 0.0
+    weight
+
+  var covered = 0.0
+  for ally in belief.teammates:
+    if ally.weapon == WeaponGun:
+      covered = max(covered, contribution(ally.pos, ally.aimBrads, 1.0))
+  for track in belief.teammateTracks:
+    if track.weapon != WeaponGun or
+        belief.tick - track.lastTick > SprayCoverTrackTtlTicks:
+      continue
+    let weight = if track.source == TrackVisual and track.lastTick == belief.tick:
+      1.0 else: SprayCoverTrackDiscount
+    covered = max(covered, contribution(
+      belief.projectedTrackPos(track), track.aimBrads, weight))
+  cache[key] = covered
+  covered
+
+proc updateSprayFleeLatch(belief: Belief): seq[SprayThreat] =
+  belief.sprayThreatCount = 0
+  belief.sprayNearestThreatDistancePx = none(float)
+  belief.sprayFleeChoice = none(SprayFleeScore)
+  if not SprayAvoid or belief.selfXy.isNone or
+      (ShieldAwareness and belief.iHaveShield):
+    belief.sprayFleeActive = false
+    return
+
+  for track in belief.enemyTracks:
+    if track.weapon != WeaponSpray or
+        belief.tick - track.lastTick > SprayThreatTtlTicks:
+      continue
+    let
+      pos = belief.projectedTrackPos(track)
+      rawDistance = distance(belief.selfXy.get, pos)
+      sourcePad = if track.source == TrackTeamShout:
+        SprayShoutThreatPadPx.float else: 0.0
+    result.add((track, pos, rawDistance, rawDistance - sourcePad))
+  belief.sprayThreatCount = result.len
+  if result.len == 0:
+    belief.sprayFleeActive = false
+    return
+
+  var nearestIndex = 0
+  for index in 1 ..< result.len:
+    if result[index].effective < result[nearestIndex].effective:
+      nearestIndex = index
+  belief.sprayNearestThreatDistancePx = some(result[nearestIndex].raw)
+  if belief.sprayFleeActive:
+    if result[nearestIndex].effective > SprayFleeReleasePx.float:
+      belief.sprayFleeActive = false
+  elif result[nearestIndex].effective <= SprayFleeTriggerPx.float:
+    belief.sprayFleeActive = true
+
+proc sprayFleeObjective(
+  belief: Belief, threats: openArray[SprayThreat]
+): Option[Objective] =
+  if not belief.sprayFleeActive:
+    return none(Objective)
+
+  let
+    selfXy = belief.selfXy.get
+    map = belief.worldmap
+  var
+    best = none(SprayFleeScore)
+    coverageCache: Table[int, float]
+  for directionIndex in 0 ..< 16:
+    let angle = directionIndex.float / 16.0 * 2.0 * PI
+    for ring in 1 .. 2:
+      let candidate: Point = (
+        pyRound(selfXy.x.float + cos(angle) * (SprayFleeStepPx * ring).float),
+        pyRound(selfXy.y.float + sin(angle) * (SprayFleeStepPx * ring).float))
+      if not map.walkableNavSegment(selfXy, candidate):
+        continue
+      var nearestThreat = Inf
+      for threat in threats:
+        nearestThreat = min(nearestThreat, distance(candidate, threat.pos))
+      let threatGain = clamp(
+        nearestThreat / SprayFleeReleasePx.float, 0.0, 1.0)
+      var
+        coverageSum = 0.0
+        coverageWeight = 0.0
+        maxNearbyAllies = 0
+      for sampleIndex in 1 .. SprayCoverSamples:
+        let
+          ratio = sampleIndex.float / SprayCoverSamples.float
+          sample: Point = (
+            pyRound(selfXy.x.float + (candidate.x - selfXy.x).float * ratio),
+            pyRound(selfXy.y.float + (candidate.y - selfXy.y).float * ratio))
+          weight = 1.0 + (SprayCoverFarBias - 1.0) *
+            (sampleIndex - 1).float / (SprayCoverSamples - 1).float
+        coverageSum += belief.coverageAt(sample, coverageCache) * weight
+        coverageWeight += weight
+        var nearbyAllies = 0
+        for ally in belief.teammates:
+          if distance(sample, ally.pos) <= SprayClumpRadiusPx.float:
+            inc nearbyAllies
+        maxNearbyAllies = max(maxNearbyAllies, nearbyAllies)
+      let
+        coverPath = coverageSum / coverageWeight
+        clumpRisk = clamp(
+          maxNearbyAllies.float / SprayClumpNormAllies.float, 0.0, 1.0)
+        centerTerm =
+          if belief.barrage.isSome and belief.barrage.get.depth > 0:
+            clamp(1.0 - distance(candidate, map.center) /
+              BarrageCenterRadiusPx.float, 0.0, 1.0)
+          else:
+            0.0
+        score = SprayThreatWeight * threatGain + SprayCoverWeight * coverPath -
+          SprayClumpWeight * clumpRisk + SprayCenterWeight * centerTerm
+        candidateScore = SprayFleeScore(
+          point: candidate, score: score, threatGain: threatGain,
+          coverPath: coverPath, clumpRisk: clumpRisk, centerTerm: centerTerm)
+      if best.isNone or score > best.get.score:
+        best = some(candidateScore)
+  if best.isSome:
+    belief.sprayFleeChoice = best
+    inc belief.sprayFleeTicks
+    return some(navigate(best.get.point, "clear_spray"))
+
+  var nearestIndex = 0
+  for index in 1 ..< threats.len:
+    if threats[index].effective < threats[nearestIndex].effective:
+      nearestIndex = index
+  let
+    nearest = threats[nearestIndex].pos
+    dx = selfXy.x - nearest.x
+    dy = selfXy.y - nearest.y
+    norm = max(distance(selfXy, nearest), 1.0)
+    fallback: Point = (
+      pyRound(selfXy.x.float + dx.float / norm * SprayFleeStepPx.float),
+      pyRound(selfXy.y.float + dy.float / norm * SprayFleeStepPx.float))
+  if map.walkableNavSegment(selfXy, fallback):
+    inc belief.sprayFleeTicks
+    return some(navigate(fallback, "clear_spray"))
+  inc belief.sprayFleeTicks
+  some(hold("clear_spray"))
 
 proc stealGoal(belief: Belief): Option[Point] =
   if belief.worldmap.isNil or belief.stealTarget.isNone:
@@ -39,6 +206,7 @@ proc decideObjective*(belief: Belief): Objective =
   let map = belief.worldmap
   if map.isNil:
     return hold("no_worldmap")
+  let sprayThreats = belief.updateSprayFleeLatch
 
   belief.squadOrderPostActive = false
   belief.squadOrderPost = none(Point)
@@ -75,6 +243,10 @@ proc decideObjective*(belief: Belief): Objective =
           int(belief.selfXy.get.x.float + dx.float / norm * GrenadeWarnClearPx.float),
           int(belief.selfXy.get.y.float + dy.float / norm * GrenadeWarnClearPx.float)),
           "clear_grenade")
+
+  let sprayFlee = belief.sprayFleeObjective(sprayThreats)
+  if sprayFlee.isSome:
+    return sprayFlee.get
 
   if BarrageCentering and belief.barrage.isSome and
       belief.barrage.get.depth > 0 and belief.selfXy.isSome:

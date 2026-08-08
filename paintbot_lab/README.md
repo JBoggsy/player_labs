@@ -200,8 +200,9 @@ These are different tools:
   `viewer_bundle.json` from [`tools/viewer_bundle.py`](tools/viewer_bundle.py). It synchronizes
   ground-truth replay positions with each Stencil agent's tick-by-tick belief,
   objective, tracks, item state, danger field, and heard-event traces. It also
-  shows a conservative ally-covered heatmap: currently visible allies' fuzzed
-  16-step headings projected through the guaranteed vision cone and clipped by
+  shows a potential ally gun-coverage heatmap: visible and fresh tracked gun
+  carriers' fuzzed 16-step headings projected through the guaranteed 45-degree
+  cone, capped at gun range, discounted when track-only, and clipped by
   pixel-wall line of sight. The belief panel reports covered-cell share,
   visible/headed ally counts, heading precision, and danger mean/max at the
   selected snapshot. Ground-truth player and flag colors come from the

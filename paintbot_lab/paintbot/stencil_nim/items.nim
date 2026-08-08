@@ -68,7 +68,7 @@ proc updateItems*(belief: Belief, percept: PaintState) =
 
 proc alreadyHave(belief: Belief, kind: ItemKind): bool =
   (kind == Grenade and belief.iHaveGrenade) or
-    (kind == Shield and belief.iHaveShield) or
+    (kind == Shield and ShieldAwareness and belief.iHaveShield) or
     (kind == Arc and belief.iHaveArc)
 
 proc threshold(kind: ItemKind): float =

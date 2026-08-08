@@ -226,7 +226,7 @@ proc coverFromThreat(
 
 proc peekDuckOverride(belief: Belief, intent: Intent): Option[MicroOverride] =
   if belief.worldmap.isNil or belief.iCarryHeartOf.isSome or intent.reason in
-      ["carry_home", "clear_grenade", "fetch_medkit", "intercept_thief",
+      ["carry_home", "clear_grenade", "clear_spray", "fetch_medkit", "intercept_thief",
        "intercept_thief_heard", "early_defense", "barrage_center"]:
     return none(MicroOverride)
   if intent.reason == "steal" and intent.point.isSome and
@@ -333,7 +333,8 @@ proc grenadePlan(belief: Belief, mask: uint8): Option[GrenadePlan] =
     elif count >= 2: addPlan(enemy.pos, "group", count, true, 1)
     elif thief: addPlan(enemy.pos, "heart_thief", count, true, 2)
     elif lives.isSome and lives.get == 1: addPlan(enemy.pos, "final_life", count, true, 3)
-    elif not belief.fireReady and not enemy.shielded and enemy.hpSegments.isSome and
+    elif not belief.fireReady and (not ShieldAwareness or not enemy.shielded) and
+        enemy.hpSegments.isSome and
         enemy.hpSegments.get <= GrenadeSingleHpMax:
       addPlan(enemy.pos, "cooldown_finish", count, true, 4)
   var predicted: seq[Point]
@@ -435,6 +436,7 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
   belief.aimLateralErrorPx = 0.0
   belief.targetRangePx = 0.0; belief.targetRayClear = false
   belief.targetTeammateBlocked = false; belief.fireGateReason = "no_target"
+  belief.sprayFireFreezeSuppressed = false
   if belief.selfXy.isNone or belief.worldmap.isNil:
     state.aHeld = false; belief.leadBrads = 0; belief.throwChargeTicks = 0
     belief.throwTarget = none(Point); belief.throwReason = ""
@@ -442,13 +444,20 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
     return Command(heldMask: 0)
   let selfXy = belief.selfXy.get
   let carrying = belief.iCarryHeartOf.isSome
+  let sprayFreezeUnsafe = intent.reason == "clear_spray" and
+    belief.sprayNearestThreatDistancePx.isSome and
+    belief.sprayNearestThreatDistancePx.get <= SprayLethalReachPx.float +
+      FireWindupTicks.float * MaxSpeedPxTick + SprayFireFreezeMarginPx.float
+  belief.sprayFireFreezeSuppressed = sprayFreezeUnsafe
   let override = if PeekDuck: belief.peekDuckOverride(intent) else: none(MicroOverride)
-  let freeze = state.fireHoldTicks > 0 and not carrying
+  let freeze = state.fireHoldTicks > 0 and not carrying and not sprayFreezeUnsafe
   if state.fireHoldTicks > 0: dec state.fireHoldTicks
   if freeze: discard
   elif override.isSome: mask = mask or override.get.mask
   elif intent.kind == NavigateTo and intent.point.isSome:
-    var waypoint = if intent.reason in FlowReasons:
+    var waypoint = if intent.reason == "clear_spray":
+      intent.point.get
+    elif intent.reason in FlowReasons:
       belief.worldmap.flowWaypoint(intent.point.get, selfXy)
     else: astarWaypoint(belief.nav, belief.worldmap, selfXy, intent.point.get)
     noteProgress(belief.nav, selfXy)
@@ -462,7 +471,7 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
           inc belief.squadCohesionTicks; waypoint = biased
     mask = mask or octantToward(selfXy, waypoint, belief.nav.stuckTicks >= StuckTicks)
   elif intent.kind == Hold and not carrying and
-      intent.reason notin ["early_defense", "barrage_center"]:
+      intent.reason notin ["early_defense", "barrage_center", "clear_spray"]:
     let separation = belief.separationBias
     if separation.isSome:
       let step: Point = (int(selfXy.x.float + separation.get.x * NavCell.float * 2.0),
@@ -491,7 +500,8 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
     if belief.iHaveArc:
       let range = distance(enemy.get.pos, selfXy)
       if range > ArcIdealRangePx.float and range <= ArcPursuitRangePx.float and
-          not carrying and intent.reason notin ["early_defense", "barrage_center"]:
+          not carrying and intent.reason notin
+            ["early_defense", "barrage_center", "clear_spray"]:
         inc belief.sprayPursuitTicks
         mask = (mask and not MovementMask) or octantToward(selfXy, enemy.get.pos, false)
       let contains = belief.sprayContains(aim.pos)
@@ -517,7 +527,7 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
         elif belief.targetTeammateBlocked: "teammate"
         else: "ready"
     if canFire and not state.aHeld:
-      if not carrying:
+      if not carrying and not sprayFreezeUnsafe:
         mask = mask and not MovementMask; state.fireHoldTicks = FireWindupTicks
       mask = mask or ButtonA; state.aHeld = true
       belief.fireGateReason = "fire"

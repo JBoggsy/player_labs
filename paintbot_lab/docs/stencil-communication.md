@@ -5,11 +5,10 @@ native Stencil player. It is a reference for humans inspecting behavior and for
 agents changing or interoperating with Stencil. It describes existing behavior,
 not a proposed redesign.
 
-**Implementation baseline:** `stencil:v58`, Paintbot 0.7.211, GameVersion 41.
-v58 changed no message formats; the shout protocol below is unchanged since v57.
-V57 aligns Stencil's shared sender interval with the engine's 24-tick limit.
-The message protocol and behavior otherwise remain inherited from v56/v55 and
-the retained v52 consensus core.
+**Implementation baseline:** `stencil:v59` (not yet uploaded), Paintbot 0.7.215,
+GameVersion 41. V59 adds the spray-carrier report. V57 aligned Stencil's shared
+sender interval with the engine's 24-tick limit; the other formats remain
+inherited from v56/v55 and the retained v52 consensus core.
 
 The application codec and sender live in
 [`chat.nim`](../paintbot/stencil_nim/chat.nim). Message effects are applied in
@@ -25,7 +24,8 @@ network.
 
 The protocol carries:
 
-- tactical observations: enemy, thief, carrier, grenade, and under-fire;
+- tactical observations: enemy, identified spray carrier, thief, carrier,
+  grenade, and under-fire;
 - local focus-fire claims;
 - squad presence pings;
 - leaderless squad proposals, votes, and commit echoes.
@@ -96,10 +96,19 @@ For example, point `(100, 200)` maps to grid cell `(12, 25)`, encoded as
 `<seat>` is one decimal digit `0..7`. It is the sender's **team-relative seat
 identity**, not its global episode slot and not its policy/entrant identity.
 
+### Player identity: `<identity>`
+
+`<identity>` is one decimal digit `0..7`, mapping to the observed team-relative
+badge names `alpha` through `theta`. It is unique only within a team, so messages
+that identify an enemy also carry `<team>`.
+
 ### Epoch: `<epoch>`
 
 `<epoch>` is one lowercase base-36 digit `0..z`. The wire epoch is the local
-unbounded consensus epoch modulo 36.
+unbounded consensus epoch modulo 36 for consensus messages. A spray report uses
+a separate per-sender epoch, incremented modulo 36 only after a spray report is
+actually selected for sending. That makes a stationary carrier's refresh differ
+from its previous live bubble and survive text-based receiver deduplication.
 
 ### Opponent: `<team>`
 
@@ -131,6 +140,7 @@ the canonical form even though receivers are permissive.
 | Enemy sighting | 5 | `E<cell>` | Adds or refreshes an enemy track at the quantized point. |
 | Under fire | 5 | `U<cell>` | Stamps danger heat `0.5` in a 32 px radius around the point. |
 | Grenade warning | 5 | `G<cell>` | Adds a warning for 72 ticks; nearby agents clear an 80 px area. |
+| Spray carrier | 8 | `S<team><identity><epoch><cell>` | Upserts that team's identified enemy track at the decoded cell as a spray carrier; fields absent from the report remain unchanged. |
 | Heart carrier | 6 | `C<cell><heading>` | Stores a carrier fix for 96 ticks and enables heard-carrier escort. |
 | Own-heart thief | 5 | `T<cell>` | Adds an enemy track and stores a thief interception fix for 96 ticks. |
 | Presence ping | 6 | `P<seat><cell>` | Marks the embedded seat present now. The point is decoded but otherwise unused. |
@@ -168,6 +178,7 @@ Using `<cell> = 0c0p`:
 
 ```text
 E0c0p       enemy near cell (12,25)
+S13a0c0p    blue identity 3 carries spray; report epoch 10
 C0c0p1      carrier near that cell, moving northeast
 P20c0p      team-relative seat 2 is present near that cell
 FI230c0p    seat 2 claims enemy identity 3 near that cell
@@ -185,10 +196,11 @@ open. `chooseShout` uses this strict priority:
 4. consensus vote;
 5. consensus proposal;
 6. active charged-grenade target;
-7. under fire without a visible enemy;
-8. focus-fire claim;
-9. nearest visible enemy sighting;
-10. presence ping.
+7. nearest visible, identified spray carrier when its dedicated cadence is due;
+8. under fire without a visible enemy;
+9. focus-fire claim;
+10. nearest visible enemy sighting;
+11. presence ping.
 
 Higher-priority continuous conditions can starve lower-priority protocol
 traffic. This is deliberate for carrier/thief emergencies but is not a fair
@@ -199,11 +211,20 @@ Additional default cadences:
 - proposal, vote, and commit rebroadcast: every 45 ticks;
 - commit echo window after local commit: 120 ticks;
 - focus-claim rebroadcast: every 30 ticks;
+- spray-carrier rebroadcast: every 48 ticks, constrained not to exceed the
+  48-tick spray-threat TTL;
 - enemy sighting: rearmed after 48 ticks without vision, with at least 72 ticks
   between enemy reshouts;
 - idle presence ping: every 60 ticks.
 
 All cadences still pass through the shared 24-tick sender cooldown.
+
+The spray report includes enemy team because identities repeat across teams.
+Receivers match exact `(team, identity)` before spatial fallback. A visual
+observation wins over a spray report on the same tick, and unknown or absent
+report fields never erase badge-derived loadout state. A v58 teammate does not
+recognize the `S` prefix and ignores it; it continues to learn spray carriers
+from its own visual perception.
 
 ## Focus-claim semantics
 
@@ -385,6 +406,8 @@ The principal gates and timings are defined in
 
 - `STENCIL_CHAT` — all Stencil shouts;
 - `STENCIL_CHAT_MIN_INTERVAL_TICKS` — sender arbitration interval;
+- `STENCIL_SPRAY_CHAT` — spray-carrier reports;
+- `STENCIL_SPRAY_RESHOUT_TICKS` — dedicated spray-report cadence;
 - `STENCIL_FOCUS_CLAIMS` — focus-claim send/receive behavior;
 - `STENCIL_SQUAD_COMMAND` — proposal/vote/commit and presence-ping behavior;
 - `STENCIL_CONSENSUS_REBROADCAST_TICKS`;

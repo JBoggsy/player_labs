@@ -102,6 +102,9 @@ const
   ArcMaxWidthPx* = 85
   ArcPursuitRangePx* = 400
   ArcIdealRangePx* = 100
+  # Paintbot 0.7.215 (6c7a4c0e), sim_types.nim:505,517: the spray cone reaches
+  # 170px and tests the victim as a 17px-radius body.
+  SprayLethalReachPx* = 187
   PostGunRangePx* = 1300
   PostProgressBuckets* = 12
   PostRayCandidatesPerBucket* = 6
@@ -165,6 +168,32 @@ let
   BarrageCentering* = envTunableBool("STENCIL_BARRAGE_CENTERING", true)
   BarrageCenterRadiusPx* = envTunableInt(
     "STENCIL_BARRAGE_CENTER_RADIUS_PX", 80, NavCell)
+  SprayAvoid* = envTunableBool("STENCIL_SPRAY_AVOID", true)
+  ShieldAwareness* = envTunableBool("STENCIL_SHIELD_AWARENESS", true)
+  SprayFleeTriggerPx* = envTunableInt("STENCIL_SPRAY_FLEE_TRIGGER_PX", 240, 0)
+  SprayFleeReleasePx* = envTunableInt("STENCIL_SPRAY_FLEE_RELEASE_PX", 300, 1)
+  SprayThreatTtlTicks* = envTunableInt("STENCIL_SPRAY_THREAT_TTL_TICKS", 48, 1)
+  SprayShoutThreatPadPx* = envTunableInt("STENCIL_SPRAY_SHOUT_PAD_PX", 40, 0)
+  SprayChat* = envTunableBool("STENCIL_SPRAY_CHAT", true)
+  SprayReshoutTicks* = envTunableInt("STENCIL_SPRAY_RESHOUT_TICKS", 48, 1)
+  SprayFleeStepPx* = envTunableInt("STENCIL_SPRAY_FLEE_STEP_PX", 96, NavCell)
+  SprayFireFreezeMarginPx* = envTunableInt(
+    "STENCIL_SPRAY_FIRE_FREEZE_MARGIN_PX", 40, 0)
+  SprayThreatWeight* = envTunableFloat("STENCIL_SPRAY_W_THREAT", 1.0, 0.0)
+  SprayCoverWeight* = envTunableFloat("STENCIL_SPRAY_W_COVER", 1.0, 0.0)
+  SprayClumpWeight* = envTunableFloat("STENCIL_SPRAY_W_CLUMP", 1.0, 0.0)
+  SprayCenterWeight* = envTunableFloat("STENCIL_SPRAY_W_CENTER", 0.5, 0.0)
+  SprayClumpRadiusPx* = envTunableInt(
+    "STENCIL_SPRAY_CLUMP_RADIUS_PX", SprayLethalReachPx, 1)
+  SprayClumpNormAllies* = envTunableInt("STENCIL_SPRAY_CLUMP_NORM_ALLIES", 3, 1)
+  SprayCoverSamples* = envTunableInt("STENCIL_SPRAY_COVER_SAMPLES", 4, 2)
+  SprayCoverFarBias* = envTunableFloat("STENCIL_SPRAY_COVER_FAR_BIAS", 2.0, 1.0)
+  SprayCoverTrackTtlTicks* = envTunableInt(
+    "STENCIL_SPRAY_COVER_TRACK_TTL_TICKS", 24, 0)
+  SprayCoverTrackDiscount* = envTunableFloat(
+    "STENCIL_SPRAY_COVER_TRACK_DISCOUNT", 0.5, 0.0, 1.0)
+  FirefightSprayWeight* = envTunableFloat(
+    "STENCIL_FIREFIGHT_SPRAY_WEIGHT", 1.0, 0.0)
   FirefightClaimRebroadcastTicks* = envTunableInt(
     "STENCIL_FF_CLAIM_REBROADCAST_TICKS", 30, 1)
   FirefightClaimTtlTicks* = envTunableInt("STENCIL_FF_CLAIM_TTL_TICKS", 72, 1)
@@ -270,6 +299,12 @@ proc validateConfig(): bool =
   require(FirefightClaimWeight <= FirefightWoundWeight * 0.5,
     "claim_bias_bounded_by_wound",
     "Claim bonus may not exceed one health-bar segment of wound score.")
+  require(SprayFleeTriggerPx < SprayFleeReleasePx,
+    "spray_flee_radius_order",
+    "Spray flee trigger radius must be smaller than release radius.")
+  require(SprayReshoutTicks <= SprayThreatTtlTicks,
+    "spray_reshout_before_expiry",
+    "Spray reshout interval must not exceed threat TTL.")
   true
 
 let ConfigValidated* = validateConfig()

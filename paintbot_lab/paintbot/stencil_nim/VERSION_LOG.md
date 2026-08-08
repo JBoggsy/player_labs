@@ -4,6 +4,35 @@ Read this before assuming what a version contains. Format mirrors
 `ctf_lab/ctf/beacon/VERSION_LOG.md`: one entry per uploaded version — what
 changed, why, and what the evidence said.
 
+## v59 — spray-carrier avoidance, not yet uploaded
+
+- Parses identity-badge loadouts into visible players and persistent tracks,
+  including truthful weapon, grenade, and shield state, plus the existing
+  overhead barrier marker. `STENCIL_SHIELD_AWARENESS` gates the three revived
+  shield consumers and the flee exemption without hiding state from telemetry.
+- Adds the `clear_spray` objective below carry-home, thief interception, and
+  grenade clearing. It uses a hysteretic keep-out radius, velocity-projected
+  spray tracks, discrete supercover validation, and direct steering along the
+  scored segment.
+- Scores flee paths for geometric threat clearance, potential allied gun
+  coverage, visible-teammate clumping, and conditional barrage centering.
+  Coverage is point-wise and memoized by nav cell; barriers remain an explicit
+  approximation because deployed barrier pickups are disabled.
+- Adds the eight-character `S<team><identity><epoch><cell>` report with a
+  dedicated 48-tick cadence and merge rules that preserve same-tick visual
+  truth and fields absent from the report. V58 teammates ignore the new prefix.
+- Prevents peek-duck, Hold separation, A* replanning, and spray pursuit from
+  overriding the flee step. Fire-freeze is suppressed on both hold and trigger
+  ticks only when a five-tick pause can enter lethal reach.
+- Prioritizes spray carriers in gun target scoring and traces loadout belief,
+  track provenance, live flee state, score terms, and the revised potential-gun-
+  coverage grid.
+- Pins the build to canonical Paintbot 0.7.215 / source
+  `6c7a4c0e0be35bdcf738137595ccbcb4b4c79bf9` (GameVersion 41).
+
+No immutable policy-version UUID exists yet. Hosted mechanism-probe and matched
+A/B evidence are pending upload.
+
 ## v58 — barrage-center evacuation, uploaded 2026-08-07
 
 Immutable policy-version UUID: `1f7f7c75-5edb-4b35-aba8-241264bbd611`.

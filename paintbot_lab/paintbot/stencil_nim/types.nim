@@ -19,6 +19,22 @@ type
     FacingLeft
     FacingRight
 
+  EnemyWeapon* = enum
+    WeaponUnknown
+    WeaponGun
+    WeaponSpray
+
+  Loadout* = object
+    weapon*: EnemyWeapon
+    grenade*: bool
+    shield*: bool
+    barrier*: bool
+
+  TrackSource* = enum
+    TrackVisual
+    TrackTeamShout
+    TrackEnemyBubble
+
   Enemy* = object
     pos*: Point
     facing*: Facing
@@ -26,6 +42,9 @@ type
     color*: Team
     identity*: Option[int]
     hpSegments*: Option[int]
+    weapon*: EnemyWeapon
+    hasGrenade*: bool
+    hasBarrier*: bool
     shielded*: bool
 
   HeardImpact* = object
@@ -44,7 +63,11 @@ type
     framesSeen*: int
     identity*: Option[int]
     hpSegments*: Option[int]
+    weapon*: EnemyWeapon
+    hasGrenade*: bool
+    hasBarrier*: bool
     shielded*: bool
+    source*: TrackSource
 
   TargetRef* = object
     identity*: Option[int]
@@ -78,7 +101,16 @@ type
     shootability*: float
     aimCost*: float
     shield*: float
+    spray*: float
     defensiveThreat*, heartDistancePx*: float
+
+  SprayFleeScore* = object
+    point*: Point
+    score*: float
+    threatGain*: float
+    coverPath*: float
+    clumpRisk*: float
+    centerTerm*: float
 
   HeartState* = object
     planted*: bool

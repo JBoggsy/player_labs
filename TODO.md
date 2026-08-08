@@ -5,6 +5,34 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
+- **Deep-dive stencil's navigation code; unify the walkability predicates**
+  (found 2026-08-08 while implementing v59). The lab now ships **two**
+  segment-walkability tests with different semantics, and that is a knowingly
+  accepted debt, not an oversight:
+  - `worldmap.walkableSegment` — resamples every 2px and rescans a 13x13 pixel
+    footprint at each sample against the **pixel wall mask**. Exact, expensive.
+    Five callers (`action.nim:202,251,470,479`, `worldmap.nim:393`), each of
+    which calls it at most once per tick.
+  - `worldmap.walkableNavSegment` — new in v59. Integer DDA over the
+    **already-eroded 8px nav grid** with a no-corner-cut rule on diagonals.
+    ~600x cheaper, conservative (rejects some passable tight lines), and
+    consistent with how A*, the flow fields, and `nearestWalkable` already
+    think. Two callers, both in `strategy.nim`'s flee scoring.
+
+  Why it exists: v59 scores 32 flee candidates per fleeing tick, and
+  `walkableSegment` at 32 calls/tick blew the budget. The better fix was to use
+  the cheap grid test as a **pre-filter** and confirm only the winning candidate
+  with `walkableSegment` — ~1-2 expensive calls per tick, one authoritative
+  predicate. James chose to ship the current path and revisit navigation
+  properly rather than patch it now.
+
+  The deep dive should settle: one predicate or a documented hierarchy;
+  whether the pixel mask or the eroded grid is the source of truth for "can a
+  body go here" (they disagree at the margins); whether `rayClear`'s
+  point-sized LOS is being used anywhere it should be footprint-aware; and
+  what to do about `belief.danger`, which `belief_update.nim:225-293` computes
+  every tick and **nothing reads** (`nav.nim`'s A* costs are pure distance).
+
 - **Re-sync crewborg's player SDK, or accept the split** (found 2026-08-07 during a
   docs audit). `pyproject.toml` now pins coworld-tools `4dd923d` (paintbot needs it —
   earlier revisions clamped Sprite-v1 masks to `0x7f` and dropped Button C), but

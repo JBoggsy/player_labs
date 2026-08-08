@@ -212,6 +212,46 @@ proc walkableSegment*(map: WorldMap, start, goal: Point): bool =
           return false
   true
 
+proc walkableNavSegment*(map: WorldMap, start, goal: Point): bool =
+  if start.x < 0 or start.x >= map.width or start.y < 0 or start.y >= map.height or
+      goal.x < 0 or goal.x >= map.width or goal.y < 0 or goal.y >= map.height:
+    return false
+  let
+    startCell = map.cellOf(start)
+    goalCell = map.cellOf(goal)
+    dx = goalCell.x - startCell.x
+    dy = goalCell.y - startCell.y
+    nx = abs(dx)
+    ny = abs(dy)
+    stepX = cmp(dx, 0)
+    stepY = cmp(dy, 0)
+  var
+    x = startCell.x
+    y = startCell.y
+    ix = 0
+    iy = 0
+  if not map.walkable[map.gridIndex(x, y)]:
+    return false
+  while ix < nx or iy < ny:
+    let decision = (1 + 2 * ix) * ny - (1 + 2 * iy) * nx
+    if decision == 0:
+      if not map.walkable[map.gridIndex(x + stepX, y)] or
+          not map.walkable[map.gridIndex(x, y + stepY)]:
+        return false
+      x += stepX
+      y += stepY
+      inc ix
+      inc iy
+    elif decision < 0:
+      x += stepX
+      inc ix
+    else:
+      y += stepY
+      inc iy
+    if not map.walkable[map.gridIndex(x, y)]:
+      return false
+  true
+
 proc reverseNeighborIndex(dx, dy: int): int =
   for index, delta in Neighbors:
     if delta.x == -dx and delta.y == -dy:

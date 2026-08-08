@@ -10,6 +10,7 @@ const
 type ChatMessage* = object
   kind*: string
   pos*: Point
+  enemyTeam*: Option[Team]
   heading*: Option[int]
   seat*: Option[int]
   epoch*: Option[int]
@@ -87,10 +88,24 @@ proc encodeFocusClaim*(map: WorldMap, seat: int, target: TargetRef): string =
   else:
     "FC" & $(floorMod(seat, 8)) & map.encodeCell(target.pos)
 
+proc encodeSpray*(map: WorldMap, team: Team, identity, epoch: int, pos: Point): string =
+  "S" & $ord(team) & $(floorMod(identity, 8)) &
+    $Base36[floorMod(epoch, 36)] & map.encodeCell(pos)
+
 proc digitValue(character: char): int = ord(character) - ord('0')
 
 proc decode*(map: WorldMap, text: string): Option[ChatMessage] =
   if text.len == 0:
+    return none(ChatMessage)
+  if text[0] == 'S' and text.len == 8 and text[1].isDigit and text[2].isDigit:
+    let
+      team = digitValue(text[1])
+      identity = digitValue(text[2])
+      epoch = Base36.find(text[3])
+      pos = map.decodeCell(text[4 .. 7])
+    if team <= ord(high(Team)) and identity < 8 and epoch >= 0 and pos.isSome:
+      return some(ChatMessage(kind: "spray", pos: pos.get,
+        enemyTeam: some(Team(team)), targetIdentity: some(identity), epoch: some(epoch)))
     return none(ChatMessage)
   if text.startsWith("FI") and text.len >= 8 and text[2].isDigit and text[3].isDigit:
     let pos = map.decodeCell(text[4 .. 7])
@@ -167,6 +182,18 @@ proc chooseShout*(belief: Belief): Option[string] =
     belief.orderSource == "consensus" and
     tick - belief.order.get.setTick <= ConsensusCommitEchoTicks and
     tick - belief.lastCommitSentTick >= ConsensusRebroadcastTicks
+  var visibleSprayer = none(int)
+  if SprayChat and tick - belief.chatLastSprayTick >= SprayReshoutTicks:
+    var nearestDistance = Inf
+    for index, enemy in belief.enemies:
+      if enemy.weapon != WeaponSpray or enemy.identity.isNone:
+        continue
+      let distance = hypot(
+        (enemy.pos.x - belief.selfXy.get.x).float,
+        (enemy.pos.y - belief.selfXy.get.y).float)
+      if distance < nearestDistance:
+        visibleSprayer = some(index)
+        nearestDistance = distance
   if belief.iCarryHeartOf.isSome:
     var velocity = none(tuple[x, y: float])
     if belief.nav.lastXy.isSome:
@@ -200,6 +227,13 @@ proc chooseShout*(belief: Belief): Option[string] =
   elif belief.throwTarget.isSome and belief.throwChargeTicks > 0:
     message = belief.worldmap.encode("grenade", belief.throwTarget.get)
     kind = "grenade"
+  elif visibleSprayer.isSome:
+    let enemy = belief.enemies[visibleSprayer.get]
+    message = belief.worldmap.encodeSpray(
+      enemy.color, enemy.identity.get, belief.chatSprayEpoch, enemy.pos)
+    kind = "spray"
+    belief.chatLastSprayTick = tick
+    belief.chatSprayEpoch = floorMod(belief.chatSprayEpoch + 1, 36)
   elif belief.underFire and belief.enemies.len == 0:
     message = belief.worldmap.encode("under_fire", belief.selfXy.get)
     kind = "under_fire"
