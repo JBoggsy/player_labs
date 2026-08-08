@@ -17,3 +17,124 @@ buffers — not in-session hit counts — is the graduation signal.
 concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
+
+### Stencil discards enemy-loadout intel the wire already gives it
+
+Evidence: `identity <color> <name>[ shield][ nade] <weapon>` is emitted in the PLAYER
+view for every visible player (`global.nim:5734+`, called with `viewerIndex = playerIndex`
+at `global.nim:6223`), and the suffixed forms are in the golden manifest
+(`tests/label_manifest.txt:40-43`) so they are contract, not chrome. Stencil's
+`identityBadges` (`perception.nim:92-98`) splits off the name token and drops the rest.
+`attachOverheadState` also collects `grenade carried` / `spray can carried` but only uses
+them to detect SELF loadout (`perception.nim:277-279`) — enemy nade/weapon state is parsed
+and thrown away.
+
+Status: candidate improvement, not measured. Knowing a visible enemy holds a grenade or a
+spray can is targeting/engagement-relevant.
+
+### `enemy.shielded` in stencil means "SPENT shield", not "shielded"
+
+Evidence: `global.nim:5216-5220` emits `shield carried` only when `player.shieldHp <= 0`
+— the armor is gone but the 3x fire slowdown persists. An ACTIVE shield renders the bubble
+instead (`"shield bubble"` / `"shield bubble hit"`, inline strings in `global.nim`, absent
+from `labels.nim` AND from the golden manifest). Stencil sets `enemy.shielded` from
+`shield carried` (`perception.nim:281-286`) and then treats it as a hardened/avoid signal
+in `fight.nim:133` and `action.nim:336`.
+
+Status: semantics look inverted from intent; needs a read of what those weights encode
+before calling it a bug. The identity badge's `shield` token is the reliable
+"has a shield at all" channel.
+
+### The label manifest beats RULES.md when they disagree — RULES.md says so itself
+
+Evidence: `docs/RULES.md:138-142` documents the badge as `identity <color> <name>` with no
+loadout suffixes; `tests/label_manifest.txt` carries `identity <color> <name> shield gun`
+etc. RULES.md line ~970 states outright that the manifest is authoritative and the prose
+is the stale surface ("that is exactly how the `heart`/`flag` claim above went wrong").
+Reading only RULES.md would have produced a wrong answer about what a policy can observe.
+
+Status: check `tests/label_manifest.txt` + `src/ctf/labels.nim` before trusting RULES prose
+on any observation question.
+
+### Some readable player-view labels are NOT in the contract vocabulary
+
+Evidence: `"shield bubble"` / `"shield bubble hit"` are emitted inline in `global.nim`
+under the same per-viewer visibility gate as contract labels, but appear in neither
+`labels.nim` nor `tests/label_manifest.txt`. `labels.nim`'s header explains the split
+deliberately: contract labels are hoisted, chrome is not, because "the broadcast view is
+free to re-cut its chrome any week."
+
+Status: a policy CAN read these, but doing so takes an unpinned dependency on a label the
+engine owes no stability promise for.
+
+### The lab's game pin went stale in under a day — deployed paintbot is 0.7.215, pinned is 0.7.211
+
+Evidence: `tools/versions.env` pins `PAINTBOT_GAME_VERSION=0.7.211` "verified 2026-08-07";
+`uv run coworld list` today shows `paintbot 0.7.215 canonical yes` with 212/213/214 in between.
+Upstream PR #256 explains why: manifest merges **auto-upload the next paintbot version**, so the
+deployed version advances without anyone in this lab acting. Four versions in ~a day.
+
+Status: the gameplay doc already says "re-resolve the canonical game before relying on these live
+values" — that instruction is load-bearing, not boilerplate. Run `uv run coworld list | grep paintbot`
+at the START of any game-mechanics work.
+
+### Two new config-gated items landed upstream that the lab has no model for: perks and cardboard barriers
+
+Evidence: PR #252 (team perks: armor/scope/grenade/thruster/luck) and PR #255 (cardboard barriers —
+placeable half-hex cover that BLOCKS PAINT but not sight, 10 hits to shred). Both are in deployed
+0.7.215's `config_schema` (verified by downloading the canonical manifest), both default OFF, and no
+deployed variant config sets them. Campaign cells CAN override (that is exactly why #256 declared
+`barrierPickups` in the schema — metta's `_cell_overrides` silently drops undeclared keys).
+
+Status: `armor` (+1 max hp) is the one that would change spray-avoidance math — 4 hp survives a
+3-damage spray. Not urgent while default-off, but it is a live tripwire.
+
+### Stencil computes a `danger` grid every tick that NOTHING reads
+
+Evidence: `belief_update.nim:225-293` builds, decays, dilates and stamps `belief.danger`; the only
+other references anywhere are `trace.nim:519-532` (dump it). `nav.nim`'s A* costs are pure distance —
+`astar` never looks at danger. So the whole danger pipeline is compute + telemetry, zero behavior.
+
+Status: either wire it into pathing or delete it. Do NOT quietly fold it into an unrelated behavior
+change — global path-cost changes are unvalidatable inside a single-behavior A/B.
+
+### `iHaveShield` is sourced from `shield carried`, which the engine emits only when the shield is SPENT
+
+Evidence: `perception.nim:337` sets `iHaveShield` from the `shield carried` overhead marker;
+`global.nim:5216` emits that marker only when `player.shieldHp <= 0`. An ACTIVE shield draws the
+bubble instead. So `iHaveShield` is true exactly when the shield no longer protects.
+Consequence at `items.nim:70-72` (the "already have one, don't fetch" gate): stencil declines to
+refill a shield precisely when it is spent, and wastes detours fetching one while its bubble is up.
+
+Status: the own `identity` badge's `shield` token (and `lives <hp>hp x<lives>`, which reads past the
+base cap) are the correct channels. Stencil parses neither.
+
+### A spray-can carrier cannot fire the gun at all — the counter to a sprayer is range, not force
+
+Evidence: `sim.nim:699` — `canFire` requires `not shooter.hasPlasmaArc`. Combined with
+`PlasmaArcReach + PlasmaArcBodyRadius = 187px` (`sim_types.nim:505,517`) versus `gunRange 1300`, a
+spray carrier is completely harmless outside 187px and outranged 7:1 inside it.
+
+Status: makes "keep out of spray range" a strictly dominant policy against that enemy — there is no
+punish for retreating. Worth checking whether the same asymmetry holds for other loadouts.
+
+### Equal top speed means a keep-out radius must be PREVENTIVE, not reactive
+
+Evidence: `MaxSpeed = 704` is per-player with no per-weapon modifier (`sim_types.nim:320`), i.e.
+2.75 px/tick for both sides (`MaxSpeedPxTick` in stencil's config.nim agrees). A committed chaser
+therefore never loses ground to radial flight — escape only comes from the 20-tick recharge window
+(`PlasmaArcResetTicks`) or an LOS break. Carriers are worse off still at `carrierSpeedPct 70`.
+
+Status: any "flee the threat" rung has to trigger outside the lethal radius with hysteresis, or it
+degenerates into orbiting the boundary.
+
+### Stencil's ally-coverage map has the same fate as the danger grid: computed for the trace, read by nothing
+
+Evidence: `trace.nim:95` `coveredGrid` builds conservative instantaneous ally vision (observable
+16-step heading, narrowest deployed 45-degree cone, exact pixel-wall LoS) — and is referenced
+only at `trace.nim:533`, to dump it. Two separate world-model products in this policy exist purely
+as telemetry.
+
+Status: this is a PATTERN worth naming, not two coincidences. When adding a belief product, decide
+up front whether a behavior consumes it; a rich trace makes an unused computation look load-bearing
+in the viewer. v59 promotes coverage to a real `coverageAt()` primitive; danger is still orphaned.
