@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v110 - retreat to a safe holding point (2026-08-08)
+
+- Version UUID: `e33c39e7-3653-4e45-957f-bad88258b67b` (`wowborg:v110`, uploaded
+  inert; not submitted). Built from source `e95156e` against canonical vanilla-wow 0.1.209.
+- Records the latest position with a safe local hazard edge. When both bypasses fall below the
+  15-yard floor, wowborg retreats to that point before waiting; retreat start/end are traced.
+  Hosted proof is pending.
+
 ## v109 - wait for a safe patrol edge (2026-08-08)
 
 - Version UUID: `6ada5206-cb39-4c3f-8b8b-db9b93fd86d6` (`wowborg:v109`, uploaded

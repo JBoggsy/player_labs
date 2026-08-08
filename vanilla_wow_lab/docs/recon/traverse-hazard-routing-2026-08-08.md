@@ -287,6 +287,8 @@ crossed the character, pulled at close range, and moved back to its 29.5-yard ca
 The next temporal edge retains the last observation whose bypass met the 15-yard floor, retreats
 to that point when the corridor becomes unsafe, and only waits once it reaches that known-safe
 holding position.
+That safe-holding edge is uploaded inert as wowborg:v110
+(`e33c39e7-3653-4e45-957f-bad88258b67b`, source `e95156e`).
 
 ## Open uncertainties
 

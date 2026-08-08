@@ -51,6 +51,8 @@ releases, but a later wait at 14.5 yards let a Glasshide Petrifier cross the sta
 pull at close range, and back out to its 29.5-yard casting distance. The active source candidate
 records the last observation with a safe edge, retreats to it when both bypasses become unsafe,
 and waits only after reaching that holding point. The 15-yard criterion is unchanged.
+It is uploaded inert as **wowborg:v110**
+(`e33c39e7-3653-4e45-957f-bad88258b67b`, source `e95156e`); hosted proof is pending.
 
 ### Previous 0.1.208 movement baseline
 
