@@ -105,6 +105,8 @@ Dunemaul Brute at `(-8396.0,-3178.9)` pulled from 4.1 yards and killed wowborg a
 `(-8395.8,-3175.2)` after 2,825 damage over 83.8 seconds. The active candidate stays on v100's
 proven center road through `(-8401.8,-3220.7)`, then crosses due east at `y=-3220`, 42 yards
 south of the observed Brute and 57 yards north of the observed Gazer, before rejoining node 4.
+It is uploaded inert as **wowborg:v102**
+(`775f286c-aa9d-4834-86e1-75730cfb3762`, source `48db44c`); hosted proof is pending.
 
 ## Historical status (2026-08-06): V78 SUBMITTED AND QUALIFYING ON THE CORRECTED CLOCK
 

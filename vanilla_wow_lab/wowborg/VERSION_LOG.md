@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v102 - measured channel between Brute and Gazer (2026-08-08)
+
+- Version UUID: `775f286c-aa9d-4834-86e1-75730cfb3762` (`wowborg:v102`, uploaded
+  inert; not submitted). Built from source `48db44c` with the published 0.1.188 contract.
+- Replaces v101's premature northern turn with two measured gates: v100's already-traversed
+  center-road point `(-8401.8,-3220.7)` south of the Brute, then `(-8300,-3220,17.4)` north of
+  the Gazer. This keeps 42 and 57 yards of observed positional clearance, respectively, before
+  reconnecting to road node 4. Hosted proof is pending.
+
 ## v101 - first live Gazer bypass (2026-08-08)
 
 - Version UUID: `22efcbf3-9091-4299-8023-c848981f0362` (`wowborg:v101`, uploaded
