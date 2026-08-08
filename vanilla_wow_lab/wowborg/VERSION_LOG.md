@@ -1,9 +1,129 @@
 # wowborg version log
 
+## v88 - 0.1.188 bring-up and unchanged 0.1.208 seamless-movement control (2026-08-07–08)
+
+- Version UUID: `3f955f79-6404-4d51-8efe-c04675d22926` (`wowborg:v88`, uploaded
+  inert; not submitted). Built from runtime source `cbbbee0` against the exact
+  `vanilla-wow:0.1.188` linux/amd64 game image
+  `sha256:88b2140777b3df5127c4d5ab0e8fa33936c45afae8c403b7b9e44741a9c17d03`;
+  policy image manifest `sha256:f68a44b47e13b0ff5b8a79fb39c996371a962132e3edac1d7a2e966a01b11579`.
+  The exact-image import check and 14 focused contract/Traverse tests passed.
+- Updates stale-frame recovery to match the canonical `Observation` rejection
+  messages. Hosted canary `xreq_9d61f4e7-b776-45af-8956-5f3fafadff02`, episode
+  `ereq_3c0ea5fd-26ac-4ff4-9fb9-b5f0fdb81102`, completed without an operational
+  or policy failure and advanced through frame 111. The retained policy trace
+  contains five successful stale-frame refreshes.
+- The host instrumentation is available in the retained game log and parses as
+  306 typed events: 96 admissions, 46 executed actions, 50 executor-free actions,
+  46 continuation preparations, 45 prefix settlements, two movement-control
+  transitions, 15 action stalls, five rejected requests, and one close. This run
+  deliberately exposed the next environment bug instead of producing a movement
+  comparison: the character displaced zero yards. The first move emitted only a
+  `route_turn`, then settled `forward_not_held`; all 44 later movement prefixes
+  settled `no_movement_emitted`, so continuation remained inactive.
+- Wowborg was not rebuilt for the environment fix. On canonical `vanilla-wow:0.1.208`,
+  owner acceptance request `xreq_c0649f44-ecca-4f82-bc2a-e1cdf95684b1` completed 5/5
+  with mean score 1,615.62 and 17,308.749 trajectory yards. There were zero nonterminal
+  stops, host stalls, rejected requests, detached frames, or direct left/right reversals.
+  Eleven turn runs lasted at most 100 ms, down 98.5% from 144 on the 0.1.207 canary, and
+  none had the old same-waypoint route-bearing disappearance signature. Three raw
+  stop/restart pairs were final forced-root/scoring-logout artifacts with no later
+  observation. This isolates the improvement to the game environment; v88 remains inert
+  and unsubmitted.
+- Independent lab request `xreq_cb6f96ae-00d0-40ab-b5a5-d10cb46248e0` then reproduced
+  the result 5/5: mean score 1,607.572, 17,352.720 trajectory yards, zero active
+  nonterminal stops, host stalls/rejections/detached frames, stale-frame rejections,
+  direct reversals, or old bearing-disappearance signatures. It recorded ten turns at
+  most 100 ms (93.1% below the 0.1.207 canary), plus two death/ghost control transitions
+  and two final scoring/logout artifacts kept separate from traversal continuity.
+
+## v86-v87 - superseded 0.1.188 contract bring-up (2026-08-07)
+
+- v86 (`92e3963c-16fb-43e6-8975-bbe6f2a9ad7e`) migrated Wowborg from the removed
+  `AgentFrame`/`AgentAction` and `/env` surfaces to `Observation`/`Action` over the
+  injected `/player` session. Its canary connected but rejected frame 1 because
+  the host emitted the open spell intent `threat_reduction` while its packaged
+  `SpellObservation` still declared a closed literal set. The superseded request
+  `xreq_887c869f-60e0-4ef6-bfdd-73b059b440f3` was cancelled after the deterministic
+  failure began retrying.
+- v87 (`c3852b29-1580-4443-a059-62a4744c2d9d`) restored the narrow spell-intent
+  compatibility widening. Canary `xreq_42484cc9-e966-4686-a0dc-b4c1d1b372c6`
+  completed, but the old stale-frame error markers left it pinned on frame 2 with
+  399 rejected submissions. v88 supersedes it. Neither version was submitted.
+
+## v85 - Vanilla WoW 0.1.178 semantic session migration (2026-08-06)
+
+- Version UUID: `d346b685-7e5e-42ac-afbd-acfe0b8420c9` (`wowborg:v85`, uploaded inert;
+  not submitted). Built from source `5253d60` against canonical `vanilla-wow-episodic
+  0.1.178` and its exact linux/amd64 image
+  `sha256:ec18781aed1c53d60d188a2287eba7e594affe1447df408ac17bf37f44131f6c`.
+- Removes Wowborg's auxiliary direct `/player` progress connection. In 0.1.178 each slot has
+  one immutable interaction mode; opening `/player` first claimed the slot as direct and made
+  the semantic `/env` handshake return HTTP 403. `/env` remains the sole gameplay connection,
+  and the policy's navigation/action behavior is otherwise unchanged.
+- Matched request `xreq_4f0dd79f-f7e8-4e61-834c-adaf7d4689ce` completed 5/5. Scores were
+  1,190.46, 1,315.65, 1,368.19, 1,305.86, and 1,523.10. Across 17,755.902 trajectory yards,
+  the replays contain 500 raw forward stops, 492 boundary-only stops, and zero falling packets.
+  That is **27.71 boundary-only stops per 1,000 yards**, down 25.2% from v80 on 0.1.174
+  (37.04), but it misses the preregistered 50% stopping-fix threshold (below 18.52). The new
+  host improves continuity but does not fix the visible stop/start churn.
+
+## v81-v84 - superseded 0.1.178 contract bring-up (2026-08-06)
+
+- v81 (`c6962e30-0e58-4808-9478-eb0aa6007700`) ported Wowborg to the flat 0.1.178
+  `AgentAction`/available-action contract. v82 (`412ef217-ee8f-4710-a716-0f90baa0b0a3`)
+  delegated slot/token query construction to the pinned SDK. v83
+  (`86f55014-d545-4936-b1e9-f90c257a6a19`) added credential-safe endpoint-shape tracing. v84
+  (`f950a5bf-38ba-409d-9ac4-fab5798297ed`) supplied the required semantic interaction query.
+- These uploads were inert and never submitted. Their hosted diagnostics failed before frame 1
+  with HTTP 403; v84's retained traces proved the final blocker was not missing auth/query keys
+  but the incompatible direct `/player` slot claim removed in v85.
+
+## v80 - current-contract action response timing ledger (2026-08-06)
+
+- Version UUID: `db6faec7-451a-483f-b65d-db2b3f80fded` (`wowborg:v80`, uploaded inert;
+  not submitted). Built from source `917e83a` with private tags `strategy=traverse`,
+  `source=917e83a`, and `experiment=action-response-timing-current-contract`; amd64 image
+  manifest `sha256:31c2b6afe33b4c12c6d6fc47a5ed8d627322dc749e322dec1e28982fb6dfe426`.
+- Replaces v79's stale `player.sdk.navmesh.models` import with the canonical traverse-wow
+  0.1.174 `environment.navigation` contract; timing instrumentation and gameplay behavior are
+  otherwise unchanged. Exact 0.1.174 linux/amd64 build verification passed.
+- Hosted request `xreq_75c86237-6b7a-4a3a-abe3-cb4b9fd65687` completed 5/5 without policy
+  failures. Wowborg submitted an action for 100% of 2,561 unique offered frames. Median and p95
+  frame age were 0.548 ms and 0.810 ms, but each run had exactly three synchronous navigation
+  pauses over the host's five-second deadline (15 total, 7.63-17.23 seconds): initial planning,
+  frontier replanning after opening no-progress, and ghost recovery planning. Those pauses were
+  followed by all 15 stale-frame rejections. The replays still contain 717 forward stops and 707
+  boundary-only stops, while only 38 raw stops fall in the coarse wall-clock windows of the 15
+  slow responses. This falsifies missed frame responses as the primary source of the pervasive
+  choppiness, but confirms Wowborg creates three long over-deadline silence windows per run.
+  Exact host `action_stall` counts remain unavailable at the policy evidence boundary.
+
+## v79 - action response timing ledger (2026-08-06)
+
+- Version UUID: `8ba9953a-3c7d-48ca-a9c6-d872a044b8e7` (`wowborg:v79`, uploaded inert;
+  not submitted). Built from source `c69ce0e` with private tags `strategy=traverse`,
+  `source=c69ce0e`, and `experiment=action-response-timing`; amd64 image manifest
+  `sha256:b8233c2c00aea09419a26e5f0b9f1af93186be2ac0bd338dbc5b05c6ea1e0c06`.
+- Behavior-neutral instrumentation records policy-visible timing for every offered frame:
+  frame receipt-to-submission latency, synchronous `/env` step round-trip, submitted and
+  returned frame IDs, raw action status, stale refresh, and locally skipped stale/terminal
+  actions. It does not guess `/env`-internal continuation-release reasons or host
+  `action_stall` counts.
+- The build contract was refreshed from stale traverse-wow 0.1.160 to the exact active
+  traverse-wow 0.1.174 game image
+  (`sha256:cec97b29f7c2e79ce3f6ef816d50116b28ba4a323069a0fbcbd26538408408d8`). The real
+  linux/amd64 image build and its `/env` plus `/player` import verification passed. Per lab
+  policy, no local gameplay smoke or routine test suite preceded upload; the hosted episode
+  is the behavioral test.
+- Hosted request `xreq_e71c7cfd-117d-4992-a194-48de1ab1910a` failed before play because the
+  source still imported `player.sdk.navmesh.models`, which does not exist in 0.1.174. v80 fixes
+  that current-contract startup bug and supersedes v79.
+
 ## v78 - complete regional spawn-safe opening (2026-08-05)
 
-- Version UUID: `36f3f0bf-2261-42ec-9d8a-4a084e145b81` (`wowborg:v78`, uploaded inert;
-  not submitted). Built from source `3e95dcb` with private tags `strategy=traverse`,
+- Version UUID: `36f3f0bf-2261-42ec-9d8a-4a084e145b81` (`wowborg:v78`). Built from source
+  `3e95dcb` with private tags `strategy=traverse`,
   `source=3e95dcb`, and `experiment=complete-spawn-safe-opening`; amd64 image manifest
   `sha256:5150e1ddf8985a836fcd9f8a31c30efaa658059b185c0f38829e3a10466b5059`.
 - Replaces only v77's unsafe three-point opening with eight exact ordinary-navmesh
@@ -13,10 +133,17 @@
   The tightest clearance is +0.226 yards, so an exact first-nine-entry regression pins the
   coordinates. Combat, recovery, the later route, and normal Great Lift boarding are
   unchanged. Focused checks: 8/8 passed.
-- Hosted evaluation is deferred until Traverse uses a Coworld containing owner commit
-  `fd425e550`, which corrects the semantic movement delay from effective 1x to the league's
-  advertised 10x. Evaluating v78 on the current 0.1.166 world would not answer whether this
-  route can complete within the actual accelerated contract.
+- Corrected-clock hosted canary `xreq_e984c401-f498-449d-8aa6-77cad0e1912b` on canonical
+  `traverse-wow 0.1.174` completed 1/1 with no failure and scored **1,304.14 northing**.
+  The ordinary-access replay contains 1,114 client movement packets, 3,746.6 trajectory
+  yards, zero falling packets, and a Travel Form cast; no owned policy-log artifact was
+  listed at ordinary permissions. Submission `sub_6c5e6403-d23f-4296-8ee9-3f4dee8b2477`
+  placed membership `lpm_67027432-7d93-40ba-9f3c-8ed632f83735` with
+  `auto_champion=never`. It subsequently qualified and became the active champion; v63 is
+  benched. Its round-325 replay (`ereq_b222a884-8660-440c-860d-3050ec7278b6`) shows one
+  unrecovered death, 1,531.0 ghost seconds, 2,818 incoming and zero outgoing damage, and 13
+  Stuck invocations. The stateful batch profiler is documented in
+  `docs/vanilla-wow-replay-analysis.md`.
 
 ## v77 - spawn-safe Tanaris opening (2026-08-05)
 

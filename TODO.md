@@ -5,6 +5,13 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
+- **LOCAL TOOLING 2026-08-08: reclaim Docker VM space before the next Wowborg build.**
+  The 0.1.208 exact-image contract imports successfully, but `tools/build_player.sh` stopped
+  during its dependency install with `OSError: [Errno 28] No space left on device`. Docker
+  currently reports substantial image, volume, and build-cache usage. Inspect ownership and
+  reclaim only disposable cache/artifacts before rebuilding; do not blindly prune shared
+  images or volumes.
+
 - **REFUTED-PREMISE 2026-07-22 (Thread 9): imposter co-location — do NOT build the spread nudge.**
   Re-measured on 200 fresh v107/v110 eps (`/tmp/wh_anchor_base_v110`; scripts `/tmp/t9_spread/`).
   The 32%-field-worst figure does not reproduce: crewborg-imposter's co-imposter share of proximity
@@ -244,6 +251,13 @@ mid-session; check them back at the start of focused work.
   whether to commit/PR them upstream or discard.
 
 ## Done
+
+- **RESOLVED 2026-08-08: expose action-stall and retained-control release reasons.**
+  `vanilla-wow:0.1.208` announces typed `stalls`, `rejected_requests`, and
+  `detached_frames` counters and retains structured environment-host events for action
+  admission, stalls, continuation preparation/release, prefix settlement, and forward-control
+  transitions. Replay stops join to their exact owner decision through client
+  `movement_time_ms`; policy wall-clock inference is no longer required.
 
 - **League telemetry artifacts "ephemeral" — investigated + harvest built** (flagged 2026-07-01;
   DONE 2026-07-21). Verdict: artifacts are **durable, not deleted** — the July-1 "vanishing"

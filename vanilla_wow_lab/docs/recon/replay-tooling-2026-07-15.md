@@ -5,6 +5,12 @@ view, decode, inspect, analyze, and understand `.cwreplay` artifacts (and per-ep
 evidence generally), what we must build, and in what order. Citations into
 `~/coding/coworlds/coworld-vanilla-wow` (@ `312d1d0c7`) and this repo.
 
+> **Current status (2026-08-06):** the owner repo now ships the stateful
+> `player.sdk.replay_diagnostics` reducer and `wow-sdk replay-report`. The lab's
+> `tools/wow_batch_profiler.py` aggregates that canonical output across batches. See
+> [`../vanilla-wow-replay-analysis.md`](../vanilla-wow-replay-analysis.md). The “build a
+> Tier-2 reducer” items below are retained as historical context, not current gaps.
+
 ## Mission
 
 After a hosted episode we get artifacts back. Session 3 proved the pain: **no results, no

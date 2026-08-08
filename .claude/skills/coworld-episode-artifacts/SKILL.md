@@ -25,6 +25,10 @@ One directory per episode (`<timestamp>_<short-id>/`) containing:
   directly-loadable binary form) plus the raw zlib blob.
 - `logs/policy_agent_{N}.log` — each agent's full per-tick stderr trace (the
   richest behavioural record).
+- `game_logs.log` — the combined experience-request container/game stdout. This is
+  where environment-owned diagnostics live, including Vanilla WoW's structured
+  movement lifecycle and host counter telemetry. It is available only for
+  experience-request episodes through the current API.
 - `artifacts/policy_artifact_{N}.zip` — any player-uploaded telemetry/debug
   bundles (policy-scoped: only slots you own come back; e.g. crewborg's trace
   zip with `telemetry.jsonl` + `manifest.json`). **This is where you verify
@@ -39,12 +43,15 @@ One directory per episode (`<timestamp>_<short-id>/`) containing:
 
 Plus a top-level `index.json` summarizing the run. Every artifact is best-effort:
 a missing replay or one missing log is logged and recorded, never aborts the run.
+Each episode also gets `policy_artifacts_checked.json`; an empty array means the
+player-artifact listing was successfully checked and no slot uploaded a ZIP.
 
 ## The model (read this before debugging a 404)
 
-Everything keys off **`job_id`**, the universal artifact handle every episode
+Most artifacts key off **`job_id`**, the universal artifact handle every episode
 carries. Artifacts come from `/jobs/{job_id}/artifacts/{results,replay,error_info}`
-and `/jobs/{job_id}/policy-logs[/{idx}]`. There are two disjoint episode
+and `/jobs/{job_id}/policy-logs[/{idx}]`; the combined game log uses
+`/v2/episode-requests/{ereq}/artifacts/logs`. There are two disjoint episode
 populations — **league/tournament** episodes (discovered by policy) and
 **experience-request** episodes (discovered by request/pool/round) — but both
 expose the same `job_id`, so one code path serves both. Full route map, dead-ends,

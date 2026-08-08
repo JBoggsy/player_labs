@@ -4,9 +4,9 @@ version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
     "coworld[auth]>=0.1.34",
-    # Python /env contract for local tests, kept in step with the canonical
-    # traverse-wow 0.1.160 image pinned in vanilla_wow_lab/tools/versions.env.
-    "vanilla-wow-coworld @ git+https://github.com/Metta-AI/coworld-vanilla-wow.git@b11cbac8a50e9a019848f4001c54f834e22c340b",
+    # Python semantic-player contract for local tests, kept in step with the
+    # canonical vanilla-wow 0.1.208 image pinned in vanilla_wow_lab/tools/versions.env.
+    "vanilla-wow-coworld @ git+https://github.com/Metta-AI/coworld-vanilla-wow.git@b92f4961c97cc918b7e46e2c39db778f01df2487",
     "httpx>=0.28.1",
     # The shared player SDK that vendored players import as `players.player_sdk`,
     # plus its base deps (anthropic, boto3 for Bedrock, etc.). The `players` repo moved

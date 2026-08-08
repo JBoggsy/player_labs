@@ -11,10 +11,10 @@ This README orients newcomers (human or agent). Two pointers do most of the work
 - **[`../README.md`](../README.md)** — lab-wide setup (`uv sync` / Observatory auth) and the
   ground rules.
 
-> **Status (2026-07-29): `wowborg` uses the game's canonical Gymnasium `/env`
-> interface.** Its Python policy consumes `AgentFrame` and submits `AgentAction`
+> **Status (2026-08-08): `wowborg` uses the game's canonical Gymnasium `/player`
+> interface.** Its Python policy consumes `Observation` and submits `Action`
 > directly; the game owns the WoW client and all protocol/admission/settlement
-> machinery. The exact deployed accelerated-wow image and matching owner commit are
+> machinery. The exact deployed `vanilla-wow:0.1.208` image and matching owner commit are
 > pinned in [`tools/versions.env`](tools/versions.env). Live state + next steps:
 > [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
 
@@ -27,7 +27,7 @@ recovers, and groups up — all over the real WoW binary protocol. It competes t
 **persistent realm**, ranked by its account's highest-XP character; and in **isolated scored
 episodes**, where the current benchmark **`rfc-five-player-clear`** puts one policy in all
 five slots of a party racing to clear **Ragefire Chasm**'s four bosses fastest. A submitted
-policy is now a synchronous Python Gymnasium agent over the game's canonical `/env`; the
+policy is now a synchronous Python Gymnasium agent over the game's canonical `/player`; the
 game owns the Nim packet-level WoW client.
 
 **Full game reference — the game shapes, RFC episode + scoring, and the WoW mechanics that
@@ -59,6 +59,7 @@ vanilla_wow_lab/
   TENTATIVE_LESSONS.md               this session's candidate-lessons buffer (auto-rotated)
   docs/
     vanilla-wow-gameplay.md          self-contained, accessible game reference (START HERE)
+    vanilla-wow-replay-analysis.md   stateful replay metrics and batch-profiler commands
     vanilla-wow-player-contract.md   the Nim packet-level player: connect / observe / emit / ship
     vanilla-wow-protocol.md          exhaustive interface-protocol reference (every message/schema/format)
     vanilla-wow-rfc-roles.md         the 5 RFC roles (commissioner/grader/…) + round scoring
@@ -66,11 +67,13 @@ vanilla_wow_lab/
     status-archive.md                retired WORKING_CONTEXT status sections (2026-07-13..07-27; all stale)
     designs/                         player design docs (obs/action spaces, v2 shim adoption)
     recon/                           citation-backed recon reports (navigation obs/actions)
-  wowborg/                           our player: Python policy over canonical /env (own README)
+  wowborg/                           our player: Python policy over canonical /player (own README)
   tools/                             versions.env (environment pin), build_player.sh, route_lab.py,
                                      cwreplay.py (replay decoder), movement_report.py (movement
                                      continuity), traverse_report.py (Traverse score/cast/death/
-                                     guidepoint/frontier/speed metrics), lessons hooks
+                                     guidepoint/frontier/speed metrics), wow_batch_profiler.py
+                                     (stateful stuck/life/damage/recovery/spell aggregation),
+                                     lessons hooks
   .claude/skills/lessons-review/     the ≈weekly lessons-graduation skill
   lessons_archive/                   rotated per-session lesson buffers
 ```
@@ -83,3 +86,11 @@ does not contain a Nim client or local adapter; the environment pin lives in
 
 The full evaluate → report → improve → submit cycle, and which skill drives each step, is in
 [`AGENTS.md`](AGENTS.md) (Vanilla-WoW layer) and [`../AGENTS.md`](../AGENTS.md) (the loop).
+
+## Replay analysis
+
+We can recover movement and stalls, exact damage and death locations, alive/dead/ghost time,
+recovery attempts, combat effectiveness, spell outcomes, and form/aura evidence from retained
+replays now. Use [`tools/wow_batch_profiler.py`](tools/wow_batch_profiler.py) for a batch and
+[`docs/vanilla-wow-replay-analysis.md`](docs/vanilla-wow-replay-analysis.md) for the evidence
+contract and direct owner-reducer commands.

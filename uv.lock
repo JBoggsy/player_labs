@@ -515,7 +515,7 @@ wheels = [
 
 [[package]]
 name = "coworld"
-version = "0.1.35"
+version = "0.1.38"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
@@ -532,9 +532,9 @@ dependencies = [
     { name = "typer" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3f/02/efb787cc3c9cae8cc499be0efd324d721feb9c538a24ee657ff928c55ce0/coworld-0.1.35.tar.gz", hash = "sha256:e87c9055ce04af13bedda3515c6bb762f3c7ae2a11f51889445c4e9b46308043", size = 1943170, upload-time = "2026-08-04T04:29:35.178Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/dd/a4/579eca9bf4b09e3adba5ebeba10037d4540ee60aa6ef00c983afaea06dd1/coworld-0.1.38.tar.gz", hash = "sha256:d8ef128cee0c24783690c804c330a003314a3b9db28a0340eea53655ae53c835", size = 1954413, upload-time = "2026-08-08T01:16:51.525Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/61/14/1b20ab8c78a3626e859b85445711b642665b147a33f183f349c2a784642b/coworld-0.1.35-py3-none-any.whl", hash = "sha256:af1d89e93c6910ba9cdbbae0f3f903a2eb443ba60ee00ad7609f462848577f74", size = 336432, upload-time = "2026-08-04T04:29:33.493Z" },
+    { url = "https://files.pythonhosted.org/packages/ca/0d/96d34fd317d7c85f137483d45830d233c57895044ab962f83f725903a574/coworld-0.1.38-py3-none-any.whl", hash = "sha256:b0590d436b96cddb42874ca2c3d30fb2318aab9a9173907be88938b8734e572c", size = 346735, upload-time = "2026-08-08T01:16:42.383Z" },
 ]
 
 [package.optional-dependencies]
@@ -1885,7 +1885,7 @@ requires-dist = [
     { name = "scikit-learn", specifier = ">=1.9.0" },
     { name = "scipy", specifier = ">=1.17.1" },
     { name = "spacy", specifier = ">=3.8.0,<3.9.0" },
-    { name = "vanilla-wow-coworld", git = "https://github.com/Metta-AI/coworld-vanilla-wow.git?rev=b11cbac8a50e9a019848f4001c54f834e22c340b" },
+    { name = "vanilla-wow-coworld", git = "https://github.com/Metta-AI/coworld-vanilla-wow.git?rev=b92f4961c97cc918b7e46e2c39db778f01df2487" },
     { name = "websockets", specifier = ">=16.0" },
 ]
 
@@ -2990,7 +2990,7 @@ wheels = [
 [[package]]
 name = "vanilla-wow-coworld"
 version = "0.1.4"
-source = { git = "https://github.com/Metta-AI/coworld-vanilla-wow.git?rev=b11cbac8a50e9a019848f4001c54f834e22c340b#b11cbac8a50e9a019848f4001c54f834e22c340b" }
+source = { git = "https://github.com/Metta-AI/coworld-vanilla-wow.git?rev=b92f4961c97cc918b7e46e2c39db778f01df2487#b92f4961c97cc918b7e46e2c39db778f01df2487" }
 dependencies = [
     { name = "boto3" },
     { name = "fastapi" },

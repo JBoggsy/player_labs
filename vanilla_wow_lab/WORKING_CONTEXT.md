@@ -13,7 +13,38 @@ file is the one-screen "where are we and why."
 
 ---
 
-## Status (2026-08-05): PREPARING THE COMPLETE SPAWN-SAFE V78 OPENING
+## Status (2026-08-08): VANILLA-WOW 0.1.208 REMOVES ENVIRONMENT MOVEMENT CHURN
+
+Canonical **vanilla-wow 0.1.208**
+(`cow_2e0459a4-0b66-492c-9799-0cc6ec0e8876`, image
+`sha256:f950683bd15014e0fd9be0c4226d70474fe05a0b09fe09b2a55fb0c351dfd3e4`)
+contains owner commit `b92f4961c97cc918b7e46e2c39db778f01df2487`. Compatible destination
+moves now retain forward input across observation horizons and route turns; collision-avoidance
+bearings remain selected until faced instead of collapsing into one-frame turn pulses. The host
+also retains typed action and movement lifecycle telemetry in the combined game log.
+
+The unchanged uploaded **wowborg:v88** (`3f955f79-6404-4d51-8efe-c04675d22926`, source
+`cbbbee0`) is the control. Owner acceptance request
+`xreq_c0649f44-ecca-4f82-bc2a-e1cdf95684b1` completed 5/5 over 17,308.7 trajectory yards
+with zero nonterminal stops, stalls, rejections, detached frames, or direct turn reversals.
+Its 11 turns lasting at most 100 ms are a 98.5% reduction from the 0.1.207 canary, and none
+has the former same-waypoint route-bearing disappearance signature. Three stop/restart pairs
+are terminal scoring/logout artifacts after the character is already a ghost, not movement
+churn. Wowborg itself was unchanged and remains unsubmitted at v88.
+
+Independent lab request `xreq_cb6f96ae-00d0-40ab-b5a5-d10cb46248e0` reproduced the
+acceptance 5/5 with mean score 1,607.572 across 17,352.720 trajectory yards. It has zero
+active nonterminal stops, host stalls/rejections/detached frames, stale-frame rejections,
+direct reversals, or old bearing-disappearance signatures. Ten turns last at most 100 ms;
+the four raw stop/restart pairs split into two death/ghost transitions and two final
+scoring/logout artifacts rather than traversal churn.
+
+The lab source dependency and exact environment-image pin now match 0.1.208. Use
+`tools/movement_report.py EPISODE_DIR --json` on downloaded experience-request artifacts;
+with `game_logs.log` present it reports nonterminal versus terminal stops, host counters,
+short turns, direct reversals, and the former bearing-disappearance signature.
+
+## Historical status (2026-08-06): V78 SUBMITTED AND QUALIFYING ON THE CORRECTED CLOCK
 
 Inert **wowborg:v75** (`c75e24cc-166f-43df-9d52-d77724cc4b16`, source `aed90c9`)
 adds the required Great Lift transition after the lower-dock route.
@@ -53,19 +84,69 @@ Rabid Blisterpaw (entry 5427, GUID 22586) had been omitted because the prior 48-
 route-local, not regional. The correct region contains 136 pinned hostile rows, and v77's exact
 route crosses seven conservative envelopes.
 
-Inert **wowborg:v78** (`36f3f0bf-2261-42ec-9d8a-4a084e145b81`, source `3e95dcb`)
+**wowborg:v78** (`36f3f0bf-2261-42ec-9d8a-4a084e145b81`, source `3e95dcb`)
 replaces only that opening with eight ordinary-navmesh guidepoints,
 then rejoins the existing first Centipaar bypass. Its exact chained Detour route is 2,122.1609
 yards and crosses zero conservative envelopes across all 136 regional hostile rows; the
 tightest margin is +0.226 yards. Combat, recovery, the later route, and normal lift boarding
-remain unchanged. v78 is uploaded but not submitted; v63 remains the only submitted version.
+remain unchanged.
 
-Independent replay/source profiling also proved the current hosted Coworld's semantic movement
-is effectively 1x inside its advertised 10x world: EnvHost created a 10x frame clock but left
-the movement delay's process gameplay clock at 1x. Owner-repo commit `fd425e550` fixes that
-locally and passes the focused host proof plus 40 architecture checks, but it is not pushed or
-published. A v78 hosted result is not decision-grade until Traverse runs a Coworld containing
-that owner fix. Publication and league update require explicit human authorization.
+The canonical league Coworld is now **traverse-wow 0.1.174**
+(`cow_dc024af2-7f05-4ee1-bd33-99103175cde0`), with the corrected 10x gameplay clock.
+Hosted canary `xreq_e984c401-f498-449d-8aa6-77cad0e1912b` completed 1/1 with no policy or
+infrastructure failure, scoring **1,304.14 northing**. Its ordinary-access replay records
+1,114 client movement packets, 3,746.6 yards of trajectory, zero falling packets, and a normal
+Travel Form cast. No policy-log artifact was exposed at ordinary permissions, so lifecycle
+timing is unavailable; the authoritative northing and replay nevertheless prove genuine
+world movement rather than a connect-only completion.
+
+With the human's explicit gate, submission `sub_6c5e6403-d23f-4296-8ee9-3f4dee8b2477`
+placed v78 as membership `lpm_67027432-7d93-40ba-9f3c-8ed632f83735`. It subsequently
+qualified and is now the active champion; v63 is benched.
+
+Behavior-neutral **wowborg:v80** (`db6faec7-451a-483f-b65d-db2b3f80fded`, source
+`917e83a`) is uploaded inert against the exact active 0.1.174 environment contract; v79 failed
+at startup on a stale navmesh import and was superseded. v80's trace records frame
+receipt-to-action latency, `/env` step round-trip, submitted/returned frame IDs, raw status,
+stale refresh, and locally skipped actions. In hosted request
+`xreq_75c86237-6b7a-4a3a-abe3-cb4b9fd65687`, all five runs completed and Wowborg eventually
+submitted on every one of 2,561 unique offered frames. Normal response is extremely prompt
+(0.548 ms median, 0.810 ms p95), but each run has exactly three synchronous nav operations over
+the default five-second deadline: initial planning, frontier replanning after opening no-progress, and
+ghost recovery planning. The 15 pauses span 7.63-17.23 seconds and are followed by all 15
+stale-frame rejections. They are real policy-caused silence windows that satisfy the documented
+stall trigger, but are not the primary cause of
+the pervasive choppiness: the five replays contain 717 forward stops and 707 boundary-only
+stops, while only 38 raw stops occur in the coarse wall-clock windows of those slow responses.
+At that time, the host's exact `action_stall` count and continuation retain/release reason were
+owner-only and required environment telemetry rather than policy inference. v80 is not submitted; v78 remains
+the active champion.
+
+The canonical owner replay reducer now makes the retained replay a complete causal diagnostic
+surface for movement/stalls, damage and death locations, life-state time, recovery controls,
+combat, spell outcomes, and form/aura evidence. `tools/wow_batch_profiler.py` aggregates those
+facts without duplicating packet-state reduction. Across rounds 323-325 (two v63, one v78), all
+three runs ended ghosted after one death, spent 4,852.6 seconds total in ghost form (68.9%),
+dealt zero damage with zero attack packets, and recorded five clustered stuck episodes from 15
+Stuck invocations. The damage sources were one Scorpid Dunestalker, one Rabid Blisterpaw, and
+one Glasshide Petrifier. Recovery, not route geometry alone, is the shared primary failure.
+
+The full historical profile now covers 129 unique playable replays (one exact duplicate
+removed), including 113 current Tanaris Traverse runs from v63–v78. In that current family,
+121 deaths and 88.6% of all incoming damage concentrate in four adjacent opening cells along
+y≈-2500; 107/113 runs ended ghosted and ghost time is 60.9%. All six v78 replays died and
+ended ghosted, five near x≈-9100 and one near x≈-9308, with Glasshide Petrifier as the final
+damage source. See
+[`docs/wowborg-history-profile-2026-08-06.md`](docs/wowborg-history-profile-2026-08-06.md).
+
+A preregistered six-replay v78 smoothness audit localizes the visible choppiness below waypoint
+strategy. The authoritative outbound wire has 591 effective stop-to-restart intervals: 478
+without an intervening turn (156 lasting at least 0.5 simulation seconds), 109 with explicit
+turn controls (median 4.0 seconds; 81 at least 3 seconds), and four with other controls. `/env`'s
+pilot explicitly stops forward for heading errors above 45 degrees, matching the stationary
+avatar/rotating-terrain presentation; the viewer interpolates the recorded wire and therefore
+exposes rather than invents it. See
+[`docs/smooth-movement-root-cause-preregistration-2026-08-06.md`](docs/smooth-movement-root-cause-preregistration-2026-08-06.md).
 
 Speed-first **wowborg:v74** (`621ee466-2caf-4325-881d-0ba483dc1bfd`, source `d421042`)
 completed current-format request `xreq_3bad8628-4872-4422-a805-41f74ac3c256` on
@@ -84,7 +165,7 @@ follows an explicit competition route when one is available, and falls back to t
 untried local northbound frontier. It records
 authoritative northing and every route/frontier activation in the trace.
 
-- Canonical target is **traverse-wow 0.1.160**
+- At that point the canonical target was **traverse-wow 0.1.160**
   (`cow_3eca82b6-2ad7-476b-88af-832d1faa666d`, image `sha256:bc2aec5696…`). Its SDK source
   pin is `b11cbac8a50e9a019848f4001c54f834e22c340b`.
 - The 0.1.160 image publishes its Python contract from `/opt/coworld-python`, replacing the
@@ -385,7 +466,7 @@ the fix. (Superseded by the 2026-08-04 status above: 0.1.152 fixed this fall.)
 
 ## Status (2026-07-30): WOWBORG WORKS ON 0.1.124; NAV + LIVE PROGRESS PROVED
 
-The current accelerated-wow release now ships the convenient Gymnasium interface the
+The then-current accelerated-wow 0.1.124 release shipped the convenient Gymnasium interface the
 lab previously expected to own. `wowborg` has been rewritten against that canonical
 surface:
 
@@ -473,10 +554,11 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
 - **7200 is NOT the episode deadline** — it's `DUNGEON_LAB_RESPAWN_SECONDS`, the boss-respawn
   timer that keeps a killed boss readable as dead. The episode budget is `max_ticks/tick_rate`
   (RFC: 10000/0.1). Be precise when writing about time.
-- **The player is Nim, packet-level** (King Nimrod, headless `-d:noGui`), connects via a
-  WebSocket→TCP bridge (`wsproxy`), and must obey **"sent is not accepted"** (confirm every
-  action from `action-results.jsonl` / typed state transition; no teleport / injection /
-  synthetic state / DB repair after login).
+- **Wowborg is a synchronous Python semantic player.** It consumes the game's typed
+  `Observation`, submits one `Action` over the injected `/player` session, and consumes the
+  next authoritative frame. The game owns the Nim packet client, projection, admission,
+  execution, settlement, and reconnects. **Submission is not success**; use typed outcomes and
+  observed state, never a second client or synthetic state.
 - **Only 7 of 9 classes are seedable** (Horde-only seeding; **paladin** Alliance-unreachable,
   **druid** unseeded). Class rotations exist for those same 7 (`player/bots/rotations.nim`).
 - **No `-100` failure sentinel** (that's Crewrift). Detect player failure via episode status;
@@ -484,17 +566,16 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
 
 ## Open threads (next steps)
 
-1. **Release the landed owner-game fix.** Commit `1608da7a` routes authenticated
-   simulation data and removes the invalid zero-active-fetch startup assertion. Focused Nim,
-   architecture, scope, and exact local episode proofs pass. Richard Higgins merged owner-repo
-   PR #7809 with both CI checks green; it still needs a released accelerated-wow build before
-   hosted wowborg can move.
-2. **Then finish the hosted movement-continuity retest** that has been pending since 0.1.127:
-   compare a fresh episode against baseline `ereq_422085f1-9ec7-4554-b2ba-9942947e5dc2`
-   with `tools/movement_report.py --baseline`. Baseline figures: 4,097 movement packets,
-   239 forward starts, 243 stops, 326 turn starts, 356 turn stops, 2,907 heartbeats,
-   1,315.8 replay yd. The open question is whether the environment-owned forward
-   continuation (game PR #7391) holds hosted, as it did locally on 0.1.127.
+1. **Return to the death cells with a reusable navigation model, not another exact script.**
+   Movement continuity is closed: unchanged v88 has zero active nonterminal stops on two
+   independent five-run 0.1.208 batches. The current-family replay profile localizes 106/121
+   deaths and 88.6% of incoming damage to four adjacent opening cells. The next human-led
+   choice is the capability model for travel between waypoints—hazard-aware routing around,
+   deliberate combat through, or stealth/travel-form passage—so the same intelligence applies
+   to later danger rather than encoding this one corridor.
+2. **Reclaim Docker VM space before the next rebuild.** The exact 0.1.208 image contract
+   imports correctly, but a full `tools/build_player.sh` run exhausted Docker storage during
+   dependency installation. The shared root TODO records the safe cleanup requirement.
 3. **`tools/route_lab.sh` is stale for 0.1.146+.** It assumes the `versions.env` image
    carries `/vmangos-data`, but the release now splits into a Python adapter image (no world
    data) and a separate VMaNGOS runtime image. Point it at the runtime image before relying
@@ -504,14 +585,15 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
 
 ## Reference
 
-- Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter
-  `src/vanilla_wow_coworld/`, Nim player `player/`, dungeons `dungeons/`, manifest
-  `coworld_manifest_template.json`. **Read-only for us; pull before relying on it.**
+- Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
+  semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.
+  **Read-only for us; fetch/pull before relying on it.** Current verified movement source:
+  `b92f4961c97cc918b7e46e2c39db778f01df2487`.
 - Design doc for this lab's creation: `../docs/superpowers/specs/2026-07-13-vanilla-wow-lab-design.md`.
 
 ## Discipline (from [`../AGENTS.md`](../AGENTS.md))
 
 Human sets strategic direction; you build observability, measure, hold the correctness gate.
 **Propose-and-pause.** Change one component per iteration. Uploading is routine/ungated;
-**league submission is the human's gate** (public, champion-making, hard to roll back) — and
-here, doubly gated behind the game even being live.
+**league submission is the human's gate** (public, champion-making, hard to roll back).
+Wowborg v78 remains the submitted champion; v88 is an inert evaluation control.

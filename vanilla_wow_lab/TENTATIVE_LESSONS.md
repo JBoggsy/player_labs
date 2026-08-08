@@ -18,6 +18,60 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
 
+### Separate death transitions and terminal scoring controls from active movement churn
+
+Evidence: the 0.1.208 five-run acceptance contains three stationary stop/restart pairs, but
+all three follow the final forced-root settlement and precede `closed: scoring_logout` with no
+later admitted action. The same runs have zero nonterminal stops across 17,308.7 trajectory
+yards. An independent five-run batch has four raw pairs: two at death/ghost transitions and two
+at final scoring/logout, again with zero active traversal stops across 17,352.7 yards. A raw stop
+count would incorrectly call the seamless fix a regression.
+Status: candidate — use the exact host movement clock and report active, life-state, and terminal
+stops separately.
+
+### Environment-owned movement claims require the combined game log
+
+Evidence: policy stderr can prove frame response timing but cannot expose continuation causes.
+The live episode API's `artifacts/logs` route now retains the host's typed stalls, rejections,
+detached frames, continuation decisions, and control transitions; the lab downloader previously
+discarded that artifact. Retaining it makes exact replay-to-owner attribution routine.
+Status: candidate — download producer telemetry alongside consumer requests.
+
+### An empty optional-artifact listing needs a positive completion marker
+
+Evidence: the streaming episode downloader used an `artifacts/` directory as its completion
+signal, but a valid policy-artifact listing can be empty and therefore creates no directory.
+The watcher repeatedly selected already-complete episodes. Persisting the checked listing as
+`policy_artifacts_checked.json`, including `[]`, distinguishes "checked and empty" from "not
+checked" without inventing placeholder payloads.
+Status: candidate — completion state must not depend on optional output being nonempty.
+
+### Batch replay evidence must separate scenario eras and deduplicate overlapping feeds
+
+Evidence: the policy replay feed and recorded experience requests exposed 130 replay files,
+but one v78 request appeared in both sources. Sixteen older v47–v61 runs also began in a
+different Durotar-era scenario and would distort current Tanaris hotspot conclusions. Exact
+SHA-256 deduplication left 129 unique replays; the decision-relevant current family is the 113
+v63–v78 runs.
+Status: candidate — provenance and cohort boundaries are prerequisites for aggregate metrics.
+
+### Replay hotspots outrank static route-envelope confidence
+
+Evidence: the regional pinned-spawn audit predicted zero conservative contacts for v78, but
+all six hosted v78 replays died and ended ghosted. Five deaths cluster near x≈-9100/y≈-2550
+and one near x≈-9308/y≈-2682, all with Glasshide Petrifier as the final damage source. Across
+v63–v78, four adjacent opening cells contain 106/121 deaths and 88.6% of incoming damage.
+Status: candidate — hostile movement and executed trajectory must validate a static envelope.
+
+### Reuse the owner replay reducer; do not rebuild packet state in the lab
+
+Evidence: current `player.sdk.replay_diagnostics` reconstructed v78's exact stuck locations,
+damage source and amounts, death location, life-state durations, recovery controls, spell
+outcomes, and aura evidence from an ordinary retained replay. The older lab recon still listed
+Tier-2 reduction as unbuilt. `wow_batch_profiler.py` now adds only batch aggregation and stuck
+retry clustering on top of the canonical reducer.
+Status: candidate — owner state reduction plus lab-specific aggregation is the clean boundary.
+
 ### Bake competition strategy into each immutable player version
 
 Evidence: Coworld policy submission preferences select versions and league behavior but do
@@ -91,6 +145,15 @@ the discriminator. Displacement is — across all 239 baseline pauses the charac
 correctly scores 239/239 and FAILs. A metric that passes the case it was built to catch is
 worthless, and only the negative control reveals it.
 Status: candidate — generalizes well beyond this lab.
+
+### Separate replay presentation from the movement wire before tuning the viewer
+
+Evidence: six v78 replays that looked visually choppy contained 591 effective forward
+stop-to-restart intervals in the outbound ordinary-client wire. Of those, 109 contained explicit
+turn controls (median pause 4.0 simulation seconds), directly explaining the centered stationary
+avatar while terrain rotates; another 156 non-turn pauses lasted at least 0.5 seconds. The
+viewer cannot be the primary source of a stop already present in the authoritative input stream.
+Status: candidate — classify control-state transitions before interpreting camera-relative video.
 
 ### A fix that changes the failure mode is progress — report the delta, not "still broken"
 

@@ -9,10 +9,10 @@ the **Vanilla-WoW-specific layer** on top of it: the game, the docs, the practic
 policies we optimize. When the two disagree, the root defines *process*; this file defines
 *Vanilla WoW*.
 
-> **Lab status (2026-07-29): `wowborg` is a Python policy over the game's canonical
-> Gymnasium `/env` interface.** The game owns the WoW client, projection, admission,
-> execution, settlement, and reconnects. Wowborg consumes `AgentFrame`, submits
-> `AgentAction`, and uses the upstream navmesh SDK. The deployed accelerated-wow image
+> **Lab status (2026-08-08): `wowborg` is a Python policy over the game's canonical
+> Gymnasium semantic `WS /player` interface.** The game owns the WoW client, projection,
+> admission, execution, settlement, and reconnects. Wowborg consumes `Observation`, submits
+> `Action`, and uses the upstream navmesh SDK. The deployed `vanilla-wow:0.1.208` image
 > and matching source commit are pinned in `tools/versions.env`. Live state + next steps:
 > [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
 
@@ -35,7 +35,7 @@ are split into [`docs/vanilla-wow-player-contract.md`](docs/vanilla-wow-player-c
 
 **The one architectural fact that shapes everything here:** a Vanilla WoW policy is now a
 synchronous Gymnasium agent. It must obey a strict client-honesty contract — **read the
-current `AgentFrame` → submit one typed `AgentAction` → consume the next authoritative
+current `Observation` → submit one typed `Action` → consume the next authoritative
 frame → repeat; submission is not success**. The game-owned environment is the sole owner
 of the packet-level client and validates all actions. Policies must not add a second client,
 projection layer, admission mask, or settlement adapter.
@@ -43,9 +43,8 @@ projection layer, admission mask, or settlement adapter.
 ## The loop, in Vanilla-WoW terms
 
 The root loop (evaluate → report → direction → implement → rebuild+reupload → repeat → human
-gate → submit) runs **unchanged** here *once the game supports it*. Right now it is **blocked**
-(see status above): there is no live scored league, and uploading a policy has nothing to
-compete in yet. When that clears, the Vanilla-WoW-specific instruments will be:
+gate → submit) runs **unchanged** here. Direct Coworld experience requests are the normal
+evaluation path; league submission remains human-gated. The Vanilla-WoW-specific instruments are:
 
 - **Evaluate** (step 1) — experience requests against the uploaded policy. Two axes matter:
   the **RFC clear** (does the same-brain 5-slot party *fully clear* — all four bosses — and how
@@ -69,7 +68,7 @@ compete in yet. When that clears, the Vanilla-WoW-specific instruments will be:
 
 ## Player build paths
 
-**Chosen path (2026-07-29): our Python bot uses the owner-provided `/env` contract
+**Chosen path (updated 2026-08-08): our Python bot uses the owner-provided semantic `/player` contract
 directly.** `wowborg/environment.py` is only a bot convenience around
 `VanillaWowEnv`; it does not adapt a client protocol. The image copies `environment/`
 and `player/sdk/` from the exact **deployed target Coworld** image pinned in
@@ -97,12 +96,12 @@ human-direction decision, not a default):
   relevant mechanics (classes, combat, leveling, navigation, the 15 manifest variants).
   **Start here** to build a mental model.
 - **[`wowborg/README.md`](wowborg/README.md)** — the current policy contract,
-  `/env` lifecycle, layout, knobs, validation, and build commands.
+  semantic-player lifecycle, layout, knobs, validation, and build commands.
 - **[`docs/vanilla-wow-player-contract.md`](docs/vanilla-wow-player-contract.md)** and
   **[`docs/vanilla-wow-protocol.md`](docs/vanilla-wow-protocol.md)** — historical
   low-level contract references from 2026-07-13. They are useful for protocol archaeology,
   but are superseded for current policy work by the owner repo's
-  `docs/bot-environment-contract.md` and `environment/contract/agent.py`.
+  `docs/bot-environment-contract.md` and `environment/contract/policy.py`.
 - **[`docs/vanilla-wow-rfc-roles.md`](docs/vanilla-wow-rfc-roles.md)** — the five RFC support
   roles (commissioner/grader/diagnoser/optimizer/reporter): images, env-var contracts,
   outputs, auto-vs-on-demand, and the exact commissioner round-scoring math.
@@ -195,6 +194,6 @@ the rest of the lab's deferred tasks. Check it at the start of focused work.
 
 ## Player policies
 
-_(None yet — the lab was just created. A policy directory `vanilla_wow_lab/<policy>/` gets
-added when the first policy is built, mirroring `crewrift_lab/crewrift/`, `heartleaf_lab/cady/`,
-and `cue_n_woo_lab/mentalist/`.)_
+- **[`wowborg/`](wowborg/)** — the active Python semantic player. Its README documents the
+  current contract, architecture, build path, and behavioral knobs; `VERSION_LOG.md` maps every
+  uploaded immutable version to its source and evidence.

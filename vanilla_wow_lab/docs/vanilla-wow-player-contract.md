@@ -2,7 +2,7 @@
 
 > **Historical reference (superseded 2026-07-29).** This document describes the
 > 2026-07-13 direct-client contract. Current wowborg policies use the owner-provided
-> Gymnasium `WS /env` contract and do not own a WoW client. For current behavior, read
+> Gymnasium semantic `WS /player` contract and do not own a WoW client. For current behavior, read
 > [`../wowborg/README.md`](../wowborg/README.md) and the owner repo's
 > `docs/bot-environment-contract.md` plus `environment/contract/agent.py`.
 

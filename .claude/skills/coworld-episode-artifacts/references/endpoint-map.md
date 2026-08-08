@@ -40,6 +40,7 @@ for both a Crewrift league episode and an amongthem experience-request episode):
 | `GET /jobs/{job_id}/artifacts/error_info` | `error_info.json` — **404 when absent** (valid type; present only on failure) |
 | `GET /jobs/{job_id}/policy-logs` | JSON list of filenames `["policy_agent_0.log", ...]` |
 | `GET /jobs/{job_id}/policy-logs/{agent_idx}` | one agent's stderr trace |
+| `GET /v2/episode-requests/{ereq_id}/artifacts/logs` | combined container/game stdout for an experience-request episode |
 | `GET /jobs/{job_id}/policy-artifact` | JSON list of **filenames** (`["policy_artifact_0.zip", ...]`), one per slot that uploaded — *not* bare slot ints; parse the index out |
 | `GET /jobs/{job_id}/policy-artifact/{agent_idx}` | one slot's `policy_artifact_{idx}.zip` (player-uploaded telemetry/debug bundle; **policy-scoped** — only slots you own) |
 
@@ -47,8 +48,9 @@ The replay decompresses (zlib) to the game's binary replay (e.g. magic
 `CREWRIFT...`) — the directly-loadable form. Keep the raw `.z` too.
 
 ### Dead ends (do not use)
-- `GET /v2/episode-requests/{ereq}/artifacts/{type}` — `results`/`replay`/`game_logs`/`stats`
-  all return **400 "Unknown artifact type"**; only the `/jobs/{job_id}/...` routes serve these.
+- `GET /v2/episode-requests/{ereq}/artifacts/{type}` — `logs` is supported and returns
+  combined container/game stdout; `game_logs` and `stats` still return **400 "Unknown artifact
+  type"**. Continue using `/jobs/{job_id}/...` for results and replay.
 - `GET /v2/experience-request-episodes...` — **gone** (renamed away ~2026-06; an
   older `fetch_episodes.py` keyed logs off this and now fails here).
 - `coworld_id` / `job_id` / `episode_id` as query params on `/v2/episode-requests`
@@ -144,6 +146,11 @@ For league episodes by policy, and for bundling everything per episode in one
 pass, use this skill's `fetch_artifacts.py` instead.
 
 ## Drift log (why this file exists)
+
+- **2026-08-08**: re-verified the typed artifact route live. `artifacts/logs` now returns
+  combined container/game stdout (including environment host telemetry); the older
+  `artifacts/game_logs` spelling still returns 400. The downloader now retains it as
+  `game_logs.log` alongside policy stderr.
 
 - **2026-07-09**: documented `POST /v2/episodes/search` + `GET /v2/episodes/search/fields`
   (see "Episode search" above) — the direct filter-AST episode query, verified live. It is

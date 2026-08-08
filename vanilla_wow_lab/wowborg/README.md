@@ -50,10 +50,12 @@ resolution is pinned to the matching owner commit in the root `pyproject.toml`.
   (policy processing time from receipt of the offered frame to submission),
   `step_round_trip_ms`, submitted/returned frame IDs, raw action status, and whether
   stale-frame refresh occurred. An `action_skipped` event records a locally rejected
-  stale or terminal frame. These fields can prove whether Wowborg answered each
-  offered frame promptly; continuation retain/release reasons and host
-  `action_stall` counters remain environment-owned telemetry and cannot be inferred by
-  the policy.
+  stale or terminal frame. These fields prove whether Wowborg answered each
+  offered frame promptly. The 0.1.208 game also retains environment-owned JSONL
+  telemetry for `stalls`, `rejected_requests`, `detached_frames`, continuation
+  preparation/release, prefix settlement, and forward-control transitions. Join a
+  replay stop to that game log by the exact client `movement_time_ms`; do not infer
+  host causes from policy timing or wall-clock proximity.
 - `Dockerfile` — copies only `environment/` and `player/sdk/` from the pinned game
   image into a small Python policy image.
 

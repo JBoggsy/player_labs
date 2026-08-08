@@ -25,6 +25,8 @@ artifact handle. All artifacts come from three job routes (verified live
     GET /jobs/{job_id}/artifacts/replay          -> replay bytes   (game replay)
     GET /jobs/{job_id}/policy-logs               -> ["policy_agent_0.log", ...]
     GET /jobs/{job_id}/policy-logs/{agent_idx}   -> one agent's stderr trace
+    GET /v2/episode-requests/{ereq}/artifacts/logs
+                                                 -> combined container/game stdout
     GET /v2/episode-requests/{ereq}/policy-artifacts -> per-position has_artifact flags
     GET /v2/episode-requests/{ereq}/{policy_version_id}/policy-artifact/{agent_idx}
                                                  -> one slot's artifact zip
@@ -385,9 +387,9 @@ def episode_is_complete(out_dir: Path, want_replay: bool, want_logs: bool,
         return False
     if want_logs and not (out_dir / "logs").exists():
         return False
-    # Episodes with no policy-scoped artifact (none of our slots uploaded one)
-    # legitimately lack artifacts/ — they get re-checked, which is cheap.
-    if want_artifacts and not (out_dir / "artifacts").exists():
+    # The listing may legitimately contain no player-uploaded ZIP. A durable
+    # marker distinguishes "checked and empty" from an interrupted fetch.
+    if want_artifacts and not (out_dir / "policy_artifacts_checked.json").exists():
         return False
     return True
 
@@ -413,6 +415,7 @@ def fetch_episode(
         "results": False,
         "replay": False,
         "logs": [],
+        "game_log": False,
         "policy_artifacts": [],
         "error_info": False,
         "errors": [],
@@ -474,6 +477,20 @@ def fetch_episode(
         else:
             summary["errors"].append("no policy logs listed for job")
 
+        # Environment-owned diagnostics (including Vanilla WoW's structured host
+        # telemetry) live in the combined container log, not policy stderr. This
+        # route is scoped to experience-request episodes; league episodes use a
+        # separate read surface and remain best-effort here.
+        if ref.ref_id.startswith("ereq_"):
+            game_log = client.get_text_or_none(
+                f"/v2/episode-requests/{ref.ref_id}/artifacts/logs"
+            )
+            if game_log is not None:
+                (out_dir / "game_logs.log").write_text(game_log)
+                summary["game_log"] = True
+            else:
+                summary["errors"].append("combined container/game log unavailable")
+
     # 5. Per-player artifact zips (policy-scoped: only slots we own come back).
     # Players may upload one zip of structured telemetry/debug data per slot
     # (e.g. crewborg's trace zip) — separate from the stderr policy logs, and
@@ -485,6 +502,8 @@ def fetch_episode(
     # (ereq id, policy_version_id, agent position). League episodes (no ereq_…
     # ref) currently have NO artifact download route; note it and move on.
     if want_artifacts:
+        artifact_rows: list[dict[str, Any]] = []
+        artifact_listing_checked = not ref.ref_id.startswith("ereq_")
         if not ref.ref_id.startswith("ereq_"):
             summary["errors"].append(
                 "policy artifacts: no v2 route for league episodes (only episode requests)"
@@ -497,6 +516,9 @@ def fetch_episode(
                     rows = json.loads(listing)
                 except json.JSONDecodeError:
                     summary["errors"].append(f"unparseable policy-artifacts listing: {listing[:80]}")
+                else:
+                    artifact_listing_checked = True
+            artifact_rows = rows
             for row in rows:
                 if not row.get("has_artifact"):
                     continue
@@ -515,6 +537,10 @@ def fetch_episode(
                 artifacts_dir.mkdir(exist_ok=True)
                 (artifacts_dir / f"policy_artifact_{idx}.zip").write_bytes(content)
                 summary["policy_artifacts"].append(idx)
+        if artifact_listing_checked:
+            (out_dir / "policy_artifacts_checked.json").write_text(
+                json.dumps(artifact_rows, indent=2)
+            )
 
     # 6. Error info (present only when the episode failed).
     err = client.get_text_or_none(f"/jobs/{job}/artifacts/error_info")

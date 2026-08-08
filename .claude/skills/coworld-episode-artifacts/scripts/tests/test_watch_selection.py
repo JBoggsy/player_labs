@@ -23,7 +23,7 @@ def _ref(ref_id: str, status: str) -> EpisodeRef:
 def _complete_dir(root: Path, ref: EpisodeRef) -> Path:
     d = root / episode_dirname(ref)
     (d / "logs").mkdir(parents=True)
-    (d / "artifacts").mkdir()
+    (d / "policy_artifacts_checked.json").write_text("[]")
     (d / "episode.json").write_text("{}")
     (d / "replay.json").write_bytes(b"")
     (d / "results.json").write_text("{}")
