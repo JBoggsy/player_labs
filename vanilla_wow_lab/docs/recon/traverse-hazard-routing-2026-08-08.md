@@ -209,6 +209,14 @@ evidence that fighting is cheap. The pinned navmesh accepts a northern waypoint 
 than 40 yards from the observed patrol position, compared with the baseline's 18.2-yard contact
 sample, and is the next attributable dynamic-avoidance probe.
 
+v101 falsified the direct northern bypass. It encountered a different hazard, one Dunemaul Brute
+at `(-8396.0,-3178.9)`, at 4.1 yards and died after taking 2,825 damage over 83.8 seconds. The
+paired traces expose a usable channel: v100 passed safely through `(-8401.8,-3220.7)`, 42 yards
+south of the Brute, and a due-east leg at `y=-3220` stays 57 yards north of the observed Gazer.
+The next probe therefore delays its deviation until the original road has passed the Brute, then
+crosses between the two measured patrol positions. This remains route-first hazard handling; both
+fights had zero policy damage and prohibit a fight-through inference.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.

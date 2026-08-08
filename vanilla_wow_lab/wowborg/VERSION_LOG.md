@@ -6,7 +6,12 @@
   inert; not submitted). Built from source `5c56fff` with the published 0.1.188 contract.
 - Adds only `tanaris-gazer-bypass-north` at `(-8350,-3180,14.1)` between canonical road nodes
   3 and 4. The pinned navmesh connects both legs, and the waypoint shifts the local corridor more
-  than 40 yards north of v100's observed Glasshide Gazer patrol. Hosted proof is pending.
+  than 40 yards north of v100's observed Glasshide Gazer patrol.
+- Request `xreq_18d73da8-12b7-4a42-a8f2-83224fb9367e` falsified that fixed
+  bypass: it crossed the 4.1-yard aggro radius of a Dunemaul Brute at
+  `(-8396.0,-3178.9)`, which dealt 2,825 damage over 83.8 seconds and killed wowborg at
+  `(-8395.8,-3175.2)`. The next candidate stays on v100's proven center-road trajectory until
+  south of the Brute, then crosses east between it and the Gazer.
 
 ## v100 - continuous road steering exposes the first live hazard (2026-08-08)
 

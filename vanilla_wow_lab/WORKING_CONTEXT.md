@@ -99,7 +99,12 @@ hazard. A Glasshide Gazer at roughly `(-8331,-3277)` pulled wowborg at
 none. The active candidate inserts one pinned-navmesh-verified northern bypass at
 `(-8350,-3180,14.1)`, over 40 yards clear of that observed patrol, and rejoins the unchanged
 owner road at node 4. It is uploaded inert as **wowborg:v101**
-(`22efcbf3-9091-4299-8023-c848981f0362`, source `5c56fff`); hosted proof is pending.
+(`22efcbf3-9091-4299-8023-c848981f0362`, source `5c56fff`). Request
+`xreq_18d73da8-12b7-4a42-a8f2-83224fb9367e` falsified that one-point bypass: a
+Dunemaul Brute at `(-8396.0,-3178.9)` pulled from 4.1 yards and killed wowborg at
+`(-8395.8,-3175.2)` after 2,825 damage over 83.8 seconds. The active candidate stays on v100's
+proven center road through `(-8401.8,-3220.7)`, then crosses due east at `y=-3220`, 42 yards
+south of the observed Brute and 57 yards north of the observed Gazer, before rejoining node 4.
 
 ## Historical status (2026-08-06): V78 SUBMITTED AND QUALIFYING ON THE CORRECTED CLOCK
 
