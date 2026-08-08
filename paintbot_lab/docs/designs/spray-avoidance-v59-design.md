@@ -15,6 +15,14 @@ engine `file:line` below was re-verified against that ref on 2026-08-08.**
 > four-team games, and the flee scoring was underspecified in a dozen places.
 > The **Resolved ambiguities** section exists so that gets caught by contract,
 > not by review, next time.
+>
+> **Revision 3** — a second adversarial pass found four more, all verified
+> against source before accepting: the fire-freeze exemption has to govern the
+> shot's trigger tick as well as the hold ticks; an identical repeat shout is
+> swallowed by the receiver's same-text dedup, so a *stationary* sprayer would
+> never refresh (hence the epoch); shout-sourced tracks need explicit provenance
+> and merge rules or jitter degrades an exact sighting; and `navigate()` routes
+> through A\*, so the executed path was not the path being scored.
 
 ## Problem
 
@@ -170,9 +178,10 @@ false**, and three consumers are dead code today:
 
 The fix is one line of source change — read `shielded` from the badge token — but
 it **reactivates three behaviors at once**, which is a confound for a v58-vs-v59
-A/B that is nominally about spray avoidance. Mitigation: gate it behind
-`STENCIL_SHIELD_AWARENESS` (default on) so a sweep can isolate the spray rung
-from the shield repair. `shieldDown` and `iShieldUp` from revision 1 are dropped
+A/B that is nominally about spray avoidance. Mitigation: `STENCIL_SHIELD_AWARENESS`
+(default on). It gates the three **consumers** and the flee exemption — never the
+parsing or the trace. Belief and telemetry always carry the truthful shield state,
+or the flag would make the trace lie about what stencil could see. `shieldDown` and `iShieldUp` from revision 1 are dropped
 — they described a state that does not exist.
 
 ### Deferred: shield-HP tracking (TODO, not in v59)
@@ -237,7 +246,12 @@ nearestThreatDistance > SprayLethalReachPx
 
 Below that, `clear_spray` joins `carrying` in the freeze exemption: keep moving
 and accept the accuracy cost, because a cone touch is fatal and a missed shot is
-not. This is one added disjunct at `action.nim:445`, not a new mechanism.
+not.
+
+**The exemption must govern two sites, not one.** `action.nim:446` skips movement
+during the *following* hold ticks, but the shot's own trigger tick independently
+zeroes the mask at `action.nim:519-521`. Exempting only the first leaves one
+frozen tick per shot — enough to matter at a boundary this tight.
 
 ### Suppression is mandatory, not cosmetic
 
@@ -265,7 +279,7 @@ score(P) = W_threat · threatGain(P)
 |---|---|
 | `threatGain(P)` | `clamp(min over threats of dist(P, threat) / SprayFleeReleasePx, 0, 1)` |
 | `coverPath(P)` | weighted mean of `coverageAt` over `SprayCoverSamples` points at `i/n` for `i` in `1..n` — **the self point is excluded**, since including it adds an identical constant to every candidate. Sample `i` is weighted `1 + (SprayCoverFarBias − 1)·(i−1)/(n−1)` |
-| `clumpRisk(P)` | **path-sampled, not endpoint-only**: at the same sample points, the fraction weighted by how many allies lie within `SprayClumpRadiusPx`, normalized as `clamp(maxAlliesAtAnySample / SprayClumpNormAllies, 0, 1)` |
+| `clumpRisk(P)` | **path-sampled, not endpoint-only**: over the same sample points, take the largest count of **visible teammates** within `SprayClumpRadiusPx` of any single sample, normalized `clamp(maxAlliesAtAnySample / SprayClumpNormAllies, 0, 1)`. Visible teammates only — clumping is about bodies actually there, and a remembered position is not evidence of one |
 | `centerTerm(P)` | `clamp(1 − dist(P, map.center) / BarrageCenterRadiusPx, 0, 1)`, and **0 unless `belief.barrage.depth > 0`** |
 
 Endpoint-only clumping fails the stated goal: the chosen path can run straight
@@ -280,6 +294,15 @@ before outer. Fallback when every candidate is rejected: move directly away from
 the *nearest* threat (not a sum, which can cancel to zero with two opposed
 sprayers); if that too is unwalkable, `Hold`, leaving the latch set.
 
+### The scored path must be the executed path
+
+`navigate()` routes non-flow reasons through `astarWaypoint`
+(`action.nim:450-453`), so an A\* route can bend away from the straight segment
+that coverage and clump were scored on — scoring one path and walking another.
+Since the candidate segment is validated walkable in the first place, the flee
+step **steers directly along the scored segment** rather than re-planning
+through A\*. Short hops (96-192px) are exactly the case where A\* adds nothing.
+
 ### Candidate validation must not use `walkableSegment`
 
 `walkableSegment` re-checks a 13×13 pixel footprint at every 2px sample
@@ -292,6 +315,13 @@ summed-area `erode` (`worldmap.nim:79+`), so walking the nav cells along the
 segment answers the same question. ~24 cell lookups for a 192px candidate versus
 ~16k pixel lookups. Candidate validation samples the eroded nav grid; the
 per-pixel test is not used here.
+
+This is a **discrete approximation, not an equivalence** — an 8px cell grid is
+coarser than a 2px pixel walk, so the validator must use supercover traversal
+(every cell the segment touches, not just one per step) and enforce the same
+no-corner-cut rule the A\* neighbour expansion already applies
+(`nav.nim`, diagonal moves require both orthogonals walkable). Without those it
+will pass segments that clip a wall corner.
 
 ## Part 3 — `coverageAt`: promote, and change the contract
 
@@ -306,10 +336,12 @@ The coverage function exists as `trace.nim:95-151` `coveredGrid`, but it measure
 | wall-only `rayClear` | the engine's paint path also stops at barriers | `trace.nim:141`, `sim.nim:619-635` |
 
 The extracted primitive is therefore **potential gun coverage**, not vision:
-gun-holding allies only, range capped at `PostGunRangePx` (1300), heading-cone
-check at *every* range, wall LOS — with a documented approximation that barriers
-are ignored, which is exact while `barrierPickups` is 0 and conservative-in-the
--wrong-direction if it is ever enabled.
+gun-holding allies only, range capped at `PostGunRangePx` (1300), a
+`GuaranteedVisionConeHalfDeg` (45°) half-cone checked at *every* range, wall LOS
+— with a documented approximation that barriers are ignored, which is exact while
+`barrierPickups` is 0 and conservative-in-the-wrong-direction if it is ever
+enabled. Ally tracks contribute at their velocity-projected position, using the
+same projection as threat tracks.
 
 `trace.nim` fills its grid from the same function, so the behavior and the viewer
 can never diverge. **Its meaning changes**, so the grid's `source` metadata and
@@ -322,7 +354,9 @@ only from a track fresher than `SprayCoverTrackTtlTicks` count
 first-wins** — otherwise a discounted track encountered first masks a visible
 ally standing right there.
 
-**Cost.** Point-wise, never a grid: ~`16 × 2 × SprayCoverSamples` requests per
+**Cost.** *Behavior* never precomputes a grid — the trace still renders its
+existing downsampled one for the viewer, which is diagnostics, not the hot path.
+Point-wise means ~`16 × 2 × SprayCoverSamples` requests per
 fleeing agent, memoized per tick by nav cell (the 16 rays overlap heavily near
 the origin), with the range and cone pre-filters rejecting most ally×point pairs
 before any ray is cast. For scale, a full grid would be 85,814 nav cells on a
@@ -335,27 +369,59 @@ per 24 ticks, 72-tick lifetime, range `mapWidth/5`, ±20px position jitter, and
 every living player in range hears it — enemies included**
 (`docs/stencil-communication.md`).
 
-- **Encoding**: `S<team><identity><cell>` — 7 chars. Revision 1's
+- **Encoding**: `S<team><identity><epoch><cell>` — 8 chars. Revision 1's
   `S<cell><identity>` omitted the team, and team-relative identities repeat
   across red/blue/green/yellow, so in FFA it names no unique enemy. Worse than
   incomplete: existing chat-seeded tracks already fall back to placeholder red
   (`belief_update.nim:199-204`), so an identity-bearing report with the wrong
   team creates a *confidently misidentified* track that visual matching may
   refuse to reconcile.
+- **The epoch is not decoration.** A receiver drops a repeat of the same
+  `(team, sender, text)` inside `ChatBubbleDedupTicks`
+  (`belief_update.nim:151-157`), and the transport re-renders one live bubble
+  rather than delivering discrete messages. A *stationary* sprayer therefore
+  encodes to identical text every time and its refresh is silently swallowed —
+  the report would go stale and expire while the threat is still standing there.
+  A base-36 epoch, incremented only when a spray report is actually sent, makes
+  each refresh textually distinct.
+- **Cadence**: dedicated `chatLastSprayTick`, reshout every
+  `SprayReshoutTicks` (default 48), which must be `<= SprayThreatTtlTicks` or the
+  track expires inside the refresh gap. Explicitly **not** the `enemy` shout's
+  arming scheme: that arms once and rearms only after all enemies have been
+  absent for 48 ticks (`chat.nim:212-241`), so it would never re-report a sprayer
+  that stays visible.
 - **Backward compatibility**: a v58 teammate's decoder has no `S` prefix and
   ignores the message (`chat.nim:130-136`); it still detects spray visually.
-- **Send**: slotted into `chooseShout` after `grenade`, before `under_fire`. The
-  consensus block keeps its priority — starving it would break the squad
-  protocol. Cadence is a dedicated `chatLastSprayTick` with a 72-tick reshout
-  interval, **not** the `enemy` shout's arming scheme: that arms once and rearms
-  only after all enemies have been absent for 48 ticks (`chat.nim:212-241`),
-  which would never re-report a sprayer that stays visible.
-- **Receive**: `belief_update` creates or refreshes an enemy track at the decoded
-  cell with `weapon = WeaponSpray`, as the `enemy` message already seeds tracks.
-  **This is what makes "all agents know" true.**
+- **Send**: slotted into `chooseShout` after `grenade`, before `under_fire`, and
+  gated by `SprayChat` so channel contention can be isolated in a sweep. The
+  consensus block keeps its priority — starving it would break the squad protocol.
+- **Receive**: `belief_update` upserts an enemy track at the decoded cell with
+  `weapon = WeaponSpray`. **This is what makes "all agents know" true.**
 - **Uncertainty**: ±20px jitter plus 8px cell quantization ≈ ±28px.
   `SprayShoutThreatPadPx` is added to the **trigger and release radii** for
   shout-sourced threats — not to the scoring distance, which stays geometric.
+
+### Track provenance and merge rules
+
+A radius pad that depends on where a track came from requires the track to know.
+`PlayerTrack` gains `source: TrackSource` (`TrackVisual`, `TrackTeamShout`,
+`TrackEnemyBubble`), and merging follows fixed rules — without them a jittered
+shout can degrade an exact sighting:
+
+- **Visual beats chat on the same tick.** Visual tracks are updated before chat
+  (`belief_update.nim:358-364`), and a shouted report must not overwrite an exact
+  pose and badge-read loadout with jittered data.
+- **Absent ≠ false.** A shout carries no grenade/shield/barrier state. A partial
+  report preserves every field it does not speak to; only a badge observation may
+  set a boolean to `false`.
+- **`WeaponUnknown` never clears a known weapon.**
+- **Identity matching first.** A spray report matches an existing track on exact
+  `(team, identity)` regardless of jitter distance, falling back to spatial
+  matching only when identity is unavailable — otherwise ±28px of jitter spawns
+  a phantom second sprayer.
+- **Nearest threat means `distance − sourcePad`**, not the geometrically nearest
+  followed by that track's own threshold. With mixed visual and shouted threats
+  the two orderings disagree.
 
 ## Part 5 — spray carriers as priority targets
 
@@ -386,6 +452,14 @@ different implementations.
 | Fallback direction | away from the *nearest* threat, never a summed vector |
 | Unknown loadout | `WeaponUnknown` never overwrites a known track weapon; only a parsed token updates it |
 | Stale spray track after a respawn | not solvable from the wire (deaths are not attributable to anonymous tracks); TTL is the only clearing mechanism, so `SprayThreatTtlTicks` is the whole safety margin |
+| Nearest threat with mixed sources | ordered by `distance − sourcePad`, not raw distance |
+| Shout vs visual on the same tick | visual wins; a shout never overwrites an exact pose or badge-read loadout |
+| Missing fields in a shouted report | preserved, never defaulted to `false`; only a badge observation may clear a boolean |
+| Shout match against an existing track | exact `(team, identity)` first, spatial only as fallback |
+| Which allies count for clumping | visible teammates only |
+| Which allies count for coverage | gun-holders, visible or track-fresh, at velocity-projected positions |
+| Coverage cone | `GuaranteedVisionConeHalfDeg` (45°), applied at every range |
+| Flee-state clearing while dead | cleared on the alive→dead transition in `updateBeliefCore`, since `decideObjective` never runs while dead |
 
 ## Tunables
 
@@ -400,6 +474,8 @@ validators in `config.nim`, which raise on malformed or out-of-range input.
 | `STENCIL_SPRAY_FLEE_RELEASE_PX` | 300 | leave it outside this (hysteresis) |
 | `STENCIL_SPRAY_THREAT_TTL_TICKS` | 48 | how long a track stays a threat |
 | `STENCIL_SPRAY_SHOUT_PAD_PX` | 40 | radius pad for shout-sourced threats |
+| `STENCIL_SPRAY_CHAT` | on | send spray reports (isolates channel contention) |
+| `STENCIL_SPRAY_RESHOUT_TICKS` | 48 | spray reshout interval; must be `<=` threat TTL |
 | `STENCIL_SPRAY_FLEE_STEP_PX` | 96 | inner candidate ring (outer is 2×) |
 | `STENCIL_SPRAY_FIRE_FREEZE_MARGIN_PX` | 40 | extra clearance required before a firing pause is allowed |
 | `STENCIL_SPRAY_W_THREAT` | 1.0 | weight: distance gained from threats |
