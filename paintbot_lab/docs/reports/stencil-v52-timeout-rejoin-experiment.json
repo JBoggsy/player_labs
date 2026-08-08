@@ -1,0 +1,22 @@
+{
+  "hypothesis": "Stencil v52's timeout-triggered regrouping prevents prolonged live epoch isolation while preserving v51's conflict-free consensus in stressed full-seat giant 4FFA8 games.",
+  "what_changes": "Only Stencil changes from v51 to v52: a live consensus timeout activates the existing bounded rejoin target and timeout used after respawn. The map, entrant blocks, Daveey, protocol, and all other behavior are unchanged.",
+  "instrument": {
+    "kind": "experience-request",
+    "summary": "Three full-seat 32-agent giant-4FFA8 hosted episodes with streamed artifacts.",
+    "detail": "Paintbot 0.7.199, campaign cell 4 mapSeed 327479547 mapSize giant; entrant blocks paintbot-focusfire:v25, alphashot:v368, co-gas-ctf-simple-relhalpha:v38, stencil:v52 repeated modulo four. Inspect consensus/order traces, rejoin objectives, and per-tick live epoch gaps."
+  },
+  "if_true": "No same-squad/epoch conflict; at least 90% of available Stencil artifacts commit and follow; commits exceed timeouts; and no epoch gap greater than one among concurrently alive squadmates persists for 90 consecutive ticks.",
+  "if_false": "Any directive conflict recurs, fewer than 75% of available seats commit or follow, timeouts equal/exceed commits, or a live epoch gap greater than one persists for at least 90 consecutive ticks.",
+  "decision_rule": "Confirm only if every true-side threshold passes. Refute if any false-side condition occurs. Otherwise call the result inconclusive, including if fewer than 22 of 24 Stencil artifacts are available.",
+  "confounds": [
+    "Use the exact v51 stress map and roster, changing only the Stencil version.",
+    "Exclude permanently dead members from live epoch-gap duration.",
+    "Emergency objectives remain above rejoin and can legitimately delay it; report the objective trace if the bound fails.",
+    "Three games validate the mechanism, not competitive win-rate superiority."
+  ],
+  "verdict": {
+    "result": "refuted",
+    "evidence": "All 24 Stencil artifacts committed and followed orders, with 164 commits, 13 timeouts, 33 resyncs, and zero conflicts. The worst live gap improved from v51's four epochs for 1,226 ticks to two epochs for 555 ticks, but still exceeded the 90-tick bound. Rejoin traces showed agents reach and hold obsolete last-known teammate coordinates. v53 refreshes targets continuously and rejects stale teammate tracks."
+  }
+}

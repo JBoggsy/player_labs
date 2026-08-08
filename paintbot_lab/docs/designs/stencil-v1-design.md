@@ -21,7 +21,7 @@ ladder's shape) is proven and portable.
 - **Goal**: preserve beacon's evolved combat core (aim/lead/fire-gate/FF-guard,
   peek-fire-duck, firefight target scoring + focus claims, hearing, chat,
   convert trigger) with minimal semantic drift, so its lessons carry.
-- **Non-goal (v1)**: posts (covered-sightline fighting positions), battle
+- **Historical non-goal (v1)**: posts (covered-sightline fighting positions), battle
   plans, opponent plan inference — the parts beacon built ON TOP of the fixed
   arena. Re-derivable later from online geometry if evals demand it.
 - **Non-goal**: paint-coverage play — paint is cosmetic in this game.
@@ -30,13 +30,13 @@ ladder's shape) is proven and portable.
 
 Beacon's one clean seam was `mapdata.py` — eight functions every consumer went
 through. stencil rebuilds that seam as an **episode-scoped object**
-(`worldmap.py: WorldMap`) constructed the first frame the init snapshot is
+(`worldmap.nim: WorldMap`) constructed the first frame the init snapshot is
 complete:
 
 | input (wire) | product |
 |---|---|
 | `walkability map` sprite (snappy RGBA, alpha=walkable) | pixel wall mask; footprint-eroded 8px nav grid (summed-area-table erosion); cover cells |
-| `game teams <n> map <w>x<h>` marker | team count, colors prefix, seat dealing, roster inference (teams + size class → 4 vs 8 seats/team) |
+| `game teams <n> map <w>x<h>` marker | team count, colors prefix, and initial seat dealing; roster size grows separately from observed identities |
 | `endzone <color> <shape> <box>` markers | per-color home/capture anchors, derived choke & rally lines (fractions of the home→center axis), spawn aim, inside-base tests |
 | `<color> flag planted` sightings | heart pedestal positions (never fog; resolve at t=0) |
 
@@ -50,6 +50,89 @@ Derived anchors replace authored ones: `CHOKE_X` → `choke_point(color)`
 (45% along home→center, snapped to cover), `SQUAD_RALLY_X` → `rally_point` /
 `past_rally` (65% projection), `BASE_FRONT_X` → `inside_base(color, margin)`,
 `PEDESTAL` → learned pedestals, POIs/plans → gone.
+
+### Post-v1 addendum: generated post knowledge
+
+`stencil:v5` reintroduced posts without restoring fixed-map data. Each agent
+generates only its own team's front against each live opponent. Cover cells
+near the opponent→home shortest-route corridor are bucketed by route progress;
+a bounded, spatially distributed subset is scored with nine forward firing
+rays. The final score combines firing-line depth, corridor relevance, and the
+contrast to a nearby reachable duck cell. Six spatially separated posts per
+front are retained when enough valid pairs exist. `stencil:v12` makes defenders
+consume this knowledge: unique post positions are ranked from the team's home
+center outward, assigned by defender seat, and used as hold targets with the sweep axis
+aimed toward the post's opponent front. A forced-forward ranking was tested and
+rejected because it reduced shots, hits, and kills without improving heart
+recovery. Heart-theft interception retains higher priority, and generic choke
+cover remains the no-post fallback.
+
+`stencil:v21` keeps that behavior and makes the boundary between generated
+knowledge and runtime action inspectable. Each defender snapshot identifies its
+assigned post, duck point, opponent front, score, heart distance, forwardness,
+and trace-only scored sightline center; the HTML navigation viewer overlays the
+assignment on the full per-front map. Follow-up attempts to change alignment
+movement, the fire corridor, duck use, post ranking, and sweep axis were all
+rejected by hosted replication and are recorded in `VERSION_LOG.md`.
+Defender gun-target scoring additionally includes a bounded threat term for
+route progress toward the home heart (or proximity to the observed thief after
+a steal). Once the heart is stolen, a visible high-confidence carrier match
+overrides generic target score and the normal target latch so the defender can
+engage immediately. These changes affect target choice without changing
+movement or objectives.
+
+### Post-v1 addendum: leaderless squad orders
+
+`stencil:v48` restores the useful behavioral vocabulary of battle plans without
+restoring their fixed-map coordinates. There is no squad leader. Every member
+proposes a hold, watch, or move directive; members vote on a deterministic
+majority choice and commit only after a quorum agrees. Kind ties resolve toward
+hold, then watch, then move, while point ties use the spatial medoid and stable
+map/opponent coordinates—never sender identity.
+
+The order layer supplies tactical goals, not movement micro. Move orders advance
+through generated fronts at staged route progress; hold and watch orders occupy
+distinct generated firing/duck posts near the agreed cell. Existing A*, danger,
+cover, formation, sightline sweep, fire gating, and peek/fire/duck behavior
+execute those goals. Carry, theft interception, escort, grenade safety, item,
+and wipe-conversion emergencies remain above squad orders in the strategy
+ladder.
+
+The ten-character shout protocol uses `Q` proposals and `V` votes with sender,
+epoch, kind, quantized map cell, and opponent. The original squad table pairs
+same-parity identities. That matched the disabled ladder's equal entrant blocks,
+but it is **not roster-aware under the current campaign's 7+7+1+1 seating**:
+one pair can include the foreign allied seat and other captain-owned seats can
+be omitted. Structured traces expose consensus transitions, proposal/vote sets,
+commits and timeouts, chosen orders/posts, arrivals, and following time. A
+roster-aware redesign is now an explicit follow-up rather than a claimed
+invariant of the protocol.
+
+`stencil:v49` adds a short commit-acknowledgement phase so a member that has
+observed quorum can converge a peer that missed one of the votes. A peer accepts
+the acknowledgement only when it matches its own vote or independently derived
+choice; no member gains command authority.
+
+`stencil:v50` makes that protocol safe under late proposals by locking each
+member's first vote for an epoch: intersecting quorums can no longer reuse a
+member whose vote changed. Fresh forward-epoch squad traffic also advances a
+lagging member's local clock, while the 36-value ring comparison rejects older
+delayed messages. Snapshot telemetry counts these repairs as
+`squad_consensus_resyncs`.
+
+`stencil:v51` fixes the incomplete v50 implementation: quorum counting and the
+local vote table use the already locked vote rather than recomputing a choice
+after late proposals. This is the property that makes intersecting majorities
+a safety guarantee.
+
+`stencil:v52` treats a live consensus timeout as a cohesion failure and enters
+the same bounded last-known-squad rejoin path used after respawn. This prevents
+an orderless isolated member from falling through to independent role behavior
+indefinitely.
+
+`stencil:v53` tested refreshing that rejoin target while regrouping, but the
+full-seat stress gate rejected it: timeouts and prolonged live epoch drift both
+increased. The source is restored to v52's bounded static-target behavior.
 
 ## Multi-team generalization
 
@@ -77,36 +160,39 @@ tables + seat-keyed item assignments, arena-anchored tests.
 
 **Ported with the WorldMap seam**: perception (plus pixel decode + marker
 parsing — new), belief (tracks/danger/hearing/chat/firefight), nav (flow + A*),
-action (movement/aim/fire/peek-duck/grenade, minus post paths), fight
+action (movement/aim/fire/peek-duck/grenade), fight
 (sightline-field scoring → exact rays; ≤8 candidates/tick is cheap), chat
-(grid dims from the map; protocol unchanged), squads (roster-aware tables,
-derived geometry; command layer still OFF), items (spawn table now
+(grid dims from the map; protocol extended with consensus), squads
+(static parity tables, leaderless consensus, generated geometry), items (spawn table now
 **discovered from sightings** — generator placements are per-map), strategy
-(the ladder minus plan/POI/post rungs), runtime/main/decide/tuning
-(STENCIL_* env prefix).
+(the ladder minus plan/POI/post rungs), policy orchestration, tracing, and the
+`STENCIL_*` configuration layer.
 
 Notable default flips vs beacon: `FIREFIGHT`/`FOCUS_CLAIMS` default **ON**
 (they were beacon's champion configuration, set per-upload there).
 
 ## Performance envelope
 
-The one-time WorldMap build is the only heavy step: erosion + cover are
-vectorized numpy; one Dijkstra over the largest grid (giant 2-team, ~402x215 =
-~86k cells) is sub-second Python and runs during the 5s `startWaitTicks`
-lobby. Per-tick work is unchanged from beacon (label scans + O(1) lookups +
-occasional A*). Keepalive is disabled so a slow first frame can't drop the
-socket.
+The one-time WorldMap build is the only heavy step: native summed-area erosion,
+cover extraction, lazy Dijkstra, and post generation over the largest grid.
+The pre-post measured giant-map p95 was 419 ms under 16-process contention.
+The final hosted v5 post pass added 20 ms small, 109 ms large, 164 ms standard
+four-team, 1.16 s huge, and 2.78 s giant on representative slots. It runs once
+inside the normal five-second start countdown; per-tick work remains label
+scans, constant-time lookups, and occasional A*.
 
 ## Risks / open questions
 
-- **Seats-per-team inference** (teams + width≥2000 → 8) is a heuristic; if a
-  new variant lands (e.g. a true 2-seat duel), revisit. The wire states no
-  muster.
+- **Seats-per-team inference** grows conservatively from observed identity
+  badges because the wire still states no muster. Low-index seats cannot know
+  4-vs-8 muster until they observe a sufficiently high identity.
 - **Item discovery** starts blind — early-game fetches only happen after
   sightings. If evals show med-kit latency mattering, seed guesses from the
   RULES layout rules per shape.
 - **4-team threat model** is beacon's 2-team model with more colors; no
   third-party reasoning yet (e.g. don't break up a rival-vs-rival fight).
-- **Live seating splits teams across policies** (7+7+2 etc.): chat protocol
-  only reaches our own seats; squads treat non-protocol allies as anonymous
-  teammates — measure whether coordination assumptions hurt in `2v2`.
+- **Current campaign 2v2-mode seating is 7+7+1+1, not equal blocks**: each
+  captain owns seven same-color seats and its allied entrant owns one. The
+  static parity squad table can therefore wait on the foreign ally or omit
+  captain-owned seats. Replace it with membership learned from Stencil
+  chat/presence before treating squad liveness as representative.

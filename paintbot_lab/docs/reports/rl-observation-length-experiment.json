@@ -1,0 +1,24 @@
+{
+  "hypothesis": "A faithful text serialization of Paintbot's semantic Sprite-v1 entities and geometry fits comfortably in Qwen3-0.6B-Base across the game's historical eras.",
+  "what_changes": "Nothing in gameplay. We re-simulate historical replays at their exact source versions, sample player-view frames evenly across five GameVersion eras, serialize every labeled entity without truncation, and count native Qwen tokens.",
+  "instrument": {
+    "kind": "instrumentation",
+    "summary": "Exact-version replay re-simulation plus an offline tokenizer-length audit.",
+    "detail": "Model: Qwen/Qwen3-0.6B-Base\nRevision: da87bfb608c14b7cf20ba1ce41287e8de496c0cd\nEra buckets: GV01-16, GV17-24, GV25-30, GV31-35, GV36+\nSampling: require and select exactly 1,000 evenly spaced frames per represented GameVersion; include early, middle, and late POV frames across available maps, seats, and high-performing policies\nSerialization: semantic label with numeric placeholders + extracted numeric values + normalized position/size/self offsets + z/layer\nNo truncation; no added action tokens in the count"
+  },
+  "if_true": "Every era's 99th-percentile observation is at most 8,192 tokens and the largest observation in the complete corpus is at most 16,384 tokens, leaving at least half of Qwen's 32,768-token context for history, actions, and future fields.",
+  "if_false": "At least one era has a 99th percentile above 8,192 tokens or any complete observation exceeds 16,384 tokens. We then need a more compact entity grammar, salience filtering, or a non-text spatial encoder before training.",
+  "decision_rule": "Confirm only if all five era buckets are present, every per-era p99 is <= 8,192, and the global maximum is <= 16,384. Otherwise refute. An incomplete era corpus is not a result.",
+  "confounds": [
+    "A current renderer would rewrite old observations; re-simulate each replay with its exact recorded GameVersion/source commit.",
+    "Abundant recent replays could dominate percentiles; cap samples equally by GameVersion and report every era separately.",
+    "Initialization and end-card frames differ sharply from live play; stratify early, middle, and late frames and retain frame phase in corpus provenance.",
+    "Map size, team count, seat, fog, and action phase change entity count; sample across these strata wherever each era supports them.",
+    "Tokenizer drift changes the answer; pin the exact Qwen model revision.",
+    "The walkability sprite's pixel payload is excluded and explicitly requires a separate representation experiment; this verdict applies only to semantic entities and geometry."
+  ],
+  "verdict": {
+    "result": "refuted",
+    "evidence": "Exact-version replay reconstruction produced 11,168 observations across GV16, GV24, GV30, GV35, and GV40; 1,000 per version were sampled. The full serialization had global median 8,876, p99 30,297, and max 43,672 tokens. Every era failed the 8,192-token p99 limit. A diagnostic not used for the decision removed only human-only `fog` runs from the same frames: global p99 fell to 3,429 and max to 4,424. The largest raw frame contained 804 fog objects and fell from 43,672 to 2,052 tokens without them. Therefore the faithful all-label grammar is too long, while a bot-semantic filter is strongly supported as the next representation change."
+  }
+}

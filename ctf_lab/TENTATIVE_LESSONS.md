@@ -1,6 +1,6 @@
 # CTF tentative lessons — session buffer
 
-**Session started:** 2026-08-03 12:35. This is THIS SESSION's lesson buffer. Write candidate
+**Session started:** 2026-08-07 15:58. This is THIS SESSION's lesson buffer. Write candidate
 lessons here **as you go** — eagerly and noisily; most will be noise and that's
 fine. At the next session start, a hook archives this file automatically to
 [`lessons_archive/`](lessons_archive/) and creates a fresh one — nothing you
@@ -18,24 +18,34 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
 
-### beacon:v67 is auto-mirrored into the Paintbot league and scores 0 there
-Entrant mirroring (metta seed.py, ("paintbot","ctf")) auto-submits CTF
-champions into Paintbot, where beacon's offline arena bake is blind on
-generated maps ("James Botts", active, 0.0 pts vs daveey's 84). CTF-side
-implication: a beacon submission now competes in TWO venues; if the mirrored
-seat matters, either retire it or expect its Paintbot losses to be visible
-under the same player. (Found 2026-08-03 while bootstrapping paintbot_lab.)
+### The viewer silently drew a baked arena over generated maps instead of failing
+`viewer.html` + `viewer_bundle.py` were built for CTF's one fixed arena, so
+reusing them on Paintbot produced a plausible-looking replay with NO walls —
+wrong output, not an error. The fix made geometry come from the replay itself
+(`expand_replay_json <replay> [pos_every] walkability` emitting `wall-runs-v1`)
+and made the bundler raise when the map is absent. Status: general rule for
+sharing ctf_lab tooling across games — assumptions inherited from the fixed
+arena must fail closed, because a viewer that renders is assumed correct.
 
-### beacon's mapdata.py seam made the paintbot fork cheap — protect it
-The whole stencil port hinged on every map consumer going through mapdata's
-eight functions; ~5k lines of nav/fight/belief/action moved nearly unchanged
-once that seam was rebuilt online. When editing beacon, keep new map facts
-behind mapdata (or config) rather than inlining geometry into consumers — the
-seam is what keeps the lineage portable.
+### `build_expand_replay.sh`'s fast path ignored source edits for a whole session
+The cache check was `[[ -x "$out_bin" && -x "$json_bin" ]]` — existence only. So
+after editing `expand_replay_json.nim`, the script printed "cached binaries up
+to date" and kept running the OLD binary, which emitted no `walkability_map`.
+Now it also requires `"$json_bin" -nt "$LAB_JSON_SRC"`. Status: any build-cache
+fast path keyed on existence rather than source mtime is this bug waiting.
 
-### beacon's three lru_cache map loaders are a latent trap if CTF ever varies maps
-mapdata._load, poi._load, nav._route_distances are process-lifetime caches —
-correct only because the CTF league runs one fixed arena with maxGames=1. If
-the league ever adopts paintbot-style variants (the manifest schema already
-supports it upstream), these silently serve episode-1 geometry to episode 2.
-stencil's fix (episode-scoped WorldMap owned by Belief) is the reference.
+### Slot-parity color defaults silently mislabel four-team FFA
+The viewer fell back to `slot % 2 === 0 ? red : blue` when a team was unknown,
+which is invisible in 2-team CTF and simply wrong for Paintbot's four-color FFA
+— ground truth read as red/blue with green/yellow players mislabeled. Now the
+episode's authoritative slot-team config supplies colors. Status: red/blue
+binary assumptions are a recurring CTF→Paintbot porting hazard (cf. TODO's
+"Generalize event-warehouse outcomes beyond red/blue").
+
+### `rotate_lessons.sh` archives every lab's buffer but commits only paintbot's
+Commit 6fbb099 is titled "rotate ctf session buffer" yet its diff touches only
+`paintbot_lab/` paths; `ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260804-
+103458.md` — three real beacon/mirroring lessons — sat untracked for three days
+until a cleanup pass found it. Status: symptom committed (3997b0a), the hook
+itself is UNFIXED and will orphan another lab's archive on the next rotation.
+This buffer's own lifecycle text points at `ctf_lab/tools/rotate_lessons.sh`.
