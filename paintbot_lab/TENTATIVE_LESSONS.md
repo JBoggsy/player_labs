@@ -176,3 +176,31 @@ but most were read from the cached 9dedac0e tree before the re-pin. PRs 252/255 
 
 Status: re-pinning the game invalidates every line citation written before it. Either re-verify
 citations after a re-pin, or cite by symbol name rather than line.
+
+### Spray encounters are ~0.05% of enemy observations — the v59 A/B as designed cannot detect it
+
+Evidence: the v59 mechanism probe (`xreq_33b25248-0e6b-4909-b903-fe4300253bb7`, 2 episodes, 32 agent
+traces, 2,658 snapshots) saw **8,342 `gun` enemy observations and 4 `spray`**. Only two cans exist
+per map (one per team endzone). `clear_spray` activated in 3 snapshots; the rung works, but the
+exposure is tiny.
+
+Status: the mechanism firing and the change being *measurable* are different questions, and the
+design only planned for the first. A whole-episode win-rate A/B would burn a matched batch to
+measure noise. Measure the targeted quantity instead — spray-caused deaths per spray exposure,
+from replay damage events with `weapon: "spray"`. **Before designing an A/B, estimate the base rate
+of the situation the change addresses**; if it is rare, the outcome metric must be conditioned on
+exposure, not aggregated over episodes.
+
+### Stencil trace artifacts are event-wrapped, and the default cadence is every 96 ticks
+
+Evidence: `policy_artifact_<seat>.zip` holds `manifest.json` + `telemetry.jsonl`, and each line is
+`{kind, tick, event, name, data}` — the belief fields live under `data`, on `event` values
+`snapshot` / `worldmap`, not at the top level. `DiagEveryTicks` defaults to 96
+(`config.nim:120`), so a 7,200-tick episode yields ~75 snapshots per agent, not per-tick data.
+My first two analysis passes silently returned all-zero counters because they assumed a flat
+per-tick schema.
+
+Status: dump one line and print its keys before writing any aggregation over a trace format you
+have not personally parsed before. An all-zero result reads identically to "the feature never
+fired" — the most expensive possible false negative on a probe whose entire purpose is to answer
+exactly that question.
