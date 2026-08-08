@@ -22,8 +22,14 @@ added `Unit.sub_name` and four quest-reward fields to `Observation`. V105 reques
 `xreq_9e058bae-fea0-4824-9045-13333b28a992` therefore failed contract validation before
 movement and provides no router evidence. The environment pin now matches 0.1.209, and the
 unchanged v105 router is uploaded inert as **wowborg:v106**
-(`ec727f01-fbe8-45e9-b1c7-b129c3d2c54a`); hosted proof is pending. V78 remains the submitted
-Traverse champion.
+(`ec727f01-fbe8-45e9-b1c7-b129c3d2c54a`). Request
+`xreq_7d385999-abc3-4231-8b78-c5bb21a2bc2f` cleared the measured gates and reached road
+node 4, then exposed endpoint-only scoring: a Rabid Blisterpaw avoidance moved south into an
+unselected Scorpid Dunestalker at 3.2 yards, and rapid left/right switches made the response
+unstable. The source candidate now tracks hostiles to 80 yards, scores player and hostile
+movement segments, ends avoidance when the projected forward corridor clears, and switches only
+when retained clearance falls below 15 yards. Activation traces include both side scores and all
+tracked destinations. V78 remains the submitted Traverse champion.
 
 ### Previous 0.1.208 movement baseline
 

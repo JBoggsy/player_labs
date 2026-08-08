@@ -7,7 +7,13 @@
   `vanilla-wow:0.1.209` image
   `sha256:2c06427e2a96ab96f3ba19fedb6049c2eab30e463c167e27fb6781c415f25dfa`.
 - This compatibility-only version accepts the live `Unit.sub_name` and quest-reward observation
-  fields. Hosted routing proof is pending.
+  fields.
+- Request `xreq_7d385999-abc3-4231-8b78-c5bb21a2bc2f` proved the contract and route
+  work through road node 4, but falsified endpoint-only clearance. Avoiding a Rabid Blisterpaw
+  drove south while an unselected Scorpid Dunestalker entered at 3.2 yards; repeated side switches
+  also showed unstable scoring around moving packs. The next candidate scores the player's path
+  against hostile movement segments over an 80-yard tracking horizon and switches only when the
+  retained side falls below 15 yards of clearance.
 
 ## v105 - corridor-filtered cluster clearance (2026-08-08)
 

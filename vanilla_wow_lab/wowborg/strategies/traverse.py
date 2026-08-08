@@ -36,8 +36,10 @@ ROAD_STALL_SECONDS = 8.0
 ROAD_HAZARD_ENTER_YARDS = 30.0
 ROAD_HAZARD_EXIT_YARDS = 40.0
 ROAD_HAZARD_CORRIDOR_YARDS = 18.0
+ROAD_HAZARD_TRACK_YARDS = 80.0
 ROAD_HAZARD_FORWARD_YARDS = 20.0
 ROAD_HAZARD_LATERAL_YARDS = 30.0
+ROAD_HAZARD_MIN_CLEARANCE_YARDS = 15.0
 ROAD_HAZARD_SWITCH_MARGIN_YARDS = 5.0
 
 # Follow the deployed owner's level-51 Tanaris and Thousand Needles road spine
@@ -109,43 +111,121 @@ def _steer_toward(bridge, frame, target: Point, *, purpose: str) -> None:
     )
 
 
+def _point_segment_distance(
+    point_x: float,
+    point_y: float,
+    start_x: float,
+    start_y: float,
+    end_x: float,
+    end_y: float,
+) -> float:
+    segment_x = end_x - start_x
+    segment_y = end_y - start_y
+    segment_length_squared = segment_x * segment_x + segment_y * segment_y
+    if segment_length_squared == 0:
+        return math.hypot(point_x - start_x, point_y - start_y)
+    progress = max(
+        0.0,
+        min(
+            1.0,
+            (
+                (point_x - start_x) * segment_x
+                + (point_y - start_y) * segment_y
+            )
+            / segment_length_squared,
+        ),
+    )
+    return math.hypot(
+        point_x - (start_x + progress * segment_x),
+        point_y - (start_y + progress * segment_y),
+    )
+
+
+def _unit_path(unit) -> tuple[float, float, float, float]:
+    if (
+        unit.movement_destination_known
+        and unit.movement_destination.map_id == unit.location.map_id
+    ):
+        return (
+            unit.location.x,
+            unit.location.y,
+            unit.movement_destination.x,
+            unit.movement_destination.y,
+        )
+    return unit.location.x, unit.location.y, unit.location.x, unit.location.y
+
+
+def _segment_clearance(
+    start_x: float,
+    start_y: float,
+    end_x: float,
+    end_y: float,
+    unit,
+) -> float:
+    unit_start_x, unit_start_y, unit_end_x, unit_end_y = _unit_path(unit)
+    route_x = end_x - start_x
+    route_y = end_y - start_y
+    unit_x = unit_end_x - unit_start_x
+    unit_y = unit_end_y - unit_start_y
+    cross = route_x * unit_y - route_y * unit_x
+    if cross != 0:
+        offset_x = unit_start_x - start_x
+        offset_y = unit_start_y - start_y
+        route_progress = (offset_x * unit_y - offset_y * unit_x) / cross
+        unit_progress = (offset_x * route_y - offset_y * route_x) / cross
+        if 0.0 <= route_progress <= 1.0 and 0.0 <= unit_progress <= 1.0:
+            return 0.0
+    return min(
+        _point_segment_distance(
+            unit_start_x, unit_start_y, start_x, start_y, end_x, end_y
+        ),
+        _point_segment_distance(
+            unit_end_x, unit_end_y, start_x, start_y, end_x, end_y
+        ),
+        _point_segment_distance(
+            start_x, start_y, unit_start_x, unit_start_y, unit_end_x, unit_end_y
+        ),
+        _point_segment_distance(
+            end_x, end_y, unit_start_x, unit_start_y, unit_end_x, unit_end_y
+        ),
+    )
+
+
 def _hazard_avoidance_target(frame, target: Point, *, side: float | None):
     route_x = target.x - frame.location.x
     route_y = target.y - frame.location.y
     route_length = math.hypot(route_x, route_y)
     if route_length == 0:
-        return target, None, []
+        return target, None, [], [], {}
     route_x /= route_length
     route_y /= route_length
     left_x, left_y = -route_y, route_x
-    detection_radius = ROAD_HAZARD_EXIT_YARDS if side is not None else ROAD_HAZARD_ENTER_YARDS
-    nearby = [
+    detection_radius = (
+        ROAD_HAZARD_EXIT_YARDS if side is not None else ROAD_HAZARD_ENTER_YARDS
+    )
+    tracked = [
         unit
         for unit in frame.units
         if unit.player_reaction_hostile
         and not unit.is_dead
-        and unit.distance <= detection_radius
+        and unit.distance <= ROAD_HAZARD_TRACK_YARDS
     ]
-    if side is None:
-        hazards = [
-            unit
-            for unit in nearby
-            if 0.0
-            <= (
-                (unit.location.x - frame.location.x) * route_x
-                + (unit.location.y - frame.location.y) * route_y
-            )
-            <= ROAD_HAZARD_ENTER_YARDS
-            and abs(
-                (unit.location.x - frame.location.x) * left_x
-                + (unit.location.y - frame.location.y) * left_y
-            )
-            <= ROAD_HAZARD_CORRIDOR_YARDS
-        ]
-    else:
-        hazards = nearby
+    corridor_end_x = frame.location.x + route_x * detection_radius
+    corridor_end_y = frame.location.y + route_y * detection_radius
+    hazards = [
+        unit
+        for unit in tracked
+        if _segment_clearance(
+            frame.location.x,
+            frame.location.y,
+            corridor_end_x,
+            corridor_end_y,
+            unit,
+        )
+        <= ROAD_HAZARD_CORRIDOR_YARDS
+    ]
     if not hazards:
-        return target, None, []
+        return target, None, [], tracked, {}
 
     def clearance(candidate_side: float) -> float:
         candidate_x = (
@@ -159,15 +239,26 @@ def _hazard_avoidance_target(frame, target: Point, *, side: float | None):
             + left_y * candidate_side * ROAD_HAZARD_LATERAL_YARDS
         )
         return min(
-            math.hypot(candidate_x - unit.location.x, candidate_y - unit.location.y)
-            for unit in nearby
+            _segment_clearance(
+                frame.location.x,
+                frame.location.y,
+                candidate_x,
+                candidate_y,
+                unit,
+            )
+            for unit in tracked
         )
 
+    clearances = {-1.0: clearance(-1.0), 1.0: clearance(1.0)}
     if side is None:
-        side = max((-1.0, 1.0), key=clearance)
+        side = max((-1.0, 1.0), key=clearances.get)
     else:
         other_side = -side
-        if clearance(other_side) >= clearance(side) + ROAD_HAZARD_SWITCH_MARGIN_YARDS:
+        if (
+            clearances[side] < ROAD_HAZARD_MIN_CLEARANCE_YARDS
+            and clearances[other_side]
+            >= clearances[side] + ROAD_HAZARD_SWITCH_MARGIN_YARDS
+        ):
             side = other_side
 
     return (
@@ -183,6 +274,8 @@ def _hazard_avoidance_target(frame, target: Point, *, side: float | None):
         ),
         side,
         hazards,
+        tracked,
+        clearances,
     )
 
 
@@ -277,16 +370,22 @@ def _steer_road_leg(bridge, target: Point, *, deadline: float, trace):
             next_avoidance_side = avoidance_side
             hazards = []
         else:
-            steering_target, next_avoidance_side, hazards = _hazard_avoidance_target(
-                frame,
-                target,
-                side=avoidance_side,
-            )
+            (
+                steering_target,
+                next_avoidance_side,
+                hazards,
+                tracked_hazards,
+                side_clearances,
+            ) = _hazard_avoidance_target(frame, target, side=avoidance_side)
         if next_avoidance_side is not None and avoidance_side is None:
             trace(
                 "traverse_hazard_avoidance",
                 activation=1,
                 side="left" if next_avoidance_side > 0 else "right",
+                side_clearances={
+                    "right": round(side_clearances[-1.0], 3),
+                    "left": round(side_clearances[1.0], 3),
+                },
                 hazards=[
                     {
                         "entry": unit.entry,
@@ -300,6 +399,23 @@ def _steer_road_leg(bridge, target: Point, *, deadline: float, trace):
                     }
                     for unit in hazards
                 ],
+                tracked_hazards=[
+                    {
+                        "entry": unit.entry,
+                        "name": unit.name,
+                        "distance": round(unit.distance, 3),
+                        "moving": unit.movement_destination_known,
+                        "destination": (
+                            [
+                                round(unit.movement_destination.x, 3),
+                                round(unit.movement_destination.y, 3),
+                            ]
+                            if unit.movement_destination_known
+                            else None
+                        ),
+                    }
+                    for unit in tracked_hazards
+                ],
             )
         elif next_avoidance_side is None and avoidance_side is not None:
             trace("traverse_hazard_avoidance_ended", activation=1)
@@ -312,6 +428,10 @@ def _steer_road_leg(bridge, target: Point, *, deadline: float, trace):
                 "traverse_hazard_avoidance_switched",
                 activation=1,
                 side="left" if next_avoidance_side > 0 else "right",
+                side_clearances={
+                    "right": round(side_clearances[-1.0], 3),
+                    "left": round(side_clearances[1.0], 3),
+                },
             )
         avoidance_side = next_avoidance_side
 

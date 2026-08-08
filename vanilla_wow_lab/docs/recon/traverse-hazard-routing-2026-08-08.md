@@ -250,6 +250,17 @@ vanilla-wow advanced from 0.1.208 to 0.1.209, and the older policy-side model re
 compatibility-only rebuild of the identical router against the exact 0.1.209 game image; its
 hosted result is the first valid test of the cluster-clearance hypothesis.
 
+V106 supplied that test and reached road node 4 before dying. At
+`(-8188.5,-3307.9)`, a Rabid Blisterpaw 29.8 yards ahead triggered a right-side diversion;
+three accelerated seconds later, a previously unselected Scorpid Dunestalker pulled from 3.2
+yards. The router also alternated sides repeatedly around earlier moving Gazers. Two assumptions
+were wrong: endpoint clearance does not model intersecting trajectories, and a 40-yard tracked
+set is too short when one real control second advances ten game seconds. The next edge evaluator
+tracks 80 yards, compares the entire candidate segment with each hostile's advertised movement
+segment, clears stale avoidance when the projected forward corridor is empty, and permits a side
+switch only below a 15-yard safety floor. Its activation trace records both candidate clearances
+and every tracked destination so the next failure is attributable.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.
