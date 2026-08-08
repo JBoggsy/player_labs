@@ -98,7 +98,8 @@ hazard. A Glasshide Gazer at roughly `(-8331,-3277)` pulled wowborg at
 `(-8314.9,-3269.0)`, then dealt 2,808 damage over 108.7 seconds while the stopped policy dealt
 none. The active candidate inserts one pinned-navmesh-verified northern bypass at
 `(-8350,-3180,14.1)`, over 40 yards clear of that observed patrol, and rejoins the unchanged
-owner road at node 4.
+owner road at node 4. It is uploaded inert as **wowborg:v101**
+(`22efcbf3-9091-4299-8023-c848981f0362`, source `5c56fff`); hosted proof is pending.
 
 ## Historical status (2026-08-06): V78 SUBMITTED AND QUALIFYING ON THE CORRECTED CLOCK
 

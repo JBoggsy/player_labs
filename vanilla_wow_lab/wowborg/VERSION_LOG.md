@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v101 - first live Gazer bypass (2026-08-08)
+
+- Version UUID: `22efcbf3-9091-4299-8023-c848981f0362` (`wowborg:v101`, uploaded
+  inert; not submitted). Built from source `5c56fff` with the published 0.1.188 contract.
+- Adds only `tanaris-gazer-bypass-north` at `(-8350,-3180,14.1)` between canonical road nodes
+  3 and 4. The pinned navmesh connects both legs, and the waypoint shifts the local corridor more
+  than 40 yards north of v100's observed Glasshide Gazer patrol. Hosted proof is pending.
+
 ## v100 - continuous road steering exposes the first live hazard (2026-08-08)
 
 - Version UUID: `a3249a32-7436-4165-ab67-3359a716d279` (`wowborg:v100`, uploaded
