@@ -45,7 +45,12 @@ reached 1,784.9 living northing yards. It later encountered two Glasshide Basili
 candidate treats “both sides below 15 yards” as a wait edge, traces wait start/end, and suspends
 the route-stall timer until a moving patrol opens a safe bypass.
 It is uploaded inert as **wowborg:v109**
-(`6ada5206-cb39-4c3f-8b8b-db9b93fd86d6`, source `dc8fe3d`); hosted proof is pending.
+(`6ada5206-cb39-4c3f-8b8b-db9b93fd86d6`, source `dc8fe3d`). Request
+`xreq_b05d3806-0a9b-4ef7-b9e2-02dbf97ae61c` proved the wait edge activates and
+releases, but a later wait at 14.5 yards let a Glasshide Petrifier cross the stationary player,
+pull at close range, and back out to its 29.5-yard casting distance. The active source candidate
+records the last observation with a safe edge, retreats to it when both bypasses become unsafe,
+and waits only after reaching that holding point. The 15-yard criterion is unchanged.
 
 ### Previous 0.1.208 movement baseline
 

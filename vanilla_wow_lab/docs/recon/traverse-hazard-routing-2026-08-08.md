@@ -281,6 +281,13 @@ no-progress timer while intentionally stationary, and resumes as soon as one sid
 That temporal edge is uploaded inert as wowborg:v109
 (`6ada5206-cb39-4c3f-8b8b-db9b93fd86d6`, source `dc8fe3d`).
 
+V109 activated `traverse_hazard_wait`, released once, then waited again with 14.5 yards of best
+clearance from a Glasshide Petrifier. Stationary waiting was not safe: the accelerated patrol
+crossed the character, pulled at close range, and moved back to its 29.5-yard casting distance.
+The next temporal edge retains the last observation whose bypass met the 15-yard floor, retreats
+to that point when the corridor becomes unsafe, and only waits once it reaches that known-safe
+holding position.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.

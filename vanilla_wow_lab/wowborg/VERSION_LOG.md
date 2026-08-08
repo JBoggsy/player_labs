@@ -6,7 +6,11 @@
   inert; not submitted). Built from source `dc8fe3d` against canonical vanilla-wow 0.1.209.
 - When the retained avoidance side remains below the existing 15-yard clearance floor, wowborg
   waits for the moving patrol instead of entering a known-unsafe edge. Wait start/end are traced,
-  and intentional waiting refreshes the road-stall budget. Hosted proof is pending.
+  and intentional waiting refreshes the road-stall budget.
+- Request `xreq_b05d3806-0a9b-4ef7-b9e2-02dbf97ae61c` activated and released one
+  wait, then waited again at 14.5 yards from a Glasshide Petrifier. The patrol crossed the
+  stationary character, pulled at close range, and backed out to its 29.5-yard casting distance.
+  The next candidate retreats to the last safe observation before waiting there.
 
 ## v108 - cross-guidepoint hazard continuity (2026-08-08)
 
