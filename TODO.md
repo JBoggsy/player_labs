@@ -26,8 +26,9 @@ mid-session; check them back at the start of focused work.
 
 - **Evaluate v58's barrage evacuation, then decide on shell-level evasion**
   (updated 2026-08-07). The hazard investigation was pinned to 0.7.211 / GV41
-  (`coworld-ctf@9dedac0`); current campaign episode rows report 0.7.215, so
-  re-resolve its source and GameVersion before the next mechanic evaluation.
+  (`coworld-ctf@9dedac0`). **Re-resolved 2026-08-08:** canonical is 0.7.215 /
+  still GV41 (`coworld-ctf@6c7a4c0e`), and `paintbot_lab/tools/versions.env` is
+  pinned there.
   V58 implements the coarse half of the recon's P1:
   it parses the `grenade barrage depth/rate/start/sat` marker and evacuates to
   the generated map center once `depth > 0`, tracing `barrage_center_ticks`.

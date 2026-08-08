@@ -291,9 +291,15 @@ Next concrete steps:
 - Barrage implementation baseline **paintbot 0.7.211**
   (`cow_01cb32e5-…`, source
   `9dedac0ed6011aeca92bf2c6403b0e70c955f461`, **GameVersion 41**), used for the
-  hazard investigation. Current campaign episode rows report **paintbot
-  0.7.215**; re-resolve its source and GameVersion before making new mechanic
-  claims. GV41 added the endgame grenade barrage (every variant; 0:00 no
+  hazard investigation. **RESOLVED 2026-08-08:** canonical is now **paintbot
+  0.7.215** (`cow_4be22f60-d630-4816-9931-d872a06ac33f`, source
+  `6c7a4c0e0be35bdcf738137595ccbcb4b4c79bf9`, still **GameVersion 41**), matched
+  by content — that commit's `coworld_manifest_paintbot.json` `config_schema`
+  and `variants` are byte-identical to the manifest downloaded from the
+  platform. The lab pin (`tools/versions.env`) moved with it. 0.7.212-215 added
+  **team perks** and **cardboard barriers**, both config-gated and off in every
+  deployed variant, both without a GameVersion bump; every spray-can constant is
+  unchanged across the bump. GV41 added the endgame grenade barrage (every variant; 0:00 no
   longer ends a barrage game) and paint puddles (implemented but inactive — no
   deployed variant sets `mapPuddles`). Game repo = the
   coworld-ctf clone (`~/coding/coworlds/coworld-ctf`); no paintbot-specific Nim

@@ -5,10 +5,12 @@ contract, and strategy notes — enough to reason about play without leaving the
 repo. Authoritative sources: the **`Metta-AI/coworld-ctf`** repo (paintbot and
 CTF are the *same Nim binary*; clone at `~/coding/coworlds/coworld-ctf`, server
 `src/ctf/`, rules `docs/RULES.md`, manifest `coworld_manifest_paintbot.json`)
-and the deployed league game (paintbot **0.7.211**, source
-`9dedac0ed6011aeca92bf2c6403b0e70c955f461`, verified 2026-08-07,
+and the deployed league game (paintbot **0.7.215**, source
+`6c7a4c0e0be35bdcf738137595ccbcb4b4c79bf9`, verified 2026-08-08,
 **GameVersion 41**). Re-resolve the canonical game before relying on these live
-values; Paintbot redeploys frequently.
+values; Paintbot redeploys frequently — an upstream manifest merge auto-uploads
+the next version, so the pin goes stale with nobody in this lab acting (0.7.211
+→ 0.7.215 took about a day).
 The full recon with `file:line` citations:
 [`recon/paintbot-2026-08-03.md`](recon/paintbot-2026-08-03.md); the GV41
 barrage/puddle recon is
@@ -112,7 +114,7 @@ a central ring; see `VERSION_LOG.md`.
 
 ## Paint puddles (implemented, NOT active in current campaign episodes)
 
-Puddles exist in 0.7.211 but **no deployed variant config sets `mapPuddles`, and
+Puddles exist in 0.7.215 but **no deployed variant config sets `mapPuddles`, and
 the engine default is zero — so normal campaign episodes have none.** Documented
 here so the mechanic is not rediscovered from scratch if it is ever enabled.
 
@@ -125,6 +127,45 @@ for even one tick, dying, or respawning resets the clock. Puddles do **not** slo
 movement or firing, and do not block shots or vision. `mapPuddles` is an exact
 0-64 count on **generated two-team maps only** — four-team generation rejects a
 positive request.
+
+## Team perks and cardboard barriers (added 0.7.212-0.7.215, both default OFF)
+
+Two config-gated systems landed after 0.7.211. Neither is set by any deployed
+variant config, and both engine defaults are off/zero — so normal campaign
+episodes have neither. Both deliberately avoided a GameVersion bump, so GV41
+still identifies the engine. Documented here for the same reason puddles are:
+a campaign cell can enable them per cell, and upstream declared
+`barrierPickups` in the manifest schema *specifically* so metta's campaign
+`_cell_overrides` could (schema-gated overrides silently drop undeclared keys).
+
+**Team perks** (`perks`, `perkMods`) assign per-team buffs, stated outright in
+an init marker `perks <color> <group>…` (emitted for every team, `-` when
+none) beside the handicap markers:
+
+| perk | effect (default mod) |
+|---|---|
+| `armor` | +1 max hit point per bot |
+| `scope` | gun aim-jitter sigma −50% |
+| `grenade` | max throw range +25% |
+| `thruster` | max speed +10% |
+| `luck` | 10% of landed gun shots deal 2 damage |
+
+Perks are **team-scope, not a carried item** — the marker is per team, not per
+player. `armor` is the one that changes weapon lethality math: at 4 max hp a
+bare cog survives a spray-can cone (3 damage), which is otherwise lethal.
+
+**Cardboard barriers** (`barrierPickups`, 0-2 per team) are a carried,
+placeable item: pick one up by touch, press C to unfold a standing half-hex
+with its flat side across your aim. A barrier **blocks paint but never sight** —
+the spray cone's victim gate and the gun's corridor samples moved from
+`lineOfSightClear` to `paintPathClear` for it, while fog shadowcasting,
+movement, and grenades ignore barriers entirely. Ten paintball hits shred one;
+any cog driving over it flattens it instantly (the placer's own footprint
+clears the apothem, so sheltering behind your own is safe); 16 may stand at
+once. **A barrier and a grenade cannot be carried together** — both spend C.
+Observation labels: `barrier` (floor pickup, fog-gated by position),
+`barrier carried` (over a visible carrier), and
+`barrier up <x>,<y> f<brads> hp <n>` for a standing sheet.
 
 ## The campaign (territory) league — how games are actually scheduled
 
@@ -199,7 +240,7 @@ generate → validate → retry seed+1). What a policy must absorb:
   must read the map from the observation (below). Replays DO carry the exact
   geometry (`mapSpec`), so post-hoc tools can reconstruct terrain.
 - `gunRange` is fixed per episode (GV34) — bigger maps do NOT extend the gun.
-  The engine stock default is 1050px, but every deployed Paintbot 0.7.211
+  The engine stock default is 1050px, but every deployed Paintbot 0.7.215
   variant explicitly overrides it to **1300px** (vision reach is therefore
   1950px except for the 90px omnidirectional bubble).
 - Grenade max range and shout radius scale with the map (`mapWidth/5`).

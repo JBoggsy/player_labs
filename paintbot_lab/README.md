@@ -18,7 +18,8 @@ This README orients newcomers (human or agent). Three pointers do most of the wo
 > champion; `stencil:v53` was rejected and `stencil:v52` is the previous
 > champion.** V54's 60-episode round-385 field test finished 49-3-8. `stencil:v55`-`v58` are
 > uploaded but inert; v58 adds GV41 barrage-center evacuation. The canonical game
-> is Paintbot **0.7.211 / GameVersion 41**. The live league uses a
+> is Paintbot **0.7.215 / GameVersion 41** (source `6c7a4c0e`, re-resolved
+> 2026-08-08; the lab is pinned there). The live league uses a
 > 10x10 campaign board; normal invasions use four policies, with 7+7+1+1
 > captain/ally seating on two-team maps and one policy per team in FFA. Current work and live IDs:
 > [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md). The required evaluation shape:

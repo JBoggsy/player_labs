@@ -20,12 +20,17 @@ root defines *process*; this file defines *Paintbot*.
 > the SAME clone as CTF's
 > (`~/coding/coworlds/coworld-ctf` — paintbot is a second manifest over the
 > same binary; **ctf_lab itself is archived** — see [`../ctf_lab/README.md`](../ctf_lab/README.md)).
-> Deployed paintbot is **0.7.211 / GameVersion 41**, which added the endgame
-> grenade barrage and paint puddles, and the lab is now pinned there
-> (`tools/versions.env`). v58 evacuates toward map center on the barrage marker;
-> **paint puddles remain unmodeled**
-> (see [`docs/recon/paintbot-gv41-hazards-2026-08-07.md`](docs/recon/paintbot-gv41-hazards-2026-08-07.md)).
-> The league redeploys often — check `uv run coworld list | grep paintbot`. Live
+> Deployed paintbot is **0.7.215 / GameVersion 41** and the lab is pinned there
+> (`tools/versions.env`, source `6c7a4c0e`). GV41 brought the endgame grenade
+> barrage and paint puddles; 0.7.212-215 added **team perks** and **cardboard
+> barriers**, both config-gated and OFF in every deployed variant. v58 evacuates
+> toward map center on the barrage marker; **paint puddles, perks, and barriers
+> all remain unmodeled**
+> (see [`docs/recon/paintbot-gv41-hazards-2026-08-07.md`](docs/recon/paintbot-gv41-hazards-2026-08-07.md)
+> and the perks/barriers section of [`docs/paintbot-gameplay.md`](docs/paintbot-gameplay.md)).
+> The league redeploys often and **an upstream manifest merge auto-uploads the
+> next version**, so this pin goes stale without anyone here acting — check
+> `uv run coworld list | grep paintbot` at the start of game-mechanics work. Live
 > state: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
 
 ## What Paintbot is

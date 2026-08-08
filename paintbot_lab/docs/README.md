@@ -76,7 +76,7 @@ champions applies only to the document's cutoff.
 | document | cutoff / role |
 | --- | --- |
 | [`recon/paintbot-2026-08-03.md`](recon/paintbot-2026-08-03.md) | founding 0.7.178 recon and source citations; explicitly superseded for live behavior |
-| [`recon/paintbot-gv41-hazards-2026-08-07.md`](recon/paintbot-gv41-hazards-2026-08-07.md) | 0.7.209–0.7.211 changes: the GV41 endgame grenade barrage and paint puddles, plus a prioritized Stencil handoff; v58 implements the barrage half, while live campaign episodes have since advanced to 0.7.215 |
+| [`recon/paintbot-gv41-hazards-2026-08-07.md`](recon/paintbot-gv41-hazards-2026-08-07.md) | 0.7.209–0.7.211 changes: the GV41 endgame grenade barrage and paint puddles, plus a prioritized Stencil handoff; v58 implements the barrage half. Scoped to that era; the lab has since re-pinned to 0.7.215 (still GV41), which adds config-gated perks and barriers — see [`paintbot-gameplay.md`](paintbot-gameplay.md) |
 | [`reports/nav-init-profile-2026-08-03.md`](reports/nav-init-profile-2026-08-03.md) | navigation startup profile |
 | [`reports/stencil-defensive-mechanics-2026-08-04.md`](reports/stencil-defensive-mechanics-2026-08-04.md) | v7-v21 defensive experiments |
 | [`reports/stencil-aim-accuracy-2026-08-04.md`](reports/stencil-aim-accuracy-2026-08-04.md) | v21-v22 exact-aim A/B |

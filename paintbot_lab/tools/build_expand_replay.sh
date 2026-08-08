@@ -42,8 +42,9 @@ CACHE_ROOT="$LAB_DIR/.cache/coworld-ctf"
 # built LAST, so analysing an OLDER batch means building that era with --ref and then
 # naming that era's binary explicitly:
 #   viewer_bundle.py <episode-dir> --expand-replay tools/bin/expand_replay_json-<sha>
-# Paintbot era pins: 9dedac0 = 0.7.211 (GV41); 871ace1 = 0.7.208 (GV40);
-# 352d0e5 = 0.7.184 (GV36).
+# Paintbot era pins: 6c7a4c0 = 0.7.215 (GV41); 9dedac0 = 0.7.211 (GV41);
+# 871ace1 = 0.7.208 (GV40); 352d0e5 = 0.7.184 (GV36). Same-GV refs read each
+# other's replays — the era gate is the GameVersion, not the ref.
 # shellcheck source=/dev/null
 source "$LAB_DIR/tools/versions.env"
 : "${PAINTBOT_GAME_REF:?versions.env did not define PAINTBOT_GAME_REF}"
