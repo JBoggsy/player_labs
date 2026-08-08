@@ -1,5 +1,17 @@
 # wowborg version log
 
+## v96 - southwest movement bootstrap (2026-08-08)
+
+- Version UUID: `087e081b-a163-4377-977f-8439c3f9cbd7` (`wowborg:v96`, uploaded
+  inert; not submitted). Built from source `b537e88` with the published 0.1.188 contract.
+- Request `xreq_1299172a-e1d0-4c68-b5d8-111811a8fa9d` proved the short southwest
+  bootstrap: nine movement prefixes advanced frames 2 through 10 and settled within eight yards
+  of `(-9200,-2545)` without combat or damage. The following eastbound semantic action again
+  advanced inside the host but never returned frame 11 to the policy.
+- The next candidate retains the proven semantic bootstrap, then drives canonical road legs with
+  bounded ordinary keyboard steering. This isolates whether vector actions only failed previously
+  because they were submitted as the first movement at the exact spawn.
+
 ## v95 - canonical long-movement contract probe (2026-08-08)
 
 - Version UUID: `a6f5493e-d1b0-47bc-91ae-f5afefa03081` (`wowborg:v95`, uploaded

@@ -79,7 +79,10 @@ move. v95 restored the long semantic movement shape, but again the host advanced
 eastbound while the policy never received frame 3. The fresh v88 control's southwest opening did
 return successive frames. The active candidate therefore adds one short southwest movement
 bootstrap, safely before v88's lethal old endpoint, then turns onto v90's canonical road on the
-following frame.
+following frame. v96 proved that bootstrap across frames 2 through 10, then stalled on the first
+eastbound semantic action. The active candidate keeps the successful bootstrap and uses bounded
+ordinary keyboard steering for the canonical road, testing vector control only after movement is
+already established.
 
 ## Historical status (2026-08-06): V78 SUBMITTED AND QUALIFYING ON THE CORRECTED CLOCK
 
