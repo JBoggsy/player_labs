@@ -303,6 +303,8 @@ edge. It still pulled a Scorpid because every pulse that briefly restored 15 yar
 overwrote the safe point while the encounter remained live; subsequent retreats collapsed into
 6–7-yard oscillations around the hazard. The next candidate freezes the last clear-corridor
 anchor for the entire encounter and updates it only after avoidance ends.
+That anchor-lifetime correction is uploaded inert as wowborg:v112
+(`9b8831af-2095-4505-98a5-ddf1e814fe54`, source `a20766f`).
 
 ## Open uncertainties
 

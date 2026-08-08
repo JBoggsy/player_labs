@@ -63,6 +63,8 @@ It is uploaded inert as **wowborg:v111**
 but each pulse that temporarily restored 15 yards overwrote the anchor inside the live encounter.
 Retreats collapsed into 6–7-yard oscillations until a Scorpid pulled. The active source candidate
 freezes the anchor until the projected corridor is fully clear.
+It is uploaded inert as **wowborg:v112**
+(`9b8831af-2095-4505-98a5-ddf1e814fe54`, source `a20766f`); hosted proof is pending.
 
 ### Previous 0.1.208 movement baseline
 

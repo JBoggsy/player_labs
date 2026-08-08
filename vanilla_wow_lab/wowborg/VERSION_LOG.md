@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v112 - stable per-encounter safe anchor (2026-08-08)
+
+- Version UUID: `9b8831af-2095-4505-98a5-ddf1e814fe54` (`wowborg:v112`, uploaded
+  inert; not submitted). Built from source `a20766f` against canonical vanilla-wow 0.1.209.
+- Keeps the safe holding point fixed while any projected corridor hazard remains active, updating
+  it only after avoidance ends. All projection, clearance, and steering knobs are unchanged.
+  Hosted proof is pending.
+
 ## v111 - two-yard safe-holding arrival (2026-08-08)
 
 - Version UUID: `3202f1c4-8a65-4f9b-b05a-f41523e11f3c` (`wowborg:v111`, uploaded
