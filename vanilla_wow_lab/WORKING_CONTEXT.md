@@ -118,7 +118,9 @@ It is uploaded inert as **wowborg:v103**
 moving, but a seed-dependent Glasshide Gazer pulled earlier at 7.9 yards and followed for roughly
 100 route yards until death. The active candidate adds pre-aggro dynamic steering: a hostile
 within 30 yards ahead bends pulses toward the higher-clearance side of the road, holds that side
-until 40 yards clear, and traces avoidance activation/end with exact unit evidence.
+until 40 yards clear, and traces avoidance activation/end with exact unit evidence. It is uploaded
+inert as **wowborg:v104** (`6472b8dc-0499-4a05-b28d-070c029b950d`, source `1d44515`);
+hosted proof is pending.
 
 ## Historical status (2026-08-06): V78 SUBMITTED AND QUALIFYING ON THE CORRECTED CLOCK
 

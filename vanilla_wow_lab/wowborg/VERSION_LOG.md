@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v104 - pre-aggro live-hostile steering (2026-08-08)
+
+- Version UUID: `6472b8dc-0499-4a05-b28d-070c029b950d` (`wowborg:v104`, uploaded
+  inert; not submitted). Built from source `1d44515` with the published 0.1.188 contract.
+- Keeps the measured road and combat escape, then adds the first live hazard overlay. A hostile
+  within 30 yards ahead creates two local side candidates; wowborg bends bounded steering toward
+  the one with greater clearance and holds that side until 40 yards clear. Activation and exit
+  emit `traverse_hazard_avoidance` and `traverse_hazard_avoidance_ended`. Hosted proof is pending.
+
 ## v103 - run-through escape on incidental combat (2026-08-08)
 
 - Version UUID: `a7b0bc17-80b6-4e7c-b909-dbefe9486428` (`wowborg:v103`, uploaded
