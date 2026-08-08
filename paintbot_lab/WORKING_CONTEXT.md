@@ -89,10 +89,12 @@ do not deploy this checkpoint; expand replay/expert diversity next. Report:
 
 ## Current objective
 
-**v54 is the active James Botts champion.** v54
-(`cf88a169-2f85-403e-bb54-6b8bdc751ea5`) is the accepted GV40 continuous-aim
-controller retaining v52's squad behavior. v52 is the previous champion; v53
-(`0984111b-1a4a-41cd-9934-d4ebf2a7b6ba`) remains rejected.
+**v58 is the active James Botts champion.** v58
+(`1f7f7c75-5edb-4b35-aba8-241264bbd611`) adds GV41 barrage-center evacuation
+on top of the fully traced v57 line. It was submitted on 2026-08-07 as
+`sub_a1298aee-c6d1-4141-bca4-b42133b3058e`, immediately placed and qualified,
+and is competing as champion through membership
+`lpm_c6ccaa63-6a6f-47c0-bea5-2a04ad6454fc`. V54 is now the previous champion.
 
 **v55 is rejected as the general replacement for v54.** v55
 (`bc7c1079-5684-47b0-82b2-7d2f69e75089`) adds a one-way covered spawn-box
@@ -119,6 +121,33 @@ Stencil's shared chat interval from 30 ticks to the engine's exact 24-tick
 limit. It was built against canonical Paintbot 0.7.208 / source
 `871ace1e5bd1a47171451e2ce3dc9004ee0a9c2b`, uploaded inertly, and has not been
 evaluated or submitted. V54 remains champion.
+
+V58 (`1f7f7c75-5edb-4b35-aba8-241264bbd611`) is the first GV41 adaptation.
+When the visible barrage marker reports positive depth, Stencil now takes the
+map's walkability-aware center flow and holds within an 80-pixel central ring.
+Carry-home, heart-thief interception, and immediate grenade warnings remain
+higher priority; combat aim and fire stay active, while lower-priority movement
+micro cannot pull the agent off the route. The marker, objective, and cumulative
+activation ticks are traced. It was built against canonical Paintbot 0.7.211 /
+source `9dedac0ed6011aeca92bf2c6403b0e70c955f461` and uploaded with full tracing.
+A full 16-seat hosted mechanism probe
+(`xreq_34bd90b7-1d97-4dd1-a77f-aa1aabf975a6`, episode
+`178292c1-a143-47a7-bdc7-c5fa0a5c985b`) reached the barrage: all agents selected
+the generated center within a two-tick window, and 12/16 reached the 80-pixel
+ring. The remaining four repeatedly routed center after respawns but exhausted
+their lives en route. Marker consumption and center navigation therefore work;
+next add individual-grenade tracking and evasion. This was a mechanism probe,
+not performance evidence.
+
+A 30-episode tournament-like v58 evaluation completed against the current
+Paintbot 0.7.212 campaign field: 10 current-board `1v1`, 10 `2v2`, and 10
+`4ffa` episodes. The two-team samples pair five cells with both captain
+seatings; the FFA samples give Stencil whole-color ownership and rotate its
+color. V58 finished 22-8 overall: 6-4 on `1v1`, 9-1 on `2v2`, and 7-3 on
+`4ffa`, with zero operational failures. This is credible absolute performance
+but not matched evidence against v54. The exact request manifest is recorded in
+[`paintbot/stencil_nim/VERSION_LOG.md`](paintbot/stencil_nim/VERSION_LOG.md).
+No `4ffa8` request was invented because it was absent from the live board.
 
 The campaign commander is now steered by a deterministic one-round controller.
 The local process proved exact unstaked Max Yankov airdrops in rounds 395-397,
@@ -240,11 +269,14 @@ Next concrete steps:
   allies 7+7+1+1 and author a second seating with captains swapped. `4ffa` is
   mode `ffa4`, one policy per color. The disabled ladder's equal-block 3:1:1
   rotation is not the live sampler.
-- Deployed game **paintbot 0.7.208**
-  (`cow_4acf602f-baa7-488e-a797-1cf511519164`, source
-  `871ace1e5bd1a47171451e2ce3dc9004ee0a9c2b`, GameVersion 40). Game repo = the
+- Deployed game **paintbot 0.7.211**
+  (`cow_01cb32e5-…`, source
+  `9dedac0ed6011aeca92bf2c6403b0e70c955f461`, **GameVersion 41**), which the lab
+  is pinned to. GV41 added the endgame grenade barrage (every variant; 0:00 no
+  longer ends a barrage game) and paint puddles (implemented but inactive — no
+  deployed variant sets `mapPuddles`). Game repo = the
   coworld-ctf clone (`~/coding/coworlds/coworld-ctf`); no paintbot-specific Nim
-  source exists. GV40 restores continuous 0..255 aim and a five-brad turn;
+  source exists. GV40 restored continuous 0..255 aim and a five-brad turn;
   0.7.205 changed `1v1` from two seats to 16; the campaign consequently
   classifies it as `2v2` and normally adds one allied entrant per side.
   The engine also now emits per-team handicap markers, locks spray direction

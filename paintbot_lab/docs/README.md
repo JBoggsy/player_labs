@@ -12,7 +12,7 @@ configuration.
 | [`../AGENTS.md`](../AGENTS.md) | coding agents and maintainers | operating loop, invariants, current player | current process contract |
 | [`../WORKING_CONTEXT.md`](../WORKING_CONTEXT.md) | active collaborators | current objective, live IDs, open threads | intentionally volatile; refresh during work |
 | [`paintbot-gameplay.md`](paintbot-gameplay.md) | player authors and analysts | rules, variants, campaign, wire contract | current reference; verify live-version callouts |
-| [`stencil-communication.md`](stencil-communication.md) | player authors and analysts | Stencil shout formats, sender priority, focus claims, squad consensus, trust model, and known limits | current implementation reference for v56 |
+| [`stencil-communication.md`](stencil-communication.md) | player authors and analysts | Stencil shout formats, sender priority, focus claims, squad consensus, trust model, and known limits | current through v58; the shared sender interval last changed in v57 (30 → the engine's 24-tick cooldown) |
 | [`tournament-like-experience-requests.md`](tournament-like-experience-requests.md) | experiment authors | normative representative-evaluation contract | current and fail-closed |
 | [`../best_practices.md`](../best_practices.md) | experiment authors | durable Paintbot-specific lessons | current defaults |
 | [`../user_preferences.md`](../user_preferences.md) | agents | James's durable Paintbot preferences | current user contract |
@@ -76,7 +76,7 @@ champions applies only to the document's cutoff.
 | document | cutoff / role |
 | --- | --- |
 | [`recon/paintbot-2026-08-03.md`](recon/paintbot-2026-08-03.md) | founding 0.7.178 recon and source citations; explicitly superseded for live behavior |
-| [`recon/paintbot-gv41-hazards-2026-08-07.md`](recon/paintbot-gv41-hazards-2026-08-07.md) | 0.7.209–0.7.211 changes: the GV41 endgame grenade barrage and paint puddles, plus a prioritized Stencil handoff; current game contract, ahead of the lab's 0.7.208 pin |
+| [`recon/paintbot-gv41-hazards-2026-08-07.md`](recon/paintbot-gv41-hazards-2026-08-07.md) | 0.7.209–0.7.211 changes: the GV41 endgame grenade barrage and paint puddles, plus a prioritized Stencil handoff; the lab is now pinned to 0.7.211 and v58 implements the barrage half |
 | [`reports/nav-init-profile-2026-08-03.md`](reports/nav-init-profile-2026-08-03.md) | navigation startup profile |
 | [`reports/stencil-defensive-mechanics-2026-08-04.md`](reports/stencil-defensive-mechanics-2026-08-04.md) | v7-v21 defensive experiments |
 | [`reports/stencil-aim-accuracy-2026-08-04.md`](reports/stencil-aim-accuracy-2026-08-04.md) | v21-v22 exact-aim A/B |

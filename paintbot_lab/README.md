@@ -14,10 +14,11 @@ This README orients newcomers (human or agent). Three pointers do most of the wo
 - **[`../README.md`](../README.md)** — lab-wide setup (`uv sync` / Observatory
   auth) and the ground rules.
 
-> **Status (verified 2026-08-06): `stencil:v54` is the active James Botts
+> **Status (verified 2026-08-07): `stencil:v54` is the active James Botts
 > champion; `stencil:v53` was rejected and `stencil:v52` is the previous
-> champion.** V54's 60-episode round-385 field test finished 49-3-8. The canonical game is
-> Paintbot **0.7.208**. The live league uses a
+> champion.** V54's 60-episode round-385 field test finished 49-3-8. `stencil:v55`-`v58` are
+> uploaded but inert; v58 adds GV41 barrage-center evacuation. The canonical game
+> is Paintbot **0.7.211 / GameVersion 41**. The live league uses a
 > 10x10 campaign board; normal invasions use four policies, with 7+7+1+1
 > captain/ally seating on two-team maps and one policy per team in FFA. Current work and live IDs:
 > [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md). The required evaluation shape:
@@ -31,7 +32,7 @@ adds variants. Teams (2 or 4: red/blue/green/yellow) guard a **heart** on a
 pedestal inside their endzone; steal any rival's heart and carry it home to
 **eliminate that team** — last team standing wins. Maps are **procedurally
 generated per episode** (five size classes; sides / corners / plus layouts).
-The historical `default` fixed-arena behavior changed; canonical 0.7.208 also
+The historical `default` fixed-arena behavior changed; the canonical game also
 uses generated terrain for `default`. Scoring is **pot** for the tournament
 variants: every team antes 1, winner takes all (+2/-2 two-team,
 +4/-1/-1/-1 four-team); a timeout draw pays -1 to everyone. Paint is cosmetic.

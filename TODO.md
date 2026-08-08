@@ -24,19 +24,22 @@ mid-session; check them back at the start of focused work.
   then either retire it or accept the visible losses. Retiring is a league action
   and a human call, not a repo change.
 
-- **Make Stencil survive the GV41 endgame barrage** (found 2026-08-07). Canonical
-  Paintbot is 0.7.211 / GV41 (`coworld-ctf@9dedac0`); the lab is pinned to
-  0.7.208 / GV40. Every variant now ends in a grenade barrage — normal 5:00
-  variants ramp 4→15 shells/s from 4:30 and reach full-board coverage at 5:00,
-  and reaching 0:00 no longer ends the game — and paint puddles are live.
-  Stencil parses neither. Recommended next iteration is P1 only: parse the
-  `grenade barrage`/`grenade air` markers, track airborne shells, feed projected
-  landings into the existing `clear_grenade` seam with the 58px body-hit reach,
-  and trace the evasion decision. Rebuild inert, then evaluate campaign-shaped
-  on 0.7.211 targeting episodes that reach 4:30. Hold the broader P2 doctrine so
-  the shell-awareness effect stays attributable. Also bump the project-local
-  CLIs (`coworld` 0.1.35→0.1.37, `softmax-cli` 0.26.27→0.26.29) before
-  operational use, and stop reusing 0.7.208 A/B results for endgame questions.
+- **Evaluate v58's barrage evacuation, then decide on shell-level evasion**
+  (updated 2026-08-07). The lab is now pinned to 0.7.211 / GV41
+  (`coworld-ctf@9dedac0`) and v58 implements the coarse half of the recon's P1:
+  it parses the `grenade barrage depth/rate/start/sat` marker and evacuates to
+  the generated map center once `depth > 0`, tracing `barrage_center_ticks`.
+  **Still open:** (a) v58 has only a one-episode mechanism probe — it needs a
+  campaign-shaped evaluation targeting episodes that actually reach 4:30 before
+  it can be judged; (b) individual airborne `grenade air` shells are still NOT
+  tracked, so there is no projected-landing evasion through the `clear_grenade`
+  seam with the 58px body-hit reach — centering is a positional heuristic, not
+  shell awareness; (c) hold the broader P2 doctrine until (a) settles, so the
+  effect stays attributable. Note the marker's rate field truncates downward
+  (`rate 9` at the true 9.5/s), so use the schedule math for density. Also bump
+  the project-local CLIs (`coworld` 0.1.35→0.1.37, `softmax-cli`
+  0.26.27→0.26.29) before operational use, and stop reusing 0.7.208 A/B results
+  for endgame questions.
   Full analysis: `paintbot_lab/docs/recon/paintbot-gv41-hazards-2026-08-07.md`.
 
 - **Expand Paintbot RL replay/expert diversity, then refine temporal state**

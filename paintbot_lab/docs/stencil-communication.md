@@ -5,7 +5,8 @@ native Stencil player. It is a reference for humans inspecting behavior and for
 agents changing or interoperating with Stencil. It describes existing behavior,
 not a proposed redesign.
 
-**Implementation baseline:** `stencil:v57`, Paintbot 0.7.208, GameVersion 40.
+**Implementation baseline:** `stencil:v58`, Paintbot 0.7.211, GameVersion 41.
+v58 changed no message formats; the shout protocol below is unchanged since v57.
 V57 aligns Stencil's shared sender interval with the engine's 24-tick limit.
 The message protocol and behavior otherwise remain inherited from v56/v55 and
 the retained v52 consensus core.

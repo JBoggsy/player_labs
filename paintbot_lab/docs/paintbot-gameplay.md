@@ -199,7 +199,7 @@ generate → validate → retry seed+1). What a policy must absorb:
   must read the map from the observation (below). Replays DO carry the exact
   geometry (`mapSpec`), so post-hoc tools can reconstruct terrain.
 - `gunRange` is fixed per episode (GV34) — bigger maps do NOT extend the gun.
-  The engine stock default is 1050px, but every deployed Paintbot 0.7.207
+  The engine stock default is 1050px, but every deployed Paintbot 0.7.211
   variant explicitly overrides it to **1300px** (vision reach is therefore
   1950px except for the 90px omnidirectional bubble).
 - Grenade max range and shout radius scale with the map (`mapWidth/5`).

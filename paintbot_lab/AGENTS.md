@@ -112,8 +112,10 @@ per-goal Dijkstra flow fields, derived chokes/rallies/spawn-aim — replacing
 beacon's `nav.npz` bake + POIs + plans wholesale); `belief` folds tracks,
 danger, hearing, chat, per-color hearts (with retirement + steal-target
 choice); `strategy` runs the ladder (carry-home > intercept-thief >
-escort-carrier > grenade-clear > items > convert-hunt > consensus squad order
-> role split);
+escort-carrier > grenade-clear > **barrage-center** > early-defense > items >
+convert-hunt > consensus squad order > role split — barrage-center evacuates to
+the generated map center once the GV41 barrage marker reports `depth > 0`, so
+only carry-home, thief interception, and immediate grenade warnings outrank it);
 `action` emits the mask (lighthouse sweep, snap/lead aim, fire gate,
 friendly-fire guard, peek-fire-duck, grenade overlay). The post-v1 WorldMap
 derives per-opponent firing/duck post candidates from online geometry;
