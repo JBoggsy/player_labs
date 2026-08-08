@@ -243,6 +243,13 @@ side candidates against *all* nearby hostiles, changes the retained side only wh
 adds at least five yards of clearance, and uses an attacker-radial escape vector after contact.
 This directly implements the geometry/live-overlay separation in the router shape above.
 
+V105 did not test that refinement. Its request
+`xreq_9e058bae-fea0-4824-9045-13333b28a992` landed immediately after canonical
+vanilla-wow advanced from 0.1.208 to 0.1.209, and the older policy-side model rejected the new
+`Unit.sub_name` and quest-reward observation fields before movement began. V106 is a
+compatibility-only rebuild of the identical router against the exact 0.1.209 game image; its
+hosted result is the first valid test of the cluster-clearance hypothesis.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.

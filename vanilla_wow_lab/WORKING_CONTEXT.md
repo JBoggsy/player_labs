@@ -13,7 +13,19 @@ file is the one-screen "where are we and why."
 
 ---
 
-## Status (2026-08-08): VANILLA-WOW 0.1.208 REMOVES ENVIRONMENT MOVEMENT CHURN
+## Status (2026-08-08): V106 RESTORES THE LIVE 0.1.209 CONTRACT
+
+Canonical **vanilla-wow 0.1.209**
+(`cow_e3f61cb2-fe38-43e9-a10c-cdd12769f797`, image
+`sha256:2c06427e2a96ab96f3ba19fedb6049c2eab30e463c167e27fb6781c415f25dfa`)
+added `Unit.sub_name` and four quest-reward fields to `Observation`. V105 request
+`xreq_9e058bae-fea0-4824-9045-13333b28a992` therefore failed contract validation before
+movement and provides no router evidence. The environment pin now matches 0.1.209, and the
+unchanged v105 router is uploaded inert as **wowborg:v106**
+(`ec727f01-fbe8-45e9-b1c7-b129c3d2c54a`); hosted proof is pending. V78 remains the submitted
+Traverse champion.
+
+### Previous 0.1.208 movement baseline
 
 Canonical **vanilla-wow 0.1.208**
 (`cow_2e0459a4-0b66-492c-9799-0cc6ec0e8876`, image
@@ -39,7 +51,7 @@ direct reversals, or old bearing-disappearance signatures. Ten turns last at mos
 the four raw stop/restart pairs split into two death/ghost transitions and two final
 scoring/logout artifacts rather than traversal churn.
 
-The lab source dependency and exact environment-image pin now match 0.1.208. Use
+For that baseline, the lab source dependency and exact environment-image pin matched 0.1.208. Use
 `tools/movement_report.py EPISODE_DIR --json` on downloaded experience-request artifacts;
 with `game_logs.log` present it reports nonterminal versus terminal stops, host counters,
 short turns, direct reversals, and the former bearing-disappearance signature.
@@ -127,7 +139,8 @@ stale side persisted. The active candidate triggers only on an 18-yard forward-c
 intersection, scores both sides against every nearby hostile, switches only for five yards more
 clearance, and flees directly away from attackers if a pull still occurs. It is uploaded inert as
 **wowborg:v105** (`af1d041f-61d2-45a5-bb44-6051762f2934`, source `d763b81`); hosted
-proof is pending.
+request `xreq_9e058bae-fea0-4824-9045-13333b28a992` was invalidated before movement by the
+0.1.209 observation expansion. V106 carries the same router on the matching live contract.
 
 ## Historical status (2026-08-06): V78 SUBMITTED AND QUALIFYING ON THE CORRECTED CLOCK
 

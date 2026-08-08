@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v106 - live 0.1.209 observation contract (2026-08-08)
+
+- Version UUID: `ec727f01-fbe8-45e9-b1c7-b129c3d2c54a` (`wowborg:v106`, uploaded
+  inert; not submitted). Rebuilds v105's unchanged corridor-filtered router against canonical
+  `vanilla-wow:0.1.209` image
+  `sha256:2c06427e2a96ab96f3ba19fedb6049c2eab30e463c167e27fb6781c415f25dfa`.
+- This compatibility-only version accepts the live `Unit.sub_name` and quest-reward observation
+  fields. Hosted routing proof is pending.
+
 ## v105 - corridor-filtered cluster clearance (2026-08-08)
 
 - Version UUID: `af1d041f-61d2-45a5-bb44-6051762f2934` (`wowborg:v105`, uploaded
@@ -7,7 +16,11 @@
 - Refines v104 without changing the road: avoidance activates only for an 18-yard forward
   corridor intersection, side clearance includes every hostile within the 30/40-yard envelope,
   and switching requires five yards of benefit. Actual combat uses a direct attacker-radial flee
-  target. Side switches emit `traverse_hazard_avoidance_switched`. Hosted proof is pending.
+  target. Side switches emit `traverse_hazard_avoidance_switched`.
+- Request `xreq_9e058bae-fea0-4824-9045-13333b28a992` ran after the canonical game
+  advanced to 0.1.209 and failed before movement: v105's 0.1.208 policy contract rejected the
+  newly added `Unit.sub_name` and four quest-reward fields. V106 is the same router rebuilt
+  against the new immutable game image, so its next request restores attribution.
 
 ## v104 - pre-aggro live-hostile steering (2026-08-08)
 
