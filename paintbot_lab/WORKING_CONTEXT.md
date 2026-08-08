@@ -87,6 +87,14 @@ changed-component accuracy from 0.7% to 8.8%, but overall exact fell from
 do not deploy this checkpoint; expand replay/expert diversity next. Report:
 [`docs/reports/rl-transition-temporal-2x2-2026-08-07.md`](docs/reports/rl-transition-temporal-2x2-2026-08-07.md).
 
+The exhaustive expert corpus is preprocessing on mettabox1. Its unattended
+handoff now converts merged JSONL to memory-mapped Hugging Face Arrow, builds a
+250,000-example epoch balanced 50/50 on action transitions and across
+GameVersion/expert/world, runs a 1,024-example BF16 canary, then starts a
+three-epoch 2e-4 LoRA job. Full training checkpoints every 1,000 optimizer
+updates and can resume at the next deterministic batch. These are conservative
+initial settings and remain open to later budget and sampling experiments.
+
 ## Current objective
 
 **v58 is the active James Botts champion.** v58
@@ -149,15 +157,21 @@ but not matched evidence against v54. The exact request manifest is recorded in
 [`paintbot/stencil_nim/VERSION_LOG.md`](paintbot/stencil_nim/VERSION_LOG.md).
 No `4ffa8` request was invented because it was absent from the live board.
 
-The campaign commander is now steered by a deterministic one-round controller.
-The local process proved exact unstaked Max Yankov airdrops in rounds 395-397,
-including prompt readback, Sonnet tool-call audits, battle audits, restoration,
-and settlement logging. It now runs as the macOS LaunchAgent
+The campaign commander is now steered by a deterministic, version-aware
+one-round controller. It resolves the active champion every poll and combines
+that version's completed campaign and owned XP episodes by opponent and exact
+cell type. Targeting uses a Beta-binomial estimate of
+`P(win | opponent, map_ref, mode)`; it always orders one unstaked airdrop and
+adds one adjacent staked invasion only when the posterior predictive probability
+of winning both paired captain seatings is strictly above 75%. The controller
+persists source counts, matchup buckets, posterior probabilities, and Wilson
+intervals, and traces every statistical refresh and selected order. It runs as
+the macOS LaunchAgent
 `com.softmax.paintbot-stencil-campaign-controller`, with persistent state and
 logs under `~/Library/Application Support/Stencil Campaign Controller/`,
 atomic checkpoints, prompt-propagation retries, duplicate exclusion, login
-startup, and crash restart. The managed process survived a deliberate restart
-without losing its armed round-400 state. Operations are documented under
+startup, crash restart, and exact audits for both airdrops and cell-to-cell
+invasions. Operations and the statistical contract are documented under
 [`infra/campaign_order_controller/`](infra/campaign_order_controller/).
 
 The previous controller was not a vision failure. It read the authoritative
@@ -314,10 +328,14 @@ Next concrete steps:
   report: `docs/reports/stencil-aim-accuracy-2026-08-04.md`.
 - **Commander prompt/controller** (campaign-specific): the private standing
   prompt is now supplemented by a nonce-marked, one-round directive from
-  `tools/campaign_order_controller.py`. It currently prefers non-FFA cells and
-  ranks owners from the tournament-clone matchup evidence. A persistent macOS
-  LaunchAgent supervises it; it resumes after login/restart but cannot act while
-  this Mac is asleep, shut down, or logged out.
+  `tools/campaign_order_controller.py`. It resolves the current champion,
+  ingests that version's completed campaign and owned XP evidence, and ranks
+  non-FFA cells by exact opponent/cell posterior probability. A qualifying
+  adjacent target with posterior predictive double-win probability above 75%
+  adds one staked invasion to the mandatory airdrop. The old tournament-clone
+  owner ordering remains only as a tie fallback. A persistent macOS LaunchAgent
+  supervises it; it resumes after login/restart but cannot act while this Mac is
+  asleep, shut down, or logged out.
 - **Per-cell map-knowledge layer** (optional, now possible): the 100
   (variant, map_seed, nullable map_size) tuples are API-readable and the generator is
   deterministic — we could regenerate all cell maps offline, precompute
