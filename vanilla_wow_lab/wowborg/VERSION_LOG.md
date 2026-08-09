@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v160 - typed Travel Form aura cancellation (2026-08-09)
+
+- Version UUID: `84f82e8c-f928-4e29-851e-5a2a8b2e0736` (`wowborg:v160`, uploaded
+  inert; not submitted). Built from source `b5f3e95` against canonical vanilla-wow 0.1.209.
+- Leaves Travel Form through the environment's typed `cancel_aura` action on the observed active
+  form spell, then enters Cat on the next frame.
+- Target selection, proactive closing, feral rotation, route geometry, and all other-contact
+  behavior are unchanged from v159.
+
 ## v159 - observed-form transition before ramp combat (2026-08-09)
 
 - Version UUID: `083b6d20-c164-485d-b828-672a6a05e9ae` (`wowborg:v159`, uploaded

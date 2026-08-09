@@ -1089,6 +1089,8 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    proactive activations, but direct invocation of the observed current-form spell still did not
    toggle Travel Form. The environment's current action catalog exposes a typed `cancel_aura`
    action for active beneficial auras; the next source candidate uses it for spell 783 before Cat.
+   That candidate is uploaded inert as **wowborg:v160**
+   (`84f82e8c-f928-4e29-851e-5a2a8b2e0736`, source `b5f3e95`).
 
 ## Reference
 

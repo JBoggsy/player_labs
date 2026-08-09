@@ -722,6 +722,8 @@ The current environment action catalog exposes `cancel_aura` for every active be
 the next source candidate invokes that typed action for spell 783, then enters Cat on the next
 frame. This keeps the transition inside the current public action contract rather than emulating a
 keypress or adding a compatibility path.
+That candidate is uploaded inert as **wowborg:v160**
+(`84f82e8c-f928-4e29-851e-5a2a8b2e0736`, source `b5f3e95`).
 
 ## Open uncertainties
 
