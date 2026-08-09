@@ -1,5 +1,12 @@
 # wowborg version log
 
+## v121 - quantized persistent retreat (2026-08-09)
+
+- Version UUID: `377a2f3e-215e-4425-8f98-06d540db6c47` (`wowborg:v121`, uploaded
+  inert; not submitted). Built from source `8b0a2e2` against canonical vanilla-wow 0.1.209.
+- Keeps v120's persistent safe-anchor state and uses exact 0.25-second actions for every precise
+  turn and translation. Hazard geometry and combat behavior are unchanged. Hosted proof pending.
+
 ## v120 - persistent safe-anchor retreat (2026-08-09)
 
 - Version UUID: `851c62e2-2a32-4e8d-8501-18067e495a30` (`wowborg:v120`, uploaded

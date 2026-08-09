@@ -127,6 +127,8 @@ switches, but persistent retreat exercised a distance-derived 0.5629-second diag
 that timed out at frame 559. It reached three guidepoints and had one escaped pull. The active
 candidate uses the proven exact 0.25-second quantum for every precise translation; turn behavior,
 state semantics, and geometry are unchanged.
+It is uploaded inert as **wowborg:v121**
+(`377a2f3e-215e-4425-8f98-06d540db6c47`, source `8b0a2e2`); hosted proof is pending.
 
 ### Previous 0.1.208 movement baseline
 
