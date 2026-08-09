@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v145 - leg-sensitive Traverse settlement cadence (2026-08-09)
+
+- Version UUID: `dbbc1e08-2f0a-42b8-b79f-9f1e010d72af` (`wowborg:v145`, uploaded
+  inert; not submitted). Built from source `9e0c895` against canonical vanilla-wow 0.1.209.
+- Yields after every pulse on exact terrain anchors and every eight pulses on ordinary roads. This
+  combines v139's proven tight-bend cadence with v143's faster open-road cadence.
+- Hosted Traverse proof is pending.
+
 ## v144 - curved Shimmering Flats ramp approach (2026-08-09)
 
 - Version UUID: `bb21cd9f-2573-4f1c-bfd2-ff5be57842ac` (`wowborg:v144`, uploaded

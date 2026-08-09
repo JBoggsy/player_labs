@@ -323,6 +323,8 @@ but was infrastructure-censored before reaching the new ramp anchors: another 0.
 timed out at about `(-7155,-3769)` on the exact Detour-east leg. Sparse yields improve ordinary
 road cadence, but this tight bend needs v139's every-pulse settlement seam. The active candidate
 yields after every pulse on exact anchors and every eight pulses on ordinary roads.
+It is uploaded inert as **wowborg:v145**
+(`dbbc1e08-2f0a-42b8-b79f-9f1e010d72af`, source `9e0c895`); hosted Traverse proof is pending.
 
 ### Previous 0.1.208 movement baseline
 
