@@ -1343,10 +1343,13 @@ Dunestalker took zero damage before and after the re-face. The change is uploade
 12 corrective re-faces across eight runs, but none exhausted two rotations, so the ranged fallback
 did not activate. One run reached the intermediate descent landing around 250 seconds and healed
 from 1,301 to 2,002 before the horizon ended, about two simulated seconds short of the 80% release
-gate. The active source therefore raises only unobstructed, non-terrain-constrained road input from
-1.0 to the 1.5-second contract maximum. Hazard steering, combat, climbing, and staged descent
-cadence are unchanged. This speed candidate is uploaded inert as **wowborg:v198**
-(`683b4cac-f2a0-4419-8cc5-d55f9af8faa5`, source `acf6e90`) but not yet evaluated.
+gate. V198 raised unobstructed road input to 1.5 seconds, but hosted request
+`xreq_18d557f7-1330-497c-891a-70a55fb58825` regressed to 22 of 24 alive without improving frontier
+reach. One long stride entered multiple attackers; the other death entered a second reactive fight
+at 84% health. The active source restores V197's one-second stride. It instead proactively fights
+an ordinary level-49-or-lower blocker already inside the eight-yard hold zone only when wowborg has
+at least 95% health and every other nearby hostile's projected path preserves the existing 12-yard
+add-clearance floor. This candidate is not yet uploaded or evaluated.
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.

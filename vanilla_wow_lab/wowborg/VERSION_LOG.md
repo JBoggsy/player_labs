@@ -1,5 +1,16 @@
 # wowborg version log
 
+## v199 - isolated healthy blocker fights (2026-08-09)
+
+- Upload pending.
+- Restores V197's proven one-second clear-road stride. When any ordinary level-49-or-lower blocker
+  is already inside the eight-yard hold zone, wowborg now fights proactively only if it has at
+  least 95% health and every other nearby hostile's projected path preserves the existing 12-yard
+  add-clearance floor.
+- V198 regressed to 22 of 24 alive and did not reach the descent. One long stride entered a
+  multi-attacker state; the other death entered a second reactive fight at 84% health. The
+  1.5-second stride is rejected.
+
 ## v198 - maximum clear-road stride (2026-08-09)
 
 - Version UUID: `683b4cac-f2a0-4419-8cc5-d55f9af8faa5` (`wowborg:v198`, uploaded
@@ -10,6 +21,9 @@
 - V197's 24-run batch kept every run alive, but its only descent-landing run arrived around 250
   seconds and ended at 2,002/2,754 health, roughly two simulated seconds short of satisfying the
   80% release gate. This candidate targets the upstream action-roundtrip cost.
+- Hosted request `xreq_18d557f7-1330-497c-891a-70a55fb58825` kept only 22 of 24 runs alive and did
+  not improve frontier reach. One run entered multiple attackers during a long stride; the other
+  died in a second reactive fight entered at 84% health. Rejected in V199.
 
 ## v197 - ranged fallback after repeated melee failure (2026-08-09)
 
