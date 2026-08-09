@@ -7,7 +7,10 @@
 - Restores the proven 0.75-second stride and removes the redundant 0.25-second wait after each
   synchronous action has already returned its settled next frame. Geometry and hazard gates are
   unchanged.
-- Hosted Traverse proof is pending.
+- Requests `xreq_5a105daa-13a3-4304-be2b-515587f6da89` and
+  `xreq_c60c6458-3659-4a37-a8ef-63b35a372b60` both stayed full-health with zero
+  combat and reached the exact Detour bend quickly, but each hit an isolated 30-second host action
+  timeout after roughly 950 uninterrupted actions. A periodic settlement yield is still required.
 
 ## v141 - doubled open Traverse stride (2026-08-09)
 

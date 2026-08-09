@@ -35,6 +35,7 @@ ROAD_PASS_LATERAL_YARDS = 60.0
 ROAD_PASS_NORTHING_SLACK_YARDS = 20.0
 ROAD_STALL_SECONDS = 8.0
 ROAD_UNSTICK_ATTEMPTS = 2
+ROAD_SETTLE_PAUSE_INTERVAL = 8
 ROAD_HAZARD_ENTER_YARDS = 30.0
 ROAD_HAZARD_EXIT_YARDS = 40.0
 ROAD_HAZARD_LOOKAHEAD_YARDS = 60.0
@@ -481,6 +482,7 @@ class HazardAvoidanceState:
     retreat_blocked: bool = False
     retreat_stalled_pulses: int = 0
     safe_point: Point | None = None
+    settled_pulses: int = 0
 
 
 def _steer_road_leg(
@@ -613,6 +615,10 @@ def _steer_road_leg(
                 closest = math.inf
                 last_progress = time.monotonic()
                 road_unstick_attempts = 0
+            avoidance.settled_pulses += 1
+            if avoidance.settled_pulses % ROAD_SETTLE_PAUSE_INTERVAL == 0:
+                bridge.select_wait(settle_frame)
+                trace("traverse_road_settle_pause", frame_id=settle_frame.frame_id)
             trace("traverse_road_pulse_settled", frame_id=settle_frame.frame_id)
             continue
 
@@ -882,6 +888,10 @@ def _steer_road_leg(
                 avoidance.retreat_stalled_pulses = 0
         else:
             avoidance.retreat_stalled_pulses = 0
+        avoidance.settled_pulses += 1
+        if avoidance.settled_pulses % ROAD_SETTLE_PAUSE_INTERVAL == 0:
+            bridge.select_wait(settle_frame)
+            trace("traverse_road_settle_pause", frame_id=settle_frame.frame_id)
         trace("traverse_road_pulse_settled", frame_id=settle_frame.frame_id)
     return None, "deadline"
 

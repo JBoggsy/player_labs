@@ -300,7 +300,14 @@ Traverse then submitted a redundant 0.25-second wait before every next pulse. Th
 restores the proven 0.75-second stride and removes that wait, increasing movement duty cycle from
 75% to 100% without increasing one-pulse hazard reaction distance.
 It is uploaded inert as **wowborg:v142**
-(`663ecd3e-10eb-4ba4-9a73-0cf33d43a33c`, source `c126d76`); hosted Traverse proof is pending.
+(`663ecd3e-10eb-4ba4-9a73-0cf33d43a33c`, source `c126d76`). First request
+`xreq_5a105daa-13a3-4304-be2b-515587f6da89` stayed full-health with zero combat
+and reached the Detour bend in 132 seconds, but one action timed out after 30 seconds while the
+prior 948 actions all settled (p99 377 ms). Fair repeat
+`xreq_c60c6458-3659-4a37-a8ef-63b35a372b60` again stayed full-health, reached all
+three exact bend anchors, then hit the same timeout after roughly 985 uninterrupted actions. The
+active candidate yields for 0.25 seconds every eight settled pulses: roughly 97% movement duty
+cycle versus the original 75%, with a periodic host settlement seam.
 
 ### Previous 0.1.208 movement baseline
 
