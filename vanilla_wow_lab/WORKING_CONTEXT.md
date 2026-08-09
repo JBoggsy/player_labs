@@ -158,7 +158,13 @@ with 18.6 yards of projected clearance was accepted under the 15-yard minimum; a
 active candidate raises the route-clearance floor to 25 yards and chooses the shortest 30/45/60
 yard lateral bypass that meets it, or the highest-clearance candidate if none do.
 It is uploaded inert as **wowborg:v125**
-(`87739aaf-702e-47fb-971e-acd5c43a4fb7`, source `c491039`); hosted proof is pending.
+(`87739aaf-702e-47fb-971e-acd5c43a4fb7`, source `c491039`). Request
+`xreq_63741569-df7c-4a98-aae3-e374cf35f365` stayed full-health and out of combat,
+and selected every configured lateral width, but issued 721 accepted retreat translations without
+moving after a 5.9-yard safe anchor became physically blocked. Persistent retreat also suppressed
+the general route-stall timer. The active candidate detects three consecutive retreat pulses below
+0.5 yards, traces the blocked anchor, and transfers control to mobile hazard evasion so a different
+escape vector can be selected.
 
 ### Previous 0.1.208 movement baseline
 

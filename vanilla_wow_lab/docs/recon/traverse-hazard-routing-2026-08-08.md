@@ -420,6 +420,14 @@ The next candidate requires 25 yards of projected clearance and selects the shor
 yard lateral bypass that satisfies it, falling back to the highest-clearance candidate when every
 width is unsafe.
 
+V125 request `xreq_63741569-df7c-4a98-aae3-e374cf35f365` stayed full-health and
+out of combat, and its activation telemetry proved all three lateral widths were selected. It
+then exposed a physical-anchor failure rather than a scoring failure: a safe anchor only 5.9 yards
+away was blocked, but wowborg issued 721 accepted quarter-second retreat translations without
+moving. Persistent retreat reset the general route-stall timer on every frame. The next candidate
+detects three consecutive retreat pulses below 0.5 yards, records the blocked anchor, and hands
+control to the existing mobile hazard-evasion vector.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.

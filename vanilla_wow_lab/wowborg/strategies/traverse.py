@@ -379,6 +379,8 @@ class HazardAvoidanceState:
     side: float | None = None
     evading: bool = False
     retreating: bool = False
+    retreat_blocked: bool = False
+    retreat_stalled_pulses: int = 0
     safe_point: Point | None = None
 
 
@@ -536,6 +538,7 @@ def _steer_road_leg(
             < ROAD_HAZARD_MIN_CLEARANCE_YARDS
         )
         if avoidance.side is None and not avoidance.retreating:
+            avoidance.retreat_blocked = False
             avoidance.safe_point = Point(
                 frame.location.map_id,
                 frame.location.x,
@@ -550,9 +553,12 @@ def _steer_road_leg(
             if (unsafe or avoidance.retreating) and avoidance.safe_point is not None
             else 0.0
         )
-        should_retreat = not avoidance.evading and (
-            unsafe or avoidance.retreating
-        ) and retreat_distance > ROAD_HAZARD_HOLD_RADIUS_YARDS
+        should_retreat = (
+            not avoidance.evading
+            and not avoidance.retreat_blocked
+            and (unsafe or avoidance.retreating)
+            and retreat_distance > ROAD_HAZARD_HOLD_RADIUS_YARDS
+        )
         should_evade = unsafe and not should_retreat
         if should_evade:
             if avoidance.retreating:
@@ -571,6 +577,7 @@ def _steer_road_leg(
         elif avoidance.evading:
             trace("traverse_hazard_evasion_ended", activation=1)
             avoidance.evading = False
+            avoidance.retreat_blocked = False
             avoidance.safe_point = Point(
                 frame.location.map_id,
                 frame.location.x,
@@ -619,6 +626,31 @@ def _steer_road_leg(
         settle_frame = bridge.observe()
         if settle_frame is None:
             return None, "no_frame"
+        if should_retreat:
+            retreat_progress = math.dist(
+                (frame.location.x, frame.location.y),
+                (settle_frame.location.x, settle_frame.location.y),
+            )
+            if retreat_progress < 0.5:
+                avoidance.retreat_stalled_pulses += 1
+            else:
+                avoidance.retreat_stalled_pulses = 0
+            if avoidance.retreat_stalled_pulses >= 3:
+                trace(
+                    "traverse_hazard_retreat_blocked",
+                    activation=1,
+                    safe_point=[
+                        round(avoidance.safe_point.x, 3),
+                        round(avoidance.safe_point.y, 3),
+                        round(avoidance.safe_point.z, 3),
+                    ],
+                    retreat_distance=round(retreat_distance, 3),
+                )
+                avoidance.retreating = False
+                avoidance.retreat_blocked = True
+                avoidance.retreat_stalled_pulses = 0
+        else:
+            avoidance.retreat_stalled_pulses = 0
         bridge.select_wait(settle_frame)
         trace("traverse_road_pulse_settled", frame_id=settle_frame.frame_id)
     return None, "deadline"
