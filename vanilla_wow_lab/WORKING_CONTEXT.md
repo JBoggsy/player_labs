@@ -1096,6 +1096,8 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    dealt / 110 taken, with wowborg alive at full health. Rake and Claw lacked their required target,
    so host telemetry reported `select target` / `cancelled` and repeated auto-attacks did the work.
    The next source candidate passes the exact Scorpid GUID to every offensive feral spell.
+   That candidate is uploaded inert as **wowborg:v161**
+   (`922c2942-06d8-4b55-8ac1-bedf7bb41522`, source `f83906a`).
 
 ## Reference
 

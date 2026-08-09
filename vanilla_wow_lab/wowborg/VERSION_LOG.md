@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v161 - exact-target feral ramp rotation (2026-08-09)
+
+- Version UUID: `922c2942-06d8-4b55-8ac1-bedf7bb41522` (`wowborg:v161`, uploaded
+  inert; not submitted). Built from source `f83906a` against canonical vanilla-wow 0.1.209.
+- Supplies the qualifying Scorpid's exact GUID to Rake, Claw, and Rip, using the environment's
+  existing targeted-spell invocation contract.
+- Form transition, target gate, proactive closing, route geometry, and all other-contact behavior
+  are unchanged from v160. This isolates realized feral rotation and time-to-kill.
+
 ## v160 - typed Travel Form aura cancellation (2026-08-09)
 
 - Version UUID: `84f82e8c-f928-4e29-851e-5a2a8b2e0736` (`wowborg:v160`, uploaded

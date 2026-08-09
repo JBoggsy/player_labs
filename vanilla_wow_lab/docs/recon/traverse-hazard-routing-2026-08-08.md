@@ -731,6 +731,8 @@ confirms that fighting the unavoidable pinch is safe. It is not yet efficient: h
 Rake and Claw were invoked without their required target (`select target` / `cancelled`), leaving
 repeated auto-attacks to do the work. The next source candidate supplies the exact Scorpid GUID to
 Rake, Claw, and Rip.
+That candidate is uploaded inert as **wowborg:v161**
+(`922c2942-06d8-4b55-8ac1-bedf7bb41522`, source `f83906a`).
 
 ## Open uncertainties
 
