@@ -10,6 +10,10 @@
 - The activation trace uses `traverse_hazard_hold` with reason
   `terrain_constrained_resident`; the hold releases once no tracked resident still projects into
   that target corridor.
+- Request `xreq_6b180e18-2154-4427-a3ee-1e26f5cce2ba` reached node 9 at full health, then
+  activated one hold for a Basilisk still 60.7 yards away and never released before the deadline.
+  The policy is safe but too conservative; the next candidate limits this hold to residents inside
+  the existing 30-yard hazard-entry gate.
 
 ## v149 - conservative open-road throughput (2026-08-09)
 

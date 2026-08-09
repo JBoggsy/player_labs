@@ -347,11 +347,16 @@ def _hazard_avoidance_target(
         )
         <= ROAD_HAZARD_RESIDENT_RADIUS_YARDS
     ]
-    if hold_resident_hazards and resident_hazards:
+    imminent_resident_hazards = [
+        unit
+        for unit in resident_hazards
+        if unit.distance <= ROAD_HAZARD_ENTER_YARDS
+    ]
+    if hold_resident_hazards and imminent_resident_hazards:
         return (
             target,
             None,
-            resident_hazards,
+            imminent_resident_hazards,
             tracked,
             {},
             {},

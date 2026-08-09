@@ -368,7 +368,13 @@ holds instead of laterally detouring when a resident hazard projects into one of
 anchors; ordinary roads keep their existing dynamic detours. The hold emits reason
 `terrain_constrained_resident` and releases when no tracked resident still projects into the
 target corridor. It is uploaded inert as **wowborg:v150**
-(`a2d455f5-da0b-4e61-8dd2-d0e637c3e998`, source `c71e07d`).
+(`a2d455f5-da0b-4e61-8dd2-d0e637c3e998`, source `c71e07d`). Request
+`xreq_6b180e18-2154-4427-a3ee-1e26f5cce2ba` reached node 9 at full health, then
+activated one terrain-constrained hold for a Basilisk still 60.7 yards away and never released
+before the episode deadline. The active candidate holds only an imminent resident inside the
+existing 30-yard hazard-entry gate; far projected residents may be crossed before they arrive.
+Rank-1 Prowl remains invalid here because its exact detection range is worse than visible level-gap
+aggro, and current basic melee remains too weak to promote over the timing solution.
 
 ### Previous 0.1.208 movement baseline
 
