@@ -2,7 +2,8 @@
 
 ## v197 - ranged fallback after repeated melee failure (2026-08-09)
 
-- Upload pending.
+- Version UUID: `392971b2-b83d-4d43-a3cc-568a3725f78f` (`wowborg:v197`, uploaded
+  inert; not submitted). Built from source `3e4d4ef` against canonical vanilla-wow 0.1.209.
 - After a complete feral rotation fails twice against the same exact attacker, leaves Cat Form and
   switches to Moonfire followed by Wrath. The first failed rotation still gets V195's corrective
   re-face; ordinary successful melee fights are unchanged.

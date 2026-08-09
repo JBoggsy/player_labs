@@ -1337,8 +1337,9 @@ The active source adds one combat fallback beyond **wowborg:v196**. A single ord
 still fought in Cat Form first, with one corrective re-face after a complete failed rotation. If a
 second complete rotation also fails, wowborg leaves Cat Form and casts Moonfire followed by Wrath
 at the exact attacker. This directly addresses V196's sole death, where a level-47 Scorpid
-Dunestalker took zero damage before and after the re-face. The change is not yet uploaded or
-evaluated; routing, hazard clearance, descent healing, and movement cadence are unchanged.
+Dunestalker took zero damage before and after the re-face. The change is uploaded inert as
+**wowborg:v197** (`392971b2-b83d-4d43-a3cc-568a3725f78f`, source `3e4d4ef`) but not yet evaluated;
+routing, hazard clearance, descent healing, and movement cadence are unchanged.
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.
