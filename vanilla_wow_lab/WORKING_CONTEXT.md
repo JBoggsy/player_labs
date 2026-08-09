@@ -1353,7 +1353,13 @@ below 20% health, so that expansion is rejected. The active source restores V197
 one-second stride whenever any hostile is visible within the router's 80-yard tracking radius. It
 uses the 1.5-second contract maximum only when that tracked set is empty. This adaptive stride
 candidate is uploaded inert as **wowborg:v200**
-(`287e4a0a-0a72-435e-9357-6ba89cfcb234`, source `1a7f63e`) but not yet evaluated.
+(`287e4a0a-0a72-435e-9357-6ba89cfcb234`, source `1a7f63e`). Hosted request
+`xreq_ae8794fa-a26f-4c9b-85dd-e00162713779` kept 23 of 24 runs alive. One run passed the descent
+health gate and began the south-road leg around 268 seconds, but the batch generated 1,012
+avoidance starts and 838 retreats despite only 328 far-clear strides. The active source preserves
+the 20-yard clearance floor but replaces stale safe-point backtracking with the existing local
+move-away evasion when a selected detour becomes unsafe. This candidate is not yet uploaded or
+evaluated.
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.

@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v201 - local evasion without safe-point backtracking (2026-08-09)
+
+- Upload pending.
+- When a selected hazard detour falls below the unchanged 20-yard clearance floor, uses the
+  existing local move-away evasion instead of reversing to a stale last-safe point. Holding and
+  terrain-constrained behavior are unchanged.
+- V200's 24-run batch produced 1,012 avoidance starts and 838 retreats. It kept 23 runs alive; one
+  run passed the descent health gate and began the south-road leg around 268 seconds, still far too
+  late for the Great Lift. The repeated backtracking is the dominant measured throughput cost.
+
 ## v200 - far-clear adaptive stride (2026-08-09)
 
 - Version UUID: `287e4a0a-0a72-435e-9357-6ba89cfcb234` (`wowborg:v200`, uploaded
@@ -10,6 +20,9 @@
 - V199 kept only 22 of 24 runs alive and did not reach the descent. Proactive wins ranged from
   about 3 to 11 seconds and sometimes ended below 20% health, so ordinary blockers are again
   detoured unless they pull reactively; proactive combat returns to the calibrated ramp Scorpid.
+- Hosted request `xreq_ae8794fa-a26f-4c9b-85dd-e00162713779` kept 23 of 24 runs alive. One run
+  passed the 80% descent gate and began the south-road leg around 268 seconds. Across the batch,
+  328 far-clear strides were outweighed by 1,012 avoidance starts and 838 retreats.
 
 ## v199 - isolated healthy blocker fights (2026-08-09)
 
