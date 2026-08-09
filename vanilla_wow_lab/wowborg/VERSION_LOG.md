@@ -1,5 +1,12 @@
 # wowborg version log
 
+## v126 - blocked retreat-anchor escape (2026-08-09)
+
+- Version UUID: `149ff0eb-750d-4efa-b524-7b7d7302c697` (`wowborg:v126`, uploaded
+  inert; not submitted). Built from source `a5d18e3` against canonical vanilla-wow 0.1.209.
+- After three retreat pulses move less than 0.5 yards, traces the blocked safe anchor and hands
+  control to the existing mobile hazard-evasion path. Adaptive widths and clearance remain v125's.
+
 ## v125 - adaptive hazard bypass width (2026-08-09)
 
 - Version UUID: `87739aaf-702e-47fb-971e-acd5c43a4fb7` (`wowborg:v125`, uploaded
@@ -7,6 +14,8 @@
 - Requires 25 yards of projected route clearance and selects the shortest safe 30/45/60-yard
   lateral bypass, or the highest-clearance candidate if none are safe. Activation and side-switch
   traces expose both the chosen clearance and lateral width for each side.
+- Request `xreq_63741569-df7c-4a98-aae3-e374cf35f365` stayed full-health and selected
+  all widths, but a blocked safe anchor caused 721 accepted retreat translations with no movement.
 
 ## v124 - discrete eight-direction road steering (2026-08-09)
 

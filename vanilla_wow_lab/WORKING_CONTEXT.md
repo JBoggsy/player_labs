@@ -165,6 +165,8 @@ moving after a 5.9-yard safe anchor became physically blocked. Persistent retrea
 the general route-stall timer. The active candidate detects three consecutive retreat pulses below
 0.5 yards, traces the blocked anchor, and transfers control to mobile hazard evasion so a different
 escape vector can be selected.
+It is uploaded inert as **wowborg:v126**
+(`149ff0eb-750d-4efa-b524-7b7d7302c697`, source `a5d18e3`); hosted proof is pending.
 
 ### Previous 0.1.208 movement baseline
 
