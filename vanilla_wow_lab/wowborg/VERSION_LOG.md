@@ -1,13 +1,28 @@
 # wowborg version log
 
+## v192 - failed combat ability fallback (2026-08-09)
+
+- Version UUID: `4d43b00a-971e-4cb7-8529-c77b1e73087c` (`wowborg:v192`, uploaded
+  inert; not submitted). Built from source `aa52d2b` against canonical vanilla-wow 0.1.209.
+- Remembers an unsuccessful Rake, Rip, or Claw family for the remainder of the current fight, so
+  the next frame falls through to another ability or exact-attacker auto-attack instead of
+  retrying the same failed cast until death.
+- V191 routing, hazard clearance, staged descent, and action cadence are unchanged. Hosted
+  evaluation is pending.
+
 ## v191 - narrower safe detour candidates (2026-08-09)
 
 - Version UUID: `7b3ab0cf-2a1a-4a27-ad1c-08845f10bef4` (`wowborg:v191`, uploaded
   inert; not submitted). Built from source `c79c00f` against canonical vanilla-wow 0.1.209.
 - Adds 20- and 25-yard lateral candidates ahead of the existing 30/45/60-yard detours. Every
   candidate still must satisfy the proven 20-yard predicted-clearance floor.
-- V190 combat, staged descent, route geometry, and cadence are unchanged. Hosted evaluation is
-  pending.
+- V190 combat, staged descent, route geometry, and cadence are unchanged. Hosted request
+  `xreq_d6b13137-05df-4644-9baa-0269e5107de9` kept 11 of 12 runs alive. All 12 selected the new
+  20-yard candidate and eight also selected 25 yards while preserving the 20-yard clearance floor.
+  One run reached the first descent landing alive, recovered from 1,167 to full health with
+  Rejuvenation, then spent the remaining horizon retrying Cat Form. The sole death was a reactive
+  Glasshide Basilisk fight that repeated six failed Rakes after auto-attack had engaged; v192
+  addresses that combat-loop defect.
 
 ## v190 - staged Rejuvenated descent (2026-08-09)
 
