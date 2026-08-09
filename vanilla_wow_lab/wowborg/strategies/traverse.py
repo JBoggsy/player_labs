@@ -31,6 +31,7 @@ GREAT_LIFT_DOCK_Z_SLACK = 2.0
 GREAT_LIFT_EXIT_Z = 80.0
 GREAT_LIFT_INPUT_SECONDS = 0.75
 ROAD_ARRIVAL_RADIUS_YARDS = 8.0
+ROAD_PASS_LATERAL_YARDS = 60.0
 ROAD_STALL_SECONDS = 8.0
 ROAD_HAZARD_ENTER_YARDS = 30.0
 ROAD_HAZARD_EXIT_YARDS = 40.0
@@ -391,6 +392,7 @@ def _steer_road_leg(
     deadline: float,
     trace,
     avoidance: HazardAvoidanceState,
+    allow_northing_pass: bool,
 ):
     closest = math.inf
     last_progress = time.monotonic()
@@ -439,6 +441,27 @@ def _steer_road_leg(
             (target.x, target.y, target.z),
         )
         if distance <= ROAD_ARRIVAL_RADIUS_YARDS:
+            return Point(
+                frame.location.map_id,
+                frame.location.x,
+                frame.location.y,
+                frame.location.z,
+            ), ""
+        lateral_distance = math.dist(
+            (frame.location.y, frame.location.z),
+            (target.y, target.z),
+        )
+        if (
+            allow_northing_pass
+            and frame.location.x >= target.x
+            and lateral_distance <= ROAD_PASS_LATERAL_YARDS
+        ):
+            trace(
+                "traverse_road_guidepoint_passed",
+                activation=1,
+                distance=round(distance, 3),
+                lateral_distance=round(lateral_distance, 3),
+            )
             return Point(
                 frame.location.map_id,
                 frame.location.x,
@@ -851,6 +874,7 @@ class TraverseStrategy:
                         deadline=until,
                         trace=trace,
                         avoidance=self.hazard_avoidance,
+                        allow_northing_pass=name != "great-lift-lower-dock",
                     )
                     if end is not None:
                         self.best_world_x = max(self.best_world_x, end.x)

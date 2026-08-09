@@ -166,7 +166,13 @@ the general route-stall timer. The active candidate detects three consecutive re
 0.5 yards, traces the blocked anchor, and transfers control to mobile hazard evasion so a different
 escape vector can be selected.
 It is uploaded inert as **wowborg:v126**
-(`149ff0eb-750d-4efa-b524-7b7d7302c697`, source `a5d18e3`); hosted proof is pending.
+(`149ff0eb-750d-4efa-b524-7b7d7302c697`, source `a5d18e3`). Request
+`xreq_2794b3ad-a849-4a1f-a733-e4659298a305` fired 68 blocked-anchor transitions,
+stayed full-health with no combat or timeout, cleared nine guidepoints, and reached 1,318.5 living
+northing yards. It then spent the remaining episode at road node 7 despite already crossing the
+node's northing by 23 yards and remaining only 32 yards lateral. The active candidate accepts an
+intermediate road guidepoint after crossing its northing within 60 lateral yards; the Great Lift
+lower dock retains exact eight-yard arrival.
 
 ### Previous 0.1.208 movement baseline
 

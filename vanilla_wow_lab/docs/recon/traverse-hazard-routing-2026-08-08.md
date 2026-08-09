@@ -428,6 +428,14 @@ moving. Persistent retreat reset the general route-stall timer on every frame. T
 detects three consecutive retreat pulses below 0.5 yards, records the blocked anchor, and hands
 control to the existing mobile hazard-evasion vector.
 
+V126 request `xreq_2794b3ad-a849-4a1f-a733-e4659298a305` proved the blocked-anchor
+transition 68 times, stayed full-health with no combat or timeout, cleared nine guidepoints, and
+reached 1,318.5 living northing yards. Its remaining inefficiency was a route-geometry contract:
+at road node 7, wowborg had crossed the node's northing by 23 yards and was only 32 yards lateral,
+but the exact eight-yard arrival circle forced it to orbit the patrol cluster for the rest of the
+episode. The next candidate accepts intermediate guidepoints after crossing their northing within
+60 lateral yards while retaining exact eight-yard arrival at the Great Lift lower dock.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.
