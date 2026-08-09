@@ -6,6 +6,11 @@
   inert; not submitted). Built from source `cd61076` against canonical vanilla-wow 0.1.209.
 - Lowers the adaptive router's clearance floor from 25 to 20 yards. This remains above v124's
   fatal 18.6-yard candidate while reducing v127's conservative evasion and retreat cost.
+- Request `xreq_b8263b3b-87fe-4fa6-a0c4-9539f2ac875a` stayed full-health with no
+  combat or timeout, while reducing avoidance churn roughly in half and reaching 2,027.5 reported
+  northing yards. It then wedged on ordinary forward translation at Tanaris road node 9, 222 yards
+  from the guidepoint; the general progress watchdog terminated after accepted inputs produced no
+  displacement.
 
 ## v127 - bounded intermediate-guidepoint pass (2026-08-09)
 

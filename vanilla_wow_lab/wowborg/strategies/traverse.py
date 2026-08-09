@@ -33,6 +33,7 @@ GREAT_LIFT_INPUT_SECONDS = 0.75
 ROAD_ARRIVAL_RADIUS_YARDS = 8.0
 ROAD_PASS_LATERAL_YARDS = 60.0
 ROAD_STALL_SECONDS = 8.0
+ROAD_UNSTICK_ATTEMPTS = 2
 ROAD_HAZARD_ENTER_YARDS = 30.0
 ROAD_HAZARD_EXIT_YARDS = 40.0
 ROAD_HAZARD_CORRIDOR_YARDS = 18.0
@@ -396,6 +397,7 @@ def _steer_road_leg(
 ):
     closest = math.inf
     last_progress = time.monotonic()
+    road_unstick_attempts = 0
     combat_escape_started: float | None = None
     while time.monotonic() < deadline and not getattr(bridge, "finished", False):
         frame = bridge.observe()
@@ -471,9 +473,52 @@ def _steer_road_leg(
         if distance < closest - 1.0:
             closest = distance
             last_progress = time.monotonic()
+            road_unstick_attempts = 0
         elif time.monotonic() - last_progress >= ROAD_STALL_SECONDS:
-            trace("traverse_road_stalled", distance=round(distance, 3))
-            return None, "no_progress"
+            if road_unstick_attempts >= ROAD_UNSTICK_ATTEMPTS:
+                trace(
+                    "traverse_road_stalled",
+                    activation=1,
+                    distance=round(distance, 3),
+                    recovery_exhausted=True,
+                )
+                return None, "no_progress"
+            side = 1.0 if road_unstick_attempts == 0 else -1.0
+            trace(
+                "traverse_road_unstick",
+                activation=1,
+                attempt=road_unstick_attempts + 1,
+                side="left" if side > 0 else "right",
+                distance=round(distance, 3),
+            )
+            bridge.select_move_vector(
+                frame,
+                forward=1.0,
+                strafe=side,
+                duration=GREAT_LIFT_INPUT_SECONDS,
+                purpose="sidestep a blocked Traverse road translation",
+            )
+            settle_frame = bridge.observe()
+            if settle_frame is None:
+                return None, "no_frame"
+            movement = math.dist(
+                (frame.location.x, frame.location.y),
+                (settle_frame.location.x, settle_frame.location.y),
+            )
+            road_unstick_attempts += 1
+            trace(
+                "traverse_road_unstick_settled",
+                activation=1,
+                attempt=road_unstick_attempts,
+                movement=round(movement, 3),
+            )
+            if movement >= 0.5:
+                closest = math.inf
+                last_progress = time.monotonic()
+                road_unstick_attempts = 0
+            bridge.select_wait(settle_frame)
+            trace("traverse_road_pulse_settled", frame_id=settle_frame.frame_id)
+            continue
 
         if frame.in_combat:
             steering_target = _combat_escape_target(frame, target)

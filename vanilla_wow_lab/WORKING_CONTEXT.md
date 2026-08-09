@@ -181,7 +181,13 @@ yards, with actual max x another 156.6 yards ahead. It still spent 92 evasions a
 retreats under the 25-yard floor. The active candidate lowers the clearance floor to 20 yards:
 this still rejects v124's fatal 18.6-yard candidate while recovering five yards of routing freedom.
 It is uploaded inert as **wowborg:v128**
-(`40be968c-6891-4dc2-8d9d-6c18cdbc3811`, source `cd61076`); hosted proof is pending.
+(`40be968c-6891-4dc2-8d9d-6c18cdbc3811`, source `cd61076`). Request
+`xreq_b8263b3b-87fe-4fa6-a0c4-9539f2ac875a` stayed full-health with no combat or
+timeout, reduced avoidance churn roughly in half, and reached 2,027.5 reported northing yards.
+At Tanaris road node 9 it then issued accepted ordinary forward inputs for eight seconds without
+physical displacement and terminated 222 yards from the guidepoint. The active candidate uses the
+existing progress watchdog to try one traced forward-diagonal recovery pulse on each side; if both
+remain blocked, the same no-progress failure still terminates the route.
 
 ### Previous 0.1.208 movement baseline
 

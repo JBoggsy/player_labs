@@ -444,6 +444,15 @@ northing yards; actual max x was another 156.6 yards ahead. Its remaining cost w
 The next candidate uses a 20-yard floor, rejecting the known fatal candidate while recovering five
 yards of routing freedom.
 
+V128 request `xreq_b8263b3b-87fe-4fa6-a0c4-9539f2ac875a` preserved the safety
+result: full health, no combat, no death, and no action timeout. Relative to v127, avoidance fell
+from 92 to 36 activations, blocked retreats from 66 to 28, and side switches from 50 to 22. It
+reached 2,027.5 reported northing yards and actual max x -7159.5 before an ordinary collision at
+Tanaris road node 9. From that point accepted 0.75-second forward inputs produced no displacement
+until the eight-second route watchdog fired. The next candidate keeps that watchdog bounded but,
+before terminating, tries one traced forward-diagonal recovery pulse on each side and requires
+measured displacement to reset progress.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.
