@@ -1068,6 +1068,9 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    constrained-ramp avoidance/evasion. The Scorpid eventually wandered into aggro at 6.7 yards;
    escape pulled a Basilisk and died. The next source candidate commits only against this single,
    non-elite level-40/41 Scorpid with the maintained Cat/Rake/Claw/Rip feral ordering.
+   That candidate is uploaded inert as **wowborg:v157**
+   (`e8629df4-2707-4729-9514-a9dcb14d512d`, source `c456c34`). It changes no route
+   geometry or behavior against any other contact.
 
 ## Reference
 

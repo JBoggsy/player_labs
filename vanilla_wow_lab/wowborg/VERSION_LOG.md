@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v157 - focused constrained-ramp feral fight (2026-08-09)
+
+- Version UUID: `e8629df4-2707-4729-9514-a9dcb14d512d` (`wowborg:v157`, uploaded
+  inert; not submitted). Built from source `c456c34` against canonical vanilla-wow 0.1.209.
+- Adds combat only when exactly one non-elite entry-5422 Scorpid Hunter at level 40–41 attacks on
+  a terrain-constrained ramp anchor. It enters Cat Form, uses Rake while healthy, Claw builders,
+  and Rip at three combo points; all other contacts retain the existing escape behavior.
+- Route geometry, terrain holds, ordinary-road avoidance, and arrival radii are unchanged from
+  v156. This isolates whether the unavoidable ramp pinch is fast and survivable to fight through.
+
 ## v156 - constrained-ramp centerline holds (2026-08-09)
 
 - Version UUID: `35d3023e-a376-4d35-9207-c9424582c2d2` (`wowborg:v156`, uploaded

@@ -695,6 +695,10 @@ remove the pinch hazard. External Classic data places entry 5422 at level 40–4
 single, non-elite Scorpid and ports the game repo's maintained real-playerbot feral ordering: Cat
 Form, Rake while healthy, Claw builders, and Rip at three combo points. Every other contact still
 escapes.
+That candidate is uploaded inert as **wowborg:v157**
+(`e8629df4-2707-4729-9514-a9dcb14d512d`, source `c456c34`). Route geometry,
+terrain holds, and all other-contact behavior are unchanged, so the hosted result isolates the
+fight decision and realized feral time-to-kill.
 
 ## Open uncertainties
 
