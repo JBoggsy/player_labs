@@ -647,6 +647,12 @@ edge, crosses straight while its current distance exceeds the existing 20-yard s
 holds at or inside 20 yards. This retains roughly 13 yards over the measured 5–7-yard visible aggro
 radius without reviving uncalibrated melee or inferior rank-1 Prowl. It is uploaded inert as
 **wowborg:v152** (`1876851a-0885-433e-be17-055734567913`, source `376d854`).
+First request `xreq_0bb6ba02-9257-423e-bed2-54e37ce62f20` died before the changed ramp.
+Fair repeat `xreq_5a742ce8-92be-4064-a812-f65bc032db88` stayed at full health, reached
+node 9, and exercised 29 terrain holds with 28 releases, but never arrived at the approach. Its
+positions repeatedly identify a stable ramp lip at `(-6911.46,-3859.38,39.24)` before direct
+steering cuts off the slope. The next candidate inserts that observed lip as a three-yard exact
+anchor before the existing approach; v152 hazard timing is unchanged.
 
 ## Open uncertainties
 

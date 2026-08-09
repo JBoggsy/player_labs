@@ -9,6 +9,10 @@
   resident cannot fall through to ordinary lateral detouring on the only traversable edge.
 - The 20-yard gate retains roughly 13 yards over the measured 5–7-yard ordinary aggro radius.
   Rank-1 Prowl and uncalibrated basic melee remain disabled.
+- First request `xreq_0bb6ba02-9257-423e-bed2-54e37ce62f20` died before the changed ramp.
+  Fair repeat `xreq_5a742ce8-92be-4064-a812-f65bc032db88` stayed at full health and
+  exercised 29 terrain holds with 28 releases, but repeatedly cut off the slope after reaching the
+  stable lip at `(-6911.46,-3859.38,39.24)`. The next candidate makes that lip an exact anchor.
 
 ## v151 - imminent-only narrow-ramp holds (2026-08-09)
 

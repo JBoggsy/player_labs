@@ -56,6 +56,7 @@ ROAD_EXACT_GUIDEPOINTS = frozenset(
         "tanaris-road-8-detour-south",
         "tanaris-road-8-detour-east-turn",
         "tanaris-road-8-detour-east",
+        "shimmering-flats-ramp-lip",
         "shimmering-flats-ramp-approach",
         "shimmering-flats-ramp-turn",
         "shimmering-flats-ramp-base",
@@ -66,6 +67,7 @@ ROAD_EXACT_GUIDEPOINTS = frozenset(
 )
 ROAD_TIGHT_GUIDEPOINTS = frozenset(
     {
+        "shimmering-flats-ramp-lip",
         "shimmering-flats-ramp-approach",
         "shimmering-flats-ramp-turn",
         "shimmering-flats-ramp-base",
@@ -102,6 +104,7 @@ TRAVERSE_ROUTE_PREFIX = (
     ("tanaris-road-8-detour-east-turn", Point(1, -7128.8000, -3767.2000, 9.8100)),
     ("tanaris-road-8-detour-east", Point(1, -7096.5330, -3795.4670, 9.3110)),
     ("tanaris-north-road-9", Point(1, -6948.5264, -3856.7524, 28.9407)),
+    ("shimmering-flats-ramp-lip", Point(1, -6911.4570, -3859.3800, 39.2366)),
     ("shimmering-flats-ramp-approach", Point(1, -6905.4900, -3869.4600, 38.8900)),
     ("shimmering-flats-ramp-turn", Point(1, -6889.5900, -3885.4700, 47.9500)),
     ("shimmering-flats-ramp-base", Point(1, -6884.0000, -3900.0000, 53.6400)),
