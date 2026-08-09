@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v196 - health-gated second descent (2026-08-09)
+
+- Version UUID: `a71f2f58-6d95-411d-90da-dd099914bcbe` (`wowborg:v196`, uploaded
+  inert; not submitted). Built from source `0c6303f` against canonical vanilla-wow 0.1.209.
+- On the intermediate Shimmering Flats landing, maintains Rejuvenation and waits until at least
+  80% health before moving toward the lower road. This exceeds the 1,780 health that v195's second
+  impact killed while retaining a shorter pause than waiting for full health.
+- V195 combat, route, hazard clearance, and other action cadence are unchanged. Hosted evaluation
+  is pending.
+
 ## v195 - re-face after failed combat rotation (2026-08-09)
 
 - Version UUID: `7d531ea7-be09-4a4e-97de-0e52bd5558fd` (`wowborg:v195`, uploaded
