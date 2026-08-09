@@ -1186,6 +1186,8 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    whole pass. Two runs died earlier in Tanaris and three stopped earlier on route progress/frame
    failures. The active source retains native jump inference but restores the 17 canonical points
    as action boundaries, so each `move_to` executes and settles one steep edge at a time.
+   That candidate is uploaded inert as **wowborg:v171**
+   (`2b445ece-e7f8-43a5-83cc-f773df84c0d0`, source `3818f5d`).
 
 ## Reference
 

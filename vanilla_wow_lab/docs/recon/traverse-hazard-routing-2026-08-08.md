@@ -825,6 +825,8 @@ The native 94-yard pass action was accepted, but returned the unchanged frame af
 progress/frame failures. The next candidate combines the two established mechanisms: canonical
 Detour points bound each action to one steep edge, while native `move_to` supplies polygon-based
 jump inference for that edge.
+That candidate is uploaded inert as **wowborg:v171**
+(`2b445ece-e7f8-43a5-83cc-f773df84c0d0`, source `3818f5d`).
 
 ## Open uncertainties
 

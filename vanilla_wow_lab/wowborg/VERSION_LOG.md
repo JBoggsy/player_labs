@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v171 - edge-bounded native mountain pass (2026-08-09)
+
+- Version UUID: `2b445ece-e7f8-43a5-83cc-f773df84c0d0` (`wowborg:v171`, uploaded
+  inert; not submitted). Built from source `3818f5d` against canonical vanilla-wow 0.1.209.
+- Combines the canonical 17-point steep-pass path with the host's native jump-aware follower,
+  bounding every synchronous `move_to` action to one Detour edge.
+- Combat, hazard routing, downstream endpoints, and ordinary-road cadence are unchanged from
+  v170. The hosted request is pending.
+
 ## v170 - native jump-aware mountain pass (2026-08-09)
 
 - Version UUID: `8085e4e1-e211-4958-9477-a15a148490b9` (`wowborg:v170`, uploaded
