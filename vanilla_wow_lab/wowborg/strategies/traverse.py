@@ -26,7 +26,7 @@ RAMP_SCORPID_ENTRY = 5422
 FERAL_CLAW_SPELL_IDS = (9850, 9849, 5201, 3029, 1082)
 FERAL_RAKE_SPELL_IDS = (9904, 1824, 1823, 1822)
 FERAL_RIP_SPELL_IDS = (9896, 9894, 9752, 9493, 9492, 1079)
-FERAL_MELEE_CLOSE_YARDS = 3.0
+FERAL_MELEE_CLOSE_YARDS = 2.5
 GREAT_LIFT_ENTRIES = (11898, 11899)
 GREAT_LIFT_LOWER_DOCK = Point(1, -4677.066, -1853.667, -43.857)
 GREAT_LIFT_UPPER_DOCK = Point(1, -4650.066, -1850.482, 85.705)
@@ -182,19 +182,18 @@ def _steer_toward(
     translation_seconds: float = TRAVERSE_INPUT_SECONDS,
     jump_when_moving: bool = False,
     trace=None,
-) -> None:
+) -> str | None:
     desired = math.atan2(target.y - frame.location.y, target.x - frame.location.x)
     delta = (desired - frame.location.orientation + math.pi) % (2 * math.pi) - math.pi
     turn_deadband = math.pi / 4
     if abs(delta) > turn_deadband:
-        bridge.select_move_vector(
+        return bridge.select_move_vector(
             frame,
             forward=0.0,
             turn=1.0 if delta > 0 else -1.0,
             duration=0.25,
             purpose=purpose,
         )
-        return
     duration = 0.25 if precise_arrival else translation_seconds
     if trace is not None and duration == ROAD_OPEN_INPUT_SECONDS:
         trace(
@@ -202,7 +201,7 @@ def _steer_toward(
             activation=1,
             duration_seconds=ROAD_OPEN_INPUT_SECONDS,
         )
-    bridge.select_move_vector(
+    return bridge.select_move_vector(
         frame,
         forward=1.0,
         strafe=(
@@ -729,15 +728,21 @@ def _fight_traverse_attacker(bridge, navigator, frame, attacker, trace) -> bool:
             and attacker.combat_distance > FERAL_MELEE_CLOSE_YARDS
         ):
             request_id = (
-                bridge.select_move_to(
+                _steer_toward(
+                    bridge,
+                    frame,
+                    attacker.location,
+                    purpose="close on the traverse attacker in combat",
+                    precise_arrival=True,
+                )
+                if frame.in_combat
+                else bridge.select_move_to(
                     frame,
                     attacker.location.x,
                     attacker.location.y,
                     attacker.location.z,
                     frame.location.map_id,
                 )
-                if not frame.in_combat
-                else bridge.select_wait(frame)
             )
             if request_id is None:
                 return False
