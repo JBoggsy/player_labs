@@ -1404,7 +1404,13 @@ activated without a death. Three runs reached descent point 9, but continuous ju
 point 10 bounced uphill from about z71 to z94 and oscillated until the horizon. The active source
 keeps continuous jumps on the proven ascent but uses only one edge-crossing jump per dense lower
 descent guidepoint, then walks precisely to settle that point. This candidate is uploaded inert as
-**wowborg:v208** (`7453834b-a830-484d-8518-59345c8bc375`, source `a311ca3`).
+**wowborg:v208** (`7453834b-a830-484d-8518-59345c8bc375`, source `a311ca3`). Hosted request
+`xreq_2f26f69e-3680-4ea5-9c4c-dbb704fa7836` completed all 48 jobs with 48 living characters. Three
+reached descent point 9, and all failed point 10: the one-shot jump crossed downhill, but the best
+landings remained 4.0–4.5 yards from the navmesh coordinate, outside its 3-yard exact arrival
+radius. Exact steering then turned back toward the unreachable point. The active source accepts a
+jump edge after the character crosses the target northing plane inside an 8-yard lateral and
+10-yard vertical landing envelope.
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.

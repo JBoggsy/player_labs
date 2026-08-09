@@ -7,6 +7,12 @@
 - Keeps continuous jumps on the proven ascent, but each dense lower descent leg now issues at most
   one aligned jump request and then walks precisely to settle the guidepoint. Combat, hazard
   thresholds, and route geometry are unchanged from V207.
+- Hosted request `xreq_2f26f69e-3680-4ea5-9c4c-dbb704fa7836` completed all 48 jobs with 48 living
+  characters. Three reached descent point 9, and all three failed point 10. The jump crossed the
+  edge, but the closest valid downhill landings remained 4.0–4.5 yards from the navmesh coordinate,
+  outside the 3-yard exact arrival radius; exact steering then turned back toward the unreachable
+  point. The next source revision accepts the crossed edge once northing passes the target plane
+  within the measured landing envelope.
 
 ## v207 - finish ranged fallback casts (2026-08-09)
 
