@@ -497,7 +497,13 @@ a Glasshide Petrifier after only 142 net northing yards. The next candidate rest
 road for a moving patrol whose path stays at least 20 yards from the player; only an immediate
 blocker or a patrol projected inside the holding radius triggers lateral avoidance.
 It is uploaded inert as **wowborg:v134**
-(`2354e2a4-a82c-4e25-a719-375e16dfc6c1`, source `11421a5`); hosted Traverse proof is pending.
+(`2354e2a4-a82c-4e25-a719-375e16dfc6c1`, source `11421a5`). Request
+`xreq_f89a11e1-5c2f-4a1e-8518-1dfcc980adb3` stayed full-health with zero combat
+and reached nine guidepoints, but spent 3,129 pulses holding and timed out at road node 7 after
+1,605 net northing yards. A Roc repeatedly projected across the next guidepoint, showing that an
+unbounded wait cannot clear a resident patrol. The next candidate caps holding at two wall seconds
+per GUID, then treats a still-present patrol as a local blocker until it leaves the 80-yard tracked
+set; brief trajectory jitter does not reset the timer.
 
 ## Open uncertainties
 

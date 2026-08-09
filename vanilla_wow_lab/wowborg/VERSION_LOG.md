@@ -7,7 +7,10 @@
 - Restores v128's road-preserving 20-yard local sidestep and 30/40-yard avoidance hysteresis.
   A separate 60-yard predictor waits on the road for a moving patrol whose projected path stays
   at least 20 yards from the holding point; immediate blockers and unsafe crossings still detour.
-- Hosted Traverse proof is pending.
+- Request `xreq_f89a11e1-5c2f-4a1e-8518-1dfcc980adb3` stayed full-health with zero
+  combat and reached nine guidepoints, but spent 3,129 pulses holding and timed out at road node 7
+  after 1,605 net northing yards. A Roc repeatedly projected across the next guidepoint, showing
+  that an unbounded wait cannot clear a resident patrol.
 
 ## v133 - frozen hazard-bypass waypoint (2026-08-09)
 
