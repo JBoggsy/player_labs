@@ -7,7 +7,13 @@
 - Propagates the action contract's explicit `jump` bit through wowborg's movement adapter and
   enables it only on forward translations along the 17 canonical steep-pass edges.
 - Hazard handling, combat, non-steep movement, and downstream route geometry are unchanged from
-  v171. The hosted request is pending.
+  v171.
+- Six-run request `xreq_38156220-9ef8-4f8d-8d85-4454b8347805` kept every run
+  alive. One reached ramp-base at 180.9 seconds, then climbed through ascent point 08 (above z111)
+  before the 270-second deadline—the first verified progress up the steep pass. It still incurred
+  49 avoidance starts, 13 side switches, and 33 retreats; three other runs stalled near Tanaris
+  waypoint 3. The next candidate time-aligns player and patrol motion when computing route
+  clearance, preserving the 20-yard threshold while removing false, time-separated crossings.
 
 ## v171 - edge-bounded native mountain pass (2026-08-09)
 

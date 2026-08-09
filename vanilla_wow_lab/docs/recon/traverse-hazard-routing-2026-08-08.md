@@ -835,6 +835,13 @@ bearings but uses the public action contract's explicit one-shot `jump` bit on t
 vectors. Non-steep movement and hazard behavior remain unchanged.
 That candidate is uploaded inert as **wowborg:v172**
 (`be0167b1-0275-4c39-aabf-a50fc8f0be19`, source `772672c`).
+Request `xreq_38156220-9ef8-4f8d-8d85-4454b8347805` kept all six runs alive. One
+reached ramp-base at 180.9 seconds and climbed through ascent point 08, above z111, before the
+270-second deadline—the first verified progress up the steep pass. The run still incurred 49
+avoidance starts, 13 side switches, and 33 retreats; three others stalled near Tanaris waypoint 3.
+The next candidate uses observed player speed and patrol time-to-destination to minimize clearance
+over simultaneous motion. The 20-yard threshold is unchanged, and missing timing retains the
+conservative swept-path fallback.
 
 ## Open uncertainties
 

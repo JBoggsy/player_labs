@@ -1196,6 +1196,13 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    their forward vectors. All non-steep movement and hazard decisions are unchanged.
    That candidate is uploaded inert as **wowborg:v172**
    (`be0167b1-0275-4c39-aabf-a50fc8f0be19`, source `772672c`).
+   Six-run request `xreq_38156220-9ef8-4f8d-8d85-4454b8347805` kept every run
+   alive. One reached ramp-base at 180.9 seconds, then climbed through ascent point 08 (above z111)
+   before the 270-second deadline—the first verified steep-pass progress. It still incurred 49
+   avoidance starts, 13 side switches, and 33 retreats; three other runs stalled near Tanaris
+   waypoint 3. The active source now time-aligns observed player and patrol motion for segment
+   clearance. It retains the 20-yard safety threshold and conservative swept fallback whenever
+   timing is absent; only false crossings that occur at different times become clear.
 
 ## Reference
 

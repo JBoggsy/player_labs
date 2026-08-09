@@ -238,7 +238,8 @@ def _point_segment_distance(
 
 def _unit_path(unit) -> tuple[float, float, float, float]:
     if (
-        unit.movement_destination_known
+        (not unit.movement_known or unit.is_moving)
+        and unit.movement_destination_known
         and unit.movement_destination.map_id == unit.location.map_id
     ):
         return (
@@ -254,13 +255,90 @@ def _unit_alive(unit) -> bool:
     return not unit.is_dead and (not unit.health_known or unit.health > 1)
 
 
+def _linear_motion_clearance(
+    start_x: float,
+    start_y: float,
+    end_x: float,
+    end_y: float,
+    duration: float,
+    unit,
+) -> float:
+    unit_duration = unit.movement_remaining_seconds
+    simultaneous_duration = min(duration, unit_duration)
+    player_velocity_x = (end_x - start_x) / duration
+    player_velocity_y = (end_y - start_y) / duration
+    unit_velocity_x = (unit.movement_destination.x - unit.location.x) / unit_duration
+    unit_velocity_y = (unit.movement_destination.y - unit.location.y) / unit_duration
+    relative_x = unit.location.x - start_x
+    relative_y = unit.location.y - start_y
+    relative_velocity_x = unit_velocity_x - player_velocity_x
+    relative_velocity_y = unit_velocity_y - player_velocity_y
+    relative_speed_squared = (
+        relative_velocity_x * relative_velocity_x
+        + relative_velocity_y * relative_velocity_y
+    )
+    closest_time = 0.0
+    if relative_speed_squared > 0:
+        closest_time = max(
+            0.0,
+            min(
+                simultaneous_duration,
+                -(
+                    relative_x * relative_velocity_x
+                    + relative_y * relative_velocity_y
+                )
+                / relative_speed_squared,
+            ),
+        )
+    clearance = math.hypot(
+        relative_x + relative_velocity_x * closest_time,
+        relative_y + relative_velocity_y * closest_time,
+    )
+    if unit_duration < duration:
+        player_at_unit_end_x = start_x + player_velocity_x * unit_duration
+        player_at_unit_end_y = start_y + player_velocity_y * unit_duration
+        clearance = min(
+            clearance,
+            _point_segment_distance(
+                unit.movement_destination.x,
+                unit.movement_destination.y,
+                player_at_unit_end_x,
+                player_at_unit_end_y,
+                end_x,
+                end_y,
+            ),
+        )
+    return clearance
+
+
 def _segment_clearance(
     start_x: float,
     start_y: float,
     end_x: float,
     end_y: float,
     unit,
+    *,
+    player_speed: float | None = None,
 ) -> float:
+    route_length = math.hypot(end_x - start_x, end_y - start_y)
+    if (
+        player_speed is not None
+        and player_speed > 0
+        and route_length > 0
+        and unit.movement_known
+        and unit.is_moving
+        and unit.movement_destination_known
+        and unit.movement_destination.map_id == unit.location.map_id
+        and unit.movement_remaining_seconds > 0
+    ):
+        return _linear_motion_clearance(
+            start_x,
+            start_y,
+            end_x,
+            end_y,
+            route_length / player_speed,
+            unit,
+        )
     unit_start_x, unit_start_y, unit_end_x, unit_end_y = _unit_path(unit)
     route_x = end_x - start_x
     route_y = end_y - start_y
@@ -305,6 +383,11 @@ def _hazard_avoidance_target(
         return target, None, [], [], {}, {}, False
     route_x /= route_length
     route_y /= route_length
+    player_speed = (
+        frame.movement_speed
+        if frame.movement_speed_known and frame.movement_speed > 0
+        else None
+    )
     left_x, left_y = -route_y, route_x
     detection_radius = (
         ROAD_HAZARD_EXIT_YARDS if side is not None else ROAD_HAZARD_ENTER_YARDS
@@ -340,6 +423,7 @@ def _hazard_avoidance_target(
             immediate_end_x,
             immediate_end_y,
             unit,
+            player_speed=player_speed,
         )
         <= ROAD_HAZARD_CORRIDOR_YARDS
     ]
@@ -354,6 +438,7 @@ def _hazard_avoidance_target(
             lookahead_end_x,
             lookahead_end_y,
             unit,
+            player_speed=player_speed,
         )
         <= ROAD_HAZARD_CORRIDOR_YARDS
     ]
@@ -432,6 +517,7 @@ def _hazard_avoidance_target(
                 candidate_x,
                 candidate_y,
                 unit,
+                player_speed=player_speed,
             )
             for unit in tracked
         )
@@ -1075,7 +1161,11 @@ def _steer_road_leg(
                         "entry": unit.entry,
                         "name": unit.name,
                         "distance": round(unit.distance, 3),
-                        "moving": unit.movement_destination_known,
+                        "moving": unit.movement_known and unit.is_moving,
+                        "movement_speed": round(unit.movement_speed, 3),
+                        "movement_remaining_seconds": round(
+                            unit.movement_remaining_seconds, 3
+                        ),
                         "destination": (
                             [
                                 round(unit.movement_destination.x, 3),
