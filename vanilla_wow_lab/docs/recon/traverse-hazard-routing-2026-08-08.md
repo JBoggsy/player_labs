@@ -910,7 +910,16 @@ hazard for about 123 seconds, so the batch did not re-reach the south-road desce
 now treats the existing south-ramp to south-road leg as terrain-constrained, replacing the fatal
 one-second open strides observed in V179 with the existing 0.25-second precise cadence. That
 candidate is uploaded inert as **wowborg:v181**
-(`a7e551aa-538f-4b83-9476-9d8a8baf4cd9`, source `9efa623`); its hosted evaluation is pending.
+(`a7e551aa-538f-4b83-9476-9d8a8baf4cd9`, source `9efa623`). Hosted request
+`xreq_f8160381-9848-4f7b-a1a9-e20c6d5799b2` kept all six runs alive but did not reach the
+south-ramp frontier. Two runs held at the ramp turn for about 111 and 130 seconds because a
+qualifying Scorpid was not literally the only hostile within 30 yards. V167 and V180 bound the
+current rotation's realized Scorpid time-to-kill to 3.4-15.6 seconds, and the pinned server model
+puts ordinary aggro at 5-7 yards for these mobs against level 60. The active source therefore
+admits the same single sub-eight-yard level-40/41 non-elite Scorpid when every other nearby
+hostile's projected patrol segment stays at least 12 yards from the player. This keeps roughly a
+2x aggro margin and rejects a predicted add crossing rather than rejecting every harmless mob in
+the broader observation circle.
 
 ## Open uncertainties
 

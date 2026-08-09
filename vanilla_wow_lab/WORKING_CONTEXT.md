@@ -1259,7 +1259,12 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    south-ramp to south-road leg terrain-constrained, replacing V179's fatal one-second open strides
    with the existing 0.25-second precise cadence. That candidate is uploaded inert as
    **wowborg:v181** (`a7e551aa-538f-4b83-9476-9d8a8baf4cd9`, source `9efa623`); its hosted
-   evaluation is pending.
+   request `xreq_f8160381-9848-4f7b-a1a9-e20c6d5799b2` kept all six runs alive but did not reach the
+   south-ramp frontier. Two runs held at the ramp turn for about 111 and 130 seconds because a
+   qualifying Scorpid was not literally the only hostile within 30 yards. The active source now
+   admits the same single sub-eight-yard level-40/41 non-elite Scorpid when every other nearby
+   hostile's projected patrol segment remains at least 12 yards from the player. That preserves
+   roughly twice the observed 5-7-yard ordinary aggro range while allowing a calibrated fast kill.
 
 ## Reference
 

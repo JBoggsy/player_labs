@@ -55,6 +55,7 @@ ROAD_HAZARD_MIN_CLEARANCE_YARDS = 20.0
 ROAD_TIGHT_HAZARD_HOLD_YARDS = 8.0
 ROAD_HAZARD_HOLD_RADIUS_YARDS = 2.0
 ROAD_HAZARD_SWITCH_MARGIN_YARDS = 5.0
+RAMP_FIGHT_ADD_CLEARANCE_YARDS = 12.0
 ROAD_STEEP_GUIDEPOINTS = frozenset(
     {f"shimmering-flats-ramp-ascent-{index:02d}" for index in range(1, 17)}
     | {"tanaris-road-9-climb-crest", "shimmering-flats-ramp-crest"}
@@ -615,15 +616,26 @@ def _ramp_scorpid_fight(frame, *, active_guid: str | None):
         and _unit_alive(unit)
         and unit.distance <= ROAD_HAZARD_ENTER_YARDS
     ]
-    if len(nearby_hazards) != 1:
+    candidates = [
+        unit
+        for unit in nearby_hazards
+        if unit.distance <= ROAD_TIGHT_HAZARD_HOLD_YARDS
+        and _qualifying_ramp_scorpid(unit)
+    ]
+    if len(candidates) != 1:
         return None
-    attacker = nearby_hazards[0]
-    return (
-        attacker
-        if attacker.distance <= ROAD_TIGHT_HAZARD_HOLD_YARDS
-        and _qualifying_ramp_scorpid(attacker)
-        else None
+    attacker = candidates[0]
+    likely_add = any(
+        unit.guid != attacker.guid
+        and _point_segment_distance(
+            frame.location.x,
+            frame.location.y,
+            *_unit_path(unit),
+        )
+        < RAMP_FIGHT_ADD_CLEARANCE_YARDS
+        for unit in nearby_hazards
     )
+    return None if likely_add else attacker
 
 
 def _cast_feral_spell(

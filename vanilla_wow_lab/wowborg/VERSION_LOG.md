@@ -8,7 +8,11 @@
   the existing 0.25-second precise movement cadence instead of the one-second open strides that
   produced V179's fatal descent.
 - V180 route geometry, combat behavior, hazard thresholds, and steep cadence are otherwise
-  unchanged. Hosted evaluation is pending.
+  unchanged.
+- Hosted request `xreq_f8160381-9848-4f7b-a1a9-e20c6d5799b2` kept all six runs alive but did not
+  reach the south-ramp frontier. Two runs spent about 111 and 130 seconds holding at the ramp turn,
+  including roughly 2,000 hold pulses apiece, because a qualifying Scorpid was not the only hostile
+  inside V180's 30-yard admission circle. The descent behavior therefore remains unexercised.
 
 ## v180 - true single-pull ramp combat (2026-08-09)
 
