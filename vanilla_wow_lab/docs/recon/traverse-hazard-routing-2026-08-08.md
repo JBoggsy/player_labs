@@ -411,6 +411,15 @@ candidate treats ordinary translation as the same discrete eight-direction actua
 precise movement: accept heading error through 45 degrees and add signed strafe beyond 22.5
 degrees, selecting the nearest 45-degree translation direction without unsupported turn sizes.
 
+V124 request `xreq_1686e46f-4062-43d6-b495-7db0ebd3e82e` proved discrete ordinary
+steering by clearing the first two road nodes without a turn loop or action timeout. The next
+failure calibrated the fixed bypass geometry: a 30-yard lateral candidate with 18.6 yards of
+projected clearance passed the old 15-yard floor, then one 7.3-yard ordinary pulse consumed most
+of that margin as a moving Glasshide Gazer closed to 16.5 yards, acquired, and killed wowborg.
+The next candidate requires 25 yards of projected clearance and selects the shortest 30/45/60
+yard lateral bypass that satisfies it, falling back to the highest-clearance candidate when every
+width is unsafe.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.

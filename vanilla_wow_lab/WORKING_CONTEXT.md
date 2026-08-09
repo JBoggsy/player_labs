@@ -150,7 +150,13 @@ quantum alternate in place at road node 1. The active candidate uses the complet
 actuator: accept heading error through 45 degrees, then add signed strafe beyond 22.5 degrees to
 translate along the nearest 45-degree direction. Straight translation duration remains unchanged.
 It is uploaded inert as **wowborg:v124**
-(`5da21603-0777-48b7-b131-de9420d24ef6`, source `da3459d`); hosted proof is pending.
+(`5da21603-0777-48b7-b131-de9420d24ef6`, source `da3459d`). Request
+`xreq_1686e46f-4062-43d6-b495-7db0ebd3e82e` cleared the first two road nodes with
+no turn loop or action timeout, proving the discrete actuator. At node 3, a fixed 30-yard bypass
+with 18.6 yards of projected clearance was accepted under the 15-yard minimum; after one normal
+7.3-yard pulse a moving Glasshide Gazer closed to 16.5 yards, acquired, and killed wowborg. The
+active candidate raises the route-clearance floor to 25 yards and chooses the shortest 30/45/60
+yard lateral bypass that meets it, or the highest-clearance candidate if none do.
 
 ### Previous 0.1.208 movement baseline
 

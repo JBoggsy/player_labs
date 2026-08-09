@@ -37,8 +37,8 @@ ROAD_HAZARD_EXIT_YARDS = 40.0
 ROAD_HAZARD_CORRIDOR_YARDS = 18.0
 ROAD_HAZARD_TRACK_YARDS = 80.0
 ROAD_HAZARD_FORWARD_YARDS = 20.0
-ROAD_HAZARD_LATERAL_YARDS = 30.0
-ROAD_HAZARD_MIN_CLEARANCE_YARDS = 15.0
+ROAD_HAZARD_LATERAL_YARDS = (30.0, 45.0, 60.0)
+ROAD_HAZARD_MIN_CLEARANCE_YARDS = 25.0
 ROAD_HAZARD_HOLD_RADIUS_YARDS = 2.0
 ROAD_HAZARD_SWITCH_MARGIN_YARDS = 5.0
 
@@ -209,7 +209,7 @@ def _hazard_avoidance_target(frame, target: Point, *, side: float | None):
     route_y = target.y - frame.location.y
     route_length = math.hypot(route_x, route_y)
     if route_length == 0:
-        return target, None, [], [], {}
+        return target, None, [], [], {}, {}
     route_x /= route_length
     route_y /= route_length
     left_x, left_y = -route_y, route_x
@@ -238,18 +238,18 @@ def _hazard_avoidance_target(frame, target: Point, *, side: float | None):
         <= ROAD_HAZARD_CORRIDOR_YARDS
     ]
     if not hazards:
-        return target, None, [], tracked, {}
+        return target, None, [], tracked, {}, {}
 
-    def clearance(candidate_side: float) -> float:
+    def clearance(candidate_side: float, lateral_yards: float) -> float:
         candidate_x = (
             frame.location.x
             + route_x * ROAD_HAZARD_FORWARD_YARDS
-            + left_x * candidate_side * ROAD_HAZARD_LATERAL_YARDS
+            + left_x * candidate_side * lateral_yards
         )
         candidate_y = (
             frame.location.y
             + route_y * ROAD_HAZARD_FORWARD_YARDS
-            + left_y * candidate_side * ROAD_HAZARD_LATERAL_YARDS
+            + left_y * candidate_side * lateral_yards
         )
         return min(
             _segment_clearance(
@@ -262,7 +262,42 @@ def _hazard_avoidance_target(frame, target: Point, *, side: float | None):
             for unit in tracked
         )
 
-    clearances = {-1.0: clearance(-1.0), 1.0: clearance(1.0)}
+    candidate_clearances = {
+        side: {
+            lateral_yards: clearance(side, lateral_yards)
+            for lateral_yards in ROAD_HAZARD_LATERAL_YARDS
+        }
+        for side in (-1.0, 1.0)
+    }
+
+    def choose_lateral(candidate_side: float) -> float:
+        safe = [
+            lateral_yards
+            for lateral_yards, candidate_clearance in candidate_clearances[
+                candidate_side
+            ].items()
+            if candidate_clearance >= ROAD_HAZARD_MIN_CLEARANCE_YARDS
+        ]
+        if safe:
+            return min(safe)
+        return max(
+            ROAD_HAZARD_LATERAL_YARDS,
+            key=lambda lateral_yards: (
+                candidate_clearances[candidate_side][lateral_yards],
+                -lateral_yards,
+            ),
+        )
+
+    lateral_by_side = {
+        candidate_side: choose_lateral(candidate_side)
+        for candidate_side in (-1.0, 1.0)
+    }
+    clearances = {
+        candidate_side: candidate_clearances[candidate_side][
+            lateral_by_side[candidate_side]
+        ]
+        for candidate_side in (-1.0, 1.0)
+    }
     if side is None:
         side = max((-1.0, 1.0), key=clearances.get)
     else:
@@ -279,16 +314,17 @@ def _hazard_avoidance_target(frame, target: Point, *, side: float | None):
             frame.location.map_id,
             frame.location.x
             + route_x * ROAD_HAZARD_FORWARD_YARDS
-            + left_x * side * ROAD_HAZARD_LATERAL_YARDS,
+            + left_x * side * lateral_by_side[side],
             frame.location.y
             + route_y * ROAD_HAZARD_FORWARD_YARDS
-            + left_y * side * ROAD_HAZARD_LATERAL_YARDS,
+            + left_y * side * lateral_by_side[side],
             frame.location.z,
         ),
         side,
         hazards,
         tracked,
         clearances,
+        lateral_by_side,
     )
 
 
@@ -425,6 +461,7 @@ def _steer_road_leg(
                 hazards,
                 tracked_hazards,
                 side_clearances,
+                side_lateral_yards,
             ) = _hazard_avoidance_target(frame, target, side=avoidance.side)
         if next_avoidance_side is not None and avoidance.side is None:
             trace(
@@ -434,6 +471,10 @@ def _steer_road_leg(
                 side_clearances={
                     "right": round(side_clearances[-1.0], 3),
                     "left": round(side_clearances[1.0], 3),
+                },
+                side_lateral_yards={
+                    "right": side_lateral_yards[-1.0],
+                    "left": side_lateral_yards[1.0],
                 },
                 hazards=[
                     {
@@ -480,6 +521,10 @@ def _steer_road_leg(
                 side_clearances={
                     "right": round(side_clearances[-1.0], 3),
                     "left": round(side_clearances[1.0], 3),
+                },
+                side_lateral_yards={
+                    "right": side_lateral_yards[-1.0],
+                    "left": side_lateral_yards[1.0],
                 },
             )
         avoidance.side = next_avoidance_side
