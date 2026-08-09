@@ -7,6 +7,10 @@
 - Retests the measured 12-yard global predicted-clearance floor—roughly twice the observed
   5–7-yard ordinary aggro radius—on top of the repaired combat and dense jump-aware descent.
   Local projected-add admission and multi-attacker escape gates are unchanged.
+- Hosted request `xreq_281a428c-895b-4c21-9eb2-09d32355d19f` kept 23 of 24 characters alive and
+  regressed median progress despite reducing evasion pulses from 691 to 365 versus V204. It caused
+  32 reactive engagements; the death was a level-46 Scorpid fight whose ranged fallback cast-looped
+  without damage. The global 12-yard floor remains unsafe and is rejected.
 
 ## v204 - jump-aware lower Shimmering Flats descent (2026-08-09)
 

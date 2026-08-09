@@ -1383,7 +1383,12 @@ dense descent and it timed out at point 12 before activating the jump boundary. 
 made 876 hazard-avoidance selections and 691 evasion pulses. The active source therefore retests
 the measured 12-yard global clearance floor against the now-repaired combat and descent stack;
 local projected-add and multi-attacker gates remain unchanged. This candidate is uploaded inert as
-**wowborg:v205** (`b42b0712-9d24-4319-a490-71f41a41d80c`, source `4d38661`).
+**wowborg:v205** (`b42b0712-9d24-4319-a490-71f41a41d80c`, source `4d38661`). Hosted request
+`xreq_281a428c-895b-4c21-9eb2-09d32355d19f` kept only 23 of 24 characters alive and regressed
+median progress despite halving evasion pulses. Its 32 reactive engagements included one fatal
+level-46 Scorpid fight whose ranged fallback cast-looped without damage, so 12-yard global
+clearance remains rejected. The active source restores 20 yards and moves the jump-aware descent
+boundary from point 16 to point 10, immediately after V202's last repeatedly proven walkable point.
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.
