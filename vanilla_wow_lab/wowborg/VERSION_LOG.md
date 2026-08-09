@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v139 - crossing-only patrol hold (2026-08-09)
+
+- Version UUID: `e97ab7d9-2c61-4f95-a334-3c3bf8eb78da` (`wowborg:v139`, uploaded
+  inert; not submitted). Built from source `bb9871f` against canonical vanilla-wow 0.1.209.
+- Holds only when an isolated moving patrol's projected trajectory crosses wowborg. Immediate and
+  guidepoint-resident blockers still use local avoidance, and the hold releases as soon as the
+  crossing trajectory clears.
+- Hosted Traverse proof is pending.
+
 ## v138 - persistent safe crossing hold (2026-08-09)
 
 - Version UUID: `cec936af-e9e3-4141-afaa-d693d0a4ccc4` (`wowborg:v138`, uploaded
@@ -7,7 +16,9 @@
 - Retains safely crossing patrol GUIDs while they remain within 70 yards or intersect the active
   lookahead. Holding never moves; a path projected within 20 yards of the holding point or a
   guidepoint-resident destination still escalates to local avoidance.
-- Hosted Traverse proof is pending.
+- Request `xreq_d1cd8097-6b68-4ba5-9e28-7c6c945374fe` stayed full-health with zero
+  combat, but spent 6,339 pulses holding and reached only road node 3. The no-hazard branch was
+  holding for every moving hostile in lookahead, not only patrols projected to cross wowborg.
 
 ## v137 - hazard-tolerant road milestone pass (2026-08-09)
 

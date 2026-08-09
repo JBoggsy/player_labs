@@ -537,6 +537,8 @@ basic classification defect: the no-hazard branch held for every moving hostile 
 whether or not its projected patrol crossed wowborg. The next candidate holds only an isolated
 projected crossing; immediate and guidepoint-resident blockers still use local avoidance, and a
 held crossing releases as soon as its projected trajectory clears.
+It is uploaded inert as **wowborg:v139**
+(`e97ab7d9-2c61-4f95-a334-3c3bf8eb78da`, source `bb9871f`); hosted Traverse proof is pending.
 
 ## Open uncertainties
 
