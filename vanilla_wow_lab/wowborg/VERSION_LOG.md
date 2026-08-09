@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v195 - re-face after failed combat rotation (2026-08-09)
+
+- Version UUID: `7d531ea7-be09-4a4e-97de-0e52bd5558fd` (`wowborg:v195`, uploaded
+  inert; not submitted). Built from source `3bcae44` against canonical vanilla-wow 0.1.209.
+- When all usable Rake/Claw/Rip families fail, invalidates the navigator's cached facing, clears
+  the per-fight failure memory, and re-engages the exact attacker. This creates a corrective
+  re-face before retrying the rotation instead of holding an unproductive auto-attack forever.
+- V194's caster descent, route, hazard clearance, and action cadence are unchanged. Hosted
+  evaluation is pending.
+
 ## v194 - caster-form staged descent (2026-08-09)
 
 - Version UUID: `866a5479-2aba-4766-8c0c-85fbc1649c7c` (`wowborg:v194`, uploaded
