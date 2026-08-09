@@ -943,7 +943,8 @@ unexercised. Five runs survived; one pulled a Glasshide Gazer at 8.75 yards duri
 collected additional attackers while escaping, and died. The 12-yard global road floor is unsafe,
 and its roughly four-second best road-9 gain does not justify the regression. The active source
 restores ordinary road clearance to 20 yards while retaining the local 12-yard projected-add gate
-for the calibrated Scorpid fight.
+for the calibrated Scorpid fight. The candidate is uploaded inert as **wowborg:v185**
+(`639852fd-e3b7-4d49-bffa-efcf58f77165`, source `2295773`); its hosted evaluation is pending.
 
 ## Open uncertainties
 

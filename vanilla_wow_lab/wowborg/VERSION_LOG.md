@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v185 - Cat descent with conservative road clearance (2026-08-09)
+
+- Version UUID: `639852fd-e3b7-4d49-bffa-efcf58f77165` (`wowborg:v185`, uploaded
+  inert; not submitted). Built from source `2295773` against canonical vanilla-wow 0.1.209.
+- Retains V184's Cat-Form exact descent while restoring the ordinary road-clearance floor to the
+  proven 20 yards. The calibrated Scorpid projected-add gate remains locally 12 yards.
+- V184 route geometry, action cadence, combat admission/rotation, and all other behavior are
+  unchanged. Hosted evaluation is pending.
+
 ## v184 - Cat Form exact descent (2026-08-09)
 
 - Version UUID: `1cfe5fa3-18ec-43f6-9c8a-50d151f19d2f` (`wowborg:v184`, uploaded

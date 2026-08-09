@@ -1284,7 +1284,9 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    unexercised. Five runs survived; one pulled a Glasshide Gazer at 8.75 yards under the 12-yard
    global clearance floor, collected additional attackers while escaping, and died. The active
    source restores ordinary road clearance to 20 yards while retaining the local 12-yard
-   projected-add gate for the calibrated Scorpid fight. Its hosted evaluation is pending.
+   projected-add gate for the calibrated Scorpid fight. The candidate is uploaded inert as
+   **wowborg:v185** (`639852fd-e3b7-4d49-bffa-efcf58f77165`, source `2295773`); its hosted
+   evaluation is pending.
 
 ## Reference
 
