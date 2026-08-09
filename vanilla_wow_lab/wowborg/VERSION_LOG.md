@@ -1,11 +1,20 @@
 # wowborg version log
 
+## v128 - calibrated 20-yard clearance floor (2026-08-09)
+
+- Version UUID: `40be968c-6891-4dc2-8d9d-6c18cdbc3811` (`wowborg:v128`, uploaded
+  inert; not submitted). Built from source `cd61076` against canonical vanilla-wow 0.1.209.
+- Lowers the adaptive router's clearance floor from 25 to 20 yards. This remains above v124's
+  fatal 18.6-yard candidate while reducing v127's conservative evasion and retreat cost.
+
 ## v127 - bounded intermediate-guidepoint pass (2026-08-09)
 
 - Version UUID: `010103bc-3838-4a7e-89a0-975beeb09c9b` (`wowborg:v127`, uploaded
   inert; not submitted). Built from source `87adcda` against canonical vanilla-wow 0.1.209.
 - An intermediate road guidepoint is complete after wowborg crosses its northing within 60 lateral
   yards. The Great Lift lower dock retains exact eight-yard arrival, and pass activations trace.
+- Request `xreq_dc68b02d-a892-4d7b-b73a-728569f395be` stayed full-health and improved
+  to 11 guidepoints / 1,869.8 reported northing, but still used 92 evasions and 66 blocked retreats.
 
 ## v126 - blocked retreat-anchor escape (2026-08-09)
 

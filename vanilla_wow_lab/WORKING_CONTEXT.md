@@ -180,6 +180,8 @@ full-health with no combat or timeout, and improved to 11 guidepoints / 1,869.8 
 yards, with actual max x another 156.6 yards ahead. It still spent 92 evasions and 66 blocked
 retreats under the 25-yard floor. The active candidate lowers the clearance floor to 20 yards:
 this still rejects v124's fatal 18.6-yard candidate while recovering five yards of routing freedom.
+It is uploaded inert as **wowborg:v128**
+(`40be968c-6891-4dc2-8d9d-6c18cdbc3811`, source `cd61076`); hosted proof is pending.
 
 ### Previous 0.1.208 movement baseline
 
