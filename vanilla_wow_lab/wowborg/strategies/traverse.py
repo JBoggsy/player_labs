@@ -850,6 +850,14 @@ def _fight_traverse_attacker(
         failed_spell_ids=failed_spell_ids,
     ):
         return True
+    if failed_spell_ids:
+        navigator._faced_attacker_guid = None
+        failed_spell_ids.clear()
+        trace(
+            "traverse_combat_fight_reface",
+            activation=1,
+            target_guid=attacker.guid,
+        )
     return navigator._engage_exact_attacker(bridge, frame)
 
 

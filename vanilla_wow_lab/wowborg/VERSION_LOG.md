@@ -8,7 +8,11 @@
   Shimmering Flats drop. Cat Form is removed from this seam because hosted evidence proved it does
   not reduce falling damage and its 1.5-second settlement outlasts rank-6 Rejuvenation at 10x.
 - V193 combat, routing, hazard clearance, and action cadence are unchanged. Hosted evaluation is
-  pending.
+  request `xreq_5e60b2d3-cf8f-4391-be7b-ad2603e5f832` kept 21 of 24 runs alive but did not reach
+  the descent. Two deaths exhausted Rake and Claw, then held a cached facing/auto-attack state
+  without further damage; the next candidate explicitly re-faces after exhausting the rotation.
+  The third death followed a 27.7-second host action gap that returned directly to a dead frame
+  amid multiple hazards.
 
 ## v193 - continuous combat closing (2026-08-09)
 
