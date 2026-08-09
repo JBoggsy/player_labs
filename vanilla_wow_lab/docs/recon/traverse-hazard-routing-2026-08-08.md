@@ -404,6 +404,13 @@ guidepoint until the progress watchdog fired. The next candidate uses the alread
 0.25-second turn-in-place quantum for ordinary heading correction while retaining 0.75-second
 straight translation.
 
+V123 request `xreq_46147008-1cf6-43d2-8f2f-37906b15240d` stayed full-health with
+no combat or action timeout, but falsified turn quantization alone. The unchanged 0.20-radian
+ordinary heading deadband made quarter turns alternate in place at road node 1. The next
+candidate treats ordinary translation as the same discrete eight-direction actuator used for
+precise movement: accept heading error through 45 degrees and add signed strafe beyond 22.5
+degrees, selecting the nearest 45-degree translation direction without unsupported turn sizes.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.

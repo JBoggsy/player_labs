@@ -29,7 +29,6 @@ GREAT_LIFT_UPPER_ROAD = Point(1, -4583.315, -1908.142, 95.58)
 GREAT_LIFT_VISIBLE_RANGE = 42.0
 GREAT_LIFT_DOCK_Z_SLACK = 2.0
 GREAT_LIFT_EXIT_Z = 80.0
-GREAT_LIFT_TURN_DEADBAND = 0.20
 GREAT_LIFT_INPUT_SECONDS = 0.75
 ROAD_ARRIVAL_RADIUS_YARDS = 8.0
 ROAD_STALL_SECONDS = 8.0
@@ -102,7 +101,7 @@ def _steer_toward(
 ) -> None:
     desired = math.atan2(target.y - frame.location.y, target.x - frame.location.x)
     delta = (desired - frame.location.orientation + math.pi) % (2 * math.pi) - math.pi
-    turn_deadband = math.pi / 4 if precise_arrival else GREAT_LIFT_TURN_DEADBAND
+    turn_deadband = math.pi / 4
     if abs(delta) > turn_deadband:
         bridge.select_move_vector(
             frame,
@@ -117,7 +116,7 @@ def _steer_toward(
         forward=1.0,
         strafe=(
             (1.0 if delta > 0 else -1.0)
-            if precise_arrival and abs(delta) > math.pi / 8
+            if abs(delta) > math.pi / 8
             else 0.0
         ),
         duration=0.25 if precise_arrival else GREAT_LIFT_INPUT_SECONDS,

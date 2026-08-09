@@ -143,7 +143,12 @@ forward-turn pulses alternated left/right on every action from frames 592–650 
 65.6 yards from the target. The active source candidate changes ordinary heading correction to
 the same proven 0.25-second turn-in-place quantum; straight road translation remains 0.75 seconds.
 It is uploaded inert as **wowborg:v123**
-(`ec6fe6c8-f7c4-4847-a242-a7aec0d6d8fc`, source `3af9760`); hosted proof is pending.
+(`ec6fe6c8-f7c4-4847-a242-a7aec0d6d8fc`, source `3af9760`). Request
+`xreq_46147008-1cf6-43d2-8f2f-37906b15240d` stayed full-health with no combat or
+action timeout, but the unchanged 0.20-radian ordinary heading deadband made the 45-degree turn
+quantum alternate in place at road node 1. The active candidate uses the complete discrete
+actuator: accept heading error through 45 degrees, then add signed strafe beyond 22.5 degrees to
+translate along the nearest 45-degree direction. Straight translation duration remains unchanged.
 
 ### Previous 0.1.208 movement baseline
 
