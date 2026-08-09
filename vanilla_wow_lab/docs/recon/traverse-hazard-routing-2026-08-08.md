@@ -660,6 +660,10 @@ full health as milestone 17, then remained six yards from the broad approach whi
 at 16.8 yards. The next candidate separates terrain-constrained hazard handling from three-yard
 arrival precision: the approach retains ramp hold semantics but restores its sufficient eight-yard
 arrival, while the lip and later narrow bends remain three-yard anchors.
+It is uploaded inert as **wowborg:v154**
+(`4b12b163-c947-4fee-969f-cd6b7110e01f`, source `e030d61`). This is a single
+mechanism change: route geometry and hazard timing are identical to v153, so reaching the approach
+will isolate the former three-yard arrival tolerance as the blocker.
 
 ## Open uncertainties
 

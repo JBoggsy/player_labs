@@ -1044,6 +1044,11 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    fallback: its 100 stealth value gives these level-45–49 mobs roughly 22–25 yards of frontal
    detection (13–16 from behind), versus only 5–7 yards of ordinary level-adjusted aggro, while
    also slowing movement by 40%. The next attributable change is the opening road prefix alone.
+   The current inert candidate is **wowborg:v154**
+   (`4b12b163-c947-4fee-969f-cd6b7110e01f`, source `e030d61`): it has already
+   reached the observed Shimmering Flats ramp lip at full health in its v153 predecessor and now
+   restores the broad ramp approach's eight-yard arrival tolerance while preserving three-yard
+   precision at the lip and later bends. It has not been submitted; v78 remains champion.
 
 ## Reference
 

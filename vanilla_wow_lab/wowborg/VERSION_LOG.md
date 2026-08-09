@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v154 - broad ramp approach arrival (2026-08-09)
+
+- Version UUID: `4b12b163-c947-4fee-969f-cd6b7110e01f` (`wowborg:v154`, uploaded
+  inert; not submitted). Built from source `e030d61` against canonical vanilla-wow 0.1.209.
+- Separates the terrain-constrained hazard set from the three-yard tight-arrival set. The broad
+  ramp approach keeps resident hold/crossing semantics but restores its sufficient eight-yard
+  arrival radius; the observed lip and later narrow bends remain three-yard exact anchors.
+- v153 route geometry, hazard timing, and ordinary-road behavior are unchanged. The hosted probe
+  should distinguish arrival-tolerance failure from a subsequent ramp-turn failure.
+
 ## v153 - observed Shimmering Flats ramp lip (2026-08-09)
 
 - Version UUID: `11b765a4-2eaf-419f-8a1d-8d848baa067a` (`wowborg:v153`, uploaded
