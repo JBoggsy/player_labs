@@ -7,6 +7,10 @@
 - Preserves V203's exact dense lower-descent bearings and enables the existing jump-aware terrain
   movement only from point 16 onward, where hosted evidence first showed walk movement falling
   through the lower Detour edge.
+- Hosted request `xreq_f5ee6500-f4c1-46f2-b7da-256c87cecd40` completed all 24 runs alive, but only
+  one reached the dense descent and it timed out at point 12 before the new jump boundary. Across
+  the batch, 876 hazard-avoidance selections and 691 evasion pulses confirmed that conservative
+  route churn still prevents consistent activation of late-route behavior.
 
 ## v203 - dense lower Shimmering Flats descent (2026-08-09)
 

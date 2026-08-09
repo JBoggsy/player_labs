@@ -1377,7 +1377,12 @@ Detour waypoint. This candidate is uploaded inert as **wowborg:v203**
 point 15 at full health, then walking toward point 16 fell through empty geometry and repeatedly
 reset to the lip. The active source preserves the dense bearings and switches to the proven
 jump-aware movement mode from point 16 onward. This candidate is uploaded inert as
-**wowborg:v204** (`7a4d1034-36ed-4d06-ac31-aa4a0fe78434`, source `a428231`).
+**wowborg:v204** (`7a4d1034-36ed-4d06-ac31-aa4a0fe78434`, source `a428231`). Hosted request
+`xreq_f5ee6500-f4c1-46f2-b7da-256c87cecd40` completed all 24 runs alive, but only one reached the
+dense descent and it timed out at point 12 before activating the jump boundary. The batch still
+made 876 hazard-avoidance selections and 691 evasion pulses. The active source therefore retests
+the measured 12-yard global clearance floor against the now-repaired combat and descent stack;
+local projected-add and multi-attacker gates remain unchanged.
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.
