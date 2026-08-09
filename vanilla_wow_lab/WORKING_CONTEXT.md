@@ -1241,7 +1241,8 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    crest, at 264.3 seconds, and one run died. The active source reverts this branch to v177 retreat
    behavior. It changes only steep-edge settling: v177's successful 94-yard mountain ascent took
    90.45 seconds with 509 control pulses and 509 extra waits, so steep edges now use the existing
-   every-eighth-pulse settle cadence.
+   every-eighth-pulse settle cadence. This is uploaded inert as **wowborg:v179**
+   (`f2e48def-d816-4ce0-bb60-8e95ce4e8f85`, source `27a277f`); its hosted evaluation is pending.
 
 ## Reference
 

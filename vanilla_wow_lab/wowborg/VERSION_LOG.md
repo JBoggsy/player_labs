@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v179 - settle steep edges every eight pulses (2026-08-09)
+
+- Version UUID: `f2e48def-d816-4ce0-bb60-8e95ce4e8f85` (`wowborg:v179`, uploaded
+  inert; not submitted). Built from source `27a277f` against canonical vanilla-wow 0.1.209.
+- Restores v177's retreat behavior and retains the normal post-control observation, while reducing
+  only the second steep-edge settle wait from every pulse to every eighth pulse.
+- Route geometry, hazard thresholds, combat, and ordinary exact-anchor settling are unchanged.
+  Hosted evaluation is pending.
+
 ## v178 - count only translated retreat stalls (2026-08-09)
 
 - Version UUID: `6c29b6e2-131f-44c7-8c8b-44219b11622a` (`wowborg:v178`, uploaded

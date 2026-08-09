@@ -891,7 +891,9 @@ branch is reverted.
 The active source instead changes only steep-edge settling. V177's successful 94-yard mountain
 ascent took 90.45 seconds and issued 509 control pulses plus 509 extra waits. The normal post-control
 observation remains; only the second settle wait moves from every steep pulse to the existing
-every-eighth-pulse cadence. Ordinary exact anchors retain their per-pulse settling.
+every-eighth-pulse cadence. Ordinary exact anchors retain their per-pulse settling. This is uploaded
+inert as **wowborg:v179** (`f2e48def-d816-4ce0-bb60-8e95ce4e8f85`, source `27a277f`); its hosted
+evaluation is pending.
 
 ## Open uncertainties
 
