@@ -1,5 +1,16 @@
 # wowborg version log
 
+## v190 - staged Rejuvenated descent (2026-08-09)
+
+- Version UUID: `e0426ef5-965e-4b6a-b1c6-1ae65b4931b7` (`wowborg:v190`, uploaded
+  inert; not submitted). Built from source `5279e9f` against canonical vanilla-wow 0.1.209.
+- Restores V188's proven 20-yard road clearance. Splits the Shimmering Flats descent at the
+  observed first-impact landing `(-6670.58, -4031.42, 27.69)` and keeps the fixture's maintained
+  Rejuvenation rank active across both precise Cat-Form descent legs.
+- Pinned-navmesh planning confirms the upper component ends around z75 and does not connect to the
+  lower road component; this explicitly manages two drops rather than treating the chord as a
+  walkable ramp. Hosted evaluation is pending.
+
 ## v189 - twelve-yard clearance with reactive combat (2026-08-09)
 
 - Version UUID: `405cc7d2-b438-42e4-b684-8406575af9b6` (`wowborg:v189`, uploaded
@@ -7,7 +18,12 @@
 - Lowers only the global predicted-clearance floor from 20 to 12 yards. V188's validated reactive
   combat/closer, Cat descent, route geometry, and action cadence are unchanged.
 - Unlike V183/V184, the policy can now kill a safe single pull instead of turning it into a lethal
-  escape. The local projected-add combat gate was already 12 yards. Hosted evaluation is pending.
+  escape. The local projected-add combat gate was already 12 yards.
+- Hosted request `xreq_072d26b9-ca22-4feb-b348-29a0f35b4bfd` kept only 9 of 12 runs alive, so the
+  global 12-yard floor is rejected again. Two reactive Glasshide fights entered repeated failing
+  Rake casts and died. One run reached the south ramp at 231.1 seconds and exercised Cat Form, but
+  the direct descent lost 1,491 health on a z27.7 landing and then died on the second fall. Cat
+  Form alone does not mitigate this environment's falling damage.
 
 ## v188 - active in-combat melee closing (2026-08-09)
 

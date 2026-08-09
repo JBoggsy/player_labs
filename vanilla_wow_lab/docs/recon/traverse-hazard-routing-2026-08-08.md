@@ -979,7 +979,18 @@ ascent point 15/16 but none reached the Cat descent. The fastest frontier runs s
 lowers only that floor to 12 yards. Unlike V183/V184, V188's validated single-attacker combat can
 now convert the known close Gazer case into a short kill instead of a lethal escape; the local
 projected-add gate was already 12 yards. This is uploaded inert as **wowborg:v189**
-(`405cc7d2-b438-42e4-b684-8406575af9b6`, source `6a53c96`); hosted evaluation is pending.
+(`405cc7d2-b438-42e4-b684-8406575af9b6`, source `6a53c96`). Hosted request
+`xreq_072d26b9-ca22-4feb-b348-29a0f35b4bfd` kept only 9 of 12 runs alive, rejecting the 12-yard
+global floor again. Two reactive Glasshide fights entered repeated failing Rake casts and died. One
+run reached the south ramp at 231.1 seconds and finally exercised Cat Form. The trace recorded a
+1,491-health impact at `(-6670.58, -4031.42, 27.69)`, then a second lethal fall near z-43; Cat Form
+does not mitigate falling damage in this fixture. The pinned navmesh routes the upper surface only
+to about z75 and reports no connected path to the lower-road component. The active source restores
+20-yard clearance, adds the observed z27.7 first-impact landing as an exact guidepoint, and keeps
+the maintained Rejuvenation rank active across both precise Cat-Form drop legs. This explicitly
+manages two disconnected drops rather than claiming a walkable ramp. The candidate is uploaded
+inert as **wowborg:v190** (`e0426ef5-965e-4b6a-b1c6-1ae65b4931b7`, source `5279e9f`); hosted
+evaluation is pending.
 
 ## Open uncertainties
 

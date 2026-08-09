@@ -1313,7 +1313,16 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    the global predicted-clearance floor from 20 to 12 yards; unlike V183/V184, V188's validated
    reactive combat can kill a safe single pull rather than turning it into a lethal escape. This
    is uploaded inert as **wowborg:v189** (`405cc7d2-b438-42e4-b684-8406575af9b6`, source
-   `6a53c96`); hosted evaluation is pending.
+   `6a53c96`). Hosted request `xreq_072d26b9-ca22-4feb-b348-29a0f35b4bfd` kept only 9 of 12 runs
+   alive, rejecting the global 12-yard floor again. Two reactive Glasshide fights entered repeated
+   failing Rake casts and died. One run reached the south ramp at 231.1 seconds, exercised Cat Form,
+   lost 1,491 health on a z27.7 landing, and died on the second fall. Cat Form alone does not reduce
+   fall damage. Pinned-navmesh planning shows the upper walkable component ending around z75 with
+   no connection to the lower-road component. The active source restores 20-yard clearance, splits
+   the descent at the observed first-impact landing `(-6670.58, -4031.42, 27.69)`, and keeps the
+   maintained Rejuvenation rank active across both precise Cat-Form drop legs. This is uploaded
+   inert as **wowborg:v190** (`e0426ef5-965e-4b6a-b1c6-1ae65b4931b7`, source `5279e9f`); hosted
+   evaluation is pending.
 
 ## Reference
 
