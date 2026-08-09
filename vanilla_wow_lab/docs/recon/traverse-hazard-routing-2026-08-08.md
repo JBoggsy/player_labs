@@ -714,6 +714,8 @@ reached attack. Both repeatedly invoked Cat Form while Travel Form was active, a
 reported "You are in shapeshift form" until deadline. This is a form-transition defect, not a
 combat-strength result. The next source candidate follows the maintained real-playerbot pattern:
 invoke the observed active-form binding to leave Travel Form, then enter Cat on the next frame.
+That candidate is uploaded inert as **wowborg:v159**
+(`083b6d20-c164-485d-b828-672a6a05e9ae`, source `d737576`).
 
 ## Open uncertainties
 

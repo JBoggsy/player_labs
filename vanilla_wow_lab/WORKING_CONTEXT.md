@@ -1083,6 +1083,8 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    telemetry reported "You are in shapeshift form" until deadline. The next source candidate first
    invokes the observed active-form binding to leave Travel Form, matching maintained real-playerbot,
    then enters Cat on the next frame.
+   That candidate is uploaded inert as **wowborg:v159**
+   (`083b6d20-c164-485d-b828-672a6a05e9ae`, source `d737576`).
 
 ## Reference
 

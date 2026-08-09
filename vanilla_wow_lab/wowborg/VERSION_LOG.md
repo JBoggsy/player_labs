@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v159 - observed-form transition before ramp combat (2026-08-09)
+
+- Version UUID: `083b6d20-c164-485d-b828-672a6a05e9ae` (`wowborg:v159`, uploaded
+  inert; not submitted). Built from source `d737576` against canonical vanilla-wow 0.1.209.
+- When ramp combat activates from another form, invokes the observed current-form spell binding to
+  leave that form before entering Cat on the next frame, matching maintained real-playerbot.
+- Target selection, proactive closing, feral rotation, route geometry, and every other-contact
+  behavior are unchanged from v158.
+
 ## v158 - proactive constrained-ramp Scorpid pull (2026-08-09)
 
 - Version UUID: `6d531041-bc99-4755-a0c8-9a4d10457391` (`wowborg:v158`, uploaded
