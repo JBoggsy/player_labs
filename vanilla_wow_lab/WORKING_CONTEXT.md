@@ -309,7 +309,13 @@ three exact bend anchors, then hit the same timeout after roughly 985 uninterrup
 active candidate yields for 0.25 seconds every eight settled pulses: roughly 97% movement duty
 cycle versus the original 75%, with a periodic host settlement seam.
 It is uploaded inert as **wowborg:v143**
-(`0f9033bc-0247-4843-9b77-2af1292a43f8`, source `c40a81b`); hosted Traverse proof is pending.
+(`0f9033bc-0247-4843-9b77-2af1292a43f8`, source `c40a81b`). Request
+`xreq_79ff2e95-2930-444c-8026-3c30c5066a75` executed 165 scheduled yields
+without v142's repeated host timeout, stayed full-health/zero-combat through Tanaris, and reached
+road node 9 in 164 seconds. The first ramp anchor was still too coarse for discrete steering:
+wowborg ran east along the cliff edge and fell before reaching its required southward bend. The
+active candidate splits the pinned navmesh approach at `(-6905,-3869,39)` and
+`(-6890,-3885,48)` before the existing exact base anchor.
 
 ### Previous 0.1.208 movement baseline
 

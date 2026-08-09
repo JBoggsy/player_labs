@@ -6,7 +6,9 @@
   inert; not submitted). Built from source `c40a81b` against canonical vanilla-wow 0.1.209.
 - Keeps the safe 0.75-second stride and yields for 0.25 seconds every eight settled pulses. This
   retains roughly 97% movement duty while restoring a periodic host settlement seam.
-- Hosted Traverse proof is pending.
+- Request `xreq_79ff2e95-2930-444c-8026-3c30c5066a75` executed 165 scheduled
+  yields without v142's repeated host timeout, stayed full-health/zero-combat through Tanaris, and
+  reached road node 9 in 164 seconds. Its first coarse ramp anchor still allowed a cliff fall.
 
 ## v142 - continuous settled Traverse cadence (2026-08-09)
 
