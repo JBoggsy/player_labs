@@ -341,7 +341,12 @@ combined y and z. The ramp therefore began below terrain and repeatedly fell/res
 candidate retains 60 yards of horizontal hazard-displacement slack but requires vertical error at
 most 10 yards before an ordinary milestone can pass.
 It is uploaded inert as **wowborg:v147**
-(`9ddebbfa-f068-41be-9ea5-32648a60d8c6`, source `57ed0da`); hosted Traverse proof is pending.
+(`9ddebbfa-f068-41be-9ea5-32648a60d8c6`, source `57ed0da`). Request
+`xreq_25bda105-0daf-4943-aa2e-e3f0c87ec9a4` enforced vertical alignment on all
+11 ordinary pass events (maximum 8.2 yards), reached node 9 within 0.9 vertical yards, and emitted
+the first exact ramp-approach arrival. It then fell approaching the ramp turn. The shared 8-yard
+exact radius is too loose for the narrow slope; the active candidate tightens only the ramp anchors
+to 3 yards while retaining existing tolerances for Detour anchors and the lower-dock goal.
 
 ### Previous 0.1.208 movement baseline
 

@@ -6,7 +6,10 @@
   inert; not submitted). Built from source `57ed0da` against canonical vanilla-wow 0.1.209.
 - Retains 60 yards of horizontal hazard-displacement slack for ordinary milestone passes but now
   requires vertical error at most 10 yards. This prevents starting elevated legs below terrain.
-- Hosted Traverse proof is pending.
+- Request `xreq_25bda105-0daf-4943-aa2e-e3f0c87ec9a4` enforced vertical alignment
+  on all 11 ordinary pass events (maximum 8.2 yards), reached node 9 within 0.9 vertical yards, and
+  emitted the first exact ramp-approach arrival. Its shared 8-yard exact radius was still too loose
+  for the following narrow-slope turn.
 
 ## v146 - pinned Detour-east turn (2026-08-09)
 

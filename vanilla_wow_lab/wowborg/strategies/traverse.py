@@ -62,6 +62,16 @@ ROAD_EXACT_GUIDEPOINTS = frozenset(
         "great-lift-lower-dock",
     }
 )
+ROAD_TIGHT_GUIDEPOINTS = frozenset(
+    {
+        "shimmering-flats-ramp-approach",
+        "shimmering-flats-ramp-turn",
+        "shimmering-flats-ramp-base",
+        "shimmering-flats-ramp-rise",
+        "shimmering-flats-ramp-crest",
+        "shimmering-flats-south-ramp",
+    }
+)
 
 # Follow the deployed owner's level-51 Tanaris and Thousand Needles road spine
 # to the Great Lift lower dock. Great Lift boarding is a separate campaign.
@@ -500,6 +510,7 @@ def _steer_road_leg(
     trace,
     avoidance: HazardAvoidanceState,
     allow_northing_pass: bool,
+    arrival_radius: float,
 ):
     settle_pause_interval = (
         1 if not allow_northing_pass else ROAD_SETTLE_PAUSE_INTERVAL
@@ -551,7 +562,7 @@ def _steer_road_leg(
             (frame.location.x, frame.location.y, frame.location.z),
             (target.x, target.y, target.z),
         )
-        if distance <= ROAD_ARRIVAL_RADIUS_YARDS:
+        if distance <= arrival_radius:
             return Point(
                 frame.location.map_id,
                 frame.location.x,
@@ -1102,6 +1113,11 @@ class TraverseStrategy:
                         trace=trace,
                         avoidance=self.hazard_avoidance,
                         allow_northing_pass=name not in ROAD_EXACT_GUIDEPOINTS,
+                        arrival_radius=(
+                            3.0
+                            if name in ROAD_TIGHT_GUIDEPOINTS
+                            else ROAD_ARRIVAL_RADIUS_YARDS
+                        ),
                     )
                     if end is not None:
                         self.best_world_x = max(self.best_world_x, end.x)
