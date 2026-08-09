@@ -1346,11 +1346,13 @@ from 1,301 to 2,002 before the horizon ended, about two simulated seconds short 
 gate. V198 raised unobstructed road input to 1.5 seconds, but hosted request
 `xreq_18d557f7-1330-497c-891a-70a55fb58825` regressed to 22 of 24 alive without improving frontier
 reach. One long stride entered multiple attackers; the other death entered a second reactive fight
-at 84% health. The active source restores V197's one-second stride. It instead proactively fights
-an ordinary level-49-or-lower blocker already inside the eight-yard hold zone only when wowborg has
-at least 95% health and every other nearby hostile's projected path preserves the existing 12-yard
-add-clearance floor. This candidate is uploaded inert as **wowborg:v199**
-(`aeebd278-56b2-4ca9-b377-859ae9c16424`, source `cd20e3d`) but not yet evaluated.
+at 84% health. V199 restored the one-second stride but proactively fought healthy isolated ordinary
+blockers; hosted request `xreq_6749dff1-abb3-4ca1-b399-6aa150135b86` also kept only 22 of 24 alive
+and did not reach the descent. Proactive wins ranged from about 3 to 11 seconds and sometimes ended
+below 20% health, so that expansion is rejected. The active source restores V197's combat scope and
+one-second stride whenever any hostile is visible within the router's 80-yard tracking radius. It
+uses the 1.5-second contract maximum only when that tracked set is empty. This adaptive stride
+candidate is not yet uploaded or evaluated.
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.

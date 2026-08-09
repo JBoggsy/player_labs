@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v200 - far-clear adaptive stride (2026-08-09)
+
+- Upload pending.
+- Reverts V199's proactive-fight expansion. Keeps the proven one-second open stride whenever any
+  hostile is visible within the router's 80-yard tracking radius, and uses the 1.5-second contract
+  maximum only when that tracked set is empty.
+- V199 kept only 22 of 24 runs alive and did not reach the descent. Proactive wins ranged from
+  about 3 to 11 seconds and sometimes ended below 20% health, so ordinary blockers are again
+  detoured unless they pull reactively; proactive combat returns to the calibrated ramp Scorpid.
+
 ## v199 - isolated healthy blocker fights (2026-08-09)
 
 - Version UUID: `aeebd278-56b2-4ca9-b377-859ae9c16424` (`wowborg:v199`, uploaded
@@ -11,6 +21,9 @@
 - V198 regressed to 22 of 24 alive and did not reach the descent. One long stride entered a
   multi-attacker state; the other death entered a second reactive fight at 84% health. The
   1.5-second stride is rejected.
+- Hosted request `xreq_6749dff1-abb3-4ca1-b399-6aa150135b86` also kept only 22 of 24 alive and did
+  not reach the descent. Proactive fight tails reached 8-11 seconds and sometimes ended below 20%
+  health. Rejected in V200.
 
 ## v198 - maximum clear-road stride (2026-08-09)
 

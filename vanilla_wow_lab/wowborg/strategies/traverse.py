@@ -22,6 +22,7 @@ CAT_FORM_SPELL_ID = 768
 PROWL_SPELL_IDS = (9913, 6783, 5215)
 TRAVEL_FORM_SPELL_ID = 783
 PROWL_ROUTE_GUIDEPOINTS = 0
+RAMP_SCORPID_ENTRY = 5422
 FERAL_CLAW_SPELL_IDS = (9850, 9849, 5201, 3029, 1082)
 FERAL_RAKE_SPELL_IDS = (9904, 1824, 1823, 1822)
 FERAL_RIP_SPELL_IDS = (9896, 9894, 9752, 9493, 9492, 1079)
@@ -49,6 +50,7 @@ GREAT_LIFT_DOCK_Z_SLACK = 2.0
 GREAT_LIFT_EXIT_Z = 80.0
 TRAVERSE_INPUT_SECONDS = 0.75
 ROAD_OPEN_INPUT_SECONDS = 1.0
+ROAD_FAR_CLEAR_INPUT_SECONDS = 1.5
 ROAD_ARRIVAL_RADIUS_YARDS = 8.0
 ROAD_PASS_LATERAL_YARDS = 60.0
 ROAD_PASS_VERTICAL_YARDS = 10.0
@@ -68,8 +70,7 @@ ROAD_HAZARD_MIN_CLEARANCE_YARDS = 20.0
 ROAD_TIGHT_HAZARD_HOLD_YARDS = 8.0
 ROAD_HAZARD_HOLD_RADIUS_YARDS = 2.0
 ROAD_HAZARD_SWITCH_MARGIN_YARDS = 5.0
-PROACTIVE_FIGHT_ADD_CLEARANCE_YARDS = 12.0
-PROACTIVE_FIGHT_MIN_HEALTH_FRACTION = 0.95
+RAMP_FIGHT_ADD_CLEARANCE_YARDS = 12.0
 SECOND_DESCENT_MIN_HEALTH_FRACTION = 0.8
 ROAD_STEEP_GUIDEPOINTS = frozenset(
     {f"shimmering-flats-ramp-ascent-{index:02d}" for index in range(1, 17)}
@@ -216,11 +217,14 @@ def _steer_toward(
             purpose=purpose,
         )
     duration = 0.25 if precise_arrival else translation_seconds
-    if trace is not None and duration == ROAD_OPEN_INPUT_SECONDS:
+    if trace is not None and duration in (
+        ROAD_OPEN_INPUT_SECONDS,
+        ROAD_FAR_CLEAR_INPUT_SECONDS,
+    ):
         trace(
             "traverse_road_open_stride",
             activation=1,
-            duration_seconds=ROAD_OPEN_INPUT_SECONDS,
+            duration_seconds=duration,
         )
     return bridge.select_move_vector(
         frame,
@@ -590,6 +594,17 @@ def _visible_attackers(frame):
     ]
 
 
+def _qualifying_ramp_scorpid(unit) -> bool:
+    return (
+        unit.player_reaction_hostile
+        and _unit_alive(unit)
+        and unit.entry == RAMP_SCORPID_ENTRY
+        and unit.level_known
+        and unit.level <= 41
+        and (not unit.creature_rank_known or unit.creature_rank == 0)
+    )
+
+
 def _qualifying_reactive_attacker(unit) -> bool:
     return (
         unit.player_reaction_hostile
@@ -637,11 +652,6 @@ def _traverse_fight_attacker(
 
     if not allow_proactive:
         return None
-    if (
-        frame.max_health <= 0
-        or frame.health / frame.max_health < PROACTIVE_FIGHT_MIN_HEALTH_FRACTION
-    ):
-        return None
 
     nearby_hazards = [
         unit
@@ -654,7 +664,7 @@ def _traverse_fight_attacker(
         unit
         for unit in nearby_hazards
         if unit.distance <= ROAD_TIGHT_HAZARD_HOLD_YARDS
-        and _qualifying_reactive_attacker(unit)
+        and _qualifying_ramp_scorpid(unit)
     ]
     if len(candidates) != 1:
         return None
@@ -666,7 +676,7 @@ def _traverse_fight_attacker(
             frame.location.y,
             *_unit_path(unit),
         )
-        < PROACTIVE_FIGHT_ADD_CLEARANCE_YARDS
+        < RAMP_FIGHT_ADD_CLEARANCE_YARDS
         for unit in nearby_hazards
     )
     return None if likely_add else attacker
@@ -963,7 +973,7 @@ def _steer_road_leg(
         fight_attacker = _traverse_fight_attacker(
             frame,
             active_guid=fight_guid,
-            allow_proactive=True,
+            allow_proactive=hold_terrain_hazards,
         )
         if fight_attacker is not None:
             if fight_started is None:
@@ -1142,6 +1152,7 @@ def _steer_road_leg(
             steering_target = _combat_escape_target(frame, target)
             next_avoidance_side = avoidance.side
             hazards = []
+            tracked_hazards = []
             should_hold = False
         else:
             (
@@ -1387,9 +1398,13 @@ def _steer_road_leg(
                 or distance <= ROAD_HAZARD_FORWARD_YARDS
             ),
             translation_seconds=(
-                ROAD_OPEN_INPUT_SECONDS
-                if not frame.in_combat and not hazards
-                else TRAVERSE_INPUT_SECONDS
+                ROAD_FAR_CLEAR_INPUT_SECONDS
+                if not frame.in_combat and not tracked_hazards
+                else (
+                    ROAD_OPEN_INPUT_SECONDS
+                    if not frame.in_combat and not hazards
+                    else TRAVERSE_INPUT_SECONDS
+                )
             ),
             jump_when_moving=(
                 jump_terrain
