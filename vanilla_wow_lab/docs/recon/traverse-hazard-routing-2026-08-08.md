@@ -481,6 +481,8 @@ bypass changes the line back to the guidepoint, the triggering patrol can drop f
 corridor while still nearby, and wowborg then cuts back toward it. The next candidate retains
 triggering hostiles by GUID until each is beyond the 70-yard exit radius, while allowing new
 crossing patrols to join the active set.
+It is uploaded inert as **wowborg:v132**
+(`1ccd4562-dba9-458e-ac61-53e0afadb02f`, source `751998a`); hosted Traverse proof is pending.
 
 ## Open uncertainties
 

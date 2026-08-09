@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v132 - persistent crossing-patrol ownership (2026-08-09)
+
+- Version UUID: `1ccd4562-dba9-458e-ac61-53e0afadb02f` (`wowborg:v132`, uploaded
+  inert; not submitted). Built from source `751998a` against canonical vanilla-wow 0.1.209.
+- Retains every hostile that triggered the current bypass by GUID until it is physically beyond
+  the 70-yard exit radius. Newly intersecting patrols join the active set; hostiles that disappear
+  beyond the 80-yard visible envelope clear naturally. This prevents the bypass line itself from
+  making wowborg forget a still-nearby patrol and cut back toward it.
+- Hosted Traverse proof is pending.
+
 ## v131 - 60-yard crossing-patrol lookahead (2026-08-09)
 
 - Version UUID: `e663e114-f50f-4246-b054-74e2e642474a` (`wowborg:v131`, uploaded

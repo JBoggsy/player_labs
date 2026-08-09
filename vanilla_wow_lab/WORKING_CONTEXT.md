@@ -215,6 +215,8 @@ line to the guidepoint, the triggering patrol can fall outside that new corridor
 nearby, ending avoidance and making wowborg cut back toward it. The active candidate retains each
 triggering hostile by GUID until it is actually beyond the 70-yard exit radius; new crossing
 hazards can join the active set, and disappearance beyond the 80-yard visible envelope clears it.
+It is uploaded inert as **wowborg:v132**
+(`1ccd4562-dba9-458e-ac61-53e0afadb02f`, source `751998a`); hosted Traverse proof is pending.
 
 ### Previous 0.1.208 movement baseline
 
