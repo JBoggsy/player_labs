@@ -26,7 +26,6 @@ RAMP_SCORPID_ENTRY = 5422
 FERAL_CLAW_SPELL_IDS = (9850, 9849, 5201, 3029, 1082)
 FERAL_RAKE_SPELL_IDS = (9904, 1824, 1823, 1822)
 FERAL_RIP_SPELL_IDS = (9896, 9894, 9752, 9493, 9492, 1079)
-FERAL_FEROCIOUS_BITE_SPELL_IDS = (31018, 22829, 22828, 22827, 22568)
 FERAL_MELEE_CLOSE_YARDS = 2.0
 GREAT_LIFT_ENTRIES = (11898, 11899)
 GREAT_LIFT_LOWER_DOCK = Point(1, -4677.066, -1853.667, -43.857)
@@ -233,6 +232,10 @@ def _unit_path(unit) -> tuple[float, float, float, float]:
     return unit.location.x, unit.location.y, unit.location.x, unit.location.y
 
 
+def _unit_alive(unit) -> bool:
+    return not unit.is_dead and (not unit.health_known or unit.health > 1)
+
+
 def _segment_clearance(
     start_x: float,
     start_y: float,
@@ -292,7 +295,7 @@ def _hazard_avoidance_target(
         unit
         for unit in frame.units
         if unit.player_reaction_hostile
-        and not unit.is_dead
+        and _unit_alive(unit)
         and unit.distance <= ROAD_HAZARD_TRACK_YARDS
     ]
     safe_active_holding_guids = {
@@ -487,7 +490,7 @@ def _combat_escape_target(frame, target: Point) -> Point:
         unit
         for unit in frame.units
         if unit.player_reaction_hostile
-        and not unit.is_dead
+        and _unit_alive(unit)
         and unit.target_guid_known
         and unit.target_guid == frame.player_guid
     ]
@@ -533,7 +536,7 @@ def _visible_attackers(frame):
         unit
         for unit in frame.units
         if unit.player_reaction_hostile
-        and not unit.is_dead
+        and _unit_alive(unit)
         and unit.target_guid_known
         and unit.target_guid == frame.player_guid
     ]
@@ -542,7 +545,7 @@ def _visible_attackers(frame):
 def _qualifying_ramp_scorpid(unit) -> bool:
     return (
         unit.player_reaction_hostile
-        and not unit.is_dead
+        and _unit_alive(unit)
         and unit.entry == RAMP_SCORPID_ENTRY
         and unit.level_known
         and unit.level <= 41
@@ -556,7 +559,7 @@ def _ramp_scorpid_fight(frame, *, active_guid: str | None):
             (
                 unit
                 for unit in frame.units
-                if unit.guid == active_guid and not unit.is_dead
+                if unit.guid == active_guid and _unit_alive(unit)
             ),
             None,
         )
@@ -584,7 +587,7 @@ def _ramp_scorpid_fight(frame, *, active_guid: str | None):
         unit
         for unit in frame.units
         if unit.player_reaction_hostile
-        and not unit.is_dead
+        and _unit_alive(unit)
         and unit.distance <= ROAD_TIGHT_HAZARD_HOLD_YARDS
     ]
     if len(nearby_hazards) != 1:
@@ -703,20 +706,6 @@ def _fight_ramp_scorpid(bridge, navigator, frame, attacker, trace) -> bool:
         or attacker.max_health <= 0
         or attacker.health / attacker.max_health > 0.4
     )
-    if (
-        frame.combo_points_known
-        and frame.combo_points >= 5
-        and not target_healthy
-        and _cast_feral_spell(
-            bridge,
-            frame,
-            FERAL_FEROCIOUS_BITE_SPELL_IDS,
-            purpose="finish the constrained-ramp Scorpid with Ferocious Bite",
-            trace=trace,
-            target_guid=attacker.guid,
-        )
-    ):
-        return True
     if (
         frame.combo_points_known
         and frame.combo_points >= 3
@@ -859,7 +848,7 @@ def _steer_road_leg(
                     }
                     for unit in frame.units
                     if unit.player_reaction_hostile
-                    and not unit.is_dead
+                    and _unit_alive(unit)
                     and unit.target_guid_known
                     and unit.target_guid == frame.player_guid
                 ]

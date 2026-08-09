@@ -7,8 +7,13 @@
 - Adds the maintained Ferocious Bite family only when the qualifying ramp Scorpid is at or below
   40% health and wowborg has five combo points. Rake, Rip, Claw, fight admission, route geometry,
   and every other-contact behavior are unchanged from the safe v162 baseline.
-- Feral spell traces now record pre-cast combo points and active power, distinguishing an unknown
-  spell or unmet resource gate from a host rejection. The hosted request is pending.
+- Feral spell traces record pre-cast combo points and active power, distinguishing an unknown spell
+  or unmet resource gate from a host rejection.
+- Six-run request `xreq_21b0b6d6-53dc-4b28-a60d-28661ec36868` produced zero Bite
+  activations. Four runs stopped before the ramp; the two ramp-bearing runs admitted two Scorpids
+  each and reached maximum combo counts of only two and four. One recorded two 33.6-33.9-second
+  fight windows plus 32 failed spell attempts after combo points had reset to zero. Source removes
+  the inactive finisher and instead adopts the owner's `health <= 1` terminal-unit convention.
 
 ## v165 - forward-progressing local bypasses (2026-08-09)
 

@@ -780,6 +780,13 @@ health and records combo points plus active power before every feral cast. Rake,
 fight admission gate, and all routing behavior remain unchanged.
 That candidate is uploaded inert as **wowborg:v166**
 (`327685d0-0d64-4bd5-a606-322610bff48f`, source `937f6ec`).
+Request `xreq_21b0b6d6-53dc-4b28-a60d-28661ec36868` produced no Ferocious Bite
+activation. Four runs stopped before the ramp; the two ramp-bearing runs admitted two Scorpids
+each and reached maximum combo counts of only two/four. One trace recorded two 33.6-33.9-second
+fight windows plus 32 failed spell attempts after combo points had reset to zero. The maintained
+owner paths consistently exclude an observed unit at `health <= 1` even when its `is_dead`
+projection lags. The next source candidate removes the inactive finisher and applies that terminal
+health convention to Traverse hazards and attackers.
 
 ## Open uncertainties
 

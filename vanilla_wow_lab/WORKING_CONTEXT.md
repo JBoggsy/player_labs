@@ -1143,6 +1143,13 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    That candidate is uploaded inert as **wowborg:v166**
    (`327685d0-0d64-4bd5-a606-322610bff48f`, source `937f6ec`). v78 remains the
    submitted champion.
+   Six-run request `xreq_21b0b6d6-53dc-4b28-a60d-28661ec36868` produced zero Bite
+   activations. Four runs stopped before the ramp; the two ramp-bearing runs admitted two Scorpids
+   each and reached only two/four combo points. One recorded two 33.6-33.9-second fight windows and
+   32 failed spells after combo points reset to zero. Current owner policy consistently treats
+   observed `health <= 1` as terminal even if `is_dead` lags. The active source removes the
+   inactive Bite branch and applies that terminal convention to Traverse hazards and attackers,
+   preserving the resource trace fields for the next hosted proof.
 
 ## Reference
 
