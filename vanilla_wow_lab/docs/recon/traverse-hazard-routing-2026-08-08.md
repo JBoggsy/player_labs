@@ -798,6 +798,15 @@ as -22, snapped back under server correction, and exhausted `no_progress`. The n
 quarter-second translation for every terrain-constrained anchor regardless of 3D endpoint distance.
 That candidate is uploaded inert as **wowborg:v168**
 (`29b5673e-b414-43c4-ad3a-64d1ff0d5089`, source `54c7b0c`).
+Request `xreq_0810a791-b80a-4316-ab58-b427e8f8e231` kept all six runs alive. Three
+reached ramp-base after 4.4-6.3-second fights but still failed ramp-rise; three ended earlier on
+missing observation frames. The precise pulses falsified cadence as the cause: the player followed
+the direct bearing, stepped off the ramp, fell from z about 52 to below zero, and was corrected back.
+A route query using the canonical 0.1.209 VMaNGOS mmaps and pinned core ref
+`d0aff0cedc18d140b72cac95ba0284218cd4175c` found a complete 93.97-yard, 17-waypoint smooth
+path from the observed base to crest. Its first three points hold x near -6884 while climbing north
+before the path bends east. The next source candidate replaces only the invalid straight ascent
+with those canonical Detour waypoints.
 
 ## Open uncertainties
 

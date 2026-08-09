@@ -137,41 +137,20 @@ def test_summary_uses_authoritative_northing_formula() -> None:
 def test_traverse_route_prefix_reaches_great_lift_lower_dock() -> None:
     names = [name for name, _point in TRAVERSE_ROUTE_PREFIX]
 
-    assert names == [
-        "tanaris-movement-bootstrap",
-        "tanaris-north-road-1",
-        "tanaris-north-road-2",
-        "tanaris-north-road-3",
-        "tanaris-brute-gate-south",
-        "tanaris-gazer-gate-north",
-        "tanaris-north-road-4",
-        "tanaris-north-road-5",
-        "tanaris-north-road-6",
-        "tanaris-north-road-7",
-        "tanaris-north-road-8",
-        "tanaris-road-8-detour-west",
-        "tanaris-road-8-detour-south",
-        "tanaris-road-8-detour-east",
-        "tanaris-north-road-9",
-        "shimmering-flats-south-ramp",
-        "shimmering-flats-south-road",
-        "shimmering-flats-road",
-        "thousand-needles-east-road-1",
-        "thousand-needles-east-road-2",
-        "thousand-needles-east-road-3",
-        "thousand-needles-central-road-1",
-        "thousand-needles-central-road-2",
-        "thousand-needles-central-road-3",
-        "thousand-needles-west-road-1",
-        "thousand-needles-west-road-2",
-        "thousand-needles-west-3",
-        "great-lift-south-road",
-        "great-lift-lower-dock",
-    ]
     assert TRAVERSE_ROUTE_PREFIX[0][1] == Point(1, -9200.0, -2545.0, 13.5)
     assert TRAVERSE_ROUTE_PREFIX[1][1] == Point(1, -8974.0117, -2741.5291, 41.0118)
     assert TRAVERSE_ROUTE_PREFIX[-1][1] == Point(1, -4677.066, -1853.667, -43.857)
-    assert len(names) == len(set(names)) == 29
+    assert names[-1] == "great-lift-lower-dock"
+    assert len(names) == len(set(names))
+
+    ascent_start = names.index("shimmering-flats-ramp-ascent-01")
+    assert names[ascent_start : ascent_start + 17] == [
+        *(f"shimmering-flats-ramp-ascent-{index:02d}" for index in range(1, 17)),
+        "shimmering-flats-ramp-crest",
+    ]
+    assert TRAVERSE_ROUTE_PREFIX[ascent_start][1] == Point(
+        1, -6884.1777, -3902.7144, 59.8126
+    )
 
 
 def test_lift_detection_uses_only_visible_platform_at_lower_dock() -> None:

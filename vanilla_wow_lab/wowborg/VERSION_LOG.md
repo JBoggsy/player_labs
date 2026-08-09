@@ -7,7 +7,14 @@
 - Keeps every terrain-constrained anchor on quarter-second translation for its full leg. This
   prevents ramp-rise's large vertical endpoint delta from selecting a one-second clear-road pulse.
 - Terminal-health combat handling, route geometry, hazard thresholds, and ordinary-road cadence
-  are unchanged from v167. The hosted request is pending.
+  are unchanged from v167.
+- Six-run request `xreq_0810a791-b80a-4316-ab58-b427e8f8e231` kept all six runs
+  alive. Three reached ramp-base after 4.4-6.3-second fights, but all three still failed the next
+  leg; the other three ended earlier on missing observation frames. Quarter-second pulses ruled
+  out cadence, because traces still moved diagonally off the ramp from z about 52 to below zero.
+  A route against the canonical 0.1.209 VMaNGOS mmaps showed that the endpoint is reachable only
+  through a 17-point smooth path that first holds x near -6884 while climbing north, then bends
+  east. The next candidate replaces this one invalid straight leg with those Detour points.
 
 ## v167 - terminal-health hostile handling (2026-08-09)
 

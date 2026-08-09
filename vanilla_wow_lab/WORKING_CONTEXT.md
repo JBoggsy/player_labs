@@ -1160,6 +1160,14 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    quarter-second translation for their full leg.
    That candidate is uploaded inert as **wowborg:v168**
    (`29b5673e-b414-43c4-ad3a-64d1ff0d5089`, source `54c7b0c`).
+   Six-run request `xreq_0810a791-b80a-4316-ab58-b427e8f8e231` kept all six runs
+   alive. Three reached ramp-base after 4.4-6.3-second fights but still failed ramp-rise; the other
+   three ended earlier on missing observation frames. The smaller pulses proved cadence was not
+   the root cause: each ramp run moved diagonally off the edge and fell from z about 52 to below
+   zero. A read-only route query over the canonical 0.1.209 VMaNGOS mmaps returned a complete
+   17-point smooth path. It holds x near -6884 for the first three climbing points before bending
+   east, unlike the invalid direct line. The active source replaces only that ascent leg with the
+   canonical Detour points; combat, hazard routing, and ordinary-road cadence are unchanged.
 
 ## Reference
 
