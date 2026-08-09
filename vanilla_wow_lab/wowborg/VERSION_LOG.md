@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v211 - lengthen clear ascent strides (2026-08-09)
+
+- Version UUID: `7e6df24e-87fd-496d-bcc5-0878d31a0be2` (`wowborg:v211`, uploaded
+  inert; not submitted). Built from source `dc8604f` against canonical vanilla-wow 0.1.209.
+- Hazard-free steep ascent translations use the existing 0.75-second terrain stride instead of the
+  0.25-second precise-arrival stride. Edge acceptance, route geometry, descent, combat, and hazard
+  thresholds are unchanged from V210.
+
 ## v210 - accept crossed ascent edges (2026-08-09)
 
 - Version UUID: `b88c0e66-569b-456d-b2ce-fcf376ef0460` (`wowborg:v210`, uploaded

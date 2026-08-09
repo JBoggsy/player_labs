@@ -1425,7 +1425,8 @@ to 31/47 and reduced median base-to-crest time from 84.7 to 72.5 seconds; one jo
 infrastructure straggler during analysis. Two of those 47 died, one to a level-47 Scorpid near
 spawn and one after falling on descent point 27. The active source lets hazard-free continuous
 climb jumps use the existing 0.75-second terrain stride instead of forcing exact 0.25-second
-translations.
+translations. This candidate is uploaded inert as **wowborg:v211**
+(`7e6df24e-87fd-496d-bcc5-0878d31a0be2`, source `dc8604f`).
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.
