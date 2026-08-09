@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v153 - observed Shimmering Flats ramp lip (2026-08-09)
+
+- Version UUID: `11b765a4-2eaf-419f-8a1d-8d848baa067a` (`wowborg:v153`, uploaded
+  inert; not submitted). Built from source `c838e20` against canonical vanilla-wow 0.1.209.
+- Inserts the repeatedly observed stable lip at `(-6911.46,-3859.38,39.24)` as a three-yard exact,
+  terrain-constrained anchor before the existing ramp approach. This makes the final short slope
+  leg begin from the correct heading instead of cutting diagonally off terrain.
+- v152 hazard timing, ordinary-road behavior, and all later ramp anchors are unchanged.
+
 ## v152 - timed crossing on the narrow ramp (2026-08-09)
 
 - Version UUID: `1876851a-0885-433e-be17-055734567913` (`wowborg:v152`, uploaded

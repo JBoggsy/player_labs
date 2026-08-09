@@ -388,7 +388,8 @@ Fair repeat `xreq_5a742ce8-92be-4064-a812-f65bc032db88` stayed at full health, r
 node 9, and exercised 29 terrain holds with 28 releases, but never arrived at the approach. Its
 positions repeatedly identify a stable ramp lip at `(-6911.46,-3859.38,39.24)` before direct
 steering cuts off the slope. The active candidate inserts that observed lip as a three-yard exact
-anchor before the existing approach; v152 hazard timing is unchanged.
+anchor before the existing approach; v152 hazard timing is unchanged. It is uploaded inert as
+**wowborg:v153** (`11b765a4-2eaf-419f-8a1d-8d848baa067a`, source `c838e20`).
 
 ### Previous 0.1.208 movement baseline
 
