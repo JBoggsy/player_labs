@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v138 - persistent safe crossing hold (2026-08-09)
+
+- Version UUID: `cec936af-e9e3-4141-afaa-d693d0a4ccc4` (`wowborg:v138`, uploaded
+  inert; not submitted). Built from source `2d61417` against canonical vanilla-wow 0.1.209.
+- Retains safely crossing patrol GUIDs while they remain within 70 yards or intersect the active
+  lookahead. Holding never moves; a path projected within 20 yards of the holding point or a
+  guidepoint-resident destination still escalates to local avoidance.
+- Hosted Traverse proof is pending.
+
 ## v137 - hazard-tolerant road milestone pass (2026-08-09)
 
 - Version UUID: `de9133dc-8ede-416d-98db-e2713ae88a6d` (`wowborg:v137`, uploaded

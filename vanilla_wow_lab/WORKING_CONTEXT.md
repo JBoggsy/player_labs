@@ -265,6 +265,8 @@ Pinned 0.1.209 Detour recon found no connected broad north or south bypass aroun
 active candidate instead retains a crossing GUID while it remains within 70 yards or intersects
 lookahead, holding without displacement. A projected path inside 20 yards of the holding point
 still escalates to local avoidance, and guidepoint-resident classification remains active.
+It is uploaded inert as **wowborg:v138**
+(`cec936af-e9e3-4141-afaa-d693d0a4ccc4`, source `2d61417`); hosted Traverse proof is pending.
 
 ### Previous 0.1.208 movement baseline
 
