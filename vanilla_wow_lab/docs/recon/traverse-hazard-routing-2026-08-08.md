@@ -654,6 +654,12 @@ positions repeatedly identify a stable ramp lip at `(-6911.46,-3859.38,39.24)` b
 steering cuts off the slope. The next candidate inserts that observed lip as a three-yard exact
 anchor before the existing approach; v152 hazard timing is unchanged. It is uploaded inert as
 **wowborg:v153** (`11b765a4-2eaf-419f-8a1d-8d848baa067a`, source `c838e20`).
+First request `xreq_7b7b2089-a15e-4294-9486-882ff7306868` stopped before the changed
+anchor. Fair repeat `xreq_fb01b524-ea4d-497b-8fa0-f8a1d4f94966` reached the new lip at
+full health as milestone 17, then remained six yards from the broad approach while a Basilisk held
+at 16.8 yards. The next candidate separates terrain-constrained hazard handling from three-yard
+arrival precision: the approach retains ramp hold semantics but restores its sufficient eight-yard
+arrival, while the lip and later narrow bends remain three-yard anchors.
 
 ## Open uncertainties
 

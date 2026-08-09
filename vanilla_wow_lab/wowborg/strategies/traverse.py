@@ -65,10 +65,9 @@ ROAD_EXACT_GUIDEPOINTS = frozenset(
         "great-lift-lower-dock",
     }
 )
-ROAD_TIGHT_GUIDEPOINTS = frozenset(
+ROAD_TIGHT_ARRIVAL_GUIDEPOINTS = frozenset(
     {
         "shimmering-flats-ramp-lip",
-        "shimmering-flats-ramp-approach",
         "shimmering-flats-ramp-turn",
         "shimmering-flats-ramp-base",
         "shimmering-flats-ramp-rise",
@@ -76,6 +75,9 @@ ROAD_TIGHT_GUIDEPOINTS = frozenset(
         "shimmering-flats-south-ramp",
     }
 )
+ROAD_TERRAIN_CONSTRAINED_GUIDEPOINTS = ROAD_TIGHT_ARRIVAL_GUIDEPOINTS | {
+    "shimmering-flats-ramp-approach"
+}
 
 # Follow the deployed owner's level-51 Tanaris and Thousand Needles road spine
 # to the Great Lift lower dock. Great Lift boarding is a separate campaign.
@@ -1162,10 +1164,12 @@ class TraverseStrategy:
                         allow_northing_pass=name not in ROAD_EXACT_GUIDEPOINTS,
                         arrival_radius=(
                             3.0
-                            if name in ROAD_TIGHT_GUIDEPOINTS
+                            if name in ROAD_TIGHT_ARRIVAL_GUIDEPOINTS
                             else ROAD_ARRIVAL_RADIUS_YARDS
                         ),
-                        hold_resident_hazards=name in ROAD_TIGHT_GUIDEPOINTS,
+                        hold_resident_hazards=(
+                            name in ROAD_TERRAIN_CONSTRAINED_GUIDEPOINTS
+                        ),
                     )
                     if end is not None:
                         self.best_world_x = max(self.best_world_x, end.x)

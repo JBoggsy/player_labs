@@ -8,6 +8,10 @@
   terrain-constrained anchor before the existing ramp approach. This makes the final short slope
   leg begin from the correct heading instead of cutting diagonally off terrain.
 - v152 hazard timing, ordinary-road behavior, and all later ramp anchors are unchanged.
+- First request `xreq_7b7b2089-a15e-4294-9486-882ff7306868` stopped before the changed
+  anchor. Fair repeat `xreq_fb01b524-ea4d-497b-8fa0-f8a1d4f94966` reached the lip at full
+  health, then remained six yards from the approach while a Basilisk held at 16.8 yards. The next
+  candidate restores only that broad approach's sufficient eight-yard arrival radius.
 
 ## v152 - timed crossing on the narrow ramp (2026-08-09)
 
