@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v134 - hold for safely crossing patrols (2026-08-09)
+
+- Version UUID: `2354e2a4-a82c-4e25-a719-375e16dfc6c1` (`wowborg:v134`, uploaded
+  inert; not submitted). Built from source `11421a5` against canonical vanilla-wow 0.1.209.
+- Restores v128's road-preserving 20-yard local sidestep and 30/40-yard avoidance hysteresis.
+  A separate 60-yard predictor waits on the road for a moving patrol whose projected path stays
+  at least 20 yards from the holding point; immediate blockers and unsafe crossings still detour.
+- Hosted Traverse proof is pending.
+
 ## v133 - frozen hazard-bypass waypoint (2026-08-09)
 
 - Version UUID: `f9fb6c08-632e-46e5-b20f-76278b79371a` (`wowborg:v133`, uploaded

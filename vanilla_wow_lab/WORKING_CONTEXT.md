@@ -231,6 +231,8 @@ a Glasshide Petrifier after only 142 net northing yards. The active candidate re
 20-yard local sidestep and 30/40-yard immediate horizon. Its separate 60-yard predictor now holds
 position for a moving patrol whose path remains at least 20 yards from the holding point; only an
 immediate blocker or a patrol projected inside that safety radius triggers lateral avoidance.
+It is uploaded inert as **wowborg:v134**
+(`2354e2a4-a82c-4e25-a719-375e16dfc6c1`, source `11421a5`); hosted Traverse proof is pending.
 
 ### Previous 0.1.208 movement baseline
 
