@@ -128,7 +128,12 @@ that timed out at frame 559. It reached three guidepoints and had one escaped pu
 candidate uses the proven exact 0.25-second quantum for every precise translation; turn behavior,
 state semantics, and geometry are unchanged.
 It is uploaded inert as **wowborg:v121**
-(`377a2f3e-215e-4425-8f98-06d540db6c47`, source `8b0a2e2`); hosted proof is pending.
+(`377a2f3e-215e-4425-8f98-06d540db6c47`, source `8b0a2e2`). Request
+`xreq_7063f045-2013-4368-a884-1893ca923ad7` had zero action timeouts and completed
+13 retreats, but reached only three guidepoints. At the final anchor it waited while a moving
+Glasshide Gazer closed from 17.5 to 15.3 yards and acquired wowborg; escape then tripped the
+route-progress watchdog. The active candidate replaces stationary unsafe-anchor waiting with
+quantized movement away from the active corridor hazards until a safe bypass reopens.
 
 ### Previous 0.1.208 movement baseline
 

@@ -317,10 +317,32 @@ def _combat_escape_target(frame, target: Point) -> Point:
     )
 
 
+def _hazard_evasion_target(frame, hazards, target: Point) -> Point:
+    if not hazards:
+        return target
+    away_x = sum(
+        (frame.location.x - unit.location.x) / max(1.0, unit.distance)
+        for unit in hazards
+    )
+    away_y = sum(
+        (frame.location.y - unit.location.y) / max(1.0, unit.distance)
+        for unit in hazards
+    )
+    away_length = math.hypot(away_x, away_y)
+    if away_length == 0:
+        return target
+    return Point(
+        frame.location.map_id,
+        frame.location.x + away_x / away_length * ROAD_HAZARD_EXIT_YARDS,
+        frame.location.y + away_y / away_length * ROAD_HAZARD_EXIT_YARDS,
+        frame.location.z,
+    )
+
+
 @dataclass
 class HazardAvoidanceState:
     side: float | None = None
-    waiting: bool = False
+    evading: bool = False
     retreating: bool = False
     safe_point: Point | None = None
 
@@ -484,25 +506,33 @@ def _steer_road_leg(
             if (unsafe or avoidance.retreating) and avoidance.safe_point is not None
             else 0.0
         )
-        should_retreat = (
+        should_retreat = not avoidance.evading and (
             unsafe or avoidance.retreating
         ) and retreat_distance > ROAD_HAZARD_HOLD_RADIUS_YARDS
-        should_wait = unsafe and not should_retreat
-        if should_wait:
-            if not avoidance.waiting:
+        should_evade = unsafe and not should_retreat
+        if should_evade:
+            if avoidance.retreating:
+                trace("traverse_hazard_retreat_ended", activation=1)
+                avoidance.retreating = False
+            if not avoidance.evading:
                 trace(
-                    "traverse_hazard_wait",
+                    "traverse_hazard_evasion",
                     activation=1,
                     side="left" if avoidance.side > 0 else "right",
                     clearance=round(side_clearances[avoidance.side], 3),
                 )
-                avoidance.waiting = True
+                avoidance.evading = True
             last_progress = time.monotonic()
-            bridge.select_wait(frame)
-            continue
-        if avoidance.waiting:
-            trace("traverse_hazard_wait_ended", activation=1)
-            avoidance.waiting = False
+            steering_target = _hazard_evasion_target(frame, hazards, target)
+        elif avoidance.evading:
+            trace("traverse_hazard_evasion_ended", activation=1)
+            avoidance.evading = False
+            avoidance.safe_point = Point(
+                frame.location.map_id,
+                frame.location.x,
+                frame.location.y,
+                frame.location.z,
+            )
         if should_retreat:
             if not avoidance.retreating:
                 trace(
@@ -527,6 +557,8 @@ def _steer_road_leg(
             steering_purpose = "flee directly away from current Traverse attackers"
         elif should_retreat:
             steering_purpose = "retreat to the last safe Traverse holding point"
+        elif should_evade:
+            steering_purpose = "move away from hazards at the Traverse holding point"
         elif hazards:
             steering_purpose = "steer around visible Traverse hazards"
         else:
@@ -538,7 +570,7 @@ def _steer_road_leg(
             frame,
             steering_target,
             purpose=steering_purpose,
-            precise_arrival=should_retreat,
+            precise_arrival=should_retreat or should_evade,
         )
         settle_frame = bridge.observe()
         if settle_frame is None:

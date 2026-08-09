@@ -5,7 +5,12 @@
 - Version UUID: `377a2f3e-215e-4425-8f98-06d540db6c47` (`wowborg:v121`, uploaded
   inert; not submitted). Built from source `8b0a2e2` against canonical vanilla-wow 0.1.209.
 - Keeps v120's persistent safe-anchor state and uses exact 0.25-second actions for every precise
-  turn and translation. Hazard geometry and combat behavior are unchanged. Hosted proof pending.
+  turn and translation. Hazard geometry and combat behavior are unchanged.
+- Request `xreq_7063f045-2013-4368-a884-1893ca923ad7` had zero action timeouts and
+  completed 13 retreats, but reached only three guidepoints. At the final anchor it waited while a
+  moving Glasshide Gazer closed from 17.5 to 15.3 yards and acquired wowborg; escape then tripped
+  the route-progress watchdog. The next candidate replaces stationary unsafe-anchor waiting with
+  quantized movement away from the active corridor hazards until a safe bypass reopens.
 
 ## v120 - persistent safe-anchor retreat (2026-08-09)
 

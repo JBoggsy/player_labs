@@ -387,6 +387,14 @@ guidepoints and escaped one pull. Exact 0.25-second actions already settle relia
 2.45 yards in Travel Form, closely matching the two-yard hold radius. The next candidate therefore
 uses that exact quantum for all precise translation instead of deriving duration continuously.
 
+V121 request `xreq_7063f045-2013-4368-a884-1893ca923ad7` proved the fully quantized
+actuator path with zero action timeouts and 13 completed retreats, but reached only three
+guidepoints. The remaining failure repeated v109's already-established stationary-wait hazard:
+at the final safe anchor, a moving Glasshide Gazer closed from 17.5 to 15.3 yards while wowborg
+waited, then acquired it. Escape moved away from the route and triggered the progress watchdog.
+The next candidate removes stationary unsafe-anchor waiting and uses quantized eight-direction
+movement away from the active corridor hazards until a safe candidate reopens.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.
