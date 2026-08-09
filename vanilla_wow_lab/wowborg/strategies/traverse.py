@@ -581,7 +581,22 @@ def _qualifying_ramp_scorpid(unit) -> bool:
     )
 
 
-def _ramp_scorpid_fight(frame, *, active_guid: str | None):
+def _qualifying_reactive_attacker(unit) -> bool:
+    return (
+        unit.player_reaction_hostile
+        and _unit_alive(unit)
+        and unit.level_known
+        and unit.level <= 49
+        and (not unit.creature_rank_known or unit.creature_rank == 0)
+    )
+
+
+def _traverse_fight_attacker(
+    frame,
+    *,
+    active_guid: str | None,
+    allow_proactive: bool,
+):
     if active_guid is not None:
         attacker = next(
             (
@@ -605,11 +620,14 @@ def _ramp_scorpid_fight(frame, *, active_guid: str | None):
         if frame.threat.attacker_count != 1 or len(attackers) != 1:
             return None
         attacker = attackers[0]
-        if not _qualifying_ramp_scorpid(attacker):
+        if not _qualifying_reactive_attacker(attacker):
             return None
         if frame.threat.elite_attacker_known and frame.threat.elite_attacker_present:
             return None
         return attacker
+
+    if not allow_proactive:
+        return None
 
     nearby_hazards = [
         unit
@@ -680,7 +698,7 @@ def _cast_feral_spell(
     return True
 
 
-def _fight_ramp_scorpid(bridge, navigator, frame, attacker, trace) -> bool:
+def _fight_traverse_attacker(bridge, navigator, frame, attacker, trace) -> bool:
     if frame.shapeshift_form_known and frame.shapeshift_form_id not in (0, 1):
         if not frame.shapeshift_form_spell_known:
             return False
@@ -702,7 +720,7 @@ def _fight_ramp_scorpid(bridge, navigator, frame, attacker, trace) -> bool:
             bridge,
             frame,
             (CAT_FORM_SPELL_ID,),
-            purpose="enter Cat Form for the constrained-ramp Scorpid",
+            purpose="enter Cat Form for traverse combat",
             trace=trace,
         )
     if frame.auto_attack_guid != attacker.guid:
@@ -760,7 +778,7 @@ def _fight_ramp_scorpid(bridge, navigator, frame, attacker, trace) -> bool:
             bridge,
             frame,
             FERAL_RIP_SPELL_IDS,
-            purpose="finish the constrained-ramp Scorpid with Rip",
+            purpose="finish the traverse attacker with Rip",
             trace=trace,
             target_guid=attacker.guid,
         )
@@ -773,7 +791,7 @@ def _fight_ramp_scorpid(bridge, navigator, frame, attacker, trace) -> bool:
             bridge,
             frame,
             FERAL_RAKE_SPELL_IDS,
-            purpose="bleed the constrained-ramp Scorpid with Rake",
+            purpose="bleed the traverse attacker with Rake",
             trace=trace,
             target_guid=attacker.guid,
         )
@@ -783,7 +801,7 @@ def _fight_ramp_scorpid(bridge, navigator, frame, attacker, trace) -> bool:
         bridge,
         frame,
         FERAL_CLAW_SPELL_IDS,
-        purpose="build on the constrained-ramp Scorpid with Claw",
+        purpose="build on the traverse attacker with Claw",
         trace=trace,
         target_guid=attacker.guid,
     ):
@@ -826,23 +844,23 @@ def _steer_road_leg(
     last_progress = time.monotonic()
     road_unstick_attempts = 0
     combat_escape_started: float | None = None
-    ramp_fight_guid: str | None = None
-    ramp_fight_started: float | None = None
+    fight_guid: str | None = None
+    fight_started: float | None = None
     while time.monotonic() < deadline and not getattr(bridge, "finished", False):
         frame = bridge.observe()
         if frame is None:
             return None, "no_frame"
         if frame.is_dead or frame.is_ghost:
             return None, "death"
-        fight_attacker = (
-            _ramp_scorpid_fight(frame, active_guid=ramp_fight_guid)
-            if hold_terrain_hazards
-            else None
+        fight_attacker = _traverse_fight_attacker(
+            frame,
+            active_guid=fight_guid,
+            allow_proactive=hold_terrain_hazards,
         )
         if fight_attacker is not None:
-            if ramp_fight_started is None:
-                ramp_fight_started = time.monotonic()
-                ramp_fight_guid = fight_attacker.guid
+            if fight_started is None:
+                fight_started = time.monotonic()
+                fight_guid = fight_attacker.guid
                 trace(
                     "traverse_combat_fight",
                     activation=1,
@@ -869,21 +887,27 @@ def _steer_road_leg(
                     },
                 )
             last_progress = time.monotonic()
-            if _fight_ramp_scorpid(bridge, navigator, frame, fight_attacker, trace):
+            if _fight_traverse_attacker(
+                bridge,
+                navigator,
+                frame,
+                fight_attacker,
+                trace,
+            ):
                 continue
-        elif ramp_fight_started is not None:
+        elif fight_started is not None:
             trace(
                 "traverse_combat_fight_ended",
                 activation=1,
                 reason="combat_ended" if not frame.in_combat else "gate_lost",
-                duration_seconds=round(time.monotonic() - ramp_fight_started, 3),
+                duration_seconds=round(time.monotonic() - fight_started, 3),
                 health=frame.health,
                 max_health=frame.max_health,
                 damage_done=frame.combat_damage_done_total,
                 damage_taken=frame.combat_damage_taken_total,
             )
-            ramp_fight_started = None
-            ramp_fight_guid = None
+            fight_started = None
+            fight_guid = None
 
         if frame.in_combat:
             if combat_escape_started is None:
