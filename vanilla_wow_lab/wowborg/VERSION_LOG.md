@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v141 - doubled open Traverse stride (2026-08-09)
+
+- Version UUID: `53afe44e-b6aa-4880-9111-eeffe620e64f` (`wowborg:v141`, uploaded
+  inert; not submitted). Built from source `1c051b2` against canonical vanilla-wow 0.1.209.
+- Doubles open translation to 1.5 seconds while retaining 0.25-second turns, retreat/evasion, and
+  final-20-yard precision. The route and 30-yard immediate hazard gate are unchanged.
+- Hosted Traverse proof is pending.
+
 ## v140 - exact Shimmering Flats ramp corridor (2026-08-09)
 
 - Version UUID: `191f1a51-9c67-46a1-8e5e-dc4d28efb9a3` (`wowborg:v140`, uploaded

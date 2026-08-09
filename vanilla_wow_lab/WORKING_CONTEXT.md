@@ -290,6 +290,8 @@ geometry is not falsified; the fixed episode horizon makes actuator throughput t
 constraint. The active candidate doubles open translation from 0.75 to 1.5 seconds while keeping
 0.25-second precision for turns, retreat/evasion, and the final 20 yards of every target. Its
 roughly 10.5-yard open stride remains inside the existing 30-yard immediate hazard gate.
+It is uploaded inert as **wowborg:v141**
+(`53afe44e-b6aa-4880-9111-eeffe620e64f`, source `1c051b2`); hosted Traverse proof is pending.
 
 ### Previous 0.1.208 movement baseline
 
