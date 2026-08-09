@@ -936,6 +936,8 @@ road at 241.4 seconds, but the exact trace showed fall damage accumulating throu
 quarter-second descent and the final damage landing 1.34 seconds after movement stopped. Precise
 cadence alone is insufficient. The active source exits Travel Form, enters Cat Form for that one
 descent, and makes south road an exact three-yard anchor before resuming Travel Form on the flats.
+The candidate is uploaded inert as **wowborg:v184**
+(`1cfe5fa3-18ec-43f6-9c8a-50d151f19d2f`, source `e85a02a`); its hosted evaluation is pending.
 
 ## Open uncertainties
 

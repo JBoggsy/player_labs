@@ -1278,7 +1278,8 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    at 241.4 seconds but accumulated fall damage throughout the quarter-second descent and died when
    the final damage landed 1.34 seconds after movement stopped. The active source now exits Travel
    Form, enters Cat Form for that one descent, and makes south road an exact three-yard anchor;
-   Travel Form resumes on the flats. Its hosted evaluation is pending.
+   Travel Form resumes on the flats. The candidate is uploaded inert as **wowborg:v184**
+   (`1cfe5fa3-18ec-43f6-9c8a-50d151f19d2f`, source `e85a02a`); its hosted evaluation is pending.
 
 ## Reference
 
