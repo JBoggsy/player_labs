@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v180 - true single-pull ramp combat (2026-08-09)
+
+- Version UUID: `2e1e0cdb-d12b-46dd-87f3-761fb55fa023` (`wowborg:v180`, uploaded
+  inert; not submitted). Built from source `836f8dd` against canonical vanilla-wow 0.1.209.
+- Proactively fights a qualifying ramp Scorpid only when it is the sole hostile inside the existing
+  30-yard hazard-entry radius, and begins attacking at 2.5 reported combat yards rather than 2.0.
+- V179 route geometry, steep cadence, hazard thresholds, and combat rotation are otherwise
+  unchanged. Hosted evaluation is pending.
+
 ## v179 - settle steep edges every eight pulses (2026-08-09)
 
 - Version UUID: `f2e48def-d816-4ce0-bb60-8e95ce4e8f85` (`wowborg:v179`, uploaded

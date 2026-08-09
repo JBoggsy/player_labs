@@ -901,6 +901,8 @@ admitted a Glasshide Basilisk at 2.55 yards, while another looped at 2.177 yards
 attack gate. The active source requires the qualifying Scorpid to be the only hostile inside the
 existing 30-yard hazard-entry radius and attacks from 2.5 reported combat yards. The third death was
 explicitly classified as unsafe falling after south road and remains the next route-safety task.
+The combat candidate is uploaded inert as **wowborg:v180**
+(`2e1e0cdb-d12b-46dd-87f3-761fb55fa023`, source `836f8dd`); its hosted evaluation is pending.
 
 ## Open uncertainties
 

@@ -1249,7 +1249,9 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    policy failures: a proactive Scorpid chase admitted a Glasshide Basilisk at 2.55 yards, while
    another looped at 2.177 yards above the 2.0 attack gate. The active source requires the Scorpid
    to be the only hostile within 30 yards and attacks from 2.5 reported combat yards. The third
-   death was explicit falling after south road and remains the next route-safety task.
+   death was explicit falling after south road and remains the next route-safety task. The combat
+   candidate is uploaded inert as **wowborg:v180**
+   (`2e1e0cdb-d12b-46dd-87f3-761fb55fa023`, source `836f8dd`); its hosted evaluation is pending.
 
 ## Reference
 
