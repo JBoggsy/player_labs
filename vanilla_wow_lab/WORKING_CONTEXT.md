@@ -1220,8 +1220,10 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    `xreq_ea688a49-44e2-4e64-b96f-71301d0e958b` produced three correct
    crest/downhill crossings that reached mountain ascent points 14, 6, and 6. One climb run still
    overshot the 40-yard jump edge; one stopped earlier; and one died near road point 3 after a
-   Glasshide Gazer closed to 4.05 yards. The active source replaces the long climb jump with six
-   measured navmesh sub-edges, matching the bounded-edge mountain-pass controller.
+   Glasshide Gazer closed to 4.05 yards. **wowborg:v176**
+   (`adb98318-5ce8-40a3-856e-0e8b9feaccc7`, source `25a2666`) is uploaded inert with the long climb
+   jump replaced by six measured navmesh sub-edges, matching the bounded-edge mountain-pass
+   controller. Its hosted evaluation is pending.
 
 ## Reference
 

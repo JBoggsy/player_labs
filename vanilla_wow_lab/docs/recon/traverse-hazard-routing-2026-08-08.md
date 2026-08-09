@@ -866,7 +866,8 @@ correct crest/downhill crossings; those runs reached mountain ascent points 14, 
 run still overshot the 40-yard jump edge, one stopped earlier, and one died near road point 3 after
 a Glasshide Gazer closed to 4.05 yards. The active source replaces the one long jump with six
 measured navmesh sub-edges from z14.7 through z31.0 before the z34 crest, matching the bounded-edge
-pattern already proven on the later mountain pass.
+pattern already proven on the later mountain pass. This is uploaded inert as **wowborg:v176**
+(`adb98318-5ce8-40a3-856e-0e8b9feaccc7`, source `25a2666`); its hosted evaluation is pending.
 
 ## Open uncertainties
 

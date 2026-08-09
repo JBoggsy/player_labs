@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v176 - bounded Tanaris road-9 climb (2026-08-09)
+
+- Version UUID: `adb98318-5ce8-40a3-856e-0e8b9feaccc7` (`wowborg:v176`, uploaded
+  inert; not submitted). Built from source `25a2666` against canonical vanilla-wow 0.1.209.
+- Replaces the single 40-yard road-9 jump edge with six navmesh-measured ascent sub-edges before
+  the existing crest, matching the proven bounded-edge controller on the later mountain pass.
+- All hazard, combat, and downstream route behavior is unchanged from v175. Hosted evaluation is
+  pending.
+
 ## v175 - split the road-9 climb at its crest (2026-08-09)
 
 - Version UUID: `069a5fea-de02-4969-afd2-62c6b83f585b` (`wowborg:v175`, uploaded
