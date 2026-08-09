@@ -7,6 +7,11 @@
 - Restores the proven 20-yard global clearance after V205 and moves the existing jump-aware lower
   descent boundary from point 16 to point 10, immediately after V202's last repeatedly proven
   walkable point. Dense bearings and every other behavior match V204.
+- Hosted request `xreq_a550e0e8-a6d5-4e70-941f-7f3b2d22bde3` kept 47 of 48 characters alive. Three
+  runs reached descent point 9 or later and jump-aware movement progressed through point 12 without
+  the prior correction loop, but none reached the south road before the horizon. The death followed
+  a quick level-42 win: a proactive level-40 Scorpid fled across the ramp while ranged fallback
+  repeatedly restarted cast-time spells before they could land.
 
 ## v205 - measured twelve-yard road clearance (2026-08-09)
 

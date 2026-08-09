@@ -1390,7 +1390,13 @@ level-46 Scorpid fight whose ranged fallback cast-looped without damage, so 12-y
 clearance remains rejected. The active source restores 20 yards and moves the jump-aware descent
 boundary from point 16 to point 10, immediately after V202's last repeatedly proven walkable point.
 This candidate is uploaded inert as **wowborg:v206**
-(`3adcfa93-82c6-4b4b-bc0d-4846b9a74596`, source `f525838`).
+(`3adcfa93-82c6-4b4b-bc0d-4846b9a74596`, source `f525838`). Hosted request
+`xreq_a550e0e8-a6d5-4e70-941f-7f3b2d22bde3` kept 47 of 48 characters alive. Three runs reached
+descent point 9 or later, and jump-aware movement progressed through point 12 without the prior
+correction loop, but none reached the south road. The death followed a quick level-42 win: a
+proactive level-40 Scorpid fled across the ramp while ranged fallback repeatedly restarted
+cast-time spells. The active source waits through active ranged casts and remembers failed ranged
+spell families so fallback can advance from Moonfire to Wrath instead of self-interrupting.
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.

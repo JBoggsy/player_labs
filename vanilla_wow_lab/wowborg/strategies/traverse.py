@@ -778,6 +778,7 @@ def _cast_combat_spell(
 @dataclass
 class TraverseCombatState:
     failed_feral_spell_ids: set[int] = field(default_factory=set)
+    failed_ranged_spell_ids: set[int] = field(default_factory=set)
     melee_refaces: int = 0
     ranged_fallback: bool = False
 
@@ -791,6 +792,17 @@ def _fight_traverse_attacker(
     combat: TraverseCombatState,
 ) -> bool:
     if combat.ranged_fallback:
+        if frame.is_casting:
+            request_id = bridge.select_wait(frame)
+            if request_id is None:
+                return False
+            trace(
+                "traverse_combat_ranged_fallback",
+                activation=1,
+                phase="finish_active_cast",
+                spell_id=frame.casting_spell_id,
+            )
+            return True
         if frame.shapeshift_form_known and frame.shapeshift_form_id != 0:
             if not frame.shapeshift_form_spell_known:
                 return False
@@ -808,9 +820,15 @@ def _fight_traverse_attacker(
                 detail=outcome.detail if outcome is not None else "unsettled",
             )
             return True
+        moonfire_unavailable = all(
+            spell_id not in frame.known_spells
+            or spell_id in combat.failed_ranged_spell_ids
+            for spell_id in MOONFIRE_SPELL_IDS
+        )
         ranged_spell_ids = (
             WRATH_SPELL_IDS
-            if set(attacker.active_aura_spell_ids).intersection(MOONFIRE_SPELL_IDS)
+            if moonfire_unavailable
+            or set(attacker.active_aura_spell_ids).intersection(MOONFIRE_SPELL_IDS)
             else MOONFIRE_SPELL_IDS
         )
         return _cast_combat_spell(
@@ -820,6 +838,7 @@ def _fight_traverse_attacker(
             purpose="damage the traverse attacker after repeated melee failure",
             trace=trace,
             target_guid=attacker.guid,
+            failed_spell_ids=combat.failed_ranged_spell_ids,
             trace_kind="traverse_combat_ranged_spell",
         )
 
