@@ -766,6 +766,8 @@ With that safe stride restored, the active source candidate changes only local b
 40 yards forward rather than 20, with the same adaptive 30/45/60-yard lateral choices and mandatory
 20-yard segment clearance. The longer tangent remains inside the 60-yard lookahead and 80-yard
 tracking horizons while spending less movement crossing the road instead of advancing.
+That candidate is uploaded inert as **wowborg:v165**
+(`3b4b7594-a711-456c-8d36-8cf282d241cc`, source `1086b45`).
 
 ## Open uncertainties
 

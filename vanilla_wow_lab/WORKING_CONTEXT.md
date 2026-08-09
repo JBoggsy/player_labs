@@ -1127,6 +1127,8 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    40 yards forward rather than 20, with the same adaptive 30/45/60-yard lateral choices and
    mandatory 20-yard segment clearance. This remains inside the 60-yard lookahead and 80-yard
    tracking horizons while reducing lateral path waste.
+   That candidate is uploaded inert as **wowborg:v165**
+   (`3b4b7594-a711-456c-8d36-8cf282d241cc`, source `1086b45`).
 
 ## Reference
 
