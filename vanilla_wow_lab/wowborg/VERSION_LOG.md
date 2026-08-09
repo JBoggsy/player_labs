@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v162 - close fully into feral range (2026-08-09)
+
+- Version UUID: `b1dfbc40-2631-4b5d-8581-83ec6e6a935f` (`wowborg:v162`, uploaded
+  inert; not submitted). Built from source `8057d2e` against canonical vanilla-wow 0.1.209.
+- Closes to two reported yards before the first attack against the qualifying ramp Scorpid, rather
+  than stopping at five yards where the ramp's vertical separation left Rake out of range.
+- Exact targeting, form transition, rotation, route geometry, and all other-contact behavior are
+  unchanged from v161. This isolates realized feral ability use and time-to-kill.
+
 ## v161 - exact-target feral ramp rotation (2026-08-09)
 
 - Version UUID: `922c2942-06d8-4b55-8ac1-bedf7bb41522` (`wowborg:v161`, uploaded

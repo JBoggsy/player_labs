@@ -740,6 +740,8 @@ material vertical separation. Auto-attacks again killed the Scorpid in 34.3 seco
 367 taken). Wowborg survived and reached ramp-base milestone 20, the first clean post-kill advance.
 The next source candidate closes to two reported yards before attacking so the ramp's 3D geometry
 cannot leave melee abilities outside range.
+That candidate is uploaded inert as **wowborg:v162**
+(`b1dfbc40-2631-4b5d-8581-83ec6e6a935f`, source `8057d2e`).
 
 ## Open uncertainties
 

@@ -1103,6 +1103,8 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    killed the mob in 34.3 seconds (1,946 dealt / 367 taken). Wowborg survived and reached ramp-base
    milestone 20, the first post-kill advance. The next source candidate closes to two reported yards
    before attacking so the ramp's vertical separation cannot leave melee abilities outside range.
+   That candidate is uploaded inert as **wowborg:v162**
+   (`b1dfbc40-2631-4b5d-8581-83ec6e6a935f`, source `8057d2e`).
 
 ## Reference
 
