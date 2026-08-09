@@ -1331,6 +1331,15 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
 
 ## Reference
 
+### Current Great Lift candidate
+
+The active source adds one combat fallback beyond **wowborg:v196**. A single ordinary attacker is
+still fought in Cat Form first, with one corrective re-face after a complete failed rotation. If a
+second complete rotation also fails, wowborg leaves Cat Form and casts Moonfire followed by Wrath
+at the exact attacker. This directly addresses V196's sole death, where a level-47 Scorpid
+Dunestalker took zero damage before and after the re-face. The change is not yet uploaded or
+evaluated; routing, hazard clearance, descent healing, and movement cadence are unchanged.
+
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.
   **Read-only for us; fetch/pull before relying on it.** Current verified movement source:

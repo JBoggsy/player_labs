@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v197 - ranged fallback after repeated melee failure (2026-08-09)
+
+- Upload pending.
+- After a complete feral rotation fails twice against the same exact attacker, leaves Cat Form and
+  switches to Moonfire followed by Wrath. The first failed rotation still gets V195's corrective
+  re-face; ordinary successful melee fights are unchanged.
+- This targets V196's sole death: a level-47 Scorpid Dunestalker took zero damage through two
+  failed melee rotations, including the corrective re-face. Hosted evaluation is pending.
+
 ## v196 - health-gated second descent (2026-08-09)
 
 - Version UUID: `a71f2f58-6d95-411d-90da-dd099914bcbe` (`wowborg:v196`, uploaded

@@ -26,6 +26,8 @@ RAMP_SCORPID_ENTRY = 5422
 FERAL_CLAW_SPELL_IDS = (9850, 9849, 5201, 3029, 1082)
 FERAL_RAKE_SPELL_IDS = (9904, 1824, 1823, 1822)
 FERAL_RIP_SPELL_IDS = (9896, 9894, 9752, 9493, 9492, 1079)
+WRATH_SPELL_IDS = (6780, 5180, 5179, 5178, 5177, 5176)
+MOONFIRE_SPELL_IDS = (8929, 8928, 8927, 8926, 8925, 8924, 8921)
 REJUVENATION_SPELL_IDS = (
     9841,
     9840,
@@ -676,7 +678,7 @@ def _traverse_fight_attacker(
     return None if likely_add else attacker
 
 
-def _cast_feral_spell(
+def _cast_combat_spell(
     bridge,
     frame,
     spell_ids,
@@ -685,6 +687,7 @@ def _cast_feral_spell(
     trace,
     target_guid: str | None = None,
     failed_spell_ids: set[int] | None = None,
+    trace_kind: str = "traverse_combat_feral_spell",
 ) -> bool:
     spell_id = next(
         (
@@ -706,7 +709,7 @@ def _cast_feral_spell(
         return False
     outcome = bridge.wait_for_settlement(frame.frame_id)
     trace(
-        "traverse_combat_feral_spell",
+        trace_kind,
         activation=1,
         spell_id=spell_id,
         purpose=purpose,
@@ -727,14 +730,54 @@ def _cast_feral_spell(
     return True
 
 
+@dataclass
+class TraverseCombatState:
+    failed_feral_spell_ids: set[int] = field(default_factory=set)
+    melee_refaces: int = 0
+    ranged_fallback: bool = False
+
+
 def _fight_traverse_attacker(
     bridge,
     navigator,
     frame,
     attacker,
     trace,
-    failed_spell_ids: set[int],
+    combat: TraverseCombatState,
 ) -> bool:
+    if combat.ranged_fallback:
+        if frame.shapeshift_form_known and frame.shapeshift_form_id != 0:
+            if not frame.shapeshift_form_spell_known:
+                return False
+            spell_id = frame.shapeshift_form_spell_id
+            request_id = bridge.select_cancel_aura(frame, spell_id)
+            if request_id is None:
+                return False
+            outcome = bridge.wait_for_settlement(frame.frame_id)
+            trace(
+                "traverse_combat_ranged_fallback",
+                activation=1,
+                phase="exit_current_form",
+                spell_id=spell_id,
+                success=outcome is not None and outcome.success,
+                detail=outcome.detail if outcome is not None else "unsettled",
+            )
+            return True
+        ranged_spell_ids = (
+            WRATH_SPELL_IDS
+            if set(attacker.active_aura_spell_ids).intersection(MOONFIRE_SPELL_IDS)
+            else MOONFIRE_SPELL_IDS
+        )
+        return _cast_combat_spell(
+            bridge,
+            frame,
+            ranged_spell_ids,
+            purpose="damage the traverse attacker after repeated melee failure",
+            trace=trace,
+            target_guid=attacker.guid,
+            trace_kind="traverse_combat_ranged_spell",
+        )
+
     if frame.shapeshift_form_known and frame.shapeshift_form_id not in (0, 1):
         if not frame.shapeshift_form_spell_known:
             return False
@@ -752,7 +795,7 @@ def _fight_traverse_attacker(
         )
         return True
     if not frame.shapeshift_form_known or frame.shapeshift_form_id != 1:
-        return _cast_feral_spell(
+        return _cast_combat_spell(
             bridge,
             frame,
             (CAT_FORM_SPELL_ID,),
@@ -816,44 +859,61 @@ def _fight_traverse_attacker(
         and frame.combo_points >= 3
         and target_healthy
         and not active_auras.intersection(FERAL_RIP_SPELL_IDS)
-        and _cast_feral_spell(
+        and _cast_combat_spell(
             bridge,
             frame,
             FERAL_RIP_SPELL_IDS,
             purpose="finish the traverse attacker with Rip",
             trace=trace,
             target_guid=attacker.guid,
-            failed_spell_ids=failed_spell_ids,
+            failed_spell_ids=combat.failed_feral_spell_ids,
         )
     ):
         return True
     if (
         target_healthy
         and not active_auras.intersection(FERAL_RAKE_SPELL_IDS)
-        and _cast_feral_spell(
+        and _cast_combat_spell(
             bridge,
             frame,
             FERAL_RAKE_SPELL_IDS,
             purpose="bleed the traverse attacker with Rake",
             trace=trace,
             target_guid=attacker.guid,
-            failed_spell_ids=failed_spell_ids,
+            failed_spell_ids=combat.failed_feral_spell_ids,
         )
     ):
         return True
-    if _cast_feral_spell(
+    if _cast_combat_spell(
         bridge,
         frame,
         FERAL_CLAW_SPELL_IDS,
         purpose="build on the traverse attacker with Claw",
         trace=trace,
         target_guid=attacker.guid,
-        failed_spell_ids=failed_spell_ids,
+        failed_spell_ids=combat.failed_feral_spell_ids,
     ):
         return True
-    if failed_spell_ids:
+    if combat.failed_feral_spell_ids:
+        combat.failed_feral_spell_ids.clear()
+        if combat.melee_refaces:
+            combat.ranged_fallback = True
+            trace(
+                "traverse_combat_ranged_fallback",
+                activation=1,
+                phase="activated",
+                target_guid=attacker.guid,
+            )
+            return _fight_traverse_attacker(
+                bridge,
+                navigator,
+                frame,
+                attacker,
+                trace,
+                combat,
+            )
         navigator._faced_attacker_guid = None
-        failed_spell_ids.clear()
+        combat.melee_refaces += 1
         trace(
             "traverse_combat_fight_reface",
             activation=1,
@@ -899,7 +959,7 @@ def _steer_road_leg(
     combat_escape_started: float | None = None
     fight_guid: str | None = None
     fight_started: float | None = None
-    failed_feral_spell_ids: set[int] = set()
+    combat = TraverseCombatState()
     while time.monotonic() < deadline and not getattr(bridge, "finished", False):
         frame = bridge.observe()
         if frame is None:
@@ -915,7 +975,7 @@ def _steer_road_leg(
             if fight_started is None:
                 fight_started = time.monotonic()
                 fight_guid = fight_attacker.guid
-                failed_feral_spell_ids.clear()
+                combat = TraverseCombatState()
                 trace(
                     "traverse_combat_fight",
                     activation=1,
@@ -948,7 +1008,7 @@ def _steer_road_leg(
                 frame,
                 fight_attacker,
                 trace,
-                failed_feral_spell_ids,
+                combat,
             ):
                 continue
         elif fight_started is not None:
@@ -964,7 +1024,7 @@ def _steer_road_leg(
             )
             fight_started = None
             fight_guid = None
-            failed_feral_spell_ids.clear()
+            combat = TraverseCombatState()
 
         if frame.in_combat:
             if combat_escape_started is None:
