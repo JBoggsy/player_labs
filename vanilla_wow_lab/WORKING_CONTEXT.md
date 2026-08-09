@@ -1136,6 +1136,10 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    source restores the proven 20-yard forward component. The next isolated speed lever is the
    unavoidable ramp fight: current safe kills take 29-36 seconds and spend combo points on Rip
    before the fixture can use its maintained Ferocious Bite finisher.
+   The active source candidate adds only the maintained five-combo-point Ferocious Bite finisher
+   once the Scorpid is at or below 40% health. Existing Rake, Rip, and Claw ordering is unchanged;
+   spell traces now include pre-cast combo points and active power so the hosted result can explain
+   both activation and non-activation.
 
 ## Reference
 

@@ -26,6 +26,7 @@ RAMP_SCORPID_ENTRY = 5422
 FERAL_CLAW_SPELL_IDS = (9850, 9849, 5201, 3029, 1082)
 FERAL_RAKE_SPELL_IDS = (9904, 1824, 1823, 1822)
 FERAL_RIP_SPELL_IDS = (9896, 9894, 9752, 9493, 9492, 1079)
+FERAL_FEROCIOUS_BITE_SPELL_IDS = (31018, 22829, 22828, 22827, 22568)
 FERAL_MELEE_CLOSE_YARDS = 2.0
 GREAT_LIFT_ENTRIES = (11898, 11899)
 GREAT_LIFT_LOWER_DOCK = Point(1, -4677.066, -1853.667, -43.857)
@@ -619,6 +620,12 @@ def _cast_feral_spell(
         activation=1,
         spell_id=spell_id,
         purpose=purpose,
+        combo_points_before=(
+            frame.combo_points if frame.combo_points_known else None
+        ),
+        active_power_before=(
+            frame.active_power if frame.active_power_known else None
+        ),
         success=outcome is not None and outcome.success,
         detail=outcome.detail if outcome is not None else "unsettled",
     )
@@ -696,6 +703,20 @@ def _fight_ramp_scorpid(bridge, navigator, frame, attacker, trace) -> bool:
         or attacker.max_health <= 0
         or attacker.health / attacker.max_health > 0.4
     )
+    if (
+        frame.combo_points_known
+        and frame.combo_points >= 5
+        and not target_healthy
+        and _cast_feral_spell(
+            bridge,
+            frame,
+            FERAL_FEROCIOUS_BITE_SPELL_IDS,
+            purpose="finish the constrained-ramp Scorpid with Ferocious Bite",
+            trace=trace,
+            target_guid=attacker.guid,
+        )
+    ):
+        return True
     if (
         frame.combo_points_known
         and frame.combo_points >= 3

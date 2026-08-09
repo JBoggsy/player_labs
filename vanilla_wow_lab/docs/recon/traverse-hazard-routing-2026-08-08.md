@@ -775,6 +775,9 @@ diagonal endpoint did not consistently reduce the state churn, so source restore
 20-yard forward component. The next isolated throughput lever is the unavoidable ramp fight's
 29-36 second duration: the current rotation spends three combo points on Rip and never reaches the
 fixture's maintained Ferocious Bite finisher.
+The next source candidate adds only that maintained five-combo-point finisher below 40% target
+health and records combo points plus active power before every feral cast. Rake, Rip, Claw, the
+fight admission gate, and all routing behavior remain unchanged.
 
 ## Open uncertainties
 
