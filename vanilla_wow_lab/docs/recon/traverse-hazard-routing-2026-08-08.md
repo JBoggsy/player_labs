@@ -724,6 +724,13 @@ frame. This keeps the transition inside the current public action contract rathe
 keypress or adding a compatibility path.
 That candidate is uploaded inert as **wowborg:v160**
 (`84f82e8c-f928-4e29-851e-5a2a8b2e0736`, source `b5f3e95`).
+Six-run request `xreq_a732a990-eb51-4157-bb7c-c025c48eac9b` produced the first
+successful ramp kill. Typed form exit and Cat entry succeeded; the level-41 Scorpid died in 34.0
+seconds after 1,956 damage dealt and only 110 taken, and wowborg survived at full health. This
+confirms that fighting the unavoidable pinch is safe. It is not yet efficient: host telemetry shows
+Rake and Claw were invoked without their required target (`select target` / `cancelled`), leaving
+repeated auto-attacks to do the work. The next source candidate supplies the exact Scorpid GUID to
+Rake, Claw, and Rip.
 
 ## Open uncertainties
 

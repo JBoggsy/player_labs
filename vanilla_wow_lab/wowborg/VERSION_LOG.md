@@ -8,6 +8,12 @@
   form spell, then enters Cat on the next frame.
 - Target selection, proactive closing, feral rotation, route geometry, and all other-contact
   behavior are unchanged from v159.
+- Six-run request `xreq_a732a990-eb51-4157-bb7c-c025c48eac9b` produced one ramp
+  fight: typed form exit and Cat entry succeeded, the level-41 Scorpid died in 34.0 seconds after
+  1,956 damage dealt and only 110 taken, and wowborg survived at full health. Host telemetry showed
+  Rake/Claw were invoked without their required target (`select target` / `cancelled`), leaving
+  repeated auto-attacks to do the work. The next candidate supplies the exact Scorpid GUID to every
+  offensive feral spell.
 
 ## v159 - observed-form transition before ramp combat (2026-08-09)
 

@@ -590,17 +590,25 @@ def _ramp_scorpid_fight(frame, *, active_guid: str | None):
     return nearby_hazards[0] if _qualifying_ramp_scorpid(nearby_hazards[0]) else None
 
 
-def _cast_feral_spell(bridge, frame, spell_ids, *, purpose: str, trace) -> bool:
+def _cast_feral_spell(
+    bridge,
+    frame,
+    spell_ids,
+    *,
+    purpose: str,
+    trace,
+    target_guid: str | None = None,
+) -> bool:
     spell_id = next(
         (spell_id for spell_id in spell_ids if spell_id in frame.known_spells),
         None,
     )
     if spell_id is None:
         return False
-    request_id = bridge.select_cast_without_target(
-        frame,
-        spell_id,
-        purpose=purpose,
+    request_id = (
+        bridge.select_cast_target(frame, spell_id, target_guid)
+        if target_guid is not None
+        else bridge.select_cast_without_target(frame, spell_id, purpose=purpose)
     )
     if request_id is None:
         return False
@@ -695,6 +703,7 @@ def _fight_ramp_scorpid(bridge, navigator, frame, attacker, trace) -> bool:
             FERAL_RIP_SPELL_IDS,
             purpose="finish the constrained-ramp Scorpid with Rip",
             trace=trace,
+            target_guid=attacker.guid,
         )
     ):
         return True
@@ -707,6 +716,7 @@ def _fight_ramp_scorpid(bridge, navigator, frame, attacker, trace) -> bool:
             FERAL_RAKE_SPELL_IDS,
             purpose="bleed the constrained-ramp Scorpid with Rake",
             trace=trace,
+            target_guid=attacker.guid,
         )
     ):
         return True
@@ -716,6 +726,7 @@ def _fight_ramp_scorpid(bridge, navigator, frame, attacker, trace) -> bool:
         FERAL_CLAW_SPELL_IDS,
         purpose="build on the constrained-ramp Scorpid with Claw",
         trace=trace,
+        target_guid=attacker.guid,
     ):
         return True
     return navigator._engage_exact_attacker(bridge, frame)

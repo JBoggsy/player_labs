@@ -377,6 +377,23 @@ class GymSession:
         )
         return None if action is None else self.select_action(frame, action)
 
+    def select_cast_target(
+        self,
+        frame: AgentFrame,
+        spell_id: int,
+        target_guid: str,
+    ) -> str | None:
+        if spell_id not in frame.known_spells:
+            return None
+        action = self._invocation(
+            frame,
+            label="cast",
+            source_kind="spell",
+            source_id=str(spell_id),
+            target_guid=target_guid,
+        )
+        return None if action is None else self.select_action(frame, action)
+
     def select_cancel_aura(self, frame: AgentFrame, spell_id: int) -> str | None:
         action = self._invocation(
             frame,
@@ -418,6 +435,7 @@ class GymSession:
         label: str,
         source_kind: str | None = None,
         source_id: str | None = None,
+        target_guid: str | None = None,
         text: str | None = None,
     ) -> AgentAction | None:
         for available in frame.available_actions:
@@ -432,6 +450,7 @@ class GymSession:
                 verb=available.verb,
                 source_kind=available.source_kind,
                 source_id=available.source_id,
+                target_guid=target_guid,
                 text=text,
             )
         return None

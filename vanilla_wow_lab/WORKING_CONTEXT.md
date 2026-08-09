@@ -1091,6 +1091,11 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    action for active beneficial auras; the next source candidate uses it for spell 783 before Cat.
    That candidate is uploaded inert as **wowborg:v160**
    (`84f82e8c-f928-4e29-851e-5a2a8b2e0736`, source `b5f3e95`).
+   Six-run request `xreq_a732a990-eb51-4157-bb7c-c025c48eac9b` produced one ramp
+   kill: form exit and Cat entry succeeded; the level-41 Scorpid died in 34.0 seconds after 1,956
+   dealt / 110 taken, with wowborg alive at full health. Rake and Claw lacked their required target,
+   so host telemetry reported `select target` / `cancelled` and repeated auto-attacks did the work.
+   The next source candidate passes the exact Scorpid GUID to every offensive feral spell.
 
 ## Reference
 
