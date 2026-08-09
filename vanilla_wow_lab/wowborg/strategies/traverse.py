@@ -38,6 +38,7 @@ ROAD_UNSTICK_ATTEMPTS = 2
 ROAD_HAZARD_ENTER_YARDS = 30.0
 ROAD_HAZARD_EXIT_YARDS = 40.0
 ROAD_HAZARD_LOOKAHEAD_YARDS = 60.0
+ROAD_HAZARD_HOLD_EXIT_YARDS = 70.0
 ROAD_HAZARD_RESIDENT_RADIUS_YARDS = 30.0
 ROAD_HAZARD_CORRIDOR_YARDS = 18.0
 ROAD_HAZARD_TRACK_YARDS = 80.0
@@ -228,6 +229,7 @@ def _hazard_avoidance_target(
     target: Point,
     *,
     side: float | None,
+    active_holding_guids: set[str],
 ):
     route_x = target.x - frame.location.x
     route_y = target.y - frame.location.y
@@ -247,12 +249,25 @@ def _hazard_avoidance_target(
         and not unit.is_dead
         and unit.distance <= ROAD_HAZARD_TRACK_YARDS
     ]
+    safe_active_holding_guids = {
+        unit.guid
+        for unit in tracked
+        if unit.guid in active_holding_guids
+        and unit.movement_destination_known
+        and _point_segment_distance(
+            frame.location.x,
+            frame.location.y,
+            *_unit_path(unit),
+        )
+        >= ROAD_HAZARD_MIN_CLEARANCE_YARDS
+    }
     immediate_end_x = frame.location.x + route_x * detection_radius
     immediate_end_y = frame.location.y + route_y * detection_radius
     immediate_hazards = [
         unit
         for unit in tracked
-        if _segment_clearance(
+        if unit.guid not in safe_active_holding_guids
+        and _segment_clearance(
             frame.location.x,
             frame.location.y,
             immediate_end_x,
@@ -304,11 +319,24 @@ def _hazard_avoidance_target(
     hazards_by_guid.update({unit.guid: unit for unit in resident_hazards})
     hazards = list(hazards_by_guid.values())
     if not hazards:
-        hold_hazards = [
-            unit
+        lookahead_guids = {unit.guid for unit in lookahead_hazards}
+        hold_hazards_by_guid = {
+            unit.guid: unit
             for unit in lookahead_hazards
             if unit.movement_destination_known
-        ]
+        }
+        hold_hazards_by_guid.update(
+            {
+                unit.guid: unit
+                for unit in tracked
+                if unit.guid in safe_active_holding_guids
+                and (
+                    unit.guid in lookahead_guids
+                    or unit.distance < ROAD_HAZARD_HOLD_EXIT_YARDS
+                )
+            }
+        )
+        hold_hazards = list(hold_hazards_by_guid.values())
         return target, None, hold_hazards, tracked, {}, {}, bool(hold_hazards)
 
     def clearance(candidate_side: float, lateral_yards: float) -> float:
@@ -450,6 +478,7 @@ def _hazard_evasion_target(frame, hazards, target: Point) -> Point:
 class HazardAvoidanceState:
     side: float | None = None
     holding: bool = False
+    holding_guids: set[str] = field(default_factory=set)
     evading: bool = False
     retreating: bool = False
     retreat_blocked: bool = False
@@ -609,6 +638,7 @@ def _steer_road_leg(
                 frame,
                 target,
                 side=avoidance.side,
+                active_holding_guids=avoidance.holding_guids,
             )
         if should_hold:
             if not avoidance.holding:
@@ -635,6 +665,7 @@ def _steer_road_leg(
             if avoidance.retreating:
                 trace("traverse_hazard_retreat_ended", activation=1, reason="hold")
             avoidance.holding = True
+            avoidance.holding_guids = {unit.guid for unit in hazards}
             avoidance.side = None
             avoidance.evading = False
             avoidance.retreating = False
@@ -652,6 +683,7 @@ def _steer_road_leg(
         if avoidance.holding:
             trace("traverse_hazard_hold_ended", activation=1)
             avoidance.holding = False
+            avoidance.holding_guids = set()
         if next_avoidance_side is not None and avoidance.side is None:
             trace(
                 "traverse_hazard_avoidance",

@@ -7,7 +7,10 @@
 - Permits ordinary road guidepoints to complete up to 20 yards before their target x when still
   inside the existing 60-yard lateral/z corridor. Exact Detour bend anchors and the Great Lift
   dock retain their 8-yard completion requirement.
-- Hosted Traverse proof is pending.
+- Request `xreq_3c31de07-6a4e-40a6-87f0-c46126c03bbe` emitted eight ordinary
+  pass events through node 6, proving the completion change, but died to two Tail Lasher contacts
+  before node 7. Detour recon found no connected broad north or south bypass around this pass; the
+  crossing-patrol decision still flickered off before the threat had cleared.
 
 ## v136 - guidepoint-resident patrol routing (2026-08-09)
 

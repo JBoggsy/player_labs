@@ -522,7 +522,13 @@ of its exact northing threshold. The next candidate permits ordinary guidepoints
 yards before their target x while retaining the existing 60-yard lateral/z corridor. The three
 Detour bend anchors and Great Lift remain exact.
 It is uploaded inert as **wowborg:v137**
-(`de9133dc-8ede-416d-98db-e2713ae88a6d`, source `b7bdcd1`); hosted Traverse proof is pending.
+(`de9133dc-8ede-416d-98db-e2713ae88a6d`, source `b7bdcd1`). Request
+`xreq_3c31de07-6a4e-40a6-87f0-c46126c03bbe` emitted eight ordinary pass events
+through node 6, proving the completion change, but died to two Tail Lasher contacts before node 7.
+Pinned 0.1.209 Detour recon found no connected broad north or south bypass around this pass. The
+next candidate instead retains a crossing GUID while it remains within 70 yards or intersects
+lookahead, holding without displacement. A projected path inside 20 yards of the holding point
+still escalates to local avoidance, and guidepoint-resident classification remains active.
 
 ## Open uncertainties
 
