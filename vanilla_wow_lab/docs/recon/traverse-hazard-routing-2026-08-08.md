@@ -787,6 +787,8 @@ fight windows plus 32 failed spell attempts after combo points had reset to zero
 owner paths consistently exclude an observed unit at `health <= 1` even when its `is_dead`
 projection lags. The next source candidate removes the inactive finisher and applies that terminal
 health convention to Traverse hazards and attackers.
+That candidate is uploaded inert as **wowborg:v167**
+(`31e355b8-384d-490b-a274-5f2669eb2c06`, source `7dc278e`).
 
 ## Open uncertainties
 

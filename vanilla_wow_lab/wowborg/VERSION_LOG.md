@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v167 - terminal-health hostile handling (2026-08-09)
+
+- Version UUID: `31e355b8-384d-490b-a274-5f2669eb2c06` (`wowborg:v167`, uploaded
+  inert; not submitted). Built from source `7dc278e` against canonical vanilla-wow 0.1.209.
+- Applies the maintained owner convention that an observed unit with `health <= 1` is terminal even
+  when `is_dead` lags. Such units no longer qualify as route hazards, attackers, or proactive ramp
+  fights. The inactive v166 Bite branch is removed; resource tracing remains.
+- Route geometry, clearance thresholds, live-unit movement projection, and combat rotation are
+  otherwise the safe v162 baseline. The hosted request is pending.
+
 ## v166 - Ferocious Bite ramp finisher (2026-08-09)
 
 - Version UUID: `327685d0-0d64-4bd5-a606-322610bff48f` (`wowborg:v166`, uploaded

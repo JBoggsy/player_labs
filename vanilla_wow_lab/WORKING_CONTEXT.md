@@ -1150,6 +1150,8 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    observed `health <= 1` as terminal even if `is_dead` lags. The active source removes the
    inactive Bite branch and applies that terminal convention to Traverse hazards and attackers,
    preserving the resource trace fields for the next hosted proof.
+   That candidate is uploaded inert as **wowborg:v167**
+   (`31e355b8-384d-490b-a274-5f2669eb2c06`, source `7dc278e`).
 
 ## Reference
 
