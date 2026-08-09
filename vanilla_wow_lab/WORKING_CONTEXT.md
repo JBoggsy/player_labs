@@ -1143,11 +1143,6 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    That candidate is uploaded inert as **wowborg:v166**
    (`327685d0-0d64-4bd5-a606-322610bff48f`, source `937f6ec`). v78 remains the
    submitted champion.
-   Recon for the next router iteration found that `Unit` already exposes movement speed and
-   remaining spline time, but current clearance treats the player's and patrol's complete segments
-   as simultaneous swept volumes. The prepared next source candidate computes closest approach at
-   matching times, retains the same 20-yard floor, and falls back to swept geometry whenever timing
-   is unavailable. It must not be uploaded until v166's finisher result is recorded.
 
 ## Reference
 
