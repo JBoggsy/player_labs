@@ -8,7 +8,13 @@
   which follows Detour polygon keys and infers required jumps. Manual steep ascent points are
   removed.
 - Hazard-aware steering, ramp combat, downstream route endpoints, and ordinary-road cadence are
-  unchanged from v169. The hosted request is pending.
+  unchanged from v169.
+- Six-run request `xreq_b07f6d6c-b7a5-4c0e-95b1-fa668c05d442` produced one
+  ramp-base run. Its native 94-yard pass action was accepted but returned the same frame after the
+  fixed 30-second action timeout, so the route was too long for one synchronous action. Two runs
+  died earlier in Tanaris and three stopped earlier on route progress/frame failures. The next
+  candidate retains native jump inference but bounds each action to one of the 17 canonical
+  Detour edges.
 
 ## v169 - canonical Detour ramp ascent (2026-08-09)
 

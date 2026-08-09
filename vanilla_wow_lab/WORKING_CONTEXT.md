@@ -1180,6 +1180,12 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    native follower. Hazard-aware steering remains unchanged before and after the pass.
    That candidate is uploaded inert as **wowborg:v170**
    (`8085e4e1-e211-4958-9477-a15a148490b9`, source `2c32d05`).
+   Six-run request `xreq_b07f6d6c-b7a5-4c0e-95b1-fa668c05d442` produced one
+   ramp-base run. The native 94-yard pass action was accepted, but after 30 seconds it returned the
+   unchanged frame with `action_status=timeout`; the synchronous action is too long to consume the
+   whole pass. Two runs died earlier in Tanaris and three stopped earlier on route progress/frame
+   failures. The active source retains native jump inference but restores the 17 canonical points
+   as action boundaries, so each `move_to` executes and settles one steep edge at a time.
 
 ## Reference
 

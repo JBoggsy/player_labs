@@ -819,6 +819,12 @@ with polygon-based jump inference. The next candidate removes the manual ascent 
 native `move_to` only from ramp-base to crest, leaving hazard-aware routing unchanged elsewhere.
 That candidate is uploaded inert as **wowborg:v170**
 (`8085e4e1-e211-4958-9477-a15a148490b9`, source `2c32d05`).
+Request `xreq_b07f6d6c-b7a5-4c0e-95b1-fa668c05d442` produced one ramp-base run.
+The native 94-yard pass action was accepted, but returned the unchanged frame after the fixed
+30-second action timeout. Two runs died earlier in Tanaris and three stopped earlier on route
+progress/frame failures. The next candidate combines the two established mechanisms: canonical
+Detour points bound each action to one steep edge, while native `move_to` supplies polygon-based
+jump inference for that edge.
 
 ## Open uncertainties
 

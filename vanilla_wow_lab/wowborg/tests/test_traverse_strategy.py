@@ -144,9 +144,14 @@ def test_traverse_route_prefix_reaches_great_lift_lower_dock() -> None:
     assert names[-1] == "great-lift-lower-dock"
     assert len(names) == len(set(names))
 
-    ramp_base = names.index("shimmering-flats-ramp-base")
-    assert names[ramp_base + 1] == "shimmering-flats-ramp-crest"
-    assert ROAD_NATIVE_NAVIGATION_GUIDEPOINTS == {"shimmering-flats-ramp-crest"}
+    ascent_start = names.index("shimmering-flats-ramp-ascent-01")
+    assert names[ascent_start : ascent_start + 17] == [
+        *(f"shimmering-flats-ramp-ascent-{index:02d}" for index in range(1, 17)),
+        "shimmering-flats-ramp-crest",
+    ]
+    assert set(names[ascent_start : ascent_start + 17]) == set(
+        ROAD_NATIVE_NAVIGATION_GUIDEPOINTS
+    )
 
 
 def test_lift_detection_uses_only_visible_platform_at_lower_dock() -> None:
