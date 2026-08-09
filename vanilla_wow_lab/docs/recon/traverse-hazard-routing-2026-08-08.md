@@ -755,6 +755,8 @@ Request `xreq_9523234d-13d1-40e6-b099-47a4df0b76e7` failed identically in all si
 episodes at the first clear stride. Canonical 0.1.209 constrains `move_vector.duration` to at most
 1.5 seconds, so the four-second action raised local validation before reaching the host. The next
 source candidate uses the contract maximum of 1.5 seconds.
+That candidate is uploaded inert as **wowborg:v164**
+(`a14b004c-0efa-481b-8cf9-d88263ce521d`, source `8ada40f`).
 
 ## Open uncertainties
 

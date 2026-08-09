@@ -1,5 +1,12 @@
 # wowborg version log
 
+## v164 - maximum valid clear-road stride (2026-08-09)
+
+- Version UUID: `a14b004c-0efa-481b-8cf9-d88263ce521d` (`wowborg:v164`, uploaded
+  inert; not submitted). Built from source `8ada40f` against canonical vanilla-wow 0.1.209.
+- Extends only hazard-free, non-combat road translations from one second to the contract maximum
+  of 1.5 seconds. All safety behavior and route geometry are unchanged from v162.
+
 ## v163 - four-second clear-road strides (2026-08-09)
 
 - Version UUID: `c111df42-03f8-42c4-bc67-40e7603270c3` (`wowborg:v163`, uploaded

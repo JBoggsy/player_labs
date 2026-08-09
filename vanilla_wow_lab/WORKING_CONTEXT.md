@@ -1117,6 +1117,8 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    first clear stride in all six episodes: canonical `move_vector.duration` is capped at 1.5
    seconds, so the four-second action failed local validation before host submission. The next
    source candidate uses the contract maximum of 1.5 seconds.
+   That candidate is uploaded inert as **wowborg:v164**
+   (`a14b004c-0efa-481b-8cf9-d88263ce521d`, source `8ada40f`).
 
 ## Reference
 
