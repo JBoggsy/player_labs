@@ -106,9 +106,9 @@ def _steer_toward(
     if abs(delta) > turn_deadband:
         bridge.select_move_vector(
             frame,
-            forward=0.0 if precise_arrival else 1.0,
+            forward=0.0,
             turn=1.0 if delta > 0 else -1.0,
-            duration=0.25 if precise_arrival else GREAT_LIFT_INPUT_SECONDS,
+            duration=0.25,
             purpose=purpose,
         )
         return

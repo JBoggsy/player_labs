@@ -395,6 +395,15 @@ waited, then acquired it. Escape moved away from the route and triggered the pro
 The next candidate removes stationary unsafe-anchor waiting and uses quantized eight-direction
 movement away from the active corridor hazards until a safe candidate reopens.
 
+V122 request `xreq_5beaa43e-290d-47b3-a3bf-7e5ef8a0a282` proved that mobile hold:
+three unsafe-anchor evasions ended without an action timeout, wowborg survived at full health,
+and living northing improved from v121's 424.1 to 605.5 yards. The run then exposed an independent
+ordinary-steering actuator defect at road node 3. From frames 592–650, 0.75-second forward-turn
+pulses alternated left and right on every action and left the character 65.6 yards from the
+guidepoint until the progress watchdog fired. The next candidate uses the already-proven
+0.25-second turn-in-place quantum for ordinary heading correction while retaining 0.75-second
+straight translation.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.

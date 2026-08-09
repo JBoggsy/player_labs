@@ -135,7 +135,13 @@ Glasshide Gazer closed from 17.5 to 15.3 yards and acquired wowborg; escape then
 route-progress watchdog. The active candidate replaces stationary unsafe-anchor waiting with
 quantized movement away from the active corridor hazards until a safe bypass reopens.
 It is uploaded inert as **wowborg:v122**
-(`da731748-bd0b-47c6-8b41-8893ba8cb59f`, source `475f58b`); hosted proof is pending.
+(`da731748-bd0b-47c6-8b41-8893ba8cb59f`, source `475f58b`). Request
+`xreq_5beaa43e-290d-47b3-a3bf-7e5ef8a0a282` activated and completed three mobile
+unsafe-anchor evasions with no action timeout, survived at full health, and improved living
+northing from v121's 424.1 to 605.5 yards. It then stalled at road node 3: ordinary 0.75-second
+forward-turn pulses alternated left/right on every action from frames 592–650 while remaining
+65.6 yards from the target. The active source candidate changes ordinary heading correction to
+the same proven 0.25-second turn-in-place quantum; straight road translation remains 0.75 seconds.
 
 ### Previous 0.1.208 movement baseline
 
