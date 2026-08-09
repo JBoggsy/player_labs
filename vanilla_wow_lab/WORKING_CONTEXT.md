@@ -157,6 +157,8 @@ with 18.6 yards of projected clearance was accepted under the 15-yard minimum; a
 7.3-yard pulse a moving Glasshide Gazer closed to 16.5 yards, acquired, and killed wowborg. The
 active candidate raises the route-clearance floor to 25 yards and chooses the shortest 30/45/60
 yard lateral bypass that meets it, or the highest-clearance candidate if none do.
+It is uploaded inert as **wowborg:v125**
+(`87739aaf-702e-47fb-971e-acd5c43a4fb7`, source `c491039`); hosted proof is pending.
 
 ### Previous 0.1.208 movement baseline
 

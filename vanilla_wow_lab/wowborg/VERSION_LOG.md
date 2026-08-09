@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v125 - adaptive hazard bypass width (2026-08-09)
+
+- Version UUID: `87739aaf-702e-47fb-971e-acd5c43a4fb7` (`wowborg:v125`, uploaded
+  inert; not submitted). Built from source `c491039` against canonical vanilla-wow 0.1.209.
+- Requires 25 yards of projected route clearance and selects the shortest safe 30/45/60-yard
+  lateral bypass, or the highest-clearance candidate if none are safe. Activation and side-switch
+  traces expose both the chosen clearance and lateral width for each side.
+
 ## v124 - discrete eight-direction road steering (2026-08-09)
 
 - Version UUID: `5da21603-0777-48b7-b131-de9420d24ef6` (`wowborg:v124`, uploaded
@@ -7,6 +15,10 @@
 - Accepts the proven 45-degree turn quantum for ordinary steering and adds signed strafe beyond
   22.5 degrees, translating along the nearest discrete 45-degree heading. Hazard geometry and
   state are unchanged.
+- Request `xreq_1686e46f-4062-43d6-b495-7db0ebd3e82e` proved the actuator by clearing
+  two road nodes without a turn loop or timeout. A 30-yard bypass then accepted 18.6 yards of
+  clearance under the old 15-yard floor; a moving Glasshide Gazer closed to 16.5 yards and killed
+  wowborg.
 
 ## v123 - quantized road heading correction (2026-08-09)
 
