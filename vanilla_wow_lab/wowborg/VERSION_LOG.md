@@ -7,7 +7,9 @@
 - Holds only when an isolated moving patrol's projected trajectory crosses wowborg. Immediate and
   guidepoint-resident blockers still use local avoidance, and the hold releases as soon as the
   crossing trajectory clears.
-- Hosted Traverse proof is pending.
+- Request `xreq_2d456355-d5b9-4d8c-936c-d239a369b07d` stayed full-health with zero
+  combat, reached all three exact Detour anchors and road node 9 in about 2.5 minutes, then failed
+  direct steering toward the Shimmering Flats south-ramp endpoint.
 
 ## v138 - persistent safe crossing hold (2026-08-09)
 

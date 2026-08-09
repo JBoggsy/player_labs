@@ -274,7 +274,13 @@ whether or not its projected patrol crossed wowborg. The active candidate holds 
 projected crossing; immediate and guidepoint-resident blockers still use local avoidance, and a
 held crossing releases as soon as its projected trajectory clears.
 It is uploaded inert as **wowborg:v139**
-(`e97ab7d9-2c61-4f95-a334-3c3bf8eb78da`, source `bb9871f`); hosted Traverse proof is pending.
+(`e97ab7d9-2c61-4f95-a334-3c3bf8eb78da`, source `bb9871f`). Request
+`xreq_2d456355-d5b9-4d8c-936c-d239a369b07d` stayed full-health with zero combat,
+reached all three exact Detour anchors and road node 9 in about 2.5 minutes, then failed the
+Shimmering Flats south-ramp leg. Pinned 0.1.209 navmesh shows that reachable 265-yard corridor
+bends through `(-6884,-3900,54)`, `(-6876,-3912,100)`, and `(-6848,-3925,125)`; direct steering
+at the far endpoint repeatedly fell from the escarpment. The active candidate adds those three
+real corridor bends as exact anchors without changing the proven Tanaris hazard policy.
 
 ### Previous 0.1.208 movement baseline
 
