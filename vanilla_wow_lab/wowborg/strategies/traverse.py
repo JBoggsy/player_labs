@@ -51,6 +51,7 @@ ROAD_EXACT_GUIDEPOINTS = frozenset(
     {
         "tanaris-road-8-detour-west",
         "tanaris-road-8-detour-south",
+        "tanaris-road-8-detour-east-turn",
         "tanaris-road-8-detour-east",
         "shimmering-flats-ramp-approach",
         "shimmering-flats-ramp-turn",
@@ -85,6 +86,7 @@ TRAVERSE_ROUTE_PREFIX = (
     # or south; northing-pass semantics would incorrectly skip the west anchor.
     ("tanaris-road-8-detour-west", Point(1, -7193.6000, -3733.3330, 8.9030)),
     ("tanaris-road-8-detour-south", Point(1, -7172.2670, -3753.6000, 9.0610)),
+    ("tanaris-road-8-detour-east-turn", Point(1, -7128.8000, -3767.2000, 9.8100)),
     ("tanaris-road-8-detour-east", Point(1, -7096.5330, -3795.4670, 9.3110)),
     ("tanaris-north-road-9", Point(1, -6948.5264, -3856.7524, 28.9407)),
     ("shimmering-flats-ramp-approach", Point(1, -6905.4900, -3869.4600, 38.8900)),

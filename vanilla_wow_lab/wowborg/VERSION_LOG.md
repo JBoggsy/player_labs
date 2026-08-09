@@ -6,7 +6,9 @@
   inert; not submitted). Built from source `9e0c895` against canonical vanilla-wow 0.1.209.
 - Yields after every pulse on exact terrain anchors and every eight pulses on ordinary roads. This
   combines v139's proven tight-bend cadence with v143's faster open-road cadence.
-- Hosted Traverse proof is pending.
+- Request `xreq_07f6e8d6-9bdc-44a6-8102-a18ad3a0c3b5` stayed full-health with zero
+  combat and removed the action timeout, but exhausted unstick at about `(-7144,-3767)` on
+  Detour-east, where direct steering turned southeast earlier than the pinned navmesh corridor.
 
 ## v144 - curved Shimmering Flats ramp approach (2026-08-09)
 

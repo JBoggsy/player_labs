@@ -588,7 +588,12 @@ timed out at about `(-7155,-3769)` on the exact Detour-east leg. Sparse yields i
 road cadence, but this tight bend needs v139's every-pulse settlement seam. The next candidate
 yields after every pulse on exact anchors and every eight pulses on ordinary roads.
 It is uploaded inert as **wowborg:v145**
-(`dbbc1e08-2f0a-42b8-b79f-9f1e010d72af`, source `9e0c895`); hosted Traverse proof is pending.
+(`dbbc1e08-2f0a-42b8-b79f-9f1e010d72af`, source `9e0c895`). Request
+`xreq_07f6e8d6-9bdc-44a6-8102-a18ad3a0c3b5` stayed full-health with zero combat
+and removed the action timeout, but exhausted unstick at about `(-7144,-3767)` on Detour-east.
+Pinned 0.1.209 navmesh shows the corridor stays shallow to `(-7129,-3767)` before turning
+southeast; direct steering forced the diagonal too early. The next candidate adds that real turn
+as an exact anchor so crossing no longer depends on v139's lucky left unstick.
 
 ## Open uncertainties
 
