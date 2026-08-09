@@ -348,7 +348,17 @@ the first exact ramp-approach arrival. It then fell approaching the ramp turn. T
 exact radius is too loose for the narrow slope; the active candidate tightens only the ramp anchors
 to 3 yards while retaining existing tolerances for Detour anchors and the lower-dock goal.
 It is uploaded inert as **wowborg:v148**
-(`52ad576d-0fc3-4ab4-9570-db29744840f0`, source `205e9e7`); hosted Traverse proof is pending.
+(`52ad576d-0fc3-4ab4-9570-db29744840f0`, source `205e9e7`). Its first request
+`xreq_36342e76-936c-4950-9f14-c6552ae08b6b` was combat-censored before the ramp. Two
+full-health zero-combat repeats (`xreq_dc28e85e-d277-4add-8f0c-290e4c6596cf` and
+`xreq_c82b3f22-a720-4816-944c-9c9bd5e786de`) both cleared the four exact Detour anchors,
+then lost the returned frame on the second ordinary node-9 translation. The latter trace records
+the 0.75-second action at `(-7096.53,-3793.63,8.43)` timing out after 30 seconds while the game
+host recorded hundreds of WebSocket detach/reattach cycles. The ramp-radius change therefore
+remains unexercised. The active candidate reduces exposure to that host churn with a conservative
+1.0-second translation only when no road hazard or combat is visible and the target is more than
+20 yards away; turns and all hazard/arrival pulses retain their prior cadence. Every longer pulse
+emits `traverse_road_open_stride`.
 
 ### Previous 0.1.208 movement baseline
 

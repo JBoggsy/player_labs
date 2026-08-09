@@ -30,6 +30,7 @@ GREAT_LIFT_VISIBLE_RANGE = 42.0
 GREAT_LIFT_DOCK_Z_SLACK = 2.0
 GREAT_LIFT_EXIT_Z = 80.0
 TRAVERSE_INPUT_SECONDS = 0.75
+ROAD_OPEN_INPUT_SECONDS = 1.0
 ROAD_ARRIVAL_RADIUS_YARDS = 8.0
 ROAD_PASS_LATERAL_YARDS = 60.0
 ROAD_PASS_VERTICAL_YARDS = 10.0
@@ -141,6 +142,8 @@ def _steer_toward(
     *,
     purpose: str,
     precise_arrival: bool = False,
+    translation_seconds: float = TRAVERSE_INPUT_SECONDS,
+    trace=None,
 ) -> None:
     desired = math.atan2(target.y - frame.location.y, target.x - frame.location.x)
     delta = (desired - frame.location.orientation + math.pi) % (2 * math.pi) - math.pi
@@ -154,6 +157,13 @@ def _steer_toward(
             purpose=purpose,
         )
         return
+    duration = 0.25 if precise_arrival else translation_seconds
+    if trace is not None and duration == ROAD_OPEN_INPUT_SECONDS:
+        trace(
+            "traverse_road_open_stride",
+            activation=1,
+            duration_seconds=ROAD_OPEN_INPUT_SECONDS,
+        )
     bridge.select_move_vector(
         frame,
         forward=1.0,
@@ -162,7 +172,7 @@ def _steer_toward(
             if abs(delta) > math.pi / 8
             else 0.0
         ),
-        duration=0.25 if precise_arrival else TRAVERSE_INPUT_SECONDS,
+        duration=duration,
         purpose=purpose,
     )
 
@@ -880,6 +890,12 @@ def _steer_road_leg(
                 or should_evade
                 or distance <= ROAD_HAZARD_FORWARD_YARDS
             ),
+            translation_seconds=(
+                ROAD_OPEN_INPUT_SECONDS
+                if not frame.in_combat and not hazards
+                else TRAVERSE_INPUT_SECONDS
+            ),
+            trace=trace,
         )
         settle_frame = bridge.observe()
         if settle_frame is None:

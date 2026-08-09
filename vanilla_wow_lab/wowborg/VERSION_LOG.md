@@ -6,7 +6,11 @@
   inert; not submitted). Built from source `205e9e7` against canonical vanilla-wow 0.1.209.
 - Tightens only the six narrow Shimmering Flats ramp anchors from 8-yard to 3-yard arrivals.
   Detour anchors, ordinary passes, hazard behavior, and the lower-dock goal are unchanged.
-- Hosted Traverse proof is pending.
+- First request `xreq_36342e76-936c-4950-9f14-c6552ae08b6b` was combat-censored before the
+  ramp. Full-health zero-combat repeats `xreq_dc28e85e-d277-4add-8f0c-290e4c6596cf` and
+  `xreq_c82b3f22-a720-4816-944c-9c9bd5e786de` both cleared the four exact Detour anchors,
+  then lost the returned frame on the second ordinary node-9 translation amid hundreds of game-host
+  WebSocket detach/reattach cycles. The three-yard ramp behavior therefore remains unexercised.
 
 ## v147 - vertically aligned road milestones (2026-08-09)
 
