@@ -778,6 +778,8 @@ fixture's maintained Ferocious Bite finisher.
 The next source candidate adds only that maintained five-combo-point finisher below 40% target
 health and records combo points plus active power before every feral cast. Rake, Rip, Claw, the
 fight admission gate, and all routing behavior remain unchanged.
+That candidate is uploaded inert as **wowborg:v166**
+(`327685d0-0d64-4bd5-a606-322610bff48f`, source `937f6ec`).
 
 ## Open uncertainties
 

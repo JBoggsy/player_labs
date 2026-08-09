@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v166 - Ferocious Bite ramp finisher (2026-08-09)
+
+- Version UUID: `327685d0-0d64-4bd5-a606-322610bff48f` (`wowborg:v166`, uploaded
+  inert; not submitted). Built from source `937f6ec` against canonical vanilla-wow 0.1.209.
+- Adds the maintained Ferocious Bite family only when the qualifying ramp Scorpid is at or below
+  40% health and wowborg has five combo points. Rake, Rip, Claw, fight admission, route geometry,
+  and every other-contact behavior are unchanged from the safe v162 baseline.
+- Feral spell traces now record pre-cast combo points and active power, distinguishing an unknown
+  spell or unmet resource gate from a host rejection. The hosted request is pending.
+
 ## v165 - forward-progressing local bypasses (2026-08-09)
 
 - Version UUID: `3b4b7594-a711-456c-8d36-8cf282d241cc` (`wowborg:v165`, uploaded

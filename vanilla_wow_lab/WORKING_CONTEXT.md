@@ -1140,6 +1140,9 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    once the Scorpid is at or below 40% health. Existing Rake, Rip, and Claw ordering is unchanged;
    spell traces now include pre-cast combo points and active power so the hosted result can explain
    both activation and non-activation.
+   That candidate is uploaded inert as **wowborg:v166**
+   (`327685d0-0d64-4bd5-a606-322610bff48f`, source `937f6ec`). v78 remains the
+   submitted champion.
 
 ## Reference
 
