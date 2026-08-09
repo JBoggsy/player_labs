@@ -318,6 +318,10 @@ least ten levels lower, and player health is at least 80%; it preserves escape f
 case and traces the decision inputs and outcome.
 That calibrated single-pull combat edge is uploaded inert as wowborg:v113
 (`ad98cbe0-d091-4f2b-8f73-3de152516a3a`, source `1e8ca0b`).
+V113's uploaded argv incorrectly used `python -m wowborg.main`; that module defines but does not
+invoke `main()`, so two requests failed before connection with empty logs and provided no gameplay
+evidence. The identical image is re-uploaded inert as wowborg:v114
+(`830a0fa0-7d92-416f-8c8a-0eabc9f1015e`) with the correct `python -m wowborg` entrypoint.
 
 ## Open uncertainties
 

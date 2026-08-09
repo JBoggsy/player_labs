@@ -73,7 +73,11 @@ aborted at 595 health. The active source candidate instead fights exactly one kn
 attacker when wowborg has at least a ten-level advantage and 80% health; all unsafe cases retain
 escape. Fight/escape activation and strength inputs are traced.
 It is uploaded inert as **wowborg:v113**
-(`ad98cbe0-d091-4f2b-8f73-3de152516a3a`, source `1e8ca0b`); hosted proof is pending.
+(`ad98cbe0-d091-4f2b-8f73-3de152516a3a`, source `1e8ca0b`), but two hosted requests
+failed before connection with empty logs. The upload argv was `python -m wowborg.main`, which
+defines but does not invoke `main()`. The identical image is re-uploaded inert as **wowborg:v114**
+(`830a0fa0-7d92-416f-8c8a-0eabc9f1015e`) with the correct `python -m wowborg` package
+entrypoint; hosted gameplay proof is pending.
 
 ### Previous 0.1.208 movement baseline
 

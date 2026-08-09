@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v114 - corrected package entrypoint (2026-08-09)
+
+- Version UUID: `830a0fa0-7d92-416f-8c8a-0eabc9f1015e` (`wowborg:v114`, uploaded
+  inert; not submitted). Reuses v113's exact `1e8ca0b` image and vanilla-wow 0.1.209 contract.
+- Changes only the uploaded argv from inert `python -m wowborg.main` to the package entrypoint
+  `python -m wowborg`, whose `__main__.py` invokes `main()`. Combat and routing code are identical
+  to v113. Hosted proof is pending.
+
 ## v113 - calibrated single-pull combat (2026-08-08)
 
 - Version UUID: `ad98cbe0-d091-4f2b-8f73-3de152516a3a` (`wowborg:v113`, uploaded
@@ -8,7 +16,11 @@
   and has at least 80% health. It closes to melee and reuses the v73-proven exact-target engagement
   owner. Multiple, elite, unknown-strength, near-level, and low-health pulls retain direct escape.
   Fight/escape transitions trace the decision inputs, duration, health, and realized damage.
-  Hosted proof is pending.
+- Requests `xreq_bf8f91db-64b1-470e-9b7a-6330125d4678` and
+  `xreq_60b18656-b3c5-4f4a-a829-c59e89524f77` both failed before connection with empty
+  policy logs. The upload used `python -m wowborg.main`; that module defines `main()` but does not
+  invoke it, so the container exited without connecting. These runs contain no gameplay evidence.
+  V114 reuses the exact image with the correct `python -m wowborg` package entrypoint.
 
 ## v112 - stable per-encounter safe anchor (2026-08-08)
 
