@@ -8,6 +8,11 @@
   and suppresses open-road lateral evasion. Outside that gate it follows the canonical centerline.
 - Combat, ordinary-road avoidance, route geometry, and arrival radii are unchanged from v155.
   This isolates whether wowborg can establish a supported pre-Scorpid frontier.
+- Request `xreq_6ba1066e-b154-4a7b-bc5e-83bdc2054c06` reached milestones 17–18 and
+  established a 25-second centerline hold with zero constrained-ramp avoidance/evasion events;
+  pre-combat z stayed within 34.6–39.2. The resident then wandered into aggro at 6.7 yards, escape
+  pulled a Basilisk, and wowborg died. The next candidate commits only against this single,
+  non-elite level-40/41 Scorpid and ports the maintained real-playerbot Cat/Rake/Claw/Rip pattern.
 
 ## v155 - calibrated ramp hold floor (2026-08-09)
 

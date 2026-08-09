@@ -684,6 +684,17 @@ and suppresses open-road lateral evasion there. This should establish a supporte
 frontier without yet changing combat.
 It is uploaded inert as **wowborg:v156**
 (`35d3023e-a376-4d35-9207-c9424582c2d2`, source `be61bff`).
+Request `xreq_6ba1066e-b154-4a7b-bc5e-83bdc2054c06` reached milestones 17–18 and
+validated the supported frontier: over 429 pre-combat observations, z stayed within 34.6–39.2 and
+no constrained-ramp avoidance or evasion activated. After 25 seconds, the resident wandered into
+aggro at 6.7 yards; escape pulled a second Basilisk and died. Waiting therefore reduces but cannot
+remove the pinch hazard. External Classic data places entry 5422 at level 40–41 with roughly
+1.8–2.0k health, while v114 measured 243 basic-melee DPS and the two escape runs imply roughly
+200–213 incoming DPS. That predicts an approximately eight-second basic kill inside a roughly
+13-second full-health survival window. The next source candidate commits only against this exact,
+single, non-elite Scorpid and ports the game repo's maintained real-playerbot feral ordering: Cat
+Form, Rake while healthy, Claw builders, and Rip at three combo points. Every other contact still
+escapes.
 
 ## Open uncertainties
 

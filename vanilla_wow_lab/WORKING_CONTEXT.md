@@ -1063,6 +1063,11 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    lateral evasion there, establishing a supported frontier before adding any combat behavior.
    That candidate is uploaded inert as **wowborg:v156**
    (`35d3023e-a376-4d35-9207-c9424582c2d2`, source `be61bff`).
+   Request `xreq_6ba1066e-b154-4a7b-bc5e-83bdc2054c06` reached milestones 17–18
+   and held 25 seconds on supported terrain: pre-combat z stayed within 34.6–39.2 with zero
+   constrained-ramp avoidance/evasion. The Scorpid eventually wandered into aggro at 6.7 yards;
+   escape pulled a Basilisk and died. The next source candidate commits only against this single,
+   non-elite level-40/41 Scorpid with the maintained Cat/Rake/Claw/Rip feral ordering.
 
 ## Reference
 
