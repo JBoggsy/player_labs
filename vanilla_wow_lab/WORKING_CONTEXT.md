@@ -142,6 +142,8 @@ northing from v121's 424.1 to 605.5 yards. It then stalled at road node 3: ordin
 forward-turn pulses alternated left/right on every action from frames 592–650 while remaining
 65.6 yards from the target. The active source candidate changes ordinary heading correction to
 the same proven 0.25-second turn-in-place quantum; straight road translation remains 0.75 seconds.
+It is uploaded inert as **wowborg:v123**
+(`ec6fe6c8-f7c4-4847-a242-a7aec0d6d8fc`, source `3af9760`); hosted proof is pending.
 
 ### Previous 0.1.208 movement baseline
 

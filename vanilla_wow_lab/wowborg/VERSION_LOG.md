@@ -1,11 +1,22 @@
 # wowborg version log
 
+## v123 - quantized road heading correction (2026-08-09)
+
+- Version UUID: `ec6fe6c8-f7c4-4847-a242-a7aec0d6d8fc` (`wowborg:v123`, uploaded
+  inert; not submitted). Built from source `3af9760` against canonical vanilla-wow 0.1.209.
+- Uses an exact 0.25-second turn-in-place action for ordinary heading correction, retaining the
+  existing 0.75-second pulse for straight road translation. This targets v122's alternating
+  left/right road-node stall without changing hazard geometry or state.
+
 ## v122 - mobile unsafe-anchor holding (2026-08-09)
 
 - Version UUID: `da731748-bd0b-47c6-8b41-8893ba8cb59f` (`wowborg:v122`, uploaded
   inert; not submitted). Built from source `475f58b` against canonical vanilla-wow 0.1.209.
 - At an unsafe safe-anchor, uses quantized eight-direction movement away from the active corridor
-  hazards until a safe candidate reopens instead of waiting in place. Hosted proof is pending.
+  hazards until a safe candidate reopens instead of waiting in place.
+- Request `xreq_5beaa43e-290d-47b3-a3bf-7e5ef8a0a282` completed three mobile evasions
+  with no action timeout, survived at full health, and reached 605.5 living northing yards. It
+  then alternated 0.75-second ordinary left/right turns at road node 3 until no-progress.
 
 ## v121 - quantized persistent retreat (2026-08-09)
 
