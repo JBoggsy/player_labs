@@ -6,7 +6,11 @@
   inert; not submitted). Built from source `2982c92` against canonical vanilla-wow 0.1.209.
 - Adds signed strafe only to precise safe-anchor translation when residual heading exceeds
   22.5 degrees, selecting the closer 45-degree movement direction. Turn duration, ordinary route
-  steering, hazard geometry, and escape-only combat are unchanged. Hosted proof is pending.
+  steering, hazard geometry, and escape-only combat are unchanged.
+- Request `xreq_e4e7e0ca-8a69-4b96-b84e-c115ef09896b` stayed alive and out of combat,
+  but failed after one guidepoint because wowborg's local `select_move_vector` convenience method
+  did not expose the upstream action contract's existing `strafe` field. The active source adds
+  that missing pass-through; the diagonal strategy itself is unchanged.
 
 ## v117 - quantized precise turns (2026-08-09)
 

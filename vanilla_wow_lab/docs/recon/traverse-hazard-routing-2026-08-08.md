@@ -363,6 +363,13 @@ translation axis: forward plus left/right strafe moves at a 45-degree offset. Th
 uses that diagonal whenever residual heading exceeds 22.5 degrees, bounding translation error at
 22.5 degrees while retaining only the already-proven duration quanta.
 
+V118 request `xreq_e4e7e0ca-8a69-4b96-b84e-c115ef09896b` failed before testing that
+geometry. The upstream action model and runtime accept `strafe`, but wowborg's local
+`GymSession.select_move_vector` convenience method hard-coded zero and did not accept the keyword.
+The policy stayed alive and out of combat, then raised the exact `TypeError` after one guidepoint.
+The next source candidate adds only the missing wrapper pass-through; the diagonal strategy is
+unchanged.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.

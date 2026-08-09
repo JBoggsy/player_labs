@@ -107,7 +107,11 @@ Gazer at 3.68 yards, and died after three guidepoints. The active candidate uses
 left/right strafe axis when residual error exceeds 22.5 degrees, reducing precise translation
 error to at most 22.5 degrees without changing turn duration, ordinary steering, or hazard
 geometry. It is uploaded inert as **wowborg:v118**
-(`2e5125da-9fa8-43b7-a8e4-73808d86f8ef`, source `2982c92`); hosted proof is pending.
+(`2e5125da-9fa8-43b7-a8e4-73808d86f8ef`, source `2982c92`). Request
+`xreq_e4e7e0ca-8a69-4b96-b84e-c115ef09896b` stayed alive and out of combat, but
+failed after one guidepoint because wowborg's thin `select_move_vector` convenience method did
+not expose the upstream action contract's existing `strafe` field. The active source adds that
+missing pass-through; the diagonal strategy itself is unchanged.
 
 ### Previous 0.1.208 movement baseline
 
