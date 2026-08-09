@@ -84,7 +84,14 @@ The pre-pull retreat had orbited its six-yard safe anchor because fixed 0.75-sec
 pulses cannot settle within two yards. The active source returns to v112's escape-only combat
 baseline and changes only retreat arrival: turn in place, then move with a distance-bounded pulse.
 It is uploaded inert as **wowborg:v115**
-(`1035e292-5f91-4e18-9398-89161c4bc14a`, source `35d9050`); hosted proof is pending.
+(`1035e292-5f91-4e18-9398-89161c4bc14a`, source `35d9050`). Request
+`xreq_c8dbfd00-8211-4e47-88a7-9e6025b588ca` avoided every pull and death, but cleared
+only nine guidepoints before the episode timeout. Its final retreat spent 106 seconds stationary,
+alternating fixed 0.25-second turn pulses around the safe-anchor heading. At the documented
+pi-radian/second turn rate, each pulse rotates about 45 degrees and overshoots the 0.20-radian
+deadband. The active source candidate changes only precise-turn duration to remaining angular
+error divided by the turn rate, capped at 0.25 seconds; ordinary steering and hazard geometry are
+unchanged.
 
 ### Previous 0.1.208 movement baseline
 

@@ -7,7 +7,12 @@
 - Returns combat to v112's escape-only baseline. When retreating to a recorded safe anchor,
   wowborg now turns in place and then bounds forward-input duration by remaining distance and
   observed movement speed. Ordinary road, avoidance, escape, and lift steering are unchanged.
-  Hosted proof is pending.
+- Request `xreq_c8dbfd00-8211-4e47-88a7-9e6025b588ca` avoided every pull and death,
+  but cleared only nine guidepoints before the episode timeout. At the final retreat, fixed
+  0.25-second turn-only pulses alternated direction without moving for 106 seconds: each pulse
+  turns about 45 degrees at the documented pi-radian/second rate, overshooting the 0.20-radian
+  arrival deadband. The next candidate scales only precise-turn duration to the remaining angular
+  error; ordinary steering and all hazard geometry remain unchanged.
 
 ## v114 - corrected package entrypoint (2026-08-09)
 

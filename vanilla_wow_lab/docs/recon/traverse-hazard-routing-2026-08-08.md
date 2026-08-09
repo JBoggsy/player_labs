@@ -338,6 +338,14 @@ then use a distance-bounded forward pulse.
 That precise safe-anchor arrival is uploaded inert as wowborg:v115
 (`1035e292-5f91-4e18-9398-89161c4bc14a`, source `35d9050`).
 
+V115 request `xreq_c8dbfd00-8211-4e47-88a7-9e6025b588ca` avoided all combat and
+deaths, but reached only nine guidepoints before the episode timeout. The final retreat exposed
+a second actuator defect: for 106 seconds, the character stayed at one position while alternating
+left and right 0.25-second turn-only pulses. With the documented pi-radian/second turn rate, each
+pulse rotates about 45 degrees and crosses the 0.20-radian precise-arrival deadband. The next
+candidate scales precise-turn duration to remaining angular error divided by that turn rate,
+capped at the existing 0.25 seconds. Ordinary steering and all hazard geometry are unchanged.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.
