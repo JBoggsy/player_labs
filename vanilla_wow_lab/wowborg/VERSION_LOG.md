@@ -8,7 +8,11 @@
   the per-fight failure memory, and re-engages the exact attacker. This creates a corrective
   re-face before retrying the rotation instead of holding an unproductive auto-attack forever.
 - V194's caster descent, route, hazard clearance, and action cadence are unchanged. Hosted
-  evaluation is pending.
+  request `xreq_8188c6ea-768e-4e25-900a-1a129b50ded9` kept 23 of 24 runs alive. Three corrective
+  re-face activations across two runs all survived. One run reached the first descent landing and
+  remained alive; the sole death reached that landing, began the second drop at 1,321 health, and
+  died on impact after Rejuvenation raised it to 1,780. The next candidate waits to 80% health on
+  the intermediate landing before committing to the second drop.
 
 ## v194 - caster-form staged descent (2026-08-09)
 

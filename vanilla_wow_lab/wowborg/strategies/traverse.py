@@ -68,6 +68,7 @@ ROAD_TIGHT_HAZARD_HOLD_YARDS = 8.0
 ROAD_HAZARD_HOLD_RADIUS_YARDS = 2.0
 ROAD_HAZARD_SWITCH_MARGIN_YARDS = 5.0
 RAMP_FIGHT_ADD_CLEARANCE_YARDS = 12.0
+SECOND_DESCENT_MIN_HEALTH_FRACTION = 0.8
 ROAD_STEEP_GUIDEPOINTS = frozenset(
     {f"shimmering-flats-ramp-ascent-{index:02d}" for index in range(1, 17)}
     | {"tanaris-road-9-climb-crest", "shimmering-flats-ramp-crest"}
@@ -1609,6 +1610,27 @@ class TraverseStrategy:
             if descending_shimmering_flats:
                 if not _activate_descent_rejuvenation(bridge, trace):
                     continue
+                if (
+                    TRAVERSE_ROUTE_PREFIX[self.route_guidepoints_arrived][0]
+                    == "shimmering-flats-south-road"
+                ):
+                    descent_frame = bridge.observe()
+                    if descent_frame is None:
+                        continue
+                    if (
+                        descent_frame.health
+                        < descent_frame.max_health
+                        * SECOND_DESCENT_MIN_HEALTH_FRACTION
+                    ):
+                        bridge.select_wait(descent_frame)
+                        trace(
+                            "traverse_descent_healing",
+                            activation=1,
+                            health=descent_frame.health,
+                            max_health=descent_frame.max_health,
+                            required_fraction=SECOND_DESCENT_MIN_HEALTH_FRACTION,
+                        )
+                        continue
             elif self.route_guidepoints_arrived < PROWL_ROUTE_GUIDEPOINTS:
                 _activate_prowl(bridge, trace)
             else:
