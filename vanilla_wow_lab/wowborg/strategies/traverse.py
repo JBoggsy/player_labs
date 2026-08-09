@@ -102,16 +102,13 @@ def _steer_toward(
 ) -> None:
     desired = math.atan2(target.y - frame.location.y, target.x - frame.location.x)
     delta = (desired - frame.location.orientation + math.pi) % (2 * math.pi) - math.pi
-    if abs(delta) > GREAT_LIFT_TURN_DEADBAND:
+    turn_deadband = math.pi / 4 if precise_arrival else GREAT_LIFT_TURN_DEADBAND
+    if abs(delta) > turn_deadband:
         bridge.select_move_vector(
             frame,
             forward=0.0 if precise_arrival else 1.0,
             turn=1.0 if delta > 0 else -1.0,
-            duration=(
-                min(0.25, abs(delta) / math.pi)
-                if precise_arrival
-                else GREAT_LIFT_INPUT_SECONDS
-            ),
+            duration=0.25 if precise_arrival else GREAT_LIFT_INPUT_SECONDS,
             purpose=purpose,
         )
         return

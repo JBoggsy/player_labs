@@ -7,7 +7,12 @@
 - Changes only precise safe-anchor turning: duration is remaining angular error divided by the
   documented pi-radian/second turn rate, capped at 0.25 seconds. This removes v115's 45-degree
   sign-flip loop without changing ordinary route steering, hazard geometry, or combat behavior.
-  Hosted proof is pending.
+- Request `xreq_21621766-8175-471c-91f9-2b748bfd7c5f` did not alternate turn signs, but
+  failed at frame 102 when its first non-quarter-second turn (`0.2188` seconds) timed out without
+  advancing an observation. It cleared one guidepoint and remained alive with no combat. Owner
+  source confirms held axis magnitude is sign-only, so the next candidate retains the reliable
+  0.25-second turn quantum and widens only precise arrival's acceptance cone to the matching
+  45 degrees.
 
 ## v115 - precise safe-anchor arrival (2026-08-09)
 

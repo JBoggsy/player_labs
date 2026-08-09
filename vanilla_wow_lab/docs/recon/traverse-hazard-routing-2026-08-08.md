@@ -346,6 +346,14 @@ pulse rotates about 45 degrees and crosses the 0.20-radian precise-arrival deadb
 candidate scales precise-turn duration to remaining angular error divided by that turn rate,
 capped at the existing 0.25 seconds. Ordinary steering and all hazard geometry are unchanged.
 
+V116 request `xreq_21621766-8175-471c-91f9-2b748bfd7c5f` eliminated the alternating
+sign symptom, but falsified continuous duration control. After three successful 0.25-second
+turn-only pulses, its first 0.2188-second pulse timed out at frame 102 without advancing an
+observation. The character was alive and out of combat after one guidepoint. Owner source also
+shows `heldAxis` reduces every nonzero input magnitude to its sign, ruling out fractional turn
+strength. The next candidate therefore retains the reliable 0.25-second, approximately 45-degree
+turn quantum and widens only precise arrival's heading acceptance cone to that same angle.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.

@@ -92,7 +92,13 @@ pi-radian/second turn rate, each pulse rotates about 45 degrees and overshoots t
 deadband. The active source candidate changes only precise-turn duration to remaining angular
 error divided by the turn rate, capped at 0.25 seconds; ordinary steering and hazard geometry are
 unchanged. It is uploaded inert as **wowborg:v116**
-(`b5ccf41d-92bd-499d-90cc-a6289c987f1a`, source `217902a`); hosted proof is pending.
+(`b5ccf41d-92bd-499d-90cc-a6289c987f1a`, source `217902a`). Request
+`xreq_21621766-8175-471c-91f9-2b748bfd7c5f` did not repeat the sign-flip loop, but its
+first non-quarter-second turn (`0.2188` seconds) timed out at frame 102 without advancing an
+observation; it cleared one guidepoint and remained alive with no combat. Owner source confirms
+held axis magnitude is reduced to sign. The active candidate therefore keeps the reliable
+0.25-second turn quantum and changes only precise arrival's heading acceptance to its matching
+45-degree arc; ordinary steering and hazard geometry remain unchanged.
 
 ### Previous 0.1.208 movement baseline
 
