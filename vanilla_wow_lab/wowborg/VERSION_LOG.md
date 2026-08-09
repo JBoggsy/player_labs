@@ -6,8 +6,14 @@
   inert; not submitted). Built from source `69fff04` against canonical vanilla-wow 0.1.209.
 - Reports whether each steering control turned or translated, and increments the three-pulse
   blocked-retreat limit only after an actual retreat translation fails to move 0.5 yards.
-- Route geometry, hazard thresholds, and combat behavior are unchanged from v177. Hosted
-  evaluation is pending.
+- Route geometry, hazard thresholds, and combat behavior are unchanged from v177.
+- Six-run request `xreq_86a8c77f-c292-4e22-b87a-509d1e2fab52` reduced blocked
+  retreats to zero in five runs, but caused 58–107 completed retreats in four full runs. Only one
+  reached the road crest, at 264.3 seconds versus v177's 134–150 seconds, and one run died. The
+  branch is reverted.
+- The next candidate restores v177 retreat behavior and changes only steep-edge settling. V177's
+  successful 94-yard mountain ascent took 90.45 seconds, with 509 control pulses and 509 extra waits;
+  steep edges now use the existing every-eighth-pulse settle cadence.
 
 ## v177 - measured Tanaris crest pass (2026-08-09)
 

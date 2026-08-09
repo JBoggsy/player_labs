@@ -1235,8 +1235,13 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    Shimmering Flats south ramp—the first verified Tanaris exit. The batch still emitted 14–30 false
    retreat-blocked events per run because turn-only retreat controls counted as failed translations.
    **wowborg:v178** (`6c29b6e2-131f-44c7-8c8b-44219b11622a`, source `69fff04`) is uploaded inert and
-   counts only actual retreat translations toward the three-pulse blocked limit. Its hosted
-   evaluation is pending.
+   counts only actual retreat translations toward the three-pulse blocked limit. Six-run request
+   `xreq_86a8c77f-c292-4e22-b87a-509d1e2fab52` reduced blocked retreats to zero
+   in five runs, but caused 58–107 completed retreats in four full runs. Only one reached the road
+   crest, at 264.3 seconds, and one run died. The active source reverts this branch to v177 retreat
+   behavior. It changes only steep-edge settling: v177's successful 94-yard mountain ascent took
+   90.45 seconds with 509 control pulses and 509 extra waits, so steep edges now use the existing
+   every-eighth-pulse settle cadence.
 
 ## Reference
 

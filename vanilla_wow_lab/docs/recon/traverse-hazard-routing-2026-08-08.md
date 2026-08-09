@@ -882,8 +882,16 @@ Shimmering Flats south ramp—the first verified exit from Tanaris. The batch st
 false retreat-blocked events per run. Trace ordering proves turn-only retreat controls increment the
 three-pulse stalled-translation counter before the character faces its safe anchor. The active source
 counts only actual retreat translations toward that limit. This is uploaded inert as
-**wowborg:v178** (`6c29b6e2-131f-44c7-8c8b-44219b11622a`, source `69fff04`); its hosted evaluation is
-pending.
+**wowborg:v178** (`6c29b6e2-131f-44c7-8c8b-44219b11622a`, source `69fff04`). Six-run request
+`xreq_86a8c77f-c292-4e22-b87a-509d1e2fab52` reduced
+blocked retreats to zero in five runs, but caused 58–107 completed retreats in four full runs. Only
+one reached the road crest, at 264.3 seconds versus v177's 134–150 seconds, and one run died. The
+branch is reverted.
+
+The active source instead changes only steep-edge settling. V177's successful 94-yard mountain
+ascent took 90.45 seconds and issued 509 control pulses plus 509 extra waits. The normal post-control
+observation remains; only the second settle wait moves from every steep pulse to the existing
+every-eighth-pulse cadence. Ordinary exact anchors retain their per-pulse settling.
 
 ## Open uncertainties
 
