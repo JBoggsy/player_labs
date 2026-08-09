@@ -867,7 +867,13 @@ run still overshot the 40-yard jump edge, one stopped earlier, and one died near
 a Glasshide Gazer closed to 4.05 yards. The active source replaces the one long jump with six
 measured navmesh sub-edges from z14.7 through z31.0 before the z34 crest, matching the bounded-edge
 pattern already proven on the later mountain pass. This is uploaded inert as **wowborg:v176**
-(`adb98318-5ce8-40a3-856e-0e8b9feaccc7`, source `25a2666`); its hosted evaluation is pending.
+(`adb98318-5ce8-40a3-856e-0e8b9feaccc7`, source `25a2666`). Six-run request
+`xreq_28f32e93-23b2-4a5e-97a4-6a3251e93513` falsified the sub-edge design:
+no run cleared the climb, two repeated the first short jump to z78–95, and one reached its first
+sub-edge before falling into combat and dying. The other three stopped earlier. The active source
+restores v175's single crest edge and permits that crest alone to use the existing northing-pass
+envelope. V175's failed climb was already within the contract's 20-yard northing slack, 60-yard
+lateral bound, and 10-yard vertical bound; exact classification alone prevented acceptance.
 
 ## Open uncertainties
 

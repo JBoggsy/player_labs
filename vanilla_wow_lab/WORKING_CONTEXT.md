@@ -1222,8 +1222,12 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    overshot the 40-yard jump edge; one stopped earlier; and one died near road point 3 after a
    Glasshide Gazer closed to 4.05 yards. **wowborg:v176**
    (`adb98318-5ce8-40a3-856e-0e8b9feaccc7`, source `25a2666`) is uploaded inert with the long climb
-   jump replaced by six measured navmesh sub-edges, matching the bounded-edge mountain-pass
-   controller. Its hosted evaluation is pending.
+   jump replaced by six measured navmesh sub-edges. Six-run request
+   `xreq_28f32e93-23b2-4a5e-97a4-6a3251e93513` falsified that design: no run
+   cleared the climb, two repeated the first short jump to z78–95, and one reached its first sub-edge
+   before falling into combat and dying. The active source restores v175's one crest edge and allows
+   that crest alone to use the existing northing-pass envelope; v175's failed climb was already
+   inside its 20-yard northing, 60-yard lateral, and 10-yard vertical limits.
 
 ## Reference
 

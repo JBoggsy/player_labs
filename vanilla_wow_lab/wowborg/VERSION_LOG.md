@@ -6,8 +6,14 @@
   inert; not submitted). Built from source `25a2666` against canonical vanilla-wow 0.1.209.
 - Replaces the single 40-yard road-9 jump edge with six navmesh-measured ascent sub-edges before
   the existing crest, matching the proven bounded-edge controller on the later mountain pass.
-- All hazard, combat, and downstream route behavior is unchanged from v175. Hosted evaluation is
-  pending.
+- All hazard, combat, and downstream route behavior is unchanged from v175.
+- Six-run request `xreq_28f32e93-23b2-4a5e-97a4-6a3251e93513` falsified the
+  sub-edge design: no run cleared the climb, two repeated the first short jump to z78–95, and one
+  reached the first sub-edge before falling into combat and dying. The other three stopped earlier,
+  including two action-settlement timeouts.
+- The next candidate restores v175's single crest edge and permits that crest alone to use the
+  existing northing-pass envelope. V175's failed climb was already within its 20-yard northing,
+  60-yard lateral, and 10-yard vertical bounds.
 
 ## v175 - split the road-9 climb at its crest (2026-08-09)
 
