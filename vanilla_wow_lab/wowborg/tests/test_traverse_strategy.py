@@ -182,9 +182,15 @@ def test_lift_steering_turns_before_walking_forward() -> None:
         location=SimpleNamespace(x=0.0, y=0.0, orientation=0.0)
     )
 
-    _steer_toward(bridge, frame, Point(1, 0.0, 10.0, 0.0), purpose="board")
-    _steer_toward(bridge, frame, Point(1, 10.0, 0.0, 0.0), purpose="board")
+    turned = _steer_toward(
+        bridge, frame, Point(1, 0.0, 10.0, 0.0), purpose="board"
+    )
+    translated = _steer_toward(
+        bridge, frame, Point(1, 10.0, 0.0, 0.0), purpose="board"
+    )
 
+    assert not turned
+    assert translated
     assert actions[0]["turn"] == 1.0
     assert actions[0].get("forward", 0.0) == 0.0
     assert actions[1]["forward"] == 1.0

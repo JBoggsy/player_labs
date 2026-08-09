@@ -875,7 +875,13 @@ restores v175's single crest edge and permits that crest alone to use the existi
 envelope. V175's failed climb was already within the contract's 20-yard northing slack, 60-yard
 lateral bound, and 10-yard vertical bound; exact classification alone prevented acceptance. This
 is uploaded inert as **wowborg:v177** (`829c6ecb-de49-4441-bd04-a163c58a4e94`, source `4a704fd`);
-its hosted evaluation is pending.
+six-run request `xreq_588c79bb-5b5b-429a-a168-6ffb5e21d05f` kept all six runs
+alive. All four climb runs acquired the crest in 1–2 seconds; three reached main mountain ascent
+points 14, 12, and 5, and one completed the mountain crest at 252.2 seconds and reached the
+Shimmering Flats south ramp—the first verified exit from Tanaris. The batch still emitted 14–30
+false retreat-blocked events per run. Trace ordering proves turn-only retreat controls increment the
+three-pulse stalled-translation counter before the character faces its safe anchor. The active source
+counts only actual retreat translations toward that limit.
 
 ## Open uncertainties
 

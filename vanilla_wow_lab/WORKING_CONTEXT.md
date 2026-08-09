@@ -1229,7 +1229,12 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    that crest alone to use the existing northing-pass envelope; v175's failed climb was already
    inside its 20-yard northing, 60-yard lateral, and 10-yard vertical limits. That candidate is
    uploaded inert as **wowborg:v177** (`829c6ecb-de49-4441-bd04-a163c58a4e94`, source `4a704fd`);
-   its hosted evaluation is pending.
+   six-run request `xreq_588c79bb-5b5b-429a-a168-6ffb5e21d05f` kept every run
+   alive. All four climb runs acquired the crest in 1–2 seconds; three reached main mountain ascent
+   points 14, 12, and 5, and one completed the mountain crest at 252.2 seconds and reached the
+   Shimmering Flats south ramp—the first verified Tanaris exit. The batch still emitted 14–30 false
+   retreat-blocked events per run because turn-only retreat controls counted as failed translations.
+   The active source counts only actual retreat translations toward the three-pulse blocked limit.
 
 ## Reference
 

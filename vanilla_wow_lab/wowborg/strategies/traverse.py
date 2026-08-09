@@ -178,7 +178,7 @@ def _steer_toward(
     translation_seconds: float = TRAVERSE_INPUT_SECONDS,
     jump_when_moving: bool = False,
     trace=None,
-) -> None:
+) -> bool:
     desired = math.atan2(target.y - frame.location.y, target.x - frame.location.x)
     delta = (desired - frame.location.orientation + math.pi) % (2 * math.pi) - math.pi
     turn_deadband = math.pi / 4
@@ -190,7 +190,7 @@ def _steer_toward(
             duration=0.25,
             purpose=purpose,
         )
-        return
+        return False
     duration = 0.25 if precise_arrival else translation_seconds
     if trace is not None and duration == ROAD_OPEN_INPUT_SECONDS:
         trace(
@@ -210,6 +210,7 @@ def _steer_toward(
         duration=duration,
         purpose=purpose,
     )
+    return True
 
 
 def _point_segment_distance(
@@ -1217,7 +1218,7 @@ def _steer_road_leg(
             steering_purpose = (
                 "steer the canonical Traverse road after movement bootstrap"
             )
-        _steer_toward(
+        translated = _steer_toward(
             bridge,
             frame,
             steering_target,
@@ -1245,7 +1246,7 @@ def _steer_road_leg(
         settle_frame = bridge.observe()
         if settle_frame is None:
             return None, "no_frame"
-        if should_retreat:
+        if should_retreat and translated:
             retreat_progress = math.dist(
                 (frame.location.x, frame.location.y),
                 (settle_frame.location.x, settle_frame.location.y),
@@ -1268,7 +1269,7 @@ def _steer_road_leg(
                 avoidance.retreating = False
                 avoidance.retreat_blocked = True
                 avoidance.retreat_stalled_pulses = 0
-        else:
+        elif not should_retreat:
             avoidance.retreat_stalled_pulses = 0
         avoidance.settled_pulses += 1
         if avoidance.settled_pulses % settle_pause_interval == 0:

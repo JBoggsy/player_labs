@@ -6,7 +6,13 @@
   inert; not submitted). Built from source `4a704fd` against canonical vanilla-wow 0.1.209.
 - Restores v175's single road-climb crest edge and allows only that crest to use the existing
   northing-pass envelope. The failed v175 climb was already inside all three measured pass bounds.
-- All hazard, combat, and remaining route behavior is unchanged. Hosted evaluation is pending.
+- All hazard, combat, and remaining route behavior is unchanged.
+- Six-run request `xreq_588c79bb-5b5b-429a-a168-6ffb5e21d05f` kept every run
+  alive. All four runs reaching the road climb acquired its crest in 1–2 seconds; three reached main
+  mountain ascent points 14, 12, and 5, and one completed the mountain crest at 252.2 seconds and
+  reached the Shimmering Flats south ramp—the first verified exit from Tanaris.
+- The batch still emitted 14–30 false retreat-blocked events per run. The next candidate stops
+  counting turn-only retreat controls as failed translations, without changing route geometry.
 
 ## v176 - bounded Tanaris road-9 climb (2026-08-09)
 
