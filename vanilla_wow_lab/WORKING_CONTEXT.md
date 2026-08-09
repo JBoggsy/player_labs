@@ -1242,7 +1242,14 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    behavior. It changes only steep-edge settling: v177's successful 94-yard mountain ascent took
    90.45 seconds with 509 control pulses and 509 extra waits, so steep edges now use the existing
    every-eighth-pulse settle cadence. This is uploaded inert as **wowborg:v179**
-   (`f2e48def-d816-4ce0-bb60-8e95ce4e8f85`, source `27a277f`); its hosted evaluation is pending.
+   (`f2e48def-d816-4ce0-bb60-8e95ce4e8f85`, source `27a277f`). Six-run request
+   `xreq_18b0176a-d269-42bf-9e0a-554a1fb71d55` shortened the successful
+   mountain ascent from 90.45 to 62.03 seconds. The best run reached the crest at 222.5 seconds,
+   south ramp at 227.5, and south road at 234.6, but three runs died. Two deaths expose combat
+   policy failures: a proactive Scorpid chase admitted a Glasshide Basilisk at 2.55 yards, while
+   another looped at 2.177 yards above the 2.0 attack gate. The active source requires the Scorpid
+   to be the only hostile within 30 yards and attacks from 2.5 reported combat yards. The third
+   death was explicit falling after south road and remains the next route-safety task.
 
 ## Reference
 

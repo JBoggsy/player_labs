@@ -26,7 +26,7 @@ RAMP_SCORPID_ENTRY = 5422
 FERAL_CLAW_SPELL_IDS = (9850, 9849, 5201, 3029, 1082)
 FERAL_RAKE_SPELL_IDS = (9904, 1824, 1823, 1822)
 FERAL_RIP_SPELL_IDS = (9896, 9894, 9752, 9493, 9492, 1079)
-FERAL_MELEE_CLOSE_YARDS = 2.0
+FERAL_MELEE_CLOSE_YARDS = 2.5
 GREAT_LIFT_ENTRIES = (11898, 11899)
 GREAT_LIFT_LOWER_DOCK = Point(1, -4677.066, -1853.667, -43.857)
 GREAT_LIFT_UPPER_DOCK = Point(1, -4650.066, -1850.482, 85.705)
@@ -612,11 +612,17 @@ def _ramp_scorpid_fight(frame, *, active_guid: str | None):
         for unit in frame.units
         if unit.player_reaction_hostile
         and _unit_alive(unit)
-        and unit.distance <= ROAD_TIGHT_HAZARD_HOLD_YARDS
+        and unit.distance <= ROAD_HAZARD_ENTER_YARDS
     ]
     if len(nearby_hazards) != 1:
         return None
-    return nearby_hazards[0] if _qualifying_ramp_scorpid(nearby_hazards[0]) else None
+    attacker = nearby_hazards[0]
+    return (
+        attacker
+        if attacker.distance <= ROAD_TIGHT_HAZARD_HOLD_YARDS
+        and _qualifying_ramp_scorpid(attacker)
+        else None
+    )
 
 
 def _cast_feral_spell(

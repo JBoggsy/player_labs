@@ -7,7 +7,15 @@
 - Restores v177's retreat behavior and retains the normal post-control observation, while reducing
   only the second steep-edge settle wait from every pulse to every eighth pulse.
 - Route geometry, hazard thresholds, combat, and ordinary exact-anchor settling are unchanged.
-  Hosted evaluation is pending.
+  Six-run request `xreq_18b0176a-d269-42bf-9e0a-554a1fb71d55` shortened the
+  successful mountain ascent from 90.45 to 62.03 seconds. The best run reached the crest at 222.5
+  seconds, south ramp at 227.5, and south road at 234.6—the farthest timed progress yet—but three
+  runs died and two stopped early.
+- Two deaths exposed ramp-combat admission/closing failures: a proactive Scorpid chase admitted a
+  Glasshide Basilisk at 2.55 yards, while another looped at 2.177 yards above the 2.0 attack gate.
+  The next candidate requires the Scorpid to be the only hostile within 30 yards and attacks from
+  2.5 reported combat yards. The third death was explicit falling after south road and remains the
+  following route-safety task.
 
 ## v178 - count only translated retreat stalls (2026-08-09)
 
