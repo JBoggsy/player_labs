@@ -749,6 +749,8 @@ horizon there. Its trace spent 266 seconds in 1,452 action round trips, includin
 hazard-free strides. The next source candidate changes only clear-road strides to four seconds.
 At observed Travel Form speed each remains inside the existing 80-yard tracked-hazard horizon;
 hazard, ramp, retreat, combat, and turn actions retain their shorter durations.
+That candidate is uploaded inert as **wowborg:v163**
+(`c111df42-03f8-42c4-bc67-40e7603270c3`, source `99d2555`).
 
 ## Open uncertainties
 

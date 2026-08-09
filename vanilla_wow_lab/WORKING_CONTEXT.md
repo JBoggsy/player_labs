@@ -1111,6 +1111,8 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    round trips, including 395 one-second hazard-free strides. The next source candidate changes
    only those clear-road strides to four seconds; the 80-yard hazard horizon and all constrained
    actions are unchanged.
+   That candidate is uploaded inert as **wowborg:v163**
+   (`c111df42-03f8-42c4-bc67-40e7603270c3`, source `99d2555`).
 
 ## Reference
 

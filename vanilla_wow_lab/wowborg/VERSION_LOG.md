@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v163 - four-second clear-road strides (2026-08-09)
+
+- Version UUID: `c111df42-03f8-42c4-bc67-40e7603270c3` (`wowborg:v163`, uploaded
+  inert; not submitted). Built from source `99d2555` against canonical vanilla-wow 0.1.209.
+- Extends only hazard-free, non-combat road translations from one second to four seconds, reducing
+  fixed action-round-trip overhead while remaining inside the existing 80-yard hazard horizon.
+- Turns, visible-hazard steering, retreat, evasion, ramp movement, combat, route geometry, and all
+  hazard thresholds are unchanged from v162. This isolates safe-route throughput.
+
 ## v162 - close fully into feral range (2026-08-09)
 
 - Version UUID: `b1dfbc40-2631-4b5d-8581-83ec6e6a935f` (`wowborg:v162`, uploaded
