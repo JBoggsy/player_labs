@@ -8,7 +8,10 @@
   acquired the target. A target that moves during a spell-settlement window is actively closed on
   again before the rotation or auto-attack continues.
 - V192's failed-ability memory remains active. Routing, hazard clearance, staged descent, and
-  action cadence are unchanged. Hosted evaluation is pending.
+  action cadence are unchanged. Hosted request
+  `xreq_7d91032c-62b9-4565-b030-f908cbe1f136` kept all 12 runs alive. Eight runs fought at least
+  one attacker, continuous closing activated as many as eight times in a fight, and none repeated
+  v192's zero-damage death loop. One run reached the south-ramp descent frontier.
 
 ## v192 - failed combat ability fallback (2026-08-09)
 
