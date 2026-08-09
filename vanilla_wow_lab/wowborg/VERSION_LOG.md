@@ -7,6 +7,10 @@
 - Expands predictive corridor entry/exit from 30/40 to 60/70 yards within the unchanged 80-yard
   tracked-unit set. This targets v130's measured crossing patrol while preserving ten yards of
   observation margin and side hysteresis; route geometry and clearance floor are unchanged.
+- Request `xreq_cc157cd3-3f7a-469b-b954-55962bc1c8c9` survived but activated 55
+  avoidances and ended 54, walked 5,942 trajectory yards for 1,842 northing, contacted three mobs,
+  and timed out at node 8. A bypass changed the line back to the guidepoint, causing its triggering
+  patrol to drop from the corridor test while still nearby; wowborg then cut back toward it.
 
 ## v130 - Detour-derived Tanaris terrain bend (2026-08-09)
 

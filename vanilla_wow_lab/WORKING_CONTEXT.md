@@ -207,7 +207,14 @@ and reached only 0–2.7 yards before contact. The active candidate widens predi
 entry/exit to 60/70 yards while retaining the existing 80-yard tracked-unit envelope, so crossing
 patrols are routed around while safe clearance still exists.
 It is uploaded inert as **wowborg:v131**
-(`e663e114-f50f-4246-b054-74e2e642474a`, source `811a92e`); hosted proof is pending.
+(`e663e114-f50f-4246-b054-74e2e642474a`, source `811a92e`). Request
+`xreq_cc157cd3-3f7a-469b-b954-55962bc1c8c9` survived but activated 55 avoidances
+and ended 54, walked 5,942 trajectory yards for 1,842 northing, contacted three mobs, and timed out
+at node 8. The widened lookahead exposed a state defect: once a bypass changes the instantaneous
+line to the guidepoint, the triggering patrol can fall outside that new corridor while still
+nearby, ending avoidance and making wowborg cut back toward it. The active candidate retains each
+triggering hostile by GUID until it is actually beyond the 70-yard exit radius; new crossing
+hazards can join the active set, and disappearance beyond the 80-yard visible envelope clears it.
 
 ### Previous 0.1.208 movement baseline
 

@@ -473,7 +473,14 @@ only at 27.8 yards; at 19.5 yards the best candidate clearance was 2.7 yards and
 The next candidate expands predictive entry/exit to 60/70 yards inside the existing 80-yard
 tracked-unit envelope, preserving ten yards of observation margin while retaining hysteresis.
 It is uploaded inert as **wowborg:v131**
-(`e663e114-f50f-4246-b054-74e2e642474a`, source `811a92e`); hosted proof is pending.
+(`e663e114-f50f-4246-b054-74e2e642474a`, source `811a92e`). Request
+`xreq_cc157cd3-3f7a-469b-b954-55962bc1c8c9` survived but activated 55 avoidances
+and ended 54, walked 5,942 trajectory yards for 1,842 northing, contacted three mobs, and timed out
+at node 8. The widened horizon exposed a state defect rather than merely conservative tuning: a
+bypass changes the line back to the guidepoint, the triggering patrol can drop from that new
+corridor while still nearby, and wowborg then cuts back toward it. The next candidate retains
+triggering hostiles by GUID until each is beyond the 70-yard exit radius, while allowing new
+crossing patrols to join the active set.
 
 ## Open uncertainties
 
