@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v187 - three-yard melee engagement (2026-08-09)
+
+- Version UUID: `9ef2d2d6-0b4a-4e27-961f-06faf57eb0b9` (`wowborg:v187`, uploaded
+  inert; not submitted). Built from source `13c001b` against canonical vanilla-wow 0.1.209.
+- Raises only the existing melee-engagement gate from 2.5 to 3.0 reported combat yards. V186's
+  reactive admission, proactive ramp gate, rotation, route, and hazard behavior are unchanged.
+- This addresses V186's sole death, where one isolated Scorpid settled at 2.652 yards and the
+  policy waited without attacking until death. Hosted evaluation is pending.
+
 ## v186 - reactive single-attacker combat (2026-08-09)
 
 - Version UUID: `1c5e7a88-5b41-42e2-b0ba-fb10ee28c898` (`wowborg:v186`, uploaded
@@ -8,8 +17,12 @@
   maintained Cat/Rake/Claw/Rip rotation on every route leg. Multi-attacker and unqualified combat
   still escapes.
 - Proactive acquisition remains limited to the constrained ramp's isolated level-40/41 Scorpid;
-  route geometry, hazard clearance, and movement cadence are unchanged. Hosted evaluation is
-  pending.
+  route geometry, hazard clearance, and movement cadence are unchanged.
+- Hosted request `xreq_20f622df-e5c0-42bf-9758-5c36137fd859` kept 11 of 12 runs alive. Reactive
+  kills included level-43/44 Scorpid Tail Lashers, a level-49 Searing Roc, a level-46 Glasshide
+  Gazer, and a level-42 Glasshide Basilisk, generally in 3.5-4.8 seconds. The only death was a
+  proactive level-41 Scorpid that stopped at 2.652 yards, just outside the 2.5-yard attack gate;
+  the policy waited there until death. No run reached the Cat descent.
 
 ## v185 - Cat descent with conservative road clearance (2026-08-09)
 

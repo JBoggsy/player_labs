@@ -1294,7 +1294,13 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    non-elite level-49-or-lower attacker on any route leg. Multi-attacker combat still escapes;
    proactive acquisition remains limited to the constrained ramp's safely isolated Scorpid. This
    is uploaded inert as **wowborg:v186** (`1c5e7a88-5b41-42e2-b0ba-fb10ee28c898`, source
-   `e303664`); hosted evaluation is pending.
+   `e303664`). Hosted request `xreq_20f622df-e5c0-42bf-9758-5c36137fd859` kept 11 of 12 runs
+   alive. Reactive level-42-49 kills generally completed in 3.5-4.8 seconds, validating combat as
+   a fast fallback. The sole death was a proactive level-41 Scorpid that settled at 2.652 reported
+   combat yards; the 2.5-yard gate then waited without attacking until death. No run reached the
+   Cat descent. The active source raises only that melee-engagement gate to three yards. It is
+   uploaded inert as **wowborg:v187** (`9ef2d2d6-0b4a-4e27-961f-06faf57eb0b9`, source `13c001b`);
+   hosted evaluation is pending.
 
 ## Reference
 

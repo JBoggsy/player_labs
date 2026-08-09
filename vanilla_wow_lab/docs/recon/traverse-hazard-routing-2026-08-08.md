@@ -954,6 +954,14 @@ maintained rotation reactively against exactly one visible, ordinary, non-elite 
 attacker on every route leg. Multi-attacker and unqualified contacts retain escape; proactive
 target acquisition remains limited to the isolated ramp Scorpid. This is uploaded inert as
 **wowborg:v186** (`1c5e7a88-5b41-42e2-b0ba-fb10ee28c898`, source `e303664`); hosted evaluation is
+request `xreq_20f622df-e5c0-42bf-9758-5c36137fd859` kept 11 of 12 runs alive. Reactive kills of
+level-43/44 Scorpid Tail Lashers, a level-49 Searing Roc, a level-46 Glasshide Gazer, and a level-42
+Glasshide Basilisk generally completed in 3.5-4.8 seconds. The health cost was material, so this
+remains a reactive fallback rather than a reason to hunt road mobs. The sole death was proactive:
+one isolated level-41 Scorpid settled at 2.652 reported combat yards, just beyond the 2.5-yard
+attack gate, and the policy waited there until death. No run reached the Cat descent. The active
+source raises only that existing melee-engagement gate to three yards. This is uploaded inert as
+**wowborg:v187** (`9ef2d2d6-0b4a-4e27-961f-06faf57eb0b9`, source `13c001b`); hosted evaluation is
 pending.
 
 ## Open uncertainties
