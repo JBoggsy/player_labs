@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v152 - timed crossing on the narrow ramp (2026-08-09)
+
+- Version UUID: `1876851a-0885-433e-be17-055734567913` (`wowborg:v152`, uploaded
+  inert; not submitted). Built from source `376d854` against canonical vanilla-wow 0.1.209.
+- For a resident projected onto a terrain-constrained ramp, crosses straight while current
+  distance exceeds the existing 20-yard safety floor and holds at or inside 20 yards. The far
+  resident cannot fall through to ordinary lateral detouring on the only traversable edge.
+- The 20-yard gate retains roughly 13 yards over the measured 5–7-yard ordinary aggro radius.
+  Rank-1 Prowl and uncalibrated basic melee remain disabled.
+
 ## v151 - imminent-only narrow-ramp holds (2026-08-09)
 
 - Version UUID: `6aa3b0e1-c341-446b-8be2-db4b93d7c6bb` (`wowborg:v151`, uploaded

@@ -645,7 +645,8 @@ activated three terrain holds, released twice near 29 yards, then remained block
 The next candidate suppresses ordinary lateral detours for a resident on the only narrow ramp
 edge, crosses straight while its current distance exceeds the existing 20-yard safety floor, and
 holds at or inside 20 yards. This retains roughly 13 yards over the measured 5–7-yard visible aggro
-radius without reviving uncalibrated melee or inferior rank-1 Prowl.
+radius without reviving uncalibrated melee or inferior rank-1 Prowl. It is uploaded inert as
+**wowborg:v152** (`1876851a-0885-433e-be17-055734567913`, source `376d854`).
 
 ## Open uncertainties
 
