@@ -1359,7 +1359,13 @@ health gate and began the south-road leg around 268 seconds, but the batch gener
 avoidance starts and 838 retreats despite only 328 far-clear strides. The active source preserves
 the 20-yard clearance floor but replaces stale safe-point backtracking with the existing local
 move-away evasion when a selected detour becomes unsafe. It is uploaded inert as **wowborg:v201**
-(`d76612f6-1733-4400-83ca-87bd435bec14`, source `5800e1c`).
+(`d76612f6-1733-4400-83ca-87bd435bec14`, source `5800e1c`). Hosted request
+`xreq_7e42a29b-2687-40f8-9afc-07cc82cfaf25` kept all 24 runs alive and eliminated backtracking;
+median progress improved, though no run reached the old descent landing. A fresh pinned-navmesh
+query found the deeper geometry defect: canonical 0.1.209 returns a complete 528.69-yard smooth
+path from north-road-9 to the south road, while the active route skipped roughly 69 descent points
+and cut two chords through the cliff. The active source replaces those falls with 17 sampled
+Detour anchors. This candidate is not yet uploaded or evaluated.
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.

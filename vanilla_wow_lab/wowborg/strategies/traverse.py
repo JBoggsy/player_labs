@@ -76,6 +76,9 @@ ROAD_STEEP_GUIDEPOINTS = frozenset(
     | {"tanaris-road-9-climb-crest", "shimmering-flats-ramp-crest"}
 )
 ROAD_STEEP_PASS_GUIDEPOINTS = frozenset({"tanaris-road-9-climb-crest"})
+ROAD_DESCENT_GUIDEPOINTS = frozenset(
+    {f"shimmering-flats-descent-{index:02d}" for index in range(1, 18)}
+)
 ROAD_EXACT_GUIDEPOINTS = frozenset(
     {
         "tanaris-road-8-detour-west",
@@ -87,21 +90,19 @@ ROAD_EXACT_GUIDEPOINTS = frozenset(
         "shimmering-flats-ramp-approach",
         "shimmering-flats-ramp-turn",
         "shimmering-flats-ramp-base",
-        "shimmering-flats-descent-landing",
         "shimmering-flats-south-road",
         "great-lift-lower-dock",
     }
-) | ROAD_STEEP_GUIDEPOINTS
+) | ROAD_STEEP_GUIDEPOINTS | ROAD_DESCENT_GUIDEPOINTS
 ROAD_TIGHT_ARRIVAL_GUIDEPOINTS = frozenset(
     {
         "shimmering-flats-ramp-lip",
         "shimmering-flats-ramp-turn",
         "shimmering-flats-ramp-base",
         "shimmering-flats-south-ramp",
-        "shimmering-flats-descent-landing",
         "shimmering-flats-south-road",
     }
-) | ROAD_STEEP_GUIDEPOINTS
+) | ROAD_STEEP_GUIDEPOINTS | ROAD_DESCENT_GUIDEPOINTS
 ROAD_TERRAIN_CONSTRAINED_GUIDEPOINTS = ROAD_TIGHT_ARRIVAL_GUIDEPOINTS | {
     "shimmering-flats-ramp-approach",
     "shimmering-flats-south-road",
@@ -161,10 +162,23 @@ TRAVERSE_ROUTE_PREFIX = (
     ("shimmering-flats-ramp-ascent-16", Point(1, -6850.1611, -3924.2969, 124.3111)),
     ("shimmering-flats-ramp-crest", Point(1, -6848.0000, -3925.3300, 124.6400)),
     ("shimmering-flats-south-ramp", Point(1, -6794.0220, -3953.5276, 100.8641)),
-    (
-        "shimmering-flats-descent-landing",
-        Point(1, -6670.5825, -4031.4185, 27.6853),
-    ),
+    ("shimmering-flats-descent-01", Point(1, -6786.3184, -3956.7168, 93.9533)),
+    ("shimmering-flats-descent-02", Point(1, -6775.4883, -3961.8838, 89.6143)),
+    ("shimmering-flats-descent-03", Point(1, -6764.6582, -3967.0503, 88.9976)),
+    ("shimmering-flats-descent-04", Point(1, -6754.1753, -3970.9795, 88.7609)),
+    ("shimmering-flats-descent-05", Point(1, -6742.8530, -3974.9521, 87.0434)),
+    ("shimmering-flats-descent-06", Point(1, -6731.5308, -3978.9248, 86.6695)),
+    ("shimmering-flats-descent-07", Point(1, -6720.2085, -3982.8975, 86.4639)),
+    ("shimmering-flats-descent-08", Point(1, -6708.8862, -3986.8704, 80.4466)),
+    ("shimmering-flats-descent-09", Point(1, -6699.4258, -3991.0769, 71.4208)),
+    ("shimmering-flats-descent-10", Point(1, -6690.3750, -3998.0830, 57.0616)),
+    ("shimmering-flats-descent-11", Point(1, -6681.7397, -4006.4150, 41.8916)),
+    ("shimmering-flats-descent-12", Point(1, -6673.1787, -4014.8232, 30.4301)),
+    ("shimmering-flats-descent-13", Point(1, -6664.6924, -4023.3083, 21.0995)),
+    ("shimmering-flats-descent-14", Point(1, -6656.2065, -4031.7937, 2.3818)),
+    ("shimmering-flats-descent-15", Point(1, -6645.8003, -4037.7693, -14.4165)),
+    ("shimmering-flats-descent-16", Point(1, -6635.3940, -4043.7446, -29.5975)),
+    ("shimmering-flats-descent-17", Point(1, -6624.9878, -4049.7195, -40.9866)),
     ("shimmering-flats-south-road", Point(1, -6624.2671, -4050.1333, -41.6139)),
     ("shimmering-flats-road", Point(1, -6239.9995, -4085.3330, -58.0107)),
     ("thousand-needles-east-road-1", Point(1, -6035.5581, -3865.7529, -59.6654)),
@@ -1575,11 +1589,12 @@ class TraverseStrategy:
             descending_shimmering_flats = (
                 not self.route_prefix_abandoned
                 and self.route_guidepoints_arrived < len(TRAVERSE_ROUTE_PREFIX)
-                and TRAVERSE_ROUTE_PREFIX[self.route_guidepoints_arrived][0]
-                in {
-                    "shimmering-flats-descent-landing",
-                    "shimmering-flats-south-road",
-                }
+                and (
+                    TRAVERSE_ROUTE_PREFIX[self.route_guidepoints_arrived][0]
+                    .startswith("shimmering-flats-descent-")
+                    or TRAVERSE_ROUTE_PREFIX[self.route_guidepoints_arrived][0]
+                    == "shimmering-flats-south-road"
+                )
             )
             if descending_shimmering_flats:
                 if not _activate_descent_rejuvenation(bridge, trace):

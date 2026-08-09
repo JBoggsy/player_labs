@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v202 - canonical connected descent path (2026-08-09)
+
+- Upload pending.
+- Replaces the two fall chords with 17 sampled anchors from the canonical 0.1.209 Detour path.
+  The pinned helper returns a complete 528.69-yard smooth path from north-road-9 to the south road;
+  the old route skipped roughly 69 of its descent waypoints and cut through the cliff.
+- V201 kept all 24 runs alive and removed backtracking, but no run reached the old landing. Its
+  median progress improved, supporting local evasion while route geometry remained limiting.
+
 ## v201 - local evasion without safe-point backtracking (2026-08-09)
 
 - Version UUID: `d76612f6-1733-4400-83ca-87bd435bec14` (`wowborg:v201`, uploaded
@@ -10,6 +19,8 @@
 - V200's 24-run batch produced 1,012 avoidance starts and 838 retreats. It kept 23 runs alive; one
   run passed the descent health gate and began the south-road leg around 268 seconds, still far too
   late for the Great Lift. The repeated backtracking is the dominant measured throughput cost.
+- Hosted request `xreq_7e42a29b-2687-40f8-9afc-07cc82cfaf25` kept all 24 runs alive with zero
+  backtracks. Median progress improved, though no run reached the old descent landing.
 
 ## v200 - far-clear adaptive stride (2026-08-09)
 
