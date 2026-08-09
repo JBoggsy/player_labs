@@ -1411,7 +1411,13 @@ landings remained 4.0–4.5 yards from the navmesh coordinate, outside its 3-yar
 radius. Exact steering then turned back toward the unreachable point. The active source accepts a
 jump edge after the character crosses the target northing plane inside an 8-yard lateral and
 10-yard vertical landing envelope. This candidate is uploaded inert as **wowborg:v209**
-(`50dc3a2d-b8ad-47a9-af22-8490590d7122`, source `e52051f`).
+(`50dc3a2d-b8ad-47a9-af22-8490590d7122`, source `e52051f`). Hosted request
+`xreq_f8b2d2ff-4a96-4d67-b35d-c332705f6a48` completed all 48 jobs with 48 living characters. Four
+runs chained beyond descent point 10, reaching points 18, 24, 27, and the south road respectively.
+The complete lower descent took 19 seconds in the best run, validating edge acceptance, but that
+run spent 86 seconds on the 16 exact ascent points and reached the south road at 267 seconds. The
+active source accepts a climb edge once wowborg reaches its target height with 3 yards of vertical
+slack inside an 8-yard planar envelope, avoiding exact-coordinate cleanup after a successful jump.
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.

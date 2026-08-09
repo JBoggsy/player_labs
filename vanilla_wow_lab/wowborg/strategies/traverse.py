@@ -57,6 +57,8 @@ ROAD_PASS_VERTICAL_YARDS = 10.0
 ROAD_PASS_NORTHING_SLACK_YARDS = 20.0
 ROAD_JUMP_EDGE_PASS_LATERAL_YARDS = 8.0
 ROAD_JUMP_EDGE_PASS_VERTICAL_YARDS = 10.0
+ROAD_CLIMB_EDGE_PASS_PLANAR_YARDS = 8.0
+ROAD_CLIMB_EDGE_PASS_VERTICAL_SLACK_YARDS = 3.0
 ROAD_STALL_SECONDS = 8.0
 ROAD_UNSTICK_ATTEMPTS = 2
 ROAD_SETTLE_PAUSE_INTERVAL = 8
@@ -1153,6 +1155,30 @@ def _steer_road_leg(
                 activation=1,
                 distance=round(distance, 3),
                 lateral_distance=round(lateral_distance, 3),
+                vertical_distance=round(vertical_distance, 3),
+            )
+            return Point(
+                frame.location.map_id,
+                frame.location.x,
+                frame.location.y,
+                frame.location.z,
+            ), ""
+        planar_distance = math.dist(
+            (frame.location.x, frame.location.y),
+            (target.x, target.y),
+        )
+        if (
+            jump_terrain
+            and not allow_northing_pass
+            and frame.location.z
+            >= target.z - ROAD_CLIMB_EDGE_PASS_VERTICAL_SLACK_YARDS
+            and planar_distance <= ROAD_CLIMB_EDGE_PASS_PLANAR_YARDS
+        ):
+            trace(
+                "traverse_road_climb_edge_passed",
+                activation=1,
+                distance=round(distance, 3),
+                planar_distance=round(planar_distance, 3),
                 vertical_distance=round(vertical_distance, 3),
             )
             return Point(

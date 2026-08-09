@@ -7,6 +7,11 @@
 - Preserves V208's one aligned jump per dense descent leg, then accepts the edge when wowborg has
   crossed the target northing plane within the measured 8-yard lateral / 10-yard vertical landing
   envelope. Route geometry, combat, and hazard thresholds are unchanged.
+- Hosted request `xreq_f8b2d2ff-4a96-4d67-b35d-c332705f6a48` completed all 48 jobs with 48 living
+  characters. Four runs chained beyond descent point 10, reaching points 18, 24, 27, and the south
+  road respectively. The complete lower descent took 19 seconds in the best run, validating edge
+  acceptance. That run spent 86 seconds on the 16 exact ascent points and reached the south road at
+  267 seconds, leaving less than a second of the episode horizon for the open road.
 
 ## v208 - jump once per lower descent edge (2026-08-09)
 
