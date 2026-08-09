@@ -8,7 +8,10 @@
   the 70-yard exit radius. Newly intersecting patrols join the active set; hostiles that disappear
   beyond the 80-yard visible envelope clear naturally. This prevents the bypass line itself from
   making wowborg forget a still-nearby patrol and cut back toward it.
-- Hosted Traverse proof is pending.
+- Request `xreq_27e8af9f-97b7-44dd-a7eb-285a398ce527` stayed full-health and
+  contact-free, and reduced avoidance lifecycle churn to three starts and two ends. But its
+  continuously recomputed target orbited the retained patrols: 79 side switches, 142 retreats,
+  only 150 net northing, and a timeout at road node 1.
 
 ## v131 - 60-yard crossing-patrol lookahead (2026-08-09)
 

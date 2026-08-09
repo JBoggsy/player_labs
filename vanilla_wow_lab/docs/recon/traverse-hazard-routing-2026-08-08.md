@@ -482,7 +482,12 @@ corridor while still nearby, and wowborg then cuts back toward it. The next cand
 triggering hostiles by GUID until each is beyond the 70-yard exit radius, while allowing new
 crossing patrols to join the active set.
 It is uploaded inert as **wowborg:v132**
-(`1ccd4562-dba9-458e-ac61-53e0afadb02f`, source `751998a`); hosted Traverse proof is pending.
+(`1ccd4562-dba9-458e-ac61-53e0afadb02f`, source `751998a`). Request
+`xreq_27e8af9f-97b7-44dd-a7eb-285a398ce527` stayed full-health and contact-free,
+and reduced avoidance lifecycle churn to three starts and two ends. But the continuously
+recomputed target orbited retained patrols: 79 side switches, 142 retreats, only 150 net northing,
+and a timeout at road node 1. The next candidate freezes a concrete 140-yard-ahead lateral
+waypoint, releasing it on arrival and replanning only for a genuinely new crossing patrol.
 
 ## Open uncertainties
 

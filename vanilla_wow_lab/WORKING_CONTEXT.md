@@ -216,7 +216,13 @@ nearby, ending avoidance and making wowborg cut back toward it. The active candi
 triggering hostile by GUID until it is actually beyond the 70-yard exit radius; new crossing
 hazards can join the active set, and disappearance beyond the 80-yard visible envelope clears it.
 It is uploaded inert as **wowborg:v132**
-(`1ccd4562-dba9-458e-ac61-53e0afadb02f`, source `751998a`); hosted Traverse proof is pending.
+(`1ccd4562-dba9-458e-ac61-53e0afadb02f`, source `751998a`). Request
+`xreq_27e8af9f-97b7-44dd-a7eb-285a398ce527` stayed full-health and contact-free,
+and reduced avoidance lifecycle churn to three starts and two ends. But the continuously
+recomputed target orbited retained patrols: 79 side switches, 142 retreats, only 150 net northing,
+and a timeout at road node 1. The active candidate freezes a concrete 140-yard-ahead lateral
+waypoint, releasing it on arrival and replanning only when a genuinely new patrol crosses the
+active path.
 
 ### Previous 0.1.208 movement baseline
 
