@@ -73,10 +73,12 @@ RAMP_FIGHT_ADD_CLEARANCE_YARDS = 12.0
 SECOND_DESCENT_MIN_HEALTH_FRACTION = 0.8
 ROAD_STEEP_GUIDEPOINTS = frozenset(
     {f"shimmering-flats-ramp-ascent-{index:02d}" for index in range(1, 17)}
-    | {f"shimmering-flats-descent-{index:02d}" for index in range(10, 42)}
     | {"tanaris-road-9-climb-crest", "shimmering-flats-ramp-crest"}
 )
 ROAD_STEEP_PASS_GUIDEPOINTS = frozenset({"tanaris-road-9-climb-crest"})
+ROAD_SINGLE_JUMP_GUIDEPOINTS = frozenset(
+    {f"shimmering-flats-descent-{index:02d}" for index in range(10, 42)}
+)
 ROAD_DESCENT_GUIDEPOINTS = frozenset(
     {f"shimmering-flats-descent-{index:02d}" for index in range(1, 42)}
 )
@@ -246,8 +248,7 @@ def _steer_toward(
     jump_when_moving: bool = False,
     trace=None,
 ) -> str | None:
-    desired = math.atan2(target.y - frame.location.y, target.x - frame.location.x)
-    delta = (desired - frame.location.orientation + math.pi) % (2 * math.pi) - math.pi
+    delta = _heading_delta(frame, target)
     turn_deadband = math.pi / 4
     if abs(delta) > turn_deadband:
         return bridge.select_move_vector(
@@ -279,6 +280,11 @@ def _steer_toward(
         duration=duration,
         purpose=purpose,
     )
+
+
+def _heading_delta(frame, target: Point) -> float:
+    desired = math.atan2(target.y - frame.location.y, target.x - frame.location.x)
+    return (desired - frame.location.orientation + math.pi) % (2 * math.pi) - math.pi
 
 
 def _point_segment_distance(
@@ -1007,6 +1013,7 @@ def _steer_road_leg(
     arrival_radius: float,
     hold_terrain_hazards: bool,
     jump_terrain: bool,
+    jump_once: bool,
 ):
     settle_pause_interval = (
         ROAD_SETTLE_PAUSE_INTERVAL
@@ -1020,6 +1027,7 @@ def _steer_road_leg(
     fight_guid: str | None = None
     fight_started: float | None = None
     combat = TraverseCombatState()
+    single_jump_used = False
     while time.monotonic() < deadline and not getattr(bridge, "finished", False):
         frame = bridge.observe()
         if frame is None:
@@ -1379,7 +1387,15 @@ def _steer_road_leg(
             steering_purpose = (
                 "steer the canonical Traverse road after movement bootstrap"
             )
-        _steer_toward(
+        jump_when_moving = (
+            jump_terrain
+            or (
+                jump_once
+                and not single_jump_used
+                and abs(_heading_delta(frame, steering_target)) <= math.pi / 4
+            )
+        ) and not frame.in_combat and not hazards and not should_evade
+        request_id = _steer_toward(
             bridge,
             frame,
             steering_target,
@@ -1398,14 +1414,11 @@ def _steer_road_leg(
                     else TRAVERSE_INPUT_SECONDS
                 )
             ),
-            jump_when_moving=(
-                jump_terrain
-                and not frame.in_combat
-                and not hazards
-                and not should_evade
-            ),
+            jump_when_moving=jump_when_moving,
             trace=trace,
         )
+        if request_id is not None and jump_when_moving and jump_once:
+            single_jump_used = True
         settle_frame = bridge.observe()
         if settle_frame is None:
             return None, "no_frame"
@@ -1723,6 +1736,7 @@ class TraverseStrategy:
                             name in ROAD_TERRAIN_CONSTRAINED_GUIDEPOINTS
                         ),
                         jump_terrain=name in ROAD_STEEP_GUIDEPOINTS,
+                        jump_once=name in ROAD_SINGLE_JUMP_GUIDEPOINTS,
                     )
                     if end is not None:
                         self.best_world_x = max(self.best_world_x, end.x)

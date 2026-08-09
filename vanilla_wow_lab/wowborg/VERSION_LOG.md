@@ -7,6 +7,10 @@
 - While ranged fallback is casting, waits instead of immediately selecting the spell again. Failed
   ranged spell families are remembered so fallback can advance from Moonfire to Wrath. Combat
   admission, the V206 route, and hazard thresholds are unchanged.
+- Hosted request `xreq_676b4187-42d4-4eb9-81fc-8cd1adbf2946` kept all 48 characters alive. One
+  ranged fallback activated without a death. Three runs reached descent point 9, but continuous
+  jump input toward point 10 bounced uphill from about z71 to z94 and oscillated until the episode
+  horizon. Jumping prevents the fall but must be limited to one edge-crossing pulse per dense leg.
 
 ## v206 - jump from the first lower descent edge (2026-08-09)
 

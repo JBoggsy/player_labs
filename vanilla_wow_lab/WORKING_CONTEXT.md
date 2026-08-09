@@ -1398,7 +1398,12 @@ proactive level-40 Scorpid fled across the ramp while ranged fallback repeatedly
 cast-time spells. The active source waits through active ranged casts and remembers failed ranged
 spell families so fallback can advance from Moonfire to Wrath instead of self-interrupting. This
 candidate is uploaded inert as **wowborg:v207**
-(`71d3f6d7-e2fe-4ead-b69d-d0ab58a106c1`, source `c850f8c`).
+(`71d3f6d7-e2fe-4ead-b69d-d0ab58a106c1`, source `c850f8c`). Hosted request
+`xreq_676b4187-42d4-4eb9-81fc-8cd1adbf2946` kept all 48 characters alive. One ranged fallback
+activated without a death. Three runs reached descent point 9, but continuous jump input toward
+point 10 bounced uphill from about z71 to z94 and oscillated until the horizon. The active source
+keeps continuous jumps on the proven ascent but uses only one edge-crossing jump per dense lower
+descent guidepoint, then walks precisely to settle that point.
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.
