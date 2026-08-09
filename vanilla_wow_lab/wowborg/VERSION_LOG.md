@@ -6,7 +6,9 @@
   inert; not submitted). Built from source `3ef7543` against canonical vanilla-wow 0.1.209.
 - Adds the pinned navmesh's three real south-ramp bends as exact route anchors, preventing direct
   steering from falling off the escarpment. Tanaris hazard behavior is unchanged from v139.
-- Hosted Traverse proof is pending.
+- Request `xreq_7ce2cbdf-f84f-4bc4-ae06-5d6be2189fdd` remained alive and reached
+  road node 9, but a dense hazard draw consumed 238 seconds and left only 29 seconds for the first
+  ramp anchor. It had one brief contact and lost 56 health; the ramp geometry was not falsified.
 
 ## v139 - crossing-only patrol hold (2026-08-09)
 

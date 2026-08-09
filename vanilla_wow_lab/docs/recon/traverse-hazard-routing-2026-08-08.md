@@ -546,7 +546,14 @@ bends through `(-6884,-3900,54)`, `(-6876,-3912,100)`, and `(-6848,-3925,125)`; 
 at the far endpoint repeatedly fell from the escarpment. The next candidate adds those three real
 corridor bends as exact anchors without changing the proven Tanaris hazard policy.
 It is uploaded inert as **wowborg:v140**
-(`191f1a51-9c67-46a1-8e5e-dc4d28efb9a3`, source `3ef7543`); hosted Traverse proof is pending.
+(`191f1a51-9c67-46a1-8e5e-dc4d28efb9a3`, source `3ef7543`). Request
+`xreq_7ce2cbdf-f84f-4bc4-ae06-5d6be2189fdd` remained alive, reached the same 15
+Tanaris milestones, and had one brief contact costing 56 health, but an unusually dense hazard
+draw took 238 seconds to road node 9 and left only 29 seconds for the first ramp anchor. The ramp
+geometry is not falsified; the fixed episode horizon makes actuator throughput the binding
+constraint. The next candidate doubles open translation from 0.75 to 1.5 seconds while keeping
+0.25-second precision for turns, retreat/evasion, and the final 20 yards of every target. Its
+roughly 10.5-yard open stride remains inside the existing 30-yard immediate hazard gate.
 
 ## Open uncertainties
 

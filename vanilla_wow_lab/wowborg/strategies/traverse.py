@@ -29,7 +29,7 @@ GREAT_LIFT_UPPER_ROAD = Point(1, -4583.315, -1908.142, 95.58)
 GREAT_LIFT_VISIBLE_RANGE = 42.0
 GREAT_LIFT_DOCK_Z_SLACK = 2.0
 GREAT_LIFT_EXIT_Z = 80.0
-GREAT_LIFT_INPUT_SECONDS = 0.75
+TRAVERSE_INPUT_SECONDS = 1.5
 ROAD_ARRIVAL_RADIUS_YARDS = 8.0
 ROAD_PASS_LATERAL_YARDS = 60.0
 ROAD_PASS_NORTHING_SLACK_YARDS = 20.0
@@ -144,7 +144,7 @@ def _steer_toward(
             if abs(delta) > math.pi / 8
             else 0.0
         ),
-        duration=0.25 if precise_arrival else GREAT_LIFT_INPUT_SECONDS,
+        duration=0.25 if precise_arrival else TRAVERSE_INPUT_SECONDS,
         purpose=purpose,
     )
 
@@ -592,7 +592,7 @@ def _steer_road_leg(
                 frame,
                 forward=1.0,
                 strafe=side,
-                duration=GREAT_LIFT_INPUT_SECONDS,
+                duration=TRAVERSE_INPUT_SECONDS,
                 purpose="sidestep a blocked Traverse road translation",
             )
             settle_frame = bridge.observe()
@@ -849,7 +849,11 @@ def _steer_road_leg(
             frame,
             steering_target,
             purpose=steering_purpose,
-            precise_arrival=should_retreat or should_evade,
+            precise_arrival=(
+                should_retreat
+                or should_evade
+                or distance <= ROAD_HAZARD_FORWARD_YARDS
+            ),
         )
         settle_frame = bridge.observe()
         if settle_frame is None:
