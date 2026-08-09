@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v149 - conservative open-road throughput (2026-08-09)
+
+- Version UUID: `b8f24e46-e596-4f20-b154-fb8ed19166a3` (`wowborg:v149`, uploaded
+  inert; not submitted). Built from source `4c5e9fc` against canonical vanilla-wow 0.1.209.
+- Uses a 1.0-second translation only when no road hazard or combat is visible and the target is
+  more than 20 yards away. Turns and all hazard, retreat, evasion, and precise-arrival pulses keep
+  their previous cadence, avoiding v141's unsafe global 1.5-second stride.
+- Each longer translation emits `traverse_road_open_stride`, so hosted traces can measure both
+  activation count and realized route throughput.
+
 ## v148 - tight Shimmering Flats ramp arrivals (2026-08-09)
 
 - Version UUID: `52ad576d-0fc3-4ab4-9570-db29744840f0` (`wowborg:v148`, uploaded

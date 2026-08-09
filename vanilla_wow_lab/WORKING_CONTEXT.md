@@ -358,7 +358,8 @@ host recorded hundreds of WebSocket detach/reattach cycles. The ramp-radius chan
 remains unexercised. The active candidate reduces exposure to that host churn with a conservative
 1.0-second translation only when no road hazard or combat is visible and the target is more than
 20 yards away; turns and all hazard/arrival pulses retain their prior cadence. Every longer pulse
-emits `traverse_road_open_stride`.
+emits `traverse_road_open_stride`. It is uploaded inert as **wowborg:v149**
+(`b8f24e46-e596-4f20-b154-fb8ed19166a3`, source `4c5e9fc`).
 
 ### Previous 0.1.208 movement baseline
 
