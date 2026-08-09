@@ -1366,7 +1366,12 @@ query found the deeper geometry defect: canonical 0.1.209 returns a complete 528
 path from north-road-9 to the south road, while the active route skipped roughly 69 descent points
 and cut two chords through the cliff. The active source replaces those falls with 17 sampled
 Detour anchors. This candidate is uploaded inert as **wowborg:v202**
-(`b210792a-fc71-446e-91f6-06782aebe9dc`, source `e634cae`) but not yet evaluated.
+(`b210792a-fc71-446e-91f6-06782aebe9dc`, source `e634cae`). Hosted request
+`xreq_8d5d72fa-185a-487b-8fb3-d98676f9716b` kept all 24 runs alive and put three runs onto the new
+descent, but none reached the south road. The best completed descent point 9, then overshot the
+17-yard vertical chord toward point 10 and entered repeated server corrections. The active source
+keeps the proven upper descent and replaces the steep lower segment with every roughly three-yard
+Detour waypoint.
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.

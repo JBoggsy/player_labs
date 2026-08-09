@@ -9,6 +9,11 @@
   the old route skipped roughly 69 of its descent waypoints and cut through the cliff.
 - V201 kept all 24 runs alive and removed backtracking, but no run reached the old landing. Its
   median progress improved, supporting local evasion while route geometry remained limiting.
+- Hosted request `xreq_8d5d72fa-185a-487b-8fb3-d98676f9716b` kept all 24 runs alive. Three runs
+  entered the sampled descent, but none reached the south road. The best run completed descent
+  point 9, then overshot the 17-yard vertical chord toward point 10 and repeatedly received server
+  position corrections. The canonical path is accepted, but its steep lower segment needs every
+  roughly three-yard Detour waypoint rather than every fourth waypoint.
 
 ## v201 - local evasion without safe-point backtracking (2026-08-09)
 
