@@ -1194,6 +1194,8 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    on route progress/frame failures and one died at ramp-turn. The active source keeps the
    canonical edge bearings but uses the public action contract's explicit one-shot `jump` bit on
    their forward vectors. All non-steep movement and hazard decisions are unchanged.
+   That candidate is uploaded inert as **wowborg:v172**
+   (`be0167b1-0275-4c39-aabf-a50fc8f0be19`, source `772672c`).
 
 ## Reference
 

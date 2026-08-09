@@ -833,6 +833,8 @@ native `move_to` cannot execute this steep component. Four runs stopped earlier 
 progress/frame failures and one died at ramp-turn. The next candidate retains the canonical edge
 bearings but uses the public action contract's explicit one-shot `jump` bit on their forward
 vectors. Non-steep movement and hazard behavior remain unchanged.
+That candidate is uploaded inert as **wowborg:v172**
+(`be0167b1-0275-4c39-aabf-a50fc8f0be19`, source `772672c`).
 
 ## Open uncertainties
 

@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v172 - explicit steep-edge jumps (2026-08-09)
+
+- Version UUID: `be0167b1-0275-4c39-aabf-a50fc8f0be19` (`wowborg:v172`, uploaded
+  inert; not submitted). Built from source `772672c` against canonical vanilla-wow 0.1.209.
+- Propagates the action contract's explicit `jump` bit through wowborg's movement adapter and
+  enables it only on forward translations along the 17 canonical steep-pass edges.
+- Hazard handling, combat, non-steep movement, and downstream route geometry are unchanged from
+  v171. The hosted request is pending.
+
 ## v171 - edge-bounded native mountain pass (2026-08-09)
 
 - Version UUID: `2b445ece-e7f8-43a5-83cc-f773df84c0d0` (`wowborg:v171`, uploaded
