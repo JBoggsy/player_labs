@@ -1178,6 +1178,8 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    maintained host `move_to` follower infers jump-at-start edges from Detour polygon keys. The
    active source removes the manual ascent points and delegates only ramp-base-to-crest to that
    native follower. Hazard-aware steering remains unchanged before and after the pass.
+   That candidate is uploaded inert as **wowborg:v170**
+   (`8085e4e1-e211-4958-9477-a15a148490b9`, source `2c32d05`).
 
 ## Reference
 

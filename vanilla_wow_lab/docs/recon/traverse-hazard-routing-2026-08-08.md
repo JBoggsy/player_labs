@@ -817,6 +817,8 @@ mountain pass, but it requires jumps. The public Python local-step wire intentio
 internal jump hint, whereas the maintained host `move_to` executor calls `routePilotWaypoints`
 with polygon-based jump inference. The next candidate removes the manual ascent points and uses
 native `move_to` only from ramp-base to crest, leaving hazard-aware routing unchanged elsewhere.
+That candidate is uploaded inert as **wowborg:v170**
+(`8085e4e1-e211-4958-9477-a15a148490b9`, source `2c32d05`).
 
 ## Open uncertainties
 

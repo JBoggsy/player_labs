@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v170 - native jump-aware mountain pass (2026-08-09)
+
+- Version UUID: `8085e4e1-e211-4958-9477-a15a148490b9` (`wowborg:v170`, uploaded
+  inert; not submitted). Built from source `2c32d05` against canonical vanilla-wow 0.1.209.
+- Delegates only the steep ramp-base-to-crest leg to the host's maintained `move_to` executor,
+  which follows Detour polygon keys and infers required jumps. Manual steep ascent points are
+  removed.
+- Hazard-aware steering, ramp combat, downstream route endpoints, and ordinary-road cadence are
+  unchanged from v169. The hosted request is pending.
+
 ## v169 - canonical Detour ramp ascent (2026-08-09)
 
 - Version UUID: `ca5d030f-316e-4644-99d7-6dccb979bb48` (`wowborg:v169`, uploaded
