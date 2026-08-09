@@ -580,6 +580,8 @@ road node 9 in 164 seconds. The first ramp anchor was still too coarse for discr
 wowborg ran east along the cliff edge and fell before reaching its required southward bend. The
 next candidate splits the pinned navmesh approach at `(-6905,-3869,39)` and
 `(-6890,-3885,48)` before the existing exact base anchor.
+It is uploaded inert as **wowborg:v144**
+(`bb21cd9f-2573-4f1c-bfd2-ff5be57842ac`, source `3e2d09c`); hosted Traverse proof is pending.
 
 ## Open uncertainties
 

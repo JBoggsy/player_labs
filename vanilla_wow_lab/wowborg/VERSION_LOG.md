@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v144 - curved Shimmering Flats ramp approach (2026-08-09)
+
+- Version UUID: `bb21cd9f-2573-4f1c-bfd2-ff5be57842ac` (`wowborg:v144`, uploaded
+  inert; not submitted). Built from source `3e2d09c` against canonical vanilla-wow 0.1.209.
+- Adds exact pinned-navmesh approach and turn anchors before the existing ramp base so discrete
+  steering follows the cliff's southward curve. Cadence and hazard behavior are unchanged.
+- Hosted Traverse proof is pending.
+
 ## v143 - periodic Traverse settlement yield (2026-08-09)
 
 - Version UUID: `0f9033bc-0247-4843-9b77-2af1292a43f8` (`wowborg:v143`, uploaded
