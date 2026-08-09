@@ -483,7 +483,7 @@ def _steer_road_leg(
             and side_clearances[avoidance.side]
             < ROAD_HAZARD_MIN_CLEARANCE_YARDS
         )
-        if avoidance.side is None:
+        if avoidance.side is None and not avoidance.retreating:
             avoidance.safe_point = Point(
                 frame.location.map_id,
                 frame.location.x,
@@ -495,10 +495,12 @@ def _steer_road_leg(
                 (frame.location.x, frame.location.y),
                 (avoidance.safe_point.x, avoidance.safe_point.y),
             )
-            if unsafe and avoidance.safe_point is not None
+            if (unsafe or avoidance.retreating) and avoidance.safe_point is not None
             else 0.0
         )
-        should_retreat = unsafe and retreat_distance > ROAD_HAZARD_HOLD_RADIUS_YARDS
+        should_retreat = (
+            unsafe or avoidance.retreating
+        ) and retreat_distance > ROAD_HAZARD_HOLD_RADIUS_YARDS
         should_wait = unsafe and not should_retreat
         if should_wait:
             if not avoidance.waiting:

@@ -370,6 +370,15 @@ The policy stayed alive and out of combat, then raised the exact `TypeError` aft
 The next source candidate adds only the missing wrapper pass-through; the diagonal strategy is
 unchanged.
 
+V119 request `xreq_bee76128-17b5-4bcc-adb5-899a08111294` supplied the first complete
+proof of eight-direction retreat. Wowborg stayed at full health, never entered combat, reached
+nine guidepoints and 1,320.1 living northing yards, and every retreat mechanically ended. It was
+not efficient: 140 retreat activations and 139 side switches consumed the episode at road node 7.
+The temporal defect is explicit in the trace: retreat ended as soon as projected clearance rose
+above 15 yards, even 20–45 yards from the frozen safe anchor, then restarted when the moving
+patrol made the next frame unsafe. The next candidate makes reaching the anchor, rather than a
+momentary clearance change, the retreat completion condition.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.

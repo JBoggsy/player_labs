@@ -4,7 +4,13 @@
 
 - Version UUID: `635748f7-56bd-4295-abed-59ddf4e82f98` (`wowborg:v119`, uploaded
   inert; not submitted). Built from source `90b0f91`; adds the missing strafe pass-through to
-  v118's unchanged diagonal precise-retreat strategy. Hosted proof is pending.
+  v118's unchanged diagonal precise-retreat strategy.
+- Request `xreq_bee76128-17b5-4bcc-adb5-899a08111294` stayed full-health and out of
+  combat, reached nine guidepoints / 1,320.1 living northing yards, and mechanically completed
+  every retreat. It was inefficient: 140 retreats and 139 side switches consumed the episode at
+  road node 7. Retreats ended whenever projected clearance briefly recovered, even while wowborg
+  remained 20–45 yards from its frozen safe anchor, then restarted on the next unsafe frame. The
+  next candidate keeps retreating until it actually reaches that anchor.
 
 ## v118 - diagonal precise retreat (2026-08-09)
 

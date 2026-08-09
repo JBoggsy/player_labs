@@ -113,7 +113,13 @@ failed after one guidepoint because wowborg's thin `select_move_vector` convenie
 not expose the upstream action contract's existing `strafe` field. The active source adds that
 missing pass-through; the diagonal strategy itself is unchanged.
 It is uploaded inert as **wowborg:v119**
-(`635748f7-56bd-4295-abed-59ddf4e82f98`, source `90b0f91`); hosted proof is pending.
+(`635748f7-56bd-4295-abed-59ddf4e82f98`, source `90b0f91`). Request
+`xreq_bee76128-17b5-4bcc-adb5-899a08111294` stayed full-health and out of combat,
+reached nine guidepoints / 1,320.1 living northing yards, and mechanically completed every
+retreat. It was inefficient: 140 retreats and 139 side switches consumed the episode at road
+node 7. Retreats ended whenever projected clearance briefly recovered, even while wowborg was
+still 20–45 yards from its frozen safe anchor, then restarted on the next unsafe frame. The active
+candidate persists retreat until it actually reaches that anchor.
 
 ### Previous 0.1.208 movement baseline
 
