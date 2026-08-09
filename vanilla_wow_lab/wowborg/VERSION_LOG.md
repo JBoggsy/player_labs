@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v207 - finish ranged fallback casts (2026-08-09)
+
+- Version UUID: `71d3f6d7-e2fe-4ead-b69d-d0ab58a106c1` (`wowborg:v207`, uploaded
+  inert; not submitted). Built from source `c850f8c` against canonical vanilla-wow 0.1.209.
+- While ranged fallback is casting, waits instead of immediately selecting the spell again. Failed
+  ranged spell families are remembered so fallback can advance from Moonfire to Wrath. Combat
+  admission, the V206 route, and hazard thresholds are unchanged.
+
 ## v206 - jump from the first lower descent edge (2026-08-09)
 
 - Version UUID: `3adcfa93-82c6-4b4b-bc0d-4846b9a74596` (`wowborg:v206`, uploaded
