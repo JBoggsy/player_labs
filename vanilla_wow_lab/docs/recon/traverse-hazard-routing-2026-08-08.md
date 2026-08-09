@@ -768,6 +768,13 @@ With that safe stride restored, the active source candidate changes only local b
 tracking horizons while spending less movement crossing the road instead of advancing.
 That candidate is uploaded inert as **wowborg:v165**
 (`3b4b7594-a711-456c-8d36-8cf282d241cc`, source `1086b45`).
+Request `xreq_e02535ab-4616-4c12-a8c0-b242294471dd` falsified that geometry. All six
+runs survived, but their last milestones were only 15, 18, 18, 18, 20, and 20; ramp arrival ranged
+from 166.7 to 210.1 seconds, with 40-51 avoidance starts and 31-49 retreats per run. A farther
+diagonal endpoint did not consistently reduce the state churn, so source restores the proven
+20-yard forward component. The next isolated throughput lever is the unavoidable ramp fight's
+29-36 second duration: the current rotation spends three combo points on Rip and never reaches the
+fixture's maintained Ferocious Bite finisher.
 
 ## Open uncertainties
 

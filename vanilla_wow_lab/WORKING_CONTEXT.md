@@ -1129,6 +1129,13 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    tracking horizons while reducing lateral path waste.
    That candidate is uploaded inert as **wowborg:v165**
    (`3b4b7594-a711-456c-8d36-8cf282d241cc`, source `1086b45`).
+   Six-run request `xreq_e02535ab-4616-4c12-a8c0-b242294471dd` survived without a
+   death but reached only milestones 15, 18, 18, 18, 20, and 20. The best ramp approach improved
+   to 166.7 seconds, but arrivals ranged through 210.1 seconds and every run still incurred 40-51
+   avoidance starts plus 31-49 retreats. The longer tangent did not consistently reduce churn, so
+   source restores the proven 20-yard forward component. The next isolated speed lever is the
+   unavoidable ramp fight: current safe kills take 29-36 seconds and spend combo points on Rip
+   before the fixture can use its maintained Ferocious Bite finisher.
 
 ## Reference
 

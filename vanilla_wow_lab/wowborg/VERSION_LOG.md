@@ -8,6 +8,11 @@
   to 40 yards forward. Adaptive lateral widths and the mandatory 20-yard clearance are unchanged.
 - The tangent remains inside the 60-yard lookahead and 80-yard tracking horizons. This isolates
   avoidance path efficiency without weakening the hazard gate.
+- Six-run request `xreq_e02535ab-4616-4c12-a8c0-b242294471dd` survived without a
+  death, but reached only milestones 15, 18, 18, 18, 20, and 20. Ramp approach/base arrival
+  ranged from 166.7 to 210.1 seconds while each run still activated 40-51 avoidances and 31-49
+  retreats. The farther tangent did not consistently reduce state churn or improve the frontier,
+  so source restores the proven 20-yard forward component before the next experiment.
 
 ## v164 - maximum valid clear-road stride (2026-08-09)
 
