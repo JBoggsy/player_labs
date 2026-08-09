@@ -781,6 +781,15 @@ fight admission gate, and all routing behavior remain unchanged.
 That candidate is uploaded inert as **wowborg:v166**
 (`327685d0-0d64-4bd5-a606-322610bff48f`, source `937f6ec`).
 
+The next router seam is now concrete. `Unit.movement_speed` and
+`Unit.movement_remaining_seconds` expose the patrol's authoritative remaining spline timing, and
+the player observation exposes current movement speed. The current `_segment_clearance` ignores
+those fields and intersects the complete player and patrol segments as swept volumes, marking paths
+unsafe even when each participant reaches the crossing at a different time. The prepared next
+candidate minimizes their relative linear motion over matching time, then checks the patrol's
+terminal point if it stops before the player candidate completes. It retains the existing 20-yard
+floor and the conservative swept-volume fallback when timing is unavailable.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.
