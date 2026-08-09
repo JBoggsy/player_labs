@@ -1365,7 +1365,8 @@ median progress improved, though no run reached the old descent landing. A fresh
 query found the deeper geometry defect: canonical 0.1.209 returns a complete 528.69-yard smooth
 path from north-road-9 to the south road, while the active route skipped roughly 69 descent points
 and cut two chords through the cliff. The active source replaces those falls with 17 sampled
-Detour anchors. This candidate is not yet uploaded or evaluated.
+Detour anchors. This candidate is uploaded inert as **wowborg:v202**
+(`b210792a-fc71-446e-91f6-06782aebe9dc`, source `e634cae`) but not yet evaluated.
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.

@@ -2,7 +2,8 @@
 
 ## v202 - canonical connected descent path (2026-08-09)
 
-- Upload pending.
+- Version UUID: `b210792a-fc71-446e-91f6-06782aebe9dc` (`wowborg:v202`, uploaded
+  inert; not submitted). Built from source `e634cae` against canonical vanilla-wow 0.1.209.
 - Replaces the two fall chords with 17 sampled anchors from the canonical 0.1.209 Detour path.
   The pinned helper returns a complete 528.69-yard smooth path from north-road-9 to the south road;
   the old route skipped roughly 69 of its descent waypoints and cut through the cliff.
