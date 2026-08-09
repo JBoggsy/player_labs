@@ -2,7 +2,8 @@
 
 ## v201 - local evasion without safe-point backtracking (2026-08-09)
 
-- Upload pending.
+- Version UUID: `d76612f6-1733-4400-83ca-87bd435bec14` (`wowborg:v201`, uploaded
+  inert; not submitted). Built from source `5800e1c` against canonical vanilla-wow 0.1.209.
 - When a selected hazard detour falls below the unchanged 20-yard clearance floor, uses the
   existing local move-away evasion instead of reversing to a stale last-safe point. Holding and
   terrain-constrained behavior are unchanged.

@@ -1358,8 +1358,8 @@ candidate is uploaded inert as **wowborg:v200**
 health gate and began the south-road leg around 268 seconds, but the batch generated 1,012
 avoidance starts and 838 retreats despite only 328 far-clear strides. The active source preserves
 the 20-yard clearance floor but replaces stale safe-point backtracking with the existing local
-move-away evasion when a selected detour becomes unsafe. This candidate is not yet uploaded or
-evaluated.
+move-away evasion when a selected detour becomes unsafe. It is uploaded inert as **wowborg:v201**
+(`d76612f6-1733-4400-83ca-87bd435bec14`, source `5800e1c`).
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.
