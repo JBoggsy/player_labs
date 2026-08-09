@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v194 - caster-form staged descent (2026-08-09)
+
+- Version UUID: `866a5479-2aba-4766-8c0c-85fbc1649c7c` (`wowborg:v194`, uploaded
+  inert; not submitted). Built from source `6a23423` against canonical vanilla-wow 0.1.209.
+- Keeps caster form after applying Rejuvenation and immediately steers through each staged
+  Shimmering Flats drop. Cat Form is removed from this seam because hosted evidence proved it does
+  not reduce falling damage and its 1.5-second settlement outlasts rank-6 Rejuvenation at 10x.
+- V193 combat, routing, hazard clearance, and action cadence are unchanged. Hosted evaluation is
+  pending.
+
 ## v193 - continuous combat closing (2026-08-09)
 
 - Version UUID: `a48ff023-0235-451d-b304-388e62bfa532` (`wowborg:v193`, uploaded
