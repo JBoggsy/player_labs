@@ -77,7 +77,12 @@ It is uploaded inert as **wowborg:v113**
 failed before connection with empty logs. The upload argv was `python -m wowborg.main`, which
 defines but does not invoke `main()`. The identical image is re-uploaded inert as **wowborg:v114**
 (`830a0fa0-7d92-416f-8c8a-0eabc9f1015e`) with the correct `python -m wowborg` package
-entrypoint; hosted gameplay proof is pending.
+entrypoint. Request `xreq_a4c0fd12-fcf6-49b4-8dc6-fb46bb57b302` proved exact melee
+activation but falsified the strength premise: 413 outgoing versus 570 incoming damage in
+1.7 seconds against one level-48 Rabid Blisterpaw, followed by death after six guidepoints.
+The pre-pull retreat had orbited its six-yard safe anchor because fixed 0.75-second forward-turn
+pulses cannot settle within two yards. The active source returns to v112's escape-only combat
+baseline and changes only retreat arrival: turn in place, then move with a distance-bounded pulse.
 
 ### Previous 0.1.208 movement baseline
 

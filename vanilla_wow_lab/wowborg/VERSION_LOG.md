@@ -6,7 +6,14 @@
   inert; not submitted). Reuses v113's exact `1e8ca0b` image and vanilla-wow 0.1.209 contract.
 - Changes only the uploaded argv from inert `python -m wowborg.main` to the package entrypoint
   `python -m wowborg`, whose `__main__.py` invokes `main()`. Combat and routing code are identical
-  to v113. Hosted proof is pending.
+  to v113.
+- Request `xreq_a4c0fd12-fcf6-49b4-8dc6-fb46bb57b302` proved the fight gate activates
+  and exact melee starts, but falsified the current-strength premise. Against one level-48 Rabid
+  Blisterpaw, basic melee dealt 413 while wowborg lost 570 health in 1.7 seconds. Falling below
+  the 80% entry threshold switched to escape and the character died after six guidepoints. The
+  pull began after the safe-anchor retreat orbited a point only 6.4 yards away because it reused
+  fixed 0.75-second forward-turn pulses. The next candidate returns combat to v112's escape-only
+  baseline and changes only retreat arrival: turn in place, then use a distance-bounded pulse.
 
 ## v113 - calibrated single-pull combat (2026-08-08)
 

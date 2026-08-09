@@ -42,8 +42,6 @@ ROAD_HAZARD_LATERAL_YARDS = 30.0
 ROAD_HAZARD_MIN_CLEARANCE_YARDS = 15.0
 ROAD_HAZARD_HOLD_RADIUS_YARDS = 2.0
 ROAD_HAZARD_SWITCH_MARGIN_YARDS = 5.0
-ROAD_FIGHT_LEVEL_ADVANTAGE = 10
-ROAD_FIGHT_MIN_HEALTH_FRACTION = 0.8
 
 # Follow the deployed owner's level-51 Tanaris and Thousand Needles road spine
 # to the Great Lift lower dock. Great Lift boarding is a separate campaign.
@@ -94,22 +92,43 @@ def _observed_lift_at_lower_dock(frame):
     return min(lifts, key=lambda obj: obj.distance, default=None)
 
 
-def _steer_toward(bridge, frame, target: Point, *, purpose: str) -> None:
+def _steer_toward(
+    bridge,
+    frame,
+    target: Point,
+    *,
+    purpose: str,
+    precise_arrival: bool = False,
+) -> None:
     desired = math.atan2(target.y - frame.location.y, target.x - frame.location.x)
     delta = (desired - frame.location.orientation + math.pi) % (2 * math.pi) - math.pi
     if abs(delta) > GREAT_LIFT_TURN_DEADBAND:
         bridge.select_move_vector(
             frame,
-            forward=1.0,
+            forward=0.0 if precise_arrival else 1.0,
             turn=1.0 if delta > 0 else -1.0,
-            duration=GREAT_LIFT_INPUT_SECONDS,
+            duration=0.25 if precise_arrival else GREAT_LIFT_INPUT_SECONDS,
             purpose=purpose,
         )
         return
+    duration = GREAT_LIFT_INPUT_SECONDS
+    if precise_arrival:
+        distance = math.hypot(
+            target.x - frame.location.x,
+            target.y - frame.location.y,
+        )
+        speed = frame.movement_speed if frame.movement_speed_known else 7.0
+        duration = max(
+            0.1,
+            min(
+                GREAT_LIFT_INPUT_SECONDS,
+                (distance - ROAD_HAZARD_HOLD_RADIUS_YARDS) / max(1.0, speed),
+            ),
+        )
     bridge.select_move_vector(
         frame,
         forward=1.0,
-        duration=GREAT_LIFT_INPUT_SECONDS,
+        duration=duration,
         purpose=purpose,
     )
 
@@ -306,32 +325,6 @@ def _combat_escape_target(frame, target: Point) -> Point:
     )
 
 
-def _visible_attackers(frame):
-    return [
-        unit
-        for unit in frame.units
-        if unit.player_reaction_hostile
-        and not unit.is_dead
-        and unit.target_guid_known
-        and unit.target_guid == frame.player_guid
-    ]
-
-
-def _fightable_attacker(frame, attackers):
-    if frame.threat.attacker_count != 1 or len(attackers) != 1:
-        return None
-    attacker = attackers[0]
-    if not attacker.level_known or attacker.level > frame.level - ROAD_FIGHT_LEVEL_ADVANTAGE:
-        return None
-    if attacker.creature_rank_known and attacker.creature_rank != 0:
-        return None
-    if frame.threat.elite_attacker_known and frame.threat.elite_attacker_present:
-        return None
-    if frame.max_health <= 0 or frame.health / frame.max_health < ROAD_FIGHT_MIN_HEALTH_FRACTION:
-        return None
-    return attacker
-
-
 @dataclass
 class HazardAvoidanceState:
     side: float | None = None
@@ -342,7 +335,6 @@ class HazardAvoidanceState:
 
 def _steer_road_leg(
     bridge,
-    navigator: RouteNavigator,
     target: Point,
     *,
     deadline: float,
@@ -351,80 +343,45 @@ def _steer_road_leg(
 ):
     closest = math.inf
     last_progress = time.monotonic()
-    combat_mode: str | None = None
-    combat_started: float | None = None
+    combat_escape_started: float | None = None
     while time.monotonic() < deadline and not getattr(bridge, "finished", False):
         frame = bridge.observe()
         if frame is None:
             return None, "no_frame"
         if frame.is_dead or frame.is_ghost:
             return None, "death"
-        attackers = _visible_attackers(frame) if frame.in_combat else []
-        fight_attacker = _fightable_attacker(frame, attackers) if frame.in_combat else None
-        next_combat_mode = "fight" if fight_attacker is not None else "escape"
-        if frame.in_combat and next_combat_mode != combat_mode:
-            if combat_mode is not None and combat_started is not None:
-                trace(
-                    f"traverse_combat_{combat_mode}_ended",
-                    activation=1,
-                    reason="mode_changed",
-                    duration_seconds=round(time.monotonic() - combat_started, 3),
-                    health=frame.health,
-                    max_health=frame.max_health,
-                )
-            combat_mode = next_combat_mode
-            combat_started = time.monotonic()
-            if combat_mode == "fight":
-                trace(
-                    "traverse_combat_fight",
-                    activation=1,
-                    health=frame.health,
-                    max_health=frame.max_health,
-                    attacker_count=frame.threat.attacker_count,
-                    player_level=frame.level,
-                    attacker={
-                        "entry": fight_attacker.entry,
-                        "name": fight_attacker.name,
-                        "level": fight_attacker.level,
-                        "health": fight_attacker.health if fight_attacker.health_known else None,
-                        "max_health": (
-                            fight_attacker.max_health
-                            if fight_attacker.max_health_known
-                            else None
-                        ),
-                        "distance": round(fight_attacker.distance, 3),
-                    },
-                )
-            else:
+        if frame.in_combat:
+            if combat_escape_started is None:
+                combat_escape_started = time.monotonic()
+                visible_attackers = [
+                    {
+                        "entry": unit.entry,
+                        "name": unit.name,
+                        "distance": round(unit.distance, 3),
+                    }
+                    for unit in frame.units
+                    if unit.player_reaction_hostile
+                    and not unit.is_dead
+                    and unit.target_guid_known
+                    and unit.target_guid == frame.player_guid
+                ]
                 trace(
                     "traverse_combat_escape",
                     activation=1,
                     health=frame.health,
                     max_health=frame.max_health,
                     attacker_count=frame.threat.attacker_count,
-                    visible_attackers=[
-                        {
-                            "entry": unit.entry,
-                            "name": unit.name,
-                            "level": unit.level if unit.level_known else None,
-                            "distance": round(unit.distance, 3),
-                        }
-                        for unit in attackers
-                    ],
+                    visible_attackers=visible_attackers,
                 )
-        elif not frame.in_combat and combat_mode is not None and combat_started is not None:
+        elif combat_escape_started is not None:
             trace(
-                f"traverse_combat_{combat_mode}_ended",
+                "traverse_combat_escape_ended",
                 activation=1,
-                reason="combat_ended",
-                duration_seconds=round(time.monotonic() - combat_started, 3),
+                duration_seconds=round(time.monotonic() - combat_escape_started, 3),
                 health=frame.health,
                 max_health=frame.max_health,
-                damage_done=frame.combat_damage_done_total,
-                damage_taken=frame.combat_damage_taken_total,
             )
-            combat_mode = None
-            combat_started = None
+            combat_escape_started = None
 
         distance = math.dist(
             (frame.location.x, frame.location.y, frame.location.z),
@@ -440,24 +397,11 @@ def _steer_road_leg(
         if distance < closest - 1.0:
             closest = distance
             last_progress = time.monotonic()
-        elif frame.in_combat:
-            last_progress = time.monotonic()
         elif time.monotonic() - last_progress >= ROAD_STALL_SECONDS:
             trace("traverse_road_stalled", distance=round(distance, 3))
             return None, "no_progress"
 
-        if fight_attacker is not None:
-            if navigator._engage_exact_attacker(bridge, frame):
-                continue
-            steering_target = Point(
-                fight_attacker.location.map_id,
-                fight_attacker.location.x,
-                fight_attacker.location.y,
-                fight_attacker.location.z,
-            )
-            next_avoidance_side = avoidance.side
-            hazards = []
-        elif frame.in_combat:
+        if frame.in_combat:
             steering_target = _combat_escape_target(frame, target)
             next_avoidance_side = avoidance.side
             hazards = []
@@ -585,9 +529,7 @@ def _steer_road_leg(
             trace("traverse_hazard_retreat_ended", activation=1)
             avoidance.retreating = False
 
-        if fight_attacker is not None:
-            steering_purpose = "close with a calibrated single Traverse attacker"
-        elif frame.in_combat:
+        if frame.in_combat:
             steering_purpose = "flee directly away from current Traverse attackers"
         elif should_retreat:
             steering_purpose = "retreat to the last safe Traverse holding point"
@@ -602,6 +544,7 @@ def _steer_road_leg(
             frame,
             steering_target,
             purpose=steering_purpose,
+            precise_arrival=should_retreat,
         )
         settle_frame = bridge.observe()
         if settle_frame is None:
@@ -802,7 +745,6 @@ class TraverseStrategy:
                 if self.route_guidepoints_arrived > 0:
                     end, failure_reason = _steer_road_leg(
                         bridge,
-                        navigator,
                         target,
                         deadline=until,
                         trace=trace,

@@ -323,6 +323,19 @@ invoke `main()`, so two requests failed before connection with empty logs and pr
 evidence. The identical image is re-uploaded inert as wowborg:v114
 (`830a0fa0-7d92-416f-8c8a-0eabc9f1015e`) with the correct `python -m wowborg` entrypoint.
 
+V114 request `xreq_a4c0fd12-fcf6-49b4-8dc6-fb46bb57b302` supplied the missing
+current-contract combat calibration. The gate selected one level-48 Rabid Blisterpaw at 97%
+player health, closed from 18 yards, and successfully faced and started auto-attack. Over the
+next 1.7 seconds, basic melee dealt 413 damage while wowborg took 570. At the 80% health floor it
+switched to escape and died. Current auto-attack is therefore not a safe or fast fight policy;
+fight-through remains unavailable until a real feral rotation is calibrated.
+
+The causal pre-pull defect was actuator precision. Both bypasses were unsafe, and the recorded
+safe anchor was only 6.4 yards behind, but fixed 0.75-second forward-turn pulses repeatedly
+orbited it rather than arriving within the two-yard hold radius. The next candidate returns to
+v112's escape-only combat baseline and changes only safe-anchor arrival: turn in place first,
+then use a distance-bounded forward pulse.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.
