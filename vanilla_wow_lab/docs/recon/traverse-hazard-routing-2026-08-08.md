@@ -670,6 +670,8 @@ holds and 17 releases for 86 seconds at the ramp-turn frontier. The recurring Sc
 6.4 yards from the turn anchor; the conservative 20-yard floor therefore cannot complete this
 route even though ordinary level-gap aggro was measured at 5–7 yards. The next source candidate
 changes only that floor to 8 yards. Ordinary-road avoidance and route geometry remain unchanged.
+It is uploaded inert as **wowborg:v155**
+(`1345f357-a3eb-414d-9942-7fe54be5e726`, source `e7fc2c4`).
 
 ## Open uncertainties
 

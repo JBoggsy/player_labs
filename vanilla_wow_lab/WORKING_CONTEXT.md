@@ -1053,6 +1053,8 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    approach at full health with zero combat, then exhausted 86 seconds holding at the ramp-turn
    frontier. The next source candidate changes only the constrained-ramp resident floor from 20
    to 8 yards, retaining margin over the measured 5–7-yard visible aggro radius.
+   That candidate is uploaded inert as **wowborg:v155**
+   (`1345f357-a3eb-414d-9942-7fe54be5e726`, source `e7fc2c4`).
 
 ## Reference
 

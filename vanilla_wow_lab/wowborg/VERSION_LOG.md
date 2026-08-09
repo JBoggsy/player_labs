@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v155 - calibrated ramp hold floor (2026-08-09)
+
+- Version UUID: `1345f357-a3eb-414d-9942-7fe54be5e726` (`wowborg:v155`, uploaded
+  inert; not submitted). Built from source `e7fc2c4` against canonical vanilla-wow 0.1.209.
+- Reduces only the terrain-constrained resident hold floor from 20 to 8 yards. This retains a
+  one-yard margin over the measured 5–7-yard visible level-gap aggro radius while allowing the
+  route to approach the recurring Scorpid 6.4 yards from the ramp-turn anchor.
+- Ordinary-road hazard avoidance, crossing holds, route geometry, and arrival precision are
+  unchanged from v154.
+
 ## v154 - broad ramp approach arrival (2026-08-09)
 
 - Version UUID: `4b12b163-c947-4fee-969f-cd6b7110e01f` (`wowborg:v154`, uploaded
