@@ -1,5 +1,11 @@
 # wowborg version log
 
+## v119 - diagonal retreat wrapper support (2026-08-09)
+
+- Version UUID: `635748f7-56bd-4295-abed-59ddf4e82f98` (`wowborg:v119`, uploaded
+  inert; not submitted). Built from source `90b0f91`; adds the missing strafe pass-through to
+  v118's unchanged diagonal precise-retreat strategy. Hosted proof is pending.
+
 ## v118 - diagonal precise retreat (2026-08-09)
 
 - Version UUID: `2e5125da-9fa8-43b7-a8e4-73808d86f8ef` (`wowborg:v118`, uploaded
