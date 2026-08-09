@@ -683,9 +683,15 @@ def _cast_feral_spell(
     purpose: str,
     trace,
     target_guid: str | None = None,
+    failed_spell_ids: set[int] | None = None,
 ) -> bool:
     spell_id = next(
-        (spell_id for spell_id in spell_ids if spell_id in frame.known_spells),
+        (
+            spell_id
+            for spell_id in spell_ids
+            if spell_id in frame.known_spells
+            and (failed_spell_ids is None or spell_id not in failed_spell_ids)
+        ),
         None,
     )
     if spell_id is None:
@@ -712,10 +718,22 @@ def _cast_feral_spell(
         success=outcome is not None and outcome.success,
         detail=outcome.detail if outcome is not None else "unsettled",
     )
+    if failed_spell_ids is not None:
+        if outcome is not None and outcome.success:
+            failed_spell_ids.difference_update(spell_ids)
+        else:
+            failed_spell_ids.update(spell_ids)
     return True
 
 
-def _fight_traverse_attacker(bridge, navigator, frame, attacker, trace) -> bool:
+def _fight_traverse_attacker(
+    bridge,
+    navigator,
+    frame,
+    attacker,
+    trace,
+    failed_spell_ids: set[int],
+) -> bool:
     if frame.shapeshift_form_known and frame.shapeshift_form_id not in (0, 1):
         if not frame.shapeshift_form_spell_known:
             return False
@@ -804,6 +822,7 @@ def _fight_traverse_attacker(bridge, navigator, frame, attacker, trace) -> bool:
             purpose="finish the traverse attacker with Rip",
             trace=trace,
             target_guid=attacker.guid,
+            failed_spell_ids=failed_spell_ids,
         )
     ):
         return True
@@ -817,6 +836,7 @@ def _fight_traverse_attacker(bridge, navigator, frame, attacker, trace) -> bool:
             purpose="bleed the traverse attacker with Rake",
             trace=trace,
             target_guid=attacker.guid,
+            failed_spell_ids=failed_spell_ids,
         )
     ):
         return True
@@ -827,6 +847,7 @@ def _fight_traverse_attacker(bridge, navigator, frame, attacker, trace) -> bool:
         purpose="build on the traverse attacker with Claw",
         trace=trace,
         target_guid=attacker.guid,
+        failed_spell_ids=failed_spell_ids,
     ):
         return True
     return navigator._engage_exact_attacker(bridge, frame)
@@ -869,6 +890,7 @@ def _steer_road_leg(
     combat_escape_started: float | None = None
     fight_guid: str | None = None
     fight_started: float | None = None
+    failed_feral_spell_ids: set[int] = set()
     while time.monotonic() < deadline and not getattr(bridge, "finished", False):
         frame = bridge.observe()
         if frame is None:
@@ -884,6 +906,7 @@ def _steer_road_leg(
             if fight_started is None:
                 fight_started = time.monotonic()
                 fight_guid = fight_attacker.guid
+                failed_feral_spell_ids.clear()
                 trace(
                     "traverse_combat_fight",
                     activation=1,
@@ -916,6 +939,7 @@ def _steer_road_leg(
                 frame,
                 fight_attacker,
                 trace,
+                failed_feral_spell_ids,
             ):
                 continue
         elif fight_started is not None:
@@ -931,6 +955,7 @@ def _steer_road_leg(
             )
             fight_started = None
             fight_guid = None
+            failed_feral_spell_ids.clear()
 
         if frame.in_combat:
             if combat_escape_started is None:
