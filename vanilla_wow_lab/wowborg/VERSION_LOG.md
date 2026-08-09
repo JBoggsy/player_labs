@@ -7,7 +7,11 @@
 - Exits Travel Form and enters Cat Form for the Shimmering Flats south-road descent, and makes the
   south-road endpoint an exact three-yard anchor. Travel Form resumes on the flats.
 - V183 clearance, route geometry, combat admission/rotation, and all other movement behavior are
-  unchanged. Hosted evaluation is pending.
+  unchanged.
+- Hosted request `xreq_bb91cc02-83a0-4c16-a291-4e0b341a2f04` did not reach the descent, so Cat Form
+  remains unexercised. Five runs survived; one pulled a Glasshide Gazer at 8.75 yards during an
+  evasion, collected additional attackers while escaping, and died. The 12-yard global road floor
+  is unsafe and its roughly four-second best road-9 gain does not justify the regression.
 
 ## v183 - twelve-yard hazard clearance (2026-08-09)
 

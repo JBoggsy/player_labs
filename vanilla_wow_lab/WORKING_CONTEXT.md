@@ -1279,7 +1279,12 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    the final damage landed 1.34 seconds after movement stopped. The active source now exits Travel
    Form, enters Cat Form for that one descent, and makes south road an exact three-yard anchor;
    Travel Form resumes on the flats. The candidate is uploaded inert as **wowborg:v184**
-   (`1cfe5fa3-18ec-43f6-9c8a-50d151f19d2f`, source `e85a02a`); its hosted evaluation is pending.
+   (`1cfe5fa3-18ec-43f6-9c8a-50d151f19d2f`, source `e85a02a`). Hosted request
+   `xreq_bb91cc02-83a0-4c16-a291-4e0b341a2f04` did not reach the descent, so Cat Form remains
+   unexercised. Five runs survived; one pulled a Glasshide Gazer at 8.75 yards under the 12-yard
+   global clearance floor, collected additional attackers while escaping, and died. The active
+   source restores ordinary road clearance to 20 yards while retaining the local 12-yard
+   projected-add gate for the calibrated Scorpid fight. Its hosted evaluation is pending.
 
 ## Reference
 
