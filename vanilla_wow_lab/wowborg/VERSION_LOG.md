@@ -1,5 +1,16 @@
 # wowborg version log
 
+## v186 - reactive single-attacker combat (2026-08-09)
+
+- Version UUID: `1c5e7a88-5b41-42e2-b0ba-fb10ee28c898` (`wowborg:v186`, uploaded
+  inert; not submitted). Built from source `e303664` against canonical vanilla-wow 0.1.209.
+- Reactively fights exactly one visible, ordinary, non-elite level-49-or-lower attacker with the
+  maintained Cat/Rake/Claw/Rip rotation on every route leg. Multi-attacker and unqualified combat
+  still escapes.
+- Proactive acquisition remains limited to the constrained ramp's isolated level-40/41 Scorpid;
+  route geometry, hazard clearance, and movement cadence are unchanged. Hosted evaluation is
+  pending.
+
 ## v185 - Cat descent with conservative road clearance (2026-08-09)
 
 - Version UUID: `639852fd-e3b7-4d49-bffa-efcf58f77165` (`wowborg:v185`, uploaded
@@ -7,7 +18,12 @@
 - Retains V184's Cat-Form exact descent while restoring the ordinary road-clearance floor to the
   proven 20 yards. The calibrated Scorpid projected-add gate remains locally 12 yards.
 - V184 route geometry, action cadence, combat admission/rotation, and all other behavior are
-  unchanged. Hosted evaluation is pending.
+  unchanged.
+- Hosted request `xreq_d0b5f50f-2c79-496f-8ee9-7caab588597d` kept 10 of 12 runs alive but did not
+  reach the south-road descent, so Cat Form remains unexercised. The two deaths each began as one
+  ordinary attacker: a Glasshide Basilisk at 22.4 yards with 2,633/2,754 health, and a Scorpid
+  Dunestalker. Eight other runs entered the existing ramp feral routine without dying. This makes
+  reactive single-attacker combat the next attributable safety change.
 
 ## v184 - Cat Form exact descent (2026-08-09)
 

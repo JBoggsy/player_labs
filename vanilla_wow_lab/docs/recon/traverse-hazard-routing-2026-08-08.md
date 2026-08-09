@@ -944,7 +944,17 @@ collected additional attackers while escaping, and died. The 12-yard global road
 and its roughly four-second best road-9 gain does not justify the regression. The active source
 restores ordinary road clearance to 20 yards while retaining the local 12-yard projected-add gate
 for the calibrated Scorpid fight. The candidate is uploaded inert as **wowborg:v185**
-(`639852fd-e3b7-4d49-bffa-efcf58f77165`, source `2295773`); its hosted evaluation is pending.
+(`639852fd-e3b7-4d49-bffa-efcf58f77165`, source `2295773`). Hosted request
+`xreq_d0b5f50f-2c79-496f-8ee9-7caab588597d` kept 10 of 12 runs alive but did not reach the
+south-road descent, so Cat Form remains unexercised. Both deaths began as one ordinary attacker:
+a Glasshide Basilisk at 22.4 yards while wowborg still had 2,633/2,754 health, and a Scorpid
+Dunestalker. Direct escape then consumed the remaining health. Eight other runs entered the
+existing constrained-ramp feral routine without dying. The active source therefore uses that
+maintained rotation reactively against exactly one visible, ordinary, non-elite level-49-or-lower
+attacker on every route leg. Multi-attacker and unqualified contacts retain escape; proactive
+target acquisition remains limited to the isolated ramp Scorpid. This is uploaded inert as
+**wowborg:v186** (`1c5e7a88-5b41-42e2-b0ba-fb10ee28c898`, source `e303664`); hosted evaluation is
+pending.
 
 ## Open uncertainties
 
