@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v133 - frozen hazard-bypass waypoint (2026-08-09)
+
+- Version UUID: `f9fb6c08-632e-46e5-b20f-76278b79371a` (`wowborg:v133`, uploaded
+  inert; not submitted). Built from source `f371bd1` against canonical vanilla-wow 0.1.209.
+- Converts reactive 20-yard avoidance into a frozen 140-yard-ahead lateral waypoint. The waypoint
+  is released on arrival and replanned only when a genuinely new patrol intersects the active
+  path, preventing the v132 target orbit while preserving early predictive clearance sampling.
+- Hosted Traverse proof is pending.
+
 ## v132 - persistent crossing-patrol ownership (2026-08-09)
 
 - Version UUID: `1ccd4562-dba9-458e-ac61-53e0afadb02f` (`wowborg:v132`, uploaded

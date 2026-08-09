@@ -488,6 +488,8 @@ and reduced avoidance lifecycle churn to three starts and two ends. But the cont
 recomputed target orbited retained patrols: 79 side switches, 142 retreats, only 150 net northing,
 and a timeout at road node 1. The next candidate freezes a concrete 140-yard-ahead lateral
 waypoint, releasing it on arrival and replanning only for a genuinely new crossing patrol.
+It is uploaded inert as **wowborg:v133**
+(`f9fb6c08-632e-46e5-b20f-76278b79371a`, source `f371bd1`); hosted Traverse proof is pending.
 
 ## Open uncertainties
 

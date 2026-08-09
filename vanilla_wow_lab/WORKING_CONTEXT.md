@@ -223,6 +223,8 @@ recomputed target orbited retained patrols: 79 side switches, 142 retreats, only
 and a timeout at road node 1. The active candidate freezes a concrete 140-yard-ahead lateral
 waypoint, releasing it on arrival and replanning only when a genuinely new patrol crosses the
 active path.
+It is uploaded inert as **wowborg:v133**
+(`f9fb6c08-632e-46e5-b20f-76278b79371a`, source `f371bd1`); hosted Traverse proof is pending.
 
 ### Previous 0.1.208 movement baseline
 
