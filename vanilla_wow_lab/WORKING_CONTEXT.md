@@ -1265,6 +1265,8 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    admits the same single sub-eight-yard level-40/41 non-elite Scorpid when every other nearby
    hostile's projected patrol segment remains at least 12 yards from the player. That preserves
    roughly twice the observed 5-7-yard ordinary aggro range while allowing a calibrated fast kill.
+   The candidate is uploaded inert as **wowborg:v182**
+   (`a536822a-16cd-4170-b9cc-8ff869198e16`, source `e3e05e3`); its hosted evaluation is pending.
 
 ## Reference
 

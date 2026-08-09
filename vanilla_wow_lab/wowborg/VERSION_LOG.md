@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v182 - projected-add ramp fights (2026-08-09)
+
+- Version UUID: `a536822a-16cd-4170-b9cc-8ff869198e16` (`wowborg:v182`, uploaded
+  inert; not submitted). Built from source `e3e05e3` against canonical vanilla-wow 0.1.209.
+- Admits the same single sub-eight-yard level-40/41 non-elite Scorpid when every other hostile in
+  the 30-yard observation circle has a projected patrol segment at least 12 yards from the player.
+  This uses roughly twice the pinned 5-7-yard ordinary aggro radius while rejecting predicted adds.
+- V181 descent cadence, route geometry, combat rotation, and other hazard behavior are unchanged.
+  Hosted evaluation is pending.
+
 ## v181 - terrain-constrained south descent (2026-08-09)
 
 - Version UUID: `a7e551aa-538f-4b83-9476-9d8a8baf4cd9` (`wowborg:v181`, uploaded

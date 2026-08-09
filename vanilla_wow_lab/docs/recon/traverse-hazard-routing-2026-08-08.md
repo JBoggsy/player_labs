@@ -919,7 +919,8 @@ puts ordinary aggro at 5-7 yards for these mobs against level 60. The active sou
 admits the same single sub-eight-yard level-40/41 non-elite Scorpid when every other nearby
 hostile's projected patrol segment stays at least 12 yards from the player. This keeps roughly a
 2x aggro margin and rejects a predicted add crossing rather than rejecting every harmless mob in
-the broader observation circle.
+the broader observation circle. The candidate is uploaded inert as **wowborg:v182**
+(`a536822a-16cd-4170-b9cc-8ff869198e16`, source `e3e05e3`); its hosted evaluation is pending.
 
 ## Open uncertainties
 
