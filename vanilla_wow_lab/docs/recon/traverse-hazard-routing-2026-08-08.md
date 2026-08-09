@@ -908,7 +908,9 @@ recurred, and the only recorded Scorpid fight cleared in about 3.4 seconds at fu
 stalled earlier on the Tanaris road, one exhausted the episode at road-9, and one held a mixed ramp
 hazard for about 123 seconds, so the batch did not re-reach the south-road descent. The active source
 now treats the existing south-ramp to south-road leg as terrain-constrained, replacing the fatal
-one-second open strides observed in V179 with the existing 0.25-second precise cadence.
+one-second open strides observed in V179 with the existing 0.25-second precise cadence. That
+candidate is uploaded inert as **wowborg:v181**
+(`a7e551aa-538f-4b83-9476-9d8a8baf4cd9`, source `9efa623`); its hosted evaluation is pending.
 
 ## Open uncertainties
 

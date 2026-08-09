@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v181 - terrain-constrained south descent (2026-08-09)
+
+- Version UUID: `a7e551aa-538f-4b83-9476-9d8a8baf4cd9` (`wowborg:v181`, uploaded
+  inert; not submitted). Built from source `9efa623` against canonical vanilla-wow 0.1.209.
+- Treats the existing Shimmering Flats south-ramp to south-road leg as terrain-constrained, using
+  the existing 0.25-second precise movement cadence instead of the one-second open strides that
+  produced V179's fatal descent.
+- V180 route geometry, combat behavior, hazard thresholds, and steep cadence are otherwise
+  unchanged. Hosted evaluation is pending.
+
 ## v180 - true single-pull ramp combat (2026-08-09)
 
 - Version UUID: `2e1e0cdb-d12b-46dd-87f3-761fb55fa023` (`wowborg:v180`, uploaded

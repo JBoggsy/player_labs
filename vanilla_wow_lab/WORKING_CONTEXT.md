@@ -1257,7 +1257,9 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    The batch did not re-reach the south road: four runs stalled earlier, one timed out at road-9,
    and one held a mixed ramp hazard for about 123 seconds. The active source now makes the existing
    south-ramp to south-road leg terrain-constrained, replacing V179's fatal one-second open strides
-   with the existing 0.25-second precise cadence; its hosted evaluation is pending.
+   with the existing 0.25-second precise cadence. That candidate is uploaded inert as
+   **wowborg:v181** (`a7e551aa-538f-4b83-9476-9d8a8baf4cd9`, source `9efa623`); its hosted
+   evaluation is pending.
 
 ## Reference
 
