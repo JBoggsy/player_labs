@@ -359,7 +359,15 @@ remains unexercised. The active candidate reduces exposure to that host churn wi
 1.0-second translation only when no road hazard or combat is visible and the target is more than
 20 yards away; turns and all hazard/arrival pulses retain their prior cadence. Every longer pulse
 emits `traverse_road_open_stride`. It is uploaded inert as **wowborg:v149**
-(`b8f24e46-e596-4f20-b154-fb8ed19166a3`, source `4c5e9fc`).
+(`b8f24e46-e596-4f20-b154-fb8ed19166a3`, source `4c5e9fc`). Request
+`xreq_e218fe41-65f7-414d-a012-066a04b1e7d4` fired 258 longer pulses, stayed at
+full health with zero combat, and reached node 9 in about 128 seconds. It then repeatedly reached
+the safe ramp lip near `(-6912,-3859,39)`, but generic resident-hazard detours stepped laterally off
+the narrow elevated corridor, fell/reset, and consumed the rest of the episode. The active candidate
+holds instead of laterally detouring when a resident hazard projects into one of the six tight ramp
+anchors; ordinary roads keep their existing dynamic detours. The hold emits reason
+`terrain_constrained_resident` and releases when no tracked resident still projects into the
+target corridor.
 
 ### Previous 0.1.208 movement baseline
 

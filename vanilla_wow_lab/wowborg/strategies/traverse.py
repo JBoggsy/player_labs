@@ -263,6 +263,7 @@ def _hazard_avoidance_target(
     *,
     side: float | None,
     active_holding_guids: set[str],
+    hold_resident_hazards: bool = False,
 ):
     route_x = target.x - frame.location.x
     route_y = target.y - frame.location.y
@@ -346,6 +347,16 @@ def _hazard_avoidance_target(
         )
         <= ROAD_HAZARD_RESIDENT_RADIUS_YARDS
     ]
+    if hold_resident_hazards and resident_hazards:
+        return (
+            target,
+            None,
+            resident_hazards,
+            tracked,
+            {},
+            {},
+            True,
+        )
     if threatening_crossings and not immediate_hazards and not resident_hazards:
         return (
             target,
@@ -521,6 +532,7 @@ def _steer_road_leg(
     avoidance: HazardAvoidanceState,
     allow_northing_pass: bool,
     arrival_radius: float,
+    hold_resident_hazards: bool,
 ):
     settle_pause_interval = (
         1 if not allow_northing_pass else ROAD_SETTLE_PAUSE_INTERVAL
@@ -672,12 +684,18 @@ def _steer_road_leg(
                 target,
                 side=avoidance.side,
                 active_holding_guids=avoidance.holding_guids,
+                hold_resident_hazards=hold_resident_hazards,
             )
         if should_hold:
             if not avoidance.holding:
                 trace(
                     "traverse_hazard_hold",
                     activation=1,
+                    reason=(
+                        "terrain_constrained_resident"
+                        if hold_resident_hazards
+                        else "projected_crossing"
+                    ),
                     hazards=[
                         {
                             "entry": unit.entry,
@@ -1134,6 +1152,7 @@ class TraverseStrategy:
                             if name in ROAD_TIGHT_GUIDEPOINTS
                             else ROAD_ARRIVAL_RADIUS_YARDS
                         ),
+                        hold_resident_hazards=name in ROAD_TIGHT_GUIDEPOINTS,
                     )
                     if end is not None:
                         self.best_world_x = max(self.best_world_x, end.x)

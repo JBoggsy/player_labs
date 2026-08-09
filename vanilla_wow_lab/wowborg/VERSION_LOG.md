@@ -9,6 +9,10 @@
   their previous cadence, avoiding v141's unsafe global 1.5-second stride.
 - Each longer translation emits `traverse_road_open_stride`, so hosted traces can measure both
   activation count and realized route throughput.
+- Request `xreq_e218fe41-65f7-414d-a012-066a04b1e7d4` fired 258 longer pulses, stayed at full
+  health with zero combat, and reached node 9 in about 128 seconds. Generic resident-hazard detours
+  then repeatedly stepped off the narrow ramp corridor after reaching its safe lip, so the next
+  candidate makes that terrain seam wait rather than detour.
 
 ## v148 - tight Shimmering Flats ramp arrivals (2026-08-09)
 
