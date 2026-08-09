@@ -1345,7 +1345,8 @@ did not activate. One run reached the intermediate descent landing around 250 se
 from 1,301 to 2,002 before the horizon ended, about two simulated seconds short of the 80% release
 gate. The active source therefore raises only unobstructed, non-terrain-constrained road input from
 1.0 to the 1.5-second contract maximum. Hazard steering, combat, climbing, and staged descent
-cadence are unchanged; this speed candidate is not yet uploaded or evaluated.
+cadence are unchanged. This speed candidate is uploaded inert as **wowborg:v198**
+(`683b4cac-f2a0-4419-8cc5-d55f9af8faa5`, source `acf6e90`) but not yet evaluated.
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.

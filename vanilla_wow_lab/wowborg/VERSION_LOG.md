@@ -2,7 +2,8 @@
 
 ## v198 - maximum clear-road stride (2026-08-09)
 
-- Upload pending.
+- Version UUID: `683b4cac-f2a0-4419-8cc5-d55f9af8faa5` (`wowborg:v198`, uploaded
+  inert; not submitted). Built from source `acf6e90` against canonical vanilla-wow 0.1.209.
 - Raises only unobstructed, non-terrain-constrained road input from 1.0 to the environment
   contract's 1.5-second maximum. Hazard steering, combat, climbs, and staged descent keep their
   existing precise cadence.
