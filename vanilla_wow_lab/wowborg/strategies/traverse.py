@@ -129,6 +129,11 @@ def _steer_toward(
     bridge.select_move_vector(
         frame,
         forward=1.0,
+        strafe=(
+            (1.0 if delta > 0 else -1.0)
+            if precise_arrival and abs(delta) > math.pi / 8
+            else 0.0
+        ),
         duration=duration,
         purpose=purpose,
     )

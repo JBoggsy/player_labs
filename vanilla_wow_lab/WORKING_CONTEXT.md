@@ -100,7 +100,13 @@ held axis magnitude is reduced to sign. The active candidate therefore keeps the
 0.25-second turn quantum and changes only precise arrival's heading acceptance to its matching
 45-degree arc; ordinary steering and hazard geometry remain unchanged. It is uploaded inert as
 **wowborg:v117** (`6e2b8986-7233-4eca-9412-fcb2f03353ae`, source `13604c1`);
-hosted proof is pending.
+request `xreq_199cfdb3-6a1c-4918-a5ca-adb51b145caf` proved every turn action settles
+and six retreats end, but the 45-degree acceptance cone is too coarse. On the fatal retreat it
+accepted a 39-degree residual heading, moved forward on the wrong diagonal, passed a Glasshide
+Gazer at 3.68 yards, and died after three guidepoints. The active candidate uses the contract's
+left/right strafe axis when residual error exceeds 22.5 degrees, reducing precise translation
+error to at most 22.5 degrees without changing turn duration, ordinary steering, or hazard
+geometry.
 
 ### Previous 0.1.208 movement baseline
 

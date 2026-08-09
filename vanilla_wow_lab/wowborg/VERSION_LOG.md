@@ -6,7 +6,13 @@
   inert; not submitted). Built from source `13604c1` against canonical vanilla-wow 0.1.209.
 - Keeps precise turn-only actions at the empirically reliable 0.25-second quantum and accepts a
   heading within that quantum's 45-degree arc before moving toward the safe anchor. Ordinary route
-  steering, hazard geometry, and escape-only combat are unchanged. Hosted proof is pending.
+  steering, hazard geometry, and escape-only combat are unchanged.
+- Request `xreq_199cfdb3-6a1c-4918-a5ca-adb51b145caf` proved all turn actions settle and
+  six retreats end, but the 45-degree acceptance cone was too coarse. On the fatal retreat it
+  accepted a 39-degree residual heading, moved forward on the wrong diagonal, passed a Glasshide
+  Gazer at 3.68 yards, and died after three guidepoints. The next candidate uses the contract's
+  left/right strafe axis when residual error exceeds 22.5 degrees, reducing precise translation
+  error to at most 22.5 degrees without changing turn duration.
 
 ## v116 - angular-error precise turns (2026-08-09)
 

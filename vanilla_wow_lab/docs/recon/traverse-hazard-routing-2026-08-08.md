@@ -354,6 +354,15 @@ shows `heldAxis` reduces every nonzero input magnitude to its sign, ruling out f
 strength. The next candidate therefore retains the reliable 0.25-second, approximately 45-degree
 turn quantum and widens only precise arrival's heading acceptance cone to that same angle.
 
+V117 request `xreq_199cfdb3-6a1c-4918-a5ca-adb51b145caf` proved that quantized turns
+settle reliably and ended six retreats, but exposed the geometric cost of the 45-degree acceptance
+cone. During its fatal retreat, two quarter-second turns left a 39-degree residual heading. The
+policy accepted it, moved forward on that diagonal, passed a Glasshide Gazer at 3.68 yards, and
+died after three guidepoints. The action contract supplies signed strafe as a second binary
+translation axis: forward plus left/right strafe moves at a 45-degree offset. The next candidate
+uses that diagonal whenever residual heading exceeds 22.5 degrees, bounding translation error at
+22.5 degrees while retaining only the already-proven duration quanta.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.
