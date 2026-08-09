@@ -34,11 +34,12 @@ ROAD_ARRIVAL_RADIUS_YARDS = 8.0
 ROAD_PASS_LATERAL_YARDS = 60.0
 ROAD_STALL_SECONDS = 8.0
 ROAD_UNSTICK_ATTEMPTS = 2
-ROAD_HAZARD_ENTER_YARDS = 60.0
-ROAD_HAZARD_EXIT_YARDS = 70.0
+ROAD_HAZARD_ENTER_YARDS = 30.0
+ROAD_HAZARD_EXIT_YARDS = 40.0
+ROAD_HAZARD_LOOKAHEAD_YARDS = 60.0
 ROAD_HAZARD_CORRIDOR_YARDS = 18.0
 ROAD_HAZARD_TRACK_YARDS = 80.0
-ROAD_HAZARD_FORWARD_YARDS = 140.0
+ROAD_HAZARD_FORWARD_YARDS = 20.0
 ROAD_HAZARD_LATERAL_YARDS = (30.0, 45.0, 60.0)
 ROAD_HAZARD_MIN_CLEARANCE_YARDS = 20.0
 ROAD_HAZARD_HOLD_RADIUS_YARDS = 2.0
@@ -225,23 +226,12 @@ def _hazard_avoidance_target(
     target: Point,
     *,
     side: float | None,
-    active_hazard_guids: set[str],
-    bypass_target: Point | None,
 ):
-    if bypass_target is not None and math.dist(
-        (frame.location.x, frame.location.y),
-        (bypass_target.x, bypass_target.y),
-    ) <= ROAD_ARRIVAL_RADIUS_YARDS:
-        side = None
-        active_hazard_guids = set()
-        bypass_target = None
-
-    steering_target = bypass_target or target
-    route_x = steering_target.x - frame.location.x
-    route_y = steering_target.y - frame.location.y
+    route_x = target.x - frame.location.x
+    route_y = target.y - frame.location.y
     route_length = math.hypot(route_x, route_y)
     if route_length == 0:
-        return target, None, [], [], {}, {}, set(), None
+        return target, None, [], [], {}, {}, False
     route_x /= route_length
     route_y /= route_length
     left_x, left_y = -route_y, route_x
@@ -255,55 +245,58 @@ def _hazard_avoidance_target(
         and not unit.is_dead
         and unit.distance <= ROAD_HAZARD_TRACK_YARDS
     ]
-    corridor_end_x = frame.location.x + route_x * detection_radius
-    corridor_end_y = frame.location.y + route_y * detection_radius
-    corridor_hazards = [
+    immediate_end_x = frame.location.x + route_x * detection_radius
+    immediate_end_y = frame.location.y + route_y * detection_radius
+    immediate_hazards = [
         unit
         for unit in tracked
         if _segment_clearance(
             frame.location.x,
             frame.location.y,
-            corridor_end_x,
-            corridor_end_y,
+            immediate_end_x,
+            immediate_end_y,
             unit,
         )
         <= ROAD_HAZARD_CORRIDOR_YARDS
     ]
-    retained_hazards = [
+    lookahead_end_x = frame.location.x + route_x * ROAD_HAZARD_LOOKAHEAD_YARDS
+    lookahead_end_y = frame.location.y + route_y * ROAD_HAZARD_LOOKAHEAD_YARDS
+    lookahead_hazards = [
         unit
         for unit in tracked
-        if unit.guid in active_hazard_guids
-        and unit.distance <= ROAD_HAZARD_EXIT_YARDS
+        if _segment_clearance(
+            frame.location.x,
+            frame.location.y,
+            lookahead_end_x,
+            lookahead_end_y,
+            unit,
+        )
+        <= ROAD_HAZARD_CORRIDOR_YARDS
+    ]
+    immediate_guids = {unit.guid for unit in immediate_hazards}
+    threatening_crossings = [
+        unit
+        for unit in lookahead_hazards
+        if unit.guid not in immediate_guids
+        and unit.movement_destination_known
+        and _point_segment_distance(
+            frame.location.x,
+            frame.location.y,
+            *_unit_path(unit),
+        )
+        < ROAD_HAZARD_MIN_CLEARANCE_YARDS
     ]
     hazards_by_guid = {
-        unit.guid: unit for unit in (*corridor_hazards, *retained_hazards)
+        unit.guid: unit for unit in (*immediate_hazards, *threatening_crossings)
     }
     hazards = list(hazards_by_guid.values())
     if not hazards:
-        return target, None, [], tracked, {}, {}, set(), None
-
-    new_hazard_guids = set(hazards_by_guid) - active_hazard_guids
-    if bypass_target is not None and not new_hazard_guids:
-        fixed_clearance = min(
-            _segment_clearance(
-                frame.location.x,
-                frame.location.y,
-                bypass_target.x,
-                bypass_target.y,
-                unit,
-            )
-            for unit in tracked
-        )
-        return (
-            bypass_target,
-            side,
-            hazards,
-            tracked,
-            {-1.0: fixed_clearance, 1.0: fixed_clearance},
-            {-1.0: 0.0, 1.0: 0.0},
-            set(hazards_by_guid),
-            bypass_target,
-        )
+        hold_hazards = [
+            unit
+            for unit in lookahead_hazards
+            if unit.movement_destination_known
+        ]
+        return target, None, hold_hazards, tracked, {}, {}, bool(hold_hazards)
 
     def clearance(candidate_side: float, lateral_yards: float) -> float:
         candidate_x = (
@@ -374,25 +367,23 @@ def _hazard_avoidance_target(
         ):
             side = other_side
 
-    candidate_target = Point(
-        frame.location.map_id,
-        frame.location.x
-        + route_x * ROAD_HAZARD_FORWARD_YARDS
-        + left_x * side * lateral_by_side[side],
-        frame.location.y
-        + route_y * ROAD_HAZARD_FORWARD_YARDS
-        + left_y * side * lateral_by_side[side],
-        frame.location.z,
-    )
     return (
-        candidate_target,
+        Point(
+            frame.location.map_id,
+            frame.location.x
+            + route_x * ROAD_HAZARD_FORWARD_YARDS
+            + left_x * side * lateral_by_side[side],
+            frame.location.y
+            + route_y * ROAD_HAZARD_FORWARD_YARDS
+            + left_y * side * lateral_by_side[side],
+            frame.location.z,
+        ),
         side,
         hazards,
         tracked,
         clearances,
         lateral_by_side,
-        set(hazards_by_guid),
-        candidate_target,
+        False,
     )
 
 
@@ -445,8 +436,7 @@ def _hazard_evasion_target(frame, hazards, target: Point) -> Point:
 @dataclass
 class HazardAvoidanceState:
     side: float | None = None
-    hazard_guids: set[str] = field(default_factory=set)
-    bypass_target: Point | None = None
+    holding: bool = False
     evading: bool = False
     retreating: bool = False
     retreat_blocked: bool = False
@@ -591,9 +581,8 @@ def _steer_road_leg(
         if frame.in_combat:
             steering_target = _combat_escape_target(frame, target)
             next_avoidance_side = avoidance.side
-            next_hazard_guids = avoidance.hazard_guids
-            next_bypass_target = avoidance.bypass_target
             hazards = []
+            should_hold = False
         else:
             (
                 steering_target,
@@ -602,15 +591,54 @@ def _steer_road_leg(
                 tracked_hazards,
                 side_clearances,
                 side_lateral_yards,
-                next_hazard_guids,
-                next_bypass_target,
+                should_hold,
             ) = _hazard_avoidance_target(
                 frame,
                 target,
                 side=avoidance.side,
-                active_hazard_guids=avoidance.hazard_guids,
-                bypass_target=avoidance.bypass_target,
             )
+        if should_hold:
+            if not avoidance.holding:
+                trace(
+                    "traverse_hazard_hold",
+                    activation=1,
+                    hazards=[
+                        {
+                            "entry": unit.entry,
+                            "name": unit.name,
+                            "distance": round(unit.distance, 3),
+                            "destination": [
+                                round(unit.movement_destination.x, 3),
+                                round(unit.movement_destination.y, 3),
+                            ],
+                        }
+                        for unit in hazards
+                    ],
+                )
+            if avoidance.side is not None:
+                trace("traverse_hazard_avoidance_ended", activation=1, reason="hold")
+            if avoidance.evading:
+                trace("traverse_hazard_evasion_ended", activation=1, reason="hold")
+            if avoidance.retreating:
+                trace("traverse_hazard_retreat_ended", activation=1, reason="hold")
+            avoidance.holding = True
+            avoidance.side = None
+            avoidance.evading = False
+            avoidance.retreating = False
+            avoidance.retreat_blocked = False
+            avoidance.safe_point = Point(
+                frame.location.map_id,
+                frame.location.x,
+                frame.location.y,
+                frame.location.z,
+            )
+            last_progress = time.monotonic()
+            bridge.select_wait(frame)
+            trace("traverse_hazard_hold_pulse", frame_id=frame.frame_id)
+            continue
+        if avoidance.holding:
+            trace("traverse_hazard_hold_ended", activation=1)
+            avoidance.holding = False
         if next_avoidance_side is not None and avoidance.side is None:
             trace(
                 "traverse_hazard_avoidance",
@@ -654,12 +682,6 @@ def _steer_road_leg(
                     }
                     for unit in tracked_hazards
                 ],
-                active_hazard_count=len(next_hazard_guids),
-                bypass_target=[
-                    round(next_bypass_target.x, 3),
-                    round(next_bypass_target.y, 3),
-                    round(next_bypass_target.z, 3),
-                ],
             )
         elif next_avoidance_side is None and avoidance.side is not None:
             trace("traverse_hazard_avoidance_ended", activation=1)
@@ -681,24 +703,7 @@ def _steer_road_leg(
                     "left": side_lateral_yards[1.0],
                 },
             )
-        if (
-            avoidance.bypass_target is not None
-            and next_bypass_target is not None
-            and next_bypass_target != avoidance.bypass_target
-        ):
-            trace(
-                "traverse_hazard_bypass_replanned",
-                activation=1,
-                active_hazard_count=len(next_hazard_guids),
-                bypass_target=[
-                    round(next_bypass_target.x, 3),
-                    round(next_bypass_target.y, 3),
-                    round(next_bypass_target.z, 3),
-                ],
-            )
         avoidance.side = next_avoidance_side
-        avoidance.hazard_guids = next_hazard_guids
-        avoidance.bypass_target = next_bypass_target
 
         unsafe = (
             not frame.in_combat

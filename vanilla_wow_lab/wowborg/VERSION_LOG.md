@@ -7,7 +7,10 @@
 - Converts reactive 20-yard avoidance into a frozen 140-yard-ahead lateral waypoint. The waypoint
   is released on arrival and replanned only when a genuinely new patrol intersects the active
   path, preventing the v132 target orbit while preserving early predictive clearance sampling.
-- Hosted Traverse proof is pending.
+- Request `xreq_9a451cfa-f39f-41e5-ada4-d2573837a55b` replanned 23 times as new
+  patrol GUIDs entered the displaced path, left the owner road for the surrounding spawn field,
+  and died to a Glasshide Petrifier after only 142 net northing yards. The fixed endpoint was
+  therefore too large a spatial reaction for Tanaris's mob density.
 
 ## v132 - persistent crossing-patrol ownership (2026-08-09)
 

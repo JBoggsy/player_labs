@@ -224,7 +224,13 @@ and a timeout at road node 1. The active candidate freezes a concrete 140-yard-a
 waypoint, releasing it on arrival and replanning only when a genuinely new patrol crosses the
 active path.
 It is uploaded inert as **wowborg:v133**
-(`f9fb6c08-632e-46e5-b20f-76278b79371a`, source `f371bd1`); hosted Traverse proof is pending.
+(`f9fb6c08-632e-46e5-b20f-76278b79371a`, source `f371bd1`). Request
+`xreq_9a451cfa-f39f-41e5-ada4-d2573837a55b` replanned 23 times as new patrol
+GUIDs entered its displaced path, left the owner road for the surrounding spawn field, and died to
+a Glasshide Petrifier after only 142 net northing yards. The active candidate restores the proven
+20-yard local sidestep and 30/40-yard immediate horizon. Its separate 60-yard predictor now holds
+position for a moving patrol whose path remains at least 20 yards from the holding point; only an
+immediate blocker or a patrol projected inside that safety radius triggers lateral avoidance.
 
 ### Previous 0.1.208 movement baseline
 

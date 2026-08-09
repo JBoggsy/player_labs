@@ -489,7 +489,13 @@ recomputed target orbited retained patrols: 79 side switches, 142 retreats, only
 and a timeout at road node 1. The next candidate freezes a concrete 140-yard-ahead lateral
 waypoint, releasing it on arrival and replanning only for a genuinely new crossing patrol.
 It is uploaded inert as **wowborg:v133**
-(`f9fb6c08-632e-46e5-b20f-76278b79371a`, source `f371bd1`); hosted Traverse proof is pending.
+(`f9fb6c08-632e-46e5-b20f-76278b79371a`, source `f371bd1`). Request
+`xreq_9a451cfa-f39f-41e5-ada4-d2573837a55b` replanned 23 times as new patrol
+GUIDs entered its displaced path, left the owner road for the surrounding spawn field, and died to
+a Glasshide Petrifier after only 142 net northing yards. The next candidate restores the proven
+20-yard local sidestep and 30/40-yard immediate horizon. A separate 60-yard predictor holds on the
+road for a moving patrol whose path stays at least 20 yards from the player; only an immediate
+blocker or a patrol projected inside the holding radius triggers lateral avoidance.
 
 ## Open uncertainties
 
