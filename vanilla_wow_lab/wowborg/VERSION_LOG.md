@@ -8,6 +8,10 @@
   leave that form before entering Cat on the next frame, matching maintained real-playerbot.
 - Target selection, proactive closing, feral rotation, route geometry, and every other-contact
   behavior are unchanged from v158.
+- Six-run request `xreq_b7d21eda-82b8-46ec-9206-4e5906fff375` produced two exact
+  proactive activations, but invoking the current-form spell still did not toggle Travel Form off.
+  The current environment exposes the intended `cancel_aura` action for active beneficial auras;
+  the next candidate uses that typed action for spell 783 before entering Cat.
 
 ## v158 - proactive constrained-ramp Scorpid pull (2026-08-09)
 

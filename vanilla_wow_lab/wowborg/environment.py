@@ -377,6 +377,15 @@ class GymSession:
         )
         return None if action is None else self.select_action(frame, action)
 
+    def select_cancel_aura(self, frame: AgentFrame, spell_id: int) -> str | None:
+        action = self._invocation(
+            frame,
+            label="cancel_aura",
+            source_kind="spell",
+            source_id=str(spell_id),
+        )
+        return None if action is None else self.select_action(frame, action)
+
     def select_area_trigger(
         self, frame: AgentFrame, trigger_id: int | None
     ) -> str | None:

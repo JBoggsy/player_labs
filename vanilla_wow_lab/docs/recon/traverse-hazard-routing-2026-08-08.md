@@ -716,6 +716,12 @@ combat-strength result. The next source candidate follows the maintained real-pl
 invoke the observed active-form binding to leave Travel Form, then enter Cat on the next frame.
 That candidate is uploaded inert as **wowborg:v159**
 (`083b6d20-c164-485d-b828-672a6a05e9ae`, source `d737576`).
+Six-run request `xreq_b7d21eda-82b8-46ec-9206-4e5906fff375` produced two exact
+proactive activations, but invoking the current-form spell still did not toggle Travel Form off.
+The current environment action catalog exposes `cancel_aura` for every active beneficial aura;
+the next source candidate invokes that typed action for spell 783, then enters Cat on the next
+frame. This keeps the transition inside the current public action contract rather than emulating a
+keypress or adding a compatibility path.
 
 ## Open uncertainties
 
