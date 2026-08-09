@@ -248,6 +248,8 @@ holds for genuine cross-traffic but locally avoids a moving patrol whose destina
 30 yards of the active guidepoint. In the observed contrast, the safe early Scorpid destination was
 about 188 yards from node 1, while v134's blocking Roc repeatedly targeted within about 12 yards of
 node 7.
+It is uploaded inert as **wowborg:v136**
+(`e604b7aa-fc13-4871-a7b5-bc1a084afb48`, source `ab358ec`); hosted Traverse proof is pending.
 
 ### Previous 0.1.208 movement baseline
 

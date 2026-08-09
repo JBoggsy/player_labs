@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v136 - guidepoint-resident patrol routing (2026-08-09)
+
+- Version UUID: `e604b7aa-fc13-4871-a7b5-bc1a084afb48` (`wowborg:v136`, uploaded
+  inert; not submitted). Built from source `ab358ec` against canonical vanilla-wow 0.1.209.
+- Holds on the road for true moving cross-traffic, but classifies a patrol whose movement
+  destination lies within 30 yards of the active guidepoint as a resident blocker and applies the
+  local 20-yard avoidance planner immediately. This replaces v135's unsafe time escalation.
+- Hosted Traverse proof is pending.
+
 ## v135 - bounded per-patrol hold (2026-08-09)
 
 - Version UUID: `cef2e31f-773e-4045-b341-13cb6d3a7b59` (`wowborg:v135`, uploaded
