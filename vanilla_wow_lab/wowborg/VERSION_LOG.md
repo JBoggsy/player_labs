@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v143 - periodic Traverse settlement yield (2026-08-09)
+
+- Version UUID: `0f9033bc-0247-4843-9b77-2af1292a43f8` (`wowborg:v143`, uploaded
+  inert; not submitted). Built from source `c40a81b` against canonical vanilla-wow 0.1.209.
+- Keeps the safe 0.75-second stride and yields for 0.25 seconds every eight settled pulses. This
+  retains roughly 97% movement duty while restoring a periodic host settlement seam.
+- Hosted Traverse proof is pending.
+
 ## v142 - continuous settled Traverse cadence (2026-08-09)
 
 - Version UUID: `663ecd3e-10eb-4ba4-9a73-0cf33d43a33c` (`wowborg:v142`, uploaded

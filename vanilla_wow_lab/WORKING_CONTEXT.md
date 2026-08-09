@@ -308,6 +308,8 @@ prior 948 actions all settled (p99 377 ms). Fair repeat
 three exact bend anchors, then hit the same timeout after roughly 985 uninterrupted actions. The
 active candidate yields for 0.25 seconds every eight settled pulses: roughly 97% movement duty
 cycle versus the original 75%, with a periodic host settlement seam.
+It is uploaded inert as **wowborg:v143**
+(`0f9033bc-0247-4843-9b77-2af1292a43f8`, source `c40a81b`); hosted Traverse proof is pending.
 
 ### Previous 0.1.208 movement baseline
 
