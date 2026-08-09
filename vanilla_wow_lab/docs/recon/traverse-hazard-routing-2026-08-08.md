@@ -464,6 +464,8 @@ to node 9, but not the coarse straight chord. The corridor bends through approxi
 `(-7194,-3733)`, `(-7172,-3754)`, and `(-7097,-3795)` before the node-9 climb. The active candidate
 adds these as exact anchors. They deliberately disable northing-pass completion: after hazard
 displacement, regaining the first bend can require brief x-backtracking.
+It is uploaded inert as **wowborg:v130**
+(`c40c37d1-0396-4307-b850-bac8714e1d67`, source `187b820`); hosted proof is pending.
 
 ## Open uncertainties
 

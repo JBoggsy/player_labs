@@ -198,6 +198,8 @@ Deployed 0.1.209 Detour recon from both observed stuck poses showed the coarse n
 omits a required bend through `(-7194,-3733)`, `(-7172,-3754)`, and `(-7097,-3795)`. The active
 candidate adds those three exact corridor anchors; they cannot use northing-pass semantics because
 hazard displacement can require brief x-backtracking to regain the corridor.
+It is uploaded inert as **wowborg:v130**
+(`c40c37d1-0396-4307-b850-bac8714e1d67`, source `187b820`); hosted proof is pending.
 
 ### Previous 0.1.208 movement baseline
 

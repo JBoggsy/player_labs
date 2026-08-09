@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v130 - Detour-derived Tanaris terrain bend (2026-08-09)
+
+- Version UUID: `c40c37d1-0396-4307-b850-bac8714e1d67` (`wowborg:v130`, uploaded
+  inert; not submitted). Built from source `187b820` against canonical vanilla-wow 0.1.209.
+- Inserts three exact node-8-to-9 corridor anchors derived from the deployed Detour navmesh. Exact
+  completion permits the brief x-backtracking needed to regain the walkable bend after hazard
+  displacement; the bounded v129 unstick remains as a generic last resort.
+
 ## v129 - bounded ordinary-road unstick (2026-08-09)
 
 - Version UUID: `e27cf658-ddef-4d2d-93fe-89b31c4b04dd` (`wowborg:v129`, uploaded
