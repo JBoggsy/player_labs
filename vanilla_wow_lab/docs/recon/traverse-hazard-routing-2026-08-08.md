@@ -594,6 +594,8 @@ and removed the action timeout, but exhausted unstick at about `(-7144,-3767)` o
 Pinned 0.1.209 navmesh shows the corridor stays shallow to `(-7129,-3767)` before turning
 southeast; direct steering forced the diagonal too early. The next candidate adds that real turn
 as an exact anchor so crossing no longer depends on v139's lucky left unstick.
+It is uploaded inert as **wowborg:v146**
+(`8fe6eaee-e885-4117-bc6e-b5b10035d602`, source `41ed1b2`); hosted Traverse proof is pending.
 
 ## Open uncertainties
 

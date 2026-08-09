@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v146 - pinned Detour-east turn (2026-08-09)
+
+- Version UUID: `8fe6eaee-e885-4117-bc6e-b5b10035d602` (`wowborg:v146`, uploaded
+  inert; not submitted). Built from source `41ed1b2` against canonical vanilla-wow 0.1.209.
+- Adds the pinned corridor's shallow `(-7129,-3767)` turn as an exact anchor before the final
+  Detour-east diagonal. Cadence, hazard behavior, and refined ramp geometry are unchanged.
+- Hosted Traverse proof is pending.
+
 ## v145 - leg-sensitive Traverse settlement cadence (2026-08-09)
 
 - Version UUID: `dbbc1e08-2f0a-42b8-b79f-9f1e010d72af` (`wowborg:v145`, uploaded
