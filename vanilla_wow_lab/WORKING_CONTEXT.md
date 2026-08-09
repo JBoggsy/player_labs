@@ -1234,7 +1234,9 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    points 14, 12, and 5, and one completed the mountain crest at 252.2 seconds and reached the
    Shimmering Flats south ramp—the first verified Tanaris exit. The batch still emitted 14–30 false
    retreat-blocked events per run because turn-only retreat controls counted as failed translations.
-   The active source counts only actual retreat translations toward the three-pulse blocked limit.
+   **wowborg:v178** (`6c29b6e2-131f-44c7-8c8b-44219b11622a`, source `69fff04`) is uploaded inert and
+   counts only actual retreat translations toward the three-pulse blocked limit. Its hosted
+   evaluation is pending.
 
 ## Reference
 

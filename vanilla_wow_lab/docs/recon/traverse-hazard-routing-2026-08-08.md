@@ -881,7 +881,9 @@ points 14, 12, and 5, and one completed the mountain crest at 252.2 seconds and 
 Shimmering Flats south ramp—the first verified exit from Tanaris. The batch still emitted 14–30
 false retreat-blocked events per run. Trace ordering proves turn-only retreat controls increment the
 three-pulse stalled-translation counter before the character faces its safe anchor. The active source
-counts only actual retreat translations toward that limit.
+counts only actual retreat translations toward that limit. This is uploaded inert as
+**wowborg:v178** (`6c29b6e2-131f-44c7-8c8b-44219b11622a`, source `69fff04`); its hosted evaluation is
+pending.
 
 ## Open uncertainties
 

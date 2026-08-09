@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v178 - count only translated retreat stalls (2026-08-09)
+
+- Version UUID: `6c29b6e2-131f-44c7-8c8b-44219b11622a` (`wowborg:v178`, uploaded
+  inert; not submitted). Built from source `69fff04` against canonical vanilla-wow 0.1.209.
+- Reports whether each steering control turned or translated, and increments the three-pulse
+  blocked-retreat limit only after an actual retreat translation fails to move 0.5 yards.
+- Route geometry, hazard thresholds, and combat behavior are unchanged from v177. Hosted
+  evaluation is pending.
+
 ## v177 - measured Tanaris crest pass (2026-08-09)
 
 - Version UUID: `829c6ecb-de49-4441-bd04-a163c58a4e94` (`wowborg:v177`, uploaded
