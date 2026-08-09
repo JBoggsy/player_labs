@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v124 - discrete eight-direction road steering (2026-08-09)
+
+- Version UUID: `5da21603-0777-48b7-b131-de9420d24ef6` (`wowborg:v124`, uploaded
+  inert; not submitted). Built from source `da3459d` against canonical vanilla-wow 0.1.209.
+- Accepts the proven 45-degree turn quantum for ordinary steering and adds signed strafe beyond
+  22.5 degrees, translating along the nearest discrete 45-degree heading. Hazard geometry and
+  state are unchanged.
+
 ## v123 - quantized road heading correction (2026-08-09)
 
 - Version UUID: `ec6fe6c8-f7c4-4847-a242-a7aec0d6d8fc` (`wowborg:v123`, uploaded
@@ -7,6 +15,9 @@
 - Uses an exact 0.25-second turn-in-place action for ordinary heading correction, retaining the
   existing 0.75-second pulse for straight road translation. This targets v122's alternating
   left/right road-node stall without changing hazard geometry or state.
+- Request `xreq_46147008-1cf6-43d2-8f2f-37906b15240d` stayed full-health with no
+  combat or action timeout, but quarter turns alternated in place under the old 0.20-radian
+  ordinary deadband and failed at road node 1.
 
 ## v122 - mobile unsafe-anchor holding (2026-08-09)
 

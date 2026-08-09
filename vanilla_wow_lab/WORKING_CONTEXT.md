@@ -149,6 +149,8 @@ action timeout, but the unchanged 0.20-radian ordinary heading deadband made the
 quantum alternate in place at road node 1. The active candidate uses the complete discrete
 actuator: accept heading error through 45 degrees, then add signed strafe beyond 22.5 degrees to
 translate along the nearest 45-degree direction. Straight translation duration remains unchanged.
+It is uploaded inert as **wowborg:v124**
+(`5da21603-0777-48b7-b131-de9420d24ef6`, source `da3459d`); hosted proof is pending.
 
 ### Previous 0.1.208 movement baseline
 
