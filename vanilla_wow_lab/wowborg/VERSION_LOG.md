@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v206 - jump from the first lower descent edge (2026-08-09)
+
+- Version UUID: `3adcfa93-82c6-4b4b-bc0d-4846b9a74596` (`wowborg:v206`, uploaded
+  inert; not submitted). Built from source `f525838` against canonical vanilla-wow 0.1.209.
+- Restores the proven 20-yard global clearance after V205 and moves the existing jump-aware lower
+  descent boundary from point 16 to point 10, immediately after V202's last repeatedly proven
+  walkable point. Dense bearings and every other behavior match V204.
+
 ## v205 - measured twelve-yard road clearance (2026-08-09)
 
 - Version UUID: `b42b0712-9d24-4319-a490-71f41a41d80c` (`wowborg:v205`, uploaded
