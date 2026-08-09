@@ -852,7 +852,8 @@ detour anchor to road point 9 is complete, but its final approach rises from z13
 25 horizontal yards and reaches a maximum per-segment slope of 1.21. The active source inserts the
 measured flat climb base at `(-7000.68, -3835.14, 12.56)` and enables explicit jumps only from that
 anchor to road point 9. This repairs a separate steep edge before the Shimmering Flats mountain
-pass without changing the remaining route.
+pass without changing the remaining route. That candidate is uploaded inert as **wowborg:v174**
+(`73f5f8cb-d6e9-41f4-ab30-e43e73208496`, source `fcb8d78`); its hosted evaluation is pending.
 
 ## Open uncertainties
 

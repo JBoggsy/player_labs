@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v174 - jump the Tanaris road-9 climb (2026-08-09)
+
+- Version UUID: `73f5f8cb-d6e9-41f4-ab30-e43e73208496` (`wowborg:v174`, uploaded
+  inert; not submitted). Built from source `fcb8d78` against canonical vanilla-wow 0.1.209.
+- Restores v172's conservative swept-path hazard clearance, dropping v173's unsuccessful timing
+  branch.
+- Adds a navmesh-measured exact anchor at the foot of the separate road-9 climb and enables explicit
+  jumps only from that anchor to road point 9. The later mountain-pass jump edges are unchanged.
+- Hosted evaluation is pending.
+
 ## v173 - time-aligned patrol clearance (2026-08-09)
 
 - Version UUID: `1fdac500-2bbf-4024-87f7-a9fd9be76a22` (`wowborg:v173`, uploaded

@@ -1208,8 +1208,9 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    but none reached ramp-base: three stalled at `tanaris-north-road-9`, two stopped at road point 3,
    and one stopped at road point 2. The timing branch is dropped from the active source. Navmesh
    recon shows that the final road-9 approach rises from z13 to z34 at up to 1.21 slope, and all
-   three road-9 runs stopped at the same foot of that climb. The active source inserts that measured
-   climb-base anchor and explicitly jumps the missing edge.
+   three road-9 runs stopped at the same foot of that climb. **wowborg:v174**
+   (`73f5f8cb-d6e9-41f4-ab30-e43e73208496`, source `fcb8d78`) is uploaded inert with that measured
+   climb-base anchor and explicit jumps on the missing edge. Its hosted evaluation is pending.
 
 ## Reference
 
