@@ -26,6 +26,7 @@ RAMP_SCORPID_ENTRY = 5422
 FERAL_CLAW_SPELL_IDS = (9850, 9849, 5201, 3029, 1082)
 FERAL_RAKE_SPELL_IDS = (9904, 1824, 1823, 1822)
 FERAL_RIP_SPELL_IDS = (9896, 9894, 9752, 9493, 9492, 1079)
+FERAL_MELEE_CLOSE_YARDS = 2.0
 GREAT_LIFT_ENTRIES = (11898, 11899)
 GREAT_LIFT_LOWER_DOCK = Point(1, -4677.066, -1853.667, -43.857)
 GREAT_LIFT_UPPER_DOCK = Point(1, -4650.066, -1850.482, 85.705)
@@ -650,7 +651,10 @@ def _fight_ramp_scorpid(bridge, navigator, frame, attacker, trace) -> bool:
             trace=trace,
         )
     if frame.auto_attack_guid != attacker.guid:
-        if attacker.combat_distance_known and attacker.combat_distance > 5.0:
+        if (
+            attacker.combat_distance_known
+            and attacker.combat_distance > FERAL_MELEE_CLOSE_YARDS
+        ):
             request_id = (
                 bridge.select_move_to(
                     frame,

@@ -8,6 +8,12 @@
   existing targeted-spell invocation contract.
 - Form transition, target gate, proactive closing, route geometry, and all other-contact behavior
   are unchanged from v160. This isolates realized feral rotation and time-to-kill.
+- Six-run request `xreq_dd819d01-f854-4b36-b482-128fb24fc8a6` produced one ramp
+  fight. The exact GUID reached the spell command, but host telemetry rejected the first Rake as
+  `Out of range`; auto-attacks again killed the mob in 34.3 seconds (1,946 dealt / 367 taken).
+  Wowborg survived and reached ramp-base milestone 20, the first clean post-kill advance. The next
+  candidate closes to two reported yards before its first attack to absorb the ramp's vertical
+  separation and bring melee abilities into range.
 
 ## v160 - typed Travel Form aura cancellation (2026-08-09)
 

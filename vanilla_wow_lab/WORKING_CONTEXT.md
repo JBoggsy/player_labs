@@ -1098,6 +1098,11 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    The next source candidate passes the exact Scorpid GUID to every offensive feral spell.
    That candidate is uploaded inert as **wowborg:v161**
    (`922c2942-06d8-4b55-8ac1-bedf7bb41522`, source `f83906a`).
+   Six-run request `xreq_dd819d01-f854-4b36-b482-128fb24fc8a6` produced one ramp
+   fight. The exact target reached the spell command, but Rake was `Out of range`; auto-attacks
+   killed the mob in 34.3 seconds (1,946 dealt / 367 taken). Wowborg survived and reached ramp-base
+   milestone 20, the first post-kill advance. The next source candidate closes to two reported yards
+   before attacking so the ramp's vertical separation cannot leave melee abilities outside range.
 
 ## Reference
 
