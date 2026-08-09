@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v183 - twelve-yard hazard clearance (2026-08-09)
+
+- Version UUID: `b3bfe4a6-940a-4677-8e43-1dfe4dc07bed` (`wowborg:v183`, uploaded
+  inert; not submitted). Built from source `e49641a` against canonical vanilla-wow 0.1.209.
+- Lowers the predicted road-clearance floor from 20 to 12 yards, aligning ordinary avoidance and
+  ramp add prediction on roughly twice the pinned 5-7-yard aggro radius.
+- V182 route geometry, one-second stride, projected-add combat admission, rotation, and constrained
+  descent are unchanged. Hosted evaluation is pending.
+
 ## v182 - projected-add ramp fights (2026-08-09)
 
 - Version UUID: `a536822a-16cd-4170-b9cc-8ff869198e16` (`wowborg:v182`, uploaded

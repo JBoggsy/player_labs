@@ -1272,7 +1272,9 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    seconds left in the fixed 270-second horizon. The full route is 6,662 yards, and the current
    20-yard predicted-clearance floor drives repeated 30/45/60-yard detours despite the pinned
    5-7-yard ordinary aggro radius. The active source lowers that floor to 12 yards, preserving an
-   approximately 2x margin while reducing avoidable route churn.
+   approximately 2x margin while reducing avoidable route churn. The candidate is uploaded inert
+   as **wowborg:v183** (`b3bfe4a6-940a-4677-8e43-1dfe4dc07bed`, source `e49641a`); its hosted
+   evaluation is pending.
 
 ## Reference
 
