@@ -498,6 +498,9 @@ def _steer_road_leg(
     avoidance: HazardAvoidanceState,
     allow_northing_pass: bool,
 ):
+    settle_pause_interval = (
+        1 if not allow_northing_pass else ROAD_SETTLE_PAUSE_INTERVAL
+    )
     closest = math.inf
     last_progress = time.monotonic()
     road_unstick_attempts = 0
@@ -620,7 +623,7 @@ def _steer_road_leg(
                 last_progress = time.monotonic()
                 road_unstick_attempts = 0
             avoidance.settled_pulses += 1
-            if avoidance.settled_pulses % ROAD_SETTLE_PAUSE_INTERVAL == 0:
+            if avoidance.settled_pulses % settle_pause_interval == 0:
                 bridge.select_wait(settle_frame)
                 trace("traverse_road_settle_pause", frame_id=settle_frame.frame_id)
             trace("traverse_road_pulse_settled", frame_id=settle_frame.frame_id)
@@ -893,7 +896,7 @@ def _steer_road_leg(
         else:
             avoidance.retreat_stalled_pulses = 0
         avoidance.settled_pulses += 1
-        if avoidance.settled_pulses % ROAD_SETTLE_PAUSE_INTERVAL == 0:
+        if avoidance.settled_pulses % settle_pause_interval == 0:
             bridge.select_wait(settle_frame)
             trace("traverse_road_settle_pause", frame_id=settle_frame.frame_id)
         trace("traverse_road_pulse_settled", frame_id=settle_frame.frame_id)

@@ -581,7 +581,12 @@ wowborg ran east along the cliff edge and fell before reaching its required sout
 next candidate splits the pinned navmesh approach at `(-6905,-3869,39)` and
 `(-6890,-3885,48)` before the existing exact base anchor.
 It is uploaded inert as **wowborg:v144**
-(`bb21cd9f-2573-4f1c-bfd2-ff5be57842ac`, source `3e2d09c`); hosted Traverse proof is pending.
+(`bb21cd9f-2573-4f1c-bfd2-ff5be57842ac`, source `3e2d09c`). Request
+`xreq_98016dca-efdf-4bbb-b394-b52d6ebb6433` stayed full-health with zero combat,
+but was infrastructure-censored before reaching the new ramp anchors: another 0.75-second action
+timed out at about `(-7155,-3769)` on the exact Detour-east leg. Sparse yields improve ordinary
+road cadence, but this tight bend needs v139's every-pulse settlement seam. The next candidate
+yields after every pulse on exact anchors and every eight pulses on ordinary roads.
 
 ## Open uncertainties
 

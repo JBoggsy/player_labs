@@ -6,7 +6,9 @@
   inert; not submitted). Built from source `3e2d09c` against canonical vanilla-wow 0.1.209.
 - Adds exact pinned-navmesh approach and turn anchors before the existing ramp base so discrete
   steering follows the cliff's southward curve. Cadence and hazard behavior are unchanged.
-- Hosted Traverse proof is pending.
+- Request `xreq_98016dca-efdf-4bbb-b394-b52d6ebb6433` stayed full-health with zero
+  combat, but was infrastructure-censored before the new ramp anchors by another 30-second action
+  timeout at about `(-7155,-3769)` on the exact Detour-east leg.
 
 ## v143 - periodic Traverse settlement yield (2026-08-09)
 
