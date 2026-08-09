@@ -8,7 +8,14 @@
   patrol as stationary at its destination for any remaining player travel time.
 - Preserves the 20-yard safety threshold and prior swept-path fallback when timing is unavailable;
   steep-edge jumps, combat, route geometry, and all other behavior are unchanged from v172.
-- Hosted evaluation is pending.
+- Six-run request `xreq_80c311ec-8cbf-4e9e-b817-a52772c8bc3d` kept all six
+  runs alive, but none reached ramp-base. Three stalled at `tanaris-north-road-9`, two stopped at
+  road point 3, and one stopped at road point 2; three ended on action-settlement timeouts. The
+  timed-clearance branch is dropped from the next candidate.
+- Navmesh recon explains the repeated road-9 stall: the complete maintained route rises from z13
+  to z34 with a maximum segment slope of 1.21, while explicit jumps currently begin only at the
+  later mountain pass. The next candidate adds the measured foot of this climb and jumps its final
+  edge.
 
 ## v172 - explicit steep-edge jumps (2026-08-09)
 

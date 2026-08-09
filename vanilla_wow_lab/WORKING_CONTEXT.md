@@ -1203,8 +1203,13 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    waypoint 3. **wowborg:v173** (`1fdac500-2bbf-4024-87f7-a9fd9be76a22`, source
    `54459a9`) is uploaded inert to time-align observed player and patrol motion for segment
    clearance. It retains the 20-yard safety threshold and conservative swept fallback whenever
-   timing is absent; only false crossings that occur at different times become clear. Its hosted
-   evaluation is pending.
+   timing is absent; only false crossings that occur at different times become clear. Six-run
+   request `xreq_80c311ec-8cbf-4e9e-b817-a52772c8bc3d` kept every run alive,
+   but none reached ramp-base: three stalled at `tanaris-north-road-9`, two stopped at road point 3,
+   and one stopped at road point 2. The timing branch is dropped from the active source. Navmesh
+   recon shows that the final road-9 approach rises from z13 to z34 at up to 1.21 slope, and all
+   three road-9 runs stopped at the same foot of that climb. The active source inserts that measured
+   climb-base anchor and explicitly jumps the missing edge.
 
 ## Reference
 

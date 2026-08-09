@@ -842,7 +842,17 @@ avoidance starts, 13 side switches, and 33 retreats; three others stalled near T
 **wowborg:v173** (`1fdac500-2bbf-4024-87f7-a9fd9be76a22`, source `54459a9`) is uploaded inert with
 observed player speed and patrol time-to-destination used to minimize clearance over simultaneous
 motion. The 20-yard threshold is unchanged, and missing timing retains the conservative
-swept-path fallback. Its hosted evaluation is pending.
+swept-path fallback. Six-run request `xreq_80c311ec-8cbf-4e9e-b817-a52772c8bc3d`
+kept all six runs alive, but none reached ramp-base. Three stalled at `tanaris-north-road-9`, two
+stopped at road point 3, and one stopped at road point 2; three ended on action-settlement timeouts.
+The timing branch is therefore dropped from the next candidate.
+
+The three road-9 runs stopped at x≈-6995 and z≈13. The maintained navmesh route from the preceding
+detour anchor to road point 9 is complete, but its final approach rises from z13 to z34 over roughly
+25 horizontal yards and reaches a maximum per-segment slope of 1.21. The active source inserts the
+measured flat climb base at `(-7000.68, -3835.14, 12.56)` and enables explicit jumps only from that
+anchor to road point 9. This repairs a separate steep edge before the Shimmering Flats mountain
+pass without changing the remaining route.
 
 ## Open uncertainties
 
