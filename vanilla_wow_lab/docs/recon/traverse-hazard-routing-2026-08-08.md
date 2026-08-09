@@ -807,6 +807,8 @@ A route query using the canonical 0.1.209 VMaNGOS mmaps and pinned core ref
 path from the observed base to crest. Its first three points hold x near -6884 while climbing north
 before the path bends east. The next source candidate replaces only the invalid straight ascent
 with those canonical Detour waypoints.
+That candidate is uploaded inert as **wowborg:v169**
+(`ca5d030f-316e-4644-99d7-6dccb979bb48`, source `b7f1b50`).
 
 ## Open uncertainties
 

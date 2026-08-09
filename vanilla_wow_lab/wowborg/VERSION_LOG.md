@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v169 - canonical Detour ramp ascent (2026-08-09)
+
+- Version UUID: `ca5d030f-316e-4644-99d7-6dccb979bb48` (`wowborg:v169`, uploaded
+  inert; not submitted). Built from source `b7f1b50` against canonical vanilla-wow 0.1.209.
+- Replaces the invalid straight ramp-base-to-crest leg with the canonical 17-point VMaNGOS
+  Detour smooth path. Every new point retains exact, three-yard, terrain-constrained steering.
+- Combat, hazard clearance, terminal-health handling, and ordinary-road cadence are unchanged
+  from v168. The hosted request is pending.
+
 ## v168 - full-leg precise ramp cadence (2026-08-09)
 
 - Version UUID: `29b5673e-b414-43c4-ad3a-64d1ff0d5089` (`wowborg:v168`, uploaded

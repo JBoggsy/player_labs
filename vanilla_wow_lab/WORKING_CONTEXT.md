@@ -1168,6 +1168,8 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    17-point smooth path. It holds x near -6884 for the first three climbing points before bending
    east, unlike the invalid direct line. The active source replaces only that ascent leg with the
    canonical Detour points; combat, hazard routing, and ordinary-road cadence are unchanged.
+   That candidate is uploaded inert as **wowborg:v169**
+   (`ca5d030f-316e-4644-99d7-6dccb979bb48`, source `b7f1b50`).
 
 ## Reference
 
