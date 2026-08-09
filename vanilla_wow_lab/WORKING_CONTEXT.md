@@ -257,6 +257,8 @@ Lasher contact, but timed out at node 7 only about 14 yards from its center and 
 of its exact northing threshold. The active candidate permits ordinary guidepoints to pass up to
 20 yards before their target x while retaining the existing 60-yard lateral/z corridor. The three
 Detour bend anchors and Great Lift remain exact.
+It is uploaded inert as **wowborg:v137**
+(`de9133dc-8ede-416d-98db-e2713ae88a6d`, source `b7bdcd1`); hosted Traverse proof is pending.
 
 ### Previous 0.1.208 movement baseline
 

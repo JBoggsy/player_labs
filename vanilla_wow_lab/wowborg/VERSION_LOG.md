@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v137 - hazard-tolerant road milestone pass (2026-08-09)
+
+- Version UUID: `de9133dc-8ede-416d-98db-e2713ae88a6d` (`wowborg:v137`, uploaded
+  inert; not submitted). Built from source `b7bdcd1` against canonical vanilla-wow 0.1.209.
+- Permits ordinary road guidepoints to complete up to 20 yards before their target x when still
+  inside the existing 60-yard lateral/z corridor. Exact Detour bend anchors and the Great Lift
+  dock retain their 8-yard completion requirement.
+- Hosted Traverse proof is pending.
+
 ## v136 - guidepoint-resident patrol routing (2026-08-09)
 
 - Version UUID: `e604b7aa-fc13-4871-a7b5-bc1a084afb48` (`wowborg:v136`, uploaded
