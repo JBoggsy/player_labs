@@ -29,7 +29,7 @@ GREAT_LIFT_UPPER_ROAD = Point(1, -4583.315, -1908.142, 95.58)
 GREAT_LIFT_VISIBLE_RANGE = 42.0
 GREAT_LIFT_DOCK_Z_SLACK = 2.0
 GREAT_LIFT_EXIT_Z = 80.0
-TRAVERSE_INPUT_SECONDS = 1.5
+TRAVERSE_INPUT_SECONDS = 0.75
 ROAD_ARRIVAL_RADIUS_YARDS = 8.0
 ROAD_PASS_LATERAL_YARDS = 60.0
 ROAD_PASS_NORTHING_SLACK_YARDS = 20.0
@@ -613,7 +613,6 @@ def _steer_road_leg(
                 closest = math.inf
                 last_progress = time.monotonic()
                 road_unstick_attempts = 0
-            bridge.select_wait(settle_frame)
             trace("traverse_road_pulse_settled", frame_id=settle_frame.frame_id)
             continue
 
@@ -883,7 +882,6 @@ def _steer_road_leg(
                 avoidance.retreat_stalled_pulses = 0
         else:
             avoidance.retreat_stalled_pulses = 0
-        bridge.select_wait(settle_frame)
         trace("traverse_road_pulse_settled", frame_id=settle_frame.frame_id)
     return None, "deadline"
 

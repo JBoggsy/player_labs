@@ -291,7 +291,14 @@ constraint. The active candidate doubles open translation from 0.75 to 1.5 secon
 0.25-second precision for turns, retreat/evasion, and the final 20 yards of every target. Its
 roughly 10.5-yard open stride remains inside the existing 30-yard immediate hazard gate.
 It is uploaded inert as **wowborg:v141**
-(`53afe44e-b6aa-4880-9111-eeffe620e64f`, source `1c051b2`); hosted Traverse proof is pending.
+(`53afe44e-b6aa-4880-9111-eeffe620e64f`, source `1c051b2`). Request
+`xreq_8ab6b8b3-5215-4506-8817-864538ef59a8` reached road node 7 six seconds
+faster than v139, but the longer stride closed on a Glasshide Basilisk to 2.7 yards and died before
+node 8. The stride is unsafe and its speed gain is small. Trace/code reconciliation found the real
+throughput defect: each synchronous vector action already returns its settled next frame, but
+Traverse then submitted a redundant 0.25-second wait before every next pulse. The active candidate
+restores the proven 0.75-second stride and removes that wait, increasing movement duty cycle from
+75% to 100% without increasing one-pulse hazard reaction distance.
 
 ### Previous 0.1.208 movement baseline
 

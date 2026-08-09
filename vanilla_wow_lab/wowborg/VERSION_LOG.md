@@ -6,7 +6,9 @@
   inert; not submitted). Built from source `1c051b2` against canonical vanilla-wow 0.1.209.
 - Doubles open translation to 1.5 seconds while retaining 0.25-second turns, retreat/evasion, and
   final-20-yard precision. The route and 30-yard immediate hazard gate are unchanged.
-- Hosted Traverse proof is pending.
+- Request `xreq_8ab6b8b3-5215-4506-8817-864538ef59a8` reached road node 7 six
+  seconds faster than v139, but closed on a Glasshide Basilisk to 2.7 yards and died before node 8.
+  The longer stride is unsafe and its speed gain is small.
 
 ## v140 - exact Shimmering Flats ramp corridor (2026-08-09)
 
