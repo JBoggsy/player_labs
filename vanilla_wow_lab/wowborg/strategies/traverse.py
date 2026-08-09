@@ -37,7 +37,7 @@ ROAD_UNSTICK_ATTEMPTS = 2
 ROAD_HAZARD_ENTER_YARDS = 30.0
 ROAD_HAZARD_EXIT_YARDS = 40.0
 ROAD_HAZARD_LOOKAHEAD_YARDS = 60.0
-ROAD_HAZARD_MAX_HOLD_SECONDS = 2.0
+ROAD_HAZARD_RESIDENT_RADIUS_YARDS = 30.0
 ROAD_HAZARD_CORRIDOR_YARDS = 18.0
 ROAD_HAZARD_TRACK_YARDS = 80.0
 ROAD_HAZARD_FORWARD_YARDS = 20.0
@@ -227,7 +227,6 @@ def _hazard_avoidance_target(
     target: Point,
     *,
     side: float | None,
-    forced_avoidance_guids: set[str],
 ):
     route_x = target.x - frame.location.x
     route_y = target.y - frame.location.y
@@ -291,13 +290,17 @@ def _hazard_avoidance_target(
     hazards_by_guid = {
         unit.guid: unit for unit in (*immediate_hazards, *threatening_crossings)
     }
-    hazards_by_guid.update(
-        {
-            unit.guid: unit
-            for unit in lookahead_hazards
-            if unit.guid in forced_avoidance_guids
-        }
-    )
+    resident_hazards = [
+        unit
+        for unit in lookahead_hazards
+        if unit.movement_destination_known
+        and math.dist(
+            (unit.movement_destination.x, unit.movement_destination.y),
+            (target.x, target.y),
+        )
+        <= ROAD_HAZARD_RESIDENT_RADIUS_YARDS
+    ]
+    hazards_by_guid.update({unit.guid: unit for unit in resident_hazards})
     hazards = list(hazards_by_guid.values())
     if not hazards:
         hold_hazards = [
@@ -446,7 +449,6 @@ def _hazard_evasion_target(frame, hazards, target: Point) -> Point:
 class HazardAvoidanceState:
     side: float | None = None
     holding: bool = False
-    held_since: dict[str, float] = field(default_factory=dict)
     evading: bool = False
     retreating: bool = False
     retreat_blocked: bool = False
@@ -593,14 +595,7 @@ def _steer_road_leg(
             next_avoidance_side = avoidance.side
             hazards = []
             should_hold = False
-            forced_avoidance_guids = set()
         else:
-            now = time.monotonic()
-            forced_avoidance_guids = {
-                guid
-                for guid, held_since in avoidance.held_since.items()
-                if now - held_since >= ROAD_HAZARD_MAX_HOLD_SECONDS
-            }
             (
                 steering_target,
                 next_avoidance_side,
@@ -613,17 +608,8 @@ def _steer_road_leg(
                 frame,
                 target,
                 side=avoidance.side,
-                forced_avoidance_guids=forced_avoidance_guids,
             )
-            tracked_guids = {unit.guid for unit in tracked_hazards}
-            avoidance.held_since = {
-                guid: held_since
-                for guid, held_since in avoidance.held_since.items()
-                if guid in tracked_guids
-            }
         if should_hold:
-            for unit in hazards:
-                avoidance.held_since.setdefault(unit.guid, time.monotonic())
             if not avoidance.holding:
                 trace(
                     "traverse_hazard_hold",
@@ -708,8 +694,17 @@ def _steer_road_leg(
                     }
                     for unit in tracked_hazards
                 ],
-                hold_exhausted_count=sum(
-                    unit.guid in forced_avoidance_guids for unit in hazards
+                resident_blocker_count=sum(
+                    unit.movement_destination_known
+                    and math.dist(
+                        (
+                            unit.movement_destination.x,
+                            unit.movement_destination.y,
+                        ),
+                        (target.x, target.y),
+                    )
+                    <= ROAD_HAZARD_RESIDENT_RADIUS_YARDS
+                    for unit in hazards
                 ),
             )
         elif next_avoidance_side is None and avoidance.side is not None:

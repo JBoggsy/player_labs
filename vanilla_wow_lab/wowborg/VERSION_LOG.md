@@ -7,7 +7,9 @@
 - Caps predictive holding at two wall seconds per patrol GUID. A patrol still projecting across
   the route then becomes a local 20-yard avoidance blocker until it leaves the 80-yard tracked
   set; brief lookahead jitter cannot restart its waiting allowance.
-- Hosted Traverse proof is pending.
+- Request `xreq_cbb87d77-a2ed-48bb-a30e-205105a13733` escalated the first safe
+  Scorpid crossing, cascaded into a Glasshide Petrifier contact, and died at node 1 after only 96
+  net northing yards. The timer conflated transient crossings with resident blockers.
 
 ## v134 - hold for safely crossing patrols (2026-08-09)
 

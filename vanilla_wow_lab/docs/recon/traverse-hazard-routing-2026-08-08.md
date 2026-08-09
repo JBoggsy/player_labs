@@ -505,7 +505,13 @@ unbounded wait cannot clear a resident patrol. The next candidate caps holding a
 per GUID, then treats a still-present patrol as a local blocker until it leaves the 80-yard tracked
 set; brief trajectory jitter does not reset the timer.
 It is uploaded inert as **wowborg:v135**
-(`cef2e31f-773e-4045-b341-13cb6d3a7b59`, source `b03cabd`); hosted Traverse proof is pending.
+(`cef2e31f-773e-4045-b341-13cb6d3a7b59`, source `b03cabd`). Request
+`xreq_cbb87d77-a2ed-48bb-a30e-205105a13733` escalated the first safe Scorpid
+crossing, cascaded into a Glasshide Petrifier contact, and died at node 1 after only 96 net northing
+yards. The timer conflated transient crossings with resident blockers. The next candidate instead
+holds for genuine cross-traffic but locally avoids a moving patrol whose destination lies within
+30 yards of the active guidepoint. The observed safe early Scorpid destination was about 188 yards
+from node 1; v134's blocking Roc repeatedly targeted within about 12 yards of node 7.
 
 ## Open uncertainties
 
