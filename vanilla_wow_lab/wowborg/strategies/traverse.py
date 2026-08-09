@@ -26,6 +26,18 @@ RAMP_SCORPID_ENTRY = 5422
 FERAL_CLAW_SPELL_IDS = (9850, 9849, 5201, 3029, 1082)
 FERAL_RAKE_SPELL_IDS = (9904, 1824, 1823, 1822)
 FERAL_RIP_SPELL_IDS = (9896, 9894, 9752, 9493, 9492, 1079)
+REJUVENATION_SPELL_IDS = (
+    9841,
+    9840,
+    9839,
+    8910,
+    3627,
+    2091,
+    2090,
+    1430,
+    1058,
+    774,
+)
 FERAL_MELEE_CLOSE_YARDS = 2.5
 GREAT_LIFT_ENTRIES = (11898, 11899)
 GREAT_LIFT_LOWER_DOCK = Point(1, -4677.066, -1853.667, -43.857)
@@ -51,7 +63,7 @@ ROAD_HAZARD_CORRIDOR_YARDS = 18.0
 ROAD_HAZARD_TRACK_YARDS = 80.0
 ROAD_HAZARD_FORWARD_YARDS = 20.0
 ROAD_HAZARD_LATERAL_YARDS = (30.0, 45.0, 60.0)
-ROAD_HAZARD_MIN_CLEARANCE_YARDS = 12.0
+ROAD_HAZARD_MIN_CLEARANCE_YARDS = 20.0
 ROAD_TIGHT_HAZARD_HOLD_YARDS = 8.0
 ROAD_HAZARD_HOLD_RADIUS_YARDS = 2.0
 ROAD_HAZARD_SWITCH_MARGIN_YARDS = 5.0
@@ -72,6 +84,7 @@ ROAD_EXACT_GUIDEPOINTS = frozenset(
         "shimmering-flats-ramp-approach",
         "shimmering-flats-ramp-turn",
         "shimmering-flats-ramp-base",
+        "shimmering-flats-descent-landing",
         "shimmering-flats-south-road",
         "great-lift-lower-dock",
     }
@@ -82,6 +95,7 @@ ROAD_TIGHT_ARRIVAL_GUIDEPOINTS = frozenset(
         "shimmering-flats-ramp-turn",
         "shimmering-flats-ramp-base",
         "shimmering-flats-south-ramp",
+        "shimmering-flats-descent-landing",
         "shimmering-flats-south-road",
     }
 ) | ROAD_STEEP_GUIDEPOINTS
@@ -144,6 +158,10 @@ TRAVERSE_ROUTE_PREFIX = (
     ("shimmering-flats-ramp-ascent-16", Point(1, -6850.1611, -3924.2969, 124.3111)),
     ("shimmering-flats-ramp-crest", Point(1, -6848.0000, -3925.3300, 124.6400)),
     ("shimmering-flats-south-ramp", Point(1, -6794.0220, -3953.5276, 100.8641)),
+    (
+        "shimmering-flats-descent-landing",
+        Point(1, -6670.5825, -4031.4185, 27.6853),
+    ),
     ("shimmering-flats-south-road", Point(1, -6624.2671, -4050.1333, -41.6139)),
     ("shimmering-flats-road", Point(1, -6239.9995, -4085.3330, -58.0107)),
     ("thousand-needles-east-road-1", Point(1, -6035.5581, -3865.7529, -59.6654)),
@@ -1430,6 +1448,69 @@ def _activate_travel_form(bridge, trace) -> None:
     )
 
 
+def _activate_descent_rejuvenation(bridge, trace) -> bool:
+    frame = bridge.observe()
+    if frame is None:
+        trace("traverse_descent_rejuvenation", activation=0, reason="no_frame")
+        return False
+    if set(frame.active_aura_spell_ids).intersection(REJUVENATION_SPELL_IDS):
+        trace("traverse_descent_rejuvenation", activation=0, reason="already_active")
+        return True
+    if frame.shapeshift_form_known and frame.shapeshift_form_id != 0:
+        if not frame.shapeshift_form_spell_known:
+            trace("traverse_descent_rejuvenation", activation=0, reason="form_unknown")
+            return False
+        request_id = bridge.select_cancel_aura(
+            frame,
+            frame.shapeshift_form_spell_id,
+        )
+        if request_id is None:
+            trace(
+                "traverse_descent_rejuvenation",
+                activation=0,
+                reason="exit_unavailable",
+            )
+            return False
+        outcome = bridge.wait_for_settlement(frame.frame_id)
+        trace(
+            "traverse_descent_rejuvenation",
+            activation=1,
+            phase="exit_current_form",
+            success=outcome is not None and outcome.success,
+            detail=outcome.detail if outcome is not None else "unsettled",
+        )
+        return False
+    spell_id = next(
+        (
+            spell_id
+            for spell_id in REJUVENATION_SPELL_IDS
+            if spell_id in frame.known_spells
+        ),
+        None,
+    )
+    if spell_id is None:
+        trace("traverse_descent_rejuvenation", activation=0, reason="spell_unknown")
+        return True
+    request_id = bridge.select_cast_without_target(
+        frame,
+        spell_id,
+        purpose="keep Rejuvenation active across the Shimmering Flats drops",
+    )
+    if request_id is None:
+        trace("traverse_descent_rejuvenation", activation=0, reason="cast_unavailable")
+        return False
+    outcome = bridge.wait_for_settlement(frame.frame_id)
+    trace(
+        "traverse_descent_rejuvenation",
+        activation=1,
+        phase="cast",
+        spell_id=spell_id,
+        success=outcome is not None and outcome.success,
+        detail=outcome.detail if outcome is not None else "unsettled",
+    )
+    return False
+
+
 def _activate_descent_cat_form(bridge, trace) -> bool:
     frame = bridge.observe()
     if frame is None:
@@ -1530,13 +1611,18 @@ class TraverseStrategy:
             goal_world_x=TRAVERSE_GOAL_WORLD_X,
         )
         while time.monotonic() < until and not getattr(bridge, "finished", False):
-            descending_to_south_road = (
+            descending_shimmering_flats = (
                 not self.route_prefix_abandoned
                 and self.route_guidepoints_arrived < len(TRAVERSE_ROUTE_PREFIX)
                 and TRAVERSE_ROUTE_PREFIX[self.route_guidepoints_arrived][0]
-                == "shimmering-flats-south-road"
+                in {
+                    "shimmering-flats-descent-landing",
+                    "shimmering-flats-south-road",
+                }
             )
-            if descending_to_south_road:
+            if descending_shimmering_flats:
+                if not _activate_descent_rejuvenation(bridge, trace):
+                    continue
                 if not _activate_descent_cat_form(bridge, trace):
                     continue
             elif self.route_guidepoints_arrived < PROWL_ROUTE_GUIDEPOINTS:
