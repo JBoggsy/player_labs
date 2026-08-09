@@ -120,6 +120,8 @@ retreat. It was inefficient: 140 retreats and 139 side switches consumed the epi
 node 7. Retreats ended whenever projected clearance briefly recovered, even while wowborg was
 still 20–45 yards from its frozen safe anchor, then restarted on the next unsafe frame. The active
 candidate persists retreat until it actually reaches that anchor.
+It is uploaded inert as **wowborg:v120**
+(`851c62e2-2a32-4e8d-8501-18067e495a30`, source `0e2a8fb`); hosted proof is pending.
 
 ### Previous 0.1.208 movement baseline
 

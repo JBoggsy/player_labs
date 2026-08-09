@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v120 - persistent safe-anchor retreat (2026-08-09)
+
+- Version UUID: `851c62e2-2a32-4e8d-8501-18067e495a30` (`wowborg:v120`, uploaded
+  inert; not submitted). Built from source `0e2a8fb` against canonical vanilla-wow 0.1.209.
+- Once retreat starts, it now persists to the frozen safe anchor even if moving patrols briefly
+  restore candidate clearance. Geometry, actuator control, and combat behavior are unchanged.
+  Hosted proof is pending.
+
 ## v119 - diagonal retreat wrapper support (2026-08-09)
 
 - Version UUID: `635748f7-56bd-4295-abed-59ddf4e82f98` (`wowborg:v119`, uploaded
