@@ -1123,6 +1123,10 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    ramp arrival only from about 202 to 190 seconds, while producing up to three earlier pulls in one
    episode and one ramp death. The next source candidate restores the proven one-second clear stride
    before changing hazard-path efficiency.
+   With the safe stride restored, the active source candidate changes only local bypass geometry:
+   40 yards forward rather than 20, with the same adaptive 30/45/60-yard lateral choices and
+   mandatory 20-yard segment clearance. This remains inside the 60-yard lookahead and 80-yard
+   tracking horizons while reducing lateral path waste.
 
 ## Reference
 

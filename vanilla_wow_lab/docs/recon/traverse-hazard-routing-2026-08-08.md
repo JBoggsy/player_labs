@@ -762,6 +762,10 @@ representative ramp-arrival gain (about 202 to 190 seconds). Longer blind transl
 to three earlier pulls in one episode and one ramp death. This is an unacceptable survival trade;
 the next source candidate restores the proven one-second clear stride before changing hazard-path
 efficiency.
+With that safe stride restored, the active source candidate changes only local bypass geometry:
+40 yards forward rather than 20, with the same adaptive 30/45/60-yard lateral choices and mandatory
+20-yard segment clearance. The longer tangent remains inside the 60-yard lookahead and 80-yard
+tracking horizons while spending less movement crossing the road instead of advancing.
 
 ## Open uncertainties
 
