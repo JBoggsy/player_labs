@@ -9,6 +9,12 @@
   are unchanged.
 - Route geometry, terrain holds, ordinary-road avoidance, and all other-contact behavior are
   unchanged. This isolates fight activation and realized time-to-kill from the v157 null probes.
+- Six-run request `xreq_903ae02b-bfc0-4f52-9150-8164d764711e` produced two exact
+  proactive activations (level 40 at 5.0 yards and level 41 at 7.7 yards), but neither attacked.
+  Both repeatedly invoked Cat Form while Travel Form was active; host telemetry returned "You are
+  in shapeshift form" until the episode deadline. The next candidate follows the maintained
+  real-playerbot transition: invoke the observed current-form binding to leave Travel Form, then
+  enter Cat on the next frame.
 
 ## v157 - focused constrained-ramp feral fight (2026-08-09)
 

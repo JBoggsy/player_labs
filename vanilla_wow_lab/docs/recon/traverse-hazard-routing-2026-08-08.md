@@ -708,6 +708,12 @@ proactively moves to and attacks the same uniquely qualifying sub-eight-yard Sco
 contacts retain avoidance/escape.
 That candidate is uploaded inert as **wowborg:v158**
 (`6d531041-bc99-4755-a0c8-9a4d10457391`, source `4d0a8af`).
+Six-run request `xreq_903ae02b-bfc0-4f52-9150-8164d764711e` produced two exact
+proactive activations: a level-40 Scorpid at 5.0 yards and a level-41 Scorpid at 7.7 yards. Neither
+reached attack. Both repeatedly invoked Cat Form while Travel Form was active, and host telemetry
+reported "You are in shapeshift form" until deadline. This is a form-transition defect, not a
+combat-strength result. The next source candidate follows the maintained real-playerbot pattern:
+invoke the observed active-form binding to leave Travel Form, then enter Cat on the next frame.
 
 ## Open uncertainties
 

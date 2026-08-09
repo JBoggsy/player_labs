@@ -609,6 +609,7 @@ def _cast_feral_spell(bridge, frame, spell_ids, *, purpose: str, trace) -> bool:
         "traverse_combat_feral_spell",
         activation=1,
         spell_id=spell_id,
+        purpose=purpose,
         success=outcome is not None and outcome.success,
         detail=outcome.detail if outcome is not None else "unsettled",
     )
@@ -616,6 +617,16 @@ def _cast_feral_spell(bridge, frame, spell_ids, *, purpose: str, trace) -> bool:
 
 
 def _fight_ramp_scorpid(bridge, navigator, frame, attacker, trace) -> bool:
+    if frame.shapeshift_form_known and frame.shapeshift_form_id not in (0, 1):
+        if not frame.shapeshift_form_spell_known:
+            return False
+        return _cast_feral_spell(
+            bridge,
+            frame,
+            (frame.shapeshift_form_spell_id,),
+            purpose="leave the current form before constrained-ramp combat",
+            trace=trace,
+        )
     if not frame.shapeshift_form_known or frame.shapeshift_form_id != 1:
         return _cast_feral_spell(
             bridge,

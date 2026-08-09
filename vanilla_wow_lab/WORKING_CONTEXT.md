@@ -1078,6 +1078,11 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    qualifying sub-eight-yard resident rather than waiting for it to wander into aggro.
    That candidate is uploaded inert as **wowborg:v158**
    (`6d531041-bc99-4755-a0c8-9a4d10457391`, source `4d0a8af`).
+   Six-run request `xreq_903ae02b-bfc0-4f52-9150-8164d764711e` produced two exact
+   proactive activations, but both repeatedly tried Cat Form while still in Travel Form; host
+   telemetry reported "You are in shapeshift form" until deadline. The next source candidate first
+   invokes the observed active-form binding to leave Travel Form, matching maintained real-playerbot,
+   then enters Cat on the next frame.
 
 ## Reference
 
