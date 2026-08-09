@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v193 - continuous combat closing (2026-08-09)
+
+- Version UUID: `a48ff023-0235-451d-b304-388e62bfa532` (`wowborg:v193`, uploaded
+  inert; not submitted). Built from source `fd16621` against canonical vanilla-wow 0.1.209.
+- Enforces the proven 2.5-yard melee gate throughout each fight, including after auto-attack has
+  acquired the target. A target that moves during a spell-settlement window is actively closed on
+  again before the rotation or auto-attack continues.
+- V192's failed-ability memory remains active. Routing, hazard clearance, staged descent, and
+  action cadence are unchanged. Hosted evaluation is pending.
+
 ## v192 - failed combat ability fallback (2026-08-09)
 
 - Version UUID: `4d43b00a-971e-4cb7-8529-c77b1e73087c` (`wowborg:v192`, uploaded
