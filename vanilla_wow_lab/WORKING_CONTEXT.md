@@ -1322,7 +1322,12 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    the descent at the observed first-impact landing `(-6670.58, -4031.42, 27.69)`, and keeps the
    maintained Rejuvenation rank active across both precise Cat-Form drop legs. This is uploaded
    inert as **wowborg:v190** (`e0426ef5-965e-4b6a-b1c6-1ae65b4931b7`, source `5279e9f`); hosted
-   evaluation is pending.
+   request `xreq_e200bf62-71f2-4ab1-90fe-474c4898916e` kept all 12 runs alive but did not reach the
+   descent. Three runs reached ascent point 15; the new behavior remains unexercised and safe-route
+   throughput is still limiting. The active source adds 20- and 25-yard lateral detour candidates
+   ahead of the existing 30/45/60-yard choices while retaining the proven 20-yard clearance floor.
+   This is uploaded inert as **wowborg:v191** (`7b3ab0cf-2a1a-4a27-ad1c-08845f10bef4`, source
+   `c79c00f`); hosted evaluation is pending.
 
 ## Reference
 

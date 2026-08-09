@@ -990,7 +990,13 @@ to about z75 and reports no connected path to the lower-road component. The acti
 the maintained Rejuvenation rank active across both precise Cat-Form drop legs. This explicitly
 manages two disconnected drops rather than claiming a walkable ramp. The candidate is uploaded
 inert as **wowborg:v190** (`e0426ef5-965e-4b6a-b1c6-1ae65b4931b7`, source `5279e9f`); hosted
-evaluation is pending.
+request `xreq_e200bf62-71f2-4ab1-90fe-474c4898916e` kept all 12 runs alive but did not reach the
+descent. Three runs reached ascent point 15; the staged landing/Rejuvenation behavior remains
+unexercised. The active source attacks safe routing churn without lowering the safety threshold: it
+adds 20- and 25-yard lateral candidates ahead of the existing 30/45/60-yard detours, while every
+candidate must still satisfy the proven 20-yard predicted-clearance floor. This is uploaded inert
+as **wowborg:v191** (`7b3ab0cf-2a1a-4a27-ad1c-08845f10bef4`, source `c79c00f`); hosted evaluation
+is pending.
 
 ## Open uncertainties
 

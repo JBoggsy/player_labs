@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v191 - narrower safe detour candidates (2026-08-09)
+
+- Version UUID: `7b3ab0cf-2a1a-4a27-ad1c-08845f10bef4` (`wowborg:v191`, uploaded
+  inert; not submitted). Built from source `c79c00f` against canonical vanilla-wow 0.1.209.
+- Adds 20- and 25-yard lateral candidates ahead of the existing 30/45/60-yard detours. Every
+  candidate still must satisfy the proven 20-yard predicted-clearance floor.
+- V190 combat, staged descent, route geometry, and cadence are unchanged. Hosted evaluation is
+  pending.
+
 ## v190 - staged Rejuvenated descent (2026-08-09)
 
 - Version UUID: `e0426ef5-965e-4b6a-b1c6-1ae65b4931b7` (`wowborg:v190`, uploaded
@@ -9,7 +18,10 @@
   Rejuvenation rank active across both precise Cat-Form descent legs.
 - Pinned-navmesh planning confirms the upper component ends around z75 and does not connect to the
   lower road component; this explicitly manages two drops rather than treating the chord as a
-  walkable ramp. Hosted evaluation is pending.
+  walkable ramp.
+- Hosted request `xreq_e200bf62-71f2-4ab1-90fe-474c4898916e` kept all 12 runs alive but did not
+  reach the descent, so the landing/Rejuvenation behavior remains unexercised. Three runs reached
+  ascent point 15; safe-route throughput remains the limiting factor.
 
 ## v189 - twelve-yard clearance with reactive combat (2026-08-09)
 
