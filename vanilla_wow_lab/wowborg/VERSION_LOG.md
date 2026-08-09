@@ -2,7 +2,8 @@
 
 ## v200 - far-clear adaptive stride (2026-08-09)
 
-- Upload pending.
+- Version UUID: `287e4a0a-0a72-435e-9357-6ba89cfcb234` (`wowborg:v200`, uploaded
+  inert; not submitted). Built from source `1a7f63e` against canonical vanilla-wow 0.1.209.
 - Reverts V199's proactive-fight expansion. Keeps the proven one-second open stride whenever any
   hostile is visible within the router's 80-yard tracking radius, and uses the 1.5-second contract
   maximum only when that tracked set is empty.
