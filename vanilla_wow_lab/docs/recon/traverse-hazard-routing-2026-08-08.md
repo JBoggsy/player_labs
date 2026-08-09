@@ -706,6 +706,8 @@ approach healthy and held for 82 seconds, but the resident never wandered into a
 fight therefore does not convert the hold into a bounded edge cost. The next source candidate
 proactively moves to and attacks the same uniquely qualifying sub-eight-yard Scorpid; all other
 contacts retain avoidance/escape.
+That candidate is uploaded inert as **wowborg:v158**
+(`6d531041-bc99-4755-a0c8-9a4d10457391`, source `4d0a8af`).
 
 ## Open uncertainties
 

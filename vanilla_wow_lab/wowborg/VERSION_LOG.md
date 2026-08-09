@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v158 - proactive constrained-ramp Scorpid pull (2026-08-09)
+
+- Version UUID: `6d531041-bc99-4755-a0c8-9a4d10457391` (`wowborg:v158`, uploaded
+  inert; not submitted). Built from source `4d0a8af` against canonical vanilla-wow 0.1.209.
+- When the exact v157 fight gate sees one qualifying Scorpid inside eight yards before combat,
+  wowborg now closes to melee and attacks proactively. The feral rotation and multi-attacker abort
+  are unchanged.
+- Route geometry, terrain holds, ordinary-road avoidance, and all other-contact behavior are
+  unchanged. This isolates fight activation and realized time-to-kill from the v157 null probes.
+
 ## v157 - focused constrained-ramp feral fight (2026-08-09)
 
 - Version UUID: `e8629df4-2707-4729-9514-a9dcb14d512d` (`wowborg:v157`, uploaded

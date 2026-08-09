@@ -1076,6 +1076,8 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    activations: three runs exhausted on the variable road prefix, and the one ramp arrival held
    healthy for 82 seconds without a pull. The next source candidate proactively closes on the exact
    qualifying sub-eight-yard resident rather than waiting for it to wander into aggro.
+   That candidate is uploaded inert as **wowborg:v158**
+   (`6d531041-bc99-4755-a0c8-9a4d10457391`, source `4d0a8af`).
 
 ## Reference
 
