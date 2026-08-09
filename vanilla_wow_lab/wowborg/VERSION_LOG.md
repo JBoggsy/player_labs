@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v209 - accept crossed lower descent edges (2026-08-09)
+
+- Version UUID: `50dc3a2d-b8ad-47a9-af22-8490590d7122` (`wowborg:v209`, uploaded
+  inert; not submitted). Built from source `e52051f` against canonical vanilla-wow 0.1.209.
+- Preserves V208's one aligned jump per dense descent leg, then accepts the edge when wowborg has
+  crossed the target northing plane within the measured 8-yard lateral / 10-yard vertical landing
+  envelope. Route geometry, combat, and hazard thresholds are unchanged.
+
 ## v208 - jump once per lower descent edge (2026-08-09)
 
 - Version UUID: `7453834b-a830-484d-8518-59345c8bc375` (`wowborg:v208`, uploaded

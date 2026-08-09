@@ -1410,7 +1410,8 @@ reached descent point 9, and all failed point 10: the one-shot jump crossed down
 landings remained 4.0–4.5 yards from the navmesh coordinate, outside its 3-yard exact arrival
 radius. Exact steering then turned back toward the unreachable point. The active source accepts a
 jump edge after the character crosses the target northing plane inside an 8-yard lateral and
-10-yard vertical landing envelope.
+10-yard vertical landing envelope. This candidate is uploaded inert as **wowborg:v209**
+(`50dc3a2d-b8ad-47a9-af22-8490590d7122`, source `e52051f`).
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.
