@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v173 - time-aligned patrol clearance (2026-08-09)
+
+- Version UUID: `1fdac500-2bbf-4024-87f7-a9fd9be76a22` (`wowborg:v173`, uploaded
+  inert; not submitted). Built from source `54459a9` against canonical vanilla-wow 0.1.209.
+- Computes route clearance over simultaneous player and observed patrol motion, then treats a
+  patrol as stationary at its destination for any remaining player travel time.
+- Preserves the 20-yard safety threshold and prior swept-path fallback when timing is unavailable;
+  steep-edge jumps, combat, route geometry, and all other behavior are unchanged from v172.
+- Hosted evaluation is pending.
+
 ## v172 - explicit steep-edge jumps (2026-08-09)
 
 - Version UUID: `be0167b1-0275-4c39-aabf-a50fc8f0be19` (`wowborg:v172`, uploaded

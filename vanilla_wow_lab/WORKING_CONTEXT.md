@@ -1200,9 +1200,11 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    alive. One reached ramp-base at 180.9 seconds, then climbed through ascent point 08 (above z111)
    before the 270-second deadline—the first verified steep-pass progress. It still incurred 49
    avoidance starts, 13 side switches, and 33 retreats; three other runs stalled near Tanaris
-   waypoint 3. The active source now time-aligns observed player and patrol motion for segment
+   waypoint 3. **wowborg:v173** (`1fdac500-2bbf-4024-87f7-a9fd9be76a22`, source
+   `54459a9`) is uploaded inert to time-align observed player and patrol motion for segment
    clearance. It retains the 20-yard safety threshold and conservative swept fallback whenever
-   timing is absent; only false crossings that occur at different times become clear.
+   timing is absent; only false crossings that occur at different times become clear. Its hosted
+   evaluation is pending.
 
 ## Reference
 
