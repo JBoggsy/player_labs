@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v205 - measured twelve-yard road clearance (2026-08-09)
+
+- Version UUID: `b42b0712-9d24-4319-a490-71f41a41d80c` (`wowborg:v205`, uploaded
+  inert; not submitted). Built from source `4d38661` against canonical vanilla-wow 0.1.209.
+- Retests the measured 12-yard global predicted-clearance floor—roughly twice the observed
+  5–7-yard ordinary aggro radius—on top of the repaired combat and dense jump-aware descent.
+  Local projected-add admission and multi-attacker escape gates are unchanged.
+
 ## v204 - jump-aware lower Shimmering Flats descent (2026-08-09)
 
 - Version UUID: `7a4d1034-36ed-4d06-ac31-aa4a0fe78434` (`wowborg:v204`, uploaded
