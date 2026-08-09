@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v118 - diagonal precise retreat (2026-08-09)
+
+- Version UUID: `2e5125da-9fa8-43b7-a8e4-73808d86f8ef` (`wowborg:v118`, uploaded
+  inert; not submitted). Built from source `2982c92` against canonical vanilla-wow 0.1.209.
+- Adds signed strafe only to precise safe-anchor translation when residual heading exceeds
+  22.5 degrees, selecting the closer 45-degree movement direction. Turn duration, ordinary route
+  steering, hazard geometry, and escape-only combat are unchanged. Hosted proof is pending.
+
 ## v117 - quantized precise turns (2026-08-09)
 
 - Version UUID: `6e2b8986-7233-4eca-9412-fcb2f03353ae` (`wowborg:v117`, uploaded

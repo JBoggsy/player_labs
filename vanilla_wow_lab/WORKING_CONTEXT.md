@@ -106,7 +106,8 @@ accepted a 39-degree residual heading, moved forward on the wrong diagonal, pass
 Gazer at 3.68 yards, and died after three guidepoints. The active candidate uses the contract's
 left/right strafe axis when residual error exceeds 22.5 degrees, reducing precise translation
 error to at most 22.5 degrees without changing turn duration, ordinary steering, or hazard
-geometry.
+geometry. It is uploaded inert as **wowborg:v118**
+(`2e5125da-9fa8-43b7-a8e4-73808d86f8ef`, source `2982c92`); hosted proof is pending.
 
 ### Previous 0.1.208 movement baseline
 
