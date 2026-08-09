@@ -6,7 +6,11 @@
   inert; not submitted). Built from source `41ed1b2` against canonical vanilla-wow 0.1.209.
 - Adds the pinned corridor's shallow `(-7129,-3767)` turn as an exact anchor before the final
   Detour-east diagonal. Cadence, hazard behavior, and refined ramp geometry are unchanged.
-- Hosted Traverse proof is pending.
+- First request `xreq_b3f7b4b0-d3ab-447b-a4d2-94505149ad67` was censored before
+  the changed bend by unrelated early hazard displacement. Fair repeat
+  `xreq_df6ba150-777d-4417-a4cd-02256116bc59` proved the new turn and final
+  Detour-east anchor at full health with zero combat, but ordinary node 9 incorrectly passed 51.6
+  vertical yards below its target and began the ramp below terrain.
 
 ## v145 - leg-sensitive Traverse settlement cadence (2026-08-09)
 

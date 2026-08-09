@@ -331,7 +331,15 @@ Pinned 0.1.209 navmesh shows the corridor stays shallow to `(-7129,-3767)` befor
 southeast; direct steering forced the diagonal too early. The active candidate adds that real turn
 as an exact anchor so crossing no longer depends on v139's lucky left unstick.
 It is uploaded inert as **wowborg:v146**
-(`8fe6eaee-e885-4117-bc6e-b5b10035d602`, source `41ed1b2`); hosted Traverse proof is pending.
+(`8fe6eaee-e885-4117-bc6e-b5b10035d602`, source `41ed1b2`). First request
+`xreq_b3f7b4b0-d3ab-447b-a4d2-94505149ad67` was censored by unrelated early
+hazard displacement before the changed bend. Fair repeat
+`xreq_df6ba150-777d-4417-a4cd-02256116bc59` proved the new exact turn and final
+Detour-east anchor at full health with zero combat, but exposed an upstream completion defect:
+ordinary node 9 passed at z `-22.7` versus target z `28.9` because its 60-yard pass tolerance
+combined y and z. The ramp therefore began below terrain and repeatedly fell/reset. The active
+candidate retains 60 yards of horizontal hazard-displacement slack but requires vertical error at
+most 10 yards before an ordinary milestone can pass.
 
 ### Previous 0.1.208 movement baseline
 

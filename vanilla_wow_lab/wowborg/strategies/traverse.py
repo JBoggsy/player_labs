@@ -32,6 +32,7 @@ GREAT_LIFT_EXIT_Z = 80.0
 TRAVERSE_INPUT_SECONDS = 0.75
 ROAD_ARRIVAL_RADIUS_YARDS = 8.0
 ROAD_PASS_LATERAL_YARDS = 60.0
+ROAD_PASS_VERTICAL_YARDS = 10.0
 ROAD_PASS_NORTHING_SLACK_YARDS = 20.0
 ROAD_STALL_SECONDS = 8.0
 ROAD_UNSTICK_ATTEMPTS = 2
@@ -557,20 +558,20 @@ def _steer_road_leg(
                 frame.location.y,
                 frame.location.z,
             ), ""
-        lateral_distance = math.dist(
-            (frame.location.y, frame.location.z),
-            (target.y, target.z),
-        )
+        lateral_distance = abs(frame.location.y - target.y)
+        vertical_distance = abs(frame.location.z - target.z)
         if (
             allow_northing_pass
             and frame.location.x >= target.x - ROAD_PASS_NORTHING_SLACK_YARDS
             and lateral_distance <= ROAD_PASS_LATERAL_YARDS
+            and vertical_distance <= ROAD_PASS_VERTICAL_YARDS
         ):
             trace(
                 "traverse_road_guidepoint_passed",
                 activation=1,
                 distance=round(distance, 3),
                 lateral_distance=round(lateral_distance, 3),
+                vertical_distance=round(vertical_distance, 3),
             )
             return Point(
                 frame.location.map_id,
