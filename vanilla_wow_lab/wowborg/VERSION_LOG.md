@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v116 - angular-error precise turns (2026-08-09)
+
+- Version UUID: `b5ccf41d-92bd-499d-90cc-a6289c987f1a` (`wowborg:v116`, uploaded
+  inert; not submitted). Built from source `217902a` against canonical vanilla-wow 0.1.209.
+- Changes only precise safe-anchor turning: duration is remaining angular error divided by the
+  documented pi-radian/second turn rate, capped at 0.25 seconds. This removes v115's 45-degree
+  sign-flip loop without changing ordinary route steering, hazard geometry, or combat behavior.
+  Hosted proof is pending.
+
 ## v115 - precise safe-anchor arrival (2026-08-09)
 
 - Version UUID: `1035e292-5f91-4e18-9398-89161c4bc14a` (`wowborg:v115`, uploaded

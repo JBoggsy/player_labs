@@ -91,7 +91,8 @@ alternating fixed 0.25-second turn pulses around the safe-anchor heading. At the
 pi-radian/second turn rate, each pulse rotates about 45 degrees and overshoots the 0.20-radian
 deadband. The active source candidate changes only precise-turn duration to remaining angular
 error divided by the turn rate, capped at 0.25 seconds; ordinary steering and hazard geometry are
-unchanged.
+unchanged. It is uploaded inert as **wowborg:v116**
+(`b5ccf41d-92bd-499d-90cc-a6289c987f1a`, source `217902a`); hosted proof is pending.
 
 ### Previous 0.1.208 movement baseline
 
