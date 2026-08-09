@@ -1214,8 +1214,9 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    `xreq_b10b0b04-3bc4-4d63-8264-19353a0b3e5c` kept every run alive. Four
    reached the climb base and crossed the formerly impassable climb; one continued through
    mountain-pass ascent point 15, the best frontier yet. Three overshot road point 9 vertically at
-   z48–71 instead of z29. The active source splits that path at the navmesh's measured z34 crest,
-   ending explicit jumps there before walking downhill to road point 9.
+   z48–71 instead of z29. **wowborg:v175** (`069a5fea-de02-4969-afd2-62c6b83f585b`, source
+   `63413c5`) is uploaded inert with that path split at the navmesh's measured z34 crest, ending
+   explicit jumps there before walking downhill to road point 9. Its hosted evaluation is pending.
 
 ## Reference
 

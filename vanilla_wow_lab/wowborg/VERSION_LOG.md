@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v175 - split the road-9 climb at its crest (2026-08-09)
+
+- Version UUID: `069a5fea-de02-4969-afd2-62c6b83f585b` (`wowborg:v175`, uploaded
+  inert; not submitted). Built from source `63413c5` against canonical vanilla-wow 0.1.209.
+- Ends the new road-9 jump edge at the navmesh's measured z34 crest, then resumes ordinary downhill
+  movement to road point 9. All other v174 behavior is unchanged.
+- Hosted evaluation is pending.
+
 ## v174 - jump the Tanaris road-9 climb (2026-08-09)
 
 - Version UUID: `73f5f8cb-d6e9-41f4-ab30-e43e73208496` (`wowborg:v174`, uploaded

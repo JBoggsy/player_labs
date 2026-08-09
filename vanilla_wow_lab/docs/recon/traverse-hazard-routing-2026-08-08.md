@@ -859,7 +859,9 @@ reached the climb base and all crossed the formerly impassable climb; one contin
 mountain-pass ascent point 15, the best Traverse frontier yet. Three crossed but overshot road
 point 9 vertically at z48–71 instead of z29, while two earlier runs ended on action-settlement
 timeouts. The active source therefore splits the edge at the measured high point
-`(-6960.11, -3851.44, 34.04)`: jump to that crest, then walk downhill to road point 9.
+`(-6960.11, -3851.44, 34.04)`: jump to that crest, then walk downhill to road point 9. This is
+uploaded inert as **wowborg:v175** (`069a5fea-de02-4969-afd2-62c6b83f585b`, source `63413c5`); its
+hosted evaluation is pending.
 
 ## Open uncertainties
 
