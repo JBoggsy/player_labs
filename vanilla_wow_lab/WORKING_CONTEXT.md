@@ -134,6 +134,8 @@ It is uploaded inert as **wowborg:v121**
 Glasshide Gazer closed from 17.5 to 15.3 yards and acquired wowborg; escape then tripped the
 route-progress watchdog. The active candidate replaces stationary unsafe-anchor waiting with
 quantized movement away from the active corridor hazards until a safe bypass reopens.
+It is uploaded inert as **wowborg:v122**
+(`da731748-bd0b-47c6-8b41-8893ba8cb59f`, source `475f58b`); hosted proof is pending.
 
 ### Previous 0.1.208 movement baseline
 

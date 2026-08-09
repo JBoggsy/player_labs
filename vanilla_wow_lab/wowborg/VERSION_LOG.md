@@ -1,5 +1,12 @@
 # wowborg version log
 
+## v122 - mobile unsafe-anchor holding (2026-08-09)
+
+- Version UUID: `da731748-bd0b-47c6-8b41-8893ba8cb59f` (`wowborg:v122`, uploaded
+  inert; not submitted). Built from source `475f58b` against canonical vanilla-wow 0.1.209.
+- At an unsafe safe-anchor, uses quantized eight-direction movement away from the active corridor
+  hazards until a safe candidate reopens instead of waiting in place. Hosted proof is pending.
+
 ## v121 - quantized persistent retreat (2026-08-09)
 
 - Version UUID: `377a2f3e-215e-4425-8f98-06d540db6c47` (`wowborg:v121`, uploaded
