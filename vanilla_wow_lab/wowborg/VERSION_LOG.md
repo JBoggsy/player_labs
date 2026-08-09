@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v208 - jump once per lower descent edge (2026-08-09)
+
+- Version UUID: `7453834b-a830-484d-8518-59345c8bc375` (`wowborg:v208`, uploaded
+  inert; not submitted). Built from source `a311ca3` against canonical vanilla-wow 0.1.209.
+- Keeps continuous jumps on the proven ascent, but each dense lower descent leg now issues at most
+  one aligned jump request and then walks precisely to settle the guidepoint. Combat, hazard
+  thresholds, and route geometry are unchanged from V207.
+
 ## v207 - finish ranged fallback casts (2026-08-09)
 
 - Version UUID: `71d3f6d7-e2fe-4ead-b69d-d0ab58a106c1` (`wowborg:v207`, uploaded

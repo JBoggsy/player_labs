@@ -1403,7 +1403,8 @@ candidate is uploaded inert as **wowborg:v207**
 activated without a death. Three runs reached descent point 9, but continuous jump input toward
 point 10 bounced uphill from about z71 to z94 and oscillated until the horizon. The active source
 keeps continuous jumps on the proven ascent but uses only one edge-crossing jump per dense lower
-descent guidepoint, then walks precisely to settle that point.
+descent guidepoint, then walks precisely to settle that point. This candidate is uploaded inert as
+**wowborg:v208** (`7453834b-a830-484d-8518-59345c8bc375`, source `a311ca3`).
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.
