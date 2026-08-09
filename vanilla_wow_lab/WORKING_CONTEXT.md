@@ -1055,6 +1055,12 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    to 8 yards, retaining margin over the measured 5–7-yard visible aggro radius.
    That candidate is uploaded inert as **wowborg:v155**
    (`1345f357-a3eb-414d-9942-7fe54be5e726`, source `e7fc2c4`).
+   Its request `xreq_801ccdf9-44a7-4f37-8b2e-e5a294999fd1` reached ramp-turn
+   milestone 19, pulled the Scorpid at 4.9 yards, and died after generic lateral evasion had left
+   the supported ramp. Pinned-navmesh recon found no connected bypass: complete paths converge
+   within about 4.5 yards, while 9–10-yard-clearance offsets terminate on disconnected ledges.
+   The next source candidate holds for every sub-eight-yard constrained-ramp hazard and suppresses
+   lateral evasion there, establishing a supported frontier before adding any combat behavior.
 
 ## Reference
 

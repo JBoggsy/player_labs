@@ -9,6 +9,12 @@
   route to approach the recurring Scorpid 6.4 yards from the ramp-turn anchor.
 - Ordinary-road hazard avoidance, crossing holds, route geometry, and arrival precision are
   unchanged from v154.
+- Request `xreq_801ccdf9-44a7-4f37-8b2e-e5a294999fd1` reached ramp-turn milestone
+  19, but pulled the Scorpid at 4.9 yards and died after falling from the ramp during the preceding
+  stationary-hostile evasion. Pinned-navmesh recon found no connected bypass: complete paths pass
+  within about 4.5 yards of the Scorpid, while 9–10-yard-clearance offsets end on disconnected
+  ledges. The next candidate makes every sub-eight-yard ramp hazard a hold and suppresses all
+  open-road lateral evasion on terrain-constrained anchors.
 
 ## v154 - broad ramp approach arrival (2026-08-09)
 

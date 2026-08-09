@@ -47,7 +47,7 @@ ROAD_HAZARD_TRACK_YARDS = 80.0
 ROAD_HAZARD_FORWARD_YARDS = 20.0
 ROAD_HAZARD_LATERAL_YARDS = (30.0, 45.0, 60.0)
 ROAD_HAZARD_MIN_CLEARANCE_YARDS = 20.0
-ROAD_TIGHT_RESIDENT_HOLD_YARDS = 8.0
+ROAD_TIGHT_HAZARD_HOLD_YARDS = 8.0
 ROAD_HAZARD_HOLD_RADIUS_YARDS = 2.0
 ROAD_HAZARD_SWITCH_MARGIN_YARDS = 5.0
 ROAD_EXACT_GUIDEPOINTS = frozenset(
@@ -269,7 +269,7 @@ def _hazard_avoidance_target(
     *,
     side: float | None,
     active_holding_guids: set[str],
-    hold_resident_hazards: bool = False,
+    hold_terrain_hazards: bool = False,
 ):
     route_x = target.x - frame.location.x
     route_y = target.y - frame.location.y
@@ -353,16 +353,16 @@ def _hazard_avoidance_target(
         )
         <= ROAD_HAZARD_RESIDENT_RADIUS_YARDS
     ]
-    imminent_resident_hazards = [
-        unit
-        for unit in resident_hazards
-        if unit.distance <= ROAD_TIGHT_RESIDENT_HOLD_YARDS
-    ]
-    if hold_resident_hazards and imminent_resident_hazards:
+    terrain_hazards_by_guid = {
+        unit.guid: unit
+        for unit in (*immediate_hazards, *resident_hazards)
+        if unit.distance <= ROAD_TIGHT_HAZARD_HOLD_YARDS
+    }
+    if hold_terrain_hazards and terrain_hazards_by_guid:
         return (
             target,
             None,
-            imminent_resident_hazards,
+            list(terrain_hazards_by_guid.values()),
             tracked,
             {},
             {},
@@ -378,13 +378,10 @@ def _hazard_avoidance_target(
             {},
             True,
         )
-    resident_guids = {unit.guid for unit in resident_hazards}
-    hazards_by_guid = {
-        unit.guid: unit
-        for unit in immediate_hazards
-        if not (hold_resident_hazards and unit.guid in resident_guids)
-    }
-    if not hold_resident_hazards:
+    hazards_by_guid = (
+        {} if hold_terrain_hazards else {unit.guid: unit for unit in immediate_hazards}
+    )
+    if not hold_terrain_hazards:
         hazards_by_guid.update((unit.guid, unit) for unit in resident_hazards)
     hazards = list(hazards_by_guid.values())
     if not hazards:
@@ -547,7 +544,7 @@ def _steer_road_leg(
     avoidance: HazardAvoidanceState,
     allow_northing_pass: bool,
     arrival_radius: float,
-    hold_resident_hazards: bool,
+    hold_terrain_hazards: bool,
 ):
     settle_pause_interval = (
         1 if not allow_northing_pass else ROAD_SETTLE_PAUSE_INTERVAL
@@ -699,7 +696,7 @@ def _steer_road_leg(
                 target,
                 side=avoidance.side,
                 active_holding_guids=avoidance.holding_guids,
-                hold_resident_hazards=hold_resident_hazards,
+                hold_terrain_hazards=hold_terrain_hazards,
             )
         if should_hold:
             if not avoidance.holding:
@@ -707,8 +704,8 @@ def _steer_road_leg(
                     "traverse_hazard_hold",
                     activation=1,
                     reason=(
-                        "terrain_constrained_resident"
-                        if hold_resident_hazards
+                        "terrain_constrained_hazard"
+                        if hold_terrain_hazards
                         else "projected_crossing"
                     ),
                     hazards=[
@@ -1167,7 +1164,7 @@ class TraverseStrategy:
                             if name in ROAD_TIGHT_ARRIVAL_GUIDEPOINTS
                             else ROAD_ARRIVAL_RADIUS_YARDS
                         ),
-                        hold_resident_hazards=(
+                        hold_terrain_hazards=(
                             name in ROAD_TERRAIN_CONSTRAINED_GUIDEPOINTS
                         ),
                     )

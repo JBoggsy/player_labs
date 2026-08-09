@@ -672,6 +672,16 @@ route even though ordinary level-gap aggro was measured at 5–7 yards. The next
 changes only that floor to 8 yards. Ordinary-road avoidance and route geometry remain unchanged.
 It is uploaded inert as **wowborg:v155**
 (`1345f357-a3eb-414d-9942-7fe54be5e726`, source `e7fc2c4`).
+Request `xreq_801ccdf9-44a7-4f37-8b2e-e5a294999fd1` reached ramp-turn milestone 19,
+then pulled the Scorpid at 4.9 yards and died. The important precursor was geometric: generic
+lateral evasion for the stationary Scorpid had already moved wowborg off the supported ramp, with
+observed z falling through 25, 18, 10, and -35 before the host returned it to the requested
+anchor. A pinned 0.1.209 navmesh offset sweep found that complete approach-to-base paths converge
+within about 4.5 yards of the Scorpid; candidates with 9–10 yards of clearance terminate on a
+disconnected ledge. There is no legitimate geometric bypass. The next source candidate treats
+every immediate or resident hazard inside eight yards as a hold on terrain-constrained anchors
+and suppresses open-road lateral evasion there. This should establish a supported pre-fight
+frontier without yet changing combat.
 
 ## Open uncertainties
 
