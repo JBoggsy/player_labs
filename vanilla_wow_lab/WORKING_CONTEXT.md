@@ -1418,6 +1418,8 @@ The complete lower descent took 19 seconds in the best run, validating edge acce
 run spent 86 seconds on the 16 exact ascent points and reached the south road at 267 seconds. The
 active source accepts a climb edge once wowborg reaches its target height with 3 yards of vertical
 slack inside an 8-yard planar envelope, avoiding exact-coordinate cleanup after a successful jump.
+This candidate is uploaded inert as **wowborg:v210**
+(`b88c0e66-569b-456d-b2ce-fcf376ef0460`, source `e3a0490`).
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.

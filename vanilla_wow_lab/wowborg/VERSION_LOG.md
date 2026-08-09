@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v210 - accept crossed ascent edges (2026-08-09)
+
+- Version UUID: `b88c0e66-569b-456d-b2ce-fcf376ef0460` (`wowborg:v210`, uploaded
+  inert; not submitted). Built from source `e3a0490` against canonical vanilla-wow 0.1.209.
+- Keeps continuous climb jumps, but accepts a steep ascent edge after reaching the target height
+  with 3 yards of vertical slack inside an 8-yard planar envelope. Descent, route geometry, combat,
+  and hazard thresholds are unchanged from V209.
+
 ## v209 - accept crossed lower descent edges (2026-08-09)
 
 - Version UUID: `50dc3a2d-b8ad-47a9-af22-8490590d7122` (`wowborg:v209`, uploaded
