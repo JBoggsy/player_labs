@@ -8,7 +8,11 @@
   the next frame falls through to another ability or exact-attacker auto-attack instead of
   retrying the same failed cast until death.
 - V191 routing, hazard clearance, staged descent, and action cadence are unchanged. Hosted
-  evaluation is pending.
+  request `xreq_d9d6f356-e550-4c19-a2c5-51476ab884ba` kept 10 of 12 runs alive. The fallback
+  correctly advanced from one failed Rake to one failed Claw instead of retrying either family,
+  but two reactive fights still held an auto-attack target without dealing damage until death.
+  Both traces stopped rechecking melee distance once `auto_attack_guid` was populated; the next
+  candidate keeps closing whenever the live target moves beyond the proven 2.5-yard gate.
 
 ## v191 - narrower safe detour candidates (2026-08-09)
 

@@ -758,37 +758,37 @@ def _fight_traverse_attacker(
             purpose="enter Cat Form for traverse combat",
             trace=trace,
         )
+    if (
+        attacker.combat_distance_known
+        and attacker.combat_distance > FERAL_MELEE_CLOSE_YARDS
+    ):
+        request_id = (
+            _steer_toward(
+                bridge,
+                frame,
+                attacker.location,
+                purpose="close on the traverse attacker in combat",
+                precise_arrival=True,
+            )
+            if frame.in_combat
+            else bridge.select_move_to(
+                frame,
+                attacker.location.x,
+                attacker.location.y,
+                attacker.location.z,
+                frame.location.map_id,
+            )
+        )
+        if request_id is None:
+            return False
+        trace(
+            "traverse_combat_fight_closing",
+            activation=1,
+            distance=round(attacker.combat_distance, 3),
+            proactive=not frame.in_combat,
+        )
+        return True
     if frame.auto_attack_guid != attacker.guid:
-        if (
-            attacker.combat_distance_known
-            and attacker.combat_distance > FERAL_MELEE_CLOSE_YARDS
-        ):
-            request_id = (
-                _steer_toward(
-                    bridge,
-                    frame,
-                    attacker.location,
-                    purpose="close on the traverse attacker in combat",
-                    precise_arrival=True,
-                )
-                if frame.in_combat
-                else bridge.select_move_to(
-                    frame,
-                    attacker.location.x,
-                    attacker.location.y,
-                    attacker.location.z,
-                    frame.location.map_id,
-                )
-            )
-            if request_id is None:
-                return False
-            trace(
-                "traverse_combat_fight_closing",
-                activation=1,
-                distance=round(attacker.combat_distance, 3),
-                proactive=not frame.in_combat,
-            )
-            return True
         if not frame.in_combat:
             request_id = bridge.select_target_action(frame, "attack", attacker.guid)
             if request_id is None:
