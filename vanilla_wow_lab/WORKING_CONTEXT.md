@@ -199,7 +199,13 @@ omits a required bend through `(-7194,-3733)`, `(-7172,-3754)`, and `(-7097,-379
 candidate adds those three exact corridor anchors; they cannot use northing-pass semantics because
 hazard displacement can require brief x-backtracking to regain the corridor.
 It is uploaded inert as **wowborg:v130**
-(`c40c37d1-0396-4307-b850-bac8714e1d67`, source `187b820`); hosted proof is pending.
+(`c40c37d1-0396-4307-b850-bac8714e1d67`, source `187b820`). Request
+`xreq_786d0482-defb-41da-970c-da0a8858156d` died near road node 2 before reaching
+the new terrain anchors. The fatal Scorpid was already tracked at 63.2 yards, outside the old
+30-yard projected corridor; when it re-entered as a hazard at 27.8 yards, clearance had collapsed
+and reached only 0–2.7 yards before contact. The active candidate widens predictive corridor
+entry/exit to 60/70 yards while retaining the existing 80-yard tracked-unit envelope, so crossing
+patrols are routed around while safe clearance still exists.
 
 ### Previous 0.1.208 movement baseline
 

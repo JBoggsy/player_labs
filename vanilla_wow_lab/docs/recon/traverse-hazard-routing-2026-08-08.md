@@ -465,7 +465,13 @@ to node 9, but not the coarse straight chord. The corridor bends through approxi
 adds these as exact anchors. They deliberately disable northing-pass completion: after hazard
 displacement, regaining the first bend can require brief x-backtracking.
 It is uploaded inert as **wowborg:v130**
-(`c40c37d1-0396-4307-b850-bac8714e1d67`, source `187b820`); hosted proof is pending.
+(`c40c37d1-0396-4307-b850-bac8714e1d67`, source `187b820`). Request
+`xreq_786d0482-defb-41da-970c-da0a8858156d` died near road node 2 before reaching
+the new anchors, so it did not test the terrain correction. The fatal Scorpid was visible in the
+tracked set at 63.2 yards but lay beyond the old 30-yard projected corridor. Avoidance activated
+only at 27.8 yards; at 19.5 yards the best candidate clearance was 2.7 yards and contact followed.
+The next candidate expands predictive entry/exit to 60/70 yards inside the existing 80-yard
+tracked-unit envelope, preserving ten yards of observation margin while retaining hysteresis.
 
 ## Open uncertainties
 

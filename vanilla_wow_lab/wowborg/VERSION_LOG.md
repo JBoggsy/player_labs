@@ -7,6 +7,10 @@
 - Inserts three exact node-8-to-9 corridor anchors derived from the deployed Detour navmesh. Exact
   completion permits the brief x-backtracking needed to regain the walkable bend after hazard
   displacement; the bounded v129 unstick remains as a generic last resort.
+- Request `xreq_786d0482-defb-41da-970c-da0a8858156d` died near road node 2 before
+  reaching the new anchors. The fatal Scorpid was tracked at 63.2 yards but lay beyond the old
+  30-yard corridor horizon; when avoidance finally activated at 27.8 yards, candidate clearance
+  had already collapsed, reaching 0–2.7 yards before contact.
 
 ## v129 - bounded ordinary-road unstick (2026-08-09)
 
