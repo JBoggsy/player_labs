@@ -7,7 +7,14 @@
 - Replaces the invalid straight ramp-base-to-crest leg with the canonical 17-point VMaNGOS
   Detour smooth path. Every new point retains exact, three-yard, terrain-constrained steering.
 - Combat, hazard clearance, terminal-health handling, and ordinary-road cadence are unchanged
-  from v168. The hosted request is pending.
+  from v168.
+- Six-run request `xreq_5d280a5e-dc35-48ce-927b-ca4f0e86ad4a` reached the first
+  ascent point in two runs, then both walked off the edge and failed the second. Two runs died
+  earlier in Tanaris, one stalled at the Detour bend, and one lost its observation frame. Source
+  recon showed the apparent 17-point corridor consists of `NAV_STEEP_SLOPES`: the public local-step
+  wire deliberately omits whether a proved step requires jumping, so static `move_vector` cannot
+  execute it. The next candidate replaces the baked points with the host's maintained `move_to`
+  follower, which infers jump edges from the Detour polygon keys.
 
 ## v168 - full-leg precise ramp cadence (2026-08-09)
 

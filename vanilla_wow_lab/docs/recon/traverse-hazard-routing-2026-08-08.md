@@ -809,6 +809,14 @@ before the path bends east. The next source candidate replaces only the invalid 
 with those canonical Detour waypoints.
 That candidate is uploaded inert as **wowborg:v169**
 (`ca5d030f-316e-4644-99d7-6dccb979bb48`, source `b7f1b50`).
+Request `xreq_5d280a5e-dc35-48ce-927b-ca4f0e86ad4a` reached the first ascent point
+in two runs, then both walked off the edge and failed the second. Two runs died earlier in Tanaris,
+one stalled at the Detour bend, and one lost its observation frame. The corridor polygons are
+marked `NAV_STEEP_SLOPES`; excluding that flag yields no path to the crest. This is the proper
+mountain pass, but it requires jumps. The public Python local-step wire intentionally omits the
+internal jump hint, whereas the maintained host `move_to` executor calls `routePilotWaypoints`
+with polygon-based jump inference. The next candidate removes the manual ascent points and uses
+native `move_to` only from ramp-base to crest, leaving hazard-aware routing unchanged elsewhere.
 
 ## Open uncertainties
 

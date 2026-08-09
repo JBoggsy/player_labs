@@ -55,10 +55,7 @@ ROAD_HAZARD_MIN_CLEARANCE_YARDS = 20.0
 ROAD_TIGHT_HAZARD_HOLD_YARDS = 8.0
 ROAD_HAZARD_HOLD_RADIUS_YARDS = 2.0
 ROAD_HAZARD_SWITCH_MARGIN_YARDS = 5.0
-ROAD_RAMP_ASCENT_GUIDEPOINTS = frozenset(
-    {f"shimmering-flats-ramp-ascent-{index:02d}" for index in range(1, 17)}
-    | {"shimmering-flats-ramp-crest"}
-)
+ROAD_NATIVE_NAVIGATION_GUIDEPOINTS = frozenset({"shimmering-flats-ramp-crest"})
 ROAD_EXACT_GUIDEPOINTS = frozenset(
     {
         "tanaris-road-8-detour-west",
@@ -71,7 +68,7 @@ ROAD_EXACT_GUIDEPOINTS = frozenset(
         "shimmering-flats-ramp-base",
         "great-lift-lower-dock",
     }
-) | ROAD_RAMP_ASCENT_GUIDEPOINTS
+) | ROAD_NATIVE_NAVIGATION_GUIDEPOINTS
 ROAD_TIGHT_ARRIVAL_GUIDEPOINTS = frozenset(
     {
         "shimmering-flats-ramp-lip",
@@ -79,7 +76,7 @@ ROAD_TIGHT_ARRIVAL_GUIDEPOINTS = frozenset(
         "shimmering-flats-ramp-base",
         "shimmering-flats-south-ramp",
     }
-) | ROAD_RAMP_ASCENT_GUIDEPOINTS
+) | ROAD_NATIVE_NAVIGATION_GUIDEPOINTS
 ROAD_TERRAIN_CONSTRAINED_GUIDEPOINTS = ROAD_TIGHT_ARRIVAL_GUIDEPOINTS | {
     "shimmering-flats-ramp-approach"
 }
@@ -115,24 +112,7 @@ TRAVERSE_ROUTE_PREFIX = (
     ("shimmering-flats-ramp-approach", Point(1, -6905.4900, -3869.4600, 38.8900)),
     ("shimmering-flats-ramp-turn", Point(1, -6889.5900, -3885.4700, 47.9500)),
     ("shimmering-flats-ramp-base", Point(1, -6884.0000, -3900.0000, 53.6400)),
-    # The ramp is too narrow to steer directly at its upper endpoint. These are
-    # the canonical VMaNGOS Detour smooth-path points from the observed base.
-    ("shimmering-flats-ramp-ascent-01", Point(1, -6884.1777, -3902.7144, 59.8126)),
-    ("shimmering-flats-ramp-ascent-02", Point(1, -6884.0815, -3905.7129, 68.2795)),
-    ("shimmering-flats-ramp-ascent-03", Point(1, -6884.0000, -3908.2666, 76.3861)),
-    ("shimmering-flats-ramp-ascent-04", Point(1, -6881.2847, -3909.5420, 83.8913)),
-    ("shimmering-flats-ramp-ascent-05", Point(1, -6878.5693, -3910.8174, 91.8873)),
-    ("shimmering-flats-ramp-ascent-06", Point(1, -6875.8540, -3912.0928, 100.0763)),
-    ("shimmering-flats-ramp-ascent-07", Point(1, -6873.1387, -3913.3682, 106.4943)),
-    ("shimmering-flats-ramp-ascent-08", Point(1, -6870.4233, -3914.6436, 111.2707)),
-    ("shimmering-flats-ramp-ascent-09", Point(1, -6867.7080, -3915.9189, 115.0312)),
-    ("shimmering-flats-ramp-ascent-10", Point(1, -6866.4004, -3916.5332, 116.6361)),
-    ("shimmering-flats-ramp-ascent-11", Point(1, -6863.6938, -3917.8271, 119.3671)),
-    ("shimmering-flats-ramp-ascent-12", Point(1, -6860.9873, -3919.1211, 122.0981)),
-    ("shimmering-flats-ramp-ascent-13", Point(1, -6858.2808, -3920.4150, 122.9458)),
-    ("shimmering-flats-ramp-ascent-14", Point(1, -6855.5742, -3921.7090, 123.9636)),
-    ("shimmering-flats-ramp-ascent-15", Point(1, -6852.8677, -3923.0029, 124.4359)),
-    ("shimmering-flats-ramp-ascent-16", Point(1, -6850.1611, -3924.2969, 124.3111)),
+    # The host's Detour follower infers the jumps required by this steep pass.
     ("shimmering-flats-ramp-crest", Point(1, -6848.0000, -3925.3300, 124.6400)),
     ("shimmering-flats-south-ramp", Point(1, -6794.0220, -3953.5276, 100.8641)),
     ("shimmering-flats-south-road", Point(1, -6624.2671, -4050.1333, -41.6139)),
@@ -787,6 +767,7 @@ def _steer_road_leg(
     allow_northing_pass: bool,
     arrival_radius: float,
     hold_terrain_hazards: bool,
+    use_native_navigation: bool,
 ):
     settle_pause_interval = (
         1 if not allow_northing_pass else ROAD_SETTLE_PAUSE_INTERVAL
@@ -1205,24 +1186,40 @@ def _steer_road_leg(
             steering_purpose = (
                 "steer the canonical Traverse road after movement bootstrap"
             )
-        _steer_toward(
-            bridge,
-            frame,
-            steering_target,
-            purpose=steering_purpose,
-            precise_arrival=(
-                hold_terrain_hazards
-                or should_retreat
-                or should_evade
-                or distance <= ROAD_HAZARD_FORWARD_YARDS
-            ),
-            translation_seconds=(
-                ROAD_OPEN_INPUT_SECONDS
-                if not frame.in_combat and not hazards
-                else TRAVERSE_INPUT_SECONDS
-            ),
-            trace=trace,
-        )
+        if (
+            use_native_navigation
+            and not frame.in_combat
+            and not hazards
+            and not should_retreat
+            and not should_evade
+        ):
+            trace("traverse_road_native_navigation", activation=1)
+            bridge.select_move_to(
+                frame,
+                steering_target.x,
+                steering_target.y,
+                steering_target.z,
+                steering_target.map_id,
+            )
+        else:
+            _steer_toward(
+                bridge,
+                frame,
+                steering_target,
+                purpose=steering_purpose,
+                precise_arrival=(
+                    hold_terrain_hazards
+                    or should_retreat
+                    or should_evade
+                    or distance <= ROAD_HAZARD_FORWARD_YARDS
+                ),
+                translation_seconds=(
+                    ROAD_OPEN_INPUT_SECONDS
+                    if not frame.in_combat and not hazards
+                    else TRAVERSE_INPUT_SECONDS
+                ),
+                trace=trace,
+            )
         settle_frame = bridge.observe()
         if settle_frame is None:
             return None, "no_frame"
@@ -1463,6 +1460,9 @@ class TraverseStrategy:
                         ),
                         hold_terrain_hazards=(
                             name in ROAD_TERRAIN_CONSTRAINED_GUIDEPOINTS
+                        ),
+                        use_native_navigation=(
+                            name in ROAD_NATIVE_NAVIGATION_GUIDEPOINTS
                         ),
                     )
                     if end is not None:

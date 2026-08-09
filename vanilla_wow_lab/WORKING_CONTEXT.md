@@ -1170,6 +1170,14 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    canonical Detour points; combat, hazard routing, and ordinary-road cadence are unchanged.
    That candidate is uploaded inert as **wowborg:v169**
    (`ca5d030f-316e-4644-99d7-6dccb979bb48`, source `b7f1b50`).
+   Six-run request `xreq_5d280a5e-dc35-48ce-927b-ca4f0e86ad4a` reached the first
+   ascent point in two runs, then both walked off the edge and failed the second. Two runs died
+   earlier in Tanaris, one stalled at the Detour bend, and one lost its observation frame. The
+   route polygons are marked `NAV_STEEP_SLOPES`; this is the real mountain pass, but it requires
+   jumps. Python's public local-step wire intentionally omits the internal jump hint, while the
+   maintained host `move_to` follower infers jump-at-start edges from Detour polygon keys. The
+   active source removes the manual ascent points and delegates only ramp-base-to-crest to that
+   native follower. Hazard-aware steering remains unchanged before and after the pass.
 
 ## Reference
 
