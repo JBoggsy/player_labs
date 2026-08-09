@@ -189,7 +189,15 @@ physical displacement and terminated 222 yards from the guidepoint. The active c
 existing progress watchdog to try one traced forward-diagonal recovery pulse on each side; if both
 remain blocked, the same no-progress failure still terminates the route.
 It is uploaded inert as **wowborg:v129**
-(`e27cf658-ddef-4d2d-93fe-89b31c4b04dd`, source `29f415a`); hosted proof is pending.
+(`e27cf658-ddef-4d2d-93fe-89b31c4b04dd`, source `29f415a`). The first direct-Coworld
+request accidentally selected the default fresh-start variant and is not evidence. Corrected
+Traverse request `xreq_37c9ae98-da0f-424c-8176-6025218f4528` showed the first recovery
+pulse moved 0.781 yards, then rewedged; the next two moved only 0.323 and 0.463 yards before bounded
+exhaustion. It survived at 2,011.7 northing yards after one Scorpid and one Basilisk contact.
+Deployed 0.1.209 Detour recon from both observed stuck poses showed the coarse node 8-to-9 chord
+omits a required bend through `(-7194,-3733)`, `(-7172,-3754)`, and `(-7097,-3795)`. The active
+candidate adds those three exact corridor anchors; they cannot use northing-pass semantics because
+hazard displacement can require brief x-backtracking to regain the corridor.
 
 ### Previous 0.1.208 movement baseline
 

@@ -43,6 +43,14 @@ ROAD_HAZARD_LATERAL_YARDS = (30.0, 45.0, 60.0)
 ROAD_HAZARD_MIN_CLEARANCE_YARDS = 20.0
 ROAD_HAZARD_HOLD_RADIUS_YARDS = 2.0
 ROAD_HAZARD_SWITCH_MARGIN_YARDS = 5.0
+ROAD_EXACT_GUIDEPOINTS = frozenset(
+    {
+        "tanaris-road-8-detour-west",
+        "tanaris-road-8-detour-south",
+        "tanaris-road-8-detour-east",
+        "great-lift-lower-dock",
+    }
+)
 
 # Follow the deployed owner's level-51 Tanaris and Thousand Needles road spine
 # to the Great Lift lower dock. Great Lift boarding is a separate campaign.
@@ -63,6 +71,12 @@ TRAVERSE_ROUTE_PREFIX = (
     ("tanaris-north-road-6", Point(1, -7866.4028, -3550.8655, 58.3285)),
     ("tanaris-north-road-7", Point(1, -7577.2563, -3602.6570, 15.3188)),
     ("tanaris-north-road-8", Point(1, -7314.9946, -3715.9453, 9.9459)),
+    # The Detour corridor bends around impassable terrain here. These exact
+    # anchors preserve the bend even after hazard avoidance displaces us north
+    # or south; northing-pass semantics would incorrectly skip the west anchor.
+    ("tanaris-road-8-detour-west", Point(1, -7193.6000, -3733.3330, 8.9030)),
+    ("tanaris-road-8-detour-south", Point(1, -7172.2670, -3753.6000, 9.0610)),
+    ("tanaris-road-8-detour-east", Point(1, -7096.5330, -3795.4670, 9.3110)),
     ("tanaris-north-road-9", Point(1, -6948.5264, -3856.7524, 28.9407)),
     ("shimmering-flats-south-ramp", Point(1, -6794.0220, -3953.5276, 100.8641)),
     ("shimmering-flats-south-road", Point(1, -6624.2671, -4050.1333, -41.6139)),
@@ -919,7 +933,7 @@ class TraverseStrategy:
                         deadline=until,
                         trace=trace,
                         avoidance=self.hazard_avoidance,
-                        allow_northing_pass=name != "great-lift-lower-dock",
+                        allow_northing_pass=name not in ROAD_EXACT_GUIDEPOINTS,
                     )
                     if end is not None:
                         self.best_world_x = max(self.best_world_x, end.x)

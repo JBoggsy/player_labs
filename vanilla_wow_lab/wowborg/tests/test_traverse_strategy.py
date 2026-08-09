@@ -149,6 +149,9 @@ def test_traverse_route_prefix_reaches_great_lift_lower_dock() -> None:
         "tanaris-north-road-6",
         "tanaris-north-road-7",
         "tanaris-north-road-8",
+        "tanaris-road-8-detour-west",
+        "tanaris-road-8-detour-south",
+        "tanaris-road-8-detour-east",
         "tanaris-north-road-9",
         "shimmering-flats-south-ramp",
         "shimmering-flats-south-road",
@@ -168,7 +171,7 @@ def test_traverse_route_prefix_reaches_great_lift_lower_dock() -> None:
     assert TRAVERSE_ROUTE_PREFIX[0][1] == Point(1, -9200.0, -2545.0, 13.5)
     assert TRAVERSE_ROUTE_PREFIX[1][1] == Point(1, -8974.0117, -2741.5291, 41.0118)
     assert TRAVERSE_ROUTE_PREFIX[-1][1] == Point(1, -4677.066, -1853.667, -43.857)
-    assert len(names) == len(set(names)) == 26
+    assert len(names) == len(set(names)) == 29
 
 
 def test_lift_detection_uses_only_visible_platform_at_lower_dock() -> None:

@@ -7,6 +7,11 @@
 - When the existing eight-second route watchdog fires, tries one forward-diagonal pulse on each
   side and traces measured displacement. Target progress resets only after physical movement; two
   blocked attempts retain the existing no-progress termination.
+- Corrected Traverse request `xreq_37c9ae98-da0f-424c-8176-6025218f4528` showed the
+  first right pulse moved 0.781 yards, but the character rewedged; the next two pulses moved only
+  0.323 and 0.463 yards before bounded exhaustion. It survived, but finished at 2,011.7 northing
+  yards after one Scorpid and one Basilisk contact. Deployed Detour recon showed the coarse node
+  8-to-9 chord omits a required three-anchor terrain bend.
 
 ## v128 - calibrated 20-yard clearance floor (2026-08-09)
 

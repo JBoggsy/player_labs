@@ -453,7 +453,17 @@ until the eight-second route watchdog fired. The next candidate keeps that watch
 before terminating, tries one traced forward-diagonal recovery pulse on each side and requires
 measured displacement to reset progress.
 It is uploaded inert as **wowborg:v129**
-(`e27cf658-ddef-4d2d-93fe-89b31c4b04dd`, source `29f415a`); hosted proof is pending.
+(`e27cf658-ddef-4d2d-93fe-89b31c4b04dd`, source `29f415a`). Corrected Traverse
+request `xreq_37c9ae98-da0f-424c-8176-6025218f4528` fired the recovery: the first
+right pulse moved 0.781 yards and reset progress, but ordinary steering rewedged; the next left and
+right pulses moved only 0.323 and 0.463 yards before bounded exhaustion. It survived at 2,011.7
+northing yards after one Scorpid and one Basilisk contact, so diagonal unstick is not the route fix.
+
+A deployed 0.1.209 Detour query from node 8 and both hosted stuck poses found a valid smooth route
+to node 9, but not the coarse straight chord. The corridor bends through approximately
+`(-7194,-3733)`, `(-7172,-3754)`, and `(-7097,-3795)` before the node-9 climb. The active candidate
+adds these as exact anchors. They deliberately disable northing-pass completion: after hazard
+displacement, regaining the first bend can require brief x-backtracking.
 
 ## Open uncertainties
 
