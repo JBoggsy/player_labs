@@ -970,7 +970,16 @@ quarter-second steering action to close on the exact attacker while in combat, r
 proven 2.5-yard attack gate. `_steer_toward` returns the action ID it already creates so combat can
 detect refusal; existing route and lift callers remain behaviorally unchanged. This is uploaded
 inert as **wowborg:v188** (`f2e341fe-45cb-4d16-b5a4-89080938294c`, source `e1e9298`); hosted
-evaluation is pending.
+request `xreq_5eae26a7-15f0-4431-8505-726aac6403d3` kept all 12 runs alive. Seven ramp Scorpid
+fights and one reactive Glasshide Gazer fight completed or safely released; the closer activated
+1-3 times in the range-boundary cases and eliminated both prior wait loops. Five runs reached
+ascent point 15/16 but none reached the Cat descent. The fastest frontier runs still accumulated
+38-51 avoidance starts, 19-37 retreats, and 14-28 side switches before the episode horizon. The
+20-yard predicted-clearance floor is therefore the current throughput bottleneck. The active source
+lowers only that floor to 12 yards. Unlike V183/V184, V188's validated single-attacker combat can
+now convert the known close Gazer case into a short kill instead of a lethal escape; the local
+projected-add gate was already 12 yards. This is uploaded inert as **wowborg:v189**
+(`405cc7d2-b438-42e4-b684-8406575af9b6`, source `6a53c96`); hosted evaluation is pending.
 
 ## Open uncertainties
 

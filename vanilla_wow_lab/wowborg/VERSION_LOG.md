@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v189 - twelve-yard clearance with reactive combat (2026-08-09)
+
+- Version UUID: `405cc7d2-b438-42e4-b684-8406575af9b6` (`wowborg:v189`, uploaded
+  inert; not submitted). Built from source `6a53c96` against canonical vanilla-wow 0.1.209.
+- Lowers only the global predicted-clearance floor from 20 to 12 yards. V188's validated reactive
+  combat/closer, Cat descent, route geometry, and action cadence are unchanged.
+- Unlike V183/V184, the policy can now kill a safe single pull instead of turning it into a lethal
+  escape. The local projected-add combat gate was already 12 yards. Hosted evaluation is pending.
+
 ## v188 - active in-combat melee closing (2026-08-09)
 
 - Version UUID: `f2e341fe-45cb-4d16-b5a4-89080938294c` (`wowborg:v188`, uploaded
@@ -8,7 +17,12 @@
   to close on the exact attacker while already in combat, rather than waiting for the attacker to
   step closer.
 - `_steer_toward` now returns its existing action ID so combat can detect refusal; its established
-  route and lift callers remain behaviorally unchanged. Hosted evaluation is pending.
+  route and lift callers remain behaviorally unchanged.
+- Hosted request `xreq_5eae26a7-15f0-4431-8505-726aac6403d3` kept all 12 runs alive. Seven ramp
+  Scorpid fights and one reactive Glasshide Gazer fight completed or safely released; the closer
+  activated 1-3 times in the boundary cases and eliminated both prior wait loops. Five runs reached
+  ascent point 15/16, but none reached the Cat descent. Those frontier runs still incurred 38-51
+  avoidance starts and 19-37 retreats, making conservative routing churn the next bottleneck.
 
 ## v187 - three-yard melee engagement (2026-08-09)
 

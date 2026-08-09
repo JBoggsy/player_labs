@@ -1305,7 +1305,15 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    failing Rake every 1.5 seconds until death. The active source restores the proven 2.5-yard gate
    and uses existing precise steering to close on the exact attacker while already in combat,
    rather than waiting for it to step closer. This is uploaded inert as **wowborg:v188**
-   (`f2e341fe-45cb-4d16-b5a4-89080938294c`, source `e1e9298`); hosted evaluation is pending.
+   (`f2e341fe-45cb-4d16-b5a4-89080938294c`, source `e1e9298`). Hosted request
+   `xreq_5eae26a7-15f0-4431-8505-726aac6403d3` kept all 12 runs alive; the closer activated 1-3
+   times in boundary fights and seven ramp Scorpids plus one reactive Gazer completed or safely
+   released. Five runs reached ascent point 15/16, but none reached the Cat descent. Those frontier
+   runs still incurred 38-51 avoidance starts and 19-37 retreats. The active source now lowers only
+   the global predicted-clearance floor from 20 to 12 yards; unlike V183/V184, V188's validated
+   reactive combat can kill a safe single pull rather than turning it into a lethal escape. This
+   is uploaded inert as **wowborg:v189** (`405cc7d2-b438-42e4-b684-8406575af9b6`, source
+   `6a53c96`); hosted evaluation is pending.
 
 ## Reference
 
