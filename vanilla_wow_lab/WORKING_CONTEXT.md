@@ -1210,7 +1210,12 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    recon shows that the final road-9 approach rises from z13 to z34 at up to 1.21 slope, and all
    three road-9 runs stopped at the same foot of that climb. **wowborg:v174**
    (`73f5f8cb-d6e9-41f4-ab30-e43e73208496`, source `fcb8d78`) is uploaded inert with that measured
-   climb-base anchor and explicit jumps on the missing edge. Its hosted evaluation is pending.
+   climb-base anchor and explicit jumps on the missing edge. Six-run request
+   `xreq_b10b0b04-3bc4-4d63-8264-19353a0b3e5c` kept every run alive. Four
+   reached the climb base and crossed the formerly impassable climb; one continued through
+   mountain-pass ascent point 15, the best frontier yet. Three overshot road point 9 vertically at
+   z48–71 instead of z29. The active source splits that path at the navmesh's measured z34 crest,
+   ending explicit jumps there before walking downhill to road point 9.
 
 ## Reference
 

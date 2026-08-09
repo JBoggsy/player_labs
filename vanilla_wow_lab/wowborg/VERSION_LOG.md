@@ -8,7 +8,13 @@
   branch.
 - Adds a navmesh-measured exact anchor at the foot of the separate road-9 climb and enables explicit
   jumps only from that anchor to road point 9. The later mountain-pass jump edges are unchanged.
-- Hosted evaluation is pending.
+- Six-run request `xreq_b10b0b04-3bc4-4d63-8264-19353a0b3e5c` kept every run
+  alive. Four reached the new climb base and all four crossed the formerly impassable climb; one
+  continued through mountain-pass ascent point 15, the best Traverse frontier yet. Three crossed
+  but overshot road point 9 vertically at z48–71 instead of z29, and two earlier runs ended on
+  action-settlement timeouts.
+- The next candidate ends this jump edge at the measured z34 crest, then walks downhill to road
+  point 9. This preserves the successful climb while preventing vertical overshoot.
 
 ## v173 - time-aligned patrol clearance (2026-08-09)
 

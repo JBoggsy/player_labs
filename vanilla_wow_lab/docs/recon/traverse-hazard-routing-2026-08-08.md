@@ -853,7 +853,13 @@ detour anchor to road point 9 is complete, but its final approach rises from z13
 measured flat climb base at `(-7000.68, -3835.14, 12.56)` and enables explicit jumps only from that
 anchor to road point 9. This repairs a separate steep edge before the Shimmering Flats mountain
 pass without changing the remaining route. That candidate is uploaded inert as **wowborg:v174**
-(`73f5f8cb-d6e9-41f4-ab30-e43e73208496`, source `fcb8d78`); its hosted evaluation is pending.
+(`73f5f8cb-d6e9-41f4-ab30-e43e73208496`, source `fcb8d78`). Six-run request
+`xreq_b10b0b04-3bc4-4d63-8264-19353a0b3e5c` kept all six runs alive. Four
+reached the climb base and all crossed the formerly impassable climb; one continued through
+mountain-pass ascent point 15, the best Traverse frontier yet. Three crossed but overshot road
+point 9 vertically at z48–71 instead of z29, while two earlier runs ended on action-settlement
+timeouts. The active source therefore splits the edge at the measured high point
+`(-6960.11, -3851.44, 34.04)`: jump to that crest, then walk downhill to road point 9.
 
 ## Open uncertainties
 
