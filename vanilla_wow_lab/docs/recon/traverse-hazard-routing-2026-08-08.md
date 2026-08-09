@@ -873,7 +873,9 @@ no run cleared the climb, two repeated the first short jump to z78–95, and one
 sub-edge before falling into combat and dying. The other three stopped earlier. The active source
 restores v175's single crest edge and permits that crest alone to use the existing northing-pass
 envelope. V175's failed climb was already within the contract's 20-yard northing slack, 60-yard
-lateral bound, and 10-yard vertical bound; exact classification alone prevented acceptance.
+lateral bound, and 10-yard vertical bound; exact classification alone prevented acceptance. This
+is uploaded inert as **wowborg:v177** (`829c6ecb-de49-4441-bd04-a163c58a4e94`, source `4a704fd`);
+its hosted evaluation is pending.
 
 ## Open uncertainties
 

@@ -1227,7 +1227,9 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    cleared the climb, two repeated the first short jump to z78–95, and one reached its first sub-edge
    before falling into combat and dying. The active source restores v175's one crest edge and allows
    that crest alone to use the existing northing-pass envelope; v175's failed climb was already
-   inside its 20-yard northing, 60-yard lateral, and 10-yard vertical limits.
+   inside its 20-yard northing, 60-yard lateral, and 10-yard vertical limits. That candidate is
+   uploaded inert as **wowborg:v177** (`829c6ecb-de49-4441-bd04-a163c58a4e94`, source `4a704fd`);
+   its hosted evaluation is pending.
 
 ## Reference
 

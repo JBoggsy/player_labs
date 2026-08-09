@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v177 - measured Tanaris crest pass (2026-08-09)
+
+- Version UUID: `829c6ecb-de49-4441-bd04-a163c58a4e94` (`wowborg:v177`, uploaded
+  inert; not submitted). Built from source `4a704fd` against canonical vanilla-wow 0.1.209.
+- Restores v175's single road-climb crest edge and allows only that crest to use the existing
+  northing-pass envelope. The failed v175 climb was already inside all three measured pass bounds.
+- All hazard, combat, and remaining route behavior is unchanged. Hosted evaluation is pending.
+
 ## v176 - bounded Tanaris road-9 climb (2026-08-09)
 
 - Version UUID: `adb98318-5ce8-40a3-856e-0e8b9feaccc7` (`wowborg:v176`, uploaded
