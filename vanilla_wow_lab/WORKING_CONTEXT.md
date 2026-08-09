@@ -1105,6 +1105,12 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    before attacking so the ramp's vertical separation cannot leave melee abilities outside range.
    That candidate is uploaded inert as **wowborg:v162**
    (`b1dfbc40-2631-4b5d-8581-83ec6e6a935f`, source `8057d2e`).
+   Six-run request `xreq_c726b42a-4b82-4961-814c-2b16afd16ee1` produced three safe
+   ramp kills. One landed Rake and two Claws, but all still took 33-36 seconds. The best run reached
+   ramp-base milestone 20 before the 270-second horizon. It spent 266 seconds inside 1,452 action
+   round trips, including 395 one-second hazard-free strides. The next source candidate changes
+   only those clear-road strides to four seconds; the 80-yard hazard horizon and all constrained
+   actions are unchanged.
 
 ## Reference
 

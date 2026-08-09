@@ -742,6 +742,13 @@ The next source candidate closes to two reported yards before attacking so the r
 cannot leave melee abilities outside range.
 That candidate is uploaded inert as **wowborg:v162**
 (`b1dfbc40-2631-4b5d-8581-83ec6e6a935f`, source `8057d2e`).
+Six-run request `xreq_c726b42a-4b82-4961-814c-2b16afd16ee1` produced three safe
+ramp kills. One fight landed Rake and two Claws, while the other two remained auto-attack kills;
+all lasted 33-36 seconds. The best run reached ramp-base milestone 20 but exhausted the 270-second
+horizon there. Its trace spent 266 seconds in 1,452 action round trips, including 395 one-second
+hazard-free strides. The next source candidate changes only clear-road strides to four seconds.
+At observed Travel Form speed each remains inside the existing 80-yard tracked-hazard horizon;
+hazard, ramp, retreat, combat, and turn actions retain their shorter durations.
 
 ## Open uncertainties
 

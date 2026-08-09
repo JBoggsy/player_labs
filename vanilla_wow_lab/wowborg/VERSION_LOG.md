@@ -8,6 +8,12 @@
   than stopping at five yards where the ramp's vertical separation left Rake out of range.
 - Exact targeting, form transition, rotation, route geometry, and all other-contact behavior are
   unchanged from v161. This isolates realized feral ability use and time-to-kill.
+- Six-run request `xreq_c726b42a-4b82-4961-814c-2b16afd16ee1` produced three ramp
+  fights and three safe kills. One fight landed Rake and two Claws; the other two oscillated at
+  3.8-8.8 yards and used auto-attacks. All lasted 33-36 seconds, and the best run reached ramp-base
+  milestone 20 before the 270-second horizon. Its 1,452 action round trips consumed 266 seconds,
+  including 395 one-second hazard-free strides. The next candidate changes only those clear-road
+  strides to four seconds; hazard, ramp, retreat, combat, and turn actions remain short.
 
 ## v161 - exact-target feral ramp rotation (2026-08-09)
 
