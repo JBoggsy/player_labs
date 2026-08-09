@@ -1,13 +1,25 @@
 # wowborg version log
 
+## v188 - active in-combat melee closing (2026-08-09)
+
+- Version UUID: `f2e341fe-45cb-4d16-b5a4-89080938294c` (`wowborg:v188`, uploaded
+  inert; not submitted). Built from source `e1e9298` against canonical vanilla-wow 0.1.209.
+- Restores the proven 2.5-yard melee gate and uses the existing precise 0.25-second steering action
+  to close on the exact attacker while already in combat, rather than waiting for the attacker to
+  step closer.
+- `_steer_toward` now returns its existing action ID so combat can detect refusal; its established
+  route and lift callers remain behaviorally unchanged. Hosted evaluation is pending.
+
 ## v187 - three-yard melee engagement (2026-08-09)
 
 - Version UUID: `9ef2d2d6-0b4a-4e27-961f-06faf57eb0b9` (`wowborg:v187`, uploaded
   inert; not submitted). Built from source `13c001b` against canonical vanilla-wow 0.1.209.
 - Raises only the existing melee-engagement gate from 2.5 to 3.0 reported combat yards. V186's
   reactive admission, proactive ramp gate, rotation, route, and hazard behavior are unchanged.
-- This addresses V186's sole death, where one isolated Scorpid settled at 2.652 yards and the
-  policy waited without attacking until death. Hosted evaluation is pending.
+- This addressed V186's 2.652-yard wait loop, but hosted request
+  `xreq_a8fcb3ec-48c5-42c6-a8ce-69686fc3f655` kept only 11 of 12 runs alive. A reactive Glasshide
+  Basilisk fight attacked from 3.05 yards, dealt zero damage, and then retried a failing Rake every
+  1.5 seconds until death. The correct fix is active closing at the proven 2.5-yard gate.
 
 ## v186 - reactive single-attacker combat (2026-08-09)
 

@@ -1299,8 +1299,13 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    a fast fallback. The sole death was a proactive level-41 Scorpid that settled at 2.652 reported
    combat yards; the 2.5-yard gate then waited without attacking until death. No run reached the
    Cat descent. The active source raises only that melee-engagement gate to three yards. It is
-   uploaded inert as **wowborg:v187** (`9ef2d2d6-0b4a-4e27-961f-06faf57eb0b9`, source `13c001b`);
-   hosted evaluation is pending.
+   uploaded inert as **wowborg:v187** (`9ef2d2d6-0b4a-4e27-961f-06faf57eb0b9`, source `13c001b`).
+   Hosted request `xreq_a8fcb3ec-48c5-42c6-a8ce-69686fc3f655` again kept 11 of 12 runs alive. Its
+   sole death attacked a Glasshide Basilisk from 3.05 yards but dealt zero damage, then retried a
+   failing Rake every 1.5 seconds until death. The active source restores the proven 2.5-yard gate
+   and uses existing precise steering to close on the exact attacker while already in combat,
+   rather than waiting for it to step closer. This is uploaded inert as **wowborg:v188**
+   (`f2e341fe-45cb-4d16-b5a4-89080938294c`, source `e1e9298`); hosted evaluation is pending.
 
 ## Reference
 

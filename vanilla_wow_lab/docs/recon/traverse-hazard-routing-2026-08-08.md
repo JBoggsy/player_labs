@@ -961,8 +961,16 @@ remains a reactive fallback rather than a reason to hunt road mobs. The sole dea
 one isolated level-41 Scorpid settled at 2.652 reported combat yards, just beyond the 2.5-yard
 attack gate, and the policy waited there until death. No run reached the Cat descent. The active
 source raises only that existing melee-engagement gate to three yards. This is uploaded inert as
-**wowborg:v187** (`9ef2d2d6-0b4a-4e27-961f-06faf57eb0b9`, source `13c001b`); hosted evaluation is
-pending.
+**wowborg:v187** (`9ef2d2d6-0b4a-4e27-961f-06faf57eb0b9`, source `13c001b`). Hosted request
+`xreq_a8fcb3ec-48c5-42c6-a8ce-69686fc3f655` again kept 11 of 12 runs alive. The sole death was a
+reactive Glasshide Basilisk fight: auto-attack was issued at 3.05 yards but dealt zero damage, then
+Rake failed to settle every 1.5 seconds until death. Widening the attack gate crossed the actual
+melee/spell range and is reverted. The active source instead uses the existing precise
+quarter-second steering action to close on the exact attacker while in combat, retaining the
+proven 2.5-yard attack gate. `_steer_toward` returns the action ID it already creates so combat can
+detect refusal; existing route and lift callers remain behaviorally unchanged. This is uploaded
+inert as **wowborg:v188** (`f2e341fe-45cb-4d16-b5a4-89080938294c`, source `e1e9298`); hosted
+evaluation is pending.
 
 ## Open uncertainties
 
