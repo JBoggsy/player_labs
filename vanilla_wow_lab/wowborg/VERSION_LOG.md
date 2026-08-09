@@ -9,6 +9,10 @@
   approach, the same traced hold still activates before the 20-yard safety floor.
 - Rank-1 Prowl and basic melee remain disabled: current evidence makes both worse than timed
   Travel Form traversal at this pinch.
+- Request `xreq_9e8b2946-9085-49c6-8ad1-14b8d2a7ee5e` reached node 9 at full health,
+  activated three terrain holds, released twice near 29 yards, then remained blocked at 23.1 yards.
+  The next candidate uses the existing 20-yard safety floor and suppresses lateral detours for the
+  far resident on this only traversable ramp edge.
 
 ## v150 - hold resident hazards on narrow ramps (2026-08-09)
 

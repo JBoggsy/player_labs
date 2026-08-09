@@ -47,6 +47,7 @@ ROAD_HAZARD_TRACK_YARDS = 80.0
 ROAD_HAZARD_FORWARD_YARDS = 20.0
 ROAD_HAZARD_LATERAL_YARDS = (30.0, 45.0, 60.0)
 ROAD_HAZARD_MIN_CLEARANCE_YARDS = 20.0
+ROAD_TIGHT_RESIDENT_HOLD_YARDS = 20.0
 ROAD_HAZARD_HOLD_RADIUS_YARDS = 2.0
 ROAD_HAZARD_SWITCH_MARGIN_YARDS = 5.0
 ROAD_EXACT_GUIDEPOINTS = frozenset(
@@ -350,7 +351,7 @@ def _hazard_avoidance_target(
     imminent_resident_hazards = [
         unit
         for unit in resident_hazards
-        if unit.distance <= ROAD_HAZARD_ENTER_YARDS
+        if unit.distance <= ROAD_TIGHT_RESIDENT_HOLD_YARDS
     ]
     if hold_resident_hazards and imminent_resident_hazards:
         return (
@@ -372,10 +373,14 @@ def _hazard_avoidance_target(
             {},
             True,
         )
+    resident_guids = {unit.guid for unit in resident_hazards}
     hazards_by_guid = {
         unit.guid: unit
-        for unit in (*immediate_hazards, *resident_hazards)
+        for unit in immediate_hazards
+        if not (hold_resident_hazards and unit.guid in resident_guids)
     }
+    if not hold_resident_hazards:
+        hazards_by_guid.update((unit.guid, unit) for unit in resident_hazards)
     hazards = list(hazards_by_guid.values())
     if not hazards:
         return target, None, [], tracked, {}, {}, False

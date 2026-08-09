@@ -376,6 +376,12 @@ existing 30-yard hazard-entry gate; far projected residents may be crossed befor
 Rank-1 Prowl remains invalid here because its exact detection range is worse than visible level-gap
 aggro, and current basic melee remains too weak to promote over the timing solution. It is uploaded
 inert as **wowborg:v151** (`6aa3b0e1-c341-446b-8be2-db4b93d7c6bb`, source `b37617e`).
+Request `xreq_9e8b2946-9085-49c6-8ad1-14b8d2a7ee5e` reached node 9 at full health,
+activated three terrain holds, released twice near 29 yards, then remained blocked at 23.1 yards.
+The active candidate suppresses ordinary lateral detours for a resident on the only narrow ramp
+edge, crosses straight while its current distance exceeds the existing 20-yard safety floor, and
+holds at or inside 20 yards. This retains roughly 13 yards over the measured 5–7-yard visible aggro
+radius without reviving uncalibrated melee or inferior rank-1 Prowl.
 
 ### Previous 0.1.208 movement baseline
 
