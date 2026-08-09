@@ -6,6 +6,10 @@
   inert; not submitted). Built from source `8ada40f` against canonical vanilla-wow 0.1.209.
 - Extends only hazard-free, non-combat road translations from one second to the contract maximum
   of 1.5 seconds. All safety behavior and route geometry are unchanged from v162.
+- Six-run request `xreq_414ce1c9-2d56-40f0-b372-6d44a5458d60` showed only a marginal
+  representative ramp-arrival gain (about 202 to 190 seconds), while longer blind translations
+  produced up to three earlier pulls in one episode and one ramp death. The next candidate restores
+  the proven one-second clear stride before changing hazard-path efficiency.
 
 ## v163 - four-second clear-road strides (2026-08-09)
 

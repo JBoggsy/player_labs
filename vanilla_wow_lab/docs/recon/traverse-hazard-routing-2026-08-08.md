@@ -757,6 +757,11 @@ episodes at the first clear stride. Canonical 0.1.209 constrains `move_vector.du
 source candidate uses the contract maximum of 1.5 seconds.
 That candidate is uploaded inert as **wowborg:v164**
 (`a14b004c-0efa-481b-8cf9-d88263ce521d`, source `8ada40f`).
+Six-run request `xreq_414ce1c9-2d56-40f0-b372-6d44a5458d60` showed only a marginal
+representative ramp-arrival gain (about 202 to 190 seconds). Longer blind translations produced up
+to three earlier pulls in one episode and one ramp death. This is an unacceptable survival trade;
+the next source candidate restores the proven one-second clear stride before changing hazard-path
+efficiency.
 
 ## Open uncertainties
 
