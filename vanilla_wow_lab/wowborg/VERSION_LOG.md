@@ -7,7 +7,13 @@
 - Combines the canonical 17-point steep-pass path with the host's native jump-aware follower,
   bounding every synchronous `move_to` action to one Detour edge.
 - Combat, hazard routing, downstream endpoints, and ordinary-road cadence are unchanged from
-  v170. The hosted request is pending.
+  v170.
+- Six-run request `xreq_24966ee6-6f57-4ebe-bad2-ce3a5946f9cf` produced one
+  ramp-base run. Its first edge-bounded native action also returned the unchanged frame after 30
+  seconds, proving native `move_to` cannot execute this steep component. Four runs stopped earlier
+  on route progress/frame failures and one died at ramp-turn. The next candidate uses the action
+  contract's explicit one-shot `jump` bit on canonical steep-edge vectors; every non-steep vector
+  remains unchanged.
 
 ## v170 - native jump-aware mountain pass (2026-08-09)
 

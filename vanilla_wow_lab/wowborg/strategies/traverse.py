@@ -55,7 +55,7 @@ ROAD_HAZARD_MIN_CLEARANCE_YARDS = 20.0
 ROAD_TIGHT_HAZARD_HOLD_YARDS = 8.0
 ROAD_HAZARD_HOLD_RADIUS_YARDS = 2.0
 ROAD_HAZARD_SWITCH_MARGIN_YARDS = 5.0
-ROAD_NATIVE_NAVIGATION_GUIDEPOINTS = frozenset(
+ROAD_STEEP_GUIDEPOINTS = frozenset(
     {f"shimmering-flats-ramp-ascent-{index:02d}" for index in range(1, 17)}
     | {"shimmering-flats-ramp-crest"}
 )
@@ -71,7 +71,7 @@ ROAD_EXACT_GUIDEPOINTS = frozenset(
         "shimmering-flats-ramp-base",
         "great-lift-lower-dock",
     }
-) | ROAD_NATIVE_NAVIGATION_GUIDEPOINTS
+) | ROAD_STEEP_GUIDEPOINTS
 ROAD_TIGHT_ARRIVAL_GUIDEPOINTS = frozenset(
     {
         "shimmering-flats-ramp-lip",
@@ -79,7 +79,7 @@ ROAD_TIGHT_ARRIVAL_GUIDEPOINTS = frozenset(
         "shimmering-flats-ramp-base",
         "shimmering-flats-south-ramp",
     }
-) | ROAD_NATIVE_NAVIGATION_GUIDEPOINTS
+) | ROAD_STEEP_GUIDEPOINTS
 ROAD_TERRAIN_CONSTRAINED_GUIDEPOINTS = ROAD_TIGHT_ARRIVAL_GUIDEPOINTS | {
     "shimmering-flats-ramp-approach"
 }
@@ -170,6 +170,7 @@ def _steer_toward(
     purpose: str,
     precise_arrival: bool = False,
     translation_seconds: float = TRAVERSE_INPUT_SECONDS,
+    jump_when_moving: bool = False,
     trace=None,
 ) -> None:
     desired = math.atan2(target.y - frame.location.y, target.x - frame.location.x)
@@ -199,6 +200,7 @@ def _steer_toward(
             if abs(delta) > math.pi / 8
             else 0.0
         ),
+        jump=jump_when_moving,
         duration=duration,
         purpose=purpose,
     )
@@ -786,7 +788,7 @@ def _steer_road_leg(
     allow_northing_pass: bool,
     arrival_radius: float,
     hold_terrain_hazards: bool,
-    use_native_navigation: bool,
+    jump_terrain: bool,
 ):
     settle_pause_interval = (
         1 if not allow_northing_pass else ROAD_SETTLE_PAUSE_INTERVAL
@@ -1205,40 +1207,31 @@ def _steer_road_leg(
             steering_purpose = (
                 "steer the canonical Traverse road after movement bootstrap"
             )
-        if (
-            use_native_navigation
-            and not frame.in_combat
-            and not hazards
-            and not should_retreat
-            and not should_evade
-        ):
-            trace("traverse_road_native_navigation", activation=1)
-            bridge.select_move_to(
-                frame,
-                steering_target.x,
-                steering_target.y,
-                steering_target.z,
-                steering_target.map_id,
-            )
-        else:
-            _steer_toward(
-                bridge,
-                frame,
-                steering_target,
-                purpose=steering_purpose,
-                precise_arrival=(
-                    hold_terrain_hazards
-                    or should_retreat
-                    or should_evade
-                    or distance <= ROAD_HAZARD_FORWARD_YARDS
-                ),
-                translation_seconds=(
-                    ROAD_OPEN_INPUT_SECONDS
-                    if not frame.in_combat and not hazards
-                    else TRAVERSE_INPUT_SECONDS
-                ),
-                trace=trace,
-            )
+        _steer_toward(
+            bridge,
+            frame,
+            steering_target,
+            purpose=steering_purpose,
+            precise_arrival=(
+                hold_terrain_hazards
+                or should_retreat
+                or should_evade
+                or distance <= ROAD_HAZARD_FORWARD_YARDS
+            ),
+            translation_seconds=(
+                ROAD_OPEN_INPUT_SECONDS
+                if not frame.in_combat and not hazards
+                else TRAVERSE_INPUT_SECONDS
+            ),
+            jump_when_moving=(
+                jump_terrain
+                and not frame.in_combat
+                and not hazards
+                and not should_retreat
+                and not should_evade
+            ),
+            trace=trace,
+        )
         settle_frame = bridge.observe()
         if settle_frame is None:
             return None, "no_frame"
@@ -1480,9 +1473,7 @@ class TraverseStrategy:
                         hold_terrain_hazards=(
                             name in ROAD_TERRAIN_CONSTRAINED_GUIDEPOINTS
                         ),
-                        use_native_navigation=(
-                            name in ROAD_NATIVE_NAVIGATION_GUIDEPOINTS
-                        ),
+                        jump_terrain=name in ROAD_STEEP_GUIDEPOINTS,
                     )
                     if end is not None:
                         self.best_world_x = max(self.best_world_x, end.x)

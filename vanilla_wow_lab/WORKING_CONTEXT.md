@@ -1188,6 +1188,12 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    as action boundaries, so each `move_to` executes and settles one steep edge at a time.
    That candidate is uploaded inert as **wowborg:v171**
    (`2b445ece-e7f8-43a5-83cc-f773df84c0d0`, source `3818f5d`).
+   Six-run request `xreq_24966ee6-6f57-4ebe-bad2-ce3a5946f9cf` produced one
+   ramp-base run. Its first edge-bounded native action also returned the unchanged frame after 30
+   seconds, proving native `move_to` cannot execute this steep component. Four runs stopped earlier
+   on route progress/frame failures and one died at ramp-turn. The active source keeps the
+   canonical edge bearings but uses the public action contract's explicit one-shot `jump` bit on
+   their forward vectors. All non-steep movement and hazard decisions are unchanged.
 
 ## Reference
 

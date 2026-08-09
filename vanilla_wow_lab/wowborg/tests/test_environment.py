@@ -97,6 +97,21 @@ def test_move_uses_upstream_action_and_advances_to_next_frame() -> None:
     assert outcome.settlement_kind is None
 
 
+def test_move_vector_preserves_explicit_jump_request() -> None:
+    env = FakeEnv()
+    session = GymSession(env, _frame(1), {})
+
+    session.select_move_vector(
+        session.frame,
+        forward=1.0,
+        jump=True,
+        duration=0.25,
+        purpose="climb a proved steep edge",
+    )
+
+    assert env.actions[0].jump is True
+
+
 def test_matching_action_state_marks_the_action_settled() -> None:
     class SettledEnv(FakeEnv):
         def step(self, action):

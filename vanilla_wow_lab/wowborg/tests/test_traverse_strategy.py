@@ -14,7 +14,7 @@ from wowborg.strategies.traverse import (
     CAT_FORM_SPELL_ID,
     GREAT_LIFT_LOWER_DOCK,
     PROWL_SPELL_IDS,
-    ROAD_NATIVE_NAVIGATION_GUIDEPOINTS,
+    ROAD_STEEP_GUIDEPOINTS,
     TRAVERSE_ROUTE_PREFIX,
     TraverseStrategy,
     _activate_prowl,
@@ -150,7 +150,7 @@ def test_traverse_route_prefix_reaches_great_lift_lower_dock() -> None:
         "shimmering-flats-ramp-crest",
     ]
     assert set(names[ascent_start : ascent_start + 17]) == set(
-        ROAD_NATIVE_NAVIGATION_GUIDEPOINTS
+        ROAD_STEEP_GUIDEPOINTS
     )
 
 

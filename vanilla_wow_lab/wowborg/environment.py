@@ -204,6 +204,7 @@ class GymSession:
         forward: float = 0.0,
         strafe: float = 0.0,
         turn: float = 0.0,
+        jump: bool = False,
         duration: float,
         purpose: str,
     ) -> str | None:
@@ -215,6 +216,7 @@ class GymSession:
                 forward=forward,
                 strafe=strafe,
                 turn=turn,
+                jump=jump,
                 duration=duration,
             ),
         )

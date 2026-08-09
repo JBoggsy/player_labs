@@ -827,6 +827,12 @@ Detour points bound each action to one steep edge, while native `move_to` suppli
 jump inference for that edge.
 That candidate is uploaded inert as **wowborg:v171**
 (`2b445ece-e7f8-43a5-83cc-f773df84c0d0`, source `3818f5d`).
+Request `xreq_24966ee6-6f57-4ebe-bad2-ce3a5946f9cf` produced one ramp-base run.
+Its first edge-bounded native action also returned the unchanged frame after 30 seconds, proving
+native `move_to` cannot execute this steep component. Four runs stopped earlier on route
+progress/frame failures and one died at ramp-turn. The next candidate retains the canonical edge
+bearings but uses the public action contract's explicit one-shot `jump` bit on their forward
+vectors. Non-steep movement and hazard behavior remain unchanged.
 
 ## Open uncertainties
 
