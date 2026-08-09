@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v115 - precise safe-anchor arrival (2026-08-09)
+
+- Version UUID: `1035e292-5f91-4e18-9398-89161c4bc14a` (`wowborg:v115`, uploaded
+  inert; not submitted). Built from source `35d9050` against canonical vanilla-wow 0.1.209.
+- Returns combat to v112's escape-only baseline. When retreating to a recorded safe anchor,
+  wowborg now turns in place and then bounds forward-input duration by remaining distance and
+  observed movement speed. Ordinary road, avoidance, escape, and lift steering are unchanged.
+  Hosted proof is pending.
+
 ## v114 - corrected package entrypoint (2026-08-09)
 
 - Version UUID: `830a0fa0-7d92-416f-8c8a-0eabc9f1015e` (`wowborg:v114`, uploaded

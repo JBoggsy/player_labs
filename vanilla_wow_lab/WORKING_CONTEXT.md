@@ -83,6 +83,8 @@ activation but falsified the strength premise: 413 outgoing versus 570 incoming 
 The pre-pull retreat had orbited its six-yard safe anchor because fixed 0.75-second forward-turn
 pulses cannot settle within two yards. The active source returns to v112's escape-only combat
 baseline and changes only retreat arrival: turn in place, then move with a distance-bounded pulse.
+It is uploaded inert as **wowborg:v115**
+(`1035e292-5f91-4e18-9398-89161c4bc14a`, source `35d9050`); hosted proof is pending.
 
 ### Previous 0.1.208 movement baseline
 

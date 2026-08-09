@@ -335,6 +335,8 @@ safe anchor was only 6.4 yards behind, but fixed 0.75-second forward-turn pulses
 orbited it rather than arriving within the two-yard hold radius. The next candidate returns to
 v112's escape-only combat baseline and changes only safe-anchor arrival: turn in place first,
 then use a distance-bounded forward pulse.
+That precise safe-anchor arrival is uploaded inert as wowborg:v115
+(`1035e292-5f91-4e18-9398-89161c4bc14a`, source `35d9050`).
 
 ## Open uncertainties
 
