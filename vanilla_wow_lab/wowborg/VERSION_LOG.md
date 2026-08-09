@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v142 - continuous settled Traverse cadence (2026-08-09)
+
+- Version UUID: `663ecd3e-10eb-4ba4-9a73-0cf33d43a33c` (`wowborg:v142`, uploaded
+  inert; not submitted). Built from source `c126d76` against canonical vanilla-wow 0.1.209.
+- Restores the proven 0.75-second stride and removes the redundant 0.25-second wait after each
+  synchronous action has already returned its settled next frame. Geometry and hazard gates are
+  unchanged.
+- Hosted Traverse proof is pending.
+
 ## v141 - doubled open Traverse stride (2026-08-09)
 
 - Version UUID: `53afe44e-b6aa-4880-9111-eeffe620e64f` (`wowborg:v141`, uploaded

@@ -563,6 +563,8 @@ throughput defect: each synchronous vector action already returns its settled ne
 Traverse then submitted a redundant 0.25-second wait before every next pulse. The next candidate
 restores the proven 0.75-second stride and removes that wait, increasing movement duty cycle from
 75% to 100% without increasing one-pulse hazard reaction distance.
+It is uploaded inert as **wowborg:v142**
+(`663ecd3e-10eb-4ba4-9a73-0cf33d43a33c`, source `c126d76`); hosted Traverse proof is pending.
 
 ## Open uncertainties
 
