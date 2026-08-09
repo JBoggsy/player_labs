@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v148 - tight Shimmering Flats ramp arrivals (2026-08-09)
+
+- Version UUID: `52ad576d-0fc3-4ab4-9570-db29744840f0` (`wowborg:v148`, uploaded
+  inert; not submitted). Built from source `205e9e7` against canonical vanilla-wow 0.1.209.
+- Tightens only the six narrow Shimmering Flats ramp anchors from 8-yard to 3-yard arrivals.
+  Detour anchors, ordinary passes, hazard behavior, and the lower-dock goal are unchanged.
+- Hosted Traverse proof is pending.
+
 ## v147 - vertically aligned road milestones (2026-08-09)
 
 - Version UUID: `9ddebbfa-f068-41be-9ea5-32648a60d8c6` (`wowborg:v147`, uploaded

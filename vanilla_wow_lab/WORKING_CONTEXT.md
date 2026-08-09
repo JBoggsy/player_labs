@@ -347,6 +347,8 @@ It is uploaded inert as **wowborg:v147**
 the first exact ramp-approach arrival. It then fell approaching the ramp turn. The shared 8-yard
 exact radius is too loose for the narrow slope; the active candidate tightens only the ramp anchors
 to 3 yards while retaining existing tolerances for Detour anchors and the lower-dock goal.
+It is uploaded inert as **wowborg:v148**
+(`52ad576d-0fc3-4ab4-9570-db29744840f0`, source `205e9e7`); hosted Traverse proof is pending.
 
 ### Previous 0.1.208 movement baseline
 
