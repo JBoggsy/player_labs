@@ -6,7 +6,11 @@
   inert; not submitted). Built from source `0e2a8fb` against canonical vanilla-wow 0.1.209.
 - Once retreat starts, it now persists to the frozen safe anchor even if moving patrols briefly
   restore candidate clearance. Geometry, actuator control, and combat behavior are unchanged.
-  Hosted proof is pending.
+- Request `xreq_4bef2465-c2bc-4933-868d-dd048e53a561` reduced churn to seven retreats
+  and four switches, but persistent retreat exercised a distance-derived 0.5629-second diagonal
+  translation that timed out at frame 559. It reached three guidepoints and had one escaped pull.
+  The next candidate uses the proven exact 0.25-second quantum for every precise translation;
+  turn behavior, state semantics, and geometry are unchanged.
 
 ## v119 - diagonal retreat wrapper support (2026-08-09)
 

@@ -112,20 +112,6 @@ def _steer_toward(
             purpose=purpose,
         )
         return
-    duration = GREAT_LIFT_INPUT_SECONDS
-    if precise_arrival:
-        distance = math.hypot(
-            target.x - frame.location.x,
-            target.y - frame.location.y,
-        )
-        speed = frame.movement_speed if frame.movement_speed_known else 7.0
-        duration = max(
-            0.1,
-            min(
-                GREAT_LIFT_INPUT_SECONDS,
-                (distance - ROAD_HAZARD_HOLD_RADIUS_YARDS) / max(1.0, speed),
-            ),
-        )
     bridge.select_move_vector(
         frame,
         forward=1.0,
@@ -134,7 +120,7 @@ def _steer_toward(
             if precise_arrival and abs(delta) > math.pi / 8
             else 0.0
         ),
-        duration=duration,
+        duration=0.25 if precise_arrival else GREAT_LIFT_INPUT_SECONDS,
         purpose=purpose,
     )
 

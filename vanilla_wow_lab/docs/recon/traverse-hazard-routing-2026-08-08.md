@@ -379,6 +379,14 @@ above 15 yards, even 20–45 yards from the frozen safe anchor, then restarted w
 patrol made the next frame unsafe. The next candidate makes reaching the anchor, rather than a
 momentary clearance change, the retreat completion condition.
 
+V120 request `xreq_4bef2465-c2bc-4933-868d-dd048e53a561` confirmed the temporal fix:
+retreat activations fell from 140 to seven and side switches from 139 to four. It also exposed the
+remaining unsupported actuator shape. Once a persistent retreat approached its anchor, the
+distance-derived 0.5629-second diagonal translation timed out at frame 559. The run reached three
+guidepoints and escaped one pull. Exact 0.25-second actions already settle reliably and move about
+2.45 yards in Travel Form, closely matching the two-yard hold radius. The next candidate therefore
+uses that exact quantum for all precise translation instead of deriving duration continuously.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.
