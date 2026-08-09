@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v198 - maximum clear-road stride (2026-08-09)
+
+- Upload pending.
+- Raises only unobstructed, non-terrain-constrained road input from 1.0 to the environment
+  contract's 1.5-second maximum. Hazard steering, combat, climbs, and staged descent keep their
+  existing precise cadence.
+- V197's 24-run batch kept every run alive, but its only descent-landing run arrived around 250
+  seconds and ended at 2,002/2,754 health, roughly two simulated seconds short of satisfying the
+  80% release gate. This candidate targets the upstream action-roundtrip cost.
+
 ## v197 - ranged fallback after repeated melee failure (2026-08-09)
 
 - Version UUID: `392971b2-b83d-4d43-a3cc-568a3725f78f` (`wowborg:v197`, uploaded
@@ -8,7 +18,12 @@
   switches to Moonfire followed by Wrath. The first failed rotation still gets V195's corrective
   re-face; ordinary successful melee fights are unchanged.
 - This targets V196's sole death: a level-47 Scorpid Dunestalker took zero damage through two
-  failed melee rotations, including the corrective re-face. Hosted evaluation is pending.
+  failed melee rotations, including the corrective re-face. Hosted request
+  `xreq_239086a7-53fc-4c8e-a920-5863683087ab` kept all 24 runs alive. Nineteen fights completed,
+  including 12 corrective re-faces across eight runs; no fight exhausted two complete rotations,
+  so the ranged fallback remains unactivated. One run reached the intermediate descent landing
+  around 250 seconds and exercised the 80% health gate, healing from 1,301 to 2,002 before the
+  episode horizon.
 
 ## v196 - health-gated second descent (2026-08-09)
 

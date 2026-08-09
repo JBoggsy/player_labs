@@ -1338,8 +1338,14 @@ still fought in Cat Form first, with one corrective re-face after a complete fai
 second complete rotation also fails, wowborg leaves Cat Form and casts Moonfire followed by Wrath
 at the exact attacker. This directly addresses V196's sole death, where a level-47 Scorpid
 Dunestalker took zero damage before and after the re-face. The change is uploaded inert as
-**wowborg:v197** (`392971b2-b83d-4d43-a3cc-568a3725f78f`, source `3e4d4ef`) but not yet evaluated;
-routing, hazard clearance, descent healing, and movement cadence are unchanged.
+**wowborg:v197** (`392971b2-b83d-4d43-a3cc-568a3725f78f`, source `3e4d4ef`). Hosted request
+`xreq_239086a7-53fc-4c8e-a920-5863683087ab` kept all 24 runs alive; 19 fights completed, including
+12 corrective re-faces across eight runs, but none exhausted two rotations, so the ranged fallback
+did not activate. One run reached the intermediate descent landing around 250 seconds and healed
+from 1,301 to 2,002 before the horizon ended, about two simulated seconds short of the 80% release
+gate. The active source therefore raises only unobstructed, non-terrain-constrained road input from
+1.0 to the 1.5-second contract maximum. Hazard steering, combat, climbing, and staged descent
+cadence are unchanged; this speed candidate is not yet uploaded or evaluated.
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.
