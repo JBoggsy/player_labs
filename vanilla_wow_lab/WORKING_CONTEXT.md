@@ -1152,6 +1152,9 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    preserving the resource trace fields for the next hosted proof.
    That candidate is uploaded inert as **wowborg:v167**
    (`31e355b8-384d-490b-a274-5f2669eb2c06`, source `7dc278e`).
+   The prepared next source candidate time-aligns player and patrol motion using the observation's
+   movement speeds and remaining spline time. It retains the 20-yard floor and swept-volume
+   fallback. It is not uploaded; v167 must settle the terminal-health mechanism first.
 
 ## Reference
 

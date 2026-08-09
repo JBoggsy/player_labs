@@ -790,6 +790,13 @@ health convention to Traverse hazards and attackers.
 That candidate is uploaded inert as **wowborg:v167**
 (`31e355b8-384d-490b-a274-5f2669eb2c06`, source `7dc278e`).
 
+The prepared next router candidate uses `Unit.movement_speed` and
+`Unit.movement_remaining_seconds` plus the player's observed movement speed to minimize distance
+between the two motions at matching times. The current complete-segment intersection marks paths
+unsafe even when the player and patrol reach their crossing at different times. The candidate
+retains the existing 20-yard floor and uses the swept-volume calculation whenever timing is
+unavailable. It remains source-only until v167 settles the terminal-health mechanism.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.
