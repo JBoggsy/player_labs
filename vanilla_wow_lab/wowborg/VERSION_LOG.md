@@ -7,6 +7,11 @@
 - Keeps continuous climb jumps, but accepts a steep ascent edge after reaching the target height
   with 3 yards of vertical slack inside an 8-yard planar envelope. Descent, route geometry, combat,
   and hazard thresholds are unchanged from V209.
+- The first 47 completed jobs in hosted request `xreq_535fa923-7c60-4c62-9da1-9ce9c251b3fa`
+  increased crest completions from V209's 5/48 to 31/47 and reduced median base-to-crest time from
+  84.7 to 72.5 seconds. One job remained an infrastructure straggler during analysis. Of the 47,
+  two died: one to a level-47 Scorpid near spawn and one after falling on descent point 27. The
+  active source removes the remaining 0.25-second precise-input cap from hazard-free climb pulses.
 
 ## v209 - accept crossed lower descent edges (2026-08-09)
 

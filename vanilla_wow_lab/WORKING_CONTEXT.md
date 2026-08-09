@@ -1419,7 +1419,13 @@ run spent 86 seconds on the 16 exact ascent points and reached the south road at
 active source accepts a climb edge once wowborg reaches its target height with 3 yards of vertical
 slack inside an 8-yard planar envelope, avoiding exact-coordinate cleanup after a successful jump.
 This candidate is uploaded inert as **wowborg:v210**
-(`b88c0e66-569b-456d-b2ce-fcf376ef0460`, source `e3a0490`).
+(`b88c0e66-569b-456d-b2ce-fcf376ef0460`, source `e3a0490`). The first 47 completed jobs in hosted
+request `xreq_535fa923-7c60-4c62-9da1-9ce9c251b3fa` increased crest completions from V209's 5/48
+to 31/47 and reduced median base-to-crest time from 84.7 to 72.5 seconds; one job remained an
+infrastructure straggler during analysis. Two of those 47 died, one to a level-47 Scorpid near
+spawn and one after falling on descent point 27. The active source lets hazard-free continuous
+climb jumps use the existing 0.75-second terrain stride instead of forcing exact 0.25-second
+translations.
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.
