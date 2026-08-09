@@ -1349,7 +1349,8 @@ reach. One long stride entered multiple attackers; the other death entered a sec
 at 84% health. The active source restores V197's one-second stride. It instead proactively fights
 an ordinary level-49-or-lower blocker already inside the eight-yard hold zone only when wowborg has
 at least 95% health and every other nearby hostile's projected path preserves the existing 12-yard
-add-clearance floor. This candidate is not yet uploaded or evaluated.
+add-clearance floor. This candidate is uploaded inert as **wowborg:v199**
+(`aeebd278-56b2-4ca9-b377-859ae9c16424`, source `cd20e3d`) but not yet evaluated.
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.

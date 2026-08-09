@@ -2,7 +2,8 @@
 
 ## v199 - isolated healthy blocker fights (2026-08-09)
 
-- Upload pending.
+- Version UUID: `aeebd278-56b2-4ca9-b377-859ae9c16424` (`wowborg:v199`, uploaded
+  inert; not submitted). Built from source `cd20e3d` against canonical vanilla-wow 0.1.209.
 - Restores V197's proven one-second clear-road stride. When any ordinary level-49-or-lower blocker
   is already inside the eight-yard hold zone, wowborg now fights proactively only if it has at
   least 95% health and every other nearby hostile's projected path preserves the existing 12-yard
