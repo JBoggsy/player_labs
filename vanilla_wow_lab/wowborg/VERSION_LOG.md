@@ -7,7 +7,11 @@
 - Holds on the road for true moving cross-traffic, but classifies a patrol whose movement
   destination lies within 30 yards of the active guidepoint as a resident blocker and applies the
   local 20-yard avoidance planner immediately. This replaces v135's unsafe time escalation.
-- Hosted Traverse proof is pending.
+- Request `xreq_80a314cf-f183-43c1-bb7f-e818e708651e` was infrastructure-censored
+  by a 30-second action-settlement timeout at node 3 while full-health. Fair repeat
+  `xreq_50cabc51-a8db-4a56-88b3-dba3884b0bd2` survived and recovered from one Tail
+  Lasher contact, but timed out at node 7 only about 14 yards from its center and just 5 yards short
+  of its exact northing threshold. It had effectively reached the milestone but could not advance.
 
 ## v135 - bounded per-patrol hold (2026-08-09)
 

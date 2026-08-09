@@ -249,7 +249,14 @@ holds for genuine cross-traffic but locally avoids a moving patrol whose destina
 about 188 yards from node 1, while v134's blocking Roc repeatedly targeted within about 12 yards of
 node 7.
 It is uploaded inert as **wowborg:v136**
-(`e604b7aa-fc13-4871-a7b5-bc1a084afb48`, source `ab358ec`); hosted Traverse proof is pending.
+(`e604b7aa-fc13-4871-a7b5-bc1a084afb48`, source `ab358ec`). Request
+`xreq_80a314cf-f183-43c1-bb7f-e818e708651e` was infrastructure-censored by a
+30-second action-settlement timeout at node 3 while full-health. Fair repeat
+`xreq_50cabc51-a8db-4a56-88b3-dba3884b0bd2` survived and recovered from one Tail
+Lasher contact, but timed out at node 7 only about 14 yards from its center and just 5 yards short
+of its exact northing threshold. The active candidate permits ordinary guidepoints to pass up to
+20 yards before their target x while retaining the existing 60-yard lateral/z corridor. The three
+Detour bend anchors and Great Lift remain exact.
 
 ### Previous 0.1.208 movement baseline
 

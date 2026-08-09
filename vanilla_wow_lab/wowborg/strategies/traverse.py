@@ -32,6 +32,7 @@ GREAT_LIFT_EXIT_Z = 80.0
 GREAT_LIFT_INPUT_SECONDS = 0.75
 ROAD_ARRIVAL_RADIUS_YARDS = 8.0
 ROAD_PASS_LATERAL_YARDS = 60.0
+ROAD_PASS_NORTHING_SLACK_YARDS = 20.0
 ROAD_STALL_SECONDS = 8.0
 ROAD_UNSTICK_ATTEMPTS = 2
 ROAD_HAZARD_ENTER_YARDS = 30.0
@@ -525,7 +526,7 @@ def _steer_road_leg(
         )
         if (
             allow_northing_pass
-            and frame.location.x >= target.x
+            and frame.location.x >= target.x - ROAD_PASS_NORTHING_SLACK_YARDS
             and lateral_distance <= ROAD_PASS_LATERAL_YARDS
         ):
             trace(
