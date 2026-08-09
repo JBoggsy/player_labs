@@ -530,7 +530,13 @@ next candidate instead retains a crossing GUID while it remains within 70 yards 
 lookahead, holding without displacement. A projected path inside 20 yards of the holding point
 still escalates to local avoidance, and guidepoint-resident classification remains active.
 It is uploaded inert as **wowborg:v138**
-(`cec936af-e9e3-4141-afaa-d693d0a4ccc4`, source `2d61417`); hosted Traverse proof is pending.
+(`cec936af-e9e3-4141-afaa-d693d0a4ccc4`, source `2d61417`). Request
+`xreq_d1cd8097-6b68-4ba5-9e28-7c6c945374fe` stayed full-health with zero combat,
+but spent 6,339 pulses holding and reached only road node 3. The retention rule exposed a more
+basic classification defect: the no-hazard branch held for every moving hostile in lookahead,
+whether or not its projected patrol crossed wowborg. The next candidate holds only an isolated
+projected crossing; immediate and guidepoint-resident blockers still use local avoidance, and a
+held crossing releases as soon as its projected trajectory clears.
 
 ## Open uncertainties
 

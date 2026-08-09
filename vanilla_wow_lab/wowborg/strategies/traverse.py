@@ -38,7 +38,6 @@ ROAD_UNSTICK_ATTEMPTS = 2
 ROAD_HAZARD_ENTER_YARDS = 30.0
 ROAD_HAZARD_EXIT_YARDS = 40.0
 ROAD_HAZARD_LOOKAHEAD_YARDS = 60.0
-ROAD_HAZARD_HOLD_EXIT_YARDS = 70.0
 ROAD_HAZARD_RESIDENT_RADIUS_YARDS = 30.0
 ROAD_HAZARD_CORRIDOR_YARDS = 18.0
 ROAD_HAZARD_TRACK_YARDS = 80.0
@@ -303,9 +302,6 @@ def _hazard_avoidance_target(
         )
         < ROAD_HAZARD_MIN_CLEARANCE_YARDS
     ]
-    hazards_by_guid = {
-        unit.guid: unit for unit in (*immediate_hazards, *threatening_crossings)
-    }
     resident_hazards = [
         unit
         for unit in lookahead_hazards
@@ -316,28 +312,23 @@ def _hazard_avoidance_target(
         )
         <= ROAD_HAZARD_RESIDENT_RADIUS_YARDS
     ]
-    hazards_by_guid.update({unit.guid: unit for unit in resident_hazards})
+    if threatening_crossings and not immediate_hazards and not resident_hazards:
+        return (
+            target,
+            None,
+            threatening_crossings,
+            tracked,
+            {},
+            {},
+            True,
+        )
+    hazards_by_guid = {
+        unit.guid: unit
+        for unit in (*immediate_hazards, *resident_hazards)
+    }
     hazards = list(hazards_by_guid.values())
     if not hazards:
-        lookahead_guids = {unit.guid for unit in lookahead_hazards}
-        hold_hazards_by_guid = {
-            unit.guid: unit
-            for unit in lookahead_hazards
-            if unit.movement_destination_known
-        }
-        hold_hazards_by_guid.update(
-            {
-                unit.guid: unit
-                for unit in tracked
-                if unit.guid in safe_active_holding_guids
-                and (
-                    unit.guid in lookahead_guids
-                    or unit.distance < ROAD_HAZARD_HOLD_EXIT_YARDS
-                )
-            }
-        )
-        hold_hazards = list(hold_hazards_by_guid.values())
-        return target, None, hold_hazards, tracked, {}, {}, bool(hold_hazards)
+        return target, None, [], tracked, {}, {}, False
 
     def clearance(candidate_side: float, lateral_yards: float) -> float:
         candidate_x = (
