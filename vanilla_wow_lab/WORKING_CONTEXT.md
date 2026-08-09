@@ -1113,6 +1113,10 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    actions are unchanged.
    That candidate is uploaded inert as **wowborg:v163**
    (`c111df42-03f8-42c4-bc67-40e7603270c3`, source `99d2555`).
+   Request `xreq_9523234d-13d1-40e6-b099-47a4df0b76e7` failed identically at the
+   first clear stride in all six episodes: canonical `move_vector.duration` is capped at 1.5
+   seconds, so the four-second action failed local validation before host submission. The next
+   source candidate uses the contract maximum of 1.5 seconds.
 
 ## Reference
 

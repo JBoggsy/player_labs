@@ -8,6 +8,10 @@
   fixed action-round-trip overhead while remaining inside the existing 80-yard hazard horizon.
 - Turns, visible-hazard steering, retreat, evasion, ramp movement, combat, route geometry, and all
   hazard thresholds are unchanged from v162. This isolates safe-route throughput.
+- Request `xreq_9523234d-13d1-40e6-b099-47a4df0b76e7` failed identically in all six
+  episodes at the first clear stride: the canonical action model constrains `move_vector.duration`
+  to at most 1.5 seconds, so constructing the four-second action raised validation before host
+  submission. The next candidate uses the contract maximum of 1.5 seconds.
 
 ## v162 - close fully into feral range (2026-08-09)
 
