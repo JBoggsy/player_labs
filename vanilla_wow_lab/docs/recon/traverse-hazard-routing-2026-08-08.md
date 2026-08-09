@@ -452,6 +452,8 @@ Tanaris road node 9. From that point accepted 0.75-second forward inputs produce
 until the eight-second route watchdog fired. The next candidate keeps that watchdog bounded but,
 before terminating, tries one traced forward-diagonal recovery pulse on each side and requires
 measured displacement to reset progress.
+It is uploaded inert as **wowborg:v129**
+(`e27cf658-ddef-4d2d-93fe-89b31c4b04dd`, source `29f415a`); hosted proof is pending.
 
 ## Open uncertainties
 

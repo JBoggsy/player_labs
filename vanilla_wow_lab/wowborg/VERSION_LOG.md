@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v129 - bounded ordinary-road unstick (2026-08-09)
+
+- Version UUID: `e27cf658-ddef-4d2d-93fe-89b31c4b04dd` (`wowborg:v129`, uploaded
+  inert; not submitted). Built from source `29f415a` against canonical vanilla-wow 0.1.209.
+- When the existing eight-second route watchdog fires, tries one forward-diagonal pulse on each
+  side and traces measured displacement. Target progress resets only after physical movement; two
+  blocked attempts retain the existing no-progress termination.
+
 ## v128 - calibrated 20-yard clearance floor (2026-08-09)
 
 - Version UUID: `40be968c-6891-4dc2-8d9d-6c18cdbc3811` (`wowborg:v128`, uploaded

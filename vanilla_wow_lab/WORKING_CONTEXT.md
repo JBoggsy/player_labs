@@ -188,6 +188,8 @@ At Tanaris road node 9 it then issued accepted ordinary forward inputs for eight
 physical displacement and terminated 222 yards from the guidepoint. The active candidate uses the
 existing progress watchdog to try one traced forward-diagonal recovery pulse on each side; if both
 remain blocked, the same no-progress failure still terminates the route.
+It is uploaded inert as **wowborg:v129**
+(`e27cf658-ddef-4d2d-93fe-89b31c4b04dd`, source `29f415a`); hosted proof is pending.
 
 ### Previous 0.1.208 movement baseline
 
