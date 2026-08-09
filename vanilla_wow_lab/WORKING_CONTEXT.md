@@ -1372,7 +1372,11 @@ descent, but none reached the south road. The best completed descent point 9, th
 17-yard vertical chord toward point 10 and entered repeated server corrections. The active source
 keeps the proven upper descent and replaces the steep lower segment with every roughly three-yard
 Detour waypoint. This candidate is uploaded inert as **wowborg:v203**
-(`2344455c-3edd-49d9-80ed-833c8c2437e2`, source `de622a3`).
+(`2344455c-3edd-49d9-80ed-833c8c2437e2`, source `de622a3`). Hosted request
+`xreq_fc162cfb-4b39-416f-bec0-6d35c04565f8` completed all 24 runs alive. Its best run reached dense
+point 15 at full health, then walking toward point 16 fell through empty geometry and repeatedly
+reset to the lip. The active source preserves the dense bearings and switches to the proven
+jump-aware movement mode from point 16 onward.
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.

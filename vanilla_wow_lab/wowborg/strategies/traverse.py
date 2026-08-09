@@ -73,6 +73,7 @@ RAMP_FIGHT_ADD_CLEARANCE_YARDS = 12.0
 SECOND_DESCENT_MIN_HEALTH_FRACTION = 0.8
 ROAD_STEEP_GUIDEPOINTS = frozenset(
     {f"shimmering-flats-ramp-ascent-{index:02d}" for index in range(1, 17)}
+    | {f"shimmering-flats-descent-{index:02d}" for index in range(16, 42)}
     | {"tanaris-road-9-climb-crest", "shimmering-flats-ramp-crest"}
 )
 ROAD_STEEP_PASS_GUIDEPOINTS = frozenset({"tanaris-road-9-climb-crest"})
@@ -177,6 +178,8 @@ TRAVERSE_ROUTE_PREFIX = (
     ("shimmering-flats-descent-13", Point(1, -6690.3750, -3998.0830, 57.0616)),
     ("shimmering-flats-descent-14", Point(1, -6688.2163, -4000.1660, 52.7371)),
     ("shimmering-flats-descent-15", Point(1, -6686.0576, -4002.2490, 49.3734)),
+    # Hosted movement falls through the lower Detour edge when merely walking.
+    # Keep its dense bearings, but use explicit jumps from this point onward.
     ("shimmering-flats-descent-16", Point(1, -6683.8989, -4004.3320, 46.0482)),
     ("shimmering-flats-descent-17", Point(1, -6681.7397, -4006.4150, 41.8916)),
     ("shimmering-flats-descent-18", Point(1, -6679.5811, -4008.4980, 39.2277)),

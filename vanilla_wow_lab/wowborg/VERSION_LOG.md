@@ -8,6 +8,10 @@
   canonical Detour waypoint down the steep lower face instead of cutting eight long vertical
   chords. This directly targets V202's first observed server-correction loop without slowing the
   already reliable upper approach.
+- Hosted request `xreq_fc162cfb-4b39-416f-bec0-6d35c04565f8` completed all 24 runs with every
+  character alive. The best run reached dense point 15 at full health, then walking toward point
+  16 fell through empty geometry and repeatedly reset to the lip. Density moved the failure down
+  the route but did not make that edge walk-continuous; explicit jumping is required there.
 
 ## v202 - canonical connected descent path (2026-08-09)
 
