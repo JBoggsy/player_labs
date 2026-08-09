@@ -174,7 +174,12 @@ node's northing by 23 yards and remaining only 32 yards lateral. The active cand
 intermediate road guidepoint after crossing its northing within 60 lateral yards; the Great Lift
 lower dock retains exact eight-yard arrival.
 It is uploaded inert as **wowborg:v127**
-(`010103bc-3838-4a7e-89a0-975beeb09c9b`, source `87adcda`); hosted proof is pending.
+(`010103bc-3838-4a7e-89a0-975beeb09c9b`, source `87adcda`). Request
+`xreq_dc68b02d-a892-4d7b-b73a-728569f395be` emitted the bounded pass, stayed
+full-health with no combat or timeout, and improved to 11 guidepoints / 1,869.8 reported northing
+yards, with actual max x another 156.6 yards ahead. It still spent 92 evasions and 66 blocked
+retreats under the 25-yard floor. The active candidate lowers the clearance floor to 20 yards:
+this still rejects v124's fatal 18.6-yard candidate while recovering five yards of routing freedom.
 
 ### Previous 0.1.208 movement baseline
 

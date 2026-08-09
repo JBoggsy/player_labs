@@ -436,6 +436,14 @@ but the exact eight-yard arrival circle forced it to orbit the patrol cluster fo
 episode. The next candidate accepts intermediate guidepoints after crossing their northing within
 60 lateral yards while retaining exact eight-yard arrival at the Great Lift lower dock.
 
+V127 request `xreq_dc68b02d-a892-4d7b-b73a-728569f395be` emitted the bounded pass,
+stayed full-health with no combat or timeout, and improved to 11 guidepoints / 1,869.8 reported
+northing yards; actual max x was another 156.6 yards ahead. Its remaining cost was 92 evasions and
+66 blocked retreats under the 25-yard clearance floor. The measured tuning interval is now useful:
+15 yards accepted v124's fatal 18.6-yard bypass, while 25 is safe but expensive across v125–v127.
+The next candidate uses a 20-yard floor, rejecting the known fatal candidate while recovering five
+yards of routing freedom.
+
 ## Open uncertainties
 
 - The exact full-route navmesh cost of the owner road versus the current direct Great Lift line.
