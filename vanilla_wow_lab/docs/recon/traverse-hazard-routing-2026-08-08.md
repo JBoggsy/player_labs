@@ -664,6 +664,12 @@ It is uploaded inert as **wowborg:v154**
 (`4b12b163-c947-4fee-969f-cd6b7110e01f`, source `e030d61`). This is a single
 mechanism change: route geometry and hazard timing are identical to v153, so reaching the approach
 will isolate the former three-yard arrival tolerance as the blocker.
+Request `xreq_2a2d6324-4fb2-470a-8aad-14dc08e7091f` reached both the lip and approach
+at full health with zero combat, validating that mechanism. It then cycled 18 constrained-ramp
+holds and 17 releases for 86 seconds at the ramp-turn frontier. The recurring Scorpid is about
+6.4 yards from the turn anchor; the conservative 20-yard floor therefore cannot complete this
+route even though ordinary level-gap aggro was measured at 5–7 yards. The next source candidate
+changes only that floor to 8 yards. Ordinary-road avoidance and route geometry remain unchanged.
 
 ## Open uncertainties
 

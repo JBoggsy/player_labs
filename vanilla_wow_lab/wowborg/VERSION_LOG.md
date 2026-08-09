@@ -9,6 +9,10 @@
   arrival radius; the observed lip and later narrow bends remain three-yard exact anchors.
 - v153 route geometry, hazard timing, and ordinary-road behavior are unchanged. The hosted probe
   should distinguish arrival-tolerance failure from a subsequent ramp-turn failure.
+- Request `xreq_2a2d6324-4fb2-470a-8aad-14dc08e7091f` reached both the exact lip and
+  broad approach at full health with zero combat. It then spent the remaining 86 seconds cycling
+  terrain holds at the ramp-turn frontier. The next candidate reduces only that constrained-ramp
+  floor from 20 to 8 yards, still above the measured 5–7-yard visible aggro radius.
 
 ## v153 - observed Shimmering Flats ramp lip (2026-08-09)
 

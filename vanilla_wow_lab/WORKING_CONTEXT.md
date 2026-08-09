@@ -1049,6 +1049,10 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    reached the observed Shimmering Flats ramp lip at full health in its v153 predecessor and now
    restores the broad ramp approach's eight-yard arrival tolerance while preserving three-yard
    precision at the lip and later bends. It has not been submitted; v78 remains champion.
+   Its request `xreq_2a2d6324-4fb2-470a-8aad-14dc08e7091f` reached the lip and broad
+   approach at full health with zero combat, then exhausted 86 seconds holding at the ramp-turn
+   frontier. The next source candidate changes only the constrained-ramp resident floor from 20
+   to 8 yards, retaining margin over the measured 5–7-yard visible aggro radius.
 
 ## Reference
 
