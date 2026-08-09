@@ -173,6 +173,8 @@ northing yards. It then spent the remaining episode at road node 7 despite alrea
 node's northing by 23 yards and remaining only 32 yards lateral. The active candidate accepts an
 intermediate road guidepoint after crossing its northing within 60 lateral yards; the Great Lift
 lower dock retains exact eight-yard arrival.
+It is uploaded inert as **wowborg:v127**
+(`010103bc-3838-4a7e-89a0-975beeb09c9b`, source `87adcda`); hosted proof is pending.
 
 ### Previous 0.1.208 movement baseline
 

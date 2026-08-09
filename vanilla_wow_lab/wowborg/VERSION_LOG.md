@@ -1,11 +1,21 @@
 # wowborg version log
 
+## v127 - bounded intermediate-guidepoint pass (2026-08-09)
+
+- Version UUID: `010103bc-3838-4a7e-89a0-975beeb09c9b` (`wowborg:v127`, uploaded
+  inert; not submitted). Built from source `87adcda` against canonical vanilla-wow 0.1.209.
+- An intermediate road guidepoint is complete after wowborg crosses its northing within 60 lateral
+  yards. The Great Lift lower dock retains exact eight-yard arrival, and pass activations trace.
+
 ## v126 - blocked retreat-anchor escape (2026-08-09)
 
 - Version UUID: `149ff0eb-750d-4efa-b524-7b7d7302c697` (`wowborg:v126`, uploaded
   inert; not submitted). Built from source `a5d18e3` against canonical vanilla-wow 0.1.209.
 - After three retreat pulses move less than 0.5 yards, traces the blocked safe anchor and hands
   control to the existing mobile hazard-evasion path. Adaptive widths and clearance remain v125's.
+- Request `xreq_2794b3ad-a849-4a1f-a733-e4659298a305` stayed full-health, cleared nine
+  guidepoints, and reached 1,318.5 yards. It then orbited node 7 despite already passing its
+  northing by 23 yards within 32 lateral yards.
 
 ## v125 - adaptive hazard bypass width (2026-08-09)
 
