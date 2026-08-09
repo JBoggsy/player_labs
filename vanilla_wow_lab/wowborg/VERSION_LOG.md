@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v131 - 60-yard crossing-patrol lookahead (2026-08-09)
+
+- Version UUID: `e663e114-f50f-4246-b054-74e2e642474a` (`wowborg:v131`, uploaded
+  inert; not submitted). Built from source `811a92e` against canonical vanilla-wow 0.1.209.
+- Expands predictive corridor entry/exit from 30/40 to 60/70 yards within the unchanged 80-yard
+  tracked-unit set. This targets v130's measured crossing patrol while preserving ten yards of
+  observation margin and side hysteresis; route geometry and clearance floor are unchanged.
+
 ## v130 - Detour-derived Tanaris terrain bend (2026-08-09)
 
 - Version UUID: `c40c37d1-0396-4307-b850-bac8714e1d67` (`wowborg:v130`, uploaded

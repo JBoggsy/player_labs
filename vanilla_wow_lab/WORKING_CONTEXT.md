@@ -206,6 +206,8 @@ the new terrain anchors. The fatal Scorpid was already tracked at 63.2 yards, ou
 and reached only 0–2.7 yards before contact. The active candidate widens predictive corridor
 entry/exit to 60/70 yards while retaining the existing 80-yard tracked-unit envelope, so crossing
 patrols are routed around while safe clearance still exists.
+It is uploaded inert as **wowborg:v131**
+(`e663e114-f50f-4246-b054-74e2e642474a`, source `811a92e`); hosted proof is pending.
 
 ### Previous 0.1.208 movement baseline
 

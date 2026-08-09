@@ -472,6 +472,8 @@ tracked set at 63.2 yards but lay beyond the old 30-yard projected corridor. Avo
 only at 27.8 yards; at 19.5 yards the best candidate clearance was 2.7 yards and contact followed.
 The next candidate expands predictive entry/exit to 60/70 yards inside the existing 80-yard
 tracked-unit envelope, preserving ten yards of observation margin while retaining hysteresis.
+It is uploaded inert as **wowborg:v131**
+(`e663e114-f50f-4246-b054-74e2e642474a`, source `811a92e`); hosted proof is pending.
 
 ## Open uncertainties
 
