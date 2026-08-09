@@ -930,8 +930,12 @@ mount spells. The existing 20-yard predicted-clearance floor is nearly 3-4x the 
 ordinary aggro radius and drives repeated 30/45/60-yard lateral detours and retreats. The active
 source lowers that floor to 12 yards, preserving roughly a 2x aggro margin without changing the
 one-second clear stride, combat admission, or route geometry. The candidate is uploaded inert as
-**wowborg:v183** (`b3bfe4a6-940a-4677-8e43-1dfe4dc07bed`, source `e49641a`); its hosted evaluation
-is pending.
+**wowborg:v183** (`b3bfe4a6-940a-4677-8e43-1dfe4dc07bed`, source `e49641a`). Hosted request
+`xreq_aeff773d-fffe-4815-b84f-2c2cc18e92c7` kept five of six runs alive. One reached south
+road at 241.4 seconds, but the exact trace showed fall damage accumulating throughout the
+quarter-second descent and the final damage landing 1.34 seconds after movement stopped. Precise
+cadence alone is insufficient. The active source exits Travel Form, enters Cat Form for that one
+descent, and makes south road an exact three-yard anchor before resuming Travel Form on the flats.
 
 ## Open uncertainties
 

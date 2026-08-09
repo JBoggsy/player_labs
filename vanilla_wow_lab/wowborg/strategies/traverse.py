@@ -72,6 +72,7 @@ ROAD_EXACT_GUIDEPOINTS = frozenset(
         "shimmering-flats-ramp-approach",
         "shimmering-flats-ramp-turn",
         "shimmering-flats-ramp-base",
+        "shimmering-flats-south-road",
         "great-lift-lower-dock",
     }
 ) | ROAD_STEEP_GUIDEPOINTS
@@ -81,6 +82,7 @@ ROAD_TIGHT_ARRIVAL_GUIDEPOINTS = frozenset(
         "shimmering-flats-ramp-turn",
         "shimmering-flats-ramp-base",
         "shimmering-flats-south-ramp",
+        "shimmering-flats-south-road",
     }
 ) | ROAD_STEEP_GUIDEPOINTS
 ROAD_TERRAIN_CONSTRAINED_GUIDEPOINTS = ROAD_TIGHT_ARRIVAL_GUIDEPOINTS | {
@@ -1399,6 +1401,53 @@ def _activate_travel_form(bridge, trace) -> None:
     )
 
 
+def _activate_descent_cat_form(bridge, trace) -> bool:
+    frame = bridge.observe()
+    if frame is None:
+        trace("traverse_descent_cat_form", activation=0, reason="no_frame")
+        return False
+    if frame.shapeshift_form_known and frame.shapeshift_form_id == 1:
+        trace("traverse_descent_cat_form", activation=0, reason="already_active")
+        return True
+    if frame.shapeshift_form_known and frame.shapeshift_form_id != 0:
+        if not frame.shapeshift_form_spell_known:
+            trace("traverse_descent_cat_form", activation=0, reason="form_unknown")
+            return False
+        request_id = bridge.select_cancel_aura(
+            frame,
+            frame.shapeshift_form_spell_id,
+        )
+        if request_id is None:
+            trace("traverse_descent_cat_form", activation=0, reason="exit_unavailable")
+            return False
+        outcome = bridge.wait_for_settlement(frame.frame_id)
+        trace(
+            "traverse_descent_cat_form",
+            activation=1,
+            phase="exit_current_form",
+            success=outcome is not None and outcome.success,
+            detail=outcome.detail if outcome is not None else "unsettled",
+        )
+        return False
+    request_id = bridge.select_cast_without_target(
+        frame,
+        CAT_FORM_SPELL_ID,
+        purpose="enter Cat Form for the Shimmering Flats descent",
+    )
+    if request_id is None:
+        trace("traverse_descent_cat_form", activation=0, reason="cast_unavailable")
+        return False
+    outcome = bridge.wait_for_settlement(frame.frame_id)
+    trace(
+        "traverse_descent_cat_form",
+        activation=1,
+        phase="enter_cat_form",
+        success=outcome is not None and outcome.success,
+        detail=outcome.detail if outcome is not None else "unsettled",
+    )
+    return False
+
+
 @dataclass
 class TraverseStrategy:
     """Advance north over the connected local navmesh until time or goal."""
@@ -1452,7 +1501,16 @@ class TraverseStrategy:
             goal_world_x=TRAVERSE_GOAL_WORLD_X,
         )
         while time.monotonic() < until and not getattr(bridge, "finished", False):
-            if self.route_guidepoints_arrived < PROWL_ROUTE_GUIDEPOINTS:
+            descending_to_south_road = (
+                not self.route_prefix_abandoned
+                and self.route_guidepoints_arrived < len(TRAVERSE_ROUTE_PREFIX)
+                and TRAVERSE_ROUTE_PREFIX[self.route_guidepoints_arrived][0]
+                == "shimmering-flats-south-road"
+            )
+            if descending_to_south_road:
+                if not _activate_descent_cat_form(bridge, trace):
+                    continue
+            elif self.route_guidepoints_arrived < PROWL_ROUTE_GUIDEPOINTS:
                 _activate_prowl(bridge, trace)
             else:
                 _activate_travel_form(bridge, trace)

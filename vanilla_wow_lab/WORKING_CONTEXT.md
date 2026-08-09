@@ -1273,8 +1273,12 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    20-yard predicted-clearance floor drives repeated 30/45/60-yard detours despite the pinned
    5-7-yard ordinary aggro radius. The active source lowers that floor to 12 yards, preserving an
    approximately 2x margin while reducing avoidable route churn. The candidate is uploaded inert
-   as **wowborg:v183** (`b3bfe4a6-940a-4677-8e43-1dfe4dc07bed`, source `e49641a`); its hosted
-   evaluation is pending.
+   as **wowborg:v183** (`b3bfe4a6-940a-4677-8e43-1dfe4dc07bed`, source `e49641a`). Hosted request
+   `xreq_aeff773d-fffe-4815-b84f-2c2cc18e92c7` kept five of six runs alive. One reached south road
+   at 241.4 seconds but accumulated fall damage throughout the quarter-second descent and died when
+   the final damage landed 1.34 seconds after movement stopped. The active source now exits Travel
+   Form, enters Cat Form for that one descent, and makes south road an exact three-yard anchor;
+   Travel Form resumes on the flats. Its hosted evaluation is pending.
 
 ## Reference
 

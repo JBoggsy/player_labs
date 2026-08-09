@@ -7,7 +7,11 @@
 - Lowers the predicted road-clearance floor from 20 to 12 yards, aligning ordinary avoidance and
   ramp add prediction on roughly twice the pinned 5-7-yard aggro radius.
 - V182 route geometry, one-second stride, projected-add combat admission, rotation, and constrained
-  descent are unchanged. Hosted evaluation is pending.
+  descent are unchanged.
+- Hosted request `xreq_aeff773d-fffe-4815-b84f-2c2cc18e92c7` kept five of six runs alive. One run
+  reached the south-road pass at 241.4 seconds, but accumulated fall damage throughout the
+  quarter-second descent and died when the final damage landed 1.34 seconds after movement stopped.
+  The 12-yard floor improved the frontier but does not by itself make the descent safe.
 
 ## v182 - projected-add ramp fights (2026-08-09)
 
