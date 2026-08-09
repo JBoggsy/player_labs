@@ -57,6 +57,7 @@ ROAD_HAZARD_HOLD_RADIUS_YARDS = 2.0
 ROAD_HAZARD_SWITCH_MARGIN_YARDS = 5.0
 ROAD_STEEP_GUIDEPOINTS = frozenset(
     {f"shimmering-flats-ramp-ascent-{index:02d}" for index in range(1, 17)}
+    | {f"tanaris-road-9-climb-ascent-{index:02d}" for index in range(1, 7)}
     | {"tanaris-road-9-climb-crest", "shimmering-flats-ramp-crest"}
 )
 ROAD_EXACT_GUIDEPOINTS = frozenset(
@@ -114,6 +115,12 @@ TRAVERSE_ROUTE_PREFIX = (
     # The Detour path becomes too steep to walk after this measured point. Start
     # explicit jumps here, before the separate Shimmering Flats mountain pass.
     ("tanaris-road-9-climb-base", Point(1, -7000.6797, -3835.1392, 12.5631)),
+    ("tanaris-road-9-climb-ascent-01", Point(1, -6987.8472, -3838.8918, 14.6925)),
+    ("tanaris-road-9-climb-ascent-02", Point(1, -6982.2085, -3840.9421, 18.2463)),
+    ("tanaris-road-9-climb-ascent-03", Point(1, -6978.9331, -3842.1333, 21.0613)),
+    ("tanaris-road-9-climb-ascent-04", Point(1, -6976.2441, -3843.4631, 23.8941)),
+    ("tanaris-road-9-climb-ascent-05", Point(1, -6970.8662, -3846.1228, 27.4543)),
+    ("tanaris-road-9-climb-ascent-06", Point(1, -6965.4883, -3848.7825, 30.9721)),
     ("tanaris-road-9-climb-crest", Point(1, -6960.1099, -3851.4419, 34.0389)),
     ("tanaris-north-road-9", Point(1, -6948.5264, -3856.7524, 28.9407)),
     ("shimmering-flats-ramp-lip", Point(1, -6911.4570, -3859.3800, 39.2366)),

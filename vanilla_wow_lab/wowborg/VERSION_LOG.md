@@ -6,7 +6,12 @@
   inert; not submitted). Built from source `63413c5` against canonical vanilla-wow 0.1.209.
 - Ends the new road-9 jump edge at the navmesh's measured z34 crest, then resumes ordinary downhill
   movement to road point 9. All other v174 behavior is unchanged.
-- Hosted evaluation is pending.
+- Six-run request `xreq_ea688a49-44e2-4e64-b96f-71301d0e958b` produced three
+  correct crest/downhill crossings; those runs reached mountain ascent points 14, 6, and 6. One
+  climb run still overshot the 40-yard jump edge, one stopped earlier on an accepted route failure,
+  and one died near road point 3 after a Glasshide Gazer closed to 4.05 yards.
+- The next candidate replaces the single 40-yard jump with six measured navmesh sub-edges, matching
+  the bounded-edge pattern already proven on the later mountain pass.
 
 ## v174 - jump the Tanaris road-9 climb (2026-08-09)
 

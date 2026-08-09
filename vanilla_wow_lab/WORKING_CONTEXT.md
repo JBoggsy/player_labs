@@ -1216,7 +1216,12 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    mountain-pass ascent point 15, the best frontier yet. Three overshot road point 9 vertically at
    z48–71 instead of z29. **wowborg:v175** (`069a5fea-de02-4969-afd2-62c6b83f585b`, source
    `63413c5`) is uploaded inert with that path split at the navmesh's measured z34 crest, ending
-   explicit jumps there before walking downhill to road point 9. Its hosted evaluation is pending.
+   explicit jumps there before walking downhill to road point 9. Six-run request
+   `xreq_ea688a49-44e2-4e64-b96f-71301d0e958b` produced three correct
+   crest/downhill crossings that reached mountain ascent points 14, 6, and 6. One climb run still
+   overshot the 40-yard jump edge; one stopped earlier; and one died near road point 3 after a
+   Glasshide Gazer closed to 4.05 yards. The active source replaces the long climb jump with six
+   measured navmesh sub-edges, matching the bounded-edge mountain-pass controller.
 
 ## Reference
 

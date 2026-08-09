@@ -860,8 +860,13 @@ mountain-pass ascent point 15, the best Traverse frontier yet. Three crossed but
 point 9 vertically at z48–71 instead of z29, while two earlier runs ended on action-settlement
 timeouts. The active source therefore splits the edge at the measured high point
 `(-6960.11, -3851.44, 34.04)`: jump to that crest, then walk downhill to road point 9. This is
-uploaded inert as **wowborg:v175** (`069a5fea-de02-4969-afd2-62c6b83f585b`, source `63413c5`); its
-hosted evaluation is pending.
+uploaded inert as **wowborg:v175** (`069a5fea-de02-4969-afd2-62c6b83f585b`, source `63413c5`).
+Six-run request `xreq_ea688a49-44e2-4e64-b96f-71301d0e958b` produced three
+correct crest/downhill crossings; those runs reached mountain ascent points 14, 6, and 6. One climb
+run still overshot the 40-yard jump edge, one stopped earlier, and one died near road point 3 after
+a Glasshide Gazer closed to 4.05 yards. The active source replaces the one long jump with six
+measured navmesh sub-edges from z14.7 through z31.0 before the z34 crest, matching the bounded-edge
+pattern already proven on the later mountain pass.
 
 ## Open uncertainties
 
