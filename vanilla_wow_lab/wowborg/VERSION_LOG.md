@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v135 - bounded per-patrol hold (2026-08-09)
+
+- Version UUID: `cef2e31f-773e-4045-b341-13cb6d3a7b59` (`wowborg:v135`, uploaded
+  inert; not submitted). Built from source `b03cabd` against canonical vanilla-wow 0.1.209.
+- Caps predictive holding at two wall seconds per patrol GUID. A patrol still projecting across
+  the route then becomes a local 20-yard avoidance blocker until it leaves the 80-yard tracked
+  set; brief lookahead jitter cannot restart its waiting allowance.
+- Hosted Traverse proof is pending.
+
 ## v134 - hold for safely crossing patrols (2026-08-09)
 
 - Version UUID: `2354e2a4-a82c-4e25-a719-375e16dfc6c1` (`wowborg:v134`, uploaded

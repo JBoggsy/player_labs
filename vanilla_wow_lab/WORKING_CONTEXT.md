@@ -239,6 +239,8 @@ and reached nine guidepoints, but spent 3,129 pulses holding and timed out at ro
 wait cannot clear a resident patrol. The active candidate bounds holding to two wall seconds per
 GUID (about 20 simulated seconds), then treats a still-present patrol as a local blocker until it
 leaves the 80-yard tracked set; brief trajectory jitter does not reset the timer.
+It is uploaded inert as **wowborg:v135**
+(`cef2e31f-773e-4045-b341-13cb6d3a7b59`, source `b03cabd`); hosted Traverse proof is pending.
 
 ### Previous 0.1.208 movement baseline
 
