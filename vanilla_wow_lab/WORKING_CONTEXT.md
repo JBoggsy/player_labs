@@ -1251,7 +1251,13 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    to be the only hostile within 30 yards and attacks from 2.5 reported combat yards. The third
    death was explicit falling after south road and remains the next route-safety task. The combat
    candidate is uploaded inert as **wowborg:v180**
-   (`2e1e0cdb-d12b-46dd-87f3-761fb55fa023`, source `836f8dd`); its hosted evaluation is pending.
+   (`2e1e0cdb-d12b-46dd-87f3-761fb55fa023`, source `836f8dd`). Hosted request
+   `xreq_15b75738-8083-42fc-b01a-d23834eedeb8` kept all six runs alive; neither prior ramp-combat
+   death recurred, and its only recorded Scorpid fight cleared in about 3.4 seconds at full health.
+   The batch did not re-reach the south road: four runs stalled earlier, one timed out at road-9,
+   and one held a mixed ramp hazard for about 123 seconds. The active source now makes the existing
+   south-ramp to south-road leg terrain-constrained, replacing V179's fatal one-second open strides
+   with the existing 0.25-second precise cadence; its hosted evaluation is pending.
 
 ## Reference
 

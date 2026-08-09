@@ -83,7 +83,8 @@ ROAD_TIGHT_ARRIVAL_GUIDEPOINTS = frozenset(
     }
 ) | ROAD_STEEP_GUIDEPOINTS
 ROAD_TERRAIN_CONSTRAINED_GUIDEPOINTS = ROAD_TIGHT_ARRIVAL_GUIDEPOINTS | {
-    "shimmering-flats-ramp-approach"
+    "shimmering-flats-ramp-approach",
+    "shimmering-flats-south-road",
 }
 
 # Follow the deployed owner's level-51 Tanaris and Thousand Needles road spine

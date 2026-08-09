@@ -902,7 +902,13 @@ attack gate. The active source requires the qualifying Scorpid to be the only ho
 existing 30-yard hazard-entry radius and attacks from 2.5 reported combat yards. The third death was
 explicitly classified as unsafe falling after south road and remains the next route-safety task.
 The combat candidate is uploaded inert as **wowborg:v180**
-(`2e1e0cdb-d12b-46dd-87f3-761fb55fa023`, source `836f8dd`); its hosted evaluation is pending.
+(`2e1e0cdb-d12b-46dd-87f3-761fb55fa023`, source `836f8dd`). Hosted request
+`xreq_15b75738-8083-42fc-b01a-d23834eedeb8` kept all six runs alive; neither prior ramp-combat death
+recurred, and the only recorded Scorpid fight cleared in about 3.4 seconds at full health. Four runs
+stalled earlier on the Tanaris road, one exhausted the episode at road-9, and one held a mixed ramp
+hazard for about 123 seconds, so the batch did not re-reach the south-road descent. The active source
+now treats the existing south-ramp to south-road leg as terrain-constrained, replacing the fatal
+one-second open strides observed in V179 with the existing 0.25-second precise cadence.
 
 ## Open uncertainties
 

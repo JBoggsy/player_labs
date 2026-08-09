@@ -7,7 +7,12 @@
 - Proactively fights a qualifying ramp Scorpid only when it is the sole hostile inside the existing
   30-yard hazard-entry radius, and begins attacking at 2.5 reported combat yards rather than 2.0.
 - V179 route geometry, steep cadence, hazard thresholds, and combat rotation are otherwise
-  unchanged. Hosted evaluation is pending.
+  unchanged.
+- Hosted request `xreq_15b75738-8083-42fc-b01a-d23834eedeb8` ran six fresh episodes. All six
+  survived, neither V179 ramp-combat death recurred, and the only recorded Scorpid fight cleared in
+  about 3.4 seconds at full health. Four runs stalled earlier on the Tanaris road, one exhausted the
+  episode at the road-9 climb, and one spent about 123 seconds holding a mixed ramp hazard before
+  clearing it, so the batch did not retest the V179 south-road frontier.
 
 ## v179 - settle steep edges every eight pulses (2026-08-09)
 
