@@ -1152,6 +1152,12 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    preserving the resource trace fields for the next hosted proof.
    That candidate is uploaded inert as **wowborg:v167**
    (`31e355b8-384d-490b-a274-5f2669eb2c06`, source `7dc278e`).
+   Six-run request `xreq_4b1d6b73-d335-466a-923b-4af9562cd3e4` kept every run alive.
+   Its three ramp fights ended in 4.3, 5.3, and 15.6 seconds instead of 29-36 seconds, and all three
+   reached ramp-base. From there, ramp-rise's 48-yard 3D distance selected one-second clear-road
+   translations; traces show repeated falls from z about 52 to as low as -22 followed by correction
+   snaps and `no_progress`. The active source changes only terrain-constrained anchors to retain
+   quarter-second translation for their full leg.
 
 ## Reference
 

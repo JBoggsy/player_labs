@@ -789,6 +789,13 @@ projection lags. The next source candidate removes the inactive finisher and app
 health convention to Traverse hazards and attackers.
 That candidate is uploaded inert as **wowborg:v167**
 (`31e355b8-384d-490b-a274-5f2669eb2c06`, source `7dc278e`).
+Request `xreq_4b1d6b73-d335-466a-923b-4af9562cd3e4` kept all six runs alive and
+reduced its three ramp fights to 4.3, 5.3, and 15.6 seconds. Every fight-bearing run reached
+ramp-base. Ramp-rise then exposed a separate controller error: its endpoint is only about 15 yards
+away horizontally but 48 yards away in 3D, so the ordinary distance gate selected one-second
+translations. Those pulses repeatedly stepped off the narrow ramp, fell from z about 52 to as low
+as -22, snapped back under server correction, and exhausted `no_progress`. The next candidate uses
+quarter-second translation for every terrain-constrained anchor regardless of 3D endpoint distance.
 
 ## Open uncertainties
 

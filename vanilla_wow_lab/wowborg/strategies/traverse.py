@@ -1194,7 +1194,8 @@ def _steer_road_leg(
             steering_target,
             purpose=steering_purpose,
             precise_arrival=(
-                should_retreat
+                hold_terrain_hazards
+                or should_retreat
                 or should_evade
                 or distance <= ROAD_HAZARD_FORWARD_YARDS
             ),

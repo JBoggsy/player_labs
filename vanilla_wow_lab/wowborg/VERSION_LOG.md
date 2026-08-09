@@ -8,7 +8,13 @@
   when `is_dead` lags. Such units no longer qualify as route hazards, attackers, or proactive ramp
   fights. The inactive v166 Bite branch is removed; resource tracing remains.
 - Route geometry, clearance thresholds, live-unit movement projection, and combat rotation are
-  otherwise the safe v162 baseline. The hosted request is pending.
+  otherwise the safe v162 baseline.
+- Six-run request `xreq_4b1d6b73-d335-466a-923b-4af9562cd3e4` kept every run alive.
+  Its three ramp fights ended in 4.3, 5.3, and 15.6 seconds, versus v162/v166's 29-36 seconds, and
+  each fight-bearing run reached ramp-base. Ramp-rise then used one-second translations because
+  its 48-yard 3D distance exceeded the ordinary precision gate, repeatedly fell off the narrow
+  ramp, and failed `no_progress`. The next candidate keeps quarter-second translation throughout
+  terrain-constrained anchors.
 
 ## v166 - Ferocious Bite ramp finisher (2026-08-09)
 
