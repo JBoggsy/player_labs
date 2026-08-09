@@ -682,6 +682,8 @@ disconnected ledge. There is no legitimate geometric bypass. The next source can
 every immediate or resident hazard inside eight yards as a hold on terrain-constrained anchors
 and suppresses open-road lateral evasion there. This should establish a supported pre-fight
 frontier without yet changing combat.
+It is uploaded inert as **wowborg:v156**
+(`35d3023e-a376-4d35-9207-c9424582c2d2`, source `be61bff`).
 
 ## Open uncertainties
 

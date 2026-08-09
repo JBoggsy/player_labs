@@ -1061,6 +1061,8 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    within about 4.5 yards, while 9–10-yard-clearance offsets terminate on disconnected ledges.
    The next source candidate holds for every sub-eight-yard constrained-ramp hazard and suppresses
    lateral evasion there, establishing a supported frontier before adding any combat behavior.
+   That candidate is uploaded inert as **wowborg:v156**
+   (`35d3023e-a376-4d35-9207-c9424582c2d2`, source `be61bff`).
 
 ## Reference
 

@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v156 - constrained-ramp centerline holds (2026-08-09)
+
+- Version UUID: `35d3023e-a376-4d35-9207-c9424582c2d2` (`wowborg:v156`, uploaded
+  inert; not submitted). Built from source `be61bff` against canonical vanilla-wow 0.1.209.
+- On terrain-constrained anchors, holds for any immediate or resident hostile inside eight yards
+  and suppresses open-road lateral evasion. Outside that gate it follows the canonical centerline.
+- Combat, ordinary-road avoidance, route geometry, and arrival radii are unchanged from v155.
+  This isolates whether wowborg can establish a supported pre-Scorpid frontier.
+
 ## v155 - calibrated ramp hold floor (2026-08-09)
 
 - Version UUID: `1345f357-a3eb-414d-9942-7fe54be5e726` (`wowborg:v155`, uploaded
