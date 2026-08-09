@@ -367,7 +367,8 @@ the narrow elevated corridor, fell/reset, and consumed the rest of the episode. 
 holds instead of laterally detouring when a resident hazard projects into one of the six tight ramp
 anchors; ordinary roads keep their existing dynamic detours. The hold emits reason
 `terrain_constrained_resident` and releases when no tracked resident still projects into the
-target corridor.
+target corridor. It is uploaded inert as **wowborg:v150**
+(`a2d455f5-da0b-4e61-8dd2-d0e637c3e998`, source `c71e07d`).
 
 ### Previous 0.1.208 movement baseline
 

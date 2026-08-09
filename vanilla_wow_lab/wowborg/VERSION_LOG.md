@@ -1,5 +1,16 @@
 # wowborg version log
 
+## v150 - hold resident hazards on narrow ramps (2026-08-09)
+
+- Version UUID: `a2d455f5-da0b-4e61-8dd2-d0e637c3e998` (`wowborg:v150`, uploaded
+  inert; not submitted). Built from source `c71e07d` against canonical vanilla-wow 0.1.209.
+- At the six terrain-constrained ramp anchors only, a resident hazard projected into the target
+  corridor now triggers waiting rather than the ordinary road's lateral detour. Ordinary roads,
+  projected-crossing holds, combat escape, and open-road throughput are unchanged.
+- The activation trace uses `traverse_hazard_hold` with reason
+  `terrain_constrained_resident`; the hold releases once no tracked resident still projects into
+  that target corridor.
+
 ## v149 - conservative open-road throughput (2026-08-09)
 
 - Version UUID: `b8f24e46-e596-4f20-b154-fb8ed19166a3` (`wowborg:v149`, uploaded
