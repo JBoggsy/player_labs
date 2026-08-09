@@ -1371,7 +1371,8 @@ Detour anchors. This candidate is uploaded inert as **wowborg:v202**
 descent, but none reached the south road. The best completed descent point 9, then overshot the
 17-yard vertical chord toward point 10 and entered repeated server corrections. The active source
 keeps the proven upper descent and replaces the steep lower segment with every roughly three-yard
-Detour waypoint.
+Detour waypoint. This candidate is uploaded inert as **wowborg:v203**
+(`2344455c-3edd-49d9-80ed-833c8c2437e2`, source `de622a3`).
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.

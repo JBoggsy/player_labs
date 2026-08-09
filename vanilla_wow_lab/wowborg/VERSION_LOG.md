@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v203 - dense lower Shimmering Flats descent (2026-08-09)
+
+- Version UUID: `2344455c-3edd-49d9-80ed-833c8c2437e2` (`wowborg:v203`, uploaded
+  inert; not submitted). Built from source `de622a3` against canonical vanilla-wow 0.1.209.
+- Keeps V202's proven upper descent through point 9, then follows every roughly three-yard
+  canonical Detour waypoint down the steep lower face instead of cutting eight long vertical
+  chords. This directly targets V202's first observed server-correction loop without slowing the
+  already reliable upper approach.
+
 ## v202 - canonical connected descent path (2026-08-09)
 
 - Version UUID: `b210792a-fc71-446e-91f6-06782aebe9dc` (`wowborg:v202`, uploaded
