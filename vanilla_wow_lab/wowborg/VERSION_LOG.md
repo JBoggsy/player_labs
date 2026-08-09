@@ -1,5 +1,15 @@
 # wowborg version log
 
+## v151 - imminent-only narrow-ramp holds (2026-08-09)
+
+- Version UUID: `6aa3b0e1-c341-446b-8be2-db4b93d7c6bb` (`wowborg:v151`, uploaded
+  inert; not submitted). Built from source `b37617e` against canonical vanilla-wow 0.1.209.
+- Limits the terrain-constrained resident hold to hazards currently inside the existing 30-yard
+  hazard-entry gate. Far projected residents no longer freeze the ramp; if one closes during the
+  approach, the same traced hold still activates before the 20-yard safety floor.
+- Rank-1 Prowl and basic melee remain disabled: current evidence makes both worse than timed
+  Travel Form traversal at this pinch.
+
 ## v150 - hold resident hazards on narrow ramps (2026-08-09)
 
 - Version UUID: `a2d455f5-da0b-4e61-8dd2-d0e637c3e998` (`wowborg:v150`, uploaded

@@ -374,7 +374,8 @@ activated one terrain-constrained hold for a Basilisk still 60.7 yards away and 
 before the episode deadline. The active candidate holds only an imminent resident inside the
 existing 30-yard hazard-entry gate; far projected residents may be crossed before they arrive.
 Rank-1 Prowl remains invalid here because its exact detection range is worse than visible level-gap
-aggro, and current basic melee remains too weak to promote over the timing solution.
+aggro, and current basic melee remains too weak to promote over the timing solution. It is uploaded
+inert as **wowborg:v151** (`6aa3b0e1-c341-446b-8be2-db4b93d7c6bb`, source `b37617e`).
 
 ### Previous 0.1.208 movement baseline
 
