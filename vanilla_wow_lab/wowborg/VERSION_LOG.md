@@ -8,7 +8,10 @@
   the 30-yard observation circle has a projected patrol segment at least 12 yards from the player.
   This uses roughly twice the pinned 5-7-yard ordinary aggro radius while rejecting predicted adds.
 - V181 descent cadence, route geometry, combat rotation, and other hazard behavior are unchanged.
-  Hosted evaluation is pending.
+  Hosted request `xreq_ecff12e4-6234-466d-950f-8d4171c8d4f8` kept all six runs alive. Two proactive
+  fights cleared safely in 5.7 and 6.2 seconds with no extra pull; one reached ramp ascent 16 but
+  only about 10 seconds remained in the fixed 270-second horizon. The projected-add gate is safe in
+  this batch, and route throughput is now the binding constraint.
 
 ## v181 - terrain-constrained south descent (2026-08-09)
 

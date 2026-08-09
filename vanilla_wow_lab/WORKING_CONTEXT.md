@@ -1266,7 +1266,13 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    hostile's projected patrol segment remains at least 12 yards from the player. That preserves
    roughly twice the observed 5-7-yard ordinary aggro range while allowing a calibrated fast kill.
    The candidate is uploaded inert as **wowborg:v182**
-   (`a536822a-16cd-4170-b9cc-8ff869198e16`, source `e3e05e3`); its hosted evaluation is pending.
+   (`a536822a-16cd-4170-b9cc-8ff869198e16`, source `e3e05e3`). Hosted request
+   `xreq_ecff12e4-6234-466d-950f-8d4171c8d4f8` kept all six runs alive; two proactive fights cleared
+   safely in 5.7 and 6.2 seconds with no extra pull. One run reached ascent 16 with only about 10
+   seconds left in the fixed 270-second horizon. The full route is 6,662 yards, and the current
+   20-yard predicted-clearance floor drives repeated 30/45/60-yard detours despite the pinned
+   5-7-yard ordinary aggro radius. The active source lowers that floor to 12 yards, preserving an
+   approximately 2x margin while reducing avoidable route churn.
 
 ## Reference
 

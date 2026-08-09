@@ -920,7 +920,16 @@ admits the same single sub-eight-yard level-40/41 non-elite Scorpid when every o
 hostile's projected patrol segment stays at least 12 yards from the player. This keeps roughly a
 2x aggro margin and rejects a predicted add crossing rather than rejecting every harmless mob in
 the broader observation circle. The candidate is uploaded inert as **wowborg:v182**
-(`a536822a-16cd-4170-b9cc-8ff869198e16`, source `e3e05e3`); its hosted evaluation is pending.
+(`a536822a-16cd-4170-b9cc-8ff869198e16`, source `e3e05e3`). Hosted request
+`xreq_ecff12e4-6234-466d-950f-8d4171c8d4f8` kept all six runs alive. Two proactive fights cleared
+safely in 5.7 and 6.2 seconds with no extra pull; one run reached ramp ascent 16 but had only about
+10 seconds left in the fixed 270-second horizon. The full guidepoint route is 6,662 yards, including
+3,758 yards after the crest, so throughput is now binding. Taxi is not a viable shortcut: the live
+league fixture explicitly seeds no known flight paths, money, mount or teleport items, riding, or
+mount spells. The existing 20-yard predicted-clearance floor is nearly 3-4x the pinned 5-7-yard
+ordinary aggro radius and drives repeated 30/45/60-yard lateral detours and retreats. The active
+source lowers that floor to 12 yards, preserving roughly a 2x aggro margin without changing the
+one-second clear stride, combat admission, or route geometry.
 
 ## Open uncertainties
 
