@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v204 - jump-aware lower Shimmering Flats descent (2026-08-09)
+
+- Version UUID: `7a4d1034-36ed-4d06-ac31-aa4a0fe78434` (`wowborg:v204`, uploaded
+  inert; not submitted). Built from source `a428231` against canonical vanilla-wow 0.1.209.
+- Preserves V203's exact dense lower-descent bearings and enables the existing jump-aware terrain
+  movement only from point 16 onward, where hosted evidence first showed walk movement falling
+  through the lower Detour edge.
+
 ## v203 - dense lower Shimmering Flats descent (2026-08-09)
 
 - Version UUID: `2344455c-3edd-49d9-80ed-833c8c2437e2` (`wowborg:v203`, uploaded

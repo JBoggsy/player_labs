@@ -1376,7 +1376,8 @@ Detour waypoint. This candidate is uploaded inert as **wowborg:v203**
 `xreq_fc162cfb-4b39-416f-bec0-6d35c04565f8` completed all 24 runs alive. Its best run reached dense
 point 15 at full health, then walking toward point 16 fell through empty geometry and repeatedly
 reset to the lip. The active source preserves the dense bearings and switches to the proven
-jump-aware movement mode from point 16 onward.
+jump-aware movement mode from point 16 onward. This candidate is uploaded inert as
+**wowborg:v204** (`7a4d1034-36ed-4d06-ac31-aa4a0fe78434`, source `a428231`).
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.
