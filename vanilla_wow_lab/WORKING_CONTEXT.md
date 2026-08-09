@@ -98,7 +98,9 @@ first non-quarter-second turn (`0.2188` seconds) timed out at frame 102 without 
 observation; it cleared one guidepoint and remained alive with no combat. Owner source confirms
 held axis magnitude is reduced to sign. The active candidate therefore keeps the reliable
 0.25-second turn quantum and changes only precise arrival's heading acceptance to its matching
-45-degree arc; ordinary steering and hazard geometry remain unchanged.
+45-degree arc; ordinary steering and hazard geometry remain unchanged. It is uploaded inert as
+**wowborg:v117** (`6e2b8986-7233-4eca-9412-fcb2f03353ae`, source `13604c1`);
+hosted proof is pending.
 
 ### Previous 0.1.208 movement baseline
 

@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v117 - quantized precise turns (2026-08-09)
+
+- Version UUID: `6e2b8986-7233-4eca-9412-fcb2f03353ae` (`wowborg:v117`, uploaded
+  inert; not submitted). Built from source `13604c1` against canonical vanilla-wow 0.1.209.
+- Keeps precise turn-only actions at the empirically reliable 0.25-second quantum and accepts a
+  heading within that quantum's 45-degree arc before moving toward the safe anchor. Ordinary route
+  steering, hazard geometry, and escape-only combat are unchanged. Hosted proof is pending.
+
 ## v116 - angular-error precise turns (2026-08-09)
 
 - Version UUID: `b5ccf41d-92bd-499d-90cc-a6289c987f1a` (`wowborg:v116`, uploaded
