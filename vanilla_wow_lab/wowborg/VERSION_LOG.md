@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v140 - exact Shimmering Flats ramp corridor (2026-08-09)
+
+- Version UUID: `191f1a51-9c67-46a1-8e5e-dc4d28efb9a3` (`wowborg:v140`, uploaded
+  inert; not submitted). Built from source `3ef7543` against canonical vanilla-wow 0.1.209.
+- Adds the pinned navmesh's three real south-ramp bends as exact route anchors, preventing direct
+  steering from falling off the escarpment. Tanaris hazard behavior is unchanged from v139.
+- Hosted Traverse proof is pending.
+
 ## v139 - crossing-only patrol hold (2026-08-09)
 
 - Version UUID: `e97ab7d9-2c61-4f95-a334-3c3bf8eb78da` (`wowborg:v139`, uploaded

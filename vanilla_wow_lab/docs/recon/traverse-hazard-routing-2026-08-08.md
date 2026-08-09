@@ -545,6 +545,8 @@ Shimmering Flats south-ramp leg. Pinned 0.1.209 navmesh shows that reachable 265
 bends through `(-6884,-3900,54)`, `(-6876,-3912,100)`, and `(-6848,-3925,125)`; direct steering
 at the far endpoint repeatedly fell from the escarpment. The next candidate adds those three real
 corridor bends as exact anchors without changing the proven Tanaris hazard policy.
+It is uploaded inert as **wowborg:v140**
+(`191f1a51-9c67-46a1-8e5e-dc4d28efb9a3`, source `3ef7543`); hosted Traverse proof is pending.
 
 ## Open uncertainties
 
