@@ -537,24 +537,57 @@ def _visible_attackers(frame):
     ]
 
 
+def _qualifying_ramp_scorpid(unit) -> bool:
+    return (
+        unit.player_reaction_hostile
+        and not unit.is_dead
+        and unit.entry == RAMP_SCORPID_ENTRY
+        and unit.level_known
+        and unit.level <= 41
+        and (not unit.creature_rank_known or unit.creature_rank == 0)
+    )
+
+
 def _ramp_scorpid_fight(frame, *, active_guid: str | None):
-    attackers = _visible_attackers(frame)
     if active_guid is not None:
+        attacker = next(
+            (
+                unit
+                for unit in frame.units
+                if unit.guid == active_guid and not unit.is_dead
+            ),
+            None,
+        )
+        if attacker is None:
+            return None
+        if frame.in_combat:
+            attackers = _visible_attackers(frame)
+            if frame.threat.attacker_count != 1 or len(attackers) != 1:
+                return None
+            return attacker if attackers[0].guid == active_guid else None
+        return attacker
+
+    if frame.in_combat:
+        attackers = _visible_attackers(frame)
         if frame.threat.attacker_count != 1 or len(attackers) != 1:
             return None
-        return attackers[0] if attackers[0].guid == active_guid else None
-    if frame.threat.attacker_count != 1 or len(attackers) != 1:
+        attacker = attackers[0]
+        if not _qualifying_ramp_scorpid(attacker):
+            return None
+        if frame.threat.elite_attacker_known and frame.threat.elite_attacker_present:
+            return None
+        return attacker
+
+    nearby_hazards = [
+        unit
+        for unit in frame.units
+        if unit.player_reaction_hostile
+        and not unit.is_dead
+        and unit.distance <= ROAD_TIGHT_HAZARD_HOLD_YARDS
+    ]
+    if len(nearby_hazards) != 1:
         return None
-    attacker = attackers[0]
-    if attacker.entry != RAMP_SCORPID_ENTRY:
-        return None
-    if not attacker.level_known or attacker.level > 41:
-        return None
-    if attacker.creature_rank_known and attacker.creature_rank != 0:
-        return None
-    if frame.threat.elite_attacker_known and frame.threat.elite_attacker_present:
-        return None
-    return attacker
+    return nearby_hazards[0] if _qualifying_ramp_scorpid(nearby_hazards[0]) else None
 
 
 def _cast_feral_spell(bridge, frame, spell_ids, *, purpose: str, trace) -> bool:
@@ -593,13 +626,36 @@ def _fight_ramp_scorpid(bridge, navigator, frame, attacker, trace) -> bool:
         )
     if frame.auto_attack_guid != attacker.guid:
         if attacker.combat_distance_known and attacker.combat_distance > 5.0:
-            request_id = bridge.select_wait(frame)
+            request_id = (
+                bridge.select_move_to(
+                    frame,
+                    attacker.location.x,
+                    attacker.location.y,
+                    attacker.location.z,
+                    frame.location.map_id,
+                )
+                if not frame.in_combat
+                else bridge.select_wait(frame)
+            )
             if request_id is None:
                 return False
             trace(
                 "traverse_combat_fight_closing",
                 activation=1,
                 distance=round(attacker.combat_distance, 3),
+                proactive=not frame.in_combat,
+            )
+            return True
+        if not frame.in_combat:
+            request_id = bridge.select_target_action(frame, "attack", attacker.guid)
+            if request_id is None:
+                return False
+            outcome = bridge.wait_for_settlement(frame.frame_id)
+            trace(
+                "traverse_combat_fight_attack",
+                activation=1,
+                success=outcome is not None and outcome.success,
+                detail=outcome.detail if outcome is not None else "unsettled",
             )
             return True
         return navigator._engage_exact_attacker(bridge, frame)
@@ -690,7 +746,7 @@ def _steer_road_leg(
             return None, "death"
         fight_attacker = (
             _ramp_scorpid_fight(frame, active_guid=ramp_fight_guid)
-            if frame.in_combat and hold_terrain_hazards
+            if hold_terrain_hazards
             else None
         )
         if fight_attacker is not None:
@@ -703,6 +759,7 @@ def _steer_road_leg(
                     health=frame.health,
                     max_health=frame.max_health,
                     attacker_count=frame.threat.attacker_count,
+                    proactive=not frame.in_combat,
                     player_level=frame.level,
                     attacker={
                         "entry": fight_attacker.entry,

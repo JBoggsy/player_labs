@@ -1071,6 +1071,11 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    That candidate is uploaded inert as **wowborg:v157**
    (`e8629df4-2707-4729-9514-a9dcb14d512d`, source `c456c34`). It changes no route
    geometry or behavior against any other contact.
+   Its one-run request `xreq_d2a1e397-b199-4cd0-be8e-43b5cffa1eb7` and three-run
+   request `xreq_3ac8997c-c6bf-451e-8292-46ee09323961` produced zero fight
+   activations: three runs exhausted on the variable road prefix, and the one ramp arrival held
+   healthy for 82 seconds without a pull. The next source candidate proactively closes on the exact
+   qualifying sub-eight-yard resident rather than waiting for it to wander into aggro.
 
 ## Reference
 

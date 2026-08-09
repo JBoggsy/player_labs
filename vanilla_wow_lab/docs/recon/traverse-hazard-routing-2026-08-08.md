@@ -699,6 +699,13 @@ That candidate is uploaded inert as **wowborg:v157**
 (`e8629df4-2707-4729-9514-a9dcb14d512d`, source `c456c34`). Route geometry,
 terrain holds, and all other-contact behavior are unchanged, so the hosted result isolates the
 fight decision and realized feral time-to-kill.
+Request `xreq_d2a1e397-b199-4cd0-be8e-43b5cffa1eb7` and three-run request
+`xreq_3ac8997c-c6bf-451e-8292-46ee09323961` produced zero fight activations.
+Three episodes exhausted on the variable road prefix; the remaining episode reached the ramp
+approach healthy and held for 82 seconds, but the resident never wandered into aggro. A reactive
+fight therefore does not convert the hold into a bounded edge cost. The next source candidate
+proactively moves to and attacks the same uniquely qualifying sub-eight-yard Scorpid; all other
+contacts retain avoidance/escape.
 
 ## Open uncertainties
 

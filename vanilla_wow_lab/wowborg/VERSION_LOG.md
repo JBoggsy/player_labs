@@ -9,6 +9,12 @@
   and Rip at three combo points; all other contacts retain the existing escape behavior.
 - Route geometry, terrain holds, ordinary-road avoidance, and arrival radii are unchanged from
   v156. This isolates whether the unavoidable ramp pinch is fast and survivable to fight through.
+- Request `xreq_d2a1e397-b199-4cd0-be8e-43b5cffa1eb7` and three-run request
+  `xreq_3ac8997c-c6bf-451e-8292-46ee09323961` produced no fight activations: three
+  episodes exhausted earlier on the variable road prefix, while one reached ramp approach healthy
+  and spent 82 seconds holding without the Scorpid wandering into aggro. The next candidate
+  proactively closes on and attacks the same uniquely qualifying sub-eight-yard resident instead
+  of waiting for a reactive pull.
 
 ## v156 - constrained-ramp centerline holds (2026-08-09)
 
