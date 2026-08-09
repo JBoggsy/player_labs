@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v147 - vertically aligned road milestones (2026-08-09)
+
+- Version UUID: `9ddebbfa-f068-41be-9ea5-32648a60d8c6` (`wowborg:v147`, uploaded
+  inert; not submitted). Built from source `57ed0da` against canonical vanilla-wow 0.1.209.
+- Retains 60 yards of horizontal hazard-displacement slack for ordinary milestone passes but now
+  requires vertical error at most 10 yards. This prevents starting elevated legs below terrain.
+- Hosted Traverse proof is pending.
+
 ## v146 - pinned Detour-east turn (2026-08-09)
 
 - Version UUID: `8fe6eaee-e885-4117-bc6e-b5b10035d602` (`wowborg:v146`, uploaded

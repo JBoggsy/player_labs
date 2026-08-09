@@ -604,6 +604,8 @@ ordinary node 9 passed at z `-22.7` versus target z `28.9` because its 60-yard p
 combined y and z. The ramp therefore began below terrain and repeatedly fell/reset. The next
 candidate retains 60 yards of horizontal hazard-displacement slack but requires vertical error at
 most 10 yards before an ordinary milestone can pass.
+It is uploaded inert as **wowborg:v147**
+(`9ddebbfa-f068-41be-9ea5-32648a60d8c6`, source `57ed0da`); hosted Traverse proof is pending.
 
 ## Open uncertainties
 
