@@ -1158,6 +1158,8 @@ migration, and the 2026-07-27 upstream contract rewrite — are in
    translations; traces show repeated falls from z about 52 to as low as -22 followed by correction
    snaps and `no_progress`. The active source changes only terrain-constrained anchors to retain
    quarter-second translation for their full leg.
+   That candidate is uploaded inert as **wowborg:v168**
+   (`29b5673e-b414-43c4-ad3a-64d1ff0d5089`, source `54c7b0c`).
 
 ## Reference
 

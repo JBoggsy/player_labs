@@ -796,6 +796,8 @@ away horizontally but 48 yards away in 3D, so the ordinary distance gate selecte
 translations. Those pulses repeatedly stepped off the narrow ramp, fell from z about 52 to as low
 as -22, snapped back under server correction, and exhausted `no_progress`. The next candidate uses
 quarter-second translation for every terrain-constrained anchor regardless of 3D endpoint distance.
+That candidate is uploaded inert as **wowborg:v168**
+(`29b5673e-b414-43c4-ad3a-64d1ff0d5089`, source `54c7b0c`).
 
 ## Open uncertainties
 

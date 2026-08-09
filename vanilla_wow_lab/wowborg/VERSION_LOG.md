@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v168 - full-leg precise ramp cadence (2026-08-09)
+
+- Version UUID: `29b5673e-b414-43c4-ad3a-64d1ff0d5089` (`wowborg:v168`, uploaded
+  inert; not submitted). Built from source `54c7b0c` against canonical vanilla-wow 0.1.209.
+- Keeps every terrain-constrained anchor on quarter-second translation for its full leg. This
+  prevents ramp-rise's large vertical endpoint delta from selecting a one-second clear-road pulse.
+- Terminal-health combat handling, route geometry, hazard thresholds, and ordinary-road cadence
+  are unchanged from v167. The hosted request is pending.
+
 ## v167 - terminal-health hostile handling (2026-08-09)
 
 - Version UUID: `31e355b8-384d-490b-a274-5f2669eb2c06` (`wowborg:v167`, uploaded
