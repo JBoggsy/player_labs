@@ -1449,24 +1449,17 @@ def _steer_road_leg(
             steering_target,
             purpose=steering_purpose,
             precise_arrival=(
-                not jump_terrain
-                and (
-                    hold_terrain_hazards
-                    or should_evade
-                    or distance <= ROAD_HAZARD_FORWARD_YARDS
-                )
+                hold_terrain_hazards
+                or should_evade
+                or distance <= ROAD_HAZARD_FORWARD_YARDS
             ),
             translation_seconds=(
-                TRAVERSE_INPUT_SECONDS
-                if jump_terrain
+                ROAD_FAR_CLEAR_INPUT_SECONDS
+                if not frame.in_combat and not tracked_hazards
                 else (
-                    ROAD_FAR_CLEAR_INPUT_SECONDS
-                    if not frame.in_combat and not tracked_hazards
-                    else (
-                        ROAD_OPEN_INPUT_SECONDS
-                        if not frame.in_combat and not hazards
-                        else TRAVERSE_INPUT_SECONDS
-                    )
+                    ROAD_OPEN_INPUT_SECONDS
+                    if not frame.in_combat and not hazards
+                    else TRAVERSE_INPUT_SECONDS
                 )
             ),
             jump_when_moving=jump_when_moving,

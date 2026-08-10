@@ -1426,7 +1426,12 @@ infrastructure straggler during analysis. Two of those 47 died, one to a level-4
 spawn and one after falling on descent point 27. The active source lets hazard-free continuous
 climb jumps use the existing 0.75-second terrain stride instead of forcing exact 0.25-second
 translations. This candidate is uploaded inert as **wowborg:v211**
-(`7e6df24e-87fd-496d-bcc5-0878d31a0be2`, source `dc8604f`).
+(`7e6df24e-87fd-496d-bcc5-0878d31a0be2`, source `dc8604f`). Hosted request
+`xreq_24848439-065f-4eee-8d67-48ee27b03d36` completed all 48 jobs, but no run reached the ramp crest
+and three characters died. Twenty-six reached the ramp base and then failed ascent point 1:
+0.75-second jump inputs carried wowborg off the narrow ledge before it could face the climb, after
+which turn-only corrections continued falling through terrain. The active source restores V210's
+0.25-second precise climb pulses.
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.

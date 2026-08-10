@@ -7,6 +7,11 @@
 - Hazard-free steep ascent translations use the existing 0.75-second terrain stride instead of the
   0.25-second precise-arrival stride. Edge acceptance, route geometry, descent, combat, and hazard
   thresholds are unchanged from V210.
+- Hosted request `xreq_24848439-065f-4eee-8d67-48ee27b03d36` completed all 48 jobs, but no run
+  reached the ramp crest and three characters died. Twenty-six runs reached the ramp base, then
+  failed ascent point 1: 0.75-second jump inputs carried wowborg off the narrow ledge before it
+  could face the climb, after which turn-only corrections continued falling through the terrain.
+  The longer stride is rejected; the active source restores V210's 0.25-second precise pulses.
 
 ## v210 - accept crossed ascent edges (2026-08-09)
 
