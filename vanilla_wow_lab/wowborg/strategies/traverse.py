@@ -304,7 +304,7 @@ TRAVERSE_ROUTE_PREFIX = (
     ("great-lift-lower-corridor-13", Point(1, -4691.20, -1856.00, -48.29)),
     ("great-lift-lower-dock", GREAT_LIFT_LOWER_DOCK),
 )
-STEALTH_ROUTE_START_GUIDEPOINT = next(
+DYNAMIC_FORM_ROUTE_START_GUIDEPOINT = next(
     index
     for index, (name, _point) in enumerate(TRAVERSE_ROUTE_PREFIX)
     if name == "shimmering-flats-road"
@@ -1126,15 +1126,30 @@ def _steer_road_leg(
             return None, "no_frame"
         if frame.is_dead or frame.is_ghost:
             return None, "death"
+        tracked_hazards = [
+            unit
+            for unit in frame.units
+            if unit.player_reaction_hostile
+            and _unit_alive(unit)
+            and unit.distance <= ROAD_HAZARD_TRACK_YARDS
+        ]
+        prowl_active = any(
+            spell_id in frame.active_aura_spell_ids for spell_id in PROWL_SPELL_IDS
+        )
         travel_form_active = (
             frame.shapeshift_form_known
             and frame.shapeshift_form_spell_known
             and frame.shapeshift_form_spell_id == TRAVEL_FORM_SPELL_ID
         )
-        if downstream_route and not frame.in_combat and not travel_form_active:
-            _activate_travel_form(bridge, trace)
-            last_progress = time.monotonic()
-            continue
+        if downstream_route and not frame.in_combat:
+            if tracked_hazards and not prowl_active:
+                _activate_prowl(bridge, trace)
+                last_progress = time.monotonic()
+                continue
+            if not tracked_hazards and not travel_form_active:
+                _activate_travel_form(bridge, trace)
+                last_progress = time.monotonic()
+                continue
         fight_attacker = _traverse_fight_attacker(
             frame,
             active_guid=fight_guid,
@@ -1362,6 +1377,13 @@ def _steer_road_leg(
             next_avoidance_side = avoidance.side
             hazards = []
             tracked_hazards = []
+            should_hold = False
+        elif downstream_route:
+            steering_target = target
+            next_avoidance_side = None
+            hazards = []
+            side_clearances = {}
+            side_lateral_yards = {}
             should_hold = False
         else:
             (
@@ -1725,6 +1747,26 @@ def _activate_travel_form(bridge, trace) -> None:
     ):
         trace("traverse_travel_form", activation=0, reason="already_active")
         return
+    if frame.in_combat:
+        trace("traverse_travel_form", activation=0, reason="in_combat")
+        return
+    if frame.shapeshift_form_known and frame.shapeshift_form_id != 0:
+        if not frame.shapeshift_form_spell_known:
+            trace("traverse_travel_form", activation=0, reason="form_unknown")
+            return
+        spell_id = frame.shapeshift_form_spell_id
+        request_id = bridge.select_cancel_aura(frame, spell_id)
+        if request_id is None:
+            return
+        outcome = bridge.wait_for_settlement(frame.frame_id)
+        trace(
+            "traverse_travel_form_exit",
+            activation=1,
+            spell_id=spell_id,
+            success=outcome is not None and outcome.success,
+            detail=outcome.detail if outcome is not None else "unsettled",
+        )
+        return
     request_id = bridge.select_cast_without_target(
         frame,
         TRAVEL_FORM_SPELL_ID,
@@ -1892,7 +1934,10 @@ class TraverseStrategy:
                             required_fraction=SECOND_DESCENT_MIN_HEALTH_FRACTION,
                         )
                         continue
-            else:
+            elif (
+                self.route_guidepoints_arrived
+                < DYNAMIC_FORM_ROUTE_START_GUIDEPOINT
+            ):
                 _activate_travel_form(bridge, trace)
             here = navigator._observe_position(bridge)
             if here is None:
@@ -1979,7 +2024,7 @@ class TraverseStrategy:
                         jump_once=name in ROAD_SINGLE_JUMP_GUIDEPOINTS,
                         downstream_route=(
                             self.route_guidepoints_arrived
-                            >= STEALTH_ROUTE_START_GUIDEPOINT
+                            >= DYNAMIC_FORM_ROUTE_START_GUIDEPOINT
                         ),
                     )
                     if end is not None:

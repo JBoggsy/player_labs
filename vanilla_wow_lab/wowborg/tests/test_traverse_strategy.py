@@ -19,6 +19,7 @@ from wowborg.strategies.traverse import (
     TraverseCombatState,
     TraverseStrategy,
     _activate_prowl,
+    _activate_travel_form,
     _fight_traverse_attacker,
     _observed_lift_at_lower_dock,
     _select_frontier,
@@ -150,6 +151,45 @@ def test_ranged_fallback_waits_for_the_observed_active_cast() -> None:
         (
             "traverse_combat_ranged_fallback",
             {"activation": 1, "phase": "finish_active_cast", "spell_id": 5176},
+        )
+    ]
+
+
+def test_travel_form_exits_the_current_form_before_casting() -> None:
+    events = []
+    frame = SimpleNamespace(
+        frame_id=13,
+        in_combat=False,
+        shapeshift_form_known=True,
+        shapeshift_form_id=1,
+        shapeshift_form_spell_known=True,
+        shapeshift_form_spell_id=CAT_FORM_SPELL_ID,
+    )
+    outcome = SimpleNamespace(success=True, detail="")
+    cancelled = []
+    bridge = SimpleNamespace(
+        observe=lambda: frame,
+        select_cancel_aura=lambda selected, spell_id: (
+            cancelled.append((selected, spell_id)) or "frame-13"
+        ),
+        wait_for_settlement=lambda _frame_id: outcome,
+    )
+
+    _activate_travel_form(
+        bridge,
+        lambda kind, **payload: events.append((kind, payload)),
+    )
+
+    assert cancelled == [(frame, CAT_FORM_SPELL_ID)]
+    assert events == [
+        (
+            "traverse_travel_form_exit",
+            {
+                "activation": 1,
+                "spell_id": CAT_FORM_SPELL_ID,
+                "success": True,
+                "detail": "",
+            },
         )
     ]
 

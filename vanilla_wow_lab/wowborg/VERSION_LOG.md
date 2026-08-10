@@ -1,5 +1,19 @@
 # wowborg version log
 
+## v231 - use hazard-aware Travel Form downstream (2026-08-09)
+
+- Version UUID: `06b5b776-ab43-43e9-9f32-7d944ae79843` (`wowborg:v231`, uploaded
+  inert; not submitted). Built from source `cf9d6f6` against canonical vanilla-wow 0.1.209.
+- Uses Travel Form after the Shimmering Flats descent and activates the existing hostile-unit
+  lookahead and avoidance planner instead of Prowl's straight-line bypass. Route geometry, quick
+  downstream collision recovery, and reactive combat gates are unchanged.
+- Matched 24-episode south-road request `xreq_ad6109fc-f823-42a2-8858-d1c0d5ef8461` produced no
+  lower-dock arrivals and two deaths. Lateral hazard detours repeatedly lost the proven narrow
+  fence and central-corridor bearings; after combat, repeated Travel Form casts also failed while
+  Cat Form remained active. The active source restores straight bearings, exits the current form
+  before Travel Form, and chooses Travel only on clear frames or Prowl while a hostile is visible
+  within the existing 80-yard hazard radius.
+
 ## v230 - use the current combat cast observation (2026-08-09)
 
 - Version UUID: `5474b742-af2f-48d6-8ca5-ac81a9b86d4f` (`wowborg:v230`, uploaded
