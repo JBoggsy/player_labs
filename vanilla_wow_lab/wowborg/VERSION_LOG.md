@@ -1,5 +1,18 @@
 # wowborg version log
 
+## v236 - Prowl through the open Tanaris road (2026-08-09)
+
+- Version UUID: `f7f33e24-c5b9-4d40-bed6-b2dd0b0eb414` (`wowborg:v236`, uploaded
+  inert; not submitted). Built from source `2ecd389` against canonical vanilla-wow 0.1.209.
+- Uses one Prowl phase on the same straight ordinary Tanaris road points 1–8 rejected in Travel
+  Form, then returns to Travel Form before the exact detour and climbs. Route bearings, reactive
+  combat, escape, and all later behavior are unchanged.
+- Canonical-spawn request `xreq_7978d79f-89cb-4552-a919-0668d9eb6898` produced no lower-dock
+  arrivals, killed five of 24 characters, and slowed the nine road-9 arrivals to a 156.3-second
+  median. Across the batch, straight Prowl triggered 84 fights taking 374.6 seconds. Stealth alone
+  therefore does not make an unsafe bearing safe. The active source restores Travel Form plus
+  hazard avoidance, but lets a planner-confirmed clear path use a three-second movement stride.
+
 ## v235 - hold the canonical Tanaris road bearing (2026-08-09)
 
 - Version UUID: `b10db6bd-f7b3-4de3-901d-0abeb0c027a4` (`wowborg:v235`, uploaded

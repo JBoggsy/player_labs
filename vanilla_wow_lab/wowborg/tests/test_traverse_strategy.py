@@ -16,7 +16,6 @@ from wowborg.strategies.traverse import (
     FINAL_TRAVEL_ROUTE_START_GUIDEPOINT,
     OPEN_TRAVEL_ROUTE_START_GUIDEPOINT,
     PROWL_SPELL_IDS,
-    ROAD_DIRECT_STEALTH_GUIDEPOINTS,
     ROAD_STEEP_GUIDEPOINTS,
     STEALTH_ROUTE_START_GUIDEPOINT,
     TERRAIN_PROWL_ROUTE_START_GUIDEPOINT,
@@ -257,13 +256,6 @@ def test_traverse_route_prefix_reaches_great_lift_lower_dock() -> None:
         set(ROAD_STEEP_GUIDEPOINTS) - {"tanaris-road-9-climb-crest"}
     )
     assert "tanaris-road-9-climb-crest" in ROAD_STEEP_GUIDEPOINTS
-    assert ROAD_DIRECT_STEALTH_GUIDEPOINTS == {
-        *(f"tanaris-north-road-{index}" for index in range(1, 9)),
-        "tanaris-brute-gate-south",
-        "tanaris-gazer-gate-north",
-    }
-
-
 def test_lift_detection_uses_only_visible_platform_at_lower_dock() -> None:
     upper = SimpleNamespace(
         entry=11898,

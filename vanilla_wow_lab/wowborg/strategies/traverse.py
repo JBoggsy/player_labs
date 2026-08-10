@@ -49,7 +49,7 @@ GREAT_LIFT_DOCK_Z_SLACK = 2.0
 GREAT_LIFT_EXIT_Z = 80.0
 TRAVERSE_INPUT_SECONDS = 0.75
 ROAD_OPEN_INPUT_SECONDS = 1.0
-ROAD_FAR_CLEAR_INPUT_SECONDS = 1.5
+ROAD_FAR_CLEAR_INPUT_SECONDS = 3.0
 ROAD_ARRIVAL_RADIUS_YARDS = 8.0
 ROAD_PASS_LATERAL_YARDS = 60.0
 ROAD_CORRIDOR_PASS_LATERAL_YARDS = 20.0
@@ -137,14 +137,6 @@ ROAD_TERRAIN_CONSTRAINED_GUIDEPOINTS = ROAD_TIGHT_ARRIVAL_GUIDEPOINTS | {
     "shimmering-flats-ramp-approach",
     "shimmering-flats-south-road",
 }
-ROAD_DIRECT_STEALTH_GUIDEPOINTS = frozenset(
-    {
-        *(f"tanaris-north-road-{index}" for index in range(1, 9)),
-        "tanaris-brute-gate-south",
-        "tanaris-gazer-gate-north",
-    }
-)
-
 # Follow the deployed owner's level-51 Tanaris and Thousand Needles road spine
 # to the Great Lift lower dock. Great Lift boarding is a separate campaign.
 TRAVERSE_ROUTE_PREFIX = (
@@ -1129,7 +1121,6 @@ def _steer_road_leg(
     jump_once: bool,
     downstream_route: bool,
     stealth_route: bool,
-    direct_route: bool,
 ):
     settle_pause_interval = (
         ROAD_SETTLE_PAUSE_INTERVAL
@@ -1395,7 +1386,7 @@ def _steer_road_leg(
             hazards = []
             tracked_hazards = []
             should_hold = False
-        elif downstream_route or direct_route:
+        elif downstream_route:
             steering_target = target
             next_avoidance_side = None
             hazards = []
@@ -1600,10 +1591,10 @@ def _steer_road_leg(
             precise_arrival=precise_road_input,
             translation_seconds=(
                 ROAD_FAR_CLEAR_INPUT_SECONDS
-                if not frame.in_combat and not tracked_hazards
+                if not frame.in_combat and not hazards
                 else (
                     ROAD_OPEN_INPUT_SECONDS
-                    if not frame.in_combat and not hazards
+                    if not frame.in_combat
                     else TRAVERSE_INPUT_SECONDS
                 )
             ),
@@ -1958,12 +1949,7 @@ class TraverseStrategy:
                             required_fraction=SECOND_DESCENT_MIN_HEALTH_FRACTION,
                         )
                         continue
-            elif (
-                self.route_guidepoints_arrived
-                < STEALTH_ROUTE_START_GUIDEPOINT
-                and TRAVERSE_ROUTE_PREFIX[self.route_guidepoints_arrived][0]
-                not in ROAD_DIRECT_STEALTH_GUIDEPOINTS
-            ):
+            elif self.route_guidepoints_arrived < STEALTH_ROUTE_START_GUIDEPOINT:
                 _activate_travel_form(bridge, trace)
             here = navigator._observe_position(bridge)
             if here is None:
@@ -2051,7 +2037,6 @@ class TraverseStrategy:
                         downstream_route=(
                             self.route_guidepoints_arrived
                             >= STEALTH_ROUTE_START_GUIDEPOINT
-                            or name in ROAD_DIRECT_STEALTH_GUIDEPOINTS
                         ),
                         stealth_route=(
                             self.route_guidepoints_arrived
@@ -2060,7 +2045,6 @@ class TraverseStrategy:
                             <= self.route_guidepoints_arrived
                             < FINAL_TRAVEL_ROUTE_START_GUIDEPOINT
                         ),
-                        direct_route=name in ROAD_DIRECT_STEALTH_GUIDEPOINTS,
                     )
                     if end is not None:
                         self.best_world_x = max(self.best_world_x, end.x)
