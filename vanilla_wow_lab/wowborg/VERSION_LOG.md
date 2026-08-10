@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v217 - exit Travel Form before downstream Prowl (2026-08-09)
+
+- Version UUID: `1bbd9ec6-4155-46cb-a474-6c31c0aac846` (`wowborg:v217`, uploaded
+  inert; not submitted). Built from source `95773cf` against canonical vanilla-wow 0.1.209.
+- Before entering Cat Form for the downstream stealth route, cancels any observed non-Cat form
+  through the environment's typed aura action. This reuses the hosted-proven combat/descent form
+  transition and changes no route geometry, stealth routing, or combat admission from V216.
+
 ## v216 - stealth through the Great Lift road (2026-08-09)
 
 - Version UUID: `9492f0e3-0b45-4510-9df5-aff3615e1bb6` (`wowborg:v216`, uploaded
