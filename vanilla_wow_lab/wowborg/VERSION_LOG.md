@@ -1,5 +1,19 @@
 # wowborg version log
 
+## v239 - size Tanaris detours from enemy aggro (2026-08-09)
+
+- Version UUID: `2a8a29e8-bef6-4c91-939c-b053d8f47074` (`wowborg:v239`, uploaded
+  inert; not submitted). Built from source `40a499e` against canonical vanilla-wow 0.1.209.
+- Sizes ordinary clearance from VMaNGOS's level-scaled aggro rule plus three yards instead of a
+  fixed 20 yards. At wowborg level 60 versus Tanaris level 40–48 enemies, that is eight to nine
+  yards. Adds 10/15-yard lateral candidates and restores the proven one-second stride.
+- Canonical-spawn request `xreq_def71fca-e7e8-41e4-8f9f-814c7d65bf79` kept 22 of 24 characters
+  alive and moved median road-9 arrival from v234's 130.7 to 102.6 seconds; 15 runs reached road 9,
+  14 reached the ramp crest at 192.5 seconds, and five reached south road at 236.8 seconds. The two
+  deaths and one-fight median require more validation, but the clearance model materially reduces
+  route churn. The active source next applies it to hazard-aware downstream Travel Form, first from
+  the south-road diagnostic start.
+
 ## v238 - use the maximum valid clear-road stride (2026-08-09)
 
 - Version UUID: `95d83b69-72ca-496f-b31e-6c9e65cf6457` (`wowborg:v238`, uploaded

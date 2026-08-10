@@ -1406,20 +1406,6 @@ def _steer_road_leg(
             hazards = []
             tracked_hazards = []
             should_hold = False
-        elif downstream_route:
-            steering_target = target
-            next_avoidance_side = None
-            hazards = []
-            tracked_hazards = [
-                unit
-                for unit in frame.units
-                if unit.player_reaction_hostile
-                and _unit_alive(unit)
-                and unit.distance <= ROAD_HAZARD_TRACK_YARDS
-            ]
-            side_clearances = {}
-            side_lateral_yards = {}
-            should_hold = False
         else:
             (
                 steering_target,
@@ -2065,13 +2051,7 @@ class TraverseStrategy:
                             self.route_guidepoints_arrived
                             >= STEALTH_ROUTE_START_GUIDEPOINT
                         ),
-                        stealth_route=(
-                            self.route_guidepoints_arrived
-                            < OPEN_TRAVEL_ROUTE_START_GUIDEPOINT
-                            or TERRAIN_PROWL_ROUTE_START_GUIDEPOINT
-                            <= self.route_guidepoints_arrived
-                            < FINAL_TRAVEL_ROUTE_START_GUIDEPOINT
-                        ),
+                        stealth_route=False,
                     )
                     if end is not None:
                         self.best_world_x = max(self.best_world_x, end.x)
