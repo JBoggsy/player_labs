@@ -1,5 +1,24 @@
 # wowborg version log
 
+## v234 - use terrain-aware downstream form phases (2026-08-09)
+
+- Version UUID: `c7c4cfde-78d0-456d-8559-a982cab2a2a4` (`wowborg:v234`, uploaded
+  inert; not submitted). Built from source `5fcdec0` against canonical vanilla-wow 0.1.209.
+- Uses Travel Form on the clear central-to-west approach, Prowl from west gap 1 through west road 3
+  for precise terrain control, then Travel Form on the final Great Lift approach. The measured
+  hazard-belt Prowl phase and all route, collision, and combat behavior are unchanged.
+- Matched 24-episode south-road request `xreq_5a38f7f4-17e4-4056-8360-13f3e26eec6d` produced twelve
+  living lower-dock arrivals at a 226.4-second median, versus v230's eleven at 236.6 seconds. Nine
+  failures were host-terminal action timeouts; the remaining three were one pre-phase combat death,
+  one west-join stall, and one scoring logout. This is the first phased candidate to exceed the
+  all-Prowl baseline, so it advances to canonical-spawn evaluation.
+- Canonical-spawn request `xreq_760cd3b5-5e4f-494a-b09e-594c4c8e52b2` produced no lower-dock
+  arrivals. The best run reached central corridor 9, but median arrival at Tanaris road 9 was 130.7
+  seconds, ramp crest 199.9 seconds, and south road 234.8 seconds. Runs reaching road 9 incurred a
+  median 38.5 avoidance starts and 37 evasions before only one fight. The active source therefore
+  holds the authored canonical bearing on ordinary Tanaris road points 1–8 while retaining reactive
+  combat and escape; exact detours, climbs, descent, and downstream routing are unchanged.
+
 ## v233 - switch to Travel Form after the danger belt (2026-08-09)
 
 - Version UUID: `3e36e050-ef89-48d2-a091-d843bde99a3a` (`wowborg:v233`, uploaded
