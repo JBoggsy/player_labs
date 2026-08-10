@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v221 - route through proven downstream gaps (2026-08-09)
+
+- Version UUID: `d5ec4fb8-b2c6-402e-a9c5-8e27ecc98052` (`wowborg:v221`, uploaded
+  inert; not submitted). Built from source `9aabf1e` against canonical vanilla-wow 0.1.209.
+- Restores V219's safe one-shot collision response and adds tight canonical anchors at the
+  Shimmering Flats fence gap and Thousand Needles west-ridge gap observed in V219's successful
+  lower-dock trace. Prowl, combat admission, and every other route segment are unchanged.
+
 ## v220 - persist short collision recovery (2026-08-09)
 
 - Version UUID: `8e9183e9-2377-4520-b60a-a3e5c7e4076d` (`wowborg:v220`, uploaded
