@@ -59,6 +59,8 @@ ROAD_JUMP_EDGE_PASS_LATERAL_YARDS = 8.0
 ROAD_JUMP_EDGE_PASS_VERTICAL_YARDS = 10.0
 ROAD_CLIMB_EDGE_PASS_PLANAR_YARDS = 8.0
 ROAD_CLIMB_EDGE_PASS_VERTICAL_SLACK_YARDS = 3.0
+ROAD_ROUTE_RESUME_MIN_WORLD_X = -8000.0
+ROAD_ROUTE_RESUME_RADIUS_YARDS = 50.0
 ROAD_STALL_SECONDS = 8.0
 ROAD_UNSTICK_ATTEMPTS = 2
 ROAD_SETTLE_PAUSE_INTERVAL = 8
@@ -1739,6 +1741,31 @@ class TraverseStrategy:
             if here.map_id != KALIMDOR_MAP_ID:
                 trace("traverse_stopped", reason="left_kalimdor", map_id=here.map_id)
                 break
+
+            if (
+                self.route_guidepoints_arrived == 0
+                and here.x >= ROAD_ROUTE_RESUME_MIN_WORLD_X
+            ):
+                resume_index, (resume_name, resume_point) = min(
+                    enumerate(TRAVERSE_ROUTE_PREFIX),
+                    key=lambda item: math.dist(
+                        (here.x, here.y, here.z),
+                        (item[1][1].x, item[1][1].y, item[1][1].z),
+                    ),
+                )
+                resume_distance = math.dist(
+                    (here.x, here.y, here.z),
+                    (resume_point.x, resume_point.y, resume_point.z),
+                )
+                if resume_distance <= ROAD_ROUTE_RESUME_RADIUS_YARDS:
+                    self.route_guidepoints_arrived = resume_index + 1
+                    trace(
+                        "traverse_route_resumed",
+                        activation=1,
+                        name=resume_name,
+                        route_guidepoints_arrived=self.route_guidepoints_arrived,
+                        distance=round(resume_distance, 3),
+                    )
 
             previous_best = self.best_world_x
             self.best_world_x = max(self.best_world_x, here.x)

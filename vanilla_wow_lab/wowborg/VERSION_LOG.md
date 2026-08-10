@@ -7,6 +7,9 @@
 - Restores V210's proven 0.25-second precise climb pulse after rejecting V211's longer stride.
   Height-based climb acceptance, descent, route geometry, combat, and hazard thresholds remain as
   in V210.
+- The next source revision can resume at the nearest canonical waypoint when an intentional hosted
+  diagnostic starts north of world X -8000 and within 50 yards of the route. The canonical league
+  spawn is outside the gate, so normal full-route behavior is unchanged.
 
 ## v211 - lengthen clear ascent strides (2026-08-09)
 
