@@ -1444,7 +1444,8 @@ central road 2. A representative run reached east road 3 in 37 seconds, then spe
 reaching central road 1 amid 60 avoidance and 83 evasion activations. Its two accidental level-28
 fights took only 2.8 and 1.9 seconds. The active source proactively fights one isolated ordinary
 hostile within 20 yards when wowborg has at least a 20-level advantage; stronger or grouped hazards
-still use avoidance.
+still use avoidance. This candidate is uploaded inert as **wowborg:v214**
+(`6ea438f2-dac9-45a8-9941-85ec549e07c7`, source `51a9b27`).
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.

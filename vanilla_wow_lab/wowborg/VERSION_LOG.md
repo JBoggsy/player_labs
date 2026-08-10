@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v214 - fight isolated weak road hazards (2026-08-09)
+
+- Version UUID: `6ea438f2-dac9-45a8-9941-85ec549e07c7` (`wowborg:v214`, uploaded
+  inert; not submitted). Built from source `51a9b27` against canonical vanilla-wow 0.1.209.
+- Proactively fights exactly one isolated ordinary hostile within 20 yards when wowborg has at
+  least a 20-level advantage. Stronger or grouped enemies retain V213's avoidance behavior; the
+  route, climb/descent, reactive combat, and diagnostic resume gate are unchanged.
+
 ## v213 - resume Traverse at diagnostic starts (2026-08-09)
 
 - Version UUID: `260ec6f4-9c81-4f4b-8181-753b36b7dc41` (`wowborg:v213`, uploaded
