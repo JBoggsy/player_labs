@@ -1,5 +1,19 @@
 # wowborg version log
 
+## v226 - follow the Thousand Needles west corridor (2026-08-09)
+
+- Version UUID: `b18e8efb-c2bc-4641-9dc4-8633586dfb37` (`wowborg:v226`, uploaded
+  inert; not submitted). Built from source `c8cdf94` against canonical vanilla-wow 0.1.209.
+- Adds eleven soft bearings sampled at roughly 50-yard intervals from the canonical Detour route
+  between west road 2 and west 3, replacing V225's dominant collision-recovery chord. All earlier
+  route geometry, stealth, combat, and movement semantics are unchanged.
+- Matched 24-episode south-road request `xreq_4630cf15-2346-4958-9414-6a6fb5b93e78` kept all 24
+  characters alive and increased lower-dock arrivals from V225's one to four. Median final world X
+  was `-5396`, still behind V225, because four runs could not join the west corridor and two more
+  drifted off the central corridor after accepting a bearing within the generic 60-yard lateral
+  envelope. The active source adds the omitted 16-yard west join and narrows crossed-bearing
+  acceptance to 20 lateral yards for Detour corridor points only.
+
 ## v225 - treat downstream corridors as soft bearings (2026-08-09)
 
 - Version UUID: `2e6e67d7-c369-44a4-91ff-6525aef6fb2b` (`wowborg:v225`, uploaded

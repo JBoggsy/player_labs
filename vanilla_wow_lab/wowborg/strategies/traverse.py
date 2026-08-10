@@ -52,6 +52,7 @@ ROAD_OPEN_INPUT_SECONDS = 1.0
 ROAD_FAR_CLEAR_INPUT_SECONDS = 1.5
 ROAD_ARRIVAL_RADIUS_YARDS = 8.0
 ROAD_PASS_LATERAL_YARDS = 60.0
+ROAD_CORRIDOR_PASS_LATERAL_YARDS = 20.0
 ROAD_PASS_VERTICAL_YARDS = 10.0
 ROAD_PASS_NORTHING_SLACK_YARDS = 20.0
 ROAD_JUMP_EDGE_PASS_LATERAL_YARDS = 8.0
@@ -91,6 +92,11 @@ ROAD_DOWNSTREAM_GAP_GUIDEPOINTS = frozenset(
 ROAD_DOWNSTREAM_GAP_JUMP_GUIDEPOINTS = ROAD_DOWNSTREAM_GAP_GUIDEPOINTS - {
     "shimmering-flats-fence-gap-1"
 }
+ROAD_CORRIDOR_GUIDEPOINTS = frozenset(
+    {f"thousand-needles-central-corridor-{index:02d}" for index in range(2, 13)}
+    | {f"thousand-needles-west-corridor-{index:02d}" for index in range(1, 13)}
+    | {f"great-lift-lower-corridor-{index:02d}" for index in range(2, 14)}
+)
 ROAD_SINGLE_JUMP_GUIDEPOINTS = frozenset(
     {f"shimmering-flats-descent-{index:02d}" for index in range(10, 42)}
 ) | ROAD_DOWNSTREAM_GAP_JUMP_GUIDEPOINTS
@@ -261,6 +267,7 @@ TRAVERSE_ROUTE_PREFIX = (
     ("thousand-needles-west-gap-7", Point(1, -5470.83, -2598.68, -37.91)),
     ("thousand-needles-west-road-1", Point(1, -5349.2344, -2439.9663, -31.8258)),
     ("thousand-needles-west-road-2", Point(1, -5312.8003, -2325.3333, -31.6509)),
+    ("thousand-needles-west-corridor-01", Point(1, -5312.76, -2322.33, -31.70)),
     ("thousand-needles-west-corridor-02", Point(1, -5301.80, -2273.13, -38.79)),
     ("thousand-needles-west-corridor-03", Point(1, -5285.92, -2224.58, -48.51)),
     ("thousand-needles-west-corridor-04", Point(1, -5274.15, -2174.95, -51.24)),
@@ -1084,6 +1091,7 @@ def _steer_road_leg(
     trace,
     avoidance: HazardAvoidanceState,
     allow_northing_pass: bool,
+    pass_lateral_yards: float,
     arrival_radius: float,
     hold_terrain_hazards: bool,
     jump_terrain: bool,
@@ -1225,7 +1233,7 @@ def _steer_road_leg(
         if (
             allow_northing_pass
             and frame.location.x >= target.x - ROAD_PASS_NORTHING_SLACK_YARDS
-            and lateral_distance <= ROAD_PASS_LATERAL_YARDS
+            and lateral_distance <= pass_lateral_yards
             and vertical_distance <= ROAD_PASS_VERTICAL_YARDS
         ):
             trace(
@@ -1958,6 +1966,11 @@ class TraverseStrategy:
                         allow_northing_pass=(
                             name not in ROAD_EXACT_GUIDEPOINTS
                             or name in ROAD_STEEP_PASS_GUIDEPOINTS
+                        ),
+                        pass_lateral_yards=(
+                            ROAD_CORRIDOR_PASS_LATERAL_YARDS
+                            if name in ROAD_CORRIDOR_GUIDEPOINTS
+                            else ROAD_PASS_LATERAL_YARDS
                         ),
                         arrival_radius=(
                             3.0
