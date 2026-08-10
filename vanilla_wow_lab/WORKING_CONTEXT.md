@@ -1436,6 +1436,8 @@ which turn-only corrections continued falling through terrain. The active source
 nearest canonical route waypoint when an intentional diagnostic starts north of world X -8000 and
 within 50 yards of the route. The canonical league spawn is outside that gate, so normal full-route
 behavior is unchanged; the capability exists to isolate and measure the downstream Great Lift leg.
+This candidate is uploaded inert as **wowborg:v213**
+(`260ec6f4-9c81-4f4b-8181-753b36b7dc41`, source `30ff696`).
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.

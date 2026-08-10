@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v213 - resume Traverse at diagnostic starts (2026-08-09)
+
+- Version UUID: `260ec6f4-9c81-4f4b-8181-753b36b7dc41` (`wowborg:v213`, uploaded
+  inert; not submitted). Built from source `30ff696` against canonical vanilla-wow 0.1.209.
+- When an intentional hosted diagnostic starts north of world X -8000 within 50 yards of the
+  canonical route, resumes after its nearest waypoint. The canonical league spawn is outside the
+  gate. All canonical-spawn behavior matches restored V212.
+
 ## v212 - restore precise ascent pulses (2026-08-09)
 
 - Version UUID: `d95c5502-bec9-4dff-8178-29bef884502e` (`wowborg:v212`, uploaded
