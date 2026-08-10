@@ -366,4 +366,4 @@ def test_lift_steering_turns_before_walking_forward() -> None:
     assert actions[0].get("forward", 0.0) == 0.0
     assert actions[1]["forward"] == 1.0
     assert actions[1].get("turn", 0.0) == 0.0
-    assert actions[1]["duration"] == 0.5
+    assert actions[1]["duration"] == 0.25

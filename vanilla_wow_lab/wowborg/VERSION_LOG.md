@@ -1,5 +1,17 @@
 # wowborg version log
 
+## v244 - lengthen precise route translations (2026-08-10)
+
+- Version UUID: `7e469dc2-802a-4a52-bd3b-93ea40cd255b` (`wowborg:v244`, uploaded
+  inert; not submitted). Built from source `0efa160` against canonical vanilla-wow 0.1.209.
+- Raises precise movement translations from 0.25 to 0.5 seconds while retaining v243's periodic
+  settlement, route geometry, hazard handling, and combat.
+- South-road request `xreq_d5369636-4a50-4aa5-9a79-b686b222a61d` kept all 24 characters alive but
+  regressed to four lower-dock arrivals at a 182.6-second median, versus v243's ten at 174.2.
+  Eight characters stopped on missing frames at central road 2. The longer precise stride is
+  rejected. The active source restores quarter-second precision and instead uses the contract-max
+  1.5-second stride only on downstream frames where the hazard planner reports a clear path.
+
 ## v243 - reduce exact-route settle waits (2026-08-10)
 
 - Version UUID: `8d3acf50-594c-426a-b486-f9c270afeb9d` (`wowborg:v243`, uploaded

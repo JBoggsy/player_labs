@@ -48,9 +48,10 @@ GREAT_LIFT_VISIBLE_RANGE = 42.0
 GREAT_LIFT_DOCK_Z_SLACK = 2.0
 GREAT_LIFT_EXIT_Z = 80.0
 TRAVERSE_INPUT_SECONDS = 0.75
-ROAD_PRECISE_INPUT_SECONDS = 0.5
+ROAD_PRECISE_INPUT_SECONDS = 0.25
 ROAD_OPEN_INPUT_SECONDS = 1.0
 ROAD_FAR_CLEAR_INPUT_SECONDS = 1.0
+ROAD_DOWNSTREAM_CLEAR_INPUT_SECONDS = 1.5
 ROAD_ARRIVAL_RADIUS_YARDS = 8.0
 ROAD_PASS_LATERAL_YARDS = 60.0
 ROAD_CORRIDOR_PASS_LATERAL_YARDS = 20.0
@@ -1623,7 +1624,11 @@ def _steer_road_leg(
             purpose=steering_purpose,
             precise_arrival=precise_road_input,
             translation_seconds=(
-                ROAD_FAR_CLEAR_INPUT_SECONDS
+                (
+                    ROAD_DOWNSTREAM_CLEAR_INPUT_SECONDS
+                    if downstream_route
+                    else ROAD_FAR_CLEAR_INPUT_SECONDS
+                )
                 if not frame.in_combat and not hazards
                 else (
                     ROAD_OPEN_INPUT_SECONDS
