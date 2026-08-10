@@ -1452,6 +1452,8 @@ median did not improve. Level-28 fights took about 2 seconds; level-33/34 fights
 seconds and removed roughly 700–1,100 health. The active source requires a 30-level advantage and
 at least 90% health before a proactive fight, targeting the measured quick-kill tier rather than
 the dangerous level-33–35 tier.
+This candidate is uploaded inert as **wowborg:v215**
+(`8c82713a-ee8c-4a2a-b074-1d72ef26ad8e`, source `f9bd53a`).
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.

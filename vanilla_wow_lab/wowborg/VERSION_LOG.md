@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v215 - tighten proactive fight admission (2026-08-09)
+
+- Version UUID: `8c82713a-ee8c-4a2a-b074-1d72ef26ad8e` (`wowborg:v215`, uploaded
+  inert; not submitted). Built from source `f9bd53a` against canonical vanilla-wow 0.1.209.
+- Proactive road combat now requires at least a 30-level advantage and 90% current health, based on
+  V214's measured fast and dangerous tiers. Isolation, range, route, reactive combat, and hazard
+  avoidance behavior are otherwise unchanged.
+
 ## v214 - fight isolated weak road hazards (2026-08-09)
 
 - Version UUID: `6ea438f2-dac9-45a8-9941-85ec549e07c7` (`wowborg:v214`, uploaded
