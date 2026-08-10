@@ -1,6 +1,6 @@
 ## Long-lived folded policy state, separated from update logic to avoid cycles.
 
-import std/[options, sets, tables]
+import std/[math, options, sets, tables]
 import nav, types, worldmap
 
 type
@@ -83,12 +83,18 @@ type
     focusClaimReleaseCounts*: CountTable[string]
     focusLastReleaseReason*: string
     friendlyFireSuppressed*, aimResyncs*, firingTurns*, sprayPursuitTicks*: int
+    sprayFleeActive*: bool
+    sprayThreatCount*, sprayFleeTicks*: int
+    sprayFireFreezeSuppressed*: bool
+    sprayNearestThreatDistancePx*: Option[float]
+    sprayFleeChoice*: Option[SprayFleeScore]
     visibleGrenadeStarts*, visibleGrenadeReleases*: int
     grenadeTargetStarts*, grenadeTargetReleases*: CountTable[string]
     grenadeTargetedEnemies*, grenadeSafetyVetoes*, grenadeForceReleases*: int
     firefightTargetRangeCounts*, firefightShotRangeCounts*: CountTable[string]
     firefightArcExemptTicks*: int
     chatLastSentTick*: int
+    chatLastSprayTick*, chatSprayEpoch*: int
     chatEnemyArmed*: bool
     chatLastEnemyTick*, chatEnemySeenTick*: int
     chatSentCounts*, chatHeardCounts*: CountTable[string]
@@ -137,9 +143,21 @@ proc newBelief*(slot: int): Belief =
     firefightTargetSelectedTick: -1, firefightTargetLastSeenTick: -1,
     focusLastClaimSentTick: -10_000,
     chatLastSentTick: -10_000, chatEnemyArmed: true,
+    chatLastSprayTick: -10_000,
     chatLastEnemyTick: -10_000, chatEnemySeenTick: -10_000,
     squadWaitSince: -1, lastPingTick: -10_000,
     lastProposalSentTick: -10_000, lastVoteSentTick: -10_000,
     lastCommitSentTick: -10_000,
     consensusStartedTick: -1, consensusState: "idle", rejoinUntil: -1,
     respawnedTick: -10_000)
+
+proc projectedTrackPos*(belief: Belief, track: PlayerTrack): Point =
+  let age = belief.tick - track.lastTick
+  if age <= 1 or track.vel.isNone or belief.worldmap.isNil:
+    return track.pos
+  let velocity = track.vel.get
+  (
+    clamp(pyRound(track.pos.x.float + velocity.x * age.float),
+      0, belief.worldmap.width - 1),
+    clamp(pyRound(track.pos.y.float + velocity.y * age.float),
+      0, belief.worldmap.height - 1))

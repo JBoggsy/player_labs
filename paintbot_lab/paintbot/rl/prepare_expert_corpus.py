@@ -15,9 +15,25 @@ from pathlib import Path
 RL_ROOT = Path(__file__).resolve().parent
 
 
+def raw_replays_complete(manifest_path: Path, raw: Path) -> bool:
+    expected = {
+        episode["episode_id"]
+        for episode in json.loads(manifest_path.read_text())["episodes"]
+    }
+    found = set()
+    for metadata_path in raw.rglob("episode.json"):
+        try:
+            episode_id = str(json.loads(metadata_path.read_text())["id"])
+        except (KeyError, json.JSONDecodeError, OSError):
+            continue
+        if (metadata_path.parent / "replay.json").exists():
+            found.add(episode_id)
+    return expected <= found
+
+
 def prune_shard_corpora(workspace: Path) -> None:
     for shard_prepared in (workspace / "shards").glob("shard-*/prepared"):
-        for pattern in ("*.samples.jsonl", "*.maps.jsonl"):
+        for pattern in ("*.samples.jsonl", "*.maps.jsonl", "maps.jsonl"):
             for artifact in shard_prepared.glob(pattern):
                 artifact.unlink()
 
@@ -38,7 +54,12 @@ def run_shard(manifest: Path, workspace: Path, log: Path) -> dict:
     log.parent.mkdir(parents=True, exist_ok=True)
     environment = os.environ.copy()
     with log.open("a") as output:
-        for stage in ("download", "prepare"):
+        stages = (
+            ("prepare",)
+            if raw_replays_complete(manifest, workspace / "raw")
+            else ("download", "prepare")
+        )
+        for stage in stages:
             command = [
                 sys.executable,
                 "-u",

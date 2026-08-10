@@ -17,8 +17,11 @@ This README orients newcomers (human or agent). Three pointers do most of the wo
 > **Status (verified 2026-08-07): `stencil:v54` is the active James Botts
 > champion; `stencil:v53` was rejected and `stencil:v52` is the previous
 > champion.** V54's 60-episode round-385 field test finished 49-3-8. `stencil:v55`-`v58` are
-> uploaded but inert; v58 adds GV41 barrage-center evacuation. The canonical game
-> is Paintbot **0.7.211 / GameVersion 41**. The live league uses a
+> uploaded but inert; v58 adds GV41 barrage-center evacuation and **`stencil:v59`
+> (2026-08-08, also inert) adds enemy-loadout belief + spray-can avoidance**,
+> with no runtime evidence yet. The canonical game is Paintbot **0.7.216 /
+> GameVersion 41**; the lab **builds** against 0.7.215 / `6c7a4c0e`
+> (`tools/versions.env`), one sprite-only release behind. The live league uses a
 > 10x10 campaign board; normal invasions use four policies, with 7+7+1+1
 > captain/ally seating on two-team maps and one policy per team in FFA. Current work and live IDs:
 > [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md). The required evaluation shape:
@@ -199,8 +202,9 @@ These are different tools:
   `viewer_bundle.json` from [`tools/viewer_bundle.py`](tools/viewer_bundle.py). It synchronizes
   ground-truth replay positions with each Stencil agent's tick-by-tick belief,
   objective, tracks, item state, danger field, and heard-event traces. It also
-  shows a conservative ally-covered heatmap: currently visible allies' fuzzed
-  16-step headings projected through the guaranteed vision cone and clipped by
+  shows a potential ally gun-coverage heatmap: visible and fresh tracked gun
+  carriers' fuzzed 16-step headings projected through the guaranteed 45-degree
+  cone, capped at gun range, discounted when track-only, and clipped by
   pixel-wall line of sight. The belief panel reports covered-cell share,
   visible/headed ally counts, heading precision, and danger mean/max at the
   selected snapshot. Ground-truth player and flag colors come from the

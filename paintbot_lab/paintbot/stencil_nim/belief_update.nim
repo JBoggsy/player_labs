@@ -49,7 +49,8 @@ proc updateHearts(belief: Belief, percept: PaintState) =
           belief.stealTarget = some(color)
 
 proc updateTracks(
-  tracks: var seq[PlayerTrack], sightings: openArray[Enemy], tick: int
+  tracks: var seq[PlayerTrack], sightings: openArray[Enemy], tick: int,
+  source = TrackVisual
 ) =
   var unclaimed = newSeq[bool](tracks.len)
   for value in unclaimed.mitems: value = true
@@ -57,7 +58,15 @@ proc updateTracks(
     var
       bestIndex = -1
       bestDistanceSquared = Inf
+    if sighting.identity.isSome:
+      for index in 0 ..< unclaimed.len:
+        if unclaimed[index] and tracks[index].identity == sighting.identity and
+            tracks[index].color == sighting.color:
+          bestIndex = index
+          break
     for index in 0 ..< unclaimed.len:
+      if bestIndex >= 0:
+        break
       if not unclaimed[index]:
         continue
       let track = tracks[index]
@@ -81,7 +90,9 @@ proc updateTracks(
         pos: sighting.pos, lastTick: tick, facing: sighting.facing,
         aimBrads: sighting.aimBrads,
         color: sighting.color, framesSeen: 1, identity: sighting.identity,
-        hpSegments: sighting.hpSegments, shielded: sighting.shielded))
+        hpSegments: sighting.hpSegments, weapon: sighting.weapon,
+        hasGrenade: sighting.hasGrenade, hasBarrier: sighting.hasBarrier,
+        shielded: sighting.shielded, source: source))
       continue
     unclaimed[bestIndex] = false
     let oldPos = tracks[bestIndex].pos
@@ -89,7 +100,12 @@ proc updateTracks(
     tracks[bestIndex].color = sighting.color
     if sighting.identity.isSome: tracks[bestIndex].identity = sighting.identity
     if sighting.hpSegments.isSome: tracks[bestIndex].hpSegments = sighting.hpSegments
-    tracks[bestIndex].shielded = sighting.shielded
+    if sighting.weapon != WeaponUnknown:
+      tracks[bestIndex].weapon = sighting.weapon
+      tracks[bestIndex].hasGrenade = sighting.hasGrenade
+      tracks[bestIndex].shielded = sighting.shielded
+    if source == TrackVisual:
+      tracks[bestIndex].hasBarrier = sighting.hasBarrier
     if elapsed > 0 and elapsed <= TrackVelMaxGapTicks:
       let vx = (sighting.pos.x - oldPos.x).float / elapsed.float
       let vy = (sighting.pos.y - oldPos.y).float / elapsed.float
@@ -107,12 +123,49 @@ proc updateTracks(
     if sighting.aimBrads.isSome:
       tracks[bestIndex].aimBrads = sighting.aimBrads
     tracks[bestIndex].lastTick = tick
+    tracks[bestIndex].source = source
     inc tracks[bestIndex].framesSeen
   var retained: seq[PlayerTrack]
   for track in tracks:
     if tick - track.lastTick <= TrackTtlTicks:
       retained.add(track)
   tracks = retained
+
+proc updateSprayTrack(
+  tracks: var seq[PlayerTrack], team: Team, identity: int, pos: Point, tick: int
+) =
+  var bestIndex = -1
+  for index, track in tracks:
+    if track.color == team and track.identity == some(identity):
+      bestIndex = index
+      break
+  if bestIndex < 0:
+    var bestDistanceSquared = Inf
+    for index, track in tracks:
+      if track.identity.isSome or track.color != team:
+        continue
+      let dx = pos.x - track.pos.x
+      let dy = pos.y - track.pos.y
+      let elapsed = tick - track.lastTick
+      let gate = elapsed.float * MaxSpeedPxTick + TrackMatchSlackPx.float
+      if max(abs(dx), abs(dy)).float > gate:
+        continue
+      let distanceSquared = (dx * dx + dy * dy).float
+      if distanceSquared < bestDistanceSquared:
+        bestDistanceSquared = distanceSquared
+        bestIndex = index
+  if bestIndex < 0:
+    tracks.add(PlayerTrack(
+      pos: pos, lastTick: tick, facing: FacingLeft, aimBrads: none(int),
+      color: team, framesSeen: 1, identity: some(identity),
+      weapon: WeaponSpray, source: TrackTeamShout))
+  elif tracks[bestIndex].lastTick != tick or tracks[bestIndex].source != TrackVisual:
+    tracks[bestIndex].pos = pos
+    tracks[bestIndex].lastTick = tick
+    tracks[bestIndex].color = team
+    tracks[bestIndex].identity = some(identity)
+    tracks[bestIndex].weapon = WeaponSpray
+    tracks[bestIndex].source = TrackTeamShout
 
 proc updateHeard(belief: Belief, percept: PaintState, tick: int) =
   for sound in percept.heardImpacts:
@@ -162,7 +215,7 @@ proc updateChat(belief: Belief, percept: PaintState, tick: int) =
       if ChatEnemyBubbleFix:
         let sighting = Enemy(pos: shout.pos, facing: FacingLeft, aimBrads: none(int),
           color: shoutTeam.get, identity: none(int), hpSegments: none(int))
-        updateTracks(belief.enemyTracks, [sighting], tick)
+        updateTracks(belief.enemyTracks, [sighting], tick, TrackEnemyBubble)
         belief.chatHeardCounts.inc("enemy_bubble")
       continue
     if shout.text == belief.chatLastSentText:
@@ -196,6 +249,12 @@ proc updateChat(belief: Belief, percept: PaintState, tick: int) =
       if message.seat.isSome:
         belief.receiveFocusClaim(
           message.seat.get, message.targetIdentity, message.pos)
+    of "spray":
+      if message.enemyTeam.isSome and message.targetIdentity.isSome and
+          message.enemyTeam.get != belief.team:
+        updateSprayTrack(
+          belief.enemyTracks, message.enemyTeam.get,
+          message.targetIdentity.get, message.pos, tick)
     of "enemy", "thief":
       let sighting = Enemy(pos: message.pos, facing: FacingLeft, aimBrads: none(int),
         color: Red, identity: none(int), hpSegments: none(int))
@@ -316,6 +375,12 @@ proc updateBeliefCore*(
       belief.rejoinUntil = -1
     elif not wasAlive and belief.alive and belief.rejoinPoint.isSome:
       belief.rejoinUntil = tick + RejoinTimeoutTicks
+
+  if wasAlive and not belief.alive:
+    belief.sprayFleeActive = false
+    belief.sprayThreatCount = 0
+    belief.sprayNearestThreatDistancePx = none(float)
+    belief.sprayFleeChoice = none(SprayFleeScore)
 
   if not wasAlive and belief.alive:
     if not belief.worldmap.isNil:

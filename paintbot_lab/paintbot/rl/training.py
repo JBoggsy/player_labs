@@ -15,6 +15,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset, Sampler
 
 from actions import canonical_action_tokens
+from corpus_store import load_arrow_dataset
 from dataset import SFTSample, read_maps, read_samples
 from modeling import SemanticPolicyModel, load_base_model, save_policy
 
@@ -24,11 +25,7 @@ class PolicyDataset(Dataset):
         self.samples = None
         self.arrow = None
         if samples_path.is_dir():
-            try:
-                from datasets import load_from_disk
-            except ImportError as error:
-                raise RuntimeError("install the rl dependency group to read Arrow corpora") from error
-            self.arrow = load_from_disk(str(samples_path))
+            self.arrow = load_arrow_dataset(samples_path)
         else:
             self.samples = read_samples(samples_path)
         self.indices = np.load(indices_path, mmap_mode="r") if indices_path else None

@@ -3,7 +3,7 @@
 
 import std/[algorithm, json, math, options, os, sequtils, sets, strutils, tables]
 import curly, zippy/ziparchives
-import belief_state, config, policy, squads, types, worldmap
+import belief_state, config, policy, squads, strategy, types, worldmap
 
 type
   OutputKind = enum
@@ -51,6 +51,18 @@ proc pointJson(point: Point): JsonNode = %*[point.x, point.y]
 proc facingName(facing: Facing): string =
   if facing == FacingRight: "right" else: "left"
 
+proc weaponName(weapon: EnemyWeapon): string =
+  case weapon
+  of WeaponUnknown: "unknown"
+  of WeaponGun: "gun"
+  of WeaponSpray: "spray"
+
+proc trackSourceName(source: TrackSource): string =
+  case source
+  of TrackVisual: "visual"
+  of TrackTeamShout: "team_shout"
+  of TrackEnemyBubble: "enemy_bubble"
+
 proc trackJson(track: PlayerTrack, tick: int): JsonNode =
   %*{
     "pos": pointJson(track.pos),
@@ -64,7 +76,11 @@ proc trackJson(track: PlayerTrack, tick: int): JsonNode =
     "identity": (if track.identity.isSome: %track.identity.get else: newJNull()),
     "hp_segments": (if track.hpSegments.isSome:
       %track.hpSegments.get else: newJNull()),
+    "weapon": weaponName(track.weapon),
+    "grenade": track.hasGrenade,
+    "barrier": track.hasBarrier,
     "shielded": track.shielded,
+    "source": trackSourceName(track.source),
   }
 
 proc itemKindName(kind: ItemKind): string =
@@ -93,24 +109,18 @@ proc scalarGrid(values: openArray[float32], map: WorldMap): JsonNode =
   %*{"cell_px": scale * NavCell, "rows": rows}
 
 proc coveredGrid(belief: Belief): JsonNode =
-  ## Conservative instantaneous ally vision. Other players expose a fuzzed
-  ## 16-step heading, not their exact aim, so coverage uses that observable
-  ## heading, the narrowest deployed cone, and exact pixel-wall LoS.
+  ## Potential gun coverage from visible and fresh tracked allies. Barriers are
+  ## omitted because their geometry is not observable; the deployed variant has
+  ## barrier pickups disabled.
   let map = belief.worldmap
   if map.isNil:
     return newJNull()
-  var allies: seq[Enemy]
-  for teammate in belief.teammates:
-    if teammate.aimBrads.isSome:
-      allies.add(teammate)
   let
     scale = DangerTraceDownsample
     cellPx = scale * NavCell
     outW = (map.gridW + scale - 1) div scale
     outH = (map.gridH + scale - 1) div scale
-    coneHalfBrads = GuaranteedVisionConeHalfDeg.float /
-      360.0 * AimBradsTurn.float
-    visionRange = PostGunRangePx.float * 1.5
+  var coverageCache: Table[int, float]
   var rows = newJArray()
   for outY in 0 ..< outH:
     var row = newJArray()
@@ -118,35 +128,18 @@ proc coveredGrid(belief: Belief): JsonNode =
       let point: Point = (
         min(outX * cellPx + cellPx div 2, map.width - 1),
         min(outY * cellPx + cellPx div 2, map.height - 1))
-      var isCovered = false
       if map.wall[point.y * map.width + point.x]:
         row.add(%0)
         continue
-      for ally in allies:
-        let
-          dx = point.x - ally.pos.x
-          dy = point.y - ally.pos.y
-          distance = hypot(dx.float, dy.float)
-        if distance > VisionBubble.float:
-          if distance > visionRange:
-            continue
-          let
-            wanted = arctan2(-dy.float, dx.float) /
-              (2.0 * PI) * AimBradsTurn.float
-            error = abs(floorMod(
-              pyRound(wanted - ally.aimBrads.get.float + AimBradsTurn.float / 2.0),
-              AimBradsTurn) - AimBradsTurn div 2).float
-          if error > coneHalfBrads:
-            continue
-        if map.rayClear(ally.pos, point):
-          isCovered = true
-          break
-      row.add(%(if isCovered: 255 else: 0))
+      row.add(%clamp(pyRound(
+        belief.coverageAt(point, coverageCache) * 255.0), 0, 255))
     rows.add(row)
   %*{
     "cell_px": cellPx,
     "rows": rows,
-    "source": "visible_allies",
+    "source": "potential_gun_coverage_visible_and_fresh_tracks",
+    "range_px": PostGunRangePx,
+    "track_discount": SprayCoverTrackDiscount,
     "heading_precision_brads": AimBradsTurn div ObservedHeadingSteps,
   }
 
@@ -381,6 +374,9 @@ proc snapshot(policy: StencilPolicy, command: Command): JsonNode =
       "identity": (if enemy.identity.isSome: %enemy.identity.get else: newJNull()),
       "hp_segments": (if enemy.hpSegments.isSome:
         %enemy.hpSegments.get else: newJNull()),
+      "weapon": weaponName(enemy.weapon),
+      "grenade": enemy.hasGrenade,
+      "barrier": enemy.hasBarrier,
       "shielded": enemy.shielded,
     })
   var visibleTeammates = newJArray()
@@ -489,6 +485,24 @@ proc snapshot(policy: StencilPolicy, command: Command): JsonNode =
     "own_lives_left": ownLives,
     "barrage": barrage,
     "barrage_center_ticks": belief.barrageCenterTicks,
+    "spray_flee_active": belief.sprayFleeActive,
+    "spray_threat_count": belief.sprayThreatCount,
+    "spray_nearest_threat_distance_px":
+      (if belief.sprayNearestThreatDistancePx.isSome:
+        %rounded4(belief.sprayNearestThreatDistancePx.get) else: newJNull()),
+    "spray_fire_freeze_suppressed": belief.sprayFireFreezeSuppressed,
+    "spray_flee_choice":
+      (if belief.sprayFleeChoice.isSome:
+        %*{
+          "point": pointJson(belief.sprayFleeChoice.get.point),
+          "score": rounded4(belief.sprayFleeChoice.get.score),
+          "threat_gain": rounded4(belief.sprayFleeChoice.get.threatGain),
+          "cover_path": rounded4(belief.sprayFleeChoice.get.coverPath),
+          "clump_risk": rounded4(belief.sprayFleeChoice.get.clumpRisk),
+          "center_term": rounded4(belief.sprayFleeChoice.get.centerTerm),
+        }
+      else:
+        newJNull()),
     "hp_pips": (if belief.hpPips.isSome: %belief.hpPips.get else: newJNull()),
     "have": {
       "grenade": belief.iHaveGrenade,
@@ -505,6 +519,8 @@ proc snapshot(policy: StencilPolicy, command: Command): JsonNode =
       %rounded4(targetScore.get.score) else: newJNull()),
     "target_generic_score": (if targetScore.isSome:
       %rounded4(targetScore.get.genericScore) else: newJNull()),
+    "target_spray_term": (if targetScore.isSome:
+      %rounded4(targetScore.get.spray) else: newJNull()),
     "target_defensive_threat": (if targetScore.isSome:
       %rounded4(targetScore.get.defensiveThreat) else: newJNull()),
     "target_heart_distance_px": (if targetScore.isSome and
@@ -576,6 +592,7 @@ proc counters(policy: StencilPolicy): JsonNode =
     "defensive_post_hold_ticks": b.defensivePostHoldTicks,
     "defensive_post_fallbacks": b.defensivePostFallbacks,
     "spray_pursuit_ticks": b.sprayPursuitTicks,
+    "spray_flee_ticks": b.sprayFleeTicks,
   }
 
 proc write(output: TraceOutput, record: JsonNode) =

@@ -41,8 +41,8 @@ The implementation now covers the complete replay-to-checkpoint path:
 - `shard_expert_manifest.py`, `prepare_expert_corpus.py`, and
   `merge_prepared_shards.py` turn that catalog into a coverage-balanced,
   resumable multi-process corpus without allowing a replay into two splits.
-- `corpus_store.py` converts merged JSONL into memory-mapped Hugging Face
-  Datasets Arrow shards and builds finite balanced training indices.
+- `corpus_store.py` opens nested, memory-mapped Hugging Face Datasets Arrow
+  shards as one virtual dataset and builds finite balanced training indices.
 - `run_expert_training.py` waits for preparation, builds Arrow plus indices,
   runs and evaluates a GPU canary, then launches resumable full training and
   sealed-test evaluation without a human handoff.
@@ -94,13 +94,16 @@ discoverable catalog. A bounded run uses coverage-balanced round-robin selection
 across expert, world, and GameVersion before sharding. Each shard resumes at the
 trajectory level, and rerunning the launcher skips completed shards. Generated
 wire/action/observation intermediates are removed after durable samples and maps
-are written. Once a shard completes, its per-trajectory sample/map copies are
-also removed; after the final merge, redundant shard corpora are removed. Raw
-replays, exact-source extractors, per-trajectory and per-shard provenance, and
-the single merged `prepared/` training corpus remain.
+are written. In large unbalanced runs, each worker groups 512 trajectories at a
+time, converts that bounded group to a verified Arrow part, then deletes only
+the corresponding sample JSON. The global merge writes a small virtual-dataset
+manifest over those parts rather than copying their payloads. Maps are
+content-deduplicated once and hard-linked across splits. Raw replays,
+exact-source extractors, Arrow parts, and per-trajectory/per-shard provenance
+remain; no full merged sample JSONL is created.
 
 Production-scale training uses the disk-backed handoff rather than passing the
-merged JSONL directly to `train_sft.py`. The conservative first run uses
+full JSONL corpus directly to `train_sft.py`. The conservative first run uses
 250,000 distinct examples per epoch for three epochs, 10,000-example
 validation/test subsets, LoRA at 2e-4, BF16, and four-tick history. Each index
 is balanced 50/50 between changed and held actions, then across GameVersion,
@@ -122,6 +125,7 @@ every 1,000 optimizer updates and retains the newest two step checkpoints plus
 each completed epoch.
 
 `supervise_expert_training.sh` retries a failed handoff after 60 seconds;
+it also raises the open-file soft limit for the many memory-mapped Arrow parts.
 `paintbot-rl-training.service` is the checked-in mettabox1 user-unit definition.
 On the current host, that supervisor is detached and an `@reboot` crontab entry
 provides reboot recovery because the `metta` account does not have systemd

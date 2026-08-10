@@ -206,8 +206,11 @@ Preparation is intentionally separate from GPU training:
 6. Each split is downsampled to its least-populated era (and an optional cap),
    then round-robined across replay trajectories so neither era abundance nor a
    long episode can silently dominate training or evaluation.
-7. The prepared directory contains replay-disjoint split JSONL plus a complete
-   provenance record and can be bundled without raw replays for transfer.
+7. Small experiments retain replay-disjoint split JSONL. Exhaustive runs
+   convert deterministic 512-trajectory groups to verified Arrow parts and
+   delete each group's redundant JSON before proceeding. A virtual manifest
+   joins those parts without copying the full corpus; provenance remains
+   replay-disjoint and complete.
 
 The Accelerate loop supports LoRA or full tuning, cosine learning-rate decay,
 warmup, gradient accumulation/checkpointing, BF16/FP16/no mixed precision,
@@ -313,12 +316,21 @@ and a separately encoded walkability map. Full verdict:
 
 ## Large-corpus training execution
 
-The exhaustive expert replay corpus is stored for training as Hugging Face
-Datasets Arrow shards, not as an in-memory Python list. Arrow is the established
-memory-mapped path in the Hugging Face/PyTorch stack and preserves random access
-for balanced sampling. The sample payload remains the versioned JSON contract;
-Arrow adds only changed-action, GameVersion, expert player ID, and world index
-columns. New Sprite labels therefore do not require a storage-schema change.
+The exhaustive expert replay corpus is stored for training as nested Hugging
+Face Datasets Arrow shards, not as an in-memory Python list or one monolithic
+Arrow copy. Arrow is the established memory-mapped path in the Hugging
+Face/PyTorch stack and preserves random access for balanced sampling. The sample
+payload remains the versioned JSON contract; Arrow adds only changed-action,
+GameVersion, expert player ID, and world index columns. New Sprite labels
+therefore do not require a storage-schema change.
+
+The storage invariant is that no durable step requires two complete corpus
+copies. Each preprocessing shard converts 512 trajectories at a time and prunes
+their JSON only after Arrow count verification. The global dataset recursively
+concatenates shard manifests in memory without rewriting Arrow payloads. Map
+JSON is content-deduplicated once and hard-linked across splits. Interrupted
+parts are idempotent: a verified Arrow part is reused, while an incomplete
+temporary part is rebuilt from its still-retained source JSON.
 
 The first full run bounds an epoch at 250,000 distinct samples. It assigns half
 the budget to action transitions and half to held actions, then water-fills each
@@ -329,8 +341,8 @@ The exact budget, balance dimensions, and epoch count remain experiment knobs.
 
 Training writes resumable state every 1,000 optimizer updates and at epoch
 boundaries. A deterministic per-epoch permutation makes mid-epoch recovery
-repeatable. An independent launcher waits for merged preprocessing, builds the
-Arrow corpus and indices, requires a complete BF16 GPU canary and validation
+repeatable. An independent launcher waits for preprocessing, opens the virtual
+Arrow corpus and builds indices, requires a complete BF16 GPU canary and validation
 evaluation, then starts the full job automatically.
 
 ## Open decisions

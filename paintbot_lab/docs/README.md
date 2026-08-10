@@ -12,7 +12,7 @@ configuration.
 | [`../AGENTS.md`](../AGENTS.md) | coding agents and maintainers | operating loop, invariants, current player | current process contract |
 | [`../WORKING_CONTEXT.md`](../WORKING_CONTEXT.md) | active collaborators | current objective, live IDs, open threads | intentionally volatile; refresh during work |
 | [`paintbot-gameplay.md`](paintbot-gameplay.md) | player authors and analysts | rules, variants, campaign, wire contract | current reference; verify live-version callouts |
-| [`stencil-communication.md`](stencil-communication.md) | player authors and analysts | Stencil shout formats, sender priority, focus claims, squad consensus, trust model, and known limits | current through v58; the shared sender interval last changed in v57 (30 → the engine's 24-tick cooldown) |
+| [`stencil-communication.md`](stencil-communication.md) | player authors and analysts | Stencil shout formats, sender priority, focus claims, squad consensus, trust model, and known limits | current through v59; v59 adds identified spray-carrier reports |
 | [`tournament-like-experience-requests.md`](tournament-like-experience-requests.md) | experiment authors | normative representative-evaluation contract | current and fail-closed |
 | [`../best_practices.md`](../best_practices.md) | experiment authors | durable Paintbot-specific lessons | current defaults |
 | [`../user_preferences.md`](../user_preferences.md) | agents | James's durable Paintbot preferences | current user contract |
@@ -28,6 +28,7 @@ The root [`../../AGENTS.md`](../../AGENTS.md),
 | [`designs/stencil-v1-design.md`](designs/stencil-v1-design.md) | Stencil architecture, online `WorldMap`, port/scrap decisions, risks | living design with post-v1 addenda |
 | [`designs/stencil-nim-port.md`](designs/stencil-nim-port.md) | native-port contract, parity corpus, packaging | completed design + maintained status |
 | [`designs/rl-policy.md`](designs/rl-policy.md) | Qwen policy decisions, cross-era data/training pipeline, observation representation | living design; full replay-to-checkpoint pipeline implemented |
+| [`designs/spray-avoidance-v59-design.md`](designs/spray-avoidance-v59-design.md) | v59: enemy loadout belief (weapon/grenade/barrier/shield), spray-can keep-out with ally-coverage-aware flee, spray shout, spray-carrier target priority | implemented and uploaded as v59 (2026-08-08, inert); revisions 2-3 record what two adversarial review rounds corrected |
 | [`../paintbot/stencil_nim/VERSION_LOG.md`](../paintbot/stencil_nim/VERSION_LOG.md) | immutable upload/version provenance | append-only; newest version first |
 | [`../../player-build.md`](../../player-build.md) | game-agnostic hosted-player image contract | root reference |
 
@@ -49,7 +50,7 @@ its full list.
   lab was archived; commands are in [`../README.md`](../README.md). The
   version-matched replay reader supplies the episode's startup walkability mask,
   including generated Paintbot terrain. Stencil snapshots supply full enemy/teammate tracks, item
-  beliefs, danger, and conservative ally-vision coverage clipped by terrain.
+  beliefs, danger, and potential ally gun coverage clipped by terrain.
   The viewer also reports coverage/danger summary values and uses the episode's
   slot-team configuration for correct two-team and FFA ground-truth colors.
   This is the dynamic replay diagnosis tool.
@@ -76,7 +77,7 @@ champions applies only to the document's cutoff.
 | document | cutoff / role |
 | --- | --- |
 | [`recon/paintbot-2026-08-03.md`](recon/paintbot-2026-08-03.md) | founding 0.7.178 recon and source citations; explicitly superseded for live behavior |
-| [`recon/paintbot-gv41-hazards-2026-08-07.md`](recon/paintbot-gv41-hazards-2026-08-07.md) | 0.7.209–0.7.211 changes: the GV41 endgame grenade barrage and paint puddles, plus a prioritized Stencil handoff; v58 implements the barrage half, while live campaign episodes have since advanced to 0.7.215 |
+| [`recon/paintbot-gv41-hazards-2026-08-07.md`](recon/paintbot-gv41-hazards-2026-08-07.md) | 0.7.209–0.7.211 changes: the GV41 endgame grenade barrage and paint puddles, plus a prioritized Stencil handoff; v58 implements the barrage half. Scoped to that era; the lab has since re-pinned to 0.7.215 (still GV41), which adds config-gated perks and barriers — see [`paintbot-gameplay.md`](paintbot-gameplay.md) |
 | [`reports/nav-init-profile-2026-08-03.md`](reports/nav-init-profile-2026-08-03.md) | navigation startup profile |
 | [`reports/stencil-defensive-mechanics-2026-08-04.md`](reports/stencil-defensive-mechanics-2026-08-04.md) | v7-v21 defensive experiments |
 | [`reports/stencil-aim-accuracy-2026-08-04.md`](reports/stencil-aim-accuracy-2026-08-04.md) | v21-v22 exact-aim A/B |

@@ -21,6 +21,14 @@ class EpisodeSpec:
     minimum_reward: float | None = None
     expert_policy_version_ids: tuple[str, ...] = ()
     max_povs_per_policy: int | None = None
+    coworld_name: str = "unknown"
+    expert_players: tuple[tuple[str, str], ...] = ()
+
+    def expert_player_id(self, policy: str) -> str:
+        players = dict(self.expert_players)
+        if policy not in players:
+            raise ValueError(f"episode {self.episode_id} has no expert identity for {policy}")
+        return players[policy]
 
 
 @dataclass(frozen=True)
@@ -146,6 +154,13 @@ def _episode(value: dict[str, Any]) -> EpisodeSpec:
     max_povs_per_policy = value.get("max_povs_per_policy")
     if max_povs_per_policy is not None and int(max_povs_per_policy) <= 0:
         raise ValueError("max_povs_per_policy must be positive")
+    expert_players = tuple(
+        (
+            f'{policy["policy_name"]}:{policy["version"]}',
+            str(policy["player_id"]),
+        )
+        for policy in value.get("expert_policies", ())
+    )
     return EpisodeSpec(
         episode_id=str(value["episode_id"]),
         game_version=str(value["game_version"]),
@@ -161,4 +176,6 @@ def _episode(value: dict[str, Any]) -> EpisodeSpec:
         max_povs_per_policy=(
             int(max_povs_per_policy) if max_povs_per_policy is not None else None
         ),
+        coworld_name=str(value.get("coworld_name", "unknown")),
+        expert_players=expert_players,
     )

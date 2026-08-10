@@ -1,3 +1,6 @@
+import json
+
+from prepare_expert_corpus import raw_replays_complete
 from shard_expert_manifest import select_episodes
 
 
@@ -28,3 +31,15 @@ def test_unlimited_selection_preserves_every_episode() -> None:
     episodes = [episode("one", "a"), episode("two", "b")]
 
     assert select_episodes(episodes, maximum=None, seed=1) == episodes
+
+
+def test_completed_raw_replays_skip_redundant_download(tmp_path) -> None:
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"episodes": [{"episode_id": "episode"}]}))
+    episode_dir = tmp_path / "raw/episode"
+    episode_dir.mkdir(parents=True)
+    (episode_dir / "episode.json").write_text(json.dumps({"id": "episode"}))
+
+    assert not raw_replays_complete(manifest, tmp_path / "raw")
+    (episode_dir / "replay.json").write_text("{}")
+    assert raw_replays_complete(manifest, tmp_path / "raw")

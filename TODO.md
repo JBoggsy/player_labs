@@ -5,6 +5,34 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
+- **Deep-dive stencil's navigation code; unify the walkability predicates**
+  (found 2026-08-08 while implementing v59). The lab now ships **two**
+  segment-walkability tests with different semantics, and that is a knowingly
+  accepted debt, not an oversight:
+  - `worldmap.walkableSegment` — resamples every 2px and rescans a 13x13 pixel
+    footprint at each sample against the **pixel wall mask**. Exact, expensive.
+    Five callers (`action.nim:202,251,470,479`, `worldmap.nim:393`), each of
+    which calls it at most once per tick.
+  - `worldmap.walkableNavSegment` — new in v59. Integer DDA over the
+    **already-eroded 8px nav grid** with a no-corner-cut rule on diagonals.
+    ~600x cheaper, conservative (rejects some passable tight lines), and
+    consistent with how A*, the flow fields, and `nearestWalkable` already
+    think. Two callers, both in `strategy.nim`'s flee scoring.
+
+  Why it exists: v59 scores 32 flee candidates per fleeing tick, and
+  `walkableSegment` at 32 calls/tick blew the budget. The better fix was to use
+  the cheap grid test as a **pre-filter** and confirm only the winning candidate
+  with `walkableSegment` — ~1-2 expensive calls per tick, one authoritative
+  predicate. James chose to ship the current path and revisit navigation
+  properly rather than patch it now.
+
+  The deep dive should settle: one predicate or a documented hierarchy;
+  whether the pixel mask or the eroded grid is the source of truth for "can a
+  body go here" (they disagree at the margins); whether `rayClear`'s
+  point-sized LOS is being used anywhere it should be footprint-aware; and
+  what to do about `belief.danger`, which `belief_update.nim:225-293` computes
+  every tick and **nothing reads** (`nav.nim`'s A* costs are pure distance).
+
 - **Re-sync crewborg's player SDK, or accept the split** (found 2026-08-07 during a
   docs audit). `pyproject.toml` now pins coworld-tools `4dd923d` (paintbot needs it —
   earlier revisions clamped Sprite-v1 masks to `0x7f` and dropped Button C), but
@@ -26,8 +54,9 @@ mid-session; check them back at the start of focused work.
 
 - **Evaluate v58's barrage evacuation, then decide on shell-level evasion**
   (updated 2026-08-07). The hazard investigation was pinned to 0.7.211 / GV41
-  (`coworld-ctf@9dedac0`); current campaign episode rows report 0.7.215, so
-  re-resolve its source and GameVersion before the next mechanic evaluation.
+  (`coworld-ctf@9dedac0`). **Re-resolved 2026-08-08:** canonical is 0.7.215 /
+  still GV41 (`coworld-ctf@6c7a4c0e`), and `paintbot_lab/tools/versions.env` is
+  pinned there.
   V58 implements the coarse half of the recon's P1:
   it parses the `grenade barrage depth/rate/start/sat` marker and evacuates to
   the generated map center once `depth > 0`, tracing `barrage_center_ticks`.
@@ -53,10 +82,11 @@ mid-session; check them back at the start of focused work.
   diversity, then compare compact deltas with short full self/nearby-state
   history and report movement/turn/fire/grenade changes separately. See
   `paintbot_lab/docs/reports/rl-transition-temporal-2x2-2026-08-07.md`.
-  **In progress:** the exhaustive reproducible expert pool is preprocessing on
-  mettabox1 with an unattended Arrow-to-canary-to-full-training handoff. After
-  this run, compare compact deltas against short full self/nearby snapshots; do
-  not change the representation while the attributable baseline is active.
+  **In progress:** all 327,188 replay downloads are complete and the exhaustive
+  expert pool is preprocessing on mettabox1 with a disk-bounded virtual-Arrow
+  handoff. After this run, compare compact deltas against short full self/nearby
+  snapshots; do not change the representation while the attributable baseline
+  is active.
 
 - **Make Stencil squads roster-aware under campaign 7+7+1+1 seating** (found
   2026-08-06). Current `squadTable` partitions two-team identities by parity,

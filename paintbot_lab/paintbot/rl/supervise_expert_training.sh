@@ -8,6 +8,7 @@ LOCK="$ROOT/runs/expert-corpus-v1/training-v1.lock"
 cd "$ROOT"
 export PYTHONPATH=paintbot_lab/paintbot/rl
 export HF_HOME=/home/metta/.cache/huggingface
+ulimit -n 8192
 
 while true; do
   /usr/bin/flock --no-fork "$LOCK" \

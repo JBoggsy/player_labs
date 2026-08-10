@@ -130,14 +130,17 @@ proc scoreTarget*(
     rangeBand = rangeTerm(candidate.distancePx)
     claim = if claimed: 1.0 else: 0.0
     shootability = if candidate.shootable: 1.0 else: -1.0
-    shield = if candidate.enemy.shielded: 1.0 else: 0.0
+    shield = if ShieldAwareness and candidate.enemy.shielded: 1.0 else: 0.0
+    spray = if candidate.enemy.weapon == WeaponSpray: 1.0 else: 0.0
     genericScore = FirefightWoundWeight * wound + FirefightRangeWeight * rangeBand +
       FirefightClaimWeight * claim + FirefightShootabilityWeight * shootability -
-      FirefightAimCostWeight * candidate.aimCost - FirefightShieldWeight * shield
+      FirefightAimCostWeight * candidate.aimCost - FirefightShieldWeight * shield +
+      FirefightSprayWeight * spray
     score = genericScore + DefensiveTargetThreatWeight * defensiveThreat
   TargetScore(candidate: candidate, score: score, genericScore: genericScore, wound: wound,
     rangeBand: rangeBand, claim: claim, shootability: shootability,
-    aimCost: candidate.aimCost, shield: shield, defensiveThreat: defensiveThreat,
+    aimCost: candidate.aimCost, shield: shield, spray: spray,
+    defensiveThreat: defensiveThreat,
     heartDistancePx: heartDistancePx)
 
 proc scoreCmp(a, b: TargetScore): int =

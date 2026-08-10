@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import fcntl
 import json
+import os
 import random
 import shutil
 import subprocess
@@ -344,7 +345,11 @@ def prepare(
             try:
                 if record_path.exists():
                     record = json.loads(record_path.read_text())
-                    samples = read_samples(output / "samples.jsonl")
+                    samples = (
+                        read_samples(output / "samples.jsonl")
+                        if manifest.preparation.balance_versions
+                        else []
+                    )
                     episode_maps = read_maps(output / "map.jsonl")
                     if len(episode_maps) != 1:
                         raise ValueError(f"expected one map in {output / 'map.jsonl'}")
@@ -434,6 +439,12 @@ def prepare(
                         "trajectory": stem,
                     }
                     record_path.write_text(json.dumps(record, indent=2) + "\n")
+                record["expert_player_id"] = (
+                    episode.expert_player_id(policy)
+                    if episode.expert_players
+                    else policy
+                )
+                record["world"] = episode.coworld_name
                 if not manifest.preparation.retain_intermediates:
                     for intermediate in ("wire.jsonl", "actions.jsonl", "observations.jsonl"):
                         (output / intermediate).unlink(missing_ok=True)
@@ -453,6 +464,12 @@ def prepare(
                         "error": str(error),
                     }
                 )
+
+    if (
+        manifest.preparation.prune_trajectory_artifacts_after_prepare
+        and not manifest.preparation.balance_versions
+    ):
+        return prepare_large_arrow_corpus(manifest, workspace, records, failures, all_maps)
 
     prepared = workspace / "prepared"
     prepared.mkdir(parents=True, exist_ok=True)
@@ -497,6 +514,108 @@ def prepare(
             trajectory = trajectories / record["trajectory"]
             (trajectory / "samples.jsonl").unlink(missing_ok=True)
             (trajectory / "map.jsonl").unlink(missing_ok=True)
+    print(json.dumps({"prepared": str(prepared), "split_counts": split_counts}, indent=2))
+    return summary
+
+
+def prepare_large_arrow_corpus(
+    manifest: PipelineManifest,
+    workspace: Path,
+    records: list[dict],
+    failures: list[dict],
+    all_maps: dict,
+    *,
+    trajectories_per_part: int = 512,
+) -> dict:
+    """Convert bounded trajectory groups to Arrow before discarding their JSON."""
+    from corpus_store import convert_split
+    from merge_prepared_shards import write_shard_manifest
+
+    trajectories = workspace / "trajectories"
+    prepared = workspace / "prepared"
+    arrow = workspace / "arrow"
+    staging = arrow / "staging"
+    prepared.mkdir(parents=True, exist_ok=True)
+    staging.mkdir(parents=True, exist_ok=True)
+    split_counts = {}
+    for split in ("train", "validation", "test"):
+        split_records = [record for record in records if record["split"] == split]
+        parts = []
+        count = 0
+        for part_number, start in enumerate(range(0, len(split_records), trajectories_per_part)):
+            part_records = split_records[start : start + trajectories_per_part]
+            part = arrow / "parts" / split / f"part-{part_number:05d}"
+            source_path = staging / f"{split}-part-{part_number:05d}.samples.jsonl"
+            expected = sum(int(record["samples"]) for record in part_records)
+            if not (part / "dataset_info.json").exists():
+                with source_path.open("w") as destination:
+                    for record in part_records:
+                        trajectory_samples = (
+                            trajectories / record["trajectory"] / "samples.jsonl"
+                        )
+                        if not trajectory_samples.exists():
+                            raise FileNotFoundError(
+                                f"missing unconverted trajectory samples: {trajectory_samples}"
+                            )
+                        with trajectory_samples.open() as source:
+                            shutil.copyfileobj(source, destination)
+            metadata = {
+                (record["episode_id"], int(record["seat"])): {
+                    "expert_player_id": record["expert_player_id"],
+                    "world": record["world"],
+                }
+                for record in part_records
+            }
+            actual = convert_split(source_path, part, metadata)
+            if actual != expected:
+                raise ValueError(
+                    f"{split} Arrow part {part_number} count {actual} != {expected}"
+                )
+            parts.append(part)
+            count += actual
+            source_path.unlink(missing_ok=True)
+            for record in part_records:
+                (trajectories / record["trajectory"] / "samples.jsonl").unlink(
+                    missing_ok=True
+                )
+        write_shard_manifest(arrow / split, parts, count)
+        split_counts[split] = count
+
+    maps_path = prepared / "maps.jsonl"
+    if not maps_path.exists():
+        temporary = prepared / ".maps.jsonl.incomplete"
+        write_jsonl(temporary, (all_maps[map_hash] for map_hash in sorted(all_maps)))
+        temporary.replace(maps_path)
+    for split in ("train", "validation", "test"):
+        split_maps = prepared / f"{split}.maps.jsonl"
+        if split_maps.exists():
+            split_maps.unlink()
+        os.link(maps_path, split_maps)
+
+    summary = {
+        "schema_version": 1,
+        "created_at_unix": time.time(),
+        "manifest": asdict(manifest),
+        "storage": "virtual_arrow_shards",
+        "split_counts": split_counts,
+        "trajectories": records,
+        "failures": failures,
+    }
+    (arrow / "provenance.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "storage": "virtual_arrow_shards",
+                "split_counts": split_counts,
+            },
+            indent=2,
+        )
+        + "\n"
+    )
+    (prepared / "provenance.json").write_text(json.dumps(summary, indent=2) + "\n")
+    for record in records:
+        trajectory = trajectories / record["trajectory"]
+        (trajectory / "map.jsonl").unlink(missing_ok=True)
     print(json.dumps({"prepared": str(prepared), "split_counts": split_counts}, indent=2))
     return summary
 

@@ -19,6 +19,7 @@ type
     objects: seq[SceneObject]
     byLabel: Table[string, seq[int]]
   ActorMarkerPair = tuple[distance: float, actorIndex, markerIndex: int]
+  IdentityBadge = tuple[identity: int, pos: Point, loadout: Loadout]
 
 proc center(item: SceneObject): Point =
   (pyRound((item.x.float + item.width.float / 2.0) / RenderScale.float),
@@ -88,18 +89,32 @@ proc findSelf(
 
 proc identityBadges(
   scene: SceneIndex, color: Team
-): seq[tuple[identity: int, pos: Point]] =
+): seq[IdentityBadge] =
   let prefix = "identity " & color.teamName & " "
   for item in scene.objects:
     if not item.label.startsWith(prefix):
       continue
-    let name = item.label[prefix.len .. ^1].split(' ', 1)[0]
-    let identity = IdentityNames.find(name)
-    if identity >= 0:
-      result.add((identity, item.center))
+    let fields = item.label[prefix.len .. ^1].splitWhitespace
+    if fields.len == 0:
+      continue
+    let identity = IdentityNames.find(fields[0])
+    if identity < 0:
+      continue
+    var loadout: Loadout
+    if fields[^1] == "gun":
+      loadout.weapon = WeaponGun
+    elif fields[^1] == "spray":
+      loadout.weapon = WeaponSpray
+    for field in fields[1 ..< max(1, fields.len - 1)]:
+      case field
+      of "nade": loadout.grenade = true
+      of "shield": loadout.shield = true
+      else: discard
+    result.add((identity, item.center, loadout))
 
-proc playersOfColor(scene: SceneIndex, color: Team): seq[Enemy] =
-  let badges = identityBadges(scene, color)
+proc playersOfColor(
+  scene: SceneIndex, color: Team, badges: openArray[IdentityBadge]
+): seq[Enemy] =
   for facing in [FacingRight, FacingLeft]:
     let label = "player " & color.teamName & " " &
       (if facing == FacingRight: "right" else: "left")
@@ -120,14 +135,17 @@ proc playersOfColor(scene: SceneIndex, color: Team): seq[Enemy] =
           none(int)
       var
         bestIdentity = none(int)
+        bestLoadout: Loadout
         bestDistance = BadgeRadius
       for badge in badges:
         let d = distance(pos, badge.pos)
         if d < bestDistance:
           bestDistance = d
           bestIdentity = some(badge.identity)
+          bestLoadout = badge.loadout
       result.add(Enemy(pos: pos, facing: facing, aimBrads: aimBrads, color: color,
-        identity: bestIdentity, hpSegments: none(int)))
+        identity: bestIdentity, hpSegments: none(int), weapon: bestLoadout.weapon,
+        hasGrenade: bestLoadout.grenade, shielded: bestLoadout.shield))
 
 proc visibleItems(scene: SceneIndex): seq[VisibleItem] =
   for item in scene.objects:
@@ -224,7 +242,8 @@ proc attachOverheadState(
     hpValues: seq[int]
     hpPositions: seq[Point]
     carried = initTable[string, seq[Point]]()
-  for label in ["grenade carried", "shield carried", "plasma arc carried", "spray can carried"]:
+  for label in ["grenade carried", "shield carried", "barrier carried",
+      "plasma arc carried", "spray can carried"]:
     carried[label] = @[]
   for item in scene.objects:
     if item.label.startsWith("hp "):
@@ -276,14 +295,15 @@ proc attachOverheadState(
     case label
     of "grenade carried": result.grenade = hasSelf
     of "shield carried": result.shield = hasSelf
+    of "barrier carried": discard
     of "plasma arc carried", "spray can carried": result.arc = result.arc or hasSelf
     else: discard
-    if label == "shield carried":
+    if label == "barrier carried":
       for actorIndex in markerAssignments(actors, remaining).keys:
         if actorIndex < enemies.len:
-          enemies[actorIndex].shielded = true
+          enemies[actorIndex].hasBarrier = true
         else:
-          teammates[actorIndex - enemies.len].shielded = true
+          teammates[actorIndex - enemies.len].hasBarrier = true
 
 proc perceive*(
   client: ProtocolClient, team: Team, colors: openArray[Team],
@@ -303,10 +323,27 @@ proc perceive*(
   result.fireReady = scene.hasLabel("fire icon")
 
   for color in colors:
+    var badges = identityBadges(scene, color)
+    var ownLoadout: Loadout
+    if color == actualTeam and self.pos.isSome:
+      var
+        ownBadgeIndex = -1
+        ownBadgeDistance = BadgeRadius
+      for badgeIndex, badge in badges:
+        let d = distance(self.pos.get, badge.pos)
+        if d < ownBadgeDistance:
+          ownBadgeDistance = d
+          ownBadgeIndex = badgeIndex
+      if ownBadgeIndex >= 0:
+        ownLoadout = badges[ownBadgeIndex].loadout
+        badges.delete(ownBadgeIndex)
+      result.iHaveGrenade = ownLoadout.grenade
+      result.iHaveShield = ownLoadout.shield
+      result.iHaveArc = ownLoadout.weapon == WeaponSpray
     if color == actualTeam:
-      result.teammates.add(playersOfColor(scene, color))
+      result.teammates.add(playersOfColor(scene, color, badges))
     else:
-      result.enemies.add(playersOfColor(scene, color))
+      result.enemies.add(playersOfColor(scene, color, badges))
   for color in colors:
     let
       planted = scene.firstWithLabel(color.teamName & " flag planted")
@@ -333,9 +370,8 @@ proc perceive*(
   if self.pos.isSome:
     let overhead = attachOverheadState(scene, self.pos.get, result.enemies, result.teammates)
     result.hpPips = overhead.hp
-    result.iHaveGrenade = overhead.grenade
-    result.iHaveShield = overhead.shield
-    result.iHaveArc = overhead.arc or scene.hasLabel("weapon spray")
+    result.iHaveGrenade = result.iHaveGrenade or overhead.grenade
+    result.iHaveArc = result.iHaveArc or overhead.arc or scene.hasLabel("weapon spray")
   else:
     result.hpPips = none(int)
   let params = parseGameParams(client)

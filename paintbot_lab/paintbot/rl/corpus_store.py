@@ -30,25 +30,33 @@ def trajectory_metadata(manifest_path: Path, shards_root: Path) -> dict[tuple[st
     episodes = {item["episode_id"]: item for item in manifest["episodes"]}
     result: dict[tuple[str, int], dict] = {}
     for provenance_path in sorted(shards_root.glob("shard-*/prepared/provenance.json")):
-        provenance = json.loads(provenance_path.read_text())
-        for trajectory in provenance.get("trajectories", ()):
-            episode_id = trajectory["episode_id"]
-            episode = episodes[episode_id]
-            player_ids = {
-                f'{policy["policy_name"]}:{policy["version"]}': policy["player_id"]
-                for policy in episode.get("expert_policies", ())
-            }
-            policy = trajectory["policy"]
-            try:
-                player_id = player_ids[policy]
-            except KeyError as error:
-                raise ValueError(
-                    f"trajectory {episode_id} seat {trajectory['seat']} has unmapped policy {policy}"
-                ) from error
-            result[(episode_id, int(trajectory["seat"]))] = {
-                "expert_player_id": player_id,
-                "world": episode["coworld_name"],
-            }
+        result.update(trajectory_metadata_from_provenance(episodes, provenance_path))
+    return result
+
+
+def trajectory_metadata_from_provenance(
+    episodes: dict[str, dict], provenance_path: Path
+) -> dict[tuple[str, int], dict]:
+    result = {}
+    provenance = json.loads(provenance_path.read_text())
+    for trajectory in provenance.get("trajectories", ()):
+        episode_id = trajectory["episode_id"]
+        episode = episodes[episode_id]
+        player_ids = {
+            f'{policy["policy_name"]}:{policy["version"]}': policy["player_id"]
+            for policy in episode.get("expert_policies", ())
+        }
+        policy = trajectory["policy"]
+        try:
+            player_id = player_ids[policy]
+        except KeyError as error:
+            raise ValueError(
+                f"trajectory {episode_id} seat {trajectory['seat']} has unmapped policy {policy}"
+            ) from error
+        result[(episode_id, int(trajectory["seat"]))] = {
+            "expert_player_id": player_id,
+            "world": episode["coworld_name"],
+        }
     return result
 
 
@@ -107,6 +115,12 @@ def convert_split(samples_path: Path, output: Path, metadata: dict[tuple[str, in
 
 def convert_corpus(manifest: Path, workspace: Path) -> dict[str, int]:
     prepared = workspace / "prepared"
+    arrow_provenance = workspace / "arrow" / "provenance.json"
+    if arrow_provenance.exists():
+        return {
+            split: int(count)
+            for split, count in json.loads(arrow_provenance.read_text())["split_counts"].items()
+        }
     metadata = trajectory_metadata(manifest, workspace / "shards")
     counts = {}
     for split in SPLITS:
@@ -127,6 +141,20 @@ def convert_corpus(manifest: Path, workspace: Path) -> dict[str, int]:
         + "\n"
     )
     return counts
+
+
+def load_arrow_dataset(path: Path):
+    datasets = _datasets()
+    if (path / "dataset_info.json").exists():
+        return datasets.load_from_disk(str(path))
+    manifest_path = path / "shards.json"
+    if not manifest_path.exists():
+        raise FileNotFoundError(f"no Arrow dataset or shard manifest at {path}")
+    manifest = json.loads(manifest_path.read_text())
+    shards = [load_arrow_dataset((path / shard).resolve()) for shard in manifest["shards"]]
+    if not shards:
+        raise ValueError(f"Arrow shard manifest is empty: {manifest_path}")
+    return datasets.concatenate_datasets(shards)
 
 
 def _balanced_quotas(capacities: dict[tuple[str, ...], int], budget: int) -> dict[tuple[str, ...], int]:
@@ -218,8 +246,7 @@ def balanced_indices(dataset, budget: int, seed: int) -> tuple[np.ndarray, dict]
 
 
 def write_balanced_indices(dataset_path: Path, output: Path, budget: int, seed: int) -> dict:
-    datasets = _datasets()
-    dataset = datasets.load_from_disk(str(dataset_path))
+    dataset = load_arrow_dataset(dataset_path)
     indices, summary = balanced_indices(dataset, budget, seed)
     output.parent.mkdir(parents=True, exist_ok=True)
     np.save(output, indices)
