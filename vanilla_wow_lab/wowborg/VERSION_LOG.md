@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v216 - stealth through the Great Lift road (2026-08-09)
+
+- Version UUID: `9492f0e3-0b45-4510-9df5-aff3615e1bb6` (`wowborg:v216`, uploaded
+  inert; not submitted). Built from source `4b05ac7` against canonical vanilla-wow 0.1.209.
+- From the first Shimmering Flats road leg through the Great Lift lower dock, enters Cat Form and
+  Prowl, follows the canonical road without the Travel-Form hazard controller's long lateral
+  detours, and reacquires Prowl after reactive contact. General proactive road combat is removed;
+  the separately measured constrained-ramp Scorpid exception remains.
+
 ## v215 - tighten proactive fight admission (2026-08-09)
 
 - Version UUID: `8c82713a-ee8c-4a2a-b074-1d72ef26ad8e` (`wowborg:v215`, uploaded
