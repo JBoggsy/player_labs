@@ -170,7 +170,29 @@ def test_epoch_sampler_is_repeatable_and_changes_between_epochs() -> None:
 def test_large_prepare_converts_bounded_parts_before_pruning_json(tmp_path) -> None:
     shard = tmp_path / "shards/shard-000"
     episode_map = EpisodeMap.from_mask(np.ones((2, 2), dtype=bool))
-    records = []
+    empty_trajectory = shard / "trajectories/trajectory-empty"
+    write_jsonl(empty_trajectory / "samples.jsonl", [])
+    write_jsonl(empty_trajectory / "map.jsonl", [episode_map])
+    records = [
+        {
+            "episode_id": "episode-empty",
+            "game_version": "1",
+            "source_commit": "commit",
+            "split": "train",
+            "seat": 0,
+            "policy": "expert:7",
+            "expert_player_id": "player",
+            "world": "paintbot",
+            "reward": 1,
+            "observations": 1,
+            "samples": 0,
+            "raw_entities": 0,
+            "retained_entities": 0,
+            "wire_source": "wire",
+            "map_hash": episode_map.map_hash,
+            "trajectory": empty_trajectory.name,
+        }
+    ]
     for number in range(2):
         trajectory = shard / "trajectories" / f"trajectory-{number}"
         sample = SFTSample(

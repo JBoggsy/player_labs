@@ -547,6 +547,13 @@ def prepare_large_arrow_corpus(
             part = arrow / "parts" / split / f"part-{part_number:05d}"
             source_path = staging / f"{split}-part-{part_number:05d}.samples.jsonl"
             expected = sum(int(record["samples"]) for record in part_records)
+            if expected == 0:
+                source_path.unlink(missing_ok=True)
+                for record in part_records:
+                    (trajectories / record["trajectory"] / "samples.jsonl").unlink(
+                        missing_ok=True
+                    )
+                continue
             if not (part / "dataset_info.json").exists():
                 with source_path.open("w") as destination:
                     for record in part_records:
