@@ -115,6 +115,7 @@ ROAD_EXACT_GUIDEPOINTS = frozenset(
         "shimmering-flats-ramp-turn",
         "shimmering-flats-ramp-base",
         "shimmering-flats-south-road",
+        "thousand-needles-west-road-2",
         "great-lift-lower-dock",
     }
 ) | (

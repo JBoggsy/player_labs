@@ -1,5 +1,19 @@
 # wowborg version log
 
+## v227 - keep corridor bearings on the Detour line (2026-08-09)
+
+- Version UUID: `8bb6a28b-9e84-450b-b381-5956156fd5f1` (`wowborg:v227`, uploaded
+  inert; not submitted). Built from source `cffe5ca` against canonical vanilla-wow 0.1.209.
+- Adds the omitted first west-corridor join and narrows crossed-bearing admission from 60 to 20
+  lateral yards for the three Detour-derived corridors only. All non-corridor road, mountain,
+  stealth, combat, and movement behavior is unchanged.
+- Matched 24-episode south-road request `xreq_322c1f53-128a-48dd-ba54-e4e50f52d4d7` kept all 24
+  characters alive and increased lower-dock arrivals from four to five. Five runs still stopped at
+  the west-corridor join because ordinary crossed acceptance marked west road 2 complete 13-16
+  yards early at an off-navmesh pose, then immediately passed corridor point 1 without correcting
+  the source. The active source requires eight-yard arrival at west road 2 only, so the existing
+  corridor begins from its canonical walkable point.
+
 ## v226 - follow the Thousand Needles west corridor (2026-08-09)
 
 - Version UUID: `b18e8efb-c2bc-4641-9dc4-8633586dfb37` (`wowborg:v226`, uploaded
