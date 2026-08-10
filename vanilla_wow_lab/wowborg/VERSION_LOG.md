@@ -1,5 +1,21 @@
 # wowborg version log
 
+## v242 - continue when Travel Form cannot persist (2026-08-10)
+
+- Version UUID: `2bfed214-38ac-4dec-a833-ad9dade1b913` (`wowborg:v242`, uploaded
+  inert; not submitted). Built from source `9be9fbf` against canonical vanilla-wow 0.1.209.
+- Attempts Travel Form at most once per road leg, then continues that leg on foot if the form does
+  not persist. Final Great Lift precision, route geometry, hazard handling, and combat are unchanged.
+- Matched south-road request `xreq_7a24423d-aaf2-4779-b64e-55fa0b4f6650` published 23 of 24 policy
+  traces. All 23 traced characters survived; eight cleared the formerly blocking west road 1 and
+  seven arrived at the lower dock at a 198.7-second median, versus three dock arrivals and zero
+  west-road-1 completions for v241. One completed episode's policy trace remained unpublished.
+- Canonical-spawn request `xreq_e06d43c6-d9e8-4dec-b3a2-3c21ac94bcf4` published all 24 traces and
+  kept 21 characters alive, but produced no lower-dock arrivals. Thirteen reached the ramp crest at
+  a 187.5-second median and only four reached south road before the 270-second horizon. Successful
+  traces issued 412–730 redundant settle waits; the active source uses the historically proven
+  every-eighth-pulse yield cadence on exact legs instead of yielding after every movement pulse.
+
 ## v241 - make the final Great Lift corridor precise (2026-08-09)
 
 - Version UUID: `82cc2a03-54b5-4282-9e31-521563ac8cfc` (`wowborg:v241`, uploaded

@@ -1147,11 +1147,7 @@ def _steer_road_leg(
     downstream_route: bool,
     stealth_route: bool,
 ):
-    settle_pause_interval = (
-        ROAD_SETTLE_PAUSE_INTERVAL
-        if jump_terrain or allow_northing_pass
-        else 1
-    )
+    settle_pause_interval = ROAD_SETTLE_PAUSE_INTERVAL
     closest = math.inf
     last_progress = time.monotonic()
     road_unstick_attempts = 0
