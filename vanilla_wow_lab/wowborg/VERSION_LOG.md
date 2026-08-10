@@ -7,6 +7,12 @@
 - Proactively fights exactly one isolated ordinary hostile within 20 yards when wowborg has at
   least a 20-level advantage. Stronger or grouped enemies retain V213's avoidance behavior; the
   route, climb/descent, reactive combat, and diagnostic resume gate are unchanged.
+- Matched 24-episode south-road request `xreq_15ff799e-b3c2-44eb-8395-868aee60cbd8` reduced
+  avoidance/evasion activations from V213's 650/1,117 to 129/67 and triggered 63 proactive fights,
+  but 7/24 characters died and the living-run median did not improve. Level-28 fights took about 2
+  seconds; level-33/34 fights commonly took 5–14 seconds and removed roughly 700–1,100 health. The
+  active source therefore requires a measured 30-level advantage and at least 90% health before a
+  proactive fight.
 
 ## v213 - resume Traverse at diagnostic starts (2026-08-09)
 

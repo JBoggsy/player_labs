@@ -61,8 +61,9 @@ ROAD_CLIMB_EDGE_PASS_PLANAR_YARDS = 8.0
 ROAD_CLIMB_EDGE_PASS_VERTICAL_SLACK_YARDS = 3.0
 ROAD_ROUTE_RESUME_MIN_WORLD_X = -8000.0
 ROAD_ROUTE_RESUME_RADIUS_YARDS = 50.0
-PROACTIVE_FIGHT_LEVEL_ADVANTAGE = 20
+PROACTIVE_FIGHT_LEVEL_ADVANTAGE = 30
 PROACTIVE_FIGHT_ENGAGE_YARDS = 20.0
+PROACTIVE_FIGHT_MIN_HEALTH_FRACTION = 0.9
 ROAD_STALL_SECONDS = 8.0
 ROAD_UNSTICK_ATTEMPTS = 2
 ROAD_SETTLE_PAUSE_INTERVAL = 8
@@ -673,6 +674,10 @@ def _qualifying_reactive_attacker(unit) -> bool:
 def _qualifying_weak_hazard(frame, unit) -> bool:
     return (
         _qualifying_reactive_attacker(unit)
+        and frame.health_known
+        and frame.max_health > 0
+        and frame.health
+        >= frame.max_health * PROACTIVE_FIGHT_MIN_HEALTH_FRACTION
         and unit.level <= frame.level - PROACTIVE_FIGHT_LEVEL_ADVANTAGE
     )
 

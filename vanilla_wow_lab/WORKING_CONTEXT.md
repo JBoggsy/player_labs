@@ -1445,7 +1445,13 @@ reaching central road 1 amid 60 avoidance and 83 evasion activations. Its two ac
 fights took only 2.8 and 1.9 seconds. The active source proactively fights one isolated ordinary
 hostile within 20 yards when wowborg has at least a 20-level advantage; stronger or grouped hazards
 still use avoidance. This candidate is uploaded inert as **wowborg:v214**
-(`6ea438f2-dac9-45a8-9941-85ec549e07c7`, source `51a9b27`).
+(`6ea438f2-dac9-45a8-9941-85ec549e07c7`, source `51a9b27`). Matched south-road request
+`xreq_15ff799e-b3c2-44eb-8395-868aee60cbd8` reduced avoidance/evasion activations from V213's
+650/1,117 to 129/67 and triggered 63 proactive fights, but 7/24 characters died and the living-run
+median did not improve. Level-28 fights took about 2 seconds; level-33/34 fights commonly took 5–14
+seconds and removed roughly 700–1,100 health. The active source requires a 30-level advantage and
+at least 90% health before a proactive fight, targeting the measured quick-kill tier rather than
+the dangerous level-33–35 tier.
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.
