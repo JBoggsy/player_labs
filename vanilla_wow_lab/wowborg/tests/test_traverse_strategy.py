@@ -15,6 +15,8 @@ from wowborg.strategies.traverse import (
     GREAT_LIFT_LOWER_DOCK,
     PROWL_SPELL_IDS,
     ROAD_STEEP_GUIDEPOINTS,
+    STEALTH_ROUTE_START_GUIDEPOINT,
+    TRAVEL_ROUTE_START_GUIDEPOINT,
     TRAVERSE_ROUTE_PREFIX,
     TraverseCombatState,
     TraverseStrategy,
@@ -232,6 +234,10 @@ def test_traverse_route_prefix_reaches_great_lift_lower_dock() -> None:
     assert TRAVERSE_ROUTE_PREFIX[-1][1] == Point(1, -4677.066, -1853.667, -43.857)
     assert names[-1] == "great-lift-lower-dock"
     assert len(names) == len(set(names))
+    assert names[STEALTH_ROUTE_START_GUIDEPOINT] == "shimmering-flats-road"
+    assert names[TRAVEL_ROUTE_START_GUIDEPOINT - 1] == (
+        "thousand-needles-central-road-3"
+    )
 
     ascent_start = names.index("shimmering-flats-ramp-ascent-01")
     assert names[ascent_start : ascent_start + 17] == [

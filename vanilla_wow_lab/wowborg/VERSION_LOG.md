@@ -1,5 +1,19 @@
 # wowborg version log
 
+## v232 - switch forms around downstream hazards (2026-08-09)
+
+- Version UUID: `099748ed-96ee-48ba-868c-f1818fc880b1` (`wowborg:v232`, uploaded
+  inert; not submitted). Built from source `c72c0ea` against canonical vanilla-wow 0.1.209.
+- Restores the proven straight downstream bearings. Clear frames use Travel Form, while any living
+  hostile visible within 80 yards triggers Cat Form and Prowl; after combat, the current form is
+  explicitly cancelled before Travel Form is recast. Route geometry and combat gates are unchanged.
+- Matched 24-episode south-road request `xreq_65424c99-250b-49b5-995d-6bdae790aa45` kept all 24
+  characters alive but produced only four lower-dock arrivals at a median 228.5 seconds. Repeated
+  visibility transitions caused 20–50 form changes in successful runs, erasing most of Travel
+  Form's speed and destabilizing narrow bearings. The active source uses the hosted hazard map
+  instead: Prowl through central road 3, then make one Travel Form transition for the enemy-free
+  west-road and Great Lift corridor.
+
 ## v231 - use hazard-aware Travel Form downstream (2026-08-09)
 
 - Version UUID: `06b5b776-ab43-43e9-9f32-7d944ae79843` (`wowborg:v231`, uploaded

@@ -304,10 +304,15 @@ TRAVERSE_ROUTE_PREFIX = (
     ("great-lift-lower-corridor-13", Point(1, -4691.20, -1856.00, -48.29)),
     ("great-lift-lower-dock", GREAT_LIFT_LOWER_DOCK),
 )
-DYNAMIC_FORM_ROUTE_START_GUIDEPOINT = next(
+STEALTH_ROUTE_START_GUIDEPOINT = next(
     index
     for index, (name, _point) in enumerate(TRAVERSE_ROUTE_PREFIX)
     if name == "shimmering-flats-road"
+)
+TRAVEL_ROUTE_START_GUIDEPOINT = 1 + next(
+    index
+    for index, (name, _point) in enumerate(TRAVERSE_ROUTE_PREFIX)
+    if name == "thousand-needles-central-road-3"
 )
 
 
@@ -1106,6 +1111,7 @@ def _steer_road_leg(
     jump_terrain: bool,
     jump_once: bool,
     downstream_route: bool,
+    stealth_route: bool,
 ):
     settle_pause_interval = (
         ROAD_SETTLE_PAUSE_INTERVAL
@@ -1126,13 +1132,6 @@ def _steer_road_leg(
             return None, "no_frame"
         if frame.is_dead or frame.is_ghost:
             return None, "death"
-        tracked_hazards = [
-            unit
-            for unit in frame.units
-            if unit.player_reaction_hostile
-            and _unit_alive(unit)
-            and unit.distance <= ROAD_HAZARD_TRACK_YARDS
-        ]
         prowl_active = any(
             spell_id in frame.active_aura_spell_ids for spell_id in PROWL_SPELL_IDS
         )
@@ -1142,11 +1141,11 @@ def _steer_road_leg(
             and frame.shapeshift_form_spell_id == TRAVEL_FORM_SPELL_ID
         )
         if downstream_route and not frame.in_combat:
-            if tracked_hazards and not prowl_active:
+            if stealth_route and not prowl_active:
                 _activate_prowl(bridge, trace)
                 last_progress = time.monotonic()
                 continue
-            if not tracked_hazards and not travel_form_active:
+            if not stealth_route and not travel_form_active:
                 _activate_travel_form(bridge, trace)
                 last_progress = time.monotonic()
                 continue
@@ -1382,6 +1381,13 @@ def _steer_road_leg(
             steering_target = target
             next_avoidance_side = None
             hazards = []
+            tracked_hazards = [
+                unit
+                for unit in frame.units
+                if unit.player_reaction_hostile
+                and _unit_alive(unit)
+                and unit.distance <= ROAD_HAZARD_TRACK_YARDS
+            ]
             side_clearances = {}
             side_lateral_yards = {}
             should_hold = False
@@ -1936,7 +1942,7 @@ class TraverseStrategy:
                         continue
             elif (
                 self.route_guidepoints_arrived
-                < DYNAMIC_FORM_ROUTE_START_GUIDEPOINT
+                < STEALTH_ROUTE_START_GUIDEPOINT
             ):
                 _activate_travel_form(bridge, trace)
             here = navigator._observe_position(bridge)
@@ -2024,7 +2030,11 @@ class TraverseStrategy:
                         jump_once=name in ROAD_SINGLE_JUMP_GUIDEPOINTS,
                         downstream_route=(
                             self.route_guidepoints_arrived
-                            >= DYNAMIC_FORM_ROUTE_START_GUIDEPOINT
+                            >= STEALTH_ROUTE_START_GUIDEPOINT
+                        ),
+                        stealth_route=(
+                            self.route_guidepoints_arrived
+                            < TRAVEL_ROUTE_START_GUIDEPOINT
                         ),
                     )
                     if end is not None:
