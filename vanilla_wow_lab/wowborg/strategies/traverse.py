@@ -137,7 +137,7 @@ ROAD_TERRAIN_CONSTRAINED_GUIDEPOINTS = ROAD_TIGHT_ARRIVAL_GUIDEPOINTS | {
     "shimmering-flats-ramp-approach",
     "shimmering-flats-south-road",
 }
-ROAD_DIRECT_TRAVEL_GUIDEPOINTS = frozenset(
+ROAD_DIRECT_STEALTH_GUIDEPOINTS = frozenset(
     {
         *(f"tanaris-north-road-{index}" for index in range(1, 9)),
         "tanaris-brute-gate-south",
@@ -1129,7 +1129,7 @@ def _steer_road_leg(
     jump_once: bool,
     downstream_route: bool,
     stealth_route: bool,
-    direct_travel_route: bool,
+    direct_route: bool,
 ):
     settle_pause_interval = (
         ROAD_SETTLE_PAUSE_INTERVAL
@@ -1395,7 +1395,7 @@ def _steer_road_leg(
             hazards = []
             tracked_hazards = []
             should_hold = False
-        elif downstream_route or direct_travel_route:
+        elif downstream_route or direct_route:
             steering_target = target
             next_avoidance_side = None
             hazards = []
@@ -1961,6 +1961,8 @@ class TraverseStrategy:
             elif (
                 self.route_guidepoints_arrived
                 < STEALTH_ROUTE_START_GUIDEPOINT
+                and TRAVERSE_ROUTE_PREFIX[self.route_guidepoints_arrived][0]
+                not in ROAD_DIRECT_STEALTH_GUIDEPOINTS
             ):
                 _activate_travel_form(bridge, trace)
             here = navigator._observe_position(bridge)
@@ -2049,6 +2051,7 @@ class TraverseStrategy:
                         downstream_route=(
                             self.route_guidepoints_arrived
                             >= STEALTH_ROUTE_START_GUIDEPOINT
+                            or name in ROAD_DIRECT_STEALTH_GUIDEPOINTS
                         ),
                         stealth_route=(
                             self.route_guidepoints_arrived
@@ -2057,7 +2060,7 @@ class TraverseStrategy:
                             <= self.route_guidepoints_arrived
                             < FINAL_TRAVEL_ROUTE_START_GUIDEPOINT
                         ),
-                        direct_travel_route=name in ROAD_DIRECT_TRAVEL_GUIDEPOINTS,
+                        direct_route=name in ROAD_DIRECT_STEALTH_GUIDEPOINTS,
                     )
                     if end is not None:
                         self.best_world_x = max(self.best_world_x, end.x)

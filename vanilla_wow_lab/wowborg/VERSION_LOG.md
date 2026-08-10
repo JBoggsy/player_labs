@@ -1,5 +1,18 @@
 # wowborg version log
 
+## v235 - hold the canonical Tanaris road bearing (2026-08-09)
+
+- Version UUID: `b10db6bd-f7b3-4de3-901d-0abeb0c027a4` (`wowborg:v235`, uploaded
+  inert; not submitted). Built from source `0bb75e3` against canonical vanilla-wow 0.1.209.
+- Holds the authored route bearing in Travel Form for ordinary Tanaris road points 1–8, including
+  the existing brute/gazer gate anchors, instead of making lateral hazard detours. Reactive
+  single-attacker combat and multi-attacker escape remain active; exact detours, climbs, descent,
+  and all downstream behavior are unchanged.
+- Canonical-spawn request `xreq_dd0b32ec-0acb-441f-93fb-dea77ca655c6` killed ten of 24 characters
+  and slowed the six road-9 arrivals to a 147.9-second median. Runs accumulated four to nine fights,
+  so the fight-through route is rejected. The active source uses Prowl rather than Travel Form on
+  those same straight road bearings, then returns to Travel Form before the exact detour and climbs.
+
 ## v234 - use terrain-aware downstream form phases (2026-08-09)
 
 - Version UUID: `c7c4cfde-78d0-456d-8559-a982cab2a2a4` (`wowborg:v234`, uploaded
