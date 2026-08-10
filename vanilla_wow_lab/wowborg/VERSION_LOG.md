@@ -1,5 +1,14 @@
 # wowborg version log
 
+## v218 - jump-sidestep blocked stealth strides (2026-08-09)
+
+- Version UUID: `29bdc186-4990-4688-acba-34fb6ff410ae` (`wowborg:v218`, uploaded
+  inert; not submitted). Built from source `7aa5612` against canonical vanilla-wow 0.1.209.
+- On the downstream stealth route only, treats an intended translation under 0.75 yards as direct
+  collision evidence and immediately makes a short alternating jump-sidestep before another long
+  stride. Mountain precision, hazard admission, combat, route geometry, and Prowl behavior are
+  unchanged from V217.
+
 ## v217 - exit Travel Form before downstream Prowl (2026-08-09)
 
 - Version UUID: `1bbd9ec6-4155-46cb-a474-6c31c0aac846` (`wowborg:v217`, uploaded
