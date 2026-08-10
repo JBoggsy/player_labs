@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v212 - restore precise ascent pulses (2026-08-09)
+
+- Version UUID: `d95c5502-bec9-4dff-8178-29bef884502e` (`wowborg:v212`, uploaded
+  inert; not submitted). Built from source `b1956f8` against canonical vanilla-wow 0.1.209.
+- Restores V210's proven 0.25-second precise climb pulse after rejecting V211's longer stride.
+  Height-based climb acceptance, descent, route geometry, combat, and hazard thresholds remain as
+  in V210.
+
 ## v211 - lengthen clear ascent strides (2026-08-09)
 
 - Version UUID: `7e6df24e-87fd-496d-bcc5-0878d31a0be2` (`wowborg:v211`, uploaded

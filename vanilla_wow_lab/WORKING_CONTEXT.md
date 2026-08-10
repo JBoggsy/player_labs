@@ -1431,7 +1431,8 @@ translations. This candidate is uploaded inert as **wowborg:v211**
 and three characters died. Twenty-six reached the ramp base and then failed ascent point 1:
 0.75-second jump inputs carried wowborg off the narrow ledge before it could face the climb, after
 which turn-only corrections continued falling through terrain. The active source restores V210's
-0.25-second precise climb pulses.
+0.25-second precise climb pulses. This restored candidate is uploaded inert as **wowborg:v212**
+(`d95c5502-bec9-4dff-8178-29bef884502e`, source `b1956f8`).
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.
