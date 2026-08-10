@@ -1,5 +1,18 @@
 # wowborg version log
 
+## v233 - switch to Travel Form after the danger belt (2026-08-09)
+
+- Version UUID: `3e36e050-ef89-48d2-a091-d843bde99a3a` (`wowborg:v233`, uploaded
+  inert; not submitted). Built from source `654305f` against canonical vanilla-wow 0.1.209.
+- Uses the stable hosted hazard map instead of per-frame visibility: Prowl from Shimmering Flats
+  through central road 3, then make one transition to Travel Form for the west-road and Great Lift
+  corridor. Straight bearings, route geometry, collision recovery, and combat gates are unchanged.
+- Matched 24-episode south-road request `xreq_54d556f8-54f1-4e96-88d5-223039dbaebf` produced five
+  lower-dock arrivals, kept 23 characters alive, and improved median arrival only to 226.0 seconds.
+  Five non-timeout runs stopped at west join 7: Travel Form was safe on the open central approach
+  but too fast for the west gap and ravine. The active source uses Prowl again from west gap 1
+  through west road 3, then returns to Travel Form for the final open lift approach.
+
 ## v232 - switch forms around downstream hazards (2026-08-09)
 
 - Version UUID: `099748ed-96ee-48ba-868c-f1818fc880b1` (`wowborg:v232`, uploaded

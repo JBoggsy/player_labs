@@ -309,10 +309,20 @@ STEALTH_ROUTE_START_GUIDEPOINT = next(
     for index, (name, _point) in enumerate(TRAVERSE_ROUTE_PREFIX)
     if name == "shimmering-flats-road"
 )
-TRAVEL_ROUTE_START_GUIDEPOINT = 1 + next(
+OPEN_TRAVEL_ROUTE_START_GUIDEPOINT = 1 + next(
     index
     for index, (name, _point) in enumerate(TRAVERSE_ROUTE_PREFIX)
     if name == "thousand-needles-central-road-3"
+)
+TERRAIN_PROWL_ROUTE_START_GUIDEPOINT = next(
+    index
+    for index, (name, _point) in enumerate(TRAVERSE_ROUTE_PREFIX)
+    if name == "thousand-needles-west-gap-1"
+)
+FINAL_TRAVEL_ROUTE_START_GUIDEPOINT = 1 + next(
+    index
+    for index, (name, _point) in enumerate(TRAVERSE_ROUTE_PREFIX)
+    if name == "thousand-needles-west-3"
 )
 
 
@@ -2034,7 +2044,10 @@ class TraverseStrategy:
                         ),
                         stealth_route=(
                             self.route_guidepoints_arrived
-                            < TRAVEL_ROUTE_START_GUIDEPOINT
+                            < OPEN_TRAVEL_ROUTE_START_GUIDEPOINT
+                            or TERRAIN_PROWL_ROUTE_START_GUIDEPOINT
+                            <= self.route_guidepoints_arrived
+                            < FINAL_TRAVEL_ROUTE_START_GUIDEPOINT
                         ),
                     )
                     if end is not None:
