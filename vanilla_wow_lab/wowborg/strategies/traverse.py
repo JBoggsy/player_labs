@@ -91,6 +91,10 @@ ROAD_DOWNSTREAM_GAP_GUIDEPOINTS = frozenset(
 ROAD_DOWNSTREAM_GAP_JUMP_GUIDEPOINTS = ROAD_DOWNSTREAM_GAP_GUIDEPOINTS - {
     "shimmering-flats-fence-gap-1"
 }
+ROAD_DOWNSTREAM_CORRIDOR_GUIDEPOINTS = frozenset(
+    {f"thousand-needles-central-corridor-{index:02d}" for index in range(2, 13)}
+    | {f"great-lift-lower-corridor-{index:02d}" for index in range(2, 14)}
+)
 ROAD_SINGLE_JUMP_GUIDEPOINTS = frozenset(
     {f"shimmering-flats-descent-{index:02d}" for index in range(10, 42)}
 ) | ROAD_DOWNSTREAM_GAP_JUMP_GUIDEPOINTS
@@ -111,7 +115,12 @@ ROAD_EXACT_GUIDEPOINTS = frozenset(
         "shimmering-flats-south-road",
         "great-lift-lower-dock",
     }
-) | ROAD_STEEP_GUIDEPOINTS | ROAD_DESCENT_GUIDEPOINTS | ROAD_DOWNSTREAM_GAP_GUIDEPOINTS
+) | (
+    ROAD_STEEP_GUIDEPOINTS
+    | ROAD_DESCENT_GUIDEPOINTS
+    | ROAD_DOWNSTREAM_GAP_GUIDEPOINTS
+    | ROAD_DOWNSTREAM_CORRIDOR_GUIDEPOINTS
+)
 ROAD_TIGHT_ARRIVAL_GUIDEPOINTS = frozenset(
     {
         "shimmering-flats-ramp-lip",
@@ -234,6 +243,17 @@ TRAVERSE_ROUTE_PREFIX = (
     ("thousand-needles-east-road-1", Point(1, -6035.5581, -3865.7529, -59.6654)),
     ("thousand-needles-east-road-2", Point(1, -5894.7827, -3611.1252, -58.0235)),
     ("thousand-needles-east-road-3", Point(1, -5866.8999, -3499.5984, -57.5426)),
+    ("thousand-needles-central-corridor-02", Point(1, -5853.48, -3472.65, -56.42)),
+    ("thousand-needles-central-corridor-03", Point(1, -5842.23, -3447.55, -53.92)),
+    ("thousand-needles-central-corridor-04", Point(1, -5832.93, -3422.20, -50.41)),
+    ("thousand-needles-central-corridor-05", Point(1, -5823.63, -3396.86, -47.54)),
+    ("thousand-needles-central-corridor-06", Point(1, -5811.69, -3371.82, -46.91)),
+    ("thousand-needles-central-corridor-07", Point(1, -5798.17, -3348.45, -43.54)),
+    ("thousand-needles-central-corridor-08", Point(1, -5784.78, -3324.23, -34.59)),
+    ("thousand-needles-central-corridor-09", Point(1, -5776.77, -3297.94, -25.60)),
+    ("thousand-needles-central-corridor-10", Point(1, -5769.53, -3271.93, -22.14)),
+    ("thousand-needles-central-corridor-11", Point(1, -5762.29, -3245.92, -28.80)),
+    ("thousand-needles-central-corridor-12", Point(1, -5755.06, -3219.90, -32.40)),
     ("thousand-needles-central-road-1", Point(1, -5745.3672, -3200.0486, -40.1584)),
     ("thousand-needles-central-road-2", Point(1, -5629.6523, -2928.8188, -44.9830)),
     ("thousand-needles-central-road-3", Point(1, -5504.7778, -2670.9585, -49.1217)),
@@ -248,6 +268,18 @@ TRAVERSE_ROUTE_PREFIX = (
     ("thousand-needles-west-road-2", Point(1, -5312.8003, -2325.3333, -31.6509)),
     ("thousand-needles-west-3", Point(1, -5116.142, -1794.543, -55.277)),
     ("great-lift-south-road", Point(1, -4971.3, -1718.92, -59.379)),
+    ("great-lift-lower-corridor-02", Point(1, -4950.90, -1741.49, -58.27)),
+    ("great-lift-lower-corridor-03", Point(1, -4933.11, -1761.80, -52.81)),
+    ("great-lift-lower-corridor-04", Point(1, -4915.32, -1782.11, -39.38)),
+    ("great-lift-lower-corridor-05", Point(1, -4890.05, -1791.43, -33.24)),
+    ("great-lift-lower-corridor-06", Point(1, -4865.89, -1803.26, -43.44)),
+    ("great-lift-lower-corridor-07", Point(1, -4839.29, -1812.35, -51.69)),
+    ("great-lift-lower-corridor-08", Point(1, -4813.06, -1818.73, -50.97)),
+    ("great-lift-lower-corridor-09", Point(1, -4786.67, -1816.02, -42.44)),
+    ("great-lift-lower-corridor-10", Point(1, -4759.60, -1809.07, -41.79)),
+    ("great-lift-lower-corridor-11", Point(1, -4733.23, -1822.99, -40.99)),
+    ("great-lift-lower-corridor-12", Point(1, -4710.47, -1836.84, -47.05)),
+    ("great-lift-lower-corridor-13", Point(1, -4691.20, -1856.00, -48.29)),
     ("great-lift-lower-dock", GREAT_LIFT_LOWER_DOCK),
 )
 STEALTH_ROUTE_START_GUIDEPOINT = next(

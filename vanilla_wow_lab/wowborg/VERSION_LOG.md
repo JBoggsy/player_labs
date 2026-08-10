@@ -1,5 +1,21 @@
 # wowborg version log
 
+## v223 - jump through downstream gap lanes (2026-08-09)
+
+- Version UUID: `e0e2accd-451b-467c-9c8b-24ca6bf77669` (`wowborg:v223`, uploaded
+  inert; not submitted). Built from source `d108842` against canonical vanilla-wow 0.1.209.
+- Adds one aligned jump to each authored downstream gap-lane edge after the first Shimmering Flats
+  fence anchor. Each jump is consumed by that single route edge, preserving V219's safe behavior
+  everywhere else and avoiding V220's persistent-jump cliff hazard.
+- Matched 24-episode south-road request `xreq_2c60eb81-123d-4ca3-aa65-100251e98103` cleared the
+  formerly deterministic fence blocker in all 24 runs and advanced median final world X from
+  V222's `-6216` to `-5435`; four reached Great Lift south road. One character died in a grouped
+  hostile contact and none reached the lower dock. Five runs exposed the same direct-line timeout
+  between east road 3 and central road 1, while all four leaders spent the remaining horizon
+  collision-stepping toward the dock. Navmesh recon shows those straight chords conceal a 334-yard
+  switchback and a 382-yard three-chunk dock approach. The active source adds sparse canonical
+  corridor anchors to those two legs without changing stealth, combat, or jump policy.
+
 ## v222 - follow dense downstream gap lanes (2026-08-09)
 
 - Version UUID: `59bbe367-7411-403b-a0ab-601a8bb961b3` (`wowborg:v222`, uploaded
