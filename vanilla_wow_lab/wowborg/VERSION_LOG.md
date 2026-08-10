@@ -7,6 +7,10 @@
 - After a downstream slowdown triggers the proven jump-sidestep, keeps eleven further steering
   pulses short and jump-aware before allowing a long stride. This carries collision recovery beyond
   V219's one normal-looking pulse inside the obstacle band; all other behavior is unchanged.
+- Matched 24-episode south-road request `xreq_f6fa4427-33d5-44be-af33-e6d4d20a7dc0` killed 10/24
+  characters, with deaths clustered near the Great Lift approach, and produced zero dock arrivals.
+  Persistent jumping is rejected. The active source restores V219's safe one-shot response and adds
+  tight anchors at the two openings proven by V219's successful dock trace instead.
 
 ## v219 - calibrate stealth collision slowdown (2026-08-09)
 

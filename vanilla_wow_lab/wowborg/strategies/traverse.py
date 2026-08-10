@@ -63,7 +63,6 @@ ROAD_ROUTE_RESUME_RADIUS_YARDS = 50.0
 ROAD_STALL_SECONDS = 8.0
 ROAD_UNSTICK_ATTEMPTS = 2
 ROAD_COLLISION_MOVEMENT_YARDS = 4.0
-ROAD_COLLISION_RECOVERY_PULSES = 11
 ROAD_SETTLE_PAUSE_INTERVAL = 8
 ROAD_HAZARD_ENTER_YARDS = 30.0
 ROAD_HAZARD_EXIT_YARDS = 40.0
@@ -96,6 +95,8 @@ ROAD_EXACT_GUIDEPOINTS = frozenset(
         "tanaris-road-8-detour-east-turn",
         "tanaris-road-8-detour-east",
         "tanaris-road-9-climb-base",
+        "shimmering-flats-fence-gap",
+        "thousand-needles-west-gap",
         "shimmering-flats-ramp-lip",
         "shimmering-flats-ramp-approach",
         "shimmering-flats-ramp-turn",
@@ -111,6 +112,8 @@ ROAD_TIGHT_ARRIVAL_GUIDEPOINTS = frozenset(
         "shimmering-flats-ramp-base",
         "shimmering-flats-south-ramp",
         "shimmering-flats-south-road",
+        "shimmering-flats-fence-gap",
+        "thousand-needles-west-gap",
     }
 ) | ROAD_STEEP_GUIDEPOINTS | ROAD_DESCENT_GUIDEPOINTS
 ROAD_TERRAIN_CONSTRAINED_GUIDEPOINTS = ROAD_TIGHT_ARRIVAL_GUIDEPOINTS | {
@@ -218,12 +221,14 @@ TRAVERSE_ROUTE_PREFIX = (
     ("shimmering-flats-descent-41", Point(1, -6624.9878, -4049.7195, -40.9866)),
     ("shimmering-flats-south-road", Point(1, -6624.2671, -4050.1333, -41.6139)),
     ("shimmering-flats-road", Point(1, -6239.9995, -4085.3330, -58.0107)),
+    ("shimmering-flats-fence-gap", Point(1, -6216.31, -4031.86, -58.75)),
     ("thousand-needles-east-road-1", Point(1, -6035.5581, -3865.7529, -59.6654)),
     ("thousand-needles-east-road-2", Point(1, -5894.7827, -3611.1252, -58.0235)),
     ("thousand-needles-east-road-3", Point(1, -5866.8999, -3499.5984, -57.5426)),
     ("thousand-needles-central-road-1", Point(1, -5745.3672, -3200.0486, -40.1584)),
     ("thousand-needles-central-road-2", Point(1, -5629.6523, -2928.8188, -44.9830)),
     ("thousand-needles-central-road-3", Point(1, -5504.7778, -2670.9585, -49.1217)),
+    ("thousand-needles-west-gap", Point(1, -5470.83, -2598.68, -37.91)),
     ("thousand-needles-west-road-1", Point(1, -5349.2344, -2439.9663, -31.8258)),
     ("thousand-needles-west-road-2", Point(1, -5312.8003, -2325.3333, -31.6509)),
     ("thousand-needles-west-3", Point(1, -5116.142, -1794.543, -55.277)),
@@ -1045,7 +1050,6 @@ def _steer_road_leg(
     fight_started: float | None = None
     combat = TraverseCombatState()
     single_jump_used = False
-    collision_recovery_pulses = 0
     while time.monotonic() < deadline and not getattr(bridge, "finished", False):
         frame = bridge.observe()
         if frame is None:
@@ -1470,10 +1474,8 @@ def _steer_road_leg(
             steering_purpose = (
                 "steer the canonical Traverse road after movement bootstrap"
             )
-        recovering_collision = collision_recovery_pulses > 0
         jump_when_moving = (
-            recovering_collision
-            or jump_terrain
+            jump_terrain
             or (
                 jump_once
                 and not single_jump_used
@@ -1487,8 +1489,7 @@ def _steer_road_leg(
             steering_target,
             purpose=steering_purpose,
             precise_arrival=(
-                recovering_collision
-                or hold_terrain_hazards
+                hold_terrain_hazards
                 or should_evade
                 or distance <= ROAD_HAZARD_FORWARD_YARDS
             ),
@@ -1513,15 +1514,7 @@ def _steer_road_leg(
             (frame.location.x, frame.location.y),
             (settle_frame.location.x, settle_frame.location.y),
         )
-        if recovering_collision:
-            collision_recovery_pulses -= 1
-            trace(
-                "traverse_road_collision_recovery",
-                activation=1,
-                remaining_pulses=collision_recovery_pulses,
-                movement=round(movement, 3),
-            )
-        elif (
+        if (
             stealth_route
             and request_id is not None
             and translating
@@ -1550,7 +1543,6 @@ def _steer_road_leg(
                 (unstick_frame.location.x, unstick_frame.location.y),
             )
             road_unstick_attempts += 1
-            collision_recovery_pulses = ROAD_COLLISION_RECOVERY_PULSES
             last_progress = time.monotonic()
             trace(
                 "traverse_road_collision_unstick_settled",
