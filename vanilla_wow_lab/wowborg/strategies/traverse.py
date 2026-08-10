@@ -120,6 +120,8 @@ ROAD_EXACT_GUIDEPOINTS = frozenset(
         "shimmering-flats-ramp-base",
         "shimmering-flats-south-road",
         "thousand-needles-west-road-2",
+        "great-lift-lower-corridor-12",
+        "great-lift-lower-corridor-13",
         "great-lift-lower-dock",
     }
 ) | (
@@ -139,6 +141,9 @@ ROAD_TIGHT_ARRIVAL_GUIDEPOINTS = frozenset(
 ROAD_TERRAIN_CONSTRAINED_GUIDEPOINTS = ROAD_TIGHT_ARRIVAL_GUIDEPOINTS | {
     "shimmering-flats-ramp-approach",
     "shimmering-flats-south-road",
+    "great-lift-lower-corridor-12",
+    "great-lift-lower-corridor-13",
+    "great-lift-lower-dock",
 }
 # Follow the deployed owner's level-51 Tanaris and Thousand Needles road spine
 # to the Great Lift lower dock. Great Lift boarding is a separate campaign.

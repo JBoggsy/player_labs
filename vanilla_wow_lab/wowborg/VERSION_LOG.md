@@ -1,5 +1,18 @@
 # wowborg version log
 
+## v240 - use level-aware Travel routing downstream (2026-08-09)
+
+- Version UUID: `d0229362-3730-493f-9354-31084ba8bbe6` (`wowborg:v240`, uploaded
+  inert; not submitted). Built from source `a58d6b6` against canonical vanilla-wow 0.1.209.
+- Uses Travel Form and the level-aware hazard planner on every downstream leg. Terrain-constrained
+  gaps hold their bearing instead of detouring; route geometry and combat are unchanged.
+- South-road request `xreq_0f7305a8-d34d-4023-ac88-1257de44b4f2` kept all 24 characters alive.
+  Twenty cleared fence gap 5 at a 22.2-second median, ten reached central road 3 at 94.4 seconds,
+  five reached west road 3 at 158.5 seconds, and five reached Great Lift corridor 11. All five then
+  hit an identical 30-second host action timeout on the second one-second Travel stride toward
+  corridor 12. The active source makes only the final corridor 12/13/dock approach precise and
+  terrain-constrained.
+
 ## v239 - size Tanaris detours from enemy aggro (2026-08-09)
 
 - Version UUID: `2a8a29e8-bef6-4c91-939c-b053d8f47074` (`wowborg:v239`, uploaded
