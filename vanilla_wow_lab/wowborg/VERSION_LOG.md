@@ -8,6 +8,11 @@
   Prowl, follows the canonical road without the Travel-Form hazard controller's long lateral
   detours, and reacquires Prowl after reactive contact. General proactive road combat is removed;
   the separately measured constrained-ramp Scorpid exception remains.
+- All 24 episodes in south-road request `xreq_9c9aa999-b3bd-47f9-baa6-cfae007203b2` stayed alive
+  but moved zero yards. Diagnostic startup entered Travel Form before route resume, and every Cat
+  cast then failed to change forms until the deadline. This is a form-transition null result, not
+  a stealth/aggro verdict. The active source reuses the proven typed current-form aura cancellation
+  before Cat and Prowl.
 
 ## v215 - tighten proactive fight admission (2026-08-09)
 

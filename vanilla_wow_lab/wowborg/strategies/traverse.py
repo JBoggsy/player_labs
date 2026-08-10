@@ -1536,6 +1536,28 @@ def _activate_prowl(bridge, trace) -> None:
         trace("traverse_prowl", activation=0, reason="already_active")
         return
 
+    if frame.shapeshift_form_known and frame.shapeshift_form_id not in (0, 1):
+        if not frame.shapeshift_form_spell_known:
+            trace("traverse_prowl", activation=0, reason="current_form_unknown")
+            return
+        spell_id = frame.shapeshift_form_spell_id
+        request_id = bridge.select_cancel_aura(frame, spell_id)
+        if request_id is None:
+            trace("traverse_prowl", activation=0, reason="form_exit_unavailable")
+            return
+        outcome = bridge.wait_for_settlement(frame.frame_id)
+        trace(
+            "traverse_prowl_form_exit",
+            activation=1,
+            spell_id=spell_id,
+            success=outcome is not None and outcome.success,
+            detail=outcome.detail if outcome is not None else "unsettled",
+        )
+        frame = bridge.observe()
+        if frame is None:
+            trace("traverse_prowl", activation=0, reason="no_frame_after_form_exit")
+            return
+
     if not frame.shapeshift_form_known or frame.shapeshift_form_id != 1:
         request_id = bridge.select_cast_without_target(
             frame,

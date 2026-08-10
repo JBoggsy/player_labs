@@ -56,6 +56,16 @@ def test_host_spell_intents_are_open_strings() -> None:
 
 def test_traverse_enters_cat_form_and_activates_prowl() -> None:
     events = []
+    travel_frame = SimpleNamespace(
+        frame_id=6,
+        in_combat=False,
+        shapeshift_form_known=True,
+        shapeshift_form_id=3,
+        shapeshift_form_spell_known=True,
+        shapeshift_form_spell_id=783,
+        active_aura_spell_ids=[783],
+        known_spells=[CAT_FORM_SPELL_ID, PROWL_SPELL_IDS[-1]],
+    )
     caster_frame = SimpleNamespace(
         frame_id=7,
         in_combat=False,
@@ -75,12 +85,17 @@ def test_traverse_enters_cat_form_and_activates_prowl() -> None:
     outcome = SimpleNamespace(success=True, detail="")
     selected = []
 
+    def cancel(frame, spell_id):
+        selected.append((frame.frame_id, spell_id, "cancel current form"))
+        return f"frame-{frame.frame_id}"
+
     def cast(frame, spell_id, purpose):
         selected.append((frame.frame_id, spell_id, purpose))
         return f"frame-{frame.frame_id}"
 
     bridge = SimpleNamespace(
-        observe=lambda: cat_frame if selected else caster_frame,
+        observe=lambda: (travel_frame, caster_frame, cat_frame)[len(selected)],
+        select_cancel_aura=cancel,
         select_cast_without_target=cast,
         wait_for_settlement=lambda _frame_id: outcome,
     )
@@ -88,10 +103,15 @@ def test_traverse_enters_cat_form_and_activates_prowl() -> None:
     _activate_prowl(bridge, lambda kind, **payload: events.append((kind, payload)))
 
     assert selected == [
+        (6, 783, "cancel current form"),
         (7, CAT_FORM_SPELL_ID, "enter Cat Form for stealth Traverse"),
         (8, PROWL_SPELL_IDS[-1], "activate Prowl for stealth Traverse"),
     ]
     assert events == [
+        (
+            "traverse_prowl_form_exit",
+            {"activation": 1, "spell_id": 783, "success": True, "detail": ""},
+        ),
         ("traverse_cat_form", {"activation": 1, "success": True, "detail": ""}),
         (
             "traverse_prowl",
