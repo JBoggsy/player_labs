@@ -88,6 +88,12 @@ ROAD_SINGLE_JUMP_GUIDEPOINTS = frozenset(
 ROAD_DESCENT_GUIDEPOINTS = frozenset(
     {f"shimmering-flats-descent-{index:02d}" for index in range(1, 42)}
 )
+ROAD_DOWNSTREAM_GAP_GUIDEPOINTS = frozenset(
+    {
+        *(f"shimmering-flats-fence-gap-{index}" for index in range(1, 6)),
+        *(f"thousand-needles-west-gap-{index}" for index in range(1, 8)),
+    }
+)
 ROAD_EXACT_GUIDEPOINTS = frozenset(
     {
         "tanaris-road-8-detour-west",
@@ -95,8 +101,6 @@ ROAD_EXACT_GUIDEPOINTS = frozenset(
         "tanaris-road-8-detour-east-turn",
         "tanaris-road-8-detour-east",
         "tanaris-road-9-climb-base",
-        "shimmering-flats-fence-gap",
-        "thousand-needles-west-gap",
         "shimmering-flats-ramp-lip",
         "shimmering-flats-ramp-approach",
         "shimmering-flats-ramp-turn",
@@ -104,7 +108,7 @@ ROAD_EXACT_GUIDEPOINTS = frozenset(
         "shimmering-flats-south-road",
         "great-lift-lower-dock",
     }
-) | ROAD_STEEP_GUIDEPOINTS | ROAD_DESCENT_GUIDEPOINTS
+) | ROAD_STEEP_GUIDEPOINTS | ROAD_DESCENT_GUIDEPOINTS | ROAD_DOWNSTREAM_GAP_GUIDEPOINTS
 ROAD_TIGHT_ARRIVAL_GUIDEPOINTS = frozenset(
     {
         "shimmering-flats-ramp-lip",
@@ -112,10 +116,8 @@ ROAD_TIGHT_ARRIVAL_GUIDEPOINTS = frozenset(
         "shimmering-flats-ramp-base",
         "shimmering-flats-south-ramp",
         "shimmering-flats-south-road",
-        "shimmering-flats-fence-gap",
-        "thousand-needles-west-gap",
     }
-) | ROAD_STEEP_GUIDEPOINTS | ROAD_DESCENT_GUIDEPOINTS
+) | ROAD_STEEP_GUIDEPOINTS | ROAD_DESCENT_GUIDEPOINTS | ROAD_DOWNSTREAM_GAP_GUIDEPOINTS
 ROAD_TERRAIN_CONSTRAINED_GUIDEPOINTS = ROAD_TIGHT_ARRIVAL_GUIDEPOINTS | {
     "shimmering-flats-ramp-approach",
     "shimmering-flats-south-road",
@@ -221,14 +223,24 @@ TRAVERSE_ROUTE_PREFIX = (
     ("shimmering-flats-descent-41", Point(1, -6624.9878, -4049.7195, -40.9866)),
     ("shimmering-flats-south-road", Point(1, -6624.2671, -4050.1333, -41.6139)),
     ("shimmering-flats-road", Point(1, -6239.9995, -4085.3330, -58.0107)),
-    ("shimmering-flats-fence-gap", Point(1, -6216.31, -4031.86, -58.75)),
+    ("shimmering-flats-fence-gap-1", Point(1, -6216.31, -4031.86, -58.75)),
+    ("shimmering-flats-fence-gap-2", Point(1, -6203.77, -4019.28, -58.75)),
+    ("shimmering-flats-fence-gap-3", Point(1, -6192.17, -4007.68, -58.75)),
+    ("shimmering-flats-fence-gap-4", Point(1, -6179.96, -3997.59, -58.75)),
+    ("shimmering-flats-fence-gap-5", Point(1, -6162.56, -3980.18, -58.75)),
     ("thousand-needles-east-road-1", Point(1, -6035.5581, -3865.7529, -59.6654)),
     ("thousand-needles-east-road-2", Point(1, -5894.7827, -3611.1252, -58.0235)),
     ("thousand-needles-east-road-3", Point(1, -5866.8999, -3499.5984, -57.5426)),
     ("thousand-needles-central-road-1", Point(1, -5745.3672, -3200.0486, -40.1584)),
     ("thousand-needles-central-road-2", Point(1, -5629.6523, -2928.8188, -44.9830)),
     ("thousand-needles-central-road-3", Point(1, -5504.7778, -2670.9585, -49.1217)),
-    ("thousand-needles-west-gap", Point(1, -5470.83, -2598.68, -37.91)),
+    ("thousand-needles-west-gap-1", Point(1, -5491.94, -2675.34, -46.49)),
+    ("thousand-needles-west-gap-2", Point(1, -5480.34, -2663.74, -41.86)),
+    ("thousand-needles-west-gap-3", Point(1, -5475.0, -2650.89, -34.78)),
+    ("thousand-needles-west-gap-4", Point(1, -5475.0, -2638.4, -34.37)),
+    ("thousand-needles-west-gap-5", Point(1, -5475.0, -2624.43, -37.37)),
+    ("thousand-needles-west-gap-6", Point(1, -5474.41, -2611.73, -37.64)),
+    ("thousand-needles-west-gap-7", Point(1, -5470.83, -2598.68, -37.91)),
     ("thousand-needles-west-road-1", Point(1, -5349.2344, -2439.9663, -31.8258)),
     ("thousand-needles-west-road-2", Point(1, -5312.8003, -2325.3333, -31.6509)),
     ("thousand-needles-west-3", Point(1, -5116.142, -1794.543, -55.277)),
@@ -1483,16 +1495,17 @@ def _steer_road_leg(
             )
         ) and not frame.in_combat and not hazards and not should_evade
         translating = abs(_heading_delta(frame, steering_target)) <= math.pi / 4
+        precise_road_input = (
+            hold_terrain_hazards
+            or should_evade
+            or distance <= ROAD_HAZARD_FORWARD_YARDS
+        )
         request_id = _steer_toward(
             bridge,
             frame,
             steering_target,
             purpose=steering_purpose,
-            precise_arrival=(
-                hold_terrain_hazards
-                or should_evade
-                or distance <= ROAD_HAZARD_FORWARD_YARDS
-            ),
+            precise_arrival=precise_road_input,
             translation_seconds=(
                 ROAD_FAR_CLEAR_INPUT_SECONDS
                 if not frame.in_combat and not tracked_hazards
@@ -1518,6 +1531,7 @@ def _steer_road_leg(
             stealth_route
             and request_id is not None
             and translating
+            and not precise_road_input
             and movement < ROAD_COLLISION_MOVEMENT_YARDS
         ):
             side = 1.0 if road_unstick_attempts % 2 == 0 else -1.0

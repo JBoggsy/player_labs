@@ -7,6 +7,12 @@
 - Restores V219's safe one-shot collision response and adds tight canonical anchors at the
   Shimmering Flats fence gap and Thousand Needles west-ridge gap observed in V219's successful
   lower-dock trace. Prowl, combat admission, and every other route segment are unchanged.
+- Matched 24-episode south-road request `xreq_6917fbf5-6637-4af9-89ab-08b19fa2bf65` kept all 24
+  characters alive, but produced zero dock arrivals and a `world_x=-6193` median. Nineteen reached
+  the fence-gap anchor, then the next long stride timed out inside the same obstacle band. The
+  active source expands each successful gap trace into a dense lane of 12-18-yard exact anchors,
+  keeping inputs short through the full band, and excludes those intentional short inputs from
+  collision-slowdown admission.
 
 ## v220 - persist short collision recovery (2026-08-09)
 
