@@ -94,6 +94,7 @@ ROAD_DOWNSTREAM_GAP_JUMP_GUIDEPOINTS = ROAD_DOWNSTREAM_GAP_GUIDEPOINTS - {
 }
 ROAD_CORRIDOR_GUIDEPOINTS = frozenset(
     {f"thousand-needles-central-corridor-{index:02d}" for index in range(2, 13)}
+    | {f"thousand-needles-west-join-{index:02d}" for index in range(1, 8)}
     | {f"thousand-needles-west-corridor-{index:02d}" for index in range(1, 13)}
     | {f"great-lift-lower-corridor-{index:02d}" for index in range(2, 14)}
 )
@@ -267,6 +268,13 @@ TRAVERSE_ROUTE_PREFIX = (
     ("thousand-needles-west-gap-6", Point(1, -5474.41, -2611.73, -37.64)),
     ("thousand-needles-west-gap-7", Point(1, -5470.83, -2598.68, -37.91)),
     ("thousand-needles-west-road-1", Point(1, -5349.2344, -2439.9663, -31.8258)),
+    ("thousand-needles-west-join-01", Point(1, -5356.38, -2452.38, -30.80)),
+    ("thousand-needles-west-join-02", Point(1, -5346.52, -2434.62, -33.21)),
+    ("thousand-needles-west-join-03", Point(1, -5337.16, -2417.58, -37.98)),
+    ("thousand-needles-west-join-04", Point(1, -5330.53, -2399.00, -43.05)),
+    ("thousand-needles-west-join-05", Point(1, -5325.61, -2378.58, -41.25)),
+    ("thousand-needles-west-join-06", Point(1, -5320.70, -2358.17, -38.68)),
+    ("thousand-needles-west-join-07", Point(1, -5315.79, -2337.75, -35.10)),
     ("thousand-needles-west-road-2", Point(1, -5312.8003, -2325.3333, -31.6509)),
     ("thousand-needles-west-corridor-01", Point(1, -5312.76, -2322.33, -31.70)),
     ("thousand-needles-west-corridor-02", Point(1, -5301.80, -2273.13, -38.79)),

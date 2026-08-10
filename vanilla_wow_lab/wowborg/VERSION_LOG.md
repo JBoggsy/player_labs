@@ -1,5 +1,17 @@
 # wowborg version log
 
+## v228 - anchor the west corridor on walkable ground (2026-08-09)
+
+- Version UUID: `333f7967-bd44-4f64-bd8d-251540b62fa4` (`wowborg:v228`, uploaded
+  inert; not submitted). Built from source `0c0cd91` against canonical vanilla-wow 0.1.209.
+- Requires ordinary eight-yard arrival at west road 2 instead of accepting it after crossing the
+  broad road envelope. The following Detour corridor and all other behavior are unchanged.
+- Matched 24-episode south-road request `xreq_9b2963c0-7892-4586-a871-944d92ead048` kept all 24
+  characters alive and again produced five lower-dock arrivals. Exact west-road-2 admission moved
+  the former join failure one waypoint earlier: ten runs stopped at west road 1. Navmesh recon
+  shows a 142-yard steep ravine path between those nominal road points. The active source inserts
+  seven narrow soft bearings through that join while retaining exact arrival at its endpoint.
+
 ## v227 - keep corridor bearings on the Detour line (2026-08-09)
 
 - Version UUID: `8bb6a28b-9e84-450b-b381-5956156fd5f1` (`wowborg:v227`, uploaded
