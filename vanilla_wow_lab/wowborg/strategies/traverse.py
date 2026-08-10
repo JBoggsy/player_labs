@@ -62,6 +62,7 @@ ROAD_ROUTE_RESUME_MIN_WORLD_X = -8000.0
 ROAD_ROUTE_RESUME_RADIUS_YARDS = 50.0
 ROAD_STALL_SECONDS = 8.0
 ROAD_UNSTICK_ATTEMPTS = 2
+ROAD_COLLISION_MOVEMENT_YARDS = 0.75
 ROAD_SETTLE_PAUSE_INTERVAL = 8
 ROAD_HAZARD_ENTER_YARDS = 30.0
 ROAD_HAZARD_EXIT_YARDS = 40.0
@@ -1475,6 +1476,7 @@ def _steer_road_leg(
                 and abs(_heading_delta(frame, steering_target)) <= math.pi / 4
             )
         ) and not frame.in_combat and not hazards and not should_evade
+        translating = abs(_heading_delta(frame, steering_target)) <= math.pi / 4
         request_id = _steer_toward(
             bridge,
             frame,
@@ -1502,6 +1504,48 @@ def _steer_road_leg(
         settle_frame = bridge.observe()
         if settle_frame is None:
             return None, "no_frame"
+        movement = math.dist(
+            (frame.location.x, frame.location.y),
+            (settle_frame.location.x, settle_frame.location.y),
+        )
+        if (
+            stealth_route
+            and request_id is not None
+            and translating
+            and movement < ROAD_COLLISION_MOVEMENT_YARDS
+        ):
+            side = 1.0 if road_unstick_attempts % 2 == 0 else -1.0
+            trace(
+                "traverse_road_collision_unstick",
+                activation=1,
+                side="left" if side > 0 else "right",
+                movement=round(movement, 3),
+            )
+            bridge.select_move_vector(
+                settle_frame,
+                forward=1.0,
+                strafe=side,
+                jump=True,
+                duration=0.25,
+                purpose="jump-sidestep a blocked stealth road translation",
+            )
+            unstick_frame = bridge.observe()
+            if unstick_frame is None:
+                return None, "no_frame"
+            unstick_movement = math.dist(
+                (settle_frame.location.x, settle_frame.location.y),
+                (unstick_frame.location.x, unstick_frame.location.y),
+            )
+            road_unstick_attempts += 1
+            last_progress = time.monotonic()
+            trace(
+                "traverse_road_collision_unstick_settled",
+                activation=1,
+                movement=round(unstick_movement, 3),
+            )
+            avoidance.settled_pulses += 1
+            trace("traverse_road_pulse_settled", frame_id=unstick_frame.frame_id)
+            continue
         avoidance.settled_pulses += 1
         if avoidance.settled_pulses % settle_pause_interval == 0:
             bridge.select_wait(settle_frame)

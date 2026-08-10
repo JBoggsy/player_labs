@@ -7,6 +7,12 @@
 - Before entering Cat Form for the downstream stealth route, cancels any observed non-Cat form
   through the environment's typed aura action. This reuses the hosted-proven combat/descent form
   transition and changes no route geometry, stealth routing, or combat admission from V216.
+- Matched 24-episode south-road request `xreq_74d335ea-bb74-46c5-b2c8-9e634bea53b5` kept all 24
+  characters alive with zero avoidance/evasion activations or escapes. Nine reached Thousand
+  Needles central road 3, but the living median `world_x=-6009` did not beat V213's `-5791`.
+  Twelve runs stopped near `world_x=-6216` and the leading runs stopped near `-5473`: in both
+  clusters a sub-yard translation was followed by a 30-second action timeout. The active source
+  uses that movement feedback to trigger a short jump-sidestep before another long road stride.
 
 ## v216 - stealth through the Great Lift road (2026-08-09)
 
