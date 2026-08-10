@@ -63,6 +63,7 @@ ROAD_ROUTE_RESUME_RADIUS_YARDS = 50.0
 ROAD_STALL_SECONDS = 8.0
 ROAD_UNSTICK_ATTEMPTS = 2
 ROAD_COLLISION_MOVEMENT_YARDS = 4.0
+ROAD_COLLISION_RECOVERY_PULSES = 11
 ROAD_SETTLE_PAUSE_INTERVAL = 8
 ROAD_HAZARD_ENTER_YARDS = 30.0
 ROAD_HAZARD_EXIT_YARDS = 40.0
@@ -1044,6 +1045,7 @@ def _steer_road_leg(
     fight_started: float | None = None
     combat = TraverseCombatState()
     single_jump_used = False
+    collision_recovery_pulses = 0
     while time.monotonic() < deadline and not getattr(bridge, "finished", False):
         frame = bridge.observe()
         if frame is None:
@@ -1468,8 +1470,10 @@ def _steer_road_leg(
             steering_purpose = (
                 "steer the canonical Traverse road after movement bootstrap"
             )
+        recovering_collision = collision_recovery_pulses > 0
         jump_when_moving = (
-            jump_terrain
+            recovering_collision
+            or jump_terrain
             or (
                 jump_once
                 and not single_jump_used
@@ -1483,7 +1487,8 @@ def _steer_road_leg(
             steering_target,
             purpose=steering_purpose,
             precise_arrival=(
-                hold_terrain_hazards
+                recovering_collision
+                or hold_terrain_hazards
                 or should_evade
                 or distance <= ROAD_HAZARD_FORWARD_YARDS
             ),
@@ -1508,7 +1513,15 @@ def _steer_road_leg(
             (frame.location.x, frame.location.y),
             (settle_frame.location.x, settle_frame.location.y),
         )
-        if (
+        if recovering_collision:
+            collision_recovery_pulses -= 1
+            trace(
+                "traverse_road_collision_recovery",
+                activation=1,
+                remaining_pulses=collision_recovery_pulses,
+                movement=round(movement, 3),
+            )
+        elif (
             stealth_route
             and request_id is not None
             and translating
@@ -1537,6 +1550,7 @@ def _steer_road_leg(
                 (unstick_frame.location.x, unstick_frame.location.y),
             )
             road_unstick_attempts += 1
+            collision_recovery_pulses = ROAD_COLLISION_RECOVERY_PULSES
             last_progress = time.monotonic()
             trace(
                 "traverse_road_collision_unstick_settled",

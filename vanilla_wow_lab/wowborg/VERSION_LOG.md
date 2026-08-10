@@ -7,6 +7,13 @@
 - Raises only the downstream collision slowdown threshold from 0.75 to four yards, below the
   measured 5.47-yard normal one-second Prowl stride and above V218's 2.83-yard first-blocker pulse.
   The jump-sidestep response and all other behavior are unchanged.
+- Matched 24-episode south-road request `xreq_6d70fea0-0c8e-4b46-9c78-e3e4f7dd3a10` kept all 24
+  characters alive and produced the first verified living Great Lift lower-dock arrival at
+  `world_x=-4675.55`; four more reached Great Lift south road. Consistency still failed: the median
+  was `-6034` and twelve runs stopped near the first blocker. Their initial jump-sidestep settled,
+  but one normal stride later they were still in the obstacle band and the following long action
+  timed out. The active source keeps short jump-aware steering active for eleven pulses after each
+  detected collision before trusting long strides again.
 
 ## v218 - jump-sidestep blocked stealth strides (2026-08-09)
 
