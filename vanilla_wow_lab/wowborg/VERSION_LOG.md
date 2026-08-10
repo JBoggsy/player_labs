@@ -1,5 +1,16 @@
 # wowborg version log
 
+## v245 - stride through clear downstream roads (2026-08-10)
+
+- Version UUID: `409807f0-71eb-4ec4-a676-f113281612aa` (`wowborg:v245`, uploaded
+  inert; not submitted). Built from source `02b7380` against canonical vanilla-wow 0.1.209.
+- Restores v243's quarter-second precise control and uses the contract-max 1.5-second stride only
+  on downstream frames where the hazard planner reports a clear path.
+- South-road request `xreq_e59ca6ca-be1a-4264-ba87-98b5955ad9a1` kept all 24 characters alive but
+  regressed to four lower-dock arrivals at a 193.1-second median, versus v243's ten at 174.2.
+  Only 11 characters reached central road 3 and four reached corridor 11. The longer clear stride
+  is rejected; the active source restores v243's one-second clear-road cadence.
+
 ## v244 - lengthen precise route translations (2026-08-10)
 
 - Version UUID: `7e469dc2-802a-4a52-bd3b-93ea40cd255b` (`wowborg:v244`, uploaded
