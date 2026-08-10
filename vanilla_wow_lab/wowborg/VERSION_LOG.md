@@ -8,6 +8,12 @@
   collision evidence and immediately makes a short alternating jump-sidestep before another long
   stride. Mountain precision, hazard admission, combat, route geometry, and Prowl behavior are
   unchanged from V217.
+- Matched 24-episode south-road request `xreq_89d9b253-1fd4-4f9e-8eca-7b4ee04dc49f` kept all 24
+  characters alive and four reached Great Lift south road near `world_x=-4910`, the closest living
+  progress yet. But 19/24 still stopped at the first blocker and the median regressed to `-6216`.
+  The jump-sidestep fired 106 times, proving the response can clear collisions, while the remaining
+  first-blocker slowdown still moved 2.83 yards and missed the 0.75-yard gate. The active source
+  raises that measured slowdown threshold to four yards.
 
 ## v217 - exit Travel Form before downstream Prowl (2026-08-09)
 
