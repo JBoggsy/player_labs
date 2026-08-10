@@ -82,17 +82,20 @@ ROAD_STEEP_GUIDEPOINTS = frozenset(
     | {"tanaris-road-9-climb-crest", "shimmering-flats-ramp-crest"}
 )
 ROAD_STEEP_PASS_GUIDEPOINTS = frozenset({"tanaris-road-9-climb-crest"})
-ROAD_SINGLE_JUMP_GUIDEPOINTS = frozenset(
-    {f"shimmering-flats-descent-{index:02d}" for index in range(10, 42)}
-)
-ROAD_DESCENT_GUIDEPOINTS = frozenset(
-    {f"shimmering-flats-descent-{index:02d}" for index in range(1, 42)}
-)
 ROAD_DOWNSTREAM_GAP_GUIDEPOINTS = frozenset(
     {
         *(f"shimmering-flats-fence-gap-{index}" for index in range(1, 6)),
         *(f"thousand-needles-west-gap-{index}" for index in range(1, 8)),
     }
+)
+ROAD_DOWNSTREAM_GAP_JUMP_GUIDEPOINTS = ROAD_DOWNSTREAM_GAP_GUIDEPOINTS - {
+    "shimmering-flats-fence-gap-1"
+}
+ROAD_SINGLE_JUMP_GUIDEPOINTS = frozenset(
+    {f"shimmering-flats-descent-{index:02d}" for index in range(10, 42)}
+) | ROAD_DOWNSTREAM_GAP_JUMP_GUIDEPOINTS
+ROAD_DESCENT_GUIDEPOINTS = frozenset(
+    {f"shimmering-flats-descent-{index:02d}" for index in range(1, 42)}
 )
 ROAD_EXACT_GUIDEPOINTS = frozenset(
     {

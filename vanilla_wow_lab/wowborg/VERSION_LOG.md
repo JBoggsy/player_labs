@@ -7,6 +7,12 @@
 - Expands the two V221 gap anchors into the 12-18-yard point sequences observed in V219's successful
   trace, keeping movement inputs precise through each full obstacle band. Intentional precise
   inputs no longer qualify for long-stride collision detection. All other behavior is unchanged.
+- Matched 24-episode south-road request `xreq_d4adf554-8fb3-4ca4-a566-4ed00550faa1` kept all 24
+  characters alive, but every run stopped at the first fence-gap point near `world_x=-6216` and
+  none fought or reached the dock. Frame-level traces showed the next precise forward inputs
+  settling with effectively zero translation before a timeout. The active source assigns one
+  aligned jump to each remaining point in the two authored gap lanes; unlike rejected V220, the
+  jump state cannot persist beyond the current route edge.
 
 ## v221 - route through proven downstream gaps (2026-08-09)
 
