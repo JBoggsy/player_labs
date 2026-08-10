@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v219 - calibrate stealth collision slowdown (2026-08-09)
+
+- Version UUID: `6cbf8e2a-7830-4101-8e2c-4c45f26c3942` (`wowborg:v219`, uploaded
+  inert; not submitted). Built from source `671567d` against canonical vanilla-wow 0.1.209.
+- Raises only the downstream collision slowdown threshold from 0.75 to four yards, below the
+  measured 5.47-yard normal one-second Prowl stride and above V218's 2.83-yard first-blocker pulse.
+  The jump-sidestep response and all other behavior are unchanged.
+
 ## v218 - jump-sidestep blocked stealth strides (2026-08-09)
 
 - Version UUID: `29bdc186-4990-4688-acba-34fb6ff410ae` (`wowborg:v218`, uploaded
