@@ -354,9 +354,16 @@ def test_lift_steering_turns_before_walking_forward() -> None:
     )
 
     _steer_toward(bridge, frame, Point(1, 0.0, 10.0, 0.0), purpose="board")
-    _steer_toward(bridge, frame, Point(1, 10.0, 0.0, 0.0), purpose="board")
+    _steer_toward(
+        bridge,
+        frame,
+        Point(1, 10.0, 0.0, 0.0),
+        purpose="board",
+        precise_arrival=True,
+    )
 
     assert actions[0]["turn"] == 1.0
     assert actions[0].get("forward", 0.0) == 0.0
     assert actions[1]["forward"] == 1.0
     assert actions[1].get("turn", 0.0) == 0.0
+    assert actions[1]["duration"] == 0.5

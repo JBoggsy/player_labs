@@ -1,5 +1,20 @@
 # wowborg version log
 
+## v243 - reduce exact-route settle waits (2026-08-10)
+
+- Version UUID: `8d3acf50-594c-426a-b486-f9c270afeb9d` (`wowborg:v243`, uploaded
+  inert; not submitted). Built from source `139a948` against canonical vanilla-wow 0.1.209.
+- Uses the historically proven every-eighth-pulse host settlement yield on all route legs instead
+  of yielding after every exact-leg movement. Movement durations, geometry, hazards, and combat
+  are unchanged.
+- South-road request `xreq_96d83269-fde2-4d1f-b8e0-4982d5c352b2` kept 20 of 24 characters alive
+  and produced ten living lower-dock arrivals at a 174.2-second median, versus v242's seven at
+  198.7 seconds. Median settle waits fell to 44. Canonical request
+  `xreq_fb0f2e97-2b23-4bd0-bfac-192667396315` kept 20 of 24 alive but produced no dock arrivals;
+  road 9 improved only to a 104.5-second median, crest to 184.6, and south road to 234.4. The
+  active source next tests a half-second precise translation, midway between the proven quarter-
+  second control and the rejected 0.75-second terrain stride.
+
 ## v242 - continue when Travel Form cannot persist (2026-08-10)
 
 - Version UUID: `2bfed214-38ac-4dec-a833-ad9dade1b913` (`wowborg:v242`, uploaded

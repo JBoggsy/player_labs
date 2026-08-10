@@ -48,6 +48,7 @@ GREAT_LIFT_VISIBLE_RANGE = 42.0
 GREAT_LIFT_DOCK_Z_SLACK = 2.0
 GREAT_LIFT_EXIT_Z = 80.0
 TRAVERSE_INPUT_SECONDS = 0.75
+ROAD_PRECISE_INPUT_SECONDS = 0.5
 ROAD_OPEN_INPUT_SECONDS = 1.0
 ROAD_FAR_CLEAR_INPUT_SECONDS = 1.0
 ROAD_ARRIVAL_RADIUS_YARDS = 8.0
@@ -366,7 +367,7 @@ def _steer_toward(
             duration=0.25,
             purpose=purpose,
         )
-    duration = 0.25 if precise_arrival else translation_seconds
+    duration = ROAD_PRECISE_INPUT_SECONDS if precise_arrival else translation_seconds
     if trace is not None and duration in (
         ROAD_OPEN_INPUT_SECONDS,
         ROAD_FAR_CLEAR_INPUT_SECONDS,
