@@ -16,8 +16,10 @@ from wowborg.strategies.traverse import (
     PROWL_SPELL_IDS,
     ROAD_STEEP_GUIDEPOINTS,
     TRAVERSE_ROUTE_PREFIX,
+    TraverseCombatState,
     TraverseStrategy,
     _activate_prowl,
+    _fight_traverse_attacker,
     _observed_lift_at_lower_dock,
     _select_frontier,
     _steer_toward,
@@ -122,6 +124,33 @@ def test_traverse_enters_cat_form_and_activates_prowl() -> None:
                 "detail": "",
             },
         ),
+    ]
+
+
+def test_ranged_fallback_waits_for_the_observed_active_cast() -> None:
+    events = []
+    waits = []
+    frame = SimpleNamespace(frame_id=12, active_cast_spell_id=5176)
+    bridge = SimpleNamespace(
+        select_wait=lambda selected: waits.append(selected) or "frame-12"
+    )
+
+    acted = _fight_traverse_attacker(
+        bridge,
+        navigator=None,
+        frame=frame,
+        attacker=None,
+        trace=lambda kind, **payload: events.append((kind, payload)),
+        combat=TraverseCombatState(ranged_fallback=True),
+    )
+
+    assert acted is True
+    assert waits == [frame]
+    assert events == [
+        (
+            "traverse_combat_ranged_fallback",
+            {"activation": 1, "phase": "finish_active_cast", "spell_id": 5176},
+        )
     ]
 
 

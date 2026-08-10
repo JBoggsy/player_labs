@@ -888,7 +888,7 @@ def _fight_traverse_attacker(
     combat: TraverseCombatState,
 ) -> bool:
     if combat.ranged_fallback:
-        if frame.is_casting:
+        if frame.active_cast_spell_id:
             request_id = bridge.select_wait(frame)
             if request_id is None:
                 return False
@@ -896,7 +896,7 @@ def _fight_traverse_attacker(
                 "traverse_combat_ranged_fallback",
                 activation=1,
                 phase="finish_active_cast",
-                spell_id=frame.casting_spell_id,
+                spell_id=frame.active_cast_spell_id,
             )
             return True
         if frame.shapeshift_form_known and frame.shapeshift_form_id != 0:

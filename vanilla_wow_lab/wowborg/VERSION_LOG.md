@@ -1,5 +1,17 @@
 # wowborg version log
 
+## v229 - follow the west-road ravine join (2026-08-09)
+
+- Version UUID: `7451bc60-d94c-4a29-a3f1-486e21f98726` (`wowborg:v229`, uploaded
+  inert; not submitted). Built from source `17a2b57` against canonical vanilla-wow 0.1.209.
+- Adds seven narrow soft bearings from the canonical Detour path between west road 1 and exact west
+  road 2. The downstream corridor and all other behavior are unchanged.
+- Matched 24-episode south-road request `xreq_7f7b12ad-ce0a-46c5-8913-a567d16b4589` produced ten
+  living lower-dock arrivals, doubling v228's five. Of the fourteen non-arrivals, eight terminated
+  on a hosted action-settlement timeout, two reached the lift corridor before scoring logout, two
+  hit a stale ranged-combat field access, one died in combat, and one ended before the route. The
+  active source fixes the ranged-combat field access; settlement timeouts remain host-terminal.
+
 ## v228 - anchor the west corridor on walkable ground (2026-08-09)
 
 - Version UUID: `333f7967-bd44-4f64-bd8d-251540b62fa4` (`wowborg:v228`, uploaded
