@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v222 - follow dense downstream gap lanes (2026-08-09)
+
+- Version UUID: `59bbe367-7411-403b-a0ab-601a8bb961b3` (`wowborg:v222`, uploaded
+  inert; not submitted). Built from source `cc95e3e` against canonical vanilla-wow 0.1.209.
+- Expands the two V221 gap anchors into the 12-18-yard point sequences observed in V219's successful
+  trace, keeping movement inputs precise through each full obstacle band. Intentional precise
+  inputs no longer qualify for long-stride collision detection. All other behavior is unchanged.
+
 ## v221 - route through proven downstream gaps (2026-08-09)
 
 - Version UUID: `d5ec4fb8-b2c6-402e-a9c5-8e27ecc98052` (`wowborg:v221`, uploaded
