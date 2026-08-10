@@ -1,5 +1,18 @@
 # wowborg version log
 
+## v237 - stride through clear Tanaris road segments (2026-08-09)
+
+- Version UUID: `125bf950-bfa2-45c0-9a77-565619d33659` (`wowborg:v237`, uploaded
+  inert; not submitted). Built from source `39e67dc` against canonical vanilla-wow 0.1.209.
+- Restores v234's Travel Form and hazard avoidance on the ordinary Tanaris road, but requests a
+  three-second movement stride whenever the hazard planner reports a clear path. Route geometry,
+  hazard thresholds, combat, and all downstream behavior are unchanged.
+- Canonical-spawn request `xreq_c8804c74-dbc6-4fbd-b8ed-6f6aabcca9bc` stopped all 24 policies at
+  road point 1 because the pinned typed action contract admits at most 1.5 seconds for vector
+  movement. No action reached the game. The active source uses that exact contract maximum while
+  retaining the planner-clear condition, so visible off-path enemies no longer force one-second
+  strides.
+
 ## v236 - Prowl through the open Tanaris road (2026-08-09)
 
 - Version UUID: `f7f33e24-c5b9-4d40-bed6-b2dd0b0eb414` (`wowborg:v236`, uploaded
