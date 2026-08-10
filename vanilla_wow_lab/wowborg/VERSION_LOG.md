@@ -1,5 +1,19 @@
 # wowborg version log
 
+## v225 - treat downstream corridors as soft bearings (2026-08-09)
+
+- Version UUID: `2e6e67d7-c369-44a4-91ff-6525aef6fb2b` (`wowborg:v225`, uploaded
+  inert; not submitted). Built from source `1a2c481` against canonical vanilla-wow 0.1.209.
+- Keeps V224's Detour-derived corridor geometry, but lets the ordinary road follower accept each
+  bearing after crossing it inside the existing lateral and vertical envelope. Proven mountain and
+  obstacle-gap points retain exact semantics; stealth, combat, and movement actions are unchanged.
+- Matched 24-episode south-road request `xreq_688069ba-a9b1-4158-a467-cb5047252382` kept all 24
+  characters alive, produced one verified lower-dock arrival, and put four more leaders into the
+  dock corridor. Median final world X improved from V224's `-5698` to `-5324`, but nine runs spent
+  98-203 collision recoveries immediately after west road 2. Navmesh recon shows that direct chord
+  conceals a 587-yard rolling ground corridor. The active source adds sparse soft bearings along
+  that corridor without changing the now-proven dock approach or any combat behavior.
+
 ## v224 - follow navmesh corridors to the Great Lift (2026-08-09)
 
 - Version UUID: `c51a1d37-e700-4f25-b98b-11867ecadc2e` (`wowborg:v224`, uploaded
