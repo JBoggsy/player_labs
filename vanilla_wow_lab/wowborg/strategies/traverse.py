@@ -91,10 +91,6 @@ ROAD_DOWNSTREAM_GAP_GUIDEPOINTS = frozenset(
 ROAD_DOWNSTREAM_GAP_JUMP_GUIDEPOINTS = ROAD_DOWNSTREAM_GAP_GUIDEPOINTS - {
     "shimmering-flats-fence-gap-1"
 }
-ROAD_DOWNSTREAM_CORRIDOR_GUIDEPOINTS = frozenset(
-    {f"thousand-needles-central-corridor-{index:02d}" for index in range(2, 13)}
-    | {f"great-lift-lower-corridor-{index:02d}" for index in range(2, 14)}
-)
 ROAD_SINGLE_JUMP_GUIDEPOINTS = frozenset(
     {f"shimmering-flats-descent-{index:02d}" for index in range(10, 42)}
 ) | ROAD_DOWNSTREAM_GAP_JUMP_GUIDEPOINTS
@@ -119,7 +115,6 @@ ROAD_EXACT_GUIDEPOINTS = frozenset(
     ROAD_STEEP_GUIDEPOINTS
     | ROAD_DESCENT_GUIDEPOINTS
     | ROAD_DOWNSTREAM_GAP_GUIDEPOINTS
-    | ROAD_DOWNSTREAM_CORRIDOR_GUIDEPOINTS
 )
 ROAD_TIGHT_ARRIVAL_GUIDEPOINTS = frozenset(
     {

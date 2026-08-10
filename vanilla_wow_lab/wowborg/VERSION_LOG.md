@@ -1,5 +1,20 @@
 # wowborg version log
 
+## v224 - follow navmesh corridors to the Great Lift (2026-08-09)
+
+- Version UUID: `c51a1d37-e700-4f25-b98b-11867ecadc2e` (`wowborg:v224`, uploaded
+  inert; not submitted). Built from source `17223ba` against canonical vanilla-wow 0.1.209.
+- Replaces the direct east-road-3-to-central-road-1 chord and final south-road-to-lower-dock chord
+  with sparse anchors sampled from the canonical VMaNGOS Detour route. These preserve the actual
+  switchback and three-chunk dock approach while retaining V223's stealth, collision response,
+  combat admission, and downstream gap jumps.
+- Matched 24-episode south-road request `xreq_235a9e70-494a-4d54-b40b-dc685d01c25e` removed the
+  old east-road-3 direct-line timeout and put two leaders onto the real dock corridor, but exact
+  checkpoint semantics created a new repeated overshoot lock at central corridor point 11. Median
+  final world X regressed from V223's `-5435` to `-5698`, two characters died, and none reached the
+  dock. The active source retains the Detour bearings but restores ordinary crossed-edge acceptance
+  for them; exact semantics remain only on the proven obstacle-gap and mountain points.
+
 ## v223 - jump through downstream gap lanes (2026-08-09)
 
 - Version UUID: `e0e2accd-451b-467c-9c8b-24ca6bf77669` (`wowborg:v223`, uploaded
