@@ -1105,7 +1105,7 @@ def _steer_road_leg(
     hold_terrain_hazards: bool,
     jump_terrain: bool,
     jump_once: bool,
-    stealth_route: bool,
+    downstream_route: bool,
 ):
     settle_pause_interval = (
         ROAD_SETTLE_PAUSE_INTERVAL
@@ -1126,11 +1126,13 @@ def _steer_road_leg(
             return None, "no_frame"
         if frame.is_dead or frame.is_ghost:
             return None, "death"
-        prowl_active = any(
-            spell_id in frame.active_aura_spell_ids for spell_id in PROWL_SPELL_IDS
+        travel_form_active = (
+            frame.shapeshift_form_known
+            and frame.shapeshift_form_spell_known
+            and frame.shapeshift_form_spell_id == TRAVEL_FORM_SPELL_ID
         )
-        if stealth_route and not frame.in_combat and not prowl_active:
-            _activate_prowl(bridge, trace)
+        if downstream_route and not frame.in_combat and not travel_form_active:
+            _activate_travel_form(bridge, trace)
             last_progress = time.monotonic()
             continue
         fight_attacker = _traverse_fight_attacker(
@@ -1361,20 +1363,6 @@ def _steer_road_leg(
             hazards = []
             tracked_hazards = []
             should_hold = False
-        elif stealth_route and prowl_active:
-            steering_target = target
-            next_avoidance_side = None
-            hazards = []
-            tracked_hazards = [
-                unit
-                for unit in frame.units
-                if unit.player_reaction_hostile
-                and _unit_alive(unit)
-                and unit.distance <= ROAD_HAZARD_TRACK_YARDS
-            ]
-            side_clearances = {}
-            side_lateral_yards = {}
-            should_hold = False
         else:
             (
                 steering_target,
@@ -1586,7 +1574,7 @@ def _steer_road_leg(
             (settle_frame.location.x, settle_frame.location.y),
         )
         if (
-            stealth_route
+            downstream_route
             and request_id is not None
             and translating
             and not precise_road_input
@@ -1904,8 +1892,6 @@ class TraverseStrategy:
                             required_fraction=SECOND_DESCENT_MIN_HEALTH_FRACTION,
                         )
                         continue
-            elif self.route_guidepoints_arrived >= STEALTH_ROUTE_START_GUIDEPOINT:
-                _activate_prowl(bridge, trace)
             else:
                 _activate_travel_form(bridge, trace)
             here = navigator._observe_position(bridge)
@@ -1991,7 +1977,7 @@ class TraverseStrategy:
                         ),
                         jump_terrain=name in ROAD_STEEP_GUIDEPOINTS,
                         jump_once=name in ROAD_SINGLE_JUMP_GUIDEPOINTS,
-                        stealth_route=(
+                        downstream_route=(
                             self.route_guidepoints_arrived
                             >= STEALTH_ROUTE_START_GUIDEPOINT
                         ),
@@ -2023,12 +2009,7 @@ class TraverseStrategy:
                             reason=failure_reason,
                         )
                     continue
-                safe_resume = (
-                    (lambda: _activate_prowl(bridge, trace))
-                    if self.route_guidepoints_arrived
-                    >= STEALTH_ROUTE_START_GUIDEPOINT
-                    else (lambda: _activate_travel_form(bridge, trace))
-                )
+                safe_resume = lambda: _activate_travel_form(bridge, trace)
                 result = navigator.navigate_to(
                     bridge,
                     target,

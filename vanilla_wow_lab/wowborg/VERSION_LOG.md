@@ -1,5 +1,20 @@
 # wowborg version log
 
+## v230 - use the current combat cast observation (2026-08-09)
+
+- Version UUID: `5474b742-af2f-48d6-8ca5-ac81a9b86d4f` (`wowborg:v230`, uploaded
+  inert; not submitted). Built from source `071d6de` against canonical vanilla-wow 0.1.209.
+- Replaces the stale `is_casting` and `casting_spell_id` accesses in ranged combat fallback with
+  the canonical `active_cast_spell_id` observation. Route, movement, form, and combat selection are
+  otherwise unchanged.
+- Matched 24-episode south-road request `xreq_c7cf3680-4742-4d0c-942a-664c260d719a` kept all 24
+  characters alive, produced eleven lower-dock arrivals, and produced no policy exceptions. Twelve
+  non-arrivals terminated on hosted action-settlement timeouts and one reached the lift corridor
+  before scoring logout. Successful arrivals still took a median 236.6 seconds, while ten of the
+  timeouts struck before central road 3 after only 67–152 seconds of policy control. The active
+  source therefore switches the downstream road from Prowl to hazard-aware Travel Form to finish
+  before the timeout window; route geometry and combat gates are unchanged.
+
 ## v229 - follow the west-road ravine join (2026-08-09)
 
 - Version UUID: `7451bc60-d94c-4a29-a3f1-486e21f98726` (`wowborg:v229`, uploaded
