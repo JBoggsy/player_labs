@@ -61,6 +61,8 @@ ROAD_CLIMB_EDGE_PASS_PLANAR_YARDS = 8.0
 ROAD_CLIMB_EDGE_PASS_VERTICAL_SLACK_YARDS = 3.0
 ROAD_ROUTE_RESUME_MIN_WORLD_X = -8000.0
 ROAD_ROUTE_RESUME_RADIUS_YARDS = 50.0
+PROACTIVE_FIGHT_LEVEL_ADVANTAGE = 20
+PROACTIVE_FIGHT_ENGAGE_YARDS = 20.0
 ROAD_STALL_SECONDS = 8.0
 ROAD_UNSTICK_ATTEMPTS = 2
 ROAD_SETTLE_PAUSE_INTERVAL = 8
@@ -668,6 +670,13 @@ def _qualifying_reactive_attacker(unit) -> bool:
     )
 
 
+def _qualifying_weak_hazard(frame, unit) -> bool:
+    return (
+        _qualifying_reactive_attacker(unit)
+        and unit.level <= frame.level - PROACTIVE_FIGHT_LEVEL_ADVANTAGE
+    )
+
+
 def _traverse_fight_attacker(
     frame,
     *,
@@ -716,8 +725,16 @@ def _traverse_fight_attacker(
     candidates = [
         unit
         for unit in nearby_hazards
-        if unit.distance <= ROAD_TIGHT_HAZARD_HOLD_YARDS
-        and _qualifying_ramp_scorpid(unit)
+        if (
+            (
+                unit.distance <= ROAD_TIGHT_HAZARD_HOLD_YARDS
+                and _qualifying_ramp_scorpid(unit)
+            )
+            or (
+                unit.distance <= PROACTIVE_FIGHT_ENGAGE_YARDS
+                and _qualifying_weak_hazard(frame, unit)
+            )
+        )
     ]
     if len(candidates) != 1:
         return None
@@ -1043,7 +1060,7 @@ def _steer_road_leg(
         fight_attacker = _traverse_fight_attacker(
             frame,
             active_guid=fight_guid,
-            allow_proactive=hold_terrain_hazards,
+            allow_proactive=True,
         )
         if fight_attacker is not None:
             if fight_started is None:

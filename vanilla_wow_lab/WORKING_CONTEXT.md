@@ -1437,7 +1437,14 @@ nearest canonical route waypoint when an intentional diagnostic starts north of 
 within 50 yards of the route. The canonical league spawn is outside that gate, so normal full-route
 behavior is unchanged; the capability exists to isolate and measure the downstream Great Lift leg.
 This candidate is uploaded inert as **wowborg:v213**
-(`260ec6f4-9c81-4f4b-8181-753b36b7dc41`, source `30ff696`).
+(`260ec6f4-9c81-4f4b-8181-753b36b7dc41`, source `30ff696`). A 24-episode south-road diagnostic
+(`xreq_00d25795-cc6e-41b9-86f9-62c82dc1fc7a`) resumed correctly and kept all characters alive, but
+none reached the Great Lift; median final world X was -5791 and the best reached Thousand Needles
+central road 2. A representative run reached east road 3 in 37 seconds, then spent 126 seconds
+reaching central road 1 amid 60 avoidance and 83 evasion activations. Its two accidental level-28
+fights took only 2.8 and 1.9 seconds. The active source proactively fights one isolated ordinary
+hostile within 20 yards when wowborg has at least a 20-level advantage; stronger or grouped hazards
+still use avoidance.
 
 - Game repo (reference only): `~/coding/coworlds/coworld-vanilla-wow` — Python adapter,
   semantic environment, owner replay reducer, Nim runtime/client, dungeons, and manifests.

@@ -7,6 +7,13 @@
 - When an intentional hosted diagnostic starts north of world X -8000 within 50 yards of the
   canonical route, resumes after its nearest waypoint. The canonical league spawn is outside the
   gate. All canonical-spawn behavior matches restored V212.
+- A 24-episode south-road diagnostic (`xreq_00d25795-cc6e-41b9-86f9-62c82dc1fc7a`) resumed correctly
+  and kept all 24 characters alive, but none reached the Great Lift; median final world X was
+  -5791 and the best reached Thousand Needles central road 2. A representative run reached east
+  road 3 in 37 seconds, then spent 126 seconds reaching central road 1 amid 60 avoidance and 83
+  evasion activations. Its two accidental level-28 fights took only 2.8 and 1.9 seconds. The active
+  source proactively fights one isolated ordinary hostile within 20 yards when wowborg has at
+  least a 20-level advantage.
 
 ## v212 - restore precise ascent pulses (2026-08-09)
 
