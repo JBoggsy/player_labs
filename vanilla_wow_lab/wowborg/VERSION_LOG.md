@@ -1,5 +1,13 @@
 # wowborg version log
 
+## v220 - persist short collision recovery (2026-08-09)
+
+- Version UUID: `8e9183e9-2377-4520-b60a-a3e5c7e4076d` (`wowborg:v220`, uploaded
+  inert; not submitted). Built from source `7459cc6` against canonical vanilla-wow 0.1.209.
+- After a downstream slowdown triggers the proven jump-sidestep, keeps eleven further steering
+  pulses short and jump-aware before allowing a long stride. This carries collision recovery beyond
+  V219's one normal-looking pulse inside the obstacle band; all other behavior is unchanged.
+
 ## v219 - calibrate stealth collision slowdown (2026-08-09)
 
 - Version UUID: `6cbf8e2a-7830-4101-8e2c-4c45f26c3942` (`wowborg:v219`, uploaded
