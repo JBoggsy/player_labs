@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from types import SimpleNamespace
 
 from environment.contract.policy import Observation, SpellObservation
@@ -20,6 +21,7 @@ from wowborg.strategies.traverse import (
     STEALTH_ROUTE_START_GUIDEPOINT,
     TERRAIN_PROWL_ROUTE_START_GUIDEPOINT,
     TRAVERSE_ROUTE_PREFIX,
+    HazardAvoidanceState,
     TraverseCombatState,
     TraverseStrategy,
     _activate_prowl,
@@ -28,6 +30,7 @@ from wowborg.strategies.traverse import (
     _hazard_clearance_yards,
     _observed_lift_at_lower_dock,
     _select_frontier,
+    _steer_road_leg,
     _steer_toward,
 )
 
@@ -197,6 +200,63 @@ def test_travel_form_exits_the_current_form_before_casting() -> None:
             },
         )
     ]
+
+
+def test_road_leg_continues_when_travel_form_does_not_persist(monkeypatch) -> None:
+    events = []
+    casts = []
+    frame = SimpleNamespace(
+        frame_id=14,
+        is_dead=False,
+        is_ghost=False,
+        in_combat=False,
+        shapeshift_form_known=True,
+        shapeshift_form_id=0,
+        shapeshift_form_spell_known=True,
+        shapeshift_form_spell_id=0,
+        active_aura_spell_ids=[],
+        location=SimpleNamespace(map_id=1, x=10.0, y=20.0, z=30.0),
+    )
+    bridge = SimpleNamespace(
+        finished=False,
+        observe=lambda: frame,
+        select_cast_without_target=lambda selected, spell_id, purpose: (
+            casts.append((selected, spell_id, purpose)) or "frame-14"
+        ),
+        wait_for_settlement=lambda _frame_id: SimpleNamespace(
+            success=True,
+            detail="cast cooldown observed",
+        ),
+    )
+    monkeypatch.setattr(
+        "wowborg.strategies.traverse._traverse_fight_attacker",
+        lambda *_args, **_kwargs: None,
+    )
+
+    end, reason = _steer_road_leg(
+        bridge,
+        navigator=None,
+        target=Point(1, 10.0, 20.0, 30.0),
+        deadline=time.monotonic() + 1.0,
+        trace=lambda kind, **payload: events.append((kind, payload)),
+        avoidance=HazardAvoidanceState(),
+        allow_northing_pass=True,
+        pass_lateral_yards=20.0,
+        arrival_radius=6.0,
+        hold_terrain_hazards=False,
+        jump_terrain=False,
+        jump_once=False,
+        downstream_route=True,
+        stealth_route=False,
+    )
+
+    assert end == Point(1, 10.0, 20.0, 30.0)
+    assert reason == ""
+    assert len(casts) == 1
+    assert events[-1] == (
+        "traverse_travel_form_unavailable",
+        {"activation": 1, "reason": "form_did_not_persist"},
+    )
 
 
 def test_frontier_prefers_farthest_safe_northing() -> None:

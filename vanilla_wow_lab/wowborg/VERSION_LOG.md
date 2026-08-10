@@ -1,5 +1,18 @@
 # wowborg version log
 
+## v241 - make the final Great Lift corridor precise (2026-08-09)
+
+- Version UUID: `82cc2a03-54b5-4282-9e31-521563ac8cfc` (`wowborg:v241`, uploaded
+  inert; not submitted). Built from source `90165b0` against canonical vanilla-wow 0.1.209.
+- Uses quarter-second, terrain-constrained movement for Great Lift corridors 12 and 13 and the
+  lower dock; route geometry, upstream movement, hazard handling, and combat are unchanged.
+- South-road request `xreq_200bb997-f74d-46d7-a974-b839cd352bee` completed all 24 episodes. Three
+  characters reached corridor 11, and all three crossed the formerly blocking final corridor and
+  arrived at the lower dock alive in 169.1, 171.5, and 193.3 seconds. The dominant remaining
+  failure is earlier: eleven characters reached west gap 7 but then stopped at west road 1 because
+  Travel Form dropped at the terrain seam and the control loop repeatedly recast it instead of
+  continuing on foot. The active source limits reactivation to one attempt per road leg.
+
 ## v240 - use level-aware Travel routing downstream (2026-08-09)
 
 - Version UUID: `d0229362-3730-493f-9354-31084ba8bbe6` (`wowborg:v240`, uploaded

@@ -1160,6 +1160,8 @@ def _steer_road_leg(
     fight_started: float | None = None
     combat = TraverseCombatState()
     single_jump_used = False
+    travel_form_attempted = False
+    travel_form_fallback_traced = False
     while time.monotonic() < deadline and not getattr(bridge, "finished", False):
         frame = bridge.observe()
         if frame is None:
@@ -1179,10 +1181,26 @@ def _steer_road_leg(
                 _activate_prowl(bridge, trace)
                 last_progress = time.monotonic()
                 continue
-            if not stealth_route and not travel_form_active:
+            if (
+                not stealth_route
+                and not travel_form_active
+                and not travel_form_attempted
+            ):
+                travel_form_attempted = True
                 _activate_travel_form(bridge, trace)
                 last_progress = time.monotonic()
                 continue
+            if (
+                not stealth_route
+                and not travel_form_active
+                and not travel_form_fallback_traced
+            ):
+                trace(
+                    "traverse_travel_form_unavailable",
+                    activation=1,
+                    reason="form_did_not_persist",
+                )
+                travel_form_fallback_traced = True
         fight_attacker = _traverse_fight_attacker(
             frame,
             active_guid=fight_guid,
