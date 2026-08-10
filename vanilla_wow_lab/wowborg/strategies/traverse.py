@@ -21,7 +21,6 @@ GOAL_RADIUS_YARDS = 8.0
 CAT_FORM_SPELL_ID = 768
 PROWL_SPELL_IDS = (9913, 6783, 5215)
 TRAVEL_FORM_SPELL_ID = 783
-PROWL_ROUTE_GUIDEPOINTS = 0
 RAMP_SCORPID_ENTRY = 5422
 FERAL_CLAW_SPELL_IDS = (9850, 9849, 5201, 3029, 1082)
 FERAL_RAKE_SPELL_IDS = (9904, 1824, 1823, 1822)
@@ -61,9 +60,6 @@ ROAD_CLIMB_EDGE_PASS_PLANAR_YARDS = 8.0
 ROAD_CLIMB_EDGE_PASS_VERTICAL_SLACK_YARDS = 3.0
 ROAD_ROUTE_RESUME_MIN_WORLD_X = -8000.0
 ROAD_ROUTE_RESUME_RADIUS_YARDS = 50.0
-PROACTIVE_FIGHT_LEVEL_ADVANTAGE = 30
-PROACTIVE_FIGHT_ENGAGE_YARDS = 20.0
-PROACTIVE_FIGHT_MIN_HEALTH_FRACTION = 0.9
 ROAD_STALL_SECONDS = 8.0
 ROAD_UNSTICK_ATTEMPTS = 2
 ROAD_SETTLE_PAUSE_INTERVAL = 8
@@ -231,6 +227,11 @@ TRAVERSE_ROUTE_PREFIX = (
     ("thousand-needles-west-3", Point(1, -5116.142, -1794.543, -55.277)),
     ("great-lift-south-road", Point(1, -4971.3, -1718.92, -59.379)),
     ("great-lift-lower-dock", GREAT_LIFT_LOWER_DOCK),
+)
+STEALTH_ROUTE_START_GUIDEPOINT = next(
+    index
+    for index, (name, _point) in enumerate(TRAVERSE_ROUTE_PREFIX)
+    if name == "shimmering-flats-road"
 )
 
 
@@ -671,17 +672,6 @@ def _qualifying_reactive_attacker(unit) -> bool:
     )
 
 
-def _qualifying_weak_hazard(frame, unit) -> bool:
-    return (
-        _qualifying_reactive_attacker(unit)
-        and frame.health_known
-        and frame.max_health > 0
-        and frame.health
-        >= frame.max_health * PROACTIVE_FIGHT_MIN_HEALTH_FRACTION
-        and unit.level <= frame.level - PROACTIVE_FIGHT_LEVEL_ADVANTAGE
-    )
-
-
 def _traverse_fight_attacker(
     frame,
     *,
@@ -734,10 +724,6 @@ def _traverse_fight_attacker(
             (
                 unit.distance <= ROAD_TIGHT_HAZARD_HOLD_YARDS
                 and _qualifying_ramp_scorpid(unit)
-            )
-            or (
-                unit.distance <= PROACTIVE_FIGHT_ENGAGE_YARDS
-                and _qualifying_weak_hazard(frame, unit)
             )
         )
     ]
@@ -1042,6 +1028,7 @@ def _steer_road_leg(
     hold_terrain_hazards: bool,
     jump_terrain: bool,
     jump_once: bool,
+    stealth_route: bool,
 ):
     settle_pause_interval = (
         ROAD_SETTLE_PAUSE_INTERVAL
@@ -1062,6 +1049,13 @@ def _steer_road_leg(
             return None, "no_frame"
         if frame.is_dead or frame.is_ghost:
             return None, "death"
+        prowl_active = any(
+            spell_id in frame.active_aura_spell_ids for spell_id in PROWL_SPELL_IDS
+        )
+        if stealth_route and not frame.in_combat and not prowl_active:
+            _activate_prowl(bridge, trace)
+            last_progress = time.monotonic()
+            continue
         fight_attacker = _traverse_fight_attacker(
             frame,
             active_guid=fight_guid,
@@ -1289,6 +1283,20 @@ def _steer_road_leg(
             next_avoidance_side = avoidance.side
             hazards = []
             tracked_hazards = []
+            should_hold = False
+        elif stealth_route and prowl_active:
+            steering_target = target
+            next_avoidance_side = None
+            hazards = []
+            tracked_hazards = [
+                unit
+                for unit in frame.units
+                if unit.player_reaction_hostile
+                and _unit_alive(unit)
+                and unit.distance <= ROAD_HAZARD_TRACK_YARDS
+            ]
+            side_clearances = {}
+            side_lateral_yards = {}
             should_hold = False
         else:
             (
@@ -1752,7 +1760,7 @@ class TraverseStrategy:
                             required_fraction=SECOND_DESCENT_MIN_HEALTH_FRACTION,
                         )
                         continue
-            elif self.route_guidepoints_arrived < PROWL_ROUTE_GUIDEPOINTS:
+            elif self.route_guidepoints_arrived >= STEALTH_ROUTE_START_GUIDEPOINT:
                 _activate_prowl(bridge, trace)
             else:
                 _activate_travel_form(bridge, trace)
@@ -1834,6 +1842,10 @@ class TraverseStrategy:
                         ),
                         jump_terrain=name in ROAD_STEEP_GUIDEPOINTS,
                         jump_once=name in ROAD_SINGLE_JUMP_GUIDEPOINTS,
+                        stealth_route=(
+                            self.route_guidepoints_arrived
+                            >= STEALTH_ROUTE_START_GUIDEPOINT
+                        ),
                     )
                     if end is not None:
                         self.best_world_x = max(self.best_world_x, end.x)
@@ -1864,7 +1876,8 @@ class TraverseStrategy:
                     continue
                 safe_resume = (
                     (lambda: _activate_prowl(bridge, trace))
-                    if self.route_guidepoints_arrived < PROWL_ROUTE_GUIDEPOINTS
+                    if self.route_guidepoints_arrived
+                    >= STEALTH_ROUTE_START_GUIDEPOINT
                     else (lambda: _activate_travel_form(bridge, trace))
                 )
                 result = navigator.navigate_to(

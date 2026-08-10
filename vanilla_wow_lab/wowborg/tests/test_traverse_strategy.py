@@ -149,9 +149,10 @@ def test_traverse_route_prefix_reaches_great_lift_lower_dock() -> None:
         *(f"shimmering-flats-ramp-ascent-{index:02d}" for index in range(1, 17)),
         "shimmering-flats-ramp-crest",
     ]
-    assert set(names[ascent_start : ascent_start + 17]) == set(
-        ROAD_STEEP_GUIDEPOINTS
+    assert set(names[ascent_start : ascent_start + 17]) == (
+        set(ROAD_STEEP_GUIDEPOINTS) - {"tanaris-road-9-climb-crest"}
     )
+    assert "tanaris-road-9-climb-crest" in ROAD_STEEP_GUIDEPOINTS
 
 
 def test_lift_detection_uses_only_visible_platform_at_lower_dock() -> None:

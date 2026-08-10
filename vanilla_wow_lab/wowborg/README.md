@@ -35,11 +35,12 @@ resolution is pinned to the matching owner commit in the root `pyproject.toml`.
   does not open a second connection because the canonical `/player` session owns
   the slot.
 - `strategies/` — competition-level objectives selected by `WOWBORG_STRATEGY`.
-  `traverse` activates Travel Form immediately and follows the deployed level-51
-  road spine through Tanaris, the Shimmering Flats, and Thousand Needles to the
-  Great Lift lower dock. After settling at the dock it traces arrival and ends.
-  Waiting for, boarding, and riding the lift are intentionally reserved for a
-  separate campaign. Route activations are traced.
+  `traverse` uses Travel Form through Tanaris, then uses Cat Form and Prowl on the
+  hostile Shimmering Flats and Thousand Needles road to the Great Lift lower dock.
+  It fights a single ordinary attacker reactively, but otherwise preserves stealth
+  instead of taking long lateral hazard detours. After settling at the dock it traces
+  arrival and ends. Waiting for, boarding, and riding the lift are intentionally
+  reserved for a separate campaign. Route activations are traced.
 - `policies/` — retained experiment and navigation-benchmark policies; they are
   not selected by the production entry point.
 - `nav/` — local movement supervision, route planning, and world-graph journeys.

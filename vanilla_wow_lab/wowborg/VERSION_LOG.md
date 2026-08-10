@@ -7,6 +7,11 @@
 - Proactive road combat now requires at least a 30-level advantage and 90% current health, based on
   V214's measured fast and dangerous tiers. Isolation, range, route, reactive combat, and hazard
   avoidance behavior are otherwise unchanged.
+- Matched 24-episode south-road request `xreq_e35be3ac-f9ff-4b0d-bec3-5158266926b0` triggered 72
+  proactive fights, but still killed 3/24 characters and moved the living-run median backward from
+  V213's `world_x=-5791` to `-5800`. It did not reach the lower dock. This rejects general
+  proactive road combat: the active source restores avoidance outside the measured ramp-Scorpid
+  exception and explores stealth for the downstream hostile road instead.
 
 ## v214 - fight isolated weak road hazards (2026-08-09)
 
