@@ -1,5 +1,17 @@
 # wowborg version log
 
+## v238 - use the maximum valid clear-road stride (2026-08-09)
+
+- Version UUID: `95d83b69-72ca-496f-b31e-6c9e65cf6457` (`wowborg:v238`, uploaded
+  inert; not submitted). Built from source `1b870d4` against canonical vanilla-wow 0.1.209.
+- Keeps v234's Travel Form and hazard avoidance, but allows the contract-max 1.5-second stride
+  whenever the planner reports no path hazard even if off-path enemies remain visible.
+- Canonical-spawn request `xreq_62f69df2-5537-4447-a74d-f04be1689395` kept all 24 characters alive
+  with no policy errors, but produced no lower-dock arrivals and reached road 9 in only eight runs
+  at a 155.6-second median. The longer stride reduced one-second movement actions but did not reduce
+  route time, matching the earlier v164 result. The active source restores one-second clear strides
+  and instead sizes bypass clearance from VMaNGOS's level-scaled aggro formula.
+
 ## v237 - stride through clear Tanaris road segments (2026-08-09)
 
 - Version UUID: `125bf950-bfa2-45c0-9a77-565619d33659` (`wowborg:v237`, uploaded

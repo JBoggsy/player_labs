@@ -49,7 +49,7 @@ GREAT_LIFT_DOCK_Z_SLACK = 2.0
 GREAT_LIFT_EXIT_Z = 80.0
 TRAVERSE_INPUT_SECONDS = 0.75
 ROAD_OPEN_INPUT_SECONDS = 1.0
-ROAD_FAR_CLEAR_INPUT_SECONDS = 1.5
+ROAD_FAR_CLEAR_INPUT_SECONDS = 1.0
 ROAD_ARRIVAL_RADIUS_YARDS = 8.0
 ROAD_PASS_LATERAL_YARDS = 60.0
 ROAD_CORRIDOR_PASS_LATERAL_YARDS = 20.0
@@ -72,8 +72,11 @@ ROAD_HAZARD_RESIDENT_RADIUS_YARDS = 30.0
 ROAD_HAZARD_CORRIDOR_YARDS = 18.0
 ROAD_HAZARD_TRACK_YARDS = 80.0
 ROAD_HAZARD_FORWARD_YARDS = 20.0
-ROAD_HAZARD_LATERAL_YARDS = (20.0, 25.0, 30.0, 45.0, 60.0)
-ROAD_HAZARD_MIN_CLEARANCE_YARDS = 20.0
+ROAD_HAZARD_LATERAL_YARDS = (10.0, 15.0, 20.0, 25.0, 30.0, 45.0, 60.0)
+ROAD_HAZARD_BASE_AGGRO_YARDS = 18.0
+ROAD_HAZARD_MIN_AGGRO_YARDS = 5.0
+ROAD_HAZARD_CLEARANCE_SLACK_YARDS = 3.0
+ROAD_HAZARD_UNKNOWN_CLEARANCE_YARDS = 20.0
 ROAD_TIGHT_HAZARD_HOLD_YARDS = 8.0
 ROAD_HAZARD_SWITCH_MARGIN_YARDS = 5.0
 RAMP_FIGHT_ADD_CLEARANCE_YARDS = 12.0
@@ -435,6 +438,18 @@ def _unit_alive(unit) -> bool:
     return not unit.is_dead and (not unit.health_known or unit.health > 1)
 
 
+def _hazard_clearance_yards(frame, unit) -> float:
+    if frame.level <= 0 or unit.level <= 0:
+        return ROAD_HAZARD_UNKNOWN_CLEARANCE_YARDS
+    # VMaNGOS starts ordinary equal-level aggro near 18 yards, subtracts one
+    # yard per player level advantage, and floors the result at five yards.
+    aggro_radius = max(
+        ROAD_HAZARD_MIN_AGGRO_YARDS,
+        ROAD_HAZARD_BASE_AGGRO_YARDS - (frame.level - unit.level),
+    )
+    return aggro_radius + ROAD_HAZARD_CLEARANCE_SLACK_YARDS
+
+
 def _segment_clearance(
     start_x: float,
     start_y: float,
@@ -497,6 +512,11 @@ def _hazard_avoidance_target(
         and _unit_alive(unit)
         and unit.distance <= ROAD_HAZARD_TRACK_YARDS
     ]
+    required_clearance = max(
+        (_hazard_clearance_yards(frame, unit) for unit in tracked),
+        default=ROAD_HAZARD_MIN_AGGRO_YARDS
+        + ROAD_HAZARD_CLEARANCE_SLACK_YARDS,
+    )
     safe_active_holding_guids = {
         unit.guid
         for unit in tracked
@@ -507,7 +527,7 @@ def _hazard_avoidance_target(
             frame.location.y,
             *_unit_path(unit),
         )
-        >= ROAD_HAZARD_MIN_CLEARANCE_YARDS
+        >= required_clearance
     }
     immediate_end_x = frame.location.x + route_x * detection_radius
     immediate_end_y = frame.location.y + route_y * detection_radius
@@ -549,7 +569,7 @@ def _hazard_avoidance_target(
             frame.location.y,
             *_unit_path(unit),
         )
-        < ROAD_HAZARD_MIN_CLEARANCE_YARDS
+        < required_clearance
     ]
     resident_hazards = [
         unit
@@ -631,7 +651,7 @@ def _hazard_avoidance_target(
             for lateral_yards, candidate_clearance in candidate_clearances[
                 candidate_side
             ].items()
-            if candidate_clearance >= ROAD_HAZARD_MIN_CLEARANCE_YARDS
+            if candidate_clearance >= required_clearance
         ]
         if safe:
             return min(safe)
@@ -658,7 +678,7 @@ def _hazard_avoidance_target(
     else:
         other_side = -side
         if (
-            clearances[side] < ROAD_HAZARD_MIN_CLEARANCE_YARDS
+            clearances[side] < required_clearance
             and clearances[other_side]
             >= clearances[side] + ROAD_HAZARD_SWITCH_MARGIN_YARDS
         ):
@@ -1541,7 +1561,14 @@ def _steer_road_leg(
             not frame.in_combat
             and avoidance.side is not None
             and side_clearances[avoidance.side]
-            < ROAD_HAZARD_MIN_CLEARANCE_YARDS
+            < max(
+                (
+                    _hazard_clearance_yards(frame, unit)
+                    for unit in tracked_hazards
+                ),
+                default=ROAD_HAZARD_MIN_AGGRO_YARDS
+                + ROAD_HAZARD_CLEARANCE_SLACK_YARDS,
+            )
         )
         should_evade = unsafe
         if should_evade:

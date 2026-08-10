@@ -25,6 +25,7 @@ from wowborg.strategies.traverse import (
     _activate_prowl,
     _activate_travel_form,
     _fight_traverse_attacker,
+    _hazard_clearance_yards,
     _observed_lift_at_lower_dock,
     _select_frontier,
     _steer_toward,
@@ -273,6 +274,14 @@ def test_lift_detection_uses_only_visible_platform_at_lower_dock() -> None:
     )
 
     assert selected is lower
+
+
+def test_hazard_clearance_tracks_vmangos_level_scaled_aggro() -> None:
+    frame = SimpleNamespace(level=60)
+
+    assert _hazard_clearance_yards(frame, SimpleNamespace(level=47)) == 8.0
+    assert _hazard_clearance_yards(frame, SimpleNamespace(level=60)) == 21.0
+    assert _hazard_clearance_yards(frame, SimpleNamespace(level=0)) == 20.0
 
 
 def test_lift_steering_turns_before_walking_forward() -> None:
