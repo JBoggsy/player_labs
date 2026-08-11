@@ -17,3 +17,8 @@ buffers — not in-session hit counts — is the graduation signal.
 concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
+
+### No paintbot lessons this session — read-only catch-up
+Evidence: this session only read paintbot_lab docs (WORKING_CONTEXT, README, lessons archive)
+to answer a "where are we at" question before pivoting to founding proxywar_lab. No paintbot
+code, evals, or docs were touched.
