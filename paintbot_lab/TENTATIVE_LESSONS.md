@@ -18,6 +18,21 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
 
+### Re-verify the campaign contract from live data before every eval — it drifted massively in 3 days
+Evidence: v60 validation (2026-08-11). Since the docs' round-381 snapshot: board migrated
+10×10→16×16 hex (round 955), a true 1v1 head-to-head mode appeared (49 cells), _duo_roster
+switched from 7+7+1+1 to an even captain/ally split, every cell now sets map_size, deployed
+canonical moved 0.7.216→0.7.227, and campaign episodes carry perk loadouts. Two of my first
+requests violated the allies-fixed rule and were cancelled/re-posted — caught only because I
+read current metta episodes.py AND diffed real round-967 episode rows instead of trusting the
+doc. The doc's own "re-resolve dated values" warning was the only part still fully true.
+
+### Real campaign episode rows are the cheapest seating oracle
+Evidence: v60 validation (2026-08-11). Rather than re-deriving slot layouts from variant
+manifests, listing the champion's completed campaign ereq rows and grouping participant
+positions by label gave every layout in one query: 2-team = alternating parity, ffa =
+interleaved mod 4, plus live coworld_version (0.7.227) and current champion labels for free.
+
 ### Property-test geometric predicates against brute force before shipping — the clever version had a boundary hole
 Evidence: Layer 1 clearance rework (2026-08-11). The Lipschitz skip-march version of
 segmentClear looked provably correct on paper (I "fixed" the margin from -1 to -2 after

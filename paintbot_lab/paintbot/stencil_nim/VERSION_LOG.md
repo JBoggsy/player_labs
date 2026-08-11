@@ -4,6 +4,60 @@ Read this before assuming what a version contains. Format mirrors
 `ctf_lab/ctf/beacon/VERSION_LOG.md`: one entry per uploaded version — what
 changed, why, and what the evidence said.
 
+## v60 — L∞ clearance field (nav rework Layer 1), uploaded 2026-08-11
+
+Immutable policy-version UUID: `311a5ef0-928c-4910-9172-881ea81886af`.
+Uploaded with tag `purpose=nav-clearance`. **Not submitted to any league.**
+
+First increment of the navigation rework
+([`../../docs/designs/nav-rework-sketch-2026-08-11.md`](../../docs/designs/nav-rework-sketch-2026-08-11.md)).
+Behavior-preserving in intent; the only deliberate behavioral deltas are the
+segment predicates becoming engine-exact at the margins.
+
+- `WorldMap.clearance: seq[uint8]` — exact L∞ (Chebyshev) distance to the
+  nearest wall pixel, out-of-bounds counted as wall, clamped at 255. Two-pass
+  8-neighbor chamfer (exact for L∞, not an approximation). Because the
+  engine's `canOccupy` footprint is a 13×13 square, `clearance[p] > PlayerHalf`
+  reproduces it bit-for-bit in one array read.
+- `canStand(p)` (engine-exact point walkability) and `segmentClear(a, b)`
+  (supercover DDA at pixel resolution, one clearance read per visited pixel)
+  replace both `walkableSegment` (pixel-exact, ~length/2 × 169 reads/sample)
+  and `walkableNavSegment` (8px-grid conservative). All seven call sites
+  updated. A Lipschitz skip-march variant was rejected: property tests caught
+  a corner-cut false pass at minimum clearance.
+- The 8px nav grid is now derived from clearance via the cell-center test —
+  bit-identical to the deleted summed-area erosion. A*, Dijkstra flow fields,
+  `nearestWalkable`, and cover are unchanged consumers of the unchanged grid.
+- `erodeMs` → `clearanceMs`; trace key `erode_ms` → `clearance_ms`
+  (`self_play.py` updated to match).
+
+**Pre-upload evidence:** scratchpad property tests vs brute force on random
+maps — 268k exhaustive clearance pixels, bitwise nav-grid parity vs the old
+erosion, 9.6k `canStand` points vs footprint scans, 24.6k segments (2,690
+walkable) vs an independent supercover reference plus a dense-sampling
+cross-check; all passed. `nim check` clean on the touched modules.
+
+**Built against 0.7.215 / `6c7a4c0e` (pin unchanged); deployed canonical is
+now 0.7.227.** v58 competes live on 0.7.227 with the same pin lineage, so the
+wire contract is compatible; sim-rule constants have not been re-derived
+against 0.7.217–0.7.227.
+
+**Hosted validation (running at upload time):** a matched v60-vs-v59
+campaign-shaped batch on live round-967 cells — head-to-head `1v1`-mode cell
+(4,2) ref `1v1` seed 2106233304 size **giant** (clearance-init stress), 2v2-mode
+cell (12,2) ref `default` seed 2008560253 standard with fixed side allies and
+swapped captains, and ffa4-mode cell (5,1) ref `4ffa8` seed 1698802266 (32
+seats); 22 episodes across 10 requests: `xreq_aef998da`/`xreq_fb8e1b51`
+(v60 h2h), `xreq_6cbf9168`/`xreq_c2e6232c` (v59 h2h), `xreq_8a92b769`/
+`xreq_7eb275ab` (v60 2v2), `xreq_334b7fd6`/`xreq_c14e122e` (v59 2v2),
+`xreq_840186b5` (v60 ffa), `xreq_55098ad0` (v59 ffa). Two earlier duo
+seating-2 requests (`xreq_5a432982`, `xreq_748e763d`) were cancelled for
+moving allies with captains — the current commissioner keeps allies fixed to
+their sides. Note the campaign contract has changed since the docs' round-381
+snapshot: 16×16 hex board (round 955 migration), true `1v1` head-to-head mode,
+and `_duo_roster` now splits each team **evenly** between captain and ally
+(4+4), not 7+1.
+
 ## v59 — spray-carrier avoidance, uploaded 2026-08-08
 
 Immutable policy-version UUID: `73caf241-9198-4245-bcf5-e9ddec986311`.

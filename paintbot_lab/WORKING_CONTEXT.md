@@ -105,6 +105,30 @@ unit—is the reboot guarantee.
 
 ## Current objective
 
+**Navigation rework in progress; v60 (Layer 1) uploaded and under hosted
+validation (2026-08-11).** Direction set by James's review of the navigation
+deep-dive: one planner, no beelining, no 8px movement coarsening, dynamic
+PoIs, goals validated before nav. Sketch:
+[`docs/designs/nav-rework-sketch-2026-08-11.md`](docs/designs/nav-rework-sketch-2026-08-11.md).
+v60 (`311a5ef0-928c-4910-9172-881ea81886af`, tag `purpose=nav-clearance`)
+ships Layer 1: the exact L∞ clearance field, `canStand`/`segmentClear`
+replacing both old segment predicates, and the nav grid derived (bit-identical)
+from clearance. A matched v60-vs-v59 campaign-shaped batch (22 episodes,
+10 xreqs — head-to-head giant-map cell, 2v2 duo cell, 4ffa8 cell; ids in
+`VERSION_LOG.md` v60 entry) is running; artifacts stream to
+`local_data/episodes/nav-clearance-v60`. Layer 2 (topology/PoIs) is next once
+v60 evidence is in.
+
+**Campaign contract drift found 2026-08-11 (round 967):** 16×16 hex board
+(migrated round 955), true `1v1` head-to-head mode (49 cells), `2v2` duo
+seating now an **even** captain/ally split (not 7+7+1+1), all cells carry
+`map_size`, deployed canonical Paintbot 0.7.227, and campaign episodes carry
+perk loadouts. `docs/tournament-like-experience-requests.md` re-verified and
+updated. NOTE for James: `user_preferences.md` still cites 7+7+1+1 — his text,
+left untouched. Also: `git -C ~/coding/metta pull` fails from this environment
+(SSH publickey denied); today's read used HEAD `84e13cb799` (2026-08-11 23:05Z,
+minutes old at read time).
+
 **v59 is uploaded and awaiting its first evidence (2026-08-08).** v59
 (`73caf241-9198-4245-bcf5-e9ddec986311`, tag `purpose=spray-avoidance`) adds
 enemy-loadout belief (weapon/grenade/barrier/shield off the identity badge) and
