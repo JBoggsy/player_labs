@@ -212,6 +212,28 @@ proc canStand*(map: WorldMap, point: Point): bool =
     point.y >= 0 and point.y < map.height and
     map.clearance[map.pixelIndex(point.x, point.y)].int > PlayerHalf
 
+proc nudgeClear*(map: WorldMap, start, goal: Point): bool =
+  ## Walkability for short micro nudges (sidesteps, stances, bias waypoints,
+  ## separation steps): canStand sampled every 2px — bit-identical acceptance
+  ## to the pre-clearance walkableSegment (2px samples x full footprint scan)
+  ## at ~1/169th the reads. Deliberately NOT the exact supercover test:
+  ## micro nudges ride the engine's forgiving wall-slide, and validating them
+  ## at engine fidelity rejects peeks the engine executes fine — the hosted
+  ## v60-vs-v59 A/B measured +3.7pp duck time and a win deficit from exactly
+  ## that. Use segmentClear for real route segments.
+  let
+    dx = goal.x - start.x
+    dy = goal.y - start.y
+    samples = max(1, ceil(hypot(dx.float, dy.float) / 2.0).int)
+  for index in 0 .. samples:
+    let ratio = index.float / samples.float
+    let point: Point = (
+      pyRound(start.x.float + dx.float * ratio),
+      pyRound(start.y.float + dy.float * ratio))
+    if not map.canStand(point):
+      return false
+  true
+
 proc segmentClear*(map: WorldMap, start, goal: Point): bool =
   ## True when the footprint stays on walkable floor at every pixel the
   ## start->goal segment passes through. Integer supercover DDA (the same
@@ -390,7 +412,7 @@ proc duckFor(map: WorldMap, candidate: PostCandidate): tuple[pos: Point, contras
           not map.walkable[map.gridIndex(hideCell.x, hideCell.y)]:
         continue
       let hide = cellCenter(hideCell)
-      if not map.segmentClear(candidate.pos, hide):
+      if not map.nudgeClear(candidate.pos, hide):
         continue
       var blocked = 0
       for endpoint in threatEnds:
