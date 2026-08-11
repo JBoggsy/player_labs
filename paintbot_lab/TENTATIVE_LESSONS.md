@@ -43,6 +43,20 @@ and kept in sync — the "bug" downgraded to an undocumented invariant plus a re
 staleness gap (init-only sprite vs live diamond restamps). One targeted read flipped the
 report's framing from "fix the fire gate" to "add an invariant comment".
 
+### James's HTML review comments export to ~/Downloads as `<doc-title>.comments.json` — fetch, don't ask
+Evidence: nav rework kickoff (2026-08-11). "I made some extensive comments" came with no
+pasted JSON; the dc-comments Export button had already written
+`~/Downloads/stencil-navigation-deep-dive.comments.json` (and prior sessions' exports for
+other docs sit alongside). Checking Downloads (newest `.comments.json` matching the doc
+title) recovered all 41 comments without a round-trip question.
+
+### Match the engine's footprint metric exactly before picking a distance transform — square footprint ⇒ L∞, not Euclidean
+Evidence: nav rework sketch (2026-08-11). Engine `canOccupy` is a 13×13 *square* test
+(box of half-extent PlayerHalf, verified in cached `sim_state.nim`). A Euclidean clearance
+field at r=6 under-covers the corners and r=6√2 over-rejects; an L∞ (Chebyshev) transform
+reproduces `canOccupy` bit-for-bit as one array read. Advisor caught this before the wrong
+metric got baked into the design.
+
 ### The intent-reason string is the de-facto nav API — planner choice, micro exemptions, and clamps all key off it
 Evidence: action.nim keys planner selection (FlowReasons list), peek/duck exemption
 (action.nim:229-231), fire-freeze exemptions, and the endzone clamp all off

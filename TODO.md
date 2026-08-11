@@ -5,33 +5,26 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
-- **Deep-dive stencil's navigation code; unify the walkability predicates**
-  (found 2026-08-08 while implementing v59). The lab now ships **two**
-  segment-walkability tests with different semantics, and that is a knowingly
-  accepted debt, not an oversight:
-  - `worldmap.walkableSegment` — resamples every 2px and rescans a 13x13 pixel
-    footprint at each sample against the **pixel wall mask**. Exact, expensive.
-    Five callers (`action.nim:202,251,470,479`, `worldmap.nim:393`), each of
-    which calls it at most once per tick.
-  - `worldmap.walkableNavSegment` — new in v59. Integer DDA over the
-    **already-eroded 8px nav grid** with a no-corner-cut rule on diagonals.
-    ~600x cheaper, conservative (rejects some passable tight lines), and
-    consistent with how A*, the flow fields, and `nearestWalkable` already
-    think. Two callers, both in `strategy.nim`'s flee scoring.
+- **Stencil navigation rework** (deep dive done 2026-08-08; design started
+  2026-08-11). The deep-dive questions are answered in
+  [`paintbot_lab/docs/reports/stencil-navigation-deep-dive-2026-08-08.md`](paintbot_lab/docs/reports/stencil-navigation-deep-dive-2026-08-08.md);
+  James's review comments set the direction — one planner, no beelining, no 8px
+  coarsening for movement, dynamic PoIs, goals validated before nav. Rough
+  sketch:
+  [`paintbot_lab/docs/designs/nav-rework-sketch-2026-08-11.md`](paintbot_lab/docs/designs/nav-rework-sketch-2026-08-11.md).
+  Next: settle the sketch's open questions (planner benchmarks first), then the
+  full design doc, then the rework itself.
 
-  Why it exists: v59 scores 32 flee candidates per fleeing tick, and
-  `walkableSegment` at 32 calls/tick blew the budget. The better fix was to use
-  the cheap grid test as a **pre-filter** and confirm only the winning candidate
-  with `walkableSegment` — ~1-2 expensive calls per tick, one authoritative
-  predicate. James chose to ship the current path and revisit navigation
-  properly rather than patch it now.
+- **Fire-windup micro** (from the 2026-08-11 nav review; explicitly not-now).
+  Strafe/aim while fire is winding up to improve accuracy, or pull the trigger
+  from cover and step out so exposure time is minimal. Today `resolveAction`
+  just freezes movement during windup (`action.nim` fire-windup freeze).
 
-  The deep dive should settle: one predicate or a documented hierarchy;
-  whether the pixel mask or the eroded grid is the source of truth for "can a
-  body go here" (they disagree at the margins); whether `rayClear`'s
-  point-sized LOS is being used anywhere it should be footprint-aware; and
-  what to do about `belief.danger`, which `belief_update.nim:225-293` computes
-  every tick and **nothing reads** (`nav.nim`'s A* costs are pure distance).
+- **Experimentally validate `belief.danger` semantics** (from the 2026-08-11
+  nav review). Hypothesis: it actually tracks *believed enemy locations*, not
+  danger per se. Keep it as-is until a dedicated experiment settles what it
+  measures; its long-term fate (promote into nav costs vs delete) follows from
+  that verdict, not from the rework.
 
 - **Re-sync crewborg's player SDK, or accept the split** (found 2026-08-07 during a
   docs audit). `pyproject.toml` now pins coworld-tools `4dd923d` (paintbot needs it —
