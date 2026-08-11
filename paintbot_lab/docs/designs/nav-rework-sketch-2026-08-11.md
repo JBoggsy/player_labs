@@ -84,6 +84,11 @@ as unfixable client-side with the current wire contract.
   they just express movement through the new goal contract and consume the new PoIs.
 - Engine changes (diamond marking, mask invariant enforcement server-side).
 - belief.danger semantics validation — separate experiment.
+- Strategy-layer improvements flagged in review, deferred: the broader strategy-logic
+  look that the `early_defense`/post rework points at, grenade evacuation as a proper
+  strategy-or-reaction, smarter escort extrapolated fixes, and moving candidate scoring
+  to behavior-trigger time instead of nav time. This rework only changes how those
+  behaviors express and validate their goals.
 
 ## 3. Architecture sketch
 
@@ -169,7 +174,8 @@ One planner: **weighted A\* over a uniform lattice on the pixel map**, with:
   hunter: danger low; default: mostly geometric). This is where "carry_home should evade"
   lives — same planner, different weights, no per-objective steering code.
 - **Admissible heuristic**: plain geometric distance always works. For the handful of
-  *stable* shared goals (team homes, own capture point), the existing cached Dijkstra
+  *stable* shared goals (team homes, own capture point, and — once layer 2 exists — the
+  derived PoIs, a bounded static set), the existing cached Dijkstra
   fields survive in exactly one role: a **true-distance heuristic / distance oracle**.
   Geometric Dijkstra distance lower-bounds any cost function that only *adds* penalties on
   top of distance, so it is admissible for the weighted search — this is the precise sense
@@ -197,11 +203,13 @@ Intent = object
   clampToEndzone: bool    # the former reason-string special cases, as fields
 ```
 
-- **Strategy validates goals before emitting.** Helpers provided to strategy:
-  `nearestReachable(p, from)` (true nearest via BFS ring on the clearance field, within
-  `from`'s component — unbiased, replacing `nearestWalkable`'s row-major up-left bias) and
-  candidate scoring that filters by component label first. Grenade evacuation, escort
-  extrapolation, spray-flee candidates: all pass through this before becoming an Intent.
+- **Goal selection is reachability-aware from the start.** Candidate generation filters
+  by component label (O(1)) and walkability *before* scoring — validation is part of
+  selecting the goal, not a post-hoc snap on the way into nav. Helpers provided to
+  strategy: `nearestReachable(p, from)` (true nearest via BFS ring on the clearance
+  field, within `from`'s component — unbiased, replacing `nearestWalkable`'s row-major
+  up-left bias). Grenade evacuation, escort extrapolation, spray-flee candidates: all
+  select this way before becoming an Intent.
 - If strategy cannot produce a reachable goal, *strategy* picks a different objective.
   The planner receiving an unreachable goal is a bug and logs as one.
 - All seven reason-string lists are deleted; their semantics become the typed fields above.
