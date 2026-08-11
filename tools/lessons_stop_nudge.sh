@@ -20,7 +20,7 @@ STATE_DIR="${TMPDIR:-/tmp}"
 TOOL_USE_MIN=15        # substantive-work proxy: tool uses in the transcript
 LAB_MENTION_MIN=12     # lab-path hits in tool_use lines for it to count as worked-on
 # ctf_lab removed 2026-08-07: archived, so it no longer collects lessons.
-LABS=(crewrift_lab cue_n_woo_lab heartleaf_lab vanilla_wow_lab paintbot_lab)
+LABS=(crewrift_lab cue_n_woo_lab heartleaf_lab vanilla_wow_lab paintbot_lab proxywar_lab)
 
 INPUT="$(cat 2>/dev/null || true)"
 SESSION_ID="$(printf '%s' "$INPUT" | jq -r '.session_id // empty' 2>/dev/null || true)"

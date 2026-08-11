@@ -41,6 +41,7 @@ player_labs/
   ctf_lab/             fourth game lab — CTF, an 8v8 capture-the-flag shooter — ARCHIVED 2026-08-07
   vanilla_wow_lab/     fifth game lab — Vanilla WoW, a real WoW 1.12.1/VMaNGOS realm (own README)
   paintbot_lab/        sixth game lab — Paintbot, a 2-or-4-team capture-the-heart shooter on procgen maps (README + docs index)
+  proxywar_lab/        seventh game lab — Proxy War, an OpenFront-fork RTS territory game with LLM/agent nations (own README)
   pyproject.toml       uv project: coworld[auth] + the pinned players SDK (from git) + deps
 ```
 
