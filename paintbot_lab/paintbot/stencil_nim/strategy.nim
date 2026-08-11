@@ -118,7 +118,7 @@ proc sprayFleeObjective(
       let candidate: Point = (
         pyRound(selfXy.x.float + cos(angle) * (SprayFleeStepPx * ring).float),
         pyRound(selfXy.y.float + sin(angle) * (SprayFleeStepPx * ring).float))
-      if not map.walkableNavSegment(selfXy, candidate):
+      if not map.segmentClear(selfXy, candidate):
         continue
       var nearestThreat = Inf
       for threat in threats:
@@ -178,7 +178,7 @@ proc sprayFleeObjective(
     fallback: Point = (
       pyRound(selfXy.x.float + dx.float / norm * SprayFleeStepPx.float),
       pyRound(selfXy.y.float + dy.float / norm * SprayFleeStepPx.float))
-  if map.walkableNavSegment(selfXy, fallback):
+  if map.segmentClear(selfXy, fallback):
     inc belief.sprayFleeTicks
     return some(navigate(fallback, "clear_spray"))
   inc belief.sprayFleeTicks

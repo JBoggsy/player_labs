@@ -308,7 +308,7 @@ proc navMetrics(map: WorldMap): JsonNode =
     if value: inc walkable
   %*{
     "base_ms": map.baseInitMs,
-    "erode_ms": map.erodeMs,
+    "clearance_ms": map.clearanceMs,
     "cover_ms": map.coverMs,
     "post_ms": map.postMs,
     "dijkstra_count": map.dijkstraMs.len,

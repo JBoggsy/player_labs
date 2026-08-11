@@ -245,7 +245,7 @@ def nav_init_summary(results: list[dict[str, Any]]) -> dict[str, Any] | None:
         "total_ms",
         "decode_ms",
         "base_ms",
-        "erode_ms",
+        "clearance_ms",
         "cover_ms",
         "dijkstra_total_ms",
     )

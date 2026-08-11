@@ -199,7 +199,7 @@ proc findSidestepCell(
       if cell.x < 0 or cell.x >= map.gridW or cell.y < 0 or cell.y >= map.gridH or
           not map.walkable[cell.y * map.gridW + cell.x]: continue
       let point = cellCenter(cell)
-      if not map.walkableSegment(selfXy, point) or map.rayClear(point, reference) != wantLos:
+      if not map.segmentClear(selfXy, point) or map.rayClear(point, reference) != wantLos:
         continue
       let d = (point.x - selfXy.x) * (point.x - selfXy.x) +
         (point.y - selfXy.y) * (point.y - selfXy.y)
@@ -248,7 +248,7 @@ proc peekDuckOverride(belief: Belief, intent: Intent): Option[MicroOverride] =
       else:
         belief.squadOrderPostDuck
       if stance.isSome and distance(stance.get, belief.selfXy.get) >= 5.0 and
-          belief.worldmap.walkableSegment(belief.selfXy.get, stance.get):
+          belief.worldmap.segmentClear(belief.selfXy.get, stance.get):
         belief.micro = if belief.fireReady: "squad_post_peek" else: "squad_post_duck"
         return some((octantToward(belief.selfXy.get, stance.get, false), some(aim)))
   if not belief.fireReady:
@@ -467,7 +467,7 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
       if bias.isSome:
         let biased: Point = (int(waypoint.x.float + bias.get.x * NavCell.float * 3.0),
           int(waypoint.y.float + bias.get.y * NavCell.float * 3.0))
-        if belief.worldmap.walkableSegment(selfXy, biased):
+        if belief.worldmap.segmentClear(selfXy, biased):
           inc belief.squadCohesionTicks; waypoint = biased
     mask = mask or octantToward(selfXy, waypoint, belief.nav.stuckTicks >= StuckTicks)
   elif intent.kind == Hold and not carrying and
@@ -476,7 +476,7 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
     if separation.isSome:
       let step: Point = (int(selfXy.x.float + separation.get.x * NavCell.float * 2.0),
         int(selfXy.y.float + separation.get.y * NavCell.float * 2.0))
-      if belief.worldmap.walkableSegment(selfXy, step):
+      if belief.worldmap.segmentClear(selfXy, step):
         inc belief.squadCohesionTicks; mask = mask or octantToward(selfXy, step, false)
   let selected = if Firefight and belief.firefightActive and not belief.iHaveArc:
     belief.selectTarget(belief.targetCandidates) else: none(TargetScore)

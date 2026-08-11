@@ -40,6 +40,7 @@ type
     width*, height*, teams*: int
     center*: Point
     wall*: seq[bool]
+    clearance*: seq[uint8]
     gridW*, gridH*: int
     walkable*: seq[bool]
     cover*: seq[bool]
@@ -47,7 +48,7 @@ type
     endzones*: Table[Team, Endzone]
     pedestals*: Table[Team, Point]
     fields: Table[int, RouteFields]
-    baseInitMs*, erodeMs*, coverMs*, postMs*: float
+    baseInitMs*, clearanceMs*, coverMs*, postMs*: float
     dijkstraMs*: seq[float]
 
 proc fieldsFor(map: WorldMap, goal: Point): RouteFields
@@ -76,40 +77,52 @@ proc contains*(zone: Endzone, point: Point): bool =
 template gridIndex(map: WorldMap, x, y: int): int = y * map.gridW + x
 template pixelIndex(map: WorldMap, x, y: int): int = y * map.width + x
 
-proc erode(map: WorldMap, pixelWalkable: openArray[bool]): seq[bool] =
-  ## Summed-area footprint erosion: O(pixels + cells), one allocation per array.
-  let satWidth = map.width + 1
-  var sat = newSeq[int32]((map.height + 1) * satWidth)
-  for y in 0 ..< map.height:
-    var rowWalls = 0'i32
-    let sourceRow = y * map.width
-    let satRow = (y + 1) * satWidth
-    let previousRow = y * satWidth
-    for x in 0 ..< map.width:
-      if not pixelWalkable[sourceRow + x]:
-        inc rowWalls
-      sat[satRow + x + 1] = sat[previousRow + x + 1] + rowWalls
+proc buildClearance(map: WorldMap, pixelWalkable: openArray[bool]): seq[uint8] =
+  ## Exact L-infinity (Chebyshev) distance to the nearest wall pixel, with
+  ## out-of-bounds counting as wall, clamped at 255. Two chamfer passes; for
+  ## the L-inf metric the 8-neighbor unit-weight chamfer is exact, not an
+  ## approximation. The engine's canOccupy footprint is a square of
+  ## half-extent PlayerHalf (sim_state.nim), so `clearance[p] > PlayerHalf`
+  ## reproduces it bit-for-bit.
+  let
+    width = map.width
+    height = map.height
+  result = newSeq[uint8](width * height)
+  template neighbor(nx, ny: int): int =
+    # Out-of-range reads count as wall (distance 0).
+    if nx < 0 or nx >= width or ny < 0 or ny >= height: 0
+    else: result[ny * width + nx].int
+  for y in 0 ..< height:
+    for x in 0 ..< width:
+      if not pixelWalkable[y * width + x]:
+        continue
+      var best = min(255, min(
+        min(neighbor(x - 1, y), neighbor(x, y - 1)),
+        min(neighbor(x - 1, y - 1), neighbor(x + 1, y - 1))) + 1)
+      result[y * width + x] = uint8(best)
+  for y in countdown(height - 1, 0):
+    for x in countdown(width - 1, 0):
+      if not pixelWalkable[y * width + x]:
+        continue
+      let index = y * width + x
+      var best = min(result[index].int, min(
+        min(neighbor(x + 1, y), neighbor(x, y + 1)),
+        min(neighbor(x + 1, y + 1), neighbor(x - 1, y + 1))) + 1)
+      result[index] = uint8(best)
 
+proc deriveWalkableGrid(map: WorldMap): seq[bool] =
+  ## Cell-center footprint test read straight off the clearance field.
+  ## Matches the previous summed-area erosion bit-for-bit: a cell is walkable
+  ## when the footprint centered on its center pixel fits on walkable floor
+  ## (cells whose footprint would leave the map fail via clearance, since
+  ## out-of-bounds counts as wall).
   result = newSeq[bool](map.gridW * map.gridH)
   for gy in 0 ..< map.gridH:
-    let
-      cy = gy * NavCell + NavCell div 2
-      y0 = cy - PlayerHalf
-      y1 = cy + PlayerHalf
-    if y0 < 0 or y1 >= map.height:
-      continue
+    let cy = gy * NavCell + NavCell div 2
     for gx in 0 ..< map.gridW:
-      let
-        cx = gx * NavCell + NavCell div 2
-        x0 = cx - PlayerHalf
-        x1 = cx + PlayerHalf
-      if x0 < 0 or x1 >= map.width:
-        continue
-      let walls = sat[(y1 + 1) * satWidth + x1 + 1] -
-        sat[y0 * satWidth + x1 + 1] -
-        sat[(y1 + 1) * satWidth + x0] +
-        sat[y0 * satWidth + x0]
-      result[map.gridIndex(gx, gy)] = walls == 0
+      let cx = gx * NavCell + NavCell div 2
+      result[map.gridIndex(gx, gy)] =
+        map.clearance[map.pixelIndex(cx, cy)].int > PlayerHalf
 
 proc coverCells(map: WorldMap): seq[bool] =
   result = newSeq[bool](map.walkable.len)
@@ -144,9 +157,10 @@ proc newWorldMap*(
     result.endzones[color] = Endzone(
       color: color, shape: marker.shape,
       x0: marker.x0, y0: marker.y0, x1: marker.x1, y1: marker.y1)
-  let erodeStarted = getMonoTime()
-  result.walkable = result.erode(pixelWalkable)
-  result.erodeMs = elapsedMs(erodeStarted)
+  let clearanceStarted = getMonoTime()
+  result.clearance = result.buildClearance(pixelWalkable)
+  result.walkable = result.deriveWalkableGrid()
+  result.clearanceMs = elapsedMs(clearanceStarted)
   let coverStarted = getMonoTime()
   result.cover = result.coverCells()
   result.coverMs = elapsedMs(coverStarted)
@@ -191,52 +205,38 @@ proc rayClear*(map: WorldMap, a, b: Point, step = 2.0): bool =
       return false
   true
 
-proc walkableSegment*(map: WorldMap, start, goal: Point): bool =
+proc canStand*(map: WorldMap, point: Point): bool =
+  ## Engine-exact point walkability: the square footprint of half-extent
+  ## PlayerHalf fits entirely on walkable floor at `point`.
+  point.x >= 0 and point.x < map.width and
+    point.y >= 0 and point.y < map.height and
+    map.clearance[map.pixelIndex(point.x, point.y)].int > PlayerHalf
+
+proc segmentClear*(map: WorldMap, start, goal: Point): bool =
+  ## True when the footprint stays on walkable floor at every pixel the
+  ## start->goal segment passes through. Integer supercover DDA (the same
+  ## traversal the old grid-level walkableNavSegment used, at pixel
+  ## resolution): at an exact diagonal crossing both adjacent pixels are
+  ## checked, so a blocked corner cannot be cut. One clearance read per
+  ## visited pixel via canStand.
+  if not map.canStand(start):
+    return false
   let
     dx = goal.x - start.x
     dy = goal.y - start.y
-    samples = max(1, ceil(hypot(dx.float, dy.float) / 2.0).int)
-  for index in 0 .. samples:
-    let ratio = index.float / samples.float
-    let x = pyRound(start.x.float + dx.float * ratio)
-    let y = pyRound(start.y.float + dy.float * ratio)
-    let x0 = x - PlayerHalf
-    let x1 = x + PlayerHalf
-    let y0 = y - PlayerHalf
-    let y1 = y + PlayerHalf
-    if x0 < 0 or y0 < 0 or x1 >= map.width or y1 >= map.height:
-      return false
-    for py in y0 .. y1:
-      for px in x0 .. x1:
-        if map.wall[map.pixelIndex(px, py)]:
-          return false
-  true
-
-proc walkableNavSegment*(map: WorldMap, start, goal: Point): bool =
-  if start.x < 0 or start.x >= map.width or start.y < 0 or start.y >= map.height or
-      goal.x < 0 or goal.x >= map.width or goal.y < 0 or goal.y >= map.height:
-    return false
-  let
-    startCell = map.cellOf(start)
-    goalCell = map.cellOf(goal)
-    dx = goalCell.x - startCell.x
-    dy = goalCell.y - startCell.y
     nx = abs(dx)
     ny = abs(dy)
     stepX = cmp(dx, 0)
     stepY = cmp(dy, 0)
   var
-    x = startCell.x
-    y = startCell.y
+    x = start.x
+    y = start.y
     ix = 0
     iy = 0
-  if not map.walkable[map.gridIndex(x, y)]:
-    return false
   while ix < nx or iy < ny:
     let decision = (1 + 2 * ix) * ny - (1 + 2 * iy) * nx
     if decision == 0:
-      if not map.walkable[map.gridIndex(x + stepX, y)] or
-          not map.walkable[map.gridIndex(x, y + stepY)]:
+      if not map.canStand((x + stepX, y)) or not map.canStand((x, y + stepY)):
         return false
       x += stepX
       y += stepY
@@ -248,7 +248,7 @@ proc walkableNavSegment*(map: WorldMap, start, goal: Point): bool =
     else:
       y += stepY
       inc iy
-    if not map.walkable[map.gridIndex(x, y)]:
+    if not map.canStand((x, y)):
       return false
   true
 
@@ -390,7 +390,7 @@ proc duckFor(map: WorldMap, candidate: PostCandidate): tuple[pos: Point, contras
           not map.walkable[map.gridIndex(hideCell.x, hideCell.y)]:
         continue
       let hide = cellCenter(hideCell)
-      if not map.walkableSegment(candidate.pos, hide):
+      if not map.segmentClear(candidate.pos, hide):
         continue
       var blocked = 0
       for endpoint in threatEnds:
