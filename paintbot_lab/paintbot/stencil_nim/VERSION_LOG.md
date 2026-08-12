@@ -48,11 +48,38 @@ over 80 maps incl. the new defender-separation invariant; selection mirror
 200/200 against the wide pool; corpus renders under
 `topology_renders/v64/`. Built against 0.7.215 / `6c7a4c0e`.
 
-**Hosted validation:** matched v64-vs-v63 batch pending at upload —
+**Hosted validation:** matched v64-vs-v63 batch —
 same shape, re-resolved board, paired giant probes (v64-vs-v63 in-episode).
 Expected behavioral deltas: post/defender positions from the wide pool +
 separation filter; intel-reactive squad picks now have real alternatives.
-Verdict appended when complete.
+
+**Hosted verdict (58/58 episodes, 0 ops failures; v64 requests
+`xreq_cd382c72`/`xreq_5c7fb816` h2h, `xreq_4f125050`/`xreq_27f6a84f` duo,
+`xreq_09b46d69` ffa; v63 arms `xreq_a7f3490d`/`xreq_7e997c25`,
+`xreq_8db26322`/`xreq_97ddcfee`, `xreq_d128c0c2`; probes
+`xreq_dbd21c9e`/`xreq_dc017eec`):**
+
+| mode (n/arm) | v64 | v63 (control) |
+| --- | --- | --- |
+| h2h vs focusfire:v39 (16) | 9W-7L | 9W-7L |
+| duo vs swgy+relh (8) | 1W-7L | 2W-6L |
+| ffa top-3 field (4) | 2W-2L | 3W-1L |
+| total (28) | 12W-16L | 14W-14L |
+
+**Gameplay: parity** — h2h dead even, duo/ffa each one game apart, total
+-2 net for v64, nowhere near significance at these n. The wide pool did
+not (yet) buy wins; its value is as substrate — Layer 4 intent-aware
+selection finally has something to select from. **Infra: strictly
+better** — hosted paired giant probes: v64 post_ms 22/27 ms and seat init
+~0.88 s (fastest of any version; v63 seats 139/267 ms post, up to 2.5 s
+total — v63 still carried mid-episode minting hitches that v64's root fix
+removed), and v64 won both in-episode giant duels (n=2, ops-tier;
+reverses v63's 0-2 vs v62 — treat both as noise).
+
+**Conclusion: v64 accepted as the Layer 3 baseline** on infra grounds with
+demonstrated gameplay parity: fastest init, no minting hitches, the
+unbounded-Dijkstra hazard closed, and the post pool the later layers need.
+v58 remains the live champion; nothing submitted.
 
 ## v63 — post candidate re-sourcing + belief-scored facing, uploaded 2026-08-12
 

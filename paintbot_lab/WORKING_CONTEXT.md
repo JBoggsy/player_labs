@@ -105,7 +105,17 @@ unit—is the reboot guarantee.
 
 ## Current objective
 
-**v64 (wide post pool) is uploaded; matched batch vs v63 next.** v64
+**v64 (wide post pool) is ACCEPTED (2026-08-12) — the Layer 3 baseline.**
+Matched batch 58/58, 0 ops failures: gameplay PARITY with v63 (12W-16L vs
+14W-14L; h2h 9-7 both) — the pool's value is substrate for Layer 4
+intent-aware selection, not immediate wins. Infra strictly better: hosted
+paired giant probes v64 post_ms 22/27 ms, seat init ~0.88 s (fastest ever;
+v63 carried mid-episode minting hitches), v64 won both in-episode duels
+(n=2, ops-tier). **Next: Layer 3 — the single weighted-A* planner**
+(sketch §3.3, Q1-Q3), with the borrowed-field-access requirement already
+landed (`fieldsFor` returns `lent`; goal-slot rule enforced at call sites).
+
+Original upload note: **v64 uploaded; batch was pending.** v64
 (`d3504b01-ea7e-46db-9b3d-59a959940752`, tag `purpose=wide-post-pool`):
 ~200-250 ray-scored, duck-paired potential posts per front (was 16), all
 choice at selection time; defenders pick from the pool with a separation
