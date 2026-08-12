@@ -577,6 +577,26 @@
       drops — turning the oracle into a slightly weaker but safe bound. Arbitrary goals
       (pursuit, interception, evacuation) use euclid: they have no minted field and
       <strong>must not</strong> mint one — that is the v64 rule.</p>
+      <p><strong>Why an 8&#8202;px oracle under a 4&#8202;px search (review question).</strong>
+      Because the fields already exist: the 8&#8202;px Dijkstra fields are minted at init for the
+      stable goals regardless (they remain the live flow fields until Layer&nbsp;4, and
+      strategy/posts read them via <code>routeDistance</code>), so reusing them as the
+      heuristic is free. A heuristic only needs to be a <em>lower bound</em> — resolution
+      mismatch costs tightness, not correctness (the clamp handles the one direction the
+      coarse grid can err). A matching 4&#8202;px Dijkstra would be a tighter bound but costs
+      ~4× per field with no correctness gain; it stays available as an easy upgrade if
+      expansion counts ever matter.</p>
+      <p><strong>Field-mint cost and goal-set headroom (review question).</strong> Measured
+      8&#8202;px mints from the v64 corpus traces: 2.6&nbsp;ms/field on the h2h map
+      (12.6&#8202;k cells), 11.2&nbsp;ms on the ffa map (46.7&#8202;k cells), 20.5&nbsp;ms on
+      the giant (85.8&#8202;k cells); a 4&#8202;px field scales ~4× (≈10/45/80&nbsp;ms
+      estimated). That leaves real headroom to <em>expand the stable goal set</em>: a curated
+      set of PoI goals — choke gates on the home route, top post-pool members, room peaks —
+      at, say, 20–30 fields costs ~0.4–0.6&nbsp;s at init on the giant, or can mint lazily at
+      ~20&nbsp;ms each (about half a tick, occasionally). This proposal keeps v65's oracle set
+      at the init-minted homes; the expanded-PoI-fields option is recorded for Layer&nbsp;4,
+      where validated Intent goals would name the beneficiaries. Unbounded per-arbitrary-goal
+      minting stays banned (the v64 rule) — expansion means a <em>chosen, bounded</em> set.</p>
     </div>
 
     <div class="decision">
@@ -598,11 +618,18 @@
         active puddles when GV41 activates them (bounding-box labels, loose — a cost, not a
         wall). Barriers, trenches, and puddles <em>never</em> become walls — they do not block
         movement.</li>
-        <li><strong>Danger:</strong> an additive bloom per believed enemy track
-        (velocity-projected, fresh within <code>TrackTtlTicks</code> — the same input as v63's
-        facingScore): radius 150&#8202;px, linear falloff, peak weight set per profile. This is
-        <em>not</em> the unvalidated <code>belief.danger</code> grid — the sketch keeps that out
-        of cost functions pending its validation experiment.</li>
+        <li><strong>Danger — split into representation and producer (review ruling).</strong>
+        The planner never computes danger; it only <em>samples</em> a <code>DangerField</code> —
+        a coarse heatmap (8&#8202;px cells, one additive cost multiplier per cell) owned by
+        belief state and rebuilt on the replan cadence. Danger <em>calculation</em> is a
+        swappable producer behind that representation: the v1 producer paints one bloom per
+        believed enemy track (velocity-projected, fresh within <code>TrackTtlTicks</code> —
+        the same input as v63's facingScore). Swapping producers — the
+        <code>belief.danger</code> grid if its validation experiment (sketch Q10) ever lands,
+        hazard overlays, anything learned — touches zero nav logic: the planner's contract is
+        "read the heatmap," full stop. This is <em>not</em> the unvalidated
+        <code>belief.danger</code> grid today, and the sketch keeps that out of cost functions
+        pending validation.</li>
         <li><strong>Exposure:</strong> at each node, if the cell's <code>coverDirs</code> mask
         leaves the node uncovered from the bearing toward any fresh believed track within gun
         range, add the exposure weight (per profile). Cheap: one bitmask test per fresh track
@@ -706,9 +733,19 @@
       <li>These four points are what this proposal asks James to rule on; everything else is decided above, pending that ruling.</li>
     </ul>
     <div class="callout callout-open">
-      <span class="callout-label">P1 · Danger bloom shape</span>
-      Radius 150&#8202;px, linear falloff, profile-weighted peak: fine as v1, or a different
-      shape/radius?
+      <span class="callout-label">P1 · Danger bloom shape (v1 producer)</span>
+      <p style="margin:0 0 .5em">A <em>bloom</em> is the cost disc one believed enemy paints
+      into the danger heatmap: centered on the track's projected position, radius
+      150&#8202;px, adding up to +3× cost at the center and fading linearly to zero at the
+      edge. Concretely: a path segment passing right through a believed enemy's position
+      costs up to 4× its geometric length, one grazing the 150&#8202;px edge costs almost
+      nothing extra — so the planner bends routes around believed enemies exactly when the
+      detour is cheaper than the exposure, and ignores them when it is not. (The 150&#8202;px
+      radius ≈ gun close-range; the profile weight from D6 scales the whole disc — a carrier
+      treats the same bloom 4× as seriously as a hunter.)</p>
+      Ruling: is that v1 shape — 150&#8202;px, linear falloff, +3× peak, profile-scaled —
+      fine to start, or do you want a different radius/shape? (Per the D6 split, this is
+      only the v1 <em>producer</em>; changing it later touches no nav logic.)
     </div>
     <div class="callout callout-open">
       <span class="callout-label">P2 · Exposure term in v1</span>
