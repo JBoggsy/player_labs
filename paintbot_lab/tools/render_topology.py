@@ -312,8 +312,8 @@ tr.merged td { color:#8aa0b4 } tr.kept td { color:#e7b3b3 }
 <label><input id="gates" type="checkbox" checked> defense gates + homes</label>
 <h2>Posts</h2>
 <label>front <select id="frontSel"></select></label>
-<label><input id="candBox" type="checkbox"> potential posts — the pool (score-colored)</label>
-<label><input id="postsBox" type="checkbox"> top posts (static default view) + rays</label>
+<label><input id="candBox" type="checkbox" checked> post pool — ALL potential posts (score-colored)</label>
+<label><input id="postsBox" type="checkbox"> static top-6 fallback (no-context default) + rays</label>
 <label><input id="defBox" type="checkbox"> defender assignments</label>
 <div id="selPanel" style="display:none">
 <h2>Selection simulator</h2>
@@ -424,7 +424,9 @@ function overlays(){
   function scoreColor(s){ const t=Math.max(0,Math.min(1,s));
     return `rgb(${Math.round(255*(1-t))},${Math.round(215*t)},80)`; }
   if(front&&document.querySelector('#candBox').checked)
-    front.candidates.forEach(c=>dot(c.pos,scoreColor(c.score),Math.max(2,2/scale)));
+    front.candidates.forEach(c=>{ dot(c.pos,scoreColor(c.score),Math.max(2.5,3/scale));
+      ctx.strokeStyle='#0b0e11'; ctx.lineWidth=Math.max(0.4,0.4/scale);
+      ctx.beginPath(); ctx.arc(c.pos[0],c.pos[1],Math.max(2.5,3/scale),0,7); ctx.stroke(); });
   if(front&&document.querySelector('#postsBox').checked)
     front.posts.forEach((p,i)=>{
       ctx.strokeStyle='#f06595'; ctx.lineWidth=Math.max(0.6,0.6/scale);
