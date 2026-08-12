@@ -360,15 +360,22 @@ function overlays(){
       ctx.fillStyle='#e7edf3'; ctx.font=`${Math.max(10,12/scale)}px ui-monospace`;
       ctx.fillText(String(i+1),r.peak[0]+3,r.peak[1]-3); });
   if(document.querySelector('#coverBox').checked){
-    const cell=data.cell_size,[gw,gh]=data.grid,n=data.cover_rays,reach=data.cover_ray_px;
-    ctx.strokeStyle='#49c6e5cc';
+    // Per-cell wedge rose: filled sectors point AT the blocking wall (the
+    // directions this cell is covered FROM); the open remainder is the
+    // cell's vulnerability fan. Wedges stay inside the cell so they can't
+    // be misread as wall decorations (long undirected spokes were).
+    const cell=data.cell_size,[gw,gh]=data.grid,n=data.cover_rays;
+    const r=cell*0.46, half=Math.PI/n;
+    ctx.fillStyle='#49c6e5b8';
     for(let gy=0;gy<gh;gy++) for(let gx=0;gx<gw;gx++){
       const mask=data.cover_dirs[gy*gw+gx]; if(!mask) continue;
       const cx=gx*cell+cell/2, cy=gy*cell+cell/2;
       for(let k=0;k<n;k++){ if(!(mask&(1<<k))) continue;
         const a=k*2*Math.PI/n;
         ctx.beginPath(); ctx.moveTo(cx,cy);
-        ctx.lineTo(cx+Math.cos(a)*reach*0.6,cy+Math.sin(a)*reach*0.6); ctx.stroke(); }
+        ctx.arc(cx,cy,r,a-half,a+half); ctx.closePath(); ctx.fill(); }
+      ctx.fillStyle='#e7edf3'; ctx.fillRect(cx-0.6,cy-0.6,1.2,1.2);
+      ctx.fillStyle='#49c6e5b8';
     }
   }
   if(document.querySelector('#gates').checked)
