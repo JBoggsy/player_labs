@@ -53,6 +53,12 @@ game loop never blocks, rate/budget-capped per meeting — to chat, respond to o
 players, keep a tentative vote, and submit early when requested or once the LLM is
 idle late in the meeting; otherwise it preserves the deterministic
 accuse-and-vote / silent-skip fallback.
+
+For Crewrift, always use Haiku 4.5
+(`us.anthropic.claude-haiku-4-5-20251001-v1:0`). Keep the policy pod below 1,800
+quota-weighted tokens per episode across every meeting call, counted as input
+tokens + cache-write tokens + 5 × output tokens. Fall back to the deterministic
+path when the remaining budget cannot cover another call.
 Hunt is gated on a visible kill opportunity whose isolation bar relaxes with
 urgency, not merely on the cooldown ending. The action layer covers `kill` (edge-A
 in KillRange) and `vent` (level-B in VentRange).

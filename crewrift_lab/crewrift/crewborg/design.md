@@ -897,6 +897,12 @@ impact.
 
 ### 10.3 LLM meeting decisions
 
+The hosted Crewrift profile always uses Haiku 4.5
+(`us.anthropic.claude-haiku-4-5-20251001-v1:0`). The policy pod must remain
+below 1,800 quota-weighted tokens per episode across all meeting calls, counted
+as input tokens + cache-write tokens + 5 × output tokens. When the remaining
+budget cannot cover another call, meeting mode takes the deterministic fallback.
+
 Attend Meeting remains a mode, not a strategy runner: meetings intentionally slow
 the game loop into a social phase, so the LLM call can run on the mode fast path
 without starving movement or combat decisions. The path is opt-in via

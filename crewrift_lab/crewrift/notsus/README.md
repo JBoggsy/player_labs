@@ -130,6 +130,12 @@ Another sneaky strategy could be "self-reporting", where you kill someone and re
 
 ## Voting as a Large Language Model
 
+Crewrift LLM integrations must always use Haiku 4.5
+(`us.anthropic.claude-haiku-4-5-20251001-v1:0`) and keep each policy pod below
+1,800 quota-weighted tokens per episode, summed across all calls as input tokens
++ cache-write tokens + 5 × output tokens. Use deterministic voting when another
+call would exceed the remaining budget.
+
 You might choose to hook up an LLM to your voting phase. Basically, what you need to do is provide all the information that has been collected: where, who, why, for what, and what you saw. You provide that as a context to the LLM. Then you tell the LLM to try to deduce, or at least say something that will allow it to deduce, who are the impostors, and then do the rounds of this. The voting timer is quite short, so it's recommended to use a much faster LLM.
 
 It's also quite hard to make the LLM play the game and not cosplay the game. You might have to have a quite clever system prompt, but LLMs really don't want to play the game. Instead, they want to make up things and accuse things and do things that they think a player should do, but something that is actually not beneficial to do at the moment.

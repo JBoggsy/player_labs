@@ -1,8 +1,8 @@
 # Starter prompt
 
-A copy-paste prompt to hand to a **new user's coding agent** so it clones this repo and
-walks them through onboarding. Share it however you like (chat, docs, a webpage); the
-user pastes it to their agent as their first message — they don't need the repo yet.
+A copy-paste prompt to hand to a **new user's coding agent** so it forks and clones this
+repo and walks them through onboarding. Share it however you like (chat, docs, a webpage);
+the user pastes it to their agent as their first message — they don't need the repo yet.
 
 The prompt front-loads a plain-language description of the lab (so the agent can answer
 questions *before* cloning), hands the agent the guide role, and points it at
@@ -29,11 +29,20 @@ simple: evaluate a player, find where it's weak, make one focused improvement, a
 measure whether it actually helped — then repeat. It currently focuses on Crewrift, a
 social-deduction game (think Among Us), and ships three starter players to choose from.
 You'll do the building and measuring; I set the direction. It just needs `uv` and
-Docker — no accounts or extra setup before we start.
+Docker to run; a GitHub account is optional but recommended, so I can fork it and keep
+my own copy to save my work in.
 
 Then walk me through it:
-  1. Clone it and go in:
-     git clone https://github.com/Metta-AI/player_labs && cd player_labs
+  1. Set me up with my own copy of the repo, so my work stays mine and never touches
+     the canonical repo. If I have a GitHub account (recommended — it lets me save and
+     back up my work), fork it to my account and clone that:
+         gh repo fork Metta-AI/player_labs --clone     # forks, clones, sets `upstream`
+     No `gh` CLI? Have me fork it on github.com first, then clone my fork:
+         git clone https://github.com/<my-username>/player_labs
+     If I just want to try the lab without an account, clone it directly instead and
+     keep my changes local — don't push to the canonical repo:
+         git clone https://github.com/Metta-AI/player_labs
+     Either way, then: cd player_labs
   2. Open docs/getting-started.md and read it — it's a step-by-step onboarding script
      written for you, the coding agent.
   3. Follow that guide with me start to finish: authenticate, help me pick a player to
