@@ -39,9 +39,12 @@ proc defensivePostForSeat*(
   if seat >= defenderCount(seats):
     return none(tuple[post: PostCandidate, opponent: Team])
   let home = map.homeCenter(team)
+  # v64 wide pool: defenders select from the full per-front candidate pool
+  # (every candidate is ray-scored and duck-paired now), not the static
+  # top-N posts — the choice, not the menu, carries the context.
   var posts: seq[tuple[post: PostCandidate, opponent: Team]]
   for front in map.postFronts:
-    for post in front.posts:
+    for post in front.candidates:
       var duplicate = false
       for existing in posts:
         if existing.post.pos == post.pos:
@@ -68,7 +71,22 @@ proc defensivePostForSeat*(
       let bUtility = b.post.score +
         PostFacingWeight * (map.facingScore(b.post.pos, threatList) - 0.5)
       result = cmp(bUtility, aUtility))
-  if seat < posts.len:
-    some(posts[seat])
+  # Seat-th DISTINCT position: with a dense pool, adjacent cells would
+  # otherwise stack defenders shoulder to shoulder.
+  var selected: seq[tuple[post: PostCandidate, opponent: Team]]
+  for candidate in posts:
+    var separated = true
+    for previous in selected:
+      if hypot((candidate.post.pos.x - previous.post.pos.x).float,
+          (candidate.post.pos.y - previous.post.pos.y).float) <
+          PostSeparationPx.float:
+        separated = false
+        break
+    if separated:
+      selected.add(candidate)
+      if selected.len > seat:
+        break
+  if seat < selected.len:
+    some(selected[seat])
   else:
     none(tuple[post: PostCandidate, opponent: Team])

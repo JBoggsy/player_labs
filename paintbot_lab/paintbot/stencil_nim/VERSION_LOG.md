@@ -4,6 +4,56 @@ Read this before assuming what a version contains. Format mirrors
 `ctf_lab/ctf/beacon/VERSION_LOG.md`: one entry per uploaded version — what
 changed, why, and what the evidence said.
 
+## v64 — wide post pool + Dijkstra-minting fix, uploaded 2026-08-12
+
+Immutable policy-version UUID: `d3504b01-ea7e-46db-9b3d-59a959940752`.
+Uploaded with tag `purpose=wide-post-pool`. **Not submitted to any league.**
+
+James's review of v63: too few potential posts — the funnel put the
+decision weight at init with zero context, and the belief-scored selection
+had almost nothing to choose from. v64
+([design](../../docs/designs/nav-wide-post-pool-v64-2026-08-12.md)) widens
+the pool and moves all choice to selection:
+
+- Per-bucket retention 6 → 24 (`PostRayCandidatesPerBucket`), shortlist cap
+  16 → 256 (`STENCIL_POST_SHORTLIST_COUNT`, now a safety cap): **every**
+  retained candidate is ray-scored and duck-paired. Real maps yield
+  ~200–250 potential posts per front (vs 16). Pool membership does not
+  require a duck (ducklessness costs the 0.15 contrast term); the static
+  top-6 "posts" survive only as a no-context default view.
+- Defenders select from the wide pool (same 64 px band ordering +
+  score/facing, plus a `PostSeparationPx` distinct-position filter so dense
+  pools don't stack seats). `orderPost` unchanged — its search space just
+  became real.
+
+**The wide pool detonated a latent landmine, now fixed at the root:**
+`routeDistance`'s GOAL argument keys the lazy Dijkstra cache, so
+`squads.advancePoint`'s `routeDistance(home, candidate.pos)` minted a
+full-grid field PER CANDIDATE (the deep-dive's M2 hazard). Episode wall
+time exploded ~6×; profiling (`sample` of the one pegged process — the
+first sample hit an idle lockstep waiter) showed 1845/1845 samples in
+`dijkstra` under `advancePoint`. Fixes: (1) argument-order rule — goal slot
+takes stable goals only (homes/capture points); arbitrary points go in the
+start slot (undirected grid, same value); applied at `advancePoint` and
+`policy.defensivePostForward`; (2) `fieldsFor` returns **`lent
+RouteFields`** with expression-form callers — ending the ~1.4 MB-per-call
+copy for every caller including per-tick `flowWaypoint` (supersedes v63's
+per-front hoist as the root fix).
+
+**Measured (local, batch cells):** giant-probe `post_ms` **18 ms** with the
+14× pool (v63: 73 ms; v62: 1528 ms); ffa 35 ms for 3 fronts; giant seat
+init ~1.0 s; episode tick rate faster than v63 (the minting fix also
+removes mid-episode Dijkstra hitches v63 still had). 5.6M property checks
+over 80 maps incl. the new defender-separation invariant; selection mirror
+200/200 against the wide pool; corpus renders under
+`topology_renders/v64/`. Built against 0.7.215 / `6c7a4c0e`.
+
+**Hosted validation:** matched v64-vs-v63 batch pending at upload —
+same shape, re-resolved board, paired giant probes (v64-vs-v63 in-episode).
+Expected behavioral deltas: post/defender positions from the wide pool +
+separation filter; intel-reactive squad picks now have real alternatives.
+Verdict appended when complete.
+
 ## v63 — post candidate re-sourcing + belief-scored facing, uploaded 2026-08-12
 
 Immutable policy-version UUID: `fba7d396-9166-49de-9252-b6bef98b0077`.

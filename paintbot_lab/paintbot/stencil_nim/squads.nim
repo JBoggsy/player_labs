@@ -229,7 +229,12 @@ proc advancePoint(belief: Belief, stage: int, opponent: Team): Point =
       if front.opponent != opponent:
         continue
       for candidate in front.candidates:
-        let progress = map.routeDistance(home, candidate.pos) / direct
+        # Argument order matters: routeDistance mints a full-grid Dijkstra
+        # field keyed by its GOAL. Candidate positions are arbitrary points —
+        # goal=candidate minted one field PER CANDIDATE (detonated when the
+        # v64 wide pool multiplied candidates; profiled at 100% CPU). The
+        # grid is undirected: read the home-goal field, minted at init.
+        let progress = map.routeDistance(candidate.pos, home) / direct
         if classify(progress) == fcInf:
           continue
         let utility = abs(progress - targetProgress) +

@@ -122,3 +122,21 @@ front and reading distances by index: post_ms 1528->73ms (giant), 2166->88ms
 every distanceAt/routeDistance/flowWaypoint call pays this copy per call —
 including per-tick follower lookups. Layer 3's planner rework should return
 borrowed/indexed views, never value copies of field-sized objects.
+
+### routeDistance's GOAL argument mints a full-grid Dijkstra — stable goals only, and profile before guessing
+Evidence: v64's wide pool turned squads.advancePoint's
+routeDistance(home, candidate.pos) into hundreds of full-grid Dijkstra mints
+(field cache keyed by goal; report M2's unbounded-minting hazard detonating).
+Two prior guesses (re-sourcing shape, fieldsFor copies) were wrong or
+incomplete; a 5-second `sample` of the one pegged process found it instantly
+(1845/1845 samples in dijkstra under advancePoint). Fix: flip args — the
+grid is undirected, so read the init-minted home/enemyHome fields. Rule:
+in routeDistance/distanceAt the goal must be a member of the stable goal set
+(homes, capture points); arbitrary points go in the START slot. Also: sample
+the BUSY process — the first sample hit an idle lockstep-waiting agent.
+
+### fieldsFor now returns `lent` — root fix superseding the per-front hoist
+Evidence: by-value RouteFields returns copied ~1.4MB per call; `lent` return
++ expression-form callers (no let binding) removed the tax for ALL callers
+incl. per-tick flowWaypoint and per-candidate ray scoring. Giant post_ms
+with a 14x bigger pool: 18ms (was 73ms with the small pool + hoist).

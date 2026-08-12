@@ -83,7 +83,7 @@ type
       postMs*: float
     dijkstraMs*: seq[float]
 
-proc fieldsFor(map: WorldMap, goal: Point): RouteFields
+proc fieldsFor(map: WorldMap, goal: Point): lent RouteFields
 proc homeCenter*(map: WorldMap, color: Team): Point
 proc pedestal*(map: WorldMap, color: Team): Point
 proc capturePoint*(map: WorldMap, color: Team): Point
@@ -672,7 +672,12 @@ proc goalKey(map: WorldMap, goal: Point): int =
   let cell = map.cellOf(goal)
   map.gridIndex(cell.x, cell.y)
 
-proc fieldsFor(map: WorldMap, goal: Point): RouteFields =
+proc fieldsFor(map: WorldMap, goal: Point): lent RouteFields =
+  ## Returns a BORROW of the cached field. RouteFields carries two
+  ## grid-sized seqs (~1.4 MB on giants); the previous by-value return
+  ## memcpy'd them on every routeDistance/flowWaypoint/distanceAt call —
+  ## measured as seconds per tick once the v64 wide pool multiplied the
+  ## per-candidate routeDistance calls in squads.advancePoint.
   let key = map.goalKey(goal)
   if not map.fields.hasKey(key):
     let started = getMonoTime()
@@ -681,18 +686,16 @@ proc fieldsFor(map: WorldMap, goal: Point): RouteFields =
   map.fields[key]
 
 proc flowWaypoint*(map: WorldMap, goal, selfXy: Point): Point =
-  let fields = map.fieldsFor(goal)
   let current = map.nearestWalkable(map.cellOf(selfXy))
-  let code = fields.hops[map.gridIndex(current.x, current.y)].int
+  let code = map.fieldsFor(goal).hops[map.gridIndex(current.x, current.y)].int
   if code == 0:
     return selfXy
   let delta = Neighbors[code - 1]
   cellCenter((current.x + delta.x, current.y + delta.y))
 
 proc routeDistance*(map: WorldMap, start, goal: Point): float =
-  let fields = map.fieldsFor(goal)
   let cell = map.nearestWalkable(map.cellOf(start))
-  fields.distances[map.gridIndex(cell.x, cell.y)] * NavCell.float
+  map.fieldsFor(goal).distances[map.gridIndex(cell.x, cell.y)] * NavCell.float
 
 proc cachedRouteFields*(map: WorldMap): seq[CachedRouteField] =
   ## Read-only snapshots of the lazy Dijkstra cache for diagnostics.
@@ -708,10 +711,8 @@ proc cachedRouteFields*(map: WorldMap): seq[CachedRouteField] =
       hops: fields.hops))
 
 proc distanceAt(map: WorldMap, point, goal: Point): float =
-  let
-    fields = map.fieldsFor(goal)
-    cell = map.nearestWalkable(map.cellOf(point))
-  fields.distances[map.gridIndex(cell.x, cell.y)] * NavCell.float
+  let cell = map.nearestWalkable(map.cellOf(point))
+  map.fieldsFor(goal).distances[map.gridIndex(cell.x, cell.y)] * NavCell.float
 
 proc forwardRayEnds(map: WorldMap, point, goal: Point): tuple[score: float, ends: seq[Point]] =
   let waypoint = map.flowWaypoint(goal, point)

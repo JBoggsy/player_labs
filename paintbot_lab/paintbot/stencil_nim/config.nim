@@ -107,7 +107,7 @@ const
   SprayLethalReachPx* = 187
   PostGunRangePx* = 1300
   PostProgressBuckets* = 12
-  PostRayCandidatesPerBucket* = 6
+  PostRayCandidatesPerBucket* = 24
   PostRayCandidateSeparationPx* = 32
 
 let
@@ -253,7 +253,7 @@ let
   PostCandidateStrideCells* = envInt("STENCIL_POST_CANDIDATE_STRIDE_CELLS", 2)
   PostRayCount* = envInt("STENCIL_POST_RAY_COUNT", 9)
   PostRayHalfArcDeg* = envFloat("STENCIL_POST_RAY_HALF_ARC_DEG", 60.0)
-  PostShortlistCount* = envInt("STENCIL_POST_SHORTLIST_COUNT", 16)
+  PostShortlistCount* = envInt("STENCIL_POST_SHORTLIST_COUNT", 256)
   PostDuckSearchCells* = envInt("STENCIL_POST_DUCK_SEARCH_CELLS", 3)
   PostCount* = envInt("STENCIL_POST_COUNT", 6)
   PostSeparationPx* = envInt("STENCIL_POST_SEPARATION_PX", 120)

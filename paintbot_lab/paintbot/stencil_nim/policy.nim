@@ -85,9 +85,12 @@ proc decide*(policy: StencilPolicy, client: ProtocolClient): Command =
           enemyHome = policy.belief.worldmap.homeCenter(selected.opponent)
         policy.belief.defensivePostHeartDistance = pyRound(
           policy.belief.worldmap.routeDistance(selected.post.pos, heart))
+        # goal=enemyHome reads the init-minted home field; goal=post.pos
+        # would mint a full-grid Dijkstra per newly-chosen post (see
+        # squads.advancePoint note).
         policy.belief.defensivePostForward =
-          policy.belief.worldmap.routeDistance(enemyHome, selected.post.pos) <
-          policy.belief.worldmap.routeDistance(enemyHome, heart)
+          policy.belief.worldmap.routeDistance(selected.post.pos, enemyHome) <
+          policy.belief.worldmap.routeDistance(heart, enemyHome)
       else:
         policy.belief.holdPoint = some(holdPointForSeat(
           policy.belief.worldmap, policy.belief.team, policy.belief.seat, seats))

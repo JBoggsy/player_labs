@@ -105,6 +105,17 @@ unit—is the reboot guarantee.
 
 ## Current objective
 
+**v64 (wide post pool) is uploaded; matched batch vs v63 next.** v64
+(`d3504b01-ea7e-46db-9b3d-59a959940752`, tag `purpose=wide-post-pool`):
+~200-250 ray-scored, duck-paired potential posts per front (was 16), all
+choice at selection time; defenders pick from the pool with a separation
+filter. The pool detonated report-M2's unbounded Dijkstra minting
+(`routeDistance(home, candidate.pos)` minted a field per candidate) — fixed
+at the root: goal-slot-takes-stable-goals-only rule + `fieldsFor` returns
+`lent` (no more 1.4 MB copies anywhere, incl. per-tick flowWaypoint).
+Giant post_ms 18 ms with the 14x pool; tick rate faster than v63. Design:
+`docs/designs/nav-wide-post-pool-v64-2026-08-12.md`.
+
 **v63 (post re-sourcing + belief-scored facing, D5-2) is ACCEPTED
 (2026-08-12) — the new nav-rework baseline for Layer 3.** v63
 (`fba7d396-9166-49de-9252-b6bef98b0077`, tag `purpose=post-resourcing`):

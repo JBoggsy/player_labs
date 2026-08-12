@@ -312,8 +312,8 @@ tr.merged td { color:#8aa0b4 } tr.kept td { color:#e7b3b3 }
 <label><input id="gates" type="checkbox" checked> defense gates + homes</label>
 <h2>Posts</h2>
 <label>front <select id="frontSel"></select></label>
-<label><input id="candBox" type="checkbox"> candidates (score-colored)</label>
-<label><input id="postsBox" type="checkbox"> selected posts + rays + ducks</label>
+<label><input id="candBox" type="checkbox"> potential posts — the pool (score-colored)</label>
+<label><input id="postsBox" type="checkbox"> top posts (static default view) + rays</label>
 <label><input id="defBox" type="checkbox"> defender assignments</label>
 <div id="selPanel" style="display:none">
 <h2>Selection simulator</h2>
