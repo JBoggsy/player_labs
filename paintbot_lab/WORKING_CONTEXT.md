@@ -105,8 +105,28 @@ unit—is the reboot guarantee.
 
 ## Current objective
 
+**v63 (post re-sourcing + belief-scored facing, D5-2) is ACCEPTED
+(2026-08-12) — the new nav-rework baseline for Layer 3.** v63
+(`fba7d396-9166-49de-9252-b6bef98b0077`, tag `purpose=post-resourcing`):
+post candidates from on-route gate vicinities (48 px, no baked direction);
+facing scored at selection time against believed enemy tracks via
+`facingScore` + the pure `selectRankedPost` core; defenders order in 64 px
+distance bands. The decisive perf find: `fieldsFor` returns RouteFields BY
+VALUE (~1.4 MB memcpy per `distanceAt` call) — per-front field hoisting took
+giant post_ms 1528→73 ms local, and the hosted paired probes measured **v63
+128/132 ms vs v62 3405/2860 ms in the same episodes** (giant seat init
+0.95 s vs 4.2 s; below the v61 baseline). **Layer 3 hard requirement:
+borrowed/indexed field access — per-tick flowWaypoint/routeDistance still
+pay the copy.** Matched batch 58/58, 0 ops failures: v63 15W-13L vs v62
+10W-18L (h2h 11-5 vs 6-10; duo 2-6 vs 3-5; ffa 2-2 vs 1-3); v63 lost both
+n=2 giant probe scores (ops-only, watch next giant batch). The topology
+viewer now shows post fronts + a belief-parameterized selection simulator
+(shift-click enemies), JS mirror fail-closed against 200 harness-run
+production-code samples. Design: `docs/designs/nav-post-resourcing-v63-2026-08-12.md`.
+**Next: Layer 3 — the single weighted-A* planner** (sketch §3.3, Q1-Q3).
+
 **Navigation rework Layer 2 is IMPLEMENTED and uploaded as v62 (2026-08-11);
-hosted matched batch in flight.** v62
+hosted matched batch COMPLETE — see v62 entry in VERSION_LOG.** v62
 (`d415aded-ae80-4140-9f27-ad073718af25`, tag `purpose=nav-topology`) derives
 everything from the clearance field at init: engine-exact 4-connected
 component labels (`componentOf`/`sameComponent` — the future Layer 4

@@ -67,7 +67,39 @@ hosted contention); analysis via the score-sign classifier (the v62
 batch's unique-max bug cannot misfile duo team wins as draws). Expected
 trace deltas: post positions, defender band ordering, squad picks; duck%
 and objective mix should hold; ticks/s compared across arms because the
-facing term sits on a per-tick path. Verdict appended when complete.
+facing term sits on a per-tick path.
+
+**Hosted verdict (batch complete, 58/58 episodes, 0 ops failures; requests
+`xreq_5b1200d8`/`xreq_c2a0784a` (v63 h2h), `xreq_05ccdab7`/`xreq_a4eaace7`
+(v63 duo), `xreq_92086ce0` (v63 ffa), `xreq_6b5ffddf`/`xreq_a7ac4ff5`,
+`xreq_58c6ccbc`/`xreq_df0fcd60`, `xreq_17c35ded` (v62 arms),
+`xreq_e486875d`/`xreq_a2e9fdaa` (giant probes)):**
+
+| mode (n/arm) | v63 | v62 (control) |
+| --- | --- | --- |
+| h2h vs focusfire:v39 (16) | **11W-5L** | 6W-10L |
+| duo vs swgy+relh (8) | 2W-6L | 3W-5L |
+| ffa top-3 field (4) | 2W-2L | 1W-3L |
+| total (28) | **15W-13L** | 10W-18L |
+
+(Score-sign classifier throughout. Note the control drifted day-to-day:
+v62 scored 11W-5L on this same h2h cell in ITS batch yesterday and 6W-10L
+today — same-day paired arms are the only comparison that means anything.)
+v63 +5 net in h2h, -1 duo, +1 ffa: overall positive, h2h-driven, duo
+within matched-arm noise at n=8. h2h duck micro: v63 7.6% vs v62 21.6% —
+the low side belongs to the winning arm (opposite of the v60 pathology
+signature, where the regressed version ducked more AND lost).
+
+**Giant probes (v63-vs-v62 in-episode, ops evidence):** both completed
+clean, and the hosted contended numbers seal the cost claim — **v63
+post_ms 128/132 ms vs v62's 3405/2860 ms in the same episodes**; v63 giant
+seat init 0.95-0.97 s vs v62's 4.1-4.2 s, i.e. below even v61's 1.9-2.1 s
+pre-Layer-2 baseline. For honesty: v63 lost both probe episodes' scores
+(n=2, giant-only, excluded from gameplay claims per the preregistration —
+worth an eye at the next giant-containing batch).
+
+**Conclusion: v63 accepted — the new nav-rework baseline for Layer 3.**
+v58 remains the live champion; nothing submitted.
 
 ## v62 — topology & PoIs (nav rework Layer 2), uploaded 2026-08-11
 
