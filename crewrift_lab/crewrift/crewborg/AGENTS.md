@@ -18,7 +18,9 @@ cited file before relying on it.**
 > Hunt is gated on a visible kill opportunity). Attend Meeting has an opt-in
 > LLM chat/vote path with deterministic fallback. `CREWBORG_BE_DUMB=1` is an
 > aggressive imposter experiment that skips Pretend/Evade/body reports and keeps
-> the imposter in Search/Hunt. See [`README.md`](./README.md) for a capability summary and
+> the imposter in Search/Hunt; `CREWBORG_NO_ISOLATION=1` drops the witness gate so
+> Hunt strikes regardless of who's watching (a win vs weaker crew — design §6.6–6.7).
+> See [`README.md`](./README.md) for a capability summary and
 > [`design.md`](./design.md) for the settled architecture. crewborg is the package
 > `crewrift.crewborg`, vendored in the lab at `crewrift_lab/crewrift/crewborg/`.
 
