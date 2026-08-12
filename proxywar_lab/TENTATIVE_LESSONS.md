@@ -53,3 +53,22 @@ that rung's deadline-proven map pool by round number. 16p added 2026-08-10/11 fo
 12p Europe is quarantined (repeated hosted artifact timeouts). Scoring: winner=1 else normalized
 territory share; ladder rating is OpenSkill MMR since match sizes vary.
 Status: evaluation batches should mirror the CURRENT rung (16 seats at 25 champions), not 1v1s.
+
+### The recon's league facts aged out overnight; the game contract did not
+Evidence: 24h after the founding recon (0.1.35), canonical was 0.1.39. `config_schema`,
+`variants`, and game env were byte-identical — every delta was commissioner-side: (a)
+World/Britannia/NorthAmerica quarantined at 12p AND 16p for multi-hour round wall-times
+(effective 16p pool now Pangaea/Asia/BlackSea/EastAsia/Oceania), (b) Competition seating
+windows shuffled per round (repo e3c04bd) after live measurement showed mid-list entrants
+got 86-100% episode exposure vs ~7-14% at the ends, distorting EWMA ranks.
+Status: split freshness checks in two: the WIRE contract (schema/variants/env — stable) vs
+the LEAGUE contract (commissioner desc, map pools, seating — churns daily). Diff the
+downloaded manifest's commissioner description on every session start.
+
+### Standings are currently NOT a clean skill signal — a seating-exposure bug just got fixed
+Evidence: e3c04bd measured rounds 1270-1365: rolling_window over a per-round-stable entrant
+order pinned exposure to list position (the house seat decayed rank 1 -> 10 on exposure
+alone). Post-fix, overnight: daveey 21.67->16.54, 0d1novizzz 14.69->9.10 (3rd->8th),
+Jordan 13.71->15.54 (5th->2nd), James Botts 0.0000->0.5714.
+Status: don't scout "who's good" from the pre-2026-08-12 table; let ~24 rounds (one EWMA
+half-life, ~12h) of shuffled seating accumulate before trusting relative ranks.

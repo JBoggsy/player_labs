@@ -13,10 +13,14 @@ This README orients newcomers (human or agent). Three pointers do most of the wo
   gotcha list, with `file:line` citations into the game repos.
 - **[`WORKING_CONTEXT.md`](WORKING_CONTEXT.md)** — live cross-session state. Read first.
 
-> **Status (2026-08-11): lab founded; recon complete; no policy yet.** The league
+> **Status (2026-08-12): lab founded; recon complete; no policy yet.** The league
 > (`league_cb60d526-…`) has 25 champions in Competition; a mystery "James Botts"
-> entrant sits at rank 23 with 0.0000 over 1066 rounds (resolve before submitting).
-> Canonical hosted game: **proxywar 0.1.35** (`cow_1ce44ce9-…`).
+> entrant sits near the bottom of the table (resolve before submitting). The hosted
+> package advances several versions per day — **always resolve the canonical version
+> live** (`uv run coworld list | grep proxywar`) rather than trusting any doc,
+> including this one. Recon baseline: 0.1.35 (2026-08-11); its game contract was
+> still byte-identical at 0.1.39 (2026-08-12), with commissioner-side changes only
+> (map quarantines, per-round seating shuffle) — see `WORKING_CONTEXT.md`.
 
 ## The game (one paragraph)
 
