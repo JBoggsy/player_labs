@@ -482,6 +482,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--variant", default="1v1")
     parser.add_argument("--map-size", choices=MAP_SIZES)
+    parser.add_argument(
+        "--map-seed", type=int, default=None,
+        help="Pin the generated map (game_config mapSeed) — e.g. a live "
+        "campaign cell's map_seed, to reproduce a hosted map exactly.")
     parser.add_argument("--episodes", type=int, default=1)
     parser.add_argument("--workers", type=int, default=1)
     parser.add_argument("--seed", type=int, default=1)
@@ -529,6 +533,8 @@ def main() -> None:
     variant_config = load_variant(live["manifest"], args.variant)
     if args.map_size is not None:
         variant_config["mapSize"] = args.map_size
+    if args.map_seed is not None:
+        variant_config["mapSeed"] = args.map_seed
     run_dir = args.output_dir.resolve() / time.strftime("%Y%m%d-%H%M%S")
     run_dir.mkdir(parents=True)
     common = {

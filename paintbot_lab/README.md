@@ -176,8 +176,11 @@ uv run python paintbot_lab/tools/self_play.py \
   --max-ticks 40 --profile-nav-init
 
 # Capture the exact nav grid, cover, posts, anchors, and lazy flow fields, then view them.
+# --map-seed pins the generated map (e.g. a live campaign cell's map_seed) —
+# 1v1/2v2 maps reproduce hosted terrain bit-exact; 4ffa has a known slight
+# drift (see TENTATIVE_LESSONS 2026-08-12).
 uv run python paintbot_lab/tools/self_play.py \
-  --variant 1v1 --episodes 1 --max-ticks 40 --visualize-nav
+  --variant 1v1 --map-seed 386501705 --episodes 1 --max-ticks 40 --visualize-nav
 uv run python paintbot_lab/tools/render_nav.py \
   paintbot_lab/self_play/<run>/episode-0000/players/slot-00.trace.jsonl
 ```

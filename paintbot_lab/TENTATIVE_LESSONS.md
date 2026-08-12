@@ -85,3 +85,11 @@ Evidence: the giant DEBUG probes seated v62-vs-v61 in one episode; each seat's
 trace carries its own nav_init, giving a same-map, same-host, same-contention
 init comparison from 2 episodes — far cleaner than cross-referencing separate
 arms' timings.
+
+### mapSeed alone reproduces 1v1/2v2 maps bit-exact; 4ffa reproduction drifts slightly
+Evidence: self_play --map-seed (added 2026-08-12) rebuilt the batch's h2h, duo,
+and giant-probe maps with identical rooms/chokes counts vs hosted nav_init;
+the 4ffa cell reproduced same dims and rooms (29) but 110 vs 116 chokes, with
+identical (mapSeed, seed) and no wall-relevant config diff. Cause unidentified
+— something in the 4-team generator (corner/plus/quadmirror pick?) draws from
+another source. Open thread before trusting offline 4ffa map precomputation.
