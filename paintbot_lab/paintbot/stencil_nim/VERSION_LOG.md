@@ -103,15 +103,19 @@ probes are ops evidence only, excluded from gameplay claims.
 | mode (n/arm) | v62 | v61 (control) |
 | --- | --- | --- |
 | h2h vs focusfire:v39 (16) | **11W-5L** | 6W-10L |
-| duo vs swgy+relh (8) | 0W-6L-2D | 0W-8L |
+| duo vs swgy+relh (8) | **2W-6L** | 0W-8L |
 | ffa top-3 field (4) | 2W-2L | 2W-2L |
-| total (28) | **13W-13L-2D** | 8W-20L |
+| total (28) | **15W-13L** | 8W-20L |
 
-v62 ≥ v61 in every mode on identical cells/opponents/seatings; the h2h
-swing (+5 net wins) is the clearest signal (not individually significant at
-n=16/arm — Fisher ~0.15 — but direction-consistent with the duo draws).
-Both arms lose the duo cell outright to the #2-ranked swgy captain — a
-matchup fact, not a regression. Behavior diffs at the subject seats:
+(Classification note: wins/losses are by the subject's own score sign in
+team modes — +2/−2, no zero-score episodes occurred — after an initial
+unique-max-winner classifier misfiled the two duo team wins as draws; the
+subject's ally shares the winning score in duo mode.) v62 ≥ v61 in every
+mode on identical cells/opponents/seatings; the h2h swing (+5 net wins) is
+the clearest signal (not individually significant at n=16/arm — Fisher
+~0.15 — but direction-consistent with the duo wins). The duo cell against
+the #2-ranked swgy captain is a hard matchup for both arms; only v62 took
+games off it. Behavior diffs at the subject seats:
 objective mixes aligned; h2h duck micro 13.4% (v62) vs 11.9% (v61) — no
 v60-style duck spike; v62 spends less time dead (27.6% vs 33.3% of h2h
 snapshots) and less time in early_defense (19.2% vs 28.9%, coherent with

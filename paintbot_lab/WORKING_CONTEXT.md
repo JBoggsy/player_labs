@@ -125,8 +125,9 @@ a real agent trace) and **configurable cover rays (default 16)**. Evidence:
 (giant seat init grew to ~2.36 s, +~690 ms Layer 2 — init-only; disclosed).
 The matched v62-vs-v61 batch (12 requests / 58 episodes, request IDs in
 VERSION_LOG v62 entry) completed 58/58 with 0 ops failures: **v62 ≥ v61 in
-every mode** (h2h 11W-5L vs 6W-10L; duo 0-6-2 vs 0-8 against the harsh
-swgy matchup; ffa 2-2 both), duck micro clean, giant probes passed —
+every mode** (h2h 11W-5L vs 6W-10L; duo 2W-6L vs 0W-8L against the harsh
+swgy matchup; ffa 2-2 both; total 15W-13L vs 8W-20L), duck micro clean,
+giant probes passed —
 **Layer 2 ACCEPTED; v62 is the Layer 3 baseline.** Known cost: hosted giant
 seat init v62 3.2-4.2 s vs v61 1.9-2.1 s, part of it post_ms growth from
 directional cover admitting more post candidates (input to the Q6 post
