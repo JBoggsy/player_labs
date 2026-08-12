@@ -36,19 +36,51 @@ type
     team*, opponent*: Team
     candidates*, posts*: seq[PostCandidate]
 
+  Choke* = object
+    pos*: Point              # widest pixel of the gate (watershed saddle)
+    clearance*: int          # L-inf half-width at the gate
+    roomA*, roomB*: int      # indices into WorldMap.rooms
+
+  Room* = object
+    peak*: Point             # clearance local maximum: the room's PoI point
+    peakClearance*: int
+    area*: int               # standable pixels
+    component*: int
+    chokes*: seq[int]        # indices into WorldMap.chokes
+
+  TopologyJournal* = ref object
+    ## Optional watershed process recorder for the offline visualizer
+    ## (tools/topology_debug.nim). nil in production play: the flood itself
+    ## is reconstructable from rawLabels + clearance (a pixel is labeled
+    ## exactly when the flood reaches its own clearance level), so only the
+    ## pre-merge labels and the decision events need recording.
+    rawLabels*: seq[int32]
+    seeds*: seq[Point]
+    contacts*: seq[tuple[pos: Point, clearance: int, a, b: int]]
+    merges*: seq[tuple[a, b: int, saddle: int, depth: int, ratio: float,
+      merged: bool]]
+
   WorldMap* = ref object
     width*, height*, teams*: int
     center*: Point
     wall*: seq[bool]
     clearance*: seq[uint8]
+    component*: seq[uint16]  # per pixel; 0 = not standable (4-connected CCL)
+    componentCount*: int
+    roomLabel*: seq[uint16]  # per pixel; 0 = not standable (post-merge rooms)
+    rooms*: seq[Room]
+    chokes*: seq[Choke]
     gridW*, gridH*: int
     walkable*: seq[bool]
-    cover*: seq[bool]
+    cover*: seq[bool]        # directional cover exists (coverDirs != 0)
+    coverDirs*: seq[uint16]  # per cell: N-sector blocked-from bitmask
     postFronts*: seq[PostFront]
     endzones*: Table[Team, Endzone]
     pedestals*: Table[Team, Point]
     fields: Table[int, RouteFields]
-    baseInitMs*, clearanceMs*, coverMs*, postMs*: float
+    gates: Table[Team, Point]  # lazy defenseGate cache (chokes are static)
+    baseInitMs*, clearanceMs*, componentMs*, topologyMs*, coverMs*,
+      postMs*: float
     dijkstraMs*: seq[float]
 
 proc fieldsFor(map: WorldMap, goal: Point): RouteFields
@@ -56,6 +88,9 @@ proc homeCenter*(map: WorldMap, color: Team): Point
 proc pedestal*(map: WorldMap, color: Team): Point
 proc capturePoint*(map: WorldMap, color: Team): Point
 proc generatePosts(map: WorldMap, team: Team): seq[PostFront]
+proc buildComponents(map: WorldMap)
+proc buildTopology*(map: WorldMap, journal: TopologyJournal = nil)
+proc buildCoverDirs(map: WorldMap)
 
 proc elapsedMs(started: MonoTime): float =
   (getMonoTime() - started).inNanoseconds.float / 1_000_000.0
@@ -124,26 +159,10 @@ proc deriveWalkableGrid(map: WorldMap): seq[bool] =
       result[map.gridIndex(gx, gy)] =
         map.clearance[map.pixelIndex(cx, cy)].int > PlayerHalf
 
-proc coverCells(map: WorldMap): seq[bool] =
-  result = newSeq[bool](map.walkable.len)
-  for gy in 0 ..< map.gridH:
-    for gx in 0 ..< map.gridW:
-      let index = map.gridIndex(gx, gy)
-      if not map.walkable[index]:
-        continue
-      for dy in -1 .. 1:
-        for dx in -1 .. 1:
-          if dx == 0 and dy == 0:
-            continue
-          let nx = gx + dx
-          let ny = gy + dy
-          if nx < 0 or nx >= map.gridW or ny < 0 or ny >= map.gridH or
-              not map.walkable[map.gridIndex(nx, ny)]:
-            result[index] = true
-
 proc newWorldMap*(
   pixelWalkable: openArray[bool], width, height, teams: int,
-  markers: Table[Team, EndzoneMarker], team: Team
+  markers: Table[Team, EndzoneMarker], team: Team,
+  journal: TopologyJournal = nil
 ): WorldMap =
   let started = getMonoTime()
   result = WorldMap(
@@ -161,8 +180,14 @@ proc newWorldMap*(
   result.clearance = result.buildClearance(pixelWalkable)
   result.walkable = result.deriveWalkableGrid()
   result.clearanceMs = elapsedMs(clearanceStarted)
+  let componentStarted = getMonoTime()
+  result.buildComponents()
+  result.componentMs = elapsedMs(componentStarted)
+  let topologyStarted = getMonoTime()
+  result.buildTopology(journal)
+  result.topologyMs = elapsedMs(topologyStarted)
   let coverStarted = getMonoTime()
-  result.cover = result.coverCells()
+  result.buildCoverDirs()
   result.coverMs = elapsedMs(coverStarted)
   result.baseInitMs = elapsedMs(started)
   for index in 0 ..< result.teams:
@@ -273,6 +298,287 @@ proc segmentClear*(map: WorldMap, start, goal: Point): bool =
     if not map.canStand((x, y)):
       return false
   true
+
+const Orth = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
+template standableAt(map: WorldMap, index: int): bool =
+  map.clearance[index].int > PlayerHalf
+
+proc buildComponents(map: WorldMap) =
+  ## 4-connected components of the standable-pixel set (canStand), one label
+  ## per pixel, 0 = not standable. 4-connectivity is engine-exact: the engine
+  ## integrates movement per axis (Y then X) and wall-slide composes axis
+  ## steps, so a diagonal move needs a standable orthogonal intermediate —
+  ## 8-connectivity would over-claim reachability at diagonal pinches.
+  map.component = newSeq[uint16](map.width * map.height)
+  map.componentCount = 0
+  var queue: seq[int]
+  for start in 0 ..< map.component.len:
+    if map.component[start] != 0 or not map.standableAt(start):
+      continue
+    # Label cap: unreachable on generator-validated maps (components are few
+    # and fat); if ever exceeded, remaining components share the last label.
+    if map.componentCount < high(uint16).int:
+      inc map.componentCount
+    let label = uint16(map.componentCount)
+    map.component[start] = label
+    queue.setLen(0)
+    queue.add(start)
+    var head = 0
+    while head < queue.len:
+      let index = queue[head]
+      inc head
+      let x = index mod map.width
+      let y = index div map.width
+      for delta in Orth:
+        let nx = x + delta[0]
+        let ny = y + delta[1]
+        if nx < 0 or nx >= map.width or ny < 0 or ny >= map.height:
+          continue
+        let neighbor = ny * map.width + nx
+        if map.component[neighbor] == 0 and map.standableAt(neighbor):
+          map.component[neighbor] = label
+          queue.add(neighbor)
+
+proc componentOf*(map: WorldMap, p: Point): int =
+  ## 0 when `p` is not standable; otherwise the 4-connected component label.
+  if map.canStand(p): map.component[map.pixelIndex(p.x, p.y)].int else: 0
+
+proc sameComponent*(map: WorldMap, a, b: Point): bool =
+  ## The O(1) reachability query behind the Layer 4 goal contract.
+  let ca = map.componentOf(a)
+  ca != 0 and ca == map.componentOf(b)
+
+proc buildTopology*(map: WorldMap, journal: TopologyJournal = nil) =
+  ## Rooms and chokepoints via priority-flood watershed on the clearance
+  ## field: regions grow from clearance-maxima plateaus in decreasing
+  ## clearance order (256-bucket queue — exact O(pixels)); the first contact
+  ## between two regions is their gate (the widest point of the narrowest
+  ## crossing) and its clearance is the gate's L-inf half-width; shallow
+  ## saddles are merged away by persistence (depth + relative-ratio tests).
+  ## Every standable pixel is labeled exactly when the flood reaches its own
+  ## clearance level — the property the offline visualizer relies on.
+  let
+    width = map.width
+    pixels = width * map.height
+  var
+    raw = newSeq[int32](pixels)
+    seeds: seq[Point]
+    peaks: seq[int]
+    areas: seq[int]
+  # --- seeds: local-maxima plateaus (4-connected, constant clearance) ---
+  var visited = newSeq[bool](pixels)
+  var plateau: seq[int]
+  for start in 0 ..< pixels:
+    if visited[start] or not map.standableAt(start):
+      continue
+    let level = map.clearance[start].int
+    plateau.setLen(0)
+    plateau.add(start)
+    visited[start] = true
+    var head = 0
+    var isMax = true
+    while head < plateau.len:
+      let index = plateau[head]
+      inc head
+      let x = index mod width
+      let y = index div width
+      for delta in Orth:
+        let nx = x + delta[0]
+        let ny = y + delta[1]
+        if nx < 0 or nx >= width or ny < 0 or ny >= map.height:
+          continue
+        let neighbor = ny * width + nx
+        if not map.standableAt(neighbor):
+          continue
+        let c = map.clearance[neighbor].int
+        if c > level:
+          isMax = false
+        elif c == level and not visited[neighbor]:
+          visited[neighbor] = true
+          plateau.add(neighbor)
+    if isMax:
+      seeds.add((plateau[0] mod width, plateau[0] div width))
+      peaks.add(level)
+      areas.add(plateau.len)
+      let label = int32(seeds.len)
+      for index in plateau:
+        raw[index] = label
+  # --- flood: descending clearance, FIFO within a level ---
+  var buckets: array[256, seq[int32]]
+  var queued = newSeq[bool](pixels)
+  var contacts: seq[tuple[pos: Point, clearance: int, a, b: int]]
+  var pairContacts = initTable[(int, int), seq[Point]]()
+  template pushNeighbors(index: int) =
+    let x = index mod width
+    let y = index div width
+    for delta in Orth:
+      let nx = x + delta[0]
+      let ny = y + delta[1]
+      if nx >= 0 and nx < width and ny >= 0 and ny < map.height:
+        let neighbor = ny * width + nx
+        if raw[neighbor] == 0 and not queued[neighbor] and
+            map.standableAt(neighbor):
+          queued[neighbor] = true
+          buckets[map.clearance[neighbor].int].add(int32(neighbor))
+  for index in 0 ..< pixels:
+    if raw[index] != 0:
+      pushNeighbors(index)
+  for level in countdown(255, PlayerHalf + 1):
+    var head = 0
+    while head < buckets[level].len:
+      let index = buckets[level][head].int
+      inc head
+      if raw[index] != 0:
+        continue
+      let x = index mod width
+      let y = index div width
+      var labels: array[4, int32]
+      var labelCount = 0
+      for delta in Orth:
+        let nx = x + delta[0]
+        let ny = y + delta[1]
+        if nx < 0 or nx >= width or ny < 0 or ny >= map.height:
+          continue
+        let value = raw[ny * width + nx]
+        if value == 0:
+          continue
+        var known = false
+        for existing in 0 ..< labelCount:
+          if labels[existing] == value:
+            known = true
+            break
+        if not known:
+          labels[labelCount] = value
+          inc labelCount
+      if labelCount == 0:
+        continue
+      var assigned = labels[0]
+      for existing in 1 ..< labelCount:
+        assigned = min(assigned, labels[existing])
+      raw[index] = assigned
+      inc areas[assigned - 1]
+      if labelCount >= 2:
+        for first in 0 ..< labelCount:
+          for second in first + 1 ..< labelCount:
+            let pair = (min(labels[first], labels[second]).int,
+              max(labels[first], labels[second]).int)
+            var nearExisting = false
+            if pairContacts.hasKey(pair):
+              for previous in pairContacts[pair]:
+                if max(abs(previous.x - x), abs(previous.y - y)) <
+                    GateSeparationPx:
+                  nearExisting = true
+                  break
+            if not nearExisting:
+              pairContacts.mgetOrPut(pair, @[]).add((x, y))
+              contacts.add(((x, y), level, pair[0], pair[1]))
+      pushNeighbors(index)
+    buckets[level].setLen(0)
+  # --- persistence merge (contacts arrive in descending saddle order) ---
+  var parent = newSeq[int](seeds.len)
+  for index in 0 ..< parent.len:
+    parent[index] = index
+  proc findRoot(parent: var seq[int], node: int): int =
+    result = node
+    while parent[result] != result:
+      parent[result] = parent[parent[result]]
+      result = parent[result]
+  if journal != nil:
+    journal.rawLabels = raw
+    journal.seeds = seeds
+    journal.contacts = contacts
+  for contact in contacts:
+    let ra = findRoot(parent, contact.a - 1)
+    let rb = findRoot(parent, contact.b - 1)
+    if ra == rb:
+      continue
+    let minPeak = min(peaks[ra], peaks[rb])
+    let depth = minPeak - contact.clearance
+    let ratio = contact.clearance.float / max(minPeak, 1).float
+    let merged = depth < TopologyMergeDepthPx or ratio >= TopologyMergeRatio
+    if journal != nil:
+      journal.merges.add((contact.a, contact.b, contact.clearance, depth,
+        ratio, merged))
+    if merged:
+      var winner = ra
+      var loser = rb
+      if peaks[rb] > peaks[ra] or (peaks[rb] == peaks[ra] and rb < ra):
+        winner = rb
+        loser = ra
+      parent[loser] = winner
+      areas[winner] += areas[loser]
+  # --- compact surviving rooms and gates ---
+  map.rooms.setLen(0)
+  map.chokes.setLen(0)
+  var final = newSeq[int](seeds.len)
+  for index in 0 ..< final.len:
+    final[index] = -1
+  for label in 0 ..< seeds.len:
+    let root = findRoot(parent, label)
+    if final[root] < 0:
+      final[root] = map.rooms.len
+      map.rooms.add(Room(
+        peak: seeds[root], peakClearance: peaks[root], area: areas[root],
+        component: map.component[seeds[root].y * width + seeds[root].x].int))
+    final[label] = final[root]
+  for contact in contacts:
+    let ra = final[findRoot(parent, contact.a - 1)]
+    let rb = final[findRoot(parent, contact.b - 1)]
+    if ra == rb:
+      continue
+    let pair = (min(ra, rb), max(ra, rb))
+    var nearExisting = false
+    for choke in map.chokes:
+      if (min(choke.roomA, choke.roomB), max(choke.roomA, choke.roomB)) ==
+          pair and
+          max(abs(choke.pos.x - contact.pos.x),
+            abs(choke.pos.y - contact.pos.y)) < GateSeparationPx:
+        nearExisting = true
+        break
+    if not nearExisting:
+      for room in [pair[0], pair[1]]:
+        map.rooms[room].chokes.add(map.chokes.len)
+      map.chokes.add(Choke(
+        pos: contact.pos, clearance: contact.clearance,
+        roomA: pair[0], roomB: pair[1]))
+  map.roomLabel = newSeq[uint16](pixels)
+  for index in 0 ..< pixels:
+    if raw[index] != 0:
+      map.roomLabel[index] = uint16(final[raw[index] - 1] + 1)
+
+proc buildCoverDirs(map: WorldMap) =
+  ## N-sector directional cover per walkable nav cell: bit k set iff a ray
+  ## from the cell center at angle k*2pi/N hits a real, in-bounds wall pixel
+  ## within CoverRayPx. Rays test the wall mask (shots are points, not
+  ## footprints), and a ray that leaves the map does NOT count as blocked —
+  ## no shooter can stand outside the map, so edge adjacency is not cover.
+  let rayCount = clamp(CoverRays, 1, 16)
+  map.coverDirs = newSeq[uint16](map.walkable.len)
+  map.cover = newSeq[bool](map.walkable.len)
+  for gy in 0 ..< map.gridH:
+    for gx in 0 ..< map.gridW:
+      let index = map.gridIndex(gx, gy)
+      if not map.walkable[index]:
+        continue
+      let center = cellCenter((gx, gy))
+      var mask: uint16 = 0
+      for ray in 0 ..< rayCount:
+        let angle = ray.float * 2.0 * PI / rayCount.float
+        let dirX = cos(angle)
+        let dirY = sin(angle)
+        var distance = 2.0
+        while distance <= CoverRayPx.float:
+          let sx = pyRound(center.x.float + dirX * distance)
+          let sy = pyRound(center.y.float + dirY * distance)
+          if sx < 0 or sx >= map.width or sy < 0 or sy >= map.height:
+            break
+          if map.wall[map.pixelIndex(sx, sy)]:
+            mask = mask or uint16(1 shl ray)
+            break
+          distance += 2.0
+      map.coverDirs[index] = mask
+      map.cover[index] = mask != 0
 
 proc reverseNeighborIndex(dx, dy: int): int =
   for index, delta in Neighbors:
@@ -581,29 +887,54 @@ proc capturePoint*(map: WorldMap, color: Team): Point =
   let cell = map.nearestWalkable(map.cellOf(map.endzones[color].center))
   cellCenter(cell)
 
-proc axisPoint(map: WorldMap, color: Team, fraction: float): Point =
+proc defenseGate*(map: WorldMap, color: Team): Point =
+  ## Derived defender hold base, replacing the authored chokePoint anchor:
+  ## the first significant gate on the route from our home toward the most
+  ## direct opponent — the on-route choke (home->gate->enemy detour within
+  ## GateDetourPx) nearest home. Falls back to the home room's open-area
+  ## peak when the route crosses no gate (single-room maps), then to the
+  ## capture point. Uses only the home-goal Dijkstra fields minted at init.
+  ## Cached per team: the inputs (chokes, homes, fields) are episode-static
+  ## and holdPointForSeat sits on a per-tick defender path.
+  if map.gates.hasKey(color):
+    return map.gates[color]
+  defer: map.gates[color] = result
   let home = map.homeCenter(color)
-  (int(home.x.float + (map.center.x - home.x).float * fraction),
-   int(home.y.float + (map.center.y - home.y).float * fraction))
-
-proc chokePoint*(map: WorldMap, color: Team): Point =
-  let base = map.axisPoint(color, ChokeFraction)
-  let cover = map.nearestCover(base, 10)
-  if cover.isSome: cover.get else: base
-
-proc rallyPoint*(map: WorldMap, color: Team): Point =
-  map.axisPoint(color, RallyFraction)
-
-proc pastRally*(map: WorldMap, color: Team, point: Point): bool =
-  let home = map.homeCenter(color)
-  let ax = map.center.x - home.x
-  let ay = map.center.y - home.y
-  let normSquared = ax * ax + ay * ay
-  if normSquared == 0:
-    return false
-  let projection = ((point.x - home.x) * ax + (point.y - home.y) * ay).float /
-    normSquared.float
-  projection > RallyFraction
+  var
+    enemyHome = home
+    direct = Inf
+  for index in 0 ..< map.teams:
+    let opponent = Team(index)
+    if opponent == color:
+      continue
+    let route = map.routeDistance(home, map.homeCenter(opponent))
+    if route < direct:
+      direct = route
+      enemyHome = map.homeCenter(opponent)
+  if classify(direct) != fcInf:
+    var
+      found = false
+      best: Point
+      bestFromHome = Inf
+    for choke in map.chokes:
+      let fromHome = map.distanceAt(choke.pos, home)
+      let toEnemy = map.distanceAt(choke.pos, enemyHome)
+      if classify(fromHome) == fcInf or classify(toEnemy) == fcInf:
+        continue
+      if fromHome + toEnemy > direct + GateDetourPx.float or fromHome <= 0.0:
+        continue
+      if fromHome < bestFromHome:
+        found = true
+        bestFromHome = fromHome
+        best = choke.pos
+    if found:
+      return best
+  let anchor = map.capturePoint(color)
+  if map.canStand(anchor) and map.roomLabel.len > 0:
+    let label = map.roomLabel[map.pixelIndex(anchor.x, anchor.y)].int
+    if label > 0:
+      return map.rooms[label - 1].peak
+  anchor
 
 proc homeStep*(map: WorldMap, color: Team, pos: Point, step: int): Point =
   let home = map.homeCenter(color)

@@ -21,6 +21,17 @@ infer the mode from the map ref — read it off the board cell.
 
 ## Normal invasion seating
 
+> **BOARD ROLLED BACK later on 2026-08-11:** hours after the round-967
+> re-verification below, the live board was RESTORED to the pre-migration
+> **10×10 square board** (100 cells, all `map_size` null again, authored
+> map_specs and owners refilled from the pre-migration snapshot — the board
+> `events` feed records the restore; `round` read 957 afterwards). The
+> roster algorithms below (true `1v1` mode, even `_duo_roster` split,
+> mode-decoupled-from-ref) come from metta code and still apply — the live
+> `modes` list still shows mode↔ref decoupling on the restored board. The
+> hex-specific counts in this doc are historical. As always: **re-resolve
+> the board live for every study**; it drifted twice in one day.
+>
 > **Re-verified 2026-08-11 (round 967, metta `84e13cb799`).** The commissioner
 > contract changed materially since the round-381 snapshot this doc first
 > recorded: the board migrated to a 16×16 hex (round 955), a true `1v1`

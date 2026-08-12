@@ -4,6 +4,101 @@ Read this before assuming what a version contains. Format mirrors
 `ctf_lab/ctf/beacon/VERSION_LOG.md`: one entry per uploaded version — what
 changed, why, and what the evidence said.
 
+## v62 — topology & PoIs (nav rework Layer 2), uploaded 2026-08-11
+
+Immutable policy-version UUID: `d415aded-ae80-4140-9f27-ad073718af25`.
+Uploaded with tag `purpose=nav-topology`. **Not submitted to any league.**
+
+Layer 2 of the navigation rework
+([design](../../docs/designs/nav-layer2-topology-proposal-2026-08-11.md),
+approved with James's rulings D1–D7 recorded there). Everything is derived
+from the v61 clearance field at init; every authored anchor is gone.
+
+- **Connected components** (`WorldMap.component`, per-pixel `uint16`):
+  standalone 4-connected CCL over the canStand set — engine-exact (per-axis
+  Y-then-X integration means diagonal steps need a standable orthogonal
+  intermediate), deliberately decoupled from the watershed so a room bug
+  cannot corrupt reachability. `componentOf`/`sameComponent` are the O(1)
+  queries behind the Layer 4 goal contract (no consumer yet).
+- **Rooms + chokepoints** (`rooms`, `chokes`, `roomLabel`): priority-flood
+  watershed on clearance (256-bucket queue, O(px)) — seeds at clearance-maxima
+  plateaus, first-contact saddles between regions are gates (pos = widest
+  point, clearance = L∞ half-width), persistence merge (depth
+  `STENCIL_TOPOLOGY_MERGE_DEPTH_PX`=4 + ratio
+  `STENCIL_TOPOLOGY_MERGE_RATIO`=0.8), spatially-separated multi-gates kept
+  (`STENCIL_GATE_SEPARATION_PX`=64).
+- **Directional cover** (`coverDirs`, per 8px cell): N-ray blocked-from
+  bitmask (`STENCIL_COVER_RAYS`=16, `STENCIL_COVER_RAY_PX`=24) testing the
+  wall mask, **map-boundary exits do not count** — the "edge adjacency is not
+  cover" review point. `cover` (bool) is now `coverDirs != 0`, so every cover
+  consumer moved with it: nearestCover (hold snap, squad spread, advance
+  fallback), spawnCoverPoint, and **post candidate gating** — post positions
+  will shift even though the post pass itself is otherwise untouched (D5-1).
+- **Authored anchors deleted**: `chokePoint` (45% axis fraction) →
+  `defenseGate` (first significant on-route gate from home, fully derived,
+  `STENCIL_GATE_DETOUR_PX`=48, cached per team; falls back to the home-room
+  peak on gateless maps); `rallyPoint`/`pastRally`/`axisPoint` and the
+  `STENCIL_CHOKE_FRACTION`/`STENCIL_RALLY_FRACTION` knobs are gone.
+- **Tracing**: `nav_init` gains `component_ms`/`topology_ms`/`cover_ms` +
+  `components_n`/`rooms_n`/`chokes_n`; `navigation_map` (schema v3) gains
+  rooms, chokes, the cover-dirs grid, the topology knob values, and a
+  zlib+delta-packed dump of the exact clearance field (~1–2 MB on giant,
+  rides the opt-in `STENCIL_TRACE_NAVIGATION=1` payload). `choke`/`rally`
+  trace fields are dropped; teams carry `defense_gate`.
+- **Offline process visualizer** (James's addition):
+  `tools/render_topology.py` + `tools/topology_debug.nim` re-run the exact
+  worldmap code on the agent-logged clearance with a process journal and
+  render a self-contained HTML viewer — watershed flood scrubber (a pixel is
+  labeled exactly at its own clearance level, so no per-pixel event log is
+  needed), raw/merged/component views, merge-decision log, cover roses, and
+  the defense-gate scoring table. It cross-checks recomputed finals against
+  the agent-traced finals and refuses to render silently on drift.
+
+**Pre-upload evidence:** 21.9M scratchpad property checks over 300 random
+maps + 2 synthetic scenarios vs brute force (components ≡ BFS 4-connectivity;
+roomLabel partition/connectivity/peak invariants; saddle-on-boundary and
+width bounds; determinism; cover ≡ reference rays incl. the empty-map
+edge-not-cover case). `nim check` clean on all locally-checkable modules.
+Real-map corpus (self_play, one episode per size, per-seat contention):
+
+| size | px | rooms | chokes | component | topology | cover | seat init total |
+|---|---|---|---|---|---|---|---|
+| small | 588k | 9 | 18 | 9 ms | 38 ms | 13 ms | 113 ms |
+| standard | 814k | 10 | 25 | 13 ms | 54 ms | 19 ms | 181 ms |
+| large | 1.38M | 16 | 57 | 23 ms | 93 ms | 36 ms | 356 ms |
+| huge | 2.64M | 27 | 111 | 45 ms | 197 ms | 69 ms | 869 ms |
+| giant 1v1 | 5.5M | 49 | 228 | 102 ms | 435 ms | 153 ms | 2362 ms |
+| giant 4ffa8 | 6.2M | 37 | 152 | 115 ms | 475 ms | 194 ms | 5119 ms |
+
+**Honest cost note:** giant-1v1 seat init grew to ~2.36 s (from v61's
+~1.5–1.9 s) — Layer 2 adds ~690 ms there under 16-way contention. The
+4ffa8-giant's 5.1 s total is dominated by the pre-existing 3-front post pass
+(3.9 s), with ~784 ms from Layer 2. Init-only; the Dijkstra/post pass remains
+the later rework target. The offline visualizer validated zero-drift against
+a real agent trace (standard map). Rooms/chokes counts above are the sketch
+Q1 node/edge bookkeeping for the hierarchical-planner decision.
+
+**Built against 0.7.215 / `6c7a4c0e` (pin unchanged); deployed canonical
+0.7.227.** Note: the campaign board was ROLLED BACK to the pre-migration
+10×10 square board (100 cells, null map_size) between this morning's
+round-967 re-verification and this upload — the board events feed records
+the restore. Hosted validation must target the restored board's live cells.
+
+**Hosted validation (in flight at write time):** matched v62-vs-v61 batch on
+the restored board, 12 requests / 58 episodes, seatings verified against the
+preregistration on readback. Cells: h2h `1v1`-mode (2,0) ref `1v1` seed
+386501705; duo `2v2`-mode (5,0) ref `2v2` seed 306617036; ffa `ffa4` (4,4)
+ref `4ffa` seed 350827746 — all with mapSize omitted (cells carry none).
+Pinned field: paintbot-focusfire:v39 (h2h + ffa), swgy-paintbot:v22 (duo
+opposing captain + ffa), Picasso:v52 (red-side ally), relhalpha:v4
+(blue-side ally + ffa). Requests: v62 h2h `xreq_390dff71`/`xreq_16800cc3`,
+duo `xreq_ca5192bf`/`xreq_22c073b6`, ffa `xreq_dd592a79`; v61 h2h
+`xreq_d8f4ffb8`/`xreq_ed06892a`, duo `xreq_e1120b86`/`xreq_d971a4e4`, ffa
+`xreq_ebed31f5`; plus two giant-init DEBUG PROBES (invented mapSize=giant,
+v62-vs-v61 in-episode, both seatings: `xreq_a1de40e5`/`xreq_5cb7f255`) —
+probes are ops evidence only, excluded from gameplay claims. Verdict
+appended when the batch completes.
+
 ## v61 — nudgeClear micro fix (nav rework Layer 1, final), uploaded 2026-08-11
 
 Immutable policy-version UUID: `3380ab6d-5bc8-45b7-9429-ff7b74fc1f85`.

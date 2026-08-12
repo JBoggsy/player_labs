@@ -114,9 +114,11 @@ validated exactly against its bootstrap Python implementation (read
 [`docs/designs/stencil-v1-design.md`](docs/designs/stencil-v1-design.md) — it
 carries the scrap-vs-port ledger). The architecture in one breath: `perception`
 reads labels **plus** the walkability sprite pixels and wire markers; the
-runtime builds an **episode-scoped `WorldMap`** (eroded nav grid, cover, lazy
-per-goal Dijkstra flow fields, derived chokes/rallies/spawn-aim — replacing
-beacon's `nav.npz` bake + POIs + plans wholesale); `belief` folds tracks,
+runtime builds an **episode-scoped `WorldMap`** (L∞ clearance field +
+predicates, clearance-derived nav grid, component labels, watershed
+rooms/chokepoints + defense gates, directional cover, lazy per-goal Dijkstra
+flow fields, spawn-aim — replacing beacon's `nav.npz` bake + POIs + plans
+wholesale); `belief` folds tracks,
 danger, hearing, chat, per-color hearts (with retirement + steal-target
 choice); `strategy` runs the ladder (carry-home > intercept-thief >
 escort-carrier > grenade-clear > **barrage-center** > early-defense > items >

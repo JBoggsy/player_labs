@@ -12,7 +12,7 @@ proc roleForSeat*(seat, seats: int): Role =
 proc holdPointForSeat*(map: WorldMap, team: Team, seat, seats: int): Point =
   let
     count = max(1, defenderCount(seats))
-    base = map.chokePoint(team)
+    base = map.defenseGate(team)
     home = map.homeCenter(team)
     axisX = map.center.x - home.x
     axisY = map.center.y - home.y

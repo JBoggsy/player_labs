@@ -105,6 +105,30 @@ unit—is the reboot guarantee.
 
 ## Current objective
 
+**Navigation rework Layer 2 is IMPLEMENTED and uploaded as v62 (2026-08-11);
+hosted matched batch in flight.** v62
+(`d415aded-ae80-4140-9f27-ad073718af25`, tag `purpose=nav-topology`) derives
+everything from the clearance field at init: engine-exact 4-connected
+component labels (`componentOf`/`sameComponent` — the future Layer 4
+reachability contract), priority-flood watershed rooms + chokepoints with
+persistence merging, 16-ray directional cover (map edge is NOT cover; the
+`cover` grid and all its consumers now ride it), and `defenseGate` replacing
+the authored `chokePoint` (rallyPoint/pastRally/axisPoint deleted). James
+ruled the proposal
+([`docs/designs/nav-layer2-topology-proposal-2026-08-11.md`](docs/designs/nav-layer2-topology-proposal-2026-08-11.md),
+rulings D1–D7 recorded inside) and added two requirements, both shipped: the
+**offline topology process visualizer** (`tools/render_topology.py` +
+`tools/topology_debug.nim`: watershed flood scrubber from the agent-logged
+clearance, merge log, cover roses, gate scoring; zero-drift verified against
+a real agent trace) and **configurable cover rays (default 16)**. Evidence:
+21.9M property checks vs brute force; corpus counts/timings in VERSION_LOG
+(giant seat init grew to ~2.36 s, +~690 ms Layer 2 — init-only; disclosed).
+The matched v62-vs-v61 batch (12 requests / 58 episodes, request IDs in
+VERSION_LOG v62 entry) is running; verdict pending. **The campaign board was
+ROLLED BACK to the 10×10 square board late 2026-08-11** (after the morning
+round-967 hex re-verification) — `docs/tournament-like-experience-requests.md`
+carries the rollback note; re-resolve the board live every study.
+
 **Navigation rework Layer 1 is SHIPPED and validated as v61 (2026-08-11).**
 Direction set by James's review of the navigation deep-dive: one planner, no
 beelining, no 8px movement coarsening, dynamic PoIs, goals validated before
@@ -429,8 +453,11 @@ Next concrete steps:
   fields from either JSONL or a hosted artifact ZIP.
   Validated locally on 0.7.182 / `3151a47`, then hosted across all competitive
   variants on 0.7.183 / `95bb768`.
-- Choke/rally fractions (`STENCIL_CHOKE_FRACTION` 0.45 / `RALLY_FRACTION`
-  0.65) are educated guesses, not tuned.
+- ~~Choke/rally fractions~~ DELETED in v62: the authored 45%/65% anchors are
+  replaced by watershed chokepoints + `defenseGate`; the tunables now are
+  `STENCIL_TOPOLOGY_MERGE_DEPTH_PX`/`_RATIO`, `STENCIL_GATE_DETOUR_PX`/
+  `_SEPARATION_PX`, `STENCIL_COVER_RAYS`/`_RAY_PX` (defaults corpus-eyeballed,
+  not tuned).
 - Remaining v1 scope cuts to revisit if evals demand: item-spawn seeding from
   layout rules, battle plans, and third-party FFA reasoning. The latter is now
   the observed limit on an all-map draw-or-win target: own-heart defense cannot

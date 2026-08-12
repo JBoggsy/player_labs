@@ -136,6 +136,11 @@ paint, not movement; trenches/puddles are passable) — they enter as **costs**,
 
 ### 3.2 Layer 2 — topology and PoIs, derived from the map
 
+> **Worked proposal (2026-08-11, awaiting ruling):**
+> [nav-layer2-topology-proposal-2026-08-11.md](nav-layer2-topology-proposal-2026-08-11.md)
+> — resolves Q4 (watershed on clearance + persistence merge, render_nav corpus QA),
+> Q5 (8-sector wall-mask bitmask, in-bounds hits only), and frames Q6 as a scope menu.
+
 Everything here is computed from the clearance field at init, replacing every authored
 anchor:
 
@@ -338,6 +343,27 @@ shipped matches §3.1 with one design-relevant amendment:
   failures across 130 episodes. Layer 5's follower/micro design should treat
   "engine-executable under slide" — not "footprint-clear along the exact
   line" — as the acceptance bar for bounded micro perturbations.
+
+## 9a. Layer 2 status addendum (2026-08-11, same day)
+
+**Layer 2 is implemented and uploaded as stencil v62** (inert, not
+submitted; hosted matched batch vs v61 in flight at write time — see
+`VERSION_LOG.md`). Built per the approved
+[worked proposal](nav-layer2-topology-proposal-2026-08-11.md) (rulings
+D1–D7 recorded there): engine-exact 4-connected pixel components
+(reachability tier for the Layer 4 contract), priority-flood watershed
+rooms/chokepoints with persistence merging (quality tier, deliberately
+decoupled), 16-ray directional cover with map-edge-not-cover semantics
+replacing adjacency cover everywhere, and `defenseGate` (first significant
+on-route gate) replacing `chokePoint`; rally anchors deleted. Q4 answered
+(watershed + render_topology corpus QA), Q5 answered (bitmask prefilter,
+posts keep sampled rays), Q6 ruled minimal (D5-1; candidate re-sourcing
+deferred until after corpus overlay review). Q1 bookkeeping: rooms/chokes
+per size recorded in the proposal's measured-budget table (9–49 rooms /
+18–228 chokes small→giant). An offline process visualizer
+(`tools/render_topology.py`) replays the flood from the agent-logged
+clearance — added at review, now the inspection tool of record for
+merge-knob tuning.
 
 ## 10. TODOs spawned by the review (out of scope here)
 
