@@ -132,6 +132,26 @@ provides reboot recovery because the `metta` account does not have systemd
 lingering enabled. The enabled user unit is a secondary login-time recovery
 path; the shared lock prevents concurrent launchers.
 
+### Training dashboard
+
+`training_dashboard.py` serves a read-only, dependency-free view of the active
+run: microbatch/epoch progress and ETA, recent and validation loss, checkpoints,
+GPU utilization/VRAM/temperature, disk headroom, process health, recent errors,
+and detailed action metrics once evaluation files exist. It binds to remote
+localhost and is reached through SSH rather than exposing a network service.
+
+From the repository root on a Mac, deploy/restart the dashboard, establish the
+SSH tunnel, and open it with:
+
+```sh
+paintbot_lab/paintbot/rl/open_training_dashboard.sh
+```
+
+The default URL is `http://127.0.0.1:8876`; if that port is occupied by another
+dashboard, the launcher chooses the next free port. Override the starting local
+port with `PAINTBOT_DASHBOARD_LOCAL_PORT`; the launcher otherwise uses the
+existing `mettabox1` SSH alias and exhaustive-corpus workspace.
+
 ### Full run
 
 The tracked GPU-oriented manifest uses winning POVs from GV16/24/30/35 for
