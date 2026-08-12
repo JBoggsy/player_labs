@@ -490,36 +490,21 @@ proc updateConsensus*(belief: Belief) =
     return
   belief.commitOrder(choice.get)
 
-type RankedPost = tuple[post: PostCandidate, utility: float]
-
 proc orderPost*(belief: Belief, directive: SquadDirective): Option[PostCandidate] =
+  ## Selection core lives in worldmap.selectRankedPost (so the offline
+  ## harness runs the exact production logic); this wrapper supplies the
+  ## belief-side inputs: the matching front's candidates, the member's rank,
+  ## and believed enemy positions for the situational facing term.
   if belief.worldmap.isNil:
     return none(PostCandidate)
-  var ranked: seq[RankedPost]
+  var candidates: seq[PostCandidate]
   for front in belief.worldmap.postFronts:
     if front.opponent != directive.opponent:
       continue
     for candidate in front.candidates:
-      let distance = hypot((candidate.pos.x - directive.pos.x).float,
-        (candidate.pos.y - directive.pos.y).float)
-      if distance <= SquadPostSearchPx.float:
-        ranked.add((candidate,
-          candidate.score - 0.25 * distance / max(SquadPostSearchPx.float, 1.0)))
-  ranked.sort(proc(a, b: RankedPost): int = cmp(b.utility, a.utility))
-  var selected: seq[PostCandidate]
-  for candidate in ranked:
-    var separated = true
-    for previous in selected:
-      if hypot((candidate.post.pos.x - previous.pos.x).float,
-          (candidate.post.pos.y - previous.pos.y).float) <
-          SquadPostSeparationPx.float:
-        separated = false
-        break
-    if separated:
-      selected.add(candidate.post)
-  if selected.len == 0:
-    return none(PostCandidate)
-  some(selected[min(belief.rankOf, selected.high)])
+      candidates.add(candidate)
+  belief.worldmap.selectRankedPost(
+    candidates, directive.pos, belief.rankOf, belief.freshEnemyPositions)
 
 proc rejoinTarget*(belief: Belief): Option[Point] =
   var mySquad = belief.squadOf.seats.toHashSet

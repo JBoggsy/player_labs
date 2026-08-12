@@ -29,9 +29,13 @@ proc holdPointForSeat*(map: WorldMap, team: Team, seat, seats: int): Point =
   if cover.isSome: cover.get else: point
 
 proc defensivePostForSeat*(
-  map: WorldMap, team: Team, seat, seats: int
+  map: WorldMap, team: Team, seat, seats: int,
+  threats: openArray[Point] = []
 ): Option[tuple[post: PostCandidate, opponent: Team]] =
-  ## Give defenders distinct generated posts, ordered from home center outward.
+  ## Give defenders distinct generated posts, ordered from home center
+  ## outward in 64px distance bands; within a band, score plus the
+  ## situational facing term against believed threats breaks ties (exact
+  ## distances almost never tie, so banding is what lets intel matter).
   if seat >= defenderCount(seats):
     return none(tuple[post: PostCandidate, opponent: Team])
   let home = map.homeCenter(team)
@@ -45,17 +49,25 @@ proc defensivePostForSeat*(
           break
       if not duplicate:
         posts.add((post, front.opponent))
+  let bandPx = NavCell.float * 8.0
+  var threatList = newSeq[Point](threats.len)
+  for index, threat in threats:
+    threatList[index] = threat
   posts.sort(proc(
     a, b: tuple[post: PostCandidate, opponent: Team]
   ): int =
     let
-      aDistance = hypot((a.post.pos.x - home.x).float,
-        (a.post.pos.y - home.y).float)
-      bDistance = hypot((b.post.pos.x - home.x).float,
-        (b.post.pos.y - home.y).float)
-    result = cmp(aDistance, bDistance)
+      aBand = int(hypot((a.post.pos.x - home.x).float,
+        (a.post.pos.y - home.y).float) / bandPx)
+      bBand = int(hypot((b.post.pos.x - home.x).float,
+        (b.post.pos.y - home.y).float) / bandPx)
+    result = cmp(aBand, bBand)
     if result == 0:
-      result = cmp(b.post.score, a.post.score))
+      let aUtility = a.post.score +
+        PostFacingWeight * (map.facingScore(a.post.pos, threatList) - 0.5)
+      let bUtility = b.post.score +
+        PostFacingWeight * (map.facingScore(b.post.pos, threatList) - 0.5)
+      result = cmp(bUtility, aUtility))
   if seat < posts.len:
     some(posts[seat])
   else:

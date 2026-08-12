@@ -93,3 +93,32 @@ the 4ffa cell reproduced same dims and rooms (29) but 110 vs 116 chokes, with
 identical (mapSeed, seed) and no wall-relevant config diff. Cause unidentified
 — something in the 4-team generator (corner/plus/quadmirror pick?) draws from
 another source. Open thread before trusting offline 4ffa map precomputation.
+
+### Undirected segment glyphs can visually invert direction semantics — anchor them
+Evidence: cover spokes drawn cell-center -> wall fused at their wall ends into
+a band; the tails then read as spikes radiating OUT of walls, i.e. the exact
+opposite of the encoded meaning (James read them as vulnerability angles).
+Data was verified correct before touching the renderer (known-pillar bit
+check). Fix: filled wedge rose + explicit anchor dot per cell, sized within
+the cell. Glyphs that encode direction need an unambiguous origin marker.
+
+### Static "toward enemy home" orientation is an opening-phase assumption — route it through belief instead
+Evidence: v63 draft's facing filter at candidate generation baked
+bearing-to-enemy-home into episode-long data; James's review: wrong once
+enemies leave home, inverted when carrying home (threats behind), and
+meaningless on 4p FFA (three pedestals). Moved to selection-time scoring
+against believed enemy track bearings — which is also exactly where the
+Layer 2 sketch put the "situational half" of cover. Generalization: any
+init-time artifact encoding a direction toward "the enemy" should be
+audited for the same assumption (the per-front sightline rays still aim at
+enemyHome — acceptable for now as fronts are per-opponent, but same class).
+
+### Nim value-returning accessors copy seqs — fieldsFor was memcpying 1.4MB per distanceAt call
+Evidence: v63 candidate re-sourcing initially made giant post_ms WORSE
+(1528->2470ms) because per-cell distanceAt calls each copy the RouteFields
+object (two ~700KB seqs) out of the Table. Hoisting the two fields once per
+front and reading distances by index: post_ms 1528->73ms (giant), 2166->88ms
+(duo); giant seat init now ~1.0-1.1s, below the v61 baseline. Implication:
+every distanceAt/routeDistance/flowWaypoint call pays this copy per call —
+including per-tick follower lookups. Layer 3's planner rework should return
+borrowed/indexed views, never value copies of field-sized objects.

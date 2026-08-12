@@ -172,6 +172,26 @@ def cross_check(nav: dict, process: dict, allow_drift: bool) -> list[str]:
             problems.append(
                 f"defense_gate[{index}]: agent {team['defense_gate']} != harness {gate}"
             )
+    # Post fronts: the agent traces fronts for its own team (slot-00 => team
+    # 0, which is what the harness rebuilds). Compare geometry, not floats
+    # (the trace rounds scores).
+    agent_fronts = nav.get("post_fronts") or []
+    harness_fronts = process.get("post_fronts") or []
+    if len(agent_fronts) != len(harness_fronts):
+        problems.append(
+            f"post_fronts: agent {len(agent_fronts)} != harness {len(harness_fronts)}"
+        )
+    else:
+        for index, (a, b) in enumerate(zip(agent_fronts, harness_fronts)):
+            a_geo = [(c["position"], c["duck"]) for c in a["candidates"]], [
+                (p["position"], p["duck"]) for p in a["posts"]
+            ]
+            b_geo = [(c["pos"], c["duck"]) for c in b["candidates"]], [
+                (p["pos"], p["duck"]) for p in b["posts"]
+            ]
+            if a_geo != b_geo:
+                problems.append(f"post_fronts[{index}]: geometry differs")
+                break
     if problems:
         report = "\n  ".join(problems)
         message = f"agent-vs-harness drift detected:\n  {report}"
@@ -218,6 +238,10 @@ def render_html(nav: dict, process: dict, drift: list[str], clearance: bytes) ->
         "merges": process["merges"],
         "cover_dirs": process["cover_dirs"],
         "anchors": process["anchors"],
+        "post_fronts": process.get("post_fronts", []),
+        "defender_assignments": process.get("defender_assignments", []),
+        "selection_samples": process.get("selection_samples", []),
+        "selection_params": process.get("selection_params"),
         "teams": [
             {
                 "team": team["team"],
@@ -286,6 +310,19 @@ tr.merged td { color:#8aa0b4 } tr.kept td { color:#e7b3b3 }
 <label><input id="peaks" type="checkbox" checked> room peaks + ids</label>
 <label><input id="coverBox" type="checkbox"> cover roses (per cell)</label>
 <label><input id="gates" type="checkbox" checked> defense gates + homes</label>
+<h2>Posts</h2>
+<label>front <select id="frontSel"></select></label>
+<label><input id="candBox" type="checkbox"> candidates (score-colored)</label>
+<label><input id="postsBox" type="checkbox"> selected posts + rays + ducks</label>
+<label><input id="defBox" type="checkbox"> defender assignments</label>
+<div id="selPanel" style="display:none">
+<h2>Selection simulator</h2>
+<label>squad rank <select id="rankSel"><option>0</option><option>1</option><option>2</option></select></label>
+<div class="summary">click map: set squad directive point<br>
+shift-click: add/remove believed enemy<br>
+<span id="selInfo"></span></div>
+<div id="selDrift"></div>
+</div>
 <div id="tip"></div></aside>
 <main><canvas id="map"></canvas>
 <h2>Defense-gate scoring</h2><div id="anchorTables"></div>
@@ -383,6 +420,30 @@ function overlays(){
       dot(a.gate,'#ff922b',Math.max(3.5,3.5/scale));
       ctx.fillStyle='#ff922b'; ctx.font=`${Math.max(10,12/scale)}px ui-monospace`;
       ctx.fillText('G'+i,a.gate[0]+4,a.gate[1]+4); });
+  const front=(data.post_fronts||[])[+document.querySelector('#frontSel').value];
+  function scoreColor(s){ const t=Math.max(0,Math.min(1,s));
+    return `rgb(${Math.round(255*(1-t))},${Math.round(215*t)},80)`; }
+  if(front&&document.querySelector('#candBox').checked)
+    front.candidates.forEach(c=>dot(c.pos,scoreColor(c.score),Math.max(2,2/scale)));
+  if(front&&document.querySelector('#postsBox').checked)
+    front.posts.forEach((p,i)=>{
+      ctx.strokeStyle='#f06595'; ctx.lineWidth=Math.max(0.6,0.6/scale);
+      (p.ray_ends||[]).forEach(e=>{ ctx.beginPath(); ctx.moveTo(p.pos[0],p.pos[1]);
+        ctx.lineTo(e[0],e[1]); ctx.stroke(); });
+      ctx.strokeStyle='#e7edf3';
+      ctx.beginPath(); ctx.moveTo(p.pos[0],p.pos[1]);
+      ctx.lineTo(p.duck[0],p.duck[1]); ctx.stroke();
+      dot(p.duck,'#9fb2c2',Math.max(2,2/scale));
+      dot(p.pos,'#f06595',Math.max(3,3/scale));
+      ctx.fillStyle='#f06595'; ctx.font=`${Math.max(10,12/scale)}px ui-monospace`;
+      ctx.fillText(String(i+1),p.pos[0]+4,p.pos[1]-4); });
+  if(document.querySelector('#defBox').checked)
+    (data.defender_assignments||[]).forEach(t=>t.assignments.forEach(a=>{
+      ctx.strokeStyle='#ffd166'; ctx.lineWidth=Math.max(1,1/scale);
+      ctx.beginPath(); ctx.arc(a.post[0],a.post[1],Math.max(5,5/scale),0,7); ctx.stroke();
+      ctx.fillStyle='#ffd166'; ctx.font=`${Math.max(10,11/scale)}px ui-monospace`;
+      ctx.fillText(`T${t.team}s${a.seat}`,a.post[0]+6,a.post[1]+10); }));
+  drawSelection(front);
   ctx.restore();
 }
 let playing=null;
@@ -436,6 +497,98 @@ const anchorDiv=document.querySelector('#anchorTables');
 document.querySelector('#mergeTable').innerHTML='<table><tr><th>#</th><th>pair</th><th>saddle</th><th>depth</th><th>ratio</th><th>verdict</th></tr>'+
   data.merges.map((m,i)=>`<tr class="${m.merged?'merged':'kept'}"><td>${i+1}</td><td>${m.pair[0]}+${m.pair[1]}</td>`+
     `<td>${m.saddle}</td><td>${m.depth}</td><td>${m.ratio.toFixed(2)}</td><td>${m.merged?'merged':'kept as gate'}</td></tr>`).join('')+'</table>';
+// posts: front dropdown
+const frontSel=document.querySelector('#frontSel');
+(data.post_fronts||[]).forEach((f,i)=>{ const o=document.createElement('option');
+  o.value=i; o.textContent=`team ${f.team} vs ${f.opponent} (${f.posts.length} posts / ${f.candidates.length} cand)`;
+  frontSel.append(o); });
+if(!(data.post_fronts||[]).length){ const o=document.createElement('option');
+  o.textContent='none'; frontSel.append(o); }
+// selection simulator (needs harness selection_params; mirror of the pure
+// production selection core, drift-guarded by harness-computed samples)
+const selP=data.selection_params;
+let directive=null, enemies=[], selectionOk=false;
+function facingMirror(pos,threats){
+  if(!threats.length) return 0.5;
+  const n=data.cover_rays, cell=data.cell_size;
+  const gx=Math.min(Math.floor(pos[0]/cell),data.grid[0]-1);
+  const gy=Math.min(Math.floor(pos[1]/cell),data.grid[1]-1);
+  const mask=data.cover_dirs[gy*data.grid[0]+gx]||0;
+  let covered=0;
+  for(const t of threats){
+    const bearing=Math.atan2(t[1]-pos[1],t[0]-pos[0]);
+    const sector=((Math.round(bearing/(2*Math.PI)*n)%n)+n)%n;
+    if(mask&(1<<sector)) covered++;
+  }
+  return covered/threats.length;
+}
+function selectMirror(front,anchor,rank,threats){
+  if(!front||!selP) return null;
+  const ranked=[];
+  for(const c of front.candidates){
+    const d=Math.hypot(c.pos[0]-anchor[0],c.pos[1]-anchor[1]);
+    if(d<=selP.search_px)
+      ranked.push({c,u:c.score-0.25*d/Math.max(selP.search_px,1)+
+        selP.facing_weight*(facingMirror(c.pos,threats)-0.5)});
+  }
+  ranked.sort((a,b)=>b.u-a.u);
+  const sel=[];
+  for(const r of ranked){
+    if(sel.every(s=>Math.hypot(s.pos[0]-r.c.pos[0],s.pos[1]-r.c.pos[1])>=selP.separation_px))
+      sel.push(r.c);
+  }
+  if(!sel.length) return null;
+  return sel[Math.min(rank,sel.length-1)];
+}
+function drawSelection(front){
+  if(!selP||!directive&&!enemies.length) return;
+  ctx.save(); ctx.lineWidth=Math.max(1,1.2/scale);
+  enemies.forEach(e=>{ dot(e,'#ff6b6b',Math.max(3.5,3.5/scale));
+    ctx.strokeStyle='#ff6b6b';
+    ctx.beginPath(); ctx.arc(e[0],e[1],Math.max(6,6/scale),0,7); ctx.stroke(); });
+  if(directive&&front){
+    dot(directive,'#69db7c',Math.max(3,3/scale));
+    const chosen=selectMirror(front,directive,+document.querySelector('#rankSel').value,enemies);
+    if(chosen){
+      ctx.strokeStyle='#69db7c';
+      ctx.beginPath(); ctx.arc(chosen.pos[0],chosen.pos[1],Math.max(7,7/scale),0,7); ctx.stroke();
+      ctx.setLineDash([4,3]);
+      ctx.beginPath(); ctx.moveTo(directive[0],directive[1]);
+      ctx.lineTo(chosen.pos[0],chosen.pos[1]); ctx.stroke(); ctx.setLineDash([]);
+      document.querySelector('#selInfo').textContent=
+        `chosen post (${chosen.pos[0]}, ${chosen.pos[1]}) score ${chosen.score.toFixed(2)} `+
+        `facing ${facingMirror(chosen.pos,enemies).toFixed(2)}`;
+    } else document.querySelector('#selInfo').textContent='no post within search radius';
+  }
+  ctx.restore();
+}
+if(selP){
+  document.querySelector('#selPanel').style.display='block';
+  // drift guard: replay every harness-computed sample through the mirror
+  let bad=0;
+  for(const s of (data.selection_samples||[])){
+    const front=data.post_fronts[s.front];
+    const chosen=selectMirror(front,s.anchor,s.rank,s.threats);
+    const got=chosen?chosen.pos.join(','):'none';
+    const want=s.chosen?s.chosen.join(','):'none';
+    if(got!==want) bad++;
+  }
+  selectionOk=bad===0;
+  document.querySelector('#selDrift').innerHTML=selectionOk?
+    `<span class="summary">mirror verified on ${(data.selection_samples||[]).length} harness samples</span>`:
+    `<div class="warn">SELECTION MIRROR DRIFT on ${bad} samples - simulator disabled</div>`;
+}
+canvas.onclick=e=>{
+  if(!selP||!selectionOk) return;
+  const rect=canvas.getBoundingClientRect();
+  const x=Math.floor((e.clientX-rect.left)/scale), y=Math.floor((e.clientY-rect.top)/scale);
+  if(e.shiftKey){
+    const hit=enemies.findIndex(en=>Math.hypot(en[0]-x,en[1]-y)<16/scale);
+    if(hit>=0) enemies.splice(hit,1); else enemies.push([x,y]);
+  } else directive=[x,y];
+  repaint();
+};
+document.querySelector('#rankSel').onchange=repaint;
 repaint();
 })();
 </script></body></html>

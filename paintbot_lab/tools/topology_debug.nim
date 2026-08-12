@@ -24,8 +24,8 @@
 ##                           "x0":..,"y0":..,"x1":..,"y1":..}, ...]}
 ## clearance.bin: W*H row-major uint8 clearance values (delta-decoded).
 
-import std/[json, math, os, strformat, tables]
-import config, types, worldmap
+import std/[json, math, options, os, random, strformat, tables]
+import config, roles, types, worldmap
 
 proc rleJson(values: seq[int]): JsonNode =
   ## [[value, runLength], ...] over a row-major array; label arrays are
@@ -180,6 +180,82 @@ proc main() =
       "ratio": merge.ratio,
       "merged": merge.merged,
     })
+  # Post fronts (static, belief-free) + defender assignments, so the viewer
+  # can show candidate generation and seat selection from the exact
+  # production code.
+  proc candidateJson(candidate: PostCandidate): JsonNode =
+    var rays = newJArray()
+    for endpoint in candidate.rayEnds:
+      rays.add(pointJson(endpoint))
+    %*{
+      "pos": pointJson(candidate.pos),
+      "duck": pointJson(candidate.duck),
+      "score": candidate.score,
+      "sightline": candidate.sightline,
+      "corridor": candidate.corridor,
+      "duck_contrast": candidate.duckContrast,
+      "ray_ends": rays,
+    }
+  var fronts = newJArray()
+  for front in map.postFronts:
+    var candidates = newJArray()
+    for candidate in front.candidates:
+      candidates.add(candidateJson(candidate))
+    var posts = newJArray()
+    for post in front.posts:
+      posts.add(candidateJson(post))
+    fronts.add(%*{
+      "team": ord(front.team),
+      "opponent": ord(front.opponent),
+      "candidates": candidates,
+      "posts": posts,
+    })
+  var defenders = newJArray()
+  for teamIndex in 0 ..< teams:
+    var seatsJson = newJArray()
+    let seatCount = if teams == 4: 4 else: 8
+    for seat in 0 ..< defenderCount(seatCount):
+      let assignment = defensivePostForSeat(
+        map, Team(teamIndex), seat, seatCount)
+      if assignment.isSome:
+        seatsJson.add(%*{
+          "seat": seat,
+          "post": pointJson(assignment.get.post.pos),
+          "opponent": ord(assignment.get.opponent),
+        })
+    defenders.add(%*{"team": teamIndex, "assignments": seatsJson})
+
+  # Selection samples: run the REAL production selection core on randomized
+  # (front, anchor, rank, threats) cases so the viewer's interactive JS
+  # mirror can be verified fail-closed at load time.
+  var walkableCenters: seq[Point]
+  for gy in 0 ..< map.gridH:
+    for gx in 0 ..< map.gridW:
+      if map.walkable[gy * map.gridW + gx]:
+        walkableCenters.add(cellCenter((gx, gy)))
+  var sampleRng = initRand(20260812)
+  var samples = newJArray()
+  if map.postFronts.len > 0 and walkableCenters.len > 0:
+    for _ in 0 ..< 200:
+      let frontIndex = sampleRng.rand(map.postFronts.high)
+      let anchor = walkableCenters[sampleRng.rand(walkableCenters.high)]
+      let rank = sampleRng.rand(2)
+      var threats: seq[Point]
+      for _ in 0 ..< sampleRng.rand(3):
+        threats.add(walkableCenters[sampleRng.rand(walkableCenters.high)])
+      let chosen = map.selectRankedPost(
+        map.postFronts[frontIndex].candidates, anchor, rank, threats)
+      var threatsJson = newJArray()
+      for threat in threats:
+        threatsJson.add(pointJson(threat))
+      samples.add(%*{
+        "front": frontIndex,
+        "anchor": pointJson(anchor),
+        "rank": rank,
+        "threats": threatsJson,
+        "chosen": if chosen.isSome: pointJson(chosen.get.pos) else: newJNull(),
+      })
+
   var rawLabels = newSeq[int](width * height)
   for index in 0 ..< rawLabels.len:
     rawLabels[index] = journal.rawLabels[index].int
@@ -219,6 +295,14 @@ proc main() =
     "component_labels_rle": rleJson(componentLabels),
     "cover_dirs": coverCells,
     "anchors": anchors,
+    "post_fronts": fronts,
+    "defender_assignments": defenders,
+    "selection_params": %*{
+      "search_px": SquadPostSearchPx,
+      "separation_px": SquadPostSeparationPx,
+      "facing_weight": PostFacingWeight,
+    },
+    "selection_samples": samples,
   }
   writeFile(paramStr(3), $output)
   echo &"topology_debug: {map.rooms.len} rooms, {map.chokes.len} chokes, " &

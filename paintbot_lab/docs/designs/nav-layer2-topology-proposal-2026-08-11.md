@@ -244,7 +244,8 @@ Menu, smallest to largest:
   cover per [D3]; the post pass keeps its current bespoke scan untouched.
   Surgical diff, clean attribution, posts rebuilt next version once we have
   looked at real overlays of rooms/chokes/cover across the corpus.
-- **[D5-2] + re-source post candidates.** Keep `PostFront`/`PostCandidate`
+- **[D5-2] + re-source post candidates.** *(Ruled GO 2026-08-12 — worked
+  plan: [nav-post-resourcing-v63-2026-08-12.md](nav-post-resourcing-v63-2026-08-12.md).)* Keep `PostFront`/`PostCandidate`
   outputs, scoring, dedup, and duck logic identical, but gate candidate
   generation on directional cover facing the enemy approach (instead of
   adjacency cover) and seed candidate buckets from choke/room PoIs near the

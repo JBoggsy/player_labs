@@ -1,7 +1,7 @@
 ## Long-lived folded policy state, separated from update logic to avoid cycles.
 
 import std/[math, options, sets, tables]
-import nav, types, worldmap
+import config, nav, types, worldmap
 
 type
   CarrierFix* = tuple[pos: Point, heading, heardTick: int]
@@ -161,3 +161,11 @@ proc projectedTrackPos*(belief: Belief, track: PlayerTrack): Point =
       0, belief.worldmap.width - 1),
     clamp(pyRound(track.pos.y.float + velocity.y * age.float),
       0, belief.worldmap.height - 1))
+
+proc freshEnemyPositions*(belief: Belief): seq[Point] =
+  ## Believed enemy locations within the track-staleness window, velocity
+  ## projected — the situational-cover input (facingScore) for post
+  ## selection.
+  for track in belief.enemyTracks:
+    if belief.tick - track.lastTick <= TrackTtlTicks:
+      result.add(belief.projectedTrackPos(track))

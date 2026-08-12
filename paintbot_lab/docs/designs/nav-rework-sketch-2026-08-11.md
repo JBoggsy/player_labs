@@ -365,6 +365,17 @@ per size recorded in the proposal's measured-budget table (9–49 rooms /
 clearance — added at review, now the inspection tool of record for
 merge-knob tuning.
 
+**v63 addendum (2026-08-12):** the D5-2 post-candidate re-sourcing shipped
+as stencil v63 with James's facing revision — candidates from on-route gate
+vicinities, facing scored **situationally at selection time against believed
+enemy tracks** (the sketch's cover "situational half", now live), never baked
+toward a pedestal at init. A `fieldsFor` by-value copy bug found en route
+(~1.4 MB memcpy per `distanceAt` call) was fixed by per-front field hoisting:
+giant `post_ms` 1528 → 73 ms, giant seat init now below the v61 baseline.
+Layer 3 note: per-tick `flowWaypoint`/`routeDistance` callers still pay that
+copy — the planner must use borrowed field access. See
+[nav-post-resourcing-v63-2026-08-12.md](nav-post-resourcing-v63-2026-08-12.md).
+
 ## 10. TODOs spawned by the review (out of scope here)
 
 - Fire-windup micro: strafe/aim during windup; trigger from cover then step out to minimize

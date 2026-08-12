@@ -1,6 +1,6 @@
 ## Episode-scoped terrain, route fields, and derived tactical geometry.
 
-import std/[algorithm, heapqueue, math, monotimes, options, tables, times]
+import std/[algorithm, heapqueue, math, monotimes, options, sets, tables, times]
 import config, types
 
 const
@@ -580,6 +580,57 @@ proc buildCoverDirs(map: WorldMap) =
       map.coverDirs[index] = mask
       map.cover[index] = mask != 0
 
+proc facingScore*(map: WorldMap, point: Point,
+    threats: openArray[Point]): float =
+  ## Situational cover facing: the fraction of believed threat positions the
+  ## cell is covered FROM (bearing point->threat quantized to the cover-ray
+  ## sectors, tested against the precomputed blocked-from bitmask). No
+  ## threats -> neutral 0.5, so intel-free selection is unchanged.
+  if threats.len == 0:
+    return 0.5
+  let rays = clamp(CoverRays, 1, 16)
+  let cell = map.cellOf(point)
+  let mask = map.coverDirs[map.gridIndex(cell.x, cell.y)]
+  var covered = 0
+  for threat in threats:
+    let bearing = arctan2((threat.y - point.y).float, (threat.x - point.x).float)
+    let sector = floorMod(pyRound(bearing / (2.0 * PI) * rays.float), rays)
+    if (mask and uint16(1 shl sector)) != 0:
+      inc covered
+  covered.float / threats.len.float
+
+proc selectRankedPost*(map: WorldMap, candidates: seq[PostCandidate],
+    anchor: Point, rank: int,
+    threats: openArray[Point]): Option[PostCandidate] =
+  ## The squad post-selection core, extracted from squads.orderPost so the
+  ## offline harness can run the exact production logic. Ranks candidates
+  ## near `anchor` by score, travel, and situational facing against believed
+  ## threats, then picks the rank-th survivor of the separation filter.
+  var ranked: seq[tuple[post: PostCandidate, utility: float]]
+  for candidate in candidates:
+    let distance = hypot((candidate.pos.x - anchor.x).float,
+      (candidate.pos.y - anchor.y).float)
+    if distance <= SquadPostSearchPx.float:
+      ranked.add((candidate,
+        candidate.score - 0.25 * distance / max(SquadPostSearchPx.float, 1.0) +
+        PostFacingWeight * (map.facingScore(candidate.pos, threats) - 0.5)))
+  ranked.sort(proc(a, b: tuple[post: PostCandidate, utility: float]): int =
+    cmp(b.utility, a.utility))
+  var selected: seq[PostCandidate]
+  for candidate in ranked:
+    var separated = true
+    for previous in selected:
+      if hypot((candidate.post.pos.x - previous.pos.x).float,
+          (candidate.post.pos.y - previous.pos.y).float) <
+          SquadPostSeparationPx.float:
+        separated = false
+        break
+    if separated:
+      selected.add(candidate.post)
+  if selected.len == 0:
+    return none(PostCandidate)
+  some(selected[min(rank, selected.high)])
+
 proc reverseNeighborIndex(dx, dy: int): int =
   for index, delta in Neighbors:
     if delta.x == -dx and delta.y == -dy:
@@ -745,25 +796,79 @@ proc generateFront(map: WorldMap, team, opponent: Team): PostFront =
   var buckets = newSeq[seq[PostCandidate]](PostProgressBuckets)
   if classify(direct) == fcInf:
     return
-  for gy in 0 ..< map.gridH:
-    for gx in 0 ..< map.gridW:
-      let index = map.gridIndex(gx, gy)
-      if not map.cover[index] or (gx + gy) mod stride != 0:
-        continue
-      let
-        point = cellCenter((gx, gy))
-        fromHome = map.distanceAt(point, home)
-        toEnemy = map.distanceAt(point, enemyHome)
-        via = fromHome + toEnemy
-        detour = max(0.0, via - direct)
-      if classify(via) == fcInf or detour > PostCorridorPx.float * 3.0:
-        continue
+  # v63 candidate sourcing: cover-bearing cells in the vicinity of on-route
+  # gates (chokes), instead of a full-grid cover scan — posts live at the
+  # constrictions the route actually crosses. Facing is deliberately NOT
+  # filtered here: threat direction is situational and scored at selection
+  # time against believed enemy tracks (facingScore). The legacy full-grid
+  # scan survives only as the per-bucket fallback for route stretches that
+  # cross gateless open space.
+  # The two route fields are hoisted ONCE per front and read by cell index:
+  # per-cell distanceAt calls (table lookup + snap each) were the measured
+  # dominant cost of the candidate stage on gate-dense giants.
+  let homeFields = map.fieldsFor(home)
+  let enemyFields = map.fieldsFor(enemyHome)
+  template admitCell(gx, gy: int, cellIndex, onlyBucket: int) =
+    # Callers guarantee map.walkable[cellIndex], so the field reads need no
+    # nearestWalkable snap.
+    let fromHome = homeFields.distances[cellIndex] * NavCell.float
+    let toEnemy = enemyFields.distances[cellIndex] * NavCell.float
+    let via = fromHome + toEnemy
+    let detour = max(0.0, via - direct)
+    if classify(via) != fcInf and detour <= PostCorridorPx.float * 3.0:
       let corridor = exp(-detour / max(PostCorridorPx.float, 1.0))
       let bucket = clamp(int(fromHome / direct * PostProgressBuckets.float),
         0, PostProgressBuckets - 1)
-      buckets[bucket].add(PostCandidate(
-        pos: point, duck: point,
-        score: corridor, corridor: corridor))
+      if onlyBucket < 0 or bucket == onlyBucket:
+        buckets[bucket].add(PostCandidate(
+          pos: cellCenter((gx, gy)), duck: cellCenter((gx, gy)),
+          score: corridor, corridor: corridor))
+  var seenCells = initHashSet[int]()
+  let vicinity = max(1, PostGateVicinityPx div NavCell)
+  for choke in map.chokes:
+    let gateFromHome = map.distanceAt(choke.pos, home)
+    let gateToEnemy = map.distanceAt(choke.pos, enemyHome)
+    if classify(gateFromHome) == fcInf or classify(gateToEnemy) == fcInf:
+      continue
+    if gateFromHome + gateToEnemy - direct > PostCorridorPx.float * 3.0:
+      continue
+    let gateCell = map.cellOf(choke.pos)
+    for dy in -vicinity .. vicinity:
+      for dx in -vicinity .. vicinity:
+        let gx = gateCell.x + dx
+        let gy = gateCell.y + dy
+        if gx < 0 or gx >= map.gridW or gy < 0 or gy >= map.gridH:
+          continue
+        let index = map.gridIndex(gx, gy)
+        if index in seenCells:
+          continue
+        seenCells.incl(index)
+        if not map.walkable[index] or map.coverDirs[index] == 0:
+          continue
+        admitCell(gx, gy, index, -1)
+  if PostBucketFallback:
+    var wasEmpty = newSeq[bool](PostProgressBuckets)
+    var anyEmpty = false
+    for index, bucket in buckets:
+      if bucket.len == 0:
+        wasEmpty[index] = true
+        anyEmpty = true
+    if anyEmpty:
+      # One bounded legacy pass, filling only the empty progress bands.
+      for gy in 0 ..< map.gridH:
+        for gx in 0 ..< map.gridW:
+          let index = map.gridIndex(gx, gy)
+          if not map.cover[index] or (gx + gy) mod stride != 0 or
+              index in seenCells:
+            continue
+          let probeFromHome = homeFields.distances[index] * NavCell.float
+          if classify(probeFromHome) == fcInf:
+            continue
+          let probeBucket = clamp(
+            int(probeFromHome / direct * PostProgressBuckets.float),
+            0, PostProgressBuckets - 1)
+          if wasEmpty[probeBucket]:
+            admitCell(gx, gy, index, probeBucket)
   for bucket in buckets.mitems:
     bucket.sort(proc(a, b: PostCandidate): int = cmp(b.corridor, a.corridor))
     var retained: seq[PostCandidate]

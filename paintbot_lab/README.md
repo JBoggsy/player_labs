@@ -92,7 +92,11 @@ paintbot_lab/
     self_play.py           native, fast-ready, parallel local self-play
     render_nav.py          static navigation-knowledge viewer
     render_topology.py     Layer 2 topology PROCESS viewer (watershed flood
-                           scrubber, merge log, cover roses, gate scoring)
+                           scrubber, merge log, cover roses, gate scoring,
+                           post fronts + a belief-parameterized selection
+                           simulator: click = squad directive, shift-click =
+                           believed enemies; JS mirror verified fail-closed
+                           against harness-run production selection)
     topology_debug.nim     its Nim harness — re-runs the exact worldmap
                            topology code on an agent-logged clearance field
     compare_stencil.py     A/B metric adapter over the shared stats engine

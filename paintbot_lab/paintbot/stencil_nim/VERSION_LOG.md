@@ -4,6 +4,71 @@ Read this before assuming what a version contains. Format mirrors
 `ctf_lab/ctf/beacon/VERSION_LOG.md`: one entry per uploaded version — what
 changed, why, and what the evidence said.
 
+## v63 — post candidate re-sourcing + belief-scored facing, uploaded 2026-08-12
+
+Immutable policy-version UUID: `fba7d396-9166-49de-9252-b6bef98b0077`.
+Uploaded with tag `purpose=post-resourcing`. **Not submitted to any league.**
+
+Executes the deferred Layer 2 D5-2 option
+([design](../../docs/designs/nav-post-resourcing-v63-2026-08-12.md), approved
+with the belief-scored facing revision after James killed the static
+toward-enemy-home facing filter). Two separable claims — quality and cost:
+
+**Quality (the re-sourcing + situational facing):**
+- `generateFront` candidates now come from cover-bearing cells within
+  `STENCIL_POST_GATE_VICINITY_PX` (48) of on-route chokes (same
+  `detour ≤ PostCorridorPx×3` cap as the old scan), with the legacy
+  full-grid scan surviving only as a per-empty-progress-bucket fallback
+  (`STENCIL_POST_BUCKET_FALLBACK`, default on). No direction is baked in.
+- Facing is situational: new `facingScore` (fraction of believed threat
+  positions a cell is covered from — the first per-direction consumer of the
+  16-ray bitmask) enters selection utility at weight
+  `STENCIL_POST_FACING_WEIGHT` (0.15). `squads.orderPost`'s core is
+  extracted to the pure `worldmap.selectRankedPost` (offline harness runs
+  the exact production proc); both it and `roles.defensivePostForSeat` take
+  believed enemy positions (velocity-projected tracks within
+  `TrackTtlTicks`) from the caller's Belief.
+- **Expected behavioral deltas, by design:** post positions move to gate
+  vicinities (the h2h batch cell's front went 3 → 5 selected posts);
+  defender assignment now orders by 64 px distance BANDS with
+  score+facing inside a band — intel-free behavior is deliberately NOT
+  bit-identical to v62 (within-band reordering); squad post picks react to
+  believed enemy bearings.
+
+**Cost (a separate fix the first cut exposed):** re-sourcing alone made
+giant `post_ms` WORSE (1528 → 2470 ms local) — the dominant cost was never
+the scan shape but `fieldsFor` returning `RouteFields` **by value**: every
+per-cell `distanceAt` memcpy'd ~1.4 MB of cached Dijkstra field. Hoisting
+the two route fields once per front and reading distances by cell index:
+giant-probe `post_ms` 1528 → **73 ms**, duo-cell 2166 → **88 ms**; giant
+seat init ~1.0–1.1 s local — below the v61 pre-Layer-2 baseline. Recorded
+for Layer 3: every `distanceAt`/`routeDistance`/`flowWaypoint` call still
+pays that copy, including per-tick follower lookups — the planner rework
+must use borrowed/indexed field access.
+
+**Viewer (James's request):** `render_topology.py` gained the post layer
+(front dropdown, score-colored candidates, posts with rays + duck links,
+defender assignments) and the **selection simulator** — click to place a
+squad directive, shift-click to place believed enemies, rank selector; the
+JS mirror of the selection utility is verified fail-closed at load against
+200 harness-sampled runs of the real production proc.
+
+**Pre-upload evidence:** 9.2M property checks over 120 random maps (half
+4-team) incl. new post invariants (separation, real ducks, routable fronts
+non-empty); selection mirror 200/200; corpus before/after renders under
+`local_data/.../topology_renders/{before-v63,after-v63}`; same-map local
+timings above. `nim check` clean on all touched modules. Built against
+0.7.215 / `6c7a4c0e` (pin unchanged).
+
+**Hosted validation:** matched v63-vs-v62 batch pending at upload time —
+same 12-request/58-episode shape on the re-resolved live board, paired
+giant probes now v63-vs-v62 in-episode (they confirm the post_ms fix under
+hosted contention); analysis via the score-sign classifier (the v62
+batch's unique-max bug cannot misfile duo team wins as draws). Expected
+trace deltas: post positions, defender band ordering, squad picks; duck%
+and objective mix should hold; ticks/s compared across arms because the
+facing term sits on a per-tick path. Verdict appended when complete.
+
 ## v62 — topology & PoIs (nav rework Layer 2), uploaded 2026-08-11
 
 Immutable policy-version UUID: `d415aded-ae80-4140-9f27-ad073718af25`.

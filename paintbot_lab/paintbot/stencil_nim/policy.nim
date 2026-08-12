@@ -67,7 +67,7 @@ proc decide*(policy: StencilPolicy, client: ProtocolClient): Command =
     if policy.belief.role == Defender:
       let assignment = if DefensivePosts:
         defensivePostForSeat(policy.belief.worldmap, policy.belief.team,
-          policy.belief.seat, seats)
+          policy.belief.seat, seats, policy.belief.freshEnemyPositions)
       else:
         none(tuple[post: PostCandidate, opponent: Team])
       if assignment.isSome:
