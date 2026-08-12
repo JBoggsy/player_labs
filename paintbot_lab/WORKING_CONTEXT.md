@@ -105,19 +105,23 @@ unit—is the reboot guarantee.
 
 ## Current objective
 
-**Navigation rework in progress; v60 (Layer 1) uploaded and under hosted
-validation (2026-08-11).** Direction set by James's review of the navigation
-deep-dive: one planner, no beelining, no 8px movement coarsening, dynamic
-PoIs, goals validated before nav. Sketch:
+**Navigation rework Layer 1 is SHIPPED and validated as v61 (2026-08-11).**
+Direction set by James's review of the navigation deep-dive: one planner, no
+beelining, no 8px movement coarsening, dynamic PoIs, goals validated before
+nav. Sketch:
 [`docs/designs/nav-rework-sketch-2026-08-11.md`](docs/designs/nav-rework-sketch-2026-08-11.md).
-v60 (`311a5ef0-928c-4910-9172-881ea81886af`, tag `purpose=nav-clearance`)
-ships Layer 1: the exact L∞ clearance field, `canStand`/`segmentClear`
-replacing both old segment predicates, and the nav grid derived (bit-identical)
-from clearance. A matched v60-vs-v59 campaign-shaped batch (22 episodes,
-10 xreqs — head-to-head giant-map cell, 2v2 duo cell, 4ffa8 cell; ids in
-`VERSION_LOG.md` v60 entry) is running; artifacts stream to
-`local_data/episodes/nav-clearance-v60`. Layer 2 (topology/PoIs) is next once
-v60 evidence is in.
+v61 (`3380ab6d-5bc8-45b7-9429-ff7b74fc1f85`, tag `purpose=nav-clearance-nudge`)
+carries the exact L∞ clearance field, `canStand`/`segmentClear`/`nudgeClear`
+replacing both old segment predicates, and the nav grid derived
+(bit-identical, hosted-verified) from clearance; erosion deleted. v60
+(clearance without `nudgeClear`) measurably regressed — exact micro-nudge
+validation rejected peeks the engine's wall-slide executes, duck time
+11.3%→15.0%, 10W-23L vs v59's 16W-17L — and is superseded. v61's matched
+round-2 batch: 13W (+16) vs paired v59 10W (+4), n=32/arm, 0 ops failures in
+130 total episodes, duck time restored. Full evidence in `VERSION_LOG.md`
+v60/v61 entries; artifacts in `local_data/episodes/nav-clearance-v6{0,1}`.
+**Layer 2 (topology/PoIs from the clearance field) is next**; the wall-slide
+micro lesson is recorded in the sketch for Layer 5.
 
 **Campaign contract drift found 2026-08-11 (round 967):** 16×16 hex board
 (migrated round 955), true `1v1` head-to-head mode (49 cells), `2v2` duo

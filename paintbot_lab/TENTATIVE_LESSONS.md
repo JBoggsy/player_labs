@@ -18,6 +18,15 @@ concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
 
+### Predicate exactness can be a pessimization when the executor is forgiving — validate micro nudges at engine-movement fidelity, not geometry fidelity
+Evidence: v60→v61 (2026-08-11). Replacing the 2px-sampled walkableSegment with an exact
+supercover test at the sidestep/stance/bias/separation call sites rejected slightly-clipping
+peek nudges that the engine's wall-slide executes fine: duck micro time rose 11.3%→15.0%
+and v60 went 10W-23L vs paired v59's 16W-17L (n=33/arm, all modes negative). Restoring the
+old acceptance bit-for-bit via nudgeClear (canStand @2px samples) flipped it to 13W vs 10W
+(n=32/arm). The matched-arm A/B + trace micro-distribution diff was what localized the
+mechanism; scores alone would have left it a mystery.
+
 ### Re-verify the campaign contract from live data before every eval — it drifted massively in 3 days
 Evidence: v60 validation (2026-08-11). Since the docs' round-381 snapshot: board migrated
 10×10→16×16 hex (round 955), a true 1v1 head-to-head mode appeared (49 cells), _duo_roster

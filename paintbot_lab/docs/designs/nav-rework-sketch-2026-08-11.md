@@ -317,7 +317,29 @@ the step only quantizes waypoint placement.
     believed enemy locations? Decides its long-term fate; nothing in this design depends
     on the answer.
 
-## 9. TODOs spawned by the review (out of scope here)
+## 9. Layer 1 status addendum (2026-08-11)
+
+**Layer 1 is implemented, shipped, and hosted-validated as stencil v61**
+(v60 = first cut, superseded; see `VERSION_LOG.md` for full evidence). What
+shipped matches §3.1 with one design-relevant amendment:
+
+- The clearance field, `canStand`, and the supercover `segmentClear` landed as
+  designed; the nav grid is now derived from clearance (hosted-verified
+  bit-identical `walkable_cells` on every map incl. the 5.5M-px giant) and the
+  SAT erosion is deleted. Giant-map clearance init: 60–100 ms one-time.
+- **Wall-slide amendment (feeds layer 5):** validating the four micro-nudge
+  call sites (sidestep, stance, formation bias, separation) with the *exact*
+  test regressed gameplay measurably — duck time +3.7pp, 10W–23L vs paired
+  v59 — because the engine's forgiving wall-slide executes slightly-clipping
+  nudges the exact test rejects. Micro-nudge validity must not exceed
+  engine-movement fidelity. v61 restores the old 2px-sampled acceptance
+  bit-for-bit via `nudgeClear` (canStand at 2px samples, ~1/169th the old
+  cost) and went 13W (+16) vs paired v59's 10W (+4) at n=32/arm, 0 ops
+  failures across 130 episodes. Layer 5's follower/micro design should treat
+  "engine-executable under slide" — not "footprint-clear along the exact
+  line" — as the acceptance bar for bounded micro perturbations.
+
+## 10. TODOs spawned by the review (out of scope here)
 
 - Fire-windup micro: strafe/aim during windup; trigger from cover then step out to minimize
   exposure time.

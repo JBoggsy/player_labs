@@ -4,6 +4,40 @@ Read this before assuming what a version contains. Format mirrors
 `ctf_lab/ctf/beacon/VERSION_LOG.md`: one entry per uploaded version — what
 changed, why, and what the evidence said.
 
+## v61 — nudgeClear micro fix (nav rework Layer 1, final), uploaded 2026-08-11
+
+Immutable policy-version UUID: `3380ab6d-5bc8-45b7-9429-ff7b74fc1f85`.
+Uploaded with tag `purpose=nav-clearance-nudge`. **Not submitted to any
+league.** This is the version that completes Layer 1; v60 is superseded.
+
+v60's matched hosted batch found a real behavioral regression: exact
+supercover validation at the four micro-nudge call sites (sidestep, squad
+stance, formation bias, hold separation) rejected slightly-clipping peek
+nudges that the engine's forgiving wall-slide executes fine — duck micro
+time rose from 11.3% to 15.0% of snapshots and v60 went 10W-23L vs paired
+v59's 16W-17L (n=33/arm, all three modes leaning negative). v61 adds
+`nudgeClear` — `canStand` sampled every 2px, bit-identical acceptance to
+the pre-clearance `walkableSegment` (19.2k random-segment property checks)
+at ~1/169th the reads — at those call sites plus init duck pairing. Flee
+validation keeps the exact `segmentClear` (the intended improvement; it
+fired equally in both v60 arms).
+
+**Hosted verdict (round-2 matched batch, 64 episodes, 20 requests, two
+cells per mode, both seatings, same pinned opponents):** v61 **13W (+16)**
+vs paired v59 **10W (+4)** at n=32/arm; ffa 8/8 sweep; 0 ops failures;
+duck micro back to 11.1% (v59 control 13.5%); objective mixes aligned;
+grid parity (`walkable_cells`) exact on every map. Combined with round 1,
+130/130 episodes completed with zero errors. Layer 1 is done: one
+predicate family (`canStand`/`segmentClear`/`nudgeClear` over the L∞
+clearance field), erosion deleted, giant-map clearance init 60-100 ms
+(one-time; total giant init ~1.5-1.9 s is pre-existing Dijkstra/post cost,
+a later rework target).
+
+Wall-slide lesson for the rework (recorded in the nav sketch): micro-nudge
+validity must not exceed engine-movement fidelity — the executor's slide
+makes near-valid segments practically valid, so exactness at the nudge
+layer is a pessimization.
+
 ## v60 — L∞ clearance field (nav rework Layer 1), uploaded 2026-08-11
 
 Immutable policy-version UUID: `311a5ef0-928c-4910-9172-881ea81886af`.

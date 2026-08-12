@@ -385,7 +385,8 @@
       <li><span class="toc-num">6</span><a href="#numbers">Numbers Driving the Decisions</a></li>
       <li><span class="toc-num">7</span><a href="#invariants">Invariants and Accepted Risks</a></li>
       <li><span class="toc-num">8</span><a href="#open-questions">Open Questions</a></li>
-      <li><span class="toc-num">9</span><a href="#todos">TODOs Spawned by the Review</a></li>
+      <li><span class="toc-num">9</span><a href="#layer1-status">Layer 1 Status Addendum</a></li>
+      <li><span class="toc-num">10</span><a href="#todos">TODOs Spawned by the Review</a></li>
     </ol>
   </nav>
 
@@ -794,8 +795,30 @@
     </div>
   </section>
 
+  <section id="layer1-status">
+    <h2>9 · Layer 1 Status Addendum (2026-08-11)</h2>
+    <p><strong>Layer 1 is implemented, shipped, and hosted-validated as stencil v61</strong> (v60 = first
+    cut, superseded; see <span class="cite">VERSION_LOG.md</span> for full evidence). What shipped matches
+    §3.1 with one design-relevant amendment:</p>
+    <ul>
+      <li>The clearance field, <code>canStand</code>, and the supercover <code>segmentClear</code> landed as
+        designed; the nav grid is now derived from clearance (hosted-verified bit-identical
+        <code>walkable_cells</code> on every map incl. the 5.5M-px giant) and the SAT erosion is deleted.
+        Giant-map clearance init: 60–100 ms one-time.</li>
+      <li><strong>Wall-slide amendment (feeds layer 5):</strong> validating the four micro-nudge call sites
+        (sidestep, stance, formation bias, separation) with the <em>exact</em> test regressed gameplay
+        measurably — duck time +3.7pp, 10W–23L vs paired v59 — because the engine's forgiving wall-slide
+        executes slightly-clipping nudges the exact test rejects. Micro-nudge validity must not exceed
+        engine-movement fidelity. v61 restores the old 2px-sampled acceptance bit-for-bit via
+        <code>nudgeClear</code> (canStand at 2px samples, ~1/169th the old cost) and went 13W (+16) vs
+        paired v59's 10W (+4) at n=32/arm, 0 ops failures across 130 episodes. Layer 5's follower/micro
+        design should treat &ldquo;engine-executable under slide&rdquo; — not &ldquo;footprint-clear along the exact
+        line&rdquo; — as the acceptance bar for bounded micro perturbations.</li>
+    </ul>
+  </section>
+
   <section id="todos">
-    <h2>9 · TODOs Spawned by the Review</h2>
+    <h2>10 · TODOs Spawned by the Review</h2>
     <ul>
       <li><strong>Fire-windup micro</strong>: strafe/aim during windup; trigger from cover then step out to
         minimize exposure time. (Recorded in <span class="cite">TODO.md</span>; out of scope here.)</li>
