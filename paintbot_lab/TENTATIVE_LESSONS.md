@@ -65,3 +65,23 @@ rooms/chokes/cover/gates differ from the agent-traced finals. First real
 agent trace (standard map): zero drift. The trace carries the knob values
 (merge depth/ratio, cover rays, gate detour) so the harness reproduces the
 agent's env exactly.
+
+### Changing a shared gating input (cover) silently rescales downstream passes — measure them too
+Evidence: D3a swapped adjacency-cover for directional cover; the post pass
+gates candidates on `map.cover`, so giant post_ms grew ~0.7-1.5s hosted (more
+wall-near cells qualify at 24px ray reach than at 8px adjacency). The Layer 2
+phase timings alone (~690ms) understated the true init delta; the paired
+in-episode v62-vs-v61 probe caught it because both versions' nav_init landed
+in the same episode's traces.
+
+### The campaign contract can drift twice in one day — re-resolve at request time, not session start
+Evidence: round-967 16x16 hex board re-verified in the morning; by evening the
+board events feed recorded "RESTORED to the pre-migration 10x10 square board"
+(null map_sizes again, fresh unowned cells). The batch was designed against
+the evening live read; morning docs were already stale.
+
+### A paired in-episode probe measures both versions' init on the exact same map for free
+Evidence: the giant DEBUG probes seated v62-vs-v61 in one episode; each seat's
+trace carries its own nav_init, giving a same-map, same-host, same-contention
+init comparison from 2 episodes — far cleaner than cross-referencing separate
+arms' timings.

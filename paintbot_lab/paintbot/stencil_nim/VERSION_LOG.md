@@ -96,8 +96,37 @@ duo `xreq_ca5192bf`/`xreq_22c073b6`, ffa `xreq_dd592a79`; v61 h2h
 `xreq_d8f4ffb8`/`xreq_ed06892a`, duo `xreq_e1120b86`/`xreq_d971a4e4`, ffa
 `xreq_ebed31f5`; plus two giant-init DEBUG PROBES (invented mapSize=giant,
 v62-vs-v61 in-episode, both seatings: `xreq_a1de40e5`/`xreq_5cb7f255`) —
-probes are ops evidence only, excluded from gameplay claims. Verdict
-appended when the batch completes.
+probes are ops evidence only, excluded from gameplay claims.
+
+**Hosted verdict (batch complete, 58/58 episodes, 0 ops failures):**
+
+| mode (n/arm) | v62 | v61 (control) |
+| --- | --- | --- |
+| h2h vs focusfire:v39 (16) | **11W-5L** | 6W-10L |
+| duo vs swgy+relh (8) | 0W-6L-2D | 0W-8L |
+| ffa top-3 field (4) | 2W-2L | 2W-2L |
+| total (28) | **13W-13L-2D** | 8W-20L |
+
+v62 ≥ v61 in every mode on identical cells/opponents/seatings; the h2h
+swing (+5 net wins) is the clearest signal (not individually significant at
+n=16/arm — Fisher ~0.15 — but direction-consistent with the duo draws).
+Both arms lose the duo cell outright to the #2-ranked swgy captain — a
+matchup fact, not a regression. Behavior diffs at the subject seats:
+objective mixes aligned; h2h duck micro 13.4% (v62) vs 11.9% (v61) — no
+v60-style duck spike; v62 spends less time dead (27.6% vs 33.3% of h2h
+snapshots) and less time in early_defense (19.2% vs 28.9%, coherent with
+earlier lives leads releasing the gate).
+
+**Giant-init probes (both seatings, v62-vs-v61 in-episode):** both completed
+clean. Paired hosted giant seat init: v62 3.2-4.2 s vs v61 1.9-2.1 s
+(rooms 71 / chokes 300 on the probe seed). Breakdown: Layer 2 phases
+~640-700 ms, and **post_ms grew ~0.7-1.5 s** because the directional-cover
+swap (D3a) admits more post candidate cells than adjacency cover — a real,
+disclosed compounding cost on giants and a concrete input to the Q6/D5-2
+post-rebuild decision and the later Dijkstra/post init rework.
+
+**Conclusion: Layer 2 accepted.** v62 is the new nav-rework baseline for
+Layer 3; v58 remains the live champion (nothing submitted).
 
 ## v61 — nudgeClear micro fix (nav rework Layer 1, final), uploaded 2026-08-11
 
