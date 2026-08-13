@@ -105,7 +105,14 @@ unit—is the reboot guarantee.
 
 ## Current objective
 
-**v65 (Layer 3 — the planner) is uploaded; matched batch vs v64 next.**
+**v65 (Layer 3 — the planner) is ACCEPTED (2026-08-13) — the Layer 4
+baseline.** Batch 58/58, 0 ops failures: gameplay parity with v64 (14W-14L
+vs 12W-16L; h2h/duo identical, +2 ffa), and the planner proved itself in
+real competition: 925 hosted searches at 13.5 ms mean, 0 unroutable,
+0 beeline fallbacks, 9 endpoint snaps (the Layer 4 producer-cleanup
+worklist counter). **Next: Layer 4 — the Intent contract** (typed Intent,
+component-validated goals, kill FlowReasons + all beelines + reason-string
+dispatch, carrier/hunter profiles live).**
 v65 (`d8b5ca59-503f-4f8c-85b8-df052fb38998`, tag `purpose=layer3-planner`),
 implemented by Codex CLI under orchestration with two review-driven fixes:
 weighted A* on a 4px lattice (exact supercover edges, completeness cascade

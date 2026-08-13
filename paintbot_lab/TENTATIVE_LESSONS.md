@@ -141,18 +141,6 @@ Evidence: by-value RouteFields returns copied ~1.4MB per call; `lent` return
 incl. per-tick flowWaypoint and per-candidate ray scoring. Giant post_ms
 with a 14x bigger pool: 18ms (was 73ms with the small pool + hoist).
 
-### v65 planner acceptance checklist (pre-staged for the Codex review)
-Evidence: orchestrating Codex for Layer 3; criteria fixed BEFORE seeing its
-plan: (1) oracle heuristic peeks the field cache non-mintingly; (2) no
-grid-seq value copies; (3) DangerField on Belief, producer standalone;
-(4) astarWaypoint contract byte-compatible (empty seq => existing beeline
-fallback); (5) FlowReasons/dispatch untouched except the moving-goal flag;
-(6) generation-stamped reusable search arrays; (7) determinism; (8) knobs
-exactly as named in the proposal; (9) nim check clean locally except
-trace.nim; (10) property tests to add: path edges all segmentClear, cost
-within bound of reference search, empty iff sameComponent false, moving
-cadence respected. Status: checklist, not lesson — delete after v65 ships.
-
 ### Lattice planners are incomplete on sub-step standable ridges — cascade to step 1 when sameComponent says reachable
 Evidence: v65 planner (4px lattice, supercover edges) returned empty for an
 engine-reachable pair: a ~14px corridor leaves a 1-2px standable ridge that

@@ -78,7 +78,35 @@ obstacle shadows. Built against 0.7.215 / `6c7a4c0e`.
 behavior delta is route GEOMETRY for the ~10 A*-reason intents (danger-
 aware shadow-threading detours, unbiased endpoints) plus the moving-target
 cadence; flow-reason movement unchanged. Tick-rate compared across arms
-(planning sits on the decide path). Verdict appended when complete.
+(planning sits on the decide path).
+
+**Hosted verdict (58/58 episodes, 0 ops failures; v65 arms
+`xreq_6c5253cb`/`xreq_9f4e2b6c` h2h, `xreq_a6cd94a3`/`xreq_f018ce5b` duo,
+`xreq_a896458b` ffa; v64 arms `xreq_95c8b41f`/`xreq_b36d3b76`,
+`xreq_c5a59bec`/`xreq_916837a7`, `xreq_a24ad8c8`; probes
+`xreq_70ce6ea6`/`xreq_419809d3`):**
+
+| mode (n/arm) | v65 | v64 (control) |
+| --- | --- | --- |
+| h2h vs focusfire:v39 (16) | 10W-6L | 10W-6L |
+| duo vs swgy+relh (8) | 2W-6L | 2W-6L |
+| ffa top-3 field (4) | 2W-2L | 0W-4L |
+| total (28) | **14W-14L** | 12W-16L |
+
+Gameplay parity (h2h and duo identical; +2 in ffa at n=4) — expected: route
+quality alone was never the win condition; the cost machinery's value
+compounds when Layer 4 gives it validated goals and per-intent profiles.
+**The planner infrastructure proved itself hosted:** across 30 sampled v65
+competition seats, 925 real searches at **13.5 ms mean** (per-seat
+containers), **0 unroutable, 0 beeline fallbacks, 9 endpoint snaps** — the
+bridge behaviors work and the Layer 4 worklist counter is live. v65 lost
+both n=2 giant probe scores (ops-tier; the probe coin has now landed
+differently in three consecutive batches — treat as noise).
+
+**Conclusion: v65 accepted — the Layer 4 baseline.** One planner runs all
+A*-reason navigation with danger-aware routing; FlowReasons and the beeline
+fallback are the remaining Layer 4 kill-list. v58 remains the live
+champion; nothing submitted.
 
 ## v64 — wide post pool + Dijkstra-minting fix, uploaded 2026-08-12
 
