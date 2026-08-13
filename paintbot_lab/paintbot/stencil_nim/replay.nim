@@ -76,7 +76,6 @@ proc replay(path: string, slot: int) =
       "aim": belief.aimBrads,
       "intent_reason": stencil.lastIntent.reason,
       "intent_point": pointJson(stencil.lastIntent.point),
-      "flow_goal": pointJson(stencil.lastFlowGoal),
       "hold_point": pointJson(belief.holdPoint),
       "defensive_post": pointJson(belief.defensivePost),
       "defensive_post_duck": pointJson(belief.defensivePostDuck),

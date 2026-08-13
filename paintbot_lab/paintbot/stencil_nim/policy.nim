@@ -15,7 +15,6 @@ type StencilPolicy* = ref object
   teamsKnown*: bool
   rolesAssigned*: bool
   lastIntent*: Intent
-  lastFlowGoal*: Option[Point]
 
 proc newStencilPolicy*(slot: int): StencilPolicy =
   StencilPolicy(slot: slot, belief: newBelief(slot))
@@ -100,10 +99,8 @@ proc decide*(policy: StencilPolicy, client: ProtocolClient): Command =
   let objective = if policy.belief.alive:
     policy.belief.decideObjective()
   else:
-    Objective(intent: Intent(kind: Hold, point: none(Point), reason: "not_alive"),
-      flowGoal: none(Point))
+    Objective(intent: makeIntent(Hold, none(Point), "not_alive"))
   policy.lastIntent = objective.intent
-  policy.lastFlowGoal = objective.flowGoal
   result = resolveAction(objective.intent, policy.belief, policy.actionState)
   if Chat and policy.belief.alive:
     let shout = policy.belief.chooseShout()

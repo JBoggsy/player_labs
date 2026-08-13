@@ -105,6 +105,21 @@ unit—is the reboot guarantee.
 
 ## Current objective
 
+**v66 (Layer 4 — the Intent & goal contract) is uploaded; matched batch vs
+v65 next.** v66 (`80e2a0a4-9662-4722-8fe0-e3aa4a57e593`, tag
+`purpose=intent-contract`), Codex-implemented under orchestration: typed
+Intent (all seven reason-string lists dead, grep-gated), goals validated at
+selection via `nearestReachable`, all five beelines + FlowReasons dispatch
+dead (flow fields = oracle only), carrier ×2.5 / hunter ×0.25 danger
+profiles live with profile-change cache invalidation, unroutable = hold +
+loud `plan_unroutable_bug`. Live checks: 0 unroutable, 2 snapped (was 9),
+carry/steal movement now planner-routed (75 plans in an h2h episode where
+v65 ran 0). v67 next after the batch: early_defense/barrage over PoIs +
+side-lane posts; then Layer 5 (bounded follower). Full story: VERSION_LOG
+v66.
+
+
+
 **v65 (Layer 3 — the planner) is ACCEPTED (2026-08-13) — the Layer 4
 baseline.** Batch 58/58, 0 ops failures: gameplay parity with v64 (14W-14L
 vs 12W-16L; h2h/duo identical, +2 ffa), and the planner proved itself in

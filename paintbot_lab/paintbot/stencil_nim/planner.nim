@@ -28,6 +28,15 @@ type
     cameFrom: seq[int32]
     queue: HeapQueue[QueueNode]
 
+proc planCostProfile*(kind: CostProfileKind): PlanCostProfile =
+  case kind
+  of ProfileDefault:
+    PlanCostProfile(dangerWeight: 1.0)
+  of ProfileCarrier:
+    PlanCostProfile(dangerWeight: ProfileCarrierDanger)
+  of ProfileHunter:
+    PlanCostProfile(dangerWeight: ProfileHunterDanger)
+
 proc elapsedMs(started: MonoTime): float =
   (getMonoTime() - started).inNanoseconds.float / 1_000_000.0
 

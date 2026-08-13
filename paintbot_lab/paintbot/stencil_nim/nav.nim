@@ -12,6 +12,8 @@ type
     lastXy*: Option[Point]
     stuckTicks*: int
     planner*: PlannerState
+    profile*: CostProfileKind
+    profileSet*: bool
     lastPlanTick*: int
     planCount*: int
     planMsTotal*: float
@@ -24,7 +26,8 @@ proc distance(a, b: Point): float = hypot((a.x - b.x).float, (a.y - b.y).float)
 
 proc astarWaypoint*(
   state: var NavState, map: WorldMap, selfXy, goal: Point,
-  danger = DangerField(), tick = 0, movingTarget = false
+  danger = DangerField(), tick = 0, movingTarget = false,
+  profile = ProfileDefault
 ): Point =
   let goalCell = map.cellOf(goal)
   let previousCell = if state.goal.isSome: some(map.cellOf(state.goal.get)) else: none(Point)
@@ -33,10 +36,15 @@ proc astarWaypoint*(
     abs(goalCell.y - previousCell.get.y) > ReplanGoalCells
   let movingReplan = movingTarget and
     tick - state.lastPlanTick >= PlanMovingReplanTicks
-  if goalMoved or not state.hasPath or state.stuckTicks >= StuckTicks or movingReplan:
-    let planned = state.planner.planPath(map, danger, selfXy, goal)
+  let profileChanged = not state.profileSet or state.profile != profile
+  if goalMoved or profileChanged or not state.hasPath or
+      state.stuckTicks >= StuckTicks or movingReplan:
+    let planned = state.planner.planPath(
+      map, danger, selfXy, goal, planCostProfile(profile))
     state.path = planned.path
     state.goal = some(goal)
+    state.profile = profile
+    state.profileSet = true
     # Python caches a successful list, but leaves an unroutable path as None so
     # it retries on the next observation. Preserve that distinction here.
     state.hasPath = state.path.len > 0
@@ -53,7 +61,7 @@ proc astarWaypoint*(
     if state.path.len == 0:
       inc state.planUnroutableCount
   if state.path.len == 0:
-    return goal
+    return selfXy
   while state.cursor < state.path.high and
       distance(selfXy, state.path[state.cursor]) < NavCell.float:
     inc state.cursor

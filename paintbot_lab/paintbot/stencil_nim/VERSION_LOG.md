@@ -4,6 +4,59 @@ Read this before assuming what a version contains. Format mirrors
 `ctf_lab/ctf/beacon/VERSION_LOG.md`: one entry per uploaded version — what
 changed, why, and what the evidence said.
 
+## v66 — the Intent & goal contract (nav rework Layer 4), uploaded 2026-08-13
+
+Immutable policy-version UUID: `80e2a0a4-9662-4722-8fe0-e3aa4a57e593`.
+Uploaded with tag `purpose=intent-contract`. **Not submitted to any league.**
+
+Layer 4 per the approved split
+([design/spec](../../docs/designs/nav-layer4-intent-contract-2026-08-13.md);
+v67 will re-express early_defense/barrage_center over PoIs + side-lane
+posts). **Codex-implemented under orchestration**; its plan review caught
+two transcription errors in MY spec's flag table (formation-bias is a
+strict five-reason whitelist; code-truth preserved and the doc corrected),
+delivered the honest Q9 census (the 8px grid also feeds peek/duck search,
+danger grids, cover/posts, squad canonicalization — grid demotion is bigger
+than the sketch implied), and caught a spec gap I endorsed: cached paths
+invalidate when the intent's cost profile changes.
+
+- **Typed Intent**: movingGoal/clampToEndzone/suppressFireFreeze/profile/
+  micro set replace ALL seven reason-string dispatch lists; one declarative
+  makeIntent table in strategy.nim; `intent.reason` is telemetry-only
+  (grep-gated: 0 non-telemetry reads; FlowReasons/MovingPlanReasons
+  identifiers deleted).
+- **Goals validated at selection**: `nearestReachable` (unbiased pixel
+  ring, component-gated) at every dirty producer — steal/convert_hunt
+  pedestals, grenade evacuation radial, escort extrapolation, spray-flee
+  winner, barrage center. Producer fallthrough on none.
+- **All five beelines dead + FlowReasons dispatch dead**: every NavigateTo
+  routes through the v65 planner; arc pursuit became a strategy-level
+  validated moving Hunter intent (shared target selection moved to
+  fight.nim so strategy/action cannot drift; firing stays action-owned);
+  the unroutable beeline is now hold-in-place + loud `plan_unroutable_bug`
+  trace. Flow fields survive only as the Dijkstra oracle
+  (flowWaypoint retained solely for forwardRayEnds, documented).
+- **Profiles live**: Carrier danger ×2.5, Hunter ×0.25
+  (`STENCIL_PROFILE_CARRIER_DANGER`/`_HUNTER_DANGER`); profile change
+  invalidates the cached path.
+
+**Pre-upload evidence:** Codex harness green (incl. arc-pursuit
+emission/suppression parity, steal rush-exemption, carrier/profile
+interaction); grep gates 0/0; 13 modules `nim check` clean; release
+compiles. My independent suites: planner props 11k checks / layer2 props
+3.3M checks green. Live: h2h corpus episode ran **75 plans where v65 ran
+zero** (the flow kill is live; carry/steal movement now planner-routed) at
+7.6 ms mean, 0 unroutable/0 snapped; forced-active ffa: 773 plans, 19 ms
+mean, **0 unroutable, 2 snapped** (was 9 in v65 — producers now validate),
+0 fallbacks, intent mixes normal, 111 ticks/s. Built against 0.7.215 /
+`6c7a4c0e`.
+
+**Hosted validation:** matched v66-vs-v65 batch pending at upload. Expected
+deltas: carry/steal/hold movement geometry (flow → danger-aware planner
+with Carrier evasion — the largest visible behavior change of the rework),
+pursuit via strategy intents; watch stuck/backoff rates and tick rate.
+Verdict appended when complete.
+
 ## v65 — the planner (nav rework Layer 3), uploaded 2026-08-13
 
 Immutable policy-version UUID: `d8b5ca59-503f-4f8c-85b8-df052fb38998`.

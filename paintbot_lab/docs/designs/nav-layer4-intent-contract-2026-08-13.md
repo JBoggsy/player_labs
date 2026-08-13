@@ -25,7 +25,8 @@ MicroFlag* = enum
   MicroPeekDuck,        # peek/duck cycle allowed at holds
   MicroSeparation,      # hold separation nudges allowed
   MicroFormationBias,   # squad formation-bias waypoint blending allowed
-  MicroSprayPursuit     # arc-range pursuit override allowed
+  MicroSprayPursuit,    # arc-range pursuit override allowed
+  MicroStealRushExempt  # steal's near-goal peek/duck exemption allowed
 
 Intent* = object
   kind*: IntentKind            # existing
@@ -52,12 +53,18 @@ from the flags themselves):
 | reason | micro excludes | other |
 | --- | --- | --- |
 | carry_home | peekDuck off | profile=Carrier |
-| steal | (peekDuck rush-exempt within PeekDuckRushExemptPx stays as an arriveRadius-style distance check in the override, gated on MicroPeekDuck) | formationBias on |
+| steal | (peekDuck rush-exempt within PeekDuckRushExemptPx stays as an arriveRadius-style distance check in the override, gated on MicroStealRushExempt) | formationBias on |
 | clear_grenade, clear_spray, fetch_medkit, intercept_thief(_heard) | peekDuck off | clear_spray: separation off, sprayPursuit off, suppressFireFreeze per today's L450 condition; intercepts: movingGoal, profile=Hunter |
 | early_defense, barrage_center | peekDuck off, separation off, sprayPursuit off | early_defense: clampToEndzone (both keep their target logic — re-expression is v67) |
 | convert_hunt, escort_carrier(_heard) | — | movingGoal; convert_hunt profile=Hunter; escort profile=Carrier |
-| to_hold, to_post, squad_move/to_watch/to_hold | — | formationBias on |
-| everything else | all micro on | profile=Default |
+| to_hold, squad_move/squad_to_watch/squad_to_hold | — | formationBias on |
+| everything else | peekDuck, separation, sprayPursuit on; formationBias and stealRushExempt off | profile=Default |
+
+**Implementation correction:** the pre-v66 code is the behavioral source of
+truth for this transcription. Formation bias's strict whitelist is `steal`,
+`to_hold`, `squad_move`, `squad_to_hold`, and `squad_to_watch`. The original
+table incorrectly included `to_post` and abbreviated `squad_to_watch` as
+`to_watch`; neither spelling matched the dispatch code.
 
 ## 2. Goal validation at selection (worldmap + strategy)
 
@@ -117,6 +124,11 @@ risk). Knobs `STENCIL_PROFILE_CARRIER_DANGER` / `_HUNTER_DANGER` (floats).
 astarWaypoint passes the intent's profile through. (Exposure was dissolved
 into LOS danger in Layer 3; there is no second term to weight.)
 
+The cached path's profile is part of its identity. A profile change for an
+otherwise unchanged goal invalidates the cache and replans immediately; this
+closes the implementation-spec gap where a carrier/hunter transition could
+otherwise keep following a path priced with the previous danger weight.
+
 ## 5. Explicitly out of scope (v67+)
 
 early_defense/barrage_center re-expression over Layer 2 PoIs; side-lane
@@ -145,3 +157,23 @@ trace schema, and the oracle consume cell coordinates).
 
 v66, tag `purpose=intent-contract`. VERSION_LOG entry, docs updated
 (sketch §9-series addendum), matched batch, verdict.
+
+## Implementation verification addendum
+
+**Q9 8 px grid consumer census:** the grid has more runtime consumers than the
+original shorthand (“shouts, trace schema, and oracle”) implied. Movement
+planning no longer consumes it as route truth, but it remains live for:
+
+- the stable-goal Dijkstra oracle and its consumers (`routeDistance`,
+  `peekRouteDistance`, `distanceAt`, and oracle-only `flowWaypoint` used by
+  `forwardRayEnds`);
+- directional cover masks, post generation/scoring, home capture snapping,
+  and squad order point quantization;
+- danger-field construction/sampling and the legacy belief-danger diffusion
+  grid;
+- chat position encoding/decoding and trace navigation-map/flow schemas;
+- local micro geometry (sidestep candidate cells, formation/separation step
+  scales), role band sizing, and configuration values expressed in cell units.
+
+This is the fuller v66 grep census result. It confirms the grid cannot be
+deleted yet; Layer 4 only removes it from movement dispatch and path choice.

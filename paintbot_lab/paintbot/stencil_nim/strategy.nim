@@ -1,23 +1,74 @@
 ## The single-objective movement priority ladder.
 
 import std/[math, options, sets, tables]
-import belief_state, config, items, squads, types, worldmap
+import belief_state, config, fight, items, squads, types, worldmap
 
 type Objective* = object
   intent*: Intent
-  flowGoal*: Option[Point]
 
 type SprayThreat = tuple[track: PlayerTrack, pos: Point, raw, effective: float]
 
 proc distance(a, b: Point): float = hypot((a.x - b.x).float, (a.y - b.y).float)
 
-proc navigate(point: Point, reason: string, flow = none(Point)): Objective =
-  Objective(intent: Intent(kind: NavigateTo, point: some(point), reason: reason),
-    flowGoal: flow)
+proc makeIntent*(kind: IntentKind, point: Option[Point], reason: string): Intent =
+  result = Intent(
+    kind: kind,
+    point: point,
+    reason: reason,
+    micro: {MicroPeekDuck, MicroSeparation, MicroSprayPursuit},
+    profile: ProfileDefault)
+  case reason
+  of "carry_home":
+    result.micro.excl(MicroPeekDuck)
+    result.profile = ProfileCarrier
+  of "steal":
+    result.micro.incl(MicroFormationBias)
+    result.micro.incl(MicroStealRushExempt)
+  of "clear_grenade", "fetch_medkit":
+    result.micro.excl(MicroPeekDuck)
+  of "clear_spray":
+    result.movingGoal = true
+    result.suppressFireFreeze = true
+    result.micro.excl(MicroPeekDuck)
+    result.micro.excl(MicroSeparation)
+    result.micro.excl(MicroSprayPursuit)
+  of "intercept_thief", "intercept_thief_heard":
+    result.movingGoal = true
+    result.profile = ProfileHunter
+    result.micro.excl(MicroPeekDuck)
+  of "early_defense":
+    result.clampToEndzone = true
+    result.micro.excl(MicroPeekDuck)
+    result.micro.excl(MicroSeparation)
+    result.micro.excl(MicroSprayPursuit)
+  of "barrage_center":
+    result.micro.excl(MicroPeekDuck)
+    result.micro.excl(MicroSeparation)
+    result.micro.excl(MicroSprayPursuit)
+  of "convert_hunt":
+    result.movingGoal = true
+    result.profile = ProfileHunter
+  of "escort_carrier", "escort_carrier_heard":
+    result.movingGoal = true
+    result.profile = ProfileCarrier
+  of "arc_pursuit":
+    result.movingGoal = true
+    result.profile = ProfileHunter
+  of "to_hold", "squad_move", "squad_to_hold", "squad_to_watch":
+    result.micro.incl(MicroFormationBias)
+  else:
+    discard
+
+proc navigate(point: Point, reason: string): Objective =
+  Objective(intent: makeIntent(NavigateTo, some(point), reason))
 
 proc hold(reason: string): Objective =
-  Objective(intent: Intent(kind: Hold, point: none(Point), reason: reason),
-    flowGoal: none(Point))
+  Objective(intent: makeIntent(Hold, none(Point), reason))
+
+proc reachableGoal(belief: Belief, point: Point): Option[Point] =
+  if belief.worldmap.isNil or belief.selfXy.isNone:
+    return none(Point)
+  belief.worldmap.nearestReachable(point, belief.selfXy.get)
 
 proc coverageAt*(
   belief: Belief, point: Point, cache: var Table[int, float]
@@ -162,9 +213,13 @@ proc sprayFleeObjective(
       if best.isNone or score > best.get.score:
         best = some(candidateScore)
   if best.isSome:
-    belief.sprayFleeChoice = best
-    inc belief.sprayFleeTicks
-    return some(navigate(best.get.point, "clear_spray"))
+    let goal = belief.reachableGoal(best.get.point)
+    if goal.isSome:
+      var choice = best.get
+      choice.point = goal.get
+      belief.sprayFleeChoice = some(choice)
+      inc belief.sprayFleeTicks
+      return some(navigate(goal.get, "clear_spray"))
 
   var nearestIndex = 0
   for index in 1 ..< threats.len:
@@ -179,20 +234,22 @@ proc sprayFleeObjective(
       pyRound(selfXy.x.float + dx.float / norm * SprayFleeStepPx.float),
       pyRound(selfXy.y.float + dy.float / norm * SprayFleeStepPx.float))
   if map.segmentClear(selfXy, fallback):
-    inc belief.sprayFleeTicks
-    return some(navigate(fallback, "clear_spray"))
+    let goal = belief.reachableGoal(fallback)
+    if goal.isSome:
+      inc belief.sprayFleeTicks
+      return some(navigate(goal.get, "clear_spray"))
   inc belief.sprayFleeTicks
   some(hold("clear_spray"))
 
 proc stealGoal(belief: Belief): Option[Point] =
-  if belief.worldmap.isNil or belief.stealTarget.isNone:
+  if belief.worldmap.isNil or belief.selfXy.isNone or belief.stealTarget.isNone:
     return none(Point)
   let target = belief.stealTarget.get
   if belief.hearts.hasKey(target):
     let heart = belief.hearts[target]
     if heart.planted and heart.pos.isSome:
-      return heart.pos
-  some(belief.worldmap.pedestal(target))
+      return belief.reachableGoal(heart.pos.get)
+  belief.reachableGoal(belief.worldmap.pedestal(target))
 
 proc itemAnchor(belief: Belief): tuple[pos: Point, kind: string] =
   if belief.order.isSome and belief.tick - belief.order.get.setTick <= OrderTtlTicks:
@@ -202,7 +259,7 @@ proc itemAnchor(belief: Belief): tuple[pos: Point, kind: string] =
   let steal = belief.stealGoal
   if steal.isSome: (steal.get, "role") else: (belief.worldmap.center, "role")
 
-proc decideObjective*(belief: Belief): Objective =
+proc decideBaseObjective(belief: Belief): Objective =
   let map = belief.worldmap
   if map.isNil:
     return hold("no_worldmap")
@@ -224,7 +281,7 @@ proc decideObjective*(belief: Belief): Objective =
 
   if belief.iCarryHeartOf.isSome:
     let home = map.capturePoint(belief.team)
-    return navigate(home, "carry_home", some(home))
+    return navigate(home, "carry_home")
 
   if belief.ownHeartStolen:
     if belief.ownHeartThiefPos.isSome:
@@ -239,10 +296,11 @@ proc decideObjective*(belief: Belief): Objective =
         let dx = belief.selfXy.get.x - warning.pos.x
         let dy = belief.selfXy.get.y - warning.pos.y
         let norm = max(distanceFromGrenade, 1.0)
-        return navigate((
+        let goal = belief.reachableGoal((
           int(belief.selfXy.get.x.float + dx.float / norm * GrenadeWarnClearPx.float),
-          int(belief.selfXy.get.y.float + dy.float / norm * GrenadeWarnClearPx.float)),
-          "clear_grenade")
+          int(belief.selfXy.get.y.float + dy.float / norm * GrenadeWarnClearPx.float)))
+        if goal.isSome:
+          return navigate(goal.get, "clear_grenade")
 
   let sprayFlee = belief.sprayFleeObjective(sprayThreats)
   if sprayFlee.isSome:
@@ -253,7 +311,9 @@ proc decideObjective*(belief: Belief): Objective =
     inc belief.barrageCenterTicks
     if distance(belief.selfXy.get, map.center) <= BarrageCenterRadiusPx.float:
       return hold("barrage_center")
-    return navigate(map.center, "barrage_center", some(map.center))
+    let goal = belief.reachableGoal(map.center)
+    if goal.isSome:
+      return navigate(goal.get, "barrage_center")
 
   if EarlyDefense and not belief.earlyDefenseComplete and belief.selfXy.isSome:
     if belief.earlyDefensePoint.isNone:
@@ -262,7 +322,7 @@ proc decideObjective*(belief: Belief): Objective =
     let point = belief.earlyDefensePoint.get
     if distance(belief.selfXy.get, point) <= HoldArrivePx.float:
       return hold("early_defense")
-    return navigate(point, "early_defense", some(point))
+    return navigate(point, "early_defense")
 
   if SquadCommand and belief.rejoinUntil >= 0 and belief.selfXy.isSome:
     if belief.tick >= belief.rejoinUntil or belief.inSquadContact:
@@ -286,10 +346,11 @@ proc decideObjective*(belief: Belief): Objective =
       let fix = belief.carrierFix.get
       let elapsed = min(belief.tick - fix.heardTick, 48)
       let angle = fix.heading.float * PI / 4.0
-      return navigate((
+      let goal = belief.reachableGoal((
         int(fix.pos.x.float + cos(angle) * 1.9 * elapsed.float),
-        int(fix.pos.y.float - sin(angle) * 1.9 * elapsed.float)),
-        "escort_carrier_heard")
+        int(fix.pos.y.float - sin(angle) * 1.9 * elapsed.float)))
+      if goal.isSome:
+        return navigate(goal.get, "escort_carrier_heard")
 
   if belief.selfXy.isSome and Items:
     let kit = belief.medkitTarget(MedkitConvenientDetourPx.float)
@@ -301,10 +362,12 @@ proc decideObjective*(belief: Belief): Objective =
       return navigate(belief.itemSpawns[choice.get.spawnIndex].pos, "fetch_item")
 
   if belief.wipeInReach and belief.selfXy.isSome:
-    if not belief.converting:
-      belief.converting = true
-      inc belief.convertEvents
-    return navigate(belief.convertHuntPoint, "convert_hunt")
+    let goal = belief.reachableGoal(belief.convertHuntPoint)
+    if goal.isSome:
+      if not belief.converting:
+        belief.converting = true
+        inc belief.convertEvents
+      return navigate(goal.get, "convert_hunt")
   belief.converting = false
 
   if SquadCommand and belief.order.isSome and belief.selfXy.isSome and
@@ -357,11 +420,29 @@ proc decideObjective*(belief: Belief): Objective =
       return hold("hold_line")
     if usingPost:
       inc belief.defensivePostTravelTicks
-      return navigate(belief.holdPoint.get, "to_post", belief.holdPoint)
-    return navigate(belief.holdPoint.get, "to_hold", belief.holdPoint)
+      return navigate(belief.holdPoint.get, "to_post")
+    return navigate(belief.holdPoint.get, "to_hold")
 
   let steal = belief.stealGoal
   if steal.isNone:
-    return navigate(belief.convertHuntPoint, "hunt_fallback")
+    let fallback = belief.reachableGoal(belief.convertHuntPoint)
+    if fallback.isSome:
+      return navigate(fallback.get, "hunt_fallback")
+    return hold("hunt_fallback")
   # _should_wait is intentionally false in the Python policy.
-  navigate(steal.get, "steal", steal)
+  navigate(steal.get, "steal")
+
+proc decideObjective*(belief: Belief): Objective =
+  let base = belief.decideBaseObjective()
+  if belief.iHaveArc and belief.iCarryHeartOf.isNone and
+      MicroSprayPursuit in base.intent.micro and belief.selfXy.isSome:
+    let enemy = belief.sprayTarget
+    if enemy.isSome:
+      let range = distance(enemy.get.pos, belief.selfXy.get)
+      if range > ArcIdealRangePx.float and range <= ArcPursuitRangePx.float:
+        let goal = belief.reachableGoal(belief.sprayAimPos(enemy.get))
+        if goal.isSome:
+          inc belief.sprayPursuitTicks
+          return Objective(intent: makeIntent(
+            NavigateTo, goal, "arc_pursuit"))
+  base

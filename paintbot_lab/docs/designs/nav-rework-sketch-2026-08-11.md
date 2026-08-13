@@ -376,6 +376,19 @@ Layer 3 note: per-tick `flowWaypoint`/`routeDistance` callers still pay that
 copy — the planner must use borrowed field access. See
 [nav-post-resourcing-v63-2026-08-12.md](nav-post-resourcing-v63-2026-08-12.md).
 
+**Layers 3–4 addendum (2026-08-13):** Layer 3 shipped as v65 (single
+weighted-A* planner, 4px lattice, LOS-danger costs, completeness cascade,
+endpoint snapping; hosted-proven at 13.5 ms/search, 0 unroutable — see
+`VERSION_LOG.md` v65) and Layer 4 shipped as v66 (typed Intent, goals
+validated at selection via `nearestReachable`, all five beelines + the
+FlowReasons dispatch + the seven reason-string lists DEAD, carrier/hunter
+profiles live, unroutable = loud bug signal). Both Codex-implemented under
+orchestration. Q9's honest census: the 8px grid still feeds peek/duck
+search, danger grids, cover/post generation, and squad canonicalization —
+its demotion to a comms unit is larger than §8 implied. Remaining: v67
+(early_defense/barrage_center over PoIs, side-lane posts) and Layer 5
+(bounded follower/micro, watchdog simplification).
+
 ## 10. TODOs spawned by the review (out of scope here)
 
 - Fire-windup micro: strafe/aim during windup; trigger from cover then step out to minimize

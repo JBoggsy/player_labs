@@ -29,6 +29,8 @@ type
     lastOrderSignature: string
     lastWorldSignature: Option[tuple[width, height, teams: int]]
     navigationFieldKeys: HashSet[int]
+    lastPlanUnroutableCount: int
+    unroutableReasons: HashSet[string]
 
 proc pointJson(point: Option[Point]): JsonNode =
   if point.isSome: %*[point.get.x, point.get.y] else: newJNull()
@@ -510,7 +512,6 @@ proc snapshot(policy: StencilPolicy, command: Command): JsonNode =
     "target_teammate_blocked": belief.targetTeammateBlocked,
     "intent": policy.lastIntent.reason,
     "intent_point": pointJson(policy.lastIntent.point),
-    "flow_goal": pointJson(policy.lastFlowGoal),
     "micro": belief.micro,
     "carrying": teamJson(belief.iCarryHeartOf),
     "steal_target": teamJson(belief.stealTarget),
@@ -729,6 +730,8 @@ proc record*(trace: TraceState, policy: StencilPolicy, command: Command) =
     if signature != trace.lastWorldSignature:
       trace.lastWorldSignature = signature
       trace.navigationFieldKeys.clear()
+      trace.unroutableReasons.clear()
+      trace.lastPlanUnroutableCount = 0
       trace.emit(policy.tick, "worldmap", snapshot(policy, command))
       if TraceNavigation and not belief.worldmap.isNil:
         trace.emit(policy.tick, "navigation_map", navigationMap(belief.worldmap))
@@ -755,6 +758,16 @@ proc record*(trace: TraceState, policy: StencilPolicy, command: Command) =
           "order": orderJson(belief),
           "post": pointJson(belief.squadOrderPost),
           "post_duck": pointJson(belief.squadOrderPostDuck),
+        })
+    if belief.nav.planUnroutableCount > trace.lastPlanUnroutableCount:
+      trace.lastPlanUnroutableCount = belief.nav.planUnroutableCount
+      if policy.lastIntent.reason notin trace.unroutableReasons:
+        trace.unroutableReasons.incl(policy.lastIntent.reason)
+        trace.emit(policy.tick, "plan_unroutable_bug", %*{
+          "reason": policy.lastIntent.reason,
+          "point": pointJson(policy.lastIntent.point),
+          "self_xy": pointJson(belief.selfXy),
+          "count": belief.nav.planUnroutableCount,
         })
     let consensus = consensusJson(belief)
     let consensusSignature = $consensus

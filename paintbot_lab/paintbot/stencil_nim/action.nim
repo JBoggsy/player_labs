@@ -3,11 +3,6 @@
 import std/[algorithm, math, options, tables]
 import belief_state, config, fight, nav, squads, types, worldmap
 
-const FlowReasons = [
-  "carry_home", "steal", "to_hold", "to_post", "early_defense", "barrage_center"]
-const MovingPlanReasons = [
-  "intercept_thief", "intercept_thief_heard", "convert_hunt",
-  "escort_carrier", "escort_carrier_heard"]
 const MovementMask = ButtonUp or ButtonDown or ButtonLeft or ButtonRight
 
 type
@@ -49,28 +44,6 @@ proc trackForEnemy(belief: Belief, enemy: Enemy): Option[PlayerTrack] =
   for track in belief.enemyTracks:
     if track.lastTick == belief.tick and track.pos == enemy.pos:
       return some(track)
-
-proc sprayAimPos(belief: Belief, enemy: Enemy): Point =
-  let track = belief.trackForEnemy(enemy)
-  if track.isNone or track.get.vel.isNone: return enemy.pos
-  belief.clampToMap((
-    pyRound(enemy.pos.x.float + track.get.vel.get.x),
-    pyRound(enemy.pos.y.float + track.get.vel.get.y)))
-
-proc sprayTarget(belief: Belief): Option[Enemy] =
-  if belief.selfXy.isNone or belief.worldmap.isNil: return none(Enemy)
-  var bestKey = (high(int), Inf)
-  for enemy in belief.enemies:
-    let d = distance(belief.selfXy.get, enemy.pos)
-    if d > ArcPursuitRangePx.float or
-        not belief.worldmap.rayClear(belief.selfXy.get, enemy.pos): continue
-    let aim = belief.sprayAimPos(enemy)
-    let key = (abs(bradError(bradsOf(
-      (aim.x - belief.selfXy.get.x).float, (aim.y - belief.selfXy.get.y).float),
-      belief.aimBrads)), d * d)
-    if result.isNone or key < bestKey:
-      result = some(enemy)
-      bestKey = key
 
 proc sprayContains(belief: Belief, target: Point): bool =
   let angle = belief.aimBrads.float / AimBradsTurn.float * 2.0 * PI
@@ -227,13 +200,16 @@ proc coverFromThreat(
   belief.micro = micro; belief.heardDuck = fromHeard
   some((octantToward(belief.selfXy.get, cover.get, false), some(aim)))
 
+proc peekDuckAllowed*(intent: Intent, carrying: bool, selfXy: Point): bool =
+  if carrying or MicroPeekDuck notin intent.micro: return false
+  if MicroStealRushExempt in intent.micro and intent.point.isSome and
+      distance(intent.point.get, selfXy) <= PeekDuckRushExemptPx.float:
+    return false
+  true
+
 proc peekDuckOverride(belief: Belief, intent: Intent): Option[MicroOverride] =
-  if belief.worldmap.isNil or belief.iCarryHeartOf.isSome or intent.reason in
-      ["carry_home", "clear_grenade", "clear_spray", "fetch_medkit", "intercept_thief",
-       "intercept_thief_heard", "early_defense", "barrage_center"]:
-    return none(MicroOverride)
-  if intent.reason == "steal" and intent.point.isSome and
-      distance(intent.point.get, belief.selfXy.get) <= PeekDuckRushExemptPx.float:
+  if belief.worldmap.isNil or not intent.peekDuckAllowed(
+      belief.iCarryHeartOf.isSome, belief.selfXy.get):
     return none(MicroOverride)
   if belief.squadOrderPostActive and intent.kind == Hold:
     let threat = belief.freshTrack(DuckThreatFreshTicks, DuckRangePx.float)
@@ -447,7 +423,7 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
     return Command(heldMask: 0)
   let selfXy = belief.selfXy.get
   let carrying = belief.iCarryHeartOf.isSome
-  let sprayFreezeUnsafe = intent.reason == "clear_spray" and
+  let sprayFreezeUnsafe = intent.suppressFireFreeze and
     belief.sprayNearestThreatDistancePx.isSome and
     belief.sprayNearestThreatDistancePx.get <= SprayLethalReachPx.float +
       FireWindupTicks.float * MaxSpeedPxTick + SprayFireFreezeMarginPx.float
@@ -458,16 +434,11 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
   if freeze: discard
   elif override.isSome: mask = mask or override.get.mask
   elif intent.kind == NavigateTo and intent.point.isSome:
-    var waypoint = if intent.reason == "clear_spray":
-      intent.point.get
-    elif intent.reason in FlowReasons:
-      belief.worldmap.flowWaypoint(intent.point.get, selfXy)
-    else:
-      astarWaypoint(belief.nav, belief.worldmap, selfXy, intent.point.get,
-        belief.planDanger, belief.tick, intent.reason in MovingPlanReasons)
+    var waypoint = astarWaypoint(
+      belief.nav, belief.worldmap, selfXy, intent.point.get,
+      belief.planDanger, belief.tick, intent.movingGoal, intent.profile)
     noteProgress(belief.nav, selfXy)
-    if Squads and intent.reason in ["steal", "to_hold", "squad_move",
-        "squad_to_hold", "squad_to_watch"] and not carrying:
+    if Squads and MicroFormationBias in intent.micro and not carrying:
       let bias = belief.formationBias
       if bias.isSome:
         let biased: Point = (int(waypoint.x.float + bias.get.x * NavCell.float * 3.0),
@@ -475,8 +446,7 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
         if belief.worldmap.nudgeClear(selfXy, biased):
           inc belief.squadCohesionTicks; waypoint = biased
     mask = mask or octantToward(selfXy, waypoint, belief.nav.stuckTicks >= StuckTicks)
-  elif intent.kind == Hold and not carrying and
-      intent.reason notin ["early_defense", "barrage_center", "clear_spray"]:
+  elif intent.kind == Hold and not carrying and MicroSeparation in intent.micro:
     let separation = belief.separationBias
     if separation.isSome:
       let step: Point = (int(selfXy.x.float + separation.get.x * NavCell.float * 2.0),
@@ -503,12 +473,6 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
       abs(belief.aimErrorBrads).float / AimBradsTurn.float * 2.0 * PI)
     var canFire: bool
     if belief.iHaveArc:
-      let range = distance(enemy.get.pos, selfXy)
-      if range > ArcIdealRangePx.float and range <= ArcPursuitRangePx.float and
-          not carrying and intent.reason notin
-            ["early_defense", "barrage_center", "clear_spray"]:
-        inc belief.sprayPursuitTicks
-        mask = (mask and not MovementMask) or octantToward(selfXy, enemy.get.pos, false)
       let contains = belief.sprayContains(aim.pos)
       belief.targetRayClear = contains
       belief.targetTeammateBlocked = belief.teammateBlocksShot(enemy.get.pos)
@@ -549,7 +513,7 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
     belief.aimTargetBrads = target
     belief.aimErrorBrads = bradError(target, belief.aimBrads)
     mask = mask or rotationButton(belief.aimTargetBrads, belief.aimBrads, state)
-  if intent.reason == "early_defense" and
+  if intent.clampToEndzone and
       belief.worldmap.insideEndzone(belief.team, selfXy):
     var next = selfXy
     if (mask and ButtonLeft) != 0: next.x -= 4

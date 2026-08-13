@@ -354,6 +354,43 @@ proc sameComponent*(map: WorldMap, a, b: Point): bool =
   let ca = map.componentOf(a)
   ca != 0 and ca == map.componentOf(b)
 
+proc nearestReachable*(
+  map: WorldMap, point, fromPoint: Point, maxRadiusPx = 32 * NavCell
+): Option[Point] =
+  ## Resolve a prospective goal before it becomes an Intent. Search order does
+  ## not decide the winner: squared distance and then row-major pixel index do,
+  ## so the bounded ring scan is deterministic and directionally unbiased.
+  let component = map.componentOf(fromPoint)
+  if component == 0 or maxRadiusPx < 0:
+    return none(Point)
+  var
+    best = none(Point)
+    bestDistance = high(int64)
+    bestIndex = high(int)
+  let radiusSquared = maxRadiusPx.int64 * maxRadiusPx.int64
+  for ring in 0 .. maxRadiusPx:
+    if best.isSome and ring.int64 * ring.int64 > bestDistance:
+      break
+    for y in max(0, point.y - ring) .. min(map.height - 1, point.y + ring):
+      for x in max(0, point.x - ring) .. min(map.width - 1, point.x + ring):
+        if max(abs(x - point.x), abs(y - point.y)) != ring:
+          continue
+        let
+          candidate: Point = (x, y)
+          dx = (x - point.x).int64
+          dy = (y - point.y).int64
+          candidateDistance = dx * dx + dy * dy
+          candidateIndex = y * map.width + x
+        if candidateDistance > radiusSquared or
+            candidateDistance > bestDistance or not map.canStand(candidate) or
+            map.component[candidateIndex].int != component:
+          continue
+        if candidateDistance < bestDistance or candidateIndex < bestIndex:
+          best = some(candidate)
+          bestDistance = candidateDistance
+          bestIndex = candidateIndex
+  best
+
 proc buildTopology*(map: WorldMap, journal: TopologyJournal = nil) =
   ## Rooms and chokepoints via priority-flood watershed on the clearance
   ## field: regions grow from clearance-maxima plateaus in decreasing
@@ -691,6 +728,8 @@ proc fieldsFor(map: WorldMap, goal: Point): lent RouteFields =
   map.fields[key]
 
 proc flowWaypoint*(map: WorldMap, goal, selfXy: Point): Point =
+  ## Oracle-derived geometry helper only. Movement must route through the
+  ## weighted planner; forwardRayEnds uses this to orient static sightline rays.
   let current = map.nearestWalkable(map.cellOf(selfXy))
   let code = map.fieldsFor(goal).hops[map.gridIndex(current.x, current.y)].int
   if code == 0:

@@ -133,6 +133,10 @@ let
   DangerCloseFloor* = envTunableFloat("STENCIL_DANGER_CLOSE_FLOOR", 0.5, 0.0)
   DangerClosePx* = envTunableInt("STENCIL_DANGER_CLOSE_PX", 190, 0)
   DangerLosWeight* = envTunableFloat("STENCIL_DANGER_LOS_WEIGHT", 1.0, 0.0)
+  ProfileCarrierDanger* = envTunableFloat(
+    "STENCIL_PROFILE_CARRIER_DANGER", 2.5, 0.0)
+  ProfileHunterDanger* = envTunableFloat(
+    "STENCIL_PROFILE_HUNTER_DANGER", 0.25, 0.0)
   StuckTicks* = envInt("STENCIL_STUCK_TICKS", 8)
   DiagEveryTicks* = envInt("STENCIL_DIAG_EVERY_TICKS", 96)
   TraceNavigation* = envTunableBool("STENCIL_TRACE_NAVIGATION", false)
