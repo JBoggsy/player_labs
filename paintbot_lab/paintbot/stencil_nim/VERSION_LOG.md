@@ -55,7 +55,33 @@ mean, **0 unroutable, 2 snapped** (was 9 in v65 — producers now validate),
 deltas: carry/steal/hold movement geometry (flow → danger-aware planner
 with Carrier evasion — the largest visible behavior change of the rework),
 pursuit via strategy intents; watch stuck/backoff rates and tick rate.
-Verdict appended when complete.
+
+**Hosted verdict (58/58 episodes, 0 ops failures; prereg
+`local_data/episodes/intent-v66-prereg.json`):**
+
+| mode (n/arm) | v66 | v65 (control) |
+| --- | --- | --- |
+| h2h vs focusfire:v39 (16) | 9W-7L | 13W-3L |
+| duo vs swgy+relh (8) | **4W-4L** | 2W-6L |
+| ffa top-3 field (4) | 2W-2L | 3W-1L |
+| total (28) | 15W-13L | 18W-10L |
+
+Totals within noise (first batch where the control's total edged the
+candidate's; h2h drove it). The obvious suspect — Carrier ×2.5 evasion
+slowing capture runs — is DISPROVEN by the traces: neither arm ever
+entered carry_home or steal in the h2h episodes (they resolve in
+early-defense combat), so the profile never ran there. The h2h control arm
+simply ran hot (this cell's control has swung 11-5 → 6-10 across days
+before). Meanwhile duo improved to 4W-4L — the best any version has done
+against the swgy field. **Contract counters hosted, flawless:** 1482 plans
+across 30 seats (≈3× v65's volume — the flow kill is live in competition)
+at 8.0 ms mean, **0 unroutable, 0 beeline fallbacks, 5 snapped**; duck
+7.1% normal.
+
+**Conclusion: v66 accepted — the contract layer is structural and its
+hosted evidence is exactly what it promised.** Flag for the v67 batch:
+watch whether the h2h scatter persists on the same cell. v58 remains the
+live champion; nothing submitted.
 
 ## v65 — the planner (nav rework Layer 3), uploaded 2026-08-13
 

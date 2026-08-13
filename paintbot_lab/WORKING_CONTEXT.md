@@ -105,8 +105,12 @@ unit—is the reboot guarantee.
 
 ## Current objective
 
-**v66 (Layer 4 — the Intent & goal contract) is uploaded; matched batch vs
-v65 next.** v66 (`80e2a0a4-9662-4722-8fe0-e3aa4a57e593`, tag
+**v66 (Layer 4 — the Intent & goal contract) is ACCEPTED (2026-08-13).**
+Batch 58/58, 0 ops: totals within noise (15W-13L vs control 18W-10L; the
+h2h control ran hot — carrier-evasion suspicion DISPROVEN, no carry phase
+occurred in h2h; duo improved to 4W-4L, best yet vs swgy). Contract
+counters hosted: 1482 plans/30 seats at 8ms, 0 unroutable, 0 fallbacks, 5
+snapped. Watch h2h scatter in the v67 batch. **v66 uploaded;** v66 (`80e2a0a4-9662-4722-8fe0-e3aa4a57e593`, tag
 `purpose=intent-contract`), Codex-implemented under orchestration: typed
 Intent (all seven reason-string lists dead, grep-gated), goals validated at
 selection via `nearestReachable`, all five beelines + FlowReasons dispatch
