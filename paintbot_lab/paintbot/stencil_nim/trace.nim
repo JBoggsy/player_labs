@@ -649,6 +649,12 @@ proc counters(policy: StencilPolicy): JsonNode =
     "defensive_post_fallbacks": b.defensivePostFallbacks,
     "spray_pursuit_ticks": b.sprayPursuitTicks,
     "spray_flee_ticks": b.sprayFleeTicks,
+    "plan_count": b.nav.planCount,
+    "plan_ms_total": rounded4(b.nav.planMsTotal),
+    "plan_expansions_total": b.nav.planExpansionsTotal,
+    "plan_unroutable_count": b.nav.planUnroutableCount,
+    "plan_fallback_count": b.nav.planFallbackCount,
+    "plan_goal_snapped": b.nav.planGoalSnappedCount,
   }
 
 proc write(output: TraceOutput, record: JsonNode) =

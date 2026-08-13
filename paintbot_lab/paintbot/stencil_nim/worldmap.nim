@@ -203,6 +203,11 @@ proc cellOf*(map: WorldMap, point: Point): Point =
 proc cellCenter*(cell: Point): Point =
   (cell.x * NavCell + NavCell div 2, cell.y * NavCell + NavCell div 2)
 
+proc isWall*(map: WorldMap, point: Point): bool =
+  ## Out-of-bounds is blocking, matching the clearance field's map-edge rule.
+  point.x < 0 or point.x >= map.width or point.y < 0 or point.y >= map.height or
+    map.wall[map.pixelIndex(point.x, point.y)]
+
 proc nearestWalkable*(map: WorldMap, cell: Point): Point =
   if map.walkable[map.gridIndex(cell.x, cell.y)]:
     return cell
@@ -696,6 +701,23 @@ proc flowWaypoint*(map: WorldMap, goal, selfXy: Point): Point =
 proc routeDistance*(map: WorldMap, start, goal: Point): float =
   let cell = map.nearestWalkable(map.cellOf(start))
   map.fieldsFor(goal).distances[map.gridIndex(cell.x, cell.y)] * NavCell.float
+
+proc cachedFields(map: WorldMap, key: int): lent RouteFields =
+  ## Caller must prove membership first; unlike fieldsFor this accessor cannot
+  ## mint, and the lent result cannot copy either grid-sized sequence.
+  map.fields[key]
+
+proc peekRouteDistance*(map: WorldMap, point, goal: Point): Option[float] =
+  ## Reads an existing goal field without invoking fieldsFor. A miss must stay
+  ## a miss: arbitrary planner goals may never mint a full-grid Dijkstra field.
+  let key = map.goalKey(goal)
+  if not map.fields.hasKey(key):
+    return none(float)
+  let cell = map.nearestWalkable(map.cellOf(point))
+  let distance = map.cachedFields(key).distances[map.gridIndex(cell.x, cell.y)]
+  if classify(distance) == fcInf:
+    return none(float)
+  some(distance * NavCell.float)
 
 proc cachedRouteFields*(map: WorldMap): seq[CachedRouteField] =
   ## Read-only snapshots of the lazy Dijkstra cache for diagnostics.

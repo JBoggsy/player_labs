@@ -25,7 +25,7 @@
 ## clearance.bin: W*H row-major uint8 clearance values (delta-decoded).
 
 import std/[json, math, options, os, random, strformat, tables]
-import config, roles, types, worldmap
+import config, danger_field, planner, roles, types, worldmap
 
 proc rleJson(values: seq[int]): JsonNode =
   ## [[value, runLength], ...] over a row-major array; label arrays are
@@ -269,6 +269,71 @@ proc main() =
   for value in map.coverDirs:
     coverCells.add(%value.int)
 
+  # Planner scenarios: real production searches (planPath) between capture
+  # points, with and without an LOS danger field, so the viewer can show how
+  # believed enemies bend routes into shadows. Danger grids are quantized
+  # 0..255 relative to each scenario's max.
+  var plannerState: PlannerState
+  var scenarioJson = newJArray()
+  for scenario in ["none", "enemy-homes"]:
+    var dangerField = DangerField()
+    var sources: seq[Point]
+    if scenario == "enemy-homes":
+      for teamIndex in 1 ..< teams:
+        let point = map.capturePoint(Team(teamIndex))
+        if map.canStand(point):
+          sources.add(point)
+    dangerField.rebuildLosDanger(map, sources)
+    var peak = 0.0
+    for value in dangerField.values:
+      peak = max(peak, value.float)
+    var dangerRle = newJArray()
+    block rle:
+      var current = -1
+      var run = 0
+      for value in dangerField.values:
+        let quantized = if peak <= 0: 0
+          else: clamp(pyRound(value.float / peak * 255.0), 0, 255)
+        if quantized == current:
+          inc run
+        else:
+          if run > 0:
+            dangerRle.add(%[current, run])
+          current = quantized
+          run = 1
+      if run > 0:
+        dangerRle.add(%[current, run])
+    var routes = newJArray()
+    for teamIndex in 0 ..< teams:
+      for opponentIndex in 0 ..< teams:
+        if teamIndex == opponentIndex:
+          continue
+        let start = map.capturePoint(Team(teamIndex))
+        let goal = map.capturePoint(Team(opponentIndex))
+        let planned = plannerState.planPath(map, dangerField, start, goal)
+        var points = newJArray()
+        points.add(pointJson(start))
+        for point in planned.path:
+          points.add(pointJson(point))
+        routes.add(%*{
+          "team": teamIndex,
+          "opponent": opponentIndex,
+          "points": points,
+          "expansions": planned.expansions,
+          "fallback_step": planned.fallbackStep,
+          "elapsed_ms": planned.elapsedMs,
+        })
+    var sourcesJson = newJArray()
+    for source in sources:
+      sourcesJson.add(pointJson(source))
+    scenarioJson.add(%*{
+      "name": scenario,
+      "sources": sourcesJson,
+      "danger_peak": peak,
+      "danger_rle": dangerRle,
+      "routes": routes,
+    })
+
   let output = %*{
     "schema_version": 1,
     "width": width,
@@ -303,6 +368,8 @@ proc main() =
       "facing_weight": PostFacingWeight,
     },
     "selection_samples": samples,
+    "plan_scenarios": scenarioJson,
+    "plan_step_px": PlanStepPx,
   }
   writeFile(paramStr(3), $output)
   echo &"topology_debug: {map.rooms.len} rooms, {map.chokes.len} chokes, " &

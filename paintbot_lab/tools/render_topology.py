@@ -242,6 +242,8 @@ def render_html(nav: dict, process: dict, drift: list[str], clearance: bytes) ->
         "defender_assignments": process.get("defender_assignments", []),
         "selection_samples": process.get("selection_samples", []),
         "selection_params": process.get("selection_params"),
+        "plan_scenarios": process.get("plan_scenarios", []),
+        "plan_step_px": process.get("plan_step_px"),
         "teams": [
             {
                 "team": team["team"],
@@ -315,6 +317,10 @@ tr.merged td { color:#8aa0b4 } tr.kept td { color:#e7b3b3 }
 <label><input id="candBox" type="checkbox" checked> post pool — ALL potential posts (score-colored)</label>
 <label><input id="postsBox" type="checkbox"> static top-6 fallback (no-context default) + rays</label>
 <label><input id="defBox" type="checkbox"> defender assignments</label>
+<h2>Planner (v65)</h2>
+<label>scenario <select id="planSel"></select></label>
+<label><input id="planHeat" type="checkbox"> LOS danger heatmap</label>
+<label><input id="planRoutes" type="checkbox"> planned routes (capture points)</label>
 <div id="selPanel" style="display:none">
 <h2>Selection simulator</h2>
 <label>squad rank <select id="rankSel"><option>0</option><option>1</option><option>2</option></select></label>
@@ -445,6 +451,7 @@ function overlays(){
       ctx.beginPath(); ctx.arc(a.post[0],a.post[1],Math.max(5,5/scale),0,7); ctx.stroke();
       ctx.fillStyle='#ffd166'; ctx.font=`${Math.max(10,11/scale)}px ui-monospace`;
       ctx.fillText(`T${t.team}s${a.seat}`,a.post[0]+6,a.post[1]+10); }));
+  drawPlanner();
   drawSelection(front);
   ctx.restore();
 }
@@ -591,6 +598,40 @@ canvas.onclick=e=>{
   repaint();
 };
 document.querySelector('#rankSel').onchange=repaint;
+// planner scenarios
+const planSel=document.querySelector('#planSel');
+(data.plan_scenarios||[]).forEach((s,i)=>{ const o=document.createElement('option');
+  o.value=i; o.textContent=`${s.name} (${s.sources.length} sources)`; planSel.append(o); });
+const planDanger=(data.plan_scenarios||[]).map(s=>{
+  const cells=new Uint8Array(data.grid[0]*data.grid[1]); let i=0;
+  for(const [v,run] of s.danger_rle){ cells.fill(v,i,i+run); i+=run; }
+  return cells; });
+const teamColors=['#69db7c','#4dabf7','#ffd166','#f06595'];
+function drawPlanner(){
+  const s=(data.plan_scenarios||[])[+planSel.value]; if(!s) return;
+  const cell=data.cell_size,[gw,gh]=data.grid;
+  if(document.querySelector('#planHeat').checked){
+    const heat=planDanger[+planSel.value];
+    for(let gy=0;gy<gh;gy++) for(let gx=0;gx<gw;gx++){
+      const v=heat[gy*gw+gx]; if(!v) continue;
+      ctx.fillStyle=`rgba(255,80,80,${(0.06+0.34*v/255).toFixed(3)})`;
+      ctx.fillRect(gx*cell,gy*cell,cell,cell);
+    }
+    s.sources.forEach(p=>dot(p,'#ff6b6b',Math.max(4,4/scale)));
+  }
+  if(document.querySelector('#planRoutes').checked){
+    s.routes.forEach(r=>{
+      ctx.strokeStyle=teamColors[r.team%4]; ctx.lineWidth=Math.max(1.6,1.6/scale);
+      ctx.beginPath();
+      r.points.forEach((p,i)=>{ if(i===0) ctx.moveTo(p[0],p[1]); else ctx.lineTo(p[0],p[1]); });
+      ctx.stroke();
+      const last=r.points[r.points.length-1];
+      ctx.fillStyle=teamColors[r.team%4]; ctx.font=`${Math.max(10,11/scale)}px ui-monospace`;
+      ctx.fillText(`T${r.team}→T${r.opponent} ${r.expansions}exp${r.fallback_step?` fb${r.fallback_step}`:''}`,
+        last[0]+4,last[1]-4);
+    });
+  }
+}
 repaint();
 })();
 </script></body></html>

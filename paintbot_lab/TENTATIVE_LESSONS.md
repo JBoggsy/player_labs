@@ -140,3 +140,32 @@ Evidence: by-value RouteFields returns copied ~1.4MB per call; `lent` return
 + expression-form callers (no let binding) removed the tax for ALL callers
 incl. per-tick flowWaypoint and per-candidate ray scoring. Giant post_ms
 with a 14x bigger pool: 18ms (was 73ms with the small pool + hoist).
+
+### v65 planner acceptance checklist (pre-staged for the Codex review)
+Evidence: orchestrating Codex for Layer 3; criteria fixed BEFORE seeing its
+plan: (1) oracle heuristic peeks the field cache non-mintingly; (2) no
+grid-seq value copies; (3) DangerField on Belief, producer standalone;
+(4) astarWaypoint contract byte-compatible (empty seq => existing beeline
+fallback); (5) FlowReasons/dispatch untouched except the moving-goal flag;
+(6) generation-stamped reusable search arrays; (7) determinism; (8) knobs
+exactly as named in the proposal; (9) nim check clean locally except
+trace.nim; (10) property tests to add: path edges all segmentClear, cost
+within bound of reference search, empty iff sameComponent false, moving
+cadence respected. Status: checklist, not lesson — delete after v65 ships.
+
+### Lattice planners are incomplete on sub-step standable ridges — cascade to step 1 when sameComponent says reachable
+Evidence: v65 planner (4px lattice, supercover edges) returned empty for an
+engine-reachable pair: a ~14px corridor leaves a 1-2px standable ridge that
+can contain NO 4px lattice node. Caught by MY property suite (sameComponent
+=> routable); Codex's own harness only tested component-disconnection, not
+lattice-incompleteness — independent review with a different property set
+earns its keep. Fix: step cascade 4->2->1 gated on sameComponent (1px
+8-connected supercover lattice is complete wrt 4-connectivity). Matters
+because Layer 4 will treat sameComponent as the planning-success guarantee.
+
+### codex exec resume did not honor the worktree isolation
+Evidence: initial `codex exec -C <worktree>` planned in the worktree, but the
+implementation turn (resume) wrote to the MAIN checkout despite the skill's
+claim that -C is inherited. Harmless here (no uncommitted paintbot work), but
+future codex orchestration should verify write location after each turn, or
+run codex from a fully separate clone rather than a git worktree.

@@ -105,15 +105,38 @@ unit—is the reboot guarantee.
 
 ## Current objective
 
+**v65 (Layer 3 — the planner) is uploaded; matched batch vs v64 next.**
+v65 (`d8b5ca59-503f-4f8c-85b8-df052fb38998`, tag `purpose=layer3-planner`),
+implemented by Codex CLI under orchestration with two review-driven fixes:
+weighted A* on a 4px lattice (exact supercover edges, completeness cascade
+to 1px gated on sameComponent, unbiased 32px endpoint snapping bridging
+Layer 4), LOS-exposure DangerField on Belief (legacy danger untouched),
+oracle heuristic measured at worst 1.13% deviation on real maps
+(STENCIL_PLAN_ORACLE valve). astarWaypoint contract preserved; FlowReasons
++ beeline fallback intentionally survive until Layer 4. Live forced-A*
+check: 0 unroutable after snapping (was 27%). Viewer has a planner layer
+(scenario routes + LOS heatmap). Full story: VERSION_LOG v65.
+
+
+
+**Navigation Layer 3 is implemented locally and in live validation
+(2026-08-13), not yet accepted.** The weighted pixel-lattice planner now has
+two compatibility repairs found by independent/live property evidence: a
+4px→2px→1px cascade makes same-component planning complete across narrow
+standable ridges, and non-standable pre-Layer-4 endpoints resolve to the nearest
+standable pixel within 32px. Snapshot counters expose lattice fallback and goal
+snapping; the latter is the retirement signal once Layer 4 validates intent
+goals at their producers.
+
 **v64 (wide post pool) is ACCEPTED (2026-08-12) — the Layer 3 baseline.**
 Matched batch 58/58, 0 ops failures: gameplay PARITY with v63 (12W-16L vs
 14W-14L; h2h 9-7 both) — the pool's value is substrate for Layer 4
 intent-aware selection, not immediate wins. Infra strictly better: hosted
 paired giant probes v64 post_ms 22/27 ms, seat init ~0.88 s (fastest ever;
 v63 carried mid-episode minting hitches), v64 won both in-episode duels
-(n=2, ops-tier). **Next: Layer 3 — the single weighted-A* planner**
-(sketch §3.3, Q1-Q3), with the borrowed-field-access requirement already
-landed (`fieldsFor` returns `lent`; goal-slot rule enforced at call sites).
+(n=2, ops-tier). It remains the baseline for the Layer 3 implementation under
+live validation above; its borrowed-field-access requirement is already landed
+(`fieldsFor` returns `lent`; goal-slot rule enforced at call sites).
 
 Original upload note: **v64 uploaded; batch was pending.** v64
 (`d3504b01-ea7e-46db-9b3d-59a959940752`, tag `purpose=wide-post-pool`):

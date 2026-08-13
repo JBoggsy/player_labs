@@ -116,6 +116,23 @@ let
   CloseRangePx* = envInt("STENCIL_CLOSE_RANGE_PX", 220)
   FriendlyFireCorridorPx* = envTunableInt("STENCIL_FF_CORRIDOR_PX", 22, 14)
   ReplanGoalCells* = envInt("STENCIL_REPLAN_GOAL_CELLS", 2)
+  PlanStepPx* = envTunableInt("STENCIL_PLAN_STEP_PX", 4, 1)
+  PlanWeight* = envTunableFloat("STENCIL_PLAN_WEIGHT", 1.0, 1.0)
+  # Diagnostic/safety valve: disable the cached-Dijkstra heuristic (D4) and
+  # fall back to pure euclidean — used to measure oracle-induced path-cost
+  # deviation, and the mitigation switch if inadmissibility ever bites.
+  PlanOracle* = envBool("STENCIL_PLAN_ORACLE", true)
+  # Shared cadence for moving-target route refreshes and LOS-danger rebuilds.
+  # Tuning it changes both planner responsiveness and danger-producer cost.
+  PlanMovingReplanTicks* = envTunableInt(
+    "STENCIL_PLAN_MOVING_REPLAN_TICKS", 12, 1)
+  DangerLosFlatPx* = envTunableInt("STENCIL_DANGER_LOS_FLAT_PX", 400, 0)
+  DangerLosFarFactor* = envTunableFloat(
+    "STENCIL_DANGER_LOS_FAR_FACTOR", 0.6, 0.0, 1.0)
+  DangerLosRangePx* = envTunableInt("STENCIL_DANGER_LOS_RANGE_PX", 1050, 1)
+  DangerCloseFloor* = envTunableFloat("STENCIL_DANGER_CLOSE_FLOOR", 0.5, 0.0)
+  DangerClosePx* = envTunableInt("STENCIL_DANGER_CLOSE_PX", 190, 0)
+  DangerLosWeight* = envTunableFloat("STENCIL_DANGER_LOS_WEIGHT", 1.0, 0.0)
   StuckTicks* = envInt("STENCIL_STUCK_TICKS", 8)
   DiagEveryTicks* = envInt("STENCIL_DIAG_EVERY_TICKS", 96)
   TraceNavigation* = envTunableBool("STENCIL_TRACE_NAVIGATION", false)
@@ -312,6 +329,9 @@ proc validateConfig(): bool =
   require(SprayReshoutTicks <= SprayThreatTtlTicks,
     "spray_reshout_before_expiry",
     "Spray reshout interval must not exceed threat TTL.")
+  require(DangerLosFlatPx <= DangerLosRangePx,
+    "danger_los_distance_order",
+    "DANGER_LOS_FLAT_PX must not exceed DANGER_LOS_RANGE_PX.")
   true
 
 let ConfigValidated* = validateConfig()

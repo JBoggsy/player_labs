@@ -4,6 +4,82 @@ Read this before assuming what a version contains. Format mirrors
 `ctf_lab/ctf/beacon/VERSION_LOG.md`: one entry per uploaded version — what
 changed, why, and what the evidence said.
 
+## v65 — the planner (nav rework Layer 3), uploaded 2026-08-13
+
+Immutable policy-version UUID: `d8b5ca59-503f-4f8c-85b8-df052fb38998`.
+Uploaded with tag `purpose=layer3-planner`. **Not submitted to any league.**
+
+Layer 3 of the navigation rework per the approved proposal
+([HTML](../../docs/designs/nav-layer3-planner-2026-08-12.html), brief +
+implementation addenda in `.nav-layer3-planner-brief.md`). **Implementation
+was planned and executed by OpenAI Codex CLI under orchestration** (James's
+call); three iterations, each gated by independent review: the initial
+implementation, a lattice-completeness fix, and an endpoint-snapping fix —
+both fixes prompted by findings Codex's own harness missed.
+
+- **The planner** (`planner.nim`): weighted A* on a 4 px pixel lattice
+  (`STENCIL_PLAN_STEP_PX`), `canStand` node validity, exact supercover
+  edge admission, octile costs × (1 + dangerWeight × DangerField sample at
+  edge midpoints), euclidean heuristic + the cached-Dijkstra oracle for
+  already-minted stable goals (non-minting `peekRouteDistance`; valve
+  `STENCIL_PLAN_ORACLE`), `STENCIL_PLAN_WEIGHT` inflation shelved at 1.0.
+  Deterministic (tie-broken queue, fixed orders); reusable
+  generation-stamped per-agent workspace, lazily allocated.
+- **Completeness cascade** (found by the independent property suite:
+  sameComponent pairs could be unroutable when a standable ridge is
+  narrower than the lattice): failed searches retry step/2 then 1 px,
+  gated on `sameComponent` — a 1 px 8-connected supercover lattice is
+  complete w.r.t. engine 4-connectivity, so Layer 4's
+  "sameComponent ⇒ planning succeeds" contract holds. `fallback` counted.
+- **Endpoint snapping** (found in live play: 27% of plans were unroutable
+  because strategy still emits non-standable goals — pedestal targets,
+  wall-clipped extrapolations — that the old astar silently snapped):
+  non-standable endpoints snap to the nearest standable pixel within 32 px
+  (unbiased ring scan, NOT the retired up-left-biased cell snap); the raw
+  unreachable goal is not appended. After the fix: unroutable 262 → 0 in
+  the same scenario, 7 goals snapped. `plan_goal_snapped` traced — the
+  producer-cleanup worklist for Layer 4.
+- **DangerField** (`danger_field.nim`): the ruled two-level LOS-exposure
+  model — per-source supercover perimeter rays on the 8 px grid with a
+  precomputed attenuation kernel (flat to 400 px, 0.6 at 1050 px,
+  `STENCIL_DANGER_LOS_*` knobs), non-LOS close-quarters floor (190 px),
+  normalization weight; producer standalone behind the heatmap; stored as
+  `Belief.planDanger` (the unvalidated legacy `belief.danger` grid is
+  deliberately untouched). Rebuilt on the shared 12-tick cadence
+  (`STENCIL_PLAN_MOVING_REPLAN_TICKS`, dual-role documented).
+- **Integration**: `astarWaypoint` keeps its contract (trailing defaulted
+  params; cache/replan semantics; unroutable → existing beeline fallback,
+  which SURVIVES v65 by design — goal validation is Layer 4); moving-target
+  replan cadence for the five pursuit-class reasons; old 8 px astar
+  deleted; `nearestWalkable` snap gone from search. FlowReasons untouched.
+  Telemetry: `plan_count/ms_total/expansions_total/unroutable_count/`
+  `fallback_count/goal_snapped` snapshot counters.
+
+**Oracle admissibility, measured (D4's caveat closed):** on the three real
+batch maps, 240 paired queries (`STENCIL_PLAN_ORACLE` on/off, same binary):
+worst path-cost ratio 1.0113, mean ≈1.0015 — vs 1.126 on adversarial
+synthetics with sub-cell passages that generator maps (26 px corridor
+guarantee) cannot produce. Ships enabled.
+
+**Pre-upload evidence:** independent planner property suite (13k–17k checks
+per run over 60–80 random maps: sameComponent ⇔ routable, every edge
+segmentClear, start-exclusive/goal-inclusive contract, determinism,
+no-minting) + Codex's own harness (lattice-ridge regressions, snapping
+cases, LOS producer values, no-mint, 192-query optimality probe); all
+locally-checkable modules `nim check` clean; release entrypoint compiles.
+Live self-play: opening phases are all flow reasons (zero plans — expected);
+with early defense disabled to force A* reasons: 600 plans/16 seats/3000
+ticks, ~50 ms per search under 16-way contention (bench-consistent),
+0 unroutable, 0 fallback. Viewer gained the planner layer: scenario
+routes between capture points with the LOS heatmap — routes visibly thread
+obstacle shadows. Built against 0.7.215 / `6c7a4c0e`.
+
+**Hosted validation:** matched v65-vs-v64 batch pending at upload; expected
+behavior delta is route GEOMETRY for the ~10 A*-reason intents (danger-
+aware shadow-threading detours, unbiased endpoints) plus the moving-target
+cadence; flow-reason movement unchanged. Tick-rate compared across arms
+(planning sits on the decide path). Verdict appended when complete.
+
 ## v64 — wide post pool + Dijkstra-minting fix, uploaded 2026-08-12
 
 Immutable policy-version UUID: `d3504b01-ea7e-46db-9b3d-59a959940752`.

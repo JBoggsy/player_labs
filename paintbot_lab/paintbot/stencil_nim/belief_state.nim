@@ -1,7 +1,7 @@
 ## Long-lived folded policy state, separated from update logic to avoid cycles.
 
-import std/[math, options, sets, tables]
-import config, nav, types, worldmap
+import std/[options, sets, tables]
+import config, danger_field, nav, types, worldmap
 
 type
   CarrierFix* = tuple[pos: Point, heading, heardTick: int]
@@ -52,6 +52,8 @@ type
     enemyTracks*, teammateTracks*: seq[PlayerTrack]
     danger*: seq[float32]
     dangerSpreadCarry*: float
+    planDanger*: DangerField
+    planDangerBuiltTick*: int
     nav*: NavState
     sweepOffset*, sweepDir*: int
     micro*: string
@@ -149,7 +151,7 @@ proc newBelief*(slot: int): Belief =
     lastProposalSentTick: -10_000, lastVoteSentTick: -10_000,
     lastCommitSentTick: -10_000,
     consensusStartedTick: -1, consensusState: "idle", rejoinUntil: -1,
-    respawnedTick: -10_000)
+    respawnedTick: -10_000, planDangerBuiltTick: -10_000)
 
 proc projectedTrackPos*(belief: Belief, track: PlayerTrack): Point =
   let age = belief.tick - track.lastTick

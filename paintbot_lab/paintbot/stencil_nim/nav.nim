@@ -1,13 +1,9 @@
-## Flow-field lookup and cached A* for moving objectives.
+## Flow-field lookup and cached weighted A* for moving objectives.
 
-import std/[algorithm, heapqueue, math, options]
-import config, types, worldmap
-
-const Sqrt2 = sqrt(2.0)
+import std/[math, options]
+import config, danger_field, planner, types, worldmap
 
 type
-  AstarNode = tuple[priority, cost: float, x, y: int]
-
   NavState* = object
     goal*: Option[Point]
     path*: seq[Point]
@@ -15,70 +11,47 @@ type
     cursor*: int
     lastXy*: Option[Point]
     stuckTicks*: int
+    planner*: PlannerState
+    lastPlanTick*: int
+    planCount*: int
+    planMsTotal*: float
+    planExpansionsTotal*: int
+    planUnroutableCount*: int
+    planFallbackCount*: int
+    planGoalSnappedCount*: int
 
 proc distance(a, b: Point): float = hypot((a.x - b.x).float, (a.y - b.y).float)
-proc gridIndex(map: WorldMap, point: Point): int = point.y * map.gridW + point.x
-
-proc astar(map: WorldMap, start, goal: Point): seq[Point] =
-  let source = map.nearestWalkable(map.cellOf(start))
-  let target = map.nearestWalkable(map.cellOf(goal))
-  if source == target:
-    return @[cellCenter(target)]
-  proc heuristic(point: Point): float =
-    hypot((point.x - target.x).float, (point.y - target.y).float)
-
-  var
-    queue = initHeapQueue[AstarNode]()
-    came = newSeq[int](map.walkable.len)
-    best = newSeq[float](map.walkable.len)
-  for value in came.mitems: value = -1
-  for value in best.mitems: value = Inf
-  best[map.gridIndex(source)] = 0.0
-  queue.push((heuristic(source), 0.0, source.x, source.y))
-  while queue.len > 0:
-    let current = queue.pop()
-    let currentPoint: Point = (current.x, current.y)
-    if currentPoint == target:
-      var cursor = map.gridIndex(target)
-      while cursor >= 0:
-        result.add(cellCenter((cursor mod map.gridW, cursor div map.gridW)))
-        cursor = came[cursor]
-      result.reverse()
-      return
-    if current.cost > best[map.gridIndex(currentPoint)]:
-      continue
-    for delta in Neighbors:
-      let next: Point = (current.x + delta.x, current.y + delta.y)
-      if next.x < 0 or next.x >= map.gridW or next.y < 0 or next.y >= map.gridH or
-          not map.walkable[map.gridIndex(next)]:
-        continue
-      if delta.x != 0 and delta.y != 0 and
-          (not map.walkable[map.gridIndex((next.x, current.y))] or
-           not map.walkable[map.gridIndex((current.x, next.y))]):
-        continue
-      let nextCost = current.cost +
-        (if delta.x != 0 and delta.y != 0: Sqrt2 else: 1.0)
-      if nextCost < best[map.gridIndex(next)]:
-        best[map.gridIndex(next)] = nextCost
-        came[map.gridIndex(next)] = map.gridIndex(currentPoint)
-        queue.push((nextCost + heuristic(next), nextCost, next.x, next.y))
 
 proc astarWaypoint*(
-  state: var NavState, map: WorldMap, selfXy, goal: Point
+  state: var NavState, map: WorldMap, selfXy, goal: Point,
+  danger = DangerField(), tick = 0, movingTarget = false
 ): Point =
   let goalCell = map.cellOf(goal)
   let previousCell = if state.goal.isSome: some(map.cellOf(state.goal.get)) else: none(Point)
   let goalMoved = previousCell.isNone or
     abs(goalCell.x - previousCell.get.x) > ReplanGoalCells or
     abs(goalCell.y - previousCell.get.y) > ReplanGoalCells
-  if goalMoved or not state.hasPath or state.stuckTicks >= StuckTicks:
-    state.path = map.astar(selfXy, goal)
+  let movingReplan = movingTarget and
+    tick - state.lastPlanTick >= PlanMovingReplanTicks
+  if goalMoved or not state.hasPath or state.stuckTicks >= StuckTicks or movingReplan:
+    let planned = state.planner.planPath(map, danger, selfXy, goal)
+    state.path = planned.path
     state.goal = some(goal)
     # Python caches a successful list, but leaves an unroutable path as None so
     # it retries on the next observation. Preserve that distinction here.
     state.hasPath = state.path.len > 0
     state.cursor = 0
     state.stuckTicks = 0
+    state.lastPlanTick = tick
+    inc state.planCount
+    state.planMsTotal += planned.elapsedMs
+    state.planExpansionsTotal += planned.expansions
+    if planned.fallbackStep > 0:
+      inc state.planFallbackCount
+    if planned.goalSnapped:
+      inc state.planGoalSnappedCount
+    if state.path.len == 0:
+      inc state.planUnroutableCount
   if state.path.len == 0:
     return goal
   while state.cursor < state.path.high and

@@ -345,7 +345,7 @@
 
   <!-- ============ Masthead ============ -->
   <header class="masthead">
-    <span class="eyebrow">Design proposal · 2026-08-12 · PROPOSAL — awaiting ruling</span>
+    <span class="eyebrow">Design proposal · 2026-08-12 · APPROVED — implemented as v65 (2026-08-13)</span>
     <h1>Layer 3 — the planner</h1>
     <p class="context">Weighted A* as the single navigation search for the stencil nav rework — a worked proposal argued from the Phase 0 benchmark, for James's ruling before v65 implementation begins.</p>
   </header>
@@ -842,6 +842,20 @@
     </ul>
   </section>
 
+<section class="doc-section" id="implementation-note">
+  <h2>Implementation addendum (2026-08-13)</h2>
+  <p>Shipped as stencil v65 (Codex CLI implementation under orchestration; see
+  <code>VERSION_LOG.md</code>). Two corrections discovered during validation and folded in:
+  a <strong>completeness cascade</strong> (4→2→1&#8202;px, gated on <code>sameComponent</code>) after the
+  property suite found sub-lattice standable ridges could make engine-reachable pairs
+  unroutable, and <strong>unbiased 32&#8202;px endpoint snapping</strong> after live play showed 27% of
+  plans hitting the beeline fallback on non-standable producer goals (pedestals) that
+  the old search silently tolerated — snapped counts are traced as the Layer&nbsp;4
+  producer-cleanup worklist. The D4 oracle caveat was closed by measurement: worst
+  path-cost deviation 1.13% on the real corpus (vs 12.6% on adversarial synthetics),
+  with <code>STENCIL_PLAN_ORACLE</code> as the valve. Terrain costs were skipped —
+  no trench plumbing exists in the Nim perception (verified).</p>
+</section>
 </article>
 
 <!-- ================================================================

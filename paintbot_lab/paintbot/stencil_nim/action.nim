@@ -5,6 +5,9 @@ import belief_state, config, fight, nav, squads, types, worldmap
 
 const FlowReasons = [
   "carry_home", "steal", "to_hold", "to_post", "early_defense", "barrage_center"]
+const MovingPlanReasons = [
+  "intercept_thief", "intercept_thief_heard", "convert_hunt",
+  "escort_carrier", "escort_carrier_heard"]
 const MovementMask = ButtonUp or ButtonDown or ButtonLeft or ButtonRight
 
 type
@@ -459,7 +462,9 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
       intent.point.get
     elif intent.reason in FlowReasons:
       belief.worldmap.flowWaypoint(intent.point.get, selfXy)
-    else: astarWaypoint(belief.nav, belief.worldmap, selfXy, intent.point.get)
+    else:
+      astarWaypoint(belief.nav, belief.worldmap, selfXy, intent.point.get,
+        belief.planDanger, belief.tick, intent.reason in MovingPlanReasons)
     noteProgress(belief.nav, selfXy)
     if Squads and intent.reason in ["steal", "to_hold", "squad_move",
         "squad_to_hold", "squad_to_watch"] and not carrying:
