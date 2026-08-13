@@ -618,23 +618,46 @@
         active puddles when GV41 activates them (bounding-box labels, loose — a cost, not a
         wall). Barriers, trenches, and puddles <em>never</em> become walls — they do not block
         movement.</li>
-        <li><strong>Danger — split into representation and producer (review ruling).</strong>
-        The planner never computes danger; it only <em>samples</em> a <code>DangerField</code> —
-        a coarse heatmap (8&#8202;px cells, one additive cost multiplier per cell) owned by
-        belief state and rebuilt on the replan cadence. Danger <em>calculation</em> is a
-        swappable producer behind that representation: the v1 producer paints one bloom per
-        believed enemy track (velocity-projected, fresh within <code>TrackTtlTicks</code> —
-        the same input as v63's facingScore). Swapping producers — the
-        <code>belief.danger</code> grid if its validation experiment (sketch Q10) ever lands,
-        hazard overlays, anything learned — touches zero nav logic: the planner's contract is
-        "read the heatmap," full stop. This is <em>not</em> the unvalidated
-        <code>belief.danger</code> grid today, and the sketch keeps that out of cost functions
-        pending validation.</li>
-        <li><strong>Exposure:</strong> at each node, if the cell's <code>coverDirs</code> mask
-        leaves the node uncovered from the bearing toward any fresh believed track within gun
-        range, add the exposure weight (per profile). Cheap: one bitmask test per fresh track
-        per expanded node, reusing v63's facingScore machinery
-        <span class="cite">worldmap.nim:583</span>.</li>
+        <li><strong>Danger — representation/producer split (review round 1), LOS-exposure
+        model (review round 2).</strong> The planner never computes danger; it only
+        <em>samples</em> a <code>DangerField</code> — a coarse heatmap (8&#8202;px cells, one
+        additive cost multiplier per cell) owned by belief state and rebuilt on the replan
+        cadence. Producers are swappable behind that representation with zero nav-logic
+        churn.
+        <p style="margin:.6em 0 0"><strong>The v1 producer is the two-level LOS model James's
+        second review specified</strong> (replacing the proximity-bloom draft, which was the
+        wrong kernel for this game — guns are 1050&#8202;px hitscan with ~80% accuracy at max
+        range, so passing near an enemy is no worse than <em>being in their line of sight at
+        any distance</em>):</p>
+        <ul style="margin:.4em 0 0">
+          <li><em>Level 1 — presence:</em> where we believe enemies are — one source per
+          fresh believed track (velocity-projected, within <code>TrackTtlTicks</code>); track
+          age can later widen a source into a small uncertainty cluster without touching
+          anything downstream.</li>
+          <li><em>Level 2 — exposure transform:</em> danger(x) = Σ over sources with
+          line-of-sight to x, times a nearly-flat range attenuation (1.0 out to
+          400&#8202;px, tapering to 0.6 at the 1050&#8202;px gun range, 0 beyond) — flat
+          because hitscan accuracy barely decays; plus a small close-quarters floor
+          (~190&#8202;px ≈ spray lethal reach) added regardless of LOS, since spray and
+          grenades do not need a clean sightline.</li>
+        </ul>
+        <p style="margin:.6em 0 0"><strong>Measured feasibility</strong> (scratchpad
+        prototype, per-source perimeter ray sweep on the 8&#8202;px grid — an upper bound on
+        a smarter FOV): full field rebuild with 8 sources on the giant = 1.55&nbsp;ms; 4
+        sources = 0.9&nbsp;ms; ffa 8 sources = 1.1&nbsp;ms. Rebuild-per-replan is free. The
+        same measurement confirms the design intuition: 4 sources already place ~69% of the
+        giant's standable cells under LOS-danger — with long guns the field is
+        shadow-structured, and it is the <em>shadows</em> (occluded corridors) that
+        differentiate routes. Magnitude therefore needs a normalization knob so
+        near-uniform exposure doesn't just inflate all costs equally
+        (<code>STENCIL_DANGER_LOS_WEIGHT</code>); per-profile weights still scale the whole
+        field.</p></li>
+        <li><strong>Exposure as a separate cost term: dissolved.</strong> The LOS danger
+        producer subsumes the draft's coverDirs-bitmask exposure term with true occlusion
+        instead of a 24&#8202;px hug-cover approximation — one danger term, one field.
+        <code>coverDirs</code> remains the right tool where it lives today: post selection
+        and duck/peek facing (v63), not route costs. (This resolves the former open question
+        P2 by design.)</li>
         <li><strong>Cohesion:</strong> deferred — the sketch marks it optional, and adding it
         in v1 would muddy attribution.</li>
       </ul>
@@ -733,26 +756,26 @@
       <li>These four points are what this proposal asks James to rule on; everything else is decided above, pending that ruling.</li>
     </ul>
     <div class="callout callout-open">
-      <span class="callout-label">P1 · Danger bloom shape (v1 producer)</span>
-      <p style="margin:0 0 .5em">A <em>bloom</em> is the cost disc one believed enemy paints
-      into the danger heatmap: centered on the track's projected position, radius
-      150&#8202;px, adding up to +3× cost at the center and fading linearly to zero at the
-      edge. Concretely: a path segment passing right through a believed enemy's position
-      costs up to 4× its geometric length, one grazing the 150&#8202;px edge costs almost
-      nothing extra — so the planner bends routes around believed enemies exactly when the
-      detour is cheaper than the exposure, and ignores them when it is not. (The 150&#8202;px
-      radius ≈ gun close-range; the profile weight from D6 scales the whole disc — a carrier
-      treats the same bloom 4× as seriously as a hunter.)</p>
-      Ruling: is that v1 shape — 150&#8202;px, linear falloff, +3× peak, profile-scaled —
-      fine to start, or do you want a different radius/shape? (Per the D6 split, this is
-      only the v1 <em>producer</em>; changing it later touches no nav logic.)
+      <span class="callout-label">P1 · Danger v2 — the LOS model (revised per review round 2)</span>
+      <p style="margin:0 0 .5em">The proximity bloom is dead; danger is now the two-level
+      LOS-exposure model in D6: presence sources from believed tracks, danger(x) = LOS-visible
+      source mass with nearly-flat range attenuation (1.0 to 400&#8202;px, 0.6 at
+      1050&#8202;px), plus a small non-LOS close-quarters floor (~190&#8202;px, spray reach).
+      Measured: full rebuild 1.55&nbsp;ms with 8 sources on the giant — free at replan
+      cadence. Routes will thread the <em>shadows</em>, which is the tactically correct
+      behavior for a hitscan game.</p>
+      Ruling: sign off on this shape as the v1 producer? Attenuation numbers, the
+      close-quarters floor, and the magnitude normalization are all knobs
+      (<code>STENCIL_DANGER_LOS_*</code>) tunable against the viewer's danger overlay without
+      code changes. Deeper refinements recorded for later: track-age uncertainty clusters,
+      and vision-cone (rather than omnidirectional) sources if believed facing ever becomes
+      reliable.
     </div>
-    <div class="callout callout-open">
-      <span class="callout-label">P2 · Exposure term in v1</span>
-      Include the exposure term in v1 at all, or defer it to Layer&nbsp;4 with the profiles?
-      (v65 runs the default profile only; danger + exposure still shape default routes.)
-      <strong>Lean:</strong> keep both terms in v1 at default weights, so the cost machinery
-      is exercised before profiles multiply.
+    <div class="callout callout-info">
+      <span class="callout-label">P2 · Exposure term — resolved by design</span>
+      Dissolved into the LOS danger producer (true occlusion subsumes the coverDirs
+      approximation for routing); <code>coverDirs</code> stays for post selection and
+      duck/peek. No separate ruling needed.
     </div>
     <div class="callout callout-open">
       <span class="callout-label">P3 · Moving-target replan cadence</span>
@@ -781,7 +804,7 @@
     </div>
     <div class="callout callout-warn">
       <span class="callout-label">Risk · Cost-term interactions</span>
-      Danger + exposure + terrain can triple-count near walls where tracks cluster. v65
+      Danger + terrain can double-count in trench corridors under believed fire lanes (and the close-quarters floor adds a third term near tracks). v65
       traces per-term totals per path, so the matched batch's behavior diffs can attribute
       route changes to specific terms.
     </div>
