@@ -86,6 +86,11 @@ Every Coworld player image obeys the same contract (full details in
   baked.)
 - **Secrets only at upload.** LLM/cloud keys attach to the policy version
   (`--secret-env`, `--use-bedrock`), never to the image.
+- **Crewrift LLM budget.** Always select Haiku 4.5
+  (`us.anthropic.claude-haiku-4-5-20251001-v1:0`). Each policy pod must remain
+  below 1,800 quota-weighted tokens per episode, cumulative across every LLM
+  call (input + cache-write + 5 × output tokens); fall back deterministically
+  when the remaining budget is insufficient.
 - **Static derived data is baked offline, not per-run.** crewborg's nav graph +
   occupancy substrate are a pure function of the (one, static) croatoan map but cost
   ~14s to build on the first tick under the hosted 250m-CPU cap — so they're baked
