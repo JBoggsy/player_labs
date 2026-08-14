@@ -150,7 +150,7 @@ shape. These defaults are conservative starting points, not closed decisions:
 | Map patches | two small convolutions, stride 8, 32 channels | `MapEncoderConfig` |
 | Map tokens | 4x4 global pool plus 4x4 local pool (32 total) | `global_grid`, `local_grid` |
 | Local context | radius 8 feature cells, gathered every decision | `local_radius_cells`; cached feature grid API |
-| Tuning | LoRA rank 8 over attention projections plus only the 17 new token rows | `--tuning lora|full` and PEFT config |
+| Tuning | LoRA rank 8 over attention projections plus only the 17 new token rows | `--tuning lora|full`, `--lora-rank`, and `--lora-target-modules attention|all-linear` |
 | Text ceiling | 2,048 tokens for the Mac baseline, preserving the nearest/self-first prefix and all targets | `--max-text-tokens` |
 | Replay alignment | observation at tick `t` predicts held mask at tick `t` | `--action-delay-ticks`; both ticks stored |
 | Decoding | five constrained greedy steps without a KV cache | isolated `greedy_action()` method |

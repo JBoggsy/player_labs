@@ -19,6 +19,12 @@ def main() -> int:
     parser.add_argument("--validation-indices", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--tuning", choices=("lora", "full"), default="lora")
+    parser.add_argument("--lora-rank", type=int, default=8)
+    parser.add_argument(
+        "--lora-target-modules",
+        choices=("attention", "all-linear"),
+        default="attention",
+    )
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--gradient-accumulation", type=int, default=8)
@@ -42,6 +48,8 @@ def main() -> int:
     args = parser.parse_args()
     if args.log_every <= 0:
         parser.error("--log-every must be positive")
+    if args.lora_rank <= 0:
+        parser.error("--lora-rank must be positive")
     if (args.validation_samples is None) != (args.validation_maps is None):
         parser.error("--validation-samples and --validation-maps must be supplied together")
     if args.validation_indices is not None and args.validation_samples is None:
@@ -78,6 +86,8 @@ def main() -> int:
         seed=args.seed,
         mixed_precision=args.mixed_precision,
         action_change_weight=action_change_weight,
+        lora_rank=args.lora_rank,
+        lora_target_modules=args.lora_target_modules,
         resume_from=args.resume_from,
         gradient_checkpointing=not args.no_gradient_checkpointing,
         log_every=args.log_every,

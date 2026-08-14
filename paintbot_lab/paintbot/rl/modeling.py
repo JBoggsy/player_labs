@@ -180,7 +180,13 @@ class SemanticPolicyModel(nn.Module):
         return tuple(generated)  # type: ignore[return-value]
 
 
-def load_base_model(*, tuning: str = "lora", dtype: torch.dtype | None = None):
+def load_base_model(
+    *,
+    tuning: str = "lora",
+    dtype: torch.dtype | None = None,
+    lora_rank: int = 8,
+    lora_target_modules: str = "attention",
+):
     from peft import LoraConfig, get_peft_model
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -195,14 +201,23 @@ def load_base_model(*, tuning: str = "lora", dtype: torch.dtype | None = None):
     )
     language_model.resize_token_embeddings(len(tokenizer))
     if tuning == "lora":
+        if lora_rank <= 0:
+            raise ValueError("lora_rank must be positive")
+        if lora_target_modules not in {"attention", "all-linear"}:
+            raise ValueError("lora_target_modules must be 'attention' or 'all-linear'")
         action_token_ids = [tokenizer.convert_tokens_to_ids(token) for token in ACTION_TOKENS]
+        target_modules = (
+            ["q_proj", "k_proj", "v_proj", "o_proj"]
+            if lora_target_modules == "attention"
+            else "all-linear"
+        )
         language_model = get_peft_model(
             language_model,
             LoraConfig(
-                r=8,
-                lora_alpha=16,
+                r=lora_rank,
+                lora_alpha=2 * lora_rank,
                 lora_dropout=0.05,
-                target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
+                target_modules=target_modules,
                 trainable_token_indices={"embed_tokens": action_token_ids},
                 task_type="CAUSAL_LM",
             ),

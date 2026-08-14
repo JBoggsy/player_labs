@@ -75,13 +75,13 @@ def parse_training_log(text: str, point_limit: int = 500) -> dict:
     }
 
 
-def full_training_log(text: str) -> str:
+def full_training_log(text: str, marker: str = "training-v1/full") -> str:
     """Exclude canary output when the shared log still contains both runs."""
     lines = text.splitlines()
     starts = [
         index
         for index, line in enumerate(lines)
-        if "train_sft.py" in line and "training-v1/full" in line
+        if "train_sft.py" in line and marker in line
     ]
     return "\n".join(lines[starts[-1] :]) if starts else text
 
@@ -100,15 +100,15 @@ def process_snapshot(run: Callable[[list[str]], str]) -> dict:
         [
             "pgrep",
             "-af",
-            "run_expert_training.py|train_sft.py|evaluate_sft.py|supervise_expert_training",
+            "run_(expert_training|diversity_experiment).py|train_sft.py|evaluate_sft.py|supervise_(expert_training|diversity_experiment)",
         ]
     )
     lines = [line for line in text.splitlines() if "training_dashboard.py" not in line]
     return {
         "trainer": any("train_sft.py" in line for line in lines),
         "evaluator": any("evaluate_sft.py" in line for line in lines),
-        "supervisor": any("supervise_expert_training" in line for line in lines),
-        "handoff": any("run_expert_training.py" in line for line in lines),
+        "supervisor": any("supervise_" in line for line in lines),
+        "handoff": any("run_" in line and "training_dashboard.py" not in line for line in lines),
         "lines": lines,
     }
 
@@ -184,15 +184,22 @@ def evaluation_metrics(output: Path) -> dict:
 
 
 def build_snapshot(
-    workspace: Path, run: Callable[[list[str]], str] = run_text
+    workspace: Path,
+    run: Callable[[list[str]], str] = run_text,
+    *,
+    training_root: Path | None = None,
+    log_path: Path | None = None,
 ) -> dict:
-    training_root = workspace / "training-v1"
+    training_root = training_root or workspace / "training-v1"
     output = training_root / "full"
     status = read_json(training_root / "status.json")
-    log_path = workspace.parent.parent / "logs" / "expert-training-v1.log"
-    if not log_path.exists():
-        log_path = workspace / "logs" / "expert-training-v1.log"
-    log = parse_training_log(full_training_log(read_tail(log_path)))
+    if log_path is None:
+        log_path = workspace.parent.parent / "logs" / "expert-training-v1.log"
+        if not log_path.exists():
+            log_path = workspace / "logs" / "expert-training-v1.log"
+    log = parse_training_log(
+        full_training_log(read_tail(log_path), f"{training_root.name}/full")
+    )
     processes = process_snapshot(run)
 
     train_budget = int(status.get("train_budget", 250_000))
@@ -244,7 +251,7 @@ def build_snapshot(
     stage = str(status.get("stage", ""))
     if stage in {"training_canary", "training_full"}:
         expected_process = processes["trainer"]
-    elif stage in {"evaluating_canary", "evaluating_full"}:
+    elif stage.startswith("evaluating_"):
         expected_process = processes["evaluator"]
     elif stage == "complete":
         expected_process = True
@@ -333,11 +340,20 @@ refresh();setInterval(refresh,10000);addEventListener('resize',refresh);
 
 class DashboardHandler(BaseHTTPRequestHandler):
     workspace: Path
+    training_root: Path
+    training_log: Path
 
     def do_GET(self) -> None:  # noqa: N802
         if self.path == "/api/status":
             self.respond(
-                json.dumps(build_snapshot(self.workspace)).encode(), "application/json"
+                json.dumps(
+                    build_snapshot(
+                        self.workspace,
+                        training_root=self.training_root,
+                        log_path=self.training_log,
+                    )
+                ).encode(),
+                "application/json",
             )
         elif self.path == "/healthz":
             self.respond(b"ok\n", "text/plain")
@@ -361,12 +377,21 @@ class DashboardHandler(BaseHTTPRequestHandler):
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workspace", type=Path, required=True)
+    parser.add_argument("--training-root", type=Path)
+    parser.add_argument("--training-log", type=Path)
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
     args = parser.parse_args()
     if not args.workspace.exists():
         parser.error(f"workspace does not exist: {args.workspace}")
     DashboardHandler.workspace = args.workspace.resolve()
+    DashboardHandler.training_root = (
+        args.training_root or args.workspace / "training-v1"
+    ).resolve()
+    DashboardHandler.training_log = (
+        args.training_log
+        or args.workspace.parent.parent / "logs" / "expert-training-v1.log"
+    ).resolve()
     server = ThreadingHTTPServer((args.host, args.port), DashboardHandler)
     print(f"Paintbot RL dashboard: http://{args.host}:{args.port}", flush=True)
     server.serve_forever()

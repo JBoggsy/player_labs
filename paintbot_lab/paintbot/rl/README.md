@@ -152,6 +152,26 @@ dashboard, the launcher chooses the next free port. Override the starting local
 port with `PAINTBOT_DASHBOARD_LOCAL_PORT`; the launcher otherwise uses the
 existing `mettabox1` SSH alias and exhaustive-corpus workspace.
 
+To follow a non-default experiment while retaining the same dashboard URL, set
+the remote output and log explicitly:
+
+```sh
+PAINTBOT_DASHBOARD_TRAINING_ROOT=/home/metta/paintbot_rl_training_20260807/runs/expert-corpus-v1/training-v2-diversity \
+PAINTBOT_DASHBOARD_TRAINING_LOG=/home/metta/paintbot_rl_training_20260807/logs/diversity-750k.log \
+  paintbot_lab/paintbot/rl/open_training_dashboard.sh
+```
+
+### Matched-compute diversity arm
+
+`run_diversity_experiment.py` compares the original 250,000 unique rows x three
+epochs against 750,000 unique rows x one epoch. Total example presentations and
+optimizer updates remain fixed. The runner writes a separate balanced index,
+trains and resumes under `training-v2-diversity`, evaluates validation, and
+deliberately stops before the sealed test. `supervise_diversity_experiment.sh`
+provides retry and reboot recovery on mettabox1. The baseline diagnosis and
+frozen checksums are recorded in the
+[`exhaustive-corpus report`](../../docs/reports/rl-exhaustive-baseline-2026-08-14.md).
+
 ### Full run
 
 The tracked GPU-oriented manifest uses winning POVs from GV16/24/30/35 for
@@ -225,6 +245,19 @@ from the prior tick. `balanced` derives `unchanged_components / changed_componen
 from the training split; `<STOP>` remains weight 1. The first weighting sweep
 showed that this mechanism creates transition recall but excessive false
 changes, so it is an experiment knob rather than a new default.
+
+LoRA defaults to rank 8 over the attention Q/K/V/O projections. Capacity
+experiments can set `--lora-rank` and choose
+`--lora-target-modules attention|all-linear`; both resolved values are recorded
+in `training_run.json`. The exhaustive-corpus all-linear canary fit in 24 GB but
+regressed movement and validation loss, so attention-only remains the default.
+
+`evaluate_sft.py --logits-out validation_logits.npz` persists only legal
+per-slot logits plus replay IDs, prior tokens, and labels. The output is intended
+for validation-only decoder diagnosis. `calibrate_change_bias.py` splits it by
+replay ID, selects a single previous-state change bias on one half, and reports
+the untouched confirmation half. Do not use this path to tune against sealed
+test logits.
 
 The first mettabox1 run and its negative behavioral verdict are recorded in the
 [`GPU training report`](../../docs/reports/rl-mettabox1-sft-2026-08-07.md).

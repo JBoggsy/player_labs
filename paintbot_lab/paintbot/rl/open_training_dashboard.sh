@@ -8,10 +8,14 @@ LOCAL_PORT=${PAINTBOT_DASHBOARD_LOCAL_PORT:-8876}
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REMOTE_SCRIPT="$REMOTE_ROOT/paintbot_lab/paintbot/rl/training_dashboard.py"
 RUN="$REMOTE_ROOT/runs/expert-corpus-v1"
+TRAINING_ROOT=${PAINTBOT_DASHBOARD_TRAINING_ROOT:-$RUN/training-v1}
+TRAINING_LOG=${PAINTBOT_DASHBOARD_TRAINING_LOG:-$REMOTE_ROOT/logs/expert-training-v1.log}
 PID_FILE="$RUN/training-v1/dashboard.pid"
 LOG_FILE="$RUN/training-v1/dashboard.log"
 HASH_FILE="$RUN/training-v1/dashboard.sha256"
-SCRIPT_HASH=$(shasum -a 256 "$SCRIPT_DIR/training_dashboard.py" | awk '{print $1}')
+SCRIPT_HASH=$(printf '%s\n%s\n%s\n' \
+  "$(shasum -a 256 "$SCRIPT_DIR/training_dashboard.py" | awk '{print $1}')" \
+  "$TRAINING_ROOT" "$TRAINING_LOG" | shasum -a 256 | awk '{print $1}')
 
 scp -q "$SCRIPT_DIR/training_dashboard.py" "$HOST:$REMOTE_SCRIPT"
 ssh "$HOST" "
@@ -29,7 +33,9 @@ if test -s '$PID_FILE'; then
 fi
 if test \"\$running\" = false; then
   cd '$REMOTE_ROOT'
-  nohup .venv/bin/python -u '$REMOTE_SCRIPT' --workspace '$RUN' --port '$REMOTE_PORT' >'$LOG_FILE' 2>&1 </dev/null &
+  nohup .venv/bin/python -u '$REMOTE_SCRIPT' --workspace '$RUN' \
+    --training-root '$TRAINING_ROOT' --training-log '$TRAINING_LOG' \
+    --port '$REMOTE_PORT' >'$LOG_FILE' 2>&1 </dev/null &
   echo \$! >'$PID_FILE'
   echo '$SCRIPT_HASH' >'$HASH_FILE'
 fi

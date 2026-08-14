@@ -166,6 +166,8 @@ def train(
     gradient_checkpointing: bool = True,
     mixed_precision: str = "no",
     action_change_weight: float | str = 1.0,
+    lora_rank: int = 8,
+    lora_target_modules: str = "attention",
     resume_from: Path | None = None,
     log_every: int = 10,
     checkpoint_every_updates: int = 0,
@@ -181,7 +183,11 @@ def train(
         gradient_accumulation_steps=gradient_accumulation,
         mixed_precision=None if mixed_precision == "no" else mixed_precision,
     )
-    tokenizer, model = load_base_model(tuning=tuning)
+    tokenizer, model = load_base_model(
+        tuning=tuning,
+        lora_rank=lora_rank,
+        lora_target_modules=lora_target_modules,
+    )
     if gradient_checkpointing:
         model.language_model.gradient_checkpointing_enable()
         model.language_model.enable_input_require_grads()
@@ -367,6 +373,10 @@ def train(
                     "mixed_precision": mixed_precision,
                     "action_change_weight": action_change_weight,
                     "resolved_action_change_weight": resolved_action_change_weight,
+                    "lora_rank": lora_rank if tuning == "lora" else None,
+                    "lora_target_modules": (
+                        lora_target_modules if tuning == "lora" else None
+                    ),
                     "sample_indices": str(sample_indices_path) if sample_indices_path else None,
                     "validation_indices": (
                         str(validation_indices_path) if validation_indices_path else None

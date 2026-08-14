@@ -8,6 +8,7 @@ import json
 from collections import defaultdict
 from pathlib import Path
 
+import numpy as np
 import torch
 
 from actions import ACTION_TOKEN_SLOTS, STOP_TOKEN, canonical_action_tokens
@@ -58,6 +59,11 @@ def main() -> int:
     parser.add_argument("--sample-indices", type=Path)
     parser.add_argument("--max-text-tokens", type=int, default=2048)
     parser.add_argument("--out", type=Path)
+    parser.add_argument(
+        "--logits-out",
+        type=Path,
+        help="Optional compressed per-example action logits for validation-only calibration",
+    )
     args = parser.parse_args()
 
     device = evaluation_device()
@@ -91,6 +97,11 @@ def main() -> int:
         )
         for allowed in (*ACTION_TOKEN_SLOTS, (STOP_TOKEN,))
     ]
+    logit_rows: list[np.ndarray] = []
+    previous_rows: list[np.ndarray] = []
+    label_rows: list[np.ndarray] = []
+    replay_ids: list[str] = []
+    game_versions: list[str] = []
     with torch.no_grad():
         for sample in dataset:
             batch = collator([sample])
@@ -121,6 +132,18 @@ def main() -> int:
                 ],
                 device=device,
             )
+            if args.logits_out:
+                width = max(len(ids) for ids in allowed_ids)
+                row = np.full((len(allowed_ids), width), -np.inf, dtype=np.float32)
+                for slot, (logits, ids) in enumerate(
+                    zip(selected_logits, allowed_ids, strict=True)
+                ):
+                    row[slot, : len(ids)] = logits[ids].float().cpu().numpy()
+                logit_rows.append(row)
+                previous_rows.append(previous.cpu().numpy())
+                label_rows.append(labels.cpu().numpy())
+                replay_ids.append(sample.replay_id)
+                game_versions.append(sample.game_version)
             for key in ("all", sample.game_version):
                 score = totals[key]
                 score["loss"] += output.loss.item()
@@ -177,6 +200,24 @@ def main() -> int:
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(rendered)
+    if args.logits_out:
+        args.logits_out.parent.mkdir(parents=True, exist_ok=True)
+        token_ids = np.full(
+            (len(allowed_ids), max(len(ids) for ids in allowed_ids)), -1, dtype=np.int64
+        )
+        valid_counts = np.asarray([len(ids) for ids in allowed_ids], dtype=np.int64)
+        for slot, ids in enumerate(allowed_ids):
+            token_ids[slot, : len(ids)] = ids.cpu().numpy()
+        np.savez_compressed(
+            args.logits_out,
+            logits=np.stack(logit_rows),
+            previous=np.stack(previous_rows),
+            labels=np.stack(label_rows),
+            token_ids=token_ids,
+            valid_counts=valid_counts,
+            replay_ids=np.asarray(replay_ids),
+            game_versions=np.asarray(game_versions),
+        )
     print(rendered, end="")
     return 0
 
