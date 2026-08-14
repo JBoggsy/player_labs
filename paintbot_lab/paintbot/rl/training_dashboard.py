@@ -33,6 +33,7 @@ METRIC_KEYS = (
     "change_recall",
     "previous_mask_exact_action_accuracy",
 )
+PROGRESS_RATE_POINTS: dict[str, list[tuple[float, int]]] = {}
 
 
 def read_json(path: Path) -> dict:
@@ -175,6 +176,16 @@ def estimate_eta(points: list[tuple[float, int]], remaining: int) -> dict:
     }
 
 
+def observed_progress_points(key: str, now: float, completed: int) -> list[tuple[float, int]]:
+    points = PROGRESS_RATE_POINTS.setdefault(key, [])
+    if points and completed < points[-1][1]:
+        points.clear()
+    if not points or completed > points[-1][1]:
+        points.append((now, completed))
+        del points[:-8]
+    return points
+
+
 def evaluation_metrics(output: Path) -> dict:
     result = {}
     for path in sorted(output.glob("*evaluation.json")):
@@ -236,6 +247,7 @@ def build_snapshot(
     ]
     if latest and log_path.exists():
         rate_points.append((log_path.stat().st_mtime, completed))
+    rate_points.extend(observed_progress_points(str(training_root), now, completed))
     eta = estimate_eta(rate_points, max(0, total_microbatches - completed))
     disk = shutil.disk_usage(workspace)
     training_run = read_json(output / "training_run.json")

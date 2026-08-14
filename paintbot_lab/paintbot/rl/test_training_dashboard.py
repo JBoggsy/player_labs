@@ -1,7 +1,14 @@
 import json
 from pathlib import Path
 
-from training_dashboard import build_snapshot, full_training_log, parse_training_log
+from training_dashboard import (
+    PROGRESS_RATE_POINTS,
+    build_snapshot,
+    estimate_eta,
+    full_training_log,
+    observed_progress_points,
+    parse_training_log,
+)
 
 
 def test_parse_training_log_extracts_progress_validation_and_errors() -> None:
@@ -79,3 +86,11 @@ def test_snapshot_marks_missing_trainer_unhealthy(tmp_path: Path) -> None:
     snapshot = build_snapshot(workspace, lambda command: "")
 
     assert snapshot["healthy"] is False
+
+
+def test_observed_progress_produces_eta_before_checkpoint() -> None:
+    PROGRESS_RATE_POINTS.clear()
+    observed_progress_points("run", 100.0, 100)
+    points = observed_progress_points("run", 110.0, 120)
+
+    assert estimate_eta(points, 80) == {"seconds": 40.0, "rate_per_second": 2.0}
