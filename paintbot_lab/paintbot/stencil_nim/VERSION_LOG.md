@@ -52,10 +52,39 @@ check`; corridor grep gates zero. Live corpus: h2h 114 plans / active-ffa
 compatibility assumed per the v60-era lineage argument, sim constants not
 re-derived (flagged for the next pin review).
 
-**Hosted validation:** matched v67-vs-v66 batch pending at upload; also
-re-tests the v66 h2h scatter watch-item. Expected deltas: post/hold
-positions everywhere (side lanes now posted), early-defense gate coverage,
-barrage positioning; plan counters expected clean. Verdict appended.
+**Hosted validation:** matched v67-vs-v66 batch; also re-tests the v66 h2h
+scatter watch-item. (Batch logistics note: the platform introduced
+**experience credits** this week — the v66 control arms initially bounced
+on HTTP 402 with the v67 arms holding the balance; a watcher posted them
+the same day once the holds released, so arms ran hours apart, not
+same-hour. Also new: the platform auto-runs a 10-episode field eval on
+every fresh upload — `xreq_b05ea5db` (v66), `xreq_7595d11e` (v67); inert
+but they share the credit pool. Prereg:
+`local_data/episodes/post-atlas-v67-prereg.json`.)
+
+**Hosted verdict (58/58 episodes, 0 ops failures):**
+
+| mode (n/arm) | v67 | v66 (control) |
+| --- | --- | --- |
+| h2h vs focusfire:v39 (16) | 8W-8L | 9W-7L |
+| duo vs swgy+relh (8) | 2W-6L | 3W-5L |
+| ffa top-3 field (4) | **4W-0L** | **4W-0L** |
+| total (28) | 14W-14L | 16W-12L |
+
+Parity (−2 net, every mode within one game; both arms swept the ffa cell —
+its first sweep by any version). The v66 h2h scatter watch-item RESOLVED:
+h2h across four same-cell arms in two days reads 13-3 / 9-7 / 9-7 / 8-8 —
+the 13-3 was the outlier, ~9-7 is this matchup's level. Contract counters
+hosted: 1163 plans / 30 seats at 9.0 ms, **0 unroutable, 0 fallbacks, 3
+snapped**. Atlas hosted under contention: 21.6k posts on the giant probes
+built in 88-181 ms — the gate holds in production (standard maps ~2.9k
+posts / ~10 ms).
+
+**Conclusion: v67 accepted.** Behavior parity at strategy-conservative
+scope was the goal ("just make sure everything still works") — achieved
+with the atlas substrate live: posts exist everywhere there is cover, and
+the future strategy rework selects from them situationally. v58 remains
+the live champion; nothing submitted.
 
 ## v66 — the Intent & goal contract (nav rework Layer 4), uploaded 2026-08-13
 

@@ -105,8 +105,15 @@ unit—is the reboot guarantee.
 
 ## Current objective
 
-**v67 (post atlas + conservative re-expressions) is uploaded; matched batch
-vs v66 next.** v67 (`f8289d11-7f88-4502-ad35-2edf4a415264`, tag
+**v67 (post atlas + conservative re-expressions) is ACCEPTED (2026-08-14) —
+the nav/tactics rework's strategy-facing substrate is complete.** Batch
+58/58, 0 ops: parity with v66 (14W-14L vs 16W-12L, every mode within one
+game, both arms swept ffa 4-0); the v66 h2h scatter is RESOLVED as an
+outlier control (13-3 vs a ~9-7 true level across four same-cell arms).
+Hosted: 1163 plans at 9ms, 0 unroutable/fallback, 3 snapped; giant atlas
+21.6k posts in 88-181ms under contention. NEW PLATFORM CONSTRAINTS:
+experience credits (2500/wk, cap 5000 — batches now budget-bound; refill
+Sun) and per-upload auto-evals (10-ep, share the pool).** v67 (`f8289d11-7f88-4502-ad35-2edf4a415264`, tag
 `purpose=post-atlas`), Codex-implemented: posts EVERYWHERE there is cover
 (14.4k atlas posts on the giant, 179 ms build, full 1300 px 16-sector reach
 profiles, lazy ducks), two-phase selection with situational bearing,
