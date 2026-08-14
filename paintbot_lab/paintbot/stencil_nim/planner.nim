@@ -172,12 +172,13 @@ proc reconstruct(
 proc searchAtStep(
   state: var PlannerState, map: WorldMap, danger: DangerField,
   start, goal: Point, step: int, profile: PlanCostProfile,
-  expansions: var int
+  avoid: Option[Point], expansions: var int
 ): seq[Point] =
   state.ensureWorkspace(map, step)
   let
     source = state.nearestConnector(map, start)
     target = state.nearestConnector(map, goal)
+    avoidCell = if avoid.isSome: some(map.cellOf(avoid.get)) else: none(Point)
   if source.isNone or target.isNone:
     return
   let
@@ -219,8 +220,11 @@ proc searchAtStep(
           (if delta.x != 0 and delta.y != 0: Sqrt2 else: 1.0)
         midpoint: Point = ((currentPoint.x + nextPoint.x) div 2,
           (currentPoint.y + nextPoint.y) div 2)
-        nextCost = current.cost + baseCost *
-          (1.0 + profile.dangerWeight * danger.sample(map, midpoint))
+      var edgeCost = baseCost *
+        (1.0 + profile.dangerWeight * danger.sample(map, midpoint))
+      if avoidCell.isSome and map.cellOf(midpoint) == avoidCell.get:
+        edgeCost *= FollowBlockFactor
+      let nextCost = current.cost + edgeCost
       if state.seenGeneration[nextIndex] != state.generation or
           nextCost < state.gScore[nextIndex]:
         state.seenGeneration[nextIndex] = state.generation
@@ -231,7 +235,8 @@ proc searchAtStep(
 
 proc planPath*(
   state: var PlannerState, map: WorldMap, danger: DangerField,
-  start, goal: Point, profile = PlanCostProfile(dangerWeight: 1.0)
+  start, goal: Point, profile = PlanCostProfile(dangerWeight: 1.0),
+  avoid = none(Point)
 ): PlanResult =
   let started = getMonoTime()
   defer: result.elapsedMs = elapsedMs(started)
@@ -252,7 +257,7 @@ proc planPath*(
     return
 
   result.path = state.searchAtStep(
-    map, danger, planStart, planGoal, PlanStepPx, profile, result.expansions)
+    map, danger, planStart, planGoal, PlanStepPx, profile, avoid, result.expansions)
   if result.path.len == 0 and PlanStepPx > 1:
     # Coarse lattice nodes need not intersect a narrow standable ridge. Halving
     # preserves the common fast path; step 1 is complete for the component's
@@ -260,10 +265,10 @@ proc planPath*(
     let halfStep = max(1, PlanStepPx div 2)
     result.fallbackStep = halfStep
     result.path = state.searchAtStep(
-      map, danger, planStart, planGoal, halfStep, profile, result.expansions)
+      map, danger, planStart, planGoal, halfStep, profile, avoid, result.expansions)
     if result.path.len == 0 and halfStep > 1:
       result.fallbackStep = 1
       result.path = state.searchAtStep(
-        map, danger, planStart, planGoal, 1, profile, result.expansions)
+        map, danger, planStart, planGoal, 1, profile, avoid, result.expansions)
   if result.startSnapped and result.path.len > 0 and result.path[0] != planStart:
     result.path.insert(planStart, 0)

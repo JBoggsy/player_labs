@@ -58,6 +58,18 @@ proc makeIntent*(kind: IntentKind, point: Option[Point], reason: string): Intent
     result.micro.incl(MicroFormationBias)
   else:
     discard
+  if kind == NavigateTo:
+    case reason
+    of "barrage_center":
+      result.arriveRadius = BarrageCenterRadiusPx.float
+    of "early_defense", "to_post", "to_hold":
+      result.arriveRadius = HoldArrivePx.float
+    of "rejoin":
+      result.arriveRadius = 40.0
+    of "squad_move", "squad_to_watch", "squad_to_hold":
+      result.arriveRadius = (2 * HoldArrivePx).float
+    else:
+      discard
 
 proc navigate(point: Point, reason: string): Objective =
   Objective(intent: makeIntent(NavigateTo, some(point), reason))

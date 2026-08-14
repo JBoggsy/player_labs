@@ -4,6 +4,55 @@ Read this before assuming what a version contains. Format mirrors
 `ctf_lab/ctf/beacon/VERSION_LOG.md`: one entry per uploaded version — what
 changed, why, and what the evidence said.
 
+## v68 — the bounded follower & micro (nav rework Layer 5, FINALE), uploaded 2026-08-14
+
+Immutable policy-version UUID: `ffa8e5d2-10f1-4e6c-93f9-4b005a83359a`.
+Uploaded with tag `purpose=bounded-follower`. **Not submitted to any
+league.** The LAST layer of the navigation rework
+([spec](../../docs/designs/nav-layer5-follower-2026-08-14.md);
+Codex-implemented under orchestration).
+
+- **Corridor-bounded micro**: perturbation destinations must lie within
+  `STENCIL_FOLLOW_CORRIDOR_PX` (default 20 — REVISED at plan review from
+  12 after Codex's discrepancy analysis showed the ~16 px separation step
+  would have been categorically rejected; the review catch of the layer)
+  of the current path polyline; `nudgeClear` remains the acceptance
+  predicate (the v60 wall-slide law); Hold-context duck displacement is
+  exempt. Rejections fall back to the plain waypoint and count
+  (`micro_corridor_rejects`).
+- **Watchdog finale**: the 90° steering jitter is DELETED (its job —
+  masking beelines — ended in v66). Ladder: progress test → one forced
+  replan with a one-cell blocked penalty (×8 cost, 96-tick TTL, per
+  agent) → `follow_stuck_bug` loud trace if re-fired within 48 ticks.
+  Spinning-diamond staleness moves from masked to visible
+  (`follow_replans`/`follow_stuck_events` counters).
+- **Follower tightening**: uniform progress accounting with an explicit
+  stationary-behavior contract (post holds, fire-windup freeze, barrage
+  ring, accepted ducks incl. zero-mask, rejected micro, dead — each with
+  a reset-or-not rule); `Intent.arriveRadius` transcribed from the five
+  real strategy arrive distances (barrage 80 / hold-family 28 / rejoin
+  40 / squad-move-family 56) and consumed by the follower as
+  behavior-preserving redundancy.
+
+**Pre-upload evidence:** Codex harness (corridor geometry incl. the 16 px
+separation case, watchdog determinism, penalty TTL, arrival parity, all
+stationary cases) + committed `tools/nav_v68_properties.nim`; my suites
+(planner 8.5k, layer2 1.9M) green; jitter grep gates zero. Live corpus:
+**duck 8.1% in the forced-active episode (gate 7-13% — PASSES)**; h2h
+duck ~0% is expected (early_defense has excluded peek/duck since v55 —
+initially misread as a v60-class regression, then verified against the
+makeIntent table and v67's identical local behavior). Micro mix shifted
+as designed: total micro 18.5%→16.2%, duck UP 5.0→8.1% (Hold-exempt),
+transit peeks 10.2→4.7% (corridor working as specified); combat micro
+alive. Corridor rejects are dominated by 3-6-cell transit sidesteps —
+expected at any sane width; peek% flagged as the batch watch metric
+alongside duck%. 0 unroutable/0 fallback throughout. Built against
+0.7.215 / `6c7a4c0e`.
+
+**Hosted validation:** matched v68-vs-v67 batch pending at upload —
+trace-diff emphasis (duck%, peek%, stuck/replan counters, micro mix) over
+W-L. Verdict appended.
+
 ## v67 — the post atlas + conservative re-expressions, uploaded 2026-08-14
 
 Immutable policy-version UUID: `f8289d11-7f88-4502-ad35-2edf4a415264`.

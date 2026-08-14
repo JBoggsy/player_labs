@@ -16,8 +16,11 @@ dies (its historical job — masking beelines — ended in v66).
 ## 1. The corridor bound (action.nim + nav.nim)
 
 New pure check `withinCorridor(state: NavState, point: Point): bool` —
-true iff `point` lies within `STENCIL_FOLLOW_CORRIDOR_PX` (default 12 =
-1.5 nav cells; lean, tunable) of the CURRENT path segment neighborhood:
+true iff `point` lies within `STENCIL_FOLLOW_CORRIDOR_PX` (default 20 =
+2.5 nav cells — REVISED at plan review: the hold-separation step moves
+~16 px perpendicular, so a 12 px default would have silently rejected all
+on-path separation; 20 px preserves it while still bounding route
+replacement. Tightening is a tuning question for the rejects counter) of the CURRENT path segment neighborhood:
 distance from `point` to the polyline segment
 [path[cursor-1 clamped], path[cursor]] and to segment
 [path[cursor], path[cursor+1 clamped]] — min of the two, point-to-segment

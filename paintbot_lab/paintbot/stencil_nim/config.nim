@@ -123,6 +123,13 @@ let
   # Tuning it changes both planner responsiveness and danger-producer cost.
   PlanMovingReplanTicks* = envTunableInt(
     "STENCIL_PLAN_MOVING_REPLAN_TICKS", 12, 1)
+  FollowCorridorPx* = envTunableFloat("STENCIL_FOLLOW_CORRIDOR_PX", 20.0, 0.0)
+  FollowStuckWindowTicks* = envTunableInt(
+    "STENCIL_FOLLOW_STUCK_WINDOW_TICKS", 48, 1)
+  FollowBlockTtlTicks* = envTunableInt(
+    "STENCIL_FOLLOW_BLOCK_TTL_TICKS", 96, 1)
+  FollowBlockFactor* = envTunableFloat(
+    "STENCIL_FOLLOW_BLOCK_FACTOR", 8.0, 1.0)
   DangerLosFlatPx* = envTunableInt("STENCIL_DANGER_LOS_FLAT_PX", 400, 0)
   DangerLosFarFactor* = envTunableFloat(
     "STENCIL_DANGER_LOS_FAR_FACTOR", 0.6, 0.0, 1.0)

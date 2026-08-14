@@ -6,7 +6,10 @@ import belief_state, config, fight, nav, squads, types, worldmap
 const MovementMask = ButtonUp or ButtonDown or ButtonLeft or ButtonRight
 
 type
-  MicroOverride = tuple[mask: uint8, aim: Option[int]]
+  MicroOverride = object
+    mask: uint8
+    aim: Option[int]
+    destination: Option[Point]
   GrenadePlan = object
     target: Point
     reason: string
@@ -194,11 +197,13 @@ proc coverFromThreat(
     (threat.y - belief.selfXy.get.y).float)
   if not belief.worldmap.rayClear(belief.selfXy.get, threat):
     belief.micro = micro; belief.heardDuck = fromHeard
-    return some((0'u8, some(aim)))
+    return some(MicroOverride(mask: 0'u8, aim: some(aim)))
   let cover = belief.findSidestepCell(belief.selfXy.get, threat, false)
   if cover.isNone: return none(MicroOverride)
   belief.micro = micro; belief.heardDuck = fromHeard
-  some((octantToward(belief.selfXy.get, cover.get, false), some(aim)))
+  some(MicroOverride(
+    mask: octantToward(belief.selfXy.get, cover.get),
+    aim: some(aim), destination: cover))
 
 proc peekDuckAllowed*(intent: Intent, carrying: bool, selfXy: Point): bool =
   if carrying or MicroPeekDuck notin intent.micro: return false
@@ -229,7 +234,9 @@ proc peekDuckOverride(belief: Belief, intent: Intent): Option[MicroOverride] =
       if stance.isSome and distance(stance.get, belief.selfXy.get) >= 5.0 and
           belief.worldmap.nudgeClear(belief.selfXy.get, stance.get):
         belief.micro = if belief.fireReady: "squad_post_peek" else: "squad_post_duck"
-        return some((octantToward(belief.selfXy.get, stance.get, false), some(aim)))
+        return some(MicroOverride(
+          mask: octantToward(belief.selfXy.get, stance.get),
+          aim: some(aim), destination: stance))
   if not belief.fireReady:
     let threat = belief.freshTrack(DuckThreatFreshTicks, DuckRangePx.float)
     var fromHeard = false
@@ -250,9 +257,11 @@ proc peekDuckOverride(belief: Belief, intent: Intent): Option[MicroOverride] =
       let peek = belief.findSidestepCell(belief.selfXy.get, target, true)
       if peek.isSome:
         belief.micro = "peek"
-        return some((octantToward(belief.selfXy.get, peek.get, false),
-          some(bradsOf((target.x - belief.selfXy.get.x).float,
-                       (target.y - belief.selfXy.get.y).float))))
+        return some(MicroOverride(
+          mask: octantToward(belief.selfXy.get, peek.get),
+          aim: some(bradsOf((target.x - belief.selfXy.get.x).float,
+                           (target.y - belief.selfXy.get.y).float)),
+          destination: peek))
     if allowCover: return belief.coverFromThreat(target, false, "cover")
     return none(MicroOverride)
   let track = belief.freshTrack(PeekTargetFreshTicks)
@@ -268,8 +277,11 @@ proc peekDuckOverride(belief: Belief, intent: Intent): Option[MicroOverride] =
   let peek = belief.findSidestepCell(belief.selfXy.get, target, true)
   if peek.isNone: return none(MicroOverride)
   belief.micro = "peek"
-  if distance(peek.get, belief.selfXy.get) < 5.0: return some((0'u8, some(aim)))
-  some((octantToward(belief.selfXy.get, peek.get, false), some(aim)))
+  if distance(peek.get, belief.selfXy.get) < 5.0:
+    return some(MicroOverride(mask: 0'u8, aim: some(aim)))
+  some(MicroOverride(
+    mask: octantToward(belief.selfXy.get, peek.get),
+    aim: some(aim), destination: peek))
 
 proc rotationButton(target, current: int, state: var ActionState): uint8 =
   let error = bradError(target, current)
@@ -428,31 +440,56 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
     belief.sprayNearestThreatDistancePx.get <= SprayLethalReachPx.float +
       FireWindupTicks.float * MaxSpeedPxTick + SprayFireFreezeMarginPx.float
   belief.sprayFireFreezeSuppressed = sprayFreezeUnsafe
-  let override = if PeekDuck: belief.peekDuckOverride(intent) else: none(MicroOverride)
+  let rawOverride = if PeekDuck:
+    belief.peekDuckOverride(intent) else: none(MicroOverride)
   let freeze = state.fireHoldTicks > 0 and not carrying and not sprayFreezeUnsafe
   if state.fireHoldTicks > 0: dec state.fireHoldTicks
+  let arrived = intent.point.isSome and intent.arriveRadius > 0.0 and
+    distance(selfXy, intent.point.get) <= intent.arriveRadius
+  if belief.alive:
+    if intent.point.isSome and not freeze and not arrived:
+      noteProgress(belief.nav, selfXy)
+    else:
+      resetProgress(belief.nav, selfXy)
+  var override = rawOverride
+  if not freeze and override.isSome and override.get.destination.isSome and
+      intent.kind != Hold and
+      not belief.nav.withinCorridor(override.get.destination.get):
+    inc belief.nav.microCorridorRejects
+    belief.micro = ""
+    override = none(MicroOverride)
   if freeze: discard
-  elif override.isSome: mask = mask or override.get.mask
-  elif intent.kind == NavigateTo and intent.point.isSome:
+  elif override.isSome:
+    mask = mask or override.get.mask
+    if belief.alive:
+      resetProgress(belief.nav, selfXy)
+  elif intent.kind == NavigateTo and intent.point.isSome and not arrived:
     var waypoint = astarWaypoint(
       belief.nav, belief.worldmap, selfXy, intent.point.get,
       belief.planDanger, belief.tick, intent.movingGoal, intent.profile)
-    noteProgress(belief.nav, selfXy)
     if Squads and MicroFormationBias in intent.micro and not carrying:
       let bias = belief.formationBias
       if bias.isSome:
         let biased: Point = (int(waypoint.x.float + bias.get.x * NavCell.float * 3.0),
           int(waypoint.y.float + bias.get.y * NavCell.float * 3.0))
         if belief.worldmap.nudgeClear(selfXy, biased):
-          inc belief.squadCohesionTicks; waypoint = biased
-    mask = mask or octantToward(selfXy, waypoint, belief.nav.stuckTicks >= StuckTicks)
+          if belief.nav.withinCorridor(biased):
+            inc belief.squadCohesionTicks
+            waypoint = biased
+          else:
+            inc belief.nav.microCorridorRejects
+    mask = mask or octantToward(selfXy, waypoint)
   elif intent.kind == Hold and not carrying and MicroSeparation in intent.micro:
     let separation = belief.separationBias
     if separation.isSome:
       let step: Point = (int(selfXy.x.float + separation.get.x * NavCell.float * 2.0),
         int(selfXy.y.float + separation.get.y * NavCell.float * 2.0))
       if belief.worldmap.nudgeClear(selfXy, step):
-        inc belief.squadCohesionTicks; mask = mask or octantToward(selfXy, step, false)
+        if belief.nav.withinCorridor(step):
+          inc belief.squadCohesionTicks
+          mask = mask or octantToward(selfXy, step)
+        else:
+          inc belief.nav.microCorridorRejects
   let selected = if Firefight and belief.firefightActive and not belief.iHaveArc:
     belief.selectTarget(belief.targetCandidates) else: none(TargetScore)
   let enemy = if belief.iHaveArc: belief.sprayTarget

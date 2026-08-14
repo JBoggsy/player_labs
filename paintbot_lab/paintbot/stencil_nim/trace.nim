@@ -31,6 +31,8 @@ type
     navigationFieldKeys: HashSet[int]
     lastPlanUnroutableCount: int
     unroutableReasons: HashSet[string]
+    lastFollowStuckCount: int
+    followStuckReasons: HashSet[string]
 
 proc pointJson(point: Option[Point]): JsonNode =
   if point.isSome: %*[point.get.x, point.get.y] else: newJNull()
@@ -638,6 +640,9 @@ proc counters(policy: StencilPolicy): JsonNode =
     "plan_unroutable_count": b.nav.planUnroutableCount,
     "plan_fallback_count": b.nav.planFallbackCount,
     "plan_goal_snapped": b.nav.planGoalSnappedCount,
+    "micro_corridor_rejects": b.nav.microCorridorRejects,
+    "follow_replans": b.nav.followReplans,
+    "follow_stuck_events": b.nav.followStuckEvents,
   }
 
 proc write(output: TraceOutput, record: JsonNode) =
@@ -714,6 +719,8 @@ proc record*(trace: TraceState, policy: StencilPolicy, command: Command) =
       trace.navigationFieldKeys.clear()
       trace.unroutableReasons.clear()
       trace.lastPlanUnroutableCount = 0
+      trace.followStuckReasons.clear()
+      trace.lastFollowStuckCount = 0
       trace.emit(policy.tick, "worldmap", snapshot(policy, command))
       if TraceNavigation and not belief.worldmap.isNil:
         trace.emit(policy.tick, "navigation_map", navigationMap(belief.worldmap))
@@ -750,6 +757,16 @@ proc record*(trace: TraceState, policy: StencilPolicy, command: Command) =
           "point": pointJson(policy.lastIntent.point),
           "self_xy": pointJson(belief.selfXy),
           "count": belief.nav.planUnroutableCount,
+        })
+    if belief.nav.followStuckEvents > trace.lastFollowStuckCount:
+      trace.lastFollowStuckCount = belief.nav.followStuckEvents
+      if policy.lastIntent.reason notin trace.followStuckReasons:
+        trace.followStuckReasons.incl(policy.lastIntent.reason)
+        trace.emit(policy.tick, "follow_stuck_bug", %*{
+          "reason": policy.lastIntent.reason,
+          "point": pointJson(policy.lastIntent.point),
+          "self_xy": pointJson(belief.selfXy),
+          "count": belief.nav.followStuckEvents,
         })
     let consensus = consensusJson(belief)
     let consensusSignature = $consensus

@@ -105,6 +105,22 @@ unit—is the reboot guarantee.
 
 ## Current objective
 
+**v68 (Layer 5 — the bounded follower, REWORK FINALE) is uploaded; matched
+batch vs v67 next.** v68 (`ffa8e5d2-10f1-4e6c-93f9-4b005a83359a`, tag
+`purpose=bounded-follower`), Codex-implemented: corridor-bounded micro
+(20 px default — plan review caught that 12 px would have killed all
+on-path separation; nudgeClear stays the acceptance law; Hold ducks
+exempt), the 90-degree jitter DELETED, watchdog = one penalty replan +
+loud follow_stuck_bug, uniform progress accounting with the stationary-
+behavior contract, arriveRadius transcribed (5 real values) and consumed.
+Local gates: duck 8.1% forced-active (band 7-13); micro mix shifted as
+designed (transit peeks halved, ducks up); h2h duck ~0% is v55-era
+early_defense suppression, not a regression. Peek% joins duck% as batch
+watch metrics. All rework layers (1-5) are now SHIPPED; the batch verdict
+completes the rework.
+
+
+
 **v67 (post atlas + conservative re-expressions) is ACCEPTED (2026-08-14) —
 the nav/tactics rework's strategy-facing substrate is complete.** Batch
 58/58, 0 ops: parity with v66 (14W-14L vs 16W-12L, every mode within one
