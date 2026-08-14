@@ -49,9 +49,43 @@ expected at any sane width; peek% flagged as the batch watch metric
 alongside duck%. 0 unroutable/0 fallback throughout. Built against
 0.7.215 / `6c7a4c0e`.
 
-**Hosted validation:** matched v68-vs-v67 batch pending at upload —
-trace-diff emphasis (duck%, peek%, stuck/replan counters, micro mix) over
-W-L. Verdict appended.
+**Hosted validation:** matched v68-vs-v67 batch — trace-diff emphasis
+(duck%, peek%, stuck/replan counters, micro mix) over W-L. Prereg:
+`local_data/episodes/bounded-follower-v68-prereg.json` (upload auto-eval
+`xreq_b6a79d55` excluded).
+
+**Hosted verdict (58/58 episodes, 0 ops failures):**
+
+| mode (n/arm) | v68 | v67 (control) |
+| --- | --- | --- |
+| h2h vs focusfire:v39 (16) | 6W-10L | 6W-10L |
+| duo vs swgy+relh (8) | **3W-5L** | 0W-8L |
+| ffa top-3 field (4) | **3W-1L** | 2W-2L |
+| total (28) | **12W-16L** | 8W-20L |
+
++4 net for v68 (h2h identical — the cell ran cold for both arms, canceling
+in the match), duo 3W the second-best ever vs swgy. **The v60 regression
+signature is ABSENT**: v60 was duck +3.7pp AND -13 net; v68 is duck
+−1.4pp (5.0% vs 6.4%) and +4 net, with peeks −1.5pp (3.9% vs 5.4%) —
+the corridor softening transit micro as specified, not suppressing combat
+micro. New watchdog telemetry live: 32 follow_replans / 8 stuck_events
+across 28 seats (first-ever visibility into stuck reality; the old jitter
+masked it); corridor rejects 9703 (dominated by 3-6-cell transit
+sidesteps — the tuning dataset for the width knob). Contract counters
+spotless: 1468 plans, 0 unroutable, 0 fallbacks, 4 snapped. Both probes
+clean (split scores, ops-tier).
+
+**Conclusion: v68 accepted — THE NAVIGATION REWORK IS COMPLETE.** All
+five layers of the 2026-08-11 sketch are shipped and hosted-validated:
+L1 clearance (v61), L2 topology/PoIs (v62), posts v63-v64+v67 atlas, L3
+planner (v65), L4 Intent contract (v66), L5 bounded follower (v68).
+Cumulative across the rework's matched batches, the line went from v61's
+baseline to a stack with zero beelines, zero unroutable plans, validated
+goals, danger-aware routing, situational post selection, and visible
+stuck-handling. Remaining post-rework items live in TODO.md (pin review,
+belief.danger experiment, fire-windup micro, 8px-grid demotion census)
+and the strategy rework is the next epoch. v58 remains the live champion;
+nothing submitted — the champion question is James's whenever he wants it.
 
 ## v67 — the post atlas + conservative re-expressions, uploaded 2026-08-14
 

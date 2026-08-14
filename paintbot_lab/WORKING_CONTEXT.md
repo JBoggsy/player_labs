@@ -105,8 +105,15 @@ unit—is the reboot guarantee.
 
 ## Current objective
 
-**v68 (Layer 5 — the bounded follower, REWORK FINALE) is uploaded; matched
-batch vs v67 next.** v68 (`ffa8e5d2-10f1-4e6c-93f9-4b005a83359a`, tag
+**v68 ACCEPTED (2026-08-14) — THE NAVIGATION REWORK IS COMPLETE.** Batch
+58/58, 0 ops: +4 net (12W-16L vs v67 8W-20L; h2h identical, duo 3W-5L
+second-best ever vs swgy), v60 signature ABSENT (duck −1.4pp, peek −1.5pp
+— corridor softening transit micro as designed), stuck-handling now
+visible (32 replans/8 events per 28 seats), contract counters spotless.
+All five sketch layers shipped: v61 clearance, v62 topology, v63/64/67
+posts→atlas, v65 planner, v66 contract, v68 follower. Next epoch: the
+strategy rework (James's future update). Champion question open (v58
+still live). Branch ~14 commits ahead of origin — push awaiting James.** v68 (`ffa8e5d2-10f1-4e6c-93f9-4b005a83359a`, tag
 `purpose=bounded-follower`), Codex-implemented: corridor-bounded micro
 (20 px default — plan review caught that 12 px would have killed all
 on-path separation; nudgeClear stays the acceptance law; Hold ducks
