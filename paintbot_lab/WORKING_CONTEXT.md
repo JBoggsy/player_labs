@@ -112,8 +112,10 @@ second-best ever vs swgy), v60 signature ABSENT (duck −1.4pp, peek −1.5pp
 visible (32 replans/8 events per 28 seats), contract counters spotless.
 All five sketch layers shipped: v61 clearance, v62 topology, v63/64/67
 posts→atlas, v65 planner, v66 contract, v68 follower. Next epoch: the
-strategy rework (James's future update). Champion question open (v58
-still live). Branch ~14 commits ahead of origin — push awaiting James.** v68 (`ffa8e5d2-10f1-4e6c-93f9-4b005a83359a`, tag
+strategy rework (James's future update). **v68 IS THE LIVE CHAMPION** (submitted 2026-08-14 on James's go-ahead:
+sub_ecedf891, lpm_eeac47d3 — placed, qualified, competing, champion,
+substatus active; v58 benched). Branch ~15 commits ahead of origin — push
+awaiting James.** v68 (`ffa8e5d2-10f1-4e6c-93f9-4b005a83359a`, tag
 `purpose=bounded-follower`), Codex-implemented: corridor-bounded micro
 (20 px default — plan review caught that 12 px would have killed all
 on-path separation; nudgeClear stays the acceptance law; Hold ducks

@@ -7,8 +7,14 @@ changed, why, and what the evidence said.
 ## v68 — the bounded follower & micro (nav rework Layer 5, FINALE), uploaded 2026-08-14
 
 Immutable policy-version UUID: `ffa8e5d2-10f1-4e6c-93f9-4b005a83359a`.
-Uploaded with tag `purpose=bounded-follower`. **Not submitted to any
-league.** The LAST layer of the navigation rework
+Uploaded with tag `purpose=bounded-follower`. **Submitted to Paintbot on
+2026-08-14 with auto-champion `always` (James's explicit go-ahead after
+the rework-complete verdict): submission
+`sub_ecedf891-9a85-4959-8486-e80233b17115`, membership
+`lpm_eeac47d3-b16d-4939-8bcd-a051af843873` — placed, qualified, and
+COMPETING as CHAMPION on first readback (substatus active). v58's reign
+(2026-08-07 → 2026-08-14) ends; the completed navigation rework now
+represents James Botts live.** The LAST layer of the navigation rework
 ([spec](../../docs/designs/nav-layer5-follower-2026-08-14.md);
 Codex-implemented under orchestration).
 
