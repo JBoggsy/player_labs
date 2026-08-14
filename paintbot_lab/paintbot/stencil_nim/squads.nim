@@ -1,6 +1,6 @@
 ## Roster-aware squads, leaderless order consensus, and multi-team conversion.
 
-import std/[algorithm, math, options, sets, tables]
+import std/[math, options, sets, tables]
 import belief_state, config, types, worldmap
 
 type Squad* = tuple[name: char, seats: seq[int]]
@@ -219,35 +219,19 @@ proc advancePoint(belief: Belief, stage: int, opponent: Team): Point =
   let targets = [0.22, 0.38, 0.55, 0.70, 0.84]
   let targetProgress = targets[clamp(stage, 0, targets.high)]
   let home = map.homeCenter(belief.team)
-  let direct = map.routeDistance(home, enemyHome)
-  var
-    found = false
-    best: Point
-    bestUtility = Inf
-  if classify(direct) != fcInf and direct > 0.0:
-    for front in map.postFronts:
-      if front.opponent != opponent:
-        continue
-      for candidate in front.candidates:
-        # Argument order matters: routeDistance mints a full-grid Dijkstra
-        # field keyed by its GOAL. Candidate positions are arbitrary points —
-        # goal=candidate minted one field PER CANDIDATE (detonated when the
-        # v64 wide pool multiplied candidates; profiled at 100% CPU). The
-        # grid is undirected: read the home-goal field, minted at init.
-        let progress = map.routeDistance(candidate.pos, home) / direct
-        if classify(progress) == fcInf:
-          continue
-        let utility = abs(progress - targetProgress) +
-          (1.0 - candidate.score) * 0.12
-        if not found or utility < bestUtility:
-          found = true
-          best = candidate.pos
-          bestUtility = utility
-  if found:
-    return best
   let raw = (
     int(home.x.float + (enemyHome.x - home.x).float * targetProgress),
     int(home.y.float + (enemyHome.y - home.y).float * targetProgress))
+  var candidates: seq[int]
+  for atlasIndex in map.atlasNear(raw, SquadPostSearchPx):
+    candidates.add(atlasIndex)
+  let
+    bearing = some(arctan2(
+      (enemyHome.y - home.y).float, (enemyHome.x - home.x).float))
+    selected = map.selectRankedPost(
+      candidates, raw, 0, [], bearing, SquadPostSearchPx)
+  if selected.isSome:
+    return selected.get.pos
   let cover = map.nearestCover(raw, 12)
   if cover.isSome: cover.get else: raw
 
@@ -498,18 +482,21 @@ proc updateConsensus*(belief: Belief) =
 proc orderPost*(belief: Belief, directive: SquadDirective): Option[PostCandidate] =
   ## Selection core lives in worldmap.selectRankedPost (so the offline
   ## harness runs the exact production logic); this wrapper supplies the
-  ## belief-side inputs: the matching front's candidates, the member's rank,
-  ## and believed enemy positions for the situational facing term.
+  ## belief-side inputs: a local atlas query, the member's rank, strategic
+  ## opponent bearing, and believed enemy positions for situational facing.
   if belief.worldmap.isNil:
     return none(PostCandidate)
-  var candidates: seq[PostCandidate]
-  for front in belief.worldmap.postFronts:
-    if front.opponent != directive.opponent:
-      continue
-    for candidate in front.candidates:
-      candidates.add(candidate)
+  let map = belief.worldmap
+  var candidates: seq[int]
+  for atlasIndex in map.atlasNear(directive.pos, SquadPostSearchPx):
+    candidates.add(atlasIndex)
+  let enemyHome = map.homeCenter(directive.opponent)
+  let bearing = some(arctan2(
+    (enemyHome.y - directive.pos.y).float,
+    (enemyHome.x - directive.pos.x).float))
   belief.worldmap.selectRankedPost(
-    candidates, directive.pos, belief.rankOf, belief.freshEnemyPositions)
+    candidates, directive.pos, belief.rankOf, belief.freshEnemyPositions,
+    bearing, SquadPostSearchPx)
 
 proc rejoinTarget*(belief: Belief): Option[Point] =
   var mySquad = belief.squadOf.seats.toHashSet

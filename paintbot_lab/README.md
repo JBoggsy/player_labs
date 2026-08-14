@@ -91,12 +91,20 @@ paintbot_lab/
     build_player.sh        build the stencil image (linux/amd64)
     self_play.py           native, fast-ready, parallel local self-play
     render_nav.py          static navigation-knowledge viewer
-    render_topology.py     Layer 2 topology PROCESS viewer (watershed flood
+    render_topology.py     Layer 2-4 nav PROCESS viewer (watershed flood
                            scrubber, merge log, cover roses, gate scoring,
-                           post fronts + a belief-parameterized selection
-                           simulator: click = squad directive, shift-click =
-                           believed enemies; JS mirror verified fail-closed
-                           against harness-run production selection)
+                           the v67 post ATLAS reach-colored across the whole
+                           map, planner routes over the LOS danger heatmap,
+                           and a belief-parameterized selection simulator;
+                           JS mirrors verified fail-closed against
+                           harness-run production code. NOTE: era-gated like
+                           expand_replay — pre-v67 traces carry post fronts
+                           the current harness no longer emits; re-render
+                           old traces with --allow-drift or a matched-era
+                           checkout)
+    nav_v67_properties.nim committed atlas/selection property harness
+                           (atlas completeness, determinism, duck bound,
+                           role invariants) — compile against stencil_nim
     topology_debug.nim     its Nim harness — re-runs the exact worldmap
                            topology code on an agent-logged clearance field
     compare_stencil.py     A/B metric adapter over the shared stats engine

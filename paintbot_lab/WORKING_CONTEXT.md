@@ -105,6 +105,22 @@ unit—is the reboot guarantee.
 
 ## Current objective
 
+**v67 (post atlas + conservative re-expressions) is uploaded; matched batch
+vs v66 next.** v67 (`f8289d11-7f88-4502-ad35-2edf4a415264`, tag
+`purpose=post-atlas`), Codex-implemented: posts EVERYWHERE there is cover
+(14.4k atlas posts on the giant, 179 ms build, full 1300 px 16-sector reach
+profiles, lazy ducks), two-phase selection with situational bearing,
+early_defense on home-room entrance gates (live-verified: 16/16 seats
+distinct, endzone-interior, gate-anchored), barrage on normalized
+danger-penalized room peaks. Corridor machinery deleted; side-lane TODO
+retired. Viewer migrated to atlas rendering + rewritten mirror (200/200).
+NOTE: era-gated viewer (pre-v67 traces need --allow-drift). Game-pin gap
+(0.7.215 vs canonical 0.7.229) parked in TODO.md. Local branch is ~7
+commits ahead of origin — push awaiting James. Batch verdict appended to
+VERSION_LOG v67 when complete (re-tests the v66 h2h scatter).
+
+
+
 **v66 (Layer 4 — the Intent & goal contract) is ACCEPTED (2026-08-13).**
 Batch 58/58, 0 ops: totals within noise (15W-13L vs control 18W-10L; the
 h2h control ran hot — carrier-evasion suspicion DISPROVEN, no carry phase

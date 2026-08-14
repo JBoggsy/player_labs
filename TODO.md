@@ -5,17 +5,12 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
-- **Paintbot: post-generation lane coverage** (James, 2026-08-12, after the
-  v64 wide-pool review). The pool's ~200-250 potential posts per front all
-  hug the DIRECT home→opponent route corridor — candidates are sourced from
-  on-route gates with `detour ≤ PostCorridorPx×3`, so flanking/side lanes
-  are completely unposted. Improve generation to cover alternative routes
-  (e.g. per-room-graph route diversity, or gates on any home-reachable path
-  within a larger detour class, with the corridor term becoming a score
-  rather than a cutoff). Pool mechanics and selection are fine as-is
-  (`docs/designs/nav-wide-post-pool-v64-2026-08-12.md`); this is about
-  candidate *coverage*. Natural slot: alongside the Layer 4 intent work or
-  the Q6 post rethink.
+- **Paintbot: game-pin review** (2026-08-14). Build pin is 0.7.215/`6c7a4c0e`;
+  canonical deployed has advanced to 0.7.229 (`bf0bcc22`) — a 14-release gap.
+  Contract compatibility has been assumed per the v58-lineage argument since
+  v60; sim-rule constants have not been re-derived since 0.7.215. Re-verify
+  manifest/config_schema byte-compat and the spray/aim/movement constants,
+  then bump PAINTBOT_GAME_REF or document why not.
 
 - **Stencil navigation rework** (deep dive done 2026-08-08; design started
   2026-08-11). The deep-dive questions are answered in

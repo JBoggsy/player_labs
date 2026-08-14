@@ -106,9 +106,6 @@ const
   # 170px and tests the victim as a 17px-radius body.
   SprayLethalReachPx* = 187
   PostGunRangePx* = 1300
-  PostProgressBuckets* = 12
-  PostRayCandidatesPerBucket* = 24
-  PostRayCandidateSeparationPx* = 32
 
 let
   SweepHalfArc* = envInt("STENCIL_SWEEP_HALF_ARC", 32)
@@ -189,6 +186,10 @@ let
   BarrageCentering* = envTunableBool("STENCIL_BARRAGE_CENTERING", true)
   BarrageCenterRadiusPx* = envTunableInt(
     "STENCIL_BARRAGE_CENTER_RADIUS_PX", 80, NavCell)
+  # Room openness and danger are normalized independently to [0, 1], so the
+  # default makes them co-equal in barrage peak selection.
+  BarragePeakDangerWeight* = envTunableFloat(
+    "STENCIL_BARRAGE_PEAK_DANGER_WEIGHT", 1.0, 0.0)
   SprayAvoid* = envTunableBool("STENCIL_SPRAY_AVOID", true)
   ShieldAwareness* = envTunableBool("STENCIL_SHIELD_AWARENESS", true)
   SprayFleeTriggerPx* = envTunableInt("STENCIL_SPRAY_FLEE_TRIGGER_PX", 240, 0)
@@ -267,16 +268,10 @@ let
   TopologyMergeRatio* = envFloat("STENCIL_TOPOLOGY_MERGE_RATIO", 0.8)
   GateSeparationPx* = envInt("STENCIL_GATE_SEPARATION_PX", 64)
   GateDetourPx* = envInt("STENCIL_GATE_DETOUR_PX", 48)
-  PostCorridorPx* = envInt("STENCIL_POST_CORRIDOR_PX", 240)
-  PostGateVicinityPx* = envInt("STENCIL_POST_GATE_VICINITY_PX", 48)
   PostFacingWeight* = envFloat("STENCIL_POST_FACING_WEIGHT", 0.15)
-  PostBucketFallback* = envBool("STENCIL_POST_BUCKET_FALLBACK", true)
-  PostCandidateStrideCells* = envInt("STENCIL_POST_CANDIDATE_STRIDE_CELLS", 2)
-  PostRayCount* = envInt("STENCIL_POST_RAY_COUNT", 9)
-  PostRayHalfArcDeg* = envFloat("STENCIL_POST_RAY_HALF_ARC_DEG", 60.0)
-  PostShortlistCount* = envInt("STENCIL_POST_SHORTLIST_COUNT", 256)
+  PostReachCapPx* = envTunableInt(
+    "STENCIL_POST_REACH_CAP_PX", PostGunRangePx, 1, high(uint16).int)
   PostDuckSearchCells* = envInt("STENCIL_POST_DUCK_SEARCH_CELLS", 3)
-  PostCount* = envInt("STENCIL_POST_COUNT", 6)
   PostSeparationPx* = envInt("STENCIL_POST_SEPARATION_PX", 120)
   DefensivePosts* = envTunableBool("STENCIL_DEFENSIVE_POSTS", true)
   ConvertEnemyLives* = envInt("STENCIL_CONVERT_ENEMY_LIVES", 6)

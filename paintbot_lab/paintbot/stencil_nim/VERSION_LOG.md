@@ -4,6 +4,59 @@ Read this before assuming what a version contains. Format mirrors
 `ctf_lab/ctf/beacon/VERSION_LOG.md`: one entry per uploaded version — what
 changed, why, and what the evidence said.
 
+## v67 — the post atlas + conservative re-expressions, uploaded 2026-08-14
+
+Immutable policy-version UUID: `f8289d11-7f88-4502-ad35-2edf4a415264`.
+Uploaded with tag `purpose=post-atlas`. **Not submitted to any league.**
+
+James's ruling made structural: **potential posts exist everywhere there is
+cover; the situation decides relevance at query time, and it can change on
+the fly** ([spec + addendum](../../docs/designs/nav-v67-post-atlas-2026-08-14.md)).
+Codex-implemented under orchestration (plan review surfaced six spec-vs-code
+discrepancies incl. a consumer my spec missed — `advancePoint` — and a
+scale bug in my barrage formula that would have left danger a tie-break;
+fixed via normalization).
+
+- **Atlas**: every `coverDirs != 0` cell is an `AtlasPost` with a
+  full-gun-range (1300 px, `STENCIL_POST_REACH_CAP_PX`) 16-sector reach
+  profile; 64 px spatial index; LAZY duck cache (fields-cache precedent).
+  Corridor-era machinery deleted (generateFront, corridor scoring,
+  progress buckets, stored PostFronts). Giant atlas: 14,408 posts,
+  **179 ms** mean build (gate 250 ms) at the full cap.
+- **Selection**: two-phase — cheap reach-toward-bearing/distance/facing
+  over all gathered posts, lazy-duck enrichment of the top 8 (bounded
+  approximation, property-tested as such) — with a situational `bearing`
+  parameter; defenders keep 64 px home-band ordering via expanding
+  queries; `advancePoint` queries at stage anchors.
+- **early_defense (conservative)**: holds atlas posts covering the home
+  room's entrance gates (seat-th gate, bearing outward), endzone-confined,
+  spawnCoverPoint fallback; release gate/suppressions unchanged.
+- **barrage_center (conservative)**: normalized
+  `peakClearance/255 − w·danger/fieldMax` over reachable room peaks
+  (`STENCIL_BARRAGE_PEAK_DANGER_WEIGHT`, default 1.0 = co-equal),
+  nearestReachable-validated; ring/priority semantics unchanged.
+- Trace schema v4: `post_atlas` (pos/max-reach/top-sector), `atlas_ms`,
+  `atlas_n`. Viewer migrated (my side): atlas rendering (reach-colored,
+  sector ticks) + the selection-simulator mirror rewritten to the
+  two-phase utility and re-verified fail-closed on 200 harness samples of
+  the real production selection.
+
+**Pre-upload evidence:** Codex harness (atlas completeness/reach
+exactness, determinism under reversed lazy-query order, top-8 duck bound,
+defender separation, endzone confinement) + my suites (planner props 11k,
+layer2 props 2.7M with atlas invariants) all green; 21 modules `nim
+check`; corridor grep gates zero. Live corpus: h2h 114 plans / active-ffa
+820 plans, 0 unroutable, 1 snapped, 0 fallbacks; ffa atlas 6,639 posts /
+86 ms under contention; tick rates normal. Built against 0.7.215 /
+`6c7a4c0e`; canonical has advanced to 0.7.229 (`bf0bcc22`) — contract
+compatibility assumed per the v60-era lineage argument, sim constants not
+re-derived (flagged for the next pin review).
+
+**Hosted validation:** matched v67-vs-v66 batch pending at upload; also
+re-tests the v66 h2h scatter watch-item. Expected deltas: post/hold
+positions everywhere (side lanes now posted), early-defense gate coverage,
+barrage positioning; plan counters expected clean. Verdict appended.
+
 ## v66 — the Intent & goal contract (nav rework Layer 4), uploaded 2026-08-13
 
 Immutable policy-version UUID: `80e2a0a4-9662-4722-8fe0-e3aa4a57e593`.

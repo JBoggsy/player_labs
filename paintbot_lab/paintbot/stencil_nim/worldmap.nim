@@ -1,6 +1,6 @@
 ## Episode-scoped terrain, route fields, and derived tactical geometry.
 
-import std/[algorithm, heapqueue, math, monotimes, options, sets, tables, times]
+import std/[algorithm, heapqueue, math, monotimes, options, tables, times]
 import config, types
 
 const
@@ -9,6 +9,8 @@ const
     (-1, -1), (-1, 1), (1, -1), (1, 1)]
   PlayerHalf* = 6
   Sqrt2 = sqrt(2.0)
+  AtlasSectorCount* = 16
+  AtlasBucketCells = 8
 
 type
   Endzone* = object
@@ -27,14 +29,19 @@ type
     distances: seq[float],
     hops: seq[uint8]]
 
+  AtlasPost* = object
+    pos*: Point
+    reach*: array[AtlasSectorCount, uint16]
+
   PostCandidate* = object
     pos*, duck*: Point
-    score*, sightline*, corridor*, duckContrast*: float
+    score*, sightline*, duckContrast*: float
     rayEnds*: seq[Point]
 
-  PostFront* = object
-    team*, opponent*: Team
-    candidates*, posts*: seq[PostCandidate]
+  DuckResult* = tuple[pos: Point, contrast: float]
+  RaySample = object
+    dx, dy: int32
+    distance: uint16
 
   Choke* = object
     pos*: Point              # widest pixel of the gate (watershed saddle)
@@ -74,23 +81,27 @@ type
     walkable*: seq[bool]
     cover*: seq[bool]        # directional cover exists (coverDirs != 0)
     coverDirs*: seq[uint16]  # per cell: N-sector blocked-from bitmask
-    postFronts*: seq[PostFront]
+    postAtlas*: seq[AtlasPost]
+    atlasBuckets: seq[seq[int]]
+    atlasBucketW, atlasBucketH: int
+    duckCache: Table[int, DuckResult]
     endzones*: Table[Team, Endzone]
     pedestals*: Table[Team, Point]
     fields: Table[int, RouteFields]
     gates: Table[Team, Point]  # lazy defenseGate cache (chokes are static)
     baseInitMs*, clearanceMs*, componentMs*, topologyMs*, coverMs*,
-      postMs*: float
+      atlasMs*: float
     dijkstraMs*: seq[float]
 
 proc fieldsFor(map: WorldMap, goal: Point): lent RouteFields
 proc homeCenter*(map: WorldMap, color: Team): Point
 proc pedestal*(map: WorldMap, color: Team): Point
 proc capturePoint*(map: WorldMap, color: Team): Point
-proc generatePosts(map: WorldMap, team: Team): seq[PostFront]
 proc buildComponents(map: WorldMap)
 proc buildTopology*(map: WorldMap, journal: TopologyJournal = nil)
 proc buildCoverDirs(map: WorldMap)
+proc buildPostAtlas(map: WorldMap)
+proc duckFor*(map: WorldMap, atlasIndex: int): DuckResult
 
 proc elapsedMs(started: MonoTime): float =
   (getMonoTime() - started).inNanoseconds.float / 1_000_000.0
@@ -164,6 +175,7 @@ proc newWorldMap*(
   markers: Table[Team, EndzoneMarker], team: Team,
   journal: TopologyJournal = nil
 ): WorldMap =
+  discard team
   let started = getMonoTime()
   result = WorldMap(
     width: width, height: height, teams: teams,
@@ -192,9 +204,9 @@ proc newWorldMap*(
   result.baseInitMs = elapsedMs(started)
   for index in 0 ..< result.teams:
     discard result.fieldsFor(result.homeCenter(Team(index)))
-  let postStarted = getMonoTime()
-  result.postFronts = result.generatePosts(team)
-  result.postMs = elapsedMs(postStarted)
+  let atlasStarted = getMonoTime()
+  result.buildPostAtlas()
+  result.atlasMs = elapsedMs(atlasStarted)
 
 proc cellOf*(map: WorldMap, point: Point): Point =
   (clamp(point.x div NavCell, 0, map.gridW - 1),
@@ -622,6 +634,135 @@ proc buildCoverDirs(map: WorldMap) =
       map.coverDirs[index] = mask
       map.cover[index] = mask != 0
 
+proc atlasRaySamples(): array[AtlasSectorCount, seq[RaySample]] =
+  ## Collapse consecutive distances that round to the same pixel. This keeps
+  ## the exact one-pixel ray convention while removing trig from the atlas's
+  ## posts x sectors x reach-cap hot loop.
+  for sector in 0 ..< AtlasSectorCount:
+    let
+      angle = sector.float * 2.0 * PI / AtlasSectorCount.float
+      dirX = cos(angle)
+      dirY = sin(angle)
+    for distance in 1 .. PostReachCapPx:
+      let
+        dx = int32(pyRound(dirX * distance.float))
+        dy = int32(pyRound(dirY * distance.float))
+      if result[sector].len > 0 and
+          result[sector][^1].dx == dx and result[sector][^1].dy == dy:
+        result[sector][^1].distance = uint16(distance)
+      else:
+        result[sector].add(RaySample(
+          dx: dx, dy: dy, distance: uint16(distance)))
+
+proc rayReach(map: WorldMap, point: Point,
+    samples: openArray[RaySample]): uint16 =
+  var reached = 0
+  for sample in samples:
+    let
+      sx = point.x + sample.dx.int
+      sy = point.y + sample.dy.int
+    if sx.uint >= map.width.uint or sy.uint >= map.height.uint or
+        map.wall[map.pixelIndex(sx, sy)]:
+      break
+    reached = sample.distance.int
+  uint16(reached)
+
+proc cardinalReach(map: WorldMap): array[4, seq[uint16]] =
+  ## Exact sector 0/4/8/12 reaches from row/column sweeps. These four rays
+  ## account for a quarter of atlas queries and do not need per-post walks.
+  for direction in 0 .. 3:
+    result[direction] = newSeq[uint16](map.gridW * map.gridH)
+  for gy in 0 ..< map.gridH:
+    let y = gy * NavCell + NavCell div 2
+    var obstacle = map.width
+    for x in countdown(map.width - 1, 0):
+      if map.wall[map.pixelIndex(x, y)]:
+        obstacle = x
+      if x >= NavCell div 2 and (x - NavCell div 2) mod NavCell == 0:
+        let gx = (x - NavCell div 2) div NavCell
+        if gx < map.gridW:
+          result[0][map.gridIndex(gx, gy)] =
+            uint16(min(PostReachCapPx, max(0, obstacle - x - 1)))
+    obstacle = -1
+    for x in 0 ..< map.width:
+      if map.wall[map.pixelIndex(x, y)]:
+        obstacle = x
+      if x >= NavCell div 2 and (x - NavCell div 2) mod NavCell == 0:
+        let gx = (x - NavCell div 2) div NavCell
+        if gx < map.gridW:
+          result[2][map.gridIndex(gx, gy)] =
+            uint16(min(PostReachCapPx, max(0, x - obstacle - 1)))
+  for gx in 0 ..< map.gridW:
+    let x = gx * NavCell + NavCell div 2
+    var obstacle = map.height
+    for y in countdown(map.height - 1, 0):
+      if map.wall[map.pixelIndex(x, y)]:
+        obstacle = y
+      if y >= NavCell div 2 and (y - NavCell div 2) mod NavCell == 0:
+        let gy = (y - NavCell div 2) div NavCell
+        if gy < map.gridH:
+          result[1][map.gridIndex(gx, gy)] =
+            uint16(min(PostReachCapPx, max(0, obstacle - y - 1)))
+    obstacle = -1
+    for y in 0 ..< map.height:
+      if map.wall[map.pixelIndex(x, y)]:
+        obstacle = y
+      if y >= NavCell div 2 and (y - NavCell div 2) mod NavCell == 0:
+        let gy = (y - NavCell div 2) div NavCell
+        if gy < map.gridH:
+          result[3][map.gridIndex(gx, gy)] =
+            uint16(min(PostReachCapPx, max(0, y - obstacle - 1)))
+
+proc buildPostAtlas(map: WorldMap) =
+  ## Orientation-free firing geometry for every cover-bearing cell. Situation,
+  ## opponent, route, and bearing are deliberately absent from this pass.
+  map.atlasBucketW = (map.gridW + AtlasBucketCells - 1) div AtlasBucketCells
+  map.atlasBucketH = (map.gridH + AtlasBucketCells - 1) div AtlasBucketCells
+  map.atlasBuckets = newSeq[seq[int]](map.atlasBucketW * map.atlasBucketH)
+  let
+    raySamples = atlasRaySamples()
+    cardinal = map.cardinalReach()
+  for gy in 0 ..< map.gridH:
+    for gx in 0 ..< map.gridW:
+      let cellIndex = map.gridIndex(gx, gy)
+      if map.coverDirs[cellIndex] == 0:
+        continue
+      var post = AtlasPost(pos: cellCenter((gx, gy)))
+      for sector in 0 ..< AtlasSectorCount:
+        if sector mod 4 == 0:
+          post.reach[sector] = cardinal[sector div 4][cellIndex]
+        else:
+          post.reach[sector] = map.rayReach(post.pos, raySamples[sector])
+      let atlasIndex = map.postAtlas.len
+      map.postAtlas.add(post)
+      let bucket = (gy div AtlasBucketCells) * map.atlasBucketW +
+        gx div AtlasBucketCells
+      map.atlasBuckets[bucket].add(atlasIndex)
+
+iterator atlasNear*(map: WorldMap, point: Point, radiusPx: int): int =
+  ## Atlas indices within an exact pixel radius, visited deterministically by
+  ## bucket and then by row-major atlas insertion order.
+  if radiusPx >= 0 and map.atlasBucketW > 0 and map.atlasBucketH > 0:
+    let
+      bucketPx = AtlasBucketCells * NavCell
+      minBx = clamp((point.x - radiusPx) div bucketPx, 0, map.atlasBucketW - 1)
+      maxBx = clamp((point.x + radiusPx) div bucketPx, 0, map.atlasBucketW - 1)
+      minBy = clamp((point.y - radiusPx) div bucketPx, 0, map.atlasBucketH - 1)
+      maxBy = clamp((point.y + radiusPx) div bucketPx, 0, map.atlasBucketH - 1)
+      radiusSquared = radiusPx.int64 * radiusPx.int64
+    for by in minBy .. maxBy:
+      for bx in minBx .. maxBx:
+        for atlasIndex in map.atlasBuckets[by * map.atlasBucketW + bx]:
+          let post = map.postAtlas[atlasIndex]
+          let
+            dx = (post.pos.x - point.x).int64
+            dy = (post.pos.y - point.y).int64
+          if dx * dx + dy * dy <= radiusSquared:
+            yield atlasIndex
+
+proc bearingSector(bearing: float, sectors: int): int =
+  floorMod(pyRound(bearing / (2.0 * PI) * sectors.float), sectors)
+
 proc facingScore*(map: WorldMap, point: Point,
     threats: openArray[Point]): float =
   ## Situational cover facing: the fraction of believed threat positions the
@@ -636,42 +777,92 @@ proc facingScore*(map: WorldMap, point: Point,
   var covered = 0
   for threat in threats:
     let bearing = arctan2((threat.y - point.y).float, (threat.x - point.x).float)
-    let sector = floorMod(pyRound(bearing / (2.0 * PI) * rays.float), rays)
+    let sector = bearingSector(bearing, rays)
     if (mask and uint16(1 shl sector)) != 0:
       inc covered
   covered.float / threats.len.float
 
-proc selectRankedPost*(map: WorldMap, candidates: seq[PostCandidate],
-    anchor: Point, rank: int,
-    threats: openArray[Point]): Option[PostCandidate] =
-  ## The squad post-selection core, extracted from squads.orderPost so the
-  ## offline harness can run the exact production logic. Ranks candidates
-  ## near `anchor` by score, travel, and situational facing against believed
-  ## threats, then picks the rank-th survivor of the separation filter.
-  var ranked: seq[tuple[post: PostCandidate, utility: float]]
-  for candidate in candidates:
-    let distance = hypot((candidate.pos.x - anchor.x).float,
-      (candidate.pos.y - anchor.y).float)
-    if distance <= SquadPostSearchPx.float:
-      ranked.add((candidate,
-        candidate.score - 0.25 * distance / max(SquadPostSearchPx.float, 1.0) +
-        PostFacingWeight * (map.facingScore(candidate.pos, threats) - 0.5)))
-  ranked.sort(proc(a, b: tuple[post: PostCandidate, utility: float]): int =
-    cmp(b.utility, a.utility))
+proc reachSector(post: AtlasPost, bearing: Option[float]): int =
+  if bearing.isSome:
+    return bearingSector(bearing.get, AtlasSectorCount)
+  for sector in 1 ..< AtlasSectorCount:
+    if post.reach[sector] > post.reach[result]:
+      result = sector
+
+proc rankedAtlasPosts*(map: WorldMap, candidates: openArray[int],
+    anchor: Point, threats: openArray[Point], bearing: Option[float],
+    searchPx: int): seq[PostCandidate] =
+  ## Two-phase bounded utility. Duck can re-rank only the phase-one top eight:
+  ## this is the intentional approximation that bounds lazy geometry work.
+  var phaseOne: seq[tuple[index, sector: int, utility, reach: float]]
+  let normalizer = max(searchPx.float, 1.0)
+  for atlasIndex in candidates:
+    let post = map.postAtlas[atlasIndex]
+    let
+      sector = post.reachSector(bearing)
+      reach = post.reach[sector].float / max(PostReachCapPx.float, 1.0)
+      distance = hypot((post.pos.x - anchor.x).float,
+        (post.pos.y - anchor.y).float)
+      utility = 0.65 * reach - 0.25 * distance / normalizer +
+        PostFacingWeight * (map.facingScore(post.pos, threats) - 0.5)
+    phaseOne.add((atlasIndex, sector, utility, reach))
+  phaseOne.sort(proc(
+      a, b: tuple[index, sector: int, utility, reach: float]
+    ): int =
+    result = cmp(b.utility, a.utility)
+    if result == 0:
+      result = cmp(a.index, b.index))
+  if phaseOne.len > 8:
+    phaseOne.setLen(8)
+  var finalists: seq[tuple[index: int, post: PostCandidate]]
+  for value in phaseOne:
+    let
+      atlasPost = map.postAtlas[value.index]
+      duck = map.duckFor(value.index)
+      angle = value.sector.float * 2.0 * PI / AtlasSectorCount.float
+      distance = atlasPost.reach[value.sector].int
+      endpoint: Point = (
+        pyRound(atlasPost.pos.x.float + cos(angle) * distance.float),
+        pyRound(atlasPost.pos.y.float + sin(angle) * distance.float))
+      utility = value.utility + 0.15 * duck.contrast
+    finalists.add((value.index, PostCandidate(
+      pos: atlasPost.pos, duck: duck.pos, score: utility,
+      sightline: value.reach, duckContrast: duck.contrast,
+      rayEnds: @[endpoint])))
+  finalists.sort(proc(
+      a, b: tuple[index: int, post: PostCandidate]
+    ): int =
+    result = cmp(b.post.score, a.post.score)
+    if result == 0:
+      result = cmp(a.index, b.index))
+  for value in finalists:
+    result.add(value.post)
+
+proc selectRankedPost*(map: WorldMap, candidates: openArray[int],
+    anchor: Point, rank: int, threats: openArray[Point] = [],
+    bearing: Option[float] = none(float),
+    searchPx = SquadPostSearchPx): Option[PostCandidate] =
+  ## Pick the rank-th survivor after two-phase utility and spatial separation.
+  let ranked = map.rankedAtlasPosts(
+    candidates, anchor, threats, bearing, searchPx)
   var selected: seq[PostCandidate]
   for candidate in ranked:
     var separated = true
     for previous in selected:
-      if hypot((candidate.post.pos.x - previous.pos.x).float,
-          (candidate.post.pos.y - previous.pos.y).float) <
+      if hypot((candidate.pos.x - previous.pos.x).float,
+          (candidate.pos.y - previous.pos.y).float) <
           SquadPostSeparationPx.float:
         separated = false
         break
     if separated:
-      selected.add(candidate.post)
+      selected.add(candidate)
   if selected.len == 0:
     return none(PostCandidate)
   some(selected[min(rank, selected.high)])
+
+proc cachedDuckCount*(map: WorldMap): int =
+  ## Narrow diagnostic used by the offline bound/determinism harness.
+  map.duckCache.len
 
 proc reverseNeighborIndex(dx, dy: int): int =
   for index, delta in Neighbors:
@@ -716,26 +907,14 @@ proc goalKey(map: WorldMap, goal: Point): int =
 
 proc fieldsFor(map: WorldMap, goal: Point): lent RouteFields =
   ## Returns a BORROW of the cached field. RouteFields carries two
-  ## grid-sized seqs (~1.4 MB on giants); the previous by-value return
-  ## memcpy'd them on every routeDistance/flowWaypoint/distanceAt call —
-  ## measured as seconds per tick once the v64 wide pool multiplied the
-  ## per-candidate routeDistance calls in squads.advancePoint.
+  ## grid-sized seqs (~1.4 MB on giants); a by-value return would memcpy them
+  ## on every routeDistance/distanceAt call.
   let key = map.goalKey(goal)
   if not map.fields.hasKey(key):
     let started = getMonoTime()
     map.fields[key] = map.dijkstra((key mod map.gridW, key div map.gridW))
     map.dijkstraMs.add(elapsedMs(started))
   map.fields[key]
-
-proc flowWaypoint*(map: WorldMap, goal, selfXy: Point): Point =
-  ## Oracle-derived geometry helper only. Movement must route through the
-  ## weighted planner; forwardRayEnds uses this to orient static sightline rays.
-  let current = map.nearestWalkable(map.cellOf(selfXy))
-  let code = map.fieldsFor(goal).hops[map.gridIndex(current.x, current.y)].int
-  if code == 0:
-    return selfXy
-  let delta = Neighbors[code - 1]
-  cellCenter((current.x + delta.x, current.y + delta.y))
 
 proc routeDistance*(map: WorldMap, start, goal: Point): float =
   let cell = map.nearestWalkable(map.cellOf(start))
@@ -775,48 +954,29 @@ proc distanceAt(map: WorldMap, point, goal: Point): float =
   let cell = map.nearestWalkable(map.cellOf(point))
   map.fieldsFor(goal).distances[map.gridIndex(cell.x, cell.y)] * NavCell.float
 
-proc forwardRayEnds(map: WorldMap, point, goal: Point): tuple[score: float, ends: seq[Point]] =
-  let waypoint = map.flowWaypoint(goal, point)
-  var
-    dx = waypoint.x - point.x
-    dy = waypoint.y - point.y
-  if dx == 0 and dy == 0:
-    dx = goal.x - point.x
-    dy = goal.y - point.y
+proc duckFor*(map: WorldMap, atlasIndex: int): DuckResult =
   let
-    centerAngle = arctan2(dy.float, dx.float)
-    rayCount = max(3, PostRayCount or 1)
-    halfArc = PostRayHalfArcDeg * PI / 180.0
-  for rayIndex in 0 ..< rayCount:
-    let
-      fraction = rayIndex.float / (rayCount - 1).float
-      angle = centerAngle - halfArc + 2.0 * halfArc * fraction
-      rayDx = cos(angle)
-      rayDy = sin(angle)
-    var last = point
-    var distance = NavCell
-    while distance <= PostGunRangePx:
-      let sample: Point = (
-        pyRound(point.x.float + rayDx * distance.float),
-        pyRound(point.y.float + rayDy * distance.float))
-      if sample.x < 0 or sample.x >= map.width or
-          sample.y < 0 or sample.y >= map.height or
-          map.wall[map.pixelIndex(sample.x, sample.y)]:
-        break
-      last = sample
-      distance += NavCell
-    result.ends.add(last)
-    result.score += min(hypot((last.x - point.x).float,
-      (last.y - point.y).float) / PostGunRangePx.float, 1.0)
-  result.score /= rayCount.float
-
-proc duckFor(map: WorldMap, candidate: PostCandidate): tuple[pos: Point, contrast: float] =
-  let cell = map.cellOf(candidate.pos)
+    candidate = map.postAtlas[atlasIndex]
+    cell = map.cellOf(candidate.pos)
+    cellIndex = map.gridIndex(cell.x, cell.y)
+  if map.duckCache.hasKey(cellIndex):
+    return map.duckCache[cellIndex]
+  var sectors = newSeq[int](AtlasSectorCount)
+  for sector in 0 ..< AtlasSectorCount:
+    sectors[sector] = sector
+  sectors.sort(proc(a, b: int): int =
+    result = cmp(candidate.reach[b], candidate.reach[a])
+    if result == 0:
+      result = cmp(a, b))
   var threatEnds: seq[Point]
-  if candidate.rayEnds.len > 0:
-    for index in [0, candidate.rayEnds.len div 2, candidate.rayEnds.high]:
-      if candidate.rayEnds[index] notin threatEnds:
-        threatEnds.add(candidate.rayEnds[index])
+  for sector in sectors[0 .. 2]:
+    let distance = candidate.reach[sector].int
+    if distance == 0:
+      continue
+    let angle = sector.float * 2.0 * PI / AtlasSectorCount.float
+    threatEnds.add((
+      pyRound(candidate.pos.x.float + cos(angle) * distance.float),
+      pyRound(candidate.pos.y.float + sin(angle) * distance.float)))
   result.pos = candidate.pos
   var bestUtility = 0.0
   for dy in -PostDuckSearchCells .. PostDuckSearchCells:
@@ -846,140 +1006,7 @@ proc duckFor(map: WorldMap, candidate: PostCandidate): tuple[pos: Point, contras
       if utility > bestUtility:
         bestUtility = utility
         result = (hide, contrast)
-
-proc generateFront(map: WorldMap, team, opponent: Team): PostFront =
-  result.team = team
-  result.opponent = opponent
-  let
-    home = map.homeCenter(team)
-    enemyHome = map.homeCenter(opponent)
-    direct = map.distanceAt(enemyHome, home)
-    stride = max(PostCandidateStrideCells, 1)
-  var buckets = newSeq[seq[PostCandidate]](PostProgressBuckets)
-  if classify(direct) == fcInf:
-    return
-  # v63 candidate sourcing: cover-bearing cells in the vicinity of on-route
-  # gates (chokes), instead of a full-grid cover scan — posts live at the
-  # constrictions the route actually crosses. Facing is deliberately NOT
-  # filtered here: threat direction is situational and scored at selection
-  # time against believed enemy tracks (facingScore). The legacy full-grid
-  # scan survives only as the per-bucket fallback for route stretches that
-  # cross gateless open space.
-  # The two route fields are hoisted ONCE per front and read by cell index:
-  # per-cell distanceAt calls (table lookup + snap each) were the measured
-  # dominant cost of the candidate stage on gate-dense giants.
-  let homeFields = map.fieldsFor(home)
-  let enemyFields = map.fieldsFor(enemyHome)
-  template admitCell(gx, gy: int, cellIndex, onlyBucket: int) =
-    # Callers guarantee map.walkable[cellIndex], so the field reads need no
-    # nearestWalkable snap.
-    let fromHome = homeFields.distances[cellIndex] * NavCell.float
-    let toEnemy = enemyFields.distances[cellIndex] * NavCell.float
-    let via = fromHome + toEnemy
-    let detour = max(0.0, via - direct)
-    if classify(via) != fcInf and detour <= PostCorridorPx.float * 3.0:
-      let corridor = exp(-detour / max(PostCorridorPx.float, 1.0))
-      let bucket = clamp(int(fromHome / direct * PostProgressBuckets.float),
-        0, PostProgressBuckets - 1)
-      if onlyBucket < 0 or bucket == onlyBucket:
-        buckets[bucket].add(PostCandidate(
-          pos: cellCenter((gx, gy)), duck: cellCenter((gx, gy)),
-          score: corridor, corridor: corridor))
-  var seenCells = initHashSet[int]()
-  let vicinity = max(1, PostGateVicinityPx div NavCell)
-  for choke in map.chokes:
-    let gateFromHome = map.distanceAt(choke.pos, home)
-    let gateToEnemy = map.distanceAt(choke.pos, enemyHome)
-    if classify(gateFromHome) == fcInf or classify(gateToEnemy) == fcInf:
-      continue
-    if gateFromHome + gateToEnemy - direct > PostCorridorPx.float * 3.0:
-      continue
-    let gateCell = map.cellOf(choke.pos)
-    for dy in -vicinity .. vicinity:
-      for dx in -vicinity .. vicinity:
-        let gx = gateCell.x + dx
-        let gy = gateCell.y + dy
-        if gx < 0 or gx >= map.gridW or gy < 0 or gy >= map.gridH:
-          continue
-        let index = map.gridIndex(gx, gy)
-        if index in seenCells:
-          continue
-        seenCells.incl(index)
-        if not map.walkable[index] or map.coverDirs[index] == 0:
-          continue
-        admitCell(gx, gy, index, -1)
-  if PostBucketFallback:
-    var wasEmpty = newSeq[bool](PostProgressBuckets)
-    var anyEmpty = false
-    for index, bucket in buckets:
-      if bucket.len == 0:
-        wasEmpty[index] = true
-        anyEmpty = true
-    if anyEmpty:
-      # One bounded legacy pass, filling only the empty progress bands.
-      for gy in 0 ..< map.gridH:
-        for gx in 0 ..< map.gridW:
-          let index = map.gridIndex(gx, gy)
-          if not map.cover[index] or (gx + gy) mod stride != 0 or
-              index in seenCells:
-            continue
-          let probeFromHome = homeFields.distances[index] * NavCell.float
-          if classify(probeFromHome) == fcInf:
-            continue
-          let probeBucket = clamp(
-            int(probeFromHome / direct * PostProgressBuckets.float),
-            0, PostProgressBuckets - 1)
-          if wasEmpty[probeBucket]:
-            admitCell(gx, gy, index, probeBucket)
-  for bucket in buckets.mitems:
-    bucket.sort(proc(a, b: PostCandidate): int = cmp(b.corridor, a.corridor))
-    var retained: seq[PostCandidate]
-    for candidate in bucket:
-      var separated = true
-      for previous in retained:
-        if hypot((candidate.pos.x - previous.pos.x).float,
-            (candidate.pos.y - previous.pos.y).float) <
-            PostRayCandidateSeparationPx.float:
-          separated = false
-          break
-      if separated:
-        retained.add(candidate)
-        result.candidates.add(candidate)
-        if retained.len >= PostRayCandidatesPerBucket:
-          break
-  for candidate in result.candidates.mitems:
-    let rays = map.forwardRayEnds(candidate.pos, enemyHome)
-    candidate.rayEnds = rays.ends
-    candidate.sightline = rays.score
-    candidate.score = 0.8 * candidate.sightline + 0.2 * candidate.corridor
-  result.candidates.sort(proc(a, b: PostCandidate): int = cmp(b.score, a.score))
-  if result.candidates.len > PostShortlistCount:
-    result.candidates.setLen(PostShortlistCount)
-  for candidate in result.candidates.mitems:
-    let duck = map.duckFor(candidate)
-    candidate.duck = duck.pos
-    candidate.duckContrast = duck.contrast
-    candidate.score = 0.65 * candidate.sightline +
-      0.20 * candidate.corridor + 0.15 * candidate.duckContrast
-  result.candidates.sort(proc(a, b: PostCandidate): int = cmp(b.score, a.score))
-  for candidate in result.candidates:
-    if candidate.duck == candidate.pos:
-      continue
-    var separated = true
-    for selected in result.posts:
-      if hypot((candidate.pos.x - selected.pos.x).float,
-          (candidate.pos.y - selected.pos.y).float) < PostSeparationPx.float:
-        separated = false
-        break
-    if separated:
-      result.posts.add(candidate)
-      if result.posts.len >= PostCount:
-        break
-
-proc generatePosts(map: WorldMap, team: Team): seq[PostFront] =
-  for opponentIndex in 0 ..< map.teams:
-    if Team(opponentIndex) != team:
-      result.add(map.generateFront(team, Team(opponentIndex)))
+  map.duckCache[cellIndex] = result
 
 proc nearestCover*(map: WorldMap, point: Point, maxCells = 6): Option[Point] =
   let cell = map.cellOf(point)
@@ -1054,6 +1081,20 @@ proc capturePoint*(map: WorldMap, color: Team): Point =
   let cell = map.nearestWalkable(map.cellOf(map.endzones[color].center))
   cellCenter(cell)
 
+proc mostDirectOpponent*(map: WorldMap, color: Team): Option[Team] =
+  let home = map.homeCenter(color)
+  var direct = Inf
+  for index in 0 ..< map.teams:
+    let opponent = Team(index)
+    if opponent == color:
+      continue
+    let route = map.routeDistance(home, map.homeCenter(opponent))
+    if route < direct:
+      direct = route
+      result = some(opponent)
+  if classify(direct) == fcInf:
+    result = none(Team)
+
 proc defenseGate*(map: WorldMap, color: Team): Point =
   ## Derived defender hold base, replacing the authored chokePoint anchor:
   ## the first significant gate on the route from our home toward the most
@@ -1067,18 +1108,11 @@ proc defenseGate*(map: WorldMap, color: Team): Point =
     return map.gates[color]
   defer: map.gates[color] = result
   let home = map.homeCenter(color)
-  var
-    enemyHome = home
-    direct = Inf
-  for index in 0 ..< map.teams:
-    let opponent = Team(index)
-    if opponent == color:
-      continue
-    let route = map.routeDistance(home, map.homeCenter(opponent))
-    if route < direct:
-      direct = route
-      enemyHome = map.homeCenter(opponent)
-  if classify(direct) != fcInf:
+  let opponent = map.mostDirectOpponent(color)
+  if opponent.isSome:
+    let
+      enemyHome = map.homeCenter(opponent.get)
+      direct = map.routeDistance(home, enemyHome)
     var
       found = false
       best: Point

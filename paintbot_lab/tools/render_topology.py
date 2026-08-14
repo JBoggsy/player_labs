@@ -177,6 +177,8 @@ def cross_check(nav: dict, process: dict, allow_drift: bool) -> list[str]:
     # (the trace rounds scores).
     agent_fronts = nav.get("post_fronts") or []
     harness_fronts = process.get("post_fronts") or []
+    if not agent_fronts and not harness_fronts:
+        agent_fronts = harness_fronts = []  # v67+: atlas replaces fronts
     if len(agent_fronts) != len(harness_fronts):
         problems.append(
             f"post_fronts: agent {len(agent_fronts)} != harness {len(harness_fronts)}"
@@ -239,6 +241,8 @@ def render_html(nav: dict, process: dict, drift: list[str], clearance: bytes) ->
         "cover_dirs": process["cover_dirs"],
         "anchors": process["anchors"],
         "post_fronts": process.get("post_fronts", []),
+        "post_atlas": process.get("post_atlas", []),
+        "reach_cap": process.get("reach_cap_px", 1300),
         "defender_assignments": process.get("defender_assignments", []),
         "selection_samples": process.get("selection_samples", []),
         "selection_params": process.get("selection_params"),
@@ -427,6 +431,22 @@ function overlays(){
       ctx.fillStyle='#ff922b'; ctx.font=`${Math.max(10,12/scale)}px ui-monospace`;
       ctx.fillText('G'+i,a.gate[0]+4,a.gate[1]+4); });
   const front=(data.post_fronts||[])[+document.querySelector('#frontSel').value];
+  if((data.post_atlas||[]).length&&document.querySelector('#candBox').checked){
+    // v67 atlas: every cover-bearing cell is a potential post; color by max
+    // reach (red short → green long), tiny tick showing the top sector.
+    const cap=data.reach_cap||1300;
+    data.post_atlas.forEach(a=>{
+      const t=Math.min(1,a.max_reach/cap);
+      ctx.fillStyle=`rgb(${Math.round(255*(1-t))},${Math.round(215*t)},80)`;
+      ctx.fillRect(a.pos[0]-1.5,a.pos[1]-1.5,3,3);
+      if(a.max_reach>200){
+        const ang=a.top_sector*2*Math.PI/16;
+        ctx.strokeStyle=ctx.fillStyle; ctx.lineWidth=Math.max(0.5,0.5/scale);
+        ctx.beginPath(); ctx.moveTo(a.pos[0],a.pos[1]);
+        ctx.lineTo(a.pos[0]+Math.cos(ang)*6,a.pos[1]+Math.sin(ang)*6); ctx.stroke();
+      }
+    });
+  }
   function scoreColor(s){ const t=Math.max(0,Math.min(1,s));
     return `rgb(${Math.round(255*(1-t))},${Math.round(215*t)},80)`; }
   if(front&&document.querySelector('#candBox').checked)
@@ -532,19 +552,25 @@ function facingMirror(pos,threats){
   return covered/threats.length;
 }
 function selectMirror(front,anchor,rank,threats){
-  if(!front||!selP) return null;
-  const ranked=[];
-  for(const c of front.candidates){
-    const d=Math.hypot(c.pos[0]-anchor[0],c.pos[1]-anchor[1]);
-    if(d<=selP.search_px)
-      ranked.push({c,u:c.score-0.25*d/Math.max(selP.search_px,1)+
-        selP.facing_weight*(facingMirror(c.pos,threats)-0.5)});
-  }
-  ranked.sort((a,b)=>b.u-a.u);
+  // v67 two-phase atlas utility (mirrors worldmap.rankedAtlasPosts):
+  // phase 1 over all in-radius posts, phase 2 duck-enriches the top 8.
+  if(!selP||!(data.post_atlas||[]).length) return null;
+  const cap=selP.reach_cap_px||1300, n=selP.sectors||16;
+  const inRadius=data.post_atlas.filter(a=>
+    Math.hypot(a.pos[0]-anchor[0],a.pos[1]-anchor[1])<=selP.search_px);
+  const phase1=inRadius.map((a,i)=>{
+    const maxSector=a.top_sector;             // bearing=none => max reach
+    const reach=a.reach[maxSector]/cap;
+    const d=Math.hypot(a.pos[0]-anchor[0],a.pos[1]-anchor[1]);
+    return {a,u:0.65*reach-0.25*d/Math.max(selP.search_px,1)+
+      selP.facing_weight*(facingMirror(a.pos,threats)-0.5)};
+  }).sort((x,y)=>y.u-x.u).slice(0,8);
+  const enriched=phase1.map(e=>({a:e.a,u:e.u+0.15*(e.a.duck_contrast||0)}))
+    .sort((x,y)=>y.u-x.u);
   const sel=[];
-  for(const r of ranked){
-    if(sel.every(s=>Math.hypot(s.pos[0]-r.c.pos[0],s.pos[1]-r.c.pos[1])>=selP.separation_px))
-      sel.push(r.c);
+  for(const e of enriched){
+    if(sel.every(s=>Math.hypot(s.pos[0]-e.a.pos[0],s.pos[1]-e.a.pos[1])>=selP.separation_px))
+      sel.push({pos:e.a.pos,score:e.u,facing:facingMirror(e.a.pos,threats)});
   }
   if(!sel.length) return null;
   return sel[Math.min(rank,sel.length-1)];
@@ -565,8 +591,7 @@ function drawSelection(front){
       ctx.beginPath(); ctx.moveTo(directive[0],directive[1]);
       ctx.lineTo(chosen.pos[0],chosen.pos[1]); ctx.stroke(); ctx.setLineDash([]);
       document.querySelector('#selInfo').textContent=
-        `chosen post (${chosen.pos[0]}, ${chosen.pos[1]}) score ${chosen.score.toFixed(2)} `+
-        `facing ${facingMirror(chosen.pos,enemies).toFixed(2)}`;
+        `chosen post (${chosen.pos[0]}, ${chosen.pos[1]}) utility ${chosen.score.toFixed(2)} facing ${chosen.facing.toFixed(2)}`;
     } else document.querySelector('#selInfo').textContent='no post within search radius';
   }
   ctx.restore();

@@ -113,3 +113,25 @@ telemetry-only; no new deps.
   `generateFront`, progress-bucket code) gone or provably dead.
 - Hosted: matched v67-vs-v66 batch, standard shape + giant probes; this
   batch also re-tests the v66 h2h scatter watch-item.
+
+## Implementation addendum (approved 2026-08-14)
+
+- `selectRankedPost` takes atlas indices rather than materialized candidates;
+  `PostCandidate` remains only as its transient result contract.
+- Defender selection preserves the existing 64 px home-outward bands through
+  expanding atlas queries. `advancePoint`, an additional stored-front consumer
+  found during code recon, queries the atlas around its existing stage anchor.
+- Early-defense gate queries use `SquadPostSearchPx`. Barrage falls back to map
+  center literally when either rooms or the atlas are empty.
+- Removing the 0.20 corridor prior changes rankings intentionally. That route-
+  frozen prior is precisely what the post atlas kills; reach, facing, distance,
+  and ducking are evaluated from the current query instead.
+- The top-eight phase-two cutoff is an intentional bounded-cost approximation:
+  lazy duck contrast may rescue a candidate only within the phase-one top eight.
+  Property validation covers that bound explicitly.
+- Barrage terms are normalized before weighting so danger is not merely a
+  clearance tie-break:
+  `peakClearance / 255 - BarragePeakDangerWeight * dangerSample(peak) /
+  max(1e-6, fieldMax)`. When `fieldMax == 0`, danger contributes zero. The
+  default `STENCIL_BARRAGE_PEAK_DANGER_WEIGHT=1.0` therefore makes normalized
+  openness and current relative danger co-equal.

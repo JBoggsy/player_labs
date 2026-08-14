@@ -271,36 +271,16 @@ proc navigationMap(map: WorldMap): JsonNode =
     if map.pedestals.hasKey(color):
       entry["pedestal"] = pointJson(map.pedestals[color])
     teams.add(entry)
-  var fronts = newJArray()
-  for front in map.postFronts:
-    var candidates = newJArray()
-    for candidate in front.candidates:
-      candidates.add(%*{
-        "position": pointJson(candidate.pos),
-        "duck": pointJson(candidate.duck),
-        "score": rounded4(candidate.score),
-        "sightline": rounded4(candidate.sightline),
-        "corridor": rounded4(candidate.corridor),
-        "duck_contrast": rounded4(candidate.duckContrast),
-      })
-    var posts = newJArray()
-    for post in front.posts:
-      var rays = newJArray()
-      for endpoint in post.rayEnds: rays.add(pointJson(endpoint))
-      posts.add(%*{
-        "position": pointJson(post.pos),
-        "duck": pointJson(post.duck),
-        "score": rounded4(post.score),
-        "sightline": rounded4(post.sightline),
-        "corridor": rounded4(post.corridor),
-        "duck_contrast": rounded4(post.duckContrast),
-        "ray_ends": rays,
-      })
-    fronts.add(%*{
-      "team": teamName(front.team),
-      "opponent": teamName(front.opponent),
-      "candidates": candidates,
-      "posts": posts,
+  var atlas = newJArray()
+  for post in map.postAtlas:
+    var topSector = 0
+    for sector in 1 ..< AtlasSectorCount:
+      if post.reach[sector] > post.reach[topSector]:
+        topSector = sector
+    atlas.add(%*{
+      "position": pointJson(post.pos),
+      "max_reach": post.reach[topSector].int,
+      "top_sector": topSector,
     })
   var rooms = newJArray()
   for room in map.rooms:
@@ -319,7 +299,7 @@ proc navigationMap(map: WorldMap): JsonNode =
       "rooms": [choke.roomA, choke.roomB],
     })
   %*{
-    "schema_version": 3,
+    "schema_version": 4,
     "map": [map.width, map.height],
     "grid": [map.gridW, map.gridH],
     "cell_size": NavCell,
@@ -338,7 +318,8 @@ proc navigationMap(map: WorldMap): JsonNode =
     "chokes": chokes,
     "clearance_packed": packedClearance(map),
     "teams": teams,
-    "post_fronts": fronts,
+    "post_reach_cap_px": PostReachCapPx,
+    "post_atlas": atlas,
   }
 
 proc navigationFlow(field: CachedRouteField, map: WorldMap): JsonNode =
@@ -365,14 +346,15 @@ proc navMetrics(map: WorldMap): JsonNode =
     "component_ms": map.componentMs,
     "topology_ms": map.topologyMs,
     "cover_ms": map.coverMs,
-    "post_ms": map.postMs,
+    "atlas_ms": map.atlasMs,
     "components_n": map.componentCount,
     "rooms_n": map.rooms.len,
     "chokes_n": map.chokes.len,
+    "atlas_n": map.postAtlas.len,
     "dijkstra_count": map.dijkstraMs.len,
     "dijkstra_total_ms": total,
     "dijkstra_max_ms": maximum,
-    "total_ms": map.baseInitMs + total + map.postMs,
+    "total_ms": map.baseInitMs + total + map.atlasMs,
     "decode_ms": 0.0,
     "map_pixels": map.width * map.height,
     "grid_cells": map.gridW * map.gridH,

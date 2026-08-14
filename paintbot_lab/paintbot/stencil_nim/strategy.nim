@@ -1,7 +1,7 @@
 ## The single-objective movement priority ladder.
 
 import std/[math, options, sets, tables]
-import belief_state, config, fight, items, squads, types, worldmap
+import belief_state, config, danger_field, fight, items, roles, squads, types, worldmap
 
 type Objective* = object
   intent*: Intent
@@ -69,6 +69,34 @@ proc reachableGoal(belief: Belief, point: Point): Option[Point] =
   if belief.worldmap.isNil or belief.selfXy.isNone:
     return none(Point)
   belief.worldmap.nearestReachable(point, belief.selfXy.get)
+
+proc barrageGoal(belief: Belief): Option[Point] =
+  let map = belief.worldmap
+  if map.postAtlas.len == 0 or map.rooms.len == 0:
+    return belief.reachableGoal(map.center)
+  let dangerMaximum = belief.planDanger.fieldMax
+  var
+    found = false
+    best = map.center
+    bestScore = -Inf
+  for room in map.rooms:
+    if not map.sameComponent(belief.selfXy.get, room.peak):
+      continue
+    let
+      openness = room.peakClearance.float / 255.0
+      danger = if dangerMaximum > 0.0:
+        belief.planDanger.sample(map, room.peak) / max(1e-6, dangerMaximum)
+      else:
+        0.0
+      score = openness - BarragePeakDangerWeight * danger
+    if not found or score > bestScore:
+      found = true
+      best = room.peak
+      bestScore = score
+  if found:
+    result = belief.reachableGoal(best)
+  if result.isNone:
+    result = belief.reachableGoal(map.center)
 
 proc coverageAt*(
   belief: Belief, point: Point, cache: var Table[int, float]
@@ -309,15 +337,15 @@ proc decideBaseObjective(belief: Belief): Objective =
   if BarrageCentering and belief.barrage.isSome and
       belief.barrage.get.depth > 0 and belief.selfXy.isSome:
     inc belief.barrageCenterTicks
-    if distance(belief.selfXy.get, map.center) <= BarrageCenterRadiusPx.float:
-      return hold("barrage_center")
-    let goal = belief.reachableGoal(map.center)
+    let goal = belief.barrageGoal
     if goal.isSome:
+      if distance(belief.selfXy.get, goal.get) <= BarrageCenterRadiusPx.float:
+        return hold("barrage_center")
       return navigate(goal.get, "barrage_center")
 
   if EarlyDefense and not belief.earlyDefenseComplete and belief.selfXy.isSome:
     if belief.earlyDefensePoint.isNone:
-      belief.earlyDefensePoint = some(map.spawnCoverPoint(
+      belief.earlyDefensePoint = some(map.earlyDefensePostForSeat(
         belief.team, belief.seat, belief.seatsPerTeam))
     let point = belief.earlyDefensePoint.get
     if distance(belief.selfXy.get, point) <= HoldArrivePx.float:

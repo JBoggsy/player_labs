@@ -180,35 +180,25 @@ proc main() =
       "ratio": merge.ratio,
       "merged": merge.merged,
     })
-  # Post fronts (static, belief-free) + defender assignments, so the viewer
-  # can show candidate generation and seat selection from the exact
-  # production code.
-  proc candidateJson(candidate: PostCandidate): JsonNode =
-    var rays = newJArray()
-    for endpoint in candidate.rayEnds:
-      rays.add(pointJson(endpoint))
-    %*{
-      "pos": pointJson(candidate.pos),
-      "duck": pointJson(candidate.duck),
-      "score": candidate.score,
-      "sightline": candidate.sightline,
-      "corridor": candidate.corridor,
-      "duck_contrast": candidate.duckContrast,
-      "ray_ends": rays,
-    }
-  var fronts = newJArray()
-  for front in map.postFronts:
-    var candidates = newJArray()
-    for candidate in front.candidates:
-      candidates.add(candidateJson(candidate))
-    var posts = newJArray()
-    for post in front.posts:
-      posts.add(candidateJson(post))
-    fronts.add(%*{
-      "team": ord(front.team),
-      "opponent": ord(front.opponent),
-      "candidates": candidates,
-      "posts": posts,
+  # Orientation-free atlas + defender assignments from production code.
+  var atlas = newJArray()
+  for atlasIndex, post in map.postAtlas:
+    var topSector = 0
+    var reachJson = newJArray()
+    for sector in 0 ..< AtlasSectorCount:
+      reachJson.add(%post.reach[sector].int)
+      if post.reach[sector] > post.reach[topSector]:
+        topSector = sector
+    # Force-evaluate the lazy duck offline so the viewer mirror can replay
+    # phase-two exactly (production keeps ducks lazy; here cost is fine).
+    let duck = map.duckFor(atlasIndex)
+    atlas.add(%*{
+      "pos": pointJson(post.pos),
+      "max_reach": post.reach[topSector].int,
+      "top_sector": topSector,
+      "reach": reachJson,
+      "duck_contrast": duck.contrast,
+      "cell": %[post.pos.x div NavCell, post.pos.y div NavCell],
     })
   var defenders = newJArray()
   for teamIndex in 0 ..< teams:
@@ -225,9 +215,7 @@ proc main() =
         })
     defenders.add(%*{"team": teamIndex, "assignments": seatsJson})
 
-  # Selection samples: run the REAL production selection core on randomized
-  # (front, anchor, rank, threats) cases so the viewer's interactive JS
-  # mirror can be verified fail-closed at load time.
+  # Selection samples from the real production atlas core.
   var walkableCenters: seq[Point]
   for gy in 0 ..< map.gridH:
     for gx in 0 ..< map.gridW:
@@ -235,21 +223,22 @@ proc main() =
         walkableCenters.add(cellCenter((gx, gy)))
   var sampleRng = initRand(20260812)
   var samples = newJArray()
-  if map.postFronts.len > 0 and walkableCenters.len > 0:
+  if map.postAtlas.len > 0 and walkableCenters.len > 0:
     for _ in 0 ..< 200:
-      let frontIndex = sampleRng.rand(map.postFronts.high)
       let anchor = walkableCenters[sampleRng.rand(walkableCenters.high)]
       let rank = sampleRng.rand(2)
       var threats: seq[Point]
       for _ in 0 ..< sampleRng.rand(3):
         threats.add(walkableCenters[sampleRng.rand(walkableCenters.high)])
+      var candidates: seq[int]
+      for atlasIndex in map.atlasNear(anchor, SquadPostSearchPx):
+        candidates.add(atlasIndex)
       let chosen = map.selectRankedPost(
-        map.postFronts[frontIndex].candidates, anchor, rank, threats)
+        candidates, anchor, rank, threats)
       var threatsJson = newJArray()
       for threat in threats:
         threatsJson.add(pointJson(threat))
       samples.add(%*{
-        "front": frontIndex,
         "anchor": pointJson(anchor),
         "rank": rank,
         "threats": threatsJson,
@@ -360,12 +349,14 @@ proc main() =
     "component_labels_rle": rleJson(componentLabels),
     "cover_dirs": coverCells,
     "anchors": anchors,
-    "post_fronts": fronts,
+    "post_atlas": atlas,
     "defender_assignments": defenders,
     "selection_params": %*{
       "search_px": SquadPostSearchPx,
       "separation_px": SquadPostSeparationPx,
       "facing_weight": PostFacingWeight,
+      "reach_cap_px": PostReachCapPx,
+      "sectors": AtlasSectorCount,
     },
     "selection_samples": samples,
     "plan_scenarios": scenarioJson,

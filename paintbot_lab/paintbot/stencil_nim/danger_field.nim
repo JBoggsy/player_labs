@@ -7,6 +7,7 @@ type
   DangerField* = object
     values*: seq[float32]
     gridW, gridH: int
+    maximum: float32
     visitGeneration: uint32
     visited: seq[uint32]
     kernelRadius: int
@@ -21,6 +22,7 @@ proc ensureSize(field: var DangerField, map: WorldMap) =
   field.gridW = map.gridW
   field.gridH = map.gridH
   field.values = newSeq[float32](size)
+  field.maximum = 0
   field.visited = newSeq[uint32](size)
   field.visitGeneration = 0
 
@@ -169,12 +171,17 @@ proc rebuildLosDanger*(
   for source in sources:
     field.castPerimeterRays(map, source)
     field.addCloseFloor(map, source)
-  if DangerLosWeight != 1.0:
-    for value in field.values.mitems:
+  field.maximum = 0
+  for value in field.values.mitems:
+    if DangerLosWeight != 1.0:
       value *= DangerLosWeight.float32
+    field.maximum = max(field.maximum, value)
 
 proc sample*(field: DangerField, map: WorldMap, point: Point): float =
   if field.values.len != map.gridW * map.gridH:
     return 0.0
   let cell = map.cellOf(point)
   field.values[cell.y * map.gridW + cell.x].float
+
+proc fieldMax*(field: DangerField): float =
+  field.maximum.float
