@@ -14,7 +14,7 @@ from actions import (
     ACTION_TOKEN_SLOTS,
     ACTION_TOKENS,
     BUTTONS,
-    EVENT_ACTION_TOKENS,
+    EVENT_TOKENS,
     PRESS_TOKENS,
     RELEASE_TOKENS,
     STOP_TOKEN,
@@ -257,8 +257,14 @@ def load_base_model(
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, revision=MODEL_REVISION)
     if action_encoding not in {"absolute", "events"}:
         raise ValueError("action encoding must be 'absolute' or 'events'")
-    action_tokens = ACTION_TOKENS if action_encoding == "absolute" else EVENT_ACTION_TOKENS
-    tokenizer.add_special_tokens({"additional_special_tokens": list(action_tokens)})
+    model_action_tokens = (
+        ACTION_TOKENS
+        if action_encoding == "absolute"
+        else (*ACTION_TOKENS, *EVENT_TOKENS)
+    )
+    tokenizer.add_special_tokens(
+        {"additional_special_tokens": list(model_action_tokens)}
+    )
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
     language_model = AutoModelForCausalLM.from_pretrained(
@@ -272,7 +278,9 @@ def load_base_model(
             raise ValueError("lora_rank must be positive")
         if lora_target_modules not in {"attention", "all-linear"}:
             raise ValueError("lora_target_modules must be 'attention' or 'all-linear'")
-        action_token_ids = [tokenizer.convert_tokens_to_ids(token) for token in action_tokens]
+        action_token_ids = [
+            tokenizer.convert_tokens_to_ids(token) for token in model_action_tokens
+        ]
         target_modules = (
             ["q_proj", "k_proj", "v_proj", "o_proj"]
             if lora_target_modules == "attention"

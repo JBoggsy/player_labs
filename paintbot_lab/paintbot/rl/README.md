@@ -249,7 +249,9 @@ changes, so it is an experiment knob rather than a new default.
 `--action-encoding events` selects the residual press/release experiment. It
 targets only changed buttons, in canonical release-then-press order, followed
 by `<STOP>`; an unchanged mask targets `<STOP>` alone. The checkpoint records
-the codec and live inference dispatches to the matching stateful decoder.
+the codec and live inference dispatches to the matching stateful decoder. Event
+checkpoints retain the absolute action tokens as trainable prompt vocabulary so
+`previous_action` has the same five-token representation under both codecs.
 `evaluate_event_sft.py` decodes event sequences back to canonical held masks
 before reporting exact-action and per-component accuracy. The default remains
 `absolute`, so existing checkpoints and unattended runs retain their original
