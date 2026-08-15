@@ -246,6 +246,15 @@ from the training split; `<STOP>` remains weight 1. The first weighting sweep
 showed that this mechanism creates transition recall but excessive false
 changes, so it is an experiment knob rather than a new default.
 
+`--action-encoding events` selects the residual press/release experiment. It
+targets only changed buttons, in canonical release-then-press order, followed
+by `<STOP>`; an unchanged mask targets `<STOP>` alone. The checkpoint records
+the codec and live inference dispatches to the matching stateful decoder.
+`evaluate_event_sft.py` decodes event sequences back to canonical held masks
+before reporting exact-action and per-component accuracy. The default remains
+`absolute`, so existing checkpoints and unattended runs retain their original
+four-slot action language.
+
 LoRA defaults to rank 8 over the attention Q/K/V/O projections. Capacity
 experiments can set `--lora-rank` and choose
 `--lora-target-modules attention|all-linear`; both resolved values are recorded

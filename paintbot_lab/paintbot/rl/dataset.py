@@ -8,7 +8,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Iterable
 
-from actions import action_text
+from actions import action_event_text, action_text
 from episode_map import EpisodeMap
 from observation_text import (
     ObservationSnapshot,
@@ -82,8 +82,12 @@ class SFTSample:
             suffix,
         )
 
-    def target(self) -> str:
-        return action_text(self.target_mask)
+    def target(self, *, action_encoding: str = "absolute") -> str:
+        if action_encoding == "absolute":
+            return action_text(self.target_mask)
+        if action_encoding == "events":
+            return action_event_text(self.previous_mask, self.target_mask)
+        raise ValueError(f"unsupported action encoding: {action_encoding}")
 
     def position(self) -> tuple[float, float]:
         return self_center(ObservationSnapshot.from_dict(self.observation))

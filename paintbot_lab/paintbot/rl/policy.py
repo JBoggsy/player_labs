@@ -59,10 +59,20 @@ class PolicyRuntime:
             + "\naction"
         )
         prompt_ids = self.tokenizer.encode(prompt, return_tensors="pt").to(self.device)
-        tokens = self.model.greedy_action(
-            self.tokenizer, prompt_ids, self.map_cache, position
-        )
-        decoded = self.decoder.decode(tokens)
+        if self.model.action_encoding == "events":
+            tokens = self.model.greedy_event_action(
+                self.tokenizer,
+                prompt_ids,
+                self.map_cache,
+                position,
+                self.decoder.previous_mask,
+            )
+            decoded = self.decoder.decode_events(tokens)
+        else:
+            tokens = self.model.greedy_action(
+                self.tokenizer, prompt_ids, self.map_cache, position
+            )
+            decoded = self.decoder.decode(tokens)
         if self.trace:
             print(
                 json.dumps(

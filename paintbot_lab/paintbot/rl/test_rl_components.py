@@ -14,11 +14,13 @@ from actions import (
     TURN_CW,
     UP,
     ActionDecoder,
+    action_event_tokens,
     action_text,
     canonical_action_tokens,
 )
 from dataset import ActionChange, ActionTimeline, SFTSample, build_samples
 from episode_map import EpisodeMap, decode_walkability_sprite
+from evaluate_event_sft import empty_score, update_event_metrics
 from evaluate_sft import update_metrics
 from modeling import MapEncoderConfig, SpatialMapEncoder, adaptive_mean_pool2d
 from measure_action_alignment import measure
@@ -46,6 +48,31 @@ def test_action_round_trip_and_transition_edges() -> None:
     assert action_text(0) == (
         "<MOVE_IDLE><TURN_NONE><FIRE_RELEASED><GRENADE_RELEASED><STOP>"
     )
+
+
+def test_event_action_codec_emits_only_canonical_transitions() -> None:
+    previous = UP | FIRE
+    target = RIGHT | FIRE | GRENADE
+    tokens = action_event_tokens(previous, target)
+
+    assert tokens == (
+        "<UP_RELEASE>",
+        "<RIGHT_PRESS>",
+        "<GRENADE_PRESS>",
+        "<STOP>",
+    )
+    decoded = ActionDecoder(previous).decode_events(tokens)
+    assert decoded.mask == target
+    assert decoded.released_mask == UP
+    assert decoded.pressed_mask == RIGHT | GRENADE
+    assert ActionDecoder(target).decode_events(("<STOP>",)).mask == target
+
+
+def test_event_action_codec_rejects_redundant_or_contradictory_events() -> None:
+    with pytest.raises(ValueError, match="does not change"):
+        ActionDecoder(UP).decode_events(("<UP_PRESS>", "<STOP>"))
+    with pytest.raises(ValueError, match="contradictory"):
+        ActionDecoder(UP).decode_events(("<DOWN_PRESS>", "<STOP>"))
 
 
 def test_contradictory_controls_are_canonicalized() -> None:
@@ -97,6 +124,30 @@ def test_evaluation_tracks_persistence_and_changed_actions() -> None:
     assert score["true_positive_changes"] == 1
 
 
+def test_event_evaluation_requires_a_valid_canonical_sequence() -> None:
+    score = empty_score()
+    update_event_metrics(
+        score,
+        predicted_ids=torch.tensor([1, 2]),
+        label_ids=torch.tensor([1, 2]),
+        predicted_tokens=("<UP_PRESS>", "<STOP>"),
+        previous_mask=0,
+        target_mask=UP,
+    )
+    update_event_metrics(
+        score,
+        predicted_ids=torch.tensor([3]),
+        label_ids=torch.tensor([2]),
+        predicted_tokens=("<UP_PRESS>",),
+        previous_mask=UP,
+        target_mask=UP,
+    )
+
+    assert score["constrained_exact"] == 1
+    assert score["constrained_changed_exact"] == 1
+    assert score["invalid_sequences"] == 1
+
+
 def test_changed_component_weights_and_class_balance() -> None:
     observation = ObservationSnapshot(
         game_version="40",
@@ -122,6 +173,18 @@ def test_changed_component_weights_and_class_balance() -> None:
     batch = PolicyCollator(tokenizer, maps, action_change_weight=3)([changed])
 
     assert batch["loss_weights"][0, -5:].tolist() == [3, 1, 1, 1, 1]
+
+    event_tokenizer = SimpleNamespace(
+        pad_token_id=0,
+        encode=lambda text, add_special_tokens: (
+            [20, 21] if text.startswith("<UP_PRESS>") else [1, 2]
+        ),
+    )
+    event_batch = PolicyCollator(
+        event_tokenizer, maps, action_encoding="events"
+    )([changed])
+    assert event_batch["labels"][0, -2:].tolist() == [20, 21]
+    assert event_batch["loss_weights"][0, -2:].tolist() == [1, 1]
 
 
 def test_episode_map_round_trip_and_sprite_decode() -> None:

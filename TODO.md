@@ -90,10 +90,12 @@ mid-session; check them back at the start of focused work.
   under `training-v2-diversity`; it stops after validation and keeps the sealed
   test closed. If diversity is flat, compare compact deltas against short full
   self/nearby snapshots or greater adaptation capacity. A validation-only
-  spatial-semantics screen is queued behind diversity: it adds egocentric
-  bearing and self-width-normalized range to the nearest 16 entities, runs one
-  schedule-matched epoch, and promotes to epochs 2-3 only on a preregistered
-  exact/movement/held gate. Report:
+  residual press/release screen is queued behind diversity after validation
+  logits showed 71.85% of changed-movement errors simply repeat the prior
+  movement. It runs one schedule-matched epoch and promotes only on a
+  preregistered exact/movement/held gate. If rejected, a spatial-semantics
+  screen adds egocentric bearing and self-width-normalized range to the nearest
+  16 entities under the same staged gate. Report:
   `paintbot_lab/docs/reports/rl-exhaustive-baseline-2026-08-14.md`.
 
 - **Make Stencil squads roster-aware under campaign 7+7+1+1 seating** (found

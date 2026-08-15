@@ -81,6 +81,7 @@ class PolicyCollator:
         action_change_weight: float = 1.0,
         max_history_tokens: int = 832,
         include_spatial_semantics: bool = False,
+        action_encoding: str = "absolute",
     ) -> None:
         self.tokenizer = tokenizer
         self.maps = maps
@@ -88,19 +89,30 @@ class PolicyCollator:
         self.action_change_weight = action_change_weight
         self.max_history_tokens = max_history_tokens
         self.include_spatial_semantics = include_spatial_semantics
+        if action_encoding not in {"absolute", "events"}:
+            raise ValueError("action encoding must be 'absolute' or 'events'")
+        self.action_encoding = action_encoding
 
     def __call__(self, samples: list[SFTSample]) -> dict:
         encoded: list[tuple[list[int], list[int], list[float]]] = []
         for sample in samples:
-            target_ids = self.tokenizer.encode(sample.target(), add_special_tokens=False)
+            target_ids = self.tokenizer.encode(
+                sample.target(action_encoding=self.action_encoding),
+                add_special_tokens=False,
+            )
             prompt_ids = self._prompt_ids(sample, len(target_ids))
             prompt_ids = prompt_ids[: max(0, self.max_text_tokens - len(target_ids))]
-            previous = canonical_action_tokens(sample.previous_mask)
-            target = canonical_action_tokens(sample.target_mask)
-            target_weights = [
-                self.action_change_weight if slot < 4 and target[slot] != previous[slot] else 1.0
-                for slot in range(5)
-            ]
+            if self.action_encoding == "events":
+                target_weights = [1.0] * len(target_ids)
+            else:
+                previous = canonical_action_tokens(sample.previous_mask)
+                target = canonical_action_tokens(sample.target_mask)
+                target_weights = [
+                    self.action_change_weight
+                    if slot < 4 and target[slot] != previous[slot]
+                    else 1.0
+                    for slot in range(5)
+                ]
             encoded.append(
                 (
                     prompt_ids + target_ids,
@@ -179,6 +191,7 @@ def train(
     lora_rank: int = 8,
     lora_target_modules: str = "attention",
     include_spatial_semantics: bool = False,
+    action_encoding: str = "absolute",
     resume_from: Path | None = None,
     log_every: int = 10,
     checkpoint_every_updates: int = 0,
@@ -198,6 +211,7 @@ def train(
         tuning=tuning,
         lora_rank=lora_rank,
         lora_target_modules=lora_target_modules,
+        action_encoding=action_encoding,
     )
     if gradient_checkpointing:
         model.language_model.gradient_checkpointing_enable()
@@ -206,9 +220,14 @@ def train(
     dataset = PolicyDataset(samples_path, maps_path, sample_indices_path)
     if not len(dataset):
         raise ValueError("training dataset is empty")
-    resolved_action_change_weight = resolve_action_change_weight(
-        dataset, action_change_weight
-    )
+    if action_encoding == "events":
+        if action_change_weight not in {1, 1.0, "1"}:
+            raise ValueError("action change weighting is not defined for event encoding")
+        resolved_action_change_weight = 1.0
+    else:
+        resolved_action_change_weight = resolve_action_change_weight(
+            dataset, action_change_weight
+        )
     sampler = EpochSampler(dataset, seed)
     loader = DataLoader(
         dataset,
@@ -221,6 +240,7 @@ def train(
             action_change_weight=resolved_action_change_weight,
             max_history_tokens=max_history_tokens,
             include_spatial_semantics=include_spatial_semantics,
+            action_encoding=action_encoding,
         ),
     )
     validation_dataset = None
@@ -242,6 +262,7 @@ def train(
                     max_text_tokens=max_text_tokens,
                     max_history_tokens=max_history_tokens,
                     include_spatial_semantics=include_spatial_semantics,
+                    action_encoding=action_encoding,
                 ),
             )
     resolved_learning_rate = learning_rate or (2e-4 if tuning == "lora" else 2e-5)
@@ -395,6 +416,7 @@ def train(
                         lora_target_modules if tuning == "lora" else None
                     ),
                     "include_spatial_semantics": include_spatial_semantics,
+                    "action_encoding": action_encoding,
                     "sample_indices": str(sample_indices_path) if sample_indices_path else None,
                     "validation_indices": (
                         str(validation_indices_path) if validation_indices_path else None

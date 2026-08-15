@@ -39,6 +39,9 @@ def main() -> int:
     parser.add_argument("--max-text-tokens", type=int, default=2048)
     parser.add_argument("--max-history-tokens", type=int, default=832)
     parser.add_argument("--spatial-semantics", action="store_true")
+    parser.add_argument(
+        "--action-encoding", choices=("absolute", "events"), default="absolute"
+    )
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--mixed-precision", choices=("no", "fp16", "bf16"), default="no")
     parser.add_argument(
@@ -98,6 +101,7 @@ def main() -> int:
         lora_rank=args.lora_rank,
         lora_target_modules=args.lora_target_modules,
         include_spatial_semantics=args.spatial_semantics,
+        action_encoding=args.action_encoding,
         resume_from=args.resume_from,
         gradient_checkpointing=not args.no_gradient_checkpointing,
         log_every=args.log_every,

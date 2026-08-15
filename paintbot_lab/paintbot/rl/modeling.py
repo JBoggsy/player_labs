@@ -10,7 +10,16 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from actions import ACTION_TOKEN_SLOTS, ACTION_TOKENS, STOP_TOKEN
+from actions import (
+    ACTION_TOKEN_SLOTS,
+    ACTION_TOKENS,
+    BUTTONS,
+    EVENT_ACTION_TOKENS,
+    PRESS_TOKENS,
+    RELEASE_TOKENS,
+    STOP_TOKEN,
+    canonical_action_mask,
+)
 
 
 MODEL_ID = "Qwen/Qwen3-0.6B-Base"
@@ -107,11 +116,18 @@ def adaptive_mean_pool2d(tensor: torch.Tensor, rows: int, columns: int) -> torch
 
 
 class SemanticPolicyModel(nn.Module):
-    def __init__(self, language_model: nn.Module, map_config: MapEncoderConfig | None = None) -> None:
+    def __init__(
+        self,
+        language_model: nn.Module,
+        map_config: MapEncoderConfig | None = None,
+        *,
+        action_encoding: str = "absolute",
+    ) -> None:
         super().__init__()
         self.language_model = language_model
         self.map_encoder = SpatialMapEncoder(language_model.config.hidden_size, map_config)
         self.map_encoder.to(dtype=language_model.get_input_embeddings().weight.dtype)
+        self.action_encoding = action_encoding
 
     def forward(
         self,
@@ -179,6 +195,53 @@ class SemanticPolicyModel(nn.Module):
             embeddings = torch.cat((embeddings, next_embedding), dim=1)
         return tuple(generated)  # type: ignore[return-value]
 
+    @torch.no_grad()
+    def greedy_event_action(
+        self,
+        tokenizer,
+        prompt_ids: torch.Tensor,
+        map_cache: StaticMapCache,
+        position: tuple[float, float],
+        previous_mask: int,
+    ) -> tuple[str, ...]:
+        """Generate a valid stateful event sequence followed by stop."""
+        map_embeddings = self.map_encoder.gather(map_cache, position)
+        text_embeddings = self.language_model.get_input_embeddings()(prompt_ids)
+        embeddings = torch.cat((map_embeddings, text_embeddings), dim=1)
+        mask = canonical_action_mask(previous_mask)
+        touched = 0
+        generated: list[str] = []
+        for _ in BUTTONS:
+            allowed = [STOP_TOKEN]
+            for index, (bit, _) in enumerate(BUTTONS):
+                if touched & bit:
+                    continue
+                candidate_mask = mask ^ bit
+                if canonical_action_mask(candidate_mask) != candidate_mask:
+                    continue
+                allowed.append(
+                    RELEASE_TOKENS[index] if mask & bit else PRESS_TOKENS[index]
+                )
+            logits = self.language_model(inputs_embeds=embeddings).logits[0, -1]
+            allowed_ids = torch.tensor(
+                [tokenizer.convert_tokens_to_ids(token) for token in allowed],
+                device=logits.device,
+            )
+            selected_id = allowed_ids[torch.argmax(logits[allowed_ids])]
+            token = tokenizer.convert_ids_to_tokens(selected_id.item())
+            generated.append(token)
+            if token == STOP_TOKEN:
+                return tuple(generated)
+            index = PRESS_TOKENS.index(token) if token in PRESS_TOKENS else RELEASE_TOKENS.index(token)
+            bit = BUTTONS[index][0]
+            touched |= bit
+            mask ^= bit
+            next_embedding = self.language_model.get_input_embeddings()(
+                selected_id.reshape(1, 1)
+            )
+            embeddings = torch.cat((embeddings, next_embedding), dim=1)
+        return (*generated, STOP_TOKEN)
+
 
 def load_base_model(
     *,
@@ -186,12 +249,16 @@ def load_base_model(
     dtype: torch.dtype | None = None,
     lora_rank: int = 8,
     lora_target_modules: str = "attention",
+    action_encoding: str = "absolute",
 ):
     from peft import LoraConfig, get_peft_model
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, revision=MODEL_REVISION)
-    tokenizer.add_special_tokens({"additional_special_tokens": list(ACTION_TOKENS)})
+    if action_encoding not in {"absolute", "events"}:
+        raise ValueError("action encoding must be 'absolute' or 'events'")
+    action_tokens = ACTION_TOKENS if action_encoding == "absolute" else EVENT_ACTION_TOKENS
+    tokenizer.add_special_tokens({"additional_special_tokens": list(action_tokens)})
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
     language_model = AutoModelForCausalLM.from_pretrained(
@@ -205,7 +272,7 @@ def load_base_model(
             raise ValueError("lora_rank must be positive")
         if lora_target_modules not in {"attention", "all-linear"}:
             raise ValueError("lora_target_modules must be 'attention' or 'all-linear'")
-        action_token_ids = [tokenizer.convert_tokens_to_ids(token) for token in ACTION_TOKENS]
+        action_token_ids = [tokenizer.convert_tokens_to_ids(token) for token in action_tokens]
         target_modules = (
             ["q_proj", "k_proj", "v_proj", "o_proj"]
             if lora_target_modules == "attention"
@@ -224,7 +291,9 @@ def load_base_model(
         )
     elif tuning != "full":
         raise ValueError("tuning must be 'lora' or 'full'")
-    return tokenizer, SemanticPolicyModel(language_model)
+    return tokenizer, SemanticPolicyModel(
+        language_model, action_encoding=action_encoding
+    )
 
 
 def save_policy(model: SemanticPolicyModel, tokenizer, output: Path, tuning: str) -> None:
@@ -243,6 +312,7 @@ def save_policy(model: SemanticPolicyModel, tokenizer, output: Path, tuning: str
                 "model_id": MODEL_ID,
                 "model_revision": MODEL_REVISION,
                 "tuning": tuning,
+                "action_encoding": model.action_encoding,
                 "map_encoder": asdict(model.map_encoder.config),
             },
             indent=2,
@@ -267,7 +337,11 @@ def load_policy(output: Path, *, device: torch.device):
         language_model = PeftModel.from_pretrained(language_model, output / "adapter")
     else:
         language_model = AutoModelForCausalLM.from_pretrained(output / "model")
-    model = SemanticPolicyModel(language_model, MapEncoderConfig(**config["map_encoder"]))
+    model = SemanticPolicyModel(
+        language_model,
+        MapEncoderConfig(**config["map_encoder"]),
+        action_encoding=config.get("action_encoding", "absolute"),
+    )
     model.map_encoder.load_state_dict(
         torch.load(output / "map_encoder.pt", map_location="cpu", weights_only=True)
     )

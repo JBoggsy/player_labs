@@ -61,6 +61,22 @@ the epoch-3 model is correct 20.40% of the time; turn is 43.54% and fire is
 73.90%. Movement's 73.28% aggregate accuracy is itself barely above the whole-
 action target.
 
+The saved validation logits further separate movement recognition from
+direction selection:
+
+| Changed-movement outcome | Share |
+| --- | ---: |
+| Correct new movement | 20.40% |
+| Repeated previous movement | 71.85% |
+| Changed to the wrong new movement | 7.76% |
+
+When the previous movement token is excluded by an oracle change gate, the
+model's highest-ranked remaining direction is correct 54.85% of the time. An
+oracle movement change gate would raise exact action from 59.41% to 69.61%
+without changing the other four outputs. This localizes almost the entire gap
+to the previous-action copycat shortcut, while also showing that a perfect
+binary gate alone would still fall just short of the target.
+
 ## Rejected decoder-calibration hypothesis
 
 Hypothesis: the model knows the new action but greedy decoding is too
@@ -101,7 +117,39 @@ baseline. If it does not, data repetition is not the main constraint and the
 next experiment should compare richer temporal state or greater adaptation
 capacity rather than merely adding epochs.
 
-## Queued representation experiment: spatial semantics
+## Queued experiment 1: residual event actions
+
+The first queued arm replaces four absolute-state targets with the stateful
+event language James originally proposed: one press or release token for each
+button that changes, followed by `<STOP>`. A held action is only `<STOP>`.
+Events are canonically ordered as releases then presses; the decoder applies
+them to the previous button mask and rejects redundant or contradictory
+sequences. This directly supervises the residual `A_t - A_(t-1)` rather than
+asking the model to reproduce four correlated held states.
+
+This is motivated by the validation diagnosis and by prior imitation-learning
+work on the copycat problem and residual-action prediction. It is not loss
+weighting: every emitted event and `<STOP>` has unit weight, and the same frozen
+50/50 changed/held index is used.
+
+On the 10,000-row validation index, target sequences have this distribution:
+
+| Tokens including `<STOP>` | Rows |
+| ---: | ---: |
+| 1 (held action) | 5,000 |
+| 2 | 2,835 |
+| 3 | 1,370 |
+| 4 | 444 |
+| 5-7 | 351 |
+
+The arm trains on the exact original 250k index for one epoch under the
+original three-epoch LR schedule. It promotes to epochs 2-3 only if validation
+exact is at least 58.02%, movement exceeds 71.30%, and held exact remains at
+least 91.24%. Evaluation decodes the canonical predicted event sequence back
+to a held mask before scoring exact action. The codec defaults to `absolute`,
+is stored in checkpoint metadata, and does not alter existing checkpoints.
+
+## Queued experiment 2: spatial semantics
 
 Movement remains the dominant error, while the current text representation
 asks Qwen to infer direction and proximity from map-normalized integer offsets.
@@ -127,7 +175,7 @@ to 3,155 tokens) and the share above 4,096 tokens only 0.4 points (5.7% to
 6.1%). Since entities are nearest-first, all labeled entities remain ahead of
 the truncation boundary.
 
-The screen is serialized behind the diversity job by the same GPU lock. It uses
+The screen runs only if the event-action screen is rejected. It uses
 the original 250k index and trains one epoch with the original three-epoch LR
 schedule. Promotion to epochs 2-3 requires all of:
 
@@ -173,3 +221,5 @@ knobs; the attention-only rank-8 default remains unchanged.
 - [QLoRA paper](https://papers.neurips.cc/paper_files/paper/2023/file/1feb87871436031bdc0f2beaa62a049b-Paper-Conference.pdf)
 - [The Road To Know-Where (ICCV 2021)](https://openaccess.thecvf.com/content/ICCV2021/html/Qi_The_Road_To_Know-Where_An_Object-and-Room_Informed_Sequential_BERT_for_ICCV_2021_paper.html)
 - [Rethinking and Improving Relative Position Encoding for Vision Transformer (ICCV 2021)](https://openaccess.thecvf.com/content/ICCV2021/html/Wu_Rethinking_and_Improving_Relative_Position_Encoding_for_Vision_Transformer_ICCV_2021_paper.html)
+- [Fighting Copycat Agents in Behavioral Cloning from Observation Histories (NeurIPS 2020)](https://proceedings.neurips.cc/paper/2020/hash/1b113258af3968aaf3969ca67e744ff8-Abstract.html)
+- [Resolving Copycat Problems in Visual Imitation Learning via Residual Action Prediction](https://arxiv.org/abs/2207.09705)

@@ -25,6 +25,7 @@ usable policy prior.
 | Training eras | Mix historical game eras; never train or validate the first model on a single-era corpus. | The central claim is robustness to observation-schema evolution. A single-era success cannot test it. |
 | Initial objective | SFT next-token prediction of four factorized action tokens followed by `<STOP>`. | This is the smallest compositional behavior-cloning objective that exercises the pretrained model and the cross-era representation. |
 | Action output | Generate four factorized semantic action tokens, then `<STOP>`. | Factorization shares training signal across action combinations and avoids a sparse 108-token joint vocabulary. |
+| Residual-action experiment | Optionally generate only canonical button press/release events, then `<STOP>`, and decode against the previous mask. | Validation localized the exhaustive model's main error to copying prior movement; this tests residual supervision without changing the default codec. |
 | Map lifecycle | Decode and store the exact walkability raster once per episode; encode it into cached spatial features. | The map is static episode data delivered once at player initialization, so neither the dataset nor inference loop should duplicate or re-encode it per frame. |
 
 The [selected model's official card](https://huggingface.co/Qwen/Qwen3-0.6B-Base)
@@ -421,6 +422,24 @@ exact but only 13.7% change precision and 35.3% overall exact. Weighting alone
 is rejected; transition-centered sampling and temporal context are now the
 next representation experiments. Full record:
 [`../reports/rl-action-change-weighting-2026-08-07.md`](../reports/rl-action-change-weighting-2026-08-07.md).
+
+### Residual event-action follow-up
+
+Exhaustive-corpus validation logits show that 71.85% of changed-movement
+examples repeat the previous movement, while only 7.76% choose a different but
+incorrect direction. Excluding the prior movement token raises correct-new-
+direction choice to 54.85%; an oracle movement change gate would yield 69.61%
+exact action. This is a direct copycat signature rather than ordinary class
+confusion.
+
+The opt-in `events` codec therefore supervises only button transitions:
+canonical releases, canonical presses, then `<STOP>`. The decoder owns previous
+button state, rejects redundant/contradictory events, and reconstructs the raw
+held mask. The absolute four-slot codec remains the default and the selected
+codec is checkpoint metadata. A schedule-matched one-epoch validation screen
+is queued ahead of the spatial-semantics arm; neither arm can open the sealed
+test. Current experiment contract and results live in
+[`../reports/rl-exhaustive-baseline-2026-08-14.md`](../reports/rl-exhaustive-baseline-2026-08-14.md).
 
 ### Transition sampling and temporal-history result
 

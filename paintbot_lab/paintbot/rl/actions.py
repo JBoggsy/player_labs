@@ -33,6 +33,28 @@ STOP_TOKEN = "<STOP>"
 ACTION_TOKEN_SLOTS = (MOVEMENT_TOKENS, TURN_TOKENS, FIRE_TOKENS, GRENADE_TOKENS)
 ACTION_TOKENS = (*MOVEMENT_TOKENS, *TURN_TOKENS, *FIRE_TOKENS, *GRENADE_TOKENS, STOP_TOKEN)
 
+BUTTONS = (
+    (UP, "UP"),
+    (DOWN, "DOWN"),
+    (LEFT, "LEFT"),
+    (RIGHT, "RIGHT"),
+    (TURN_CW, "TURN_CW"),
+    (FIRE, "FIRE"),
+    (TURN_CCW, "TURN_CCW"),
+    (GRENADE, "GRENADE"),
+)
+PRESS_TOKENS = tuple(f"<{name}_PRESS>" for _, name in BUTTONS)
+RELEASE_TOKENS = tuple(f"<{name}_RELEASE>" for _, name in BUTTONS)
+EVENT_TOKENS = (*PRESS_TOKENS, *RELEASE_TOKENS)
+EVENT_ACTION_TOKENS = (*EVENT_TOKENS, STOP_TOKEN)
+_EVENT_TO_CHANGE = {
+    **{token: (bit, True) for (bit, _), token in zip(BUTTONS, PRESS_TOKENS, strict=True)},
+    **{
+        token: (bit, False)
+        for (bit, _), token in zip(BUTTONS, RELEASE_TOKENS, strict=True)
+    },
+}
+
 _MOVE_TO_BITS = {
     "<MOVE_IDLE>": 0,
     "<MOVE_N>": UP,
@@ -65,6 +87,40 @@ def canonical_action_tokens(mask: int) -> tuple[str, str, str, str, str]:
     fire = "<FIRE_HELD>" if mask & FIRE else "<FIRE_RELEASED>"
     grenade = "<GRENADE_HELD>" if mask & GRENADE else "<GRENADE_RELEASED>"
     return movement, turn, fire, grenade, STOP_TOKEN
+
+
+def canonical_action_mask(mask: int) -> int:
+    """Collapse contradictory raw buttons to the mask represented by action tokens."""
+    movement, turn, fire, grenade, _ = canonical_action_tokens(mask)
+    return (
+        _MOVE_TO_BITS[movement]
+        | _TURN_TO_BITS[turn]
+        | (FIRE if fire == "<FIRE_HELD>" else 0)
+        | (GRENADE if grenade == "<GRENADE_HELD>" else 0)
+    )
+
+
+def action_event_tokens(previous_mask: int, target_mask: int) -> tuple[str, ...]:
+    """Encode a canonical held-mask transition as releases, presses, then stop."""
+    previous = canonical_action_mask(previous_mask)
+    target = canonical_action_mask(target_mask)
+    released = previous & ~target
+    pressed = target & ~previous
+    tokens = [
+        token
+        for (bit, _), token in zip(BUTTONS, RELEASE_TOKENS, strict=True)
+        if released & bit
+    ]
+    tokens.extend(
+        token
+        for (bit, _), token in zip(BUTTONS, PRESS_TOKENS, strict=True)
+        if pressed & bit
+    )
+    return (*tokens, STOP_TOKEN)
+
+
+def action_event_text(previous_mask: int, target_mask: int) -> str:
+    return "".join(action_event_tokens(previous_mask, target_mask))
 
 
 def action_text(mask: int) -> str:
@@ -105,6 +161,34 @@ class ActionDecoder:
             | (FIRE if tokens[2] == "<FIRE_HELD>" else 0)
             | (GRENADE if tokens[3] == "<GRENADE_HELD>" else 0)
         )
+        decoded = DecodedAction(
+            mask=mask,
+            previous_mask=self.previous_mask,
+            pressed_mask=mask & ~self.previous_mask,
+            released_mask=self.previous_mask & ~mask,
+        )
+        self.previous_mask = mask
+        return decoded
+
+    def decode_events(self, tokens: Sequence[str]) -> DecodedAction:
+        """Apply one canonical press/release event sequence to retained state."""
+        if not tokens or len(tokens) > len(BUTTONS) + 1 or tokens[-1] != STOP_TOKEN:
+            raise ValueError("event action must end with <STOP> after at most eight events")
+        mask = canonical_action_mask(self.previous_mask)
+        touched = 0
+        for token in tokens[:-1]:
+            if token not in _EVENT_TO_CHANGE:
+                raise ValueError(f"{token!r} is not an action event")
+            bit, pressed = _EVENT_TO_CHANGE[token]
+            if touched & bit:
+                raise ValueError("an event action may change each button at most once")
+            if pressed == bool(mask & bit):
+                raise ValueError(f"{token!r} does not change the previous button state")
+            touched |= bit
+            mask = mask | bit if pressed else mask & ~bit
+        canonical = canonical_action_mask(mask)
+        if canonical != mask:
+            raise ValueError("event sequence produces contradictory controls")
         decoded = DecodedAction(
             mask=mask,
             previous_mask=self.previous_mask,
