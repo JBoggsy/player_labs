@@ -309,6 +309,28 @@ sealed decision record.
 This keeps model selection on validation and makes the one-time test opening
 auditable:
 
+The legacy `indices/test.npy` was opened by the original teacher-forced
+evaluator before this guard existed, so it is retired from final confirmation.
+The gate instead requires `indices/test-confirmation.npy`, frozen before any
+current-arm validation result with `freeze_confirmation_holdout.py`. The
+replacement excludes every replay ID touched by the legacy index, contains one
+row from each of 10,000 episode-seat trajectories (7,236 replays), and is
+balanced 5,000/5,000 between changed and held actions. No model-selection or
+diagnostic command reads it. Its immutable provenance is recorded in
+`configs/confirmation-holdout-v1.json`.
+
+The one-time deterministic freeze command was:
+
+```sh
+uv run python paintbot_lab/paintbot/rl/freeze_confirmation_holdout.py \
+  --dataset runs/expert-corpus-v1/arrow/test \
+  --contaminated-index runs/expert-corpus-v1/indices/test.npy \
+  --out runs/expert-corpus-v1/indices/test-confirmation.npy
+```
+
+The command refuses to overwrite either the index or its adjacent JSON
+manifest.
+
 ```sh
 uv run python paintbot_lab/paintbot/rl/evaluate_sealed_candidate.py \
   --checkpoint runs/expert-corpus-v1/training-v2-diversity/full/best \

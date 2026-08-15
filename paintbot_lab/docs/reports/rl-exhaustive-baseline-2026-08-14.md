@@ -2,7 +2,7 @@
 
 Date: 2026-08-14
 
-Verdict: 59.17% sealed-test teacher-forced proxy; autoregressive result pending; matched-compute diversity arm running
+Verdict: 59.17% teacher-forced diagnostic on a retired test index; untouched autoregressive confirmation pending; matched-compute diversity arm running
 
 ## Question
 
@@ -12,15 +12,35 @@ without tuning against the test set?
 
 ## Immutable evaluation contract
 
-The 10,000-row sealed test index remains unchanged:
+The original 10,000-row `test.npy` was opened by the legacy teacher-forced
+evaluator before a sealed gate existed. Its 59.17% result and subsequent audit
+make it useful diagnostic history, but not an untouched final test. It is now
+retired from confirmation rather than relabeled as sealed.
 
-- test index SHA-256: `244dad9d331ab92c2a852c1f7ca1ae31d5892c48e11acf08cb31c6f65577dbdb`
+Before any current-arm validation result existed, a replacement confirmation
+index was selected deterministically from the same replay-disjoint test corpus.
+Selection excluded every replay ID touched by the old index, retained at most
+one row per episode-seat trajectory, and balanced changed/held actions exactly.
+No model has been evaluated on it.
+
+The immutable confirmation contract is:
+
+- confirmation index SHA-256: `8db6fb0c7fc8c53f514443ca7a7cba923f2a29b13356cc86fcf99d38b96c5b2e`
 - validation index SHA-256: `78e46be391cf13c6c488b6b0ed2ccd0fe1da36eb73d13fb6db5a42c0f8d50644`
-- test Arrow dataset fingerprint: `03693a38c974e27a`
+- confirmation Arrow dataset fingerprint: `03693a38c974e27a`
 - validation Arrow dataset fingerprint: `599c88fdfbf0ba82`
-- test selected semantic rows SHA-256: `3f64245eff0e2f8307453455fdd8273b645ed59175eabf2db895d4b16e22e1a3`
+- confirmation selected semantic rows SHA-256: `6b86e5f4452546a256b40595ce1d91445a9ce1cf9196652060ff275acc656dc9`
 - validation selected semantic rows SHA-256: `8b02bd5212d0ba47346d81af812be24ddf46d9e9ff9f19d3071754217ddcb35a`
-- baseline test evaluation SHA-256: `f4b5fb20777076ae84856214051be63dea3daf456167df73d3f93244a6e0457e`
+
+The replacement contains 10,000 unique trajectories from 7,236 replays, split
+5,000/5,000 between changed and held actions across 303 strata. It has zero
+replay-ID overlap with the 4,342 replays represented in the retired index. The
+selection procedure and audit are frozen in
+`paintbot_lab/paintbot/rl/configs/confirmation-holdout-v1.json`; the retired
+index SHA-256 is
+`244dad9d331ab92c2a852c1f7ca1ae31d5892c48e11acf08cb31c6f65577dbdb` and
+its legacy evaluation SHA-256 is
+`f4b5fb20777076ae84856214051be63dea3daf456167df73d3f93244a6e0457e`.
 
 A provenance audit across all 20 shards found 526,164 unique train
 trajectories, 29,458 unique validation trajectories, and 29,164 unique test
@@ -28,8 +48,8 @@ trajectories by `(episode, seat)`, with no duplicate trajectory records. The
 corresponding replay counts are 294,449, 16,388, and 16,304, with zero replay-ID
 overlap between every pair of splits.
 
-All diagnosis and model selection after the baseline use validation only. The
-test set will be opened once for a candidate selected under the frozen
+All current-arm diagnosis and model selection use validation only. The fresh
+confirmation set will be opened once for a candidate selected under the frozen
 validation rule. New evaluator artifacts include their sample-index hash,
 dataset fingerprint, selected-row hash, and validated map-set fingerprint.
 `evaluate_sealed_candidate.py` refuses the final run unless validation attests
@@ -54,7 +74,7 @@ presentations drawn from a 219,717,943-row training split. It used the existing
 Qwen revision, LoRA rank 8, BF16, learning rate `2e-4`, effective batch 16,
 four-tick causal history, and an unweighted action-token loss.
 
-| Teacher-forced diagnostic | Sealed test |
+| Teacher-forced diagnostic | Retired test index |
 | --- | ---: |
 | Exact action | 59.17% |
 | Changed-action exact | 27.19% |
@@ -126,14 +146,15 @@ The next arm changes one variable: unique training rows.
 | Epochs | 3 | 1 |
 | Total presentations | 750,000 | 750,000 |
 | Optimizer updates | 46,875 | 46,875 |
-| Validation/test indices | frozen | frozen |
+| Validation/confirmation indices | frozen | frozen |
 | Decoder bias | 0 | 0 |
 
 The candidate is supervised under
 `runs/expert-corpus-v1/training-v2-diversity`. It builds a separate balanced
 index, never overwrites the baseline index, resumes after process failure or
 reboot, trains automatically, and stops after validation. It does not open the
-sealed test. The selected 750,000-row index is balanced 375,000/375,000 between
+untouched confirmation set. The selected 750,000-row index is balanced
+375,000/375,000 between
 changed and held actions. All 750,000 indices are unique and in bounds; the
 deterministic reservoir sampler covers 662 `(class, era, expert, world)` strata.
 The index has SHA-256
@@ -228,7 +249,7 @@ to epochs 2-3 requires all of:
 - autoregressive held-action exact no lower than 91.24%.
 
 Failure stops the arm. Passing resumes the same optimizer/scheduler state for
-epochs 2-3. Both selection stages use validation only; the sealed test remains
+epochs 2-3. Both selection stages use validation only; the confirmation set remains
 closed.
 
 ## Preregistered interaction cell
@@ -275,6 +296,8 @@ knobs; the attention-only rank-8 default remains unchanged.
 
 ## References
 
+- [Google ML Crash Course: dividing datasets](https://developers.google.com/machine-learning/crash-course/overfitting/dividing-datasets)
+- [scikit-learn: common pitfalls and data leakage](https://scikit-learn.org/stable/common_pitfalls.html)
 - [Hugging Face PEFT LoRA reference](https://huggingface.co/docs/peft/main/package_reference/lora)
 - [QLoRA paper](https://papers.neurips.cc/paper_files/paper/2023/file/1feb87871436031bdc0f2beaa62a049b-Paper-Conference.pdf)
 - [The Road To Know-Where (ICCV 2021)](https://openaccess.thecvf.com/content/ICCV2021/html/Qi_The_Road_To_Know-Where_An_Object-and-Room_Informed_Sequential_BERT_for_ICCV_2021_paper.html)

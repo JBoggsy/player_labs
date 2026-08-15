@@ -178,7 +178,7 @@ class SemanticPolicyModel(nn.Module):
         map_cache: StaticMapCache,
         position: tuple[float, float],
     ) -> tuple[str, str, str, str, str]:
-        """Constrained baseline decoding; deliberately simple, with no KV cache yet."""
+        """Constrained baseline decoding with incremental KV-cached generation."""
         map_embeddings = self.map_encoder.gather(map_cache, position)
         text_embeddings = self.language_model.get_input_embeddings()(prompt_ids)
         embeddings = torch.cat((map_embeddings, text_embeddings), dim=1)

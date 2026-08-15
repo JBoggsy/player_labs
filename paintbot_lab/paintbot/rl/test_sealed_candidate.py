@@ -1,10 +1,15 @@
 import hashlib
+import json
+from pathlib import Path
 
 import pytest
 
 from evaluate_sft import sha256_tree
 from evaluate_sealed_candidate import (
     GATE_SAMPLES,
+    TEST_INDEX_NAME,
+    TEST_INDEX_SHA256,
+    TEST_SELECTED_SAMPLES_SHA256,
     VALIDATION_DATASET_FINGERPRINT,
     VALIDATION_INDEX_SHA256,
     VALIDATION_SELECTED_SAMPLES_SHA256,
@@ -12,6 +17,18 @@ from evaluate_sealed_candidate import (
     require_frozen_index,
     validate_validation_gate,
 )
+
+
+def test_confirmation_manifest_matches_sealed_gate() -> None:
+    manifest = json.loads(
+        (Path(__file__).parent / "configs" / "confirmation-holdout-v1.json").read_text()
+    )
+
+    assert Path(manifest["confirmation_index"]).name == TEST_INDEX_NAME
+    assert manifest["confirmation_index_sha256"] == TEST_INDEX_SHA256
+    assert manifest["selected_samples_sha256"] == TEST_SELECTED_SAMPLES_SHA256
+    assert manifest["selected"] == GATE_SAMPLES
+    assert manifest["independent_verification"]["old_new_replay_overlap"] == 0
 
 
 def validation(

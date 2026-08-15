@@ -13,11 +13,12 @@ from run_expert_training import evaluate
 
 
 VALIDATION_INDEX_SHA256 = "78e46be391cf13c6c488b6b0ed2ccd0fe1da36eb73d13fb6db5a42c0f8d50644"
-TEST_INDEX_SHA256 = "244dad9d331ab92c2a852c1f7ca1ae31d5892c48e11acf08cb31c6f65577dbdb"
+TEST_INDEX_SHA256 = "8db6fb0c7fc8c53f514443ca7a7cba923f2a29b13356cc86fcf99d38b96c5b2e"
 VALIDATION_DATASET_FINGERPRINT = "599c88fdfbf0ba82"
 TEST_DATASET_FINGERPRINT = "03693a38c974e27a"
 VALIDATION_SELECTED_SAMPLES_SHA256 = "8b02bd5212d0ba47346d81af812be24ddf46d9e9ff9f19d3071754217ddcb35a"
-TEST_SELECTED_SAMPLES_SHA256 = "3f64245eff0e2f8307453455fdd8273b645ed59175eabf2db895d4b16e22e1a3"
+TEST_SELECTED_SAMPLES_SHA256 = "6b86e5f4452546a256b40595ce1d91445a9ce1cf9196652060ff275acc656dc9"
+TEST_INDEX_NAME = "test-confirmation.npy"
 GATE_SAMPLES = 10_000
 TARGET_ACCURACY = 0.70
 
@@ -106,7 +107,7 @@ def main() -> int:
             spatial_semantics=spatial_semantics,
         )
         validation_index = args.workspace / "indices" / "validation.npy"
-        test_index = args.workspace / "indices" / "test.npy"
+        test_index = args.workspace / "indices" / TEST_INDEX_NAME
         require_frozen_index(
             validation_index, VALIDATION_INDEX_SHA256, "validation"
         )
