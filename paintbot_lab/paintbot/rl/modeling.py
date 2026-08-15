@@ -182,7 +182,7 @@ class SemanticPolicyModel(nn.Module):
         text_embeddings = self.language_model.get_input_embeddings()(prompt_ids)
         embeddings = torch.cat((map_embeddings, text_embeddings), dim=1)
         generated: list[str] = []
-        for allowed in (*ACTION_TOKEN_SLOTS, (STOP_TOKEN,)):
+        for allowed in ACTION_TOKEN_SLOTS:
             logits = self.language_model(inputs_embeds=embeddings).logits[0, -1]
             allowed_ids = torch.tensor(
                 [tokenizer.convert_tokens_to_ids(token) for token in allowed],
@@ -193,7 +193,7 @@ class SemanticPolicyModel(nn.Module):
             generated.append(token)
             next_embedding = self.language_model.get_input_embeddings()(selected_id.reshape(1, 1))
             embeddings = torch.cat((embeddings, next_embedding), dim=1)
-        return tuple(generated)  # type: ignore[return-value]
+        return (*generated, STOP_TOKEN)
 
     @torch.no_grad()
     def greedy_event_action(

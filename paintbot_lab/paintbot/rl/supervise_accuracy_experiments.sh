@@ -6,6 +6,7 @@ WORKSPACE=runs/expert-corpus-v1
 LOCK="$ROOT/$WORKSPACE/training-v2-diversity.lock"
 DIVERSITY_STATUS="$ROOT/$WORKSPACE/training-v2-diversity/status.json"
 DIVERSITY_VALIDATION="$ROOT/$WORKSPACE/training-v2-diversity/full/validation_evaluation.json"
+BASELINE_AUTOREGRESSIVE_VALIDATION="$ROOT/$WORKSPACE/training-v1/full/validation_autoregressive_evaluation.json"
 EVENT_OUTPUT="$ROOT/$WORKSPACE/training-v4-event-actions"
 EVENT_STATUS="$EVENT_OUTPUT/status.json"
 SPATIAL_OUTPUT="$ROOT/$WORKSPACE/training-v3-spatial-semantics"
@@ -65,9 +66,27 @@ while ! test -s "$DIVERSITY_STATUS" \
   sleep 60
 done
 
+while ! test -s "$BASELINE_AUTOREGRESSIVE_VALIDATION"; do
+  (
+    /usr/bin/flock --exclusive 9
+    .venv/bin/python -u paintbot_lab/paintbot/rl/evaluate_sft.py \
+      --checkpoint "$WORKSPACE/training-v1/full/best" \
+      --samples "$WORKSPACE/arrow/validation" \
+      --maps "$WORKSPACE/prepared/validation.maps.jsonl" \
+      --sample-indices "$WORKSPACE/indices/validation.npy" \
+      --max-text-tokens 4096 \
+      --out "$BASELINE_AUTOREGRESSIVE_VALIDATION" \
+      >>"$ROOT/logs/baseline-autoregressive-validation.log" 2>&1
+  ) 9>"$LOCK"
+  if ! test -s "$BASELINE_AUTOREGRESSIVE_VALIDATION"; then
+    echo "baseline autoregressive evaluation exited; retrying in 60 seconds" >&2
+    sleep 60
+  fi
+done
+
 if test -s "$DIVERSITY_VALIDATION" \
   && .venv/bin/python -c \
-    'import json,sys; raise SystemExit(json.load(open(sys.argv[1]))["groups"]["all"]["constrained_exact_action_accuracy"] <= 0.70)' \
+    'import json,sys; raise SystemExit(json.load(open(sys.argv[1]))["groups"]["all"]["autoregressive_exact_action_accuracy"] <= 0.70)' \
     "$DIVERSITY_VALIDATION"; then
   exit 0
 fi

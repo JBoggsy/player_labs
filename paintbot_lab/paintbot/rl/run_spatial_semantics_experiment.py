@@ -10,26 +10,24 @@ from pathlib import Path
 from run_expert_training import evaluate, record_status, run, train_command
 
 
-BASELINE_EPOCH_1_EXACT = 0.5702
-BASELINE_EPOCH_1_HELD_EXACT = 0.9324
-BASELINE_EPOCH_1_MOVEMENT = 0.7130
-MIN_EXACT_IMPROVEMENT = 0.01
-MAX_HELD_REGRESSION = 0.02
+MIN_AUTOREGRESSIVE_EXACT = 0.5802
+MIN_AUTOREGRESSIVE_HELD_EXACT = 0.9124
+MIN_AUTOREGRESSIVE_MOVEMENT = 0.7130
 
 
 def passes_screen(metrics: dict) -> bool:
     all_metrics = metrics["groups"]["all"]
     held_samples = all_metrics["samples"] - all_metrics["changed_action_samples"]
     held_exact = (
-        all_metrics["constrained_exact"]
-        - all_metrics["constrained_changed_exact"]
+        all_metrics["autoregressive_exact"]
+        - all_metrics["autoregressive_changed_exact"]
     ) / held_samples
     return (
-        all_metrics["constrained_exact_action_accuracy"]
-        >= BASELINE_EPOCH_1_EXACT + MIN_EXACT_IMPROVEMENT
-        and all_metrics["constrained_slot_accuracy"]["movement"]
-        > BASELINE_EPOCH_1_MOVEMENT
-        and held_exact >= BASELINE_EPOCH_1_HELD_EXACT - MAX_HELD_REGRESSION
+        all_metrics["autoregressive_exact_action_accuracy"]
+        >= MIN_AUTOREGRESSIVE_EXACT
+        and all_metrics["autoregressive_slot_accuracy"]["movement"]
+        > MIN_AUTOREGRESSIVE_MOVEMENT
+        and held_exact >= MIN_AUTOREGRESSIVE_HELD_EXACT
     )
 
 

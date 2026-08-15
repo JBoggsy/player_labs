@@ -37,10 +37,11 @@ def validate_validation_gate(
     metrics = evaluation.get("groups", {}).get("all", {})
     if metrics.get("samples") != GATE_SAMPLES:
         raise ValueError(f"validation gate must contain exactly {GATE_SAMPLES} rows")
-    accuracy = metrics.get("constrained_exact_action_accuracy")
+    accuracy = metrics.get("autoregressive_exact_action_accuracy")
     if not isinstance(accuracy, (int, float)) or accuracy <= TARGET_ACCURACY:
         raise ValueError(
-            f"validation exact action must exceed {TARGET_ACCURACY:.0%}; got {accuracy!r}"
+            "validation autoregressive exact action must exceed "
+            f"{TARGET_ACCURACY:.0%}; got {accuracy!r}"
         )
     return float(accuracy)
 
@@ -104,7 +105,7 @@ def main() -> int:
     metrics = result["groups"]["all"]
     if metrics["samples"] != GATE_SAMPLES:
         raise RuntimeError("sealed evaluation did not contain exactly 10,000 rows")
-    test_accuracy = float(metrics["constrained_exact_action_accuracy"])
+    test_accuracy = float(metrics["autoregressive_exact_action_accuracy"])
     decision = {
         "checkpoint": str(args.checkpoint),
         "checkpoint_sha256": checkpoint_sha256,

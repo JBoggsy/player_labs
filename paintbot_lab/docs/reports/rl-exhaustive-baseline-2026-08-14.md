@@ -2,13 +2,13 @@
 
 Date: 2026-08-14
 
-Verdict: 59.17% sealed-test exact action; decoder calibration rejected; matched-compute diversity arm running
+Verdict: 59.17% sealed-test teacher-forced proxy; autoregressive result pending; matched-compute diversity arm running
 
 ## Question
 
-Can the cross-era Qwen3-0.6B LoRA policy exceed 70% exact action accuracy on
-the fixed, replay-disjoint, 50/50 changed/held evaluation contract without
-tuning against the test set?
+Can the cross-era Qwen3-0.6B LoRA policy exceed 70% autoregressive exact-action
+accuracy on the fixed, replay-disjoint, 50/50 changed/held evaluation contract
+without tuning against the test set?
 
 ## Immutable evaluation contract
 
@@ -23,8 +23,16 @@ test set will be opened once for a candidate selected under the frozen
 validation rule. New evaluator artifacts include their sample-index hash, and
 `evaluate_sealed_candidate.py` refuses the final run unless validation attests
 the frozen index and exact checkpoint tree, contains 10,000 rows, uses the
-matching representation contract, and exceeds 70% exact action. It also
-re-hashes the test index and refuses to overwrite an existing candidate result.
+matching representation contract, and exceeds 70% autoregressive exact action.
+It also re-hashes the test index and refuses to overwrite an existing candidate
+result.
+
+Metric correction: the original absolute-action evaluator derived its
+`constrained_*` fields from teacher-forced slot logits. Live inference instead
+feeds each generated slot back into the transformer. The original artifacts and
+numbers below remain valid teacher-forced diagnostics, but they do not establish
+autoregressive exact-action accuracy. New artifacts add explicit `autoregressive_*`
+fields, and only `autoregressive_exact_action_accuracy` can satisfy the 70% gate.
 
 ## Baseline result
 
@@ -33,7 +41,7 @@ presentations drawn from a 219,717,943-row training split. It used the existing
 Qwen revision, LoRA rank 8, BF16, learning rate `2e-4`, effective batch 16,
 four-tick causal history, and an unweighted action-token loss.
 
-| Metric | Sealed test |
+| Teacher-forced diagnostic | Sealed test |
 | --- | ---: |
 | Exact action | 59.17% |
 | Changed-action exact | 27.19% |
@@ -44,17 +52,18 @@ four-tick causal history, and an unweighted action-token loss.
 | Change recall | 38.92% |
 | Repeat-previous-mask exact | 50.01% |
 
-This beats repeat-previous-mask by 9.16 points, so the model learned behavior;
-it is not merely exploiting held actions. The 50/50 gate also makes the target
-explicit: holding held-action exact at 91.14% requires about 48.9%
-changed-action exact to cross 70% overall.
+This teacher-forced proxy beats repeat-previous-mask by 9.16 points, evidence
+that the model learned behavior rather than merely exploiting held actions. It
+is not the final autoregressive score. The 50/50 gate still makes the target
+explicit: at 91.14% held-action exact, about 48.9% changed-action exact is
+required to cross 70% overall.
 
 ## Validation diagnosis
 
 Saved epoch states were exported and evaluated on the same 10,000 validation
 rows. Exact-action gains flatten well below the target.
 
-| Epoch | Validation loss | Exact action | Changed exact | Held exact | Movement |
+| Epoch | Validation loss | Teacher-forced exact | Changed exact | Held exact | Movement |
 | ---: | ---: | ---: | ---: | ---: | ---: |
 | 1 | 0.3143 | 57.02% | 20.80% | 93.24% | 71.30% |
 | 2 | 0.2909 | 58.49% | 25.56% | 91.42% | 72.51% |
@@ -76,10 +85,10 @@ direction selection:
 
 When the previous movement token is excluded by an oracle change gate, the
 model's highest-ranked remaining direction is correct 54.85% of the time. An
-oracle movement change gate would raise exact action from 59.41% to 69.61%
-without changing the other four outputs. This localizes almost the entire gap
-to the previous-action copycat shortcut, while also showing that a perfect
-binary gate alone would still fall just short of the target.
+oracle movement change gate would raise the teacher-forced proxy from 59.41%
+to 69.61% without changing the other four outputs. This localizes almost the
+entire proxy gap to the previous-action copycat shortcut; the autoregressive
+evaluation is the authoritative target.
 
 ## Rejected decoder-calibration hypothesis
 
@@ -116,10 +125,15 @@ changed and held actions and has SHA-256
 `27a2b9feafb0b07dd1140e715600c34481b9a708737cfdcc4b3fcf655f5097d8`.
 
 Prediction: tripling unique cross-era states at fixed compute will improve
-validation movement transitions and exact-action accuracy over the 59.41%
-baseline. If it does not, data repetition is not the main constraint and the
-next experiment should compare richer temporal state or greater adaptation
-capacity rather than merely adding epochs.
+validation movement transitions and the teacher-forced proxy over the 59.41%
+baseline. The diversity artifact will also provide the first authoritative
+autoregressive score under the corrected evaluator. If diversity is flat, data
+repetition is not the main constraint and the next experiment should compare
+richer temporal state or greater adaptation capacity rather than merely adding
+epochs. Once the diversity run releases the GPU, the unattended queue evaluates
+the original baseline best checkpoint autoregressively on the same frozen
+validation index. This supplies a like-for-like diagnostic comparison without
+opening the test or changing any promotion threshold.
 
 ## Queued experiment 1: residual event actions
 
@@ -147,10 +161,13 @@ On the 10,000-row validation index, target sequences have this distribution:
 | 5-7 | 351 |
 
 The arm trains on the exact original 250k index for one epoch under the
-original three-epoch LR schedule. It promotes to epochs 2-3 only if validation
-exact is at least 58.02%, movement exceeds 71.30%, and held exact remains at
-least 91.24%. Evaluation decodes the canonical predicted event sequence back
-to a held mask before scoring exact action. The selection metric generates
+original three-epoch LR schedule. It promotes to epochs 2-3 only if
+autoregressive validation exact is at least 58.02%, movement exceeds 71.30%,
+and held exact remains at least 91.24%. These fixed preregistered hurdles were
+derived before the metric correction and are conservative screening thresholds,
+not a claimed one-point autoregressive delta over epoch 1. Evaluation decodes
+the canonical predicted event sequence back to a held mask before scoring exact
+action. The selection metric generates
 autoregressively until `<STOP>` without knowing the target length; teacher-
 forced event accuracy is diagnostic only. Training reserves the same worst-
 case nine-token action budget for every row, so prompt truncation cannot leak
@@ -187,9 +204,9 @@ The screen runs only if the event-action screen is rejected. It uses
 the original 250k index and trains one epoch with the original three-epoch LR
 schedule. Promotion to epochs 2-3 requires all of:
 
-- validation exact action at least 58.02% (one point above baseline epoch 1);
-- validation movement above 71.30%;
-- held-action exact no lower than 91.24% (at most two points below baseline).
+- autoregressive validation exact action at least 58.02%;
+- autoregressive validation movement above 71.30%;
+- autoregressive held-action exact no lower than 91.24%.
 
 Failure stops the arm. Passing resumes the same optimizer/scheduler state for
 epochs 2-3. Both selection stages use validation only; the sealed test remains
@@ -219,9 +236,11 @@ knobs; the attention-only rank-8 default remains unchanged.
   and long-term goals are only partially observable from four causal deltas.
 - The balanced gate is intentionally unlike the natural tick distribution; it
   measures decisions on changes rather than rewarding action persistence.
-- Teacher-forced action-token evaluation matches the established gate but is
-  optimistic relative to fully autoregressive live decoding after an early
-  token error. Live-policy evaluation remains a later gate.
+- Historical `constrained_*` results are teacher-forced and optimistic after an
+  early token error. Corrected `autoregressive_*` evaluation now matches the
+  inference decoder's feedback semantics and is the only metric accepted by the
+  final gate. Runtime support for the checkpoint's four-tick history remains a
+  separate deployment requirement.
 
 ## References
 

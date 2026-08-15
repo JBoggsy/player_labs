@@ -94,34 +94,45 @@ def test_evaluation_tracks_persistence_and_changed_actions() -> None:
         "vocab_correct": 0,
         "constrained_correct": 0,
         "constrained_exact": 0,
+        "autoregressive_correct": 0,
+        "autoregressive_exact": 0,
         "previous_correct": 0,
         "previous_exact": 0,
         "changed_components": 0,
         "changed_component_correct": 0,
         "predicted_change_components": 0,
         "true_positive_changes": 0,
+        "autoregressive_changed_component_correct": 0,
+        "autoregressive_predicted_change_components": 0,
+        "autoregressive_true_positive_changes": 0,
         "constrained_slot_correct": [0] * 5,
+        "autoregressive_slot_correct": [0] * 5,
         "changed_samples": 0,
         "changed_tokens": 0,
         "constrained_changed_correct": 0,
         "constrained_changed_exact": 0,
+        "autoregressive_changed_correct": 0,
+        "autoregressive_changed_exact": 0,
     }
     labels = torch.tensor([1, 2, 3, 4, 5])
     previous = torch.tensor([1, 2, 0, 4, 5])
     predicted = torch.tensor([1, 2, 3, 0, 5])
 
-    update_metrics(score, predicted, predicted, labels, previous)
+    update_metrics(score, predicted, predicted, labels, labels, previous)
 
     assert score["changed_samples"] == 1
     assert score["previous_correct"] == 4
     assert score["previous_exact"] == 0
     assert score["constrained_changed_correct"] == 4
     assert score["constrained_changed_exact"] == 0
+    assert score["autoregressive_exact"] == 1
+    assert score["autoregressive_changed_exact"] == 1
     assert score["constrained_slot_correct"] == [1, 1, 1, 0, 1]
     assert score["changed_components"] == 1
     assert score["changed_component_correct"] == 1
     assert score["predicted_change_components"] == 2
     assert score["true_positive_changes"] == 1
+    assert score["autoregressive_slot_correct"] == [1, 1, 1, 1, 1]
 
 
 def test_event_evaluation_requires_a_valid_canonical_sequence() -> None:

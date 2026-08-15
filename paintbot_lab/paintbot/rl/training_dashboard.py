@@ -26,8 +26,10 @@ METRIC_KEYS = (
     "mean_loss",
     "constrained_token_accuracy",
     "constrained_exact_action_accuracy",
+    "autoregressive_exact_action_accuracy",
     "changed_action_samples",
     "constrained_changed_exact_action_accuracy",
+    "autoregressive_changed_exact_action_accuracy",
     "changed_component_accuracy",
     "change_precision",
     "change_recall",
@@ -101,13 +103,16 @@ def process_snapshot(run: Callable[[list[str]], str]) -> dict:
         [
             "pgrep",
             "-af",
-            "run_(expert_training|diversity_experiment).py|train_sft.py|evaluate_sft.py|supervise_(expert_training|diversity_experiment)",
+            "run_(expert_training|diversity_experiment|event_action_experiment|spatial_semantics_experiment).py|train_sft.py|evaluate_(event_)?sft.py|supervise_(expert_training|diversity_experiment|accuracy_experiments)",
         ]
     )
     lines = [line for line in text.splitlines() if "training_dashboard.py" not in line]
     return {
         "trainer": any("train_sft.py" in line for line in lines),
-        "evaluator": any("evaluate_sft.py" in line for line in lines),
+        "evaluator": any(
+            "evaluate_sft.py" in line or "evaluate_event_sft.py" in line
+            for line in lines
+        ),
         "supervisor": any("supervise_" in line for line in lines),
         "handoff": any("run_" in line and "training_dashboard.py" not in line for line in lines),
         "lines": lines,
@@ -344,7 +349,7 @@ function chart(points){const c=$('lossChart'),d=devicePixelRatio||1,w=c.clientWi
 async function refresh(){try{const r=await fetch('/api/status',{cache:'no-store'}),d=await r.json(),p=d.progress,stage=d.status.stage||'unknown';$('stage').innerHTML=`<span class="${d.healthy?'good':'bad'}">${d.healthy?'● healthy':'● attention'}</span> · ${stage.replaceAll('_',' ')}`;$('freshness').textContent='Updated '+new Date(d.generated_at_unix*1000).toLocaleTimeString();$('progress').textContent=`${pct(p.fraction)} · epoch ${p.epoch}/${p.epochs}`;$('progressBar').style.width=pct(p.fraction);$('eta').textContent=`${num(p.completed_microbatches)} / ${num(p.total_microbatches)} microbatches · ${duration(p.eta_seconds)}`;
 const g=d.gpu;$('gpu').textContent=g.utilization_percent==null?'—':g.utilization_percent+'%';$('gpuSub').textContent=g.memory_used_mib==null?'nvidia-smi unavailable':`${(g.memory_used_mib/1024).toFixed(1)} / ${(g.memory_total_mib/1024).toFixed(1)} GiB · ${g.temperature_c}°C`;$('disk').textContent=gib(d.disk.free_bytes);$('diskSub').textContent=pct(d.disk.used_fraction)+' used';chart(d.recent_losses);
 $('validations').innerHTML=d.validation_history.length?d.validation_history.map(v=>metric('Epoch '+v.epoch,v.loss)).join(''):'Not yet available';$('checkpoints').innerHTML=d.checkpoints.length?`<table><tr><th>Name</th><th>Update</th><th>Best val</th></tr>${d.checkpoints.slice(-7).reverse().map(c=>`<tr><td>${c.name}</td><td>${num(c.global_updates)}</td><td>${c.best_validation_loss==null?'—':c.best_validation_loss.toFixed(4)}</td></tr>`).join('')}</table>`:'None yet';
-const entries=Object.entries(d.evaluations);$('evaluation').innerHTML=entries.length?entries.map(([name,m])=>`<div style="margin-bottom:14px"><strong>${name}</strong>${metric('Exact action',m.constrained_exact_action_accuracy,true)}${metric('Changed-action exact',m.constrained_changed_exact_action_accuracy,true)}${metric('Changed component',m.changed_component_accuracy,true)}${metric('Change precision',m.change_precision,true)}${metric('Change recall',m.change_recall,true)}${metric('Repeat previous',m.previous_mask_exact_action_accuracy,true)}</div>`).join(''):'Available after final evaluation.';
+const entries=Object.entries(d.evaluations);$('evaluation').innerHTML=entries.length?entries.map(([name,m])=>`<div style="margin-bottom:14px"><strong>${name}</strong>${metric('Exact action · autoregressive',m.autoregressive_exact_action_accuracy,true)}${metric('Changed-action exact · autoregressive',m.autoregressive_changed_exact_action_accuracy,true)}${metric('Exact action · teacher forced',m.constrained_exact_action_accuracy,true)}${metric('Changed component',m.changed_component_accuracy,true)}${metric('Change precision',m.change_precision,true)}${metric('Change recall',m.change_recall,true)}${metric('Repeat previous',m.previous_mask_exact_action_accuracy,true)}</div>`).join(''):'Available after final evaluation.';
 $('errorCard').classList.toggle('hidden',!d.errors.length);$('errors').textContent=d.errors.join('\n');}catch(e){$('stage').innerHTML='<span class="bad">● disconnected</span>';console.error(e)}}
 refresh();setInterval(refresh,10000);addEventListener('resize',refresh);
 </script></body></html>"""

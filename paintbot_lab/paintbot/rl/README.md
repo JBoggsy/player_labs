@@ -157,8 +157,10 @@ existing `mettabox1` SSH alias and exhaustive-corpus workspace.
 The unattended accuracy queue retargets the remote dashboard from diversity to
 the event-action screen, and then to spatial semantics only if needed. It stops
 before launching another arm if diversity already exceeds 70% on frozen
-validation. The SSH tunnel and local `8876` URL remain unchanged across those
-handoffs.
+autoregressive validation. After diversity finishes, it also evaluates the
+original baseline checkpoint autoregressively on the same frozen validation
+index, providing a like-for-like diagnostic without opening the test. The SSH
+tunnel and local `8876` URL remain unchanged across those handoffs.
 
 To follow a non-default experiment while retaining the same dashboard URL, set
 the remote output and log explicitly:
@@ -241,10 +243,12 @@ investigation selected zero ticks decisively; see the living design for results.
 
 For live inference, set `PAINTBOT_RL_CHECKPOINT`. Set
 `PAINTBOT_RL_TRACE=1` to emit generated tokens, mask transitions, and latency.
-`evaluate_sft.py` reports the grammar-constrained accuracy that matches live
-decoding as well as unrestricted vocabulary accuracy, per-slot accuracy, a
-held-action persistence baseline, and accuracy restricted to examples where
-the expert actually changed the button state. The latter two are required:
+`evaluate_sft.py` reports autoregressive exact-action and per-slot accuracy
+using the same feedback decoding as inference. It retains teacher-forced
+`constrained_*` diagnostics for interpreting older artifacts and adds an
+explicit teacher-forced exact-action alias. It also reports a held-action
+persistence baseline plus accuracy restricted to examples where the expert
+actually changed the button state. The latter two are required:
 aggregate accuracy can otherwise reward simply copying the previous mask.
 
 Training accepts `--action-change-weight <number|balanced>`. Numeric values
@@ -284,10 +288,11 @@ test logits.
 `evaluate_sealed_candidate.py` is the only supported final-gate command. It
 refuses to run unless the candidate's validation JSON attests the frozen
 validation-index SHA-256, contains exactly 10,000 rows, and reports strictly
-more than 70% exact action. The validation artifact must also attest the exact
-checkpoint-tree SHA-256, action codec, spatial representation, and 4,096-token
-budget. The guard independently verifies the frozen test index, refuses to
-overwrite an existing result, and writes a separate sealed decision record.
+more than 70% autoregressive exact action. Teacher-forced exact action cannot
+satisfy this gate. The validation artifact must also attest the exact checkpoint-
+tree SHA-256, action codec, spatial representation, and 4,096-token budget. The
+guard independently verifies the frozen test index, refuses to overwrite an
+existing result, and writes a separate sealed decision record.
 This keeps model selection on validation and makes the one-time test opening
 auditable:
 

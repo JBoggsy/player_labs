@@ -154,7 +154,7 @@ shape. These defaults are conservative starting points, not closed decisions:
 | Tuning | LoRA rank 8 over attention projections plus only the 17 new token rows | `--tuning lora|full`, `--lora-rank`, and `--lora-target-modules attention|all-linear` |
 | Text ceiling | 2,048 tokens for the Mac baseline, preserving the nearest/self-first prefix and all targets | `--max-text-tokens` |
 | Replay alignment | observation at tick `t` predicts held mask at tick `t` | `--action-delay-ticks`; both ticks stored |
-| Decoding | five constrained greedy steps without a KV cache | isolated `greedy_action()` method |
+| Decoding | four constrained autoregressive action steps, then grammar-implied `<STOP>`, without a KV cache | isolated `greedy_action()` method |
 | Temporal training input | four compact causal deltas plus previous transmitted action | `history` sample field; history length and `max_history_tokens` remain experiment knobs |
 
 The action decoder uses the actual Sprite-v1 layout: directions occupy bits
@@ -449,11 +449,13 @@ test. Current experiment contract and results live in
 Validation and test evaluators now attest the exact sample-index SHA-256 in
 their result JSON. `evaluate_sealed_candidate.py` opens the frozen test only
 when validation uses the recorded index, contains exactly 10,000 rows, and is
-strictly above 70% exact action. Validation must attest the same checkpoint-
-tree hash, action codec, spatial representation, and 4,096-token budget used by
-the sealed run. The guard re-hashes the frozen test index, refuses to overwrite
-a prior candidate result, and writes a separate pass/fail decision. This is
-the mechanical boundary between model selection and the one-time sealed test.
+strictly above 70% autoregressive exact action. Teacher-forced
+constrained metrics remain diagnostics for old artifacts but cannot satisfy the
+gate. Validation must attest the same checkpoint-tree hash, action codec,
+spatial representation, and 4,096-token budget used by the sealed run. The
+guard re-hashes the frozen test index, refuses to overwrite a prior candidate
+result, and writes a separate pass/fail decision. This is the mechanical
+boundary between model selection and the one-time sealed test.
 All unattended training runners stop after frozen-validation evaluation; do not
 invoke `evaluate_sft.py` directly for a new final candidate.
 

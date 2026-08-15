@@ -27,7 +27,7 @@ def validation(
         "groups": {
             "all": {
                 "samples": samples,
-                "constrained_exact_action_accuracy": accuracy,
+                "autoregressive_exact_action_accuracy": accuracy,
             }
         },
     }
@@ -49,6 +49,21 @@ def test_sealed_gate_requires_frozen_index_size_and_strictly_over_70() -> None:
     with pytest.raises(ValueError, match="this checkpoint"):
         validate_validation_gate(
             validation(0.8, checkpoint_hash="other"), **kwargs
+        )
+
+
+def test_sealed_gate_rejects_teacher_forced_proxy() -> None:
+    evaluation = validation(0.8)
+    metrics = evaluation["groups"]["all"]
+    metrics.pop("autoregressive_exact_action_accuracy")
+    metrics["constrained_exact_action_accuracy"] = 0.99
+
+    with pytest.raises(ValueError, match="must exceed"):
+        validate_validation_gate(
+            evaluation,
+            checkpoint_sha256="checkpoint",
+            action_encoding="absolute",
+            spatial_semantics=False,
         )
 
 

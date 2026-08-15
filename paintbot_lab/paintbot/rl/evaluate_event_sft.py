@@ -193,6 +193,8 @@ def main() -> int:
     for key, score in totals.items():
         result["groups"][key] = {
             **score,
+            "autoregressive_exact": score["constrained_exact"],
+            "autoregressive_changed_exact": score["constrained_changed_exact"],
             "teacher_forced_token_accuracy": score["teacher_forced_correct"]
             / score["tokens"],
             "teacher_forced_exact_action_accuracy": score[
@@ -201,7 +203,19 @@ def main() -> int:
             / score["samples"],
             "constrained_exact_action_accuracy": score["constrained_exact"]
             / score["samples"],
+            "autoregressive_exact_action_accuracy": score["constrained_exact"]
+            / score["samples"],
             "constrained_slot_accuracy": dict(
+                zip(
+                    ("movement", "turn", "fire", "grenade", "stop"),
+                    (
+                        correct / score["samples"]
+                        for correct in score["constrained_slot_correct"]
+                    ),
+                    strict=True,
+                )
+            ),
+            "autoregressive_slot_accuracy": dict(
                 zip(
                     ("movement", "turn", "fire", "grenade", "stop"),
                     (
@@ -215,6 +229,11 @@ def main() -> int:
             / score["samples"],
             "changed_action_samples": score["changed_samples"],
             "constrained_changed_exact_action_accuracy": (
+                score["constrained_changed_exact"] / score["changed_samples"]
+                if score["changed_samples"]
+                else None
+            ),
+            "autoregressive_changed_exact_action_accuracy": (
                 score["constrained_changed_exact"] / score["changed_samples"]
                 if score["changed_samples"]
                 else None

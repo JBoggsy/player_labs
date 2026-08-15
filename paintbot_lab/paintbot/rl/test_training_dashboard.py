@@ -51,7 +51,13 @@ def test_snapshot_reports_microbatch_progress_and_evaluation(tmp_path: Path) -> 
         "epoch=1 validation_loss=0.4\nepoch=2 step=25 loss=0.2\n"
     )
     evaluation = {
-        "groups": {"all": {"samples": 10, "constrained_exact_action_accuracy": 0.3}}
+        "groups": {
+            "all": {
+                "samples": 10,
+                "constrained_exact_action_accuracy": 0.3,
+                "autoregressive_exact_action_accuracy": 0.25,
+            }
+        }
     }
     (output / "test_evaluation.json").write_text(json.dumps(evaluation))
 
@@ -73,6 +79,9 @@ def test_snapshot_reports_microbatch_progress_and_evaluation(tmp_path: Path) -> 
     assert snapshot["evaluations"]["test_evaluation.json"][
         "constrained_exact_action_accuracy"
     ] == 0.3
+    assert snapshot["evaluations"]["test_evaluation.json"][
+        "autoregressive_exact_action_accuracy"
+    ] == 0.25
 
 
 def test_snapshot_marks_missing_trainer_unhealthy(tmp_path: Path) -> None:

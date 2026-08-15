@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Evaluate teacher-forced action-token accuracy for a saved checkpoint."""
+"""Evaluate autoregressive actions plus teacher-forced diagnostics."""
 
 from __future__ import annotations
 
@@ -50,7 +50,9 @@ def evaluation_device() -> torch.device:
     return torch.device("cpu")
 
 
-def update_metrics(score: dict, predicted, constrained, labels, previous) -> None:
+def update_metrics(
+    score: dict, predicted, constrained, autoregressive, labels, previous
+) -> None:
     """Accumulate model scores alongside the held-action persistence baseline."""
     changed = not torch.equal(previous, labels)
     score["samples"] += 1
@@ -58,23 +60,43 @@ def update_metrics(score: dict, predicted, constrained, labels, previous) -> Non
     score["vocab_correct"] += (predicted == labels).sum().item()
     score["constrained_correct"] += (constrained == labels).sum().item()
     score["constrained_exact"] += torch.equal(constrained, labels)
+    score["autoregressive_correct"] += (autoregressive == labels).sum().item()
+    score["autoregressive_exact"] += torch.equal(autoregressive, labels)
     score["previous_correct"] += (previous == labels).sum().item()
     score["previous_exact"] += not changed
     target_changes = previous[:4] != labels[:4]
     predicted_changes = previous[:4] != constrained[:4]
+    autoregressive_changes = previous[:4] != autoregressive[:4]
     score["changed_components"] += target_changes.sum().item()
     score["changed_component_correct"] += (
         (constrained[:4] == labels[:4]) & target_changes
     ).sum().item()
     score["predicted_change_components"] += predicted_changes.sum().item()
     score["true_positive_changes"] += (target_changes & predicted_changes).sum().item()
+    score["autoregressive_changed_component_correct"] += (
+        (autoregressive[:4] == labels[:4]) & target_changes
+    ).sum().item()
+    score["autoregressive_predicted_change_components"] += (
+        autoregressive_changes.sum().item()
+    )
+    score["autoregressive_true_positive_changes"] += (
+        target_changes & autoregressive_changes
+    ).sum().item()
     for slot, correct in enumerate((constrained == labels).tolist()):
         score["constrained_slot_correct"][slot] += correct
+    for slot, correct in enumerate((autoregressive == labels).tolist()):
+        score["autoregressive_slot_correct"][slot] += correct
     if changed:
         score["changed_samples"] += 1
         score["changed_tokens"] += labels.numel()
         score["constrained_changed_correct"] += (constrained == labels).sum().item()
         score["constrained_changed_exact"] += torch.equal(constrained, labels)
+        score["autoregressive_changed_correct"] += (
+            autoregressive == labels
+        ).sum().item()
+        score["autoregressive_changed_exact"] += torch.equal(
+            autoregressive, labels
+        )
 
 
 def main() -> int:
@@ -95,6 +117,8 @@ def main() -> int:
 
     device = evaluation_device()
     tokenizer, model = load_policy(args.checkpoint, device=device)
+    if model.action_encoding != "absolute":
+        parser.error("checkpoint does not use absolute action encoding")
     dataset = PolicyDataset(args.samples, args.maps, args.sample_indices)
     collator = PolicyCollator(
         tokenizer,
@@ -110,17 +134,25 @@ def main() -> int:
             "vocab_correct": 0,
             "constrained_correct": 0,
             "constrained_exact": 0,
+            "autoregressive_correct": 0,
+            "autoregressive_exact": 0,
             "previous_correct": 0,
             "previous_exact": 0,
             "changed_components": 0,
             "changed_component_correct": 0,
             "predicted_change_components": 0,
             "true_positive_changes": 0,
+            "autoregressive_changed_component_correct": 0,
+            "autoregressive_predicted_change_components": 0,
+            "autoregressive_true_positive_changes": 0,
             "constrained_slot_correct": [0] * 5,
+            "autoregressive_slot_correct": [0] * 5,
             "changed_samples": 0,
             "changed_tokens": 0,
             "constrained_changed_correct": 0,
             "constrained_changed_exact": 0,
+            "autoregressive_changed_correct": 0,
+            "autoregressive_changed_exact": 0,
         }
     )
     allowed_ids = [
@@ -157,6 +189,28 @@ def main() -> int:
             constrained = torch.stack(
                 [ids[torch.argmax(logits[ids])] for logits, ids in zip(selected_logits, allowed_ids, strict=True)]
             )
+            target_length = len(ACTION_TOKEN_SLOTS) + 1
+            prompt_ids = collator._prompt_ids(sample, target_length)
+            prompt_ids = prompt_ids[
+                : max(0, args.max_text_tokens - target_length)
+            ]
+            prompt_tensor = torch.tensor(
+                [prompt_ids], dtype=torch.long, device=device
+            )
+            map_cache = model.map_encoder.encode_static(batch["maps"][0])
+            autoregressive_tokens = model.greedy_action(
+                tokenizer,
+                prompt_tensor,
+                map_cache,
+                sample.position(),
+            )
+            autoregressive = torch.tensor(
+                [
+                    tokenizer.convert_tokens_to_ids(token)
+                    for token in autoregressive_tokens
+                ],
+                device=device,
+            )
             previous = torch.tensor(
                 [
                     tokenizer.convert_tokens_to_ids(token)
@@ -179,7 +233,14 @@ def main() -> int:
             for key in ("all", sample.game_version):
                 score = totals[key]
                 score["loss"] += output.loss.item()
-                update_metrics(score, predicted, constrained, labels, previous)
+                update_metrics(
+                    score,
+                    predicted,
+                    constrained,
+                    autoregressive,
+                    labels,
+                    previous,
+                )
 
     result = {
         "device": str(device),
@@ -199,12 +260,30 @@ def main() -> int:
             "vocab_token_accuracy": score["vocab_correct"] / score["tokens"],
             "constrained_token_accuracy": score["constrained_correct"] / score["tokens"],
             "constrained_exact_action_accuracy": score["constrained_exact"] / score["samples"],
+            "teacher_forced_constrained_exact_action_accuracy": score[
+                "constrained_exact"
+            ]
+            / score["samples"],
+            "autoregressive_token_accuracy": score["autoregressive_correct"]
+            / score["tokens"],
+            "autoregressive_exact_action_accuracy": score["autoregressive_exact"]
+            / score["samples"],
             "constrained_slot_accuracy": dict(
                 zip(
                     ("movement", "turn", "fire", "grenade", "stop"),
                     (
                         correct / score["samples"]
                         for correct in score["constrained_slot_correct"]
+                    ),
+                    strict=True,
+                )
+            ),
+            "autoregressive_slot_accuracy": dict(
+                zip(
+                    ("movement", "turn", "fire", "grenade", "stop"),
+                    (
+                        correct / score["samples"]
+                        for correct in score["autoregressive_slot_correct"]
                     ),
                     strict=True,
                 )
@@ -226,6 +305,24 @@ def main() -> int:
                 if score["changed_components"]
                 else None
             ),
+            "autoregressive_changed_component_accuracy": (
+                score["autoregressive_changed_component_correct"]
+                / score["changed_components"]
+                if score["changed_components"]
+                else None
+            ),
+            "autoregressive_change_precision": (
+                score["autoregressive_true_positive_changes"]
+                / score["autoregressive_predicted_change_components"]
+                if score["autoregressive_predicted_change_components"]
+                else None
+            ),
+            "autoregressive_change_recall": (
+                score["autoregressive_true_positive_changes"]
+                / score["changed_components"]
+                if score["changed_components"]
+                else None
+            ),
             "changed_action_samples": score["changed_samples"],
             "constrained_changed_token_accuracy": (
                 score["constrained_changed_correct"] / score["changed_tokens"]
@@ -234,6 +331,11 @@ def main() -> int:
             ),
             "constrained_changed_exact_action_accuracy": (
                 score["constrained_changed_exact"] / score["changed_samples"]
+                if score["changed_samples"]
+                else None
+            ),
+            "autoregressive_changed_exact_action_accuracy": (
+                score["autoregressive_changed_exact"] / score["changed_samples"]
                 if score["changed_samples"]
                 else None
             ),

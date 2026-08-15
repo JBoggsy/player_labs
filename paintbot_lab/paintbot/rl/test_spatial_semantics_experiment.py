@@ -7,11 +7,11 @@ def metrics(*, exact: int, changed_exact: int, movement: float) -> dict:
             "all": {
                 "samples": 10_000,
                 "changed_action_samples": 5_000,
-                "constrained_exact": exact,
-                "constrained_changed_exact": changed_exact,
-                "constrained_exact_action_accuracy": exact / 10_000,
-                "constrained_changed_exact_action_accuracy": changed_exact / 5_000,
-                "constrained_slot_accuracy": {"movement": movement},
+                "autoregressive_exact": exact,
+                "autoregressive_changed_exact": changed_exact,
+                "autoregressive_exact_action_accuracy": exact / 10_000,
+                "autoregressive_changed_exact_action_accuracy": changed_exact / 5_000,
+                "autoregressive_slot_accuracy": {"movement": movement},
             }
         }
     }
