@@ -4,6 +4,7 @@ set -uo pipefail
 ROOT=/home/metta/paintbot_rl_training_20260807
 WORKSPACE=runs/expert-corpus-v1
 LOCK="$ROOT/$WORKSPACE/training-v2-diversity.lock"
+DIVERSITY_STATUS="$ROOT/$WORKSPACE/training-v2-diversity/status.json"
 EVENT_OUTPUT="$ROOT/$WORKSPACE/training-v4-event-actions"
 EVENT_STATUS="$EVENT_OUTPUT/status.json"
 SPATIAL_OUTPUT="$ROOT/$WORKSPACE/training-v3-spatial-semantics"
@@ -57,6 +58,11 @@ run_until_terminal() {
     sleep 60
   done
 }
+
+while ! test -s "$DIVERSITY_STATUS" \
+  || ! grep -q '"stage": "complete"' "$DIVERSITY_STATUS"; do
+  sleep 60
+done
 
 run_until_terminal "$EVENT_STATUS" \
   "$EVENT_OUTPUT" \
