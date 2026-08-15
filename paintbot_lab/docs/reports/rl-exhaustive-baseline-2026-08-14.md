@@ -128,7 +128,9 @@ The candidate is supervised under
 index, never overwrites the baseline index, resumes after process failure or
 reboot, trains automatically, and stops after validation. It does not open the
 sealed test. The selected 750,000-row index is balanced 375,000/375,000 between
-changed and held actions and has SHA-256
+changed and held actions. All 750,000 indices are unique and in bounds; the
+deterministic reservoir sampler covers 662 `(class, era, expert, world)` strata.
+The index has SHA-256
 `27a2b9feafb0b07dd1140e715600c34481b9a708737cfdcc4b3fcf655f5097d8`.
 
 Prediction: tripling unique cross-era states at fixed compute will improve
