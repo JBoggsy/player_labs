@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -14,6 +15,31 @@ import torch
 from actions import ACTION_TOKEN_SLOTS, STOP_TOKEN, canonical_action_tokens
 from modeling import load_policy
 from training import PolicyCollator, PolicyDataset
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def sha256_tree(path: Path) -> str:
+    if not path.is_dir():
+        raise ValueError(f"checkpoint is not a directory: {path}")
+    digest = hashlib.sha256()
+    files = sorted(item for item in path.rglob("*") if item.is_file())
+    if not files:
+        raise ValueError(f"checkpoint contains no files: {path}")
+    for item in files:
+        digest.update(item.relative_to(path).as_posix().encode())
+        digest.update(b"\0")
+        with item.open("rb") as source:
+            for chunk in iter(lambda: source.read(1024 * 1024), b""):
+                digest.update(chunk)
+        digest.update(b"\0")
+    return digest.hexdigest()
 
 
 def evaluation_device() -> torch.device:
@@ -158,7 +184,12 @@ def main() -> int:
     result = {
         "device": str(device),
         "max_text_tokens": args.max_text_tokens,
+        "checkpoint_sha256": sha256_tree(args.checkpoint),
+        "sample_indices_sha256": (
+            sha256_file(args.sample_indices) if args.sample_indices else None
+        ),
         "include_spatial_semantics": args.spatial_semantics,
+        "action_encoding": "absolute",
         "groups": {},
     }
     for key, score in totals.items():

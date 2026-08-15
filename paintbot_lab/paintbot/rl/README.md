@@ -279,6 +279,24 @@ replay ID, selects a single previous-state change bias on one half, and reports
 the untouched confirmation half. Do not use this path to tune against sealed
 test logits.
 
+`evaluate_sealed_candidate.py` is the only supported final-gate command. It
+refuses to run unless the candidate's validation JSON attests the frozen
+validation-index SHA-256, contains exactly 10,000 rows, and reports strictly
+more than 70% exact action. The validation artifact must also attest the exact
+checkpoint-tree SHA-256, action codec, spatial representation, and 4,096-token
+budget. The guard independently verifies the frozen test index, refuses to
+overwrite an existing result, and writes a separate sealed decision record.
+This keeps model selection on validation and makes the one-time test opening
+auditable:
+
+```sh
+uv run python paintbot_lab/paintbot/rl/evaluate_sealed_candidate.py \
+  --checkpoint runs/expert-corpus-v1/training-v2-diversity/full/best \
+  --validation-evaluation runs/expert-corpus-v1/training-v2-diversity/full/validation_evaluation.json \
+  --workspace runs/expert-corpus-v1 \
+  --out runs/expert-corpus-v1/training-v2-diversity/full/sealed_test_evaluation.json
+```
+
 The first mettabox1 run and its negative behavioral verdict are recorded in the
 [`GPU training report`](../../docs/reports/rl-mettabox1-sft-2026-08-07.md).
 The matched weighting follow-up is in the

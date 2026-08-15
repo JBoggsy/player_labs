@@ -20,7 +20,11 @@ The 10,000-row sealed test index remains unchanged:
 
 All diagnosis and model selection after the baseline use validation only. The
 test set will be opened once for a candidate selected under the frozen
-validation rule.
+validation rule. New evaluator artifacts include their sample-index hash, and
+`evaluate_sealed_candidate.py` refuses the final run unless validation attests
+the frozen index and exact checkpoint tree, contains 10,000 rows, uses the
+matching representation contract, and exceeds 70% exact action. It also
+re-hashes the test index and refuses to overwrite an existing candidate result.
 
 ## Baseline result
 

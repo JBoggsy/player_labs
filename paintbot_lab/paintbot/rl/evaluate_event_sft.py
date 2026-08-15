@@ -17,7 +17,7 @@ from actions import (
     canonical_action_mask,
     canonical_action_tokens,
 )
-from evaluate_sft import evaluation_device
+from evaluate_sft import evaluation_device, sha256_file, sha256_tree
 from modeling import load_policy
 from training import PolicyCollator, PolicyDataset
 
@@ -182,6 +182,10 @@ def main() -> int:
     result = {
         "device": str(device),
         "max_text_tokens": args.max_text_tokens,
+        "checkpoint_sha256": sha256_tree(args.checkpoint),
+        "sample_indices_sha256": (
+            sha256_file(args.sample_indices) if args.sample_indices else None
+        ),
         "include_spatial_semantics": args.spatial_semantics,
         "action_encoding": "events",
         "groups": {},

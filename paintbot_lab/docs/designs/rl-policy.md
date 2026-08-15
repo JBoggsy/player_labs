@@ -444,6 +444,18 @@ is queued ahead of the spatial-semantics arm; neither arm can open the sealed
 test. Current experiment contract and results live in
 [`../reports/rl-exhaustive-baseline-2026-08-14.md`](../reports/rl-exhaustive-baseline-2026-08-14.md).
 
+### Sealed-candidate gate
+
+Validation and test evaluators now attest the exact sample-index SHA-256 in
+their result JSON. `evaluate_sealed_candidate.py` opens the frozen test only
+when validation uses the recorded index, contains exactly 10,000 rows, and is
+strictly above 70% exact action. Validation must attest the same checkpoint-
+tree hash, action codec, spatial representation, and 4,096-token budget used by
+the sealed run. The guard re-hashes the frozen test index, refuses to overwrite
+a prior candidate result, and writes a separate pass/fail decision. This is
+the mechanical boundary between model selection and the one-time sealed test;
+do not invoke `evaluate_sft.py` directly for a new final candidate.
+
 ### Transition sampling and temporal-history result
 
 A matched 2x2 independently varied uniform versus 50/50 transition/hold
