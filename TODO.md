@@ -89,8 +89,8 @@ mid-session; check them back at the start of focused work.
   so it is not autoregressive; corrected autoregressive evaluation is now the
   only final-gate metric. Validation diagnosis rejected decoder calibration and
   localized the main error to movement transitions. A matched-compute 750k-
-  unique x 1-epoch arm is running
-  under `training-v2-diversity`; it stops after validation and keeps the sealed
+  unique x 1-epoch arm is running under `training-v2-diversity`; it stops after
+  validation and keeps the sealed
   test closed. If diversity is flat, compare compact deltas against short full
   self/nearby snapshots or greater adaptation capacity. A validation-only
   residual press/release screen is queued behind diversity after validation
@@ -100,6 +100,13 @@ mid-session; check them back at the start of focused work.
   screen adds egocentric bearing and self-width-normalized range to the nearest
   16 entities under the same staged gate. Report:
   `paintbot_lab/docs/reports/rl-exhaustive-baseline-2026-08-14.md`.
+  **Deferred fallback:** a next-state/action audit found that physical Arrow
+  neighbors are normally six ticks apart and omit intervening actions, so they
+  are not valid one-step world-model pairs. Raw replays are retained. If the
+  queued arms fail, re-extract a bounded per-tick train/validation subset and
+  compare one preregistered compact semantic-delta or latent future-prediction
+  auxiliary objective. Do not generate full observation text or inspect test
+  pairs. Contract and measurements are in `paintbot_lab/docs/designs/rl-policy.md`.
 
 - **Make Stencil squads roster-aware under campaign 7+7+1+1 seating** (found
   2026-08-06). Current `squadTable` partitions two-team identities by parity,

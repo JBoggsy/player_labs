@@ -459,6 +459,65 @@ boundary between model selection and the one-time sealed test.
 All unattended training runners stop after frozen-validation evaluation; do not
 invoke `evaluate_sft.py` directly for a new final candidate.
 
+### Next-state/action extension audit
+
+The proposed extension can be written causally as:
+
+```text
+O_t, A_t, A_(t+1) -> delta(O_t, O_(t+1)), A_(t+2)
+```
+
+Here `A_t` is the previously held mask and `A_(t+1)` is the action chosen from
+`O_t`. The future observation target must follow that chosen action before the
+following action is predicted. This is compatible with an autoregressive
+trajectory model, but the transition data must contain every intervention.
+
+The exhaustive Arrow corpus is not sufficient for the literal objective as
+stored. Its observations use stride 6. In the first 100,000 physical training
+rows, 99,218 adjacent rows from the same trajectory were six ticks apart; the
+remaining same-trajectory gaps were predominantly 72 or 78 ticks. Each later
+sample's stored history covers offsets -4 through -1, so it does not recover
+all actions and state changes across the preceding six-tick gap. Treating these
+rows as a one-step transition would ask the model to explain hidden intervening
+actions and is rejected as a causal training contract.
+
+The stored rows do show that a compact future target is practical. On 9,848
+six-tick adjacent pairs, the existing semantic-delta serialization measured 158
+Qwen tokens at median and 165 at p95, versus 909 and 3,062 tokens for the full
+next observation. Full observation generation would regularly exceed the
+4,096-token budget once the prompt and action targets are included. These
+numbers measure compactness only; they do not make the six-tick pairs valid
+world-model supervision.
+
+If the queued diversity/event/spatial arms do not clear the autoregressive
+validation gate, the next-state arm should therefore:
+
+1. Re-extract exact tick `t+1` observations and actions from retained raw
+   replays for a bounded, replay-disjoint subset of the existing train and
+   validation splits. Do not derive or inspect test pairs during development.
+2. Keep current-action prediction as the primary loss. Add an action-conditioned
+   future semantic-delta or latent-representation objective, followed by the
+   next action, with its loss weight fixed before validation.
+3. Prefer a compact target over reconstructing the full Sprite-v1 text. Compare
+   an inspectable semantic-delta target against a latent self-prediction target
+   only as a preregistered validation experiment; do not add both at once.
+4. Preserve the frozen validation index/checkpoint attestation and require the
+   same autoregressive exact-action gate. Future-state loss is an auxiliary
+   representation objective, never a substitute success metric.
+
+This follows the useful part of established approaches without importing their
+full machinery: Trajectory Transformer models correctly ordered state/action
+sequences; Self-Predictive Representations predicts future latent states; and
+Dreamer learns action-conditioned latent dynamics. For this SFT policy, a small
+auxiliary target is the conservative first experiment—not a Dreamer-style
+planner or full-observation language rollout.
+
+References:
+
+- [Offline Reinforcement Learning as One Big Sequence Modeling Problem](https://trajectory-transformer.github.io/)
+- [Data-Efficient Reinforcement Learning with Self-Predictive Representations](https://arxiv.org/abs/2007.05929)
+- [Mastering diverse control tasks through world models](https://www.nature.com/articles/s41586-025-08744-2)
+
 ### Transition sampling and temporal-history result
 
 A matched 2x2 independently varied uniform versus 50/50 transition/hold
