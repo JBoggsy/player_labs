@@ -57,3 +57,24 @@ def test_unattended_run_evaluates_validation_without_opening_test(
         )
     ]
     assert json.loads((output / "status.json").read_text())["stage"] == "complete"
+
+
+def test_train_command_can_combine_event_and_spatial_representations(
+    tmp_path: Path,
+) -> None:
+    command = run_expert_training.train_command(
+        tmp_path / "train",
+        tmp_path / "maps",
+        tmp_path / "indices.npy",
+        tmp_path / "validation",
+        tmp_path / "validation-maps",
+        tmp_path / "validation-indices.npy",
+        tmp_path / "output",
+        epochs=1,
+        checkpoint_every_updates=1_000,
+        spatial_semantics=True,
+        action_encoding="events",
+    )
+
+    assert "--spatial-semantics" in command
+    assert command[command.index("--action-encoding") + 1] == "events"

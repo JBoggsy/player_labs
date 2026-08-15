@@ -15,6 +15,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workspace", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--spatial-semantics", action="store_true")
     args = parser.parse_args()
 
     status = args.output / "status.json"
@@ -29,7 +30,12 @@ def main() -> int:
     if training_run.exists():
         completed_epochs = int(json.loads(training_run.read_text())["epochs"])
     if completed_epochs < 1:
-        record_status(status, "training_epoch_1", experiment="event_action_screen")
+        experiment = (
+            "event_spatial_screen"
+            if args.spatial_semantics
+            else "event_action_screen"
+        )
+        record_status(status, "training_epoch_1", experiment=experiment)
         run(
             train_command(
                 arrow / "train",
@@ -42,6 +48,7 @@ def main() -> int:
                 epochs=1,
                 schedule_epochs=3,
                 checkpoint_every_updates=1_000,
+                spatial_semantics=args.spatial_semantics,
                 action_encoding="events",
             )
         )
@@ -53,6 +60,7 @@ def main() -> int:
             prepared / "validation.maps.jsonl",
             indices / "validation.npy",
             validation,
+            spatial_semantics=args.spatial_semantics,
             action_encoding="events",
         )
 
@@ -75,6 +83,7 @@ def main() -> int:
                 epochs=3,
                 schedule_epochs=3,
                 checkpoint_every_updates=1_000,
+                spatial_semantics=args.spatial_semantics,
                 action_encoding="events",
             )
         )
@@ -87,6 +96,7 @@ def main() -> int:
             prepared / "validation.maps.jsonl",
             indices / "validation.npy",
             final_validation,
+            spatial_semantics=args.spatial_semantics,
             action_encoding="events",
         )
     record_status(status, "complete", promotion=True)

@@ -223,6 +223,18 @@ Failure stops the arm. Passing resumes the same optimizer/scheduler state for
 epochs 2-3. Both selection stages use validation only; the sealed test remains
 closed.
 
+## Preregistered interaction cell
+
+Event outputs and spatial-semantic inputs form two orthogonal representation
+factors. The existing absolute/raw baseline plus their two single-factor arms
+leave one cell in a 2x2 factorial design. The queue trains that combined cell
+only if both individual arms pass their fixed screens, complete three epochs,
+and remain below 70% autoregressive validation exact action. The combined arm
+uses the same 250k index, three-epoch schedule, epoch-one promotion thresholds,
+and frozen validation set. If either factor is rejected, the combination is not
+run. This rule is recorded before any of those validation results exist; it is
+a single interaction test, not a post-hoc combination sweep.
+
 ## Rejected adapter-capacity canary
 
 PEFT's QLoRA-style guidance recommends adapting every transformer linear layer

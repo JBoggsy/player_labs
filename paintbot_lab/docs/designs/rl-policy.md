@@ -447,6 +447,13 @@ training, but only exceeding 70% autoregressive validation stops the independent
 spatial arm; neither arm can open the sealed test. Current experiment contract and results live in
 [`../reports/rl-exhaustive-baseline-2026-08-14.md`](../reports/rl-exhaustive-baseline-2026-08-14.md).
 
+If both event outputs and spatial-semantic inputs pass their single-factor
+screens, complete three epochs, and remain below 70%, the unattended queue
+fills the fourth cell of that 2x2 representation design. The combined arm uses
+the same index, schedule, screen, and validation-only selection contract. It is
+not eligible when either individual factor is rejected, which prevents an
+open-ended search over post-hoc combinations.
+
 ### Sealed-candidate gate
 
 Validation and test evaluators attest the exact sample-index SHA-256, Arrow

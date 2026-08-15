@@ -11,6 +11,8 @@ EVENT_OUTPUT="$ROOT/$WORKSPACE/training-v4-event-actions"
 EVENT_STATUS="$EVENT_OUTPUT/status.json"
 SPATIAL_OUTPUT="$ROOT/$WORKSPACE/training-v3-spatial-semantics"
 SPATIAL_STATUS="$SPATIAL_OUTPUT/status.json"
+COMBINED_OUTPUT="$ROOT/$WORKSPACE/training-v5-event-spatial"
+COMBINED_STATUS="$COMBINED_OUTPUT/status.json"
 DASHBOARD_PID="$ROOT/$WORKSPACE/training-v1/dashboard.pid"
 DASHBOARD_LOG="$ROOT/$WORKSPACE/training-v1/dashboard.log"
 
@@ -116,3 +118,20 @@ run_until_terminal "$SPATIAL_STATUS" \
   .venv/bin/python -u paintbot_lab/paintbot/rl/run_spatial_semantics_experiment.py \
     --workspace "$WORKSPACE" \
     --output "$WORKSPACE/training-v3-spatial-semantics"
+
+if exceeds_target "$SPATIAL_OUTPUT/full/validation_evaluation.json"; then
+  exit 0
+fi
+
+# Fill the preregistered 2x2 interaction cell only when both individual
+# representation factors passed their screens and completed below target.
+if grep -q '"stage": "complete"' "$EVENT_STATUS" \
+  && grep -q '"stage": "complete"' "$SPATIAL_STATUS"; then
+  run_until_terminal "$COMBINED_STATUS" \
+    "$COMBINED_OUTPUT" \
+    "$ROOT/logs/event-spatial.log" \
+    .venv/bin/python -u paintbot_lab/paintbot/rl/run_event_action_experiment.py \
+      --workspace "$WORKSPACE" \
+      --output "$WORKSPACE/training-v5-event-spatial" \
+      --spatial-semantics
+fi

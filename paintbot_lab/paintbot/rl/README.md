@@ -158,6 +158,10 @@ The unattended accuracy queue retargets the remote dashboard from diversity to
 the event-action screen, and then to spatial semantics if no completed arm has
 exceeded 70% on frozen autoregressive validation. Passing the event screen but
 finishing below the target does not stop the independent spatial experiment.
+If both single-factor arms pass their screens and complete below 70%, the queue
+fills the preregistered 2x2 interaction cell by training event outputs with
+spatial-semantic inputs. A rejected single-factor screen suppresses that
+combination.
 After diversity finishes, the queue also evaluates the original baseline
 checkpoint autoregressively on the same frozen validation index, providing a
 like-for-like diagnostic without opening the test. The SSH tunnel and local
