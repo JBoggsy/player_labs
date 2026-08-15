@@ -5,6 +5,7 @@ ROOT=/home/metta/paintbot_rl_training_20260807
 WORKSPACE=runs/expert-corpus-v1
 LOCK="$ROOT/$WORKSPACE/training-v2-diversity.lock"
 DIVERSITY_STATUS="$ROOT/$WORKSPACE/training-v2-diversity/status.json"
+DIVERSITY_VALIDATION="$ROOT/$WORKSPACE/training-v2-diversity/full/validation_evaluation.json"
 EVENT_OUTPUT="$ROOT/$WORKSPACE/training-v4-event-actions"
 EVENT_STATUS="$EVENT_OUTPUT/status.json"
 SPATIAL_OUTPUT="$ROOT/$WORKSPACE/training-v3-spatial-semantics"
@@ -63,6 +64,13 @@ while ! test -s "$DIVERSITY_STATUS" \
   || ! grep -q '"stage": "complete"' "$DIVERSITY_STATUS"; do
   sleep 60
 done
+
+if test -s "$DIVERSITY_VALIDATION" \
+  && .venv/bin/python -c \
+    'import json,sys; raise SystemExit(json.load(open(sys.argv[1]))["groups"]["all"]["constrained_exact_action_accuracy"] <= 0.70)' \
+    "$DIVERSITY_VALIDATION"; then
+  exit 0
+fi
 
 run_until_terminal "$EVENT_STATUS" \
   "$EVENT_OUTPUT" \
