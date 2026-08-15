@@ -22,6 +22,12 @@ The 10,000-row sealed test index remains unchanged:
 - validation selected semantic rows SHA-256: `8b02bd5212d0ba47346d81af812be24ddf46d9e9ff9f19d3071754217ddcb35a`
 - baseline test evaluation SHA-256: `f4b5fb20777076ae84856214051be63dea3daf456167df73d3f93244a6e0457e`
 
+A provenance audit across all 20 shards found 526,164 unique train
+trajectories, 29,458 unique validation trajectories, and 29,164 unique test
+trajectories by `(episode, seat)`, with no duplicate trajectory records. The
+corresponding replay counts are 294,449, 16,388, and 16,304, with zero replay-ID
+overlap between every pair of splits.
+
 All diagnosis and model selection after the baseline use validation only. The
 test set will be opened once for a candidate selected under the frozen
 validation rule. New evaluator artifacts include their sample-index hash,
