@@ -19,6 +19,7 @@ from actions import (
     RELEASE_TOKENS,
     STOP_TOKEN,
     canonical_action_mask,
+    canonical_event_candidates,
 )
 
 
@@ -210,18 +211,18 @@ class SemanticPolicyModel(nn.Module):
         embeddings = torch.cat((map_embeddings, text_embeddings), dim=1)
         mask = canonical_action_mask(previous_mask)
         touched = 0
+        press_phase = False
+        release_from = 0
+        press_from = 0
         generated: list[str] = []
         for _ in BUTTONS:
-            allowed = [STOP_TOKEN]
-            for index, (bit, _) in enumerate(BUTTONS):
-                if touched & bit:
-                    continue
-                candidate_mask = mask ^ bit
-                if canonical_action_mask(candidate_mask) != candidate_mask:
-                    continue
-                allowed.append(
-                    RELEASE_TOKENS[index] if mask & bit else PRESS_TOKENS[index]
-                )
+            allowed = canonical_event_candidates(
+                mask,
+                touched,
+                press_phase=press_phase,
+                release_from=release_from,
+                press_from=press_from,
+            )
             logits = self.language_model(inputs_embeds=embeddings).logits[0, -1]
             allowed_ids = torch.tensor(
                 [tokenizer.convert_tokens_to_ids(token) for token in allowed],
@@ -232,10 +233,19 @@ class SemanticPolicyModel(nn.Module):
             generated.append(token)
             if token == STOP_TOKEN:
                 return tuple(generated)
-            index = PRESS_TOKENS.index(token) if token in PRESS_TOKENS else RELEASE_TOKENS.index(token)
+            index = (
+                PRESS_TOKENS.index(token)
+                if token in PRESS_TOKENS
+                else RELEASE_TOKENS.index(token)
+            )
             bit = BUTTONS[index][0]
             touched |= bit
             mask ^= bit
+            if token in PRESS_TOKENS:
+                press_phase = True
+                press_from = index + 1
+            else:
+                release_from = index + 1
             next_embedding = self.language_model.get_input_embeddings()(
                 selected_id.reshape(1, 1)
             )

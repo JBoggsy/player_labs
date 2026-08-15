@@ -124,6 +124,32 @@ def action_event_text(previous_mask: int, target_mask: int) -> str:
     return "".join(action_event_tokens(previous_mask, target_mask))
 
 
+def canonical_event_candidates(
+    mask: int,
+    touched: int,
+    *,
+    press_phase: bool,
+    release_from: int,
+    press_from: int,
+) -> tuple[str, ...]:
+    """Return valid next tokens in the canonical training-sequence order."""
+    candidates = [STOP_TOKEN]
+    for index, (bit, _) in enumerate(BUTTONS):
+        if touched & bit:
+            continue
+        pressed = not bool(mask & bit)
+        if press_phase:
+            if not pressed or index < press_from:
+                continue
+        elif not pressed and index < release_from:
+            continue
+        candidate_mask = mask ^ bit
+        if canonical_action_mask(candidate_mask) != candidate_mask:
+            continue
+        candidates.append(PRESS_TOKENS[index] if pressed else RELEASE_TOKENS[index])
+    return tuple(candidates)
+
+
 def action_text(mask: int) -> str:
     # Added special tokens must remain adjacent: Qwen otherwise learns four
     # ordinary whitespace tokens that constrained inference never generates.

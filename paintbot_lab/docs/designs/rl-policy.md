@@ -435,7 +435,9 @@ confusion.
 The opt-in `events` codec therefore supervises only button transitions:
 canonical releases, canonical presses, then `<STOP>`. The decoder owns previous
 button state, rejects redundant/contradictory events, and reconstructs the raw
-held mask. The absolute four-slot codec remains the default and the selected
+held mask. Autoregressive generation enforces the same release-before-press and
+within-phase button order as training, so it cannot enter unsupervised event
+permutations. The absolute four-slot codec remains the default and the selected
 codec is checkpoint metadata. Event training always reserves nine target
 tokens, preventing target-length leakage through prompt truncation. Model
 selection uses autoregressive generation through `<STOP>`; teacher-forced

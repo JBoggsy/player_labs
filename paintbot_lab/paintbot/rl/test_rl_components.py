@@ -14,9 +14,14 @@ from actions import (
     TURN_CW,
     UP,
     ActionDecoder,
+    BUTTONS,
+    PRESS_TOKENS,
+    RELEASE_TOKENS,
     action_event_tokens,
     action_text,
+    canonical_action_mask,
     canonical_action_tokens,
+    canonical_event_candidates,
 )
 from dataset import ActionChange, ActionTimeline, SFTSample, build_samples
 from episode_map import EpisodeMap, decode_walkability_sprite
@@ -73,6 +78,62 @@ def test_event_action_codec_rejects_redundant_or_contradictory_events() -> None:
         ActionDecoder(UP).decode_events(("<UP_PRESS>", "<STOP>"))
     with pytest.raises(ValueError, match="contradictory"):
         ActionDecoder(UP).decode_events(("<DOWN_PRESS>", "<STOP>"))
+
+
+def test_every_event_target_follows_the_generation_grammar() -> None:
+    masks = {canonical_action_mask(mask) for mask in range(256)}
+    for previous in masks:
+        for target in masks:
+            mask = previous
+            touched = 0
+            press_phase = False
+            release_from = 0
+            press_from = 0
+            for token in action_event_tokens(previous, target):
+                assert token in canonical_event_candidates(
+                    mask,
+                    touched,
+                    press_phase=press_phase,
+                    release_from=release_from,
+                    press_from=press_from,
+                )
+                if token == "<STOP>":
+                    continue
+                pressed = token in PRESS_TOKENS
+                index = (
+                    PRESS_TOKENS.index(token)
+                    if pressed
+                    else RELEASE_TOKENS.index(token)
+                )
+                bit = BUTTONS[index][0]
+                touched |= bit
+                mask ^= bit
+                if pressed:
+                    press_phase = True
+                    press_from = index + 1
+                else:
+                    release_from = index + 1
+
+
+def test_event_generation_grammar_excludes_out_of_order_events() -> None:
+    after_fire_release = canonical_event_candidates(
+        UP,
+        FIRE,
+        press_phase=False,
+        release_from=BUTTONS.index((FIRE, "FIRE")) + 1,
+        press_from=0,
+    )
+    assert "<UP_RELEASE>" not in after_fire_release
+
+    after_fire_press = canonical_event_candidates(
+        UP | FIRE,
+        FIRE,
+        press_phase=True,
+        release_from=0,
+        press_from=BUTTONS.index((FIRE, "FIRE")) + 1,
+    )
+    assert "<UP_RELEASE>" not in after_fire_press
+    assert "<RIGHT_PRESS>" not in after_fire_press
 
 
 def test_contradictory_controls_are_canonicalized() -> None:

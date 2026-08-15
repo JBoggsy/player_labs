@@ -149,8 +149,10 @@ event language James originally proposed: one press or release token for each
 button that changes, followed by `<STOP>`. A held action is only `<STOP>`.
 Events are canonically ordered as releases then presses; the decoder applies
 them to the previous button mask and rejects redundant or contradictory
-sequences. This directly supervises the residual `A_t - A_(t-1)` rather than
-asking the model to reproduce four correlated held states.
+sequences. Generation is constrained to that same phase and button order so it
+cannot condition later predictions on event permutations absent from SFT. This
+directly supervises the residual `A_t - A_(t-1)` rather than asking the model to
+reproduce four correlated held states.
 
 This is motivated by the validation diagnosis and by prior imitation-learning
 work on the copycat problem and residual-action prediction. It is not loss

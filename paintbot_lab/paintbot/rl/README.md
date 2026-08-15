@@ -266,11 +266,12 @@ checkpoints retain the absolute action tokens as trainable prompt vocabulary so
 `previous_action` has the same five-token representation under both codecs.
 Every row reserves the worst-case nine-token event budget during truncation,
 regardless of its true target length. `evaluate_event_sft.py` generates
-autoregressively until `<STOP>` and decodes the result back to a canonical held
-mask before reporting the selection exact-action and per-component accuracy;
-teacher-forced event scores are diagnostics only. The default remains
-`absolute`, so existing checkpoints and unattended runs retain their original
-four-slot action language.
+autoregressively until `<STOP>` while enforcing the same release-before-press,
+button-order grammar used by the targets. It decodes the result back to a
+canonical held mask before reporting the selection exact-action and
+per-component accuracy; teacher-forced event scores are diagnostics only. The
+default remains `absolute`, so existing checkpoints and unattended runs retain
+their original four-slot action language.
 
 LoRA defaults to rank 8 over the attention Q/K/V/O projections. Capacity
 experiments can set `--lora-rank` and choose
