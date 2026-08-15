@@ -224,14 +224,15 @@ def main() -> int:
                 checkpoint_every_updates=1_000,
             )
         )
-    if not (full / "test_evaluation.json").exists():
-        record_status(status, "evaluating_full")
+    validation_evaluation = full / "validation_evaluation.json"
+    if not validation_evaluation.exists():
+        record_status(status, "evaluating_full_validation")
         evaluate(
             full / "best",
-            arrow / "test",
-            prepared / "test.maps.jsonl",
-            indices / "test.npy",
-            full / "test_evaluation.json",
+            arrow / "validation",
+            prepared / "validation.maps.jsonl",
+            indices / "validation.npy",
+            validation_evaluation,
         )
     record_status(status, "complete")
     return 0

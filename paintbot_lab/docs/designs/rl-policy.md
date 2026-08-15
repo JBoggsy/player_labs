@@ -453,8 +453,9 @@ strictly above 70% exact action. Validation must attest the same checkpoint-
 tree hash, action codec, spatial representation, and 4,096-token budget used by
 the sealed run. The guard re-hashes the frozen test index, refuses to overwrite
 a prior candidate result, and writes a separate pass/fail decision. This is
-the mechanical boundary between model selection and the one-time sealed test;
-do not invoke `evaluate_sft.py` directly for a new final candidate.
+the mechanical boundary between model selection and the one-time sealed test.
+All unattended training runners stop after frozen-validation evaluation; do not
+invoke `evaluate_sft.py` directly for a new final candidate.
 
 ### Transition sampling and temporal-history result
 

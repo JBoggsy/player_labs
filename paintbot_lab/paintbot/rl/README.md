@@ -45,12 +45,12 @@ The implementation now covers the complete replay-to-checkpoint path:
   shards as one virtual dataset and builds finite balanced training indices.
 - `run_expert_training.py` waits for preparation, builds Arrow plus indices,
   runs and evaluates a GPU canary, then launches resumable full training and
-  sealed-test evaluation without a human handoff.
+  frozen-validation evaluation. It never opens the sealed test.
 - `assemble_corpus.py` deduplicates maps and samples a balanced cross-era corpus
   from what the pipeline extracted.
 - `train_sft.py` is the CLI entry point that fine-tunes a run end to end (the
   `training.py`/`modeling.py` machinery is the library beneath it);
-  `evaluate_sft.py` scores a checkpoint against a sealed split.
+  `evaluate_sft.py` scores a checkpoint against an explicitly supplied split.
 - `measure_action_alignment.py` measures which replay action tick explains each
   observed aim transition — the instrument that settled zero-tick alignment.
   `measure_observation_lengths.py` is the corresponding token-length instrument.
@@ -122,7 +122,9 @@ completed stages and resumes full training from the newest valid state. It
 runs a 1,024-example GPU canary first and starts full training immediately when
 the canary and its validation evaluation complete. Full training checkpoints
 every 1,000 optimizer updates and retains the newest two step checkpoints plus
-each completed epoch.
+each completed epoch. The unattended launcher evaluates the selected checkpoint
+on frozen validation and then stops. The sealed test can only be opened through
+the guarded final-gate workflow below after validation exceeds 70%.
 
 `supervise_expert_training.sh` retries a failed handoff after 60 seconds;
 it also raises the open-file soft limit for the many memory-mapped Arrow parts.
