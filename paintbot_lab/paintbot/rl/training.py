@@ -14,7 +14,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader, Dataset, Sampler
 
-from actions import canonical_action_tokens
+from actions import MAX_EVENT_ACTION_TOKENS, canonical_action_tokens
 from corpus_store import load_arrow_dataset
 from dataset import SFTSample, read_maps, read_samples
 from modeling import SemanticPolicyModel, load_base_model, save_policy
@@ -100,8 +100,15 @@ class PolicyCollator:
                 sample.target(action_encoding=self.action_encoding),
                 add_special_tokens=False,
             )
-            prompt_ids = self._prompt_ids(sample, len(target_ids))
-            prompt_ids = prompt_ids[: max(0, self.max_text_tokens - len(target_ids))]
+            target_reservation = (
+                MAX_EVENT_ACTION_TOKENS
+                if self.action_encoding == "events"
+                else len(target_ids)
+            )
+            prompt_ids = self._prompt_ids(sample, target_reservation)
+            prompt_ids = prompt_ids[
+                : max(0, self.max_text_tokens - target_reservation)
+            ]
             if self.action_encoding == "events":
                 target_weights = [1.0] * len(target_ids)
             else:

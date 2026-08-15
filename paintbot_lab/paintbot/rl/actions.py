@@ -47,6 +47,7 @@ PRESS_TOKENS = tuple(f"<{name}_PRESS>" for _, name in BUTTONS)
 RELEASE_TOKENS = tuple(f"<{name}_RELEASE>" for _, name in BUTTONS)
 EVENT_TOKENS = (*PRESS_TOKENS, *RELEASE_TOKENS)
 EVENT_ACTION_TOKENS = (*EVENT_TOKENS, STOP_TOKEN)
+MAX_EVENT_ACTION_TOKENS = len(BUTTONS) + 1
 _EVENT_TO_CHANGE = {
     **{token: (bit, True) for (bit, _), token in zip(BUTTONS, PRESS_TOKENS, strict=True)},
     **{
@@ -172,7 +173,7 @@ class ActionDecoder:
 
     def decode_events(self, tokens: Sequence[str]) -> DecodedAction:
         """Apply one canonical press/release event sequence to retained state."""
-        if not tokens or len(tokens) > len(BUTTONS) + 1 or tokens[-1] != STOP_TOKEN:
+        if not tokens or len(tokens) > MAX_EVENT_ACTION_TOKENS or tokens[-1] != STOP_TOKEN:
             raise ValueError("event action must end with <STOP> after at most eight events")
         mask = canonical_action_mask(self.previous_mask)
         touched = 0

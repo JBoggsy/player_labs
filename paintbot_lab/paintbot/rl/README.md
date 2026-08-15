@@ -256,8 +256,11 @@ by `<STOP>`; an unchanged mask targets `<STOP>` alone. The checkpoint records
 the codec and live inference dispatches to the matching stateful decoder. Event
 checkpoints retain the absolute action tokens as trainable prompt vocabulary so
 `previous_action` has the same five-token representation under both codecs.
-`evaluate_event_sft.py` decodes event sequences back to canonical held masks
-before reporting exact-action and per-component accuracy. The default remains
+Every row reserves the worst-case nine-token event budget during truncation,
+regardless of its true target length. `evaluate_event_sft.py` generates
+autoregressively until `<STOP>` and decodes the result back to a canonical held
+mask before reporting the selection exact-action and per-component accuracy;
+teacher-forced event scores are diagnostics only. The default remains
 `absolute`, so existing checkpoints and unattended runs retain their original
 four-slot action language.
 

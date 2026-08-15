@@ -436,7 +436,10 @@ The opt-in `events` codec therefore supervises only button transitions:
 canonical releases, canonical presses, then `<STOP>`. The decoder owns previous
 button state, rejects redundant/contradictory events, and reconstructs the raw
 held mask. The absolute four-slot codec remains the default and the selected
-codec is checkpoint metadata. A schedule-matched one-epoch validation screen
+codec is checkpoint metadata. Event training always reserves nine target
+tokens, preventing target-length leakage through prompt truncation. Model
+selection uses autoregressive generation through `<STOP>`; teacher-forced
+event accuracy is not the gate. A schedule-matched one-epoch validation screen
 is queued ahead of the spatial-semantics arm; neither arm can open the sealed
 test. Current experiment contract and results live in
 [`../reports/rl-exhaustive-baseline-2026-08-14.md`](../reports/rl-exhaustive-baseline-2026-08-14.md).

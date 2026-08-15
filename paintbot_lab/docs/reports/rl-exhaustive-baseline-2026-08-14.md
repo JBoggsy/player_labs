@@ -146,8 +146,12 @@ The arm trains on the exact original 250k index for one epoch under the
 original three-epoch LR schedule. It promotes to epochs 2-3 only if validation
 exact is at least 58.02%, movement exceeds 71.30%, and held exact remains at
 least 91.24%. Evaluation decodes the canonical predicted event sequence back
-to a held mask before scoring exact action. The codec defaults to `absolute`,
-is stored in checkpoint metadata, and does not alter existing checkpoints.
+to a held mask before scoring exact action. The selection metric generates
+autoregressively until `<STOP>` without knowing the target length; teacher-
+forced event accuracy is diagnostic only. Training reserves the same worst-
+case nine-token action budget for every row, so prompt truncation cannot leak
+the number of target events. The codec defaults to `absolute`, is stored in
+checkpoint metadata, and does not alter existing checkpoints.
 
 ## Queued experiment 2: spatial semantics
 

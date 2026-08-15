@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Evaluate teacher-forced press/release event prediction on canonical actions."""
+"""Evaluate autoregressive press/release events with teacher-forced diagnostics."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ import torch
 
 from actions import (
     EVENT_ACTION_TOKENS,
+    MAX_EVENT_ACTION_TOKENS,
     ActionDecoder,
     canonical_action_mask,
     canonical_action_tokens,
@@ -25,7 +26,9 @@ def empty_score() -> dict:
     return {
         "samples": 0,
         "tokens": 0,
-        "constrained_correct": 0,
+        "teacher_forced_correct": 0,
+        "teacher_forced_exact": 0,
+        "teacher_forced_invalid_sequences": 0,
         "constrained_exact": 0,
         "previous_exact": 0,
         "invalid_sequences": 0,
@@ -38,29 +41,40 @@ def empty_score() -> dict:
 def update_event_metrics(
     score: dict,
     *,
-    predicted_ids: torch.Tensor,
+    teacher_forced_ids: torch.Tensor,
     label_ids: torch.Tensor,
-    predicted_tokens: tuple[str, ...],
+    teacher_forced_tokens: tuple[str, ...],
+    autoregressive_tokens: tuple[str, ...],
     previous_mask: int,
     target_mask: int,
 ) -> None:
     previous = canonical_action_mask(previous_mask)
     target = canonical_action_mask(target_mask)
     changed = previous != target
-    sequence_exact = torch.equal(predicted_ids, label_ids)
+    teacher_sequence_exact = torch.equal(teacher_forced_ids, label_ids)
     try:
-        predicted_mask = ActionDecoder(previous).decode_events(predicted_tokens).mask
+        teacher_mask = ActionDecoder(previous).decode_events(teacher_forced_tokens).mask
+    except ValueError:
+        teacher_mask = None
+    try:
+        predicted_mask = ActionDecoder(previous).decode_events(
+            autoregressive_tokens
+        ).mask
     except ValueError:
         predicted_mask = None
 
     score["samples"] += 1
     score["tokens"] += label_ids.numel()
-    score["constrained_correct"] += (predicted_ids == label_ids).sum().item()
+    score["teacher_forced_correct"] += (
+        teacher_forced_ids == label_ids
+    ).sum().item()
+    score["teacher_forced_invalid_sequences"] += teacher_mask is None
+    score["teacher_forced_exact"] += (
+        teacher_sequence_exact and teacher_mask == target
+    )
     score["previous_exact"] += not changed
     score["invalid_sequences"] += predicted_mask is None
-    # Canonical target order makes token-sequence exact a conservative action-exact
-    # criterion; decoding also guards against malformed event combinations.
-    action_exact = sequence_exact and predicted_mask == target
+    action_exact = predicted_mask == target
     score["constrained_exact"] += action_exact
     target_slots = canonical_action_tokens(target)
     predicted_slots = (
@@ -129,19 +143,38 @@ def main() -> int:
             selected = shifted_labels != -100
             labels = shifted_labels[selected]
             selected_logits = output.logits[:, :-1][selected]
-            constrained = allowed_ids[
+            teacher_forced = allowed_ids[
                 torch.argmax(selected_logits[:, allowed_ids], dim=1)
             ]
-            tokens = tuple(
+            teacher_forced_tokens = tuple(
                 tokenizer.convert_ids_to_tokens(int(token_id))
-                for token_id in constrained
+                for token_id in teacher_forced
+            )
+            prompt_ids = collator._prompt_ids(sample, MAX_EVENT_ACTION_TOKENS)
+            prompt_ids = prompt_ids[
+                : max(0, args.max_text_tokens - MAX_EVENT_ACTION_TOKENS)
+            ]
+            prompt_tensor = torch.tensor(
+                [prompt_ids], dtype=torch.long, device=device
+            )
+            map_tensor = torch.from_numpy(dataset.maps[sample.map_hash].mask()).to(
+                device, dtype=torch.float32
+            )
+            map_cache = model.map_encoder.encode_static(map_tensor)
+            autoregressive_tokens = model.greedy_event_action(
+                tokenizer,
+                prompt_tensor,
+                map_cache,
+                sample.position(),
+                sample.previous_mask,
             )
             for key in ("all", sample.game_version):
                 update_event_metrics(
                     totals[key],
-                    predicted_ids=constrained,
+                    teacher_forced_ids=teacher_forced,
                     label_ids=labels,
-                    predicted_tokens=tokens,
+                    teacher_forced_tokens=teacher_forced_tokens,
+                    autoregressive_tokens=autoregressive_tokens,
                     previous_mask=sample.previous_mask,
                     target_mask=sample.target_mask,
                 )
@@ -156,8 +189,12 @@ def main() -> int:
     for key, score in totals.items():
         result["groups"][key] = {
             **score,
-            "constrained_token_accuracy": score["constrained_correct"]
+            "teacher_forced_token_accuracy": score["teacher_forced_correct"]
             / score["tokens"],
+            "teacher_forced_exact_action_accuracy": score[
+                "teacher_forced_exact"
+            ]
+            / score["samples"],
             "constrained_exact_action_accuracy": score["constrained_exact"]
             / score["samples"],
             "constrained_slot_accuracy": dict(

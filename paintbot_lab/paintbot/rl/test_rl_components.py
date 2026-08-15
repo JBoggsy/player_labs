@@ -128,17 +128,19 @@ def test_event_evaluation_requires_a_valid_canonical_sequence() -> None:
     score = empty_score()
     update_event_metrics(
         score,
-        predicted_ids=torch.tensor([1, 2]),
+        teacher_forced_ids=torch.tensor([1, 2]),
         label_ids=torch.tensor([1, 2]),
-        predicted_tokens=("<UP_PRESS>", "<STOP>"),
+        teacher_forced_tokens=("<UP_PRESS>", "<STOP>"),
+        autoregressive_tokens=("<UP_PRESS>", "<STOP>"),
         previous_mask=0,
         target_mask=UP,
     )
     update_event_metrics(
         score,
-        predicted_ids=torch.tensor([3]),
+        teacher_forced_ids=torch.tensor([3]),
         label_ids=torch.tensor([2]),
-        predicted_tokens=("<UP_PRESS>",),
+        teacher_forced_tokens=("<UP_PRESS>",),
+        autoregressive_tokens=("<UP_PRESS>",),
         previous_mask=UP,
         target_mask=UP,
     )
@@ -146,6 +148,8 @@ def test_event_evaluation_requires_a_valid_canonical_sequence() -> None:
     assert score["constrained_exact"] == 1
     assert score["constrained_changed_exact"] == 1
     assert score["invalid_sequences"] == 1
+    assert score["teacher_forced_exact"] == 1
+    assert score["teacher_forced_invalid_sequences"] == 1
 
 
 def test_changed_component_weights_and_class_balance() -> None:
@@ -185,6 +189,24 @@ def test_changed_component_weights_and_class_balance() -> None:
     )([changed])
     assert event_batch["labels"][0, -2:].tolist() == [20, 21]
     assert event_batch["loss_weights"][0, -2:].tolist() == [1, 1]
+
+    def encode_with_long_prompt(text: str, add_special_tokens: bool) -> list[int]:
+        if text.startswith("<UP_PRESS>"):
+            return [20, 21]
+        if text == "<STOP>":
+            return [21]
+        return list(range(100, 120))
+
+    leak_safe_batch = PolicyCollator(
+        SimpleNamespace(pad_token_id=0, encode=encode_with_long_prompt),
+        maps,
+        max_text_tokens=12,
+        action_encoding="events",
+    )([changed, held])
+    assert (leak_safe_batch["labels"] != -100).sum(dim=1).tolist() == [2, 1]
+    # Both prompts reserve the same worst-case nine-token action suffix. Their
+    # visible lengths differ only by the emitted target, not by target-aware truncation.
+    assert leak_safe_batch["attention_mask"].sum(dim=1).tolist() == [5, 4]
 
 
 def test_episode_map_round_trip_and_sprite_decode() -> None:
