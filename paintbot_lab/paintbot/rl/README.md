@@ -152,6 +152,10 @@ dashboard, the launcher chooses the next free port. Override the starting local
 port with `PAINTBOT_DASHBOARD_LOCAL_PORT`; the launcher otherwise uses the
 existing `mettabox1` SSH alias and exhaustive-corpus workspace.
 
+The unattended accuracy queue retargets the remote dashboard from diversity to
+the event-action screen, and then to spatial semantics only if needed. The SSH
+tunnel and local `8876` URL remain unchanged across those handoffs.
+
 To follow a non-default experiment while retaining the same dashboard URL, set
 the remote output and log explicitly:
 
