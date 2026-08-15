@@ -7,12 +7,17 @@ import argparse
 import json
 from pathlib import Path
 
+from corpus_store import load_arrow_dataset
 from evaluate_sft import sha256_file, sha256_tree
 from run_expert_training import evaluate
 
 
 VALIDATION_INDEX_SHA256 = "78e46be391cf13c6c488b6b0ed2ccd0fe1da36eb73d13fb6db5a42c0f8d50644"
 TEST_INDEX_SHA256 = "244dad9d331ab92c2a852c1f7ca1ae31d5892c48e11acf08cb31c6f65577dbdb"
+VALIDATION_DATASET_FINGERPRINT = "599c88fdfbf0ba82"
+TEST_DATASET_FINGERPRINT = "03693a38c974e27a"
+VALIDATION_SELECTED_SAMPLES_SHA256 = "8b02bd5212d0ba47346d81af812be24ddf46d9e9ff9f19d3071754217ddcb35a"
+TEST_SELECTED_SAMPLES_SHA256 = "3f64245eff0e2f8307453455fdd8273b645ed59175eabf2db895d4b16e22e1a3"
 GATE_SAMPLES = 10_000
 TARGET_ACCURACY = 0.70
 
@@ -26,6 +31,21 @@ def validate_validation_gate(
 ) -> float:
     if evaluation.get("sample_indices_sha256") != VALIDATION_INDEX_SHA256:
         raise ValueError("validation evaluation is not tied to the frozen index")
+    if evaluation.get("sample_dataset_fingerprint") != VALIDATION_DATASET_FINGERPRINT:
+        raise ValueError("validation evaluation is not tied to the frozen dataset")
+    if (
+        evaluation.get("selected_samples_sha256")
+        != VALIDATION_SELECTED_SAMPLES_SHA256
+    ):
+        raise ValueError("validation evaluation is not tied to the frozen sample rows")
+    maps_fingerprint = evaluation.get("maps_fingerprint")
+    if not isinstance(maps_fingerprint, str) or len(maps_fingerprint) != 64:
+        raise ValueError("validation evaluation does not attest the map set")
+    if (
+        not isinstance(evaluation.get("maps_count"), int)
+        or evaluation["maps_count"] <= 0
+    ):
+        raise ValueError("validation evaluation does not attest a non-empty map set")
     if evaluation.get("checkpoint_sha256") != checkpoint_sha256:
         raise ValueError("validation evaluation is not tied to this checkpoint")
     if evaluation.get("max_text_tokens") != 4096:
@@ -50,6 +70,12 @@ def require_frozen_index(path: Path, expected: str, name: str) -> None:
     actual = sha256_file(path)
     if actual != expected:
         raise ValueError(f"{name} index hash mismatch: {actual}")
+
+
+def require_frozen_dataset(path: Path, expected: str, name: str) -> None:
+    actual = str(load_arrow_dataset(path)._fingerprint)
+    if actual != expected:
+        raise ValueError(f"{name} dataset fingerprint mismatch: {actual}")
 
 
 def main() -> int:
@@ -85,6 +111,18 @@ def main() -> int:
             validation_index, VALIDATION_INDEX_SHA256, "validation"
         )
         require_frozen_index(test_index, TEST_INDEX_SHA256, "test")
+        require_frozen_dataset(
+            args.workspace / "arrow" / "validation",
+            VALIDATION_DATASET_FINGERPRINT,
+            "validation",
+        )
+        require_frozen_dataset(
+            args.workspace / "arrow" / "test", TEST_DATASET_FINGERPRINT, "test"
+        )
+        validation_maps = args.workspace / "prepared" / "validation.maps.jsonl"
+        test_maps = args.workspace / "prepared" / "test.maps.jsonl"
+        if not validation_maps.samefile(test_maps):
+            raise ValueError("validation and test do not use the same frozen map table")
     except (FileNotFoundError, ValueError) as error:
         parser.error(str(error))
 
@@ -100,8 +138,16 @@ def main() -> int:
     result = json.loads(args.out.read_text())
     if result.get("sample_indices_sha256") != TEST_INDEX_SHA256:
         raise RuntimeError("evaluator did not attest the frozen test index")
+    if result.get("sample_dataset_fingerprint") != TEST_DATASET_FINGERPRINT:
+        raise RuntimeError("evaluator did not attest the frozen test dataset")
+    if result.get("selected_samples_sha256") != TEST_SELECTED_SAMPLES_SHA256:
+        raise RuntimeError("evaluator did not attest the frozen test sample rows")
     if result.get("checkpoint_sha256") != checkpoint_sha256:
         raise RuntimeError("evaluator did not attest the selected checkpoint")
+    if result.get("maps_fingerprint") != validation["maps_fingerprint"]:
+        raise RuntimeError("test and validation map-set attestations differ")
+    if result.get("maps_count") != validation["maps_count"]:
+        raise RuntimeError("test and validation map counts differ")
     metrics = result["groups"]["all"]
     if metrics["samples"] != GATE_SAMPLES:
         raise RuntimeError("sealed evaluation did not contain exactly 10,000 rows")
@@ -111,6 +157,12 @@ def main() -> int:
         "checkpoint_sha256": checkpoint_sha256,
         "validation_index_sha256": VALIDATION_INDEX_SHA256,
         "test_index_sha256": TEST_INDEX_SHA256,
+        "validation_dataset_fingerprint": VALIDATION_DATASET_FINGERPRINT,
+        "test_dataset_fingerprint": TEST_DATASET_FINGERPRINT,
+        "validation_selected_samples_sha256": VALIDATION_SELECTED_SAMPLES_SHA256,
+        "test_selected_samples_sha256": TEST_SELECTED_SAMPLES_SHA256,
+        "maps_fingerprint": validation["maps_fingerprint"],
+        "maps_count": validation["maps_count"],
         "validation_exact_action_accuracy": validation_accuracy,
         "test_exact_action_accuracy": test_accuracy,
         "target_accuracy": TARGET_ACCURACY,

@@ -446,16 +446,20 @@ test. Current experiment contract and results live in
 
 ### Sealed-candidate gate
 
-Validation and test evaluators now attest the exact sample-index SHA-256 in
-their result JSON. `evaluate_sealed_candidate.py` opens the frozen test only
-when validation uses the recorded index, contains exactly 10,000 rows, and is
-strictly above 70% autoregressive exact action. Teacher-forced
-constrained metrics remain diagnostics for old artifacts but cannot satisfy the
-gate. Validation must attest the same checkpoint-tree hash, action codec,
-spatial representation, and 4,096-token budget used by the sealed run. The
-guard re-hashes the frozen test index, refuses to overwrite a prior candidate
-result, and writes a separate pass/fail decision. This is the mechanical
-boundary between model selection and the one-time sealed test.
+Validation and test evaluators attest the exact sample-index SHA-256, Arrow
+dataset fingerprint, SHA-256 of the selected semantic sample records, and
+validated map-set fingerprint in their result JSON.
+`evaluate_sealed_candidate.py` opens the frozen test only when validation uses
+the recorded dataset and index, contains exactly 10,000 rows, and is strictly
+above 70% autoregressive exact action. Teacher-forced constrained metrics remain
+diagnostics for old artifacts but cannot satisfy the gate. Validation must
+attest the same checkpoint-tree hash, action codec, spatial representation, and
+4,096-token budget used by the sealed run. The guard re-hashes both frozen
+indices, verifies both Arrow dataset fingerprints, requires validation and test
+to use the same map-table file, and checks the resulting test row and map
+attestations before writing a separate pass/fail decision. It also refuses to
+overwrite a prior candidate result. This is the mechanical boundary between
+model selection and the one-time sealed test.
 All unattended training runners stop after frozen-validation evaluation; do not
 invoke `evaluate_sft.py` directly for a new final candidate.
 

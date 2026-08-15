@@ -287,12 +287,16 @@ test logits.
 
 `evaluate_sealed_candidate.py` is the only supported final-gate command. It
 refuses to run unless the candidate's validation JSON attests the frozen
-validation-index SHA-256, contains exactly 10,000 rows, and reports strictly
-more than 70% autoregressive exact action. Teacher-forced exact action cannot
-satisfy this gate. The validation artifact must also attest the exact checkpoint-
-tree SHA-256, action codec, spatial representation, and 4,096-token budget. The
-guard independently verifies the frozen test index, refuses to overwrite an
-existing result, and writes a separate sealed decision record.
+validation-index SHA-256, Arrow dataset fingerprint, SHA-256 of the 10,000
+selected semantic sample records, and validated map-set fingerprint. It must
+contain exactly 10,000 rows and report strictly more than 70% autoregressive
+exact action; teacher-forced exact action cannot satisfy this gate. The
+validation artifact must also attest the exact checkpoint-tree SHA-256, action
+codec, spatial representation, and 4,096-token budget. The guard independently
+verifies the frozen test index and Arrow dataset, requires validation and test
+to reference the same map-table file, checks the test evaluator's row and map
+attestations, refuses to overwrite an existing result, and writes a separate
+sealed decision record.
 This keeps model selection on validation and makes the one-time test opening
 auditable:
 

@@ -6,6 +6,8 @@ import torch
 
 import evaluate_sft
 from actions import ACTION_TOKENS, UP, canonical_action_tokens
+from dataset import SFTSample
+from observation_text import EntitySnapshot, ObservationSnapshot
 
 
 def test_evaluator_separates_autoregressive_from_teacher_forced_exact(
@@ -19,17 +21,21 @@ def test_evaluator_separates_autoregressive_from_teacher_forced_exact(
         def convert_tokens_to_ids(self, token):
             return token_ids[token]
 
-    sample = SimpleNamespace(
+    observation = ObservationSnapshot(
         game_version="40",
-        map_hash="map",
-        previous_mask=0,
-        target_mask=UP,
-        replay_id="replay",
-        position=lambda: (0.0, 0.0),
+        frame=1,
+        map_width=8,
+        map_height=8,
+        entities=(EntitySnapshot(1, "self red right", 0, 0, 0, 0, 1, 1),),
+        tick=1,
+    ).to_dict()
+    sample = SFTSample(
+        "replay", "40", 0, 1, 1, "map", observation, 0, UP
     )
 
     class Dataset:
         maps = {"map": object()}
+        arrow = SimpleNamespace(_fingerprint="dataset-fingerprint")
 
         def __init__(self, *args):
             pass
@@ -99,6 +105,11 @@ def test_evaluator_separates_autoregressive_from_teacher_forced_exact(
 
     assert evaluate_sft.main() == 0
     metrics = json.loads(output.read_text())["groups"]["all"]
+    evaluation = json.loads(output.read_text())
+    assert evaluation["sample_dataset_fingerprint"] == "dataset-fingerprint"
+    assert len(evaluation["selected_samples_sha256"]) == 64
+    assert evaluation["maps_count"] == 1
+    assert len(evaluation["maps_fingerprint"]) == 64
     assert metrics["constrained_exact_action_accuracy"] == 0.0
     assert metrics["autoregressive_exact_action_accuracy"] == 1.0
     assert metrics["autoregressive_changed_exact_action_accuracy"] == 1.0

@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 from collections import defaultdict
+from dataclasses import asdict
 from pathlib import Path
 
 import numpy as np
@@ -40,6 +41,29 @@ def sha256_tree(path: Path) -> str:
                 digest.update(chunk)
         digest.update(b"\0")
     return digest.hexdigest()
+
+
+def dataset_fingerprint(dataset: PolicyDataset, samples_path: Path) -> str:
+    if dataset.arrow is not None:
+        return str(dataset.arrow._fingerprint)
+    return sha256_file(samples_path)
+
+
+def maps_fingerprint(maps: dict) -> str:
+    """Bind the validated map set without re-hashing multi-gigabyte rasters."""
+    digest = hashlib.sha256()
+    for map_hash in sorted(maps):
+        digest.update(map_hash.encode())
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+def update_sample_fingerprint(digest, sample) -> None:
+    payload = json.dumps(
+        asdict(sample), sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode()
+    digest.update(len(payload).to_bytes(8, "little"))
+    digest.update(payload)
 
 
 def evaluation_device() -> torch.device:
@@ -166,8 +190,10 @@ def main() -> int:
     label_rows: list[np.ndarray] = []
     replay_ids: list[str] = []
     game_versions: list[str] = []
+    selected_samples_digest = hashlib.sha256()
     with torch.no_grad():
         for sample in dataset:
+            update_sample_fingerprint(selected_samples_digest, sample)
             batch = collator([sample])
             batch = {
                 key: [item.to(device) for item in value] if key == "maps" else value.to(device) if torch.is_tensor(value) else value
@@ -246,9 +272,13 @@ def main() -> int:
         "device": str(device),
         "max_text_tokens": args.max_text_tokens,
         "checkpoint_sha256": sha256_tree(args.checkpoint),
+        "sample_dataset_fingerprint": dataset_fingerprint(dataset, args.samples),
+        "selected_samples_sha256": selected_samples_digest.hexdigest(),
         "sample_indices_sha256": (
             sha256_file(args.sample_indices) if args.sample_indices else None
         ),
+        "maps_fingerprint": maps_fingerprint(dataset.maps),
+        "maps_count": len(dataset.maps),
         "include_spatial_semantics": args.spatial_semantics,
         "action_encoding": "absolute",
         "groups": {},

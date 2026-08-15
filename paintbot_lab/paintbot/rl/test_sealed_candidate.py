@@ -5,7 +5,10 @@ import pytest
 from evaluate_sft import sha256_tree
 from evaluate_sealed_candidate import (
     GATE_SAMPLES,
+    VALIDATION_DATASET_FINGERPRINT,
     VALIDATION_INDEX_SHA256,
+    VALIDATION_SELECTED_SAMPLES_SHA256,
+    require_frozen_dataset,
     require_frozen_index,
     validate_validation_gate,
 )
@@ -20,6 +23,10 @@ def validation(
 ) -> dict:
     return {
         "sample_indices_sha256": index_hash,
+        "sample_dataset_fingerprint": VALIDATION_DATASET_FINGERPRINT,
+        "selected_samples_sha256": VALIDATION_SELECTED_SAMPLES_SHA256,
+        "maps_fingerprint": "a" * 64,
+        "maps_count": 123,
         "checkpoint_sha256": checkpoint_hash,
         "max_text_tokens": 4096,
         "action_encoding": "absolute",
@@ -46,6 +53,14 @@ def test_sealed_gate_requires_frozen_index_size_and_strictly_over_70() -> None:
         validate_validation_gate(validation(0.8, samples=9_999), **kwargs)
     with pytest.raises(ValueError, match="frozen index"):
         validate_validation_gate(validation(0.8, index_hash="wrong"), **kwargs)
+    substituted_dataset = validation(0.8)
+    substituted_dataset["sample_dataset_fingerprint"] = "wrong"
+    with pytest.raises(ValueError, match="frozen dataset"):
+        validate_validation_gate(substituted_dataset, **kwargs)
+    substituted_rows = validation(0.8)
+    substituted_rows["selected_samples_sha256"] = "wrong"
+    with pytest.raises(ValueError, match="frozen sample rows"):
+        validate_validation_gate(substituted_rows, **kwargs)
     with pytest.raises(ValueError, match="this checkpoint"):
         validate_validation_gate(
             validation(0.8, checkpoint_hash="other"), **kwargs
@@ -75,6 +90,17 @@ def test_frozen_index_check_hashes_exact_bytes(tmp_path) -> None:
     require_frozen_index(path, digest, "test")
     with pytest.raises(ValueError, match="hash mismatch"):
         require_frozen_index(path, "0" * 64, "test")
+
+
+def test_frozen_dataset_check_uses_arrow_fingerprint(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(
+        "evaluate_sealed_candidate.load_arrow_dataset",
+        lambda path: type("Dataset", (), {"_fingerprint": "frozen"})(),
+    )
+
+    require_frozen_dataset(tmp_path, "frozen", "validation")
+    with pytest.raises(ValueError, match="dataset fingerprint mismatch"):
+        require_frozen_dataset(tmp_path, "other", "validation")
 
 
 def test_checkpoint_tree_hash_binds_names_and_contents(tmp_path) -> None:

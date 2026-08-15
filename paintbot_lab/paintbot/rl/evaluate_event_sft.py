@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -17,7 +18,14 @@ from actions import (
     canonical_action_mask,
     canonical_action_tokens,
 )
-from evaluate_sft import evaluation_device, sha256_file, sha256_tree
+from evaluate_sft import (
+    dataset_fingerprint,
+    evaluation_device,
+    maps_fingerprint,
+    sha256_file,
+    sha256_tree,
+    update_sample_fingerprint,
+)
 from modeling import load_policy
 from training import PolicyCollator, PolicyDataset
 
@@ -119,8 +127,10 @@ def main() -> int:
         device=device,
     )
     totals = defaultdict(empty_score)
+    selected_samples_digest = hashlib.sha256()
     with torch.no_grad():
         for sample in dataset:
+            update_sample_fingerprint(selected_samples_digest, sample)
             batch = collator([sample])
             batch = {
                 key: [item.to(device) for item in value]
@@ -183,9 +193,13 @@ def main() -> int:
         "device": str(device),
         "max_text_tokens": args.max_text_tokens,
         "checkpoint_sha256": sha256_tree(args.checkpoint),
+        "sample_dataset_fingerprint": dataset_fingerprint(dataset, args.samples),
+        "selected_samples_sha256": selected_samples_digest.hexdigest(),
         "sample_indices_sha256": (
             sha256_file(args.sample_indices) if args.sample_indices else None
         ),
+        "maps_fingerprint": maps_fingerprint(dataset.maps),
+        "maps_count": len(dataset.maps),
         "include_spatial_semantics": args.spatial_semantics,
         "action_encoding": "events",
         "groups": {},

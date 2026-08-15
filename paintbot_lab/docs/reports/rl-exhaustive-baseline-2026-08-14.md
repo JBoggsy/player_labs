@@ -16,16 +16,23 @@ The 10,000-row sealed test index remains unchanged:
 
 - test index SHA-256: `244dad9d331ab92c2a852c1f7ca1ae31d5892c48e11acf08cb31c6f65577dbdb`
 - validation index SHA-256: `78e46be391cf13c6c488b6b0ed2ccd0fe1da36eb73d13fb6db5a42c0f8d50644`
+- test Arrow dataset fingerprint: `03693a38c974e27a`
+- validation Arrow dataset fingerprint: `599c88fdfbf0ba82`
+- test selected semantic rows SHA-256: `3f64245eff0e2f8307453455fdd8273b645ed59175eabf2db895d4b16e22e1a3`
+- validation selected semantic rows SHA-256: `8b02bd5212d0ba47346d81af812be24ddf46d9e9ff9f19d3071754217ddcb35a`
 - baseline test evaluation SHA-256: `f4b5fb20777076ae84856214051be63dea3daf456167df73d3f93244a6e0457e`
 
 All diagnosis and model selection after the baseline use validation only. The
 test set will be opened once for a candidate selected under the frozen
-validation rule. New evaluator artifacts include their sample-index hash, and
+validation rule. New evaluator artifacts include their sample-index hash,
+dataset fingerprint, selected-row hash, and validated map-set fingerprint.
 `evaluate_sealed_candidate.py` refuses the final run unless validation attests
-the frozen index and exact checkpoint tree, contains 10,000 rows, uses the
-matching representation contract, and exceeds 70% autoregressive exact action.
-It also re-hashes the test index and refuses to overwrite an existing candidate
-result.
+the frozen dataset, rows, index, maps, and exact checkpoint tree; contains
+10,000 rows; uses the matching representation contract; and exceeds 70%
+autoregressive exact action. It also independently checks both datasets and
+indices, requires validation and test to share the same map table, verifies the
+sealed evaluator's content attestations, and refuses to overwrite an existing
+candidate result.
 
 Metric correction: the original absolute-action evaluator derived its
 `constrained_*` fields from teacher-forced slot logits. Live inference instead
