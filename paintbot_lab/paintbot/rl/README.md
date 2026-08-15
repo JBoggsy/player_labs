@@ -255,6 +255,9 @@ explicit teacher-forced exact-action alias. It also reports a held-action
 persistence baseline plus accuracy restricted to examples where the expert
 actually changed the button state. The latter two are required:
 aggregate accuracy can otherwise reward simply copying the previous mask.
+Both absolute and event decoders prefill the observation once, then reuse
+Qwen's KV cache for generated action tokens; this changes evaluation latency,
+not token selection or the metric contract.
 
 Training accepts `--action-change-weight <number|balanced>`. Numeric values
 multiply loss only for movement/turn/fire/grenade targets whose state differs

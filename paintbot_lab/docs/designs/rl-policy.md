@@ -154,7 +154,7 @@ shape. These defaults are conservative starting points, not closed decisions:
 | Tuning | LoRA rank 8 over attention projections plus only the 17 new token rows | `--tuning lora|full`, `--lora-rank`, and `--lora-target-modules attention|all-linear` |
 | Text ceiling | 2,048 tokens for the Mac baseline, preserving the nearest/self-first prefix and all targets | `--max-text-tokens` |
 | Replay alignment | observation at tick `t` predicts held mask at tick `t` | `--action-delay-ticks`; both ticks stored |
-| Decoding | four constrained autoregressive action steps, then grammar-implied `<STOP>`, without a KV cache | isolated `greedy_action()` method |
+| Decoding | one prefix prefill, then KV-cached constrained action steps and grammar-implied `<STOP>` | isolated `greedy_action()` and `greedy_event_action()` methods |
 | Temporal training input | four compact causal deltas plus previous transmitted action | `history` sample field; history length and `max_history_tokens` remain experiment knobs |
 
 The action decoder uses the actual Sprite-v1 layout: directions occupy bits

@@ -182,9 +182,14 @@ class SemanticPolicyModel(nn.Module):
         map_embeddings = self.map_encoder.gather(map_cache, position)
         text_embeddings = self.language_model.get_input_embeddings()(prompt_ids)
         embeddings = torch.cat((map_embeddings, text_embeddings), dim=1)
+        output = self.language_model(
+            inputs_embeds=embeddings,
+            use_cache=True,
+            logits_to_keep=1,
+        )
         generated: list[str] = []
-        for allowed in ACTION_TOKEN_SLOTS:
-            logits = self.language_model(inputs_embeds=embeddings).logits[0, -1]
+        for slot, allowed in enumerate(ACTION_TOKEN_SLOTS):
+            logits = output.logits[0, -1]
             allowed_ids = torch.tensor(
                 [tokenizer.convert_tokens_to_ids(token) for token in allowed],
                 device=logits.device,
@@ -192,8 +197,13 @@ class SemanticPolicyModel(nn.Module):
             selected_id = allowed_ids[torch.argmax(logits[allowed_ids])]
             token = tokenizer.convert_ids_to_tokens(selected_id.item())
             generated.append(token)
-            next_embedding = self.language_model.get_input_embeddings()(selected_id.reshape(1, 1))
-            embeddings = torch.cat((embeddings, next_embedding), dim=1)
+            if slot + 1 < len(ACTION_TOKEN_SLOTS):
+                output = self.language_model(
+                    input_ids=selected_id.reshape(1, 1),
+                    past_key_values=output.past_key_values,
+                    use_cache=True,
+                    logits_to_keep=1,
+                )
         return (*generated, STOP_TOKEN)
 
     @torch.no_grad()
@@ -209,13 +219,18 @@ class SemanticPolicyModel(nn.Module):
         map_embeddings = self.map_encoder.gather(map_cache, position)
         text_embeddings = self.language_model.get_input_embeddings()(prompt_ids)
         embeddings = torch.cat((map_embeddings, text_embeddings), dim=1)
+        output = self.language_model(
+            inputs_embeds=embeddings,
+            use_cache=True,
+            logits_to_keep=1,
+        )
         mask = canonical_action_mask(previous_mask)
         touched = 0
         press_phase = False
         release_from = 0
         press_from = 0
         generated: list[str] = []
-        for _ in BUTTONS:
+        for step in range(len(BUTTONS)):
             allowed = canonical_event_candidates(
                 mask,
                 touched,
@@ -223,7 +238,7 @@ class SemanticPolicyModel(nn.Module):
                 release_from=release_from,
                 press_from=press_from,
             )
-            logits = self.language_model(inputs_embeds=embeddings).logits[0, -1]
+            logits = output.logits[0, -1]
             allowed_ids = torch.tensor(
                 [tokenizer.convert_tokens_to_ids(token) for token in allowed],
                 device=logits.device,
@@ -246,10 +261,13 @@ class SemanticPolicyModel(nn.Module):
                 press_from = index + 1
             else:
                 release_from = index + 1
-            next_embedding = self.language_model.get_input_embeddings()(
-                selected_id.reshape(1, 1)
-            )
-            embeddings = torch.cat((embeddings, next_embedding), dim=1)
+            if step + 1 < len(BUTTONS):
+                output = self.language_model(
+                    input_ids=selected_id.reshape(1, 1),
+                    past_key_values=output.past_key_values,
+                    use_cache=True,
+                    logits_to_keep=1,
+                )
         return (*generated, STOP_TOKEN)
 
 
