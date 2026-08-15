@@ -80,12 +80,14 @@ class PolicyCollator:
         max_text_tokens: int = 2048,
         action_change_weight: float = 1.0,
         max_history_tokens: int = 832,
+        include_spatial_semantics: bool = False,
     ) -> None:
         self.tokenizer = tokenizer
         self.maps = maps
         self.max_text_tokens = max_text_tokens
         self.action_change_weight = action_change_weight
         self.max_history_tokens = max_history_tokens
+        self.include_spatial_semantics = include_spatial_semantics
 
     def __call__(self, samples: list[SFTSample]) -> dict:
         encoded: list[tuple[list[int], list[int], list[float]]] = []
@@ -129,8 +131,15 @@ class PolicyCollator:
 
     def _prompt_ids(self, sample: SFTSample, target_length: int) -> list[int]:
         if not sample.history:
-            return self.tokenizer.encode(sample.prompt(), add_special_tokens=False)
-        history, observation, suffix = sample.prompt_parts()
+            return self.tokenizer.encode(
+                sample.prompt(
+                    include_spatial_semantics=self.include_spatial_semantics
+                ),
+                add_special_tokens=False,
+            )
+        history, observation, suffix = sample.prompt_parts(
+            include_spatial_semantics=self.include_spatial_semantics
+        )
         history_ids = self.tokenizer.encode(history + "\n", add_special_tokens=False)
         observation_ids = self.tokenizer.encode(observation + "\n", add_special_tokens=False)
         suffix_ids = self.tokenizer.encode(suffix, add_special_tokens=False)
@@ -155,6 +164,7 @@ def train(
     validation_indices_path: Path | None = None,
     tuning: str = "lora",
     epochs: int = 1,
+    schedule_epochs: int | None = None,
     batch_size: int = 1,
     gradient_accumulation: int = 8,
     learning_rate: float | None = None,
@@ -168,6 +178,7 @@ def train(
     action_change_weight: float | str = 1.0,
     lora_rank: int = 8,
     lora_target_modules: str = "attention",
+    include_spatial_semantics: bool = False,
     resume_from: Path | None = None,
     log_every: int = 10,
     checkpoint_every_updates: int = 0,
@@ -209,6 +220,7 @@ def train(
             max_text_tokens=max_text_tokens,
             action_change_weight=resolved_action_change_weight,
             max_history_tokens=max_history_tokens,
+            include_spatial_semantics=include_spatial_semantics,
         ),
     )
     validation_dataset = None
@@ -229,6 +241,7 @@ def train(
                     validation_dataset.maps,
                     max_text_tokens=max_text_tokens,
                     max_history_tokens=max_history_tokens,
+                    include_spatial_semantics=include_spatial_semantics,
                 ),
             )
     resolved_learning_rate = learning_rate or (2e-4 if tuning == "lora" else 2e-5)
@@ -238,7 +251,10 @@ def train(
         weight_decay=weight_decay,
     )
     updates_per_epoch = math.ceil(len(loader) / gradient_accumulation)
-    total_updates = max(1, updates_per_epoch * epochs)
+    resolved_schedule_epochs = schedule_epochs or epochs
+    if resolved_schedule_epochs < epochs:
+        raise ValueError("schedule epochs cannot be less than training epochs")
+    total_updates = max(1, updates_per_epoch * resolved_schedule_epochs)
     scheduler = get_scheduler(
         "cosine",
         optimizer=optimizer,
@@ -360,6 +376,7 @@ def train(
                     "samples": len(dataset),
                     "validation_samples": len(validation_dataset) if validation_dataset else 0,
                     "epochs": epochs,
+                    "schedule_epochs": resolved_schedule_epochs,
                     "batch_size": batch_size,
                     "gradient_accumulation": gradient_accumulation,
                     "learning_rate": resolved_learning_rate,
@@ -377,6 +394,7 @@ def train(
                     "lora_target_modules": (
                         lora_target_modules if tuning == "lora" else None
                     ),
+                    "include_spatial_semantics": include_spatial_semantics,
                     "sample_indices": str(sample_indices_path) if sample_indices_path else None,
                     "validation_indices": (
                         str(validation_indices_path) if validation_indices_path else None

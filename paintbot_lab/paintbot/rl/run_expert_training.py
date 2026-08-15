@@ -63,6 +63,8 @@ def train_command(
     *,
     epochs: int,
     checkpoint_every_updates: int,
+    schedule_epochs: int | None = None,
+    spatial_semantics: bool = False,
 ) -> list[str]:
     command = [
         sys.executable,
@@ -103,15 +105,26 @@ def train_command(
         "--checkpoint-every-updates",
         str(checkpoint_every_updates),
     ]
+    if schedule_epochs is not None:
+        command.extend(("--schedule-epochs", str(schedule_epochs)))
+    if spatial_semantics:
+        command.append("--spatial-semantics")
     resume = latest_resume(output)
     if resume is not None:
         command.extend(("--resume-from", str(resume)))
     return command
 
 
-def evaluate(checkpoint: Path, samples: Path, maps: Path, indices: Path, output: Path) -> None:
-    run(
-        [
+def evaluate(
+    checkpoint: Path,
+    samples: Path,
+    maps: Path,
+    indices: Path,
+    output: Path,
+    *,
+    spatial_semantics: bool = False,
+) -> None:
+    command = [
             sys.executable,
             "-u",
             str(RL_ROOT / "evaluate_sft.py"),
@@ -128,7 +141,9 @@ def evaluate(checkpoint: Path, samples: Path, maps: Path, indices: Path, output:
             "--out",
             str(output),
         ]
-    )
+    if spatial_semantics:
+        command.append("--spatial-semantics")
+    run(command)
 
 
 def main() -> int:

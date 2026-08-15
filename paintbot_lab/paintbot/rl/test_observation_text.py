@@ -1,9 +1,11 @@
 from observation_text import (
     MAX_TEMPORAL_CHANGES_PER_TICK,
+    MAX_SPATIAL_SEMANTIC_ENTITIES,
     EntitySnapshot,
     ObservationSnapshot,
     bot_semantic_observation,
     is_bot_semantic_label,
+    relative_spatial_semantics,
     serialize_observation,
     serialize_temporal_history,
     split_label_numbers,
@@ -83,6 +85,57 @@ def test_bot_semantic_filter_removes_only_source_defined_human_visuals() -> None
     assert "fog" not in serialize_observation(snapshot)
     assert 'semantic="fog"' in serialize_observation(
         snapshot, include_human_visuals=True
+    )
+
+
+def test_spatial_semantics_are_egocentric_and_scale_normalized() -> None:
+    assert relative_spatial_semantics((10, 10), (10, 10), self_width=20) == (
+        "overlap",
+        "overlap",
+    )
+    assert relative_spatial_semantics((30, -10), (10, 10), self_width=20) == (
+        "above-right",
+        "1-to-2-self-widths",
+    )
+    assert relative_spatial_semantics((50, 10), (10, 10), self_width=20) == (
+        "right",
+        "2-to-4-self-widths",
+    )
+
+    snapshot = ObservationSnapshot(
+        game_version="40",
+        frame=1,
+        map_width=100,
+        map_height=100,
+        entities=(
+            EntitySnapshot(1, "self red right", 0, 20, 0, 0, 20, 20),
+            EntitySnapshot(2, "player blue left", 20, 0, 0, 0, 20, 20),
+        ),
+    )
+    baseline = serialize_observation(snapshot)
+    enriched = serialize_observation(snapshot, include_spatial_semantics=True)
+
+    assert "bearing=" not in baseline
+    assert "bearing=above-right range=1-to-2-self-widths" in enriched
+
+    crowded = ObservationSnapshot(
+        game_version="40",
+        frame=1,
+        map_width=100,
+        map_height=100,
+        entities=(
+            EntitySnapshot(1, "self red right", 0, 0, 0, 0, 10, 10),
+            *(
+                EntitySnapshot(index, f"item {index}", index, 0, 0, 0, 1, 1)
+                for index in range(2, MAX_SPATIAL_SEMANTIC_ENTITIES + 3)
+            ),
+        ),
+    )
+    assert (
+        serialize_observation(crowded, include_spatial_semantics=True).count(
+            "bearing="
+        )
+        == MAX_SPATIAL_SEMANTIC_ENTITIES
     )
 
 

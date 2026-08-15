@@ -101,6 +101,44 @@ baseline. If it does not, data repetition is not the main constraint and the
 next experiment should compare richer temporal state or greater adaptation
 capacity rather than merely adding epochs.
 
+## Queued representation experiment: spatial semantics
+
+Movement remains the dominant error, while the current text representation
+asks Qwen to infer direction and proximity from map-normalized integer offsets.
+That is a poor inductive bias for nearby geometry: permille rounding can collapse
+small displacements, and self sprite width changes from 18 to 96 pixels across
+the sampled game versions.
+
+The queued arm adds two observation-derived labels to the self and 15 nearest
+entities:
+
+- an eight-way egocentric screen bearing such as `above-right`;
+- a logarithmic range such as `2-to-4-self-widths`.
+
+Both are computed from fields already available to the live Sprite-v1 policy;
+no replay-only world metadata is used. Raw offsets remain present. The feature
+defaults off in training, evaluation, and inference, so it cannot change the
+active diversity run if that run resumes.
+
+On 1,000 evenly spaced rows from the 750k diversity index, annotating every
+entity increased mean prompt length 16.0%, so that version was rejected before
+training. Limiting labels to the nearest 16 increased mean length 6.2% (2,972
+to 3,155 tokens) and the share above 4,096 tokens only 0.4 points (5.7% to
+6.1%). Since entities are nearest-first, all labeled entities remain ahead of
+the truncation boundary.
+
+The screen is serialized behind the diversity job by the same GPU lock. It uses
+the original 250k index and trains one epoch with the original three-epoch LR
+schedule. Promotion to epochs 2-3 requires all of:
+
+- validation exact action at least 58.02% (one point above baseline epoch 1);
+- validation movement above 71.30%;
+- held-action exact no lower than 91.24% (at most two points below baseline).
+
+Failure stops the arm. Passing resumes the same optimizer/scheduler state for
+epochs 2-3. Both selection stages use validation only; the sealed test remains
+closed.
+
 ## Rejected adapter-capacity canary
 
 PEFT's QLoRA-style guidance recommends adapting every transformer linear layer
@@ -133,3 +171,5 @@ knobs; the attention-only rank-8 default remains unchanged.
 
 - [Hugging Face PEFT LoRA reference](https://huggingface.co/docs/peft/main/package_reference/lora)
 - [QLoRA paper](https://papers.neurips.cc/paper_files/paper/2023/file/1feb87871436031bdc0f2beaa62a049b-Paper-Conference.pdf)
+- [The Road To Know-Where (ICCV 2021)](https://openaccess.thecvf.com/content/ICCV2021/html/Qi_The_Road_To_Know-Where_An_Object-and-Room_Informed_Sequential_BERT_for_ICCV_2021_paper.html)
+- [Rethinking and Improving Relative Position Encoding for Vision Transformer (ICCV 2021)](https://openaccess.thecvf.com/content/ICCV2021/html/Wu_Rethinking_and_Improving_Relative_Position_Encoding_for_Vision_Transformer_ICCV_2021_paper.html)

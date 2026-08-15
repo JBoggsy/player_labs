@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 from dataclasses import asdict, dataclass, replace
 from typing import Any, Iterable
@@ -14,6 +15,7 @@ NUMBER_PATTERN = re.compile(r"[-+]?\d+(?:\.\d+)?")
 HUMAN_VISUAL_LABELS = frozenset({"fog"})
 HUMAN_VISUAL_LABEL_PREFIXES = ("splatter ", "hit splat ", "damage pop ")
 MAX_TEMPORAL_CHANGES_PER_TICK = 4
+MAX_SPATIAL_SEMANTIC_ENTITIES = 16
 
 
 @dataclass(frozen=True)
@@ -88,7 +90,10 @@ def bot_semantic_observation(snapshot: ObservationSnapshot) -> ObservationSnapsh
 
 
 def serialize_observation(
-    snapshot: ObservationSnapshot, *, include_human_visuals: bool = False
+    snapshot: ObservationSnapshot,
+    *,
+    include_human_visuals: bool = False,
+    include_spatial_semantics: bool = False,
 ) -> str:
     """Render one deterministic, map-scale-normalized observation as text."""
     if snapshot.map_width <= 0 or snapshot.map_height <= 0:
@@ -97,10 +102,11 @@ def serialize_observation(
         snapshot = bot_semantic_observation(snapshot)
 
     resolved = [(_center(entity), entity) for entity in snapshot.entities]
-    self_center = next(
-        (center for center, entity in resolved if entity.label.startswith("self ")),
-        None,
+    self_item = next(
+        (item for item in resolved if item[1].label.startswith("self ")), None
     )
+    self_center = self_item[0] if self_item else None
+    self_width = self_item[1].width if self_item else None
     resolved.sort(key=lambda item: _entity_sort_key(item[0], item[1], self_center))
 
     lines = [
@@ -110,7 +116,7 @@ def serialize_observation(
         f" map_width={snapshot.map_width}"
         f" map_height={snapshot.map_height}"
     ]
-    for center, entity in resolved:
+    for entity_rank, (center, entity) in enumerate(resolved):
         semantic_label, label_values = split_label_numbers(entity.label)
         fields = [
             "entity",
@@ -135,8 +141,61 @@ def serialize_observation(
                     f"dy_permille={_permille(center[1] - self_center[1], snapshot.map_height)}",
                 )
             )
+            if (
+                include_spatial_semantics
+                and entity_rank < MAX_SPATIAL_SEMANTIC_ENTITIES
+            ):
+                assert self_width is not None
+                bearing, distance = relative_spatial_semantics(
+                    center,
+                    self_center,
+                    self_width=self_width,
+                )
+                fields.extend((f"bearing={bearing}", f"range={distance}"))
         lines.append(" ".join(fields))
     return "\n".join(lines)
+
+
+def relative_spatial_semantics(
+    center: tuple[float, float],
+    origin: tuple[float, float],
+    *,
+    self_width: int,
+) -> tuple[str, str]:
+    """Return egocentric direction and log-range labels stable across sprite scales."""
+    if self_width <= 0:
+        raise ValueError("self width must be positive")
+    dx = center[0] - origin[0]
+    dy = center[1] - origin[1]
+    distance = math.hypot(dx, dy) / self_width
+    if distance == 0:
+        return "overlap", "overlap"
+
+    # Screen coordinates increase downward, so negative angles are visually above.
+    sector = round(math.atan2(dy, dx) / (math.pi / 4)) % 8
+    bearing = (
+        "right",
+        "below-right",
+        "below",
+        "below-left",
+        "left",
+        "above-left",
+        "above",
+        "above-right",
+    )[sector]
+    if distance < 1:
+        range_label = "within-1-self-width"
+    elif distance < 2:
+        range_label = "1-to-2-self-widths"
+    elif distance < 4:
+        range_label = "2-to-4-self-widths"
+    elif distance < 8:
+        range_label = "4-to-8-self-widths"
+    elif distance < 16:
+        range_label = "8-to-16-self-widths"
+    else:
+        range_label = "beyond-16-self-widths"
+    return bearing, range_label
 
 
 def temporal_delta(

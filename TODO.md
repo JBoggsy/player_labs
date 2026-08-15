@@ -89,7 +89,11 @@ mid-session; check them back at the start of focused work.
   movement transitions. A matched-compute 750k-unique x 1-epoch arm is running
   under `training-v2-diversity`; it stops after validation and keeps the sealed
   test closed. If diversity is flat, compare compact deltas against short full
-  self/nearby snapshots or greater adaptation capacity. Report:
+  self/nearby snapshots or greater adaptation capacity. A validation-only
+  spatial-semantics screen is queued behind diversity: it adds egocentric
+  bearing and self-width-normalized range to the nearest 16 entities, runs one
+  schedule-matched epoch, and promotes to epochs 2-3 only on a preregistered
+  exact/movement/held gate. Report:
   `paintbot_lab/docs/reports/rl-exhaustive-baseline-2026-08-14.md`.
 
 - **Make Stencil squads roster-aware under campaign 7+7+1+1 seating** (found

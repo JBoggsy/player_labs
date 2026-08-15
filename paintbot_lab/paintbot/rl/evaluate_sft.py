@@ -58,6 +58,7 @@ def main() -> int:
     parser.add_argument("--maps", type=Path, required=True)
     parser.add_argument("--sample-indices", type=Path)
     parser.add_argument("--max-text-tokens", type=int, default=2048)
+    parser.add_argument("--spatial-semantics", action="store_true")
     parser.add_argument("--out", type=Path)
     parser.add_argument(
         "--logits-out",
@@ -69,7 +70,12 @@ def main() -> int:
     device = evaluation_device()
     tokenizer, model = load_policy(args.checkpoint, device=device)
     dataset = PolicyDataset(args.samples, args.maps, args.sample_indices)
-    collator = PolicyCollator(tokenizer, dataset.maps, max_text_tokens=args.max_text_tokens)
+    collator = PolicyCollator(
+        tokenizer,
+        dataset.maps,
+        max_text_tokens=args.max_text_tokens,
+        include_spatial_semantics=args.spatial_semantics,
+    )
     totals = defaultdict(
         lambda: {
             "samples": 0,
@@ -149,7 +155,12 @@ def main() -> int:
                 score["loss"] += output.loss.item()
                 update_metrics(score, predicted, constrained, labels, previous)
 
-    result = {"device": str(device), "max_text_tokens": args.max_text_tokens, "groups": {}}
+    result = {
+        "device": str(device),
+        "max_text_tokens": args.max_text_tokens,
+        "include_spatial_semantics": args.spatial_semantics,
+        "groups": {},
+    }
     for key, score in totals.items():
         result["groups"][key] = {
             **score,

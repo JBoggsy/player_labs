@@ -28,6 +28,9 @@ class PolicyRuntime:
         self.map_cache = None
         self.trace = os.environ.get("PAINTBOT_RL_TRACE", "0") == "1"
         self.game_version = os.environ.get("PAINTBOT_GAME_VERSION", "unknown")
+        self.include_spatial_semantics = (
+            os.environ.get("PAINTBOT_SPATIAL_SEMANTICS", "0") == "1"
+        )
 
     def decide(self, world, _context) -> int:
         started = time.perf_counter()
@@ -47,7 +50,10 @@ class PolicyRuntime:
         except ValueError:
             return 0
         prompt = (
-            serialize_observation(snapshot)
+            serialize_observation(
+                snapshot,
+                include_spatial_semantics=self.include_spatial_semantics,
+            )
             + "\nprevious_action "
             + action_text(self.decoder.previous_mask)
             + "\naction"

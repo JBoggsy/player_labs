@@ -26,6 +26,11 @@ def main() -> int:
         default="attention",
     )
     parser.add_argument("--epochs", type=int, default=1)
+    parser.add_argument(
+        "--schedule-epochs",
+        type=int,
+        help="LR schedule horizon; defaults to --epochs and may be longer for a staged run",
+    )
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--gradient-accumulation", type=int, default=8)
     parser.add_argument("--learning-rate", type=float)
@@ -33,6 +38,7 @@ def main() -> int:
     parser.add_argument("--warmup-ratio", type=float, default=0.03)
     parser.add_argument("--max-text-tokens", type=int, default=2048)
     parser.add_argument("--max-history-tokens", type=int, default=832)
+    parser.add_argument("--spatial-semantics", action="store_true")
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--mixed-precision", choices=("no", "fp16", "bf16"), default="no")
     parser.add_argument(
@@ -50,6 +56,8 @@ def main() -> int:
         parser.error("--log-every must be positive")
     if args.lora_rank <= 0:
         parser.error("--lora-rank must be positive")
+    if args.schedule_epochs is not None and args.schedule_epochs < args.epochs:
+        parser.error("--schedule-epochs cannot be less than --epochs")
     if (args.validation_samples is None) != (args.validation_maps is None):
         parser.error("--validation-samples and --validation-maps must be supplied together")
     if args.validation_indices is not None and args.validation_samples is None:
@@ -76,6 +84,7 @@ def main() -> int:
         validation_indices_path=args.validation_indices,
         tuning=args.tuning,
         epochs=args.epochs,
+        schedule_epochs=args.schedule_epochs,
         batch_size=args.batch_size,
         gradient_accumulation=args.gradient_accumulation,
         learning_rate=args.learning_rate,
@@ -88,6 +97,7 @@ def main() -> int:
         action_change_weight=action_change_weight,
         lora_rank=args.lora_rank,
         lora_target_modules=args.lora_target_modules,
+        include_spatial_semantics=args.spatial_semantics,
         resume_from=args.resume_from,
         gradient_checkpointing=not args.no_gradient_checkpointing,
         log_every=args.log_every,
