@@ -442,8 +442,9 @@ codec is checkpoint metadata. Event training always reserves nine target
 tokens, preventing target-length leakage through prompt truncation. Model
 selection uses autoregressive generation through `<STOP>`; teacher-forced
 event accuracy is not the gate. A schedule-matched one-epoch validation screen
-is queued ahead of the spatial-semantics arm; neither arm can open the sealed
-test. Current experiment contract and results live in
+is queued ahead of the spatial-semantics arm. Passing the screen promotes event
+training, but only exceeding 70% autoregressive validation stops the independent
+spatial arm; neither arm can open the sealed test. Current experiment contract and results live in
 [`../reports/rl-exhaustive-baseline-2026-08-14.md`](../reports/rl-exhaustive-baseline-2026-08-14.md).
 
 ### Sealed-candidate gate

@@ -209,9 +209,11 @@ to 3,155 tokens) and the share above 4,096 tokens only 0.4 points (5.7% to
 6.1%). Since entities are nearest-first, all labeled entities remain ahead of
 the truncation boundary.
 
-The screen runs only if the event-action screen is rejected. It uses
-the original 250k index and trains one epoch with the original three-epoch LR
-schedule. Promotion to epochs 2-3 requires all of:
+The screen runs if neither diversity nor the completed event arm exceeds 70%
+autoregressive exact action. Passing the event screen but finishing below the
+target does not suppress this independent factor. It uses the original 250k
+index and trains one epoch with the original three-epoch LR schedule. Promotion
+to epochs 2-3 requires all of:
 
 - autoregressive validation exact action at least 58.02%;
 - autoregressive validation movement above 71.30%;

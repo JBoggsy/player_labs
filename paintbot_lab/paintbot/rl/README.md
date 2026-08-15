@@ -155,12 +155,13 @@ port with `PAINTBOT_DASHBOARD_LOCAL_PORT`; the launcher otherwise uses the
 existing `mettabox1` SSH alias and exhaustive-corpus workspace.
 
 The unattended accuracy queue retargets the remote dashboard from diversity to
-the event-action screen, and then to spatial semantics only if needed. It stops
-before launching another arm if diversity already exceeds 70% on frozen
-autoregressive validation. After diversity finishes, it also evaluates the
-original baseline checkpoint autoregressively on the same frozen validation
-index, providing a like-for-like diagnostic without opening the test. The SSH
-tunnel and local `8876` URL remain unchanged across those handoffs.
+the event-action screen, and then to spatial semantics if no completed arm has
+exceeded 70% on frozen autoregressive validation. Passing the event screen but
+finishing below the target does not stop the independent spatial experiment.
+After diversity finishes, the queue also evaluates the original baseline
+checkpoint autoregressively on the same frozen validation index, providing a
+like-for-like diagnostic without opening the test. The SSH tunnel and local
+`8876` URL remain unchanged across those handoffs.
 
 To follow a non-default experiment while retaining the same dashboard URL, set
 the remote output and log explicitly:

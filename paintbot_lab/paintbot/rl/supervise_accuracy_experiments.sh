@@ -61,6 +61,14 @@ run_until_terminal() {
   done
 }
 
+exceeds_target() {
+  local evaluation=$1
+  test -s "$evaluation" \
+    && .venv/bin/python -c \
+      'import json,sys; raise SystemExit(json.load(open(sys.argv[1]))["groups"]["all"]["autoregressive_exact_action_accuracy"] <= 0.70)' \
+      "$evaluation"
+}
+
 while ! test -s "$DIVERSITY_STATUS" \
   || ! grep -q '"stage": "complete"' "$DIVERSITY_STATUS"; do
   sleep 60
@@ -84,10 +92,7 @@ while ! test -s "$BASELINE_AUTOREGRESSIVE_VALIDATION"; do
   fi
 done
 
-if test -s "$DIVERSITY_VALIDATION" \
-  && .venv/bin/python -c \
-    'import json,sys; raise SystemExit(json.load(open(sys.argv[1]))["groups"]["all"]["autoregressive_exact_action_accuracy"] <= 0.70)' \
-    "$DIVERSITY_VALIDATION"; then
+if exceeds_target "$DIVERSITY_VALIDATION"; then
   exit 0
 fi
 
@@ -98,8 +103,10 @@ run_until_terminal "$EVENT_STATUS" \
     --workspace "$WORKSPACE" \
     --output "$WORKSPACE/training-v4-event-actions"
 
-# A promoted event arm needs model-selection review before combining variables.
-if grep -q '"stage": "complete"' "$EVENT_STATUS"; then
+# Continue to the independent spatial arm unless event actions already clear the
+# preregistered target. Combining representation variables remains a later,
+# validation-selected experiment.
+if exceeds_target "$EVENT_OUTPUT/full/validation_evaluation.json"; then
   exit 0
 fi
 
