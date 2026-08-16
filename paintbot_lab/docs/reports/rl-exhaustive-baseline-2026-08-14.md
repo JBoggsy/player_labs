@@ -67,6 +67,15 @@ confidence, seed `20260814`. The gate verifies the method and reports whether
 the confirmation interval's lower bound itself exceeds 70%. This interval is
 reported evidence rather than an extra model-selection threshold.
 
+The one-time candidate rule is fixed before results as well. In the existing
+queue order—diversity, event actions, spatial semantics, then the eligible
+event/spatial interaction—the first arm strictly above 70% autoregressive exact
+action on frozen validation receives the confirmation evaluation. The queue
+stops after that result whether it passes or fails, so the confirmation set can
+never become another model-selection surface. If no arm clears validation, it
+remains unopened. Process recovery may validate an already-written result and
+finish its decision record, but cannot repeat inference on the holdout.
+
 Metric correction: the original absolute-action evaluator derived its
 `constrained_*` fields from teacher-forced slot logits. Live inference instead
 feeds each generated slot back into the transformer. The original artifacts and

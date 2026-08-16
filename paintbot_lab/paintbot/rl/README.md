@@ -168,6 +168,16 @@ checkpoint autoregressively on the same frozen validation index, providing a
 like-for-like diagnostic without opening the test. The SSH tunnel and local
 `8876` URL remain unchanged across those handoffs.
 
+Confirmation selection is also unattended and fixed before results. The first
+eligible arm in queue order—diversity, event actions, spatial semantics, then
+the eligible interaction—that reports strictly more than 70% autoregressive
+exact action on frozen validation is sent once through
+`evaluate_sealed_candidate.py`. The queue then stops regardless of confirmation
+pass or failure; it never evaluates a second candidate on the same holdout. If
+no arm clears validation, the holdout remains unopened. An interrupted process
+may verify and finish the decision for an already-written result, but it never
+runs model inference on the confirmation rows twice.
+
 To follow a non-default experiment while retaining the same dashboard URL, set
 the remote output and log explicitly:
 
@@ -305,8 +315,9 @@ validation artifact must also attest the exact checkpoint-tree SHA-256, action
 codec, spatial representation, and 4,096-token budget. The guard independently
 verifies the frozen test index and Arrow dataset, requires validation and test
 to reference the same map-table file, checks the test evaluator's row and map
-attestations, refuses to overwrite an existing result, and writes a separate
-sealed decision record.
+attestations and writes a separate sealed decision record. If inference wrote
+the result but the process stopped before recording the decision, a retry
+revalidates that same immutable artifact instead of repeating inference.
 Every new autoregressive evaluation also reports a fixed replay-cluster BCa
 bootstrap interval for exact-action accuracy: replay IDs are resampled as whole
 clusters, with 9,999 resamples, 95% two-sided confidence, and seed `20260814`.

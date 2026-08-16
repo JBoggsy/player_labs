@@ -28,6 +28,17 @@
     "resamples": 9999,
     "seed": 20260814
   },
+  "candidate_selection": {
+    "ordered_arms": [
+      "matched_compute_unique_rows",
+      "event_actions",
+      "spatial_semantics",
+      "event_spatial_interaction"
+    ],
+    "criterion": "frozen validation autoregressive exact-action accuracy strictly above 0.70",
+    "confirmation_attempts": 1,
+    "after_confirmation": "stop regardless of pass or fail"
+  },
   "independent_verification": {
     "unique_indices": 10000,
     "unique_trajectories": 10000,

@@ -10,6 +10,7 @@ from evaluate_sealed_candidate import (
     TEST_INDEX_NAME,
     TEST_INDEX_SHA256,
     TEST_SELECTED_SAMPLES_SHA256,
+    load_or_evaluate_result,
     VALIDATION_DATASET_FINGERPRINT,
     VALIDATION_INDEX_SHA256,
     VALIDATION_SELECTED_SAMPLES_SHA256,
@@ -42,6 +43,15 @@ def test_confirmation_manifest_matches_sealed_gate() -> None:
         "resamples": CLUSTER_BOOTSTRAP_RESAMPLES,
         "seed": CLUSTER_BOOTSTRAP_SEED,
     }
+    selection = manifest["candidate_selection"]
+    assert selection["ordered_arms"] == [
+        "matched_compute_unique_rows",
+        "event_actions",
+        "spatial_semantics",
+        "event_spatial_interaction",
+    ]
+    assert selection["confirmation_attempts"] == 1
+    assert selection["after_confirmation"] == "stop regardless of pass or fail"
 
 
 def validation(
@@ -173,3 +183,12 @@ def test_checkpoint_tree_hash_binds_names_and_contents(tmp_path) -> None:
     first = sha256_tree(checkpoint)
     (adapter / "weights").write_bytes(b"changed")
     assert sha256_tree(checkpoint) != first
+
+
+def test_sealed_result_recovery_does_not_repeat_evaluation(tmp_path) -> None:
+    result = tmp_path / "sealed.json"
+    result.write_text('{"complete": true}\n')
+
+    assert load_or_evaluate_result(
+        result, lambda: pytest.fail("must not open confirmation twice")
+    ) == {"complete": True}

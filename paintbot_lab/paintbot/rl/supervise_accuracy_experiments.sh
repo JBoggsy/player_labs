@@ -71,6 +71,27 @@ exceeds_target() {
       "$evaluation"
 }
 
+seal_candidate() {
+  local checkpoint=$1
+  local validation=$2
+  local output="$(dirname "$checkpoint")/sealed_confirmation_evaluation.json"
+  local decision="${output%.json}.sealed-decision.json"
+  while ! test -s "$decision"; do
+    (
+      /usr/bin/flock --exclusive 9
+      .venv/bin/python -u paintbot_lab/paintbot/rl/evaluate_sealed_candidate.py \
+        --checkpoint "$checkpoint" \
+        --validation-evaluation "$validation" \
+        --workspace "$WORKSPACE" \
+        --out "$output"
+    ) 9>"$LOCK"
+    if ! test -s "$decision"; then
+      echo "sealed confirmation exited without a decision; retrying in 60 seconds" >&2
+      sleep 60
+    fi
+  done
+}
+
 while ! test -s "$DIVERSITY_STATUS" \
   || ! grep -q '"stage": "complete"' "$DIVERSITY_STATUS"; do
   sleep 60
@@ -95,6 +116,8 @@ while ! test -s "$BASELINE_AUTOREGRESSIVE_VALIDATION"; do
 done
 
 if exceeds_target "$DIVERSITY_VALIDATION"; then
+  seal_candidate "$WORKSPACE/training-v2-diversity/full/best" \
+    "$DIVERSITY_VALIDATION"
   exit 0
 fi
 
@@ -109,6 +132,8 @@ run_until_terminal "$EVENT_STATUS" \
 # preregistered target. Combining representation variables remains a later,
 # validation-selected experiment.
 if exceeds_target "$EVENT_OUTPUT/full/validation_evaluation.json"; then
+  seal_candidate "$WORKSPACE/training-v4-event-actions/full/best" \
+    "$EVENT_OUTPUT/full/validation_evaluation.json"
   exit 0
 fi
 
@@ -120,6 +145,8 @@ run_until_terminal "$SPATIAL_STATUS" \
     --output "$WORKSPACE/training-v3-spatial-semantics"
 
 if exceeds_target "$SPATIAL_OUTPUT/full/validation_evaluation.json"; then
+  seal_candidate "$WORKSPACE/training-v3-spatial-semantics/full/best" \
+    "$SPATIAL_OUTPUT/full/validation_evaluation.json"
   exit 0
 fi
 
@@ -134,4 +161,9 @@ if grep -q '"stage": "complete"' "$EVENT_STATUS" \
       --workspace "$WORKSPACE" \
       --output "$WORKSPACE/training-v5-event-spatial" \
       --spatial-semantics
+fi
+
+if exceeds_target "$COMBINED_OUTPUT/full/validation_evaluation.json"; then
+  seal_candidate "$WORKSPACE/training-v5-event-spatial/full/best" \
+    "$COMBINED_OUTPUT/full/validation_evaluation.json"
 fi

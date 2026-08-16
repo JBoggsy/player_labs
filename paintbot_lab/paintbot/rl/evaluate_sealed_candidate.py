@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+from collections.abc import Callable
 from pathlib import Path
 
 from corpus_store import load_arrow_dataset
@@ -28,6 +29,13 @@ TEST_SELECTED_SAMPLES_SHA256 = "6b86e5f4452546a256b40595ce1d91445a9ce1cf91966520
 TEST_INDEX_NAME = "test-confirmation.npy"
 GATE_SAMPLES = 10_000
 TARGET_ACCURACY = 0.70
+
+
+def load_or_evaluate_result(path: Path, evaluate_result: Callable[[], None]) -> dict:
+    """Resume validation of an already-written result after a process interruption."""
+    if not path.exists():
+        evaluate_result()
+    return json.loads(path.read_text())
 
 
 def validate_cluster_bootstrap(evaluation: dict, accuracy: float) -> dict:
@@ -130,8 +138,8 @@ def main() -> int:
     args = parser.parse_args()
 
     decision_path = args.out.with_suffix(".sealed-decision.json")
-    if args.out.exists() or decision_path.exists():
-        parser.error(f"refusing to overwrite an existing sealed result: {args.out}")
+    if decision_path.exists():
+        parser.error(f"sealed decision already exists: {decision_path}")
     policy_config = json.loads((args.checkpoint / "policy_config.json").read_text())
     action_encoding = policy_config.get("action_encoding", "absolute")
     checkpoint_sha256 = sha256_tree(args.checkpoint)
@@ -169,16 +177,18 @@ def main() -> int:
     except (FileNotFoundError, ValueError) as error:
         parser.error(str(error))
 
-    evaluate(
-        args.checkpoint,
-        args.workspace / "arrow" / "test",
-        args.workspace / "prepared" / "test.maps.jsonl",
-        test_index,
+    result = load_or_evaluate_result(
         args.out,
-        spatial_semantics=spatial_semantics,
-        action_encoding=action_encoding,
+        lambda: evaluate(
+            args.checkpoint,
+            args.workspace / "arrow" / "test",
+            args.workspace / "prepared" / "test.maps.jsonl",
+            test_index,
+            args.out,
+            spatial_semantics=spatial_semantics,
+            action_encoding=action_encoding,
+        ),
     )
-    result = json.loads(args.out.read_text())
     if result.get("sample_indices_sha256") != TEST_INDEX_SHA256:
         raise RuntimeError("evaluator did not attest the frozen test index")
     if result.get("sample_dataset_fingerprint") != TEST_DATASET_FINGERPRINT:
