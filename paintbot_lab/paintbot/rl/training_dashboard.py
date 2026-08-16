@@ -205,6 +205,13 @@ def evaluation_metrics(output: Path) -> dict:
     return result
 
 
+def sealed_decision(output: Path) -> dict:
+    decisions = sorted(
+        output.glob("*.sealed-decision.json"), key=lambda path: path.stat().st_mtime
+    )
+    return read_json(decisions[-1]) if decisions else {}
+
+
 def build_snapshot(
     workspace: Path,
     run: Callable[[list[str]], str] = run_text,
@@ -311,6 +318,7 @@ def build_snapshot(
         if training_run
         else {},
         "evaluations": evaluation_metrics(output),
+        "sealed_decision": sealed_decision(output),
         "checkpoints": states[-12:],
         "processes": processes,
         "gpu": gpu_snapshot(run),
@@ -355,7 +363,8 @@ function chart(points){const c=$('lossChart'),d=devicePixelRatio||1,w=c.clientWi
 async function refresh(){try{const r=await fetch('/api/status',{cache:'no-store'}),d=await r.json(),p=d.progress,stage=d.status.stage||'unknown';$('stage').innerHTML=`<span class="${d.healthy?'good':'bad'}">${d.healthy?'● healthy':'● attention'}</span> · ${stage.replaceAll('_',' ')}`;$('freshness').textContent='Updated '+new Date(d.generated_at_unix*1000).toLocaleTimeString();$('progress').textContent=`${pct(p.fraction)} · epoch ${p.epoch}/${p.epochs}`;$('progressBar').style.width=pct(p.fraction);$('eta').textContent=`${num(p.completed_microbatches)} / ${num(p.total_microbatches)} microbatches · ${duration(p.eta_seconds)}`;
 const g=d.gpu;$('gpu').textContent=g.utilization_percent==null?'—':g.utilization_percent+'%';$('gpuSub').textContent=g.memory_used_mib==null?'nvidia-smi unavailable':`${(g.memory_used_mib/1024).toFixed(1)} / ${(g.memory_total_mib/1024).toFixed(1)} GiB · ${g.temperature_c}°C`;$('disk').textContent=gib(d.disk.free_bytes);$('diskSub').textContent=pct(d.disk.used_fraction)+' used';chart(d.recent_losses);
 $('validations').innerHTML=d.validation_history.length?d.validation_history.map(v=>metric('Epoch '+v.epoch,v.loss)).join(''):'Not yet available';$('checkpoints').innerHTML=d.checkpoints.length?`<table><tr><th>Name</th><th>Update</th><th>Best val</th></tr>${d.checkpoints.slice(-7).reverse().map(c=>`<tr><td>${c.name}</td><td>${num(c.global_updates)}</td><td>${c.best_validation_loss==null?'—':c.best_validation_loss.toFixed(4)}</td></tr>`).join('')}</table>`:'None yet';
-const entries=Object.entries(d.evaluations);$('evaluation').innerHTML=entries.length?entries.map(([name,m])=>{const ci=m.autoregressive_exact_action_cluster_bootstrap,ciText=ci?.available?`${pct(ci.lower)} – ${pct(ci.upper)} (${num(ci.clusters)} replays)`:'—';return `<div style="margin-bottom:14px"><strong>${name}</strong>${metric('Exact action · autoregressive',m.autoregressive_exact_action_accuracy,true)}${metric('Replay-cluster 95% CI',ciText)}${metric('Changed-action exact · autoregressive',m.autoregressive_changed_exact_action_accuracy,true)}${metric('Exact action · teacher forced',m.constrained_exact_action_accuracy,true)}${metric('Changed component',m.changed_component_accuracy,true)}${metric('Change precision',m.change_precision,true)}${metric('Change recall',m.change_recall,true)}${metric('Repeat previous',m.previous_mask_exact_action_accuracy,true)}</div>`}).join(''):'Available after final evaluation.';
+const decision=d.sealed_decision,decisionHtml=Object.keys(decision).length?`<div style="margin-bottom:18px"><strong class="${decision.passed?'good':'bad'}">Confirmation ${decision.passed?'PASSED':'FAILED'}</strong>${metric('Validation exact',decision.validation_exact_action_accuracy,true)}${metric('Confirmation exact',decision.test_exact_action_accuracy,true)}${metric('Target',decision.target_accuracy,true)}${metric('95% lower bound clears target',decision.test_cluster_bootstrap_lower_exceeds_target?'yes':'no')}</div>`:'';
+const entries=Object.entries(d.evaluations);$('evaluation').innerHTML=decisionHtml+(entries.length?entries.map(([name,m])=>{const ci=m.autoregressive_exact_action_cluster_bootstrap,ciText=ci?.available?`${pct(ci.lower)} – ${pct(ci.upper)} (${num(ci.clusters)} replays)`:'—';return `<div style="margin-bottom:14px"><strong>${name}</strong>${metric('Exact action · autoregressive',m.autoregressive_exact_action_accuracy,true)}${metric('Replay-cluster 95% CI',ciText)}${metric('Changed-action exact · autoregressive',m.autoregressive_changed_exact_action_accuracy,true)}${metric('Exact action · teacher forced',m.constrained_exact_action_accuracy,true)}${metric('Changed component',m.changed_component_accuracy,true)}${metric('Change precision',m.change_precision,true)}${metric('Change recall',m.change_recall,true)}${metric('Repeat previous',m.previous_mask_exact_action_accuracy,true)}</div>`}).join(''):'Available after final evaluation.');
 $('errorCard').classList.toggle('hidden',!d.errors.length);$('errors').textContent=d.errors.join('\n');}catch(e){$('stage').innerHTML='<span class="bad">● disconnected</span>';console.error(e)}}
 refresh();setInterval(refresh,10000);addEventListener('resize',refresh);
 </script></body></html>"""

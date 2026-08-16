@@ -66,6 +66,17 @@ def test_snapshot_reports_microbatch_progress_and_evaluation(tmp_path: Path) -> 
         }
     }
     (output / "test_evaluation.json").write_text(json.dumps(evaluation))
+    (output / "sealed_confirmation_evaluation.sealed-decision.json").write_text(
+        json.dumps(
+            {
+                "validation_exact_action_accuracy": 0.72,
+                "test_exact_action_accuracy": 0.71,
+                "target_accuracy": 0.70,
+                "test_cluster_bootstrap_lower_exceeds_target": False,
+                "passed": True,
+            }
+        )
+    )
 
     def command_output(command: list[str]) -> str:
         if command[0] == "pgrep":
@@ -91,6 +102,8 @@ def test_snapshot_reports_microbatch_progress_and_evaluation(tmp_path: Path) -> 
     assert snapshot["evaluations"]["test_evaluation.json"][
         "autoregressive_exact_action_cluster_bootstrap"
     ]["lower"] == 0.2
+    assert snapshot["sealed_decision"]["passed"] is True
+    assert snapshot["sealed_decision"]["test_exact_action_accuracy"] == 0.71
 
 
 def test_snapshot_marks_missing_trainer_unhealthy(tmp_path: Path) -> None:

@@ -140,7 +140,9 @@ path; the shared lock prevents concurrent launchers.
 run: microbatch/epoch progress and ETA, recent and validation loss, checkpoints,
 GPU utilization/VRAM/temperature, disk headroom, process health, recent errors,
 and detailed action metrics plus the replay-cluster confidence interval once
-evaluation files exist. It binds to remote
+evaluation files exist. A completed one-shot confirmation is shown explicitly
+as passed or failed with its validation accuracy, confirmation accuracy, target,
+and lower-bound verdict. It binds to remote
 localhost and is reached through SSH rather than exposing a network service.
 
 From the repository root on a Mac, deploy/restart the dashboard, establish the
