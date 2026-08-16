@@ -110,6 +110,10 @@ def test_evaluator_separates_autoregressive_from_teacher_forced_exact(
     assert len(evaluation["selected_samples_sha256"]) == 64
     assert evaluation["maps_count"] == 1
     assert len(evaluation["maps_fingerprint"]) == 64
+    uncertainty = evaluation["autoregressive_exact_action_cluster_bootstrap"]
+    assert uncertainty["available"] is False
+    assert uncertainty["point_estimate"] == 1.0
+    assert uncertainty["clusters"] == 1
     assert metrics["constrained_exact_action_accuracy"] == 0.0
     assert metrics["autoregressive_exact_action_accuracy"] == 1.0
     assert metrics["autoregressive_changed_exact_action_accuracy"] == 1.0

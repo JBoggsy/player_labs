@@ -5,9 +5,16 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
 
 from corpus_store import load_arrow_dataset
+from evaluation_uncertainty import (
+    CLUSTER_BOOTSTRAP_CONFIDENCE,
+    CLUSTER_BOOTSTRAP_METHOD,
+    CLUSTER_BOOTSTRAP_RESAMPLES,
+    CLUSTER_BOOTSTRAP_SEED,
+)
 from evaluate_sft import sha256_file, sha256_tree
 from run_expert_training import evaluate
 
@@ -21,6 +28,40 @@ TEST_SELECTED_SAMPLES_SHA256 = "6b86e5f4452546a256b40595ce1d91445a9ce1cf91966520
 TEST_INDEX_NAME = "test-confirmation.npy"
 GATE_SAMPLES = 10_000
 TARGET_ACCURACY = 0.70
+
+
+def validate_cluster_bootstrap(evaluation: dict, accuracy: float) -> dict:
+    uncertainty = evaluation.get("autoregressive_exact_action_cluster_bootstrap")
+    if not isinstance(uncertainty, dict) or uncertainty.get("available") is not True:
+        raise ValueError("evaluation lacks replay-cluster uncertainty")
+    expected = {
+        "cluster_unit": "replay_id",
+        "samples": GATE_SAMPLES,
+        "confidence_level": CLUSTER_BOOTSTRAP_CONFIDENCE,
+        "method": CLUSTER_BOOTSTRAP_METHOD,
+        "resamples": CLUSTER_BOOTSTRAP_RESAMPLES,
+        "seed": CLUSTER_BOOTSTRAP_SEED,
+    }
+    if any(uncertainty.get(key) != value for key, value in expected.items()):
+        raise ValueError("replay-cluster uncertainty contract mismatch")
+    clusters = uncertainty.get("clusters")
+    correct = uncertainty.get("correct")
+    if not isinstance(clusters, int) or not 2 <= clusters <= GATE_SAMPLES:
+        raise ValueError("replay-cluster count is invalid")
+    if not isinstance(correct, int) or correct != round(accuracy * GATE_SAMPLES):
+        raise ValueError("replay-cluster correct count does not match accuracy")
+    point = uncertainty.get("point_estimate")
+    lower = uncertainty.get("lower")
+    upper = uncertainty.get("upper")
+    if not all(isinstance(value, (int, float)) for value in (point, lower, upper)):
+        raise ValueError("replay-cluster interval is invalid")
+    if not all(math.isfinite(value) for value in (point, lower, upper)):
+        raise ValueError("replay-cluster interval is non-finite")
+    if not math.isclose(point, accuracy, rel_tol=0, abs_tol=1e-12):
+        raise ValueError("replay-cluster point estimate does not match accuracy")
+    if not 0 <= lower <= point <= upper <= 1:
+        raise ValueError("replay-cluster interval bounds are invalid")
+    return uncertainty
 
 
 def validate_validation_gate(
@@ -64,6 +105,7 @@ def validate_validation_gate(
             "validation autoregressive exact action must exceed "
             f"{TARGET_ACCURACY:.0%}; got {accuracy!r}"
         )
+    validate_cluster_bootstrap(evaluation, float(accuracy))
     return float(accuracy)
 
 
@@ -153,6 +195,7 @@ def main() -> int:
     if metrics["samples"] != GATE_SAMPLES:
         raise RuntimeError("sealed evaluation did not contain exactly 10,000 rows")
     test_accuracy = float(metrics["autoregressive_exact_action_accuracy"])
+    uncertainty = validate_cluster_bootstrap(result, test_accuracy)
     decision = {
         "checkpoint": str(args.checkpoint),
         "checkpoint_sha256": checkpoint_sha256,
@@ -166,6 +209,13 @@ def main() -> int:
         "maps_count": validation["maps_count"],
         "validation_exact_action_accuracy": validation_accuracy,
         "test_exact_action_accuracy": test_accuracy,
+        "test_cluster_bootstrap_95_percent_interval": [
+            uncertainty["lower"],
+            uncertainty["upper"],
+        ],
+        "test_cluster_bootstrap_lower_exceeds_target": (
+            uncertainty["lower"] > TARGET_ACCURACY
+        ),
         "target_accuracy": TARGET_ACCURACY,
         "passed": test_accuracy > TARGET_ACCURACY,
     }

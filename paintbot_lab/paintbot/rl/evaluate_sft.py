@@ -14,6 +14,7 @@ import numpy as np
 import torch
 
 from actions import ACTION_TOKEN_SLOTS, STOP_TOKEN, canonical_action_tokens
+from evaluation_uncertainty import replay_cluster_bootstrap
 from modeling import load_policy
 from training import PolicyCollator, PolicyDataset
 
@@ -191,6 +192,7 @@ def main() -> int:
     replay_ids: list[str] = []
     game_versions: list[str] = []
     selected_samples_digest = hashlib.sha256()
+    replay_outcomes: dict[str, list[int]] = defaultdict(lambda: [0, 0])
     with torch.no_grad():
         for sample in dataset:
             update_sample_fingerprint(selected_samples_digest, sample)
@@ -237,6 +239,9 @@ def main() -> int:
                 ],
                 device=device,
             )
+            replay_outcome = replay_outcomes[sample.replay_id]
+            replay_outcome[0] += int(torch.equal(autoregressive, labels))
+            replay_outcome[1] += 1
             previous = torch.tensor(
                 [
                     tokenizer.convert_tokens_to_ids(token)
@@ -281,6 +286,9 @@ def main() -> int:
         "maps_count": len(dataset.maps),
         "include_spatial_semantics": args.spatial_semantics,
         "action_encoding": "absolute",
+        "autoregressive_exact_action_cluster_bootstrap": replay_cluster_bootstrap(
+            {key: tuple(value) for key, value in replay_outcomes.items()}
+        ),
         "groups": {},
     }
     for key, score in totals.items():

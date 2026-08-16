@@ -26,6 +26,7 @@ from evaluate_sft import (
     sha256_tree,
     update_sample_fingerprint,
 )
+from evaluation_uncertainty import replay_cluster_bootstrap
 from modeling import load_policy
 from training import PolicyCollator, PolicyDataset
 
@@ -55,7 +56,7 @@ def update_event_metrics(
     autoregressive_tokens: tuple[str, ...],
     previous_mask: int,
     target_mask: int,
-) -> None:
+) -> bool:
     previous = canonical_action_mask(previous_mask)
     target = canonical_action_mask(target_mask)
     changed = previous != target
@@ -97,6 +98,7 @@ def update_event_metrics(
     if changed:
         score["changed_samples"] += 1
         score["constrained_changed_exact"] += action_exact
+    return action_exact
 
 
 def main() -> int:
@@ -127,6 +129,7 @@ def main() -> int:
         device=device,
     )
     totals = defaultdict(empty_score)
+    replay_outcomes: dict[str, list[int]] = defaultdict(lambda: [0, 0])
     selected_samples_digest = hashlib.sha256()
     with torch.no_grad():
         for sample in dataset:
@@ -178,8 +181,9 @@ def main() -> int:
                 sample.position(),
                 sample.previous_mask,
             )
+            action_exact = False
             for key in ("all", sample.game_version):
-                update_event_metrics(
+                action_exact = update_event_metrics(
                     totals[key],
                     teacher_forced_ids=teacher_forced,
                     label_ids=labels,
@@ -188,6 +192,9 @@ def main() -> int:
                     previous_mask=sample.previous_mask,
                     target_mask=sample.target_mask,
                 )
+            replay_outcome = replay_outcomes[sample.replay_id]
+            replay_outcome[0] += int(action_exact)
+            replay_outcome[1] += 1
 
     result = {
         "device": str(device),
@@ -202,6 +209,9 @@ def main() -> int:
         "maps_count": len(dataset.maps),
         "include_spatial_semantics": args.spatial_semantics,
         "action_encoding": "events",
+        "autoregressive_exact_action_cluster_bootstrap": replay_cluster_bootstrap(
+            {key: tuple(value) for key, value in replay_outcomes.items()}
+        ),
         "groups": {},
     }
     for key, score in totals.items():

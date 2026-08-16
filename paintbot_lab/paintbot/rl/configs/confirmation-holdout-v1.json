@@ -21,6 +21,13 @@
   "confirmation_index": "runs/expert-corpus-v1/indices/test-confirmation.npy",
   "confirmation_index_sha256": "8db6fb0c7fc8c53f514443ca7a7cba923f2a29b13356cc86fcf99d38b96c5b2e",
   "selected_samples_sha256": "6b86e5f4452546a256b40595ce1d91445a9ce1cf9196652060ff275acc656dc9",
+  "evaluation_uncertainty": {
+    "cluster_unit": "replay_id",
+    "confidence_level": 0.95,
+    "method": "BCa",
+    "resamples": 9999,
+    "seed": 20260814
+  },
   "independent_verification": {
     "unique_indices": 10000,
     "unique_trajectories": 10000,

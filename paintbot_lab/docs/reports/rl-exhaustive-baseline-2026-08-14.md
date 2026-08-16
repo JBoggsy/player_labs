@@ -60,6 +60,13 @@ indices, requires validation and test to share the same map table, verifies the
 sealed evaluator's content attestations, and refuses to overwrite an existing
 candidate result.
 
+Uncertainty reporting is also fixed before any current-arm result. Each new
+evaluation aggregates correct/total actions by replay ID and uses SciPy's BCa
+bootstrap to resample whole replays together: 9,999 resamples, 95% two-sided
+confidence, seed `20260814`. The gate verifies the method and reports whether
+the confirmation interval's lower bound itself exceeds 70%. This interval is
+reported evidence rather than an extra model-selection threshold.
+
 Metric correction: the original absolute-action evaluator derived its
 `constrained_*` fields from teacher-forced slot logits. Live inference instead
 feeds each generated slot back into the transformer. The original artifacts and
@@ -296,6 +303,8 @@ knobs; the attention-only rank-8 default remains unchanged.
 
 ## References
 
+- [SciPy bootstrap reference](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.bootstrap.html)
+- [Shan 2020: confidence intervals for clustered binary outcomes](https://doi.org/10.1177/0962280220913971)
 - [Google ML Crash Course: dividing datasets](https://developers.google.com/machine-learning/crash-course/overfitting/dividing-datasets)
 - [scikit-learn: common pitfalls and data leakage](https://scikit-learn.org/stable/common_pitfalls.html)
 - [Hugging Face PEFT LoRA reference](https://huggingface.co/docs/peft/main/package_reference/lora)

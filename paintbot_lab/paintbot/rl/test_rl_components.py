@@ -198,7 +198,7 @@ def test_evaluation_tracks_persistence_and_changed_actions() -> None:
 
 def test_event_evaluation_requires_a_valid_canonical_sequence() -> None:
     score = empty_score()
-    update_event_metrics(
+    first_exact = update_event_metrics(
         score,
         teacher_forced_ids=torch.tensor([1, 2]),
         label_ids=torch.tensor([1, 2]),
@@ -207,7 +207,7 @@ def test_event_evaluation_requires_a_valid_canonical_sequence() -> None:
         previous_mask=0,
         target_mask=UP,
     )
-    update_event_metrics(
+    second_exact = update_event_metrics(
         score,
         teacher_forced_ids=torch.tensor([3]),
         label_ids=torch.tensor([2]),
@@ -217,6 +217,8 @@ def test_event_evaluation_requires_a_valid_canonical_sequence() -> None:
         target_mask=UP,
     )
 
+    assert first_exact is True
+    assert second_exact is False
     assert score["constrained_exact"] == 1
     assert score["constrained_changed_exact"] == 1
     assert score["invalid_sequences"] == 1

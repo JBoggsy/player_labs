@@ -17,6 +17,12 @@ from evaluate_sealed_candidate import (
     require_frozen_index,
     validate_validation_gate,
 )
+from evaluation_uncertainty import (
+    CLUSTER_BOOTSTRAP_CONFIDENCE,
+    CLUSTER_BOOTSTRAP_METHOD,
+    CLUSTER_BOOTSTRAP_RESAMPLES,
+    CLUSTER_BOOTSTRAP_SEED,
+)
 
 
 def test_confirmation_manifest_matches_sealed_gate() -> None:
@@ -29,6 +35,13 @@ def test_confirmation_manifest_matches_sealed_gate() -> None:
     assert manifest["selected_samples_sha256"] == TEST_SELECTED_SAMPLES_SHA256
     assert manifest["selected"] == GATE_SAMPLES
     assert manifest["independent_verification"]["old_new_replay_overlap"] == 0
+    assert manifest["evaluation_uncertainty"] == {
+        "cluster_unit": "replay_id",
+        "confidence_level": CLUSTER_BOOTSTRAP_CONFIDENCE,
+        "method": CLUSTER_BOOTSTRAP_METHOD,
+        "resamples": CLUSTER_BOOTSTRAP_RESAMPLES,
+        "seed": CLUSTER_BOOTSTRAP_SEED,
+    }
 
 
 def validation(
@@ -38,6 +51,7 @@ def validation(
     index_hash: str = VALIDATION_INDEX_SHA256,
     checkpoint_hash: str = "checkpoint",
 ) -> dict:
+    correct = round(accuracy * samples) if isinstance(accuracy, (int, float)) else 0
     return {
         "sample_indices_sha256": index_hash,
         "sample_dataset_fingerprint": VALIDATION_DATASET_FINGERPRINT,
@@ -48,6 +62,21 @@ def validation(
         "max_text_tokens": 4096,
         "action_encoding": "absolute",
         "include_spatial_semantics": False,
+        "autoregressive_exact_action_cluster_bootstrap": {
+            "cluster_unit": "replay_id",
+            "clusters": samples // 2,
+            "samples": samples,
+            "correct": correct,
+            "point_estimate": accuracy,
+            "confidence_level": 0.95,
+            "method": "BCa",
+            "resamples": 9999,
+            "seed": 20260814,
+            "available": True,
+            "lower": max(0.0, accuracy - 0.01),
+            "upper": min(1.0, accuracy + 0.01),
+            "standard_error": 0.005,
+        },
         "groups": {
             "all": {
                 "samples": samples,
@@ -91,6 +120,19 @@ def test_sealed_gate_rejects_teacher_forced_proxy() -> None:
     metrics["constrained_exact_action_accuracy"] = 0.99
 
     with pytest.raises(ValueError, match="must exceed"):
+        validate_validation_gate(
+            evaluation,
+            checkpoint_sha256="checkpoint",
+            action_encoding="absolute",
+            spatial_semantics=False,
+        )
+
+
+def test_sealed_gate_requires_fixed_replay_cluster_uncertainty() -> None:
+    evaluation = validation(0.8)
+    evaluation["autoregressive_exact_action_cluster_bootstrap"]["seed"] = 7
+
+    with pytest.raises(ValueError, match="uncertainty contract"):
         validate_validation_gate(
             evaluation,
             checkpoint_sha256="checkpoint",

@@ -139,7 +139,8 @@ path; the shared lock prevents concurrent launchers.
 `training_dashboard.py` serves a read-only, dependency-free view of the active
 run: microbatch/epoch progress and ETA, recent and validation loss, checkpoints,
 GPU utilization/VRAM/temperature, disk headroom, process health, recent errors,
-and detailed action metrics once evaluation files exist. It binds to remote
+and detailed action metrics plus the replay-cluster confidence interval once
+evaluation files exist. It binds to remote
 localhost and is reached through SSH rather than exposing a network service.
 
 From the repository root on a Mac, deploy/restart the dashboard, establish the
@@ -306,6 +307,13 @@ verifies the frozen test index and Arrow dataset, requires validation and test
 to reference the same map-table file, checks the test evaluator's row and map
 attestations, refuses to overwrite an existing result, and writes a separate
 sealed decision record.
+Every new autoregressive evaluation also reports a fixed replay-cluster BCa
+bootstrap interval for exact-action accuracy: replay IDs are resampled as whole
+clusters, with 9,999 resamples, 95% two-sided confidence, and seed `20260814`.
+The sealed gate verifies that contract and records whether the interval's lower
+bound clears 70%. This is uncertainty evidence, not another candidate-selection
+threshold; the preregistered promotion metric remains exact-action point
+accuracy strictly above 70%.
 This keeps model selection on validation and makes the one-time test opening
 auditable:
 
