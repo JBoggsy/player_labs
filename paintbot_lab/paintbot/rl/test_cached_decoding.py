@@ -166,6 +166,45 @@ def test_cached_absolute_decoding_matches_full_prefix_recomputation() -> None:
     assert actual == expected
 
 
+def test_batched_cached_absolute_decoding_matches_individual_decoding() -> None:
+    policy, tokenizer, prompt_ids, map_cache = tiny_policy()
+    second_prompt = prompt_ids.flip(dims=(1,))
+
+    expected = (
+        policy.greedy_action(tokenizer, prompt_ids, map_cache, (4.0, 4.0)),
+        policy.greedy_action(tokenizer, second_prompt, map_cache, (3.0, 5.0)),
+    )
+    actual = policy.greedy_actions(
+        tokenizer,
+        torch.cat((prompt_ids, second_prompt)),
+        (map_cache, map_cache),
+        ((4.0, 4.0), (3.0, 5.0)),
+    )
+
+    assert actual == expected
+
+
+def test_evaluation_logit_slice_matches_full_forward() -> None:
+    policy, _, prompt_ids, _ = tiny_policy()
+    labels = torch.tensor([[-100, -100, -100, -100, 4, 5, 6, 7, 8]])
+    inputs = torch.tensor([[0, 1, 2, 3, 4, 5, 6, 7, 8]])
+    kwargs = {
+        "input_ids": inputs,
+        "attention_mask": torch.ones_like(inputs),
+        "labels": labels,
+        "loss_weights": torch.ones_like(inputs, dtype=torch.float32),
+        "maps": (torch.ones((8, 8)),),
+        "positions": ((4.0, 4.0),),
+    }
+
+    with torch.no_grad():
+        full = policy(**kwargs)
+        sliced = policy(**kwargs, logits_to_keep=6)
+
+    torch.testing.assert_close(sliced.logits, full.logits[:, -6:])
+    torch.testing.assert_close(sliced.loss, full.loss)
+
+
 def test_cached_event_decoding_matches_full_prefix_recomputation() -> None:
     policy, tokenizer, prompt_ids, map_cache = tiny_policy()
 

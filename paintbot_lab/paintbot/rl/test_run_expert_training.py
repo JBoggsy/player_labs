@@ -78,3 +78,21 @@ def test_train_command_can_combine_event_and_spatial_representations(
 
     assert "--spatial-semantics" in command
     assert command[command.index("--action-encoding") + 1] == "events"
+
+
+def test_evaluate_batches_only_fixed_length_absolute_actions(
+    tmp_path: Path, monkeypatch
+) -> None:
+    commands = []
+    monkeypatch.setattr(run_expert_training, "run", commands.append)
+    paths = [
+        tmp_path / name for name in ("checkpoint", "samples", "maps", "indices")
+    ]
+
+    run_expert_training.evaluate(*paths, tmp_path / "absolute.json")
+    run_expert_training.evaluate(
+        *paths, tmp_path / "events.json", action_encoding="events"
+    )
+
+    assert "--autoregressive-batch-size" in commands[0]
+    assert "--autoregressive-batch-size" not in commands[1]

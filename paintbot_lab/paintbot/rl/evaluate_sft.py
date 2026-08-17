@@ -124,6 +124,31 @@ def update_metrics(
         )
 
 
+@torch.no_grad()
+def decode_autoregressive_batch(model, tokenizer, collator, device, rows) -> None:
+    """Fill equal-length rows using the policy's padding-free batch decoder."""
+    prompt_ids = torch.from_numpy(np.stack([row["prompt_ids"] for row in rows])).to(
+        device=device, dtype=torch.long
+    )
+    map_caches = []
+    positions = []
+    for row in rows:
+        map_tensor = torch.from_numpy(collator.maps[row["map_hash"]].mask()).float()
+        map_caches.append(model.map_encoder.encode_static(map_tensor.to(device)))
+        positions.append(row["position"])
+    if len(rows) == 1:
+        generated = (
+            model.greedy_action(tokenizer, prompt_ids, map_caches[0], positions[0]),
+        )
+    else:
+        generated = model.greedy_actions(tokenizer, prompt_ids, map_caches, positions)
+    for row, tokens in zip(rows, generated, strict=True):
+        row["autoregressive"] = torch.tensor(
+            [tokenizer.convert_tokens_to_ids(token) for token in tokens]
+        )
+        del row["prompt_ids"]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--checkpoint", type=Path, required=True)
@@ -131,6 +156,7 @@ def main() -> int:
     parser.add_argument("--maps", type=Path, required=True)
     parser.add_argument("--sample-indices", type=Path)
     parser.add_argument("--max-text-tokens", type=int, default=2048)
+    parser.add_argument("--autoregressive-batch-size", type=int, default=8)
     parser.add_argument("--spatial-semantics", action="store_true")
     parser.add_argument("--out", type=Path)
     parser.add_argument(
@@ -139,6 +165,8 @@ def main() -> int:
         help="Optional compressed per-example action logits for validation-only calibration",
     )
     args = parser.parse_args()
+    if args.autoregressive_batch_size <= 0:
+        parser.error("--autoregressive-batch-size must be positive")
 
     device = evaluation_device()
     tokenizer, model = load_policy(args.checkpoint, device=device)
@@ -193,6 +221,8 @@ def main() -> int:
     game_versions: list[str] = []
     selected_samples_digest = hashlib.sha256()
     replay_outcomes: dict[str, list[int]] = defaultdict(lambda: [0, 0])
+    evaluation_rows = []
+    pending_by_length: dict[int, list[dict]] = defaultdict(list)
     with torch.no_grad():
         for sample in dataset:
             update_sample_fingerprint(selected_samples_digest, sample)
@@ -201,47 +231,20 @@ def main() -> int:
                 key: [item.to(device) for item in value] if key == "maps" else value.to(device) if torch.is_tensor(value) else value
                 for key, value in batch.items()
             }
-            output = model(**batch)
-            shifted_labels = torch.cat(
-                (
-                    batch["labels"].new_full((1, model.map_encoder.config.token_count), -100),
-                    batch["labels"],
-                ),
-                dim=1,
-            )[:, 1:]
-            predictions = output.logits[:, :-1].argmax(dim=-1)
-            selected = shifted_labels != -100
-            labels = shifted_labels[selected]
-            predicted = predictions[selected]
-            selected_logits = output.logits[:, :-1][selected]
+            target_length = len(ACTION_TOKEN_SLOTS) + 1
+            output = model(**batch, logits_to_keep=target_length + 1)
+            labels = batch["labels"][:, -target_length:].reshape(-1)
+            selected_logits = output.logits[:, -target_length - 1 : -1].reshape(
+                target_length, -1
+            )
+            predicted = selected_logits.argmax(dim=-1)
             constrained = torch.stack(
                 [ids[torch.argmax(logits[ids])] for logits, ids in zip(selected_logits, allowed_ids, strict=True)]
             )
-            target_length = len(ACTION_TOKEN_SLOTS) + 1
             prompt_ids = collator._prompt_ids(sample, target_length)
             prompt_ids = prompt_ids[
                 : max(0, args.max_text_tokens - target_length)
             ]
-            prompt_tensor = torch.tensor(
-                [prompt_ids], dtype=torch.long, device=device
-            )
-            map_cache = model.map_encoder.encode_static(batch["maps"][0])
-            autoregressive_tokens = model.greedy_action(
-                tokenizer,
-                prompt_tensor,
-                map_cache,
-                sample.position(),
-            )
-            autoregressive = torch.tensor(
-                [
-                    tokenizer.convert_tokens_to_ids(token)
-                    for token in autoregressive_tokens
-                ],
-                device=device,
-            )
-            replay_outcome = replay_outcomes[sample.replay_id]
-            replay_outcome[0] += int(torch.equal(autoregressive, labels))
-            replay_outcome[1] += 1
             previous = torch.tensor(
                 [
                     tokenizer.convert_tokens_to_ids(token)
@@ -261,21 +264,52 @@ def main() -> int:
                 label_rows.append(labels.cpu().numpy())
                 replay_ids.append(sample.replay_id)
                 game_versions.append(sample.game_version)
-            for key in ("all", sample.game_version):
-                score = totals[key]
-                score["loss"] += output.loss.item()
-                update_metrics(
-                    score,
-                    predicted,
-                    constrained,
-                    autoregressive,
-                    labels,
-                    previous,
+            row = {
+                "replay_id": sample.replay_id,
+                "game_version": sample.game_version,
+                "map_hash": sample.map_hash,
+                "position": sample.position(),
+                "prompt_ids": np.asarray(prompt_ids, dtype=np.int32),
+                "loss": output.loss.item(),
+                "predicted": predicted.cpu(),
+                "constrained": constrained.cpu(),
+                "labels": labels.cpu(),
+                "previous": previous.cpu(),
+            }
+            evaluation_rows.append(row)
+            pending = pending_by_length[len(prompt_ids)]
+            pending.append(row)
+            if len(pending) == args.autoregressive_batch_size:
+                decode_autoregressive_batch(
+                    model, tokenizer, collator, device, pending
                 )
+                pending.clear()
+        for pending in pending_by_length.values():
+            if pending:
+                decode_autoregressive_batch(model, tokenizer, collator, device, pending)
+
+    for row in evaluation_rows:
+        autoregressive = row["autoregressive"]
+        labels = row["labels"]
+        replay_outcome = replay_outcomes[row["replay_id"]]
+        replay_outcome[0] += int(torch.equal(autoregressive, labels))
+        replay_outcome[1] += 1
+        for key in ("all", row["game_version"]):
+            score = totals[key]
+            score["loss"] += row["loss"]
+            update_metrics(
+                score,
+                row["predicted"],
+                row["constrained"],
+                autoregressive,
+                labels,
+                row["previous"],
+            )
 
     result = {
         "device": str(device),
         "max_text_tokens": args.max_text_tokens,
+        "autoregressive_batch_size": args.autoregressive_batch_size,
         "checkpoint_sha256": sha256_tree(args.checkpoint),
         "sample_dataset_fingerprint": dataset_fingerprint(dataset, args.samples),
         "selected_samples_sha256": selected_samples_digest.hexdigest(),

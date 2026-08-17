@@ -143,9 +143,10 @@ def evaluate(
             str(indices),
             "--max-text-tokens",
             "4096",
-            "--out",
-            str(output),
         ]
+    if action_encoding == "absolute":
+        command.extend(("--autoregressive-batch-size", "8"))
+    command.extend(("--out", str(output)))
     if spatial_semantics:
         command.append("--spatial-semantics")
     run(command)

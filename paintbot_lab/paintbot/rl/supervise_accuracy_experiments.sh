@@ -112,6 +112,7 @@ while ! test -s "$BASELINE_AUTOREGRESSIVE_VALIDATION"; do
       --maps "$WORKSPACE/prepared/validation.maps.jsonl" \
       --sample-indices "$WORKSPACE/indices/validation.npy" \
       --max-text-tokens 4096 \
+      --autoregressive-batch-size 8 \
       --out "$BASELINE_AUTOREGRESSIVE_VALIDATION" \
       >>"$ROOT/logs/baseline-autoregressive-validation.log" 2>&1
   ) 9>"$LOCK"

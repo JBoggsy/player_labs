@@ -2,6 +2,7 @@ import json
 import sys
 from types import SimpleNamespace
 
+import numpy as np
 import torch
 
 import evaluate_sft
@@ -34,7 +35,7 @@ def test_evaluator_separates_autoregressive_from_teacher_forced_exact(
     )
 
     class Dataset:
-        maps = {"map": object()}
+        maps = {"map": SimpleNamespace(mask=lambda: np.ones((8, 8)))}
         arrow = SimpleNamespace(_fingerprint="dataset-fingerprint")
 
         def __init__(self, *args):
@@ -45,7 +46,7 @@ def test_evaluator_separates_autoregressive_from_teacher_forced_exact(
 
     class Collator:
         def __init__(self, *args, **kwargs):
-            pass
+            self.maps = args[1]
 
         def __call__(self, samples):
             return {

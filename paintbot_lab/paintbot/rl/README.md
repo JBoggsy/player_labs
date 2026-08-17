@@ -272,7 +272,11 @@ actually changed the button state. The latter two are required:
 aggregate accuracy can otherwise reward simply copying the previous mask.
 Both absolute and event decoders prefill the observation once, then reuse
 Qwen's KV cache for generated action tokens; this changes evaluation latency,
-not token selection or the metric contract.
+not token selection or the metric contract. Absolute-action evaluation also
+projects vocabulary logits only for the five scored targets and batches
+autoregressive rows with identical prompt lengths, so no padding or altered
+position semantics enter the metric. Unattended evaluations use batches of
+eight; `--autoregressive-batch-size 1` retains the single-row reference path.
 
 Training accepts `--action-change-weight <number|balanced>`. Numeric values
 multiply loss only for movement/turn/fire/grenade targets whose state differs
