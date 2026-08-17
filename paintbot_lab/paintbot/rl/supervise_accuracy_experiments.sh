@@ -97,6 +97,12 @@ while ! test -s "$DIVERSITY_STATUS" \
   sleep 60
 done
 
+if exceeds_target "$DIVERSITY_VALIDATION"; then
+  seal_candidate "$WORKSPACE/training-v2-diversity/full/best" \
+    "$DIVERSITY_VALIDATION"
+  exit 0
+fi
+
 while ! test -s "$BASELINE_AUTOREGRESSIVE_VALIDATION"; do
   (
     /usr/bin/flock --exclusive 9
@@ -114,12 +120,6 @@ while ! test -s "$BASELINE_AUTOREGRESSIVE_VALIDATION"; do
     sleep 60
   fi
 done
-
-if exceeds_target "$DIVERSITY_VALIDATION"; then
-  seal_candidate "$WORKSPACE/training-v2-diversity/full/best" \
-    "$DIVERSITY_VALIDATION"
-  exit 0
-fi
 
 run_until_terminal "$EVENT_STATUS" \
   "$EVENT_OUTPUT" \

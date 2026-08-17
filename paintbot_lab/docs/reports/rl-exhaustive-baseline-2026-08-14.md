@@ -182,10 +182,12 @@ baseline. The diversity artifact will also provide the first authoritative
 autoregressive score under the corrected evaluator. If diversity is flat, data
 repetition is not the main constraint and the next experiment should compare
 richer temporal state or greater adaptation capacity rather than merely adding
-epochs. Once the diversity run releases the GPU, the unattended queue evaluates
-the original baseline best checkpoint autoregressively on the same frozen
-validation index. This supplies a like-for-like diagnostic comparison without
-opening the test or changing any promotion threshold.
+epochs. If diversity remains below the target after releasing the GPU, the
+unattended queue evaluates the original baseline best checkpoint
+autoregressively on the same frozen validation index before starting the next
+arm. This supplies a like-for-like diagnostic comparison without opening the
+test or changing any promotion threshold; a diversity model already above the
+target proceeds directly to its one-shot confirmation.
 
 ## Queued experiment 1: residual event actions
 

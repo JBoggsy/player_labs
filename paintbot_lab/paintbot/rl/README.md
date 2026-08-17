@@ -165,10 +165,12 @@ If both single-factor arms pass their screens and complete below 70%, the queue
 fills the preregistered 2x2 interaction cell by training event outputs with
 spatial-semantic inputs. A rejected single-factor screen suppresses that
 combination.
-After diversity finishes, the queue also evaluates the original baseline
-checkpoint autoregressively on the same frozen validation index, providing a
-like-for-like diagnostic without opening the test. The SSH tunnel and local
-`8876` URL remain unchanged across those handoffs.
+If diversity finishes below the target, the queue also evaluates the original
+baseline checkpoint autoregressively on the same frozen validation index before
+starting the next arm, providing a like-for-like diagnostic without opening the
+test. A diversity model that already clears the target proceeds directly to its
+one-shot confirmation instead of waiting for that non-selecting diagnostic. The
+SSH tunnel and local `8876` URL remain unchanged across those handoffs.
 
 Confirmation selection is also unattended and fixed before results. The first
 eligible arm in queue order—diversity, event actions, spatial semantics, then
