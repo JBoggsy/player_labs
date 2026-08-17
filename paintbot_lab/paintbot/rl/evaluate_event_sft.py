@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import time
 from collections import defaultdict
 from pathlib import Path
 
@@ -21,6 +22,7 @@ from actions import (
 from evaluate_sft import (
     dataset_fingerprint,
     evaluation_device,
+    log_evaluation_progress,
     maps_fingerprint,
     sha256_file,
     sha256_tree,
@@ -108,9 +110,12 @@ def main() -> int:
     parser.add_argument("--maps", type=Path, required=True)
     parser.add_argument("--sample-indices", type=Path)
     parser.add_argument("--max-text-tokens", type=int, default=2048)
+    parser.add_argument("--progress-every", type=int, default=100)
     parser.add_argument("--spatial-semantics", action="store_true")
     parser.add_argument("--out", type=Path)
     args = parser.parse_args()
+    if args.progress_every <= 0:
+        parser.error("--progress-every must be positive")
 
     device = evaluation_device()
     tokenizer, model = load_policy(args.checkpoint, device=device)
@@ -131,8 +136,11 @@ def main() -> int:
     totals = defaultdict(empty_score)
     replay_outcomes: dict[str, list[int]] = defaultdict(lambda: [0, 0])
     selected_samples_digest = hashlib.sha256()
+    total_samples = len(dataset)
+    progress_started = time.monotonic()
+    log_evaluation_progress("event", 0, total_samples, progress_started)
     with torch.no_grad():
-        for sample in dataset:
+        for sample_number, sample in enumerate(dataset, start=1):
             update_sample_fingerprint(selected_samples_digest, sample)
             batch = collator([sample])
             batch = {
@@ -195,6 +203,12 @@ def main() -> int:
             replay_outcome = replay_outcomes[sample.replay_id]
             replay_outcome[0] += int(action_exact)
             replay_outcome[1] += 1
+            if sample_number % args.progress_every == 0:
+                log_evaluation_progress(
+                    "event", sample_number, total_samples, progress_started
+                )
+    if total_samples % args.progress_every:
+        log_evaluation_progress("event", total_samples, total_samples, progress_started)
 
     result = {
         "device": str(device),
@@ -267,6 +281,7 @@ def main() -> int:
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(rendered)
+    log_evaluation_progress("complete", total_samples, total_samples, progress_started)
     print(rendered, end="")
     return 0
 

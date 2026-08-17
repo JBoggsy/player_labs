@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import time
 from collections import defaultdict
 from dataclasses import asdict
 from pathlib import Path
@@ -67,6 +68,28 @@ def update_sample_fingerprint(digest, sample) -> None:
     digest.update(payload)
 
 
+def log_evaluation_progress(
+    phase: str, completed: int, total: int, started: float
+) -> None:
+    elapsed = time.monotonic() - started
+    rate = completed / elapsed if completed and elapsed > 0 else None
+    eta = (total - completed) / rate if rate else None
+    print(
+        "evaluation_progress "
+        + json.dumps(
+            {
+                "phase": phase,
+                "completed": completed,
+                "total": total,
+                "elapsed_seconds": elapsed,
+                "eta_seconds": eta,
+            },
+            separators=(",", ":"),
+        ),
+        flush=True,
+    )
+
+
 def evaluation_device() -> torch.device:
     if torch.cuda.is_available():
         return torch.device("cuda")
@@ -125,7 +148,7 @@ def update_metrics(
 
 
 @torch.no_grad()
-def decode_autoregressive_batch(model, tokenizer, collator, device, rows) -> None:
+def decode_autoregressive_batch(model, tokenizer, collator, device, rows) -> int:
     """Fill equal-length rows using the policy's padding-free batch decoder."""
     prompt_ids = torch.from_numpy(np.stack([row["prompt_ids"] for row in rows])).to(
         device=device, dtype=torch.long
@@ -147,6 +170,7 @@ def decode_autoregressive_batch(model, tokenizer, collator, device, rows) -> Non
             [tokenizer.convert_tokens_to_ids(token) for token in tokens]
         )
         del row["prompt_ids"]
+    return len(rows)
 
 
 def main() -> int:
@@ -157,6 +181,7 @@ def main() -> int:
     parser.add_argument("--sample-indices", type=Path)
     parser.add_argument("--max-text-tokens", type=int, default=2048)
     parser.add_argument("--autoregressive-batch-size", type=int, default=8)
+    parser.add_argument("--progress-every", type=int, default=100)
     parser.add_argument("--spatial-semantics", action="store_true")
     parser.add_argument("--out", type=Path)
     parser.add_argument(
@@ -167,6 +192,8 @@ def main() -> int:
     args = parser.parse_args()
     if args.autoregressive_batch_size <= 0:
         parser.error("--autoregressive-batch-size must be positive")
+    if args.progress_every <= 0:
+        parser.error("--progress-every must be positive")
 
     device = evaluation_device()
     tokenizer, model = load_policy(args.checkpoint, device=device)
@@ -223,8 +250,12 @@ def main() -> int:
     replay_outcomes: dict[str, list[int]] = defaultdict(lambda: [0, 0])
     evaluation_rows = []
     pending_by_length: dict[int, list[dict]] = defaultdict(list)
+    total_samples = len(dataset)
+    progress_started = time.monotonic()
+    autoregressive_completed = 0
+    log_evaluation_progress("main", 0, total_samples, progress_started)
     with torch.no_grad():
-        for sample in dataset:
+        for sample_number, sample in enumerate(dataset, start=1):
             update_sample_fingerprint(selected_samples_digest, sample)
             batch = collator([sample])
             batch = {
@@ -280,13 +311,38 @@ def main() -> int:
             pending = pending_by_length[len(prompt_ids)]
             pending.append(row)
             if len(pending) == args.autoregressive_batch_size:
-                decode_autoregressive_batch(
+                autoregressive_completed += decode_autoregressive_batch(
                     model, tokenizer, collator, device, pending
                 )
                 pending.clear()
+            if sample_number % args.progress_every == 0:
+                log_evaluation_progress(
+                    "main", sample_number, total_samples, progress_started
+                )
+        if total_samples % args.progress_every:
+            log_evaluation_progress(
+                "main", total_samples, total_samples, progress_started
+            )
+        tail_total = total_samples - autoregressive_completed
+        tail_completed = 0
+        tail_last_report = 0
+        tail_started = time.monotonic()
         for pending in pending_by_length.values():
             if pending:
-                decode_autoregressive_batch(model, tokenizer, collator, device, pending)
+                tail_completed += decode_autoregressive_batch(
+                    model, tokenizer, collator, device, pending
+                )
+                if (
+                    tail_completed - tail_last_report >= args.progress_every
+                    or tail_completed == tail_total
+                ):
+                    log_evaluation_progress(
+                        "autoregressive_tail",
+                        tail_completed,
+                        tail_total,
+                        tail_started,
+                    )
+                    tail_last_report = tail_completed
 
     for row in evaluation_rows:
         autoregressive = row["autoregressive"]
@@ -434,6 +490,7 @@ def main() -> int:
             replay_ids=np.asarray(replay_ids),
             game_versions=np.asarray(game_versions),
         )
+    log_evaluation_progress("complete", total_samples, total_samples, progress_started)
     print(rendered, end="")
     return 0
 

@@ -44,6 +44,9 @@ def test_evaluator_separates_autoregressive_from_teacher_forced_exact(
         def __iter__(self):
             yield sample
 
+        def __len__(self):
+            return 1
+
     class Collator:
         def __init__(self, *args, **kwargs):
             self.maps = args[1]

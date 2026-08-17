@@ -36,6 +36,7 @@ METRIC_KEYS = (
     "previous_mask_exact_action_accuracy",
 )
 PROGRESS_RATE_POINTS: dict[str, list[tuple[float, int]]] = {}
+EVALUATION_PROGRESS_PREFIX = "evaluation_progress "
 
 
 def read_json(path: Path) -> dict:
@@ -70,11 +71,30 @@ def parse_training_log(text: str, point_limit: int = 500) -> dict:
         for epoch, loss in VALIDATION_RE.findall(text)
     ]
     errors = [line.strip() for line in text.splitlines() if ERROR_RE.search(line)]
+    evaluation_progress = None
+    for line in text.splitlines():
+        if not line.startswith(EVALUATION_PROGRESS_PREFIX):
+            continue
+        try:
+            value = json.loads(line.removeprefix(EVALUATION_PROGRESS_PREFIX))
+        except json.JSONDecodeError:
+            continue
+        if (
+            isinstance(value, dict)
+            and isinstance(value.get("phase"), str)
+            and isinstance(value.get("completed"), int)
+            and isinstance(value.get("total"), int)
+        ):
+            evaluation_progress = value
+            evaluation_progress["fraction"] = (
+                value["completed"] / value["total"] if value["total"] else 0
+            )
     return {
         "losses": losses[-point_limit:],
         "validations": validations,
         "errors": errors[-20:],
         "latest": losses[-1] if losses else None,
+        "evaluation_progress": evaluation_progress,
     }
 
 
@@ -304,6 +324,7 @@ def build_snapshot(
             "microbatches_per_second": eta["rate_per_second"],
         },
         "validation_history": validation_history,
+        "evaluation_progress": log["evaluation_progress"],
         "recent_losses": log["losses"],
         "training_run": {
             key: training_run.get(key)
@@ -360,7 +381,7 @@ const $=id=>document.getElementById(id), pct=x=>(100*x).toFixed(1)+'%', num=x=>x
 function duration(s){if(s==null)return 'ETA unavailable';s=Math.max(0,s);const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h?`${h}h ${m}m remaining`:`${m}m remaining`}
 function metric(label,value,percent=false){let v=value==null?'—':typeof value==='string'?value:percent?pct(value):num(value);return `<div class="metric-row"><span class="muted">${label}</span><span>${v}</span></div>`}
 function chart(points){const c=$('lossChart'),d=devicePixelRatio||1,w=c.clientWidth,h=c.clientHeight;c.width=w*d;c.height=h*d;const x=c.getContext('2d');x.scale(d,d);x.clearRect(0,0,w,h);if(points.length<2)return;const vals=points.map(p=>p.loss),lo=Math.min(...vals),hi=Math.max(...vals),pad=18;x.strokeStyle='#273243';x.beginPath();x.moveTo(pad,h-pad);x.lineTo(w-pad,h-pad);x.stroke();x.strokeStyle='#6aa9ff';x.lineWidth=1.6;x.beginPath();points.forEach((p,i)=>{const xx=pad+i*(w-2*pad)/(points.length-1),yy=h-pad-(p.loss-lo)/(hi-lo||1)*(h-2*pad);i?x.lineTo(xx,yy):x.moveTo(xx,yy)});x.stroke();x.fillStyle='#8f9bad';x.font='11px ui-monospace';x.fillText(hi.toFixed(3),2,12);x.fillText(lo.toFixed(3),2,h-4)}
-async function refresh(){try{const r=await fetch('/api/status',{cache:'no-store'}),d=await r.json(),p=d.progress,stage=d.status.stage||'unknown';$('stage').innerHTML=`<span class="${d.healthy?'good':'bad'}">${d.healthy?'● healthy':'● attention'}</span> · ${stage.replaceAll('_',' ')}`;$('freshness').textContent='Updated '+new Date(d.generated_at_unix*1000).toLocaleTimeString();$('progress').textContent=`${pct(p.fraction)} · epoch ${p.epoch}/${p.epochs}`;$('progressBar').style.width=pct(p.fraction);$('eta').textContent=`${num(p.completed_microbatches)} / ${num(p.total_microbatches)} microbatches · ${duration(p.eta_seconds)}`;
+async function refresh(){try{const r=await fetch('/api/status',{cache:'no-store'}),d=await r.json(),p=d.progress,stage=d.status.stage||'unknown';$('stage').innerHTML=`<span class="${d.healthy?'good':'bad'}">${d.healthy?'● healthy':'● attention'}</span> · ${stage.replaceAll('_',' ')}`;$('freshness').textContent='Updated '+new Date(d.generated_at_unix*1000).toLocaleTimeString();const ep=d.evaluation_progress;if(d.processes.evaluator&&ep){$('progress').textContent=`${pct(ep.fraction)} · ${ep.phase.replaceAll('_',' ')}`;$('progressBar').style.width=pct(ep.fraction);$('eta').textContent=`${num(ep.completed)} / ${num(ep.total)} evaluation rows · ${duration(ep.eta_seconds)}`}else{$('progress').textContent=`${pct(p.fraction)} · epoch ${p.epoch}/${p.epochs}`;$('progressBar').style.width=pct(p.fraction);$('eta').textContent=`${num(p.completed_microbatches)} / ${num(p.total_microbatches)} microbatches · ${duration(p.eta_seconds)}`}
 const g=d.gpu;$('gpu').textContent=g.utilization_percent==null?'—':g.utilization_percent+'%';$('gpuSub').textContent=g.memory_used_mib==null?'nvidia-smi unavailable':`${(g.memory_used_mib/1024).toFixed(1)} / ${(g.memory_total_mib/1024).toFixed(1)} GiB · ${g.temperature_c}°C`;$('disk').textContent=gib(d.disk.free_bytes);$('diskSub').textContent=pct(d.disk.used_fraction)+' used';chart(d.recent_losses);
 $('validations').innerHTML=d.validation_history.length?d.validation_history.map(v=>metric('Epoch '+v.epoch,v.loss)).join(''):'Not yet available';$('checkpoints').innerHTML=d.checkpoints.length?`<table><tr><th>Name</th><th>Update</th><th>Best val</th></tr>${d.checkpoints.slice(-7).reverse().map(c=>`<tr><td>${c.name}</td><td>${num(c.global_updates)}</td><td>${c.best_validation_loss==null?'—':c.best_validation_loss.toFixed(4)}</td></tr>`).join('')}</table>`:'None yet';
 const decision=d.sealed_decision,decisionHtml=Object.keys(decision).length?`<div style="margin-bottom:18px"><strong class="${decision.passed?'good':'bad'}">Confirmation ${decision.passed?'PASSED':'FAILED'}</strong>${metric('Validation exact',decision.validation_exact_action_accuracy,true)}${metric('Confirmation exact',decision.test_exact_action_accuracy,true)}${metric('Target',decision.target_accuracy,true)}${metric('95% lower bound clears target',decision.test_cluster_bootstrap_lower_exceeds_target?'yes':'no')}</div>`:'';

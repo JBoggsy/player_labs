@@ -139,10 +139,12 @@ path; the shared lock prevents concurrent launchers.
 `training_dashboard.py` serves a read-only, dependency-free view of the active
 run: microbatch/epoch progress and ETA, recent and validation loss, checkpoints,
 GPU utilization/VRAM/temperature, disk headroom, process health, recent errors,
-and detailed action metrics plus the replay-cluster confidence interval once
-evaluation files exist. A completed one-shot confirmation is shown explicitly
+and evaluation-row progress/ETA during long autoregressive scoring. Detailed
+action metrics plus the replay-cluster confidence interval appear once an
+evaluation file exists. A completed one-shot confirmation is shown explicitly
 as passed or failed with its validation accuracy, confirmation accuracy, target,
-and lower-bound verdict. It binds to remote
+and lower-bound verdict. Evaluators emit structured progress every 100 rows by
+default; `--progress-every` changes only that reporting cadence. It binds to remote
 localhost and is reached through SSH rather than exposing a network service.
 
 From the repository root on a Mac, deploy/restart the dashboard, establish the

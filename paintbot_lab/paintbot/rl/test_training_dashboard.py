@@ -16,12 +16,22 @@ def test_parse_training_log_extracts_progress_validation_and_errors() -> None:
         "epoch=1 step=100 loss=0.4\n"
         "epoch=1 validation_loss=0.3\n"
         "epoch=2 step=50 loss=0.2\n"
+        'evaluation_progress {"phase":"main","completed":25,"total":100,'
+        '"elapsed_seconds":10.0,"eta_seconds":30.0}\n'
         "RuntimeError: failed safely\n"
     )
 
     assert parsed["latest"] == {"epoch": 2, "step": 50, "loss": 0.2}
     assert parsed["validations"] == [{"epoch": 1, "loss": 0.3}]
     assert parsed["errors"] == ["RuntimeError: failed safely"]
+    assert parsed["evaluation_progress"] == {
+        "phase": "main",
+        "completed": 25,
+        "total": 100,
+        "elapsed_seconds": 10.0,
+        "eta_seconds": 30.0,
+        "fraction": 0.25,
+    }
 
 
 def test_full_training_log_excludes_canary_metrics() -> None:
