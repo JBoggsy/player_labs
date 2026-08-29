@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stencil Navigation Rework — Sketch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Merriweather+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============ Ink & Print tokens ============ */
+  :root {
+    --bg: #fffdf4;            /* cream paper */
+    --surface: #fffaf0;
+    --surface-alt: #f8f6ef;
+    --fg: #111827;            /* warm near-black — never pure #000 */
+    --fg-subtle: #555555;
+    --fg-muted: #999999;
+    --ink-navy: #1a3875;
+    --ink-sage: #6e8050;
+    --ink-terracotta: #b36e4e;
+    --ink-gold: #d4a853;
+    --accent: #859ebe;
+    --accent-soft: #eef2f7;
+    --cta: #0e2758;
+    --cta-foreground: #fffdf4;
+    --border: #e4dac8;
+    --border-strong: #d4c9b5;
+    --border-subtle: #f0ebe1;
+    --serif: 'Merriweather', Georgia, serif;
+    --sans: 'Merriweather Sans', 'Helvetica Neue', sans-serif;
+    --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  /* ============ Page grid: reading column + comment rail ============ */
+  .dc-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 0;
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+  article#doc {
+    max-width: 72ch;
+    margin: 0 auto;
+    padding: 56px 40px 120px;
+    min-width: 0;
+  }
+
+  /* ============ Typography ============ */
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-subtle);
+  }
+  header.masthead { border-bottom: 2px solid var(--border-strong); padding-bottom: 20px; margin-bottom: 32px; }
+  header.masthead h1 {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 34px;
+    line-height: 1.2;
+    margin: 8px 0 10px;
+  }
+  header.masthead .context { color: var(--fg-subtle); font-size: 13.5px; margin: 0; }
+  h2 {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-navy);
+    margin: 48px 0 12px;
+  }
+  h3 { font-family: var(--serif); font-weight: 700; font-size: 16.5px; margin: 32px 0 8px; }
+  p { margin: 0 0 14px; }
+  a { color: var(--ink-navy); text-decoration-color: var(--accent); text-underline-offset: 3px; }
+  a:hover { color: var(--cta); }
+  strong { font-weight: 700; }
+  ul, ol { padding-left: 24px; margin: 0 0 14px; }
+  li { margin-bottom: 4px; }
+  hr { border: 0; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  /* Key-points opener: every section starts with scannable bullets */
+  .key-points {
+    list-style: none;
+    padding: 0 0 0 2px;
+    margin: 0 0 18px;
+  }
+  .key-points li { padding-left: 18px; position: relative; margin-bottom: 6px; }
+  .key-points li::before { content: '—'; position: absolute; left: 0; color: var(--ink-gold); font-weight: 700; }
+
+  /* ============ TOC ============ */
+  nav.toc { margin: 28px 0 8px; }
+  nav.toc ol { list-style: none; padding: 0; column-count: 2; column-gap: 40px; margin: 10px 0 0; }
+  nav.toc li { margin-bottom: 5px; break-inside: avoid; }
+  nav.toc a { text-decoration: none; border-bottom: 1px dotted var(--border-strong); }
+  nav.toc .toc-num { font-family: var(--mono); font-size: 12px; color: var(--fg-muted); margin-right: 8px; }
+
+  /* ============ Tables ============ */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 18px 0 22px;
+    font-size: 13.5px;
+  }
+  th {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg-subtle);
+    text-align: left;
+    padding: 6px 12px 6px 0;
+    border-bottom: 2px solid var(--border-strong);
+  }
+  td { padding: 7px 12px 7px 0; border-bottom: 1px solid var(--border-subtle); vertical-align: top; }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-size: 12.5px; font-feature-settings: 'tnum' 1; }
+
+  /* ============ Figures ============ */
+  figure { margin: 24px 0 28px; }
+  figure svg { max-width: 100%; height: auto; display: block; }
+  figcaption {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--fg-subtle);
+  }
+  figcaption .fig-label {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 10.5px;
+    color: var(--ink-navy);
+    margin-right: 8px;
+  }
+
+  /* ============ Code & citations ============ */
+  code {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--surface-alt);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  pre {
+    background: var(--surface-alt);
+    border: 1px solid var(--border-subtle);
+    border-radius: 3px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    margin: 16px 0 20px;
+  }
+  pre code { background: none; padding: 0; font-size: 12.5px; line-height: 1.6; }
+  .cite {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--fg-subtle);
+    background: var(--surface-alt);
+    padding: 1px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+
+  /* ============ Callouts ============ */
+  .callout { padding: 12px 16px; margin: 18px 0; font-size: 13.5px; border-radius: 3px; }
+  .callout .callout-label {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .callout-info { background: var(--accent-soft); }
+  .callout-info .callout-label { color: var(--ink-navy); }
+  .callout-warn { background: rgba(179, 110, 78, 0.08); border-left: 3px solid var(--ink-terracotta); }
+  .callout-warn .callout-label { color: var(--ink-terracotta); }
+  .callout-open { background: rgba(212, 168, 83, 0.10); }
+  .callout-open .callout-label { color: #8a6a1f; }
+
+  /* Decision record */
+  .decision { border-top: 1px solid var(--border); padding: 14px 0 4px; margin: 14px 0; }
+  .decision .decision-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-sage); }
+  .decision p { margin-top: 6px; }
+
+  /* Requirement lead-ins (§1) */
+  .req { margin-bottom: 16px; }
+  .req .req-name { font-weight: 700; }
+
+  @media (max-width: 1100px) {
+    .dc-page { grid-template-columns: 1fr; }
+  }
+  @media print {
+    #dc-sidebar, #dc-fab, #dc-toggle { display: none !important; }
+    .dc-page { grid-template-columns: 1fr; }
+  }
+
+  /* ================================================================
+     DC-COMMENTS BEGIN — styles (copy verbatim; do not modify)
+     ================================================================ */
+  ::highlight(dc-hl) { background: rgba(212, 168, 83, 0.28); }
+  ::highlight(dc-hl-active) { background: rgba(212, 168, 83, 0.6); }
+
+  #dc-fab {
+    position: absolute;
+    z-index: 40;
+    display: none;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--cta-foreground);
+    background: var(--cta);
+    border: 1px solid #0a1c42;
+    border-radius: 3px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  #dc-fab:hover { background: var(--ink-navy); }
+
+  #dc-sidebar {
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    padding: 24px 20px 60px;
+    font-size: 13px;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    overflow-y: auto;
+  }
+  #dc-sidebar h2.dc-title {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-subtle);
+    margin: 0 0 4px;
+  }
+  .dc-actions { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 18px; }
+  .dc-btn {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--fg);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    padding: 4px 9px;
+    cursor: pointer;
+  }
+  .dc-btn:hover { background: var(--surface-alt); }
+  .dc-btn:focus-visible, #dc-fab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .dc-empty { color: var(--fg-muted); font-style: italic; }
+  .dc-item { border-top: 1px solid var(--border-subtle); padding: 12px 0; cursor: pointer; }
+  .dc-item.dc-resolved { opacity: 0.5; }
+  .dc-quote {
+    border-left: 2px solid var(--ink-gold);
+    padding-left: 8px;
+    color: var(--fg-subtle);
+    font-style: italic;
+    font-size: 12px;
+    margin-bottom: 6px;
+    overflow-wrap: break-word;
+  }
+  .dc-orphan-tag {
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-terracotta);
+    background: rgba(179, 110, 78, 0.12);
+    border-radius: 999px;
+    padding: 1px 7px;
+    margin-left: 6px;
+  }
+  .dc-text { white-space: pre-wrap; overflow-wrap: break-word; }
+  .dc-item textarea {
+    width: 100%;
+    min-height: 64px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    padding: 6px 8px;
+    resize: vertical;
+  }
+  .dc-item textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .dc-meta { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 11px; color: var(--fg-muted); }
+  .dc-meta label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+  .dc-meta .dc-del { margin-left: auto; color: var(--ink-terracotta); background: none; border: none; font-size: 11px; cursor: pointer; padding: 0; }
+  .dc-meta .dc-del:hover { text-decoration: underline; }
+  #dc-status { font-size: 11px; color: var(--ink-sage); min-height: 16px; margin-top: 8px; }
+
+  #dc-toggle { display: none; }
+  @media (max-width: 1100px) {
+    #dc-sidebar {
+      position: fixed;
+      right: 0;
+      top: 0;
+      width: 320px;
+      max-width: 90vw;
+      transform: translateX(100%);
+      transition: transform 200ms ease-out;
+      z-index: 50;
+      box-shadow: -4px 0 16px rgba(0, 0, 0, 0.08);
+    }
+    #dc-sidebar.dc-open { transform: translateX(0); }
+    #dc-toggle {
+      display: block;
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 51;
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--cta-foreground);
+      background: var(--cta);
+      border: 1px solid #0a1c42;
+      border-radius: 999px;
+      padding: 9px 15px;
+      cursor: pointer;
+    }
+  }
+  /* ============ DC-COMMENTS END — styles ============ */
+</style>
+</head>
+<body>
+<div class="dc-page">
+<article id="doc">
+
+  <header class="masthead">
+    <span class="eyebrow">Design Sketch · 2026-08-11 · Status: Rough — open questions unresolved</span>
+    <h1>Stencil Navigation Rework</h1>
+    <p class="context">General shape for replacing stencil's two-planner, two-predicate navigation stack with one
+    weighted planner over one pixel-exact walkability field. Inputs: the
+    <a href="../reports/stencil-navigation-deep-dive-2026-08-08.html">navigation deep-dive report</a> and James's
+    41 review comments on it (2026-08-10/11). Source of truth is the
+    <a href="nav-rework-sketch-2026-08-11.md">markdown original</a>; this render exists to be commented on.</p>
+  </header>
+
+  <section id="summary">
+    <h2>Executive Summary</h2>
+    <p>The review verdict on today's navigation is uniform: two planners chosen by string membership, three
+    beeline paths with no walkability check, an 8px coarsening that spawned its own bug class, and authored
+    anchors that no longer describe the maps. The sketch replaces all of it with five strict layers: an
+    <strong>L∞ clearance field</strong> that reproduces the engine's square-footprint <code>canOccupy</code>
+    bit-for-bit as one array read; a <strong>topology layer</strong> deriving chokepoints, rooms, cover
+    potential, and connected components from that field; <strong>one weighted A*</strong> whose cost terms
+    (trench, puddle, danger-from-tracks, exposure) replace per-objective steering hacks; a <strong>typed
+    Intent contract</strong> under which strategy only ever emits validated, reachable goals; and a follower
+    whose stuck handling shrinks to a watchdog.</p>
+    <p>The most consequential calls: flow fields are demoted from planner to admissible heuristic for a fixed
+    set of stable goals; the 8px grid survives only as the comms/telemetry coordinate unit; and the search
+    lattice step (1–4px) is deliberately left open pending Nim benchmarks — with the clearance field,
+    correctness is pixel-exact at any step, so resolution becomes purely a performance knob.</p>
+  </section>
+
+  <nav class="toc">
+    <span class="eyebrow">Contents</span>
+    <ol>
+      <li><span class="toc-num">1</span><a href="#requirements">Requirements from the Review</a></li>
+      <li><span class="toc-num">2</span><a href="#goals">Goals and Non-Goals</a></li>
+      <li><span class="toc-num">3</span><a href="#architecture">Architecture Sketch</a></li>
+      <li><span class="toc-num">4</span><a href="#kill-list">Kill List</a></li>
+      <li><span class="toc-num">5</span><a href="#beelines">Fate of Each Beeline</a></li>
+      <li><span class="toc-num">6</span><a href="#numbers">Numbers Driving the Decisions</a></li>
+      <li><span class="toc-num">7</span><a href="#invariants">Invariants and Accepted Risks</a></li>
+      <li><span class="toc-num">8</span><a href="#open-questions">Open Questions</a></li>
+      <li><span class="toc-num">9</span><a href="#layer1-status">Layer 1 Status Addendum</a></li>
+      <li><span class="toc-num">10</span><a href="#todos">TODOs Spawned by the Review</a></li>
+    </ol>
+  </nav>
+
+  <section id="requirements">
+    <h2>1 · Requirements from the Review</h2>
+    <ul class="key-points">
+      <li>Every requirement below traces to one or more of the 41 comments on the deep-dive report.</li>
+      <li>The five directives with the most emphasis: one planner, no beelining, validated goals, no 8px
+        movement coarsening, dynamic PoIs.</li>
+    </ul>
+
+    <div class="req"><span class="req-name">One planner.</span> Exactly one route planner for all navigation.
+    Flow fields stop being a second way to navigate; if they survive at all, they <em>inform</em> the single
+    planner (shared distance oracle / heuristic) and are never followed directly. Direct steering is not a
+    sanctioned third planner. The <code>Intent.planner</code> field proposed in the report's H1 is dropped —
+    there is nothing to select.</div>
+
+    <div class="req"><span class="req-name">No beelining, anywhere.</span> Intent picks the point; nav routes
+    to it. All five direct-steer paths (§5) go through the planner.</div>
+
+    <div class="req"><span class="req-name">Unreachable goals never reach the planner.</span> An unroutable
+    goal today either freezes the agent (flow) or beelines it (A*). Both are symptoms of the same bug:
+    strategy handed nav a goal nobody validated. Goal selection must emit only walkable, reachable points;
+    the planner may then treat &ldquo;no path&rdquo; as a hard internal error worth loud telemetry, not a condition to
+    paper over.</div>
+
+    <div class="req"><span class="req-name">No 8px coarsening for movement.</span> The eroded 8px grid goes
+    away as the movement representation. Cell coordinates survive only as the comms/telemetry unit (shout
+    formats, trace schema). Pathfinding efficiency is bought with better algorithms, not lower resolution.
+    This also kills the class of problems the coarsening created: the <code>nearestWalkable</code> snap with
+    its up-left bias, and the grid-vs-pixel disagreement between the two segment predicates.</div>
+
+    <div class="req"><span class="req-name">Dynamic PoIs, not authored anchors.</span> All the axis-percentage
+    anchors (<code>chokePoint</code> at 45%, <code>rallyPoint</code>/<code>pastRally</code> at 65%) are
+    stripped. Points of interest — chokepoints, room centers, cover-rich posts — are computed from the
+    walkability map itself.</div>
+
+    <div class="req"><span class="req-name">Kill the threat axis.</span> The concept is outdated; remove it
+    and everything keyed on it.</div>
+
+    <div class="req"><span class="req-name">Rework cover.</span> &ldquo;Walkable cell with ≥1 non-walkable
+    8-neighbor&rdquo; is not cover — it is &ldquo;next to an obstacle,&rdquo; including the map edge. Cover has a precomputable
+    part (wall proximity <em>with direction</em>) and a situational part (where the believed enemies are).</div>
+
+    <div class="req"><span class="req-name">Stuck handling: keep, but lightweight.</span> A perfect nav stack
+    never gets stuck; ours won't be perfect, so keep a watchdog — but the bigger it gets, the more it hides
+    primary-stack bugs. Progress test → one replan → loud telemetry. No escalating jitter ladder.</div>
+
+    <div class="req"><span class="req-name">Movement smarter than goal-point + shortest path.</span>
+    <code>carry_home</code> today follows the flow field with only local micro; interception, escort, and hunt
+    A* straight at their targets. Evasion, cover, and ally proximity should shape routes — which in a
+    single-planner world means they live in the cost function, not in per-objective steering hacks.</div>
+
+    <div class="req"><span class="req-name">belief.danger stays for now.</span> Reversing the report's H3:
+    what it likely tracks is <em>believed enemy locations</em>, not danger per se. Keep as-is, add a TODO to
+    experimentally validate the semantics before promoting it into any cost function. The new danger cost
+    term is specified against believed enemy <em>tracks</em> directly, not against this grid.</div>
+
+    <div class="req"><span class="req-name">WorldMap becomes immutable.</span> The per-tick pedestal rewrite
+    leaves WorldMap; anything dynamic (pedestal positions, steal/capture detection inputs) moves to belief
+    state.</div>
+
+    <div class="req"><span class="req-name">Note the engine invariants.</span> walkMask/wallMask are written
+    as exact complements but nothing promises they stay that way — document it where <code>map.wall</code> is
+    built. The spinning-diamond staleness (init-only sprite, live restamps, diamonds unmarked) is accepted as
+    unfixable client-side with the current wire contract.</div>
+  </section>
+
+  <section id="goals">
+    <h2>2 · Goals and Non-Goals</h2>
+
+    <h3>Goals</h3>
+    <ul>
+      <li>One planner, one walkability predicate, one authoritative map representation.</li>
+      <li>Pixel-exact correctness everywhere; resolution is a performance knob, never a correctness
+        compromise.</li>
+      <li>Route quality (danger, cover, hazards) expressed as costs in that one planner.</li>
+      <li>Strategy emits validated goals; nav trusts its inputs.</li>
+      <li>Structured <code>Intent</code> type; the seven reason-string lists die.</li>
+      <li>Derived, map-driven PoIs replacing all authored anchors.</li>
+    </ul>
+
+    <h3>Non-goals (this rework)</h3>
+    <ul>
+      <li>Fire-windup micro cleverness (strafe/aim during windup, trigger-in-cover-then-peek) — recorded as a
+        TODO, explicitly out of scope.</li>
+      <li>Changing squad <em>decision</em> logic (who goes where and why). Squads keep their brains; they just
+        express movement through the new goal contract and consume the new PoIs.</li>
+      <li>Engine changes (diamond marking, mask invariant enforcement server-side).</li>
+      <li><code>belief.danger</code> semantics validation — separate experiment.</li>
+      <li>Strategy-layer improvements flagged in review, deferred: the broader strategy-logic look that
+        the <code>early_defense</code>/post rework points at, grenade evacuation as a proper
+        strategy-or-reaction, smarter escort extrapolated fixes, and moving candidate scoring to
+        behavior-trigger time instead of nav time. This rework only changes how those behaviors express
+        and validate their goals.</li>
+    </ul>
+  </section>
+
+  <section id="architecture">
+    <h2>3 · Architecture Sketch</h2>
+    <ul class="key-points">
+      <li>Five layers, strictly ordered: each consumes only the layers below it.</li>
+      <li>Correctness lives in layer 1; route intelligence lives in layer 3's cost function; trust lives in
+        layer 4's contract.</li>
+    </ul>
+
+    <figure>
+      <svg viewBox="0 0 640 560" role="img" aria-label="Layered navigation architecture">
+        <defs>
+          <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8" fill="none" stroke="#859ebe" stroke-width="1.2"/>
+          </marker>
+        </defs>
+        <rect x="90" y="10" width="460" height="62" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="320" y="36" text-anchor="middle" font-family="Merriweather Sans" font-size="13.5" font-weight="600" fill="#111827">strategy · squads · fight</text>
+        <text x="320" y="56" text-anchor="middle" font-family="Merriweather Sans" font-size="11.5" fill="#555555">what to do</text>
+        <line x1="320" y1="72" x2="320" y2="100" stroke="#859ebe" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="332" y="92" font-family="Merriweather Sans" font-size="10.5" fill="#555555">validated Goal + intent profile</text>
+        <rect x="90" y="102" width="460" height="62" rx="3" fill="#eef2f7" stroke="#859ebe"/>
+        <text x="320" y="128" text-anchor="middle" font-family="Merriweather Sans" font-size="13.5" font-weight="600" fill="#1a3875">[4] Intent &amp; goal contract</text>
+        <text x="320" y="148" text-anchor="middle" font-family="Merriweather Sans" font-size="11.5" fill="#555555">typed Intent · goals pre-validated, reachable</text>
+        <line x1="320" y1="164" x2="320" y2="192" stroke="#859ebe" stroke-width="1.5" marker-end="url(#arr)"/>
+        <rect x="90" y="194" width="460" height="62" rx="3" fill="#eef2f7" stroke="#859ebe"/>
+        <text x="320" y="220" text-anchor="middle" font-family="Merriweather Sans" font-size="13.5" font-weight="600" fill="#1a3875">[3] The planner — the only one</text>
+        <text x="320" y="240" text-anchor="middle" font-family="Merriweather Sans" font-size="11.5" fill="#555555">one weighted A*-family search · per-intent cost profiles</text>
+        <line x1="320" y1="256" x2="320" y2="284" stroke="#859ebe" stroke-width="1.5" marker-end="url(#arr)"/>
+        <rect x="90" y="286" width="460" height="62" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="320" y="312" text-anchor="middle" font-family="Merriweather Sans" font-size="13.5" font-weight="600" fill="#111827">[2] Topology &amp; PoI layer</text>
+        <text x="320" y="332" text-anchor="middle" font-family="Merriweather Sans" font-size="11.5" fill="#555555">components · chokepoints · rooms · posts · cover potential</text>
+        <line x1="320" y1="348" x2="320" y2="376" stroke="#859ebe" stroke-width="1.5" marker-end="url(#arr)"/>
+        <rect x="90" y="378" width="460" height="62" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="320" y="404" text-anchor="middle" font-family="Merriweather Sans" font-size="13.5" font-weight="600" fill="#111827">[1] Clearance field</text>
+        <text x="320" y="424" text-anchor="middle" font-family="Merriweather Sans" font-size="11.5" fill="#555555">L∞ distance transform — THE walkability predicate</text>
+        <line x1="320" y1="440" x2="320" y2="468" stroke="#859ebe" stroke-width="1.5" marker-end="url(#arr)"/>
+        <rect x="90" y="470" width="460" height="62" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="320" y="496" text-anchor="middle" font-family="Merriweather Sans" font-size="13.5" font-weight="600" fill="#111827">[0] Pixel wall mask</text>
+        <text x="320" y="516" text-anchor="middle" font-family="Merriweather Sans" font-size="11.5" fill="#555555">decoded once from player init · immutable</text>
+      </svg>
+      <figcaption><span class="fig-label">Figure 1</span>The five-layer stack. Follower and micro (§3.5) sit
+      beside the planner as consumers of its path; nothing above the contract line can hand nav an
+      unvalidated goal.</figcaption>
+    </figure>
+
+    <h3 id="clearance">3.1 · Layer 1 — the clearance field (one predicate to rule them all)</h3>
+    <p>The engine's ground truth is <code>canOccupy(x,y)</code>: the 13×13 <strong>square</strong> footprint
+    (half-extent <code>PlayerHalf = 6</code>) must be entirely on walkable floor
+    (<span class="cite">sim_state.nim</span>, verified against the cached source). A square footprint means
+    the exact analogue is an <strong>L∞ (Chebyshev) distance transform</strong> of the wall mask, computed
+    once at init:</p>
+    <ul>
+      <li><code>clearance[x,y]</code> = L∞ distance to the nearest wall pixel (out-of-bounds counts as
+        wall).</li>
+      <li><strong>Point walkability</strong> = <code>clearance[x,y] &gt; PlayerHalf</code> — one array read
+        that <em>is</em> <code>canOccupy</code>, bit-for-bit. Not conservative, not approximate.</li>
+      <li><strong>Segment walkability</strong> = DDA over the same field. This single primitive replaces both
+        <code>walkableSegment</code> (pixel-exact but ~length/2 × 169 reads) and
+        <code>walkableNavSegment</code> (cheap but conservative): it is as cheap as the DDA <em>and</em> as
+        exact as the footprint scan. The &ldquo;they disagree at the margins&rdquo; problem is not fixed — it is
+        dissolved; there is nothing left to disagree.</li>
+      <li><code>rayClear</code> (point-sized LOS for aim/vision/throw) stays as-is — the report confirmed all
+        12 call sites genuinely want point LOS, and it reads the wall mask, not clearance.</li>
+    </ul>
+    <p>An L∞ transform is O(pixels) (two-pass chamfer-style). Even the 4-team giant (~6.2M px) should be tens
+    of ms in Nim; see §6 for budgets.</p>
+    <div class="callout callout-info">
+      <span class="callout-label">Note</span>
+      Trenches, puddles, and barriers remain invisible to <em>walkability</em> (correct: barriers block paint,
+      not movement; trenches/puddles are passable) — they enter as <strong>costs</strong>, not walls (§3.3).
+    </div>
+
+    <h3 id="topology">3.2 · Layer 2 — topology and PoIs, derived from the map</h3>
+    <p>Everything here is computed from the clearance field at init, replacing every authored anchor:</p>
+    <ul>
+      <li><strong>Connected components</strong> of the walkable region (<code>clearance &gt; PlayerHalf</code>),
+        labeled once. Reachability between any two points becomes an O(1) label comparison — this is what
+        makes the &ldquo;unreachable goals never reach the planner&rdquo; contract cheap to enforce.</li>
+      <li><strong>Chokepoints</strong>: local minima of clearance along the walkable region's skeleton/medial
+        axis (the ridge of the clearance field). Replaces <code>chokePoint(color)</code>.</li>
+      <li><strong>Room/open-area nodes</strong>: local maxima of clearance (large open areas), giving a sparse
+        PoI graph: rooms connected through chokepoints. This graph is what hierarchical planning (if adopted,
+        §8 Q1) would search at the top level, and what squads draw posts/advance/rally points from.</li>
+      <li><strong>Cover potential</strong> (precomputed half): per-cell <em>directional</em> wall proximity —
+        an 8-sector bitmask of &ldquo;shots from this direction are blocked by nearby standable-adjacent wall.&rdquo;
+        Adjacency alone is explicitly not cover. The situational half — scoring a candidate against
+        currently-believed enemy positions — is computed at use time by consumers (post selection, duck
+        logic, the cost function's exposure term).</li>
+      <li><strong>Tactical posts</strong>: the firing/duck-post pass gets rebuilt on top of the above
+        (candidate posts = cover-potential cells near chokepoints/rooms facing likely approach directions)
+        rather than its current bespoke scan. Scope of that rebuild: open question (§8 Q6).</li>
+    </ul>
+
+    <h3 id="planner">3.3 · Layer 3 — the planner (the only one)</h3>
+    <p>One planner: <strong>weighted A* over a uniform lattice on the pixel map</strong>, with:</p>
+    <ul>
+      <li><strong>Node validity</strong> from the clearance field (pixel-exact at any lattice step — the
+        lattice spacing affects path granularity and search size, never correctness).</li>
+      <li><strong>Cost function</strong> = distance × terrain multiplier + soft penalties:
+        <ul>
+          <li>terrain: trench ×5 (matches engine climb-out speed), active puddles (per the GV41 hazards
+            recon's prescription),</li>
+          <li>danger: proximity to believed enemy tracks (from belief tracks directly — <em>not</em> the
+            unvalidated danger grid),</li>
+          <li>exposure: sightline exposure to believed enemy positions, using cover potential,</li>
+          <li>cohesion (optional, per-intent): mild discount toward allies/carrier.</li>
+        </ul>
+      </li>
+      <li><strong>Per-intent cost profiles</strong>: a small weights bundle on the Intent (carrier: danger
+        high; hunter: danger low; default: mostly geometric). This is where &ldquo;carry_home should evade&rdquo; lives —
+        same planner, different weights, no per-objective steering code.</li>
+      <li><strong>Admissible heuristic</strong>: plain geometric distance always works. For the handful of
+        <em>stable</em> shared goals (team homes, own capture point, and — once layer 2 exists — the
+        derived PoIs, a bounded static set), the existing cached Dijkstra fields
+        survive in exactly one role: a <strong>true-distance heuristic / distance oracle</strong>. Geometric
+        Dijkstra distance lower-bounds any cost function that only <em>adds</em> penalties on top of
+        distance, so it is admissible for the weighted search — this is the precise sense in which &ldquo;flow
+        fields inform per-agent A*.&rdquo; They are never followed directly, and they are minted only for the
+        fixed goal set at init — the unbounded field-minting problem (pedestal-driven, report M2) dies with
+        WorldMap immutability.</li>
+      <li><strong>Replanning</strong>: cached path per agent, invalidated by goal movement or watchdog. Moving
+        targets (pursuit, interception) replan on a short cadence rather than steering directly. Cadence and
+        whether we need incremental replanning: open question (§8 Q3).</li>
+    </ul>
+    <div class="decision">
+      <span class="decision-label">Decision (tentative)</span>
+      <p><strong>JPS is likely out.</strong> It requires a uniform-cost grid, and the cost terms above are the
+      point of the rework. Hierarchical A* (PoI graph at the top, lattice refinement locally) is the fallback
+      if flat weighted A* misses budget on giant maps — decision deferred to benchmarks (§8 Q1).</p>
+    </div>
+
+    <h3 id="intent">3.4 · Layer 4 — the Intent and goal contract</h3>
+<pre><code>Intent = object
+  reason: string          # telemetry only; NOTHING dispatches on it
+  goal: Vec2              # pre-validated: walkable AND same component as agent
+  arriveRadius: float
+  costProfile: CostProfile  # per-intent planner weights (§3.3)
+  micro: MicroFlags       # typed permissions: sidestep, separation, peekDuck...
+  clampToEndzone: bool    # the former reason-string special cases, as fields
+</code></pre>
+    <ul>
+      <li><strong>Goal selection is reachability-aware from the start.</strong> Candidate generation
+        filters by component label (O(1)) and walkability <em>before</em> scoring — validation is part of
+        selecting the goal, not a post-hoc snap on the way into nav. Helpers provided to strategy:
+        <code>nearestReachable(p, from)</code> (true nearest via BFS ring on the clearance field, within
+        <code>from</code>'s component — unbiased, replacing <code>nearestWalkable</code>'s row-major up-left
+        bias). Grenade evacuation, escort extrapolation, spray-flee candidates: all select this way before
+        becoming an Intent.</li>
+      <li>If strategy cannot produce a reachable goal, <em>strategy</em> picks a different objective. The
+        planner receiving an unreachable goal is a bug and logs as one.</li>
+      <li>All seven reason-string lists are deleted; their semantics become the typed fields above.</li>
+      <li><code>early_defense</code> is scrapped as a reason: it becomes ordinary post/hold-point logic in
+        strategy using layer-2 posts. <code>barrage_center</code>'s raw map-center hold likewise becomes a
+        scored PoI selection (safest reachable open-area node, not literal center).</li>
+    </ul>
+
+    <h3 id="micro">3.5 · Layer 5 — following and micro</h3>
+    <ul>
+      <li>Waypoint follower on the planned path (unchanged in spirit).</li>
+      <li>Micro modifiers (separation, sidestep, peek/duck) are <strong>bounded</strong>: they may perturb
+        motion within a corridor around the planned path, never replace the route. Sidestep validation uses
+        the segment-DDA primitive.</li>
+      <li><strong>Stuck watchdog</strong>: progress test (as today) → single forced replan with a temporary
+        cost bump on the blocked edge → if still stuck, loud trace event. No 90° jitter ladder; the jitter's
+        real function today is masking beelines and stale-mask collisions, both of which this design removes
+        or accepts-with-telemetry (diamonds).</li>
+    </ul>
+  </section>
+
+  <section id="kill-list">
+    <h2>4 · Kill List</h2>
+    <p><strong>Removed outright:</strong> the flow-following planner path and <code>Objective.flowGoal</code>;
+    direct/beeline steering (all sites, §5); <code>walkableSegment</code> and
+    <code>walkableNavSegment</code> (subsumed by the clearance DDA); the eroded 8px grid as movement truth;
+    <code>nearestWalkable</code> and its snap (replaced by strategy-side <code>nearestReachable</code>); all
+    seven reason-string dispatch lists; threat axis and everything keyed on it;
+    <code>chokePoint</code>/<code>rallyPoint</code>/<code>pastRally</code> and the axis-percentage anchor
+    scheme; <code>early_defense</code> as an intent reason; the current cover definition; WorldMap pedestal
+    mutation; dead code from report Appendix B (<code>pastRally</code>, <code>insideBase</code>,
+    <code>walkabilityDecodeMs</code>, <code>distanceAt</code>).</p>
+    <p><strong>Kept:</strong> <code>rayClear</code> (all 12 sites); cached Dijkstra fields for the fixed
+    stable-goal set, as heuristic/oracle only; <code>belief.danger</code> (as-is, pending validation); 8px
+    cells as comms/telemetry coordinates; the parity corpus idea (needs a rebuilt harness, §8 Q8).</p>
+  </section>
+
+  <section id="beelines">
+    <h2>5 · Fate of Each Beeline</h2>
+    <table>
+      <thead>
+        <tr><th>Today</th><th>Fate under this design</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Spray (arc) pursuit overwrites movement with a direct octant at the enemy
+            (<span class="cite">action.nim:501-506</span>)</td>
+          <td>pursuit is an Intent with a fast-replan moving goal; planner routes every repath</td>
+        </tr>
+        <tr>
+          <td>Grenade evacuation emits an unclamped radial point
+            (<span class="cite">strategy.nim:242-245</span>)</td>
+          <td>evacuation candidates filtered through <code>nearestReachable</code> + component check before
+            Intent</td>
+        </tr>
+        <tr>
+          <td>Escort-carrier extrapolated fix (<span class="cite">strategy.nim:288-292</span>)</td>
+          <td>extrapolated point validated the same way; if unreachable, snap to nearest reachable</td>
+        </tr>
+        <tr>
+          <td><code>clear_spray</code> winner steered directly after grid-validating candidates</td>
+          <td>candidates scored, winner becomes a validated Intent goal, planner routes</td>
+        </tr>
+        <tr>
+          <td>Unroutable A* goal → raw-goal beeline + retry every tick</td>
+          <td>cannot occur: goals are pre-validated; planner failure = logged bug</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="numbers">
+    <h2>6 · Numbers Driving the Decisions</h2>
+    <ul class="key-points">
+      <li>Map sizes (report Appendix C, <span class="cite">arena.nim:1350-1375</span>): 1050×560 to
+        3211×1713 px for 2-team, up to 2496×2496 for 4-team.</li>
+      <li>The lattice step decides search size, not correctness — validity stays pixel-exact via the
+        clearance field at every step.</li>
+    </ul>
+    <table>
+      <thead>
+        <tr><th>Step</th><th class="num">Smallest 2-team</th><th class="num">Largest 2-team</th><th class="num">4-team giant</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1 px</td><td class="num">588k</td><td class="num">5.50M</td><td class="num">6.23M</td></tr>
+        <tr><td>2 px</td><td class="num">147k</td><td class="num">1.38M</td><td class="num">1.56M</td></tr>
+        <tr><td>4 px</td><td class="num">37k</td><td class="num">344k</td><td class="num">390k</td></tr>
+        <tr><td>8 px (today's grid)</td><td class="num">9.2k</td><td class="num">86k</td><td class="num">97k</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Budgets:</strong> the 2026-08-03 init profile (Python-era stencil) measured 453.5 ms worst-case
+    startup on giant maps, Dijkstra 81.8% of it
+    (<span class="cite">reports/nav-init-profile-2026-08-03.md</span>); the Nim port is far faster but has not
+    been re-profiled — the rework adds an init distance transform + component labeling + skeleton/PoI
+    extraction, so a Nim init re-baseline is an early task. Per-tick: today's planner work is effectively free
+    (cached fields + rare A*); the new steady-state cost is per-agent weighted A* at replan cadence. A 4px
+    lattice (~390k nodes worst case) with a strong heuristic is very likely affordable per replan in Nim;
+    1–2px needs benchmarks or hierarchy.</p>
+    <div class="callout callout-info">
+      <span class="callout-label">Note</span>
+      A 4px lattice is <em>not</em> a return to today's coarsening problem: validity stays pixel-exact via the
+      clearance field — the step only quantizes waypoint placement.
+    </div>
+  </section>
+
+  <section id="invariants">
+    <h2>7 · Invariants and Accepted Risks</h2>
+    <div class="callout callout-warn">
+      <span class="callout-label">Invariant</span>
+      <strong>walkMask/wallMask complement invariant</strong>: relied upon (fire gate + LOS share one mask);
+      documented with a one-line comment where <code>map.wall</code> is built; a cheap init-time assert if the
+      wire format ever exposes both.
+    </div>
+    <div class="callout callout-warn">
+      <span class="callout-label">Accepted Risk</span>
+      <strong>Spinning-diamond staleness</strong>: accepted. Diamonds are not marked in the init sprite and
+      restamp the live masks every frame; no client-side fix exists under the current wire contract.
+      Mitigation is the stuck watchdog + a trace counter so staleness collisions are at least
+      <em>visible</em>. (Possible soft mitigation if diamond positions turn out to be labeled/observable:
+      small cost bloom around them — open question §8 Q7.)
+    </div>
+    <p><strong>Engine wall-slide physics</strong>: unchanged; the follower still benefits from it but no
+    longer depends on it to escape beeline collisions.</p>
+  </section>
+
+  <section id="open-questions">
+    <h2>8 · Open Questions</h2>
+    <ol>
+      <li><strong>Search algorithm &amp; lattice step.</strong> Flat weighted A* at 2–4px with Dijkstra-oracle
+        heuristics, vs hierarchical (PoI graph + local refinement)? Needs a Nim microbenchmark on the giant
+        map: init transform time, per-replan time at 1/2/4px, memory.</li>
+      <li><strong>Cost function terms and weights</strong> — and how many per-intent profiles actually earn
+        their keep (start with 2–3: default, carrier, hunter?).</li>
+      <li><strong>Replan cadence for moving goals</strong> (pursuit/interception): fixed N ticks, or
+        goal-moved-by-X? Is incremental replanning (D*-lite-style) ever warranted, or is plain re-search
+        cheap enough?</li>
+      <li><strong>PoI extraction method and quality bar</strong>: skeleton/medial-axis vs room-flood
+        decomposition; how to validate chokepoint quality across the map corpus
+        (<code>render_nav.py</code> overlay is the obvious inspection tool).</li>
+      <li><strong>Cover model detail</strong>: is the 8-sector precomputed bitmask + runtime enemy-direction
+        check enough, or do posts need sampled-LOS scoring? How does this feed duck/peek?</li>
+      <li><strong>Post-generation rebuild scope</strong>: minimal (same outputs, new inputs) or a real
+        rethink of defender assignment/squad orders consuming the PoI graph?</li>
+      <li><strong>Dynamic overlays</strong>: exact cost shapes for trenches/puddles (bounding-box labels are
+        loose), whether barrier belief (v59) should shape <em>fire-lane</em> choices, and whether diamond
+        regions are identifiable enough to cost-bloom.</li>
+      <li><strong>Validation harness</strong>: the Python-parity corpus no longer runs (missing engine
+        cache); what replaces it — trace-replay behavior diffs? scripted scenario suite? — before we trust a
+        rework this large, plus hosted A/B as the final gate.</li>
+      <li><strong>Comms coupling</strong>: confirm nothing but shout formats and trace schema consumes 8px
+        cells once the grid is demoted (grep census before deletion).</li>
+      <li><strong>belief.danger validation experiment</strong> (separate TODO): does it empirically track
+        believed enemy locations? Decides its long-term fate; nothing in this design depends on the
+        answer.</li>
+    </ol>
+    <div class="callout callout-open">
+      <span class="callout-label">Open</span>
+      Q1 is the natural first step: its benchmark numbers decide flat-vs-hierarchical and the lattice step,
+      which everything else in layer 3 builds on. James decides scope and ordering.
+    </div>
+  </section>
+
+  <section id="layer1-status">
+    <h2>9 · Layer 1 Status Addendum (2026-08-11)</h2>
+    <p><strong>Layer 1 is implemented, shipped, and hosted-validated as stencil v61</strong> (v60 = first
+    cut, superseded; see <span class="cite">VERSION_LOG.md</span> for full evidence). What shipped matches
+    §3.1 with one design-relevant amendment:</p>
+    <ul>
+      <li>The clearance field, <code>canStand</code>, and the supercover <code>segmentClear</code> landed as
+        designed; the nav grid is now derived from clearance (hosted-verified bit-identical
+        <code>walkable_cells</code> on every map incl. the 5.5M-px giant) and the SAT erosion is deleted.
+        Giant-map clearance init: 60–100 ms one-time.</li>
+      <li><strong>Wall-slide amendment (feeds layer 5):</strong> validating the four micro-nudge call sites
+        (sidestep, stance, formation bias, separation) with the <em>exact</em> test regressed gameplay
+        measurably — duck time +3.7pp, 10W–23L vs paired v59 — because the engine's forgiving wall-slide
+        executes slightly-clipping nudges the exact test rejects. Micro-nudge validity must not exceed
+        engine-movement fidelity. v61 restores the old 2px-sampled acceptance bit-for-bit via
+        <code>nudgeClear</code> (canStand at 2px samples, ~1/169th the old cost) and went 13W (+16) vs
+        paired v59's 10W (+4) at n=32/arm, 0 ops failures across 130 episodes. Layer 5's follower/micro
+        design should treat &ldquo;engine-executable under slide&rdquo; — not &ldquo;footprint-clear along the exact
+        line&rdquo; — as the acceptance bar for bounded micro perturbations.</li>
+    </ul>
+  </section>
+
+  <section id="todos">
+    <h2>10 · TODOs Spawned by the Review</h2>
+    <ul>
+      <li><strong>Fire-windup micro</strong>: strafe/aim during windup; trigger from cover then step out to
+        minimize exposure time. (Recorded in <span class="cite">TODO.md</span>; out of scope here.)</li>
+      <li><strong><code>belief.danger</code> semantics validation experiment</strong> (Q10 above; recorded in
+        <span class="cite">TODO.md</span>).</li>
+      <li><strong>Nim init re-baseline profile</strong> (supersedes the Python-era numbers in
+        <span class="cite">reports/nav-init-profile-2026-08-03.md</span>).</li>
+    </ul>
+  </section>
+
+</article>
+
+<!-- ================================================================
+     DC-COMMENTS BEGIN — markup + script (copy verbatim; do not modify)
+     ================================================================ -->
+<aside id="dc-sidebar" aria-label="Comments">
+  <h2 class="dc-title">Comments <span id="dc-count"></span></h2>
+  <div class="dc-actions">
+    <button class="dc-btn" id="dc-export">Export JSON</button>
+    <button class="dc-btn" id="dc-copy">Copy JSON</button>
+    <button class="dc-btn" id="dc-import">Import…</button>
+    <input type="file" id="dc-file" accept=".json,application/json" hidden>
+  </div>
+  <div id="dc-status" role="status"></div>
+  <div id="dc-list"><p class="dc-empty">No comments yet. Select text in the document to add one.</p></div>
+</aside>
+<button id="dc-fab" type="button">+ Comment</button>
+<button id="dc-toggle" type="button">Comments</button>
+
+<script>
+(() => {
+  'use strict';
+  const FORMAT = 'dc-comments/1';
+  const CTX = 32; // prefix/suffix context length, chars
+  const doc = document.getElementById('doc');
+  const fab = document.getElementById('dc-fab');
+  const listEl = document.getElementById('dc-list');
+  const countEl = document.getElementById('dc-count');
+  const statusEl = document.getElementById('dc-status');
+  const sidebar = document.getElementById('dc-sidebar');
+  const storeKey = 'dc:' + document.title;
+
+  let comments = []; // {id, exact, prefix, suffix, text, created, resolved}
+  let ranges = new Map(); // id -> Range (null if orphaned)
+  let seq = 0;
+
+  // ---- text indexing: one global string over #doc's text nodes ----
+  function docText() {
+    const r = document.createRange();
+    r.selectNodeContents(doc);
+    return r.toString();
+  }
+  function globalOffset(container, offset) {
+    const r = document.createRange();
+    r.setStart(doc, 0);
+    r.setEnd(container, offset);
+    return r.toString().length;
+  }
+  function offsetsToRange(start, end) {
+    const walker = document.createTreeWalker(doc, NodeFilter.SHOW_TEXT);
+    let pos = 0, range = document.createRange(), haveStart = false;
+    while (walker.nextNode()) {
+      const node = walker.currentNode, len = node.data.length;
+      if (!haveStart && pos + len >= start) {
+        range.setStart(node, start - pos);
+        haveStart = true;
+      }
+      if (haveStart && pos + len >= end) {
+        range.setEnd(node, end - pos);
+        return range;
+      }
+      pos += len;
+    }
+    return null;
+  }
+
+  // ---- anchoring: TextQuoteSelector-style exact + prefix/suffix ----
+  function selectorFromRange(range) {
+    const text = docText();
+    const start = globalOffset(range.startContainer, range.startOffset);
+    const end = globalOffset(range.endContainer, range.endOffset);
+    return {
+      exact: text.slice(start, end),
+      prefix: text.slice(Math.max(0, start - CTX), start),
+      suffix: text.slice(end, end + CTX),
+    };
+  }
+  function locate(c) {
+    const text = docText();
+    let i = text.indexOf(c.prefix + c.exact + c.suffix);
+    if (i >= 0) return offsetsToRange(i + c.prefix.length, i + c.prefix.length + c.exact.length);
+    i = text.indexOf(c.exact);
+    if (i >= 0) return offsetsToRange(i, i + c.exact.length);
+    return null;
+  }
+  function reanchorAll() {
+    ranges = new Map(comments.map(c => [c.id, locate(c)]));
+    paint();
+  }
+
+  // ---- painting via CSS Custom Highlight API ----
+  const hl = typeof Highlight !== 'undefined' ? new Highlight() : null;
+  const hlActive = typeof Highlight !== 'undefined' ? new Highlight() : null;
+  if (hl) { CSS.highlights.set('dc-hl', hl); CSS.highlights.set('dc-hl-active', hlActive); }
+  function paint(activeId) {
+    if (!hl) return;
+    hl.clear(); hlActive.clear();
+    for (const [id, r] of ranges) {
+      if (!r) continue;
+      (id === activeId ? hlActive : hl).add(r);
+    }
+  }
+
+  // ---- persistence (best-effort; file:// storage varies by browser) ----
+  function save() {
+    try { localStorage.setItem(storeKey, JSON.stringify(comments)); } catch (e) { /* unavailable on some file:// setups */ }
+  }
+  function load() {
+    try {
+      const raw = localStorage.getItem(storeKey);
+      if (raw) comments = JSON.parse(raw);
+    } catch (e) { /* ignore */ }
+  }
+
+  // ---- sidebar rendering ----
+  function flash(msg) {
+    statusEl.textContent = msg;
+    setTimeout(() => { if (statusEl.textContent === msg) statusEl.textContent = ''; }, 2500);
+  }
+  function sortedComments() {
+    const pos = c => {
+      const r = ranges.get(c.id);
+      return r ? globalOffset(r.startContainer, r.startOffset) : Infinity; // orphans last
+    };
+    return [...comments].sort((a, b) => pos(a) - pos(b));
+  }
+  function render(editingId) {
+    countEl.textContent = comments.length ? '(' + comments.length + ')' : '';
+    listEl.textContent = '';
+    if (!comments.length) {
+      const p = document.createElement('p');
+      p.className = 'dc-empty';
+      p.textContent = 'No comments yet. Select text in the document to add one.';
+      listEl.appendChild(p);
+      return;
+    }
+    for (const c of sortedComments()) {
+      const item = document.createElement('div');
+      item.className = 'dc-item' + (c.resolved ? ' dc-resolved' : '');
+      item.dataset.id = c.id;
+
+      const quote = document.createElement('div');
+      quote.className = 'dc-quote';
+      quote.textContent = c.exact.length > 90 ? c.exact.slice(0, 90) + '…' : c.exact;
+      if (!ranges.get(c.id)) {
+        const tag = document.createElement('span');
+        tag.className = 'dc-orphan-tag';
+        tag.textContent = 'orphaned';
+        quote.appendChild(tag);
+      }
+      item.appendChild(quote);
+
+      if (c.id === editingId) {
+        const ta = document.createElement('textarea');
+        ta.value = c.text;
+        ta.placeholder = 'Write a comment… (⌘/Ctrl+Enter to save, Esc to cancel)';
+        ta.addEventListener('keydown', e => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') commit();
+          if (e.key === 'Escape') cancel();
+        });
+        ta.addEventListener('click', e => e.stopPropagation());
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'dc-btn';
+        saveBtn.textContent = 'Save';
+        saveBtn.style.marginTop = '6px';
+        saveBtn.addEventListener('click', e => { e.stopPropagation(); commit(); });
+        function commit() {
+          c.text = ta.value.trim();
+          if (!c.text) return cancel();
+          save(); render();
+        }
+        function cancel() {
+          if (!c.text) { comments = comments.filter(x => x.id !== c.id); ranges.delete(c.id); paint(); }
+          save(); render();
+        }
+        item.appendChild(ta);
+        item.appendChild(saveBtn);
+        listEl.appendChild(item);
+        requestAnimationFrame(() => ta.focus());
+        continue;
+      }
+
+      const text = document.createElement('div');
+      text.className = 'dc-text';
+      text.textContent = c.text;
+      item.appendChild(text);
+
+      const meta = document.createElement('div');
+      meta.className = 'dc-meta';
+      const when = document.createElement('span');
+      when.textContent = c.created.slice(0, 10);
+      const resolved = document.createElement('label');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = !!c.resolved;
+      cb.addEventListener('click', e => e.stopPropagation());
+      cb.addEventListener('change', () => { c.resolved = cb.checked; save(); render(); });
+      resolved.append(cb, 'resolved');
+      const del = document.createElement('button');
+      del.className = 'dc-del';
+      del.textContent = 'delete';
+      del.addEventListener('click', e => {
+        e.stopPropagation();
+        comments = comments.filter(x => x.id !== c.id);
+        ranges.delete(c.id);
+        paint(); save(); render();
+      });
+      meta.append(when, resolved, del);
+      item.appendChild(meta);
+
+      item.addEventListener('click', () => {
+        const r = ranges.get(c.id);
+        if (!r) return flash('Anchor not found in this version of the document.');
+        const rect = r.getBoundingClientRect();
+        window.scrollTo({ top: window.scrollY + rect.top - 160, behavior: 'smooth' });
+        paint(c.id);
+        setTimeout(() => paint(), 2000);
+      });
+      // double-click text to edit
+      text.addEventListener('dblclick', e => { e.stopPropagation(); render(c.id); });
+      listEl.appendChild(item);
+    }
+  }
+
+  // ---- selection -> floating Comment button ----
+  document.addEventListener('mouseup', e => {
+    if (fab.contains(e.target)) return;
+    setTimeout(() => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || !sel.rangeCount) { fab.style.display = 'none'; return; }
+      const range = sel.getRangeAt(0);
+      if (!doc.contains(range.commonAncestorContainer) || !range.toString().trim()) {
+        fab.style.display = 'none';
+        return;
+      }
+      const rect = range.getBoundingClientRect();
+      fab.style.display = 'block';
+      fab.style.left = Math.min(rect.right + 8 + window.scrollX, window.scrollX + document.documentElement.clientWidth - 120) + 'px';
+      fab.style.top = (rect.top + window.scrollY - 4) + 'px';
+      fab.dataset.pending = '1';
+    }, 0);
+  });
+  fab.addEventListener('click', () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    const c = Object.assign({ id: 'c' + Date.now().toString(36) + (seq++), text: '', created: new Date().toISOString(), resolved: false }, selectorFromRange(range));
+    comments.push(c);
+    ranges.set(c.id, range.cloneRange());
+    paint(c.id);
+    sel.removeAllRanges();
+    fab.style.display = 'none';
+    sidebar.classList.add('dc-open');
+    render(c.id);
+  });
+
+  // ---- export / import ----
+  function payload() {
+    return JSON.stringify({
+      format: FORMAT,
+      doc: document.title,
+      exported: new Date().toISOString(),
+      comments: comments,
+    }, null, 2);
+  }
+  document.getElementById('dc-export').addEventListener('click', () => {
+    const blob = new Blob([payload()], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (document.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'doc') + '.comments.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    flash('Downloaded.');
+  });
+  document.getElementById('dc-copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(payload()); flash('Copied to clipboard.'); }
+    catch (e) { flash('Clipboard blocked — use Export instead.'); }
+  });
+  document.getElementById('dc-import').addEventListener('click', () => document.getElementById('dc-file').click());
+  document.getElementById('dc-file').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    file.text().then(raw => {
+      const data = JSON.parse(raw);
+      if (data.format !== FORMAT || !Array.isArray(data.comments)) { flash('Not a dc-comments file.'); return; }
+      const byId = new Map(comments.map(c => [c.id, c]));
+      for (const c of data.comments) byId.set(c.id, c);
+      comments = [...byId.values()];
+      reanchorAll(); save(); render();
+      flash('Imported ' + data.comments.length + ' comment(s).');
+    }).catch(() => flash('Could not parse that file.'));
+    e.target.value = '';
+  });
+
+  document.getElementById('dc-toggle').addEventListener('click', () => sidebar.classList.toggle('dc-open'));
+
+  // ---- init ----
+  load();
+  reanchorAll();
+  render();
+})();
+</script>
+<!-- ============ DC-COMMENTS END ============ -->
+</div>
+</body>
+</html>

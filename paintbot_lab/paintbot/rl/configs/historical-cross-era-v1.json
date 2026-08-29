@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "source_repository": "https://github.com/Metta-AI/coworld-ctf.git",
+  "preparation": {
+    "stride": 6,
+    "action_delay_ticks": 0,
+    "max_samples_per_version": 5000,
+    "seed": 1
+  },
+  "training": {
+    "tuning": "lora",
+    "epochs": 3,
+    "batch_size": 2,
+    "gradient_accumulation": 8,
+    "learning_rate": 0.0002,
+    "weight_decay": 0.01,
+    "warmup_ratio": 0.03,
+    "max_text_tokens": 4096,
+    "mixed_precision": "bf16",
+    "seed": 1
+  },
+  "episodes": [
+    {"episode_id": "1df3e1d7-45e7-4c41-824c-34ecdbac4f10", "game_version": "16", "source_commit": "35fa06b1343552c5b9af1085375688e1461c4a0d", "split": "train", "povs": "best_reward", "minimum_reward": 1},
+    {"episode_id": "ce0d1553-2545-4f4a-bb04-b2faa70839a3", "game_version": "16", "source_commit": "35fa06b1343552c5b9af1085375688e1461c4a0d", "split": "train", "povs": "best_reward", "minimum_reward": 1},
+    {"episode_id": "36ba65d7-4e11-4a95-b1ed-d3c1aa5132e2", "game_version": "16", "source_commit": "35fa06b1343552c5b9af1085375688e1461c4a0d", "split": "validation", "povs": "best_reward", "minimum_reward": 1},
+
+    {"episode_id": "caeac109-b859-4deb-aa21-228e39671f11", "game_version": "24", "source_commit": "e05c73134c3b0dc961cc7fbf7e89a7aa8e4ab1be", "split": "train", "povs": "best_reward", "minimum_reward": 1},
+    {"episode_id": "2eb71de7-dd31-415e-b395-ace96d4098f3", "game_version": "24", "source_commit": "e05c73134c3b0dc961cc7fbf7e89a7aa8e4ab1be", "split": "train", "povs": "best_reward", "minimum_reward": 1},
+    {"episode_id": "be521de6-893a-4d5f-a8eb-3f68ca286eef", "game_version": "24", "source_commit": "e05c73134c3b0dc961cc7fbf7e89a7aa8e4ab1be", "split": "validation", "povs": "best_reward", "minimum_reward": 1},
+
+    {"episode_id": "a390aca9-7985-4132-8656-25d7088106ae", "game_version": "30", "source_commit": "1047232faef01a06fbf9710d014021c84764cc5d", "split": "train", "povs": "best_reward", "minimum_reward": 1},
+    {"episode_id": "7dcf4cfd-68e2-4f21-ad8b-b22021d33c40", "game_version": "30", "source_commit": "1047232faef01a06fbf9710d014021c84764cc5d", "split": "train", "povs": "best_reward", "minimum_reward": 1},
+    {"episode_id": "1289d482-c17d-4211-9d99-6f164d70db3e", "game_version": "30", "source_commit": "1047232faef01a06fbf9710d014021c84764cc5d", "split": "validation", "povs": "best_reward", "minimum_reward": 1},
+
+    {"episode_id": "d55ff8cf-02e4-4618-a96b-cd0b534b167b", "game_version": "35", "source_commit": "95bb76829e0e0e41329292860395d88787a9d8c8", "split": "train", "povs": "best_reward", "minimum_reward": 1},
+    {"episode_id": "449ad161-63ff-4d13-91d6-5914fdf8037e", "game_version": "35", "source_commit": "95bb76829e0e0e41329292860395d88787a9d8c8", "split": "train", "povs": "best_reward", "minimum_reward": 1},
+    {"episode_id": "0d7814ff-21e8-467b-ad0f-e0942e7f2c11", "game_version": "35", "source_commit": "95bb76829e0e0e41329292860395d88787a9d8c8", "split": "validation", "povs": "best_reward", "minimum_reward": 1},
+
+    {"episode_id": "48a54116-cb0f-4f9d-9694-b990695527da", "game_version": "40", "source_commit": "ec244e6b01485e8c7acd7a7929a9268354d50957", "split": "test", "povs": "best_reward", "minimum_reward": 2},
+    {"episode_id": "1432f4db-1039-4084-b6b4-a10f6f73e07a", "game_version": "40", "source_commit": "ec244e6b01485e8c7acd7a7929a9268354d50957", "split": "test", "povs": "best_reward", "minimum_reward": 2}
+  ]
+}

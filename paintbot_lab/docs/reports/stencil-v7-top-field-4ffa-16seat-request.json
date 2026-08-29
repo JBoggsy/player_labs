@@ -1,0 +1,26 @@
+{
+  "target": {
+    "coworld_id": "cow_322da93d-595c-4ef5-a0a4-2a91721f1f6b",
+    "variant_id": "4ffa"
+  },
+  "roster": [
+    {"player": {"policy_ref": "91cd9b6d-df02-4887-8ed0-24cc8379030b"}, "slot": 0},
+    {"player": {"policy_ref": "paintbot-focusfire:v22"}, "slot": 1},
+    {"player": {"policy_ref": "co-gas-paintbot-nim-richard:v4"}, "slot": 2},
+    {"player": {"policy_ref": "alphashot:v359"}, "slot": 3},
+    {"player": {"policy_ref": "91cd9b6d-df02-4887-8ed0-24cc8379030b"}, "slot": 4},
+    {"player": {"policy_ref": "paintbot-focusfire:v22"}, "slot": 5},
+    {"player": {"policy_ref": "co-gas-paintbot-nim-richard:v4"}, "slot": 6},
+    {"player": {"policy_ref": "alphashot:v359"}, "slot": 7},
+    {"player": {"policy_ref": "91cd9b6d-df02-4887-8ed0-24cc8379030b"}, "slot": 8},
+    {"player": {"policy_ref": "paintbot-focusfire:v22"}, "slot": 9},
+    {"player": {"policy_ref": "co-gas-paintbot-nim-richard:v4"}, "slot": 10},
+    {"player": {"policy_ref": "alphashot:v359"}, "slot": 11},
+    {"player": {"policy_ref": "91cd9b6d-df02-4887-8ed0-24cc8379030b"}, "slot": 12},
+    {"player": {"policy_ref": "paintbot-focusfire:v22"}, "slot": 13},
+    {"player": {"policy_ref": "co-gas-paintbot-nim-richard:v4"}, "slot": 14},
+    {"player": {"policy_ref": "alphashot:v359"}, "slot": 15}
+  ],
+  "num_episodes": 8,
+  "notes": "Stencil v7 red-team baseline vs current top Paintbot policy teams on 0.7.184 4ffa; correct 16-agent roster; natural generated maps"
+}

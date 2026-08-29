@@ -1,0 +1,22 @@
+{
+  "hypothesis": "Stencil v50 removes v49's conflicting same-epoch commitments and repairs missed-commit epoch drift without sacrificing leaderless squad-order adoption in full-seat tournament games.",
+  "what_changes": "Only Stencil changes from v49 to v50: each member locks its first vote for an epoch, and fresh forward-epoch squad traffic advances a lagging local epoch. Maps, seat blocks, Daveey, and all other pinned opponents match the v49 gate.",
+  "instrument": {
+    "kind": "experience-request",
+    "summary": "Ten matched full-seat hosted episodes: 6 2v2, 2 4ffa, and 2 4ffa8, with artifacts streamed as episodes finish.",
+    "detail": "Canonical Paintbot 0.7.199; the same round-320 campaign map tuples and entrant placements as the v49 gate; stencil:v50 and Daveey v25 in every episode; exact 16/32-seat modulo-four expansion. Inspect per-agent squad_consensus, squad_order, squad_follow, terminal counters, and squad_consensus_resyncs."
+  },
+  "if_true": "No squad commits conflicting directives for one epoch; at least 90% of Stencil seats commit, at least 80% follow orders, commits exceed timeouts, total timeouts do not exceed v49's 45, and no squad ends with an epoch spread greater than one.",
+  "if_false": "Any same-squad/epoch conflict recurs, fewer than 75% of seats commit or follow, timeouts equal/exceed commits or exceed 45, or a squad ends more than one epoch apart.",
+  "decision_rule": "Confirm only if every true-side threshold passes. Refute if any false-side condition occurs. Otherwise call the repair inconclusive. Win/loss is directional and cannot decide this protocol-mechanics gate.",
+  "confounds": [
+    "Map and roster variance: use the exact ten map tuples and entrant placements from v49, changing only the Stencil version.",
+    "Communication opportunity varies with combat and deaths: use aggregate adoption plus per-squad terminal epoch spread rather than requiring a resync in every game.",
+    "A locked vote favors safety over liveness under partitions: explicitly bound timeouts against v49 and retain separate conflict and adoption gates.",
+    "Outcome noise: report wins but do not infer gameplay superiority from ten episodes."
+  ],
+  "verdict": {
+    "result": "refuted",
+    "evidence": "Among 47 available Stencil artifacts, all 47 committed and followed orders. Commits rose from v49's 272 to 275, timeouts fell from 45 to 24, ten explicit resynchronizations occurred, and no conflicting same-squad/epoch directive appeared. However, one squad's terminal epochs were 9/6/9, triggering the preregistered false condition; the epoch-6 member had been permanently dead for the final 880 ticks, so this is a measurement defect rather than evidence of live protocol drift. One of 48 Stencil artifact ZIPs was absent after a forced re-fetch. Outcomes remained 4 wins and 6 losses. A separately preregistered live-agent recovery gate addresses the dead-member confound without changing v50."
+  }
+}

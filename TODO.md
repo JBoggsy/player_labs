@@ -5,6 +5,154 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
+- **Repair experience-request division resolution against the current API**
+  (2026-08-21). The experience-request helper's `resolve --division ...` command
+  sends `include_recent_rounds=3`, which the live Emerg-ant
+  leaderboard route now rejects with HTTP 422; the companion active-memberships CLI
+  query returned `[]` despite three ranked players. Hosted evaluation remained
+  unblocked by resolving explicit policy labels through the stats endpoint. Reconcile
+  the current leaderboard query contract and membership semantics before relying on
+  automatic ranked-roster construction again.
+
+- **Paintbot: game-pin review** (2026-08-14). Build pin is 0.7.215/`6c7a4c0e`;
+  canonical deployed has advanced to 0.7.229 (`bf0bcc22`) — a 14-release gap.
+  Contract compatibility has been assumed per the v58-lineage argument since
+  v60; sim-rule constants have not been re-derived since 0.7.215. Re-verify
+  manifest/config_schema byte-compat and the spray/aim/movement constants,
+  then bump PAINTBOT_GAME_REF or document why not.
+
+- **Stencil navigation rework** (deep dive done 2026-08-08; design started
+  2026-08-11). The deep-dive questions are answered in
+  [`paintbot_lab/docs/reports/stencil-navigation-deep-dive-2026-08-08.md`](paintbot_lab/docs/reports/stencil-navigation-deep-dive-2026-08-08.md);
+  James's review comments set the direction — one planner, no beelining, no 8px
+  coarsening for movement, dynamic PoIs, goals validated before nav. Rough
+  sketch:
+  [`paintbot_lab/docs/designs/nav-rework-sketch-2026-08-11.md`](paintbot_lab/docs/designs/nav-rework-sketch-2026-08-11.md).
+  Next: settle the sketch's open questions (planner benchmarks first), then the
+  full design doc, then the rework itself.
+
+- **Fire-windup micro** (from the 2026-08-11 nav review; explicitly not-now).
+  Strafe/aim while fire is winding up to improve accuracy, or pull the trigger
+  from cover and step out so exposure time is minimal. Today `resolveAction`
+  just freezes movement during windup (`action.nim` fire-windup freeze).
+
+- **Experimentally validate `belief.danger` semantics** (from the 2026-08-11
+  nav review). Hypothesis: it actually tracks *believed enemy locations*, not
+  danger per se. Keep it as-is until a dedicated experiment settles what it
+  measures; its long-term fate (promote into nav costs vs delete) follows from
+  that verdict, not from the rework.
+
+- **Re-sync crewborg's player SDK, or accept the split** (found 2026-08-07 during a
+  docs audit). `pyproject.toml` now pins coworld-tools `4dd923d` (paintbot needs it —
+  earlier revisions clamped Sprite-v1 masks to `0x7f` and dropped Button C), but
+  `crewrift_lab/tools/versions.env` `PLAYERS_SDK_REF` is still `e8921a6`. Local `uv`
+  and the crewborg **image** therefore run different SDKs, breaking the "local dev and
+  the built image run one SDK" invariant both files document. Left diverged on purpose:
+  bumping it rebuilds a live player against an untested SDK. Either rebuild + retest
+  crewborg at `4dd923d`, or record the split as permanent and drop the invariant.
+
+- **Decide whether to retire beacon from the CTF league** (found 2026-08-07).
+  `ctf_lab/` is archived, but that is a repo action only — Coworld CTF is still
+  live (`ctf 0.7.203` canonical) and CTF champions are auto-mirrored into the
+  Paintbot league (metta `seed.py`, `("paintbot","ctf")`) under the same **James
+  Botts** identity, where beacon's offline arena bake is blind on generated maps
+  and scored 0.0. If beacon still holds a CTF seat, it keeps competing in
+  Paintbot under the same player as Stencil. Confirm its current league standing,
+  then either retire it or accept the visible losses. Retiring is a league action
+  and a human call, not a repo change.
+
+- **Evaluate v58's barrage evacuation, then decide on shell-level evasion**
+  (updated 2026-08-07). The hazard investigation was pinned to 0.7.211 / GV41
+  (`coworld-ctf@9dedac0`). **Re-resolved 2026-08-08:** canonical is 0.7.215 /
+  still GV41 (`coworld-ctf@6c7a4c0e`), and `paintbot_lab/tools/versions.env` is
+  pinned there.
+  V58 implements the coarse half of the recon's P1:
+  it parses the `grenade barrage depth/rate/start/sat` marker and evacuates to
+  the generated map center once `depth > 0`, tracing `barrage_center_ticks`.
+  **Still open:** (a) v58 has only a one-episode mechanism probe — it needs a
+  campaign-shaped evaluation targeting episodes that actually reach 4:30 before
+  it can be judged; (b) individual airborne `grenade air` shells are still NOT
+  tracked, so there is no projected-landing evasion through the `clear_grenade`
+  seam with the 58px body-hit reach — centering is a positional heuristic, not
+  shell awareness; (c) hold the broader P2 doctrine until (a) settles, so the
+  effect stays attributable. Note the marker's rate field truncates downward
+  (`rate 9` at the true 9.5/s), so use the schedule math for density. The
+  supported project CLI combination is now `coworld 0.1.38` with its required
+  `softmax-cli 0.26.27`; stop reusing 0.7.208 A/B results for endgame questions.
+  Full analysis: `paintbot_lab/docs/recon/paintbot-gv41-hazards-2026-08-07.md`.
+
+- **Expand Paintbot RL replay/expert diversity, then refine temporal state**
+  (updated 2026-08-07). A matched 2x2 showed transition-centered sampling alone
+  is flat while four-tick causal delta history is informative. The selected
+  combined arm improved sealed-GV40 changed-action exact from 1/309 to 12/309
+  and changed-component accuracy from 0.7% to 8.8%, but overall exact fell to
+  74.7% and change precision to 45.2%. Keep history; do not deploy this seed
+  checkpoint. Add substantially more high-performing replay and policy
+  diversity, then compare compact deltas with short full self/nearby-state
+  history and report movement/turn/fire/grenade changes separately. See
+  `paintbot_lab/docs/reports/rl-transition-temporal-2x2-2026-08-07.md`.
+  **In progress:** all 327,188 replay downloads and exhaustive preprocessing are
+  complete. The first 250k-unique x 3-epoch arm reached a 59.17% teacher-forced
+  exact-action proxy on the frozen 10k balanced sealed test (27.19% changed,
+  91.14% held). That evaluator did not feed generated slots back into the model,
+  so it is not autoregressive; corrected autoregressive evaluation is now the
+  only final-gate metric. Validation diagnosis rejected decoder calibration and
+  localized the main error to movement transitions. A matched-compute 750k-
+  unique x 1-epoch arm is running under `training-v2-diversity`; it stops after
+  validation and keeps the sealed
+  test closed. If diversity is flat, compare compact deltas against short full
+  self/nearby snapshots or greater adaptation capacity. A validation-only
+  residual press/release screen is queued behind diversity after validation
+  logits showed 71.85% of changed-movement errors simply repeat the prior
+  movement. It runs one schedule-matched epoch and promotes only on a
+  preregistered exact/movement/held gate. If rejected, a spatial-semantics
+  screen adds egocentric bearing and self-width-normalized range to the nearest
+  16 entities under the same staged gate. Report:
+  `paintbot_lab/docs/reports/rl-exhaustive-baseline-2026-08-14.md`.
+  **Deferred fallback:** a next-state/action audit found that physical Arrow
+  neighbors are normally six ticks apart and omit intervening actions, so they
+  are not valid one-step world-model pairs. Raw replays are retained. If the
+  queued arms fail, re-extract a bounded per-tick train/validation subset and
+  compare one preregistered compact semantic-delta or latent future-prediction
+  auxiliary objective. Do not generate full observation text or inspect test
+  pairs. Contract and measurements are in `paintbot_lab/docs/designs/rl-policy.md`.
+
+- **Make Stencil squads roster-aware under campaign 7+7+1+1 seating** (found
+  2026-08-06). Current `squadTable` partitions two-team identities by parity,
+  which matched the disabled ladder's equal four-agent entrant blocks. Normal
+  campaign invasions instead give each captain seven team seats and its ally
+  only the team's second seat. Static parity can therefore wait on the foreign
+  ally or omit owned Stencil seats. Preserve v52 behavior during the GV40 aim
+  test; redesign membership from observed Stencil chat/presence before the next
+  squad iteration.
+
+- **Redesign Paintbot fixed-squad reconnection over proximity chat** (deferred
+  2026-08-06). v51 made same-epoch consensus conflict-free, but giant-map live
+  drift lasted 1,226 ticks; v52's static timeout rendezvous improved that to
+  555 ticks, and v53's continuously refreshed target regressed to 967 ticks.
+  Before another implementation, specify how separated living members discover
+  one another, rendezvous, and rejoin without a designated leader, plus a
+  preregistered concurrent-live drift bound. Start from
+  `paintbot_lab/docs/reports/stencil-squad-consensus-retrospective-2026-08-06.md`;
+  do not resume v53 target tuning.
+
+- **Generalize event-warehouse outcomes beyond red/blue** (found 2026-08-04).
+  `paintbot_lab/tools/event_warehouse.py` (moved from ctf_lab) projects only `red_score`, `blue_score`,
+  and a red/blue `winner`; on four-team Paintbot it labels green/yellow wins as
+  draws. Add all-team score/win projection or a game-agnostic result table.
+  Until then, compute Paintbot W/D/L directly from each `results.json` team/win
+  vector.
+
+- **Expose player muster in Paintbot's Sprite-v1 init contract** (found
+  2026-08-04). The current marker states teams and map dimensions but not
+  `num_agents`/seats per team. Current campaign `1v1` means eight seats per
+  team, while `2v2`/`4ffa` mean four per entrant and historical `4ffa8` means
+  eight; `mapSize` is not a reliable proxy and is currently unset on every
+  campaign cell. Stencil grows a conservative roster estimate from observed
+  identity badges, but low-index seats cannot know muster until they see an
+  epsilon-or-higher identity. Add muster to the owner game's init marker, then
+  consume it directly and delete the estimate.
+
 - **REFUTED-PREMISE 2026-07-22 (Thread 9): imposter co-location — do NOT build the spread nudge.**
   Re-measured on 200 fresh v107/v110 eps (`/tmp/wh_anchor_base_v110`; scripts `/tmp/t9_spread/`).
   The 32%-field-worst figure does not reproduce: crewborg-imposter's co-imposter share of proximity
@@ -187,6 +335,21 @@ mid-session; check them back at the start of focused work.
   whether to commit/PR them upstream or discard.
 
 ## Done
+
+- **Paintbot RL mettabox1 canary, sweep, and full training (DONE 2026-08-07).**
+  Provisioned a locked CUDA 12.8/BF16 environment on the RTX 4090, passed two
+  canaries, swept 1e-4/2e-4/4e-4, selected the full three-epoch 2e-4 arm, and
+  evaluated the sealed GV40 split. The artifact is archived locally and
+  remotely with matching SHA-256. It is a pipeline control, not a live-policy
+  candidate, because it did not beat previous-mask persistence. Report:
+  `paintbot_lab/docs/reports/rl-mettabox1-sft-2026-08-07.md`.
+
+- **Paintbot Sprite-v1 `sprites off` landed upstream and deployed (2026-08-03).**
+  coworld-ctf PR #219 is in canonical Paintbot 0.7.180 at source `052b058`.
+  The self-play harness now resolves that canonical version before every batch
+  and opts stencil into `0x87`, adopting the optimization without a private
+  fork. A fresh giant-board benchmark remains useful when optimization work
+  targets 4ffa8.
 
 - **League telemetry artifacts "ephemeral" — investigated + harvest built** (flagged 2026-07-01;
   DONE 2026-07-21). Verdict: artifacts are **durable, not deleted** — the July-1 "vanishing"

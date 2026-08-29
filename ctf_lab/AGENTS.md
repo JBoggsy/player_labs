@@ -1,4 +1,18 @@
-# ctf_lab — agent guide
+# ctf_lab — agent guide — 🗄️ ARCHIVED 2026-08-07
+
+> **STOP. This lab is archived — do not do new work here.** Active work is in
+> [`../paintbot_lab/AGENTS.md`](../paintbot_lab/AGENTS.md).
+>
+> The replay viewer, replay reader, event warehouse, and `lessons-review` skill
+> **moved to `paintbot_lab/tools/`** — edit them there, not here. Instructions
+> below that reference `tools/viewer.html`, `tools/viewer_bundle.py`,
+> `tools/expand_replay_json.nim`, `tools/build_expand_replay.sh`, or
+> `tools/event_warehouse.py` are stale; those files no longer exist in this lab.
+>
+> Everything else is a historical snapshot, accurate as of 2026-07-31 and
+> unmaintained since. See [`README.md`](README.md) for the full archive note,
+> including the caveat that archiving the directory did **not** retire beacon
+> from the still-live CTF league.
 
 The **CTF** corner of player_labs: where we build, evaluate, and improve **player
 policies** for Coworld CTF. This file orients agents working here.
@@ -137,6 +151,17 @@ in [`../AGENTS.md`](../AGENTS.md)) — use those to *create*, *pull*, and *ship*
 - `tools/agg_eval.py <dir>` — fast one-line scoreline from a results dir.
 - `tools/build_expand_replay.sh` — builds two host-native, version-matched replay readers:
   `expand_replay` (human timeline) and `expand_replay_json` (JSONL for the warehouse).
+  `expand_replay_json <replay> [pos_every] [walkability]` — the optional third arg emits
+  the exact startup wall map as `wall-runs-v1`, which `viewer_bundle.py` requires. The
+  build script rebuilds when `expand_replay_json.nim` is newer than the cached binary.
+- ⚠️ **`viewer.html`, `viewer_bundle.py`, and `expand_replay_json.nim` are SHARED with
+  paintbot_lab** (paintbot is a second manifest over the same engine) and paintbot is
+  now their heaviest consumer. Do not reintroduce assumptions that only hold for CTF's
+  one fixed arena: map geometry must come from the replay's own walkability mask, and
+  team colors from the episode's slot-team config — red/blue slot parity silently
+  mislabels paintbot's four-team FFA. Paintbot builds the reader through
+  `paintbot_lab/tools/build_expand_replay.sh`, which overrides `CTF_REF`; the two labs
+  share one `expand_replay_json` symlink, so pass `--expand-replay` for a specific ref.
 - **beacon tracing** — structured `TraceEvent`s to the SDK `TraceOutputs` (default
   `jsonl@artifact`; `BEACON_TRACE_OUTPUTS` to override, `BEACON_DIAG_EVERY_TICKS=1` for a
   per-tick trace); falls back to `CTF_DIAG` stderr lines with no artifact URL.

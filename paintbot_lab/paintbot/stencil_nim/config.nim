@@ -1,0 +1,343 @@
+## Paintbot protocol constants and environment-backed stencil tuning.
+##
+## Names and defaults mirror config.py. Geometry remains episode-scoped.
+
+import std/[math, os, parseutils, strutils]
+
+proc envInt(name: string, default: int): int =
+  let raw = getEnv(name).strip
+  if raw.len == 0 or parseInt(raw, result) != raw.len:
+    result = default
+
+proc envFloat(name: string, default: float): float =
+  let raw = getEnv(name).strip
+  if raw.len == 0 or parseFloat(raw, result) != raw.len:
+    result = default
+
+proc envBool(name: string, default: bool): bool =
+  envInt(name, ord(default)) == 1
+
+proc envTunableBool(name: string, default: bool): bool =
+  let raw = getEnv(name)
+  if raw.len == 0:
+    return default
+  case raw.strip.toLowerAscii
+  of "0", "false", "off": false
+  of "1", "true", "on": true
+  else: raise newException(ValueError, name & " must be boolean")
+
+proc envTunableInt(name: string, default, minimum: int, maximum = high(int)): int =
+  let raw = getEnv(name).strip
+  if raw.len == 0:
+    return default
+  if parseInt(raw, result) != raw.len or $result != raw:
+    raise newException(ValueError, name & " must be an integer")
+  if result < minimum:
+    raise newException(ValueError, name & " must be >= " & $minimum)
+  if result > maximum:
+    raise newException(ValueError, name & " must be <= " & $maximum)
+
+proc envTunableFloat(
+  name: string, default, minimum: float, maximum = Inf
+): float =
+  let raw = getEnv(name).strip
+  if raw.len == 0:
+    return default
+  if parseFloat(raw, result) != raw.len or classify(result) in {fcNan, fcInf, fcNegInf}:
+    raise newException(ValueError, name & " must be a finite number")
+  if result < minimum:
+    raise newException(ValueError, name & " must be >= " & $minimum)
+  if result > maximum:
+    raise newException(ValueError, name & " must be <= " & $maximum)
+
+const
+  TeamColors* = ["red", "blue", "green", "yellow"]
+  WebSocketPath* = "/player"
+
+  ButtonUp* = 1'u8
+  ButtonDown* = 2'u8
+  ButtonLeft* = 4'u8
+  ButtonRight* = 8'u8
+  ButtonSelect* = 16'u8
+  ButtonA* = 32'u8
+  ButtonB* = 64'u8
+  ButtonC* = 128'u8
+
+  NavCell* = 8
+  MaxSpeedPxTick* = 2.75
+  RenderScale* = 1
+  LivesPerPlayer* = 3
+  AimBradsTurn* = 256
+  ObservedHeadingSteps* = 16
+  # GV40 restored continuous integer-brad aim. Every deployed Paintbot 0.7.207
+  # variant turns five brads per held B/Select tick; there is no slot grid.
+  AimTurnRate* = 5
+  AimTurnDeadbandBrads* = AimTurnRate div 2
+  AimSweepStepBrads* = AimTurnRate
+  # The wire does not identify the variant. Use the narrowest deployed cone so
+  # absence-based item tracking never claims a 4ffa8 pickup was visible when it
+  # was actually outside that variant's 45-degree cone.
+  GuaranteedVisionConeHalfDeg* = 45
+  VisionBubble* = 90
+  FireWindupTicks* = 5
+  GrenadeRespawnTicks* = 5 * 24
+  MedkitRespawnTicks* = 30 * 24
+  ShieldRespawnTicks* = 30 * 24
+  ArcRespawnTicks* = 30 * 24
+  GrenadeChargeTicks* = 24
+  GrenadeMinRange* = 30
+  GrenadeBlastRadius* = 52
+  GrenadeFlightTicks* = 2 * FireWindupTicks
+  ItemPickupRange* = 12
+  TrackMatchSlackPx* = 16
+  TrackVelMaxGapTicks* = 8
+  TrackVelEma* = 0.5
+  DangerStampRadiusPx* = 16
+  DangerTraceDownsample* = 4
+  FirefightRangeScoreFalloffPx* = 350
+  FirefightRadiusMaxPx* = 400
+  GrenadeMinThrowPx* = 90
+  GrenadeForceReleaseTicks* = 16
+  ArcFireRangePx* = 170
+  ArcMaxWidthPx* = 85
+  ArcPursuitRangePx* = 400
+  ArcIdealRangePx* = 100
+  # Paintbot 0.7.215 (6c7a4c0e), sim_types.nim:505,517: the spray cone reaches
+  # 170px and tests the victim as a 17px-radius body.
+  SprayLethalReachPx* = 187
+  PostGunRangePx* = 1300
+
+let
+  SweepHalfArc* = envInt("STENCIL_SWEEP_HALF_ARC", 32)
+  FireSlackPx* = envInt("STENCIL_FIRE_SLACK_PX", 8)
+  CloseRangePx* = envInt("STENCIL_CLOSE_RANGE_PX", 220)
+  FriendlyFireCorridorPx* = envTunableInt("STENCIL_FF_CORRIDOR_PX", 22, 14)
+  ReplanGoalCells* = envInt("STENCIL_REPLAN_GOAL_CELLS", 2)
+  PlanStepPx* = envTunableInt("STENCIL_PLAN_STEP_PX", 4, 1)
+  PlanWeight* = envTunableFloat("STENCIL_PLAN_WEIGHT", 1.0, 1.0)
+  # Diagnostic/safety valve: disable the cached-Dijkstra heuristic (D4) and
+  # fall back to pure euclidean — used to measure oracle-induced path-cost
+  # deviation, and the mitigation switch if inadmissibility ever bites.
+  PlanOracle* = envBool("STENCIL_PLAN_ORACLE", true)
+  # Shared cadence for moving-target route refreshes and LOS-danger rebuilds.
+  # Tuning it changes both planner responsiveness and danger-producer cost.
+  PlanMovingReplanTicks* = envTunableInt(
+    "STENCIL_PLAN_MOVING_REPLAN_TICKS", 12, 1)
+  FollowCorridorPx* = envTunableFloat("STENCIL_FOLLOW_CORRIDOR_PX", 20.0, 0.0)
+  FollowStuckWindowTicks* = envTunableInt(
+    "STENCIL_FOLLOW_STUCK_WINDOW_TICKS", 48, 1)
+  FollowBlockTtlTicks* = envTunableInt(
+    "STENCIL_FOLLOW_BLOCK_TTL_TICKS", 96, 1)
+  FollowBlockFactor* = envTunableFloat(
+    "STENCIL_FOLLOW_BLOCK_FACTOR", 8.0, 1.0)
+  DangerLosFlatPx* = envTunableInt("STENCIL_DANGER_LOS_FLAT_PX", 400, 0)
+  DangerLosFarFactor* = envTunableFloat(
+    "STENCIL_DANGER_LOS_FAR_FACTOR", 0.6, 0.0, 1.0)
+  DangerLosRangePx* = envTunableInt("STENCIL_DANGER_LOS_RANGE_PX", 1050, 1)
+  DangerCloseFloor* = envTunableFloat("STENCIL_DANGER_CLOSE_FLOOR", 0.5, 0.0)
+  DangerClosePx* = envTunableInt("STENCIL_DANGER_CLOSE_PX", 190, 0)
+  DangerLosWeight* = envTunableFloat("STENCIL_DANGER_LOS_WEIGHT", 1.0, 0.0)
+  ProfileCarrierDanger* = envTunableFloat(
+    "STENCIL_PROFILE_CARRIER_DANGER", 2.5, 0.0)
+  ProfileHunterDanger* = envTunableFloat(
+    "STENCIL_PROFILE_HUNTER_DANGER", 0.25, 0.0)
+  StuckTicks* = envInt("STENCIL_STUCK_TICKS", 8)
+  DiagEveryTicks* = envInt("STENCIL_DIAG_EVERY_TICKS", 96)
+  TraceNavigation* = envTunableBool("STENCIL_TRACE_NAVIGATION", false)
+  TrackTtlTicks* = envInt("STENCIL_TRACK_TTL_TICKS", 120)
+  DangerDiffusionFactor* = envFloat("STENCIL_DANGER_DIFFUSION_FACTOR", 0.75)
+  DangerDecayHalfLifeTicks* = envInt("STENCIL_DANGER_HALF_LIFE_TICKS", 48)
+  PeekDuck* = envBool("STENCIL_PEEK_DUCK", true)
+  DuckRangePx* = envInt("STENCIL_DUCK_RANGE_PX", 340)
+  DuckThreatFreshTicks* = envInt("STENCIL_DUCK_THREAT_FRESH_TICKS", 30)
+  PeekTargetFreshTicks* = envInt("STENCIL_PEEK_TARGET_FRESH_TICKS", 24)
+  PeekDuckSearchCells* = envInt("STENCIL_PEEK_DUCK_SEARCH_CELLS", 3)
+  PeekDuckRushExemptPx* = envInt("STENCIL_PEEK_DUCK_RUSH_EXEMPT_PX", 90)
+  LeadAim* = envBool("STENCIL_LEAD_AIM", true)
+  LeadTicks* = envFloat("STENCIL_LEAD_TICKS", 3.5)
+  LeadMinFrames* = envInt("STENCIL_LEAD_MIN_FRAMES", 3)
+  Firefight* = envTunableBool("STENCIL_FIREFIGHT", true)
+  FocusClaims* = envTunableBool("STENCIL_FOCUS_CLAIMS", true)
+  FirefightRadiusPx* = envTunableInt("STENCIL_FF_RADIUS_PX", 400,
+    FirefightRangeScoreFalloffPx, FirefightRadiusMaxPx)
+  FirefightDwellTicks* = envTunableInt("STENCIL_FF_DWELL_TICKS", 48, 1)
+  FirefightTargetMinDwellTicks* = envTunableInt(
+    "STENCIL_FF_TARGET_MIN_DWELL_TICKS", 8, 1)
+  FirefightTargetSwitchMargin* = envTunableFloat(
+    "STENCIL_FF_TARGET_SWITCH_MARGIN", 0.10, 0.0)
+  FirefightRangeClosePx* = envTunableInt("STENCIL_FF_RANGE_CLOSE_PX", 120, 0,
+    FirefightRangeScoreFalloffPx)
+  FirefightRangeIdealMinPx* = envTunableInt(
+    "STENCIL_FF_RANGE_IDEAL_MIN_PX", 220, 0, FirefightRangeScoreFalloffPx)
+  FirefightRangeIdealMaxPx* = envTunableInt(
+    "STENCIL_FF_RANGE_IDEAL_MAX_PX", 300, 0, FirefightRangeScoreFalloffPx)
+  FirefightWoundWeight* = envTunableFloat("STENCIL_FF_WOUND_WEIGHT", 0.50, 0.0)
+  FirefightWoundUnknown* = envTunableFloat(
+    "STENCIL_FF_WOUND_UNKNOWN", 0.15, 0.0, 1.0)
+  FirefightRangeWeight* = envTunableFloat("STENCIL_FF_RANGE_WEIGHT", 0.30, 0.0)
+  FirefightClaimWeight* = envTunableFloat("STENCIL_FF_CLAIM_WEIGHT", 0.12, 0.0)
+  FirefightShootabilityWeight* = envTunableFloat(
+    "STENCIL_FF_SHOOTABILITY_WEIGHT", 0.35, 0.0)
+  FirefightAimCostWeight* = envTunableFloat("STENCIL_FF_AIM_COST_WEIGHT", 0.18, 0.0)
+  FirefightShieldWeight* = envTunableFloat("STENCIL_FF_SHIELD_WEIGHT", 0.10, 0.0)
+  DefensiveTargeting* = envTunableBool("STENCIL_DEFENSIVE_TARGETING", true)
+  DefensiveTargetThreatWeight* = envTunableFloat(
+    "STENCIL_DEFENSIVE_TARGET_THREAT_WEIGHT", 0.65, 0.0)
+  DefensiveTargetThreatRadiusPx* = envTunableInt(
+    "STENCIL_DEFENSIVE_TARGET_THREAT_RADIUS_PX", 500, NavCell)
+  DefensiveThiefMatchPx* = envTunableInt(
+    "STENCIL_DEFENSIVE_THIEF_MATCH_PX", 96, NavCell)
+  DefensiveCarrierThreatMin* = envTunableFloat(
+    "STENCIL_DEFENSIVE_CARRIER_THREAT_MIN", 0.75, 0.0, 1.0)
+  EarlyDefense* = envTunableBool("STENCIL_EARLY_DEFENSE", true)
+  BarrageCentering* = envTunableBool("STENCIL_BARRAGE_CENTERING", true)
+  BarrageCenterRadiusPx* = envTunableInt(
+    "STENCIL_BARRAGE_CENTER_RADIUS_PX", 80, NavCell)
+  # Room openness and danger are normalized independently to [0, 1], so the
+  # default makes them co-equal in barrage peak selection.
+  BarragePeakDangerWeight* = envTunableFloat(
+    "STENCIL_BARRAGE_PEAK_DANGER_WEIGHT", 1.0, 0.0)
+  SprayAvoid* = envTunableBool("STENCIL_SPRAY_AVOID", true)
+  ShieldAwareness* = envTunableBool("STENCIL_SHIELD_AWARENESS", true)
+  SprayFleeTriggerPx* = envTunableInt("STENCIL_SPRAY_FLEE_TRIGGER_PX", 240, 0)
+  SprayFleeReleasePx* = envTunableInt("STENCIL_SPRAY_FLEE_RELEASE_PX", 300, 1)
+  SprayThreatTtlTicks* = envTunableInt("STENCIL_SPRAY_THREAT_TTL_TICKS", 48, 1)
+  SprayShoutThreatPadPx* = envTunableInt("STENCIL_SPRAY_SHOUT_PAD_PX", 40, 0)
+  SprayChat* = envTunableBool("STENCIL_SPRAY_CHAT", true)
+  SprayReshoutTicks* = envTunableInt("STENCIL_SPRAY_RESHOUT_TICKS", 48, 1)
+  SprayFleeStepPx* = envTunableInt("STENCIL_SPRAY_FLEE_STEP_PX", 96, NavCell)
+  SprayFireFreezeMarginPx* = envTunableInt(
+    "STENCIL_SPRAY_FIRE_FREEZE_MARGIN_PX", 40, 0)
+  SprayThreatWeight* = envTunableFloat("STENCIL_SPRAY_W_THREAT", 1.0, 0.0)
+  SprayCoverWeight* = envTunableFloat("STENCIL_SPRAY_W_COVER", 1.0, 0.0)
+  SprayClumpWeight* = envTunableFloat("STENCIL_SPRAY_W_CLUMP", 1.0, 0.0)
+  SprayCenterWeight* = envTunableFloat("STENCIL_SPRAY_W_CENTER", 0.5, 0.0)
+  SprayClumpRadiusPx* = envTunableInt(
+    "STENCIL_SPRAY_CLUMP_RADIUS_PX", SprayLethalReachPx, 1)
+  SprayClumpNormAllies* = envTunableInt("STENCIL_SPRAY_CLUMP_NORM_ALLIES", 3, 1)
+  SprayCoverSamples* = envTunableInt("STENCIL_SPRAY_COVER_SAMPLES", 4, 2)
+  SprayCoverFarBias* = envTunableFloat("STENCIL_SPRAY_COVER_FAR_BIAS", 2.0, 1.0)
+  SprayCoverTrackTtlTicks* = envTunableInt(
+    "STENCIL_SPRAY_COVER_TRACK_TTL_TICKS", 24, 0)
+  SprayCoverTrackDiscount* = envTunableFloat(
+    "STENCIL_SPRAY_COVER_TRACK_DISCOUNT", 0.5, 0.0, 1.0)
+  FirefightSprayWeight* = envTunableFloat(
+    "STENCIL_FIREFIGHT_SPRAY_WEIGHT", 1.0, 0.0)
+  FirefightClaimRebroadcastTicks* = envTunableInt(
+    "STENCIL_FF_CLAIM_REBROADCAST_TICKS", 30, 1)
+  FirefightClaimTtlTicks* = envTunableInt("STENCIL_FF_CLAIM_TTL_TICKS", 72, 1)
+  FirefightClaimMatchPx* = envTunableInt("STENCIL_FF_CLAIM_MATCH_PX", 96, NavCell)
+  FirefightClaimLocalityPx* = envTunableInt(
+    "STENCIL_FF_CLAIM_LOCALITY_PX", 400, NavCell)
+  FirefightTargetMissingTicks* = envTunableInt(
+    "STENCIL_FF_TARGET_MISSING_TICKS", 36, 1)
+  FirefightDeathMissingTicks* = envTunableInt(
+    "STENCIL_FF_DEATH_MISSING_TICKS", 8, 1)
+  Items* = envBool("STENCIL_ITEMS", true)
+  ItemConvenientDetourPx* = envInt("STENCIL_ITEM_CONVENIENT_DETOUR_PX", 48)
+  MedkitConvenientDetourPx* = envInt("STENCIL_MEDKIT_CONVENIENT_DETOUR_PX", 420)
+  ItemArcDetourPx* = envInt("STENCIL_ITEM_ARC_DETOUR_PX", 32)
+  ItemYieldMarginPx* = envInt("STENCIL_ITEM_YIELD_MARGIN_PX", 16)
+  GrenadeThrow* = envBool("STENCIL_GRENADE_THROW", true)
+  GrenadeAimErrBrads* = envInt("STENCIL_GRENADE_AIM_ERR_BRADS", 4)
+  GrenadeTargetFreshTicks* = envInt("STENCIL_GRENADE_TARGET_FRESH_TICKS", 30)
+  GrenadeTeammateFreshTicks* = envInt("STENCIL_GRENADE_TEAMMATE_FRESH_TICKS", 12)
+  GrenadeSingleHpMax* = envInt("STENCIL_GRENADE_SINGLE_HP_MAX", 2)
+  Hearing* = envBool("STENCIL_HEARING", true)
+  HeardMatchPx* = envInt("STENCIL_HEARD_MATCH_PX", 40)
+  HeardTtlTicks* = envInt("STENCIL_HEARD_TTL_TICKS", 60)
+  HeardDangerHeat* = envFloat("STENCIL_HEARD_DANGER_HEAT", 0.5)
+  HeardDangerRadiusPx* = envInt("STENCIL_HEARD_DANGER_RADIUS_PX", 32)
+  HeardDuckRangePx* = envInt("STENCIL_HEARD_DUCK_RANGE_PX", 180)
+  HeardDuckFreshTicks* = envInt("STENCIL_HEARD_DUCK_FRESH_TICKS", 24)
+  Chat* = envBool("STENCIL_CHAT", true)
+  ChatMinIntervalTicks* = envInt("STENCIL_CHAT_MIN_INTERVAL_TICKS", 24)
+  ChatEnemyRearmTicks* = envInt("STENCIL_CHAT_ENEMY_REARM_TICKS", 48)
+  ChatEnemyReshoutTicks* = envInt("STENCIL_CHAT_ENEMY_RESHOUT_TICKS", 72)
+  ChatFixTtlTicks* = envInt("STENCIL_CHAT_FIX_TTL_TICKS", 96)
+  ChatBubbleDedupTicks* = envInt("STENCIL_CHAT_BUBBLE_DEDUP_TICKS", 80)
+  UnderFireRangePx* = envInt("STENCIL_UNDER_FIRE_RANGE_PX", 90)
+  UnderFireFreshTicks* = envInt("STENCIL_UNDER_FIRE_FRESH_TICKS", 24)
+  ChatEnemyBubbleFix* = envBool("STENCIL_CHAT_ENEMY_BUBBLE_FIX", true)
+  GrenadeWarnClearPx* = envInt("STENCIL_GRENADE_WARN_CLEAR_PX", 80)
+  GrenadeWarnTtlTicks* = envInt("STENCIL_GRENADE_WARN_TTL_TICKS", 72)
+  Squads* = envBool("STENCIL_SQUADS", true)
+  SquadCohesionPx* = envInt("STENCIL_SQUAD_COHESION_PX", 120)
+  SquadMinBuddies* = envInt("STENCIL_SQUAD_MIN_BUDDIES", 1)
+  SquadSeparationPx* = envTunableInt("STENCIL_SQUAD_SEPARATION_PX", 40, 16, 120)
+  SquadSpreadPx* = envInt("STENCIL_SQUAD_SPREAD_PX", 70)
+  SquadWaitTimeoutTicks* = envInt("STENCIL_SQUAD_WAIT_TIMEOUT_TICKS", 150)
+  SquadSectorBrads* = envInt("STENCIL_SQUAD_SECTOR_BRADS", 50)
+  SquadCommand* = envBool("STENCIL_SQUAD_COMMAND", true)
+  CoverRays* = envInt("STENCIL_COVER_RAYS", 16)
+  CoverRayPx* = envInt("STENCIL_COVER_RAY_PX", 24)
+  TopologyMergeDepthPx* = envInt("STENCIL_TOPOLOGY_MERGE_DEPTH_PX", 4)
+  TopologyMergeRatio* = envFloat("STENCIL_TOPOLOGY_MERGE_RATIO", 0.8)
+  GateSeparationPx* = envInt("STENCIL_GATE_SEPARATION_PX", 64)
+  GateDetourPx* = envInt("STENCIL_GATE_DETOUR_PX", 48)
+  PostFacingWeight* = envFloat("STENCIL_POST_FACING_WEIGHT", 0.15)
+  PostReachCapPx* = envTunableInt(
+    "STENCIL_POST_REACH_CAP_PX", PostGunRangePx, 1, high(uint16).int)
+  PostDuckSearchCells* = envInt("STENCIL_POST_DUCK_SEARCH_CELLS", 3)
+  PostSeparationPx* = envInt("STENCIL_POST_SEPARATION_PX", 120)
+  DefensivePosts* = envTunableBool("STENCIL_DEFENSIVE_POSTS", true)
+  ConvertEnemyLives* = envInt("STENCIL_CONVERT_ENEMY_LIVES", 6)
+  OrderTtlTicks* = envInt("STENCIL_ORDER_TTL_TICKS", 720)
+  ConsensusRebroadcastTicks* = envInt(
+    "STENCIL_CONSENSUS_REBROADCAST_TICKS", 45)
+  ConsensusCommitEchoTicks* = envInt("STENCIL_CONSENSUS_COMMIT_ECHO_TICKS", 120)
+  ConsensusTimeoutTicks* = envInt("STENCIL_CONSENSUS_TIMEOUT_TICKS", 480)
+  SquadMoveMinTicks* = envInt("STENCIL_SQUAD_MOVE_MIN_TICKS", 120)
+  SquadWatchTicks* = envInt("STENCIL_SQUAD_WATCH_TICKS", 240)
+  SquadHoldTicks* = envInt("STENCIL_SQUAD_HOLD_TICKS", 180)
+  SquadPostSearchPx* = envInt("STENCIL_SQUAD_POST_SEARCH_PX", 360)
+  SquadPostSeparationPx* = envInt("STENCIL_SQUAD_POST_SEPARATION_PX", 64)
+  PingIntervalTicks* = envInt("STENCIL_PING_INTERVAL_TICKS", 60)
+  PresenceStaleTicks* = envInt("STENCIL_PRESENCE_STALE_TICKS", 190)
+  BackoffStepPx* = envInt("STENCIL_BACKOFF_STEP_PX", 70)
+  RejoinTimeoutTicks* = envInt("STENCIL_REJOIN_TIMEOUT_TICKS", 360)
+  RejoinContactPx* = envInt("STENCIL_REJOIN_CONTACT_PX", 160)
+  ConfiguredDefenderCount* = envInt("STENCIL_DEFENDERS", 3)
+  HoldArrivePx* = envInt("STENCIL_HOLD_ARRIVE_PX", 28)
+
+proc validateConfig(): bool =
+  template require(condition: bool, name, description: string) =
+    if not condition:
+      raise newException(ValueError, name & ": " & description)
+  require(0 <= FirefightRangeClosePx and
+      FirefightRangeClosePx < FirefightRangeIdealMinPx and
+      FirefightRangeIdealMinPx <= FirefightRangeIdealMaxPx and
+      FirefightRangeIdealMaxPx <= FirefightRangeScoreFalloffPx,
+    "range_band_order",
+    "0 <= close < ideal_min <= ideal_max <= FF_RANGE_SCORE_FALLOFF_PX.")
+  require(FirefightTargetMinDwellTicks <= FirefightDwellTicks,
+    "target_latch_within_mode",
+    "Target minimum dwell must not exceed firefight dwell.")
+  require(FirefightClaimRebroadcastTicks < FirefightClaimTtlTicks,
+    "claim_refresh_before_expiry",
+    "Claim rebroadcast interval must be shorter than claim TTL.")
+  require(FirefightDeathMissingTicks < FirefightTargetMissingTicks and
+      FirefightTargetMissingTicks < FirefightClaimTtlTicks,
+    "claim_release_clock_order",
+    "Death-missing ticks < target-missing ticks < claim TTL.")
+  require(FirefightClaimMatchPx <= FirefightClaimLocalityPx,
+    "claim_match_within_locality",
+    "Anonymous claim match radius must not exceed claim locality.")
+  require(not FocusClaims or Firefight,
+    "focus_requires_firefight",
+    "FOCUS_CLAIMS may be enabled only when FIREFIGHT is enabled.")
+  require(FirefightClaimWeight <= FirefightWoundWeight * 0.5,
+    "claim_bias_bounded_by_wound",
+    "Claim bonus may not exceed one health-bar segment of wound score.")
+  require(SprayFleeTriggerPx < SprayFleeReleasePx,
+    "spray_flee_radius_order",
+    "Spray flee trigger radius must be smaller than release radius.")
+  require(SprayReshoutTicks <= SprayThreatTtlTicks,
+    "spray_reshout_before_expiry",
+    "Spray reshout interval must not exceed threat TTL.")
+  require(DangerLosFlatPx <= DangerLosRangePx,
+    "danger_los_distance_order",
+    "DANGER_LOS_FLAT_PX must not exceed DANGER_LOS_RANGE_PX.")
+  true
+
+let ConfigValidated* = validateConfig()

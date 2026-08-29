@@ -1,0 +1,81 @@
+{
+  "created_at": "2026-08-06",
+  "selection": "Three independent hosted episodes and POV seats 0 and 8 per GameVersion; observations sampled evenly to 1,000 per version.",
+  "versions": [
+    {
+      "game_version": 16,
+      "coworld": "ctf:0.7.50",
+      "coworld_id": "cow_fb3e1cae-0fe1-400b-a19c-ae402558dc79",
+      "source_commit": "35fa06b1343552c5b9af1085375688e1461c4a0d",
+      "policies": ["Picasso:v16", "ctf-focusfire:v35"],
+      "episode_ids": [
+        "1df3e1d7-45e7-4c41-824c-34ecdbac4f10",
+        "ce0d1553-2545-4f4a-bb04-b2faa70839a3",
+        "36ba65d7-4e11-4a95-b1ed-d3c1aa5132e2"
+      ]
+    },
+    {
+      "game_version": 24,
+      "coworld": "ctf:0.7.103",
+      "coworld_id": "cow_dc3b090b-9f8d-4027-bfb5-bd127c7ed9bf",
+      "source_commit": "e05c73134c3b0dc961cc7fbf7e89a7aa8e4ab1be",
+      "policies": ["Picasso:v28", "daf-ctf-runner:v3", "osprey:v3"],
+      "episode_ids": [
+        "caeac109-b859-4deb-aa21-228e39671f11",
+        "2eb71de7-dd31-415e-b395-ace96d4098f3",
+        "be521de6-893a-4d5f-a8eb-3f68ca286eef"
+      ]
+    },
+    {
+      "game_version": 30,
+      "coworld": "ctf:0.7.136",
+      "coworld_id": "cow_a722bd7a-ebf6-4f50-b358-19256b13eed5",
+      "source_commit": "1047232faef01a06fbf9710d014021c84764cc5d",
+      "policies": [
+        "beacon:v56",
+        "co-gas-ctf-simple-richard:v45",
+        "ctf-focusfire:v65",
+        "ctf-h050:v1",
+        "deltashot:v23",
+        "jordan-ctf-candidate:v76",
+        "nancy-ctf:v4",
+        "osprey:v296",
+        "reardenr-ctf-heist:v10"
+      ],
+      "episode_ids": [
+        "a390aca9-7985-4132-8656-25d7088106ae",
+        "7dcf4cfd-68e2-4f21-ad8b-b22021d33c40",
+        "1289d482-c17d-4211-9d99-6f164d70db3e"
+      ]
+    },
+    {
+      "game_version": 35,
+      "coworld": "ctf:0.7.179",
+      "coworld_id": "cow_5f2117d0-dc5e-4fa6-b16a-e191f457f5c5",
+      "source_commit": "95bb76829e0e0e41329292860395d88787a9d8c8",
+      "policies": ["alphashot:v368", "ctf-focusfire:v65"],
+      "episode_ids": [
+        "d55ff8cf-02e4-4618-a96b-cd0b534b167b",
+        "449ad161-63ff-4d13-91d6-5914fdf8037e",
+        "0d7814ff-21e8-467b-ad0f-e0942e7f2c11"
+      ]
+    },
+    {
+      "game_version": 40,
+      "coworld": "paintbot:0.7.206",
+      "coworld_id": "cow_eb4a0cde-ee3e-4d4d-9b4c-d001fbcd2495",
+      "source_commit": "ec244e6b01485e8c7acd7a7929a9268354d50957",
+      "policies": [
+        "golergka-paintbot-beliefscan:v3",
+        "paintbot-champion:v3",
+        "paintbot-p027:v1",
+        "stencil:v54"
+      ],
+      "episode_ids": [
+        "48a54116-cb0f-4f9d-9694-b990695527da",
+        "1432f4db-1039-4084-b6b4-a10f6f73e07a",
+        "86674af1-d304-42ec-948d-476e5484b606"
+      ]
+    }
+  ]
+}
