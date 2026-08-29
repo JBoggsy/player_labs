@@ -59,34 +59,13 @@ proc sprayContains(belief: Belief, target: Point): bool =
   forward > 0 and forward <= ArcFireRangePx.float and
     perpendicular <= forward * ArcMaxWidthPx.float / (2.0 * ArcFireRangePx.float)
 
-proc threatAxis(belief: Belief): int =
-  if belief.worldmap.isNil: return belief.aimBrads
-  let target = if belief.squadOrderPostActive and
-      belief.squadOrderPostSightlineAim.isSome:
-    belief.squadOrderPostSightlineAim.get
-  elif belief.role == Defender and not belief.ownHeartStolen and
-      belief.defensivePostOpponent.isSome:
-    belief.worldmap.pedestal(belief.defensivePostOpponent.get)
-  elif belief.stealTarget.isSome:
-    belief.worldmap.pedestal(belief.stealTarget.get)
-  else:
-    belief.worldmap.center
-  let delta: Point = (target.x - belief.selfXy.get.x, target.y - belief.selfXy.get.y)
-  if abs(delta.x) < 1 and abs(delta.y) < 1:
-    belief.worldmap.spawnAim(belief.team)
-  else: bradsOf(delta.x.float, delta.y.float)
-
-proc sweepTarget(belief: Belief): int =
-  var axis = belief.threatAxis
-  if Squads and not belief.squadOrderPostActive and
-      belief.defensivePost.isNone:
-    axis = floorMod(axis + belief.sectorOffsetBrads, AimBradsTurn)
+proc idleSweepAim(belief: Belief, center: int): int =
   belief.sweepOffset += belief.sweepDir * AimSweepStepBrads
   if belief.sweepOffset >= SweepHalfArc:
     belief.sweepOffset = SweepHalfArc; belief.sweepDir = -1
   elif belief.sweepOffset <= -SweepHalfArc:
     belief.sweepOffset = -SweepHalfArc; belief.sweepDir = 1
-  floorMod(axis + belief.sweepOffset, AimBradsTurn)
+  floorMod(center + belief.sweepOffset, AimBradsTurn)
 
 proc leadAimPos(belief: Belief, enemy: Enemy): tuple[pos: Point, lead: int] =
   if not LeadAim or belief.selfXy.isNone: return (enemy.pos, 0)
@@ -546,7 +525,11 @@ proc resolveAction*(intent: Intent, belief: Belief, state: var ActionState): Com
   else:
     state.aHeld = false; belief.leadBrads = 0
     let target = if override.isSome and override.get.aim.isSome:
-      override.get.aim.get else: belief.sweepTarget
+      override.get.aim.get
+    else:
+      # none is valid only before self/worldmap initialization, which the
+      # resolveAction early-out handles; absence here is an Intent producer bug.
+      belief.idleSweepAim(intent.idleAimCenterBrads.get)
     belief.aimTargetBrads = target
     belief.aimErrorBrads = bradError(target, belief.aimBrads)
     mask = mask or rotationButton(belief.aimTargetBrads, belief.aimBrads, state)

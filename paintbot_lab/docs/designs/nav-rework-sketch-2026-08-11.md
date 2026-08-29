@@ -415,7 +415,15 @@ transcribed from the five real strategy arrive distances — see
 `VERSION_LOG.md` v67/v68 for the hosted verdicts. **Kill-list honesty
 notes:** the §4 "threat axis" kill only half-landed — movement no longer
 keys on it, but `threatAxis`/`sweepTarget` still drive the idle aim sweep
-in `action.nim` (carried as strategy-rework input); of the Appendix B dead
+in `action.nim` (carried as strategy-rework input) — **RESOLVED
+2026-08-29 (v69): the aim-side keying is now removed too.**
+`threatAxis`/`sweepTarget` are deleted; the idle-aim center is a typed
+mind product (`Intent.idleAimCenterBrads`, computed in `strategy.nim`
+post-ladder, consuming `sectorOffsetBrads` mind-side) with the body
+keeping only the sweep oscillator. Bit-identical policy output proven on
+a 278k-decision recorded-wire corpus. Design:
+[strategy-idle-aim-intent-2026-08-29.md](strategy-idle-aim-intent-2026-08-29.md).
+Of the Appendix B dead
 code, `flowWaypoint` and the rally/choke anchors are gone, `distanceAt`
 was revived as a live `defenseGate` scoring dependency, and
 `insideBase`/`walkabilityDecodeMs` remain as vestiges.

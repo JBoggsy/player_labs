@@ -4,6 +4,45 @@ Read this before assuming what a version contains. Format mirrors
 `ctf_lab/ctf/beacon/VERSION_LOG.md`: one entry per uploaded version — what
 changed, why, and what the evidence said.
 
+## v69 — idle aim re-homed to the typed Intent (threat-axis kill completed), uploaded 2026-08-29
+
+Immutable policy-version UUID: `6b759380-62b6-4af0-bbc5-03dbd26ec9ae`.
+Uploaded with tag `purpose=idle-aim-intent`; not submitted. The strategy
+rework's opening move: finishes the nav-rework sketch §4 "kill the threat
+axis" order (the half that survived v61-v68 — aim-side keying) by re-homing
+idle-aim policy on the mind side of the Intent contract.
+Design (Codex-reviewed, 2 rounds):
+[strategy-idle-aim-intent-2026-08-29.md](../../docs/designs/strategy-idle-aim-intent-2026-08-29.md);
+recon: [threat-axis-idle-aim-2026-08-29.md](../../docs/recon/threat-axis-idle-aim-2026-08-29.md).
+Codex-implemented under orchestration.
+
+- **`threatAxis`/`sweepTarget` DELETED from action.nim.** The idle-aim
+  center (squad-post sightline > eligible defender's opponent pedestal >
+  steal-target pedestal > map center; degenerate delta → spawn aim; squad
+  sector offset under the same gate as before) is now computed in
+  `strategy.nim:idleAimAxis`, stamped post-ladder on every Intent as the
+  new typed field `Intent.idleAimCenterBrads` (unswept center; `none` only
+  when worldmap/selfXy are absent). policy.nim stamps the dead-tick
+  `not_alive` intent too, preserving dead-tick sweep parity.
+- **The body keeps only execution**: `idleSweepAim(center)` steps the
+  unchanged ±`SweepHalfArc` oscillator, still lazily (advances exactly when
+  no combat target and no override aim fired). Grep gate: action.nim has
+  zero references to `threatAxis|sweepTarget|stealTarget|
+  defensivePostOpponent|sectorOffsetBrads|spawnAim`.
+- **Intended behavior change: NONE.** Pre-change baseline wire corpus
+  (fresh v68 self-play: 1v1 seed 101, 4ffa seed 202, forced-active 1v1
+  seed 303; 48 seat-files) replayed bit-identically post-change through
+  `tools/compare_stencil.py`: **278,016/278,016 exact mask+chat decisions**
+  (forced-active files replayed with capture-time `STENCIL_EARLY_DEFENSE=0`
+  — replay env must match capture env or the comparator false-fails).
+- Built against 0.7.215 / `6c7a4c0e` (pin unchanged); wire corpus captured
+  and replayed on canonical 0.7.242 / `44be9572` self-play builds.
+
+**Hosted validation:** matched campaign-shaped v69-vs-v68 A/B,
+preregistered as a PARITY check (hits/shots, kills, duck%, peek% — any
+significant delta is a red flag, not a win). Verdict pending — see below
+when appended.
+
 ## v68 — the bounded follower & micro (nav rework Layer 5, FINALE), uploaded 2026-08-14
 
 Immutable policy-version UUID: `ffa8e5d2-10f1-4e6c-93f9-4b005a83359a`.

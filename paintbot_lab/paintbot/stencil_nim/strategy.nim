@@ -10,6 +10,33 @@ type SprayThreat = tuple[track: PlayerTrack, pos: Point, raw, effective: float]
 
 proc distance(a, b: Point): float = hypot((a.x - b.x).float, (a.y - b.y).float)
 
+proc bradsOf(dx, dy: float): int =
+  floorMod(pyRound(arctan2(-dy, dx) / (2.0 * PI) * AimBradsTurn.float),
+    AimBradsTurn)
+
+proc idleAimAxis*(belief: Belief): Option[int] =
+  if belief.worldmap.isNil or belief.selfXy.isNone:
+    return none(int)
+  let target = if belief.squadOrderPostActive and
+      belief.squadOrderPostSightlineAim.isSome:
+    belief.squadOrderPostSightlineAim.get
+  elif belief.role == Defender and not belief.ownHeartStolen and
+      belief.defensivePostOpponent.isSome:
+    belief.worldmap.pedestal(belief.defensivePostOpponent.get)
+  elif belief.stealTarget.isSome:
+    belief.worldmap.pedestal(belief.stealTarget.get)
+  else:
+    belief.worldmap.center
+  let delta: Point = (target.x - belief.selfXy.get.x, target.y - belief.selfXy.get.y)
+  var center = if abs(delta.x) < 1 and abs(delta.y) < 1:
+    belief.worldmap.spawnAim(belief.team)
+  else:
+    bradsOf(delta.x.float, delta.y.float)
+  if Squads and not belief.squadOrderPostActive and
+      belief.defensivePost.isNone:
+    center = floorMod(center + belief.sectorOffsetBrads, AimBradsTurn)
+  some(center)
+
 proc makeIntent*(kind: IntentKind, point: Option[Point], reason: string): Intent =
   result = Intent(
     kind: kind,
@@ -473,9 +500,9 @@ proc decideBaseObjective(belief: Belief): Objective =
   navigate(steal.get, "steal")
 
 proc decideObjective*(belief: Belief): Objective =
-  let base = belief.decideBaseObjective()
+  result = belief.decideBaseObjective()
   if belief.iHaveArc and belief.iCarryHeartOf.isNone and
-      MicroSprayPursuit in base.intent.micro and belief.selfXy.isSome:
+      MicroSprayPursuit in result.intent.micro and belief.selfXy.isSome:
     let enemy = belief.sprayTarget
     if enemy.isSome:
       let range = distance(enemy.get.pos, belief.selfXy.get)
@@ -483,6 +510,6 @@ proc decideObjective*(belief: Belief): Objective =
         let goal = belief.reachableGoal(belief.sprayAimPos(enemy.get))
         if goal.isSome:
           inc belief.sprayPursuitTicks
-          return Objective(intent: makeIntent(
+          result = Objective(intent: makeIntent(
             NavigateTo, goal, "arc_pursuit"))
-  base
+  result.intent.idleAimCenterBrads = belief.idleAimAxis()

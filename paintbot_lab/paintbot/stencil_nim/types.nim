@@ -205,6 +205,7 @@ type
   Intent* = object
     kind*: IntentKind
     point*: Option[Point]
+    idleAimCenterBrads*: Option[int]
     arriveRadius*: float
     reason*: string
     movingGoal*: bool

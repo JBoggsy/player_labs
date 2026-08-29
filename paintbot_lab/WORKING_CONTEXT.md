@@ -117,8 +117,15 @@ verified boundary: `policy.decide` → `perceive` → `updateBeliefCore` →
 `strategy.decideObjective` (the ladder, emitting one typed `Intent`) →
 `action.resolveAction` (planner-routed movement + combat overlay). The typed
 Intent (types.nim) is the mind→body contract since v66. Known boundary leaks
-to address (verified in code 2026-08-29): `threatAxis`/`sweepTarget` (idle aim
-sweep) read strategy-level state directly inside action.nim; defender post
+to address (verified in code 2026-08-29): ~~`threatAxis`/`sweepTarget` (idle
+aim sweep) read strategy-level state directly inside action.nim~~ **CLOSED
+2026-08-29 as v69** — idle-aim center is now the typed
+`Intent.idleAimCenterBrads` stamped post-ladder in strategy (dead-tick stamp
+in policy.nim; body keeps only the sweep oscillator); bit-identical policy
+output proven on a 278k-decision recorded-wire corpus
+(design: `docs/designs/strategy-idle-aim-intent-2026-08-29.md`, recon:
+`docs/recon/threat-axis-idle-aim-2026-08-29.md`; hosted parity A/B vs v68
+per the standing evaluation contract). Remaining leaks: defender post
 assignment lives in policy.nim rather than strategy; chat shout choice is a
 side channel in policy.decide; strategy writes telemetry/latch state onto
 Belief mid-decision. A stencil-centered documentation audit (this date)

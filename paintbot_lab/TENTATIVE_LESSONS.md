@@ -17,3 +17,23 @@ buffers — not in-session hit counts — is the graduation signal.
 concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
+### The lazily-evaluated `else` branch is load-bearing state semantics in action.nim
+Evidence: `belief.sweepTarget` at action.nim:549 mutates the sweep oscillator
+(sweepOffset/sweepDir) as a side effect of being *read*, and Nim's lazy `else`
+means it only advances on genuinely idle ticks (no combat target, no override
+aim). Any re-homing of idle aim that computes the swept value eagerly (e.g.
+per-tick in strategy) silently changes oscillator cadence. Found during the
+threat-axis-removal recon; drove the axis-mind/sweep-body split in the design.
+
+### Dead ticks bypass strategy entirely — parity claims must account for policy.nim's not_alive intent
+Evidence: policy.nim:99-102 hand-builds `makeIntent(Hold, none, "not_alive")`
+when dead, and resolveAction still runs (early-out is only selfXy/worldmap).
+A field stamped only in decideObjective is absent on dead ticks; bit-parity
+against v68 on compare_stencil requires stamping the dead-tick intent too.
+### compare_stencil replays must reproduce capture-time STENCIL_* env or they false-FAIL
+Evidence: pre-change baseline on a fresh 48-file corpus failed on exactly the
+16 forced-active seats (captured with STENCIL_EARLY_DEFENSE=0) until the same
+env was set for the replay run; the 32 normal seats passed as-is. Config env
+is read at process start and is part of the recorded behavior. Also:
+compare_stencil's pinned-cache default errors if only self_play's canonical
+cache exists — pass --game-repo paintbot_lab/.cache/coworld-ctf/<canonical-sha>.

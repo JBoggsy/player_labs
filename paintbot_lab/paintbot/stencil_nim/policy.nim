@@ -96,10 +96,12 @@ proc decide*(policy: StencilPolicy, client: ProtocolClient): Command =
         if DefensivePosts:
           inc policy.belief.defensivePostFallbacks
     policy.rolesAssigned = true
-  let objective = if policy.belief.alive:
-    policy.belief.decideObjective()
+  var objective: Objective
+  if policy.belief.alive:
+    objective = policy.belief.decideObjective()
   else:
-    Objective(intent: makeIntent(Hold, none(Point), "not_alive"))
+    objective = Objective(intent: makeIntent(Hold, none(Point), "not_alive"))
+    objective.intent.idleAimCenterBrads = policy.belief.idleAimAxis()
   policy.lastIntent = objective.intent
   result = resolveAction(objective.intent, policy.belief, policy.actionState)
   if Chat and policy.belief.alive:

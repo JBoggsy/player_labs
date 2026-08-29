@@ -42,9 +42,10 @@ mid-session; check them back at the start of focused work.
   Story: `paintbot_lab/docs/designs/nav-rework-sketch-2026-08-11.md` (status
   addenda) + per-layer docs + `VERSION_LOG.md`. Surviving follow-ups: corridor
   width tuning from the `micro_corridor_rejects` corpus; the 8px grid
-  demotion (large consumer census in the Layer 4 doc); threat-axis removal
-  (`threatAxis`/`sweepTarget` still drive idle aim sweep — strategy-rework
-  input); peek%/duck% as standing batch watch metrics.
+  demotion (large consumer census in the Layer 4 doc); ~~threat-axis
+  removal~~ DONE 2026-08-29 as v69 (idle-aim center re-homed to the typed
+  Intent — `paintbot_lab/docs/designs/strategy-idle-aim-intent-2026-08-29.md`);
+  peek%/duck% as standing batch watch metrics.
 
 - **Fire-windup micro** (from the 2026-08-11 nav review; explicitly not-now).
   Strafe/aim while fire is winding up to improve accuracy, or pull the trigger
