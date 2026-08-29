@@ -43,6 +43,7 @@ player_labs/
   paintbot_lab/        sixth game lab — Paintbot, a 2-or-4-team capture-the-heart shooter on procgen maps (README + docs index)
   proxywar_lab/        seventh game lab — Proxy War, an OpenFront-fork RTS territory game with LLM/agent nations (own README)
   emergant_lab/        eighth game lab — Emerg-ant, a 16-agent repeated-food-capture colony shooter
+  sugarscape_lab/      ninth game lab — Sugarscape, a movement-policy lab over coworld-sugarscape (own README)
   pyproject.toml       uv project: coworld[auth] + the pinned players SDK (from git) + deps
 ```
 
