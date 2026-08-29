@@ -1,6 +1,6 @@
 # CTF tentative lessons — session buffer
 
-**Session started:** 2026-08-11 14:28. This is THIS SESSION's lesson buffer. Write candidate
+**Session started:** 2026-08-20 13:47. This is THIS SESSION's lesson buffer. Write candidate
 lessons here **as you go** — eagerly and noisily; most will be noise and that's
 fine. At the next session start, a hook archives this file automatically to
 [`lessons_archive/`](lessons_archive/) and creates a fresh one — nothing you
@@ -17,8 +17,3 @@ buffers — not in-session hit counts — is the graduation signal.
 concrete) and optional `Status:` notes. Terse. One lesson per `###`.
 
 ---
-
-### No paintbot lessons this session — read-only catch-up
-Evidence: this session only read paintbot_lab docs (WORKING_CONTEXT, README, lessons archive)
-to answer a "where are we at" question before pivoting to founding proxywar_lab. No paintbot
-code, evals, or docs were touched.

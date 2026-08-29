@@ -168,6 +168,19 @@ document.getElementById("file").addEventListener("change", async (e) => {
   await loadBundle(JSON.parse(await f.text()), f.name);
 });
 
+// ?bundle=<path> auto-loads a same-origin bundle (needs an http server, e.g. plan_server.py).
+const bundleParam = new URLSearchParams(location.search).get("bundle");
+if (bundleParam) (async () => {
+  status(`fetching ${bundleParam}…`);
+  const resp = await fetch(bundleParam);
+  if (!resp.ok) { status(`fetch failed (${resp.status}) for ${bundleParam}`); return; }
+  B = JSON.parse(await resp.text());
+  index();
+  status(`${bundleParam} · ${B.episode?.coworld_version ?? "?"} · ${ticks.length} ticks · ` +
+         `${Object.keys(B.traces || {}).length} traced bots`);
+  draw();
+})();
+
 function status(s) { document.getElementById("status").innerHTML = s; }
 
 function index() {

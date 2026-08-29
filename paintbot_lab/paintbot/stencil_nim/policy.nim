@@ -15,7 +15,6 @@ type StencilPolicy* = ref object
   teamsKnown*: bool
   rolesAssigned*: bool
   lastIntent*: Intent
-  lastFlowGoal*: Option[Point]
 
 proc newStencilPolicy*(slot: int): StencilPolicy =
   StencilPolicy(slot: slot, belief: newBelief(slot))
@@ -67,7 +66,7 @@ proc decide*(policy: StencilPolicy, client: ProtocolClient): Command =
     if policy.belief.role == Defender:
       let assignment = if DefensivePosts:
         defensivePostForSeat(policy.belief.worldmap, policy.belief.team,
-          policy.belief.seat, seats)
+          policy.belief.seat, seats, policy.belief.freshEnemyPositions)
       else:
         none(tuple[post: PostCandidate, opponent: Team])
       if assignment.isSome:
@@ -85,9 +84,12 @@ proc decide*(policy: StencilPolicy, client: ProtocolClient): Command =
           enemyHome = policy.belief.worldmap.homeCenter(selected.opponent)
         policy.belief.defensivePostHeartDistance = pyRound(
           policy.belief.worldmap.routeDistance(selected.post.pos, heart))
+        # goal=enemyHome reads the init-minted home field; goal=post.pos
+        # would mint a full-grid Dijkstra per newly-chosen post (see
+        # squads.advancePoint note).
         policy.belief.defensivePostForward =
-          policy.belief.worldmap.routeDistance(enemyHome, selected.post.pos) <
-          policy.belief.worldmap.routeDistance(enemyHome, heart)
+          policy.belief.worldmap.routeDistance(selected.post.pos, enemyHome) <
+          policy.belief.worldmap.routeDistance(heart, enemyHome)
       else:
         policy.belief.holdPoint = some(holdPointForSeat(
           policy.belief.worldmap, policy.belief.team, policy.belief.seat, seats))
@@ -97,10 +99,8 @@ proc decide*(policy: StencilPolicy, client: ProtocolClient): Command =
   let objective = if policy.belief.alive:
     policy.belief.decideObjective()
   else:
-    Objective(intent: Intent(kind: Hold, point: none(Point), reason: "not_alive"),
-      flowGoal: none(Point))
+    Objective(intent: makeIntent(Hold, none(Point), "not_alive"))
   policy.lastIntent = objective.intent
-  policy.lastFlowGoal = objective.flowGoal
   result = resolveAction(objective.intent, policy.belief, policy.actionState)
   if Chat and policy.belief.alive:
     let shout = policy.belief.chooseShout()

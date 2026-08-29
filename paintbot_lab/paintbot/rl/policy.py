@@ -28,6 +28,9 @@ class PolicyRuntime:
         self.map_cache = None
         self.trace = os.environ.get("PAINTBOT_RL_TRACE", "0") == "1"
         self.game_version = os.environ.get("PAINTBOT_GAME_VERSION", "unknown")
+        self.include_spatial_semantics = (
+            os.environ.get("PAINTBOT_SPATIAL_SEMANTICS", "0") == "1"
+        )
 
     def decide(self, world, _context) -> int:
         started = time.perf_counter()
@@ -47,16 +50,29 @@ class PolicyRuntime:
         except ValueError:
             return 0
         prompt = (
-            serialize_observation(snapshot)
+            serialize_observation(
+                snapshot,
+                include_spatial_semantics=self.include_spatial_semantics,
+            )
             + "\nprevious_action "
             + action_text(self.decoder.previous_mask)
             + "\naction"
         )
         prompt_ids = self.tokenizer.encode(prompt, return_tensors="pt").to(self.device)
-        tokens = self.model.greedy_action(
-            self.tokenizer, prompt_ids, self.map_cache, position
-        )
-        decoded = self.decoder.decode(tokens)
+        if self.model.action_encoding == "events":
+            tokens = self.model.greedy_event_action(
+                self.tokenizer,
+                prompt_ids,
+                self.map_cache,
+                position,
+                self.decoder.previous_mask,
+            )
+            decoded = self.decoder.decode_events(tokens)
+        else:
+            tokens = self.model.greedy_action(
+                self.tokenizer, prompt_ids, self.map_cache, position
+            )
+            decoded = self.decoder.decode(tokens)
         if self.trace:
             print(
                 json.dumps(

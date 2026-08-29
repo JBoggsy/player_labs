@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Layer 3 — the planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Merriweather+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============ Ink & Print tokens ============ */
+  :root {
+    --bg: #fffdf4;            /* cream paper */
+    --surface: #fffaf0;
+    --surface-alt: #f8f6ef;
+    --fg: #111827;            /* warm near-black — never pure #000 */
+    --fg-subtle: #555555;
+    --fg-muted: #999999;
+    --ink-navy: #1a3875;
+    --ink-sage: #6e8050;
+    --ink-terracotta: #b36e4e;
+    --ink-gold: #d4a853;
+    --accent: #859ebe;
+    --accent-soft: #eef2f7;
+    --cta: #0e2758;
+    --cta-foreground: #fffdf4;
+    --border: #e4dac8;
+    --border-strong: #d4c9b5;
+    --border-subtle: #f0ebe1;
+    --serif: 'Merriweather', Georgia, serif;
+    --sans: 'Merriweather Sans', 'Helvetica Neue', sans-serif;
+    --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  /* ============ Page grid: reading column + comment rail ============ */
+  .dc-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 0;
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+  article#doc {
+    max-width: 72ch;
+    margin: 0 auto;
+    padding: 56px 40px 120px;
+    min-width: 0;
+  }
+
+  /* ============ Typography ============ */
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-subtle);
+  }
+  header.masthead { border-bottom: 2px solid var(--border-strong); padding-bottom: 20px; margin-bottom: 32px; }
+  header.masthead h1 {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 34px;
+    line-height: 1.2;
+    margin: 8px 0 10px;
+  }
+  header.masthead .context { color: var(--fg-subtle); font-size: 13.5px; margin: 0; }
+  h2 {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-navy);
+    margin: 48px 0 12px;
+  }
+  h3 { font-family: var(--serif); font-weight: 700; font-size: 16.5px; margin: 32px 0 8px; }
+  p { margin: 0 0 14px; }
+  a { color: var(--ink-navy); text-decoration-color: var(--accent); text-underline-offset: 3px; }
+  a:hover { color: var(--cta); }
+  strong { font-weight: 700; }
+  ul, ol { padding-left: 24px; margin: 0 0 14px; }
+  li { margin-bottom: 4px; }
+  hr { border: 0; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  /* Key-points opener: every section starts with scannable bullets */
+  .key-points {
+    list-style: none;
+    padding: 0 0 0 2px;
+    margin: 0 0 18px;
+  }
+  .key-points li { padding-left: 18px; position: relative; margin-bottom: 6px; }
+  .key-points li::before { content: '—'; position: absolute; left: 0; color: var(--ink-gold); font-weight: 700; }
+
+  /* ============ TOC ============ */
+  nav.toc { margin: 28px 0 8px; }
+  nav.toc ol { list-style: none; padding: 0; column-count: 2; column-gap: 40px; margin: 10px 0 0; }
+  nav.toc li { margin-bottom: 5px; break-inside: avoid; }
+  nav.toc a { text-decoration: none; border-bottom: 1px dotted var(--border-strong); }
+  nav.toc .toc-num { font-family: var(--mono); font-size: 12px; color: var(--fg-muted); margin-right: 8px; }
+
+  /* ============ Tables ============ */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 18px 0 22px;
+    font-size: 13.5px;
+  }
+  th {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg-subtle);
+    text-align: left;
+    padding: 6px 12px 6px 0;
+    border-bottom: 2px solid var(--border-strong);
+  }
+  td { padding: 7px 12px 7px 0; border-bottom: 1px solid var(--border-subtle); vertical-align: top; }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-size: 12.5px; font-feature-settings: 'tnum' 1; }
+
+  /* ============ Figures ============ */
+  figure { margin: 24px 0 28px; }
+  figure svg { max-width: 100%; height: auto; display: block; }
+  figcaption {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--fg-subtle);
+  }
+  figcaption .fig-label {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 10.5px;
+    color: var(--ink-navy);
+    margin-right: 8px;
+  }
+
+  /* ============ Code & citations ============ */
+  code {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--surface-alt);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  pre {
+    background: var(--surface-alt);
+    border: 1px solid var(--border-subtle);
+    border-radius: 3px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    margin: 16px 0 20px;
+  }
+  pre code { background: none; padding: 0; font-size: 12.5px; line-height: 1.6; }
+  .cite {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--fg-subtle);
+    background: var(--surface-alt);
+    padding: 1px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+
+  /* ============ Callouts ============ */
+  .callout { padding: 12px 16px; margin: 18px 0; font-size: 13.5px; border-radius: 3px; }
+  .callout .callout-label {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .callout-info { background: var(--accent-soft); }
+  .callout-info .callout-label { color: var(--ink-navy); }
+  .callout-warn { background: rgba(179, 110, 78, 0.08); border-left: 3px solid var(--ink-terracotta); }
+  .callout-warn .callout-label { color: var(--ink-terracotta); }
+  .callout-open { background: rgba(212, 168, 83, 0.10); }
+  .callout-open .callout-label { color: #8a6a1f; }
+
+  /* Decision record */
+  .decision { border-top: 1px solid var(--border); padding: 14px 0 4px; margin: 14px 0; }
+  .decision .decision-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-sage); }
+  .decision p { margin-top: 6px; }
+
+  @media (max-width: 1100px) {
+    .dc-page { grid-template-columns: 1fr; }
+  }
+  @media print {
+    #dc-sidebar, #dc-fab, #dc-toggle { display: none !important; }
+    .dc-page { grid-template-columns: 1fr; }
+  }
+
+  /* ================================================================
+     DC-COMMENTS BEGIN — styles (copy verbatim; do not modify)
+     ================================================================ */
+  ::highlight(dc-hl) { background: rgba(212, 168, 83, 0.28); }
+  ::highlight(dc-hl-active) { background: rgba(212, 168, 83, 0.6); }
+
+  #dc-fab {
+    position: absolute;
+    z-index: 40;
+    display: none;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--cta-foreground);
+    background: var(--cta);
+    border: 1px solid #0a1c42;
+    border-radius: 3px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  #dc-fab:hover { background: var(--ink-navy); }
+
+  #dc-sidebar {
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    padding: 24px 20px 60px;
+    font-size: 13px;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    overflow-y: auto;
+  }
+  #dc-sidebar h2.dc-title {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-subtle);
+    margin: 0 0 4px;
+  }
+  .dc-actions { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 18px; }
+  .dc-btn {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--fg);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    padding: 4px 9px;
+    cursor: pointer;
+  }
+  .dc-btn:hover { background: var(--surface-alt); }
+  .dc-btn:focus-visible, #dc-fab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .dc-empty { color: var(--fg-muted); font-style: italic; }
+  .dc-item { border-top: 1px solid var(--border-subtle); padding: 12px 0; cursor: pointer; }
+  .dc-item.dc-resolved { opacity: 0.5; }
+  .dc-quote {
+    border-left: 2px solid var(--ink-gold);
+    padding-left: 8px;
+    color: var(--fg-subtle);
+    font-style: italic;
+    font-size: 12px;
+    margin-bottom: 6px;
+    overflow-wrap: break-word;
+  }
+  .dc-orphan-tag {
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-terracotta);
+    background: rgba(179, 110, 78, 0.12);
+    border-radius: 999px;
+    padding: 1px 7px;
+    margin-left: 6px;
+  }
+  .dc-text { white-space: pre-wrap; overflow-wrap: break-word; }
+  .dc-item textarea {
+    width: 100%;
+    min-height: 64px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    padding: 6px 8px;
+    resize: vertical;
+  }
+  .dc-item textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .dc-meta { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 11px; color: var(--fg-muted); }
+  .dc-meta label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+  .dc-meta .dc-del { margin-left: auto; color: var(--ink-terracotta); background: none; border: none; font-size: 11px; cursor: pointer; padding: 0; }
+  .dc-meta .dc-del:hover { text-decoration: underline; }
+  #dc-status { font-size: 11px; color: var(--ink-sage); min-height: 16px; margin-top: 8px; }
+
+  #dc-toggle { display: none; }
+  @media (max-width: 1100px) {
+    #dc-sidebar {
+      position: fixed;
+      right: 0;
+      top: 0;
+      width: 320px;
+      max-width: 90vw;
+      transform: translateX(100%);
+      transition: transform 200ms ease-out;
+      z-index: 50;
+      box-shadow: -4px 0 16px rgba(0, 0, 0, 0.08);
+    }
+    #dc-sidebar.dc-open { transform: translateX(0); }
+    #dc-toggle {
+      display: block;
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 51;
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--cta-foreground);
+      background: var(--cta);
+      border: 1px solid #0a1c42;
+      border-radius: 999px;
+      padding: 9px 15px;
+      cursor: pointer;
+    }
+  }
+  /* ============ DC-COMMENTS END — styles ============ */
+</style>
+</head>
+<body>
+<div class="dc-page">
+<article id="doc">
+
+  <!-- ============ Masthead ============ -->
+  <header class="masthead">
+    <span class="eyebrow">Design proposal · 2026-08-12 · APPROVED — implemented as v65 (2026-08-13)</span>
+    <h1>Layer 3 — the planner</h1>
+    <p class="context">Weighted A* as the single navigation search for the stencil nav rework — a worked proposal argued from the Phase 0 benchmark, for James's ruling before v65 implementation begins.</p>
+  </header>
+
+  <!-- ============ Executive summary ============ -->
+  <section id="summary">
+    <h2>Executive Summary</h2>
+    <p>The stencil navigation rework replaces today's two planners — goal-anchored Dijkstra
+    flow fields followed one 8&#8202;px hop at a time, plus a per-agent cached A* on the eroded
+    8&#8202;px grid — with one weighted A*-family search that all navigation eventually routes
+    through. This proposal specifies that planner. The Phase&nbsp;0 benchmark ran weighted A*
+    on the real competition maps from the v62–v64 hosted batches, with synthetic danger blooms
+    deliberately chosen to weaken the heuristic, and the headline result is that <strong>a flat
+    (non-hierarchical) search on a 4&#8202;px lattice with exact supercover edge checks clears the
+    budget comfortably</strong>: typical replans run 1–12&nbsp;ms against a ~41&nbsp;ms tick, and the
+    worst single measured replan at the chosen configuration is 47&nbsp;ms — a rare one-tick-ish
+    blip on the giant probe map, with a shelved inflation valve (w&#8202;=&#8202;1.3) that cuts it
+    roughly 30× if hosted reality ever demands it.</p>
+    <p>The most consequential choices: no hierarchy (D1), pixel-exact edges by construction
+    (D3), a Dijkstra-oracle heuristic for stable goals that carries a real admissibility caveat
+    bounded by property tests rather than assumed away (D4), optimal search by default with
+    inflation as a config knob (D5), and a deliberately narrow v65 ship scope — swap only the
+    existing A* consumers, leave flow-following to Layer&nbsp;4 — so the matched hosted batch
+    stays readable (D8). Even so, the v65 behavior delta is broad: every A*-reason route can
+    change shape. Four points await James's ruling (P1–P4).</p>
+  </section>
+
+  <!-- ============ TOC ============ -->
+  <nav class="toc">
+    <span class="eyebrow">Contents</span>
+    <ol>
+      <li><span class="toc-num">1</span><a href="#background">Problem &amp; Context</a></li>
+      <li><span class="toc-num">2</span><a href="#benchmark">Phase 0 Benchmark — the Evidence</a></li>
+      <li><span class="toc-num">3</span><a href="#decisions">Decisions D1–D8</a></li>
+      <li><span class="toc-num">4</span><a href="#alternatives">Alternatives Considered</a></li>
+      <li><span class="toc-num">5</span><a href="#validation">Validation Plan (v65)</a></li>
+      <li><span class="toc-num">6</span><a href="#open-questions">Open Questions P1–P4</a></li>
+      <li><span class="toc-num">7</span><a href="#risks">Risks</a></li>
+      <li><span class="toc-num">8</span><a href="#sources">Sources</a></li>
+    </ol>
+  </nav>
+
+  <!-- ============ 1 · Problem & context ============ -->
+  <section id="background">
+    <h2>1 · Problem &amp; Context</h2>
+    <ul class="key-points">
+      <li>Two planners today (flow fields + cached 8&#8202;px A*) collapse into one weighted A*-family search; route quality becomes cost terms, not steering hacks.</li>
+      <li>Layers 1–2 are shipped and hosted-validated, and two performance landmines were already cleared en route — Layer&nbsp;3 inherits both as satisfied hard requirements.</li>
+      <li>Layer&nbsp;3 ships the planner itself; the full kill of flow-following and beelines is Layer&nbsp;4's Intent contract.</li>
+    </ul>
+    <p>The governing document for this work is the nav rework sketch
+    <span class="cite">docs/designs/nav-rework-sketch-2026-08-11.md</span> §3.3. Today the
+    agent navigates with two separate planners: goal-anchored Dijkstra flow fields followed
+    one 8&#8202;px hop at a time, and a per-agent cached A* on the eroded 8&#8202;px grid
+    <span class="cite">nav.nim:22-87</span>. The rework replaces both with one weighted
+    A*-family search that all navigation eventually routes through, so that route quality —
+    danger, cover exposure, terrain — becomes cost terms in that one search instead of
+    per-objective steering hacks scattered across dispatch code.</p>
+    <p>The layers already shipped and hosted-validated set the stage: Layer&nbsp;1 delivered the
+    exact L∞ clearance field (<code>canStand</code> at <span class="cite">worldmap.nim:233</span>,
+    supercover <code>segmentClear</code> at <span class="cite">worldmap.nim:262</span>); Layer&nbsp;2
+    delivered components, rooms, chokes, and cover (v62); post re-sourcing and belief-scored
+    facing landed in v63, and the wide post pool in v64. Two performance landmines were cleared
+    along the way, and Layer&nbsp;3 inherits them as hard requirements already satisfied:
+    <code>fieldsFor</code> now returns <code>lent RouteFields</code>
+    <span class="cite">worldmap.nim:86,675</span>, ending the ~1.4&nbsp;MB per-call field copies;
+    and the argument-order rule that the <code>routeDistance</code>/<code>distanceAt</code>
+    GOAL slot takes stable goals only — the goal keys the lazy Dijkstra cache, and arbitrary
+    goals were each minting a full-grid field until that detonated and was fixed in v64.</p>
+    <p>Today's A* is exactly what the rework exists to kill: it plans on the 8&#8202;px grid,
+    snaps endpoints via <code>nearestWalkable</code> with an up-left bias, and when the goal is
+    unroutable it returns the raw goal and the agent beelines
+    <span class="cite">nav.nim:66-87</span>. This proposal ships the planner itself; the full
+    kill of flow-following, the seven reason-string dispatch lists, and the beelines is
+    Layer&nbsp;4's Intent contract.</p>
+  </section>
+
+  <!-- ============ 2 · Phase 0 benchmark ============ -->
+  <section id="benchmark">
+    <h2>2 · Phase 0 Benchmark — the Evidence</h2>
+    <ul class="key-points">
+      <li>Weighted A* was benchmarked on the REAL competition maps from the v62–v64 hosted batches, with synthetic danger blooms chosen to weaken the heuristic — the worst case for A*.</li>
+      <li>At the chosen config (4&#8202;px, exact edges, w&#8202;=&#8202;1.0) typical replans are 1–12&nbsp;ms; worst measured single replan is 47&nbsp;ms against a ~41&nbsp;ms tick.</li>
+      <li>Exact supercover edges cost +40–70% over endpoint-only checks; memory is 13&nbsp;MB per process at 4&#8202;px on the giant map; zero unroutable results in any class.</li>
+    </ul>
+    <p>The scratchpad harness (<code>layer3_bench.nim</code>, from the Layer&nbsp;2 scratchpad)
+    ran weighted A* on the real competition maps from the v62–v64 hosted batches, using
+    clearance fields logged by the agent and decoded offline: the h2h cell (1235×659&nbsp;px),
+    the 4-team ffa cell (1728×1728&nbsp;px), and the giant probe map (3211×1713&nbsp;px). Danger
+    was emulated with 8 synthetic believed-track blooms (radius 150&nbsp;px, peak +3.0 additive
+    cost multiplier) — deliberately weakening the heuristic, which is the worst case for A*.
+    Edge validity "exact" means a supercover <code>canStand</code> DDA per edge (the same
+    primitive as <code>segmentClear</code>); "endpt" means endpoint <code>canStand</code> only.
+    Each class ran 25 queries, shared across configurations. Machine: M4&nbsp;Pro, single
+    process — hosted runs 16 processes, but replans are occasional, not synchronized.</p>
+
+    <table>
+      <thead>
+        <tr><th>Map</th><th>Step</th><th>Class</th><th>Heuristic / w</th><th class="num">Mean ms</th><th class="num">Worst ms</th><th class="num">Mean expansions</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>h2h 1235×659</td><td>2&#8202;px</td><td>stable</td><td>euclid 1.0</td><td class="num">7.10</td><td class="num">19.99</td><td class="num">18,045</td></tr>
+        <tr><td>h2h</td><td>2&#8202;px</td><td>stable</td><td>oracle 1.0</td><td class="num">5.13</td><td class="num">18.64</td><td class="num">11,460</td></tr>
+        <tr><td>h2h</td><td>2&#8202;px</td><td>stable</td><td>oracle 1.3</td><td class="num">1.68</td><td class="num">5.19</td><td class="num">3,567</td></tr>
+        <tr><td>h2h</td><td>2&#8202;px</td><td>arbitrary</td><td>euclid 1.0</td><td class="num">9.58</td><td class="num">27.55</td><td class="num">23,872</td></tr>
+        <tr><td>h2h</td><td>2&#8202;px</td><td>short ≤300&#8202;px</td><td>euclid 1.0</td><td class="num">2.27</td><td class="num">10.57</td><td class="num">6,003</td></tr>
+        <tr><td>h2h</td><td>4&#8202;px</td><td>stable</td><td>oracle 1.0</td><td class="num">1.73</td><td class="num">5.20</td><td class="num">3,152</td></tr>
+        <tr><td>h2h</td><td>4&#8202;px</td><td>arbitrary</td><td>euclid 1.0</td><td class="num">2.88</td><td class="num">8.19</td><td class="num">6,029</td></tr>
+        <tr><td>ffa 1728²</td><td>2&#8202;px</td><td>arbitrary</td><td>euclid 1.0</td><td class="num">32.57</td><td class="num">76.67</td><td class="num">80,274</td></tr>
+        <tr><td>ffa</td><td>4&#8202;px</td><td>stable</td><td>oracle 1.0</td><td class="num">3.49</td><td class="num">15.36</td><td class="num">6,549</td></tr>
+        <tr><td>ffa</td><td>4&#8202;px</td><td>arbitrary</td><td>euclid 1.0</td><td class="num">9.94</td><td class="num">22.35</td><td class="num">20,139</td></tr>
+        <tr><td>ffa</td><td>4&#8202;px</td><td>arbitrary</td><td>euclid 1.3</td><td class="num">2.23</td><td class="num">13.32</td><td class="num">3,935</td></tr>
+        <tr><td>giant 3211×1713</td><td>2&#8202;px</td><td>stable</td><td>euclid 1.0</td><td class="num">42.97</td><td class="num">101.72</td><td class="num">110,970</td></tr>
+        <tr><td>giant</td><td>2&#8202;px</td><td>stable</td><td>oracle 1.0</td><td class="num">10.40</td><td class="num">41.18</td><td class="num">22,495</td></tr>
+        <tr><td>giant</td><td>2&#8202;px</td><td>arbitrary</td><td>euclid 1.0</td><td class="num">40.26</td><td class="num">162.86</td><td class="num">98,857</td></tr>
+        <tr><td>giant</td><td>4&#8202;px</td><td>stable</td><td>euclid 1.0</td><td class="num">12.84</td><td class="num">29.72</td><td class="num">27,592</td></tr>
+        <tr><td>giant</td><td>4&#8202;px</td><td>stable</td><td>oracle 1.0</td><td class="num">5.17</td><td class="num">17.40</td><td class="num">9,681</td></tr>
+        <tr><td>giant</td><td>4&#8202;px</td><td>stable</td><td>oracle 1.3</td><td class="num">0.62</td><td class="num">2.77</td><td class="num">1,005</td></tr>
+        <tr><td>giant</td><td>4&#8202;px</td><td>arbitrary</td><td>euclid 1.0</td><td class="num">12.00</td><td class="num">46.68</td><td class="num">24,810</td></tr>
+        <tr><td>giant</td><td>4&#8202;px</td><td>arbitrary</td><td>euclid 1.3</td><td class="num">0.37</td><td class="num">1.44</td><td class="num">667</td></tr>
+        <tr><td>giant</td><td>4&#8202;px</td><td>short ≤300&#8202;px</td><td>euclid 1.0</td><td class="num">2.46</td><td class="num">10.87</td><td class="num">5,091</td></tr>
+      </tbody>
+    </table>
+
+    <figure>
+      <svg viewBox="0 0 620 250" role="img" aria-label="Horizontal bar chart of worst-case plan times on the giant map at 4 px, compared with the 41 ms one-tick budget">
+        <!-- category labels -->
+        <text x="152" y="33" text-anchor="end" font-family="Merriweather Sans" font-size="11" fill="#111827">euclid · w=1.0 · stable</text>
+        <text x="152" y="69" text-anchor="end" font-family="Merriweather Sans" font-size="11" fill="#111827">oracle · w=1.0 · stable</text>
+        <text x="152" y="105" text-anchor="end" font-family="Merriweather Sans" font-size="11" fill="#111827">oracle · w=1.3 · stable</text>
+        <text x="152" y="141" text-anchor="end" font-family="Merriweather Sans" font-size="11" fill="#111827">euclid · w=1.0 · arbitrary</text>
+        <text x="152" y="177" text-anchor="end" font-family="Merriweather Sans" font-size="11" fill="#111827">euclid · w=1.3 · arbitrary</text>
+        <!-- bars: plot x=160..540 spans 0..50 ms (7.6 px per ms) -->
+        <rect x="160" y="20" width="225.7" height="18" fill="#1a3875"/>
+        <rect x="160" y="56" width="132.2" height="18" fill="#1a3875"/>
+        <rect x="160" y="92" width="21.3" height="18" fill="#6e8050"/>
+        <rect x="160" y="128" width="354.9" height="18" fill="#1a3875"/>
+        <rect x="160" y="164" width="10.6" height="18" fill="#6e8050"/>
+        <!-- value labels -->
+        <text x="391.7" y="33" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#111827">29.7 ms</text>
+        <text x="298.2" y="69" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#111827">17.4 ms</text>
+        <text x="187.3" y="105" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#111827">2.8 ms</text>
+        <text x="520.9" y="141" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#111827">46.7 ms</text>
+        <text x="176.6" y="177" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#111827">1.4 ms</text>
+        <!-- reference line: 41 ms one tick -->
+        <line x1="471.6" y1="12" x2="471.6" y2="196" stroke="#b36e4e" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="471.6" y="212" text-anchor="middle" font-family="Merriweather Sans" font-size="10.5" font-weight="700" fill="#b36e4e">one tick @ 24/s (41 ms)</text>
+        <!-- axis -->
+        <line x1="160" y1="196" x2="540" y2="196" stroke="#d4c9b5" stroke-width="1"/>
+        <text x="160" y="230" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="10" fill="#999999">0</text>
+        <text x="236" y="230" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="10" fill="#999999">10</text>
+        <text x="312" y="230" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="10" fill="#999999">20</text>
+        <text x="388" y="230" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="10" fill="#999999">30</text>
+        <text x="540" y="230" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="10" fill="#999999">50 ms</text>
+      </svg>
+      <figcaption><span class="fig-label">Figure 1</span>Worst-case single plan time on the giant map (3211×1713&#8202;px) at the 4&#8202;px lattice, by heuristic and inflation weight, against the ~41&nbsp;ms one-tick budget at 24 ticks/s. Only the chosen config's rarest worst case (euclid, w&#8202;=&#8202;1.0, arbitrary goal: 46.7&nbsp;ms) exceeds one tick; the shelved w&#8202;=&#8202;1.3 valve collapses it to 1.4&nbsp;ms.</figcaption>
+    </figure>
+
+    <p>Supporting numbers. Exact versus endpoint-only edge checks costs +40–70% time (giant
+    4&#8202;px arbitrary: 12.00 vs 6.92&nbsp;ms mean) — affordable, and what it buys is argued in
+    D3. Memory for the generation-stamped node arrays (gScore/cameFrom/closed/gen, no
+    per-query clearing) is 13&nbsp;MB at 4&#8202;px on the giant map and 52&nbsp;MB at 2&#8202;px.
+    There were zero unroutable results in any class — all sampled starts and goals were
+    standable; preventing component-mismatched goals is Layer&nbsp;4's contract.</p>
+    <p>Budget context: the game runs 24 ticks/s (~41&nbsp;ms per tick). Replans are per-agent
+    and occasional — goal moved, stuck watchdog, or a cadence for moving targets — so the
+    realistic worst load is a handful of replans per second across 8 agents, not
+    per-tick-per-agent. The worst single measured replan at the chosen configuration
+    (4&#8202;px, exact edges, w&#8202;=&#8202;1.0) is 47&nbsp;ms (giant map, arbitrary goal, euclid) —
+    a rare worst-case blip, one-tick-ish, and the inflation valve cuts it ~30× if that is
+    ever needed hosted.</p>
+  </section>
+
+  <!-- ============ 3 · Decisions ============ -->
+  <section id="decisions">
+    <h2>3 · Decisions D1–D8</h2>
+    <ul class="key-points">
+      <li>Every decision below cites the Phase 0 matrix; none rests on intuition alone.</li>
+      <li>The riskiest call is D4's Dijkstra oracle — its admissibility caveat is real and gets bounded by property tests, not assumed away.</li>
+      <li>D8 keeps the v65 diff to one change class: swap the A* consumers, leave flow-following alone.</li>
+    </ul>
+
+    <div class="decision">
+      <span class="decision-label">Decision D1 · Architecture</span>
+      <p><strong>Flat weighted A*; no hierarchy.</strong> The worst measured configuration at
+      4&#8202;px is 47&nbsp;ms on the giant map; typical replans are 1–12&nbsp;ms. A hierarchical
+      planner (PoI graph at the top level plus local refinement) would add an abstraction
+      layer, path-stitching artifacts, and a second thing to test — to solve a budget problem
+      that does not exist. The PoI graph (rooms and chokes, from v62) stays available as a
+      fallback if hosted reality contradicts the bench. This answers sketch Q1 by
+      measurement.</p>
+    </div>
+
+    <div class="decision">
+      <span class="decision-label">Decision D2 · Lattice step</span>
+      <p><strong>4&#8202;px lattice step by default.</strong> It is 3–4× cheaper than 2&#8202;px
+      everywhere in the matrix, and validity stays pixel-exact at any step because node and
+      edge admission read the clearance field (<code>canStand</code>) — the step only quantizes
+      where waypoints may land, and the Layer&nbsp;5 follower smooths waypoint placement anyway.
+      This is <em>not</em> a return to the old 8&#8202;px coarsening problem: the old grid was the
+      walkability truth (conservative, with a biased snap); here the lattice is only waypoint
+      placement. 2&#8202;px stays available as a config knob (<code>STENCIL_PLAN_STEP_PX</code>)
+      for experiments.</p>
+    </div>
+
+    <div class="decision">
+      <span class="decision-label">Decision D3 · Edge validity</span>
+      <p><strong>Exact supercover edges.</strong> Every edge is admitted via the supercover
+      <code>canStand</code> DDA — the same primitive as <code>segmentClear</code> — so every
+      returned path is engine-walkable <em>by construction</em>: no post-validation pass, and
+      no reliance on engine wall-slide to survive route corners. (Slide remains a bonus for
+      micro, per the v60/v61 wall-slide lesson, not a route crutch.) The measured cost is
+      +40–70% over endpoint-only checks — affordable, and it buys away an entire class of
+      "path clips a corner" bugs.</p>
+    </div>
+
+    <div class="decision">
+      <span class="decision-label">Decision D4 · Heuristic</span>
+      <p><strong>Euclidean always; Dijkstra oracle for stable goals.</strong> For goals in the
+      stable set — team homes and the own capture point, the fields minted at init — the
+      heuristic is h&nbsp;=&nbsp;max(euclid, gridDistance&nbsp;×&nbsp;0.999). Measured effect: a 2–4×
+      expansion reduction (giant stable at w&#8202;=&#8202;1.0: 27,592&nbsp;→&nbsp;9,681 expansions).</p>
+      <p>The ×0.999 clamp addresses a real admissibility caveat, stated plainly: the
+      8&#8202;px-grid Dijkstra distance can in principle exceed the true 4&#8202;px-lattice distance
+      where the conservative grid misses sub-cell passages, which would make the oracle
+      inadmissible at the margin. Phase&nbsp;0 observed zero anomalies, but v65's property tests
+      bound the actual path-cost deviation against an exact-euclid reference search on random
+      maps rather than assuming the caveat away. If deviation shows up, the clamp factor
+      drops — turning the oracle into a slightly weaker but safe bound. Arbitrary goals
+      (pursuit, interception, evacuation) use euclid: they have no minted field and
+      <strong>must not</strong> mint one — that is the v64 rule.</p>
+      <p><strong>Why an 8&#8202;px oracle under a 4&#8202;px search (review question).</strong>
+      Because the fields already exist: the 8&#8202;px Dijkstra fields are minted at init for the
+      stable goals regardless (they remain the live flow fields until Layer&nbsp;4, and
+      strategy/posts read them via <code>routeDistance</code>), so reusing them as the
+      heuristic is free. A heuristic only needs to be a <em>lower bound</em> — resolution
+      mismatch costs tightness, not correctness (the clamp handles the one direction the
+      coarse grid can err). A matching 4&#8202;px Dijkstra would be a tighter bound but costs
+      ~4× per field with no correctness gain; it stays available as an easy upgrade if
+      expansion counts ever matter.</p>
+      <p><strong>Field-mint cost and goal-set headroom (review question).</strong> Measured
+      8&#8202;px mints from the v64 corpus traces: 2.6&nbsp;ms/field on the h2h map
+      (12.6&#8202;k cells), 11.2&nbsp;ms on the ffa map (46.7&#8202;k cells), 20.5&nbsp;ms on
+      the giant (85.8&#8202;k cells); a 4&#8202;px field scales ~4× (≈10/45/80&nbsp;ms
+      estimated). That leaves real headroom to <em>expand the stable goal set</em>: a curated
+      set of PoI goals — choke gates on the home route, top post-pool members, room peaks —
+      at, say, 20–30 fields costs ~0.4–0.6&nbsp;s at init on the giant, or can mint lazily at
+      ~20&nbsp;ms each (about half a tick, occasionally). This proposal keeps v65's oracle set
+      at the init-minted homes; the expanded-PoI-fields option is recorded for Layer&nbsp;4,
+      where validated Intent goals would name the beneficiaries. Unbounded per-arbitrary-goal
+      minting stays banned (the v64 rule) — expansion means a <em>chosen, bounded</em> set.</p>
+    </div>
+
+    <div class="decision">
+      <span class="decision-label">Decision D5 · Inflation weight</span>
+      <p><strong>w&nbsp;=&nbsp;1.0 (optimal) by default; inflation is a shelved valve, not a
+      default.</strong> w&#8202;=&#8202;1.3 collapses worst cases ~10–30× (giant arbitrary:
+      46.68&nbsp;→&nbsp;1.44&nbsp;ms worst) with bounded suboptimality ≤30%, but the budget does not
+      require it, and optimal paths make behavior more predictable and debuggable. The knob
+      <code>STENCIL_PLAN_WEIGHT</code> ships (default 1.0), so a hosted timing surprise is a
+      config flip, not a code change.</p>
+    </div>
+
+    <div class="decision">
+      <span class="decision-label">Decision D6 · Cost function v1</span>
+      <p><strong>Per-edge cost = octile base length × terrain × (1&nbsp;+&nbsp;soft
+      penalties).</strong> The terms:</p>
+      <ul>
+        <li><strong>Terrain:</strong> trench ×5, matching engine climb-out speed (sketch §3.3);
+        active puddles when GV41 activates them (bounding-box labels, loose — a cost, not a
+        wall). Barriers, trenches, and puddles <em>never</em> become walls — they do not block
+        movement.</li>
+        <li><strong>Danger — representation/producer split (review round 1), LOS-exposure
+        model (review round 2).</strong> The planner never computes danger; it only
+        <em>samples</em> a <code>DangerField</code> — a coarse heatmap (8&#8202;px cells, one
+        additive cost multiplier per cell) owned by belief state and rebuilt on the replan
+        cadence. Producers are swappable behind that representation with zero nav-logic
+        churn.
+        <p style="margin:.6em 0 0"><strong>The v1 producer is the two-level LOS model James's
+        second review specified</strong> (replacing the proximity-bloom draft, which was the
+        wrong kernel for this game — guns are 1050&#8202;px hitscan with ~80% accuracy at max
+        range, so passing near an enemy is no worse than <em>being in their line of sight at
+        any distance</em>):</p>
+        <ul style="margin:.4em 0 0">
+          <li><em>Level 1 — presence:</em> where we believe enemies are — one source per
+          fresh believed track (velocity-projected, within <code>TrackTtlTicks</code>); track
+          age can later widen a source into a small uncertainty cluster without touching
+          anything downstream.</li>
+          <li><em>Level 2 — exposure transform:</em> danger(x) = Σ over sources with
+          line-of-sight to x, times a nearly-flat range attenuation (1.0 out to
+          400&#8202;px, tapering to 0.6 at the 1050&#8202;px gun range, 0 beyond) — flat
+          because hitscan accuracy barely decays; plus a small close-quarters floor
+          (~190&#8202;px ≈ spray lethal reach) added regardless of LOS, since spray and
+          grenades do not need a clean sightline.</li>
+        </ul>
+        <p style="margin:.6em 0 0"><strong>Measured feasibility</strong> (scratchpad
+        prototype, per-source perimeter ray sweep on the 8&#8202;px grid — an upper bound on
+        a smarter FOV): full field rebuild with 8 sources on the giant = 1.55&nbsp;ms; 4
+        sources = 0.9&nbsp;ms; ffa 8 sources = 1.1&nbsp;ms. Rebuild-per-replan is free. The
+        same measurement confirms the design intuition: 4 sources already place ~69% of the
+        giant's standable cells under LOS-danger — with long guns the field is
+        shadow-structured, and it is the <em>shadows</em> (occluded corridors) that
+        differentiate routes. Magnitude therefore needs a normalization knob so
+        near-uniform exposure doesn't just inflate all costs equally
+        (<code>STENCIL_DANGER_LOS_WEIGHT</code>); per-profile weights still scale the whole
+        field.</p></li>
+        <li><strong>Exposure as a separate cost term: dissolved.</strong> The LOS danger
+        producer subsumes the draft's coverDirs-bitmask exposure term with true occlusion
+        instead of a 24&#8202;px hug-cover approximation — one danger term, one field.
+        <code>coverDirs</code> remains the right tool where it lives today: post selection
+        and duck/peek facing (v63), not route costs. (This resolves the former open question
+        P2 by design.)</li>
+        <li><strong>Cohesion:</strong> deferred — the sketch marks it optional, and adding it
+        in v1 would muddy attribution.</li>
+      </ul>
+      <p>Draft profile weights (sketch Q2: start with exactly three) —
+      <strong>default</strong>: danger 0.5, exposure 0.25;
+      <strong>carrier</strong>: danger 2.0, exposure 1.0 (evade — the "carry_home should
+      evade" requirement lands here);
+      <strong>hunter</strong>: danger 0.1, exposure 0.1 (close distance, accept risk).
+      Profiles are weight bundles on the future Intent (Layer&nbsp;4); in v65 all swapped
+      consumers run the default profile (see D8).</p>
+    </div>
+
+    <div class="decision">
+      <span class="decision-label">Decision D7 · Replan policy</span>
+      <p><strong>Plain re-search, no D*-lite</strong> (sketch Q3). Each agent caches its path
+      and invalidates when (a) the goal moved more than the <code>ReplanGoalCells</code>
+      equivalent (existing knob, <span class="cite">config.nim:118</span>, 2 cells =
+      16&#8202;px), (b) the stuck watchdog fires (existing progress test), or (c) the
+      moving-target cadence triggers: every 12 ticks (0.5&nbsp;s) for pursuit- and
+      interception-class goals. At ~1–12&nbsp;ms per replan, incremental replanning is
+      complexity without payoff. The cadence ships as a knob,
+      <code>STENCIL_PLAN_MOVING_REPLAN_TICKS</code> (default 12).</p>
+    </div>
+
+    <div class="decision">
+      <span class="decision-label">Decision D8 · v65 ship scope</span>
+      <p><strong>Swap the A* consumers only; flow-following waits for Layer&nbsp;4.</strong>
+      The new planner replaces <code>astarWaypoint</code> for its current reason set
+      (intercept_thief, clear_grenade, rejoin, escort_carrier, fetch_*, convert_hunt,
+      squad_move/watch/hold, hunt_fallback), returning the same waypoint contract to the
+      existing follower. FlowReasons (carry_home, steal, to_hold, to_post, early_defense,
+      barrage_center) keep flow fields until the Layer&nbsp;4 Intent contract lands — killing
+      both dispatch paths simultaneously with a new search would make the matched batch
+      unreadable, and one change class per version is the lab's standing discipline. The
+      unroutable-goal beeline fallback in <span class="cite">nav.nim:77-79</span>
+      <em>survives</em> v65: goals are not yet validated — that contract is Layer&nbsp;4's —
+      and the planner logs unroutable requests to trace so Layer&nbsp;4 has data.</p>
+    </div>
+  </section>
+
+  <!-- ============ 4 · Alternatives considered ============ -->
+  <section id="alternatives">
+    <h2>4 · Alternatives Considered</h2>
+    <ul class="key-points">
+      <li>Each rejected option lost to a measured number or a standing rule, not to taste.</li>
+      <li>Hierarchy and inflation stay on the shelf as contingencies rather than defaults.</li>
+    </ul>
+    <p><strong>JPS / JPS+.</strong> Jump-point search requires uniform costs, and the cost
+    terms are the entire point of the rework. The sketch already ruled it out; re-affirmed
+    here.</p>
+    <p><strong>Hierarchical A* now.</strong> The bench says flat search clears the budget with
+    a 3–30× margin. Hierarchy is the contingency (D1), not the plan.</p>
+    <p><strong>2&#8202;px default step.</strong> 3–4× the cost, for waypoint granularity the
+    follower does not need. Revisit only if Layer&nbsp;5 micro wants finer waypoints in tight
+    play.</p>
+    <p><strong>Endpoint-only edge checks.</strong> 40–70% cheaper, but reintroduces
+    corner-clipping paths that only engine slide bails out — contradicting the sketch's §2
+    goal of pixel-exact correctness everywhere.</p>
+    <p><strong>D*-lite / incremental replanning.</strong> Replans cost 1–12&nbsp;ms; incremental
+    search's bookkeeping complexity buys nothing at this scale.</p>
+    <p><strong>Inflation by default (w&#8202;&gt;&#8202;1).</strong> Not needed for budget, and
+    suboptimal paths are harder to reason about in trace diffs.</p>
+    <p><strong>Danger from the <code>belief.danger</code> grid.</strong> Its semantics are
+    unvalidated (the sketch's Q10 experiment is still open); believed tracks are the direct,
+    interpretable source.</p>
+  </section>
+
+  <!-- ============ 5 · Validation plan ============ -->
+  <section id="validation">
+    <h2>5 · Validation Plan (v65)</h2>
+    <ul class="key-points">
+      <li>Property tests bound the D4 oracle caveat empirically instead of trusting Phase 0's zero-anomaly run.</li>
+      <li>Corpus timing plus trace keys give Layer&nbsp;4 its data feed; the hosted batch is the standard matched shape.</li>
+    </ul>
+    <p><strong>Property tests</strong> (scratchpad harness, house method): every returned path
+    edge passes <code>segmentClear</code> — true by construction, so the test guards
+    regressions; path cost stays within bound of a brute-force reference search on random
+    small maps, which bounds the oracle-admissibility caveat from D4; determinism; and
+    no-path if and only if BFS says the components are disconnected.</p>
+    <p><strong>Corpus timing:</strong> the plan_ms distribution on the three batch maps plus
+    the 4ffa8 giant, with trace keys <code>plan_ms</code>, <code>plan_expansions</code>,
+    <code>plan_cache_hits</code>, and <code>plan_unroutable</code> — the last being
+    Layer&nbsp;4's data feed.</p>
+    <p><strong>Viewer:</strong> a path debug layer in <code>render_topology.py</code> — click
+    start and goal, see the planned route plus the expanded-region heatmap, produced by the
+    <em>real production search</em> via the harness (the same drift-guard pattern as
+    selection).</p>
+    <p><strong>Hosted:</strong> a matched v65-vs-v64 batch in the standard shape — 12 requests
+    / 58 episodes, re-resolved board, paired giant probes.</p>
+  </section>
+
+  <!-- ============ 6 · Open questions ============ -->
+  <section id="open-questions">
+    <h2>6 · Open Questions P1–P4</h2>
+    <ul class="key-points">
+      <li>These four points are what this proposal asks James to rule on; everything else is decided above, pending that ruling.</li>
+    </ul>
+    <div class="callout callout-open">
+      <span class="callout-label">P1 · Danger v2 — the LOS model (revised per review round 2)</span>
+      <p style="margin:0 0 .5em">The proximity bloom is dead; danger is now the two-level
+      LOS-exposure model in D6: presence sources from believed tracks, danger(x) = LOS-visible
+      source mass with nearly-flat range attenuation (1.0 to 400&#8202;px, 0.6 at
+      1050&#8202;px), plus a small non-LOS close-quarters floor (~190&#8202;px, spray reach).
+      Measured: full rebuild 1.55&nbsp;ms with 8 sources on the giant — free at replan
+      cadence. Routes will thread the <em>shadows</em>, which is the tactically correct
+      behavior for a hitscan game.</p>
+      Ruling: sign off on this shape as the v1 producer? Attenuation numbers, the
+      close-quarters floor, and the magnitude normalization are all knobs
+      (<code>STENCIL_DANGER_LOS_*</code>) tunable against the viewer's danger overlay without
+      code changes. Deeper refinements recorded for later: track-age uncertainty clusters,
+      and vision-cone (rather than omnidirectional) sources if believed facing ever becomes
+      reliable.
+    </div>
+    <div class="callout callout-info">
+      <span class="callout-label">P2 · Exposure term — resolved by design</span>
+      Dissolved into the LOS danger producer (true occlusion subsumes the coverDirs
+      approximation for routing); <code>coverDirs</code> stays for post selection and
+      duck/peek. No separate ruling needed.
+    </div>
+    <div class="callout callout-open">
+      <span class="callout-label">P3 · Moving-target replan cadence</span>
+      12 ticks (0.5&nbsp;s) — accept, or tune later? The knob
+      (<code>STENCIL_PLAN_MOVING_REPLAN_TICKS</code>) ships regardless.
+    </div>
+    <div class="callout callout-open">
+      <span class="callout-label">P4 · Viewer path layer scope</span>
+      In v65 scope, or split out to keep the diff smaller? <strong>Lean:</strong> in scope —
+      it is the inspection tool for every later layer.
+    </div>
+  </section>
+
+  <!-- ============ 7 · Risks ============ -->
+  <section id="risks">
+    <h2>7 · Risks</h2>
+    <ul class="key-points">
+      <li>The two watch-items are the oracle's admissibility margin and cost-term triple-counting; both have concrete mitigations in v65.</li>
+      <li>The v65 batch's behavior delta is broad by design — the expected-delta list is written down in advance so the matched batch stays interpretable.</li>
+    </ul>
+    <div class="callout callout-warn">
+      <span class="callout-label">Risk · Oracle inadmissibility at the margin</span>
+      The D4 caveat: the 8&#8202;px-grid Dijkstra distance can in principle exceed the true
+      4&#8202;px-lattice distance. Bounded by v65's property tests; the mitigation is lowering
+      the ×0.999 clamp.
+    </div>
+    <div class="callout callout-warn">
+      <span class="callout-label">Risk · Cost-term interactions</span>
+      Danger + terrain can double-count in trench corridors under believed fire lanes (and the close-quarters floor adds a third term near tracks). v65
+      traces per-term totals per path, so the matched batch's behavior diffs can attribute
+      route changes to specific terms.
+    </div>
+    <div class="callout callout-warn">
+      <span class="callout-label">Risk · Per-process memory</span>
+      Per-search arrays are per-process: 13&nbsp;MB on the giant map at 4&#8202;px × 16 processes
+      ≈ 200&nbsp;MB aggregate on one host. Acceptable — hosted runners are per-seat containers —
+      but noted for the record.
+    </div>
+    <div class="callout callout-warn">
+      <span class="callout-label">Risk · Broad v65 behavior delta</span>
+      Every A*-reason route can change shape in the v65 batch. Expected-delta list, stated in
+      advance: route geometry for the ~10 swapped reasons, danger-avoiding detours near
+      believed enemies, and <em>no</em> change to flow-reason movement.
+    </div>
+  </section>
+
+  <!-- ============ 8 · Sources ============ -->
+  <section id="sources">
+    <h2>8 · Sources</h2>
+    <ul>
+      <li><span class="cite">docs/designs/nav-rework-sketch-2026-08-11.md</span> — §3.3
+      (planner spec), §6 (lattice size table), §8 Q1–Q3 (the open questions this proposal
+      answers).</li>
+      <li>Phase 0 harness + raw output: scratchpad <code>layer3_bench.nim</code> (session
+      scratchpad; the matrix is reproduced in full in §2).</li>
+      <li><span class="cite">paintbot/stencil_nim/nav.nim:22-87</span> — today's A* + beeline
+      fallback.</li>
+      <li><span class="cite">worldmap.nim:233</span> (<code>canStand</code>),
+      <span class="cite">worldmap.nim:262</span> (<code>segmentClear</code>),
+      <span class="cite">worldmap.nim:86,675</span> (<code>lent fieldsFor</code>),
+      <span class="cite">worldmap.nim:583</span> (facingScore).</li>
+      <li><span class="cite">config.nim:118</span> (<code>ReplanGoalCells</code>).</li>
+      <li>VERSION_LOG v60–v64 entries — the evidence chain for Layers 1–2 and the posts.</li>
+    </ul>
+  </section>
+
+<section class="doc-section" id="implementation-note">
+  <h2>Implementation addendum (2026-08-13)</h2>
+  <p>Shipped as stencil v65 (Codex CLI implementation under orchestration; see
+  <code>VERSION_LOG.md</code>). Two corrections discovered during validation and folded in:
+  a <strong>completeness cascade</strong> (4→2→1&#8202;px, gated on <code>sameComponent</code>) after the
+  property suite found sub-lattice standable ridges could make engine-reachable pairs
+  unroutable, and <strong>unbiased 32&#8202;px endpoint snapping</strong> after live play showed 27% of
+  plans hitting the beeline fallback on non-standable producer goals (pedestals) that
+  the old search silently tolerated — snapped counts are traced as the Layer&nbsp;4
+  producer-cleanup worklist. The D4 oracle caveat was closed by measurement: worst
+  path-cost deviation 1.13% on the real corpus (vs 12.6% on adversarial synthetics),
+  with <code>STENCIL_PLAN_ORACLE</code> as the valve. Terrain costs were skipped —
+  no trench plumbing exists in the Nim perception (verified).</p>
+</section>
+</article>
+
+<!-- ================================================================
+     DC-COMMENTS BEGIN — markup + script (copy verbatim; do not modify)
+     ================================================================ -->
+<aside id="dc-sidebar" aria-label="Comments">
+  <h2 class="dc-title">Comments <span id="dc-count"></span></h2>
+  <div class="dc-actions">
+    <button class="dc-btn" id="dc-export">Export JSON</button>
+    <button class="dc-btn" id="dc-copy">Copy JSON</button>
+    <button class="dc-btn" id="dc-import">Import…</button>
+    <input type="file" id="dc-file" accept=".json,application/json" hidden>
+  </div>
+  <div id="dc-status" role="status"></div>
+  <div id="dc-list"><p class="dc-empty">No comments yet. Select text in the document to add one.</p></div>
+</aside>
+<button id="dc-fab" type="button">+ Comment</button>
+<button id="dc-toggle" type="button">Comments</button>
+
+<script>
+(() => {
+  'use strict';
+  const FORMAT = 'dc-comments/1';
+  const CTX = 32; // prefix/suffix context length, chars
+  const doc = document.getElementById('doc');
+  const fab = document.getElementById('dc-fab');
+  const listEl = document.getElementById('dc-list');
+  const countEl = document.getElementById('dc-count');
+  const statusEl = document.getElementById('dc-status');
+  const sidebar = document.getElementById('dc-sidebar');
+  const storeKey = 'dc:' + document.title;
+
+  let comments = []; // {id, exact, prefix, suffix, text, created, resolved}
+  let ranges = new Map(); // id -> Range (null if orphaned)
+  let seq = 0;
+
+  // ---- text indexing: one global string over #doc's text nodes ----
+  function docText() {
+    const r = document.createRange();
+    r.selectNodeContents(doc);
+    return r.toString();
+  }
+  function globalOffset(container, offset) {
+    const r = document.createRange();
+    r.setStart(doc, 0);
+    r.setEnd(container, offset);
+    return r.toString().length;
+  }
+  function offsetsToRange(start, end) {
+    const walker = document.createTreeWalker(doc, NodeFilter.SHOW_TEXT);
+    let pos = 0, range = document.createRange(), haveStart = false;
+    while (walker.nextNode()) {
+      const node = walker.currentNode, len = node.data.length;
+      if (!haveStart && pos + len >= start) {
+        range.setStart(node, start - pos);
+        haveStart = true;
+      }
+      if (haveStart && pos + len >= end) {
+        range.setEnd(node, end - pos);
+        return range;
+      }
+      pos += len;
+    }
+    return null;
+  }
+
+  // ---- anchoring: TextQuoteSelector-style exact + prefix/suffix ----
+  function selectorFromRange(range) {
+    const text = docText();
+    const start = globalOffset(range.startContainer, range.startOffset);
+    const end = globalOffset(range.endContainer, range.endOffset);
+    return {
+      exact: text.slice(start, end),
+      prefix: text.slice(Math.max(0, start - CTX), start),
+      suffix: text.slice(end, end + CTX),
+    };
+  }
+  function locate(c) {
+    const text = docText();
+    let i = text.indexOf(c.prefix + c.exact + c.suffix);
+    if (i >= 0) return offsetsToRange(i + c.prefix.length, i + c.prefix.length + c.exact.length);
+    i = text.indexOf(c.exact);
+    if (i >= 0) return offsetsToRange(i, i + c.exact.length);
+    return null;
+  }
+  function reanchorAll() {
+    ranges = new Map(comments.map(c => [c.id, locate(c)]));
+    paint();
+  }
+
+  // ---- painting via CSS Custom Highlight API ----
+  const hl = typeof Highlight !== 'undefined' ? new Highlight() : null;
+  const hlActive = typeof Highlight !== 'undefined' ? new Highlight() : null;
+  if (hl) { CSS.highlights.set('dc-hl', hl); CSS.highlights.set('dc-hl-active', hlActive); }
+  function paint(activeId) {
+    if (!hl) return;
+    hl.clear(); hlActive.clear();
+    for (const [id, r] of ranges) {
+      if (!r) continue;
+      (id === activeId ? hlActive : hl).add(r);
+    }
+  }
+
+  // ---- persistence (best-effort; file:// storage varies by browser) ----
+  function save() {
+    try { localStorage.setItem(storeKey, JSON.stringify(comments)); } catch (e) { /* unavailable on some file:// setups */ }
+  }
+  function load() {
+    try {
+      const raw = localStorage.getItem(storeKey);
+      if (raw) comments = JSON.parse(raw);
+    } catch (e) { /* ignore */ }
+  }
+
+  // ---- sidebar rendering ----
+  function flash(msg) {
+    statusEl.textContent = msg;
+    setTimeout(() => { if (statusEl.textContent === msg) statusEl.textContent = ''; }, 2500);
+  }
+  function sortedComments() {
+    const pos = c => {
+      const r = ranges.get(c.id);
+      return r ? globalOffset(r.startContainer, r.startOffset) : Infinity; // orphans last
+    };
+    return [...comments].sort((a, b) => pos(a) - pos(b));
+  }
+  function render(editingId) {
+    countEl.textContent = comments.length ? '(' + comments.length + ')' : '';
+    listEl.textContent = '';
+    if (!comments.length) {
+      const p = document.createElement('p');
+      p.className = 'dc-empty';
+      p.textContent = 'No comments yet. Select text in the document to add one.';
+      listEl.appendChild(p);
+      return;
+    }
+    for (const c of sortedComments()) {
+      const item = document.createElement('div');
+      item.className = 'dc-item' + (c.resolved ? ' dc-resolved' : '');
+      item.dataset.id = c.id;
+
+      const quote = document.createElement('div');
+      quote.className = 'dc-quote';
+      quote.textContent = c.exact.length > 90 ? c.exact.slice(0, 90) + '…' : c.exact;
+      if (!ranges.get(c.id)) {
+        const tag = document.createElement('span');
+        tag.className = 'dc-orphan-tag';
+        tag.textContent = 'orphaned';
+        quote.appendChild(tag);
+      }
+      item.appendChild(quote);
+
+      if (c.id === editingId) {
+        const ta = document.createElement('textarea');
+        ta.value = c.text;
+        ta.placeholder = 'Write a comment… (⌘/Ctrl+Enter to save, Esc to cancel)';
+        ta.addEventListener('keydown', e => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') commit();
+          if (e.key === 'Escape') cancel();
+        });
+        ta.addEventListener('click', e => e.stopPropagation());
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'dc-btn';
+        saveBtn.textContent = 'Save';
+        saveBtn.style.marginTop = '6px';
+        saveBtn.addEventListener('click', e => { e.stopPropagation(); commit(); });
+        function commit() {
+          c.text = ta.value.trim();
+          if (!c.text) return cancel();
+          save(); render();
+        }
+        function cancel() {
+          if (!c.text) { comments = comments.filter(x => x.id !== c.id); ranges.delete(c.id); paint(); }
+          save(); render();
+        }
+        item.appendChild(ta);
+        item.appendChild(saveBtn);
+        listEl.appendChild(item);
+        requestAnimationFrame(() => ta.focus());
+        continue;
+      }
+
+      const text = document.createElement('div');
+      text.className = 'dc-text';
+      text.textContent = c.text;
+      item.appendChild(text);
+
+      const meta = document.createElement('div');
+      meta.className = 'dc-meta';
+      const when = document.createElement('span');
+      when.textContent = c.created.slice(0, 10);
+      const resolved = document.createElement('label');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = !!c.resolved;
+      cb.addEventListener('click', e => e.stopPropagation());
+      cb.addEventListener('change', () => { c.resolved = cb.checked; save(); render(); });
+      resolved.append(cb, 'resolved');
+      const del = document.createElement('button');
+      del.className = 'dc-del';
+      del.textContent = 'delete';
+      del.addEventListener('click', e => {
+        e.stopPropagation();
+        comments = comments.filter(x => x.id !== c.id);
+        ranges.delete(c.id);
+        paint(); save(); render();
+      });
+      meta.append(when, resolved, del);
+      item.appendChild(meta);
+
+      item.addEventListener('click', () => {
+        const r = ranges.get(c.id);
+        if (!r) return flash('Anchor not found in this version of the document.');
+        const rect = r.getBoundingClientRect();
+        window.scrollTo({ top: window.scrollY + rect.top - 160, behavior: 'smooth' });
+        paint(c.id);
+        setTimeout(() => paint(), 2000);
+      });
+      // double-click text to edit
+      text.addEventListener('dblclick', e => { e.stopPropagation(); render(c.id); });
+      listEl.appendChild(item);
+    }
+  }
+
+  // ---- selection -> floating Comment button ----
+  document.addEventListener('mouseup', e => {
+    if (fab.contains(e.target)) return;
+    setTimeout(() => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || !sel.rangeCount) { fab.style.display = 'none'; return; }
+      const range = sel.getRangeAt(0);
+      if (!doc.contains(range.commonAncestorContainer) || !range.toString().trim()) {
+        fab.style.display = 'none';
+        return;
+      }
+      const rect = range.getBoundingClientRect();
+      fab.style.display = 'block';
+      fab.style.left = Math.min(rect.right + 8 + window.scrollX, window.scrollX + document.documentElement.clientWidth - 120) + 'px';
+      fab.style.top = (rect.top + window.scrollY - 4) + 'px';
+      fab.dataset.pending = '1';
+    }, 0);
+  });
+  fab.addEventListener('click', () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    const c = Object.assign({ id: 'c' + Date.now().toString(36) + (seq++), text: '', created: new Date().toISOString(), resolved: false }, selectorFromRange(range));
+    comments.push(c);
+    ranges.set(c.id, range.cloneRange());
+    paint(c.id);
+    sel.removeAllRanges();
+    fab.style.display = 'none';
+    sidebar.classList.add('dc-open');
+    render(c.id);
+  });
+
+  // ---- export / import ----
+  function payload() {
+    return JSON.stringify({
+      format: FORMAT,
+      doc: document.title,
+      exported: new Date().toISOString(),
+      comments: comments,
+    }, null, 2);
+  }
+  document.getElementById('dc-export').addEventListener('click', () => {
+    const blob = new Blob([payload()], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (document.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'doc') + '.comments.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    flash('Downloaded.');
+  });
+  document.getElementById('dc-copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(payload()); flash('Copied to clipboard.'); }
+    catch (e) { flash('Clipboard blocked — use Export instead.'); }
+  });
+  document.getElementById('dc-import').addEventListener('click', () => document.getElementById('dc-file').click());
+  document.getElementById('dc-file').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    file.text().then(raw => {
+      const data = JSON.parse(raw);
+      if (data.format !== FORMAT || !Array.isArray(data.comments)) { flash('Not a dc-comments file.'); return; }
+      const byId = new Map(comments.map(c => [c.id, c]));
+      for (const c of data.comments) byId.set(c.id, c);
+      comments = [...byId.values()];
+      reanchorAll(); save(); render();
+      flash('Imported ' + data.comments.length + ' comment(s).');
+    }).catch(() => flash('Could not parse that file.'));
+    e.target.value = '';
+  });
+
+  document.getElementById('dc-toggle').addEventListener('click', () => sidebar.classList.toggle('dc-open'));
+
+  // ---- init ----
+  load();
+  reanchorAll();
+  render();
+})();
+</script>
+<!-- ============ DC-COMMENTS END ============ -->
+</div>
+</body>
+</html>

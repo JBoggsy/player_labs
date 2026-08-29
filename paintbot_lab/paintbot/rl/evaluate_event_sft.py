@@ -1,0 +1,290 @@
+#!/usr/bin/env python3
+"""Evaluate autoregressive press/release events with teacher-forced diagnostics."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import time
+from collections import defaultdict
+from pathlib import Path
+
+import torch
+
+from actions import (
+    EVENT_ACTION_TOKENS,
+    MAX_EVENT_ACTION_TOKENS,
+    ActionDecoder,
+    canonical_action_mask,
+    canonical_action_tokens,
+)
+from evaluate_sft import (
+    dataset_fingerprint,
+    evaluation_device,
+    log_evaluation_progress,
+    maps_fingerprint,
+    sha256_file,
+    sha256_tree,
+    update_sample_fingerprint,
+)
+from evaluation_uncertainty import replay_cluster_bootstrap
+from modeling import load_policy
+from training import PolicyCollator, PolicyDataset
+
+
+def empty_score() -> dict:
+    return {
+        "samples": 0,
+        "tokens": 0,
+        "teacher_forced_correct": 0,
+        "teacher_forced_exact": 0,
+        "teacher_forced_invalid_sequences": 0,
+        "constrained_exact": 0,
+        "previous_exact": 0,
+        "invalid_sequences": 0,
+        "constrained_slot_correct": [0] * 5,
+        "changed_samples": 0,
+        "constrained_changed_exact": 0,
+    }
+
+
+def update_event_metrics(
+    score: dict,
+    *,
+    teacher_forced_ids: torch.Tensor,
+    label_ids: torch.Tensor,
+    teacher_forced_tokens: tuple[str, ...],
+    autoregressive_tokens: tuple[str, ...],
+    previous_mask: int,
+    target_mask: int,
+) -> bool:
+    previous = canonical_action_mask(previous_mask)
+    target = canonical_action_mask(target_mask)
+    changed = previous != target
+    teacher_sequence_exact = torch.equal(teacher_forced_ids, label_ids)
+    try:
+        teacher_mask = ActionDecoder(previous).decode_events(teacher_forced_tokens).mask
+    except ValueError:
+        teacher_mask = None
+    try:
+        predicted_mask = ActionDecoder(previous).decode_events(
+            autoregressive_tokens
+        ).mask
+    except ValueError:
+        predicted_mask = None
+
+    score["samples"] += 1
+    score["tokens"] += label_ids.numel()
+    score["teacher_forced_correct"] += (
+        teacher_forced_ids == label_ids
+    ).sum().item()
+    score["teacher_forced_invalid_sequences"] += teacher_mask is None
+    score["teacher_forced_exact"] += (
+        teacher_sequence_exact and teacher_mask == target
+    )
+    score["previous_exact"] += not changed
+    score["invalid_sequences"] += predicted_mask is None
+    action_exact = predicted_mask == target
+    score["constrained_exact"] += action_exact
+    target_slots = canonical_action_tokens(target)
+    predicted_slots = (
+        canonical_action_tokens(predicted_mask)
+        if predicted_mask is not None
+        else (None,) * 5
+    )
+    for slot, (predicted, label) in enumerate(
+        zip(predicted_slots, target_slots, strict=True)
+    ):
+        score["constrained_slot_correct"][slot] += predicted == label
+    if changed:
+        score["changed_samples"] += 1
+        score["constrained_changed_exact"] += action_exact
+    return action_exact
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--checkpoint", type=Path, required=True)
+    parser.add_argument("--samples", type=Path, required=True)
+    parser.add_argument("--maps", type=Path, required=True)
+    parser.add_argument("--sample-indices", type=Path)
+    parser.add_argument("--max-text-tokens", type=int, default=2048)
+    parser.add_argument("--progress-every", type=int, default=100)
+    parser.add_argument("--spatial-semantics", action="store_true")
+    parser.add_argument("--out", type=Path)
+    args = parser.parse_args()
+    if args.progress_every <= 0:
+        parser.error("--progress-every must be positive")
+
+    device = evaluation_device()
+    tokenizer, model = load_policy(args.checkpoint, device=device)
+    if model.action_encoding != "events":
+        parser.error("checkpoint does not use event action encoding")
+    dataset = PolicyDataset(args.samples, args.maps, args.sample_indices)
+    collator = PolicyCollator(
+        tokenizer,
+        dataset.maps,
+        max_text_tokens=args.max_text_tokens,
+        include_spatial_semantics=args.spatial_semantics,
+        action_encoding="events",
+    )
+    allowed_ids = torch.tensor(
+        [tokenizer.convert_tokens_to_ids(token) for token in EVENT_ACTION_TOKENS],
+        device=device,
+    )
+    totals = defaultdict(empty_score)
+    replay_outcomes: dict[str, list[int]] = defaultdict(lambda: [0, 0])
+    selected_samples_digest = hashlib.sha256()
+    total_samples = len(dataset)
+    progress_started = time.monotonic()
+    log_evaluation_progress("event", 0, total_samples, progress_started)
+    with torch.no_grad():
+        for sample_number, sample in enumerate(dataset, start=1):
+            update_sample_fingerprint(selected_samples_digest, sample)
+            batch = collator([sample])
+            batch = {
+                key: [item.to(device) for item in value]
+                if key == "maps"
+                else value.to(device)
+                if torch.is_tensor(value)
+                else value
+                for key, value in batch.items()
+            }
+            output = model(**batch)
+            shifted_labels = torch.cat(
+                (
+                    batch["labels"].new_full(
+                        (1, model.map_encoder.config.token_count), -100
+                    ),
+                    batch["labels"],
+                ),
+                dim=1,
+            )[:, 1:]
+            selected = shifted_labels != -100
+            labels = shifted_labels[selected]
+            selected_logits = output.logits[:, :-1][selected]
+            teacher_forced = allowed_ids[
+                torch.argmax(selected_logits[:, allowed_ids], dim=1)
+            ]
+            teacher_forced_tokens = tuple(
+                tokenizer.convert_ids_to_tokens(int(token_id))
+                for token_id in teacher_forced
+            )
+            prompt_ids = collator._prompt_ids(sample, MAX_EVENT_ACTION_TOKENS)
+            prompt_ids = prompt_ids[
+                : max(0, args.max_text_tokens - MAX_EVENT_ACTION_TOKENS)
+            ]
+            prompt_tensor = torch.tensor(
+                [prompt_ids], dtype=torch.long, device=device
+            )
+            map_tensor = torch.from_numpy(dataset.maps[sample.map_hash].mask()).to(
+                device, dtype=torch.float32
+            )
+            map_cache = model.map_encoder.encode_static(map_tensor)
+            autoregressive_tokens = model.greedy_event_action(
+                tokenizer,
+                prompt_tensor,
+                map_cache,
+                sample.position(),
+                sample.previous_mask,
+            )
+            action_exact = False
+            for key in ("all", sample.game_version):
+                action_exact = update_event_metrics(
+                    totals[key],
+                    teacher_forced_ids=teacher_forced,
+                    label_ids=labels,
+                    teacher_forced_tokens=teacher_forced_tokens,
+                    autoregressive_tokens=autoregressive_tokens,
+                    previous_mask=sample.previous_mask,
+                    target_mask=sample.target_mask,
+                )
+            replay_outcome = replay_outcomes[sample.replay_id]
+            replay_outcome[0] += int(action_exact)
+            replay_outcome[1] += 1
+            if sample_number % args.progress_every == 0:
+                log_evaluation_progress(
+                    "event", sample_number, total_samples, progress_started
+                )
+    if total_samples % args.progress_every:
+        log_evaluation_progress("event", total_samples, total_samples, progress_started)
+
+    result = {
+        "device": str(device),
+        "max_text_tokens": args.max_text_tokens,
+        "checkpoint_sha256": sha256_tree(args.checkpoint),
+        "sample_dataset_fingerprint": dataset_fingerprint(dataset, args.samples),
+        "selected_samples_sha256": selected_samples_digest.hexdigest(),
+        "sample_indices_sha256": (
+            sha256_file(args.sample_indices) if args.sample_indices else None
+        ),
+        "maps_fingerprint": maps_fingerprint(dataset.maps),
+        "maps_count": len(dataset.maps),
+        "include_spatial_semantics": args.spatial_semantics,
+        "action_encoding": "events",
+        "autoregressive_exact_action_cluster_bootstrap": replay_cluster_bootstrap(
+            {key: tuple(value) for key, value in replay_outcomes.items()}
+        ),
+        "groups": {},
+    }
+    for key, score in totals.items():
+        result["groups"][key] = {
+            **score,
+            "autoregressive_exact": score["constrained_exact"],
+            "autoregressive_changed_exact": score["constrained_changed_exact"],
+            "teacher_forced_token_accuracy": score["teacher_forced_correct"]
+            / score["tokens"],
+            "teacher_forced_exact_action_accuracy": score[
+                "teacher_forced_exact"
+            ]
+            / score["samples"],
+            "constrained_exact_action_accuracy": score["constrained_exact"]
+            / score["samples"],
+            "autoregressive_exact_action_accuracy": score["constrained_exact"]
+            / score["samples"],
+            "constrained_slot_accuracy": dict(
+                zip(
+                    ("movement", "turn", "fire", "grenade", "stop"),
+                    (
+                        correct / score["samples"]
+                        for correct in score["constrained_slot_correct"]
+                    ),
+                    strict=True,
+                )
+            ),
+            "autoregressive_slot_accuracy": dict(
+                zip(
+                    ("movement", "turn", "fire", "grenade", "stop"),
+                    (
+                        correct / score["samples"]
+                        for correct in score["constrained_slot_correct"]
+                    ),
+                    strict=True,
+                )
+            ),
+            "previous_mask_exact_action_accuracy": score["previous_exact"]
+            / score["samples"],
+            "changed_action_samples": score["changed_samples"],
+            "constrained_changed_exact_action_accuracy": (
+                score["constrained_changed_exact"] / score["changed_samples"]
+                if score["changed_samples"]
+                else None
+            ),
+            "autoregressive_changed_exact_action_accuracy": (
+                score["constrained_changed_exact"] / score["changed_samples"]
+                if score["changed_samples"]
+                else None
+            ),
+        }
+    rendered = json.dumps(result, indent=2) + "\n"
+    if args.out:
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(rendered)
+    log_evaluation_progress("complete", total_samples, total_samples, progress_started)
+    print(rendered, end="")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

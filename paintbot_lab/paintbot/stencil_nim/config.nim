@@ -106,9 +106,6 @@ const
   # 170px and tests the victim as a 17px-radius body.
   SprayLethalReachPx* = 187
   PostGunRangePx* = 1300
-  PostProgressBuckets* = 12
-  PostRayCandidatesPerBucket* = 6
-  PostRayCandidateSeparationPx* = 32
 
 let
   SweepHalfArc* = envInt("STENCIL_SWEEP_HALF_ARC", 32)
@@ -116,6 +113,34 @@ let
   CloseRangePx* = envInt("STENCIL_CLOSE_RANGE_PX", 220)
   FriendlyFireCorridorPx* = envTunableInt("STENCIL_FF_CORRIDOR_PX", 22, 14)
   ReplanGoalCells* = envInt("STENCIL_REPLAN_GOAL_CELLS", 2)
+  PlanStepPx* = envTunableInt("STENCIL_PLAN_STEP_PX", 4, 1)
+  PlanWeight* = envTunableFloat("STENCIL_PLAN_WEIGHT", 1.0, 1.0)
+  # Diagnostic/safety valve: disable the cached-Dijkstra heuristic (D4) and
+  # fall back to pure euclidean — used to measure oracle-induced path-cost
+  # deviation, and the mitigation switch if inadmissibility ever bites.
+  PlanOracle* = envBool("STENCIL_PLAN_ORACLE", true)
+  # Shared cadence for moving-target route refreshes and LOS-danger rebuilds.
+  # Tuning it changes both planner responsiveness and danger-producer cost.
+  PlanMovingReplanTicks* = envTunableInt(
+    "STENCIL_PLAN_MOVING_REPLAN_TICKS", 12, 1)
+  FollowCorridorPx* = envTunableFloat("STENCIL_FOLLOW_CORRIDOR_PX", 20.0, 0.0)
+  FollowStuckWindowTicks* = envTunableInt(
+    "STENCIL_FOLLOW_STUCK_WINDOW_TICKS", 48, 1)
+  FollowBlockTtlTicks* = envTunableInt(
+    "STENCIL_FOLLOW_BLOCK_TTL_TICKS", 96, 1)
+  FollowBlockFactor* = envTunableFloat(
+    "STENCIL_FOLLOW_BLOCK_FACTOR", 8.0, 1.0)
+  DangerLosFlatPx* = envTunableInt("STENCIL_DANGER_LOS_FLAT_PX", 400, 0)
+  DangerLosFarFactor* = envTunableFloat(
+    "STENCIL_DANGER_LOS_FAR_FACTOR", 0.6, 0.0, 1.0)
+  DangerLosRangePx* = envTunableInt("STENCIL_DANGER_LOS_RANGE_PX", 1050, 1)
+  DangerCloseFloor* = envTunableFloat("STENCIL_DANGER_CLOSE_FLOOR", 0.5, 0.0)
+  DangerClosePx* = envTunableInt("STENCIL_DANGER_CLOSE_PX", 190, 0)
+  DangerLosWeight* = envTunableFloat("STENCIL_DANGER_LOS_WEIGHT", 1.0, 0.0)
+  ProfileCarrierDanger* = envTunableFloat(
+    "STENCIL_PROFILE_CARRIER_DANGER", 2.5, 0.0)
+  ProfileHunterDanger* = envTunableFloat(
+    "STENCIL_PROFILE_HUNTER_DANGER", 0.25, 0.0)
   StuckTicks* = envInt("STENCIL_STUCK_TICKS", 8)
   DiagEveryTicks* = envInt("STENCIL_DIAG_EVERY_TICKS", 96)
   TraceNavigation* = envTunableBool("STENCIL_TRACE_NAVIGATION", false)
@@ -168,6 +193,10 @@ let
   BarrageCentering* = envTunableBool("STENCIL_BARRAGE_CENTERING", true)
   BarrageCenterRadiusPx* = envTunableInt(
     "STENCIL_BARRAGE_CENTER_RADIUS_PX", 80, NavCell)
+  # Room openness and danger are normalized independently to [0, 1], so the
+  # default makes them co-equal in barrage peak selection.
+  BarragePeakDangerWeight* = envTunableFloat(
+    "STENCIL_BARRAGE_PEAK_DANGER_WEIGHT", 1.0, 0.0)
   SprayAvoid* = envTunableBool("STENCIL_SPRAY_AVOID", true)
   ShieldAwareness* = envTunableBool("STENCIL_SHIELD_AWARENESS", true)
   SprayFleeTriggerPx* = envTunableInt("STENCIL_SPRAY_FLEE_TRIGGER_PX", 240, 0)
@@ -240,15 +269,16 @@ let
   SquadWaitTimeoutTicks* = envInt("STENCIL_SQUAD_WAIT_TIMEOUT_TICKS", 150)
   SquadSectorBrads* = envInt("STENCIL_SQUAD_SECTOR_BRADS", 50)
   SquadCommand* = envBool("STENCIL_SQUAD_COMMAND", true)
-  ChokeFraction* = envFloat("STENCIL_CHOKE_FRACTION", 0.45)
-  RallyFraction* = envFloat("STENCIL_RALLY_FRACTION", 0.65)
-  PostCorridorPx* = envInt("STENCIL_POST_CORRIDOR_PX", 240)
-  PostCandidateStrideCells* = envInt("STENCIL_POST_CANDIDATE_STRIDE_CELLS", 2)
-  PostRayCount* = envInt("STENCIL_POST_RAY_COUNT", 9)
-  PostRayHalfArcDeg* = envFloat("STENCIL_POST_RAY_HALF_ARC_DEG", 60.0)
-  PostShortlistCount* = envInt("STENCIL_POST_SHORTLIST_COUNT", 16)
+  CoverRays* = envInt("STENCIL_COVER_RAYS", 16)
+  CoverRayPx* = envInt("STENCIL_COVER_RAY_PX", 24)
+  TopologyMergeDepthPx* = envInt("STENCIL_TOPOLOGY_MERGE_DEPTH_PX", 4)
+  TopologyMergeRatio* = envFloat("STENCIL_TOPOLOGY_MERGE_RATIO", 0.8)
+  GateSeparationPx* = envInt("STENCIL_GATE_SEPARATION_PX", 64)
+  GateDetourPx* = envInt("STENCIL_GATE_DETOUR_PX", 48)
+  PostFacingWeight* = envFloat("STENCIL_POST_FACING_WEIGHT", 0.15)
+  PostReachCapPx* = envTunableInt(
+    "STENCIL_POST_REACH_CAP_PX", PostGunRangePx, 1, high(uint16).int)
   PostDuckSearchCells* = envInt("STENCIL_POST_DUCK_SEARCH_CELLS", 3)
-  PostCount* = envInt("STENCIL_POST_COUNT", 6)
   PostSeparationPx* = envInt("STENCIL_POST_SEPARATION_PX", 120)
   DefensivePosts* = envTunableBool("STENCIL_DEFENSIVE_POSTS", true)
   ConvertEnemyLives* = envInt("STENCIL_CONVERT_ENEMY_LIVES", 6)
@@ -305,6 +335,9 @@ proc validateConfig(): bool =
   require(SprayReshoutTicks <= SprayThreatTtlTicks,
     "spray_reshout_before_expiry",
     "Spray reshout interval must not exceed threat TTL.")
+  require(DangerLosFlatPx <= DangerLosRangePx,
+    "danger_los_distance_order",
+    "DANGER_LOS_FLAT_PX must not exceed DANGER_LOS_RANGE_PX.")
   true
 
 let ConfigValidated* = validateConfig()

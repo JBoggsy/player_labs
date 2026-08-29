@@ -5,6 +5,44 @@ import belief_state, config, squads, types, worldmap
 
 proc distance(a, b: Point): float = hypot((a.x - b.x).float, (a.y - b.y).float)
 
+proc sprayBradError(target, current: int): int =
+  result = floorMod(target - current, AimBradsTurn)
+  if result > AimBradsTurn div 2:
+    result -= AimBradsTurn
+
+proc sprayAimPos*(belief: Belief, enemy: Enemy): Point =
+  var track = none(PlayerTrack)
+  for candidate in belief.enemyTracks:
+    if candidate.lastTick == belief.tick and candidate.pos == enemy.pos:
+      track = some(candidate)
+      break
+  if track.isNone or track.get.vel.isNone:
+    return enemy.pos
+  (clamp(pyRound(enemy.pos.x.float + track.get.vel.get.x),
+    0, belief.worldmap.width - 1),
+   clamp(pyRound(enemy.pos.y.float + track.get.vel.get.y),
+    0, belief.worldmap.height - 1))
+
+proc sprayTarget*(belief: Belief): Option[Enemy] =
+  if belief.selfXy.isNone or belief.worldmap.isNil:
+    return none(Enemy)
+  var bestKey = (high(int), Inf)
+  for enemy in belief.enemies:
+    let d = distance(belief.selfXy.get, enemy.pos)
+    if d > ArcPursuitRangePx.float or
+        not belief.worldmap.rayClear(belief.selfXy.get, enemy.pos):
+      continue
+    let
+      aim = belief.sprayAimPos(enemy)
+      wanted = floorMod(pyRound(arctan2(
+        -(aim.y - belief.selfXy.get.y).float,
+        (aim.x - belief.selfXy.get.x).float) /
+        (2.0 * PI) * AimBradsTurn.float), AimBradsTurn)
+      key = (abs(sprayBradError(wanted, belief.aimBrads)), d * d)
+    if result.isNone or key < bestKey:
+      result = some(enemy)
+      bestKey = key
+
 proc enemyDeaths(belief: Belief): Option[int] =
   if belief.worldmap.isNil:
     return none(int)

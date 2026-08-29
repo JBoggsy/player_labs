@@ -38,6 +38,12 @@
             "command": "\"$CLAUDE_PROJECT_DIR/proxywar_lab/tools/rotate_lessons.sh\"",
             "timeout": 15,
             "statusMessage": "Rotating Proxywar tentative-lessons buffer"
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/emergant_lab/tools/rotate_lessons.sh\"",
+            "timeout": 15,
+            "statusMessage": "Rotating Emerg-ant tentative-lessons buffer"
           }
         ]
       }

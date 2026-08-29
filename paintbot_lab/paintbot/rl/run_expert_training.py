@@ -63,6 +63,9 @@ def train_command(
     *,
     epochs: int,
     checkpoint_every_updates: int,
+    schedule_epochs: int | None = None,
+    spatial_semantics: bool = False,
+    action_encoding: str = "absolute",
 ) -> list[str]:
     command = [
         sys.executable,
@@ -103,18 +106,33 @@ def train_command(
         "--checkpoint-every-updates",
         str(checkpoint_every_updates),
     ]
+    if schedule_epochs is not None:
+        command.extend(("--schedule-epochs", str(schedule_epochs)))
+    if spatial_semantics:
+        command.append("--spatial-semantics")
+    if action_encoding != "absolute":
+        command.extend(("--action-encoding", action_encoding))
     resume = latest_resume(output)
     if resume is not None:
         command.extend(("--resume-from", str(resume)))
     return command
 
 
-def evaluate(checkpoint: Path, samples: Path, maps: Path, indices: Path, output: Path) -> None:
-    run(
-        [
+def evaluate(
+    checkpoint: Path,
+    samples: Path,
+    maps: Path,
+    indices: Path,
+    output: Path,
+    *,
+    spatial_semantics: bool = False,
+    action_encoding: str = "absolute",
+) -> None:
+    evaluator = "evaluate_event_sft.py" if action_encoding == "events" else "evaluate_sft.py"
+    command = [
             sys.executable,
             "-u",
-            str(RL_ROOT / "evaluate_sft.py"),
+            str(RL_ROOT / evaluator),
             "--checkpoint",
             str(checkpoint),
             "--samples",
@@ -125,10 +143,13 @@ def evaluate(checkpoint: Path, samples: Path, maps: Path, indices: Path, output:
             str(indices),
             "--max-text-tokens",
             "4096",
-            "--out",
-            str(output),
         ]
-    )
+    if action_encoding == "absolute":
+        command.extend(("--autoregressive-batch-size", "8"))
+    command.extend(("--out", str(output)))
+    if spatial_semantics:
+        command.append("--spatial-semantics")
+    run(command)
 
 
 def main() -> int:
@@ -204,14 +225,15 @@ def main() -> int:
                 checkpoint_every_updates=1_000,
             )
         )
-    if not (full / "test_evaluation.json").exists():
-        record_status(status, "evaluating_full")
+    validation_evaluation = full / "validation_evaluation.json"
+    if not validation_evaluation.exists():
+        record_status(status, "evaluating_full_validation")
         evaluate(
             full / "best",
-            arrow / "test",
-            prepared / "test.maps.jsonl",
-            indices / "test.npy",
-            full / "test_evaluation.json",
+            arrow / "validation",
+            prepared / "validation.maps.jsonl",
+            indices / "validation.npy",
+            validation_evaluation,
         )
     record_status(status, "complete")
     return 0

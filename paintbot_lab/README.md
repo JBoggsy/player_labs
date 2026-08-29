@@ -91,6 +91,22 @@ paintbot_lab/
     build_player.sh        build the stencil image (linux/amd64)
     self_play.py           native, fast-ready, parallel local self-play
     render_nav.py          static navigation-knowledge viewer
+    render_topology.py     Layer 2-4 nav PROCESS viewer (watershed flood
+                           scrubber, merge log, cover roses, gate scoring,
+                           the v67 post ATLAS reach-colored across the whole
+                           map, planner routes over the LOS danger heatmap,
+                           and a belief-parameterized selection simulator;
+                           JS mirrors verified fail-closed against
+                           harness-run production code. NOTE: era-gated like
+                           expand_replay — pre-v67 traces carry post fronts
+                           the current harness no longer emits; re-render
+                           old traces with --allow-drift or a matched-era
+                           checkout)
+    nav_v67_properties.nim committed atlas/selection property harness
+                           (atlas completeness, determinism, duck bound,
+                           role invariants) — compile against stencil_nim
+    topology_debug.nim     its Nim harness — re-runs the exact worldmap
+                           topology code on an agent-logged clearance field
     compare_stencil.py     A/B metric adapter over the shared stats engine
     build_expand_replay.sh  build the version-matched replay reader (from versions.env)
     expand_replay_json.nim  JSONL event + startup wall-map emitter (feeds the viewer)
@@ -109,8 +125,11 @@ The player lives at [`paintbot/stencil_nim/`](paintbot/stencil_nim/): a
 deterministic native Nim Sprite-v1 cyborg descended from ctf_lab's beacon. The
 defining difference from beacon: **no offline map bake** — an episode-scoped `WorldMap`
 (`worldmap.nim`) is built online from the walkability sprite + wire markers
-(nav grid, cover, lazy Dijkstra flow fields, derived chokes/rallies/spawn-aim,
-and per-opponent firing/duck posts). Beacon's authored POIs and fixed-map
+(L∞ clearance field with the `canStand`/`segmentClear`/`nudgeClear` predicate
+family, the clearance-derived nav grid, connected-component reachability
+labels, watershed rooms + chokepoints with derived defense gates, directional
+cover bitmasks, lazy Dijkstra flow fields, spawn-aim, and per-opponent
+firing/duck posts). Beacon's authored POIs and fixed-map
 battle-plan data remain scrapped; leaderless squads now form consensus on
 hold/watch/move orders and ground them in the generated posts. Defenders consume the online posts while heart-theft
 interception remains higher priority. Multi-team support: color lock from the self sprite, per-color
@@ -158,7 +177,7 @@ uv run python paintbot_lab/tools/self_play.py \
 # Local mechanism probe. Only the candidate team's processes get this env.
 uv run python paintbot_lab/tools/self_play.py \
   --variant 2v2 --episodes 20 --workers 2 \
-  --candidate-env STENCIL_CHOKE_FRACTION=0.52
+  --candidate-env STENCIL_TOPOLOGY_MERGE_DEPTH_PX=6
 
 # Full-roster local structural/debug run (still not a tournament verdict).
 uv run python paintbot_lab/tools/self_play.py --variant 4ffa8
@@ -169,17 +188,34 @@ uv run python paintbot_lab/tools/self_play.py \
   --max-ticks 40 --profile-nav-init
 
 # Capture the exact nav grid, cover, posts, anchors, and lazy flow fields, then view them.
+# --map-seed pins the generated map (e.g. a live campaign cell's map_seed) —
+# 1v1/2v2 maps reproduce hosted terrain bit-exact; 4ffa has a known slight
+# drift (see TENTATIVE_LESSONS 2026-08-12).
 uv run python paintbot_lab/tools/self_play.py \
-  --variant 1v1 --episodes 1 --max-ticks 40 --visualize-nav
+  --variant 1v1 --map-seed 386501705 --episodes 1 --max-ticks 40 --visualize-nav
 uv run python paintbot_lab/tools/render_nav.py \
   paintbot_lab/self_play/<run>/episode-0000/players/slot-00.trace.jsonl
 ```
 
 `--visualize-nav` enables the otherwise off `STENCIL_TRACE_NAVIGATION=1`
-payload. The trace contains `navigation_map` once per map and a
-`navigation_flow` event whenever the policy lazily computes a new Dijkstra
-goal. `render_nav.py` accepts either that JSONL trace or a hosted player artifact
-ZIP and writes a standalone HTML viewer with toggles and per-cell inspection.
+payload. The trace contains `navigation_map` once per map (schema v3 since
+v62: rooms, chokepoints, directional cover, defense gates, topology knobs,
+and a packed dump of the exact clearance field) and a `navigation_flow` event
+whenever the policy lazily computes a new Dijkstra goal. `render_nav.py`
+accepts either that JSONL trace or a hosted player artifact ZIP and writes a
+standalone HTML viewer with toggles and per-cell inspection.
+
+`render_topology.py` (same input trace) goes deeper: it re-runs the exact
+topology code on the agent-logged clearance via `topology_debug.nim`,
+cross-checks the recomputed rooms/chokes/cover/gates against the agent-traced
+finals (hard error on drift), and writes an HTML viewer that *replays the
+watershed flood* level-by-level with the merge-decision log, per-cell cover
+roses, and the defense-gate scoring table:
+
+```sh
+uv run python paintbot_lab/tools/render_topology.py \
+  paintbot_lab/self_play/<run>/episode-0000/players/slot-00.trace.jsonl --open
+```
 Post-front selection overlays the bounded candidates, selected firing cells,
 nearby duck cells, score components, and forward firing rays actually computed
 by that team-colored agent. Fully traced artifacts also overlay that specific

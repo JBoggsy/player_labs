@@ -10,6 +10,41 @@ startup to resume; **update it as you learn** (keep it tight).
 
 ---
 
+## IN PROGRESS (2026-08-03): v67 DISQUALIFIED from the ladder — diagnosing + resubmitting
+
+**What happened.** The championed v67 membership `lpm_e2f2be80` (the 2026-07-31 23:39
+manual submission) was **disqualified 2026-08-03T03:51Z, reason "3 consecutive
+competitive failures"** (division rule `disqualify_after_consecutive_failures: 3`),
+carrying a **2651 Elo over 655 rounds** — it would lead the board (daveey is rank 1 at
+1966). Beacon is now absent from ladder rounds (5 policies rotate: focusfire, nancy,
+h050, jordan, daf-flagrunner). A second v67 membership `lpm_32940dab` (auto-entered)
+still shows competing/active/champion-flag but has 0 rounds and is not being scheduled.
+
+**Cause.** The failing round (`round_a6942e3d`, 03:43Z) ran the freshly-redeployed
+**ctf 0.7.174 / GameVersion 35** (ref `1633b7e4…`). Beacon's 12 failed episodes are all
+`player_error: "player slot N never joined the lobby within 2880 lobby ticks"` — and the
+same join-timeout also hit ctf-h050, reardenr-ctf-heist, nancy-ctf-solo and co-gas in
+the same window: **rollout infra flakiness, not a beacon incompatibility.** In the same
+round's 6 completed episodes v67 went **5-1** (beat focusfire, jordan ×2, osprey,
+co-gas; lost one to autoresearch).
+
+**GV31→GV35 compatibility review (source diff 5590b2ad→1633b7e4):** GV32 capture
+eliminates the team / last-team-standing (2-team outcome unchanged); GV33 dead team's
+heart retires; GV34 gun range FIXED at 1050px (arena was 1300), released shots get
+Gaussian aim fuzz (80% hit at max range), vision cone capped at 1.5× gun range
+(1575px); GV35 elimination deaths no longer count as combat deaths. Beacon parses flags
+by label (tolerant) and the self-sprite readback base (5100 + skin×16) is unchanged —
+**no crash-level incompatibility found.** Strategy implications of GV34 (shorter gun,
+capped vision) unexplored.
+
+**League state:** `submissions_locked_at: null` (unlocked), rounds unpaused.
+
+**In flight:** `xreq_e1d31f43` — 10-ep GV35 check, v67 (red, pinned) vs focusfire v66
+(blue, pinned) on ctf 0.7.174, verifying clean joins before resubmitting v67 → champion
+(James's explicit go-ahead this session). Era pins updated: `build_expand_replay.sh`
+default now `5590b2a` (0.7.144/GV31) with `1633b7e4` (0.7.174/GV35) also built;
+`versions.env` CTF_REF bumped, GV27→GV31+ nav-bake re-verify flagged pending.
+
 ## Current champion (2026-07-31): v67 crown-compatible aim readback
 
 **Current submitted champion:** `beacon:v67`, immutable version

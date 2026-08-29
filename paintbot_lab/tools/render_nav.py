@@ -170,8 +170,9 @@ function drawAnchors(){{
         (zone.box[2]-zone.box[0])/cell*scale,(zone.box[3]-zone.box[1])/cell*scale);
     }}
     dot(team.capture,color,team.team+' capture');
-    dot(team.choke,'#d980fa',team.team+' choke');
-    dot(team.rally,'#69db7c',team.team+' rally');
+    if(team.defense_gate) dot(team.defense_gate,'#d980fa',team.team+' defense gate');
+    if(team.choke) dot(team.choke,'#d980fa',team.team+' choke');
+    if(team.rally) dot(team.rally,'#69db7c',team.team+' rally');
     if(team.pedestal) dot(team.pedestal,'#fff3bf',team.team+' heart');
   }}
 }}
