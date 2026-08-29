@@ -8,6 +8,7 @@ current-frame bookkeeping, structured traces, and the read-only navmesh query.
 from __future__ import annotations
 
 import os
+import struct
 import time
 from collections.abc import Callable
 from typing import Literal
@@ -40,6 +41,12 @@ STALE_FRAME_REJECTIONS = (
     "no Observation is awaiting an action",
     "action submission arrived after the game-wide deadline",
 )
+
+
+def _wire_float(value: float) -> float:
+    """Round a Python float to the Nim contract's IEEE-754 float32 value."""
+
+    return struct.unpack("f", struct.pack("f", value))[0]
 
 
 def _accept_host_spell_intents() -> None:
@@ -192,7 +199,12 @@ class GymSession:
             frame,
             AgentAction(
                 kind="move_to",
-                destination=WorldPoint(map_id=map_id, x=x, y=y, z=z),
+                destination=WorldPoint(
+                    map_id=map_id,
+                    x=_wire_float(x),
+                    y=_wire_float(y),
+                    z=_wire_float(z),
+                ),
                 arrival_radius=3.0,
             ),
         )

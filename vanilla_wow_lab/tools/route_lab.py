@@ -14,6 +14,9 @@ Usage (from the repo root, via tools/route_lab.sh):
     route_lab.py course                # all configured stations, sequentially
     route_lab.py station NAME         # one station
     route_lab.py route X Y Z [MAP]    # ad-hoc target
+    route_lab.py segment SX SY SZ TX TY TZ [MAP]  # print one Detour corridor
+    route_lab.py chain SX SY SZ TX TY TZ [MAP] [TOLERANCE]
+                                                    # chase partial-path frontiers
 """
 
 from __future__ import annotations
@@ -166,6 +169,37 @@ class InstantDeadline:
     """monotonic-based deadline that tracks SIMULATED seconds, not wall clock."""
 
 
+def _point_segment_distance(point: Position, start: Position, end: Position) -> float:
+    segment = (end.x - start.x, end.y - start.y, end.z - start.z)
+    length_squared = sum(component * component for component in segment)
+    if length_squared == 0:
+        return math.dist((point.x, point.y, point.z), (start.x, start.y, start.z))
+    offset = (point.x - start.x, point.y - start.y, point.z - start.z)
+    fraction = max(
+        0.0,
+        min(1.0, sum(a * b for a, b in zip(offset, segment)) / length_squared),
+    )
+    projection = tuple(
+        origin + fraction * component
+        for origin, component in zip((start.x, start.y, start.z), segment)
+    )
+    return math.dist((point.x, point.y, point.z), projection)
+
+
+def _simplify_corridor(points: list[Position], tolerance: float) -> list[Position]:
+    if len(points) <= 2:
+        return points
+    start, end = points[0], points[-1]
+    distances = [_point_segment_distance(point, start, end) for point in points[1:-1]]
+    farthest_distance = max(distances, default=0.0)
+    if farthest_distance <= tolerance:
+        return [start, end]
+    split = distances.index(farthest_distance) + 1
+    return _simplify_corridor(points[: split + 1], tolerance)[:-1] + _simplify_corridor(
+        points[split:], tolerance
+    )
+
+
 def run_station(name: str, target: Point, expected: str) -> dict:
     bridge = NavmeshWorldSession(SPAWN)
     journey = JourneyPlanner()
@@ -251,6 +285,75 @@ def main() -> int:
     STATIONS = load_stations()
 
     args = sys.argv[1:]
+    if args and args[0] == "chain":
+        sx, sy, sz, tx, ty, tz = (float(value) for value in args[1:7])
+        map_id = int(args[7]) if len(args) > 7 else 1
+        simplify_tolerance = float(args[8]) if len(args) > 8 else 8.0
+        current = Point(map_id, sx, sy, sz)
+        target = Point(map_id, tx, ty, tz)
+        total_distance = 0.0
+        seen_ends: list[Point] = []
+        corridor: list[Position] = []
+        for index in range(30):
+            session = NavmeshWorldSession(current)
+            route = session.plan_route(
+                Position(current.x, current.y, current.z, 0.0),
+                Position(target.x, target.y, target.z, 0.0),
+                map_id,
+            )
+            if not route.waypoints:
+                print(f"{index:02d} status={route.status} empty")
+                break
+            end = route.waypoints[-1]
+            corridor.extend(route.waypoints)
+            total_distance += route.route_distance
+            print(
+                f"{index:02d} status={route.status} partial={route.partial} "
+                f"distance={route.route_distance:.1f} waypoints={len(route.waypoints)} "
+                f"end={end.x:.4f},{end.y:.4f},{end.z:.4f}"
+            )
+            if not route.partial or math.dist(
+                (end.x, end.y, end.z), (target.x, target.y, target.z)
+            ) <= 3.0:
+                print(f"complete total_distance={total_distance:.1f}")
+                break
+            next_point = Point(map_id, end.x, end.y, end.z)
+            if any(
+                math.dist(
+                    (next_point.x, next_point.y, next_point.z),
+                    (seen.x, seen.y, seen.z),
+                )
+                <= 3.0
+                for seen in seen_ends
+            ):
+                print(f"loop total_distance={total_distance:.1f}")
+                break
+            seen_ends.append(next_point)
+            current = next_point
+        simplified = _simplify_corridor(corridor, simplify_tolerance)
+        print(
+            f"simplified tolerance={simplify_tolerance:.1f} "
+            f"anchors={len(simplified)}"
+        )
+        for index, waypoint in enumerate(simplified):
+            print(f"{index:03d} {waypoint.x:.4f} {waypoint.y:.4f} {waypoint.z:.4f}")
+        return 0
+    if args and args[0] == "segment":
+        sx, sy, sz, tx, ty, tz = (float(value) for value in args[1:7])
+        map_id = int(args[7]) if len(args) > 7 else 1
+        session = NavmeshWorldSession(Point(map_id, sx, sy, sz))
+        route = session.plan_route(
+            Position(sx, sy, sz, 0.0),
+            Position(tx, ty, tz, 0.0),
+            map_id,
+        )
+        print(
+            f"status={route.status} partial={route.partial} "
+            f"distance={route.route_distance:.1f} waypoints={len(route.waypoints)}"
+        )
+        for index, waypoint in enumerate(route.waypoints):
+            print(f"{index:03d} {waypoint.x:.4f} {waypoint.y:.4f} {waypoint.z:.4f}")
+        return 0
     if args and args[0] == "course":
         rows = run_course(STATIONS)
     elif args and args[0] == "route":

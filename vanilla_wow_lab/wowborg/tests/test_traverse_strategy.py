@@ -14,12 +14,8 @@ from wowborg.strategies import build_strategy
 from wowborg.strategies.traverse import (
     CAT_FORM_SPELL_ID,
     GREAT_LIFT_LOWER_DOCK,
-    FINAL_TRAVEL_ROUTE_START_GUIDEPOINT,
-    OPEN_TRAVEL_ROUTE_START_GUIDEPOINT,
     PROWL_SPELL_IDS,
     ROAD_STEEP_GUIDEPOINTS,
-    STEALTH_ROUTE_START_GUIDEPOINT,
-    TERRAIN_PROWL_ROUTE_START_GUIDEPOINT,
     TRAVERSE_ROUTE_PREFIX,
     HazardAvoidanceState,
     TraverseCombatState,
@@ -165,7 +161,7 @@ def test_ranged_fallback_waits_for_the_observed_active_cast() -> None:
 
 def test_travel_form_exits_the_current_form_before_casting() -> None:
     events = []
-    frame = SimpleNamespace(
+    cat_frame = SimpleNamespace(
         frame_id=13,
         in_combat=False,
         shapeshift_form_known=True,
@@ -173,12 +169,25 @@ def test_travel_form_exits_the_current_form_before_casting() -> None:
         shapeshift_form_spell_known=True,
         shapeshift_form_spell_id=CAT_FORM_SPELL_ID,
     )
+    caster_frame = SimpleNamespace(
+        frame_id=14,
+        in_combat=False,
+        shapeshift_form_known=True,
+        shapeshift_form_id=0,
+        shapeshift_form_spell_known=True,
+        shapeshift_form_spell_id=0,
+    )
     outcome = SimpleNamespace(success=True, detail="")
     cancelled = []
+    casts = []
+    observations = iter((cat_frame, caster_frame))
     bridge = SimpleNamespace(
-        observe=lambda: frame,
+        observe=lambda: next(observations),
         select_cancel_aura=lambda selected, spell_id: (
             cancelled.append((selected, spell_id)) or "frame-13"
+        ),
+        select_cast_without_target=lambda selected, spell_id, purpose: (
+            casts.append((selected, spell_id, purpose)) or "frame-14"
         ),
         wait_for_settlement=lambda _frame_id: outcome,
     )
@@ -188,7 +197,10 @@ def test_travel_form_exits_the_current_form_before_casting() -> None:
         lambda kind, **payload: events.append((kind, payload)),
     )
 
-    assert cancelled == [(frame, CAT_FORM_SPELL_ID)]
+    assert cancelled == [(cat_frame, CAT_FORM_SPELL_ID)]
+    assert casts == [
+        (caster_frame, 783, "activate Travel Form for speed-first Traverse")
+    ]
     assert events == [
         (
             "traverse_travel_form_exit",
@@ -198,7 +210,11 @@ def test_travel_form_exits_the_current_form_before_casting() -> None:
                 "success": True,
                 "detail": "",
             },
-        )
+        ),
+        (
+            "traverse_travel_form",
+            {"activation": 1, "success": True, "detail": ""},
+        ),
     ]
 
 
@@ -246,6 +262,8 @@ def test_road_leg_continues_when_travel_form_does_not_persist(monkeypatch) -> No
         hold_terrain_hazards=False,
         jump_terrain=False,
         jump_once=False,
+        straight_jump_pulses=0,
+        bounded_jump_floor_z=None,
         downstream_route=True,
         stealth_route=False,
     )
@@ -293,30 +311,19 @@ def test_traverse_route_prefix_reaches_great_lift_lower_dock() -> None:
     names = [name for name, _point in TRAVERSE_ROUTE_PREFIX]
 
     assert TRAVERSE_ROUTE_PREFIX[0][1] == Point(1, -9200.0, -2545.0, 13.5)
-    assert TRAVERSE_ROUTE_PREFIX[1][1] == Point(1, -8974.0117, -2741.5291, 41.0118)
+    assert names[1] == "tanaris-northern-bypass-01"
+    assert names[17] == "tanaris-northern-bypass-17"
+    assert names[18:24] == [
+        *(f"tanaris-northern-safe-bridge-{index:02d}" for index in range(1, 7))
+    ]
+    assert names[24] == "tanaris-northern-direct-141"
+    assert names[-2] == "tanaris-northern-direct-419"
     assert TRAVERSE_ROUTE_PREFIX[-1][1] == Point(1, -4677.066, -1853.667, -43.857)
     assert names[-1] == "great-lift-lower-dock"
     assert len(names) == len(set(names))
-    assert names[STEALTH_ROUTE_START_GUIDEPOINT] == "shimmering-flats-road"
-    assert names[OPEN_TRAVEL_ROUTE_START_GUIDEPOINT - 1] == (
-        "thousand-needles-central-road-3"
-    )
-    assert names[TERRAIN_PROWL_ROUTE_START_GUIDEPOINT] == (
-        "thousand-needles-west-gap-1"
-    )
-    assert names[FINAL_TRAVEL_ROUTE_START_GUIDEPOINT - 1] == (
-        "thousand-needles-west-3"
-    )
+    assert "tanaris-northern-safe-bridge-05" in ROAD_STEEP_GUIDEPOINTS
 
-    ascent_start = names.index("shimmering-flats-ramp-ascent-01")
-    assert names[ascent_start : ascent_start + 17] == [
-        *(f"shimmering-flats-ramp-ascent-{index:02d}" for index in range(1, 17)),
-        "shimmering-flats-ramp-crest",
-    ]
-    assert set(names[ascent_start : ascent_start + 17]) == (
-        set(ROAD_STEEP_GUIDEPOINTS) - {"tanaris-road-9-climb-crest"}
-    )
-    assert "tanaris-road-9-climb-crest" in ROAD_STEEP_GUIDEPOINTS
+
 def test_lift_detection_uses_only_visible_platform_at_lower_dock() -> None:
     upper = SimpleNamespace(
         entry=11898,
@@ -337,7 +344,7 @@ def test_lift_detection_uses_only_visible_platform_at_lower_dock() -> None:
 
 
 def test_hazard_clearance_tracks_vmangos_level_scaled_aggro() -> None:
-    frame = SimpleNamespace(level=60)
+    frame = SimpleNamespace(level=60, active_aura_spell_ids=[])
 
     assert _hazard_clearance_yards(frame, SimpleNamespace(level=47)) == 8.0
     assert _hazard_clearance_yards(frame, SimpleNamespace(level=60)) == 21.0
@@ -367,3 +374,37 @@ def test_lift_steering_turns_before_walking_forward() -> None:
     assert actions[1]["forward"] == 1.0
     assert actions[1].get("turn", 0.0) == 0.0
     assert actions[1]["duration"] == 0.25
+
+
+def test_steep_jump_never_strafes() -> None:
+    actions = []
+    bridge = SimpleNamespace(
+        select_move_vector=lambda frame, **action: actions.append(action)
+    )
+    frame = SimpleNamespace(
+        location=SimpleNamespace(x=0.0, y=0.0, orientation=0.0)
+    )
+
+    _steer_toward(
+        bridge,
+        frame,
+        Point(1, 10.0, 4.0, 8.0),
+        purpose="climb",
+        jump_when_moving=True,
+        jump_strafe=False,
+    )
+    _steer_toward(
+        bridge,
+        frame,
+        Point(1, 10.0, 1.0, 8.0),
+        purpose="climb",
+        jump_when_moving=True,
+        jump_strafe=False,
+    )
+
+    assert actions[0]["forward"] == 1.0
+    assert actions[0]["strafe"] == 0.0
+    assert actions[0]["jump"] is True
+    assert actions[1]["forward"] == 1.0
+    assert actions[1]["strafe"] == 0.0
+    assert actions[1]["jump"] is True

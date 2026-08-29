@@ -1,5 +1,2656 @@
 # wowborg version log
 
+## v421 - keep the full mesa bypass under jump control (2026-08-11)
+
+- Version UUID: `bd2e69d3-73b1-45d4-a95b-5cb0e557d0de` (`wowborg:v421`,
+  uploaded inert; not submitted).
+- Retains V420's route and cadence, but treats all 20 existing mesa-bypass
+  anchors as one continuous steep-terrain band. The exact three-yard anchors
+  and 0.25-second inputs are unchanged; jump control no longer turns off
+  between narrow or intermittently unsupported surface patches.
+- V420's canonical request
+  `xreq_b817f9b9-d1f8-4b37-810a-8255198424fb` completed 100/100 with no
+  platform failures. Extending the two jumps converted mesa 1 to 2 at 34/34
+  and mesa 11 to 12 at 16/16, and two runners reached mesa 20. Those controls
+  are retained.
+- Failures shifted to the first later non-jump anchors rather than disappearing:
+  12 runners ended at mesa 2, six at mesa 17, four at mesa 18, and three at
+  mesa 12. This demonstrates one continuous terrain band rather than two
+  isolated edges. No runner reached the Great Lift.
+
+## v420 - continue jumping through each mesa landing (2026-08-11)
+
+- Version UUID: `613dc641-6879-4535-aeac-7f86a1844e2f` (`wowborg:v420`,
+  uploaded inert; not submitted).
+- Retains V419 and extends its two mesa-lip jumps through exactly the following
+  anchors: mesa 1--2 and mesa 11--12 now use continuous precision jumps. This
+  keeps the avatar under jump control until the acquired surface settles; all
+  later mesa anchors and route behavior are unchanged.
+- V419's canonical request
+  `xreq_66e044bb-a563-4c90-aa4c-533a8b17f1ab` completed 100/100 with no
+  platform failures. The two lip classifications worked: direct 343 to mesa 1
+  converted at 22/22 versus V418's 7/16, and mesa 10 to 11 converted at 6/6
+  versus 3/6. Retained in active source.
+- The first non-jump target after each lip then exposed the airborne acceptance:
+  14 runners ended at mesa 1 while targeting mesa 2, and three ended at mesa
+  11 while targeting mesa 12. No runner reached the Great Lift. Extending each
+  jump by one authored three-yard anchor addresses that same landing state
+  without widening acceptance or changing the rest of the mesa.
+
+## v419 - jump the two false mesa lip acquisitions (2026-08-11)
+
+- Version UUID: `b1cd5427-d5b7-4e21-bd67-e3717cbd557f` (`wowborg:v419`,
+  uploaded inert; not submitted).
+- Retains V418's direct supported landing jump. Marks only mesa-bypass anchors
+  1 and 11 as steep terrain, applying the established continuous 0.25-second
+  jump control and climb-edge acceptance at those two lip acquisitions. All
+  other mesa anchors and route behavior are unchanged.
+- V418's canonical request
+  `xreq_2d68d970-68eb-4278-bc09-3b3a91ef221f` completed 100/100 with no
+  platform failures. The new ledge jump converted ledge anchor 2 to the
+  supported landing at 23/23 and reached direct 339 at 22/23, resolving the
+  prior variable-airborne landing failure. Retained in active source.
+- The next two death signatures are identical false-edge misses. Nine of 16
+  direct-343 runners ended before mesa anchor 1, falling from z84 to z-43.
+  The fastest mesa runner reached anchor 10 at 227 seconds; only three of six
+  anchor-10 arrivals acquired anchor 11 after overshooting its lip and falling
+  to z25 before death. No runner reached the Great Lift.
+
+## v418 - target the supported landing before takeoff (2026-08-11)
+
+- Version UUID: `b8a942a4-7145-4fb5-8a04-350ad5791369` (`wowborg:v418`,
+  uploaded inert; not submitted).
+- Retains V415's upstream route and V417's measured touchdown center. Changes
+  the ledge jump itself: after exact ledge anchor 2, skips direct 338 and
+  continuously jumps southeast to the exact landing anchor at
+  `(-5759, -1876, z86.1)`. The jump now acquires its safe heading before
+  takeoff rather than trying to correct variable airborne momentum afterward.
+  No other route behavior changes.
+- V417's canonical request
+  `xreq_d1afd3ae-64be-45ee-bbb5-db29b3a67cf8` completed 100/100 with no
+  platform failures, but the post-direct-338 correction was rejected: only
+  10/20 direct-338 runners acquired the landing anchor and eight reached
+  direct 339. No runner reached the Great Lift.
+- V416 and V417 together show that changing a target after direct 338 cannot
+  reliably correct the already-airborne trajectory. The established ledge-2
+  origin and measured stable touchdown are 63 yards apart at nearly equal
+  elevation; targeting that chord directly removes the unstable intermediate
+  acquisition.
+
+## v417 - center the landing anchor on observed touchdowns (2026-08-11)
+
+- Version UUID: `7b1f2f2e-d4c9-479f-8ba5-758648cdbc8c` (`wowborg:v417`,
+  uploaded inert; not submitted).
+- Retains V415 and V416's explicit landing-guidepoint structure, but moves the
+  anchor from `(-5734.6, -1870.6, z86.1)` to
+  `(-5759.0, -1876.0, z86.1)`. This is the median first stable-ground position
+  of V416's 19 observed direct-338 landings and remains aligned with the
+  south-east airborne momentum. No other route behavior changes.
+- V416's canonical request
+  `xreq_67f70bdd-947b-40c5-bf73-4a4e19742e23` completed 100/100 with no
+  platform failures, but the original anchor was rejected: only 17/28
+  direct-338 runners acquired it and 14 reached direct 339, no improvement
+  over V415's 22/38 direct-339 conversion. No runner reached the Great Lift.
+- The failed V416 anchor pulled toward `y=-1870.6` while runners still carried
+  southward momentum. Successful touchdowns clustered at x -5772..-5756 and
+  y -1881..-1868, with medians `(-5759, -1876)`; failures commonly turned
+  north and fell to the false lower layer before landing.
+
+## v416 - land due east before turning toward direct 339 (2026-08-11)
+
+- Version UUID: `d12ec866-5529-4ff0-bec9-8322d1095b32` (`wowborg:v416`,
+  uploaded inert; not submitted).
+- Retains V415. Inserts one exact terrain-tight landing anchor at
+  `(-5734.6, -1870.6, z86.1)` between direct 338 and direct 339. The runner
+  now holds its eastbound jump heading until the known landing surface, then
+  turns northeast on stable ground. No cadence, acceptance, or other route
+  behavior changes.
+- V415's canonical request
+  `xreq_871b8a00-db90-4d23-b820-3376c47f7677` completed 100/100 with no
+  platform failures. The direct-329 lower-surface bypass converted 39/43
+  runners to direct 336, versus V414's 14/36 conversion to direct 330, and is
+  retained.
+- That additional volume isolated the next failure: 38 runners reached direct
+  338, but 16 ended there. Successful traces held `y≈-1871`, landed near
+  `(-5735, -1871, z86)`, and continued; failed traces began turning north
+  toward distant direct 339 while still above z107 and fell through the ledge
+  seam. The new anchor is the successful traces' observed landing point.
+
+## v415 - follow the real lower surface after direct 329 (2026-08-11)
+
+- Version UUID: `fb0524be-ef78-4e92-bf19-187489d64719` (`wowborg:v415`,
+  uploaded inert; not submitted).
+- Retains V414. After direct 329, targets supported direct 336 directly rather
+  than the false upper-layer direct 330--335 sequence. The existing clear
+  stride safely descends from the z129 plateau to the real z86 surface; direct
+  336 is about 35 yards north on that same surface at z87. No cadence,
+  acceptance, or other route behavior changes.
+- V414's canonical request
+  `xreq_a1f8cd63-c5b2-4f64-ae6b-38c39481ba33` completed 100/100 with no
+  platform failures. The new entry converted direct 307 to ridge 5 at 52/52
+  and reached ridge 21 with 44 runners, versus V413's 45/66 conversion to
+  ridge 1 and 43 ridge-21 arrivals. Retained in active source.
+- The downstream false-layer failure reproduced at scale: 36 runners reached
+  direct 329, only 14 reached direct 330, and 22 episodes ended at direct 329.
+  Those traces safely fell to the stable z86 surface near
+  `(-5863, -1900)` but could not satisfy direct 330's false z129 target before
+  the deadline. Successful old-path runners spent about 19 seconds on that
+  leg before the remaining descent sequence.
+
+## v414 - carry direct-307 momentum onto the ridge shelf (2026-08-11)
+
+- Version UUID: `c7c513c6-dccc-4c95-ab24-a615cd429038` (`wowborg:v414`,
+  uploaded inert; not submitted).
+- Retains V413 except for the direct-307 ridge entry. After direct 307, skips
+  direct 308, direct 309, and ridge anchors 1--4, and continuously jumps to
+  exact ridge anchor 5. This turns the runner southeast onto the descending
+  shelf instead of first carrying it east to direct 309 and then demanding an
+  immediate southwest reversal at the cliff lip.
+- V413's canonical request
+  `xreq_e6eee008-02cd-497b-8697-090dfccb3f2a` completed 100/100 with no
+  platform failures. It produced the best absolute throughput so far: 70
+  direct-275 arrivals, 67 direct-296 arrivals, 45 ridge-1 arrivals, and 43
+  complete ridge crossings. The remaining local losses clustered at direct
+  308 (8), direct 309 (11), and the reversal before ridge 1.
+- Trace geometry supports this chord: direct 307 is typically accepted around
+  `(-6247, -2292, z131)` with eastward momentum, while ridge 5 is about 21
+  yards southeast at `(-6229, -2303, z137)`. It is the first established
+  lower-shelf anchor aligned with that momentum. No cadence or acceptance
+  radius changes.
+
+## v413 - ground the direct-309 ridge reversal (2026-08-11)
+
+- Version UUID: `beb5ff43-cf5f-46e9-bcae-791a11dfd3ce` (`wowborg:v413`,
+  uploaded inert; not submitted).
+- Retains V412. Restores source-route direct 308 instead of skipping 307 to
+  309, and makes direct 308 exact/terrain-tight like direct 309. The approach
+  is now two short 0.25-second acquisitions before reversing toward ridge 1,
+  rather than one 18-yard chord. No acceptance radius is broadened.
+- V412's canonical request
+  `xreq_5c241fc7-da0d-4bc8-8452-788a0dbd1bc1` produced 100 completed episodes
+  and zero failures (the request status readback briefly lagged despite all
+  counters being terminal). Direct 293 to 296 remained 54/54, direct 309 was
+  reached by 45/53, and ridge-21 arrivals rose to 32.
+- The remaining transition deaths share one state: direct 309 is accepted near
+  `(-6225, -2288, z139)` while northeast airborne momentum persists. Ridge 1
+  is only 3.6 yards southwest. Turn-only inputs rotate the character but do
+  not cancel that momentum, and nine runners continued northeast off the edge.
+  Direct 308 is the existing intermediate ground anchor at
+  `(-6229.5, -2290.1, z139.2)`.
+
+## v412 - retain only the safe direct-296 edge jump (2026-08-11)
+
+- Version UUID: `96f1ed79-ff30-4f68-9596-8cca4e5d5b2f` (`wowborg:v412`,
+  uploaded inert; not submitted).
+- Retains V410's landing-to-clear transition and V411's direct-296 steep jump.
+  Removes direct 309 from the steep class, restoring its prior exact non-jump
+  control. No other behavior changes.
+- V411's canonical request
+  `xreq_ff23015e-03a4-4434-bd62-a37321aa8d62` completed 100/100 with no
+  platform failures. Direct 293 to 296 improved from 33/50 in V410 to 56/56,
+  and direct 307 to 309 improved from 25/30 to 56/56. Ridge-21 arrivals rose
+  from 15 to 29.
+- The direct-309 climb-edge acceptance was unsafe: 25 runners arrived there
+  and then died before ridge 1, versus four such deaths in V410. Direct 296
+  had no corresponding death cluster. This version preserves the independently
+  clean edge fix and rejects only the harmful one.
+- Canonical request `xreq_5c241fc7-da0d-4bc8-8452-788a0dbd1bc1` retained the
+  direct-296 conversion at 54/54 and produced 32 ridge-21 arrivals. Retained as
+  the active baseline for V413.
+
+## v411 - jump the two remaining northern false edges (2026-08-11)
+
+- Version UUID: `b84d9d94-c105-474d-84f1-1236829632c3` (`wowborg:v411`,
+  uploaded inert; not submitted).
+- Retains V410's safe landing-to-clear transition. Adds direct 296 and direct
+  309 to the existing steep-guidepoint class, giving those two false-surface
+  edges continuous 0.25-second jumps and the established eight-yard
+  climb-edge acceptance. No other route or cadence changes.
+- V410's canonical request
+  `xreq_4c15d3fe-f5b8-4732-803f-8c391ed2ce90` completed 100/100 with no
+  platform failures. All three ledge-2 runners reached direct 338, 339, and
+  343. Each direct-339 leg safely switched from 13 short landing pulses to 12
+  clear strides and completed in about 8.8 seconds versus V408's 10.8; none
+  reached the Lift because they entered the late route at 246--258 seconds.
+- Upstream, 17 of 50 direct-293 arrivals ended there while targeting direct
+  296: traces repeatedly fell from z121 to the false lower layer. Five more
+  runners died after direct 307 while targeting exact direct 309, falling from
+  z126 to z14. These are geometric edge failures, not combat or platform
+  failures, and use the same short-jump control already proven at nearby steep
+  anchors.
+- Rejected as a combined change after canonical evaluation: direct 296 is
+  retained, but direct 309's broad climb-edge acceptance caused 25 immediate
+  pre-ridge deaths and is removed in V412.
+
+## v410 - resume clear strides after the mesa landing (2026-08-11)
+
+- Version UUID: `fbf17aea-d0c5-4369-bb06-03579a3046c2` (`wowborg:v410`,
+  uploaded inert; not submitted).
+- Restores V408's route and bounded-jump cadence after rejecting V409. On the
+  direct-339 leg only, retains 0.25-second pulses while the runner is more than
+  three vertical yards from the supported z87 surface, then resumes the
+  existing 1.5-second clear-road stride for the remainder of the 189-yard mesa
+  chord. The false-layer mesa-bypass anchors remain terrain-tight.
+- V408 proved that the short pulse lands this jump safely and that the complete
+  chord is supported, but its successful runner spent 10.8 wall seconds and 85
+  actions reaching direct 339. V405 proved that starting a clear stride while
+  still 27 yards above the target is fatal. The vertical gate preserves the
+  landing fix while removing precision cadence after it has done its job.
+- Canonical request `xreq_4c15d3fe-f5b8-4732-803f-8c391ed2ce90`
+  completed 100/100 with no platform failures. Three runners exercised the
+  gate; all three survived through direct 343. The direct-339 leg used 25
+  actions and about 8.8 wall seconds in each trace. Retained in active source.
+
+## v409 - accelerate bounded jump bands (2026-08-11)
+
+- Version UUID: `bf8c8a2c-5722-4549-bc92-230713dbac1b` (`wowborg:v409`,
+  uploaded inert; not submitted).
+- Separates the already-classified bounded straight-jump bands from genuinely
+  tight terrain control. Direct 141--215 and 258--275 now use the existing
+  0.75-second Traverse pulse instead of an unconditional 0.25-second pulse;
+  tight ledges, ridge anchors, mesa bypasses, exact descents, and hazard
+  evasion retain their current precision cadence.
+- V408's canonical request
+  `xreq_282020d3-7511-4f2a-a20d-f0f4caa46708` completed 100/100 with no
+  platform failures. Both ledge-2 arrivals reached direct 338. One landed,
+  reached direct 339 and 343, traversed all 20 mesa-bypass anchors, and reached
+  direct 359: the first complete crossing of the false-surface ledge/mesa
+  barrier. The other fell after direct 338.
+- The successful runner reached direct 359 at 268.9 seconds and then received
+  the fixed 270-second `scoring_logout`; it did not reach the Great Lift. Its
+  bounded jump bands consumed about 51 wall seconds, making their conservative
+  cadence the largest isolated throughput cost that can be changed without
+  altering route geometry.
+- Rejected after canonical evaluation. Request
+  `xreq_0818d49d-e666-47d6-aae6-a60a125a9c92` completed 100/100 with no
+  platform failures, but deaths rose from 33 to 74 and direct-275 arrivals
+  fell from 63 to 7. Of 55 runners reaching direct 258, 48 failed before
+  direct 275, commonly falling from the physical ridge after a 0.75-second
+  pulse. The longer bounded-jump cadence also did not improve the sole late
+  runner's milestone times. Active source restores V408's 0.25-second control.
+
+## v408 - land the ledge jump with short road pulses (2026-08-11)
+
+- Version UUID: `c973268c-b0fa-4651-b0e0-db1c40e197dd` (`wowborg:v408`,
+  uploaded inert; not submitted).
+- Removes the rejected v406/v407 airborne-settle branch and marks direct 339
+  as terrain-tight. After the successful jump to direct 338, road movement is
+  therefore split into 0.25-second pulses instead of the fatal 1.5-second
+  open-road stride; all other route controls remain unchanged.
+- V407's canonical request
+  `xreq_16c02db5-e7cb-467c-a10e-295a080078e1` completed 100/100 with no
+  platform failures. Three runners reached ledge anchor 2, but none entered
+  the settle branch: two episodes ended just as they came within the trigger
+  radius and one ended mid-jump with a typed action timeout. No runner reached
+  direct 338 or the lift.
+- V405 already isolated the landing failure: direct 338 was accepted at z114,
+  then the first 1.5-second stride fell to z97 while moving 15 yards and the
+  second fell to z38 before death. Short pulses reuse the established
+  terrain-tight control and avoid that irreversible airborne stride.
+
+## v407 - settle the ledge jump on the locomotion clock (2026-08-11)
+
+- Version UUID: `c22ecc3a-0249-4e6a-91c9-c00a64034ef9` (`wowborg:v407`,
+  uploaded inert; not submitted).
+- Replaces v406's direct-338 simulation `wait` with a zero-input
+  `move_vector`. The latter advances WoW locomotion and gravity while
+  commanding neither forward nor lateral motion; all route targeting remains
+  unchanged.
+- V406's canonical request
+  `xreq_9b030fed-b5ad-4072-b377-37c0ac196535` completed 100/100 with no
+  platform failures. Its sole ledge-2 arrival emitted 804 airborne-settle
+  pulses without reaching direct 338; none reached direct 339 or the lift.
+- The settle trace remains bit-identical at
+  `(-5776.848, -1872.094, 113.587)` for all 804 accepted wait actions. Hosted
+  `wait` freezes this movement state, so it cannot be used to let gravity land
+  the runner.
+
+## v406 - settle the ledge jump before resuming the road (2026-08-11)
+
+- Version UUID: `9c4934d9-f33b-4ab1-9ece-d0721557e66a` (`wowborg:v406`,
+  uploaded inert; not submitted).
+- Retains v405's successful ledge-2 to direct-338 jump. At that one landing,
+  when the runner is within eight planar yards but remains more than ten yards
+  above the target, submits wait pulses until gravity settles the character;
+  the ordinary road leg resumes only after the landing is physically close.
+- V405's canonical request
+  `xreq_e66c3e73-d7dc-4841-a11e-70e1fb84c092` completed 100/100 with no
+  platform failures. All four ledge-2 arrivals crossed to direct 338, but all
+  four died before direct 339; none reached direct 343 or the Great Lift.
+- The common trace accepts direct 338 at z114 over its z86 target, then the
+  first 1.5-second non-jump road pulse carries the falling runner to z97 and
+  the second to z38 before death. Settling in place removes that post-jump
+  horizontal overshoot without changing other terrain jumps.
+
+## v405 - jump the unsupported northern ledge chord (2026-08-11)
+
+- Version UUID: `2efc5d49-39e3-44a4-9b89-9a50bd8dd3e6` (`wowborg:v405`,
+  uploaded inert; not submitted).
+- Retains v404's successful lower-to-upper ridge jump. After exact ledge
+  anchor 2, skips the unsupported anchor-3/direct-337 chord and applies one
+  continuous eastward terrain jump to direct 338, where the stable mesa
+  resumes 52 yards away.
+- V404's canonical request
+  `xreq_7fde8541-8e9b-43cd-b82c-9d392ceba21b` completed 100/100 with no
+  platform failures. Of 19 lower anchor-21 arrivals, all reached anchor 43,
+  18 reached upper anchor 70, and 17 completed anchor 81 and direct 312. Four
+  reached direct 332 and ledge anchors 1--2; none reached ledge anchor 3 or
+  direct 337.
+- A common full-health trace walks east from ledge anchor 2 while its z falls
+  from 85 to 12, then dies before anchor 3. Direct 338 is aligned east of the
+  ledge and rejoins the supported z86 mesa, so the jump does not release over
+  the false physical surface.
+
+## v404 - correct v403's uploaded module entrypoint (2026-08-11)
+
+- Version UUID: `061df677-96c6-4461-8ee8-e3ff30db1bca` (`wowborg:v404`,
+  uploaded inert; not submitted).
+- Byte-identical route code to v403, uploaded with the valid
+  `python -m wowborg` entrypoint. The prior upload mistakenly used
+  `python -m wowborg.main`; that module defines `main()` but does not invoke
+  it, so the policy exited without connecting.
+- V403's request `xreq_9b2a0c56-5887-4be0-8bdf-b4543f915822` is invalid as
+  gameplay evidence: its terminal jobs uniformly reported `player_error`,
+  "player did not connect before the configured startup deadline," with no
+  replay, results, or policy artifacts.
+
+## v403 - land the shelf jump along the supported upper ridge (2026-08-11)
+
+- Version UUID: `09a1df9b-6f89-4031-98ee-00f8a7660e9f` (`wowborg:v403`,
+  uploaded inert; not submitted; invalid entrypoint, never connected).
+- Retains v402's reliable anchor-21 to 43 jump, but replaces the premature
+  anchor-54 target with a northward jump directly to upper-ridge anchor 70.
+  The target turns momentum along the supported upper ridge and resumes exact
+  walking at anchor 71.
+- V402's canonical request
+  `xreq_cae98785-5e75-408b-aa65-110c7ee02de0` completed 100/100 with no
+  platform failures. All 22 anchor-21 arrivals reached anchors 43 and 54, but
+  none reached anchor 55 or direct 312; 21 of those 22 runners then died.
+- The common trace declares anchor 54 arrived eight yards early while still
+  airborne around z139 over its z101 target. Releasing the continuous jump
+  there carries the runner east to unsupported z57 terrain. Anchor 70 lies
+  north on the real upper ridge, so the jump remains active through the false
+  arrival and its landing momentum follows supported ground.
+
+## v402 - chain the aligned jump through the second shelf gap (2026-08-11)
+
+- Version UUID: `09caae6b-3321-4ad6-80b6-a19cee3ba585` (`wowborg:v402`,
+  uploaded inert; not submitted).
+- Retains v401's anchor-21 to 43 jump, then skips false anchors 44--53 and
+  applies the same continuous eastward jump toward anchor 54, about 24 yards
+  farther. Ordinary exact climbing resumes at anchor 55.
+- V401's canonical request
+  `xreq_aadb2e3a-81bf-48b0-b1e3-4f6f563b9403` completed 100/100 with no
+  platform failures and 34 traces containing a death. All 19 anchor-21
+  arrivals reached aligned anchor 43; two reached anchors 44--48, and one
+  reached 49--53. None reached direct 312 or the Great Lift.
+- The aligned first jump removed v400's southward reversal but still ends
+  before stable ground: 16 traces ended with no frame toward anchor 44 and one
+  stalled there. Anchor 54 continues east on the same line and is 24 yards
+  beyond anchor 43, so the second jump extends the same attributable mechanic
+  through the remaining false patch.
+
+## v401 - jump through the false shelf without reversing momentum (2026-08-11)
+
+- Version UUID: `81ab1c87-8fcf-443c-8636-d5352edeb8dc` (`wowborg:v401`,
+  uploaded inert; not submitted).
+- Retains v400's localized continuous jump after lower anchor 21, but aims it
+  directly east-southeast at anchor 43 instead of the airborne anchor 28. The
+  39-yard target aligns with the next route leg, so the policy does not
+  reverse over the unsupported patch.
+- V400's canonical request
+  `xreq_de4d0c97-83e7-443e-b599-00fa159ec274` completed 100/100 with no
+  platform failures and 34 traces containing a death. All 19 anchor-21
+  arrivals activated the skip and reached anchor 28, but 18 stalled toward
+  anchor 29; only one reached anchors 29--32. None reached direct 312 or the
+  Great Lift.
+- The common trace reaches anchor 28 while airborne, then retained southward
+  momentum carries it roughly 20 yards to y=-2376 while steering back toward
+  anchor 29. It repeatedly falls and server-corrects there. Anchor 43 lies 39
+  yards east-southeast of anchor 21 and the subsequent route continues east,
+  removing that midair reversal.
+
+## v400 - jump the false lower-shelf navmesh patch (2026-08-11)
+
+- Version UUID: `c539ad07-ab95-4575-ae26-0e52af7ba064` (`wowborg:v400`,
+  uploaded inert; not submitted).
+- Retains v399's lower-shelf bypass, but after exact anchor 21 skips false
+  anchors 22--27 and applies the existing continuous terrain-jump primitive
+  only toward anchor 28, a 16-yard span. Ordinary exact walking resumes
+  immediately afterward; global steering is unchanged.
+- V399's canonical request
+  `xreq_a0dfe6ad-830b-4ca6-939e-043b684a854d` completed 100/100 with no
+  platform failures and 33 traces containing a death. Of 37 direct-309
+  arrivals, 27 crossed lower-route anchors 6--12, 26 crossed 13--18, 21
+  reached 20, 20 reached 21, 12 reached 22, and only three reached 23--25.
+  None reached direct 312 or the Great Lift.
+- Failure traces at anchor 23 remain full-health and non-combat but fall
+  repeatedly through fixed x/y around `(-6215.45, -2347.04)` while the server
+  corrects z back near 94. This is an unsupported navmesh patch, not a normal
+  descent or combat failure; anchor 28 is 16 yards across it on the east shelf.
+
+## v399 - bypass the ridge lip on the lower southern shelf (2026-08-11)
+
+- Version UUID: `89d55041-79d7-4c9d-b696-6220014f9ed5` (`wowborg:v399`,
+  uploaded inert; not submitted).
+- Replaces v398's still-lethal plateau approach with an 81-anchor, 278-yard
+  real-navmesh route that approaches west of the ridge lip, descends onto the
+  broad lower shelf, crosses east, and climbs gradually to direct 312. It
+  costs roughly ten seconds versus the original chord.
+- V398's canonical request
+  `xreq_d9c5a3f2-003f-41c1-a2f2-66ecb04ff29a` completed 100/100 with no
+  platform failures and 30 traces containing a death. Thirty-five reached
+  direct 309; 31 reached ridge anchors 1--6, 26 reached 7, 15 reached 8, four
+  reached 9, and one reached 10. None reached direct 312 or the Great Lift,
+  proving the shared southern-plateau approach—not only v397's hairpin—is the
+  active failure surface.
+- Three fresh pinned-navmesh sections connect direct 309 to the lower shelf,
+  traverse it, and rejoin direct 312 without using the failed lip. The full
+  route is 278 yards and every returned centerline point is retained exactly.
+
+## v398 - round the southern ridge on a continuous plateau loop (2026-08-11)
+
+- Version UUID: `b84c445f-fe9e-4d41-afea-2eac2a092650` (`wowborg:v398`,
+  uploaded inert; not submitted).
+- Replaces v397's 81-yard out-and-back arc with a 140-yard, 43-anchor
+  supported plateau loop whose turns remain continuous. It adds about four
+  seconds versus the original ridge chord and changes no combat, hazard,
+  stealth, or general steering behavior.
+- V397's canonical request
+  `xreq_7cce9c31-99c0-442c-a140-f509ce22c7bc` completed 100/100 with no
+  platform failures and 33 traces containing a death. Of 26 direct-309
+  arrivals, 21 reached arc anchors 1--6, 18 reached 7, eight reached 8, and
+  two reached 9--10; none reached direct 312 or the Great Lift.
+- The failure trace shows the short arc's two navmesh sections form a
+  180-degree turn at anchor 10 on the ridge lip. Even turn-in-place actions
+  retain southward movement long enough to fall. Three fresh real-navmesh
+  sections instead round the broad plateau through x=-6175 before rejoining
+  direct 312, avoiding the reversal entirely.
+
+## v397 - route around the narrow ridge on a short southern arc (2026-08-11)
+
+- Version UUID: `dad122cf-a6c7-4659-a85f-8b27ba34792b` (`wowborg:v397`,
+  uploaded inert; not submitted).
+- Replaces the failed direct-309--312 ridge centerline with a fully pinned
+  26-anchor southern arc and makes the direct-309 join exact. Removes v396's
+  rejected ridge-only heading-control machinery.
+- V396's canonical request
+  `xreq_5ac726a0-9908-4f8a-ab3a-c86dd4f4502d` completed 100/100 with no
+  platform failures. Of 36 direct-309 arrivals, 27 reached ridge anchor 1, 15
+  reached anchor 2, one reached anchor 3, and none reached anchor 4 or direct
+  312. There were 51 deaths and no Great Lift arrival, decisively rejecting
+  turn-in-place heading alignment on the three-yard ridge anchors.
+- Fresh pinned-navmesh queries found a supported southern arc in two sections:
+  27.2 yards from direct 309 to `(-6216.53, -2312.53, 148.13)`, then 54.1
+  yards to direct 312. At 81.3 yards total, it adds only about 36 yards versus
+  the lethal chord while avoiding the narrow ridge entirely.
+
+## v396 - align heading before moving on the dense ridge (2026-08-11)
+
+- Version UUID: `9f606363-9127-4cf9-8a91-a334af0f2964` (`wowborg:v396`,
+  uploaded inert; not submitted).
+- Retains v395's dense exact ridge, but replaces its binary full-strength
+  lateral correction with a ridge-only five-degree heading contract: turn in
+  place outside five degrees, then move straight with exact quarter-second
+  pulses. The proven post-staircase ledge keeps its existing two-degree strafe
+  behavior; all other steering keeps the 45-degree turn and 22.5-degree strafe
+  deadbands.
+- V395's canonical cohort published 98 traces with no platform failures. The
+  later correction worked: all three runners reaching ridge anchor 6 crossed
+  anchors 7--14 and rejoined direct 312. But full-strength strafe overcorrected
+  the three-yard early anchors, causing 7 deaths toward anchor 3, 8 toward 4,
+  3 toward 5, and 6 toward 6. One runner reached direct 332; the mesa did not
+  activate. There were 45 deaths in the 98 recovered traces and no Great Lift
+  arrival.
+
+## v395 - hold the shallow ridge centerline laterally (2026-08-11)
+
+- Version UUID: `95871773-3bbd-4be6-8e4d-c64ca1d1a6e9` (`wowborg:v395`,
+  uploaded inert; not submitted).
+- Retains v394's exact dense ridge and applies the existing two-degree lateral
+  strafe deadband only to its 14 anchors. The ordinary 22.5-degree deadband
+  remains everywhere else except the already proven post-staircase ledge.
+- V394's canonical request
+  `xreq_63a203fe-b5bc-4c86-8fb8-56a5417e3852` produced 100 traces with no
+  platform failures. Twenty-nine reached direct 309 and ridge anchors 1--2,
+  19 reached anchor 3, 12 reached 4, eight reached 5, three reached 6, and one
+  reached 7. That runner crossed anchors 1--7 in about 1.5 seconds at full
+  health, then the shallow turn toward anchor 8 stayed inside the ordinary
+  strafe deadband: y drifted from -2284 to -2241 while z fell from 136 to 13,
+  causing death. There were 47 deaths and no Great Lift arrival; the later
+  mesa did not activate.
+
+## v394 - follow the direct-309--312 ridge centerline exactly (2026-08-11)
+
+- Version UUID: `4fa1b38f-360b-427c-a814-e52e4f3cca97` (`wowborg:v394`,
+  uploaded inert; not submitted).
+- Retains v393's complete upper-mesa repair and replaces source direct 310/311
+  with the full 14-point pinned-navmesh centerline from direct 309 to 312. All
+  ridge anchors use exact quarter-second control before rejoining source direct
+  312; no hazard, combat, or later-route behavior changes.
+- V393's canonical request
+  `xreq_88068622-c7ff-4e4a-8045-d36d4b6725e9` completed 100/100 with no
+  platform failures. Forty reached direct 309 and 38 reached restored 310, but
+  2 died toward 310, 16 died toward 311, and 6 died toward 312. Only two
+  reached direct 332 and none reached 338, so the mesa change did not activate.
+  There were 54 deaths and no Great Lift arrival. The pinned ridge query shows
+  the omitted centerline points at roughly three-yard spacing throughout the
+  lethal section.
+
+## v393 - keep the upper-mesa bend fully dense (2026-08-11)
+
+- Version UUID: `e590cf17-7c69-4d34-95c3-5dc86c703073` (`wowborg:v393`,
+  uploaded inert; not submitted).
+- Retains v392's validated direct-343 join and first eight upper-mesa anchors,
+  then restores the nine omitted three-yard navmesh points across the bend and
+  through the direct-355 rejoin. All 20 mesa bypass anchors remain exact and
+  terrain-constrained; upstream behavior is unchanged.
+- V392's canonical request
+  `xreq_a045ea03-0596-442a-bac2-9c422476df0a` completed 100/100 with no
+  platform failures. The ridge repair activated strongly: all 41 direct-309
+  arrivals reached restored 310, 27 reached 311, and 19 reached 312, eliminating
+  the prior 18-run death cluster on the skipped chord. One downstream runner
+  crossed exact direct 343 and mesa bypass anchors 1--8 at full health. The
+  coarse selection then omitted three navmesh points before anchor 9; the
+  runner fell immediately at that bend and died. There were 51 deaths and no
+  Great Lift arrival.
+
+## v392 - retain supported terrain at the ridge and upper-mesa joins (2026-08-11)
+
+- Version UUID: `ee4109ed-3537-4aef-8ee3-53d7e5a69159` (`wowborg:v392`,
+  uploaded inert; not submitted).
+- Makes two independently traced corrections within the route-geometry
+  component. It removes the direct-309 to 312 skip so source anchors 310/311
+  retain the supported ridge. At the later mesa, it makes direct 343 exact,
+  restores the four omitted three-yard navmesh approach anchors, and applies
+  exact quarter-second control across all 11 upper-mesa bypass anchors.
+- In v391's first 100-episode cohort, 18 full-health, non-combat runners died
+  on the 309--312 chord. The pinned navmesh reports a 14-point supported ridge
+  corridor descending smoothly from z138.8 to z125.4 through source 310/311.
+- V391's repeat request
+  `xreq_1dd39175-921a-471e-a09b-a36bac83ac18` completed 100/100 with no
+  platform failures. Fifty-six reached direct 275, 53 reached restored 276, 52
+  reached 277/293, 41 reached 307/309, 18 survived to 312, eight reached 332,
+  four reached 337, and one reached 338--343. That runner accepted direct 343
+  off the intended join, then a 1.5-second stride toward the prematurely
+  coarsened first bypass anchor crossed the edge and fell. There were 61 deaths
+  and no Great Lift arrival.
+
+## v391 - stay on the supported upper mesa after direct 343 (2026-08-11)
+
+- Version UUID: `f3777fde-b677-46b2-b294-e30c24fca4a2` (`wowborg:v391`,
+  uploaded inert; not submitted).
+- Replaces the inactive source direct-344--354 lower layer with seven anchors
+  from a fresh pinned-navmesh query that remain on the supported z84--88 upper
+  mesa and rejoin the existing route at direct 355. Removes the rejected
+  lower-layer jump, exact-descent, and skip classifications; upstream behavior
+  is unchanged.
+- The pinned 0.1.209 navmesh reports a 78.2-yard, 27-point upper-surface
+  corridor from direct 343 to direct 355. Its height remains z84.41--87.71,
+  while the source corridor dives to z52 at direct 348 before climbing back to
+  z87 at direct 355. A direct query from 343 to the Great Lift basin has no
+  path, consistent with the source route's accidental layer switch.
+- V390's two canonical cohorts completed 100/100 each with no platform
+  failures. The first never activated direct 338. The repeat reached 338--343
+  once; its jump toward 344 moved horizontally but repeatedly fell through and
+  server-corrected around the false lower layer, never landing. Across the
+  repeat, 58 reached direct 275, 57 reached restored 276, 56 reached 277/293,
+  and one reached 338--343. There were 55 deaths and no Great Lift arrival.
+
+## v390 - chain jumps down the direct-344--348 shelf sequence (2026-08-11)
+
+- Version UUID: `a3461781-a72f-42fd-8ee5-1d4ddd5dc13c` (`wowborg:v390`,
+  uploaded inert; not submitted).
+- Retains v389's dense exact ramp anchors and applies the existing one-shot
+  jump primitive to direct 344 through 348. Each leg gets one aligned jump,
+  then returns to exact quarter-second steering; no upstream route, hazard,
+  combat, or stealth behavior changes.
+- V389's canonical request
+  `xreq_335d0e05-8428-44fe-b90b-511971d78406` completed 100/100 with no
+  platform failures. Sixty-two reached direct 275, 60 reached restored
+  276/277/293, 11 reached 332/333, eight reached 336, six reached 337, four
+  crossed through 343, and one reached exact 344. The other three fell while
+  walking toward 344; the direct-344 arrival fell and died toward 345. The
+  pinned navmesh cannot connect direct 343 to the Great Lift basin and reports
+  the local 344--348 corridor partial, confirming discrete physical shelves
+  rather than one supported walking ramp. There were 66 deaths and no Great
+  Lift arrival.
+
+## v389 - control the complete direct-344--348 descent precisely (2026-08-11)
+
+- Version UUID: `3accbe7d-d4fa-47fd-87c7-46dc17854c7e` (`wowborg:v389`,
+  uploaded inert; not submitted).
+- Retains v388's restored direct 346 and exact direct-346/347 controls, and
+  classifies only direct 344 as an exact descent point. This makes the complete
+  source ramp from 344 through 348 use quarter-second terrain-constrained
+  movement.
+- V388's canonical request
+  `xreq_a2bca2c0-6bb3-4c4b-be7d-b0f248e9ccd0` completed 100/100 with no
+  platform failures. Fifty-nine reached direct 275, 57 reached restored 276,
+  56 reached 277/293, ten reached 332--334, seven reached 336, four crossed
+  into 337, two reached 338, and one reached 343. That frontier activated
+  direct 344 but took a 1.5-second open stride because 344 was retained without
+  being classified exact; it fell from z83.30 to z67.35 on the first pulse and
+  never reached 344. There were 54 deaths and no Great Lift arrival. The new
+  346/347 behavior was not activated.
+
+## v388 - follow the dense post-mesa ramp through direct 347 (2026-08-11)
+
+- Version UUID: `aaecb36b-5434-426a-95d3-d7ddaf196630` (`wowborg:v388`,
+  uploaded inert; not submitted).
+- Retains v387 and removes only the direct 345 to 347 skip, restoring source
+  anchor 346. It also classifies direct 346 and 347 as exact descent points so
+  they use quarter-second terrain-constrained movement.
+- V387's second canonical cohort reached direct 343, restored 344, 345, and
+  347. Direct 347 was then accepted by the ordinary road-pass rule at z61.37,
+  9.55 yards below its z70.92 target, while the character was already falling;
+  it died at z-41.94 approaching direct 348. The pinned navmesh reports an
+  eight-point, 35.7-yard ramp from the direct-345 arrival to direct 348, with
+  source anchors 346 and 347 following that supported descent.
+- Superseded by v389 after its sole direct-343 arrival exposed that retained
+  direct 344 still used an ordinary 1.5-second stride rather than the ramp's
+  exact quarter-second control.
+
+## v387 - retain direct 344 on the mesa descent (2026-08-11)
+
+- Version UUID: `40598596-0735-4d5d-9088-454fab3e6b67` (`wowborg:v387`,
+  uploaded inert; not submitted).
+- Retains v386's time recovery and chained ledge jumps, and removes only the
+  direct 343 to 345 skip. V386 reached 343 safely, then the chord that omitted
+  source descent anchor 344 walked off the mesa and fell from z86 to z-44.
+- Two canonical-spawn requests completed 100/100 each with no platform
+  failures: `xreq_847afa22-2170-4994-962d-7e7a3e1d37c7` and
+  `xreq_429425d2-8d84-43a2-8441-9ba01da300ab`. The first did not activate the
+  changed descent. In the repeat, one runner crossed direct 343, restored 344,
+  345, and 347, validating the direct-344 fix; it then fell before direct 348.
+  Across the repeat, 60 reached direct 275, 58 reached restored 276/277, 56
+  reached 293, eight reached 332, and one reached 338--347. There were 59
+  deaths and no Great Lift arrival.
+
+## v386 - retain direct 276 to avoid the 275--277 collision trap (2026-08-11)
+
+- Version UUID: `855d8902-011f-4c82-8426-2f8842514458` (`wowborg:v386`,
+  uploaded inert; not submitted).
+- Retains v385's proven chained ledge jumps and removes only the supported-road
+  skip from direct 275 to 277. The first direct-338 run spent 33.1 seconds on
+  that rising chord and invoked 12 collision unstick cycles; source point 276
+  is the missing intermediate climb anchor. Restoring it should reclaim most
+  of that time and leave usable horizon after the ledge.
+- Canonical-spawn request `xreq_51ddb223-8d2f-4493-bcb8-862403a6183e`
+  completed 100/100 with no platform failures. In the first 76 traces, 43
+  reached direct 275, 40 reached restored 276, 39 reached 277, and 38 reached
+  293; the prior 33.1-second 275--277 trap fell to 1.14 seconds. Six reached
+  direct 332, four reached 335/336, one crossed both jumps through 338 at
+  249.1 seconds (16.4 seconds earlier than v385), then reached 339, 341, and
+  343. It fell on the skipped 343--345 descent; no Great Lift arrival.
+
+## v385 - chain the direct-338 jump from the tiny landing (2026-08-11)
+
+- Version UUID: `5d82af10-7735-4ab4-aa01-9d8096947b88` (`wowborg:v385`,
+  uploaded inert; not submitted).
+- Retains v384's successful jump into direct 337 and applies the same one-shot
+  jump immediately toward direct 338. Hosted traces reach direct 337 at the
+  expected z85.46 landing height, but the first non-jump pulse then falls;
+  direct 337 is a tiny intermediate landing rather than continuous road.
+- Three canonical cohorts completed 100/100 each with no platform failures:
+  `xreq_9de13e45-5276-42ed-a11a-7a7a6d4df0ad`,
+  `xreq_96a45afd-e04c-4c26-a08d-d12a9110417f`, and
+  `xreq_39cdf2fa-3f27-4443-b847-3cef3dee2347`. The first two never activated
+  direct 337. In the third, five reached direct 332--334, four reached 335/336,
+  two jumped into 337, and one chained the second jump into direct 338—the
+  first complete hosted crossing of the post-staircase gap sequence. It then
+  traveled 117 safe yards toward direct 339 before the 270-second episode
+  ended. No Great Lift arrival; superseded by v386's upstream time recovery.
+
+## v384 - jump the final direct-337 ledge discontinuity (2026-08-11)
+
+- Version UUID: `2d0c8a03-57f1-4b27-92a9-a09a8c1f8906` (`wowborg:v384`,
+  uploaded inert; not submitted).
+- Retains v383's centered approach and reuses the proven one-shot route jump
+  only for direct 337. V383 held y near -1870, but z fell from 85 to 82 within
+  five horizontal yards and continued to the ground through the target's x;
+  the pinned navmesh also marks this apparently connected corridor partial.
+- Canonical-spawn request `xreq_7b4ed2fa-b2dd-4e6b-931b-71de631f9efe`
+  completed 100/100 with no platform failures. In the first 81 recovered
+  traces, six reached direct 336 and three crossed the centering anchors plus
+  the new jump into direct 337—the first hosted crossing of that
+  discontinuity. All three then fell on the first non-jump pulse toward direct
+  338; superseded by v385's chained one-shot jump.
+
+## v383 - hold the centered line into direct 337 (2026-08-11)
+
+- Version UUID: `55754732-da3b-42ae-9145-2a4aaca8315e` (`wowborg:v383`,
+  uploaded inert; not submitted).
+- Retains v382's three real-navmesh centering anchors, but restores the normal
+  strafe deadband for the final eight yards into direct 337. V382 arrived at
+  ledge 03 on supported ground at y=-1871.27/z85.21; treating the target's
+  harmless 0.34-yard lateral offset as an error then oscillated north and fell.
+  The remaining chord should proceed straight along the centered line.
+- Canonical-spawn request `xreq_4a381f3f-af6f-4e14-abf9-a80766e77a61`
+  completed 100/100 with no platform failures. The first recovered frontier
+  reached all three ledge anchors and held the centered line, but lost altitude
+  immediately after ledge 03 and fell through direct 337's x coordinate. This
+  confirms a short physical discontinuity rather than v382's lateral-control
+  overshoot; superseded by v384's one-shot jump.
+
+## v382 - center the direct-336--337 narrow ledge (2026-08-11)
+
+- Version UUID: `c0d71205-14a0-45de-b069-5b4dbbe73efe` (`wowborg:v382`,
+  uploaded inert; not submitted).
+- Retains v381 and replaces the unsupported one-target chord from direct 336
+  to 337 with three anchors sampled from the pinned real navmesh. The corridor
+  is supported but only about five degrees off the current heading; ordinary
+  steering's 22.5-degree strafe deadband therefore held the starting y until
+  the ledge fell away. These four ledge targets use a two-degree lateral
+  deadband and exact quarter-second pulses to track the corridor center.
+- Canonical-spawn request `xreq_8f08a37c-d003-442e-a3d5-a26999aed450`
+  completed 100/100 with no platform failures. Artifact publication is still
+  draining, but the first frontier trace reached all three new ledge anchors,
+  proving the centerline fix crossed the section where v381 fell. It then
+  overcorrected the final 0.34-yard lateral offset into direct 337 and fell;
+  superseded by v383's straight final chord.
+
+## v381 - traverse the full direct-336--338 ledge precisely (2026-08-11)
+
+- Version UUID: `5a6cbe96-61b6-4572-98c6-0a2156bb3502` (`wowborg:v381`,
+  uploaded inert; not submitted).
+- Retains v380 and extends tight/exact quarter-second steering to direct 336
+  and 337. In v380 the sole run to reach direct 336 was accepted about eight
+  yards above the source anchor, then long strides drifted laterally and fell
+  before direct 337. The whole post-staircase ledge now uses one consistent
+  precise control contract.
+- Canonical-spawn request `xreq_1b7b495d-64aa-43ad-8d7e-0e6160ffbed6`
+  completed 96/96 with no platform failures: 47 deaths, 49 survivors, 12,142
+  guidepoint arrivals, and 403,234 replay trajectory yards. Forty-nine reached
+  direct 293, two crossed 332--335, one reached 336, and none reached 337 or
+  338; no Great Lift arrival. The frontier trace held y near -1867 until the
+  supported strip moved toward y=-1871, then fell from z84 to z12. The pinned
+  navmesh confirms the 49.8-yard corridor is supported but reports the direct
+  query as partial; v381's precision alone could not correct its shallow
+  lateral offset.
+
+## v380 - traverse the direct-338 ledge precisely (2026-08-11)
+
+- Version UUID: `87ce1932-ef75-4486-a7ca-16d42a6217fb` (`wowborg:v380`,
+  uploaded inert; not submitted).
+- Retains v379 and classifies only direct 338 as tight/exact. The real navmesh
+  reports a supported 32.2-yard ledge from direct 337 to 338, but v379's
+  ordinary 1.5-second strides drifted laterally from y=-1870 to y=-1846 and
+  fell to z11. Precise quarter-second steering should stay on the ledge; no
+  jump is added.
+- Canonical-spawn request `xreq_580ccefe-8dff-4e91-a58b-acc9ebfac774`
+  completed 64/64 with no platform failures. Twenty-three runs reached direct
+  293 and three crossed direct 332--334; one reached direct 336 but died before
+  337, so direct 338's changed control never activated. The trace shows the
+  broad 336/337 acceptance and long-stride behavior begins the ledge fall
+  before 338. The candidate is superseded by precise control across 336--338.
+
+## v379 - retain the direct-336/337 ledge turn (2026-08-11)
+
+- Version UUID: `d8fd5758-9e48-46e6-9ccb-809a3e0060bd` (`wowborg:v379`,
+  uploaded inert; not submitted).
+- Retains v378 and removes only the `335 -> 338` supported-road skip. V378's
+  frontier run crossed the full 332--335 descent, then the 88-yard skipped
+  chord fell from z91 to z12 and killed the full-health character. The source
+  anchors at direct 336/337 first turn onto the z85 supported ledge before the
+  route continues east.
+- Forty-six of 48 canonical-spawn jobs in request
+  `xreq_f498d099-88cc-4c07-8415-550f6555e88f` completed while two hosted jobs
+  remained delayed. The recovered sample has 24 direct-293 arrivals, two
+  direct-332 arrivals, and one complete 332--337 crossing. The frontier then
+  died approaching direct 338 after ordinary long strides drifted off its
+  narrow supported ledge. Final cohort aggregation awaits the two delayed jobs;
+  the direct-336/337 restoration is mechanically validated and retained.
+
+## v378 - route north around the Centipaar hive (2026-08-11)
+
+- Version UUID: `62c18bf8-5582-41bb-8ce1-60f4de8ea2b0` (`wowborg:v378`,
+  uploaded inert; not submitted).
+- Reverts v377's global clearance increase and replaces the 252-yard straight
+  bridge chord through the hive with a real-navmesh-validated northern arc via
+  `(-8180,-2300)` and `(-7940,-2300)`. The 498-yard arc stays on one connected,
+  supported surface and remains about 45 yards north of the closest observed
+  Centipaar patrol, adding roughly 246 route yards without v377's unbounded
+  local detours.
+- Canonical-spawn request `xreq_df9d304c-9948-4075-b339-bb6664475517`
+  completed 48/48 with no platform failures. Thirty-four runs crossed the
+  northern bypass, 22 reached direct 293, and one crossed all of direct
+  332--335 before dying on the skipped chord to 338. Deaths were 24 and total
+  guidepoints reached jumped from v377's 879 to 4,729. The replay-derived
+  4,531-yard maximum was a post-death graveyard artifact; the authoritative
+  policy best was 3,385 yards. The geometric bypass is retained.
+
+## v377 - restore a 20-yard hive clearance floor (2026-08-11)
+
+- Version UUID: `daae9982-1adf-425f-ae9a-82e6d6c219a6` (`wowborg:v377`,
+  uploaded inert; not submitted).
+- Reverts v375/v376's unsafe-detour hold branch and retains v374's terrain and
+  reactive-combat controls. Raises the ordinary level-scaled hazard uncertainty
+  margin from three to 15 yards, producing a 20-yard floor against the recurring
+  level-46--49 Centipaar mobs. Prior hosted evidence kept all 12 runs alive at
+  that floor; the later 12-yard experiment regressed to 9/12, while current
+  8-yard cohorts die in more than half of episodes.
+- Canonical-spawn request `xreq_cb4d2d63-6ebb-41ee-999f-04ce891fc504`
+  completed 48/48 with no platform failures. Deaths fell to 13 from v376's 26
+  and the unchanged v374 repeat's 29, but no run cleared the bridge: best
+  northing was 1,996 yards and median regressed to 1,144. Total trajectory rose
+  to 181,532 yards because the local detour controller churned instead of
+  selecting a stable bypass. Rejected in favor of explicit route geometry.
+
+## v376 - hold only for an immediately fightable blocker (2026-08-11)
+
+- Version UUID: `76c5ac5a-af43-45ed-89d5-e26db2aae133` (`wowborg:v376`,
+  uploaded inert; not submitted).
+- Retains v374's terrain controls and narrows v375's unsafe-detour hold to the
+  cases that can actually activate its guarded clearance fight: exactly one
+  non-elite level-49-or-lower blocker within 45 yards, at least 80% player
+  health, and no predicted add at the blocker over the next six seconds.
+  Unsuitable or multi-blocker crossings use the prior avoidance behavior rather
+  than waiting indefinitely.
+- Canonical-spawn request `xreq_f2a63d71-a23b-4078-a5e2-b9c8b16643b1`
+  completed 48/48 with no platform failures. Deaths improved from the unchanged
+  v374 repeat's 29 to 26, but hold pulses remained 5,070 versus 563 and total
+  trajectory fell from 90,264 to 80,498 yards. Twelve proactive fights fired;
+  no run reached direct 332. Rejected and reverted.
+
+## v375 - hold when every hazard detour is unsafe (2026-08-11)
+
+- Version UUID: `a6a9e36f-8e06-4823-9434-f6be7f77d5cf` (`wowborg:v375`,
+  uploaded inert; not submitted).
+- Retains v374, but stops taking the least-bad sidestep when both candidate
+  paths violate the router's estimated aggro clearance. The blocking enemies
+  become an explicit hold set: one isolated non-elite level-49-or-lower blocker
+  can be cleared after the existing three-second/80%-health/add-prediction
+  gates; multiple or stronger blockers are still waited out.
+- Canonical-spawn request `xreq_cd20acb5-3257-4f0a-aa1e-f4e42c55c6ac`
+  completed 48/48 with no platform failures. Against the unchanged v374 repeat,
+  deaths changed only from 29 to 28 while hold pulses exploded from 563 to
+  24,030 and trajectory fell from 90,264 to 73,085 yards. Twenty-one guarded
+  proactive fights did activate, but the broad hold also trapped unsuitable and
+  multi-blocker cases. Rejected in favor of holding only when the existing
+  fight gates can actually be satisfied.
+
+## v374 - traverse the direct-332--335 descent staircase (2026-08-11)
+
+- Version UUID: `c78d4618-67c5-4872-bdae-5b9865506309` (`wowborg:v374`,
+  uploaded inert; not submitted).
+- Retains v373, classifies direct 333 as an exact descent, and applies one-shot
+  forward-lip control to the measured direct-332--335 staircase. Direct 332's
+  jump crossed 1/1 in v373; the landing then stalled at unclassified direct 333
+  before the two larger already-classified drops at 334/335.
+- Initial canonical-spawn request
+  `xreq_fed0bc47-1fb9-4d2e-ab42-4dc50e5a91ed` completed 48/48 with no platform
+  failures, but no run reached the changed staircase (best direct guidepoint
+  309). It had 26 deaths; 25 occurred in the northern Tanaris hazard corridor,
+  and the router repeatedly selected a sidestep whose measured clearance was
+  below its own aggro requirement. Unchanged 48-episode repeat
+  `xreq_a017bfbc-42fb-4131-87e0-3eddd67e9684` also completed 48/48 without
+  reaching the staircase (best direct guidepoint 312; best northing 2,831).
+  It recorded 29 deaths, 563 hold pulses, and 90,264 trajectory yards. The
+  staircase control remains mechanically untested.
+
+## v373 - jump the direct-332 descent lip (2026-08-11)
+
+- Version UUID: `ba1333a2-c1c0-4e94-97be-2d6163ea8dfb` (`wowborg:v373`,
+  uploaded inert; not submitted).
+- Retains v372 and adds only direct 332 to the one-shot jump set. The target is
+  roughly ten yards ahead and 6.5 yards lower; v372's exact descent steering
+  oscillated at the lip, drifted 37 yards away, and timed out.
+- Initial canonical-spawn request `xreq_218756bb-62e3-460e-9367-3fb5a9844ccc`
+  completed 24/24 without reaching direct 332. The unchanged 48-episode repeat
+  `xreq_078aee76-c92d-49bb-8197-3f39011f0218` produced one direct-332 attempt
+  and one successful crossing, with best northing 3,329 yards. That run then
+  failed at direct 333, the first of three adjacent descent lips. The direct-332
+  jump is retained. The next candidate classifies direct 333 as an exact
+  descent and applies the same one-shot lip control to the measured 332--335
+  descent sequence.
+
+## v372 - add scoped direct-298 jump (2026-08-11)
+
+- Version UUID: `eefd6177-73f2-441d-8b2d-1cc36f8ab0ea` (`wowborg:v372`,
+  uploaded inert; not submitted).
+- Retains v371 and adds only direct 298 to the steep-jump set. The measured
+  route rises 13.2 yards over 17.4 horizontal yards there; a healthy v371 run
+  crossed direct 293 and 296 before exhausting collision recovery at 298.
+- Initial canonical-spawn request `xreq_c0fb8481-e5c0-40a8-9a8e-4d17f78feeab`
+  completed 24/24 without reaching direct 293, so it could not evaluate the
+  change. The unchanged repeat
+  `xreq_5c69b146-2d48-4619-81f9-5ee5b26a8e47` completed 24/24: direct 293,
+  298, and 302 each crossed on every attempt, and best northing advanced from
+  2,889 to 3,322 yards at direct 330. At direct 332, exact descent steering
+  oscillated at a 6.5-yard lip, drifted 37 yards away, and timed out. The
+  direct-298 jump is retained. The next candidate adds a one-shot forward jump
+  only to direct 332's already-classified exact descent.
+
+## v371 - combine clearance fights with direct-293 jump (2026-08-11)
+
+- Version UUID: `2068ee08-20e8-442b-9625-92a1b6b921cb` (`wowborg:v371`,
+  uploaded inert; not submitted).
+- Retains v370's time-bounded single-blocker clearance fights and adds only
+  direct 293 to the steep-jump set. Hosted v364 evidence already showed this
+  exact jump crosses the ridge in about 1.5 seconds; v370 newly delivered a
+  healthy cohort member to the same ridge before ordinary movement timed out.
+- Canonical-spawn request `xreq_39820a57-c7ca-4c70-90b7-7256ab4e1032`
+  completed 24/24 with no platform failures and no Great Lift arrivals. Deaths
+  improved from 14 to 12, survivors rose from ten to 12, total guidepoints
+  reached rose from 733 to 856, and hold pulses fell from 2,886 to 587. All
+  three direct-293 attempts crossed successfully; one continued through direct
+  296 and then exhausted collision recovery at direct 298. The combined
+  clearance-fight and direct-293 controls are retained. The next candidate adds
+  scoped jump control to direct 298's measured 13.2-yard climb over 17.4 yards;
+  direct 302 is already in the steep set.
+
+## v370 - time-bound clearance-fight add prediction (2026-08-11)
+
+- Version UUID: `8192a021-9960-4a58-9fa6-d3f0f1dde44e` (`wowborg:v370`,
+  uploaded inert; not submitted).
+- Retains v369's single-blocker and health gates, but predicts adds at the
+  blocker location over the next six seconds instead of rejecting on any
+  eventual crossing of the character's current location along a patrol's full
+  remaining path.
+- Canonical-spawn request `xreq_5ac24426-207d-4b7d-8c81-7d9c4c66a8e0`
+  completed 24/24 with no platform failures and no Great Lift arrivals. Two
+  guarded proactive fights activated against a level-47 Wasp and level-49
+  Sandreaver; all fights still began with at most one attacker. Deaths matched
+  v367 at 14, hold pulses fell from v369's 5,788 to 2,886, and total
+  guidepoints reached set a cohort high of 733. The best run reached direct 293
+  alive, where ordinary movement timed out for 32 seconds. The fight-window
+  predictor is retained; the next candidate recombines v364's already-proven
+  scoped jump at that exact ridge.
+
+## v369 - clear a prolonged single-enemy hold (2026-08-11)
+
+- Version UUID: `8b63fb67-306c-4d72-8a49-a898ee5f5d94` (`wowborg:v369`,
+  uploaded inert; not submitted).
+- After three seconds at a terrain-constrained hold, permits a proactive fight
+  only when exactly one held blocker is a non-elite level-49-or-lower enemy,
+  health is at least 80%, and no likely add crosses the approach. Multi-blocker,
+  low-health, elite, and stronger holds retain avoidance/wait behavior.
+- Canonical-spawn request `xreq_5f63b78f-c499-47e5-87fe-bddd3f8141c3`
+  completed 24/24 with no platform failures and no Great Lift arrivals. Deaths
+  matched v367 at 14 and best northing reached 2,832 yards, but the intended
+  proactive branch never activated; one survivor still accumulated all 5,788
+  hold pulses. The full-patrol-path add check was rejecting blockers based on
+  eventual crossings outside the measured four-to-five-second fight window.
+  The next candidate bounds that prediction to the fight location and a
+  six-second horizon.
+
+## v368 - reacquire Travel Form after combat (2026-08-11)
+
+- Version UUID: `7ba105a1-d36b-405d-bc95-20a717af443a` (`wowborg:v368`,
+  uploaded inert; not submitted).
+- Resets the current road leg's Travel Form attempt and fallback latches when a
+  Traverse fight ends. Combat and post-fight Rejuvenation both change form, so
+  the old latches could otherwise leave the character walking until the next
+  guidepoint.
+- Canonical-spawn request `xreq_4932f03b-428b-4f58-9f43-3121f0e79c8f`
+  completed 24/24 with no platform failures and no Great Lift arrivals. Travel
+  Form casts rose from 49 to 65 and best northing rose from 2,698 to 2,849
+  yards, but deaths worsened from 14 to 16 and total guidepoints reached fell
+  from 687 to 652; median northing remained 1,996 yards. The latch reset is
+  rejected because it did not improve consistency. The next candidate instead
+  converts a prolonged single-blocker hold into a guarded clearance fight.
+
+## v367 - react before entering estimated aggro range (2026-08-11)
+
+- Version UUID: `761ea27e-7a59-455d-bd52-34af9e96db2f` (`wowborg:v367`,
+  uploaded inert; not submitted).
+- Increases the hazard-router activation/deactivation distances from 30/40 to
+  45/55 yards while leaving the per-enemy aggro-radius estimate unchanged.
+- Canonical-spawn request `xreq_e9894ee0-808a-4501-9253-6117350ca108`
+  completed 24/24 with no platform failures and no Great Lift arrivals. Versus
+  v366, deaths fell from 15 to 14, survivors rose from nine to ten, total
+  guidepoints reached rose from 608 to 687, and best northing improved from
+  2,671 to 2,698 yards; median northing remained 1,996 yards. The earlier
+  reaction margin is retained as a modest consistency improvement. The next
+  candidate resets Travel Form's per-leg attempt latch after combat changes
+  form, allowing the fast form to be reacquired after post-fight healing.
+
+## v366 - relax broad bridge pass envelopes (2026-08-11)
+
+- Version UUID: `dad4d7e6-23c6-4c3d-88b8-3d8981d164b5` (`wowborg:v366`,
+  uploaded inert; not submitted).
+- Restores v363's cast-and-move healing and removes the broad safe-bridge legs
+  from the six-yard corridor set. The measured climb and descent anchors remain
+  exact; ordinary bridge legs may pass within the standard 60-yard envelope.
+- Canonical-spawn request `xreq_126766e9-6550-4cdf-9631-159bf96d286f`
+  completed 24/24 with no platform failures and no Great Lift arrivals. Deaths
+  fell to 15 and survivors rose to nine. The best reached direct 275 at
+  x=-6515.57 with 5,048 trajectory yards, materially less path waste than
+  v363's 6,508-yard best. The relaxed pass rule is retained, but deaths still
+  cluster on bridge 02/03. The next candidate increases hazard-reaction margin
+  without changing the estimated aggro radius.
+
+## v365 - wait for post-fight healing to complete (2026-08-11)
+
+- Version UUID: `795b7255-3833-4d7e-aa0c-1787ada5722a` (`wowborg:v365`,
+  uploaded inert; not submitted).
+- Removes v364's direct-293 jump and waits out an active Rejuvenation until the
+  same 80% health threshold that triggered healing is restored.
+- Canonical-spawn request `xreq_ff690f79-8334-4af6-b57d-22ee77a776c7`
+  completed 24/24 with no platform failures and no Great Lift arrivals. Deaths
+  rose to 19 and the best survivor regressed to direct 250 at x=-6744.87. Some
+  runs spent 50--117 wait frames stationary beside the patrol that caused the
+  fight, inviting another pull before healing completed. Waiting is rejected;
+  v363's cast-and-move behavior is restored. The next candidate instead relaxes
+  the broad bridge legs' six-yard pass envelope so hazard avoidance can remain
+  lateral to the Centipaar endpoint.
+
+## v364 - jump the direct-293 ridge (2026-08-11)
+
+- Version UUID: `31eb06bd-616f-4e95-bc5b-99fc5523fac3` (`wowborg:v364`,
+  uploaded inert; not submitted).
+- Adds direct 293 to the steep-jump set, leaving v363's short bridge, combat,
+  and post-fight healing unchanged.
+- Canonical-spawn request `xreq_48b8fc3a-eb8b-4675-a387-808151bb426d`
+  completed 24/24 with no platform failures and no Great Lift arrivals. It had
+  17 deaths and seven survivors. The best run activated the jump and reached
+  direct 293 in 1.5 seconds, but stopped at direct 296 on `no_frame`; the best
+  final x=-6354.91 was behind v363. The jump is mechanically valid but did not
+  improve the cohort frontier, so it is removed. The next candidate instead
+  waits for Rejuvenation to restore the configured 80% health threshold before
+  resuming Travel Form.
+
+## v363 - combine healing with the shorter supported bridge (2026-08-11)
+
+- Version UUID: `035f5252-c807-4864-9378-5464c5c33f4c` (`wowborg:v363`,
+  uploaded inert; not submitted).
+- Replaces the 844-yard wide bridge with the 331-yard, six-anchor
+  Detour-supported bridge from v353/v355 while retaining v362's verified
+  post-fight healing.
+- Canonical-spawn request `xreq_8a83932a-24e5-4935-954b-d13b95e293c7`
+  completed 24/24 with no platform failures and no Great Lift arrivals. Deaths
+  fell to 16 and 31 Rejuvenation casts succeeded. The best living run reached
+  x=-6294 at direct 296 with 6,508 trajectory yards, recovering the v355
+  frontier. Its trace spent about 47 seconds colliding below direct 293 before
+  finally climbing, then failed at direct 298 for lack of a next frame. The
+  short bridge and healing are retained; v364 adds scoped jump control only to
+  the measured direct-293 ridge.
+
+## v362 - queue healing after gate-lost fights (2026-08-11)
+
+- Version UUID: `30d742ad-9f47-470c-b9f4-4e3c6cfe7a32` (`wowborg:v362`,
+  uploaded inert; not submitted).
+- Queues low-health post-fight healing after either `combat_ended` or
+  `gate_lost`, while retaining the requirement that combat actually clear
+  before exiting form and casting. Route geometry is unchanged from v360/v361.
+- Canonical-spawn request `xreq_50c1d242-226a-4057-bf65-4d2981142f63`
+  completed 24/24 with no platform failures and no Great Lift arrivals. It
+  produced 28 successful Rejuvenation casts and reduced deaths from v361's 23
+  to 18, validating the corrected transition. Throughput remained poor: the
+  best run reached route activation 41 (`tanaris-northern-direct-147`), while
+  the six non-death runs mostly ended on deadline, `no_frame`, or no progress
+  within the 844-yard bridge. Healing is retained; the wide route is rejected
+  in favor of the shorter supported bridge.
+
+## v361 - heal after low-health Traverse fights (2026-08-11)
+
+- Version UUID: `e175c5a9-30e6-4819-8d1d-5f00433972f0` (`wowborg:v361`,
+  uploaded inert; not submitted).
+- Adds an 80% post-fight health threshold and uses the existing Rejuvenation
+  transition before resuming Travel Form. The v360 route is unchanged.
+- Canonical-spawn request `xreq_3a74fce1-21f7-4888-8a8e-bcd5fac75e99`
+  completed 24/24 with no platform failures and no Great Lift arrivals. It had
+  23 deaths, 45 fights, and a best route activation of 40. Rejuvenation handling
+  emitted 68 events after 13 clean `combat_ended` boundaries, but 27 fights
+  ended with `gate_lost` while the character remained in combat; those
+  low-health escapes were not queued for healing. The experiment exposes a
+  state-machine gap rather than rejecting post-fight sustain: v362 queues the
+  heal on either fight-ending reason and still waits for combat to clear before
+  casting.
+
+## v360 - route outside the observed southern hive boundary (2026-08-11)
+
+- Version UUID: `325fab49-eab5-4570-a7a4-bbb11a406b7b` (`wowborg:v360`,
+  uploaded inert; not submitted).
+- Widens the bridge to an 844-yard Detour-supported route near y=-2700 and
+  leaves only the measured climbs and descents terrain-constrained.
+- Canonical-spawn request `xreq_d670dbe9-d1d7-4b63-9f77-14fcaff375ee`
+  completed 24/24 with no platform failures and no Great Lift arrivals. Seven
+  runs crossed the bridge, but 21/24 died and only two exceeded 2,500 yards
+  northing. The best living run reached direct 275 at x=-6504.68. The wide
+  route proves the supported geometry is traversable, but its extra distance
+  and broad hostile exposure make geometry-only avoidance too slow and
+  inconsistent. It is retained for one isolated combat-sustain experiment.
+
+## v359 - route along the supported southern hive boundary (2026-08-11)
+
+- Version UUID: `2ec95f47-fe97-402f-a3d0-32a0ca5966c3` (`wowborg:v359`,
+  uploaded inert; not submitted).
+- Moves the bridge to a 412-yard Detour-supported corridor about 34 yards south
+  of the first observed patrol line, rejoining east of the hive.
+- Canonical-spawn request `xreq_15745978-a7cf-4cb7-83b3-d69c881c1dce`
+  completed 24/24 with no platform failures and no Great Lift arrivals. No run
+  crossed and 13/24 died. The authored canyon anchors were traversable, but
+  traces exposed Stingers, Swarmers, Silithid Swarms, and a Sandreaver as far
+  south as y=-2460. This boundary is still inside the hive and is rejected.
+
+## v358 - route north of both observed Centipaar patrol lines (2026-08-11)
+
+- Version UUID: `c406cd88-92ac-4159-a1fd-04bdace419b7` (`wowborg:v358`,
+  uploaded inert; not submitted).
+- Widens the bridge bypass to a 371-yard Detour-supported corridor north of the
+  Stinger and Swarmer positions observed in v356/v357.
+- Canonical-spawn request `xreq_09fbfce2-ed97-41b5-8f7a-de10db7d237c`
+  completed 24/24 with no platform failures and no Great Lift arrivals. One run
+  crossed and reached direct 293 at x=-6375, but 18/24 died and the other 23
+  failed to cross. Traces exposed additional Worker, Wasp, and Sandreaver
+  patrols as far north as y=-2359. The entire near-north corridor remains inside
+  the hive and is rejected.
+
+## v357 - dogleg north of the bridge-02 Stinger pack (2026-08-11)
+
+- Version UUID: `7794f340-40fe-46b0-a0c4-51770059a0de` (`wowborg:v357`,
+  uploaded inert; not submitted).
+- Replaces the original bridge-02 chord with a Detour-supported dogleg about
+  30--40 yards north of the first observed Stinger pack.
+- Canonical-spawn request `xreq_4d8bc26f-b73a-4bc9-aa92-3823f71e0c60`
+  completed 24/24 with no platform failures and no Great Lift arrivals. Only
+  2/24 crossed the new bridge and 12/24 died. The dogleg landed beside a
+  different Swarmer patrol near (-7952, -2384), causing the constrained router
+  to hold indefinitely or accumulate attackers. This local dogleg is rejected.
+
+## v356 - scope jump control to the direct-293 ridge (2026-08-11)
+
+- Version UUID: `f27587fe-cf94-4f80-9627-57d6ed133e07` (`wowborg:v356`,
+  uploaded inert; not submitted).
+- Adds direct 293 to the steep-jump set after v355 spent its final 46 seconds
+  colliding below that 15-yard ridge.
+- Canonical-spawn request `xreq_db4cb31c-3f18-4281-aa0f-46575bfe6aa3`
+  completed 24/24 with no platform failures and no Great Lift arrivals. Only
+  two runs exceeded 2,500 yards northing and neither reached direct 293, so the
+  new control never activated and the cohort cannot judge it. Ten runs died,
+  predominantly after the long bridge-02 leg entered the Centipaar pack near
+  (-7932, -2428). The direct-293 change is removed while that earlier
+  consistency bottleneck is isolated.
+
+## v355 - extend only clear-road movement to 1.5-second strides (2026-08-10)
+
+- Version UUID: `54a30422-61b2-4922-853f-83e17cb96487` (`wowborg:v355`,
+  uploaded inert; not submitted).
+- Restores v353's quarter-second terrain control and extends only hazard-free,
+  unconstrained clear-road translation from 1.0 to the previously hosted-proven
+  1.5-second input limit.
+- Canonical-spawn request `xreq_9e24d697-11ee-45fb-b691-68dac51a7629`
+  completed 24/24 with no platform failures and no Great Lift arrivals. Three
+  runs exceeded 2,500 yards northing; the best reached x=-6292.36, improving
+  the v353/v354 frontier. It then spent roughly 46 seconds colliding beneath
+  direct 293, a 15-yard climb over 21 horizontal yards that was missing from
+  the steep-jump set. The clear stride is retained; the next candidate adds
+  scoped climb control only at direct 293.
+
+## v354 - try half-second control on active terrain bands (2026-08-10)
+
+- Version UUID: `a25ee243-d806-4736-a449-c44a1439cd94` (`wowborg:v354`,
+  uploaded inert; not submitted).
+- Uses half-second rather than quarter-second precise movement on direct bands
+  140--215 and 258--275, leaving the supported bridge and all other behavior
+  identical to v353.
+- Canonical-spawn request `xreq_bb0adf87-cb13-4aad-a73f-fd8727529e4c`
+  completed 24/24 with no platform failures and no Great Lift arrivals. The
+  best run reached direct 293 at x=-6364.8, slightly behind v353's direct-296
+  best. It also needed about 92 seconds from direct 260 to failure, versus
+  roughly 74 seconds for v353 to reach direct 296. The cadence change is
+  rejected; quarter-second terrain control is restored.
+
+## v353 - bridge the supported northern surface into the proven corridor (2026-08-10)
+
+- Version UUID: `8b84befe-d3e3-4cd0-bf1e-4eb88b06fcad` (`wowborg:v353`,
+  uploaded inert; not submitted).
+- Replaces the disconnected ridge descent with a pinned 342.6-yard, six-anchor
+  bridge from northern bypass 17 to the already-proven direct corridor at
+  direct 140. The resulting full route is approximately 5,761 yards.
+- Canonical-spawn request `xreq_8e24887e-861f-45b4-9747-7be5d6dd101c`
+  completed 24/24 without platform failures. Multiple episodes crossed the new
+  bridge alive and reached direct 296; the best run covered 5,718 trajectory
+  yards with no death and reached x=-6329 before the 270-second episode limit.
+  No episode reached the Great Lift. Trace timing isolates the next bottleneck:
+  terrain-sensitive direct bands 140--215 and 258--275 still consume
+  quarter-second movement pulses, while the supported route itself is viable.
+
+## v352 - start semantic descent from the first downhill polygon (2026-08-10)
+
+- Version UUID: `4914be09-b85f-4aa9-b3db-23c5c597e954` (`wowborg:v352`,
+  uploaded inert; not submitted).
+- Repairs v351's startup syntax and enters the first confirmed downhill polygon
+  manually before invoking native semantic movement.
+- Canonical-spawn request `xreq_5f974182-45b8-4a23-951b-1f2970515369`
+  was cancelled after repeated live traces rejected the component itself.
+  Representative runs reached the entry anchor, but the native follower then
+  aborted with `unsafe environmental damage interruption (falling)`; subsequent
+  attempts lost the admissible source triangle. The alternate cliff component
+  is rejected. A pinned query found a 342.6-yard, six-anchor supported bridge
+  from bypass 17 to the already proven old corridor at direct 140, producing a
+  5,761-yard full route without the disconnected descent.
+
+## v351 - enter the first downhill polygon before semantic descent (2026-08-10)
+
+- Version UUID: `ebc1cb32-9f3d-4bf0-a764-da2368c21eff` (`wowborg:v351`,
+  uploaded inert; not submitted).
+- Intended to add one manually proven entry anchor before the scoped native
+  descent.
+- Canonical-spawn request `xreq_510caf14-c93b-45c7-92e8-fc292fd48ba8`
+  exposed an image-startup regression before gameplay: the Traverse module had
+  an unmatched parenthesis in the new guidepoint-set expression and exited with
+  `SyntaxError`. The request was cancelled and provides no route evidence. A
+  narrow container import reproduced the hosted failure; v352 fixes only that
+  syntax error and retains the intended v351 behavior.
+
+## v350 - delegate the ridge descent to native Detour movement (2026-08-10)
+
+- Version UUID: `d71a1378-f2b9-41ac-8307-62cc4dfaca31` (`wowborg:v350`,
+  uploaded inert; not submitted).
+- Scopes semantic `move_to` to the single 63-yard ridge descent; every other
+  route leg retains the manual hazard-aware controller.
+- Canonical-spawn request `xreq_69b514e5-3fa7-4204-8082-1e026adce70b`
+  was cancelled after semantic descent attempts returned a typed refusal rather
+  than falling: `no physically admissible source triangle was found near the
+  client pose`. The preceding steep-edge rule accepted bypass 20 at x=-7846.2,
+  z=23.2, slightly below the first raw descent triangle near z=25. Native
+  movement is retained, but now begins after one manually proven entry anchor
+  on the downhill polygon.
+
+## v349 - restore the raw Detour descent anchors (2026-08-10)
+
+- Version UUID: `d9da795e-e7eb-4a30-a3d1-51ae14edf6cf` (`wowborg:v349`,
+  uploaded inert; not submitted).
+- Replaces the invalid bypass-20-to-21 chord with all 20 raw pinned Detour
+  points across the 63-yard downhill surface.
+- Canonical-spawn request `xreq_cf26f026-0073-47ba-95f2-da3f36b6a688`
+  was cancelled after live traces showed material but incomplete improvement.
+  A representative run traversed descent 01--13 alive, then accepted point 13
+  at the three-yard edge of its radius. Its next turn-only pulse began after
+  the character was already sliding; movement continuation carried it below
+  the world before point 14. This proves the raw polygon corridor is the right
+  geometry but manual vector headings remain an unsafe actuator for the narrow
+  vertical seam. The next candidate delegates only this seam to native semantic
+  movement, which follows the Detour corridor directly.
+
+## v348 - control the alternate ridge descent exactly (2026-08-10)
+
+- Version UUID: `eae658b8-c5f4-416d-a62f-f1fe685954f2` (`wowborg:v348`,
+  uploaded inert; not submitted).
+- Makes bypass 20--24 exact, bounded terrain; jumps to the ridge crest and the
+  three recovery climbs after its landing.
+- Canonical-spawn request `xreq_5c21f123-d003-42f3-bf3e-0ff54f6b6da6`
+  was cancelled after multiple live traces reproduced death at bypass 21. The
+  new control did reach bypass 20 at the intended ridge crest (x=-7846.2,
+  z=23.3, then z=25.0 on the first descent frame), falsifying loose crest
+  arrival as the remaining cause. A fresh pinned sub-query exposed the actual
+  defect: the whole-route simplifier collapsed 20 downhill Detour points into
+  a single 53-yard chord. That chord cuts through empty world and fell to
+  z=-63 before death. Exact crest control is retained; the raw descent
+  corridor must be restored.
+
+## v347 - take the alternate pinned northern chain (2026-08-10)
+
+- Version UUID: `f28837fc-af1e-4fe2-be6c-105642715de0` (`wowborg:v347`,
+  uploaded inert; not submitted).
+- Rejects the narrow shelf entirely. The active route now follows the alternate
+  exact-spawn Detour chain for 48 anchors, then rejoins the proven route at
+  direct 221. The resulting route is 5,650 yards, within the episode's movement
+  budget without relying on ineffective rank-1 Prowl.
+- Canonical-spawn request `xreq_a02e1f1b-f23c-46a9-b64c-d9e4ddc38333`
+  reached bypass 18 in the first sampled runs, but representative runs then
+  fell and died at bypass 21. Trace evidence identified a local control seam:
+  bypass 20 was accepted about ten planar yards and eight vertical yards below
+  its ridge-crest target, after which the long chord to bypass 21 walked off the
+  ridge and fell to z=-137. The alternate chain is retained; only its observed
+  crest-to-landing seam needs exact bounded control.
+
+## v346 - use ordinary aggro routing on the dense shelf (2026-08-10)
+
+- Version UUID: `051046f3-933e-419c-a37e-79164b713226` (`wowborg:v346`,
+  uploaded inert; not submitted).
+- Retains the dense exact shelf but removes ineffective shortcut Prowl, using
+  ordinary level-scaled hazard routing on broad terrain and hold-on-hazard on
+  the shelf.
+- Request `xreq_48fadeb9-d430-413c-a225-ba17641f9eb8` was cancelled after live
+  samples showed the shelf remained structurally bad: runs reached the denser
+  anchors, but still clustered in hazard holds, level-48 engagements, deaths,
+  and no-progress around shelf 01--10. No completed episodes are used as
+  evidence. The entire shelf corridor is rejected in favor of the alternate
+  pinned northern chain.
+
+## v345 - densify the prowled shortcut shelf (2026-08-10)
+
+- Version UUID: `c6d15404-7182-494f-a212-4a73d396528e` (`wowborg:v345`,
+  uploaded inert; not submitted).
+- Replaces the coarse shortcut-14--23 shelf with 26 exact anchors simplified
+  at one yard from a fresh pinned-navmesh sub-query. Full-shortcut Prowl remains
+  for this isolated geometry test.
+- Canonical-spawn request `xreq_9eb0f3fb-16fb-4bb5-9f19-ac077a7e190c`
+  confirmed that rank-1 Prowl is itself unsafe in this fixture. One early run
+  was detected by level-46 and level-48 Tanaris mobs while prowled and died at
+  shortcut 07; the trace's first engagement began at 5.5 yards after Prowl had
+  been active since shortcut 01. This agrees with the pinned VMaNGOS model:
+  rank-1 Prowl's 100 stealth value is detectable by these mobs much farther
+  away than ordinary level-scaled aggro. Dense shelf geometry is retained;
+  shortcut Prowl is rejected.
+
+## v344 - enter Prowl before the shortcut mob field (2026-08-10)
+
+- Version UUID: `d243fece-9ccc-493b-8c6b-4a382fa012d5` (`wowborg:v344`,
+  uploaded inert; not submitted).
+- Extends Prowl across the complete 34-anchor shortcut and tightens the
+  shortcut-14--23 shelf to exact three-yard arrivals.
+- Canonical-spawn request `xreq_221c6a49-4772-4221-b0f2-065515c62c93`
+  prevented the earlier unstealthed mob-field failures, and one observed weak
+  attacker was correctly killed in 3.8 seconds. Runs still clustered in deaths
+  and no-progress at shortcut 15--19. A fresh pinned-navmesh sub-query found
+  that the three-yard whole-route simplification omitted material bends near
+  x=-7979/-7899 and placed shortcut 17 just outside the sub-corridor's exact
+  anchor. Full-corridor stealth is retained; the coarse shelf geometry is
+  rejected.
+
+## v343 - prowl only on the narrow shortcut shelf (2026-08-10)
+
+- Version UUID: `0248a3c2-5ccc-4271-9aaf-49743339a397` (`wowborg:v343`,
+  uploaded inert; not submitted).
+- Adds terrain-constrained Prowl from shortcut 14 through 23, leaving the rest
+  of the shorter route in Travel Form.
+- Canonical-spawn request `xreq_2a6bc12b-6841-4230-90c7-fbb2f26ad0d3`
+  showed that the scoped band starts too late: sampled episodes died before it
+  at shortcut 02 or entered shortcut 14 already falling/engaged, preventing a
+  useful stealth transition. The band's ordinary eight-yard arrival envelope
+  also remained wide enough to cut corners on the narrow shelf. Scoped late
+  stealth is rejected in favor of entering Prowl before the mob field and exact
+  control only on the observed shelf.
+
+## v342 - route around hazards on the northern shortcut (2026-08-10)
+
+- Version UUID: `6a79ac13-fe61-4e2a-9439-dc0ba618f1f1` (`wowborg:v342`,
+  uploaded inert; not submitted).
+- Removes v341's speculative shortcut terrain tags so the existing live-unit
+  router can choose lateral clearance around Tanaris mobs.
+- Canonical-spawn request `xreq_3fcf13b4-b7e7-4aa3-81e5-78c77fe4eeb5`
+  cleared the old shortcut-07 hold and demonstrated the intended velocity, but
+  representative runs died or timed out at shortcut 14--23. A policy trace
+  caught ordinary hazard avoidance leaving the narrow shelf near shortcut 18,
+  falling from about z=9 to z=-45, and timing out after the off-mesh landing.
+  Unconstrained avoidance is rejected only for that observed shelf.
+
+## v341 - take the shorter northern Detour chain (2026-08-10)
+
+- Version UUID: `ea7a103d-47f0-4f3e-b904-099923ae9c7f` (`wowborg:v341`,
+  uploaded inert; not submitted).
+- Replaces the first 217 anchors of the older partial-path frontier with the
+  pinned 0.1.209 Detour chain from the exact movement bootstrap, then rejoins
+  the proven route at direct 218. The active route falls from 6,926 to 5,573
+  yards while every downstream terrain and hazard control remains unchanged.
+- Canonical-spawn request `xreq_9bb5e48e-25e1-466a-981c-2295d4cde210`
+  proved the shortcut's early velocity but exposed an encoding error at
+  shortcut 07: the candidate speculatively marked a smooth navmesh rise as
+  terrain constrained, so a Rabid Blisterpaw 9.6 yards ahead triggered an
+  indefinite hazard hold instead of lateral avoidance. The constraint is
+  rejected; the shorter route is retained.
+
+## v340 - resume clear-road semantic movement after wire canonicalization (2026-08-10)
+
+- Version UUID: `ff5be9ae-dd04-46aa-94e6-d21a79ce12d5` (`wowborg:v340`,
+  uploaded inert; not submitted).
+- Re-enables `move_to` only on clear, supported, non-jumping, non-stealth road
+  legs after v339 canonicalized destination coordinates to the host's float32
+  wire width. Hazard steering, combat, stealth, bounded terrain, and precise
+  arrivals retain the proven manual-vector controller.
+- The `linux/amd64` image passed the required `/player` and navmesh SDK import
+  verification.
+- Canonical-spawn request `xreq_566ba3ee-3bb1-4766-b957-9af2b8d38d0f`
+  completed all 24 episodes with zero deaths but zero dock arrivals. The
+  float32 repair eliminated the v338 settlement deadlock: 5,855 semantic
+  actions settled continuously, and host telemetry showed compatible movement
+  continuation with no next-action stall. The controller itself is rejected:
+  repeated short Detour replans oscillated, median progress fell to direct 55,
+  and the best run only activated direct 81 in 270 seconds. Clear-road routing
+  returns to the proven manual vector controller; wire canonicalization remains
+  because it repairs the general semantic-action contract.
+
+## v339 - canonicalize semantic destinations to the wire float width (2026-08-10)
+
+- Version UUID: `97b57d73-a7ba-4f2a-b28f-c6bb424a21a9` (`wowborg:v339`,
+  uploaded inert; not submitted).
+- Canonicalizes `move_to` destination coordinates to IEEE-754 float32 before
+  submission. The host's Nim contract stores `WorldPoint` coordinates as
+  float32, while the packaged Python runtime correlates returned action state
+  using exact action equality. Arbitrary route decimals therefore failed
+  correlation after a successful bounded semantic prefix and left the player
+  waiting past the host's next-action deadline; binary-exact bootstrap
+  coordinates concealed the mismatch.
+- No route, hazard, combat, stealth, or movement-controller behavior changes.
+  Focused contract validation: 9/9 wrapper tests. The `linux/amd64` image passed
+  the required `/player` and navmesh SDK import verification after repulling a
+  corrupt local base-image cache.
+- Request `xreq_da0a07c1-01e1-415d-be8d-48c810a30e14` was cancelled while all
+  24 episodes were still pending after noticing that v339 did not yet re-enable
+  the reverted clear-road semantic call site. It provides no gameplay evidence.
+
+## v338 - use semantic continuation on clear supported road (2026-08-10)
+
+- Version UUID: `ffe16d87-adc0-49e2-98a7-61233875d625` (`wowborg:v338`,
+  uploaded inert; not submitted).
+- Uses `move_to` only on clear, non-jumping, non-precise supported-road legs so
+  the 0.1.209 semantic continuation controller can move across observation
+  horizons. Bounded terrain, hazards, combat, and precise arrivals retain the
+  proven vector controller.
+- Canonical-spawn request `xreq_49630412-6627-4ca2-8a30-6be7d562af7b` is
+  complete with 24 episodes and 24 traces. Every run reached direct 01, issued
+  its first semantic `move_to`, and then failed direct 02 with `no_frame`.
+  Semantic continuation is rejected on the current canonical route; source is
+  restored to the safe manual controller.
+
+## v337 - remove periodic settled-pulse waits (2026-08-10)
+
+- Version UUID: `a2f3ac6a-4eff-42b9-a89f-da3de2f952f9` (`wowborg:v337`,
+  uploaded inert; not submitted).
+- Restores the safe v332 movement durations, then removes the unconditional
+  wait inserted after every eight settled movement pulses. Per-pulse
+  observations, hazard holds, collision recovery, and stall detection remain;
+  only controller idle frames are removed.
+- Canonical-spawn request `xreq_0efbf699-1097-4d6a-acea-2ee910ac6b08` is
+  complete with 24 episodes and 24 traces: zero dock arrivals, six deaths, and
+  the same direct-292 frontier. Periodic wait removal is safe but provides no
+  material throughput gain.
+
+## v336 - use a half-second bounded-terrain stride (2026-08-10)
+
+- Version UUID: `8627e0e0-bbed-4bf7-8719-521ae45e258f` (`wowborg:v336`,
+  uploaded inert; not submitted).
+- Steps the continuously jumping bounded-terrain input down from v335's failed
+  0.75 seconds to 0.5 seconds, halfway between the rejected cadence and the
+  proven-safe 0.25-second baseline. All floors, anchors, and near-target/hazard
+  precision remain unchanged.
+- Canonical-spawn request `xreq_c3a02abc-de61-402f-99c0-cb109c3e1fde`
+  reproduced the terrain regression: deaths clustered at direct 100/130 and
+  no-progress at direct 96/98. The half-second cadence is rejected, and bounded
+  terrain returns to the proven 0.25-second controller.
+
+## v335 - stride continuously through bounded terrain (2026-08-10)
+
+- Version UUID: `e555253b-9224-4a2f-930a-d27891246fcd` (`wowborg:v335`,
+  uploaded inert; not submitted).
+- Keeps the same bounded floors and dense terrain anchors, but continuously
+  jumps through those legs at the existing 0.75-second Traverse input instead
+  of forcing every far-from-target pulse to 0.25 seconds. Near-target precision,
+  hazard evasion, and terrain hazard holds remain unchanged.
+- Canonical-spawn request `xreq_ee95ebf3-b5e3-4d6d-a194-022cfa2667e0`
+  exposed a decisive early regression: bounded-band runs clustered in deaths
+  and no-progress at direct 91--100. The 0.75-second terrain cadence is rejected.
+
+## v334 - use the accepted clear-road stride limit (2026-08-10)
+
+- Version UUID: `b305a624-cddd-4e5d-8599-2bf208edf0f1` (`wowborg:v334`,
+  uploaded inert; not submitted).
+- Corrects the v333 clear-road duration from the rejected two seconds to the
+  host-proven 1.5-second limit. No route, hazard, form, or terrain behavior
+  changes.
+- Canonical-spawn request `xreq_c369b998-0509-4d01-8abc-d508152cb86f` is
+  complete with 24 episodes. Recovered traces again had zero dock arrivals and
+  a maximum of direct 292 despite thousands of accepted 1.5-second clear-road
+  strides. The change did not move the frontier, identifying the blanket
+  0.25-second bounded-terrain input as the remaining controller bottleneck.
+
+## v333 - lengthen only clear supported-road strides (2026-08-10)
+
+- Version UUID: `86cab30d-fd6f-4c91-9010-8ecdc10c7c60` (`wowborg:v333`,
+  uploaded inert; not submitted).
+- Uses two-second inputs only on clear, supported road. Hazard steering remains
+  one second and bounded terrain remains 0.25 seconds, so the longer stride does
+  not weaken either control. Extends bounded control two anchors through direct
+  275 after one of 24 v332 runs fell at that first unbounded endpoint.
+- Canonical-spawn request `xreq_d9ebf8a9-c47c-4b4d-9f4c-5e288bb4bf41` is
+  complete with 24 episodes. Every recovered trace stopped at direct 02 when
+  the host rejected `duration=2.0` for vector movement. v333 is rejected; it
+  provides no gameplay comparison.
+
+## v332 - separate terrain precision from stealth (2026-08-10)
+
+- Version UUID: `02ebba39-15ca-4ccf-b476-f21617f3d495` (`wowborg:v332`,
+  uploaded inert; not submitted).
+- Keeps every bounded terrain input, jump floor, and the direct 41--42 Brute
+  micro-zone, but uses Travel Form through the bounded bands. The v326 dynamic
+  traces recorded no Prowl-triggering hazards from direct 90--215; all dynamic
+  stealth starts after direct 80 were isolated at 225, 232--233, and 244 on
+  supported road, where the existing avoid/fight router already operated safely.
+  This removes blanket Prowl speed loss without reintroducing dynamic switching.
+- Canonical-spawn request `xreq_1c77e58c-9b48-4f00-be5b-95c8f4d7f337` is
+  complete with 24 episodes and 24 recovered policy traces: zero dock arrivals,
+  four deaths, one hazard hold, 27 isolated fights, and a maximum of 292 anchors.
+  Median direct-270 time improved from about 254 seconds in v331 to 238 seconds,
+  with only one post-80 death beyond the old direct-266/270 seam (at direct 275).
+  Removing blanket Prowl is retained, but survivors still exhaust the horizon at
+  direct 293.
+
+## v331 - coalesce supported road and bound the direct-266 descent (2026-08-10)
+
+- Version UUID: `c4e7d43a-c72f-4f61-a502-430d5b33e4d7` (`wowborg:v331`,
+  uploaded inert; not submitted).
+- Coalesces dense Detour samples only on ordinary supported road: 88 longer
+  legs skip 162 anchors while remaining within 3.876 yards of the source
+  corridor. Every terrain-constrained and named steep/descent anchor remains.
+  Extends bounded Prowl through direct 273 after v330 exposed four non-combat
+  deaths at direct 266/270 immediately beyond the old band.
+- Canonical-spawn request `xreq_2fd6508d-726f-4156-8a12-66d52d410903` is
+  complete with 24 episodes and 24 recovered policy traces: zero dock arrivals,
+  five deaths, one hazard hold, 829 coalesced-leg events, 427 bounded-edge
+  passes, and a maximum of 292 anchors. Coalescing moved the frontier 23 anchors
+  beyond v330 and the extended band eliminated deaths at direct 266/270. Four
+  deaths occurred at direct 275 immediately after Prowl and bounded control
+  ended; the continuing ridge needs bounded support, but blanket Prowl remains
+  the dominant route-time cost.
+
+## v330 - restore static terrain stealth with a brute micro-zone (2026-08-10)
+
+- Version UUID: `ee4115ab-8722-48d7-8dc4-9e4a1a14f1ff` (`wowborg:v330`,
+  uploaded inert; not submitted).
+- Removes dynamic form selection after v326--v329 failed the safety/velocity
+  comparison. Restores static Prowl across the proven bounded terrain bands and
+  adds only direct 41--42 as a static micro-zone for the Dunemaul Brute. Keeps
+  robust form-settlement handling and the vMaNGOS-derived 2.5-yard prowled
+  clearance.
+- Canonical-spawn request `xreq_ce3d8675-b162-4048-9160-2090b8504b67` is
+  complete with 24 episodes and 24 recovered policy traces: zero dock arrivals,
+  eight deaths, zero hazard holds, 415 bounded-edge passes, and a maximum of
+  269 anchors. The direct 41--42 hold pathology disappeared completely and the
+  frontier advanced beyond v325. Four deaths at direct 266/270 had no combat
+  events and began after the bounded band ended, exposing the next fall seam.
+
+## v329 - retain stealth through transient hazard dropout (2026-08-10)
+
+- Version UUID: `1c4c8695-8d3a-4fda-95b8-67035106623f` (`wowborg:v329`,
+  uploaded inert; not submitted).
+- Adds a four-second last-seen grace to the dynamic hazard identity. Once a
+  nearby hazard triggers Prowl, transient unit-list dropout no longer clears the
+  identity and reopens the form transition; a visible hazard refreshes the
+  grace until it is actually beyond the 40-yard exit band.
+- Canonical-spawn request `xreq_a745c768-84cf-4b7f-889f-529edac2399d` is
+  complete with 24 episodes and 24 recovered policy traces: zero dock arrivals,
+  16 deaths, zero hazard holds, and a maximum of 269 anchors. Last-seen grace
+  reduced Prowl events from 537 to 328 and stealth exits from 208 to 120, but
+  deaths and useful route velocity did not improve. Dynamic form switching is
+  rejected in favor of the safer v325 static-band baseline.
+
+## v328 - align dynamic stealth entry and exit bands (2026-08-10)
+
+- Version UUID: `cf0121e9-9a12-4667-aaa7-610abd705378` (`wowborg:v328`,
+  uploaded inert; not submitted).
+- Only hazards within the 30-yard entry radius now trigger Prowl; their identities
+  retain stealth until 40 yards. Cat/caster form transitions wait through up to
+  four settled pulses for delayed aura state before failing. This removes v327's
+  far-lookahead add/remove loop while preserving its vMaNGOS-derived 2.5-yard
+  prowled clearance.
+- Canonical-spawn request `xreq_a395a08c-d629-4463-9a75-5a8ac41b94cd` is
+  complete with 24 episodes and 24 recovered policy traces: zero dock arrivals,
+  16 deaths, zero hazard holds, and a maximum of 269 anchors. Restricting entry
+  to 30 yards reduced stealth starts from 1,689 to 284, but transient unit-list
+  dropout still cleared identities and reopened form transitions. Ten deaths
+  clustered at direct 71, and the frontier did not improve over v327.
+
+## v327 - retain Prowl until the triggering hazard is clear (2026-08-10)
+
+- Version UUID: `22b3322c-c6d5-40a0-a6b8-b515da169d7d` (`wowborg:v327`,
+  uploaded inert; not submitted).
+- Adds hazard-identity hysteresis: once a unit triggers Prowl, the router remains
+  prowled until that unit is at least 40 yards away. Cat Form waits one settled
+  pulse before declaring its transition failed, and Travel Form now completes
+  the caster-form-to-Travel transition in one helper call. These changes address
+  v326's Prowl-clearance oscillation without changing its fight/stealth decision
+  or clearance thresholds.
+- Canonical-spawn request `xreq_70048874-a283-4631-b19f-5d4d6c4528d2` is
+  complete with 24 episodes and 24 recovered policy traces: zero dock arrivals,
+  13 deaths, zero hazard holds, and a maximum of 270 anchors. Hysteresis moved
+  the frontier 22 anchors beyond v326, but 60-yard lookahead hazards were still
+  being added to the stealth set and immediately removed by the 40-yard exit
+  rule: 1,689 stealth starts and 1,511 ends. Form transitions also continued to
+  see delayed aura updates.
+
+## v326 - switch forms dynamically around live hazards (2026-08-10)
+
+- Version UUID: `b04c53ec-87bd-4c16-8e3f-11918bfbd304` (`wowborg:v326`,
+  uploaded inert; not submitted).
+- Removes blanket Prowl from the terrain bands. The router now uses Travel Form
+  by default, retains the existing isolated-weak-attacker fight gate, enters
+  Prowl only when a live route hazard is present, and returns to Travel Form
+  once clear. Bounded terrain jumps remain enabled while prowled around a
+  hazard. Prowled hazard clearance is 2.5 yards: vMaNGOS floors creature stealth
+  detection at 1.5 yards, plus one yard of collision margin for this level-60
+  template against ordinary route mobs.
+- Canonical-spawn request `xreq_16750d76-56c3-4af0-99c5-a8508b58dc4e` is
+  complete with 24 episodes and 24 recovered policy traces: zero dock arrivals,
+  14 deaths, zero hazard holds, and a maximum of 248 anchors. The first dynamic
+  implementation oscillated between forms: 2,584 Prowl events, 628 Travel-form
+  exits, and 559 Travel-unavailable events. Prowl often activated successfully,
+  but its lower clearance removed the triggering unit from the immediate hazard
+  set, so the router instantly tried Travel Form and rediscovered the hazard.
+
+## v325 - bound the direct-213 and direct-259 fall sites (2026-08-10)
+
+- Version UUID: `76651003-5bba-4508-85c7-c0a97ce94a88` (`wowborg:v325`,
+  uploaded inert; not submitted).
+- Continues the first bounded Prowl band through direct 215, then adds a separate
+  short band from the direct-258 climb through the direct-263/264 descents. The
+  long supported road between them remains in Travel Form. In v324, all four
+  direct-213 failures began after Prowl ended at 205 and all four direct-259
+  failures began immediately after the direct-258 climb; both sites used open,
+  non-jumping strides and fell far below their route elevations.
+- Canonical-spawn request `xreq_6de10926-77ab-4ff1-a0e6-591f89cf37bf` is
+  complete with 24 episodes and 24 recovered policy traces: zero dock arrivals,
+  six deaths, 244 terrain holds, 253 bounded-edge passes, and a maximum of 262
+  anchors. The direct-213 cluster disappeared. Every non-death `no_frame`
+  terminal occurred at the 270-second episode horizon, including the scattered
+  direct-221--263 endpoints; these are budget exhaustion, not a new failure
+  cluster. All 244 hazard holds occurred at direct 41--42 around a Dunemaul
+  Brute, before the old blanket-Prowl range began.
+
+## v324 - keep the direct-188--205 ridge in bounded Prowl (2026-08-10)
+
+- Version UUID: `68a92c45-e5fc-4d46-8aa9-b8dd7f316f65` (`wowborg:v324`,
+  uploaded inert; not submitted).
+- Extends bounded jump floors and terrain-aware Prowl from direct 188 through
+  the known direct-196/200/205 descents, following the route's z-profile. In
+  v323, every failure in the new direct-189--196 cluster began after Prowl ended
+  at direct 188: the controller issued a 1.0-second open stride without jumping
+  and immediately fell 30--60 vertical yards. No failure involved combat or a
+  hazard transition.
+- Canonical-spawn request `xreq_253f6b98-42ef-4af2-b842-46acd1adca63` is
+  complete with 24 episodes and 24 recovered policy traces: zero dock arrivals,
+  six deaths, 62 terrain holds, 228 bounded-edge passes, and a maximum of 258
+  anchors. The direct-189--196 cluster disappeared completely and the frontier
+  advanced by 63 anchors. The new deep clusters were four failures at direct
+  213 after Prowl ended at 205, and four at direct 259 immediately after the
+  direct-258 climb; both sites used non-jumping open strides and fell far below
+  their route elevations. One run also lost its frame at direct 205 and one at
+  215.
+
+## v323 - accept supported bounded edges planarly (2026-08-10)
+
+- Version UUID: `b4f2c079-58ed-450c-83f4-3039e59bc0a9` (`wowborg:v323`,
+  uploaded inert; not submitted).
+- A bounded terrain leg now counts as passed once the character is within that
+  leg's planar arrival radius and safely at or above its target elevation. This
+  is the bounded analogue of the existing climb-edge acceptance rule: v322's
+  deepest direct-178 and direct-183 traces had already reached supported ground
+  beside their targets, but exact 3D arrival continued steering toward lower
+  navmesh z-coordinates until observations stopped.
+- Canonical-spawn request `xreq_22a89c57-161d-44af-ba87-d89b696f1667` is
+  complete with 24 episodes and 24 recovered policy traces: zero dock arrivals,
+  nine deaths, 59 terrain holds, 222 bounded-edge passes, and a maximum of 195
+  anchors. The bounded acceptance eliminated every direct-178/182/183/187
+  failure and moved the frontier beyond v321's direct 186. The new cluster was
+  five failures at direct 189, two at 191, one at 192, and three at 195--196;
+  each trace crossed the direct-188 Prowl boundary into a 1.0-second open stride
+  with no jump, then fell 30--60 vertical yards without a combat or hazard
+  transition.
+
+## v322 - support the direct-178--188 physical corridor (2026-08-10)
+
+- Version UUID: `5a8f0601-075f-4f2a-a3b1-dbb51e9a33a4` (`wowborg:v322`,
+  uploaded inert; not submitted).
+- Raises direct 178's bounded jump trigger from z=2 to z=4, adds bounded floors
+  across the previously unclassified direct-181--187 descent and climb, and
+  keeps Prowl/terrain holds through the direct-188 climb. In v321, all three
+  direct-178 failures crossed the edge near z=3 before the old trigger; the
+  direct-182 trace fell from z=-24 to z=-114 on its first open stride; and the
+  direct-187 trace stalled below the next rise at z=-16. No trace showed a
+  hazard or combat transition at failure.
+- Canonical-spawn request `xreq_148f6c93-f5c4-4ccf-bd37-770776ecbb60` is
+  complete with 24 episodes and 24 recovered policy traces: zero dock arrivals,
+  four deaths, 88 terrain holds, and a maximum of 182 anchors. The old clustered
+  direct-178/182/187 failures fell to one direct-178 and one direct-183 loss.
+  Both deepest traces reached a supported shelf planarly beside the target but
+  remained well above its navmesh z-coordinate; exact 3D arrival then kept
+  steering until the next observation was lost. This shows the remaining issue
+  is bounded-leg acceptance rather than another unsupported gap.
+
+## v321 - support the direct-176 descent through its climb handoff (2026-08-10)
+
+- Version UUID: `5e905ccd-34eb-466f-b7c7-8e085fa56ec9` (`wowborg:v321`,
+  uploaded inert; not submitted).
+- Adds a bounded direct-176--179 band with a z=2 to z=-2 floor and keeps
+  Prowl/terrain holds through the existing direct-180 climb. In the first 23
+  recovered v320 traces, six deep runs cleared the entire new 162--174 basin;
+  five then died falling at direct 178 and one lost its frame at 177. Those
+  traces contain no hazard or combat transition, so this is the next adjacent
+  physical gap rather than another routing-mode boundary.
+- Canonical-spawn request `xreq_c87daf51-1134-4e8e-984c-814f3ea0a2ff` is
+  complete with 24 episodes and 24 recovered policy traces: zero dock arrivals,
+  eight deaths, 285 terrain holds, and a maximum of 186 anchors. The new band
+  moved the deep frontier from direct 177 to direct 186. Three runs lost their
+  next frame at direct 178 after crossing the edge near z=3 before the z=2 jump
+  floor activated; one fell to death at direct 182 immediately after its first
+  open stride; and one lost its frame below the rise at direct 187. None of the
+  five traces contained a hazard or combat transition at failure.
+
+## v320 - support the direct-162 basin through its climb handoff (2026-08-10)
+
+- Version UUID: `238e5b41-61dd-4747-9465-45a65f0cbd73` (`wowborg:v320`,
+  uploaded inert; not submitted).
+- Classifies direct 162--174 as one bounded physical band, with floors following
+  the route's z=22 to z=-2 basin, and keeps Prowl/terrain holds through the
+  existing continuous climb at 175. In the first 23 recovered v319 traces the
+  prior direct-152/153 failures disappeared completely, but four deep runs died
+  falling at direct 162--165. The band starts high enough to activate before
+  the observed first drop and ends immediately before the already-classified
+  climb controller.
+- Canonical-spawn request `xreq_e406dcbd-cbd5-430f-b217-2e415a265895` is
+  complete with 23 of 24 policy traces recoverable: zero dock arrivals, ten
+  deaths, 76 terrain holds, and a maximum of 177 anchors. Six deep runs cleared
+  direct 162--174; five then died falling at direct 178 and one lost its frame
+  at 177. The final episode completed but did not expose a policy artifact.
+  A recurrent missing cached Docker parent
+  snapshot required the same clean-layer rebuild used for v318; the unchanged
+  canonical build path then passed before upload.
+
+## v319 - keep the later physical corridor in Prowl (2026-08-10)
+
+- Version UUID: `00a6aa73-9b94-4282-9bad-7eee18b46777` (`wowborg:v319`,
+  uploaded inert; not submitted).
+- Extends the established later Prowl/terrain-constrained band from direct 151
+  through direct 169 without changing geometry or bounded floors. A failing
+  v318 trace arrived at 151 under supported Prowl, then canceled Cat Form at
+  152, saw a hazard, switched to lateral hazard steering (which correctly
+  disables jumping), and immediately fell through the physical corridor.
+  Remaining in Prowl makes the level-aware terrain hold authoritative until the
+  bounded band and the newly exposed later gaps are clear.
+- Canonical-spawn request `xreq_6076bd6d-6682-4f23-b207-f4db502147b5` is
+  complete with all 24 traces: zero dock arrivals, seven deaths, 70 terrain
+  holds, and a maximum of 164 anchors. The direct-152/153 failure cluster
+  disappeared completely. Four deep runs instead died falling at direct
+  162--165, validating the later Prowl boundary and isolating the next physical
+  basin.
+
+## v318 - bridge the direct-151 descent into the next climb (2026-08-10)
+
+- Version UUID: `3ed29742-e852-49b3-8e7d-bdca5c16ccc2` (`wowborg:v318`,
+  uploaded inert; not submitted).
+- Adds bounded support across direct 151--155, with floors descending alongside
+  the navmesh from z=10 to z=-5. All four v317 deep runs reached direct 150 at
+  full health, then immediately fell below the world while targeting 151 and
+  died around z=-94; no hostile unit or combat transition was involved. The
+  band ends where the existing continuous climb controller begins at direct
+  156, so the two controllers meet without overlap or a new uncontrolled gap.
+- Canonical-spawn request `xreq_6d80fdd0-81d5-4da1-a21e-5d5430fb8d91` is
+  complete with all 24 traces: zero dock arrivals, nine deaths, 309 terrain
+  holds, and a maximum of 168 anchors. Three runs failed at direct 152/153
+  after the Prowl boundary restored lateral hazard evasion inside the physical
+  gap. Three deeper runs died falling at direct 162, 167, or 169, establishing
+  the next unsupported band after the existing 156--158 climb. The first
+  cached build hit a missing
+  Docker parent snapshot during the canonical sanity run; a clean layer rebuild
+  repaired the store, after which the unchanged project build path passed.
+
+## v317 - carry bounded support to the far side of the direct-140 void (2026-08-10)
+
+- Version UUID: `fa0a1e89-aa2d-4448-9265-930f826f3f3d` (`wowborg:v317`,
+  uploaded inert; not submitted).
+- Extends v316's validated z=8 bounded support from direct 140 through direct
+  145, the last low anchor before the route returns to a z=14 surface at 146.
+  All six deep v316 runs arrived at 140, proving the first supported half, then
+  immediately began falling again while targeting 141 and failed there. The
+  underlying void therefore spans the far-side acquisition, not just the first
+  guidepoint.
+- Canonical-spawn request `xreq_a0eec157-95b7-495f-aadf-063a6a003314` is
+  complete with all 24 traces: zero dock arrivals, 12 deaths, 193 terrain
+  holds, and a maximum of 150 anchors. The support band cleared direct 140--145
+  and moved the frontier ten anchors. Four deep runs then fell below the world
+  at direct 151 and died; their health stayed full until fall damage, confirming
+  another physical gap rather than combat or stealth failure.
+
+## v316 - support the direct-140 collision seam (2026-08-10)
+
+- Version UUID: `5e3f672f-218a-4ebe-b068-00c174e4c0c5` (`wowborg:v316`,
+  uploaded inert; not submitted).
+- Adds the proven altitude-gated bounded jump controller only at direct 140,
+  with a floor matching its z=8 navmesh surface. Five v315 deep runs entered
+  the leg around z=14, fell below z=0 within five movement pulses, and then
+  either wedged near z=-26 or continued below the world. A rare v311 survivor
+  crossed the same void and was reset onto the far-side surface near z=10;
+  this turns that nondeterministic fall/reset into the same bounded physical
+  crossing already validated at direct 93--112 and 118--129.
+- Canonical-spawn request `xreq_55bfa48a-e699-4566-be27-9b1b40bf28ae` is
+  complete with all 24 traces: zero dock arrivals, three deaths, 251 terrain
+  holds, and a maximum of 140 anchors. All six deep runs arrived at direct 140,
+  then all six failed at direct 141. The z=8 support activated as designed and
+  moved the frontier exactly one anchor; the physical void continues through
+  the next low-surface targets.
+
+## v315 - decouple later Prowl from tight guidepoint arrival (2026-08-10)
+
+- Version UUID: `ca2f1e2a-6448-459f-af39-49bee459203b` (`wowborg:v315`,
+  uploaded inert; not submitted).
+- Keeps direct 90--129 both Prowled and tight-arrival for the proven collision
+  gaps, but lets direct 130--151 use ordinary eight-yard/crossed arrival while
+  remaining Prowled and terrain-constrained for hazard holds. In the first 20
+  v314 traces the direct-71 death cluster disappeared, but four deep runs
+  stopped at direct 139/140 because extending stealth had also imposed a
+  three-yard arrival radius on this later non-gap band.
+- Canonical-spawn request `xreq_d9359a4b-bb15-4dfe-904b-761557049b5a` is
+  complete with all 24 traces: zero dock arrivals, three deaths, 301 terrain
+  holds, and a maximum of 139 anchors. Five deep runs again failed at direct
+  140. Relaxing the arrival radius therefore preserved v314's survival gain
+  but did not move the frontier; direct 140 is a physical collision seam.
+
+## v314 - reject early Prowl in the direct-70 hive (2026-08-10)
+
+- Version UUID: `12c2566e-f037-4238-9a23-9f34acd0c8b8` (`wowborg:v314`,
+  uploaded inert; not submitted).
+- Restores the Prowl start from direct 70 to direct 90 while retaining v313's
+  useful extension through direct 151. Four matched cohorts make the choice
+  decisive: v307's Travel plus ordinary hazard routing before direct 90 had
+  four deaths, while v308--v311 early-Prowl cohorts had 15--20 deaths. A v312
+  social pull began at 10.9 reported yards despite corrected hold hysteresis.
+  Travel/avoid-or-fight is therefore safer through this hive; Prowl remains for
+  the later collision/hazard band.
+- Canonical-spawn request `xreq_823f0236-4a45-45b2-913f-b51b336f1f93` is
+  complete with all 24 traces: zero dock arrivals, seven deaths, 225 terrain
+  holds, and a maximum of 139 anchors. Only one run died at direct 71, versus
+  eleven in v313. Five deep runs failed at direct 139/140, confirming that the
+  remaining shared blocker was the overly tight later arrival rule rather than
+  early hazard handling.
+
+## v313 - keep Prowl and terrain constraints through direct 151 (2026-08-10)
+
+- Version UUID: `49ff4e27-943f-469d-b2cb-3c384b40283e` (`wowborg:v313`,
+  uploaded inert; not submitted).
+- Extends the Prowl/terrain-constrained corridor from direct 129 through direct
+  151. Three v311 runs cleared the post-117 gap and reached direct 150, then a
+  visible Sandreaver triggered ordinary lateral hazard evasion after the
+  constrained band ended; all three left the narrow collision surface and died
+  falling while targeting 151. The corrected v312 level-aware hold now remains
+  active across this observed hazardous band instead.
+- Canonical-spawn request `xreq_fcb072d2-7e98-46ae-988c-753ddde9f2cd` is
+  complete with all 24 traces: zero dock arrivals, 12 deaths, 151 terrain
+  holds, and a maximum of 139 anchors. Eleven runs died at direct 71 under the
+  intentionally retained early-Prowl control. Three deep runs failed at direct
+  140, so extending the constrained band prevented the earlier direct-151
+  hazard-evasion falls but coupled ordinary later terrain to an unnecessary
+  three-yard arrival rule.
+
+## v312 - use required clearance for terrain-hold entry and release (2026-08-10)
+
+- Version UUID: `dba534d0-87a9-4f04-bebb-ff25b9c88228` (`wowborg:v312`,
+  uploaded inert; not submitted).
+- Makes the level-aware required hazard clearance authoritative for both
+  terrain-hold entry and release. V310 held level-49 mobs at 7.4--7.9 yards,
+  then released them as soon as their projected patrol segment looked clear
+  even though their current distance remained seven yards; two then aggroed at
+  7.1 and 5.0 yards. Holds now begin at the computed ten-yard clearance and
+  release only when both current distance and projected path are clear.
+- Canonical-spawn request `xreq_dd897233-796e-4386-b4cc-2a10a46d3f76` is
+  complete with all 24 traces: zero dock arrivals, 12 deaths, 137 terrain-hold
+  entries, and a maximum of 144 anchors. Ten runs still died at direct 71.
+  One representative social pull began with a Silithid Swarm reported at 10.9
+  yards and immediately became two attackers. Consistent ten-yard hysteresis
+  reduced v310's 19 deaths but remained substantially worse than v307's
+  pre-direct-90 Travel behavior, so early Prowl is rejected independently of
+  this hold correction.
+
+## v311 - catch the post-ledge fall at its navmesh surface (2026-08-10)
+
+- Version UUID: `f4e82f34-1605-439e-99ee-7fd2a813f653` (`wowborg:v311`,
+  uploaded inert; not submitted).
+- Raises the bounded physical floor only at direct 118--120 from z=14 to z=20,
+  matching those anchors' z=20--22 navmesh surface. Early v309 failures fired
+  40--90 jump pulses and reached target x/y, but the z14 gate activated after
+  they had already lost collision and they fell to z=-2 through z=-26. The
+  lower direct 121--129 band remains at z=14.
+- Canonical-spawn request `xreq_c06e22ed-2335-4098-bb69-a009691abc9b` is
+  complete with all 24 traces: zero dock arrivals, 20 deaths, and a maximum of
+  150 anchors. Thirteen runs died and two exhausted their deadline at direct
+  71 under the known early-Prowl regression. Three runs crossed the z20 band,
+  reached direct 150, and died falling at 151 after unconstrained hazard
+  evasion. The raised catch plane is validated; early Prowl and the post-129
+  unconstrained band are independently rejected.
+
+## v310 - retain hazard clearance while moving in Prowl (2026-08-10)
+
+- Version UUID: `73929a33-a889-42d5-bcb0-35566573ba93` (`wowborg:v310`,
+  uploaded inert; not submitted).
+- Removes the stealth-route bypass around hazard routing. V308 entered Prowl
+  successfully before direct 70 but then walked straight within 3.3--5.3 yards
+  of level-49 mobs and pulled them, because stealth had disabled all clearance
+  logic. The existing terrain-constrained eight-yard hold now remains active in
+  Prowl; form selection and all clearance thresholds are otherwise unchanged.
+- Canonical-spawn request `xreq_48a27283-a5ab-4123-8492-77b62e7ff2d8` is
+  complete with all 24 traces: zero dock arrivals, 19 deaths, 110 terrain hold
+  entries, and a maximum of 117 anchors. Seventeen runs still died at direct
+  71. A representative trace held mobs at 7.4--7.9 yards, then released because
+  their projected path looked clear while their current distance was still
+  seven yards; two immediately aggroed at 7.1 and 5.0 yards. Preserving hazard
+  routing was necessary but the hold hysteresis remained internally
+  inconsistent.
+
+## v309 - maintain a physical floor after the direct-117 ledge (2026-08-10)
+
+- Version UUID: `612d2935-93a4-45b2-bac5-650b31141416` (`wowborg:v309`,
+  uploaded inert; not submitted).
+- Adds the existing bounded-gap controller across direct 118--129 with a z=14
+  physical floor and 64 translating pulses per anchor. Three early v307 traces
+  cleared direct 117, entered direct 118 around z=26, then lost collision
+  support near z=13--14 and fell below the world before direct 119. Continuous
+  climbing ends at 117; this band receives altitude-gated support instead.
+- Canonical-spawn request `xreq_4d6bf2af-2965-4e40-aaf8-b901755eefcd` is
+  complete with all 24 traces: zero dock arrivals, eight deaths, and a maximum
+  of 118 anchors. Six runs repeated v308's direct-71 stealth-clearance death.
+  Three deep survivors failed at direct 118 or 119. Those runs fired 40--90
+  bounded pulses and reached target x/y, but the z14 gate activated after
+  collision was already lost and they fell to z=-2 through z=-26.
+
+## v308 - enter Prowl before the northern Tanaris multi-pull band (2026-08-10)
+
+- Version UUID: `c96f80af-7006-4ed6-945e-2e2c5b3340c8` (`wowborg:v308`,
+  uploaded inert; not submitted).
+- Extends the local Prowl corridor from direct 90--129 to direct 70--129. V306
+  deaths at direct 71--74 began as hostile pulls and often escalated to two to
+  four attackers; the character can kill one level-47/48 ordinary mob but the
+  resulting multi-add escape is lethal. Route geometry, combat selection, and
+  the v307 ledge climb are unchanged.
+- Canonical-spawn request `xreq_c3cfdc44-363d-4bd1-9632-4d892328c32d` is
+  complete with all 24 traces: zero dock arrivals, 15 deaths, and a maximum of
+  118 anchors. Eleven runs died at direct 71 and one at direct 70. Prowl did
+  activate successfully, but the stealth branch bypassed hazard clearance and
+  walked within 3.3--5.3 yards of level-49 mobs. Starting Prowl earlier without
+  respecting its residual detection radius was a severe regression.
+
+## v307 - extend the northern ledge climb through direct 117 (2026-08-10)
+
+- Version UUID: `985330a7-9281-4b6e-b0b8-8ef7efd3890a` (`wowborg:v307`,
+  uploaded inert; not submitted).
+- Extends the existing continuous climb segment at direct 113--114 through
+  direct 115--117. V306 repeatedly reached direct 115 but then stalled or fell
+  at the adjacent 115--117 physical ledge despite the nominal navmesh heights
+  looking nearly flat at its foot.
+- Canonical-spawn request `xreq_455dd7b7-03d9-4fdc-a075-fa255124d031` is
+  complete with all 24 traces: zero dock arrivals, four deaths, and a maximum
+  of 118 anchors. Fourteen deep runs failed at direct 118 or 119. The added
+  climb reliably cleared 115--117, then runs entered direct 118 near z=26,
+  lost collision support around z=13--14, and fell below the world. This
+  establishes a bounded post-ledge gap rather than another continuous climb.
+
+## v306 - reserve bounded pulse budget for forward crossings (2026-08-10)
+
+- Version UUID: `dea44c7f-49fe-48af-aa7a-d04d72b5d15a` (`wowborg:v306`,
+  uploaded inert; not submitted).
+- Retains v305's altitude-gated jump support on turn-only frames, but counts
+  only translating jump frames against the finite 64-pulse crossing budget.
+  In v305, direct 96--98 spent roughly half their pulses rotating and then fell
+  after exhausting the budget below the collision floor.
+- Canonical-spawn request `xreq_93b7dd09-e591-47ee-9383-da416210e128`
+  recovered all 24 traces: zero dock arrivals, eight deaths, and a maximum of
+  115 anchors. Three runs failed while targeting direct 116. Reserving the
+  budget for translating frames restored v304's frontier, but did not improve
+  survival enough; the next independent blocker is the physical ledge from
+  direct 115 through 117.
+
+## v305 - preserve collision-gap lift during turn-only steering (2026-08-10)
+
+- Version UUID: `fc256c44-d48e-4fd7-a13b-b0bbe55516c3` (`wowborg:v305`,
+  uploaded inert; not submitted).
+- Extends bounded physical-floor jumping to turn-only steering frames. Those
+  frames previously stripped `jump`, so curved corrections inside a collision
+  gap could consume enough unsupported frames to pull the character below the
+  world even with an unexhausted pulse budget.
+- Canonical-spawn request `xreq_e243aa4e-a449-437f-ac36-4a3efb806b04`
+  recovered all 24 traces: zero dock arrivals, six deaths, and a maximum of 114
+  anchors. Ten runs reached direct 114 and then failed at 115; four failed at
+  direct 96. Deep traces showed direct 96--98 spending 34--35 of their 64
+  pulses on turn-only frames before falling, so preserving lift while rotating
+  was correct but charging those frames to the forward budget was not.
+
+## v304 - enlarge collision-gap pulse budget (2026-08-10)
+
+- Version UUID: `6c530aab-7f2a-4c31-a3f3-26c4b643c844` (`wowborg:v304`,
+  uploaded inert; not submitted).
+- Raises the per-anchor physical-floor pulse budget from eight to 64 while
+  retaining v303's two calibrated floor bands.
+- Canonical-spawn request `xreq_9dcfa9b9-aaa5-4a06-915c-09c7c8cd9918`
+  recovered all 24 traces: zero dock arrivals, seven deaths, and a maximum of
+  115 anchors. A representative direct-108 failure used all 64 jump pulses and
+  202 movement actions yet fell to z=-196. It got within 1.57 planar yards of
+  the target, but turn-only steering frames stripped jump and repeatedly lost
+  altitude. The larger budget therefore exposed a steering-action bug rather
+  than a remaining budget shortage.
+
+## v303 - physical-floor cadence across the two northern collision gaps (2026-08-10)
+
+- Version UUID: `6c0b0c39-47bc-41bb-917f-358fa642f0f8` (`wowborg:v303`,
+  uploaded inert; not submitted). Two image-upload attempts returned HTTP 500
+  before version creation; the third identical upload succeeded.
+- Replaces target-relative bounded jumping with explicit physical floors and up
+  to eight cadence pulses per anchor: z=3 across direct 93--99 and z=-8 across
+  direct 104--112. Direct 108 leaves the continuous-climb set; direct 113
+  remains the next true uphill climb.
+- Canonical-spawn request `xreq_86db541c-b200-4433-8557-d1b1b505a786`
+  recovered all 24 traces: zero dock arrivals, eight deaths, and a maximum of
+  115 anchors. Six runs died at direct 106 or 108 after exhausting all eight
+  pulses; three crossed both gaps and reached direct 115 or 116. This proved
+  both physical floors and the second collision-gap boundary, while showing
+  that eight pulses were insufficient for correction-heavy crossings.
+
+## v302 - altitude-capped bounded jump cadence (2026-08-10)
+
+- Version UUID: `f3ca595f-58e3-4635-b264-36d0a6af531a` (`wowborg:v302`,
+  uploaded inert; not submitted).
+- Retains v301's signed terrain classes and v300's five-pulse maximum, but
+  emits a bounded jump only while no more than five yards above the current
+  target. This spreads lift across a gap instead of spending every pulse at its
+  start and then falling below the mesh.
+- Canonical-spawn request `xreq_54c704f0-6f17-4c0a-9b8d-d44042d4c558`
+  recovered all 24 traces: zero dock arrivals, ten deaths, and a maximum of 103
+  anchors. Four runs died falling while targeting 104. A successful crossing
+  still fell to z=-90 and depended on the host snapping it back near direct99,
+  proving target-relative altitude is invalid inside this collision gap.
+
+## v301 - classify generated steep anchors by vertical direction (2026-08-10)
+
+- Version UUID: `b34026a9-e825-4f43-b71d-d713cb7b2b5e` (`wowborg:v301`,
+  uploaded inert; not submitted).
+- Splits the absolute-grade-generated steep set by sign: uphill anchors retain
+  continuous climb steering; 27 downhill anchors remain exact and
+  terrain-constrained without jumping. The calibrated direct 92--99 seams are
+  unchanged.
+- Canonical-spawn request `xreq_6c99c6a5-443c-40e4-9d4f-50769f34cf33`
+  recovered all 24 traces: zero dock arrivals, four deaths, and a maximum of 95
+  anchors. Eighteen surviving runs failed from direct 94 through 96, so the
+  signed descent behavior remained unreachable behind the unchanged upfront
+  jump cadence.
+
+## v300 - five bounded jump pulses across northern seams 93--99 (2026-08-10)
+
+- Version UUID: `5075d2d1-623c-4cc2-8b8a-e9b77e2227fe` (`wowborg:v300`,
+  uploaded inert; not submitted).
+- Raises only the direct 93--99 bounded jump budget from three to five pulses.
+  The v299 trace reached the target x but was still 3.3 yards short laterally
+  and already below the mesh; two additional supported translations should
+  complete the crossing before exact steering releases jump.
+- Canonical-spawn request `xreq_36c39dbe-0eac-46b7-87c8-21a29cb7de59`
+  recovered all 24 traces: zero dock arrivals, two deaths, and a maximum of 103
+  anchors. Five pulses reliably cleared direct 93; three runs failed at 94 and
+  fourteen at 95. One run reached 103 and then died landing at 104, confirming
+  both that five pulses can bridge the first gap and that remaining downhill
+  anchors must not use continuous climb steering.
+
+## v299 - bounded jump pulses across northern seams 93--99 (2026-08-10)
+
+- Version UUID: `55a6ae0d-a2b2-4787-bad8-cf7c65310241` (`wowborg:v299`,
+  uploaded inert; not submitted).
+- Implements the previously inert bounded-jump budget in the road controller.
+  Direct 92 keeps one pulse; direct 93--99 receive three initial jump pulses,
+  followed by ordinary exact steering so the character can cross each gap
+  without accumulating continuous upward velocity.
+- Canonical-spawn request `xreq_3c9b4a76-d199-49d7-9b61-d3f70b51efd0`
+  recovered all 24 traces: zero dock arrivals, three early deaths, and a hard
+  maximum of 92 anchors. Sixteen runs failed at direct 93. All three bounded
+  pulses fired; the final supported trajectory reached target x but fell below
+  the mesh before completing the remaining lateral correction.
+
+## v298 - single-pulse the northern 92--99 seams (2026-08-10)
+
+- Version UUID: `73c6b6c0-2249-485f-aca9-41739e7d07ed` (`wowborg:v298`,
+  uploaded inert; not submitted).
+- Replaces continuous jumping with one jump pulse per exact anchor from northern
+  direct 92 through 99. v297 proved that continuous pulses launched the
+  character roughly 70 yards above the downhill route before a lethal landing.
+- Canonical-spawn request `xreq_ced7de9c-2122-456b-abfb-0ae1f121a0fe`
+  recovered all 24 traces: zero dock arrivals, three early deaths, and a hard
+  maximum of 92 anchors. Seventeen runs failed at direct 93 (`no_frame`,
+  `no_progress`, or deadline). One pulse briefly held altitude, but the
+  character fell through the gap after roughly three non-jump translations.
+
+## v297 - repair the northern direct-92 jump seam (2026-08-10)
+
+- Version UUID: `c9e51e97-0c45-49b1-8c58-b132ec55f380` (`wowborg:v297`,
+  uploaded inert; not submitted).
+- Retains v296's local Prowl band and adds `tanaris-northern-direct-92` to the
+  explicit jump seams. In 17/24 v296 traces, the character reached direct 91,
+  attempted the rising direct-92 edge without jumping, and fell through the
+  cliff mesh; this version changes only that missing jump classification.
+- Canonical-spawn request `xreq_f5291be7-1e2c-488f-9e19-ed203730611b` recovered
+  all 24 traces: zero dock arrivals and 21 deaths. The missing direct-92 jump was
+  repaired and the best run reached direct 103, but 13 runs died landing at
+  direct 100 after repeated jump pulses had launched them to z=60--70 on a
+  route near z=-5. The failure is terrain control, not combat or broken Prowl.
+
+## v296 - stealth only through the Centipaar cliff band (2026-08-10)
+
+- Version UUID: `eb2ab302-3ecb-454a-be24-f04b2b725d18` (`wowborg:v296`,
+  uploaded inert; not submitted).
+- Uses Cat Form and Prowl, exact arrivals, and terrain-constrained steering only
+  for northern direct anchors 90--129; every other clear segment remains in
+  Travel Form with six-yard hazard bypass.
+- Canonical-spawn request `xreq_61463e30-2a85-4aa0-898e-ac30acc020b0` recovered
+  all 24 traces: zero dock arrivals, three early route deaths, and a maximum of
+  92 arrived anchors. Seventeen runs reproduced the same no-progress failure at
+  direct 92 after slipping below the world, isolating a missing jump seam rather
+  than a stealth or combat failure.
+
+## v295 - exact jump treatment for the first northern cliff seams (2026-08-10)
+
+- Version UUID: `65480360-6b30-4e8d-a2ff-7cbd75e388fa` (`wowborg:v295`,
+  uploaded inert; not submitted).
+- Retains v294's six-yard hazard router and adds exact continuous-jump steering
+  at northern seams 41--42 and 93--99.
+- Canonical-spawn request `xreq_7abd5e60-1740-44d4-ae9d-1cf7fced2097` advanced
+  the best trace from anchor 95 to 133, but seven of the first eleven recovered
+  traces died and many fell below the world around anchors 100--111. The result
+  identified the Centipaar cliff band as the next terrain-and-aggro boundary.
+
+## v294 - bounded hazard bypass on the northern route (2026-08-10)
+
+- Version UUID: `24a54f48-922e-48a3-a49c-a92da76a7c91` (`wowborg:v294`,
+  uploaded inert; not submitted).
+- Re-enables hazard-aware lateral selection with a six-yard bypass/rejoin
+  corridor while keeping only computed steep anchors exact.
+- Canonical-spawn request `xreq_fdba63bb-9c25-494d-a662-6835fb2e82dc` improved
+  survival to three deaths in the first eleven traces and reached anchor 95.
+  Deterministic stalls at 41 and falls around 94--95 established the first two
+  explicit jump seams.
+
+## v293 - exact northern anchors with full melee fallback (2026-08-10)
+
+- Version UUID: `26a47462-b7eb-4993-a56f-be0cfdc30fd3` (`wowborg:v293`,
+  uploaded inert; not submitted).
+- Makes every northern direct anchor exact and terrain-constrained, disabling
+  broad corridor passing and hazard drift while retaining full melee fallback.
+- Canonical-spawn request `xreq_f69c9313-4726-4ae1-abb2-8cc34c69d34b` reached
+  anchor 92, but 12 of the first 13 recovered traces died. Individual level
+  45--49 fights were winnable in roughly 3--10 seconds; repeated Petrifier,
+  Ogre, and Centipaar contacts were cumulatively lethal. Global fight-through
+  routing was rejected in favor of local bypass or stealth.
+
+## v292 - collision-faithful current-navmesh northern route (2026-08-10)
+
+- Version UUID: `2f9291fe-9ddc-4fde-ba51-c6509d8d7e60` (`wowborg:v292`,
+  uploaded inert; not submitted).
+- Expands the old safe opening and the current northern continuation into 419
+  one-yard-error navmesh anchors, preserving collision geometry that the coarse
+  route discarded.
+- Canonical-spawn request `xreq_2325cd0a-d91b-45d5-bdc0-0302b930e12c` survived
+  and reached anchor 42, but 20-yard hazard detours drifted outside the narrow
+  navmesh corridor and stalled. The route was retained; broad avoidance was not.
+
+## v291 - bootstrap the reconstructed northern route (2026-08-10)
+
+- Version UUID: `d7809458-95d0-48e1-a5ca-04b82056e8fd` (`wowborg:v291`,
+  uploaded inert; not submitted).
+- Prepends the proven current-host southwest movement bootstrap to v290's
+  reconstructed v78 opening.
+- Canonical-spawn request `xreq_a42f6646-d31c-40e5-b03c-332f0f61aac9` passed
+  the opening timeout, but nine of the first eleven traces died and the best
+  reached only anchor 10 before the old sparse bypass chord fell below world.
+
+## v290 - reconstruct the v78 northern opening (2026-08-10)
+
+- Version UUID: `e243b209-4443-48e1-a5ca-04b82056e8fd` (`wowborg:v290`,
+  uploaded inert; not submitted).
+- Reconstructs v78's historical safe opening endpoints on the current navmesh,
+  then joins the dense current northern continuation.
+- Canonical-spawn request `xreq_ecd48cc0-49e8-40d4-b23d-46cf549a884b` failed at
+  the first target: current-host southwest `move_to` produced a 30-second
+  no-frame timeout. The geometry remained useful after adding the known
+  movement bootstrap.
+
+## v289 - probe the generated movement-duration contract (2026-08-10)
+
+- Version UUID: `5c46e289-f433-4889-965a-d98a303f4468` (`wowborg:v289`,
+  uploaded inert; not submitted).
+- Requests 2.5-second clear movement strides on the restored v280 mountain
+  route, matching the generated field schema's advertised maximum of five.
+- Canonical-spawn request `xreq_4a246a5b-62a1-4699-b272-3a6b79be0c57` imported
+  in all 24 episodes but failed at the first 2.5-second translation: the exact
+  image has a cross-field `move_vector` validator capped at 1.5 seconds. The
+  source returned to one-second Travel Form and 1.5-second stealth strides.
+
+## v287-v288 - first current-navmesh northern-direct candidate (2026-08-10)
+
+- Version UUIDs: v287 `9cac825e-9d76-4338-8364-0b3f49b4beda`; v288
+  `a95d0bfd-8e4c-4ee2-8ed9-b4d4669536dc` (uploaded inert; neither submitted).
+- v287 introduced the direct northern Detour path but failed policy import
+  because a `frozenset` was unioned with a dict. v288 fixed the import without
+  changing the route.
+- Canonical-spawn request `xreq_041a1f3a-1e49-4f3e-a985-321c13f6a017` recovered
+  all 24 v288 traces: zero dock arrivals and 16 deaths. The eight-yard-simplified
+  route cut collision corners and exposed too many hazards, motivating a dense
+  current-navmesh reconstruction.
+
+## v277-v286 - establish the retained stealth corridor and reject local variants (2026-08-10)
+
+- Version UUIDs: v277 `ce9f6c60-e1f4-4ea4-a48b-e89c7799d2d0`; v278
+  `fd85a3f9-2ee8-4bd7-9d51-79598b7e2f5c`; v279
+  `3fa82773-261e-4a86-bf25-ca11077a94df`; v280
+  `917fe984-05d8-4488-b9be-5b0bc945e9b3`; v281
+  `f99511ad-bbd9-48ef-a1d7-9d589f8a67aa`; v282
+  `5765dbd5-7483-49a9-9057-9072fd3029f4`; v283
+  `2c099e1e-20dc-4cad-b2ac-bac1c4d9a64a`; v284
+  `493553ee-9605-4736-b689-50729536c389`; v285
+  `848ef3cb-c528-4cb6-b757-78ec97020e29`; v286
+  `3425dcf4-20ce-4493-83dd-46f6549296eb` (all uploaded inert; none submitted).
+- v277 and v278 progressively extended Prowl across the direct Flats corridor
+  and produced 6/24 and 4/24 dock arrivals. v279 extended stealth through the
+  central road and west gap, producing 19/24 south-road arrivals with no deaths.
+  v280 retained that geometry, used 1.5-second strides only on clear stealth
+  legs, and produced 21/24 arrivals with no deaths; this is the retained
+  downstream behavior.
+- v281's ten-yard ordinary-road precision threshold also produced 21/24 and was
+  behaviorally neutral. v282's post-gap long strides regressed to 11/24. Road-9
+  combat/stealth variants v283--v286 produced only 1, 0, 0, and 1 arrivals,
+  respectively, with eight aggregate deaths. Those variants were rejected.
+- Requests: v277 `xreq_a9e02953-d3b5-4131-bd6e-8e043ceef040`; v278
+  `xreq_2897605e-9994-4c92-a4d9-6a8c2e8591ec`; v279 south-road
+  `xreq_05e35f02-ed69-4042-9369-3e5c8330bacb`; v280 south-road
+  `xreq_2ae2ced4-dc21-41c2-b3f4-3c77e9cb6bc8`; v281
+  `xreq_3f916f6b-1d72-451c-9582-097802ea7e90`; v282
+  `xreq_9721f3dc-207b-4f76-8261-456329b989b4`; and v283--v286 road-9
+  `xreq_6d3a26a0-2928-4b1b-ac94-b6484194b213`,
+  `xreq_adf270c7-de65-4958-87d5-e3976cc3664f`,
+  `xreq_56feae84-96eb-4bc0-b58a-53b27ad38a3f`, and
+  `xreq_fc5dcfb6-66fb-424e-964a-7091be2b8f44`.
+
+## v276 - prowl across the direct Flats corridor (2026-08-10)
+
+- Version UUID: `2503acd0-0616-4364-9293-1c70938a102e` (`wowborg:v276`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Retains v275's shorter Detour-derived corridor, but uses Cat Form and Prowl only from direct point
+  1 through central road 1 and follows the verified corridor without ordinary enemy detours. Travel
+  Form resumes at central road 2. All later route, combat fallback, and terrain control are unchanged.
+- South-road evaluation pending.
+
+## v275 - take the direct Detour corridor across Shimmering Flats (2026-08-10)
+
+- Version UUID: `a1fc74c7-0888-40a8-81db-a5fb855a0dc2` (`wowborg:v275`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Replaces the authored 1,427-yard south-road-to-central-road approach, including its collision-heavy
+  fence gap and dense central corridor, with eight meaningful turns simplified at three-yard
+  tolerance from the real 1,279-yard Detour corridor. The endpoint, controller, hazard behavior,
+  central/west roads, west gap, and Great Lift approach are unchanged.
+- South-road request `xreq_9bda9df8-8277-42c5-ab28-0a0a76aa735f` completed all
+  24 episodes but produced only two trace-confirmed lower-dock arrivals and four route deaths.
+  Successful median move actions fell from v261's 662 to 583, proving the corridor is materially
+  more efficient, but direct exposure to the Flats hazard field erased the conversion gain. The
+  route remains for a corridor-scoped stealth test.
+
+## v274 - hold forward across verified clear road (2026-08-10)
+
+- Version UUID: `6f57cbb3-9d1c-44d1-a4a8-e2a2ca23f874` (`wowborg:v274`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Restores v254's collision behavior after v273. On a non-terrain downstream road leg only, when
+  already aligned within 22.5 degrees, more than 70 yards from the target, and with the existing
+  60-yard hazard lookahead completely clear, uses the supported raw-input contract to hold W during
+  one five-simulation-second wait, then explicitly releases it. All turns, gaps, hazards, combat,
+  and nearby arrivals retain the proven per-observation controller.
+- South-road request `xreq_3faae541-056b-4ccf-9ad9-9b9265f410b8` completed all
+  24 episodes but every run timed out on its first raw-input action without moving. Hosted headless
+  observations support `wait`, `move_vector`, `move_to`, `face`, and `invoke`, but not `input`;
+  the general contract is unavailable in this runtime. Held input is rejected and removed.
+
+## v273 - recover blocked fence pulses immediately (2026-08-10)
+
+- Version UUID: `73abe1d4-5178-4520-98fe-685ff895da0b` (`wowborg:v273`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Restores v254's quarter-second control on every fence anchor. Extends the existing immediate
+  jump-sidestep collision recovery to the five fence legs only, instead of waiting for the
+  four-second generic stall detector when a precise crossing pulse moves less than half a yard.
+  Geometry, ordinary movement, hazards, and every other terrain segment are unchanged.
+- South-road request `xreq_57cbe984-6c59-459c-ba0a-f05fccd5066b` completed all
+  24 episodes but produced only five trace-confirmed lower-dock arrivals at a 202.9-second median.
+  The new recovery fired a median 139 times in successful runs, inflating median move actions from
+  v261's 662 to 967. Sub-half-yard fence movement is normal precise control rather than a collision
+  signal, so the special recovery is rejected and removed.
+
+## v272 - midpoint fence-gap control (2026-08-10)
+
+- Version UUID: `fbf3c54a-614c-482f-b22a-ab0dd1df166f` (`wowborg:v272`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Uses 0.375-second precise pulses across all five Shimmering Flats fence-gap anchors, midway
+  between v254's stable quarter-second crossing and v270/v271's faster but unstable half-second
+  crossing. All route geometry and non-fence behavior remain unchanged.
+- South-road request `xreq_42d28b8b-d22a-49e9-84a7-caab23912f3d` completed all
+  24 episodes and produced six trace-confirmed lower-dock arrivals at a 175.9-second median. Median
+  fence moves fell to 75, but nine runs still failed in the crossing and two characters died later.
+  The midpoint remains below baseline reliability, so all fence legs return to quarter-second
+  control.
+
+## v271 - acquire the fence before half-second control (2026-08-10)
+
+- Version UUID: `35f6ef3f-9218-4da3-bf65-4a529dbe56fc` (`wowborg:v271`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Retains v270's half-second pulses on fence-gap points 2--5, but restores quarter-second control
+  on point 1 where v270 introduced five acquisition failures. All anchors, downstream behavior,
+  and non-fence cadence remain unchanged.
+- South-road request `xreq_6befc5af-83a4-454c-b490-3dfd0a6f3472` completed all
+  24 episodes but produced only three trace-confirmed lower-dock arrivals. Restoring precise entry
+  control removed v270's point-1 expiries, but eight runs then expired at point 2 and two died near
+  the crossing. Half-second interior control is rejected; the next version tests the midpoint.
+
+## v270 - half-second control only inside the fence gap (2026-08-10)
+
+- Version UUID: `3634b0d2-f7f5-4813-93d0-a6361dae21dc` (`wowborg:v270`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Restores all five fence anchors after v269. Only the five Shimmering Flats fence-gap legs use
+  half-second precise pulses; every other precise terrain segment retains v254's quarter-second
+  control. This isolates the crossing that consumed roughly 84 precise move actions per successful
+  v261 run.
+- South-road request `xreq_421708ca-373f-4bde-9ae2-8531bac6c0d1` completed all
+  24 episodes and produced six trace-confirmed lower-dock arrivals at a 181.2-second median. Median
+  fence move actions fell from v261's 121 to 65 and successful total moves from 662 to 619, but five
+  runs expired while acquiring fence-gap point 1 and one character died later. Applying the longer
+  pulse at the crossing entry is rejected; point 1 returns to quarter-second control.
+
+## v269 - hold the Shimmering Flats fence-gap bearing (2026-08-10)
+
+- Version UUID: `cab25e7f-46b6-43b3-a7a6-fc550a6ee567` (`wowborg:v269`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Restores v254's one-second cadence after v268. After acquiring fence-gap point 1, skips the three
+  collinear interior targets and jumps directly toward point 5. The exact crossing endpoints,
+  quarter-second jump control, hazard behavior, and all downstream geometry are unchanged.
+- South-road request `xreq_81708ab2-ce00-4bea-83b0-882a4d475b52` completed all
+  24 episodes but produced zero lower-dock arrivals. Eighteen traces expired or stalled while
+  targeting fence-gap point 5, proving that the three skipped interior anchors are required for
+  collision guidance. The fence skip is rejected and removed.
+
+## v268 - lengthen only tightly aligned clear-road pulses (2026-08-10)
+
+- Version UUID: `457469c8-16da-4a5d-bd8d-ec3b99c6aef2` (`wowborg:v268`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Restores every v254 downstream guidepoint after v267. Requests the 1.5-second contract maximum
+  only when the character is within 22.5 degrees of the target, remains more than 20 yards away,
+  and has no visible hazard; diagonal corrections, hazards, constrained terrain, and precise
+  arrivals retain their proven cadence.
+- South-road request `xreq_ec860344-69b5-4d43-bf18-0c9723584b25` completed all
+  24 episodes but produced only two trace-confirmed lower-dock arrivals and two route deaths.
+  Successful runs requested a median 145.5 long pulses yet saved only eight move actions versus
+  v261, showing that longer requested duration did not translate into useful controller progress.
+  The aligned long stride is rejected and removed.
+
+## v267 - skip redundant central-road bearings (2026-08-10)
+
+- Version UUID: `401f389b-5ee5-42f7-b63f-de9e924df454` (`wowborg:v267`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Restores v254's forms and hazard behavior after v266. Skips five nearly collinear intermediate
+  targets in the Thousand Needles central corridor and the 2.7-degree midpoint on the following
+  straight road. Movement durations, route endpoints, combat, avoidance, gaps, and terrain control
+  are unchanged.
+- South-road request `xreq_c3527729-905b-4120-8cb9-232b5728da6d` completed all 24
+  episodes but produced only six trace-confirmed lower-dock arrivals at a 195.5-second median. Two
+  characters died on the route, and successful median move
+  actions rose from v261's 662 to 701 because the longer compressed legs induced extra hazard
+  steering. The downstream skips are rejected and removed.
+
+## v266 - stealth only through the central-road hazard belt (2026-08-10)
+
+- Version UUID: `6bd489a1-2978-4e42-8411-ebc950521da4` (`wowborg:v266`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Restores v254's one-second cadence after v265. Uses Cat Form and Prowl with straight bearings only
+  on Thousand Needles central road 2, where recovered traces cluster the Snarler/Cougar/Boulderkin
+  settlement failures. Exiting Cat does not consume the following leg's single Travel Form attempt.
+- South-road request `xreq_1d92d024-04c9-4296-9a2e-80b4af826800` kept all 24
+  characters alive but produced only six lower-dock score-band runs. All 24 policy traces were
+  recovered: Prowl and Travel Form both activated as intended, yet central road 2 retained its
+  characteristic 30-second `no_frame` failures. Narrow stealth is rejected and removed; this
+  bottleneck is more consistent with route geometry or terrain than enemy aggro.
+
+## v265 - shorten only timeout-prone road actions (2026-08-10)
+
+- Version UUID: `9859229e-1733-4938-8cf5-a2c6f989f282` (`wowborg:v265`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Restores v254's steering after v264. Only Thousand Needles central roads 2/3 and west road 1 use
+  0.75-second open translations; recovered v261 traces attributed 11 of 16 non-arrivals to exact
+  30-second settlement timeouts, with these three legs accounting for every terminal intent.
+- South-road request `xreq_34e8b0f6-4449-4353-bdf9-1b32ea9dd2c3` produced only seven dock-band
+  runs. In 22 recovered traces, central road 2 still caused seven `no_frame` timeouts and two
+  deaths; successful arrivals slowed to a 192.0-second median. The shorter cadence is rejected and
+  removed from the active source.
+
+## v264 - face hazard detours before translating (2026-08-10)
+
+- Version UUID: `6765a188-5757-44bb-b8fc-08cd6f20d877` (`wowborg:v264`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Restores v254's conservative fixed-corridor hazard admission after v263. Only hazard avoidance
+  and evasion waypoints use a 22.5-degree turn-before-move gate, replacing long normalized diagonal
+  vectors with stationary alignment followed by full-speed straight movement.
+- South-road request `xreq_f27e5f6d-8325-4156-adfb-fb0ffb7781e9` kept all 24 characters alive and
+  produced eight lower-dock score-band runs. In recovered arrival traces, median diagonal actions
+  fell only from 237 to 222 while turn-only actions rose from 30.5 to 56. Stationary hazard
+  alignment is rejected and removed from the active source.
+
+## v263 - compute hazard clearance per enemy (2026-08-10)
+
+- Version UUID: `9a895521-5fde-4fa8-98c1-37ae52638887` (`wowborg:v263`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Completes v262's hazard-admission correction: each enemy's projected path and every lateral
+  candidate are compared with that enemy's own level-derived aggro radius. Side selection and
+  emergency evasion use the worst per-enemy clearance margin; unknown enemies remain conservative.
+- South-road request `xreq_3c05b7b7-51f5-43de-b0cb-b50d043c64b5` kept all 24 characters alive but
+  produced only five lower-dock score-band runs. Per-enemy admission converted conservative early
+  steering into later emergency evasion and is rejected; the active source restores v254's fixed
+  detection corridor and global worst-case clearance.
+
+## v262 - admit only aggro-relevant path hazards (2026-08-10)
+
+- Version UUID: `7ad1baea-a191-4fa5-80d8-627e75130646` (`wowborg:v262`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Restores v254's form and movement behavior after v261. Immediate and lookahead enemies enter
+  lateral avoidance only when their projected path clearance is inside the existing level-aware
+  aggro requirement (including three yards of slack), rather than an unrelated fixed 18 yards.
+- South-road request `xreq_8b198ece-052c-4323-93b1-2c1b7266bf73` kept all 24 characters alive and
+  produced nine trace-confirmed lower-dock arrivals at a 182.8-second median. Avoidance activations
+  and diagonal actions did not fall because the maximum tracked-unit clearance still governed all
+  enemies. The global threshold is rejected; the active source computes per-enemy margins.
+
+## v261 - reacquire Travel Form after combat (2026-08-10)
+
+- Version UUID: `3f336f4f-dce2-4883-b4d2-a799b6fcbcdd` (`wowborg:v261`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Restores v254's movement cadence after v260. The one-attempt-per-leg Travel Form latch now resets
+  only after an observed fight or escape ends, allowing one legitimate speed recovery without
+  reviving the terrain-seam recast loop fixed in v242.
+- South-road request `xreq_939750ae-7750-4c45-8edc-21f420335bad` kept all 24 characters alive and
+  produced eight trace-confirmed lower-dock arrivals at a 194.5-second median, versus v243's ten at
+  174.2 seconds. Combat recovery is rejected and removed from the active source.
+
+## v260 - keep full cadence through soft bearings (2026-08-10)
+
+- Version UUID: `12d441d6-0684-4823-9b04-3d563e08045e` (`wowborg:v260`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Restores v254's four-pulse lower-ramp acquisition after v259. Ordinary crossed-bearing road legs
+  retain their one-second cadence through the final 20 yards instead of slowing to quarter-second
+  pulses. Exact terrain, gaps, the final dock approach, active hazards, and evasion remain precise.
+- South-road request `xreq_a7470287-42af-440e-9c73-019e3975c8ee` kept all 24 characters alive and
+  produced eight trace-confirmed lower-dock arrivals at a 195.6-second median, versus v243's ten at
+  174.2 seconds. Soft bearings require their final precision; the cadence change is rejected and
+  removed from the active source.
+
+## v259 - shorten the lower-ramp straight acquisition (2026-08-10)
+
+- Version UUID: `a6358f0b-27ee-41a7-b33a-0fd91f068856` (`wowborg:v259`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Restores v254's quarter-second upper-ascent control after v258 and reduces only ascent point 4's
+  bounded straight-jump acquisition from four pulses to three. The retained point-4-to-16 skip and
+  all downstream route control are unchanged.
+- In the first 22 terminal runs from road-9 request
+  `xreq_eda2679c-10d5-4a6f-b76e-b41cedd23223`, all characters remained alive but none reached the
+  dock and ten collapsed around the ramp-base score band of 311--320. The shorter acquisition is
+  rejected, and the active source restores v254's four pulses.
+
+## v258 - lengthen only the stable upper-ascent hold (2026-08-10)
+
+- Version UUID: `f0c86c20-25ab-4012-b8fc-120f3c038d9b` (`wowborg:v258`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Restores v254's lower-ascent control and uses half-second precise pulses only on the direct
+  point-4-to-16 upper-ascent hold. All other precise terrain pulses remain quarter-second.
+- In the first 20 terminal runs from road-9 request
+  `xreq_c6d42a35-026d-4ece-870c-5050fd9590f2`, two scored zero and nine collapsed around score
+  319; only one reached the lower dock. The longer upper-ascent pulse is rejected, and the active
+  source restores quarter-second precise control.
+
+## v257 - jump straight across each lower-ascent edge (2026-08-10)
+
+- Version UUID: `3988ad5a-280a-4c8b-aa3e-793b6317575b` (`wowborg:v257`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Restores the required lower-ascent points 1--3 after v256, but prohibits jump-strafe while
+  traversing each point's shared bearing. V254's upper-ascent skip remains active.
+- The first 23 terminal runs in road-9 request
+  `xreq_64462c2e-319c-41f7-b53e-5934b7acfad8` all survived but produced zero dock arrivals; the
+  maximum score was `1770.6264`. Straightening the lower verified edges is rejected, and the active
+  source restores v254's lower-ascent control.
+
+## v256 - hold both collinear ascent bearings (2026-08-10)
+
+- Version UUID: `194c8265-da6c-4a6c-8ee6-e8477e637e4e` (`wowborg:v256`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Retains v254's point-4-to-16 upper-ascent skip and also jumps directly from ramp base to ascent
+  point 3 along their single measured bearing. The point-3-to-4 turn remains separately acquired.
+- In the first 13 terminal road-9 episodes from request
+  `xreq_29362b26-5c1b-412f-8f73-0a2b22794b8f`, all characters survived but none passed the
+  ramp-base region; the maximum score was `313.1164`. The lower direct hold is rejected, and the
+  active source restores all three height anchors.
+
+## v255 - keep moving through safe downstream turns (2026-08-10)
+
+- Version UUID: `e81429b3-694e-4d46-b64e-ce751bf53fc0` (`wowborg:v255`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Retains v254's collinear ascent skip. On safe, non-jumping, non-terrain downstream turns of at
+  most 90 degrees, combines forward motion with the existing quarter-second turn instead of
+  rotating in place. Combat, hazards, gaps, and precise terrain turns are unchanged.
+- Road-9 request `xreq_8d34f8c6-2b1f-49e1-8514-a24a75932e2b` kept all 24 characters alive but
+  produced zero dock arrivals; its best score stopped at the central-road-2 plateau. Moving turns
+  are rejected, and the active source restores v254's in-place turn control.
+
+## v254 - hold the collinear upper-ascent bearing (2026-08-10)
+
+- Version UUID: `53de1ad9-2420-423d-bf99-3c2bf3aa586d` (`wowborg:v254`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Retains v250's bounded straight-jump acquisition at ascent point 4, then skips redundant
+  collinear points 5--15 and jumps directly to point 16 on the same measured bearing. All other
+  route, hazard, combat, and downstream control is unchanged.
+- Road-9 request `xreq_70685708-df99-49d3-aa71-6c0c5420f5d5` kept 23 of 24 characters alive and
+  produced one lower-dock arrival. Seven runs reached the central-road-2 score plateau. This is the
+  first dock arrival from the road-9 fixture, so the collinear skip remains active, but downstream
+  conversion is not yet consistent. Canonical request
+  `xreq_98cb87c6-ee69-423b-9f33-03abd08ce5b4` kept all 24 characters alive but produced no dock
+  arrivals. Four reached the south-road score plateau, matching v250's count but leaving
+  insufficient downstream horizon.
+
+## v253 - use navmesh movement on individual open road legs (2026-08-10)
+
+- Version UUID: `15927173-1b73-427f-8998-d971eb3ca269` (`wowborg:v253`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Retains v250's bounded ascent fix and uses the existing supervised server-side navigator only on
+  eight individually named, navmesh-connected open downstream road legs. Gaps, corridors, and the
+  final dock approach retain the authored precise controller.
+- South-road request `xreq_e116a1a3-f35c-4934-929c-af75b58c0214` completed all 24 episodes without
+  an infrastructure failure, but every run had the identical near-zero score `4.5371`. Individual
+  `move_to` actions are therefore unusable in this fixture just like the longer v246/v251
+  navigations. The navmesh branch is rejected and removed.
+
+## v252 - stride only on named open downstream roads (2026-08-10)
+
+- Version UUID: `6cfa9a00-8c38-476e-8461-a36f3e7b6264` (`wowborg:v252`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Retains v250's bounded straight-jump ascent and requests the 1.5-second contract maximum only on
+  eight named open downstream road legs. Gaps and narrow corridors retain proven precise control.
+- South-road request `xreq_50c05a9b-5a04-43ac-b595-c5d679b4fc92` completed all 24 episodes without
+  an infrastructure failure but produced zero dock arrivals. Four runs reached the pre-dock
+  1,943--1,947 score plateau; none reached the dock's distinct 1,968.27 score. The selected longer
+  strides are rejected; the active source restores one-second vector control.
+
+## v251 - ask Detour to route the full downstream crossing (2026-08-10)
+
+- Version UUID: `9a0fe881-ccf3-4381-a09f-3bd02c61deeb` (`wowborg:v251`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Replaces the authored route from Shimmering Flats road to Great Lift south road with one
+  supervised semantic-navigation request.
+- South-road request `xreq_8c21c36d-bd3d-437b-8c6e-e94e170c679a` kept all 24 characters alive,
+  but all 24 returned the same `no_progress` failure after 30.2--30.3 seconds with zero
+  displacement. The planner reported a 2,857.8-yard route but could not execute it. The bypass is
+  rejected; the active source restores the authored downstream route.
+
+## v250 - bound straight jumping at the two costly ascent turns (2026-08-10)
+
+- Version UUID: `abd044c8-c2ef-4873-96fe-43f31102d7cf` (`wowborg:v250`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Suppresses jump-strafe for the first four translating pulses at ascent point 4 and for all
+  translating pulses at ascent point 11. All other ascent points retain normal steering.
+- Canonical request `xreq_fbac3864-e6ab-4e24-8c82-431c139aac0b` kept 19 of 24 characters alive.
+  Fourteen reached the ramp crest at a 189.6-second median and five reached south road at 197.3,
+  versus v243's five south-road arrivals at 234.4. No character reached the dock, but this is the
+  first large canonical upstream speedup and remains active while downstream control is optimized.
+
+## v249 - jump straight only at ascent points 4 and 11 (2026-08-10)
+
+- Version UUID: `46167607-7fcc-40b7-b40e-a852d08ca56f` (`wowborg:v249`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Prohibits jump-strafe at the two ascent turns identified in v248 while retaining ordinary
+  steering everywhere else.
+- Canonical request `xreq_64a7165f-ed34-44e2-a5d1-53f261ad7181` kept 22 of 24 characters alive but
+  produced only two crest arrivals at a 178.1-second median and no south-road or dock arrivals.
+  Point 11 improved, while point 4 remained inconsistent and sometimes trapped the route at point
+  3. The unbounded point-4 rule is rejected in favor of a short bounded straight-jump phase.
+
+## v248 - prohibit strafe during every jump (2026-08-10)
+
+- Version UUID: `9d3a9ce8-1fba-4b2e-bb8c-51d1c4faf6db` (`wowborg:v248`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Prevents strafe components on all jumping movement while preserving turn-only alignment and all
+  non-jump steering.
+- Canonical request `xreq_ad6e1f84-0bf2-4c35-a458-3a1f4c46dcf2` kept 19 of 24 characters alive,
+  but only three reached the crest, at a 221.9-second median, and none reached south road. Although
+  the two pathological ascent turns became much faster, global straight jumping harmed other
+  ascent and descent points. The global rule is rejected.
+
+## v247 - tightly align steep jumps (2026-08-10)
+
+- Version UUID: `e39c59ea-a943-4879-baee-f6daa316dec2` (`wowborg:v247`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- Requires an 11.25-degree bearing before steep jumps and prohibits jump-strafe; ordinary road
+  steering, route geometry, combat, and hazard handling are unchanged.
+- Ramp-base request `xreq_9203ea6b-9687-4f0f-82ed-3559d6c95e58` kept all 24 characters alive but
+  produced zero crest crossings. The tighter gate was below the host turn quantum: every run
+  alternated turn-only inputs at ascent point 1, then fell from the unsupported exact diagnostic
+  spawn. Tight alignment is rejected. The active source restores the proven 45-degree gate while
+  retaining zero jump-strafe for a stable ramp-turn diagnostic.
+
+## v246 - ask Detour to bypass the Shimmering Flats cliff (2026-08-10)
+
+- Version UUID: `e396e767-6f48-4b1c-be4f-2d5b93fba0ef` (`wowborg:v246`, uploaded
+  inert; not submitted). Built from uncommitted diagnostic source against canonical vanilla-wow
+  0.1.209.
+- At road 9, replaces the hand-steered cliff ascent and descent with one supervised semantic
+  navigation request to the Shimmering Flats south road.
+- Road-9 request `xreq_e9617db4-00d9-403e-8375-fd81bc8ae922` kept all 12 characters alive, but all
+  12 returned the identical `no_progress` failure after 30.0 seconds with zero displacement. The
+  planner was unavailable and the semantic executor refused the cross-component move. The bypass
+  is rejected; the active source restores v243's hand-steered crossing.
+
 ## v245 - stride through clear downstream roads (2026-08-10)
 
 - Version UUID: `409807f0-71eb-4ec4-a676-f113281612aa` (`wowborg:v245`, uploaded

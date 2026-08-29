@@ -97,6 +97,21 @@ def test_move_uses_upstream_action_and_advances_to_next_frame() -> None:
     assert outcome.settlement_kind is None
 
 
+def test_move_canonicalizes_destination_to_the_wire_float_width() -> None:
+    env = FakeEnv()
+    session = GymSession(env, _frame(1), {})
+
+    session.select_move_to(session.frame, -9225.2002, -2574.7705, 17.031, 1)
+
+    destination = env.actions[0].destination
+    assert destination == WorldPoint(
+        map_id=1,
+        x=-9225.2001953125,
+        y=-2574.7705078125,
+        z=17.0310001373291,
+    )
+
+
 def test_move_vector_preserves_explicit_jump_request() -> None:
     env = FakeEnv()
     session = GymSession(env, _frame(1), {})

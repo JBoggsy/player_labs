@@ -5,7 +5,9 @@
 # world navmesh at /vmangos-data/mmaps + the vmangos-navmesh-helper binary) and
 # runs tools/route_lab.py against the actual L1/L2 planning code.
 #
-# Usage: tools/route_lab.sh [stations | course | station NAME | route X Y Z [MAP]]
+# Usage: tools/route_lab.sh [stations | course | station NAME | route X Y Z [MAP] |
+#                            segment SX SY SZ TX TY TZ [MAP] |
+#                            chain SX SY SZ TX TY TZ [MAP] [TOLERANCE]]
 set -euo pipefail
 
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
