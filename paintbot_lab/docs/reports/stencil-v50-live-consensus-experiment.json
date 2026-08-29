@@ -1,0 +1,22 @@
+{
+  "hypothesis": "While squadmates are alive and able to exchange traffic, Stencil v50 bounds epoch drift and converges without conflicting commitments on the giant 4FFA8 case that most stressed v49 and v50.",
+  "what_changes": "No player change. Run three fresh full-seat episodes on the same giant campaign map and pinned four-entrant roster, with Stencil v50 and Daveey v25 in every episode. Correct the prior terminal metric by evaluating only concurrently alive squadmates.",
+  "instrument": {
+    "kind": "experience-request",
+    "summary": "Three full-seat 32-agent giant-4FFA8 hosted episodes with streamed artifacts.",
+    "detail": "Paintbot 0.7.199 4ffa8, campaign cell 4 mapSeed 327479547 mapSize giant; entrant blocks paintbot-focusfire:v25, alphashot:v368, co-gas-ctf-simple-relhalpha:v38, stencil:v50 repeated modulo four. Inspect every available Stencil snapshot and order transition."
+  },
+  "if_true": "No same-squad/epoch directive conflict; at least 90% of available Stencil artifacts commit and follow orders; commits exceed timeouts; and no epoch gap greater than one among concurrently alive squadmates persists for 90 consecutive ticks (two 45-tick rebroadcast intervals).",
+  "if_false": "Any directive conflict recurs, fewer than 75% of available seats commit or follow, timeouts equal/exceed commits, or a live epoch gap greater than one persists for at least 90 consecutive ticks.",
+  "decision_rule": "Confirm only if every true-side threshold passes. Refute if any false-side condition occurs. Otherwise call the result inconclusive, including if artifact availability is too low to inspect at least 22 of 24 Stencil seats.",
+  "confounds": [
+    "Permanent elimination freezes a dead process's epoch: exclude ticks where a member is not alive rather than treating death as protocol drift.",
+    "Transient propagation is expected in an asynchronous shout protocol: the bound is two configured 45-tick rebroadcast intervals, not instantaneous equality.",
+    "Artifact omission can hide a seat: require at least 22 of 24 Stencil artifacts and report omissions.",
+    "Three games test the stressed protocol mechanism, not win-rate superiority."
+  ],
+  "verdict": {
+    "result": "refuted",
+    "evidence": "Twenty-three of 24 Stencil artifacts were available; all 23 committed and followed orders, with 154 commits, 17 timeouts, and 25 resyncs. However, four same-squad/epoch directive conflicts appeared across all three episodes, and one live epoch gap persisted for 122 ticks. Trace-level root cause: updateConsensus stored a locked vote but continued to count and publish a newly recomputed choice after late proposals. v51 corrects that exact path."
+  }
+}

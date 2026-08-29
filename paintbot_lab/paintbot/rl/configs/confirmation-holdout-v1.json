@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "purpose": "untouched final confirmation after retiring the legacy opened test index",
+  "created_before_current_arm_results": true,
+  "selection_script": "paintbot_lab/paintbot/rl/freeze_confirmation_holdout.py",
+  "seed": "paintbot-exact-action-confirmation-v1-2026-08-14",
+  "requested_budget": 10000,
+  "selected": 10000,
+  "selected_trajectories": 10000,
+  "selected_replays": 7236,
+  "contaminated_rows": 10000,
+  "contaminated_replays": 4342,
+  "eligible_trajectories": 17985,
+  "changed": 5000,
+  "held": 5000,
+  "strata": 303,
+  "available": 12184824,
+  "dataset_fingerprint": "03693a38c974e27a",
+  "contaminated_index": "runs/expert-corpus-v1/indices/test.npy",
+  "contaminated_index_sha256": "244dad9d331ab92c2a852c1f7ca1ae31d5892c48e11acf08cb31c6f65577dbdb",
+  "confirmation_index": "runs/expert-corpus-v1/indices/test-confirmation.npy",
+  "confirmation_index_sha256": "8db6fb0c7fc8c53f514443ca7a7cba923f2a29b13356cc86fcf99d38b96c5b2e",
+  "selected_samples_sha256": "6b86e5f4452546a256b40595ce1d91445a9ce1cf9196652060ff275acc656dc9",
+  "evaluation_uncertainty": {
+    "cluster_unit": "replay_id",
+    "confidence_level": 0.95,
+    "method": "BCa",
+    "resamples": 9999,
+    "seed": 20260814
+  },
+  "candidate_selection": {
+    "ordered_arms": [
+      "matched_compute_unique_rows",
+      "event_actions",
+      "spatial_semantics",
+      "event_spatial_interaction"
+    ],
+    "criterion": "frozen validation autoregressive exact-action accuracy strictly above 0.70",
+    "confirmation_attempts": 1,
+    "after_confirmation": "stop regardless of pass or fail"
+  },
+  "independent_verification": {
+    "unique_indices": 10000,
+    "unique_trajectories": 10000,
+    "old_new_replay_overlap": 0,
+    "changed": 5000
+  }
+}

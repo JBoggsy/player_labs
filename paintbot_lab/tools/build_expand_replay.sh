@@ -1,50 +1,55 @@
 #!/usr/bin/env bash
-# Build a version-matched `expand_replay` binary for reading CTF replays.
+# Build a version-matched `expand_replay` binary for reading PAINTBOT replays.
 #
-# Usage: ctf_lab/tools/build_expand_replay.sh [--ref SHA] [--force] [--run REPLAY]
+# Moved here from ctf_lab on 2026-08-07 when that lab was archived; paintbot is a
+# second manifest over the same coworld-ctf engine, so the reader is the same tool.
+#
+# Usage: paintbot_lab/tools/build_expand_replay.sh [--ref SHA] [--force] [--run REPLAY]
 #   --ref SHA    coworld-ctf game ref to build against
-#                (default: CTF_REF below — the version our replays use)
+#                (default: PAINTBOT_GAME_REF from tools/versions.env)
 #   --force      re-fetch source and rebuild even if a cached binary exists
 #   --run REPLAY build if needed, then run the binary on REPLAY (a .bitreplay)
 #
-# `expand_replay` re-simulates a recorded replay through the CTF sim and validates
-# a per-tick hash, so it expands a replay faithfully only when built from the SAME
+# `expand_replay` re-simulates a recorded replay through the sim and validates a
+# per-tick hash, so it expands a replay faithfully only when built from the SAME
 # game version that recorded it. This builds at a matching source ref.
+#
+# `expand_replay_json <replay> [pos_every] [walkability]` — the optional third arg
+# emits the exact startup wall map as `wall-runs-v1`, which `viewer_bundle.py`
+# requires to draw generated Paintbot terrain.
 #
 # It is a HOST analysis tool (run locally to read a replay), so it builds native
 # to this host's arch — no Docker, no amd64. The CTF game source + its bitworld
 # dep are public, so the fetch and `nimby sync` need no credentials.
 set -euo pipefail
 
-# The CTF source ref to build the tool from. It must contain tools/expand_replay.nim
-# and be the same game version that recorded the replays (re-sim validates a per-tick
-# hash). DELIBERATELY PINNED — it must match the game version the LEAGUE actually runs
-# (the last *deployed* game), not `main`, which can run ahead of what's deployed.
-#   How you'll know to bump: build_expand_replay starts hash-failing on FRESH replays
-#   — that's the signal the league redeployed; try a newer commit until a fresh replay
-#   expands cleanly, and update this.
-# Current value (5590b2a) is the deployed ctf 0.7.144 / GameVersion 31 (league
-# coworld cow_07744f5b…, canonical as of 2026-08-03). Resolve the deployed ref by
-# grepping a 40-hex sha out of `coworld show <cow_id> --json` — the parsed
-# game.runnable.source_url field reads None, but the sha is in the raw payload.
-#
-# READERS ARE MUTUALLY EXCLUSIVE BY ERA: a GV26 binary REFUSES a GV23 replay and
-# vice versa ("Replay game version does not match"). The stable symlink tracks the
-# CURRENT league era, so analysing an OLDER batch means naming that era's binary
-# explicitly, e.g. for the 2026-07-29 firefight ladder (0.7.102 / GV23):
-#   event_warehouse.py --expand-replay tools/bin/expand_replay_json-cdd567f
-# Era pins: 5590b2a = 0.7.144 (GV31); beae161 = 0.7.124 (GV27); f24943a = 0.7.112 (GV26);
-# f9e0889 = 0.7.111 (GV26);
-# a2ec0cc = 0.7.108 (GV26);
-# cdd567f = 0.7.102 (GV23);
-# d78450e5 = 0.7.70-0.7.76; 72fb1b1f = 0.7.69; 2641542 = 0.7.66; b571dd3 = 0.7.51;
-# c76e0c75 = 0.7.49; d60dc27 = 0.7.4; 761c098 = 0.5.4.
-CTF_REF="${CTF_REF:-5590b2ad20c6326366d681482b057d1f1b2c02fc}"
-GAME_REPO_SLUG="Metta-AI/coworld-ctf"
-
-LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # ctf_lab/
+LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # paintbot_lab/
 BIN_DIR="$LAB_DIR/tools/bin"
-CACHE_ROOT="$LAB_DIR/.cache/ctf-src"
+CACHE_ROOT="$LAB_DIR/.cache/coworld-ctf"
+
+# The game source ref to build the tool from. It must contain tools/expand_replay.nim
+# and be the same game version that recorded the replays (re-sim validates a per-tick
+# hash). The default is this lab's single source of truth — versions.env's
+# PAINTBOT_GAME_REF, which is also the game-sync ledger and the ref the player builds
+# against. Bump it there, not here.
+#   How you'll know to bump: this starts hash-failing on FRESH replays — that's the
+#   signal the league redeployed. Resolve the deployed ref by grepping a 40-hex sha
+#   out of `coworld show <cow_id> --json`; the parsed game.runnable.source_url field
+#   reads None, but the sha is in the raw payload.
+#
+# READERS ARE MUTUALLY EXCLUSIVE BY ERA: a GV40 binary REFUSES a GV36 replay and vice
+# versa ("Replay game version does not match"). The stable symlink tracks whatever was
+# built LAST, so analysing an OLDER batch means building that era with --ref and then
+# naming that era's binary explicitly:
+#   viewer_bundle.py <episode-dir> --expand-replay tools/bin/expand_replay_json-<sha>
+# Paintbot era pins: 6c7a4c0 = 0.7.215 (GV41); 9dedac0 = 0.7.211 (GV41);
+# 871ace1 = 0.7.208 (GV40); 352d0e5 = 0.7.184 (GV36). Same-GV refs read each
+# other's replays — the era gate is the GameVersion, not the ref.
+# shellcheck source=/dev/null
+source "$LAB_DIR/tools/versions.env"
+: "${PAINTBOT_GAME_REF:?versions.env did not define PAINTBOT_GAME_REF}"
+CTF_REF="${CTF_REF:-$PAINTBOT_GAME_REF}"
+GAME_REPO_SLUG="Metta-AI/coworld-ctf"
 
 die() { echo "build_expand_replay.sh: $*" >&2; exit 1; }
 
@@ -83,7 +88,7 @@ link_stable() {
 }
 
 # Fast path: already built for this ref (both binaries present).
-if [[ -x "$out_bin" && -x "$json_bin" && $force -eq 0 ]]; then
+if [[ -x "$out_bin" && -x "$json_bin" && "$json_bin" -nt "$LAB_JSON_SRC" && $force -eq 0 ]]; then
   echo "build_expand_replay.sh: cached binaries up to date: $out_bin, $json_bin"
   link_stable
   [[ -n "$run_replay" ]] && exec "$out_bin" "$run_replay"

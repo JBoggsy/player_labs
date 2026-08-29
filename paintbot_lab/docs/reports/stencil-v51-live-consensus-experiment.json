@@ -1,0 +1,22 @@
+{
+  "hypothesis": "Stencil v51's actually enforced vote lock prevents overlapping quorums from committing different directives while retaining bounded live epoch recovery in stressed full-seat giant 4FFA8 games.",
+  "what_changes": "Only Stencil changes from v50 to v51: quorum counting and local vote-table publication now use the member's locked first vote rather than a freshly recomputed choice. The map, four entrant blocks, Daveey, and all other settings match the v50 stress gate.",
+  "instrument": {
+    "kind": "experience-request",
+    "summary": "Three full-seat 32-agent giant-4FFA8 hosted episodes with streamed artifacts.",
+    "detail": "Paintbot 0.7.199, campaign cell 4 mapSeed 327479547 mapSize giant; entrant blocks paintbot-focusfire:v25, alphashot:v368, co-gas-ctf-simple-relhalpha:v38, stencil:v51 repeated modulo four. Inspect all available Stencil snapshots, order transitions, consensus counters, and live epoch gaps."
+  },
+  "if_true": "No same-squad/epoch directive conflict; at least 90% of available Stencil artifacts commit and follow; commits exceed timeouts; and no epoch gap greater than one among concurrently alive squadmates persists for 90 consecutive ticks.",
+  "if_false": "Any directive conflict recurs, fewer than 75% of available seats commit or follow, timeouts equal/exceed commits, or a live epoch gap greater than one persists for at least 90 consecutive ticks.",
+  "decision_rule": "Confirm only if every true-side threshold passes. Refute if any false-side condition occurs. Otherwise call the result inconclusive, including if fewer than 22 of 24 Stencil artifacts are available.",
+  "confounds": [
+    "Use the exact stressed v50 roster and map, changing only the Stencil version.",
+    "Exclude ticks where a squad member is permanently dead; dead processes cannot receive shouts.",
+    "Allow two configured 45-tick rebroadcast intervals for asynchronous recovery rather than requiring instantaneous epoch equality.",
+    "Three games test protocol mechanics, not competitive win-rate superiority."
+  ],
+  "verdict": {
+    "result": "refuted",
+    "evidence": "All 24 Stencil artifacts committed and followed orders, with 159 commits, 13 timeouts, 27 resyncs, and zero conflicting same-squad/epoch directives. The vote-safety change therefore worked. The combined hypothesis was nevertheless refuted because one concurrently alive member remained four epochs behind for 1,226 ticks. Its expired order fell through to independent to_post/hold_post behavior outside shout contact. v52 reuses the bounded rejoin path on a live consensus timeout."
+  }
+}

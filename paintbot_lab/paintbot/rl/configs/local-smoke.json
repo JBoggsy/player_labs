@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "source_repository": "https://github.com/Metta-AI/coworld-ctf.git",
+  "preparation": {
+    "stride": 240,
+    "action_delay_ticks": 0,
+    "max_samples_per_version": 2,
+    "seed": 1
+  },
+  "training": {
+    "tuning": "lora",
+    "epochs": 1,
+    "batch_size": 1,
+    "gradient_accumulation": 1,
+    "learning_rate": 0.0002,
+    "weight_decay": 0.01,
+    "warmup_ratio": 0,
+    "max_text_tokens": 512,
+    "mixed_precision": "no",
+    "seed": 1
+  },
+  "episodes": [
+    {
+      "episode_id": "1df3e1d7-45e7-4c41-824c-34ecdbac4f10",
+      "game_version": "16",
+      "source_commit": "35fa06b1343552c5b9af1085375688e1461c4a0d",
+      "split": "train",
+      "povs": [0]
+    },
+    {
+      "episode_id": "48a54116-cb0f-4f9d-9694-b990695527da",
+      "game_version": "40",
+      "source_commit": "ec244e6b01485e8c7acd7a7929a9268354d50957",
+      "split": "train",
+      "povs": [0]
+    },
+    {
+      "episode_id": "2eb71de7-dd31-415e-b395-ace96d4098f3",
+      "game_version": "24",
+      "source_commit": "e05c73134c3b0dc961cc7fbf7e89a7aa8e4ab1be",
+      "split": "validation",
+      "povs": [0]
+    }
+  ]
+}

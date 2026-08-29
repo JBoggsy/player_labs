@@ -1,0 +1,18 @@
+[Unit]
+Description=Paintbot expert corpus and Qwen training handoff
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/metta/paintbot_rl_training_20260807
+Environment=PYTHONPATH=/home/metta/paintbot_rl_training_20260807/paintbot_lab/paintbot/rl
+Environment=HF_HOME=/home/metta/.cache/huggingface
+ExecStart=/home/metta/paintbot_rl_training_20260807/paintbot_lab/paintbot/rl/supervise_expert_training.sh
+Restart=on-failure
+RestartSec=60
+StandardOutput=append:/home/metta/paintbot_rl_training_20260807/logs/expert-training-v1.log
+StandardError=append:/home/metta/paintbot_rl_training_20260807/logs/expert-training-v1.log
+
+[Install]
+WantedBy=default.target
