@@ -14,11 +14,18 @@ from actions import (
     TURN_CW,
     UP,
     ActionDecoder,
+    BUTTONS,
+    PRESS_TOKENS,
+    RELEASE_TOKENS,
+    action_event_tokens,
     action_text,
+    canonical_action_mask,
     canonical_action_tokens,
+    canonical_event_candidates,
 )
 from dataset import ActionChange, ActionTimeline, SFTSample, build_samples
 from episode_map import EpisodeMap, decode_walkability_sprite
+from evaluate_event_sft import empty_score, update_event_metrics
 from evaluate_sft import update_metrics
 from modeling import MapEncoderConfig, SpatialMapEncoder, adaptive_mean_pool2d
 from measure_action_alignment import measure
@@ -48,6 +55,87 @@ def test_action_round_trip_and_transition_edges() -> None:
     )
 
 
+def test_event_action_codec_emits_only_canonical_transitions() -> None:
+    previous = UP | FIRE
+    target = RIGHT | FIRE | GRENADE
+    tokens = action_event_tokens(previous, target)
+
+    assert tokens == (
+        "<UP_RELEASE>",
+        "<RIGHT_PRESS>",
+        "<GRENADE_PRESS>",
+        "<STOP>",
+    )
+    decoded = ActionDecoder(previous).decode_events(tokens)
+    assert decoded.mask == target
+    assert decoded.released_mask == UP
+    assert decoded.pressed_mask == RIGHT | GRENADE
+    assert ActionDecoder(target).decode_events(("<STOP>",)).mask == target
+
+
+def test_event_action_codec_rejects_redundant_or_contradictory_events() -> None:
+    with pytest.raises(ValueError, match="does not change"):
+        ActionDecoder(UP).decode_events(("<UP_PRESS>", "<STOP>"))
+    with pytest.raises(ValueError, match="contradictory"):
+        ActionDecoder(UP).decode_events(("<DOWN_PRESS>", "<STOP>"))
+
+
+def test_every_event_target_follows_the_generation_grammar() -> None:
+    masks = {canonical_action_mask(mask) for mask in range(256)}
+    for previous in masks:
+        for target in masks:
+            mask = previous
+            touched = 0
+            press_phase = False
+            release_from = 0
+            press_from = 0
+            for token in action_event_tokens(previous, target):
+                assert token in canonical_event_candidates(
+                    mask,
+                    touched,
+                    press_phase=press_phase,
+                    release_from=release_from,
+                    press_from=press_from,
+                )
+                if token == "<STOP>":
+                    continue
+                pressed = token in PRESS_TOKENS
+                index = (
+                    PRESS_TOKENS.index(token)
+                    if pressed
+                    else RELEASE_TOKENS.index(token)
+                )
+                bit = BUTTONS[index][0]
+                touched |= bit
+                mask ^= bit
+                if pressed:
+                    press_phase = True
+                    press_from = index + 1
+                else:
+                    release_from = index + 1
+
+
+def test_event_generation_grammar_excludes_out_of_order_events() -> None:
+    after_fire_release = canonical_event_candidates(
+        UP,
+        FIRE,
+        press_phase=False,
+        release_from=BUTTONS.index((FIRE, "FIRE")) + 1,
+        press_from=0,
+    )
+    assert "<UP_RELEASE>" not in after_fire_release
+
+    after_fire_press = canonical_event_candidates(
+        UP | FIRE,
+        FIRE,
+        press_phase=True,
+        release_from=0,
+        press_from=BUTTONS.index((FIRE, "FIRE")) + 1,
+    )
+    assert "<UP_RELEASE>" not in after_fire_press
+    assert "<RIGHT_PRESS>" not in after_fire_press
+
+
 def test_contradictory_controls_are_canonicalized() -> None:
     tokens = canonical_action_tokens(LEFT | RIGHT | TURN_CCW | TURN_CW)
     assert tokens[:2] == ("<MOVE_IDLE>", "<TURN_NONE>")
@@ -67,34 +155,75 @@ def test_evaluation_tracks_persistence_and_changed_actions() -> None:
         "vocab_correct": 0,
         "constrained_correct": 0,
         "constrained_exact": 0,
+        "autoregressive_correct": 0,
+        "autoregressive_exact": 0,
         "previous_correct": 0,
         "previous_exact": 0,
         "changed_components": 0,
         "changed_component_correct": 0,
         "predicted_change_components": 0,
         "true_positive_changes": 0,
+        "autoregressive_changed_component_correct": 0,
+        "autoregressive_predicted_change_components": 0,
+        "autoregressive_true_positive_changes": 0,
         "constrained_slot_correct": [0] * 5,
+        "autoregressive_slot_correct": [0] * 5,
         "changed_samples": 0,
         "changed_tokens": 0,
         "constrained_changed_correct": 0,
         "constrained_changed_exact": 0,
+        "autoregressive_changed_correct": 0,
+        "autoregressive_changed_exact": 0,
     }
     labels = torch.tensor([1, 2, 3, 4, 5])
     previous = torch.tensor([1, 2, 0, 4, 5])
     predicted = torch.tensor([1, 2, 3, 0, 5])
 
-    update_metrics(score, predicted, predicted, labels, previous)
+    update_metrics(score, predicted, predicted, labels, labels, previous)
 
     assert score["changed_samples"] == 1
     assert score["previous_correct"] == 4
     assert score["previous_exact"] == 0
     assert score["constrained_changed_correct"] == 4
     assert score["constrained_changed_exact"] == 0
+    assert score["autoregressive_exact"] == 1
+    assert score["autoregressive_changed_exact"] == 1
     assert score["constrained_slot_correct"] == [1, 1, 1, 0, 1]
     assert score["changed_components"] == 1
     assert score["changed_component_correct"] == 1
     assert score["predicted_change_components"] == 2
     assert score["true_positive_changes"] == 1
+    assert score["autoregressive_slot_correct"] == [1, 1, 1, 1, 1]
+
+
+def test_event_evaluation_requires_a_valid_canonical_sequence() -> None:
+    score = empty_score()
+    first_exact = update_event_metrics(
+        score,
+        teacher_forced_ids=torch.tensor([1, 2]),
+        label_ids=torch.tensor([1, 2]),
+        teacher_forced_tokens=("<UP_PRESS>", "<STOP>"),
+        autoregressive_tokens=("<UP_PRESS>", "<STOP>"),
+        previous_mask=0,
+        target_mask=UP,
+    )
+    second_exact = update_event_metrics(
+        score,
+        teacher_forced_ids=torch.tensor([3]),
+        label_ids=torch.tensor([2]),
+        teacher_forced_tokens=("<UP_PRESS>",),
+        autoregressive_tokens=("<UP_PRESS>",),
+        previous_mask=UP,
+        target_mask=UP,
+    )
+
+    assert first_exact is True
+    assert second_exact is False
+    assert score["constrained_exact"] == 1
+    assert score["constrained_changed_exact"] == 1
+    assert score["invalid_sequences"] == 1
+    assert score["teacher_forced_exact"] == 1
+    assert score["teacher_forced_invalid_sequences"] == 1
 
 
 def test_changed_component_weights_and_class_balance() -> None:
@@ -122,6 +251,36 @@ def test_changed_component_weights_and_class_balance() -> None:
     batch = PolicyCollator(tokenizer, maps, action_change_weight=3)([changed])
 
     assert batch["loss_weights"][0, -5:].tolist() == [3, 1, 1, 1, 1]
+
+    event_tokenizer = SimpleNamespace(
+        pad_token_id=0,
+        encode=lambda text, add_special_tokens: (
+            [20, 21] if text.startswith("<UP_PRESS>") else [1, 2]
+        ),
+    )
+    event_batch = PolicyCollator(
+        event_tokenizer, maps, action_encoding="events"
+    )([changed])
+    assert event_batch["labels"][0, -2:].tolist() == [20, 21]
+    assert event_batch["loss_weights"][0, -2:].tolist() == [1, 1]
+
+    def encode_with_long_prompt(text: str, add_special_tokens: bool) -> list[int]:
+        if text.startswith("<UP_PRESS>"):
+            return [20, 21]
+        if text == "<STOP>":
+            return [21]
+        return list(range(100, 120))
+
+    leak_safe_batch = PolicyCollator(
+        SimpleNamespace(pad_token_id=0, encode=encode_with_long_prompt),
+        maps,
+        max_text_tokens=12,
+        action_encoding="events",
+    )([changed, held])
+    assert (leak_safe_batch["labels"] != -100).sum(dim=1).tolist() == [2, 1]
+    # Both prompts reserve the same worst-case nine-token action suffix. Their
+    # visible lengths differ only by the emitted target, not by target-aware truncation.
+    assert leak_safe_batch["attention_mask"].sum(dim=1).tolist() == [5, 4]
 
 
 def test_episode_map_round_trip_and_sprite_decode() -> None:

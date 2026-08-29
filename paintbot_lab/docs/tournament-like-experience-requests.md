@@ -13,37 +13,65 @@ Every campaign cell has both:
 - a **campaign `mode`**, derived from that variant's actual team/seat structure
   and selecting the commissioner roster algorithm.
 
-This distinction matters now. Paintbot 0.7.205 changed variant `1v1` to 16
-seats. Because it is a two-team variant with at least four seats, the current
-commissioner classifies it as mode `2v2`. On the round-381 board, both `1v1`
-and `2v2` map refs therefore have mode `2v2`; `4ffa` has mode `ffa4`.
+This distinction matters now — and the coupling loosened further in the
+current commissioner: a cell's mode is a **policy layout chosen independently
+of the variant** (a 16-seat two-team variant hosts both `1v1` head-to-head
+and `2v2` duo cells; the variant owns only the ground and headcount). Never
+infer the mode from the map ref — read it off the board cell.
 
 ## Normal invasion seating
 
+> **BOARD ROLLED BACK later on 2026-08-11:** hours after the round-967
+> re-verification below, the live board was RESTORED to the pre-migration
+> **10×10 square board** (100 cells, all `map_size` null again, authored
+> map_specs and owners refilled from the pre-migration snapshot — the board
+> `events` feed records the restore; `round` read 957 afterwards). The
+> roster algorithms below (true `1v1` mode, even `_duo_roster` split,
+> mode-decoupled-from-ref) come from metta code and still apply — the live
+> `modes` list still shows mode↔ref decoupling on the restored board. The
+> hex-specific counts in this doc are historical. As always: **re-resolve
+> the board live for every study**; it drifted twice in one day.
+>
+> **Re-verified 2026-08-11 (round 967, metta `84e13cb799`).** The commissioner
+> contract changed materially since the round-381 snapshot this doc first
+> recorded: the board migrated to a 16×16 hex (round 955), a true `1v1`
+> head-to-head mode exists, and `_duo_roster` now splits each team **evenly**
+> between captain and ally — the old 7+7+1+1 seating is gone. A cell's mode is
+> now a policy layout **independent of its variant** (`variant_arenas` /
+> `variant_campaign_modes`): the variant owns only the ground and headcount.
+
 For a normal occupied-cell invasion, reproduce the commissioner's roster:
 
-| campaign mode | current map refs | seats | normal roster |
+| campaign mode | round-967 occupied refs | seats | normal roster |
 | --- | --- | ---: | --- |
-| `2v2` | `1v1`, `2v2` | 16 | four policies in 7+7+1+1 captain/ally seating |
-| `ffa4` | `4ffa` | 16 | four policies, one complete four-agent color each |
-| `ffa4` if `4ffa8` returns | `4ffa8` | 32 | four policies, one complete eight-agent color each |
+| `1v1` | `1v1`, `2v2`, `default` (mixed) | 16 | two policies head-to-head, each owning one team's every seat; teams swap for the second seating |
+| `2v2` | mostly `default` | 16 | four policies; per team the **captain owns the leading half** of that team's seats in slot order and the **ally the trailing half** (4+4 on 8-seat teams; captain gets the extra seat on odd counts) |
+| `ffa4` | `4ffa`, `4ffa8` | 16 / 32 | four policies, one complete color each (seats interleaved mod 4) |
 
-For `2v2`, each side has a captain and one allied entrant. The captain owns its
-team's first seat and every seat after the second; the ally owns only the
-team's second seat. With alternating red/blue slots, seating A is:
+Two-team variants seat teams on alternating global slots (one team even, the
+other odd — verified from live round-967 episode rows). For `2v2` on an
+alternating 16-seat variant, seating A is:
 
 | global slots | owner |
 | --- | --- |
-| 0, 4, 6, 8, 10, 12, 14 | red captain |
-| 2 | red ally |
-| 1, 5, 7, 9, 11, 13, 15 | blue captain |
-| 3 | blue ally |
+| 0, 2, 4, 6 | red captain |
+| 8, 10, 12, 14 | red ally |
+| 1, 3, 5, 7 | blue captain |
+| 9, 11, 13, 15 | blue ally |
 
 The campaign authors a second seating with captains swapped between red and
-blue while allies remain on their original sides. With current `best_of: 1`,
-that is one episode per seating. This cancels captain-side and ally-strength
-bias; an evaluation that uses four equal modulo-four blocks is the disabled
-ladder shape, not the campaign shape.
+blue while **allies remain on their original sides**; head-to-head battles
+likewise swap the two policies' teams. With current `best_of: 1`, that is one
+episode per seating. This cancels captain-side and ally-strength bias; an
+evaluation that uses four equal modulo-four blocks on a two-team variant is
+the disabled ladder shape, not the campaign shape.
+
+Campaign episodes also carry **per-player perk loadouts** (equipped perks, or
+the coworld's default loadout) and can carry per-cell `game_config` overrides
+(`resolve_perk_loadouts`, `_roster_perks`, `_cell_overrides` in metta
+`campaign/episodes.py`). An experience request that omits them diverges from
+campaign conditions; matched A/B arms cancel the divergence, but label
+absolute-strength claims accordingly.
 
 Claims and degraded battles are different: an empty-cell claim seats the
 claimant once against baseline-filled seats, and a two-team invasion without
@@ -71,10 +99,12 @@ An episode is **campaign-shaped** only when all of these conditions hold:
 6. **Final rows verified.** Treat created participant rows and runtime config as
    the final truth; reject evidence if they differ from the preregistration.
 
-As of round 381, the 100-cell board has 26 `1v1`, 26 `2v2`, and 48 `4ffa` map
-refs, corresponding to 52 `2v2`-mode and 48 `ffa4`-mode cells. All cells have a
-non-null `map_seed`; all currently leave `map_size` unset. Re-resolve these
-dated values for every study.
+As of round 967, the 16×16 hex board has 169 occupied cells: 107 `ffa4`-mode
+(58 `4ffa8` + 49 `4ffa` refs), 49 `1v1`-mode, and 13 `2v2`-mode. Every occupied
+cell has a non-null `map_seed` **and a set `map_size`** (observed classes:
+small, standard, large, huge, giant) — copy both exactly. Deployed canonical
+Paintbot was 0.7.227 at verification. Re-resolve these dated values for every
+study.
 
 ## Batch construction
 
@@ -101,7 +131,8 @@ cancel the batch if any invariant fails:
 - variant or map fields do not match the preregistered live cell;
 - `mapSize` was invented when the cell supplied no value;
 - participant count or policy placement differs from the chosen battle kind;
-- a normal `2v2` invasion uses equal four-seat blocks instead of 7+7+1+1;
+- a normal `2v2` invasion does not use the even captain/ally split (captain
+  leading half, ally trailing half of each team's seats);
 - captain-swapped arms do not keep allies fixed to their original sides;
 - any seat contains an unintended filler or obsolete Stencil version.
 

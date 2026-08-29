@@ -4,6 +4,750 @@ Read this before assuming what a version contains. Format mirrors
 `ctf_lab/ctf/beacon/VERSION_LOG.md`: one entry per uploaded version — what
 changed, why, and what the evidence said.
 
+## v68 — the bounded follower & micro (nav rework Layer 5, FINALE), uploaded 2026-08-14
+
+Immutable policy-version UUID: `ffa8e5d2-10f1-4e6c-93f9-4b005a83359a`.
+Uploaded with tag `purpose=bounded-follower`. **Submitted to Paintbot on
+2026-08-14 with auto-champion `always` (James's explicit go-ahead after
+the rework-complete verdict): submission
+`sub_ecedf891-9a85-4959-8486-e80233b17115`, membership
+`lpm_eeac47d3-b16d-4939-8bcd-a051af843873` — placed, qualified, and
+COMPETING as CHAMPION on first readback (substatus active). v58's reign
+(2026-08-07 → 2026-08-14) ends; the completed navigation rework now
+represents James Botts live.** The LAST layer of the navigation rework
+([spec](../../docs/designs/nav-layer5-follower-2026-08-14.md);
+Codex-implemented under orchestration).
+
+- **Corridor-bounded micro**: perturbation destinations must lie within
+  `STENCIL_FOLLOW_CORRIDOR_PX` (default 20 — REVISED at plan review from
+  12 after Codex's discrepancy analysis showed the ~16 px separation step
+  would have been categorically rejected; the review catch of the layer)
+  of the current path polyline; `nudgeClear` remains the acceptance
+  predicate (the v60 wall-slide law); Hold-context duck displacement is
+  exempt. Rejections fall back to the plain waypoint and count
+  (`micro_corridor_rejects`).
+- **Watchdog finale**: the 90° steering jitter is DELETED (its job —
+  masking beelines — ended in v66). Ladder: progress test → one forced
+  replan with a one-cell blocked penalty (×8 cost, 96-tick TTL, per
+  agent) → `follow_stuck_bug` loud trace if re-fired within 48 ticks.
+  Spinning-diamond staleness moves from masked to visible
+  (`follow_replans`/`follow_stuck_events` counters).
+- **Follower tightening**: uniform progress accounting with an explicit
+  stationary-behavior contract (post holds, fire-windup freeze, barrage
+  ring, accepted ducks incl. zero-mask, rejected micro, dead — each with
+  a reset-or-not rule); `Intent.arriveRadius` transcribed from the five
+  real strategy arrive distances (barrage 80 / hold-family 28 / rejoin
+  40 / squad-move-family 56) and consumed by the follower as
+  behavior-preserving redundancy.
+
+**Pre-upload evidence:** Codex harness (corridor geometry incl. the 16 px
+separation case, watchdog determinism, penalty TTL, arrival parity, all
+stationary cases) + committed `tools/nav_v68_properties.nim`; my suites
+(planner 8.5k, layer2 1.9M) green; jitter grep gates zero. Live corpus:
+**duck 8.1% in the forced-active episode (gate 7-13% — PASSES)**; h2h
+duck ~0% is expected (early_defense has excluded peek/duck since v55 —
+initially misread as a v60-class regression, then verified against the
+makeIntent table and v67's identical local behavior). Micro mix shifted
+as designed: total micro 18.5%→16.2%, duck UP 5.0→8.1% (Hold-exempt),
+transit peeks 10.2→4.7% (corridor working as specified); combat micro
+alive. Corridor rejects are dominated by 3-6-cell transit sidesteps —
+expected at any sane width; peek% flagged as the batch watch metric
+alongside duck%. 0 unroutable/0 fallback throughout. Built against
+0.7.215 / `6c7a4c0e`.
+
+**Hosted validation:** matched v68-vs-v67 batch — trace-diff emphasis
+(duck%, peek%, stuck/replan counters, micro mix) over W-L. Prereg:
+`local_data/episodes/bounded-follower-v68-prereg.json` (upload auto-eval
+`xreq_b6a79d55` excluded).
+
+**Hosted verdict (58/58 episodes, 0 ops failures):**
+
+| mode (n/arm) | v68 | v67 (control) |
+| --- | --- | --- |
+| h2h vs focusfire:v39 (16) | 6W-10L | 6W-10L |
+| duo vs swgy+relh (8) | **3W-5L** | 0W-8L |
+| ffa top-3 field (4) | **3W-1L** | 2W-2L |
+| total (28) | **12W-16L** | 8W-20L |
+
++4 net for v68 (h2h identical — the cell ran cold for both arms, canceling
+in the match), duo 3W the second-best ever vs swgy. **The v60 regression
+signature is ABSENT**: v60 was duck +3.7pp AND -13 net; v68 is duck
+−1.4pp (5.0% vs 6.4%) and +4 net, with peeks −1.5pp (3.9% vs 5.4%) —
+the corridor softening transit micro as specified, not suppressing combat
+micro. New watchdog telemetry live: 32 follow_replans / 8 stuck_events
+across 28 seats (first-ever visibility into stuck reality; the old jitter
+masked it); corridor rejects 9703 (dominated by 3-6-cell transit
+sidesteps — the tuning dataset for the width knob). Contract counters
+spotless: 1468 plans, 0 unroutable, 0 fallbacks, 4 snapped. Both probes
+clean (split scores, ops-tier).
+
+**Conclusion: v68 accepted — THE NAVIGATION REWORK IS COMPLETE.** All
+five layers of the 2026-08-11 sketch are shipped and hosted-validated:
+L1 clearance (v61), L2 topology/PoIs (v62), posts v63-v64+v67 atlas, L3
+planner (v65), L4 Intent contract (v66), L5 bounded follower (v68).
+Cumulative across the rework's matched batches, the line went from v61's
+baseline to a stack with zero beelines, zero unroutable plans, validated
+goals, danger-aware routing, situational post selection, and visible
+stuck-handling. Remaining post-rework items live in TODO.md (pin review,
+belief.danger experiment, fire-windup micro, 8px-grid demotion census)
+and the strategy rework is the next epoch. v58 remains the live champion;
+nothing submitted — the champion question is James's whenever he wants it.
+
+## v67 — the post atlas + conservative re-expressions, uploaded 2026-08-14
+
+Immutable policy-version UUID: `f8289d11-7f88-4502-ad35-2edf4a415264`.
+Uploaded with tag `purpose=post-atlas`. **Not submitted to any league.**
+
+James's ruling made structural: **potential posts exist everywhere there is
+cover; the situation decides relevance at query time, and it can change on
+the fly** ([spec + addendum](../../docs/designs/nav-v67-post-atlas-2026-08-14.md)).
+Codex-implemented under orchestration (plan review surfaced six spec-vs-code
+discrepancies incl. a consumer my spec missed — `advancePoint` — and a
+scale bug in my barrage formula that would have left danger a tie-break;
+fixed via normalization).
+
+- **Atlas**: every `coverDirs != 0` cell is an `AtlasPost` with a
+  full-gun-range (1300 px, `STENCIL_POST_REACH_CAP_PX`) 16-sector reach
+  profile; 64 px spatial index; LAZY duck cache (fields-cache precedent).
+  Corridor-era machinery deleted (generateFront, corridor scoring,
+  progress buckets, stored PostFronts). Giant atlas: 14,408 posts,
+  **179 ms** mean build (gate 250 ms) at the full cap.
+- **Selection**: two-phase — cheap reach-toward-bearing/distance/facing
+  over all gathered posts, lazy-duck enrichment of the top 8 (bounded
+  approximation, property-tested as such) — with a situational `bearing`
+  parameter; defenders keep 64 px home-band ordering via expanding
+  queries; `advancePoint` queries at stage anchors.
+- **early_defense (conservative)**: holds atlas posts covering the home
+  room's entrance gates (seat-th gate, bearing outward), endzone-confined,
+  spawnCoverPoint fallback; release gate/suppressions unchanged.
+- **barrage_center (conservative)**: normalized
+  `peakClearance/255 − w·danger/fieldMax` over reachable room peaks
+  (`STENCIL_BARRAGE_PEAK_DANGER_WEIGHT`, default 1.0 = co-equal),
+  nearestReachable-validated; ring/priority semantics unchanged.
+- Trace schema v4: `post_atlas` (pos/max-reach/top-sector), `atlas_ms`,
+  `atlas_n`. Viewer migrated (my side): atlas rendering (reach-colored,
+  sector ticks) + the selection-simulator mirror rewritten to the
+  two-phase utility and re-verified fail-closed on 200 harness samples of
+  the real production selection.
+
+**Pre-upload evidence:** Codex harness (atlas completeness/reach
+exactness, determinism under reversed lazy-query order, top-8 duck bound,
+defender separation, endzone confinement) + my suites (planner props 11k,
+layer2 props 2.7M with atlas invariants) all green; 21 modules `nim
+check`; corridor grep gates zero. Live corpus: h2h 114 plans / active-ffa
+820 plans, 0 unroutable, 1 snapped, 0 fallbacks; ffa atlas 6,639 posts /
+86 ms under contention; tick rates normal. Built against 0.7.215 /
+`6c7a4c0e`; canonical has advanced to 0.7.229 (`bf0bcc22`) — contract
+compatibility assumed per the v60-era lineage argument, sim constants not
+re-derived (flagged for the next pin review).
+
+**Hosted validation:** matched v67-vs-v66 batch; also re-tests the v66 h2h
+scatter watch-item. (Batch logistics note: the platform introduced
+**experience credits** this week — the v66 control arms initially bounced
+on HTTP 402 with the v67 arms holding the balance; a watcher posted them
+the same day once the holds released, so arms ran hours apart, not
+same-hour. Also new: the platform auto-runs a 10-episode field eval on
+every fresh upload — `xreq_b05ea5db` (v66), `xreq_7595d11e` (v67); inert
+but they share the credit pool. Prereg:
+`local_data/episodes/post-atlas-v67-prereg.json`.)
+
+**Hosted verdict (58/58 episodes, 0 ops failures):**
+
+| mode (n/arm) | v67 | v66 (control) |
+| --- | --- | --- |
+| h2h vs focusfire:v39 (16) | 8W-8L | 9W-7L |
+| duo vs swgy+relh (8) | 2W-6L | 3W-5L |
+| ffa top-3 field (4) | **4W-0L** | **4W-0L** |
+| total (28) | 14W-14L | 16W-12L |
+
+Parity (−2 net, every mode within one game; both arms swept the ffa cell —
+its first sweep by any version). The v66 h2h scatter watch-item RESOLVED:
+h2h across four same-cell arms in two days reads 13-3 / 9-7 / 9-7 / 8-8 —
+the 13-3 was the outlier, ~9-7 is this matchup's level. Contract counters
+hosted: 1163 plans / 30 seats at 9.0 ms, **0 unroutable, 0 fallbacks, 3
+snapped**. Atlas hosted under contention: 21.6k posts on the giant probes
+built in 88-181 ms — the gate holds in production (standard maps ~2.9k
+posts / ~10 ms).
+
+**Conclusion: v67 accepted.** Behavior parity at strategy-conservative
+scope was the goal ("just make sure everything still works") — achieved
+with the atlas substrate live: posts exist everywhere there is cover, and
+the future strategy rework selects from them situationally. v58 remains
+the live champion; nothing submitted.
+
+## v66 — the Intent & goal contract (nav rework Layer 4), uploaded 2026-08-13
+
+Immutable policy-version UUID: `80e2a0a4-9662-4722-8fe0-e3aa4a57e593`.
+Uploaded with tag `purpose=intent-contract`. **Not submitted to any league.**
+
+Layer 4 per the approved split
+([design/spec](../../docs/designs/nav-layer4-intent-contract-2026-08-13.md);
+v67 will re-express early_defense/barrage_center over PoIs + side-lane
+posts). **Codex-implemented under orchestration**; its plan review caught
+two transcription errors in MY spec's flag table (formation-bias is a
+strict five-reason whitelist; code-truth preserved and the doc corrected),
+delivered the honest Q9 census (the 8px grid also feeds peek/duck search,
+danger grids, cover/posts, squad canonicalization — grid demotion is bigger
+than the sketch implied), and caught a spec gap I endorsed: cached paths
+invalidate when the intent's cost profile changes.
+
+- **Typed Intent**: movingGoal/clampToEndzone/suppressFireFreeze/profile/
+  micro set replace ALL seven reason-string dispatch lists; one declarative
+  makeIntent table in strategy.nim; `intent.reason` is telemetry-only
+  (grep-gated: 0 non-telemetry reads; FlowReasons/MovingPlanReasons
+  identifiers deleted).
+- **Goals validated at selection**: `nearestReachable` (unbiased pixel
+  ring, component-gated) at every dirty producer — steal/convert_hunt
+  pedestals, grenade evacuation radial, escort extrapolation, spray-flee
+  winner, barrage center. Producer fallthrough on none.
+- **All five beelines dead + FlowReasons dispatch dead**: every NavigateTo
+  routes through the v65 planner; arc pursuit became a strategy-level
+  validated moving Hunter intent (shared target selection moved to
+  fight.nim so strategy/action cannot drift; firing stays action-owned);
+  the unroutable beeline is now hold-in-place + loud `plan_unroutable_bug`
+  trace. Flow fields survive only as the Dijkstra oracle
+  (flowWaypoint retained solely for forwardRayEnds, documented).
+- **Profiles live**: Carrier danger ×2.5, Hunter ×0.25
+  (`STENCIL_PROFILE_CARRIER_DANGER`/`_HUNTER_DANGER`); profile change
+  invalidates the cached path.
+
+**Pre-upload evidence:** Codex harness green (incl. arc-pursuit
+emission/suppression parity, steal rush-exemption, carrier/profile
+interaction); grep gates 0/0; 13 modules `nim check` clean; release
+compiles. My independent suites: planner props 11k checks / layer2 props
+3.3M checks green. Live: h2h corpus episode ran **75 plans where v65 ran
+zero** (the flow kill is live; carry/steal movement now planner-routed) at
+7.6 ms mean, 0 unroutable/0 snapped; forced-active ffa: 773 plans, 19 ms
+mean, **0 unroutable, 2 snapped** (was 9 in v65 — producers now validate),
+0 fallbacks, intent mixes normal, 111 ticks/s. Built against 0.7.215 /
+`6c7a4c0e`.
+
+**Hosted validation:** matched v66-vs-v65 batch pending at upload. Expected
+deltas: carry/steal/hold movement geometry (flow → danger-aware planner
+with Carrier evasion — the largest visible behavior change of the rework),
+pursuit via strategy intents; watch stuck/backoff rates and tick rate.
+
+**Hosted verdict (58/58 episodes, 0 ops failures; prereg
+`local_data/episodes/intent-v66-prereg.json`):**
+
+| mode (n/arm) | v66 | v65 (control) |
+| --- | --- | --- |
+| h2h vs focusfire:v39 (16) | 9W-7L | 13W-3L |
+| duo vs swgy+relh (8) | **4W-4L** | 2W-6L |
+| ffa top-3 field (4) | 2W-2L | 3W-1L |
+| total (28) | 15W-13L | 18W-10L |
+
+Totals within noise (first batch where the control's total edged the
+candidate's; h2h drove it). The obvious suspect — Carrier ×2.5 evasion
+slowing capture runs — is DISPROVEN by the traces: neither arm ever
+entered carry_home or steal in the h2h episodes (they resolve in
+early-defense combat), so the profile never ran there. The h2h control arm
+simply ran hot (this cell's control has swung 11-5 → 6-10 across days
+before). Meanwhile duo improved to 4W-4L — the best any version has done
+against the swgy field. **Contract counters hosted, flawless:** 1482 plans
+across 30 seats (≈3× v65's volume — the flow kill is live in competition)
+at 8.0 ms mean, **0 unroutable, 0 beeline fallbacks, 5 snapped**; duck
+7.1% normal.
+
+**Conclusion: v66 accepted — the contract layer is structural and its
+hosted evidence is exactly what it promised.** Flag for the v67 batch:
+watch whether the h2h scatter persists on the same cell. v58 remains the
+live champion; nothing submitted.
+
+## v65 — the planner (nav rework Layer 3), uploaded 2026-08-13
+
+Immutable policy-version UUID: `d8b5ca59-503f-4f8c-85b8-df052fb38998`.
+Uploaded with tag `purpose=layer3-planner`. **Not submitted to any league.**
+
+Layer 3 of the navigation rework per the approved proposal
+([HTML](../../docs/designs/nav-layer3-planner-2026-08-12.html), brief +
+implementation addenda in `.nav-layer3-planner-brief.md`). **Implementation
+was planned and executed by OpenAI Codex CLI under orchestration** (James's
+call); three iterations, each gated by independent review: the initial
+implementation, a lattice-completeness fix, and an endpoint-snapping fix —
+both fixes prompted by findings Codex's own harness missed.
+
+- **The planner** (`planner.nim`): weighted A* on a 4 px pixel lattice
+  (`STENCIL_PLAN_STEP_PX`), `canStand` node validity, exact supercover
+  edge admission, octile costs × (1 + dangerWeight × DangerField sample at
+  edge midpoints), euclidean heuristic + the cached-Dijkstra oracle for
+  already-minted stable goals (non-minting `peekRouteDistance`; valve
+  `STENCIL_PLAN_ORACLE`), `STENCIL_PLAN_WEIGHT` inflation shelved at 1.0.
+  Deterministic (tie-broken queue, fixed orders); reusable
+  generation-stamped per-agent workspace, lazily allocated.
+- **Completeness cascade** (found by the independent property suite:
+  sameComponent pairs could be unroutable when a standable ridge is
+  narrower than the lattice): failed searches retry step/2 then 1 px,
+  gated on `sameComponent` — a 1 px 8-connected supercover lattice is
+  complete w.r.t. engine 4-connectivity, so Layer 4's
+  "sameComponent ⇒ planning succeeds" contract holds. `fallback` counted.
+- **Endpoint snapping** (found in live play: 27% of plans were unroutable
+  because strategy still emits non-standable goals — pedestal targets,
+  wall-clipped extrapolations — that the old astar silently snapped):
+  non-standable endpoints snap to the nearest standable pixel within 32 px
+  (unbiased ring scan, NOT the retired up-left-biased cell snap); the raw
+  unreachable goal is not appended. After the fix: unroutable 262 → 0 in
+  the same scenario, 7 goals snapped. `plan_goal_snapped` traced — the
+  producer-cleanup worklist for Layer 4.
+- **DangerField** (`danger_field.nim`): the ruled two-level LOS-exposure
+  model — per-source supercover perimeter rays on the 8 px grid with a
+  precomputed attenuation kernel (flat to 400 px, 0.6 at 1050 px,
+  `STENCIL_DANGER_LOS_*` knobs), non-LOS close-quarters floor (190 px),
+  normalization weight; producer standalone behind the heatmap; stored as
+  `Belief.planDanger` (the unvalidated legacy `belief.danger` grid is
+  deliberately untouched). Rebuilt on the shared 12-tick cadence
+  (`STENCIL_PLAN_MOVING_REPLAN_TICKS`, dual-role documented).
+- **Integration**: `astarWaypoint` keeps its contract (trailing defaulted
+  params; cache/replan semantics; unroutable → existing beeline fallback,
+  which SURVIVES v65 by design — goal validation is Layer 4); moving-target
+  replan cadence for the five pursuit-class reasons; old 8 px astar
+  deleted; `nearestWalkable` snap gone from search. FlowReasons untouched.
+  Telemetry: `plan_count/ms_total/expansions_total/unroutable_count/`
+  `fallback_count/goal_snapped` snapshot counters.
+
+**Oracle admissibility, measured (D4's caveat closed):** on the three real
+batch maps, 240 paired queries (`STENCIL_PLAN_ORACLE` on/off, same binary):
+worst path-cost ratio 1.0113, mean ≈1.0015 — vs 1.126 on adversarial
+synthetics with sub-cell passages that generator maps (26 px corridor
+guarantee) cannot produce. Ships enabled.
+
+**Pre-upload evidence:** independent planner property suite (13k–17k checks
+per run over 60–80 random maps: sameComponent ⇔ routable, every edge
+segmentClear, start-exclusive/goal-inclusive contract, determinism,
+no-minting) + Codex's own harness (lattice-ridge regressions, snapping
+cases, LOS producer values, no-mint, 192-query optimality probe); all
+locally-checkable modules `nim check` clean; release entrypoint compiles.
+Live self-play: opening phases are all flow reasons (zero plans — expected);
+with early defense disabled to force A* reasons: 600 plans/16 seats/3000
+ticks, ~50 ms per search under 16-way contention (bench-consistent),
+0 unroutable, 0 fallback. Viewer gained the planner layer: scenario
+routes between capture points with the LOS heatmap — routes visibly thread
+obstacle shadows. Built against 0.7.215 / `6c7a4c0e`.
+
+**Hosted validation:** matched v65-vs-v64 batch pending at upload; expected
+behavior delta is route GEOMETRY for the ~10 A*-reason intents (danger-
+aware shadow-threading detours, unbiased endpoints) plus the moving-target
+cadence; flow-reason movement unchanged. Tick-rate compared across arms
+(planning sits on the decide path).
+
+**Hosted verdict (58/58 episodes, 0 ops failures; v65 arms
+`xreq_6c5253cb`/`xreq_9f4e2b6c` h2h, `xreq_a6cd94a3`/`xreq_f018ce5b` duo,
+`xreq_a896458b` ffa; v64 arms `xreq_95c8b41f`/`xreq_b36d3b76`,
+`xreq_c5a59bec`/`xreq_916837a7`, `xreq_a24ad8c8`; probes
+`xreq_70ce6ea6`/`xreq_419809d3`):**
+
+| mode (n/arm) | v65 | v64 (control) |
+| --- | --- | --- |
+| h2h vs focusfire:v39 (16) | 10W-6L | 10W-6L |
+| duo vs swgy+relh (8) | 2W-6L | 2W-6L |
+| ffa top-3 field (4) | 2W-2L | 0W-4L |
+| total (28) | **14W-14L** | 12W-16L |
+
+Gameplay parity (h2h and duo identical; +2 in ffa at n=4) — expected: route
+quality alone was never the win condition; the cost machinery's value
+compounds when Layer 4 gives it validated goals and per-intent profiles.
+**The planner infrastructure proved itself hosted:** across 30 sampled v65
+competition seats, 925 real searches at **13.5 ms mean** (per-seat
+containers), **0 unroutable, 0 beeline fallbacks, 9 endpoint snaps** — the
+bridge behaviors work and the Layer 4 worklist counter is live. v65 lost
+both n=2 giant probe scores (ops-tier; the probe coin has now landed
+differently in three consecutive batches — treat as noise).
+
+**Conclusion: v65 accepted — the Layer 4 baseline.** One planner runs all
+A*-reason navigation with danger-aware routing; FlowReasons and the beeline
+fallback are the remaining Layer 4 kill-list. v58 remains the live
+champion; nothing submitted.
+
+## v64 — wide post pool + Dijkstra-minting fix, uploaded 2026-08-12
+
+Immutable policy-version UUID: `d3504b01-ea7e-46db-9b3d-59a959940752`.
+Uploaded with tag `purpose=wide-post-pool`. **Not submitted to any league.**
+
+James's review of v63: too few potential posts — the funnel put the
+decision weight at init with zero context, and the belief-scored selection
+had almost nothing to choose from. v64
+([design](../../docs/designs/nav-wide-post-pool-v64-2026-08-12.md)) widens
+the pool and moves all choice to selection:
+
+- Per-bucket retention 6 → 24 (`PostRayCandidatesPerBucket`), shortlist cap
+  16 → 256 (`STENCIL_POST_SHORTLIST_COUNT`, now a safety cap): **every**
+  retained candidate is ray-scored and duck-paired. Real maps yield
+  ~200–250 potential posts per front (vs 16). Pool membership does not
+  require a duck (ducklessness costs the 0.15 contrast term); the static
+  top-6 "posts" survive only as a no-context default view.
+- Defenders select from the wide pool (same 64 px band ordering +
+  score/facing, plus a `PostSeparationPx` distinct-position filter so dense
+  pools don't stack seats). `orderPost` unchanged — its search space just
+  became real.
+
+**The wide pool detonated a latent landmine, now fixed at the root:**
+`routeDistance`'s GOAL argument keys the lazy Dijkstra cache, so
+`squads.advancePoint`'s `routeDistance(home, candidate.pos)` minted a
+full-grid field PER CANDIDATE (the deep-dive's M2 hazard). Episode wall
+time exploded ~6×; profiling (`sample` of the one pegged process — the
+first sample hit an idle lockstep waiter) showed 1845/1845 samples in
+`dijkstra` under `advancePoint`. Fixes: (1) argument-order rule — goal slot
+takes stable goals only (homes/capture points); arbitrary points go in the
+start slot (undirected grid, same value); applied at `advancePoint` and
+`policy.defensivePostForward`; (2) `fieldsFor` returns **`lent
+RouteFields`** with expression-form callers — ending the ~1.4 MB-per-call
+copy for every caller including per-tick `flowWaypoint` (supersedes v63's
+per-front hoist as the root fix).
+
+**Measured (local, batch cells):** giant-probe `post_ms` **18 ms** with the
+14× pool (v63: 73 ms; v62: 1528 ms); ffa 35 ms for 3 fronts; giant seat
+init ~1.0 s; episode tick rate faster than v63 (the minting fix also
+removes mid-episode Dijkstra hitches v63 still had). 5.6M property checks
+over 80 maps incl. the new defender-separation invariant; selection mirror
+200/200 against the wide pool; corpus renders under
+`topology_renders/v64/`. Built against 0.7.215 / `6c7a4c0e`.
+
+**Hosted validation:** matched v64-vs-v63 batch —
+same shape, re-resolved board, paired giant probes (v64-vs-v63 in-episode).
+Expected behavioral deltas: post/defender positions from the wide pool +
+separation filter; intel-reactive squad picks now have real alternatives.
+
+**Hosted verdict (58/58 episodes, 0 ops failures; v64 requests
+`xreq_cd382c72`/`xreq_5c7fb816` h2h, `xreq_4f125050`/`xreq_27f6a84f` duo,
+`xreq_09b46d69` ffa; v63 arms `xreq_a7f3490d`/`xreq_7e997c25`,
+`xreq_8db26322`/`xreq_97ddcfee`, `xreq_d128c0c2`; probes
+`xreq_dbd21c9e`/`xreq_dc017eec`):**
+
+| mode (n/arm) | v64 | v63 (control) |
+| --- | --- | --- |
+| h2h vs focusfire:v39 (16) | 9W-7L | 9W-7L |
+| duo vs swgy+relh (8) | 1W-7L | 2W-6L |
+| ffa top-3 field (4) | 2W-2L | 3W-1L |
+| total (28) | 12W-16L | 14W-14L |
+
+**Gameplay: parity** — h2h dead even, duo/ffa each one game apart, total
+-2 net for v64, nowhere near significance at these n. The wide pool did
+not (yet) buy wins; its value is as substrate — Layer 4 intent-aware
+selection finally has something to select from. **Infra: strictly
+better** — hosted paired giant probes: v64 post_ms 22/27 ms and seat init
+~0.88 s (fastest of any version; v63 seats 139/267 ms post, up to 2.5 s
+total — v63 still carried mid-episode minting hitches that v64's root fix
+removed), and v64 won both in-episode giant duels (n=2, ops-tier;
+reverses v63's 0-2 vs v62 — treat both as noise).
+
+**Conclusion: v64 accepted as the Layer 3 baseline** on infra grounds with
+demonstrated gameplay parity: fastest init, no minting hitches, the
+unbounded-Dijkstra hazard closed, and the post pool the later layers need.
+v58 remains the live champion; nothing submitted.
+
+## v63 — post candidate re-sourcing + belief-scored facing, uploaded 2026-08-12
+
+Immutable policy-version UUID: `fba7d396-9166-49de-9252-b6bef98b0077`.
+Uploaded with tag `purpose=post-resourcing`. **Not submitted to any league.**
+
+Executes the deferred Layer 2 D5-2 option
+([design](../../docs/designs/nav-post-resourcing-v63-2026-08-12.md), approved
+with the belief-scored facing revision after James killed the static
+toward-enemy-home facing filter). Two separable claims — quality and cost:
+
+**Quality (the re-sourcing + situational facing):**
+- `generateFront` candidates now come from cover-bearing cells within
+  `STENCIL_POST_GATE_VICINITY_PX` (48) of on-route chokes (same
+  `detour ≤ PostCorridorPx×3` cap as the old scan), with the legacy
+  full-grid scan surviving only as a per-empty-progress-bucket fallback
+  (`STENCIL_POST_BUCKET_FALLBACK`, default on). No direction is baked in.
+- Facing is situational: new `facingScore` (fraction of believed threat
+  positions a cell is covered from — the first per-direction consumer of the
+  16-ray bitmask) enters selection utility at weight
+  `STENCIL_POST_FACING_WEIGHT` (0.15). `squads.orderPost`'s core is
+  extracted to the pure `worldmap.selectRankedPost` (offline harness runs
+  the exact production proc); both it and `roles.defensivePostForSeat` take
+  believed enemy positions (velocity-projected tracks within
+  `TrackTtlTicks`) from the caller's Belief.
+- **Expected behavioral deltas, by design:** post positions move to gate
+  vicinities (the h2h batch cell's front went 3 → 5 selected posts);
+  defender assignment now orders by 64 px distance BANDS with
+  score+facing inside a band — intel-free behavior is deliberately NOT
+  bit-identical to v62 (within-band reordering); squad post picks react to
+  believed enemy bearings.
+
+**Cost (a separate fix the first cut exposed):** re-sourcing alone made
+giant `post_ms` WORSE (1528 → 2470 ms local) — the dominant cost was never
+the scan shape but `fieldsFor` returning `RouteFields` **by value**: every
+per-cell `distanceAt` memcpy'd ~1.4 MB of cached Dijkstra field. Hoisting
+the two route fields once per front and reading distances by cell index:
+giant-probe `post_ms` 1528 → **73 ms**, duo-cell 2166 → **88 ms**; giant
+seat init ~1.0–1.1 s local — below the v61 pre-Layer-2 baseline. Recorded
+for Layer 3: every `distanceAt`/`routeDistance`/`flowWaypoint` call still
+pays that copy, including per-tick follower lookups — the planner rework
+must use borrowed/indexed field access.
+
+**Viewer (James's request):** `render_topology.py` gained the post layer
+(front dropdown, score-colored candidates, posts with rays + duck links,
+defender assignments) and the **selection simulator** — click to place a
+squad directive, shift-click to place believed enemies, rank selector; the
+JS mirror of the selection utility is verified fail-closed at load against
+200 harness-sampled runs of the real production proc.
+
+**Pre-upload evidence:** 9.2M property checks over 120 random maps (half
+4-team) incl. new post invariants (separation, real ducks, routable fronts
+non-empty); selection mirror 200/200; corpus before/after renders under
+`local_data/.../topology_renders/{before-v63,after-v63}`; same-map local
+timings above. `nim check` clean on all touched modules. Built against
+0.7.215 / `6c7a4c0e` (pin unchanged).
+
+**Hosted validation:** matched v63-vs-v62 batch pending at upload time —
+same 12-request/58-episode shape on the re-resolved live board, paired
+giant probes now v63-vs-v62 in-episode (they confirm the post_ms fix under
+hosted contention); analysis via the score-sign classifier (the v62
+batch's unique-max bug cannot misfile duo team wins as draws). Expected
+trace deltas: post positions, defender band ordering, squad picks; duck%
+and objective mix should hold; ticks/s compared across arms because the
+facing term sits on a per-tick path.
+
+**Hosted verdict (batch complete, 58/58 episodes, 0 ops failures; requests
+`xreq_5b1200d8`/`xreq_c2a0784a` (v63 h2h), `xreq_05ccdab7`/`xreq_a4eaace7`
+(v63 duo), `xreq_92086ce0` (v63 ffa), `xreq_6b5ffddf`/`xreq_a7ac4ff5`,
+`xreq_58c6ccbc`/`xreq_df0fcd60`, `xreq_17c35ded` (v62 arms),
+`xreq_e486875d`/`xreq_a2e9fdaa` (giant probes)):**
+
+| mode (n/arm) | v63 | v62 (control) |
+| --- | --- | --- |
+| h2h vs focusfire:v39 (16) | **11W-5L** | 6W-10L |
+| duo vs swgy+relh (8) | 2W-6L | 3W-5L |
+| ffa top-3 field (4) | 2W-2L | 1W-3L |
+| total (28) | **15W-13L** | 10W-18L |
+
+(Score-sign classifier throughout. Note the control drifted day-to-day:
+v62 scored 11W-5L on this same h2h cell in ITS batch yesterday and 6W-10L
+today — same-day paired arms are the only comparison that means anything.)
+v63 +5 net in h2h, -1 duo, +1 ffa: overall positive, h2h-driven, duo
+within matched-arm noise at n=8. h2h duck micro: v63 7.6% vs v62 21.6% —
+the low side belongs to the winning arm (opposite of the v60 pathology
+signature, where the regressed version ducked more AND lost).
+
+**Giant probes (v63-vs-v62 in-episode, ops evidence):** both completed
+clean, and the hosted contended numbers seal the cost claim — **v63
+post_ms 128/132 ms vs v62's 3405/2860 ms in the same episodes**; v63 giant
+seat init 0.95-0.97 s vs v62's 4.1-4.2 s, i.e. below even v61's 1.9-2.1 s
+pre-Layer-2 baseline. For honesty: v63 lost both probe episodes' scores
+(n=2, giant-only, excluded from gameplay claims per the preregistration —
+worth an eye at the next giant-containing batch).
+
+**Conclusion: v63 accepted — the new nav-rework baseline for Layer 3.**
+v58 remains the live champion; nothing submitted.
+
+## v62 — topology & PoIs (nav rework Layer 2), uploaded 2026-08-11
+
+Immutable policy-version UUID: `d415aded-ae80-4140-9f27-ad073718af25`.
+Uploaded with tag `purpose=nav-topology`. **Not submitted to any league.**
+
+Layer 2 of the navigation rework
+([design](../../docs/designs/nav-layer2-topology-proposal-2026-08-11.md),
+approved with James's rulings D1–D7 recorded there). Everything is derived
+from the v61 clearance field at init; every authored anchor is gone.
+
+- **Connected components** (`WorldMap.component`, per-pixel `uint16`):
+  standalone 4-connected CCL over the canStand set — engine-exact (per-axis
+  Y-then-X integration means diagonal steps need a standable orthogonal
+  intermediate), deliberately decoupled from the watershed so a room bug
+  cannot corrupt reachability. `componentOf`/`sameComponent` are the O(1)
+  queries behind the Layer 4 goal contract (no consumer yet).
+- **Rooms + chokepoints** (`rooms`, `chokes`, `roomLabel`): priority-flood
+  watershed on clearance (256-bucket queue, O(px)) — seeds at clearance-maxima
+  plateaus, first-contact saddles between regions are gates (pos = widest
+  point, clearance = L∞ half-width), persistence merge (depth
+  `STENCIL_TOPOLOGY_MERGE_DEPTH_PX`=4 + ratio
+  `STENCIL_TOPOLOGY_MERGE_RATIO`=0.8), spatially-separated multi-gates kept
+  (`STENCIL_GATE_SEPARATION_PX`=64).
+- **Directional cover** (`coverDirs`, per 8px cell): N-ray blocked-from
+  bitmask (`STENCIL_COVER_RAYS`=16, `STENCIL_COVER_RAY_PX`=24) testing the
+  wall mask, **map-boundary exits do not count** — the "edge adjacency is not
+  cover" review point. `cover` (bool) is now `coverDirs != 0`, so every cover
+  consumer moved with it: nearestCover (hold snap, squad spread, advance
+  fallback), spawnCoverPoint, and **post candidate gating** — post positions
+  will shift even though the post pass itself is otherwise untouched (D5-1).
+- **Authored anchors deleted**: `chokePoint` (45% axis fraction) →
+  `defenseGate` (first significant on-route gate from home, fully derived,
+  `STENCIL_GATE_DETOUR_PX`=48, cached per team; falls back to the home-room
+  peak on gateless maps); `rallyPoint`/`pastRally`/`axisPoint` and the
+  `STENCIL_CHOKE_FRACTION`/`STENCIL_RALLY_FRACTION` knobs are gone.
+- **Tracing**: `nav_init` gains `component_ms`/`topology_ms`/`cover_ms` +
+  `components_n`/`rooms_n`/`chokes_n`; `navigation_map` (schema v3) gains
+  rooms, chokes, the cover-dirs grid, the topology knob values, and a
+  zlib+delta-packed dump of the exact clearance field (~1–2 MB on giant,
+  rides the opt-in `STENCIL_TRACE_NAVIGATION=1` payload). `choke`/`rally`
+  trace fields are dropped; teams carry `defense_gate`.
+- **Offline process visualizer** (James's addition):
+  `tools/render_topology.py` + `tools/topology_debug.nim` re-run the exact
+  worldmap code on the agent-logged clearance with a process journal and
+  render a self-contained HTML viewer — watershed flood scrubber (a pixel is
+  labeled exactly at its own clearance level, so no per-pixel event log is
+  needed), raw/merged/component views, merge-decision log, cover roses, and
+  the defense-gate scoring table. It cross-checks recomputed finals against
+  the agent-traced finals and refuses to render silently on drift.
+
+**Pre-upload evidence:** 21.9M scratchpad property checks over 300 random
+maps + 2 synthetic scenarios vs brute force (components ≡ BFS 4-connectivity;
+roomLabel partition/connectivity/peak invariants; saddle-on-boundary and
+width bounds; determinism; cover ≡ reference rays incl. the empty-map
+edge-not-cover case). `nim check` clean on all locally-checkable modules.
+Real-map corpus (self_play, one episode per size, per-seat contention):
+
+| size | px | rooms | chokes | component | topology | cover | seat init total |
+|---|---|---|---|---|---|---|---|
+| small | 588k | 9 | 18 | 9 ms | 38 ms | 13 ms | 113 ms |
+| standard | 814k | 10 | 25 | 13 ms | 54 ms | 19 ms | 181 ms |
+| large | 1.38M | 16 | 57 | 23 ms | 93 ms | 36 ms | 356 ms |
+| huge | 2.64M | 27 | 111 | 45 ms | 197 ms | 69 ms | 869 ms |
+| giant 1v1 | 5.5M | 49 | 228 | 102 ms | 435 ms | 153 ms | 2362 ms |
+| giant 4ffa8 | 6.2M | 37 | 152 | 115 ms | 475 ms | 194 ms | 5119 ms |
+
+**Honest cost note:** giant-1v1 seat init grew to ~2.36 s (from v61's
+~1.5–1.9 s) — Layer 2 adds ~690 ms there under 16-way contention. The
+4ffa8-giant's 5.1 s total is dominated by the pre-existing 3-front post pass
+(3.9 s), with ~784 ms from Layer 2. Init-only; the Dijkstra/post pass remains
+the later rework target. The offline visualizer validated zero-drift against
+a real agent trace (standard map). Rooms/chokes counts above are the sketch
+Q1 node/edge bookkeeping for the hierarchical-planner decision.
+
+**Built against 0.7.215 / `6c7a4c0e` (pin unchanged); deployed canonical
+0.7.227.** Note: the campaign board was ROLLED BACK to the pre-migration
+10×10 square board (100 cells, null map_size) between this morning's
+round-967 re-verification and this upload — the board events feed records
+the restore. Hosted validation must target the restored board's live cells.
+
+**Hosted validation (in flight at write time):** matched v62-vs-v61 batch on
+the restored board, 12 requests / 58 episodes, seatings verified against the
+preregistration on readback. Cells: h2h `1v1`-mode (2,0) ref `1v1` seed
+386501705; duo `2v2`-mode (5,0) ref `2v2` seed 306617036; ffa `ffa4` (4,4)
+ref `4ffa` seed 350827746 — all with mapSize omitted (cells carry none).
+Pinned field: paintbot-focusfire:v39 (h2h + ffa), swgy-paintbot:v22 (duo
+opposing captain + ffa), Picasso:v52 (red-side ally), relhalpha:v4
+(blue-side ally + ffa). Requests: v62 h2h `xreq_390dff71`/`xreq_16800cc3`,
+duo `xreq_ca5192bf`/`xreq_22c073b6`, ffa `xreq_dd592a79`; v61 h2h
+`xreq_d8f4ffb8`/`xreq_ed06892a`, duo `xreq_e1120b86`/`xreq_d971a4e4`, ffa
+`xreq_ebed31f5`; plus two giant-init DEBUG PROBES (invented mapSize=giant,
+v62-vs-v61 in-episode, both seatings: `xreq_a1de40e5`/`xreq_5cb7f255`) —
+probes are ops evidence only, excluded from gameplay claims.
+
+**Hosted verdict (batch complete, 58/58 episodes, 0 ops failures):**
+
+| mode (n/arm) | v62 | v61 (control) |
+| --- | --- | --- |
+| h2h vs focusfire:v39 (16) | **11W-5L** | 6W-10L |
+| duo vs swgy+relh (8) | **2W-6L** | 0W-8L |
+| ffa top-3 field (4) | 2W-2L | 2W-2L |
+| total (28) | **15W-13L** | 8W-20L |
+
+(Classification note: wins/losses are by the subject's own score sign in
+team modes — +2/−2, no zero-score episodes occurred — after an initial
+unique-max-winner classifier misfiled the two duo team wins as draws; the
+subject's ally shares the winning score in duo mode.) v62 ≥ v61 in every
+mode on identical cells/opponents/seatings; the h2h swing (+5 net wins) is
+the clearest signal (not individually significant at n=16/arm — Fisher
+~0.15 — but direction-consistent with the duo wins). The duo cell against
+the #2-ranked swgy captain is a hard matchup for both arms; only v62 took
+games off it. Behavior diffs at the subject seats:
+objective mixes aligned; h2h duck micro 13.4% (v62) vs 11.9% (v61) — no
+v60-style duck spike; v62 spends less time dead (27.6% vs 33.3% of h2h
+snapshots) and less time in early_defense (19.2% vs 28.9%, coherent with
+earlier lives leads releasing the gate).
+
+**Giant-init probes (both seatings, v62-vs-v61 in-episode):** both completed
+clean. Paired hosted giant seat init: v62 3.2-4.2 s vs v61 1.9-2.1 s
+(rooms 71 / chokes 300 on the probe seed). Breakdown: Layer 2 phases
+~640-700 ms, and **post_ms grew ~0.7-1.5 s** because the directional-cover
+swap (D3a) admits more post candidate cells than adjacency cover — a real,
+disclosed compounding cost on giants and a concrete input to the Q6/D5-2
+post-rebuild decision and the later Dijkstra/post init rework.
+
+**Conclusion: Layer 2 accepted.** v62 is the new nav-rework baseline for
+Layer 3; v58 remains the live champion (nothing submitted).
+
+## v61 — nudgeClear micro fix (nav rework Layer 1, final), uploaded 2026-08-11
+
+Immutable policy-version UUID: `3380ab6d-5bc8-45b7-9429-ff7b74fc1f85`.
+Uploaded with tag `purpose=nav-clearance-nudge`. **Not submitted to any
+league.** This is the version that completes Layer 1; v60 is superseded.
+
+v60's matched hosted batch found a real behavioral regression: exact
+supercover validation at the four micro-nudge call sites (sidestep, squad
+stance, formation bias, hold separation) rejected slightly-clipping peek
+nudges that the engine's forgiving wall-slide executes fine — duck micro
+time rose from 11.3% to 15.0% of snapshots and v60 went 10W-23L vs paired
+v59's 16W-17L (n=33/arm, all three modes leaning negative). v61 adds
+`nudgeClear` — `canStand` sampled every 2px, bit-identical acceptance to
+the pre-clearance `walkableSegment` (19.2k random-segment property checks)
+at ~1/169th the reads — at those call sites plus init duck pairing. Flee
+validation keeps the exact `segmentClear` (the intended improvement; it
+fired equally in both v60 arms).
+
+**Hosted verdict (round-2 matched batch, 64 episodes, 20 requests, two
+cells per mode, both seatings, same pinned opponents):** v61 **13W (+16)**
+vs paired v59 **10W (+4)** at n=32/arm; ffa 8/8 sweep; 0 ops failures;
+duck micro back to 11.1% (v59 control 13.5%); objective mixes aligned;
+grid parity (`walkable_cells`) exact on every map. Combined with round 1,
+130/130 episodes completed with zero errors. Layer 1 is done: one
+predicate family (`canStand`/`segmentClear`/`nudgeClear` over the L∞
+clearance field), erosion deleted, giant-map clearance init 60-100 ms
+(one-time; total giant init ~1.5-1.9 s is pre-existing Dijkstra/post cost,
+a later rework target).
+
+Wall-slide lesson for the rework (recorded in the nav sketch): micro-nudge
+validity must not exceed engine-movement fidelity — the executor's slide
+makes near-valid segments practically valid, so exactness at the nudge
+layer is a pessimization.
+
+## v60 — L∞ clearance field (nav rework Layer 1), uploaded 2026-08-11
+
+Immutable policy-version UUID: `311a5ef0-928c-4910-9172-881ea81886af`.
+Uploaded with tag `purpose=nav-clearance`. **Not submitted to any league.**
+
+First increment of the navigation rework
+([`../../docs/designs/nav-rework-sketch-2026-08-11.md`](../../docs/designs/nav-rework-sketch-2026-08-11.md)).
+Behavior-preserving in intent; the only deliberate behavioral deltas are the
+segment predicates becoming engine-exact at the margins.
+
+- `WorldMap.clearance: seq[uint8]` — exact L∞ (Chebyshev) distance to the
+  nearest wall pixel, out-of-bounds counted as wall, clamped at 255. Two-pass
+  8-neighbor chamfer (exact for L∞, not an approximation). Because the
+  engine's `canOccupy` footprint is a 13×13 square, `clearance[p] > PlayerHalf`
+  reproduces it bit-for-bit in one array read.
+- `canStand(p)` (engine-exact point walkability) and `segmentClear(a, b)`
+  (supercover DDA at pixel resolution, one clearance read per visited pixel)
+  replace both `walkableSegment` (pixel-exact, ~length/2 × 169 reads/sample)
+  and `walkableNavSegment` (8px-grid conservative). All seven call sites
+  updated. A Lipschitz skip-march variant was rejected: property tests caught
+  a corner-cut false pass at minimum clearance.
+- The 8px nav grid is now derived from clearance via the cell-center test —
+  bit-identical to the deleted summed-area erosion. A*, Dijkstra flow fields,
+  `nearestWalkable`, and cover are unchanged consumers of the unchanged grid.
+- `erodeMs` → `clearanceMs`; trace key `erode_ms` → `clearance_ms`
+  (`self_play.py` updated to match).
+
+**Pre-upload evidence:** scratchpad property tests vs brute force on random
+maps — 268k exhaustive clearance pixels, bitwise nav-grid parity vs the old
+erosion, 9.6k `canStand` points vs footprint scans, 24.6k segments (2,690
+walkable) vs an independent supercover reference plus a dense-sampling
+cross-check; all passed. `nim check` clean on the touched modules.
+
+**Built against 0.7.215 / `6c7a4c0e` (pin unchanged); deployed canonical is
+now 0.7.227.** v58 competes live on 0.7.227 with the same pin lineage, so the
+wire contract is compatible; sim-rule constants have not been re-derived
+against 0.7.217–0.7.227.
+
+**Hosted validation (running at upload time):** a matched v60-vs-v59
+campaign-shaped batch on live round-967 cells — head-to-head `1v1`-mode cell
+(4,2) ref `1v1` seed 2106233304 size **giant** (clearance-init stress), 2v2-mode
+cell (12,2) ref `default` seed 2008560253 standard with fixed side allies and
+swapped captains, and ffa4-mode cell (5,1) ref `4ffa8` seed 1698802266 (32
+seats); 22 episodes across 10 requests: `xreq_aef998da`/`xreq_fb8e1b51`
+(v60 h2h), `xreq_6cbf9168`/`xreq_c2e6232c` (v59 h2h), `xreq_8a92b769`/
+`xreq_7eb275ab` (v60 2v2), `xreq_334b7fd6`/`xreq_c14e122e` (v59 2v2),
+`xreq_840186b5` (v60 ffa), `xreq_55098ad0` (v59 ffa). Two earlier duo
+seating-2 requests (`xreq_5a432982`, `xreq_748e763d`) were cancelled for
+moving allies with captains — the current commissioner keeps allies fixed to
+their sides. Note the campaign contract has changed since the docs' round-381
+snapshot: 16×16 hex board (round 955 migration), true `1v1` head-to-head mode,
+and `_duo_roster` now splits each team **evenly** between captain and ally
+(4+4), not 7+1.
+
 ## v59 — spray-carrier avoidance, uploaded 2026-08-08
 
 Immutable policy-version UUID: `73caf241-9198-4245-bcf5-e9ddec986311`.

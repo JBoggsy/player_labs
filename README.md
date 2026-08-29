@@ -41,6 +41,9 @@ player_labs/
   ctf_lab/             fourth game lab — CTF, an 8v8 capture-the-flag shooter — ARCHIVED 2026-08-07
   vanilla_wow_lab/     fifth game lab — Vanilla WoW, a real WoW 1.12.1/VMaNGOS realm (own README)
   paintbot_lab/        sixth game lab — Paintbot, a 2-or-4-team capture-the-heart shooter on procgen maps (README + docs index)
+  proxywar_lab/        seventh game lab — Proxy War, an OpenFront-fork RTS territory game with LLM/agent nations (own README)
+  emergant_lab/        eighth game lab — Emerg-ant, a 16-agent repeated-food-capture colony shooter
+  sugarscape_lab/      ninth game lab — Sugarscape, a movement-policy lab over coworld-sugarscape (own README)
   pyproject.toml       uv project: coworld[auth] + the pinned players SDK (from git) + deps
 ```
 
@@ -49,9 +52,9 @@ Each **game** gets its own lab directory (`crewrift_lab/`, …). Anything game-s
 lab; the root stays game-agnostic.
 
 **`ctf_lab/` is archived (2026-08-07)** — see [`ctf_lab/README.md`](ctf_lab/README.md).
-Active work is Paintbot. The belief replay viewer, replay reader, and event warehouse
-moved to `paintbot_lab/tools/`, since Paintbot is a second manifest over the same
-engine and is now their only consumer.
+Active game labs include Paintbot and Emerg-ant. The belief replay viewer, replay
+reader, and event warehouse moved to `paintbot_lab/tools/`, since Paintbot is a second
+manifest over the same engine and is now their only consumer.
 
 ## Skills
 
@@ -95,12 +98,14 @@ on, your first evaluation, and your first improvement, step by step.
 > collects candidate lessons — both described in [`crewrift_lab/AGENTS.md`](crewrift_lab/AGENTS.md).
 
 **Pointing a new user here?** [`docs/starter-prompt.md`](docs/starter-prompt.md) is a
-copy-paste prompt they can hand to their own coding agent to clone the repo and run the
-guided onboarding.
+copy-paste prompt they can hand to their own coding agent to fork & clone the repo and
+run the guided onboarding.
 
 **Prerequisites:** [`uv`](https://docs.astral.sh/uv/) and (only for *building* player
-images) Docker — **no GitHub credentials and no sibling checkouts**; the player SDK and
-the Crewrift game repo are public. TL;DR if you just want the commands:
+images) Docker — **no GitHub credentials and no sibling checkouts** to build or run; the
+player SDK and the Crewrift game repo are public. (A **GitHub account** isn't required to
+try the lab, but is recommended so you can **fork** it and keep your own copy to save
+work in — the guided onboarding sets that up.) TL;DR if you just want the commands:
 
 ```sh
 uv sync                                          # .venv: coworld[auth] + the SDK + deps

@@ -1,8 +1,9 @@
 ## Structured diagnostics and player-artifact delivery.
 ## Telemetry is isolated from gameplay: failures are reported and swallowed.
 
-import std/[algorithm, json, math, options, os, sequtils, sets, strutils, tables]
-import curly, zippy/ziparchives
+import std/[algorithm, base64, json, math, options, os, sequtils, sets,
+  strutils, tables]
+import curly, zippy, zippy/ziparchives
 import belief_state, config, policy, squads, strategy, types, worldmap
 
 type
@@ -28,6 +29,10 @@ type
     lastOrderSignature: string
     lastWorldSignature: Option[tuple[width, height, teams: int]]
     navigationFieldKeys: HashSet[int]
+    lastPlanUnroutableCount: int
+    unroutableReasons: HashSet[string]
+    lastFollowStuckCount: int
+    followStuckReasons: HashSet[string]
 
 proc pointJson(point: Option[Point]): JsonNode =
   if point.isSome: %*[point.get.x, point.get.y] else: newJNull()
@@ -224,6 +229,30 @@ proc distanceRows(values: openArray[float], width: int): JsonNode =
       row.add(if classify(distance) == fcInf: newJNull() else: %rounded4(distance))
     result.add(row)
 
+proc hexRows(values: openArray[uint16], width: int): JsonNode =
+  result = newJArray()
+  for y in 0 ..< values.len div width:
+    var row = newStringOfCap(width * 4)
+    for x in 0 ..< width:
+      row.add(toHex(values[y * width + x].int, 4))
+    result.add(%row)
+
+proc packedClearance(map: WorldMap): JsonNode =
+  ## The exact clearance field the agent computed, for the offline topology
+  ## visualizer: row-major byte deltas (mod 256; clearance is 1-Lipschitz so
+  ## deltas are almost all in {-1,0,+1}), zlib-deflated, base64.
+  var deltas = newString(map.clearance.len)
+  var previous = 0
+  for index, value in map.clearance:
+    deltas[index] = char((value.int - previous) and 0xff)
+    previous = value.int
+  %*{
+    "encoding": "clearance-delta-zlib-b64",
+    "width": map.width,
+    "height": map.height,
+    "data": encode(compress(deltas, DefaultCompression, dfZlib)),
+  }
+
 proc navigationMap(map: WorldMap): JsonNode =
   var teams = newJArray()
   for index in 0 ..< map.teams:
@@ -232,8 +261,7 @@ proc navigationMap(map: WorldMap): JsonNode =
       "team": teamName(color),
       "home_center": pointJson(map.homeCenter(color)),
       "capture": pointJson(map.capturePoint(color)),
-      "choke": pointJson(map.chokePoint(color)),
-      "rally": pointJson(map.rallyPoint(color)),
+      "defense_gate": pointJson(map.defenseGate(color)),
       "spawn_aim_brads": map.spawnAim(color),
     }
     if map.endzones.hasKey(color):
@@ -245,47 +273,55 @@ proc navigationMap(map: WorldMap): JsonNode =
     if map.pedestals.hasKey(color):
       entry["pedestal"] = pointJson(map.pedestals[color])
     teams.add(entry)
-  var fronts = newJArray()
-  for front in map.postFronts:
-    var candidates = newJArray()
-    for candidate in front.candidates:
-      candidates.add(%*{
-        "position": pointJson(candidate.pos),
-        "duck": pointJson(candidate.duck),
-        "score": rounded4(candidate.score),
-        "sightline": rounded4(candidate.sightline),
-        "corridor": rounded4(candidate.corridor),
-        "duck_contrast": rounded4(candidate.duckContrast),
-      })
-    var posts = newJArray()
-    for post in front.posts:
-      var rays = newJArray()
-      for endpoint in post.rayEnds: rays.add(pointJson(endpoint))
-      posts.add(%*{
-        "position": pointJson(post.pos),
-        "duck": pointJson(post.duck),
-        "score": rounded4(post.score),
-        "sightline": rounded4(post.sightline),
-        "corridor": rounded4(post.corridor),
-        "duck_contrast": rounded4(post.duckContrast),
-        "ray_ends": rays,
-      })
-    fronts.add(%*{
-      "team": teamName(front.team),
-      "opponent": teamName(front.opponent),
-      "candidates": candidates,
-      "posts": posts,
+  var atlas = newJArray()
+  for post in map.postAtlas:
+    var topSector = 0
+    for sector in 1 ..< AtlasSectorCount:
+      if post.reach[sector] > post.reach[topSector]:
+        topSector = sector
+    atlas.add(%*{
+      "position": pointJson(post.pos),
+      "max_reach": post.reach[topSector].int,
+      "top_sector": topSector,
+    })
+  var rooms = newJArray()
+  for room in map.rooms:
+    rooms.add(%*{
+      "peak": pointJson(room.peak),
+      "clearance": room.peakClearance,
+      "area": room.area,
+      "component": room.component,
+      "chokes": room.chokes,
+    })
+  var chokes = newJArray()
+  for choke in map.chokes:
+    chokes.add(%*{
+      "pos": pointJson(choke.pos),
+      "clearance": choke.clearance,
+      "rooms": [choke.roomA, choke.roomB],
     })
   %*{
-    "schema_version": 2,
+    "schema_version": 4,
     "map": [map.width, map.height],
     "grid": [map.gridW, map.gridH],
     "cell_size": NavCell,
     "center": pointJson(map.center),
     "walkable_rows": boolRows(map.walkable, map.gridW),
     "cover_rows": boolRows(map.cover, map.gridW),
+    "cover_dirs_rows": hexRows(map.coverDirs, map.gridW),
+    "cover_rays": clamp(CoverRays, 1, 16),
+    "cover_ray_px": CoverRayPx,
+    "merge_depth_px": TopologyMergeDepthPx,
+    "merge_ratio": TopologyMergeRatio,
+    "gate_detour_px": GateDetourPx,
+    "gate_separation_px": GateSeparationPx,
+    "components_n": map.componentCount,
+    "rooms": rooms,
+    "chokes": chokes,
+    "clearance_packed": packedClearance(map),
     "teams": teams,
-    "post_fronts": fronts,
+    "post_reach_cap_px": PostReachCapPx,
+    "post_atlas": atlas,
   }
 
 proc navigationFlow(field: CachedRouteField, map: WorldMap): JsonNode =
@@ -308,13 +344,19 @@ proc navMetrics(map: WorldMap): JsonNode =
     if value: inc walkable
   %*{
     "base_ms": map.baseInitMs,
-    "erode_ms": map.erodeMs,
+    "clearance_ms": map.clearanceMs,
+    "component_ms": map.componentMs,
+    "topology_ms": map.topologyMs,
     "cover_ms": map.coverMs,
-    "post_ms": map.postMs,
+    "atlas_ms": map.atlasMs,
+    "components_n": map.componentCount,
+    "rooms_n": map.rooms.len,
+    "chokes_n": map.chokes.len,
+    "atlas_n": map.postAtlas.len,
     "dijkstra_count": map.dijkstraMs.len,
     "dijkstra_total_ms": total,
     "dijkstra_max_ms": maximum,
-    "total_ms": map.baseInitMs + total + map.postMs,
+    "total_ms": map.baseInitMs + total + map.atlasMs,
     "decode_ms": 0.0,
     "map_pixels": map.width * map.height,
     "grid_cells": map.gridW * map.gridH,
@@ -454,7 +496,6 @@ proc snapshot(policy: StencilPolicy, command: Command): JsonNode =
     "target_teammate_blocked": belief.targetTeammateBlocked,
     "intent": policy.lastIntent.reason,
     "intent_point": pointJson(policy.lastIntent.point),
-    "flow_goal": pointJson(policy.lastFlowGoal),
     "micro": belief.micro,
     "carrying": teamJson(belief.iCarryHeartOf),
     "steal_target": teamJson(belief.stealTarget),
@@ -593,6 +634,15 @@ proc counters(policy: StencilPolicy): JsonNode =
     "defensive_post_fallbacks": b.defensivePostFallbacks,
     "spray_pursuit_ticks": b.sprayPursuitTicks,
     "spray_flee_ticks": b.sprayFleeTicks,
+    "plan_count": b.nav.planCount,
+    "plan_ms_total": rounded4(b.nav.planMsTotal),
+    "plan_expansions_total": b.nav.planExpansionsTotal,
+    "plan_unroutable_count": b.nav.planUnroutableCount,
+    "plan_fallback_count": b.nav.planFallbackCount,
+    "plan_goal_snapped": b.nav.planGoalSnappedCount,
+    "micro_corridor_rejects": b.nav.microCorridorRejects,
+    "follow_replans": b.nav.followReplans,
+    "follow_stuck_events": b.nav.followStuckEvents,
   }
 
 proc write(output: TraceOutput, record: JsonNode) =
@@ -667,6 +717,10 @@ proc record*(trace: TraceState, policy: StencilPolicy, command: Command) =
     if signature != trace.lastWorldSignature:
       trace.lastWorldSignature = signature
       trace.navigationFieldKeys.clear()
+      trace.unroutableReasons.clear()
+      trace.lastPlanUnroutableCount = 0
+      trace.followStuckReasons.clear()
+      trace.lastFollowStuckCount = 0
       trace.emit(policy.tick, "worldmap", snapshot(policy, command))
       if TraceNavigation and not belief.worldmap.isNil:
         trace.emit(policy.tick, "navigation_map", navigationMap(belief.worldmap))
@@ -693,6 +747,26 @@ proc record*(trace: TraceState, policy: StencilPolicy, command: Command) =
           "order": orderJson(belief),
           "post": pointJson(belief.squadOrderPost),
           "post_duck": pointJson(belief.squadOrderPostDuck),
+        })
+    if belief.nav.planUnroutableCount > trace.lastPlanUnroutableCount:
+      trace.lastPlanUnroutableCount = belief.nav.planUnroutableCount
+      if policy.lastIntent.reason notin trace.unroutableReasons:
+        trace.unroutableReasons.incl(policy.lastIntent.reason)
+        trace.emit(policy.tick, "plan_unroutable_bug", %*{
+          "reason": policy.lastIntent.reason,
+          "point": pointJson(policy.lastIntent.point),
+          "self_xy": pointJson(belief.selfXy),
+          "count": belief.nav.planUnroutableCount,
+        })
+    if belief.nav.followStuckEvents > trace.lastFollowStuckCount:
+      trace.lastFollowStuckCount = belief.nav.followStuckEvents
+      if policy.lastIntent.reason notin trace.followStuckReasons:
+        trace.followStuckReasons.incl(policy.lastIntent.reason)
+        trace.emit(policy.tick, "follow_stuck_bug", %*{
+          "reason": policy.lastIntent.reason,
+          "point": pointJson(policy.lastIntent.point),
+          "self_xy": pointJson(belief.selfXy),
+          "count": belief.nav.followStuckEvents,
         })
     let consensus = consensusJson(belief)
     let consensusSignature = $consensus

@@ -1,0 +1,7 @@
+{
+  "author": "James Boggs",
+  "name": "sugarscape-health",
+  "image_uri": "public.ecr.aws/PLACEHOLDER/players/sugarscape-health:latest",
+  "run": ["python", "/app/policy.py"],
+  "games": ["sugarscape"]
+}

@@ -190,10 +190,28 @@ type
     NavigateTo
     Hold
 
+  CostProfileKind* = enum
+    ProfileDefault
+    ProfileCarrier
+    ProfileHunter
+
+  MicroFlag* = enum
+    MicroPeekDuck
+    MicroSeparation
+    MicroFormationBias
+    MicroSprayPursuit
+    MicroStealRushExempt
+
   Intent* = object
     kind*: IntentKind
     point*: Option[Point]
+    arriveRadius*: float
     reason*: string
+    movingGoal*: bool
+    clampToEndzone*: bool
+    suppressFireFreeze*: bool
+    profile*: CostProfileKind
+    micro*: set[MicroFlag]
 
   Command* = object
     heldMask*: uint8

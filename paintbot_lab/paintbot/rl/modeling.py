@@ -10,7 +10,17 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from actions import ACTION_TOKEN_SLOTS, ACTION_TOKENS, STOP_TOKEN
+from actions import (
+    ACTION_TOKEN_SLOTS,
+    ACTION_TOKENS,
+    BUTTONS,
+    EVENT_TOKENS,
+    PRESS_TOKENS,
+    RELEASE_TOKENS,
+    STOP_TOKEN,
+    canonical_action_mask,
+    canonical_event_candidates,
+)
 
 
 MODEL_ID = "Qwen/Qwen3-0.6B-Base"
@@ -107,11 +117,18 @@ def adaptive_mean_pool2d(tensor: torch.Tensor, rows: int, columns: int) -> torch
 
 
 class SemanticPolicyModel(nn.Module):
-    def __init__(self, language_model: nn.Module, map_config: MapEncoderConfig | None = None) -> None:
+    def __init__(
+        self,
+        language_model: nn.Module,
+        map_config: MapEncoderConfig | None = None,
+        *,
+        action_encoding: str = "absolute",
+    ) -> None:
         super().__init__()
         self.language_model = language_model
         self.map_encoder = SpatialMapEncoder(language_model.config.hidden_size, map_config)
         self.map_encoder.to(dtype=language_model.get_input_embeddings().weight.dtype)
+        self.action_encoding = action_encoding
 
     def forward(
         self,
@@ -122,6 +139,7 @@ class SemanticPolicyModel(nn.Module):
         loss_weights: torch.Tensor | None = None,
         maps: Sequence[torch.Tensor],
         positions: Sequence[tuple[float, float]],
+        logits_to_keep: int = 0,
     ):
         token_embeddings = self.language_model.get_input_embeddings()(input_ids)
         map_embeddings = torch.cat(
@@ -131,25 +149,49 @@ class SemanticPolicyModel(nn.Module):
         map_attention = attention_mask.new_ones((attention_mask.shape[0], map_embeddings.shape[1]))
         map_labels = labels.new_full((labels.shape[0], map_embeddings.shape[1]), -100)
         combined_labels = torch.cat((map_labels, labels), dim=1)
-        output = self.language_model(
-            inputs_embeds=inputs_embeds,
-            attention_mask=torch.cat((map_attention, attention_mask), dim=1),
-            labels=combined_labels,
-        )
-        if loss_weights is not None:
-            map_weights = loss_weights.new_zeros(
-                (loss_weights.shape[0], map_embeddings.shape[1])
+        language_model_kwargs = {
+            "inputs_embeds": inputs_embeds,
+            "attention_mask": torch.cat((map_attention, attention_mask), dim=1),
+        }
+        if logits_to_keep:
+            if logits_to_keep < 2:
+                raise ValueError("logits_to_keep must retain a prediction and target")
+            output = self.language_model(
+                **language_model_kwargs,
+                logits_to_keep=logits_to_keep,
             )
-            combined_weights = torch.cat((map_weights, loss_weights), dim=1)
-            shifted_labels = combined_labels[:, 1:].contiguous()
+            loss_labels = combined_labels[:, -(logits_to_keep - 1) :]
+            loss_logits = output.logits[:, :-1]
+        else:
+            output = self.language_model(
+                **language_model_kwargs,
+                labels=combined_labels,
+            )
+            loss_labels = combined_labels[:, 1:]
+            loss_logits = output.logits[:, :-1]
+        if loss_weights is not None or logits_to_keep:
+            combined_weights = None
+            if loss_weights is not None:
+                map_weights = loss_weights.new_zeros(
+                    (loss_weights.shape[0], map_embeddings.shape[1])
+                )
+                combined_weights = torch.cat((map_weights, loss_weights), dim=1)
             token_losses = F.cross_entropy(
-                output.logits[:, :-1].contiguous().view(-1, output.logits.shape[-1]),
-                shifted_labels.view(-1),
+                loss_logits.contiguous().view(-1, output.logits.shape[-1]),
+                loss_labels.contiguous().view(-1),
                 ignore_index=-100,
                 reduction="none",
-            ).view_as(shifted_labels)
-            shifted_weights = combined_weights[:, 1:]
-            valid_weights = shifted_weights * (shifted_labels != -100)
+            ).view_as(loss_labels)
+            if combined_weights is None:
+                valid = loss_labels != -100
+                output.loss = token_losses[valid].mean()
+                return output
+            loss_weights_for_logits = (
+                combined_weights[:, -(logits_to_keep - 1) :]
+                if logits_to_keep
+                else combined_weights[:, 1:]
+            )
+            valid_weights = loss_weights_for_logits * (loss_labels != -100)
             output.loss = (token_losses * valid_weights).sum() / valid_weights.sum()
         return output
 
@@ -161,13 +203,90 @@ class SemanticPolicyModel(nn.Module):
         map_cache: StaticMapCache,
         position: tuple[float, float],
     ) -> tuple[str, str, str, str, str]:
-        """Constrained baseline decoding; deliberately simple, with no KV cache yet."""
+        """Constrained baseline decoding with incremental KV-cached generation."""
+        return self.greedy_actions(tokenizer, prompt_ids, (map_cache,), (position,))[0]
+
+    @torch.no_grad()
+    def greedy_actions(
+        self,
+        tokenizer,
+        prompt_ids: torch.Tensor,
+        map_caches: Sequence[StaticMapCache],
+        positions: Sequence[tuple[float, float]],
+    ) -> tuple[tuple[str, str, str, str, str], ...]:
+        """Decode an equal-length batch with the same constrained KV-cache path."""
+        if prompt_ids.ndim != 2:
+            raise ValueError("prompt_ids must have shape [batch, tokens]")
+        if (
+            len(map_caches) != prompt_ids.shape[0]
+            or len(positions) != prompt_ids.shape[0]
+        ):
+            raise ValueError("map caches and positions must match the prompt batch")
+        map_embeddings = torch.cat(
+            [
+                self.map_encoder.gather(cache, position)
+                for cache, position in zip(map_caches, positions, strict=True)
+            ]
+        )
+        text_embeddings = self.language_model.get_input_embeddings()(prompt_ids)
+        embeddings = torch.cat((map_embeddings, text_embeddings), dim=1)
+        output = self.language_model(
+            inputs_embeds=embeddings,
+            use_cache=True,
+            logits_to_keep=1,
+        )
+        generated: list[list[str]] = [[] for _ in map_caches]
+        for slot, allowed in enumerate(ACTION_TOKEN_SLOTS):
+            logits = output.logits[:, -1]
+            allowed_ids = torch.tensor(
+                [tokenizer.convert_tokens_to_ids(token) for token in allowed],
+                device=logits.device,
+            )
+            selected_ids = allowed_ids[torch.argmax(logits[:, allowed_ids], dim=1)]
+            for tokens, token_id in zip(generated, selected_ids.tolist(), strict=True):
+                tokens.append(tokenizer.convert_ids_to_tokens(token_id))
+            if slot + 1 < len(ACTION_TOKEN_SLOTS):
+                output = self.language_model(
+                    input_ids=selected_ids[:, None],
+                    past_key_values=output.past_key_values,
+                    use_cache=True,
+                    logits_to_keep=1,
+                )
+        return tuple((*tokens, STOP_TOKEN) for tokens in generated)
+
+    @torch.no_grad()
+    def greedy_event_action(
+        self,
+        tokenizer,
+        prompt_ids: torch.Tensor,
+        map_cache: StaticMapCache,
+        position: tuple[float, float],
+        previous_mask: int,
+    ) -> tuple[str, ...]:
+        """Generate a valid stateful event sequence followed by stop."""
         map_embeddings = self.map_encoder.gather(map_cache, position)
         text_embeddings = self.language_model.get_input_embeddings()(prompt_ids)
         embeddings = torch.cat((map_embeddings, text_embeddings), dim=1)
+        output = self.language_model(
+            inputs_embeds=embeddings,
+            use_cache=True,
+            logits_to_keep=1,
+        )
+        mask = canonical_action_mask(previous_mask)
+        touched = 0
+        press_phase = False
+        release_from = 0
+        press_from = 0
         generated: list[str] = []
-        for allowed in (*ACTION_TOKEN_SLOTS, (STOP_TOKEN,)):
-            logits = self.language_model(inputs_embeds=embeddings).logits[0, -1]
+        for step in range(len(BUTTONS)):
+            allowed = canonical_event_candidates(
+                mask,
+                touched,
+                press_phase=press_phase,
+                release_from=release_from,
+                press_from=press_from,
+            )
+            logits = output.logits[0, -1]
             allowed_ids = torch.tensor(
                 [tokenizer.convert_tokens_to_ids(token) for token in allowed],
                 device=logits.device,
@@ -175,17 +294,53 @@ class SemanticPolicyModel(nn.Module):
             selected_id = allowed_ids[torch.argmax(logits[allowed_ids])]
             token = tokenizer.convert_ids_to_tokens(selected_id.item())
             generated.append(token)
-            next_embedding = self.language_model.get_input_embeddings()(selected_id.reshape(1, 1))
-            embeddings = torch.cat((embeddings, next_embedding), dim=1)
-        return tuple(generated)  # type: ignore[return-value]
+            if token == STOP_TOKEN:
+                return tuple(generated)
+            index = (
+                PRESS_TOKENS.index(token)
+                if token in PRESS_TOKENS
+                else RELEASE_TOKENS.index(token)
+            )
+            bit = BUTTONS[index][0]
+            touched |= bit
+            mask ^= bit
+            if token in PRESS_TOKENS:
+                press_phase = True
+                press_from = index + 1
+            else:
+                release_from = index + 1
+            if step + 1 < len(BUTTONS):
+                output = self.language_model(
+                    input_ids=selected_id.reshape(1, 1),
+                    past_key_values=output.past_key_values,
+                    use_cache=True,
+                    logits_to_keep=1,
+                )
+        return (*generated, STOP_TOKEN)
 
 
-def load_base_model(*, tuning: str = "lora", dtype: torch.dtype | None = None):
+def load_base_model(
+    *,
+    tuning: str = "lora",
+    dtype: torch.dtype | None = None,
+    lora_rank: int = 8,
+    lora_target_modules: str = "attention",
+    action_encoding: str = "absolute",
+):
     from peft import LoraConfig, get_peft_model
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, revision=MODEL_REVISION)
-    tokenizer.add_special_tokens({"additional_special_tokens": list(ACTION_TOKENS)})
+    if action_encoding not in {"absolute", "events"}:
+        raise ValueError("action encoding must be 'absolute' or 'events'")
+    model_action_tokens = (
+        ACTION_TOKENS
+        if action_encoding == "absolute"
+        else (*ACTION_TOKENS, *EVENT_TOKENS)
+    )
+    tokenizer.add_special_tokens(
+        {"additional_special_tokens": list(model_action_tokens)}
+    )
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
     language_model = AutoModelForCausalLM.from_pretrained(
@@ -195,21 +350,34 @@ def load_base_model(*, tuning: str = "lora", dtype: torch.dtype | None = None):
     )
     language_model.resize_token_embeddings(len(tokenizer))
     if tuning == "lora":
-        action_token_ids = [tokenizer.convert_tokens_to_ids(token) for token in ACTION_TOKENS]
+        if lora_rank <= 0:
+            raise ValueError("lora_rank must be positive")
+        if lora_target_modules not in {"attention", "all-linear"}:
+            raise ValueError("lora_target_modules must be 'attention' or 'all-linear'")
+        action_token_ids = [
+            tokenizer.convert_tokens_to_ids(token) for token in model_action_tokens
+        ]
+        target_modules = (
+            ["q_proj", "k_proj", "v_proj", "o_proj"]
+            if lora_target_modules == "attention"
+            else "all-linear"
+        )
         language_model = get_peft_model(
             language_model,
             LoraConfig(
-                r=8,
-                lora_alpha=16,
+                r=lora_rank,
+                lora_alpha=2 * lora_rank,
                 lora_dropout=0.05,
-                target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
+                target_modules=target_modules,
                 trainable_token_indices={"embed_tokens": action_token_ids},
                 task_type="CAUSAL_LM",
             ),
         )
     elif tuning != "full":
         raise ValueError("tuning must be 'lora' or 'full'")
-    return tokenizer, SemanticPolicyModel(language_model)
+    return tokenizer, SemanticPolicyModel(
+        language_model, action_encoding=action_encoding
+    )
 
 
 def save_policy(model: SemanticPolicyModel, tokenizer, output: Path, tuning: str) -> None:
@@ -228,6 +396,7 @@ def save_policy(model: SemanticPolicyModel, tokenizer, output: Path, tuning: str
                 "model_id": MODEL_ID,
                 "model_revision": MODEL_REVISION,
                 "tuning": tuning,
+                "action_encoding": model.action_encoding,
                 "map_encoder": asdict(model.map_encoder.config),
             },
             indent=2,
@@ -252,7 +421,11 @@ def load_policy(output: Path, *, device: torch.device):
         language_model = PeftModel.from_pretrained(language_model, output / "adapter")
     else:
         language_model = AutoModelForCausalLM.from_pretrained(output / "model")
-    model = SemanticPolicyModel(language_model, MapEncoderConfig(**config["map_encoder"]))
+    model = SemanticPolicyModel(
+        language_model,
+        MapEncoderConfig(**config["map_encoder"]),
+        action_encoding=config.get("action_encoding", "absolute"),
+    )
     model.map_encoder.load_state_dict(
         torch.load(output / "map_encoder.pt", map_location="cpu", weights_only=True)
     )

@@ -5,33 +5,42 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
-- **Deep-dive stencil's navigation code; unify the walkability predicates**
-  (found 2026-08-08 while implementing v59). The lab now ships **two**
-  segment-walkability tests with different semantics, and that is a knowingly
-  accepted debt, not an oversight:
-  - `worldmap.walkableSegment` — resamples every 2px and rescans a 13x13 pixel
-    footprint at each sample against the **pixel wall mask**. Exact, expensive.
-    Five callers (`action.nim:202,251,470,479`, `worldmap.nim:393`), each of
-    which calls it at most once per tick.
-  - `worldmap.walkableNavSegment` — new in v59. Integer DDA over the
-    **already-eroded 8px nav grid** with a no-corner-cut rule on diagonals.
-    ~600x cheaper, conservative (rejects some passable tight lines), and
-    consistent with how A*, the flow fields, and `nearestWalkable` already
-    think. Two callers, both in `strategy.nim`'s flee scoring.
+- **Repair experience-request division resolution against the current API**
+  (2026-08-21). The experience-request helper's `resolve --division ...` command
+  sends `include_recent_rounds=3`, which the live Emerg-ant
+  leaderboard route now rejects with HTTP 422; the companion active-memberships CLI
+  query returned `[]` despite three ranked players. Hosted evaluation remained
+  unblocked by resolving explicit policy labels through the stats endpoint. Reconcile
+  the current leaderboard query contract and membership semantics before relying on
+  automatic ranked-roster construction again.
 
-  Why it exists: v59 scores 32 flee candidates per fleeing tick, and
-  `walkableSegment` at 32 calls/tick blew the budget. The better fix was to use
-  the cheap grid test as a **pre-filter** and confirm only the winning candidate
-  with `walkableSegment` — ~1-2 expensive calls per tick, one authoritative
-  predicate. James chose to ship the current path and revisit navigation
-  properly rather than patch it now.
+- **Paintbot: game-pin review** (2026-08-14). Build pin is 0.7.215/`6c7a4c0e`;
+  canonical deployed has advanced to 0.7.229 (`bf0bcc22`) — a 14-release gap.
+  Contract compatibility has been assumed per the v58-lineage argument since
+  v60; sim-rule constants have not been re-derived since 0.7.215. Re-verify
+  manifest/config_schema byte-compat and the spray/aim/movement constants,
+  then bump PAINTBOT_GAME_REF or document why not.
 
-  The deep dive should settle: one predicate or a documented hierarchy;
-  whether the pixel mask or the eroded grid is the source of truth for "can a
-  body go here" (they disagree at the margins); whether `rayClear`'s
-  point-sized LOS is being used anywhere it should be footprint-aware; and
-  what to do about `belief.danger`, which `belief_update.nim:225-293` computes
-  every tick and **nothing reads** (`nav.nim`'s A* costs are pure distance).
+- **Stencil navigation rework** (deep dive done 2026-08-08; design started
+  2026-08-11). The deep-dive questions are answered in
+  [`paintbot_lab/docs/reports/stencil-navigation-deep-dive-2026-08-08.md`](paintbot_lab/docs/reports/stencil-navigation-deep-dive-2026-08-08.md);
+  James's review comments set the direction — one planner, no beelining, no 8px
+  coarsening for movement, dynamic PoIs, goals validated before nav. Rough
+  sketch:
+  [`paintbot_lab/docs/designs/nav-rework-sketch-2026-08-11.md`](paintbot_lab/docs/designs/nav-rework-sketch-2026-08-11.md).
+  Next: settle the sketch's open questions (planner benchmarks first), then the
+  full design doc, then the rework itself.
+
+- **Fire-windup micro** (from the 2026-08-11 nav review; explicitly not-now).
+  Strafe/aim while fire is winding up to improve accuracy, or pull the trigger
+  from cover and step out so exposure time is minimal. Today `resolveAction`
+  just freezes movement during windup (`action.nim` fire-windup freeze).
+
+- **Experimentally validate `belief.danger` semantics** (from the 2026-08-11
+  nav review). Hypothesis: it actually tracks *believed enemy locations*, not
+  danger per se. Keep it as-is until a dedicated experiment settles what it
+  measures; its long-term fate (promote into nav costs vs delete) follows from
+  that verdict, not from the rework.
 
 - **Re-sync crewborg's player SDK, or accept the split** (found 2026-08-07 during a
   docs audit). `pyproject.toml` now pins coworld-tools `4dd923d` (paintbot needs it —
@@ -82,11 +91,31 @@ mid-session; check them back at the start of focused work.
   diversity, then compare compact deltas with short full self/nearby-state
   history and report movement/turn/fire/grenade changes separately. See
   `paintbot_lab/docs/reports/rl-transition-temporal-2x2-2026-08-07.md`.
-  **In progress:** all 327,188 replay downloads are complete and the exhaustive
-  expert pool is preprocessing on mettabox1 with a disk-bounded virtual-Arrow
-  handoff. After this run, compare compact deltas against short full self/nearby
-  snapshots; do not change the representation while the attributable baseline
-  is active.
+  **In progress:** all 327,188 replay downloads and exhaustive preprocessing are
+  complete. The first 250k-unique x 3-epoch arm reached a 59.17% teacher-forced
+  exact-action proxy on the frozen 10k balanced sealed test (27.19% changed,
+  91.14% held). That evaluator did not feed generated slots back into the model,
+  so it is not autoregressive; corrected autoregressive evaluation is now the
+  only final-gate metric. Validation diagnosis rejected decoder calibration and
+  localized the main error to movement transitions. A matched-compute 750k-
+  unique x 1-epoch arm is running under `training-v2-diversity`; it stops after
+  validation and keeps the sealed
+  test closed. If diversity is flat, compare compact deltas against short full
+  self/nearby snapshots or greater adaptation capacity. A validation-only
+  residual press/release screen is queued behind diversity after validation
+  logits showed 71.85% of changed-movement errors simply repeat the prior
+  movement. It runs one schedule-matched epoch and promotes only on a
+  preregistered exact/movement/held gate. If rejected, a spatial-semantics
+  screen adds egocentric bearing and self-width-normalized range to the nearest
+  16 entities under the same staged gate. Report:
+  `paintbot_lab/docs/reports/rl-exhaustive-baseline-2026-08-14.md`.
+  **Deferred fallback:** a next-state/action audit found that physical Arrow
+  neighbors are normally six ticks apart and omit intervening actions, so they
+  are not valid one-step world-model pairs. Raw replays are retained. If the
+  queued arms fail, re-extract a bounded per-tick train/validation subset and
+  compare one preregistered compact semantic-delta or latent future-prediction
+  auxiliary objective. Do not generate full observation text or inspect test
+  pairs. Contract and measurements are in `paintbot_lab/docs/designs/rl-policy.md`.
 
 - **Make Stencil squads roster-aware under campaign 7+7+1+1 seating** (found
   2026-08-06). Current `squadTable` partitions two-team identities by parity,

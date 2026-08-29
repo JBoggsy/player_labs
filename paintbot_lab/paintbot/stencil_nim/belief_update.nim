@@ -1,7 +1,7 @@
 ## Fold one memoryless percept into stencil's long-lived belief.
 
 import std/[math, options, sets, tables]
-import belief_state, chat, config, fight, items, squads, types, worldmap
+import belief_state, chat, config, danger_field, fight, items, squads, types, worldmap
 
 let
   DangerDecay = pow(0.5, 1.0 / DangerDecayHalfLifeTicks.float).float32
@@ -350,6 +350,15 @@ proc updateDanger(belief: Belief) =
     if not walkable:
       belief.danger[index] = 0.0
 
+proc updatePlanDanger(belief: Belief) =
+  let map = belief.worldmap
+  if map.isNil:
+    return
+  if belief.planDanger.values.len != map.gridW * map.gridH or
+      belief.tick - belief.planDangerBuiltTick >= PlanMovingReplanTicks:
+    belief.planDanger.rebuildLosDanger(map, belief.freshEnemyPositions)
+    belief.planDangerBuiltTick = belief.tick
+
 proc updateBeliefCore*(
   belief: Belief, percept: PaintState, actionState: ActionState, tick: int
 ) =
@@ -428,4 +437,5 @@ proc updateBeliefCore*(
   if Chat:
     belief.updateChat(percept, tick)
   belief.updateDanger()
+  belief.updatePlanDanger()
   belief.updateFirefight()

@@ -15,6 +15,7 @@ episode_data/
 analysis/
 paintbot_lab/self_play/
 paintbot_lab/.cache/
+paintbot_lab/local_data/
 paintbot_lab/paintbot/rl/data/
 paintbot_lab/paintbot/rl/results/
 # Scratch/downloaded-coworld dir only (top-level). Do NOT ignore a player
@@ -43,6 +44,8 @@ crewrift_lab/.cache/
 crewrift_lab/tools/bin/
 paintbot_lab/tools/bin/
 ctf_lab/tools/bin/
+# Expanded replay viewer bundles (regenerable via build_expand_replay.sh; 100MB+)
+ctf_lab/tools/bundles/
 
 # League telemetry harvest (raw artifact zips; regenerable while retention lasts)
 crewrift_lab/telemetry_harvest/

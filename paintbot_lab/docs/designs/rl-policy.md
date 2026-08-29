@@ -25,6 +25,7 @@ usable policy prior.
 | Training eras | Mix historical game eras; never train or validate the first model on a single-era corpus. | The central claim is robustness to observation-schema evolution. A single-era success cannot test it. |
 | Initial objective | SFT next-token prediction of four factorized action tokens followed by `<STOP>`. | This is the smallest compositional behavior-cloning objective that exercises the pretrained model and the cross-era representation. |
 | Action output | Generate four factorized semantic action tokens, then `<STOP>`. | Factorization shares training signal across action combinations and avoids a sparse 108-token joint vocabulary. |
+| Residual-action experiment | Optionally generate only canonical button press/release events, then `<STOP>`, and decode against the previous mask. | Validation localized the exhaustive model's main error to copying prior movement; this tests residual supervision without changing the default codec. |
 | Map lifecycle | Decode and store the exact walkability raster once per episode; encode it into cached spatial features. | The map is static episode data delivered once at player initialization, so neither the dataset nor inference loop should duplicate or re-encode it per frame. |
 
 The [selected model's official card](https://huggingface.co/Qwen/Qwen3-0.6B-Base)
@@ -150,10 +151,10 @@ shape. These defaults are conservative starting points, not closed decisions:
 | Map patches | two small convolutions, stride 8, 32 channels | `MapEncoderConfig` |
 | Map tokens | 4x4 global pool plus 4x4 local pool (32 total) | `global_grid`, `local_grid` |
 | Local context | radius 8 feature cells, gathered every decision | `local_radius_cells`; cached feature grid API |
-| Tuning | LoRA rank 8 over attention projections plus only the 17 new token rows | `--tuning lora|full` and PEFT config |
+| Tuning | LoRA rank 8 over attention projections plus only the 17 new token rows | `--tuning lora|full`, `--lora-rank`, and `--lora-target-modules attention|all-linear` |
 | Text ceiling | 2,048 tokens for the Mac baseline, preserving the nearest/self-first prefix and all targets | `--max-text-tokens` |
 | Replay alignment | observation at tick `t` predicts held mask at tick `t` | `--action-delay-ticks`; both ticks stored |
-| Decoding | five constrained greedy steps without a KV cache | isolated `greedy_action()` method |
+| Decoding | one prefix prefill, then KV-cached constrained action steps and grammar-implied `<STOP>`; offline absolute-action evaluation batches only equal-length prompts | isolated `greedy_action()`, `greedy_actions()`, and `greedy_event_action()` methods; `--autoregressive-batch-size` |
 | Temporal training input | four compact causal deltas plus previous transmitted action | `history` sample field; history length and `max_history_tokens` remain experiment knobs |
 
 The action decoder uses the actual Sprite-v1 layout: directions occupy bits
@@ -421,6 +422,115 @@ exact but only 13.7% change precision and 35.3% overall exact. Weighting alone
 is rejected; transition-centered sampling and temporal context are now the
 next representation experiments. Full record:
 [`../reports/rl-action-change-weighting-2026-08-07.md`](../reports/rl-action-change-weighting-2026-08-07.md).
+
+### Residual event-action follow-up
+
+Exhaustive-corpus validation logits show that 71.85% of changed-movement
+examples repeat the previous movement, while only 7.76% choose a different but
+incorrect direction. Excluding the prior movement token raises correct-new-
+direction choice to 54.85%; an oracle movement change gate would yield 69.61%
+exact action. This is a direct copycat signature rather than ordinary class
+confusion.
+
+The opt-in `events` codec therefore supervises only button transitions:
+canonical releases, canonical presses, then `<STOP>`. The decoder owns previous
+button state, rejects redundant/contradictory events, and reconstructs the raw
+held mask. Autoregressive generation enforces the same release-before-press and
+within-phase button order as training, so it cannot enter unsupervised event
+permutations. The absolute four-slot codec remains the default and the selected
+codec is checkpoint metadata. Event training always reserves nine target
+tokens, preventing target-length leakage through prompt truncation. Model
+selection uses autoregressive generation through `<STOP>`; teacher-forced
+event accuracy is not the gate. A schedule-matched one-epoch validation screen
+is queued ahead of the spatial-semantics arm. Passing the screen promotes event
+training, but only exceeding 70% autoregressive validation stops the independent
+spatial arm; neither arm can open the sealed test. Current experiment contract and results live in
+[`../reports/rl-exhaustive-baseline-2026-08-14.md`](../reports/rl-exhaustive-baseline-2026-08-14.md).
+
+If both event outputs and spatial-semantic inputs pass their single-factor
+screens, complete three epochs, and remain below 70%, the unattended queue
+fills the fourth cell of that 2x2 representation design. The combined arm uses
+the same index, schedule, screen, and validation-only selection contract. It is
+not eligible when either individual factor is rejected, which prevents an
+open-ended search over post-hoc combinations.
+
+### Sealed-candidate gate
+
+Validation and test evaluators attest the exact sample-index SHA-256, Arrow
+dataset fingerprint, SHA-256 of the selected semantic sample records, and
+validated map-set fingerprint in their result JSON.
+`evaluate_sealed_candidate.py` opens the frozen test only when validation uses
+the recorded dataset and index, contains exactly 10,000 rows, and is strictly
+above 70% autoregressive exact action. Teacher-forced constrained metrics remain
+diagnostics for old artifacts but cannot satisfy the gate. Validation must
+attest the same checkpoint-tree hash, action codec, spatial representation, and
+4,096-token budget used by the sealed run. The guard re-hashes both frozen
+indices, verifies both Arrow dataset fingerprints, requires validation and test
+to use the same map-table file, and checks the resulting test row and map
+attestations before writing a separate pass/fail decision. It also refuses to
+overwrite a prior candidate result. This is the mechanical boundary between
+model selection and the one-time sealed test.
+All unattended training runners stop after frozen-validation evaluation; do not
+invoke `evaluate_sft.py` directly for a new final candidate.
+
+### Next-state/action extension audit
+
+The proposed extension can be written causally as:
+
+```text
+O_t, A_t, A_(t+1) -> delta(O_t, O_(t+1)), A_(t+2)
+```
+
+Here `A_t` is the previously held mask and `A_(t+1)` is the action chosen from
+`O_t`. The future observation target must follow that chosen action before the
+following action is predicted. This is compatible with an autoregressive
+trajectory model, but the transition data must contain every intervention.
+
+The exhaustive Arrow corpus is not sufficient for the literal objective as
+stored. Its observations use stride 6. In the first 100,000 physical training
+rows, 99,218 adjacent rows from the same trajectory were six ticks apart; the
+remaining same-trajectory gaps were predominantly 72 or 78 ticks. Each later
+sample's stored history covers offsets -4 through -1, so it does not recover
+all actions and state changes across the preceding six-tick gap. Treating these
+rows as a one-step transition would ask the model to explain hidden intervening
+actions and is rejected as a causal training contract.
+
+The stored rows do show that a compact future target is practical. On 9,848
+six-tick adjacent pairs, the existing semantic-delta serialization measured 158
+Qwen tokens at median and 165 at p95, versus 909 and 3,062 tokens for the full
+next observation. Full observation generation would regularly exceed the
+4,096-token budget once the prompt and action targets are included. These
+numbers measure compactness only; they do not make the six-tick pairs valid
+world-model supervision.
+
+If the queued diversity/event/spatial arms do not clear the autoregressive
+validation gate, the next-state arm should therefore:
+
+1. Re-extract exact tick `t+1` observations and actions from retained raw
+   replays for a bounded, replay-disjoint subset of the existing train and
+   validation splits. Do not derive or inspect test pairs during development.
+2. Keep current-action prediction as the primary loss. Add an action-conditioned
+   future semantic-delta or latent-representation objective, followed by the
+   next action, with its loss weight fixed before validation.
+3. Prefer a compact target over reconstructing the full Sprite-v1 text. Compare
+   an inspectable semantic-delta target against a latent self-prediction target
+   only as a preregistered validation experiment; do not add both at once.
+4. Preserve the frozen validation index/checkpoint attestation and require the
+   same autoregressive exact-action gate. Future-state loss is an auxiliary
+   representation objective, never a substitute success metric.
+
+This follows the useful part of established approaches without importing their
+full machinery: Trajectory Transformer models correctly ordered state/action
+sequences; Self-Predictive Representations predicts future latent states; and
+Dreamer learns action-conditioned latent dynamics. For this SFT policy, a small
+auxiliary target is the conservative first experiment—not a Dreamer-style
+planner or full-observation language rollout.
+
+References:
+
+- [Offline Reinforcement Learning as One Big Sequence Modeling Problem](https://trajectory-transformer.github.io/)
+- [Data-Efficient Reinforcement Learning with Self-Predictive Representations](https://arxiv.org/abs/2007.05929)
+- [Mastering diverse control tasks through world models](https://www.nature.com/articles/s41586-025-08744-2)
 
 ### Transition sampling and temporal-history result
 

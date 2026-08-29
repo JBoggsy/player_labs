@@ -45,12 +45,12 @@ The implementation now covers the complete replay-to-checkpoint path:
   shards as one virtual dataset and builds finite balanced training indices.
 - `run_expert_training.py` waits for preparation, builds Arrow plus indices,
   runs and evaluates a GPU canary, then launches resumable full training and
-  sealed-test evaluation without a human handoff.
+  frozen-validation evaluation. It never opens the sealed test.
 - `assemble_corpus.py` deduplicates maps and samples a balanced cross-era corpus
   from what the pipeline extracted.
 - `train_sft.py` is the CLI entry point that fine-tunes a run end to end (the
   `training.py`/`modeling.py` machinery is the library beneath it);
-  `evaluate_sft.py` scores a checkpoint against a sealed split.
+  `evaluate_sft.py` scores a checkpoint against an explicitly supplied split.
 - `measure_action_alignment.py` measures which replay action tick explains each
   observed aim transition — the instrument that settled zero-tick alignment.
   `measure_observation_lengths.py` is the corresponding token-length instrument.
@@ -122,7 +122,9 @@ completed stages and resumes full training from the newest valid state. It
 runs a 1,024-example GPU canary first and starts full training immediately when
 the canary and its validation evaluation complete. Full training checkpoints
 every 1,000 optimizer updates and retains the newest two step checkpoints plus
-each completed epoch.
+each completed epoch. The unattended launcher evaluates the selected checkpoint
+on frozen validation and then stops. The sealed test can only be opened through
+the guarded final-gate workflow below after validation exceeds 70%.
 
 `supervise_expert_training.sh` retries a failed handoff after 60 seconds;
 it also raises the open-file soft limit for the many memory-mapped Arrow parts.
@@ -131,6 +133,76 @@ On the current host, that supervisor is detached and an `@reboot` crontab entry
 provides reboot recovery because the `metta` account does not have systemd
 lingering enabled. The enabled user unit is a secondary login-time recovery
 path; the shared lock prevents concurrent launchers.
+
+### Training dashboard
+
+`training_dashboard.py` serves a read-only, dependency-free view of the active
+run: microbatch/epoch progress and ETA, recent and validation loss, checkpoints,
+GPU utilization/VRAM/temperature, disk headroom, process health, recent errors,
+and evaluation-row progress/ETA during long autoregressive scoring. Detailed
+action metrics plus the replay-cluster confidence interval appear once an
+evaluation file exists. A completed one-shot confirmation is shown explicitly
+as passed or failed with its validation accuracy, confirmation accuracy, target,
+and lower-bound verdict. Evaluators emit structured progress every 100 rows by
+default; `--progress-every` changes only that reporting cadence. It binds to remote
+localhost and is reached through SSH rather than exposing a network service.
+
+From the repository root on a Mac, deploy/restart the dashboard, establish the
+SSH tunnel, and open it with:
+
+```sh
+paintbot_lab/paintbot/rl/open_training_dashboard.sh
+```
+
+The default URL is `http://127.0.0.1:8876`; if that port is occupied by another
+dashboard, the launcher chooses the next free port. Override the starting local
+port with `PAINTBOT_DASHBOARD_LOCAL_PORT`; the launcher otherwise uses the
+existing `mettabox1` SSH alias and exhaustive-corpus workspace.
+
+The unattended accuracy queue retargets the remote dashboard from diversity to
+the event-action screen, and then to spatial semantics if no completed arm has
+exceeded 70% on frozen autoregressive validation. Passing the event screen but
+finishing below the target does not stop the independent spatial experiment.
+If both single-factor arms pass their screens and complete below 70%, the queue
+fills the preregistered 2x2 interaction cell by training event outputs with
+spatial-semantic inputs. A rejected single-factor screen suppresses that
+combination.
+If diversity finishes below the target, the queue also evaluates the original
+baseline checkpoint autoregressively on the same frozen validation index before
+starting the next arm, providing a like-for-like diagnostic without opening the
+test. A diversity model that already clears the target proceeds directly to its
+one-shot confirmation instead of waiting for that non-selecting diagnostic. The
+SSH tunnel and local `8876` URL remain unchanged across those handoffs.
+
+Confirmation selection is also unattended and fixed before results. The first
+eligible arm in queue order—diversity, event actions, spatial semantics, then
+the eligible interaction—that reports strictly more than 70% autoregressive
+exact action on frozen validation is sent once through
+`evaluate_sealed_candidate.py`. The queue then stops regardless of confirmation
+pass or failure; it never evaluates a second candidate on the same holdout. If
+no arm clears validation, the holdout remains unopened. An interrupted process
+may verify and finish the decision for an already-written result, but it never
+runs model inference on the confirmation rows twice.
+
+To follow a non-default experiment while retaining the same dashboard URL, set
+the remote output and log explicitly:
+
+```sh
+PAINTBOT_DASHBOARD_TRAINING_ROOT=/home/metta/paintbot_rl_training_20260807/runs/expert-corpus-v1/training-v2-diversity \
+PAINTBOT_DASHBOARD_TRAINING_LOG=/home/metta/paintbot_rl_training_20260807/logs/diversity-750k.log \
+  paintbot_lab/paintbot/rl/open_training_dashboard.sh
+```
+
+### Matched-compute diversity arm
+
+`run_diversity_experiment.py` compares the original 250,000 unique rows x three
+epochs against 750,000 unique rows x one epoch. Total example presentations and
+optimizer updates remain fixed. The runner writes a separate balanced index,
+trains and resumes under `training-v2-diversity`, evaluates validation, and
+deliberately stops before the sealed test. `supervise_diversity_experiment.sh`
+provides retry and reboot recovery on mettabox1. The baseline diagnosis and
+frozen checksums are recorded in the
+[`exhaustive-corpus report`](../../docs/reports/rl-exhaustive-baseline-2026-08-14.md).
 
 ### Full run
 
@@ -193,11 +265,20 @@ investigation selected zero ticks decisively; see the living design for results.
 
 For live inference, set `PAINTBOT_RL_CHECKPOINT`. Set
 `PAINTBOT_RL_TRACE=1` to emit generated tokens, mask transitions, and latency.
-`evaluate_sft.py` reports the grammar-constrained accuracy that matches live
-decoding as well as unrestricted vocabulary accuracy, per-slot accuracy, a
-held-action persistence baseline, and accuracy restricted to examples where
-the expert actually changed the button state. The latter two are required:
+`evaluate_sft.py` reports autoregressive exact-action and per-slot accuracy
+using the same feedback decoding as inference. It retains teacher-forced
+`constrained_*` diagnostics for interpreting older artifacts and adds an
+explicit teacher-forced exact-action alias. It also reports a held-action
+persistence baseline plus accuracy restricted to examples where the expert
+actually changed the button state. The latter two are required:
 aggregate accuracy can otherwise reward simply copying the previous mask.
+Both absolute and event decoders prefill the observation once, then reuse
+Qwen's KV cache for generated action tokens; this changes evaluation latency,
+not token selection or the metric contract. Absolute-action evaluation also
+projects vocabulary logits only for the five scored targets and batches
+autoregressive rows with identical prompt lengths, so no padding or altered
+position semantics enter the metric. Unattended evaluations use batches of
+eight; `--autoregressive-batch-size 1` retains the single-row reference path.
 
 Training accepts `--action-change-weight <number|balanced>`. Numeric values
 multiply loss only for movement/turn/fire/grenade targets whose state differs
@@ -205,6 +286,87 @@ from the prior tick. `balanced` derives `unchanged_components / changed_componen
 from the training split; `<STOP>` remains weight 1. The first weighting sweep
 showed that this mechanism creates transition recall but excessive false
 changes, so it is an experiment knob rather than a new default.
+
+`--action-encoding events` selects the residual press/release experiment. It
+targets only changed buttons, in canonical release-then-press order, followed
+by `<STOP>`; an unchanged mask targets `<STOP>` alone. The checkpoint records
+the codec and live inference dispatches to the matching stateful decoder. Event
+checkpoints retain the absolute action tokens as trainable prompt vocabulary so
+`previous_action` has the same five-token representation under both codecs.
+Every row reserves the worst-case nine-token event budget during truncation,
+regardless of its true target length. `evaluate_event_sft.py` generates
+autoregressively until `<STOP>` while enforcing the same release-before-press,
+button-order grammar used by the targets. It decodes the result back to a
+canonical held mask before reporting the selection exact-action and
+per-component accuracy; teacher-forced event scores are diagnostics only. The
+default remains `absolute`, so existing checkpoints and unattended runs retain
+their original four-slot action language.
+
+LoRA defaults to rank 8 over the attention Q/K/V/O projections. Capacity
+experiments can set `--lora-rank` and choose
+`--lora-target-modules attention|all-linear`; both resolved values are recorded
+in `training_run.json`. The exhaustive-corpus all-linear canary fit in 24 GB but
+regressed movement and validation loss, so attention-only remains the default.
+
+`evaluate_sft.py --logits-out validation_logits.npz` persists only legal
+per-slot logits plus replay IDs, prior tokens, and labels. The output is intended
+for validation-only decoder diagnosis. `calibrate_change_bias.py` splits it by
+replay ID, selects a single previous-state change bias on one half, and reports
+the untouched confirmation half. Do not use this path to tune against sealed
+test logits.
+
+`evaluate_sealed_candidate.py` is the only supported final-gate command. It
+refuses to run unless the candidate's validation JSON attests the frozen
+validation-index SHA-256, Arrow dataset fingerprint, SHA-256 of the 10,000
+selected semantic sample records, and validated map-set fingerprint. It must
+contain exactly 10,000 rows and report strictly more than 70% autoregressive
+exact action; teacher-forced exact action cannot satisfy this gate. The
+validation artifact must also attest the exact checkpoint-tree SHA-256, action
+codec, spatial representation, and 4,096-token budget. The guard independently
+verifies the frozen test index and Arrow dataset, requires validation and test
+to reference the same map-table file, checks the test evaluator's row and map
+attestations and writes a separate sealed decision record. If inference wrote
+the result but the process stopped before recording the decision, a retry
+revalidates that same immutable artifact instead of repeating inference.
+Every new autoregressive evaluation also reports a fixed replay-cluster BCa
+bootstrap interval for exact-action accuracy: replay IDs are resampled as whole
+clusters, with 9,999 resamples, 95% two-sided confidence, and seed `20260814`.
+The sealed gate verifies that contract and records whether the interval's lower
+bound clears 70%. This is uncertainty evidence, not another candidate-selection
+threshold; the preregistered promotion metric remains exact-action point
+accuracy strictly above 70%.
+This keeps model selection on validation and makes the one-time test opening
+auditable:
+
+The legacy `indices/test.npy` was opened by the original teacher-forced
+evaluator before this guard existed, so it is retired from final confirmation.
+The gate instead requires `indices/test-confirmation.npy`, frozen before any
+current-arm validation result with `freeze_confirmation_holdout.py`. The
+replacement excludes every replay ID touched by the legacy index, contains one
+row from each of 10,000 episode-seat trajectories (7,236 replays), and is
+balanced 5,000/5,000 between changed and held actions. No model-selection or
+diagnostic command reads it. Its immutable provenance is recorded in
+`configs/confirmation-holdout-v1.json`.
+
+The one-time deterministic freeze command was:
+
+```sh
+uv run python paintbot_lab/paintbot/rl/freeze_confirmation_holdout.py \
+  --dataset runs/expert-corpus-v1/arrow/test \
+  --contaminated-index runs/expert-corpus-v1/indices/test.npy \
+  --out runs/expert-corpus-v1/indices/test-confirmation.npy
+```
+
+The command refuses to overwrite either the index or its adjacent JSON
+manifest.
+
+```sh
+uv run python paintbot_lab/paintbot/rl/evaluate_sealed_candidate.py \
+  --checkpoint runs/expert-corpus-v1/training-v2-diversity/full/best \
+  --validation-evaluation runs/expert-corpus-v1/training-v2-diversity/full/validation_evaluation.json \
+  --workspace runs/expert-corpus-v1 \
+  --out runs/expert-corpus-v1/training-v2-diversity/full/sealed_test_evaluation.json
+```
 
 The first mettabox1 run and its negative behavioral verdict are recorded in the
 [`GPU training report`](../../docs/reports/rl-mettabox1-sft-2026-08-07.md).

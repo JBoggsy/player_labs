@@ -8,7 +8,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Iterable
 
-from actions import action_text
+from actions import action_event_text, action_text
 from episode_map import EpisodeMap
 from observation_text import (
     ObservationSnapshot,
@@ -53,10 +53,12 @@ class SFTSample:
             history=tuple(value.get("history", ())),
         )
 
-    def prompt(self) -> str:
+    def prompt(self, *, include_spatial_semantics: bool = False) -> str:
         snapshot = ObservationSnapshot.from_dict(self.observation)
         current = (
-            serialize_observation(snapshot)
+            serialize_observation(
+                snapshot, include_spatial_semantics=include_spatial_semantics
+            )
             + "\nprevious_action "
             + action_text(self.previous_mask)
             + "\naction"
@@ -65,15 +67,27 @@ class SFTSample:
             return current
         return serialize_temporal_history(self.history) + "\n" + current
 
-    def prompt_parts(self) -> tuple[str, str, str]:
+    def prompt_parts(
+        self, *, include_spatial_semantics: bool = False
+    ) -> tuple[str, str, str]:
         """Return history, current observation, and must-retain action suffix."""
         snapshot = ObservationSnapshot.from_dict(self.observation)
         history = serialize_temporal_history(self.history) if self.history else ""
         suffix = "previous_action " + action_text(self.previous_mask) + "\naction"
-        return history, serialize_observation(snapshot), suffix
+        return (
+            history,
+            serialize_observation(
+                snapshot, include_spatial_semantics=include_spatial_semantics
+            ),
+            suffix,
+        )
 
-    def target(self) -> str:
-        return action_text(self.target_mask)
+    def target(self, *, action_encoding: str = "absolute") -> str:
+        if action_encoding == "absolute":
+            return action_text(self.target_mask)
+        if action_encoding == "events":
+            return action_event_text(self.previous_mask, self.target_mask)
+        raise ValueError(f"unsupported action encoding: {action_encoding}")
 
     def position(self) -> tuple[float, float]:
         return self_center(ObservationSnapshot.from_dict(self.observation))
