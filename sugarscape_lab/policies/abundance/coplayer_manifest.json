@@ -1,0 +1,7 @@
+{
+  "author": "James Boggs",
+  "name": "sugarscape-abundance",
+  "image_uri": "public.ecr.aws/PLACEHOLDER/players/sugarscape-abundance:latest",
+  "run": ["python", "/app/player.py"],
+  "games": ["sugarscape"]
+}

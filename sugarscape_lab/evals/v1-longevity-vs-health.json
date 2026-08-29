@@ -1,0 +1,10 @@
+{
+  "coworld_id": "cow_1dad3782-21bc-4935-ab98-e4e68629603e",
+  "variant_id": "default",
+  "roster": [
+    {"player": {"policy_ref": "sugarscape-longevity:v1"}},
+    {"player": {"policy_ref": "sugarscape-health:v1"}}
+  ],
+  "num_episodes": 16,
+  "notes": "sugarscape v1 pairwise: longevity vs health; rotating seats"
+}
