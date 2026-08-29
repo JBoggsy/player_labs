@@ -12,7 +12,7 @@ configuration.
 | [`../AGENTS.md`](../AGENTS.md) | coding agents and maintainers | operating loop, invariants, current player | current process contract |
 | [`../WORKING_CONTEXT.md`](../WORKING_CONTEXT.md) | active collaborators | current objective, live IDs, open threads | intentionally volatile; refresh during work |
 | [`paintbot-gameplay.md`](paintbot-gameplay.md) | player authors and analysts | rules, variants, campaign, wire contract | current reference; verify live-version callouts |
-| [`stencil-communication.md`](stencil-communication.md) | player authors and analysts | Stencil shout formats, sender priority, focus claims, squad consensus, trust model, and known limits | current through v59; v59 adds identified spray-carrier reports |
+| [`stencil-communication.md`](stencil-communication.md) | player authors and analysts | Stencil shout formats, sender priority, focus claims, squad consensus, trust model, and known limits | wire formats current through v68 (`chat.nim` unchanged since v59); squad W/M orders now ground into v67 atlas posts |
 | [`tournament-like-experience-requests.md`](tournament-like-experience-requests.md) | experiment authors | normative representative-evaluation contract | current and fail-closed |
 | [`../best_practices.md`](../best_practices.md) | experiment authors | durable Paintbot-specific lessons | current defaults |
 | [`../user_preferences.md`](../user_preferences.md) | agents | James's durable Paintbot preferences | current user contract |
@@ -25,10 +25,17 @@ The root [`../../AGENTS.md`](../../AGENTS.md),
 
 | document | purpose | status |
 | --- | --- | --- |
-| [`designs/stencil-v1-design.md`](designs/stencil-v1-design.md) | Stencil architecture, online `WorldMap`, port/scrap decisions, risks | living design with post-v1 addenda |
+| [`designs/stencil-v1-design.md`](designs/stencil-v1-design.md) | Stencil architecture, online `WorldMap`, port/scrap decisions, risks | living design with post-v1 addenda; the original WorldMap/nav internals are superseded by the navigation rework — see its 2026-08-29 addendum |
 | [`designs/stencil-nim-port.md`](designs/stencil-nim-port.md) | native-port contract, parity corpus, packaging | completed design + maintained status |
 | [`designs/rl-policy.md`](designs/rl-policy.md) | Qwen policy decisions, cross-era data/training pipeline, observation representation | living design; full replay-to-checkpoint pipeline implemented |
-| [`designs/nav-rework-sketch-2026-08-11.md`](designs/nav-rework-sketch-2026-08-11.md) | navigation rework rough sketch from the deep-dive review: one weighted-A* planner, L∞ clearance field as the single predicate, derived PoIs, validated-goal contract, kill list, open questions — commentable HTML render alongside ([`.html`](designs/nav-rework-sketch-2026-08-11.html)) | rough sketch awaiting open-question resolution; direction set by James's 2026-08-10/11 review comments |
+| [`designs/nav-rework-sketch-2026-08-11.md`](designs/nav-rework-sketch-2026-08-11.md) | the navigation rework's governing sketch: one weighted-A* planner, L∞ clearance field as the single predicate, derived PoIs, validated-goal contract, kill list — commentable HTML render alongside ([`.html`](designs/nav-rework-sketch-2026-08-11.html)) | EXECUTED: all five layers shipped as v61-v68 (2026-08-11 → 08-14); §9 status addenda run through v63, later layers live in the per-layer docs below + `VERSION_LOG.md` |
+| [`designs/nav-layer2-topology-proposal-2026-08-11.md`](designs/nav-layer2-topology-proposal-2026-08-11.md) | Layer 2 worked proposal: watershed rooms/chokepoints, directional cover, defense gates (James's rulings D1-D7 recorded inside) | shipped as v62 |
+| [`designs/nav-post-resourcing-v63-2026-08-12.md`](designs/nav-post-resourcing-v63-2026-08-12.md) | post candidate re-sourcing from on-route gate vicinities + belief-scored facing | shipped as v63 |
+| [`designs/nav-wide-post-pool-v64-2026-08-12.md`](designs/nav-wide-post-pool-v64-2026-08-12.md) | wide post pool (~200-250 candidates/front) + the Dijkstra-minting root fix | shipped as v64 |
+| [`designs/nav-layer3-planner-2026-08-12.html`](designs/nav-layer3-planner-2026-08-12.html) | Layer 3 planner design (weighted A* on a 4px lattice, LOS-exposure danger, oracle heuristic) — HTML render; working brief at `.nav-layer3-planner-brief.md` | shipped as v65 |
+| [`designs/nav-layer4-intent-contract-2026-08-13.md`](designs/nav-layer4-intent-contract-2026-08-13.md) | Layer 4: the typed Intent & goal contract — the strategy↔nav boundary (validated goals, typed permissions, reason strings demoted to telemetry, cost profiles) | shipped as v66; the authoritative statement of the mind/body movement interface |
+| [`designs/nav-v67-post-atlas-2026-08-14.md`](designs/nav-v67-post-atlas-2026-08-14.md) | the post atlas (posts everywhere there is cover) + early-defense/barrage re-expressions | shipped as v67 |
+| [`designs/nav-layer5-follower-2026-08-14.md`](designs/nav-layer5-follower-2026-08-14.md) | Layer 5: corridor-bounded micro, watchdog rework, follower tightening, `arriveRadius` | shipped as v68 — the rework finale and live champion |
 | [`designs/spray-avoidance-v59-design.md`](designs/spray-avoidance-v59-design.md) | v59: enemy loadout belief (weapon/grenade/barrier/shield), spray-can keep-out with ally-coverage-aware flee, spray shout, spray-carrier target priority | implemented and uploaded as v59 (2026-08-08, inert); revisions 2-3 record what two adversarial review rounds corrected |
 | [`../paintbot/stencil_nim/VERSION_LOG.md`](../paintbot/stencil_nim/VERSION_LOG.md) | immutable upload/version provenance | append-only; newest version first |
 | [`../../player-build.md`](../../player-build.md) | game-agnostic hosted-player image contract | root reference |
@@ -92,6 +99,7 @@ champions applies only to the document's cutoff.
 | [`reports/rl-mettabox1-sft-2026-08-07.md`](reports/rl-mettabox1-sft-2026-08-07.md) | CUDA/BF16 canaries, LR/epoch sweep, full cross-era checkpoint, and persistence-baseline verdict |
 | [`reports/rl-action-change-weighting-2026-08-07.md`](reports/rl-action-change-weighting-2026-08-07.md) | matched 1×/3×/class-balanced/16× changed-component loss sweep and held-out-era verdict |
 | [`reports/rl-transition-temporal-2x2-2026-08-07.md`](reports/rl-transition-temporal-2x2-2026-08-07.md) | matched transition-sampling x four-tick-history ablation and selected-model GV40 result |
+| [`reports/rl-exhaustive-baseline-2026-08-14.md`](reports/rl-exhaustive-baseline-2026-08-14.md) | exhaustive-corpus SFT baseline: 59.17% teacher-forced on a retired diagnostic index; sealed confirmation + matched-compute diversity arm defined |
 | [`reports/stencil-squad-consensus-retrospective-2026-08-06.md`](reports/stencil-squad-consensus-retrospective-2026-08-06.md) | v49-v53 leaderless-squad experiment retrospective and next-session handoff — **read this first**; it synthesizes the per-version artifacts below |
 | `reports/stencil-v49…v53-*-experiment.{html,json}` | the underlying per-version squad-consensus and rejoin experiment renders + their exact request/result fixtures (v49 squad, v50 squad + live, v51 live, v52 timeout-rejoin, v53 refresh-rejoin) |
 | [`reports/stencil-v55-early-defense-r399-2026-08-06.md`](reports/stencil-v55-early-defense-r399-2026-08-06.md) | v55 spawn-box opening / early-defense round-399 field test |
@@ -118,6 +126,8 @@ When live state changes:
    rather than rewriting their evidence.
 6. Append uploads/submissions to `VERSION_LOG.md`.
 
-Dated audit records live in [`audits/`](audits/): the documentation audit
-([`2026-08-05`](audits/2026-08-05-documentation-audit.md)) and the game-contract
-audit ([`2026-08-06`](audits/2026-08-06-game-contract-audit.md)).
+Dated audit records live in [`audits/`](audits/): the documentation audits
+([`2026-08-05`](audits/2026-08-05-documentation-audit.md),
+[`2026-08-29` — stencil-centered, pre-strategy-rework](audits/2026-08-29-documentation-audit.md))
+and the game-contract audit
+([`2026-08-06`](audits/2026-08-06-game-contract-audit.md)).

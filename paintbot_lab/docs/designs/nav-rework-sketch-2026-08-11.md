@@ -6,6 +6,16 @@ resolved. Inputs: the
 James's 41 review comments on it (2026-08-10/11). This document will graduate into a full
 design doc once the open questions below are settled.
 
+> **EXECUTED (final status 2026-08-29): the rework this sketch governs is
+> COMPLETE.** All five layers shipped and were accepted on matched hosted
+> batches: Layer 1 = v61 (clearance, 2026-08-11), Layer 2 = v62 (topology,
+> 08-11), Layer 3 = v65 (planner, 08-13), Layer 4 = v66 (Intent contract,
+> 08-13), Layer 5 = v68 (bounded follower, 08-14), with the post work v63/v64
+> and the v67 atlas alongside. v68 was submitted 2026-08-14 and is the live
+> champion. The §9-series status addenda below run through Layers 3-4; the
+> v67/v68 close-out follows them. The sketch never graduated into a separate
+> full design doc — the per-layer docs served that role.
+
 ## 1. Requirements distilled from the review
 
 Grouped by theme; each traces back to comments on the deep-dive report.
@@ -388,6 +398,27 @@ search, danger grids, cover/post generation, and squad canonicalization —
 its demotion to a comms unit is larger than §8 implied. Remaining: v67
 (early_defense/barrage_center over PoIs, side-lane posts) and Layer 5
 (bounded follower/micro, watchdog simplification).
+
+**v67 + Layer 5 close-out addendum (2026-08-29, written at rework
+completion):** v67 shipped the post ATLAS (posts everywhere there is cover,
+16-sector reach profiles, lazy ducks, two-phase situational selection;
+early_defense re-expressed on home-room entrance gates and barrage on
+danger-penalized room peaks; the side-lane TODO retired with the corridor
+machinery — see
+[nav-v67-post-atlas-2026-08-14.md](nav-v67-post-atlas-2026-08-14.md)).
+Layer 5 shipped as v68: corridor-bounded micro (20 px default,
+`nudgeClear` acceptance, Hold-duck exempt), the 90° jitter deleted, the
+penalty-replan watchdog with `follow_replans`/`follow_stuck_events`
+visibility, uniform progress accounting, and `Intent.arriveRadius`
+transcribed from the five real strategy arrive distances — see
+[nav-layer5-follower-2026-08-14.md](nav-layer5-follower-2026-08-14.md) and
+`VERSION_LOG.md` v67/v68 for the hosted verdicts. **Kill-list honesty
+notes:** the §4 "threat axis" kill only half-landed — movement no longer
+keys on it, but `threatAxis`/`sweepTarget` still drive the idle aim sweep
+in `action.nim` (carried as strategy-rework input); of the Appendix B dead
+code, `flowWaypoint` and the rally/choke anchors are gone, `distanceAt`
+was revived as a live `defenseGate` scoring dependency, and
+`insideBase`/`walkabilityDecodeMs` remain as vestiges.
 
 ## 10. TODOs spawned by the review (out of scope here)
 

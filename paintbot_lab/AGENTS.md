@@ -9,31 +9,35 @@ game-agnostic skills. This file is the **Paintbot-specific layer**: the game,
 the docs, the practices, and the policy we optimize. When the two disagree, the
 root defines *process*; this file defines *Paintbot*.
 
-> **Lab status (2026-08-07): v54 champion, v58 newest.** `stencil:v54` is the
-> active James Botts champion, a hosted-validated GV40 continuous-aim correction
-> retaining v52's squad behavior; v52 is the previous champion. Versions v55-v58
-> are uploaded but **inert** (never submitted); v53 is rejected. Always verify
-> live rather than trusting this snapshot.
+> **Lab status (verified live 2026-08-29): v68 champion — the navigation
+> rework is complete.** `stencil:v68` (the bounded follower, rework Layer 5)
+> was submitted 2026-08-14 and is the active James Botts champion
+> (`lpm_eeac47d3`); v58's reign ended then, and v54/v52/v47 are benched. A
+> **second league, Elite Paintbot** (created 2026-08-19), also lists
+> stencil:v68 competing (`lpm_243bbc99`). Always verify live rather than
+> trusting this snapshot.
 > Stencil lives at [`paintbot/stencil_nim/`](paintbot/stencil_nim/) and its
 > immutable upload history is recorded in
 > [`VERSION_LOG.md`](paintbot/stencil_nim/VERSION_LOG.md). The game repo is
 > the SAME clone as CTF's
 > (`~/coding/coworlds/coworld-ctf` — paintbot is a second manifest over the
 > same binary; **ctf_lab itself is archived** — see [`../ctf_lab/README.md`](../ctf_lab/README.md)).
-> Deployed paintbot is **0.7.216 / GameVersion 41**; the lab **builds** against
-> 0.7.215 / `6c7a4c0e` (`tools/versions.env`), one sprite-only release behind —
-> 0.7.216's `config_schema` and `variants` are byte-identical to 0.7.215's, so
-> nothing in the pin's contract moved. GV41 brought the endgame grenade
+> Deployed canonical paintbot has advanced to **0.7.242** (verified
+> 2026-08-29 via `coworld deploy-audit`); the lab **builds** against 0.7.215 /
+> `6c7a4c0e` (`tools/versions.env`) — the widening game-pin gap has a parked
+> review task in [`../TODO.md`](../TODO.md). GV41 brought the endgame grenade
 > barrage and paint puddles; 0.7.212-215 added **team perks** and **cardboard
-> barriers**, both config-gated and OFF in every deployed variant. v58 evacuates
+> barriers**, both config-gated and OFF in every deployed variant as of the
+> last audit. v58+ evacuates
 > toward map center on the barrage marker; **paint puddles, perks, and barriers
 > all remain unmodeled**
 > (see [`docs/recon/paintbot-gv41-hazards-2026-08-07.md`](docs/recon/paintbot-gv41-hazards-2026-08-07.md)
 > and the perks/barriers section of [`docs/paintbot-gameplay.md`](docs/paintbot-gameplay.md)).
 > The league redeploys often and **an upstream manifest merge auto-uploads the
 > next version**, so this pin goes stale without anyone here acting — check
-> `uv run coworld list | grep paintbot` at the start of game-mechanics work. Live
-> state: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
+> `uv run coworld deploy-audit | grep paintbot` at the start of game-mechanics
+> work (`coworld list` no longer shows games you don't own as of CLI 0.1.39).
+> Live state: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
 
 ## What Paintbot is
 
@@ -59,10 +63,13 @@ league, and why it reshapes the lab:
   so battles over a cell replay the same terrain every time. Campaign rounds
   stamp `purpose: "ladder"` — don't misread them. Full model: the recon
   addendum + [`docs/paintbot-gameplay.md`](docs/paintbot-gameplay.md).
-- **Campaign-shaped full seating**: normal invasions use four policies. Current
-  two-team variants—including map ref `1v1`—are campaign mode `2v2` and use
-  7+7+1+1 captain/ally seating; four-team FFA gives one color to each policy.
-  Inspect the cell mode and final roster instead of inferring from names.
+- **Campaign-shaped full seating**: a cell's campaign **mode is independent of
+  its variant** (since the 2026-08-11 commissioner change). `1v1` mode is true
+  head-to-head (each policy owns one team's every seat); `2v2` mode seats four
+  policies with an **even** captain/ally split per team (the old 7+7+1+1 is
+  gone); four-team FFA gives one color to each policy. Inspect the cell mode
+  and final roster instead of inferring from names — details in
+  [`docs/tournament-like-experience-requests.md`](docs/tournament-like-experience-requests.md).
 
 Full reference: [`docs/paintbot-gameplay.md`](docs/paintbot-gameplay.md). The
 founding recon (with `file:line` citations into the game repo, metta, and the
@@ -112,24 +119,32 @@ repeat → human gate → submit) runs **unchanged**. Paintbot-specific instrume
 A deterministic native Nim cyborg descended from ctf_lab's **beacon** and
 validated exactly against its bootstrap Python implementation (read
 [`docs/designs/stencil-v1-design.md`](docs/designs/stencil-v1-design.md) — it
-carries the scrap-vs-port ledger). The architecture in one breath: `perception`
+carries the scrap-vs-port ledger and a completion addendum for the navigation
+rework). The architecture in one breath: `perception`
 reads labels **plus** the walkability sprite pixels and wire markers; the
 runtime builds an **episode-scoped `WorldMap`** (L∞ clearance field +
 predicates, clearance-derived nav grid, component labels, watershed
-rooms/chokepoints + defense gates, directional cover, lazy per-goal Dijkstra
-flow fields, spawn-aim — replacing beacon's `nav.npz` bake + POIs + plans
+rooms/chokepoints + defense gates, directional cover, the map-wide post
+atlas, stable-goal Dijkstra fields as the planner's oracle, spawn-aim —
+replacing beacon's `nav.npz` bake + POIs + plans
 wholesale); `belief` folds tracks,
 danger, hearing, chat, per-color hearts (with retirement + steal-target
-choice); `strategy` runs the ladder (carry-home > intercept-thief >
-escort-carrier > grenade-clear > **barrage-center** > early-defense > items >
-convert-hunt > consensus squad order > role split — barrage-center evacuates to
-the generated map center once the GV41 barrage marker reports `depth > 0`, so
-only carry-home, thief interception, and immediate grenade warnings outrank it);
-`action` emits the mask (lighthouse sweep, snap/lead aim, fire gate,
-friendly-fire guard, peek-fire-duck, grenade overlay). The post-v1 WorldMap
-derives per-opponent firing/duck post candidates from online geometry;
-defenders occupy distinct homeward-ranked posts and sweep toward the associated
-opponent front. Leaderless squads also use those generated posts to execute
+choice); `strategy` runs the ladder (`strategy.nim:decideBaseObjective`,
+first match wins: carry-home > intercept-thief > grenade-clear > spray-flee >
+**barrage-center** > early-defense > squad rejoin > escort-carrier (attackers)
+> item fetch > convert-hunt > consensus squad order > defender post/hold >
+steal; early-defense also gates squad consensus until it completes) and emits
+one **typed `Intent`** — a pre-validated goal plus typed permissions
+(movingGoal, clampToEndzone, suppressFireFreeze, cost profile, micro flag
+set, arriveRadius; reason strings are telemetry-only since v66);
+`action` resolves the Intent to the mask: the weighted-A* planner
+(`planner.nim`, via `nav.nim`'s bounded follower with corridor-bounded micro
+and a replan watchdog) routes all movement, and the combat layer overlays
+lighthouse sweep, snap/lead aim, fire gate,
+friendly-fire guard, peek-fire-duck, and the grenade overlay. Since v67 the
+WorldMap carries an atlas of firing/duck posts everywhere there is cover;
+defenders occupy ranked atlas posts scored situationally against believed
+enemy tracks. Leaderless squads use the same atlas to execute
 consensus hold/watch/move orders. Fixed-map battle plans, general POIs, and
 anti-turtle remain cut.
 
@@ -141,9 +156,10 @@ Key invariants to respect when editing:
   `worldmap.nim` from the init snapshot; never constant-ize a generated map.
 - **Multi-team throughout**: any code touching "the enemy" must handle 1-3
   enemy colors and hearts leaving play (`belief.heartsRetired`).
-- Seat conventions must work when another entrant owns one allied seat on our
-  team in a normal campaign `2v2`-mode invasion. Do not assume the disabled
-  ladder's equal four-seat entrant blocks.
+- Seat conventions must work when another entrant owns the trailing half of
+  our team's seats (the current even captain/ally split in `2v2`-mode
+  invasions). Do not assume the disabled ladder's equal four-seat entrant
+  blocks, nor the retired 7+7+1+1 seating.
 
 ## Docs
 
@@ -155,7 +171,9 @@ Key invariants to respect when editing:
 
 ## Skills
 
-No paintbot-specific skills yet. The loop's **game-agnostic** halves (experience
+One paintbot-local skill exists: `lessons-review` (in
+[`.claude/skills/`](.claude/skills/), the periodic lessons-archive review). No
+paintbot-specific *loop* skills yet. The loop's **game-agnostic** halves (experience
 requests, artifact download, build-and-upload, policy lifecycle, A/B,
 hypothesis miner) live at the **lab root** (`../.claude/skills/`, indexed in
 [`../AGENTS.md`](../AGENTS.md)). Still missing: a Paintbot event warehouse +
@@ -190,10 +208,9 @@ Paintbot-specific parked work lives in the shared [`../TODO.md`](../TODO.md).
 
 - **stencil** *(native Nim)* — at
   [`paintbot/stencil_nim/`](paintbot/stencil_nim/), the primary competing
-  Paintbot policy. **Current as of 2026-08-07: `stencil:v54` is the active
-  champion; `stencil:v58` is the newest uploaded version and is inert — its only
-  hosted run is a one-episode mechanism probe, not a performance verdict;
-  `stencil:v53` is rejected; `stencil:v52` is the previous champion**.
+  Paintbot policy. **Current as of 2026-08-29: `stencil:v68` is the active
+  champion (submitted 2026-08-14, also competing in the new Elite Paintbot
+  league); `stencil:v58` is the previous champion, benched**.
   Version
   history: [`paintbot/stencil_nim/VERSION_LOG.md`](paintbot/stencil_nim/VERSION_LOG.md).
   Behavior knobs are `STENCIL_*` env vars declared in `config.nim` and set at

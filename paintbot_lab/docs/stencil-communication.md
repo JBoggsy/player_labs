@@ -5,11 +5,19 @@ native Stencil player. It is a reference for humans inspecting behavior and for
 agents changing or interoperating with Stencil. It describes existing behavior,
 not a proposed redesign.
 
-**Implementation baseline:** `stencil:v59` (uploaded 2026-08-08, inert), built
+**Implementation baseline:** `stencil:v59` (uploaded 2026-08-08), built
 against Paintbot 0.7.215 / `6c7a4c0e`,
 GameVersion 41. V59 adds the spray-carrier report. V57 aligned Stencil's shared
 sender interval with the engine's 24-tick limit; the other formats remain
 inherited from v56/v55 and the retained v52 consensus core.
+
+**Re-verified 2026-08-29 against `stencil:v68` (the live champion):**
+`chat.nim` is unchanged since v59, so every wire format, cadence, and
+sender-arbitration rule below still holds. What changed around the protocol:
+squad `W`/`M` orders now ground into posts selected from the v67 post atlas
+(`squads.nim:orderPost`), and executing an order routes through the v65-v68
+planner/follower instead of flow fields — receiver-side *movement*, not
+message semantics.
 
 The application codec and sender live in
 [`chat.nim`](../paintbot/stencil_nim/chat.nim). Message effects are applied in
@@ -262,10 +270,15 @@ even seats: A = [0,2], B = [4,6]
 odd seats:  A = [1,3], B = [5,7]
 ```
 
-This matched the old equal four-agent entrant blocks. It does **not** match the
-current campaign's 7+7+1+1 captain/ally seating: a squad may include the foreign
-ally or omit Stencil-owned seats. Roster-aware membership is an explicit open
-task.
+This matched the old equal four-agent entrant blocks. Under the campaign
+seating current since 2026-08-11 (`2v2` mode splits each team **evenly**:
+captain owns team-relative seats 0-3, ally 4-7; the earlier 7+7+1+1 seating is
+gone), each parity squad happens to fall entirely within one owner's block —
+`[0,2]`/`[1,3]` are captain seats and `[4,6]`/`[5,7]` ally seats — so a
+Stencil captain's squads no longer straddle a foreign ally. In `1v1` mode
+Stencil owns every seat. This alignment is derived from the seating contract
+and the seat-dealing code, not yet hosted-validated; roster-aware membership
+remains the robust fix and an explicit open task.
 
 ### Four-team games
 
@@ -423,8 +436,10 @@ version and hosted validation.
 
 ## Known limitations requiring design decisions
 
-1. **Campaign roster mismatch:** fixed two-team parity squads do not represent
-   7+7+1+1 ownership.
+1. **Campaign roster mismatch:** squad membership is fixed by seat arithmetic,
+   not discovered from the roster. The current even captain/ally split happens
+   to align parity squads with ownership blocks (see Squad membership above),
+   but nothing enforces that, and a future seating change silently breaks it.
 2. **No bounded reconnection:** retries and epoch resync do not restore physical
    shout contact.
 3. **No authentication or version field:** same-team spoofing and accidental

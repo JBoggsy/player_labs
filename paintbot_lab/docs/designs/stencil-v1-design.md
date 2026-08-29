@@ -3,6 +3,14 @@
 *2026-08-03. Living document; updated as the implementation reveals new
 information.*
 
+> **Freshness note (2026-08-29):** the WorldMap/navigation internals described
+> below (footprint erosion, choke/rally anchor fractions, flow-field movement,
+> the v5/v12 per-front posts) are the v1-v59 design and are **superseded by
+> the completed navigation rework (v60-v68)** — see the addendum
+> [below](#post-v1-addendum-the-navigation-rework-v60v68) and the per-layer
+> docs it links. The problem statement, scrap/port ledger, multi-team
+> generalization, and squad-consensus addenda remain current.
+
 ## Problem
 
 Beacon (the CTF champion lineage) is auto-mirrored into the live Paintbot
@@ -100,10 +108,13 @@ ladder.
 
 The ten-character shout protocol uses `Q` proposals and `V` votes with sender,
 epoch, kind, quantized map cell, and opponent. The original squad table pairs
-same-parity identities. That matched the disabled ladder's equal entrant blocks,
-but it is **not roster-aware under the current campaign's 7+7+1+1 seating**:
-one pair can include the foreign allied seat and other captain-owned seats can
-be omitted. Structured traces expose consensus transitions, proposal/vote sets,
+same-parity identities. That matched the disabled ladder's equal entrant
+blocks and is **not roster-aware**: under the 7+7+1+1 seating current when
+this was written, one pair could include the foreign allied seat and other
+captain-owned seats could be omitted. *(Update 2026-08-29: the campaign now
+splits captain/ally evenly, under which parity squads happen to fall within
+one owner's block — see `../stencil-communication.md`; roster-awareness
+remains the robust fix.)* Structured traces expose consensus transitions, proposal/vote sets,
 commits and timeouts, chosen orders/posts, arrivals, and following time. A
 roster-aware redesign is now an explicit follow-up rather than a claimed
 invariant of the protocol.
@@ -133,6 +144,50 @@ indefinitely.
 `stencil:v53` tested refreshing that rejoin target while regrouping, but the
 full-seat stress gate rejected it: timeouts and prolonged live epoch drift both
 increased. The source is restored to v52's bounded static-target behavior.
+
+### Post-v1 addendum: the navigation rework (v60–v68)
+
+The five-layer navigation rework (2026-08-11 → 08-14, all layers hosted-
+validated; v68 is the live champion) replaced most of this document's WorldMap
+and movement internals. What changed, against the sections above:
+
+- **The erosion nav grid is gone.** The walkability product is now an exact
+  **L∞ clearance field** with the `canStand`/`segmentClear`/`nudgeClear`
+  predicate family; the 8 px grid is *derived* from clearance and survives
+  only for comms/telemetry coordinates, the Dijkstra oracle, and local micro
+  geometry (v61; the fuller consumer census is in the Layer 4 doc).
+- **Choke/rally axis fractions are gone.** Topology is derived from the map:
+  4-connected component labels, priority-flood watershed rooms + chokepoints,
+  16-ray directional cover (map edge is not cover), and `defenseGate`
+  replacing `choke_point`/`rally_point`/`past_rally` (v62).
+- **Flow fields no longer move agents.** Movement routes through one
+  weighted-A* pixel-lattice planner (`planner.nim`) with belief-derived LOS
+  danger and carrier/hunter cost profiles; the lazily minted stable-goal
+  Dijkstra fields survive only as the planner's heuristic oracle (v65/v66).
+- **Strategy→action is a typed contract.** Strategy emits an `Intent` with a
+  pre-validated goal (`nearestReachable`) and typed permissions; reason-string
+  dispatch and all beelines are dead; unroutable goals are loud bugs
+  (v66 — [`nav-layer4-intent-contract-2026-08-13.md`](nav-layer4-intent-contract-2026-08-13.md)).
+- **The v5/v12 per-front posts became the post atlas.** Posts exist wherever
+  there is cover (~14k on a giant map), with 16-sector reach profiles and lazy
+  duck pairing; selection is two-phase and scored situationally against
+  believed enemy tracks. Defenders, early defense (home-room entrance gates),
+  barrage centering (danger-penalized room peaks), and squad orders all select
+  from the atlas (v63/v64/v67).
+- **Micro is corridor-bounded.** Peek/duck, separation, and formation bias may
+  perturb motion only within a corridor of the planned path; the 90° stuck
+  jitter is deleted in favor of a penalty-replan watchdog with loud telemetry
+  (v68 — [`nav-layer5-follower-2026-08-14.md`](nav-layer5-follower-2026-08-14.md)).
+
+Governing sketch (with per-layer status addenda):
+[`nav-rework-sketch-2026-08-11.md`](nav-rework-sketch-2026-08-11.md). Full
+evidence per layer: `VERSION_LOG.md` v60-v68.
+
+Seating note: the "current campaign 2v2-mode seating is 7+7+1+1" risk recorded
+below is dated — since the 2026-08-11 commissioner change the split is an
+**even** captain/ally half-split, under which the two-team parity squads fall
+entirely within one owner's block (see
+[`../stencil-communication.md`](../stencil-communication.md)).
 
 ## Multi-team generalization
 
@@ -191,8 +246,8 @@ scans, constant-time lookups, and occasional A*.
   RULES layout rules per shape.
 - **4-team threat model** is beacon's 2-team model with more colors; no
   third-party reasoning yet (e.g. don't break up a rival-vs-rival fight).
-- **Current campaign 2v2-mode seating is 7+7+1+1, not equal blocks**: each
-  captain owns seven same-color seats and its allied entrant owns one. The
-  static parity squad table can therefore wait on the foreign ally or omit
-  captain-owned seats. Replace it with membership learned from Stencil
-  chat/presence before treating squad liveness as representative.
+- **Campaign 2v2-mode seating splits ownership** *(originally 7+7+1+1; since
+  2026-08-11 an even captain/ally half-split)*: the static parity squad table
+  is not roster-aware, so a seating change can silently regroup squads across
+  owners. Replace it with membership learned from Stencil chat/presence
+  before treating squad liveness as representative.

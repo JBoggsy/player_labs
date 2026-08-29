@@ -14,16 +14,19 @@ This README orients newcomers (human or agent). Three pointers do most of the wo
 - **[`../README.md`](../README.md)** — lab-wide setup (`uv sync` / Observatory
   auth) and the ground rules.
 
-> **Status (verified 2026-08-07): `stencil:v54` is the active James Botts
-> champion; `stencil:v53` was rejected and `stencil:v52` is the previous
-> champion.** V54's 60-episode round-385 field test finished 49-3-8. `stencil:v55`-`v58` are
-> uploaded but inert; v58 adds GV41 barrage-center evacuation and **`stencil:v59`
-> (2026-08-08, also inert) adds enemy-loadout belief + spray-can avoidance**,
-> with no runtime evidence yet. The canonical game is Paintbot **0.7.216 /
-> GameVersion 41**; the lab **builds** against 0.7.215 / `6c7a4c0e`
-> (`tools/versions.env`), one sprite-only release behind. The live league uses a
-> 10x10 campaign board; normal invasions use four policies, with 7+7+1+1
-> captain/ally seating on two-team maps and one policy per team in FFA. Current work and live IDs:
+> **Status (verified live 2026-08-29): `stencil:v68` is the active James Botts
+> champion** (submitted 2026-08-14, `lpm_eeac47d3`; v58 and earlier champions
+> benched). v68 is the finale of the completed five-layer navigation rework
+> (v61-v68: clearance field, watershed topology, weighted-A* planner, typed
+> Intent contract, bounded follower). A **second league, Elite Paintbot**
+> (created 2026-08-19), also lists stencil:v68 competing (`lpm_243bbc99`). The
+> canonical game has advanced to Paintbot **0.7.242** while the lab still
+> **builds** against 0.7.215 / `6c7a4c0e` (`tools/versions.env`) — the game-pin
+> review is parked in [`../TODO.md`](../TODO.md). The live league uses the
+> restored 10x10 campaign board; a cell's campaign **mode** is independent of
+> its variant — true `1v1` head-to-head, `2v2` duo with an **even**
+> captain/ally split (the old 7+7+1+1 seating is gone), one policy per team in
+> FFA. Current work and live IDs:
 > [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md). The required evaluation shape:
 > [`docs/tournament-like-experience-requests.md`](docs/tournament-like-experience-requests.md).
 
@@ -47,23 +50,27 @@ deep recon with citations:
 
 | variant | seats | teams | map | our agents |
 |---|---|---|---|---|
-| `1v1` | 16 | 2 | generated | campaign mode `2v2`: normally captain 7 + ally 1 per team |
-| `default` | 16 | 2 | generated | scheduler-dependent; absent from the current campaign board |
-| `2v2` | 16 | 2 | generated | normally captain 7 + ally 1 per team |
+| `1v1` | 16 | 2 | generated | mode-dependent: `1v1` head-to-head (one policy per team) or `2v2` duo (even captain/ally split) |
+| `default` | 16 | 2 | generated | scheduler-dependent; hosts `1v1`/`2v2`-mode cells on the current board |
+| `2v2` | 16 | 2 | generated | mode-dependent, same as `1v1` |
 | `4ffa` | 16 | 4 | generated | 4 (one policy per team) |
 | `4ffa8` | 32 | 4 | generated (manifest defaults giant; campaign cell size wins) | 8 (one policy per team) |
 
 The `1v1` variant was added in 0.7.179 as a two-agent custom game, then changed
-in 0.7.205 to a 16-seat two-team format. The campaign classifies it as mode
-`2v2` and normally seats four policies 7+7+1+1; the variant name does not mean
-two policies. A correctly seated full campaign cell is representative;
-partial-seat and arbitrary-map variants remain debug-only. Which map a
-campaign episode plays is decided by the
-**campaign**: each territory cell
-permanently owns a variant + terrain seed (round-381 board: 26x `1v1`, 26x
-`2v2`, 48x `4ffa`; every `map_size` is currently unset), and battles replay
-the target cell's map identity. See the campaign section of
-[`docs/paintbot-gameplay.md`](docs/paintbot-gameplay.md).
+in 0.7.205 to a 16-seat two-team format. Since the 2026-08-11 commissioner
+change, a cell's campaign **mode is a policy layout chosen independently of its
+variant**: a 16-seat two-team variant hosts both true `1v1` head-to-head cells
+(each policy owns one team's every seat) and `2v2` duo cells (captain owns the
+leading half of a team's seats, ally the trailing half) — read the mode off the
+board cell, never off the variant name. A correctly seated full campaign cell
+is representative; partial-seat and arbitrary-map variants remain debug-only.
+Which map a campaign episode plays is decided by the **campaign**: each
+territory cell permanently owns a variant + terrain seed (the 10x10 board was
+restored from the pre-migration snapshot on 2026-08-11 — re-resolve it live
+every study), and battles replay the target cell's map identity. See the
+campaign section of [`docs/paintbot-gameplay.md`](docs/paintbot-gameplay.md)
+and the seating tables in
+[`docs/tournament-like-experience-requests.md`](docs/tournament-like-experience-requests.md).
 
 ## Layout
 
@@ -85,6 +92,8 @@ paintbot_lab/
     reports/               hosted experiment evidence and verdicts
     designs/stencil-v1-design.md   stencil's architecture + scrap/port ledger
     designs/stencil-nim-port.md    native port contract + parity evidence
+    designs/nav-*.md               the navigation rework: sketch + per-layer
+                                   design docs (v61-v68; all five layers shipped)
     designs/rl-policy.md           Qwen policy architecture + decisions
   tools/
     analyze_giant_carries.py  one-off historical v22 giant-duel analyzer
@@ -105,9 +114,14 @@ paintbot_lab/
     nav_v67_properties.nim committed atlas/selection property harness
                            (atlas completeness, determinism, duck bound,
                            role invariants) — compile against stencil_nim
+    nav_v68_properties.nim committed follower/corridor property harness
+                           (corridor geometry, watchdog determinism,
+                           penalty TTL, arrival parity)
     topology_debug.nim     its Nim harness — re-runs the exact worldmap
                            topology code on an agent-logged clearance field
-    compare_stencil.py     A/B metric adapter over the shared stats engine
+    compare_stencil.py     exact wire-decision replay comparator (the native
+                           parity harness; NOT the coworld-ab metric adapter,
+                           which paintbot still lacks)
     build_expand_replay.sh  build the version-matched replay reader (from versions.env)
     expand_replay_json.nim  JSONL event + startup wall-map emitter (feeds the viewer)
     viewer_bundle.py       bundle one episode for the belief viewer
@@ -128,10 +142,19 @@ defining difference from beacon: **no offline map bake** — an episode-scoped `
 (L∞ clearance field with the `canStand`/`segmentClear`/`nudgeClear` predicate
 family, the clearance-derived nav grid, connected-component reachability
 labels, watershed rooms + chokepoints with derived defense gates, directional
-cover bitmasks, lazy Dijkstra flow fields, spawn-aim, and per-opponent
-firing/duck posts). Beacon's authored POIs and fixed-map
+cover bitmasks, a map-wide post **atlas** with lazily paired duck cells,
+stable-goal Dijkstra fields kept as the planner's heuristic oracle, and
+spawn-aim). Movement follows the completed v61-v68 navigation rework: strategy
+emits a typed `Intent` (pre-validated goal + typed permissions — see
+[`docs/designs/nav-layer4-intent-contract-2026-08-13.md`](docs/designs/nav-layer4-intent-contract-2026-08-13.md)),
+a weighted-A* pixel-lattice planner (`planner.nim`) routes every move under
+belief-derived LOS danger with carrier/hunter cost profiles, and a bounded
+follower (`nav.nim`) executes the path, letting micro (peek/duck, separation,
+formation bias) perturb motion only within a corridor of the planned route.
+Beacon's authored POIs and fixed-map
 battle-plan data remain scrapped; leaderless squads now form consensus on
-hold/watch/move orders and ground them in the generated posts. Defenders consume the online posts while heart-theft
+hold/watch/move orders and ground them in atlas posts. Defenders occupy ranked
+atlas posts while heart-theft
 interception remains higher priority. Multi-team support: color lock from the self sprite, per-color
 hearts with retirement tracking, steal target = nearest live enemy heart, and
 the convert trigger generalized to the weakest enemy team.

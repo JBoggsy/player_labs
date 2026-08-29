@@ -14,22 +14,37 @@ mid-session; check them back at the start of focused work.
   the current leaderboard query contract and membership semantics before relying on
   automatic ranked-roster construction again.
 
-- **Paintbot: game-pin review** (2026-08-14). Build pin is 0.7.215/`6c7a4c0e`;
-  canonical deployed has advanced to 0.7.229 (`bf0bcc22`) — a 14-release gap.
+- **Paintbot: game-pin review** (2026-08-14; gap re-measured 2026-08-29).
+  Build pin is 0.7.215/`6c7a4c0e`; canonical deployed has advanced to
+  **0.7.242** (`cow_ed016cb2`, per `coworld deploy-audit` — a 27-release gap,
+  and the game now serves three leagues: Paintbot, Elite Paintbot, Ctf).
   Contract compatibility has been assumed per the v58-lineage argument since
   v60; sim-rule constants have not been re-derived since 0.7.215. Re-verify
   manifest/config_schema byte-compat and the spray/aim/movement constants,
   then bump PAINTBOT_GAME_REF or document why not.
 
-- **Stencil navigation rework** (deep dive done 2026-08-08; design started
-  2026-08-11). The deep-dive questions are answered in
-  [`paintbot_lab/docs/reports/stencil-navigation-deep-dive-2026-08-08.md`](paintbot_lab/docs/reports/stencil-navigation-deep-dive-2026-08-08.md);
-  James's review comments set the direction — one planner, no beelining, no 8px
-  coarsening for movement, dynamic PoIs, goals validated before nav. Rough
-  sketch:
-  [`paintbot_lab/docs/designs/nav-rework-sketch-2026-08-11.md`](paintbot_lab/docs/designs/nav-rework-sketch-2026-08-11.md).
-  Next: settle the sketch's open questions (planner benchmarks first), then the
-  full design doc, then the rework itself.
+- **Paintbot: Elite Paintbot league** (found 2026-08-29). A second Paintbot
+  league (`league_15cf0b94`, created 2026-08-19) lists stencil:v68 competing
+  under `lpm_243bbc99` — how it was entered, its board/format, and whether it
+  needs separate campaign steering are all unexamined.
+
+- **Paintbot: campaign controller broken by repo rename** (2026-08-29). The
+  LaunchAgent `com.softmax.paintbot-stencil-campaign-controller` still points
+  at `~/coding/personal_labs/personal_labs_paintbot/`, which no longer exists
+  (renamed to `personal_paintbot`); the surviving process has logged
+  `FileNotFoundError` every poll since ~2026-08-26 and no orders are being
+  placed. Reinstall via
+  `paintbot_lab/tools/manage_campaign_order_launch_agent.py` from the new
+  path (runbook: `paintbot_lab/infra/campaign_order_controller/README.md`).
+
+- **Stencil navigation rework — COMPLETE (2026-08-14); survivors below.** All
+  five layers shipped and were accepted as v61-v68; v68 is the live champion.
+  Story: `paintbot_lab/docs/designs/nav-rework-sketch-2026-08-11.md` (status
+  addenda) + per-layer docs + `VERSION_LOG.md`. Surviving follow-ups: corridor
+  width tuning from the `micro_corridor_rejects` corpus; the 8px grid
+  demotion (large consumer census in the Layer 4 doc); threat-axis removal
+  (`threatAxis`/`sweepTarget` still drive idle aim sweep — strategy-rework
+  input); peek%/duck% as standing batch watch metrics.
 
 - **Fire-windup micro** (from the 2026-08-11 nav review; explicitly not-now).
   Strafe/aim while fire is winding up to improve accuracy, or pull the trigger

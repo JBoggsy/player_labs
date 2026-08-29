@@ -3,9 +3,12 @@
 ## Status
 
 Completed locally on 2026-08-03. The native policy is the production
-implementation; `stencil:v52` was the active Paintbot champion when this status
-was refreshed on 2026-08-06. Its accepted Python oracle is preserved in Git
-commit `1129931` and was then removed from the working tree.
+implementation; `stencil:v68` was the active Paintbot champion when this status
+was refreshed on 2026-08-29. Its accepted Python oracle is preserved in Git
+commit `1129931` and was then removed from the working tree. The navigation
+rework (v60-v68) since replaced the ported nav internals with native-only
+modules; the parity corpus below proves the historical port boundary, not the
+current navigation stack.
 
 ## Contract
 
@@ -14,8 +17,8 @@ Sprite-v1 byte stream and `STENCIL_*` environment: the ordered controller masks
 and chat payloads must be identical. The acceptance proof also covered all 91
 policy environment variables then present, their parsing and validation, the
 connection lifecycle, and the default JSONL trace/artifact contract. Subsequent
-native-only iterations raised `config.nim` to 111 variables; those additions
-are outside the original parity corpus. Host scheduling time and performance
+native-only iterations have grown `config.nim` further (152 `STENCIL_*`
+variables as of v68); those additions are outside the original parity corpus. Host scheduling time and performance
 counters are not deterministic and are outside byte equivalence.
 
 The production process is native from socket to decision. It connects with
@@ -29,15 +32,23 @@ The native implementation lives in `paintbot/stencil_nim/` and follows the
 policy's existing responsibilities:
 
 - `protocols.nim`, `perception.nim`: wire state and observations.
-- `worldmap.nim`, `nav.nim`: summed-area footprint erosion, cover, A*, and lazy
-  goal distance fields.
+- `worldmap.nim`: the online map model — L∞ clearance field + standing/segment
+  predicates, component labels, watershed topology + defense gates,
+  directional cover, the post atlas, and lazy stable-goal Dijkstra fields
+  (kept as the planner's heuristic oracle). The original port's summed-area
+  erosion was deleted in the v61 rework.
+- `planner.nim`, `nav.nim`, `danger_field.nim` *(post-port, v65-v68)*: the
+  weighted-A* pixel-lattice planner, the bounded path follower with its
+  corridor check and replan watchdog, and LOS-exposure danger sampling.
 - `belief_state.nim`, `belief_update.nim`: episode state and track updates.
-- `roles.nim`, `squads.nim`, `strategy.nim`: assignments and intent selection.
-- `fight.nim`, `items.nim`, `action.nim`: combat scoring and final controls.
+- `roles.nim`, `squads.nim`, `strategy.nim`: assignments and typed-Intent
+  selection.
+- `fight.nim`, `items.nim`, `action.nim`: combat scoring and Intent-to-
+  controller resolution.
 - `chat.nim`, `trace.nim`: team protocol and operational evidence.
 - `policy.nim`, `stencil.nim`: orchestration and native process lifecycle.
 - `config.nim`, `types.nim`: the current configuration contract
-  and shared domain types.
+  and shared domain types (including `Intent` and its flag enums).
 
 The split intentionally mirrors behavior boundaries rather than translating
 Python files line-for-line. Episode-owned map data stays episode-owned; no
