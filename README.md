@@ -41,6 +41,7 @@ player_labs/
   ctf_lab/             fourth game lab — CTF, an 8v8 capture-the-flag shooter — ARCHIVED 2026-08-07
   vanilla_wow_lab/     fifth game lab — Vanilla WoW, a real WoW 1.12.1/VMaNGOS realm (own README)
   paintbot_lab/        sixth game lab — Paintbot, a 2-or-4-team capture-the-heart shooter on procgen maps (README + docs index)
+  emergant_lab/        seventh game lab — Emerg-ant, a 16-agent repeated-food-capture colony shooter
   pyproject.toml       uv project: coworld[auth] + the pinned players SDK (from git) + deps
 ```
 
@@ -49,9 +50,9 @@ Each **game** gets its own lab directory (`crewrift_lab/`, …). Anything game-s
 lab; the root stays game-agnostic.
 
 **`ctf_lab/` is archived (2026-08-07)** — see [`ctf_lab/README.md`](ctf_lab/README.md).
-Active work is Paintbot. The belief replay viewer, replay reader, and event warehouse
-moved to `paintbot_lab/tools/`, since Paintbot is a second manifest over the same
-engine and is now their only consumer.
+Active game labs include Paintbot and Emerg-ant. The belief replay viewer, replay
+reader, and event warehouse moved to `paintbot_lab/tools/`, since Paintbot is a second
+manifest over the same engine and is now their only consumer.
 
 ## Skills
 

@@ -5,6 +5,15 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
+- **Repair experience-request division resolution against the current API**
+  (2026-08-21). The experience-request helper's `resolve --division ...` command
+  sends `include_recent_rounds=3`, which the live Emerg-ant
+  leaderboard route now rejects with HTTP 422; the companion active-memberships CLI
+  query returned `[]` despite three ranked players. Hosted evaluation remained
+  unblocked by resolving explicit policy labels through the stats endpoint. Reconcile
+  the current leaderboard query contract and membership semantics before relying on
+  automatic ranked-roster construction again.
+
 - **Paintbot: game-pin review** (2026-08-14). Build pin is 0.7.215/`6c7a4c0e`;
   canonical deployed has advanced to 0.7.229 (`bf0bcc22`) — a 14-release gap.
   Contract compatibility has been assumed per the v58-lineage argument since

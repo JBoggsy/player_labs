@@ -10,6 +10,15 @@ sessions. Keep it tidy: one bullet per preference, drop ones that are superseded
 
 ## Preferences
 
+- **Use the James Botts Coworld account for this lab** (James, 2026-08-21).
+  Resolve, upload, and evaluate Emerg-ant policies as James Botts. Do not use the
+  Games Bond account.
+
+- **Never spend XP requests on self-play** (James, 2026-08-21). XP requests now
+  cost money, and self-play is less informative than evaluating against a real
+  opponent at the same cost. Use local episodes for self-play; reserve paid XP
+  requests for real opponents.
+
 - **Every behavior change ships with activation tracing** (James, 2026-07-15). Whenever
   a change gates a new behavior (or meaningfully alters when an existing one fires),
   add (possibly temporary) tracing/logging in the SAME iteration that counts how often
