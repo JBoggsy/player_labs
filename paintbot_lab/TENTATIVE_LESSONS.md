@@ -37,3 +37,21 @@ env was set for the replay run; the 32 normal seats passed as-is. Config env
 is read at process start and is part of the recorded behavior. Also:
 compare_stencil's pinned-cache default errors if only self_play's canonical
 cache exists — pass --game-repo paintbot_lab/.cache/coworld-ctf/<canonical-sha>.
+### Same-seed self-play is timing-nondeterministic — single-episode micro% is a noisy gate
+Evidence: identical seed-404 forced-active gate episodes on v69 and pre-change
+v68 code produced different episode lengths (21,504 vs 26,784 snapshots) and
+duck% 13.26 vs 18.02 — the v68 CONTROL itself landed outside the 7-13 band.
+The policy is deterministic on a fixed wire (278k-decision parity), but live
+self-play wire depends on real-time scheduling. Read the duck% band as a
+coarse smoke check across draws, not a per-episode pass/fail; the recorded-
+wire comparator is the deterministic instrument.
+### Hosted policy-artifact upload is flaky — don't preregister artifact-only metrics without a coverage plan
+Evidence: in the v69-vs-v68 parity batch, only 28/56 episodes' stencil seats
+uploaded trace zips (11 v69 / 17 v68), non-matched across arms (v68's all
+from one seating), leaving duck%/peek% underpowered and composition-
+confounded; and the trace has shot counters but NO hit counter, so the
+preregistered hits/shots was unmeasurable without replay attribution.
+Powered fallbacks that saved the verdict: results.json kills (every seat,
+every episode) and W-L from scores. Next time: preregister metric sources
+against what hosted artifacts actually contain, and treat artifact-derived
+rates as best-effort secondary evidence.

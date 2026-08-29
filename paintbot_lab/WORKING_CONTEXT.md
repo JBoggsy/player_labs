@@ -124,11 +124,54 @@ aim sweep) read strategy-level state directly inside action.nim~~ **CLOSED
 in policy.nim; body keeps only the sweep oscillator); bit-identical policy
 output proven on a 278k-decision recorded-wire corpus
 (design: `docs/designs/strategy-idle-aim-intent-2026-08-29.md`, recon:
-`docs/recon/threat-axis-idle-aim-2026-08-29.md`; hosted parity A/B vs v68
-per the standing evaluation contract). Remaining leaks: defender post
-assignment lives in policy.nim rather than strategy; chat shout choice is a
-side channel in policy.decide; strategy writes telemetry/latch state onto
-Belief mid-decision. A stencil-centered documentation audit (this date)
+`docs/recon/threat-axis-idle-aim-2026-08-29.md`). Hosted parity A/B vs v68
+COMPLETE (2026-08-29): 56/56 episodes, 0 ops failures, W-L 6-22 vs 4-24
+(+2 net, noise), kills 2.08 vs 2.12/seat (n=176/arm) — PARITY, no red
+flag; duck%/peek% hosted instruments underpowered (flaky artifact upload)
+with gaps disclosed in VERSION_LOG v69. v69 (6b759380) is uploaded, inert,
+NOT submitted; v68 remains the live champion — promotion is James's call. **Strategy-rework worklist** (remaining
+items; leak numbers from the Body-and-Mind report §8):
+
+1. **REMOVE roles and role assignment — James-directed 2026-08-29** (widened
+   from the original "move roles into strategy" ruling, same date). The
+   strategy rework deletes the static Role concept outright: the
+   Attacker/Defender enum, `roleForSeat`/`defenderCount`
+   (`STENCIL_DEFENDERS`), the seat-arithmetic split, and the whole
+   policy.nim:55-98 assignment block (deleted, not relocated). Known
+   role-keyed behavior that must be re-expressed or consciously dropped —
+   the full consumer census (grep-verified at v69): the Attacker-only
+   escort-carrier rung and Defender-only post/hold rung (strategy.nim), the
+   Defender-only `defensiveThreatTerm` + stolen-heart carrier-override gate
+   (fight.nim:150-160,239,250), role-anchored item-fetch detours, the
+   role-keyed idle-aim center (strategy.nim, v69), and the `earlyDefensePoint`
+   lazy latch (same frozen pattern; not cleared by re-roles today). How
+   attack/defense posture is chosen dynamically instead — per-tick, per-agent,
+   from belief — is THE central design question of the rework, not decided
+   here. Note the seat-arithmetic side effects that disappear with roles:
+   the silent-coordination property (everyone derives the same split without
+   comms) and the 2v2 even-split artifact (all defenders captain-side, allies
+   field zero) — the replacement must answer how team-wide division of labor
+   stays coherent, especially with a foreign ally.
+2. **Staleness becomes explicit strategy policy** (with item 1 — applies to
+   whatever replaces role posture: post/posture choices still need defined
+   re-decision triggers). Today
+   staleness ≜ exactly two triggers — WorldMap build/signature change
+   (policy.nim:43-47) and grow-only muster-estimate change (policy.nim:51-54,
+   belief_update.nim:413-422) — and nothing else invalidates a post.
+   Code-verified missing invalidations: enemy-belief drift (post scored once,
+   never re-scored); opponent retirement (`mostDirectOpponent` is pure map
+   geometry, belief-blind — `heartsRetired` never touches role state, so
+   posts/idle aim can stay oriented on an eliminated team); the color-lock
+   correction (no re-trigger; frame-ordering window if the map completes
+   before the first self sighting); `earlyDefensePoint` surviving re-roles.
+   Model to follow: squad-order posts, which re-select on every directive.
+   Design the re-selection triggers (opponent-retired, threat-shift/TTL,
+   early-defense transition) as tunable `STENCIL_*` policy.
+3. Chat shout choice is a side channel in policy.decide (leak #3).
+4. Strategy writes telemetry/latch state onto Belief mid-decision (leak #4).
+5. WorldMap pedestal mutation per percept in `updateHearts` (leak #5).
+
+A stencil-centered documentation audit (this date)
 refreshed README/AGENTS/docs-index/design docs to the post-rework reality.
 
 **Live state re-verified 2026-08-29:** stencil:v68 is the active champion in
@@ -228,10 +271,12 @@ Next concrete steps (reseeded 2026-08-29):
 2. Investigate the Elite Paintbot league: format, board, how stencil:v68 was
    entered, whether it needs separate steering.
 3. Run the game-pin review (0.7.215 build pin vs 0.7.242 canonical; TODO).
-4. The strategy rework itself — James sets direction. Inputs ready: the
-   body/mind boundary map and leak list above, the threat-axis removal
-   carry-over, the v68 verdict's peek%/duck% watch metrics, and the corridor
-   `micro_corridor_rejects` tuning corpus.
+4. The strategy rework itself — James has directed item 1 of the worklist
+   (REMOVE roles and role assignment entirely) with item 2 (explicit
+   staleness/re-decision policy for whatever replaces role posture) riding
+   along; threat-axis removal shipped as v69. Other inputs ready: the
+   body/mind boundary map above, the v68 verdict's peek%/duck% watch metrics,
+   and the corridor `micro_corridor_rejects` tuning corpus.
 
 ## Facts worth carrying forward (verified 2026-08-06; restamped 2026-08-29 where noted)
 

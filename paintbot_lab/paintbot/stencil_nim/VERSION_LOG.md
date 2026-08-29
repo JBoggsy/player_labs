@@ -40,8 +40,46 @@ Codex-implemented under orchestration.
 
 **Hosted validation:** matched campaign-shaped v69-vs-v68 A/B,
 preregistered as a PARITY check (hits/shots, kills, duck%, peek% — any
-significant delta is a red flag, not a win). Verdict pending — see below
-when appended.
+significant delta is a red flag, not a win). Prereg:
+`local_data/episodes/idle-aim-v69-prereg.json`, written before creation.
+Exact v68-batch shape re-instantiated on the same three cells (all still
+live, round-2879 board), opponents re-resolved to current champions
+(focusfire v39→v52, swgy:v22, Picasso:v59, relhalpha:v22); the two giant
+self-play ops probes DROPPED per the 2026-08-21 no-self-play-XP
+preference. v69 arm: xreq_7bc2bd59/1c79dcbf (h2h 8+8), xreq_bb391e2c/
+511db52e (duo 4+4), xreq_85634618 (ffa 4); v68 arm: xreq_7d53123c/
+5d71fd92, xreq_241ca945/5d9523ee, xreq_dab4c04d. Upload auto-eval
+excluded.
+
+**Hosted verdict (56/56 episodes, 0 ops failures): PARITY — no red flag;
+v69 accepted as the behavioral equal of v68.**
+
+| mode (n/arm) | v69 | v68 (control) |
+| --- | --- | --- |
+| h2h vs focusfire:v52 (16) | 0W-16L | 0W-16L |
+| duo vs swgy+relh, ally Picasso (8) | 5W-3L | 3W-5L |
+| ffa vs focusfire+swgy+relh (4) | 1W-3L | 1W-3L |
+| total (28) | 6W-22L | 4W-24L |
+
++2 net for v69 — binomial noise. h2h identically 0-16 in both arms:
+focusfire:v52 is far stronger than the v39 the v68 batch faced (the cell
+runs cold for both arms and cancels in the match — same pattern as the
+v68-vs-v67 batch). Kills/seat-episode 2.08 vs 2.12 (n=176/arm, t≈-0.26 —
+parity at full coverage). **Instrument degradations, disclosed:** hosted
+policy-artifact upload was flaky (only 11 v69 / 17 v68 stencil seats got
+trace zips, and non-matched — v68's all from one seating), so duck%/peek%
+came back underpowered and composition-confounded: pooled 12.7%/1.7% (v69)
+vs 25.3%/3.2% (v68), but per-seat duck% spans 0-55% in BOTH arms and the
+only comparable slice (h2hB attackers) fully overlaps — consistent with
+the seat-level variance the local gate measured (same-seed self-play drew
+13.3% and 18.0% on identical code). hits/shots was not measurable as
+preregistered: the trace has shot counters but no hit counter (hits are
+engine-side; replay attribution not built). The verdict rests on the
+powered instruments (W-L, kills) plus the primary evidence: the
+278,016-decision bit-identical recorded-wire proof, which precludes any
+behavioral difference on identical input. NOT submitted — the champion
+question is James's whenever he wants it (v68 remains the live champion
+until then).
 
 ## v68 — the bounded follower & micro (nav rework Layer 5, FINALE), uploaded 2026-08-14
 
