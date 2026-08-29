@@ -37,6 +37,7 @@ The root [`../../AGENTS.md`](../../AGENTS.md),
 | [`designs/nav-v67-post-atlas-2026-08-14.md`](designs/nav-v67-post-atlas-2026-08-14.md) | the post atlas (posts everywhere there is cover) + early-defense/barrage re-expressions | shipped as v67 |
 | [`designs/nav-layer5-follower-2026-08-14.md`](designs/nav-layer5-follower-2026-08-14.md) | Layer 5: corridor-bounded micro, watchdog rework, follower tightening, `arriveRadius` | shipped as v68 — the rework finale and live champion |
 | [`designs/spray-avoidance-v59-design.md`](designs/spray-avoidance-v59-design.md) | v59: enemy loadout belief (weapon/grenade/barrier/shield), spray-can keep-out with ally-coverage-aware flee, spray shout, spray-carrier target priority | implemented and uploaded as v59 (2026-08-08, inert); revisions 2-3 record what two adversarial review rounds corrected |
+| [`reports/stencil-policy-loop-2026-08-29.md`](reports/stencil-policy-loop-2026-08-29.md) | "The Stencil Decision Loop: Body and Mind" — the loop/phase structure, the typed Intent contract, and the boundary-leak worklist, with diagrams; commentable HTML render alongside ([`.html`](reports/stencil-policy-loop-2026-08-29.html)) | current at v68; written as the strategy-rework pre-read |
 | [`../paintbot/stencil_nim/VERSION_LOG.md`](../paintbot/stencil_nim/VERSION_LOG.md) | immutable upload/version provenance | append-only; newest version first |
 | [`../../player-build.md`](../../player-build.md) | game-agnostic hosted-player image contract | root reference |
 
