@@ -25,6 +25,7 @@ The root [`../../AGENTS.md`](../../AGENTS.md),
 
 | document | purpose | status |
 | --- | --- | --- |
+| [`designs/strategy-play-calling-shell-2026-08-29.md`](designs/strategy-play-calling-shell-2026-08-29.md) | Season 2 play-calling shell: compiled Nim plays above the `Intent` contract (CALL/PLAY/INTENT/ACTION layers, `CombatPolicy` widening, reflex subscription, CTF parity adapter, catalog handshake, call-event determinism) | DESIGN rev 9; adversarially cross-reviewed by Codex over 9 rounds to VERDICT: SATISFIED; not yet implemented |
 | [`designs/stencil-v1-design.md`](designs/stencil-v1-design.md) | Stencil architecture, online `WorldMap`, port/scrap decisions, risks | living design with post-v1 addenda; the original WorldMap/nav internals are superseded by the navigation rework — see its 2026-08-29 addendum |
 | [`designs/stencil-nim-port.md`](designs/stencil-nim-port.md) | native-port contract, parity corpus, packaging | completed design + maintained status |
 | [`designs/rl-policy.md`](designs/rl-policy.md) | Qwen policy decisions, cross-era data/training pipeline, observation representation | living design; full replay-to-checkpoint pipeline implemented |
