@@ -174,6 +174,17 @@ items; leak numbers from the Body-and-Mind report §8):
 A stencil-centered documentation audit (this date)
 refreshed README/AGENTS/docs-index/design docs to the post-rework reality.
 
+**Campaign-mode flip-flop (2026-08-31, second-hand from a peer Claude
+session working for James):** campaign mode on the Paintbot league
+(`league_b8fa9b35`) was DISABLED at James's request, re-enabled within
+minutes by an unidentified privileged client off this machine (21:25-21:39
+UTC Aug 31 per round-creation timestamps), and re-disabled by that session.
+Our campaign-order controller LaunchAgent was verified innocent (still
+FileNotFoundError-looping, writes nothing). Consequence: the campaign brain
+may be OFF and the board frozen — re-verify `campaign board` live before
+any campaign-shaped evaluation or controller repair, and expect further
+flip-flops until the mystery client is identified.
+
 **Live state re-verified 2026-08-29:** stencil:v68 is the active champion in
 the Paintbot league (`lpm_eeac47d3`; v58/v54/v52/v47 benched) **and also
 competes in a NEW second league, Elite Paintbot** (`league_15cf0b94`, created
