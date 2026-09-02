@@ -96,6 +96,7 @@ paintbot_lab/
                                    design docs (v61-v68; all five layers shipped)
     designs/rl-policy.md           Qwen policy architecture + decisions
   tools/
+    ctf_probes/        replay + shell probes for the S2 engine (build inside coworld-ctf; README)
     analyze_giant_carries.py  one-off historical v22 giant-duel analyzer
     build_player.sh        build the stencil image (linux/amd64)
     self_play.py           native, fast-ready, parallel local self-play

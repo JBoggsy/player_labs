@@ -1,3 +1,3 @@
 # Tentative lessons — current session
 
-Rotated 2026-08-29 13:19. Add candidate lessons eagerly under `###` headings.
+Rotated 2026-09-01 16:35. Add candidate lessons eagerly under `###` headings.

@@ -110,6 +110,92 @@ the mettabox1 run state has not been re-checked since.
 
 ## Current objective
 
+**THE SEASON TWO EPOCH IS OPENING (2026-09-01).** The lab is being overhauled to the
+Season Two play-calling framework: a policy image uploads a playbook of WASM plays and
+calls them by name; the engine hosts a port of Stencil's body and drives the cog. Start
+from the research report
+[`docs/reports/ctf-season-two-framework-2026-09-01.md`](docs/reports/ctf-season-two-framework-2026-09-01.md)
+(HTML twin beside it; researched at coworld-ctf `e9bc0bee`). Its seven headline
+findings change what the lab builds: the socket view is the binary `PV1` frame (the
+Python PoC/starters crash on the first live frame); ladder guards are evaluated blind
+in production; reflexes are hardwired always-on; a neutral combat policy never fires
+(always carry a `target_law`/`pact` overlay); the live variant pins `gunRange: 1300`;
+reconnect recovery omits the call and playbook; `BR_PLAYS.md` is not a reliable spec
+(use the golden manifests). League score = winning team's Glory, 0 otherwise. The
+Stencil epoch notes below are historical from here on.
+
+**League health (2026-09-01 22:15 PDT, coworld-ctf image 0.7.283 canonical since
+04:57Z from `9ba120eb`, which includes every fix below).** The Season 2 league is
+running healthy rounds: 3623–3633 completed with real play (decided winners, two
+seats at Glory 18 and the rest 0 is the S2 scoring shape), one episode per round,
+two to three minutes each, on a ten-minute cadence. The earlier failures
+(3606–3622) were filler-pod exits from the qwen allowlist 403, fixed upstream.
+Root-caused, fixed, and **merged to coworld-ctf main by direct push (James: "merge
+them")**: `90543bc2` brain parses fenced/prose-wrapped model JSON (a starter seat
+died on the first fenced reply); `818f5f61` containment CPU gate samples three body
+ticks (flaky CI shard blocked uploads); `64134692` upload workflow waits for
+certification then polls canonical promotion (the verify step raced the async
+promotion and marked good uploads failed, twice); `d179633f` replay header echoes
+`num_agents` (every hosted S2 replay failed its hash check at tick 1 because the
+echo dropped the seat count and playback rebuilt a different hash layout; fixture
+`tests/fixtures/seats-numagents16.bitreplay` guards it); `420ce7cf` the hosted game
+image now bakes the engine build stamp; `78270034` rebuilt viewer bundle plus the
+AGENTS.md rule that any `src/*.nim` change needs the bundle rebuilt. **Verified on
+the first replay recorded by 0.7.283 (round 3633):** header carries `num_agents`
+and `engineStamp`, tick-1 hash matches, full re-simulation clean. Hosted replays
+recorded before 0.7.283 remain unreplayable.
+**Cogs not moving + huddle by seat number (James, 2026-09-01 late).** Root-caused
+from round 3633's replay and a deterministic offline reproduction of the shell on
+the real map: three engine defects (zone reflex picked the cog's own position when
+the next rect lay beyond its lattice; one flat 256-unit planning budget per tick
+shared by 16 seats on a 172k-node lattice; a re-installed goal cancelled the plan
+in flight with nothing to re-request it). Fixed in coworld-ctf `75fceb5a` (five
+discriminating tests; reproduction: worst seat now 5 ticks outside the zone versus
+over 1000). Huddle identity: names now ride in the PlayContext roster (`name`) and
+the PoC/starter brains render self, partner, roster, and the heard transcript by
+name (`c2f58c47`); the 0xB2 packet stays seat-indexed. Movement shipped in 0.7.287 (`4fad9987`) and verified on round 3641: 12/12 episodes,
+hash-clean replay, 14 deaths / 2 survivors, no cog stalled on spawn. The roster
+names missed the live socket packet (a second roster builder in server.nim); fixed
+by a single shared builder (`5e73c383`, view is now an unconditional import in
+episode.nim), shipped in 0.7.288 (`6a913ebb`) and verified on round 3645: the 0xB0
+roster carries every seat's name. Engine work is handed to the peer engine session
+(James's stand-down relayed 2026-09-02 ~07:00Z); open engine finding for James: the
+cog-vs-cog collision deadlock (see lessons). The starters'
+name rendering only takes effect once their policy images are rebuilt and
+re-uploaded (they are separate uploads).
+
+Round 3634 (05:31Z) failed with 6 of 12 episodes: "player slot never joined within
+300 s" / "Kubernetes did not start every player process (never scheduled)". It was the
+first round after the league moved to 12 episodes per round (192 policy pods in one
+burst); 3635–3637 ran 12 episodes each with zero failures, so this was cluster
+scheduling capacity warming up, not the engine. Watch for it again at the next
+cadence change.
+**GV51 (2026-09-02 ~10:15Z): the duo collision deadlock fix is pushed** as coworld-ctf
+`d7ac9be7` + bundle `b99b24b1` on main (James's order relayed by the peer engine
+session: "fix the three engine gaps"; the peer took items-to-view and play-seat
+guards, shipped in 0.7.290). `blockingPlayerAt` now refuses only closing steps;
+GameVersion 51, allowlist ["51"] (GV50 hosted replays no longer load in the
+viewer), all eight fixtures recut (BR golden seed 4248, capture-seed1 take 2),
+three tests re-pinned per their rituals. 0.7.291 (GV51) canonical 17:34Z; verified on round 3706 (15/15 episodes,
+replays hash-clean under GV51): across 48 cogs in three replays the longest
+push-blocked run is 13 ticks, and every never-moving cog is idle (no input at
+all), so the abreast deadlock is gone in the wild. Probes for GV51 replays:
+`scratchpad/move_probe_gv51`, `scratchpad/push_probe_gv51` (push-blocked vs idle
+classification). Worktree removed.
+
+**Stood down 2026-09-02 ~18:00Z (James): remaining work is starter-policy iteration,
+owned by the peer engine session (`coworld-ctf-ad`, coordination log
+`docs/coordination/agents-notes.md` in coworld-ctf).** Probes are stored in
+`paintbot_lab/tools/ctf_probes/` (README there). Open engine items for the peer/James:
+none blocking; the deprecated-mode recorder/test drift is fixed; the containment
+body gate is timing-marginal on this Mac (judge it on CI).
+
+CLI note: `coworld episodes -r` now needs the round *id* (`round_…`), the round
+number returns 422. Two non-blockers left for James: his codex entrant pods run
+canned (no sidecar env; needs `--use-bedrock --bedrock-model` at upload), and
+`min_episodes_per_entrant` reads 12 where the orchestrator said 4.
+
+
 **THE STRATEGY-REWORK EPOCH IS OPENING (2026-08-29).** The session focus:
 separate the "body" and the "mind" of Stencil — make the action, intent, and
 strategy loops separable with clear, well-defined interfaces. Current
@@ -198,6 +284,17 @@ CLI is now **0.1.39**, and `coworld list` no longer shows games you don't own
 pre-rename repo path (`personal_labs_paintbot/`), and it has logged
 `FileNotFoundError` every poll since ~2026-08-26 — no orders are being
 placed; reinstall from the new path (TODO).
+
+**CAMPAIGN MODE ON THE MAIN PAINTBOT LEAGUE IS DISABLED and was briefly
+contested (2026-08-31, reported by the coworld-ctf session working for
+James):** `settings.campaign.enabled` on `league_b8fa9b35` was turned off at
+James's request (~00:40 UTC), re-enabled 21:25-21:39 UTC by a privileged
+client off this machine (likely a person via the Observatory settings UI —
+seed/backend reconcilers are ruled out by code), then re-disabled. Treat the
+league's competition model as IN FLUX: re-resolve campaign/board state live
+before designing any evaluation, and expect the campaign-shaped evaluation
+contract (`docs/tournament-like-experience-requests.md`) and the campaign
+controller to need revisiting if the campaign stays off.
 
 **v68 ACCEPTED (2026-08-14) — THE NAVIGATION REWORK IS COMPLETE.** Batch
 58/58, 0 ops: +4 net (12W-16L vs v67 8W-20L; h2h identical, duo 3W-5L
