@@ -1,0 +1,1004 @@
+[
+  {
+    "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260714-103646.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260714-103650.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260714-103800.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260714-103950.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260714-105814.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260714-164518.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260714-184706.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260715-120931.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260715-122706.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260721-091839.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260721-092302.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260721-100403.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260722-163652.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260724-105533.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260728-101539.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260729-154146.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260820-133825.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260612-150445.md",
+    "target": "best_practices.md",
+    "class": "historical",
+    "repaired_target": "../../best_practices.md"
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260612-150445.md",
+    "target": "../best_practices.md",
+    "class": "historical",
+    "repaired_target": "../../../best_practices.md"
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260613-103435.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260615-102844.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260624-161856.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260625-130626.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260626-090431.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260626-094417.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260626-174438.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260626-232231.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260630-104648.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260630-232348.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-100549.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-111945.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-112311.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-113134.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-115109.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-123452.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-125630.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-151640.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260702-092852.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260702-161854.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260702-170524.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260704-160250.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260705-164951.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260705-165717.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260705-225823.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260706-091124.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260706-105751.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260706-114032.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260707-093815.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260709-114152.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260710-121139.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260710-121624.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-102008.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-150034.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-155414.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-160135.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260714-103809.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260714-184706.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260715-121442.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260715-122706.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260721-091839.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260721-100403.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260721-151914.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260723-133822.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260727-184457.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260728-105121.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260729-115723.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260731-171800.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260803-162732.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260804-103458.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "ctf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-145349.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "ctf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-145605.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "ctf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-145806.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "ctf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-150034.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "ctf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-155415.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260615-094356.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260615-102844.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260615-180834.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260619-152316.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260626-090431.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260626-174438.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260630-104648.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-100549.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-112311.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-115109.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260704-160250.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260705-164951.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260705-165717.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260706-091124.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260707-093815.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260710-121139.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260710-123915.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-101429.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-102008.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-111426.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-123343.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-150034.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-155415.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-160135.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "heartleaf_lab/lessons_archive/TENTATIVE_LESSONS-20260714-202500.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "heartleaf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260710-121624.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "heartleaf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-101429.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "heartleaf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-102008.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "heartleaf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-111426.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "heartleaf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-123343.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "heartleaf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-150034.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "heartleaf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-155415.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "heartleaf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-160135.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260807-155812.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260807-202957.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260808-122020.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260811-142814.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260811-152215.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260811-184223.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260820-133825.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260829-131914.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260901-163555.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260902-110000.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "proxywar_lab/lessons_archive/TENTATIVE_LESSONS-20260829-115720.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/policies/world_race.py:160",
+    "class": "historical",
+    "repaired_target": "../../wowborg/policies/world_race.py:160"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/policies/world_race.py:219",
+    "class": "historical",
+    "repaired_target": "../../wowborg/policies/world_race.py:219"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/policies/world_race.py:239",
+    "class": "historical",
+    "repaired_target": "../../wowborg/policies/world_race.py:239"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/docs/designs/wowborg-nav-v2.md:178",
+    "class": "historical",
+    "repaired_target": "../designs/wowborg-nav-v2.md:178"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/route.py:190",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/route.py:190"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/route.py:282",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/route.py:282"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/route.py:297",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/route.py:297"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/route.py:368",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/route.py:368"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/world_model.py:54",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/world_model.py:54"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/world_model.py:62",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/world_model.py:62"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/journey.py:73",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/journey.py:73"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/route.py:153",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/route.py:153"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/route.py:164",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/route.py:164"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/local.py:22",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/local.py:22"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/route.py:235",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/route.py:235"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/world_model.py:67",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/world_model.py:67"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/journey.py:131",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/journey.py:131"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/local.py:107",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/local.py:107"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/local.py:125",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/local.py:125"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/local.py:153",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/local.py:153"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/route.py:395",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/route.py:395"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/route.py:411",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/route.py:411"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/route.py:74",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/route.py:74"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/route.py:186",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/route.py:186"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/route.py:226",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/route.py:226"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/policies/world_race.py:189",
+    "class": "historical",
+    "repaired_target": "../../wowborg/policies/world_race.py:189"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/journey.py:191",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/journey.py:191"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/policies/world_race.py:276",
+    "class": "historical",
+    "repaired_target": "../../wowborg/policies/world_race.py:276"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/tests/test_nav.py:28",
+    "class": "historical",
+    "repaired_target": "../../wowborg/tests/test_nav.py:28"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/world_model.py:110",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/world_model.py:110"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/world_model.py:119",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/world_model.py:119"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/policies/world_race.py:159",
+    "class": "historical",
+    "repaired_target": "../../wowborg/policies/world_race.py:159"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/journey.py:143",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/journey.py:143"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/nav/journey.py:108",
+    "class": "historical",
+    "repaired_target": "../../wowborg/nav/journey.py:108"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/docs/designs/wowborg-nav-v2.md:3",
+    "class": "historical",
+    "repaired_target": "../designs/wowborg-nav-v2.md:3"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/docs/designs/wowborg-nav-v2.md:46",
+    "class": "historical",
+    "repaired_target": "../designs/wowborg-nav-v2.md:46"
+  },
+  {
+    "path": "vanilla_wow_lab/lessons_archive/TENTATIVE_LESSONS-20260714-164518.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "vanilla_wow_lab/lessons_archive/TENTATIVE_LESSONS-20260721-092302.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "vanilla_wow_lab/lessons_archive/TENTATIVE_LESSONS-20260724-105533.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "vanilla_wow_lab/lessons_archive/TENTATIVE_LESSONS-20260731-171800.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "vanilla_wow_lab/lessons_archive/TENTATIVE_LESSONS-20260829-115720.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": "."
+  },
+  {
+    "path": "vanilla_wow_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-160135.md",
+    "target": "lessons_archive/",
+    "class": "historical",
+    "repaired_target": ".."
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/tests/fake_nav_bridge.py:107",
+    "class": "historical",
+    "disposition": "Source absent from current checkout; original reference retained as non-clickable historical text"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/tests/fake_nav_bridge.py:225",
+    "class": "historical",
+    "disposition": "Source absent from current checkout; original reference retained as non-clickable historical text"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/bridge.py:564",
+    "class": "historical",
+    "disposition": "Source absent from current checkout; original reference retained as non-clickable historical text"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/bridge.py:88",
+    "class": "historical",
+    "disposition": "Source absent from current checkout; original reference retained as non-clickable historical text"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/tests/fake_nav_bridge.py:56",
+    "class": "historical",
+    "disposition": "Source absent from current checkout; original reference retained as non-clickable historical text"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/tests/fake_nav_bridge.py:169",
+    "class": "historical",
+    "disposition": "Source absent from current checkout; original reference retained as non-clickable historical text"
+  },
+  {
+    "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+    "target": "vanilla_wow_lab/wowborg/bridge.py:427",
+    "class": "historical",
+    "disposition": "Source absent from current checkout; original reference retained as non-clickable historical text"
+  }
+]

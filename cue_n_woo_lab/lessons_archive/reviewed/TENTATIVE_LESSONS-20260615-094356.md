@@ -3,7 +3,7 @@
 **Session started:** (seeded at lab setup; the SessionStart hook restamps this).
 This is THIS SESSION's lesson buffer. Write candidate lessons here **as you go** —
 eagerly and noisily; most will be noise and that's fine. At the next session start,
-a hook archives this file automatically to [`lessons_archive/`](lessons_archive/)
+a hook archives this file automatically to [`lessons_archive/`](..)
 and creates a fresh one — nothing you write here is lost, and nothing carries over
 by hand.
 
