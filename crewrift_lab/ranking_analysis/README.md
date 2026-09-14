@@ -120,7 +120,7 @@ for z in glob.glob('/tmp/v96_rank_wh_episodes/*/replay.json.z'):
 PY
 uv run python crewrift_lab/.claude/skills/crewrift-event-warehouse/scripts/build_warehouse.py \
   --episodes /tmp/v96_rank_wh_episodes --out /tmp/v96_rank_wh \
-  --expand-replay crewrift_lab/tools/bin/expand_replay --elevated
+  --expand-replay crewrift_lab/tools/bin/expand_replay
 ```
 
 ## Method notes
@@ -137,3 +137,5 @@ uv run python crewrift_lab/.claude/skills/crewrift-event-warehouse/scripts/build
   bootstrapped over games.
 - **Differential unit.** One row per (episode, seat); crewborg vs the pooled top-3
   per role; Cohen's d + Mann-Whitney U; ranked by |d|.
+
+**Access contract (2026-09-14):** use normal participant access only. Older elevated-access recipes are superseded; private opponent evidence remains unavailable.

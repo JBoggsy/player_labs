@@ -54,8 +54,8 @@ everyone else's changes.
      --eyebrow "<Game> · A/B comparison" --finding finding.md --verdict "<one-line synthesis>"
    ```
    The adapter leads with the target delta, then a **group-split** table of all metrics, each marked
-   **improved / regressed / noise** with a p-value, plus a **regression scan**. It's deliberately
-   conservative — a borderline move reads as `noise`. The report renders this as a comparison page;
+   **improved / regressed / inconclusive** with a p-value, plus a **regression scan**. It's deliberately
+   conservative — a borderline move reads as `inconclusive`. The report renders this as a comparison page;
    it's a **starting point — adapt/extend the visuals** to what the comparison shows.
 
 5. **Qualitative compare — the part numbers can't give.** Read both batches **side by side** through
@@ -63,7 +63,7 @@ everyone else's changes.
    it to the report as `--finding`.
 
 6. **Synthesize the verdict:** did the target move, did anything regress, and does the qualitative
-   story explain (or contradict) the numbers? A common, important outcome: numbers say *noise* but
+   story explain (or contradict) the numbers? A common, important outcome: numbers say *inconclusive* but
    behaviour visibly changed → more episodes, a sharper metric, or the change didn't do what you thought.
 
 ## What your lab supplies — the adapter
@@ -84,13 +84,13 @@ JSON. To add a new game: copy crewrift's `compare.py`, swap the four game-specif
 ## Discipline (the hard-won ones)
 
 - **Matched + fresh, every time** — re-run the baseline alongside the candidate; never diff a stale batch.
-- **Same tree** — build the baseline by git-stashing the candidate change, so only the subject differs.
+- **Same source baseline** — use exact commits or isolated worktrees so unrelated user edits remain untouched.
 - **Recompute on CLEAN episodes** — connect/disconnect-timeouts hit the arms **asymmetrically**; drop
   them (an `ops_fail`-style metric) before comparing or the delta is contaminated.
 - **Decompose by group** — different roles are different policies; a change can help one and break the
   other (that's what the regression scan is for; a team-level "win" is a confounded metric).
-- **Respect noise** — small batches and borderline deltas are not wins; the engine errs conservative
-  on purpose — believe it. Rates need a few hundred appearances/side.
+- **Respect inconclusive** — small batches and borderline deltas are not wins; the engine errs conservative
+  on purpose. Choose sample size from the effect you need to detect; a fixed minimum is not a power calculation.
 - **One change at a time** upstream, or the delta isn't attributable.
 
 ## See also
@@ -98,3 +98,11 @@ JSON. To add a new game: copy crewrift's `compare.py`, swap the four game-specif
 - **`coworld-experiment`** — hands a hypothesis here when the test needs a designed run (this is that run).
 - **`coworld-experience-requests`** / **`coworld-episode-artifacts`** — fire the matched runs / pull them.
 - **`crewrift-ab`** — the reference adapter (crewrift's metrics over this engine).
+
+## Statistical contract (2026-09-14)
+
+The shared engine uses SciPy Fisher exact tests for binary episode outcomes and Welch t-tests for continuous episode values. It applies Benjamini–Yekutieli correction across reported metric/group tests; displayed `p` is adjusted and `raw_p` is unadjusted. A directional verdict also requires at least 30 observations per arm/group. This floor does not guarantee adequate power. `inconclusive` does not establish equivalence or safety.
+
+Use one independent observation per episode/group. Do not count several seats of one policy as independent games; average diagnostics within the episode, or use a preregistered clustered/paired analysis. The engine does not implement paired tests, sequential stopping corrections or causal identification. Missing values remain excluded with counts. Report operational failures separately before filtering whole episodes for gameplay metrics.
+
+[Paintbot's adapter](../../../paintbot_lab/tools/compare.py) selects immutable version IDs and aggregates team seats per episode. Match game version/config, roster, ally composition, roles and time window before interpretation. A same-window batch alone does not eliminate map/seed or composition confounding.

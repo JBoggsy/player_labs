@@ -7,14 +7,13 @@ once, and serves a self-contained page that updates as completions roll in:
 
   - completion progress + throughput/ETA per request and overall
   - a leaderboard of per-player win-rate and mean score
-  - a player x player win-rate heatmap (row = focal player, col = role they held;
-    plus a same-episode head-to-head grid)
+  - an overall per-seat win-rate heatmap (descriptive, not an A/B verdict)
   - per-player score distributions as points along one horizontal line per player
 
 It only READS (episode lists + results artifacts), so it is safe to run alongside
 the requests and alongside `fetch_artifacts.py`. Stats are attributed by SEAT from
 each episode's `participants` (position -> player/policy/version) and
-`game_config.slots` (position -> role), so they never depend on the deduped inline
+explicit result-array indices, so they never depend on the deduped inline
 `scores` field.
 
 Run:
@@ -95,16 +94,17 @@ class Poller:
             rows = self._client.get_json(f"/v2/experience-requests/{xreq}/episodes")
             rows = rows if isinstance(rows, list) else rows.get("entries", [])
             completed = sum(1 for r in rows if r.get("status") == "completed")
+            terminal = sum(r.get("status") in FA.TERMINAL_EPISODE_STATUSES for r in rows)
             for r in rows:
                 pending.append((xreq, r))
             with self._lock:
                 self._req[xreq] = {
                     "total": len(rows),
-                    "completed": completed,
-                    "status": "done" if (rows and completed == len(rows)) else "running",
+                    "completed": completed, "terminal": terminal, "failed": terminal - completed,
+                    "status": "done" if (rows and terminal == len(rows)) else "running",
                 }
         with ThreadPoolExecutor(max_workers=8) as pool:
-            pool.map(lambda xr: self._ingest(xr[0], xr[1]), pending)
+            list(pool.map(lambda xr: self._ingest(xr[0], xr[1]), pending))
         with self._lock:
             self._last_poll = time.time()
             self._poll_count += 1
@@ -119,20 +119,11 @@ class Poller:
             return  # already fully captured
         if row.get("status") != "completed":
             return
-        # Per-seat identity, ordered by seat position. Role is derived later in
-        # snapshot() from the results artifact's imposter/crew flags (game_config.slots
-        # is empty on natural-roles evals).
-        parts = row.get("participants") or []
-        seats = [seat_label(p) for p in sorted(parts, key=lambda p: p.get("position", 0))]
-        results = None
-        job = row.get("job_id")
-        if job:
-            txt = self._client.get_text_or_none(f"/jobs/{job}/artifacts/results")
-            if txt:
-                try:
-                    results = json.loads(txt)
-                except json.JSONDecodeError:
-                    results = None
+        # Preserve explicit seat positions: sparse/human seats must not shift scores.
+        seats = {p["position"]: seat_label(p) for p in row.get("participants", [])
+                 if p.get("kind", "policy") == "policy"}
+        txt = self._client.get_text_or_none(f"/v2/episode-requests/{eid}/artifacts/results")
+        results = json.loads(txt) if txt else None
         with self._lock:
             self._episodes[eid] = {
                 "xreq": xreq, "seats": seats,
@@ -160,7 +151,7 @@ class Poller:
             if label not in players:
                 players[label] = {
                     "label": label, "n": 0, "wins": 0, "scores": [],
-                    "crew_n": 0, "crew_w": 0, "imp_n": 0, "imp_w": 0,
+
                 }
             return players[label]
 
@@ -172,30 +163,17 @@ class Poller:
             ct = res.get("connect_timeout") or []
             dt = res.get("disconnect_timeout") or []
             seats = e["seats"]
-            n_seats = min(len(seats), len(win), len(score))
-            # Per-seat role comes from the results artifact's `imposter`/`crew` flag
-            # arrays — authoritative for BOTH natural-roles and role-pinned evals. The
-            # old source (`game_config.slots[].role`) is EMPTY on natural-roles runs, so
-            # the per-role split never populated. See results.json: imposter=[1,0,...].
-            imp_flags = res.get("imposter") or []
-            crew_flags = res.get("crew") or []
-            # Episode-level ops filter: if ANY seat timed out, the whole episode is
-            # corrupt (-100 across the board) — skip it for stats.
-            if any((ct[i] if i < len(ct) else 0) or (dt[i] if i < len(dt) else 0)
-                   for i in range(n_seats)):
+            if any(ct) or any(dt):
                 ops_filtered += 1
                 continue
-            for i in range(n_seats):
-                lab = seats[i]
+            for i, label in seats.items():
+                if i < 0 or i >= len(score) or i >= len(win):
+                    continue  # Unavailable is not a loss or a zero score.
                 w = bool(win[i])
-                p = P(lab)
+                p = P(label)
                 p["n"] += 1
                 p["wins"] += int(w)
                 p["scores"].append([score[i], int(w)])
-                if i < len(imp_flags) and imp_flags[i]:
-                    p["imp_n"] += 1; p["imp_w"] += int(w)
-                elif i < len(crew_flags) and crew_flags[i]:
-                    p["crew_n"] += 1; p["crew_w"] += int(w)
 
         def winrate(w: int, n: int) -> float | None:
             return round(100.0 * w / n, 1) if n else None
@@ -205,8 +183,6 @@ class Poller:
             leaderboard.append({
                 "label": p["label"], "n": p["n"],
                 "win": winrate(p["wins"], p["n"]),
-                "crew_win": winrate(p["crew_w"], p["crew_n"]), "crew_n": p["crew_n"],
-                "imp_win": winrate(p["imp_w"], p["imp_n"]), "imp_n": p["imp_n"],
                 "score_mean": round(sum(s for s, _ in p["scores"]) / len(p["scores"]), 1) if p["scores"] else None,
                 "scores": p["scores"],   # [[score, win], ...]
             })
@@ -216,7 +192,7 @@ class Poller:
         recent = sum(1 for e in scored if now - e["ts"] <= RATE_WINDOW_SECONDS)
         rate_per_min = recent / (RATE_WINDOW_SECONDS / 60.0)
         total = sum(v["total"] for v in req.values())
-        done = sum(v["completed"] for v in req.values())
+        done = sum(v.get("terminal", v["completed"]) for v in req.values())
         pending = max(0, total - done)
         eta = round(pending / rate_per_min * 60.0) if rate_per_min > 0 else None
 
@@ -278,8 +254,7 @@ def main(argv: list[str] | None = None) -> int:
                           "(it stays server-side in this process), so this only exposes the "
                           "rendered XP-request stats, not credentials.")
     ap.add_argument("--elevated", action="store_true",
-                     help="Send X-Use-Elevated-Privileges (Softmax team members only; needed to "
-                          "read another player's per-seat results.json since metta PR #17028).")
+                     help="Rejected: player-lab analysis uses normal participant access.")
     args = ap.parse_args(argv)
 
     client = FA.Client(FA.default_server(), FA.load_token(), elevated=args.elevated)

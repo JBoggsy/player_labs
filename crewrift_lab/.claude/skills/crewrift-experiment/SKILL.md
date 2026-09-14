@@ -46,7 +46,7 @@ uv run python .claude/skills/coworld-experiment/scripts/experiment_report.py des
 ```
 
 Follow [`report-style.md`](../../../docs/report-style.md); **look at the rendered page** before showing
-it, and get explicit go-ahead before running (especially a hosted experience request).
+it, then proceed within existing task authorization. Ask only when the design introduces a new strategic direction, scope or budget decision.
 
 ## Crewrift-specific criticism checks
 

@@ -1,0 +1,2868 @@
+{
+  "documents": [
+    {
+      "path": ".claude/skills/build-and-upload/SKILL.md",
+      "class": "current"
+    },
+    {
+      "path": ".claude/skills/build-and-upload/references/cli.md",
+      "class": "current"
+    },
+    {
+      "path": ".claude/skills/coworld-ab/SKILL.md",
+      "class": "current"
+    },
+    {
+      "path": ".claude/skills/coworld-community/SKILL.md",
+      "class": "current"
+    },
+    {
+      "path": ".claude/skills/coworld-episode-artifacts/SKILL.md",
+      "class": "current"
+    },
+    {
+      "path": ".claude/skills/coworld-episode-artifacts/references/endpoint-map.md",
+      "class": "current"
+    },
+    {
+      "path": ".claude/skills/coworld-experience-requests/SKILL.md",
+      "class": "current"
+    },
+    {
+      "path": ".claude/skills/coworld-experience-requests/references/api.md",
+      "class": "current"
+    },
+    {
+      "path": ".claude/skills/coworld-experience-requests/scripts/xp_dashboard.html",
+      "class": "current"
+    },
+    {
+      "path": ".claude/skills/coworld-experiment/SKILL.md",
+      "class": "current"
+    },
+    {
+      "path": ".claude/skills/coworld-hypothesis-miner/SKILL.md",
+      "class": "current"
+    },
+    {
+      "path": ".claude/skills/coworld-local-run/SKILL.md",
+      "class": "current"
+    },
+    {
+      "path": ".claude/skills/coworld-local-run/references/cli.md",
+      "class": "current"
+    },
+    {
+      "path": ".claude/skills/coworld-policy-lifecycle/SKILL.md",
+      "class": "current"
+    },
+    {
+      "path": ".claude/skills/coworld-policy-lifecycle/references/cli.md",
+      "class": "current"
+    },
+    {
+      "path": ".tmp_findings_archive/crewrift_lab__ab_v106_v100/ab.html",
+      "class": "current"
+    },
+    {
+      "path": ".tmp_findings_archive/crewrift_lab__ab_v106_v100/compare.md",
+      "class": "current"
+    },
+    {
+      "path": ".tmp_findings_archive/crewrift_lab__ab_v106_v100/finding.md",
+      "class": "current"
+    },
+    {
+      "path": ".tmp_findings_archive/crewrift_lab__ab_v107_v100/ab.html",
+      "class": "current"
+    },
+    {
+      "path": ".tmp_findings_archive/crewrift_lab__ab_v107_v100/finding.md",
+      "class": "current"
+    },
+    {
+      "path": ".tmp_findings_archive/personal_labs_crewrift__ab_v105_v100/ab.html",
+      "class": "current"
+    },
+    {
+      "path": ".tmp_findings_archive/personal_labs_crewrift__ab_v105_v100/finding.md",
+      "class": "current"
+    },
+    {
+      "path": "AGENTS.md",
+      "class": "current"
+    },
+    {
+      "path": "README.md",
+      "class": "current"
+    },
+    {
+      "path": "TODO.md",
+      "class": "current"
+    },
+    {
+      "path": "WORKTREE_RESULTS.md",
+      "class": "current"
+    },
+    {
+      "path": "best_practices.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/.claude/skills/crewrift-ab/SKILL.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/.claude/skills/crewrift-belief-audit/SKILL.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/.claude/skills/crewrift-diagnose/SKILL.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/.claude/skills/crewrift-event-warehouse/SKILL.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/.claude/skills/crewrift-event-warehouse/references/event-catalog.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/.claude/skills/crewrift-event-warehouse/references/recipes.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/.claude/skills/crewrift-experiment/SKILL.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/.claude/skills/crewrift-field-study/SKILL.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/.claude/skills/crewrift-survey/SKILL.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/.claude/skills/lessons-review/SKILL.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/AGENTS.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/README.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/TENTATIVE_LESSONS.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/WEEKLY_CONTEXT.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/WORKING_CONTEXT.history-2026-09-14.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/WORKING_CONTEXT.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/best_practices.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/chat_effectiveness/README.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/chat_study/README.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/AGENTS.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/CLAUDE.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/README.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/design.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/docs/README.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/docs/agent-tracking.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/docs/commander.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/docs/crew-voting-investigation.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/docs/crewmate-play.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/docs/designs/button-runner-interception.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/docs/designs/chat-evidence.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/docs/designs/honor-society.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/docs/designs/imposter-parity-meeting.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/docs/designs/sprite-bridge-migration.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/docs/designs/suspicion-learning.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/docs/designs/vision-model.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/docs/designs/watch-camouflage.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/docs/imposter-play.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/docs/meetings.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/docs/navigation.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/docs/perception-and-belief.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/docs/reports/2026-07-02-chat-accuracy-effectiveness.html",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/docs/reports/2026-07-02-chat-tactics-deep-dive.html",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/docs/suspicion.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/docs/trace-logs.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/strategy/commander/memory/crewmate.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/strategy/commander/memory/imposter.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/strategy/meeting/memory/crewmate.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/strategy/meeting/memory/imposter.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/tools/README.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/tools/path_prediction_ui.html",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/version_log.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/crewrift/crewborg/viewer/index.html",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/notsus/README.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/suspectra/README.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/suspectra/memory/summary.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/suspectra/memory/system.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/crewrift/suspectra/memory/templates.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/README.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/bedrock-quota-ask.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/coworld-platform.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/crewrift-gameplay.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/crewrift-protocol.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/crewrift-replays.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/designs/2026-07-02-chat-accuracy-effectiveness-design.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/designs/2026-07-21-first-mover-anchor-ab-prereg.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/designs/2026-07-21-first-mover-anchor-design.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/designs/2026-07-21-imposter-kill-to-win-design.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/designs/2026-07-21-imposter-survival-ab-prereg.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/designs/2026-07-21-meeting-llm-cadence-design.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/designs/2026-07-22-bedrock-spend-telemetry-design.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/designs/2026-07-22-chat-evidence-incorporation.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/designs/2026-07-22-hs-isolated-ab-prereg.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/designs/2026-07-22-warm-anchor-ab-prereg.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/designs/2026-07-22-warm-anchor-design.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/designs/2026-07-23-vote-gate-sweep-prereg.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/designs/2026-07-24-vote-coordination-prereg.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/designs/2026-07-28-improvement-loop-alpha.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/designs/2026-07-28-prevote-push-prereg.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/designs/2026-07-28-suspicion-v5-refit-prereg.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/designs/2026-07-29-chat-swallow-fix-prereg.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/designs/2026-07-29-chatfix-powered-prereg.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/designs/2026-07-29-improvement-loop-alpha-run-report.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/designs/building_players.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/experiment_v85_chat_then_skip.html",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/h4_experiment.html",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/hs1-ecosystem-notes.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/report-style.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/telemetry-harvest.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/docs/top3-advantage-reporter-guidance.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/README.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260702-chat-accuracy-effectiveness.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260714-103646.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260714-103650.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260714-103800.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260714-103950.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260714-105814.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260714-164518.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260714-184706.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260715-120931.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260715-122706.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260721-091839.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260721-092302.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260721-100403.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260722-163652.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260724-105533.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260728-101539.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260729-154146.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260820-133825.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260612-150445.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260613-103435.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260615-102844.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260624-161856.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260625-130626.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260626-090431.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260626-094417.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260626-174438.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260626-232231.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260630-104648.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260630-232348.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-100549.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-111945.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-112311.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-113134.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-115109.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-123452.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-125630.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-151640.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260702-092852.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260702-161854.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260702-170524.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260704-160250.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260705-164951.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260705-165717.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260705-225823.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260706-091124.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260706-105751.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260706-114032.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260707-093815.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260709-114152.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260710-121139.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260710-121624.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-102008.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-150034.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-155414.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-160135.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/ranking_analysis/README.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/ranking_analysis/data/report.html",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/ranking_analysis/data/voting_report.html",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/suspicion_lab/README.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/suspicion_lab/docs/runtime-feature-training.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/tools/event-warehouse/crewrift-event-reporter/README.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/tools/event-warehouse/crewrift-event-reporter/crewrift-event-reporter-design.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/tools/event-warehouse/crewrift-event-warehouse/README.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/tools/event-warehouse/crewrift-event-warehouse/crewrift-event-warehouse-design.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/tools/event-warehouse/crewrift-event-warehouse/crewrift_event_warehouse/assets/index.html",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/tools/imposter_movement/README.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/tools/positioning_viz/README.md",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/tools/positioning_viz/index.html",
+      "class": "current"
+    },
+    {
+      "path": "crewrift_lab/user_preferences.md",
+      "class": "current"
+    },
+    {
+      "path": "ctf_lab/.claude/skills/ctf-ab/SKILL.md",
+      "class": "current"
+    },
+    {
+      "path": "ctf_lab/.claude/skills/ctf-event-warehouse/SKILL.md",
+      "class": "current"
+    },
+    {
+      "path": "ctf_lab/.claude/skills/lessons-review/SKILL.md",
+      "class": "current"
+    },
+    {
+      "path": "ctf_lab/AGENTS.md",
+      "class": "current"
+    },
+    {
+      "path": "ctf_lab/README.md",
+      "class": "current"
+    },
+    {
+      "path": "ctf_lab/TENTATIVE_LESSONS.md",
+      "class": "current"
+    },
+    {
+      "path": "ctf_lab/WORKING_CONTEXT.history-2026-09-14.md",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/WORKING_CONTEXT.md",
+      "class": "current"
+    },
+    {
+      "path": "ctf_lab/battle_plans/SCHEMA.md",
+      "class": "current"
+    },
+    {
+      "path": "ctf_lab/best_practices.md",
+      "class": "current"
+    },
+    {
+      "path": "ctf_lab/ctf/beacon/VERSION_LOG.md",
+      "class": "current"
+    },
+    {
+      "path": "ctf_lab/ctf/beacon/plans/README.md",
+      "class": "current"
+    },
+    {
+      "path": "ctf_lab/docs/ctf-gameplay.md",
+      "class": "current"
+    },
+    {
+      "path": "ctf_lab/docs/designs/.firefight-brief.md",
+      "class": "current"
+    },
+    {
+      "path": "ctf_lab/docs/designs/.posts-cover-sightlines-brief.md",
+      "class": "current"
+    },
+    {
+      "path": "ctf_lab/docs/designs/beacon-posts-cover-sightlines-2026-07-28.html",
+      "class": "current"
+    },
+    {
+      "path": "ctf_lab/docs/designs/ctf-debug-sprite-overlay-design.md",
+      "class": "current"
+    },
+    {
+      "path": "ctf_lab/docs/designs/ctf-peek-fire-duck-design.md",
+      "class": "current"
+    },
+    {
+      "path": "ctf_lab/docs/designs/ctf-player-v1-design.html",
+      "class": "current"
+    },
+    {
+      "path": "ctf_lab/docs/designs/ctf-squad-play-design.md",
+      "class": "current"
+    },
+    {
+      "path": "ctf_lab/docs/opponent-plan-analysis.md",
+      "class": "current"
+    },
+    {
+      "path": "ctf_lab/docs/replay-firefight-detection.md",
+      "class": "current"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260714-103809.md",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260714-184706.md",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260715-121442.md",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260715-122706.md",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260721-091839.md",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260721-100403.md",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260721-151914.md",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260723-133822.md",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260727-184457.md",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260728-105121.md",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260729-115723.md",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260731-171800.md",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260803-162732.md",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260804-103458.md",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-145349.md",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-145605.md",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-145806.md",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-150034.md",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-155415.md",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/tools/plan_editor.html",
+      "class": "current"
+    },
+    {
+      "path": "ctf_lab/tools/poi_editor.html",
+      "class": "current"
+    },
+    {
+      "path": "ctf_lab/user_preferences.md",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/.claude/skills/lessons-review/SKILL.md",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/AGENTS.md",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/README.md",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/TENTATIVE_LESSONS.md",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/WORKING_CONTEXT.history-2026-09-14.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/WORKING_CONTEXT.md",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/best_practices.md",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/cheater/README.md",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/docs/axis-combo-system.md",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/docs/cue-n-woo-gameplay.md",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/docs/designs/mentalist-v4-sdk-rewrite.html",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/docs/designs/mentalist-v4-strategy-and-design.md",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/docs/designs/player-design.md",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/docs/designs/strategy-v4-from-tournament-signal.md",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/docs/directive-exploit-probe.html",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/docs/fingerprint-report.html",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/docs/league-infra-incident-2026-06-12.md",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/docs/probe-findings.md",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/docs/r273-report-analyst.html",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/docs/r273-report-narrative.html",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/docs/r275-report-analyst.html",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/docs/r275-report-narrative.html",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/docs/r275-report-strategist.html",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/docs/recent-rounds-analysis.html",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/docs/v7eval-analyst.html",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/README.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260615-094356.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260615-102844.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260615-180834.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260619-152316.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260626-090431.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260626-174438.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260630-104648.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-100549.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-112311.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-115109.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260704-160250.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260705-164951.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260705-165717.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260706-091124.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260707-093815.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260710-121139.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260710-123915.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-101429.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-102008.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-111426.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-123343.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-150034.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-155415.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-160135.md",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/mentalist/README.md",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/mentalist/VERSION_LOG.md",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/mentalist_v4/README.md",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/mentalist_v4/VERSION_LOG.md",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/probe/README.md",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/probe/probe_dashboard.html",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/recall_player/README.md",
+      "class": "current"
+    },
+    {
+      "path": "cue_n_woo_lab/recall_player/VERSION_LOG.md",
+      "class": "current"
+    },
+    {
+      "path": "docs/agent-memory/MEMORY.md",
+      "class": "historical"
+    },
+    {
+      "path": "docs/agent-memory/README.md",
+      "class": "historical"
+    },
+    {
+      "path": "docs/agent-memory/cnw-axis-combo-rewrite.md",
+      "class": "historical"
+    },
+    {
+      "path": "docs/agent-memory/cnw-bedrock-now-working.md",
+      "class": "historical"
+    },
+    {
+      "path": "docs/agent-memory/cnw-league-iam-hotfix.md",
+      "class": "historical"
+    },
+    {
+      "path": "docs/agent-memory/cnw-qualify-latency.md",
+      "class": "historical"
+    },
+    {
+      "path": "docs/agent-memory/cnw-recall-player-champion.md",
+      "class": "historical"
+    },
+    {
+      "path": "docs/agent-memory/cnw-superflood-champion.md",
+      "class": "historical"
+    },
+    {
+      "path": "docs/agent-memory/crewrift-always-2-imposter-evals.md",
+      "class": "historical"
+    },
+    {
+      "path": "docs/agent-memory/crewrift-living-docs-discipline.md",
+      "class": "historical"
+    },
+    {
+      "path": "docs/agent-memory/cue-n-woo-lab.md",
+      "class": "historical"
+    },
+    {
+      "path": "docs/capabilities.md",
+      "class": "current"
+    },
+    {
+      "path": "docs/coworld-community.md",
+      "class": "current"
+    },
+    {
+      "path": "docs/designs/2026-07-01-crewrift-strategy-report-design.md",
+      "class": "current"
+    },
+    {
+      "path": "docs/designs/2026-07-01-streaming-xreq-eval-pipeline-design.md",
+      "class": "current"
+    },
+    {
+      "path": "docs/getting-started.md",
+      "class": "current"
+    },
+    {
+      "path": "docs/learning.md",
+      "class": "current"
+    },
+    {
+      "path": "docs/player-engineering.md",
+      "class": "current"
+    },
+    {
+      "path": "docs/recon/player-lab-optimization-2026-09-14.md",
+      "class": "historical"
+    },
+    {
+      "path": "docs/reports/coworld-wow-combat-2026-07-24.md",
+      "class": "historical"
+    },
+    {
+      "path": "docs/reports/experimentation-guide-2026-07-14.md",
+      "class": "historical"
+    },
+    {
+      "path": "docs/reports/learning-evidence-2026-09-14/early-sessions.md",
+      "class": "historical"
+    },
+    {
+      "path": "docs/reports/learning-review-2026-09-14.md",
+      "class": "historical"
+    },
+    {
+      "path": "docs/reports/modernization-audit-2026-09-14.md",
+      "class": "historical"
+    },
+    {
+      "path": "docs/starter-prompt.md",
+      "class": "current"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-06-26-llm-gameplay-commander.md",
+      "class": "current"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-07-01-streaming-xreq-eval-pipeline.md",
+      "class": "current"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-07-02-chat-accuracy-effectiveness-plan.md",
+      "class": "current"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-07-05-chat-evidence-plan.md",
+      "class": "current"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-07-13-generalize-experiment-ab-skills-design.md",
+      "class": "current"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-07-13-vanilla-wow-lab-design.md",
+      "class": "current"
+    },
+    {
+      "path": "docs/tooling.md",
+      "class": "current"
+    },
+    {
+      "path": "emergant_lab/AGENTS.md",
+      "class": "current"
+    },
+    {
+      "path": "emergant_lab/README.md",
+      "class": "current"
+    },
+    {
+      "path": "emergant_lab/TENTATIVE_LESSONS.md",
+      "class": "current"
+    },
+    {
+      "path": "emergant_lab/WORKING_CONTEXT.history-2026-09-14.md",
+      "class": "historical"
+    },
+    {
+      "path": "emergant_lab/WORKING_CONTEXT.md",
+      "class": "current"
+    },
+    {
+      "path": "emergant_lab/best_practices.md",
+      "class": "current"
+    },
+    {
+      "path": "emergant_lab/docs/README.md",
+      "class": "current"
+    },
+    {
+      "path": "emergant_lab/docs/emerg-ant-gameplay.md",
+      "class": "current"
+    },
+    {
+      "path": "emergant_lab/docs/recon/emerg-ant-2026-08-20.md",
+      "class": "historical"
+    },
+    {
+      "path": "emergant_lab/emergant/stencil_ant_gv57_nim/README.md",
+      "class": "current"
+    },
+    {
+      "path": "emergant_lab/emergant/stencil_ant_gv57_nim/VERSION_LOG.md",
+      "class": "current"
+    },
+    {
+      "path": "emergant_lab/emergant/stencil_ant_nim/README.md",
+      "class": "current"
+    },
+    {
+      "path": "emergant_lab/emergant/stencil_ant_nim/VERSION_LOG.md",
+      "class": "current"
+    },
+    {
+      "path": "emergant_lab/lessons_archive/TENTATIVE_LESSONS-20260829-115719.md",
+      "class": "historical"
+    },
+    {
+      "path": "emergant_lab/user_preferences.md",
+      "class": "current"
+    },
+    {
+      "path": "heartleaf_lab/.claude/skills/heartleaf-event-warehouse/SKILL.md",
+      "class": "current"
+    },
+    {
+      "path": "heartleaf_lab/.claude/skills/lessons-review/SKILL.md",
+      "class": "current"
+    },
+    {
+      "path": "heartleaf_lab/AGENTS.md",
+      "class": "current"
+    },
+    {
+      "path": "heartleaf_lab/ISSUE-xreq-500-coworld-manifest-reporter.md",
+      "class": "current"
+    },
+    {
+      "path": "heartleaf_lab/README.md",
+      "class": "current"
+    },
+    {
+      "path": "heartleaf_lab/TENTATIVE_LESSONS.md",
+      "class": "current"
+    },
+    {
+      "path": "heartleaf_lab/WORKING_CONTEXT.history-2026-09-14.md",
+      "class": "historical"
+    },
+    {
+      "path": "heartleaf_lab/WORKING_CONTEXT.md",
+      "class": "current"
+    },
+    {
+      "path": "heartleaf_lab/best_practices.md",
+      "class": "current"
+    },
+    {
+      "path": "heartleaf_lab/cady/README.md",
+      "class": "current"
+    },
+    {
+      "path": "heartleaf_lab/cady/VERSION_LOG.md",
+      "class": "current"
+    },
+    {
+      "path": "heartleaf_lab/docs/chat-and-llm-coordination.md",
+      "class": "current"
+    },
+    {
+      "path": "heartleaf_lab/docs/designs/cady-player-design.html",
+      "class": "current"
+    },
+    {
+      "path": "heartleaf_lab/docs/designs/cady-player-design.md",
+      "class": "current"
+    },
+    {
+      "path": "heartleaf_lab/docs/designs/cady-social-llm-controller.md",
+      "class": "current"
+    },
+    {
+      "path": "heartleaf_lab/docs/heartleaf-gameplay.md",
+      "class": "current"
+    },
+    {
+      "path": "heartleaf_lab/docs/heartleaf-map.md",
+      "class": "current"
+    },
+    {
+      "path": "heartleaf_lab/docs/plans/2026-07-06-cady-player.md",
+      "class": "current"
+    },
+    {
+      "path": "heartleaf_lab/docs/plans/2026-07-06-cady-v2-baked-navigation.md",
+      "class": "current"
+    },
+    {
+      "path": "heartleaf_lab/docs/replay-tools.md",
+      "class": "current"
+    },
+    {
+      "path": "heartleaf_lab/docs/villager-dinner-attendance.md",
+      "class": "current"
+    },
+    {
+      "path": "heartleaf_lab/lessons_archive/TENTATIVE_LESSONS-20260714-202500.md",
+      "class": "historical"
+    },
+    {
+      "path": "heartleaf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260710-121624.md",
+      "class": "historical"
+    },
+    {
+      "path": "heartleaf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-101429.md",
+      "class": "historical"
+    },
+    {
+      "path": "heartleaf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-102008.md",
+      "class": "historical"
+    },
+    {
+      "path": "heartleaf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-111426.md",
+      "class": "historical"
+    },
+    {
+      "path": "heartleaf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-123343.md",
+      "class": "historical"
+    },
+    {
+      "path": "heartleaf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-150034.md",
+      "class": "historical"
+    },
+    {
+      "path": "heartleaf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-155415.md",
+      "class": "historical"
+    },
+    {
+      "path": "heartleaf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-160135.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/.claude/skills/lessons-review/SKILL.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/AGENTS.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/README.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/TENTATIVE_LESSONS.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/WORKING_CONTEXT.history-2026-09-14.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/WORKING_CONTEXT.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/best_practices.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/docs/README.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/docs/analysis-tools.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/docs/audits/2026-08-05-documentation-audit.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/docs/audits/2026-08-06-game-contract-audit.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/docs/audits/2026-08-29-documentation-audit.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/docs/designs/.nav-layer3-planner-brief.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/docs/designs/nav-layer2-topology-proposal-2026-08-11.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/docs/designs/nav-layer3-planner-2026-08-12.html",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/docs/designs/nav-layer4-intent-contract-2026-08-13.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/docs/designs/nav-layer5-follower-2026-08-14.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/docs/designs/nav-post-resourcing-v63-2026-08-12.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/docs/designs/nav-rework-sketch-2026-08-11.html",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/docs/designs/nav-rework-sketch-2026-08-11.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/docs/designs/nav-v67-post-atlas-2026-08-14.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/docs/designs/nav-wide-post-pool-v64-2026-08-12.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/docs/designs/rl-policy.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/docs/designs/spray-avoidance-v59-design.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/docs/designs/stencil-nim-port.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/docs/designs/stencil-v1-design.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/docs/designs/strategy-idle-aim-intent-2026-08-29.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/docs/designs/strategy-play-calling-shell-2026-08-29.html",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/docs/designs/strategy-play-calling-shell-2026-08-29.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/docs/paintbot-gameplay.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/docs/recon/paintbot-2026-08-03.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/recon/paintbot-gv41-hazards-2026-08-07.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/recon/threat-axis-idle-aim-2026-08-29.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/ctf-season-two-framework-2026-09-01.html",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/ctf-season-two-framework-2026-09-01.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/nav-init-profile-2026-08-03.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/paintbot-s2-league-state-2026-09-02.html",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/paintbot-s2-league-state-2026-09-02.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/rl-action-alignment-investigation-2026-08-06.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/rl-action-change-weighting-2026-08-07.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/rl-bot-semantic-length-experiment.html",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/rl-exhaustive-baseline-2026-08-14.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/rl-initial-sft-2026-08-06.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/rl-mettabox1-sft-2026-08-07.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/rl-observation-length-experiment.html",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/rl-transition-temporal-2x2-2026-08-07.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/stencil-aim-accuracy-2026-08-04.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/stencil-defensive-mechanics-2026-08-04.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/stencil-navigation-deep-dive-2026-08-08.html",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/stencil-navigation-deep-dive-2026-08-08.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/stencil-policy-loop-2026-08-29.html",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/stencil-policy-loop-2026-08-29.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/stencil-squad-consensus-retrospective-2026-08-06.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/stencil-v49-squad-consensus-experiment.html",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/stencil-v50-live-consensus-experiment.html",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/stencil-v50-squad-consensus-experiment.html",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/stencil-v51-live-consensus-experiment.html",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/stencil-v52-timeout-rejoin-experiment.html",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/stencil-v53-refresh-rejoin-experiment.html",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/stencil-v54-gv40-aim-validation-2026-08-06.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/stencil-v54-large-field-r385-2026-08-06.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/stencil-v54-top-champions-r383-2026-08-06.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/reports/stencil-v55-early-defense-r399-2026-08-06.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/docs/stencil-communication.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/docs/tournament-like-experience-requests.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/infra/campaign_order_controller/README.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260804-103458.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260806-105051.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260807-155812.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260807-202957.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260808-122020.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260811-142814.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260811-152215.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260811-184223.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260820-133825.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260829-131914.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260901-163555.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260902-110000.md",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/paintbot/rl/README.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/paintbot/stencil_nim/VERSION_LOG.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/tools/ctf_probes/README.md",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/tools/viewer.html",
+      "class": "current"
+    },
+    {
+      "path": "paintbot_lab/user_preferences.md",
+      "class": "current"
+    },
+    {
+      "path": "player-build.md",
+      "class": "current"
+    },
+    {
+      "path": "proxywar_lab/AGENTS.md",
+      "class": "current"
+    },
+    {
+      "path": "proxywar_lab/README.md",
+      "class": "current"
+    },
+    {
+      "path": "proxywar_lab/TENTATIVE_LESSONS.md",
+      "class": "current"
+    },
+    {
+      "path": "proxywar_lab/WORKING_CONTEXT.history-2026-09-14.md",
+      "class": "historical"
+    },
+    {
+      "path": "proxywar_lab/WORKING_CONTEXT.md",
+      "class": "current"
+    },
+    {
+      "path": "proxywar_lab/docs/README.md",
+      "class": "current"
+    },
+    {
+      "path": "proxywar_lab/docs/recon/proxywar-2026-08-11.md",
+      "class": "historical"
+    },
+    {
+      "path": "proxywar_lab/lessons_archive/TENTATIVE_LESSONS-20260829-115720.md",
+      "class": "historical"
+    },
+    {
+      "path": "sugarscape_lab/AGENTS.md",
+      "class": "current"
+    },
+    {
+      "path": "sugarscape_lab/README.md",
+      "class": "current"
+    },
+    {
+      "path": "sugarscape_lab/TENTATIVE_LESSONS.md",
+      "class": "current"
+    },
+    {
+      "path": "sugarscape_lab/WORKING_CONTEXT.history-2026-09-14.md",
+      "class": "historical"
+    },
+    {
+      "path": "sugarscape_lab/WORKING_CONTEXT.md",
+      "class": "current"
+    },
+    {
+      "path": "sugarscape_lab/evals/v1-results.md",
+      "class": "current"
+    },
+    {
+      "path": "sugarscape_lab/policies/abundance/README.md",
+      "class": "current"
+    },
+    {
+      "path": "sugarscape_lab/policies/health/README.md",
+      "class": "current"
+    },
+    {
+      "path": "sugarscape_lab/policies/longevity/README.md",
+      "class": "current"
+    },
+    {
+      "path": "sugarscape_lab/version_log.md",
+      "class": "historical"
+    },
+    {
+      "path": "user_preferences.md",
+      "class": "current"
+    },
+    {
+      "path": "vanilla_wow_lab/.claude/skills/lessons-review/SKILL.md",
+      "class": "current"
+    },
+    {
+      "path": "vanilla_wow_lab/AGENTS.md",
+      "class": "current"
+    },
+    {
+      "path": "vanilla_wow_lab/README.md",
+      "class": "current"
+    },
+    {
+      "path": "vanilla_wow_lab/TENTATIVE_LESSONS.md",
+      "class": "current"
+    },
+    {
+      "path": "vanilla_wow_lab/WORKING_CONTEXT.history-2026-09-14.md",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/WORKING_CONTEXT.md",
+      "class": "current"
+    },
+    {
+      "path": "vanilla_wow_lab/best_practices.md",
+      "class": "current"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/designs/wowborg-nav-v2.md",
+      "class": "current"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/designs/wowborg-observation-action-spaces.html",
+      "class": "current"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/designs/wowborg-player-design.md",
+      "class": "current"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/designs/wowborg-t1-combat-modules.md",
+      "class": "current"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/designs/wowborg-v2-shim-adoption.md",
+      "class": "current"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/plans/2026-07-13-wowborg-skeleton.md",
+      "class": "current"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-audit-codex-2026-07-22.md",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/navigation-obs-actions-2026-07-14.md",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/player-contract-0131-2026-07-21.md",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/replay-tooling-2026-07-15.md",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/traverse-hazard-routing-2026-08-08.md",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/smooth-movement-root-cause-preregistration-2026-08-06.md",
+      "class": "current"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/status-archive.md",
+      "class": "current"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/vanilla-wow-gameplay.md",
+      "class": "current"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/vanilla-wow-player-contract.md",
+      "class": "current"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/vanilla-wow-protocol.md",
+      "class": "current"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/vanilla-wow-replay-analysis.md",
+      "class": "current"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/vanilla-wow-rfc-roles.md",
+      "class": "current"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/vanilla-wow-strategy-guide.md",
+      "class": "current"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/wowborg-history-profile-2026-08-06.md",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/lessons_archive/TENTATIVE_LESSONS-20260714-164518.md",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/lessons_archive/TENTATIVE_LESSONS-20260721-092302.md",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/lessons_archive/TENTATIVE_LESSONS-20260724-105533.md",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/lessons_archive/TENTATIVE_LESSONS-20260731-171800.md",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/lessons_archive/TENTATIVE_LESSONS-20260829-115720.md",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-160135.md",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/wowborg/README.md",
+      "class": "current"
+    },
+    {
+      "path": "vanilla_wow_lab/wowborg/VERSION_LOG.md",
+      "class": "current"
+    }
+  ],
+  "broken_targets": [
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260714-103646.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260714-103650.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260714-103800.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260714-103950.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260714-105814.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260714-164518.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260714-184706.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260715-120931.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260715-122706.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260721-091839.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260721-092302.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260721-100403.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260722-163652.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260724-105533.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260728-101539.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260729-154146.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/TENTATIVE_LESSONS-20260820-133825.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260612-150445.md",
+      "target": "best_practices.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260612-150445.md",
+      "target": "best_practices.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260612-150445.md",
+      "target": "../best_practices.md",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260613-103435.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260615-102844.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260624-161856.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260625-130626.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260626-090431.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260626-094417.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260626-174438.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260626-232231.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260630-104648.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260630-232348.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-100549.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-111945.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-112311.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-113134.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-115109.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-123452.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-125630.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-151640.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260702-092852.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260702-161854.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260702-170524.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260704-160250.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260705-164951.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260705-165717.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260705-225823.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260706-091124.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260706-105751.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260706-114032.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260707-093815.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260709-114152.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260710-121139.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260710-121624.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-102008.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-150034.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-155414.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "crewrift_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-160135.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260714-103809.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260714-184706.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260715-121442.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260715-122706.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260721-091839.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260721-100403.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260721-151914.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260723-133822.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260727-184457.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260728-105121.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260729-115723.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260731-171800.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260803-162732.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/TENTATIVE_LESSONS-20260804-103458.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-145349.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-145605.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-145806.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-150034.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "ctf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-155415.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260615-094356.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260615-102844.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260615-180834.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260619-152316.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260626-090431.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260626-174438.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260630-104648.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-100549.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-112311.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260701-115109.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260704-160250.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260705-164951.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260705-165717.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260706-091124.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260707-093815.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260710-121139.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260710-123915.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-101429.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-102008.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-111426.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-123343.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-150034.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-155415.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "cue_n_woo_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-160135.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "heartleaf_lab/lessons_archive/TENTATIVE_LESSONS-20260714-202500.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "heartleaf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260710-121624.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "heartleaf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-101429.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "heartleaf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-102008.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "heartleaf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-111426.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "heartleaf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-123343.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "heartleaf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-150034.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "heartleaf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-155415.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "heartleaf_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-160135.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260807-155812.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260807-202957.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260808-122020.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260811-142814.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260811-152215.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260811-184223.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260820-133825.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260829-131914.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260901-163555.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "paintbot_lab/lessons_archive/TENTATIVE_LESSONS-20260902-110000.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "proxywar_lab/lessons_archive/TENTATIVE_LESSONS-20260829-115720.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/policies/world_race.py:160",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/policies/world_race.py:219",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/policies/world_race.py:239",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/docs/designs/wowborg-nav-v2.md:178",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/route.py:190",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/route.py:282",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/route.py:297",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/route.py:368",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/world_model.py:54",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/world_model.py:62",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/journey.py:73",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/route.py:153",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/route.py:164",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/route.py:190",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/local.py:22",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/route.py:235",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/world_model.py:67",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/journey.py:131",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/tests/fake_nav_bridge.py:107",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/tests/fake_nav_bridge.py:225",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/local.py:107",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/local.py:125",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/local.py:153",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/bridge.py:564",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/bridge.py:88",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/route.py:395",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/route.py:411",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/route.py:74",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/route.py:186",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/route.py:226",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/policies/world_race.py:189",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/journey.py:191",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/policies/world_race.py:276",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/tests/fake_nav_bridge.py:56",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/tests/fake_nav_bridge.py:169",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/tests/test_nav.py:28",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/bridge.py:427",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/world_model.py:110",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/world_model.py:119",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/policies/world_race.py:159",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/journey.py:143",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/wowborg/nav/journey.py:108",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/docs/designs/wowborg-nav-v2.md:3",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/docs/recon/nav-v2-audit-codex-2026-07-23.md",
+      "target": "vanilla_wow_lab/docs/designs/wowborg-nav-v2.md:46",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/lessons_archive/TENTATIVE_LESSONS-20260714-164518.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/lessons_archive/TENTATIVE_LESSONS-20260721-092302.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/lessons_archive/TENTATIVE_LESSONS-20260724-105533.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/lessons_archive/TENTATIVE_LESSONS-20260731-171800.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/lessons_archive/TENTATIVE_LESSONS-20260829-115720.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    },
+    {
+      "path": "vanilla_wow_lab/lessons_archive/reviewed/TENTATIVE_LESSONS-20260713-160135.md",
+      "target": "lessons_archive/",
+      "class": "historical"
+    }
+  ],
+  "limits": "Local file targets only; no anchor, remote URL, command or semantic verification."
+}

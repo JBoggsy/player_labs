@@ -1,7 +1,7 @@
 # Suspicion learning — fitting the evidence model from scraped replays
 
 **Status:** proposed design (2026-06-12), not yet built. Companion to
-[`suspicion.md`](suspicion.md), which documents the *current* hand-tuned Bayesian
+[`suspicion.md`](../suspicion.md), which documents the *current* hand-tuned Bayesian
 model this pipeline is designed to replace the weights of. Read that first.
 
 **The problem, in one paragraph.** Every suspicion weight in `strategy/suspicion.py`

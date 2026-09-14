@@ -37,7 +37,9 @@ Player code must read the exact `own aim <brads>` marker. The self soldier has
 only 16 visual rotations, so deriving aim from its sprite discards most of the
 turret's 256 legal headings and makes the controller act on false state.
 
-## Variants (deployed manifest, verified live)
+## Variant snapshot and campaign seating
+
+This section combines historical manifest observations with the later campaign-seating correction; re-resolve live versions before evaluation. The [campaign evaluation guide](tournament-like-experience-requests.md) is authoritative for roster construction.
 
 The manifest determines seats and teams; the campaign commissioner separately
 determines which policies occupy those seats. Normal invasions use four
@@ -49,9 +51,9 @@ separate concerns, so do not use that value as terrain identity.
 
 | variant | seats | teams | map | scoring | maxTicks | vision cone | agents per policy |
 |---|---|---|---|---|---|---|---|
-| `1v1` | 16 | 2 | generated | pot +2/-2 | 5000 | ±60° | campaign mode `2v2`; normally 7-seat captain + 1-seat ally per team |
+| `1v1` | 16 | 2 | generated | pot +2/-2 | 5000 | ±60° | mode-dependent; see campaign seating guide |
 | `default` | 16 | 2 | generated | classic +1/-1 | 5000 | ±60° | campaign mode `2v2` if used |
-| `2v2` | 16 | 2 | generated (size drawn) | pot **+2/-2** | 5000 | ±60° | normally 7-seat captain + 1-seat ally per team |
+| `2v2` | 16 | 2 | generated (size drawn) | pot **+2/-2** | 5000 | ±60° | mode-dependent; see campaign seating guide |
 | `4ffa` | 16 | 4 | generated (size drawn) | pot **+4/-1/-1/-1** | 5000 | ±60° | 4 (one policy per team) |
 | `4ffa8` | 32 | 4 | generated, manifest defaults giant | pot +4/-1/-1/-1 | **7500** | **±45°** | 8 (one policy per team) |
 
@@ -62,11 +64,7 @@ separate concerns, so do not use that value as terrain identity.
 - **The campaign, not the disabled ladder, selects contested cells** (next
   section). Its current board uses `1v1`, `2v2`, and `4ffa`; the disabled
   ladder's older four-entrant 3:1:1 rotation is not the live sampling model.
-- **Normal campaign assignment:** on a 16-seat two-team map, each captain owns
-  seven seats and its ally owns the team's second seat: global slots 0/2 are
-  red captain/ally, 1/3 blue captain/ally, and later same-color slots repeat
-  the captain. A paired seating swaps captains across colors while allies stay
-  fixed. Four-team modes give one complete color to each of four policies.
+- **Campaign assignment is mode-dependent.** The 2026-08-11 commissioner study superseded the old 7+1 assignment: `1v1` assigns one policy per team, while `2v2` divides each team's ordered seats between captain and ally (4+4 on eight-seat teams). Four-team modes assign a complete team per policy. Read the board cell's mode and verify created participant positions; variant names do not determine roster composition. See the campaign evaluation guide for paired seating and later board changes.
 - Time-limit draw pays **-1 to every player** (GV21); mutual wipe = 0/0.
 
 ## The GV41 endgame barrage (new in 0.7.210 — changes how games end)

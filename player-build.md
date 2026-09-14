@@ -1,14 +1,12 @@
 # Building a Coworld player image
 
-What **any** Coworld player image must be, and how to build, test, and ship one. The
-image **contract is game-agnostic** — identical for every Coworld; only the *protocol*
-your code speaks over the websocket is game-specific. (Verified against coworld
-0.1.20 / metta `main`: `packages/coworld/.../docs/roles/PLAYER.md`, `runner/runner.py`.)
+This page describes **container policies**. The current CLI also accepts game-hosted files/directories through `coworld upload-policy --file`; that format is defined by the selected game. Start with the lab's build guide and [build/upload skill](.claude/skills/build-and-upload/SKILL.md).
+
+The container contract below is a historical baseline (originally verified with coworld 0.1.20). Verify the game's current runner/manifest before relying on launch details, especially multi-agent assignment and legacy environment aliases. CLI upload modes were checked with coworld 0.1.47 on 2026-09-14. Do not infer live compatibility from this document alone.
 
 ## The contract — what the runner requires of your image
 
-A player is a short-lived **linux/amd64** container the runner starts **once per
-slot**. It must:
+A container policy runs as a short-lived **linux/amd64** process. Its exact seat/agent assignment comes from the game and runner contract. It must:
 
 1. **Read `COWORLD_PLAYER_WS_URL`** from the environment — a ready-to-use
    `ws://<game-host>:8080/player?slot=<N>&token=<T>`. (The runner also sets
@@ -18,8 +16,7 @@ slot**. It must:
    (`game.protocols.player` in the manifest) — receive observations, emit actions.
    **This is the one game-specific piece** (e.g. Crewrift's binary Sprite-v1 vs a
    JSON game).
-3. **Act only for its own slot** — the runner hands each container its own slot/token;
-   never drive another slot.
+3. **Act only for its assigned agents** — follow the game/runner assignment rather than guessing from container count.
 4. **Exit cleanly when the episode ends.**
 
 Plus, for the image itself:

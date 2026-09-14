@@ -55,12 +55,7 @@ new ones (this also makes re-running `build_warehouse.py` after a partial
 failure cheap). A version-skewed `--expand-replay` is warned after the FIRST
 batch, minutes in.
 
-**Pulling opponents' episodes (the normal case)?** Both scripts pass through `--elevated` to
-`fetch_artifacts.py` — needed for another player's artifacts since Softmax team members are
-external-by-default now (metta PR #17028). Omit it and those episodes' replays 403 with no error
-surfaced here: `find_episode_dirs` only counts a dir with a `replay.json.z` present, so 403'd
-episodes are just silently absent from the warehouse (fewer episodes than the xreq/round actually
-had — check `episodes_total` against what you expected, not just `trace_warning`).
+Use normal participant access. The downloader rejects elevated access; report missing/private opponent evidence as a coverage limit.
 
 ### ⚠️ The one hard part — `expand_replay` version coupling
 

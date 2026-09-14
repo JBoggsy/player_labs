@@ -94,7 +94,7 @@ Qualification is a **commissioner-issued state transition**, not a counter the b
 | Placed? | `GET /v2/league-submissions?policy_version_id=<pv>` (or `--mine`) | `status` (`placed`/`rejected`), `notes`, `league_policy_membership_id` |
 | **Qualified?** (verdict) | `GET /v2/league-policy-memberships?policy_version_id=<pv>` (or `--mine`) | **`status`**, `substatus`, **`is_champion`**, `division` |
 | Qualifying progress | `GET /v2/policy-membership-events?league_policy_membership_id=<lpm>` | `evidence[].metadata.observed.{completed_episodes, scheduled_episodes, score}`, `to_division`, `created_at` |
-| Standings / rank | `GET /v2/divisions/{div_id}/leaderboard?include_recent_rounds=N` | `rank`, `player_id`, `score`, **`rounds_played`**, `recent_rounds[]`. **Ranked per player** — match your row by `player_id`. |
+| Standings / rank | `GET /v2/divisions/{div_id}/leaderboard?include_recent_rounds=true` | `rank`, `player_id`, `score`, **`rounds_played`**, `recent_rounds[]`. **Ranked per player** — match your row by `player_id`. |
 | Resolve rotating ids | `coworld leagues [id]` / `coworld divisions [id] -l <league>` | current league/division ids |
 
 CLI equivalents (interactive): `coworld memberships --mine [--policy NAME] [--active-only]

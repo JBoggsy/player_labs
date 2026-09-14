@@ -32,5 +32,7 @@ replay (GV50 replays need a pre-GV51 checkout).
 | `verify_round.sh` | one-shot: round id → episodes → first replay → `move_probe` → agent-3 log grep for names/huddle (expects the probe binary in the session scratchpad; adjust the path) |
 
 Replays: `uv run coworld episodes -r <round_id> --json` (the round **id**, not
-the number) gives `replay_url`; logs need `uv run coworld --elevated
+the number) gives `replay_url`; logs need `uv run coworld
 episode-logs <ereq> --game|--agent N -d <dir>`.
+
+**Access contract (2026-09-14):** use normal participant access only. Older elevated-access recipes are superseded; private opponent evidence remains unavailable.

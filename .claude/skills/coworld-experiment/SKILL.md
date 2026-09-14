@@ -71,7 +71,7 @@ read against.
 Loop Step 1 ↔ Step 2 until the experiment is **valid** (differing, falsifiable predictions; confounds
 controlled) and **cheap** (the least instrument that decides it). Only then run.
 
-## Step 4 — Present the design for go-ahead (always)
+## Step 4 — Present the design and check scope
 
 Render the design as a clean HTML report with `scripts/experiment_report.py` (pass
 `--eyebrow "<Game> · Experiment design"`) — the hypothesis, what's being changed, the **instrument**,
@@ -79,9 +79,10 @@ the **if-true vs if-false predictions side by side**, and the decision rule. **A
 the content needs it** — it's a starting point, not a form. **Look at the rendered page** before
 showing it.
 
-Show it to the human and **get explicit go-ahead before running** — especially for an experience
-request, which spends a hosted run. Even for a free existing-data query, present the design first: the
-point is the human sees *what's being tested and why*, and that the predictions actually differ.
+Show the design before running. **Proceed within the already-authorized objective**:
+queries and targeted experience requests do not need repeated permission. Ask only
+when the design requires a new strategic direction, material scope/budget decision,
+or a separately gated action. The root AGENTS authorization rule governs all bindings.
 
 ## Step 5 — Run it
 
@@ -104,8 +105,7 @@ Read the result against the **pre-committed** predictions (no post-hoc goalpost-
 
 - **Falsifiability is non-negotiable** — no if-true/if-false split, no run.
 - **Commit the decision rule before running** — post-hoc thresholds are how you fool yourself.
-- **One variable, same tree** — vary exactly one thing; for a designed run, build the baseline by
-  git-stashing the candidate change so both arms share everything else (→ `coworld-ab`).
+- **One variable, same tree** — vary exactly one thing; for a designed run, build both arms from isolated worktrees or exact commits so unrelated user changes stay untouched and both arms share everything else (→ `coworld-ab`).
 - **The mechanism can be backwards** — design so a result can refute the *direction*, not just
   presence. A refuted (or inverted) hypothesis is a real, valuable result.
 - **Prefer existing data** — a query refutes most hunches for free; spend a new run only when you must.

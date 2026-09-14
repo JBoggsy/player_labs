@@ -9,7 +9,7 @@ The primary eval instrument: a **hosted batch of episodes you define and the ser
 a **target** (game / league / division), a **roster** (which policies play, in which seats and
 roles), and a **count**; POST it; poll the `xreq_…` to completion; then pull the episodes with the
 `coworld-episode-artifacts` skill and analyze. They run in parallel on Softmax infra and are
-currently free — use them liberally, but **target them to the question.**
+potentially paid — **target them to the question** and use local runs for self-play.
 
 **Announce at start:** "Setting up a Coworld experience request. I'll frame the question, resolve the
 live IDs, compose the request, validate it against the live schema, POST it, and stream the results in the background."
@@ -106,7 +106,7 @@ uv run python "$S" create /tmp/req.json                  # POST for real -> prin
 the next stage.** Immediately after `create` returns the `xreq_…`, launch the
 streaming pipeline **in the background** and let all stages overlap:
 
-- **Crewrift deep-dig (warehouse wanted — the common case):** hand the fresh
+- **Game-specific streaming integration (when available):** hand the fresh
   `xreq_…` id(s) to the `crewrift-event-warehouse` skill's `stream_eval.py`
   (see that SKILL.md). It watches the request, pulls each episode's artifacts
   as it completes, and folds them into the event warehouse in incremental
@@ -116,15 +116,12 @@ streaming pipeline **in the background** and let all stages overlap:
 
 Both are crash-safe: rerun the same command and it resumes from disk.
 
-**Pulling artifacts for opponents' policies (the normal case in a field eval)?** Add `--elevated`
-to `fetch_artifacts.py`/`stream_eval.py`/`build_warehouse.py`/`xp_dashboard.py` — Softmax team
-members are external-by-default now (metta PR #17028), so another player's `results`/`replay`/
-`policy-logs` 403 without it. See the `coworld-episode-artifacts` skill's 403 note.
+Use normal participant access. Missing/private opponent artifacts remain an explicit coverage limit; do not use elevated privileges for competitive intelligence.
 
 For a quick status glance (or several requests at once), the old serial tools
 remain: `uv run python "$S" monitor xreq_…` polls one request;
 `scripts/xp_dashboard.py xreq_… [...]` serves the browser dashboard
-(completion/ETA, win-rate leaderboard overall/crew/imposter, heatmap, score
+(completion/ETA, descriptive per-seat win-rate leaderboard, heatmap, score
 strips; ops-filtered — watch the "ops-filtered" count). Serial
 monitor → fetch → build is the **fallback**, not the default.
 

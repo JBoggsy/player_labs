@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.12, pydantic, `players.player_sdk` (LLM helpers + `OverwriteBuffer` + `AgentRuntime`), Bedrock Haiku 4.5, pytest.
 
-**Full design:** [`crewrift_lab/crewrift/crewborg/docs/designs/llm-commander.md`](../../../crewrift_lab/crewrift/crewborg/docs/designs/llm-commander.md) (summary in `design.md` §10.6).
+**Historical plan:** the original design path `crewrift_lab/crewrift/crewborg/docs/designs/llm-commander.md` is no longer present. Use the [current commander reference](../../../crewrift_lab/crewrift/crewborg/docs/commander.md) for implemented behavior; it is not a replacement copy of the old design.
 
 ## Global Constraints
 

@@ -214,9 +214,9 @@ unseen era:
 MANIFEST=paintbot_lab/paintbot/rl/configs/historical-cross-era-v1.json
 RUN=paintbot_lab/paintbot/rl/data/runs/historical-cross-era-v1
 
-# Requires `softmax login`. Add --elevated when reading other owners' episodes.
+# Requires `softmax login`; use only normally accessible episodes.
 uv run python paintbot_lab/paintbot/rl/pipeline.py download \
-  --manifest "$MANIFEST" --workspace "$RUN" --elevated
+  --manifest "$MANIFEST" --workspace "$RUN"
 uv run python paintbot_lab/paintbot/rl/pipeline.py prepare \
   --manifest "$MANIFEST" --workspace "$RUN"
 uv run python paintbot_lab/paintbot/rl/pipeline.py bundle \
@@ -437,3 +437,5 @@ The length experiment covered only labeled entities and geometry. The vertical
 slice now decodes the walkability payload through a separate, configurable map
 encoder; its architecture and token budget are baseline choices, not settled
 experimental conclusions.
+
+**Access contract (2026-09-14):** use normal participant access only. Older elevated-access recipes are superseded; private opponent evidence remains unavailable.

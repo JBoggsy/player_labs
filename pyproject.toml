@@ -14,8 +14,9 @@ dependencies = [
     # install it from coworld-tools' GitHub source TARBALL (see [tool.uv.sources]).
     # Tarball (not a git source) on purpose: a GitHub archive excludes submodules, which
     # sidesteps coworld-tools' broken `players/users/relh/co-gas` submodule that fails
-    # uv's recursive git clone (coworld-tools issue #13). This matches what the hosted
-    # image builds against (Dockerfile + tools/versions.env PLAYERS_SDK_REF). To adopt a
+    # uv's recursive git clone (coworld-tools issue #13). Local and per-player image
+    # SDK pins can differ; inspect each Dockerfile and tools/versions.env before
+    # claiming parity. To adopt a
     # newer SDK, bump the tarball SHA below to coworld-tools' current `main`
     # (`git ls-remote https://github.com/Metta-AI/coworld-tools main`) and `uv lock`.
     # `[bedrock]` pulls boto3 to match the hosted image's `players[bedrock]` install — the

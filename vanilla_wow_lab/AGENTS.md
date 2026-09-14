@@ -117,22 +117,14 @@ need — mirroring the other labs' `docs/`.
 
 ## Skills
 
-**No Vanilla-WoW-specific skills exist yet** beyond the lessons-lifecycle skill
-(`/lessons-review`, in `vanilla_wow_lab/.claude/skills/`). The loop's **game-agnostic** halves
-(experience requests, artifact download, local run, build-and-upload, policy lifecycle) live at
-the **lab root** (`../.claude/skills/`, indexed in [`../AGENTS.md`](../AGENTS.md)) — use those
-to *create*, *pull*, and *ship* episodes once the game is live.
+Game-specific analysis is implemented in [tools](tools/), even where it has no separate skill wrapper:
 
-Game-specific tooling belongs **here** (`vanilla_wow_lab/.claude/skills/`), not at the root.
-The gaps worth filling first (once real episodes exist):
+- [wow_survey.py](tools/wow_survey.py): batch HTML plus machine-readable metrics from episode artifacts and CWREPLAY packets.
+- [cwreplay.py](tools/cwreplay.py): replay decoding.
+- [movement_report.py](tools/movement_report.py), [nav_report.py](tools/nav_report.py): movement/navigation evidence.
+- [wow_batch_profiler.py](tools/wow_batch_profiler.py): batch profiling.
 
-- A **Vanilla-WoW survey/report** skill — turn a batch of RFC episodes into a dense report on
-  clear rate, per-boss progress, clear time, wipe locations, and XP accrual (built on the
-  reporter's `recap`/`events`/`stats` + the diagnoser's `missing_bosses`), analogous to
-  `crewrift-survey`.
-- A **replay-reading** helper for the `CWREPLAY` v4 format (the game repo ships expander
-  tooling; a lab-side wrapper over it, like `crewrift_lab`'s `expand_replay`, is the natural
-  form).
+Use each tool's `--help` and match its replay contract to the episode. Packet movement/login metrics are not proof of competitive objective completion. Root skills handle request creation, downloads, upload and separately gated submission; the [capability map](../docs/capabilities.md) connects them.
 
 ## Vanilla WoW best practices
 

@@ -34,8 +34,7 @@ Usage (auth from `softmax login`; run inside `uv run`):
     uv run python policy_lifecycle.py monitor  --name crewborg
     uv run python policy_lifecycle.py monitor  --name crewborg --watch   # background it
 
-Set COWORLD_ELEVATED=1 to send X-Use-Elevated-Privileges (Softmax team members only;
-needed to see private/team-gated leagues, e.g. Vanilla Wow — mirrors `coworld --elevated`).
+Uses ordinary participant access. COWORLD_ELEVATED is rejected for lab analysis.
 
 Routes (Observatory gateway): /stats/policy-versions, /v2/league-submissions,
 /v2/league-policy-memberships, /v2/policy-membership-events, /v2/divisions/{id}/leaderboard.
@@ -72,12 +71,8 @@ def client() -> httpx.Client:
     if not tok:
         sys.exit("Not authenticated. Run: uv run softmax login")
     headers = {"X-Auth-Token": tok}
-    # Private/team-gated leagues (e.g. the Vanilla Wow league) are invisible to
-    # unelevated requests under the opt-in elevation model (metta #17028). Set
-    # COWORLD_ELEVATED=1 to send the team-access header, mirroring `coworld --elevated`.
-    # The header is a no-op for non-team credentials; it never elevates a player token.
     if os.environ.get("COWORLD_ELEVATED", "").lower() in {"1", "true", "yes"}:
-        headers["X-Use-Elevated-Privileges"] = "true"
+        raise ValueError("Elevated access is not permitted for player-lab analysis.")
     return httpx.Client(base_url=api.rstrip("/") + "/observatory",
                         headers=headers, timeout=60.0, follow_redirects=True)
 
@@ -179,7 +174,7 @@ def render(c: httpx.Client, name: str) -> tuple[str, bool]:
             pid = (m.get("player") or {}).get("id") or m.get("player_id")
             if div_id:
                 try:
-                    board = rows(get(c, f"/v2/divisions/{div_id}/leaderboard", include_recent_rounds=5))
+                    board = rows(get(c, f"/v2/divisions/{div_id}/leaderboard", include_recent_rounds=True))
                     hit = next((e for e in board if e.get("player_id") == pid), None)
                     if hit:
                         print(f"      standings: rank {hit.get('rank')}  score {hit.get('score')}  "

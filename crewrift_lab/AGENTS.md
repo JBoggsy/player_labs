@@ -114,7 +114,7 @@ Crewrift-specific skills live here in `.claude/skills/`:
   optional augmentation of the **direction** step. Pairs with `crewrift-survey` (signals in),
   `crewrift-event-warehouse` (test cheaply), and `crewrift-experiment` (run one).
 - **`crewrift-experiment`** — design + run **one** falsifiable experiment for a single
-  hypothesis (design ↔ adversarial-critique ↔ run); **gates on the human before running**. The
+  hypothesis (design ↔ adversarial-critique ↔ run); **runs within the root authorization rules**. The
   **crewrift binding** of the root **`coworld-experiment`** method: it supplies crewrift's
   instruments (event warehouse / `crewrift-ab` / trace-logs) and examples, and uses the root
   `experiment_report.py` renderer. Usable standalone ("it might be X — let's test it").
@@ -222,3 +222,9 @@ Docker-only with no credentials**.
   Upstream: `Metta-AI/players` (`players/crewrift/suspectra`). Builds in-lab via
   `tools/build_player.sh suspectra` (same Nim path as notsus).
 </content>
+
+## Additional analysis entry points
+
+- [Field study](.claude/skills/crewrift-field-study/SKILL.md) for field-wide behavior investigation.
+- [Specialist tools](tools/), [suspicion lab](suspicion_lab/README.md), [ranking analysis](ranking_analysis/README.md).
+- [Shared capability map](../docs/capabilities.md) and [learning lifecycle](../docs/learning.md).

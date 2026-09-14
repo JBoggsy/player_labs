@@ -126,15 +126,15 @@
   </section>
 
   <section>
-    <h2>Win-rate by player &amp; policy, split by role</h2>
+    <h2>Descriptive per-seat win rate by player &amp; policy</h2>
     <table id="lb"><thead><tr>
-      <th>Player · policy:v</th><th>games</th><th>win %</th>
-      <th>crew win % (n)</th><th>imposter win % (n)</th><th>score μ</th>
+      <th>Player · policy:v</th><th>seat appearances</th><th>win %</th>
+      <th>score μ</th>
     </tr></thead><tbody></tbody></table>
   </section>
 
   <section>
-    <h2>Win-rate heatmap — overall · crew · imposter</h2>
+    <h2>Overall per-seat win-rate heatmap</h2>
     <div class="hm" id="heat"></div>
     <div class="legend"><span>lower</span><span class="scale"></span><span>higher win %</span></div>
   </section>
@@ -185,12 +185,12 @@ function render(d){
 
   // per-request cards
   document.getElementById("reqs").innerHTML = d.requests.map(q=>{
-    const pct=q.total? Math.round(100*q.completed/q.total):0;
+    const pct=q.total? Math.round(100*(q.terminal ?? q.completed)/q.total):0;
     const st=(q.status||"").toLowerCase();
     return `<div class="reqcard">
       <div class="rid"><span>${esc(q.xreq.slice(0,20))}…</span><span class="tag ${st}">${esc(q.status)}</span></div>
-      <div class="cnt"><span class="num">${q.completed}</span><span class="sub">/${q.total}</span>
-        <span class="sub">(${pct}%)</span></div>
+      <div class="cnt"><span class="num">${q.terminal ?? q.completed}</span><span class="sub">/${q.total}</span>
+        <span class="sub">(${pct}%; ${q.failed ?? 0} failed/cancelled)</span></div>
       <div class="bar"><i style="width:${pct}%"></i></div></div>`;
   }).join("");
 
@@ -198,25 +198,23 @@ function render(d){
   // leaderboard
   const tb=document.getElementById("lb").querySelector("tbody");
   if(!lb.length){
-    tb.innerHTML=`<tr class="empty-row"><td colspan="6">No scored episodes yet — waiting for the first results.</td></tr>`;
+    tb.innerHTML=`<tr class="empty-row"><td colspan="4">No scored episodes yet — waiting for the first results.</td></tr>`;
   } else {
     tb.innerHTML = lb.map(p=>{
       // p.label is "Player Name (policy:vN)" (see seat_label() server-side) — the
       // policy name always immediately follows the opening paren, so anchor there,
       // not to the start of the whole label (which is the player's name).
-      const me = /\(crewborg[:)]/.test(p.label) ? "me" : "";
+      const me = "";
       const w = p.win==null?"—":p.win;
       return `<tr class="${me}"><td>${esc(p.label)}</td><td>${p.n}</td>
         <td class="wr" style="color:${winText(p.win)}">${w}</td>
-        <td>${p.crew_win==null?"—":p.crew_win} <span class="sub">(${p.crew_n})</span></td>
-        <td>${p.imp_win==null?"—":p.imp_win} <span class="sub">(${p.imp_n})</span></td>
         <td>${p.score_mean==null?"—":p.score_mean}</td></tr>`;
     }).join("");
   }
 
   // heatmap — ONE grid so header cols and data cols always align.
   const heat=document.getElementById("heat");
-  const cols=[["overall","win"],["crew","crew_win"],["imp","imp_win"]];
+  const cols=[["overall","win"]];
   if(!lb.length){
     heat.innerHTML=`<div class="hm-corner"></div>`+cols.map(c=>`<div class="hm-hd">${c[0]}</div>`).join("")+
       `<div class="hm-rl dim" style="grid-column:1/-1;font-style:italic">No scored episodes yet.</div>`;

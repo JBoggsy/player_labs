@@ -65,3 +65,7 @@ The universal A/B discipline is in `coworld-ab`. Crewrift specifics:
 - **`crewrift-experiment`** — hands a hypothesis here when the test needs a designed run (this is that run).
 - **`crewrift-event-warehouse`** — the deep side-by-side for the qualitative half.
 - [`report-style.md`](../../../docs/report-style.md) — adapting the comparison HTML.
+
+## Reader contract (2026-09-14)
+
+Use exact `NAME:vN` specs. The reader rejects duplicate episodes, shared episodes across arms and more than one subject seat in a role/episode. Unknown roles are omitted. Any seat's connect/disconnect failure marks the whole episode operationally failed; gameplay metrics exclude those records while `ops_fail_rate` retains them. Follow the root statistical contract: independent episode/group observations and adjusted p-values. Multi-seat experiments need an episode-aggregated or paired adapter; don't suppress this error to obtain a verdict.

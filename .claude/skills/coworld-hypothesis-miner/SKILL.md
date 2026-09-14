@@ -21,8 +21,8 @@ Adapted from `Metta-AI/optimizer-skills`' replay-variance-miner, whose validated
 ## What it is (and is not)
 
 - **Is:** a cheap, free re-analysis of data you already have (an eval batch you already pulled)
-  that produces *candidates* — each with the feature evidence, a direction, and an estimated
-  points-recoverable figure.
+  that produces *candidates* — each with the feature evidence, a direction, and a descriptive
+  association index (not a causal gain estimate).
 - **Is not:** a verdict. A mined candidate is a **correlation**; it goes through
   `coworld-experiment` (falsify the mechanism) and, if a change ships, `coworld-ab` (measure it).
   Never ship a change on miner output alone.
@@ -80,10 +80,16 @@ Feature design rules (so the miner finds real signal):
 - **Make "never happened" a real worst-case value** (e.g. `LAST_TICK+1` for timings), not a
   missing key, so non-occurrence is comparable.
 - **Prefer features tied to scoring and enabling milestones** (time-to-first-X, did-Y-at-all,
-  count-of-Z in a scoring category); avoid raw per-action noise.
+  an observed behavior in a fixed exposure window); avoid raw per-action noise.
 
 ## See also
 
 - **`coworld-experiment`** — where every mined candidate goes next (falsify before building).
 - **`coworld-ab`** — measures a shipped fix; also the origin of the engine+adapter pattern used here.
 - **`coworld-episode-artifacts`** — pulls the batches the corpus is built from.
+
+## Integration and evidence limits
+
+The shared engine is available; a verified ready-to-run game feature exporter is not implied by the adapter template. September's audit found useful Crewrift features but missing game-version/replay-coverage provenance, and no verified Heartleaf local warehouse. Restore those facts before promotion to a supported integration.
+
+Require exact policy-version/game-version/cohort selection, reliable seat identity, comparable exposure windows and complete relevant observations. Exclude outcome components from predictors. The engine rejects duplicate episode IDs and nonfinite values and requires at least eight usable episodes; this minimum is not statistical power or causal evidence. `vp_swing` is a historical JSON field name for a heuristic index, not recoverable points. Invariant behavior can still be essential or worth improving; this method only says it doesn't distinguish outcomes in this corpus.

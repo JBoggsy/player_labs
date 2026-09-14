@@ -4,16 +4,15 @@ Adapted from Metta-AI/optimizer-skills `harness/tools/variance_miner.py` (the
 executable form of a hand-done strategy reconstruction). Its central, hard-won
 insight: the behaviors that *separate a policy's wins from its losses* are NOT
 the behaviors the policy does in every game (its invariant engine), but the
-high-variance moves. Analyzing (or training on) the invariant competence learns
-nothing about the policy's own score variance. This miner finds the load-bearing,
-variance-explaining behaviors automatically and emits them as candidate
+high-variance moves. An invariant feature does not explain observed score differences in this corpus;
+that does not make the behavior unimportant or unimprovable. This miner ranks observed associations and emits them as candidate
 hypotheses for the experiment/A/B loop.
 
 Pipeline (game-agnostic core, game-specific feature adapter — the coworld-ab pattern):
 
   episodes (rows) --featurize--> per-episode feature vectors (the lab's adapter)
                   --associate--> per-feature (high/low delta, correlation, score swing)
-                  --rank-------> hypotheses sorted by load-bearing score swing.
+                  --rank-------> hypotheses sorted by a descriptive association index.
 
 The core never hardcodes a game. A `FeatureAdapter` maps one raw episode row to a
 flat `dict[str, float]` of behavioral features plus the seat's `score`. Each lab
@@ -111,9 +110,8 @@ class FeatureAssociation:
     low_score: float
     spread: float  # |high_mean - low_mean| in feature units
     score_gap: float  # high_score - low_score (points between the buckets)
-    # The headline number: estimated points this behavior is worth, attributing
-    # the bucket score gap to features by |corr|-weighted contribution. How much
-    # of the high/low SCORE gap this feature could plausibly explain.
+    # Historical field name; descriptive ranking index, not causal point value.
+    # Correlated features overlap and these values must not be summed.
     vp_swing: float
     discriminative: bool  # spread is large AND correlated (load-bearing)
     invariant: bool  # feature barely moves across buckets => can't explain variance
@@ -128,9 +126,14 @@ def associate(
     """For every feature, measure association with score AND whether it explains
     *variance* (a behavior present in every game, win or lose, is invariant and
     uninformative even if correlated)."""
-    if len(episodes) < 4:
-        raise ValueError(f"need >=4 episodes to mine variance, got {len(episodes)}")
+    if len(episodes) < 8:
+        raise ValueError(f"need >=8 episodes to mine variance, got {len(episodes)}")
 
+    ids = [e.episode_id for e in episodes]
+    if len(ids) != len(set(ids)):
+        raise ValueError("Expected one observation per episode; duplicate episode IDs found")
+    if any(not math.isfinite(e.score) or any(not math.isfinite(v) for v in e.features.values()) for e in episodes):
+        raise ValueError("Scores/features must be finite; missing observations should be omitted")
     scores = [e.score for e in episodes]
     ssorted = sorted(scores)
     hi_cut = _quantile(ssorted, 1 - bucket_q)
@@ -166,10 +169,8 @@ def associate(
         discriminative = norm_spread >= 0.25 and (corr is not None and abs(corr) >= 0.3)
         invariant = norm_spread < 0.10
 
-        # Score swing: share of the bucket score gap attributable to this feature.
-        # We attribute by |corr| and by how much of the feature's own spread the
-        # high/low gap captures. This intentionally rewards features that BOTH
-        # correlate AND vary across buckets — exactly the load-bearing ones.
+        # Heuristic ranking only: correlation and normalized feature spread
+        # scale the observed score gap. This does not estimate treatment effects.
         if corr is None or score_gap <= 0:
             vp_swing = 0.0
         else:
@@ -216,7 +217,7 @@ def _direction(meta: FeatureMeta, a: FeatureAssociation) -> str:
 def emit_hypothesis(meta: FeatureMeta, a: FeatureAssociation, rank: int) -> str:
     direction = _direction(meta, a)
     corr_txt = "n/a" if a.corr is None else f"{a.corr:+.2f}"
-    return f"""### H{rank}: {meta.name} — {meta.blurb}  (≈+{a.vp_swing:.1f} pts)
+    return f"""### H{rank}: {meta.name} — {meta.blurb}  (association index {a.vp_swing:.1f})
 
 ```
 Observation:  In winning games the {meta.name} feature averages {a.high_mean} vs {a.low_mean}
@@ -231,7 +232,7 @@ Missing data: per-decision attribution of WHY losing games skip this behavior �
               in the traces/replays before committing the change.
 Change:       {meta.change_hint}
 Expected:     moving {meta.name} from the losing-game level ({a.low_mean}) toward the
-              winning-game level ({a.high_mean}) should recover up to ~{a.vp_swing:.1f} pts.
+              winning-game level ({a.high_mean}) is a hypothesis to test, not an estimated causal gain.
 Next step:    harden via coworld-experiment (falsify the mechanism against existing data),
               then measure any fix with a matched fresh coworld-ab.
 Overfit risk: {("LOW — strongly discriminative" if a.discriminative else "MEDIUM — correlation present but spread is modest; verify it is not opponent-specific")}.
@@ -272,8 +273,8 @@ class MineResult:
 
 def mine(rows: Iterable[dict], adapter: FeatureAdapter, metas: dict[str, FeatureMeta]) -> MineResult:
     episodes = [ep for ep in (adapter(r) for r in rows) if ep is not None]
-    if len(episodes) < 4:
-        raise ValueError(f"adapter produced {len(episodes)} usable episodes; need >=4")
+    if len(episodes) < 8:
+        raise ValueError(f"adapter produced {len(episodes)} usable episodes; need >=8")
     assocs = associate(episodes, metas)
     scores = sorted(e.score for e in episodes)
     return MineResult(
@@ -296,18 +297,17 @@ def render_report(res: MineResult, *, top: int = 5) -> str:
     inv = res.invariant_behaviors()
     if inv:
         lines.append(
-            "## Invariant behaviors (NOT hypotheses)\n\n"
-            "These happen in winning AND losing games, so they cannot explain this "
-            "policy's score variance. Do not spend a hypothesis here:\n\n- "
+            "## Features with little observed variation\n\n"
+            "These vary little between outcome buckets, so this analysis cannot link them to "
+            "the policy's observed score differences:\n\n- "
             + "\n- ".join(inv)
             + "\n"
         )
-    lines.append("## Load-bearing behaviors (ranked by points they could recover)\n")
+    lines.append("## Load-bearing behaviors (ranked by association index; not causal gains)\n")
     hyps = res.ranked_hypotheses(top=top)
     if not hyps:
         lines.append(
-            "_No feature cleared the variance + correlation bar. Either the corpus "
-            "is too small, or the score spread is pure noise (no actionable signal)._\n"
+            "_No feature cleared the variance + correlation bar. The corpus may be too small, the features may miss the mechanism, or no association was detected._\n"
         )
     else:
         lines.extend(hyps)
