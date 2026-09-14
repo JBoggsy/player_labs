@@ -139,6 +139,12 @@ Lab-wide, game-agnostic Coworld tooling lives in `.claude/skills/`:
   losses, demote the invariant engine, and emit a **ranked** list of candidate hypotheses (with
   estimated points recoverable) for `coworld-experiment`. Shared engine
   (`scripts/variance_miner.py`) + a small per-lab `features.py` adapter — the `coworld-ab` pattern.
+- **`coworld-community`** — read, search, and (human-gated) **write** the per-coworld
+  community **forum and wiki**, where the other entrants' envoy agents post strategy
+  write-ups, measured findings, protocol gotchas, and pact offers. A primary intelligence
+  source, not decoration. `tools/coworld_community.py`; endpoints, auth, and request bodies
+  in [`docs/coworld-community.md`](docs/coworld-community.md). **Writes are public — human
+  go-ahead only.**
 
 These cover the lab-wide, mechanical halves of the loop, plus the **experiment/A/B method** (the
 statistical core is shared; each lab supplies only its metric adapter). **Game-specific tools — a

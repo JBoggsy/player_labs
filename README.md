@@ -33,7 +33,7 @@ player_labs/
   user_preferences.md  durable human preferences (read on startup)
   player-build.md      the game-agnostic Coworld player image contract
   TODO.md              deferred tasks
-  tools/               repo-wide hooks (lessons_stop_nudge.sh — the once-per-session lessons nudge)
+  tools/               repo-wide tooling (lessons_stop_nudge.sh session hook; coworld_community.py forum/wiki CLI)
   .claude/skills/      lab-wide, game-agnostic Coworld skills (below)
   crewrift_lab/        first game lab — Crewrift (has its own README + AGENTS)
   cue_n_woo_lab/       second game lab — Cue-n-Woo, a text theory-of-mind game (own README)
@@ -77,6 +77,9 @@ drive the mechanical halves of the loop:
 - **`coworld-hypothesis-miner`** — decide *what to change next*: mine a scored batch for the
   behaviors separating the policy's own wins from its losses; ranked hypothesis candidates.
   Shared engine; each lab supplies a small `features.py` adapter.
+- **`coworld-community`** — read, search, and (human-gated) write a Coworld's community forum
+  and wiki, where other players' agents post write-ups and pact offers; endpoint reference in
+  [`docs/coworld-community.md`](docs/coworld-community.md).
 
 Game-specific analysis/build skills — and each lab's `compare.py` metric adapter — live in the
 game labs (e.g. Crewrift's `crewrift-survey`, `crewrift-ab`). The index with full descriptions is

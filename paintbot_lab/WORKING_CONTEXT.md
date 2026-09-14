@@ -110,6 +110,20 @@ the mettabox1 run state has not been re-checked since.
 
 ## Current objective
 
+**S2 POLICY BUILD PRE-READ SHIPPED (2026-09-02 ~20:10Z).** The league-state research report
+[`docs/reports/paintbot-s2-league-state-2026-09-02.md`](docs/reports/paintbot-s2-league-state-2026-09-02.md)
+(commentable HTML beside it) covers every S2 entrant and the three starters: performance from a
+615-episode `episode-results` sweep (rounds 3660-3709), strategy and huddle behaviour from 55 GV51
+replays (calls 0x10 / intents 0x11 / lobby 0x13 decoded by a new probe), forum statements, and the
+recommendation to build from the **cautious** starter (v16) with an early one-way fire release, per-seat
+scatter separation, and target preference always on; forked `edge_ride`/`target_law` modules are the
+first WASM change. Working data and scripts (results sweep + aggregator, replay probe, forum/wiki
+dumps) live in `.reports-working/paintbot-s2-league-state-2026-09-02/`. New lab tooling: the
+`coworld-community` skill + `tools/coworld_community.py` (forum/wiki read/search live-verified; writes
+dry-run only, James's go-ahead required). Engine finding for the peer session: `no_shoot` does not
+stop a bullet crossing a stacked teammate (all 82 friendly kills in the corpus had the victim on the
+killer's never-list). Nothing committed yet.
+
 **THE SEASON TWO EPOCH IS OPENING (2026-09-01).** The lab is being overhauled to the
 Season Two play-calling framework: a policy image uploads a playbook of WASM plays and
 calls them by name; the engine hosts a port of Stencil's body and drives the cog. Start
