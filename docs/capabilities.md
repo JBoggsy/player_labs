@@ -32,6 +32,7 @@ This is the navigation map; implementation and the linked skills define each con
 | [Emerg-ant](../emergant_lab/AGENTS.md) | [Tools](../emergant_lab/tools/) | Colony/economy and policy trace studies; version-specific protocols |
 | [Sugarscape](../sugarscape_lab/AGENTS.md) | [Evaluation records](../sugarscape_lab/evals/), [policies](../sugarscape_lab/policies/) | Movement/objective evaluation; don't substitute global world welfare for a policy metric |
 | [Proxywar](../proxywar_lab/AGENTS.md) | [Lab docs](../proxywar_lab/) | Recon/foundation; no claim of a complete policy evaluation stack |
+| [Gods of the Arena](../gods_of_the_arena_lab/AGENTS.md) | [BASIC contract and starter](../gods_of_the_arena_lab/README.md) | Language/contract foundation; no candidate or evaluation adapter yet |
 | [CTF archive](../ctf_lab/README.md) | [Historical skills](../ctf_lab/.claude/skills/) | Archived; reference history does not authorize restarting it |
 
 The table links components rather than copying every CLI flag. Use `uv run python tools/audit_docs.py` for a discoverable file/link inventory, and each script's `--help` for its current options. A directory's existence does not prove live integration; each run records its actual validation.
