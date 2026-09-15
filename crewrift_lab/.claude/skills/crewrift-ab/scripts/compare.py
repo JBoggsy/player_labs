@@ -111,18 +111,21 @@ def load_batch(root: Path, policy: str, version: int | None) -> tuple[list[Rec],
             continue
         try:
             results = json.loads(rj.read_text()) if rj.exists() else {}
-        except json.JSONDecodeError:
+        except ValueError:
             results = {}
         if not isinstance(results, dict):
             results = {}
+        timeout_arrays = [results.get(key) for key in ("connect_timeout", "disconnect_timeout")]
+        seat_count = max(pos for pos, _, _ in slot_entries(episode)) + 1
+        has_ops_evidence = all(isinstance(values, list) and len(values) >= seat_count
+                               for values in timeout_arrays)
         failed = bool(episode.get("status") in {"failed", "cancelled"}
                       or episode.get("error_type") or episode.get("failed_policy_index") is not None
                       or episode.get("failed_agent_index") is not None
-                      or any(results.get("connect_timeout") or [])
-                      or any(results.get("disconnect_timeout") or []))
+                      or any(any(values) for values in timeout_arrays if isinstance(values, list)))
         # Missing results alone are not proof of a crash. Status/error metadata
         # still establish failures when no role or gameplay result was produced.
-        known = failed or (bool(results) and episode.get("status") in {"completed", None})
+        known = failed or (has_ops_evidence and episode.get("status") in {"completed", None})
         if known:
             outcomes.append({"episode_id": eid, "ops_fail": failed})
         else:
@@ -130,9 +133,6 @@ def load_batch(root: Path, policy: str, version: int | None) -> tuple[list[Rec],
             continue
         if failed:
             excluded["failed_episode_gameplay"] += 1
-            continue
-        if not results:
-            excluded["missing_or_invalid_results"] += 1
             continue
         episode_records = [rec for slot in slots if (rec := _record(results, slot)) is not None]
         if len(episode_records) != len(slots):
@@ -259,9 +259,9 @@ def main() -> None:
     base_recs, base_ops, excluded_base = load_batch(Path(args.baseline_dir), bname, bver)
     cand_recs, cand_ops, excluded_cand = load_batch(Path(args.candidate_dir), cname, cver)
     if not base_ops:
-        raise SystemExit(f"no '{args.baseline}' appearances in {args.baseline_dir}")
+        raise SystemExit(f"No known operational outcomes for {args.baseline}: {excluded_base}")
     if not cand_ops:
-        raise SystemExit(f"no '{args.candidate}' appearances in {args.candidate_dir}")
+        raise SystemExit(f"No known operational outcomes for {args.candidate}: {excluded_cand}")
 
     if {r["episode_id"] for r in base_ops} & {r["episode_id"] for r in cand_ops}:
         ap.error("Arms share episodes; use a paired analysis for within-episode comparisons")

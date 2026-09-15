@@ -125,8 +125,11 @@ class Poller:
         txt = self._client.get_text_or_none(f"/v2/episode-requests/{eid}/artifacts/results")
         try:
             results = json.loads(txt) if txt else None
-            if results is not None and not isinstance(results, dict):
-                raise ValueError("Expected a JSON object")
+            if (not isinstance(results, dict) or not results
+                    or any(not isinstance(results.get(key), list) for key in ("win", "scores"))
+                    or any(key in results and not isinstance(results[key], list)
+                           for key in ("connect_timeout", "disconnect_timeout"))):
+                raise ValueError("Expected result arrays")
             error = None
         except ValueError:
             results = None

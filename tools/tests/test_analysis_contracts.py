@@ -349,7 +349,7 @@ def test_crew_failure_survives_missing_results(tmp_path, results):
     assert failure.group == 'episodes' and failure.n_base == 1
 
 
-@pytest.mark.parametrize('payload', ['<html>not JSON</html>', '"oops"', '[1]'])
+@pytest.mark.parametrize('payload', ['<html>not JSON</html>', '"oops"', '[1]', '{}', '{"connect_timeout":1}'])
 def test_dashboard_bad_json_does_not_stop_poll(payload):
     class BadResultClient:
         def get_json(self, path):
@@ -377,3 +377,29 @@ def test_crew_completed_without_results_is_unknown(tmp_path, results):
     records, outcomes, excluded = crew.load_batch(tmp_path, 'subject', 2)
     assert not records and not outcomes
     assert excluded == {'unknown_episode_outcome': 1}
+
+
+@pytest.mark.parametrize('results', [b'{"scores":[5]}', b'\xff',
+                                     b'{"connect_timeout":[],"disconnect_timeout":[]}'])
+def test_crew_partial_ops_evidence_is_unknown(tmp_path, results):
+    path = episode(tmp_path)
+    row = json.loads((path / 'episode.json').read_text())
+    row['participants'] = [{'position': 0, 'policy_name': 'subject', 'version': 2}]
+    (path / 'episode.json').write_text(json.dumps(row))
+    (path / 'results.json').write_bytes(results)
+    records, outcomes, excluded = crew.load_batch(tmp_path, 'subject', 2)
+    assert not records and not outcomes
+    assert excluded == {'unknown_episode_outcome': 1}
+
+
+def test_crew_known_success_with_unknown_role_reports_exclusion(tmp_path):
+    path = episode(tmp_path)
+    row = json.loads((path / 'episode.json').read_text())
+    row['participants'] = [{'position': 0, 'policy_name': 'subject', 'version': 2}]
+    (path / 'episode.json').write_text(json.dumps(row))
+    (path / 'results.json').write_text(json.dumps({'scores': [5], 'win': [0], 'tasks': [0],
+        'kills': [0], 'connect_timeout': [0], 'disconnect_timeout': [0]}))
+    records, outcomes, excluded = crew.load_batch(tmp_path, 'subject', 2)
+    assert not records
+    assert crew.metric_value(outcomes, 'ops_fail_rate') == (0, 1)
+    assert excluded == {'incomplete_target_seat_results': 1}
