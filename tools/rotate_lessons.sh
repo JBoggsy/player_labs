@@ -51,17 +51,8 @@ fi
 mkdir -p "$ARCHIVE_DIR" || exit 1
 ARCHIVED=""
 SKIPPED_DUP=""
-if [[ -s "$BUFFER" ]]; then
-  if buffer_is_already_archived; then
-    SKIPPED_DUP=1
-  else
-    ARCHIVE_FILE="$ARCHIVE_DIR/TENTATIVE_LESSONS-$STAMP.md"
-    mv "$BUFFER" "$ARCHIVE_FILE" || exit 1
-    ARCHIVED="$(basename "$ARCHIVE_FILE")"
-  fi
-fi
-
-cat > "$BUFFER" << EOF
+render_buffer() {
+cat << EOF
 # $LAB tentative lessons — session buffer
 
 **Session started:** $NOW. This is THIS SESSION's lesson buffer. Write candidate
@@ -82,6 +73,26 @@ concrete) and optional \`Status:\` notes. Terse. One lesson per \`###\`.
 
 ---
 EOF
+}
+
+# Ignore only the generated timestamp when recognizing an unchanged template.
+# Any other edit (including nonstandard entries before the divider) is preserved.
+buffer_is_empty_template() {
+  cmp -s <(sed -E 's/^(\*\*Session started:\*\*) [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}/\1 TIMESTAMP/' "$BUFFER") \
+    <(render_buffer | sed -E 's/^(\*\*Session started:\*\*) [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}/\1 TIMESTAMP/')
+}
+
+if [[ -s "$BUFFER" ]] && ! buffer_is_empty_template; then
+  if buffer_is_already_archived; then
+    SKIPPED_DUP=1
+  else
+    ARCHIVE_FILE="$ARCHIVE_DIR/TENTATIVE_LESSONS-$STAMP.md"
+    mv "$BUFFER" "$ARCHIVE_FILE" || exit 1
+    ARCHIVED="$(basename "$ARCHIVE_FILE")"
+  fi
+fi
+
+render_buffer > "$BUFFER" || exit 1
 
 if [[ -n "$ARCHIVED" ]]; then
   CTX="Tentative-lessons buffer rotated: previous session's lessons archived to $LAB/lessons_archive/$ARCHIVED. Fresh buffer: $LAB/TENTATIVE_LESSONS.md — write candidate lessons there AS YOU GO."

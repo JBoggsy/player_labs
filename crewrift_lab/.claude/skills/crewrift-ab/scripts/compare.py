@@ -23,6 +23,7 @@ import argparse
 import json
 import statistics
 import sys
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -83,39 +84,64 @@ def slot_entries(episode: dict) -> list[tuple[int, str | None, int | None]]:
     return out
 
 
-def load_batch(root: Path, policy: str, version: int | None) -> list[Rec]:
-    """Every appearance of (policy[:version]) across the episode dirs in `root`."""
+def load_batch(root: Path, policy: str, version: int | None) -> tuple[list[Rec], list[dict], dict]:
+    """Read gameplay seats, independent episode failures, and explicit exclusions."""
     if version is None:
         raise ValueError("A/B requires an exact policy version: name:vN")
-    recs: list[Rec] = []
+    recs, outcomes, excluded = [], [], Counter()
     seen = set()
     for ep in sorted(p for p in root.iterdir() if p.is_dir()):
         ej, rj = ep / "episode.json", ep / "results.json"
-        if not (ej.exists() and rj.exists()):
+        if not ej.exists():
+            excluded["missing_episode_metadata"] += 1
             continue
-        try:
-            episode, results = json.loads(ej.read_text()), json.loads(rj.read_text())
-        except json.JSONDecodeError:
-            continue
+        episode = json.loads(ej.read_text())
         eid = episode.get("id")
         if not eid or eid in seen:
             raise ValueError(f"Missing or duplicate episode ID in {ep}")
         seen.add(eid)
         slots = [pos for pos, name, ver in slot_entries(episode)
-                 if name == policy and (version is None or ver == version)]
-        episode_records = [rec for slot in slots if (rec := _record(results, slot)) is not None]
-        roles = [rec.role for rec in episode_records]
-        if len(roles) != len(set(roles)):
-            raise ValueError(f"{eid}: multiple target seats in one role; use an episode-aggregated analysis")
-        failed = bool(episode.get("error_type") or episode.get("failed_policy_index") is not None
+                 if name == policy and ver == version]
+        if not slots:
+            excluded["target_absent"] += 1
+            continue
+        try:
+            results = json.loads(rj.read_text()) if rj.exists() else {}
+        except json.JSONDecodeError:
+            results = {}
+        if not isinstance(results, dict):
+            results = {}
+        failed = bool(episode.get("status") in {"failed", "cancelled"}
+                      or episode.get("error_type") or episode.get("failed_policy_index") is not None
                       or episode.get("failed_agent_index") is not None
                       or any(results.get("connect_timeout") or [])
                       or any(results.get("disconnect_timeout") or []))
+        # Missing results alone are not proof of a crash. Status/error metadata
+        # still establish failures when no role or gameplay result was produced.
+        known = failed or episode.get("status") == "completed" or (
+            episode.get("status") is None and bool(results))
+        if known:
+            outcomes.append({"episode_id": eid, "ops_fail": failed})
+        else:
+            excluded["unknown_episode_outcome"] += 1
+            continue
+        if failed:
+            excluded["failed_episode_gameplay"] += 1
+            continue
+        if not results:
+            excluded["missing_or_invalid_results"] += 1
+            continue
+        episode_records = [rec for slot in slots if (rec := _record(results, slot)) is not None]
+        if len(episode_records) != len(slots):
+            excluded["incomplete_target_seat_results"] += 1
+            continue
+        roles = [rec.role for rec in episode_records]
+        if len(roles) != len(set(roles)):
+            raise ValueError(f"{eid}: multiple target seats in one role; use an episode-aggregated analysis")
         for rec in episode_records:
-            rec.ops_fail = failed
             rec.episode_id = eid
         recs.extend(episode_records)
-    return recs
+    return recs, outcomes, dict(excluded)
 
 
 def _record(results: dict, slot: int) -> Rec | None:
@@ -155,7 +181,7 @@ METRICS = [
     ("kills_mean",              True,  "mean", "imposter"),
     ("penalty_mean",            False, "mean", None),
     ("no_vote_rate",            False, "rate", None),
-    ("ops_fail_rate",           False, "rate", None),
+    ("ops_fail_rate",           False, "rate", "episodes"),
     ("imposter_no_kills_rate",  False, "rate", "imposter"),
     ("crew_low_tasks_rate",     False, "rate", "crew"),
     ("crew_lost_nearly_won_rate", False, "rate", "crew"),
@@ -167,8 +193,9 @@ NEARLY_WON_FRAC = 0.85
 
 def metric_value(recs: list[Rec], key: str) -> tuple[float, int] | None:
     """Return (value, n) for a metric over a group's records, or None if N/A."""
-    if key != "ops_fail_rate":
-        recs = [r for r in recs if not r.ops_fail]
+    if key == "ops_fail_rate":
+        return (sum(r["ops_fail"] for r in recs) / len(recs), len(recs)) if recs else None
+    recs = [r for r in recs if not r.ops_fail]
     if not recs:
         return None
     n = len(recs)
@@ -184,8 +211,6 @@ def metric_value(recs: list[Rec], key: str) -> tuple[float, int] | None:
         return statistics.mean(r.penalty for r in recs), n
     if key == "no_vote_rate":
         return sum(r.vote_timeout > 0 for r in recs) / n, n
-    if key == "ops_fail_rate":
-        return sum(r.ops_fail for r in recs) / n, n
     if key == "imposter_no_kills_rate":
         return sum(r.kills == 0 for r in recs) / n, n
     if key == "crew_low_tasks_rate":
@@ -199,6 +224,8 @@ def metric_value(recs: list[Rec], key: str) -> tuple[float, int] | None:
 
 def value_fn(recs: list[Rec], key: str) -> list[float]:
     """Per-appearance values for a metric (for the continuous significance test)."""
+    if key == "ops_fail_rate":
+        return []
     recs = [r for r in recs if not r.ops_fail]
     if key == "score_mean":   return [float(r.score) for r in recs]
     if key == "tasks_mean":   return [float(r.tasks) for r in recs]
@@ -227,23 +254,28 @@ def main() -> None:
 
     bname, bver = parse_spec(args.baseline)
     cname, cver = parse_spec(args.candidate)
-    base_recs = load_batch(Path(args.baseline_dir), bname, bver)
-    cand_recs = load_batch(Path(args.candidate_dir), cname, cver)
-    if not base_recs:
+    if bver is None or cver is None:
+        ap.error("Both policies require an exact version: name:vN")
+    base_recs, base_ops, excluded_base = load_batch(Path(args.baseline_dir), bname, bver)
+    cand_recs, cand_ops, excluded_cand = load_batch(Path(args.candidate_dir), cname, cver)
+    if not base_ops:
         raise SystemExit(f"no '{args.baseline}' appearances in {args.baseline_dir}")
-    if not cand_recs:
+    if not cand_ops:
         raise SystemExit(f"no '{args.candidate}' appearances in {args.candidate_dir}")
 
-    if {r.episode_id for r in base_recs} & {r.episode_id for r in cand_recs}:
+    if {r["episode_id"] for r in base_ops} & {r["episode_id"] for r in cand_ops}:
         ap.error("Arms share episodes; use a paired analysis for within-episode comparisons")
     base, cand = by_group(base_recs), by_group(cand_recs)
+    base["episodes"], cand["episodes"] = base_ops, cand_ops
+    print(f"Excluded baseline: {excluded_base}; candidate: {excluded_cand}")
     deltas = ab_stats.build_deltas(base, cand, METRICS, metric_value, value_fn, GROUPS)
     print(ab_stats.render_markdown(args.baseline, args.candidate, base, cand,
                                    deltas, args.target, GROUPS, METRICS))
 
     if args.json:
-        Path(args.json).write_text(json.dumps(
-            ab_stats.emit_json(args.baseline, args.candidate, args.target, deltas), indent=2))
+        report = ab_stats.emit_json(args.baseline, args.candidate, args.target, deltas)
+        report.update(excluded_baseline=excluded_base, excluded_candidate=excluded_cand)
+        Path(args.json).write_text(json.dumps(report, indent=2))
         print(f"\n[wrote JSON: {args.json}]")
 
 

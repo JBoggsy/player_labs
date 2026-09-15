@@ -241,10 +241,10 @@ def test_crew_whole_episode_failure_excluded_from_gameplay(tmp_path):
     results = {'scores': [0,0,0,100], 'win': [0,0,0,1], 'tasks': [0]*4, 'kills': [0]*4,
                'crew': [1]*4, 'imposter': [0]*4, 'disconnect_timeout': [1,0,0,0]}
     (path/'episode.json').write_text(json.dumps(row)); (path/'results.json').write_text(json.dumps(results))
-    records = crew.load_batch(tmp_path, 'subject', 2)
-    assert records[0].ops_fail
-    assert crew.metric_value(records, 'win_rate') is None
-    assert crew.metric_value(records, 'ops_fail_rate') == (1,1)
+    records, outcomes, excluded = crew.load_batch(tmp_path, 'subject', 2)
+    assert not records
+    assert excluded == {'failed_episode_gameplay': 1}
+    assert crew.metric_value(outcomes, 'ops_fail_rate') == (1,1)
 
 
 def test_policy_discovery_current_cursor_routes():
@@ -306,3 +306,56 @@ def test_create_preserves_admission_cost_preview(monkeypatch, tmp_path, capsys):
     body.write_text('{"roster": []}')
     er.cmd_create(Namespace(server=None, body=str(body), check_schema=False))
     assert json.loads(capsys.readouterr().out)['cost_preview'] == preview
+
+
+def test_rotation_does_not_archive_fresh_templates(tmp_path):
+    (tmp_path / 'tools').mkdir()
+    (tmp_path / 'test_lab').mkdir()
+    script = tmp_path / 'tools/rotate_lessons.sh'
+    shutil.copy(ROOT / 'tools/rotate_lessons.sh', script)
+    def rotate():
+        subprocess.run(['bash', str(script), 'test_lab'], input='{"source":"startup"}',
+                       text=True, check=True, capture_output=True)
+    rotate()
+    buffer = tmp_path / 'test_lab/TENTATIVE_LESSONS.md'
+    buffer.write_text(__import__('re').sub(r'(?<=Session started:\*\* )[0-9-]+ [0-9:]+', '2000-01-01 00:00', buffer.read_text()))
+    rotate()
+    archives = tmp_path / 'test_lab/lessons_archive'
+    assert not list(archives.glob('*.md'))
+    buffer.write_text(buffer.read_text().replace('**Lifecycle.**', 'Important pre-divider lesson.\n\n**Lifecycle.**'))
+    rotate()
+    assert len(list(archives.glob('*.md'))) == 1
+
+
+@pytest.mark.parametrize('results', [None, '<html>bad data</html>'])
+def test_crew_failure_survives_missing_results(tmp_path, results):
+    path = episode(tmp_path, status='failed')
+    row = json.loads((path / 'episode.json').read_text())
+    row['participants'] = [{'position': 0, 'policy_name': 'subject', 'version': 2}]
+    (path / 'episode.json').write_text(json.dumps(row))
+    if results is None:
+        (path / 'results.json').unlink()
+    else:
+        (path / 'results.json').write_text(results)
+    records, outcomes, excluded = crew.load_batch(tmp_path, 'subject', 2)
+    assert not records
+    assert crew.metric_value(outcomes, 'ops_fail_rate') == (1, 1)
+    groups = crew.by_group(records)
+    groups['episodes'] = outcomes
+    deltas = ab.build_deltas(groups, groups, crew.METRICS, crew.metric_value, crew.value_fn, crew.GROUPS)
+    failure = next(d for d in deltas if d.metric == 'ops_fail_rate')
+    assert failure.group == 'episodes' and failure.n_base == 1
+
+
+def test_dashboard_bad_json_does_not_stop_poll():
+    class BadResultClient:
+        def get_json(self, path):
+            return [{'id': 'bad', 'status': 'completed', 'participants': None}]
+        def get_text_or_none(self, path):
+            return '<html>not JSON</html>'
+    poller = xp.Poller(BadResultClient(), ['xreq_test'])
+    poller._poll_once()
+    snapshot = poller.snapshot()
+    assert snapshot['poll_count'] == 1
+    assert snapshot['result_errors'] == 1
+    assert snapshot['scored_episodes'] == 0

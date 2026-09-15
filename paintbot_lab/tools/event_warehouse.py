@@ -16,6 +16,9 @@ carrier". Two event feeds, both re-keyed from episode *slot* to
 
 Outcome normalization supports two/four-team Paintbot results. The Beacon trace
 parser below remains format-specific; use Stencil viewer tools for Stencil traces.
+Role columns are retained as null: team/seat alone does not establish a role.
+Invalid identity or contradictory outcomes abort the build so exclusions cannot
+silently change the evidence cohort; repair or explicitly exclude that input.
 
 Tables written (DuckDB `warehouse.duckdb` + one Parquet per table):
   * ``episodes``     — one row per episode (ids, coworld version, winner, per-team score)
@@ -82,7 +85,7 @@ def _load_episode_meta(ep_dir: Path) -> dict[str, Any] | None:
         raise ValueError(f"{eid}: results team order differs from game_config.slots")
     rows = []
     seen = set()
-    for participant in sorted(participants, key=lambda row: row["position"]):
+    for participant in participants:
         slot = participant["position"]
         if not isinstance(slot, int) or slot < 0 or slot in seen:
             raise ValueError(f"{eid}: invalid or duplicate participant slot {slot}")

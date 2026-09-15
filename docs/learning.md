@@ -35,3 +35,5 @@ Codex does not automatically run `.claude` hooks. Read context/buffers on startu
 ## Transcript research
 
 The local `agent-transcripts` project owns ingestion and search. Refresh with its documented `pull_transcripts.py`, then use FTS and inspect actual user/assistant turns. Search globally as well as by repository: old/deleted worktrees often have no repository attribution. Track discovery separately from substantive review. Cite `source:session_id@seq`; check later correction and provenance before promotion.
+
+Unchanged generated lesson templates are not archived on each startup. Rotation ignores only the generated timestamp when comparing the template; nonstandard or edited buffers remain preserved. Older template formats can be archived once rather than guessed to be empty.

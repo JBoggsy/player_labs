@@ -92,7 +92,6 @@ class Delta:
             z, p, d = mean_sig(base_vals, cand_vals)
             self.p, self.effect = p, d
         self.raw_p = self.p
-        self.p = self.raw_p
         sig = self.p < sig_p and min(self.n_base, self.n_cand) >= SMALL_N
         if not sig or delta == 0:
             self.verdict = "inconclusive"

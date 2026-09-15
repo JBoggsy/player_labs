@@ -60,3 +60,19 @@ Promoted recurring process principles: keep disproofs in an investigation ledger
 ## Credit-accounting correction
 
 The initial audit missed the daily XP credit allowance and relied on an older preference for the “paid” explanation. Follow-up verified the backend schedule and live team-account meter: standard users receive 500/7 credits daily (cap 1,000), team members 10,000/7 daily (cap 20,000), shared across their players. Users are never billed. Root workflow and request guidance now reflect this; see the linked credit reference.
+
+
+## Pre-merge independent review
+
+The independent review identified repeated archival of empty lesson templates and
+Crewrift failure undercounting when a failed episode produced no parseable results.
+Rotation now recognizes unchanged generated templates, and Crewrift reports
+operational failures once per episode separately from role-specific gameplay,
+with explicit exclusion counts. Malformed dashboard result JSON no longer aborts
+the poll. Paintbot warehouse role columns remain null and its strict refusal of
+contradictory identity/outcome data is explicit.
+
+The suggestion to accept legacy terminal-status aliases was declined: the current
+verified API uses completed/failed/cancelled and does not expose cancelled_count.
+Paintbot comparison continues to disclose excluded outcomes without an operational
+failure significance metric; inspect those counts before interpreting gameplay.

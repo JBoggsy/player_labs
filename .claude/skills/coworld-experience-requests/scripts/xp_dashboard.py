@@ -120,14 +120,19 @@ class Poller:
         if row.get("status") != "completed":
             return
         # Preserve explicit seat positions: sparse/human seats must not shift scores.
-        seats = {p["position"]: seat_label(p) for p in row.get("participants", [])
+        seats = {p["position"]: seat_label(p) for p in (row.get("participants") or [])
                  if p.get("kind", "policy") == "policy"}
         txt = self._client.get_text_or_none(f"/v2/episode-requests/{eid}/artifacts/results")
-        results = json.loads(txt) if txt else None
+        try:
+            results = json.loads(txt) if txt else None
+            error = None
+        except json.JSONDecodeError:
+            results = None
+            error = "Results are not valid JSON; retrying next poll"
         with self._lock:
             self._episodes[eid] = {
                 "xreq": xreq, "seats": seats,
-                "results": results, "ts": time.time(),
+                "results": results, "error": error, "ts": time.time(),
             }
 
     # --- snapshot / stats --------------------------------------------------------
@@ -202,6 +207,7 @@ class Poller:
             "total": total, "done": done, "pending": pending,
             "pct": round(100.0 * done / total, 1) if total else 0.0,
             "scored_episodes": len(scored), "ops_filtered": ops_filtered,
+            "result_errors": sum(bool(e.get("error")) for e in episodes),
             "rate_per_min": round(rate_per_min, 1), "eta_seconds": eta,
             "rate_window_seconds": RATE_WINDOW_SECONDS,
             "leaderboard": leaderboard,
