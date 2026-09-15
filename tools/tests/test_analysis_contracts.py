@@ -324,7 +324,9 @@ def test_rotation_does_not_archive_fresh_templates(tmp_path):
     assert not list(archives.glob('*.md'))
     buffer.write_text(buffer.read_text().replace('**Lifecycle.**', 'Important pre-divider lesson.\n\n**Lifecycle.**'))
     rotate()
-    assert len(list(archives.glob('*.md'))) == 1
+    saved = list(archives.glob('*.md'))
+    assert len(saved) == 1
+    assert 'Important pre-divider lesson.' in saved[0].read_text()
 
 
 @pytest.mark.parametrize('results', [None, '<html>bad data</html>'])
@@ -347,15 +349,31 @@ def test_crew_failure_survives_missing_results(tmp_path, results):
     assert failure.group == 'episodes' and failure.n_base == 1
 
 
-def test_dashboard_bad_json_does_not_stop_poll():
+@pytest.mark.parametrize('payload', ['<html>not JSON</html>', '"oops"', '[1]'])
+def test_dashboard_bad_json_does_not_stop_poll(payload):
     class BadResultClient:
         def get_json(self, path):
             return [{'id': 'bad', 'status': 'completed', 'participants': None}]
         def get_text_or_none(self, path):
-            return '<html>not JSON</html>'
+            return payload
     poller = xp.Poller(BadResultClient(), ['xreq_test'])
     poller._poll_once()
     snapshot = poller.snapshot()
     assert snapshot['poll_count'] == 1
     assert snapshot['result_errors'] == 1
     assert snapshot['scored_episodes'] == 0
+
+
+@pytest.mark.parametrize('results', [None, '<html>bad data</html>'])
+def test_crew_completed_without_results_is_unknown(tmp_path, results):
+    path = episode(tmp_path)
+    row = json.loads((path / 'episode.json').read_text())
+    row['participants'] = [{'position': 0, 'policy_name': 'subject', 'version': 2}]
+    (path / 'episode.json').write_text(json.dumps(row))
+    if results is None:
+        (path / 'results.json').unlink()
+    else:
+        (path / 'results.json').write_text(results)
+    records, outcomes, excluded = crew.load_batch(tmp_path, 'subject', 2)
+    assert not records and not outcomes
+    assert excluded == {'unknown_episode_outcome': 1}

@@ -99,7 +99,7 @@ if [[ -n "$ARCHIVED" ]]; then
 elif [[ -n "$SKIPPED_DUP" ]]; then
   CTX="Fresh tentative-lessons buffer: $LAB/TENTATIVE_LESSONS.md (previous buffer was a byte-identical copy of an existing archive - likely restored by a git sync; not re-archived) - write candidate lessons there AS YOU GO."
 else
-  CTX="Fresh tentative-lessons buffer: $LAB/TENTATIVE_LESSONS.md (previous buffer was empty; nothing archived) — write candidate lessons there AS YOU GO."
+  CTX="Fresh tentative-lessons buffer: $LAB/TENTATIVE_LESSONS.md (previous buffer was empty or an unchanged template; nothing archived) — write candidate lessons there AS YOU GO."
 fi
 
 # Rotation stays uncommitted; the normal documentation audit precedes commits.

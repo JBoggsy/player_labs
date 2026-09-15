@@ -44,7 +44,6 @@ class Rec:
     kills: int
     win: bool
     vote_timeout: int
-    ops_fail: bool
     penalty: int
     game_tasks_done: int
     game_tasks_total: int
@@ -95,7 +94,12 @@ def load_batch(root: Path, policy: str, version: int | None) -> tuple[list[Rec],
         if not ej.exists():
             excluded["missing_episode_metadata"] += 1
             continue
-        episode = json.loads(ej.read_text())
+        try:
+            episode = json.loads(ej.read_text())
+            if not isinstance(episode, dict):
+                raise ValueError("expected a JSON object")
+        except ValueError as exc:
+            raise ValueError(f"Invalid episode metadata in {ej}: {exc}") from exc
         eid = episode.get("id")
         if not eid or eid in seen:
             raise ValueError(f"Missing or duplicate episode ID in {ep}")
@@ -118,8 +122,7 @@ def load_batch(root: Path, policy: str, version: int | None) -> tuple[list[Rec],
                       or any(results.get("disconnect_timeout") or []))
         # Missing results alone are not proof of a crash. Status/error metadata
         # still establish failures when no role or gameplay result was produced.
-        known = failed or episode.get("status") == "completed" or (
-            episode.get("status") is None and bool(results))
+        known = failed or (bool(results) and episode.get("status") in {"completed", None})
         if known:
             outcomes.append({"episode_id": eid, "ops_fail": failed})
         else:
@@ -164,7 +167,6 @@ def _record(results: dict, slot: int) -> Rec | None:
         role="imposter" if col("imposter") else "crew",
         score=score, tasks=tasks, kills=kills, win=win,
         vote_timeout=int(col("vote_timeout")),
-        ops_fail=bool(col("connect_timeout") or col("disconnect_timeout")),
         penalty=int(100 * win + tasks + 10 * kills - score),
         game_tasks_done=sum(int(t) for t, c in zip(tasks_arr, crew_flags) if c),
         game_tasks_total=8 * crew_count,
@@ -195,7 +197,6 @@ def metric_value(recs: list[Rec], key: str) -> tuple[float, int] | None:
     """Return (value, n) for a metric over a group's records, or None if N/A."""
     if key == "ops_fail_rate":
         return (sum(r["ops_fail"] for r in recs) / len(recs), len(recs)) if recs else None
-    recs = [r for r in recs if not r.ops_fail]
     if not recs:
         return None
     n = len(recs)
@@ -226,7 +227,6 @@ def value_fn(recs: list[Rec], key: str) -> list[float]:
     """Per-appearance values for a metric (for the continuous significance test)."""
     if key == "ops_fail_rate":
         return []
-    recs = [r for r in recs if not r.ops_fail]
     if key == "score_mean":   return [float(r.score) for r in recs]
     if key == "tasks_mean":   return [float(r.tasks) for r in recs]
     if key == "kills_mean":   return [float(r.kills) for r in recs]

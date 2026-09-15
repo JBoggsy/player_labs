@@ -125,10 +125,12 @@ class Poller:
         txt = self._client.get_text_or_none(f"/v2/episode-requests/{eid}/artifacts/results")
         try:
             results = json.loads(txt) if txt else None
+            if results is not None and not isinstance(results, dict):
+                raise ValueError("Expected a JSON object")
             error = None
-        except json.JSONDecodeError:
+        except ValueError:
             results = None
-            error = "Results are not valid JSON; retrying next poll"
+            error = "Results are not a valid JSON object; retrying next poll"
         with self._lock:
             self._episodes[eid] = {
                 "xreq": xreq, "seats": seats,
