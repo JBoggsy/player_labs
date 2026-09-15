@@ -8,14 +8,6 @@ improvement loop, your role in it (speed first), the submission gate, and the
 game-agnostic skills. This file is the **Proxy War-specific layer**. When the two
 disagree, the root defines *process*; this file defines *Proxy War*.
 
-> **Lab status (2026-08-11): founded, recon done, no policy yet.** The founding
-> deep-dive with `file:line` citations is
-> [`docs/recon/proxywar-2026-08-11.md`](docs/recon/proxywar-2026-08-11.md) — read it
-> before touching game mechanics. Live state: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
-> Canonical hosted game **proxywar 0.1.35**; the in-repo manifest LAGS the hosted
-> package — run `uv run coworld list | grep proxywar` at the start of any
-> game-mechanics work.
-
 ## What Proxy War is (the load-bearing facts)
 
 - **Menu-selection protocol.** Each decision: observation + offered `LegalAction[]`
@@ -37,7 +29,7 @@ disagree, the root defines *process*; this file defines *Proxy War*.
   (NAP / trade-security / joint-attack / support) with in-match `rivalReliability`.
   The engine separately has 5-min alliances with a real traitor debuff for betrayal.
 - **No workers/population economy** (fork predates it): flat 100 gold/tick + trade
-  ships + trains + conquest. Warships retired; defense posts are static auras.
+  ships + trains + conquest. Defense posts are static auras.
 
 ## The loop, in Proxy War terms
 

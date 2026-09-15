@@ -10,12 +10,9 @@ classifier, no LLM. The whole policy is two constants in [`config.py`](config.py
 > code-isolated means active work on either can't break the other — hence
 > cheater vendors its own [`validator.py`](validator.py).
 
-## Strategy (v3 — the "daveey" approach)
+## Strategy
 
-**Always answer `"The goblin"`.** That's it. This copies the deterministic shape
-that wins for `daveey-cnw-stock`, the strongest fixed bot in the field, which
-answers every question with a fixed `"The <noun>"` (`"The water"`, `"The sea"`…)
-and beats most opponents on that alone.
+The configured fixed answer is used for proposals and opponent questions.
 
 1. **`private_questions`** — asks a goblin-promoting injection
    ([`config.INJECTION`](config.py)) on all three probes. This lands in the
@@ -23,29 +20,6 @@ and beats most opponents on that alone.
    (`v2/coworld/game.py:scoring_context`) — a free nudge toward goblin.
 2. **`proposals`** — open-ended questions; commits `"The goblin"` as each secret.
 3. **`answers`** — blind-answers the opponent's questions with `"The goblin"` too.
-
-### Why short beats the alternatives
-
-The FLAS-steered Gemma judge strongly prefers **short, plain, concrete** answers.
-The journey here:
-
-- **v1** (bare `goblin` everywhere) — ~40% live win-rate; a single bare word
-  loses to coherent answers.
-- **v2** (long goblin-y *sentences*) — looked great on a probe vs a benign fixed
-  opponent, but dropped to **30%** in live play: long/weird/repetitive is the
-  *worst* profile against this judge, losing even to daveey's mediocre "The sea".
-- **v3** (`"The goblin"`) — probed against **real** field answers pulled from
-  replays (daveey's "The water"/"The morning"/"The sea", biglobes' descriptive
-  answers), under our saturated context:
-
-  | our answer | mean preference | wins |
-  |---|---:|---:|
-  | **`The goblin`** | **0.876** | **30/36** |
-  | `goblin` (bare) | 0.488 | 18/36 |
-  | goblin sentence (v2) | 0.274 | 6/36 |
-
-  `"The goblin"` beats daveey's own answers **18/18** and stays competitive
-  (~0.63) against longer descriptive answers. Short shape + goblin loyalty.
 
 ## Layout
 

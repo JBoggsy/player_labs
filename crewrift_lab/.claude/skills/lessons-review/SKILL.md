@@ -1,53 +1,15 @@
 ---
 name: lessons-review
-description: "Periodic (≈weekly) review of crewborg's tentative-lessons archive: cluster the lessons that keep REAPPEARING across independent session buffers, propose promote/keep/cull with recurrence counts, and — on the human's call — graduate the keepers into best_practices.md and retire the reviewed buffers. Triggers: '/lessons-review', 'review the lessons archive', 'which lessons keep reappearing', 'graduate lessons'."
+description: Review current candidate guidance and maintain accurate supported practices.
 ---
 
-# Lessons review
+# Review current guidance
 
-Mine the tentative-lessons archive for the one signal it exists to surface: **lessons that keep
-reappearing across independent sessions.** Recurrence across session buffers — not anyone's
-in-session conviction — is the graduation evidence (a boring lesson seen in 3 sessions outranks a
-brilliant one seen once).
+Read the root learning workflow, the lab's current context, candidate guidance,
+best practices and relevant implementation. Verify each proposed rule against
+independent evidence or source. Keep its scope no broader than the evidence supports.
 
-**Announce:** "Reviewing the lessons archive — clustering recurring lessons across N session buffers."
-
-## Inputs
-
-- [`lessons_archive/*.md`](../../../lessons_archive/) — one buffer per past session (rotated in
-  automatically by the SessionStart hook). `lessons_archive/reviewed/` holds already-reviewed
-  buffers — **exclude them from the candidate set**, but still count them when judging a fresh lesson's
-  recurrence.
-- [`TENTATIVE_LESSONS.md`](../../../TENTATIVE_LESSONS.md) — the live buffer; include it
-  **read-only** (it stays in place; this review never retires it).
-- [`best_practices.md`](../../../best_practices.md) — the graduation target; also check a
-  candidate isn't already there.
-
-## Workflow
-
-1. **Collect** every `### ` lesson from the unreviewed archives (+ the live buffer), keyed by
-   (file, title, evidence).
-2. **Cluster semantically** — the same underlying lesson worded differently counts as recurrence.
-   Cite which sessions each cluster appeared in.
-3. **Propose**, as a table for the human: **promote** (recurred in ≥2–3 sessions, or single-occurrence
-   but high-stakes *and* verified), **keep waiting** (plausible, 1 occurrence), **cull** (contradicted,
-   superseded, or noise). Give the one-line lesson, recurrence count + dates, and a recommendation
-   with a reason. **The human decides — do not graduate without their call.**
-4. **Apply the decisions:** graduated lessons → [`best_practices.md`](../../../best_practices.md),
-   **rewritten as durable practice prose** (not buffer-entry format), in the right part (general vs
-   Crewrift-specific). Culled lessons just retire with their buffer.
-5. **Retire reviewed buffers** → `git mv` them into `lessons_archive/reviewed/`. Waiting lessons
-   stay discoverable there (future reviews count recurrence against `reviewed/` too).
-6. **Commit** with a summary: N buffers reviewed, promoted / waiting / culled counts.
-
-## Discipline
-
-- **Recurrence beats eloquence** — graduate what *keeps coming back*, not what reads well once.
-- **Check the target first** — don't re-promote something already in `best_practices.md`.
-- **Negative results are findings** — a lesson contradicted by later evidence gets culled *with a
-  note* in the commit message, not silently dropped.
-
-## See also
-
-- [`TENTATIVE_LESSONS.md`](../../../TENTATIVE_LESSONS.md) + [`lessons_archive/README.md`](../../../lessons_archive/) — the lifecycle this closes.
-- [`best_practices.md`](../../../best_practices.md) — where keepers land.
+Promote supported rules into the appropriate current reference. Replace superseded
+claims directly. Remove resolved or unsupported candidates; keep unresolved questions
+explicitly tentative. Do not create session archives, version logs, audit records or
+change narratives. Public wiki edits require session authorization.

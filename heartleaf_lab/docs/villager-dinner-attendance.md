@@ -6,8 +6,7 @@ thin wrappers that just pass a different "soul" prompt). Source:
 `coworld-heartleaf/players/talking_villager/talking_villager.nim` (+ `decisions.nim`),
 read at master `c0dc3df`. All line numbers are from that file.
 
-## What triggers a villager's LLM to ACCEPT our invite (from soul.md, 2026-07-07)
-
+## What triggers a villager's LLM to ACCEPT our invite (from soul.md,
 Each villager's `soul.md` (personality prompt) gives the LLM an **explicit accept recipe**.
 All four (chatty/friendly/fatherly/shy) share the same structure — only the wording of the
 promise differs:
@@ -39,8 +38,7 @@ CAVEAT: this is the LLM path. It requires the villager's LLM to be firing (measu
 xreq — see reliability note below) and to judge itself "free." No deterministic fallback reads
 our chat, so if the LLM is down our invite does nothing to that villager.
 
-## Two facts that drive how we recruit them (verified in source, 2026-07-07)
-
+## Two facts that drive how we recruit them (verified in source,
 1. **A host stands OUTSIDE its own door, visible — not inside.** `gatherAtHouseGoal`
    ("keep the bot **visible outside** one house") targets `desiredHouseGatherPoint =
    (house.x + w/2 + slot_offset, house.y + h + 4)` — a spot just **below the door on the
@@ -55,28 +53,13 @@ our chat, so if the LLM is down our invite does nothing to that villager.
    `go_to_party` early. So **a villager can commit to OUR invite before 4 PM** — via its LLM
    hearing our line and replying "I'll come". CAVEAT: the *deterministic* accept path
    (`bestVisiblePartyHouse` → `go_to_party`) is effectively gated early by `acceptsPartyCrowd`
-   (before 4 PM it wants a visible crowd of 2–4; after 4 PM/`LatePartySearchMinutes` it
-   accepts anyone). And a villager keeps *gathering* until its gardens are exhausted or 5 PM
+   . And a villager keeps *gathering* until its gardens are exhausted or 5 PM
    (`shouldGather`), so pre-4 PM it's out in the gardens, not idle.
    **Implication:** inviting in the gardens *before 4 PM* can work — but it relies on the
    villager's **LLM** hearing us and choosing to accept (ungated), not on the deterministic
    crowd path (gated).
 
 ### Villager LLM reliability — what we've actually measured (don't assume from Crewrift)
-
-**Measured (xreq path, 15 v16 games, 2026-07-07):** the villager LLM **IS working** here — 35
-villager chats, **26 unique lines**, clearly contextual/conversational ("Creek running high? My
-garden's doing well too!"), i.e. real generation, not fixed templates. An earlier note claimed
-"LLM often absent in league pods" — that was an **unverified import from Crewrift** (where the
-Bedrock sidecar served xreq pods but not league/dispatch rounds) and is **not established for
-Heartleaf**; corrected. Two honest limits remain:
-   - **Volume is low: ~2 villager chats/game, and 3/15 games had zero villager chat.** The LLM
-     works but villagers chat *sparsely* — don't count on a dense stream to key off.
-   - **This is verified for the xreq (experience-request) path only.** All our evals are xreq.
-     Whether the LLM fires in true **league/dispatch** rounds is *unverified* — and that's the
-     exact axis where Crewrift differed. For a precise per-call reliability number, pull the
-     villagers' own telemetry artifacts (`--elevated`) and look for LLM-decision-vs-fallback
-     counters, rather than inferring from chat diversity.
 
    So: early garden invites can work *if* their LLM hears+accepts; it demonstrably does in xreq.
    Measure the league path before betting the strategy on it.
@@ -188,7 +171,7 @@ host's party gives *the host* points, not itself. Guests get 0. See
 
 ## Commitment lifecycle
 
-1. **Seek** (before commit): `dinnerGatherGoal` / `partyHouseIndex` pick a target —
+1. **Seek** : `dinnerGatherGoal` / `partyHouseIndex` pick a target —
    host own house, else best visible party, else *scout* houses in a rotating
    sweep (`scoutingHouseIndex`, 1735) to discover crowds.
 2. **Commit**: once `committedPartyHouse` is set (via LLM `go_to_party`, inferred
@@ -215,7 +198,7 @@ commitments through `inferSocialCommitment`. (More on chat range/coordination in
 walks to the door and **goes inside** (onto that house's home map); once inside
 the right house, `firstDinerGoal` positions as a diner. Being inside the host's
 home map is exactly what the scorer counts (`homeVisitors`: `mapIndex == host's
-home map`). Pre-dinner (before `HouseEnterMinutes`) guests **gather outside** the
+home map`). Pre-dinner  guests **gather outside** the
 door (`gatherAtHouseGoal`, spaced by `DoorGatherSlots`) so the crowd is visible to
 others — which is what *draws more guests* via the crowd-following rule above.
 

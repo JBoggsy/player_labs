@@ -11,11 +11,6 @@ events** (movement, proximity, following, kills, bodies, votes, chat, tasks, vis
 from episode *slot* to **policy / role**, and collates them into a queryable **DuckDB/Parquet** dataset
 so you can ask **cross-episode, by-policy, by-role** behavioural questions in SQL.
 
-**The tool is vendored** at [`crewrift_lab/tools/event-warehouse/`](../../../tools/event-warehouse/)
-(two packages: `crewrift-event-warehouse` + its `crewrift-event-reporter`), run via `uv` — no global
-install. Its own [`README`](../../../tools/event-warehouse/crewrift-event-warehouse/README.md) is the
-full reference; this skill is the operator's path.
-
 **Use it when** a survey/A-B/diagnose question needs the actual behaviour: kill conversion, stalking,
 being-trailed, task abandonment, vote correctness, suss accuracy. **Don't** use it for a quick
 batch overview — that's the fast `crewrift-survey`.

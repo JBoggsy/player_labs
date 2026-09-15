@@ -44,20 +44,6 @@ everyone else's changes.
    fire one `fetch_artifacts.py --xreq … --watch` per arm in the background right after step 2's
    creates, so both downloads overlap the still-running episodes.
 
-4. **Quantitative diff + report** — run *your lab's* `compare.py` adapter (it calls the shared engine),
-   then the shared renderer:
-   ```bash
-   AB=.claude/skills/coworld-ab/scripts
-   uv run python <your-lab>/.claude/skills/<lab>-ab/scripts/compare.py /tmp/ab/base /tmp/ab/cand \
-     --baseline player:vM --candidate player:vN --target <metric> --json /tmp/ab/diff.json
-   uv run python "$AB/compare_report.py" /tmp/ab/diff.json --out /tmp/ab/ab.html \
-     --eyebrow "<Game> · A/B comparison" --finding finding.md --verdict "<one-line synthesis>"
-   ```
-   The adapter leads with the target delta, then a **group-split** table of all metrics, each marked
-   **improved / regressed / inconclusive** with a p-value, plus a **regression scan**. It's deliberately
-   conservative — a borderline move reads as `inconclusive`. The report renders this as a comparison page;
-   it's a **starting point — adapt/extend the visuals** to what the comparison shows.
-
 5. **Qualitative compare — the part numbers can't give.** Read both batches **side by side** through
    your lens; read the player's own logs at the moments that matter. Write a focused finding and pass
    it to the report as `--finding`.
@@ -99,7 +85,7 @@ JSON. To add a new game: copy crewrift's `compare.py`, swap the four game-specif
 - **`coworld-experience-requests`** / **`coworld-episode-artifacts`** — fire the matched runs / pull them.
 - **`crewrift-ab`** — the reference adapter (crewrift's metrics over this engine).
 
-## Statistical contract (2026-09-14)
+## Statistical contract
 
 The shared engine uses SciPy Fisher exact tests for binary episode outcomes and Welch t-tests for continuous episode values. It applies Benjamini–Yekutieli correction across reported metric/group tests; displayed `p` is adjusted and `raw_p` is unadjusted. A directional verdict also requires at least 30 observations per arm/group. This floor does not guarantee adequate power. `inconclusive` does not establish equivalence or safety.
 

@@ -6,11 +6,6 @@ is a JSON string you read with `json_extract_string(value,'$.field')` (text) or
 `json_extract(value,'$.field')::int|double` (numbers). This catalogs every `key` and its `value`
 fields, so you can write queries without guessing.
 
-> **Verified** against the extractor source 2026-06-27: raw keys from
-> `coworld-crewrift/tools/expand_replay.nim`; reporter metadata from
-> `crewrift-event-reporter/.../events.py`; derived keys + thresholds from `.../analysis.py`; the fact
-> schema from `crewrift-event-warehouse/.../schema.py`. Re-derive there if a field looks off.
-
 ## The two universals
 
 - **`slot` ≥ 0** = the row is attributed to that player; its `policy_name` / `policy_version` / `role`

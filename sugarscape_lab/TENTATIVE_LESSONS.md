@@ -1,3 +1,5 @@
-# Sugarscape tentative lessons
+# Candidate guidance
 
-Candidate findings belong here, with evidence, game/version scope and counterexamples. See the [shared learning lifecycle](../docs/learning.md). No new gameplay lesson is asserted by the documentation modernization.
+Keep unresolved, testable ideas here with the current evidence needed to evaluate them.
+Promote supported guidance to best_practices.md, and remove resolved or unsupported
+claims. This is a current working document, not a session log.

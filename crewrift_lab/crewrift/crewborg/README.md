@@ -5,10 +5,6 @@ Crewborg plugs Crewrift-specific perception, belief, modes, and strategy into th
 Player SDK's two-loop runtime and runs as a WebSocket client that speaks Crewrift's
 binary protocol to the Coworld runner.
 
-The shared **Player SDK** is the `players.player_sdk` package, imported from the
-**public `Metta-AI/players` repo**, which tracks `main` (installed via `pyproject.toml`;
-no local checkout — see the [lab README](../../README.md)); it is not vendored in this tree.
-
 - **Design spec:** [`design.md`](./design.md) — the settled architecture.
 - **Orientation:** [`AGENTS.md`](./AGENTS.md) — codebases, protocol, source pointers.
 - **Design docs:** [`docs/`](./docs/) — living deep-dives, e.g.
@@ -16,9 +12,6 @@ no local checkout — see the [lab README](../../README.md)); it is not vendored
   table + how we learn/improve the weights) and
   [`agent-tracking.md`](./docs/agent-tracking.md) (probabilistic location
   tracking for imposter search).
-
-Develop / run / test / benchmark / fetch-episode workflows live at the lab level —
-see the [lab README](../../README.md).
 
 ## What it does
 
@@ -76,25 +69,6 @@ liars (`domain.honor_liar`). As imposter it stays entirely silent (the rules
 permit silence, never a false crew claim). Receive-always / send-optional; set the
 flag to `0`/`false` for byte-identical legacy behaviour. Design + the HS1 wire
 spec: [`docs/designs/honor-society.md`](docs/designs/honor-society.md).
-
-**Chat-provided evidence** (`CREWBORG_CHAT_EVIDENCE`, **default OFF in code;
-recipe-enabled** — the 2026-07-22 W3b A/B ship-recommends `=1` with the default
-trust floor; the earlier un-floored calibration was refuted — both verdicts in
-the design doc): other
-players' parsed chat claims (kill/vent testimony, accusations, defenses — extracted
-by a deterministic template pass plus the spaCy parse) feed the suspicion posterior
-as a log-LR term **weighted by speaker trust**: HS-verified members count in full
-(a trusted "saw X kill" clears the vote bar on its own), everyone else is scaled by
-`1 − P(speaker is imposter)`, witnessed imposters count zero, and the total is
-capped below witnessed certainty (chat is hearsay). Identical on both scoring paths
-and with the meeting LLM on or off; `=1` enables.
-`CREWBORG_CHAT_EVIDENCE_TRUST_FLOOR` (default **0.9**) gates WHO may testify at
-all: speakers below the floor contribute zero, so by default only HS-verified
-members (trust 1.0) and near-cleared players (suspicion ≤ 0.1) count — the W3b
-re-tuning that removes the fabrication-prone stranger band; `=0` restores the
-un-floored (refuted) v1 weighting.
-Design + A/B verdict: `crewrift_lab/docs/designs/2026-07-22-chat-evidence-incorporation.md`;
-model reference: [`docs/suspicion.md`](docs/suspicion.md) §3.1.
 
 A separate, opt-in **LLM gameplay commander** (`CREWBORG_LLM_COMMANDER=1`) can steer the
 Playing phase by writing *priorities* into belief that the modes read to bias which room to

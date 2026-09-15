@@ -9,7 +9,7 @@ benchmark, plus the exact round-scoring math that turns episodes into a ranking.
 Read [`vanilla-wow-gameplay.md`](vanilla-wow-gameplay.md) first for what an episode *is* and
 the per-slot raw score; this doc is the layer above it — how episodes become a ranked round.
 
-Citations are `file:line` into `~/coding/coworlds/coworld-vanilla-wow` (read 2026-07-13).
+Citations are `file:line` into `~/coding/coworlds/coworld-vanilla-wow`.
 
 ---
 

@@ -5,9 +5,6 @@ description: "Use to fetch and query the Heartleaf event warehouse — the HOSTE
 
 # Heartleaf Event Warehouse
 
-> **Freshness note (2026-09-14 audit):** reporter versions, automatic attachment and failure frequencies below are historical July observations. Verify the current reporter binding, identity mapping and trace coverage before using a new batch. The documented dropout/NULL-version issues remain unresolved here; do not infer they are fixed from successful reporter completion.
-
-
 The deep-dig tool for Heartleaf. Unlike the Crewrift/CTF warehouses (built locally from
 downloaded replays), Heartleaf's warehouse is a **hosted v2 wasm reporter on Observatory** —
 `heartleaf-round-warehouse` (`rptr_5c331a88-9403-455e-b736-316f63622714`, ours). It fires
@@ -82,7 +79,7 @@ FROM events WHERE kind='dinner' AND CAST(json_extract(value,'$.was_host') AS BOO
 
 ## Discipline
 
-- **⚠️ KNOWN BUG (2026-07-15, live v5): slot→policy attribution is WRONG whenever players
+- **⚠️ KNOWN BUG : slot→policy attribution is WRONG whenever players
   crash/disconnect.** Replay slots are assigned in *connection order* (and compact around
   dropouts), but the reporter keys identity by `participants[].position` (*seat* order) —
   see `identity.nim`/`run.nim` in the reporter source. In rounds where the co-gas/daf

@@ -1,8 +1,5 @@
 # Crewrift's real vision model, and where crewborg approximates it
 
-**Status:** reference doc, written 2026-07-06 after tracing the actual mechanic in the
-vendored game source. Read this before adding or tuning any "can X see Y" constant.
-
 ## The real mechanic
 
 Crewrift vision is **not a circular radius**. Per-player camera + visibility is computed
@@ -24,51 +21,16 @@ their own center, over the same wall geometry — if A is within B's frame and u
 B is (in practice) within A's frame and unoccluded too. Practically: **if we currently
 see a live crewmate at all, they can see us back.**
 
-## Where crewborg approximates this, and how
+## Where crewborg approximates vision
 
-Two places in the codebase model "can X see Y" — for different purposes, so they don't
-have to (and, before 2026-07-06, didn't) use the same number:
+The kill-witness gate in `strategy/opportunity.py` uses the live visible roster.
+It checks that count against the urgency-dependent witness tolerance. The gate
+must use actual observation visibility rather than an unrelated distance radius.
 
-1. **The kill-witness gate** (`strategy/opportunity.py`'s `unwitnessed()`). Reworked
-   2026-07-06: since vision is symmetric and `belief.roster` is fed purely from our own
-   vision, counting how many live non-teammate crewmates are currently visible to us
-   (`last_seen_tick == belief.last_tick`) **is** the witness count, exactly — no radius
-   or staleness window needed as a proxy. That count is checked against an
-   urgency-ramped tolerance (`witness_tolerance()`: 1 at zero urgency, up to 6 — an
-   "always strike" ceiling in this game's 6-crew format — by full urgency), not gated
-   as a bare yes/no on any witness at all. (Previously used a bespoke
-   `BASE_ISOLATION_RADIUS = 48` / `WITNESS_WINDOW_TICKS = 72` decaying-with-urgency
-   heuristic that was never derived from the 128px screen constant and was actually
-   *smaller* than the true ~64–90px reach — a real gap where the gate could clear a kill
-   as "unwitnessed" that would in fact have been seen in-game.)
-2. **WATCH vantage scoring** (`modes/search.py`'s `VANTAGE_RANGE`, in `_best_vantage()`).
-   This asks a genuinely different, *prospective* question — "how far can a *candidate
-   standing point* see into a room" — for spots the agent hasn't stood at yet, so it
-   can't be answered by "are they in `belief.roster` right now." It still needs a
-   distance cap, corrected 2026-07-06 from an arbitrary `360` to **`91`** (`ceil(64·√2)`,
-   the circumscribed-circle radius of the true 128×128 square — chosen to over-cover
-   rather than under-cover, since in-room wall occlusion (`_segment_clear`) is what
-   actually narrows it down; see that module's own comment). Later the same day,
-   `_best_vantage()` was rewritten to score only **room task-station points**
-   (`_room_task_indices`), not arbitrary open-floor points — WATCH always latches onto a
-   task while observing rather than hovering mid-room (see `imposter-play.md`'s
-   "Vantage selection" section). The standalone `visionbake.py` module and its
-   precomputed-pickle asset (`map/croatoan_visionbake.pkl.gz`), which used to score
-   *arbitrary* floor points for the now-removed camouflage one-shot, were deleted
-   entirely as part of that rework — they no longer exist in this codebase.
+WATCH vantage scoring in `modes/search.py` evaluates task-station positions that
+the agent has not yet occupied. It uses a 91px distance cap and wall occlusion.
+That circle bounds the diagonal reach of the 128×128 viewport; it is an
+approximation for prospective positions, not the exact observation predicate.
 
-Both are still **circular approximations of a square viewport** — exact for the
-witness gate now (roster membership already reflects the true square+occlusion check),
-approximate for vantage scoring (a real geometry query against a point that isn't
-necessarily where we're currently standing). A precise axis-aligned box check is
-possible there if the circular approximation ever proves too loose in practice; not
-done here since walls already do most of the real narrowing.
-
-## Caution before re-tuning
-
-This lab's own history (`crewrift_lab/lessons_archive/`) records **three separate
-refuted attempts** to further *relax* the witness gate (dropping it after kill #1
-instead of #2, lowering `URGENCY_FULL_TICKS` from 240→80) — each moved kills/ejections
-the wrong direction. This doc's changes are a **correctness fix + a mechanism
-simplification**, not a re-loosening — but they touch the same lever, so validate with
-a fresh A/B (`crewrift-ab` skill) before shipping to a league, not just unit tests.
+Changing either rule can alter kill timing and exposure. Check geometry locally
+and evaluate competitive effects with a fresh matched comparison.

@@ -370,17 +370,3 @@ turns this into behavior, defer to its strategy docs below.
 ---
 
 ## Related docs
-
-- [`./crewrift-protocol.md`](./crewrift-protocol.md) — the wire protocol: the bytes
-  a player sends/receives to *act* on these mechanics.
-- [`./crewrift-replays.md`](./crewrift-replays.md) — reading a *finished* game
-  (visual replay, `expand_replay` event timeline, per-policy logs).
-- [`./coworld-platform.md`](./coworld-platform.md) — the game-agnostic
-  image/build/ship/host contract and how scores become standings.
-- [`./README.md`](./README.md) — reference-doc index.
-- [`../best_practices.md`](../best_practices.md) — crewborg engineering practices.
-- crewborg internals — strategy over these rules:
-  [`../crewrift/crewborg/docs/imposter-play.md`](../crewrift/crewborg/docs/imposter-play.md),
-  [`../crewrift/crewborg/docs/crewmate-play.md`](../crewrift/crewborg/docs/crewmate-play.md),
-  [`../crewrift/crewborg/docs/meetings.md`](../crewrift/crewborg/docs/meetings.md),
-  [`../crewrift/crewborg/docs/perception-and-belief.md`](../crewrift/crewborg/docs/perception-and-belief.md).

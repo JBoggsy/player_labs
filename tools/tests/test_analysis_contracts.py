@@ -192,18 +192,20 @@ def test_miner_rejects_duplicates_and_nonfinite():
         miner.associate(rows, {})
 
 
-def test_rotation_preserves_nonstandard_entries_and_does_not_commit(tmp_path):
-    (tmp_path/'tools').mkdir(); (tmp_path/'test_lab').mkdir()
-    shutil.copy(ROOT/'tools/rotate_lessons.sh', tmp_path/'tools/rotate_lessons.sh')
-    buffer = tmp_path/'test_lab/TENTATIVE_LESSONS.md'
-    buffer.write_text('A lesson without the required heading.\n')
-    subprocess.run(['bash', str(tmp_path/'tools/rotate_lessons.sh'), 'test_lab'], input='{"source":"startup"}', text=True, check=True, capture_output=True)
-    archives = list((tmp_path/'test_lab/lessons_archive').glob('*.md'))
-    assert len(archives)==1 and archives[0].read_text()=='A lesson without the required heading.\n'
-    before = buffer.read_text()
-    subprocess.run(['bash', str(tmp_path/'tools/rotate_lessons.sh'), 'test_lab'], input='{"source":"resume"}', text=True, check=True, capture_output=True)
-    assert buffer.read_text()==before
-    assert 'git -C' not in (tmp_path/'tools/rotate_lessons.sh').read_text()
+def test_lesson_context_preserves_current_knowledge(tmp_path):
+    (tmp_path / 'tools').mkdir()
+    (tmp_path / 'test_lab').mkdir()
+    script = tmp_path / 'tools/lesson_context.sh'
+    shutil.copy(ROOT / 'tools/lesson_context.sh', script)
+    buffer = tmp_path / 'test_lab/TENTATIVE_LESSONS.md'
+    buffer.write_text('Unresolved hypothesis.\n')
+    before = {p.relative_to(tmp_path): p.read_bytes() for p in tmp_path.rglob('*') if p.is_file()}
+    for source in ('startup', 'clear', 'resume', 'compact'):
+        run = subprocess.run(['bash', str(script), 'test_lab'],
+                             input=json.dumps({'source': source}), text=True,
+                             check=True, capture_output=True)
+        assert 'test_lab/WORKING_CONTEXT.md' in json.loads(run.stdout)['hookSpecificOutput']['additionalContext']
+        assert {p.relative_to(tmp_path): p.read_bytes() for p in tmp_path.rglob('*') if p.is_file()} == before
 
 
 def test_malformed_artifact_is_bounded_and_other_episode_progresses(tmp_path):
@@ -219,19 +221,6 @@ def test_malformed_artifact_is_bounded_and_other_episode_progresses(tmp_path):
     assert fa.watch_loop(BrokenClient(), args, 'https://example.invalid',
                          want_replay=False, want_results=True, want_logs=False, want_artifacts=False) == 1
     assert json.loads((tmp_path/'watch_state.json').read_text())['ereq_bad'] == 2
-
-
-def test_archive_failure_preserves_buffer(tmp_path):
-    (tmp_path/'tools').mkdir(); (tmp_path/'test_lab').mkdir(); (tmp_path/'bin').mkdir()
-    shutil.copy(ROOT/'tools/rotate_lessons.sh', tmp_path/'tools/rotate_lessons.sh')
-    buffer = tmp_path/'test_lab/TENTATIVE_LESSONS.md'; buffer.write_text('Important original.\n')
-    failing_mv = tmp_path/'bin/mv'; failing_mv.write_text('#!/bin/sh\nexit 1\n'); failing_mv.chmod(0o755)
-    import os
-    env = dict(os.environ, PATH=str(tmp_path/'bin')+os.pathsep+os.environ['PATH'])
-    result = subprocess.run(['bash', str(tmp_path/'tools/rotate_lessons.sh'), 'test_lab'], input='{"source":"startup"}',
-                            text=True, capture_output=True, env=env)
-    assert result.returncode == 1
-    assert buffer.read_text() == 'Important original.\n'
 
 
 def test_crew_whole_episode_failure_excluded_from_gameplay(tmp_path):
@@ -306,27 +295,6 @@ def test_create_preserves_admission_cost_preview(monkeypatch, tmp_path, capsys):
     body.write_text('{"roster": []}')
     er.cmd_create(Namespace(server=None, body=str(body), check_schema=False))
     assert json.loads(capsys.readouterr().out)['cost_preview'] == preview
-
-
-def test_rotation_does_not_archive_fresh_templates(tmp_path):
-    (tmp_path / 'tools').mkdir()
-    (tmp_path / 'test_lab').mkdir()
-    script = tmp_path / 'tools/rotate_lessons.sh'
-    shutil.copy(ROOT / 'tools/rotate_lessons.sh', script)
-    def rotate():
-        subprocess.run(['bash', str(script), 'test_lab'], input='{"source":"startup"}',
-                       text=True, check=True, capture_output=True)
-    rotate()
-    buffer = tmp_path / 'test_lab/TENTATIVE_LESSONS.md'
-    buffer.write_text(__import__('re').sub(r'(?<=Session started:\*\* )[0-9-]+ [0-9:]+', '2000-01-01 00:00', buffer.read_text()))
-    rotate()
-    archives = tmp_path / 'test_lab/lessons_archive'
-    assert not list(archives.glob('*.md'))
-    buffer.write_text(buffer.read_text().replace('**Lifecycle.**', 'Important pre-divider lesson.\n\n**Lifecycle.**'))
-    rotate()
-    saved = list(archives.glob('*.md'))
-    assert len(saved) == 1
-    assert 'Important pre-divider lesson.' in saved[0].read_text()
 
 
 @pytest.mark.parametrize('results', [None, '<html>bad data</html>'])

@@ -208,10 +208,10 @@ writes require a user or player token. Full table with request bodies:
 truth (read-only): `~/coding/metta/app_backend/src/metta/app_backend/v2/routes/posts.py`
 and `wikis.py`.
 
-## Status of this skill
+## Public writes
 
-Every **read and search** command was exercised live against the Paintbot forum and
-wiki on 2026-09-02. Every **write** (`forum post`, `forum comment`, `forum vote`,
-`wiki write`) is implemented from the route source and verified only through
-`--dry-run` — no test post, comment, vote, or edit has ever been sent, because
-those are public. The first real write should be reviewed by James before it goes.
+Read the current page before editing. Use its base revision and a stable
+idempotency key, preview the payload, publish within the user-authorized scope,
+and read the page back. A conflict requires rereading and reconciling the change.
+Wiki page removal requires the game owner or a Softmax team account; ordinary
+editing access does not grant removal. Do not escalate identity to bypass that gate.

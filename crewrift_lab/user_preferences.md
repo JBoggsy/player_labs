@@ -17,8 +17,7 @@ General (non-Crewrift) preferences go in the lab-wide file instead.
 
 ## Preferences
 
-- **XP-request opponents: the current Crewrift Prime champions** (2026-06-29; supersedes the
-  earlier "only Aaron's and Andre's players" rule, now scrapped). Fill opponent seats from the
+- **XP-request opponents: the current Crewrift Prime champions** . Fill opponent seats from the
   live Prime division's champion pool — i.e. `top_n` / `random` against the Prime division
   target. Measure crewborg against whoever is actually competing now, not a hand-picked set.
 - **Rotate opponents through seats so we play with AND against each of them in every role.**
@@ -38,29 +37,28 @@ General (non-Crewrift) preferences go in the lab-wide file instead.
 
 These preferences apply to Crewborg, not unrelated games or players.
 
-- **NEVER submit a policy without LLM chatting to the actual tournament** (James, 2026-07-01).
+- **NEVER submit a policy without LLM chatting to the actual tournament**.
   League submissions ALWAYS carry the meeting LLM (the recipe below). Deterministic (LLM-off)
   uploads exist ONLY as A/B test arms — both arms deterministic to isolate the mechanism under
   test. The flow: A/B the change deterministically → if positive, re-upload the same image with
   the LLM recipe → verify `meeting_llm_decision` fires → submit THAT.
 
-- **ALL uploads: meeting LLM ON, commander OFF, unless told otherwise** (James, 2026-07-01).
+- **ALL uploads: meeting LLM ON, commander OFF, unless told otherwise**.
   Every `coworld upload-policy` gets `--use-bedrock --bedrock-model
   us.anthropic.claude-haiku-4-5-20251001-v1:0 --secret-env CREWBORG_LLM_MEETINGS=1`
-  (the proven v70 recipe: NO manual USE_BEDROCK — the SDK gates on the sidecar endpoint)
+  (the SDK gates on the sidecar endpoint; do not set USE_BEDROCK manually)
   and does NOT set `CREWBORG_LLM_COMMANDER` (stays off). After upload, verify
   `domain.meeting_llm_decision` fires in an xreq probe; note league/dispatch pods
-  historically lack the Bedrock sidecar (LLM falls back deterministic there) — check the
+  may lack the Bedrock sidecar (LLM falls back deterministic there) — check the
   league telemetry after any submission.
 
-- **Always upload policies with ALL telemetry enabled unless told otherwise** (James, 2026-07-01).
+- **Always upload policies with ALL telemetry enabled unless told otherwise**.
   Every `coworld upload-policy` gets `--secret-env CREWBORG_METRICS=1 --secret-env
   CREWBORG_TRACE_GROUPS=all --secret-env CREWBORG_TRACE_SUSPICION_FEATURES=1` (the `all`
   trace group exists in `trace.py`; the suspicion-features flag is a SEPARATE env gate —
   `TRACE_GROUPS=all` does NOT imply it, and without it `suspicion_snapshot` lacks the
-  `ranking[].features` vectors the suspicion refit needs; added 2026-07-02 per James after
+  `ranking[].features` vectors the suspicion refit needs; use them after
   discovering no upload had ever carried it). Rationale: massive logs when we need them
-  beat re-uploading the same policy and re-running XP requests to get telemetry (v81 had
-  to be re-uploaded as v82 for exactly this reason). If telemetry volume is ever suspected
+  beat re-uploading the same policy and re-running XP requests to get telemetry . If telemetry volume is ever suspected
   of causing latency/timeouts, that's a finding to raise, not a reason to silently strip
   tracing.

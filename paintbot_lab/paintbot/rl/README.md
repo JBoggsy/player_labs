@@ -6,9 +6,6 @@ a pretrained causal language model consumes semantic Sprite-v1 entities, a
 cached walkability-map representation, and the previous action. It predicts
 four grammar-constrained action tokens followed by `<STOP>`.
 
-The living architecture and decision record is
-[`../../docs/designs/rl-policy.md`](../../docs/designs/rl-policy.md).
-
 ## Implemented pipeline
 
 The implementation now covers the complete replay-to-checkpoint path:
@@ -195,15 +192,6 @@ PAINTBOT_DASHBOARD_TRAINING_LOG=/home/metta/paintbot_rl_training_20260807/logs/d
 
 ### Matched-compute diversity arm
 
-`run_diversity_experiment.py` compares the original 250,000 unique rows x three
-epochs against 750,000 unique rows x one epoch. Total example presentations and
-optimizer updates remain fixed. The runner writes a separate balanced index,
-trains and resumes under `training-v2-diversity`, evaluates validation, and
-deliberately stops before the sealed test. `supervise_diversity_experiment.sh`
-provides retry and reboot recovery on mettabox1. The baseline diagnosis and
-frozen checksums are recorded in the
-[`exhaustive-corpus report`](../../docs/reports/rl-exhaustive-baseline-2026-08-14.md).
-
 ### Full run
 
 The tracked GPU-oriented manifest uses winning POVs from GV16/24/30/35 for
@@ -338,15 +326,10 @@ accuracy strictly above 70%.
 This keeps model selection on validation and makes the one-time test opening
 auditable:
 
-The legacy `indices/test.npy` was opened by the original teacher-forced
-evaluator before this guard existed, so it is retired from final confirmation.
-The gate instead requires `indices/test-confirmation.npy`, frozen before any
-current-arm validation result with `freeze_confirmation_holdout.py`. The
-replacement excludes every replay ID touched by the legacy index, contains one
-row from each of 10,000 episode-seat trajectories (7,236 replays), and is
-balanced 5,000/5,000 between changed and held actions. No model-selection or
-diagnostic command reads it. Its immutable provenance is recorded in
-`configs/confirmation-holdout-v1.json`.
+The confirmation gate requires `indices/test-confirmation.npy`, frozen before
+candidate validation with `freeze_confirmation_holdout.py`. It excludes replay IDs
+used by the development test index. Keep model selection and diagnostic commands
+away from this sealed holdout; its provenance is in `configs/confirmation-holdout-v1.json`.
 
 The one-time deterministic freeze command was:
 
@@ -367,15 +350,6 @@ uv run python paintbot_lab/paintbot/rl/evaluate_sealed_candidate.py \
   --workspace runs/expert-corpus-v1 \
   --out runs/expert-corpus-v1/training-v2-diversity/full/sealed_test_evaluation.json
 ```
-
-The first mettabox1 run and its negative behavioral verdict are recorded in the
-[`GPU training report`](../../docs/reports/rl-mettabox1-sft-2026-08-07.md).
-The matched weighting follow-up is in the
-[`action-change report`](../../docs/reports/rl-action-change-weighting-2026-08-07.md).
-The subsequent 2x2 found that history, not transition sampling alone, carries
-the useful signal. Its selected arm improved action changes on held-out GV40
-but is not deployment-ready; see the
-[`temporal-history report`](../../docs/reports/rl-transition-temporal-2x2-2026-08-07.md).
 
 History-aware training uses `--max-history-tokens` (default 832) to reserve the
 entire compact history before allocating the remaining text budget to the
@@ -406,22 +380,6 @@ each represented GameVersion. It samples exactly 1,000 evenly spaced frames
 per version so recent data cannot dominate the result. Raw corpora and
 generated results are local artifacts, not repository data.
 
-The first run covered GV16/24/30/35/40 and **refuted** the full all-label
-serialization: global p99 was 30,297 tokens and max was 43,672. Historical
-human-view `fog` runs dominated the failure. Removing only those objects from
-the same frames reduced p99 to 3,429 and max to 4,424; that is a diagnostic,
-not a revised verdict. See the
-[`experiment report`](../../docs/reports/rl-observation-length-experiment.html)
-and [`living design`](../../docs/designs/rl-policy.md).
-
-The source-derived follow-up excludes exactly `fog`, `splatter …`,
-`hit splat …`, and `damage pop …` while retaining unknown labels. It
-**confirmed** the canonical bot-semantic representation: global p99 3,178 and
-max 4,424 tokens. `serialize_observation()` applies this filter by default;
-pass `include_human_visuals=True` only to reproduce the rejected all-label
-baseline. See the
-[`filtered experiment`](../../docs/reports/rl-bot-semantic-length-experiment.html).
-
 ```sh
 uv run python paintbot_lab/paintbot/rl/capture_wire_observations.py \
   path/to/slot.wire.jsonl --game-version 35 \
@@ -438,4 +396,4 @@ slice now decodes the walkability payload through a separate, configurable map
 encoder; its architecture and token budget are baseline choices, not settled
 experimental conclusions.
 
-**Access contract (2026-09-14):** use normal participant access only. Older elevated-access recipes are superseded; private opponent evidence remains unavailable.
+**Access contract:** use normal participant access only. Private opponent evidence remains unavailable.

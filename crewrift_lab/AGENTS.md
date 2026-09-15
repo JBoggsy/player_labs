@@ -118,7 +118,7 @@ Crewrift-specific skills live here in `.claude/skills/`:
   **crewrift binding** of the root **`coworld-experiment`** method: it supplies crewrift's
   instruments (event warehouse / `crewrift-ab` / trace-logs) and examples, and uses the root
   `experiment_report.py` renderer. Usable standalone ("it might be X — let's test it").
-- **`lessons-review`** — cluster lessons that RECUR across archived sessions and graduate keepers
+- **`lessons-review`** — review recurring supported lessons and keep current guidance accurate
   to `best_practices.md` (the ≈weekly, human-driven graduation pass).
 
 The loop's **game-agnostic** halves (experience requests, artifact download, local run,
@@ -142,42 +142,14 @@ trace-level verification). **Read both**; root first.
 [`../user_preferences.md`](../user_preferences.md). **Read both on startup**, and when
 the human states a Crewrift-specific preference, record it here.
 
-## Working context & tentative lessons
+## Working context and guidance
 
-Two session-spanning files carry state and learning forward between sessions — **read
-both on startup** alongside the preferences above:
-
-- **[`WORKING_CONTEXT.md`](WORKING_CONTEXT.md)** — the **live, minimal, high-signal
-  state of what we're working on right now**: the current objective plus the few facts
-  worth carrying forward (active policy/version, the working lens, live findings, open
-  threads). Read it to resume, **keep it updated as you learn**, and **clear/reseed it
-  when we pivot to a whole new direction**. A recorded objective there is the
-  resume-the-loop signal (it doubles as the onboarding "active policy" marker).
-- **[`TENTATIVE_LESSONS.md`](TENTATIVE_LESSONS.md)** — **this session's** eager,
-  noisy buffer of candidate lessons: write here freely, AS YOU GO, the moment
-  something *looks* like a reusable lesson. Most entries are noise; the value is the
-  occasional gem. **The lifecycle is automated** (2026-06-12): a SessionStart hook
-  archives each session's buffer to [`lessons_archive/`](lessons_archive/) and creates
-  a fresh one; the **`/lessons-review`** skill (≈weekly, human-driven) clusters lessons
-  that RECUR across archived sessions and graduates keepers to `best_practices.md`.
-  Recurrence across sessions — not in-session hit counts — is the graduation signal.
-  (A single repo-wide Stop hook (`tools/lessons_stop_nudge.sh` at the repo root) nudges
-  once per session, naming only the labs the session actually worked in whose buffers
-  are still untouched — it replaced the old per-lab nudges on 2026-07-13.)
-
-**Cleanup step — run when you wrap up a thread (and before you push/land work).** Do a
-deliberate sweep so nothing learned evaporates:
-
-1. **Capture all tentative lessons.** Re-scan the work you just did for anything that
-   *looked* like a reusable lesson — a gotcha, a surprise, a "next time I'd…" — and make
-   sure each is written into [`TENTATIVE_LESSONS.md`](TENTATIVE_LESSONS.md). Capturing
-   eagerly is the whole point; an un-recorded lesson is a lost one. (The buffer is
-   archived automatically at the next session start; graduation happens at
-   `/lessons-review`, keyed on cross-session recurrence.)
-2. **Reconcile working context.** Prune completed/stale detail from
-   [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md) (it's a one-screen state file, not a log —
-   finished work lives in git history / the version log), update the active
-   policy/version, and **clear/reseed it on a pivot** to a new direction.
+Keep the active objective, scope, unresolved constraints and next decision in
+[WORKING_CONTEXT.md](WORKING_CONTEXT.md). Keep testable unresolved ideas in
+[TENTATIVE_LESSONS.md](TENTATIVE_LESSONS.md); promote supported rules to
+best_practices.md and remove resolved claims. Follow the
+[shared learning workflow](../docs/learning.md). Update these documents in place;
+do not create session archives, version logs or change narratives.
 
 ## Deferred tasks
 
@@ -224,7 +196,3 @@ Docker-only with no credentials**.
 </content>
 
 ## Additional analysis entry points
-
-- [Field study](.claude/skills/crewrift-field-study/SKILL.md) for field-wide behavior investigation.
-- [Specialist tools](tools/), [suspicion lab](suspicion_lab/README.md), [ranking analysis](ranking_analysis/README.md).
-- [Shared capability map](../docs/capabilities.md) and [learning lifecycle](../docs/learning.md).

@@ -15,7 +15,7 @@ defines *process*; this file defines *Cue-n-Woo*.
 Cue-n-Woo is a Coworld **two-player, text-only, theory-of-mind game** (**not** a
 gridworld, despite shipping in the same `cogames` image family as among_them /
 cogs_vs_clips). Two players each privately interview a hidden-persona **judge**
-(Gemma-2-9B-IT steered via FLAS toward one of **61 publicly-known writing styles**),
+(Gemma-2-9B-IT steered via FLAS toward a **combination of independent concept axes**),
 then each writes 3 challenge questions with their own answers and blind-answers the
 opponent's 3 questions. The steered judge scores each question as a 2-way preference
 between the two answers. **You win by modeling the judge's hidden style better than
@@ -39,8 +39,8 @@ repeat → human gate → submit) runs **unchanged** here. The Cue-n-Woo-specifi
 - **Evaluate** (step 1) — experience requests against the uploaded version of the
   policy under optimization. The game is symmetric (no role split like Crewrift's
   crew/imposter), so the main cuts are **opponent/matchup** and the **hidden style**
-  (the 61-style pool — watch whether one style cluster is systematically lost). The
-  **judge worker is publicly callable unsigned** (`cue-n-woo-worker.softmax-research.net`),
+  (the resolved concept configuration). The
+  **judge worker is publicly callable unsigned** (`cue-n-woo-fleet.softmax-research.net`),
   so a true head-to-head self-eval is also possible *locally* without the league
   (see the rebuild/upload bullet below).
 - **Report** (step 2) — pull artifacts with the game-agnostic
@@ -53,36 +53,19 @@ repeat → human gate → submit) runs **unchanged** here. The Cue-n-Woo-specifi
 - **Rebuild / upload / submit** (steps 5–8) — build the policy's image with
   its own [`mentalist/Dockerfile`](mentalist/Dockerfile) (`docker build
   --platform linux/amd64`; `--run python --run=-m --run mentalist --use-bedrock` is
-  **mandatory** on upload AND local runs — see [`mentalist/README.md`](mentalist/README.md)),
+  **mandatory** on upload AND local runs),
   then the game-agnostic skills + [`../player-build.md`](../player-build.md) for the
   upload/submit flow. **Hosted-vs-local gotcha that has already bitten:** the league
   runs `require_signing=true` (exercising a game-side signing-key path that local
   `require_signing=false` runs never touch), so a local run can pass while every league
-  episode crashes game-side — one more reason the hosted eval, not a local run, is the
-  test — see
-  [`docs/league-infra-incident-2026-06-12.md`](docs/league-infra-incident-2026-06-12.md).
+  episode crashes game-side; verify the selected hosted configuration.
 
 ## Cue-n-Woo lab docs
 
-- **[`docs/cue-n-woo-gameplay.md`](docs/cue-n-woo-gameplay.md)** — the self-contained
-  game reference: rules, roles, phase flow, the wire protocol, the scoring math, the
-  full 61-style pool, and a strategy treatment. **Start here** to build a mental model
-  before reasoning about play or setting direction.
-- **[`docs/probe-findings.md`](docs/probe-findings.md)** — what the live worker-probe
-  spike established (the evidence the player design rests on): topicality dominates and
-  style is a decisive *tilt*; a cheap no-LLM classifier hits ~96% top-1 with 3
-  questions; a pure-style answer path is dead on arrival. The reproducible harness is
-  [`probe/`](probe/).
-- **[`docs/designs/player-design.md`](docs/designs/player-design.md)** — the player
-  architecture + rationale + build order (classifier → Bedrock writer → validator),
-  and the open questions. A living doc.
-- **[`docs/league-infra-incident-2026-06-12.md`](docs/league-infra-incident-2026-06-12.md)**
-  — the league-side IAM bug that disqualified every entrant, how we diagnosed it (game
-  container logs via the then-current job route; use the root artifact reference now) and hotfixed it, and the
-  **metta Terraform reconciliation still owed**.
+- [Gameplay](docs/cue-n-woo-gameplay.md): phase, observation and scoring contract.
+- [Axis-combination concepts](docs/axis-combo-system.md): hidden-concept configuration.
+- [Mentalist implementation](mentalist_v4/README.md): policy components and build.
 
-The vendored policy also carries its own internal docs — see
-[`mentalist/README.md`](mentalist/README.md).
 
 ## Skills
 
@@ -98,7 +81,7 @@ gaps worth filling, in rough priority order (the incident doc flags the first):
 - Use the **shared artifact fetcher** for current game logs and owned seat diagnostics.
   It now reads `/v2/episode-requests/{id}/artifacts/logs`; a separate legacy job-log
   fetcher is unnecessary. Worker-specific diagnostics are not guaranteed in that
-  artifact. The old IAM incident is historical evidence, not a current API recipe.
+  artifact. Use the current API and participant access.
 - A **Cue-n-Woo report** skill — turn a batch of episodes into a dense report on the
   player's strengths/weaknesses (per-question scoring, style-cluster losses,
   decline/conflict pathologies).
@@ -130,43 +113,14 @@ crewrift's broad-coverage style; this game's surface is smaller and the cost/ben
 favors restraint.) When unsure whether a test earns its place, prefer not writing it —
 or ask.
 
-## Working context & tentative lessons
+## Working context and guidance
 
-Two session-spanning files carry state and learning forward between sessions — **read
-both on startup** alongside the preferences above:
-
-- **[`WORKING_CONTEXT.md`](WORKING_CONTEXT.md)** — the **live, minimal, high-signal
-  state of what we're working on right now**: the current objective plus the few facts
-  worth carrying forward (active policy/version, the working lens, live findings, open
-  threads). Read it to resume, **keep it updated as you learn**, and **clear/reseed it
-  when we pivot to a whole new direction**.
-- **[`TENTATIVE_LESSONS.md`](TENTATIVE_LESSONS.md)** — **this session's** eager,
-  noisy buffer of candidate lessons: write here freely, AS YOU GO, the moment
-  something *looks* like a reusable lesson. Most entries are noise; the value is the
-  occasional gem. **The lifecycle is automated**: a SessionStart hook archives each
-  session's buffer to [`lessons_archive/`](lessons_archive/) and creates a fresh one
-  (`tools/rotate_lessons.sh`); the **`/lessons-review`** skill
-  (≈weekly, human-driven) clusters lessons that RECUR across archived sessions and
-  graduates keepers to `best_practices.md`. Recurrence across sessions — not in-session
-  hit counts — is the graduation signal. (The hook is registered in the **root**
-  `.claude/settings.json`, alongside crewrift's. A single repo-wide Stop hook
-  (`tools/lessons_stop_nudge.sh` at the repo root) nudges once per session, naming
-  only the labs the session actually worked in whose buffers are still untouched —
-  it replaced the old per-lab nudges on 2026-07-13.)
-
-**Cleanup step — run when you wrap up a thread (and before you push/land work).** Do a
-deliberate sweep so nothing learned evaporates:
-
-1. **Capture all tentative lessons.** Re-scan the work you just did for anything that
-   *looked* like a reusable lesson — a gotcha, a surprise, a "next time I'd…" — and make
-   sure each is written into [`TENTATIVE_LESSONS.md`](TENTATIVE_LESSONS.md). Capturing
-   eagerly is the whole point; an un-recorded lesson is a lost one. (The buffer is
-   archived automatically at the next session start; graduation happens at
-   `/lessons-review`, keyed on cross-session recurrence.)
-2. **Reconcile working context.** Prune completed/stale detail from
-   [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md) (it's a one-screen state file, not a log —
-   finished work lives in git history / the version log), update the active
-   policy/version, and **clear/reseed it on a pivot** to a new direction.
+Keep the active objective, scope, unresolved constraints and next decision in
+[WORKING_CONTEXT.md](WORKING_CONTEXT.md). Keep testable unresolved ideas in
+[TENTATIVE_LESSONS.md](TENTATIVE_LESSONS.md); promote supported rules to
+best_practices.md and remove resolved claims. Follow the
+[shared learning workflow](../docs/learning.md). Update these documents in place;
+do not create session archives, version logs or change narratives.
 
 ## Deferred tasks
 
@@ -175,14 +129,3 @@ alongside the rest of the lab's deferred tasks (there's no separate Cue-n-Woo TO
 Check it at the start of focused work.
 
 ## Player policies
-
-- **mentalist** *(Python)* — at [`mentalist/`](mentalist/), our Cue-n-Woo player and
-  **the primary policy under optimization**. A **cheap local style classifier →
-  Bedrock Claude writer**: 3 fixed private questions → TF-IDF nearest-neighbor over a
-  shipped 61-style reference library (`data/library.json`) → Claude
-  (`us.anthropic.claude-opus-4-8`) writes short, on-topic, in-style proposals and blind
-  answers, with deterministic legal fallbacks on any failure. Its internals and
-  build/test/ship commands are in [`mentalist/README.md`](mentalist/README.md); the
-  design rationale is [`docs/designs/player-design.md`](docs/designs/player-design.md).
-  Builds from its own `Dockerfile` (no shared `build_player.sh` — this lab has a single
-  Python policy). Version history → change mapping: [`mentalist/VERSION_LOG.md`](mentalist/VERSION_LOG.md).

@@ -6,11 +6,6 @@ file, an A\* navigation graph built over the decoded walkability mask, an offlin
 bake that ships that graph as a vendored asset, route planning over the graph, and
 a momentum-aware controller that turns a route into d-pad input.
 
-This document is the cross-cutting narrative. For the structural spec see
-[`../design.md`](../design.md) (§6 the static map / nav graph, §9 the action
-sequencing, §12 the movement controller). For orientation and setup see
-[`../README.md`](../README.md).
-
 Navigation is pure geometry. It holds no game state, makes no strategic choices,
 and never decides *where* to go — it only answers "given a goal point, how do I
 reach it, and what buttons do I hold this tick to make progress." Which modes pick

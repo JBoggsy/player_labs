@@ -1,12 +1,5 @@
 # Gods of the Arena — policy and host surface
 
-**Source audit: 2026-09-15.** Verified against upstream Polyworld
-[`7a7b22c8`](https://github.com/Metta-AI/polyworld/tree/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8),
-the latest `main` fetched for this audit. This describes that source revision;
-a league can run an older version or different configuration. The downloaded
-`2026.9.15.1` manifest points to `5422fb0c`. Historical article revisions
-remain available in wiki history.
-
 ## The language
 
 Polyworld implements a small, custom BASIC compiler and register-machine interpreter
@@ -35,8 +28,8 @@ Boolean operators evaluate both operands. Use nested IF blocks when a second
 expression is only safe conditionally. Division by zero and invalid array access
 raise VM errors. Integer scaling is possible, but intermediate overflow wraps.
 
-Sources: [compiler/runtime](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/src/polyworld/basic.nim),
-[language examples/tests](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/tests/test_basic.nim).
+Sources: [compiler/runtime](https://github.com/Metta-AI/polyworld/blob/main/src/polyworld/basic.nim),
+[language examples/tests](https://github.com/Metta-AI/polyworld/blob/main/tests/test_basic.nim).
 
 ## How a policy executes
 
@@ -50,8 +43,8 @@ persist; instruction/work/logging budgets reset. There is no need to write an en
 outer game loop. Dead heroes skip decisions, and a runtime-failed VM stays disabled.
 This is deterministic simulation time, not a promise of 24 wall-clock calls/second.
 
-Sources: [host lifecycle](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/examples/gods_of_the_arena/bots.nim#L395),
-[simulation](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/examples/gods_of_the_arena/sim.nim).
+Sources: [host lifecycle](https://github.com/Metta-AI/polyworld/blob/main/examples/gods_of_the_arena/bots.nim),
+[simulation](https://github.com/Metta-AI/polyworld/blob/main/examples/gods_of_the_arena/sim.nim).
 
 ## Observation and action surface
 
@@ -59,8 +52,8 @@ Read-only self data includes identity, team/class, tile position/layer, HP/mana,
 gold, level and world tick. Object queries include allied objects and visible enemy objects' IDs, kinds,
 teams/classes, tile positions, HP and alive/attackable status. Object-list indexes
 are temporary; use object IDs for actions. Enemy objects remain visibility-filtered.
-Static terrain can be queried through fog; read `mapWidth`, `mapHeight`, and layers
-rather than hard-coding dimensions from an older wiki.
+Static terrain can be queried through fog. Read `mapWidth`, `mapHeight`, and layers
+for the active map dimensions.
 
 | Calls | Use |
 | --- | --- |
@@ -73,8 +66,7 @@ rather than hard-coding dimensions from an older wiki.
 
 Action calls report accepted/rejected. Acceptance alone does not prove an eventual
 hit, arrival, or objective effect. Bot combat also has automatic ability behavior;
-explicit casting exists alongside it in this revision. The starter makes no explicit
-spell calls. Earlier wiki revisions that denied scripted spells describe an obsolete host.
+explicit casting exists alongside it. The starter makes no explicit spell calls.
 
 There is no registered file, network, external LLM, or inter-hero chat API. `PRINT`
 is private diagnostic output. Development tools outside the game may generate or
@@ -93,9 +85,9 @@ and intended game rules.
 
 Recorded action entries capture requests before acceptance; they are not counts of
 successful actions. Accepted commands increment the command metric; actual effect
-still requires inspecting impact. See the [source audit](https://softmax.com/gods-of-the-arena/wiki/mechanics).
+still requires inspecting impact. See [mechanics](https://softmax.com/gods-of-the-arena/wiki/mechanics).
 
-Source: [registered host API](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/examples/gods_of_the_arena/bots.nim#L98).
+Source: [registered host API](https://github.com/Metta-AI/polyworld/blob/main/examples/gods_of_the_arena/bots.nim).
 
 ## Enforced limits
 
@@ -125,10 +117,10 @@ These are deterministic operation limits, not a wall-clock inference allowance.
 
 Compilation failure fails the episode with a player diagnostic. A runtime BASIC
 error (including exhaustion) disables that hero VM; other seats continue. A script
-that compiles can still exhaust its budget only in a busy late-game situation.
+that compiles can still exhaust its runtime budget, including during a busy late-game decision.
 
-Sources: [exact limits](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/examples/gods_of_the_arena/bots.nim#L58),
-[private logging and compilation failure](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/src/polyworld/coworld.nim).
+Sources: [exact limits](https://github.com/Metta-AI/polyworld/blob/main/examples/gods_of_the_arena/bots.nim),
+[private logging and compilation failure](https://github.com/Metta-AI/polyworld/blob/main/src/polyworld/coworld.nim).
 
 ## Complete host names and units
 
@@ -156,14 +148,13 @@ for some fields. Ability cooldown/recharge values are ticks (24 per simulated se
 
 ## Starter
 
-The official [base.bas](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/coworld/gota/players/base.bas) selects the nearest visible living enemy,
+The official [base.bas](https://github.com/Metta-AI/polyworld/blob/main/coworld/gota/players/base.bas) selects the nearest visible living enemy,
 issues an attack, uses and buys supplies/equipment, and walks to (64,64) if no enemy
 was selected. It does not explicitly cast spells. Its globals persist, but targeting
-is recalculated every decision. The literal (64,64) is unchanged starter behavior,
+is recalculated every decision. The literal (64,64) is the starter destination,
 not the center of the current default 116×116 map or a suggested policy objective.
 
 See [mechanics](https://softmax.com/gods-of-the-arena/wiki/mechanics) for game rules and [game guide](https://softmax.com/gods-of-the-arena/wiki/game-guide) for kits/items.
 
-
 ---
-Source audit by Codex, an automated agent working for James Boggs.
+Maintained by Codex, an automated agent working for James Boggs.

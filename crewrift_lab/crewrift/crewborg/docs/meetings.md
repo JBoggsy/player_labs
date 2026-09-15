@@ -4,12 +4,6 @@ The cross-cutting reference for everything crewborg does during a Crewrift **mee
 deciding what to say in meeting chat and who to vote out. It covers both paths the
 subsystem runs: an always-present **deterministic** path and an opt-in **LLM** path.
 
-This is a deep reference. For orientation start with [`../README.md`](../README.md); for the
-architecture see [`../design.md`](../design.md). Adjacent references:
-[crewmate play](./crewmate-play.md), [imposter play](./imposter-play.md),
-[the suspicion model](./suspicion.md), [perception and belief](./perception-and-belief.md),
-[the gameplay commander](./commander.md), and [trace logs](./trace-logs.md).
-
 Scope boundaries (deferred, not duplicated):
 
 - The suspicion **model** that ranks suspects and produces `top_suspect` →
@@ -57,7 +51,7 @@ The decision pieces live in `strategy/meeting/`:
                               |
         vote already confirmed / committed? --yes--> re-emit / idle
                               | no
-              LLM client enabled (opt-in)? 
+              LLM client enabled (opt-in)?
                   /                       \
                 no                        yes
                  |                          |
@@ -155,7 +149,7 @@ Deflect heat onto crewmates, never teammates, and survive the meeting. Order of 
    target into a plurality), and we accuse+vote it like a bandwagon. Both gates keep it from the
    "vote aggression raises ejection" trap: it only fires when the parity math/teammate exclusion are
    trustworthy and a single ejection *wins the game*. **A/B-validated: imposter win +14.4pp (p<1e-9),
-   kills flat.** Rationale, evidence, and merge guide: [`./designs/imposter-parity-meeting.md`](./designs/imposter-parity-meeting.md).
+   kills flat.** Rationale, evidence, and merge guide: .
 4. **Skip** (path `skip`) — if nobody is taking heat and we're not parity-closing, idle and watch; skip at the deadline.
 
 `imposter.votes_against` counts votes cast against each candidate by *other* players (skip
@@ -415,7 +409,7 @@ All meeting LLM knobs are env-driven and read in `build_meeting_llm_client_from_
 | `CREWBORG_LLM_MODEL` | SDK-resolved | Explicit model id override (else Bedrock/direct id per backend). |
 | `CREWBORG_LLM_MAX_TOKENS` | 512 | Generation cap. |
 | `CREWBORG_LLM_TEMPERATURE` | 0.2 | Low, for steadier meeting behavior. |
-| `CREWBORG_LLM_MEETING_TIMEOUT_SECONDS` | 6.0 | Meeting per-call wall-clock budget; also feeds the latest-safe-start math. Raised from 3.0 (2026-07-21): success latency p90 is ~4.0 s, and the old 3.0 s aborted ~40% of ultimately-successful calls into an SDK retry — double-spending tokens on the throttled Bedrock daily pool. |
+| `CREWBORG_LLM_MEETING_TIMEOUT_SECONDS` | 6.0 | Meeting per-call wall-clock budget; also feeds the latest-safe-start math. |
 | `CREWBORG_LLM_TIMEOUT_SECONDS` | — | Shared fallback timeout (also read by the commander); used when the meeting-specific var is unset. |
 | `CREWBORG_LLM_MIN_CALL_INTERVAL_TICKS` | 120 | Minimum ticks between meeting LLM calls (cadence sweeps). |
 | `CREWBORG_LLM_PROMPT_DIR` | `memory/` | Override directory for role prompt files. |
@@ -444,7 +438,6 @@ The mode emits a rich set of `meeting_*` events and counters; see
 | `meeting_llm_fallback` | Why the LLM path yielded — disabled, call failed, invalid decision, duplicate/cooldown chat. |
 | `meeting_decision` | The deterministic decision: role, path, target, real-vs-fabricated, heat (imposter), NLP state. |
 | `meeting_tentative_vote` / `meeting_vote_selected` / `meeting_chat_selected` | The staged vote, committed vote, and emitted chat. |
-| `llm_spend` | Per-call spend attribution (success AND failure): surface (meeting/commander), trigger, tokens, `est_cost_usd`, cumulative `episode_est_cost_usd`, `error_class` (429s are $0 — measured pre-inference rejection; timeouts accrue a wasted-input estimate), meeting_index/role, cached sidecar cross-check. `strategy/llm_spend.py`; design `crewrift_lab/docs/designs/2026-07-22-bedrock-spend-telemetry-design.md`. |
 | `meeting_llm.latency_ms` (histogram) | Per-call latency by model and trigger. |
 
 ---

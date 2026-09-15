@@ -4,10 +4,6 @@ A light-ML study of Crewrift meeting chat: turn every natural-language chat mess
 feature vector and fit a **readable** model of two outcomes, measured from **real vote
 movement** — so we change crewborg's social behaviour on evidence, not intuition.
 
-Built 2026-07-07. Corpus: the 3 event warehouses that carry resolved vote targets
-(`v96_rank_wh` + `crew_wh` + `v101_wh`), **851 episodes / 2,450 meetings / 6,757 NL chats**
-(4,803 crew + 1,954 imposter) / 13,441 votes.
-
 ## Two questions (both labelled from votes, not opinion)
 
 - **A. Suspicion drawn** — after a message, do votes shift onto **the speaker**?
@@ -44,29 +40,6 @@ uv run python crewrift_lab/chat_study/fit.py                 # -> models/{report
 The model is standardized L2 logistic regression (coefficients per 1 SD, comparable
 across features); `cv_auc` is a meeting-grouped sanity check that the signal is real
 (0.61–0.92), **not** the goal — the coefficients are.
-
-## Headline findings (see `models/report.md` for the full tables)
-
-Read the **actionable (non-control)** coefficients. Sign = effect on the outcome.
-
-**What PERSUADES (moves votes onto your accused target):**
-- **Citing concrete evidence works — especially for imposters.** `s_provides_evidence` is
-  the standout actionable lever on the imposter persuasion model (+0.34 coef; raw: imposter
-  accusations *with* evidence land 64% of the time vs **43% without** — a 21pp swing). A
-  fabricated-but-concrete cue ("X vented near the body") persuades; a bare "X is sus" does not.
-- **Explicit vote language helps** (`f_says_vote` +0.71 crew, `f_says_sus` +0.50/+0.70): say
-  "vote X" / "X is sus", not just imply it.
-- **Bandwagoning persuades for imposters** (`s_bandwagons` +0.75): piling onto an existing
-  accusation moves votes; opening a *fresh* accusation ("first_speaker") does less.
-- **Asking questions does NOT persuade** (`s_asks_question` −0.36/−0.40) — it defers, it
-  doesn't drive a vote.
-
-**What DRAWS SUSPICION onto yourself (avoid as imposter):**
-- **Self-referential defensiveness** (`f_self_reference` +0.15 imposter, +0.23 imposter
-  suspicion model): "it wasn't me / I was doing tasks" reads as guilty. Defending yourself
-  unprompted backfires.
-- Timing controls dominate raw suspicion; among content, defensiveness + question-dodging
-  are the tells.
 
 ## Implication for crewborg (the point of the study)
 

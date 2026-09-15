@@ -1,18 +1,6 @@
 # crewrift_lab
 
-The **Crewrift** corner of [player_labs](../README.md) — where we build, evaluate, and
-improve player policies for Crewrift, a Coworld social-deduction game (*Among Us*–style:
-crewmates do tasks and vote out imposters; imposters kill, vent, and blend in).
-
 This README orients newcomers (human or agent). Two pointers do most of the work:
-
-- **[`AGENTS.md`](AGENTS.md)** — the operating model *for this lab*: the improvement
-  loop in Crewrift terms, the player-policy index, and the lab's practices. Read it to
-  *work* here.
-- **[`../README.md`](../README.md)** — lab-wide setup (`uv sync` / Observatory auth)
-  and the ground rules. Everything here is public, so there are **no extra
-  credentials** — building players (Python or Nim) and the replay reader need only
-  Docker; see [`docs/designs/building_players.md`](docs/designs/building_players.md).
 
 ## The game
 
@@ -27,14 +15,6 @@ source lives in the `Metta-AI/coworld-crewrift` repo.
 
 Three Crewrift policies are vendored here as drift-able forks under
 [`crewrift/`](crewrift/) (full per-policy summary in [`AGENTS.md`](AGENTS.md#player-policies)):
-
-- **crewborg** *(Python)* — the main policy under optimization; a full Player-SDK agent
-  (perception → belief/suspicion → strategy → action). It imports the shared
-  `players.player_sdk` from the **pinned public players repo** (`pyproject.toml`; no
-  local checkout — see [`../README.md`](../README.md)), so the SDK stays fixed even as
-  the fork drifts. Its internals: `crewrift/crewborg/design.md`.
-- **notsus** *(Nim)* — the minimal reference baseline / comparison opponent.
-- **suspectra** *(Nim + LLM)* — notsus plus a bounded meeting-LLM.
 
 ## Docs
 

@@ -35,11 +35,11 @@ empirically**: build expanders from a few public-master candidates and test whic
 gives `trace_complete:true` (no hash-fail) on the deploy's replays — *including a
 button game* (button-meeting re-sim is the thing that diverges on a wrong commit). The
 manifest calls Prime "config-only variants", so the sim usually matches a recent
-public-master commit even though the SHA differs. The deploys (2026-06-25):
+public-master commit even though the SHA differs. The deploys:
 - **`crewrift_prime:0.4.3`** (current PRIME, where we compete; `source_url` `a3d1547`
   is NON-PUBLIC) ⇒ sim matches **master-tip `26ee08c`**, helper **`/tmp/expand-043`**
   (verified 63/63 `trace_complete`, button games expand cleanly with rounds
-  continuing). **Use this for the v44 / current Prime episodes.**
+  continuing). **Use this for the selected Prime episodes.**
 - `crewrift_prime:0.3.9` (older Prime) ⇒ commit `20e3be4`, `/tmp/expand-prime039` —
   but it HASH-FAILS on every button game (re-sim diverges at the button vote); a
   later commit fixed that, so 0.4.3/master expand buttons fine.
@@ -55,7 +55,7 @@ be non-public). Reusable 0.1.54 warehouses from earlier:
 
 To build an event warehouse from `fetch_artifacts`-downloaded dirs, use the
 **`crewrift-event-warehouse`** skill (`scripts/build_warehouse.py` ingests episode dirs / IDs
-directly — the old `make_wh_input.py` adapter is retired).
+directly).
 
 ## `path_prediction_ui.py` — live prediction viewer
 
@@ -98,30 +98,4 @@ it **two** ways:
   positive median means we ride the right corridor more often than not, even when the
   room-name match is low (≈38% of "room misses" are actually right-hallway).
 
-```sh
-uv run --with matplotlib --with duckdb python \
-  crewrift_lab/crewrift/crewborg/tools/path_prediction_eval.py \
-  --warehouse /tmp/xp_imp_warehouse --episodes 20 --images 40 --out /tmp/pred_eval
-# then open /tmp/pred_eval/report.html
-```
-
-Knobs: `--episode <id>` (single) or `--episodes N` (deterministic sweep, so reruns
-compare cleanly); `--min-occlusion 24` (ignore blinks); `--horizon 240` (window the
-next-room must be entered within); `--images N` (sampled overlay PNGs, biased toward
-room-changers). Outputs to `--out`: **`report.html`** (self-contained — write-up,
-result cards, calibration table, embedded images, full instance table),
-`instances.csv` (one row per occlusion), and `images/` (overlay per instance:
-**orange** = actual path, **blue** = predicted weighted routes, white dot = onset,
-◇/★ = predicted/actual destination). stdout also prints match rate **by confidence
-bucket** — calibration should stay monotonic. (Baseline 2026-06-24, 6 eps: next-room
-41% / path reward +0.26 / 79% in the top confidence bucket.)
-
 ## Tuning the module
-
-Knobs live at the top of `strategy/path_prediction.py` (each documented there):
-`HEADING_WINDOW_TICKS`, `ALIGN_GAIN`, `EVIDENCE_DECAY`, `LOOKAHEAD_PX`, `REFRESH_DIST`,
-`REACQUIRE_DIST`, `CREW_SPEED_PX`. The path-reward shape (`PATH_DECAY_LEN`,
-`PATH_ERR_SCALE`, …) lives in the eval tool — it defines the *metric*, not the
-predictor. Loop: change one knob → re-run the eval → watch the **path reward** and
-**calibration** in `report.html` → eyeball a few miss images for *how* it fails.
-Unit tests pin the qualitative behavior: `tests/test_path_prediction.py`.

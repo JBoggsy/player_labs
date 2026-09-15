@@ -85,7 +85,4 @@ vanilla_wow_lab/tools/build_player.sh --strategy traverse
 The tests cover the direct `/player` wrapper and navigation behavior. The route lab
 mounts current wowborg source into the pinned deployed game image and uses its real
 navmesh data and helper. The build check verifies the canonical environment imports
-and rejects an image containing either historical bundled WoW client.
-
-Historical adapter designs and results remain in `docs/designs/`, `docs/recon/`, and
-[`VERSION_LOG.md`](VERSION_LOG.md); they are not part of the current runtime.
+and rejects an image containing a bundled WoW client.

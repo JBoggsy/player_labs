@@ -11,7 +11,7 @@ full day on a clock-driven schedule:
 - **Host** (5 PM → the 6:55 PM dinner resolve): enter our own house and hold
   inside, where the game scores us `food × guests`.
 
-It is the **Heartleaf league champion** (v20). The scoring, timing, and villager
+The scoring, timing, and villager
 mechanics it exploits are documented in `../docs/heartleaf-gameplay.md` and
 `../docs/villager-dinner-attendance.md`; the social-controller design (incl. the
 planned LLM layer) is in `../docs/designs/cady-social-llm-controller.md`.
@@ -66,6 +66,3 @@ COWORLD_PLAYER_WS_URL=ws://... uv run python -m cady
 Build with context `heartleaf_lab/cady`. The Dockerfile installs the pinned
 `players[bedrock]` SDK from `coworld-tools`, copies this package to `/app/cady`,
 and runs `python -m cady`.
-
-Design: [`../docs/designs/cady-player-design.md`](../docs/designs/cady-player-design.md)  
-Plan: [`../docs/plans/2026-07-06-cady-player.md`](../docs/plans/2026-07-06-cady-player.md)

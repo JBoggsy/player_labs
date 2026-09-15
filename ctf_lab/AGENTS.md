@@ -1,18 +1,7 @@
-# ctf_lab — agent guide — 🗄️ ARCHIVED 2026-08-07
+# CTF lab — inactive
 
-> **STOP. This lab is archived — do not do new work here.** Active work is in
-> [`../paintbot_lab/AGENTS.md`](../paintbot_lab/AGENTS.md).
->
-> The replay viewer, replay reader, event warehouse, and `lessons-review` skill
-> **moved to `paintbot_lab/tools/`** — edit them there, not here. Instructions
-> below that reference `tools/viewer.html`, `tools/viewer_bundle.py`,
-> `tools/expand_replay_json.nim`, `tools/build_expand_replay.sh`, or
-> `tools/event_warehouse.py` are stale; those files no longer exist in this lab.
->
-> Everything else is a historical snapshot, accurate as of 2026-07-31 and
-> unmaintained since. See [`README.md`](README.md) for the full archive note,
-> including the caveat that archiving the directory did **not** retire beacon
-> from the still-live CTF league.
+Policy development is paused. Use [Paintbot](../paintbot_lab/AGENTS.md) for active
+work on the shared engine. Documentation maintenance does not resume gameplay work.
 
 The **CTF** corner of player_labs: where we build, evaluate, and improve **player
 policies** for Coworld CTF. This file orients agents working here.
@@ -22,13 +11,6 @@ loop, your role in it (speed first), the submission gate, and the game-agnostic 
 This file is the **CTF-specific layer** on top of it: the game, the docs, the
 practices/preferences, and the policies we optimize. When the two disagree, the root
 defines *process*; this file defines *CTF*.
-
-> **Lab status (2026-07-31): `beacon:v67` is the submitted CTF champion.** The
-> game repo (`Metta-AI/coworld-ctf`) is cloned for reference at `~/coding/coworlds/coworld-ctf`.
-> **`beacon` (Python, [`ctf/beacon/`](ctf/beacon/)) is on `beacon:v67`**, combining
-> the `outer_echelon` plan, sight-line cover discipline, anti-turtle base caution,
-> uncapped gun eligibility, and crown-compatible aim readback. Live state:
-> [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md); versions: [`ctf/beacon/VERSION_LOG.md`](ctf/beacon/VERSION_LOG.md).
 
 ## What CTF is
 
@@ -193,37 +175,14 @@ with those. The hosted eval is the test; speed wins (root AGENTS.md). No
 coverage-for-its-own-sake. When unsure whether a test earns its place, prefer not writing
 it — or ask.
 
-## Working context & tentative lessons
+## Working context and guidance
 
-Two session-spanning files carry state and learning forward between sessions — **read both
-on startup** alongside the preferences above:
-
-- **[`WORKING_CONTEXT.md`](WORKING_CONTEXT.md)** — the **live, minimal, high-signal state
-  of what we're working on right now**: the current objective plus the few facts worth
-  carrying forward (active policy/version, the working lens, live findings, open threads).
-  Read it to resume, **keep it updated as you learn**, and **clear/reseed it when we
-  pivot**.
-- **[`TENTATIVE_LESSONS.md`](TENTATIVE_LESSONS.md)** — **this session's** eager, noisy
-  buffer of candidate lessons: write here freely, AS YOU GO, the moment something *looks*
-  like a reusable lesson. Most entries are noise; the value is the occasional gem. **The
-  lifecycle is automated**: a SessionStart hook archives each session's buffer to
-  [`lessons_archive/`](lessons_archive/) and creates a fresh one
-  (`tools/rotate_lessons.sh`); the **`/lessons-review`** skill
-  (≈weekly, human-driven) clusters lessons that RECUR across archived sessions and
-  graduates keepers to `best_practices.md`. Recurrence across sessions — not in-session hit
-  counts — is the graduation signal. (The hook is registered in the **root**
-  `.claude/settings.json`, alongside crewrift's, cue-n-woo's, and heartleaf's. A single
-  repo-wide Stop hook (`tools/lessons_stop_nudge.sh` at the repo root) nudges once per
-  session, naming only the labs the session actually worked in whose buffers are still
-  untouched — it replaced the old per-lab nudges on 2026-07-13.)
-
-**Cleanup step — run when you wrap up a thread (and before you push/land work).**
-
-1. **Capture all tentative lessons** into [`TENTATIVE_LESSONS.md`](TENTATIVE_LESSONS.md) —
-   eagerly; an un-recorded lesson is a lost one.
-2. **Reconcile working context** — prune completed/stale detail from
-   [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md), update the active policy/version, and
-   clear/reseed it on a pivot.
+Keep the active objective, scope, unresolved constraints and next decision in
+[WORKING_CONTEXT.md](WORKING_CONTEXT.md). Keep testable unresolved ideas in
+[TENTATIVE_LESSONS.md](TENTATIVE_LESSONS.md); promote supported rules to
+best_practices.md and remove resolved claims. Follow the
+[shared learning workflow](../docs/learning.md). Update these documents in place;
+do not create session archives, version logs or change narratives.
 
 ## Deferred tasks
 
@@ -255,19 +214,14 @@ rest of the lab's deferred tasks. Check it at the start of focused work.
   dynamic goals. `posts.py` derives directional cover from that field and, behind
   `BEACON_POSTS`, turns nearby plan/order/hold waypoints into covered fighting
   positions with a committed watch direction. Design:
-  [`docs/designs/ctf-player-v1-design.html`](docs/designs/ctf-player-v1-design.html).
-  **Current: `beacon:v67` (competing champion, submitted 2026-07-31).** Plan/order/hold
+  [`ctf/beacon/`](ctf/beacon/).
+  **Beacon:** Plan/order/hold
   waypoints act as search centres for stable covered posts; the active `outer_echelon`
   plan assigns four two-agent pairs to separated top and bottom corridor positions.
-  v65 added anti-turtle base caution, v66 removed the hard 350px firing veto, and v67
-  made absolute aim readback work under the champion's crown skin. A fresh 540-game
-  top-player screen finished 508-3-29. Version history:
-  [`ctf/beacon/VERSION_LOG.md`](ctf/beacon/VERSION_LOG.md); read it before assuming
-  what a version contains.
   Behavior knobs are env vars in `ctf/beacon/config.py` (`BEACON_DEFENDERS`,
   `BEACON_FF_CORRIDOR_PX`, …), set at upload time for A/B. Build: `tools/build_player.sh beacon`.
   Firefight sweep knobs are registered in that same config module; dump their
   machine-readable domains or emit validated upload arguments with
   `uv run python -m ctf.beacon.tuning` (see the README's tuning-sweeps section).
-  **Next (open thread):** raise the baseline win rate above 26% — survive the grab-and-run
+  **Potential direction, requiring authorization:** improve survival — survive the grab-and-run
   better (tighter escort, staggered pushes), enemy-track memory, exposure-aware routing.

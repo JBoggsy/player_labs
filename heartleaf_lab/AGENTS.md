@@ -9,8 +9,6 @@ game-agnostic skills. This file is the **Heartleaf-specific layer** on top of it
 the game, the docs, the practices/preferences, and the policies we optimize. When
 the two disagree, the root defines *process*; this file defines *Heartleaf*.
 
-> **Repository status (audited 2026-09-14):** [Cady](cady/) is implemented. Use [working context](WORKING_CONTEXT.md) for the handoff and the [event warehouse](.claude/skills/heartleaf-event-warehouse/SKILL.md) for structured analysis. Re-resolve live policy/game versions before operations.
-
 ## What Heartleaf is
 
 Heartleaf is a Coworld **9-gnome garden-dinner gridworld** on the **BitWorld Sprite-v1**
@@ -129,36 +127,14 @@ regression that would silently lose points or crash an episode — and be **spar
 with those. The hosted eval is the test; speed wins (root AGENTS.md). No coverage-for-its-
 own-sake. When unsure whether a test earns its place, prefer not writing it — or ask.
 
-## Working context & tentative lessons
+## Working context and guidance
 
-Two session-spanning files carry state and learning forward between sessions — **read
-both on startup** alongside the preferences above:
-
-- **[`WORKING_CONTEXT.md`](WORKING_CONTEXT.md)** — the **live, minimal, high-signal state
-  of what we're working on right now**: the current objective plus the few facts worth
-  carrying forward (active policy/version, the working lens, live findings, open threads).
-  Read it to resume, **keep it updated as you learn**, and **clear/reseed it when we pivot**.
-- **[`TENTATIVE_LESSONS.md`](TENTATIVE_LESSONS.md)** — **this session's** eager, noisy buffer
-  of candidate lessons: write here freely, AS YOU GO, the moment something *looks* like a
-  reusable lesson. Most entries are noise; the value is the occasional gem. **The lifecycle
-  is automated**: a SessionStart hook archives each session's buffer to
-  [`lessons_archive/`](lessons_archive/) and creates a fresh one
-  (`tools/rotate_lessons.sh`); the **`/lessons-review`** skill
-  (≈weekly, human-driven) clusters lessons that RECUR across archived sessions and graduates
-  keepers to `best_practices.md`. Recurrence across sessions — not in-session hit counts —
-  is the graduation signal. (The hook is registered in the **root** `.claude/settings.json`,
-  alongside crewrift's and cue-n-woo's. A single repo-wide Stop hook
-  (`tools/lessons_stop_nudge.sh` at the repo root) nudges once per session, naming only
-  the labs the session actually worked in whose buffers are still untouched — it
-  replaced the old per-lab nudges on 2026-07-13.)
-
-**Cleanup step — run when you wrap up a thread (and before you push/land work).**
-
-1. **Capture all tentative lessons** into [`TENTATIVE_LESSONS.md`](TENTATIVE_LESSONS.md) —
-   eagerly; an un-recorded lesson is a lost one.
-2. **Reconcile working context** — prune completed/stale detail from
-   [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md), update the active policy/version, and
-   clear/reseed it on a pivot.
+Keep the active objective, scope, unresolved constraints and next decision in
+[WORKING_CONTEXT.md](WORKING_CONTEXT.md). Keep testable unresolved ideas in
+[TENTATIVE_LESSONS.md](TENTATIVE_LESSONS.md); promote supported rules to
+best_practices.md and remove resolved claims. Follow the
+[shared learning workflow](../docs/learning.md). Update these documents in place;
+do not create session archives, version logs or change narratives.
 
 ## Deferred tasks
 
@@ -166,16 +142,3 @@ Heartleaf-specific parked work lives in the **shared** [`../TODO.md`](../TODO.md
 the rest of the lab's deferred tasks. Check it at the start of focused work.
 
 ## Player policies
-
-- **cady** *(Python)* — at [`cady/`](cady/), our first Heartleaf player and the primary policy
-  under optimization. A **deterministic cyborg Player-SDK policy on the SDK's SpriteV1 bridge**
-  (`players.player_sdk.run_sprite_bridge` — no vendored wire layer): `perceive` reads the raw
-  `SpriteWorld` labels/positions into a `HeartleafState`, belief folds it (recording a morning
-  `home_anchor`), a clock-driven `ClockStrategy` picks Gather/Host/Idle, and `resolve_action`
-  emits a `Button` mask — assembled on `AgentRuntime` and glued to the bridge by `cady.decide`.
-  **v1** = gather food by day, return home to host at 6 PM, no chat/LLM (build path 3, raw
-  Sprite-v1). Built 2026-07-06 (design [`docs/designs/cady-player-design.md`](docs/designs/cady-player-design.md),
-  plan [`docs/plans/2026-07-06-cady-player.md`](docs/plans/2026-07-06-cady-player.md); 31 tests,
-  `uv run pytest heartleaf_lab/cady/tests`). Version history: [`cady/VERSION_LOG.md`](cady/VERSION_LOG.md).
-  **Next (human-gated lab loop):** build image → upload → first hosted eval → calibrate self/seat
-  + geometry from the real stream. Coordination (chat invitations) is the planned **v2**.

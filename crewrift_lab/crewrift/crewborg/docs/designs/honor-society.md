@@ -3,16 +3,6 @@
 **Status:** implemented; `CREWBORG_HONOR_SOCIETY` **defaults ON** (set it to a false
 value for byte-identical legacy behaviour). Level 1 of the society rules.
 
-> **Provenance / correction (2026-07-21).** The wire format below was **re-derived
-> from live games**, not the original design memo. The champion `sasmith-crewborg-hs1`
-> emits the **compact** `HS1 <sig>` form; our earlier code emitted only a legacy
-> 5-token form and could not parse a single real announcement. We verified the real
-> format by brute-forcing 17 captured signatures from live `crewrift_prime` replays
-> against sasmith's registered key — 17/17 verified over `HS1|<ts5>|<color>`. We also
-> found the game changed its color palette on 2026-06-24 (`coworld-crewrift` commit
-> `1cbd4de`); `perception/constants.py:PLAYER_COLOR_NAMES` was stale and is now fixed,
-> which matters because HS1 signs over the observed color *string*.
-
 ## The society's rules (verbatim intent)
 
 The Crewrift Honor Society exists for the betterment of members, capitalizing on crew
@@ -84,13 +74,13 @@ here — crewborg does announcements only.
 
 ## Key management
 
-- `CREWBORG_HS_SECRET` (canonical) or `CREWBORG_HONOR_SEED` (our historical alias) —
+- `CREWBORG_HS_SECRET` (canonical) or `CREWBORG_HONOR_SEED` (alias) —
   unpadded/padded base64(url) of the 32-byte Ed25519 seed, injected at upload via
   `--secret-env`. **Never commit the seed.**
 - Flag on without a seed ⇒ an **ephemeral** per-process key: we still verify others
   and simply announce with a key nobody has in their ledger (harmless). This is the
   spec's **receive-always / send-optional** posture.
-- **The lab's member identity** (generated 2026-07-02): public key
+- **The lab's member identity** : public key
   `Gq5nOr6NdgrRPfi7Ahzm-i9fuMJdHIaNHaDDDUuRhMc`; the seed lives at
   `~/.crewborg/honor_seed.b64` (mode 0600, outside git). Upload recipe addition:
   `--secret-env CREWBORG_HS_SECRET=$(cat ~/.crewborg/honor_seed.b64)`
@@ -125,8 +115,7 @@ ledger (the compact form can't verify anything else). Keys compare by raw bytes,
 either base64 flavor matches. `CREWBORG_HONOR_MEMBERS` overrides the path; `0`
 disables; missing/bad file ⇒ empty registry, never a crash.
 
-### The cross-game distrust list (offline liar harvest — implemented 2026-07-22)
-
+### The cross-game distrust list (offline liar harvest — implemented
 The in-game liar ledger (`society_liar_keys` + `domain.honor_liar` events) only
 lasts one episode. The offline consumer closes the loop:
 
@@ -137,17 +126,11 @@ lasts one episode. The offline consumer closes the loop:
   pubkey, and (with `--write`) renders `data/honor_distrust.json`
   (`crewborg-honor-distrust/v1`). Run it after `harvest_artifacts.py` (same
   cadence works).
-- **Ground-truth gate (load-bearing):** the in-game witness has FALSE POSITIVES —
-  measured 6 ledgerings of alex-smith's key across 199 baseline episodes
-  (2026-07-22), all with the accused seat actually **crew** per `results.json`
-  (kill/vent misattribution by our own perception). The harvest therefore
-  validates every `honor_liar` event against the episode's `results.json`
-  (accused color → palette slot → real role): only confirmed lies reach the
-  distrust list; witness errors are reported as `refuted`, results-less events
-  as `unverified` — both excluded (fail-closed toward trusting members). As of
-  2026-07-22 the corpus (675 sources / 234 episodes incl. the A/B baseline)
-  contains **zero confirmed lies** (6 refuted witness errors), so the vendored
-  list is empty — the normal state.
+- **Ground-truth gate:** perception can misattribute a kill or vent. The harvest
+  validates each `honor_liar` event against `results.json`: accused color → palette
+  slot → actual role. Only confirmed lies enter the distrust list. Refuted witness
+  errors and events without results are excluded.
+
 - **Consume:** `strategy/honor_society.py` (`_load_distrust`/`is_distrusted`)
   loads the vendored list (env `CREWBORG_HONOR_DISTRUST` overrides the path,
   `0` disables, missing/bad file ⇒ empty — same contract as the members

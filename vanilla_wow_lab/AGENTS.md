@@ -9,13 +9,6 @@ the **Vanilla-WoW-specific layer** on top of it: the game, the docs, the practic
 policies we optimize. When the two disagree, the root defines *process*; this file defines
 *Vanilla WoW*.
 
-> **Lab status (2026-08-08): `wowborg` is a Python policy over the game's canonical
-> Gymnasium semantic `WS /player` interface.** The game owns the WoW client, projection,
-> admission, execution, settlement, and reconnects. Wowborg consumes `Observation`, submits
-> `Action`, and uses the upstream navmesh SDK. The deployed `vanilla-wow:0.1.208` image
-> and matching source commit are pinned in `tools/versions.env`. Live state + next steps:
-> [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
-
 ## What Vanilla WoW is
 
 Vanilla WoW Coworld is **a real World of Warcraft 1.12.1 realm** (backed by VMaNGOS) turned
@@ -68,25 +61,13 @@ evaluation path; league submission remains human-gated. The Vanilla-WoW-specific
 
 ## Player build paths
 
-**Chosen path (updated 2026-08-08): our Python bot uses the owner-provided semantic `/player` contract
+**Chosen path: our Python bot uses the owner-provided semantic `/player` contract
 directly.** `wowborg/environment.py` is only a bot convenience around
 `VanillaWowEnv`; it does not adapt a client protocol. The image copies `environment/`
 and `player/sdk/` from the exact **deployed target Coworld** image pinned in
 [`tools/versions.env`](tools/versions.env), while the game runs the client.
 Each uploaded wowborg version bakes one competition objective selected by the
 `--strategy` build flag; shared navigation and recovery stay below that boundary.
-
-The original fork of alternatives, kept for when this path hits a ceiling (revisiting is a
-human-direction decision, not a default):
-
-1. **Tune the bundled policy** — new/better leveling profiles (the authored zone JSONs) or
-   sharper class rotations (`player/bots/rotations.nim`) on top of the existing engine.
-2. **Fork King Nimrod / the shared bot policy in Nim** — change the Nim decision layer
-   while reusing the plumbing (needs a Nim build path + pinned game commit).
-3. **The identity-blind general-grinding lane** — revive the archived experiment as its
-   own strategy (opt-in, default-off). Bet on *transfer*; more speculative.
-4. **A new player from the protocol up** — "write a WoW client" (sized 2026-07-15 at a
-   20–45k-line port; rejected in favor of the shim — see the v2 design doc).
 
 ## Vanilla WoW lab docs
 
@@ -95,13 +76,9 @@ human-direction decision, not a default):
   episodes), the `rfc-five-player-clear` benchmark, the scoring math, and the strategically-
   relevant mechanics (classes, combat, leveling, navigation, the 15 manifest variants).
   **Start here** to build a mental model.
-- **[`wowborg/README.md`](wowborg/README.md)** — the current policy contract,
+- **[Wowborg](wowborg/README.md)** — the current policy contract,
   semantic-player lifecycle, layout, knobs, validation, and build commands.
-- **[`docs/vanilla-wow-player-contract.md`](docs/vanilla-wow-player-contract.md)** and
-  **[`docs/vanilla-wow-protocol.md`](docs/vanilla-wow-protocol.md)** — historical
-  low-level contract references from 2026-07-13. They are useful for protocol archaeology,
-  but are superseded for current policy work by the owner repo's
-  `docs/bot-environment-contract.md` and `environment/contract/policy.py`.
+- **[`docs/vanilla-wow-player-contract.md`](docs/vanilla-wow-player-contract.md)** — the game-owned environment and policy integration.
 - **[`docs/vanilla-wow-rfc-roles.md`](docs/vanilla-wow-rfc-roles.md)** — the five RFC support
   roles (commissioner/grader/diagnoser/optimizer/reporter): images, env-var contracts,
   outputs, auto-vs-on-demand, and the exact commissioner round-scoring math.
@@ -150,34 +127,14 @@ unsure whether a test earns its place, prefer not writing it — or ask. (Note t
 here means "a quick unit test" is more expensive than in the Python labs — bias even harder
 toward the hosted eval as the test.)
 
-## Working context & tentative lessons
+## Working context and guidance
 
-Two session-spanning files carry state and learning forward between sessions — **read both on
-startup** alongside the preferences above:
-
-- **[`WORKING_CONTEXT.md`](WORKING_CONTEXT.md)** — the **live, minimal, high-signal state of
-  what we're working on right now**: the current objective plus the few facts worth carrying
-  forward (active policy/version, live findings, open threads, the readiness gap). Read it to
-  resume, **keep it updated as you learn**, and **clear/reseed it when we pivot**.
-- **[`TENTATIVE_LESSONS.md`](TENTATIVE_LESSONS.md)** — **this session's** eager, noisy buffer of
-  candidate lessons: write here freely, AS YOU GO, the moment something *looks* like a reusable
-  lesson. Most entries are noise; the value is the occasional gem. **The lifecycle is
-  automated**: a SessionStart hook archives each session's buffer to
-  [`lessons_archive/`](lessons_archive/) and creates a fresh one
-  (`tools/rotate_lessons.sh`); a Stop hook nudges once if substantive work ends with the buffer
-  untouched (`tools/lessons_stop_nudge.sh`); the **`/lessons-review`** skill (≈weekly,
-  human-driven) clusters lessons that RECUR across archived sessions and graduates keepers to
-  `best_practices.md`. Recurrence across sessions — not in-session hit counts — is the
-  graduation signal. (Both hooks are registered in the **root** `.claude/settings.json`,
-  alongside the other three labs'.)
-
-**Cleanup step — run when you wrap up a thread (and before you push/land work).**
-
-1. **Capture all tentative lessons** into [`TENTATIVE_LESSONS.md`](TENTATIVE_LESSONS.md) —
-   eagerly; an un-recorded lesson is a lost one.
-2. **Reconcile working context** — prune completed/stale detail from
-   [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md), update the active policy/version, and
-   clear/reseed it on a pivot.
+Keep the active objective, scope, unresolved constraints and next decision in
+[WORKING_CONTEXT.md](WORKING_CONTEXT.md). Keep testable unresolved ideas in
+[TENTATIVE_LESSONS.md](TENTATIVE_LESSONS.md); promote supported rules to
+best_practices.md and remove resolved claims. Follow the
+[shared learning workflow](../docs/learning.md). Update these documents in place;
+do not create session archives, version logs or change narratives.
 
 ## Deferred tasks
 
@@ -187,5 +144,4 @@ the rest of the lab's deferred tasks. Check it at the start of focused work.
 ## Player policies
 
 - **[`wowborg/`](wowborg/)** — the active Python semantic player. Its README documents the
-  current contract, architecture, build path, and behavioral knobs; `VERSION_LOG.md` maps every
   uploaded immutable version to its source and evidence.

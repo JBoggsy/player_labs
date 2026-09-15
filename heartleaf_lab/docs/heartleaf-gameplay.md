@@ -9,7 +9,7 @@ The authoritative source is the **`Metta-AI/coworld-heartleaf`** repo (Nim game 
 doc distills that plus the game's own docs (`docs/rules.md`, `docs/game_rules.md`,
 `docs/play_heartleaf.md`) and the `coworld_manifest.json`.
 
-> **Repo status caveat (2026-07-06).** The game repo is topic `coworld-incomplete`:
+> **Repo status caveat.** The game repo is topic `coworld-incomplete`:
 > `uv run coworld certify coworld_manifest.json` has **not** passed yet (README badge:
 > "coworld verify: failed"). A live Observatory league exists, but treat the game
 > version / certification state as something to re-verify before relying on it.
@@ -134,7 +134,7 @@ Dinner is the **only** scoring event. It resolves **once**, at **6:55 PM**
   - 1 food item, 3 visitors → **3**. 6 food items, 2 visitors → **12**.
 - **Visitors score nothing** for eating. Their upside: they eat for free **and keep their
   own inventory** — so their food survives to fund *their own* future hosting.
-- After the party, the **host's hosted food is consumed** (removed); visitors' inventories
+- After the party, the **host's hosted food is consumed** ; visitors' inventories
   are untouched.
 - Score is **cumulative** across the episode's days.
 

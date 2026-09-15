@@ -1,164 +1,22 @@
-# paintbot_lab
+# Paintbot lab
 
-The **Paintbot** corner of [player_labs](../README.md) — where we build,
-evaluate, and improve player policies for **Coworld Paintbot**, a 2-or-4-team
-capture-the-heart paintball shooter on the **BitWorld Sprite-v1** protocol, with
-**procedurally generated maps**.
+The lab contains Stencil, a native Nim direct-input policy, analysis/viewer tools,
+and an experimental learned-policy pipeline. Read [the lab guide](AGENTS.md),
+[game reference](docs/paintbot-gameplay.md), and [documentation index](docs/README.md).
 
-This README orients newcomers (human or agent). Three pointers do most of the work:
-
-- **[`AGENTS.md`](AGENTS.md)** — the operating model *for this lab*: the
-  improvement loop in Paintbot terms, the player, and the lab's practices.
-- **[`docs/README.md`](docs/README.md)** — the documentation index: current
-  references, operations, designs, historical reports, and audit status.
-- **[`../README.md`](../README.md)** — lab-wide setup (`uv sync` / Observatory
-  auth) and the ground rules.
-
-> **Status (verified live 2026-08-29): `stencil:v68` is the active James Botts
-> champion** (submitted 2026-08-14, `lpm_eeac47d3`; v58 and earlier champions
-> benched). v68 is the finale of the completed five-layer navigation rework
-> (v61-v68: clearance field, watershed topology, weighted-A* planner, typed
-> Intent contract, bounded follower). A **second league, Elite Paintbot**
-> (created 2026-08-19), also lists stencil:v68 competing (`lpm_243bbc99`). The
-> canonical game has advanced to Paintbot **0.7.242** while the lab still
-> **builds** against 0.7.215 / `6c7a4c0e` (`tools/versions.env`) — the game-pin
-> review is parked in [`../TODO.md`](../TODO.md). The live league uses the
-> restored 10x10 campaign board; a cell's campaign **mode** is independent of
-> its variant — true `1v1` head-to-head, `2v2` duo with an **even**
-> captain/ally split (the old 7+7+1+1 seating is gone), one policy per team in
-> FFA. Current work and live IDs:
-> [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md). The required evaluation shape:
-> [`docs/tournament-like-experience-requests.md`](docs/tournament-like-experience-requests.md).
-
-## The game (one paragraph)
-
-Paintbot is CTF's expanded sibling — **the same engine, repo, and Nim binary**
-(`Metta-AI/coworld-ctf`), registered as a second Coworld game whose manifest
-adds variants. Teams (2 or 4: red/blue/green/yellow) guard a **heart** on a
-pedestal inside their endzone; steal any rival's heart and carry it home to
-**eliminate that team** — last team standing wins. Maps are **procedurally
-generated per episode** (five size classes; sides / corners / plus layouts).
-The historical `default` fixed-arena behavior changed; the canonical game also
-uses generated terrain for `default`. Scoring is **pot** for the tournament
-variants: every team antes 1, winner takes all (+2/-2 two-team,
-+4/-1/-1/-1 four-team); a timeout draw pays -1 to everyone. Paint is cosmetic.
-**Full reference: [`docs/paintbot-gameplay.md`](docs/paintbot-gameplay.md)**;
-deep recon with citations:
-[`docs/recon/paintbot-2026-08-03.md`](docs/recon/paintbot-2026-08-03.md).
-
-## Variants at a glance
-
-| variant | seats | teams | map | our agents |
-|---|---|---|---|---|
-| `1v1` | 16 | 2 | generated | mode-dependent: `1v1` head-to-head (one policy per team) or `2v2` duo (even captain/ally split) |
-| `default` | 16 | 2 | generated | scheduler-dependent; hosts `1v1`/`2v2`-mode cells on the current board |
-| `2v2` | 16 | 2 | generated | mode-dependent, same as `1v1` |
-| `4ffa` | 16 | 4 | generated | 4 (one policy per team) |
-| `4ffa8` | 32 | 4 | generated (manifest defaults giant; campaign cell size wins) | 8 (one policy per team) |
-
-The `1v1` variant was added in 0.7.179 as a two-agent custom game, then changed
-in 0.7.205 to a 16-seat two-team format. Since the 2026-08-11 commissioner
-change, a cell's campaign **mode is a policy layout chosen independently of its
-variant**: a 16-seat two-team variant hosts both true `1v1` head-to-head cells
-(each policy owns one team's every seat) and `2v2` duo cells (captain owns the
-leading half of a team's seats, ally the trailing half) — read the mode off the
-board cell, never off the variant name. A correctly seated full campaign cell
-is representative; partial-seat and arbitrary-map variants remain debug-only.
-Which map a campaign episode plays is decided by the **campaign**: each
-territory cell permanently owns a variant + terrain seed (the 10x10 board was
-restored from the pre-migration snapshot on 2026-08-11 — re-resolve it live
-every study), and battles replay the target cell's map identity. See the
-campaign section of [`docs/paintbot-gameplay.md`](docs/paintbot-gameplay.md)
-and the seating tables in
-[`docs/tournament-like-experience-requests.md`](docs/tournament-like-experience-requests.md).
+The public game manifest uses `battle-royale-s2` play-calling control. Stencil's
+capture-the-heart/input-mask behavior needs a compatible configuration; do not
+assume it can enter that variant unchanged. Resolve active leagues and memberships
+live instead of treating a document as a leaderboard.
 
 ## Layout
 
-```
-paintbot_lab/
-  README.md                this file
-  AGENTS.md                operating model: the loop in Paintbot terms
-  WORKING_CONTEXT.md       live cross-session state — read first
-  best_practices.md        Paintbot-specific practices (fills via lessons)
-  TENTATIVE_LESSONS.md     this session's candidate-lessons buffer (auto-rotated)
-  paintbot/stencil_nim/    THE PLAYER — native Nim Sprite-v1 policy
-  paintbot/rl/             cross-era Qwen policy experiments
-  docs/
-    README.md             documentation index + source-of-truth map
-    paintbot-gameplay.md   self-contained game reference
-    tournament-like-experience-requests.md  required hosted-eval contract
-    audits/                dated documentation-audit records
-    recon/                 the founding deep-dive (citations into game + metta)
-    reports/               hosted experiment evidence and verdicts
-    designs/stencil-v1-design.md   stencil's architecture + scrap/port ledger
-    designs/stencil-nim-port.md    native port contract + parity evidence
-    designs/nav-*.md               the navigation rework: sketch + per-layer
-                                   design docs (v61-v68; all five layers shipped)
-    designs/rl-policy.md           Qwen policy architecture + decisions
-  tools/
-    ctf_probes/        replay + shell probes for the S2 engine (build inside coworld-ctf; README)
-    analyze_giant_carries.py  one-off historical v22 giant-duel analyzer
-    build_player.sh        build the stencil image (linux/amd64)
-    self_play.py           native, fast-ready, parallel local self-play
-    render_nav.py          static navigation-knowledge viewer
-    render_topology.py     Layer 2-4 nav PROCESS viewer (watershed flood
-                           scrubber, merge log, cover roses, gate scoring,
-                           the v67 post ATLAS reach-colored across the whole
-                           map, planner routes over the LOS danger heatmap,
-                           and a belief-parameterized selection simulator;
-                           JS mirrors verified fail-closed against
-                           harness-run production code. NOTE: era-gated like
-                           expand_replay — pre-v67 traces carry post fronts
-                           the current harness no longer emits; re-render
-                           old traces with --allow-drift or a matched-era
-                           checkout)
-    nav_v67_properties.nim committed atlas/selection property harness
-                           (atlas completeness, determinism, duck bound,
-                           role invariants) — compile against stencil_nim
-    nav_v68_properties.nim committed follower/corridor property harness
-                           (corridor geometry, watchdog determinism,
-                           penalty TTL, arrival parity)
-    topology_debug.nim     its Nim harness — re-runs the exact worldmap
-                           topology code on an agent-logged clearance field
-    compare_stencil.py     exact wire-decision replay comparator (the native
-                           parity harness; NOT the coworld-ab metric adapter,
-                           which paintbot still lacks)
-    build_expand_replay.sh  build the version-matched replay reader (from versions.env)
-    expand_replay_json.nim  JSONL event + startup wall-map emitter (feeds the viewer)
-    viewer_bundle.py       bundle one episode for the belief viewer
-    viewer.html            belief replay overlay (ground truth + agent belief)
-    event_warehouse.py     DuckDB/Parquet event warehouse (still red/blue — see TODO)
-    campaign_order_controller.py        campaign standing-orders controller
-    manage_campaign_order_launch_agent.py  install/status the macOS LaunchAgent
-    versions.env           pinned game/dependency provenance
-    rotate_lessons.sh      SessionStart hook (archive the lesson buffer)
-  infra/campaign_order_controller/  the controller's service docs + cycle test
-  lessons_archive/         rotated per-session lesson buffers
-```
-
-The player lives at [`paintbot/stencil_nim/`](paintbot/stencil_nim/): a
-deterministic native Nim Sprite-v1 cyborg descended from ctf_lab's beacon. The
-defining difference from beacon: **no offline map bake** — an episode-scoped `WorldMap`
-(`worldmap.nim`) is built online from the walkability sprite + wire markers
-(L∞ clearance field with the `canStand`/`segmentClear`/`nudgeClear` predicate
-family, the clearance-derived nav grid, connected-component reachability
-labels, watershed rooms + chokepoints with derived defense gates, directional
-cover bitmasks, a map-wide post **atlas** with lazily paired duck cells,
-stable-goal Dijkstra fields kept as the planner's heuristic oracle, and
-spawn-aim). Movement follows the completed v61-v68 navigation rework: strategy
-emits a typed `Intent` (pre-validated goal + typed permissions — see
-[`docs/designs/nav-layer4-intent-contract-2026-08-13.md`](docs/designs/nav-layer4-intent-contract-2026-08-13.md)),
-a weighted-A* pixel-lattice planner (`planner.nim`) routes every move under
-belief-derived LOS danger with carrier/hunter cost profiles, and a bounded
-follower (`nav.nim`) executes the path, letting micro (peek/duck, separation,
-formation bias) perturb motion only within a corridor of the planned route.
-Beacon's authored POIs and fixed-map
-battle-plan data remain scrapped; leaderless squads now form consensus on
-hold/watch/move orders and ground them in atlas posts. Defenders occupy ranked
-atlas posts while heart-theft
-interception remains higher priority. Multi-team support: color lock from the self sprite, per-color
-hearts with retirement tracking, steal target = nearest live enemy heart, and
-the convert trigger generalized to the weakest enemy team.
+- `paintbot/stencil_nim/`: Stencil implementation.
+- `paintbot/rl/`: learned-policy data, training and evaluation tools.
+- `tools/`: build, replay, navigation, comparison and campaign instruments.
+- `docs/`: game, analysis, communication and evaluation references.
+- `WORKING_CONTEXT.md`: active objective and unresolved decisions.
+- `TENTATIVE_LESSONS.md`: candidate guidance awaiting stronger evidence.
 
 ## Quick commands
 
@@ -214,7 +72,6 @@ uv run python paintbot_lab/tools/self_play.py \
 # Capture the exact nav grid, cover, posts, anchors, and lazy flow fields, then view them.
 # --map-seed pins the generated map (e.g. a live campaign cell's map_seed) —
 # 1v1/2v2 maps reproduce hosted terrain bit-exact; 4ffa has a known slight
-# drift (see TENTATIVE_LESSONS 2026-08-12).
 uv run python paintbot_lab/tools/self_play.py \
   --variant 1v1 --map-seed 386501705 --episodes 1 --max-ticks 40 --visualize-nav
 uv run python paintbot_lab/tools/render_nav.py \
@@ -223,7 +80,7 @@ uv run python paintbot_lab/tools/render_nav.py \
 
 `--visualize-nav` enables the otherwise off `STENCIL_TRACE_NAVIGATION=1`
 payload. The trace contains `navigation_map` once per map (schema v3 since
-v62: rooms, chokepoints, directional cover, defense gates, topology knobs,
+rooms, chokepoints, directional cover, defense gates, topology knobs,
 and a packed dump of the exact clearance field) and a `navigation_flow` event
 whenever the policy lazily computes a new Dijkstra goal. `render_nav.py`
 accepts either that JSONL trace or a hosted player artifact ZIP and writes a
@@ -286,10 +143,6 @@ python3 -m http.server -d paintbot_lab/tools 8766
 # Open http://localhost:8766/viewer.html and load <episode-dir>/viewer_bundle.json.
 ```
 
-These tools moved here from `ctf_lab/tools/` on 2026-08-07 when that lab was
-archived; paintbot is a second manifest over the same engine, so the replay
-reader is the same binary built at a different game ref.
-
 The reader re-simulates the replay and validates a per-tick hash, so it must be
 built from the game version that recorded the episode. The default comes from
 this lab's [`tools/versions.env`](tools/versions.env) — bump it there, not in the
@@ -305,19 +158,3 @@ paintbot_lab/tools/build_expand_replay.sh --ref <that episode's source commit>
 uv run python paintbot_lab/tools/viewer_bundle.py <episode-dir> \
   --expand-replay paintbot_lab/tools/bin/expand_replay_json-<sha>
 ```
-
-## Native parity evidence
-
-The accepted port matched **169,235 exact decisions** against its legacy Python
-implementation across 1v1, 2v2, 4-player FFA, giant 8-player FFA, a major-
-features-disabled profile, and squads/command mode. That oracle is preserved
-in Git commit `1129931` and no longer exists in the working tree.
-`tools/self_play.py --record-wire` now records native streams for diagnostics;
-`tools/compare_stencil.py` can replay historical captured decisions. See
-[`docs/designs/stencil-nim-port.md`](docs/designs/stencil-nim-port.md) for the
-module mapping, equivalence boundary, and performance evidence.
-
-Upload freely; **submitting to the league is the human-gated step** (root
-[`AGENTS.md`](../AGENTS.md); note beacon's CTF entrants auto-mirror into
-Paintbot, so a *submitted* stencil coexists with the mirrored beacon under the
-same account — see the `coworld-player-swap` skill if identity matters).

@@ -235,7 +235,3 @@ How to find the right version:
   `/bin/crewrift` mtime pins the build time. Build the expander from the
   crewrift master commit at/just-before that time and VERIFY (exit 0 +
   `trace_complete:true` on a real replay from that round).
-- As of 2026-06-24, arena `crewrift:0.1.54` ⇒ commit `42fed21`. Current master
-  hash-FAILS. Build:
-  `nim c -d:release -d:useMalloc --opt:speed --out:/tmp/expand-42fed21 tools/expand_replay.nim`
-  (after `nimby --global sync nimby.lock`; nim+nimby on PATH via `~/.local/bin`).

@@ -2,8 +2,7 @@
 
 Small Nim programs that answer "what did the cogs actually do" from a hosted
 replay, and "what would the engine-hosted body do on this map" without any
-policy. They were written during the 2026-09-01/02 league-health session
-(see `paintbot_lab/WORKING_CONTEXT.md`) and found three engine defects.
+policy. Use the probes for targeted engine and protocol questions.
 
 They are NOT standalone: each one imports the coworld-ctf engine by relative
 path, so build them from inside a coworld-ctf checkout. Every source file
@@ -35,4 +34,4 @@ Replays: `uv run coworld episodes -r <round_id> --json` (the round **id**, not
 the number) gives `replay_url`; logs need `uv run coworld
 episode-logs <ereq> --game|--agent N -d <dir>`.
 
-**Access contract (2026-09-14):** use normal participant access only. Older elevated-access recipes are superseded; private opponent evidence remains unavailable.
+**Access contract:** use normal participant access only. Private opponent evidence remains unavailable.

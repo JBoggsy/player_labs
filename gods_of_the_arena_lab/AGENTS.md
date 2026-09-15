@@ -1,19 +1,16 @@
 # Gods of the Arena lab
 
-Read [root instructions](../AGENTS.md), [root preferences](../user_preferences.md),
-and this lab's [README](README.md) before work.
+This lab provides the BASIC contract and game mechanics for policy development.
+Agree the policy and strategic objective with James before implementing behavior.
 
-This lab is at the language/contract orientation stage. James wants to understand
-BASIC, the starter, and policy constraints before choosing a policy or strategy.
-No candidate has been created, uploaded, evaluated, or submitted here.
+The [reference starter](reference/base.bas) is the official baseline. Keep reference
+files distinct from candidates. Runtime constraints are in the README.
 
-The [reference starter](reference/base.bas) is an unmodified downloaded artifact,
-not a claimed competitive policy. Its source hash and runtime limits are in the
-README. Keep reference files distinct from future candidates and preserve exact
-source/version provenance. Historical forum claims about bismarck are leads,
-not a recovered policy or verified current result.
+Keep documentation and wiki entries as complete current references. Replace
+superseded information directly; omit audit records, change narratives, version
+logs, obsolete measurements and references to removed information. Maintain
+source links and concrete current rules. Local wiki content is in `docs/wiki/`.
 
 Use the shared experience-request and artifact tools. This game uses game-hosted
-BASIC files, not player containers. Ten seats each control one hero; do not reuse
-old five-heroes-per-policy instructions. Never infer a binary win from XP, gold,
+BASIC files, not player containers. Ten seats each control one hero. Never infer a binary win from XP, gold,
 or timeout. League submission and public community writing remain explicitly gated.

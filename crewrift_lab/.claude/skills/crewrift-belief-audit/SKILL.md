@@ -112,11 +112,8 @@ with losses, etc.).
 - **`vote_crew_over_imposter` is the decision layer, not the belief layer** — the belief
   was right and the action contradicted it. Route those to the meeting/vote path
   (`modes/attend_meeting.py`), not to suspicion.
-- **Known, already-shipped divergence classes** (don't rediscover): belief-clock lag under
-  meeting load (fixed v111 — spend-read cache + auto-submit margin; `clock_desync` now
-  catches the residual reconnect-stall class), the bimodal posterior ceiling (W2: softer
-  bars unlock nothing, the separation lives in social counters — suspicion-v5 refit is the
-  open lever), HS witness false positives (gated by `tools/harvest_liars.py`).
+- Inspect clock desynchronization, suspicion calibration and witness attribution
+  separately; they have different owners and validation needs.
 - Divergence rows are **evidence for crewrift-diagnose**, which turns them into mechanistic
   hypotheses → `crewrift-experiment` tests them.
 

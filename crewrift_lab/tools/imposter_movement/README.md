@@ -2,7 +2,7 @@
 
 Tools to inspect and compare **how imposters move while trying to find victims**:
 where our imposter goes when it's kill-ready and blind, where the top imposters go,
-and where the crew actually are. Built 2026-07-02 to answer "why can't crewborg's
+and where the crew actually are. Use it to answer "why can't crewborg's
 imposter find people to kill" — see the findings summary at the bottom.
 
 All tools read a **per-tick event warehouse** (`crewrift-event-warehouse` skill, built
@@ -45,31 +45,3 @@ uv run --with duckdb --with pandas --with numpy --with matplotlib python heat_co
 Related: `../positioning_viz/` renders single kill-ready *moments* (past/future paths
 around one event, interactive server + PNG). This directory is the *window/cross-policy*
 layer on top of the same warehouse data.
-
-## Findings snapshot (2026-07-02, crewrift_prime 0.4.31 data)
-
-Measured over `/tmp/prime_wh` (48 tournament eps), the ~200-ep ghost-A/B warehouses,
-and 25 pinned-imposter killtrace probes (belief telemetry cross-checked):
-
-- **Handoff is fine.** Median nearest-crew at the ready moment: crewborg ≈18px, 84% of
-  windows start within 60px — as good as any top imposter. Cooldown positioning is
-  best-in-field (same-room-with-crew ~85-95%).
-- **Point-blank conversion leaks.** Windows starting within 60px convert 70-77% for the
-  crewborg family vs 88-92% for notsus/relhalpha/daveey (witness-gate waits + ~7t
-  strike latency vs their ~1t).
-- **Blind recovery is catastrophic (the real deficit).** Windows starting >150px from
-  crew last a median **519 ticks** for crewborg vs 91-218 for the field. Failure modes,
-  both from the mode-gate design (`rule_based.py` routes ready+no-visible-victim to
-  Recon *whenever any crew was ever seen*, so Search's room-checking FSM never runs
-  while ready; `recon.py` beelines to `most_recent_victim`'s last-seen point with **no
-  staleness bound, no arrival fallback, no timeout**):
-    1. *Stale-point park*: walk to a minutes-old last-seen position and stand there
-       (one killtrace game: parked 98.5% of an 8,452-tick ready window, nearest crew
-       500px away; killtrace median parked share of blind ready ticks 87%).
-    2. *Glimpse-chase circuit*: with players around, each belief-glimpse retargets the
-       beeline → giant repeated map circuits that pass within ~20px of sitting crew
-       through walls without ever entering the room to check (see the triple-pass-by
-       exhibit) — near-misses a room-sweep would convert.
-- **Coverage is NOT the problem.** crewborg's blind-search heat overlaps crew density
-  *more* than anyone (0.48 vs notsus 0.26) — it goes everywhere; it just never
-  checks rooms or persists near contacts while ready.

@@ -30,10 +30,6 @@ There's a small, recurring set of ways it fails — check these, pick the highes
 
 Keep this short — it's the entry. The value is the explanation + hypotheses below.
 
-> **Known standing lever (2026-06, re-verify):** the imposter is strong but **under-converts kills to
-> wins** — more kills haven't moved win%, so kill→win conversion (esp. landing the 2nd kill) is the
-> durable gap. A good default place to look.
-
 ## 2. Explain the signals (what do they actually mean?)
 
 Translate the flags and numbers into **what is happening in the games**. The survey's flag symbols

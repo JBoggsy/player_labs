@@ -5,25 +5,6 @@
 how they fit together, the API/protocol crewborg must satisfy, and pointers to
 source for detail. The durable design decisions live in [`design.md`](./design.md).
 
-Everything below was read from source on **2026-05-28**. These repos are in
-active development; **verify any specific symbol, path, or constant against the
-cited file before relying on it.**
-
-> **Status:** Implemented end-to-end — the agent plays both roles (crewmate
-> tasks / meetings / voting / report / accuse, plus imposter Evade / Pretend / Search / Hunt and the
-> `kill`/`vent` intents; the imposter **evades after fresh kills** and may report
-> non-fresh visible bodies;
-> imposter Pretend fakes real task stations in likely occupied rooms, Search owns
-> pre-kill target acquisition, and
-> Hunt is gated on a visible kill opportunity). Attend Meeting has an opt-in
-> LLM chat/vote path with deterministic fallback. `CREWBORG_BE_DUMB=1` is an
-> aggressive imposter experiment that skips Pretend/Evade/body reports and keeps
-> the imposter in Search/Hunt; `CREWBORG_NO_ISOLATION=1` drops the witness gate so
-> Hunt strikes regardless of who's watching (a win vs weaker crew — design §6.6–6.7).
-> See [`README.md`](./README.md) for a capability summary and
-> [`design.md`](./design.md) for the settled architecture. crewborg is the package
-> `crewrift.crewborg`, vendored in the lab at `crewrift_lab/crewrift/crewborg/`.
-
 > **Mandatory LLM profile:** Crewrift policies always use Haiku 4.5
 > (`us.anthropic.claude-haiku-4-5-20251001-v1:0`) and stay below 1,800
 > quota-weighted tokens per policy episode across all calls
@@ -58,7 +39,7 @@ Three layers. Crewborg is the top; it treats the protocol below as a contract.
   league-runnable game).
 - **The Player SDK** (`players.player_sdk`) is a generic Python framework for
   building agents with a *fast symbolic inner loop* + a *slower strategy loop*
-  (the architecture is historically called "Cyborg" in the SDK docs). It is
+   It is
   transport- and game-agnostic.
 - **Crewborg** plugs Crewrift-specific perception/belief/modes/strategy into the
   SDK's runtime, and ships as a Docker image the Coworld runner launches.
@@ -194,7 +175,6 @@ Then each tick: `command = runtime.step(observation)`; send `command`'s packets.
 | `player_sdk/trace.py` | trace & metrics sinks |
 | `player_sdk/buffers.py` | `OverwriteBuffer` (latest-wins, thread-safe) |
 | `player_sdk/coworld_json_bridge.py` | JSON-protocol bridge — **NOT for Crewrift** (see below) |
-| `player_sdk/docs/metta_cogames_framework/README.md` | full framework reference + invariants/anti-patterns |
 | `player_sdk/docs/metta_cogames_framework/PYTHON_FRAMEWORK.md` | quickstart + minimal agent |
 | `player_sdk/docs/metta_cogames_framework/examples/toy_grid_agent.py` | complete runnable example — the assembly pattern to mirror |
 
@@ -243,8 +223,6 @@ Crewborg's contract. Two repos matter:
   reference — never write there)* — the generic Coworld
   packaging/runner/CLI contract Crewrift conforms to.
 
-### Concept & objective (`coworld-crewrift/README.md`, `docs/rules.md`)
-
 Social deduction, 8 players / 2 imposters default, retro pixel art.
 - **Crewmates** win by completing all assigned tasks **or** voting out all
   imposters.
@@ -253,13 +231,6 @@ Social deduction, 8 players / 2 imposters default, retro pixel art.
   chat then vote (or skip); ties/timeouts eject no one.
 
 ### Loop, mechanics, scoring
-
-> **Citation key** (all paths are in the `Metta-AI/coworld-crewrift` repo, verified
-> 2026-05-28). Game source: `sim` = `src/crewrift/sim.nim`, `global` =
-> `src/crewrift/global.nim` (the `/player` renderer), `server` =
-> `src/crewrift/server.nim`, `protocol` = `src/crewrift/common/protocol.nim`.
-> Reference consumer: `notsus` = `players/notsus/notsus.nim`, `np` =
-> `players/notsus/notsus/protocols.nim`. Cited as e.g. `sim:2464`.
 
 Runs at **24 FPS** (`TargetFps`). Crewmates do timed tasks at stations; imposters
 kill (range + cooldown), vent (teleport between grouped vents), and blend in.
@@ -449,8 +420,6 @@ a latency optimization crewborg skips (it has no rate limiter and self-corrects
 from transient backlog). Tolerate partial startup frames — don't assume the map
 object / walkability sprite have arrived yet on the first ticks.
 
-### Connecting (`coworld-crewrift/README.md`)
-
 Hosted play sets `COWORLD_PLAYER_WS_URL=ws://<svc>:8080/player?slot=<s>&token=<t>`
 — connect to it **exactly**; don't hardcode slot/token. Browser clients:
 `/client/player`, `/client/global`, `/client/replay`, `/client/admin`. Reference
@@ -459,18 +428,6 @@ bots live in `coworld-crewrift/players/` (`notsus`, `evidencebot_v2`,
 `how_to_submit_coworld_policy.md`.
 
 ### Runtime contract
-
-Crewborg runs as a **WebSocket client**: the Coworld runner sets
-`COWORLD_PLAYER_WS_URL` (legacy alias `COGAMES_ENGINE_WS_URL`), the bridge (`coworld/policy_player.py`) connects, speaks
-Crewrift's binary protocol for its slot, and exits on the final message.
-**stdout = protocol channel; traces/metrics go to SDK trace outputs.** The bridge
-defaults to `jsonl@artifact` — traces are zipped and uploaded to the runner-provided
-`COWORLD_PLAYER_ARTIFACT_UPLOAD_URL` at exit (falling back to `jsonl@stderr` when no
-URL is present), so heavy tracing survives Observatory's hosted log-line cap; override
-with `CREWBORG_TRACE_OUTPUTS` (see design.md §"Tracing"). Platform contract:
-`coworld/src/coworld/docs/README.md` (overview + role/artifact docs under
-`docs/roles/` and `docs/artifacts/`, incl. `artifacts/PLAYER_ARTIFACT.md`) and
-`runner/runner.py` (protocol authority).
 
 ---
 
@@ -507,13 +464,6 @@ Behavior & parsing references:
 
 ## 4. Tests
 
-This fork is the editable package `crewrift.crewborg`; its tests live under
-`crewrift_lab/crewrift/crewborg/tests` and cover the action resolver, modes, trace
-sinks, the assembled runtime, an in-process bridge smoke, and the scene decoder
-(decode recorded Sprite-v1 sequences → assert resolved objects/labels/coordinates,
-rather than pixel parity). Develop/run/test workflows live in the
-[lab README](../../README.md).
-
 ---
 
 ## Quick file index
@@ -524,18 +474,14 @@ rather than pixel parity). Develop/run/test workflows live in the
 | SDK mode base + registry | `players/player_sdk/modes.py` |
 | SDK directive/intent/command/belief types | `players/player_sdk/types.py` |
 | SDK strategy runners | `players/player_sdk/strategy.py` |
-| SDK framework reference (invariants) | `players/player_sdk/docs/metta_cogames_framework/README.md` |
 | SDK minimal example to mirror | `players/player_sdk/docs/metta_cogames_framework/examples/toy_grid_agent.py` |
 | Crewborg design decisions | `./design.md` (this fork) |
 | Crewborg trace-log format + `jq` recipes | [`./docs/trace-logs.md`](./docs/trace-logs.md) |
 | Crewrift Sprite-v1 parser (perception reference) | `Metta-AI/coworld-crewrift`: `players/notsus/notsus/protocols.nim` |
-| Crewrift rules / mechanics | `Metta-AI/coworld-crewrift`: `README.md`, `docs/rules.md`, `src/crewrift/sim.nim` |
 | Crewrift wire protocol | `Metta-AI/coworld-crewrift`: `docs/sprite_v1.md` |
 | Crewrift reference bots + guides | `Metta-AI/coworld-crewrift`: `players/` |
-| Coworld platform/runner contract | `Metta-AI/metta`: `packages/coworld/src/coworld/docs/README.md` + `runner/runner.py` *(read-only)* |
 | Crewborg trace replay viewer | `./viewer/index.html` |
 | Path-prediction module (where a crewmate is heading) | `./strategy/path_prediction.py` |
-| Path-prediction replay UI + accuracy/eval tools | [`./tools/README.md`](./tools/README.md) |
 
 Repo roots:
 - Player SDK: pkg `players`, installed from the public `Metta-AI/coworld-tools` monorepo (`players/` subdir; `Metta-AI/players` archived) via a pinned archive tarball, lock-pinned, no local checkout
@@ -546,14 +492,13 @@ Repo roots:
 ## Source-of-truth & caveats
 
 The protocol/mechanics in §2 were read from `coworld-crewrift` source on
-2026-05-28 (`global.nim`/`server.nim` for the `/player` render, `sim.nim` for
 mechanics/constants, `players/notsus/notsus/{protocols,votereader}.nim` for the
 proven consumer). Crewrift is in active development, so when something doesn't
 match, re-derive from those files (and a live `coworld-crewrift` capture) — they
 win over this doc. Specifics worth re-confirming against the live game:
 
 - The **label strings** and **object-id bases** are the perception contract and
-  are game-defined (not in `sprite_v1.md`). They're current as of the date above;
+  are game-defined (not in `sprite_v1.md`). Verify them against the selected game;
   re-check `global.nim` if perception misbehaves.
 - `notsus` is a **dual-path** bot: a legacy pixel-CV path *and* the label path.
   Over Sprite v1 the **label path is authoritative** (`spriteDetectionsReady`);

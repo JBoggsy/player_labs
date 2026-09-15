@@ -1,10 +1,5 @@
 # Unified chat & meeting-behavior evidence
 
-**Status:** implemented (layer 1). The deferred "layer 2" (speaker-trust-weighted
-incorporation into the suspicion posterior + a deterministic template extraction
-floor + the `kill` claim type) is designed and implemented in
-`crewrift_lab/docs/designs/2026-07-22-chat-evidence-incorporation.md`.
-
 ## Why
 
 Two independent chat parsers exist today and disagree with each other:

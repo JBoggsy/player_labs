@@ -15,7 +15,7 @@ uv run python "$S" --round round_ID --out /tmp/round
 uv run python "$S" --policy POLICY --version VERSION -n 20 --out /tmp/policy
 ```
 
-Replace IDs/placeholders. Stream immediately after creating the request so downloading overlaps execution. `--watch` supports `--xreq`; multiple `--ereq`, `--round` or `--episode` flags combine within their selection mode. `--division` discovers its rounds. Pool discovery is retired.
+Replace IDs/placeholders. Stream immediately after creating the request so downloading overlaps execution. `--watch` supports `--xreq`; multiple `--ereq`, `--round` or `--episode` flags combine within their selection mode. `--division` discovers its rounds. Use explicit request, round, division or episode selection.
 
 Use `--no-replay`, `--no-results`, `--no-logs` or `--no-artifacts` only when the question doesn't require that evidence. `--force` refetches existing data. Watch retries are bounded by `--max-attempts`; exhausted episodes yield a nonzero status and remain in the index. Rerunning resumes from disk; an exhausted request needs its attempt state inspected/reset deliberately to retry.
 

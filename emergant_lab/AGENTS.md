@@ -8,31 +8,16 @@ submission gate. This file adds Emerg-ant-specific rules.
 
 ## Startup read order
 
-1. [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md)
-2. [`README.md`](README.md)
-3. [`docs/emerg-ant-gameplay.md`](docs/emerg-ant-gameplay.md)
-4. [`best_practices.md`](best_practices.md) and
-   [`user_preferences.md`](user_preferences.md)
-5. [`TENTATIVE_LESSONS.md`](TENTATIVE_LESSONS.md)
+Read [the lab README](README.md), [gameplay](docs/emerg-ant-gameplay.md),
+[working context](WORKING_CONTEXT.md), [best practices](best_practices.md),
+and [preferences](user_preferences.md).
 
-Use the dated [founding recon](docs/recon/emerg-ant-2026-08-20.md) only for the
-retired 0.6.1 / GameVersion 52 history. Re-resolve live releases, leagues, rosters,
-and CLI versions before relying on dated state.
 
-## Current state
+## Policy
 
-As of 2026-08-21, `stencil-ant:v6` remains the promoted player
-(`3da684b3-c68a-46c7-9d3a-c25d36a60afe`). It has never been submitted. The newer
-uploaded v7 experiment was rejected after its nominal crowd-redirection mechanism
-produced zero sampled activations. Immutable history is in
-[`emergant/stencil_ant_gv57_nim/VERSION_LOG.md`](emergant/stencil_ant_gv57_nim/VERSION_LOG.md).
-
-The active player starts from the exact canonical GameVersion 57 Nim baseline, adds
-telemetry, routes carriers through two offset queen-delivery lanes, and implements a
-bounded danger-pheromone queen alarm. V6 keeps v5's precise launch conditions and
-moves the active defense post from 58 to 68 px outward. It beat an all-in local queen
-rush 5–1, then beat the current champion 3–1 in a four-episode hosted color swap. A
-same-window v5 control split 2–2; the favorable delta is promising but still small-n.
+The Nim policy under `emergant/stencil_ant_gv57_nim/` adds telemetry, carrier routing
+and queen-defense behavior. Select the policy artifact and evaluation objective with
+the human, and resolve current participation through the platform.
 
 ## Source of truth
 
@@ -73,18 +58,16 @@ and roster afresh before designing an experience request.
 - Re-derive movement, combat, timing, visibility, and input constants from the
   pinned Emerg-ant source before adapting any Paintbot module.
 - Pheromones are public environmental state. Never treat them as private radio.
-- Do not add compatibility for the retired GV52 cache-race behavior to a GV57 player.
 - The user has explicitly authorized local self-play for iterative improvement. Keep
   it matched by seed and seat orientation; do not substitute hosted XP self-play.
 - Uploading is inert and routine. **Never submit to the league without James's explicit
   permission in the current task.**
 
-## Lab hygiene
+## Working context and guidance
 
-Keep all Emerg-ant-specific source, analysis, fixtures, and docs under this directory.
-Update [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md) as facts change and append uploads
-to the future player's `VERSION_LOG.md`. Capture candidate lessons eagerly in
-[`TENTATIVE_LESSONS.md`](TENTATIVE_LESSONS.md); the root hooks rotate and nudge it.
-
-When a work thread finishes, reconcile the context, propose the next decision, and
-pause. Do not auto-chain into gameplay strategy changes.
+Keep the active objective, scope, unresolved constraints and next decision in
+[WORKING_CONTEXT.md](WORKING_CONTEXT.md). Keep testable unresolved ideas in
+[TENTATIVE_LESSONS.md](TENTATIVE_LESSONS.md); promote supported rules to
+best_practices.md and remove resolved claims. Follow the
+[shared learning workflow](../docs/learning.md). Update these documents in place;
+do not create session archives, version logs or change narratives.

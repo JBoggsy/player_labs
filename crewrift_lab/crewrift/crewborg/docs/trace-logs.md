@@ -5,19 +5,6 @@ tick: what it **perceived**, what it **believed** (suspicion over the roster), t
 **mode** it chose, and the **command** it sent. This document is the reference for
 that trace's *format* and for reading a finished game from it.
 
-It is the cross-cutting observability reference. For what the recorded values
-*mean* in gameplay terms, follow the per-area docs: belief/perception in
-[`./perception-and-belief.md`](./perception-and-belief.md), suspicion posteriors in
-[`./suspicion.md`](./suspicion.md), the modes in
-[`./imposter-play.md`](./imposter-play.md) and
-[`./crewmate-play.md`](./crewmate-play.md), meetings in
-[`./meetings.md`](./meetings.md), occupancy tracking in
-[`./agent-tracking.md`](./agent-tracking.md), routing in
-[`./navigation.md`](./navigation.md), and the LLM commander in
-[`./commander.md`](./commander.md). The package orientation is
-[`../README.md`](../README.md); the settled architecture and the canonical event
-catalogue are in [`../design.md`](../design.md).
-
 The trace is **crewborg-specific**. Its game-level events are emitted by
 `events.py:CrewborgEventTracer`, wired as the runtime's `on_step_complete` hook in
 `__init__.py:build_runtime`. The env-derived filtering lives in `trace.py`; output
@@ -191,25 +178,6 @@ diagnostic:
 | `votes` | (imposter) vote tally against each color — the heat that drove it |
 | `chat_accusers` | (imposter) per-color count of chat accusers |
 | `nlp` | (imposter) the chat-NLP state (`ready`/`loading`/`disabled`/`failed`) |
-
-When the LLM meeting layer is enabled, `modes/attend_meeting.py` also emits
-`domain.meeting_context_serialized` (`trigger` + the full serialized dossier —
-**large**), `domain.meeting_llm_decision` (`trigger`, `model`, `latency_ms`,
-`usage`, `decision`), `domain.meeting_llm_debug` (raw request/response),
-`domain.meeting_tentative_vote`, and `domain.meeting_llm_fallback` (`reason` +
-detail) on each fallback to the deterministic path. Both paths emit
-`domain.meeting_chat_selected` (`text`, `reason`) and `domain.meeting_vote_selected`
-(`target`, `reason`) as the chat/vote actually goes out. Every completed LLM call attempt
-(meeting AND commander, success AND failure) additionally emits one `domain.llm_spend`
-per-call spend-attribution record — tokens, `est_cost_usd`, cumulative
-`episode_est_cost_usd`, `error_class` — from the shared `strategy/llm_spend.py` ledger
-(design: `crewrift_lab/docs/designs/2026-07-22-bedrock-spend-telemetry-design.md`). Crew seats with the
-chat-evidence feature on also emit `domain.chat_evidence_applied` once per meeting
-at vote-submit (`vote_target`, `top_suspect_with_chat`, `top_suspect_without_chat`,
-`changed_top_suspect`, per-target `contributions` — the "did chat evidence change
-our vote" mechanism metric; design
-`crewrift_lab/docs/designs/2026-07-22-chat-evidence-incorporation.md`). The meeting
-machinery is [`./meetings.md`](./meetings.md).
 
 ### Framework boundary events
 

@@ -70,11 +70,9 @@ Nikita, Vova, Dima, Egor.
 Other named regions in `map.resource`: `market`, `water`, `honey` (×3), `smoke`/`smoke stack`
 (×6) — decorative/other, not gardens.
 
-## Why this matters for cady (the v1 zero-score bug → v2 fix)
+## Navigation
 
-cady v1 scored 0 because it only enters Gather when a food garden is *currently perceived*, and
-at spawn it sees none, so it went straight to Host and held with an empty inventory. With the
-map fixed, **v2 can drive off these known coordinates**: pick the nearest garden(s) by world
-position and navigate there to harvest (press A within 40 px), then go to its own `houseN` to
-host — no reliance on happening to see a garden. First validate the coordinate-frame alignment
-(caveat above), ideally by decoding a 0.1.10 replay frame.
+Use the fixed map's garden coordinates to select a reachable harvest target even
+when no garden is currently in view. Verify the coordinate frame, navigate within
+the interaction radius, gather food, then return to the correct house to host.
+An absent garden observation is not a reason to host with an empty inventory.

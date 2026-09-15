@@ -1,52 +1,8 @@
-# ctf_lab — 🗄️ ARCHIVED 2026-08-07
+# CTF lab
 
-> **This lab is archived and is no longer worked on.** Active work is in
-> [`paintbot_lab/`](../paintbot_lab/). Everything below is preserved as a
-> historical snapshot: accurate as of the last CTF session (2026-07-31), and not
-> maintained since.
->
-> **What moved to `paintbot_lab/tools/`** (paintbot is a second manifest over the
-> same engine, so these were always the same tools):
-> `build_expand_replay.sh`, `expand_replay_json.nim`, `viewer.html`,
-> `viewer_bundle.py`, `event_warehouse.py`, and a copy of the `lessons-review`
-> skill. Use the paintbot copies — the ones described below are gone.
->
-> **What stayed here**, unmaintained: the beacon player (`ctf/beacon/`), its
-> baked arena and battle plans, CTF-specific analysis tools
-> (`analyze_reporter_warehouse.py`, `find_firefights.py`, `infer_battle_plan.py`,
-> `plan_server.py`, `agg_eval.py`, `run_roundwarehouse_local.py`), the `ctf-ab`
-> and `ctf-event-warehouse` skills, and the docs/lessons archive.
->
-> **The SessionStart lesson-rotation hook was removed for this lab**, so
-> `TENTATIVE_LESSONS.md` is frozen at its final state and will not rotate again.
->
-> ⚠️ **Archiving the directory did not retire the player.** Coworld CTF is still
-> live (`ctf 0.7.203` canonical), and CTF champions are auto-mirrored into the
-> Paintbot league under the same player identity. If beacon still holds a CTF
-> league seat, it keeps competing — and scoring 0 — in Paintbot. Retiring it is a
-> league action, not a repo action.
-
-The **CTF** corner of [player_labs](../README.md) — where we build, evaluate, and
-improve player policies for **Coworld CTF**, a two-team capture-the-flag shooter on the
-**BitWorld Sprite-v1** protocol.
+This lab is inactive. Resume gameplay work only with a new user direction.
 
 This README orients newcomers (human or agent). Two pointers do most of the work:
-
-- **[`AGENTS.md`](AGENTS.md)** — the operating model *for this lab*: the improvement
-  loop in CTF terms, the player build paths, and the lab's practices. Read it to *work*
-  here.
-- **[`../README.md`](../README.md)** — lab-wide setup (`uv sync` / Observatory auth) and
-  the ground rules.
-
-> **Status: `beacon:v67` is the submitted CTF champion.** It combines the
-> `outer_echelon` plan, stronger post/cover discipline, anti-turtle base caution,
-> uncapped gun eligibility, and crown-compatible aim readback. Its fresh top-player
-> screen finished 508-3-29 across 540 scored games. The game repo
-> (`Metta-AI/coworld-ctf`) is cloned for
-> reference at `~/coding/coworlds/coworld-ctf` — **the league redeploys often**; the
-> canonical league version at the 2026-07-31 submission is **ctf 0.7.138**. Live
-> state + open threads: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md); version history:
-> [`ctf/beacon/VERSION_LOG.md`](ctf/beacon/VERSION_LOG.md).
 
 ## The game (one paragraph)
 
@@ -68,18 +24,6 @@ exact tuning numbers, the baseline bot, and strategy — is
 without leaving the repo. The authoritative source is the **`Metta-AI/coworld-ctf`**
 repo (Nim server `src/ctf.nim`, rules `docs/RULES.md`, baseline `players/baseline/`).
 
-## The opportunity, in brief
-
-CTF is a **fork of Crewrift**: it keeps Crewrift's continuous movement, line-of-sight,
-Sprite-v1 protocol, and replay infrastructure, and swaps social deduction for teams,
-guns, flags, and fog-of-war. That makes the cheapest path to a competitive player a
-**Python Player-SDK policy on the SDK's SpriteV1 bridge** (`run_sprite_bridge`),
-borrowing Crewrift `crewborg`'s perception decoder + movement controller and Heartleaf
-`cady`'s bridge wiring, with CTF's own decision layer (aim/vision management, roles,
-flag logic). The bundled **Nim `baseline`** bot is a strong, fully-featured reference to
-beat. Which build path to pursue is a human-direction call — see
-[`AGENTS.md`](AGENTS.md#player-build-paths).
-
 ## Layout
 
 ```
@@ -88,12 +32,11 @@ ctf_lab/
   AGENTS.md                       operating model: the loop in CTF terms, build paths
   WORKING_CONTEXT.md              live cross-session state — read first
   best_practices.md               CTF-specific practices (near-empty until lessons graduate)
-  TENTATIVE_LESSONS.md            this session's candidate-lessons buffer (auto-rotated)
+  TENTATIVE_LESSONS.md            this session's candidate-lessons buffer (maintained)
   ctf/beacon/                     THE PLAYER — Python Player-SDK SpriteV1 policy (see below)
     tuning.py                     tunable-registry JSON + validated sweep-arm CLI
   docs/
     ctf-gameplay.md               self-contained game reference (rules, protocol, tuning, strategy)
-    designs/ctf-player-v1-design.html   beacon's strategic/tactical design
   tools/
     build_player.sh               build the beacon image (linux/amd64)
     versions.env                  pinned SDK + game refs for builds
@@ -105,11 +48,9 @@ ctf_lab/
     find_firefights.py            detect and weight reciprocal replay firefights
     infer_battle_plan.py          infer opponent groups + move/hold orders from replays
     agg_eval.py                   aggregate an eval results dir into a scoreline
-    rotate_lessons.sh             SessionStart hook (archive the lesson buffer)
   .claude/skills/
     ctf-event-warehouse/          build + query the event warehouse (deep-dig analysis)
     lessons-review/               the ≈weekly lessons-graduation skill
-  lessons_archive/                rotated per-session lesson buffers
 ```
 
 The player policy lives at `ctf_lab/ctf/beacon/` (a deterministic Player-SDK SpriteV1

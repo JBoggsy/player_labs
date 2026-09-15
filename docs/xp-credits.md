@@ -1,6 +1,6 @@
 # Experience-request credits
 
-Verified 2026-09-14 against backend source and the signed-in account's live credit meter. **Softmax grants credits; users are not billed money for XP requests.** Hosted work consumes a limited, replenishing allowance.
+**Softmax grants credits; users are not billed money for XP requests.** Hosted work consumes a limited, replenishing allowance.
 
 ## Allowance
 
@@ -23,7 +23,7 @@ The account-only endpoint is `GET /usage/me/credits` on the Observatory gateway 
 
 ## Evidence and correction
 
-Backend source: [user_credits.py at 70bcdd00](https://github.com/Metta-AI/metta/blob/70bcdd00b120ae29326b6844e792c076a7b3ae54/app_backend/src/metta/app_backend/user_credits.py). The standard schedule above is source-verified. The live signed-in team account returned refill 1,428.5714285714287, cadence `day`, cap 20,000, conversion 10 and `enforced=true`; this independently confirms the deployed team schedule. No request was created or charged to the allowance during verification.
+Backend source: [user_credits.py at 70bcdd00](https://github.com/Metta-AI/metta/blob/main/app_backend/src/metta/app_backend/user_credits.py). The standard schedule above is source-verified. The live signed-in team account returned refill 1,428.5714285714287, cadence `day`, cap 20,000, conversion 10 and `enforced=true`; this independently confirms the deployed team schedule. No request was created or charged to the allowance during verification.
 
 The initial modernization incorrectly generalized an August preference's “cost money” explanation into “treat requests as paid work.” That wording missed the granted-credit system. The corrected distinction is **free to the user, limited by replenishing credits**, not unlimited/free infrastructure and not monetary billing.
 

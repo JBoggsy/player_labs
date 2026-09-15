@@ -1,7 +1,5 @@
 # Submit and monitor reference
 
-Checked 2026-09-14 with `coworld 0.1.47`, public OpenAPI, live read-only membership/submission responses, and current backend source. See the [platform reference](../../../../docs/platform-reference.md) for evidence and boundaries. No submission, retirement or champion change was performed during the audit.
-
 ## Submit
 
 ```bash
@@ -32,7 +30,7 @@ Champion is a separate boolean. Inspect membership-event reasons and episode fai
 
 Membership/submission lists return **arrays with `X-Next-Cursor` headers**. Follow pagination. Do not use `active_only` when diagnosing disqualification: it can hide the row. Match the primary leaderboard by `player_id`; other leaderboard views also exist. Progress evidence is commissioner-dependent; missing `metadata.observed` is not zero progress.
 
-CLI reads include `coworld submissions`, `memberships`, `results`, `leagues`, and `divisions`. Our monitor follows list pagination, but is a **policy-name history view**, not an exact-version/exact-league completion gate; inspect the chosen membership UUID directly for final verification.
+CLI reads include `coworld submissions`, `memberships`, `results`, `leagues`, and `divisions`. Our monitor follows list pagination, but is a **policy-name membership view**, not an exact-version/exact-league completion gate; inspect the chosen membership UUID directly for final verification.
 
 ## Retirement and authorization
 

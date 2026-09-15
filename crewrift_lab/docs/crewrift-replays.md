@@ -127,12 +127,6 @@ container — run from a scratch dir or clean up (`docker rm -f crewrift-replay`
 
 ## B. The replay as events: `expand_replay` (objective ground truth)
 
-`tools/expand_replay.nim` parses a `.bitreplay` into a tick-by-tick **event
-timeline**. Because it reads the recorded game, it knows the **true roles** — kills
-are attributed to the real imposters — so it is the fastest objective view of what
-actually happened. The repo recommends it as the agent's starting point
-(`README.md §"Inspect replay timelines"`).
-
 ### It re-simulates → the binary must match the recording build
 
 The driver `tools/expand_replay.nim:expandReplayTimeline` builds a fresh
@@ -400,15 +394,3 @@ pick the right one; **defer the how-to to each tool's own documentation.**
 ---
 
 ## See also
-
-- [`./crewrift-gameplay.md`](./crewrift-gameplay.md) — what the events *mean* as
-  gameplay (roles, phases, scoring); read this to interpret a timeline or log.
-- [`./crewrift-protocol.md`](./crewrift-protocol.md) — what a player must *do* over the wire.
-- [`./coworld-platform.md`](./coworld-platform.md) — the hosting platform
-  (episodes, leagues, artifacts) this doc's downloads come from.
-- [`./README.md`](./README.md) — reference-doc index.
-- [`../best_practices.md`](../best_practices.md) — crewborg working conventions.
-- [`../crewrift/crewborg/docs/trace-logs.md`](../crewrift/crewborg/docs/trace-logs.md) —
-  crewborg's per-slot JSON trace format + `jq` recipes (the [§C](#c-a-players-own-logs-subjective) "crewborg" pointer).
-</content>
-</invoke>

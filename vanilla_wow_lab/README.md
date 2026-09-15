@@ -1,17 +1,8 @@
 # vanilla_wow_lab
 
-The **Vanilla WoW** corner of [player_labs](../README.md) — where we build, evaluate, and
-improve player policies for **Vanilla WoW**, a Coworld game that is a *real* World of
-Warcraft 1.12.1 realm backed by [VMaNGOS](https://github.com/vmangos/core).
-
 This README orients newcomers (human or agent). Two pointers do most of the work:
 
-- **[`AGENTS.md`](AGENTS.md)** — the operating model *for this lab*: the improvement loop in
-  Vanilla-WoW terms, the player build paths, and the lab's practices. Read it to *work* here.
-- **[`../README.md`](../README.md)** — lab-wide setup (`uv sync` / Observatory auth) and the
-  ground rules.
-
-> **Status (2026-08-08): `wowborg` uses the game's canonical Gymnasium `/player`
+> **Status: `wowborg` uses the game's canonical Gymnasium `/player`
 > interface.** Its Python policy consumes `Observation` and submits `Action`
 > directly; the game owns the WoW client and all protocol/admission/settlement
 > machinery. The exact deployed `vanilla-wow:0.1.208` image and matching owner commit are
@@ -56,15 +47,13 @@ vanilla_wow_lab/
   AGENTS.md                          operating model: the loop in Vanilla-WoW terms, build paths
   WORKING_CONTEXT.md                 live cross-session state — read first
   best_practices.md                  Vanilla-WoW practices (near-empty until lessons graduate)
-  TENTATIVE_LESSONS.md               this session's candidate-lessons buffer (auto-rotated)
+  TENTATIVE_LESSONS.md               this session's candidate-lessons buffer (maintained)
   docs/
     vanilla-wow-gameplay.md          self-contained, accessible game reference (START HERE)
     vanilla-wow-replay-analysis.md   stateful replay metrics and batch-profiler commands
     vanilla-wow-player-contract.md   the Nim packet-level player: connect / observe / emit / ship
-    vanilla-wow-protocol.md          exhaustive interface-protocol reference (every message/schema/format)
     vanilla-wow-rfc-roles.md         the 5 RFC roles (commissioner/grader/…) + round scoring
     vanilla-wow-strategy-guide.md    how to PLAY WoW well: beginner's guide + pro tips + RFC/leveling strategy
-    status-archive.md                retired WORKING_CONTEXT status sections (2026-07-13..07-27; all stale)
     designs/                         player design docs (obs/action spaces, v2 shim adoption)
     recon/                           citation-backed recon reports (navigation obs/actions)
   wowborg/                           our player: Python policy over canonical /player (own README)
@@ -75,7 +64,6 @@ vanilla_wow_lab/
                                      (stateful stuck/life/damage/recovery/spell aggregation),
                                      lessons hooks
   .claude/skills/lessons-review/     the ≈weekly lessons-graduation skill
-  lessons_archive/                   rotated per-session lesson buffers
 ```
 
 The player policy directory is [`wowborg/`](wowborg/) — mirroring `crewrift_lab/crewrift/`,

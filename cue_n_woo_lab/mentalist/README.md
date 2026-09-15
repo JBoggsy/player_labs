@@ -1,9 +1,5 @@
 # mentalist
 
-Our Cue-n-Woo player policy: a **cheap local style classifier → Bedrock Claude
-writer**. Design + rationale: [`../docs/designs/player-design.md`](../docs/designs/player-design.md);
-evidence: [`../docs/probe-findings.md`](../docs/probe-findings.md).
-
 ## How it plays
 
 1. **`private_questions`** — asks the 3 fixed questions in [`config.py`](config.py)
@@ -66,5 +62,3 @@ uv run coworld run-episode <manifest> <request.json> \
 ```
 and confirm the log shows `LLM backend: bedrock ... ok` and real prose answers,
 not the `"<Style> speaking, ... matters most to me"` fallback.
-
-Version history → change mapping: [`VERSION_LOG.md`](VERSION_LOG.md).

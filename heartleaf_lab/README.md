@@ -1,18 +1,6 @@
 # heartleaf_lab
 
-The **Heartleaf** corner of [player_labs](../README.md) — where we build, evaluate, and
-improve player policies for **Heartleaf**, a cozy 9-gnome garden-dinner Coworld game on
-the BitWorld Sprite-v1 protocol.
-
 This README orients newcomers (human or agent). Two pointers do most of the work:
-
-- **[`AGENTS.md`](AGENTS.md)** — the operating model *for this lab*: the improvement loop
-  in Heartleaf terms, the player build paths, and the lab's practices. Read it to *work*
-  here.
-- **[`../README.md`](../README.md)** — lab-wide setup (`uv sync` / Observatory auth) and
-  the ground rules.
-
-> **Repository status (audited 2026-09-14):** [Cady](cady/) is implemented, with [build tools](tools/) and an [event warehouse](.claude/skills/heartleaf-event-warehouse/SKILL.md). The original scaffolding status is obsolete. Historical evaluation and deployment records are in [working context](WORKING_CONTEXT.md); re-resolve live state before operations.
 
 ## The game (one paragraph)
 
@@ -43,24 +31,6 @@ tradeoffs) are in [`AGENTS.md`](AGENTS.md#player-build-paths); which to pursue i
 human-direction call.
 
 ## Layout
-
-```
-heartleaf_lab/
-  README.md                       this file
-  AGENTS.md                       operating model: the loop in Heartleaf terms, build paths
-  WORKING_CONTEXT.md              live cross-session state — read first
-  best_practices.md               Heartleaf-specific practices (near-empty until lessons graduate)
-  TENTATIVE_LESSONS.md            this session's candidate-lessons buffer (auto-rotated)
-  docs/
-    heartleaf-gameplay.md         self-contained game reference (rules, protocol, scoring, exact timing)
-    villager-dinner-attendance.md how the starter villagers decide/accept dinners (what we exploit)
-    replay-tools.md               how to expand a replay + draw travel-line debug images
-    designs/                      cady player + social-LLM-controller designs
-  tools/                          lessons hooks + replay/analysis viz (expand_replay, viz_replay,
-                                  viz_occupancy, build/viz_flow_field — movement + heatmap over the map)
-  .claude/skills/lessons-review/  the ≈weekly lessons-graduation skill
-  lessons_archive/                rotated per-session lesson buffers
-```
 
 The implemented player lives in `cady/`; the game-hosted starter framework remains another supported design path.
 

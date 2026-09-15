@@ -64,7 +64,7 @@ direction.
 5. **Rebuild + upload, immediately** (you): rebuild and **upload the changed artifact** (`build-and-upload` skill; the game-agnostic image contract is in
    [`player-build.md`](player-build.md)) — **no smoke test, no pre-upload checks**; the
    next experience request is the test. **Do NOT submit it to a league yet.**
-   Record the version → change mapping in the version log.
+   Use the returned policy identity for the next evaluation.
 6. **Repeat** — evaluate the new version (back to step 1) and iterate until it is
    **demonstrably better than before.**
 7. **Submission gate** (the human's) — only once the player is clearly
@@ -119,12 +119,12 @@ Lab-wide, game-agnostic Coworld tooling lives in `.claude/skills/`:
   and per-agent logs into one directory per episode (keyed off `job_id`) — one-shot,
   or **streamed live from a running request** (`fetch_artifacts.py --xreq … --watch`:
   each episode downloads as it turns terminal). (Loop step 2: **Report**, the pull.)
-- **`coworld-local-run`** — local debugging and mechanism/parity checks. Own-player local self-play may be useful; no hosted XP self-play or routine pre-upload gate. `scripts/smoke.py` is a historical filename, not a required smoke-test step.
+- **`coworld-local-run`** — local debugging and mechanism/parity checks. Own-player local self-play may be useful; no hosted XP self-play or routine pre-upload gate. `scripts/smoke.py` supports targeted local debugging.
 - **`build-and-upload`** — build the player image and **upload** it as a new version: the
   routine action that registers an artifact to evaluate; an identical upload may
   reuse a version. Uploading enters no competition. (Loop step 5.)
 - **`coworld-policy-lifecycle`** — **submit** an already-uploaded version to a league → watch
-  it **qualify** → **monitor** standings, with version-log discipline. Submit is the gated,
+  it **qualify** → **monitor** standings, with explicit policy identity. Submit is the gated,
   consequential league-entry action (human go-ahead only; promotion depends on league rules). `scripts/policy_lifecycle.py`
   does `versions` / `monitor`. (Loop steps 7–8.)
 - **`coworld-experiment`** — test **one** falsifiable hypothesis about a player rigorously:
@@ -165,7 +165,7 @@ existing lab prose or a transcript is not independent verification.
 | --- | --- |
 | [Softmax docs](https://docs.softmax.com) · [complete Markdown index](https://docs.softmax.com/llms.txt) | Discover current platform guides before implementing or diagnosing a workflow. |
 | [API reference](https://docs.softmax.com/api-reference/overview) · [live OpenAPI JSON](https://softmax.com/api/observatory/openapi.json) | Exact public routes, fields, pagination and schemas. API base: `https://softmax.com/api/observatory`. |
-| [Authentication](https://docs.softmax.com/guides/authentication) · [rate limits](https://docs.softmax.com/guides/rate-limits) · [errors](https://docs.softmax.com/api-reference/error-handling) · [changelog](https://docs.softmax.com/api-reference/changelog) | Check identity, current traffic limits, retry rules and caller-visible changes. XP credits are a separate [account allowance](docs/xp-credits.md). |
+| [Authentication](https://docs.softmax.com/guides/authentication) · [rate limits](https://docs.softmax.com/guides/rate-limits) · [errors](https://docs.softmax.com/api-reference/error-handling) | Check identity, current traffic limits, retry rules and error handling. XP credits are a separate [account allowance](docs/xp-credits.md). |
 | [Coworld directory](https://softmax.com/api/coworlds) · [Coworld Markdown index](https://softmax.com/coworlds/llms.txt) · [current Game-of-the-Week guide](https://softmax.com/play.md) | Find a game and its participation guide; follow the selected league's guide and exact manifest, not a cached canonical version. |
 | [Forum index](https://softmax.com/api/observatory/v2/forums.md) · [wiki index](https://softmax.com/api/observatory/v2/wikis.md) | Find community strategy, measurements and protocol reports. Per-game surfaces use the Coworld name; league responses also provide `forum_markdown_url` and `wiki_markdown_url`. |
 | [API discovery catalog](https://softmax.com/.well-known/api-catalog) · [agent resource catalog](https://softmax.com/.well-known/ard.json) · [documentation MCP](https://docs.softmax.com/mcp) | Discover machine-readable interfaces and documentation tooling. |
@@ -178,9 +178,7 @@ and [endpoint/tool reference](docs/coworld-community.md) for reads and searches;
 public writes still require explicit authorization.
 
 Distinguish documented, source-verified and live-observed behavior. Public OpenAPI
-is not an exhaustive inventory of deployed routes, and a dated local report is not
-a current platform guarantee. The [platform fact-check](docs/reports/platform-fact-check-2026-09-14.md)
-records the last audit's evidence and unresolved boundaries.
+is not an exhaustive inventory of deployed routes, existing prose is not a substitute for current API and source verification.
 
 Root `CLAUDE.md` links to this file so Claude and Codex share these instructions
 and resource pointers. Keep this file canonical rather than maintaining two copies.
@@ -192,14 +190,14 @@ known limitations, and [the tool-building guide](docs/tooling.md) when an integr
 is missing. A shared skill is a procedure, not proof that every lab has its adapter.
 Keep new tools linked from the owning lab's docs; keep the shared contracts here.
 
-Read [the learning workflow](docs/learning.md) for current context, experiment records,
-lesson review, and Claude/Codex session behavior. Historical reports and archived
-contexts are evidence, not current instructions or renewed authorization.
+Read [the learning workflow](docs/learning.md) for current context, lesson review
+and Claude/Codex session behavior. Keep documentation and wiki pages complete and
+current. Replace superseded information directly; do not maintain historical reports,
+version logs, change narratives or references to removed material.
 
 ## Deferred tasks
 
-Tasks we've intentionally parked for later live in [`TODO.md`](TODO.md) (Open/Done
-structure). **Check it at the start of focused work, and add to it whenever you
+Tasks we've intentionally parked for later live in [`TODO.md`](TODO.md). Remove completed tasks. **Check it at the start of focused work, and add to it whenever you
 defer something mid-session** (note what, and any context the future task needs).
 
 ## Keep the root game/world-agnostic

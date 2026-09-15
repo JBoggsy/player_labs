@@ -1,6 +1,6 @@
 # Reworking suspicion training onto crewborg's runtime features
 
-**Status:** investigation (2026-06-30). The nightly auto-fit+submit cron is **disabled**
+**Status:** investigation. The nightly auto-fit+submit cron is **disabled**
 pending this rework (`tools/nightly_refit.sh` early-exits unless `NIGHTLY_REFIT_ENABLED=1`).
 
 ## Why
@@ -9,7 +9,7 @@ The shipped suspicion model is fit and validated on the **offline replay reconst
 (`suspicion_lab/tools/features.py` over `game.sees()`), then *served* from crewborg's
 **live perception + `event_log`**. These two feature pipelines diverge → a train→serve
 gap: ~94% imposter-precision on held-out *offline* rows vs ~39% on crewborg's *live*
-votes (see `crewborg/docs/crew-voting-investigation.md`). Re-fitting on the same offline
+votes (see `crewborg/docs/suspicion.md`). Re-fitting on the same offline
 reconstruction cannot close that gap — which is why nightly refits churned versions
 without moving outcomes.
 

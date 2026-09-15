@@ -1,10 +1,6 @@
 # stencil-ant
 
-> **Archived and incompatible with the live game.** This implementation targets the
-> retired Emerg-ant 0.6.1 / GameVersion 52 cache-race contract. Use
-> [`../stencil_ant_gv57_nim/`](../stencil_ant_gv57_nim/) for current work.
-
-`stencil-ant` is the native Nim Emerg-ant adaptation of Paintbot Stencil v68.
+`stencil-ant` is the native Nim Emerg-ant policy.
 
 The fork retains Stencil's retained Sprite-v1 client, episode-scoped walkability and
 navigation, targeting, combat, items, and trace pipeline. Its objective contract is
@@ -16,7 +12,7 @@ Emerg-ant-specific:
 - assign three defenders and five foragers in the fixed eight-seat colony;
 - observe and trace public scout/food pheromones without following them yet;
 - use GV52's five lives, 1,050px gun range, and 60-degree vision half-angle;
-- leave early-defense and squad-command experiments disabled for the attributable v1.
+- leave early-defense and squad-command experiments disabled until explicitly enabled for an experiment.
 
 Build from the repository root:
 

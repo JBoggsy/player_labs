@@ -12,10 +12,7 @@ ones that recur across sessions into durable practices here. The live, evolving
 game knowledge lives in [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md), [`docs/`](docs/),
 and the buffer.
 
-> Provenance note: the practices below graduated from the lab's first review
-> (2026-07-13). The lab is young — most rest on a single intensive build/eval
-> session (beacon v1→v5), but every one is verified by concrete eval results or
-> a root-caused bug with a confirmed before/after, not by hunch.
+
 
 ## Winning — score and win paths
 
@@ -23,8 +20,7 @@ and the buffer.
   optimize win rate, never K/D.** Kills, deaths, and captures are recorded but award
   zero points; a kill-farming bot that never captures or wipes still loses points.
   Evaluate by win rate (by team/seat) and by the *win path* — capture vs wipe vs
-  timeout draw. (Updated 2026-07-23: the original +100/0 win-only scoring and the
-  lives-remaining timeout tiebreak were both replaced in the 0.7.6x redeploys.)
+  timeout draw.
 - **There are exactly two win paths; a timeout is a shared loss.** A capture ends
   the game instantly; a wipe ends it too. **There is no timeout tiebreak anymore** —
   at tick 5000 both sides eat -1, so banked lives have no terminal value. Survival

@@ -47,6 +47,6 @@ positions in telemetry, not startup labels.
 ## Reuse protocol code; re-derive strategy
 
 The exact canonical GV57 baseline is the compatibility floor for Sprite v1 parsing,
-navigation, action masks, and pheromone control. Paintbot/CTF architecture is historical
+navigation, action masks, and pheromone control. Paintbot/CTF architecture is separate
 evidence only; GV57 food, brood, contact combat, queen, and pheromone semantics must be
 derived from the pinned game source.

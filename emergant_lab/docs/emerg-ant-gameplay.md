@@ -1,7 +1,7 @@
 # Emerg-ant gameplay contract
 
 Self-contained reference for canonical **Emerg-ant 0.9.1 / GameVersion 57**,
-verified 2026-08-21 against
+Source:
 `Metta-AI/coworld-emerg-ant@1e0be3f1ecabf2fc70adb8af81818a9947281cc9`.
 Re-resolve live state before operations.
 
@@ -16,7 +16,7 @@ Re-resolve live state before operations.
 - The first colony to reach all 16 active ants wins.
 - Killing a queen collapses its colony and is an alternate victory path.
 
-This is not the retired GameVersion 52 enemy-cache race. There are no repeated enemy
+There are no repeated enemy
 caches, guns, items, lives, or capture-zone deliveries in GV57.
 
 ## Food and brood

@@ -7,14 +7,6 @@ it, and how it behaves at a meeting and as a ghost. This is the narrative that t
 and `modes/attend_meeting.py` together; the per-file docstrings have the local detail and
 [`../design.md`](../design.md) §10 is the structural contract.
 
-This doc is descriptive of the crewmate path only. It defers three things that live
-elsewhere: the suspicion **model** (prior, log-LRs, thresholds) to
-[`./suspicion.md`](./suspicion.md); the meeting **mechanics** (LLM path, fallback timing,
-vote legality, chat parsing) to [`./meetings.md`](./meetings.md); and movement (routing,
-button presses) to [`./navigation.md`](./navigation.md). The imposter's selector branch is
-[`./imposter-play.md`](./imposter-play.md). For orientation start at
-[`../README.md`](../README.md).
-
 ---
 
 ## The shape of it

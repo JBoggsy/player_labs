@@ -5,20 +5,6 @@ native Stencil player. It is a reference for humans inspecting behavior and for
 agents changing or interoperating with Stencil. It describes existing behavior,
 not a proposed redesign.
 
-**Implementation baseline:** `stencil:v59` (uploaded 2026-08-08), built
-against Paintbot 0.7.215 / `6c7a4c0e`,
-GameVersion 41. V59 adds the spray-carrier report. V57 aligned Stencil's shared
-sender interval with the engine's 24-tick limit; the other formats remain
-inherited from v56/v55 and the retained v52 consensus core.
-
-**Re-verified 2026-08-29 against `stencil:v68` (the live champion):**
-`chat.nim` is unchanged since v59, so every wire format, cadence, and
-sender-arbitration rule below still holds. What changed around the protocol:
-squad `W`/`M` orders now ground into posts selected from the v67 post atlas
-(`squads.nim:orderPost`), and executing an order routes through the v65-v68
-planner/follower instead of flow fields — receiver-side *movement*, not
-message semantics.
-
 The application codec and sender live in
 [`chat.nim`](../paintbot/stencil_nim/chat.nim). Message effects are applied in
 [`belief_update.nim`](../paintbot/stencil_nim/belief_update.nim), leaderless
@@ -231,7 +217,7 @@ All cadences still pass through the shared 24-tick sender cooldown.
 The spray report includes enemy team because identities repeat across teams.
 Receivers match exact `(team, identity)` before spatial fallback. A visual
 observation wins over a spray report on the same tick, and unknown or absent
-report fields never erase badge-derived loadout state. A v58 teammate does not
+report fields never erase badge-derived loadout state. A teammate without these fields does not
 recognize the `S` prefix and ignores it; it continues to learn spray carriers
 from its own visual perception.
 
@@ -271,11 +257,11 @@ odd seats:  A = [1,3], B = [5,7]
 ```
 
 This matched the old equal four-agent entrant blocks. Under the campaign
-seating current since 2026-08-11 (`2v2` mode splits each team **evenly**:
+seating (`2v2` mode splits each team **evenly**:
 captain owns team-relative seats 0-3, ally 4-7; the earlier 7+7+1+1 seating is
 gone), each parity squad happens to fall entirely within one owner's block —
 `[0,2]`/`[1,3]` are captain seats and `[4,6]`/`[5,7]` ally seats — so a
-Stencil captain's squads no longer straddle a foreign ally. In `1v1` mode
+Stencil captain's squads stay within its assigned seats. In `1v1` mode
 Stencil owns every seat. This alignment is derived from the seating contract
 and the seat-dealing code, not yet hosted-validated; roster-aware membership
 remains the robust fix and an explicit open task.
@@ -302,7 +288,7 @@ three-member squad.
 
 ## Leaderless consensus
 
-Consensus runs only when `STENCIL_SQUAD_COMMAND=1`. With v55/v56's early
+Consensus runs only when `STENCIL_SQUAD_COMMAND=1`. With early
 defense enabled, it is additionally paused until the early-defense gate
 finishes.
 
@@ -330,8 +316,7 @@ After receiving proposal quorum, every agent deterministically chooses:
 ### 3. Lock and vote
 
 The first local vote for an epoch is immutable. The same locked value is used
-for local storage, quorum counting, and rebroadcast. This is the retained v51
-safety fix.
+for local storage, quorum counting, and rebroadcast.
 
 ### 4. Commit
 
@@ -361,9 +346,7 @@ exists, it takes a homeward step. Rejoin ends on timeout or when a visible
 squadmate is within 160 px.
 
 This mechanism does not guarantee liveness. Shout retries cannot repair a
-physical partition, and hosted tests observed concurrently living members
-remaining multiple epochs apart. The static last-known-position rejoin is the
-retained v52 checkpoint, not a validated solution.
+physical partition, so verify that currently living members reconnect before relying on convergence.
 
 ## Presence
 

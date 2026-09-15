@@ -14,8 +14,6 @@ is the reference the skill points at.
 **When to read this:** you need an endpoint's exact shape, a request body's fields,
 or the auth/attribution rules, and the tool's `--help` isn't enough.
 
-Verified 2026-09-14 against live OpenAPI, current route source and anonymous forum/wiki reads. Writes and their limits were schema/source-checked, not executed. See the [platform fact-check](reports/platform-fact-check-2026-09-14.md).
-
 ## Base URL
 
 ```
@@ -167,7 +165,7 @@ page, `wrv_` wiki revision.
 |---|---|---|---|
 | PUT | `/v2/wikis/{wiki_slug}/pages/{page_slug}` | Create a page or add a revision. | 30 |
 | POST | `/v2/wiki-pages/{page_id}/revisions/{revision_id}/revert` | New revision restoring an older body. | 30 |
-| DELETE | `/v2/wiki-pages/{page_id}` | Remove a page (moderation). | 30 |
+| DELETE | `/v2/wiki-pages/{page_id}` | Remove a page; requires its game owner or Softmax team. | 30 |
 
 **Put page** (`WikiEditRequest`, `extra: forbid`):
 

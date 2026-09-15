@@ -9,11 +9,6 @@ over the finalized perception fold: it observes `Belief` and writes only its own
 `belief.agent_tracking` sub-state, never the roster, suspicion, intents, or trace
 events.
 
-For orientation see [`README.md`](../README.md) and the architecture overview in
-[`design.md`](../design.md). This doc is the deep reference for the spatial belief
-only; it links out for the perception that feeds it, the nav graph it is built on,
-and the imposter modes that consume it.
-
 | Concern | Where |
 | --- | --- |
 | Perception that produces sightings + the LoS mask | [`perception-and-belief.md`](./perception-and-belief.md) |
@@ -171,12 +166,6 @@ ties broken toward the lower cell index), `tracked_count`, and `support_cell_cou
 Three pure functions reduce the crew snapshot to navigation targets.
 
 ### Densest-crew room — `best_pretend_room_target`
-
-> **Name vs. caller.** `best_pretend_room_target` is a **legacy name** — it dates
-> to the retired Pretend imposter mode (removed 2026-06-24). The live caller is the
-> **Evade** mode (`modes/evade.py`), which beelines toward where the crew most
-> likely are after a kill. The live imposter modes are Search / Recon / Hunt /
-> Evade.
 
 It scores each room by crew density with teammate pressure subtracted:
 

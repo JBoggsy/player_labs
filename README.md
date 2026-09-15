@@ -9,7 +9,7 @@ This README is the **front door**: what the lab is, how it's laid out, and how t
 set up. It's written for both the humans working here and the coding agents that do
 most of the building.
 
-> **Platform contracts → [verified reference](docs/platform-reference.md).** Credits, API limits, visibility, completion and runtime facts, with dated evidence.
+> **Platform contracts → [verified reference](docs/platform-reference.md).** Credits, API limits, visibility, completion and runtime facts, with source links.
 
 > **Operating model → [`AGENTS.md`](AGENTS.md).** How the improvement loop actually
 > runs (the human sets strategic direction; the agent builds observability, measures,
@@ -35,16 +35,17 @@ player_labs/
   user_preferences.md  durable human preferences (read on startup)
   player-build.md      the game-agnostic Coworld player image contract
   TODO.md              deferred tasks
-  tools/               repo-wide tooling (lessons_stop_nudge.sh session hook; coworld_community.py forum/wiki CLI)
+  tools/               shared analysis, current-context hooks and community CLI
   .claude/skills/      lab-wide, game-agnostic Coworld skills (below)
   crewrift_lab/        first game lab — Crewrift (has its own README + AGENTS)
   cue_n_woo_lab/       second game lab — Cue-n-Woo, a text theory-of-mind game (own README)
   heartleaf_lab/       third game lab — Heartleaf, a 9-gnome garden-dinner game (own README)
-  ctf_lab/             fourth game lab — CTF, an 8v8 capture-the-flag shooter — ARCHIVED 2026-08-07
+  ctf_lab/             fourth game lab — CTF, an 8v8 capture-the-flag shooter — inactive
   vanilla_wow_lab/     fifth game lab — Vanilla WoW, a real WoW 1.12.1/VMaNGOS realm (own README)
   paintbot_lab/        sixth game lab — Paintbot, a 2-or-4-team capture-the-heart shooter on procgen maps (README + docs index)
   proxywar_lab/        seventh game lab — Proxy War, an OpenFront-fork RTS territory game with LLM/agent nations (own README)
   emergant_lab/        eighth game lab — Emerg-ant, a 16-agent repeated-food-capture colony shooter
+  gods_of_the_arena_lab/ Gods of the Arena BASIC policy reference
   sugarscape_lab/      ninth game lab — Sugarscape, a movement-policy lab over coworld-sugarscape (own README)
   pyproject.toml       uv project: coworld[auth] + the pinned players SDK (from git) + deps
 ```
@@ -52,11 +53,6 @@ player_labs/
 Each **game** gets its own lab directory (`crewrift_lab/`, …). Anything game-specific
 — a player's source, that game's rules, its result analysis — lives under its game
 lab; the root stays game-agnostic.
-
-**`ctf_lab/` is archived (2026-08-07)** — see [`ctf_lab/README.md`](ctf_lab/README.md).
-Active game labs include Paintbot and Emerg-ant. The belief replay viewer, replay
-reader, and event warehouse moved to `paintbot_lab/tools/`, since Paintbot is a second
-manifest over the same engine and is now their only consumer.
 
 ## Skills
 
@@ -92,7 +88,7 @@ in [`AGENTS.md`](AGENTS.md).
 it walks you (and your coding agent) through authentication, picking a player to work
 on, your first evaluation, and your first improvement, step by step.
 
-> **Coding agents:** choose the relevant lab, read its AGENTS and WORKING_CONTEXT, and verify that the recorded objective still applies. A dated context snapshot is not a new instruction. Start onboarding when no current policy/objective has been chosen.
+> **Coding agents:** choose the relevant lab, read its AGENTS and WORKING_CONTEXT, and verify that the recorded objective still applies. The current user request defines the objective. Start onboarding when no current policy/objective has been chosen.
 
 **Pointing a new user here?** [`docs/starter-prompt.md`](docs/starter-prompt.md) is a
 copy-paste prompt they can hand to their own coding agent to fork & clone the repo and
@@ -134,10 +130,8 @@ upload → run an experience request → report + diagnose. After that you're in
   *inside* one: architecture selection, robustness, navigation.
 - [`TODO.md`](TODO.md) — parked work.
 
-
 ## Tool and learning navigation
 
 - [Capability map](docs/capabilities.md)
 - [Choosing/building tools](docs/tooling.md)
 - [Learning and experiment records](docs/learning.md)
-- [September transcript review](docs/reports/learning-review-2026-09-14.md)

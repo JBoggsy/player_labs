@@ -498,15 +498,3 @@ and any changed bars/shadow.
 ---
 
 ## See also
-
-- [`./crewrift-gameplay.md`](./crewrift-gameplay.md) — rules, scoring, strategy (the *why*).
-- [`./crewrift-replays.md`](./crewrift-replays.md) — reading a finished game.
-- [`./coworld-platform.md`](./coworld-platform.md) — the game-agnostic image/build/ship contract.
-- [`./README.md`](./README.md) — reference-doc index.
-- [`../best_practices.md`](../best_practices.md) — crewborg engineering practices.
-- [`../crewrift/crewborg/docs/perception-and-belief.md`](../crewrift/crewborg/docs/perception-and-belief.md) — crewborg's concrete decoder over this stream.
-- Authoritative source: `bitworld/docs/sprite_v1.md` (transport),
-  `src/crewrift/global.nim` + `src/crewrift/sim.nim` (scene + input), at the ref
-  pinned by `CREWRIFT_REF`.
-</content>
-</invoke>

@@ -80,7 +80,7 @@ Every Coworld player image obeys the same contract (full details in
   (e.g. crewborg's `CREWBORG_BE_DUMB`, which swaps in a deliberately-reduced
   variant). Set those at **upload time** (`coworld upload-policy --secret-env …` /
   env). This keeps the image behavior-neutral and reproducible, and keeps the
-  version log honest: one image = one codebase, the env records the experiment.
+  artifact identity explicit: one image contains one codebase; record evaluation configuration separately.
   (Operational config that merely wires the policy to its own files — e.g.
   suspectra's `SUSPECTRA_LLM_*` paths — is part of the policy's identity and may be
   baked.)
@@ -219,12 +219,9 @@ from PyPI and the SDK from the public players repo.
 
 ## Known follow-ups
 
-- **Keep `CREWRIFT_REF` matched to the deployed game.** It can't be auto-resolved
-  (the platform exposes no commit; `master` runs ahead of the deployed `:latest` — a
-  `master`-built `expand_replay` hash-failed on a fresh live replay 2026-06-09, while
-  `d9f6b30` expands cleanly). So it's a deliberate pin; bump it when
-  `build_expand_replay` starts hash-failing on *fresh* replays (the redeploy signal).
-  Currently `d9f6b30`, validated against the live game 2026-06-09.
+- **Match `CREWRIFT_REF` to the selected game artifact.** Build the replay decoder
+  against that exact source and verify complete expansion before analyzing a batch.
+
 - **Optional local-checkout fast path.** A `--local-game` mode (mount
   the `Metta-AI/coworld-crewrift` repo instead of cloning) would speed iteration at
   the cost of hermeticity; not implemented — add it if cold-build time hurts.

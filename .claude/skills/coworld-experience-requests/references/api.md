@@ -1,7 +1,5 @@
 # Experience-request API reference
 
-Schema snapshot checked 2026-09-14 against the [Observatory OpenAPI](https://softmax.com/api/observatory/openapi.json). Recheck current schema and CLI help before creating a request; this reference does not override game configuration validation.
-
 ## Workflow and authorization
 
 Use the [skill](../SKILL.md) to resolve → compose → validate → create → stream. `create --check-schema` is read-only validation. Actual requests consume [granted credits](../../../../docs/xp-credits.md), not user money; stay within the current task scope. League submission and public community writes are separate actions.
@@ -34,8 +32,6 @@ The `state` field is passed into game configuration; a schema selector is not pr
 
 ## V2CreateExperienceRequestRequest
 
-
-
 | Field | Type | Required | Default / bounds | Meaning |
 | --- | --- | --- | --- | --- |
 | `idempotency_key` | string or null | no | 5–200 characters when set | Key that makes repeated create requests return the same experience request. |
@@ -59,8 +55,6 @@ Additional properties: False.
 
 ## V2ExperienceRequestTarget
 
-
-
 | Field | Type | Required | Default / bounds | Meaning |
 | --- | --- | --- | --- | --- |
 | `coworld_id` | string or null | no | {} | Coworld to run directly. |
@@ -74,8 +68,6 @@ Additional properties: False.
 
 ## V2CoworldState
 
-
-
 | Field | Type | Required | Default / bounds | Meaning |
 | --- | --- | --- | --- | --- |
 | `mode` | string | yes | {"enum": ["head", "snapshot"]} | State version to load: live head state or an immutable snapshot. |
@@ -86,8 +78,6 @@ Additional properties: False.
 
 ## V2RosterParticipant
 
-
-
 | Field | Type | Required | Default / bounds | Meaning |
 | --- | --- | --- | --- | --- |
 | `player` | V2RosterPlayer | yes | {} | Policy selector for this roster entry. |
@@ -96,8 +86,6 @@ Additional properties: False.
 Additional properties: False.
 
 ## ReporterBindingSpec
-
-
 
 | Field | Type | Required | Default / bounds | Meaning |
 | --- | --- | --- | --- | --- |
@@ -109,8 +97,6 @@ Additional properties: False.
 Additional properties: False.
 
 ## V2CoworldStateParticipant
-
-
 
 | Field | Type | Required | Default / bounds | Meaning |
 | --- | --- | --- | --- | --- |
@@ -132,8 +118,6 @@ Additional properties: False.
 
 ## PinnedReporterRef-Input
 
-
-
 | Field | Type | Required | Default / bounds | Meaning |
 | --- | --- | --- | --- | --- |
 | `kind` | string | no | {"default": "version", "const": "version"} | Selects a specific reporter version. |
@@ -143,8 +127,6 @@ Additional properties: False.
 
 ## LatestReporterRef-Input
 
-
-
 | Field | Type | Required | Default / bounds | Meaning |
 | --- | --- | --- | --- | --- |
 | `kind` | string | no | {"default": "latest", "const": "latest"} | Selects the latest reporter version. |
@@ -153,8 +135,6 @@ Additional properties: False.
 Additional properties: False.
 
 ## ReporterLimitsOverride
-
-
 
 | Field | Type | Required | Default / bounds | Meaning |
 | --- | --- | --- | --- | --- |
@@ -171,8 +151,6 @@ Additional properties: False.
 
 ## ReporterDependencySpec-Input
 
-
-
 | Field | Type | Required | Default / bounds | Meaning |
 | --- | --- | --- | --- | --- |
 | `reporter` | PinnedReporterRef-Input or LatestReporterRef-Input | yes | {} | Reporter version used for this dependency. |
@@ -184,8 +162,6 @@ Additional properties: False.
 Additional properties: False.
 
 ## ReporterDependencyReuse
-
-
 
 | Field | Type | Required | Default / bounds | Meaning |
 | --- | --- | --- | --- | --- |

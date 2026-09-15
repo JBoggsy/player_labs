@@ -4,7 +4,7 @@ The loop is **evaluate → understand → choose a change → implement → eval
 
 ## 1. Find or choose the game and policy
 
-Read root [AGENTS](../AGENTS.md), [preferences](../user_preferences.md), [best practices](../best_practices.md), and the selected game's guide in the [capability map](capabilities.md). Check its WORKING_CONTEXT and version log. A historical objective or permission is not a new instruction.
+Read root [AGENTS](../AGENTS.md), [preferences](../user_preferences.md), [best practices](../best_practices.md), and the selected game's guide in the [capability map](capabilities.md). Check its current WORKING_CONTEXT. The current user request defines the objective and authorization.
 
 If no current policy/objective has been selected, present the available choices and recommend a starting point based on what the user wants to investigate. Do not automatically choose the first lab or rewrite a strategy before direction is established.
 
@@ -35,7 +35,7 @@ The human chooses the strategic direction. Within an already authorized objectiv
 
 Change one attributable component. [Build and upload](../.claude/skills/build-and-upload/SKILL.md) a new version and record its source/runtime configuration. The next hosted evaluation tests it; no routine pre-upload smoke gate. Use local runs to answer a concrete debugging/parity question.
 
-Use fresh matched baseline/candidate batches for an [A/B comparison](../.claude/skills/coworld-ab/SKILL.md). An implementation milestone is not a win; retain inconclusive and negative results. Update the version log, experiment index and concise working context.
+Use fresh matched baseline/candidate batches for an [A/B comparison](../.claude/skills/coworld-ab/SKILL.md). An implementation milestone is not a win; report inconclusive and negative results honestly. Update the active working context and supported guidance.
 
 ## 6. Close the loop
 

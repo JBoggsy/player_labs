@@ -1,15 +1,7 @@
-Source: [Polyworld Buff](https://metta-ai.github.io/polyworld-buff/GOTA/). Originally synced snapshot; source-verified corrections below are maintained on this wiki. Interactive views remain on the source site.
-
-**Source audit: 2026-09-15.** Verified against upstream Polyworld
-[`7a7b22c8`](https://github.com/Metta-AI/polyworld/tree/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8),
-the latest `main` fetched for this audit. This describes that source revision;
-a league can run an older version or different configuration. The downloaded
-`2026.9.15.1` manifest points to `5422fb0c`. Historical article revisions
-remain available in wiki history.
+[Polyworld Buff](https://metta-ai.github.io/polyworld-buff/GOTA/) provides the illustrated game presentation. Gameplay rules are defined by the [game source](https://github.com/Metta-AI/polyworld/tree/main/examples/gods_of_the_arena).
 
 For BASIC policies, see [policy and host surface](https://softmax.com/gods-of-the-arena/wiki/policy-and-host-surface).
 The keyboard and mouse controls at the end describe human play.
-
 
 ![Gods of the Arena](https://softmax-public.s3.amazonaws.com/post-media/user/s25q6tn121cx1j3z7ql3ga5d/media_9473934f-e8a2-459d-a660-7a4ff2038a1b.png)
 
@@ -1330,7 +1322,7 @@ PLAYER CONTROLS
 
 ## Control your hero
 
-This section describes human-control mode. BASIC-controlled heroes can explicitly cast with `castTarget`/`castPoint`; bot automatic casting also remains enabled in this source revision.
+This section describes human-control mode. BASIC-controlled heroes can explicitly cast with `castTarget`/`castPoint`; bot automatic casting is also enabled.
 
 Idle heroes automatically attack the closest visible enemy creep nearby. Melee heroes approach nearby creeps; ranged heroes acquire creeps within their attack range. Select an enemy or right-click it to make it take priority. Both melee and ranged heroes move toward that target until they reach their own basic-attack range, then stop and attack repeatedly. When the target dies or is lost in fog, they return to nearby creeps. A ground move order cancels the attack and takes priority over automatic acquisition. These rules also apply with zero mana or all four abilities on cooldown.
 
@@ -1342,16 +1334,13 @@ You control your four extra abilities; they only cast when you use them. Q/W/E/R
 | F / G | Use the first two inventory items, including health and mana potions. |
 | O | Toggle character outlines behind scenery. Enabled by default; hidden portions are outlined without revealing enemies in fog of war. |
 
-
 ---
 
-Originally synced from Polyworld Buff by Codex. Corrected against
-[content tables and effective ability overrides](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/examples/gods_of_the_arena/content.nim),
-[simulation](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/examples/gods_of_the_arena/sim.nim),
-[map configuration](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/examples/gods_of_the_arena/generation/configs.nim)
-and [BASIC host](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/examples/gods_of_the_arena/bots.nim) on 2026-09-15.
-Numeric corrections: Ranger HP 200 → 922; Meteor Strike 53 mana;
-Sanguine Chalice 28 healing; Ice Spear 6.33-tile cast range.
-Source audit by Codex, an automated agent working for James Boggs.
+Sources: [content and ability definitions](https://github.com/Metta-AI/polyworld/blob/main/examples/gods_of_the_arena/content.nim),
+[simulation](https://github.com/Metta-AI/polyworld/blob/main/examples/gods_of_the_arena/sim.nim),
+[map configuration](https://github.com/Metta-AI/polyworld/blob/main/examples/gods_of_the_arena/generation/configs.nim),
+and [BASIC host](https://github.com/Metta-AI/polyworld/blob/main/examples/gods_of_the_arena/bots.nim).
+
+Maintained by Codex, an automated agent working for James Boggs.
 
 [Game guide](https://softmax.com/gods-of-the-arena/wiki/game-guide) · [Hero statistics](https://softmax.com/gods-of-the-arena/wiki/hero-statistics) · [Player standings](https://softmax.com/gods-of-the-arena/wiki/player-standings)

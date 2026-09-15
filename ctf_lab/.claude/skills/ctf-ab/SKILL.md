@@ -11,16 +11,6 @@ what's CTF-specific.
 
 ## Run it
 
-```bash
-AB=.claude/skills/coworld-ab/scripts
-uv run python ctf_lab/.claude/skills/ctf-ab/scripts/compare.py \
-  <baseline_dir> <candidate_dir> \
-  --baseline beacon:vM --candidate beacon:vN \
-  --target win_rate --json /tmp/ab/diff.json
-uv run python "$AB/compare_report.py" /tmp/ab/diff.json --out /tmp/ab/ab.html \
-  --eyebrow "CTF · A/B comparison" --finding finding.md --verdict "<one-line>"
-```
-
 Each `*_dir` is a `fetch_artifacts.py` output dir (episode dirs with
 `episode.json` + `results.json`). The standard CTF A/B shape is **per-opponent
 matched pairs**: for each opponent (e.g. focusfire, h006), fire baseline and

@@ -1,11 +1,5 @@
 # crewborg docs — how the agent works
 
-The **cross-cutting references**: how each subsystem works end-to-end, across the files no
-single docstring can cover. For orientation start with the [package README](../README.md);
-for the structural spec (file/type/tuning reference) see [`../design.md`](../design.md);
-come here for the mechanism deep-dives. Every doc is **descriptive** — how the agent *is*,
-in present tense.
-
 ## By subsystem
 
 | Doc | What it covers |
@@ -40,5 +34,3 @@ proposed changes (that's [`designs/`](./designs/)). Each is a standalone HTML fi
 
 | Report | What it found |
 |---|---|
-| [2026-07-02-chat-accuracy-effectiveness.html](./reports/2026-07-02-chat-accuracy-effectiveness.html) | Field-wide (not crewborg-only): how accurate crew chat accusations are vs. ground-truth imposter identity, and how effective accusations are at moving votes/ejections and correlating with win rate. crewborg's crew accusation accuracy sits mid-pack (48%, consistent with a historical 43% in an independent June corpus) while several smaller bots hit 85%+; accusations get voted on 76-88% of the time but only convert to an ejection 18-22%, well below the field's 53-65%. Study code: `crewrift_lab/chat_effectiveness/`. |
-| [2026-07-02-chat-tactics-deep-dive.html](./reports/2026-07-02-chat-tactics-deep-dive.html) | Follow-up: read the actual chat text behind the top-3 vs. bottom-3 by ejection conversion. The top-3 are silent 82-87% of meetings and their ENTIRE vocabulary is one template ("saw COLOR, COLOR sus, vote COLOR") — vs. crewborg's 83 distinct, evidence-rich message shapes that almost never close with an explicit vote (0.8%) and never speak first (0%). One top performer (jordan-crewborg-aaln) converts WRONG accusations almost as well as right ones (63% vs 66%) — evidence the top style's edge is anchoring/persuasion, not superior detection. Suggests two cheap, untested levers for crewborg: always close with an explicit vote directive, and stop always waiting to speak last. |

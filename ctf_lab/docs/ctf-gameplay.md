@@ -14,8 +14,7 @@ league episodes run the manifest's **Default variant** `game_config`, which over
 `config.json` where they differ (notably `visionConeDeg`: the variant says **45**,
 `config.json` says 60 — episodes run **45**). To verify what's live, read a fresh
 episode's `episode.json` (`coworld_version` + full `game_config`) or `coworld show
-<cow_id> --json`. **Deployed at last audit (2026-07-23): ctf 0.7.69 = repo commit
-`72fb1b1` (GameVersion 21).** CTF is a **fork of Crewrift** and keeps
+<cow_id> --json`.  CTF is a **fork of Crewrift** and keeps
 Crewrift's continuous 2D movement, line-of-sight, Sprite-v1 protocol, websocket
 server, and replay infrastructure; it replaces the social-deduction layer (roles,
 tasks, voting) with **teams, guns, flags, and fog-of-war vision**.
@@ -90,7 +89,7 @@ wall-sliding. Corpses never block.
   direction, and the sprite flip. **Managing aim = managing both what you can kill and
   what you can see** — this is the single most important tactical variable.
 - On spawn/respawn, aim points toward the enemy side (Red → east/0, Blue → west/128).
-- **The old floating aim-dot indicator is retired** (0.7.8 renderer restore): a
+- **Facing:** a
   player's facing is shown by the soldier sprite itself — the held gun sweeps to the
   aim angle, and the sprite label reports a coarse `right`/`left` side. For anyone you
   can see, the lane their body faces is exactly where they can shoot.
@@ -142,7 +141,7 @@ wall-sliding. Corpses never block.
 - **Friendly fire is ON** — a shot hits the first valid target regardless of team.
 - **Same-tick shots resolve simultaneously** against the same snapshot (mutual duels
   kill both; no input-order advantage).
-- **NO spawn protection** (removed in GameVersion 20): a freshly respawned player can
+- **NO spawn protection** : a freshly respawned player can
   shoot and be shot (and blocks bullets) from their first tick.
 
 ## Lives & respawn
@@ -197,7 +196,7 @@ The round ends immediately on either:
 
 Otherwise, at the time limit (`maxTicks` = 5000, ~3.5 min), the round is a
 **lose-lose draw** — **there is no tiebreak** (the old lives-remaining → flag-progress
-tiebreak was removed in the 0.7.6x era).
+there is no distance tiebreak).
 
 **Scoring is sparse and win-only** (GameVersion 21):
 - **Decisive round** (capture or wipe): every winner **+1**, every loser **-1**.
@@ -267,7 +266,7 @@ on its pedestal) vs `"<color> flag"` (centered on its carrier), `"fire icon"` /
 `"grenade carried"`), sound rings (`"shot impact"`, `"grenade sound"`), shout bubbles
 (`"<team> shout <player>: <text>"`), `"corpse <color> <side>"` (ghost view only), and
 the `"walkability map"` sprite (decoded into a nav mask). The old `"aim dot"` readback
-is retired (0.7.8 renderer restore) — read facing from the self sprite's coarse
+is not drawn — read facing from the self sprite's coarse
 right/left instead, or dead-reckon the aim. The SDK bridge accumulates this stream but
 does **not** decompress pixels or resolve palettes — decoding labels / the walkability
 mask is the policy's job (see the SDK notes below).

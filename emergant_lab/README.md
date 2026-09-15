@@ -3,12 +3,6 @@
 The Emerg-ant corner of `player_labs`: a human-in-the-loop lab for evaluating,
 building, and improving Coworld players for **Emerg-ant**.
 
-> **Status (2026-08-21): `stencil-ant:v6` remains the promoted player and is not
-> submitted.** It is compatible with Emerg-ant 0.9.1 / GameVersion 57. The uploaded
-> v7 crowd-aware-food experiment split the real champion 2–2 with a 60–48 delivery
-> lead, but its redirect objective appeared in zero local or hosted transitions.
-> V7 was therefore rejected as an unvalidated mechanism and exact v6 source restored.
-> See [WORKING_CONTEXT.md](WORKING_CONTEXT.md).
 
 ## Start here
 
@@ -17,7 +11,7 @@ building, and improving Coworld players for **Emerg-ant**.
 2. Read this lab's [AGENTS.md](AGENTS.md), [best_practices.md](best_practices.md),
    and [user_preferences.md](user_preferences.md).
 3. Read the current [gameplay contract](docs/emerg-ant-gameplay.md).
-4. Use the dated recon documents only for their matching release.
+4. Resolve the selected game artifact and configuration before evaluation.
 
 ## Current game
 
@@ -49,7 +43,6 @@ emergant_lab/
   emergant/stencil_ant_gv57_nim/
     Dockerfile
     stencil.nim
-    VERSION_LOG.md
   tools/
     build_player.sh
     versions.env

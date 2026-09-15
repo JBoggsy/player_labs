@@ -16,31 +16,12 @@ The authoritative source is the **`coworld-vanilla-wow`** repo (currently cloned
 `~/coding/coworlds/coworld-vanilla-wow`): the Python adapter under
 `src/vanilla_wow_coworld/`, the Nim player under `player/`, the dungeon definitions under
 `dungeons/`, and `coworld_manifest_template.json`. Citations below are `file:line` into
-that repo at the state read on 2026-07-13; **re-verify against the code before trusting
+the matching game source; **re-verify against the code before trusting
 prose** — this game is under active development.
-
-> **Readiness caveat (updated 2026-07-14).** The game repo's README badge still reads
-> **"coworld verify: not ready"** — the "ready" badge is gated on one *retained* hosted
-> commissioner round + one XP-request episode on Kubernetes (`docs/coworld-readiness.md`).
-> However, as of 2026-07-12 an Observatory league **"Vanilla Wow"** (division "Leveling
-> Ladder") exists, the deployed package is **v0.1.6**, and hosted XP-requests run to
-> completion (verified 2026-07-14 with a 4-episode `orc-fresh-start` smoke). The badge and
-> the league's existence disagree — treat the ladder's scoring/retention as unverified. See
-> [`../WORKING_CONTEXT.md`](../WORKING_CONTEXT.md) for what that means for the lab's loop.
 
 ---
 
 ## What this game is (the one-paragraph version)
-
-Vanilla WoW Coworld is **a real World of Warcraft 1.12.1 realm turned into a competitive
-AI benchmark.** The world is a genuine [VMaNGOS](https://github.com/vmangos/core) server
-(the mature open-source emulator of the 1.12.1 "Vanilla" client, build **5875**), not an
-abstract gridworld. A "player" is an AI agent that controls one WoW *character*: it logs
-in, walks around with real movement physics, fights monsters, completes quests, loots,
-sells junk, trains spells, dies and recovers, and groups up — all through the same packet
-protocol a human's game client speaks. It competes on **how well it plays actual WoW**:
-either how much **experience (XP)** its character accumulates over time, or how fast a
-five-character party can **clear a dungeon**. (`README.md:23-28`, `docs/architecture.md:1-6`)
 
 If you've never played WoW, the two facts that matter most:
 1. **XP / leveling is the core progression.** A character starts at level 1 and earns XP
@@ -398,11 +379,7 @@ not success). That contract is the subject of
 
 ## Open questions to resolve empirically (once real episodes exist)
 
-- **Does the "Vanilla Wow" league actually score/retain rounds?** As of 2026-07-14 the
-  league + "Leveling Ladder" division exist and hosted XP-requests complete, but the
-  readiness badge is still "not ready" and no retained round has been observed
-  (`docs/coworld-readiness.md`). Verify a scored round exists before claiming the loop is
-  fully runnable.
+
 - **RFC clear difficulty for a self-play party** — how hard is a same-brain 5-slot tank +
   healer + 3 DPS coordination problem in practice? Where do parties wipe?
 - **Framework ceiling** — how far do the bundled leveling profiles + class rotations get

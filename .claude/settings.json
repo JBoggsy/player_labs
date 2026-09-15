@@ -5,62 +5,51 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/crewrift_lab/tools/rotate_lessons.sh\"",
+            "command": "\"$CLAUDE_PROJECT_DIR/tools/lesson_context.sh\" crewrift_lab",
             "timeout": 15,
-            "statusMessage": "Rotating Crewrift tentative-lessons buffer"
+            "statusMessage": "Loading current crewrift_lab knowledge"
           },
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/cue_n_woo_lab/tools/rotate_lessons.sh\"",
+            "command": "\"$CLAUDE_PROJECT_DIR/tools/lesson_context.sh\" cue_n_woo_lab",
             "timeout": 15,
-            "statusMessage": "Rotating Cue-n-Woo tentative-lessons buffer"
+            "statusMessage": "Loading current cue_n_woo_lab knowledge"
           },
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/heartleaf_lab/tools/rotate_lessons.sh\"",
+            "command": "\"$CLAUDE_PROJECT_DIR/tools/lesson_context.sh\" heartleaf_lab",
             "timeout": 15,
-            "statusMessage": "Rotating Heartleaf tentative-lessons buffer"
+            "statusMessage": "Loading current heartleaf_lab knowledge"
           },
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/vanilla_wow_lab/tools/rotate_lessons.sh\"",
+            "command": "\"$CLAUDE_PROJECT_DIR/tools/lesson_context.sh\" vanilla_wow_lab",
             "timeout": 15,
-            "statusMessage": "Rotating Vanilla WoW tentative-lessons buffer"
+            "statusMessage": "Loading current vanilla_wow_lab knowledge"
           },
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/paintbot_lab/tools/rotate_lessons.sh\"",
+            "command": "\"$CLAUDE_PROJECT_DIR/tools/lesson_context.sh\" paintbot_lab",
             "timeout": 15,
-            "statusMessage": "Rotating Paintbot tentative-lessons buffer"
+            "statusMessage": "Loading current paintbot_lab knowledge"
           },
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/proxywar_lab/tools/rotate_lessons.sh\"",
+            "command": "\"$CLAUDE_PROJECT_DIR/tools/lesson_context.sh\" proxywar_lab",
             "timeout": 15,
-            "statusMessage": "Rotating Proxywar tentative-lessons buffer"
+            "statusMessage": "Loading current proxywar_lab knowledge"
           },
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/emergant_lab/tools/rotate_lessons.sh\"",
+            "command": "\"$CLAUDE_PROJECT_DIR/tools/lesson_context.sh\" emergant_lab",
             "timeout": 15,
-            "statusMessage": "Rotating Emerg-ant tentative-lessons buffer"
+            "statusMessage": "Loading current emergant_lab knowledge"
           },
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/sugarscape_lab/tools/rotate_lessons.sh\"",
+            "command": "\"$CLAUDE_PROJECT_DIR/tools/lesson_context.sh\" sugarscape_lab",
             "timeout": 15,
-            "statusMessage": "Rotating Sugarscape tentative-lessons buffer"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/tools/lessons_stop_nudge.sh\"",
-            "timeout": 10
+            "statusMessage": "Loading current sugarscape_lab knowledge"
           }
         ]
       }

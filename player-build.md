@@ -1,6 +1,6 @@
 # Building and uploading a Coworld player
 
-Checked 2026-09-14 against [official runtime guidance](https://docs.softmax.com/coworld/build-a-coworld/player-runtimes), [protocol documentation](https://docs.softmax.com/coworld/build-a-player/protocol-and-runtime), and project-local `coworld 0.1.47`. The selected game's manifest and player guide determine which format to build. See [platform evidence](docs/reports/platform-fact-check-2026-09-14.md) and the [upload skill](.claude/skills/build-and-upload/SKILL.md).
+Use [official runtime guidance](https://docs.softmax.com/coworld/build-a-coworld/player-runtimes), [protocol documentation](https://docs.softmax.com/coworld/build-a-player/protocol-and-runtime), and the project-local CLI help. The selected game's manifest and player guide determine which format to build. See the [upload skill](.claude/skills/build-and-upload/SKILL.md).
 
 ## Choose the declared runtime
 
@@ -13,7 +13,7 @@ Checked 2026-09-14 against [official runtime guidance](https://docs.softmax.com/
 | Submitted size cap | 5 GiB image | 100 MiB packed bytes |
 | Bundled size cap | 512 MiB image | 100 MiB packed bytes |
 
-These are documented limits, not boundaries exercised by this audit. File policies reject `--run`, `--secret-env`, `--use-bedrock`, and `--bedrock-model`. The staged outer file is named `file`, so do not rely on its original extension. Directory packing rejects symlinks. The game process can read/copy submitted files; it does not receive submitted image bytes. See [upload and evaluate](https://docs.softmax.com/coworld/build-a-player/upload-and-evaluate).
+File policies reject `--run`, `--secret-env`, `--use-bedrock`, and `--bedrock-model`. The staged outer file is named `file`, so do not rely on its original extension. Directory packing rejects symlinks. The game process can read/copy submitted files; it does not receive submitted image bytes. See [upload and evaluate](https://docs.softmax.com/coworld/build-a-player/upload-and-evaluate).
 
 ## Container contract
 

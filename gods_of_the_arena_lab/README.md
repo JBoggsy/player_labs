@@ -1,15 +1,8 @@
 # Gods of the Arena: language and policy foundation
 
-**Status:** Understanding the contract before choosing a strategy or existing policy.
-No candidate upload, hosted evaluation, or league submission has been performed.
-
-Checked 2026-09-15 against latest fetched upstream main
-[`7a7b22c85c1411bc37707a21b2a4a94e1b757fd8`](https://github.com/Metta-AI/polyworld/tree/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8).
-Downloaded **2026.9.15.1** points to `5422fb0c4b230ca7bfa57a69e450a369da2dabe9`; its BASIC host,
-language, content tables and starter are unchanged at the latest revision.
-Latest source additionally changes tower collision, footman route resumption and
-visuals. A downloaded canonical version does not prove the league's active pin.
-Project CLIs were current on PyPI: `coworld 0.1.47`, `softmax-cli 0.26.34`.
+This lab provides the BASIC policy contract, official starter and game mechanics
+for developing Gods of the Arena policies. Use the active league's manifest and
+configuration when preparing an evaluation.
 
 - [Game](https://softmax.com/gods-of-the-arena)
 - [Participation guide](https://softmax.com/api/observatory/v2/participate?league_id=league_3c60897b-25cf-4b37-9d1a-8554c1198f28)
@@ -18,8 +11,8 @@ Project CLIs were current on PyPI: `coworld 0.1.47`, `softmax-cli 0.26.34`.
 - Competition division: `div_a4534073-c5d2-4193-a94a-93d9c5e2e443`
 - [Forum](https://softmax.com/gods-of-the-arena/forum.md) and [wiki](https://softmax.com/gods-of-the-arena/wiki.md)
 
-See the [game research record](docs/research.md) for source coverage, current mechanics,
-wiki/guide contradictions, historical standings and community hypotheses.
+See [game mechanics and resources](docs/research.md) for rules, source links and
+the workflow for choosing an optimization.
 
 ## The language
 
@@ -49,8 +42,8 @@ Boolean operators evaluate both operands. Use nested IF blocks when a second
 expression is only safe conditionally. Division by zero and invalid array access
 raise VM errors. Integer scaling is possible, but intermediate overflow wraps.
 
-Sources: [compiler/runtime](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/src/polyworld/basic.nim),
-[language examples/tests](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/tests/test_basic.nim).
+Sources: [compiler/runtime](https://github.com/Metta-AI/polyworld/blob/main/src/polyworld/basic.nim),
+[language examples/tests](https://github.com/Metta-AI/polyworld/blob/main/tests/test_basic.nim).
 
 ## How a policy executes
 
@@ -64,8 +57,8 @@ persist; instruction/work/logging budgets reset. There is no need to write an en
 outer game loop. Dead heroes skip decisions, and a runtime-failed VM stays disabled.
 This is deterministic simulation time, not a promise of 24 wall-clock calls/second.
 
-Sources: [host lifecycle](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/examples/gods_of_the_arena/bots.nim#L395),
-[simulation](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/examples/gods_of_the_arena/sim.nim).
+Sources: [host lifecycle](https://github.com/Metta-AI/polyworld/blob/main/examples/gods_of_the_arena/bots.nim),
+[simulation](https://github.com/Metta-AI/polyworld/blob/main/examples/gods_of_the_arena/sim.nim).
 
 ## Observation and action surface
 
@@ -73,8 +66,8 @@ Read-only self data includes identity, team/class, tile position/layer, HP/mana,
 gold, level and world tick. Object queries expose visible objects' IDs, kinds,
 teams/classes, tile positions, HP and alive/attackable status. Object-list indexes
 are temporary; use object IDs for actions. Enemy objects remain visibility-filtered.
-Static terrain can be queried through fog; read `mapWidth`, `mapHeight`, and layers
-rather than hard-coding dimensions from an older wiki.
+Static terrain can be queried through fog. Read `mapWidth`, `mapHeight`, and layers
+for the active map dimensions.
 
 | Calls | Use |
 | --- | --- |
@@ -87,8 +80,7 @@ rather than hard-coding dimensions from an older wiki.
 
 Action calls report accepted/rejected. Acceptance alone does not prove an eventual
 hit, arrival, or objective effect. Bot combat also has automatic ability behavior;
-explicit casting exists alongside it in this revision. The starter makes no explicit
-spell calls. Older wiki statements that spells cannot be scripted are stale.
+explicit casting exists alongside it. The starter makes no explicit spell calls.
 
 There is no registered file, network, external LLM, or inter-hero chat API. `PRINT`
 is private diagnostic output. Development tools outside the game may generate or
@@ -107,9 +99,9 @@ and intended game rules.
 
 Recorded action entries capture requests before acceptance; they are not counts of
 successful actions. Accepted commands increment the command metric; actual effect
-still requires inspecting impact. See the [source audit](docs/source-audit-2026-09-15.md).
+still requires inspecting impact.
 
-Source: [registered host API](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/examples/gods_of_the_arena/bots.nim#L98).
+Source: [registered host API](https://github.com/Metta-AI/polyworld/blob/main/examples/gods_of_the_arena/bots.nim).
 
 ## Enforced limits
 
@@ -139,16 +131,14 @@ These are deterministic operation limits, not a wall-clock inference allowance.
 
 Compilation failure fails the episode with a player diagnostic. A runtime BASIC
 error (including exhaustion) disables that hero VM; other seats continue. A script
-that compiles can still exhaust its budget only in a busy late-game situation.
+that compiles can still exhaust its runtime budget, including during a busy late-game decision.
 
-Sources: [exact limits](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/examples/gods_of_the_arena/bots.nim#L58),
-[private logging and compilation failure](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/src/polyworld/coworld.nim).
+Sources: [exact limits](https://github.com/Metta-AI/polyworld/blob/main/examples/gods_of_the_arena/bots.nim),
+[private logging and compilation failure](https://github.com/Metta-AI/polyworld/blob/main/src/polyworld/coworld.nim).
 
 ## The unmodified starter
 
-[Open base.bas](reference/base.bas). Its SHA-256 is
-`2b358e6e116d6445e38505aad6bbb00ab62004fa381fb9e433f3e8b7abd2a464`.
-The downloaded file matches the [pinned source starter](https://github.com/Metta-AI/polyworld/blob/5422fb0c4b230ca7bfa57a69e450a369da2dabe9/coworld/gota/players/base.bas) byte for byte.
+[Open base.bas](reference/base.bas), the official [source starter](https://github.com/Metta-AI/polyworld/blob/main/coworld/gota/players/base.bas).
 
 Each decision it:
 
@@ -162,7 +152,7 @@ Each decision it:
 6. Calls `walkTo(64,64)` when no enemy was selected.
 
 It uses WHILE/IF and global integers, without arrays or SUBs. The decision counter
-is its only obvious historical state; targeting is recalculated each pass. It does
+is its persistent counter; targeting is recalculated each pass. It does
 not implement deliberate objective priorities, explicit spell selection, retreat,
 or team coordination. Those are observations about the source, not proven avenues
 for improvement. Its fixed destination is a fact about the starter, not a recommended
@@ -175,8 +165,3 @@ last-seen targets, organize code into subroutines, and act through the bounded h
 Large searches and full-map sweeps every tick will compete with action work budgets.
 Start with readable BASIC and sparse, meaningful diagnostics; choose strategy after
 reviewing the game's actual behavior.
-
-This inspection checked source, manifest, and starter identity. It did not run a
-hosted transition-certification or claim current competitive performance. The
-historical bismarck forum post is a recovery lead; its policy source and present
-identity have not been established here.

@@ -1,8 +1,7 @@
 # mentalist_v4 — Cue-n-Woo player
 
-A full rewrite of the Cue-n-Woo player, built on the **Player SDK** and a strategy
-derived entirely from tournament-field evidence (not the dead v1–v3 classify→prose
-approach). Strategy + research: [`../docs/designs/mentalist-v4-strategy-and-design.md`](../docs/designs/mentalist-v4-strategy-and-design.md).
+A Cue-n-Woo player built on the **Player SDK**, with concept inference,
+question authorship and response generation.
 
 ## The strategy in one paragraph
 
@@ -25,7 +24,7 @@ Transport + telemetry come from `players.player_sdk`; the strategy is transport-
 | `engine.py` | `PhaseEngine` — pure state machine over the 4 phases (private_questions → proposals → answers → reveal). Idempotence from per-slot counts + one in-flight guard. No transport. |
 | `author.py` | Offense: builds plant (private ask) + retrieve (challenge question) + committed-answer triples. Direction A (passphrase). Fresh cue labels to avoid colliding with biglobes/daveey vocab. |
 | `passphrase.py` | Defense: detects retrieval questions; extracts an embedded `= value`, else looks up the cue label in `data/opponent_passphrases.json` (author-keyed preferred). The only counter to an opponent passphrase. |
-| `validator.py` | Game answer legality (≤12 tokens, ASCII) + deterministic repair. Unchanged from v3 (scoring rules didn't change). |
+| `validator.py` | Game answer legality (≤12 tokens, ASCII) + deterministic repair.  |
 | `config.py` | Tunable knobs (directive direction, fingerprint toggle, time fallbacks). |
 | `data/opponent_passphrases.json` | Harvested key→value table (550 episodes, rounds 213–235). **Re-verify before submit** — opponents may rotate cue-sets. |
 

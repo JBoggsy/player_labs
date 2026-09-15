@@ -1,6 +1,6 @@
 # Heartleaf chat + how the villager coordinates its LLM (reference)
 
-Captured 2026-07-06 for when cady gets a chat/coordination layer (deferred until
+For when cady gets a chat/coordination layer (deferred until
 navigation works). Sources: `coworld-heartleaf/src/heartleaf.nim`,
 `players/talking_villager/talking_villager.nim`, the SDK `sprite_bridge`.
 

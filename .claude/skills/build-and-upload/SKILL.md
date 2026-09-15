@@ -23,7 +23,7 @@ These are templates: replace uppercase placeholders from the game guide. Check `
 
 ## Record and evaluate
 
-Record policy name, sequential version and immutable version UUID, source commit/diff, build/runtime configuration, intended change and evaluation links in the player's version log. Avoid storing secrets in logs. Resolve uploaded versions with:
+Use the returned immutable policy-version UUID and actual build/runtime configuration in the active evaluation request. Keep credentials out of artifacts. Resolve uploaded versions with:
 
 ```bash
 uv run python .claude/skills/build-and-upload/scripts/versions.py --name POLICY

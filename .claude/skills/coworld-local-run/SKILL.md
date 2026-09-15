@@ -84,12 +84,10 @@ supply *zero* images).
   helper doesn't pass it): it uses **your own** AWS creds and there is **no sidecar
   locally**, so it proves the code can call Bedrock but **not** that the hosted upload is
   correct — that contract is the
-  [Bedrock section of `coworld-platform.md`](../../../crewrift_lab/docs/coworld-platform.md#bedrock--in-pod-llm).
+  [Bedrock section of `platform-reference.md`](../../../docs/platform-reference.md).
 - **Auth/network:** `download` needs `softmax login` (for a name) + Docker + network to
   pull/tag the game image; once the game image and your `:dev` image are local, the run
   is offline. `cow_…` ids are stable; **names resolve to whatever is canonical now**.
 - The player-image contract + the runner lifecycle live in
-  [`coworld-platform.md`](../../../crewrift_lab/docs/coworld-platform.md). Full CLI reference
+  [`platform-reference.md`](../../../docs/platform-reference.md). Full CLI reference
   (exact flags, outputs, every gotcha): [`references/cli.md`](references/cli.md).
-- CLI **re-verified 2026-06-27** (`run-episode` gained `--variant`/`-n`/`--use-bedrock`
-  since the original 0.1.20 pass — see `references/cli.md`).

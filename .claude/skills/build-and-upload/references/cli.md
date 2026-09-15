@@ -1,7 +1,5 @@
 # Upload CLI reference
 
-Verified with project-local `coworld 0.1.47` on 2026-09-14. Recheck installed help before relying on a changed environment.
-
 ```bash
 uv run coworld upload-policy --help
 uv run python .claude/skills/build-and-upload/scripts/versions.py --name POLICY

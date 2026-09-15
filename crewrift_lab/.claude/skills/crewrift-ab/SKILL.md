@@ -27,15 +27,6 @@ method** — this file documents only what's crewrift-specific.
 
 Follow **`coworld-ab`**'s workflow. The crewrift-specific commands:
 
-```bash
-S=crewrift_lab/.claude/skills/crewrift-ab/scripts
-AB=.claude/skills/coworld-ab/scripts
-uv run python "$S/compare.py" /tmp/ab/base /tmp/ab/cand \
-  --baseline crewborg:v70 --candidate crewborg:v71 --target kills_mean --json /tmp/ab/diff.json
-uv run python "$AB/compare_report.py" /tmp/ab/diff.json --out /tmp/ab/ab.html \
-  --eyebrow "Crewrift · A/B comparison" --finding finding.md --verdict "<your one-line synthesis>"
-```
-
 `compare.py` leads with the target delta, then a **role-split** table with per-metric
 **improved/regressed/noise** verdicts and a **regression scan** (did fixing one role break the
 other?). The report renders it as a comparison page — **adapt/extend the visuals** to what the
@@ -57,7 +48,7 @@ The universal A/B discipline is in `coworld-ab`. Crewrift specifics:
 - **Decompose by role** — crew and imposter are different policies; "crew win" is a confounded team
   metric. The regression scan catches fixing one role by breaking the other.
 - **Pin every seat** — the champion pool can seat our own entry under the same display name; an
-  unpinned A/B faces different fields (burned the v22-vs-v24 A/B).
+  unpinned A/B faces different fields.
 
 ## See also
 
@@ -66,6 +57,6 @@ The universal A/B discipline is in `coworld-ab`. Crewrift specifics:
 - **`crewrift-event-warehouse`** — the deep side-by-side for the qualitative half.
 - [`report-style.md`](../../../docs/report-style.md) — adapting the comparison HTML.
 
-## Reader contract (2026-09-14)
+## Reader contract
 
 Use exact `NAME:vN` specs. The reader rejects duplicate episodes, shared episodes across arms and more than one subject seat in a role/episode. Unknown or incomplete target-seat results are excluded and counted. Failed/cancelled status, error metadata, or any seat's connect/disconnect failure marks the whole episode operationally failed. `ops_fail_rate` uses one observation per episode in the `episodes` group, including failures with missing results or unknown roles. Gameplay metrics exclude failed episodes. Missing results alone establish neither failure nor success: even completed episodes have unknown operational outcomes unless both timeout arrays cover every mapped seat; unknown outcomes and all gameplay exclusions are disclosed in text and JSON. Follow the root statistical contract: independent episode/group observations and adjusted p-values. Multi-seat experiments need an episode-aggregated or paired adapter; don't suppress this error to obtain a verdict.

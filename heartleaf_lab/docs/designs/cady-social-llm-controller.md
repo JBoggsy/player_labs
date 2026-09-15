@@ -1,6 +1,6 @@
 # Cady social LLM controller — design
 
-**Status:** proposed (2026-07-07). Living doc; update as implementation reveals more.
+**Status:** proposed. Living doc; update as implementation reveals more.
 
 **Goal:** Give Cady a slow-loop LLM controller that decides her *social plan*
 (gather vs host vs attend, and whom to invite) a few seconds at a time, off the
@@ -10,13 +10,11 @@ dependency.
 
 ## Why this shape
 
-- **Nav/gather/actions are done** (v10/v11: 15/15 games, 100% present, harvest
-  193–240, clean home loop). Only *scoring* is left, and scoring = hosting a
-  party with guests (`food × guests`; only the host scores). That's a social
-  problem: draw guests to our house / pick the right party to attend.
+- Keep navigation, gathering and actions deterministic.
+
 - The starter villager solves this with an **LLM-proposes / deterministic-
-  disposes** hybrid (see [`villager-dinner-attendance.md`]). We mirror that
-  structure and exploit its seams ([[heartleaf-villager-exploits]]): the chat→
+  disposes** hybrid (see [villager attendance](../villager-dinner-attendance.md)). We mirror that
+  structure and exploit its seams : the chat→
   commitment lock and food-poor targeting.
 - The SDK already ships the whole slow-loop seam — we write a strategy, not
   infrastructure.
@@ -98,7 +96,7 @@ Guards, in order:
 Net: the fast loop always runs *some* coherent mode; the slow loop refines the
 choice without ever causing a visible flip.
 
-### Modes (v1 scope: host/attend/invite; gather/nav stay deterministic)
+### Modes (host/attend/invite; gather/nav stay deterministic)
 
 | Mode | Params (`ModeParams`) | Behavior |
 |---|---|---|
@@ -112,15 +110,15 @@ fields), satisfying "LLM can specify a target OR not and both work."
 
 ### Chat: LLM prepares, fast loop releases (proximity-gated)
 
-The LLM authoring full chat is **out of v1 scope** (per the scope decision:
-"host/attend + who to invite"). v1 uses **templated** invite lines
+The LLM authoring full chat is **out of scope** (per the scope decision:
+"host/attend + who to invite"). The proposal uses **templated** invite lines
 (`"Party at my house at 6 — tons of food!"`, ≤48 chars, the broadcast-width
 rule). The LLM picks the *target/plan*; a cheap per-frame proximity check in the
 `invite` mode releases the templated line when the target is within hearing range
 (the villager's `maybeSendDecisionChat` trick, and the bubble-width reach from
 [[heartleaf-chat-broadcast-whisper]]). LLM-authored persuasion is a fast-follow.
 
-### The exploits this enables ([[heartleaf-villager-exploits]])
+### The exploits this enables
 
 - **Trip the commitment lock**: invite early, clearly, naming our house — an
   attendance phrase from a villager's LLM force-locks it to us.
@@ -166,8 +164,7 @@ rule). The LLM picks the *target/plan*; a cheap per-frame proximity check in the
 Deterministic floor first, LLM layered second — so we always have a shippable,
 non-regressing build and can attribute any gain to the LLM.
 
-## Attend mode — accepting invites (added 2026-07-08)
-
+## Attend mode — accepting invites (added
 **Why (despite guests scoring 0):** attending is a **reciprocity investment**, not a points
 grab. Today a guest scores 0 (`visitorRecord.score = 0`), so a host-only Cady is optimal
 *against the current villagers*. But (a) it makes **self-play degenerate** — 9 host-only Cadys

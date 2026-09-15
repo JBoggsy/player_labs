@@ -7,7 +7,7 @@ Start from the decision the human needs to make. A tool is useful when it shorte
 3. **Inspect real data.** Pin game/version/config, episode ID and policy-version UUID. Verify seat mapping from explicit positions. Missing values stay missing; a missing log is not evidence an action never happened.
 4. **Build the smallest useful tool.** A saved query or small report may suffice. Keep game parsing and mechanics in the lab. Share transport, statistics and presentation only when there is a concrete second consumer.
 5. **Validate the boundary.** Use representative fixtures for parsing, sparse/multi-seat identity, partial downloads and failure filtering. These checks protect analysis correctness; they are not a pre-upload player gate.
-6. **Connect it.** Add a link from the lab guide and capability map. Document input/schema, invocation, outputs, assumptions, exclusions and a known example. Link the experiment that motivated it.
+6. **Connect it.** Add a link from the lab guide and capability map. Document input/schema, invocation, outputs, assumptions, exclusions and a known example. Explain the decision the tool supports.
 
 ## Shared contracts
 
@@ -22,4 +22,4 @@ Store raw observations beside decoded fields and stable tick/event keys. Provide
 
 ## Verification sources
 
-Current API fields come from the [Observatory OpenAPI](https://softmax.com/api/observatory/openapi.json), checked 2026-09-14. The shared comparison reuses existing SciPy [Fisher exact](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.fisher_exact.html), [Welch t-test](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ttest_ind.html) and [false discovery correction](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.false_discovery_control.html), avoiding handwritten distribution approximations. No new production dependency was needed.
+Current API fields come from the [Observatory OpenAPI](https://softmax.com/api/observatory/openapi.json). The shared comparison reuses existing SciPy [Fisher exact](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.fisher_exact.html), [Welch t-test](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ttest_ind.html) and [false discovery correction](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.false_discovery_control.html), avoiding handwritten distribution approximations.

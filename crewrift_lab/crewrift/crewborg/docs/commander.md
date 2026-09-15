@@ -8,14 +8,6 @@ room to hunt, which player to chase, how to break ties — without ever changing
 runs. It is the realization of the "future LLM seam" that [`../design.md`](../design.md)
 anticipates, scoped to live play.
 
-The commander is **disabled by default**: when off, no worker thread runs, no context is
-serialized, `belief.commander` stays `None`, and play is byte-identical to deterministic
-crewborg. This document is the cross-cutting reference for the layer. For the modes' base
-behavior see [`./imposter-play.md`](./imposter-play.md) and
-[`./crewmate-play.md`](./crewmate-play.md); for the separate meeting/chat LLM (a different
-system) see [`./meetings.md`](./meetings.md); for trace event mechanics see
-[`./trace-logs.md`](./trace-logs.md). Orientation lives in [`../README.md`](../README.md).
-
 ---
 
 ## 1. Scope and boundaries
@@ -279,17 +271,6 @@ works with no backend, and the worker is never started). This makes control dete
 unset.
 
 ## 10. Observability
-
-`strategy/commander/trace.py:CommanderTrace` is a bounded (capacity 256), drop-oldest,
-lock-protected ring buffer. The worker records into it on the daemon thread; `CrewborgEventTracer`
-drains it on the inner-loop thread and re-emits each record through the domain `EventEmitter` as
-a `domain.commander_*` event. A drop is surfaced as a synthetic `commander_trace_dropped`
-record so loss is visible. These events are gated behind `CREWBORG_TRACE=debug` or
-`CREWBORG_TRACE_GROUPS=commander` (off by default — see [`./trace-logs.md`](./trace-logs.md)).
-Exception: the buffer is drained EVERY step regardless of that gate, and `llm_spend`
-records (per-call spend attribution, W4 — `strategy/llm_spend.py`) always emit as
-`domain.llm_spend`, because spend telemetry must reach the hosted artifact in the default
-lean config. See `crewrift_lab/docs/designs/2026-07-22-bedrock-spend-telemetry-design.md`.
 
 Events:
 

@@ -6,16 +6,6 @@ prior, the log-odds update, the per-event and social evidence, the two scoring
 paths (the fitted production posterior and the legacy hand model), the outputs and
 thresholds, and how the fitted weights are learned.
 
-It complements the orientation in [`README.md`](../README.md), the structural spec
-in [`design.md`](../design.md) §10.1, and the docstrings in
-`strategy/suspicion.py`. The behaviours that *consume* the posterior live in their
-own references: the crewmate vote in [`crewmate-play.md`](./crewmate-play.md), and
-imposter deflection in [`imposter-play.md`](./imposter-play.md) and
-[`meetings.md`](./meetings.md). Evidence collection upstream is covered by
-[`agent-tracking.md`](./agent-tracking.md) and
-[`perception-and-belief.md`](./perception-and-belief.md); tracing output by
-[`trace-logs.md`](./trace-logs.md).
-
 ---
 
 ## 1. What the model computes
@@ -130,12 +120,6 @@ base + evidence terms by scoring path:
 
 ### 3.1 Chat-provided evidence (hearsay), weighted by speaker trust
 
-Design + calibration: `crewrift_lab/docs/designs/2026-07-22-chat-evidence-incorporation.md`.
-Gated by `CREWBORG_CHAT_EVIDENCE` (**default OFF in code; recipe-enabled** — the
-2026-07-22 W3b A/B ship-recommends `=1` with the default trust floor: chat-changed
-votes hit imposters 92.1%, mis-votes −45%. The earlier un-floored calibration was
-refuted; both verdicts with numbers in the design doc).
-
 `chat_evidence_log_lr` adds, on **both** scoring paths, a clamped term built from the
 banked `PlayerRecord.claims` (template-, spaCy-, and LLM-sourced — see
 `docs/designs/chat-evidence.md` for extraction):
@@ -153,13 +137,9 @@ banked `PlayerRecord.claims` (template-, spaCy-, and LLM-sourced — see
   tick (one-tick-lag fixed point — breaks the trust↔suspicion circularity).
 - **Trust FLOOR** (`CREWBORG_CHAT_EVIDENCE_TRUST_FLOOR`, default **0.9**): a speaker
   below the floor contributes **zero** testimony — by default only HS-verified
-  members and near-cleared players (suspicion ≤ 0.1) count. The W3b re-tuning after
-  the un-floored A/B was refuted: the intermediate-trust stranger band added only
-  symmetric vote volume (offline recount: HS kill/vent testimony 22/22 accurate vs
-  strangers ≈64%, imposter-speakers 0/158). `=0` restores the v1 weighting. The
+  members and near-cleared players (suspicion ≤ 0.1) count. The
   contradicted-self-alibi weight is not floored (our own observation, not testimony).
-- **Base log-LRs**: kill testimony `ln 30` (hearsay-degraded — even the honest HS
-  liar-witness misattributed kills in 6/199 episodes, T8 2026-07-22), vent `ln 8`,
+- **Base log-LRs**: kill testimony `ln 30` , vent `ln 8`,
   bare accusation `ln 1.5` (the fabrication-prone class), defense `−ln 2`. A
   **contradicted self-alibi** (we watched the speaker elsewhere) adds `ln 4` on the
   speaker, unscaled — the contradiction is our own observation.

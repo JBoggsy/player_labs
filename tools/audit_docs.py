@@ -2,7 +2,7 @@
 """Inventory owned documentation and check local Markdown/HTML file targets.
 
 Checks targets, not heading anchors or semantic correctness. Skips generated local
-artifacts and code fences. Historical failures are reported separately, not hidden.
+artifacts and code fences. All documentation targets are checked.
 """
 from __future__ import annotations
 
@@ -14,7 +14,6 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
-HISTORY = {'reports', 'recon', 'lessons_archive', 'agent-memory', 'history'}
 
 
 def inventory(root: Path = ROOT) -> dict:
@@ -26,8 +25,7 @@ def inventory(root: Path = ROOT) -> dict:
         path = root / name
         if path.suffix not in {'.md', '.html'} or not path.is_file():
             continue
-        historical = bool(set(path.relative_to(root).parts) & HISTORY) or 'history' in path.name.lower() or 'version_log' in name
-        docs.append({'path': name, 'class': 'historical' if historical else 'current'})
+        docs.append({'path': name, 'class': 'current'})
         source = re.sub(r'(?ms)^```.*?^```[^\n]*', '', path.read_text())
         targets = re.findall(r'\]\(([^\n)]+)\)|(?:href|src)=["\']([^"\']+)["\']', source)
         for markdown, html in targets:
@@ -41,7 +39,7 @@ def inventory(root: Path = ROOT) -> dict:
             if local.startswith('/'):
                 continue  # Machine/web-root targets aren't repository-relative links.
             if not (path.parent / local).exists():
-                broken.append({'path': name, 'target': target, 'class': 'historical' if historical else 'current'})
+                broken.append({'path': name, 'target': target, 'class': 'current'})
     return {'documents': docs, 'broken_targets': broken,
             'limits': 'Local file targets only; no anchor, remote URL, command or semantic verification.'}
 
@@ -54,8 +52,7 @@ def main() -> int:
     if args.json:
         args.json.write_text(json.dumps(result, indent=2) + '\n')
     current = [row for row in result['broken_targets'] if row['class'] == 'current']
-    print(f"{len(result['documents'])} documents; {len(current)} current and "
-          f"{len(result['broken_targets']) - len(current)} historical broken targets")
+    print(f"{len(result['documents'])} documents; {len(current)} broken targets")
     for row in current:
         print(f"{row['path']}: {row['target']}")
     return bool(current)

@@ -1,7 +1,5 @@
 # Local execution reference
 
-Checked with project-local `coworld 0.1.47` help and the official [packaging guide](https://docs.softmax.com/coworld/build-a-player/package-and-verify), [runtime guide](https://docs.softmax.com/coworld/build-a-coworld/player-runtimes), and [replay guide](https://docs.softmax.com/coworld/advanced/replays), 2026-09-14. No local games were run in the platform audit.
-
 Use local runs for debugging, mechanism/parity evidence and own-policy self-play. The lab's no-routine-smoke-gate rule is a preference, not a platform limitation.
 
 ## Download

@@ -30,8 +30,8 @@ S=.claude/skills/coworld-policy-lifecycle/scripts/policy_lifecycle.py
 uv run python "$S" monitor --name POLICY --watch
 ```
 
-Run the watcher in the background when useful. It shows history by policy name; verify the **exact submitted version, league and membership** before declaring the requested action complete. Follow cursor headers when listing memberships/submissions. Keep disqualified rows visible by omitting `active_only`.
+Run the watcher in the background when useful. It lists memberships by policy name; verify the **exact submitted version, league and membership** before declaring the requested action complete. Follow cursor headers when listing memberships/submissions. Keep disqualified rows visible by omitting `active_only`.
 
 Read submission status/notes, membership status/substatus, membership-event reasons, and `is_champion` separately. Qualification rules and timing are league-specific; some leagues use platform qualification instead of a container commissioner. A failure score, failed round or timeout does not by itself establish disqualification or its cause. Pull the matching [episode evidence](../coworld-episode-artifacts/SKILL.md).
 
-Record submission/membership IDs, policy UUID, league/division, outcome and evidence in the selected lab's version log. Use normal participant access. Missing private data remains a coverage limitation.
+Use the exact submission/membership IDs, policy UUID and league/division when reporting the action's current outcome. Use normal participant access. Missing private data remains a coverage limitation.

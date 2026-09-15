@@ -70,8 +70,7 @@ rooms rather than beelining to history) **and every pre-ready tick where it isn'
 time to move yet** — Search's WATCH holds the best-view task station until gate 4
 fires.
 
-Gate 4 (reworked 2026-07-06 — was a fixed `recon_window()` ticks-before-ready,
-replaced with computed timing) keeps Recon honest three ways:
+Gate 4  keeps Recon honest three ways:
 
 - **Isolation, not recency** — the target is `strategy/opportunity.py`'s
   `most_isolated_recon_candidate`: among fresh sightings, the one farthest from
@@ -143,8 +142,7 @@ window opens. It does not kill; when the kill is ready and a victim is visible
 the selector flips to Hunt. The measured imposter gap that motivates Search is
 being near crew about half as often as the strongest imposters.
 
-A small FSM, with all state on the instance (reworked 2026-07-01 to the 5-state
-form; see the module docstring for the authoritative transition list):
+A small FSM, with all state on the instance :
 
 ```
   PICK_ROOM ─► GO_TO_ROOM ─► SEARCH_ROOM ─► WATCH ─► FOLLOW(c) ─┐
@@ -159,7 +157,7 @@ form; see the module docstring for the authoritative transition list):
 | `pick_room` | **Score every reachable room and commit to the best — never idles.** The score blends (env-tunable weights, `modes/search.py`): live expected-crew occupancy (strongest, `W_OCCUPANCY` 3.0), the **empirical density prior** (`W_PRIOR` 1.5 — see below), unvisitedness (grows with time since visit), a fast-decaying just-visited penalty, travel cost, teammate-pressure subtraction, a task-room blend bonus, and a soft commander hunt-room nudge. Excludes the current room, the spawn room, and a commander avoid-room when possible. Head to the room **center** (go fully inside), not a door/task spot. |
 | `go_to_room` | Navigate to the center; seeing ANY live non-teammate — room or hallway — switches to FOLLOW immediately; on arrival, SEARCH_ROOM. |
 | `search_room` | Sweep the room's interior scan points so crew hidden from the door are found. Crew in the room → WATCH; a crewmate seen elsewhere → FOLLOW; swept empty → PICK_ROOM. |
-| `watch` | Only entered with crew confirmed in the room. **One case** (simplified 2026-07-06 — James: crewborg should just latch onto the best-viewing task and never hover): any crew visible → hold the in-room task station with line-of-sight to the most of them (recomputed as they move), regardless of how many are visible or how close the kill is. Leaver → FOLLOW; no watched crew remain → PICK_ROOM. |
+| `watch` | Only entered with crew confirmed in the room. **One case** : any crew visible → hold the in-room task station with line-of-sight to the most of them (recomputed as they move), regardless of how many are visible or how close the kill is. Leaver → FOLLOW; no watched crew remain → PICK_ROOM. |
 | `follow(c)` | Chase the committed leaver `c` to its next room. When visible, `navigate_to` its live position and feed `strategy/path_prediction.py:PathPredictor`; when occluded, `navigate_to` the predictor's top predicted hallway position. Give up when the target is gone/dead/now a teammate, the lost-ticks budget expires, or the predictor runs out. |
 
 Search never follows the teammate imposter (`belief.teammate_colors`). The path
@@ -202,10 +200,7 @@ chase, not a case to special-case around.
 ### Vantage selection (WATCH's one case)
 
 `_refresh_vantage` / `_best_vantage` pick, over the room's **task stations only**
-— never an arbitrary room point (2026-07-06, James: replays showed crewborg
-hovering mid-room instead of latching onto a task; every room on croatoan has
->=1 task station, so a held vantage is always one, and this is now WATCH's
-*only* behavior — no separate camouflage state, no single/multiple-crew split)
+— never an arbitrary room point
 — whichever has clear line-of-sight (`nav._segment_clear` over
 `belief.nav.walkability`) to the most watchable crew within `VANTAGE_RANGE`
 (91 px — the circumscribed-circle radius of the game's real 128×128 camera
@@ -214,12 +209,6 @@ window, see `docs/designs/vision-model.md`). It is throttled
 so it only moves when a new vantage sees at least one more crewmate, avoiding
 jitter between equal vantages. Returns `None` only for a room with zero task
 stations (doesn't happen on croatoan; guards a future map).
-
-A prior version of this ("WATCH camouflage") gated the task-latch behind a
-kill-cooldown threshold and split single- vs multiple-crew handling — removed
-2026-07-06 in favor of always latching onto the best-view task regardless of
-cooldown or crew count. See `docs/designs/watch-camouflage.md` (marked
-superseded) for the historical design and why it existed.
 
 | Search constant | Value | Meaning |
 |-----------------|-------|---------|
@@ -240,9 +229,7 @@ subsystem in `strategy/path_prediction.py`.
 
 ## Recon — the timed pre-ready beeline
 
-`modes/recon.py:ReconMode`. The only *pre-positioning* mode (reworked
-2026-07-06 — was a fixed tick-window before ready, now a computed departure
-time). When the selector's travel-time gate fires (gate 4), it routes here
+`modes/recon.py:ReconMode`. The only *pre-positioning* mode . When the selector's travel-time gate fires (gate 4), it routes here
 instead of Search. Recon does exactly one thing: **beeline to the most
 ISOLATED fresh crewmate** (`strategy/opportunity.py:recon_target` — live
 position when visible, last-known otherwise) so that the instant the cooldown
@@ -334,9 +321,7 @@ saw them, and Crewrift vision is symmetric (same camera-frame + line-of-sight
 check run from either side — see `docs/designs/vision-model.md`). So "we
 currently see them" and "they can see the kill" are the same fact — no isolation
 radius or staleness window is needed to *approximate* "nearby and probably still
-watching." (Before 2026-07-06 this used a bespoke `BASE_ISOLATION_RADIUS`/
-`WITNESS_WINDOW_TICKS` heuristic that was never derived from the game's real
-~64–90px vision reach — see the vision-model doc.) The victim itself and fellow
+watching."  The victim itself and fellow
 imposters are never witnesses; dead crewmates can't witness.
 
 ### Urgency ramps the tolerated witness count

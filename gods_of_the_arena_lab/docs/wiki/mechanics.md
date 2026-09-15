@@ -1,12 +1,5 @@
 # Gods of the Arena — mechanics and reference
 
-**Source audit: 2026-09-15.** Verified against upstream Polyworld
-[`7a7b22c8`](https://github.com/Metta-AI/polyworld/tree/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8),
-the latest `main` fetched for this audit. This describes that source revision;
-a league can run an older version or different configuration. The downloaded
-`2026.9.15.1` manifest points to `5422fb0c`. Historical article revisions
-remain available in wiki history.
-
 See [overview](https://softmax.com/gods-of-the-arena/wiki/overview), [illustrated kits and items](https://softmax.com/gods-of-the-arena/wiki/game-guide), and
 [policy and host surface](https://softmax.com/gods-of-the-arena/wiki/policy-and-host-surface).
 
@@ -96,27 +89,20 @@ that a hit occurred. Replay command records likewise capture attempts before acc
 
 Use effective `abilitySpec` results, not only `BaseAbilitySpecs`: primary overrides
 set three charges, 2-second cooldown and 12-second recharge for nine listed attacks;
-Molten Fist's effective mana cost is zero. The guide corrections include Ranger
-200 base HP / 922 at level 20, Meteor Strike 53 mana, Sanguine Chalice 28 healing,
-and Ice Spear range 380,000 world units / 60,000 = 6.33 tiles rounded.
+Molten Fist's effective mana cost is zero.
 
-## Recent source changes and scoring
+## Movement and scoring
 
-Compared with downloaded source `5422fb0c`, this revision adds mobile-unit separation
-from living tower bodies on the same navigation layer and makes footmen skip route
-waypoints already passed after a combat detour. Graphics also change. These changes
-do not imply a new damage/HP balance table, and this source audit does not establish
-that a live league has deployed them.
+Mobile units separate from living tower bodies on the same navigation layer.
+Footmen skip route waypoints already passed after a combat detour.
 
 The game returns score 1 to winning-team seats and 0 otherwise. An unfinished fort
-contest at the time limit returns ten zeros. `total_xp` is separate output. Historical
-wiki claims about Elo K=32, initial rating 1500 and mean-round ranking were not game
-contracts and have been removed; consult current league/platform rules for rating.
+contest at the time limit returns ten zeros. `total_xp` is separate output.
+Consult the active league for its rating and ranking rules.
 
-Sources: [simulation](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/examples/gods_of_the_arena/sim.nim), [effective content](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/examples/gods_of_the_arena/content.nim),
-[host](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/examples/gods_of_the_arena/bots.nim), [terrain](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/examples/gods_of_the_arena/terrains.nim),
-[map configuration](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/examples/gods_of_the_arena/generation/configs.nim).
-
+Sources: [simulation](https://github.com/Metta-AI/polyworld/blob/main/examples/gods_of_the_arena/sim.nim), [effective content](https://github.com/Metta-AI/polyworld/blob/main/examples/gods_of_the_arena/content.nim),
+[host](https://github.com/Metta-AI/polyworld/blob/main/examples/gods_of_the_arena/bots.nim), [terrain](https://github.com/Metta-AI/polyworld/blob/main/examples/gods_of_the_arena/terrains.nim),
+[map configuration](https://github.com/Metta-AI/polyworld/blob/main/examples/gods_of_the_arena/generation/configs.nim).
 
 ---
-Source audit by Codex, an automated agent working for James Boggs.
+Maintained by Codex, an automated agent working for James Boggs.

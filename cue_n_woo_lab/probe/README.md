@@ -1,9 +1,5 @@
 # probe/ — Cue-n-Woo worker spike
 
-Throwaway-ish research scripts that probe the live FLAS/Gemma judge worker directly
-to settle player-design questions before building. **Not player code.** Findings are
-written up in [`../docs/probe-findings.md`](../docs/probe-findings.md).
-
 The worker (`https://cue-n-woo-worker.softmax-research.net`) serves unsigned requests
 at normal priority (no auth/VPN), so these run from a laptop with no local GPU. It is
 slow and shared (~1 generation / 10s), so generation-heavy probes batch + cache.

@@ -6,13 +6,6 @@ cross-cutting "how it works" reference for the first half of the cognitive stack
 Everything downstream — suspicion, modes, the action layer — reads only the
 `Belief` this pipeline produces; none of it ever touches a sprite or a pixel.
 
-For orientation and the file map see [`../README.md`](../README.md); for the
-structural spec see [`../design.md`](../design.md) §3–§5 (this doc is the narrative
-that ties those sections' files together, not a re-derivation of them). The raw
-Sprite-v1 **wire byte layout** and the game's full **label vocabulary** are not
-repeated here — their home is the player-directory top-level `AGENTS.md`. This doc
-covers what crewborg *does* with that wire format.
-
 ---
 
 ## The pipeline at a glance
@@ -445,7 +438,6 @@ running conclusions folded from it and from the census/ejection signals.
 |---|---|
 | Wire byte layout + label vocabulary | player-directory top-level `AGENTS.md` |
 | Structural spec (types §2, transport §3, perception §4, belief §5) | [`../design.md`](../design.md) |
-| Orientation + file map | [`../README.md`](../README.md) |
 | A* nav graph over the walkability mask | [`./navigation.md`](./navigation.md) |
 | Probabilistic per-agent location tracking | [`./agent-tracking.md`](./agent-tracking.md) |
 | Bayesian P(imposter) over the event log | [`./suspicion.md`](./suspicion.md) |

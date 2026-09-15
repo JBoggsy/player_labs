@@ -63,7 +63,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"{args.name}: {len(vs)} uploaded version(s)")
     for v in vs:
         print(f"  v{v['version']:<4} {v['policy_version_id']}  {v.get('created_at') or ''}")
-    print("\n(reconcile against version_log.md — each version should map to the change it carries)")
+    print("\n(use the exact returned policy version ID for evaluation and submission)")
     return 0
 
 

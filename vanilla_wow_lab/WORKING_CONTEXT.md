@@ -1,16 +1,9 @@
-# vanilla_wow working context
+# vanilla_wow_lab working context
 
-## Current handoff — documentation audit, 2026-09-14
+Use the current user request to establish the objective, scope and next decision.
+Resolve the active game configuration, policy identity and roster through the platform
+before evaluating or changing live participation. Source code and current API responses
+define behavior; this file must not substitute for a live-state query.
 
-Wowborg source and replay/survey/navigation/profiling tools exist. The long handoff contains several mutually superseded deployment/version claims; resolve current state before operating.
-
-The full prior record is preserved in [historical working context](WORKING_CONTEXT.history-2026-09-14.md). It contains dated experiment details and old permissions, not a standing instruction to resume gameplay or submit a policy. No live league or player behavior was changed by this modernization.
-
-## Where to resume
-
-1. Read the latest user objective and establish which existing track it continues.
-2. Follow the historical handoff's experiment/version links, retaining negative results.
-3. Re-resolve game version, policy-version UUID, roster and runtime configuration before an evaluation.
-4. Replace this short handoff with the chosen objective, scope, last result and next decision; link detailed evidence instead of appending its entire history.
-
-[README](README.md) · [AGENTS](AGENTS.md) · [shared learning guide](../docs/learning.md)
+Maintain only the active objective, unresolved constraints and next action here.
+Replace completed or superseded context in place.
