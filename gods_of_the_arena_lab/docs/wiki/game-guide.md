@@ -30,7 +30,7 @@ Outer towers fall first, then inner, then the gate. A god becomes attackable aft
 | Reference | Details |
 | --- | --- |
 | Footmen | 60 HP, 12 damage, 15 gold |
-| Towers | Outer 600, inner 800, gate 1000 |
+| Towers | Outer 1,200, inner 2,400, gate 4,800 |
 | Gods | 400 HP, exposed after a lane falls |
 | Hero bounty | 150 XP and 100 gold |
 | Level curve | 100 XP, then +75 each level |

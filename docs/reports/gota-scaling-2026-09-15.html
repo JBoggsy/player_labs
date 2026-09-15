@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How Gods of the Arena numbers scale from level 1 to level 20</title>
+<!--
+  Ink & Print design/plan document template (Softmax house style).
+
+  HOW TO USE (renderer subagent):
+  - Replace everything inside <article id="doc"> with the real document content.
+    The placeholder content below doubles as a component style guide — copy the
+    markup patterns (masthead, TOC, section, figure, table, callout, code,
+    citation) and delete what you don't use.
+  - Do NOT modify anything between the DC-COMMENTS BEGIN/END markers. That block
+    is the tested commenting system; copy it verbatim. The one thing you may fill
+    is the CONTENT of <script id="dc-preload" type="application/json">: a
+    dc-comments/1 `comments` array, each comment optionally carrying
+    `replies: [{author, text, created}]`, so the reader sees their comments and
+    the agent's replies together in the sidebar.
+  - Keep the doc self-contained: inline SVG for figures, no JS deps beyond this
+    file. Google Fonts is the only permitted external fetch.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Merriweather+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============ Ink & Print tokens ============ */
+  :root {
+    --bg: #fffdf4;            /* cream paper */
+    --surface: #fffaf0;
+    --surface-alt: #f8f6ef;
+    --fg: #111827;            /* warm near-black — never pure #000 */
+    --fg-subtle: #555555;
+    --fg-muted: #999999;
+    --ink-navy: #1a3875;
+    --ink-sage: #6e8050;
+    --ink-terracotta: #b36e4e;
+    --ink-gold: #d4a853;
+    --accent: #859ebe;
+    --accent-soft: #eef2f7;
+    --cta: #0e2758;
+    --cta-foreground: #fffdf4;
+    --border: #e4dac8;
+    --border-strong: #d4c9b5;
+    --border-subtle: #f0ebe1;
+    --serif: 'Merriweather', Georgia, serif;
+    --sans: 'Merriweather Sans', 'Helvetica Neue', sans-serif;
+    --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  /* ============ Page grid: reading column + comment rail ============ */
+  .dc-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 0;
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+  article#doc {
+    max-width: 72ch;
+    margin: 0 auto;
+    padding: 56px 40px 120px;
+    min-width: 0;
+  }
+
+  /* ============ Typography ============ */
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-subtle);
+  }
+  header.masthead { border-bottom: 2px solid var(--border-strong); padding-bottom: 20px; margin-bottom: 32px; }
+  header.masthead h1 {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 34px;
+    line-height: 1.2;
+    margin: 8px 0 10px;
+  }
+  header.masthead .context { color: var(--fg-subtle); font-size: 13.5px; margin: 0; }
+  h2 {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-navy);
+    margin: 48px 0 12px;
+  }
+  h3 { font-family: var(--serif); font-weight: 700; font-size: 16.5px; margin: 32px 0 8px; }
+  p { margin: 0 0 14px; }
+  a { color: var(--ink-navy); text-decoration-color: var(--accent); text-underline-offset: 3px; }
+  a:hover { color: var(--cta); }
+  strong { font-weight: 700; }
+  ul, ol { padding-left: 24px; margin: 0 0 14px; }
+  li { margin-bottom: 4px; }
+  hr { border: 0; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  /* Key-points opener: every section starts with scannable bullets */
+  .key-points {
+    list-style: none;
+    padding: 0 0 0 2px;
+    margin: 0 0 18px;
+  }
+  .key-points li { padding-left: 18px; position: relative; margin-bottom: 6px; }
+  .key-points li::before { content: '—'; position: absolute; left: 0; color: var(--ink-gold); font-weight: 700; }
+
+  /* ============ TOC ============ */
+  nav.toc { margin: 28px 0 8px; }
+  nav.toc ol { list-style: none; padding: 0; column-count: 2; column-gap: 40px; margin: 10px 0 0; }
+  nav.toc li { margin-bottom: 5px; break-inside: avoid; }
+  nav.toc a { text-decoration: none; border-bottom: 1px dotted var(--border-strong); }
+  nav.toc .toc-num { font-family: var(--mono); font-size: 12px; color: var(--fg-muted); margin-right: 8px; }
+
+  /* ============ Tables ============ */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 18px 0 22px;
+    font-size: 13.5px;
+  }
+  th {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg-subtle);
+    text-align: left;
+    padding: 6px 12px 6px 0;
+    border-bottom: 2px solid var(--border-strong);
+  }
+  td { padding: 7px 12px 7px 0; border-bottom: 1px solid var(--border-subtle); vertical-align: top; }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-size: 12.5px; font-feature-settings: 'tnum' 1; }
+
+  /* ============ Figures ============ */
+  figure { margin: 24px 0 28px; }
+  figure svg { max-width: 100%; height: auto; display: block; }
+  figcaption {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--fg-subtle);
+  }
+  figcaption .fig-label {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 10.5px;
+    color: var(--ink-navy);
+    margin-right: 8px;
+  }
+
+  /* ============ Code & citations ============ */
+  code {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--surface-alt);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  pre {
+    background: var(--surface-alt);
+    border: 1px solid var(--border-subtle);
+    border-radius: 3px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    margin: 16px 0 20px;
+  }
+  pre code { background: none; padding: 0; font-size: 12.5px; line-height: 1.6; }
+  .cite {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--fg-subtle);
+    background: var(--surface-alt);
+    padding: 1px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  /* Superscript source references — body prose never carries raw file paths.
+     Full citation lives in the title (hover) and in the numbered Sources list. */
+  sup.ref { line-height: 0; }
+  sup.ref a {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--ink-navy);
+    text-decoration: none;
+    padding: 0 1px;
+  }
+  sup.ref a:hover { text-decoration: underline; }
+  ol.sources { margin: 12px 0; padding-left: 30px; }
+  ol.sources li {
+    font-size: 13px;
+    padding: 2px 0;
+  }
+  ol.sources li::marker {
+    font-family: var(--mono);
+    font-weight: 700;
+    color: var(--ink-navy);
+  }
+  ol.sources li:target { background: var(--accent-soft); }
+
+  /* ============ Callouts ============ */
+  .callout { padding: 12px 16px; margin: 18px 0; font-size: 13.5px; border-radius: 3px; }
+  .callout .callout-label {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .callout-info { background: var(--accent-soft); }
+  .callout-info .callout-label { color: var(--ink-navy); }
+  .callout-warn { background: rgba(179, 110, 78, 0.08); border-left: 3px solid var(--ink-terracotta); }
+  .callout-warn .callout-label { color: var(--ink-terracotta); }
+  .callout-open { background: rgba(212, 168, 83, 0.10); }
+  .callout-open .callout-label { color: #8a6a1f; }
+
+  /* Decision record */
+  .decision { border-top: 1px solid var(--border); padding: 14px 0 4px; margin: 14px 0; }
+  .decision .decision-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-sage); }
+  .decision p { margin-top: 6px; }
+
+  @media (max-width: 1100px) {
+    .dc-page { grid-template-columns: 1fr; }
+  }
+  @media print {
+    #dc-sidebar, #dc-fab, #dc-toggle { display: none !important; }
+    .dc-page { grid-template-columns: 1fr; }
+  }
+
+  /* ================================================================
+     DC-COMMENTS BEGIN — styles (copy verbatim; do not modify)
+     ================================================================ */
+  ::highlight(dc-hl) { background: rgba(212, 168, 83, 0.28); }
+  ::highlight(dc-hl-active) { background: rgba(212, 168, 83, 0.6); }
+
+  #dc-fab {
+    position: absolute;
+    z-index: 40;
+    display: none;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--cta-foreground);
+    background: var(--cta);
+    border: 1px solid #0a1c42;
+    border-radius: 3px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  #dc-fab:hover { background: var(--ink-navy); }
+
+  #dc-sidebar {
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    padding: 24px 20px 60px;
+    font-size: 13px;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    overflow-y: auto;
+  }
+  #dc-sidebar h2.dc-title {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-subtle);
+    margin: 0 0 4px;
+  }
+  .dc-actions { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 18px; }
+  .dc-btn {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--fg);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    padding: 4px 9px;
+    cursor: pointer;
+  }
+  .dc-btn:hover { background: var(--surface-alt); }
+  .dc-btn:focus-visible, #dc-fab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .dc-empty { color: var(--fg-muted); font-style: italic; }
+  .dc-item { border-top: 1px solid var(--border-subtle); padding: 12px 0; cursor: pointer; }
+  .dc-item.dc-resolved { opacity: 0.5; }
+  .dc-quote {
+    border-left: 2px solid var(--ink-gold);
+    padding-left: 8px;
+    color: var(--fg-subtle);
+    font-style: italic;
+    font-size: 12px;
+    margin-bottom: 6px;
+    overflow-wrap: break-word;
+  }
+  .dc-orphan-tag {
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-terracotta);
+    background: rgba(179, 110, 78, 0.12);
+    border-radius: 999px;
+    padding: 1px 7px;
+    margin-left: 6px;
+  }
+  .dc-text { white-space: pre-wrap; overflow-wrap: break-word; }
+  .dc-item textarea {
+    width: 100%;
+    min-height: 64px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    padding: 6px 8px;
+    resize: vertical;
+  }
+  .dc-item textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .dc-meta { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 11px; color: var(--fg-muted); }
+  .dc-meta label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+  .dc-meta .dc-del { margin-left: auto; color: var(--ink-terracotta); background: none; border: none; font-size: 11px; cursor: pointer; padding: 0; }
+  .dc-meta .dc-del:hover { text-decoration: underline; }
+  #dc-status { font-size: 11px; color: var(--ink-sage); min-height: 16px; margin-top: 8px; }
+
+  #dc-toggle { display: none; }
+  @media (max-width: 1100px) {
+    #dc-sidebar {
+      position: fixed;
+      right: 0;
+      top: 0;
+      width: 320px;
+      max-width: 90vw;
+      transform: translateX(100%);
+      transition: transform 200ms ease-out;
+      z-index: 50;
+      box-shadow: -4px 0 16px rgba(0, 0, 0, 0.08);
+    }
+    #dc-sidebar.dc-open { transform: translateX(0); }
+    #dc-toggle {
+      display: block;
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 51;
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--cta-foreground);
+      background: var(--cta);
+      border: 1px solid #0a1c42;
+      border-radius: 999px;
+      padding: 9px 15px;
+      cursor: pointer;
+    }
+  }
+  /* ============ DC-COMMENTS END — styles ============ */
+  /* replies rendered under a comment (from the comment's `replies` array) */
+  .dc-replies { margin-top: 8px; padding-left: 10px; border-left: 2px solid var(--border-strong); }
+  .dc-reply-author { font-family: var(--sans); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-navy); }
+  .dc-reply-text { font-size: 12.5px; line-height: 1.5; color: var(--fg); white-space: pre-wrap; margin-top: 2px; }
+  .dc-reply-text a { color: var(--ink-navy); word-break: break-all; }
+</style>
+</head>
+<body>
+<div class="dc-page">
+<article id="doc">
+
+  <!-- ============ Masthead ============ -->
+  <header class="masthead">
+    <span class="eyebrow">Research Report · 2026-09-15 · for James, before designing fight, farm, and shop logic</span>
+    <h1>How Gods of the Arena numbers scale from level 1 to level 20</h1>
+    <p class="context">For James, before we design the fight, farm, and shop logic of the first James Botts policy. Every number comes from the content tables of the engine. A small program compiled against polyworld <code>1d7eb723</code> extracted them (the content file<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/content.nim">1</a></sup> is byte-identical at the deployed <code>5422fb0c</code>), <code>model.py</code> computes the derived values, and <code>charts.py</code> makes the figures from that dump<sup class="ref"><a href="#src-2" title=".reports-working/gota-scaling-2026-09-15/dump_specs.nim, specs.json, model.py, charts.py">2</a></sup>. This report stays in the lab. Do not post the spell-scaling finding in public.</p>
+  </header>
+
+  <!-- ============ Executive summary ============ -->
+  <section id="summary">
+    <h2>Executive Summary</h2>
+    <p>Only four hero numbers change with level: max HP, max mana, basic-attack damage, and move speed. Each grows by a fixed step per level that depends on the class<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/content.nim:743-761">1</a></sup>. Everything else is a constant for the whole match: attack speed, attack range, the damage, heal, mana cost, cooldown, and range of every ability, every item bonus, every consumable, the footman and tower stats, and every reward. Over 19 levels, HP grows 3.9 to 4.6 times, basic damage grows 4.5 to 5.6 times, mana grows 2.4 to 2.9 times, and move speed grows only 1.2 to 1.3 times. As a result, the balance of the game changes shape as heroes level. A basic-attack duel between two level-1 heroes takes 4 to 17 seconds, and the same duel at level 20 takes about the same time, because attacker damage and defender HP grow together. Spells do not grow. A level-1 ultimate removes a third to a half of the HP of an enemy hero, and the same ultimate at level 20 removes 7 to 12 percent (figure 9). By level 5 to 13, the full ten-second ability burst of every class has fallen below half of an enemy's HP. By then, basic attacks already give several times the sustained damage of the whole kit (figures 11 and 12).</p>
+    <p>The same fixed numbers cut both ways. Footmen keep 60 HP and 12 damage for the whole match. At level 1 a footman is a two- or three-hit kill and a real threat. By level 4 to 11 it is a one-hit kill and background noise (figure 15). Towers stay dangerous for longer. A gate tower kills a level-1 hero in 2 to 4 seconds and a level-20 hero in 7 to 14 seconds (figure 16). A lone hero needs about 170 seconds of basic attacks to take a gate at level 1, and 35 seconds at level 20 (figure 17). A +14 damage weapon is a third to two thirds of a hero's damage at level 1 and 7 to 14 percent at level 20. An elixir heals a quarter to a half of a level-1 hero and 6 to 13 percent of a level-20 hero (figures 18 to 20). Rewards are flat too, so a hero kill is worth 1.5 levels at level 1 and a tenth of a level at level 19 (figure 3). The practical shape is a game in three phases. Early, spells, potions, and cheap weapons decide fights, and creeps hurt. In the middle, levels and equipment take over. Late, the only things that still grow are basic attacks and HP, so every fight is a long basic-attack race that towers and heals decide.</p>
+  </section>
+
+  <!-- ============ TOC ============ -->
+  <nav class="toc">
+    <span class="eyebrow">Contents</span>
+    <ol>
+      <li><span class="toc-num">1</span><a href="#sec-1">What scales and what does not</a></li>
+      <li><span class="toc-num">2</span><a href="#sec-2">The level curve against the clock</a></li>
+      <li><span class="toc-num">3</span><a href="#sec-3">Hero stats by level</a></li>
+      <li><span class="toc-num">4</span><a href="#sec-4">Hero against hero: time to kill</a></li>
+      <li><span class="toc-num">5</span><a href="#sec-5">Abilities against level</a></li>
+      <li><span class="toc-num">5.1</span><a href="#sec-5-1">Strikes as a share of enemy HP</a></li>
+      <li><span class="toc-num">5.2</span><a href="#sec-5-2">Sustained and burst damage</a></li>
+      <li><span class="toc-num">5.3</span><a href="#sec-5-3">Mana</a></li>
+      <li><span class="toc-num">6</span><a href="#sec-6">Footmen and towers against level</a></li>
+      <li><span class="toc-num">7</span><a href="#sec-7">Items and consumables against level</a></li>
+      <li><span class="toc-num">8</span><a href="#sec-8">Consequences for policy design</a></li>
+      <li><span class="toc-num">A</span><a href="#appendix-a">Per-hero numbers</a></li>
+      <li><span class="toc-num">B</span><a href="#appendix-b">Method and assumptions</a></li>
+      <li><span class="toc-num">C</span><a href="#sources">Sources</a></li>
+    </ol>
+  </nav>
+
+  <!-- ============ 1 ============ -->
+  <section id="sec-1">
+    <h2>1 · What scales and what does not</h2>
+    <ul class="key-points">
+      <li>Four per-hero numbers grow linearly with level: HP, mana, basic damage, move speed<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/content.nim:743-761">1</a></sup>.</li>
+      <li>Nothing else in the game has a level term: abilities, attack cadence, range, items, consumables, footmen, towers, rewards.</li>
+      <li>At level 20 the growth multiples are 3.9 to 4.6× for HP, 2.4 to 2.9× for mana, 4.5 to 5.6× for basic damage, and 1.2 to 1.3× for move.</li>
+    </ul>
+    <p>The scaling functions are four one-line formulas: <code>base + (level - 1) * perLevel</code> for HP, mana, damage, and move<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/content.nim:743-761">1</a></sup>. <code>refreshHeroStats</code> applies the HP and mana growth at each level-up. <code>heroAttackDamage</code> and <code>heroMoveSpeed</code> read the damage and move values at the time of use, with equipment added<sup class="ref"><a href="#src-3" title="examples/gods_of_the_arena/sim.nim:676-702">3</a></sup>. Attack cadence and range are per-class constants with no level parameter (<code>heroAttackTicks</code> and <code>heroAttackRange</code>)<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/content.nim:148-313">1</a></sup>. Ability specs hold fixed <code>damage</code>, <code>heal</code>, <code>restore</code>, <code>manaCost</code>, <code>cooldownTicks</code>, <code>range</code>, and area values. The effective-spec function adds charge and recharge rules but no level term, and <code>hitSpellTarget</code> applies <code>spec.damage</code> without change<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/content.nim:606-716">1</a></sup> <sup class="ref"><a href="#src-3" title="examples/gods_of_the_arena/sim.nim:2073">3</a></sup>. Item bonuses are constants<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/content.nim:511-593">1</a></sup>. Footman HP and damage, tower HP, damage, and range, and the three reward pairs are constants in the simulation<sup class="ref"><a href="#src-3" title="examples/gods_of_the_arena/sim.nim:229-236, sim.nim:339-340, sim.nim:358-363">3</a></sup>.</p>
+
+    <figure>
+      <img src="gota-scaling-2026-09-15-figures/fig-01-growth.svg" alt="Growth multiples" style="width:100%;height:auto;display:block">
+      <figcaption><span class="fig-label">Figure 1</span>Level 20 value divided by level 1 value for the four stats that grow, plus basic DPS, which follows damage. Note that mana grows at half the rate of HP and damage, and that move speed almost does not change.</figcaption>
+    </figure>
+
+    <p>Basic DPS is damage times attacks per second, and attacks per second is fixed, so DPS has exactly the same multiple as damage. This one fact drives the rest of the report. Everything a hero does with its basic attack keeps pace with enemy HP. Everything a hero does with a spell or a potion does not, and neither does a threat the size of a footman.</p>
+  </section>
+
+  <!-- ============ 2 ============ -->
+  <section id="sec-2">
+    <h2>2 · The level curve against the clock</h2>
+    <ul class="key-points">
+      <li>The XP to leave level L is <code>100 + (L - 1) × 75</code>. Level 20 needs 14,725 XP<sup class="ref"><a href="#src-3" title="examples/gods_of_the_arena/sim.nim:654-656">3</a></sup>.</li>
+      <li>With one fifth of the team's creeps, a hero ends a 20-minute match at level 10. With a whole lane, level 12. With a lane plus a hero kill every two minutes, level 14.</li>
+      <li>Only a hero that takes every creep on the map reaches level 20, at about minute 16.</li>
+    </ul>
+    <p>Figure 2 shows the curve and four income scenarios from the economy report<sup class="ref"><a href="#src-4" title="gods_of_the_arena_lab/docs/leveling-economy.md">4</a></sup> (a footman gives 25 XP, and 6 enemy footmen come per 240-tick wave per team<sup class="ref"><a href="#src-3" title="examples/gods_of_the_arena/sim.nim:1123-1160">3</a></sup> <sup class="ref"><a href="#src-5" title="src/polyworld/configs.nim:20">5</a></sup>). The scenarios are rates, not plans. 3 XP/s is an equal five-way division of the team's creeps. 5 XP/s is every last hit in one lane. 6.25 XP/s adds one hero kill (150 XP) every 120 seconds. 15 XP/s is the theoretical maximum of all three lanes. The realistic band for a policy that farms well but shares is level 10 to 14 at the time limit. Levels 15 to 20 exist in the tables, but a match rarely reaches them. Thus the "late" phase in this report is about levels 10 to 14, not 20.</p>
+
+    <figure>
+      <img src="gota-scaling-2026-09-15-figures/fig-16-xp.svg" alt="XP curve and level over time" style="width:100%;height:auto;display:block">
+      <figcaption><span class="fig-label">Figure 2</span>Left: cumulative XP needed for each level. Right: level reached over a default 28,800-tick match at four steady income rates. Note that even the income of a full lane stops in the low teens.</figcaption>
+    </figure>
+
+    <figure>
+      <img src="gota-scaling-2026-09-15-figures/fig-17-kill-value.svg" alt="Value of a kill" style="width:100%;height:auto;display:block">
+      <figcaption><span class="fig-label">Figure 3</span>Left: the XP of one kill as a share of the killer's next level. Right: gold per kill, which never changes. Note that a hero kill pays 1.5 levels at level 1 and a tenth of a level at level 19.</figcaption>
+    </figure>
+
+    <p>Rewards are constants, so their value in levels falls as <code>1 / (100 + (L - 1) × 75)</code>. A hero kill at level 1 is 150 percent of the next level. At level 5 it is 38 percent, at level 10 it is 19 percent, and at level 19 it is 10 percent. Gold does not lose value the same way, because item prices are also flat: 100 gold is always most of a Battle Axe. What loses value is the item itself (section 7).</p>
+  </section>
+
+  <!-- ============ 3 ============ -->
+  <section id="sec-3">
+    <h2>3 · Hero stats by level</h2>
+    <ul class="key-points">
+      <li>Melee classes have the most HP (Death Knight 350 to 1,528, Vanguard Knight 330 to 1,470). Mages have the least (Lich 185 to 717, Arcanist 190 to 760).</li>
+      <li>Basic DPS at level 20 goes from 90 (Druid Warden) to 248 (Demon Hunter). The order almost does not change across levels, because growth is proportional.</li>
+      <li>Move speed is 2.3 to 3.0 tiles per second at level 1 and 2.7 to 4.0 at level 20. Ranger Boots (+0.32 tiles/s) are worth about ten levels of movement.</li>
+    </ul>
+
+    <figure>
+      <img src="gota-scaling-2026-09-15-figures/fig-02-hp.svg" alt="HP by level" style="width:100%;height:auto;display:block">
+      <figcaption><span class="fig-label">Figure 4</span>Max HP by level, one panel per hero, with the other nine in gray for context. Note the three tiers: the melee tanks, the middle (Warden, Warlock, Crossbowman, Ranger, Demon Hunter), and the two mages.</figcaption>
+    </figure>
+
+    <figure>
+      <img src="gota-scaling-2026-09-15-figures/fig-03-dps.svg" alt="Basic DPS by level" style="width:100%;height:auto;display:block">
+      <figcaption><span class="fig-label">Figure 5</span>Basic-attack damage per second by level. Demon Hunter (16-tick swing) and Berserker lead at every level, and Druid Warden is last at every level.</figcaption>
+    </figure>
+
+    <p>The full per-level table is Appendix A. The panels show two things. First, the gap between the best and the worst basic DPS grows only from 2.4× at level 1 to 2.7× at level 20 (Demon Hunter against Druid Warden), and the order changes only once (Lich passes Crossbowman at level 4), so class matchups do not turn around with level. Second, HP and damage both grow, so the ratio of a hero's own DPS to its own HP is almost flat. A hero can always kill a copy of itself in about the same number of seconds (section 4).</p>
+  </section>
+
+  <!-- ============ 4 ============ -->
+  <section id="sec-4">
+    <h2>4 · Hero against hero: time to kill</h2>
+    <ul class="key-points">
+      <li>A pure basic-attack duel takes 4 to 17 seconds at level 1 and 3 to 17 seconds at level 20. The matrix almost does not change with level.</li>
+      <li>The fastest killers are Demon Hunter and Berserker (3 to 7 seconds against any target). The slowest are Druid Warden and Warlock (9 to 17 seconds).</li>
+      <li>Duels do not get shorter with level, but spells get smaller. Thus fights get longer relative to burst as the game goes on.</li>
+    </ul>
+
+    <figure>
+      <img src="gota-scaling-2026-09-15-figures/fig-04-ttk-L1.svg" alt="Time to kill, level 1" style="width:100%;height:auto;display:block">
+      <figcaption><span class="fig-label">Figure 6</span>Seconds of uninterrupted basic attacks for the row hero to kill the column hero, both at level 1. Same-team cells are blank.</figcaption>
+    </figure>
+
+    <figure>
+      <img src="gota-scaling-2026-09-15-figures/fig-04-ttk-L10.svg" alt="Time to kill, level 10" style="width:100%;height:auto;display:block">
+      <figcaption><span class="fig-label">Figure 7</span>The same matrix at level 10.</figcaption>
+    </figure>
+
+    <figure>
+      <img src="gota-scaling-2026-09-15-figures/fig-04-ttk-L20.svg" alt="Time to kill, level 20" style="width:100%;height:auto;display:block">
+      <figcaption><span class="fig-label">Figure 8</span>The same matrix at level 20. Compare any cell with figure 6: most change by at most a second or two.</figcaption>
+    </figure>
+
+    <p>Time to kill is <code>ceil(defender HP / attacker damage) × attacker swing ticks / 24</code>, with no abilities, items, healing, or movement (Appendix B). The small change is arithmetic: HP and damage each grow about 4.5×, and the ratio moves only with the difference in per-class growth rates. In practice, a level-20 fight between two heroes with full HP lasts as long as a level-1 fight, but the level-20 fight has no burst in it. That is the mechanism behind the phase change. Early fights are decided by who lands an ultimate. Late fights are decided by who has more HP, more allies, or a tower.</p>
+  </section>
+
+  <!-- ============ 5 ============ -->
+  <section id="sec-5">
+    <h2>5 · Abilities against level</h2>
+    <ul class="key-points">
+      <li>One cast of an ultimate is 33 to 53 percent of an enemy's HP at level 1 and 7 to 12 percent at level 20 (figure 9).</li>
+      <li>A full ten-second burst with every charge falls below half of an enemy's HP at level 5 (Vanguard Knight) to level 13 (Crossbowman). The single strike of Druid Warden is never above a third (figure 12).</li>
+      <li>Sustained ability DPS is 4 to 18 per second and flat. Basic DPS starts at 20 to 48 and reaches 90 to 248. Thus basic attacks do more damage than the whole kit from level 1, and 7 to 23× more at level 20 (figure 11).</li>
+      <li>Mana grows more slowly than HP, and regeneration alone cannot pay for most kits cast on cooldown (figures 13 and 14).</li>
+    </ul>
+
+    <h3 id="sec-5-1">5.1 Strikes as a share of enemy HP</h3>
+
+    <figure>
+      <img src="gota-scaling-2026-09-15-figures/fig-05-strike-share.svg" alt="Strike share" style="width:100%;height:auto;display:block">
+      <figcaption><span class="fig-label">Figure 9</span>Damage of one cast of each strike ability as a percentage of the average enemy hero's HP, when both sides are at the same level. Every curve is <code>constant / (a + b × L)</code>.</figcaption>
+    </figure>
+
+    <p>The average enemy HP is the mean over the five classes of the opposing team (Appendix B). At level 1 the ultimates of the Red team are the largest single hits in the game. Lich's Bound Void (125) is 53 percent of an average Blue hero, Crossbowman's Clockwork Charge (115) is 48 percent, and Death Knight's Dark Eclipse (110) is 46 percent. The best on Blue is Arcanist's Arcane Meteor (120), at 46 percent of an average Red hero. The primary strikes (40 to 50 damage, three charges) are 15 to 27 percent each at level 1, so three charges in a row kill a low-HP target. By level 10 the ultimates are 15 to 19 percent and the primaries are 5 to 8 percent. By level 20 every ability is below 10 percent, except the five largest ultimates at 10 to 12 percent.</p>
+
+    <p>The heal side (figure 10) has the same shape. Druid Warden's Kindred Wisps (80) heals a third of its own HP at level 1 and 7 percent at level 20. The self-heal passives (18 to 28) are 5 to 9 percent of own HP at level 1 and 1 to 2 percent at level 20. These fire on their own whenever the hero is below max, so late in the game their effect is small.</p>
+
+    <figure>
+      <img src="gota-scaling-2026-09-15-figures/fig-06-heal-share.svg" alt="Heal share" style="width:100%;height:auto;display:block">
+      <figcaption><span class="fig-label">Figure 10</span>One cast of each heal as a share of the caster's own max HP. Only the five classes with a heal ability are shown.</figcaption>
+    </figure>
+
+    <h3 id="sec-5-2">5.2 Sustained and burst damage</h3>
+
+    <figure>
+      <img src="gota-scaling-2026-09-15-figures/fig-07-dps-mix.svg" alt="DPS mix" style="width:100%;height:auto;display:block">
+      <figcaption><span class="fig-label">Figure 11</span>Sustained damage per second from basic attacks (rising) against abilities cast on every recharge (flat, orange) and abilities limited to what 4 mana per second of regeneration pays for (flat, green).</figcaption>
+    </figure>
+
+    <p>The orange line is the kit cast at its charge-limited rate without end: one cast per <code>rechargeTicks</code> per ability, 4 to 18 damage per second (Appendix A). It never crosses the blue line. Basic attacks win at level 1 for every class, and the gap only gets wider. The green line is lower again for eight classes, because a cast on every cooldown costs 5 to 12 mana per second and regeneration is 4<sup class="ref"><a href="#src-3" title="examples/gods_of_the_arena/sim.nim:1877-1880">3</a></sup>. Only Druid Warden (3.4/s) and Berserker (2.7/s, Molten Fist is free) can keep their kits going on regeneration alone (figure 14).</p>
+
+    <p>Burst is where abilities matter, and only early. Figure 12 counts the damage available in the first ten seconds of a fight with every charge full and mana ignored: three primary casts plus one cast of each other ability.</p>
+
+    <figure>
+      <img src="gota-scaling-2026-09-15-figures/fig-08-burst.svg" alt="Burst share" style="width:100%;height:auto;display:block">
+      <figcaption><span class="fig-label">Figure 12</span>Ten-second ability burst as a percentage of the average enemy hero's HP at the same level. Above 100 (dark cells), the kit alone can kill an average enemy without one basic attack.</figcaption>
+    </figure>
+
+    <p>Seven classes can kill an average enemy from full HP with abilities alone at level 1. Crossbowman and Lich can do it through level 3, and Death Knight through level 2. The 50 percent line, where a burst still decides a fight if the target is already hurt, comes at level 5 for Vanguard Knight, 7 for Ranger and Demon Hunter, 9 for Arcanist, Warlock, and Berserker, 10 for Death Knight, 12 for Lich, and 13 for Crossbowman. At the realistic end of a match (level 10 to 14, section 2), the burst of every kit is 25 to 50 percent of an enemy. The lone strike of Druid Warden is under 10 percent from level 3 on.</p>
+
+    <h3 id="sec-5-3">5.3 Mana</h3>
+
+    <figure>
+      <img src="gota-scaling-2026-09-15-figures/fig-18-mana-rotations.svg" alt="Mana rotations" style="width:100%;height:auto;display:block">
+      <figcaption><span class="fig-label">Figure 13</span>How many full strike rotations (one cast of every strike ability) a full mana pool pays for. Note that Death Knight and Crossbowman never reach two.</figcaption>
+    </figure>
+
+    <figure>
+      <img src="gota-scaling-2026-09-15-figures/fig-19-mana-rate.svg" alt="Mana rate" style="width:100%;height:auto;display:block">
+      <figcaption><span class="fig-label">Figure 14</span>Mana per second needed to cast every strike as soon as it recharges, against the fixed 4 mana per second of regeneration.</figcaption>
+    </figure>
+
+    <p>Mana grows 2.4 to 2.9× while costs are fixed, so the pool does get larger. Lich goes from 1.1 rotations at level 1 to 2.8 at level 20, and Arcanist from 1.0 to 2.6. But the rate does not change with level at all, because regeneration is a constant 1 mana per 6 ticks. A mage that opens with a full rotation at level 1 is then limited to what regeneration buys, which is a third to a half of its cooldown-bound output. A mana potion (60 mana for 45 gold) buys about two more primary casts or half an ultimate, and that does not change with level either.</p>
+  </section>
+
+  <!-- ============ 6 ============ -->
+  <section id="sec-6">
+    <h2>6 · Footmen and towers against level</h2>
+    <ul class="key-points">
+      <li>A footman (60 HP) takes 2 or 3 basic hits at level 1. It takes 1 hit from level 4 (Crossbowman) to level 11 (Druid Warden) on (figure 15).</li>
+      <li>A gate tower kills a hero in 2 to 4 seconds at level 1 and 7 to 14 seconds at level 20 (figure 16). Footman damage is 4.8 percent of average hero HP at level 1 and 1.1 percent at level 20.</li>
+      <li>A lone hero needs 42 / 85 / 169 seconds of basic attacks for an outer / inner / gate tower at level 1, 15 / 30 / 60 seconds at level 10, and 9 / 17 / 35 seconds at level 20 (figure 17).</li>
+    </ul>
+
+    <figure>
+      <img src="gota-scaling-2026-09-15-figures/fig-09-footman-hits.svg" alt="Footman hits" style="width:100%;height:auto;display:block">
+      <figcaption><span class="fig-label">Figure 15</span>Basic attacks needed to kill one footman. The step to one hit is the level at which a hero's damage reaches 60.</figcaption>
+    </figure>
+
+    <figure>
+      <img src="gota-scaling-2026-09-15-figures/fig-10-tower-survival.svg" alt="Tower survival" style="width:100%;height:auto;display:block">
+      <figcaption><span class="fig-label">Figure 16</span>Seconds a hero survives under a gate tower (112 damage per second) with no healing.</figcaption>
+    </figure>
+
+    <figure>
+      <img src="gota-scaling-2026-09-15-figures/fig-11-tower-time.svg" alt="Tower time" style="width:100%;height:auto;display:block">
+      <figcaption><span class="fig-label">Figure 17</span>Seconds for one hero alone to destroy each tower tier with basic attacks, averaged over the ten classes.</figcaption>
+    </figure>
+
+    <p>Footmen stop being a threat at about level 5, when their 12 damage is under 3 percent of any hero's HP. They stop costing time between level 4 and level 11, when they take one hit each. But they never stop being the economy: 25 XP and 15 gold each, unchanged. Towers are the opposite. Their HP is fixed, so a hero's time to take one falls with level. But their damage is also fixed, and it stays lethal. At level 10 an average hero survives a gate tower for six seconds, which is less than the 60 seconds it needs to kill it. A solo siege of a gate is impossible at any level without creeps to absorb tower fire, because towers target footmen before heroes<sup class="ref"><a href="#src-3" title="examples/gods_of_the_arena/sim.nim:1587-1663">3</a></sup>. With a wave in front, the hero's time to kill the tower is the limit, and that is what levels buy.</p>
+  </section>
+
+  <!-- ============ 7 ============ -->
+  <section id="sec-7">
+    <h2>7 · Items and consumables against level</h2>
+    <ul class="key-points">
+      <li>A +14 damage item (Battle Axe or Rune Crossbow, 180 gold) is 33 to 64 percent of basic damage at level 1 and 7 to 14 percent at level 20 (figure 18).</li>
+      <li>A +120 max HP item (Knight Armor, 160 gold) is 34 to 65 percent of HP at level 1 and 8 to 17 percent at level 20 (figure 19).</li>
+      <li>A Vitality Elixir (+90 HP, 50 gold) is 26 to 49 percent of HP at level 1 and 6 to 13 percent at level 20. A Poison Potion (35 damage) is always 58 percent of a footman, and 14 to 3 percent of a hero (figures 20 and 21).</li>
+    </ul>
+
+    <figure>
+      <img src="gota-scaling-2026-09-15-figures/fig-12-item-dmg.svg" alt="Item damage share" style="width:100%;height:auto;display:block">
+      <figcaption><span class="fig-label">Figure 18</span>The best damage item as a share of basic-attack damage.</figcaption>
+    </figure>
+
+    <figure>
+      <img src="gota-scaling-2026-09-15-figures/fig-13-item-hp.svg" alt="Item HP share" style="width:100%;height:auto;display:block">
+      <figcaption><span class="fig-label">Figure 19</span>Knight Armor as a share of max HP.</figcaption>
+    </figure>
+
+    <figure>
+      <img src="gota-scaling-2026-09-15-figures/fig-14-elixir.svg" alt="Elixir share" style="width:100%;height:auto;display:block">
+      <figcaption><span class="fig-label">Figure 20</span>One Vitality Elixir as a share of max HP.</figcaption>
+    </figure>
+
+    <figure>
+      <img src="gota-scaling-2026-09-15-figures/fig-15-poison.svg" alt="Poison" style="width:100%;height:auto;display:block">
+      <figcaption><span class="fig-label">Figure 21</span>Poison Potion damage as a share of a footman's HP (fixed) and of the average hero's HP.</figcaption>
+    </figure>
+
+    <p>Items are one-time purchases with no upgrade paths. The purchase code rejects a duplicate and has no recipe logic<sup class="ref"><a href="#src-3" title="examples/gods_of_the_arena/sim.nim:1512-1567">3</a></sup>. Thus the value of an item is set at purchase, and every level then makes it smaller. The 150 starting gold, spent on Leather Gauntlets (+4) at tick one, is +16 percent damage for a Vanguard Knight at level 1 and +3 percent at level 20. The same 70 gold is almost nothing later. As a result, the order of purchases matters more than the total. Buy damage items first, while they are a large share. Buy HP items when fights become long basic-attack races. Buy consumables early, when 90 HP is a third of the bar and a poison is more than half of a footman.</p>
+
+    <p>Poison gets its own note. At 35 damage against a footman that never has more than 60 HP, it is a sure last-hit tool for the whole match, and a last hit is 25 XP and 15 gold. At 40 gold it does not pay for itself in gold, but in XP it is the cheapest level progress in the shop.</p>
+  </section>
+
+  <!-- ============ 8 ============ -->
+  <section id="sec-8">
+    <h2>8 · Consequences for policy design</h2>
+    <ul class="key-points">
+      <li>The game has three phases keyed to level, not clock: burst (levels 1 to about 5), transition (about 5 to 10), and attrition (10 and up).</li>
+      <li>Cast everything early, when a rotation is a kill. Late, treat abilities as a small bonus on top of basic attacks, and do not plan around them.</li>
+      <li>Fight early when your burst is above the enemy's HP share and theirs is not. Fight late only with an HP, numbers, or tower advantage, because there is no burst to turn it.</li>
+      <li>Buy damage first, HP later, and potions early. Farm creeps with the poison from level 1.</li>
+    </ul>
+
+    <p><strong>Burst phase (levels 1 to 5).</strong> Every ultimate is a third to a half of an enemy. Every kit can kill from full HP. Footmen do 5 percent of a hero per hit and take three hits to kill. A hero kill is worth a level or more. This is the phase where ability timing and target selection decide the game. It is also where the automatic cast rule (passive, then ultimate, secondary, primary, whenever there is a combat target) does the most harm, because it spends the ultimate on the first footman. A policy that keeps its ultimate for a hero and opens with it has a large, measurable advantage here, and only here.</p>
+
+    <p><strong>Transition (levels 5 to 10).</strong> Burst falls through 50 percent, footmen become one-hit kills for most classes, and the +14 weapon is still 15 to 30 percent of damage. Fights start to depend on who has more HP and more allies. This is where equipment matters most, and where a policy must convert gold as fast as it comes in.</p>
+
+    <p><strong>Attrition (level 10 and up).</strong> Ultimates are 10 to 19 percent of an enemy, sustained kit damage is a tenth of basic DPS, and the time to kill in a duel is the same as at level 1, with nothing to shorten it. Towers are still lethal in six to ten seconds and take a minute to kill solo. This is a game of HP pools, creep waves to absorb tower fire, and fights taken at a numbers advantage. Heals are small, so recovery after a retreat is about respawn timers and potions, not abilities.</p>
+
+    <p>Two class notes. Druid Warden is a healer whose heals stop mattering after level 5, and whose single strike is the weakest kit in the game. Its value is basic-attack DPS and 1,162 HP at level 20, not its abilities. Crossbowman and Lich have the largest bursts and keep them longest (above 50 percent until level 12 to 13). They are the classes whose ability use a policy must get right.</p>
+  </section>
+
+  <!-- ============ Appendix A ============ -->
+  <section id="appendix-a">
+    <h2>Appendix A · Per-hero numbers</h2>
+    <p>Level 1 and level 20 values from the engine dump (<code>specs.json</code>)<sup class="ref"><a href="#src-2" title=".reports-working/gota-scaling-2026-09-15/specs.json">2</a></sup>. DPS is damage × 24 / attack ticks. Rotation mana is one cast of every strike. Sustained spell DPS is one cast per recharge per ability. Spell mana/s is what that costs.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Class</th>
+          <th class="num">HP L1–L20</th>
+          <th class="num">Dmg L1–L20</th>
+          <th class="num">DPS L1–L20</th>
+          <th class="num">Move tiles/s</th>
+          <th class="num">Range</th>
+          <th class="num">Atk/s</th>
+          <th class="num">Rot. mana</th>
+          <th class="num">Spell DPS</th>
+          <th class="num">Spell mana/s</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>0 Vanguard Knight</td><td class="num">330&#8209;1,470</td><td class="num">25&#8209;120</td><td class="num">25&#8209;120</td><td class="num">2.32&#8209;2.78</td><td class="num">1.17</td><td class="num">1.00</td><td class="num">90</td><td class="num">7.8</td><td class="num">5.2</td></tr>
+        <tr><td>1 Ranger</td><td class="num">200&#8209;922</td><td class="num">25&#8209;139</td><td class="num">33&#8209;185</td><td class="num">2.76&#8209;3.44</td><td class="num">5.50</td><td class="num">1.33</td><td class="num">130</td><td class="num">14.4</td><td class="num">8.8</td></tr>
+        <tr><td>2 Arcanist</td><td class="num">190&#8209;760</td><td class="num">38&#8209;190</td><td class="num">30&#8209;152</td><td class="num">2.48&#8209;3.01</td><td class="num">5.00</td><td class="num">0.80</td><td class="num">181</td><td class="num">16.1</td><td class="num">12.2</td></tr>
+        <tr><td>3 Druid Warden</td><td class="num">250&#8209;1,162</td><td class="num">22&#8209;98</td><td class="num">20&#8209;91</td><td class="num">2.56&#8209;3.09</td><td class="num">4.00</td><td class="num">0.92</td><td class="num">75</td><td class="num">3.9</td><td class="num">3.4</td></tr>
+        <tr><td>4 Demon Hunter</td><td class="num">220&#8209;904</td><td class="num">32&#8209;165</td><td class="num">48&#8209;248</td><td class="num">3.04&#8209;3.95</td><td class="num">1.25</td><td class="num">1.50</td><td class="num">109</td><td class="num">15.4</td><td class="num">8.4</td></tr>
+        <tr><td>5 Death Knight</td><td class="num">350&#8209;1,528</td><td class="num">30&#8209;144</td><td class="num">26&#8209;123</td><td class="num">2.28&#8209;2.74</td><td class="num">1.27</td><td class="num">0.86</td><td class="num">134</td><td class="num">14.4</td><td class="num">8.6</td></tr>
+        <tr><td>6 Crossbowman</td><td class="num">230&#8209;1,028</td><td class="num">43&#8209;195</td><td class="num">29&#8209;130</td><td class="num">2.40&#8209;2.86</td><td class="num">6.50</td><td class="num">0.67</td><td class="num">132</td><td class="num">18.2</td><td class="num">8.9</td></tr>
+        <tr><td>7 Lich</td><td class="num">185&#8209;717</td><td class="num">36&#8209;188</td><td class="num">27&#8209;141</td><td class="num">2.40&#8209;2.86</td><td class="num">5.50</td><td class="num">0.75</td><td class="num">188</td><td class="num">17.4</td><td class="num">11.9</td></tr>
+        <tr><td>8 Warlock</td><td class="num">240&#8209;1,114</td><td class="num">26&#8209;121</td><td class="num">22&#8209;104</td><td class="num">2.48&#8209;3.01</td><td class="num">4.50</td><td class="num">0.86</td><td class="num">156</td><td class="num">13.8</td><td class="num">10.4</td></tr>
+        <tr><td>9 Berserker</td><td class="num">300&#8209;1,345</td><td class="num">35&#8209;168</td><td class="num">42&#8209;202</td><td class="num">2.72&#8209;3.40</td><td class="num">1.33</td><td class="num">1.20</td><td class="num">36</td><td class="num">13.8</td><td class="num">2.7</td></tr>
+      </tbody>
+    </table>
+
+    <p>Ability kits with effective values (the effective-spec function applied to the base ability specs<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/content.nim:606-716 applied to content.nim:319-511">1</a></sup>): the nine primary strikes (slot 1, except Druid Warden) have 3 charges, a 48-tick cooldown, and a 288-tick recharge per charge. Every other ability has 1 charge, with recharge equal to cooldown. Cast delays are 0 ticks for melee and projectile casts, 6 to 72 ticks for area casts. Per-ability damage, heal, mana, cooldown, and range are in the economy report's Appendix B<sup class="ref"><a href="#src-4" title="gods_of_the_arena_lab/docs/leveling-economy.md">4</a></sup> and in <code>specs.json</code>.</p>
+  </section>
+
+  <!-- ============ Appendix B ============ -->
+  <section id="appendix-b">
+    <h2>Appendix B · Method and assumptions</h2>
+    <ul>
+      <li><strong>Source of numbers.</strong> <code>dump_specs.nim</code> imports the game's content module and prints <code>HeroSpecs</code>, the effective <code>abilitySpec</code> for every class slot, and <code>ItemSpecs</code> as JSON<sup class="ref"><a href="#src-2" title=".reports-working/gota-scaling-2026-09-15/dump_specs.nim">2</a></sup>. No number was transcribed by hand.</li>
+      <li><strong>Average enemy HP</strong> for a hero at level L is the mean of <code>hp(L)</code> over the five classes of the opposing team, both sides at the same level.</li>
+      <li><strong>Time to kill</strong> uses <code>ceil(HP / damage)</code> hits at one hit per <code>attackTicks</code> ticks, with no abilities, items, healing, or movement, and without the 45 percent swing offset. It measures relative scaling, not fight outcomes.</li>
+      <li><strong>Sustained spell DPS</strong> is <code>Σ damage × 24 / rechargeTicks</code> over strike abilities: the long-run rate after the charges are spent. <strong>Mana-limited</strong> spell DPS spends 4 mana per second on the strikes with the best damage per mana first, and ignores the pool. <strong>Ten-second burst</strong> counts all charges plus recharges in 240 ticks, with mana ignored.</li>
+      <li><strong>Level over time</strong> applies a constant XP rate and the exact level thresholds. It ignores death time and the unit cap.</li>
+      <li><strong>Items</strong> are evaluated as a share of the level-scaled base stat without other items.</li>
+      <li>Everything is deterministic from the dump, and <code>charts.py</code> makes every figure again<sup class="ref"><a href="#src-2" title=".reports-working/gota-scaling-2026-09-15/charts.py">2</a></sup>.</li>
+    </ul>
+  </section>
+
+  <!-- ============ Sources: every superscript reference resolves here ============ -->
+  <section id="sources">
+    <h2>Appendix C · Sources</h2>
+    <ol class="sources">
+      <li id="src-1"><span class="cite">examples/gods_of_the_arena/content.nim</span> — class specs and per-level scaling, base and effective ability specs, item specs.</li>
+      <li id="src-2"><span class="cite">.reports-working/gota-scaling-2026-09-15/</span> <code>dump_specs.nim</code>, <code>specs.json</code>, <code>model.py</code>, <code>charts.py</code> — the extraction, model, and figure code for this report.</li>
+      <li id="src-3"><span class="cite">examples/gods_of_the_arena/sim.nim</span> — level curve, stat refresh, attack cadence, cast and charge mechanics, mana regeneration, tower and footman constants, rewards, purchase rules.</li>
+      <li id="src-4"><span class="cite">gods_of_the_arena_lab/docs/leveling-economy.md</span> — income rates and reward rules used in section 2.</li>
+      <li id="src-5"><span class="cite">src/polyworld/configs.nim</span> — default match length and spawn interval.</li>
+    </ol>
+  </section>
+
+</article>
+
+<!-- ================================================================
+     DC-COMMENTS BEGIN — markup + script (copy verbatim; do not modify)
+     ================================================================ -->
+<aside id="dc-sidebar" aria-label="Comments">
+  <h2 class="dc-title">Comments <span id="dc-count"></span></h2>
+  <div class="dc-actions">
+    <button class="dc-btn" id="dc-export">Export JSON</button>
+    <button class="dc-btn" id="dc-copy">Copy JSON</button>
+    <button class="dc-btn" id="dc-import">Import…</button>
+    <input type="file" id="dc-file" accept=".json,application/json" hidden>
+  </div>
+  <div id="dc-status" role="status"></div>
+  <div id="dc-list"><p class="dc-empty">No comments yet. Select text in the document to add one.</p></div>
+</aside>
+<button id="dc-fab" type="button">+ Comment</button>
+<button id="dc-toggle" type="button">Comments</button>
+<!-- Preload slot: a renderer may put a dc-comments/1 `comments` array here (each comment optionally carrying `replies`). Merged by id into the stored comments on load. Leave empty otherwise. -->
+<script id="dc-preload" type="application/json"></script>
+
+<script>
+(() => {
+  'use strict';
+  const FORMAT = 'dc-comments/1';
+  const CTX = 32; // prefix/suffix context length, chars
+  const doc = document.getElementById('doc');
+  const fab = document.getElementById('dc-fab');
+  const listEl = document.getElementById('dc-list');
+  const countEl = document.getElementById('dc-count');
+  const statusEl = document.getElementById('dc-status');
+  const sidebar = document.getElementById('dc-sidebar');
+  const storeKey = 'dc:' + document.title;
+
+  let comments = []; // {id, exact, prefix, suffix, text, created, resolved}
+  let ranges = new Map(); // id -> Range (null if orphaned)
+  let seq = 0;
+
+  // ---- text indexing: one global string over #doc's text nodes ----
+  function docText() {
+    const r = document.createRange();
+    r.selectNodeContents(doc);
+    return r.toString();
+  }
+  function globalOffset(container, offset) {
+    const r = document.createRange();
+    r.setStart(doc, 0);
+    r.setEnd(container, offset);
+    return r.toString().length;
+  }
+  function offsetsToRange(start, end) {
+    const walker = document.createTreeWalker(doc, NodeFilter.SHOW_TEXT);
+    let pos = 0, range = document.createRange(), haveStart = false;
+    while (walker.nextNode()) {
+      const node = walker.currentNode, len = node.data.length;
+      if (!haveStart && pos + len >= start) {
+        range.setStart(node, start - pos);
+        haveStart = true;
+      }
+      if (haveStart && pos + len >= end) {
+        range.setEnd(node, end - pos);
+        return range;
+      }
+      pos += len;
+    }
+    return null;
+  }
+
+  // ---- anchoring: TextQuoteSelector-style exact + prefix/suffix ----
+  function selectorFromRange(range) {
+    const text = docText();
+    const start = globalOffset(range.startContainer, range.startOffset);
+    const end = globalOffset(range.endContainer, range.endOffset);
+    return {
+      exact: text.slice(start, end),
+      prefix: text.slice(Math.max(0, start - CTX), start),
+      suffix: text.slice(end, end + CTX),
+    };
+  }
+  function locate(c) {
+    const text = docText();
+    let i = text.indexOf(c.prefix + c.exact + c.suffix);
+    if (i >= 0) return offsetsToRange(i + c.prefix.length, i + c.prefix.length + c.exact.length);
+    i = text.indexOf(c.exact);
+    if (i >= 0) return offsetsToRange(i, i + c.exact.length);
+    return null;
+  }
+  function reanchorAll() {
+    ranges = new Map(comments.map(c => [c.id, locate(c)]));
+    paint();
+  }
+
+  // ---- painting via CSS Custom Highlight API ----
+  const hl = typeof Highlight !== 'undefined' ? new Highlight() : null;
+  const hlActive = typeof Highlight !== 'undefined' ? new Highlight() : null;
+  if (hl) { CSS.highlights.set('dc-hl', hl); CSS.highlights.set('dc-hl-active', hlActive); }
+  function paint(activeId) {
+    if (!hl) return;
+    hl.clear(); hlActive.clear();
+    for (const [id, r] of ranges) {
+      if (!r) continue;
+      (id === activeId ? hlActive : hl).add(r);
+    }
+  }
+
+  // ---- persistence (best-effort; file:// storage varies by browser) ----
+  function save() {
+    try { localStorage.setItem(storeKey, JSON.stringify(comments)); } catch (e) { /* unavailable on some file:// setups */ }
+  }
+  function load() {
+    try {
+      const raw = localStorage.getItem(storeKey);
+      if (raw) comments = JSON.parse(raw);
+    } catch (e) { /* ignore */ }
+  }
+
+  // ---- sidebar rendering ----
+  function flash(msg) {
+    statusEl.textContent = msg;
+    setTimeout(() => { if (statusEl.textContent === msg) statusEl.textContent = ''; }, 2500);
+  }
+  function sortedComments() {
+    const pos = c => {
+      const r = ranges.get(c.id);
+      return r ? globalOffset(r.startContainer, r.startOffset) : Infinity; // orphans last
+    };
+    return [...comments].sort((a, b) => pos(a) - pos(b));
+  }
+  function render(editingId) {
+    countEl.textContent = comments.length ? '(' + comments.length + ')' : '';
+    listEl.textContent = '';
+    if (!comments.length) {
+      const p = document.createElement('p');
+      p.className = 'dc-empty';
+      p.textContent = 'No comments yet. Select text in the document to add one.';
+      listEl.appendChild(p);
+      return;
+    }
+    for (const c of sortedComments()) {
+      const item = document.createElement('div');
+      item.className = 'dc-item' + (c.resolved ? ' dc-resolved' : '');
+      item.dataset.id = c.id;
+
+      const quote = document.createElement('div');
+      quote.className = 'dc-quote';
+      quote.textContent = c.exact.length > 90 ? c.exact.slice(0, 90) + '…' : c.exact;
+      if (!ranges.get(c.id)) {
+        const tag = document.createElement('span');
+        tag.className = 'dc-orphan-tag';
+        tag.textContent = 'orphaned';
+        quote.appendChild(tag);
+      }
+      item.appendChild(quote);
+
+      if (c.id === editingId) {
+        const ta = document.createElement('textarea');
+        ta.value = c.text;
+        ta.placeholder = 'Write a comment… (⌘/Ctrl+Enter to save, Esc to cancel)';
+        ta.addEventListener('keydown', e => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') commit();
+          if (e.key === 'Escape') cancel();
+        });
+        ta.addEventListener('click', e => e.stopPropagation());
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'dc-btn';
+        saveBtn.textContent = 'Save';
+        saveBtn.style.marginTop = '6px';
+        saveBtn.addEventListener('click', e => { e.stopPropagation(); commit(); });
+        function commit() {
+          c.text = ta.value.trim();
+          if (!c.text) return cancel();
+          save(); render();
+        }
+        function cancel() {
+          if (!c.text) { comments = comments.filter(x => x.id !== c.id); ranges.delete(c.id); paint(); }
+          save(); render();
+        }
+        item.appendChild(ta);
+        item.appendChild(saveBtn);
+        listEl.appendChild(item);
+        requestAnimationFrame(() => ta.focus());
+        continue;
+      }
+
+      const text = document.createElement('div');
+      text.className = 'dc-text';
+      text.textContent = c.text;
+      item.appendChild(text);
+
+      if (Array.isArray(c.replies) && c.replies.length) {
+        const box = document.createElement('div');
+        box.className = 'dc-replies';
+        for (const r of c.replies) {
+          const who = document.createElement('div');
+          who.className = 'dc-reply-author';
+          who.textContent = 'Reply from ' + (r.author || 'agent') + (r.created ? ' · ' + String(r.created).slice(0, 10) : '');
+          const body = document.createElement('div');
+          body.className = 'dc-reply-text';
+          for (const part of String(r.text || '').split(/(https?:\/\/[^\s)]+)/g)) {
+            if (/^https?:\/\//.test(part)) {
+              const a = document.createElement('a');
+              a.href = part; a.target = '_blank'; a.rel = 'noopener';
+              a.textContent = part;
+              a.addEventListener('click', e => e.stopPropagation());
+              body.appendChild(a);
+            } else body.appendChild(document.createTextNode(part));
+          }
+          box.append(who, body);
+        }
+        item.appendChild(box);
+      }
+
+      const meta = document.createElement('div');
+      meta.className = 'dc-meta';
+      const when = document.createElement('span');
+      when.textContent = c.created.slice(0, 10);
+      const resolved = document.createElement('label');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = !!c.resolved;
+      cb.addEventListener('click', e => e.stopPropagation());
+      cb.addEventListener('change', () => { c.resolved = cb.checked; save(); render(); });
+      resolved.append(cb, 'resolved');
+      const del = document.createElement('button');
+      del.className = 'dc-del';
+      del.textContent = 'delete';
+      del.addEventListener('click', e => {
+        e.stopPropagation();
+        comments = comments.filter(x => x.id !== c.id);
+        ranges.delete(c.id);
+        paint(); save(); render();
+      });
+      meta.append(when, resolved, del);
+      item.appendChild(meta);
+
+      item.addEventListener('click', () => {
+        const r = ranges.get(c.id);
+        if (!r) return flash('Anchor not found in this version of the document.');
+        const rect = r.getBoundingClientRect();
+        window.scrollTo({ top: window.scrollY + rect.top - 160, behavior: 'smooth' });
+        paint(c.id);
+        setTimeout(() => paint(), 2000);
+      });
+      // double-click text to edit
+      text.addEventListener('dblclick', e => { e.stopPropagation(); render(c.id); });
+      listEl.appendChild(item);
+    }
+  }
+
+  // ---- selection -> floating Comment button ----
+  document.addEventListener('mouseup', e => {
+    if (fab.contains(e.target)) return;
+    setTimeout(() => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || !sel.rangeCount) { fab.style.display = 'none'; return; }
+      const range = sel.getRangeAt(0);
+      if (!doc.contains(range.commonAncestorContainer) || !range.toString().trim()) {
+        fab.style.display = 'none';
+        return;
+      }
+      const rect = range.getBoundingClientRect();
+      fab.style.display = 'block';
+      fab.style.left = Math.min(rect.right + 8 + window.scrollX, window.scrollX + document.documentElement.clientWidth - 120) + 'px';
+      fab.style.top = (rect.top + window.scrollY - 4) + 'px';
+      fab.dataset.pending = '1';
+    }, 0);
+  });
+  fab.addEventListener('click', () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    const c = Object.assign({ id: 'c' + Date.now().toString(36) + (seq++), text: '', created: new Date().toISOString(), resolved: false }, selectorFromRange(range));
+    comments.push(c);
+    ranges.set(c.id, range.cloneRange());
+    paint(c.id);
+    sel.removeAllRanges();
+    fab.style.display = 'none';
+    sidebar.classList.add('dc-open');
+    render(c.id);
+  });
+
+  // ---- export / import ----
+  function payload() {
+    return JSON.stringify({
+      format: FORMAT,
+      doc: document.title,
+      exported: new Date().toISOString(),
+      comments: comments,
+    }, null, 2);
+  }
+  document.getElementById('dc-export').addEventListener('click', () => {
+    const blob = new Blob([payload()], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (document.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'doc') + '.comments.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    flash('Downloaded.');
+  });
+  document.getElementById('dc-copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(payload()); flash('Copied to clipboard.'); }
+    catch (e) { flash('Clipboard blocked — use Export instead.'); }
+  });
+  document.getElementById('dc-import').addEventListener('click', () => document.getElementById('dc-file').click());
+  document.getElementById('dc-file').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    file.text().then(raw => {
+      const data = JSON.parse(raw);
+      if (data.format !== FORMAT || !Array.isArray(data.comments)) { flash('Not a dc-comments file.'); return; }
+      const byId = new Map(comments.map(c => [c.id, c]));
+      for (const c of data.comments) byId.set(c.id, c);
+      comments = [...byId.values()];
+      reanchorAll(); save(); render();
+      flash('Imported ' + data.comments.length + ' comment(s).');
+    }).catch(() => flash('Could not parse that file.'));
+    e.target.value = '';
+  });
+
+  document.getElementById('dc-toggle').addEventListener('click', () => sidebar.classList.toggle('dc-open'));
+
+  // ---- init ----
+  load();
+  // Merge the renderer's preloaded comments (with replies) by id: a stored
+  // comment keeps its own text/resolved state and takes the preloaded replies.
+  try {
+    const pre = document.getElementById('dc-preload');
+    const preloaded = pre && pre.textContent.trim() ? JSON.parse(pre.textContent) : [];
+    if (Array.isArray(preloaded) && preloaded.length) {
+      const byId = new Map(comments.map(c => [c.id, c]));
+      for (const c of preloaded) {
+        const existing = byId.get(c.id);
+        if (existing) { if (c.replies) existing.replies = c.replies; }
+        else byId.set(c.id, c);
+      }
+      comments = [...byId.values()];
+      save();
+    }
+  } catch (e) { /* malformed preload: ignore */ }
+  reanchorAll();
+  render();
+})();
+</script>
+<!-- ============ DC-COMMENTS END ============ -->
+</div>
+</body>
+</html>

@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gods of the Arena replay format and a replay-expander design</title>
+<!--
+  Ink & Print design/plan document template (Softmax house style).
+
+  HOW TO USE (renderer subagent):
+  - Replace everything inside <article id="doc"> with the real document content.
+    The placeholder content below doubles as a component style guide — copy the
+    markup patterns (masthead, TOC, section, figure, table, callout, code,
+    citation) and delete what you don't use.
+  - Do NOT modify anything between the DC-COMMENTS BEGIN/END markers. That block
+    is the tested commenting system; copy it verbatim. The one thing you may fill
+    is the CONTENT of <script id="dc-preload" type="application/json">: a
+    dc-comments/1 `comments` array, each comment optionally carrying
+    `replies: [{author, text, created}]`, so the reader sees their comments and
+    the agent's replies together in the sidebar.
+  - Keep the doc self-contained: inline SVG for figures, no JS deps beyond this
+    file. Google Fonts is the only permitted external fetch.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Merriweather+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============ Ink & Print tokens ============ */
+  :root {
+    --bg: #fffdf4;            /* cream paper */
+    --surface: #fffaf0;
+    --surface-alt: #f8f6ef;
+    --fg: #111827;            /* warm near-black — never pure #000 */
+    --fg-subtle: #555555;
+    --fg-muted: #999999;
+    --ink-navy: #1a3875;
+    --ink-sage: #6e8050;
+    --ink-terracotta: #b36e4e;
+    --ink-gold: #d4a853;
+    --accent: #859ebe;
+    --accent-soft: #eef2f7;
+    --cta: #0e2758;
+    --cta-foreground: #fffdf4;
+    --border: #e4dac8;
+    --border-strong: #d4c9b5;
+    --border-subtle: #f0ebe1;
+    --serif: 'Merriweather', Georgia, serif;
+    --sans: 'Merriweather Sans', 'Helvetica Neue', sans-serif;
+    --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  /* ============ Page grid: reading column + comment rail ============ */
+  .dc-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 0;
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+  article#doc {
+    max-width: 72ch;
+    margin: 0 auto;
+    padding: 56px 40px 120px;
+    min-width: 0;
+  }
+
+  /* ============ Typography ============ */
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-subtle);
+  }
+  header.masthead { border-bottom: 2px solid var(--border-strong); padding-bottom: 20px; margin-bottom: 32px; }
+  header.masthead h1 {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 34px;
+    line-height: 1.2;
+    margin: 8px 0 10px;
+  }
+  header.masthead .context { color: var(--fg-subtle); font-size: 13.5px; margin: 0; }
+  h2 {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-navy);
+    margin: 48px 0 12px;
+  }
+  h3 { font-family: var(--serif); font-weight: 700; font-size: 16.5px; margin: 32px 0 8px; }
+  p { margin: 0 0 14px; }
+  a { color: var(--ink-navy); text-decoration-color: var(--accent); text-underline-offset: 3px; }
+  a:hover { color: var(--cta); }
+  strong { font-weight: 700; }
+  ul, ol { padding-left: 24px; margin: 0 0 14px; }
+  li { margin-bottom: 4px; }
+  hr { border: 0; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  /* Key-points opener: every section starts with scannable bullets */
+  .key-points {
+    list-style: none;
+    padding: 0 0 0 2px;
+    margin: 0 0 18px;
+  }
+  .key-points li { padding-left: 18px; position: relative; margin-bottom: 6px; }
+  .key-points li::before { content: '—'; position: absolute; left: 0; color: var(--ink-gold); font-weight: 700; }
+
+  /* ============ TOC ============ */
+  nav.toc { margin: 28px 0 8px; }
+  nav.toc ol { list-style: none; padding: 0; column-count: 2; column-gap: 40px; margin: 10px 0 0; }
+  nav.toc li { margin-bottom: 5px; break-inside: avoid; }
+  nav.toc a { text-decoration: none; border-bottom: 1px dotted var(--border-strong); }
+  nav.toc .toc-num { font-family: var(--mono); font-size: 12px; color: var(--fg-muted); margin-right: 8px; }
+
+  /* ============ Tables ============ */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 18px 0 22px;
+    font-size: 13.5px;
+  }
+  th {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg-subtle);
+    text-align: left;
+    padding: 6px 12px 6px 0;
+    border-bottom: 2px solid var(--border-strong);
+  }
+  td { padding: 7px 12px 7px 0; border-bottom: 1px solid var(--border-subtle); vertical-align: top; }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-size: 12.5px; font-feature-settings: 'tnum' 1; }
+
+  /* ============ Figures ============ */
+  figure { margin: 24px 0 28px; }
+  figure svg { max-width: 100%; height: auto; display: block; }
+  figcaption {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--fg-subtle);
+  }
+  figcaption .fig-label {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 10.5px;
+    color: var(--ink-navy);
+    margin-right: 8px;
+  }
+
+  /* ============ Code & citations ============ */
+  code {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--surface-alt);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  pre {
+    background: var(--surface-alt);
+    border: 1px solid var(--border-subtle);
+    border-radius: 3px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    margin: 16px 0 20px;
+  }
+  pre code { background: none; padding: 0; font-size: 12.5px; line-height: 1.6; }
+  .cite {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--fg-subtle);
+    background: var(--surface-alt);
+    padding: 1px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  /* Superscript source references — body prose never carries raw file paths.
+     Full citation lives in the title (hover) and in the numbered Sources list. */
+  sup.ref { line-height: 0; }
+  sup.ref a {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--ink-navy);
+    text-decoration: none;
+    padding: 0 1px;
+  }
+  sup.ref a:hover { text-decoration: underline; }
+  ol.sources { margin: 12px 0; padding-left: 30px; }
+  ol.sources li {
+    font-size: 13px;
+    padding: 2px 0;
+  }
+  ol.sources li::marker {
+    font-family: var(--mono);
+    font-weight: 700;
+    color: var(--ink-navy);
+  }
+  ol.sources li:target { background: var(--accent-soft); }
+
+  /* ============ Callouts ============ */
+  .callout { padding: 12px 16px; margin: 18px 0; font-size: 13.5px; border-radius: 3px; }
+  .callout .callout-label {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .callout-info { background: var(--accent-soft); }
+  .callout-info .callout-label { color: var(--ink-navy); }
+  .callout-warn { background: rgba(179, 110, 78, 0.08); border-left: 3px solid var(--ink-terracotta); }
+  .callout-warn .callout-label { color: var(--ink-terracotta); }
+  .callout-open { background: rgba(212, 168, 83, 0.10); }
+  .callout-open .callout-label { color: #8a6a1f; }
+
+  /* Decision record */
+  .decision { border-top: 1px solid var(--border); padding: 14px 0 4px; margin: 14px 0; }
+  .decision .decision-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-sage); }
+  .decision p { margin-top: 6px; }
+
+  @media (max-width: 1100px) {
+    .dc-page { grid-template-columns: 1fr; }
+  }
+  @media print {
+    #dc-sidebar, #dc-fab, #dc-toggle { display: none !important; }
+    .dc-page { grid-template-columns: 1fr; }
+  }
+
+  /* replies rendered under a comment (from the comment's `replies` array) */
+  .dc-replies { margin-top: 8px; padding-left: 10px; border-left: 2px solid var(--border-strong); }
+  .dc-reply-author { font-family: var(--sans); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-navy); }
+  .dc-reply-text { font-size: 12.5px; line-height: 1.5; color: var(--fg); white-space: pre-wrap; margin-top: 2px; }
+  .dc-reply-text a { color: var(--ink-navy); word-break: break-all; }
+
+  /* ================================================================
+     DC-COMMENTS BEGIN — styles (copy verbatim; do not modify)
+     ================================================================ */
+  ::highlight(dc-hl) { background: rgba(212, 168, 83, 0.28); }
+  ::highlight(dc-hl-active) { background: rgba(212, 168, 83, 0.6); }
+
+  #dc-fab {
+    position: absolute;
+    z-index: 40;
+    display: none;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--cta-foreground);
+    background: var(--cta);
+    border: 1px solid #0a1c42;
+    border-radius: 3px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  #dc-fab:hover { background: var(--ink-navy); }
+
+  #dc-sidebar {
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    padding: 24px 20px 60px;
+    font-size: 13px;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    overflow-y: auto;
+  }
+  #dc-sidebar h2.dc-title {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-subtle);
+    margin: 0 0 4px;
+  }
+  .dc-actions { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 18px; }
+  .dc-btn {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--fg);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    padding: 4px 9px;
+    cursor: pointer;
+  }
+  .dc-btn:hover { background: var(--surface-alt); }
+  .dc-btn:focus-visible, #dc-fab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .dc-empty { color: var(--fg-muted); font-style: italic; }
+  .dc-item { border-top: 1px solid var(--border-subtle); padding: 12px 0; cursor: pointer; }
+  .dc-item.dc-resolved { opacity: 0.5; }
+  .dc-quote {
+    border-left: 2px solid var(--ink-gold);
+    padding-left: 8px;
+    color: var(--fg-subtle);
+    font-style: italic;
+    font-size: 12px;
+    margin-bottom: 6px;
+    overflow-wrap: break-word;
+  }
+  .dc-orphan-tag {
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-terracotta);
+    background: rgba(179, 110, 78, 0.12);
+    border-radius: 999px;
+    padding: 1px 7px;
+    margin-left: 6px;
+  }
+  .dc-text { white-space: pre-wrap; overflow-wrap: break-word; }
+  .dc-item textarea {
+    width: 100%;
+    min-height: 64px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    padding: 6px 8px;
+    resize: vertical;
+  }
+  .dc-item textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .dc-meta { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 11px; color: var(--fg-muted); }
+  .dc-meta label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+  .dc-meta .dc-del { margin-left: auto; color: var(--ink-terracotta); background: none; border: none; font-size: 11px; cursor: pointer; padding: 0; }
+  .dc-meta .dc-del:hover { text-decoration: underline; }
+  #dc-status { font-size: 11px; color: var(--ink-sage); min-height: 16px; margin-top: 8px; }
+
+  #dc-toggle { display: none; }
+  @media (max-width: 1100px) {
+    #dc-sidebar {
+      position: fixed;
+      right: 0;
+      top: 0;
+      width: 320px;
+      max-width: 90vw;
+      transform: translateX(100%);
+      transition: transform 200ms ease-out;
+      z-index: 50;
+      box-shadow: -4px 0 16px rgba(0, 0, 0, 0.08);
+    }
+    #dc-sidebar.dc-open { transform: translateX(0); }
+    #dc-toggle {
+      display: block;
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 51;
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--cta-foreground);
+      background: var(--cta);
+      border: 1px solid #0a1c42;
+      border-radius: 999px;
+      padding: 9px 15px;
+      cursor: pointer;
+    }
+  }
+  /* ============ DC-COMMENTS END — styles ============ */
+</style>
+</head>
+<body>
+<div class="dc-page">
+<article id="doc">
+  <header class="masthead">
+    <span class="eyebrow">Research Report · 2026-09-15 · for James, before building the replay expander</span>
+    <h1>Gods of the Arena replay format and a replay-expander design</h1>
+    <p class="context">For James, before we assemble the Gods of the Arena replay expander. The research used Metta-AI/polyworld commit <code>5422fb0c</code>, the commit of the live game. Polyworld <code>main</code> (<code>1d7eb723</code>) is different from that commit and is not a valid re-simulation target (section 3).</p>
+  </header>
+
+<section id="summary">
+<h2>Executive Summary</h2>
+
+<p>A hosted Gods of the Arena replay is not a record of game state. It is a binary <strong>action tape</strong>. The tape has a short header and the match setup (seed, map hash, ten heroes with team, seat, lane and class). It has the hosted match configuration with the public player display names. It has each BASIC action call as a 20-byte record and one state hash for each tick. It also has CPU samples for each second (<sup class="ref"><a href="#src-1" title="src/polyworld/tapes.nim">1</a></sup>, <sup class="ref"><a href="#src-2" title="examples/gods_of_the_arena/replays.nim:12-46">2</a></sup>). The file has nothing else: no positions, no HP, no gold, no kills, and no damage. A 60-line pure-Python decoder from this investigation reads a real league replay to the last byte. The last recorded hash is equal to the <code>hash:</code> line in the game log of that episode.</p>
+<p>Only <strong>re-simulation</strong> can recover all other data. Playback operates the full engine again and applies the recorded requests through the same validators. It compares the state hash on each tick (<sup class="ref"><a href="#src-3" title="examples/gods_of_the_arena/sim.nim:2306">3</a></sup>, <sup class="ref"><a href="#src-3" title="examples/gods_of_the_arena/sim.nim:2692">3</a></sup>). This is correct only at the exact source commit that recorded the game. A build at polyworld <code>main</code> moves away from the sample replay at tick 132. A build at <code>5422fb0c</code> re-simulates all 28,800 ticks with zero mismatches in 24 seconds on this arm64 Mac, and it reproduces the hosted game log exactly. The manifest of the coworld gives the correct commit, thus no guess is necessary. The proposed expander has the same shape as the Crewrift and Heartleaf tools. Layer A is a small Nim program in our repo, compiled against the polyworld tree that we fetch. It writes JSONL events and sampled state. The Python tape decoder is the fallback when no build is possible, and Python statistics, <code>compare.py</code> and <code>features.py</code> adapters sit on top. The main open design decision is damage attribution. The engine never records damage, thus we must apply a one-line simulator patch or accept a first version with victim-side data only.</p>
+<p>Each item marked <strong>verified</strong> was compared with the polyworld source at <code>5422fb0c</code>, with a real league replay from the Observatory, or with both. <strong>Inferred</strong> items come from the source but were not exercised.</p>
+<table>
+<thead>
+<tr>
+<th>Evidence</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Live game version</td>
+<td><code>2026.9.15.1</code> (<code>GET /v2/coworlds/cow_252fb6a6-…</code> → <code>version</code>)</td>
+</tr>
+<tr>
+<td>Live source commit</td>
+<td><code>5422fb0c</code> (<code>manifest.game.runnable.source_url</code> on the same endpoint)</td>
+</tr>
+<tr>
+<td>polyworld <code>main</code> at time of writing</td>
+<td><code>1d7eb723</code> (2026-09-15T19:23Z), different from the live build</td>
+</tr>
+<tr>
+<td>Sample episode</td>
+<td><code>ereq_9aa9fcd9-b288-42aa-bc37-70f9b736e9d9</code>, Competition division, completed 2026-09-15T19:46Z, time-limit draw, 291,325 recorded actions</td>
+</tr>
+</tbody>
+</table>
+</section>
+
+<nav class="toc">
+<span class="eyebrow">Contents</span>
+<ol>
+<li><span class="toc-num">1</span><a href="#sec-1-where-replays-come-from">Where replays come from</a></li>
+<li><span class="toc-num">2</span><a href="#sec-2-the-file-format">The file format</a></li>
+<li><span class="toc-num">3</span><a href="#sec-3-playback-and-version-coupling">Playback and version coupling</a></li>
+<li><span class="toc-num">4</span><a href="#sec-4-the-other-artifacts-of-an-episode">The other artifacts of an episode</a></li>
+<li><span class="toc-num">5</span><a href="#sec-5-what-is-recorded-and-what-is-recoverable">What is recorded and what is recoverable</a></li>
+<li><span class="toc-num">6</span><a href="#sec-6-what-is-not-recorded">What is not recorded</a></li>
+<li><span class="toc-num">7</span><a href="#sec-7-proposed-expander-design">Proposed expander design</a></li>
+<li><span class="toc-num">8</span><a href="#sec-8-open-questions">Open questions</a></li>
+<li><span class="toc-num">A</span><a href="#appendix-a-decoded-sample-header">Appendix A: Decoded sample header</a></li>
+<li><span class="toc-num">B</span><a href="#appendix-b-build-recipe">Appendix B: Build recipe</a></li>
+<li><span class="toc-num">C</span><a href="#sources">Sources</a></li>
+</ol>
+</nav>
+
+
+<section id="sec-1-where-replays-come-from">
+<h2>1 · Where replays come from</h2>
+<ul class="key-points">
+<li>The hosted game records an action tape in memory during the match and writes it one time at the end (verified).</li>
+<li>Each completed episode has a replay, because the game does not publish results without one.</li>
+<li>The Observatory serves the raw bytes from public S3 and through the episode-artifacts route. The shared downloader saves them with the name <code>replay.json</code>, but the file is binary.</li>
+</ul>
+<p>The hosted game operates the headless polyworld binary, compiled with <code>-d:coworld</code>. The runner gives the output path in <code>COGAME_SAVE_REPLAY_URI</code> (<sup class="ref"><a href="#src-4" title="src/polyworld/coworld.nim:280">4</a></sup>). The game makes a recorder for each match together with the current setup, and it copies the hosted <code>GotaConfig</code> into the tape (<sup class="ref"><a href="#src-5" title="examples/gods_of_the_arena/game.nim:144-149">5</a></sup>). At the end of the match, <code>saveRecording</code> calls <code>saveReplay</code> (<sup class="ref"><a href="#src-5" title="examples/gods_of_the_arena/game.nim:229">5</a></sup>, <sup class="ref"><a href="#src-2" title="examples/gods_of_the_arena/replays.nim:285">2</a></sup>). If the replay file does not exist, <code>finishCoworld</code> does not publish the results (<sup class="ref"><a href="#src-4" title="src/polyworld/coworld.nim:329">4</a></sup>). Thus each completed episode has a replay.</p>
+<p>The Observatory serves the file in two ways, and both were verified on the sample episode. <code>episode.json.replay_url</code> points at <code>https://softmax-public.s3.amazonaws.com/replays/&lt;job&gt;.replay</code>, on public S3, as raw bytes. The manifest declares <code>replay_viewer.replay_compression: "gzip"</code>, and the inspector of polyworld accepts a gzip prefix (<sup class="ref"><a href="#src-6" title="tools/herostats.nim:162">6</a></sup>). But the bytes we received were not compressed. The second route is <code>/v2/episode-requests/{id}/artifacts/replay</code>, which the shared <code>fetch_artifacts.py</code> uses. That script saved 6,119,872 identical bytes as <code>replay.json.z</code> and as <code>replay.json</code>, because its zlib step fails silently and then keeps the raw blob. The file with the name <code>replay.json</code> is not JSON. Use it as <code>replay.bin</code>.</p>
+</section>
+
+<section id="sec-2-the-file-format">
+<h2>2 · The file format</h2>
+<ul class="key-points">
+<li>A hand-written header (magic, format version, game version, game name) comes first. Then a Flatty serialization of one Nim object comes (verified).</li>
+<li>There is no compression, no state for each tick, and no event log.</li>
+<li>Each action has 20 bytes. There are 14 action kinds, and BASIC policies write at most 12 of them.</li>
+</ul>
+<p>A GotA replay is the generic polyworld tape container (<sup class="ref"><a href="#src-1" title="src/polyworld/tapes.nim">1</a></sup>). A small header comes first, then a Flatty (<code>0.4.0</code>, <code>-d:flatty64</code>) serialization of <code>ActionTape[Setup, ReplayAction, ReplayMetrics, GotaConfig]</code>. Flatty writes object fields in declaration order. The lengths of <code>int</code> and <code>seq</code> values are 8-byte little-endian, enums are 8 bytes, and a bool is 1 byte. A <code>seq</code> of a plain-data object is a raw copy of the Nim struct, with the padding (<sup class="ref"><a href="#src-7" title="flatty.nim:464-472">7</a></sup>).</p>
+<figure>
+<svg id="fig-1" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="flowchart" style="max-width: 269.219px; background-color: transparent;" viewBox="0 0 269.21875 1049.199951171875" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#fig-1{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;fill:#111827;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#fig-1 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#fig-1 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#fig-1 .error-icon{fill:#fffaf0;}#fig-1 .error-text{fill:#111827;stroke:#111827;}#fig-1 .edge-thickness-normal{stroke-width:1px;}#fig-1 .edge-thickness-thick{stroke-width:3.5px;}#fig-1 .edge-pattern-solid{stroke-dasharray:0;}#fig-1 .edge-thickness-invisible{stroke-width:0;fill:none;}#fig-1 .edge-pattern-dashed{stroke-dasharray:3;}#fig-1 .edge-pattern-dotted{stroke-dasharray:2;}#fig-1 .marker{fill:#859ebe;stroke:#859ebe;}#fig-1 .marker.cross{stroke:#859ebe;}#fig-1 svg{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;}#fig-1 p{margin:0;}#fig-1 .label{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111827;}#fig-1 .cluster-label text{fill:#1a3875;}#fig-1 .cluster-label span{color:#1a3875;}#fig-1 .cluster-label span p{background-color:transparent;}#fig-1 .label text,#fig-1 span{fill:#111827;color:#111827;}#fig-1 .node rect,#fig-1 .node circle,#fig-1 .node ellipse,#fig-1 .node polygon,#fig-1 .node path{fill:#f8f6ef;stroke:#d4c9b5;stroke-width:1px;}#fig-1 .rough-node .label text,#fig-1 .node .label text,#fig-1 .image-shape .label,#fig-1 .icon-shape .label{text-anchor:middle;}#fig-1 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#fig-1 .rough-node .label,#fig-1 .node .label,#fig-1 .image-shape .label,#fig-1 .icon-shape .label{text-align:center;}#fig-1 .node.clickable{cursor:pointer;}#fig-1 .root .anchor path{fill:#859ebe!important;stroke-width:0;stroke:#859ebe;}#fig-1 .arrowheadPath{fill:#00020b;}#fig-1 .edgePaths .path{stroke:#859ebe;stroke-width:1px;}#fig-1 .flowchart-link{stroke:#859ebe;fill:none;}#fig-1 .edgeLabel{background-color:#fffdf4;text-align:center;}#fig-1 .edgeLabel p{background-color:#fffdf4;}#fig-1 .edgeLabel rect{opacity:0.5;background-color:#fffdf4;fill:#fffdf4;}#fig-1 .labelBkg{background-color:rgba(255, 253, 244, 0.5);}#fig-1 .cluster rect{fill:#fffaf0;stroke:#e4dac8;stroke-width:1px;}#fig-1 .cluster text{fill:#1a3875;}#fig-1 .cluster span{color:#1a3875;}#fig-1 .node .collapsed-indicator{fill:#e4dac8;stroke:none;opacity:0.6;}#fig-1 .node .collapsed-separator{stroke:#e4dac8;stroke-width:0.75px;}#fig-1 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:12px;background:#fffaf0;border:1px solid #e4dac8;border-radius:2px;pointer-events:none;z-index:100;}#fig-1 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#111827;}#fig-1 rect.text{fill:none;stroke-width:0;}#fig-1 .icon-shape,#fig-1 .image-shape{background-color:#fffdf4;text-align:center;}#fig-1 .icon-shape p,#fig-1 .image-shape p{background-color:#fffdf4;padding:2px;}#fig-1 .icon-shape .label rect,#fig-1 .image-shape .label rect{opacity:0.5;background-color:#fffdf4;fill:#fffdf4;}#fig-1 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#fig-1 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#fig-1 .node .neo-node{stroke:#d4c9b5;}#fig-1 [data-look="neo"].node rect,#fig-1 [data-look="neo"].cluster rect,#fig-1 [data-look="neo"].node polygon{stroke:url(#fig-1-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-1 [data-look="neo"].swimlane.cluster rect{filter:none;}#fig-1 [data-look="neo"].node path{stroke:url(#fig-1-gradient);stroke-width:1px;}#fig-1 [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-1 [data-look="neo"].node .neo-line path{stroke:#d4c9b5;filter:none;}#fig-1 [data-look="neo"].node circle{stroke:url(#fig-1-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-1 [data-look="neo"].node circle .state-start{fill:#000000;}#fig-1 [data-look="neo"].icon-shape .icon{fill:url(#fig-1-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-1 [data-look="neo"].icon-shape .icon-neo path{stroke:url(#fig-1-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-1 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="fig-1_flowchart-v2-pointEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-pointStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-pointEnd-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="11.5" refY="7" markerUnits="userSpaceOnUse" markerWidth="10.5" markerHeight="14" orient="auto"><path d="M 0 0 L 11.5 7 L 0 14 z" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-pointStart-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="1" refY="7" markerUnits="userSpaceOnUse" markerWidth="11.5" markerHeight="14" orient="auto"><polygon points="0,7 11.5,14 11.5,0" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-circleEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-circleStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-circleEnd-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refY="5" refX="12.25" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-circleStart-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-2" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-crossEnd" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-crossStart" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-crossEnd-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5;"/></marker><marker id="fig-1_flowchart-v2-crossStart-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="-3.5" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5; stroke-dasharray: 1, 0;"/></marker><g class="root"><g class="clusters"/><g class="edgePaths"><path d="M134.609,69.4L134.609,73.567C134.609,77.733,134.609,86.067,134.609,93.733C134.609,101.4,134.609,108.4,134.609,111.9L134.609,115.4" id="fig-1-L_H1_H2_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_H1_H2_0" data-points="W3sieCI6MTM0LjYwOTM3NSwieSI6NjkuNDAwMDAxNTI1ODc4OX0seyJ4IjoxMzQuNjA5Mzc1LCJ5Ijo5NC40MDAwMDE1MjU4Nzg5fSx7IngiOjEzNC42MDkzNzUsInkiOjExOS40MDAwMDE1MjU4Nzg5fV0=" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M134.609,165.4L134.609,169.567C134.609,173.733,134.609,182.067,134.609,189.733C134.609,197.4,134.609,204.4,134.609,207.9L134.609,211.4" id="fig-1-L_H2_H3_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_H2_H3_0" data-points="W3sieCI6MTM0LjYwOTM3NSwieSI6MTY1LjQwMDAwMTUyNTg3ODl9LHsieCI6MTM0LjYwOTM3NSwieSI6MTkwLjQwMDAwMTUyNTg3ODl9LHsieCI6MTM0LjYwOTM3NSwieSI6MjE1LjQwMDAwMTUyNTg3ODl9XQ==" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M134.609,261.4L134.609,265.567C134.609,269.733,134.609,278.067,134.609,285.733C134.609,293.4,134.609,300.4,134.609,303.9L134.609,307.4" id="fig-1-L_H3_H4_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_H3_H4_0" data-points="W3sieCI6MTM0LjYwOTM3NSwieSI6MjYxLjQwMDAwMTUyNTg3ODl9LHsieCI6MTM0LjYwOTM3NSwieSI6Mjg2LjQwMDAwMTUyNTg3ODl9LHsieCI6MTM0LjYwOTM3NSwieSI6MzExLjQwMDAwMTUyNTg3ODl9XQ==" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M134.609,372.8L134.609,376.967C134.609,381.133,134.609,389.467,134.609,397.133C134.609,404.8,134.609,411.8,134.609,415.3L134.609,418.8" id="fig-1-L_H4_P_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_H4_P_0" data-points="W3sieCI6MTM0LjYwOTM3NSwieSI6MzcyLjgwMDAwMzA1MTc1Nzh9LHsieCI6MTM0LjYwOTM3NSwieSI6Mzk3LjgwMDAwMzA1MTc1Nzh9LHsieCI6MTM0LjYwOTM3NSwieSI6NDIyLjgwMDAwMzA1MTc1Nzh9XQ==" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M134.609,468.8L134.609,472.967C134.609,477.133,134.609,485.467,134.609,493.133C134.609,500.8,134.609,507.8,134.609,511.3L134.609,514.8" id="fig-1-L_P_S_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_P_S_0" data-points="W3sieCI6MTM0LjYwOTM3NSwieSI6NDY4LjgwMDAwMzA1MTc1Nzh9LHsieCI6MTM0LjYwOTM3NSwieSI6NDkzLjgwMDAwMzA1MTc1Nzh9LHsieCI6MTM0LjYwOTM3NSwieSI6NTE4LjgwMDAwMzA1MTc1Nzh9XQ==" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M134.609,595.6L134.609,599.767C134.609,603.933,134.609,612.267,134.609,619.933C134.609,627.6,134.609,634.6,134.609,638.1L134.609,641.6" id="fig-1-L_S_C_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_S_C_0" data-points="W3sieCI6MTM0LjYwOTM3NSwieSI6NTk1LjU5OTk5ODQ3NDEyMTF9LHsieCI6MTM0LjYwOTM3NSwieSI6NjIwLjU5OTk5ODQ3NDEyMTF9LHsieCI6MTM0LjYwOTM3NSwieSI6NjQ1LjU5OTk5ODQ3NDEyMTF9XQ==" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M134.609,722.4L134.609,726.567C134.609,730.733,134.609,739.067,134.609,746.733C134.609,754.4,134.609,761.4,134.609,764.9L134.609,768.4" id="fig-1-L_C_A_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_C_A_0" data-points="W3sieCI6MTM0LjYwOTM3NSwieSI6NzIyLjM5OTk5Mzg5NjQ4NDR9LHsieCI6MTM0LjYwOTM3NSwieSI6NzQ3LjM5OTk5Mzg5NjQ4NDR9LHsieCI6MTM0LjYwOTM3NSwieSI6NzcyLjM5OTk5Mzg5NjQ4NDR9XQ==" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M134.609,833.8L134.609,837.967C134.609,842.133,134.609,850.467,134.609,858.133C134.609,865.8,134.609,872.8,134.609,876.3L134.609,879.8" id="fig-1-L_A_X_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_A_X_0" data-points="W3sieCI6MTM0LjYwOTM3NSwieSI6ODMzLjc5OTk5NTQyMjM2MzN9LHsieCI6MTM0LjYwOTM3NSwieSI6ODU4Ljc5OTk5NTQyMjM2MzN9LHsieCI6MTM0LjYwOTM3NSwieSI6ODgzLjc5OTk5NTQyMjM2MzN9XQ==" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M134.609,929.8L134.609,933.967C134.609,938.133,134.609,946.467,134.609,954.133C134.609,961.8,134.609,968.8,134.609,972.3L134.609,975.8" id="fig-1-L_X_M_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_X_M_0" data-points="W3sieCI6MTM0LjYwOTM3NSwieSI6OTI5Ljc5OTk5NTQyMjM2MzN9LHsieCI6MTM0LjYwOTM3NSwieSI6OTU0Ljc5OTk5NTQyMjM2MzN9LHsieCI6MTM0LjYwOTM3NSwieSI6OTc5Ljc5OTk5NTQyMjM2MzN9XQ==" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" data-id="L_H1_H2_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_H2_H3_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_H3_H4_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_H4_P_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_P_S_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_S_C_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_C_A_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_A_X_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_X_M_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g></g><g class="nodes"><g class="node default" id="fig-1-flowchart-H1-0" data-look="classic" transform="translate(134.609375, 38.70000076293945)"><rect class="basic label-container" style="" x="-123.8828125" y="-30.700000762939453" width="247.765625" height="61.400001525878906"/><g class="label" style="" transform="translate(0, -15.700000762939453)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">magic</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> 'POLYWORLDREPLAY'</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">(15</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> bytes)</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-H2-1" data-look="classic" transform="translate(134.609375, 142.4000015258789)"><rect class="basic label-container" style="" x="-86.8671875" y="-22.999999523162842" width="173.734375" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">file</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> format</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> u16</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> =</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> 1</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-H3-3" data-look="classic" transform="translate(134.609375, 238.4000015258789)"><rect class="basic label-container" style="" x="-101.515625" y="-22.999999523162842" width="203.03125" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">game</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> version</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> u16</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> =</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> 33</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-H4-5" data-look="classic" transform="translate(134.609375, 342.10000228881836)"><rect class="basic label-container" style="" x="-93.40625" y="-30.700000762939453" width="186.8125" height="61.400001525878906"/><g class="label" style="" transform="translate(0, -15.700000762939453)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">game</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> name</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">'gods_of_the_arena'</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-P-7" data-look="classic" transform="translate(134.609375, 445.8000030517578)"><rect class="basic label-container" style="" x="-74.0859375" y="-22.999999523162842" width="148.171875" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">Flatty</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> payload</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-S-9" data-look="classic" transform="translate(134.609375, 557.2000007629395)"><rect class="basic label-container" style="" x="-123.625" y="-38.39999961853027" width="247.25" height="76.79999923706055"/><g class="label" style="" transform="translate(0, -23.399999618530273)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">header:</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> formatVersion,</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">gameVersion,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> createdUnixMs,</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="2.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">setup</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-C-11" data-look="classic" transform="translate(134.609375, 683.9999961853027)"><rect class="basic label-container" style="" x="-126.609375" y="-38.39999961853027" width="253.21875" height="76.79999923706055"/><g class="label" style="" transform="translate(0, -23.399999618530273)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">config:</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> players,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> seed,</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">maxTicks,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> spawn</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> interval,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> map</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="2.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">preset</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-A-13" data-look="classic" transform="translate(134.609375, 803.0999946594238)"><rect class="basic label-container" style="" x="-120.796875" y="-30.700000762939453" width="241.59375" height="61.400001525878906"/><g class="label" style="" transform="translate(0, -15.700000762939453)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">actions:</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> count,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> then</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> 20</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> bytes</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">each</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-X-15" data-look="classic" transform="translate(134.609375, 906.7999954223633)"><rect class="basic label-container" style="" x="-106.78125" y="-22.999999523162842" width="213.5625" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">hashes:</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> one</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> u64</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> per</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> tick</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-M-17" data-look="classic" transform="translate(134.609375, 1010.4999961853027)"><rect class="basic label-container" style="" x="-107.15625" y="-30.700000762939453" width="214.3125" height="61.400001525878906"/><g class="label" style="" transform="translate(0, -15.700000762939453)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">metrics:</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> CPU</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> frames</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> per</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">second</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> per</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> seat</tspan></tspan></text></g></g></g></g></g></g><defs><filter id="fig-1-drop-shadow" height="130%" width="130%"><feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"/></filter></defs><defs><filter id="fig-1-drop-shadow-small" height="150%" width="150%"><feDropShadow dx="2" dy="2" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"/></filter></defs><linearGradient id="fig-1-gradient" gradientUnits="objectBoundingBox" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#d4c9b5" stop-opacity="1"/><stop offset="100%" stop-color="#d4c9b5" stop-opacity="1"/></linearGradient></svg>
+<figcaption><span class="fig-label">Figure 1</span>The replay container from the first byte to the last. Note that the actions and the hashes are the only content for each tick. There is no state.</figcaption>
+</figure>
+
+<pre><code>offset  size  field                              value in sample
+0       15    magic                              &quot;POLYWORLDREPLAY&quot;          tapes.nim:11
+15      u16   file format version                1                          tapes.nim:12
+17      u16   game version                       33                         replays.nim:15
+19      u16   game name length                   17
+21      n     game name                          &quot;gods_of_the_arena&quot;        replays.nim:11
+21+n    …     Flatty payload: ActionTape[Setup, ReplayAction, ReplayMetrics, GotaConfig]
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Bytes / notes</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>header.formatVersion</code></td>
+<td>u16</td>
+<td>5</td>
+<td><sup class="ref"><a href="#src-2" title="examples/gods_of_the_arena/replays.nim:12">2</a></sup></td>
+</tr>
+<tr>
+<td><code>header.gameVersion</code></td>
+<td>u16</td>
+<td>33</td>
+<td><sup class="ref"><a href="#src-2" title="examples/gods_of_the_arena/replays.nim:15">2</a></sup></td>
+</tr>
+<tr>
+<td><code>header.createdUnixMs</code></td>
+<td>i64</td>
+<td></td>
+<td><sup class="ref"><a href="#src-1" title="src/polyworld/tapes.nim:187">1</a></sup></td>
+</tr>
+<tr>
+<td><code>header.setup</code></td>
+<td><code>Setup</code></td>
+<td><code>mapSeed i32, mapHash u64, tickRate u16, gridTiles u16, spawnIntervalTicks u32, maximumTicks u32, heroes seq[ReplayHero]</code></td>
+<td><sup class="ref"><a href="#src-2" title="examples/gods_of_the_arena/replays.nim:37">2</a></sup></td>
+</tr>
+<tr>
+<td><code>ReplayHero</code></td>
+<td>8 bytes each</td>
+<td><code>id i32, team u8, slot u8, lane u8, class u8</code></td>
+<td><sup class="ref"><a href="#src-2" title="examples/gods_of_the_arena/replays.nim:30">2</a></sup></td>
+</tr>
+<tr>
+<td><code>config</code></td>
+<td><code>GotaConfig</code> = <code>MatchConfig[MapConfig]</code></td>
+<td><code>players seq[{name string}], seed i32, maxTicks i32, spawnIntervalTicks i32, playerSlot i32, dayCount i32, mapPreset</code></td>
+<td><sup class="ref"><a href="#src-8" title="src/polyworld/configs.nim:16">8</a></sup>, <sup class="ref"><a href="#src-9" title="examples/gods_of_the_arena/presets.nim:10">9</a></sup></td>
+</tr>
+<tr>
+<td><code>MapConfig</code></td>
+<td></td>
+<td><code>mapSize i64, seed i64, lakeCrossings i64, jungleRoads i64, 9 × f32, campsTouchRoads u8</code></td>
+<td><sup class="ref"><a href="#src-10" title="generation/configs.nim:10">10</a></sup></td>
+</tr>
+<tr>
+<td><code>actions</code></td>
+<td><code>seq[ReplayAction]</code></td>
+<td>count i64, then <strong>20 bytes each</strong>: <code>tick u32 @0, heroId i32 @4, kind u8 @8, 3 pad, first i32 @12, second i32 @16</code></td>
+<td><sup class="ref"><a href="#src-2" title="examples/gods_of_the_arena/replays.nim:46">2</a></sup></td>
+</tr>
+<tr>
+<td><code>hashes</code></td>
+<td><code>seq[uint64]</code></td>
+<td>one canonical state hash per completed tick</td>
+<td><sup class="ref"><a href="#src-1" title="src/polyworld/tapes.nim:196">1</a></sup></td>
+</tr>
+<tr>
+<td><code>metrics</code></td>
+<td><code>ReplayMetrics</code></td>
+<td><code>tickRate i32, interval i32, frames seq[{tick i32, rows seq[{cpu i32}]}], final seq[{cpu i32}]</code></td>
+<td><sup class="ref"><a href="#src-11" title="src/polyworld/metrics.nim:27">11</a></sup></td>
+</tr>
+</tbody>
+</table>
+<p>Action <code>kind</code> codes (<sup class="ref"><a href="#src-2" title="examples/gods_of_the_arena/replays.nim:16-23">2</a></sup>):</p>
+<table>
+<thead>
+<tr>
+<th>kind</th>
+<th>meaning</th>
+<th><code>first</code>, <code>second</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>walkTo</code></td>
+<td>tile x, tile y</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>attackTarget</code></td>
+<td>object id, –</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>buyItem</code></td>
+<td>item id (<code>Item</code> enum ordinal, <sup class="ref"><a href="#src-12" title="examples/gods_of_the_arena/content.nim:82">12</a></sup>), –</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>useItem</code></td>
+<td>inventory slot 0–5, –</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>attackMove</code></td>
+<td>tile x, tile y (human or graphical client only; never emitted by BASIC)</td>
+</tr>
+<tr>
+<td>6–9</td>
+<td><code>castTarget</code> slot 0–3</td>
+<td>object id, –</td>
+</tr>
+<tr>
+<td>10–13</td>
+<td><code>castPoint</code> slot 0–3</td>
+<td>tile x, tile y</td>
+</tr>
+<tr>
+<td>14</td>
+<td><code>manualSpells</code></td>
+<td>1 = human seat (only written when a human plays)</td>
+</tr>
+</tbody>
+</table>
+<p>A pure-Python decoder of this layout reads the sample replay and the in-repo <code>examples/gods_of_the_arena/replays/demo.replay</code> to the exact last byte. The last entry of <code>hashes</code> (<code>0x320ad325</code>) is equal to the <code>hash:</code> line in the <code>game_logs.log</code> of the episode. The prototype, <code>gota_replay_probe.py</code> in the scratchpad of this session, has approximately 60 lines of <code>struct</code> calls. Move it into the lab as it is. Appendix A shows the decoded header of the sample.</p>
+<p><code>config.players[].name</code> is the public player display name. Thus the replay itself tells you who sat where. Hero id 100 + slot is seat 0–4 (Red), and 105 + slot is seat 5–9 (Blue). <code>episode.json.participants[].position</code> uses the same order.</p>
+</section>
+
+<section id="sec-3-playback-and-version-coupling">
+<h2>3 · Playback and version coupling</h2>
+<ul class="key-points">
+<li>The tape stores requests. The engine records each request before it accepts or rejects it. Playback operates the full simulation again and compares the hash on each tick (verified).</li>
+<li>The recorded game version (33) does not identify a compatible build. The source commit does, and the coworld manifest gives it.</li>
+<li>An arm64 host build reproduced the hosted game exactly on the one sample. Keep the hash check as the guard.</li>
+</ul>
+<p>The engine records each BASIC action call before it examines the call (<sup class="ref"><a href="#src-13" title="examples/gods_of_the_arena/bots.nim:186-207">13</a></sup>). Playback operates the simulation again and applies the recorded requests at their ticks through the same validators (<code>applyReplayAction</code>, <sup class="ref"><a href="#src-3" title="examples/gods_of_the_arena/sim.nim:2306">3</a></sup>, called from <code>tickWorld</code>, <sup class="ref"><a href="#src-3" title="examples/gods_of_the_arena/sim.nim:2830">3</a></sup>). On each tick it compares <code>stateHash</code> with the recorded hash (<sup class="ref"><a href="#src-3" title="examples/gods_of_the_arena/sim.nim:2692">3</a></sup>). This is the same design as the bitworld <code>.bitreplay</code> of Crewrift and Heartleaf. Thus all that the Crewrift replay notes say about version coupling (<sup class="ref"><a href="#src-14" title="crewrift_lab/docs/crewrift-replays.md">14</a></sup>) applies here.</p>
+<figure>
+<svg id="fig-2" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="flowchart" style="max-width: 469.445px; background-color: transparent;" viewBox="0 0 469.4453125 1013.1655883789062" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#fig-2{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;fill:#111827;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#fig-2 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#fig-2 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#fig-2 .error-icon{fill:#fffaf0;}#fig-2 .error-text{fill:#111827;stroke:#111827;}#fig-2 .edge-thickness-normal{stroke-width:1px;}#fig-2 .edge-thickness-thick{stroke-width:3.5px;}#fig-2 .edge-pattern-solid{stroke-dasharray:0;}#fig-2 .edge-thickness-invisible{stroke-width:0;fill:none;}#fig-2 .edge-pattern-dashed{stroke-dasharray:3;}#fig-2 .edge-pattern-dotted{stroke-dasharray:2;}#fig-2 .marker{fill:#859ebe;stroke:#859ebe;}#fig-2 .marker.cross{stroke:#859ebe;}#fig-2 svg{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;}#fig-2 p{margin:0;}#fig-2 .label{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111827;}#fig-2 .cluster-label text{fill:#1a3875;}#fig-2 .cluster-label span{color:#1a3875;}#fig-2 .cluster-label span p{background-color:transparent;}#fig-2 .label text,#fig-2 span{fill:#111827;color:#111827;}#fig-2 .node rect,#fig-2 .node circle,#fig-2 .node ellipse,#fig-2 .node polygon,#fig-2 .node path{fill:#f8f6ef;stroke:#d4c9b5;stroke-width:1px;}#fig-2 .rough-node .label text,#fig-2 .node .label text,#fig-2 .image-shape .label,#fig-2 .icon-shape .label{text-anchor:middle;}#fig-2 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#fig-2 .rough-node .label,#fig-2 .node .label,#fig-2 .image-shape .label,#fig-2 .icon-shape .label{text-align:center;}#fig-2 .node.clickable{cursor:pointer;}#fig-2 .root .anchor path{fill:#859ebe!important;stroke-width:0;stroke:#859ebe;}#fig-2 .arrowheadPath{fill:#00020b;}#fig-2 .edgePaths .path{stroke:#859ebe;stroke-width:1px;}#fig-2 .flowchart-link{stroke:#859ebe;fill:none;}#fig-2 .edgeLabel{background-color:#fffdf4;text-align:center;}#fig-2 .edgeLabel p{background-color:#fffdf4;}#fig-2 .edgeLabel rect{opacity:0.5;background-color:#fffdf4;fill:#fffdf4;}#fig-2 .labelBkg{background-color:rgba(255, 253, 244, 0.5);}#fig-2 .cluster rect{fill:#fffaf0;stroke:#e4dac8;stroke-width:1px;}#fig-2 .cluster text{fill:#1a3875;}#fig-2 .cluster span{color:#1a3875;}#fig-2 .node .collapsed-indicator{fill:#e4dac8;stroke:none;opacity:0.6;}#fig-2 .node .collapsed-separator{stroke:#e4dac8;stroke-width:0.75px;}#fig-2 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:12px;background:#fffaf0;border:1px solid #e4dac8;border-radius:2px;pointer-events:none;z-index:100;}#fig-2 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#111827;}#fig-2 rect.text{fill:none;stroke-width:0;}#fig-2 .icon-shape,#fig-2 .image-shape{background-color:#fffdf4;text-align:center;}#fig-2 .icon-shape p,#fig-2 .image-shape p{background-color:#fffdf4;padding:2px;}#fig-2 .icon-shape .label rect,#fig-2 .image-shape .label rect{opacity:0.5;background-color:#fffdf4;fill:#fffdf4;}#fig-2 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#fig-2 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#fig-2 .node .neo-node{stroke:#d4c9b5;}#fig-2 [data-look="neo"].node rect,#fig-2 [data-look="neo"].cluster rect,#fig-2 [data-look="neo"].node polygon{stroke:url(#fig-2-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-2 [data-look="neo"].swimlane.cluster rect{filter:none;}#fig-2 [data-look="neo"].node path{stroke:url(#fig-2-gradient);stroke-width:1px;}#fig-2 [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-2 [data-look="neo"].node .neo-line path{stroke:#d4c9b5;filter:none;}#fig-2 [data-look="neo"].node circle{stroke:url(#fig-2-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-2 [data-look="neo"].node circle .state-start{fill:#000000;}#fig-2 [data-look="neo"].icon-shape .icon{fill:url(#fig-2-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-2 [data-look="neo"].icon-shape .icon-neo path{stroke:url(#fig-2-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-2 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="fig-2_flowchart-v2-pointEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="fig-2_flowchart-v2-pointStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="fig-2_flowchart-v2-pointEnd-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="11.5" refY="7" markerUnits="userSpaceOnUse" markerWidth="10.5" markerHeight="14" orient="auto"><path d="M 0 0 L 11.5 7 L 0 14 z" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="fig-2_flowchart-v2-pointStart-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="1" refY="7" markerUnits="userSpaceOnUse" markerWidth="11.5" markerHeight="14" orient="auto"><polygon points="0,7 11.5,14 11.5,0" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="fig-2_flowchart-v2-circleEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="fig-2_flowchart-v2-circleStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="fig-2_flowchart-v2-circleEnd-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refY="5" refX="12.25" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="fig-2_flowchart-v2-circleStart-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-2" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="fig-2_flowchart-v2-crossEnd" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="fig-2_flowchart-v2-crossStart" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="fig-2_flowchart-v2-crossEnd-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5;"/></marker><marker id="fig-2_flowchart-v2-crossStart-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="-3.5" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5; stroke-dasharray: 1, 0;"/></marker><g class="root"><g class="clusters"/><g class="edgePaths"><path d="M228.789,54L228.789,58.167C228.789,62.333,228.789,70.667,228.789,78.333C228.789,86,228.789,93,228.789,96.5L228.789,100" id="fig-2-L_R_D_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_R_D_0" data-points="W3sieCI6MjI4Ljc4OTA2MjUsInkiOjU0fSx7IngiOjIyOC43ODkwNjI1LCJ5Ijo3OX0seyJ4IjoyMjguNzg5MDYyNSwieSI6MTA0fV0=" data-look="classic" marker-end="url(#fig-2_flowchart-v2-pointEnd)"/><path d="M228.789,165.4L228.789,169.567C228.789,173.733,228.789,182.067,228.789,189.733C228.789,197.4,228.789,204.4,228.789,207.9L228.789,211.4" id="fig-2-L_D_G_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_D_G_0" data-points="W3sieCI6MjI4Ljc4OTA2MjUsInkiOjE2NS40MDAwMDE1MjU4Nzg5fSx7IngiOjIyOC43ODkwNjI1LCJ5IjoxOTAuNDAwMDAxNTI1ODc4OX0seyJ4IjoyMjguNzg5MDYyNSwieSI6MjE1LjQwMDAwMTUyNTg3ODl9XQ==" data-look="classic" marker-end="url(#fig-2_flowchart-v2-pointEnd)"/><path d="M228.789,276.8L228.789,280.967C228.789,285.133,228.789,293.467,228.789,301.133C228.789,308.8,228.789,315.8,228.789,319.3L228.789,322.8" id="fig-2-L_G_T_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_G_T_0" data-points="W3sieCI6MjI4Ljc4OTA2MjUsInkiOjI3Ni44MDAwMDMwNTE3NTc4fSx7IngiOjIyOC43ODkwNjI1LCJ5IjozMDEuODAwMDAzMDUxNzU3OH0seyJ4IjoyMjguNzg5MDYyNSwieSI6MzI2LjgwMDAwMzA1MTc1Nzh9XQ==" data-look="classic" marker-end="url(#fig-2_flowchart-v2-pointEnd)"/><path d="M179.879,388.2L173.241,392.367C166.603,396.533,153.327,404.867,146.689,412.533C140.051,420.2,140.051,427.2,140.051,430.7L140.051,434.2" id="fig-2-L_T_V_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_T_V_0" data-points="W3sieCI6MTc5Ljg3OTQ1MjcxOTcxNTE4LCJ5IjozODguMjAwMDA0NTc3NjM2N30seyJ4IjoxNDAuMDUwNzgxMjUsInkiOjQxMy4yMDAwMDQ1Nzc2MzY3fSx7IngiOjE0MC4wNTA3ODEyNSwieSI6NDM4LjIwMDAwNDU3NzYzNjd9XQ==" data-look="classic" marker-end="url(#fig-2_flowchart-v2-pointEnd)"/><path d="M125.702,655.126L124.537,663.351C123.372,671.576,121.041,688.025,119.876,706.208C118.711,724.39,118.711,744.305,118.711,754.263L118.711,764.22" id="fig-2-L_V_F_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_V_F_0" data-points="W3sieCI6MTI1LjcwMTg3ODIyODcxNTg3LCJ5Ijo2NTUuMTI2MTEwNzExNjI2MX0seyJ4IjoxMTguNzEwOTM3NSwieSI6NzA0LjQ3NTAxMjc3OTIzNTh9LHsieCI6MTE4LjcxMDkzNzUsInkiOjc2OC4yMjAzMjM1NjI2MjIxfV0=" data-look="classic" marker-end="url(#fig-2_flowchart-v2-pointEnd)"/><path d="M188.875,620.651L199.084,634.622C209.293,648.592,229.711,676.534,249.454,700.651C269.196,724.769,288.264,745.063,297.798,755.21L307.332,765.357" id="fig-2-L_V_N_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_V_N_0" data-points="W3sieCI6MTg4Ljg3NDcwMzg5MjMzOTE3LCJ5Ijo2MjAuNjUxMDkxMDkwNTcxfSx7IngiOjI1MC4xMjg5MDYyNSwieSI6NzA0LjQ3NTAxMjc3OTIzNTh9LHsieCI6MzEwLjA3MDUzMTc1NjQ2OCwieSI6NzY4LjI3MTY2NzU2OTA5MzZ9XQ==" data-look="classic" marker-end="url(#fig-2_flowchart-v2-pointEnd)"/><path d="M347.655,748.262L348.92,740.964C350.186,733.667,352.718,719.071,353.984,686.667C355.25,654.263,355.25,604.05,355.25,555.504C355.25,506.958,355.25,460.079,346.4,432.742C337.55,405.404,319.851,397.608,311.001,393.71L302.151,389.812" id="fig-2-L_N_T_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_N_T_0" data-points="W3sieCI6MzQ3LjY1NDUwMDQ0MTI5MjEsInkiOjc0OC4yNjIzMjQ3NjY4NTM3fSx7IngiOjM1NS4yNSwieSI6NzA0LjQ3NTAxMjc3OTIzNTh9LHsieCI6MzU1LjI1LCJ5Ijo1NTMuODM3NTA5MTU1MjczNH0seyJ4IjozNTUuMjUsInkiOjQxMy4yMDAwMDQ1Nzc2MzY3fSx7IngiOjI5OC40OTAxNTQ1MDI3NzA3LCJ5IjozODguMjAwMDA0NTc3NjM2N31d" data-look="classic" marker-end="url(#fig-2_flowchart-v2-pointEnd)"/><path d="M338.867,858.366L338.867,864.199C338.867,870.032,338.867,881.699,338.867,892.699C338.867,903.699,338.867,914.032,338.867,919.199L338.867,924.366" id="fig-2-L_N_Z_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_N_Z_0" data-points="W3sieCI6MzM4Ljg2NzE4NzUsInkiOjg1OC4zNjU2MzY4MjU1NjE2fSx7IngiOjMzOC44NjcxODc1LCJ5Ijo4OTMuMzY1NjM1ODcxODg3Mn0seyJ4IjozMzguODY3MTg3NSwieSI6OTI4LjM2NTYzNDkxODIxMjl9XQ==" data-look="classic" marker-end="url(#fig-2_flowchart-v2-pointEnd)"/></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" data-id="L_R_D_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_D_G_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_G_T_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_T_V_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel" transform="translate(118.7109375, 704.4750127792358)"><g class="label" data-id="L_V_F_0" transform="translate(0, -9.000000476837158)"><g><rect class="background" style="" x="-9.9140625" y="-0.9999990463256836" width="19.828125" height="19.999999046325684"/><text y="-10.1" text-anchor="middle" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">no</tspan></tspan></text></g></g></g><g class="edgeLabel" transform="translate(245.32595, 697.90236)"><g class="label" data-id="L_V_N_0" transform="translate(0, -9.000000476837158)"><g><rect class="background" style="" x="-12.765625" y="-0.9999990463256836" width="25.53125" height="19.999999046325684"/><text y="-10.1" text-anchor="middle" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">yes</tspan></tspan></text></g></g></g><g class="edgeLabel" transform="translate(355.25, 553.8375091552734)"><g class="label" data-id="L_N_T_0" transform="translate(0, -9.000000476837158)"><g><rect class="background" style="" x="-12.765625" y="-0.9999990463256836" width="25.53125" height="19.999999046325684"/><text y="-10.1" text-anchor="middle" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">yes</tspan></tspan></text></g></g></g><g class="edgeLabel" transform="translate(338.8671875, 893.3656358718872)"><g class="label" data-id="L_N_Z_0" transform="translate(0, -9.000000476837158)"><g><rect class="background" style="" x="-9.9140625" y="-0.9999990463256836" width="19.828125" height="19.999999046325684"/><text y="-10.1" text-anchor="middle" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">no</tspan></tspan></text></g></g></g></g><g class="nodes"><g class="node default" id="fig-2-flowchart-R-0" data-look="classic" transform="translate(228.7890625, 31)"><rect class="basic label-container" style="" x="-59.953125" y="-22.999999523162842" width="119.90625" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">replay.bin</tspan></tspan></text></g></g></g><g class="node default" id="fig-2-flowchart-D-1" data-look="classic" transform="translate(228.7890625, 134.70000076293945)"><rect class="basic label-container" style="" x="-123.125" y="-30.700000762939453" width="246.25" height="61.400001525878906"/><g class="label" style="" transform="translate(0, -15.700000762939453)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">decode</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> header,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> setup,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> config,</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">actions,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> hashes</tspan></tspan></text></g></g></g><g class="node default" id="fig-2-flowchart-G-3" data-look="classic" transform="translate(228.7890625, 246.10000228881836)"><rect class="basic label-container" style="" x="-120.3984375" y="-30.700000762939453" width="240.796875" height="61.400001525878906"/><g class="label" style="" transform="translate(0, -15.700000762939453)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">generate</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> map</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> from</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> seed</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> and</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">preset</tspan></tspan></text></g></g></g><g class="node default" id="fig-2-flowchart-T-5" data-look="classic" transform="translate(228.7890625, 357.50000381469727)"><rect class="basic label-container" style="" x="-111.9453125" y="-30.700000762939453" width="223.890625" height="61.400001525878906"/><g class="label" style="" transform="translate(0, -15.700000762939453)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">tickWorld:</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> apply</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> this</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> tick's</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">recorded</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> requests</tspan></tspan></text></g></g></g><g class="node default" id="fig-2-flowchart-V-7" data-look="classic" transform="translate(140.05078125, 553.8375091552734)"><polygon points="115.63750076293945,0 231.2750015258789,-115.63750076293945 115.63750076293945,-231.2750015258789 0,-115.63750076293945" class="label-container" transform="translate(-115.13750076293945, 115.63750076293945)"/><g class="label" style="" transform="translate(0, -15.700000762939453)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">state</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> hash</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> equals</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> recorded</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">hash?</tspan></tspan></text></g></g></g><g class="node default" id="fig-2-flowchart-F-9" data-look="classic" transform="translate(118.7109375, 798.9203243255615)"><rect class="basic label-container" style="" x="-110.7109375" y="-30.700000762939453" width="221.421875" height="61.400001525878906"/><g class="label" style="" transform="translate(0, -15.700000762939453)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">divergence:</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> wrong</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> source</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">commit</tspan></tspan></text></g></g></g><g class="node default" id="fig-2-flowchart-N-11" data-look="classic" transform="translate(338.8671875, 798.9203243255615)"><polygon points="59.44531202316284,0 118.89062404632568,-59.44531202316284 59.44531202316284,-118.89062404632568 0,-59.44531202316284" class="label-container" transform="translate(-58.94531202316284, 59.44531202316284)"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">more</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> ticks?</tspan></tspan></text></g></g></g><g class="node default" id="fig-2-flowchart-Z-15" data-look="classic" transform="translate(338.8671875, 966.7656326293945)"><rect class="basic label-container" style="" x="-122.578125" y="-38.39999961853027" width="245.15625" height="76.79999923706055"/><g class="label" style="" transform="translate(0, -23.399999618530273)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">complete</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> world</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> state</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> at</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> every</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">tick</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> was</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> available</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> along</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> the</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="2.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">way</tspan></tspan></text></g></g></g></g></g></g><defs><filter id="fig-2-drop-shadow" height="130%" width="130%"><feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"/></filter></defs><defs><filter id="fig-2-drop-shadow-small" height="150%" width="150%"><feDropShadow dx="2" dy="2" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"/></filter></defs><linearGradient id="fig-2-gradient" gradientUnits="objectBoundingBox" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#d4c9b5" stop-opacity="1"/><stop offset="100%" stop-color="#d4c9b5" stop-opacity="1"/></linearGradient></svg>
+<figcaption><span class="fig-label">Figure 2</span>Re-simulation. The hash check on each tick makes the recovered state reliable. The same check fails when the build does not match the commit of the recording.</figcaption>
+</figure>
+
+<p><code>ReplayGameVersion</code> (33) is not sufficient to select a compatible simulator. A build at polyworld <code>main</code> (<code>1d7eb723</code>, also version 33) moves away from the sample replay at tick 132, with 28,669 mismatches. The in-repo <code>demo.replay</code> also moves away, at tick 135. Three changes to the simulation (tower collision, creep lane resume, creep upscale) were merged after the live build without a version increase. A build at <code>5422fb0c</code> re-simulates both replays with zero mismatches on this arm64 Mac. The headless summary reproduces the hosted game log exactly:</p>
+<pre><code>result: time limit
+forts: red 400 hp, blue 400 hp / towers: red 4, blue 5
+hash: 00000000320AD325 map 0000000029424656
+heroes: red L13 L13 L8 L3 L12, blue L10 L10 L9 L10 L9
+economy: red 21200 XP / 635 gold, blue 18950 XP / 680 gold
+replay: 291325/291325 actions          (24 s wall clock for 28,800 ticks)
+</code></pre>
+<p>Two results come from this. First, the correct ref is not a guess. <code>GET /v2/coworlds/{coworld_id}</code> returns <code>manifest.game.runnable.source_url</code> in the form <code>https://github.com/Metta-AI/polyworld/tree/&lt;sha&gt;/coworld/gota</code>. The build script must get <code>GOTA_REF</code> from that, with <code>episode.json.coworld_version</code> as the cache key. This is the same as the current <code>CREWRIFT_REF</code> and <code>HEARTLEAF_REF</code> pins, but automatic. The policy of polyworld is that older replays use their archived client and that no compatibility branches are added (<sup class="ref"><a href="#src-2" title="examples/gods_of_the_arena/replays.nim:13-14">2</a></sup>). Also, <code>replays.nim</code> has 12 commits in five days. Thus expect frequent re-pins. Second, arm64 host builds are sufficiently deterministic. Map generation uses <code>float32</code> presets, but the map hash and all 28,800 tick hashes matched, and <code>validateReplayWorld</code> (<sup class="ref"><a href="#src-3" title="examples/gods_of_the_arena/sim.nim:1091">3</a></sup>) passed. No Docker or amd64 build is necessary for expansion. This is one sample. Keep the hash check as the guard. Appendix B gives the build recipe that worked.</p>
+</section>
+
+<section id="sec-4-the-other-artifacts-of-an-episode">
+<h2>4 · The other artifacts of an episode</h2>
+<ul class="key-points">
+<li><code>results.json</code> and <code>game_logs.log</code> give the outcome, the levels, the team XP and gold, the tower counts and the VM status. The replay is not necessary for these.</li>
+<li>The private log of each seat has each <code>PRINT</code> and each BASIC error, but only for the seats that the current identity owns.</li>
+<li>GotA makes no player artifact ZIP.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>results.json</code></td>
+<td><code>{"scores":[10 × 0/1],"ticks":28800,"seed":…,"outcome":…,"banked_gold":[],"returned":[],"total_xp":[10 ints]}</code> where <code>outcome</code> is one of <code>time_limit</code>, <code>RedTeam</code>, <code>BlueTeam</code> (<sup class="ref"><a href="#src-15" title="examples/gods_of_the_arena/gota.nim:9-14">15</a></sup>, <sup class="ref"><a href="#src-4" title="src/polyworld/coworld.nim:41">4</a></sup>). <code>banked_gold</code> and <code>returned</code> are fields from a different game and are always empty for GotA.</td>
+</tr>
+<tr>
+<td><code>game_logs.log</code></td>
+<td>Container stdout. The <code>game</code> section is the headless summary: <code>replay saved … (N actions)</code>, <code>result</code>, <code>forts</code>, <code>towers</code>, <code>hash</code>, <code>heroes</code> (levels), <code>economy</code> (team XP and unspent gold), <code>scripts: 10/10 active, N decisions</code> (<sup class="ref"><a href="#src-5" title="examples/gods_of_the_arena/game.nim:243">5</a></sup>). This is a cheap end-of-game signal. <code>scripts: 10/10 active</code> tells you if a VM stopped.</td>
+</tr>
+<tr>
+<td>Private log of each seat</td>
+<td>Only for the seats you own. It has <code>Player slot N started.</code>, each BASIC <code>PRINT</code>, <code>BASIC error: …</code> on VM failure, and <code>Player slot N completed.</code>. The limit is 10 MiB (<sup class="ref"><a href="#src-4" title="src/polyworld/coworld.nim:141-175">4</a></sup>). It has no tick stamps unless the policy prints <code>worldTick</code>. The route is <code>/v2/episode-requests/{id}/{policy_version_id}/policy-logs/{position}</code>. On the sample episode, the <code>games-bond-gota</code> seat returned <code>403 You do not own this policy</code> with the login in use at that time. That policy belongs to the "Games Bond" player identity (see the <code>coworld-player-swap</code> skill).</td>
+</tr>
+<tr>
+<td>Player artifact ZIP</td>
+<td>GotA does not make one (<code>integration.md</code>: "No player artifact ZIP is produced").</td>
+</tr>
+<tr>
+<td><code>episode.json</code></td>
+<td>Discovery row: <code>participants[] {position, policy_name, version, policy_version_id, player_name, is_filler}</code>, <code>participant_scores</code>, <code>coworld_version</code>, <code>replay_url</code>, <code>inspect_url</code>.</td>
+</tr>
+</tbody>
+</table>
+</section>
+
+<section id="sec-5-what-is-recorded-and-what-is-recoverable">
+<h2>5 · What is recorded and what is recoverable</h2>
+<ul class="key-points">
+<li>Directly from the file: each action request with its tick and hero, the CPU of each seat for each second, and the episode setup.</li>
+<li>With re-simulation: the complete world state on each tick, with the automatic casts of the engine and the team vision.</li>
+<li>The reward arithmetic is exact at the hit site. Thus last hits and tower kills are attributable on each tick.</li>
+</ul>
+<h3 id="sec-51-directly-in-the-file-no-re-simulation">5.1 Directly in the file (no re-simulation)</h3>
+<p>For each action, accepted or not, the file has the tick, the hero id, the kind and the arguments. That gives command rates, target selections (object ids only, no positions), shop requests, item-use requests, and cast requests. It also gives the last tick on which the VM of each hero made calls, because a VM that stopped is not in the file after that tick. For each second and each seat, <code>metrics.frames</code> gives the CPU percentage (instructions used, divided by the budget of 20,000). <code>metrics.final</code> gives the average for the full game. A value of <code>-1</code> means no VM, that is, a human seat. For each episode, the file has the seed, the map preset, the hero roster (id, team, slot, lane, class), the player display names, the recorded duration (<code>len(hashes)</code>) and the creation time. The file does not have: acceptance of an action, positions, HP, gold, XP, level, kills, deaths, damage, item inventories, ability charges, structure HP, or fog.</p>
+<h3 id="sec-52-recoverable-by-re-simulation-verified-reachable-in-world">5.2 Recoverable by re-simulation (verified reachable in <code>World</code>)</h3>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Where</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hero position (world units, <code>WorldScale = 60,000</code> per tile), facing, navigation layer</td>
+<td><code>Hero</code>, <sup class="ref"><a href="#src-3" title="examples/gods_of_the_arena/sim.nim:90">3</a></sup></td>
+<td><code>mapCoordinate(pos.x)</code> is the tile x as BASIC sees it</td>
+</tr>
+<tr>
+<td>HP and max HP, mana and max mana, level, xp, totalXp, gold</td>
+<td><code>Hero</code></td>
+<td><code>gold</code> is unspent; earned gold is <code>stats.values[slot][GoldMetric]</code></td>
+</tr>
+<tr>
+<td>State (<code>Marching</code>, <code>Fighting</code>, <code>Dying</code>), current targets (<code>targetFootmanId</code>, <code>targetHeroId</code>, <code>targetTowerId</code>, <code>attackingFort</code>), <code>attackObjectId</code>, move path and target</td>
+<td><code>Hero</code></td>
+<td>What the engine does, compared with what the script asked</td>
+</tr>
+<tr>
+<td>Inventory (6 × item enum plus counts), ability cooldowns, charges, recharges</td>
+<td><code>Hero</code></td>
+<td></td>
+</tr>
+<tr>
+<td>Footmen (id, team, lane, position, HP, state, target)</td>
+<td><code>Footman</code>, <sup class="ref"><a href="#src-3" title="examples/gods_of_the_arena/sim.nim:67">3</a></sup>; <code>UnitCap = 120</code></td>
+<td></td>
+</tr>
+<tr>
+<td>Towers (id, team, lane, tier, position, HP, target), forts (HP 400 at start of siege)</td>
+<td><sup class="ref"><a href="#src-3" title="examples/gods_of_the_arena/sim.nim:138-154">3</a></sup></td>
+<td></td>
+</tr>
+<tr>
+<td>Live spell casts (<code>ability, heroId, targetId, origin, position, started, impact, ends, resolved</code>)</td>
+<td><code>SpellCast</code>, <sup class="ref"><a href="#src-3" title="examples/gods_of_the_arena/sim.nim:171">3</a></sup>; <code>world.casts</code></td>
+<td>Includes the automatic casts of the engine, which are never in the tape</td>
+</tr>
+<tr>
+<td>Team vision and explored tiles</td>
+<td><code>world.teamVisible</code>, <code>teamExplored</code>, <sup class="ref"><a href="#src-3" title="examples/gods_of_the_arena/sim.nim:204-205">3</a></sup>, rebuilt each tick by <code>rebuildVision</code> (<sup class="ref"><a href="#src-3" title="examples/gods_of_the_arena/sim.nim:509">3</a></sup>)</td>
+<td>Answers "was the target visible when the script attacked it"</td>
+</tr>
+<tr>
+<td>Combat counters per seat: gold earned, kills, deaths (<code>LossesMetric</code>), assists (10-second damage window)</td>
+<td><code>world.stats</code> (<code>CombatStats</code>, <sup class="ref"><a href="#src-11" title="src/polyworld/metrics.nim:81">11</a></sup>, <code>hitHero</code>)</td>
+<td>Hashed with the world, thus guaranteed to match the live game</td>
+</tr>
+<tr>
+<td><code>teamHeroKills</code>, <code>teamHeroDeaths</code>, <code>gameOver</code>, <code>winner</code></td>
+<td><code>World</code></td>
+<td></td>
+</tr>
+<tr>
+<td>Accepted commands per seat (actions per minute)</td>
+<td><code>game.metrics.command</code> in <code>tickWorld</code></td>
+<td>Acceptance is computed again on playback</td>
+</tr>
+</tbody>
+</table>
+<p>The reward arithmetic is exact and attributable at the hit site (<code>applyHeroHit</code>, <sup class="ref"><a href="#src-3" title="examples/gods_of_the_arena/sim.nim:1856">3</a></sup>). A footman kill gives +25 XP and +15 gold, a hero kill +150 and +100, and a tower kill +100 and +75 (<sup class="ref"><a href="#src-3" title="examples/gods_of_the_arena/sim.nim:357-362">3</a></sup>). Fort damage gives nothing. Spell strikes go through the same procedure (<code>hitSpellTarget</code>, <sup class="ref"><a href="#src-3" title="examples/gods_of_the_arena/sim.nim:2031">3</a></sup>), thus spell kills are credited. Tower and footman damage to heroes calls <code>hitHero(-1, …)</code> (<sup class="ref"><a href="#src-3" title="examples/gods_of_the_arena/sim.nim:1641">3</a></sup>, <sup class="ref"><a href="#src-3" title="examples/gods_of_the_arena/sim.nim:1775">3</a></sup>). That records a death with no killer seat.</p>
+<h3 id="sec-53-prior-art-in-polyworld-verified">5.3 Prior art in polyworld (verified)</h3>
+<p>Polyworld has a minimal re-simulation extractor for its tournament tool: <code>inspectReplay</code> in <sup class="ref"><a href="#src-6" title="tools/herostats.nim:157">6</a></sup> and <sup class="ref"><a href="#src-16" title="tools/inspect_players.nim">16</a></sup>. It plays the tape, rejects each hash mismatch, and compares <code>scores()</code> with <code>participant_scores</code>. Then it writes end-of-game JSON for each seat: <code>hero, class, team, win, draw, level, xp, xp_progress, gold (earned), banked_gold, kills, deaths, assists</code>. From the exact reward arithmetic, it then computes <code>tower_kills</code> and <code>last_hits</code> (<code>objectiveCounts</code>, <sup class="ref"><a href="#src-17" title="tools/tournaments.nim:265">17</a></sup>). It gives only the end state, with no timeline, positions or events. It also imports <code>curly</code>, <code>zippy</code> and <code>jsony</code> for the tournament runner. Copy its loop. Do not make it a dependency.</p>
+</section>
+
+<section id="sec-6-what-is-not-recorded">
+<h2>6 · What is not recorded</h2>
+<ul class="key-points">
+<li>Without a version-matched re-simulation, only command counts are available.</li>
+<li>The tape has requests, not effects. Damage and healing totals exist nowhere.</li>
+<li>
+<p>Automatic casts, visibility and policy reasons are derivable or private. They are never recorded.</p>
+</li>
+<li>
+<p><strong>No state for each tick in the file.</strong> All data other than command counts is necessary from the version-matched re-simulation of section 3. If a ref cannot be built (a source commit that no longer exists, or a private dependency change), only the action stream of the replay is readable.</p>
+</li>
+<li><strong>Requests, not effects.</strong> <code>attackTarget(id)</code> in the tape does not mean that the hero hit that target, or that the hero moved to it. Acceptance must be computed again (<code>applyReplayAction</code> returns the accepted flag), and the effect must be read from the world state after that.</li>
+<li><strong>No damage or healing totals.</strong> GotA never writes <code>DamageMetric</code>, <code>HealingMetric</code>, <code>ArmyMetric</code>, <code>BankedMetric</code> or <code>StructuresMetric</code> (grep of <code>examples/gods_of_the_arena/*.nim</code>). The report of polyworld says "Damage and healing totals are not tracked … and are not reported as zero". A hook on <code>applyHeroHit</code> in the expander can recover them easily, but the file and the stock tools do not have them.</li>
+<li><strong>No attribution for each hit from a tower or a creep.</strong> <code>hitHero(-1, …)</code> records a hero death from a non-hero source, without a tower or footman tag. The expander sees the call site, thus it can add the tag.</li>
+<li><strong>Automatic ability casts are not in the tape.</strong> They occur inside <code>updateHero</code> → <code>tryCastAbility</code>. Only <code>world.casts</code> during re-simulation has them.</li>
+<li><strong>No policy-side reasons.</strong> <code>PRINT</code> output is private to the owner of the seat, and only for the seats you own. The logic of other entrants is not visible. For our own seats, the private log is the only "why" channel, and it has no tick stamps unless the policy prints <code>worldTick</code>.</li>
+<li><strong>No wall-clock or schedule data</strong>, other than <code>createdUnixMs</code>.</li>
+<li><strong>Visibility is derivable, but it is not recorded.</strong> To know if an enemy was visible to a hero on a tick, compute it again from <code>teamVisible</code>. The tape does not say what the script saw.</li>
+<li><strong>Tool mismatch in the shared downloader.</strong> <code>fetch_artifacts.py</code> gives the binary tape the name <code>replay.json</code>. A tool that expects JSON fails. A test for the <code>POLYWORLDREPLAY</code> magic, or a game adapter hook, is necessary.</li>
+</ul>
+</section>
+
+<section id="sec-7-proposed-expander-design">
+<h2>7 · Proposed expander design</h2>
+<ul class="key-points">
+<li>Three layers, with the same pattern as Crewrift and Heartleaf: a Nim re-simulation expander, a pure-Python tape decoder, and Python analysis on top.</li>
+<li>The expander is our file, compiled against the polyworld ref that the build script fetches. Thus a renamed field is a compile error, not silent wrong data.</li>
+<li>The events come from a comparison of the world state between ticks. Damage attribution is a stub until the engine records it (change request 6).</li>
+</ul>
+<h3 id="sec-71-shape">7.1 Shape</h3>
+<figure>
+<svg id="fig-3" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="flowchart" style="max-width: 566.461px; background-color: transparent;" viewBox="0 0 566.4609375 411.6000061035156" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#fig-3{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;fill:#111827;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#fig-3 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#fig-3 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#fig-3 .error-icon{fill:#fffaf0;}#fig-3 .error-text{fill:#111827;stroke:#111827;}#fig-3 .edge-thickness-normal{stroke-width:1px;}#fig-3 .edge-thickness-thick{stroke-width:3.5px;}#fig-3 .edge-pattern-solid{stroke-dasharray:0;}#fig-3 .edge-thickness-invisible{stroke-width:0;fill:none;}#fig-3 .edge-pattern-dashed{stroke-dasharray:3;}#fig-3 .edge-pattern-dotted{stroke-dasharray:2;}#fig-3 .marker{fill:#859ebe;stroke:#859ebe;}#fig-3 .marker.cross{stroke:#859ebe;}#fig-3 svg{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;}#fig-3 p{margin:0;}#fig-3 .label{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111827;}#fig-3 .cluster-label text{fill:#1a3875;}#fig-3 .cluster-label span{color:#1a3875;}#fig-3 .cluster-label span p{background-color:transparent;}#fig-3 .label text,#fig-3 span{fill:#111827;color:#111827;}#fig-3 .node rect,#fig-3 .node circle,#fig-3 .node ellipse,#fig-3 .node polygon,#fig-3 .node path{fill:#f8f6ef;stroke:#d4c9b5;stroke-width:1px;}#fig-3 .rough-node .label text,#fig-3 .node .label text,#fig-3 .image-shape .label,#fig-3 .icon-shape .label{text-anchor:middle;}#fig-3 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#fig-3 .rough-node .label,#fig-3 .node .label,#fig-3 .image-shape .label,#fig-3 .icon-shape .label{text-align:center;}#fig-3 .node.clickable{cursor:pointer;}#fig-3 .root .anchor path{fill:#859ebe!important;stroke-width:0;stroke:#859ebe;}#fig-3 .arrowheadPath{fill:#00020b;}#fig-3 .edgePaths .path{stroke:#859ebe;stroke-width:1px;}#fig-3 .flowchart-link{stroke:#859ebe;fill:none;}#fig-3 .edgeLabel{background-color:#fffdf4;text-align:center;}#fig-3 .edgeLabel p{background-color:#fffdf4;}#fig-3 .edgeLabel rect{opacity:0.5;background-color:#fffdf4;fill:#fffdf4;}#fig-3 .labelBkg{background-color:rgba(255, 253, 244, 0.5);}#fig-3 .cluster rect{fill:#fffaf0;stroke:#e4dac8;stroke-width:1px;}#fig-3 .cluster text{fill:#1a3875;}#fig-3 .cluster span{color:#1a3875;}#fig-3 .node .collapsed-indicator{fill:#e4dac8;stroke:none;opacity:0.6;}#fig-3 .node .collapsed-separator{stroke:#e4dac8;stroke-width:0.75px;}#fig-3 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:12px;background:#fffaf0;border:1px solid #e4dac8;border-radius:2px;pointer-events:none;z-index:100;}#fig-3 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#111827;}#fig-3 rect.text{fill:none;stroke-width:0;}#fig-3 .icon-shape,#fig-3 .image-shape{background-color:#fffdf4;text-align:center;}#fig-3 .icon-shape p,#fig-3 .image-shape p{background-color:#fffdf4;padding:2px;}#fig-3 .icon-shape .label rect,#fig-3 .image-shape .label rect{opacity:0.5;background-color:#fffdf4;fill:#fffdf4;}#fig-3 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#fig-3 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#fig-3 .node .neo-node{stroke:#d4c9b5;}#fig-3 [data-look="neo"].node rect,#fig-3 [data-look="neo"].cluster rect,#fig-3 [data-look="neo"].node polygon{stroke:url(#fig-3-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-3 [data-look="neo"].swimlane.cluster rect{filter:none;}#fig-3 [data-look="neo"].node path{stroke:url(#fig-3-gradient);stroke-width:1px;}#fig-3 [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-3 [data-look="neo"].node .neo-line path{stroke:#d4c9b5;filter:none;}#fig-3 [data-look="neo"].node circle{stroke:url(#fig-3-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-3 [data-look="neo"].node circle .state-start{fill:#000000;}#fig-3 [data-look="neo"].icon-shape .icon{fill:url(#fig-3-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-3 [data-look="neo"].icon-shape .icon-neo path{stroke:url(#fig-3-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-3 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="fig-3_flowchart-v2-pointEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="fig-3_flowchart-v2-pointStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="fig-3_flowchart-v2-pointEnd-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="11.5" refY="7" markerUnits="userSpaceOnUse" markerWidth="10.5" markerHeight="14" orient="auto"><path d="M 0 0 L 11.5 7 L 0 14 z" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="fig-3_flowchart-v2-pointStart-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="1" refY="7" markerUnits="userSpaceOnUse" markerWidth="11.5" markerHeight="14" orient="auto"><polygon points="0,7 11.5,14 11.5,0" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="fig-3_flowchart-v2-circleEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="fig-3_flowchart-v2-circleStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="fig-3_flowchart-v2-circleEnd-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refY="5" refX="12.25" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="fig-3_flowchart-v2-circleStart-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-2" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="fig-3_flowchart-v2-crossEnd" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="fig-3_flowchart-v2-crossStart" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="fig-3_flowchart-v2-crossEnd-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5;"/></marker><marker id="fig-3_flowchart-v2-crossStart-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="-3.5" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5; stroke-dasharray: 1, 0;"/></marker><g class="root"><g class="clusters"/><g class="edgePaths"><path d="M219.465,50.304L204.611,55.087C189.758,59.869,160.051,69.435,145.197,77.717C130.344,86,130.344,93,130.344,96.5L130.344,100" id="fig-3-L_B_LA_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_B_LA_0" data-points="W3sieCI6MjE5LjQ2NDg0Mzc1LCJ5Ijo1MC4zMDQxNDI3NTYwNzI2MzZ9LHsieCI6MTMwLjM0Mzc1LCJ5Ijo3OX0seyJ4IjoxMzAuMzQzNzUsInkiOjEwNH1d" data-look="classic" marker-end="url(#fig-3_flowchart-v2-pointEnd)"/><path d="M339.371,50.304L354.225,55.087C369.078,59.869,398.785,69.435,413.639,77.717C428.492,86,428.492,93,428.492,96.5L428.492,100" id="fig-3-L_B_LB_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_B_LB_0" data-points="W3sieCI6MzM5LjM3MTA5Mzc1LCJ5Ijo1MC4zMDQxNDI3NTYwNzI2MzZ9LHsieCI6NDI4LjQ5MjE4NzUsInkiOjc5fSx7IngiOjQyOC40OTIxODc1LCJ5IjoxMDR9XQ==" data-look="classic" marker-end="url(#fig-3_flowchart-v2-pointEnd)"/><path d="M130.344,165.4L130.344,169.567C130.344,173.733,130.344,182.067,130.344,189.733C130.344,197.4,130.344,204.4,130.344,207.9L130.344,211.4" id="fig-3-L_LA_J_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_LA_J_0" data-points="W3sieCI6MTMwLjM0Mzc1LCJ5IjoxNjUuNDAwMDAxNTI1ODc4OX0seyJ4IjoxMzAuMzQzNzUsInkiOjE5MC40MDAwMDE1MjU4Nzg5fSx7IngiOjEzMC4zNDM3NSwieSI6MjE1LjQwMDAwMTUyNTg3ODl9XQ==" data-look="classic" marker-end="url(#fig-3_flowchart-v2-pointEnd)"/><path d="M428.492,165.4L428.492,169.567C428.492,173.733,428.492,182.067,428.492,189.733C428.492,197.4,428.492,204.4,428.492,207.9L428.492,211.4" id="fig-3-L_LB_AT_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_LB_AT_0" data-points="W3sieCI6NDI4LjQ5MjE4NzUsInkiOjE2NS40MDAwMDE1MjU4Nzg5fSx7IngiOjQyOC40OTIxODc1LCJ5IjoxOTAuNDAwMDAxNTI1ODc4OX0seyJ4Ijo0MjguNDkyMTg3NSwieSI6MjE1LjQwMDAwMTUyNTg3ODl9XQ==" data-look="classic" marker-end="url(#fig-3_flowchart-v2-pointEnd)"/><path d="M130.344,276.8L130.344,280.967C130.344,285.133,130.344,293.467,139.527,301.539C148.711,309.612,167.079,317.423,176.262,321.329L185.446,325.235" id="fig-3-L_J_LC_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_J_LC_0" data-points="W3sieCI6MTMwLjM0Mzc1LCJ5IjoyNzYuODAwMDAzMDUxNzU3OH0seyJ4IjoxMzAuMzQzNzUsInkiOjMwMS44MDAwMDMwNTE3NTc4fSx7IngiOjE4OS4xMjY5NjE0MDg0MjQyLCJ5IjozMjYuODAwMDAzMDUxNzU3OH1d" data-look="classic" marker-end="url(#fig-3_flowchart-v2-pointEnd)"/><path d="M428.492,276.8L428.492,280.967C428.492,285.133,428.492,293.467,419.308,301.539C410.125,309.612,391.757,317.423,382.574,321.329L373.39,325.235" id="fig-3-L_AT_LC_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_AT_LC_0" data-points="W3sieCI6NDI4LjQ5MjE4NzUsInkiOjI3Ni44MDAwMDMwNTE3NTc4fSx7IngiOjQyOC40OTIxODc1LCJ5IjozMDEuODAwMDAzMDUxNzU3OH0seyJ4IjozNjkuNzA4OTc2MDkxNTc1OCwieSI6MzI2LjgwMDAwMzA1MTc1Nzh9XQ==" data-look="classic" marker-end="url(#fig-3_flowchart-v2-pointEnd)"/></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" data-id="L_B_LA_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_B_LB_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_LA_J_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_LB_AT_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_J_LC_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_AT_LC_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g></g><g class="nodes"><g class="node default" id="fig-3-flowchart-B-0" data-look="classic" transform="translate(279.41796875, 31)"><rect class="basic label-container" style="" x="-59.953125" y="-22.999999523162842" width="119.90625" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">replay.bin</tspan></tspan></text></g></g></g><g class="node default" id="fig-3-flowchart-LA-1" data-look="classic" transform="translate(130.34375, 134.70000076293945)"><rect class="basic label-container" style="" x="-118.1796875" y="-30.700000762939453" width="236.359375" height="61.400001525878906"/><g class="label" style="" transform="translate(0, -15.700000762939453)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">Layer</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> A:</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> expand_replay.nim,</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">version-matched</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> re-sim</tspan></tspan></text></g></g></g><g class="node default" id="fig-3-flowchart-LB-3" data-look="classic" transform="translate(428.4921875, 134.70000076293945)"><rect class="basic label-container" style="" x="-129.96875" y="-30.700000762939453" width="259.9375" height="61.400001525878906"/><g class="label" style="" transform="translate(0, -15.700000762939453)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">Layer</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> B:</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> replay_actions.py,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> pure</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">Python,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> version-free</tspan></tspan></text></g></g></g><g class="node default" id="fig-3-flowchart-J-5" data-look="classic" transform="translate(130.34375, 246.10000228881836)"><rect class="basic label-container" style="" x="-122.34375" y="-30.700000762939453" width="244.6875" height="61.400001525878906"/><g class="label" style="" transform="translate(0, -15.700000762939453)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">expanded.jsonl:</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> meta,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> action,</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">event,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> state,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> summary</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> rows</tspan></tspan></text></g></g></g><g class="node default" id="fig-3-flowchart-AT-7" data-look="classic" transform="translate(428.4921875, 246.10000228881836)"><rect class="basic label-container" style="" x="-120.5234375" y="-30.700000762939453" width="241.046875" height="61.400001525878906"/><g class="label" style="" transform="translate(0, -15.700000762939453)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">actions</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> table:</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> command</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> mix,</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">CPU,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> VM</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> liveness</tspan></tspan></text></g></g></g><g class="node default" id="fig-3-flowchart-LC-9" data-look="classic" transform="translate(279.41796875, 365.20000076293945)"><rect class="basic label-container" style="" x="-111.9453125" y="-38.39999961853027" width="223.890625" height="76.79999923706055"/><g class="label" style="" transform="translate(0, -23.399999618530273)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">Layer</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> C:</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> replay_stats.py,</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">viz_replay.py,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> compare.py,</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="2.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">features.py</tspan></tspan></text></g></g></g></g></g></g><defs><filter id="fig-3-drop-shadow" height="130%" width="130%"><feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"/></filter></defs><defs><filter id="fig-3-drop-shadow-small" height="150%" width="150%"><feDropShadow dx="2" dy="2" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"/></filter></defs><linearGradient id="fig-3-gradient" gradientUnits="objectBoundingBox" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#d4c9b5" stop-opacity="1"/><stop offset="100%" stop-color="#d4c9b5" stop-opacity="1"/></linearGradient></svg>
+<figcaption><span class="fig-label">Figure 3</span>The three layers. Layer B needs no build and is the fallback when a ref does not compile. Layer A gives the value.</figcaption>
+</figure>
+
+<p>Layer B exists as a prototype (the 60-line <code>struct</code> decoder) and never needs a new build. It is the fallback when a ref does not build, and it is sufficient for command-rate, shop and target-policy questions. Layer A gives the value. Layer C is plain Python on JSONL or Parquet. This is the same as the <code>crewrift-event-warehouse</code> pattern and the Heartleaf replay visualizer (<sup class="ref"><a href="#src-18" title="heartleaf_lab/tools/viz_replay.py">18</a></sup>).</p>
+<p>The module layout is the same as <code>heartleaf_lab/tools/</code>:</p>
+<pre><code>gods_of_the_arena_lab/
+  tools/
+    build_expand_replay.sh      # resolves GOTA_REF from /v2/coworlds/{id} (cache by coworld_version),
+                                #   tarball fetch, nimby sync, host-native nim c; caches bin/expand_replay-&lt;ref&gt;
+    expand_replay.nim           # OUR file, compiled against the fetched polyworld tree (see 7.2)
+    bin/expand_replay-&lt;ref&gt;     # gitignored
+    replay_actions.py           # layer B: pure-Python tape decoder (lifted from the prototype)
+    replay_stats.py             # layer C: expanded.jsonl -&gt; per-hero / per-team tables (markdown + JSON)
+    viz_replay.py               # layer C: paths / heatmaps on the tile grid (Pillow, like heartleaf's)
+  .claude/skills/gota-ab/scripts/compare.py                # coworld-ab adapter
+  .claude/skills/gota-hypothesis-miner/scripts/features.py # miner adapter
+  docs/replay-format.md         # the reference once the tools exist
+</code></pre>
+<p><code>expand_replay.nim</code> is in our repo, because polyworld has no such tool. We compile it with the polyworld source on the <code>--path</code>. It imports <code>polyworld/[tapes, metrics]</code> and <code>examples/gods_of_the_arena/[content, maps, replays, sim]</code>, exactly as <code>herostats.nim</code> does. The file stays at approximately 300 lines: the <code>herostats.nim</code> loop, the output for each tick, and some event detectors that compare states. The build script fetches a ref, and the file compiles against that ref. Thus the file obeys the one-client-per-gameplay-version rule of polyworld automatically. If a future polyworld commit renames a field, we get a compile error and not silent wrong data.</p>
+<h3 id="sec-72-expander-core-loop-inferred-from-herostatsnim-not-yet-written">7.2 Expander core loop (inferred from <code>herostats.nim</code>, not yet written)</h3>
+<pre><code class="language-nim">let data = decodeReplay(bytes)                       # gzip sniff like herostats
+let game = newGame(generateMap(data.config.seed, data.config.mapPreset),
+                   data.config.spawnIntervalTicks, 0, true, data)
+game.replayPlayer = initReplayPlayer(data); game.historyPlayback = true
+emit meta row
+while game.world.tick &lt; data.hashes.len:
+  snapshot previous world (clone or copy the fields we diff)
+  game.tickWorld(nil)                                 # applies tape actions, checks hash
+  diff previous vs current -&gt; events; every N ticks -&gt; state rows
+require game.hashCheck.mismatches == 0 (else summary.hash_failed = true, exit non-zero)
+emit summary row
+</code></pre>
+<p>The events come from a comparison of the state between ticks. No engine change is necessary:</p>
+<table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Detection</th>
+<th>Fields</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>action</code></td>
+<td>Each tape action consumed this tick, with the <code>applyReplayAction</code> result</td>
+<td><code>slot, kind, args, accepted</code>. This needs a call to the validators from our code, or the <code>game.metrics</code> command delta. The simplest method: consume the actions in our loop and call <code>applyReplayAction</code> directly, as the branch in <code>tickWorld</code> does</td>
+</tr>
+<tr>
+<td><code>hero_death</code>, <code>hero_respawn</code></td>
+<td><code>hp &gt; 0 → ≤ 0</code> (state <code>Dying</code>), then <code>hp</code> above 0 again at spawn</td>
+<td><code>slot, tick, pos, killer_slot</code> (from the <code>stats.values[KillsMetric]</code> delta on that tick; <code>-1</code> if tower or creep)</td>
+</tr>
+<tr>
+<td><code>hero_kill</code>, <code>assist</code></td>
+<td><code>KillsMetric</code> and <code>AssistsMetric</code> delta for each seat</td>
+<td></td>
+</tr>
+<tr>
+<td><code>last_hit</code> (footman), <code>tower_kill</code></td>
+<td>XP and gold delta, decomposed with the exact reward table (25/15, 150/100, 100/75). This is the arithmetic of <code>objectiveCounts</code>, but for each tick, thus without ambiguity</td>
+<td><code>slot, kind, tick</code></td>
+</tr>
+<tr>
+<td><code>tower_destroyed</code>, <code>fort_damaged</code>, <code>fort_destroyed</code></td>
+<td>Tower and fort HP transitions</td>
+<td><code>team, lane, tier, tick</code></td>
+</tr>
+<tr>
+<td><code>level_up</code></td>
+<td><code>level</code> delta</td>
+<td></td>
+</tr>
+<tr>
+<td><code>gold_spent</code>, <code>item_bought</code>, <code>item_used</code></td>
+<td>Inventory diff and gold decrease on the tick of an accepted <code>buyItem</code> or <code>useItem</code></td>
+<td><code>slot, item, cost</code></td>
+</tr>
+<tr>
+<td><code>cast</code></td>
+<td>New entry in <code>world.casts</code></td>
+<td><code>slot, ability, slot_index, target or point, auto (not in tape at that tick) or explicit</code></td>
+</tr>
+<tr>
+<td><code>damage</code></td>
+<td><strong>Stub until change request 6 lands.</strong> The engine keeps no per-hit record, so a comparison of states cannot give the attacker, and the expander must not patch the simulator to get it. Emit <code>damage</code> as a placeholder event type with no rows, blocked on requested game change 6 (damage and heal events in the recording, see <code>gods_of_the_arena_lab/docs/requested-game-changes.md</code>). The <code>hp</code> delta of the victim on each tick is still available through <code>objective_state</code>. Fill this row in as soon as the change ships.</td>
+<td><code>tick, source, target, amount, cause</code> (reserved)</td>
+</tr>
+<tr>
+<td><code>objective_state</code> (sampled)</td>
+<td>On each <code>--snapshot-every N</code> ticks: all hero rows (pos, hp, mana, gold, level, state, target ids, inventory, cooldowns), tower and fort HP, footman counts for each lane and team</td>
+<td>The feed for positions and heatmaps</td>
+</tr>
+<tr>
+<td><code>visibility</code> (sampled)</td>
+<td>For each hero: the count of visible enemy heroes and exposed enemy structures</td>
+<td>Answers "did it attack a target that it saw"</td>
+</tr>
+</tbody>
+</table>
+<p>Output contract: one JSON object on each line, with <code>type</code> in <code>meta | action | event | state | summary</code>, and all with <code>tick</code>. Seat-tagged rows have <code>slot</code> (platform seat 0–9, equal to the hero index) and <code>hero_id</code>. Positions are in tile units (<code>mapCoordinate</code>) and also in raw world units. Thus they agree with what BASIC sees and with the <code>terrain*</code> grid. These are the same conventions as the Heartleaf rows (<code>meta</code>, <code>tick</code>, <code>event</code>, <code>summary</code>), thus <code>viz_replay.py</code> is almost a copy.</p>
+<h3 id="sec-73-stats-tables-layer-c">7.3 Stats tables (layer C)</h3>
+<p>For each hero, one row for each seat in each episode. The columns are those that the tournament of polyworld defines, plus the columns that only a timeline gives:</p>
+<p><code>slot, team, class, policy_name, version, player, win, draw, level, total_xp, gold_earned, gold_unspent, kills, deaths, assists, last_hits, tower_kills, damage_taken, first_death_tick, time_dead_ticks, first_tower_kill_tick, first_fort_hit_tick, apm, cpu_pct, vm_failed_tick, actions_by_kind{…}, casts_explicit, casts_auto, items_bought{…}, ticks_in_enemy_half, mean_distance_to_nearest_ally, …</code></p>
+<p>For each team: <code>towers_lost_by_lane, fort_hp_min, first_tower_kill_tick, first_fort_hit_tick, hero_kills, hero_deaths, xp, gold, outcome</code>.</p>
+<p>For each episode: <code>outcome, ticks, minutes, coworld_version, replay_ref, hash_verified, seed, map_seed</code>.</p>
+<h3 id="sec-74-slotting-into-the-shared-adapters">7.4 Slotting into the shared adapters</h3>
+<p>The <code>coworld-ab</code> adapter (<code>compare.py</code>) needs only <code>results.json</code> and <code>episode.json</code> for the headline metrics: <code>win</code> from <code>participant_scores</code>, <code>total_xp[position]</code>, and <code>outcome == time_limit</code> as the draw rate. <code>by_group</code> must be <code>{red, blue}</code> at minimum, and possibly <code>{class}</code>. GotA fixes the class for each seat (seat 0 is always Death Knight, and so on). Thus the seats that a policy gets have an effect on its numbers, and a group for each class is the honest split (<code>RedHeroClasses</code>, <sup class="ref"><a href="#src-12" title="examples/gods_of_the_arena/content.nim:123">12</a></sup>, and <code>BlueHeroClasses</code>, <sup class="ref"><a href="#src-12" title="examples/gods_of_the_arena/content.nim:130">12</a></sup>). The timeline metrics (<code>first_tower_kill_tick</code>, <code>deaths</code>, <code>last_hits</code>) come from the <code>replay_stats.py</code> output, joined on <code>(episode_id, position)</code>. The adapter must accept an optional <code>--expanded DIR</code> and use results-only metrics when that is absent.</p>
+<p>The <code>coworld-hypothesis-miner</code> adapter (<code>features.py</code>) writes one row for each (episode, own seat). The features come directly from the table for each hero: the "never happened = LAST_TICK+1" rule for timings (<code>first_death_tick</code>, <code>first_tower_kill_tick</code>, <code>first_fort_hit_tick</code>), presence flags (<code>bought_X</code>, <code>cast_ultimate</code>), and counts (<code>last_hits</code>, <code>deaths_to_towers</code>). The score is the <code>total_xp</code> of the seat minus the time penalty of the ladder (100 XP for each simulated minute, per polyworld <code>USAGE.md</code>), or the plain win. Select the score for each question.</p>
+<p>If we collect many episodes, the Crewrift event-warehouse pattern (Parquet and DuckDB) applies without change. The JSONL of the expander is its input.</p>
+<h3 id="sec-75-cost">7.5 Cost</h3>
+<p>Expansion takes approximately 24 seconds for each 20-minute episode on this machine, on one thread. The simulation operates at 49 times real time. A 20-episode experience request expands in less than one minute with four workers. The simulator has module-level globals. This is why <code>herostats.nim</code> operates one process for each replay. Do the same.</p>
+</section>
+
+<section id="sec-8-open-questions">
+<h2>8 · Open questions</h2>
+
+<ol>
+<li><strong>Ref resolution for old episodes.</strong> <code>/v2/coworlds/{id}</code> gives the source commit of the current version. For an episode with an earlier <code>coworld_version</code>, we need a map from version to commit. Polyworld keeps receipts in <code>coworld/releases/*.json</code> (<code>source_commit</code>), but only for some releases, and not for <code>2026.9.15.1</code> yet. Keep a local cache of <code>(coworld_version → sha)</code> as we see them, and stop with a clear error in the other cases.</li>
+<li><strong>Damage attribution</strong> is blocked on requested game change 6: damage and heal events recorded by the engine. Until then <code>damage</code> is a stub, and <code>features.py</code> must not use "damage dealt".</li>
+<li><strong>The Nim expander is necessary for the first iteration</strong> (decided 2026-09-15). Layer B alone gives aggregates and action requests without acceptance, and that is not sufficient. The expander must also write, per tick and per bot, what that bot could see under fog of war (the team visibility map and the filtered object list), so we know what each policy knew when it acted.</li>
+<li><strong>Private logs of our own seats.</strong> The "Games Bond" player identity owns the <code>games-bond-gota</code> seat. The login in use during the investigation was not that identity (403 "You do not own this policy"). The James Botts player session that became active later in this session is a different identity again. Before we depend on <code>PRINT</code> traces, make sure that we know which identity owns the policy that we will iterate on.</li>
+<li><strong>Downloader name.</strong> Change <code>fetch_artifacts.py</code> so that it tests for the <code>POLYWORLDREPLAY</code> magic and saves the file as <code>replay.bin</code>. The alternative is to keep <code>replay.json</code> and document it. This is a small change to a shared skill. It needs a go-ahead because it touches root tools.</li>
+<li><strong>arm64 determinism</strong> is verified on one episode. Keep the hash check mandatory. If a mismatch occurs with the correct ref, that is the signal to use a <code>linux/amd64</code> container build instead.</li>
+</ol>
+</section>
+
+<section id="appendix-a-decoded-sample-header">
+<h2>Appendix A: Decoded sample header</h2>
+
+<pre><code>setup:   map_seed 223226943, map_hash 0x29424656, tick_rate 24, grid 116, spawn 240, max 28800
+heroes:  id 100-104 team 0 (Red) classes DeathKnight, Crossbowman, Lich, Warlock, Berserker (lanes 0,0,1,2,2)
+         id 105-109 team 1 (Blue) classes VanguardKnight, Ranger, Arcanist, DruidWarden, DemonHunter
+players: ['Andrew Brower', 'richard', 'Games Bond', 'daveey-2', 'docxology', 'Andrew Brower B', 'relh', 'Andre von Auto', 'daveey', 'Andre von Houck']
+actions: 291,325  (attackTarget 180,166 · walkTo 85,632 · useItem 15,371 · buyItem 10,156 · 0 casts)
+hashes:  28,800   metrics: 1,201 CPU frames at 24-tick interval + 10 finals
+</code></pre>
+</section>
+
+<section id="appendix-b-build-recipe">
+<h2>Appendix B: Build recipe</h2>
+
+<p>No credentials are necessary. <code>nim</code> 2.2.6 and <code>nimby</code> are already in <code>~/.local/bin</code>.</p>
+<pre><code class="language-sh">curl -fsSL https://github.com/Metta-AI/polyworld/archive/$REF.tar.gz | tar xz -C src --strip-components=1
+cd src &amp;&amp; nimby --global sync nimby.lock          # writes nim.cfg with dependency paths
+nim c -d:headless -d:release --out:../gota_headless examples/gods_of_the_arena/gota.nim
+../gota_headless --replay replay.bin              # hash-checked; non-zero exit on divergence
+</code></pre></section>
+
+<section id="sources">
+<h2>Appendix C: Sources</h2>
+<p>Polyworld paths are relative to the repository root at commit <code>5422fb0c</code>. Where there is no ambiguity, <code>examples/gods_of_the_arena/</code> is shortened to the file name. There is one entry for each cited file, in first-citation order. The hover text of each superscript reference gives the exact line range.</p>
+<ol class="sources">
+<li id="src-1"><span class="cite">src/polyworld/tapes.nim</span> — tape container: magic, header, <code>ActionTape</code>, per-tick hashes.</li>
+<li id="src-2"><span class="cite">examples/gods_of_the_arena/replays.nim</span> — GotA replay header, action kinds, <code>saveReplay</code>, version policy.</li>
+<li id="src-3"><span class="cite">examples/gods_of_the_arena/sim.nim</span> — playback, hash check, world records, reward arithmetic, vision.</li>
+<li id="src-4"><span class="cite">src/polyworld/coworld.nim</span> — hosted replay path, private logs, result publishing.</li>
+<li id="src-5"><span class="cite">examples/gods_of_the_arena/game.nim</span> — recorder lifecycle, headless summary.</li>
+<li id="src-6"><span class="cite">tools/herostats.nim</span> — polyworld's re-simulation extractor (<code>inspectReplay</code>), the loop to copy.</li>
+<li id="src-7"><span class="cite">flatty.nim</span> — the Flatty 0.4.0 serializer (external dependency, pinned by <code>nimby.lock</code>): field order and raw struct copy rules.</li>
+<li id="src-8"><span class="cite">src/polyworld/configs.nim</span> — <code>MatchConfig</code>.</li>
+<li id="src-9"><span class="cite">examples/gods_of_the_arena/presets.nim</span> — <code>GotaConfig</code>, <code>MapConfig</code>.</li>
+<li id="src-10"><span class="cite">generation/configs.nim</span> — <code>GotaConfig</code>, <code>MapConfig</code>.</li>
+<li id="src-11"><span class="cite">src/polyworld/metrics.nim</span> — <code>ReplayMetrics</code>, <code>CombatStats</code>, <code>hitHero</code>.</li>
+<li id="src-12"><span class="cite">examples/gods_of_the_arena/content.nim</span> — <code>Item</code> enum, class lineups.</li>
+<li id="src-13"><span class="cite">examples/gods_of_the_arena/bots.nim</span> — actions recorded before acceptance.</li>
+<li id="src-14"><span class="cite">crewrift_lab/docs/crewrift-replays.md</span> — the bitworld expander shape this mirrors.</li>
+<li id="src-15"><span class="cite">examples/gods_of_the_arena/gota.nim</span> — <code>results.json</code>.</li>
+<li id="src-16"><span class="cite">tools/inspect_players.nim</span> — tournament-side driver of that extractor.</li>
+<li id="src-17"><span class="cite">tools/tournaments.nim</span> — <code>objectiveCounts</code>, the reward decomposition into tower kills and last hits.</li>
+<li id="src-18"><span class="cite">heartleaf_lab/tools/viz_replay.py</span> — the bitworld expander shape this mirrors.</li>
+</ol>
+</section>
+</article>
+
+<!-- ================================================================
+     DC-COMMENTS BEGIN — markup + script (copy verbatim; do not modify)
+     ================================================================ -->
+<aside id="dc-sidebar" aria-label="Comments">
+  <h2 class="dc-title">Comments <span id="dc-count"></span></h2>
+  <div class="dc-actions">
+    <button class="dc-btn" id="dc-export">Export JSON</button>
+    <button class="dc-btn" id="dc-copy">Copy JSON</button>
+    <button class="dc-btn" id="dc-import">Import…</button>
+    <input type="file" id="dc-file" accept=".json,application/json" hidden>
+  </div>
+  <div id="dc-status" role="status"></div>
+  <div id="dc-list"><p class="dc-empty">No comments yet. Select text in the document to add one.</p></div>
+</aside>
+<button id="dc-fab" type="button">+ Comment</button>
+<button id="dc-toggle" type="button">Comments</button>
+<!-- Preload slot: a renderer may put a dc-comments/1 `comments` array here (each comment optionally carrying `replies`). Merged by id into the stored comments on load. Leave empty otherwise. -->
+<script id="dc-preload" type="application/json"></script>
+
+<script>
+(() => {
+  'use strict';
+  const FORMAT = 'dc-comments/1';
+  const CTX = 32; // prefix/suffix context length, chars
+  const doc = document.getElementById('doc');
+  const fab = document.getElementById('dc-fab');
+  const listEl = document.getElementById('dc-list');
+  const countEl = document.getElementById('dc-count');
+  const statusEl = document.getElementById('dc-status');
+  const sidebar = document.getElementById('dc-sidebar');
+  const storeKey = 'dc:' + document.title;
+
+  let comments = []; // {id, exact, prefix, suffix, text, created, resolved}
+  let ranges = new Map(); // id -> Range (null if orphaned)
+  let seq = 0;
+
+  // ---- text indexing: one global string over #doc's text nodes ----
+  function docText() {
+    const r = document.createRange();
+    r.selectNodeContents(doc);
+    return r.toString();
+  }
+  function globalOffset(container, offset) {
+    const r = document.createRange();
+    r.setStart(doc, 0);
+    r.setEnd(container, offset);
+    return r.toString().length;
+  }
+  function offsetsToRange(start, end) {
+    const walker = document.createTreeWalker(doc, NodeFilter.SHOW_TEXT);
+    let pos = 0, range = document.createRange(), haveStart = false;
+    while (walker.nextNode()) {
+      const node = walker.currentNode, len = node.data.length;
+      if (!haveStart && pos + len >= start) {
+        range.setStart(node, start - pos);
+        haveStart = true;
+      }
+      if (haveStart && pos + len >= end) {
+        range.setEnd(node, end - pos);
+        return range;
+      }
+      pos += len;
+    }
+    return null;
+  }
+
+  // ---- anchoring: TextQuoteSelector-style exact + prefix/suffix ----
+  function selectorFromRange(range) {
+    const text = docText();
+    const start = globalOffset(range.startContainer, range.startOffset);
+    const end = globalOffset(range.endContainer, range.endOffset);
+    return {
+      exact: text.slice(start, end),
+      prefix: text.slice(Math.max(0, start - CTX), start),
+      suffix: text.slice(end, end + CTX),
+    };
+  }
+  function locate(c) {
+    const text = docText();
+    let i = text.indexOf(c.prefix + c.exact + c.suffix);
+    if (i >= 0) return offsetsToRange(i + c.prefix.length, i + c.prefix.length + c.exact.length);
+    i = text.indexOf(c.exact);
+    if (i >= 0) return offsetsToRange(i, i + c.exact.length);
+    return null;
+  }
+  function reanchorAll() {
+    ranges = new Map(comments.map(c => [c.id, locate(c)]));
+    paint();
+  }
+
+  // ---- painting via CSS Custom Highlight API ----
+  const hl = typeof Highlight !== 'undefined' ? new Highlight() : null;
+  const hlActive = typeof Highlight !== 'undefined' ? new Highlight() : null;
+  if (hl) { CSS.highlights.set('dc-hl', hl); CSS.highlights.set('dc-hl-active', hlActive); }
+  function paint(activeId) {
+    if (!hl) return;
+    hl.clear(); hlActive.clear();
+    for (const [id, r] of ranges) {
+      if (!r) continue;
+      (id === activeId ? hlActive : hl).add(r);
+    }
+  }
+
+  // ---- persistence (best-effort; file:// storage varies by browser) ----
+  function save() {
+    try { localStorage.setItem(storeKey, JSON.stringify(comments)); } catch (e) { /* unavailable on some file:// setups */ }
+  }
+  function load() {
+    try {
+      const raw = localStorage.getItem(storeKey);
+      if (raw) comments = JSON.parse(raw);
+    } catch (e) { /* ignore */ }
+  }
+
+  // ---- sidebar rendering ----
+  function flash(msg) {
+    statusEl.textContent = msg;
+    setTimeout(() => { if (statusEl.textContent === msg) statusEl.textContent = ''; }, 2500);
+  }
+  function sortedComments() {
+    const pos = c => {
+      const r = ranges.get(c.id);
+      return r ? globalOffset(r.startContainer, r.startOffset) : Infinity; // orphans last
+    };
+    return [...comments].sort((a, b) => pos(a) - pos(b));
+  }
+  function render(editingId) {
+    countEl.textContent = comments.length ? '(' + comments.length + ')' : '';
+    listEl.textContent = '';
+    if (!comments.length) {
+      const p = document.createElement('p');
+      p.className = 'dc-empty';
+      p.textContent = 'No comments yet. Select text in the document to add one.';
+      listEl.appendChild(p);
+      return;
+    }
+    for (const c of sortedComments()) {
+      const item = document.createElement('div');
+      item.className = 'dc-item' + (c.resolved ? ' dc-resolved' : '');
+      item.dataset.id = c.id;
+
+      const quote = document.createElement('div');
+      quote.className = 'dc-quote';
+      quote.textContent = c.exact.length > 90 ? c.exact.slice(0, 90) + '…' : c.exact;
+      if (!ranges.get(c.id)) {
+        const tag = document.createElement('span');
+        tag.className = 'dc-orphan-tag';
+        tag.textContent = 'orphaned';
+        quote.appendChild(tag);
+      }
+      item.appendChild(quote);
+
+      if (c.id === editingId) {
+        const ta = document.createElement('textarea');
+        ta.value = c.text;
+        ta.placeholder = 'Write a comment… (⌘/Ctrl+Enter to save, Esc to cancel)';
+        ta.addEventListener('keydown', e => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') commit();
+          if (e.key === 'Escape') cancel();
+        });
+        ta.addEventListener('click', e => e.stopPropagation());
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'dc-btn';
+        saveBtn.textContent = 'Save';
+        saveBtn.style.marginTop = '6px';
+        saveBtn.addEventListener('click', e => { e.stopPropagation(); commit(); });
+        function commit() {
+          c.text = ta.value.trim();
+          if (!c.text) return cancel();
+          save(); render();
+        }
+        function cancel() {
+          if (!c.text) { comments = comments.filter(x => x.id !== c.id); ranges.delete(c.id); paint(); }
+          save(); render();
+        }
+        item.appendChild(ta);
+        item.appendChild(saveBtn);
+        listEl.appendChild(item);
+        requestAnimationFrame(() => ta.focus());
+        continue;
+      }
+
+      const text = document.createElement('div');
+      text.className = 'dc-text';
+      text.textContent = c.text;
+      item.appendChild(text);
+
+      if (Array.isArray(c.replies) && c.replies.length) {
+        const box = document.createElement('div');
+        box.className = 'dc-replies';
+        for (const r of c.replies) {
+          const who = document.createElement('div');
+          who.className = 'dc-reply-author';
+          who.textContent = 'Reply from ' + (r.author || 'agent') + (r.created ? ' · ' + String(r.created).slice(0, 10) : '');
+          const body = document.createElement('div');
+          body.className = 'dc-reply-text';
+          for (const part of String(r.text || '').split(/(https?:\/\/[^\s)]+)/g)) {
+            if (/^https?:\/\//.test(part)) {
+              const a = document.createElement('a');
+              a.href = part; a.target = '_blank'; a.rel = 'noopener';
+              a.textContent = part;
+              a.addEventListener('click', e => e.stopPropagation());
+              body.appendChild(a);
+            } else body.appendChild(document.createTextNode(part));
+          }
+          box.append(who, body);
+        }
+        item.appendChild(box);
+      }
+
+      const meta = document.createElement('div');
+      meta.className = 'dc-meta';
+      const when = document.createElement('span');
+      when.textContent = c.created.slice(0, 10);
+      const resolved = document.createElement('label');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = !!c.resolved;
+      cb.addEventListener('click', e => e.stopPropagation());
+      cb.addEventListener('change', () => { c.resolved = cb.checked; save(); render(); });
+      resolved.append(cb, 'resolved');
+      const del = document.createElement('button');
+      del.className = 'dc-del';
+      del.textContent = 'delete';
+      del.addEventListener('click', e => {
+        e.stopPropagation();
+        comments = comments.filter(x => x.id !== c.id);
+        ranges.delete(c.id);
+        paint(); save(); render();
+      });
+      meta.append(when, resolved, del);
+      item.appendChild(meta);
+
+      item.addEventListener('click', () => {
+        const r = ranges.get(c.id);
+        if (!r) return flash('Anchor not found in this version of the document.');
+        const rect = r.getBoundingClientRect();
+        window.scrollTo({ top: window.scrollY + rect.top - 160, behavior: 'smooth' });
+        paint(c.id);
+        setTimeout(() => paint(), 2000);
+      });
+      // double-click text to edit
+      text.addEventListener('dblclick', e => { e.stopPropagation(); render(c.id); });
+      listEl.appendChild(item);
+    }
+  }
+
+  // ---- selection -> floating Comment button ----
+  document.addEventListener('mouseup', e => {
+    if (fab.contains(e.target)) return;
+    setTimeout(() => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || !sel.rangeCount) { fab.style.display = 'none'; return; }
+      const range = sel.getRangeAt(0);
+      if (!doc.contains(range.commonAncestorContainer) || !range.toString().trim()) {
+        fab.style.display = 'none';
+        return;
+      }
+      const rect = range.getBoundingClientRect();
+      fab.style.display = 'block';
+      fab.style.left = Math.min(rect.right + 8 + window.scrollX, window.scrollX + document.documentElement.clientWidth - 120) + 'px';
+      fab.style.top = (rect.top + window.scrollY - 4) + 'px';
+      fab.dataset.pending = '1';
+    }, 0);
+  });
+  fab.addEventListener('click', () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    const c = Object.assign({ id: 'c' + Date.now().toString(36) + (seq++), text: '', created: new Date().toISOString(), resolved: false }, selectorFromRange(range));
+    comments.push(c);
+    ranges.set(c.id, range.cloneRange());
+    paint(c.id);
+    sel.removeAllRanges();
+    fab.style.display = 'none';
+    sidebar.classList.add('dc-open');
+    render(c.id);
+  });
+
+  // ---- export / import ----
+  function payload() {
+    return JSON.stringify({
+      format: FORMAT,
+      doc: document.title,
+      exported: new Date().toISOString(),
+      comments: comments,
+    }, null, 2);
+  }
+  document.getElementById('dc-export').addEventListener('click', () => {
+    const blob = new Blob([payload()], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (document.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'doc') + '.comments.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    flash('Downloaded.');
+  });
+  document.getElementById('dc-copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(payload()); flash('Copied to clipboard.'); }
+    catch (e) { flash('Clipboard blocked — use Export instead.'); }
+  });
+  document.getElementById('dc-import').addEventListener('click', () => document.getElementById('dc-file').click());
+  document.getElementById('dc-file').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    file.text().then(raw => {
+      const data = JSON.parse(raw);
+      if (data.format !== FORMAT || !Array.isArray(data.comments)) { flash('Not a dc-comments file.'); return; }
+      const byId = new Map(comments.map(c => [c.id, c]));
+      for (const c of data.comments) byId.set(c.id, c);
+      comments = [...byId.values()];
+      reanchorAll(); save(); render();
+      flash('Imported ' + data.comments.length + ' comment(s).');
+    }).catch(() => flash('Could not parse that file.'));
+    e.target.value = '';
+  });
+
+  document.getElementById('dc-toggle').addEventListener('click', () => sidebar.classList.toggle('dc-open'));
+
+  // ---- init ----
+  load();
+  // Merge the renderer's preloaded comments (with replies) by id: a stored
+  // comment keeps its own text/resolved state and takes the preloaded replies.
+  try {
+    const pre = document.getElementById('dc-preload');
+    const preloaded = pre && pre.textContent.trim() ? JSON.parse(pre.textContent) : [];
+    if (Array.isArray(preloaded) && preloaded.length) {
+      const byId = new Map(comments.map(c => [c.id, c]));
+      for (const c of preloaded) {
+        const existing = byId.get(c.id);
+        if (existing) { if (c.replies) existing.replies = c.replies; }
+        else byId.set(c.id, c);
+      }
+      comments = [...byId.values()];
+      save();
+    }
+  } catch (e) { /* malformed preload: ignore */ }
+  reanchorAll();
+  render();
+})();
+</script>
+<!-- ============ DC-COMMENTS END ============ -->
+</div>
+</body>
+</html>

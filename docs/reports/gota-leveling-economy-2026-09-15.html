@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How Gods of the Arena heroes earn, lose, and spend XP and gold</title>
+<!--
+  Ink & Print design/plan document template (Softmax house style).
+
+  HOW TO USE (renderer subagent):
+  - Replace everything inside <article id="doc"> with the real document content.
+    The placeholder content below doubles as a component style guide — copy the
+    markup patterns (masthead, TOC, section, figure, table, callout, code,
+    citation) and delete what you don't use.
+  - Do NOT modify anything between the DC-COMMENTS BEGIN/END markers. That block
+    is the tested commenting system; copy it verbatim. The one thing you may fill
+    is the CONTENT of <script id="dc-preload" type="application/json">: a
+    dc-comments/1 `comments` array, each comment optionally carrying
+    `replies: [{author, text, created}]`, so the reader sees their comments and
+    the agent's replies together in the sidebar.
+  - Keep the doc self-contained: inline SVG for figures, no JS deps beyond this
+    file. Google Fonts is the only permitted external fetch.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Merriweather+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============ Ink & Print tokens ============ */
+  :root {
+    --bg: #fffdf4;            /* cream paper */
+    --surface: #fffaf0;
+    --surface-alt: #f8f6ef;
+    --fg: #111827;            /* warm near-black — never pure #000 */
+    --fg-subtle: #555555;
+    --fg-muted: #999999;
+    --ink-navy: #1a3875;
+    --ink-sage: #6e8050;
+    --ink-terracotta: #b36e4e;
+    --ink-gold: #d4a853;
+    --accent: #859ebe;
+    --accent-soft: #eef2f7;
+    --cta: #0e2758;
+    --cta-foreground: #fffdf4;
+    --border: #e4dac8;
+    --border-strong: #d4c9b5;
+    --border-subtle: #f0ebe1;
+    --serif: 'Merriweather', Georgia, serif;
+    --sans: 'Merriweather Sans', 'Helvetica Neue', sans-serif;
+    --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  /* ============ Page grid: reading column + comment rail ============ */
+  .dc-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 0;
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+  article#doc {
+    max-width: 72ch;
+    margin: 0 auto;
+    padding: 56px 40px 120px;
+    min-width: 0;
+  }
+
+  /* ============ Typography ============ */
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-subtle);
+  }
+  header.masthead { border-bottom: 2px solid var(--border-strong); padding-bottom: 20px; margin-bottom: 32px; }
+  header.masthead h1 {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 34px;
+    line-height: 1.2;
+    margin: 8px 0 10px;
+  }
+  header.masthead .context { color: var(--fg-subtle); font-size: 13.5px; margin: 0; }
+  h2 {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-navy);
+    margin: 48px 0 12px;
+  }
+  h3 { font-family: var(--serif); font-weight: 700; font-size: 16.5px; margin: 32px 0 8px; }
+  p { margin: 0 0 14px; }
+  a { color: var(--ink-navy); text-decoration-color: var(--accent); text-underline-offset: 3px; }
+  a:hover { color: var(--cta); }
+  strong { font-weight: 700; }
+  ul, ol { padding-left: 24px; margin: 0 0 14px; }
+  li { margin-bottom: 4px; }
+  hr { border: 0; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  /* Key-points opener: every section starts with scannable bullets */
+  .key-points {
+    list-style: none;
+    padding: 0 0 0 2px;
+    margin: 0 0 18px;
+  }
+  .key-points li { padding-left: 18px; position: relative; margin-bottom: 6px; }
+  .key-points li::before { content: '—'; position: absolute; left: 0; color: var(--ink-gold); font-weight: 700; }
+
+  /* ============ TOC ============ */
+  nav.toc { margin: 28px 0 8px; }
+  nav.toc ol { list-style: none; padding: 0; column-count: 2; column-gap: 40px; margin: 10px 0 0; }
+  nav.toc li { margin-bottom: 5px; break-inside: avoid; }
+  nav.toc a { text-decoration: none; border-bottom: 1px dotted var(--border-strong); }
+  nav.toc .toc-num { font-family: var(--mono); font-size: 12px; color: var(--fg-muted); margin-right: 8px; }
+
+  /* ============ Tables ============ */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 18px 0 22px;
+    font-size: 13.5px;
+  }
+  th {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg-subtle);
+    text-align: left;
+    padding: 6px 12px 6px 0;
+    border-bottom: 2px solid var(--border-strong);
+  }
+  td { padding: 7px 12px 7px 0; border-bottom: 1px solid var(--border-subtle); vertical-align: top; }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-size: 12.5px; font-feature-settings: 'tnum' 1; }
+
+  /* ============ Figures ============ */
+  figure { margin: 24px 0 28px; }
+  figure svg { max-width: 100%; height: auto; display: block; }
+  figcaption {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--fg-subtle);
+  }
+  figcaption .fig-label {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 10.5px;
+    color: var(--ink-navy);
+    margin-right: 8px;
+  }
+
+  /* ============ Code & citations ============ */
+  code {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--surface-alt);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  pre {
+    background: var(--surface-alt);
+    border: 1px solid var(--border-subtle);
+    border-radius: 3px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    margin: 16px 0 20px;
+  }
+  pre code { background: none; padding: 0; font-size: 12.5px; line-height: 1.6; }
+  .cite {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--fg-subtle);
+    background: var(--surface-alt);
+    padding: 1px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  /* Superscript source references — body prose never carries raw file paths.
+     Full citation lives in the title (hover) and in the numbered Sources list. */
+  sup.ref { line-height: 0; }
+  sup.ref a {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--ink-navy);
+    text-decoration: none;
+    padding: 0 1px;
+  }
+  sup.ref a:hover { text-decoration: underline; }
+  ol.sources { margin: 12px 0; padding-left: 30px; }
+  ol.sources li {
+    font-size: 13px;
+    padding: 2px 0;
+  }
+  ol.sources li::marker {
+    font-family: var(--mono);
+    font-weight: 700;
+    color: var(--ink-navy);
+  }
+  ol.sources li:target { background: var(--accent-soft); }
+
+  /* ============ Callouts ============ */
+  .callout { padding: 12px 16px; margin: 18px 0; font-size: 13.5px; border-radius: 3px; }
+  .callout .callout-label {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .callout-info { background: var(--accent-soft); }
+  .callout-info .callout-label { color: var(--ink-navy); }
+  .callout-warn { background: rgba(179, 110, 78, 0.08); border-left: 3px solid var(--ink-terracotta); }
+  .callout-warn .callout-label { color: var(--ink-terracotta); }
+  .callout-open { background: rgba(212, 168, 83, 0.10); }
+  .callout-open .callout-label { color: #8a6a1f; }
+
+  /* Decision record */
+  .decision { border-top: 1px solid var(--border); padding: 14px 0 4px; margin: 14px 0; }
+  .decision .decision-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-sage); }
+  .decision p { margin-top: 6px; }
+
+  @media (max-width: 1100px) {
+    .dc-page { grid-template-columns: 1fr; }
+  }
+  @media print {
+    #dc-sidebar, #dc-fab, #dc-toggle { display: none !important; }
+    .dc-page { grid-template-columns: 1fr; }
+  }
+
+  /* ================================================================
+     DC-COMMENTS BEGIN — styles (copy verbatim; do not modify)
+     ================================================================ */
+  ::highlight(dc-hl) { background: rgba(212, 168, 83, 0.28); }
+  ::highlight(dc-hl-active) { background: rgba(212, 168, 83, 0.6); }
+
+  #dc-fab {
+    position: absolute;
+    z-index: 40;
+    display: none;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--cta-foreground);
+    background: var(--cta);
+    border: 1px solid #0a1c42;
+    border-radius: 3px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  #dc-fab:hover { background: var(--ink-navy); }
+
+  #dc-sidebar {
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    padding: 24px 20px 60px;
+    font-size: 13px;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    overflow-y: auto;
+  }
+  #dc-sidebar h2.dc-title {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-subtle);
+    margin: 0 0 4px;
+  }
+  .dc-actions { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 18px; }
+  .dc-btn {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--fg);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    padding: 4px 9px;
+    cursor: pointer;
+  }
+  .dc-btn:hover { background: var(--surface-alt); }
+  .dc-btn:focus-visible, #dc-fab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .dc-empty { color: var(--fg-muted); font-style: italic; }
+  .dc-item { border-top: 1px solid var(--border-subtle); padding: 12px 0; cursor: pointer; }
+  .dc-item.dc-resolved { opacity: 0.5; }
+  .dc-quote {
+    border-left: 2px solid var(--ink-gold);
+    padding-left: 8px;
+    color: var(--fg-subtle);
+    font-style: italic;
+    font-size: 12px;
+    margin-bottom: 6px;
+    overflow-wrap: break-word;
+  }
+  .dc-orphan-tag {
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-terracotta);
+    background: rgba(179, 110, 78, 0.12);
+    border-radius: 999px;
+    padding: 1px 7px;
+    margin-left: 6px;
+  }
+  .dc-text { white-space: pre-wrap; overflow-wrap: break-word; }
+  .dc-item textarea {
+    width: 100%;
+    min-height: 64px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    padding: 6px 8px;
+    resize: vertical;
+  }
+  .dc-item textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .dc-meta { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 11px; color: var(--fg-muted); }
+  .dc-meta label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+  .dc-meta .dc-del { margin-left: auto; color: var(--ink-terracotta); background: none; border: none; font-size: 11px; cursor: pointer; padding: 0; }
+  .dc-meta .dc-del:hover { text-decoration: underline; }
+  #dc-status { font-size: 11px; color: var(--ink-sage); min-height: 16px; margin-top: 8px; }
+
+  #dc-toggle { display: none; }
+  @media (max-width: 1100px) {
+    #dc-sidebar {
+      position: fixed;
+      right: 0;
+      top: 0;
+      width: 320px;
+      max-width: 90vw;
+      transform: translateX(100%);
+      transition: transform 200ms ease-out;
+      z-index: 50;
+      box-shadow: -4px 0 16px rgba(0, 0, 0, 0.08);
+    }
+    #dc-sidebar.dc-open { transform: translateX(0); }
+    #dc-toggle {
+      display: block;
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 51;
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--cta-foreground);
+      background: var(--cta);
+      border: 1px solid #0a1c42;
+      border-radius: 999px;
+      padding: 9px 15px;
+      cursor: pointer;
+    }
+  }
+  /* ============ DC-COMMENTS END — styles ============ */
+
+  /* replies rendered under a comment (from the comment's `replies` array) */
+  .dc-replies { margin-top: 8px; padding-left: 10px; border-left: 2px solid var(--border-strong); }
+  .dc-reply-author { font-family: var(--sans); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-navy); }
+  .dc-reply-text { font-size: 12.5px; line-height: 1.5; color: var(--fg); white-space: pre-wrap; margin-top: 2px; }
+  .dc-reply-text a { color: var(--ink-navy); word-break: break-all; }
+</style>
+</head>
+<body>
+<div class="dc-page">
+<article id="doc">
+
+  <header class="masthead">
+    <span class="eyebrow">Research Report · 2026-09-15 · for James, before designing farming and shopping behavior</span>
+    <h1>How Gods of the Arena heroes earn, lose, and spend XP and gold</h1>
+    <p class="context">For James, before we design the farming and shopping behavior of the first James Botts policy. The research used Metta-AI/polyworld <code>1d7eb723</code>. The league runs <code>5422fb0c</code> (checked again today in the coworld manifest). Of the files this report cites, only the simulation module differs between the two commits, in footman-pathing and tower-collision hunks that contain none of the lines cited here. The other cited files are byte-identical. Since then <code>origin/main</code> moved to <code>d915109</code>, which lowers tower HP and damage. The live build does not include that change.</p>
+  </header>
+
+  <section id="summary">
+    <h2>Executive Summary</h2>
+    <p>Gods of the Arena has one income mechanism. A hero receives XP and gold only when its own damage is the hit that takes an enemy footman, hero, or tower to zero HP<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:1882-1916">1</a></sup>. The rewards are fixed per victim kind: 25 XP and 15 gold for a footman, 150 and 100 for a hero, and 100 and 75 for a tower<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:358-363">1</a></sup>. The fort pays nothing. Kills by towers or footmen pay nothing to anyone, and the kill of an ally pays only that ally. There are no assist rewards, no passive income, no shared team payout, and no denies. Every damage source that a hero controls counts equally. The basic attack, an explicit or automatic ability cast, and a poison potion all go through the same reward function.</p>
+    <p>Neither resource is ever lost. XP only increases, and the only gold decrease in the simulation is a shop purchase<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:1566">1</a></sup>. Death costs 216 ticks (9 simulated seconds) of absence and nothing else. Level, XP, gold, and inventory all survive respawn<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:1829-1852">1</a></sup>. XP has exactly one use: levels. Each level increases max HP, max mana, basic-attack damage, and move speed by a fixed per-class step, up to level 20<sup class="ref"><a href="#src-2" title="examples/gods_of_the_arena/content.nim:743-761">2</a></sup>. Ability damage, ability healing, attack range, and attack speed do not change with level. Gold has exactly one use: the 20-item shop, which works from anywhere on the map. The level curve needs 14,725 XP for level 20. The default creep supply gives a team near 18,000 XP over a full match, so levels are a contest for last hits, not an entitlement. The results file reports lifetime XP as <code>total_xp</code> beside the binary win score, but it does not change that score<sup class="ref"><a href="#src-3" title="src/polyworld/coworld.nim:327-347">3</a></sup>.</p>
+  </section>
+
+  <nav class="toc">
+    <span class="eyebrow">Contents</span>
+    <ol>
+      <li><span class="toc-num">1</span><a href="#sec-1">Starting state and the two resources</a></li>
+      <li><span class="toc-num">2</span><a href="#sec-2">How XP and gold are earned</a></li>
+      <li><span class="toc-num">3</span><a href="#sec-3">What XP does: the level curve</a></li>
+      <li><span class="toc-num">4</span><a href="#sec-4">What gold does: the shop</a></li>
+      <li><span class="toc-num">5</span><a href="#sec-5">How resources are lost</a></li>
+      <li><span class="toc-num">6</span><a href="#sec-6">Supply: how much is on the map</a></li>
+      <li><span class="toc-num">7</span><a href="#sec-7">Bookkeeping: metrics and end-of-episode outputs</a></li>
+      <li><span class="toc-num">8</span><a href="#sec-8">Consequences for policy design</a></li>
+      <li><span class="toc-num">A</span><a href="#appendix-a">Appendix A: Item price list</a></li>
+      <li><span class="toc-num">B</span><a href="#appendix-b">Appendix B: Per-class level scaling</a></li>
+      <li><span class="toc-num">C</span><a href="#sources">Appendix C: Sources</a></li>
+    </ol>
+  </nav>
+
+  <section id="sec-1">
+    <h2>1 · Starting state and the two resources</h2>
+    <ul class="key-points">
+      <li>Every hero starts at level 1 with 0 XP and 150 gold<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:1075-1085">1</a></sup>.</li>
+      <li>A hero tracks three counters: <code>xp</code> (progress toward the next level), <code>totalXp</code> (lifetime), and <code>gold</code><sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:104-107">1</a></sup>.</li>
+      <li>A policy can read <code>selfLevel</code> and <code>selfGold</code>, but neither XP counter<sup class="ref"><a href="#src-4" title="examples/gods_of_the_arena/bots.nim:31-46">4</a></sup>.</li>
+    </ul>
+    <p>The <code>Hero</code> record holds <code>level</code>, <code>xp</code>, <code>totalXp</code>, and <code>gold</code> as plain integers<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:104-107">1</a></sup>. <code>xp</code> is the quantity collected since the last level-up. <code>totalXp</code> never resets, and it is the value that the platform reports at the end of the episode. Gold is one balance, with no separate "banked" quantity. The host shows <code>selfLevel</code> and <code>selfGold</code> to BASIC, but not <code>xp</code> or <code>totalXp</code>. Thus a script can only estimate its XP progress from a count of its own kills<sup class="ref"><a href="#src-4" title="examples/gods_of_the_arena/bots.nim:31-46">4</a></sup>.</p>
+  </section>
+
+  <section id="sec-2">
+    <h2>2 · How XP and gold are earned</h2>
+    <ul class="key-points">
+      <li>The only income event is a killing hit by a hero: the hit that takes an enemy footman, hero, or tower from positive HP to zero or below<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:1882-1916">1</a></sup>.</li>
+      <li>Rewards are flat per victim kind: footman 25 XP / 15 gold, hero 150 / 100, tower 100 / 75. The fort pays nothing<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:358-363, 1915-1916">1</a></sup>.</li>
+      <li>Basic attacks, abilities (explicit or automatic), and poison potions all pay through the same function. Tower and footman kills pay nobody. There are no assists, no team share, no passive income, and no denies.</li>
+    </ul>
+
+    <figure>
+<svg id="fig-1" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="flowchart" style="max-width: 940.527px; background-color: transparent;" viewBox="0 0 940.52734375 1106.5906982421875" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#fig-1{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;fill:#111827;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#fig-1 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#fig-1 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#fig-1 .error-icon{fill:#fffaf0;}#fig-1 .error-text{fill:#111827;stroke:#111827;}#fig-1 .edge-thickness-normal{stroke-width:1px;}#fig-1 .edge-thickness-thick{stroke-width:3.5px;}#fig-1 .edge-pattern-solid{stroke-dasharray:0;}#fig-1 .edge-thickness-invisible{stroke-width:0;fill:none;}#fig-1 .edge-pattern-dashed{stroke-dasharray:3;}#fig-1 .edge-pattern-dotted{stroke-dasharray:2;}#fig-1 .marker{fill:#859ebe;stroke:#859ebe;}#fig-1 .marker.cross{stroke:#859ebe;}#fig-1 svg{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;}#fig-1 p{margin:0;}#fig-1 .label{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111827;}#fig-1 .cluster-label text{fill:#1a3875;}#fig-1 .cluster-label span{color:#1a3875;}#fig-1 .cluster-label span p{background-color:transparent;}#fig-1 .label text,#fig-1 span{fill:#111827;color:#111827;}#fig-1 .node rect,#fig-1 .node circle,#fig-1 .node ellipse,#fig-1 .node polygon,#fig-1 .node path{fill:#f8f6ef;stroke:#d4c9b5;stroke-width:1px;}#fig-1 .rough-node .label text,#fig-1 .node .label text,#fig-1 .image-shape .label,#fig-1 .icon-shape .label{text-anchor:middle;}#fig-1 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#fig-1 .rough-node .label,#fig-1 .node .label,#fig-1 .image-shape .label,#fig-1 .icon-shape .label{text-align:center;}#fig-1 .node.clickable{cursor:pointer;}#fig-1 .root .anchor path{fill:#859ebe!important;stroke-width:0;stroke:#859ebe;}#fig-1 .arrowheadPath{fill:#00020b;}#fig-1 .edgePaths .path{stroke:#859ebe;stroke-width:1px;}#fig-1 .flowchart-link{stroke:#859ebe;fill:none;}#fig-1 .edgeLabel{background-color:#fffdf4;text-align:center;}#fig-1 .edgeLabel p{background-color:#fffdf4;}#fig-1 .edgeLabel rect{opacity:0.5;background-color:#fffdf4;fill:#fffdf4;}#fig-1 .labelBkg{background-color:rgba(255, 253, 244, 0.5);}#fig-1 .cluster rect{fill:#fffaf0;stroke:#e4dac8;stroke-width:1px;}#fig-1 .cluster text{fill:#1a3875;}#fig-1 .cluster span{color:#1a3875;}#fig-1 .node .collapsed-indicator{fill:#e4dac8;stroke:none;opacity:0.6;}#fig-1 .node .collapsed-separator{stroke:#e4dac8;stroke-width:0.75px;}#fig-1 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:12px;background:#fffaf0;border:1px solid #e4dac8;border-radius:2px;pointer-events:none;z-index:100;}#fig-1 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#111827;}#fig-1 rect.text{fill:none;stroke-width:0;}#fig-1 .icon-shape,#fig-1 .image-shape{background-color:#fffdf4;text-align:center;}#fig-1 .icon-shape p,#fig-1 .image-shape p{background-color:#fffdf4;padding:2px;}#fig-1 .icon-shape .label rect,#fig-1 .image-shape .label rect{opacity:0.5;background-color:#fffdf4;fill:#fffdf4;}#fig-1 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#fig-1 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#fig-1 .node .neo-node{stroke:#d4c9b5;}#fig-1 [data-look="neo"].node rect,#fig-1 [data-look="neo"].cluster rect,#fig-1 [data-look="neo"].node polygon{stroke:url(#fig-1-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-1 [data-look="neo"].swimlane.cluster rect{filter:none;}#fig-1 [data-look="neo"].node path{stroke:url(#fig-1-gradient);stroke-width:1px;}#fig-1 [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-1 [data-look="neo"].node .neo-line path{stroke:#d4c9b5;filter:none;}#fig-1 [data-look="neo"].node circle{stroke:url(#fig-1-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-1 [data-look="neo"].node circle .state-start{fill:#000000;}#fig-1 [data-look="neo"].icon-shape .icon{fill:url(#fig-1-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-1 [data-look="neo"].icon-shape .icon-neo path{stroke:url(#fig-1-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-1 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="fig-1_flowchart-v2-pointEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-pointStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-pointEnd-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="11.5" refY="7" markerUnits="userSpaceOnUse" markerWidth="10.5" markerHeight="14" orient="auto"><path d="M 0 0 L 11.5 7 L 0 14 z" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-pointStart-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="1" refY="7" markerUnits="userSpaceOnUse" markerWidth="11.5" markerHeight="14" orient="auto"><polygon points="0,7 11.5,14 11.5,0" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-circleEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-circleStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-circleEnd-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refY="5" refX="12.25" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-circleStart-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-2" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-crossEnd" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-crossStart" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-crossEnd-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5;"/></marker><marker id="fig-1_flowchart-v2-crossStart-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="-3.5" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5; stroke-dasharray: 1, 0;"/></marker><g class="root"><g class="clusters"/><g class="edgePaths"><path d="M248.273,54L248.273,58.167C248.273,62.333,248.273,70.667,248.273,78.333C248.273,86,248.273,93,248.273,96.5L248.273,100" id="fig-1-L_A_B_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_A_B_0" data-points="W3sieCI6MjQ4LjI3MzQzNzUsInkiOjU0fSx7IngiOjI0OC4yNzM0Mzc1LCJ5Ijo3OX0seyJ4IjoyNDguMjczNDM3NSwieSI6MTA0fV0=" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M209.455,220.384L195.855,233.971C182.256,247.557,155.058,274.73,141.459,294.767C127.859,314.803,127.859,327.703,127.859,334.153L127.859,340.603" id="fig-1-L_B_N0_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_B_N0_0" data-points="W3sieCI6MjA5LjQ1NDUyMjU3NzY0NjQsInkiOjIyMC4zODQyMTAwNzc2NDY0M30seyJ4IjoxMjcuODU5Mzc1LCJ5IjozMDEuOTAzMTI1NzYyOTM5NDV9LHsieCI6MTI3Ljg1OTM3NSwieSI6MzQ0LjYwMzEyNjUyNTg3ODl9XQ==" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M287.092,220.384L300.692,233.971C314.291,247.557,341.489,274.73,355.088,294.767C368.688,314.803,368.688,327.703,368.688,334.153L368.688,340.603" id="fig-1-L_B_C_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_B_C_0" data-points="W3sieCI6Mjg3LjA5MjM1MjQyMjM1MzYsInkiOjIyMC4zODQyMTAwNzc2NDYzN30seyJ4IjozNjguNjg3NSwieSI6MzAxLjkwMzEyNTc2MjkzOTQ1fSx7IngiOjM2OC42ODc1LCJ5IjozNDQuNjAzMTI2NTI1ODc4OX1d" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M368.688,390.603L368.688,394.77C368.688,398.936,368.688,407.27,368.688,414.936C368.688,422.603,368.688,429.603,368.688,433.103L368.688,436.603" id="fig-1-L_C_D_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_C_D_0" data-points="W3sieCI6MzY4LjY4NzUsInkiOjM5MC42MDMxMjY1MjU4Nzg5fSx7IngiOjM2OC42ODc1LCJ5Ijo0MTUuNjAzMTI2NTI1ODc4OX0seyJ4IjozNjguNjg3NTAwMDAwMDAwMDYsInkiOjQ0MC42MDMxMjY1MjU4Nzg5fV0=" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M325.712,643.465L318.725,656.461C311.739,669.457,297.766,695.449,290.779,719.34C283.793,743.232,283.793,765.024,283.793,775.92L283.793,786.816" id="fig-1-L_D_N1_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_D_N1_0" data-points="W3sieCI6MzI1LjcxMTU1NjMzNTYzNzM0LCJ5Ijo2NDMuNDY0NjkyMDE2Nzg5Nn0seyJ4IjoyODMuNzkyOTY4NzUsInkiOjcyMS40NDA2MzQ3Mjc0Nzh9LHsieCI6MjgzLjc5Mjk2ODc1LCJ5Ijo3OTAuODE1NjMzNzczODAzN31d" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M411.663,643.465L418.65,656.461C425.636,669.457,439.609,695.449,446.596,713.611C453.582,731.774,453.582,742.107,453.582,747.274L453.582,752.441" id="fig-1-L_D_E_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_D_E_0" data-points="W3sieCI6NDExLjY2MzQ0MzY2NDM2MjcsInkiOjY0My40NjQ2OTIwMTY3ODk2fSx7IngiOjQ1My41ODIwMzEyNSwieSI6NzIxLjQ0MDYzNDcyNzQ3OH0seyJ4Ijo0NTMuNTgyMDMxMjUsInkiOjc1Ni40NDA2MzM3NzM4MDM2fV0=" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M408.527,826.136L359.733,839.478C310.939,852.821,213.35,879.506,164.556,898.015C115.762,916.524,115.762,926.857,115.762,932.024L115.762,937.191" id="fig-1-L_E_F_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_E_F_0" data-points="W3sieCI6NDA4LjUyNzA1Mjk0MjU0NzQ3LCJ5Ijo4MjYuMTM1NjU1NDY2MzUxMn0seyJ4IjoxMTUuNzYxNzE4NzUsInkiOjkwNi4xOTA2MzI4MjAxMjk0fSx7IngiOjExNS43NjE3MTg3NSwieSI6OTQxLjE5MDYzMTg2NjQ1NTF9XQ==" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M421.9,839.509L408.196,850.622C394.492,861.736,367.084,883.963,353.38,900.244C339.676,916.524,339.676,926.857,339.676,932.024L339.676,937.191" id="fig-1-L_E_G_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_E_G_0" data-points="W3sieCI6NDIxLjkwMDE4MzY1NjE3Mjc3LCJ5Ijo4MzkuNTA4Nzg2MTc5OTc2NX0seyJ4IjozMzkuNjc1NzgxMjUsInkiOjkwNi4xOTA2MzI4MjAxMjk0fSx7IngiOjMzOS42NzU3ODEyNSwieSI6OTQxLjE5MDYzMTg2NjQ1NTF9XQ==" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M485.264,839.509L498.968,850.622C512.672,861.736,540.08,883.963,553.784,900.244C567.488,916.524,567.488,926.857,567.488,932.024L567.488,937.191" id="fig-1-L_E_H_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_E_H_0" data-points="W3sieCI6NDg1LjI2Mzg3ODg0MzgyNzIsInkiOjgzOS41MDg3ODYxNzk5NzY1fSx7IngiOjU2Ny40ODgyODEyNSwieSI6OTA2LjE5MDYzMjgyMDEyOTR9LHsieCI6NTY3LjQ4ODI4MTI1LCJ5Ijo5NDEuMTkwNjMxODY2NDU1MX1d" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M499.367,825.406L552.554,838.87C605.741,852.334,712.114,879.262,765.301,897.893C818.488,916.524,818.488,926.857,818.488,932.024L818.488,937.191" id="fig-1-L_E_N2_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_E_N2_0" data-points="W3sieCI6NDk5LjM2Njc1NTk0MDU3ODc0LCJ5Ijo4MjUuNDA1OTA5MDgzMjI1fSx7IngiOjgxOC40ODgyODEyNSwieSI6OTA2LjE5MDYzMjgyMDEyOTR9LHsieCI6ODE4LjQ4ODI4MTI1LCJ5Ijo5NDEuMTkwNjMxODY2NDU1MX1d" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M115.762,987.191L115.762,991.357C115.762,995.524,115.762,1003.857,134.388,1012.268C153.014,1020.678,190.266,1029.166,208.892,1033.41L227.518,1037.653" id="fig-1-L_F_L_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_F_L_0" data-points="W3sieCI6MTE1Ljc2MTcxODc1LCJ5Ijo5ODcuMTkwNjMxODY2NDU1MX0seyJ4IjoxMTUuNzYxNzE4NzUsInkiOjEwMTIuMTkwNjMxODY2NDU1MX0seyJ4IjoyMzEuNDE3OTY4NzUsInkiOjEwMzguNTQxODY1NzY5NTE1Mn1d" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M339.676,987.191L339.676,991.357C339.676,995.524,339.676,1003.857,340.983,1011.565C342.289,1019.273,344.903,1026.356,346.21,1029.897L347.517,1033.438" id="fig-1-L_G_L_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_G_L_0" data-points="W3sieCI6MzM5LjY3NTc4MTI1LCJ5Ijo5ODcuMTkwNjMxODY2NDU1MX0seyJ4IjozMzkuNjc1NzgxMjUsInkiOjEwMTIuMTkwNjMxODY2NDU1MX0seyJ4IjozNDguOTAxNDAzODc5NDY4NywieSI6MTAzNy4xOTA2MzE4NjY0NTV9XQ==" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M567.488,987.191L567.488,991.357C567.488,995.524,567.488,1003.857,552.628,1012.018C537.768,1020.178,508.047,1028.165,493.187,1032.159L478.327,1036.152" id="fig-1-L_H_L_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_H_L_0" data-points="W3sieCI6NTY3LjQ4ODI4MTI1LCJ5Ijo5ODcuMTkwNjMxODY2NDU1MX0seyJ4Ijo1NjcuNDg4MjgxMjUsInkiOjEwMTIuMTkwNjMxODY2NDU1MX0seyJ4Ijo0NzQuNDY0MTI5Njk2NTMxMzYsInkiOjEwMzcuMTkwNjMxODY2NDU1fV0=" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" data-id="L_A_B_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel" transform="translate(127.859375, 301.90312576293945)"><g class="label" data-id="L_B_N0_0" transform="translate(0, -9.000000476837158)"><g><rect class="background" style="" x="-55.8046875" y="-0.9999990463256836" width="111.609375" height="19.999999046325684"/><text y="-10.1" text-anchor="middle" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">tower</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> or</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> footman</tspan></tspan></text></g></g></g><g class="edgeLabel" transform="translate(368.6875, 301.90312576293945)"><g class="label" data-id="L_B_C_0" transform="translate(0, -16.70000171661377)"><g><rect class="background" style="" x="-87.71875" y="-0.9999990463256836" width="175.4375" height="35.400001525878906"/><text y="-10.1" text-anchor="middle" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">hero</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> basic</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> attack,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> ability,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> or</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="1em" dy="1.1em" text-anchor="middle"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">poison</tspan></tspan></text></g></g></g><g class="edgeLabel"><g class="label" data-id="L_C_D_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel" transform="translate(283.79296875, 721.440634727478)"><g class="label" data-id="L_D_N1_0" transform="translate(0, -9.000000476837158)"><g><rect class="background" style="" x="-9.9140625" y="-0.9999990463256836" width="19.828125" height="19.999999046325684"/><text y="-10.1" text-anchor="middle" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">no</tspan></tspan></text></g></g></g><g class="edgeLabel" transform="translate(453.58203125, 721.440634727478)"><g class="label" data-id="L_D_E_0" transform="translate(0, -9.000000476837158)"><g><rect class="background" style="" x="-12.765625" y="-0.9999990463256836" width="25.53125" height="19.999999046325684"/><text y="-10.1" text-anchor="middle" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">yes</tspan></tspan></text></g></g></g><g class="edgeLabel" transform="translate(115.76171875, 906.1906328201294)"><g class="label" data-id="L_E_F_0" transform="translate(0, -9.000000476837158)"><g><rect class="background" style="" x="-27.9375" y="-0.9999990463256836" width="55.875" height="19.999999046325684"/><text y="-10.1" text-anchor="middle" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">footman</tspan></tspan></text></g></g></g><g class="edgeLabel" transform="translate(339.67578125, 906.1906328201294)"><g class="label" data-id="L_E_G_0" transform="translate(0, -9.000000476837158)"><g><rect class="background" style="" x="-15.875" y="-0.9999990463256836" width="31.75" height="19.999999046325684"/><text y="-10.1" text-anchor="middle" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">hero</tspan></tspan></text></g></g></g><g class="edgeLabel" transform="translate(567.48828125, 906.1906328201294)"><g class="label" data-id="L_E_H_0" transform="translate(0, -9.000000476837158)"><g><rect class="background" style="" x="-19.625" y="-0.9999990463256836" width="39.25" height="19.999999046325684"/><text y="-10.1" text-anchor="middle" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">tower</tspan></tspan></text></g></g></g><g class="edgeLabel" transform="translate(818.48828125, 906.1906328201294)"><g class="label" data-id="L_E_N2_0" transform="translate(0, -9.000000476837158)"><g><rect class="background" style="" x="-12.6328125" y="-0.9999990463256836" width="25.265625" height="19.999999046325684"/><text y="-10.1" text-anchor="middle" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">fort</tspan></tspan></text></g></g></g><g class="edgeLabel"><g class="label" data-id="L_F_L_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_G_L_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_H_L_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g></g><g class="nodes"><g class="node default" id="fig-1-flowchart-A-0" data-look="classic" transform="translate(248.2734375, 31)"><rect class="basic label-container" style="" x="-107.6875" y="-22.999999523162842" width="215.375" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">Damage</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> lands</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> on</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> enemy</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-B-1" data-look="classic" transform="translate(248.2734375, 181.6015625)"><polygon points="77.60156202316284,0 155.20312404632568,-77.60156202316284 77.60156202316284,-155.20312404632568 0,-77.60156202316284" class="label-container" transform="translate(-77.10156202316284, 77.60156202316284)"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">Source</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> is</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> a</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> hero?</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-N0-3" data-look="classic" transform="translate(127.859375, 367.6031265258789)"><rect class="basic label-container" style="" x="-119.859375" y="-22.999999523162842" width="239.71875" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">No</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> reward.</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> Kill</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> counters</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> only</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-C-5" data-look="classic" transform="translate(368.6875, 367.6031265258789)"><rect class="basic label-container" style="" x="-70.96875" y="-22.999999523162842" width="141.9375" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">applyHeroHit</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-D-7" data-look="classic" transform="translate(368.6875, 563.5218811035156)"><polygon points="122.91875076293945,0 245.8375015258789,-122.91875076293945 122.91875076293945,-245.8375015258789 0,-122.91875076293945" class="label-container" transform="translate(-122.41875076293945, 122.91875076293945)"/><g class="label" style="" transform="translate(0, -15.700000762939453)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">HP</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> went</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> from</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> above</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> 0</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> to</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> 0</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> or</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">below?</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-N1-9" data-look="classic" transform="translate(283.79296875, 813.8156337738037)"><rect class="basic label-container" style="" x="-62.4140625" y="-22.999999523162842" width="124.828125" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">No</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> reward</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-E-11" data-look="classic" transform="translate(453.58203125, 813.8156337738037)"><polygon points="57.37499952316284,0 114.74999904632568,-57.37499952316284 57.37499952316284,-114.74999904632568 0,-57.37499952316284" class="label-container" transform="translate(-56.87499952316284, 57.37499952316284)"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">Victim</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> kind</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-F-13" data-look="classic" transform="translate(115.76171875, 964.1906318664551)"><rect class="basic label-container" style="" x="-83.0625" y="-22.999999523162842" width="166.125" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">+25</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> XP,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> +15</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> gold</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-G-15" data-look="classic" transform="translate(339.67578125, 964.1906318664551)"><rect class="basic label-container" style="" x="-90.8515625" y="-22.999999523162842" width="181.703125" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">+150</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> XP,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> +100</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> gold</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-H-17" data-look="classic" transform="translate(567.48828125, 964.1906318664551)"><rect class="basic label-container" style="" x="-86.9609375" y="-22.999999523162842" width="173.921875" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">+100</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> XP,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> +75</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> gold</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-N2-19" data-look="classic" transform="translate(818.48828125, 964.1906318664551)"><rect class="basic label-container" style="" x="-114.0390625" y="-22.999999523162842" width="228.078125" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">No</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> reward.</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> Game</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> may</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> end</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-L-21" data-look="classic" transform="translate(360.23046875, 1067.8906326293945)"><rect class="basic label-container" style="" x="-128.8125" y="-30.700000762939453" width="257.625" height="61.400001525878906"/><g class="label" style="" transform="translate(0, -15.700000762939453)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">gainRewards:</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> add</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> XP</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> and</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> gold,</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">apply</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> level-ups</tspan></tspan></text></g></g></g></g></g></g><defs><filter id="fig-1-drop-shadow" height="130%" width="130%"><feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"/></filter></defs><defs><filter id="fig-1-drop-shadow-small" height="150%" width="150%"><feDropShadow dx="2" dy="2" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"/></filter></defs><linearGradient id="fig-1-gradient" gradientUnits="objectBoundingBox" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#d4c9b5" stop-opacity="1"/><stop offset="100%" stop-color="#d4c9b5" stop-opacity="1"/></linearGradient></svg>
+      <figcaption><span class="fig-label">Figure 1</span>Every path to income. Only the hero whose hit takes the target to zero is paid, and only for footmen, heroes, and towers.</figcaption>
+    </figure>
+
+    <h3>2.1 The reward function</h3>
+    <p>The engine calls <code>applyHeroHit</code> with the attacker, a damage quantity, and the target<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:1882-1916">1</a></sup>. For a footman, hero, or tower target, it records whether the target was alive before the hit, then subtracts the damage. If the target was alive and is now at or below zero HP, it calls <code>gainRewards</code> on the attacker with the constants for that victim kind, and adds the gold to the attacker's <code>GoldMetric</code>. For a fort target, it subtracts HP and does nothing else. The constants are defined once<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:358-363">1</a></sup>:</p>
+
+    <table>
+      <thead>
+        <tr><th>Victim</th><th class="num">XP</th><th class="num">Gold</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Footman</td><td class="num">25</td><td class="num">15</td><td>60 HP, so a level-1 hero needs 2 or 3 hits<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:339">1</a></sup></td></tr>
+        <tr><td>Hero</td><td class="num">150</td><td class="num">100</td><td>The victim is out for 216 ticks (section 5)</td></tr>
+        <tr><td>Tower</td><td class="num">100</td><td class="num">75</td><td>1,200 / 2,400 / 4,800 HP for outer / inner / gate<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:229">1</a></sup></td></tr>
+        <tr><td>Fort</td><td class="num">0</td><td class="num">0</td><td>400 HP. Its destruction ends the game<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:378, 2990-2997">1</a></sup></td></tr>
+      </tbody>
+    </table>
+
+    <p><code>gainRewards</code> adds the XP to <code>xp</code> and to <code>totalXp</code>, adds the gold, and then applies as many level-ups as the new XP pays for<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:704-713">1</a></sup>. Nothing else in the simulation calls <code>gainRewards</code>.</p>
+
+    <h3>2.2 Which damage sources qualify</h3>
+    <p>Three hero-controlled damage sources reach <code>applyHeroHit</code>:</p>
+    <ul>
+      <li><strong>Basic attacks.</strong> The combat update lands one hit per swing, at 45% of the swing duration. The damage comes from <code>heroAttackDamage</code>: class base damage, plus per-level growth, plus equipment bonuses<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:2671-2684, 691-693">1</a></sup>.</li>
+      <li><strong>Abilities.</strong> Every strike ability resolves through <code>hitSpellTarget</code>, whether the script cast it with <code>castTarget</code> or <code>castPoint</code>, or the engine cast it on its own in combat. That procedure calls <code>applyHeroHit</code> with the flat damage of the ability<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:2057-2079">1</a></sup>. An area spell calls it once per object inside the footprint<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:2094-2143">1</a></sup>, so one ultimate can collect several footman bounties at the same time.</li>
+      <li><strong>Poison potion.</strong> <code>useItem</code> on a poison potion applies 35 damage to the current attack target of the hero through <code>applyHeroHit</code><sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:1959-2028">1</a></sup> <sup class="ref"><a href="#src-2" title="examples/gods_of_the_arena/content.nim:526-527">2</a></sup>. Thus a potion can take a last hit.</li>
+    </ul>
+    <p>Two damage sources never pay anyone:</p>
+    <ul>
+      <li><strong>Towers</strong> subtract HP directly. When a tower kills a hero, the engine increments the team kill counters and records a death with attacker <code>-1</code>. It pays no XP or gold to any hero<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:1655-1663">1</a></sup>.</li>
+      <li><strong>Footmen</strong> also subtract HP directly, for footmen, heroes, towers, and the fort<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:1786-1795">1</a></sup>. A creep wave that kills a tower earns the team nothing, except that the next structure is now exposed.</li>
+    </ul>
+    <p>There is no deny mechanism, because an attack on your own footman is rejected as a non-enemy target<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:1471-1493">1</a></sup>. There is no shared team gold, no periodic income, and no reward for damage short of the kill. Assists exist only as a metric (section 7).</p>
+  </section>
+
+  <section id="sec-3">
+    <h2>3 · What XP does: the level curve</h2>
+    <ul class="key-points">
+      <li>The XP needed to leave level L is <code>100 + (L - 1) * 75</code>. Level 20 is the cap<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:654-656, 357">1</a></sup>.</li>
+      <li>Reaching level 20 from level 1 takes 14,725 XP in total.</li>
+      <li>Each level-up increases max HP, max mana, basic-attack damage, and move speed by fixed per-class steps. Current HP and mana increase by the same step<sup class="ref"><a href="#src-2" title="examples/gods_of_the_arena/content.nim:743-761">2</a></sup> <sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:676-689">1</a></sup>.</li>
+      <li>Abilities, attack range, attack speed, and cooldowns do not change with level.</li>
+    </ul>
+    <p><code>xpForNextLevel(level)</code> returns <code>100 + (level - 1) * 75</code><sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:654-656">1</a></sup>. <code>gainRewards</code> loops while the hero is below <code>HeroMaxLevel</code> (20) and has at least that much <code>xp</code>. Each pass subtracts the threshold and increments the level, so one large reward can give several levels<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:709-713">1</a></sup>. After level 20, XP still collects in <code>xp</code> and <code>totalXp</code>, but it has no effect.</p>
+
+    <table>
+      <thead>
+        <tr><th class="num">From level</th><th class="num">XP to next</th><th class="num">Cumulative XP to reach the next level</th><th class="num">Footman kills for this level</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="num">1</td><td class="num">100</td><td class="num">100</td><td class="num">4</td></tr>
+        <tr><td class="num">2</td><td class="num">175</td><td class="num">275</td><td class="num">7</td></tr>
+        <tr><td class="num">3</td><td class="num">250</td><td class="num">525</td><td class="num">10</td></tr>
+        <tr><td class="num">5</td><td class="num">400</td><td class="num">1,250</td><td class="num">16</td></tr>
+        <tr><td class="num">10</td><td class="num">775</td><td class="num">4,375</td><td class="num">31</td></tr>
+        <tr><td class="num">15</td><td class="num">1150</td><td class="num">9,375</td><td class="num">46</td></tr>
+        <tr><td class="num">19</td><td class="num">1450</td><td class="num">14,725</td><td class="num">58</td></tr>
+      </tbody>
+    </table>
+
+    <p>The cumulative XP to reach level L+1 from level 1 is <code>100 L + 75 L (L-1) / 2</code>. One hero kill (150 XP) pays for the first level alone. By level 10, a hero kill is less than a fifth of a level.</p>
+    <p>On each level-up, <code>refreshHeroStats</code> computes max HP and max mana again from class, level, and equipment, and adds the increase to the current values. Thus a level-up in the middle of a fight is a small heal<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:676-689">1</a></sup>. The engine reads basic-attack damage and move speed from class and level at the time of use<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:691-702">1</a></sup>. The per-class steps are in Appendix B. Ability specs hold flat <code>damage</code>, <code>heal</code>, <code>restore</code>, <code>manaCost</code>, and cooldown values, with no level term, and <code>hitSpellTarget</code> applies <code>spec.damage</code> directly<sup class="ref"><a href="#src-2" title="examples/gods_of_the_arena/content.nim:319-511">2</a></sup> <sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:2073">1</a></sup>. Attack cadence (<code>attackTicks</code>) and range are class constants<sup class="ref"><a href="#src-2" title="examples/gods_of_the_arena/content.nim:148-313">2</a></sup>.</p>
+  </section>
+
+  <section id="sec-4">
+    <h2>4 · What gold does: the shop</h2>
+    <ul class="key-points">
+      <li>Gold is spent only through <code>buyItem</code>, from anywhere on the map, at any level<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:1512-1567">1</a></sup>.</li>
+      <li>Four consumables (heal, heal, mana, poison) and sixteen equipment pieces. Prices go from 30 to 190 gold (Appendix A).</li>
+      <li>Equipment gives flat max HP, max mana, basic damage, or move speed while held. Duplicates are rejected, and nothing can be sold<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:663-674, 1527-1534">1</a></sup>.</li>
+    </ul>
+    <p><code>purchaseReason</code> accepts a purchase when the hero is alive, has at least the cost of the item, and has an empty inventory slot or a non-full stack (up to 8) of the same consumable<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:1512-1536">1</a></sup>. <code>applyBuyItem</code> then subtracts the cost. This is the only place where gold decreases<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:1538-1567">1</a></sup>. It also refreshes the stats, so equipment applies at once. Equipment bonuses are the sum over the held items<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:663-674">1</a></sup>. A hero cannot hold two of the same equipment, cannot sell, and has six slots. Thus the equipment budget is six pieces, or fewer when consumables occupy slots.</p>
+    <p>Consumables convert gold to HP, mana, or damage on use: a ration is 30 gold for 40 HP, an elixir 50 for 90, a mana potion 45 for 60 mana, and a poison 40 for a 35-damage strike on the current target<sup class="ref"><a href="#src-2" title="examples/gods_of_the_arena/content.nim:514-527">2</a></sup>. A heal on a full resource is rejected. Per point, the elixir is cheaper (0.56 gold per HP against 0.75). The agent of another entrant made the same point in the forum<sup class="ref"><a href="#src-5" title="https://softmax.com/gods-of-the-arena/forum.md">5</a></sup>. The only advantage of the ration is that you can afford it earlier.</p>
+    <p>Equipment is the durable sink. The cheapest damage is Leather Gauntlets (70 gold, +4). The most damage per item is Battle Axe or Rune Crossbow (180, +14). Knight Armor is +120 max HP for 160. The starter script already buys gear for its class as soon as it can afford each tier, so gold rarely sits idle in the baseline<sup class="ref"><a href="#src-6" title="gods_of_the_arena_lab/reference/base.bas:100-190">6</a></sup>.</p>
+  </section>
+
+  <section id="sec-5">
+    <h2>5 · How resources are lost</h2>
+    <ul class="key-points">
+      <li>XP is never lost. Gold is lost only by spending it.</li>
+      <li>Death removes the hero for 24 death-animation ticks plus 192 respawn ticks. Then the hero returns to the spawn point with full HP and mana<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:356, 377, 1829-1852">1</a></sup>.</li>
+      <li>Level, XP, gold, inventory, and script memory all survive death. On respawn, ability charges are full and cooldowns are clear.</li>
+    </ul>
+    <p>The simulation decreases these counters in exactly two places: <code>hero.xp -= xpForNextLevel(...)</code> when a level is consumed<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:711">1</a></sup>, and <code>gold -= spec.cost</code> on a purchase<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:1566">1</a></sup>. <code>totalXp</code> and <code>level</code> only increase.</p>
+    <p>Thus death is a cost in time, not in resources. A hero at zero HP enters <code>Dying</code>, which cancels its targets and movement<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:2510-2520">1</a></sup>. After <code>HeroDeathTicks</code> (24) plus <code>HeroRespawnTicks</code> (192), the hero respawns at its barracks with full HP and mana, no target, clear cooldowns, and every ability slot at full charges<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:1829-1862">1</a></sup>. If the killer is a hero, it gains 150 XP and 100 gold. The victim loses nine simulated seconds of farming and map presence, and gives the lane to the enemy team. A hero kill is worth six footman kills, and a footman wave arrives every ten seconds. As a result, a death costs about one wave of income plus the bounty it gave away.</p>
+  </section>
+
+  <section id="sec-6">
+    <h2>6 · Supply: how much is on the map</h2>
+    <ul class="key-points">
+      <li>Footmen spawn 2 per lane per team every 240 ticks by default, 12 per wave, with a cap of 120 living footmen<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:1123-1160">1</a></sup> <sup class="ref"><a href="#src-7" title="src/polyworld/configs.nim:20">7</a></sup> <sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:374">1</a></sup>.</li>
+      <li>A team faces 6 enemy footmen per wave. That is 150 XP and 90 gold per wave if it takes every last hit.</li>
+      <li>A default 28,800-tick match has 120 waves. That is about 18,000 XP and 10,800 gold per team from creeps, plus 900 XP and 675 gold from the nine enemy towers.</li>
+    </ul>
+    <p><code>spawnWave</code> operates every <code>spawnIntervalTicks</code> (default 240, ten seconds). It places two footmen at each of the three barracks pairs for both teams, unless the living count will go above <code>UnitCap</code><sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:1123-1160, 2885-2889">1</a></sup>. Each footman has 60 HP and does 12 damage per swing<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:339-340">1</a></sup>.</p>
+
+    <table>
+      <thead>
+        <tr><th>Source</th><th>Count per match (default config)</th><th class="num">XP</th><th class="num">Gold</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Enemy footmen</td><td>720 (6 per wave × 120 waves, if the cap never applies)</td><td class="num">18,000</td><td class="num">10,800</td></tr>
+        <tr><td>Enemy towers</td><td>9</td><td class="num">900</td><td class="num">675</td></tr>
+        <tr><td>Enemy heroes</td><td>No limit. Each respawns 216 ticks after death</td><td class="num">150 each</td><td class="num">100 each</td></tr>
+        <tr><td>Enemy fort</td><td>1</td><td class="num">0</td><td class="num">0</td></tr>
+      </tbody>
+    </table>
+
+    <p>Two things follow. First, the creep economy is shared by five heroes and it is finite. If the team divides the footman kills equally, each hero gets about 3,600 XP over a whole match, exactly the cost of level 10, and about 2,160 gold. Level 20 for one hero (14,725 XP) needs most of the creep income of the team, or a steady flow of hero kills. Second, hero kills are the only income that grows with aggression. A kill every 216 ticks against the same victim earns three times more than the creeps of one lane. The timeout rule in the guide, a game with no fort kill scores zero for all ten seats<sup class="ref"><a href="#src-8" title="coworld/gota/guide.md:3">8</a></sup>, means that gold and XP totals are a means, never the objective.</p>
+    <p>Towers also decide who gets the income. A tower attacks the nearest enemy footman it can see first, and only targets heroes when no footman is in range. It hits once per second for 28 / 56 / 112 by tier, at 5 / 5.5 / 6 tiles<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:1587-1663, 229-236">1</a></sup>. Tower kills pay nobody, so a footman that dies under a tower is income lost to both teams.</p>
+  </section>
+
+  <section id="sec-7">
+    <h2>7 · Bookkeeping: metrics and end-of-episode outputs</h2>
+    <ul class="key-points">
+      <li>The episode results hold <code>total_xp</code> (lifetime XP per seat) beside the scores. The score itself is 1 per winning-team seat and 0 otherwise<sup class="ref"><a href="#src-3" title="src/polyworld/coworld.nim:327-347">3</a></sup> <sup class="ref"><a href="#src-8" title="coworld/gota/guide.md:3">8</a></sup>.</li>
+      <li>The replay's telemetry records <code>GoldMetric</code> (gold earned from kills, not net), <code>LevelMetric</code>, and kill / death / assist counters per seat<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:1896-1914, 3050-3053">1</a></sup> <sup class="ref"><a href="#src-9" title="src/polyworld/metrics.nim:9-11">9</a></sup>.</li>
+      <li>An assist goes to each enemy hero that damaged the victim in the last 10 seconds. It gives no reward<sup class="ref"><a href="#src-9" title="src/polyworld/metrics.nim:81-100">9</a></sup>.</li>
+    </ul>
+    <p><code>finishCoworld</code> adds <code>"total_xp": [...]</code> to the results JSON in seat order when the game supplies it<sup class="ref"><a href="#src-3" title="src/polyworld/coworld.nim:327-347">3</a></sup>. <code>totalXp</code> in the simulation returns the lifetime XP of each hero<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:3139-3142">1</a></sup>. This is diagnostic output. The league standing uses the binary win score and platform Elo, per the guide and the standings page of the lab.</p>
+    <p>Inside the simulation, <code>CombatStats.hitHero</code> records the tick of the last hit by each enemy hero on each victim. On a kill, it adds a loss to the victim, a kill to the attacker if the attacker is a hero, and an assist to every other enemy hero whose last hit was in the last <code>tickRate * 10</code> ticks<sup class="ref"><a href="#src-9" title="src/polyworld/metrics.nim:81-100">9</a></sup>. Tower and footman kills pass attacker <code>-1</code>, so they record a death with no kill credit<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:1662, 1794">1</a></sup>. Only the three reward sites increment <code>GoldMetric</code>, so it is equal to the cumulative gold earned, not the current balance<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:1896, 1907, 1914">1</a></sup>. <code>LevelMetric</code> is a snapshot of the current level<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:3053">1</a></sup>. A replay expander can recover these counters exactly, because they are part of the hashed state.</p>
+  </section>
+
+  <section id="sec-8">
+    <h2>8 · Consequences for policy design</h2>
+    <ul class="key-points">
+      <li>Last hits are the whole economy. Damage that does not kill earns nothing, so the time of the last hit matters more than damage throughput.</li>
+      <li>Hero kills are the high-value target. One is worth six footmen and a tower, and they repeat every 216 ticks.</li>
+      <li>Level scaling is linear and small. Equipment is the fast way to convert early gold into stats.</li>
+      <li>Death is cheap in resources but expensive in tempo. The bounty given away is the real cost.</li>
+    </ul>
+    <p>A policy can see <code>objectHp</code> for every object in vision, and the reward goes to whoever takes the target to zero. Thus a policy can aim for last hits: attack the enemy footman whose HP is at or below the current basic damage of the hero, or use a spell or a poison on one that an ally or a tower is about to kill. The starter attacks the nearest enemy and takes the last hits that happen by chance.</p>
+    <p>A hero kill at level 1 pays a full level. Even at level 10 it pays a fifth of a level plus 100 gold, which is a pair of Ranger Boots or most of a Sapphire Ring. Respawn is fixed at 216 ticks at every level. Thus repeated kills on the same over-extended enemy are the fastest income in the game.</p>
+    <p>Buy equipment early. The 150 starting gold buys Leather Gauntlets (+4 damage) and a ration on tick one, and +4 damage is almost one level of growth for most classes (Appendix B). Purchases work anywhere, so there is no reason to walk to the base to shop.</p>
+    <p>The zero-on-timeout rule limits the value of farming. Gold and XP that do not become a fort kill before tick 28,800 are worth nothing. A policy must use the economy as a means to win fights and sieges faster, and change to objective play when it has the stats to take a lane.</p>
+  </section>
+
+  <section id="appendix-a">
+    <h2>Appendix A · Item price list</h2>
+    <p>IDs, prices, and effects from the item specs<sup class="ref"><a href="#src-2" title="examples/gods_of_the_arena/content.nim:511-593">2</a></sup>. Consumables stack to 8. Equipment is held once and applies while it is in the inventory.</p>
+
+    <table>
+      <thead>
+        <tr><th class="num">ID</th><th>Item</th><th class="num">Cost (gold)</th><th>Effect</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="num">1</td><td>Ironroot Ration</td><td class="num">30</td><td>Consumable, +40 HP</td></tr>
+        <tr><td class="num">2</td><td>Vitality Elixir</td><td class="num">50</td><td>Consumable, +90 HP</td></tr>
+        <tr><td class="num">3</td><td>Mana Potion</td><td class="num">45</td><td>Consumable, +60 mana</td></tr>
+        <tr><td class="num">4</td><td>Poison Potion</td><td class="num">40</td><td>Consumable, 35 damage to current target</td></tr>
+        <tr><td class="num">5</td><td>Steel Helmet</td><td class="num">80</td><td>+50 max HP</td></tr>
+        <tr><td class="num">6</td><td>Steel Buckler</td><td class="num">90</td><td>+60 max HP</td></tr>
+        <tr><td class="num">7</td><td>Leather Gauntlets</td><td class="num">70</td><td>+4 damage</td></tr>
+        <tr><td class="num">8</td><td>Ranger Boots</td><td class="num">100</td><td>+800 move per tick (about 0.013 tiles)</td></tr>
+        <tr><td class="num">9</td><td>Ruby Amulet</td><td class="num">120</td><td>+70 max HP</td></tr>
+        <tr><td class="num">10</td><td>Sapphire Ring</td><td class="num">120</td><td>+40 max mana</td></tr>
+        <tr><td class="num">11</td><td>Crimson Dagger</td><td class="num">110</td><td>+8 damage</td></tr>
+        <tr><td class="num">12</td><td>Amethyst Wand</td><td class="num">140</td><td>+9 damage</td></tr>
+        <tr><td class="num">13</td><td>Sunsteel Longsword</td><td class="num">150</td><td>+10 damage</td></tr>
+        <tr><td class="num">14</td><td>Ranger Bow</td><td class="num">150</td><td>+10 damage</td></tr>
+        <tr><td class="num">15</td><td>Ironbark Pauldrons</td><td class="num">140</td><td>+80 max HP</td></tr>
+        <tr><td class="num">16</td><td>Knight Armor</td><td class="num">160</td><td>+120 max HP</td></tr>
+        <tr><td class="num">17</td><td>Thornwood Staff</td><td class="num">170</td><td>+40 max HP, +6 damage</td></tr>
+        <tr><td class="num">18</td><td>Battle Axe</td><td class="num">180</td><td>+14 damage</td></tr>
+        <tr><td class="num">19</td><td>Rune Crossbow</td><td class="num">180</td><td>+14 damage</td></tr>
+        <tr><td class="num">20</td><td>Arcane Spellbook</td><td class="num">190</td><td>+30 max mana, +12 damage</td></tr>
+      </tbody>
+    </table>
+
+    <p>Move speed is in world units per tick, and 60,000 units are one tile<sup class="ref"><a href="#src-1" title="examples/gods_of_the_arena/sim.nim:227">1</a></sup>. Thus Ranger Boots add about 0.32 tiles per second to a base of about 2.3 to 3.0 tiles per second.</p>
+  </section>
+
+  <section id="appendix-b">
+    <h2>Appendix B · Per-class level scaling</h2>
+    <p>Base value at level 1 and the increase per level, from the class specs<sup class="ref"><a href="#src-2" title="examples/gods_of_the_arena/content.nim:137-320">2</a></sup> and the scaling functions<sup class="ref"><a href="#src-2" title="examples/gods_of_the_arena/content.nim:743-761">2</a></sup>. Move is in world units per tick.</p>
+
+    <table>
+      <thead>
+        <tr><th>Class</th><th class="num">HP</th><th class="num">Mana</th><th class="num">Basic damage</th><th class="num">Move per tick</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>0 Vanguard Knight</td><td class="num">330 + 60</td><td class="num">110 + 8</td><td class="num">25 + 5</td><td class="num">5,800 + 60</td></tr>
+        <tr><td>1 Ranger</td><td class="num">200 + 38</td><td class="num">110 + 8</td><td class="num">25 + 6</td><td class="num">6,900 + 90</td></tr>
+        <tr><td>2 Arcanist</td><td class="num">190 + 30</td><td class="num">180 + 15</td><td class="num">38 + 8</td><td class="num">6,200 + 70</td></tr>
+        <tr><td>3 Druid Warden</td><td class="num">250 + 48</td><td class="num">170 + 14</td><td class="num">22 + 4</td><td class="num">6,400 + 70</td></tr>
+        <tr><td>4 Demon Hunter</td><td class="num">220 + 36</td><td class="num">90 + 7</td><td class="num">32 + 7</td><td class="num">7,600 + 120</td></tr>
+        <tr><td>5 Death Knight</td><td class="num">350 + 62</td><td class="num">90 + 8</td><td class="num">30 + 6</td><td class="num">5,700 + 60</td></tr>
+        <tr><td>6 Crossbowman</td><td class="num">230 + 42</td><td class="num">80 + 6</td><td class="num">43 + 8</td><td class="num">6,000 + 60</td></tr>
+        <tr><td>7 Lich</td><td class="num">185 + 28</td><td class="num">210 + 17</td><td class="num">36 + 8</td><td class="num">6,000 + 60</td></tr>
+        <tr><td>8 Warlock</td><td class="num">240 + 46</td><td class="num">190 + 16</td><td class="num">26 + 5</td><td class="num">6,200 + 70</td></tr>
+        <tr><td>9 Berserker</td><td class="num">300 + 55</td><td class="num">40 + 4</td><td class="num">35 + 7</td><td class="num">6,800 + 90</td></tr>
+      </tbody>
+    </table>
+
+    <p>The HP, mana, and damage columns match the lab's hero statistics page<sup class="ref"><a href="#src-10" title="gods_of_the_arena_lab/docs/wiki/hero-statistics.md">10</a></sup>. Attack cadence is fixed per class at 24, 18, 30, 26, 16, 28, 36, 32, 28, and 20 ticks per swing in class order<sup class="ref"><a href="#src-2" title="examples/gods_of_the_arena/content.nim:148-313">2</a></sup>.</p>
+  </section>
+
+  <section id="sources">
+    <h2>Appendix C · Sources</h2>
+    <p>All polyworld paths are relative to the repository root at <code>1d7eb723</code>. Every cited line range is unchanged at the deployed <code>5422fb0c</code>. There is one entry per cited source file, in first-citation order. Every superscript in the body points to one of these entries.</p>
+    <ol class="sources">
+      <li id="src-1"><span class="cite">examples/gods_of_the_arena/sim.nim</span> — reward constants and function, level curve, stat refresh, hit attribution for heroes, towers, footmen, and spells, death and respawn, wave spawning, tower behavior, purchase rules, XP export.</li>
+      <li id="src-2"><span class="cite">examples/gods_of_the_arena/content.nim</span> — per-level scaling functions, class specs, item specs, ability specs.</li>
+      <li id="src-3"><span class="cite">src/polyworld/coworld.nim</span> — <code>total_xp</code> in the results file.</li>
+      <li id="src-4"><span class="cite">examples/gods_of_the_arena/bots.nim</span> — which self fields BASIC can read.</li>
+      <li id="src-5"><span class="cite">https://softmax.com/gods-of-the-arena/forum.md</span> — entrant posts on consumable value and on the timeout rule.</li>
+      <li id="src-6"><span class="cite">gods_of_the_arena_lab/reference/base.bas</span> — the starter's shopping behavior.</li>
+      <li id="src-7"><span class="cite">src/polyworld/configs.nim</span> — default match length and spawn interval.</li>
+      <li id="src-8"><span class="cite">coworld/gota/guide.md</span> — scoring rule.</li>
+      <li id="src-9"><span class="cite">src/polyworld/metrics.nim</span> — kill, death, and assist accounting and metric kinds.</li>
+      <li id="src-10"><span class="cite">gods_of_the_arena_lab/docs/wiki/hero-statistics.md</span> — cross-check for the scaling table.</li>
+    </ol>
+  </section>
+
+</article>
+
+<!-- ================================================================
+     DC-COMMENTS BEGIN — markup + script (copy verbatim; do not modify)
+     ================================================================ -->
+<aside id="dc-sidebar" aria-label="Comments">
+  <h2 class="dc-title">Comments <span id="dc-count"></span></h2>
+  <div class="dc-actions">
+    <button class="dc-btn" id="dc-export">Export JSON</button>
+    <button class="dc-btn" id="dc-copy">Copy JSON</button>
+    <button class="dc-btn" id="dc-import">Import…</button>
+    <input type="file" id="dc-file" accept=".json,application/json" hidden>
+  </div>
+  <div id="dc-status" role="status"></div>
+  <div id="dc-list"><p class="dc-empty">No comments yet. Select text in the document to add one.</p></div>
+</aside>
+<button id="dc-fab" type="button">+ Comment</button>
+<button id="dc-toggle" type="button">Comments</button>
+<!-- Preload slot: a renderer may put a dc-comments/1 `comments` array here (each comment optionally carrying `replies`). Merged by id into the stored comments on load. Leave empty otherwise. -->
+<script id="dc-preload" type="application/json"></script>
+
+<script>
+(() => {
+  'use strict';
+  const FORMAT = 'dc-comments/1';
+  const CTX = 32; // prefix/suffix context length, chars
+  const doc = document.getElementById('doc');
+  const fab = document.getElementById('dc-fab');
+  const listEl = document.getElementById('dc-list');
+  const countEl = document.getElementById('dc-count');
+  const statusEl = document.getElementById('dc-status');
+  const sidebar = document.getElementById('dc-sidebar');
+  const storeKey = 'dc:' + document.title;
+
+  let comments = []; // {id, exact, prefix, suffix, text, created, resolved}
+  let ranges = new Map(); // id -> Range (null if orphaned)
+  let seq = 0;
+
+  // ---- text indexing: one global string over #doc's text nodes ----
+  function docText() {
+    const r = document.createRange();
+    r.selectNodeContents(doc);
+    return r.toString();
+  }
+  function globalOffset(container, offset) {
+    const r = document.createRange();
+    r.setStart(doc, 0);
+    r.setEnd(container, offset);
+    return r.toString().length;
+  }
+  function offsetsToRange(start, end) {
+    const walker = document.createTreeWalker(doc, NodeFilter.SHOW_TEXT);
+    let pos = 0, range = document.createRange(), haveStart = false;
+    while (walker.nextNode()) {
+      const node = walker.currentNode, len = node.data.length;
+      if (!haveStart && pos + len >= start) {
+        range.setStart(node, start - pos);
+        haveStart = true;
+      }
+      if (haveStart && pos + len >= end) {
+        range.setEnd(node, end - pos);
+        return range;
+      }
+      pos += len;
+    }
+    return null;
+  }
+
+  // ---- anchoring: TextQuoteSelector-style exact + prefix/suffix ----
+  function selectorFromRange(range) {
+    const text = docText();
+    const start = globalOffset(range.startContainer, range.startOffset);
+    const end = globalOffset(range.endContainer, range.endOffset);
+    return {
+      exact: text.slice(start, end),
+      prefix: text.slice(Math.max(0, start - CTX), start),
+      suffix: text.slice(end, end + CTX),
+    };
+  }
+  function locate(c) {
+    const text = docText();
+    let i = text.indexOf(c.prefix + c.exact + c.suffix);
+    if (i >= 0) return offsetsToRange(i + c.prefix.length, i + c.prefix.length + c.exact.length);
+    i = text.indexOf(c.exact);
+    if (i >= 0) return offsetsToRange(i, i + c.exact.length);
+    return null;
+  }
+  function reanchorAll() {
+    ranges = new Map(comments.map(c => [c.id, locate(c)]));
+    paint();
+  }
+
+  // ---- painting via CSS Custom Highlight API ----
+  const hl = typeof Highlight !== 'undefined' ? new Highlight() : null;
+  const hlActive = typeof Highlight !== 'undefined' ? new Highlight() : null;
+  if (hl) { CSS.highlights.set('dc-hl', hl); CSS.highlights.set('dc-hl-active', hlActive); }
+  function paint(activeId) {
+    if (!hl) return;
+    hl.clear(); hlActive.clear();
+    for (const [id, r] of ranges) {
+      if (!r) continue;
+      (id === activeId ? hlActive : hl).add(r);
+    }
+  }
+
+  // ---- persistence (best-effort; file:// storage varies by browser) ----
+  function save() {
+    try { localStorage.setItem(storeKey, JSON.stringify(comments)); } catch (e) { /* unavailable on some file:// setups */ }
+  }
+  function load() {
+    try {
+      const raw = localStorage.getItem(storeKey);
+      if (raw) comments = JSON.parse(raw);
+    } catch (e) { /* ignore */ }
+  }
+
+  // ---- sidebar rendering ----
+  function flash(msg) {
+    statusEl.textContent = msg;
+    setTimeout(() => { if (statusEl.textContent === msg) statusEl.textContent = ''; }, 2500);
+  }
+  function sortedComments() {
+    const pos = c => {
+      const r = ranges.get(c.id);
+      return r ? globalOffset(r.startContainer, r.startOffset) : Infinity; // orphans last
+    };
+    return [...comments].sort((a, b) => pos(a) - pos(b));
+  }
+  function render(editingId) {
+    countEl.textContent = comments.length ? '(' + comments.length + ')' : '';
+    listEl.textContent = '';
+    if (!comments.length) {
+      const p = document.createElement('p');
+      p.className = 'dc-empty';
+      p.textContent = 'No comments yet. Select text in the document to add one.';
+      listEl.appendChild(p);
+      return;
+    }
+    for (const c of sortedComments()) {
+      const item = document.createElement('div');
+      item.className = 'dc-item' + (c.resolved ? ' dc-resolved' : '');
+      item.dataset.id = c.id;
+
+      const quote = document.createElement('div');
+      quote.className = 'dc-quote';
+      quote.textContent = c.exact.length > 90 ? c.exact.slice(0, 90) + '…' : c.exact;
+      if (!ranges.get(c.id)) {
+        const tag = document.createElement('span');
+        tag.className = 'dc-orphan-tag';
+        tag.textContent = 'orphaned';
+        quote.appendChild(tag);
+      }
+      item.appendChild(quote);
+
+      if (c.id === editingId) {
+        const ta = document.createElement('textarea');
+        ta.value = c.text;
+        ta.placeholder = 'Write a comment… (⌘/Ctrl+Enter to save, Esc to cancel)';
+        ta.addEventListener('keydown', e => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') commit();
+          if (e.key === 'Escape') cancel();
+        });
+        ta.addEventListener('click', e => e.stopPropagation());
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'dc-btn';
+        saveBtn.textContent = 'Save';
+        saveBtn.style.marginTop = '6px';
+        saveBtn.addEventListener('click', e => { e.stopPropagation(); commit(); });
+        function commit() {
+          c.text = ta.value.trim();
+          if (!c.text) return cancel();
+          save(); render();
+        }
+        function cancel() {
+          if (!c.text) { comments = comments.filter(x => x.id !== c.id); ranges.delete(c.id); paint(); }
+          save(); render();
+        }
+        item.appendChild(ta);
+        item.appendChild(saveBtn);
+        listEl.appendChild(item);
+        requestAnimationFrame(() => ta.focus());
+        continue;
+      }
+
+      const text = document.createElement('div');
+      text.className = 'dc-text';
+      text.textContent = c.text;
+      item.appendChild(text);
+
+      if (Array.isArray(c.replies) && c.replies.length) {
+        const box = document.createElement('div');
+        box.className = 'dc-replies';
+        for (const r of c.replies) {
+          const who = document.createElement('div');
+          who.className = 'dc-reply-author';
+          who.textContent = 'Reply from ' + (r.author || 'agent') + (r.created ? ' · ' + String(r.created).slice(0, 10) : '');
+          const body = document.createElement('div');
+          body.className = 'dc-reply-text';
+          for (const part of String(r.text || '').split(/(https?:\/\/[^\s)]+)/g)) {
+            if (/^https?:\/\//.test(part)) {
+              const a = document.createElement('a');
+              a.href = part; a.target = '_blank'; a.rel = 'noopener';
+              a.textContent = part;
+              a.addEventListener('click', e => e.stopPropagation());
+              body.appendChild(a);
+            } else body.appendChild(document.createTextNode(part));
+          }
+          box.append(who, body);
+        }
+        item.appendChild(box);
+      }
+
+      const meta = document.createElement('div');
+      meta.className = 'dc-meta';
+      const when = document.createElement('span');
+      when.textContent = c.created.slice(0, 10);
+      const resolved = document.createElement('label');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = !!c.resolved;
+      cb.addEventListener('click', e => e.stopPropagation());
+      cb.addEventListener('change', () => { c.resolved = cb.checked; save(); render(); });
+      resolved.append(cb, 'resolved');
+      const del = document.createElement('button');
+      del.className = 'dc-del';
+      del.textContent = 'delete';
+      del.addEventListener('click', e => {
+        e.stopPropagation();
+        comments = comments.filter(x => x.id !== c.id);
+        ranges.delete(c.id);
+        paint(); save(); render();
+      });
+      meta.append(when, resolved, del);
+      item.appendChild(meta);
+
+      item.addEventListener('click', () => {
+        const r = ranges.get(c.id);
+        if (!r) return flash('Anchor not found in this version of the document.');
+        const rect = r.getBoundingClientRect();
+        window.scrollTo({ top: window.scrollY + rect.top - 160, behavior: 'smooth' });
+        paint(c.id);
+        setTimeout(() => paint(), 2000);
+      });
+      // double-click text to edit
+      text.addEventListener('dblclick', e => { e.stopPropagation(); render(c.id); });
+      listEl.appendChild(item);
+    }
+  }
+
+  // ---- selection -> floating Comment button ----
+  document.addEventListener('mouseup', e => {
+    if (fab.contains(e.target)) return;
+    setTimeout(() => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || !sel.rangeCount) { fab.style.display = 'none'; return; }
+      const range = sel.getRangeAt(0);
+      if (!doc.contains(range.commonAncestorContainer) || !range.toString().trim()) {
+        fab.style.display = 'none';
+        return;
+      }
+      const rect = range.getBoundingClientRect();
+      fab.style.display = 'block';
+      fab.style.left = Math.min(rect.right + 8 + window.scrollX, window.scrollX + document.documentElement.clientWidth - 120) + 'px';
+      fab.style.top = (rect.top + window.scrollY - 4) + 'px';
+      fab.dataset.pending = '1';
+    }, 0);
+  });
+  fab.addEventListener('click', () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    const c = Object.assign({ id: 'c' + Date.now().toString(36) + (seq++), text: '', created: new Date().toISOString(), resolved: false }, selectorFromRange(range));
+    comments.push(c);
+    ranges.set(c.id, range.cloneRange());
+    paint(c.id);
+    sel.removeAllRanges();
+    fab.style.display = 'none';
+    sidebar.classList.add('dc-open');
+    render(c.id);
+  });
+
+  // ---- export / import ----
+  function payload() {
+    return JSON.stringify({
+      format: FORMAT,
+      doc: document.title,
+      exported: new Date().toISOString(),
+      comments: comments,
+    }, null, 2);
+  }
+  document.getElementById('dc-export').addEventListener('click', () => {
+    const blob = new Blob([payload()], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (document.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'doc') + '.comments.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    flash('Downloaded.');
+  });
+  document.getElementById('dc-copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(payload()); flash('Copied to clipboard.'); }
+    catch (e) { flash('Clipboard blocked — use Export instead.'); }
+  });
+  document.getElementById('dc-import').addEventListener('click', () => document.getElementById('dc-file').click());
+  document.getElementById('dc-file').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    file.text().then(raw => {
+      const data = JSON.parse(raw);
+      if (data.format !== FORMAT || !Array.isArray(data.comments)) { flash('Not a dc-comments file.'); return; }
+      const byId = new Map(comments.map(c => [c.id, c]));
+      for (const c of data.comments) byId.set(c.id, c);
+      comments = [...byId.values()];
+      reanchorAll(); save(); render();
+      flash('Imported ' + data.comments.length + ' comment(s).');
+    }).catch(() => flash('Could not parse that file.'));
+    e.target.value = '';
+  });
+
+  document.getElementById('dc-toggle').addEventListener('click', () => sidebar.classList.toggle('dc-open'));
+
+  // ---- init ----
+  load();
+  // Merge the renderer's preloaded comments (with replies) by id: a stored
+  // comment keeps its own text/resolved state and takes the preloaded replies.
+  try {
+    const pre = document.getElementById('dc-preload');
+    const preloaded = pre && pre.textContent.trim() ? JSON.parse(pre.textContent) : [];
+    if (Array.isArray(preloaded) && preloaded.length) {
+      const byId = new Map(comments.map(c => [c.id, c]));
+      for (const c of preloaded) {
+        const existing = byId.get(c.id);
+        if (existing) { if (c.replies) existing.replies = c.replies; }
+        else byId.set(c.id, c);
+      }
+      comments = [...byId.values()];
+      save();
+    }
+  } catch (e) { /* malformed preload: ignore */ }
+  reanchorAll();
+  render();
+})();
+</script>
+<!-- ============ DC-COMMENTS END ============ -->
+</div>
+</body>
+</html>

@@ -47,7 +47,7 @@ each next level is `100 + (level - 1) * 75`. Hero-attributed killing hits award:
 | Hero | 150 | 100 |
 | Tower | 100 | 75 |
 
-Footmen have 60 HP and 12 base damage; tower HP is 600/800/1000 by tier; fort HP is 400.
+Footmen have 60 HP and 12 base damage; tower HP is 1,200/2,400/4,800 for outer/inner/gate (`TowerHitPoints`, sim.nim); fort HP is 400.
 These rewards are not an automatic whole-team payout for every kill.
 
 Inventory has six slots (0–5). Consumables stack to eight; a full existing stack
