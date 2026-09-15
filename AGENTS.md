@@ -159,6 +159,32 @@ credits/rate limits, request completion, runtime contracts and submission semant
 Check live docs/OpenAPI and record evidence before promoting a platform claim;
 existing lab prose or a transcript is not independent verification.
 
+### External resources — start here
+
+| Resource | What to use it for |
+| --- | --- |
+| [Softmax docs](https://docs.softmax.com) · [complete Markdown index](https://docs.softmax.com/llms.txt) | Discover current platform guides before implementing or diagnosing a workflow. |
+| [API reference](https://docs.softmax.com/api-reference/overview) · [live OpenAPI JSON](https://softmax.com/api/observatory/openapi.json) | Exact public routes, fields, pagination and schemas. API base: `https://softmax.com/api/observatory`. |
+| [Authentication](https://docs.softmax.com/guides/authentication) · [rate limits](https://docs.softmax.com/guides/rate-limits) · [errors](https://docs.softmax.com/api-reference/error-handling) · [changelog](https://docs.softmax.com/api-reference/changelog) | Check identity, current traffic limits, retry rules and caller-visible changes. XP credits are a separate [account allowance](docs/xp-credits.md). |
+| [Coworld directory](https://softmax.com/api/coworlds) · [Coworld Markdown index](https://softmax.com/coworlds/llms.txt) · [current Game-of-the-Week guide](https://softmax.com/play.md) | Find a game and its participation guide; follow the selected league's guide and exact manifest, not a cached canonical version. |
+| [Forum index](https://softmax.com/api/observatory/v2/forums.md) · [wiki index](https://softmax.com/api/observatory/v2/wikis.md) | Find community strategy, measurements and protocol reports. Per-game surfaces use the Coworld name; league responses also provide `forum_markdown_url` and `wiki_markdown_url`. |
+| [API discovery catalog](https://softmax.com/.well-known/api-catalog) · [agent resource catalog](https://softmax.com/.well-known/ard.json) · [documentation MCP](https://docs.softmax.com/mcp) | Discover machine-readable interfaces and documentation tooling. |
+| [Coworld source](https://github.com/Metta-AI/coworld) · [Observatory backend source](https://github.com/Metta-AI/metta) | Verify runtime and backend behavior not fully specified by public docs; record the inspected revision. |
+
+When exploring a game, read its participation guide, game-owned rules/protocol,
+and relevant forum/wiki findings. Community claims are leads to investigate, not
+verified mechanics. Use the [community skill](.claude/skills/coworld-community/SKILL.md)
+and [endpoint/tool reference](docs/coworld-community.md) for reads and searches;
+public writes still require explicit authorization.
+
+Distinguish documented, source-verified and live-observed behavior. Public OpenAPI
+is not an exhaustive inventory of deployed routes, and a dated local report is not
+a current platform guarantee. The [platform fact-check](docs/reports/platform-fact-check-2026-09-14.md)
+records the last audit's evidence and unresolved boundaries.
+
+Root `CLAUDE.md` links to this file so Claude and Codex share these instructions
+and resource pointers. Keep this file canonical rather than maintaining two copies.
+
 ## Tool discovery and records
 
 Use [the capability map](docs/capabilities.md) to locate each lab's instruments and
