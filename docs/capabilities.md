@@ -24,7 +24,7 @@ This is the navigation map; implementation and the linked skills define each con
 
 | Lab | Analysis entry points | Limits |
 | --- | --- | --- |
-| [Gods of the Arena](../gods_of_the_arena_lab/AGENTS.md) | [Language and starter](../gods_of_the_arena_lab/README.md), [game reference](../gods_of_the_arena_lab/docs/research.md) | BASIC policy foundation; game-specific experiment adapters depend on the selected question |
+| [Gods of the Arena](../gods_of_the_arena_lab/AGENTS.md) | [Knowledge map](../gods_of_the_arena_lab/docs/research.md), [language and starter](../gods_of_the_arena_lab/README.md), [deployed-commit check](../gods_of_the_arena_lab/tools/deployed_ref.py), [scaling tools](../gods_of_the_arena_lab/tools/scaling/README.md) | Source-verified mechanics; no policy uploaded yet; replay expander designed but not built, so no `compare.py`/`features.py` adapter |
 | [CTF](../ctf_lab/AGENTS.md) | [Tools](../ctf_lab/tools/) | Inactive lab; new gameplay work requires user direction |
 | [Crewrift](../crewrift_lab/AGENTS.md) | [Survey/analysis skills](../crewrift_lab/.claude/skills/), [tools](../crewrift_lab/tools/) | Role-aware comparison; specialist belief, chat, suspicion and field studies |
 | [Cue-n-Woo](../cue_n_woo_lab/AGENTS.md) | [Skills](../cue_n_woo_lab/.claude/skills/), [tools](../cue_n_woo_lab/tools/) | Game-specific reports; do not assume a shared comparison adapter |

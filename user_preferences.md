@@ -51,3 +51,7 @@ sessions. Keep it tidy: one bullet per preference, drop ones that are superseded
   activation counts, and verify the uploaded artifact emits them. If tracing appears
   to hurt latency, report measured evidence before reducing it. Exact flags and LLM
   recipes belong in each game's preferences, not the shared upload procedure.
+
+- **Gameplay-mechanics discoveries are proprietary until James says otherwise.** Findings
+  such as spells not scaling with level in Gods of the Arena stay in the lab docs and reports;
+  do not post them to game forums or wikis, even as a "public mechanics" note. (Stated 2026-09-15.)

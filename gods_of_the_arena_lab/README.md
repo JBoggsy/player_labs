@@ -11,8 +11,10 @@ configuration when preparing an evaluation.
 - Competition division: `div_a4534073-c5d2-4193-a94a-93d9c5e2e443`
 - [Forum](https://softmax.com/gods-of-the-arena/forum.md) and [wiki](https://softmax.com/gods-of-the-arena/wiki.md)
 
-See [game mechanics and resources](docs/research.md) for rules, source links and
-the workflow for choosing an optimization.
+Start with the [knowledge map](docs/research.md): what the lab knows about the game, where
+each document lives, and how to check it against the deployed polyworld commit. This README
+covers the language and the execution contract; [docs/policy-capabilities.md](docs/policy-capabilities.md)
+has the complete observation and action tables.
 
 ## The language
 
@@ -164,4 +166,5 @@ A stateful, hand-coded policy is feasible: cache observations in arrays, remembe
 last-seen targets, organize code into subroutines, and act through the bounded host.
 Large searches and full-map sweeps every tick will compete with action work budgets.
 Start with readable BASIC and sparse, meaningful diagnostics; choose strategy after
-reviewing the game's actual behavior.
+reviewing the game's actual behavior. The [economy](docs/leveling-economy.md) and
+[scaling](docs/scaling.md) documents give the numbers a strategy must respect.
