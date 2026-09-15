@@ -9,6 +9,8 @@ This README is the **front door**: what the lab is, how it's laid out, and how t
 set up. It's written for both the humans working here and the coding agents that do
 most of the building.
 
+> **Platform contracts → [verified reference](docs/platform-reference.md).** Credits, API limits, visibility, completion and runtime facts, with dated evidence.
+
 > **Operating model → [`AGENTS.md`](AGENTS.md).** How the improvement loop actually
 > runs (the human sets strategic direction; the agent builds observability, measures,
 > and ships iterations fast — speed over caution), plus the skills index and the
@@ -65,8 +67,7 @@ drive the mechanical halves of the loop:
   After `create`, the default is to **stream** the results (below), not wait.
 - **`coworld-episode-artifacts`** — download episodes' replays, results, and logs —
   one-shot for finished batches, or **streamed live** (`--watch`) while a batch runs.
-- **`coworld-local-run`** — run your built policy locally (debugging tool only —
-  not part of the standard loop).
+- **`coworld-local-run`** — run your built policy locally (focused debugging/mechanism checks and own-policy self-play; no routine upload gate).
 - **`coworld-policy-lifecycle`** — (gated) submit an uploaded version → monitor.
 - **`build-and-upload`** — build a player image and upload it as a new policy version;
   the routine, inert, every-iteration action. Uploading enters no competition.
@@ -117,12 +118,12 @@ upload → run an experience request → report + diagnose. After that you're in
 ## Ground rules
 
 - **Upload freely, submit rarely** — uploading a policy version is routine; submitting
-  to a league is the irreversible, champion-making action (the human's gate).
+  to a league is consequential and requires explicit human authorization.
 - **Build `--platform=linux/amd64`** — the cluster is amd64; on Apple Silicon images
   build under emulation (the build tools handle this).
 - **Player source and SDK versions have separate ownership.** Vendored players live in their game labs; the shared SDK is imported through [pyproject.toml](pyproject.toml) and locked by `uv.lock`. Per-player images may pin a different SDK in their own build configuration. Inspect both before claiming local/hosted parity; changing a live player's SDK is a separate behavioral validation task.
-- The Coworld platform contract (PLAYER.md/GAME.md, runner) lives in the `metta` repo
-  if you need to consult it — **read-only; never write to a `metta` checkout.**
+- The Coworld runtime contract lives in the `Metta-AI/coworld` repository; Observatory backend behavior lives in `Metta-AI/metta`
+  when you need implementation evidence. **Do not modify `~/coding/metta`; authorized Metta changes use a separate checkout.**
 
 ## Where to go next
 

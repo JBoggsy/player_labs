@@ -7,6 +7,7 @@ This is the navigation map; implementation and the linked skills define each con
 | Decision/action | Entry point |
 | --- | --- |
 | Start/resume, scope and authorization | [AGENTS](../AGENTS.md), [onboarding](getting-started.md) |
+| Check evaluation allowance | [XP credits](xp-credits.md) |
 | Resolve roster, create/monitor evaluation | [Experience requests](../.claude/skills/coworld-experience-requests/SKILL.md) |
 | Download/stream evidence | [Episode artifacts](../.claude/skills/coworld-episode-artifacts/SKILL.md) |
 | Build/upload a testable version | [Build and upload](../.claude/skills/build-and-upload/SKILL.md), [artifact contract](../player-build.md) |
@@ -34,3 +35,5 @@ This is the navigation map; implementation and the linked skills define each con
 | [CTF archive](../ctf_lab/README.md) | [Historical skills](../ctf_lab/.claude/skills/) | Archived; reference history does not authorize restarting it |
 
 The table links components rather than copying every CLI flag. Use `uv run python tools/audit_docs.py` for a discoverable file/link inventory, and each script's `--help` for its current options. A directory's existence does not prove live integration; each run records its actual validation.
+
+Platform contracts and live-verification boundaries: [Softmax reference](platform-reference.md).

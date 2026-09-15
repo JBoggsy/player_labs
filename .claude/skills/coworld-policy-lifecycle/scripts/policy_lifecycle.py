@@ -54,10 +54,8 @@ import httpx
 # Membership status meanings (PolicyMembershipStatus in metta models.py).
 TERMINAL_STATUSES = {"competing", "disqualified"}  # qualification verdict is settled
 SUBSTATUS_HINT = {
-    "crash": "container crashed/failed episodes — pull the qualifier episodes' logs "
-    "(the usual cause is TIMEOUTS / LLM latency; a fast/no-LLM player qualifies clean)",
-    "inactive": "evicted (player-per-user limit, default 2) or retired — NOT a quality "
-    "failure; a newer champion of yours can evict an older membership",
+    "crash": "player failure recorded — inspect episode error_type, failed seat and logs",
+    "inactive": "retired or removed by participation limits — inspect membership-event reasons",
 }
 
 
@@ -128,11 +126,24 @@ def verdict(status: str | None, substatus: str | None, is_champion: bool) -> str
     return f"… status={status}"
 
 
+def get_all_rows(c: httpx.Client, path: str, **params: Any) -> list[dict[str, Any]]:
+    """Membership/submission lists carry continuation in the response header."""
+    result = []
+    while True:
+        response = c.get(path, params=params)
+        response.raise_for_status()
+        result.extend(rows(response.json()))
+        cursor = response.headers.get("X-Next-Cursor")
+        if not cursor:
+            return result
+        params["cursor"] = cursor
+
+
 def focal(c: httpx.Client, name: str) -> tuple[list[dict], list[dict]]:
     """This policy's submissions and memberships (memberships WITHOUT active_only, to catch DQ)."""
-    subs = [s for s in rows(get(c, "/v2/league-submissions", mine=True, limit=200))
+    subs = [s for s in get_all_rows(c, "/v2/league-submissions", mine=True, limit=200)
             if policy_name_of(s) == name]
-    mems = [m for m in rows(get(c, "/v2/league-policy-memberships", mine=True, limit=1000))
+    mems = [m for m in get_all_rows(c, "/v2/league-policy-memberships", mine=True, limit=1000)
             if policy_name_of(m) == name]
     return subs, mems
 

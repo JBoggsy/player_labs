@@ -78,7 +78,7 @@ repeat → human gate → submit) runs **unchanged** here. The Cue-n-Woo-specifi
   and the open questions. A living doc.
 - **[`docs/league-infra-incident-2026-06-12.md`](docs/league-infra-incident-2026-06-12.md)**
   — the league-side IAM bug that disqualified every entrant, how we diagnosed it (game
-  container logs via `GET /jobs/{job_id}/artifacts/logs`) and hotfixed it, and the
+  container logs via the then-current job route; use the root artifact reference now) and hotfixed it, and the
   **metta Terraform reconciliation still owed**.
 
 The vendored policy also carries its own internal docs — see
@@ -95,10 +95,10 @@ Game-specific tooling belongs **here** (`cue_n_woo_lab/.claude/skills/`), not at
 root. The lessons-lifecycle skill (`lessons-review`, below) already lives here. The
 gaps worth filling, in rough priority order (the incident doc flags the first):
 
-- An **artifact-logs fetcher** — `GET /jobs/{job_id}/artifacts/logs` serves the game +
-  worker container logs, which the `coworld-episode-artifacts` skill does **not** pull;
-  that route is how the IAM incident was diagnosed ("did not qualify" can mean *the
-  game crashed*, not *your policy is bad*).
+- Use the **shared artifact fetcher** for current game logs and owned seat diagnostics.
+  It now reads `/v2/episode-requests/{id}/artifacts/logs`; a separate legacy job-log
+  fetcher is unnecessary. Worker-specific diagnostics are not guaranteed in that
+  artifact. The old IAM incident is historical evidence, not a current API recipe.
 - A **Cue-n-Woo report** skill — turn a batch of episodes into a dense report on the
   player's strengths/weaknesses (per-question scoring, style-cluster losses,
   decline/conflict pathologies).

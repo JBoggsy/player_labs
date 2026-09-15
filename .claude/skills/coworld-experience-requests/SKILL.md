@@ -1,139 +1,72 @@
 ---
 name: coworld-experience-requests
-description: "Use to create and monitor Coworld experience requests — hosted batches of episodes you define (target, roster, roles, count) for evaluating a policy against a live field. Triggers: 'run crewborg vs the top opponents', 'make an experience request', 'request N hosted games', 'A/B a policy against the league', 'measure the imposter', 'set up an evaluation battery'. DEFAULT FLOW after create: launch the STREAMING pipeline in the background (step 4) — artifacts download and analysis prep overlap the still-running episodes; don't wait for the batch to drain."
+description: "Create and monitor hosted Coworld evaluation batches against selected opponents. Resolve the live target and versions, compose a question-driven request, create within existing authorization, and stream artifacts while episodes run."
 ---
 
-# Coworld Experience Requests
+# Coworld experience requests
 
-The primary eval instrument: a **hosted batch of episodes you define and the server runs**. You pick
-a **target** (game / league / division), a **roster** (which policies play, in which seats and
-roles), and a **count**; POST it; poll the `xreq_…` to completion; then pull the episodes with the
-`coworld-episode-artifacts` skill and analyze. They run in parallel on Softmax infra and are
-potentially paid — **target them to the question** and use local runs for self-play.
+Hosted XP is the primary competitive evaluation instrument. It consumes the owning user's [granted credits](../../../docs/xp-credits.md) and runs under separate API and job-capacity limits. Read [user preferences](../../../user_preferences.md), the [platform reference](../../../docs/platform-reference.md), and the selected game's evaluation guide.
 
-**Announce at start:** "Setting up a Coworld experience request. I'll frame the question, resolve the
-live IDs, compose the request, validate it against the live schema, POST it, and stream the results in the background."
+Within the human's authorized objective, announce the question, cohort, count and budget considerations; do not ask again merely to run a targeted evaluation. New strategic directions or material scope/budget changes need the human's decision. Use local runs for own-policy self-play, not hosted XP.
 
-> **Check `user_preferences.md` for any standing XP-request preferences** before composing
-> (e.g. a preferred opponent set, a default episode count, an always-2-imposter rule). The human may
-> have recorded eval defaults there — honor them unless this request's question overrides them.
+## 1. Choose the experiment
 
----
+| Question | Design |
+| --- | --- |
+| Where does the policy struggle against the current field? | Subject in one seat; eligible `random` or `top_n` opponents; game-appropriate natural roles |
+| Did this change help? | Exact baseline/candidate versions, matched explicit opponents, seat treatment, game version and seed design |
+| Is one role or mechanism broken? | Game-supported role/config overrides; confirm broader effects separately |
+| Does the policy function under local self-play? | Local mechanism/debugging tools; not a hosted XP request |
 
-## Step 1 — frame the question, then pick the shape
+Do not equate a random XP field with every league's matchmaking. Current sampling is rank-weighted without replacement until pool refill; duplicates can then appear. `slot: -1` rotates open seats, but incomplete rotations and game-specific role assignment can leave imbalance. Record actual seats and opponents.
 
-**The question dictates the roster.** Don't reach for a default body; decide what you're measuring,
-then choose the request *kind* below. This is the most important step — a mis-shaped request answers
-the wrong question (or gets masked).
+Choose **1–100 episodes per request**. Larger batches need multiple requests and remain subject to the shared allowance/queue caps. An explicit integer `game_config_overrides.seed` repeats that seed throughout a request; omitting it does not produce matched seeds across independent requests.
 
-| What you want to learn | Request kind | Key knobs |
-|---|---|---|
-| "How does crewborg do **against the live field**?" a.k.a. **tournament-style** | **Field eval** | your `policy_ref` in exactly one seat, **every other seat `{"random": true}`** (all seats `slot:-1`), **natural roles** (no `game_config_overrides`), high `num_episodes` |
-| "**Did my change help?**" (vs a baseline) | **A/B** | pin the **full roster** with explicit `policy_ref`s, pin seats, *identical across arms except the subject*. Prefer the **`crewrift-ab`** skill, which runs both arms matched. |
-| "How's crewborg **as imposter** (or crew)?" | **Role-pinned eval** | pin your seat + force its role via `game_config_overrides.slots`; opponents rotate the rest |
-| "Where's the **role gap** as it actually plays?" | **Natural-roles eval** | no role override (roles fall naturally), seats rotating — see the masking caveat below |
-| "Does the build **run at scale / not crash**?" | **Self-play crash-test** | your `policy_ref` in most/all seats, modest `num_episodes` |
-| "Broaden / hand-pick the **opponent field**" | any of the above | add `included_players` / `excluded_players` to shape the `top_n`/`random` pool |
+Preregister operational-failure handling. Do not classify all nonpositive scores as infrastructure faults or silently drop player failures: report failures and coverage separately, then apply the game's justified gameplay metric rules.
 
-> **"Tournament-style" — precise definition.** When the human asks for a request that "mimics the
-> tournament" or "substitutes for tournament signal" (e.g. because the real league is down), it means
-> exactly the **Field eval** shape above, not a pinned/A-B shape:
-> - **Your subject** fills exactly one seat via `policy_ref`.
-> - **Every other seat is `{"random": true}`** — independently sampled from the division's full
->   rank-weighted champion pool, same as how real tournament rounds fill seats. Do **not** substitute
->   pinned explicit opponents (that's a controlled-field eval, a different question) or `top_n`
->   (that restricts to a top-N slice, which is narrower than a real tournament's pool).
-> - **No `game_config_overrides`** — roles are assigned naturally by the game, exactly as in a real
->   round.
-> - All seats default `slot:-1` (round-robin) — nothing about your seat is special beyond which
->   `policy_ref` sits there.
-> - **Known infra risk:** `random`/`top_n` pool selectors have previously 500'd on a statement timeout
->   (see `crewrift_lab/WORKING_CONTEXT.md`) — if that recurs, it's a platform bug to report, not a
->   reason to quietly fall back to pinned opponents (that changes what the request measures).
-> - **`num_episodes` caps at 100 per request** (API-enforced) — a "200-episode" ask needs two requests
->   with the same body.
+## 2. Resolve the target and versions
 
-Full field reference (every option, with worked example bodies) is in
-[`references/api.md`](references/api.md) — **read it before composing a body**, and re-print the live
-schema when a route 4xxs (the API drifts).
-
-## Decision points & best practices (these are where requests go wrong)
-
-- **Rotate every non-pinned seat (`slot:-1`).** It cancels per-seat bias so a win rate means
-  something. Pin a seat *only* to hold a specific role/position for the question.
-- **A single request already varies the field.** `top_n`/`random` seats **re-draw per episode** and
-  round-robin seats rotate per episode (verified — see `references/api.md`), so one N-episode request
-  faces a varied field across episodes. You do **not** fire multiple requests for opponent variety.
-- **Pin roles to answer a role question — but beware masking.** Forcing roles (e.g. crewborg always
-  imposter) isolates that role, but a **role-pinned A/B can hide a gap that only shows in natural
-  roles**. Confirm a promising role-specific change in a **natural-roles** run before trusting it.
-- **For a clean A/B, pin the whole roster** with explicit `policy_ref`s (exact `name:vN`) so both
-  arms are identical except the subject — `top_n`/`random` are uncontrolled (the pool drifts and can
-  even seat your own entry). Use `included_players`/`excluded_players` to shape the pool when you want
-  a specific field without full pinning.
-- **Enough episodes, and ops-filter.** Pick `num_episodes` high enough to smooth variance, and drop
-  **connect/disconnect-timeout** episodes (score ≤ 0 / `-100`) before computing rates — they gut your
-  effective n. If the ops-failure rate is high, re-run.
-- **Decompose by role and opponent** when you analyze (an aggregate hides a broken role).
-
-## Step 2 — resolve live IDs (never reuse cached ones; they rotate)
+Read the current league participation guide and Coworld manifest. Recheck name-to-ID mappings; IDs identify resources, while canonical versions and active leagues can change.
 
 ```bash
-# run with the Coworld SDK available — a uv env with coworld[auth] + `softmax login`
 S=.claude/skills/coworld-experience-requests/scripts/experience_request.py
-uv run python "$S" resolve --policy crewborg --version <N>        # a name -> version id(s)
-uv run python "$S" resolve --division div_... --top 7             # a division's ranked active field
+uv run python "$S" resolve --policy POLICY --version N
+uv run python "$S" resolve --division div_... --top N
 ```
-`policy_ref` accepts the `name:vN` label and the target accepts a division/league **name**, so you
-often don't need UUIDs at all — `resolve` is mainly for ranking the field and confirming versions.
 
-## Step 3 — compose, validate, create
+The resolver uses exact version labels on the primary leaderboard. A visibility or undersized-roster failure is not permission to silently substitute a different field. Use [the API reference](references/api.md) for body fields and their limits.
 
-Compose the body per [`references/api.md`](references/api.md) for the chosen kind (e.g. `/tmp/req.json`),
-then validate against the **live** schema before posting (`additionalProperties:false` — a stray key
-4xxs):
+## 3. Compose and create
+
+Record the exact request body with the experiment. Choose visibility deliberately: `private` defaults false, and a private request can exclude opponents that have not consented to requests hidden from their owners. A selection-consent rejection does not authorize changing the experiment to public.
 
 ```bash
-uv run python "$S" create /tmp/req.json --check-schema   # dry-run: validate, don't POST
-uv run python "$S" create /tmp/req.json                  # POST for real -> prints xreq_… + summary
+uv run python "$S" create /tmp/request.json --check-schema
+uv run python "$S" create /tmp/request.json
 ```
-**Verify it resolved as intended:** `episode_count` matches `num_episodes`, and the first episodes'
-`participants` seat the policies/versions and roles you intended (the spread you expected).
 
-## Step 4 — stream, don't wait (the default)
+`--check-schema` makes no POST. It checks top-level keys plus game overrides when the helper resolves their schema; it does not fully validate every nested field, estimate credits, or prove admission will succeed. The server applies those contracts. A `state` selector only works when the game supports the corresponding persistence contract.
 
-"Created" ≠ "done" — but **do not wait for the xreq to drain before starting
-the next stage.** Immediately after `create` returns the `xreq_…`, launch the
-streaming pipeline **in the background** and let all stages overlap:
+The creator prints the returned creation-only `cost_preview`. Save it with the body and returned ID. After creation, verify the resolved Coworld/version, variant, participant versions, seats and episode count. For ambiguous errors, inspect existing work before retrying; reuse the same supported idempotency key and payload.
 
-- **Game-specific streaming integration (when available):** hand the fresh
-  `xreq_…` id(s) to the `crewrift-event-warehouse` skill's `stream_eval.py`
-  (see that SKILL.md). It watches the request, pulls each episode's artifacts
-  as it completes, and folds them into the event warehouse in incremental
-  batches — the warehouse is ready (or nearly) the moment the last episode ends.
-- **Artifacts only:** `fetch_artifacts.py --xreq xreq_… --watch` (the
-  `coworld-episode-artifacts` skill) streams the downloads the same way.
+## 4. Stream immediately
 
-Both are crash-safe: rerun the same command and it resumes from disk.
+Start artifact collection in the background as soon as the request exists, so downloading and analysis overlap execution:
 
-Use normal participant access. Missing/private opponent artifacts remain an explicit coverage limit; do not use elevated privileges for competitive intelligence.
+```bash
+uv run python .claude/skills/coworld-episode-artifacts/scripts/fetch_artifacts.py \
+  --xreq xreq_... --watch --out /tmp/evaluation-evidence
+```
 
-For a quick status glance (or several requests at once), the old serial tools
-remain: `uv run python "$S" monitor xreq_…` polls one request;
-`scripts/xp_dashboard.py xreq_… [...]` serves the browser dashboard
-(completion/ETA, descriptive per-seat win-rate leaderboard, heatmap, score
-strips; ops-filtered — watch the "ops-filtered" count). Serial
-monitor → fetch → build is the **fallback**, not the default.
+Use a game-specific streaming integration when the [capability map](../../../docs/capabilities.md) identifies one. Reruns resume existing evidence; inspect exhausted retry state before retrying it deliberately.
 
-When everything is terminal, compute the stats the question needs,
-**decomposed by role and opponent**.
+For **more than 16 episodes**, start the XP dashboard and give the human its localhost URL in the creation update:
 
-## Notes
+```bash
+uv run python .claude/skills/coworld-experience-requests/scripts/xp_dashboard.py \
+  --port PORT xreq_...
+```
 
-- Auth comes from `softmax login` (the tool uses `load_current_token`); run inside `uv run`.
-- For a one-off you'd rather hand-drive, the `coworld xp-request create|list|get|episodes` CLI hits
-  the same routes; this script adds live-schema validation, POST/readback race handling, ID
-  resolution, and polling.
-- This skill *creates*; **`coworld-episode-artifacts`** *downloads* the episodes it produces;
-  **`crewrift-survey`** turns a finished batch into a strengths/weaknesses report; **`crewrift-ab`**
-  wraps the A/B shape end-to-end.
+For a quick status view use `uv run python "$S" monitor xreq_... --once`. A parent `failed`/`cancelled` label is not proof every child stopped. Both monitoring and collection must inspect child completion. Terminal failures may legitimately lack results/replays; report them as coverage gaps.
+
+Use ordinary access. Honor API rate-limit response headers and bounded retries. Missing opponent diagnostics remain unavailable; never elevate to retrieve them for optimization. Link the request and evidence from the lab's experiment record, then report results and return the next strategic choice to the human.

@@ -1,0 +1,240 @@
+[
+  {
+    "url": "https://docs.softmax.com/index.md",
+    "status": 200,
+    "sha256": "586291adc4f45e6b014640a6ee510cf5dcb127c05013ecc7f785234e31ac8ba5"
+  },
+  {
+    "url": "https://docs.softmax.com/guides/platform-overview.md",
+    "status": 200,
+    "sha256": "54c9a5445102d22c9543202f0b9bf7847452dea0620bb368d09b9babd6e37c20"
+  },
+  {
+    "url": "https://docs.softmax.com/guides/quickstart.md",
+    "status": 200,
+    "sha256": "968a06d1970f6e211b3a75553820b7d2efb413c38d625c9416a111d9fcb68f29"
+  },
+  {
+    "url": "https://docs.softmax.com/guides/authentication.md",
+    "status": 200,
+    "sha256": "68731cb4b8f722da8b460034feec7e5c81dc97479dedeb779a6a8306984a8321"
+  },
+  {
+    "url": "https://docs.softmax.com/skill.md",
+    "status": 200,
+    "sha256": "e7d2b9ebb33d7fac29e5b7bc73953d8ef57d2c4017be9f3b2591f07143e0d36e"
+  },
+  {
+    "url": "https://docs.softmax.com/coworld/overview.md",
+    "status": 200,
+    "sha256": "9410069ec083a56637bb100ca7b7815b62ffc6bacd16240961be5bb4d894ac8d"
+  },
+  {
+    "url": "https://docs.softmax.com/coworld/concepts/competition.md",
+    "status": 200,
+    "sha256": "efca8039d71909df9d38aa6ffa87b18a39c7e638b738a0d23c069a77dfb4b4b7"
+  },
+  {
+    "url": "https://docs.softmax.com/coworld/build-a-player/overview.md",
+    "status": 200,
+    "sha256": "cf6da2db79f30edaf3ceec5a244683f6884538ceb28ac22d041e2939644fdc96"
+  },
+  {
+    "url": "https://docs.softmax.com/coworld/build-a-player/choose-a-coworld.md",
+    "status": 200,
+    "sha256": "2f831a1b6979ab5d0f24c4e9dbd52d68f2c6f39dc8231a936850ab7241e839a9"
+  },
+  {
+    "url": "https://docs.softmax.com/coworld/build-a-player/protocol-and-runtime.md",
+    "status": 200,
+    "sha256": "42cdf5b0fd360bbf73a307b2315475701642224bb8831c87a0b35b6687eb38aa"
+  },
+  {
+    "url": "https://docs.softmax.com/coworld/build-a-player/architecture.md",
+    "status": 200,
+    "sha256": "5db3f981a1fded2b34786ea649603d316bd97ed6fb0cf023d76bde0a2a166b03"
+  },
+  {
+    "url": "https://docs.softmax.com/coworld/build-a-player/package-and-verify.md",
+    "status": 200,
+    "sha256": "a12989a0d9530c5df7592bae091cb38fad3ae86b791ac1e44d12a0bc2d3b3f30"
+  },
+  {
+    "url": "https://docs.softmax.com/coworld/build-a-player/upload-and-evaluate.md",
+    "status": 200,
+    "sha256": "7d856e967f1e0521177addf3925916a94e35fd0f9ccf7dfeb27cc7f1f656f61c"
+  },
+  {
+    "url": "https://docs.softmax.com/coworld/build-a-player/debug-hosted-episodes.md",
+    "status": 200,
+    "sha256": "e6144cbc1c3e238296106b12a5937d6d7e46c4d6c728bef63f972d6ce293abb1"
+  },
+  {
+    "url": "https://docs.softmax.com/coworld/build-a-player/improve-a-policy.md",
+    "status": 200,
+    "sha256": "f3cefa45a6ea31e8d11ae5678d97014838ec8c948f37582843fa36056864aaee"
+  },
+  {
+    "url": "https://docs.softmax.com/coworld/build-a-player/submit-to-a-league.md",
+    "status": 200,
+    "sha256": "e45265c08087894f7e4817cc3bb0f36751f7924734f1ae5685115657088d43b8"
+  },
+  {
+    "url": "https://docs.softmax.com/coworld/build-a-coworld/overview.md",
+    "status": 200,
+    "sha256": "83a46e31ff2f1d67be7af218db432507a3b4840e136522ea7c558951982195be"
+  },
+  {
+    "url": "https://docs.softmax.com/coworld/build-a-coworld/player-runtimes.md",
+    "status": 200,
+    "sha256": "6e548c7b9b60e0c2f377efe505fa9c57662d6809edfb32a269c6c997a932b733"
+  },
+  {
+    "url": "https://docs.softmax.com/coworld/build-a-coworld/design.md",
+    "status": 200,
+    "sha256": "e984ca8f612d961e194face53cf4531b74c90cd487f0170c6188b531f2c395e6"
+  },
+  {
+    "url": "https://docs.softmax.com/coworld/build-a-coworld/game-and-baselines.md",
+    "status": 200,
+    "sha256": "089b24a9710ff05d8375a1f1ae5d289c837b8391791c43be5b14d63ae994e7e1"
+  },
+  {
+    "url": "https://docs.softmax.com/coworld/build-a-coworld/manifest-and-variants.md",
+    "status": 200,
+    "sha256": "d886334ea5cce907922ccc9e114ce8bdda834c286fca8897d56d8c6da29a3f30"
+  },
+  {
+    "url": "https://docs.softmax.com/coworld/build-a-coworld/build-certify-upload.md",
+    "status": 200,
+    "sha256": "32b38944fb0d679c2e2a8ff63a7563de14a457e3bf4102d2d24110c2b6b115ca"
+  },
+  {
+    "url": "https://docs.softmax.com/coworld/build-a-coworld/hosted-verification.md",
+    "status": 200,
+    "sha256": "3b877713729548215099b57c05331484f4abdce8b992f4c05b990c6aaee7129d"
+  },
+  {
+    "url": "https://docs.softmax.com/coworld/cli.md",
+    "status": 200,
+    "sha256": "60084f08f3da712502d6fbbb8a5c21421f5bd3c86a529f9e0b5902dbf41b7396"
+  },
+  {
+    "url": "https://docs.softmax.com/coworld/build-a-player/bedrock.md",
+    "status": 200,
+    "sha256": "1ccf122a317b7eba417997ba3a0a05bd802da1a6c3fb4f7271867eaa8a9f149b"
+  },
+  {
+    "url": "https://docs.softmax.com/coworld/advanced/replays.md",
+    "status": 200,
+    "sha256": "8de22c96bb4ff1dc9ca4561053f0636d0b8feb7ede37a2b9076f99e06fd46d88"
+  },
+  {
+    "url": "https://docs.softmax.com/coworld/advanced/troubleshooting.md",
+    "status": 200,
+    "sha256": "ec84718daf9d2a8ef86c85b12658144eaa33d336a6154b1de5f0521b2e81e4f7"
+  },
+  {
+    "url": "https://docs.softmax.com/api-reference/overview.md",
+    "status": 200,
+    "sha256": "89e365fa8dfa9ee2936f4c7060a3076194c6e03716c0627adafc9d0ec82e7aca"
+  },
+  {
+    "url": "https://docs.softmax.com/guides/rate-limits.md",
+    "status": 200,
+    "sha256": "cc4adabe2ee0a3fe264df6466704ce3317dbafc094364fdf01797fce5f6c4c25"
+  },
+  {
+    "url": "https://docs.softmax.com/api-reference/error-handling.md",
+    "status": 200,
+    "sha256": "a90416a804c9775a5f7e5978d6ed1cc3e6a77754127911a64d59c94c4c7c7c9a"
+  },
+  {
+    "url": "https://docs.softmax.com/api-reference/changelog.md",
+    "status": 200,
+    "sha256": "13fba500c26f668dbdb8a33dac1770b6b8f7210c9ac04c73c37de965782b9b74"
+  },
+  {
+    "url": "https://softmax.com/.well-known/ard.json",
+    "status": 200,
+    "sha256": "f4434be59b063c2056c101bd6898294e5ca9fe7f03e2f3f60e64b35877353556"
+  },
+  {
+    "url": "https://softmax.com/.well-known/api-catalog",
+    "status": 200,
+    "sha256": "de80143ccb6b987e7e0436105e6ea5ef4b73b8e6fc301e81b113f3439c686223"
+  },
+  {
+    "url": "https://softmax.com/play.md",
+    "status": 200,
+    "sha256": "af08a857ca315264c0350ce228cb971ef533ef1371b3c35c97d668241ea38013"
+  },
+  {
+    "url": "https://github.com/Metta-AI/metta/blob/70bcdd00b120ae29326b6844e792c076a7b3ae54/app_backend/src/metta/app_backend/user_credits.py",
+    "sha256": "a762f336b832d7b5273cf1e8f36d02d10775c870cd6a7d1d5e57651fbab4d301"
+  },
+  {
+    "url": "https://github.com/Metta-AI/metta/blob/70bcdd00b120ae29326b6844e792c076a7b3ae54/app_backend/src/metta/app_backend/routes/usage_routes.py",
+    "sha256": "0fd000f7b9623ed0b682db46b87b1e175b7cb7001d3a3ce289a30e1440221e7c"
+  },
+  {
+    "url": "https://github.com/Metta-AI/metta/blob/70bcdd00b120ae29326b6844e792c076a7b3ae54/app_backend/src/metta/app_backend/v2/routes/experience_requests.py",
+    "sha256": "f84bef1ecab737cce76f88d9796f01487beb60065ba4dbaeba4aa8ac62e8e6de"
+  },
+  {
+    "url": "https://github.com/Metta-AI/metta/blob/70bcdd00b120ae29326b6844e792c076a7b3ae54/app_backend/src/metta/app_backend/v2/experience_requests.py",
+    "sha256": "4a3f32ac5541fd7a3e7f9a5ad2ca2ed96ff6047cabd24c42ecfee7a9e3021729"
+  },
+  {
+    "url": "https://github.com/Metta-AI/metta/blob/70bcdd00b120ae29326b6844e792c076a7b3ae54/app_backend/src/metta/app_backend/v2/permissions.py",
+    "sha256": "c0afc7b98931aca344f42bff6f31550bf9de1c085ec8735d64dbbbb509e662a0"
+  },
+  {
+    "url": "https://github.com/Metta-AI/metta/blob/70bcdd00b120ae29326b6844e792c076a7b3ae54/app_backend/src/metta/app_backend/v2/policy_selection.py",
+    "sha256": "94534769ae9323dcf4e17c90e67b81cd7ad98ccfee1b5a06839befaa94a57b63"
+  },
+  {
+    "url": "https://github.com/Metta-AI/metta/blob/70bcdd00b120ae29326b6844e792c076a7b3ae54/app_backend/src/metta/app_backend/v2/league_policy_memberships.py",
+    "sha256": "eda4a39ba5d35ed9192ec7f33e0a71222260105a4285d45063222e0b2de82a60"
+  },
+  {
+    "url": "https://github.com/Metta-AI/metta/blob/70bcdd00b120ae29326b6844e792c076a7b3ae54/app_backend/src/metta/app_backend/v2/policy_membership_events.py",
+    "sha256": "1ee65dd2f887873c5a7600caadcdc2aa6e07964d51aa90e3527eb365afc9f6bd"
+  },
+  {
+    "url": "https://github.com/Metta-AI/metta/blob/70bcdd00b120ae29326b6844e792c076a7b3ae54/app_backend/src/metta/app_backend/v2/division_selectors.py",
+    "sha256": "a1c31f314ba130568d5948fa5d48a96e7efad4326375141f350e5af3e22d1d0f"
+  },
+  {
+    "url": "https://github.com/Metta-AI/metta/blob/70bcdd00b120ae29326b6844e792c076a7b3ae54/app_backend/src/metta/app_backend/v2/coworld_surfaces.py",
+    "sha256": "6c608f11d853c7af5b4b25707b991ab9aa77d141e1e3e5ce34388012c9a18627"
+  },
+  {
+    "url": "https://github.com/Metta-AI/metta/blob/70bcdd00b120ae29326b6844e792c076a7b3ae54/app_backend/src/metta/app_backend/v2/routes/posts.py",
+    "sha256": "89e84a8915e1bc6ba36b41b0c629e4306df2e9b887117c93dda22845c08e423a"
+  },
+  {
+    "url": "https://github.com/Metta-AI/metta/blob/70bcdd00b120ae29326b6844e792c076a7b3ae54/app_backend/src/metta/app_backend/v2/routes/wikis.py",
+    "sha256": "2b0644e72355b67762a93cf7dcc755921926617df14117c62c6307ce0081844a"
+  },
+  {
+    "url": "https://github.com/Metta-AI/metta/blob/70bcdd00b120ae29326b6844e792c076a7b3ae54/app_backend/src/metta/app_backend/v2/routes/league_policy_memberships.py",
+    "sha256": "217cceb906db6531401d2567534e432378b554f902e7adfbe25a322c14fea3dd"
+  },
+  {
+    "url": "https://github.com/Metta-AI/metta/blob/70bcdd00b120ae29326b6844e792c076a7b3ae54/app_backend/src/metta/app_backend/job_capacity.py",
+    "sha256": "ed803504575b6e0f61df114aacdfb5dcc84c18622ccf1eaaf29ad65c1b2d09af"
+  },
+  {
+    "url": "https://github.com/Metta-AI/metta/blob/70bcdd00b120ae29326b6844e792c076a7b3ae54/app_backend/src/metta/app_backend/v2/episode_requests.py",
+    "sha256": "4a91aa8f0cbb99b3d1517a0cd5928a1a3e932ea20a4ea5586a28c0470ba0e3b4"
+  },
+  {
+    "url": "https://github.com/Metta-AI/metta/blob/70bcdd00b120ae29326b6844e792c076a7b3ae54/app_backend/src/metta/app_backend/v2/routes/episode_requests.py",
+    "sha256": "2de17ef6bb225b42d9a596ee977dee8464e765a09ca188d64e24a80c87f1f685"
+  },
+  {
+    "url": "https://github.com/Metta-AI/metta/blob/70bcdd00b120ae29326b6844e792c076a7b3ae54/app_backend/src/metta/app_backend/v2/league_settings_schema.py",
+    "sha256": "45d69c3cac3416f9b997deafec0df3466fc22a7710b43d08a69ada7fab60733e"
+  }
+]

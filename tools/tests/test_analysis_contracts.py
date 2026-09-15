@@ -81,9 +81,22 @@ def test_access_elevation_rejected():
         fa.Client('https://example.invalid', 'test', elevated=True)
 
 
-def test_failed_request_terminal():
-    assert fa._xreq_drained({'status': 'cancelled', 'episode_count': 4})
-    assert er._terminal({'status': 'failed', 'episode_count': 4})
+@pytest.mark.parametrize("check", [fa._xreq_drained, er._terminal])
+@pytest.mark.parametrize("parent", ["failed", "cancelled"])
+def test_parent_terminal_does_not_finish_live_children(check, parent):
+    detail = {"status": parent, "episode_count": 2, "episodes": [
+        {"status": "failed"}, {"status": "running"},
+    ]}
+    assert not check(detail)
+    detail["episodes"][1]["status"] = "cancelled"
+    assert check(detail)
+    assert not check({"status": parent, "episode_count": 2})
+
+
+@pytest.mark.parametrize("check", [fa._xreq_drained, er._terminal])
+def test_completion_counts_include_submitted_work(check):
+    assert not check({"status": "failed", "episode_count": 2, "failed_count": 1, "submitted_count": 1})
+    assert check({"episode_count": 2, "failed_count": 1, "completed_count": 1})
 
 
 def test_exact_fisher_and_welch():
@@ -262,3 +275,34 @@ def test_missing_comparison_arm_does_not_invent_zero():
         ab.Delta('win_rate','all',True,None,.5,0,10,'rate')])
     page=renderer.render(d,None,None,'test')
     assert 'Δ ·' in page
+
+
+def test_membership_pagination_keeps_older_matches():
+    lifecycle = module('policy_lifecycle', '.claude/skills/coworld-policy-lifecycle/scripts/policy_lifecycle.py')
+    def respond(request):
+        if request.url.params.get('cursor') == 'page2':
+            return httpx.Response(200, json=[{'id': 'older'}])
+        return httpx.Response(200, json=[{'id': 'newer'}], headers={'X-Next-Cursor': 'page2'})
+    with httpx.Client(base_url='https://example.invalid', transport=httpx.MockTransport(respond)) as client:
+        assert lifecycle.get_all_rows(client, '/v2/league-policy-memberships', mine=True) == [
+            {'id': 'newer'}, {'id': 'older'},
+        ]
+
+
+def test_create_preserves_admission_cost_preview(monkeypatch, tmp_path, capsys):
+    from argparse import Namespace
+    preview = {'estimated_cost_credits': 7.5, 'player_pod_llm_spend_limit_usd': None}
+    def respond(request):
+        if request.url.path == '/openapi.json':
+            return httpx.Response(200, json={'components': {'schemas': {'V2CreateExperienceRequestRequest': {
+                'properties': {'roster': {}}, 'additionalProperties': False,
+            }}}})
+        if request.method == 'POST':
+            return httpx.Response(200, json={'id': 'xreq_test', 'cost_preview': preview})
+        return httpx.Response(200, json={'id': 'xreq_test', 'episode_count': 1, 'cost_preview': None})
+    monkeypatch.setattr(er, 'observatory_client', lambda server: httpx.Client(
+        base_url='https://example.invalid', transport=httpx.MockTransport(respond)))
+    body = tmp_path / 'request.json'
+    body.write_text('{"roster": []}')
+    er.cmd_create(Namespace(server=None, body=str(body), check_schema=False))
+    assert json.loads(capsys.readouterr().out)['cost_preview'] == preview

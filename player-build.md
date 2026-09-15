@@ -1,117 +1,50 @@
-# Building a Coworld player image
+# Building and uploading a Coworld player
 
-This page describes **container policies**. The current CLI also accepts game-hosted files/directories through `coworld upload-policy --file`; that format is defined by the selected game. Start with the lab's build guide and [build/upload skill](.claude/skills/build-and-upload/SKILL.md).
+Checked 2026-09-14 against [official runtime guidance](https://docs.softmax.com/coworld/build-a-coworld/player-runtimes), [protocol documentation](https://docs.softmax.com/coworld/build-a-player/protocol-and-runtime), and project-local `coworld 0.1.47`. The selected game's manifest and player guide determine which format to build. See [platform evidence](docs/reports/platform-fact-check-2026-09-14.md) and the [upload skill](.claude/skills/build-and-upload/SKILL.md).
 
-The container contract below is a historical baseline (originally verified with coworld 0.1.20). Verify the game's current runner/manifest before relying on launch details, especially multi-agent assignment and legacy environment aliases. CLI upload modes were checked with coworld 0.1.47 on 2026-09-14. Do not infer live compatibility from this document alone.
+## Choose the declared runtime
 
-## The contract — what the runner requires of your image
+| Contract | `platform-hosted` (default) | `game-hosted` |
+| --- | --- | --- |
+| Player artifact | `linux/amd64` container image | Game-defined file or packed directory |
+| Execution | Platform starts player containers per seat | Game loads/runs the seat files |
+| Interface | Game protocol via supplied WebSocket URL | Game-defined file and execution contract |
+| Policy environment/secrets | Supported | Not provided |
+| Submitted size cap | 5 GiB image | 100 MiB packed bytes |
+| Bundled size cap | 512 MiB image | 100 MiB packed bytes |
 
-A container policy runs as a short-lived **linux/amd64** process. Its exact seat/agent assignment comes from the game and runner contract. It must:
+These are documented limits, not boundaries exercised by this audit. File policies reject `--run`, `--secret-env`, `--use-bedrock`, and `--bedrock-model`. The staged outer file is named `file`, so do not rely on its original extension. Directory packing rejects symlinks. The game process can read/copy submitted files; it does not receive submitted image bytes. See [upload and evaluate](https://docs.softmax.com/coworld/build-a-player/upload-and-evaluate).
 
-1. **Read `COWORLD_PLAYER_WS_URL`** from the environment — a ready-to-use
-   `ws://<game-host>:8080/player?slot=<N>&token=<T>`. (The runner also sets
-   `COGAMES_ENGINE_WS_URL` to the *same value* as a legacy alias — **prefer the
-   canonical `COWORLD_PLAYER_WS_URL`.**)
-2. **Connect to that websocket and speak the game's player protocol**
-   (`game.protocols.player` in the manifest) — receive observations, emit actions.
-   **This is the one game-specific piece** (e.g. Crewrift's binary Sprite-v1 vs a
-   JSON game).
-3. **Act only for its assigned agents** — follow the game/runner assignment rather than guessing from container count.
-4. **Exit cleanly when the episode ends.**
+## Container contract
 
-Plus, for the image itself:
+- Build `linux/amd64`, including on Apple Silicon.
+- Read **`COWORLD_PLAYER_WS_URL` unchanged**. It includes the assigned slot, token and any game-owned parameters. `COGAMES_ENGINE_WS_URL` is a legacy alias.
+- Speak the protocol linked by `game.protocols.player`; there is no universal observation/action format. Follow the game's seat/agent assignment.
+- Finish cleanly when the game ends. The episode runner does not restart an exited player container.
+- Keep diagnostics on stdout/stderr. For larger traces, the optional `COWORLD_PLAYER_ARTIFACT_UPLOAD_URL` accepts a replaceable ZIP of up to **200 MiB**; local URLs use `file://`, hosted ones use HTTP PUT. Finish uploads before exit. Missing optional telemetry does not itself fail an otherwise successful game.
+- Hosted player pods request **250m CPU / 256Mi memory** by default. These are scheduling requests, **not hard resource limits**; inspect the actual runtime contract for the target.
 
-- **linux/amd64** — hard-checked at run *and* upload; arm64 is rejected. On Apple
-  Silicon, build with `docker build --platform linux/amd64 …`.
-- **No secrets baked in** — the image is hashed/stored (bundled images are even
-  mirrored public). Attach secrets at upload (`--secret-env`, `--use-bedrock`), never
-  in the image or manifest env.
-- **stdout/stderr are diagnostic logs only** — the source of truth for an episode is
-  the game's results/replay, not player logs. Hosted policy logs are line-capped; for
-  bulky structured telemetry, upload a **player artifact** instead: when the runner
-  sets `COWORLD_PLAYER_ARTIFACT_UPLOAD_URL`, the player may PUT one `.zip` (≤200 MB)
-  there before exiting (metta `docs/artifacts/PLAYER_ARTIFACT.md`; the player SDK's
-  `TraceOutputs` does this for you with an `…@artifact` output spec). Retrieval:
-  `GET /jobs/{job_id}/policy-artifact[/{agent_idx}]`, policy-scoped.
-- **Lightweight** — hosted default is **250m CPU / 256Mi memory** per player.
+Retrieve artifacts through the [current episode-request endpoints](.claude/skills/coworld-episode-artifacts/references/endpoint-map.md), not old `/jobs/...` routes. Replays/results are game-owned evidence; player logs explain decisions but do not override game outcomes.
 
-## The minimal Dockerfile
+## Build and upload
 
-A small base, a websocket client, your code, and a command that runs your player:
+```bash
+docker buildx build --platform linux/amd64 --load --tag my-player:local .
+uv run coworld upload-policy my-player:local --name my-player \
+  --run python --run -m --run my_player.main
 
-```dockerfile
-FROM python:3.12-slim
-RUN pip install --no-cache-dir websockets       # + your player's own deps
-WORKDIR /app
-COPY . /app/your_player
-ENV PYTHONPATH=/app
-# The command must read COWORLD_PLAYER_WS_URL, connect, play one slot, and exit.
-CMD ["python", "-m", "your_player.bridge"]
+# For a game-hosted target instead:
+uv run coworld upload-policy --file ./my-player --name my-player
 ```
 
-The container's command is **either** this baked `ENTRYPOINT`/`CMD`, **or** the `run`
-argv you supply at upload (`--run python --run -m --run your_player.bridge`), which
-**overrides** the image's command. `run` is *optional* when the baked command is
-correct; pass it to override, or to disambiguate an image that bundles multiple roles.
+Use the lab's actual recipe. The image's baked command can be used when correct; repeated `--run` arguments override it. Record returned policy name/version/UUID, source revision, runtime configuration and intended change. **An identical upload may reuse an existing version.** Upload enters no league and does not establish that the player works.
 
-The bridge itself is roughly:
+The lab skips routine pre-upload local gates by preference. Use local runs for focused mechanism/transport debugging or own-policy self-play; use targeted XP for field performance. Explicit league submission is a separate authorized action.
 
-```python
-import asyncio, os, websockets
-async def main():
-    url = os.environ["COWORLD_PLAYER_WS_URL"]            # the canonical var
-    async with websockets.connect(url, max_size=None) as ws:
-        async for message in ws:                          # speak the GAME'S protocol here
-            ...                                            # (game-specific decode/act/encode)
-        # connection closed cleanly ⇒ episode over ⇒ exit 0
-asyncio.run(main())
-```
+## Secrets and model access
 
-## Build → ship
+Never bake secrets into images, source or manifests. Container uploads support `--secret-env KEY=VALUE` and optional `--use-bedrock --bedrock-model MODEL`. Keep model choices, per-game budgets and tracing recipes in the game's lab.
 
-1. **Build amd64:**  `docker build --platform linux/amd64 -t <your-tag>:dev .`
-2. **Upload as a new version** (routine, inert; no local test first — the next hosted
-   eval is the test) and — gated — **submit + monitor**: the
-   **`coworld-policy-lifecycle`** skill
-   (`coworld upload-policy <image> --name <name> [--run …]` →
-   `coworld submit <name> --league <id>`).
+For hosted Bedrock, read `AWS_ENDPOINT_URL_BEDROCK_RUNTIME` and send calls through that sidecar; injected placeholder credentials are not direct AWS credentials. `USE_BEDROCK` alone does not establish hosted proxy availability. Game-hosted files have no player secrets or Bedrock upload flags; the game owns model access and seat attribution. Local provider calls use separately supplied credentials and may incur provider charges. See [official Bedrock guidance](https://docs.softmax.com/coworld/build-a-player/bedrock).
 
-If a hosted eval shows the image can't connect → play → exit cleanly, debug it locally
-with the **`coworld-local-run`** skill.
-
-## Secrets, LLM keys, Bedrock
-
-Never bake keys into the image. Attach them to the **policy version** at upload — they
-land only in that version's pod:
-
-```sh
-coworld upload-policy <image> --name <name> --run python --run -m --run your_player.bridge \
-  --secret-env API_KEY=...                                   # → AWS Secrets Manager
-coworld upload-policy <image> --name <name> ... --use-bedrock --bedrock-model us.amazon.nova-micro-v1:0
-```
-
-For Crewrift, always use Haiku 4.5:
-`--bedrock-model us.anthropic.claude-haiku-4-5-20251001-v1:0`. Keep each policy
-pod below 1,800 quota-weighted tokens per episode, counted cumulatively across
-all LLM calls as input tokens + cache-write tokens + 5 × output tokens. If the
-remaining budget cannot cover another call, use a deterministic fallback.
-
-For **local** testing, pass `--secret-env` / `--use-bedrock` to `coworld run-episode`
-(the `coworld-local-run` skill) — those values inject only into that run's container.
-
-## What's game-specific (NOT in this guide)
-
-This guide is the agnostic image contract + build/ship flow. The parts that depend on
-the game live in **that game's lab**, not here:
-
-- **Speaking the protocol** — decoding observations / encoding actions for the specific
-  game (the body of the bridge above).
-- **The player's logic** — perception, belief, strategy. (The game-agnostic *design*
-  doctrine for what goes inside the image — architecture selection, robustness,
-  navigation — is [`docs/player-engineering.md`](docs/player-engineering.md).)
-- **That player's actual build** — its real Dockerfile / build script and any
-  source-repo build harness.
-
-Full contracts: `docs/roles/PLAYER.md` (player side) and `docs/roles/GAME.md` (the
-mirror `/player` route) in the metta coworld package; `COOKBOOK.md` for the upload /
-submit / secrets details.
+Player architecture guidance is in [player engineering](docs/player-engineering.md); game-specific build scripts, protocols and observability belong in the relevant lab.

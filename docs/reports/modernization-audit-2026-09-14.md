@@ -1,5 +1,7 @@
 # Player lab modernization audit — 2026-09-14
 
+> **Platform verification correction:** this original audit checked local consistency and selected schemas, not all live platform claims. The [subsequent platform fact-check](platform-fact-check-2026-09-14.md) supersedes its platform assurances and records further corrections, live evidence and limits.
+
 ## Result and scope
 
 Unified the optimization workflow, documentation navigation, tool contracts and learning records. Corrected supported analysis integrations without changing player source, live leagues or historical experiment results. User-authorized scope included supported integrations and conservative promotion of recurring lessons.
@@ -10,7 +12,7 @@ Start with the [capability map](../capabilities.md), [tool-building guide](../to
 
 | Finding | Resolution |
 | --- | --- |
-| Root workflow said evaluations were free, rejected all local mechanism tests, and had conflicting reapproval rules | Updated cost/local-evidence distinctions and existing-authorization behavior; explicit league/community/remote-write permissions remain |
+| Root workflow described unlimited/free evaluation, limited the local-run skill to hosted-failure debugging, and conflicted with later authorization preferences | Clarified local mechanism checks and existing authorization. Initial “paid work” wording was incorrect; follow-up verified granted daily credits, shared per user. Users are not billed. See [XP credits](../xp-credits.md). |
 | Shared build skill only described one game/player | Documented container and game-hosted artifacts; moved player-specific runtime recipe to its lab |
 | Long working contexts mixed old objectives, permissions and incompatible live-version claims | Preserved all nine complete originals beside concise handoffs; historical state must be re-resolved |
 | API docs/routes lagged current service | Updated request schema reference, boolean leaderboard option, exact version resolution and cursor pagination; migrated downloads to episode-request routes |
@@ -54,3 +56,7 @@ Promoted recurring process principles: keep disproofs in an investigation ledger
 3. **Statistical interpretation:** matching, power, stopping rules and paired/clustered designs remain the experiment author's responsibility. No detected difference does not prove equivalence.
 4. **Hooks:** `.claude` hooks do not automatically run in Codex. Use explicit record updates there. Concurrent work on lesson buffers belongs in separate worktrees.
 5. **Live contracts and historical evidence:** re-resolve live state at use; dated line numbers/commands can be stale even when their file links resolve. The [TODO](../../TODO.md) carries concrete provenance and authenticated-readback follow-ups.
+
+## Credit-accounting correction
+
+The initial audit missed the daily XP credit allowance and relied on an older preference for the “paid” explanation. Follow-up verified the backend schedule and live team-account meter: standard users receive 500/7 credits daily (cap 1,000), team members 10,000/7 daily (cap 20,000), shared across their players. Users are never billed. Root workflow and request guidance now reflect this; see the linked credit reference.

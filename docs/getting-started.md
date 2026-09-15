@@ -21,7 +21,7 @@ Use the project environment, not global package installs. Authenticate interacti
 
 ## 3. Establish a useful baseline
 
-Resolve the actual game version, policy-version UUID and current roster. State the question, metric, cohort/roles, intended count/stopping rule and available budget. Experience requests may incur costs. Do not run paid self-play. Existing evidence or local mechanism checks can answer narrower questions more cheaply.
+Resolve the actual game version, policy-version UUID and current roster. State the question, metric, cohort/roles, intended count/stopping rule and available budget. Experience requests consume [granted credits](xp-credits.md), not user money. Check the account allowance and [API/job limits](platform-reference.md); do not run hosted XP self-play. Existing evidence or local mechanism checks can answer narrower questions more cheaply.
 
 Use [experience requests](../.claude/skills/coworld-experience-requests/SKILL.md) and stream [artifacts](../.claude/skills/coworld-episode-artifacts/SKILL.md) as games finish. Verify the resolved participants and output coverage. Use normal participant access; private opponent diagnostics remain unavailable.
 

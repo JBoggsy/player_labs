@@ -27,15 +27,15 @@ upload. Concretely:
   let the next experience request tell you what happened.
 - **The hosted evaluation IS the test.** Experience requests run in parallel and
   catch breakage *and* measure gameplay in one step. A broken upload costs one eval
-  round — uploading enters no league, but hosted evaluation can cost money. Don't buy
+  round — uploading enters no league, but hosted evaluation consumes granted credits (users are not billed). Don't buy
   pre-upload confidence with local runs or test suites; buy it with the next iteration.
 - **Skip non-critical testing.** No smoke tests, no pre-upload gate, no test-first
   discipline. Run a unit test only when it's the *fastest* way to answer a specific
   question you already have (e.g. a pure function you just changed misbehaves) — never
   as a routine step.
-- **When speed and care conflict, speed wins.** Careful is for the two things that are
-  actually irreversible: league **submission** (the human's gate, below) and
-  destroying data. Everything else in this lab is retryable — act like it.
+- **When speed and care conflict, speed wins.** Careful is for consequential live actions such as league **submission**
+  (the human's gate, below), public writes, and destroying data. Retirement can
+  stop participation but cannot erase past results. Keep retryable iterations fast.
 
 **The cycle** — it *starts* with evaluation: you bring the signal, the human sets
 direction.
@@ -43,8 +43,7 @@ direction.
 1. **Evaluate** (you) — run experiments via **experience requests**
    (`coworld-experience-requests` skill) against the current uploaded version and
    measure how it performs. Experience requests are the **primary** eval instrument:
-   they run many episodes in parallel on Softmax infra. Treat them as paid
-   work and **target them to the question** (matched
+   they run many episodes in parallel on Softmax infra. Use the [replenishing credit allowance](docs/xp-credits.md) and **target them to the question** (matched
    roles when the last change was role-specific; the specific opponents the policy
    struggles against). Turn on heavy tracing for the policy if it has it.
    Run evals **streaming by default**: right after creating an experience
@@ -62,15 +61,14 @@ direction.
    pre-decide. Agree the model before writing code for anything non-trivial.
 4. **Implement** (you) — change **one** component so the next evaluation is
    attributable; keep tunable knobs in a config layer separate from logic.
-5. **Rebuild + upload, immediately** (you): rebuild and **upload the change as a new
-   version** (`build-and-upload` skill; the game-agnostic image contract is in
+5. **Rebuild + upload, immediately** (you): rebuild and **upload the changed artifact** (`build-and-upload` skill; the game-agnostic image contract is in
    [`player-build.md`](player-build.md)) — **no smoke test, no pre-upload checks**; the
    next experience request is the test. **Do NOT submit it to a league yet.**
    Record the version → change mapping in the version log.
 6. **Repeat** — evaluate the new version (back to step 1) and iterate until it is
    **demonstrably better than before.**
 7. **Submission gate** (the human's) — only once the player is clearly
-   better, **ask the human for permission to submit.**
+   better, **obtain explicit authorization to submit** (existing authorization for this action counts).
 8. **Submit + monitor** (you, gated) — submit to the league and monitor standings
    (`coworld-policy-lifecycle` skill).
 
@@ -84,8 +82,7 @@ A past campaign's permission does not authorize a new campaign. Git push/PR/publ
 also follows the session's explicit permissions.
 
 **Local versus hosted.** Local runs can debug transport, reproduce mechanisms, check
-recorded-wire parity, or run own-policy self-play. Never spend paid experience requests
-on self-play. Local results do not establish performance against the real field, and
+recorded-wire parity, or run own-policy self-play. Do not spend hosted XP credits on self-play. Local results do not establish performance against the real field, and
 local runs are not a routine pre-upload gate. For shared analysis tools, run focused
 checks of parsing, identity, and statistics: broken instruments invalidate conclusions.
 
@@ -114,7 +111,7 @@ Lab-wide, game-agnostic Coworld tooling lives in `.claude/skills/`:
 - **`coworld-experience-requests`** — create and monitor hosted *experience
   requests* (batches of episodes you define: target, roster, roles, count) for
   evaluating agents against a live roster. (Loop step 1: **Evaluate**.)
-  `references/api.md` is the full request-API field reference;
+  `references/api.md` summarizes the request fields; live OpenAPI is the full contract;
   `scripts/experience_request.py` does `resolve` / `create` / `monitor`.
   **After `create`, stream by default** (that skill's step 4): launch the
   streaming pipeline in the background instead of waiting for the batch.
@@ -122,13 +119,13 @@ Lab-wide, game-agnostic Coworld tooling lives in `.claude/skills/`:
   and per-agent logs into one directory per episode (keyed off `job_id`) — one-shot,
   or **streamed live from a running request** (`fetch_artifacts.py --xreq … --watch`:
   each episode downloads as it turns terminal). (Loop step 2: **Report**, the pull.)
-- **`coworld-local-run`** — local debugging and mechanism/parity checks. Own-player local self-play may be useful; no paid self-play or routine pre-upload gate. `scripts/smoke.py` is a historical filename, not a required smoke-test step.
+- **`coworld-local-run`** — local debugging and mechanism/parity checks. Own-player local self-play may be useful; no hosted XP self-play or routine pre-upload gate. `scripts/smoke.py` is a historical filename, not a required smoke-test step.
 - **`build-and-upload`** — build the player image and **upload** it as a new version: the
-  routine, inert, every-iteration action that produces a runnable artifact to
-  evaluate. Uploading enters no competition. (Loop step 5.)
+  routine action that registers an artifact to evaluate; an identical upload may
+  reuse a version. Uploading enters no competition. (Loop step 5.)
 - **`coworld-policy-lifecycle`** — **submit** an already-uploaded version to a league → watch
   it **qualify** → **monitor** standings, with version-log discipline. Submit is the gated,
-  irreversible, champion-making action (human go-ahead only). `scripts/policy_lifecycle.py`
+  consequential league-entry action (human go-ahead only; promotion depends on league rules). `scripts/policy_lifecycle.py`
   does `versions` / `monitor`. (Loop steps 7–8.)
 - **`coworld-experiment`** — test **one** falsifiable hypothesis about a player rigorously:
   design → adversarially criticize for falsifiability → run the cheapest valid instrument →
@@ -154,6 +151,13 @@ These cover the lab-wide, mechanical halves of the loop, plus the **experiment/A
 statistical core is shared; each lab supplies only its metric adapter). **Game-specific tools — a
 lab's metric adapter, result analysis, the player's build, its observability — belong under that
 game's lab directory, not here.**
+
+## Platform facts
+
+Use the [verified platform reference](docs/platform-reference.md) for API identity,
+credits/rate limits, request completion, runtime contracts and submission semantics.
+Check live docs/OpenAPI and record evidence before promoting a platform claim;
+existing lab prose or a transcript is not independent verification.
 
 ## Tool discovery and records
 

@@ -6,7 +6,7 @@ description: "Use to run your own built player policy in a LOCAL Coworld episode
 # Coworld Local Run (local debugging)
 
 Run your **own** built policy image in a local Coworld episode and watch the result.
-Use it for debugging, mechanism/parity checks, and local own-player self-play when that answers the current question. It is not a routine pre-upload gate or evidence of strength against the live field. Do not run paid hosted self-play. Game-hosted formats may need the game's own local harness; this helper targets container policies.
+Use it for debugging, mechanism/parity checks, and local own-player self-play when that answers the current question. It is not a routine pre-upload gate or evidence of strength against the live field. Do not run hosted XP self-play. Game-hosted formats may need the game's own local harness; this helper targets container policies.
 
 **Announce at start:** "Running the built policy locally to debug it."
 

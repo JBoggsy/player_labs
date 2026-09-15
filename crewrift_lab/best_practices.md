@@ -25,7 +25,7 @@ human if a request would contravene one** before proceeding (then do what they d
 4. **🚩 `-100` means DISCONNECT/CRASH, not ejection.** It's an ops failure; filter it out before
    any rate. Getting voted out carries *no* score signal at all — you must read the logs for it.
 5. **Upload freely; submit rarely.** Uploading a version is routine and touches no league. Submitting
-   is the irreversible, champion-making action — only on a demonstrably-better player + human go-ahead.
+   is a consequential league-entry action — only on a demonstrably-better player + human go-ahead.
    *Not* submitting is your rollback.
 6. **Speed first — iterations per day is the KPI.** Write the change fast, rebuild, upload
    *immediately* — no smoke test, no pre-upload gate, no test scaffolding. The next experience

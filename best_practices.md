@@ -18,14 +18,13 @@ afternoon. Defaults:
   scaffolding around the change.
 - **No smoke tests, no pre-upload gate.** Upload straight after the rebuild. The next
   experience request both catches breakage and measures gameplay — one step, hosted,
-  parallel. Local runs (`coworld-local-run`) are a *debugging tool* for when an
-  eval shows the artifact can't even connect/play — never a routine step.
+  parallel. Local runs (`coworld-local-run`) support focused debugging, mechanism/parity
+  checks and own-policy self-play — never a routine pre-upload gate.
 - **Only the most critical testing survives.** Run a test only when it's the fastest
   path to an answer you need right now — a pure function you just changed, a parser
   against a captured fixture. Never test-first, never a suite run as ritual, never
   "just to be safe."
-- **Careful is reserved for the irreversible.** League submission (the human's gate)
-  and destroying data. Everything else — code, uploads, versions, evals — is cheap
+- **Careful is reserved for consequential actions.** League submission (the human's gate), public writes and destroying data. Retirement cannot erase prior results. Everything else — code, uploads, versions, evals — is cheap
   and retryable; treat hesitation there as the real cost.
 - **Ship the minimal capable player first; let the eval locate the gap.** A bare
   loop that connects, acts, and exits cleanly is a better first artifact than a
@@ -113,7 +112,7 @@ afternoon. Defaults:
   the table. (Mechanically: pin a representative spread, or draw randomly and bucket by
   opponent leaderboard score; don't default the opponent roster to the top-N.)
 - **Experience requests are your primary competitive eval.** They run many
-  episodes in parallel on Softmax infra and can cost money. Use existing data first
+  episodes in parallel on Softmax infra and consume [granted credits](docs/xp-credits.md), not user money. Use existing data first
   where it answers the question, and **target new requests to the question** (matched roles when
   the change was role-specific; the specific opponents the policy struggles against)
   and harvest async (the value is in the results, not babysitting the wait) — the
@@ -121,7 +120,7 @@ afternoon. Defaults:
   harvest overlap the run by default, so "async" costs nothing.
 - **Local runs test mechanisms, not field performance.** Use them for transport
   debugging, recorded-wire parity, and own-policy self-play. Do not make them a
-  routine upload gate or spend paid hosted requests on self-play.
+  routine upload gate or spend hosted XP credits on self-play.
   You generally can't download and run other users' policies locally anyway, so
   **all competitive judgment comes from experience requests.** (A local zero from a
   trivial fixture is still not a broken player; and join scores to role/player by the
@@ -231,7 +230,7 @@ below are the recurring platform-specific ones:
 - **Rebuild after every change** — a stale artifact reads as "the change did nothing."
 - **Upload freely; submit rarely.** Uploading a new policy version is routine and
   doesn't touch any league — it's how you get a testable artifact for experience
-  requests. **Submitting to a league is the irreversible, champion-making action** —
+  requests. **Submitting to a league is consequential and explicitly gated** —
   submit only when the player is demonstrably better and the human has approved.
   *Not* submitting is your rollback.
 - **Keep a version log** mapping each uploaded version to the changes it carries, so

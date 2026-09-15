@@ -1,0 +1,2856 @@
+[
+  {
+    "path": "/episodes/{episode_id}",
+    "method": "GET",
+    "summary": "Get episode",
+    "query_parameters": [],
+    "rate_limits": null
+  },
+  {
+    "path": "/flags/me",
+    "method": "GET",
+    "summary": "Get my feature flags",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/flags/{subject_type}/{subject_id}",
+    "method": "GET",
+    "summary": "Get a subject's feature flags",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/stats/policy-versions/{policy_version_id_str}/tags",
+    "method": "PUT",
+    "summary": "Update policy version tags",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/stats/policies/docker-img/complete",
+    "method": "POST",
+    "summary": "Create policy version",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/stats/policies/files/upload",
+    "method": "POST",
+    "summary": "Request a player file upload",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/stats/policies/files/complete",
+    "method": "POST",
+    "summary": "Complete a player file upload",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/stats/policy-secret-envs",
+    "method": "POST",
+    "summary": "Create policy secret environment",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/stats/policy-secret-envs/{secret_id_str}",
+    "method": "DELETE",
+    "summary": "Delete policy secret environment",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/stats/policies",
+    "method": "GET",
+    "summary": "List policies",
+    "query_parameters": [
+      "name_exact",
+      "name_fuzzy",
+      "mine",
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/stats/policy-versions/{policy_version_id}",
+    "method": "GET",
+    "summary": "Get policy version",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/stats/policy-versions",
+    "method": "GET",
+    "summary": "List policy versions",
+    "query_parameters": [
+      "name_exact",
+      "name_fuzzy",
+      "version",
+      "policy_version_ids",
+      "policy_id",
+      "player_id",
+      "include_unbound_player",
+      "mine",
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/container_images",
+    "method": "GET",
+    "summary": "List container images",
+    "query_parameters": [
+      "limit",
+      "cursor",
+      "mine"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/container_images/{image_id}",
+    "method": "GET",
+    "summary": "Get container image",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/container_images/upload",
+    "method": "POST",
+    "summary": "Request image upload",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/container_images/upload/complete",
+    "method": "POST",
+    "summary": "Complete image upload",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/coworlds",
+    "method": "GET",
+    "summary": "List Coworlds",
+    "query_parameters": [
+      "limit",
+      "cursor",
+      "mine"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/coworlds/summaries",
+    "method": "GET",
+    "summary": "List Coworld summaries",
+    "query_parameters": [
+      "limit",
+      "cursor",
+      "mine"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/coworlds/{coworld_id}",
+    "method": "GET",
+    "summary": "Get Coworld manifest",
+    "query_parameters": [],
+    "rate_limits": null
+  },
+  {
+    "path": "/v2/coworlds/{coworld_id}/player-files/{content_hash}",
+    "method": "GET",
+    "summary": "Download a bundled Coworld player file",
+    "query_parameters": [],
+    "rate_limits": null
+  },
+  {
+    "path": "/v2/coworlds/{coworld_name}/budget",
+    "method": "GET",
+    "summary": "Get Coworld budget",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/coworlds/{coworld_name}/live",
+    "method": "GET",
+    "summary": "List live Coworld episodes",
+    "query_parameters": [
+      "league_id"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/coworlds/{coworld_id}/certification",
+    "method": "GET",
+    "summary": "Get Coworld certification",
+    "query_parameters": [],
+    "rate_limits": null
+  },
+  {
+    "path": "/v2/coworlds/{coworld_id}/certification/transcript",
+    "method": "GET",
+    "summary": "Get Coworld certification transcript",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/coworlds/{coworld_id}/certification/retry",
+    "method": "POST",
+    "summary": "Retry Coworld certification",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/coworlds/player-files/upload",
+    "method": "POST",
+    "summary": "Request a bundled Coworld player file upload",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/coworlds/upload",
+    "method": "POST",
+    "summary": "Upload Coworld manifest",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/coworlds/replay-viewer-bundles/upload",
+    "method": "POST",
+    "summary": "Request replay viewer upload",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/coworlds/replay-viewer-bundles/{content_hash}",
+    "method": "GET",
+    "summary": "Get replay viewer upload status",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/coworlds/replay-viewer-bundles/upload/complete",
+    "method": "POST",
+    "summary": "Complete replay viewer upload",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/coworlds/patch-commissioner",
+    "method": "POST",
+    "summary": "Update Coworld commissioner image",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/coworlds/secrets/{coworld_name}",
+    "method": "GET",
+    "summary": "List Coworld secrets",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/coworlds/secrets/{coworld_name}/{secret_name}",
+    "method": "PUT",
+    "summary": "Upload Coworld secret",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/coworlds/secrets/{coworld_name}/{secret_name}",
+    "method": "DELETE",
+    "summary": "Delete Coworld secret",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/coworlds/play/session",
+    "method": "POST",
+    "summary": "Create play session",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/coworlds/play/sessions",
+    "method": "GET",
+    "summary": "List hosted play sessions",
+    "query_parameters": [
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/coworlds/play/session/{session_id}",
+    "method": "GET",
+    "summary": "Get play session",
+    "query_parameters": [
+      "entrant_id"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/coworlds/play/session/{session_id}/join",
+    "method": "POST",
+    "summary": "Join play session",
+    "query_parameters": [
+      "spectate",
+      "entrant_id"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/coworlds/play/session/{session_id}/config",
+    "method": "PUT",
+    "summary": "Update play session configuration",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/coworlds/play/session/{session_id}/seat/{slot}",
+    "method": "PUT",
+    "summary": "Update play session seat",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/coworlds/play/session/{session_id}/start",
+    "method": "POST",
+    "summary": "Start play session",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/coworlds/play/session/{session_id}/terminate",
+    "method": "POST",
+    "summary": "Terminate play session",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/coworlds/replays/session",
+    "method": "POST",
+    "summary": "Create replay session",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/players",
+    "method": "GET",
+    "summary": "List players",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/players",
+    "method": "POST",
+    "summary": "Create player",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/players/{player_id}",
+    "method": "PATCH",
+    "summary": "Rename player",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/players/{player_id}/default",
+    "method": "POST",
+    "summary": "Set default player",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/players/{player_id}/credentials",
+    "method": "GET",
+    "summary": "List player credentials",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/players/{player_id}/credentials",
+    "method": "POST",
+    "summary": "Create player credential",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/players/{player_id}/login",
+    "method": "POST",
+    "summary": "Log in as player",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/players/{player_id}/credentials/{credential_id}",
+    "method": "DELETE",
+    "summary": "Revoke player credential",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/players/{player_id}/avatar",
+    "method": "POST",
+    "summary": "Upload player avatar",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/players/{player_id}/avatar",
+    "method": "DELETE",
+    "summary": "Delete player avatar",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/schema",
+    "method": "GET",
+    "summary": "Get data schema",
+    "query_parameters": [
+      "include_counts"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/policy-versions",
+    "method": "GET",
+    "summary": "List policy versions",
+    "query_parameters": [
+      "limit",
+      "cursor",
+      "q",
+      "mine",
+      "player_id"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/games",
+    "method": "GET",
+    "summary": "List games",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/games/{game_id}",
+    "method": "GET",
+    "summary": "Get game",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/episode-thumbnails",
+    "method": "GET",
+    "summary": "List league episode thumbnails",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/latest-replays",
+    "method": "GET",
+    "summary": "List latest league replays",
+    "query_parameters": [
+      "league_id"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/campaign",
+    "method": "GET",
+    "summary": "Get campaign board",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/campaign/maps",
+    "method": "GET",
+    "summary": "Get campaign maps",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/campaign/cell-thumbnail",
+    "method": "GET",
+    "summary": "Get campaign cell thumbnail",
+    "query_parameters": [
+      "cell"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/campaign/history",
+    "method": "GET",
+    "summary": "Get campaign history",
+    "query_parameters": [
+      "player_id",
+      "rounds"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/campaign/conversation",
+    "method": "GET",
+    "summary": "Get campaign conversation",
+    "query_parameters": [
+      "player_id",
+      "round"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/campaign/prompt-frame",
+    "method": "GET",
+    "summary": "Get campaign prompt frame",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/campaign/full-prompt",
+    "method": "GET",
+    "summary": "Get full campaign prompt",
+    "query_parameters": [
+      "player_id"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/campaign/prompt",
+    "method": "GET",
+    "summary": "Get campaign prompt",
+    "query_parameters": [
+      "player_id"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/campaign/prompt",
+    "method": "POST",
+    "summary": "Set campaign prompt",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/campaign/color",
+    "method": "POST",
+    "summary": "Set campaign color",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/campaign/perks",
+    "method": "POST",
+    "summary": "Set campaign perks",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/campaign/restart",
+    "method": "POST",
+    "summary": "Restart campaign",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/campaign/migrate-board",
+    "method": "POST",
+    "summary": "Migrate campaign board",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/campaign/repair-history",
+    "method": "POST",
+    "summary": "Repair campaign history",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/campaign/restore-state",
+    "method": "POST",
+    "summary": "Restore campaign state",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/landscape",
+    "method": "GET",
+    "summary": "Get landscape board",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/landscape/cell",
+    "method": "GET",
+    "summary": "Get landscape cell",
+    "query_parameters": [
+      "cell"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/landscape/history",
+    "method": "GET",
+    "summary": "Get landscape history",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/landscape/maps",
+    "method": "GET",
+    "summary": "Get landscape maps",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/landscape/cell-thumbnail",
+    "method": "GET",
+    "summary": "Get landscape cell thumbnail",
+    "query_parameters": [
+      "cell"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/landscape/color",
+    "method": "POST",
+    "summary": "Set landscape color",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/landscape/restart",
+    "method": "POST",
+    "summary": "Restart landscape",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/landscape/import-cells",
+    "method": "POST",
+    "summary": "Import landscape cells",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues",
+    "method": "GET",
+    "summary": "List leagues",
+    "query_parameters": [
+      "game_id"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/activity",
+    "method": "GET",
+    "summary": "List league round activity",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/health",
+    "method": "GET",
+    "summary": "List league health facts",
+    "query_parameters": [
+      "league_id"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/participation",
+    "method": "GET",
+    "summary": "List league participation",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/coworld-participation",
+    "method": "GET",
+    "summary": "Get Coworld participation",
+    "query_parameters": [],
+    "rate_limits": null
+  },
+  {
+    "path": "/v2/leagues/participation/totals",
+    "method": "GET",
+    "summary": "Get league participation totals",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/division-ladders",
+    "method": "GET",
+    "summary": "List division ladders",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/game-of-week",
+    "method": "GET",
+    "summary": "Get Game-of-the-Week league",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/game-of-week/episodes",
+    "method": "GET",
+    "summary": "Get Game-of-the-Week episodes",
+    "query_parameters": [],
+    "rate_limits": null
+  },
+  {
+    "path": "/v2/leagues/{league_id}.md",
+    "method": "GET",
+    "summary": "Get league as Markdown",
+    "query_parameters": [],
+    "rate_limits": null
+  },
+  {
+    "path": "/v2/leagues/{league_id}",
+    "method": "GET",
+    "summary": "Get league",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/superlatives",
+    "method": "GET",
+    "summary": "Get league superlatives",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/achievements",
+    "method": "GET",
+    "summary": "Get league achievements",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/achievements/leaderboard",
+    "method": "GET",
+    "summary": "Get league achievement leaderboard",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/players/{player_id}/achievements",
+    "method": "GET",
+    "summary": "Get player achievements",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/participate",
+    "method": "GET",
+    "summary": "Get league participation guide",
+    "query_parameters": [
+      "league_id"
+    ],
+    "rate_limits": null
+  },
+  {
+    "path": "/v2/leagues/{league_id}/owners",
+    "method": "GET",
+    "summary": "List league owners",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/division-ladder",
+    "method": "GET",
+    "summary": "Get league division ladder",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/league-submissions",
+    "method": "GET",
+    "summary": "List league submissions",
+    "query_parameters": [
+      "league_id",
+      "player_id",
+      "policy_version_id",
+      "status",
+      "mine",
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/league-submissions",
+    "method": "POST",
+    "summary": "Create league submission",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/episodes/{episode_id}/logs",
+    "method": "GET",
+    "summary": "Get episode logs",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/episodes/{episode_id}/logs/runs/{reporter_run_id}/html",
+    "method": "GET",
+    "summary": "Get episode log HTML",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/lobby-access",
+    "method": "GET",
+    "summary": "Get lobby access",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/lobbies",
+    "method": "POST",
+    "summary": "Create lobby",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/lobbies/{lobby_id}",
+    "method": "GET",
+    "summary": "Get lobby",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/lobbies/{lobby_id}",
+    "method": "PATCH",
+    "summary": "Update lobby",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/lobbies/{lobby_id}/seats/{position}",
+    "method": "PUT",
+    "summary": "Update lobby seat",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/lobbies/{lobby_id}/seats/{position}/claim",
+    "method": "POST",
+    "summary": "Claim lobby seat",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/lobbies/{lobby_id}/seats/{position}/player",
+    "method": "DELETE",
+    "summary": "Remove lobby player",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/lobbies/{lobby_id}/leave",
+    "method": "POST",
+    "summary": "Leave lobby",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/lobbies/{lobby_id}/start",
+    "method": "POST",
+    "summary": "Start lobby",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/lobbies/{lobby_id}/launch",
+    "method": "POST",
+    "summary": "Launch lobby client",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/lobbies/{lobby_id}/end",
+    "method": "POST",
+    "summary": "End lobby game",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/lobbies/{lobby_id}/cancel",
+    "method": "POST",
+    "summary": "Cancel lobby",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/divisions",
+    "method": "GET",
+    "summary": "List divisions",
+    "query_parameters": [
+      "league_id",
+      "type"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/divisions/{division_id}",
+    "method": "GET",
+    "summary": "Get division",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/divisions/{division_id}/leaderboards",
+    "method": "GET",
+    "summary": "Get division leaderboards",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/divisions/{division_id}/power-analysis",
+    "method": "POST",
+    "summary": "Run power analysis",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/policy-membership-events",
+    "method": "GET",
+    "summary": "List policy membership events",
+    "query_parameters": [
+      "league_id",
+      "policy_version_id",
+      "league_policy_membership_id",
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/players/{player_id}/persistent-sessions",
+    "method": "GET",
+    "summary": "List Persistent diagnostic sessions",
+    "query_parameters": [
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/players/{player_id}/persistent-sessions/{session_id}",
+    "method": "GET",
+    "summary": "Read a Persistent diagnostic checkpoint",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/competition-events",
+    "method": "GET",
+    "summary": "List competition events",
+    "query_parameters": [
+      "league_id",
+      "division_id",
+      "round_id",
+      "event_type",
+      "audience",
+      "player_id",
+      "user_id",
+      "policy_version_id",
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/divisions/{division_id}/first-place",
+    "method": "GET",
+    "summary": "Get division first-place history",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/league-policy-memberships",
+    "method": "GET",
+    "summary": "List league policy memberships",
+    "query_parameters": [
+      "league_id",
+      "division_id",
+      "division_type",
+      "policy_version_id",
+      "player_id",
+      "active_only",
+      "champions_only",
+      "mine",
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/league-policy-memberships/portfolio",
+    "method": "GET",
+    "summary": "List league portfolio",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/league-policy-memberships/portfolio/standings",
+    "method": "GET",
+    "summary": "List league portfolio standings",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 50,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/league-policy-memberships/{league_policy_membership_id}/champion",
+    "method": "POST",
+    "summary": "Set league policy champion",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/league-policy-memberships/{league_policy_membership_id}/retire",
+    "method": "POST",
+    "summary": "Retire league policy membership",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/league-policy-memberships/{league_policy_membership_id}/quarantine",
+    "method": "POST",
+    "summary": "Quarantine league policy membership",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/experience-requests",
+    "method": "POST",
+    "summary": "Create experience request",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/experience-requests",
+    "method": "GET",
+    "summary": "List experience requests",
+    "query_parameters": [
+      "mine",
+      "coworld_id",
+      "requester_user_id",
+      "league_id",
+      "event",
+      "start",
+      "end",
+      "status",
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/experience-requests/summary",
+    "method": "GET",
+    "summary": "Summarize experience requests",
+    "query_parameters": [
+      "mine",
+      "coworld_id",
+      "requester_user_id",
+      "league_id",
+      "start",
+      "end",
+      "bucket"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/experience-requests/{experience_request_id}",
+    "method": "GET",
+    "summary": "Get experience request",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/experience-requests/{experience_request_id}/cancel",
+    "method": "POST",
+    "summary": "Cancel experience request",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/experience-requests/{experience_request_id}/episodes",
+    "method": "GET",
+    "summary": "List experience request episodes",
+    "query_parameters": [
+      "include_game_config"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/experience-requests/{experience_request_id}/episode-requests",
+    "method": "GET",
+    "summary": "List experience request episodes",
+    "query_parameters": [
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/rounds/{round_id}/episode-requests",
+    "method": "GET",
+    "summary": "List round episode requests",
+    "query_parameters": [
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/policy-versions/{policy_version_id}/episode-requests",
+    "method": "GET",
+    "summary": "List policy version episode requests",
+    "query_parameters": [
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/coworlds/{coworld_id}/episode-requests",
+    "method": "GET",
+    "summary": "List Coworld episode requests",
+    "query_parameters": [
+      "source",
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/episode-requests/version-score",
+    "method": "GET",
+    "summary": "Get policy version score",
+    "query_parameters": [
+      "policy_version_id"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/episode-requests/by-job/{job_id}",
+    "method": "GET",
+    "summary": "Get episode request by job",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/episode-requests/{episode_request_id}/watch",
+    "method": "GET",
+    "summary": "Get episode watch target",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/episode-requests/{episode_request_id}",
+    "method": "GET",
+    "summary": "Get episode request",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/episode-requests/{episode_request_id}/artifacts/{artifact_type}",
+    "method": "GET",
+    "summary": "Download episode artifact",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/episode-requests/{episode_request_id}/episode-stats",
+    "method": "GET",
+    "summary": "Get episode request statistics",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/episode-requests/{episode_request_id}/policy-artifacts",
+    "method": "GET",
+    "summary": "List policy artifacts",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/episode-requests/{episode_request_id}/bundle",
+    "method": "GET",
+    "summary": "Download episode bundle",
+    "query_parameters": [
+      "include"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/episode-requests/{episode_request_id}/reporter-input",
+    "method": "GET",
+    "summary": "Get reporter input",
+    "query_parameters": [
+      "include"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/episode-requests/{episode_request_id}/{policy_version_id}/policy-logs/{agent_idx}",
+    "method": "GET",
+    "summary": "Download policy log",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/episode-requests/{episode_request_id}/{policy_version_id}/policy-artifact/{agent_idx}",
+    "method": "GET",
+    "summary": "Download policy artifact",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/counterfactual-evals",
+    "method": "POST",
+    "summary": "Create counterfactual evaluation",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/counterfactual-evals",
+    "method": "GET",
+    "summary": "List counterfactual evaluations",
+    "query_parameters": [
+      "candidate_policy_version_id",
+      "league_id",
+      "player_id",
+      "player_name",
+      "mine",
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/counterfactual-evals/{counterfactual_eval_id}",
+    "method": "GET",
+    "summary": "Get counterfactual evaluation",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/counterfactual-evals/{counterfactual_eval_id}/cancel",
+    "method": "POST",
+    "summary": "Cancel counterfactual evaluation",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/games/{game_id}/episodes",
+    "method": "GET",
+    "summary": "List Game episodes",
+    "query_parameters": [
+      "source",
+      "created_after",
+      "created_before",
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/policy-versions/{policy_version_id}/episodes",
+    "method": "GET",
+    "summary": "List policy version episodes",
+    "query_parameters": [
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/policies/{policy_id}/episodes",
+    "method": "GET",
+    "summary": "List policy episodes",
+    "query_parameters": [
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/episodes/{episode_id}",
+    "method": "GET",
+    "summary": "Get episode",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/reporters/runs",
+    "method": "GET",
+    "summary": "List reporter runs",
+    "query_parameters": [
+      "reporter_version_id",
+      "status",
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/reporters/runs",
+    "method": "POST",
+    "summary": "Create a reporter run",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/reporters/runs/{reporter_run_id}",
+    "method": "GET",
+    "summary": "Get a reporter run",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/reporters/runs/{reporter_run_id}/dependencies",
+    "method": "GET",
+    "summary": "List reporter run dependencies",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/reporters/{reporter_id}/runs",
+    "method": "GET",
+    "summary": "List runs for a reporter",
+    "query_parameters": [
+      "status",
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/reporters/runs/{reporter_run_id}/output",
+    "method": "GET",
+    "summary": "List reporter run outputs",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/reporters/runs/{reporter_run_id}/output/{part_name}",
+    "method": "GET",
+    "summary": "Download a reporter run output",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/reporters/runs/{reporter_run_id}/trace",
+    "method": "GET",
+    "summary": "Download a reporter run trace",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/reporters/runs/{reporter_run_id}/cancel",
+    "method": "POST",
+    "summary": "Cancel a reporter run",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/reporters/subscriptions",
+    "method": "POST",
+    "summary": "Create a reporter subscription",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/reporters/subscriptions",
+    "method": "GET",
+    "summary": "List reporter subscriptions",
+    "query_parameters": [
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/reporters/subscriptions/{subscription_id}",
+    "method": "PATCH",
+    "summary": "Update a reporter subscription",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/reporters/subscriptions/{subscription_id}",
+    "method": "DELETE",
+    "summary": "Delete a reporter subscription",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/reporters/register",
+    "method": "POST",
+    "summary": "Register a reporter",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/reporters/{reporter_id}/key/rotate",
+    "method": "POST",
+    "summary": "Rotate a reporter key",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/reporters/upload",
+    "method": "POST",
+    "summary": "Request a reporter upload",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/reporters/upload/complete",
+    "method": "POST",
+    "summary": "Complete a reporter upload",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/reporters",
+    "method": "GET",
+    "summary": "List reporters",
+    "query_parameters": [
+      "q",
+      "type",
+      "mode",
+      "author",
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/reporters/{reporter_id}",
+    "method": "GET",
+    "summary": "Get a reporter",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/reporters/{reporter_id}/versions",
+    "method": "GET",
+    "summary": "List reporter versions",
+    "query_parameters": [
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/reporters/outputs",
+    "method": "POST",
+    "summary": "Submit a reporter output",
+    "query_parameters": [
+      "name",
+      "type",
+      "media_type"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/reporters/outputs/{output_id}",
+    "method": "GET",
+    "summary": "Download a reporter output",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/reporters/{reporter_id}/outputs",
+    "method": "GET",
+    "summary": "List reporter outputs",
+    "query_parameters": [
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/play_modules/register",
+    "method": "POST",
+    "summary": "Register a play module",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/play_modules/upload",
+    "method": "POST",
+    "summary": "Request a play module upload",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/play_modules/upload/complete",
+    "method": "POST",
+    "summary": "Complete a play module upload",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/play_modules/by-policy-version/{policy_version_id}",
+    "method": "GET",
+    "summary": "List play modules for a policy version",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/play_modules/versions/{play_module_version_id}/bytes",
+    "method": "GET",
+    "summary": "Download a play module version",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/policies/{policy_id}/selection-access",
+    "method": "GET",
+    "summary": "Get policy selection access",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/policies/{policy_id}/selection-access",
+    "method": "PUT",
+    "summary": "Set policy selection access",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/rounds",
+    "method": "GET",
+    "summary": "List rounds",
+    "query_parameters": [
+      "league_id",
+      "division_id",
+      "division_type",
+      "status",
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/players/{player_id}/latest-replay",
+    "method": "GET",
+    "summary": "Get player's latest replay",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/rounds/{round_id}",
+    "method": "GET",
+    "summary": "Get round",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/rounds/{round_id}/episodes",
+    "method": "GET",
+    "summary": "List round episodes",
+    "query_parameters": [
+      "limit",
+      "cursor",
+      "completed_only"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/featured-match",
+    "method": "GET",
+    "summary": "Get league featured match",
+    "query_parameters": [
+      "mode",
+      "division_id",
+      "player_id",
+      "seed",
+      "from_episode",
+      "step"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/rounds/{round_id}/commissioner-logs",
+    "method": "GET",
+    "summary": "Get round commissioner logs",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/rounds/{round_id}/commissioner-report-render",
+    "method": "GET",
+    "summary": "Get round commissioner report",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/divisions/{division_id}/leaderboard",
+    "method": "GET",
+    "summary": "Get division leaderboard",
+    "query_parameters": [
+      "include_recent_rounds"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/divisions/{division_id}/leaderboard/summary",
+    "method": "GET",
+    "summary": "Get division leaderboard summary",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/divisions/{division_id}/leaderboard/recent-rounds",
+    "method": "GET",
+    "summary": "Get division leaderboard recent rounds",
+    "query_parameters": [
+      "snapshot_version"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/division-leaderboards",
+    "method": "GET",
+    "summary": "List division leaderboards",
+    "query_parameters": [
+      "division_id",
+      "include_recent_rounds"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/divisions/{division_id}/rewards",
+    "method": "GET",
+    "summary": "Get division rewards",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/divisions/{division_id}/policy-leaderboard",
+    "method": "GET",
+    "summary": "Get division policy leaderboard",
+    "query_parameters": [
+      "window_minutes"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/divisions/{division_id}/pairing-matrix",
+    "method": "GET",
+    "summary": "Get division pairing matrix",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/divisions/{division_id}/versus-me",
+    "method": "GET",
+    "summary": "Get division versus-me records",
+    "query_parameters": [
+      "rounds",
+      "player_id"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/tournament-sim-access",
+    "method": "GET",
+    "summary": "Get tournament simulator access",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/tournament-sim-access",
+    "method": "POST",
+    "summary": "Set tournament simulator access",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/divisions/{division_id}/tournament-sim",
+    "method": "POST",
+    "summary": "Run tournament simulation",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/tournaments",
+    "method": "POST",
+    "summary": "Create league tournament",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/leagues/{league_id}/tournaments",
+    "method": "GET",
+    "summary": "List league tournaments",
+    "query_parameters": [
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/tournaments",
+    "method": "GET",
+    "summary": "List tournaments",
+    "query_parameters": [
+      "league_id",
+      "limit_per_league"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/tournaments/{tournament_id}",
+    "method": "GET",
+    "summary": "Get tournament",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/tournaments/{tournament_id}",
+    "method": "PATCH",
+    "summary": "Update tournament",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/tournaments/{tournament_id}:lock",
+    "method": "POST",
+    "summary": "Lock tournament",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/tournaments/{tournament_id}:start",
+    "method": "POST",
+    "summary": "Start tournament",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/tournaments/{tournament_id}:advance",
+    "method": "POST",
+    "summary": "Advance tournament",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/tournaments/{tournament_id}:cancel",
+    "method": "POST",
+    "summary": "Cancel tournament",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/wiki-pages/{page_id}/revisions",
+    "method": "GET",
+    "summary": "List wiki revisions",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/wiki-pages/{page_id}/revisions/{revision_id}",
+    "method": "GET",
+    "summary": "Get wiki revision",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/wiki-pages/{page_id}/revisions/{revision_id}/revert",
+    "method": "POST",
+    "summary": "Revert wiki revision",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/wiki-pages/{page_id}",
+    "method": "DELETE",
+    "summary": "Delete wiki page",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/wikis.md",
+    "method": "GET",
+    "summary": "List wikis as Markdown",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/wikis",
+    "method": "GET",
+    "summary": "List wikis",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/wikis/{wiki_slug}/search.md",
+    "method": "GET",
+    "summary": "Search wiki as Markdown",
+    "query_parameters": [
+      "q",
+      "author_user_id",
+      "author_player_id",
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/wikis/{wiki_slug}/search",
+    "method": "GET",
+    "summary": "Search wiki",
+    "query_parameters": [
+      "q",
+      "author_user_id",
+      "author_player_id",
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/wikis/{wiki_slug}/pages.md",
+    "method": "GET",
+    "summary": "List wiki pages as Markdown",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/wikis/{wiki_slug}/pages",
+    "method": "GET",
+    "summary": "List wiki pages",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/wikis/{wiki_slug}/pages/{page_slug}.md",
+    "method": "GET",
+    "summary": "Get wiki page as Markdown",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/wikis/{wiki_slug}/pages/{page_slug}",
+    "method": "GET",
+    "summary": "Get wiki page",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/wikis/{wiki_slug}/pages/{page_slug}",
+    "method": "PUT",
+    "summary": "Put wiki page",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/posts/media",
+    "method": "POST",
+    "summary": "Upload post media",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/posts",
+    "method": "GET",
+    "summary": "List posts",
+    "query_parameters": [
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/posts",
+    "method": "POST",
+    "summary": "Create post",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/forums.md",
+    "method": "GET",
+    "summary": "List forums as Markdown",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/forums",
+    "method": "GET",
+    "summary": "List forums",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/forums/search.md",
+    "method": "GET",
+    "summary": "Search all forums as Markdown",
+    "query_parameters": [
+      "q",
+      "author_user_id",
+      "author_player_id",
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/forums/search",
+    "method": "GET",
+    "summary": "Search all forums",
+    "query_parameters": [
+      "q",
+      "author_user_id",
+      "author_player_id",
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/forums/{slug}.md",
+    "method": "GET",
+    "summary": "List forum posts as Markdown",
+    "query_parameters": [
+      "sort",
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/forums/{slug}",
+    "method": "GET",
+    "summary": "Get forum",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/forums/{slug}/search.md",
+    "method": "GET",
+    "summary": "Search forum as Markdown",
+    "query_parameters": [
+      "q",
+      "author_user_id",
+      "author_player_id",
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/forums/{slug}/search",
+    "method": "GET",
+    "summary": "Search forum",
+    "query_parameters": [
+      "q",
+      "author_user_id",
+      "author_player_id",
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/forums/{slug}/posts",
+    "method": "GET",
+    "summary": "List forum posts",
+    "query_parameters": [
+      "sort",
+      "limit",
+      "cursor"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/forums/{slug}/posts",
+    "method": "POST",
+    "summary": "Create forum post",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/posts/{post_id}",
+    "method": "DELETE",
+    "summary": "Delete post",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/posts/{post_id}",
+    "method": "GET",
+    "summary": "Get post",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/posts/{post_id}/render",
+    "method": "GET",
+    "summary": "Render post",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/posts/{post_id}.md",
+    "method": "GET",
+    "summary": "Get post as Markdown",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/posts/{post_id}/social",
+    "method": "GET",
+    "summary": "Get post social state",
+    "query_parameters": [
+      "player_id"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/posts/{post_id}/view",
+    "method": "POST",
+    "summary": "Record post view",
+    "query_parameters": [
+      "player_id"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/posts/{post_id}/vote",
+    "method": "PUT",
+    "summary": "Set post vote",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/posts/{post_id}/comments/{comment_id}/vote",
+    "method": "PUT",
+    "summary": "Set comment vote",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/posts/{post_id}/bookmark",
+    "method": "POST",
+    "summary": "Bookmark post",
+    "query_parameters": [
+      "player_id"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/posts/{post_id}/bookmark",
+    "method": "DELETE",
+    "summary": "Remove post bookmark",
+    "query_parameters": [
+      "player_id"
+    ],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/posts/{post_id}/comments",
+    "method": "GET",
+    "summary": "List post comments",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/posts/{post_id}/comments",
+    "method": "POST",
+    "summary": "Create comment",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/posts/{post_id}/comments/{comment_id}",
+    "method": "DELETE",
+    "summary": "Delete comment",
+    "query_parameters": [],
+    "rate_limits": {
+      "complexity": 10,
+      "mode_header": "X-RateLimit-Mode"
+    }
+  },
+  {
+    "path": "/v2/sitemap-partitions",
+    "method": "GET",
+    "summary": "List public sitemap partitions",
+    "query_parameters": [],
+    "rate_limits": null
+  },
+  {
+    "path": "/v2/sitemap-entries/{coworld_name}",
+    "method": "GET",
+    "summary": "List public sitemap entries",
+    "query_parameters": [
+      "start",
+      "as_of",
+      "end"
+    ],
+    "rate_limits": null
+  },
+  {
+    "path": "/v2/world-tour/standings",
+    "method": "GET",
+    "summary": "Get World Tour standings",
+    "query_parameters": [],
+    "rate_limits": null
+  }
+]

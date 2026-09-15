@@ -49,7 +49,7 @@ The name is **Emerg-ant** in game-facing prose and identifiers. The directory st
 ## Evaluation and reporting
 
 Use matched local play for cheap self-play and iterative testing. Experience requests
-have a real cost: never use one for self-play; target a current real opponent and start
+consume [granted credits](../docs/xp-credits.md): never use one for self-play; target a current real opponent and start
 artifact streaming immediately after creation. For every comparative claim:
 
 - keep roster, roles, and time window matched;
@@ -75,7 +75,7 @@ and roster afresh before designing an experience request.
 - Pheromones are public environmental state. Never treat them as private radio.
 - Do not add compatibility for the retired GV52 cache-race behavior to a GV57 player.
 - The user has explicitly authorized local self-play for iterative improvement. Keep
-  it matched by seed and seat orientation; do not substitute paid hosted self-play.
+  it matched by seed and seat orientation; do not substitute hosted XP self-play.
 - Uploading is inert and routine. **Never submit to the league without James's explicit
   permission in the current task.**
 

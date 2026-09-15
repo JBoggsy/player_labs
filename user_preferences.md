@@ -16,10 +16,7 @@ sessions. Keep it tidy: one bullet per preference, drop ones that are superseded
   player's logs or artifacts only when ordinary non-elevated access permits it; never use elevated
   permissions to retrieve competitor evidence for optimization.
 
-- **Never spend XP requests on self-play** (James, 2026-08-21). XP requests now
-  cost money, and self-play is less informative than evaluating against a real
-  opponent at the same cost. Use local episodes for self-play; reserve paid XP
-  requests for real opponents.
+- **Never spend XP requests on self-play** (James, 2026-08-21). Use local episodes for self-play; reserve hosted XP requests for real-opponent evaluation. **Factual correction (2026-09-14):** the original explanation said “cost money,” but XP consumes a granted, replenishing credit allowance and users are not billed. See [credit accounting](docs/xp-credits.md). The no-XP-self-play preference remains unchanged.
 
 - **Every behavior change ships with activation tracing** (James, 2026-07-15). Whenever
   a change gates a new behavior (or meaningfully alters when an existing one fires),
@@ -33,8 +30,8 @@ sessions. Keep it tidy: one bullet per preference, drop ones that are superseded
   smoke tests, no pre-upload gate (Gate 1 is removed from the loop), no test-first
   discipline, no routine test-suite runs — upload straight after the rebuild and let
   the next experience request catch breakage and measure gameplay in one step. Care
-  is reserved for the irreversible: league submission (still the human's gate) and
-  destroying data. Encoded in `AGENTS.md` ("Speed is the meta-priority") and
+  is reserved for consequential live actions and destroying data. League submission
+  remains gated; retirement can end participation but does not erase prior results. Encoded in `AGENTS.md` ("Speed is the meta-priority") and
   `best_practices.md` ("Speed first").
 
 - **Create hosted experience requests without asking first** (James, 2026-08-06).

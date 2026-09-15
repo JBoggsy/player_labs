@@ -291,12 +291,15 @@ def cmd_create(args: argparse.Namespace) -> int:
 
         r = client.post("/v2/experience-requests", json=payload, timeout=120.0)
         if r.status_code < 400:
-            xreq = r.json()["id"]
+            created = r.json()
+            xreq = created["id"]
+            cost_preview = created.get("cost_preview")
         else:
             # Known create-then-replica-read race: a 404 can still name the request.
             m = re.search(r"(xreq_[0-9a-f-]{36})", r.text)
             if r.status_code == 404 and m:
                 xreq = m.group(1)
+                cost_preview = None
             else:
                 sys.exit(f"Create failed HTTP {r.status_code}: {r.text}")
 
@@ -310,9 +313,9 @@ def cmd_create(args: argparse.Namespace) -> int:
             time.sleep(0.5)
         if detail is None:
             log(f"Created {xreq} but readback did not resolve; check `monitor {xreq}`.")
-            emit({"id": xreq, "readback": "pending"})
+            emit({"id": xreq, "readback": "pending", "cost_preview": cost_preview})
             return 0
-    emit(_summary(detail))
+    emit({**_summary(detail), "cost_preview": cost_preview})
     return 0
 
 
@@ -335,9 +338,15 @@ def _summary(detail: dict[str, Any]) -> dict[str, Any]:
 
 
 def _terminal(d: dict[str, Any]) -> bool:
+    # A failed/cancelled parent can still have children executing or cancelling.
     total = d.get("episode_count") or 0
-    done = (d.get("completed_count") or 0) + (d.get("failed_count") or 0)
-    return d.get("status") in {"completed", "failed", "cancelled", "canceled"} or (total > 0 and done >= total)
+    if any(d.get(key, 0) for key in ("pending_count", "submitted_count", "running_count")):
+        return False
+    episodes = d.get("episodes") or []
+    if len(episodes) == total and total > 0:
+        return all(row.get("status") in {"completed", "failed", "cancelled"} for row in episodes)
+    finished = (d.get("completed_count") or 0) + (d.get("failed_count") or 0)
+    return total > 0 and finished >= total
 
 
 def cmd_monitor(args: argparse.Namespace) -> int:

@@ -474,9 +474,15 @@ def select_watch_fetches(
 
 
 def _xreq_drained(detail: dict[str, Any]) -> bool:
+    # A failed/cancelled parent can still have children executing or cancelling.
     total = detail.get("episode_count") or 0
+    if any(detail.get(key, 0) for key in ("pending_count", "submitted_count", "running_count")):
+        return False
+    episodes = detail.get("episodes") or []
+    if len(episodes) == total and total > 0:
+        return all(row.get("status") in {"completed", "failed", "cancelled"} for row in episodes)
     finished = (detail.get("completed_count") or 0) + (detail.get("failed_count") or 0)
-    return str(detail.get("status", "")).lower() in TERMINAL_EPISODE_STATUSES or (total > 0 and finished >= total)
+    return total > 0 and finished >= total
 
 
 def _write_watch_index(

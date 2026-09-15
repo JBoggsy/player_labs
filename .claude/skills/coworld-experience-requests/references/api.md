@@ -4,7 +4,7 @@ Schema snapshot checked 2026-09-14 against the [Observatory OpenAPI](https://sof
 
 ## Workflow and authorization
 
-Use the [skill](../SKILL.md) to resolve → compose → validate → create → stream. `create --check-schema` is read-only validation. Actual request creation can incur costs; stay within the current task scope. League submission and public community writes are separate actions.
+Use the [skill](../SKILL.md) to resolve → compose → validate → create → stream. `create --check-schema` is read-only validation. Actual requests consume [granted credits](../../../../docs/xp-credits.md), not user money; stay within the current task scope. League submission and public community writes are separate actions.
 
 ```bash
 uv run coworld xp-request --help
@@ -19,10 +19,18 @@ Target a game/league/division using the fields below. Supply one roster selector
 - Create/list: `/v2/experience-requests` (POST/GET).
 - Detail: `/v2/experience-requests/{id}`.
 - Child episode rows: `/v2/experience-requests/{id}/episodes`.
-- Cancel: `/v2/experience-requests/{id}/cancel` (POST; stops execution).
-- Division roster: `/v2/divisions/{id}/leaderboard?include_recent_rounds=false`; the flag is boolean. Exact `policy_label` is resolved through `/stats/policy-versions?name_exact=…&version=N`. No separate membership join. Undersized/unresolved rosters fail explicitly.
+- Cancel: `/v2/experience-requests/{id}/cancel` (POST; authorized cancellation of parent and child jobs; inspect child states after the call).
+- Division roster: `/v2/divisions/{id}/leaderboard?include_recent_rounds=false`; the flag is boolean. Exact `policy_label` is resolved through `/stats/policy-versions?name_exact=…&version=N`. No separate membership join in the lab resolver. Undersized/unresolved rosters fail explicitly.
 
 Auth uses the project-local Softmax login. Do not elevate access for competitive intelligence. Artifact paths and completion semantics are in the [artifact reference](../../coworld-episode-artifacts/references/endpoint-map.md).
+
+## Contract limits beyond the field table
+
+The table summarizes the schema, not every conditional validator. Read the [platform reference](../../../../docs/platform-reference.md) for private-policy selection consent, replenishing credits, admission holds, queue limits, seed behavior, sampling without replacement, and child completion. Names/IDs also have formats in live OpenAPI.
+
+`--check-schema` checks known keys and game overrides when resolvable; it does not fully validate nested fields or quote credits. `cost_preview` appears only in the POST response and is preserved by the helper. A later GET is not a cost quote. Private requests can return `409 policy_selection_not_allowed` for explicit opponents; do not silently make them public.
+
+The `state` field is passed into game configuration; a schema selector is not proof that a game implements saved-state loading. A failed parent can still have running children. Use child rows/counts to finish monitoring, and account for failed/cancelled episodes separately from successful evidence.
 
 ## V2CreateExperienceRequestRequest
 
@@ -30,9 +38,9 @@ Auth uses the project-local Softmax login. Do not elevate access for competitive
 
 | Field | Type | Required | Default / bounds | Meaning |
 | --- | --- | --- | --- | --- |
-| `idempotency_key` | string or null | no | {} | Key that makes repeated create requests return the same experience request. |
+| `idempotency_key` | string or null | no | 5–200 characters when set | Key that makes repeated create requests return the same experience request. |
 | `private` | boolean | no | {"default": false} | Limit the request, episodes, and artifacts to the requester. |
-| `llm_routing_override` | string or null | no | {} | Language-model provider override for this request. |
+| `llm_routing_override` | string or null | no | `openrouter` or `bedrock` | Language-model provider override for this request. |
 | `coworld_id` | string or null | no | {} | Coworld to run directly. |
 | `variant_id` | string or null | no | {} | Variant to run within the direct Coworld. |
 | `target` | V2ExperienceRequestTarget or null | no | {} | Coworld, league, or division to resolve as the run target. |
@@ -43,9 +51,9 @@ Auth uses the project-local Softmax login. Do not elevate access for competitive
 | `included_players` | array of string | no | {} | Limit champion selection to these player IDs or names. Explicit policy seats are unaffected. |
 | `excluded_players` | array of string | no | {} | Exclude these player IDs or names from champion selection. Exclusions take precedence. |
 | `num_episodes` | integer | no | {"default": 1, "minimum": 1.0, "maximum": 100.0} | Number of episodes to create. |
-| `notes` | string or null | no | {} | Note explaining the request's purpose. |
+| `notes` | string or null | no | Maximum 1,000 characters | Note explaining the request's purpose. |
 | `execution_backend` | string | no | {"default": "k8s", "const": "k8s"} | Execution system used for the episodes. |
-| `reporters` | array of ReporterBindingSpec | no | {"maxItems": 10} | Reporters to run after completion, including optional dependencies. Runs are billed to the requester. |
+| `reporters` | array of ReporterBindingSpec | no | {"maxItems": 10} | Reporters to run after completion, including optional dependencies. Runs are attributed to the requester; this wording is not evidence of monetary billing. |
 
 Additional properties: False.
 
