@@ -51,6 +51,8 @@ its full list.
 
 ## Evaluation and replay operations
 
+- [Outcome warehouse and episode-level comparison](analysis-tools.md): supported two/four-team data, commands, exclusions and trace-format limits.
+
 - Representative hosted games: follow
   [`tournament-like-experience-requests.md`](tournament-like-experience-requests.md),
   then use the root `coworld-experience-requests` and

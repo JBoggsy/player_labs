@@ -25,11 +25,11 @@ human if a request would contravene one** before proceeding (then do what they d
 4. **🚩 `-100` means DISCONNECT/CRASH, not ejection.** It's an ops failure; filter it out before
    any rate. Getting voted out carries *no* score signal at all — you must read the logs for it.
 5. **Upload freely; submit rarely.** Uploading a version is routine and touches no league. Submitting
-   is the irreversible, champion-making action — only on a demonstrably-better player + human go-ahead.
+   is a consequential league-entry action — only on a demonstrably-better player + human go-ahead.
    *Not* submitting is your rollback.
 6. **Speed first — iterations per day is the KPI.** Write the change fast, rebuild, upload
    *immediately* — no smoke test, no pre-upload gate, no test scaffolding. The next experience
-   request catches breakage *and* measures gameplay; a broken upload costs one free eval round.
+   request catches breakage *and* measures gameplay; a broken upload costs one eval round.
    Rigor is for *reading* results (items 1–4), not for shipping code. (Full version:
    [`../best_practices.md`](../best_practices.md).)
 
@@ -67,7 +67,7 @@ human if a request would contravene one** before proceeding (then do what they d
   result needs a controlled design (vary one seat, hold the rest fixed). Individual stats
   (kills, tasks) are clean per-seat; team stats (win) are not.
 - **Experience requests are your primary eval — they aren't scarce.** They run many episodes in
-  parallel on Softmax infra and are currently free; use them liberally, just **target them to the
+  parallel on Softmax infra and may incur costs; **target them to the
   question** (matched roles, the specific opponents you struggle against) and harvest async.
 - **Pin an explicit identical roster for any A/B — never `top_n`/`random` seats.** Auto-selected
   seats drift between arms (one partner swing alone moved win rate 87%→37%) and can seat **your own
@@ -268,13 +268,7 @@ These layer on Part 1; they're the failure modes of *this* game. Add to this par
   decision/vote/suspicion trace is only in the artifact zip. Beware fetch flags: `--no-logs` has
   (twice) silently gated the artifact-zip download too — after any filtered fetch, verify the zips
   actually landed before concluding "no telemetry."
-- **League episodes are a disjoint population — `coworld episodes -p crewborg` returns `[]`.**
-  Discover them via the policy-versions → episodes path (the `coworld-episode-artifacts` skill);
-  never read `[]` as "no episodes." For outcome-level reads (win rates, role splits), skip artifact
-  fetching entirely: `POST /v2/episodes/search` returns per-seat `results` inline for any policy
-  version — it's also a cross-user "has anyone already run this config" check. `/jobs/*` artifact
-  routes need `--elevated` (opt-in elevation model). And **league telemetry artifacts are ephemeral
-  (~one round's retention)** — harvest every round or lose them.
+- **An empty discovery result is not proof no episodes exist.** Verify selection, current API contract and access scope. Use the root artifact skill's current routes; old `/jobs/*` recipes are retired. Record missing/expired evidence and collect relevant telemetry while available. Historical retention observations are not a platform guarantee.
 - **Confirm what's in a log before querying it** (crewborg's trace level varies — an empty `select`
   can mean "wrong level," not "didn't happen"), and **🚩 attribute by `policy_version_id`, never by
   display name or list position.** Your own champion gets drawn as an opponent under the same
@@ -358,3 +352,5 @@ Distilled from many refuted and confirmed experiments; check these before propos
   alone never moved outcomes). Mis-votes are parity gifts (2.2× more crew than imposters ejected),
   so vote-bar tuning in either direction is a validated dead end until the live ranking improves —
   and any voting change must be A/B'd against the live league field, never self-play.
+
+**Access contract (2026-09-14):** use normal participant access only. Older elevated-access recipes are superseded; private opponent evidence remains unavailable.

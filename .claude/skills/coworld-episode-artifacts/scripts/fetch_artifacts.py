@@ -1,81 +1,17 @@
 #!/usr/bin/env python3
-"""Identify and download full Coworld episode artifacts (replay, results, logs).
+"""Download episode metadata, results, replay and accessible per-seat diagnostics.
 
-This is the lab's general-purpose episode-artifact downloader. Point it at a set
-of episodes (by policy, by experience-request, by pool/round/division, or by
-explicit id) and it writes one self-contained directory per episode containing
-everything the Observatory data API will hand back: the episode record, the
-results, the replay (raw + decompressed), and every per-agent stderr trace.
-
-Why this exists / how it differs from `coworld replays|episode-logs|episode-results`:
-the `coworld` CLI is the right tool for ad-hoc interactive inspection. This script
-exists to (1) discover episodes across *all* of a policy's versions in one pass,
-(2) bundle replay + per-agent logs + results + metadata into one directory per
-episode, and (3) read raw JSON against the live routes so it survives the
-client/server version skew that recurs here (the published `coworld` client
-regularly ships behind the server). It is **game-agnostic**: nothing about
-Crewrift, crewborg, or any specific game is baked in.
-
-THE KEY IDEA: every episode -- whether a league/tournament episode or an ad-hoc
-experience-request episode -- carries a `job_id`, and the job is the universal
-artifact handle. All artifacts come from three job routes (verified live
-2026-06-08):
-
-    GET /jobs/{job_id}/artifacts/results        -> results.json   (scores/metrics)
-    GET /jobs/{job_id}/artifacts/replay          -> replay bytes   (game replay)
-    GET /jobs/{job_id}/policy-logs               -> ["policy_agent_0.log", ...]
-    GET /jobs/{job_id}/policy-logs/{agent_idx}   -> one agent's stderr trace
-    GET /v2/episode-requests/{ereq}/artifacts/logs
-                                                 -> combined container/game stdout
-    GET /v2/episode-requests/{ereq}/policy-artifacts -> per-position has_artifact flags
-    GET /v2/episode-requests/{ereq}/{policy_version_id}/policy-artifact/{agent_idx}
-                                                 -> one slot's artifact zip
-    (the old /jobs/{job_id}/policy-artifact pair was DELETED upstream, metta
-    c4ddebd857 2026-07-10 — episode-request-scoped v2 routes are the only path now)
-    GET /jobs/{job_id}/artifacts/error_info      -> error_info.json (only on failure)
-
-Each artifact is best-effort: a missing replay or one missing log is logged and
-recorded in the per-episode summary, never aborts the episode or the run.
-
-DISCOVERY MODES (pick exactly one):
-
-    --policy NAME [--version N]   league episodes a policy played, newest first
-    --ereq ereq_... [--ereq ...]  explicit experience-request episode rows
-    --xreq xreq_...               all child episodes of one experience request
-    --pool pool_... | --round round_... | --division div_...
-                                  experience-request episodes in a container
-    --episode UUID [--episode ..] explicit league episode records by id
-
-WATCH MODE (--watch, with --xreq only): stream a still-running experience
-request — poll it and download each episode's artifacts as it turns terminal,
-exiting once every episode is terminal and fetched. Resume-safe (completeness
-is judged from disk); watch_state.json bounds retries (--max-attempts, default
-3) for episodes whose artifacts keep erroring. This is the streaming half of
-the default eval flow (see the coworld-experience-requests skill, step 4).
-
-Usage (auth comes from `softmax login`; run inside `uv run` so softmax is importable):
-
-    uv run python fetch_artifacts.py --policy crewborg -n 10 --out /tmp/eps
-    uv run python fetch_artifacts.py --xreq xreq_abc... --out /tmp/eps
-    uv run python fetch_artifacts.py --xreq xreq_abc... --watch --out /tmp/eps
-    uv run python fetch_artifacts.py --ereq ereq_abc... --ereq ereq_def... --no-logs
-    uv run python fetch_artifacts.py --pool pool_abc... -n 20 --out /tmp/eps
-
-The run is idempotent: an episode directory that already looks complete is
-skipped unless --force is given.
-
-ENDPOINT MAP & DRIFT NOTES -- see references/endpoint-map.md next to this script.
-The authoritative live route list is always `<base>/openapi.json`; read it when a
-route 4xxs, because the server moves faster than the client. `<base>` defaults to
-the official gateway derived from your `softmax login`
-(`<api-server>/observatory`, today https://softmax.com/api/observatory). Pass
---server to override.
+Current routes are episode-request scoped. Legacy episode records resolve their
+job ID through /v2/episode-requests/by-job/{job_id}. No watch URL is treated as
+replay bytes. Normal participant access only; private opponent data is excluded.
+See ../references/endpoint-map.md for the API contract and completeness rules.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+from itertools import islice
 import sys
 import time
 import zlib
@@ -138,10 +74,7 @@ class Client:
     def __init__(self, server: str, token: str, elevated: bool = False) -> None:
         headers = {"X-Auth-Token": token}
         if elevated:
-            # metta PR #17028: Softmax team members are external by default now;
-            # per-episode job artifacts (results/replay/policy-logs) for another
-            # player's policy are TEAM_AUTH-gated and 403 without this header.
-            headers["X-Use-Elevated-Privileges"] = "true"
+            raise ValueError("Elevated access is not permitted for player-lab analysis.")
         self._http = httpx.Client(
             base_url=server.rstrip("/"),
             headers=headers,
@@ -188,8 +121,8 @@ class EpisodeRef:
 
     `record` is the raw source row (a league episode record or an
     experience-request episode row); it is written verbatim as episode.json.
-    `job_id` is the universal artifact handle. `replay_url` is a fallback replay
-    source when the job replay artifact is unavailable.
+    `job_id` resolves legacy records to an episode request. `replay_url` is a
+    human watch link, not an artifact download URL.
     """
 
     ref_id: str                    # episode uuid or ereq_... id
@@ -238,44 +171,24 @@ def _ref_from_ereq_row(row: dict[str, Any]) -> EpisodeRef:
 # --------------------------------------------------------------------------- #
 
 def discover_by_policy(client: Client, name: str, version: int | None, want: int) -> list[EpisodeRef]:
-    """League episodes a policy played, newest first, across its versions.
+    """Recorded episodes across exact policy versions, newest first.
 
-    /stats/policy-versions?name_exact=NAME -> version ids
-    /episodes?policy_version_id=PV         -> episode records (id, replay_url, tags.job_id)
+    Both version and episode lists use current cursor pagination. Fetch full
+    episode records only for the final selected IDs to retain identity metadata.
     """
-    rows = client.get_json("/stats/policy-versions", name_exact=name, limit=100)
-    if isinstance(rows, dict):
-        rows = rows.get("entries", [])
-    pvs = [{"id": r["id"], "version": r.get("version")} for r in rows]
+    params: dict[str, Any] = {"name_exact": name}
     if version is not None:
-        pvs = [pv for pv in pvs if pv["version"] == version]
-        if not pvs:
-            sys.exit(f"No '{name}' policy version {version} found "
-                     f"(have: {sorted(r.get('version') for r in rows)}).")
-    if not pvs:
-        sys.exit(f"No policy versions found for name '{name}'.")
-    pvs.sort(key=lambda pv: (pv["version"] or -1), reverse=True)
-    log(f"{name} policy versions: " + ", ".join(f"v{pv['version']}" for pv in pvs))
-
-    by_id: dict[str, EpisodeRef] = {}
-    for pv in pvs:
-        offset, page = 0, 100
-        # Episodes interleave across versions in time; fetch a generous window
-        # per version then merge-sort by created_at.
-        while offset < max(want * 2, want + 20):
-            eps = client.get_json("/episodes", policy_version_id=pv["id"], limit=page, offset=offset)
-            eps = eps if isinstance(eps, list) else eps.get("entries", [])
-            if not eps:
-                break
-            for rec in eps:
-                eid = str(rec["id"])
-                if eid not in by_id:
-                    by_id[eid] = _ref_from_episode_record(rec, label=f"{name} v{pv['version']}")
-            if len(eps) < page:
-                break
-            offset += page
-    ordered = sorted(by_id.values(), key=lambda e: e.created_at, reverse=True)
-    return ordered[:want]
+        params["version"] = version
+    versions = list(cursor_rows(client, "/stats/policy-versions", **params))
+    if not versions:
+        raise ValueError(f"No policy versions found for {name!r}, version={version}")
+    selected: dict[str, dict] = {}
+    for pv in versions:
+        for row in islice(cursor_rows(client, f"/v2/policy-versions/{pv['id']}/episodes"), want):
+            selected.setdefault(row["id"], row)
+    ordered = sorted(selected.values(), key=lambda row: row.get("created_at") or "", reverse=True)[:want]
+    return [_ref_from_episode_record(client.get_json(f"/episodes/{row['id']}"), label=name)
+            for row in ordered]
 
 
 def discover_by_ereq(client: Client, ereq_ids: list[str]) -> list[EpisodeRef]:
@@ -308,34 +221,30 @@ def discover_by_container(
     division_id: str | None,
     want: int,
 ) -> list[EpisodeRef]:
-    """Experience-request episodes filtered by pool / round(s) / division.
-
-    Only `pool_id`, `round_id`, `division_id` are real server-side filters on
-    /v2/episode-requests (coworld_id/job_id/episode_id are silently ignored).
-    The server takes one round_id per query, so repeated --round flags fan out
-    into one query each and merge (deduped by ereq id).
-    A bare pool uuid 422s -- it must carry the `pool_` prefix.
-    """
-    if pool_id and not pool_id.startswith("pool_"):
-        pool_id = f"pool_{pool_id}"
-    base_params: dict[str, Any] = {"limit": min(max(want, 1), 1000), "offset": 0}
+    """Discover current round episodes, optionally resolving a division's rounds."""
     if pool_id:
-        base_params["pool_id"] = pool_id
+        raise ValueError("Pool discovery was removed upstream; supply --round or --division.")
     if division_id:
-        base_params["division_id"] = division_id
-
+        if round_ids:
+            raise ValueError("Choose --round or --division, not both.")
+        round_ids = [r["id"] for r in cursor_rows(client, "/v2/rounds", division_id=division_id)]
     by_id: dict[str, EpisodeRef] = {}
-    for round_id in round_ids or [None]:
-        params = dict(base_params)
-        if round_id:
-            params["round_id"] = round_id
-        page = client.get_json("/v2/episode-requests", **params)
-        rows = page.get("entries", []) if isinstance(page, dict) else page
-        for r in rows:
-            ref = _ref_from_ereq_row(r)
+    for round_id in round_ids:
+        for row in cursor_rows(client, f"/v2/rounds/{round_id}/episodes"):
+            ref = _ref_from_ereq_row(row)
             by_id.setdefault(ref.ref_id, ref)
-    refs = sorted(by_id.values(), key=lambda e: e.created_at, reverse=True)
-    return refs[:want]
+    return sorted(by_id.values(), key=lambda e: e.created_at, reverse=True)[:want]
+
+
+def cursor_rows(client: Client, path: str, **params: Any):
+    """Read every page of a current cursor-paginated endpoint."""
+    while True:
+        page = client.get_json(path, limit=100, **params)
+        yield from page["entries"]
+        cursor = page.get("next_cursor")
+        if not cursor:
+            return
+        params["cursor"] = cursor
 
 
 def discover_by_episode(client: Client, episode_ids: list[str]) -> list[EpisodeRef]:
@@ -385,16 +294,41 @@ def episode_is_complete(out_dir: Path, want_replay: bool, want_logs: bool,
         return False
     if want_results and not (out_dir / "results.json").exists():
         return False
-    if want_logs and not (out_dir / "logs").exists():
-        return False
-    # The listing may legitimately contain no player-uploaded ZIP. A durable
-    # marker distinguishes "checked and empty" from an interrupted fetch.
-    if want_artifacts and not (out_dir / "policy_artifacts_checked.json").exists():
-        return False
+    for wanted, marker, flag, directory, template in (
+        (want_logs, "policy_logs_checked.json", "has_log", "logs", "policy_agent_{}.log"),
+        (want_artifacts, "policy_artifacts_checked.json", "has_artifact", "artifacts", "policy_artifact_{}.zip"),
+    ):
+        if not wanted:
+            continue
+        marker_path = out_dir / marker
+        if not marker_path.exists():
+            return False
+        try:
+            rows = json.loads(marker_path.read_text())
+        except (json.JSONDecodeError, OSError):
+            return False  # Interrupted marker writes must be retried, not loop forever.
+        if not isinstance(rows, list) or any(not isinstance(row, dict) or "position" not in row for row in rows):
+            return False
+        if any(row.get(flag) and not (out_dir / directory / template.format(row["position"])).exists()
+               for row in rows):
+            return False
     return True
 
 
-def fetch_episode(
+def fetch_episode(client: Client, ref: EpisodeRef, out_dir: Path, *,
+                  want_replay: bool, want_results: bool, want_logs: bool,
+                  want_artifacts: bool = True) -> dict[str, Any]:
+    """Contain one episode's transport/parse failure so bounded retries can progress."""
+    try:
+        return _fetch_episode(client, ref, out_dir, want_replay=want_replay,
+                              want_results=want_results, want_logs=want_logs,
+                              want_artifacts=want_artifacts)
+    except (httpx.HTTPError, json.JSONDecodeError, OSError, ValueError, KeyError, TypeError) as exc:
+        return {"ref_id": ref.ref_id, "dir": out_dir.name, "complete": False,
+                "errors": [f"{type(exc).__name__}: {exc}"]}
+
+
+def _fetch_episode(
     client: Client,
     ref: EpisodeRef,
     out_dir: Path,
@@ -404,150 +338,89 @@ def fetch_episode(
     want_logs: bool,
     want_artifacts: bool = True,
 ) -> dict[str, Any]:
-    """Download everything available for one episode into `out_dir`."""
+    """Fetch available artifacts; only complete listings get durable markers.
+
+    A successful empty listing means no accessible uploads, not universal
+    visibility. Missing requested results/replay remain incomplete.
+    """
     out_dir.mkdir(parents=True, exist_ok=True)
-    summary: dict[str, Any] = {
-        "ref_id": ref.ref_id,
-        "created_at": ref.created_at,
-        "label": ref.label,
-        "job_id": ref.job_id,
-        "dir": out_dir.name,
-        "results": False,
-        "replay": False,
-        "logs": [],
-        "game_log": False,
-        "policy_artifacts": [],
-        "error_info": False,
-        "errors": [],
-    }
-
-    # 1. Source record (the episode row / detail), verbatim.
     (out_dir / "episode.json").write_text(json.dumps(ref.record, indent=2))
-
-    job = ref.job_id
-    if job is None:
-        summary["errors"].append("no job_id on episode -- artifacts unavailable")
+    summary: dict[str, Any] = {"ref_id": ref.ref_id, "dir": out_dir.name,
+        "results": False, "replay": False, "logs": [], "policy_artifacts": [], "errors": []}
+    if ref.ref_id.startswith("ereq_"):
+        ereq = ref.ref_id
+    elif ref.job_id:
+        row = client.get_json(f"/v2/episode-requests/by-job/{ref.job_id}")
+        ereq = row["id"]
+        (out_dir / "episode_request.json").write_text(json.dumps(row, indent=2))
+    else:
+        summary["errors"].append("No episode-request ID or job ID; cannot resolve artifact owner.")
         return summary
-
-    # 2. Results (scores / metrics).
-    if want_results:
-        raw = client.get_text_or_none(f"/jobs/{job}/artifacts/results")
-        if raw is not None:
-            (out_dir / "results.json").write_text(raw)
-            summary["results"] = True
+    base = f"/v2/episode-requests/{ereq}"
+    for wanted, kind, filename in ((want_results, "results", "results.json"),
+                                   (want_replay, "replay", "replay.json")):
+        if not wanted:
+            continue
+        content = client.get_bytes_or_none(f"{base}/artifacts/{kind}")
+        if content is None:
+            summary["errors"].append(f"{kind}: unavailable")
         else:
-            summary["errors"].append("results artifact unavailable")
-
-    # 3. Replay (prefer the job artifact; fall back to the episode's replay_url).
-    if want_replay:
-        content = client.get_bytes_or_none(f"/jobs/{job}/artifacts/replay")
-        if content is None and ref.replay_url:
-            try:
-                r = httpx.get(ref.replay_url, follow_redirects=True, timeout=120.0)
-                r.raise_for_status()
-                content = r.content
-            except httpx.HTTPError as exc:
-                summary["errors"].append(f"replay_url fallback: {exc}")
-        if content is not None:
-            _write_replay(content, out_dir)
-            summary["replay"] = True
-        else:
-            summary["errors"].append("replay unavailable (job artifact + replay_url both failed)")
-
-    # 4. Per-agent policy logs. The job lists its own log files; download each.
-    if want_logs:
-        names = client.get_text_or_none(f"/jobs/{job}/policy-logs")
-        log_names: list[str] = []
-        if names is not None:
-            try:
-                log_names = json.loads(names)
-            except json.JSONDecodeError:
-                log_names = []
-        if log_names:
-            logs_dir = out_dir / "logs"
-            logs_dir.mkdir(exist_ok=True)
-            for idx, fname in enumerate(log_names):
-                text = client.get_text_or_none(f"/jobs/{job}/policy-logs/{idx}")
-                if text is None:
-                    summary["errors"].append(f"policy-log {idx} ({fname}): unavailable")
-                    continue
-                safe = Path(fname).name or f"policy_agent_{idx}.log"
-                (logs_dir / safe).write_text(text)
-                summary["logs"].append(safe)
-        else:
-            summary["errors"].append("no policy logs listed for job")
-
-        # Environment-owned diagnostics (including Vanilla WoW's structured host
-        # telemetry) live in the combined container log, not policy stderr. This
-        # route is scoped to experience-request episodes; league episodes use a
-        # separate read surface and remain best-effort here.
-        if ref.ref_id.startswith("ereq_"):
-            game_log = client.get_text_or_none(
-                f"/v2/episode-requests/{ref.ref_id}/artifacts/logs"
-            )
-            if game_log is not None:
-                (out_dir / "game_logs.log").write_text(game_log)
-                summary["game_log"] = True
+            if kind == "replay":
+                _write_replay(content, out_dir)
             else:
-                summary["errors"].append("combined container/game log unavailable")
-
-    # 5. Per-player artifact zips (policy-scoped: only slots we own come back).
-    # Players may upload one zip of structured telemetry/debug data per slot
-    # (e.g. crewborg's trace zip) — separate from the stderr policy logs, and
-    # gated separately (--no-artifacts), NOT by --no-logs: the zips are the
-    # richer record (no hosted log cap) and are wanted even when logs are not.
-    # The v1 /jobs/{job}/policy-artifact routes were deleted upstream (metta
-    # c4ddebd857, 2026-07-10); the only path is the v2 episode-request pair —
-    # a per-position listing with has_artifact flags, then a download keyed by
-    # (ereq id, policy_version_id, agent position). League episodes (no ereq_…
-    # ref) currently have NO artifact download route; note it and move on.
-    if want_artifacts:
-        artifact_rows: list[dict[str, Any]] = []
-        artifact_listing_checked = not ref.ref_id.startswith("ereq_")
-        if not ref.ref_id.startswith("ereq_"):
-            summary["errors"].append(
-                "policy artifacts: no v2 route for league episodes (only episode requests)"
-            )
+                json.loads(content)  # Reject an HTML/login response as results.
+                (out_dir / filename).write_bytes(content)
+            summary[kind] = True
+    if want_logs or want_artifacts:
+        for wanted, marker in ((want_logs, "policy_logs_checked.json"),
+                               (want_artifacts, "policy_artifacts_checked.json")):
+            if wanted:
+                (out_dir / marker).unlink(missing_ok=True)
+        listing = client.get_text_or_none(f"{base}/policy-artifacts")
+        rows = json.loads(listing) if listing is not None else None
+        if rows is None:
+            summary["errors"].append("Accessible policy diagnostics listing unavailable")
+        elif not isinstance(rows, list):
+            raise ValueError("Expected policy-artifacts list")
         else:
-            listing = client.get_text_or_none(f"/v2/episode-requests/{ref.ref_id}/policy-artifacts")
-            rows: list[dict[str, Any]] = []
-            if listing is not None:
-                try:
-                    rows = json.loads(listing)
-                except json.JSONDecodeError:
-                    summary["errors"].append(f"unparseable policy-artifacts listing: {listing[:80]}")
-                else:
-                    artifact_listing_checked = True
-            artifact_rows = rows
-            for row in rows:
-                if not row.get("has_artifact"):
+            for wanted, flag, kind, folder, template, marker, key in (
+                (want_logs, "has_log", "policy-logs", "logs", "policy_agent_{}.log", "policy_logs_checked.json", "logs"),
+                (want_artifacts, "has_artifact", "policy-artifact", "artifacts", "policy_artifact_{}.zip", "policy_artifacts_checked.json", "policy_artifacts"),
+            ):
+                if not wanted:
                     continue
-                idx = row.get("position")
-                pv = row.get("policy_version_id")
-                if idx is None or pv is None:
-                    summary["errors"].append(f"unrecognized policy-artifacts row: {row!r}")
-                    continue
-                content = client.get_bytes_or_none(
-                    f"/v2/episode-requests/{ref.ref_id}/{pv}/policy-artifact/{idx}"
-                )
-                if content is None:
-                    summary["errors"].append(f"policy-artifact {idx}: unavailable (403 if not owned)")
-                    continue
-                artifacts_dir = out_dir / "artifacts"
-                artifacts_dir.mkdir(exist_ok=True)
-                (artifacts_dir / f"policy_artifact_{idx}.zip").write_bytes(content)
-                summary["policy_artifacts"].append(idx)
-        if artifact_listing_checked:
-            (out_dir / "policy_artifacts_checked.json").write_text(
-                json.dumps(artifact_rows, indent=2)
-            )
-
-    # 6. Error info (present only when the episode failed).
-    err = client.get_text_or_none(f"/jobs/{job}/artifacts/error_info")
-    if err is not None:
-        (out_dir / "error_info.json").write_text(err)
-        summary["error_info"] = True
-
+                marker_path = out_dir / marker
+                marker_path.unlink(missing_ok=True)
+                complete = True
+                for row in rows:
+                    if not row[flag]:
+                        continue
+                    position, version = row["position"], row["policy_version_id"]
+                    content = client.get_bytes_or_none(f"{base}/{version}/{kind}/{position}")
+                    if content is None:
+                        complete = False
+                        summary["errors"].append(f"{kind} seat {position}: unavailable")
+                        continue
+                    destination = out_dir / folder / template.format(position)
+                    destination.parent.mkdir(exist_ok=True)
+                    destination.write_bytes(content)
+                    summary[key].append(position)
+                if complete:
+                    marker_path.write_text(json.dumps(rows, indent=2))
+    if want_logs:
+        content = client.get_bytes_or_none(f"{base}/artifacts/logs")
+        if content is not None:
+            (out_dir / "game_logs.log").write_bytes(content)
+        else:
+            summary["errors"].append("Optional combined game log unavailable")
+    error = client.get_bytes_or_none(f"{base}/artifacts/error-info")
+    if error is not None:
+        (out_dir / "error_info.json").write_bytes(error)
+    summary["complete"] = (
+        (not want_results or summary["results"]) and (not want_replay or summary["replay"])
+        and episode_is_complete(out_dir, want_replay, want_logs, want_artifacts, want_results)
+    )
+    (out_dir / "download.json").write_text(json.dumps(summary, indent=2))
     return summary
 
 
@@ -601,7 +474,13 @@ def select_watch_fetches(
 
 
 def _xreq_drained(detail: dict[str, Any]) -> bool:
+    # A failed/cancelled parent can still have children executing or cancelling.
     total = detail.get("episode_count") or 0
+    if any(detail.get(key, 0) for key in ("pending_count", "submitted_count", "running_count")):
+        return False
+    episodes = detail.get("episodes") or []
+    if len(episodes) == total and total > 0:
+        return all(row.get("status") in {"completed", "failed", "cancelled"} for row in episodes)
     finished = (detail.get("completed_count") or 0) + (detail.get("failed_count") or 0)
     return total > 0 and finished >= total
 
@@ -684,7 +563,7 @@ def watch_loop(
                 )
                 for err in s["errors"]:
                     log(f"      ! {err}")
-                if episode_is_complete(ep_dir, want_replay, want_logs, want_artifacts, want_results):
+                if s.get("complete") and episode_is_complete(ep_dir, want_replay, want_logs, want_artifacts, want_results):
                     attempts.pop(ref.ref_id, None)
                     done.append(ref)
                 else:
@@ -694,14 +573,21 @@ def watch_loop(
                         exhausted.append(ref)
             state_path.write_text(json.dumps(attempts, indent=2))
 
-            total = detail.get("episode_count") or len(refs)
+            total = min(detail.get("episode_count") or len(refs), args.num)
             pending = max(0, total - len(done) - len(exhausted))
             _write_watch_index(args.out, args.xreq, server, refs, done, exhausted, pending, drained)
             log(f"[watch] fetched {len(done)}/{total} "
                 f"(pending {pending}, exhausted {len(exhausted)}, drained={drained})")
-            if drained and pending == 0:
+            if drained and (pending == 0 or (not waiting and not to_fetch)):
+                if pending:
+                    log(f"[watch] incomplete: {pending} requested episodes have no fetched terminal record")
                 log(f"[watch] done: xreq drained; {len(done)} fetched, {len(exhausted)} without artifacts.")
-                return 0
+                return 1 if exhausted or pending else 0
+        except httpx.HTTPStatusError as exc:
+            if 400 <= exc.response.status_code < 500 and exc.response.status_code != 429:
+                log(f"[watch] request cannot be read: {exc}")
+                return 1
+            log(f"[watch] request temporarily unavailable: {exc}")
         except (httpx.HTTPError, json.JSONDecodeError, OSError) as exc:
             log(f"[watch] !!! poll pass failed ({type(exc).__name__}: {exc}); "
                 f"retrying in {args.interval:.0f}s")
@@ -724,7 +610,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     sel.add_argument("--ereq", action="append", default=[],
                      help="Experience-request episode id (ereq_...). Repeatable.")
     sel.add_argument("--xreq", help="Experience-request id (xreq_...); downloads all its child episodes.")
-    sel.add_argument("--pool", help="Pool id (pool_...).")
+    sel.add_argument("--pool", help="Retired upstream; use --round, --division or --xreq.")
     sel.add_argument("--round", dest="round_ids", action="append", default=[],
                      help="Round id (round_...). Repeatable; results merge across rounds.")
     sel.add_argument("--division", dest="division_id", help="Division id (div_...).")
@@ -739,9 +625,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--server", default=None,
                         help="Observatory API base URL. Default: <api-server>/observatory from `softmax login`.")
     parser.add_argument("--elevated", action="store_true",
-                        help="Send X-Use-Elevated-Privileges (Softmax team members only; needed to "
-                             "read another player's job artifacts -- results/replay/policy-logs -- "
-                             "since metta PR #17028 made team access opt-in. No-op for external users.")
+                        help="Rejected: player-lab analysis uses normal participant access.")
     parser.add_argument("--no-replay", action="store_true", help="Skip replay downloads.")
     parser.add_argument("--no-results", action="store_true", help="Skip results downloads.")
     parser.add_argument("--no-logs", action="store_true", help="Skip per-agent policy-log downloads.")
@@ -788,6 +672,8 @@ def resolve_refs(client: Client, args: argparse.Namespace) -> list[EpisodeRef]:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    if args.elevated:
+        sys.exit("Elevated access is not permitted for player-lab analysis.")
     if args.num is None:
         args.num = 10**9 if args.watch else 10
     if args.watch and not args.xreq:
@@ -848,7 +734,7 @@ def main(argv: list[str] | None = None) -> int:
     }
     (args.out / "index.json").write_text(json.dumps(index, indent=2))
     log(f"Done. Wrote {len(summaries)} episode(s) + index.json to {args.out}")
-    return 0
+    return 0 if all(s.get("complete") or s.get("skipped") for s in summaries) else 1
 
 
 if __name__ == "__main__":

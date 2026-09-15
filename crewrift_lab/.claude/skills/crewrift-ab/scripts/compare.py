@@ -23,6 +23,7 @@ import argparse
 import json
 import statistics
 import sys
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -43,10 +44,10 @@ class Rec:
     kills: int
     win: bool
     vote_timeout: int
-    ops_fail: bool
     penalty: int
     game_tasks_done: int
     game_tasks_total: int
+    episode_id: str = ""
 
 
 def parse_spec(spec: str) -> tuple[str, int | None]:
@@ -82,33 +83,81 @@ def slot_entries(episode: dict) -> list[tuple[int, str | None, int | None]]:
     return out
 
 
-def load_batch(root: Path, policy: str, version: int | None) -> list[Rec]:
-    """Every appearance of (policy[:version]) across the episode dirs in `root`."""
-    recs: list[Rec] = []
+def load_batch(root: Path, policy: str, version: int | None) -> tuple[list[Rec], list[dict], dict]:
+    """Read gameplay seats, independent episode failures, and explicit exclusions."""
+    if version is None:
+        raise ValueError("A/B requires an exact policy version: name:vN")
+    recs, outcomes, excluded = [], [], Counter()
+    seen = set()
     for ep in sorted(p for p in root.iterdir() if p.is_dir()):
         ej, rj = ep / "episode.json", ep / "results.json"
-        if not (ej.exists() and rj.exists()):
+        if not ej.exists():
+            excluded["missing_episode_metadata"] += 1
             continue
         try:
-            episode, results = json.loads(ej.read_text()), json.loads(rj.read_text())
-        except json.JSONDecodeError:
-            continue
+            episode = json.loads(ej.read_text())
+            if not isinstance(episode, dict):
+                raise ValueError("expected a JSON object")
+        except ValueError as exc:
+            raise ValueError(f"Invalid episode metadata in {ej}: {exc}") from exc
+        eid = episode.get("id")
+        if not eid or eid in seen:
+            raise ValueError(f"Missing or duplicate episode ID in {ep}")
+        seen.add(eid)
         slots = [pos for pos, name, ver in slot_entries(episode)
-                 if name == policy and (version is None or ver == version)]
-        for slot in slots:
-            rec = _record(results, slot)
-            if rec is not None:
-                recs.append(rec)
-    return recs
+                 if name == policy and ver == version]
+        if not slots:
+            excluded["target_absent"] += 1
+            continue
+        try:
+            results = json.loads(rj.read_text()) if rj.exists() else {}
+        except ValueError:
+            results = {}
+        if not isinstance(results, dict):
+            results = {}
+        timeout_arrays = [results.get(key) for key in ("connect_timeout", "disconnect_timeout")]
+        seat_count = max(pos for pos, _, _ in slot_entries(episode)) + 1
+        has_ops_evidence = all(isinstance(values, list) and len(values) >= seat_count
+                               for values in timeout_arrays)
+        failed = bool(episode.get("status") in {"failed", "cancelled"}
+                      or episode.get("error_type") or episode.get("failed_policy_index") is not None
+                      or episode.get("failed_agent_index") is not None
+                      or any(any(values) for values in timeout_arrays if isinstance(values, list)))
+        # Missing results alone are not proof of a crash. Status/error metadata
+        # still establish failures when no role or gameplay result was produced.
+        known = failed or (has_ops_evidence and episode.get("status") in {"completed", None})
+        if known:
+            outcomes.append({"episode_id": eid, "ops_fail": failed})
+        else:
+            excluded["unknown_episode_outcome"] += 1
+            continue
+        if failed:
+            excluded["failed_episode_gameplay"] += 1
+            continue
+        episode_records = [rec for slot in slots if (rec := _record(results, slot)) is not None]
+        if len(episode_records) != len(slots):
+            excluded["incomplete_target_seat_results"] += 1
+            continue
+        roles = [rec.role for rec in episode_records]
+        if len(roles) != len(set(roles)):
+            raise ValueError(f"{eid}: multiple target seats in one role; use an episode-aggregated analysis")
+        for rec in episode_records:
+            rec.episode_id = eid
+        recs.extend(episode_records)
+    return recs, outcomes, dict(excluded)
 
 
 def _record(results: dict, slot: int) -> Rec | None:
     scores = results.get("scores") or []
-    if slot is None or slot >= len(scores):
+    if slot is None or slot < 0 or slot >= len(scores):
         return None
     def col(k):
         a = results.get(k) or []
         return a[slot] if slot < len(a) else 0
+    if any(slot >= len(results.get(key) or []) for key in ("win", "tasks", "kills")):
+        return None
+    if bool(col("imposter")) == bool(col("crew")):
+        return None  # Unknown/contradictory role is not implicitly crew.
     crew_flags = results.get("crew") or []
     tasks_arr = results.get("tasks") or []
     win = bool(col("win"))
@@ -118,7 +167,6 @@ def _record(results: dict, slot: int) -> Rec | None:
         role="imposter" if col("imposter") else "crew",
         score=score, tasks=tasks, kills=kills, win=win,
         vote_timeout=int(col("vote_timeout")),
-        ops_fail=bool(col("connect_timeout") or col("disconnect_timeout")),
         penalty=int(100 * win + tasks + 10 * kills - score),
         game_tasks_done=sum(int(t) for t, c in zip(tasks_arr, crew_flags) if c),
         game_tasks_total=8 * crew_count,
@@ -135,7 +183,7 @@ METRICS = [
     ("kills_mean",              True,  "mean", "imposter"),
     ("penalty_mean",            False, "mean", None),
     ("no_vote_rate",            False, "rate", None),
-    ("ops_fail_rate",           False, "rate", None),
+    ("ops_fail_rate",           False, "rate", "episodes"),
     ("imposter_no_kills_rate",  False, "rate", "imposter"),
     ("crew_low_tasks_rate",     False, "rate", "crew"),
     ("crew_lost_nearly_won_rate", False, "rate", "crew"),
@@ -147,6 +195,8 @@ NEARLY_WON_FRAC = 0.85
 
 def metric_value(recs: list[Rec], key: str) -> tuple[float, int] | None:
     """Return (value, n) for a metric over a group's records, or None if N/A."""
+    if key == "ops_fail_rate":
+        return (sum(r["ops_fail"] for r in recs) / len(recs), len(recs)) if recs else None
     if not recs:
         return None
     n = len(recs)
@@ -162,8 +212,6 @@ def metric_value(recs: list[Rec], key: str) -> tuple[float, int] | None:
         return statistics.mean(r.penalty for r in recs), n
     if key == "no_vote_rate":
         return sum(r.vote_timeout > 0 for r in recs) / n, n
-    if key == "ops_fail_rate":
-        return sum(r.ops_fail for r in recs) / n, n
     if key == "imposter_no_kills_rate":
         return sum(r.kills == 0 for r in recs) / n, n
     if key == "crew_low_tasks_rate":
@@ -177,6 +225,8 @@ def metric_value(recs: list[Rec], key: str) -> tuple[float, int] | None:
 
 def value_fn(recs: list[Rec], key: str) -> list[float]:
     """Per-appearance values for a metric (for the continuous significance test)."""
+    if key == "ops_fail_rate":
+        return []
     if key == "score_mean":   return [float(r.score) for r in recs]
     if key == "tasks_mean":   return [float(r.tasks) for r in recs]
     if key == "kills_mean":   return [float(r.kills) for r in recs]
@@ -196,29 +246,36 @@ def main() -> None:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("baseline_dir", help="Episodes dir for the BASELINE version (matched, fresh).")
     ap.add_argument("candidate_dir", help="Episodes dir for the CANDIDATE version (matched, fresh).")
-    ap.add_argument("--baseline", required=True, help="Baseline policy as NAME or NAME:vN.")
-    ap.add_argument("--candidate", required=True, help="Candidate policy as NAME or NAME:vN.")
+    ap.add_argument("--baseline", required=True, help="Baseline policy as NAME:vN.")
+    ap.add_argument("--candidate", required=True, help="Candidate policy as NAME:vN.")
     ap.add_argument("--target", help="Lead metric (e.g. win_rate, kills_mean, imposter_no_kills_rate).")
     ap.add_argument("--json", help="Also write the structured diff here.")
     args = ap.parse_args()
 
     bname, bver = parse_spec(args.baseline)
     cname, cver = parse_spec(args.candidate)
-    base_recs = load_batch(Path(args.baseline_dir), bname, bver)
-    cand_recs = load_batch(Path(args.candidate_dir), cname, cver)
-    if not base_recs:
-        raise SystemExit(f"no '{args.baseline}' appearances in {args.baseline_dir}")
-    if not cand_recs:
-        raise SystemExit(f"no '{args.candidate}' appearances in {args.candidate_dir}")
+    if bver is None or cver is None:
+        ap.error("Both policies require an exact version: name:vN")
+    base_recs, base_ops, excluded_base = load_batch(Path(args.baseline_dir), bname, bver)
+    cand_recs, cand_ops, excluded_cand = load_batch(Path(args.candidate_dir), cname, cver)
+    if not base_ops:
+        raise SystemExit(f"No known operational outcomes for {args.baseline}: {excluded_base}")
+    if not cand_ops:
+        raise SystemExit(f"No known operational outcomes for {args.candidate}: {excluded_cand}")
 
+    if {r["episode_id"] for r in base_ops} & {r["episode_id"] for r in cand_ops}:
+        ap.error("Arms share episodes; use a paired analysis for within-episode comparisons")
     base, cand = by_group(base_recs), by_group(cand_recs)
+    base["episodes"], cand["episodes"] = base_ops, cand_ops
+    print(f"Excluded baseline: {excluded_base}; candidate: {excluded_cand}")
     deltas = ab_stats.build_deltas(base, cand, METRICS, metric_value, value_fn, GROUPS)
     print(ab_stats.render_markdown(args.baseline, args.candidate, base, cand,
                                    deltas, args.target, GROUPS, METRICS))
 
     if args.json:
-        Path(args.json).write_text(json.dumps(
-            ab_stats.emit_json(args.baseline, args.candidate, args.target, deltas), indent=2))
+        report = ab_stats.emit_json(args.baseline, args.candidate, args.target, deltas)
+        report.update(excluded_baseline=excluded_base, excluded_candidate=excluded_cand)
+        Path(args.json).write_text(json.dumps(report, indent=2))
         print(f"\n[wrote JSON: {args.json}]")
 
 

@@ -34,8 +34,7 @@ Usage (auth from `softmax login`; run inside `uv run`):
     uv run python policy_lifecycle.py monitor  --name crewborg
     uv run python policy_lifecycle.py monitor  --name crewborg --watch   # background it
 
-Set COWORLD_ELEVATED=1 to send X-Use-Elevated-Privileges (Softmax team members only;
-needed to see private/team-gated leagues, e.g. Vanilla Wow — mirrors `coworld --elevated`).
+Uses ordinary participant access. COWORLD_ELEVATED is rejected for lab analysis.
 
 Routes (Observatory gateway): /stats/policy-versions, /v2/league-submissions,
 /v2/league-policy-memberships, /v2/policy-membership-events, /v2/divisions/{id}/leaderboard.
@@ -55,10 +54,8 @@ import httpx
 # Membership status meanings (PolicyMembershipStatus in metta models.py).
 TERMINAL_STATUSES = {"competing", "disqualified"}  # qualification verdict is settled
 SUBSTATUS_HINT = {
-    "crash": "container crashed/failed episodes — pull the qualifier episodes' logs "
-    "(the usual cause is TIMEOUTS / LLM latency; a fast/no-LLM player qualifies clean)",
-    "inactive": "evicted (player-per-user limit, default 2) or retired — NOT a quality "
-    "failure; a newer champion of yours can evict an older membership",
+    "crash": "player failure recorded — inspect episode error_type, failed seat and logs",
+    "inactive": "retired or removed by participation limits — inspect membership-event reasons",
 }
 
 
@@ -72,12 +69,8 @@ def client() -> httpx.Client:
     if not tok:
         sys.exit("Not authenticated. Run: uv run softmax login")
     headers = {"X-Auth-Token": tok}
-    # Private/team-gated leagues (e.g. the Vanilla Wow league) are invisible to
-    # unelevated requests under the opt-in elevation model (metta #17028). Set
-    # COWORLD_ELEVATED=1 to send the team-access header, mirroring `coworld --elevated`.
-    # The header is a no-op for non-team credentials; it never elevates a player token.
     if os.environ.get("COWORLD_ELEVATED", "").lower() in {"1", "true", "yes"}:
-        headers["X-Use-Elevated-Privileges"] = "true"
+        raise ValueError("Elevated access is not permitted for player-lab analysis.")
     return httpx.Client(base_url=api.rstrip("/") + "/observatory",
                         headers=headers, timeout=60.0, follow_redirects=True)
 
@@ -133,11 +126,24 @@ def verdict(status: str | None, substatus: str | None, is_champion: bool) -> str
     return f"… status={status}"
 
 
+def get_all_rows(c: httpx.Client, path: str, **params: Any) -> list[dict[str, Any]]:
+    """Membership/submission lists carry continuation in the response header."""
+    result = []
+    while True:
+        response = c.get(path, params=params)
+        response.raise_for_status()
+        result.extend(rows(response.json()))
+        cursor = response.headers.get("X-Next-Cursor")
+        if not cursor:
+            return result
+        params["cursor"] = cursor
+
+
 def focal(c: httpx.Client, name: str) -> tuple[list[dict], list[dict]]:
     """This policy's submissions and memberships (memberships WITHOUT active_only, to catch DQ)."""
-    subs = [s for s in rows(get(c, "/v2/league-submissions", mine=True, limit=200))
+    subs = [s for s in get_all_rows(c, "/v2/league-submissions", mine=True, limit=200)
             if policy_name_of(s) == name]
-    mems = [m for m in rows(get(c, "/v2/league-policy-memberships", mine=True, limit=1000))
+    mems = [m for m in get_all_rows(c, "/v2/league-policy-memberships", mine=True, limit=1000)
             if policy_name_of(m) == name]
     return subs, mems
 
@@ -179,7 +185,7 @@ def render(c: httpx.Client, name: str) -> tuple[str, bool]:
             pid = (m.get("player") or {}).get("id") or m.get("player_id")
             if div_id:
                 try:
-                    board = rows(get(c, f"/v2/divisions/{div_id}/leaderboard", include_recent_rounds=5))
+                    board = rows(get(c, f"/v2/divisions/{div_id}/leaderboard", include_recent_rounds=True))
                     hit = next((e for e in board if e.get("player_id") == pid), None)
                     if hit:
                         print(f"      standings: rank {hit.get('rank')}  score {hit.get('score')}  "

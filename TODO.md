@@ -5,14 +5,11 @@ mid-session; check them back at the start of focused work.
 
 ## Open
 
-- **Repair experience-request division resolution against the current API**
-  (2026-08-21). The experience-request helper's `resolve --division ...` command
-  sends `include_recent_rounds=3`, which the live Emerg-ant
-  leaderboard route now rejects with HTTP 422; the companion active-memberships CLI
-  query returned `[]` despite three ranked players. Hosted evaluation remained
-  unblocked by resolving explicit policy labels through the stats endpoint. Reconcile
-  the current leaderboard query contract and membership semantics before relying on
-  automatic ranked-roster construction again.
+- **Platform fact-check follow-ups (2026-09-14):** exact league/version/membership selectors for the lifecycle monitor; explicit failed-attempt discovery for policy artifact collection; consistent `Retry-After` handling across shared clients. See [verified findings and remaining boundaries](docs/reports/platform-fact-check-2026-09-14.md). Current instructions identify the direct API alternatives. Reporter execution, arbitrary saved-state support and retention guarantees remain unverified; do not infer them from schema presence.
+
+- **Restore provenance before connecting behavioral miners** (2026-09-14 audit). Crewrift's retained feature/dimension tables join correctly but lack per-episode game versions and replay-coverage metadata. Heartleaf has no verified local warehouse and its existing guide records slot/version attribution limitations. Restore authoritative sidecars/report outputs, verify identity and a fixed observation window, then build the small adapters. Do not stamp guessed versions onto historical rows. See [audit](docs/reports/modernization-audit-2026-09-14.md).
+
+- **Authenticated integration readback** (2026-09-14 audit). Current artifact/roster routes were checked against public OpenAPI and regression fixtures, not an authenticated live request. On the next authorized evaluation, record resolver participants, artifact coverage/exit status and game-parser output before treating that batch as complete evidence.
 
 - **Paintbot: game-pin review** (2026-08-14; gap re-measured 2026-08-29).
   Build pin is 0.7.215/`6c7a4c0e`; canonical deployed has advanced to
@@ -408,6 +405,8 @@ mid-session; check them back at the start of focused work.
   whether to commit/PR them upstream or discard.
 
 ## Done
+
+- **Shared optimization modernization (2026-09-14):** repaired boolean leaderboard resolution and exact-version lookups, migrated artifact discovery/download routes, corrected completion/retry accounting, added Paintbot episode-level comparison, consolidated learning hooks and linked workflow/tool records. [Audit and validation](docs/reports/modernization-audit-2026-09-14.md). Live leagues/player behavior were not changed.
 
 - **RESOLVED 2026-08-08: expose action-stall and retained-control release reasons.**
   `vanilla-wow:0.1.208` announces typed `stalls`, `rejected_requests`, and

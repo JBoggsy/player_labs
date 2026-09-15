@@ -9,11 +9,7 @@ game-agnostic skills. This file is the **Heartleaf-specific layer** on top of it
 the game, the docs, the practices/preferences, and the policies we optimize. When
 the two disagree, the root defines *process*; this file defines *Heartleaf*.
 
-> **Lab status (2026-07-06): just created — scaffolding only, no player yet.** The
-> game repo (`Metta-AI/coworld-heartleaf`) is cloned for reference; a live Observatory
-> league exists. **No player policy has been built or uploaded.** The immediate next
-> step is human-directed: pick a build path (below) and start the loop. Live state:
-> [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
+> **Repository status (audited 2026-09-14):** [Cady](cady/) is implemented. Use [working context](WORKING_CONTEXT.md) for the handoff and the [event warehouse](.claude/skills/heartleaf-event-warehouse/SKILL.md) for structured analysis. Re-resolve live policy/game versions before operations.
 
 ## What Heartleaf is
 
@@ -49,9 +45,7 @@ human gate → submit) runs **unchanged** here. The Heartleaf-specific instrumen
   across the ~9 days, and whether the policy fails to *host* vs. hosts but attracts no
   guests).
 - **Report** (step 2) — pull artifacts with the game-agnostic `coworld-episode-artifacts`
-  skill, then distill. **There is no Heartleaf-specific report skill yet** — see
-  [Skills](#skills); building one (a per-day host/guest/score survey) is the
-  highest-leverage tooling investment for this lab once episodes exist.
+  skill, then use the [event warehouse](.claude/skills/heartleaf-event-warehouse/SKILL.md) and [replay tools](tools/). A purpose-built narrative survey remains distinct from the existing warehouse.
 - **Implement** (step 4) — change the policy under optimization (see
   [Player build paths](#player-build-paths)); keep tunable knobs (food thresholds, hosting
   schedule, invitation policy) in a config layer separate from logic so each iteration is

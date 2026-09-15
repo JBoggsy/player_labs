@@ -9,6 +9,8 @@ This README is the **front door**: what the lab is, how it's laid out, and how t
 set up. It's written for both the humans working here and the coding agents that do
 most of the building.
 
+> **Platform contracts → [verified reference](docs/platform-reference.md).** Credits, API limits, visibility, completion and runtime facts, with dated evidence.
+
 > **Operating model → [`AGENTS.md`](AGENTS.md).** How the improvement loop actually
 > runs (the human sets strategic direction; the agent builds observability, measures,
 > and ships iterations fast — speed over caution), plus the skills index and the
@@ -65,9 +67,8 @@ drive the mechanical halves of the loop:
   After `create`, the default is to **stream** the results (below), not wait.
 - **`coworld-episode-artifacts`** — download episodes' replays, results, and logs —
   one-shot for finished batches, or **streamed live** (`--watch`) while a batch runs.
-- **`coworld-local-run`** — run your built policy locally (debugging tool only —
-  not part of the standard loop).
-- **`coworld-policy-lifecycle`** — upload a new version → (gated) submit → monitor.
+- **`coworld-local-run`** — run your built policy locally (focused debugging/mechanism checks and own-policy self-play; no routine upload gate).
+- **`coworld-policy-lifecycle`** — (gated) submit an uploaded version → monitor.
 - **`build-and-upload`** — build a player image and upload it as a new policy version;
   the routine, inert, every-iteration action. Uploading enters no competition.
 - **`coworld-experiment`** — design + run **one** falsifiable hypothesis test (design →
@@ -91,14 +92,7 @@ in [`AGENTS.md`](AGENTS.md).
 it walks you (and your coding agent) through authentication, picking a player to work
 on, your first evaluation, and your first improvement, step by step.
 
-> **Coding agents:** if this is your first time in this repo — or
-> [`crewrift_lab/WORKING_CONTEXT.md`](crewrift_lab/WORKING_CONTEXT.md) has **no current
-> objective naming an active policy** — start with
-> [`docs/getting-started.md`](docs/getting-started.md). Step 2 records the chosen policy
-> there, so a recorded objective is the signal that onboarding is already done and you
-> should resume the loop (see [`AGENTS.md`](AGENTS.md)) instead. As you work, that file
-> holds the live working context, and [`crewrift_lab/TENTATIVE_LESSONS.md`](crewrift_lab/TENTATIVE_LESSONS.md)
-> collects candidate lessons — both described in [`crewrift_lab/AGENTS.md`](crewrift_lab/AGENTS.md).
+> **Coding agents:** choose the relevant lab, read its AGENTS and WORKING_CONTEXT, and verify that the recorded objective still applies. A dated context snapshot is not a new instruction. Start onboarding when no current policy/objective has been chosen.
 
 **Pointing a new user here?** [`docs/starter-prompt.md`](docs/starter-prompt.md) is a
 copy-paste prompt they can hand to their own coding agent to fork & clone the repo and
@@ -113,7 +107,6 @@ work in — the guided onboarding sets that up.) TL;DR if you just want the comm
 ```sh
 uv sync                                          # .venv: coworld[auth] + the SDK + deps
 uv run softmax login && uv run softmax status    # auth to Observatory — expect "Authenticated"
-uv run pytest crewrift_lab/crewrift/crewborg/tests   # verify the install (should pass)
 ```
 
 The guided onboarding above ([`docs/getting-started.md`](docs/getting-started.md)) takes
@@ -125,27 +118,12 @@ upload → run an experience request → report + diagnose. After that you're in
 ## Ground rules
 
 - **Upload freely, submit rarely** — uploading a policy version is routine; submitting
-  to a league is the irreversible, champion-making action (the human's gate).
+  to a league is consequential and requires explicit human authorization.
 - **Build `--platform=linux/amd64`** — the cluster is amd64; on Apple Silicon images
   build under emulation (the build tools handle this).
-- **The SDK is imported, not vendored** — vendored players are forks *in this repo*,
-  free to drift; `players.player_sdk` is imported from the public **`Metta-AI/coworld-tools`**
-  monorepo (the `players` repo moved there as the `players/` subdirectory; the old repo is
-  archived). Both the hosted image and local `uv` install it from the coworld-tools **archive
-  tarball** (`pyproject.toml` `[tool.uv.sources]`, with the `[bedrock]` extra) — a tarball, not
-  a git source, because a GitHub archive excludes submodules and so sidesteps coworld-tools'
-  broken `co-gas` submodule that breaks uv's recursive clone (issue #13). `uv.lock` pins the
-  exact tarball SHA for reproducible installs; to adopt a newer SDK, bump that SHA (in
-  `pyproject.toml` + `crewrift_lab/tools/versions.env`) and `uv lock` (a tarball can't
-  auto-track `main`). **These two are currently DIVERGED (2026-08-07):** `pyproject.toml`
-  is on `4dd923d` (needed for paintbot — earlier revisions clamped Sprite-v1 input masks
-  to `0x7f` and dropped Button C), while `PLAYERS_SDK_REF` stays on `e8921a6` so crewborg's
-  image is not rebuilt against an untested SDK. Local `uv` and the crewborg image therefore
-  run different SDKs until someone rebuilds and retests crewborg. The **game** ref
-  (`CREWRIFT_REF`) stays deliberately pinned — it must match the deployed league game, not
-  latest (see `crewrift_lab/tools/versions.env`).
-- The Coworld platform contract (PLAYER.md/GAME.md, runner) lives in the `metta` repo
-  if you need to consult it — **read-only; never write to a `metta` checkout.**
+- **Player source and SDK versions have separate ownership.** Vendored players live in their game labs; the shared SDK is imported through [pyproject.toml](pyproject.toml) and locked by `uv.lock`. Per-player images may pin a different SDK in their own build configuration. Inspect both before claiming local/hosted parity; changing a live player's SDK is a separate behavioral validation task.
+- The Coworld runtime contract lives in the `Metta-AI/coworld` repository; Observatory backend behavior lives in `Metta-AI/metta`
+  when you need implementation evidence. **Do not modify `~/coding/metta`; authorized Metta changes use a separate checkout.**
 
 ## Where to go next
 
@@ -155,4 +133,11 @@ upload → run an experience request → report + diagnose. After that you're in
 - [`docs/player-engineering.md`](docs/player-engineering.md) — how to design what goes
   *inside* one: architecture selection, robustness, navigation.
 - [`TODO.md`](TODO.md) — parked work.
-</content>
+
+
+## Tool and learning navigation
+
+- [Capability map](docs/capabilities.md)
+- [Choosing/building tools](docs/tooling.md)
+- [Learning and experiment records](docs/learning.md)
+- [September transcript review](docs/reports/learning-review-2026-09-14.md)

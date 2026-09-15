@@ -102,8 +102,16 @@ def cmd_resolve(args: argparse.Namespace) -> int:
         sys.exit("resolve needs --policy NAME or --division DIV_ID")
     with observatory_client(args.server) as client:
         if args.policy:
-            rows = get_json(client, "/stats/policy-versions", name_exact=args.policy, limit=100)
-            rows = rows.get("entries", rows) if isinstance(rows, dict) else rows
+            rows = []
+            params = {"name_exact": args.policy, "limit": 100}
+            if args.version is not None:
+                params["version"] = args.version
+            while True:
+                payload = get_json(client, "/stats/policy-versions", **params)
+                rows.extend(payload["entries"])
+                if not payload.get("next_cursor"):
+                    break
+                params["cursor"] = payload["next_cursor"]
             pvs = [
                 {"policy_version_id": r["id"], "version": r.get("version"), "policy_id": r.get("policy_id")}
                 for r in rows
@@ -114,43 +122,43 @@ def cmd_resolve(args: argparse.Namespace) -> int:
             emit({"policy": args.policy, "versions": pvs})
             return 0
 
-        # --division: rank the leaderboard, join to active runnable memberships
+        # The primary leaderboard publishes an exact policy label. Resolve that
+        # label, not a separate membership listing that can describe another era.
         leaderboard = get_json(
-            client, f"/v2/divisions/{args.division}/leaderboard", include_recent_rounds=args.include_recent_rounds
+            client, f"/v2/divisions/{args.division}/leaderboard", include_recent_rounds=False
         )
-        memberships = get_json(
-            client, "/v2/league-policy-memberships", division_id=args.division, active_only=True, limit=1000
-        )
-        by_player: dict[str, list[dict[str, Any]]] = {}
-        for m in memberships or []:
-            pid = (m.get("player") or {}).get("id")
-            if pid:
-                by_player.setdefault(pid, []).append(m)
-
-        def msort(m: dict[str, Any]) -> tuple[bool, str]:
-            return (m.get("end_time") is None, m.get("start_time") or m.get("created_at") or "")
-
-        excl_names = set(args.exclude_policy_name or [])
+        excluded = set(args.exclude_policy_name or [])
         opponents: list[dict[str, Any]] = []
-        for entry in (leaderboard or []):
-            pid = entry.get("player_id")
-            cands = sorted(by_player.get(pid, []), key=msort, reverse=True)
-            if not cands:
+        unresolved: list[str] = []
+        for entry in sorted(leaderboard or [], key=lambda row: row["rank"]):
+            label = entry.get("policy_label") or ""
+            name, separator, version_text = label.rpartition(":v")
+            if not separator or not version_text.isdigit():
+                unresolved.append(f"rank {entry['rank']}: no exact policy label")
                 continue
-            pv = cands[0].get("policy_version") or {}
-            pname = (pv.get("policy") or {}).get("name")
-            if pname in excl_names:
+            if name in excluded:
+                continue
+            versions = get_json(client, "/stats/policy-versions", name_exact=name, version=int(version_text), limit=100)
+            versions = versions.get("entries", versions) if isinstance(versions, dict) else versions
+            matches = [v for v in versions if v.get("version") == int(version_text)]
+            if len(matches) != 1:
+                unresolved.append(f"{label}: expected one exact policy version, got {len(matches)}")
                 continue
             opponents.append({
-                "rank": entry.get("rank"),
-                "player_name": entry.get("player_name") or (cands[0].get("player") or {}).get("name"),
-                "policy_name": pname,
-                "version": pv.get("version"),
-                "policy_version_id": pv.get("id"),
+                "rank": entry["rank"], "player_name": entry.get("player_name"),
+                "policy_name": name, "version": int(version_text),
+                "policy_version_id": matches[0]["id"], "policy_ref": label,
                 "leaderboard_score": entry.get("score"),
             })
             if args.top and len(opponents) >= args.top:
                 break
+        if args.top and len(opponents) < args.top:
+            unresolved.append(f"requested {args.top} opponents, resolved {len(opponents)}")
+        if not opponents:
+            unresolved.append("leaderboard has no resolvable eligible policies")
+        if unresolved:
+            raise SystemExit("Roster resolution incomplete; do not silently shrink the field:\n" + "\n".join(unresolved))
+
         emit({"division": args.division, "opponents": opponents})
         return 0
 
@@ -283,12 +291,15 @@ def cmd_create(args: argparse.Namespace) -> int:
 
         r = client.post("/v2/experience-requests", json=payload, timeout=120.0)
         if r.status_code < 400:
-            xreq = r.json()["id"]
+            created = r.json()
+            xreq = created["id"]
+            cost_preview = created.get("cost_preview")
         else:
             # Known create-then-replica-read race: a 404 can still name the request.
             m = re.search(r"(xreq_[0-9a-f-]{36})", r.text)
             if r.status_code == 404 and m:
                 xreq = m.group(1)
+                cost_preview = None
             else:
                 sys.exit(f"Create failed HTTP {r.status_code}: {r.text}")
 
@@ -302,9 +313,9 @@ def cmd_create(args: argparse.Namespace) -> int:
             time.sleep(0.5)
         if detail is None:
             log(f"Created {xreq} but readback did not resolve; check `monitor {xreq}`.")
-            emit({"id": xreq, "readback": "pending"})
+            emit({"id": xreq, "readback": "pending", "cost_preview": cost_preview})
             return 0
-    emit(_summary(detail))
+    emit({**_summary(detail), "cost_preview": cost_preview})
     return 0
 
 
@@ -327,9 +338,15 @@ def _summary(detail: dict[str, Any]) -> dict[str, Any]:
 
 
 def _terminal(d: dict[str, Any]) -> bool:
+    # A failed/cancelled parent can still have children executing or cancelling.
     total = d.get("episode_count") or 0
-    done = (d.get("completed_count") or 0) + (d.get("failed_count") or 0)
-    return total > 0 and done >= total
+    if any(d.get(key, 0) for key in ("pending_count", "submitted_count", "running_count")):
+        return False
+    episodes = d.get("episodes") or []
+    if len(episodes) == total and total > 0:
+        return all(row.get("status") in {"completed", "failed", "cancelled"} for row in episodes)
+    finished = (d.get("completed_count") or 0) + (d.get("failed_count") or 0)
+    return total > 0 and finished >= total
 
 
 def cmd_monitor(args: argparse.Namespace) -> int:
@@ -360,7 +377,6 @@ def main(argv: list[str] | None = None) -> int:
     pr.add_argument("--division", help="Division id -> ranked active opponents.")
     pr.add_argument("--top", type=int, default=None, help="With --division: keep the top N ranked opponents.")
     pr.add_argument("--exclude-policy-name", action="append", help="Drop these policy names from opponents.")
-    pr.add_argument("--include-recent-rounds", type=int, default=3, help="Leaderboard recency window.")
     pr.set_defaults(func=cmd_resolve)
 
     pc = sub.add_parser("create", help="Validate + POST a request body, read it back.")

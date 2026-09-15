@@ -1,6 +1,6 @@
-"""CTF event warehouse — a policy-indexed DuckDB/Parquet dataset of gameplay events.
+"""Paintbot event warehouse — a policy-indexed DuckDB/Parquet dataset of gameplay events.
 
-The lean CTF analogue of Crewrift's warehouse (one file, not two packages): it turns a
+The inherited CTF-based analogue of Crewrift's warehouse (one file, not two packages): it turns a
 set of episode artifact dirs into a queryable store so you can ask cross-episode,
 by-policy, by-team, by-role questions in SQL — e.g. "what fraction of flag steals get
 delivered", "where do carriers die on the return", "is the escort actually near the
@@ -13,6 +13,12 @@ carrier". Two event feeds, both re-keyed from episode *slot* to
   * **beacon trace events** (belief/decision side) — from beacon's per-episode trace
     (the `jsonl@artifact` member, or the folded `CTF_DIAG` policy log): snapshot /
     objective / alive / engage, with the full belief payload.
+
+Outcome normalization supports two/four-team Paintbot results. The Beacon trace
+parser below remains format-specific; use Stencil viewer tools for Stencil traces.
+Role columns are retained as null: team/seat alone does not establish a role.
+Invalid identity or contradictory outcomes abort the build so exclusions cannot
+silently change the evidence cohort; repair or explicitly exclude that input.
 
 Tables written (DuckDB `warehouse.duckdb` + one Parquet per table):
   * ``episodes``     — one row per episode (ids, coworld version, winner, per-team score)
@@ -54,97 +60,82 @@ def log(msg: str) -> None:
 # --------------------------------------------------------------------------- #
 # Slot -> identity resolution (the re-keying that makes cross-episode queries work)
 # --------------------------------------------------------------------------- #
-def _team_for_slot(slot: int) -> str:
-    return "red" if slot % 2 == 0 else "blue"
-
-
-def _seat_for_slot(slot: int) -> int:
-    return slot // 2
-
-
-def _role_for_seat(seat: int, defender_count: int) -> str:
-    return "defender" if seat < defender_count else "attacker"
-
-
 def _load_episode_meta(ep_dir: Path) -> dict[str, Any] | None:
-    """Read episode.json + results.json into a normalized per-slot identity table."""
-    ep_path = ep_dir / "episode.json"
-    res_path = ep_dir / "results.json"
+    """Normalize completed artifact outcomes without inferring teams from slot parity."""
+    ep_path, res_path = ep_dir / "episode.json", ep_dir / "results.json"
     if not ep_path.exists():
         return None
     episode = json.loads(ep_path.read_text())
     results = json.loads(res_path.read_text()) if res_path.exists() else {}
-
-    participants = episode.get("participants", [])
+    eid = episode.get("id") or ep_dir.name
+    participants = episode.get("participants") or []
     if not participants:
-        # League episodes carry identity as policy_results (one entry per policy,
-        # agents[].agent_id = slot) instead of the xreq-style participants list.
-        participants = [
-            {
-                "position": agent.get("agent_id"),
-                "policy_name": (pr.get("policy") or {}).get("name"),
-                "version": (pr.get("policy") or {}).get("version"),
-                "policy_version_id": (pr.get("policy") or {}).get("id"),
-                "player_name": None,
-            }
-            for pr in episode.get("policy_results", [])
-            for agent in pr.get("agents", [])
-        ]
-    scores = results.get("scores", [])
-    wins = results.get("win", [])
-    teams_res = results.get("team", [])
-    kills = results.get("kills", [])
-    deaths = results.get("deaths", [])
-    captures = results.get("captures", [])
-
-    # Guess DEFENDER_COUNT only to label beacon's roles; other policies get role=None.
-    # beacon:v2-v4 => 5 defenders, v5 => 3. Resolve per-participant from its version.
-    slot_rows: list[dict[str, Any]] = []
-    for p in participants:
-        slot = p.get("position", 0)
-        policy = p.get("policy_name")
-        version = p.get("version")
-        defender_count = _beacon_defender_count(policy, version)
-        seat = _seat_for_slot(slot)
-        slot_rows.append({
-            "episode_id": episode.get("id"),
-            "slot": slot,
-            "policy_name": policy,
-            "policy_version": version,
-            "policy_version_id": p.get("policy_version_id"),
-            "player_name": p.get("player_name"),
-            "team": teams_res[slot] if slot < len(teams_res) else _team_for_slot(slot),
-            "seat": seat,
-            "role": _role_for_seat(seat, defender_count) if defender_count is not None else None,
-            "score": scores[slot] if slot < len(scores) else None,
-            "win": wins[slot] if slot < len(wins) else None,
-            "kills": kills[slot] if slot < len(kills) else None,
-            "deaths": deaths[slot] if slot < len(deaths) else None,
-            "captures": captures[slot] if slot < len(captures) else None,
-        })
-
-    red_score = sum(r["score"] or 0 for r in slot_rows if r["team"] == "red")
-    blue_score = sum(r["score"] or 0 for r in slot_rows if r["team"] == "blue")
-    winner = "red" if red_score > blue_score else "blue" if blue_score > red_score else "draw"
+        participants = []
+        for entry in episode.get("policy_results") or []:
+            policy = entry.get("policy") or {}
+            positions = ([entry["position"]] if entry.get("position") is not None else
+                         [agent["agent_id"] for agent in entry.get("agents") or []])
+            participants.extend({
+                "position": slot, "policy_name": policy.get("name"),
+                "version": policy.get("version"), "policy_version_id": policy.get("id"),
+            } for slot in positions)
+    config_slots = (episode.get("game_config") or {}).get("slots") or []
+    teams = results.get("team") or [slot.get("team") for slot in config_slots]
+    if config_slots and teams != [slot.get("team") for slot in config_slots]:
+        raise ValueError(f"{eid}: results team order differs from game_config.slots")
+    rows = []
+    seen = set()
+    for participant in participants:
+        slot = participant["position"]
+        if not isinstance(slot, int) or slot < 0 or slot in seen:
+            raise ValueError(f"{eid}: invalid or duplicate participant slot {slot}")
+        seen.add(slot)
+        team = teams[slot] if slot < len(teams) else None
+        row = {
+            "episode_id": eid, "slot": slot,
+            "policy_name": participant.get("policy_name"),
+            "policy_version": participant.get("version"),
+            "policy_version_id": participant.get("policy_version_id"),
+            "player_name": participant.get("player_name"),
+            "team": team,
+            "seat": sum(value == team for value in teams[:slot]) if team is not None else None,
+            "role": None,
+        }
+        for output, source in [("score", "scores"), ("win", "win"), ("kills", "kills"),
+                               ("deaths", "deaths"), ("captures", "captures")]:
+            values = results.get(source) or []
+            row[output] = values[slot] if slot < len(values) else None
+        rows.append(row)
+    wins = results.get("win") or []
+    complete = (episode.get("status") == "completed" and not episode.get("error_type")
+                and episode.get("failed_policy_index") is None
+                and episode.get("failed_agent_index") is None
+                and not any(results.get("connect_timeout") or [])
+                and not any(results.get("disconnect_timeout") or []))
+    have_outcome = (complete and len(wins) == len(teams) and bool(teams)
+                    and all(win in (True, False) for win in wins)
+                    and all(team in {"red", "blue", "green", "yellow"} for team in teams))
+    winner = None
+    if have_outcome:
+        winning_teams = {team for team, win in zip(teams, wins) if win}
+        if len(winning_teams) > 1 or any(
+            len({win for team, win in zip(teams, wins) if team == color}) != 1
+            for color in set(teams)
+        ):
+            raise ValueError(f"{eid}: contradictory team win flags")
+        winner = next(iter(winning_teams), "draw")
     ep_row = {
-        "episode_id": episode.get("id"),
-        "round_id": episode.get("round_id"),
+        "episode_id": eid, "round_id": episode.get("round_id"),
         "coworld_version": episode.get("coworld_version"),
-        "status": episode.get("status"),
-        "job_id": episode.get("job_id"),
-        "winner": winner,
-        "red_score": red_score,
-        "blue_score": blue_score,
-        "n_participants": len(slot_rows),
+        "status": episode.get("status"), "job_id": episode.get("job_id"),
+        "winner": winner, "n_participants": len(rows),
     }
-    return {"episode": ep_row, "slots": slot_rows}
-
-
-def _beacon_defender_count(policy: str | None, version: int | None) -> int | None:
-    """beacon's DEFENDER_COUNT by version (for role labelling). None for non-beacon."""
-    if policy != "beacon" or version is None:
-        return None
-    return 3 if version >= 5 else 5  # v5 shifted 5->3
+    for color in ("red", "blue", "green", "yellow"):
+        values = [row["score"] for row in rows if row["team"] == color]
+        ep_row[f"{color}_score"] = (
+            sum(values) if values and all(value is not None for value in values) else None
+        )
+    return {"episode": ep_row, "slots": rows}
 
 
 # --------------------------------------------------------------------------- #

@@ -48,11 +48,17 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--name", required=True)
     args = ap.parse_args(argv)
     with client() as c:
-        r = c.get("/stats/policy-versions", params={"mine": True, "name_exact": args.name, "limit": 100})
-        r.raise_for_status()
-        vs = [{"version": v.get("version"),
-               "policy_version_id": v.get("id") or v.get("policy_version_id"),
-               "created_at": v.get("created_at")} for v in rows(r.json())]
+        vs = []
+        params = {"mine": True, "name_exact": args.name, "limit": 100}
+        while True:
+            r = c.get("/stats/policy-versions", params=params)
+            r.raise_for_status()
+            payload = r.json()
+            vs.extend({"version": v.get("version"), "policy_version_id": v["id"],
+                       "created_at": v.get("created_at")} for v in payload["entries"])
+            if not payload.get("next_cursor"):
+                break
+            params["cursor"] = payload["next_cursor"]
     vs.sort(key=lambda v: (v["version"] or -1), reverse=True)
     print(f"{args.name}: {len(vs)} uploaded version(s)")
     for v in vs:

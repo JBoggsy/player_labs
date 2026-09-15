@@ -1,88 +1,33 @@
-# Local-run CLI reference
+# Local execution reference
 
-Exact behaviour of the `coworld` commands this skill uses (source `Metta-AI/metta`:
-`packages/coworld/src/coworld/`, and `coworld <cmd> --help`). **Re-verified 2026-06-27:**
-`download`/`run-episode`/`replay`/`play` all present; since the original 0.1.20 pass
-`run-episode` **gained** `-n/--episodes`, `--variant`, and `--use-bedrock`/`--aws-*`.
-Re-check with `--help` if a flag seems off — the CLI ships ahead of the metta checkout.
-There is no `--version` flag; `uv pip show coworld`.
+Checked with project-local `coworld 0.1.47` help and the official [packaging guide](https://docs.softmax.com/coworld/build-a-player/package-and-verify), [runtime guide](https://docs.softmax.com/coworld/build-a-coworld/player-runtimes), and [replay guide](https://docs.softmax.com/coworld/advanced/replays), 2026-09-14. No local games were run in the platform audit.
 
-## `coworld download <ref> [-o DIR=./coworld] [--server] [--refresh]`
+Use local runs for debugging, mechanism/parity evidence and own-policy self-play. The lab's no-routine-smoke-gate rule is a preference, not a platform limitation.
 
-- `<ref>` = a `cow_…` id (stable; no auth) **or** a Coworld **name** (resolved to the
-  current canonical version; **needs `softmax login`**). Names are not stable.
-- Produces under `./coworld/<cow_id>/`: `coworld_manifest.json` (every `image` field
-  rewritten to a **local** docker tag like `coworld/<slug>/<name>-<ver>-<i>:downloaded`),
-  `coworld_images.json` (public→local tag map), and a canned `AGENTS.md`.
-- Side effect: `docker pull` + `docker tag` each referenced image → needs **Docker +
-  network**. Idempotent: skips re-pull if manifest+images JSON exist and no `--refresh`.
+## Download
 
-## `coworld run-episode <manifest> [PLAYER_IMAGE...] [--run TOK]... [-o DIR] [-n EPISODES] [--variant ID] [--timeout-seconds 3600] [--verify-replay] [--use-bedrock] [--aws-profile P] [--aws-region R] [--secret-env K=V]... [--server]`
+`coworld download REF --output-dir DIR [--refresh]` resolves a Coworld ID or canonical name and downloads its package/images. Names can resolve to newer versions; pin the episode's ID for reproduction. Download can pull/tag Docker images, so it is not merely a metadata query. Use the API manifest route when only inspecting configuration.
 
-- `<manifest>` = a path, URL, or bare `cow_…` (auto-downloads+caches if absent).
-- **Positional player image(s)** are how you run *your* policy:
-  - **one image** → reused for every slot (self-play); **N images** → one per slot (must
-    be exactly 1 or slot-count).
-  - **zero images** → the manifest's **certification (reference) players** run — the
-    *silent fallback*; your change is not under test.
-  - `--run` (repeatable, one token per flag, e.g. `--run python --run -m --run mod`)
-    overrides the container argv for the supplied image(s); **it requires at least one
-    image positional** (`--run` alone errors).
-- Default config = the manifest's `certification.game_config` — deliberately
-  tiny/degenerate (a "package smoke test, not a benchmark"); **a 0 score is not a
-  failure**. For a fuller game headlessly, pass **`--variant <id>`** (added to
-  `run-episode` since 0.1.20 — it used to be `play`-only), or supply an
-  `episode_request.json` positional with the variant's `game_config`.
-- **`-n/--episodes N`** runs N local episodes back-to-back in one invocation (added since
-  0.1.20) — use it to confirm the player is **stable across repeated games** (catches an
-  intermittent crash / connect-race / timeout that a single smoke would miss). Still
-  self-play on the local config, so it is **not** a competitive measure — that's experience
-  requests.
-- **`--use-bedrock` [`--aws-profile P` / `--aws-region R`]** smoke-tests the LLM path
-  locally with **your own** AWS creds — there is **no sidecar locally**, so it proves the
-  code can call Bedrock but **not** that the hosted upload is correct (the hosted sidecar
-  contract is the [Bedrock section of `coworld-platform.md`](../../../../crewrift_lab/docs/coworld-platform.md#bedrock--in-pod-llm)).
-- **Output dir** = `--output-dir` if given, else `./coworld/<cow_id>/results` for a
-  downloaded coworld, else `<manifest_dir>/results`. Writes: `config.json`,
-  `results.json` (validated vs `game.results_schema`; has a `scores` array),
-  **`replay`** (raw bytes, *no extension*), `logs/game.stdout.log`,
-  `logs/game.stderr.log`, `logs/policy_agent_<slot>.log` (per player container).
-- **Success / crash detection (the pass/fail signal):** the CLI exits non-zero if the game
-  container exits non-zero, **any player container exits non-zero** ("did my player
-  crash"), health times out, the player token is rejected, or `results.json` fails
-  schema validation. Exit 0 + valid results + replay written = pass.
-- On finish it prints `Artifacts:/Results:/Replay:/Logs:` and a ready-to-paste
-  `Inspect replay: uv run coworld replay <manifest> <replay>`.
+## Run an episode
 
-## `coworld play <manifest> [PLAYER_IMAGE...] [--run TOK]... [--variant ID] [--open-browser/--no-open-browser] [-o DIR] [--server]`
+```bash
+uv run coworld run-episode path/to/coworld_manifest.json IMAGE \
+  --run python --run -m --run MODULE --episodes N --variant VARIANT \
+  --output-dir ./runs/local
+```
 
-- Same player-image / `--run` model as `run-episode`, plus `--variant <id>` to pick a
-  non-certification variant. Prints per-slot browser URLs + the global viewer + admin
-  client, opens the global viewer, and keeps the session alive until the game exits.
-- Skips the token-rejection / health probes and replay verification that `run-episode`
-  does. Use it to **watch live**; use `run-episode` for headless artifacts.
+For container policies, one supplied image is reused across slots; otherwise supply the required roster. Without overrides, bundled fixture players run, not your unlisted player. Repeated `--run` supplies argv. Inspect `--help` for current options rather than copying old monorepo CLI paths.
 
-## `coworld replay <manifest> <replay> [--open-browser/--no-open-browser] [--timeout-seconds 60] [--server]`
+For game-hosted policies, supply one file/directory per seat; a single file is **not** duplicated across seats. Files use the game's loader contract and no player environment. Container `--run`, secrets, local Bedrock flags and `coworld play` do not apply.
 
-- **Two positionals: manifest then replay file.** Boots the game image in replay mode
-  (`COGAME_LOAD_REPLAY_URI`), waits for `/healthz`, opens
-  `http://127.0.0.1:<port>/client/replay`. Game container only — no player containers.
-- (`coworld replay-open <episode_request_id> [--hosted]` is the counterpart for a
-  *stored* episode — fetches one game's replay by its episode-request id; `--hosted`
-  prints an Observatory viewer URL with no local Docker. Not for local runs.)
+Without a chosen variant, local execution normally uses the certification fixture; this is not necessarily the hosted competitive config. Multiple local episodes increment an existing integer game seed; do not assume that is how hosted XP chooses seeds. Inspect each run's config/results/logs and optional replay/artifacts. A process exit code alone does not prove useful gameplay or complete optional telemetry.
 
-## Gotchas
+## Play and replay
 
-- **linux/amd64 mandatory** (`runner.py` `_assert_linux_amd64_image`) for every game and
-  player image — arm64 aborts with the rebuild hint. Build `--platform linux/amd64`.
-- **`--run` / silent-fallback:** no positional image ⇒ reference player runs; `--run`
-  without an image ⇒ error.
-- **Game image must be local/pullable.** A manifest pointing at an unresolved backend id
-  (`img_<uuid>`) aborts telling you to `coworld download … --refresh`.
-- **Replay file is named `replay`** (no extension); `coworld replay` wants `<manifest>
-  <replay>` in that order.
-- **Local ≠ hosted:** local `run-episode` writes plain files only — no episode bundle,
-  no commissioner/reporter/grader, no zlib-compressed replay (those are hosted-only).
-- **Rotating ids:** `cow_…` is stable; a **name** resolves to whatever is canonical now,
-  landing artifacts under a new `./coworld/<new_id>/` when the canonical version changes.
-- A `coworld-local` Docker network is created/reused; first run may create it.
+`coworld play MANIFEST … --variant VARIANT` supports interactive platform-hosted play. `coworld replay MANIFEST REPLAY` uses the matching game container's viewer when the game does not declare a static viewer. `coworld replay-open ereq_… [--hosted]` opens a stored episode through its viewer; hosted session creation may allocate resources and is a separate action from reading existing replay bytes.
+
+Replay format and compression are game-owned; neither local nor hosted execution implies a universal JSON/zlib format. Use the episode's game version and declared viewer.
+
+## Model access
+
+Local `--use-bedrock` with `--aws-profile`/`--aws-region` uses supplied local credentials. It does not verify the hosted sidecar or upload settings. Follow the workspace's credential rules, never assume ambient credentials are authorized, and account for external provider charges. See [player build](../../../../player-build.md).

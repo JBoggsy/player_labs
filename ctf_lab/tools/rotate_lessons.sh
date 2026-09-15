@@ -89,12 +89,6 @@ else
   CTX="Fresh tentative-lessons buffer: ctf_lab/TENTATIVE_LESSONS.md (previous buffer was empty; nothing archived) — write candidate lessons there AS YOU GO."
 fi
 
-# Keep git tidy: commit the rotation if the tree allows it (best effort, never block).
-if [[ -n "$ARCHIVED" ]]; then
-  git -C "$REPO" add "$BUFFER" "$ARCHIVE_DIR" >/dev/null 2>&1 \
-    && git -C "$REPO" commit -q -m "lessons: rotate ctf session buffer -> lessons_archive/$ARCHIVED (SessionStart hook)" \
-       -- "$BUFFER" "$ARCHIVE_DIR" >/dev/null 2>&1 \
-    || true
-fi
+# Rotation stays uncommitted; the normal documentation audit precedes commits.
 
 emit_context "$CTX"

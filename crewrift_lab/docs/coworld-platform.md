@@ -1,4 +1,6 @@
-# Coworld Platform Contract (reference for crewborg)
+# Historical Coworld platform snapshot (Crewborg)
+
+> **Historical reference, not current operating instructions.** Current platform facts are in the [verified shared reference](../../docs/platform-reference.md) and [player build guide](../../player-build.md). This older snapshot includes obsolete monorepo paths and an InvokeModel-only limitation; the current documented Bedrock sidecar supports InvokeModel and Converse, including streaming. Game-specific historical evidence below is preserved; recheck it before use.
 
 The platform that Crewrift and **crewborg** run on. This is a focused reference
 for an agent optimizing crewborg: what a Coworld is, the player image contract

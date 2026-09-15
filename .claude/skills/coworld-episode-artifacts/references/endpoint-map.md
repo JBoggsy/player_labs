@@ -1,182 +1,37 @@
-# Observatory episode-artifact endpoint map
+# Episode artifact endpoints
 
-The authoritative live route list is always `<base>/openapi.json`. Read it when a
-route 4xxs — **the server moves faster than the published `coworld` client**, and
-this skew is the single most common cause of artifact-download breakage here.
+Routes checked against [current OpenAPI](https://softmax.com/api/observatory/openapi.json), 2026-09-14. Base: the authenticated API server's `/observatory` gateway.
 
-`<base>` defaults to the official gateway derived from your `softmax login`:
-`<api-server>/observatory` (today `https://softmax.com/api/observatory`). The same
-routes are also served directly at `https://api.observatory.softmax-research.net`
-(root, no `/observatory` segment); pass `--server` to switch.
-
-Auth: `X-Auth-Token: <token>` header. In Python use
-`softmax.auth.load_current_token(server=softmax.auth.get_api_server())` — **not**
-the removed `load_current_cogames_token(api_server=...)` (see "Drift" below).
-
-## The two episode populations
-
-| | League / tournament episodes | Experience-request episodes |
-| --- | --- | --- |
-| What | League round games (e.g. a Crewrift league) | Ad-hoc / commissioner-created hosted episodes |
-| Listed by | `/stats/policy-versions` → `/episodes?policy_version_id=` | `/v2/episode-requests` (by container) or `/v2/experience-requests/{xreq}/episodes` |
-| Id form | bare uuid (`/episodes/{uuid}`) | `ereq_...` |
-| Metadata record | `/episodes/{id}` → `replay_url`, `policy_results`, `game_stats`, `tags` | the row itself → `participants`, `scores`, `status`, `replay_url`, `game_config` |
-| `job_id` | in `tags.job_id` | top-level `job_id` field |
-
-They are **disjoint populations**: a league episode's `pool_id` returns **0** rows
-from `/v2/episode-requests?pool_id=`, and `coworld episodes --policy <league-player>`
-is empty. Don't try to cross them — discover each in its own world.
-
-## The universal artifact key: `job_id`
-
-Every episode in **both** worlds carries a `job_id`, and the job is the universal
-artifact handle. All artifacts come from these job routes (verified live 2026-06-08,
-for both a Crewrift league episode and an amongthem experience-request episode):
-
-| Route | Returns |
+| Purpose | Route |
 | --- | --- |
-| `GET /jobs/{job_id}/artifacts/results` | `results.json` (scores / metrics / win / per-agent) |
-| `GET /jobs/{job_id}/artifacts/replay` | replay bytes (zlib-compressed; magic `0x78`) |
-| `GET /jobs/{job_id}/artifacts/error_info` | `error_info.json` — **404 when absent** (valid type; present only on failure) |
-| `GET /jobs/{job_id}/policy-logs` | JSON list of filenames `["policy_agent_0.log", ...]` |
-| `GET /jobs/{job_id}/policy-logs/{agent_idx}` | one agent's stderr trace |
-| `GET /v2/episode-requests/{ereq_id}/artifacts/logs` | combined container/game stdout for an experience-request episode |
-| `GET /jobs/{job_id}/policy-artifact` | JSON list of **filenames** (`["policy_artifact_0.zip", ...]`), one per slot that uploaded — *not* bare slot ints; parse the index out |
-| `GET /jobs/{job_id}/policy-artifact/{agent_idx}` | one slot's `policy_artifact_{idx}.zip` (player-uploaded telemetry/debug bundle; **policy-scoped** — only slots you own) |
+| Request child rows | `/v2/experience-requests/{id}/episodes` |
+| Policy versions | `/stats/policy-versions?name_exact=…` (cursor pages, optional exact `version`) |
+| Recorded policy episodes | `/v2/policy-versions/{id}/episodes` (cursor pages); detail `/episodes/{id}` |
+| Explicit episode request | `/v2/episode-requests/{id}` |
+| Legacy job to request | `/v2/episode-requests/by-job/{job_id}` |
+| Round episodes | `/v2/rounds/{id}/episodes` (cursor pages) |
+| Division rounds | `/v2/rounds?division_id=…` (cursor pages) |
+| Results/replay/game logs/error | `/v2/episode-requests/{id}/artifacts/{type}` |
+| Accessible seat diagnostics listing | `/v2/episode-requests/{id}/policy-artifacts` |
+| Seat log | `/v2/episode-requests/{id}/{policy_version_id}/policy-logs/{position}` |
+| Seat ZIP | `/v2/episode-requests/{id}/{policy_version_id}/policy-artifact/{position}` |
 
-The replay decompresses (zlib) to the game's binary replay (e.g. magic
-`CREWRIFT...`) — the directly-loadable form. Keep the raw `.z` too.
+Artifact types include `results`, `replay`, `logs`, `error-info`, `spec`, `player-status`, `game-config`. The old `/jobs/...` and bare `/v2/episode-requests` listing are absent from the public schema; absence alone does not establish removal. The lab uses the verified v2 routes. Its pool-discovery mode is unsupported: choose a round, division or experience request. A `replay_url` is a watch link and must not be downloaded as replay bytes.
 
-### Dead ends (do not use)
-- `GET /v2/episode-requests/{ereq}/artifacts/{type}` — `logs` is supported and returns
-  combined container/game stdout; `game_logs` and `stats` still return **400 "Unknown artifact
-  type"**. Continue using `/jobs/{job_id}/...` for results and replay.
-- `GET /v2/experience-request-episodes...` — **gone** (renamed away ~2026-06; an
-  older `fetch_episodes.py` keyed logs off this and now fails here).
-- `coworld_id` / `job_id` / `episode_id` as query params on `/v2/episode-requests`
-  are **silently ignored** (not real filters). Only `pool_id`, `round_id`,
-  `division_id`, `player_id` filter server-side. A **bare** pool uuid 422s — the
-  value must carry the `pool_` prefix.
+## Coverage and resume
 
-## Discovery routes
+`episode.json` retains the discovery source row. Legacy jobs also save the resolved `episode_request.json`. Results and replay must exist when requested. `policy_logs_checked.json` and `policy_artifacts_checked.json` record the successful accessible listing; each advertised available file must exist. A partial ZIP/log failure does not mark that category complete. Empty accessible listings are valid but do not imply all opponents are visible. Combined game logs and error-info are optional diagnostics.
 
-```
-GET /stats/policy-versions?name_exact=<name>&limit=100      -> [{id, version, policy_id, ...}]
-GET /episodes?policy_version_id=<pv>&limit&offset           -> [episode record, ...]
-GET /episodes/{episode_id}                                  -> single league episode record
-GET /v2/episode-requests?pool_id=pool_<uuid>|round_id|division_id|player_id&limit&offset
-                                                           -> {entries, total_count, limit, offset}
-GET /v2/episode-requests/{ereq_id}                          -> single experience-request episode row
-GET /v2/experience-requests/{xreq_id}/episodes             -> [experience-request episode row, ...]
-GET /v2/experience-requests?mine&limit&offset              -> {entries, ...} (the xreq batteries, not episodes)
-```
+Watch mode checks that all child episodes are completed/failed/cancelled; the parent status alone is insufficient. Exhausted downloads return a nonzero exit status and remain visible in `index.json`; terminal is not equivalent to complete evidence. One-shot downloads also return nonzero when requested artifacts are incomplete. Older directories without the log coverage marker are checked again.
 
-## Episode search — the direct cross-population query (`POST /v2/episodes/search`)
+Use normal participant access. A 403 is a coverage limitation, never a reason to fetch private opponent intelligence with elevated privileges.
 
-The newest and often best discovery route: search episodes **directly** by a filter
-AST, across both populations, without walking containers. Verified live 2026-07-09.
+Validation: route/schema inspection, local regression tests, and a subsequent authenticated read-only download of an owned evaluation's results, replay, seat log and ZIP (2026-09-14). This sample does not establish universal artifact availability, viewer compatibility or a retention SLA. See the [fact-check evidence](../../../../docs/reports/platform-fact-check-2026-09-14.md).
 
-```
-GET  /v2/episodes/search/fields?coworld_name=<name>   -> [{field, type, operators, description}, ...]
-POST /v2/episodes/search  {where, order_by, order_dir, limit<=500, offset<=10000}
-                                                       -> {entries, total_count, limit, offset}
-```
+## Attempts, bundles and optional evidence
 
-`where` is a filter AST — composites `{op: and|or, clauses:[...]}` / `{op: not, clause}`;
-leaves `{op: eq|ne|gt|gte|lt|lte|in|like|ilike|exists|contains|includes|excludes,
-field, value}`. Queryable field paths (from `/search/fields`): `episode_id`, `created_at`,
-`replay_url`, `primary_pv_id`, `coworld.{id,name,version}`, `tag.<key>`,
-`policy.{version_id,name,version,player_id}`, `metric.<name>`, `results.<path>`,
-`attributes.<path>`. **`includes`/`excludes`** on `policy.version_id` take a LIST and mean
-"the episode includes all / none of these versions participated" — e.g. every episode a
-policy version played:
+Use `/v2/policy-versions/{id}/episode-requests` to find attempts, including ones without a recorded episode. The helper's policy discovery currently uses recorded `/episodes`; do not treat it as a failure-complete denominator. XP/round request rows retain failed attempts.
 
-```json
-{"op":"and","clauses":[
-  {"op":"eq","field":"coworld.name","value":"crewrift_prime"},
-  {"op":"includes","field":"policy.version_id","value":["<pv-uuid>"]}]}
-```
+`/v2/episode-requests/{id}/bundle` can package selected evidence; `include` supports `results,replay,events,error_info,game_logs,player_logs,player_artifact`. This is a schema/source-verified optional alternative, not exercised by the current downloader. Reporter output/trace routes are separate from raw game/player files.
 
-**Why this is the tool of choice for "find all episodes version X played":** it works
-even for uploaded-but-never-submitted versions (no league episodes) whose only history is
-experience-request episodes scattered across many xreqs. Returned rows carry INLINE
-`results` (per-seat `win`/`crew`/`imposter`/`kills`/`tasks`/`vote_*`/`names`, seat-aligned)
-and `tags.job_id`/`replay_url` — so a role-split **win-rate A/B needs zero artifact
-downloads**; only deeper metrics (LLM-firing gate, warehouses) need the job routes above.
-
-Two gotchas: (1) the row's `policies` list is **not** in seat order — map a seat via
-`results.names`, not list index. (2) If one account owns several policy *versions*, two of
-its seats in one episode both surface as `"<name>"` / `"<name> (2)"` in `results.names`,
-which cannot be mapped back to a version from the row — restrict to episodes where the
-account holds exactly one seat, or download the job's per-slot artifacts to disambiguate.
-
-## Discovery routes
-
-```
-GET /stats/policy-versions?name_exact=<name>&limit=100      -> [{id, version, policy_id, ...}]
-GET /episodes?policy_version_id=<pv>&limit&offset           -> [episode record, ...]
-GET /episodes/{episode_id}                                  -> single league episode record
-GET /v2/episode-requests?pool_id=pool_<uuid>|round_id|division_id|player_id&limit&offset
-                                                           -> {entries, total_count, limit, offset}
-GET /v2/episode-requests/{ereq_id}                          -> single experience-request episode row
-GET /v2/experience-requests/{xreq_id}/episodes             -> [experience-request episode row, ...]
-GET /v2/experience-requests?mine&limit&offset              -> {entries, ...} (the xreq batteries, not episodes)
-POST /v2/episodes/search                                    -> {entries, total_count, ...}  (see "Episode search" above)
-```
-
-`/episodes` and `/stats/policy-versions` return bare lists (the latter may also be
-`{entries:[...]}`). `/v2/episode-requests` is paginated as
-`{entries, total_count, limit, offset}` — `total_count` is the whole table
-(hundreds of thousands), so always filter by a container; never page it blindly.
-
-## Official `coworld` CLI equivalents (for interactive use)
-
-These work today against the live server (they hit `/v2/episode-requests` +
-`/jobs/{job_id}/...` under the hood) but only cover the experience-request world:
-
-```bash
-uv run coworld episodes --pool pool_... --json       # list ereq episodes
-uv run coworld replays  --round round_... --download-dir replays/
-uv run coworld episode-results ereq_... --output results.json
-uv run coworld episode-logs ereq_... --download-dir logs/
-uv run coworld replay <coworld_id> <replay_file>     # open a replay in the viewer
-```
-
-For league episodes by policy, and for bundling everything per episode in one
-pass, use this skill's `fetch_artifacts.py` instead.
-
-## Drift log (why this file exists)
-
-- **2026-08-08**: re-verified the typed artifact route live. `artifacts/logs` now returns
-  combined container/game stdout (including environment host telemetry); the older
-  `artifacts/game_logs` spelling still returns 400. The downloader now retains it as
-  `game_logs.log` alongside policy stderr.
-
-- **2026-07-09**: documented `POST /v2/episodes/search` + `GET /v2/episodes/search/fields`
-  (see "Episode search" above) — the direct filter-AST episode query, verified live. It is
-  the right tool for "all episodes version X played" (esp. uploaded-but-unsubmitted versions
-  with no league games), returns inline per-seat `results` so a win-rate A/B needs no
-  downloads, and supersedes walking xreq details for participant discovery. Also recorded the
-  two seat-mapping gotchas (policies list not seat-ordered; one account's multiple versions
-  collide in `results.names`).
-- **2026-06-27**: re-verified the discovery split live — `coworld episodes --policy crewborg`
-  returns `[]` (champion league player), while `/stats/policy-versions` → `/episodes` lists its
-  league games (the `fetch_artifacts.py --policy` path downloaded a current league episode). The
-  two-population model + the `job_id` artifact routes still hold.
-- **2026-06-10**: added the per-player artifact routes
-  (`/jobs/{job_id}/policy-artifact[/{agent_idx}]`) — players may upload one
-  telemetry/debug zip per slot to a runner-provided
-  `COWORLD_PLAYER_ARTIFACT_UPLOAD_URL` (metta #15290; player-side support in the
-  players SDK's `TraceOutputs`). **Verified live 2026-06-10** against crewborg v18
-  hosted episodes (after metta #15409 fixed the runner-image build so the upload
-  actually ships). Note the listing returns **filenames**, not slot ints.
-
-- **2026-06**: `/v2/episode-requests*` ↔ `/v2/experience-request*` churn; the
-  `/v2/experience-request-episodes` route was removed.
-- **~2026-06 (auth)**: `softmax.auth.load_current_cogames_token(api_server=...)` →
-  `softmax.auth.load_current_token(server=...)`. The old name is gone; tools that
-  still call it (e.g. an older `crewrift/crewborg/scripts/fetch_episodes.py`) fail at auth
-  until updated.
-
-When you hit drift: diff `<base>/openapi.json` against the routes above, fix the
-path, and add a dated line here.
+Replays are optional. If a game emits none, use `--no-replay` deliberately and report that limitation. The helper otherwise requires requested results/replay files and will mark terminal failures without them incomplete, even when that absence is expected. Never infer a storage TTL from missing artifacts.

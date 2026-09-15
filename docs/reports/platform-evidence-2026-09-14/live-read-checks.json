@@ -1,0 +1,887 @@
+[
+  {
+    "name": "identity",
+    "path": "/whoami",
+    "params": {},
+    "http": 200,
+    "headers": {
+      "x-complexity": "10",
+      "x-ratelimit-mode": "enforced",
+      "x-ratelimit-outcome": "allowed",
+      "x-ratelimit-requests-minute-limit": "2400",
+      "x-ratelimit-requests-hour-limit": "36000",
+      "x-ratelimit-complexity-minute-limit": "24000",
+      "x-ratelimit-complexity-hour-limit": "360000"
+    },
+    "shape": [
+      "user_email",
+      "name",
+      "is_softmax_team_member",
+      "is_softmax_admin",
+      "subject_type",
+      "subject_id",
+      "owner_user_id",
+      "scopes"
+    ],
+    "subject_type": "user",
+    "observation_window_utc": "2026-09-14T23:55:00Z\u20132026-09-14T23:56:00Z"
+  },
+  {
+    "name": "credits",
+    "path": "/usage/me/credits",
+    "params": {},
+    "http": 200,
+    "headers": {
+      "x-complexity": "10",
+      "x-ratelimit-mode": "enforced",
+      "x-ratelimit-outcome": "allowed",
+      "x-ratelimit-requests-minute-limit": "2400",
+      "x-ratelimit-requests-hour-limit": "36000",
+      "x-ratelimit-complexity-minute-limit": "24000",
+      "x-ratelimit-complexity-hour-limit": "360000"
+    },
+    "shape": [
+      "status",
+      "recent_requests"
+    ],
+    "schedule": {
+      "max_balance_credits": 20000.0,
+      "refill_credits": 1428.5714285714287,
+      "refill_cadence": "day",
+      "next_refill_at": "2026-09-15T00:00:00Z",
+      "credits_per_usd": 10.0,
+      "enforced": true
+    },
+    "observation_window_utc": "2026-09-14T23:55:00Z\u20132026-09-14T23:56:00Z"
+  },
+  {
+    "name": "leagues",
+    "path": "/v2/leagues",
+    "params": {},
+    "http": 200,
+    "headers": {
+      "x-complexity": "10",
+      "x-ratelimit-mode": "enforced",
+      "x-ratelimit-outcome": "allowed",
+      "x-ratelimit-requests-minute-limit": "2400",
+      "x-ratelimit-requests-hour-limit": "36000",
+      "x-ratelimit-complexity-minute-limit": "24000",
+      "x-ratelimit-complexity-hour-limit": "360000"
+    },
+    "shape": {
+      "array_length": 150,
+      "entry_fields": [
+        "name",
+        "short_name",
+        "description",
+        "commissioner_key",
+        "commissioner_config",
+        "commissioner_migration_version",
+        "rounds_paused_at",
+        "submissions_locked_at",
+        "settings",
+        "filler_policy_version_ids",
+        "seed_policy_version_ids",
+        "seed_policy_number",
+        "rules",
+        "public",
+        "hidden",
+        "is_game_of_week",
+        "disabled_at",
+        "notes",
+        "id",
+        "game",
+        "mod",
+        "created_at",
+        "participation_url",
+        "forum_markdown_url",
+        "wiki_markdown_url",
+        "logs_reporter_id",
+        "handicaps",
+        "handicap_dynamic"
+      ]
+    },
+    "observation_window_utc": "2026-09-14T23:55:00Z\u20132026-09-14T23:56:00Z"
+  },
+  {
+    "name": "divisions",
+    "path": "/v2/divisions",
+    "params": {},
+    "http": 200,
+    "headers": {
+      "x-complexity": "10",
+      "x-ratelimit-mode": "enforced",
+      "x-ratelimit-outcome": "allowed",
+      "x-ratelimit-requests-minute-limit": "2400",
+      "x-ratelimit-requests-hour-limit": "36000",
+      "x-ratelimit-complexity-minute-limit": "24000",
+      "x-ratelimit-complexity-hour-limit": "360000"
+    },
+    "shape": {
+      "array_length": 167,
+      "entry_fields": [
+        "id",
+        "name",
+        "level",
+        "type",
+        "description",
+        "hidden",
+        "archived_at",
+        "round_schedule",
+        "notes",
+        "league",
+        "created_at",
+        "commissioner_description"
+      ]
+    },
+    "observation_window_utc": "2026-09-14T23:55:00Z\u20132026-09-14T23:56:00Z"
+  },
+  {
+    "name": "versions",
+    "path": "/stats/policy-versions",
+    "params": {
+      "mine": "true",
+      "limit": 2
+    },
+    "http": 200,
+    "headers": {
+      "x-complexity": "10",
+      "x-ratelimit-mode": "enforced",
+      "x-ratelimit-outcome": "allowed",
+      "x-ratelimit-requests-minute-limit": "2400",
+      "x-ratelimit-requests-hour-limit": "36000",
+      "x-ratelimit-complexity-minute-limit": "24000",
+      "x-ratelimit-complexity-hour-limit": "360000"
+    },
+    "shape": [
+      "entries",
+      "next_cursor"
+    ],
+    "observation_window_utc": "2026-09-14T23:55:00Z\u20132026-09-14T23:56:00Z"
+  },
+  {
+    "name": "xrequests",
+    "path": "/v2/experience-requests",
+    "params": {
+      "mine": "true",
+      "limit": 3
+    },
+    "http": 200,
+    "headers": {
+      "x-complexity": "10",
+      "x-ratelimit-mode": "enforced",
+      "x-ratelimit-outcome": "allowed",
+      "x-ratelimit-requests-minute-limit": "2400",
+      "x-ratelimit-requests-hour-limit": "36000",
+      "x-ratelimit-complexity-minute-limit": "24000",
+      "x-ratelimit-complexity-hour-limit": "360000"
+    },
+    "shape": [
+      "entries",
+      "next_cursor"
+    ],
+    "observation_window_utc": "2026-09-14T23:55:00Z\u20132026-09-14T23:56:00Z"
+  },
+  {
+    "name": "memberships",
+    "path": "/v2/league-policy-memberships",
+    "params": {
+      "mine": "true",
+      "limit": 2
+    },
+    "http": 200,
+    "headers": {
+      "x-next-cursor": "present",
+      "x-complexity": "10",
+      "x-ratelimit-mode": "enforced",
+      "x-ratelimit-outcome": "allowed",
+      "x-ratelimit-requests-minute-limit": "2400",
+      "x-ratelimit-requests-hour-limit": "36000",
+      "x-ratelimit-complexity-minute-limit": "24000",
+      "x-ratelimit-complexity-hour-limit": "360000"
+    },
+    "shape": {
+      "array_length": 2,
+      "entry_fields": [
+        "status",
+        "substatus",
+        "is_champion",
+        "start_time",
+        "end_time",
+        "notes",
+        "id",
+        "league",
+        "division",
+        "policy_version",
+        "player",
+        "created_at"
+      ]
+    },
+    "observation_window_utc": "2026-09-14T23:55:00Z\u20132026-09-14T23:56:00Z"
+  },
+  {
+    "name": "submissions",
+    "path": "/v2/league-submissions",
+    "params": {
+      "mine": "true",
+      "limit": 2
+    },
+    "http": 200,
+    "headers": {
+      "x-next-cursor": "present",
+      "x-complexity": "10",
+      "x-ratelimit-mode": "enforced",
+      "x-ratelimit-outcome": "allowed",
+      "x-ratelimit-requests-minute-limit": "2400",
+      "x-ratelimit-requests-hour-limit": "36000",
+      "x-ratelimit-complexity-minute-limit": "24000",
+      "x-ratelimit-complexity-hour-limit": "360000"
+    },
+    "shape": {
+      "array_length": 2,
+      "entry_fields": [
+        "auto_champion",
+        "preferences",
+        "notes",
+        "id",
+        "status",
+        "league",
+        "policy_version",
+        "player",
+        "league_policy_membership_id",
+        "created_at"
+      ]
+    },
+    "observation_window_utc": "2026-09-14T23:55:00Z\u20132026-09-14T23:56:00Z"
+  },
+  {
+    "label": "anonymous identity",
+    "path": "/whoami",
+    "params": null,
+    "identity": "anonymous",
+    "utc": "2026-09-14T23:56:10.047633+00:00",
+    "http": 200,
+    "content_type": "application/json",
+    "has_next_cursor": false,
+    "shape": [
+      "user_email",
+      "name",
+      "is_softmax_team_member",
+      "is_softmax_admin",
+      "subject_type",
+      "subject_id",
+      "owner_user_id",
+      "scopes"
+    ],
+    "headers": {}
+  },
+  {
+    "label": "public leagues",
+    "path": "/v2/leagues",
+    "params": null,
+    "identity": "anonymous",
+    "utc": "2026-09-14T23:56:10.404815+00:00",
+    "http": 200,
+    "content_type": "application/json",
+    "has_next_cursor": false,
+    "shape": {
+      "length": 150,
+      "entry_fields": [
+        "name",
+        "short_name",
+        "description",
+        "commissioner_key",
+        "commissioner_config",
+        "commissioner_migration_version",
+        "rounds_paused_at",
+        "submissions_locked_at",
+        "settings",
+        "filler_policy_version_ids",
+        "seed_policy_version_ids",
+        "seed_policy_number",
+        "rules",
+        "public",
+        "hidden",
+        "is_game_of_week",
+        "disabled_at",
+        "notes",
+        "id",
+        "game",
+        "mod",
+        "created_at",
+        "participation_url",
+        "forum_markdown_url",
+        "wiki_markdown_url",
+        "logs_reporter_id",
+        "handicaps",
+        "handicap_dynamic"
+      ]
+    },
+    "headers": {}
+  },
+  {
+    "label": "participation guide",
+    "path": "/v2/participate",
+    "params": {
+      "league_id": "<sample>"
+    },
+    "identity": "anonymous",
+    "utc": "2026-09-14T23:56:10.529997+00:00",
+    "http": 200,
+    "content_type": "text/markdown; charset=utf-8",
+    "has_next_cursor": false,
+    "shape": {
+      "length": 11730,
+      "entry_fields": []
+    },
+    "headers": {}
+  },
+  {
+    "label": "public forum metadata",
+    "path": "/v2/forums/paintbot",
+    "params": null,
+    "identity": "anonymous",
+    "utc": "2026-09-14T23:56:10.642560+00:00",
+    "http": 200,
+    "content_type": "application/json",
+    "has_next_cursor": false,
+    "shape": [
+      "id",
+      "slug",
+      "display_name",
+      "scope_type",
+      "coworld_name",
+      "created_at"
+    ],
+    "headers": {}
+  },
+  {
+    "label": "public forum feed",
+    "path": "/v2/forums/paintbot/posts",
+    "params": {
+      "limit": 1
+    },
+    "identity": "anonymous",
+    "utc": "2026-09-14T23:56:10.778496+00:00",
+    "http": 200,
+    "content_type": "application/json",
+    "has_next_cursor": false,
+    "shape": [
+      "entries",
+      "next_cursor"
+    ],
+    "headers": {}
+  },
+  {
+    "label": "public wiki index",
+    "path": "/v2/wikis/paintbot/pages",
+    "params": null,
+    "identity": "anonymous",
+    "utc": "2026-09-14T23:56:10.897077+00:00",
+    "http": 200,
+    "content_type": "application/json",
+    "has_next_cursor": false,
+    "shape": [
+      "entries"
+    ],
+    "headers": {}
+  },
+  {
+    "label": "public forum search",
+    "path": "/v2/forums/paintbot/search",
+    "params": {
+      "q": "policy",
+      "limit": 1
+    },
+    "identity": "anonymous",
+    "utc": "2026-09-14T23:56:11.030101+00:00",
+    "http": 200,
+    "content_type": "application/json",
+    "has_next_cursor": false,
+    "shape": [
+      "entries",
+      "next_cursor",
+      "result_quality",
+      "candidate_limit",
+      "older_matches_may_be_omitted"
+    ],
+    "headers": {}
+  },
+  {
+    "label": "public wiki search",
+    "path": "/v2/wikis/paintbot/search",
+    "params": {
+      "q": "policy",
+      "limit": 1
+    },
+    "identity": "anonymous",
+    "utc": "2026-09-14T23:56:11.175100+00:00",
+    "http": 200,
+    "content_type": "application/json",
+    "has_next_cursor": false,
+    "shape": [
+      "entries",
+      "next_cursor",
+      "result_quality"
+    ],
+    "headers": {}
+  },
+  {
+    "label": "leaderboard boolean flag",
+    "path": "/v2/divisions/{sample_id}/leaderboard",
+    "params": {
+      "include_recent_rounds": "false"
+    },
+    "identity": "user; no elevation",
+    "utc": "2026-09-14T23:56:11.332458+00:00",
+    "http": 200,
+    "content_type": "application/json",
+    "has_next_cursor": false,
+    "shape": {
+      "length": 12,
+      "entry_fields": [
+        "rank",
+        "player_id",
+        "player_name",
+        "score",
+        "score_label",
+        "score_value_type",
+        "rounds_played",
+        "episode_wins",
+        "episodes_played",
+        "win_rate",
+        "policy_label",
+        "recent_rounds"
+      ]
+    },
+    "headers": {}
+  },
+  {
+    "label": "exact ranked policy version",
+    "path": "/stats/policy-versions",
+    "params": {
+      "name_exact": "<sample>",
+      "version": 1,
+      "limit": 2
+    },
+    "identity": "user; no elevation",
+    "utc": "2026-09-14T23:56:11.463563+00:00",
+    "http": 200,
+    "content_type": "application/json",
+    "has_next_cursor": false,
+    "shape": [
+      "entries",
+      "next_cursor"
+    ],
+    "headers": {}
+  },
+  {
+    "label": "membership second page",
+    "path": "/v2/league-policy-memberships",
+    "params": {
+      "mine": "true",
+      "limit": 2,
+      "cursor": "<redacted cursor>"
+    },
+    "identity": "user; no elevation",
+    "utc": "2026-09-14T23:56:11.616951+00:00",
+    "http": 200,
+    "content_type": "application/json",
+    "has_next_cursor": true,
+    "shape": {
+      "length": 2,
+      "entry_fields": [
+        "status",
+        "substatus",
+        "is_champion",
+        "start_time",
+        "end_time",
+        "notes",
+        "id",
+        "league",
+        "division",
+        "policy_version",
+        "player",
+        "created_at"
+      ]
+    },
+    "headers": {}
+  },
+  {
+    "label": "own policy selection scope",
+    "path": "/v2/policies/{sample_id}/selection-access",
+    "params": null,
+    "identity": "user; no elevation",
+    "utc": "2026-09-14T23:56:11.736223+00:00",
+    "http": 200,
+    "content_type": "application/json",
+    "has_next_cursor": false,
+    "shape": [
+      "selection_scope"
+    ],
+    "headers": {}
+  },
+  {
+    "label": "recorded policy episodes",
+    "path": "/v2/policy-versions/{sample_id}/episodes",
+    "params": {
+      "limit": 1
+    },
+    "identity": "user; no elevation",
+    "utc": "2026-09-14T23:56:11.894522+00:00",
+    "http": 200,
+    "content_type": "application/json",
+    "has_next_cursor": false,
+    "shape": [
+      "entries",
+      "next_cursor",
+      "limit"
+    ],
+    "headers": {}
+  },
+  {
+    "label": "policy request attempts",
+    "path": "/v2/policy-versions/{sample_id}/episode-requests",
+    "params": {
+      "limit": 1
+    },
+    "identity": "user; no elevation",
+    "utc": "2026-09-14T23:56:12.046206+00:00",
+    "http": 200,
+    "content_type": "application/json",
+    "has_next_cursor": false,
+    "shape": [
+      "entries",
+      "next_cursor"
+    ],
+    "headers": {}
+  },
+  {
+    "label": "own XP detail",
+    "path": "/v2/experience-requests/{sample_id}",
+    "params": null,
+    "identity": "user; no elevation",
+    "utc": "2026-09-14T23:56:12.260006+00:00",
+    "http": 200,
+    "content_type": "application/json",
+    "has_next_cursor": false,
+    "shape": [
+      "id",
+      "requester_user_id",
+      "requester",
+      "coworld_id",
+      "coworld_name",
+      "coworld_version",
+      "variant_id",
+      "status",
+      "episode_count",
+      "pending_count",
+      "submitted_count",
+      "running_count",
+      "completed_count",
+      "failed_count",
+      "error",
+      "created_at",
+      "started_at",
+      "completed_at",
+      "episodes",
+      "can_cancel",
+      "requested",
+      "cost_preview"
+    ],
+    "headers": {}
+  },
+  {
+    "label": "XP child requests",
+    "path": "/v2/experience-requests/{sample_id}/episodes",
+    "params": {
+      "include_game_config": "false"
+    },
+    "identity": "user; no elevation",
+    "utc": "2026-09-14T23:56:12.421728+00:00",
+    "http": 200,
+    "content_type": "application/json",
+    "has_next_cursor": false,
+    "shape": {
+      "length": 1,
+      "entry_fields": [
+        "id",
+        "requester_user_id",
+        "round_id",
+        "coworld_id",
+        "coworld_name",
+        "coworld_version",
+        "variant_name",
+        "max_steps",
+        "job_index",
+        "status",
+        "policy_version_ids",
+        "participants",
+        "job_id",
+        "episode_id",
+        "replay_url",
+        "live_url",
+        "error_type",
+        "error",
+        "failed_policy_index",
+        "failed_agent_index",
+        "scores",
+        "participant_scores",
+        "created_at",
+        "dispatched_at",
+        "running_at",
+        "completed_at",
+        "cost_usd",
+        "game_config"
+      ]
+    },
+    "headers": {}
+  },
+  {
+    "label": "XP paginated child requests",
+    "path": "/v2/experience-requests/{sample_id}/episode-requests",
+    "params": {
+      "limit": 1
+    },
+    "identity": "user; no elevation",
+    "utc": "2026-09-14T23:56:12.558964+00:00",
+    "http": 200,
+    "content_type": "application/json",
+    "has_next_cursor": false,
+    "shape": [
+      "entries",
+      "next_cursor"
+    ],
+    "headers": {}
+  },
+  {
+    "label": "episode detail",
+    "path": "/v2/episode-requests/{sample_id}",
+    "params": null,
+    "identity": "user; no elevation",
+    "utc": "2026-09-14T23:56:12.745607+00:00",
+    "http": 200,
+    "content_type": "application/json",
+    "has_next_cursor": false,
+    "shape": [
+      "id",
+      "requester_user_id",
+      "round_id",
+      "coworld_id",
+      "coworld_name",
+      "coworld_version",
+      "variant_name",
+      "max_steps",
+      "job_index",
+      "status",
+      "policy_version_ids",
+      "participants",
+      "job_id",
+      "episode_id",
+      "replay_url",
+      "live_url",
+      "error_type",
+      "error",
+      "failed_policy_index",
+      "failed_agent_index",
+      "scores",
+      "participant_scores",
+      "created_at",
+      "dispatched_at",
+      "running_at",
+      "completed_at",
+      "cost_usd",
+      "game_config"
+    ],
+    "headers": {}
+  },
+  {
+    "label": "result bytes",
+    "path": "/v2/episode-requests/{sample_id}/artifacts/results",
+    "params": null,
+    "identity": "user; no elevation",
+    "utc": "2026-09-14T23:56:12.978605+00:00",
+    "http": 200,
+    "content_type": "application/json",
+    "has_next_cursor": false,
+    "shape": [
+      "schema_version",
+      "scores",
+      "run_id",
+      "mode",
+      "seed",
+      "player_slot_count",
+      "step_seconds",
+      "step_count",
+      "warmup_step_count",
+      "measurement_complete",
+      "game_bootstrap_import_s",
+      "game_bootstrap_config_read_s",
+      "game_bootstrap_config_decode_s",
+      "game_bootstrap_payload_build_s",
+      "game_bootstrap_server_start_s",
+      "game_process_birth_to_first_mark_s",
+      "game_listening_to_first_health_s",
+      "game_listening_to_first_global_s",
+      "player_connect_ready_max_s",
+      "player_connect_ready_min_s",
+      "episode_loop_measurement_s",
+      "game_step_duration",
+      "game_tick_lag",
+      "game_event_loop_lag",
+      "game_gc_pause",
+      "player_turn_duration",
+      "websocket_application_rtt",
+      "websocket_transport_residual",
+      "player_turn_duration_worst_slot_p99_s",
+      "action_late_fraction",
+      "action_unanswered_count",
+      "observation_dropped_count",
+      "timing_report_missing_count",
+      "game_cpu_throttled_s",
+      "game_memory_peak_bytes",
+      "replay_size_bytes",
+      "replay_prepare_s",
+      "replay_publish_s",
+      "player_artifact_success_count",
+      "trace_dropped_record_count",
+      "slots",
+      "cells"
+    ],
+    "headers": {}
+  },
+  {
+    "label": "own accessible seat listing",
+    "path": "/v2/episode-requests/{sample_id}/policy-artifacts",
+    "params": null,
+    "identity": "user; no elevation",
+    "utc": "2026-09-14T23:56:13.169932+00:00",
+    "http": 200,
+    "content_type": "application/json",
+    "has_next_cursor": false,
+    "shape": {
+      "length": 2,
+      "entry_fields": [
+        "position",
+        "policy_version_id",
+        "policy_name",
+        "has_log",
+        "has_artifact"
+      ]
+    },
+    "headers": {}
+  },
+  {
+    "label": "own seat log",
+    "path": "/v2/episode-requests/{sample_id}/{sample_id}/policy-logs/0",
+    "params": null,
+    "identity": "user; no elevation",
+    "utc": "2026-09-14T23:56:13.409298+00:00",
+    "http": 200,
+    "content_type": "text/plain; charset=utf-8",
+    "has_next_cursor": false,
+    "shape": {
+      "length": 959,
+      "entry_fields": []
+    },
+    "headers": {}
+  },
+  {
+    "label": "XP coworld manifest",
+    "path": "/v2/coworlds/{sample_id}",
+    "params": null,
+    "identity": "user; no elevation",
+    "utc": "2026-09-14T23:56:13.526781+00:00",
+    "http": 200,
+    "content_type": "application/json",
+    "has_next_cursor": false,
+    "shape": [
+      "id",
+      "name",
+      "version",
+      "manifest",
+      "api_version",
+      "schema_hash",
+      "manifest_hash",
+      "size_bytes",
+      "canonical"
+    ],
+    "headers": {}
+  },
+  {
+    "label": "episode reporters",
+    "path": "/v2/episodes/{sample_id}/logs",
+    "params": null,
+    "identity": "user; no elevation",
+    "utc": "2026-09-14T23:56:13.699068+00:00",
+    "http": 404,
+    "content_type": "application/json",
+    "has_next_cursor": false,
+    "headers": {}
+  },
+  {
+    "label": "replay bytes",
+    "path": "/v2/episode-requests/{sample_id}/artifacts/replay",
+    "utc": "2026-09-14T23:58:03.737197+00:00",
+    "http": 200,
+    "content_type": "application/octet-stream",
+    "bytes_read": 411608,
+    "read_complete": true,
+    "sha256": "f01a3ddeb19b4ad21f92419cf892284acde18e66ae341a356e4e0f88473b0506",
+    "zip_magic": false,
+    "redirect_statuses": [],
+    "headers": {}
+  },
+  {
+    "label": "recorded episode detail",
+    "path": "/episodes/{sample_id}",
+    "utc": "2026-09-14T23:58:03.881053+00:00",
+    "http": 200,
+    "content_type": "application/json",
+    "bytes_read": 1066,
+    "read_complete": true,
+    "sha256": "1a53311e5c3235c0377b36fd9dcb0d44d01a71a2f17b9c7e7a8e32ece804138f",
+    "zip_magic": false,
+    "redirect_statuses": [],
+    "headers": {}
+  },
+  {
+    "label": "reporter aggregate using prefixed episode id",
+    "path": "/v2/episodes/{sample_id}/logs",
+    "utc": "2026-09-14T23:58:03.996934+00:00",
+    "http": 422,
+    "content_type": "application/json",
+    "bytes_read": 376,
+    "read_complete": true,
+    "sha256": "62042f836fd5f6152cc2181152f023c08a86b21262e4e675010d4e92a9964e1b",
+    "zip_magic": false,
+    "redirect_statuses": [],
+    "headers": {}
+  },
+  {
+    "label": "public request detail",
+    "path": "/v2/episode-requests/{sample_id}",
+    "utc": "2026-09-14T23:58:04.094565+00:00",
+    "http": 401,
+    "content_type": "application/json",
+    "bytes_read": 35,
+    "read_complete": true,
+    "sha256": "f1b12226f1d35014bb75d08b51a4957d9c5217da727550cb0e8688af93b6f603",
+    "zip_magic": false,
+    "redirect_statuses": [],
+    "headers": {}
+  },
+  {
+    "label": "own seat ZIP",
+    "path": "/v2/episode-requests/{sample_id}/{sample_id}/policy-artifact/0",
+    "utc": "2026-09-14T23:58:04.573219+00:00",
+    "http": 200,
+    "content_type": "application/zip",
+    "bytes_read": 115267,
+    "read_complete": true,
+    "sha256": "efc9148dc1f2fc4942c15fc6cd979f5c304870d81f5f52f08ba0195d5a8a1001",
+    "zip_magic": true,
+    "redirect_statuses": [],
+    "headers": {}
+  }
+]

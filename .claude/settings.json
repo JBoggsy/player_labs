@@ -44,6 +44,12 @@
             "command": "\"$CLAUDE_PROJECT_DIR/emergant_lab/tools/rotate_lessons.sh\"",
             "timeout": 15,
             "statusMessage": "Rotating Emerg-ant tentative-lessons buffer"
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/sugarscape_lab/tools/rotate_lessons.sh\"",
+            "timeout": 15,
+            "statusMessage": "Rotating Sugarscape tentative-lessons buffer"
           }
         ]
       }

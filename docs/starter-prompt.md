@@ -26,10 +26,8 @@ First, so you can answer my questions before we dive in — here's what this is:
 player_labs is a human-in-the-loop lab for making Coworld game-playing agents better.
 Coworld (Softmax's Observatory) runs competitive AI leagues, and the loop here is
 simple: evaluate a player, find where it's weak, make one focused improvement, and
-measure whether it actually helped — then repeat. It currently focuses on Crewrift, a
-social-deduction game (think Among Us), and ships three starter players to choose from.
-You'll do the building and measuring; I set the direction. It just needs `uv` and
-Docker to run; a GitHub account is optional but recommended, so I can fork it and keep
+measure whether it actually helped — then repeat. It contains several game-specific labs; help me choose one from the capability map.
+You'll do the building and measuring; I set the direction. It uses `uv`, plus Docker for container policies; a GitHub account is optional but recommended, so I can fork it and keep
 my own copy to save my work in.
 
 Then walk me through it:

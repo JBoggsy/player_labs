@@ -6,12 +6,7 @@ description: "Use to run your own built player policy in a LOCAL Coworld episode
 # Coworld Local Run (local debugging)
 
 Run your **own** built policy image in a local Coworld episode and watch the result.
-This is a **debugging tool, not a gate**: the standard loop uploads straight after a
-rebuild and lets the next experience request catch breakage. Reach for a local run only
-when a hosted eval shows the artifact **can't connect → play → exit cleanly** and you
-need to watch it fail up close. It is correctness/liveness only, **not** a competitive
-test (you generally can't run other users' policies locally, so all competitive
-judgment comes from experience requests; see `coworld-experience-requests`).
+Use it for debugging, mechanism/parity checks, and local own-player self-play when that answers the current question. It is not a routine pre-upload gate or evidence of strength against the live field. Do not run hosted XP self-play. Game-hosted formats may need the game's own local harness; this helper targets container policies.
 
 **Announce at start:** "Running the built policy locally to debug it."
 
@@ -26,10 +21,10 @@ judgment comes from experience requests; see `coworld-experience-requests`).
 
 ## Workflow
 
-1. **Build crewborg `linux/amd64`** (the cluster + local runner are amd64):
+1. **Build the selected player `linux/amd64`** (the cluster + local runner are amd64):
 
    ```bash
-   crewrift_lab/tools/build_player.sh crewborg   # builds players-crewborg:dev
+   <lab>/tools/build_player.sh <player>   # use the game build guide
    ```
    (or the **`build-and-upload`** skill.)
 
@@ -39,10 +34,10 @@ judgment comes from experience requests; see `coworld-experience-requests`).
    ```bash
    # run with the Coworld SDK available (a uv env with coworld[auth]) + Docker
    S=.claude/skills/coworld-local-run/scripts/smoke.py
-   uv run python "$S" --coworld <cow_id|name> --image players-crewborg:dev
+   uv run python "$S" --coworld <cow_id|name> --image <image>:dev
    # multi-token entrypoint, longer timeout, custom out dir:
-   uv run python "$S" --coworld cow_... --image players-crewborg:dev \
-     --run python --run -m --run crewrift.crewborg.coworld.policy_player --timeout 180
+   uv run python "$S" --coworld cow_... --image <image>:dev \
+     --run python --run -m --run <module> --timeout 180
    ```
 
    **Heads-up — the first run can take several minutes.** `download` pulls the

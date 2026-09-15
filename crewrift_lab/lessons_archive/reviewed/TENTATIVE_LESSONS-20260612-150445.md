@@ -2,15 +2,15 @@
 
 **What this is.** An *eager, deliberately noisy* buffer of candidate lessons from
 Crewrift work — things that *might* be durably true but haven't earned a place in
-[`best_practices.md`](best_practices.md) yet. Write here freely the moment something
+[`best_practices.md`](../../best_practices.md) yet. Write here freely the moment something
 *looks* like a reusable lesson; most entries will be noise, and that's fine — the value
 is the occasional gem.
 
 **The graduation rule.** Each lesson carries a **hit count** — bump it (and add a dated
 note) every time the lesson recurs and holds up. **Once a lesson has hit enough (≈3
 independent confirmations) and still holds, promote it** to the right `best_practices.md`
-(Crewrift-specific → [`best_practices.md`](best_practices.md); game-agnostic → the
-root [`../best_practices.md`](../best_practices.md)) and delete it here. Cull entries
+(Crewrift-specific → [`best_practices.md`](../../best_practices.md); game-agnostic → the
+root [`../best_practices.md`](../../../best_practices.md)) and delete it here. Cull entries
 that get contradicted.
 
 **Entry format.** `### <lesson, one line>` then: `Hits:` (count + dates), `Evidence:`

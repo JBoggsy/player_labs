@@ -2,10 +2,10 @@
 """Game-agnostic A/B statistics engine — the shared core of the `coworld-ab` skill.
 
 This module knows NOTHING about any specific game's metrics. It provides the significance
-tests, the improved/regressed/noise verdict logic, the metric-delta builder, and the neutral
+tests, the improved/regressed/inconclusive verdict logic, the metric-delta builder, and the neutral
 Markdown/JSON renderers. Each game lab writes a thin `compare.py` **adapter** that:
 
-  - extracts per-appearance records from *its* results.json/episode.json schema,
+  - extracts per-episode records from *its* results.json/episode.json schema,
   - declares its METRICS list and a grouping dimension (e.g. crewrift: role in {crew, imposter};
     a role-less game: a single {"all": [...]} group),
   - imports this module and calls `build_deltas(...)` + `render_markdown(...)` + `emit_json(...)`.
@@ -14,7 +14,7 @@ The adapter → engine contract:
 
   metrics:      list of (key, higher_is_better: bool, kind: "rate"|"mean", applies_to_group|None)
   metric_value: (recs, key) -> (value: float, n: int) | None       # game-specific aggregation
-  value_fn:     (recs, key) -> list[float]                          # per-appearance values (mean kind)
+  value_fn:     (recs, key) -> list[float]                          # per-episode values (mean kind)
   *_groups:     {group_name: [rec, ...]}                            # the lab's grouping dimension
   all_groups:   ordered list of group names to report when a metric applies to every group
 
@@ -30,39 +30,35 @@ import statistics
 from dataclasses import dataclass
 
 
-# --- significance (normal-approx; no scipy) -----------------------------------------
-
-def _phi(x: float) -> float:
-    return 0.5 * (1 + math.erf(x / math.sqrt(2)))
-
-
-def two_sided_p(z: float) -> float:
-    return 2 * (1 - _phi(abs(z)))
+# Independent-sample tests. Adapters must make one observation per independent
+# episode/group, or use a separate preregistered paired/clustered analysis.
+from scipy import stats
 
 
 def rate_sig(p_a: float, n_a: int, p_b: float, n_b: int) -> tuple[float, float]:
-    """Two-proportion z-test. Returns (z, p)."""
-    if n_a == 0 or n_b == 0:
+    """Fisher exact test on binary outcomes; effect is the proportion difference."""
+    if not n_a or not n_b:
         return 0.0, 1.0
-    pool = (p_a * n_a + p_b * n_b) / (n_a + n_b)
-    se = math.sqrt(pool * (1 - pool) * (1 / n_a + 1 / n_b))
-    if se == 0:
-        return 0.0, 1.0
-    z = (p_b - p_a) / se
-    return z, two_sided_p(z)
+    for proportion, count in ((p_a, n_a), (p_b, n_b)):
+        if not 0 <= proportion <= 1 or not math.isclose(proportion * count, round(proportion * count), abs_tol=1e-8):
+            raise ValueError("Rate metrics require binary episode outcomes; use mean for seat averages.")
+    a, b = round(p_a * n_a), round(p_b * n_b)
+    result = stats.fisher_exact([[a, n_a - a], [b, n_b - b]])
+    return p_b - p_a, float(result.pvalue)
 
 
 def mean_sig(vals_a: list[float], vals_b: list[float]) -> tuple[float, float, float]:
-    """Welch-ish z on the mean difference + Cohen's d. Returns (z, p, d)."""
+    """Welch t-test and Cohen's d; return (t, p, d)."""
     if len(vals_a) < 2 or len(vals_b) < 2:
         return 0.0, 1.0, 0.0
     ma, mb = statistics.mean(vals_a), statistics.mean(vals_b)
     va, vb = statistics.variance(vals_a), statistics.variance(vals_b)
-    se = math.sqrt(va / len(vals_a) + vb / len(vals_b))
-    z = (mb - ma) / se if se else 0.0
+    if va == vb == 0:
+        # No variance estimate: report the observed difference, not certainty.
+        return 0.0, 1.0, 0.0
+    result = stats.ttest_ind(vals_b, vals_a, equal_var=False)
     pooled_sd = math.sqrt((va + vb) / 2)
-    d = (mb - ma) / pooled_sd if pooled_sd else 0.0
-    return z, two_sided_p(z), d
+    return float(result.statistic), float(result.pvalue), (mb - ma) / pooled_sd
 
 
 SIG_P = 0.05
@@ -80,11 +76,12 @@ class Delta:
     n_cand: int
     kind: str
     p: float = 1.0
-    effect: float = 0.0          # Cohen's d for means; z for rates
-    verdict: str = "n/a"         # improved | regressed | noise | n/a
+    effect: float = 0.0          # Cohen's d for means; proportion difference for rates
+    raw_p: float = 1.0
+    verdict: str = "n/a"         # improved | regressed | inconclusive | n/a
 
     def compute(self, base_vals: list[float], cand_vals: list[float], sig_p: float = SIG_P) -> None:
-        """Fill p / effect / verdict. base_vals/cand_vals are per-appearance values (mean kind only)."""
+        """Fill p / effect / verdict. base_vals/cand_vals are per-episode values (mean kind only)."""
         if self.base is None or self.cand is None:
             return
         delta = self.cand - self.base
@@ -94,9 +91,10 @@ class Delta:
         else:
             z, p, d = mean_sig(base_vals, cand_vals)
             self.p, self.effect = p, d
-        sig = self.p < sig_p and min(self.n_base, self.n_cand) >= 2
+        self.raw_p = self.p
+        sig = self.p < sig_p and min(self.n_base, self.n_cand) >= SMALL_N
         if not sig or delta == 0:
-            self.verdict = "noise"
+            self.verdict = "inconclusive"
         else:
             better = (delta > 0) == self.higher_is_better
             self.verdict = "improved" if better else "regressed"
@@ -122,13 +120,21 @@ def build_deltas(base_groups, cand_groups, metrics, metric_value, value_fn, all_
                       n_base=bv[1] if bv else 0, n_cand=cv[1] if cv else 0, kind=kind)
             d.compute(value_fn(br, key), value_fn(cr, key), sig_p=sig_p)
             out.append(d)
+    eligible = [d for d in out if d.base is not None and d.cand is not None]
+    if eligible:
+        # Benjamini-Yekutieli controls false discoveries under dependent metrics.
+        adjusted = stats.false_discovery_control([d.raw_p for d in eligible], method="by")
+        for d, corrected in zip(eligible, adjusted):
+            d.p = float(corrected)
+            if d.p >= sig_p or min(d.n_base, d.n_cand) < SMALL_N:
+                d.verdict = "inconclusive"
     return out
 
 
 # --- rendering ----------------------------------------------------------------------
 
 VERDICT_MARK = {"improved": "▲ improved", "regressed": "▼ REGRESSED",
-                "noise": "· noise", "n/a": "—"}
+                "inconclusive": "· inconclusive", "n/a": "—"}
 
 
 def fmt(v: float | None, kind: str) -> str:
@@ -141,9 +147,10 @@ def emit_json(base_spec: str, cand_spec: str, target: str | None, deltas: list[D
     """The neutral JSON contract consumed by compare_report.py."""
     return {
         "baseline": base_spec, "candidate": cand_spec, "target": target,
+        "analysis": "Independent samples; Fisher rates; Welch means; BY correction across reported metrics; minimum 30 observations per side. Inconclusive is not equivalence.",
         "deltas": [{"metric": d.metric, "group": d.group, "base": d.base, "cand": d.cand,
                     "n_base": d.n_base, "n_cand": d.n_cand, "p": d.p,
-                    "effect": d.effect, "verdict": d.verdict} for d in deltas],
+                    "raw_p": d.raw_p, "effect": d.effect, "verdict": d.verdict} for d in deltas],
     }
 
 
@@ -174,9 +181,11 @@ def render_markdown(base_spec: str, cand_spec: str, base_groups, cand_groups,
                 continue
             L.append(f"- **{d.group}**: {fmt(d.base, d.kind)} → {fmt(d.cand, d.kind)}  "
                      f"(**{VERDICT_MARK[d.verdict]}**, p={d.p:.3f}, "
-                     f"{'d' if d.kind=='mean' else 'z'}={d.effect:+.2f})")
+                     f"{'d' if d.kind=='mean' else 'rate difference'}={d.effect:+.2f})")
         L.append("")
 
+    L.append("P-values below use Benjamini-Yekutieli correction across the reported metrics. "
+             "Inconclusive does not establish equality; paired/clustered designs require their own analysis.")
     L.append("## All metrics (baseline → candidate, Δ, verdict)")
     L.append("")
     L.append("| metric | group | baseline | candidate | verdict (p) |")

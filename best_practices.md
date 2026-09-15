@@ -10,7 +10,7 @@ what they decide).
 
 Everything below serves one goal: **more iterations through the loop, faster.** The
 loop's cost is dominated by the agent being careful, not by the agent being wrong —
-a broken upload costs one free eval round; a cautious afternoon costs the whole
+a broken upload costs an eval round; a cautious afternoon costs the whole
 afternoon. Defaults:
 
 - **Write code fast; ship it now.** Make the focused change, rebuild, upload, move on.
@@ -18,14 +18,13 @@ afternoon. Defaults:
   scaffolding around the change.
 - **No smoke tests, no pre-upload gate.** Upload straight after the rebuild. The next
   experience request both catches breakage and measures gameplay — one step, hosted,
-  free, parallel. Local runs (`coworld-local-run`) are a *debugging tool* for when an
-  eval shows the artifact can't even connect/play — never a routine step.
+  parallel. Local runs (`coworld-local-run`) support focused debugging, mechanism/parity
+  checks and own-policy self-play — never a routine pre-upload gate.
 - **Only the most critical testing survives.** Run a test only when it's the fastest
   path to an answer you need right now — a pure function you just changed, a parser
   against a captured fixture. Never test-first, never a suite run as ritual, never
   "just to be safe."
-- **Careful is reserved for the irreversible.** League submission (the human's gate)
-  and destroying data. Everything else — code, uploads, versions, evals — is cheap
+- **Careful is reserved for consequential actions.** League submission (the human's gate), public writes and destroying data. Retirement cannot erase prior results. Everything else — code, uploads, versions, evals — is cheap
   and retryable; treat hesitation there as the real cost.
 - **Ship the minimal capable player first; let the eval locate the gap.** A bare
   loop that connects, acts, and exits cleanly is a better first artifact than a
@@ -112,16 +111,16 @@ afternoon. Defaults:
   testing top-N only. Leaving the weak-opponent upside on the table is leaving points on
   the table. (Mechanically: pin a representative spread, or draw randomly and bucket by
   opponent leaderboard score; don't default the opponent roster to the top-N.)
-- **Experience requests are your primary eval — they aren't scarce.** They run many
-  episodes in parallel on Softmax infra and are currently free, so use them liberally
-  rather than rationing them; just **target them to the question** (matched roles when
+- **Experience requests are your primary competitive eval.** They run many
+  episodes in parallel on Softmax infra and consume [granted credits](docs/xp-credits.md), not user money. Use existing data first
+  where it answers the question, and **target new requests to the question** (matched roles when
   the change was role-specific; the specific opponents the policy struggles against)
   and harvest async (the value is in the results, not babysitting the wait) — the
   streaming pipeline (the `coworld-experience-requests` skill, step 4) makes the
   harvest overlap the run by default, so "async" costs nothing.
-- **Local runs are a debugging tool — not a gate, never comparative.** Don't run
-  locally before uploading; upload and let the eval speak. Drop to a local run only
-  when an eval shows the artifact can't connect/play and you need to watch it fail.
+- **Local runs test mechanisms, not field performance.** Use them for transport
+  debugging, recorded-wire parity, and own-policy self-play. Do not make them a
+  routine upload gate or spend hosted XP credits on self-play.
   You generally can't download and run other users' policies locally anyway, so
   **all competitive judgment comes from experience requests.** (A local zero from a
   trivial fixture is still not a broken player; and join scores to role/player by the
@@ -231,7 +230,7 @@ below are the recurring platform-specific ones:
 - **Rebuild after every change** — a stale artifact reads as "the change did nothing."
 - **Upload freely; submit rarely.** Uploading a new policy version is routine and
   doesn't touch any league — it's how you get a testable artifact for experience
-  requests. **Submitting to a league is the irreversible, champion-making action** —
+  requests. **Submitting to a league is consequential and explicitly gated** —
   submit only when the player is demonstrably better and the human has approved.
   *Not* submitting is your rollback.
 - **Keep a version log** mapping each uploaded version to the changes it carries, so
@@ -243,12 +242,12 @@ below are the recurring platform-specific ones:
   call actually happened* — coherent-looking output is not evidence, and this exact
   mistake has shipped "working" players with no LLM more than once. The paired habit:
   after every upload, check the hosted pod's success line, never local output.
-- **An eval regression in a path your change can't mechanically touch means another
-  bundled diff did it** — audit everything else that rode along before re-diagnosing
-  the game (a 10σ regression has come from a "harmless" co-packaged change).
-- **"Implemented and tested" is not "committed."** Commit in the same breath as
-  reporting done; days-old uncommitted work on a live lab is a standing provenance
-  hazard. Same family: after any sync with main, re-read the lab's process docs
+- **A regression outside the edited path needs a wider causal check.** Audit bundled
+  diffs, shared inputs, dependency/image changes, opponent composition, and operations
+  failures before attributing it to the intended change.
+- **"Implemented and tested" is not "committed."** Preserve accepted changes and
+  verdict instruments in local commits after the documentation audit. State explicitly
+  when work is still uncommitted; never sweep unrelated changes into a checkpoint. Same family: after any sync with main, re-read the lab's process docs
   (`AGENTS.md`, `WORKING_CONTEXT.md`) — they can change under you mid-session.
 - **Freshness checks extend to package pins and reference docs** — before concluding
   an SDK lacks a feature, check the dependency's `main`, not just the pinned copy in
@@ -257,3 +256,14 @@ below are the recurring platform-specific ones:
 - Stay alert to **local↔live drift**, **stale rotating IDs / docs**, **over-reading a
   small batch**, and **position-based score joins** — the classic looked-like-success
   failures.
+
+## Consolidated process lessons (2026-09-14)
+
+These recurring findings are supported by the [transcript review](docs/reports/learning-review-2026-09-14.md), which records exact sources, counterevidence and limits.
+
+- **Keep an investigation ledger.** Track each explanation, the check that separates it from alternatives, the observation, and whether it is disproven or still open. Reconcile it before another fix when the investigation starts repeating itself.
+- **Separate implementation milestones from objective improvement.** An upload, successful action or repaired protocol may be useful without improving gameplay. Keep refuted and inconclusive experiments in the record; do not graduate a checkpoint into a success claim.
+- **Verify the evidence path.** Join observed state, decoded beliefs, chosen action, actuation and objective events by stable identity/time keys. Check what the downstream evaluator actually received before attributing missing behavior to the player.
+- **Protect the real objective.** A convenient proxy is not the goal. Preserve the measuring environment and report all campaign outcomes; don't change rules or evaluation to manufacture improvement. Fixing an actual environment bug changes the comparison contract and requires a fresh baseline.
+- **Distinguish survey from controlled comparison.** Random live fields reveal current weaknesses; fresh matched arms isolate a change. Correlations suggest hypotheses, not causal point gains. Representative runtime conditions and historical opponents can expose regressions a narrow local meta hides.
+- **Keep retrieval current.** Link completed experiment results from the lab's index/context and map uploaded versions to their evidence. Keep working state concise and link detailed history; candidate lessons and stable instructions are separate records.

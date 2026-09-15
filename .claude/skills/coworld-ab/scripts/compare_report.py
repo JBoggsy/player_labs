@@ -45,10 +45,10 @@ th,td{padding:6px 9px;border-bottom:1px solid var(--border);text-align:right;whi
 thead th{font:700 10px 'Merriweather Sans';text-transform:uppercase;letter-spacing:.07em;color:var(--sub);border-bottom:2px solid var(--border-strong)}
 td.metric,th:first-child{text-align:left;font:600 13px 'IBM Plex Mono'}
 td.group{text-align:left;color:var(--sub);font-size:12px}
-.v-improved{color:var(--sage);font-weight:700} .v-regressed{color:var(--terra);font-weight:700} .v-noise,.v-na{color:var(--muted)}
+.v-improved{color:var(--sage);font-weight:700} .v-regressed{color:var(--terra);font-weight:700} .v-noise,.v-inconclusive,.v-na{color:var(--muted)}
 .chip{font:700 9px 'Merriweather Sans';text-transform:uppercase;letter-spacing:.05em;padding:1px 7px;border-radius:999px}
 .c-improved{background:rgba(110,128,80,.16);color:var(--sage)} .c-regressed{background:rgba(179,110,78,.14);color:var(--terra)}
-.c-noise{background:#efe9dd;color:var(--muted)} .c-na{background:#efe9dd;color:var(--muted)}
+.c-inconclusive,.c-noise{background:#efe9dd;color:var(--muted)} .c-na{background:#efe9dd;color:var(--muted)}
 /* delta bar (effect size, centred at 0) */
 .bar{position:relative;width:120px;height:14px;background:linear-gradient(90deg,rgba(179,110,78,.10),#f3eee2 50%,rgba(110,128,80,.10));border-radius:2px;display:inline-block;vertical-align:middle}
 .bar .mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--border-strong)}
@@ -62,7 +62,7 @@ td.group{text-align:left;color:var(--sub);font-size:12px}
 @media(max-width:680px){.wrap{padding:24px 16px}.bar{width:70px}h1{font-size:22px}}
 """
 
-VERD = {"improved": "▲ improved", "regressed": "▼ regressed", "noise": "· noise", "n/a": "—"}
+VERD = {"improved": "▲ improved", "regressed": "▼ regressed", "noise": "· inconclusive", "inconclusive": "· inconclusive", "n/a": "—"}
 
 
 def esc(s) -> str:
@@ -76,7 +76,7 @@ def fmt(v, metric: str) -> str:
 
 
 def bar(effect: float, verdict: str) -> str:
-    if verdict in ("noise", "n/a"):
+    if verdict in ("noise", "inconclusive", "n/a"):
         return '<span class="bar"><span class="mid"></span></span>'
     w = min(abs(effect) / 1.2, 1.0) * 50  # half-width %, |d|~1.2 saturates
     color = "var(--sage)" if verdict == "improved" else "var(--terra)"
@@ -86,20 +86,21 @@ def bar(effect: float, verdict: str) -> str:
 
 def render(d: dict, finding: str | None, verdict_line: str | None, eyebrow: str) -> str:
     deltas = d.get("deltas") or []
+    analysis = esc(d.get("analysis", "Historical result: check the producing script for its statistical method."))
     target = d.get("target")
     by = {(x["metric"], x.get("group")): x for x in deltas}
     # headline cards: target axis (if any) + overall win rate (whatever group it lands in)
     cards = []
     tgt = next((x for x in deltas if x["metric"] == target), None) if target else None
     win = next((x for x in deltas if x["metric"] == "win_rate"), None)
-    for label, x in (("Target · " + (target or "—"), tgt), ("Overall win rate", win)):
+    for label, x in (("Target · " + (target or "—"), tgt), ("Win rate · " + str(win.get("group", "all")) if win else "Win rate", win)):
         if not x:
             continue
-        delta = (x["cand"] or 0) - (x["base"] or 0)
+        delta = x["cand"] - x["base"] if x["cand"] is not None and x["base"] is not None else None
         m = x["metric"]
         cards.append(f'<div class="hcard"><div class="l">{esc(label)}</div>'
                      f'<div class="v v-{x["verdict"].replace("/","")}">{fmt(x["base"],m)} → {fmt(x["cand"],m)}</div>'
-                     f'<div class="vd">Δ {"+" if delta>=0 else ""}{fmt(delta,m) if m.endswith("_rate") else f"{delta:.2f}"} · '
+                     f'<div class="vd">Δ {"+" if delta is not None and delta>=0 else ""}{fmt(delta,m)} · '
                      f'<span class="chip c-{x["verdict"].replace("/","")}">{esc(VERD.get(x["verdict"],x["verdict"]))}</span> · p={x["p"]:.2f}</div></div>')
 
     rows = []
@@ -107,11 +108,11 @@ def render(d: dict, finding: str | None, verdict_line: str | None, eyebrow: str)
         m, group, vd = x["metric"], x.get("group"), x["verdict"]
         if x["base"] is None and x["cand"] is None:
             continue
-        delta = (x["cand"] or 0) - (x["base"] or 0)
+        delta = x["cand"] - x["base"] if x["cand"] is not None and x["base"] is not None else None
         rows.append(
             f'<tr><td class="metric">{esc(m)}</td><td class="group">{esc(group or "all")}</td>'
             f'<td class="num">{fmt(x["base"],m)}</td><td class="num">{fmt(x["cand"],m)}</td>'
-            f'<td class="num v-{vd.replace("/","")}">{"+" if delta>=0 else ""}{fmt(delta,m) if m.endswith("_rate") else f"{delta:.2f}"}</td>'
+            f'<td class="num v-{vd.replace("/","")}">{"+" if delta is not None and delta>=0 else ""}{fmt(delta,m)}</td>'
             f'<td>{bar(x.get("effect") or 0, vd)}</td>'
             f'<td><span class="chip c-{vd.replace("/","")}">{esc(VERD.get(vd,vd))}</span></td>'
             f'<td class="num dim">{x["p"]:.2f}</td><td class="num dim">{x["n_base"]}/{x["n_cand"]}</td></tr>')
@@ -120,7 +121,7 @@ def render(d: dict, finding: str | None, verdict_line: str | None, eyebrow: str)
     scan = (f'<div class="regr"><b>⚠ Regression scan:</b> {len(regr)} metric(s) regressed — '
             + ", ".join(f'{esc(x["metric"])} ({esc(x.get("group") or "all")})' for x in regr)
             + '. Check you didn\'t fix one group by breaking another.</div>') if regr else \
-           '<div class="ok"><b>✓ Regression scan:</b> nothing regressed beyond noise.</div>'
+           '<div class="ok"><b>✓ Regression scan:</b> no statistically detected regressions.</div>'
 
     find_html = (f'<h2>Qualitative finding — what the numbers can\'t say</h2>'
                  f'<div class="finding"><h3>Side-by-side read</h3>{esc(finding)}</div>') if finding else ""
@@ -132,16 +133,16 @@ def render(d: dict, finding: str | None, verdict_line: str | None, eyebrow: str)
 <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Merriweather+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>{STYLE}</style></head><body><div class="wrap">
 <header><p class="eyebrow">{esc(eyebrow)}</p>
-<h1>{esc(d.get("baseline"))} <span class="arrow">→</span> {esc(d.get("candidate"))}</h1></header>
+<h1>{esc(d.get("baseline"))} <span class="arrow">→</span> {esc(d.get("candidate"))}</h1></header><p class="note">{analysis}</p>
 <div class="headline">{''.join(cards) or '<div class="hcard"><div class="l">No target/win metric</div></div>'}</div>
 
 <h2>All metrics — baseline → candidate, group-split</h2>
 <div style="overflow-x:auto"><table><thead><tr>
   <th>Metric</th><th>Group</th><th>Base</th><th>Cand</th><th>Δ</th><th>Effect</th><th>Verdict</th><th>p</th><th>n b/c</th>
 </tr></thead><tbody>{''.join(rows)}</tbody></table></div>
-<p class="note">Effect bar = standardized effect size (Cohen's d / z), centred at 0 — right/sage =
-candidate better, left/terracotta = worse; noise = no bar. compare.py errs conservative: a borderline
-move reads as <i>noise</i>, not a win. Rates need a few hundred appearances/side to separate from noise.</p>
+<p class="note">Effect bars show Cohen's d for means and proportion differences for rates.
+Inconclusive comparisons have no bar. No detected regression is not evidence of equivalence.
+See the analysis disclosure for tests, correction and sample limits.</p>
 {scan}
 {find_html}
 {vline}

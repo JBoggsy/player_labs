@@ -4,7 +4,7 @@ The data-science half of the suspicion system: scrape league games, expand their
 replays into observer-exact evidence, fit the evidence weights against ground-truth
 roles, and emit a weights file for the agent to load. **The design (read first):**
 [`../crewrift/crewborg/docs/designs/suspicion-learning.md`](../crewrift/crewborg/docs/designs/suspicion-learning.md).
-The runtime model it feeds: [`suspicion.md`](../crewrift/crewborg/docs/designs/suspicion.md).
+The runtime model it feeds: [`suspicion.md`](../crewrift/crewborg/docs/suspicion.md).
 
 ## Pipeline (each stage idempotent; re-run any time)
 

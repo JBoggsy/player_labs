@@ -31,10 +31,10 @@ manifest alone does not select live gameplay; the CLI otherwise uses its certifi
 fixture (`maxTicks=300`, `hitPoints=1`, `forageGoal=1`), which is not valid strategy
 evidence.
 
-## Never buy self-play with XP
+## Reserve hosted XP for real opponents
 
-Experience requests cost money and real opponents cost the same as self-play. Use
-local episodes for self-play and paid requests only against a current real opponent,
+Experience requests consume [granted credits](../docs/xp-credits.md); users are not billed. Use
+local episodes for self-play and hosted requests against a current real opponent,
 with immutable policy versions and color rotation.
 
 ## Treat roles as behavior, not labels

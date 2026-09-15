@@ -1,4 +1,6 @@
 <!-- Independent third-party audit of wowborg nav v2 (post v21-v38 campaign),
+
+> Historical July audit. Repository-relative file links were repaired in September; line numbers and observations still describe the original inspected source, not necessarily current code.
      performed by OpenAI Codex CLI in a read-only worktree at commit 01e680d.
      Thread: 019f902a-d885-7021-b720-3bccf0f6e08b (codex exec resume-able).
      Commissioned as an overfitting check per James's request, 2026-07-23. -->
@@ -9,7 +11,7 @@
 
 ### 1. The “generalizes” proof is selectively censored and is not two successful fresh-course tests
 
-[world_race.py:160](vanilla_wow_lab/wowborg/policies/world_race.py:160), [world_race.py:219](vanilla_wow_lab/wowborg/policies/world_race.py:219), [world_race.py:239](vanilla_wow_lab/wowborg/policies/world_race.py:239), [wowborg-nav-v2.md:178](vanilla_wow_lab/docs/designs/wowborg-nav-v2.md:178)
+[world_race.py:160](../../wowborg/policies/world_race.py:160), [world_race.py:219](../../wowborg/policies/world_race.py:219), [world_race.py:239](../../wowborg/policies/world_race.py:239), [wowborg-nav-v2.md:178](../designs/wowborg-nav-v2.md:178)
 
 What it does: visits same-map stations first, reorders them nearest-first, skips any reachable station whose heuristic travel estimate exceeds its current time share, and removes those skips from the reachability denominator.
 
@@ -27,7 +29,7 @@ Fix direction: evaluate a fixed, held-out drawn order with sufficient per-course
 
 ### 2. A fully planned off-mesh target can enter an unbounded replan loop
 
-[route.py:190](vanilla_wow_lab/wowborg/nav/route.py:190), [route.py:282](vanilla_wow_lab/wowborg/nav/route.py:282), [route.py:297](vanilla_wow_lab/wowborg/nav/route.py:297), [route.py:368](vanilla_wow_lab/wowborg/nav/route.py:368)
+[route.py:190](../../wowborg/nav/route.py:190), [route.py:282](../../wowborg/nav/route.py:282), [route.py:297](../../wowborg/nav/route.py:297), [route.py:368](../../wowborg/nav/route.py:368)
 
 What it does: when `projected_target_distance > 12`, a partial plan fails as unreachable, but a non-partial plan changes `arrival_check` to the projected endpoint. Because that endpoint is not the true target, it is treated as an intermediate hop with the 35-yard stage radius. On arrival, L1 simply replans.
 
@@ -41,7 +43,7 @@ Fix direction: make excessive target projection a terminal typed verdict, or exp
 
 ### 3. “Navigate literally anywhere” is impossible with the shipped world model
 
-[world_model.py:54](vanilla_wow_lab/wowborg/nav/world_model.py:54), [world_model.py:62](vanilla_wow_lab/wowborg/nav/world_model.py:62), [journey.py:73](vanilla_wow_lab/wowborg/nav/journey.py:73)
+[world_model.py:54](../../wowborg/nav/world_model.py:54), [world_model.py:62](../../wowborg/nav/world_model.py:62), [journey.py:73](../../wowborg/nav/journey.py:73)
 
 What it does: the graph contains map 1 Durotar/Orgrimmar nodes, two map 389 RFC nodes, and one one-way portal. Unknown target maps return `unknown_region`; absent graph connectivity returns `no_world_path`.
 
@@ -53,7 +55,7 @@ Fix direction: narrow the contract to “same-map Detour plus seeded RFC entry�
 
 ### 4. Reachability classification treats several reachable modes as unreachable
 
-[route.py:153](vanilla_wow_lab/wowborg/nav/route.py:153), [route.py:164](vanilla_wow_lab/wowborg/nav/route.py:164), [route.py:190](vanilla_wow_lab/wowborg/nav/route.py:190)
+[route.py:153](../../wowborg/nav/route.py:153), [route.py:164](../../wowborg/nav/route.py:164), [route.py:190](../../wowborg/nav/route.py:190)
 
 What it does:
 
@@ -75,7 +77,7 @@ Fix direction: distinguish source projection, target projection, partial-tile ex
 
 ### 5. The staging ladder is waypoint-count and Durotar-radius dependent
 
-[local.py:22](vanilla_wow_lab/wowborg/nav/local.py:22), [route.py:235](vanilla_wow_lab/wowborg/nav/route.py:235)
+[local.py:22](../../wowborg/nav/local.py:22), [route.py:235](../../wowborg/nav/route.py:235)
 
 What it does: staging only activates for at least four waypoints, chooses `len(waypoints) // 2**attempt`, and treats any intermediate point within 35 yards as already reached.
 
@@ -96,7 +98,7 @@ Fix direction: select stages by forward corridor arc length and topology, requir
 
 ### 6. The RFC portal test cannot detect a wrong pad or trigger assumption
 
-[world_model.py:67](vanilla_wow_lab/wowborg/nav/world_model.py:67), [journey.py:131](vanilla_wow_lab/wowborg/nav/journey.py:131), [fake_nav_bridge.py:107](vanilla_wow_lab/wowborg/tests/fake_nav_bridge.py:107), [fake_nav_bridge.py:225](vanilla_wow_lab/wowborg/tests/fake_nav_bridge.py:225)
+[world_model.py:67](../../wowborg/nav/world_model.py:67), [journey.py:131](../../wowborg/nav/journey.py:131), fake_nav_bridge.py:107 (historical source unavailable: `vanilla_wow_lab/wowborg/tests/fake_nav_bridge.py:107`), fake_nav_bridge.py:225 (historical source unavailable: `vanilla_wow_lab/wowborg/tests/fake_nav_bridge.py:225`)
 
 What it does: hardcodes several Orgrimmar positions marked “verify,” including the RFC pad, then fires trigger 2230 up to three times. The fake exposes every portal binding everywhere because `_near_any_portal()` always returns `True`.
 
@@ -108,7 +110,7 @@ Fix direction: validate the pad and trigger against a captured real frame, make 
 
 ### 7. Frame starvation is immediately misclassified on the first sample
 
-[local.py:107](vanilla_wow_lab/wowborg/nav/local.py:107)
+[local.py:107](../../wowborg/nav/local.py:107)
 
 What it does: after `wait_for_frame()` times out, movement is tolerated only if `history` is non-empty and `observe()` differs from `history[-1]`.
 
@@ -120,7 +122,7 @@ Fix direction: capture a baseline observation before the first wait and compare 
 
 ### 8. Movement supervision cannot distinguish intended locomotion from forced motion or transport
 
-[local.py:125](vanilla_wow_lab/wowborg/nav/local.py:125), [local.py:153](vanilla_wow_lab/wowborg/nav/local.py:153), [bridge.py:564](vanilla_wow_lab/wowborg/bridge.py:564)
+[local.py:125](../../wowborg/nav/local.py:125), [local.py:153](../../wowborg/nav/local.py:153), bridge.py:564 (historical source unavailable: `vanilla_wow_lab/wowborg/bridge.py:564`)
 
 What it does: any displacement over 3 yards clears stalls, regardless of direction or cause. Observations expose only position, health, combat, dead, and ghost state.
 
@@ -138,7 +140,7 @@ Fix direction: supervise signed progress along the planned corridor and add expl
 
 ### 9. Lenient frames disable the only recovery action used by combat and death loops
 
-[bridge.py:88](vanilla_wow_lab/wowborg/bridge.py:88), [route.py:395](vanilla_wow_lab/wowborg/nav/route.py:395), [route.py:411](vanilla_wow_lab/wowborg/nav/route.py:411)
+bridge.py:88 (historical source unavailable: `vanilla_wow_lab/wowborg/bridge.py:88`), [route.py:395](../../wowborg/nav/route.py:395), [route.py:411](../../wowborg/nav/route.py:411)
 
 What it does: lenient frames set `recommended_action = None`. Combat and death recovery do nothing except select the recommended action.
 
@@ -150,7 +152,7 @@ Fix direction: preserve and independently validate the recommended action’s ad
 
 ### 10. Budget logic reintroduces straight-line assumptions and carries stale pace across terrain modes
 
-[route.py:74](vanilla_wow_lab/wowborg/nav/route.py:74), [route.py:186](vanilla_wow_lab/wowborg/nav/route.py:186), [route.py:226](vanilla_wow_lab/wowborg/nav/route.py:226), [world_race.py:189](vanilla_wow_lab/wowborg/policies/world_race.py:189)
+[route.py:74](../../wowborg/nav/route.py:74), [route.py:186](../../wowborg/nav/route.py:186), [route.py:226](../../wowborg/nav/route.py:226), [world_race.py:189](../../wowborg/policies/world_race.py:189)
 
 What it does: the pace estimator persists for the entire race. Planner degradation and empty-partial nudges budget from Euclidean distance; each replan creates a fresh budget.
 
@@ -167,7 +169,7 @@ Fix direction: keep mode/terrain-conditioned pace, exclude externally interrupte
 
 ### 11. The benchmark does not collect the robustness data it claims to score
 
-[journey.py:191](vanilla_wow_lab/wowborg/nav/journey.py:191), [world_race.py:276](vanilla_wow_lab/wowborg/policies/world_race.py:276)
+[journey.py:191](../../wowborg/nav/journey.py:191), [world_race.py:276](../../wowborg/policies/world_race.py:276)
 
 What it does: journey legs retain only kind, destination, status, and reason. World Race then hardcodes `deaths`, `combat_pauses`, and `replans` to zero.
 
@@ -179,7 +181,7 @@ Fix direction: propagate the complete `RouteResult` metrics through each journey
 
 ### 12. The fake structurally guarantees away the most important real failures
 
-[fake_nav_bridge.py:56](vanilla_wow_lab/wowborg/tests/fake_nav_bridge.py:56), [fake_nav_bridge.py:169](vanilla_wow_lab/wowborg/tests/fake_nav_bridge.py:169), [test_nav.py:28](vanilla_wow_lab/wowborg/tests/test_nav.py:28)
+fake_nav_bridge.py:56 (historical source unavailable: `vanilla_wow_lab/wowborg/tests/fake_nav_bridge.py:56`), fake_nav_bridge.py:169 (historical source unavailable: `vanilla_wow_lab/wowborg/tests/fake_nav_bridge.py:169`), [test_nav.py:28](../../wowborg/tests/test_nav.py:28)
 
 What it does: movement is a constant 14-yard straight-line 3D interpolation; plans are straight-line waypoint chains; settlements are immediate successes; here→here always succeeds; portals bind everywhere.
 
@@ -193,7 +195,7 @@ Fix direction: replace the geometric toy with captured planner/frame/settlement 
 
 ### 13. Settlement correlation knowingly accepts the wrong action’s result
 
-[bridge.py:427](vanilla_wow_lab/wowborg/bridge.py:427)
+bridge.py:427 (historical source unavailable: `vanilla_wow_lab/wowborg/bridge.py:427`)
 
 What it does: any settlement with `settled.frame_id >= awaited_frame_id` satisfies the wait; a newer settlement is returned as if it were the awaited outcome.
 
@@ -205,7 +207,7 @@ Fix direction: require exact frame/request correlation and return an explicit lo
 
 ### 14. The world graph’s “nearest” and cost semantics are wrong for vertical cities
 
-[world_model.py:110](vanilla_wow_lab/wowborg/nav/world_model.py:110), [world_model.py:119](vanilla_wow_lab/wowborg/nav/world_model.py:119)
+[world_model.py:110](../../wowborg/nav/world_model.py:110), [world_model.py:119](../../wowborg/nav/world_model.py:119)
 
 What it does: chooses the nearest place using horizontal distance only, and Dijkstra uses static `cost_hint` despite the docstring saying walk edges are re-costed live.
 
@@ -217,7 +219,7 @@ Fix direction: select anchors by a live route/projection cost and make graph cos
 
 ### 15. World Race reachability can exceed 100%
 
-[world_race.py:159](vanilla_wow_lab/wowborg/policies/world_race.py:159)
+[world_race.py:159](../../wowborg/policies/world_race.py:159)
 
 What it does: the reachability numerator counts every arrival, including an “unreachable” station incorrectly reached; the denominator counts only attempted expected-reachable stations.
 
@@ -229,7 +231,7 @@ Fix direction: calculate reachable success only over expected-reachable rows and
 
 ### 16. Portal retries are time-based and validate only map identity
 
-[journey.py:143](vanilla_wow_lab/wowborg/nav/journey.py:143)
+[journey.py:143](../../wowborg/nav/journey.py:143)
 
 What it does: makes three fire attempts, sleeps one second only after a failed selection, and accepts any position on the destination map.
 
@@ -241,7 +243,7 @@ Fix direction: treat transfer as its own state with a bounded load wait and vali
 
 ### 17. Journey replan state is an undeclared cross-call attribute
 
-[journey.py:108](vanilla_wow_lab/wowborg/nav/journey.py:108)
+[journey.py:108](../../wowborg/nav/journey.py:108)
 
 What it does: creates `_last_replan_at` dynamically and retains it across `journey_to()` calls, while `replan_count` resets locally.
 
@@ -255,7 +257,7 @@ Fix direction: keep replan history local to one journey and compare only points 
 
 ### 18. Documentation still labels the shipped design a proposal and overstates implemented behavior
 
-[wowborg-nav-v2.md:3](vanilla_wow_lab/docs/designs/wowborg-nav-v2.md:3), [wowborg-nav-v2.md:46](vanilla_wow_lab/docs/designs/wowborg-nav-v2.md:46)
+[wowborg-nav-v2.md:3](../designs/wowborg-nav-v2.md:3), [wowborg-nav-v2.md:46](../designs/wowborg-nav-v2.md:46)
 
 The document remains “proposal for review” and describes waypoint hopping, settlement fidelity, cross-continent challenge content, robustness metrics, and a diverse course shape that the outcome section or implementation later contradicts.
 

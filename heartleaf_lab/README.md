@@ -12,10 +12,7 @@ This README orients newcomers (human or agent). Two pointers do most of the work
 - **[`../README.md`](../README.md)** — lab-wide setup (`uv sync` / Observatory auth) and
   the ground rules.
 
-> **Status (2026-07-06): lab just created — scaffolding only.** The game repo
-> (`Metta-AI/coworld-heartleaf`) is cloned for reference and a live Observatory league
-> exists, but **no player policy has been built yet**. Next step is human-directed: pick a
-> build path and start the loop. Live state: [`WORKING_CONTEXT.md`](WORKING_CONTEXT.md).
+> **Repository status (audited 2026-09-14):** [Cady](cady/) is implemented, with [build tools](tools/) and an [event warehouse](.claude/skills/heartleaf-event-warehouse/SKILL.md). The original scaffolding status is obsolete. Historical evaluation and deployment records are in [working context](WORKING_CONTEXT.md); re-resolve live state before operations.
 
 ## The game (one paragraph)
 
@@ -63,12 +60,9 @@ heartleaf_lab/
                                   viz_occupancy, build/viz_flow_field — movement + heatmap over the map)
   .claude/skills/lessons-review/  the ≈weekly lessons-graduation skill
   lessons_archive/                rotated per-session lesson buffers
-  .claude/skills/lessons-review/  the ≈weekly lessons-graduation skill
-  lessons_archive/                rotated per-session lesson buffers
 ```
 
-A player policy directory (e.g. `heartleaf_lab/<policy>/`) gets added once the first policy
-is built — mirroring `crewrift_lab/crewrift/` and `cue_n_woo_lab/mentalist/`.
+The implemented player lives in `cady/`; the game-hosted starter framework remains another supported design path.
 
 The full evaluate → report → improve → submit cycle, and which skill drives each step, is in
 [`AGENTS.md`](AGENTS.md) (Heartleaf layer) and [`../AGENTS.md`](../AGENTS.md) (the loop).

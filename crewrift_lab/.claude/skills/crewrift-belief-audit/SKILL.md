@@ -23,8 +23,7 @@ Two scripts, run in order, both idempotent:
 
 ## Prerequisites
 
-- Episodes fetched **with artifacts** (`coworld-episode-artifacts`; `--elevated` if any
-  opponents' seats matter — but the subject's own artifact comes with normal auth).
+- Episodes fetched **with artifacts** (`coworld-episode-artifacts`, normal participant access). Report missing/private opponent evidence as unavailable.
 - A warehouse built over those same episodes (`crewrift-event-warehouse`,
   version-matched `--expand-replay`). The join needs its `player_manifest` (color↔slot↔role
   ground truth), `phase`, `kill`/`died`, and `episode_players.parquet`.
