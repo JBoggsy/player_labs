@@ -1,7 +1,9 @@
 # Game research — 2026-09-15
 
 This is a source-and-documentation investigation, not a completed gameplay evaluation.
-The [language reference](../README.md) pins the deployed game and lists BASIC limits.
+The [language reference](../README.md) distinguishes latest source from the downloaded game and lists BASIC limits.
+See the [source and wiki audit](source-audit-2026-09-15.md) for subsequent corrections,
+additional execution details and publication evidence.
 
 ## Sources inspected
 
@@ -15,34 +17,34 @@ The [language reference](../README.md) pins the deployed game and lists BASIC li
 | [Forum](https://softmax.com/gods-of-the-arena/forum.md) | Both posts returned by the index, full post pages, and the one returned comment |
 | [Participation guide](https://softmax.com/api/observatory/v2/participate?league_id=league_3c60897b-25cf-4b37-9d1a-8554c1198f28) | League/division identity, runtime workflow; not independent proof of every generic instruction |
 | Downloaded manifest and starter | Version 2026.9.15.1, game-hosted runtime, ten seats, competition config, results schema, starter SHA-256 |
-| [Pinned source tree](https://github.com/Metta-AI/polyworld/tree/5422fb0c4b230ca7bfa57a69e450a369da2dabe9) | BASIC parser/runtime/tests; GotA host, simulation, content, map generation, executable settlement and shared Coworld logging |
+| [Pinned source tree](https://github.com/Metta-AI/polyworld/tree/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8) | BASIC parser/runtime/tests; GotA host, simulation, content, map generation, executable settlement and shared Coworld logging |
 
 The browser search tool could not fetch these sites in this session; ordinary HTTPS
 reads and GitHub/git access succeeded. No privileged competitor evidence was used.
-The source repository was cloned separately, then checked out at the manifest's exact
-revision. The local game image was downloaded but no episode was launched.
+The source repository was cloned separately and first read at the manifest's exact
+revision, then fetched and audited at latest main. See the source audit for their diff. The local game image was downloaded but no episode was launched.
 
 ## Current mechanics established from source
 
 - **Objective:** destroy the enemy fort. Each winning-team hero scores 1; otherwise
   0. Reaching the time limit without a fort victory gives all ten seats zero.
   `total_xp` is separate diagnostic output, not the competition win score.
-  See [settlement](https://github.com/Metta-AI/polyworld/blob/5422fb0c4b230ca7bfa57a69e450a369da2dabe9/examples/gods_of_the_arena/sim.nim#L3072).
+  See [settlement](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/examples/gods_of_the_arena/sim.nim).
 - **Objective access:** within each of three lanes, earlier tower tiers protect later
   tiers. Clearing every tower in one lane exposes that team's fort. Fort HP is 400.
   The object query's alive flag incorporates structural exposure, not just HP.
-  See [exposure rules](https://github.com/Metta-AI/polyworld/blob/5422fb0c4b230ca7bfa57a69e450a369da2dabe9/examples/gods_of_the_arena/sim.nim#L622).
+  See [exposure rules](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/examples/gods_of_the_arena/sim.nim).
 - **Economy:** start at level 1 with 150 gold; six inventory slots; consumables stack
   to eight; duplicate equipment is rejected. Purchases require being alive, sufficient
   gold and storage, without a shop-distance condition in `purchaseReason`. Held
   equipment applies passive bonuses. XP needed for the next level is
   `100 + (level - 1) * 75`, with a maximum level of 20.
-  See [rewards](https://github.com/Metta-AI/polyworld/blob/5422fb0c4b230ca7bfa57a69e450a369da2dabe9/examples/gods_of_the_arena/sim.nim#L653)
-  and [purchases](https://github.com/Metta-AI/polyworld/blob/5422fb0c4b230ca7bfa57a69e450a369da2dabe9/examples/gods_of_the_arena/sim.nim#L1492).
+  See [rewards](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/examples/gods_of_the_arena/sim.nim)
+  and [purchases](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/examples/gods_of_the_arena/sim.nim).
 - **Recovery:** respawn restores HP/mana, clears movement/attack state and restores
   ability readiness through the simulation. It does not recreate the policy VM.
   Script memory therefore needs to account for changes in the hero's lifecycle.
-  See [respawn](https://github.com/Metta-AI/polyworld/blob/5422fb0c4b230ca7bfa57a69e450a369da2dabe9/examples/gods_of_the_arena/sim.nim#L1803).
+  See [respawn](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/examples/gods_of_the_arena/sim.nim).
 - **Combat:** basic attacks are separate from four abilities. Explicit target and
   point casting are registered BASIC functions. Bot auto-casting also exists;
   human-control instructions about pressing Q/W/E/R are not the BASIC contract.
@@ -52,21 +54,25 @@ revision. The local game image was downloaded but no episode was launched.
   expose terrain through fog. Read team/class, identity and map dimensions from the
   host. Do not transfer positional constants from earlier maps.
 
-## Discrepancies and limits
+## Discrepancies found and resolved
+
+The four current-reference wiki pages have been corrected by the source audit.
+The claim column below identifies their earlier prose and the external Buff mirror;
+the historical statistics remain historical.
 
 | Claim/source | Current resolution |
 | --- | --- |
 | Old wiki: 64×64, movement clamped to 0–63 | Explicitly historical. Current host uses active map dimensions. |
 | Buff/current mirrored guide: 128×128 | Downloaded competition preset is 116×116. `buildArena` uses config.mapSize and `mapTiles` reads the generated layer width. Re-resolve the actual league config before any evaluation; downloaded canonical config alone does not establish league pinning. |
-| Guide introduction: Red living / Blue undead | Pinned content has Red = Death Knight, Crossbowman, Lich, Warlock, Berserker; Blue = Vanguard Knight, Ranger, Arcanist, Druid Warden, Demon Hunter. Read selfClass; some guide hero cards already use these correct colors. |
+| Guide introduction: Red living / Blue undead | Latest content has Red = Death Knight, Crossbowman, Lich, Warlock, Berserker; Blue = Vanguard Knight, Ranger, Arcanist, Druid Warden, Demon Hunter. Read selfClass; some guide hero cards already use these correct colors. |
 | Old wiki: one policy controls five heroes | Current manifest has ten independent file-policy seats, one per hero. A repeated file can occupy multiple seats with independent VMs. |
 | Old wiki: spells cannot be scripted | Current host registers castTarget/castPoint and charge/cooldown/recharge queries. |
 | Public guide's manual controls | Describes human UI, not the entire bot execution path. Bot auto-casting remains present in pinned sim.nim. |
 | Hero win-rate table | Dated 2026-09-13–14 cohort, 540 games spanning older versions. Fixed faction lineups share outcomes; rows are not independent estimates of each hero's causal strength. |
 | Player standings | Published 100-game tournament on 2026.9.14.2, explicitly not the live leaderboard. Mixed-team and mono-team cohorts answer different questions. Its additional Score/Glory values are not the platform's binary scores contract. |
 
-Source details: [hero factions](https://github.com/Metta-AI/polyworld/blob/5422fb0c4b230ca7bfa57a69e450a369da2dabe9/examples/gods_of_the_arena/content.nim#L123),
-[map construction](https://github.com/Metta-AI/polyworld/blob/5422fb0c4b230ca7bfa57a69e450a369da2dabe9/examples/gods_of_the_arena/arenas.nim#L188),
+Source details: [hero factions](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/examples/gods_of_the_arena/content.nim),
+[map construction](https://github.com/Metta-AI/polyworld/blob/7a7b22c85c1411bc37707a21b2a4a94e1b757fd8/examples/gods_of_the_arena/arenas.nim),
 [hero statistics](https://softmax.com/api/observatory/v2/wikis/Gods%20of%20the%20Arena/pages/hero-statistics.md),
 [published standings](https://softmax.com/api/observatory/v2/wikis/Gods%20of%20the%20Arena/pages/player-standings.md).
 
