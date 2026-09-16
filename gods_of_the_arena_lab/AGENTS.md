@@ -34,7 +34,9 @@ before implementing behavior.
 ## Rules specific to this lab
 
 - **Cite the deployed commit, not `main`.** Replays only re-simulate at the recording commit,
-  and `main` already differs (tower rebalance). Every mechanics doc names its commit.
+  and `main` already differs (tower rebalance, the observation expansion in
+  [docs/policy-capabilities.md §3.6](docs/policy-capabilities.md), heal buffs). Every mechanics
+  doc names its commit.
 - **Mechanics discoveries stay in the lab.** Do not post findings such as spell scaling to
   the forum or wiki (see `user_preferences.md`).
 - **Identity.** Uploads bind to the active player session; confirm `softmax status` shows

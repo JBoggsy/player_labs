@@ -12,7 +12,10 @@ deployed commit changes. Run the check first:
 Every mechanics claim below was verified against polyworld `1d7eb723` and holds at the
 deployed `5422fb0c` (checked 2026-09-15). Unless a document says otherwise, the deployed
 build is the only one that matters: replays only re-simulate at it, and `main` moves ahead
-of it (it already carries a tower rebalance the league does not run).
+of it. At `e127989` (2026-09-15) `main` carries three things the league does not run: the tower
+rebalance (900/1,200/1,800 HP, 18/24/30 damage), heal buffs to Sanguine Chalice and Aether Siphon,
+and the observation expansion that implements our requests 1–13
+([policy-capabilities.md §3.6](policy-capabilities.md#36-observations-added-on-main-not-yet-deployed)).
 
 ## What we know, and where
 
@@ -20,7 +23,7 @@ of it (it already carries a tower rebalance the league does not run).
 | --- | --- | --- | --- |
 | The policy language | A small structured BASIC: 32-bit ints, `IF`/`WHILE`, `SUB`s without return values, fixed arrays, `PRINT`. No `FOR`, `GOTO`, functions, strings, or randomness. Budgets: 20,000 instructions and 50,000 work units per decision; exhaustion disables the hero for the match. | [policy-capabilities.md](policy-capabilities.md) §1, [wiki/policy-and-host-surface.md](wiki/policy-and-host-surface.md) | [capabilities](../../docs/reports/gota-policy-capabilities-2026-09-15.html) |
 | Execution model | One file per seat, one VM per seat, no shared memory. Mono-team or mixed-team rosters are a platform setting. The engine chases targets, auto-acquires footmen, and auto-casts all four ability slots between decisions. | [policy-capabilities.md](policy-capabilities.md) §2 | same |
-| Observations | 13 self fields, a per-tick frozen visibility-filtered object list (id, kind, team, class, x, y, hp, alive), inventory, ability charges/cooldowns, static terrain through fog. Tile-grained positions; `selfId` = 100 + seat. Not exposed: XP, others' max HP/level/mana/items/targets, spell projectiles, own target, attack cooldown. | [policy-capabilities.md](policy-capabilities.md) §3 | same |
+| Observations | 13 self fields, a per-tick frozen visibility-filtered object list (id, kind, team, class, x, y, hp, alive), inventory, ability charges/cooldowns, static terrain through fog. Tile-grained positions; `selfId` = 100 + seat. Not exposed at the deployed build: XP, others' max HP/level/mana/items/targets, spell projectiles, own target, attack cooldown. `main` adds own speed/range/damage/target/cooldown/hits-landed, others' level/mana/items/facing/target/velocity, and pending spells (§3.6); a script using those names fails to compile on the deployed build. | [policy-capabilities.md](policy-capabilities.md) §3 | same |
 | Actions | `walkTo`, `attackTarget`, `buyItem`, `useItem`, `castTarget`, `castPoint`; exact acceptance rules and side effects (`walkTo` always clears the target; structure `alive` means exposed). | [policy-capabilities.md](policy-capabilities.md) §4 | same |
 | Economy | Income only from a hero's own killing hit: footman 25/15, hero 150/100, tower 100/75, fort 0; flat for the whole match. No assists, passive income, denies, or losses except purchases. Death costs 216 ticks. Shop works anywhere; no upgrades or selling. Creep supply about 18,000 XP per team per match. | [leveling-economy.md](leveling-economy.md) | [economy](../../docs/reports/gota-leveling-economy-2026-09-15.html) |
 | Scaling | Only HP, mana, basic damage, and move speed scale (linear per class). Abilities, items, consumables, footmen, towers, rewards are fixed. Duels take the same time at every level; spells fall from 33–53% of an enemy at L1 to 7–12% at L20; three phases keyed to level. **Lab-internal finding; do not post.** | [scaling.md](scaling.md), [tools/scaling/](../tools/scaling/README.md) | [scaling](../../docs/reports/gota-scaling-2026-09-15.html) |
@@ -28,7 +31,7 @@ of it (it already carries a tower rebalance the league does not run).
 | Hero and item numbers | Base stats and growth per class, kits, item prices and effects. | [wiki/hero-statistics.md](wiki/hero-statistics.md), [wiki/game-guide.md](wiki/game-guide.md), [scaling.md](scaling.md) Appendix A, `tools/scaling/specs.json` | |
 | Rules and structures | Map, teams, seats, object kinds, tower exposure order, fort exposure, respawn, mana regen, scoring (1 per winning seat, 0 on timeout for all). Tower HP 1,200/2,400/4,800 at the deployed build. | [wiki/mechanics.md](wiki/mechanics.md), [wiki/overview.md](wiki/overview.md) | |
 | Replays | A binary action tape plus per-tick hashes; full state only by re-simulation at the recording commit (resolved from the coworld manifest). Kill, XP, gold, level, purchase events are exact; per-attacker damage and heals are not recoverable without an engine change. Expander design (Nim core, Python decoder, `compare.py`/`features.py` adapters). | [replay-format.md](replay-format.md) | [replay](../../docs/reports/gota-replay-format-2026-09-15.html) |
-| Requested engine changes | 15 observation and recording requests with reasons, for the polyworld maintainer. Not yet sent. | [requested-game-changes.md](requested-game-changes.md) | |
+| Requested engine changes | 14 requests with reasons. Items 1–13 (observations) merged to polyworld `main` in `e127989` (2026-09-15), not yet deployed; item 14 (damage/heal/kill events in the recording) still open. | [requested-game-changes.md](requested-game-changes.md) | |
 | Standings | Where to read league results and what the numbers mean. | [wiki/player-standings.md](wiki/player-standings.md) | |
 | The official starter | Nearest-enemy attack, class-based shopping, walk to (64,64). | [../reference/base.bas](../reference/base.bas), [../README.md](../README.md) | |
 
@@ -45,6 +48,8 @@ of it (it already carries a tower rebalance the league does not run).
    names; grep those names in the new commit.
 4. **Host surface.** `examples/gods_of_the_arena/bots.nim` lists every registered data name
    and function; compare with `policy-capabilities.md` §3–4 and `wiki/policy-and-host-surface.md`.
+   When the deployed build includes `e127989`, fold `policy-capabilities.md` §3.6 into §3.1–3.2,
+   move requests 1–13 out of `requested-game-changes.md`, and update the limits tables.
 5. **Replays.** Re-simulate one fresh episode at the deployed commit and confirm the final
    hash matches the game log (`replay-format.md` §1.4).
 6. **Platform facts** (identity, seats, credits, submission) live at the root in

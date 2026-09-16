@@ -101,7 +101,7 @@ These are GotA's overrides, not the much larger generic VM defaults.
 | Work budget | 50,000 units per hero decision |
 | Logical VM memory | 2 MiB |
 | Globals | 256 |
-| Registered host data / functions | 32 / 32 maximum |
+| Registered host data / functions | 32 / 32 maximum (64 / 64 on polyworld `main` since `e127989`, not yet deployed) |
 | Arrays | 32, with 4,096 total integer elements |
 | Routines | 64 including the top-level routine |
 | Parameters | 16 per routine |
@@ -145,6 +145,19 @@ sell-item or manual-spell-mode function, even where internal engine helpers exis
 Read host registration before assuming an engine function is callable from BASIC.
 Terrain queries return zero for invalid/missing tiles; zero is also a valid result
 for some fields. Ability cooldown/recharge values are ticks (24 per simulated second).
+
+## Additions on polyworld `main`, not yet deployed
+
+Polyworld commit `e127989` (2026-09-15) adds read-only self data `selfMoveSpeed`,
+`selfAttackRange`, `selfAttackDamage`, `selfTarget`, `selfAttackCooldown`,
+`selfAttacksLanded`; constants `worldScale` (60000) and `tickRate` (24); object queries
+`objectLevel`, `objectMana`, `objectItemId(i, slot)`, `objectItemCount(i, slot)`,
+`objectFacingX/Y`, `objectTarget`, `objectVelX/Y` (16 work units each); and a pending-spell
+list `spellCount()`, `spellAbility`, `spellCasterId`, `spellX/Y`, `spellImpactTick`
+(16 work units each, visibility-filtered like objects). The host limits rise to 64 data
+names and 64 functions. The deployed league build does not have these names; a script
+that uses them fails to compile there. The maintainer's description is in
+[coworld/gota/guide.md](https://github.com/Metta-AI/polyworld/blob/main/coworld/gota/guide.md).
 
 ## Starter
 

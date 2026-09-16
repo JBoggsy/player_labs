@@ -24,7 +24,11 @@ written or uploaded yet; the research phase is complete (see
 - The account's other player, Games Bond, owns the `games-bond-gota` policy; its private
   logs are not readable under the James Botts session.
 - Deployed polyworld commit `5422fb0c` (coworld version 2026.9.15.1). Check with
-  `tools/deployed_ref.py` at the start of a session.
+  `tools/deployed_ref.py` at the start of a session. Polyworld `main` (`e127989`,
+  2026-09-15) already carries our observation requests 1–13, a tower rebalance, and two
+  heal buffs; none is live. A policy that references the new names
+  ([docs/policy-capabilities.md §3.6](docs/policy-capabilities.md)) fails to compile on
+  the deployed build, so gate any use of them on the deployed commit.
 
 ## Public discussion
 
@@ -38,7 +42,11 @@ written or uploaded yet; the research phase is complete (see
 ## Unresolved constraints
 
 - Damage and heal attribution is not recoverable from replays; `damage` is a stub in the
-  expander design until [requested change 15](docs/requested-game-changes.md) lands.
+  expander design until [requested change 14](docs/requested-game-changes.md) lands (still
+  open on `main`).
+- The observation expansion is merged but not deployed. Until it is, the burst-killer and
+  siege rules must work from the deployed surface (no `selfTarget`, no `objectTarget`, no
+  spell warnings); decide whether the first upload targets the deployed surface or waits.
 - Mono-team versus mixed-team rosters are a platform setting; confirm which the target
   league or experience request uses before reasoning about allies.
 - The public wiki still carries the old tower-HP numbers (600/800/1,000); the corrected

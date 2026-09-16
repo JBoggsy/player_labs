@@ -17,17 +17,19 @@ Remove a task when it is complete.
 
 ## Gods of the Arena
 
-- Send `gods_of_the_arena_lab/docs/requested-game-changes.md` to the polyworld maintainer
-  (James sends it); then mark items done as they land and drop any the host now exposes.
+- Requested engine change 14 (damage/heal/kill events in the recording) is still open after
+  `e127989` shipped items 1–13; raise it with the polyworld maintainer (James sends it).
 - Publish the tower-HP correction (1,200/2,400/4,800) from `docs/wiki/mechanics.md` and
   `docs/wiki/game-guide.md` to the public wiki once James authorizes the write.
 - Build the replay expander per `docs/replay-format.md` §4 (Nim core at the deployed commit,
   Python tape decoder, `compare.py`/`features.py` adapters); keep `damage` a stub until
-  change request 15 lands.
+  change request 14 lands.
 - Fix `coworld-episode-artifacts/fetch_artifacts.py` to sniff the `POLYWORLDREPLAY` magic
   and save GotA replays as `replay.bin` (shared skill; needs a go-ahead).
 - When `tools/deployed_ref.py` reports a new deployed commit, re-run the checks in
-  `docs/research.md`; `main` already carries a tower rebalance (900/1,200/1,800 HP).
+  `docs/research.md`; `main` already carries a tower rebalance (900/1,200/1,800 HP), heal
+  buffs, and the observation expansion (`policy-capabilities.md` §3.6). If the new build
+  includes `e127989`, fold §3.6 into the deployed tables and retire requests 1–13.
 
 ## Paintbot
 

@@ -1,11 +1,14 @@
 # What a Gods of the Arena policy can know and do
 
-> **Currency.** Verified against polyworld `1d7eb723`; the league runs `5422fb0c`, and the
-> cited files (`bots.nim`, `basic.nim`, `content.nim`, the cited `sim.nim` procedures) are
-> unchanged between the two. **Re-verify when** `tools/deployed_ref.py` reports a new deployed
-> commit: diff `examples/gods_of_the_arena/bots.nim` (host surface), `src/polyworld/basic.nim`
-> (dialect), and the `sim.nim` acceptance procedures named below. Rendered report with
-> citations: [`docs/reports/gota-policy-capabilities-2026-09-15.html`](../../docs/reports/gota-policy-capabilities-2026-09-15.html).
+> **Currency.** Sections 1–5 describe the deployed `5422fb0c` (verified at `1d7eb723`; the
+> cited files `bots.nim`, `basic.nim`, `content.nim`, and the cited `sim.nim` procedures are
+> unchanged between the two). Section 3.6 describes the observation surface polyworld `main`
+> added after the deployed build (`e127989`, 2026-09-15), which the league does **not** run
+> yet. **Re-verify when** `tools/deployed_ref.py` reports a new deployed commit: diff
+> `examples/gods_of_the_arena/bots.nim` (host surface), `src/polyworld/basic.nim` (dialect),
+> and the `sim.nim` acceptance procedures named below; if the new build includes `e127989`,
+> fold §3.6 into §3.1–3.2 and update the limits table. Rendered report with citations (deployed
+> surface only): [`docs/reports/gota-policy-capabilities-2026-09-15.html`](../../docs/reports/gota-policy-capabilities-2026-09-15.html).
 
 A complete inventory of the BASIC dialect, every observation a hero script can read,
 and every action it can take, with the parameters and semantics of each. Verified
@@ -90,10 +93,11 @@ converts for you (`mapCoordinate`, `sim.nim:1160`).
 | `mapWidth`, `mapHeight`, `mapLayers` | int | Map dimensions in tiles and layer count. Read these rather than hard-coding 116. |
 | `GroundLayer` … `WaterLayer`, `TerrainNone` … `TerrainWater` | constants | Named constants for layers 0–3 and terrain kinds 0–7. |
 
-Not exposed about yourself: XP, movement speed, basic attack range/damage,
-current attack target, whether a path exists to a destination, death/respawn
-timer. Class-derived facts must be table-driven in your script
-from [hero statistics](wiki/hero-statistics.md).
+Not exposed about yourself at the deployed build: XP, movement speed, basic attack
+range/damage, current attack target, attack cooldown, whether a path exists to a
+destination, death/respawn timer. Class-derived facts must be table-driven in your
+script from [hero statistics](wiki/hero-statistics.md). Everything in that list except
+XP, path existence, and the respawn timer is exposed once `main` deploys (§3.6).
 
 ### 3.2 Visible objects (host functions, 4 work units each; `objectCount` costs 2)
 
@@ -111,15 +115,16 @@ Invalid index returns 0 (or -1 for class, 0 for alive).
 | `objectTeam(i)` | 0 Red, 1 Blue | Owner. `<> selfTeam` means enemy. |
 | `objectClass(i)` | 0–9 for heroes, -1 otherwise | Enemy hero class, hence its kit and ranges. |
 | `objectX(i)`, `objectY(i)` | tile | Position (fort: its center). |
-| `objectHp(i)` | int ≥ 0 | Current HP. **Maximum HP is not exposed**; infer from kind (footman 60, towers 1,200/2,400/4,800 for outer/inner/gate, fort 400) or hero class + level tables. |
+| `objectHp(i)` | int ≥ 0 | Current HP. **Maximum HP is not exposed**; infer from kind (footman 60, towers 1,200/2,400/4,800 for outer/inner/gate at the deployed build, 900/1,200/1,800 once `main` deploys, fort 400) or hero class + level tables (`objectLevel` on `main`, §3.6). |
 | `objectAlive(i)` | 0/1 | Heroes/footmen: HP > 0 and not in the death animation. **Towers: HP > 0 and exposed** (outer must fall before inner, inner before gate). **Fort: HP > 0 and at least one lane fully cleared.** So a live but shielded structure reads 0. Dead heroes remain in the list with alive = 0 until they respawn. |
 
-What is **not** in the object list: your own hero is included (filter by
-`objectId(i) = selfId`); enemy positions outside your team's vision are absent
-entirely, not stale; there is no "last seen" memory unless you build it in arrays;
-no object level, mana, gold, inventory, cooldowns, facing, current target, or
+What is **not** in the object list at the deployed build: your own hero is included
+(filter by `objectId(i) = selfId`); enemy positions outside your team's vision are
+absent entirely, not stale; there is no "last seen" memory unless you build it in
+arrays; no object level, mana, gold, inventory, cooldowns, facing, current target, or
 movement vector; no spell projectiles or area-warning markers; no tower tier or
-lane label (derive from position).
+lane label (derive from position). Level, mana, inventory, facing, target, velocity,
+and pending spells arrive with `main` (§3.6); gold, cooldowns, and tier/lane do not.
 
 Vision (`rebuildVision`, `sim.nim:520–566`) is shared per team and terrain-occluded:
 each living hero sees radius 10 tiles, each footman 5, each tower its attack range
@@ -156,6 +161,64 @@ Ranges are in tiles there; internally 60,000 units = 1 tile.
 Invalid tiles return 0. The map is fixed (seed 54), so a full 116×116 sweep
 costs 430,000 work units and cannot fit in one decision; cache what you need in
 arrays over several ticks or hard-code lane geometry after inspecting a replay.
+
+### 3.6 Observations added on `main`, not yet deployed
+
+Polyworld `e127989` (2026-09-15) implements requests 1–13 of
+[requested-game-changes.md](requested-game-changes.md). The league still runs
+`5422fb0c`, where **none of these names exist: a script that references one fails to
+compile there and the episode fails for that seat.** Run `tools/deployed_ref.py`
+before uploading a policy that uses them. Sources: `bots.nim` (`HeroDataNames`,
+`objectProc`, `spellProc`, `initHeroHost`), `observations.nim`, `sim.nim`
+(`heroAttackCooldown`, `rawWorldObjectAt`), and the maintainer's own description in
+`coworld/gota/guide.md` at that commit.
+
+Units. `worldScale = 60000` (world units per tile) and `tickRate = 24` are new
+read-only constants. Positions stay in whole tiles; facing, speed, range, and
+velocity are in world units, so divide by `worldScale` for tiles. The "Y" of every
+new API is the second horizontal axis (internally `z`), not height.
+
+**Self data** (read-only globals, snapshotted at decision start like §3.1):
+
+| Name | What it indicates |
+| --- | --- |
+| `selfMoveSpeed` | Unblocked movement in world units per tick, including level and boots. |
+| `selfAttackRange` | Basic-attack range in world units by class (`heroAttackRange(class)`; no item modifies it). Planar distance between centers; towers allow at least 105,000 and forts 255,000 regardless. |
+| `selfAttackDamage` | Current basic-attack damage including level and equipment: the exact last-hit threshold. |
+| `selfTarget` | Object ID of the ordered or auto-acquired attack target, 0 for none. Tells you whether the engine silently dropped your last `attackTarget`. |
+| `selfAttackCooldown` | Ticks until the next basic hit could land if the target stays in range: remaining recovery plus the next windup (45% of the class swing duration), or the remainder of a windup in progress; an idle hero reports a full windup; 0 while dead. Separate from ability cooldowns. |
+| `selfAttacksLanded` | Lifetime count of basic hits that landed, kept across respawns; spells do not count. |
+
+**Visible objects** (host functions, **16 work units each**, same visibility filter and
+index space as §3.2; 0 for an invalid index or a field that does not apply):
+
+| Function | What it indicates |
+| --- | --- |
+| `objectLevel(i)` | Hero level (0 for non-heroes). |
+| `objectMana(i)` | Hero's current mana (0 for non-heroes). |
+| `objectItemId(i, slot)`, `objectItemCount(i, slot)` | That hero's inventory, slots 0–5, same item IDs as §3.3. |
+| `objectFacingX(i)`, `objectFacingY(i)` | Unit facing, normalized and scaled by `worldScale`: facing +X reads `(60000, 0)`. Works for heroes, footmen, and towers. |
+| `objectTarget(i)` | The object's current attack target ID, or 0 if it has none, is dead, or the target is not visible to your team. Heroes report their attack target, towers theirs, footmen their footman/hero/tower target or the enemy fort when battering it. |
+| `objectVelX(i)`, `objectVelY(i)` | Actual displacement over the last tick in world units, collision included; 0 when stationary. Advancing versus retreating without differencing positions yourself. |
+
+**Pending spells** (`spellCount()` and one-argument queries, **16 work units each**):
+the list of unresolved casts from cast start through impact, including projectiles and
+area warnings, in simulation order. Allied casts are always listed; an enemy cast is
+listed only while its aim tile is visible to your team (the same rule the viewer uses
+for warning markers). Resolved casts drop out.
+
+| Function | What it indicates |
+| --- | --- |
+| `spellAbility(i)` | Ability enum ID from `content.nim` (0-based); -1 for an invalid index. |
+| `spellCasterId(i)` | Caster's object ID, or 0 when the caster is an enemy your team cannot see. |
+| `spellX(i)`, `spellY(i)` | Aim/impact tile or area center. Not the projectile's current flight position. |
+| `spellImpactTick(i)` | Absolute tick of impact; `spellImpactTick(i) - worldTick` is the time left to step out. |
+
+Also changed at that commit: the object list is built at the **start** of the decision
+(before self data is set) rather than on the first object query, so self data and the
+object list are one consistent sample even after action calls; spell queries read the
+live pending list, so your own successful cast appears in it during the same decision.
+The registered host limits rose from 32/32 to 64/64 data names/functions.
 
 ## 4. Actions
 

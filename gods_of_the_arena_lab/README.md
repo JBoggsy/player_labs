@@ -117,7 +117,7 @@ These are GotA's overrides, not the much larger generic VM defaults.
 | Work budget | 50,000 units per hero decision |
 | Logical VM memory | 2 MiB |
 | Globals | 256 |
-| Registered host data / functions | 32 / 32 maximum |
+| Registered host data / functions | 32 / 32 maximum (64 / 64 on polyworld `main` since `e127989`, not yet deployed) |
 | Arrays | 32, with 4,096 total integer elements |
 | Routines | 64 including the top-level routine |
 | Parameters | 16 per routine |

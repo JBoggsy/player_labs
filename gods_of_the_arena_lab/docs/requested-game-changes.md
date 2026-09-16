@@ -1,9 +1,17 @@
 # Requested changes to the Gods of the Arena BASIC host
 
-> **Currency.** Host surface verified against polyworld `1d7eb723` (identical at deployed
-> `5422fb0c`). **Re-verify when** the deployed commit changes: re-check `bots.nim` registrations
-> before sending, since any item the maintainer has already added should be dropped. The status
-> line below says whether the list has been sent.
+> **Currency.** Checked against polyworld `origin/main` at `e127989` ("Expand GotA BASIC
+> combat observations", 2026-09-15) and the deployed `5422fb0c`. **Re-verify when**
+> `tools/deployed_ref.py` reports a new deployed commit: confirm the `bots.nim` registrations
+> below are in that build, then move the merged items out of this file and into
+> [policy-capabilities.md](policy-capabilities.md) as deployed surface.
+
+## Status
+
+| Items | State |
+| --- | --- |
+| 1–13 (observations) | **Merged to polyworld `main`** in `e127989`, with the host limits raised from 32/32 to 64/64 data names/functions and two new constants (`worldScale = 60000`, `tickRate = 24`). **Not deployed**: the league still runs `5422fb0c`, where none of these names exist and a script that references them fails to compile. The exact registered names and semantics are in [policy-capabilities.md §3.6](policy-capabilities.md#36-observations-added-on-main-not-yet-deployed). |
+| 14 (damage, heal, and kill events in the replay or results) | **Open.** No event stream or per-seat damage metric has been added on `main`; `damage` stays a stub in the replay expander ([replay-format.md](replay-format.md)). |
 
 A list of feature requests/changes I'd like you and your agents to make. All but the last of these are just adding more observable information to the agent so that it can make better-informed choices. All of the things I'm requesting are given to players in a real DOTA gaming, which defuses a balance argument (and, to a limited extent, makes an argument for their inclusion here).
 
@@ -38,6 +46,6 @@ A list of feature requests/changes I'd like you and your agents to make. All but
 
 ## Notes for the maintainer
 
-- The host limits allow 32 data names and 32 functions, and the current host uses 28 of each. Items 1 to 13 exceed the remaining headroom, so the limits would need to rise or several fields be packed into one call.
-- Item 7 should be visibility-filtered like the object list; a projectile or warning inside fog should stay hidden.
+- Items 1 to 13 landed with the names suggested above (`e127989`); the host limits were raised to 64 data names and 64 functions to make room.
+- Item 7 is visibility-filtered as requested: an enemy cast is listed only when its aim tile is visible to your team, and `spellCasterId` returns 0 when the caster itself is hidden.
 - Enemy gold and ability cooldowns are deliberately not requested.

@@ -3,7 +3,9 @@
 > **Currency.** Format and re-simulation verified against the deployed polyworld `5422fb0c`
 > (see the table below) using one downloaded league episode. **Re-verify when** `tools/deployed_ref.py`
 > reports a new commit: the replay format version in `replays.nim`, the action record layout, and
-> whether a re-simulation at the new commit still reproduces an episode's hash line. Rendered report:
+> whether a re-simulation at the new commit still reproduces an episode's hash line. Polyworld
+> `main` is already at `ReplayGameVersion` 36 (deployed: 33) and hashes hero velocity and
+> `attacksLanded`, so episodes recorded after the next deploy re-simulate only at that commit. Rendered report:
 > [`docs/reports/gota-replay-format-2026-09-15.html`](../../docs/reports/gota-replay-format-2026-09-15.html).
 
 Investigation report (2026-09-15). What a hosted GotA replay actually contains,
@@ -364,7 +366,7 @@ Events derived **by diffing** state between ticks (no engine changes needed):
 | `level_up` | `level` delta | |
 | `gold_spent` / `item_bought` / `item_used` | inventory diff + gold drop on the tick a `buyItem`/`useItem` was accepted | `slot, item, cost` |
 | `cast` | new entry in `world.casts` | `slot, ability, slot_index, target/point, auto (not in tape at that tick) vs explicit` |
-| `damage` | **Stub until change request 6 lands.** The engine keeps no per-hit record, so per-attacker damage is not diff-derivable and the expander must not patch the simulator to get it. Emit `damage` as a placeholder event type with no rows, documented as blocked on [requested game change 6](requested-game-changes.md) (damage/heal events in the recording). The victim-side `hp` delta per tick is still available through `objective_state`. Fill this row in as soon as the change ships. | `tick, source, target, amount, cause` (reserved) |
+| `damage` | **Stub until change request 14 lands.** The engine keeps no per-hit record, so per-attacker damage is not diff-derivable and the expander must not patch the simulator to get it. Emit `damage` as a placeholder event type with no rows, documented as blocked on [requested game change 14](requested-game-changes.md) (damage/heal events in the recording). The victim-side `hp` delta per tick is still available through `objective_state`. Fill this row in as soon as the change ships. | `tick, source, target, amount, cause` (reserved) |
 | `objective_state` (sampled) | every `--snapshot-every N` ticks: all hero rows (pos, hp, mana, gold, level, state, target ids, inventory, cooldowns), tower/fort HP, footman counts per lane per team | the positions/heatmap feed |
 | `visibility` (sampled) | for each hero: count of enemy heroes visible, enemy structures exposed | answers "did it attack something it could see" |
 
@@ -432,7 +434,7 @@ runs one process per replay for this reason; do the same).
    `coworld/releases/*.json` (`source_commit`), but only for some releases and
    not for `2026.9.15.1` yet. Cache `(coworld_version → sha)` locally as we
    observe them and fail loudly otherwise.
-2. **Damage attribution** is blocked on [requested game change 6](requested-game-changes.md): damage and heal events recorded by the engine. Until then `damage` is a stub and `features.py` must not build on "damage dealt".
+2. **Damage attribution** is blocked on [requested game change 14](requested-game-changes.md): damage and heal events recorded by the engine. Still open on polyworld `main` at `e127989` (2026-09-15), which shipped the observation requests but no event recording. Until then `damage` is a stub and `features.py` must not build on "damage dealt".
 3. **The Nim expander is required for the first iteration** (decided 2026-09-15). Layer B alone gives aggregates and unaccepted action requests, which is not enough. The expander must also emit, per tick and per bot, what that bot could observe under fog of war (the team visibility map and the visibility-filtered object list) so we can tell what each policy knew when it acted.
 4. **Own-seat private logs**: the `games-bond-gota` seat is owned by the
    "Games Bond" player identity; the current `softmax login` is not that
