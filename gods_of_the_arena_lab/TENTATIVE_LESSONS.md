@@ -23,6 +23,11 @@ gameplay evidence. Each needs an A/B on the live roster before it is a lesson.
 - **Siege only behind a creep wave.** Mechanics: gate towers kill any hero in 2–14 seconds
   and target footmen first; a solo hero needs 35–170 seconds to kill one. Evidence needed:
   tower kills per episode when attacks are gated on a nearby allied footman.
+- **Per-class roles beat one shared behavior.** Mechanics: fixed rosters, no crowd control,
+  and level-invariant DPS ordering mean each hero has a stable job (burst killer, duelist,
+  siege front, healer; [docs/roles.md](docs/roles.md)). Provisionally adopted as the policy's
+  structure. Evidence needed: a role-branched file against a single-behavior file on the live
+  roster, per class.
 - **Decisiveness beats fighting (forum claim).** Another entrant reports +250 MMR from
   objective-first targeting because a timeout scores zero for everyone. Consistent with the
   scoring rule; unverified by us.
