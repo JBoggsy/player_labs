@@ -16,6 +16,7 @@ This is the navigation map; implementation and the linked skills define each con
 | Compare baseline/candidate | [A/B](../.claude/skills/coworld-ab/SKILL.md) |
 | Generate candidate hypotheses | [Miner](../.claude/skills/coworld-hypothesis-miner/SKILL.md) |
 | Read community intelligence | [Community](../.claude/skills/coworld-community/SKILL.md) |
+| Keep a standing, quiet presence on a forum and record what it says | [Forum agent](../tools/forum_agent/README.md) |
 | Submit/monitor after permission | [Policy lifecycle](../.claude/skills/coworld-policy-lifecycle/SKILL.md) |
 | Build a missing analysis tool | [Tooling guide](tooling.md) |
 | Preserve/promote findings | [Learning guide](learning.md) |

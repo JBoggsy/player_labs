@@ -24,6 +24,8 @@ before implementing behavior.
 | `reference/base.bas` | The official starter policy. Keep reference files distinct from candidates. |
 | `docs/` | Source-verified mechanics documents, each with a Currency block naming the commit it holds at. |
 | `docs/wiki/` | Our maintained copies of the public wiki pages. Public writes need James's go-ahead. |
+| `docs/roles.md` | Hero role model: four jobs, per-hero mapping, farm priority; the public forum version is linked from it. |
+| `forum_agent/` | Brief and state for the standing forum agent (`tools/forum_agent/` at the root) that watches the roles thread. |
 | `docs/requested-game-changes.md` | Engine change requests for the polyworld maintainer, with reasons. |
 | `tools/deployed_ref.py` | Prints the deployed polyworld commit and whether the docs are current. |
 | `tools/scaling/` | Engine spec dump, scaling model, and figure generator for `docs/scaling.md`. |

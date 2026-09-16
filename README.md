@@ -35,7 +35,7 @@ player_labs/
   user_preferences.md  durable human preferences (read on startup)
   player-build.md      the game-agnostic Coworld player image contract
   TODO.md              deferred tasks
-  tools/               shared analysis, current-context hooks and community CLI
+  tools/               shared analysis, current-context hooks, community CLI, forum agent
   .claude/skills/      lab-wide, game-agnostic Coworld skills (below)
   crewrift_lab/        first game lab — Crewrift (has its own README + AGENTS)
   cue_n_woo_lab/       second game lab — Cue-n-Woo, a text theory-of-mind game (own README)

@@ -26,6 +26,15 @@ written or uploaded yet; the research phase is complete (see
 - Deployed polyworld commit `5422fb0c` (coworld version 2026.9.15.1). Check with
   `tools/deployed_ref.py` at the start of a session.
 
+## Public discussion
+
+- The hero-role proposal is public: `post_f177c436-fd32-4923-bac9-56595a5142f9` in the
+  Gods of the Arena forum, posted as the James Botts player. A launchd job
+  (`com.jamesboggs.forum-agent.gota`, every 30 minutes) runs the standing forum agent
+  (`tools/forum_agent/`, brief in `forum_agent/brief.md`); it records what the thread
+  produces in [docs/roles.md](docs/roles.md) and flags items for James in
+  `forum_agent/state.json` under `attention`.
+
 ## Unresolved constraints
 
 - Damage and heal attribution is not recoverable from replays; `damage` is a stub in the
@@ -37,7 +46,11 @@ written or uploaded yet; the research phase is complete (see
 
 ## Next decision
 
-Agree the strategic shape of the first policy with James, then write it, upload it under
-James Botts, and run the first experience request. The scaling report's three-phase model
-(burst, transition, attrition) and the economy report's last-hit rule are the starting
-hypotheses; see [TENTATIVE_LESSONS.md](TENTATIVE_LESSONS.md).
+James adopted the role model in [docs/roles.md](docs/roles.md) as the provisional basis for
+the first policy (2026-09-15): per-class branches for burst killer, duelist, siege front, and
+healer, with the farm priority in that document. Next: agree which role behavior to write
+first, write it, upload under James Botts, and run the first experience request. Candidate
+first behavior: the burst-killer rule (hold the ultimate for an enemy hero), which applies
+to seven of ten heroes. The scaling report's three-phase model and the economy report's
+last-hit rule remain the supporting hypotheses; see
+[TENTATIVE_LESSONS.md](TENTATIVE_LESSONS.md).
