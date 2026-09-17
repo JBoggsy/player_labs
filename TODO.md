@@ -17,19 +17,30 @@ Remove a task when it is complete.
 
 ## Gods of the Arena
 
-- Requested engine change 14 (damage/heal/kill events in the recording) is still open after
-  `e127989` shipped items 1–13; raise it with the polyworld maintainer (James sends it).
-- Publish the tower-HP correction (1,200/2,400/4,800) from `docs/wiki/mechanics.md` and
-  `docs/wiki/game-guide.md` to the public wiki once James authorizes the write.
-- Build the replay expander per `docs/replay-format.md` §4 (Nim core at the deployed commit,
-  Python tape decoder, `compare.py`/`features.py` adapters); keep `damage` a stub until
-  change request 14 lands.
+- Re-verify the mechanics documents at polyworld `f2ab9598` (deployed 2026-09-17): `attackMove`
+  is registered to BASIC (800 work units), two god-guard gate towers flank each god and must
+  both fall before the god takes damage, footmen path to the next enemy building after their
+  lane waypoints, and barracks ids are assigned by map order. Update `policy-capabilities.md`,
+  `wiki/mechanics.md`, `leveling-economy.md` (fort exposure) and the Currency blocks.
+- Local `run-episode -n 3` produced identical games for seeds 2026 and 2028; check whether the
+  match seed only affects animation choices before trusting seed counts as independent samples.
+
+- Requested engine change 14 (damage/heal/kill events in the recording) is still open at the
+  deployed `f2ab9598`; raise it with the polyworld maintainer (James sends it).
+- Agree with Andre who owns the `game-guide`, `hero-statistics`, and `player-standings` wiki
+  pages: his Polyworld Buff sync job and our `docs/wiki/` copies both write them.
+- Tell the polyworld maintainer that `coworld/gota/guide.md`, the manifest readme, and
+  `docs/index.html` say barracks have 900 HP while `sim.nim:3527` gives them 950.
+- Regenerate the four rendered reports under `docs/reports/gota-*-2026-09-15.html` from
+  their Markdown sources, which are now verified at `7365e4e9`.
+- Join the replay expander's per-seat table (`tools/replay_stats.py --json`) into
+  `tools/compare.py` and `tools/features.py` on `(episode_id, position)` so every seat,
+  not only ours, gets exact last hits, kills and deaths; keep `damage` a stub until change
+  request 14 lands.
+- Decide the miner's ladder score: confirm whether the league applies 100 or 200 XP per
+  simulated minute as the time penalty, then add `--score ladder` to `tools/miner_rows.py`.
 - Fix `coworld-episode-artifacts/fetch_artifacts.py` to sniff the `POLYWORLDREPLAY` magic
   and save GotA replays as `replay.bin` (shared skill; needs a go-ahead).
-- When `tools/deployed_ref.py` reports a new deployed commit, re-run the checks in
-  `docs/research.md`; `main` already carries a tower rebalance (900/1,200/1,800 HP), heal
-  buffs, and the observation expansion (`policy-capabilities.md` §3.6). If the new build
-  includes `e127989`, fold §3.6 into the deployed tables and retire requests 1–13.
 
 ## Paintbot
 

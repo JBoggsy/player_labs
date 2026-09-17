@@ -28,13 +28,20 @@ Teams are Red = 0, Blue = 1. Seats 0–4 are Red, seats 5–9 Blue.
 | 8 | Warlock | Red |
 | 9 | Berserker | Red |
 
-Object kinds: 1 fort, 2 hero, 3 footman, 4 tower. Non-heroes have class -1.
-Allied objects are included; enemy objects require team visibility. Object-list
-indexes are temporary; actions use stable object IDs.
+Object kinds: 1 fort, 2 hero, 3 footman, 4 tower, 5 barracks. Non-heroes have class -1.
+Allied objects are included; enemy objects require team visibility. Destroyed
+towers and barracks leave the object list. Object-list indexes are temporary;
+actions use stable object IDs.
 Tower `objectAlive` requires positive HP and exposure: outer → inner → gate in
-each lane. The fort becomes exposed when any one lane has no surviving towers.
+each lane. A barracks is exposed only when all three of its lane's towers are
+down. The fort becomes exposed when any one lane has no surviving towers.
 Its alive flag includes that exposure condition. This is a targeting constraint,
 not evidence that a protected structure has died.
+
+Each team has two barracks per lane (six in total, `generation/maps.nim`
+`placeBarracks`). Every 480 ticks (20 s, `DefaultSpawnIntervalTicks`) each
+surviving barracks spawns three footmen (`CreepsPerBarracks`), so a lane sends
+six per team per wave. Barracks do not attack. Destroying one stops its footmen.
 
 ## Economy and recovery
 
@@ -45,9 +52,11 @@ each next level is `100 + (level - 1) * 75`. Hero-attributed killing hits award:
 | --- | --- | --- |
 | Footman | 25 | 15 |
 | Hero | 150 | 100 |
-| Tower | 100 | 75 |
+| Tower or barracks | 100 | 75 |
 
-Footmen have 60 HP and 12 base damage; tower HP is 1,200/2,400/4,800 for outer/inner/gate (`TowerHitPoints`, sim.nim); fort HP is 400.
+Footmen have 60 HP and 12 base damage; tower HP is 950/1,300/1,950 for outer/inner/gate
+(`TowerHitPoints`, sim.nim) with tower damage 18/24/30; barracks HP is 950 (the outer-tower
+value); fort HP is 400.
 These rewards are not an automatic whole-team payout for every kill.
 
 Inventory has six slots (0–5). Consumables stack to eight; a full existing stack
@@ -93,7 +102,12 @@ Molten Fist's effective mana cost is zero.
 
 ## Movement and scoring
 
-Mobile units separate from living tower bodies on the same navigation layer.
+Living towers and barracks occupy their footprint tiles, which block pathing for
+every unit on that layer; a destroyed building frees its tiles at once. A unit
+whose ordered move makes no progress for 24 ticks (one second) has its path
+recomputed. `terrainWalkable` also reports building footprints, but only as your
+team last saw them: an enemy building destroyed out of your sight still reads as
+blocked until your team sees it (`knownWalkable`).
 Footmen skip route waypoints already passed after a combat detour.
 
 The game returns score 1 to winning-team seats and 0 otherwise. An unfinished fort
