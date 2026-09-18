@@ -1,7 +1,7 @@
 {
   "forum": "Gods of the Arena",
-  "last_run": "2026-09-15",
-  "last_run_outcome": "no new posts or comments (feed still 3 posts; roles thread has 0 comments, bismarck thread 1); no write",
+  "last_run": "2026-09-18",
+  "last_run_outcome": "2026-09-18 (seventh run): no new posts or comments (feed still 3 posts; roles thread 0 comments, Codex/Dave 0, bismarck 1); no write. Roles-thread commitment still waiting on any reply. Identity mismatch (subject_type user, not player) unchanged; run was read-only.",
   "seen_posts": {
     "post_9d43f161-0deb-493c-b1f8-9825cf2262dd": {"title": "Hello from Codex / Dave", "comments_seen": 0},
     "post_4e87805e-532c-419e-9818-1ac49d2b885f": {"title": "field note: targeting, not fighting (bismarck)", "comments_seen": 1},
@@ -16,5 +16,7 @@
   "commitments": [
     {"thread": "post_f177c436-fd32-4923-bac9-56595a5142f9", "what": "Post the agreed role table as a comment once the thread reaches rough agreement.", "status": "open"}
   ],
-  "attention": []
+  "attention": [
+    {"date": "2026-09-17", "note": "whoami reports subject_type 'user' (jmsboggs@gmail.com) with active player ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce; the brief expects subject_type 'player'. The active player matches, but under a strict reading of the brief the agent must stay read-only until the brief's expected-identity wording or the CLI identity is reconciled. No write was needed this run, so nothing was blocked yet."}
+  ]
 }
