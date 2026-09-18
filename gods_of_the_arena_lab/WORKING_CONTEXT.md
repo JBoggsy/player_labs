@@ -10,6 +10,52 @@ Replace completed or superseded context in place.
 
 ## Objective
 
+Current direction (James, 2026-09-17): improve with Claude via `agent-collab`.
+Win while earning strictly more XP than every teammate. Track that joint outcome,
+team win rate, team XP rank/margin, and XP per 1,000 ticks separately. Farm until
+teammates initiate fights, take finishing kills, and return to farm; rely on teammates
+to end the match. No solo aggression or pushing. Further league submission, commits
+and pushes require James's explicit permission. This direction supersedes the older
+farm-only objective and proposed pushing/dueling increments below.
+
+**PAUSED by James, 2026-09-18.** Review findings only. No further gameplay changes,
+uploads, evaluations, commits, pushes or league submissions without fresh direction.
+No accepted gameplay improvement in this campaign; v13 remains the accepted baseline.
+Local modules and diagnostic v20 (`6f3fce4b-1199-4982-a791-7e9e93561bab`) contain
+v13 gameplay plus sparse KT traces (`cfgKsTrace=1`),252globals/32arrays. No new
+league submission was made. Rejected retreat-cast code and lane-follow code are removed.
+
+The16-game diagnostic request `xreq_1c2f1807-8f6a-4afa-9dfa-6b3683f5e6c0` is
+complete: all16replaysverified, no VMerrors, no operationalfailures. Records in
+`tmp/collab/xp-team/trace/`. Do not repeat it. Completed dashboard:localhost8817.
+
+v18 lane-follow was rejected: XP/1,000 ticks fell 168.24 to 112.78 and farm 5.50 to
+3.56 in 48 games per arm; its code is removed. v19 cast-and-retreat's exploratory
+XP gain (169.02 to 188.57, 48/arm) did not replicate in fresh96/arm: 171.99 to163.72,
+kills1.98 to1.77, deaths2.06 to2.26; joint win/strictXPlead0/96 both. Differences
+are inconclusive, not proof of equality or harm; there is no adoption evidence.
+All192confirmation replays verified. One v13 Lich hit the BASIC instruction limit;
+this subject remains in the comparison. No v19 VM errors or operational failures.
+
+Evidence: `tmp/collab/xp-team/cast-confirm/summary.json` and `comparison.md`;
+exploratory results in `cast/`, rejected lane rule in `repair/`. Requests completed:
+baseline `xreq_91cee40e-2001-49de-99d4-14203b172341`, candidate
+`xreq_a68adf17-db43-4d11-96f5-bcfa119e64db`. Do not duplicate them.
+Dashboard http://localhost:8817 shows request progress; its score parser does not
+accept these game results. Exact replay metrics now join into compare/miner tools.
+
+Review: `tmp/collab/xp-team/FINDINGS.md` is the root-reviewed summary;
+`trace/trace-rows.json` is the raw trace evidence. Claude's TRACE-VERDICT counts and
+conversion claims are exploratory and not reconciled; see the summary's limits. Raw1891KTrows are not independent failedfinishers: priority
+overrides dominate. There were60openings without retreat/punish override,58basic
+and2spell; at least35basic used approach calculation. Equalhorizon cases do not prove
+in-range status. This suggests inspecting approach timing if James resumes; it does
+not prove zerochase or any forecasting rule improves the objective. Spell identity
+cannot be inferred from drop size. The earlier horizon-shrink explanation was withdrawn.
+Claude tmux `claude-gota-xp` completed the read-only review and is standing down.
+Across v19 exploration and confirmation, each arm achieved only1jointwin/strict
+teamXPlead in144games. Closing the gap to the leading teammate remains unsolved.
+
 Make the James Botts policy (`ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`, the account
 default) take as many footman last hits as possible, as a module a larger policy can wrap.
 Uploaded versions (2026-09-17): `james-botts-gota:v1` (`91f92e55-1146-43b0-b324-8c2e2bf62d6c`,

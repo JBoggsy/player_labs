@@ -381,7 +381,7 @@ Positions contain tile `x`, `y` (`mapCoordinate`) and raw `world_x`, `world_y`,
 | --- | --- |
 | `meta` | `schema_version=2`, source path, game version, seed, recorded ticks, tile-grid size, tick rate, world scale, roster, `actions_enabled`, and damage availability. |
 | `action` | Every consumed tape request in tape order: `action_index`, numeric `kind`, two `args`, `accepted`. |
-| `hero_death` / `hero_respawn` | Seat, position and `killer_slot`; `-1` means no hero credited, null means ambiguous. Respawn retains the preceding death's killer. |
+| `hero_death` / `hero_respawn` | Seat, position and `killer_slot`; `-1` means no hero credited, null means ambiguous. Death also includes `heroes_before`: every seat's HP and position immediately before the death tick. Respawn retains the preceding death's killer. |
 | `hero_kill` / `assist` | One row per credited kill/assist. Kill rows carry victim seat/hero ID when known, otherwise null plus candidate victim seats. |
 | `last_hit` | One row per footman last hit, from exact XP/earned-gold reward decomposition. |
 | `building_kill` | One row per credited building reward. `building_kind=tower|barracks`, target team, lane, tier, object ID and god-guard status where known. Ambiguous victim fields are null and candidates are retained. |
@@ -454,6 +454,23 @@ ties (1, 1, 3); a team with zero footman last hits has null shares. Team level i
 mean seat level. Unknown splits remain null/`unknown`, never zero. JSON also retains
 bounds and all summary seat fields. Team bounds sum seat bounds and can be conservative
 because seat assignments are correlated.
+
+With event-time `heroes_before` data, seat rows also report the fraction of enemy
+deaths within 12 tiles of that living seat, and the fraction of those deaths credited
+to that seat. Tile distance is Euclidean on the map's integer coordinates. Missing
+event positions or ambiguous nearby killer attribution leave the corresponding
+fraction null. Old expansions must be regenerated with the rebuilt binary for this
+measurement. Comparison averages per-episode fractions, so a pooled event fraction
+can differ.
+
+Reports use `episode.json.id` for episode identity, not the artifact-directory name.
+`compare.py --baseline-replay-stats BASE.json --candidate-replay-stats CAND.json`
+and `miner_rows.py --replay-stats REPORT.json` join exact combat counts by episode
+ID and seat position. The join checks outcome, duration, policy name and XP; duplicate
+episodes/seats or mismatches fail. Exact comparison mode leaves unavailable combat
+metrics missing rather than falling back to telemetry. The miner excludes seats
+without exact counts when a replay report is requested. Private logs remain the
+source of policy activation counters and first-occurrence estimates.
 
 Artifact discovery accepts one directory or recursively finds episode directories
 under a batch. It recognizes `replay.bin`, `replay.json`, `replay`, then `replay.json.z`.

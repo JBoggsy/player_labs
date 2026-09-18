@@ -107,6 +107,28 @@ class StatsTests(unittest.TestCase):
         self.assertIsNone(red['tower_kills'])
         self.assertFalse(report['attribution_complete'])
 
+    def test_death_proximity_uses_living_hero_at_event_and_keeps_ambiguity(self):
+        from replay_stats import ExpandedEpisode, episode_stats
+        path = self.root/'expanded.jsonl'
+        positions = [dict(slot=slot, hp=100, pos=dict(x=x, y=0))
+                     for slot, x in enumerate([0, 30, 12, 13])]
+        events = [dict(kind='hero_death', slot=2, team='BlueTeam', killer_slot=0,
+                       heroes_before=positions),
+                  dict(kind='hero_death', slot=3, team='BlueTeam', killer_slot=1,
+                       heroes_before=positions)]
+        path.write_text(''.join(json.dumps(event)+'\n' for event in events))
+        expanded = ExpandedEpisode(path, {}, self.summary(), False)
+        seat = episode_stats(self.root, expanded)['seats'][0]
+        self.assertEqual(seat['nearby_enemy_deaths'], 1)
+        self.assertEqual(seat['nearby_death_share'], .5)
+        self.assertEqual(seat['nearby_kill_share'], 1)
+        events[0]['killer_slot'] = None
+        path.write_text(''.join(json.dumps(event)+'\n' for event in events))
+        self.assertIsNone(episode_stats(self.root, expanded)['seats'][0]['nearby_kill_share'])
+        positions[0]['hp'] = 0
+        path.write_text(''.join(json.dumps(event)+'\n' for event in events))
+        self.assertEqual(episode_stats(self.root, expanded)['seats'][0]['nearby_enemy_deaths'], 0)
+
     def test_cache_reuse_invalidation_and_no_actions(self):
         from types import SimpleNamespace
         from unittest.mock import patch

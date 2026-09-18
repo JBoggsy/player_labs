@@ -254,6 +254,11 @@ proc events(output: File, before, world: World, totals: var seq[Totals],
     var row = world.seatRow(victim)
     row["pos"] = position(world.heroes[victim].position)
     row["killer_slot"] = (if unique: %killer else: newJNull())
+    # Event-time positions avoid estimating fight proximity from sparse snapshots.
+    var heroesBefore = newJArray()
+    for slot, hero in before.heroes:
+      heroesBefore.add %*{"slot": slot, "hp": hero.hp, "pos": position(hero.position)}
+    row["heroes_before"] = heroesBefore
     if not unique:
       attributionComplete = false
       var candidates = possible.deduplicate()

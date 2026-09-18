@@ -1,5 +1,13 @@
 # James Botts policy
 
+Gameplay work is paused at James's request (2026-09-18); review only until fresh direction.
+
+Current build: diagnostic **v20**, v13 gameplay with sparse hero-window traces
+(`cfgKsTrace=1`). The league entry and accepted baseline remain **v13**. The failed
+retreat-cast experiment is removed; the local modules reuse the last-hit planner's
+lane globals. They use 252 global scalars and all32arrays. Set `cfgKsTrace=0` to
+stop diagnostic output. v20's16-game sample is complete (all replays verified, no VM errors); it is not an A/B.
+
 The Gods of the Arena policy for the James Botts player, built from modules. Its first
 capability is footman last-hitting; the module layout is meant to be wrapped by a
 larger fighting and sieging policy later. Design and engine evidence:
@@ -50,6 +58,37 @@ may override any output; the module itself never calls an action.
 
 ## Build, evaluate, upload
 
+The active objective is a team win with strictly more XP than every teammate.
+Report `win_team_xp_lead_rate` over all episodes alongside team win rate, team XP
+rank/margin, XP per 1,000 ticks, exact hero kills, nearby-death conversion and deaths.
+Ties do not count as XP leadership. `winning_xp_mean` is raw XP times the win
+indicator, not the platform's time-penalized reward formula.
+
+Each A/B arm uses one copy plus nine random champions, run in the same window.
+Start at 48 episodes per arm; confirm gains smaller than about 10% with 96 per arm.
+Inspect actual opponent/class balance. Start and link the XP dashboard for requests
+over 16 episodes. Build and upload directly; local runs below are debugging tools,
+not a pre-upload gate. Submission, commit and push require James's explicit go-ahead.
+
+For exact metrics, generate each arm's replay report and pass both into comparison:
+
+```sh
+uv run python gods_of_the_arena_lab/tools/replay_stats.py BASE_DIR \
+  --binary gods_of_the_arena_lab/tools/bin/expand_replay-f2ab9598 --json base-replay.json
+uv run python gods_of_the_arena_lab/tools/replay_stats.py CAND_DIR \
+  --binary gods_of_the_arena_lab/tools/bin/expand_replay-f2ab9598 --json cand-replay.json
+uv run python gods_of_the_arena_lab/tools/compare.py BASE_DIR CAND_DIR \
+  --baseline james-botts-gota:v13 --candidate james-botts-gota:vN --group all \
+  --target win_team_xp_lead_rate \
+  --baseline-replay-stats base-replay.json --candidate-replay-stats cand-replay.json
+```
+
+Use the recording commit's binary. Rebuild it after expander changes. Nearby means
+within 12 tiles of our living hero immediately before the death tick; ambiguous
+killer attribution makes conversion unavailable, rather than guessing a killer.
+The miner accepts `--replay-stats` too; exact counts supersede telemetry estimates,
+including for seats without private logs. Damage remains unavailable.
+
 ```sh
 python3 gods_of_the_arena_lab/policy/build.py                       # -> dist/james_botts.bas
 uv run python gods_of_the_arena_lab/tools/lasthit_eval.py \
@@ -75,7 +114,19 @@ Income is inferred from gold increments (footman 15, hero 100); the harness chec
 `25 * lastHits + 150 * heroKills + 100 * towerKills` against `total_xp`. `lost` counts
 ordered targets that vanished unpaid; the two zero fields held `early` and `missed`
 counters that were removed to stay under the 256-global limit.
-With `cfgDebug = 1` the log also carries `ORD` and `LOST` event lines.
+The diagnostic build emits a `KT` line when the planned hero target differs from
+the previous applied order, excluding the regular `LH` tick:
+
+```
+KT tick target ordered ksTarget ksSlot horizon ringHp predicted ev1 ev2 seen cooldown x y hp retreat punish
+```
+
+`target` is the current hero candidate, else the previous hero order. `ringHp` is
+current only when `seen == tick`. `predicted` uses the selected landing horizon
+(or the current basic-hit horizon for a closing window). Events encode
+`tick * 256 + damage`. `retreat` and `punish` identify priority overrides; repeated
+overridden windows may print each tick. `KT` uses68PRINTevents; it cannot coincide
+with `LH`. The modules have no separate ORD/LOST prints.
 
 **PRINT budget.** The VM charges two print events per item (value plus separator) against
 a limit of 128 events per decision, so a decision may print at most about 63 items in
@@ -121,6 +172,10 @@ champions, as league games do (James's rule, 2026-09-17). Games last 4,000 to 15
 | v13 (v16 A/B baseline arm) | | 5.4 | 2.6 | 48 |
 | v16 | v13 plus area and ring ultimates on still targets (rejected: finishing casts 16 to 44 but hero kills 2.10 to 1.54, XP flat; knob off) | 5.7 | 2.1 | 48 |
 | v15 | v13 plus a 12-tile approach toward enemy heroes a teammate is fighting (rejected: hero kills 2.65 to 1.58, deaths 1.73 to 2.42), and standing ready beside a shielded structure predicted to die within 10 s (never fired) | 5.7 | 2.4 | 48 |
+| v13 (v18 A/B baseline arm) | | 5.50 | 1.83 | 48 |
+| v18 | Farm the higher-level ally's lane (rejected: XP/1,000 ticks 168.24 to 112.78, kills 2.10 to 1.62; code removed) | 3.56 | 1.52 | 48 |
+| v13 (v19 confirmation baseline) | XP/1,000 ticks 171.99, kills 1.98; one instruction-limit VM error included | 5.67 | 2.06 | 96 |
+| v19 | Cast finishing spell before retreat (not adopted: XP/1,000 ticks 163.72, kills 1.77; no replicated gain; code removed) | 5.66 | 2.26 | 96 |
 
 The v3 versus v4 A/B (`tools/compare.py`, one observation per episode, 16 per arm) is
 inconclusive: last hits per 1,000 ticks 4.40 to 4.54, adjusted p = 1.0. The instrument needs

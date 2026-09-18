@@ -44,12 +44,13 @@ SCORES = ("xp", "xp_rate", "last_hits", "win")
 def seat_row(seat, record, score_kind: str) -> dict | None:
     """Flatten one seat into a miner row; None when the score is not computable."""
     telemetry = seat.telemetry
+    combat = seat.combat or telemetry
     if score_kind == "xp":
         score = seat.total_xp
     elif score_kind == "xp_rate":
         score = None if seat.total_xp is None or not record.ticks else 1000.0 * seat.total_xp / record.ticks
     elif score_kind == "last_hits":
-        score = None if telemetry is None else telemetry.last_hits
+        score = None if combat is None else combat.last_hits
     else:
         score = float(seat.won)
     if score is None:
@@ -61,6 +62,7 @@ def seat_row(seat, record, score_kind: str) -> dict | None:
         "ticks": record.ticks, "won": seat.won, "draw": record.draw,
         "total_xp": seat.total_xp, "level": seat.level, "vm_error": seat.vm_error,
         "telemetry": None if telemetry is None else asdict(telemetry),
+        "combat": None if seat.combat is None else asdict(seat.combat),
     }
     return row
 
@@ -76,6 +78,7 @@ def main() -> int:
     parser.add_argument("--role", dest="roles", action="append", choices=ROLE_NAMES,
                         help="Keep only these role tiers (repeatable).")
     parser.add_argument("--out", type=Path, required=True, help="JSONL output path.")
+    parser.add_argument("--replay-stats", type=Path, help="Verified replay_stats.py JSON; exact combat counts override LH estimates.")
     args = parser.parse_args()
 
     name, version = parse_spec(args.policy)
@@ -85,7 +88,7 @@ def main() -> int:
     dropped: Counter = Counter()
     seen: set[str] = set()
     for root in args.roots:
-        records, excluded = load_batch(root)
+        records, excluded = load_batch(root, args.replay_stats)
         dropped.update(excluded)
         for record in records:
             if record.episode_id in seen:
@@ -95,6 +98,9 @@ def main() -> int:
                 dropped["failed_or_unknown_episode"] += 1
                 continue
             for seat in own_seats(record, name, version):
+                if args.replay_stats is not None and seat.combat is None:
+                    dropped["seat_missing_exact_replay"] += 1
+                    continue
                 if args.classes and seat.hero_class not in args.classes:
                     continue
                 if args.roles and ROLE_OF_CLASS[seat.hero_class] not in args.roles:

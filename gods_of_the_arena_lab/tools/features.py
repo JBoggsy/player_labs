@@ -3,8 +3,9 @@
 Consumes the rows `miner_rows.py` writes (one per episode and own seat) and exposes the
 `adapter` and `METAS` names the engine loads. Features come from end-of-game results and
 the policy's own `LH` telemetry snapshots (240-tick resolution); nothing here needs a
-replay re-simulation. Rows without telemetry keep only the result-derived features, so
-the engine reports lower coverage for the telemetry ones instead of dropping the seat.
+replay re-simulation. When miner_rows receives a verified replay report, its combat
+counts override LH estimates, including for seats without telemetry. Policy activation
+and timing features still require logs; missing features remain unavailable.
 
 Score components are excluded per `score_kind` (set by `miner_rows.py --score`): XP is
 25 per last hit, 150 per hero kill, 100 per building kill, and level is a function of XP,
@@ -101,6 +102,12 @@ def adapter(row: dict) -> Episode | None:
             features[key] = never if value is None else float(value)
         features["farmed_at_all"] = float(telemetry["last_hits"] > 0)
         features["died_at_all"] = float(telemetry["deaths"] > 0)
+    combat = row.get("combat")
+    if combat is not None:
+        for key in ("last_hits", "hero_kills", "tower_kills", "deaths"):
+            features[key] = float(combat[key])
+        features["farmed_at_all"] = float(combat["last_hits"] > 0)
+        features["died_at_all"] = float(combat["deaths"] > 0)
     for name in SCORE_COMPONENTS.get(score_kind, set()):
         features.pop(name, None)
     notes = {"class": str(row.get("hero_class")), "role": str(row.get("role")),

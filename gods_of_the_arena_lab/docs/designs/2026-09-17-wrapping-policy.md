@@ -9,7 +9,11 @@ James's direction (2026-09-17): the policy does not push structures. It keeps it
 holds a level and item lead over the enemy heroes, and punishes them when they dive our
 towers. Farm and kills are the means; the measurable objective is the gap in level, XP
 and items between our hero and the enemy heroes in the same game, with last hits and
-deaths as guard rails.
+deaths as guard rails. James's current objective is a **team win with strictly more XP
+than every teammate**. Track that joint outcome alongside win rate, own XP per 1,000
+ticks, team XP rank/margin and exact combat counts. Teammates initiate fights and end
+the match; our policy farms and takes finishing blows. Raw XP on a losing team does
+not satisfy the objective.
 
 Why no pushing: a siege module was built and measured (one copy per game, 48 games per
 arm). It took 0.98 structures per game with farm and deaths unchanged, but hero kills
@@ -28,10 +32,17 @@ highest-priority intent.
 | --- | --- | --- | --- |
 | 1 | survive (`30_survive.bas`) | enemy hero targeting me within 8 tiles, enemy tower firing at me, or low HP with a heal in hand | walk toward own god, drink |
 | 2 | punish (`25_punish.bas`) | an allied tower is firing at an enemy hero within 7 tiles of it and 12 of me, HP above 50 percent | attack that hero; the engine auto-casts the kit |
-| 3 | last hit (`20_lasthit.bas`) | enemy footmen in play | window strike, chase-attack (melee and low-damage classes) or idle at the standoff point |
-| 4 | lane (`90_main.bas`) | nothing else | walk to the lane front |
+| 3 | kill-steal (`22_ksteal.bas`) | an engaged enemy is predicted to die to our available hit | take the finishing hit or cast, then return to farm |
+| 4 | last hit (`20_lasthit.bas`) | enemy footmen in play | window strike, chase-attack (melee and low-damage classes) or idle at the standoff point |
+| 5 | lane (`90_main.bas`) | nothing else | walk to the lane front |
 
 Shopping (`40_shop.bas`) runs every tick after the action; it is not a layer.
+
+The cast-before-retreat experiment was not adopted: its exploratory XP gain did
+not replicate in96gamesperarm. Its code is removed. Current diagnostic build adds
+sparse `KT` traces of hero-window transitions, preserving v13 gameplay. The traces
+expose the ring forecast and priority overrides so a future change can target an
+observed cause. No sticky-window or damage-cap rule is adopted.
 
 ## Level and item lead
 

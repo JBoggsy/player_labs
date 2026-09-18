@@ -11,7 +11,9 @@ downloader (`coworld-episode-artifacts`) writes for one experience request:
 
 Nothing here re-simulates a replay. Everything is end-of-game state plus the
 policy's own `LH` telemetry snapshots (see policy/README.md, "Telemetry"), so
-per-seat combat counts exist only for seats whose policy prints them.
+inferred combat counts exist only for seats whose policy prints them. Passing
+replay_stats to load_batch joins verified expander counts for all seats by
+(episode_id, position), checking outcome, duration, policy name and XP.
 """
 
 from __future__ import annotations
@@ -77,6 +79,16 @@ class Telemetry:
 
 
 @dataclass
+class CombatCounts:
+    last_hits: int
+    hero_kills: int
+    tower_kills: int  # Includes barracks, matching the LH and XP accounting contract.
+    deaths: int
+    nearby_death_share: float | None = None
+    nearby_kill_share: float | None = None
+
+
+@dataclass
 class Seat:
     episode_id: str
     position: int
@@ -92,6 +104,7 @@ class Seat:
     has_log: bool
     vm_error: bool | None        # `BASIC error:` in the seat's own log; None without a log
     telemetry: Telemetry | None
+    combat: CombatCounts | None = None
 
 
 @dataclass
@@ -245,7 +258,7 @@ def load_episode(directory: Path) -> EpisodeRecord | None:
     return record
 
 
-def load_batch(root: Path) -> tuple[list[EpisodeRecord], Counter]:
+def load_batch(root: Path, replay_stats: Path | None = None) -> tuple[list[EpisodeRecord], Counter]:
     """Load every episode directory under `root` (the downloader's output directory,
     or a parent holding several). Raises on a duplicate episode id."""
     records: list[EpisodeRecord] = []
@@ -262,6 +275,33 @@ def load_batch(root: Path) -> tuple[list[EpisodeRecord], Counter]:
             raise ValueError(f"duplicate episode id {record.episode_id} under {root}")
         seen.add(record.episode_id)
         records.append(record)
+    if replay_stats is not None:
+        report = json.loads(replay_stats.read_text())
+        by_id = {record.episode_id: record for record in records}
+        joined: set[str] = set()
+        for episode in report["episodes"]:
+            episode_id = episode["episode_id"]
+            if episode_id not in by_id:
+                continue
+            if episode_id in joined:
+                raise ValueError(f"duplicate replay episode {episode_id}")
+            joined.add(episode_id)
+            record = by_id[episode_id]
+            rows = episode["seats"]
+            if (episode.get("verified") is not True or len(rows) != 10
+                    or {row["slot"] for row in rows} != set(range(10))
+                    or episode["ticks"] != record.ticks or episode["outcome"] != record.outcome):
+                raise ValueError(f"invalid replay coverage or outcome for {episode_id}")
+            by_slot = {row["slot"]: row for row in rows}
+            for seat in record.seats:
+                row = by_slot[seat.position]
+                if (row["xp"] != seat.total_xp or bool(row["win"]) != seat.won
+                        or row["policy_name"] != seat.policy_name):
+                    raise ValueError(f"replay identity/result mismatch: {episode_id}:{seat.position}")
+                seat.combat = CombatCounts(row["last_hits"], row["hero_kills"],
+                                           row["building_kills"], row["deaths"],
+                                           row.get("nearby_death_share"), row.get("nearby_kill_share"))
+        excluded["missing_exact_replay"] += sum(not r.ops_fail and r.episode_id not in joined for r in records)
     return records, excluded
 
 

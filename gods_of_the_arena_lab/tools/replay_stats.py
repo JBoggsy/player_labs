@@ -114,6 +114,13 @@ def episode_stats(directory: Path, expanded: ExpandedEpisode) -> dict:
     if ticks <= 0:
         raise ValueError('nonpositive recorded duration')
     seats = [dict(hero) for hero in summary['heroes']]
+    deaths = []
+    if expanded.path.exists():
+        with expanded.path.open() as source:
+            for line in source:
+                event = json.loads(line)
+                if event.get('kind') == 'hero_death':
+                    deaths.append(event)
     for seat in seats:
         if 25 * seat['last_hits'] + 150 * seat['hero_kills'] + 100 * seat['building_kills'] != seat['xp']:
             raise ValueError(f'reward identity failed in {directory.name} seat {seat["slot"]}')
@@ -122,6 +129,27 @@ def episode_stats(directory: Path, expanded: ExpandedEpisode) -> dict:
         seat['xp_per_1000_ticks'] = 1000 * seat['xp'] / ticks
         seat['team_last_hit_share'] = seat['last_hits'] / team_lh if team_lh else None
         seat['rank_within_team'] = 1 + sum(s['last_hits'] > seat['last_hits'] for s in allies)
+        enemies = [event for event in deaths if event['team'] != seat['team']]
+        seat['nearby_enemy_deaths'] = None
+        seat['nearby_enemy_kills'] = None
+        seat['nearby_death_share'] = None
+        seat['nearby_kill_share'] = None
+        if expanded.path.exists() and all('heroes_before' in event for event in enemies):
+            nearby = []
+            for event in enemies:
+                positions = {hero['slot']: hero for hero in event['heroes_before']}
+                own = positions[seat['slot']]
+                victim = positions[event['slot']]
+                dx = own['pos']['x'] - victim['pos']['x']
+                dy = own['pos']['y'] - victim['pos']['y']
+                if own['hp'] > 0 and dx * dx + dy * dy <= 144:
+                    nearby.append(event)
+            kills = sum(event['killer_slot'] == seat['slot'] for event in nearby)
+            unknown = sum(event['killer_slot'] is None for event in nearby)
+            seat['nearby_enemy_deaths'] = len(nearby)
+            seat['nearby_enemy_kills'] = kills if not unknown else None
+            seat['nearby_death_share'] = len(nearby) / len(enemies) if enemies else None
+            seat['nearby_kill_share'] = kills / len(nearby) if nearby and not unknown else None
     teams = []
     for team in sorted({s['team'] for s in seats}):
         allies = [s for s in seats if s['team'] == team]
@@ -134,7 +162,9 @@ def episode_stats(directory: Path, expanded: ExpandedEpisode) -> dict:
             row[key] = sum(values) if all(v is not None for v in values) else None
         row['xp_per_1000_ticks'] = 1000 * row['xp'] / ticks
         teams.append(row)
-    return dict(episode_id=directory.name, directory=str(directory), ticks=ticks,
+    metadata = directory / 'episode.json'
+    episode_id = json.loads(metadata.read_text())['id'] if metadata.exists() else directory.name
+    return dict(episode_id=episode_id, directory=str(directory), ticks=ticks,
                 outcome=summary['outcome'], verified=True,
                 attribution_complete=summary['attribution_complete'],
                 actions_enabled=summary['actions_enabled'], cache_hit=expanded.cache_hit,

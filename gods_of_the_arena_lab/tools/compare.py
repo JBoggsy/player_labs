@@ -5,8 +5,8 @@ Diffs a BASELINE and a CANDIDATE policy version across two matched, fresh, same-
 experience requests and delegates statistics, verdicts, and rendering to `ab_stats`.
 
 Unit and grouping. The class per seat is fixed (seat 0 is always the Death Knight, seat
-5 always the Vanguard Knight), and one policy usually holds several seats in one episode.
-The unit is therefore one observation per EPISODE per GROUP: seats of the same group in
+5 always the Vanguard Knight). Current evaluations use one subject seat per episode.
+The unit is one observation per EPISODE per GROUP: seats of the same group in
 one episode are averaged before any test, so a game is never counted twice in a group.
 `--group` picks the split: `class` (ten groups, the honest split, needs large batches),
 `role` (the five farm-priority tiers of docs/roles.md), `team` (red/blue), or `all`
@@ -15,13 +15,19 @@ metric becomes the within-episode fraction of the policy's seats and is tested a
 
 Sources. `win` and `total_xp` come from results.json for every seat. `level` comes from
 the game log's `heroes:` line for every seat. Last hits, hero kills, tower kills and
-deaths come from the policy's own `LH` telemetry and exist only for seats that print it
-(see policy/README.md); a version without telemetry reports those metrics as n/a.
+deaths use verified replay counts when --baseline-replay-stats and
+--candidate-replay-stats are supplied; missing replay coverage stays missing in
+that mode. Without those arguments they use inferred `LH` telemetry.
 
-Caveat on win rate. When the policy sits on both teams of one episode (the usual
-experience-request fill), the seat's team win is partly decided by its own copies on
-the other side. Read `xp_mean` and the farm metrics as the per-seat signal; treat
-`win_rate` as a team outcome.
+Team XP leadership requires strictly more XP than all four teammates; a tie does
+not count. `win_team_xp_lead_rate` measures that lead AND a team win over all games.
+`team_xp_rank` uses competition ranking (ties share rank), while `team_xp_margin`
+subtracts the highest teammate XP. Incomplete teammate evidence is excluded.
+`winning_xp_mean` is raw XP times the win indicator, averaged over all games; it
+is a diagnostic, not a claim about the platform's cumulative reward formula.
+
+Caveat on win rate. It is a team outcome affected by the nine other seats. Historical
+multi-copy episodes must not be treated as independent hero-match observations.
 
 Usage:
   uv run python gods_of_the_arena_lab/tools/compare.py BASE_DIR CAND_DIR \
@@ -47,7 +53,13 @@ import ab_stats  # noqa: E402
 
 # (key, higher_is_better, kind, applies_to_group). Class-grouped metrics have group None.
 METRICS = [
+    ("win_team_xp_lead_rate", True, "rate", None),
     ("win_rate", True, "rate", None),
+    ("team_xp_lead_rate", True, "rate", None),
+    ("team_xp_rank", False, "mean", None),
+    ("team_xp_margin", True, "mean", None),
+    ("team_total_xp", True, "mean", None),
+    ("winning_xp_mean", True, "mean", None),
     ("xp_mean", True, "mean", None),
     ("xp_per_1k_ticks", True, "mean", None),
     ("level_mean", True, "mean", None),
@@ -55,6 +67,8 @@ METRICS = [
     ("last_hits_per_1k_ticks", True, "mean", None),
     ("no_last_hit_rate", False, "rate", None),
     ("hero_kills_mean", True, "mean", None),
+    ("nearby_death_share", True, "mean", None),
+    ("nearby_kill_share", True, "mean", None),
     ("tower_kills_mean", True, "mean", None),
     ("deaths_mean", False, "mean", None),
     ("vm_error_rate", False, "rate", None),
@@ -64,10 +78,10 @@ METRICS = [
     # out longer. Reread this direction once the policy is winning games.
     ("ticks_mean", True, "mean", "episodes"),
 ]
-def metrics_for(grouping: str) -> list[tuple]:
+def metrics_for(grouping: str, single_seat_per_group: bool = False) -> list[tuple]:
     """Seat-level rates stay Fisher-tested rates only when each episode contributes one seat
     per group (`class`); averaged over several seats they are fractions, tested as means."""
-    if grouping == "class":
+    if grouping == "class" or single_seat_per_group:
         return METRICS
     return [(key, hib, "mean" if kind == "rate" and group is None else kind, group)
             for key, hib, kind, group in METRICS]
@@ -87,9 +101,30 @@ def _per_1k(value: int | None, ticks: int | None) -> float | None:
     return 1000.0 * value / ticks
 
 
-def seat_value(seat: Seat, ticks: int | None, key: str) -> float | None:
+def seat_value(seat: Seat, record: EpisodeRecord, key: str) -> float | None:
     """One seat's value for a metric, or None when the source is missing."""
-    telemetry = seat.telemetry
+    ticks = record.ticks
+    telemetry = seat.combat or seat.telemetry
+    if key == "winning_xp_mean":
+        return None if seat.total_xp is None else float(seat.total_xp if seat.won else 0)
+    if key in {"win_team_xp_lead_rate", "team_xp_lead_rate", "team_xp_rank", "team_xp_margin", "team_total_xp"}:
+        teammates = [other for other in record.seats
+                     if other.team == seat.team and other.position != seat.position]
+        if (seat.total_xp is None or len(teammates) != 4
+                or len({other.position for other in teammates}) != 4
+                or any(other.total_xp is None for other in teammates)):
+            return None
+        teammate_xp = [other.total_xp for other in teammates]
+        if key == "team_total_xp":
+            return float(seat.total_xp + sum(teammate_xp))
+        margin = seat.total_xp - max(teammate_xp)
+        if key == "team_xp_margin":
+            return float(margin)
+        if key == "team_xp_rank":
+            return float(1 + sum(xp > seat.total_xp for xp in teammate_xp))
+        if key == "team_xp_lead_rate":
+            return float(margin > 0)
+        return float(seat.won and margin > 0)
     if key == "win_rate":
         return float(seat.won)
     if key == "xp_mean":
@@ -100,6 +135,8 @@ def seat_value(seat: Seat, ticks: int | None, key: str) -> float | None:
         return None if seat.level is None else float(seat.level)
     if key == "vm_error_rate":
         return None if seat.vm_error is None else float(seat.vm_error)
+    if key in {"nearby_death_share", "nearby_kill_share"}:
+        return None if seat.combat is None else getattr(seat.combat, key)
     if telemetry is None:
         return None
     if key == "last_hits_mean":
@@ -117,11 +154,18 @@ def seat_value(seat: Seat, ticks: int | None, key: str) -> float | None:
     return None
 
 
-def load_arm(root: Path, policy: str, version: int, grouping: str) -> tuple[dict[str, list], dict]:
+def load_arm(root: Path, policy: str, version: int, grouping: str,
+             replay_stats: Path | None = None) -> tuple[dict[str, list], dict]:
     """Group one arm's seats; each group row is (seats of one episode, episode record).
     Episode-level rows go under "episodes"."""
     group_names, key_of = GROUPINGS[grouping]
-    records, excluded = load_batch(root)
+    records, excluded = load_batch(root, replay_stats)
+    if replay_stats is not None:
+        # Exact mode never silently mixes inferred telemetry with verified counts.
+        for record in records:
+            for seat in record.seats:
+                if seat.combat is None:
+                    seat.telemetry = None
     groups: dict[str, list] = {name: [] for name in group_names}
     groups["episodes"] = []
     for record in records:
@@ -152,7 +196,7 @@ def value_fn(rows: list, key: str) -> list[float]:
         return [float(r["ticks"]) for r in rows if r.get("ticks")]
     out: list[float] = []
     for seats, record in rows:
-        values = [v for v in (seat_value(seat, record.ticks, key) for seat in seats) if v is not None]
+        values = [v for v in (seat_value(seat, record, key) for seat in seats) if v is not None]
         if values:
             out.append(statistics.mean(values))
     return out
@@ -181,14 +225,18 @@ def main() -> None:
     parser.add_argument("--group", choices=list(GROUPINGS), default="class",
                         help="How to split the policy's seats (see the module docstring).")
     parser.add_argument("--json", type=Path, help="Also write the structured diff here.")
+    parser.add_argument("--baseline-replay-stats", type=Path, help="Verified replay_stats.py JSON for baseline.")
+    parser.add_argument("--candidate-replay-stats", type=Path, help="Verified replay_stats.py JSON for candidate.")
     args = parser.parse_args()
 
     base_name, base_version = parse_spec(args.baseline)
     cand_name, cand_version = parse_spec(args.candidate)
     if base_version is None or cand_version is None:
         parser.error("both policies need an exact version: name:vN")
-    base, excluded_base = load_arm(args.baseline_dir, base_name, base_version, args.group)
-    cand, excluded_cand = load_arm(args.candidate_dir, cand_name, cand_version, args.group)
+    base, excluded_base = load_arm(args.baseline_dir, base_name, base_version, args.group,
+                                  args.baseline_replay_stats)
+    cand, excluded_cand = load_arm(args.candidate_dir, cand_name, cand_version, args.group,
+                                  args.candidate_replay_stats)
     if not base["episodes"] or not cand["episodes"]:
         parser.error(f"no known episodes for an arm; baseline {excluded_base}, candidate {excluded_cand}")
     base_ids = {r["episode_id"] for r in base["episodes"]}
@@ -197,7 +245,9 @@ def main() -> None:
         parser.error("arms share episodes; use a paired analysis for within-episode comparisons")
 
     groups = [g for g in GROUPINGS[args.group][0] if base[g] or cand[g]]
-    metrics = metrics_for(args.group)
+    single_seat = all(len(seats) == 1 for arm in (base, cand) for group in groups
+                      for seats, _ in arm[group])
+    metrics = metrics_for(args.group, single_seat)
     deltas = ab_stats.build_deltas(base, cand, metrics, metric_value, value_fn, groups)
     print(f"Unit: one observation per episode per {args.group} group (seats averaged within an episode); "
           "verify matched roster, roles, and window separately.")

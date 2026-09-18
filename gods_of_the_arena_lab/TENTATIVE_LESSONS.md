@@ -52,6 +52,18 @@ gameplay evidence. Each needs an A/B on the live roster before it is a lesson.
   30%, and cut deaths from 2.67 to 1.90; the level gap to the enemy mean closed from -1.1 to
   -0.1. Holding spells while an enemy hero is within 10 tiles (window-only farming) did not cost
   farm (5.6 to 6.2).
+- **Casting a finisher before the retreat walk has no demonstrated gain.** v19 issued
+  accepted retreat casts in 28/96 confirmation games (90 total), but XP/1,000 ticks
+  read 171.99 to 163.72, kills 1.98 to 1.77 and deaths 2.06 to 2.26 versus v13.
+  Joint win with strict team XP lead was 0/96 in both. All replays verified; one v13
+  instruction-limit failure stayed in the comparison. Differences are inconclusive;
+  the exploratory XP gain did not replicate, so the rule was not adopted.
+- **Changing lanes to follow a higher-level ally costs too much farm.** One-copy hosted
+  A/B (48 games per arm, exact replays verified): the rule activated in 47/48 games but
+  XP per 1,000 ticks fell 168.24 to 112.78, farm 5.50 to 3.56 and kills 2.10 to 1.62.
+  Nearby-death exposure barely changed (27% to 29%). Joint wins with a strict team
+  XP lead were 0/48 versus 1/48, unresolved. Reject this lane-selection rule; this
+  does not settle bounded positioning within the current lane before fights.
 - **Walking far into a teammate's fight for the kill loses more than it steals.** One-copy A/B
   (2026-09-17, 48 games per arm): letting the kill-steal approach an engaged enemy hero from up
   to 12 tiles instead of 3 cut hero kills per match from 2.65 to 1.58 and raised deaths from 1.73

@@ -50,6 +50,11 @@ sub cfgInit()
   cfgKsStructPrepTicks = 240   ' stand ready beside a shielded structure predicted to die within this many ticks (10 s)
   cfgKsStructPrepKu = 900      ' ku: only for structures within this of me (15 tiles)
 
+  ' Diagnostic only: print a KT line when the kill-steal hero target changes against
+  ' the order applied last decision (a hero window opening, closing, or being
+  ' overridden by retreat or punish). No behavior depends on it. See 90_main.bas.
+  cfgKsTrace = 1
+
   ' Punish: attack an enemy hero that is farming inside our tower's reach
   cfgPunish = 1                ' 0 disables the module
   cfgPunishEnterKu = 420       ' enemy hero within this of an allied tower that is firing at it starts a punish (7 tiles)

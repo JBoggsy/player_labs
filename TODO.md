@@ -17,6 +17,22 @@ Remove a task when it is complete.
 
 ## Gods of the Arena
 
+- Diagnose v13's rare BASIC instruction-limit failure: confirmation baseline episode
+  `ereq_c6ef2db4-bd` under `xreq_91cee40e-2001-49de-99d4-14203b172341`, slot2 Lich,
+  private log ends after tick4560 with `BASIC instruction limit exceeded`. Keep failed
+  subjects in performance comparisons; identify the expensive path before optimizing.
+
+- Diagnose the XP dashboard score panel: request progress works, but GOTA results
+  fail its required `win`/`scores` array check. Use the GOTA replay comparison for
+  gameplay metrics meanwhile; do not treat this panel error as an episode failure.
+
+- Track orphaned children of failed experience request
+  `xreq_610ee81d-1117-425a-9b5d-e81f41d1629c`: parent cancellation returns HTTP 409
+  "already failed" despite `can_cancel: true` and nonterminal children. Inspect live
+  child states before declaring it drained; ordinary public OpenAPI exposes no
+  per-episode cancellation route. Evidence is in the GOTA `tmp/collab/xp-team/`
+  cancellation and child-state files. Do not rerun this broken v17 artifact.
+
 - Re-verify the mechanics documents at polyworld `f2ab9598` (deployed 2026-09-17): `attackMove`
   is registered to BASIC (800 work units), two god-guard gate towers flank each god and must
   both fall before the god takes damage, footmen path to the next enemy building after their
@@ -33,10 +49,6 @@ Remove a task when it is complete.
   `docs/index.html` say barracks have 900 HP while `sim.nim:3527` gives them 950.
 - Regenerate the four rendered reports under `docs/reports/gota-*-2026-09-15.html` from
   their Markdown sources, which are now verified at `7365e4e9`.
-- Join the replay expander's per-seat table (`tools/replay_stats.py --json`) into
-  `tools/compare.py` and `tools/features.py` on `(episode_id, position)` so every seat,
-  not only ours, gets exact last hits, kills and deaths; keep `damage` a stub until change
-  request 14 lands.
 - Decide the miner's ladder score: confirm whether the league applies 100 or 200 XP per
   simulated minute as the time penalty, then add `--score ladder` to `tools/miner_rows.py`.
 - Fix `coworld-episode-artifacts/fetch_artifacts.py` to sniff the `POLYWORLDREPLAY` magic

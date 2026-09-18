@@ -77,6 +77,32 @@ end if
 pnPlan()
 svPlan()
 ksPlan()
+' Diagnostic trace (cfgKsTrace): one KT line at a hero-window transition, that is when
+' the kill-steal target differs from the order applied last decision and either is a
+' hero. Reads the shared drop ring through lhEventInc without changing it; every
+' scratch it touches (rsSlot, lhInc, i*, oId, oD) is rewritten by lhPlan or ksPlan
+' before its next use. Skips LH decisions so the two lines never share a decision.
+'   KT tick target ordered ksTarget ksSlot horizon ringHp predicted ev1 ev2 seen cooldown x y hp retreat punish
+if cfgKsTrace = 1 and ksTargetId <> mnOrderedId and worldTick mod cfgReportEvery <> 0 then
+  oId = 0
+  if ksTargetId >= 100 and ksTargetId < 110 then
+    oId = ksTargetId
+    oD = ksBestH
+  else
+    if mnOrderedId >= 100 and mnOrderedId < 110 then
+      oId = mnOrderedId
+      oD = selfAttackCooldown - 1
+      if oD < 0 then
+        oD = 0
+      end if
+    end if
+  end if
+  if oId > 0 then
+    lhRingSlot(oId)
+    lhEventInc(rsSlot, oD, cfgHeroPeriod)
+    print "KT ", worldTick, " ", oId, " ", mnOrderedId, " ", ksTargetId, " ", ksSlot, " ", oD, " ", fmHp(rsSlot), " ", fmHp(rsSlot) - lhInc, " ", fmEv1(rsSlot), " ", fmEv2(rsSlot), " ", fmSeen(rsSlot), " ", selfAttackCooldown, " ", selfX, " ", selfY, " ", selfHp, " ", svRetreat, " ", pnTargetId
+  end if
+end if
 lhStickId = mnOrderedId
 lhPlan()
 
@@ -226,22 +252,13 @@ end
 ' footmen that are fighting (a stuck straggler is never fighting); else the
 ' lane's waypoint. Writes mnFrontX, mnFrontY in tiles.
 sub mnLaneFront()
-  mnSeat = selfId - 100
-  mnSlot = mnSeat mod 5
-  mnLane = 1
-  if mnSlot < 2 then
-    mnLane = 0
-  end if
-  if mnSlot > 2 then
-    mnLane = 2
-  end if
-  mnDiag = (mapWidth - 1) * 60
+  ' lhPlan has already computed the same lane and diagonal this decision.
   mnBest = -1
   mnBestD = -1
   mnBestFight = 0
   oI = 0
   while oI < afN
-    oS = afX(oI) + afY(oI) - mnDiag
+    oS = afX(oI) + afY(oI) - lhDiag
     oL = 1
     if oS <= -900 then
       oL = 0
@@ -249,7 +266,7 @@ sub mnLaneFront()
     if oS >= 900 then
       oL = 2
     end if
-    if oL = mnLane then
+    if oL = lhMyLane then
       oDx = afX(oI) - scFortX
       oDy = afY(oI) - scFortY
       oD = oDx * oDx + oDy * oDy
@@ -298,11 +315,11 @@ sub mnLaneFront()
   else
     mnFrontX = mapWidth / 2
     mnFrontY = mapHeight / 2
-    if mnLane = 0 then
+    if lhMyLane = 0 then
       mnFrontX = 14
       mnFrontY = 14
     end if
-    if mnLane = 2 then
+    if lhMyLane = 2 then
       mnFrontX = mapWidth - 15
       mnFrontY = mapHeight - 15
     end if
