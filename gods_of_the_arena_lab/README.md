@@ -6,7 +6,9 @@ configuration when preparing an evaluation.
 
 - [Game](https://softmax.com/gods-of-the-arena)
 - [Participation guide](https://softmax.com/api/observatory/v2/participate?league_id=league_3c60897b-25cf-4b37-9d1a-8554c1198f28)
-- Coworld: `cow_252fb6a6-cbc3-4d4f-9fa2-8b5250a9d2a2`
+- Coworld: one record per release; the league's current one is `cow_126f2fcb-80a0-4b6e-8166-eb6163576db5`
+  (2026.9.16.5, polyworld `f2ab9598`). `tools/deployed_ref.py` resolves it from the league.
+- Our policy: [policy/](policy/README.md) (`james-botts-gota` on the platform).
 - League: `league_3c60897b-25cf-4b37-9d1a-8554c1198f28`
 - Competition division: `div_a4534073-c5d2-4193-a94a-93d9c5e2e443`
 - [Forum](https://softmax.com/gods-of-the-arena/forum.md) and [wiki](https://softmax.com/gods-of-the-arena/wiki.md)
@@ -44,8 +46,8 @@ Boolean operators evaluate both operands. Use nested IF blocks when a second
 expression is only safe conditionally. Division by zero and invalid array access
 raise VM errors. Integer scaling is possible, but intermediate overflow wraps.
 
-Sources: [compiler/runtime](https://github.com/Metta-AI/polyworld/blob/main/src/polyworld/basic.nim),
-[language examples/tests](https://github.com/Metta-AI/polyworld/blob/main/tests/test_basic.nim).
+Sources: [compiler/runtime](https://github.com/Metta-AI/polyworld/blob/7365e4e9390e97bbc8b7722b41a2ae88ae008c2b/src/polyworld/basic.nim),
+[language examples/tests](https://github.com/Metta-AI/polyworld/blob/7365e4e9390e97bbc8b7722b41a2ae88ae008c2b/tests/test_basic.nim).
 
 ## How a policy executes
 
@@ -59,17 +61,20 @@ persist; instruction/work/logging budgets reset. There is no need to write an en
 outer game loop. Dead heroes skip decisions, and a runtime-failed VM stays disabled.
 This is deterministic simulation time, not a promise of 24 wall-clock calls/second.
 
-Sources: [host lifecycle](https://github.com/Metta-AI/polyworld/blob/main/examples/gods_of_the_arena/bots.nim),
-[simulation](https://github.com/Metta-AI/polyworld/blob/main/examples/gods_of_the_arena/sim.nim).
+Sources: [host lifecycle](https://github.com/Metta-AI/polyworld/blob/7365e4e9390e97bbc8b7722b41a2ae88ae008c2b/examples/gods_of_the_arena/bots.nim),
+[simulation](https://github.com/Metta-AI/polyworld/blob/7365e4e9390e97bbc8b7722b41a2ae88ae008c2b/examples/gods_of_the_arena/sim.nim).
 
 ## Observation and action surface
 
 Read-only self data includes identity, team/class, tile position/layer, HP/mana,
-gold, level and world tick. Object queries expose visible objects' IDs, kinds,
-teams/classes, tile positions, HP and alive/attackable status. Object-list indexes
-are temporary; use object IDs for actions. Enemy objects remain visibility-filtered.
-Static terrain can be queried through fog. Read `mapWidth`, `mapHeight`, and layers
-for the active map dimensions.
+gold, level, world tick, move speed, basic-attack range, damage and cooldown, current
+target, and lifetime hits landed. Object queries expose visible objects' IDs, kinds (1 fort, 2 hero, 3 footman, 4 tower, 5 barracks),
+teams/classes, tile positions, HP and alive/attackable status, plus heroes' level,
+mana, items, facing, current target, and last-tick velocity. A spell list exposes
+pending casts and area warnings with impact tick. Object-list indexes are temporary;
+use object IDs for actions. Enemy objects remain visibility-filtered. Static terrain
+can be queried through fog; walkability also reflects buildings your team knows about.
+Read `mapWidth`, `mapHeight`, and layers for the active map dimensions.
 
 | Calls | Use |
 | --- | --- |
@@ -103,7 +108,7 @@ Recorded action entries capture requests before acceptance; they are not counts 
 successful actions. Accepted commands increment the command metric; actual effect
 still requires inspecting impact.
 
-Source: [registered host API](https://github.com/Metta-AI/polyworld/blob/main/examples/gods_of_the_arena/bots.nim).
+Source: [registered host API](https://github.com/Metta-AI/polyworld/blob/7365e4e9390e97bbc8b7722b41a2ae88ae008c2b/examples/gods_of_the_arena/bots.nim).
 
 ## Enforced limits
 
@@ -117,7 +122,7 @@ These are GotA's overrides, not the much larger generic VM defaults.
 | Work budget | 50,000 units per hero decision |
 | Logical VM memory | 2 MiB |
 | Globals | 256 |
-| Registered host data / functions | 32 / 32 maximum (64 / 64 on polyworld `main` since `e127989`, not yet deployed) |
+| Registered host data / functions | 64 / 64 maximum |
 | Arrays | 32, with 4,096 total integer elements |
 | Routines | 64 including the top-level routine |
 | Parameters | 16 per routine |
@@ -135,12 +140,12 @@ Compilation failure fails the episode with a player diagnostic. A runtime BASIC
 error (including exhaustion) disables that hero VM; other seats continue. A script
 that compiles can still exhaust its runtime budget, including during a busy late-game decision.
 
-Sources: [exact limits](https://github.com/Metta-AI/polyworld/blob/main/examples/gods_of_the_arena/bots.nim),
-[private logging and compilation failure](https://github.com/Metta-AI/polyworld/blob/main/src/polyworld/coworld.nim).
+Sources: [exact limits](https://github.com/Metta-AI/polyworld/blob/7365e4e9390e97bbc8b7722b41a2ae88ae008c2b/examples/gods_of_the_arena/bots.nim),
+[private logging and compilation failure](https://github.com/Metta-AI/polyworld/blob/7365e4e9390e97bbc8b7722b41a2ae88ae008c2b/src/polyworld/coworld.nim).
 
 ## The unmodified starter
 
-[Open base.bas](reference/base.bas), the official [source starter](https://github.com/Metta-AI/polyworld/blob/main/coworld/gota/players/base.bas).
+[Open base.bas](reference/base.bas), the official [source starter](https://github.com/Metta-AI/polyworld/blob/7365e4e9390e97bbc8b7722b41a2ae88ae008c2b/coworld/gota/players/base.bas).
 
 Each decision it:
 

@@ -57,3 +57,5 @@ posviz_*.png
 .claude/worktrees/
 crewrift_lab/.claude/worktrees/
 vanilla_wow_lab/.sdk-snapshot/
+gods_of_the_arena_lab/tools/.cache/
+gods_of_the_arena_lab/tools/bin/

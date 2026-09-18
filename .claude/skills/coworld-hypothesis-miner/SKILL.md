@@ -90,6 +90,6 @@ Feature design rules (so the miner finds real signal):
 
 ## Integration and evidence limits
 
-The shared engine is available; a verified ready-to-run game feature exporter is not implied by the adapter template. September's audit found useful Crewrift features but missing game-version/replay-coverage provenance, and no verified Heartleaf local warehouse. Restore those facts before promotion to a supported integration.
+The shared engine is available; a verified ready-to-run game feature exporter is not implied by the adapter template. September's audit found useful Crewrift features but missing game-version/replay-coverage provenance, and no verified Heartleaf local warehouse. Restore those facts before promotion to a supported integration. Gods of the Arena has a working pair (`gods_of_the_arena_lab/tools/miner_rows.py` builds rows from hosted results and the policy's own telemetry; `tools/features.py` is the adapter) whose features exist only for seats whose policy prints `LH` telemetry.
 
 Require exact policy-version/game-version/cohort selection, reliable seat identity, comparable exposure windows and complete relevant observations. Exclude outcome components from predictors. The engine rejects duplicate episode IDs and nonfinite values and requires at least eight usable episodes; this minimum is not statistical power or causal evidence. `vp_swing` is the JSON field name for a heuristic index, not recoverable points. Invariant behavior can still be essential or worth improving; this method only says it doesn't distinguish outcomes in this corpus.

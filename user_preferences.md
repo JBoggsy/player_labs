@@ -55,3 +55,9 @@ sessions. Keep it tidy: one bullet per preference, drop ones that are superseded
 - **Gameplay-mechanics discoveries are proprietary until James says otherwise.** Findings
   such as spells not scaling with level in Gods of the Arena stay in the lab docs and reports;
   do not post them to game forums or wikis, even as a "public mechanics" note. (Stated 2026-09-15.)
+
+- **Hosted experience requests carry one copy of our policy, not five.** Real league games seat
+  one copy of a policy among nine others, so evaluation requests must use one `policy_ref` seat
+  (slot -1) plus nine `random` opponents; five-copy rosters measure a roster that never occurs and
+  distort ally behavior. Size the episode count for the hero-matches needed (one per episode).
+  (Stated 2026-09-17 for Gods of the Arena; applies to every game unless James says otherwise.)

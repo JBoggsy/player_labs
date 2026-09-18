@@ -1,0 +1,2682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Where the strongest GOTA players get their XP — 2026-09-18</title>
+<!--
+  Ink & Print design/plan document template (Softmax house style).
+
+  HOW TO USE (renderer subagent):
+  - Replace everything inside <article id="doc"> with the real document content.
+    The placeholder content below doubles as a component style guide — copy the
+    markup patterns (masthead, TOC, section, figure, table, callout, code,
+    citation) and delete what you don't use.
+  - Do NOT modify anything between the DC-COMMENTS BEGIN/END markers. That block
+    is the tested commenting system; copy it verbatim.
+  - Keep the doc self-contained: inline SVG for figures, no JS deps beyond this
+    file. Google Fonts is the only permitted external fetch.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Merriweather+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============ Ink & Print tokens ============ */
+  :root {
+    --bg: #fffdf4;            /* cream paper */
+    --surface: #fffaf0;
+    --surface-alt: #f8f6ef;
+    --fg: #111827;            /* warm near-black — never pure #000 */
+    --fg-subtle: #555555;
+    --fg-muted: #999999;
+    --ink-navy: #1a3875;
+    --ink-sage: #6e8050;
+    --ink-terracotta: #b36e4e;
+    --ink-gold: #d4a853;
+    --accent: #859ebe;
+    --accent-soft: #eef2f7;
+    --cta: #0e2758;
+    --cta-foreground: #fffdf4;
+    --border: #e4dac8;
+    --border-strong: #d4c9b5;
+    --border-subtle: #f0ebe1;
+    --serif: 'Merriweather', Georgia, serif;
+    --sans: 'Merriweather Sans', 'Helvetica Neue', sans-serif;
+    --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  /* ============ Page grid: reading column + comment rail ============ */
+  .dc-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 0;
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+  article#doc {
+    max-width: 72ch;
+    margin: 0 auto;
+    padding: 56px 40px 120px;
+    min-width: 0;
+  }
+
+  /* ============ Typography ============ */
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-subtle);
+  }
+  header.masthead { border-bottom: 2px solid var(--border-strong); padding-bottom: 20px; margin-bottom: 32px; }
+  header.masthead h1 {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 34px;
+    line-height: 1.2;
+    margin: 8px 0 10px;
+  }
+  header.masthead .context { color: var(--fg-subtle); font-size: 13.5px; margin: 0; }
+  h2 {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-navy);
+    margin: 48px 0 12px;
+  }
+  h3 { font-family: var(--serif); font-weight: 700; font-size: 16.5px; margin: 32px 0 8px; }
+  p { margin: 0 0 14px; }
+  a { color: var(--ink-navy); text-decoration-color: var(--accent); text-underline-offset: 3px; }
+  a:hover { color: var(--cta); }
+  strong { font-weight: 700; }
+  ul, ol { padding-left: 24px; margin: 0 0 14px; }
+  li { margin-bottom: 4px; }
+  hr { border: 0; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  /* Key-points opener: every section starts with scannable bullets */
+  .key-points {
+    list-style: none;
+    padding: 0 0 0 2px;
+    margin: 0 0 18px;
+  }
+  .key-points li { padding-left: 18px; position: relative; margin-bottom: 6px; }
+  .key-points li::before { content: '—'; position: absolute; left: 0; color: var(--ink-gold); font-weight: 700; }
+
+  /* ============ TOC ============ */
+  nav.toc { margin: 28px 0 8px; }
+  nav.toc ol { list-style: none; padding: 0; column-count: 2; column-gap: 40px; margin: 10px 0 0; }
+  nav.toc li { margin-bottom: 5px; break-inside: avoid; }
+  nav.toc a { text-decoration: none; border-bottom: 1px dotted var(--border-strong); }
+  nav.toc .toc-num { font-family: var(--mono); font-size: 12px; color: var(--fg-muted); margin-right: 8px; }
+
+  /* ============ Tables ============ */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 18px 0 22px;
+    font-size: 13.5px;
+  }
+  th {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg-subtle);
+    text-align: left;
+    padding: 6px 12px 6px 0;
+    border-bottom: 2px solid var(--border-strong);
+  }
+  td { padding: 7px 12px 7px 0; border-bottom: 1px solid var(--border-subtle); vertical-align: top; }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-size: 12.5px; font-feature-settings: 'tnum' 1; }
+
+  /* ============ Figures ============ */
+  figure { margin: 24px 0 28px; }
+  figure svg { max-width: 100%; height: auto; display: block; }
+  figcaption {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--fg-subtle);
+  }
+  figcaption .fig-label {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 10.5px;
+    color: var(--ink-navy);
+    margin-right: 8px;
+  }
+
+  /* ============ Code & citations ============ */
+  code {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--surface-alt);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  pre {
+    background: var(--surface-alt);
+    border: 1px solid var(--border-subtle);
+    border-radius: 3px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    margin: 16px 0 20px;
+  }
+  pre code { background: none; padding: 0; font-size: 12.5px; line-height: 1.6; }
+  .cite {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--fg-subtle);
+    background: var(--surface-alt);
+    padding: 1px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+
+  /* ============ Callouts ============ */
+  .callout { padding: 12px 16px; margin: 18px 0; font-size: 13.5px; border-radius: 3px; }
+  .callout .callout-label {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .callout-info { background: var(--accent-soft); }
+  .callout-info .callout-label { color: var(--ink-navy); }
+  .callout-warn { background: rgba(179, 110, 78, 0.08); border-left: 3px solid var(--ink-terracotta); }
+  .callout-warn .callout-label { color: var(--ink-terracotta); }
+  .callout-open { background: rgba(212, 168, 83, 0.10); }
+  .callout-open .callout-label { color: #8a6a1f; }
+
+  /* Decision record */
+  .decision { border-top: 1px solid var(--border); padding: 14px 0 4px; margin: 14px 0; }
+  .decision .decision-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-sage); }
+  .decision p { margin-top: 6px; }
+
+  @media (max-width: 1100px) {
+    .dc-page { grid-template-columns: 1fr; }
+  }
+  @media print {
+    #dc-sidebar, #dc-fab, #dc-toggle { display: none !important; }
+    .dc-page { grid-template-columns: 1fr; }
+  }
+
+  /* ================================================================
+     DC-COMMENTS BEGIN — styles (copy verbatim; do not modify)
+     ================================================================ */
+  ::highlight(dc-hl) { background: rgba(212, 168, 83, 0.28); }
+  ::highlight(dc-hl-active) { background: rgba(212, 168, 83, 0.6); }
+
+  #dc-fab {
+    position: absolute;
+    z-index: 40;
+    display: none;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--cta-foreground);
+    background: var(--cta);
+    border: 1px solid #0a1c42;
+    border-radius: 3px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  #dc-fab:hover { background: var(--ink-navy); }
+
+  #dc-sidebar {
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    padding: 24px 20px 60px;
+    font-size: 13px;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    overflow-y: auto;
+  }
+  #dc-sidebar h2.dc-title {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-subtle);
+    margin: 0 0 4px;
+  }
+  .dc-actions { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 18px; }
+  .dc-btn {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--fg);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    padding: 4px 9px;
+    cursor: pointer;
+  }
+  .dc-btn:hover { background: var(--surface-alt); }
+  .dc-btn:focus-visible, #dc-fab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .dc-empty { color: var(--fg-muted); font-style: italic; }
+  .dc-item { border-top: 1px solid var(--border-subtle); padding: 12px 0; cursor: pointer; }
+  .dc-item.dc-resolved { opacity: 0.5; }
+  .dc-quote {
+    border-left: 2px solid var(--ink-gold);
+    padding-left: 8px;
+    color: var(--fg-subtle);
+    font-style: italic;
+    font-size: 12px;
+    margin-bottom: 6px;
+    overflow-wrap: break-word;
+  }
+  .dc-orphan-tag {
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-terracotta);
+    background: rgba(179, 110, 78, 0.12);
+    border-radius: 999px;
+    padding: 1px 7px;
+    margin-left: 6px;
+  }
+  .dc-text { white-space: pre-wrap; overflow-wrap: break-word; }
+  .dc-item textarea {
+    width: 100%;
+    min-height: 64px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    padding: 6px 8px;
+    resize: vertical;
+  }
+  .dc-item textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .dc-meta { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 11px; color: var(--fg-muted); }
+  .dc-meta label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+  .dc-meta .dc-del { margin-left: auto; color: var(--ink-terracotta); background: none; border: none; font-size: 11px; cursor: pointer; padding: 0; }
+  .dc-meta .dc-del:hover { text-decoration: underline; }
+  #dc-status { font-size: 11px; color: var(--ink-sage); min-height: 16px; margin-top: 8px; }
+
+  #dc-toggle { display: none; }
+  @media (max-width: 1100px) {
+    #dc-sidebar {
+      position: fixed;
+      right: 0;
+      top: 0;
+      width: 320px;
+      max-width: 90vw;
+      transform: translateX(100%);
+      transition: transform 200ms ease-out;
+      z-index: 50;
+      box-shadow: -4px 0 16px rgba(0, 0, 0, 0.08);
+    }
+    #dc-sidebar.dc-open { transform: translateX(0); }
+    #dc-toggle {
+      display: block;
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 51;
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--cta-foreground);
+      background: var(--cta);
+      border: 1px solid #0a1c42;
+      border-radius: 999px;
+      padding: 9px 15px;
+      cursor: pointer;
+    }
+  }
+  /* ============ DC-COMMENTS END — styles ============ */
+
+/* Report-specific layout; the standard comments blocks below are unchanged. */
+article#doc { width: 100%; }
+article#doc p, article#doc li, article#doc td, article#doc th { overflow-wrap: anywhere; }
+table { table-layout: fixed; font-size: 12px; }
+td, th { padding-right: 9px; }
+table code { font-size: 11px; overflow-wrap: anywhere; }
+figure svg { width: 100%; }
+.ref { font-size: 10px; vertical-align: super; line-height: 0; margin-left: 2px; }
+.ref a { text-decoration: none; }
+.sources { font-size: 12px; }
+.sources li { margin-bottom: 14px; }
+.sources code { font-size: 11px; }
+section, .sources li { scroll-margin-top: 24px; }
+@media (max-width: 600px) {
+  article#doc { padding: 32px 18px 100px; }
+  header.masthead h1 { font-size: 28px; }
+  nav.toc ol { column-count: 1; }
+  table { font-size: 10px; }
+  th { font-size: 9px; letter-spacing: 0.01em; }
+  td, th { padding-right: 5px; }
+}
+
+</style>
+</head>
+<body>
+<div class="dc-page">
+<article id="doc">
+<header class="masthead"><span class="eyebrow">Research Report · 2026-09-18 · Replay comparison for James</span><h1>Where the strongest GOTA players get their XP</h1><div class="context"><p>A replay comparison for James: v13 versus leading players, 18 September 2026. Research checkout <code>7a1d1bfc</code>; deployed engine <code>f2ab9598</code>. Gameplay changes remain paused.</p>
+</div></header>
+<section id="executive-summary"><h2>Executive summary</h2><p>V13 earns <strong>166 XP per 1,000 ticks</strong>, compared with <strong>283</strong> for each of the two leading Aaron policies, after giving every hero class equal weight. Their roughly <strong>70% advantage comes from hero kills and buildings</strong>. V13 earns slightly more creep XP than either. Across 288 games, the reward accounting is exact: the leaders gain about 80 more hero-kill XP and 46–48 more building XP per 1,000 ticks, while conceding 9–11 creep XP. Their advantage is already visible by the second minute. <sup class="ref"><a href="#src-1" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/methods-audit.md:5-70 — independent identity, accounting, cohort, and method audit; original artifact paths in inventory.json.">1</a></sup> <sup class="ref"><a href="#src-2" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/timing-findings.md:1-51 and timing-and-uncertainty.json — class-balanced rates, whole-match uncertainty, checkpoints, attainment, and class-specific results. Reproduction: timing-and-uncertainty.py.">2</a></sup></p>
+<p>The replay behavior points the next investigation toward <strong>what happens during a nearby fight</strong>. V13 spends more sampled time near living enemies, but claims only 27% of nearby enemy deaths, versus 71–73% for the Aaron policies. The leaders spend much more time pursuing or attacking hero targets and structures. This does not establish that v13 should chase or attack earlier: their kill share includes kills they may have created themselves. Within farm-and-finish, the strongest next question is why v13 misses nearby finishing opportunities, especially on Ranger and Crossbowman. <sup class="ref"><a href="#src-3" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/methods-audit.md:40-52 — exact proximity numerators, denominators, and ambiguous-killer sensitivity.">3</a></sup> <sup class="ref"><a href="#src-4" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/behavior-findings.md:5-90 and behavior-summary.json — random-sample behavior, inventory snapshots, and event examples. Reproduction: sample_states.py, then behavior_analysis.py; full episode manifest in sample-manifest.json.">4</a></sup></p>
+</section>
+<nav class="toc" aria-label="Contents"><span class="eyebrow">Contents</span><ol>
+<li><span class="toc-num">1</span><a href="#who-and-what-we-compared">Who and what we compared</a></li>
+<li><span class="toc-num">2</span><a href="#the-xp-gap-source-by-source">The XP gap, source by source</a></li>
+<li><span class="toc-num">3</span><a href="#when-the-leaders-pull-ahead">When the leaders pull ahead</a></li>
+<li><span class="toc-num">4</span><a href="#what-the-replay-behavior-shows">What the replay behavior shows</a></li>
+<li><span class="toc-num">5</span><a href="#concrete-replay-examples">Concrete replay examples</a></li>
+<li><span class="toc-num">6</span><a href="#what-this-means-for-farm-and-finish">What this means for farm-and-finish</a></li>
+<li><span class="toc-num">7</span><a href="#methods-and-limitations">Methods and limitations</a></li>
+<li><span class="toc-num">8</span><a href="#data-and-exact-policy-identities">Data and exact policy identities</a></li>
+<li><span class="toc-num">9</span><a href="#sources">Sources</a></li>
+</ol>
+</nav>
+<section id="who-and-what-we-compared"><h2>Who and what we compared</h2><ul class="key-points">
+<li><strong>288 archived matches, 2,880 seats</strong>, with exactly one v13 and nine other champions in each game.</li>
+<li>The main comparators belong to the accounts ranked <strong>first and third</strong> in the live league snapshot.</li>
+<li>League MMR and XP efficiency are different measures; this report measures internal game XP.</li>
+</ul>
+<p>The matches were created on 17 September, between 22:28 and 23:54 UTC, across five baseline evaluation batches. Every replay was reconstructed with the deployed engine version, hash checked, and reconciled against the hosted results for all ten seats. No new evaluations were needed. <sup class="ref"><a href="#src-1" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/methods-audit.md:5-70 — independent identity, accounting, cohort, and method audit; original artifact paths in inventory.json.">1</a></sup></p>
+<p>The league snapshot is from 18 September at 17:33 UTC. Aaron ranked first, relh second, Aaron’s Co-play Coach third, Jordan fourth, Alex Smith fifth, Andrew Brower B sixth, richard seventh, and Andrew Brower eighth. Here, <strong>Aaron perimeter</strong> means the recorded v1 policy belonging to Aaron; <strong>Aaron anchor</strong> means the recorded v1 policy belonging to Aaron’s Co-play Coach. The live leaderboard did not expose their current policy labels, so these are comparisons of the versions actually present in the replays. Jordan’s current version was v254; our corpus contains v218 and v209, not v254. <sup class="ref"><a href="#src-5" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/leaderboard.json:1-150 and league.json:10-65 — live leaderboard and league metadata, retrieved 2026-09-18 17:33 UTC through ordinary account access.">5</a></sup></p>
+<p>Hero class, team, and initial lane are tied to seat. To prevent a policy’s seat mix from determining its apparent strength, the headline numbers first average within each of the ten classes, then give those ten averages equal weight. These remain observational comparisons against the sampled rosters. <sup class="ref"><a href="#src-1" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/methods-audit.md:5-70 — independent identity, accounting, cohort, and method audit; original artifact paths in inventory.json.">1</a></sup> <sup class="ref"><a href="#src-6" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/xp-contract.md:5-71 — verified engine contract. Underlying code: gods_of_the_arena_lab/tools/.cache/polyworld/examples/gods_of_the_arena/sim.nim:388-393,784-793,2263-2297,3612-3623; replay instrumentation: gods_of_the_arena_lab/tools/expand_replay.nim:27-82,216-305,396-458.">6</a></sup></p>
+</section>
+<section id="the-xp-gap-source-by-source"><h2>The XP gap, source by source</h2><ul class="key-points">
+<li>V13’s creep income is competitive with the leaders.</li>
+<li>Hero kills account for the largest missing income source; structure income is almost absent.</li>
+<li>A hero kill awards <strong>150 XP</strong>, a creep <strong>25 XP</strong>, and a building <strong>100 XP</strong>.</li>
+</ul>
+<p>XP goes to the hero landing the lethal hit, immediately on that tick. Assists, proximity, and nonlethal damage award no XP. Destroying the enemy god ends the game but awards no direct XP. A hero kill therefore equals six creep last hits, and a building equals four. Travel, danger, and foregone farming still determine whether pursuing either is worthwhile. <sup class="ref"><a href="#src-6" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/xp-contract.md:5-71 — verified engine contract. Underlying code: gods_of_the_arena_lab/tools/.cache/polyworld/examples/gods_of_the_arena/sim.nim:388-393,784-793,2263-2297,3612-3623; replay instrumentation: gods_of_the_arena_lab/tools/expand_replay.nim:27-82,216-305,396-458.">6</a></sup></p>
+<table>
+<thead>
+<tr>
+<th>Recorded policy</th>
+<th style="text-align:right">Games</th>
+<th style="text-align:right">Creep XP</th>
+<th style="text-align:right">Hero XP</th>
+<th style="text-align:right">Building XP</th>
+<th style="text-align:right">Total XP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>v13</strong></td>
+<td style="text-align:right"><strong>288</strong></td>
+<td style="text-align:right"><strong>139.5</strong></td>
+<td style="text-align:right"><strong>26.8</strong></td>
+<td style="text-align:right"><strong>0.1</strong></td>
+<td style="text-align:right"><strong>166.3</strong></td>
+</tr>
+<tr>
+<td>Aaron anchor v1</td>
+<td style="text-align:right">232</td>
+<td style="text-align:right">130.9</td>
+<td style="text-align:right">106.5</td>
+<td style="text-align:right">45.7</td>
+<td style="text-align:right">283.1</td>
+</tr>
+<tr>
+<td>Aaron perimeter v1</td>
+<td style="text-align:right">221</td>
+<td style="text-align:right">128.5</td>
+<td style="text-align:right">106.2</td>
+<td style="text-align:right">48.4</td>
+<td style="text-align:right">283.1</td>
+</tr>
+<tr>
+<td>black-kite v16</td>
+<td style="text-align:right">207</td>
+<td style="text-align:right">149.0</td>
+<td style="text-align:right">73.7</td>
+<td style="text-align:right">12.7</td>
+<td style="text-align:right">235.4</td>
+</tr>
+<tr>
+<td>red-kite v34</td>
+<td style="text-align:right">235</td>
+<td style="text-align:right">140.6</td>
+<td style="text-align:right">77.8</td>
+<td style="text-align:right">9.5</td>
+<td style="text-align:right">227.9</td>
+</tr>
+<tr>
+<td>gota-g002 v1, Alex Smith</td>
+<td style="text-align:right">207</td>
+<td style="text-align:right">91.4</td>
+<td style="text-align:right">97.6</td>
+<td style="text-align:right">15.4</td>
+<td style="text-align:right">204.5</td>
+</tr>
+<tr>
+<td>Jordan v218</td>
+<td style="text-align:right">154</td>
+<td style="text-align:right">96.2</td>
+<td style="text-align:right">88.5</td>
+<td style="text-align:right">13.8</td>
+<td style="text-align:right">198.5</td>
+</tr>
+<tr>
+<td>richard v78</td>
+<td style="text-align:right">212</td>
+<td style="text-align:right">114.7</td>
+<td style="text-align:right">67.6</td>
+<td style="text-align:right">12.7</td>
+<td style="text-align:right">195.0</td>
+</tr>
+<tr>
+<td>relh v154</td>
+<td style="text-align:right">88</td>
+<td style="text-align:right">118.3</td>
+<td style="text-align:right">40.7</td>
+<td style="text-align:right">10.1</td>
+<td style="text-align:right">169.0</td>
+</tr>
+</tbody>
+</table>
+<p>All XP columns are <strong>XP per 1,000 elapsed simulation ticks</strong>, with equal class weights. Rounding can make displayed components differ from the displayed total by 0.1. Exact policy names and all other sampled versions are in the data appendix. <sup class="ref"><a href="#src-2" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/timing-findings.md:1-51 and timing-and-uncertainty.json — class-balanced rates, whole-match uncertainty, checkpoints, attainment, and class-specific results. Reproduction: timing-and-uncertainty.py.">2</a></sup> <sup class="ref"><a href="#src-7" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/policy-summary.json and aggregate.py:1-80 — full policy inventory and income aggregation; published CSVs generated by publish_data.py.">7</a></sup></p>
+<figure id="figure-1">
+<svg role="img" aria-label="XP sources and uncertainty" xmlns:xlink="http://www.w3.org/1999/xlink" width="589.800312pt" height="319.298805pt" viewBox="0 0 589.800312 319.298805" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-09-18T10:44:02.610227</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.0, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="fig-1-figure_1">
+  <g id="fig-1-patch_1">
+   <path d="M 0 319.298805 
+L 589.800312 319.298805 
+L 589.800312 0 
+L 0 0 
+z
+" style="fill: #fffdf4"/>
+  </g>
+  <g id="fig-1-axes_1">
+   <g id="fig-1-patch_2">
+    <path d="M 121.364063 279.097946 
+L 582.600312 279.097946 
+L 582.600312 39.961786 
+L 121.364063 39.961786 
+z
+" style="fill: #fffdf4"/>
+   </g>
+   <g id="fig-1-patch_3">
+    <path d="M 121.364063 50.831611 
+L 319.28199 50.831611 
+L 319.28199 76.407671 
+L 121.364063 76.407671 
+z
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: #6e8050"/>
+   </g>
+   <g id="fig-1-patch_4">
+    <path d="M 121.364063 82.801686 
+L 307.148656 82.801686 
+L 307.148656 108.377746 
+L 121.364063 108.377746 
+z
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: #6e8050"/>
+   </g>
+   <g id="fig-1-patch_5">
+    <path d="M 121.364063 114.771761 
+L 303.6733 114.771761 
+L 303.6733 140.347821 
+L 121.364063 140.347821 
+z
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: #6e8050"/>
+   </g>
+   <g id="fig-1-patch_6">
+    <path d="M 121.364063 146.741836 
+L 332.815639 146.741836 
+L 332.815639 172.317896 
+L 121.364063 172.317896 
+z
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: #6e8050"/>
+   </g>
+   <g id="fig-1-patch_7">
+    <path d="M 121.364063 178.711911 
+L 320.85941 178.711911 
+L 320.85941 204.28797 
+L 121.364063 204.28797 
+z
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: #6e8050"/>
+   </g>
+   <g id="fig-1-patch_8">
+    <path d="M 121.364063 210.681985 
+L 289.196902 210.681985 
+L 289.196902 236.258045 
+L 121.364063 236.258045 
+z
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: #6e8050"/>
+   </g>
+   <g id="fig-1-patch_9">
+    <path d="M 121.364063 242.65206 
+L 257.928784 242.65206 
+L 257.928784 268.22812 
+L 121.364063 268.22812 
+z
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: #6e8050"/>
+   </g>
+   <g id="fig-1-patch_10">
+    <path d="M 319.28199 50.831611 
+L 357.266132 50.831611 
+L 357.266132 76.407671 
+L 319.28199 76.407671 
+z
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: #1a3875"/>
+   </g>
+   <g id="fig-1-patch_11">
+    <path d="M 307.148656 82.801686 
+L 458.317029 82.801686 
+L 458.317029 108.377746 
+L 307.148656 108.377746 
+z
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: #1a3875"/>
+   </g>
+   <g id="fig-1-patch_12">
+    <path d="M 303.6733 114.771761 
+L 454.415987 114.771761 
+L 454.415987 140.347821 
+L 303.6733 140.347821 
+z
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: #1a3875"/>
+   </g>
+   <g id="fig-1-patch_13">
+    <path d="M 332.815639 146.741836 
+L 437.433193 146.741836 
+L 437.433193 172.317896 
+L 332.815639 172.317896 
+z
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: #1a3875"/>
+   </g>
+   <g id="fig-1-patch_14">
+    <path d="M 320.85941 178.711911 
+L 431.338514 178.711911 
+L 431.338514 204.28797 
+L 320.85941 204.28797 
+z
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: #1a3875"/>
+   </g>
+   <g id="fig-1-patch_15">
+    <path d="M 289.196902 210.681985 
+L 346.924364 210.681985 
+L 346.924364 236.258045 
+L 289.196902 236.258045 
+z
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: #1a3875"/>
+   </g>
+   <g id="fig-1-patch_16">
+    <path d="M 257.928784 242.65206 
+L 383.513832 242.65206 
+L 383.513832 268.22812 
+L 257.928784 268.22812 
+z
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: #1a3875"/>
+   </g>
+   <g id="fig-1-patch_17">
+    <path d="M 357.266132 50.831611 
+L 357.402212 50.831611 
+L 357.402212 76.407671 
+L 357.266132 76.407671 
+z
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: #b36e4e"/>
+   </g>
+   <g id="fig-1-patch_18">
+    <path d="M 458.317029 82.801686 
+L 523.168329 82.801686 
+L 523.168329 108.377746 
+L 458.317029 108.377746 
+z
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: #b36e4e"/>
+   </g>
+   <g id="fig-1-patch_19">
+    <path d="M 454.415987 114.771761 
+L 523.077091 114.771761 
+L 523.077091 140.347821 
+L 454.415987 140.347821 
+z
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: #b36e4e"/>
+   </g>
+   <g id="fig-1-patch_20">
+    <path d="M 437.433193 146.741836 
+L 455.386026 146.741836 
+L 455.386026 172.317896 
+L 437.433193 172.317896 
+z
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: #b36e4e"/>
+   </g>
+   <g id="fig-1-patch_21">
+    <path d="M 431.338514 178.711911 
+L 444.767417 178.711911 
+L 444.767417 204.28797 
+L 431.338514 204.28797 
+z
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: #b36e4e"/>
+   </g>
+   <g id="fig-1-patch_22">
+    <path d="M 346.924364 210.681985 
+L 361.2258 210.681985 
+L 361.2258 236.258045 
+L 346.924364 236.258045 
+z
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: #b36e4e"/>
+   </g>
+   <g id="fig-1-patch_23">
+    <path d="M 383.513832 242.65206 
+L 403.136805 242.65206 
+L 403.136805 268.22812 
+L 383.513832 268.22812 
+z
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: #b36e4e"/>
+   </g>
+   <g id="fig-1-matplotlib.axis_1">
+    <g id="fig-1-xtick_1">
+     <g id="fig-1-line2d_1">
+      <defs>
+       <path id="fig-1-mb9ba7b62fe" d="M 0 0 
+L 0 3.5 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#fig-1-mb9ba7b62fe" x="121.364063" y="279.097946" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-1-text_1">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="121.364063" y="294.455367" transform="rotate(-0 121.364063 294.455367)">0</text>
+     </g>
+    </g>
+    <g id="fig-1-xtick_2">
+     <g id="fig-1-line2d_2">
+      <g>
+       <use xlink:href="#fig-1-mb9ba7b62fe" x="192.323486" y="279.097946" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-1-text_2">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="192.323486" y="294.455367" transform="rotate(-0 192.323486 294.455367)">50</text>
+     </g>
+    </g>
+    <g id="fig-1-xtick_3">
+     <g id="fig-1-line2d_3">
+      <g>
+       <use xlink:href="#fig-1-mb9ba7b62fe" x="263.282909" y="279.097946" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-1-text_3">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="263.282909" y="294.455367" transform="rotate(-0 263.282909 294.455367)">100</text>
+     </g>
+    </g>
+    <g id="fig-1-xtick_4">
+     <g id="fig-1-line2d_4">
+      <g>
+       <use xlink:href="#fig-1-mb9ba7b62fe" x="334.242332" y="279.097946" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-1-text_4">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="334.242332" y="294.455367" transform="rotate(-0 334.242332 294.455367)">150</text>
+     </g>
+    </g>
+    <g id="fig-1-xtick_5">
+     <g id="fig-1-line2d_5">
+      <g>
+       <use xlink:href="#fig-1-mb9ba7b62fe" x="405.201755" y="279.097946" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-1-text_5">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="405.201755" y="294.455367" transform="rotate(-0 405.201755 294.455367)">200</text>
+     </g>
+    </g>
+    <g id="fig-1-xtick_6">
+     <g id="fig-1-line2d_6">
+      <g>
+       <use xlink:href="#fig-1-mb9ba7b62fe" x="476.161178" y="279.097946" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-1-text_6">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="476.161178" y="294.455367" transform="rotate(-0 476.161178 294.455367)">250</text>
+     </g>
+    </g>
+    <g id="fig-1-xtick_7">
+     <g id="fig-1-line2d_7">
+      <g>
+       <use xlink:href="#fig-1-mb9ba7b62fe" x="547.120601" y="279.097946" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-1-text_7">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="547.120601" y="294.455367" transform="rotate(-0 547.120601 294.455367)">300</text>
+     </g>
+    </g>
+    <g id="fig-1-text_8">
+     <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #111827" x="351.982187" y="309.456227" transform="rotate(-0 351.982187 309.456227)">XP per 1,000 elapsed ticks · equal weighting of 10 classes</text>
+    </g>
+   </g>
+   <g id="fig-1-matplotlib.axis_2">
+    <g id="fig-1-ytick_1">
+     <g id="fig-1-line2d_8">
+      <defs>
+       <path id="fig-1-m049cec4d31" d="M 0 0 
+L -3.5 0 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#fig-1-m049cec4d31" x="121.364063" y="63.619641" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-1-text_9">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="114.364063" y="67.798352" transform="rotate(-0 114.364063 67.798352)">v13</text>
+     </g>
+    </g>
+    <g id="fig-1-ytick_2">
+     <g id="fig-1-line2d_9">
+      <g>
+       <use xlink:href="#fig-1-m049cec4d31" x="121.364063" y="95.589716" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-1-text_10">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="114.364063" y="99.768856" transform="rotate(-0 114.364063 99.768856)">Aaron anchor v1</text>
+     </g>
+    </g>
+    <g id="fig-1-ytick_3">
+     <g id="fig-1-line2d_10">
+      <g>
+       <use xlink:href="#fig-1-m049cec4d31" x="121.364063" y="127.559791" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-1-text_11">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="114.364063" y="131.738931" transform="rotate(-0 114.364063 131.738931)">Aaron perimeter v1</text>
+     </g>
+    </g>
+    <g id="fig-1-ytick_4">
+     <g id="fig-1-line2d_11">
+      <g>
+       <use xlink:href="#fig-1-m049cec4d31" x="121.364063" y="159.529866" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-1-text_12">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="114.364063" y="163.709006" transform="rotate(-0 114.364063 163.709006)">black-kite v16</text>
+     </g>
+    </g>
+    <g id="fig-1-ytick_5">
+     <g id="fig-1-line2d_12">
+      <g>
+       <use xlink:href="#fig-1-m049cec4d31" x="121.364063" y="191.49994" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-1-text_13">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="114.364063" y="195.679081" transform="rotate(-0 114.364063 195.679081)">red-kite v34</text>
+     </g>
+    </g>
+    <g id="fig-1-ytick_6">
+     <g id="fig-1-line2d_13">
+      <g>
+       <use xlink:href="#fig-1-m049cec4d31" x="121.364063" y="223.470015" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-1-text_14">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="114.364063" y="227.649156" transform="rotate(-0 114.364063 227.649156)">relh v154</text>
+     </g>
+    </g>
+    <g id="fig-1-ytick_7">
+     <g id="fig-1-line2d_14">
+      <g>
+       <use xlink:href="#fig-1-m049cec4d31" x="121.364063" y="255.44009" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-1-text_15">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="114.364063" y="259.619231" transform="rotate(-0 114.364063 259.619231)">Jordan v218</text>
+     </g>
+    </g>
+   </g>
+   <g id="fig-1-LineCollection_1">
+    <path d="M 346.829652 63.619641 
+L 368.242982 63.619641 
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: none; stroke: #333333; stroke-width: 1.5"/>
+   </g>
+   <g id="fig-1-line2d_15">
+    <defs>
+     <path id="fig-1-m60595fcba2" d="M 0 3 
+L 0 -3 
+" style="stroke: #333333"/>
+    </defs>
+    <g clip-path="url(#fig-1-pfb2449a75f)">
+     <use xlink:href="#fig-1-m60595fcba2" x="346.829652" y="63.619641" style="fill: #1f77b4; stroke: #333333"/>
+    </g>
+   </g>
+   <g id="fig-1-line2d_16">
+    <g clip-path="url(#fig-1-pfb2449a75f)">
+     <use xlink:href="#fig-1-m60595fcba2" x="368.242982" y="63.619641" style="fill: #1f77b4; stroke: #333333"/>
+    </g>
+   </g>
+   <g id="fig-1-LineCollection_2">
+    <path d="M 501.160669 95.589716 
+L 547.304806 95.589716 
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: none; stroke: #333333; stroke-width: 1.5"/>
+   </g>
+   <g id="fig-1-line2d_17">
+    <g clip-path="url(#fig-1-pfb2449a75f)">
+     <use xlink:href="#fig-1-m60595fcba2" x="501.160669" y="95.589716" style="fill: #1f77b4; stroke: #333333"/>
+    </g>
+   </g>
+   <g id="fig-1-line2d_18">
+    <g clip-path="url(#fig-1-pfb2449a75f)">
+     <use xlink:href="#fig-1-m60595fcba2" x="547.304806" y="95.589716" style="fill: #1f77b4; stroke: #333333"/>
+    </g>
+   </g>
+   <g id="fig-1-LineCollection_3">
+    <path d="M 500.90368 127.559791 
+L 546.313977 127.559791 
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: none; stroke: #333333; stroke-width: 1.5"/>
+   </g>
+   <g id="fig-1-line2d_19">
+    <g clip-path="url(#fig-1-pfb2449a75f)">
+     <use xlink:href="#fig-1-m60595fcba2" x="500.90368" y="127.559791" style="fill: #1f77b4; stroke: #333333"/>
+    </g>
+   </g>
+   <g id="fig-1-line2d_20">
+    <g clip-path="url(#fig-1-pfb2449a75f)">
+     <use xlink:href="#fig-1-m60595fcba2" x="546.313977" y="127.559791" style="fill: #1f77b4; stroke: #333333"/>
+    </g>
+   </g>
+   <g id="fig-1-LineCollection_4">
+    <path d="M 435.717514 159.529866 
+L 476.091093 159.529866 
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: none; stroke: #333333; stroke-width: 1.5"/>
+   </g>
+   <g id="fig-1-line2d_21">
+    <g clip-path="url(#fig-1-pfb2449a75f)">
+     <use xlink:href="#fig-1-m60595fcba2" x="435.717514" y="159.529866" style="fill: #1f77b4; stroke: #333333"/>
+    </g>
+   </g>
+   <g id="fig-1-line2d_22">
+    <g clip-path="url(#fig-1-pfb2449a75f)">
+     <use xlink:href="#fig-1-m60595fcba2" x="476.091093" y="159.529866" style="fill: #1f77b4; stroke: #333333"/>
+    </g>
+   </g>
+   <g id="fig-1-LineCollection_5">
+    <path d="M 425.953165 191.49994 
+L 464.017538 191.49994 
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: none; stroke: #333333; stroke-width: 1.5"/>
+   </g>
+   <g id="fig-1-line2d_23">
+    <g clip-path="url(#fig-1-pfb2449a75f)">
+     <use xlink:href="#fig-1-m60595fcba2" x="425.953165" y="191.49994" style="fill: #1f77b4; stroke: #333333"/>
+    </g>
+   </g>
+   <g id="fig-1-line2d_24">
+    <g clip-path="url(#fig-1-pfb2449a75f)">
+     <use xlink:href="#fig-1-m60595fcba2" x="464.017538" y="191.49994" style="fill: #1f77b4; stroke: #333333"/>
+    </g>
+   </g>
+   <g id="fig-1-LineCollection_6">
+    <path d="M 337.57261 223.470015 
+L 384.66478 223.470015 
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: none; stroke: #333333; stroke-width: 1.5"/>
+   </g>
+   <g id="fig-1-line2d_25">
+    <g clip-path="url(#fig-1-pfb2449a75f)">
+     <use xlink:href="#fig-1-m60595fcba2" x="337.57261" y="223.470015" style="fill: #1f77b4; stroke: #333333"/>
+    </g>
+   </g>
+   <g id="fig-1-line2d_26">
+    <g clip-path="url(#fig-1-pfb2449a75f)">
+     <use xlink:href="#fig-1-m60595fcba2" x="384.66478" y="223.470015" style="fill: #1f77b4; stroke: #333333"/>
+    </g>
+   </g>
+   <g id="fig-1-LineCollection_7">
+    <path d="M 375.366039 255.44009 
+L 431.551198 255.44009 
+" clip-path="url(#fig-1-pfb2449a75f)" style="fill: none; stroke: #333333; stroke-width: 1.5"/>
+   </g>
+   <g id="fig-1-line2d_27">
+    <g clip-path="url(#fig-1-pfb2449a75f)">
+     <use xlink:href="#fig-1-m60595fcba2" x="375.366039" y="255.44009" style="fill: #1f77b4; stroke: #333333"/>
+    </g>
+   </g>
+   <g id="fig-1-line2d_28">
+    <g clip-path="url(#fig-1-pfb2449a75f)">
+     <use xlink:href="#fig-1-m60595fcba2" x="431.551198" y="255.44009" style="fill: #1f77b4; stroke: #333333"/>
+    </g>
+   </g>
+   <g id="fig-1-patch_24">
+    <path d="M 121.364063 279.097946 
+L 121.364063 39.961786 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="fig-1-patch_25">
+    <path d="M 121.364063 279.097946 
+L 582.600312 279.097946 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="fig-1-text_16">
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="220.323026" y="66.217297" transform="rotate(-0 220.323026 66.217297)">139</text>
+   </g>
+   <g id="fig-1-text_17">
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="214.256359" y="98.187372" transform="rotate(-0 214.256359 98.187372)">131</text>
+   </g>
+   <g id="fig-1-text_18">
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="212.518681" y="130.157447" transform="rotate(-0 212.518681 130.157447)">128</text>
+   </g>
+   <g id="fig-1-text_19">
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="227.089851" y="162.127522" transform="rotate(-0 227.089851 162.127522)">149</text>
+   </g>
+   <g id="fig-1-text_20">
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="221.111736" y="194.097597" transform="rotate(-0 221.111736 194.097597)">141</text>
+   </g>
+   <g id="fig-1-text_21">
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="205.280482" y="226.067672" transform="rotate(-0 205.280482 226.067672)">118</text>
+   </g>
+   <g id="fig-1-text_22">
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="189.646423" y="258.037746" transform="rotate(-0 189.646423 258.037746)">96</text>
+   </g>
+   <g id="fig-1-text_23">
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="338.274061" y="66.217297" transform="rotate(-0 338.274061 66.217297)">27</text>
+   </g>
+   <g id="fig-1-text_24">
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="382.732843" y="98.187372" transform="rotate(-0 382.732843 98.187372)">107</text>
+   </g>
+   <g id="fig-1-text_25">
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="379.044644" y="130.157447" transform="rotate(-0 379.044644 130.157447)">106</text>
+   </g>
+   <g id="fig-1-text_26">
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="385.124416" y="162.127522" transform="rotate(-0 385.124416 162.127522)">74</text>
+   </g>
+   <g id="fig-1-text_27">
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="376.098962" y="194.097597" transform="rotate(-0 376.098962 194.097597)">78</text>
+   </g>
+   <g id="fig-1-text_28">
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="318.060633" y="226.067672" transform="rotate(-0 318.060633 226.067672)">41</text>
+   </g>
+   <g id="fig-1-text_29">
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="320.721308" y="258.037746" transform="rotate(-0 320.721308 258.037746)">88</text>
+   </g>
+   <g id="fig-1-text_30">
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="490.742679" y="98.187372" transform="rotate(-0 490.742679 98.187372)">46</text>
+   </g>
+   <g id="fig-1-text_31">
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="488.746539" y="130.157447" transform="rotate(-0 488.746539 130.157447)">48</text>
+   </g>
+   <g id="fig-1-legend_1">
+    <g id="fig-1-patch_26">
+     <path d="M 234.893203 19.958281 
+L 256.893203 19.958281 
+L 256.893203 12.258281 
+L 234.893203 12.258281 
+z
+" style="fill: #6e8050"/>
+    </g>
+    <g id="fig-1-text_32">
+     <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #111827" x="265.693203" y="19.958281" transform="rotate(-0 265.693203 19.958281)">Farm</text>
+    </g>
+    <g id="fig-1-patch_27">
+     <path d="M 314.796172 19.958281 
+L 336.796172 19.958281 
+L 336.796172 12.258281 
+L 314.796172 12.258281 
+z
+" style="fill: #1a3875"/>
+    </g>
+    <g id="fig-1-text_33">
+     <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #111827" x="345.596172" y="19.958281" transform="rotate(-0 345.596172 19.958281)">Hero</text>
+    </g>
+    <g id="fig-1-patch_28">
+     <path d="M 393.647266 19.958281 
+L 415.647266 19.958281 
+L 415.647266 12.258281 
+L 393.647266 12.258281 
+z
+" style="fill: #b36e4e"/>
+    </g>
+    <g id="fig-1-text_34">
+     <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #111827" x="424.447266" y="19.958281" transform="rotate(-0 424.447266 19.958281)">Building</text>
+    </g>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="fig-1-pfb2449a75f">
+   <rect x="121.364063" y="39.961786" width="461.23625" height="239.13616"/>
+  </clipPath>
+ </defs>
+</svg>
+
+<figcaption><span class="fig-label">Figure 1</span>Class-balanced XP rates. Error bars show 95% intervals from resampling whole matches, retaining their ten seats together. The intervals describe uncertainty within this historical cohort, not the effect of copying a behavior. <sup class="ref"><a href="#src-2" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/timing-findings.md:1-51 and timing-and-uncertainty.json — class-balanced rates, whole-match uncertainty, checkpoints, attainment, and class-specific results. Reproduction: timing-and-uncertainty.py.">2</a></sup></figcaption>
+</figure>
+<p>The Aaron advantage is about <strong>117 XP per 1,000 ticks</strong>, with a 95% interval of approximately <strong>99 to 135</strong>. Black-kite’s advantage is 69, and red-kite’s is 62. Relh v154 is only 3 above v13 in this corpus; its difference is unresolved. Thus a high league rank does not imply a large measured advantage on James’s XP objective. <sup class="ref"><a href="#src-2" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/timing-findings.md:1-51 and timing-and-uncertainty.json — class-balanced rates, whole-match uncertainty, checkpoints, attainment, and class-specific results. Reproduction: timing-and-uncertainty.py.">2</a></sup></p>
+<p>V13 averages <strong>1.90 hero kills and 2.23 deaths per match</strong>, compared with <strong>7.44–7.51 kills and 3.67–3.90 deaths</strong> for the Aaron policies, using the same class weights. They accept more deaths while earning much more hero income. V13 received only <strong>four building kills in all 288 matches</strong>; the Aaron policies average <strong>3.76–3.92 buildings per match</strong>. Death does not subtract earned XP, though it costs time and position. <sup class="ref"><a href="#src-2" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/timing-findings.md:1-51 and timing-and-uncertainty.json — class-balanced rates, whole-match uncertainty, checkpoints, attainment, and class-specific results. Reproduction: timing-and-uncertainty.py.">2</a></sup> <sup class="ref"><a href="#src-6" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/xp-contract.md:5-71 — verified engine contract. Underlying code: gods_of_the_arena_lab/tools/.cache/polyworld/examples/gods_of_the_arena/sim.nim:388-393,784-793,2263-2297,3612-3623; replay instrumentation: gods_of_the_arena_lab/tools/expand_replay.nim:27-82,216-305,396-458.">6</a></sup> <sup class="ref"><a href="#src-8" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/proximity-by-class.md:1-59 — class-specific exposure and conversion, plus exact building-kill totals.">8</a></sup></p>
+</section>
+<section id="when-the-leaders-pull-ahead"><h2>When the leaders pull ahead</h2><ul class="key-points">
+<li>The gap is visible by <strong>two minutes</strong>, before a long farming phase could establish a v13 lead.</li>
+<li>In longer games, the Aaron policies continue earning hero XP while v13’s income remains mostly creeps.</li>
+<li>The timing chart uses one fixed set of games, so early endings do not silently change the population at each point.</li>
+</ul>
+<p>For the 142 matches lasting at least six minutes, v13 averages <strong>474 XP at minute two</strong>, compared with <strong>736 for anchor and 683 for perimeter</strong>. By minute six, those totals are <strong>1,604, 2,418, and 2,519</strong>. Each policy’s curve balances its ten classes within this fixed cohort. Fast endings are excluded from this chart, so it describes longer matches, not all matches. <sup class="ref"><a href="#src-2" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/timing-findings.md:1-51 and timing-and-uncertainty.json — class-balanced rates, whole-match uncertainty, checkpoints, attainment, and class-specific results. Reproduction: timing-and-uncertainty.py.">2</a></sup></p>
+<figure id="figure-2">
+<svg role="img" aria-label="XP over time" xmlns:xlink="http://www.w3.org/1999/xlink" width="637.835859pt" height="278.590797pt" viewBox="0 0 637.835859 278.590797" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-09-18T10:44:02.822234</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.0, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="fig-2-figure_1">
+  <g id="fig-2-patch_1">
+   <path d="M 0 278.590797 
+L 637.835859 278.590797 
+L 637.835859 0 
+L 0 0 
+z
+" style="fill: #fffdf4"/>
+  </g>
+  <g id="fig-2-axes_1">
+   <g id="fig-2-patch_2">
+    <path d="M 57.195859 238.389938 
+L 320.075859 238.389938 
+L 320.075859 23.229938 
+L 57.195859 23.229938 
+z
+" style="fill: #fffdf4"/>
+   </g>
+   <g id="fig-2-matplotlib.axis_1">
+    <g id="fig-2-xtick_1">
+     <g id="fig-2-line2d_1">
+      <defs>
+       <path id="fig-2-m13150494b0" d="M 0 0 
+L 0 3.5 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#fig-2-m13150494b0" x="69.14495" y="238.389938" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-2-text_1">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="69.14495" y="253.747359" transform="rotate(-0 69.14495 253.747359)">1</text>
+     </g>
+    </g>
+    <g id="fig-2-xtick_2">
+     <g id="fig-2-line2d_2">
+      <g>
+       <use xlink:href="#fig-2-m13150494b0" x="116.941314" y="238.389938" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-2-text_2">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="116.941314" y="253.747359" transform="rotate(-0 116.941314 253.747359)">2</text>
+     </g>
+    </g>
+    <g id="fig-2-xtick_3">
+     <g id="fig-2-line2d_3">
+      <g>
+       <use xlink:href="#fig-2-m13150494b0" x="164.737678" y="238.389938" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-2-text_3">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="164.737678" y="253.747359" transform="rotate(-0 164.737678 253.747359)">3</text>
+     </g>
+    </g>
+    <g id="fig-2-xtick_4">
+     <g id="fig-2-line2d_4">
+      <g>
+       <use xlink:href="#fig-2-m13150494b0" x="212.534041" y="238.389938" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-2-text_4">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="212.534041" y="253.747359" transform="rotate(-0 212.534041 253.747359)">4</text>
+     </g>
+    </g>
+    <g id="fig-2-xtick_5">
+     <g id="fig-2-line2d_5">
+      <g>
+       <use xlink:href="#fig-2-m13150494b0" x="260.330405" y="238.389938" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-2-text_5">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="260.330405" y="253.747359" transform="rotate(-0 260.330405 253.747359)">5</text>
+     </g>
+    </g>
+    <g id="fig-2-xtick_6">
+     <g id="fig-2-line2d_6">
+      <g>
+       <use xlink:href="#fig-2-m13150494b0" x="308.126768" y="238.389938" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-2-text_6">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="308.126768" y="253.747359" transform="rotate(-0 308.126768 253.747359)">6</text>
+     </g>
+    </g>
+    <g id="fig-2-text_7">
+     <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #111827" x="188.635859" y="268.748219" transform="rotate(-0 188.635859 268.748219)">Elapsed simulation minutes</text>
+    </g>
+   </g>
+   <g id="fig-2-matplotlib.axis_2">
+    <g id="fig-2-ytick_1">
+     <g id="fig-2-line2d_7">
+      <path d="M 57.195859 200.477463 
+L 320.075859 200.477463 
+" clip-path="url(#fig-2-p466f682600)" style="fill: none; stroke: #b0b0b0; stroke-opacity: 0.15; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="fig-2-line2d_8">
+      <defs>
+       <path id="fig-2-mef38892e2c" d="M 0 0 
+L -3.5 0 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#fig-2-mef38892e2c" x="57.195859" y="200.477463" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-2-text_8">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="50.195859" y="204.656174" transform="rotate(-0 50.195859 204.656174)">500</text>
+     </g>
+    </g>
+    <g id="fig-2-ytick_2">
+     <g id="fig-2-line2d_9">
+      <path d="M 57.195859 159.008894 
+L 320.075859 159.008894 
+" clip-path="url(#fig-2-p466f682600)" style="fill: none; stroke: #b0b0b0; stroke-opacity: 0.15; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="fig-2-line2d_10">
+      <g>
+       <use xlink:href="#fig-2-mef38892e2c" x="57.195859" y="159.008894" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-2-text_9">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="50.195859" y="163.187605" transform="rotate(-0 50.195859 163.187605)">1000</text>
+     </g>
+    </g>
+    <g id="fig-2-ytick_3">
+     <g id="fig-2-line2d_11">
+      <path d="M 57.195859 117.540324 
+L 320.075859 117.540324 
+" clip-path="url(#fig-2-p466f682600)" style="fill: none; stroke: #b0b0b0; stroke-opacity: 0.15; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="fig-2-line2d_12">
+      <g>
+       <use xlink:href="#fig-2-mef38892e2c" x="57.195859" y="117.540324" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-2-text_10">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="50.195859" y="121.719035" transform="rotate(-0 50.195859 121.719035)">1500</text>
+     </g>
+    </g>
+    <g id="fig-2-ytick_4">
+     <g id="fig-2-line2d_13">
+      <path d="M 57.195859 76.071755 
+L 320.075859 76.071755 
+" clip-path="url(#fig-2-p466f682600)" style="fill: none; stroke: #b0b0b0; stroke-opacity: 0.15; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="fig-2-line2d_14">
+      <g>
+       <use xlink:href="#fig-2-mef38892e2c" x="57.195859" y="76.071755" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-2-text_11">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="50.195859" y="80.250466" transform="rotate(-0 50.195859 80.250466)">2000</text>
+     </g>
+    </g>
+    <g id="fig-2-ytick_5">
+     <g id="fig-2-line2d_15">
+      <path d="M 57.195859 34.603186 
+L 320.075859 34.603186 
+" clip-path="url(#fig-2-p466f682600)" style="fill: none; stroke: #b0b0b0; stroke-opacity: 0.15; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="fig-2-line2d_16">
+      <g>
+       <use xlink:href="#fig-2-mef38892e2c" x="57.195859" y="34.603186" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-2-text_12">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="50.195859" y="38.781897" transform="rotate(-0 50.195859 38.781897)">2500</text>
+     </g>
+    </g>
+    <g id="fig-2-text_13">
+     <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #111827" x="15.558281" y="130.809938" transform="rotate(-90 15.558281 130.809938)">Cumulative XP</text>
+    </g>
+   </g>
+   <g id="fig-2-line2d_17">
+    <path d="M 69.14495 227.873263 
+L 116.941314 202.617177 
+L 164.737678 180.845993 
+L 212.534041 156.011468 
+L 260.330405 131.123399 
+L 308.126768 108.909283 
+" clip-path="url(#fig-2-p466f682600)" style="fill: none; stroke: #111827; stroke-width: 1.5; stroke-linecap: square"/>
+    <defs>
+     <path id="fig-2-m7b7bc1b008" d="M 0 1.5 
+C 0.397805 1.5 0.77937 1.341951 1.06066 1.06066 
+C 1.341951 0.77937 1.5 0.397805 1.5 0 
+C 1.5 -0.397805 1.341951 -0.77937 1.06066 -1.06066 
+C 0.77937 -1.341951 0.397805 -1.5 0 -1.5 
+C -0.397805 -1.5 -0.77937 -1.341951 -1.06066 -1.06066 
+C -1.341951 -0.77937 -1.5 -0.397805 -1.5 0 
+C -1.5 0.397805 -1.341951 0.77937 -1.06066 1.06066 
+C -0.77937 1.341951 -0.397805 1.5 0 1.5 
+z
+" style="stroke: #111827"/>
+    </defs>
+    <g clip-path="url(#fig-2-p466f682600)">
+     <use xlink:href="#fig-2-m7b7bc1b008" x="69.14495" y="227.873263" style="fill: #111827; stroke: #111827"/>
+     <use xlink:href="#fig-2-m7b7bc1b008" x="116.941314" y="202.617177" style="fill: #111827; stroke: #111827"/>
+     <use xlink:href="#fig-2-m7b7bc1b008" x="164.737678" y="180.845993" style="fill: #111827; stroke: #111827"/>
+     <use xlink:href="#fig-2-m7b7bc1b008" x="212.534041" y="156.011468" style="fill: #111827; stroke: #111827"/>
+     <use xlink:href="#fig-2-m7b7bc1b008" x="260.330405" y="131.123399" style="fill: #111827; stroke: #111827"/>
+     <use xlink:href="#fig-2-m7b7bc1b008" x="308.126768" y="108.909283" style="fill: #111827; stroke: #111827"/>
+    </g>
+   </g>
+   <g id="fig-2-line2d_18">
+    <path d="M 69.14495 224.047909 
+L 116.941314 180.873462 
+L 164.737678 143.118095 
+L 212.534041 107.517059 
+L 260.330405 71.744988 
+L 308.126768 41.383241 
+" clip-path="url(#fig-2-p466f682600)" style="fill: none; stroke: #1a3875; stroke-width: 1.5; stroke-linecap: square"/>
+    <defs>
+     <path id="fig-2-m9c028983f3" d="M 0 1.5 
+C 0.397805 1.5 0.77937 1.341951 1.06066 1.06066 
+C 1.341951 0.77937 1.5 0.397805 1.5 0 
+C 1.5 -0.397805 1.341951 -0.77937 1.06066 -1.06066 
+C 0.77937 -1.341951 0.397805 -1.5 0 -1.5 
+C -0.397805 -1.5 -0.77937 -1.341951 -1.06066 -1.06066 
+C -1.341951 -0.77937 -1.5 -0.397805 -1.5 0 
+C -1.5 0.397805 -1.341951 0.77937 -1.06066 1.06066 
+C -0.77937 1.341951 -0.397805 1.5 0 1.5 
+z
+" style="stroke: #1a3875"/>
+    </defs>
+    <g clip-path="url(#fig-2-p466f682600)">
+     <use xlink:href="#fig-2-m9c028983f3" x="69.14495" y="224.047909" style="fill: #1a3875; stroke: #1a3875"/>
+     <use xlink:href="#fig-2-m9c028983f3" x="116.941314" y="180.873462" style="fill: #1a3875; stroke: #1a3875"/>
+     <use xlink:href="#fig-2-m9c028983f3" x="164.737678" y="143.118095" style="fill: #1a3875; stroke: #1a3875"/>
+     <use xlink:href="#fig-2-m9c028983f3" x="212.534041" y="107.517059" style="fill: #1a3875; stroke: #1a3875"/>
+     <use xlink:href="#fig-2-m9c028983f3" x="260.330405" y="71.744988" style="fill: #1a3875; stroke: #1a3875"/>
+     <use xlink:href="#fig-2-m9c028983f3" x="308.126768" y="41.383241" style="fill: #1a3875; stroke: #1a3875"/>
+    </g>
+   </g>
+   <g id="fig-2-line2d_19">
+    <path d="M 69.14495 222.628426 
+L 116.941314 185.328435 
+L 164.737678 148.414991 
+L 212.534041 108.575379 
+L 260.330405 67.862789 
+L 308.126768 33.009938 
+" clip-path="url(#fig-2-p466f682600)" style="fill: none; stroke: #b36e4e; stroke-width: 1.5; stroke-linecap: square"/>
+    <defs>
+     <path id="fig-2-m0bebb2216a" d="M 0 1.5 
+C 0.397805 1.5 0.77937 1.341951 1.06066 1.06066 
+C 1.341951 0.77937 1.5 0.397805 1.5 0 
+C 1.5 -0.397805 1.341951 -0.77937 1.06066 -1.06066 
+C 0.77937 -1.341951 0.397805 -1.5 0 -1.5 
+C -0.397805 -1.5 -0.77937 -1.341951 -1.06066 -1.06066 
+C -1.341951 -0.77937 -1.5 -0.397805 -1.5 0 
+C -1.5 0.397805 -1.341951 0.77937 -1.06066 1.06066 
+C -0.77937 1.341951 -0.397805 1.5 0 1.5 
+z
+" style="stroke: #b36e4e"/>
+    </defs>
+    <g clip-path="url(#fig-2-p466f682600)">
+     <use xlink:href="#fig-2-m0bebb2216a" x="69.14495" y="222.628426" style="fill: #b36e4e; stroke: #b36e4e"/>
+     <use xlink:href="#fig-2-m0bebb2216a" x="116.941314" y="185.328435" style="fill: #b36e4e; stroke: #b36e4e"/>
+     <use xlink:href="#fig-2-m0bebb2216a" x="164.737678" y="148.414991" style="fill: #b36e4e; stroke: #b36e4e"/>
+     <use xlink:href="#fig-2-m0bebb2216a" x="212.534041" y="108.575379" style="fill: #b36e4e; stroke: #b36e4e"/>
+     <use xlink:href="#fig-2-m0bebb2216a" x="260.330405" y="67.862789" style="fill: #b36e4e; stroke: #b36e4e"/>
+     <use xlink:href="#fig-2-m0bebb2216a" x="308.126768" y="33.009938" style="fill: #b36e4e; stroke: #b36e4e"/>
+    </g>
+   </g>
+   <g id="fig-2-line2d_20">
+    <path d="M 69.14495 228.609938 
+L 116.941314 194.670547 
+L 164.737678 161.281519 
+L 212.534041 130.776656 
+L 260.330405 98.543812 
+L 308.126768 63.942322 
+" clip-path="url(#fig-2-p466f682600)" style="fill: none; stroke: #6e8050; stroke-width: 1.5; stroke-linecap: square"/>
+    <defs>
+     <path id="fig-2-me7b6e9b179" d="M 0 1.5 
+C 0.397805 1.5 0.77937 1.341951 1.06066 1.06066 
+C 1.341951 0.77937 1.5 0.397805 1.5 0 
+C 1.5 -0.397805 1.341951 -0.77937 1.06066 -1.06066 
+C 0.77937 -1.341951 0.397805 -1.5 0 -1.5 
+C -0.397805 -1.5 -0.77937 -1.341951 -1.06066 -1.06066 
+C -1.341951 -0.77937 -1.5 -0.397805 -1.5 0 
+C -1.5 0.397805 -1.341951 0.77937 -1.06066 1.06066 
+C -0.77937 1.341951 -0.397805 1.5 0 1.5 
+z
+" style="stroke: #6e8050"/>
+    </defs>
+    <g clip-path="url(#fig-2-p466f682600)">
+     <use xlink:href="#fig-2-me7b6e9b179" x="69.14495" y="228.609938" style="fill: #6e8050; stroke: #6e8050"/>
+     <use xlink:href="#fig-2-me7b6e9b179" x="116.941314" y="194.670547" style="fill: #6e8050; stroke: #6e8050"/>
+     <use xlink:href="#fig-2-me7b6e9b179" x="164.737678" y="161.281519" style="fill: #6e8050; stroke: #6e8050"/>
+     <use xlink:href="#fig-2-me7b6e9b179" x="212.534041" y="130.776656" style="fill: #6e8050; stroke: #6e8050"/>
+     <use xlink:href="#fig-2-me7b6e9b179" x="260.330405" y="98.543812" style="fill: #6e8050; stroke: #6e8050"/>
+     <use xlink:href="#fig-2-me7b6e9b179" x="308.126768" y="63.942322" style="fill: #6e8050; stroke: #6e8050"/>
+    </g>
+   </g>
+   <g id="fig-2-line2d_21">
+    <path d="M 69.14495 228.559872 
+L 116.941314 195.60989 
+L 164.737678 162.337201 
+L 212.534041 127.300772 
+L 260.330405 94.49033 
+L 308.126768 61.605257 
+" clip-path="url(#fig-2-p466f682600)" style="fill: none; stroke: #aa8a3a; stroke-width: 1.5; stroke-linecap: square"/>
+    <defs>
+     <path id="fig-2-m457930b941" d="M 0 1.5 
+C 0.397805 1.5 0.77937 1.341951 1.06066 1.06066 
+C 1.341951 0.77937 1.5 0.397805 1.5 0 
+C 1.5 -0.397805 1.341951 -0.77937 1.06066 -1.06066 
+C 0.77937 -1.341951 0.397805 -1.5 0 -1.5 
+C -0.397805 -1.5 -0.77937 -1.341951 -1.06066 -1.06066 
+C -1.341951 -0.77937 -1.5 -0.397805 -1.5 0 
+C -1.5 0.397805 -1.341951 0.77937 -1.06066 1.06066 
+C -0.77937 1.341951 -0.397805 1.5 0 1.5 
+z
+" style="stroke: #aa8a3a"/>
+    </defs>
+    <g clip-path="url(#fig-2-p466f682600)">
+     <use xlink:href="#fig-2-m457930b941" x="69.14495" y="228.559872" style="fill: #aa8a3a; stroke: #aa8a3a"/>
+     <use xlink:href="#fig-2-m457930b941" x="116.941314" y="195.60989" style="fill: #aa8a3a; stroke: #aa8a3a"/>
+     <use xlink:href="#fig-2-m457930b941" x="164.737678" y="162.337201" style="fill: #aa8a3a; stroke: #aa8a3a"/>
+     <use xlink:href="#fig-2-m457930b941" x="212.534041" y="127.300772" style="fill: #aa8a3a; stroke: #aa8a3a"/>
+     <use xlink:href="#fig-2-m457930b941" x="260.330405" y="94.49033" style="fill: #aa8a3a; stroke: #aa8a3a"/>
+     <use xlink:href="#fig-2-m457930b941" x="308.126768" y="61.605257" style="fill: #aa8a3a; stroke: #aa8a3a"/>
+    </g>
+   </g>
+   <g id="fig-2-patch_3">
+    <path d="M 57.195859 238.389938 
+L 57.195859 23.229938 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="fig-2-patch_4">
+    <path d="M 57.195859 238.389938 
+L 320.075859 238.389938 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="fig-2-text_14">
+    <text style="font-size: 13.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #111827" x="188.635859" y="17.229938" transform="rotate(-0 188.635859 17.229938)">All income</text>
+   </g>
+   <g id="fig-2-legend_1">
+    <g id="fig-2-line2d_22">
+     <path d="M 64.395859 33.708688 
+L 72.395859 33.708688 
+L 80.395859 33.708688 
+" style="fill: none; stroke: #111827; stroke-width: 1.5; stroke-linecap: square"/>
+     <g>
+      <use xlink:href="#fig-2-m7b7bc1b008" x="72.395859" y="33.708688" style="fill: #111827; stroke: #111827"/>
+     </g>
+    </g>
+    <g id="fig-2-text_15">
+     <text style="font-size: 8px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #111827" x="86.795859" y="36.508688" transform="rotate(-0 86.795859 36.508688)">v13</text>
+    </g>
+    <g id="fig-2-line2d_23">
+     <path d="M 64.395859 45.709313 
+L 72.395859 45.709313 
+L 80.395859 45.709313 
+" style="fill: none; stroke: #1a3875; stroke-width: 1.5; stroke-linecap: square"/>
+     <g>
+      <use xlink:href="#fig-2-m9c028983f3" x="72.395859" y="45.709313" style="fill: #1a3875; stroke: #1a3875"/>
+     </g>
+    </g>
+    <g id="fig-2-text_16">
+     <text style="font-size: 8px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #111827" x="86.795859" y="48.509313" transform="rotate(-0 86.795859 48.509313)">Aaron anchor v1</text>
+    </g>
+    <g id="fig-2-line2d_24">
+     <path d="M 64.395859 57.709938 
+L 72.395859 57.709938 
+L 80.395859 57.709938 
+" style="fill: none; stroke: #b36e4e; stroke-width: 1.5; stroke-linecap: square"/>
+     <g>
+      <use xlink:href="#fig-2-m0bebb2216a" x="72.395859" y="57.709938" style="fill: #b36e4e; stroke: #b36e4e"/>
+     </g>
+    </g>
+    <g id="fig-2-text_17">
+     <text style="font-size: 8px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #111827" x="86.795859" y="60.509938" transform="rotate(-0 86.795859 60.509938)">Aaron perimeter v1</text>
+    </g>
+    <g id="fig-2-line2d_25">
+     <path d="M 64.395859 69.710562 
+L 72.395859 69.710562 
+L 80.395859 69.710562 
+" style="fill: none; stroke: #6e8050; stroke-width: 1.5; stroke-linecap: square"/>
+     <g>
+      <use xlink:href="#fig-2-me7b6e9b179" x="72.395859" y="69.710562" style="fill: #6e8050; stroke: #6e8050"/>
+     </g>
+    </g>
+    <g id="fig-2-text_18">
+     <text style="font-size: 8px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #111827" x="86.795859" y="72.510562" transform="rotate(-0 86.795859 72.510562)">black-kite v16</text>
+    </g>
+    <g id="fig-2-line2d_26">
+     <path d="M 64.395859 81.711188 
+L 72.395859 81.711188 
+L 80.395859 81.711188 
+" style="fill: none; stroke: #aa8a3a; stroke-width: 1.5; stroke-linecap: square"/>
+     <g>
+      <use xlink:href="#fig-2-m457930b941" x="72.395859" y="81.711188" style="fill: #aa8a3a; stroke: #aa8a3a"/>
+     </g>
+    </g>
+    <g id="fig-2-text_19">
+     <text style="font-size: 8px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #111827" x="86.795859" y="84.511188" transform="rotate(-0 86.795859 84.511188)">red-kite v34</text>
+    </g>
+   </g>
+  </g>
+  <g id="fig-2-axes_2">
+   <g id="fig-2-patch_5">
+    <path d="M 367.755859 238.389938 
+L 630.635859 238.389938 
+L 630.635859 23.229938 
+L 367.755859 23.229938 
+z
+" style="fill: #fffdf4"/>
+   </g>
+   <g id="fig-2-matplotlib.axis_3">
+    <g id="fig-2-xtick_7">
+     <g id="fig-2-line2d_27">
+      <g>
+       <use xlink:href="#fig-2-m13150494b0" x="379.70495" y="238.389938" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-2-text_20">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="379.70495" y="253.747359" transform="rotate(-0 379.70495 253.747359)">1</text>
+     </g>
+    </g>
+    <g id="fig-2-xtick_8">
+     <g id="fig-2-line2d_28">
+      <g>
+       <use xlink:href="#fig-2-m13150494b0" x="427.501314" y="238.389938" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-2-text_21">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="427.501314" y="253.747359" transform="rotate(-0 427.501314 253.747359)">2</text>
+     </g>
+    </g>
+    <g id="fig-2-xtick_9">
+     <g id="fig-2-line2d_29">
+      <g>
+       <use xlink:href="#fig-2-m13150494b0" x="475.297678" y="238.389938" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-2-text_22">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="475.297678" y="253.747359" transform="rotate(-0 475.297678 253.747359)">3</text>
+     </g>
+    </g>
+    <g id="fig-2-xtick_10">
+     <g id="fig-2-line2d_30">
+      <g>
+       <use xlink:href="#fig-2-m13150494b0" x="523.094041" y="238.389938" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-2-text_23">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="523.094041" y="253.747359" transform="rotate(-0 523.094041 253.747359)">4</text>
+     </g>
+    </g>
+    <g id="fig-2-xtick_11">
+     <g id="fig-2-line2d_31">
+      <g>
+       <use xlink:href="#fig-2-m13150494b0" x="570.890405" y="238.389938" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-2-text_24">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="570.890405" y="253.747359" transform="rotate(-0 570.890405 253.747359)">5</text>
+     </g>
+    </g>
+    <g id="fig-2-xtick_12">
+     <g id="fig-2-line2d_32">
+      <g>
+       <use xlink:href="#fig-2-m13150494b0" x="618.686768" y="238.389938" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-2-text_25">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="618.686768" y="253.747359" transform="rotate(-0 618.686768 253.747359)">6</text>
+     </g>
+    </g>
+    <g id="fig-2-text_26">
+     <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #111827" x="499.195859" y="268.748219" transform="rotate(-0 499.195859 268.748219)">Elapsed simulation minutes</text>
+    </g>
+   </g>
+   <g id="fig-2-matplotlib.axis_4">
+    <g id="fig-2-ytick_6">
+     <g id="fig-2-line2d_33">
+      <path d="M 367.755859 234.65147 
+L 630.635859 234.65147 
+" clip-path="url(#fig-2-p5639026a74)" style="fill: none; stroke: #b0b0b0; stroke-opacity: 0.15; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="fig-2-line2d_34">
+      <g>
+       <use xlink:href="#fig-2-mef38892e2c" x="367.755859" y="234.65147" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-2-text_27">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="360.755859" y="238.830181" transform="rotate(-0 360.755859 238.830181)">0</text>
+     </g>
+    </g>
+    <g id="fig-2-ytick_7">
+     <g id="fig-2-line2d_35">
+      <path d="M 367.755859 194.840417 
+L 630.635859 194.840417 
+" clip-path="url(#fig-2-p5639026a74)" style="fill: none; stroke: #b0b0b0; stroke-opacity: 0.15; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="fig-2-line2d_36">
+      <g>
+       <use xlink:href="#fig-2-mef38892e2c" x="367.755859" y="194.840417" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-2-text_28">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="360.755859" y="199.019127" transform="rotate(-0 360.755859 199.019127)">200</text>
+     </g>
+    </g>
+    <g id="fig-2-ytick_8">
+     <g id="fig-2-line2d_37">
+      <path d="M 367.755859 155.029363 
+L 630.635859 155.029363 
+" clip-path="url(#fig-2-p5639026a74)" style="fill: none; stroke: #b0b0b0; stroke-opacity: 0.15; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="fig-2-line2d_38">
+      <g>
+       <use xlink:href="#fig-2-mef38892e2c" x="367.755859" y="155.029363" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-2-text_29">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="360.755859" y="159.208074" transform="rotate(-0 360.755859 159.208074)">400</text>
+     </g>
+    </g>
+    <g id="fig-2-ytick_9">
+     <g id="fig-2-line2d_39">
+      <path d="M 367.755859 115.218309 
+L 630.635859 115.218309 
+" clip-path="url(#fig-2-p5639026a74)" style="fill: none; stroke: #b0b0b0; stroke-opacity: 0.15; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="fig-2-line2d_40">
+      <g>
+       <use xlink:href="#fig-2-mef38892e2c" x="367.755859" y="115.218309" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-2-text_30">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="360.755859" y="119.39702" transform="rotate(-0 360.755859 119.39702)">600</text>
+     </g>
+    </g>
+    <g id="fig-2-ytick_10">
+     <g id="fig-2-line2d_41">
+      <path d="M 367.755859 75.407256 
+L 630.635859 75.407256 
+" clip-path="url(#fig-2-p5639026a74)" style="fill: none; stroke: #b0b0b0; stroke-opacity: 0.15; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="fig-2-line2d_42">
+      <g>
+       <use xlink:href="#fig-2-mef38892e2c" x="367.755859" y="75.407256" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-2-text_31">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="360.755859" y="79.585966" transform="rotate(-0 360.755859 79.585966)">800</text>
+     </g>
+    </g>
+    <g id="fig-2-ytick_11">
+     <g id="fig-2-line2d_43">
+      <path d="M 367.755859 35.596202 
+L 630.635859 35.596202 
+" clip-path="url(#fig-2-p5639026a74)" style="fill: none; stroke: #b0b0b0; stroke-opacity: 0.15; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="fig-2-line2d_44">
+      <g>
+       <use xlink:href="#fig-2-mef38892e2c" x="367.755859" y="35.596202" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-2-text_32">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="360.755859" y="39.774913" transform="rotate(-0 360.755859 39.774913)">1000</text>
+     </g>
+    </g>
+   </g>
+   <g id="fig-2-line2d_45">
+    <path d="M 379.70495 228.609938 
+L 427.501314 220.24801 
+L 475.297678 213.992852 
+L 523.094041 205.485397 
+L 570.890405 196.226922 
+L 618.686768 189.04776 
+" clip-path="url(#fig-2-p5639026a74)" style="fill: none; stroke: #111827; stroke-width: 1.5; stroke-linecap: square"/>
+    <g clip-path="url(#fig-2-p5639026a74)">
+     <use xlink:href="#fig-2-m7b7bc1b008" x="379.70495" y="228.609938" style="fill: #111827; stroke: #111827"/>
+     <use xlink:href="#fig-2-m7b7bc1b008" x="427.501314" y="220.24801" style="fill: #111827; stroke: #111827"/>
+     <use xlink:href="#fig-2-m7b7bc1b008" x="475.297678" y="213.992852" style="fill: #111827; stroke: #111827"/>
+     <use xlink:href="#fig-2-m7b7bc1b008" x="523.094041" y="205.485397" style="fill: #111827; stroke: #111827"/>
+     <use xlink:href="#fig-2-m7b7bc1b008" x="570.890405" y="196.226922" style="fill: #111827; stroke: #111827"/>
+     <use xlink:href="#fig-2-m7b7bc1b008" x="618.686768" y="189.04776" style="fill: #111827; stroke: #111827"/>
+    </g>
+   </g>
+   <g id="fig-2-line2d_46">
+    <path d="M 379.70495 223.051546 
+L 427.501314 187.698716 
+L 475.297678 149.547103 
+L 523.094041 110.899413 
+L 570.890405 71.680517 
+L 618.686768 33.009937 
+" clip-path="url(#fig-2-p5639026a74)" style="fill: none; stroke: #1a3875; stroke-width: 1.5; stroke-linecap: square"/>
+    <g clip-path="url(#fig-2-p5639026a74)">
+     <use xlink:href="#fig-2-m9c028983f3" x="379.70495" y="223.051546" style="fill: #1a3875; stroke: #1a3875"/>
+     <use xlink:href="#fig-2-m9c028983f3" x="427.501314" y="187.698716" style="fill: #1a3875; stroke: #1a3875"/>
+     <use xlink:href="#fig-2-m9c028983f3" x="475.297678" y="149.547103" style="fill: #1a3875; stroke: #1a3875"/>
+     <use xlink:href="#fig-2-m9c028983f3" x="523.094041" y="110.899413" style="fill: #1a3875; stroke: #1a3875"/>
+     <use xlink:href="#fig-2-m9c028983f3" x="570.890405" y="71.680517" style="fill: #1a3875; stroke: #1a3875"/>
+     <use xlink:href="#fig-2-m9c028983f3" x="618.686768" y="33.009937" style="fill: #1a3875; stroke: #1a3875"/>
+    </g>
+   </g>
+   <g id="fig-2-line2d_47">
+    <path d="M 379.70495 223.933292 
+L 427.501314 194.115287 
+L 475.297678 159.96546 
+L 523.094041 123.325072 
+L 570.890405 83.90028 
+L 618.686768 46.80017 
+" clip-path="url(#fig-2-p5639026a74)" style="fill: none; stroke: #b36e4e; stroke-width: 1.5; stroke-linecap: square"/>
+    <g clip-path="url(#fig-2-p5639026a74)">
+     <use xlink:href="#fig-2-m0bebb2216a" x="379.70495" y="223.933292" style="fill: #b36e4e; stroke: #b36e4e"/>
+     <use xlink:href="#fig-2-m0bebb2216a" x="427.501314" y="194.115287" style="fill: #b36e4e; stroke: #b36e4e"/>
+     <use xlink:href="#fig-2-m0bebb2216a" x="475.297678" y="159.96546" style="fill: #b36e4e; stroke: #b36e4e"/>
+     <use xlink:href="#fig-2-m0bebb2216a" x="523.094041" y="123.325072" style="fill: #b36e4e; stroke: #b36e4e"/>
+     <use xlink:href="#fig-2-m0bebb2216a" x="570.890405" y="83.90028" style="fill: #b36e4e; stroke: #b36e4e"/>
+     <use xlink:href="#fig-2-m0bebb2216a" x="618.686768" y="46.80017" style="fill: #b36e4e; stroke: #b36e4e"/>
+    </g>
+   </g>
+   <g id="fig-2-line2d_48">
+    <path d="M 379.70495 224.579629 
+L 427.501314 206.286094 
+L 475.297678 185.172018 
+L 523.094041 161.537759 
+L 570.890405 132.488131 
+L 618.686768 95.040859 
+" clip-path="url(#fig-2-p5639026a74)" style="fill: none; stroke: #6e8050; stroke-width: 1.5; stroke-linecap: square"/>
+    <g clip-path="url(#fig-2-p5639026a74)">
+     <use xlink:href="#fig-2-me7b6e9b179" x="379.70495" y="224.579629" style="fill: #6e8050; stroke: #6e8050"/>
+     <use xlink:href="#fig-2-me7b6e9b179" x="427.501314" y="206.286094" style="fill: #6e8050; stroke: #6e8050"/>
+     <use xlink:href="#fig-2-me7b6e9b179" x="475.297678" y="185.172018" style="fill: #6e8050; stroke: #6e8050"/>
+     <use xlink:href="#fig-2-me7b6e9b179" x="523.094041" y="161.537759" style="fill: #6e8050; stroke: #6e8050"/>
+     <use xlink:href="#fig-2-me7b6e9b179" x="570.890405" y="132.488131" style="fill: #6e8050; stroke: #6e8050"/>
+     <use xlink:href="#fig-2-me7b6e9b179" x="618.686768" y="95.040859" style="fill: #6e8050; stroke: #6e8050"/>
+    </g>
+   </g>
+   <g id="fig-2-line2d_49">
+    <path d="M 379.70495 226.06476 
+L 427.501314 210.260208 
+L 475.297678 189.330758 
+L 523.094041 162.757165 
+L 570.890405 131.322965 
+L 618.686768 95.602045 
+" clip-path="url(#fig-2-p5639026a74)" style="fill: none; stroke: #aa8a3a; stroke-width: 1.5; stroke-linecap: square"/>
+    <g clip-path="url(#fig-2-p5639026a74)">
+     <use xlink:href="#fig-2-m457930b941" x="379.70495" y="226.06476" style="fill: #aa8a3a; stroke: #aa8a3a"/>
+     <use xlink:href="#fig-2-m457930b941" x="427.501314" y="210.260208" style="fill: #aa8a3a; stroke: #aa8a3a"/>
+     <use xlink:href="#fig-2-m457930b941" x="475.297678" y="189.330758" style="fill: #aa8a3a; stroke: #aa8a3a"/>
+     <use xlink:href="#fig-2-m457930b941" x="523.094041" y="162.757165" style="fill: #aa8a3a; stroke: #aa8a3a"/>
+     <use xlink:href="#fig-2-m457930b941" x="570.890405" y="131.322965" style="fill: #aa8a3a; stroke: #aa8a3a"/>
+     <use xlink:href="#fig-2-m457930b941" x="618.686768" y="95.602045" style="fill: #aa8a3a; stroke: #aa8a3a"/>
+    </g>
+   </g>
+   <g id="fig-2-patch_6">
+    <path d="M 367.755859 238.389938 
+L 367.755859 23.229937 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="fig-2-patch_7">
+    <path d="M 367.755859 238.389938 
+L 630.635859 238.389938 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="fig-2-text_33">
+    <text style="font-size: 13.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #111827" x="499.195859" y="17.229938" transform="rotate(-0 499.195859 17.229938)">Hero-kill income</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="fig-2-p466f682600">
+   <rect x="57.195859" y="23.229938" width="262.88" height="215.16"/>
+  </clipPath>
+  <clipPath id="fig-2-p5639026a74">
+   <rect x="367.755859" y="23.229938" width="262.88" height="215.16"/>
+  </clipPath>
+ </defs>
+</svg>
+
+<figcaption><span class="fig-label">Figure 2</span>Cumulative XP in the fixed six-minute cohort. Sample sizes: v13 142, anchor 113, perimeter 102, black-kite 98, red-kite 121 appearances. One simulation minute is 1,440 ticks. <sup class="ref"><a href="#src-2" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/timing-findings.md:1-51 and timing-and-uncertainty.json — class-balanced rates, whole-match uncertainty, checkpoints, attainment, and class-specific results. Reproduction: timing-and-uncertainty.py.">2</a></sup> <sup class="ref"><a href="#src-6" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/xp-contract.md:5-71 — verified engine contract. Underlying code: gods_of_the_arena_lab/tools/.cache/polyworld/examples/gods_of_the_arena/sim.nim:388-393,784-793,2263-2297,3612-3623; replay instrumentation: gods_of_the_arena_lab/tools/expand_replay.nim:27-82,216-305,396-458.">6</a></sup></figcaption>
+</figure>
+<p>At minute six, anchor has earned <strong>1,141 creep XP, 1,013 hero XP, and 265 building XP</strong>. V13 has <strong>1,374 creep XP, 229 hero XP, and about 1 building XP</strong>. The extra farming does not compensate for the missing hero and building income. Between minutes two and six, anchor adds roughly 190–197 hero XP per minute; v13 adds roughly 31–47. <sup class="ref"><a href="#src-2" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/timing-findings.md:1-51 and timing-and-uncertainty.json — class-balanced rates, whole-match uncertainty, checkpoints, attainment, and class-specific results. Reproduction: timing-and-uncertainty.py.">2</a></sup></p>
+<p>Across the full corpus, 73% of v13 appearances reach level five, with a median time of <strong>3:06 among those that reach it</strong>. The Aaron policies reach it in 84–86% of appearances, with corresponding medians of <strong>2:05–2:13</strong>. These conditional medians must be read alongside the attainment rates: games end at different times, and non-achievers are excluded. The intended level lead is therefore not consistently present against these leaders. <sup class="ref"><a href="#src-2" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/timing-findings.md:1-51 and timing-and-uncertainty.json — class-balanced rates, whole-match uncertainty, checkpoints, attainment, and class-specific results. Reproduction: timing-and-uncertainty.py.">2</a></sup></p>
+</section>
+<section id="what-the-replay-behavior-shows"><h2>What the replay behavior shows</h2><ul class="key-points">
+<li>V13’s problem is not simply a lack of nearby living enemies.</li>
+<li>The leaders retain hero targets much more often and attack buildings for sustained periods.</li>
+<li>Differences in gear and class matter, but the replays do not reveal the competitors’ decision code.</li>
+</ul>
+<p>We examined two-second snapshots from 40 randomly selected matches, four for each v13 class. The Aaron policies each appear 31 times, black-kite 27, and red-kite 34. The following are equal-class averages of each appearance’s time fractions; some comparator classes have only one or two examples, so these are directional observations. <sup class="ref"><a href="#src-4" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/behavior-findings.md:5-90 and behavior-summary.json — random-sample behavior, inventory snapshots, and event examples. Reproduction: sample_states.py, then behavior_analysis.py; full episode manifest in sample-manifest.json.">4</a></sup></p>
+<table>
+<thead>
+<tr>
+<th>Observed state</th>
+<th style="text-align:right">v13</th>
+<th style="text-align:right">Anchor</th>
+<th style="text-align:right">Perimeter</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Alive, share of sampled match time</td>
+<td style="text-align:right">94.7%</td>
+<td style="text-align:right">93.7%</td>
+<td style="text-align:right">94.4%</td>
+</tr>
+<tr>
+<td>Within 12 tiles of a living enemy, while alive</td>
+<td style="text-align:right">42.0%</td>
+<td style="text-align:right">23.2%</td>
+<td style="text-align:right">26.4%</td>
+</tr>
+<tr>
+<td>Within 12 tiles of a living ally, while alive</td>
+<td style="text-align:right">42.6%</td>
+<td style="text-align:right">38.2%</td>
+<td style="text-align:right">47.1%</td>
+</tr>
+<tr>
+<td>Pursuing or attacking a hero target, while alive</td>
+<td style="text-align:right">1.5%</td>
+<td style="text-align:right">13.8%</td>
+<td style="text-align:right">13.7%</td>
+</tr>
+<tr>
+<td>Pursuing or attacking a building target, while alive</td>
+<td style="text-align:right">0.0%</td>
+<td style="text-align:right">18.5%</td>
+<td style="text-align:right">24.2%</td>
+</tr>
+<tr>
+<td>Closer to enemy god than own god, while alive</td>
+<td style="text-align:right">33.2%</td>
+<td style="text-align:right">42.6%</td>
+<td style="text-align:right">52.8%</td>
+</tr>
+</tbody>
+</table>
+<p>“Pursuing or attacking” means the engine reports <code>Fighting</code> with a nonzero target ID. That state includes movement toward a target; it does not establish an attack landed. Brief spells can occur outside that state, and two-second snapshots can miss short engagements. In particular, v13’s zero sampled building-target time is compatible with its four exact building kills. <sup class="ref"><a href="#src-4" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/behavior-findings.md:5-90 and behavior-summary.json — random-sample behavior, inventory snapshots, and event examples. Reproduction: sample_states.py, then behavior_analysis.py; full episode manifest in sample-manifest.json.">4</a></sup> <sup class="ref"><a href="#src-6" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/xp-contract.md:5-71 — verified engine contract. Underlying code: gods_of_the_arena_lab/tools/.cache/polyworld/examples/gods_of_the_arena/sim.nim:388-393,784-793,2263-2297,3612-3623; replay instrumentation: gods_of_the_arena_lab/tools/expand_replay.nim:27-82,216-305,396-458.">6</a></sup></p>
+<p>When a living enemy is within 12 tiles, v13 is pursuing or attacking a hero in <strong>3.6%</strong> of those sampled moments; anchor and perimeter do so in <strong>54.3% and 53.2%</strong>. This is a large difference in engagement behavior. It supports investigating target selection and how long v13 stays committed to an available finish, but it does not establish that those other attacks are safe, ally-initiated, or consistent with farm-and-finish. <sup class="ref"><a href="#src-4" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/behavior-findings.md:5-90 and behavior-summary.json — random-sample behavior, inventory snapshots, and event examples. Reproduction: sample_states.py, then behavior_analysis.py; full episode manifest in sample-manifest.json.">4</a></sup></p>
+<p>The full 288-match event record shows how often each policy was near an enemy death and how often it received the kill:</p>
+<table>
+<thead>
+<tr>
+<th>Measure</th>
+<th style="text-align:right">v13</th>
+<th style="text-align:right">Anchor</th>
+<th style="text-align:right">Perimeter</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Enemy deaths with us alive within 12 tiles</td>
+<td style="text-align:right">24.7%</td>
+<td style="text-align:right">36.0%</td>
+<td style="text-align:right">38.8%</td>
+</tr>
+<tr>
+<td>Nearby enemy deaths credited to us</td>
+<td style="text-align:right">27.3%</td>
+<td style="text-align:right">70.8%</td>
+<td style="text-align:right">72.6%</td>
+</tr>
+</tbody>
+</table>
+<p>These are pooled event proportions, unlike the class-balanced time fractions above. Balancing the death proportions by class preserves the result: conversion is <strong>24.9% for v13 versus 68.7% for each Aaron policy</strong>, and their conversion exceeds ours in every class. A few ambiguous killer identities make the pooled conversion a slight lower bound; excluding them changes the displayed rates by at most 0.2 percentage points. <sup class="ref"><a href="#src-3" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/methods-audit.md:40-52 — exact proximity numerators, denominators, and ambiguous-killer sensitivity.">3</a></sup> <sup class="ref"><a href="#src-8" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/proximity-by-class.md:1-59 — class-specific exposure and conversion, plus exact building-kill totals.">8</a></sup></p>
+<p>Being near an enemy while it lives is different from being present when it dies. V13 can spend time near healthy enemies or retreat before a death; the leaders can also create deaths through their own attacks. The data establishes a gap in realized kills, not a count of safe finishing opportunities v13 could certainly have taken.</p>
+<p>The item snapshot provides another clue. At two minutes, class-balanced equipment bonuses are approximately <strong>+13 damage and +9 HP for v13</strong>, <strong>+15 damage and +44 HP for anchor</strong>, and <strong>+13 damage and +46 HP for perimeter</strong>. Their direct equipment damage bonuses are similar, while they hold more durability. V13 holds Leather Gauntlets in every sampled appearance; the Aaron policies more often hold Crimson Dagger, Steel Buckler, and Ruby Amulet. These are observed inventories, not proof that changing the purchase order causes their lead. Level, class, mana, cooldowns, and item effects also affect combat. <sup class="ref"><a href="#src-4" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/behavior-findings.md:5-90 and behavior-summary.json — random-sample behavior, inventory snapshots, and event examples. Reproduction: sample_states.py, then behavior_analysis.py; full episode manifest in sample-manifest.json.">4</a></sup></p>
+<figure id="figure-3">
+<svg role="img" aria-label="XP by hero class" xmlns:xlink="http://www.w3.org/1999/xlink" width="587.800781pt" height="336.240859pt" viewBox="0 0 587.800781 336.240859" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-09-18T10:44:02.912219</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.0, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="fig-3-figure_1">
+  <g id="fig-3-patch_1">
+   <path d="M 0 336.240859 
+L 587.800781 336.240859 
+L 587.800781 0 
+L 0 0 
+z
+" style="fill: #fffdf4"/>
+  </g>
+  <g id="fig-3-axes_1">
+   <g id="fig-3-patch_2">
+    <path d="M 105.594531 296.04 
+L 580.600781 296.04 
+L 580.600781 7.2 
+L 105.594531 7.2 
+z
+" style="fill: #fffdf4"/>
+   </g>
+   <g id="fig-3-PathCollection_1">
+    <defs>
+     <path id="fig-3-mc48fabb3dd" d="M 0 2.54951 
+C 0.676138 2.54951 1.324674 2.280877 1.802776 1.802776 
+C 2.280877 1.324674 2.54951 0.676138 2.54951 0 
+C 2.54951 -0.676138 2.280877 -1.324674 1.802776 -1.802776 
+C 1.324674 -2.280877 0.676138 -2.54951 0 -2.54951 
+C -0.676138 -2.54951 -1.324674 -2.280877 -1.802776 -1.802776 
+C -2.280877 -1.324674 -2.54951 -0.676138 -2.54951 0 
+C -2.54951 0.676138 -2.280877 1.324674 -1.802776 1.802776 
+C -1.324674 2.280877 -0.676138 2.54951 0 2.54951 
+z
+" style="stroke: #111827"/>
+    </defs>
+    <g clip-path="url(#fig-3-p851013b313)">
+     <use xlink:href="#fig-3-mc48fabb3dd" x="127.185724" y="20.329091" style="fill: #111827; stroke: #111827"/>
+     <use xlink:href="#fig-3-mc48fabb3dd" x="205.315117" y="48.503106" style="fill: #111827; stroke: #111827"/>
+     <use xlink:href="#fig-3-mc48fabb3dd" x="226.298359" y="76.677121" style="fill: #111827; stroke: #111827"/>
+     <use xlink:href="#fig-3-mc48fabb3dd" x="176.27215" y="104.851135" style="fill: #111827; stroke: #111827"/>
+     <use xlink:href="#fig-3-mc48fabb3dd" x="197.690231" y="133.02515" style="fill: #111827; stroke: #111827"/>
+     <use xlink:href="#fig-3-mc48fabb3dd" x="156.112453" y="161.199165" style="fill: #111827; stroke: #111827"/>
+     <use xlink:href="#fig-3-mc48fabb3dd" x="225.805912" y="189.37318" style="fill: #111827; stroke: #111827"/>
+     <use xlink:href="#fig-3-mc48fabb3dd" x="205.746415" y="217.547195" style="fill: #111827; stroke: #111827"/>
+     <use xlink:href="#fig-3-mc48fabb3dd" x="181.881618" y="245.72121" style="fill: #111827; stroke: #111827"/>
+     <use xlink:href="#fig-3-mc48fabb3dd" x="155.12619" y="273.895224" style="fill: #111827; stroke: #111827"/>
+    </g>
+   </g>
+   <g id="fig-3-PathCollection_2">
+    <defs>
+     <path id="fig-3-md1ffc1c96d" d="M 0 2.54951 
+C 0.676138 2.54951 1.324674 2.280877 1.802776 1.802776 
+C 2.280877 1.324674 2.54951 0.676138 2.54951 0 
+C 2.54951 -0.676138 2.280877 -1.324674 1.802776 -1.802776 
+C 1.324674 -2.280877 0.676138 -2.54951 0 -2.54951 
+C -0.676138 -2.54951 -1.324674 -2.280877 -1.802776 -1.802776 
+C -2.280877 -1.324674 -2.54951 -0.676138 -2.54951 0 
+C -2.54951 0.676138 -2.280877 1.324674 -1.802776 1.802776 
+C -1.324674 2.280877 -0.676138 2.54951 0 2.54951 
+z
+" style="stroke: #1a3875"/>
+    </defs>
+    <g clip-path="url(#fig-3-p851013b313)">
+     <use xlink:href="#fig-3-md1ffc1c96d" x="156.632906" y="24.836933" style="fill: #1a3875; stroke: #1a3875"/>
+     <use xlink:href="#fig-3-md1ffc1c96d" x="527.616399" y="53.010948" style="fill: #1a3875; stroke: #1a3875"/>
+     <use xlink:href="#fig-3-md1ffc1c96d" x="359.057076" y="81.184963" style="fill: #1a3875; stroke: #1a3875"/>
+     <use xlink:href="#fig-3-md1ffc1c96d" x="214.568382" y="109.358978" style="fill: #1a3875; stroke: #1a3875"/>
+     <use xlink:href="#fig-3-md1ffc1c96d" x="318.580584" y="137.532993" style="fill: #1a3875; stroke: #1a3875"/>
+     <use xlink:href="#fig-3-md1ffc1c96d" x="213.954515" y="165.707007" style="fill: #1a3875; stroke: #1a3875"/>
+     <use xlink:href="#fig-3-md1ffc1c96d" x="504.196089" y="193.881022" style="fill: #1a3875; stroke: #1a3875"/>
+     <use xlink:href="#fig-3-md1ffc1c96d" x="347.265183" y="222.055037" style="fill: #1a3875; stroke: #1a3875"/>
+     <use xlink:href="#fig-3-md1ffc1c96d" x="207.060827" y="250.229052" style="fill: #1a3875; stroke: #1a3875"/>
+     <use xlink:href="#fig-3-md1ffc1c96d" x="245.239708" y="278.403067" style="fill: #1a3875; stroke: #1a3875"/>
+    </g>
+   </g>
+   <g id="fig-3-PathCollection_3">
+    <defs>
+     <path id="fig-3-m8bacb7daf6" d="M 0 2.54951 
+C 0.676138 2.54951 1.324674 2.280877 1.802776 1.802776 
+C 2.280877 1.324674 2.54951 0.676138 2.54951 0 
+C 2.54951 -0.676138 2.280877 -1.324674 1.802776 -1.802776 
+C 1.324674 -2.280877 0.676138 -2.54951 0 -2.54951 
+C -0.676138 -2.54951 -1.324674 -2.280877 -1.802776 -1.802776 
+C -2.280877 -1.324674 -2.54951 -0.676138 -2.54951 0 
+C -2.54951 0.676138 -2.280877 1.324674 -1.802776 1.802776 
+C -1.324674 2.280877 -0.676138 2.54951 0 2.54951 
+z
+" style="stroke: #b36e4e"/>
+    </defs>
+    <g clip-path="url(#fig-3-p851013b313)">
+     <use xlink:href="#fig-3-m8bacb7daf6" x="153.162913" y="29.344776" style="fill: #b36e4e; stroke: #b36e4e"/>
+     <use xlink:href="#fig-3-m8bacb7daf6" x="559.009588" y="57.51879" style="fill: #b36e4e; stroke: #b36e4e"/>
+     <use xlink:href="#fig-3-m8bacb7daf6" x="296.979347" y="85.692805" style="fill: #b36e4e; stroke: #b36e4e"/>
+     <use xlink:href="#fig-3-m8bacb7daf6" x="267.322403" y="113.86682" style="fill: #b36e4e; stroke: #b36e4e"/>
+     <use xlink:href="#fig-3-m8bacb7daf6" x="307.574717" y="142.040835" style="fill: #b36e4e; stroke: #b36e4e"/>
+     <use xlink:href="#fig-3-m8bacb7daf6" x="202.620881" y="170.21485" style="fill: #b36e4e; stroke: #b36e4e"/>
+     <use xlink:href="#fig-3-m8bacb7daf6" x="491.131165" y="198.388865" style="fill: #b36e4e; stroke: #b36e4e"/>
+     <use xlink:href="#fig-3-m8bacb7daf6" x="346.671786" y="226.562879" style="fill: #b36e4e; stroke: #b36e4e"/>
+     <use xlink:href="#fig-3-m8bacb7daf6" x="222.111625" y="254.736894" style="fill: #b36e4e; stroke: #b36e4e"/>
+     <use xlink:href="#fig-3-m8bacb7daf6" x="246.906546" y="282.910909" style="fill: #b36e4e; stroke: #b36e4e"/>
+    </g>
+   </g>
+   <g id="fig-3-matplotlib.axis_1">
+    <g id="fig-3-xtick_1">
+     <g id="fig-3-line2d_1">
+      <path d="M 115.523475 296.04 
+L 115.523475 7.2 
+" clip-path="url(#fig-3-p851013b313)" style="fill: none; stroke: #b0b0b0; stroke-opacity: 0.15; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="fig-3-line2d_2">
+      <defs>
+       <path id="fig-3-m28e9ba4d9e" d="M 0 0 
+L 0 3.5 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#fig-3-m28e9ba4d9e" x="115.523475" y="296.04" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-3-text_1">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="115.523475" y="311.397422" transform="rotate(-0 115.523475 311.397422)">100</text>
+     </g>
+    </g>
+    <g id="fig-3-xtick_2">
+     <g id="fig-3-line2d_3">
+      <path d="M 168.464438 296.04 
+L 168.464438 7.2 
+" clip-path="url(#fig-3-p851013b313)" style="fill: none; stroke: #b0b0b0; stroke-opacity: 0.15; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="fig-3-line2d_4">
+      <g>
+       <use xlink:href="#fig-3-m28e9ba4d9e" x="168.464438" y="296.04" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-3-text_2">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="168.464438" y="311.397422" transform="rotate(-0 168.464438 311.397422)">150</text>
+     </g>
+    </g>
+    <g id="fig-3-xtick_3">
+     <g id="fig-3-line2d_5">
+      <path d="M 221.405402 296.04 
+L 221.405402 7.2 
+" clip-path="url(#fig-3-p851013b313)" style="fill: none; stroke: #b0b0b0; stroke-opacity: 0.15; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="fig-3-line2d_6">
+      <g>
+       <use xlink:href="#fig-3-m28e9ba4d9e" x="221.405402" y="296.04" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-3-text_3">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="221.405402" y="311.397422" transform="rotate(-0 221.405402 311.397422)">200</text>
+     </g>
+    </g>
+    <g id="fig-3-xtick_4">
+     <g id="fig-3-line2d_7">
+      <path d="M 274.346365 296.04 
+L 274.346365 7.2 
+" clip-path="url(#fig-3-p851013b313)" style="fill: none; stroke: #b0b0b0; stroke-opacity: 0.15; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="fig-3-line2d_8">
+      <g>
+       <use xlink:href="#fig-3-m28e9ba4d9e" x="274.346365" y="296.04" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-3-text_4">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="274.346365" y="311.397422" transform="rotate(-0 274.346365 311.397422)">250</text>
+     </g>
+    </g>
+    <g id="fig-3-xtick_5">
+     <g id="fig-3-line2d_9">
+      <path d="M 327.287329 296.04 
+L 327.287329 7.2 
+" clip-path="url(#fig-3-p851013b313)" style="fill: none; stroke: #b0b0b0; stroke-opacity: 0.15; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="fig-3-line2d_10">
+      <g>
+       <use xlink:href="#fig-3-m28e9ba4d9e" x="327.287329" y="296.04" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-3-text_5">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="327.287329" y="311.397422" transform="rotate(-0 327.287329 311.397422)">300</text>
+     </g>
+    </g>
+    <g id="fig-3-xtick_6">
+     <g id="fig-3-line2d_11">
+      <path d="M 380.228292 296.04 
+L 380.228292 7.2 
+" clip-path="url(#fig-3-p851013b313)" style="fill: none; stroke: #b0b0b0; stroke-opacity: 0.15; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="fig-3-line2d_12">
+      <g>
+       <use xlink:href="#fig-3-m28e9ba4d9e" x="380.228292" y="296.04" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-3-text_6">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="380.228292" y="311.397422" transform="rotate(-0 380.228292 311.397422)">350</text>
+     </g>
+    </g>
+    <g id="fig-3-xtick_7">
+     <g id="fig-3-line2d_13">
+      <path d="M 433.169256 296.04 
+L 433.169256 7.2 
+" clip-path="url(#fig-3-p851013b313)" style="fill: none; stroke: #b0b0b0; stroke-opacity: 0.15; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="fig-3-line2d_14">
+      <g>
+       <use xlink:href="#fig-3-m28e9ba4d9e" x="433.169256" y="296.04" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-3-text_7">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="433.169256" y="311.397422" transform="rotate(-0 433.169256 311.397422)">400</text>
+     </g>
+    </g>
+    <g id="fig-3-xtick_8">
+     <g id="fig-3-line2d_15">
+      <path d="M 486.11022 296.04 
+L 486.11022 7.2 
+" clip-path="url(#fig-3-p851013b313)" style="fill: none; stroke: #b0b0b0; stroke-opacity: 0.15; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="fig-3-line2d_16">
+      <g>
+       <use xlink:href="#fig-3-m28e9ba4d9e" x="486.11022" y="296.04" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-3-text_8">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="486.11022" y="311.397422" transform="rotate(-0 486.11022 311.397422)">450</text>
+     </g>
+    </g>
+    <g id="fig-3-xtick_9">
+     <g id="fig-3-line2d_17">
+      <path d="M 539.051183 296.04 
+L 539.051183 7.2 
+" clip-path="url(#fig-3-p851013b313)" style="fill: none; stroke: #b0b0b0; stroke-opacity: 0.15; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="fig-3-line2d_18">
+      <g>
+       <use xlink:href="#fig-3-m28e9ba4d9e" x="539.051183" y="296.04" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-3-text_9">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="539.051183" y="311.397422" transform="rotate(-0 539.051183 311.397422)">500</text>
+     </g>
+    </g>
+    <g id="fig-3-text_10">
+     <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #111827" x="343.097656" y="326.398281" transform="rotate(-0 343.097656 326.398281)">XP per 1,000 elapsed ticks</text>
+    </g>
+   </g>
+   <g id="fig-3-matplotlib.axis_2">
+    <g id="fig-3-ytick_1">
+     <g id="fig-3-line2d_19">
+      <defs>
+       <path id="fig-3-mac34c001a3" d="M 0 0 
+L -3.5 0 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#fig-3-mac34c001a3" x="105.594531" y="24.836933" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-3-text_11">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="98.594531" y="29.016074" transform="rotate(-0 98.594531 29.016074)">Vanguard Knight</text>
+     </g>
+    </g>
+    <g id="fig-3-ytick_2">
+     <g id="fig-3-line2d_20">
+      <g>
+       <use xlink:href="#fig-3-mac34c001a3" x="105.594531" y="53.010948" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-3-text_12">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="98.594531" y="57.189659" transform="rotate(-0 98.594531 57.189659)">Ranger</text>
+     </g>
+    </g>
+    <g id="fig-3-ytick_3">
+     <g id="fig-3-line2d_21">
+      <g>
+       <use xlink:href="#fig-3-mac34c001a3" x="105.594531" y="81.184963" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-3-text_13">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="98.594531" y="85.364104" transform="rotate(-0 98.594531 85.364104)">Arcanist</text>
+     </g>
+    </g>
+    <g id="fig-3-ytick_4">
+     <g id="fig-3-line2d_22">
+      <g>
+       <use xlink:href="#fig-3-mac34c001a3" x="105.594531" y="109.358978" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-3-text_14">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="98.594531" y="113.538118" transform="rotate(-0 98.594531 113.538118)">Druid Warden</text>
+     </g>
+    </g>
+    <g id="fig-3-ytick_5">
+     <g id="fig-3-line2d_23">
+      <g>
+       <use xlink:href="#fig-3-mac34c001a3" x="105.594531" y="137.532993" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-3-text_15">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="98.594531" y="141.711704" transform="rotate(-0 98.594531 141.711704)">Demon Hunter</text>
+     </g>
+    </g>
+    <g id="fig-3-ytick_6">
+     <g id="fig-3-line2d_24">
+      <g>
+       <use xlink:href="#fig-3-mac34c001a3" x="105.594531" y="165.707007" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-3-text_16">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="98.594531" y="169.886148" transform="rotate(-0 98.594531 169.886148)">Death Knight</text>
+     </g>
+    </g>
+    <g id="fig-3-ytick_7">
+     <g id="fig-3-line2d_25">
+      <g>
+       <use xlink:href="#fig-3-mac34c001a3" x="105.594531" y="193.881022" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-3-text_17">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="98.594531" y="198.060163" transform="rotate(-0 98.594531 198.060163)">Crossbowman</text>
+     </g>
+    </g>
+    <g id="fig-3-ytick_8">
+     <g id="fig-3-line2d_26">
+      <g>
+       <use xlink:href="#fig-3-mac34c001a3" x="105.594531" y="222.055037" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-3-text_18">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="98.594531" y="226.234178" transform="rotate(-0 98.594531 226.234178)">Lich</text>
+     </g>
+    </g>
+    <g id="fig-3-ytick_9">
+     <g id="fig-3-line2d_27">
+      <g>
+       <use xlink:href="#fig-3-mac34c001a3" x="105.594531" y="250.229052" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-3-text_19">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="98.594531" y="254.408193" transform="rotate(-0 98.594531 254.408193)">Warlock</text>
+     </g>
+    </g>
+    <g id="fig-3-ytick_10">
+     <g id="fig-3-line2d_28">
+      <g>
+       <use xlink:href="#fig-3-mac34c001a3" x="105.594531" y="278.403067" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="fig-3-text_20">
+      <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: end" x="98.594531" y="282.582207" transform="rotate(-0 98.594531 282.582207)">Berserker</text>
+     </g>
+    </g>
+   </g>
+   <g id="fig-3-patch_3">
+    <path d="M 105.594531 296.04 
+L 105.594531 7.2 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="fig-3-patch_4">
+    <path d="M 105.594531 296.04 
+L 580.600781 296.04 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="fig-3-legend_1">
+    <g id="fig-3-PathCollection_4">
+     <g>
+      <use xlink:href="#fig-3-mc48fabb3dd" x="468.621094" y="256.413984" style="fill: #111827; stroke: #111827"/>
+     </g>
+    </g>
+    <g id="fig-3-text_21">
+     <text style="font-size: 9px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #111827" x="484.821094" y="258.776484" transform="rotate(-0 484.821094 258.776484)">v13</text>
+    </g>
+    <g id="fig-3-PathCollection_5">
+     <g>
+      <use xlink:href="#fig-3-md1ffc1c96d" x="468.621094" y="269.914687" style="fill: #1a3875; stroke: #1a3875"/>
+     </g>
+    </g>
+    <g id="fig-3-text_22">
+     <text style="font-size: 9px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #111827" x="484.821094" y="272.277187" transform="rotate(-0 484.821094 272.277187)">Aaron anchor v1</text>
+    </g>
+    <g id="fig-3-PathCollection_6">
+     <g>
+      <use xlink:href="#fig-3-m8bacb7daf6" x="468.621094" y="283.415391" style="fill: #b36e4e; stroke: #b36e4e"/>
+     </g>
+    </g>
+    <g id="fig-3-text_23">
+     <text style="font-size: 9px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #111827" x="484.821094" y="285.777891" transform="rotate(-0 484.821094 285.777891)">Aaron perimeter v1</text>
+    </g>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="fig-3-p851013b313">
+   <rect x="105.594531" y="7.2" width="475.00625" height="288.84"/>
+  </clipPath>
+ </defs>
+</svg>
+
+<figcaption><span class="fig-label">Figure 3</span>The Aaron advantage appears in all ten class means. Ranger and Crossbowman together account for roughly half the overall class-balanced gap. <sup class="ref"><a href="#src-2" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/timing-findings.md:1-51 and timing-and-uncertainty.json — class-balanced rates, whole-match uncertainty, checkpoints, attainment, and class-specific results. Reproduction: timing-and-uncertainty.py.">2</a></sup></figcaption>
+</figure>
+<p>On Ranger, v13 earns <strong>185 XP per 1,000 ticks</strong>, versus <strong>489–519</strong> for the Aaron policies. On Crossbowman, it earns <strong>204</strong>, versus <strong>455–467</strong>. Their advantage is much smaller on Vanguard Knight, at <strong>135–139 versus 111</strong>. A class-specific review of ranged finishing behavior is more focused than changing every class’s lane selection. <sup class="ref"><a href="#src-2" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/timing-findings.md:1-51 and timing-and-uncertainty.json — class-balanced rates, whole-match uncertainty, checkpoints, attainment, and class-specific results. Reproduction: timing-and-uncertainty.py.">2</a></sup></p>
+</section>
+<section id="concrete-replay-examples"><h2>Concrete replay examples</h2><ul class="key-points">
+<li>These examples expose exact income and observed positions in individual games.</li>
+<li>They illustrate mechanisms; differences in class, team, and opposition prevent treating them as controlled comparisons.</li>
+</ul>
+<p>One same-team sequence occurs in replay <strong>62fa2aa5</strong>, where v13 is Ranger in seat 6 and anchor is Arcanist in seat 7. At tick <strong>6,491 (4:30.5)</strong>, anchor receives the kill on enemy Crossbowman, while v13 is alive only <strong>5.46 tiles</strong> from the victim. The preceding snapshots show the victim at <strong>22 HP</strong> at ticks 6,432 and 6,480. The replay records anchor’s <strong>Frost Lance at 6,483</strong> and v13’s <strong>Verdant Arrow at 6,490</strong>, one tick before the death. <sup class="ref"><a href="#src-4" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/behavior-findings.md:5-90 and behavior-summary.json — random-sample behavior, inventory snapshots, and event examples. Reproduction: sample_states.py, then behavior_analysis.py; full episode manifest in sample-manifest.json.">4</a></sup></p>
+<p>This is not evidence that v13 ignored the fight. It had also cast Dragon Sight at 6,400 and Ricochet Disc at 6,404. The sequence makes spell timing, travel time, and damage already in flight concrete subjects for review. We have not attributed the lethal damage to a specific spell or established an earlier safe action v13 should have taken. This example is the earliest qualifying same-team nearby-death event in the sampled games ordered by creation time. It also shows why a sampled marching state must not be mistaken for complete inactivity. <sup class="ref"><a href="#src-4" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/behavior-findings.md:5-90 and behavior-summary.json — random-sample behavior, inventory snapshots, and event examples. Reproduction: sample_states.py, then behavior_analysis.py; full episode manifest in sample-manifest.json.">4</a></sup></p>
+<p>In replay <strong>9112b7c1</strong>, lasting <strong>3:36</strong>, v13 plays Demon Hunter in seat 9 and anchor plays Warlock in opposing seat 3. V13 earns <strong>1,050 XP from 42 creeps</strong>. Anchor earns <strong>1,575 XP from 41 creeps, three heroes, and one tower</strong>. Nearly identical creep counts leave a 525-XP difference explained completely by other lethal hits. <sup class="ref"><a href="#src-4" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/behavior-findings.md:5-90 and behavior-summary.json — random-sample behavior, inventory snapshots, and event examples. Reproduction: sample_states.py, then behavior_analysis.py; full episode manifest in sample-manifest.json.">4</a></sup></p>
+<p>Anchor kills a hero at tick <strong>1,516 (1:03.2)</strong>, then a tower at <strong>1,982 (1:22.6)</strong>. At the preceding snapshot, tick 1,968, anchor targets that tower from approximately <strong>(100.2, 102.3)</strong> while v13 targets a creep near <strong>(91.0, 101.5)</strong>. This shows sustained objective participation in the same region. Because they are opponents, that tower is not an opportunity v13 could have stolen. <sup class="ref"><a href="#src-4" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/behavior-findings.md:5-90 and behavior-summary.json — random-sample behavior, inventory snapshots, and event examples. Reproduction: sample_states.py, then behavior_analysis.py; full episode manifest in sample-manifest.json.">4</a></sup></p>
+<p>Replay <strong>e970b846</strong>, lasting <strong>7:05</strong>, is a useful counterexample to treating every gap as hero XP. V13’s Lich and black-kite’s Death Knight are allies. V13 earns <strong>1,575 XP from 39 creeps and four heroes</strong>; black-kite earns <strong>2,250 XP from 72 creeps and three heroes</strong>. Here, black-kite wins the XP comparison through farm despite one fewer hero kill. At tick <strong>9,792 (6:48)</strong> it is targeting enemy hero 108 while v13 is marching nearby; twelve ticks later it claims that hero. Proximity does not establish that v13 had a ready, safe lethal action. <sup class="ref"><a href="#src-4" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/behavior-findings.md:5-90 and behavior-summary.json — random-sample behavior, inventory snapshots, and event examples. Reproduction: sample_states.py, then behavior_analysis.py; full episode manifest in sample-manifest.json.">4</a></sup></p>
+<p>Full episode IDs, seat identities, precise events, and sampled coordinates accompany the report’s evidence files. The latter two examples were selected by taking the shared game closest to the median XP-rate difference for each comparator within the random 40-match sample, rather than choosing the largest win. <sup class="ref"><a href="#src-4" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/behavior-findings.md:5-90 and behavior-summary.json — random-sample behavior, inventory snapshots, and event examples. Reproduction: sample_states.py, then behavior_analysis.py; full episode manifest in sample-manifest.json.">4</a></sup></p>
+</section>
+<section id="what-this-means-for-farm-and-finish"><h2>What this means for farm-and-finish</h2><ul class="key-points">
+<li><strong>First investigate missed nearby hero finishes, especially on Ranger and Crossbowman.</strong> The conversion gap survives class balancing and is larger than the exposure gap.</li>
+<li>Treat structure finishing as a separate opportunity; copying sustained building attacks would change the strategy.</li>
+<li>Keep the existing gameplay pause. This report identifies questions, not a validated policy change.</li>
+</ul>
+<p>The next replay audit should start with enemy deaths where v13 was alive nearby and an ally earned the kill. For each, reconstruct whether v13 had a ready attack or spell, sufficient range and mana, a credible lethal window, and a safe position. Then distinguish deliberate rejection from late selection, movement canceling a commitment, an incorrect damage estimate, and a target that was never actually finishable. These explanations require different changes; the current aggregate evidence cannot choose among them.</p>
+<p>That investigation also separates <strong>finishing execution</strong> from <strong>creating the kill</strong>. The leaders’ much higher kill share may partly depend on dealing earlier damage or accepting fights James does not want. Their behavior cannot be imported wholesale under the no-solo-aggression constraint. The rejected chasing, lane-following, and cast-and-retreat experiments remain negative evidence about those particular changes; this report does not overturn them.</p>
+<p>Building XP deserves an explicit strategy decision. The leaders earn roughly 46–48 XP per 1,000 ticks there, while v13 earns almost none. Yet their long periods targeting buildings and greater time on the enemy side show participation beyond a last-second finishing blow. Within the current strategy, the useful question is whether teammates’ existing structure fights offer missed safe finishes. We have not measured how much of the leaders’ building income is accessible under that restriction.</p>
+<p>The farming baseline is worth preserving: its creep-income rate already matches or exceeds most of these leaders. A proposed change should be judged on <strong>total XP per 1,000 ticks</strong>, hero kills, nearby-death conversion, and deaths, while checking that any new hero income outweighs lost farm. None of the observed gaps is a forecast of the gain from an implementation.</p>
+</section>
+<section id="methods-and-limitations"><h2>Methods and limitations</h2><ul class="key-points">
+<li>Exact reward accounting is stronger than behavioral interpretation.</li>
+<li>Uncertainty is calculated at the match level; all ten seats share a game’s conditions.</li>
+<li>Historical cohort selection, current-version gaps, and sparse behavior samples limit generalization.</li>
+</ul>
+<p>The corpus contains five baseline batches of 48, 48, 48, 48, and 96 matches, all with one immutable v13 policy version. It has 288 distinct recorded seeds. We retained the one v13 appearance with a logged BASIC error rather than silently excluding it; competitor log coverage is incomplete, so technical failure rates are not compared. <sup class="ref"><a href="#src-1" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/methods-audit.md:5-70 — independent identity, accounting, cohort, and method audit; original artifact paths in inventory.json.">1</a></sup></p>
+<p>For each seat, the expander verifies <code>XP = 25 × creep kills + 150 × hero kills + 100 × building kills</code> and matches final XP, win, and duration to hosted results. This validates income source and exact reward time even when simultaneous deaths leave a specific killer-victim pairing ambiguous. Snapshots locate the earning hero within two seconds; creep reward events do not identify the individual creep’s position. Damage dealt is unavailable in this instrument. <sup class="ref"><a href="#src-1" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/methods-audit.md:5-70 — independent identity, accounting, cohort, and method audit; original artifact paths in inventory.json.">1</a></sup> <sup class="ref"><a href="#src-6" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/xp-contract.md:5-71 — verified engine contract. Underlying code: gods_of_the_arena_lab/tools/.cache/polyworld/examples/gods_of_the_arena/sim.nim:388-393,784-793,2263-2297,3612-3623; replay instrumentation: gods_of_the_arena_lab/tools/expand_replay.nim:27-82,216-305,396-458.">6</a></sup></p>
+<p>Headline rates are means of individual match rates, then means across ten classes. The 95% intervals use 2,000 whole-match bootstrap draws, seed 9182026. They retain all seats together. Relh v154 has sparse classes; only 1,880 draws contain every class, so its exploratory interval uses those valid draws. The intervals do not correct for selecting high performers, opponent changes, or historical roster selection. <sup class="ref"><a href="#src-2" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/timing-findings.md:1-51 and timing-and-uncertainty.json — class-balanced rates, whole-match uncertainty, checkpoints, attainment, and class-specific results. Reproduction: timing-and-uncertainty.py.">2</a></sup></p>
+<p>The 40-match behavior sample uses seed 20260918 and four random matches per v13 class, independent of the score. Time fractions first average each appearance, then each class. The six-minute income chart uses a separate fixed cohort of 142 long matches; it excludes fast wins and losses. The two-minute item comparison has 40 v13 and 31 appearances for each Aaron policy; later snapshots lose early-finished games. <sup class="ref"><a href="#src-2" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/timing-findings.md:1-51 and timing-and-uncertainty.json — class-balanced rates, whole-match uncertainty, checkpoints, attainment, and class-specific results. Reproduction: timing-and-uncertainty.py.">2</a></sup> <sup class="ref"><a href="#src-4" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/behavior-findings.md:5-90 and behavior-summary.json — random-sample behavior, inventory snapshots, and event examples. Reproduction: sample_states.py, then behavior_analysis.py; full episode manifest in sample-manifest.json.">4</a></sup></p>
+<p>These archived games all contain v13. They do not represent every match in the current league, and replacing v13 with a comparator could change team income, kill competition, and match duration. A class also fixes team and initial lane, so these factors cannot be separately identified. No causal gain from a proposed behavior is established by this report. <sup class="ref"><a href="#src-1" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/methods-audit.md:5-70 — independent identity, accounting, cohort, and method audit; original artifact paths in inventory.json.">1</a></sup></p>
+</section>
+<section id="data-and-exact-policy-identities"><h2>Data and exact policy identities</h2><ul class="key-points">
+<li>The accompanying CSVs include every measured policy and all 2,880 seats.</li>
+<li>Policy versions remain separate; the report abbreviates names only for readability.</li>
+</ul>
+<p><a href="v13-vs-strongest-2026-09-18-data/all-policies.csv">Download all policy summaries</a> · <a href="v13-vs-strongest-2026-09-18-data/all-seats.csv">Download all seat results</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Report label</th>
+<th>Exact recorded policy name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>v13</td>
+<td><code>james-botts-gota:v13</code></td>
+</tr>
+<tr>
+<td>Aaron anchor v1</td>
+<td><code>aaron-gota-ir-coordinated-support-anchor-0916:v1</code></td>
+</tr>
+<tr>
+<td>Aaron perimeter v1</td>
+<td><code>aaron-gota-ir-perimeter-blue_repair-0916-aaron:v1</code></td>
+</tr>
+<tr>
+<td>black-kite v16</td>
+<td><code>black-kite:v16</code></td>
+</tr>
+<tr>
+<td>red-kite v34</td>
+<td><code>red-kite:v34</code></td>
+</tr>
+<tr>
+<td>gota-g002 v1, Alex Smith</td>
+<td><code>gota-g002:v1</code></td>
+</tr>
+<tr>
+<td>Jordan v218</td>
+<td><code>Jordan-ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb:v218</code></td>
+</tr>
+<tr>
+<td>richard v78</td>
+<td><code>richard-gods-of-the-arena:v78</code></td>
+</tr>
+<tr>
+<td>relh v154</td>
+<td><code>relh-gods-of-the-arena:v154</code></td>
+</tr>
+</tbody>
+</table>
+<p>The all-seat CSV contains each immutable <code>policy_version_id</code>, episode ID, hero class, team, duration, raw XP, source rates, kill counts, and proximity counts. V13’s immutable version is <code>40d72eea-ac61-44b0-aaf4-7828fbf30170</code>. The saved inventory links every row back to its original replay and hosted metadata. <sup class="ref"><a href="#src-1" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/methods-audit.md:5-70 — independent identity, accounting, cohort, and method audit; original artifact paths in inventory.json.">1</a></sup> <sup class="ref"><a href="#src-7" title="gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/policy-summary.json and aggregate.py:1-80 — full policy inventory and income aggregation; published CSVs generated by publish_data.py.">7</a></sup></p>
+</section>
+<section id="sources"><h2>Sources</h2><ul class="key-points">
+<li>All evidence below is retained locally with the report’s reproducible analysis scripts.</li>
+<li>Source audits use deployed engine commit <code>f2ab9598</code>, not the older mechanics-document revision.</li>
+</ul>
+<ol class="sources"><li id="src-1"><code>gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/methods-audit.md:5-70</code> — independent identity, accounting, cohort, and method audit; original artifact paths in <code>inventory.json</code>.</li><li id="src-2"><code>gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/timing-findings.md:1-51</code> and <code>timing-and-uncertainty.json</code> — class-balanced rates, whole-match uncertainty, checkpoints, attainment, and class-specific results. Reproduction: <code>timing-and-uncertainty.py</code>.</li><li id="src-3"><code>gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/methods-audit.md:40-52</code> — exact proximity numerators, denominators, and ambiguous-killer sensitivity.</li><li id="src-4"><code>gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/behavior-findings.md:5-90</code> and <code>behavior-summary.json</code> — random-sample behavior, inventory snapshots, and event examples. Reproduction: <code>sample_states.py</code>, then <code>behavior_analysis.py</code>; full episode manifest in <code>sample-manifest.json</code>.</li><li id="src-5"><code>gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/leaderboard.json:1-150</code> and <code>league.json:10-65</code> — live leaderboard and league metadata, retrieved 2026-09-18 17:33 UTC through ordinary account access.</li><li id="src-6"><code>gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/xp-contract.md:5-71</code> — verified engine contract. Underlying code: <code>gods_of_the_arena_lab/tools/.cache/polyworld/examples/gods_of_the_arena/sim.nim:388-393,784-793,2263-2297,3612-3623</code>; replay instrumentation: <code>gods_of_the_arena_lab/tools/expand_replay.nim:27-82,216-305,396-458</code>.</li><li id="src-7"><code>gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/policy-summary.json</code> and <code>aggregate.py:1-80</code> — full policy inventory and income aggregation; published CSVs generated by <code>publish_data.py</code>.</li><li id="src-8"><code>gods_of_the_arena_lab/.reports-working/v13-vs-strongest-2026-09-18/proximity-by-class.md:1-59</code> — class-specific exposure and conversion, plus exact building-kill totals.</li></ol></section>
+</article>
+
+<!-- ================================================================
+     DC-COMMENTS BEGIN — markup + script (copy verbatim; do not modify)
+     ================================================================ -->
+<aside id="dc-sidebar" aria-label="Comments">
+  <h2 class="dc-title">Comments <span id="dc-count"></span></h2>
+  <div class="dc-actions">
+    <button class="dc-btn" id="dc-export">Export JSON</button>
+    <button class="dc-btn" id="dc-copy">Copy JSON</button>
+    <button class="dc-btn" id="dc-import">Import…</button>
+    <input type="file" id="dc-file" accept=".json,application/json" hidden>
+  </div>
+  <div id="dc-status" role="status"></div>
+  <div id="dc-list"><p class="dc-empty">No comments yet. Select text in the document to add one.</p></div>
+</aside>
+<button id="dc-fab" type="button">+ Comment</button>
+<button id="dc-toggle" type="button">Comments</button>
+
+<script>
+(() => {
+  'use strict';
+  const FORMAT = 'dc-comments/1';
+  const CTX = 32; // prefix/suffix context length, chars
+  const doc = document.getElementById('doc');
+  const fab = document.getElementById('dc-fab');
+  const listEl = document.getElementById('dc-list');
+  const countEl = document.getElementById('dc-count');
+  const statusEl = document.getElementById('dc-status');
+  const sidebar = document.getElementById('dc-sidebar');
+  const storeKey = 'dc:' + document.title;
+
+  let comments = []; // {id, exact, prefix, suffix, text, created, resolved}
+  let ranges = new Map(); // id -> Range (null if orphaned)
+  let seq = 0;
+
+  // ---- text indexing: one global string over #doc's text nodes ----
+  function docText() {
+    const r = document.createRange();
+    r.selectNodeContents(doc);
+    return r.toString();
+  }
+  function globalOffset(container, offset) {
+    const r = document.createRange();
+    r.setStart(doc, 0);
+    r.setEnd(container, offset);
+    return r.toString().length;
+  }
+  function offsetsToRange(start, end) {
+    const walker = document.createTreeWalker(doc, NodeFilter.SHOW_TEXT);
+    let pos = 0, range = document.createRange(), haveStart = false;
+    while (walker.nextNode()) {
+      const node = walker.currentNode, len = node.data.length;
+      if (!haveStart && pos + len >= start) {
+        range.setStart(node, start - pos);
+        haveStart = true;
+      }
+      if (haveStart && pos + len >= end) {
+        range.setEnd(node, end - pos);
+        return range;
+      }
+      pos += len;
+    }
+    return null;
+  }
+
+  // ---- anchoring: TextQuoteSelector-style exact + prefix/suffix ----
+  function selectorFromRange(range) {
+    const text = docText();
+    const start = globalOffset(range.startContainer, range.startOffset);
+    const end = globalOffset(range.endContainer, range.endOffset);
+    return {
+      exact: text.slice(start, end),
+      prefix: text.slice(Math.max(0, start - CTX), start),
+      suffix: text.slice(end, end + CTX),
+    };
+  }
+  function locate(c) {
+    const text = docText();
+    let i = text.indexOf(c.prefix + c.exact + c.suffix);
+    if (i >= 0) return offsetsToRange(i + c.prefix.length, i + c.prefix.length + c.exact.length);
+    i = text.indexOf(c.exact);
+    if (i >= 0) return offsetsToRange(i, i + c.exact.length);
+    return null;
+  }
+  function reanchorAll() {
+    ranges = new Map(comments.map(c => [c.id, locate(c)]));
+    paint();
+  }
+
+  // ---- painting via CSS Custom Highlight API ----
+  const hl = typeof Highlight !== 'undefined' ? new Highlight() : null;
+  const hlActive = typeof Highlight !== 'undefined' ? new Highlight() : null;
+  if (hl) { CSS.highlights.set('dc-hl', hl); CSS.highlights.set('dc-hl-active', hlActive); }
+  function paint(activeId) {
+    if (!hl) return;
+    hl.clear(); hlActive.clear();
+    for (const [id, r] of ranges) {
+      if (!r) continue;
+      (id === activeId ? hlActive : hl).add(r);
+    }
+  }
+
+  // ---- persistence (best-effort; file:// storage varies by browser) ----
+  function save() {
+    try { localStorage.setItem(storeKey, JSON.stringify(comments)); } catch (e) { /* unavailable on some file:// setups */ }
+  }
+  function load() {
+    try {
+      const raw = localStorage.getItem(storeKey);
+      if (raw) comments = JSON.parse(raw);
+    } catch (e) { /* ignore */ }
+  }
+
+  // ---- sidebar rendering ----
+  function flash(msg) {
+    statusEl.textContent = msg;
+    setTimeout(() => { if (statusEl.textContent === msg) statusEl.textContent = ''; }, 2500);
+  }
+  function sortedComments() {
+    const pos = c => {
+      const r = ranges.get(c.id);
+      return r ? globalOffset(r.startContainer, r.startOffset) : Infinity; // orphans last
+    };
+    return [...comments].sort((a, b) => pos(a) - pos(b));
+  }
+  function render(editingId) {
+    countEl.textContent = comments.length ? '(' + comments.length + ')' : '';
+    listEl.textContent = '';
+    if (!comments.length) {
+      const p = document.createElement('p');
+      p.className = 'dc-empty';
+      p.textContent = 'No comments yet. Select text in the document to add one.';
+      listEl.appendChild(p);
+      return;
+    }
+    for (const c of sortedComments()) {
+      const item = document.createElement('div');
+      item.className = 'dc-item' + (c.resolved ? ' dc-resolved' : '');
+      item.dataset.id = c.id;
+
+      const quote = document.createElement('div');
+      quote.className = 'dc-quote';
+      quote.textContent = c.exact.length > 90 ? c.exact.slice(0, 90) + '…' : c.exact;
+      if (!ranges.get(c.id)) {
+        const tag = document.createElement('span');
+        tag.className = 'dc-orphan-tag';
+        tag.textContent = 'orphaned';
+        quote.appendChild(tag);
+      }
+      item.appendChild(quote);
+
+      if (c.id === editingId) {
+        const ta = document.createElement('textarea');
+        ta.value = c.text;
+        ta.placeholder = 'Write a comment… (⌘/Ctrl+Enter to save, Esc to cancel)';
+        ta.addEventListener('keydown', e => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') commit();
+          if (e.key === 'Escape') cancel();
+        });
+        ta.addEventListener('click', e => e.stopPropagation());
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'dc-btn';
+        saveBtn.textContent = 'Save';
+        saveBtn.style.marginTop = '6px';
+        saveBtn.addEventListener('click', e => { e.stopPropagation(); commit(); });
+        function commit() {
+          c.text = ta.value.trim();
+          if (!c.text) return cancel();
+          save(); render();
+        }
+        function cancel() {
+          if (!c.text) { comments = comments.filter(x => x.id !== c.id); ranges.delete(c.id); paint(); }
+          save(); render();
+        }
+        item.appendChild(ta);
+        item.appendChild(saveBtn);
+        listEl.appendChild(item);
+        requestAnimationFrame(() => ta.focus());
+        continue;
+      }
+
+      const text = document.createElement('div');
+      text.className = 'dc-text';
+      text.textContent = c.text;
+      item.appendChild(text);
+
+      const meta = document.createElement('div');
+      meta.className = 'dc-meta';
+      const when = document.createElement('span');
+      when.textContent = c.created.slice(0, 10);
+      const resolved = document.createElement('label');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = !!c.resolved;
+      cb.addEventListener('click', e => e.stopPropagation());
+      cb.addEventListener('change', () => { c.resolved = cb.checked; save(); render(); });
+      resolved.append(cb, 'resolved');
+      const del = document.createElement('button');
+      del.className = 'dc-del';
+      del.textContent = 'delete';
+      del.addEventListener('click', e => {
+        e.stopPropagation();
+        comments = comments.filter(x => x.id !== c.id);
+        ranges.delete(c.id);
+        paint(); save(); render();
+      });
+      meta.append(when, resolved, del);
+      item.appendChild(meta);
+
+      item.addEventListener('click', () => {
+        const r = ranges.get(c.id);
+        if (!r) return flash('Anchor not found in this version of the document.');
+        const rect = r.getBoundingClientRect();
+        window.scrollTo({ top: window.scrollY + rect.top - 160, behavior: 'smooth' });
+        paint(c.id);
+        setTimeout(() => paint(), 2000);
+      });
+      // double-click text to edit
+      text.addEventListener('dblclick', e => { e.stopPropagation(); render(c.id); });
+      listEl.appendChild(item);
+    }
+  }
+
+  // ---- selection -> floating Comment button ----
+  document.addEventListener('mouseup', e => {
+    if (fab.contains(e.target)) return;
+    setTimeout(() => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || !sel.rangeCount) { fab.style.display = 'none'; return; }
+      const range = sel.getRangeAt(0);
+      if (!doc.contains(range.commonAncestorContainer) || !range.toString().trim()) {
+        fab.style.display = 'none';
+        return;
+      }
+      const rect = range.getBoundingClientRect();
+      fab.style.display = 'block';
+      fab.style.left = Math.min(rect.right + 8 + window.scrollX, window.scrollX + document.documentElement.clientWidth - 120) + 'px';
+      fab.style.top = (rect.top + window.scrollY - 4) + 'px';
+      fab.dataset.pending = '1';
+    }, 0);
+  });
+  fab.addEventListener('click', () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    const c = Object.assign({ id: 'c' + Date.now().toString(36) + (seq++), text: '', created: new Date().toISOString(), resolved: false }, selectorFromRange(range));
+    comments.push(c);
+    ranges.set(c.id, range.cloneRange());
+    paint(c.id);
+    sel.removeAllRanges();
+    fab.style.display = 'none';
+    sidebar.classList.add('dc-open');
+    render(c.id);
+  });
+
+  // ---- export / import ----
+  function payload() {
+    return JSON.stringify({
+      format: FORMAT,
+      doc: document.title,
+      exported: new Date().toISOString(),
+      comments: comments,
+    }, null, 2);
+  }
+  document.getElementById('dc-export').addEventListener('click', () => {
+    const blob = new Blob([payload()], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (document.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'doc') + '.comments.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    flash('Downloaded.');
+  });
+  document.getElementById('dc-copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(payload()); flash('Copied to clipboard.'); }
+    catch (e) { flash('Clipboard blocked — use Export instead.'); }
+  });
+  document.getElementById('dc-import').addEventListener('click', () => document.getElementById('dc-file').click());
+  document.getElementById('dc-file').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    file.text().then(raw => {
+      const data = JSON.parse(raw);
+      if (data.format !== FORMAT || !Array.isArray(data.comments)) { flash('Not a dc-comments file.'); return; }
+      const byId = new Map(comments.map(c => [c.id, c]));
+      for (const c of data.comments) byId.set(c.id, c);
+      comments = [...byId.values()];
+      reanchorAll(); save(); render();
+      flash('Imported ' + data.comments.length + ' comment(s).');
+    }).catch(() => flash('Could not parse that file.'));
+    e.target.value = '';
+  });
+
+  document.getElementById('dc-toggle').addEventListener('click', () => sidebar.classList.toggle('dc-open'));
+
+  // ---- init ----
+  load();
+  reanchorAll();
+  render();
+})();
+</script>
+<!-- ============ DC-COMMENTS END ============ -->
+</div>
+</body>
+</html>

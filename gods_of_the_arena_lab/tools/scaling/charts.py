@@ -162,9 +162,9 @@ heatmap(mat, [short(h) for h in HEROES], LEVELS, 'Ten-second ability burst (full
 mat = [[hits_to_kill(dmg(h, L), FOOTMAN_HP) for L in LEVELS] for h in HEROES]
 heatmap(mat, [short(h) for h in HEROES], LEVELS, 'Basic attacks needed to kill one footman (60 HP)', fmt='{:.0f}', name='fig-09-footman-hits', xlabel='level', cbar_label='hits', vmin=1, vmax=3, figsize=(W, 4.0))
 mat = [[seconds_to_die_under_tower(h, L, 2) for L in LEVELS] for h in HEROES]
-heatmap(mat, [short(h) for h in HEROES], LEVELS, 'Seconds a hero survives under a gate tower (112 damage/s), no healing', fmt='{:.0f}', name='fig-10-tower-survival', xlabel='level', cbar_label='seconds', figsize=(W, 4.0))
+heatmap(mat, [short(h) for h in HEROES], LEVELS, f'Seconds a hero survives under a gate tower ({TOWER_DMG[2]} damage/s), no healing', fmt='{:.0f}', name='fig-10-tower-survival', xlabel='level', cbar_label='seconds', figsize=(W, 4.0))
 fig, ax = plt.subplots(figsize=(W, 2.8))
-for k, (tier, name) in enumerate([(0, 'outer 1,200 HP'), (1, 'inner 2,400 HP'), (2, 'gate 4,800 HP')]):
+for k, (tier, name) in enumerate([(0, f'outer {TOWER_HP[0]:,} HP'), (1, f'inner {TOWER_HP[1]:,} HP'), (2, f'gate {TOWER_HP[2]:,} HP')]):
     ys = [np.mean([TOWER_HP[tier] / basic_dps(h, L) for h in HEROES]) for L in LEVELS]
     ax.plot(LEVELS, ys, color=cols[k]); label_end(ax, 20, ys[-1], name)
 ax.set_xlabel('level'); ax.set_ylabel('seconds'); ax.set_xticks([1, 5, 10, 15, 20])
@@ -193,7 +193,8 @@ fig, (a1, a2) = plt.subplots(1, 2, figsize=(W, 3.0))
 a1.plot(LEVELS, [cum_xp(L) for L in LEVELS], color=S1); a1.plot([20], [cum_xp(20)], 'o', ms=5, color=S1, mec=SURFACE, mew=1.5)
 label_end(a1, 20, cum_xp(20), f'{cum_xp(20):,}', dx=-3.5)
 a1.set_xlabel('level'); a1.set_ylabel('cumulative XP'); a1.set_title('XP needed to reach each level', loc='left'); a1.set_xticks([1, 5, 10, 15, 20])
-scen = [(3.0, '1/5 of team creeps (3 XP/s)', S1), (5.0, 'one full lane (5 XP/s)', S2), (6.25, 'one lane + a hero kill every 2 min', S3), (15.0, 'every creep on the map (15 XP/s)', S4)]
+lane, team = CREEP_XP_PER_S_PER_LANE, CREEP_XP_PER_S_PER_TEAM
+scen = [(team / 5, f'1/5 of team creeps ({team / 5:g} XP/s)', S1), (lane, f'one full lane ({lane:g} XP/s)', S2), (lane + 150 / 120, 'one lane + a hero kill every 2 min', S3), (team, f'every creep on the map ({team:g} XP/s)', S4)]
 for rate, lab, c in scen:
     pts = level_over_time(rate); a2.plot([p[0] for p in pts], [p[1] for p in pts], color=c)
 a2.set_xlabel('match minute'); a2.set_ylabel('level'); a2.set_title('Level over a 20-minute match by income', loc='left'); a2.set_ylim(1, 20.5)

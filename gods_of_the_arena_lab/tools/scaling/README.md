@@ -7,8 +7,8 @@ polyworld commit without transcribing numbers by hand.
 | File | Role |
 | --- | --- |
 | `dump_specs.nim` | Compiles against `examples/gods_of_the_arena/content.nim` and prints `HeroSpecs`, the effective `abilitySpec` of every class slot, and `ItemSpecs` as JSON. |
-| `specs.json` | The dump used by the current report (polyworld `1d7eb723`; `content.nim` identical at the deployed `5422fb0c`). |
-| `model.py` | Derived quantities as functions of level: HP, mana, damage, DPS, time to kill, spell shares, burst, mana rates, XP curve, level over time. Constants for footmen, towers, rewards, and regen are at the top; check them against `sim.nim` when the engine changes. |
+| `specs.json` | The dump used by the current report (deployed polyworld `7365e4e9`, coworld 2026.9.16.3, dumped 2026-09-16). |
+| `model.py` | Derived quantities as functions of level: HP, mana, damage, DPS, time to kill, spell shares, burst, mana rates, XP curve, level over time. Constants for footmen, towers, barracks, rewards, regen, and creep supply are at the top; check them against `sim.nim`, `content.nim`, and `configs.nim` when the engine changes. |
 | `charts.py` | Renders the 21 SVG figures into a directory, following the `dataviz` skill's palette and mark rules. |
 
 ## Regenerate against a new engine commit
@@ -24,7 +24,8 @@ nim c -d:release --hints:off --warnings:off \
 ./dump_specs > specs.json
 
 # 3. Check the hard-coded simulation constants in model.py against sim.nim
-#    (TOWER_HP, TOWER_DMG, TOWER_RANGE, FOOTMAN_HP/DMG, REWARDS, MANA_REGEN, RESPAWN_TICKS)
+#    (TOWER_HP, TOWER_DMG, TOWER_RANGE, BARRACKS_HP, FOOTMAN_HP/DMG, REWARDS, MANA_REGEN, RESPAWN_TICKS,
+#    SPAWN_INTERVAL_TICKS and the creeps-per-barracks / barracks-per-lane counts that set the XP scenarios)
 
 # 4. Recompute and re-render
 ../../../.venv/bin/python model.py

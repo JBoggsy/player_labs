@@ -1,0 +1,4502 @@
+{
+  "method": {
+    "episodes": 288,
+    "bootstrap_draws": 2000,
+    "seed": 9182026,
+    "unit": "whole episode with all seats retained",
+    "interval": "percentile 95%",
+    "standardization": "equal weight to each of ten class means",
+    "timing_cohort": "episodes whose observed duration is at least 8640 ticks; same selected episodes at every timing point",
+    "timing_cohort_episodes": 142,
+    "caveat": "descriptive historical v13-containing cohort; not randomized policy replacement; bootstrap is conditional on sampled versions and does not correct selection, time drift, or multiple comparisons"
+  },
+  "policies": {
+    "james-botts-gota:v13": {
+      "n": 288,
+      "class_counts": {
+        "3": 25,
+        "1": 29,
+        "7": 30,
+        "8": 30,
+        "6": 30,
+        "9": 30,
+        "2": 29,
+        "4": 25,
+        "0": 30,
+        "5": 30
+      },
+      "metrics": {
+        "xp_rate": {
+          "estimate": 166.31910100567188,
+          "ci95": {
+            "low": 158.86937916490893,
+            "high": 173.95781203833045,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 0.0,
+          "gap_ci95": {
+            "low": 0.0,
+            "high": 0.0,
+            "valid_draws": 2000
+          }
+        },
+        "farm_rate": {
+          "estimate": 139.45852333988165,
+          "ci95": {
+            "low": 132.61896820931773,
+            "high": 146.27014134757442,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 0.0,
+          "gap_ci95": {
+            "low": 0.0,
+            "high": 0.0,
+            "valid_draws": 2000
+          }
+        },
+        "hero_rate": {
+          "estimate": 26.764692414590492,
+          "ci95": {
+            "low": 23.87600175976591,
+            "high": 29.94889959626308,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 0.0,
+          "gap_ci95": {
+            "low": 0.0,
+            "high": 0.0,
+            "valid_draws": 2000
+          }
+        },
+        "building_rate": {
+          "estimate": 0.09588525119972922,
+          "ci95": {
+            "low": 0.0,
+            "high": 0.23068092720883981,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 0.0,
+          "gap_ci95": {
+            "low": 0.0,
+            "high": 0.0,
+            "valid_draws": 2000
+          }
+        },
+        "hero_kills": {
+          "estimate": 1.902551724137931,
+          "ci95": {
+            "low": 1.640596580623026,
+            "high": 2.2009913058977517,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 0.0,
+          "gap_ci95": {
+            "low": 0.0,
+            "high": 0.0,
+            "valid_draws": 2000
+          }
+        },
+        "deaths": {
+          "estimate": 2.231425287356322,
+          "ci95": {
+            "low": 2.004080886363936,
+            "high": 2.4603844514399276,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 0.0,
+          "gap_ci95": {
+            "low": 0.0,
+            "high": 0.0,
+            "valid_draws": 2000
+          }
+        },
+        "win": {
+          "estimate": 0.3280689655172414,
+          "ci95": {
+            "low": 0.2764797831976366,
+            "high": 0.38334793302894504,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 0.0,
+          "gap_ci95": {
+            "low": 0.0,
+            "high": 0.0,
+            "valid_draws": 2000
+          }
+        },
+        "joint": {
+          "estimate": 0.006781609195402299,
+          "ci95": {
+            "low": 0.0,
+            "high": 0.01717191142191142,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 0.0,
+          "gap_ci95": {
+            "low": 0.0,
+            "high": 0.0,
+            "valid_draws": 2000
+          }
+        }
+      },
+      "per_class": {
+        "0": {
+          "n": 30,
+          "baseline_n": 30,
+          "hero": "Vanguard Knight",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 111.01439116916826,
+              "gap_vs_v13": 0.0
+            },
+            "farm_rate": {
+              "estimate": 102.91595686894976,
+              "gap_vs_v13": 0.0
+            },
+            "hero_rate": {
+              "estimate": 8.098434300218505,
+              "gap_vs_v13": 0.0
+            },
+            "building_rate": {
+              "estimate": 0.0,
+              "gap_vs_v13": 0.0
+            },
+            "hero_kills": {
+              "estimate": 0.5333333333333333,
+              "gap_vs_v13": 0.0
+            },
+            "deaths": {
+              "estimate": 2.8333333333333335,
+              "gap_vs_v13": 0.0
+            },
+            "win": {
+              "estimate": 0.5333333333333333,
+              "gap_vs_v13": 0.0
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        },
+        "1": {
+          "n": 29,
+          "baseline_n": 29,
+          "hero": "Ranger",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 184.8035588687208,
+              "gap_vs_v13": 0.0
+            },
+            "farm_rate": {
+              "estimate": 156.34595067550305,
+              "gap_vs_v13": 0.0
+            },
+            "hero_rate": {
+              "estimate": 28.45760819321779,
+              "gap_vs_v13": 0.0
+            },
+            "building_rate": {
+              "estimate": 0.0,
+              "gap_vs_v13": 0.0
+            },
+            "hero_kills": {
+              "estimate": 1.793103448275862,
+              "gap_vs_v13": 0.0
+            },
+            "deaths": {
+              "estimate": 2.689655172413793,
+              "gap_vs_v13": 0.0
+            },
+            "win": {
+              "estimate": 0.20689655172413793,
+              "gap_vs_v13": 0.0
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        },
+        "2": {
+          "n": 29,
+          "baseline_n": 29,
+          "hero": "Arcanist",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 204.62114457293225,
+              "gap_vs_v13": 0.0
+            },
+            "farm_rate": {
+              "estimate": 134.09124405090972,
+              "gap_vs_v13": 0.0
+            },
+            "hero_rate": {
+              "estimate": 70.52990052202254,
+              "gap_vs_v13": 0.0
+            },
+            "building_rate": {
+              "estimate": 0.0,
+              "gap_vs_v13": 0.0
+            },
+            "hero_kills": {
+              "estimate": 6.172413793103448,
+              "gap_vs_v13": 0.0
+            },
+            "deaths": {
+              "estimate": 2.1379310344827585,
+              "gap_vs_v13": 0.0
+            },
+            "win": {
+              "estimate": 0.41379310344827586,
+              "gap_vs_v13": 0.0
+            },
+            "joint": {
+              "estimate": 0.034482758620689655,
+              "gap_vs_v13": 0.0
+            }
+          }
+        },
+        "3": {
+          "n": 25,
+          "baseline_n": 25,
+          "hero": "Druid Warden",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 157.37397932565364,
+              "gap_vs_v13": 0.0
+            },
+            "farm_rate": {
+              "estimate": 150.33463496919995,
+              "gap_vs_v13": 0.0
+            },
+            "hero_rate": {
+              "estimate": 7.039344356453665,
+              "gap_vs_v13": 0.0
+            },
+            "building_rate": {
+              "estimate": 0.0,
+              "gap_vs_v13": 0.0
+            },
+            "hero_kills": {
+              "estimate": 0.48,
+              "gap_vs_v13": 0.0
+            },
+            "deaths": {
+              "estimate": 1.72,
+              "gap_vs_v13": 0.0
+            },
+            "win": {
+              "estimate": 0.68,
+              "gap_vs_v13": 0.0
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        },
+        "4": {
+          "n": 25,
+          "baseline_n": 25,
+          "hero": "Demon Hunter",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 177.60224816877175,
+              "gap_vs_v13": 0.0
+            },
+            "farm_rate": {
+              "estimate": 163.76929573620677,
+              "gap_vs_v13": 0.0
+            },
+            "hero_rate": {
+              "estimate": 13.832952432564984,
+              "gap_vs_v13": 0.0
+            },
+            "building_rate": {
+              "estimate": 0.0,
+              "gap_vs_v13": 0.0
+            },
+            "hero_kills": {
+              "estimate": 0.88,
+              "gap_vs_v13": 0.0
+            },
+            "deaths": {
+              "estimate": 3,
+              "gap_vs_v13": 0
+            },
+            "win": {
+              "estimate": 0.28,
+              "gap_vs_v13": 0.0
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        },
+        "5": {
+          "n": 30,
+          "baseline_n": 30,
+          "hero": "Death Knight",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 138.33418928978134,
+              "gap_vs_v13": 0.0
+            },
+            "farm_rate": {
+              "estimate": 123.96727055666129,
+              "gap_vs_v13": 0.0
+            },
+            "hero_rate": {
+              "estimate": 13.546822135593626,
+              "gap_vs_v13": 0.0
+            },
+            "building_rate": {
+              "estimate": 0.8200965975264379,
+              "gap_vs_v13": 0.0
+            },
+            "hero_kills": {
+              "estimate": 0.8333333333333334,
+              "gap_vs_v13": 0.0
+            },
+            "deaths": {
+              "estimate": 1.2,
+              "gap_vs_v13": 0.0
+            },
+            "win": {
+              "estimate": 0.26666666666666666,
+              "gap_vs_v13": 0.0
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        },
+        "6": {
+          "n": 30,
+          "baseline_n": 30,
+          "hero": "Crossbowman",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 204.15605442961845,
+              "gap_vs_v13": 0.0
+            },
+            "farm_rate": {
+              "estimate": 164.25020619431479,
+              "gap_vs_v13": 0.0
+            },
+            "hero_rate": {
+              "estimate": 39.90584823530366,
+              "gap_vs_v13": 0.0
+            },
+            "building_rate": {
+              "estimate": 0.0,
+              "gap_vs_v13": 0.0
+            },
+            "hero_kills": {
+              "estimate": 2.433333333333333,
+              "gap_vs_v13": 0.0
+            },
+            "deaths": {
+              "estimate": 2,
+              "gap_vs_v13": 0
+            },
+            "win": {
+              "estimate": 0.26666666666666666,
+              "gap_vs_v13": 0.0
+            },
+            "joint": {
+              "estimate": 0.03333333333333333,
+              "gap_vs_v13": 0.0
+            }
+          }
+        },
+        "7": {
+          "n": 30,
+          "baseline_n": 30,
+          "hero": "Lich",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 185.21089718204047,
+              "gap_vs_v13": 0.0
+            },
+            "farm_rate": {
+              "estimate": 121.01656686644186,
+              "gap_vs_v13": 0.0
+            },
+            "hero_rate": {
+              "estimate": 64.19433031559862,
+              "gap_vs_v13": 0.0
+            },
+            "building_rate": {
+              "estimate": 0.0,
+              "gap_vs_v13": 0.0
+            },
+            "hero_kills": {
+              "estimate": 4.5,
+              "gap_vs_v13": 0.0
+            },
+            "deaths": {
+              "estimate": 2.3333333333333335,
+              "gap_vs_v13": 0.0
+            },
+            "win": {
+              "estimate": 0.26666666666666666,
+              "gap_vs_v13": 0.0
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        },
+        "8": {
+          "n": 30,
+          "baseline_n": 30,
+          "hero": "Warlock",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 162.67183187966464,
+              "gap_vs_v13": 0.0
+            },
+            "farm_rate": {
+              "estimate": 150.2619840876388,
+              "gap_vs_v13": 0.0
+            },
+            "hero_rate": {
+              "estimate": 12.27109187755498,
+              "gap_vs_v13": 0.0
+            },
+            "building_rate": {
+              "estimate": 0.1387559144708543,
+              "gap_vs_v13": 0.0
+            },
+            "hero_kills": {
+              "estimate": 0.5,
+              "gap_vs_v13": 0.0
+            },
+            "deaths": {
+              "estimate": 2.066666666666667,
+              "gap_vs_v13": 0.0
+            },
+            "win": {
+              "estimate": 0.16666666666666666,
+              "gap_vs_v13": 0.0
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        },
+        "9": {
+          "n": 30,
+          "baseline_n": 30,
+          "hero": "Berserker",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 137.4027151703671,
+              "gap_vs_v13": 0.0
+            },
+            "farm_rate": {
+              "estimate": 127.63212339299054,
+              "gap_vs_v13": 0.0
+            },
+            "hero_rate": {
+              "estimate": 9.77059177737655,
+              "gap_vs_v13": 0.0
+            },
+            "building_rate": {
+              "estimate": 0.0,
+              "gap_vs_v13": 0.0
+            },
+            "hero_kills": {
+              "estimate": 0.9,
+              "gap_vs_v13": 0.0
+            },
+            "deaths": {
+              "estimate": 2.3333333333333335,
+              "gap_vs_v13": 0.0
+            },
+            "win": {
+              "estimate": 0.2,
+              "gap_vs_v13": 0.0
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        }
+      },
+      "first_hero_kill": {
+        "reached": 174,
+        "n": 288,
+        "fraction": 0.6041666666666666,
+        "median_tick_among_achievers": 2506.5
+      },
+      "level5": {
+        "reached": 211,
+        "n": 288,
+        "fraction": 0.7326388888888888,
+        "median_tick_among_achievers": 4466
+      },
+      "level10": {
+        "reached": 33,
+        "n": 288,
+        "fraction": 0.11458333333333333,
+        "median_tick_among_achievers": 15659
+      },
+      "proximity": {
+        "enemy_deaths": 8201,
+        "nearby_enemy_deaths": 2027,
+        "nearby_own_kills": 554,
+        "exposure": 0.24716497988050237,
+        "conversion_lower_bound": 0.27331031080414403
+      },
+      "timing": {
+        "n": 142,
+        "class_counts": {
+          "3": 14,
+          "1": 15,
+          "7": 17,
+          "6": 14,
+          "9": 12,
+          "8": 11,
+          "2": 16,
+          "0": 17,
+          "4": 12,
+          "5": 14
+        },
+        "minutes": {
+          "1": {
+            "xp": 169.67994015788133,
+            "sources": {
+              "farm": 139.32890883626177,
+              "hero": 30.35103132161956,
+              "building": 0
+            },
+            "minute_source_income": {
+              "farm": 139.32890883626177,
+              "hero": 30.35103132161956,
+              "building": 0
+            }
+          },
+          "2": {
+            "xp": 474.2007734912147,
+            "sources": {
+              "farm": 401.8416730328495,
+              "hero": 72.35910045836516,
+              "building": 0
+            },
+            "minute_source_income": {
+              "farm": 262.51276419658774,
+              "hero": 42.008069136745604,
+              "building": 0
+            }
+          },
+          "3": {
+            "xp": 736.7030096129361,
+            "sources": {
+              "farm": 632.2053969314999,
+              "hero": 103.7833269671505,
+              "building": 0.7142857142857143
+            },
+            "minute_source_income": {
+              "farm": 230.36372389865036,
+              "hero": 31.42422650878533,
+              "building": 0.7142857142857143
+            }
+          },
+          "4": {
+            "xp": 1036.140931372549,
+            "sources": {
+              "farm": 888.9041571173924,
+              "hero": 146.52248854087088,
+              "building": 0.7142857142857143
+            },
+            "minute_source_income": {
+              "farm": 256.6987601858925,
+              "hero": 42.739161573720395,
+              "building": 0
+            }
+          },
+          "5": {
+            "xp": 1336.224463649096,
+            "sources": {
+              "farm": 1141.7613238477209,
+              "hero": 193.03456837280368,
+              "building": 1.4285714285714286
+            },
+            "minute_source_income": {
+              "farm": 252.85716673032852,
+              "hero": 46.51207983193277,
+              "building": 0.7142857142857143
+            }
+          },
+          "6": {
+            "xp": 1604.0672746371276,
+            "sources": {
+              "farm": 1373.5379583651643,
+              "hero": 229.1007448433919,
+              "building": 1.4285714285714286
+            },
+            "minute_source_income": {
+              "farm": 231.77663451744334,
+              "hero": 36.06617647058823,
+              "building": 0
+            }
+          }
+        }
+      }
+    },
+    "aaron-gota-ir-coordinated-support-anchor-0916:v1": {
+      "n": 232,
+      "class_counts": {
+        "0": 22,
+        "5": 20,
+        "3": 23,
+        "7": 21,
+        "1": 21,
+        "8": 17,
+        "6": 23,
+        "4": 31,
+        "9": 25,
+        "2": 29
+      },
+      "metrics": {
+        "xp_rate": {
+          "estimate": 283.12255694833726,
+          "ci95": {
+            "low": 267.61534273785617,
+            "high": 300.1297959078741,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 116.80345594266538,
+          "gap_ci95": {
+            "low": 99.30006346664834,
+            "high": 134.22738891194194,
+            "valid_draws": 2000
+          }
+        },
+        "farm_rate": {
+          "estimate": 130.90903627251936,
+          "ci95": {
+            "low": 122.88743481659536,
+            "high": 139.16617775481504,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": -8.549487067362293,
+          "gap_ci95": {
+            "low": -18.95555931419759,
+            "high": 1.8323159247370715,
+            "valid_draws": 2000
+          }
+        },
+        "hero_rate": {
+          "estimate": 106.5174761795214,
+          "ci95": {
+            "low": 98.33557361972106,
+            "high": 115.39141257555113,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 79.75278376493091,
+          "gap_ci95": {
+            "low": 70.92757787804221,
+            "high": 89.3417315884893,
+            "valid_draws": 2000
+          }
+        },
+        "building_rate": {
+          "estimate": 45.69604449629653,
+          "ci95": {
+            "low": 41.219110647828515,
+            "high": 50.015833469177785,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 45.6001592450968,
+          "gap_ci95": {
+            "low": 41.112632748139795,
+            "high": 49.923640546325736,
+            "valid_draws": 2000
+          }
+        },
+        "hero_kills": {
+          "estimate": 7.4395736353834465,
+          "ci95": {
+            "low": 6.6056894813667295,
+            "high": 8.36950855593056,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 5.537021911245516,
+          "gap_ci95": {
+            "low": 4.695420072327234,
+            "high": 6.394183967820636,
+            "valid_draws": 2000
+          }
+        },
+        "deaths": {
+          "estimate": 3.6742031444663583,
+          "ci95": {
+            "low": 3.262986574386693,
+            "high": 4.109448874037332,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 1.4427778571100363,
+          "gap_ci95": {
+            "low": 1.010102905564548,
+            "high": 1.922129271051603,
+            "valid_draws": 2000
+          }
+        },
+        "win": {
+          "estimate": 0.562482905138032,
+          "ci95": {
+            "low": 0.5022958694582215,
+            "high": 0.6270577869795263,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 0.2344139396207906,
+          "gap_ci95": {
+            "low": 0.15198812728758396,
+            "high": 0.31930577780791464,
+            "valid_draws": 2000
+          }
+        },
+        "joint": {
+          "estimate": 0.2577360743591338,
+          "ci95": {
+            "low": 0.22037474816112382,
+            "high": 0.29486978597087293,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 0.25095446516373154,
+          "gap_ci95": {
+            "low": 0.21155092255684926,
+            "high": 0.2904399366936642,
+            "valid_draws": 2000
+          }
+        }
+      },
+      "per_class": {
+        "0": {
+          "n": 22,
+          "baseline_n": 30,
+          "hero": "Vanguard Knight",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 138.82572996088854,
+              "gap_vs_v13": 27.811338791720274
+            },
+            "farm_rate": {
+              "estimate": 66.93661354453857,
+              "gap_vs_v13": -35.97934332441119
+            },
+            "hero_rate": {
+              "estimate": 47.53153408182758,
+              "gap_vs_v13": 39.43309978160907
+            },
+            "building_rate": {
+              "estimate": 24.357582334522387,
+              "gap_vs_v13": 24.357582334522387
+            },
+            "hero_kills": {
+              "estimate": 4.5,
+              "gap_vs_v13": 3.966666666666667
+            },
+            "deaths": {
+              "estimate": 5.681818181818182,
+              "gap_vs_v13": 2.848484848484848
+            },
+            "win": {
+              "estimate": 0.36363636363636365,
+              "gap_vs_v13": -0.16969696969696968
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        },
+        "1": {
+          "n": 21,
+          "baseline_n": 29,
+          "hero": "Ranger",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 489.20043867327166,
+              "gap_vs_v13": 304.39687980455085
+            },
+            "farm_rate": {
+              "estimate": 179.65280600220154,
+              "gap_vs_v13": 23.306855326698496
+            },
+            "hero_rate": {
+              "estimate": 204.09223054679606,
+              "gap_vs_v13": 175.63462235357827
+            },
+            "building_rate": {
+              "estimate": 105.45540212427406,
+              "gap_vs_v13": 105.45540212427406
+            },
+            "hero_kills": {
+              "estimate": 10.428571428571429,
+              "gap_vs_v13": 8.635467980295566
+            },
+            "deaths": {
+              "estimate": 1.1904761904761905,
+              "gap_vs_v13": -1.4991789819376027
+            },
+            "win": {
+              "estimate": 0.9047619047619048,
+              "gap_vs_v13": 0.6978653530377669
+            },
+            "joint": {
+              "estimate": 0.9047619047619048,
+              "gap_vs_v13": 0.9047619047619048
+            }
+          }
+        },
+        "2": {
+          "n": 29,
+          "baseline_n": 29,
+          "hero": "Arcanist",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 330.00488220353003,
+              "gap_vs_v13": 125.38373763059778
+            },
+            "farm_rate": {
+              "estimate": 153.67029017588575,
+              "gap_vs_v13": 19.57904612497603
+            },
+            "hero_rate": {
+              "estimate": 117.54349167129702,
+              "gap_vs_v13": 47.013591149274475
+            },
+            "building_rate": {
+              "estimate": 58.791100356347286,
+              "gap_vs_v13": 58.791100356347286
+            },
+            "hero_kills": {
+              "estimate": 8.689655172413794,
+              "gap_vs_v13": 2.517241379310345
+            },
+            "deaths": {
+              "estimate": 2.9655172413793105,
+              "gap_vs_v13": 0.827586206896552
+            },
+            "win": {
+              "estimate": 0.5172413793103449,
+              "gap_vs_v13": 0.103448275862069
+            },
+            "joint": {
+              "estimate": 0.2413793103448276,
+              "gap_vs_v13": 0.20689655172413796
+            }
+          }
+        },
+        "3": {
+          "n": 23,
+          "baseline_n": 25,
+          "hero": "Druid Warden",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 193.5427886074831,
+              "gap_vs_v13": 36.16880928182945
+            },
+            "farm_rate": {
+              "estimate": 104.81902360092313,
+              "gap_vs_v13": -45.51561136827682
+            },
+            "hero_rate": {
+              "estimate": 58.89083643371647,
+              "gap_vs_v13": 51.851492077262805
+            },
+            "building_rate": {
+              "estimate": 29.832928572843507,
+              "gap_vs_v13": 29.832928572843507
+            },
+            "hero_kills": {
+              "estimate": 5.565217391304348,
+              "gap_vs_v13": 5.085217391304347
+            },
+            "deaths": {
+              "estimate": 4.086956521739131,
+              "gap_vs_v13": 2.366956521739131
+            },
+            "win": {
+              "estimate": 0.6956521739130435,
+              "gap_vs_v13": 0.01565217391304341
+            },
+            "joint": {
+              "estimate": 0.043478260869565216,
+              "gap_vs_v13": 0.043478260869565216
+            }
+          }
+        },
+        "4": {
+          "n": 31,
+          "baseline_n": 25,
+          "hero": "Demon Hunter",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 291.7769304794831,
+              "gap_vs_v13": 114.17468231071135
+            },
+            "farm_rate": {
+              "estimate": 134.2699838102629,
+              "gap_vs_v13": -29.499311925943886
+            },
+            "hero_rate": {
+              "estimate": 94.49658294678767,
+              "gap_vs_v13": 80.66363051422269
+            },
+            "building_rate": {
+              "estimate": 63.01036372243255,
+              "gap_vs_v13": 63.01036372243255
+            },
+            "hero_kills": {
+              "estimate": 7.419354838709677,
+              "gap_vs_v13": 6.539354838709677
+            },
+            "deaths": {
+              "estimate": 4.967741935483871,
+              "gap_vs_v13": 1.967741935483871
+            },
+            "win": {
+              "estimate": 0.8064516129032258,
+              "gap_vs_v13": 0.5264516129032257
+            },
+            "joint": {
+              "estimate": 0.45161290322580644,
+              "gap_vs_v13": 0.45161290322580644
+            }
+          }
+        },
+        "5": {
+          "n": 20,
+          "baseline_n": 30,
+          "hero": "Death Knight",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 192.963022518484,
+              "gap_vs_v13": 54.62883322870266
+            },
+            "farm_rate": {
+              "estimate": 108.13986383291328,
+              "gap_vs_v13": -15.827406723748012
+            },
+            "hero_rate": {
+              "estimate": 59.28557890125127,
+              "gap_vs_v13": 45.73875676565764
+            },
+            "building_rate": {
+              "estimate": 25.537579784319433,
+              "gap_vs_v13": 24.717483186792997
+            },
+            "hero_kills": {
+              "estimate": 4.55,
+              "gap_vs_v13": 3.7166666666666663
+            },
+            "deaths": {
+              "estimate": 3.3,
+              "gap_vs_v13": 2.0999999999999996
+            },
+            "win": {
+              "estimate": 0.35,
+              "gap_vs_v13": 0.08333333333333331
+            },
+            "joint": {
+              "estimate": 0.05,
+              "gap_vs_v13": 0.05
+            }
+          }
+        },
+        "6": {
+          "n": 23,
+          "baseline_n": 30,
+          "hero": "Crossbowman",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 467.08116754706066,
+              "gap_vs_v13": 262.9251131174422
+            },
+            "farm_rate": {
+              "estimate": 180.9428336569381,
+              "gap_vs_v13": 16.692627462623307
+            },
+            "hero_rate": {
+              "estimate": 217.64203156608693,
+              "gap_vs_v13": 177.73618333078326
+            },
+            "building_rate": {
+              "estimate": 68.4963023240357,
+              "gap_vs_v13": 68.4963023240357
+            },
+            "hero_kills": {
+              "estimate": 13.217391304347826,
+              "gap_vs_v13": 10.784057971014493
+            },
+            "deaths": {
+              "estimate": 1.4782608695652173,
+              "gap_vs_v13": -0.5217391304347827
+            },
+            "win": {
+              "estimate": 0.7391304347826086,
+              "gap_vs_v13": 0.472463768115942
+            },
+            "joint": {
+              "estimate": 0.6956521739130435,
+              "gap_vs_v13": 0.6623188405797101
+            }
+          }
+        },
+        "7": {
+          "n": 21,
+          "baseline_n": 30,
+          "hero": "Lich",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 318.86804868950344,
+              "gap_vs_v13": 133.65715150746297
+            },
+            "farm_rate": {
+              "estimate": 148.97398904180093,
+              "gap_vs_v13": 27.95742217535907
+            },
+            "hero_rate": {
+              "estimate": 134.18562173786756,
+              "gap_vs_v13": 69.99129142226894
+            },
+            "building_rate": {
+              "estimate": 35.708437909834934,
+              "gap_vs_v13": 35.708437909834934
+            },
+            "hero_kills": {
+              "estimate": 9.571428571428571,
+              "gap_vs_v13": 5.071428571428571
+            },
+            "deaths": {
+              "estimate": 2.857142857142857,
+              "gap_vs_v13": 0.5238095238095237
+            },
+            "win": {
+              "estimate": 0.47619047619047616,
+              "gap_vs_v13": 0.2095238095238095
+            },
+            "joint": {
+              "estimate": 0.19047619047619047,
+              "gap_vs_v13": 0.19047619047619047
+            }
+          }
+        },
+        "8": {
+          "n": 17,
+          "baseline_n": 30,
+          "hero": "Warlock",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 186.45229186336144,
+              "gap_vs_v13": 23.7804599836968
+            },
+            "farm_rate": {
+              "estimate": 104.24773766243528,
+              "gap_vs_v13": -46.014246425203524
+            },
+            "hero_rate": {
+              "estimate": 58.46550963132763,
+              "gap_vs_v13": 46.19441775377265
+            },
+            "building_rate": {
+              "estimate": 23.73904456959852,
+              "gap_vs_v13": 23.600288655127667
+            },
+            "hero_kills": {
+              "estimate": 4.294117647058823,
+              "gap_vs_v13": 3.7941176470588234
+            },
+            "deaths": {
+              "estimate": 4.294117647058823,
+              "gap_vs_v13": 2.2274509803921565
+            },
+            "win": {
+              "estimate": 0.4117647058823529,
+              "gap_vs_v13": 0.24509803921568626
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        },
+        "9": {
+          "n": 25,
+          "baseline_n": 30,
+          "hero": "Berserker",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 222.51026894030682,
+              "gap_vs_v13": 85.10755376993973
+            },
+            "farm_rate": {
+              "estimate": 127.43722139729414,
+              "gap_vs_v13": -0.194901995696398
+            },
+            "hero_rate": {
+              "estimate": 73.04134427825576,
+              "gap_vs_v13": 63.27075250087921
+            },
+            "building_rate": {
+              "estimate": 22.031703264756906,
+              "gap_vs_v13": 22.031703264756906
+            },
+            "hero_kills": {
+              "estimate": 6.16,
+              "gap_vs_v13": 5.26
+            },
+            "deaths": {
+              "estimate": 5.92,
+              "gap_vs_v13": 3.5866666666666664
+            },
+            "win": {
+              "estimate": 0.36,
+              "gap_vs_v13": 0.15999999999999998
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        }
+      },
+      "first_hero_kill": {
+        "reached": 220,
+        "n": 232,
+        "fraction": 0.9482758620689655,
+        "median_tick_among_achievers": 1854.5
+      },
+      "level5": {
+        "reached": 195,
+        "n": 232,
+        "fraction": 0.8405172413793104,
+        "median_tick_among_achievers": 3004
+      },
+      "level10": {
+        "reached": 71,
+        "n": 232,
+        "fraction": 0.30603448275862066,
+        "median_tick_among_achievers": 9306
+      },
+      "proximity": {
+        "enemy_deaths": 6847,
+        "nearby_enemy_deaths": 2464,
+        "nearby_own_kills": 1745,
+        "exposure": 0.35986563458448956,
+        "conversion_lower_bound": 0.708198051948052
+      },
+      "timing": {
+        "n": 113,
+        "class_counts": {
+          "0": 10,
+          "5": 10,
+          "3": 11,
+          "7": 12,
+          "8": 9,
+          "6": 10,
+          "9": 16,
+          "2": 14,
+          "1": 5,
+          "4": 16
+        },
+        "minutes": {
+          "1": {
+            "xp": 215.80348124098123,
+            "sources": {
+              "farm": 132.65809884559886,
+              "hero": 58.27489177489178,
+              "building": 24.87049062049062
+            },
+            "minute_source_income": {
+              "farm": 132.65809884559886,
+              "hero": 58.27489177489178,
+              "building": 24.87049062049062
+            }
+          },
+          "2": {
+            "xp": 736.3717983405484,
+            "sources": {
+              "farm": 422.69602272727275,
+              "hero": 235.87797619047618,
+              "building": 77.79779942279943
+            },
+            "minute_source_income": {
+              "farm": 290.03792388167386,
+              "hero": 177.60308441558442,
+              "building": 52.9273088023088
+            }
+          },
+          "3": {
+            "xp": 1191.6005140692641,
+            "sources": {
+              "farm": 631.1051136363636,
+              "hero": 427.5413961038961,
+              "building": 132.95400432900433
+            },
+            "minute_source_income": {
+              "farm": 208.4090909090909,
+              "hero": 191.66341991341992,
+              "building": 55.156204906204906
+            }
+          },
+          "4": {
+            "xp": 1620.8537608225108,
+            "sources": {
+              "farm": 826.7334505772005,
+              "hero": 621.6969696969697,
+              "building": 172.42334054834055
+            },
+            "minute_source_income": {
+              "farm": 195.62833694083693,
+              "hero": 194.1555735930736,
+              "building": 39.46933621933622
+            }
+          },
+          "5": {
+            "xp": 2052.169237012987,
+            "sources": {
+              "farm": 1002.4299693362193,
+              "hero": 818.7221320346321,
+              "building": 231.01713564213563
+            },
+            "minute_source_income": {
+              "farm": 175.69651875901874,
+              "hero": 197.02516233766232,
+              "building": 58.593795093795094
+            }
+          },
+          "6": {
+            "xp": 2418.2506764069262,
+            "sources": {
+              "farm": 1140.6647276334777,
+              "hero": 1012.9926948051948,
+              "building": 264.593253968254
+            },
+            "minute_source_income": {
+              "farm": 138.2347582972583,
+              "hero": 194.27056277056278,
+              "building": 33.576118326118326
+            }
+          }
+        }
+      }
+    },
+    "aaron-gota-ir-perimeter-blue_repair-0916-aaron:v1": {
+      "n": 221,
+      "class_counts": {
+        "6": 26,
+        "0": 23,
+        "8": 23,
+        "3": 23,
+        "4": 16,
+        "2": 24,
+        "7": 19,
+        "5": 13,
+        "1": 33,
+        "9": 21
+      },
+      "metrics": {
+        "xp_rate": {
+          "estimate": 283.0582684281581,
+          "ci95": {
+            "low": 267.4342610318544,
+            "high": 299.431630233949,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 116.73916742248622,
+          "gap_ci95": {
+            "low": 99.01815966463627,
+            "high": 134.9650455224838,
+            "valid_draws": 2000
+          }
+        },
+        "farm_rate": {
+          "estimate": 128.4602029090562,
+          "ci95": {
+            "low": 120.01871284867022,
+            "high": 136.99999598847518,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": -10.998320430825459,
+          "gap_ci95": {
+            "low": -22.22654939273608,
+            "high": 0.11298118983716897,
+            "valid_draws": 2000
+          }
+        },
+        "hero_rate": {
+          "estimate": 106.21752568975721,
+          "ci95": {
+            "low": 97.30761540478709,
+            "high": 115.79543525375459,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 79.45283327516671,
+          "gap_ci95": {
+            "low": 70.03847521544004,
+            "high": 89.34501539805055,
+            "valid_draws": 2000
+          }
+        },
+        "building_rate": {
+          "estimate": 48.38053982934468,
+          "ci95": {
+            "low": 43.68223522350262,
+            "high": 53.32425331566182,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 48.284654578144945,
+          "gap_ci95": {
+            "low": 43.57189259358739,
+            "high": 53.259855370530275,
+            "valid_draws": 2000
+          }
+        },
+        "hero_kills": {
+          "estimate": 7.508616864638031,
+          "ci95": {
+            "low": 6.4786558578689055,
+            "high": 8.722824689662371,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 5.6060651405001005,
+          "gap_ci95": {
+            "low": 4.645768151316238,
+            "high": 6.7408202031667415,
+            "valid_draws": 2000
+          }
+        },
+        "deaths": {
+          "estimate": 3.895791346334825,
+          "ci95": {
+            "low": 3.439978605192378,
+            "high": 4.365389833897986,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 1.6643660589785028,
+          "gap_ci95": {
+            "low": 1.204253653164681,
+            "high": 2.140079734999574,
+            "valid_draws": 2000
+          }
+        },
+        "win": {
+          "estimate": 0.5807999018525334,
+          "ci95": {
+            "low": 0.5192855107256044,
+            "high": 0.6430302768723394,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 0.252730936335292,
+          "gap_ci95": {
+            "low": 0.17617824640958246,
+            "high": 0.3310288712250017,
+            "valid_draws": 2000
+          }
+        },
+        "joint": {
+          "estimate": 0.27178122697287455,
+          "ci95": {
+            "low": 0.22220086446049025,
+            "high": 0.32369942130240115,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 0.2649996177774723,
+          "gap_ci95": {
+            "low": 0.21328213027895435,
+            "high": 0.3176476656313062,
+            "valid_draws": 2000
+          }
+        }
+      },
+      "per_class": {
+        "0": {
+          "n": 23,
+          "baseline_n": 30,
+          "hero": "Vanguard Knight",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 135.54850155373808,
+              "gap_vs_v13": 24.534110384569814
+            },
+            "farm_rate": {
+              "estimate": 70.75466295395599,
+              "gap_vs_v13": -32.16129391499378
+            },
+            "hero_rate": {
+              "estimate": 42.8250287777389,
+              "gap_vs_v13": 34.72659447752039
+            },
+            "building_rate": {
+              "estimate": 21.968809822043198,
+              "gap_vs_v13": 21.968809822043198
+            },
+            "hero_kills": {
+              "estimate": 3.608695652173913,
+              "gap_vs_v13": 3.07536231884058
+            },
+            "deaths": {
+              "estimate": 5.391304347826087,
+              "gap_vs_v13": 2.5579710144927534
+            },
+            "win": {
+              "estimate": 0.7391304347826086,
+              "gap_vs_v13": 0.20579710144927532
+            },
+            "joint": {
+              "estimate": 0.043478260869565216,
+              "gap_vs_v13": 0.043478260869565216
+            }
+          }
+        },
+        "1": {
+          "n": 33,
+          "baseline_n": 29,
+          "hero": "Ranger",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 518.849680519458,
+              "gap_vs_v13": 334.04612165073723
+            },
+            "farm_rate": {
+              "estimate": 201.460944129439,
+              "gap_vs_v13": 45.114993453935966
+            },
+            "hero_rate": {
+              "estimate": 208.71810039095175,
+              "gap_vs_v13": 180.26049219773395
+            },
+            "building_rate": {
+              "estimate": 108.67063599906724,
+              "gap_vs_v13": 108.67063599906724
+            },
+            "hero_kills": {
+              "estimate": 12.303030303030303,
+              "gap_vs_v13": 10.50992685475444
+            },
+            "deaths": {
+              "estimate": 1.4848484848484849,
+              "gap_vs_v13": -1.2048066875653083
+            },
+            "win": {
+              "estimate": 0.8484848484848485,
+              "gap_vs_v13": 0.6415882967607106
+            },
+            "joint": {
+              "estimate": 0.8181818181818182,
+              "gap_vs_v13": 0.8181818181818182
+            }
+          }
+        },
+        "2": {
+          "n": 24,
+          "baseline_n": 29,
+          "hero": "Arcanist",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 271.37568003986024,
+              "gap_vs_v13": 66.75453546692799
+            },
+            "farm_rate": {
+              "estimate": 129.90680587670397,
+              "gap_vs_v13": -4.184438174205752
+            },
+            "hero_rate": {
+              "estimate": 89.00987458608523,
+              "gap_vs_v13": 18.479974064062688
+            },
+            "building_rate": {
+              "estimate": 52.45899957707104,
+              "gap_vs_v13": 52.45899957707104
+            },
+            "hero_kills": {
+              "estimate": 6.416666666666667,
+              "gap_vs_v13": 0.24425287356321856
+            },
+            "deaths": {
+              "estimate": 2.9583333333333335,
+              "gap_vs_v13": 0.820402298850575
+            },
+            "win": {
+              "estimate": 0.5416666666666666,
+              "gap_vs_v13": 0.12787356321839077
+            },
+            "joint": {
+              "estimate": 0.20833333333333334,
+              "gap_vs_v13": 0.1738505747126437
+            }
+          }
+        },
+        "3": {
+          "n": 23,
+          "baseline_n": 25,
+          "hero": "Druid Warden",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 243.36623126701568,
+              "gap_vs_v13": 85.99225194136204
+            },
+            "farm_rate": {
+              "estimate": 103.82104833406689,
+              "gap_vs_v13": -46.513586635133066
+            },
+            "hero_rate": {
+              "estimate": 87.46468314583755,
+              "gap_vs_v13": 80.42533878938389
+            },
+            "building_rate": {
+              "estimate": 52.08049978711123,
+              "gap_vs_v13": 52.08049978711123
+            },
+            "hero_kills": {
+              "estimate": 6.434782608695652,
+              "gap_vs_v13": 5.954782608695652
+            },
+            "deaths": {
+              "estimate": 3.5217391304347827,
+              "gap_vs_v13": 1.8017391304347827
+            },
+            "win": {
+              "estimate": 0.7391304347826086,
+              "gap_vs_v13": 0.0591304347826086
+            },
+            "joint": {
+              "estimate": 0.2608695652173913,
+              "gap_vs_v13": 0.2608695652173913
+            }
+          }
+        },
+        "4": {
+          "n": 16,
+          "baseline_n": 25,
+          "hero": "Demon Hunter",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 281.3824584483667,
+              "gap_vs_v13": 103.78021027959497
+            },
+            "farm_rate": {
+              "estimate": 116.76092809716828,
+              "gap_vs_v13": -47.0083676390385
+            },
+            "hero_rate": {
+              "estimate": 100.1282545985825,
+              "gap_vs_v13": 86.29530216601752
+            },
+            "building_rate": {
+              "estimate": 64.49327575261596,
+              "gap_vs_v13": 64.49327575261596
+            },
+            "hero_kills": {
+              "estimate": 8.6875,
+              "gap_vs_v13": 7.8075
+            },
+            "deaths": {
+              "estimate": 5,
+              "gap_vs_v13": 2
+            },
+            "win": {
+              "estimate": 0.625,
+              "gap_vs_v13": 0.345
+            },
+            "joint": {
+              "estimate": 0.1875,
+              "gap_vs_v13": 0.1875
+            }
+          }
+        },
+        "5": {
+          "n": 13,
+          "baseline_n": 30,
+          "hero": "Death Knight",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 182.25899189917246,
+              "gap_vs_v13": 43.92480260939112
+            },
+            "farm_rate": {
+              "estimate": 101.36439280162874,
+              "gap_vs_v13": -22.60287775503255
+            },
+            "hero_rate": {
+              "estimate": 55.98430865031534,
+              "gap_vs_v13": 42.43748651472171
+            },
+            "building_rate": {
+              "estimate": 24.91029044722837,
+              "gap_vs_v13": 24.090193849701933
+            },
+            "hero_kills": {
+              "estimate": 4.538461538461538,
+              "gap_vs_v13": 3.705128205128205
+            },
+            "deaths": {
+              "estimate": 4.153846153846154,
+              "gap_vs_v13": 2.953846153846154
+            },
+            "win": {
+              "estimate": 0.3076923076923077,
+              "gap_vs_v13": 0.041025641025641046
+            },
+            "joint": {
+              "estimate": 0.07692307692307693,
+              "gap_vs_v13": 0.07692307692307693
+            }
+          }
+        },
+        "6": {
+          "n": 26,
+          "baseline_n": 30,
+          "hero": "Crossbowman",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 454.7420233646311,
+              "gap_vs_v13": 250.58596893501266
+            },
+            "farm_rate": {
+              "estimate": 173.1470387946659,
+              "gap_vs_v13": 8.896832600351104
+            },
+            "hero_rate": {
+              "estimate": 220.13838169239415,
+              "gap_vs_v13": 180.23253345709048
+            },
+            "building_rate": {
+              "estimate": 61.45660287757109,
+              "gap_vs_v13": 61.45660287757109
+            },
+            "hero_kills": {
+              "estimate": 11.538461538461538,
+              "gap_vs_v13": 9.105128205128205
+            },
+            "deaths": {
+              "estimate": 1.1538461538461537,
+              "gap_vs_v13": -0.8461538461538463
+            },
+            "win": {
+              "estimate": 0.7307692307692307,
+              "gap_vs_v13": 0.46410256410256406
+            },
+            "joint": {
+              "estimate": 0.5769230769230769,
+              "gap_vs_v13": 0.5435897435897435
+            }
+          }
+        },
+        "7": {
+          "n": 19,
+          "baseline_n": 30,
+          "hero": "Lich",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 318.3076159948653,
+              "gap_vs_v13": 133.0967188128248
+            },
+            "farm_rate": {
+              "estimate": 152.55300630942972,
+              "gap_vs_v13": 31.536439442987856
+            },
+            "hero_rate": {
+              "estimate": 126.8040156129527,
+              "gap_vs_v13": 62.609685297354076
+            },
+            "building_rate": {
+              "estimate": 38.950594072482836,
+              "gap_vs_v13": 38.950594072482836
+            },
+            "hero_kills": {
+              "estimate": 9.473684210526315,
+              "gap_vs_v13": 4.973684210526315
+            },
+            "deaths": {
+              "estimate": 4,
+              "gap_vs_v13": 1.6666666666666665
+            },
+            "win": {
+              "estimate": 0.42105263157894735,
+              "gap_vs_v13": 0.15438596491228068
+            },
+            "joint": {
+              "estimate": 0.3157894736842105,
+              "gap_vs_v13": 0.3157894736842105
+            }
+          }
+        },
+        "8": {
+          "n": 23,
+          "baseline_n": 30,
+          "hero": "Warlock",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 200.66699087466654,
+              "gap_vs_v13": 37.9951589950019
+            },
+            "farm_rate": {
+              "estimate": 103.81553519625702,
+              "gap_vs_v13": -46.44644889138179
+            },
+            "hero_rate": {
+              "estimate": 61.81792780093274,
+              "gap_vs_v13": 49.54683592337776
+            },
+            "building_rate": {
+              "estimate": 35.03352787747677,
+              "gap_vs_v13": 34.894771963005915
+            },
+            "hero_kills": {
+              "estimate": 5.608695652173913,
+              "gap_vs_v13": 5.108695652173913
+            },
+            "deaths": {
+              "estimate": 4.913043478260869,
+              "gap_vs_v13": 2.8463768115942023
+            },
+            "win": {
+              "estimate": 0.5217391304347826,
+              "gap_vs_v13": 0.35507246376811596
+            },
+            "joint": {
+              "estimate": 0.08695652173913043,
+              "gap_vs_v13": 0.08695652173913043
+            }
+          }
+        },
+        "9": {
+          "n": 21,
+          "baseline_n": 30,
+          "hero": "Berserker",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 224.0845103198068,
+              "gap_vs_v13": 86.68179514943972
+            },
+            "farm_rate": {
+              "estimate": 131.0176665972465,
+              "gap_vs_v13": 3.385543204255953
+            },
+            "hero_rate": {
+              "estimate": 69.28468164178125,
+              "gap_vs_v13": 59.514089864404696
+            },
+            "building_rate": {
+              "estimate": 23.782162080779052,
+              "gap_vs_v13": 23.782162080779052
+            },
+            "hero_kills": {
+              "estimate": 6.476190476190476,
+              "gap_vs_v13": 5.576190476190476
+            },
+            "deaths": {
+              "estimate": 6.380952380952381,
+              "gap_vs_v13": 4.0476190476190474
+            },
+            "win": {
+              "estimate": 0.3333333333333333,
+              "gap_vs_v13": 0.1333333333333333
+            },
+            "joint": {
+              "estimate": 0.14285714285714285,
+              "gap_vs_v13": 0.14285714285714285
+            }
+          }
+        }
+      },
+      "first_hero_kill": {
+        "reached": 204,
+        "n": 221,
+        "fraction": 0.9230769230769231,
+        "median_tick_among_achievers": 1929.0
+      },
+      "level5": {
+        "reached": 190,
+        "n": 221,
+        "fraction": 0.8597285067873304,
+        "median_tick_among_achievers": 3187.0
+      },
+      "level10": {
+        "reached": 64,
+        "n": 221,
+        "fraction": 0.2895927601809955,
+        "median_tick_among_achievers": 8748.0
+      },
+      "proximity": {
+        "enemy_deaths": 6146,
+        "nearby_enemy_deaths": 2384,
+        "nearby_own_kills": 1731,
+        "exposure": 0.38789456557110313,
+        "conversion_lower_bound": 0.7260906040268457
+      },
+      "timing": {
+        "n": 102,
+        "class_counts": {
+          "6": 6,
+          "0": 14,
+          "8": 15,
+          "4": 6,
+          "2": 10,
+          "3": 10,
+          "7": 12,
+          "9": 14,
+          "5": 6,
+          "1": 9
+        },
+        "minutes": {
+          "1": {
+            "xp": 232.9186507936508,
+            "sources": {
+              "farm": 151.20833333333334,
+              "hero": 53.845238095238095,
+              "building": 27.865079365079364
+            },
+            "minute_source_income": {
+              "farm": 151.20833333333334,
+              "hero": 53.845238095238095,
+              "building": 27.865079365079364
+            }
+          },
+          "2": {
+            "xp": 682.656746031746,
+            "sources": {
+              "farm": 410.4503968253968,
+              "hero": 203.64285714285714,
+              "building": 68.56349206349206
+            },
+            "minute_source_income": {
+              "farm": 259.2420634920635,
+              "hero": 149.79761904761904,
+              "building": 40.698412698412696
+            }
+          },
+          "3": {
+            "xp": 1127.734126984127,
+            "sources": {
+              "farm": 625.5793650793651,
+              "hero": 375.20238095238096,
+              "building": 126.95238095238095
+            },
+            "minute_source_income": {
+              "farm": 215.12896825396825,
+              "hero": 171.5595238095238,
+              "building": 58.388888888888886
+            }
+          },
+          "4": {
+            "xp": 1608.093253968254,
+            "sources": {
+              "farm": 872.2956349206349,
+              "hero": 559.2738095238095,
+              "building": 176.52380952380952
+            },
+            "minute_source_income": {
+              "farm": 246.71626984126985,
+              "hero": 184.07142857142858,
+              "building": 49.57142857142857
+            }
+          },
+          "5": {
+            "xp": 2098.9781746031745,
+            "sources": {
+              "farm": 1112.5257936507937,
+              "hero": 757.3333333333334,
+              "building": 229.11904761904762
+            },
+            "minute_source_income": {
+              "farm": 240.23015873015873,
+              "hero": 198.05952380952382,
+              "building": 52.595238095238095
+            }
+          },
+          "6": {
+            "xp": 2519.2103174603176,
+            "sources": {
+              "farm": 1303.202380952381,
+              "hero": 943.7142857142857,
+              "building": 272.2936507936508
+            },
+            "minute_source_income": {
+              "farm": 190.6765873015873,
+              "hero": 186.38095238095238,
+              "building": 43.17460317460318
+            }
+          }
+        }
+      }
+    },
+    "black-kite:v16": {
+      "n": 207,
+      "class_counts": {
+        "4": 19,
+        "1": 21,
+        "8": 19,
+        "0": 17,
+        "5": 25,
+        "6": 19,
+        "3": 24,
+        "9": 18,
+        "2": 24,
+        "7": 21
+      },
+      "metrics": {
+        "xp_rate": {
+          "estimate": 235.3612454108913,
+          "ci95": {
+            "low": 221.50226006413706,
+            "high": 249.9506164702341,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 69.04214440521943,
+          "gap_ci95": {
+            "low": 53.810044686621616,
+            "high": 84.10657317506828,
+            "valid_draws": 2000
+          }
+        },
+        "farm_rate": {
+          "estimate": 148.99471238904243,
+          "ci95": {
+            "low": 140.3342043449401,
+            "high": 158.0534170615562,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 9.536189049160782,
+          "gap_ci95": {
+            "low": -0.9193066593305181,
+            "high": 19.952228787371062,
+            "valid_draws": 2000
+          }
+        },
+        "hero_rate": {
+          "estimate": 73.71646289249459,
+          "ci95": {
+            "low": 66.17798394792416,
+            "high": 81.50107132376111,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 46.9517704779041,
+          "gap_ci95": {
+            "low": 38.46923372598646,
+            "high": 55.446687217313446,
+            "valid_draws": 2000
+          }
+        },
+        "building_rate": {
+          "estimate": 12.650070129354319,
+          "ci95": {
+            "low": 10.301495671049741,
+            "high": 15.287560417671319,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 12.55418487815459,
+          "gap_ci95": {
+            "low": 10.192621160475372,
+            "high": 15.2084587021933,
+            "valid_draws": 2000
+          }
+        },
+        "hero_kills": {
+          "estimate": 5.429895768833849,
+          "ci95": {
+            "low": 4.604924615259677,
+            "high": 6.380150541533631,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 3.5273440446959183,
+          "gap_ci95": {
+            "low": 2.7261080395031296,
+            "high": 4.404486580414196,
+            "valid_draws": 2000
+          }
+        },
+        "deaths": {
+          "estimate": 5.107606123151015,
+          "ci95": {
+            "low": 4.4859252561420195,
+            "high": 5.758335275776818,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 2.876180835794693,
+          "gap_ci95": {
+            "low": 2.2663992172288068,
+            "high": 3.5258891560271226,
+            "valid_draws": 2000
+          }
+        },
+        "win": {
+          "estimate": 0.3941847019509558,
+          "ci95": {
+            "low": 0.3295889842470649,
+            "high": 0.4598434867433084,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 0.06611573643371438,
+          "gap_ci95": {
+            "low": -0.021776550190063144,
+            "high": 0.15358627871266378,
+            "valid_draws": 2000
+          }
+        },
+        "joint": {
+          "estimate": 0.07766374269005848,
+          "ci95": {
+            "low": 0.04316230608636215,
+            "high": 0.11500022793697037,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 0.07088213349465618,
+          "gap_ci95": {
+            "low": 0.032995574317697084,
+            "high": 0.11014936444274674,
+            "valid_draws": 2000
+          }
+        }
+      },
+      "per_class": {
+        "0": {
+          "n": 17,
+          "baseline_n": 30,
+          "hero": "Vanguard Knight",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 145.8215658420531,
+              "gap_vs_v13": 34.80717467288484
+            },
+            "farm_rate": {
+              "estimate": 122.70076905550475,
+              "gap_vs_v13": 19.784812186554987
+            },
+            "hero_rate": {
+              "estimate": 19.520559373671595,
+              "gap_vs_v13": 11.42212507345309
+            },
+            "building_rate": {
+              "estimate": 3.6002374128767585,
+              "gap_vs_v13": 3.6002374128767585
+            },
+            "hero_kills": {
+              "estimate": 1.411764705882353,
+              "gap_vs_v13": 0.8784313725490197
+            },
+            "deaths": {
+              "estimate": 6.176470588235294,
+              "gap_vs_v13": 3.343137254901961
+            },
+            "win": {
+              "estimate": 0.5294117647058824,
+              "gap_vs_v13": -0.0039215686274509665
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        },
+        "1": {
+          "n": 21,
+          "baseline_n": 29,
+          "hero": "Ranger",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 338.39049604221765,
+              "gap_vs_v13": 153.58693717349684
+            },
+            "farm_rate": {
+              "estimate": 184.34749724419143,
+              "gap_vs_v13": 28.001546568688383
+            },
+            "hero_rate": {
+              "estimate": 131.33035571925456,
+              "gap_vs_v13": 102.87274752603676
+            },
+            "building_rate": {
+              "estimate": 22.71264307877165,
+              "gap_vs_v13": 22.71264307877165
+            },
+            "hero_kills": {
+              "estimate": 9.476190476190476,
+              "gap_vs_v13": 7.683087027914614
+            },
+            "deaths": {
+              "estimate": 2.761904761904762,
+              "gap_vs_v13": 0.07224958949096871
+            },
+            "win": {
+              "estimate": 0.42857142857142855,
+              "gap_vs_v13": 0.22167487684729062
+            },
+            "joint": {
+              "estimate": 0.19047619047619047,
+              "gap_vs_v13": 0.19047619047619047
+            }
+          }
+        },
+        "2": {
+          "n": 24,
+          "baseline_n": 29,
+          "hero": "Arcanist",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 215.9384601971645,
+              "gap_vs_v13": 11.317315624232236
+            },
+            "farm_rate": {
+              "estimate": 125.61604242977705,
+              "gap_vs_v13": -8.475201621132669
+            },
+            "hero_rate": {
+              "estimate": 83.37593337953548,
+              "gap_vs_v13": 12.846032857512938
+            },
+            "building_rate": {
+              "estimate": 6.946484387851947,
+              "gap_vs_v13": 6.946484387851947
+            },
+            "hero_kills": {
+              "estimate": 5.5,
+              "gap_vs_v13": -0.6724137931034484
+            },
+            "deaths": {
+              "estimate": 4.208333333333333,
+              "gap_vs_v13": 2.0704022988505746
+            },
+            "win": {
+              "estimate": 0.5833333333333334,
+              "gap_vs_v13": 0.16954022988505751
+            },
+            "joint": {
+              "estimate": 0.041666666666666664,
+              "gap_vs_v13": 0.00718390804597701
+            }
+          }
+        },
+        "3": {
+          "n": 24,
+          "baseline_n": 25,
+          "hero": "Druid Warden",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 148.3579985881496,
+              "gap_vs_v13": -9.015980737504037
+            },
+            "farm_rate": {
+              "estimate": 108.62352975312024,
+              "gap_vs_v13": -41.711105216079716
+            },
+            "hero_rate": {
+              "estimate": 34.21347632845887,
+              "gap_vs_v13": 27.174131972005203
+            },
+            "building_rate": {
+              "estimate": 5.520992506570483,
+              "gap_vs_v13": 5.520992506570483
+            },
+            "hero_kills": {
+              "estimate": 3.25,
+              "gap_vs_v13": 2.77
+            },
+            "deaths": {
+              "estimate": 7.041666666666667,
+              "gap_vs_v13": 5.321666666666667
+            },
+            "win": {
+              "estimate": 0.375,
+              "gap_vs_v13": -0.30500000000000005
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        },
+        "4": {
+          "n": 19,
+          "baseline_n": 25,
+          "hero": "Demon Hunter",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 260.2269263347309,
+              "gap_vs_v13": 82.62467816595912
+            },
+            "farm_rate": {
+              "estimate": 173.82083092242124,
+              "gap_vs_v13": 10.051535186214466
+            },
+            "hero_rate": {
+              "estimate": 64.89499680849637,
+              "gap_vs_v13": 51.06204437593139
+            },
+            "building_rate": {
+              "estimate": 21.511098603813274,
+              "gap_vs_v13": 21.511098603813274
+            },
+            "hero_kills": {
+              "estimate": 5.2631578947368425,
+              "gap_vs_v13": 4.383157894736843
+            },
+            "deaths": {
+              "estimate": 6.631578947368421,
+              "gap_vs_v13": 3.6315789473684212
+            },
+            "win": {
+              "estimate": 0.47368421052631576,
+              "gap_vs_v13": 0.19368421052631574
+            },
+            "joint": {
+              "estimate": 0.10526315789473684,
+              "gap_vs_v13": 0.10526315789473684
+            }
+          }
+        },
+        "5": {
+          "n": 25,
+          "baseline_n": 30,
+          "hero": "Death Knight",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 174.08625716520604,
+              "gap_vs_v13": 35.7520678754247
+            },
+            "farm_rate": {
+              "estimate": 128.25380430748888,
+              "gap_vs_v13": 4.286533750827587
+            },
+            "hero_rate": {
+              "estimate": 38.36366644386203,
+              "gap_vs_v13": 24.816844308268404
+            },
+            "building_rate": {
+              "estimate": 7.468786413855132,
+              "gap_vs_v13": 6.6486898163286945
+            },
+            "hero_kills": {
+              "estimate": 3.76,
+              "gap_vs_v13": 2.9266666666666663
+            },
+            "deaths": {
+              "estimate": 6.48,
+              "gap_vs_v13": 5.28
+            },
+            "win": {
+              "estimate": 0.48,
+              "gap_vs_v13": 0.21333333333333332
+            },
+            "joint": {
+              "estimate": 0.08,
+              "gap_vs_v13": 0.08
+            }
+          }
+        },
+        "6": {
+          "n": 19,
+          "baseline_n": 30,
+          "hero": "Crossbowman",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 324.73597478652965,
+              "gap_vs_v13": 120.5799203569112
+            },
+            "farm_rate": {
+              "estimate": 176.05026737131348,
+              "gap_vs_v13": 11.800061176998696
+            },
+            "hero_rate": {
+              "estimate": 128.23473595584437,
+              "gap_vs_v13": 88.3288877205407
+            },
+            "building_rate": {
+              "estimate": 20.450971459371843,
+              "gap_vs_v13": 20.450971459371843
+            },
+            "hero_kills": {
+              "estimate": 9.210526315789474,
+              "gap_vs_v13": 6.777192982456141
+            },
+            "deaths": {
+              "estimate": 4.052631578947368,
+              "gap_vs_v13": 2.052631578947368
+            },
+            "win": {
+              "estimate": 0.21052631578947367,
+              "gap_vs_v13": -0.05614035087719299
+            },
+            "joint": {
+              "estimate": 0.10526315789473684,
+              "gap_vs_v13": 0.07192982456140351
+            }
+          }
+        },
+        "7": {
+          "n": 21,
+          "baseline_n": 30,
+          "hero": "Lich",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 320.23693998839406,
+              "gap_vs_v13": 135.0260428063536
+            },
+            "farm_rate": {
+              "estimate": 174.73361680339005,
+              "gap_vs_v13": 53.717049936948186
+            },
+            "hero_rate": {
+              "estimate": 129.51794186349545,
+              "gap_vs_v13": 65.32361154789683
+            },
+            "building_rate": {
+              "estimate": 15.985381321508534,
+              "gap_vs_v13": 15.985381321508534
+            },
+            "hero_kills": {
+              "estimate": 10.19047619047619,
+              "gap_vs_v13": 5.69047619047619
+            },
+            "deaths": {
+              "estimate": 3.9047619047619047,
+              "gap_vs_v13": 1.5714285714285712
+            },
+            "win": {
+              "estimate": 0.42857142857142855,
+              "gap_vs_v13": 0.16190476190476188
+            },
+            "joint": {
+              "estimate": 0.14285714285714285,
+              "gap_vs_v13": 0.14285714285714285
+            }
+          }
+        },
+        "8": {
+          "n": 19,
+          "baseline_n": 30,
+          "hero": "Warlock",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 190.96911932270936,
+              "gap_vs_v13": 28.297287443044723
+            },
+            "farm_rate": {
+              "estimate": 155.03308894111544,
+              "gap_vs_v13": 4.771104853476629
+            },
+            "hero_rate": {
+              "estimate": 27.598650157022902,
+              "gap_vs_v13": 15.327558279467922
+            },
+            "building_rate": {
+              "estimate": 8.337380224571012,
+              "gap_vs_v13": 8.198624310100158
+            },
+            "hero_kills": {
+              "estimate": 1.736842105263158,
+              "gap_vs_v13": 1.236842105263158
+            },
+            "deaths": {
+              "estimate": 4.2631578947368425,
+              "gap_vs_v13": 2.1964912280701756
+            },
+            "win": {
+              "estimate": 0.21052631578947367,
+              "gap_vs_v13": 0.043859649122807015
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        },
+        "9": {
+          "n": 18,
+          "baseline_n": 30,
+          "hero": "Berserker",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 234.8487158417584,
+              "gap_vs_v13": 97.44600067139132
+            },
+            "farm_rate": {
+              "estimate": 140.76767706210165,
+              "gap_vs_v13": 13.135553669111118
+            },
+            "hero_rate": {
+              "estimate": 80.11431289530421,
+              "gap_vs_v13": 70.34372111792766
+            },
+            "building_rate": {
+              "estimate": 13.966725884352558,
+              "gap_vs_v13": 13.966725884352558
+            },
+            "hero_kills": {
+              "estimate": 4.5,
+              "gap_vs_v13": 3.6
+            },
+            "deaths": {
+              "estimate": 5.555555555555555,
+              "gap_vs_v13": 3.222222222222222
+            },
+            "win": {
+              "estimate": 0.2222222222222222,
+              "gap_vs_v13": 0.0222222222222222
+            },
+            "joint": {
+              "estimate": 0.1111111111111111,
+              "gap_vs_v13": 0.1111111111111111
+            }
+          }
+        }
+      },
+      "first_hero_kill": {
+        "reached": 178,
+        "n": 207,
+        "fraction": 0.8599033816425121,
+        "median_tick_among_achievers": 2436.0
+      },
+      "level5": {
+        "reached": 171,
+        "n": 207,
+        "fraction": 0.8260869565217391,
+        "median_tick_among_achievers": 3597
+      },
+      "level10": {
+        "reached": 42,
+        "n": 207,
+        "fraction": 0.2028985507246377,
+        "median_tick_among_achievers": 10456.5
+      },
+      "proximity": {
+        "enemy_deaths": 5567,
+        "nearby_enemy_deaths": 1748,
+        "nearby_own_kills": 1126,
+        "exposure": 0.31399317406143346,
+        "conversion_lower_bound": 0.6441647597254004
+      },
+      "timing": {
+        "n": 98,
+        "class_counts": {
+          "4": 10,
+          "1": 9,
+          "0": 9,
+          "5": 15,
+          "6": 8,
+          "3": 16,
+          "9": 7,
+          "7": 10,
+          "8": 5,
+          "2": 9
+        },
+        "minutes": {
+          "1": {
+            "xp": 160.79761904761904,
+            "sources": {
+              "farm": 105.86607142857143,
+              "hero": 50.598214285714285,
+              "building": 4.333333333333333
+            },
+            "minute_source_income": {
+              "farm": 105.86607142857143,
+              "hero": 50.598214285714285,
+              "building": 4.333333333333333
+            }
+          },
+          "2": {
+            "xp": 570.015873015873,
+            "sources": {
+              "farm": 406.19642857142856,
+              "hero": 142.5,
+              "building": 21.319444444444443
+            },
+            "minute_source_income": {
+              "farm": 300.33035714285717,
+              "hero": 91.90178571428571,
+              "building": 16.98611111111111
+            }
+          },
+          "3": {
+            "xp": 972.5982142857142,
+            "sources": {
+              "farm": 689.7787698412699,
+              "hero": 248.57142857142856,
+              "building": 34.24801587301587
+            },
+            "minute_source_income": {
+              "farm": 283.58234126984127,
+              "hero": 106.07142857142857,
+              "building": 12.928571428571429
+            }
+          },
+          "4": {
+            "xp": 1340.405257936508,
+            "sources": {
+              "farm": 929.0639880952381,
+              "hero": 367.30357142857144,
+              "building": 44.03769841269841
+            },
+            "minute_source_income": {
+              "farm": 239.28521825396825,
+              "hero": 118.73214285714286,
+              "building": 9.78968253968254
+            }
+          },
+          "5": {
+            "xp": 1729.047123015873,
+            "sources": {
+              "farm": 1166.2266865079364,
+              "hero": 513.2410714285714,
+              "building": 49.57936507936508
+            },
+            "minute_source_income": {
+              "farm": 237.16269841269843,
+              "hero": 145.9375,
+              "building": 5.541666666666667
+            }
+          },
+          "6": {
+            "xp": 2146.248511904762,
+            "sources": {
+              "farm": 1382.719742063492,
+              "hero": 701.3660714285714,
+              "building": 62.16269841269841
+            },
+            "minute_source_income": {
+              "farm": 216.49305555555554,
+              "hero": 188.125,
+              "building": 12.583333333333334
+            }
+          }
+        }
+      }
+    },
+    "red-kite:v34": {
+      "n": 235,
+      "class_counts": {
+        "8": 16,
+        "0": 25,
+        "2": 29,
+        "9": 21,
+        "5": 27,
+        "7": 28,
+        "4": 29,
+        "1": 16,
+        "6": 25,
+        "3": 19
+      },
+      "metrics": {
+        "xp_rate": {
+          "estimate": 227.87907521437518,
+          "ci95": {
+            "low": 214.62202599531497,
+            "high": 241.4432508241619,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 61.559974208703295,
+          "gap_ci95": {
+            "low": 47.043087009478924,
+            "high": 76.28605118204439,
+            "valid_draws": 2000
+          }
+        },
+        "farm_rate": {
+          "estimate": 140.57001826295095,
+          "ci95": {
+            "low": 132.6602380515628,
+            "high": 148.22560016218753,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 1.1114949230693014,
+          "gap_ci95": {
+            "low": -9.24198070579265,
+            "high": 10.98897445348593,
+            "valid_draws": 2000
+          }
+        },
+        "hero_rate": {
+          "estimate": 77.84667555972455,
+          "ci95": {
+            "low": 68.18711006114263,
+            "high": 88.39209690948724,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 51.08198314513405,
+          "gap_ci95": {
+            "low": 40.88330479885185,
+            "high": 62.16746633750683,
+            "valid_draws": 2000
+          }
+        },
+        "building_rate": {
+          "estimate": 9.462381391699658,
+          "ci95": {
+            "low": 7.948708094783905,
+            "high": 11.108338422552487,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 9.36649614049993,
+          "gap_ci95": {
+            "low": 7.820355488108982,
+            "high": 10.995847604563473,
+            "valid_draws": 2000
+          }
+        },
+        "hero_kills": {
+          "estimate": 6.826912739223538,
+          "ci95": {
+            "low": 5.79463237675626,
+            "high": 7.981520097842049,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 4.924361015085607,
+          "gap_ci95": {
+            "low": 3.849489712089081,
+            "high": 6.034184429100423,
+            "valid_draws": 2000
+          }
+        },
+        "deaths": {
+          "estimate": 5.472758375824619,
+          "ci95": {
+            "low": 4.819963720928195,
+            "high": 6.157035131911433,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 3.241333088468297,
+          "gap_ci95": {
+            "low": 2.602616105985537,
+            "high": 3.9384588814540513,
+            "valid_draws": 2000
+          }
+        },
+        "win": {
+          "estimate": 0.5256608379185512,
+          "ci95": {
+            "low": 0.4621173118949752,
+            "high": 0.5952015164188763,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 0.19759187240130982,
+          "gap_ci95": {
+            "low": 0.11599623007358545,
+            "high": 0.2832021228430113,
+            "valid_draws": 2000
+          }
+        },
+        "joint": {
+          "estimate": 0.0946227422003284,
+          "ci95": {
+            "low": 0.0604571967789885,
+            "high": 0.13225386240281017,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 0.0878411330049261,
+          "gap_ci95": {
+            "low": 0.05259458918652429,
+            "high": 0.12769088031253273,
+            "valid_draws": 2000
+          }
+        }
+      },
+      "per_class": {
+        "0": {
+          "n": 25,
+          "baseline_n": 30,
+          "hero": "Vanguard Knight",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 122.53971486991588,
+              "gap_vs_v13": 11.52532370074762
+            },
+            "farm_rate": {
+              "estimate": 100.24255324018668,
+              "gap_vs_v13": -2.673403628763083
+            },
+            "hero_rate": {
+              "estimate": 18.152813080508423,
+              "gap_vs_v13": 10.054378780289918
+            },
+            "building_rate": {
+              "estimate": 4.144348549220785,
+              "gap_vs_v13": 4.144348549220785
+            },
+            "hero_kills": {
+              "estimate": 1.6,
+              "gap_vs_v13": 1.0666666666666669
+            },
+            "deaths": {
+              "estimate": 5.52,
+              "gap_vs_v13": 2.686666666666666
+            },
+            "win": {
+              "estimate": 0.68,
+              "gap_vs_v13": 0.14666666666666672
+            },
+            "joint": {
+              "estimate": 0.04,
+              "gap_vs_v13": 0.04
+            }
+          }
+        },
+        "1": {
+          "n": 16,
+          "baseline_n": 29,
+          "hero": "Ranger",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 441.40266540573583,
+              "gap_vs_v13": 256.599106537015
+            },
+            "farm_rate": {
+              "estimate": 181.30348453068044,
+              "gap_vs_v13": 24.957533855177388
+            },
+            "hero_rate": {
+              "estimate": 243.5968976938263,
+              "gap_vs_v13": 215.1392895006085
+            },
+            "building_rate": {
+              "estimate": 16.502283181229107,
+              "gap_vs_v13": 16.502283181229107
+            },
+            "hero_kills": {
+              "estimate": 23,
+              "gap_vs_v13": 21.20689655172414
+            },
+            "deaths": {
+              "estimate": 5.375,
+              "gap_vs_v13": 2.685344827586207
+            },
+            "win": {
+              "estimate": 0.625,
+              "gap_vs_v13": 0.4181034482758621
+            },
+            "joint": {
+              "estimate": 0.5,
+              "gap_vs_v13": 0.5
+            }
+          }
+        },
+        "2": {
+          "n": 29,
+          "baseline_n": 29,
+          "hero": "Arcanist",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 228.35902894782774,
+              "gap_vs_v13": 23.737884374895486
+            },
+            "farm_rate": {
+              "estimate": 147.24455530567235,
+              "gap_vs_v13": 13.153311254762627
+            },
+            "hero_rate": {
+              "estimate": 68.51759545651245,
+              "gap_vs_v13": -2.012305065510091
+            },
+            "building_rate": {
+              "estimate": 12.596878185642941,
+              "gap_vs_v13": 12.596878185642941
+            },
+            "hero_kills": {
+              "estimate": 5.931034482758621,
+              "gap_vs_v13": -0.2413793103448274
+            },
+            "deaths": {
+              "estimate": 7,
+              "gap_vs_v13": 4.862068965517242
+            },
+            "win": {
+              "estimate": 0.5517241379310345,
+              "gap_vs_v13": 0.13793103448275862
+            },
+            "joint": {
+              "estimate": 0.034482758620689655,
+              "gap_vs_v13": 0.0
+            }
+          }
+        },
+        "3": {
+          "n": 19,
+          "baseline_n": 25,
+          "hero": "Druid Warden",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 128.0972355612359,
+              "gap_vs_v13": -29.276743764417745
+            },
+            "farm_rate": {
+              "estimate": 91.47127182414202,
+              "gap_vs_v13": -58.86336314505793
+            },
+            "hero_rate": {
+              "estimate": 31.464034654753856,
+              "gap_vs_v13": 24.42469029830019
+            },
+            "building_rate": {
+              "estimate": 5.161929082339999,
+              "gap_vs_v13": 5.161929082339999
+            },
+            "hero_kills": {
+              "estimate": 2.210526315789474,
+              "gap_vs_v13": 1.730526315789474
+            },
+            "deaths": {
+              "estimate": 4.7368421052631575,
+              "gap_vs_v13": 3.0168421052631578
+            },
+            "win": {
+              "estimate": 0.5789473684210527,
+              "gap_vs_v13": -0.1010526315789474
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        },
+        "4": {
+          "n": 29,
+          "baseline_n": 25,
+          "hero": "Demon Hunter",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 203.38140259233805,
+              "gap_vs_v13": 25.779154423566297
+            },
+            "farm_rate": {
+              "estimate": 140.63634258414268,
+              "gap_vs_v13": -23.13295315206409
+            },
+            "hero_rate": {
+              "estimate": 53.01519106883436,
+              "gap_vs_v13": 39.182238636269375
+            },
+            "building_rate": {
+              "estimate": 9.729868939361001,
+              "gap_vs_v13": 9.729868939361001
+            },
+            "hero_kills": {
+              "estimate": 3.6551724137931036,
+              "gap_vs_v13": 2.7751724137931038
+            },
+            "deaths": {
+              "estimate": 5.310344827586207,
+              "gap_vs_v13": 2.3103448275862073
+            },
+            "win": {
+              "estimate": 0.7241379310344828,
+              "gap_vs_v13": 0.44413793103448274
+            },
+            "joint": {
+              "estimate": 0.034482758620689655,
+              "gap_vs_v13": 0.034482758620689655
+            }
+          }
+        },
+        "5": {
+          "n": 27,
+          "baseline_n": 30,
+          "hero": "Death Knight",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 202.58268617263718,
+              "gap_vs_v13": 64.24849688285585
+            },
+            "farm_rate": {
+              "estimate": 157.91327413108093,
+              "gap_vs_v13": 33.946003574419635
+            },
+            "hero_rate": {
+              "estimate": 36.84534143916516,
+              "gap_vs_v13": 23.298519303571535
+            },
+            "building_rate": {
+              "estimate": 7.82407060239108,
+              "gap_vs_v13": 7.003974004864642
+            },
+            "hero_kills": {
+              "estimate": 2.3703703703703702,
+              "gap_vs_v13": 1.5370370370370368
+            },
+            "deaths": {
+              "estimate": 3.7777777777777777,
+              "gap_vs_v13": 2.5777777777777775
+            },
+            "win": {
+              "estimate": 0.37037037037037035,
+              "gap_vs_v13": 0.10370370370370369
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        },
+        "6": {
+          "n": 25,
+          "baseline_n": 30,
+          "hero": "Crossbowman",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 276.91145665347534,
+              "gap_vs_v13": 72.75540222385689
+            },
+            "farm_rate": {
+              "estimate": 163.06768004203886,
+              "gap_vs_v13": -1.1825261522759263
+            },
+            "hero_rate": {
+              "estimate": 102.50140705703973,
+              "gap_vs_v13": 62.59555882173607
+            },
+            "building_rate": {
+              "estimate": 11.342369554396738,
+              "gap_vs_v13": 11.342369554396738
+            },
+            "hero_kills": {
+              "estimate": 9.88,
+              "gap_vs_v13": 7.446666666666667
+            },
+            "deaths": {
+              "estimate": 4.96,
+              "gap_vs_v13": 2.96
+            },
+            "win": {
+              "estimate": 0.28,
+              "gap_vs_v13": 0.013333333333333364
+            },
+            "joint": {
+              "estimate": 0.12,
+              "gap_vs_v13": 0.08666666666666667
+            }
+          }
+        },
+        "7": {
+          "n": 28,
+          "baseline_n": 30,
+          "hero": "Lich",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 274.68188774719766,
+              "gap_vs_v13": 89.4709905651572
+            },
+            "farm_rate": {
+              "estimate": 162.7667565228482,
+              "gap_vs_v13": 41.750189656406334
+            },
+            "hero_rate": {
+              "estimate": 100.95121470883588,
+              "gap_vs_v13": 36.75688439323726
+            },
+            "building_rate": {
+              "estimate": 10.963916515513596,
+              "gap_vs_v13": 10.963916515513596
+            },
+            "hero_kills": {
+              "estimate": 8.892857142857142,
+              "gap_vs_v13": 4.392857142857142
+            },
+            "deaths": {
+              "estimate": 5.357142857142857,
+              "gap_vs_v13": 3.0238095238095233
+            },
+            "win": {
+              "estimate": 0.39285714285714285,
+              "gap_vs_v13": 0.1261904761904762
+            },
+            "joint": {
+              "estimate": 0.10714285714285714,
+              "gap_vs_v13": 0.10714285714285714
+            }
+          }
+        },
+        "8": {
+          "n": 16,
+          "baseline_n": 30,
+          "hero": "Warlock",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 168.17808388514052,
+              "gap_vs_v13": 5.506252005475886
+            },
+            "farm_rate": {
+              "estimate": 107.59581708403151,
+              "gap_vs_v13": -42.6661670036073
+            },
+            "hero_rate": {
+              "estimate": 53.811864405188956,
+              "gap_vs_v13": 41.540772527633976
+            },
+            "building_rate": {
+              "estimate": 6.770402395920043,
+              "gap_vs_v13": 6.631646481449189
+            },
+            "hero_kills": {
+              "estimate": 5.0625,
+              "gap_vs_v13": 4.5625
+            },
+            "deaths": {
+              "estimate": 6.5,
+              "gap_vs_v13": 4.433333333333334
+            },
+            "win": {
+              "estimate": 0.625,
+              "gap_vs_v13": 0.45833333333333337
+            },
+            "joint": {
+              "estimate": 0.0625,
+              "gap_vs_v13": 0.0625
+            }
+          }
+        },
+        "9": {
+          "n": 21,
+          "baseline_n": 30,
+          "hero": "Berserker",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 232.65659030824756,
+              "gap_vs_v13": 95.25387513788047
+            },
+            "farm_rate": {
+              "estimate": 153.4584473646859,
+              "gap_vs_v13": 25.82632397169536
+            },
+            "hero_rate": {
+              "estimate": 69.61039603258038,
+              "gap_vs_v13": 59.83980425520383
+            },
+            "building_rate": {
+              "estimate": 9.587746910981284,
+              "gap_vs_v13": 9.587746910981284
+            },
+            "hero_kills": {
+              "estimate": 5.666666666666667,
+              "gap_vs_v13": 4.766666666666667
+            },
+            "deaths": {
+              "estimate": 6.190476190476191,
+              "gap_vs_v13": 3.857142857142857
+            },
+            "win": {
+              "estimate": 0.42857142857142855,
+              "gap_vs_v13": 0.22857142857142854
+            },
+            "joint": {
+              "estimate": 0.047619047619047616,
+              "gap_vs_v13": 0.047619047619047616
+            }
+          }
+        }
+      },
+      "first_hero_kill": {
+        "reached": 189,
+        "n": 235,
+        "fraction": 0.8042553191489362,
+        "median_tick_among_achievers": 2513
+      },
+      "level5": {
+        "reached": 188,
+        "n": 235,
+        "fraction": 0.8,
+        "median_tick_among_achievers": 3735.0
+      },
+      "level10": {
+        "reached": 58,
+        "n": 235,
+        "fraction": 0.24680851063829787,
+        "median_tick_among_achievers": 10977.5
+      },
+      "proximity": {
+        "enemy_deaths": 6974,
+        "nearby_enemy_deaths": 2212,
+        "nearby_own_kills": 1488,
+        "exposure": 0.3171780900487525,
+        "conversion_lower_bound": 0.6726943942133815
+      },
+      "timing": {
+        "n": 121,
+        "class_counts": {
+          "8": 9,
+          "0": 16,
+          "9": 9,
+          "7": 15,
+          "4": 13,
+          "5": 8,
+          "1": 12,
+          "6": 14,
+          "2": 19,
+          "3": 6
+        },
+        "minutes": {
+          "1": {
+            "xp": 161.40126960028277,
+            "sources": {
+              "farm": 115.9306218270034,
+              "hero": 43.13731443994602,
+              "building": 2.3333333333333335
+            },
+            "minute_source_income": {
+              "farm": 115.9306218270034,
+              "hero": 43.13731443994602,
+              "building": 2.3333333333333335
+            }
+          },
+          "2": {
+            "xp": 558.6899098708309,
+            "sources": {
+              "farm": 409.21438210911896,
+              "hero": 122.53512386736071,
+              "building": 26.940403894351263
+            },
+            "minute_source_income": {
+              "farm": 293.28376028211557,
+              "hero": 79.39780942741469,
+              "building": 24.60707056101793
+            }
+          },
+          "3": {
+            "xp": 959.869521560311,
+            "sources": {
+              "farm": 680.9090715570978,
+              "hero": 227.67904135338347,
+              "building": 51.2814086498297
+            },
+            "minute_source_income": {
+              "farm": 271.69468944797893,
+              "hero": 105.14391748602274,
+              "building": 24.34100475547844
+            }
+          },
+          "4": {
+            "xp": 1382.3151167180772,
+            "sources": {
+              "farm": 953.8999281055202,
+              "hero": 361.1776074802391,
+              "building": 67.23758113231797
+            },
+            "minute_source_income": {
+              "farm": 272.99085654842236,
+              "hero": 133.4985661268556,
+              "building": 15.956172482488272
+            }
+          },
+          "5": {
+            "xp": 1777.9212634952767,
+            "sources": {
+              "farm": 1181.4100375136559,
+              "hero": 519.0945512820513,
+              "building": 77.41667469956944
+            },
+            "minute_source_income": {
+              "farm": 227.51010940813572,
+              "hero": 157.91694380181224,
+              "building": 10.179093567251462
+            }
+          },
+          "6": {
+            "xp": 2174.427268090097,
+            "sources": {
+              "farm": 1394.5644379377932,
+              "hero": 698.5468237902448,
+              "building": 81.316006362059
+            },
+            "minute_source_income": {
+              "farm": 213.15440042413726,
+              "hero": 179.45227250819357,
+              "building": 3.8993316624895575
+            }
+          }
+        }
+      }
+    },
+    "relh-gods-of-the-arena:v154": {
+      "n": 88,
+      "class_counts": {
+        "3": 11,
+        "1": 14,
+        "0": 14,
+        "2": 7,
+        "9": 3,
+        "5": 12,
+        "8": 8,
+        "4": 7,
+        "6": 6,
+        "7": 6
+      },
+      "metrics": {
+        "xp_rate": {
+          "estimate": 169.01330844112212,
+          "ci95": {
+            "low": 152.3466073309507,
+            "high": 185.52907152139733,
+            "valid_draws": 1880
+          },
+          "gap_vs_v13": 2.694207435450238,
+          "gap_ci95": {
+            "low": -16.310511433041828,
+            "high": 21.093657171137647,
+            "valid_draws": 1880
+          }
+        },
+        "farm_rate": {
+          "estimate": 118.25972640138157,
+          "ci95": {
+            "low": 109.14095868699026,
+            "high": 128.4476648649597,
+            "valid_draws": 1880
+          },
+          "gap_vs_v13": -21.19879693850008,
+          "gap_ci95": {
+            "low": -32.617369757252774,
+            "high": -8.790042007025914,
+            "valid_draws": 1880
+          }
+        },
+        "hero_rate": {
+          "estimate": 40.67638914387711,
+          "ci95": {
+            "low": 31.193893862687897,
+            "high": 50.21944729194855,
+            "valid_draws": 1880
+          },
+          "gap_vs_v13": 13.911696729286618,
+          "gap_ci95": {
+            "low": 3.516383558457628,
+            "high": 23.485664270057683,
+            "valid_draws": 1880
+          }
+        },
+        "building_rate": {
+          "estimate": 10.07719289586346,
+          "ci95": {
+            "low": 7.373147869108855,
+            "high": 13.076769961790294,
+            "valid_draws": 1880
+          },
+          "gap_vs_v13": 9.981307644663731,
+          "gap_ci95": {
+            "low": 7.304725840614665,
+            "high": 12.954186635797575,
+            "valid_draws": 1880
+          }
+        },
+        "hero_kills": {
+          "estimate": 3.8475108225108228,
+          "ci95": {
+            "low": 2.559899517149517,
+            "high": 5.36550081168831,
+            "valid_draws": 1880
+          },
+          "gap_vs_v13": 1.9449590983728917,
+          "gap_ci95": {
+            "low": 0.6852809220917194,
+            "high": 3.455477116899843,
+            "valid_draws": 1880
+          }
+        },
+        "deaths": {
+          "estimate": 6.920508658008658,
+          "ci95": {
+            "low": 5.773297275641026,
+            "high": 8.193117424242423,
+            "valid_draws": 1880
+          },
+          "gap_vs_v13": 4.689083370652336,
+          "gap_ci95": {
+            "low": 3.5708576329334956,
+            "high": 5.908405844826862,
+            "valid_draws": 1880
+          }
+        },
+        "win": {
+          "estimate": 0.4099025974025974,
+          "ci95": {
+            "low": 0.30044143411413154,
+            "high": 0.527541625041625,
+            "valid_draws": 1880
+          },
+          "gap_vs_v13": 0.08183363188535597,
+          "gap_ci95": {
+            "low": -0.03820754669742579,
+            "high": 0.2114524209316485,
+            "valid_draws": 1880
+          }
+        },
+        "joint": {
+          "estimate": 0.05476190476190476,
+          "ci95": {
+            "low": 0.0,
+            "high": 0.1324695696460402,
+            "valid_draws": 1880
+          },
+          "gap_vs_v13": 0.04798029556650246,
+          "gap_ci95": {
+            "low": -0.00712544642857143,
+            "high": 0.12690922619047618,
+            "valid_draws": 1880
+          }
+        }
+      },
+      "per_class": {
+        "0": {
+          "n": 14,
+          "baseline_n": 30,
+          "hero": "Vanguard Knight",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 48.781344222478666,
+              "gap_vs_v13": -62.2330469466896
+            },
+            "farm_rate": {
+              "estimate": 43.33441661747062,
+              "gap_vs_v13": -59.58154025147914
+            },
+            "hero_rate": {
+              "estimate": 1.678040049222508,
+              "gap_vs_v13": -6.420394250995997
+            },
+            "building_rate": {
+              "estimate": 3.7688875557855304,
+              "gap_vs_v13": 3.7688875557855304
+            },
+            "hero_kills": {
+              "estimate": 0.07142857142857142,
+              "gap_vs_v13": -0.46190476190476193
+            },
+            "deaths": {
+              "estimate": 4.714285714285714,
+              "gap_vs_v13": 1.880952380952381
+            },
+            "win": {
+              "estimate": 0.7142857142857143,
+              "gap_vs_v13": 0.18095238095238098
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        },
+        "1": {
+          "n": 14,
+          "baseline_n": 29,
+          "hero": "Ranger",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 291.9696388029865,
+              "gap_vs_v13": 107.16607993426567
+            },
+            "farm_rate": {
+              "estimate": 183.7923078854868,
+              "gap_vs_v13": 27.446357209983745
+            },
+            "hero_rate": {
+              "estimate": 90.59178339139335,
+              "gap_vs_v13": 62.134175198175555
+            },
+            "building_rate": {
+              "estimate": 17.585547526106343,
+              "gap_vs_v13": 17.585547526106343
+            },
+            "hero_kills": {
+              "estimate": 7.928571428571429,
+              "gap_vs_v13": 6.135467980295567
+            },
+            "deaths": {
+              "estimate": 7.285714285714286,
+              "gap_vs_v13": 4.596059113300493
+            },
+            "win": {
+              "estimate": 0.42857142857142855,
+              "gap_vs_v13": 0.22167487684729062
+            },
+            "joint": {
+              "estimate": 0.07142857142857142,
+              "gap_vs_v13": 0.07142857142857142
+            }
+          }
+        },
+        "2": {
+          "n": 7,
+          "baseline_n": 29,
+          "hero": "Arcanist",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 212.9515057673378,
+              "gap_vs_v13": 8.330361194405555
+            },
+            "farm_rate": {
+              "estimate": 127.00911189539222,
+              "gap_vs_v13": -7.082132155517499
+            },
+            "hero_rate": {
+              "estimate": 72.34276062642839,
+              "gap_vs_v13": 1.8128601044058428
+            },
+            "building_rate": {
+              "estimate": 13.599633245517182,
+              "gap_vs_v13": 13.599633245517182
+            },
+            "hero_kills": {
+              "estimate": 7.142857142857143,
+              "gap_vs_v13": 0.9704433497536948
+            },
+            "deaths": {
+              "estimate": 7.714285714285714,
+              "gap_vs_v13": 5.5763546798029555
+            },
+            "win": {
+              "estimate": 0.5714285714285714,
+              "gap_vs_v13": 0.15763546798029554
+            },
+            "joint": {
+              "estimate": 0.14285714285714285,
+              "gap_vs_v13": 0.1083743842364532
+            }
+          }
+        },
+        "3": {
+          "n": 11,
+          "baseline_n": 25,
+          "hero": "Druid Warden",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 76.67145701408413,
+              "gap_vs_v13": -80.70252231156951
+            },
+            "farm_rate": {
+              "estimate": 65.81123591205304,
+              "gap_vs_v13": -84.52339905714692
+            },
+            "hero_rate": {
+              "estimate": 4.648504030685616,
+              "gap_vs_v13": -2.390840325768049
+            },
+            "building_rate": {
+              "estimate": 6.211717071345482,
+              "gap_vs_v13": 6.211717071345482
+            },
+            "hero_kills": {
+              "estimate": 0.2727272727272727,
+              "gap_vs_v13": -0.20727272727272728
+            },
+            "deaths": {
+              "estimate": 5.818181818181818,
+              "gap_vs_v13": 4.098181818181819
+            },
+            "win": {
+              "estimate": 0.5454545454545454,
+              "gap_vs_v13": -0.13454545454545463
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        },
+        "4": {
+          "n": 7,
+          "baseline_n": 25,
+          "hero": "Demon Hunter",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 127.36317239549084,
+              "gap_vs_v13": -50.239075773280916
+            },
+            "farm_rate": {
+              "estimate": 81.49774409071932,
+              "gap_vs_v13": -82.27155164548745
+            },
+            "hero_rate": {
+              "estimate": 36.53268989818135,
+              "gap_vs_v13": 22.69973746561637
+            },
+            "building_rate": {
+              "estimate": 9.332738406590156,
+              "gap_vs_v13": 9.332738406590156
+            },
+            "hero_kills": {
+              "estimate": 3.142857142857143,
+              "gap_vs_v13": 2.262857142857143
+            },
+            "deaths": {
+              "estimate": 8.714285714285714,
+              "gap_vs_v13": 5.7142857142857135
+            },
+            "win": {
+              "estimate": 0.7142857142857143,
+              "gap_vs_v13": 0.4342857142857143
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        },
+        "5": {
+          "n": 12,
+          "baseline_n": 30,
+          "hero": "Death Knight",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 73.38893859596966,
+              "gap_vs_v13": -64.94525069381167
+            },
+            "farm_rate": {
+              "estimate": 67.32880211705546,
+              "gap_vs_v13": -56.63846843960583
+            },
+            "hero_rate": {
+              "estimate": 4.771427379169493,
+              "gap_vs_v13": -8.775394756424133
+            },
+            "building_rate": {
+              "estimate": 1.2887090997447137,
+              "gap_vs_v13": 0.4686125022182758
+            },
+            "hero_kills": {
+              "estimate": 0.5,
+              "gap_vs_v13": -0.33333333333333337
+            },
+            "deaths": {
+              "estimate": 7.5,
+              "gap_vs_v13": 6.3
+            },
+            "win": {
+              "estimate": 0.08333333333333333,
+              "gap_vs_v13": -0.18333333333333335
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        },
+        "6": {
+          "n": 6,
+          "baseline_n": 30,
+          "hero": "Crossbowman",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 226.87099738619145,
+              "gap_vs_v13": 22.714942956572997
+            },
+            "farm_rate": {
+              "estimate": 185.38389599203794,
+              "gap_vs_v13": 21.13368979772315
+            },
+            "hero_rate": {
+              "estimate": 33.31389987880052,
+              "gap_vs_v13": -6.5919483565031385
+            },
+            "building_rate": {
+              "estimate": 8.173201515353009,
+              "gap_vs_v13": 8.173201515353009
+            },
+            "hero_kills": {
+              "estimate": 3.1666666666666665,
+              "gap_vs_v13": 0.7333333333333334
+            },
+            "deaths": {
+              "estimate": 5.666666666666667,
+              "gap_vs_v13": 3.666666666666667
+            },
+            "win": {
+              "estimate": 0,
+              "gap_vs_v13": -0.26666666666666666
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": -0.03333333333333333
+            }
+          }
+        },
+        "7": {
+          "n": 6,
+          "baseline_n": 30,
+          "hero": "Lich",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 246.16794924667573,
+              "gap_vs_v13": 60.95705206463526
+            },
+            "farm_rate": {
+              "estimate": 141.2827867146797,
+              "gap_vs_v13": 20.26621984823784
+            },
+            "hero_rate": {
+              "estimate": 93.12676424038371,
+              "gap_vs_v13": 28.932433924785087
+            },
+            "building_rate": {
+              "estimate": 11.758398291612352,
+              "gap_vs_v13": 11.758398291612352
+            },
+            "hero_kills": {
+              "estimate": 10.333333333333334,
+              "gap_vs_v13": 5.833333333333334
+            },
+            "deaths": {
+              "estimate": 9,
+              "gap_vs_v13": 6.666666666666666
+            },
+            "win": {
+              "estimate": 0.3333333333333333,
+              "gap_vs_v13": 0.06666666666666665
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        },
+        "8": {
+          "n": 8,
+          "baseline_n": 30,
+          "hero": "Warlock",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 190.31727426903035,
+              "gap_vs_v13": 27.645442389365712
+            },
+            "farm_rate": {
+              "estimate": 140.27128524785337,
+              "gap_vs_v13": -9.990698839785438
+            },
+            "hero_rate": {
+              "estimate": 33.81036482761944,
+              "gap_vs_v13": 21.539272950064458
+            },
+            "building_rate": {
+              "estimate": 16.23562419355755,
+              "gap_vs_v13": 16.096868279086696
+            },
+            "hero_kills": {
+              "estimate": 2.25,
+              "gap_vs_v13": 1.75
+            },
+            "deaths": {
+              "estimate": 5.125,
+              "gap_vs_v13": 3.058333333333333
+            },
+            "win": {
+              "estimate": 0.375,
+              "gap_vs_v13": 0.20833333333333334
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        },
+        "9": {
+          "n": 3,
+          "baseline_n": 30,
+          "hero": "Berserker",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 195.6508067109762,
+              "gap_vs_v13": 58.248091540609124
+            },
+            "farm_rate": {
+              "estimate": 146.88567754106722,
+              "gap_vs_v13": 19.253554148076688
+            },
+            "hero_rate": {
+              "estimate": 35.947657116886695,
+              "gap_vs_v13": 26.177065339510143
+            },
+            "building_rate": {
+              "estimate": 12.81747205302228,
+              "gap_vs_v13": 12.81747205302228
+            },
+            "hero_kills": {
+              "estimate": 3.6666666666666665,
+              "gap_vs_v13": 2.7666666666666666
+            },
+            "deaths": {
+              "estimate": 7.666666666666667,
+              "gap_vs_v13": 5.333333333333334
+            },
+            "win": {
+              "estimate": 0.3333333333333333,
+              "gap_vs_v13": 0.1333333333333333
+            },
+            "joint": {
+              "estimate": 0.3333333333333333,
+              "gap_vs_v13": 0.3333333333333333
+            }
+          }
+        }
+      },
+      "first_hero_kill": {
+        "reached": 49,
+        "n": 88,
+        "fraction": 0.5568181818181818,
+        "median_tick_among_achievers": 3262
+      },
+      "level5": {
+        "reached": 51,
+        "n": 88,
+        "fraction": 0.5795454545454546,
+        "median_tick_among_achievers": 4607
+      },
+      "level10": {
+        "reached": 15,
+        "n": 88,
+        "fraction": 0.17045454545454544,
+        "median_tick_among_achievers": 11170
+      },
+      "proximity": {
+        "enemy_deaths": 2138,
+        "nearby_enemy_deaths": 574,
+        "nearby_own_kills": 300,
+        "exposure": 0.2684752104770814,
+        "conversion_lower_bound": 0.5226480836236934
+      },
+      "timing": {
+        "n": 35,
+        "class_counts": {
+          "3": 4,
+          "1": 7,
+          "2": 3,
+          "8": 5,
+          "4": 3,
+          "0": 1,
+          "7": 4,
+          "5": 5,
+          "9": 1,
+          "6": 2
+        },
+        "minutes": {
+          "1": {
+            "xp": 180.41666666666666,
+            "sources": {
+              "farm": 134.98809523809524,
+              "hero": 14.642857142857142,
+              "building": 30.785714285714285
+            },
+            "minute_source_income": {
+              "farm": 134.98809523809524,
+              "hero": 14.642857142857142,
+              "building": 30.785714285714285
+            }
+          },
+          "2": {
+            "xp": 503.1488095238095,
+            "sources": {
+              "farm": 342.1011904761905,
+              "hero": 86.71428571428572,
+              "building": 74.33333333333333
+            },
+            "minute_source_income": {
+              "farm": 207.11309523809524,
+              "hero": 72.07142857142857,
+              "building": 43.54761904761905
+            }
+          },
+          "3": {
+            "xp": 796.2738095238095,
+            "sources": {
+              "farm": 530.75,
+              "hero": 170.5,
+              "building": 95.02380952380952
+            },
+            "minute_source_income": {
+              "farm": 188.64880952380952,
+              "hero": 83.78571428571429,
+              "building": 20.69047619047619
+            }
+          },
+          "4": {
+            "xp": 1115.3869047619048,
+            "sources": {
+              "farm": 747.875,
+              "hero": 257.0357142857143,
+              "building": 110.47619047619048
+            },
+            "minute_source_income": {
+              "farm": 217.125,
+              "hero": 86.53571428571429,
+              "building": 15.452380952380953
+            }
+          },
+          "5": {
+            "xp": 1378.7440476190477,
+            "sources": {
+              "farm": 922.125,
+              "hero": 342.7142857142857,
+              "building": 113.90476190476191
+            },
+            "minute_source_income": {
+              "farm": 174.25,
+              "hero": 85.67857142857143,
+              "building": 3.428571428571429
+            }
+          },
+          "6": {
+            "xp": 1639.982142857143,
+            "sources": {
+              "farm": 1102.5059523809523,
+              "hero": 415.6428571428571,
+              "building": 121.83333333333333
+            },
+            "minute_source_income": {
+              "farm": 180.38095238095238,
+              "hero": 72.92857142857143,
+              "building": 7.928571428571429
+            }
+          }
+        }
+      }
+    },
+    "Jordan-ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb:v218": {
+      "n": 154,
+      "class_counts": {
+        "2": 11,
+        "7": 11,
+        "5": 17,
+        "6": 11,
+        "4": 19,
+        "0": 15,
+        "8": 19,
+        "1": 15,
+        "9": 22,
+        "3": 14
+      },
+      "metrics": {
+        "xp_rate": {
+          "estimate": 198.54497812351673,
+          "ci95": {
+            "low": 178.9769178035917,
+            "high": 218.56655671186027,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 32.225877117844846,
+          "gap_ci95": {
+            "low": 11.841765040574908,
+            "high": 53.797982307673344,
+            "valid_draws": 2000
+          }
+        },
+        "farm_rate": {
+          "estimate": 96.2273336305566,
+          "ci95": {
+            "low": 88.48364703192497,
+            "high": 103.97430614030552,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": -43.23118970932505,
+          "gap_ci95": {
+            "low": -53.04165146246961,
+            "high": -34.1435775916344,
+            "valid_draws": 2000
+          }
+        },
+        "hero_rate": {
+          "estimate": 88.49074762152436,
+          "ci95": {
+            "low": 74.13802677163814,
+            "high": 105.67956695023666,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 61.72605520693387,
+          "gap_ci95": {
+            "low": 46.927476986436645,
+            "high": 78.89015112740266,
+            "valid_draws": 2000
+          }
+        },
+        "building_rate": {
+          "estimate": 13.826896871435757,
+          "ci95": {
+            "low": 11.333114333885229,
+            "high": 16.333540624507247,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 13.731011620236028,
+          "gap_ci95": {
+            "low": 11.21597660093864,
+            "high": 16.259279403263395,
+            "valid_draws": 2000
+          }
+        },
+        "hero_kills": {
+          "estimate": 5.570258400010722,
+          "ci95": {
+            "low": 4.607842026523527,
+            "high": 6.574794363834051,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 3.6677066758727914,
+          "gap_ci95": {
+            "low": 2.710409953009598,
+            "high": 4.6881498014434895,
+            "valid_draws": 2000
+          }
+        },
+        "deaths": {
+          "estimate": 5.608143755109699,
+          "ci95": {
+            "low": 4.849025787949972,
+            "high": 6.442861108458535,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 3.3767184677533773,
+          "gap_ci95": {
+            "low": 2.614295447437099,
+            "high": 4.2063574306265625,
+            "valid_draws": 2000
+          }
+        },
+        "win": {
+          "estimate": 0.49094634983179875,
+          "ci95": {
+            "low": 0.40940561309903356,
+            "high": 0.566577534782469,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 0.16287738431455734,
+          "gap_ci95": {
+            "low": 0.06628261722859397,
+            "high": 0.26318060149204564,
+            "valid_draws": 2000
+          }
+        },
+        "joint": {
+          "estimate": 0.11738437001594895,
+          "ci95": {
+            "low": 0.07403255297334245,
+            "high": 0.16488929425837318,
+            "valid_draws": 2000
+          },
+          "gap_vs_v13": 0.11060276082054665,
+          "gap_ci95": {
+            "low": 0.06611464661011032,
+            "high": 0.15903062073098284,
+            "valid_draws": 2000
+          }
+        }
+      },
+      "per_class": {
+        "0": {
+          "n": 15,
+          "baseline_n": 30,
+          "hero": "Vanguard Knight",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 69.24052222420704,
+              "gap_vs_v13": -41.77386894496122
+            },
+            "farm_rate": {
+              "estimate": 46.304561547214476,
+              "gap_vs_v13": -56.61139532173529
+            },
+            "hero_rate": {
+              "estimate": 18.201195301590563,
+              "gap_vs_v13": 10.102761001372057
+            },
+            "building_rate": {
+              "estimate": 4.734765375402008,
+              "gap_vs_v13": 4.734765375402008
+            },
+            "hero_kills": {
+              "estimate": 1.5333333333333334,
+              "gap_vs_v13": 1.0
+            },
+            "deaths": {
+              "estimate": 9,
+              "gap_vs_v13": 6.166666666666666
+            },
+            "win": {
+              "estimate": 0.4666666666666667,
+              "gap_vs_v13": -0.06666666666666665
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        },
+        "1": {
+          "n": 15,
+          "baseline_n": 29,
+          "hero": "Ranger",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 376.84471902174835,
+              "gap_vs_v13": 192.04116015302753
+            },
+            "farm_rate": {
+              "estimate": 145.60635055646733,
+              "gap_vs_v13": -10.739600119035714
+            },
+            "hero_rate": {
+              "estimate": 192.42678592363055,
+              "gap_vs_v13": 163.96917773041275
+            },
+            "building_rate": {
+              "estimate": 38.81158254165047,
+              "gap_vs_v13": 38.81158254165047
+            },
+            "hero_kills": {
+              "estimate": 9.933333333333334,
+              "gap_vs_v13": 8.140229885057472
+            },
+            "deaths": {
+              "estimate": 2.933333333333333,
+              "gap_vs_v13": 0.24367816091953998
+            },
+            "win": {
+              "estimate": 0.8,
+              "gap_vs_v13": 0.5931034482758621
+            },
+            "joint": {
+              "estimate": 0.6666666666666666,
+              "gap_vs_v13": 0.6666666666666666
+            }
+          }
+        },
+        "2": {
+          "n": 11,
+          "baseline_n": 29,
+          "hero": "Arcanist",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 214.32732999168792,
+              "gap_vs_v13": 9.706185418755666
+            },
+            "farm_rate": {
+              "estimate": 117.88641713194372,
+              "gap_vs_v13": -16.204826918966006
+            },
+            "hero_rate": {
+              "estimate": 86.67639987050242,
+              "gap_vs_v13": 16.146499348479878
+            },
+            "building_rate": {
+              "estimate": 9.764512989241776,
+              "gap_vs_v13": 9.764512989241776
+            },
+            "hero_kills": {
+              "estimate": 8.363636363636363,
+              "gap_vs_v13": 2.191222570532915
+            },
+            "deaths": {
+              "estimate": 7.7272727272727275,
+              "gap_vs_v13": 5.589341692789969
+            },
+            "win": {
+              "estimate": 0.6363636363636364,
+              "gap_vs_v13": 0.2225705329153605
+            },
+            "joint": {
+              "estimate": 0.09090909090909091,
+              "gap_vs_v13": 0.05642633228840126
+            }
+          }
+        },
+        "3": {
+          "n": 14,
+          "baseline_n": 25,
+          "hero": "Druid Warden",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 132.59368604336674,
+              "gap_vs_v13": -24.78029328228689
+            },
+            "farm_rate": {
+              "estimate": 82.27796979035192,
+              "gap_vs_v13": -68.05666517884804
+            },
+            "hero_rate": {
+              "estimate": 37.92126524362069,
+              "gap_vs_v13": 30.881920887167023
+            },
+            "building_rate": {
+              "estimate": 12.394451009394137,
+              "gap_vs_v13": 12.394451009394137
+            },
+            "hero_kills": {
+              "estimate": 2.4285714285714284,
+              "gap_vs_v13": 1.9485714285714284
+            },
+            "deaths": {
+              "estimate": 5.928571428571429,
+              "gap_vs_v13": 4.208571428571429
+            },
+            "win": {
+              "estimate": 0.7142857142857143,
+              "gap_vs_v13": 0.03428571428571425
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        },
+        "4": {
+          "n": 19,
+          "baseline_n": 25,
+          "hero": "Demon Hunter",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 144.23633774446566,
+              "gap_vs_v13": -33.365910424306094
+            },
+            "farm_rate": {
+              "estimate": 92.48691928349147,
+              "gap_vs_v13": -71.2823764527153
+            },
+            "hero_rate": {
+              "estimate": 44.10581731867505,
+              "gap_vs_v13": 30.272864886110067
+            },
+            "building_rate": {
+              "estimate": 7.643601142299135,
+              "gap_vs_v13": 7.643601142299135
+            },
+            "hero_kills": {
+              "estimate": 4.421052631578948,
+              "gap_vs_v13": 3.541052631578948
+            },
+            "deaths": {
+              "estimate": 8.368421052631579,
+              "gap_vs_v13": 5.368421052631579
+            },
+            "win": {
+              "estimate": 0.47368421052631576,
+              "gap_vs_v13": 0.19368421052631574
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        },
+        "5": {
+          "n": 17,
+          "baseline_n": 30,
+          "hero": "Death Knight",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 138.30706043342465,
+              "gap_vs_v13": -0.027128856356682718
+            },
+            "farm_rate": {
+              "estimate": 80.20431681429609,
+              "gap_vs_v13": -43.7629537423652
+            },
+            "hero_rate": {
+              "estimate": 52.88532908010178,
+              "gap_vs_v13": 39.338506944508154
+            },
+            "building_rate": {
+              "estimate": 5.217414539026756,
+              "gap_vs_v13": 4.397317941500319
+            },
+            "hero_kills": {
+              "estimate": 3.6470588235294117,
+              "gap_vs_v13": 2.813725490196078
+            },
+            "deaths": {
+              "estimate": 6.176470588235294,
+              "gap_vs_v13": 4.976470588235294
+            },
+            "win": {
+              "estimate": 0.4117647058823529,
+              "gap_vs_v13": 0.14509803921568626
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        },
+        "6": {
+          "n": 11,
+          "baseline_n": 30,
+          "hero": "Crossbowman",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 295.9917527652661,
+              "gap_vs_v13": 91.83569833564763
+            },
+            "farm_rate": {
+              "estimate": 100.66486401930536,
+              "gap_vs_v13": -63.58534217500943
+            },
+            "hero_rate": {
+              "estimate": 177.8138519482865,
+              "gap_vs_v13": 137.90800371298283
+            },
+            "building_rate": {
+              "estimate": 17.513036797674218,
+              "gap_vs_v13": 17.513036797674218
+            },
+            "hero_kills": {
+              "estimate": 11.181818181818182,
+              "gap_vs_v13": 8.748484848484848
+            },
+            "deaths": {
+              "estimate": 2.727272727272727,
+              "gap_vs_v13": 0.7272727272727271
+            },
+            "win": {
+              "estimate": 0.36363636363636365,
+              "gap_vs_v13": 0.09696969696969698
+            },
+            "joint": {
+              "estimate": 0.2727272727272727,
+              "gap_vs_v13": 0.23939393939393938
+            }
+          }
+        },
+        "7": {
+          "n": 11,
+          "baseline_n": 30,
+          "hero": "Lich",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 284.9967208839857,
+              "gap_vs_v13": 99.78582370194522
+            },
+            "farm_rate": {
+              "estimate": 127.00712889190375,
+              "gap_vs_v13": 5.990562025461884
+            },
+            "hero_rate": {
+              "estimate": 132.26019704374576,
+              "gap_vs_v13": 68.06586672814714
+            },
+            "building_rate": {
+              "estimate": 25.729394948336203,
+              "gap_vs_v13": 25.729394948336203
+            },
+            "hero_kills": {
+              "estimate": 5.2727272727272725,
+              "gap_vs_v13": 0.7727272727272725
+            },
+            "deaths": {
+              "estimate": 2.1818181818181817,
+              "gap_vs_v13": -0.15151515151515182
+            },
+            "win": {
+              "estimate": 0.5454545454545454,
+              "gap_vs_v13": 0.27878787878787875
+            },
+            "joint": {
+              "estimate": 0.09090909090909091,
+              "gap_vs_v13": 0.09090909090909091
+            }
+          }
+        },
+        "8": {
+          "n": 19,
+          "baseline_n": 30,
+          "hero": "Warlock",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 177.76527992091883,
+              "gap_vs_v13": 15.093448041254192
+            },
+            "farm_rate": {
+              "estimate": 79.2025639420288,
+              "gap_vs_v13": -71.05942014561
+            },
+            "hero_rate": {
+              "estimate": 90.25570456854723,
+              "gap_vs_v13": 77.98461269099225
+            },
+            "building_rate": {
+              "estimate": 8.307011410342794,
+              "gap_vs_v13": 8.16825549587194
+            },
+            "hero_kills": {
+              "estimate": 5.421052631578948,
+              "gap_vs_v13": 4.921052631578948
+            },
+            "deaths": {
+              "estimate": 4.947368421052632,
+              "gap_vs_v13": 2.880701754385965
+            },
+            "win": {
+              "estimate": 0.3157894736842105,
+              "gap_vs_v13": 0.14912280701754385
+            },
+            "joint": {
+              "estimate": 0.05263157894736842,
+              "gap_vs_v13": 0.05263157894736842
+            }
+          }
+        },
+        "9": {
+          "n": 22,
+          "baseline_n": 30,
+          "hero": "Berserker",
+          "metrics": {
+            "xp_rate": {
+              "estimate": 151.14637220609623,
+              "gap_vs_v13": 13.743657035729143
+            },
+            "farm_rate": {
+              "estimate": 90.6322443285631,
+              "gap_vs_v13": -36.99987906442743
+            },
+            "hero_rate": {
+              "estimate": 52.360929916543064,
+              "gap_vs_v13": 42.59033813916651
+            },
+            "building_rate": {
+              "estimate": 8.153197960990068,
+              "gap_vs_v13": 8.153197960990068
+            },
+            "hero_kills": {
+              "estimate": 3.5,
+              "gap_vs_v13": 2.6
+            },
+            "deaths": {
+              "estimate": 6.090909090909091,
+              "gap_vs_v13": 3.7575757575757573
+            },
+            "win": {
+              "estimate": 0.18181818181818182,
+              "gap_vs_v13": -0.018181818181818188
+            },
+            "joint": {
+              "estimate": 0,
+              "gap_vs_v13": 0
+            }
+          }
+        }
+      },
+      "first_hero_kill": {
+        "reached": 129,
+        "n": 154,
+        "fraction": 0.8376623376623377,
+        "median_tick_among_achievers": 1986
+      },
+      "level5": {
+        "reached": 108,
+        "n": 154,
+        "fraction": 0.7012987012987013,
+        "median_tick_among_achievers": 4371.5
+      },
+      "level10": {
+        "reached": 21,
+        "n": 154,
+        "fraction": 0.13636363636363635,
+        "median_tick_among_achievers": 12865
+      },
+      "proximity": {
+        "enemy_deaths": 4042,
+        "nearby_enemy_deaths": 1492,
+        "nearby_own_kills": 801,
+        "exposure": 0.36912419594260265,
+        "conversion_lower_bound": 0.5368632707774799
+      },
+      "timing": {
+        "n": 67,
+        "class_counts": {
+          "2": 8,
+          "7": 2,
+          "5": 6,
+          "4": 9,
+          "0": 9,
+          "9": 7,
+          "3": 6,
+          "8": 10,
+          "1": 5,
+          "6": 5
+        },
+        "minutes": {
+          "1": {
+            "xp": 194.38194444444443,
+            "sources": {
+              "farm": 124.66567460317461,
+              "hero": 57.720238095238095,
+              "building": 11.996031746031747
+            },
+            "minute_source_income": {
+              "farm": 124.66567460317461,
+              "hero": 57.720238095238095,
+              "building": 11.996031746031747
+            }
+          },
+          "2": {
+            "xp": 420.70238095238096,
+            "sources": {
+              "farm": 243.49603174603175,
+              "hero": 145.32142857142858,
+              "building": 31.884920634920636
+            },
+            "minute_source_income": {
+              "farm": 118.83035714285714,
+              "hero": 87.60119047619048,
+              "building": 19.88888888888889
+            }
+          },
+          "3": {
+            "xp": 692.1269841269841,
+            "sources": {
+              "farm": 402.2638888888889,
+              "hero": 255.75595238095238,
+              "building": 34.10714285714286
+            },
+            "minute_source_income": {
+              "farm": 158.76785714285714,
+              "hero": 110.43452380952381,
+              "building": 2.2222222222222223
+            }
+          },
+          "4": {
+            "xp": 957.3174603174604,
+            "sources": {
+              "farm": 553.7698412698412,
+              "hero": 363.5238095238095,
+              "building": 40.023809523809526
+            },
+            "minute_source_income": {
+              "farm": 151.50595238095238,
+              "hero": 107.76785714285714,
+              "building": 5.916666666666667
+            }
+          },
+          "5": {
+            "xp": 1239.080357142857,
+            "sources": {
+              "farm": 705.5327380952381,
+              "hero": 483.2738095238095,
+              "building": 50.273809523809526
+            },
+            "minute_source_income": {
+              "farm": 151.76289682539684,
+              "hero": 119.75,
+              "building": 10.25
+            }
+          },
+          "6": {
+            "xp": 1535.4791666666667,
+            "sources": {
+              "farm": 858.9017857142857,
+              "hero": 613.3035714285714,
+              "building": 63.273809523809526
+            },
+            "minute_source_income": {
+              "farm": 153.36904761904762,
+              "hero": 130.0297619047619,
+              "building": 13
+            }
+          }
+        }
+      }
+    }
+  }
+}

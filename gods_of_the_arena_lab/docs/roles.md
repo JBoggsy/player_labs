@@ -1,8 +1,8 @@
 # Hero roles in Gods of the Arena
 
-> **Currency.** Derived from [scaling.md](scaling.md) and [leveling-economy.md](leveling-economy.md)
-> (polyworld `1d7eb723`, holding at the deployed `5422fb0c`). **Re-verify when** those documents
-> change. The role model is theory from the engine's numbers, not gameplay evidence; each row is
+> **Currency.** Derived from [scaling.md](scaling.md) and [leveling-economy.md](leveling-economy.md),
+> re-checked against the deployed polyworld `7365e4e9` (coworld 2026.9.16.3, 2026-09-16).
+> **Re-verify when** those documents change. The role model is theory from the engine's numbers, not gameplay evidence; each row is
 > a hypothesis until an A/B on the live roster confirms it. The public version of this table is
 > the forum thread named at the end; the phase reasoning below depends on the lab-internal spell
 > scaling finding and stays here.
@@ -24,7 +24,7 @@ draft, crowd control, buffs, and superlinear scaling. Gods of the Arena has none
   basic DPS ordering is the same at level 1 and level 20, and the basic-attack time-to-kill
   matrix is nearly level-invariant ([scaling.md](scaling.md) §4).
 - **The early/late axis belongs to the clock, not the hero.** What changes over a match is that
-  spells fade relative to HP: an ultimate is 33–53% of an enemy at level 1 and 15–19% at level
+  spells fade relative to HP: an ultimate is 33–53% of an enemy at level 1 and 13–20% at level
   10. "Early carry" therefore means "large kit burst", "late carry" means "large HP × basic DPS
   product"; those are different stats on the same fixed roster.
 
@@ -37,8 +37,10 @@ Three hero properties drive different jobs:
 2. **HP × basic DPS.** Level 10 and up, where fights are basic-attack races and the only edges
    are HP, numbers, or a tower.
 3. **Raw HP and self-centered effects.** The siege, which is the win condition: a timeout scores
-   zero for all ten seats, and gate towers kill any hero in 6–14 seconds, so someone must stand
-   in tower range after the wave dies.
+   zero for all ten seats, and a gate tower (30 damage/s) kills a level-1 hero in 7–12 seconds
+   and a level-10 hero in 15–31, so until about level 10 someone must stand in tower range after
+   the wave dies. Behind each lane's three towers sit two barracks (950 HP, no attack, tower
+   bounty), attackable once the towers are down.
 
 Ally healing is a fourth, minor axis available to two heroes.
 
@@ -59,20 +61,31 @@ of every strike. HP and DPS are level 1 → level 20 (Appendix A of [scaling.md]
 
 | Hero | Team | Burst phase | Attrition phase | HP | Basic DPS | L1 rotation (mana) | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Berserker | Red | Burst killer | Duelist / siege front | 300 → 1,345 | 42 → 202 | 275 (36) | Molten Fist is free; the whole kit fits a 40-mana pool. Strongest hero on paper. |
+| Berserker | Red | Burst killer | Duelist / siege front | 300 → 1,345 | 46 → 228 | 275 (36) | Molten Fist is free; the whole kit fits a 40-mana pool. Strongest hero on paper. |
 | Demon Hunter | Blue | Burst killer | Duelist | 220 → 904 | 48 → 248 | 266 (109) | Highest DPS and fastest mover at every level; mid HP. |
 | Death Knight | Red | Burst killer | Siege front | 350 → 1,528 | 26 → 123 | 296 (134) | Highest HP; self-centered 110 ring ultimate; one rotation then mana-starved. |
 | Vanguard Knight | Blue | Frontline | Siege front | 330 → 1,470 | 25 → 120 | 210 (90) | Second-highest HP; 50 HP ally heal circle; self-centered 90 sector ultimate. |
-| Lich | Red | Burst killer (best) | Ranged poke | 185 → 717 | 27 → 141 | 337 (188) | 125 ultimate, largest mana pool, lowest HP in the game. |
-| Crossbowman | Red | Burst killer | Ranged last-hitter | 230 → 1,028 | 29 → 130 | 353 (132) | Largest rotation; 6.5-tile range; 80-mana pool buys one rotation. |
+| Lich | Red | Burst killer (best) | Ranged poke | 185 → 717 | 27 → 141 | 349 (188) | 125 ultimate, largest mana pool, lowest HP in the game; Ice Spear (48, 6.7 tiles) out-ranges every basic attack. |
+| Crossbowman | Red | Burst killer | Ranged last-hitter | 230 → 1,028 | 31 → 145 | 353 (132) | Largest rotation; 6.5-tile range; 80-mana pool buys one rotation. |
 | Arcanist | Blue | Burst killer | Ranged poke | 190 → 760 | 30 → 152 | 316 (181) | 120 ultimate; second-lowest HP. |
 | Ranger | Blue | Ranged poke | Duelist (ranged) | 200 → 922 | 33 → 185 | 255 (130) | Best growth ratio of any hero (HP × DPS grows 26× against 20–22×); 5.5-tile range. |
-| Warlock | Red | Ranged poke | Filler | 240 → 1,114 | 22 → 104 | 271 (156) | No standout stat; no job the numbers single it out for. |
+| Warlock | Red | Ranged poke | Filler | 240 → 1,114 | 22 → 104 | 271 (156) | No standout stat; no job the numbers single it out for. Aether Siphon (30 mana per 7 s) roughly doubles its regeneration, so it sustains more of its kit than the other mages. |
 | Druid Warden | Blue | Healer | Healer / body | 250 → 1,162 | 20 → 91 | 85 (75) | 55 + 80 ally heals (about 7 HP/s on regeneration); worst DPS and burst; fourth-best HP. |
 
 Farm priority that follows from the table, highest first: Duelists (Berserker, Demon Hunter,
 Ranger), then burst killers who need levels for HP (Lich, Arcanist, Crossbowman), then the
 siege fronts (Death Knight, Vanguard Knight), then Warlock, then Druid Warden.
+
+**Hypothesis, not yet checked against play: the creep supply and barracks change what the
+siege front and the farm split are worth.** Each lane now delivers 6 enemy creeps per 20-second
+wave (two barracks × 3) and towers deal 18/24/30 per second, so a lane's last hits are less
+contested than the five-way split suggests and tower fire stops being lethal for a full-HP hero
+from about level 10. Two consequences worth testing: the siege front's "absorb tower fire" job
+matters only in the first ten levels, after which its job is simply to be the first hero on
+the tower and then on the barracks; and killing a barracks is a farm decision as much as a
+siege one, because it removes a third of that lane's creep income from the enemy for the rest
+of the match (and pays 100 XP / 75 gold). Neither changes the role assignments above until an
+A/B says so.
 
 ## Open questions
 

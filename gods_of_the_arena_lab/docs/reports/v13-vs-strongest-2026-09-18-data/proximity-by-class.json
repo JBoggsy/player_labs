@@ -1,0 +1,329 @@
+{
+  "james-botts-gota:v13": {
+    "n": 288,
+    "total_building_kills": 4,
+    "classes": {
+      "0": {
+        "hero": "Vanguard Knight",
+        "n": 30,
+        "nearby_enemy_deaths": 154,
+        "enemy_deaths": 880,
+        "nearby_own_kills": 16,
+        "exposure": 0.175,
+        "conversion_lower_bound": 0.1038961038961039,
+        "mean_building_kills": 0
+      },
+      "1": {
+        "hero": "Ranger",
+        "n": 29,
+        "nearby_enemy_deaths": 128,
+        "enemy_deaths": 725,
+        "nearby_own_kills": 52,
+        "exposure": 0.17655172413793102,
+        "conversion_lower_bound": 0.40625,
+        "mean_building_kills": 0
+      },
+      "2": {
+        "hero": "Arcanist",
+        "n": 29,
+        "nearby_enemy_deaths": 542,
+        "enemy_deaths": 1041,
+        "nearby_own_kills": 178,
+        "exposure": 0.5206532180595581,
+        "conversion_lower_bound": 0.3284132841328413,
+        "mean_building_kills": 0
+      },
+      "3": {
+        "hero": "Druid Warden",
+        "n": 25,
+        "nearby_enemy_deaths": 81,
+        "enemy_deaths": 698,
+        "nearby_own_kills": 12,
+        "exposure": 0.11604584527220631,
+        "conversion_lower_bound": 0.14814814814814814,
+        "mean_building_kills": 0
+      },
+      "4": {
+        "hero": "Demon Hunter",
+        "n": 25,
+        "nearby_enemy_deaths": 92,
+        "enemy_deaths": 687,
+        "nearby_own_kills": 22,
+        "exposure": 0.1339155749636099,
+        "conversion_lower_bound": 0.2391304347826087,
+        "mean_building_kills": 0
+      },
+      "5": {
+        "hero": "Death Knight",
+        "n": 30,
+        "nearby_enemy_deaths": 168,
+        "enemy_deaths": 856,
+        "nearby_own_kills": 25,
+        "exposure": 0.19626168224299065,
+        "conversion_lower_bound": 0.1488095238095238,
+        "mean_building_kills": 0.1
+      },
+      "6": {
+        "hero": "Crossbowman",
+        "n": 30,
+        "nearby_enemy_deaths": 154,
+        "enemy_deaths": 853,
+        "nearby_own_kills": 72,
+        "exposure": 0.18053927315357562,
+        "conversion_lower_bound": 0.4675324675324675,
+        "mean_building_kills": 0
+      },
+      "7": {
+        "hero": "Lich",
+        "n": 30,
+        "nearby_enemy_deaths": 480,
+        "enemy_deaths": 926,
+        "nearby_own_kills": 135,
+        "exposure": 0.5183585313174947,
+        "conversion_lower_bound": 0.28125,
+        "mean_building_kills": 0
+      },
+      "8": {
+        "hero": "Warlock",
+        "n": 30,
+        "nearby_enemy_deaths": 86,
+        "enemy_deaths": 673,
+        "nearby_own_kills": 15,
+        "exposure": 0.1277860326894502,
+        "conversion_lower_bound": 0.1744186046511628,
+        "mean_building_kills": 0.03333333333333333
+      },
+      "9": {
+        "hero": "Berserker",
+        "n": 30,
+        "nearby_enemy_deaths": 142,
+        "enemy_deaths": 862,
+        "nearby_own_kills": 27,
+        "exposure": 0.16473317865429235,
+        "conversion_lower_bound": 0.19014084507042253,
+        "mean_building_kills": 0
+      }
+    },
+    "standardized_exposure": 0.2309845060491109,
+    "standardized_conversion_lower_bound": 0.24879894120232787,
+    "standardized_mean_building_kills": 0.013333333333333334
+  },
+  "aaron-gota-ir-coordinated-support-anchor-0916:v1": {
+    "n": 232,
+    "total_building_kills": 894,
+    "classes": {
+      "0": {
+        "hero": "Vanguard Knight",
+        "n": 22,
+        "nearby_enemy_deaths": 227,
+        "enemy_deaths": 736,
+        "nearby_own_kills": 99,
+        "exposure": 0.30842391304347827,
+        "conversion_lower_bound": 0.43612334801762115,
+        "mean_building_kills": 2.0454545454545454
+      },
+      "1": {
+        "hero": "Ranger",
+        "n": 21,
+        "nearby_enemy_deaths": 241,
+        "enemy_deaths": 388,
+        "nearby_own_kills": 219,
+        "exposure": 0.6211340206185567,
+        "conversion_lower_bound": 0.9087136929460581,
+        "mean_building_kills": 7
+      },
+      "2": {
+        "hero": "Arcanist",
+        "n": 29,
+        "nearby_enemy_deaths": 318,
+        "enemy_deaths": 720,
+        "nearby_own_kills": 249,
+        "exposure": 0.44166666666666665,
+        "conversion_lower_bound": 0.7830188679245284,
+        "mean_building_kills": 4.620689655172414
+      },
+      "3": {
+        "hero": "Druid Warden",
+        "n": 23,
+        "nearby_enemy_deaths": 246,
+        "enemy_deaths": 715,
+        "nearby_own_kills": 128,
+        "exposure": 0.34405594405594403,
+        "conversion_lower_bound": 0.5203252032520326,
+        "mean_building_kills": 2.739130434782609
+      },
+      "4": {
+        "hero": "Demon Hunter",
+        "n": 31,
+        "nearby_enemy_deaths": 319,
+        "enemy_deaths": 862,
+        "nearby_own_kills": 230,
+        "exposure": 0.3700696055684455,
+        "conversion_lower_bound": 0.7210031347962382,
+        "mean_building_kills": 5.161290322580645
+      },
+      "5": {
+        "hero": "Death Knight",
+        "n": 20,
+        "nearby_enemy_deaths": 149,
+        "enemy_deaths": 610,
+        "nearby_own_kills": 91,
+        "exposure": 0.2442622950819672,
+        "conversion_lower_bound": 0.610738255033557,
+        "mean_building_kills": 2.2
+      },
+      "6": {
+        "hero": "Crossbowman",
+        "n": 23,
+        "nearby_enemy_deaths": 346,
+        "enemy_deaths": 684,
+        "nearby_own_kills": 303,
+        "exposure": 0.5058479532163743,
+        "conversion_lower_bound": 0.8757225433526011,
+        "mean_building_kills": 5.6521739130434785
+      },
+      "7": {
+        "hero": "Lich",
+        "n": 21,
+        "nearby_enemy_deaths": 254,
+        "enemy_deaths": 689,
+        "nearby_own_kills": 201,
+        "exposure": 0.3686502177068215,
+        "conversion_lower_bound": 0.7913385826771654,
+        "mean_building_kills": 3.4285714285714284
+      },
+      "8": {
+        "hero": "Warlock",
+        "n": 17,
+        "nearby_enemy_deaths": 122,
+        "enemy_deaths": 619,
+        "nearby_own_kills": 73,
+        "exposure": 0.19709208400646203,
+        "conversion_lower_bound": 0.5983606557377049,
+        "mean_building_kills": 2.588235294117647
+      },
+      "9": {
+        "hero": "Berserker",
+        "n": 25,
+        "nearby_enemy_deaths": 242,
+        "enemy_deaths": 824,
+        "nearby_own_kills": 152,
+        "exposure": 0.2936893203883495,
+        "conversion_lower_bound": 0.628099173553719,
+        "mean_building_kills": 2.2
+      }
+    },
+    "standardized_exposure": 0.36948920203530655,
+    "standardized_conversion_lower_bound": 0.6873443457291226,
+    "standardized_mean_building_kills": 3.7635545593722766
+  },
+  "aaron-gota-ir-perimeter-blue_repair-0916-aaron:v1": {
+    "n": 221,
+    "total_building_kills": 908,
+    "classes": {
+      "0": {
+        "hero": "Vanguard Knight",
+        "n": 23,
+        "nearby_enemy_deaths": 162,
+        "enemy_deaths": 652,
+        "nearby_own_kills": 83,
+        "exposure": 0.24846625766871167,
+        "conversion_lower_bound": 0.5123456790123457,
+        "mean_building_kills": 2.1739130434782608
+      },
+      "1": {
+        "hero": "Ranger",
+        "n": 33,
+        "nearby_enemy_deaths": 465,
+        "enemy_deaths": 770,
+        "nearby_own_kills": 406,
+        "exposure": 0.6038961038961039,
+        "conversion_lower_bound": 0.8731182795698925,
+        "mean_building_kills": 6.878787878787879
+      },
+      "2": {
+        "hero": "Arcanist",
+        "n": 24,
+        "nearby_enemy_deaths": 214,
+        "enemy_deaths": 471,
+        "nearby_own_kills": 154,
+        "exposure": 0.4543524416135881,
+        "conversion_lower_bound": 0.719626168224299,
+        "mean_building_kills": 3.5
+      },
+      "3": {
+        "hero": "Druid Warden",
+        "n": 23,
+        "nearby_enemy_deaths": 245,
+        "enemy_deaths": 606,
+        "nearby_own_kills": 148,
+        "exposure": 0.4042904290429043,
+        "conversion_lower_bound": 0.6040816326530613,
+        "mean_building_kills": 4.434782608695652
+      },
+      "4": {
+        "hero": "Demon Hunter",
+        "n": 16,
+        "nearby_enemy_deaths": 182,
+        "enemy_deaths": 433,
+        "nearby_own_kills": 139,
+        "exposure": 0.42032332563510394,
+        "conversion_lower_bound": 0.7637362637362637,
+        "mean_building_kills": 5.125
+      },
+      "5": {
+        "hero": "Death Knight",
+        "n": 13,
+        "nearby_enemy_deaths": 122,
+        "enemy_deaths": 377,
+        "nearby_own_kills": 58,
+        "exposure": 0.32360742705570295,
+        "conversion_lower_bound": 0.47540983606557374,
+        "mean_building_kills": 2.4615384615384617
+      },
+      "6": {
+        "hero": "Crossbowman",
+        "n": 26,
+        "nearby_enemy_deaths": 346,
+        "enemy_deaths": 665,
+        "nearby_own_kills": 300,
+        "exposure": 0.5203007518796993,
+        "conversion_lower_bound": 0.8670520231213873,
+        "mean_building_kills": 4.538461538461538
+      },
+      "7": {
+        "hero": "Lich",
+        "n": 19,
+        "nearby_enemy_deaths": 225,
+        "enemy_deaths": 608,
+        "nearby_own_kills": 179,
+        "exposure": 0.37006578947368424,
+        "conversion_lower_bound": 0.7955555555555556,
+        "mean_building_kills": 3.6315789473684212
+      },
+      "8": {
+        "hero": "Warlock",
+        "n": 23,
+        "nearby_enemy_deaths": 230,
+        "enemy_deaths": 853,
+        "nearby_own_kills": 128,
+        "exposure": 0.2696365767878077,
+        "conversion_lower_bound": 0.5565217391304348,
+        "mean_building_kills": 4.173913043478261
+      },
+      "9": {
+        "hero": "Berserker",
+        "n": 21,
+        "nearby_enemy_deaths": 193,
+        "enemy_deaths": 711,
+        "nearby_own_kills": 136,
+        "exposure": 0.2714486638537271,
+        "conversion_lower_bound": 0.7046632124352331,
+        "mean_building_kills": 2.2857142857142856
+      }
+    },
+    "standardized_exposure": 0.38863877669070335,
+    "standardized_conversion_lower_bound": 0.6872110389504047,
+    "standardized_mean_building_kills": 3.920368980752276
+  }
+}

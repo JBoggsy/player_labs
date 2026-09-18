@@ -12,13 +12,15 @@ XP, kills and gold are useful diagnostics but do not replace this binary score.
 Platform rating rules must be checked in the active league, not inferred from game code.
 
 There are three lanes with three towers per team per lane: outer, inner, gate.
-Later tiers remain protected until earlier towers in that lane fall. Clearing any
-one enemy lane exposes the enemy fort. `objectAlive` incorporates this protection
-for structures, so it does not simply mean positive HP.
+Later tiers remain protected until earlier towers in that lane fall. Behind them,
+each team has two barracks per lane that spawn the lane's footmen; a barracks is
+protected until all three of its lane's towers are down, and destroying it stops
+its footmen. Clearing any one enemy lane exposes the enemy fort. `objectAlive`
+incorporates this protection for structures, so it does not simply mean positive HP.
 
 The default map is **116×116**, generated with map seed 54; dimensions and match
 limits are configurable. The default match uses 28,800 ticks
-(20 simulated minutes at 24 ticks/s) and 240 ticks between footman waves.
+(20 simulated minutes at 24 ticks/s) and 480 ticks (20 s) between footman waves.
 Red/team 0 has Death Knight, Crossbowman, Lich, Warlock and Berserker.
 Blue/team 1 has Vanguard Knight, Ranger, Arcanist, Druid Warden and Demon Hunter.
 

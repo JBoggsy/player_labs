@@ -1,16 +1,15 @@
 # Requested changes to the Gods of the Arena BASIC host
 
-> **Currency.** Checked against polyworld `origin/main` at `e127989` ("Expand GotA BASIC
-> combat observations", 2026-09-15) and the deployed `5422fb0c`. **Re-verify when**
-> `tools/deployed_ref.py` reports a new deployed commit: confirm the `bots.nim` registrations
-> below are in that build, then move the merged items out of this file and into
-> [policy-capabilities.md](policy-capabilities.md) as deployed surface.
+> **Currency.** Checked against the deployed polyworld `7365e4e9` (coworld 2026.9.16.3,
+> 2026-09-16), which includes `e127989`. Items 1–13 are live and documented as deployed
+> surface in [policy-capabilities.md §3](policy-capabilities.md); item 14 is still absent
+> on `main`.
 
 ## Status
 
 | Items | State |
 | --- | --- |
-| 1–13 (observations) | **Merged to polyworld `main`** in `e127989`, with the host limits raised from 32/32 to 64/64 data names/functions and two new constants (`worldScale = 60000`, `tickRate = 24`). **Not deployed**: the league still runs `5422fb0c`, where none of these names exist and a script that references them fails to compile. The exact registered names and semantics are in [policy-capabilities.md §3.6](policy-capabilities.md#36-observations-added-on-main-not-yet-deployed). |
+| 1–13 (observations) | **Deployed** (coworld 2026.9.16.3, polyworld `7365e4e9`, 2026-09-16). Merged in `e127989` with the host limits raised from 32/32 to 64/64 data names/functions and two new constants (`worldScale = 60000`, `tickRate = 24`). The registered names and semantics are in [policy-capabilities.md §3](policy-capabilities.md#3-observations). |
 | 14 (damage, heal, and kill events in the replay or results) | **Open.** No event stream or per-seat damage metric has been added on `main`; `damage` stays a stub in the replay expander ([replay-format.md](replay-format.md)). |
 
 A list of feature requests/changes I'd like you and your agents to make. All but the last of these are just adding more observable information to the agent so that it can make better-informed choices. All of the things I'm requesting are given to players in a real DOTA gaming, which defuses a balance argument (and, to a limited extent, makes an argument for their inclusion here).

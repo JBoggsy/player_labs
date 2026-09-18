@@ -12,10 +12,10 @@ the increase per additional level. Maximum level is 20.
 | 3 | Druid Warden | Blue | 250 + 48 | 170 + 14 | 22 + 4 | 4.00 | 0.92 |
 | 4 | Demon Hunter | Blue | 220 + 36 | 90 + 7 | 32 + 7 | 1.25 | 1.50 |
 | 5 | Death Knight | Red | 350 + 62 | 90 + 8 | 30 + 6 | 1.27 | 0.86 |
-| 6 | Crossbowman | Red | 230 + 42 | 80 + 6 | 43 + 8 | 6.50 | 0.67 |
+| 6 | Crossbowman | Red | 230 + 42 | 80 + 6 | 46 + 9 | 6.50 | 0.67 |
 | 7 | Lich | Red | 185 + 28 | 210 + 17 | 36 + 8 | 5.50 | 0.75 |
 | 8 | Warlock | Red | 240 + 46 | 190 + 16 | 26 + 5 | 4.50 | 0.86 |
-| 9 | Berserker | Red | 300 + 55 | 40 + 4 | 35 + 7 | 1.33 | 1.20 |
+| 9 | Berserker | Red | 300 + 55 | 40 + 4 | 38 + 8 | 1.33 | 1.20 |
 
 For any level, use `base + (level - 1) * growth`. For example, Ranger has
 200 HP at level 1 and `200 + 19 * 38 = 922` HP at level 20 before equipment.

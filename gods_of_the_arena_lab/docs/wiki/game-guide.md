@@ -23,14 +23,15 @@ Gods of the Arena is a 5v5 lane battler. Red fields Death Knight, Crossbowman, L
 
 The default arena is 116 by 116 tiles with map seed 54. Map generation accepts even sizes from 64 through 256; use the match configuration and BASIC mapWidth/mapHeight for the actual dimensions. Blue starts in the southwest and Red in the northeast. Roads carve the forest and cross cliffs at short ramps. Each fort has three exits, two barracks per exit, and a separate walled spawn. Match seeds control gameplay randomness without changing this layout.
 
-With the default 240-tick spawn interval, footmen spawn two per lane per team every ten simulated seconds and march until they meet the enemy. Heroes start at level 1 with 150 gold and their full four-ability kit already unlocked. Kills grant gold and XP. Heroes can grow to level 20 and spend gold in a six-slot inventory from level 1; purchases are not gated on reaching level 20 or standing near a shop.
+With the default 480-tick spawn interval, every surviving barracks spawns three footmen every 20 simulated seconds, so each lane sends six per team per wave; they march until they meet the enemy. Destroying a barracks stops its three. Heroes start at level 1 with 150 gold and their full four-ability kit already unlocked. Kills grant gold and XP. Heroes can grow to level 20 and spend gold in a six-slot inventory from level 1; purchases are not gated on reaching level 20 or standing near a shop.
 
-Outer towers fall first, then inner, then the gate. A god becomes attackable after one of its lanes is cleared. The first fort to reach zero health loses. Each winning-team seat scores 1 and each losing-team seat scores 0. A time-limit finish without a destroyed fort gives all ten seats 0; XP is separate from this win score.
+Outer towers fall first, then inner, then the gate. A lane's barracks become attackable once all three of its towers are down. A god becomes attackable after one of its lanes is cleared. The first fort to reach zero health loses. Each winning-team seat scores 1 and each losing-team seat scores 0. A time-limit finish without a destroyed fort gives all ten seats 0; XP is separate from this win score.
 
 | Reference | Details |
 | --- | --- |
 | Footmen | 60 HP, 12 damage, 15 gold |
-| Towers | Outer 1,200, inner 2,400, gate 4,800 |
+| Towers | HP: outer 950, inner 1,300, gate 1,950. Damage: 18, 24, 30 |
+| Barracks | 950 HP, no attack; two per lane per team; exposed after the lane's towers fall; 100 XP and 75 gold like a tower |
 | Gods | 400 HP, exposed after a lane falls |
 | Hero bounty | 150 XP and 100 gold |
 | Level curve | 100 XP, then +75 each level |
@@ -610,7 +611,7 @@ Self cast
 
 | Property | Value |
 | --- | --- |
-| Healing | +28 HP |
+| Healing | +36 HP |
 | Mana cost | 0 |
 | Charges | 1 |
 | Cast cooldown | 8s |
@@ -698,7 +699,7 @@ RANGER · HEAVY RANGED CARRY
 | --- | --- |
 | HP +42/LVL | 230 → 1028 |
 | MANA +6/LVL | 80 → 194 |
-| BASIC DAMAGE +8/LVL | 43 → 195 |
+| BASIC DAMAGE +9/LVL | 46 → 217 |
 | RANGE | 6.50 |
 | MOVE | 2.40 → 2.86 |
 | ATTACKS / S | 0.67 |
@@ -845,13 +846,13 @@ Projectile
 
 | Property | Value |
 | --- | --- |
-| Damage | 44 |
+| Damage | 48 |
 | Mana cost | 30 |
 | Charges | 3 |
 | Cast cooldown | 2s |
 | Recharge | 12s / charge |
 | Cast delay | Instant |
-| Cast range | 6.33 tiles |
+| Cast range | 6.67 tiles |
 
 Follows the selected enemy. A ground shot hits the first enemy along its path.
 
@@ -933,7 +934,7 @@ Self cast
 
 | Property | Value |
 | --- | --- |
-| Restores | +22 mana |
+| Restores | +30 mana |
 | Mana cost | 0 |
 | Charges | 1 |
 | Cast cooldown | 7s |
@@ -1021,7 +1022,7 @@ MELEE · AGGRESSIVE MELEE CARRY
 | --- | --- |
 | HP +55/LVL | 300 → 1345 |
 | MANA +4/LVL | 40 → 116 |
-| BASIC DAMAGE +7/LVL | 35 → 168 |
+| BASIC DAMAGE +8/LVL | 38 → 190 |
 | RANGE | 1.33 |
 | MOVE | 2.72 → 3.40 |
 | ATTACKS / S | 1.20 |
@@ -1118,7 +1119,7 @@ THE SHOP
 
 ## Items, costs, and bonuses
 
-Six inventory slots. Consumables stack to 8. Heroes start with 150 gold. Footmen drop 15, towers 75, heroes 100.
+Six inventory slots. Consumables stack to 8. Heroes start with 150 gold. Footmen drop 15, towers and barracks 75, heroes 100.
 
 ### Consumables
 
