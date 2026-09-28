@@ -52,7 +52,9 @@ Remove a task when it is complete.
 - Decide the miner's ladder score: confirm whether the league applies 100 or 200 XP per
   simulated minute as the time penalty, then add `--score ladder` to `tools/miner_rows.py`.
 - Fix `coworld-episode-artifacts/fetch_artifacts.py` to sniff the `POLYWORLDREPLAY` magic
-  and save GotA replays as `replay.bin` (shared skill; needs a go-ahead).
+  and save GotA replays as `replay.bin` (shared skill; needs a go-ahead). paintbot-pw hits
+  the same bug: the route returns the decompressed tape and it is saved as both
+  `replay.json` and `replay.json.z`.
 
 ## Paintbot
 
@@ -89,3 +91,11 @@ Remove a task when it is complete.
 
 - Determine current Beacon participation before considering retirement. Retirement
   requires explicit authorization and does not follow from documentation maintenance.
+
+## Paintbot PW
+
+- Tell the paintbot-pw maintainer (David B) that `coworld/paintbot/guide.md` (lines 678,
+  758) and the `base.bas` / `jev.bas` headers still give a 20,000-instruction budget while
+  `examples/paintbot/bots.nim:147-148` allows 50,000 instructions and 125,000 work units,
+  and that the guide says `jev.bas` ships with `useRetreat`/`useDial` off while the file
+  has them on (James sends it; see `paintbot_pw_lab/docs/mechanics.md` section 8).
